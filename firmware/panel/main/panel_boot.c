@@ -240,6 +240,8 @@ bool bring_up(void)
     /* The Wi-Fi page's file API reads the same card from its server's
      * task. */
     wifi_access_set_files(panel_files_card(), panel_files_web_bench);
+    /* And its file manager colours a text as the viewer does. */
+    panel_files_web_hl();
     /* Before anything can ask for a profile; with no card, the built-in
      * ones alone. */
     esc_profiles_load();

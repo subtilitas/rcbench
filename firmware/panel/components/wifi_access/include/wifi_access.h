@@ -36,6 +36,7 @@
 #include "fm_io.h"
 #include "fm_rules.h"
 #include "fw_upload.h"
+#include "wa_app.h"
 #include "wa_fetch.h"
 #include "wa_session.h"
 
@@ -182,6 +183,14 @@ void wifi_access_set_files(const fm_io_t *io,
  * @param auto_logs  AUTO LOG FOLDER; NULL or "" is CARD_AUTO_LOGS
  */
 void wifi_access_set_log_dirs(const char *user_logs, const char *auto_logs);
+
+/**
+ * @brief The words and colours the page's file manager classes a text
+ *        with, the panel viewer's (wa_app.h), set once at start-up.
+ *        Before it, the page shows a text uncoloured.
+ * @param hl  kept; NULL for none
+ */
+void wifi_access_set_hl(const wa_hl_t *hl);
 
 #ifdef __cplusplus
 }

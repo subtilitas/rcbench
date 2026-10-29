@@ -176,6 +176,12 @@ jobs:
       - name: The checked-in ESC profile tables match their JSON
         run: python3 tools/gen_esc_profiles.py --check
 
+      # The Wi-Fi page's file manager is written as JavaScript and CSS
+      # (cascading style sheets) under shared/webaccess/web; the panel
+      # carries them as C strings generated from those files and checked in.
+      - name: The checked-in file manager strings match their sources
+        run: python3 tools/gen_web_blob.py --check
+
       # Every file over 1,000 code lines (not blank, not comment-only) is
       # in tools/check_sizes.txt with the reason it stays whole, and no
       # listed file is at or under 1,000 code lines.

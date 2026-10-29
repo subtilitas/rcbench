@@ -7,17 +7,63 @@ with `node --check`, which parses it without running it: a text that ends
 a string early, or a "</script>" inside a text, fails here as it fails in a
 browser.
 
-Exit code 77 (skipped) when node is not on the PATH.
+The file manager's data element (id "fm-data") is read as JSON, and every
+text the file manager's script (shared/webaccess/web/app.js) reads by its
+key is in it: each literal key, a "k." key per kind word and an "r." key
+per place word the file API writes (shared/webaccess/wa_api.c).  These
+checks run without node.
+
+Exit code 77 (skipped) when node is not on the PATH and the data checks
+pass.
 
 Usage: check_wa_page.py <folder>
 """
 
+import json
 import pathlib
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+APP_JS = ROOT / "shared/webaccess/web/app.js"
+WA_API = ROOT / "shared/webaccess/wa_api.c"
+
+
+def data_of(html):
+    """The file manager's data element as JSON; None when there is none."""
+    m = re.search(r'<script type="application/json" id="fm-data">(.*?)'
+                  r"</script>", html, re.DOTALL)
+    return None if m is None else json.loads(m.group(1))
+
+
+def keys_read(js, api):
+    """Every text key app.js reads.
+
+    The literal ones, and the kind and place words the API writes behind
+    "k." and "r.".
+    """
+    keys = set(re.findall(r"\bTX\.([A-Za-z_]\w*)", js))
+    keys |= set(re.findall(r"\bTX\['([^']+)'\]", js))
+    keys |= {"k." + w for w in re.findall(r'\[FM_KIND_\w+\] = "(\w+)"',
+                                          api)}
+    keys |= {"r." + w for w in re.findall(r'\[FM_PLACE_\w+\] = "(\w+)"',
+                                          api)}
+    return keys
+
+
+def check_data(page, js, api):
+    """The failures of one page's data: [] when it holds every key."""
+    try:
+        data = data_of(page.read_text(encoding="utf-8"))
+    except ValueError as e:
+        return [f"{page.name}: the data is no JSON: {e}"]
+    if data is None:
+        return [f"{page.name}: no data element"]
+    missing = sorted(keys_read(js, api) - set(data["tx"]))
+    return [f"{page.name}: no text {k!r}" for k in missing]
 
 
 def scripts_of(html):
@@ -29,14 +75,21 @@ def main(argv):
     if len(argv) != 2:
         print(__doc__, file=sys.stderr)
         return 2
-    node = shutil.which("node")
-    if node is None:
-        print("node not found; script check skipped")
-        return 77
     pages = sorted(pathlib.Path(argv[1]).glob("page_*.html"))
     if len(pages) != 2:
         print(f"{argv[1]}: {len(pages)} pages, want 2", file=sys.stderr)
         return 1
+    js = APP_JS.read_text(encoding="utf-8")
+    api = WA_API.read_text(encoding="utf-8")
+    bad = [f for page in pages for f in check_data(page, js, api)]
+    if bad:
+        print("\n".join(bad), file=sys.stderr)
+        return 1
+    print(f"{len(keys_read(js, api))} texts the app reads, in both pages")
+    node = shutil.which("node")
+    if node is None:
+        print("node not found; script check skipped")
+        return 77
     failed = False
     with tempfile.TemporaryDirectory() as tmp:
         for page in pages:
