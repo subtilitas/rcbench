@@ -493,6 +493,15 @@ void kpn_warn_apply(void);
 /** @brief Every editor shut: the keypad, the keyboard, the list and the
  *         page; a soft limit's edit is cancelled. */
 void kpn_close_editors(void);
+
+/**
+ * @brief The limits a CONNECT is held to: the SUPPLY screen's caps as they
+ *        are now and the 4.8V floor, or none on a board whose ports run
+ *        from their own fixed supply (the rbmod carrier's 5V), which the
+ *        PD mini's caps do not bound.
+ * @param p the programmer
+ */
+void kpn_supply_limits(kst_prog_t *p);
 /** @brief A file's name typed: the save, or the keyboard again for a name
  *         the card's side does not take.
  * @param name the name typed

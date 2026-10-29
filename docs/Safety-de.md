@@ -248,8 +248,12 @@ Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
 4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
 Programmer für KST und Hitec schalten die 5V für eine Sitzung ein und aus;
 das Panel bietet keine Taste dafür. Die Programmer lesen auf dem Carrier
-nichts vom PD mini: sein Sollwert lehnt weder ein CONNECT unter 4.8V ab,
-noch setzt er die Spannung eines Power-Cycle. Die Page folgt den Regeln
+nichts vom PD mini: sein Sollwert lehnt weder ein VERBINDEN unter 4.8V
+ab, noch setzt er die Spannung eines Power-Cycle, und die Grenzen der
+Ansicht SUPPLY begrenzen nur die Servoschienen, kein VERBINDEN. Sind die
+5V als ein gelesen, schalten VERBINDEN und VERLASSEN nach einem Schreiben
+sie aus und wieder ein, wie den Ausgang des PD mini; sind sie aus,
+schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln
 der Page SUPPLY für einen Port:
 
 - Ein Fehler schreibt das OFF der Page, wer immer sie hält und was immer

@@ -436,6 +436,9 @@ typedef struct {
                                    PD mini, on                            */
     uint16_t out_mv;          /**< its output, mV                         */
     uint16_t out_ma;          /**< the current it gives, mA               */
+    bool     fixed_on;        /**< the ports' own fixed supply (the rbmod
+                                   carrier's 5V, GPIO 21) reads on; no
+                                   reading of its voltage or current      */
     bool     supply_held;     /**< the SUPPLY page says a programming port
                                    holds it (LINK_SP_PORT)                */
     bool     card;            /**< a card is mounted: a write's record

@@ -31,6 +31,20 @@
 
 /* ------------------------------------------------------------------ editors */
 
+void kpn_supply_limits(kst_prog_t *p)
+{
+    if (ui_board_prog_5v_pin() >= 0) {
+        kst_prog_supply_caps(p, 0u, 0u);
+        kst_prog_supply_floor(p, 0u);
+        return;
+    }
+    const supply_caps_t caps = supply_screen_caps();
+
+    kst_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
+                         (uint16_t)lroundf(caps.i_max * 1000.0f));
+    kst_prog_supply_floor(p, (uint16_t)KST_PORT_SUPPLY_MIN_MV);
+}
+
 void kpn_close_editors(void)
 {
     if (k.warn.open && k.warn.kind == W_SOFT) {
@@ -391,12 +405,7 @@ void kpn_act(const row_t *r)
     switch (r->what) {
     case A_PORT:
         if (st == KST_PROG_PWM) {
-            /* Against the SUPPLY screen's limits as they are now. */
-            const supply_caps_t caps = supply_screen_caps();
-
-            kst_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
-                                 (uint16_t)lroundf(caps.i_max * 1000.0f));
-            kst_prog_supply_floor(p, (uint16_t)KST_PORT_SUPPLY_MIN_MV);
+            kpn_supply_limits(p);
             (void)kst_prog_connect(p, kpn_port_no());
         } else if (st == KST_PROG_PROGRAMMING) {
             kpn_warn_leave();

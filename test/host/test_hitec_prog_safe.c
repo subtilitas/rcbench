@@ -100,6 +100,26 @@ TEST_CASE(a_switch_to_safe_at_the_bench_stops_and_clear_goes_on_reading)
     CHECK_EQ(hitec_prog_model(model())->model, HITEC_MODEL_D485HW);
 }
 
+TEST_CASE(on_the_carriers_fixed_supply_clear_goes_on_reading_too)
+{
+    /* The ports' own 5V reads on, with no reading of it: the servo is
+     * still powered, and CLEAR reads on without a new entry. */
+    rig();
+    g_fixed = true;
+    reading(8u);
+    disarm();
+    until(HITEC_PROG_HELD);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_STOPPED);
+    CHECK_EQ(hitec_prog_clear(model()), HITEC_PROG_MSG_NONE);
+    for (unsigned i = 0; i < 20000u && pstate() == HITEC_PROG_CLEARING;
+         ++i) {
+        pms();
+    }
+    CHECK_EQ(pstate(), HITEC_PROG_READING);
+    until(HITEC_PROG_HELD);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_READ);
+}
+
 TEST_CASE(clear_with_no_stop_is_refused_busy)
 {
     rig();
@@ -289,6 +309,7 @@ int main(void)
 {
     RUN(a_stop_during_read_all_cuts_holds_the_port_and_leave_frees_it);
     RUN(a_switch_to_safe_at_the_bench_stops_and_clear_goes_on_reading);
+    RUN(on_the_carriers_fixed_supply_clear_goes_on_reading_too);
     RUN(clear_with_no_stop_is_refused_busy);
     RUN(abort_during_read_all_keeps_the_port_and_read_all_runs_again);
     RUN(abort_during_the_entry_keeps_the_port_for_leave);

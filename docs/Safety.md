@@ -223,7 +223,10 @@ PD mini feeds the servo rails only. The KST and Hitec programmers switch
 the 5V on and off for a session; the panel offers no key for it. The
 programmers take no reading of the PD mini on the carrier: its set point
 neither refuses a CONNECT under 4.8V nor sets the voltage of a power
-cycle. The page follows the SUPPLY page's rules for a port:
+cycle, and the SUPPLY screen's limits bound the servo rails only, not a
+CONNECT. With the 5V read on, CONNECT and LEAVE after a write switch it
+off and on, as they do the PD mini's output; with it off, CONNECT powers
+the servo up. The page follows the SUPPLY page's rules for a port:
 
 - An error writes the page's OFF, whoever holds it and whatever the panel
   reads of it (`error_sites.c`, `prog_supply_link_cut()`). A write to the

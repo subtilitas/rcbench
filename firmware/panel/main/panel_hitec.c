@@ -214,6 +214,8 @@ __attribute__((noinline)) void hitec_publish(hitec_prog_feed_t *f)
      * only, and the ports' 5V has no reading: none. */
     f->supply_read = s_supply_is_real && s_supply.online && s_supply.output
                      && !atomic_load(&s_psup_owns);
+    f->fixed_on = atomic_load(&s_psup_owns)
+                  && prog_supply_link_state(&s_psup_link) == PROG_SUPPLY_ON;
     f->out_mv = 0u;
     f->out_ma = 0u;
     if (f->supply_read) {
