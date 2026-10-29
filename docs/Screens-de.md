@@ -5703,7 +5703,7 @@ hinterlassen hat.
 ### Pin auswählen
 
 Hinter der Kachel PICK A PIN auf SETUP; das Home-Tag führt dorthin zurück.
-Auf dem [rbmod-Carrier](Carrier-de.md) ist die Kachel nicht gezeigt.
+Auf dem [rbmod-Carrier](Carrier-de.md) öffnet die Kachel stattdessen [LAYOUT](#layout).
 Über der offenen Protokollliste schließt das Home-Tag die Liste, ohne zu
 wählen, und der Bildschirm bleibt.
 Dieselbe Bindung,
@@ -5984,6 +5984,31 @@ eine Rate, die kein Eintrag anbietet, ein Pin, der nicht auf dem Header liegt
 — werden als solche gezeigt und nicht als „nichts konfiguriert“: siehe [Eine
 Bindung, die nicht bestätigt
 ist](#eine-bindung-die-nicht-bestätigt-ist).
+
+### Layout
+
+LAYOUT liegt hinter der Kachel PICK A PIN auf SETUP, solange der IOmcu
+ein Board mit verlöteten Pins meldet, den
+[rbmod-Carrier](Carrier-de.md). Die Kachel zeigt dort
+`STECKER UND PINS`. Das Home-Tag führt zurück zu SETUP. Der Bildschirm
+treibt nichts und nimmt keinen Tipp.
+
+![LAYOUT auf dem Carrier](img/de/layout-rbmod.png)
+
+| Spalte | Zeilen | Jede Zeile |
+| --- | --- | --- |
+| J1, `PROGRAMMIERPORTS` | Positionen 1 bis 4: PROGP04, PROGP01, PROGP02, PROGP03 | die Position, die Rolle, ihr GPIO und das Netz an ihrem +, VCC_PROGPORT; rechts `PROGRAMMIEREN` |
+| J2, `SERVOAUSGÄNGE` | Positionen 1 bis 4: PWM03, PWM02, PWM01, PWM04 | dasselbe, mit VCC_SERVOPORT_B an den Positionen 1 und 2 und VCC_SERVOPORT_A an 3 und 4; rechts das auf dem Ausgang gebundene Protokoll, `OFF` für keines, `NICHT GELESEN`, bis die Bindung dieses Boards gelesen ist |
+| `WEITERE STECKER` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NICHT BETRIEBEN`), J6 PD MINI, J9 TAP, PROG 5V EN an keinem Stecker | der Name, was er trägt, sein GPIO |
+
+Die Zeile unter den Spalten lautet
+`EIN BOARD REV 1 BRAUCHT ZWEI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.`
+([Carrier: Nacharbeit Rev 1](Carrier-de.md#nacharbeit-rev-1)).
+
+Ein Protokoll, das unter OUTPUTS gebunden oder gelöst wird, und ein
+Wechsel des Boards zeichnen den Bildschirm neu. Auf einem Board mit
+gewählten Pins zeigt er `DIESES BOARD HAT KEINE VERLÖTETEN PINS.` und
+`SEINE PINS WERDEN UNTER OUTPUTS UND PICK A PIN GEWÄHLT.`.
 
 ## Auswuchten
 

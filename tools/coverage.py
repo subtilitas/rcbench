@@ -139,6 +139,7 @@ TRACKED = [
     "shared/ui/log_viewer_events.c",
     "shared/ui/log_select.c",
     "shared/ui/files_screen.c",
+    "shared/ui/layout_screen.c",
     "shared/ui/files_draw.c",
     "shared/ui/files_events.c",
     "shared/ui/files_text.c",

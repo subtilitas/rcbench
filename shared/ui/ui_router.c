@@ -9,6 +9,7 @@
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
 #include "files_screen.h"
+#include "layout_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "supply_screen.h"
@@ -166,6 +167,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_UPDATES:  return upd_screen();
     case SCREEN_UPD_REMIND: return upd_remind_screen();
     case SCREEN_FILES:    return files_screen();
+    case SCREEN_LAYOUT:   return layout_screen();
     default:              return overview_screen();
     }
 }
@@ -258,6 +260,7 @@ void ui_router_invalidate(void)
     update_screen_invalidate();
     upd_screen_invalidate();
     files_screen_invalidate();
+    layout_screen_invalidate();
 }
 
 static void clear_alert(void)

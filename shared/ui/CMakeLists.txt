@@ -96,6 +96,7 @@ set(SRCS
     coproc_update_screen.c
     upd_screen.c
     files_screen.c
+    layout_screen.c
     files_draw.c
     files_events.c
     files_text.c
