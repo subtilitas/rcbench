@@ -5333,6 +5333,12 @@ UI_TEXT(HP_FACTORY_RAW, 116,
 UI_TEXT(HP_FACTORY_DONE, 116,
     "Factory values written and verified.",
     "Werkswerte geschrieben und geprüft.")
+UI_TEXT(HP_OTHER_SERVO, 116,
+    "Other values than the last read: taken as another servo.",
+    "Andere Werte als beim letzten Auslesen: als anderes Servo genommen.")
+UI_TEXT(HP_OTHER_SERVO_2, 116,
+    "Its backup is this read.",
+    "Sein Backup sind die jetzt ausgelesenen Werte.")
 /* --------------------- end of the Hitec programmer */
 
 /* ------------------------------------------------- WI-FI, PANEL UPDATE */
