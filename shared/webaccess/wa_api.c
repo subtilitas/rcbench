@@ -15,6 +15,7 @@
 #include "fm_rules.h"
 #include "fm_tree.h"
 #include "wa_zip.h"
+#include "wall_clock.h"
 
 /** @brief The page's texts, P_<ID> for each UI_WEB_TEXT() of ui_text.def. */
 typedef enum {
@@ -273,6 +274,9 @@ void wa_api_status_json(wa_out_t *o, const wa_api_status_t *st)
     wa_out_u64(o, TEXT_BUF_FILE_MAX);
     json_key(o, "lines_max", false);
     wa_out_u64(o, TEXT_BUF_ENDS_MAX);
+    json_key(o, "user_logs", false);
+    json_str(o, (st->user_logs != NULL && st->user_logs[0] != '\0')
+                    ? st->user_logs : CARD_USER_LOGS);
     wa_out_str(o, "}");
 }
 
@@ -627,7 +631,12 @@ void wa_api_info_json(const wa_api_t *api, wa_out_t *o)
     wa_out_u64(o, req->info.entries);
     json_key(o, "unlisted", false);
     wa_out_u64(o, req->info.unlisted);
-    wa_out_str(o, "}");
+    json_key(o, "time", false);
+    wa_out_str(o, "\"");
+    if (wall_stamp_known(req->info.mtime)) {
+        wa_out_time(o, wall_local_s(req->info.mtime));
+    }
+    wa_out_str(o, "\"}");
 }
 
 /* ---------------------------------------------------------- the file */

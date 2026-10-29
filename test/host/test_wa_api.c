@@ -4,7 +4,7 @@
  *        (fm_fake.h): every reason with its word, status and texts; the
  *        status answer; a folder's pages at 0, 1, 47, 48, 49 and 999
  *        entries, forward and back by the key at the page's edge; INFO of
- *        a file and a folder; and the query's refusals, before any card
+ *        a file and a folder with its time as INFO shows it; and the query's refusals, before any card
  *        call.  The file answer is test_wa_api_file.c's.
  *
  * Cases:
@@ -24,10 +24,13 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "wa_api_rig.h"
 
 #include "card_tree.h"
+#include "wall_clock.h"
 #include "fm_tree.h"
 
 /**
@@ -162,7 +165,17 @@ TEST_CASE(the_status_says_the_card_and_why_writes_are_closed)
                  "\"why\":\"READ_ONLY\",\"card\":{\"mounted\":true,"
                  "\"mount\":3,\"name\":\"RC \\\"BENCH\\\"\","
                  "\"total\":31914983424,\"free\":1099511627776},"
-                 "\"page\":48,\"file_max\":1048576,\"lines_max\":65536}");
+                 "\"page\":48,\"file_max\":1048576,\"lines_max\":65536,"
+                 "\"user_logs\":\"USER/LOGS\"}");
+    /* A User log folder SETUP names is where FILES' right pane opens. */
+    st.user_logs = "MY LOGS";
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    CHECK(has(json_end(), "\"user_logs\":\"MY LOGS\"}"));
+    st.user_logs = "";
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    CHECK(has(json_end(), "\"user_logs\":\"USER/LOGS\"}"));
     /* The gate shut says why; no card is no name and no bytes. */
     st.gate = FM_ERR_ARMED;
     st.de = true;
@@ -403,20 +416,39 @@ TEST_CASE(info_reads_a_file_and_a_folder)
     CHECK_STR_EQ(json_end(),
                  "{\"path\":\"USER/LOGS/LIMIT006.TXT\",\"d\":false,"
                  "\"mount\":1,\"s\":1873,\"t\":1798761600,\"entries\":0,"
-                 "\"unlisted\":0}");
+                 "\"unlisted\":0,\"time\":\"2027-01-01 00:00\"}");
     CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS&dir=1&mount=1"), WA_API_OK);
     json_begin();
     wa_api_info_json(&g_api, &g_out);
     CHECK_STR_EQ(json_end(),
                  "{\"path\":\"USER/LOGS\",\"d\":true,\"mount\":1,"
                  "\"s\":16977,\"t\":1798761600,\"entries\":2,"
-                 "\"unlisted\":1}");
+                 "\"unlisted\":1,\"time\":\"2027-01-01 00:00\"}");
     /* No time on the card: -1. */
     g_card.mtime = -1;
     CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS/LIMIT006.TXT"), WA_API_OK);
     json_begin();
     wa_api_info_json(&g_api, &g_out);
     CHECK(has(json_end(), "\"t\":-1,"));
+    CHECK(has(json_end(), "\"time\":\"\"}"));
+    /* A 1980 stamp is an unset clock's (wall_clock.h): no date; the first
+     * stamp taken as known, 1981-01-01 12:00 UTC, is one. */
+    g_card.mtime = 315644040;        /* 1980-01-02 06:54 */
+    CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS/LIMIT006.TXT"), WA_API_OK);
+    json_begin();
+    wa_api_info_json(&g_api, &g_out);
+    CHECK(has(json_end(), "\"t\":315644040,"));
+    CHECK(has(json_end(), "\"time\":\"\"}"));
+    g_card.mtime = WALL_STAMP_FLOOR_S;
+    CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS/LIMIT006.TXT"), WA_API_OK);
+    json_begin();
+    wa_api_info_json(&g_api, &g_out);
+    CHECK(has(json_end(), "\"time\":\"1981-01-01 12:00\"}"));
+    g_card.mtime = WALL_STAMP_FLOOR_S - 1;
+    CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS/LIMIT006.TXT"), WA_API_OK);
+    json_begin();
+    wa_api_info_json(&g_api, &g_out);
+    CHECK(has(json_end(), "\"time\":\"\"}"));
     CHECK_EQ(g_card.holds, 0);
 }
 
@@ -478,6 +510,10 @@ TEST_CASE(the_query_reads_first_values_and_ignores_the_rest)
 
 int main(void)
 {
+    /* Times as UTC whatever the shell's zone: INFO's time is read in the C
+     * library's zone (wall_local_s()). */
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
     RUN(every_core_answer_has_a_reason_word_status_and_texts);
     RUN(a_refusal_is_its_word_and_its_text_in_json);
     RUN(the_status_says_the_card_and_why_writes_are_closed);

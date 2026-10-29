@@ -11,6 +11,7 @@
 #define RCBENCH_WIFI_FILES_H
 
 #include "esp_http_server.h"
+#include "wa_app.h"
 
 /** @brief Handlers wifi_files_register() adds. */
 #define WIFI_FILES_URIS 4
@@ -26,5 +27,11 @@ void wifi_files_register(httpd_handle_t h);
  *        the 256KiB line index.  Only with the server stopped.
  */
 void wifi_files_free(void);
+
+/**
+ * @brief The words and colours wifi_access_set_hl() set.
+ * @return them; NULL before
+ */
+const wa_hl_t *wifi_files_hl(void);
 
 #endif /* RCBENCH_WIFI_FILES_H */

@@ -334,6 +334,7 @@ TRACKED = [
     "shared/webaccess/wa_mdns.c",
     "shared/webaccess/wa_guard.c",
     "shared/webaccess/wa_api.c",
+    "shared/webaccess/wa_app.c",
     "shared/clock/wall_clock.c",
 ]
 
@@ -355,6 +356,8 @@ DATA_ONLY = {
     "shared/ui/ui_cats_art.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
     "shared/esc/esc_profiles_gen.c",
+    # The Wi-Fi page's file manager as C strings, by tools/gen_web_blob.py.
+    "shared/webaccess/wa_web_blob.c",
 }
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it

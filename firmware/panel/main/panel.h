@@ -342,6 +342,13 @@ const fm_io_t *panel_files_card(void);
  */
 void panel_files_web_bench(fm_bench_t *out, void *ctx);
 
+/**
+ * @brief Give the Wi-Fi page's file manager the words, the span cap and
+ *        the colours the text viewer classes and draws a line with
+ *        (wifi_access_set_hl()), once at start-up.
+ */
+void panel_files_web_hl(void);
+
 /* ------------------------------------------------------------ panel_card.c */
 
 /* Read once at start-up, from bring_up(). */
