@@ -456,6 +456,7 @@ SCREENS = {
     # The rbmod carrier: no PICK A PIN tile, and soldered pin rows.
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
     "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
+    "supply-rbmod": ("supply-rbmod.png", "supply", "dark"),
     "setup-rbmod-iface": ("setup-rbmod-iface.png", "setup", "dark"),
     # SENSORS: 0x40 and 0x41 fitted, at the top with 0x40 online; and at
     # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.

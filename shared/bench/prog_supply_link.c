@@ -1,0 +1,88 @@
+/**
+ * @file
+ * @brief The panel's end of the PROG_SUPPLY page.  See prog_supply_link.h.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "prog_supply_link.h"
+
+#include <stddef.h>
+#include <string.h>
+
+void prog_supply_link_init(prog_supply_link_t *l, bool page)
+{
+    if (l == NULL) {
+        return;
+    }
+    memset(l, 0, sizeof(*l));
+    l->page = page;
+    l->pin  = LINK_PS_NO_PIN;
+}
+
+void prog_supply_link_cut(prog_supply_link_t *l)
+{
+    if (l != NULL && l->page) {
+        l->owed = true;
+    }
+}
+
+bool prog_supply_link_next(const prog_supply_link_t *l, uint8_t *off,
+                           uint16_t *v)
+{
+    if (l == NULL || !l->page || !l->owed) {
+        return false;
+    }
+    if (off != NULL) {
+        *off = (uint8_t)LINK_PS_OUTPUT;
+    }
+    if (v != NULL) {
+        *v = 0u;
+    }
+    return true;
+}
+
+void prog_supply_link_written(prog_supply_link_t *l, int result)
+{
+    if (l != NULL && result != PROG_SUPPLY_LINK_NO_ANSWER) {
+        l->owed = false;
+    }
+}
+
+bool prog_supply_link_read_due(const prog_supply_link_t *l, uint32_t now_ms)
+{
+    if (l == NULL || !l->page) {
+        return false;
+    }
+    return !l->read_once
+           || (uint32_t)(now_ms - l->read_ms) >= PROG_SUPPLY_LINK_READ_MS;
+}
+
+void prog_supply_link_read(prog_supply_link_t *l, const uint16_t *regs,
+                           uint32_t now_ms)
+{
+    if (l == NULL) {
+        return;
+    }
+    l->read_once = true;
+    l->read_ms   = now_ms;
+    l->answered  = regs != NULL;
+    if (regs == NULL) {
+        return;               /* fitted and pin stay as last read */
+    }
+    const uint16_t f = regs[LINK_PS_FLAGS];
+    l->fitted = (f & LINK_PS_FITTED) != 0u;
+    l->on     = l->fitted && (f & LINK_PS_ON) != 0u;
+    l->pin    = (uint8_t)regs[LINK_PS_PIN];
+}
+
+prog_supply_state_t prog_supply_link_state(const prog_supply_link_t *l)
+{
+    if (l == NULL || !l->page || !l->fitted) {
+        return PROG_SUPPLY_NONE;
+    }
+    if (!l->answered) {
+        return PROG_SUPPLY_UNKNOWN;
+    }
+    return l->on ? PROG_SUPPLY_ON : PROG_SUPPLY_OFF;
+}

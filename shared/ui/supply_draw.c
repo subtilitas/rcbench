@@ -624,6 +624,31 @@ static uint8_t output_tag(void)
 }
 
 /**
+ * @brief The programming ports' own supply under OUTPUT, on a board that
+ *        switches one: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or `NOT READ`;
+ *        nothing on any other board.
+ * @param c the canvas
+ */
+static void draw_prog_5v(gfx_canvas_t *c)
+{
+    gfx_fill_rect(c, RC_X, PROG5V_Y, RC_W, LINE_H,
+                  ui_theme_color(UI_C_PANEL));
+    const unsigned st = (unsigned)(s.prog_5v >> 8);
+    if (st == 0u) {
+        return;
+    }
+    const char *what = (st == 3u) ? TR(SUP_PROG5V_ON)
+                       : (st == 2u) ? TR(SUP_PROG5V_OFF)
+                                    : TR(SUP_PROG5V_UNKNOWN);
+    char line[48];
+    snprintf(line, sizeof(line), TR(SUP_PROG5V_LINE),
+             (unsigned)(s.prog_5v & 0xFFu), what);
+    gfx_text(c, RC_X, PROG5V_Y, line, SU_FONT_LABEL,
+             (st == 3u) ? ui_theme_color(UI_C_ACCENT)
+                        : ui_theme_color(UI_C_TEXT_FAINT), 1);
+}
+
+/**
  * @brief A frame: the chrome once per framebuffer, then each part on its
  *        own counter.
  * @param c the canvas
@@ -638,6 +663,12 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
     /* The left column shows LIVE's plot and set points unless the keypad
      * or the question covers it, or SETTINGS' page has it. */
     const bool covered = s.kp.open || s.confirm_open || !sup_on_live();
+    /* The ports' own supply moved: CONTROL repaints. */
+    const uint32_t p5 = sup_prog_5v();
+    if (p5 != s.prog_5v) {
+        s.prog_5v = p5;
+        ++s.ctrl_rev;
+    }
     const uint8_t tag = output_tag();
     char tag_buf[48];
     if ((s.drawn_mask & bit) == 0) {
@@ -752,6 +783,7 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
         ui_button_font(c, s.reset_rect, TR(MO_RESET_PEAKS),
                        ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_RESET,
                        true, SU_FONT_LABEL);
+        draw_prog_5v(c);
     }
     if (ctrl_moved || out_moved) {
         draw_out_button(c);

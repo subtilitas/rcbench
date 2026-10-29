@@ -95,8 +95,9 @@ error is a fault that ends what the bench drives. The operator's own OFF,
 DISARM and edits are not errors.
 
 The outputs are the bank's servo PWM slots and DShot throttle channels, the
-four programming ports (servo PWM, DShot, the KST line, the Hitec line), and
-the PD (Power Delivery) mini's output. The phase tap on the TONE page is an
+four programming ports (servo PWM, DShot, the KST line, the Hitec line), the
+PD (Power Delivery) mini's output, and on the rbmod carrier the programming
+ports' own 5V on GPIO 21 ([The carrier's programming-port 5V](#the-carriers-programming-port-5v)). The phase tap on the TONE page is an
 input and drives nothing. The panel has no wire to any output: it acts
 through the link and the heartbeat, and the IOmcu acts on its own when
 either goes.
@@ -213,6 +214,31 @@ not switch. Hitec: no servo, a wrong entry answer, a failed read, a classic
 write without its answer, a read-back that differs, a step the decoder
 refused. Not a fault: a refusal, a plan that sends nothing, ABORT, and a
 step cut by a stop or a lost link, which end the session themselves.
+
+#### The carrier's programming-port 5V
+
+On the [rbmod carrier](Carrier.md#power) the programming ports run from
+the 5V buck M7, switched by GPIO 21 (link 4.32, the PROG_SUPPLY page). The
+PD mini feeds the servo rails only. The KST and Hitec programmers switch
+the 5V on and off for a session; the panel offers no key for it. The page
+follows the SUPPLY page's rules for a port:
+
+- An error writes the page's OFF, whoever holds it and whatever the panel
+  reads of it (`error_sites.c`, `prog_supply_link_cut()`). A write to the
+  servo's memory keeps it on until the write ends, 10000ms at most; from
+  the OFF until the port lets go, the port's own ON is refused.
+- The heartbeat lost or the link silent switches it off at once, after a
+  frame on the wire, 12ms at most.
+- It is off at every start of the IOmcu, driven low from the first
+  statement of `main()`; the pull-down on M7's EN holds it off while the
+  IOmcu does not drive GPIO 21.
+- An ON from the panel is refused with NOT_ARMED without a live heartbeat
+  and with BAD_VALUE while a port holds the supply.
+
+SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
+or `NOT READ` when the last read went unanswered. The core is
+`shared/outputs/prog_supply.c` under `test_prog_supply`; the panel's end
+is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`.
 
 Current limitations:
 

@@ -295,6 +295,7 @@ TRACKED = [
     "protocols/pdmini/pdmini_codec.c",
     "protocols/pdmini/pdmini_jobs.c",
     "shared/bench/supply_link.c",
+    "shared/bench/prog_supply_link.c",
     "shared/bench/sense_link.c",
     "shared/bench/sense_link_view.c",
     "shared/bench/sense_map_link.c",

@@ -50,6 +50,7 @@
 #include "out_bind.h"
 #include "outputs.h"
 #include "prog_link.h"
+#include "prog_supply_link.h"
 #include "safety_gate.h"
 #include "sense_link.h"
 #include "sense_map_link.h"
@@ -1089,6 +1090,14 @@ extern atomic_uint s_card_faults;
 /* The supply's service, from control_pump(). */
 void supply_pump(void);
 void supply_link_service(void);
+/** @brief The PROG_SUPPLY page (link 4.32) on a board that switches the
+ *         programming ports' own supply: its state read, and the OFF an
+ *         error owes written; control task only. */
+extern prog_supply_link_t s_psup_link;
+/** @brief The PROG_SUPPLY page's service: the owed OFF written, the page
+ *         read every PROG_SUPPLY_LINK_READ_MS, its state published to
+ *         SUPPLY; from poll_bench(), after supply_link_service(). */
+void prog_supply_service(void);
 
 /* ------------------------------------------------------------- panel_arm.c */
 

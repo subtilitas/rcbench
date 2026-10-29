@@ -105,7 +105,9 @@ Fehler.
 
 Die Ausgänge sind die Servo-PWM-Slots und DShot-Throttle-Kanäle der Bank,
 die vier Programmierports (Servo-PWM, DShot, die KST-Leitung, die
-Hitec-Leitung) und der Ausgang des PD (Power Delivery) mini. Der Phase Tap
+Hitec-Leitung), der Ausgang des PD (Power Delivery) mini und auf dem
+rbmod-Carrier die eigenen 5V der Programmierports an GPIO 21
+([Die 5V der Programmierports auf dem Carrier](#die-5v-der-programmierports-auf-dem-carrier)). Der Phase Tap
 auf der Page TONE ist ein Eingang und treibt nichts. Das Panel hat keinen
 Draht zu einem Ausgang: es handelt über den Link und den Heartbeat, und der
 IOmcu handelt selbst, wenn einer der beiden ausfällt.
@@ -238,6 +240,34 @@ Antwort, ein Zurücklesen mit Abweichung, ein Schritt, den der Decoder
 abwies. Keine Störung: eine Ablehnung, ein Plan, der nichts sendet, ABORT
 und ein Schritt, den ein Stopp oder eine verlorene Verbindung abbricht; die
 beenden die Sitzung selbst.
+
+#### Die 5V der Programmierports auf dem Carrier
+
+Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die
+Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
+4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
+Programmer für KST und Hitec schalten die 5V für eine Sitzung ein und aus;
+das Panel bietet keine Taste dafür. Die Page folgt den Regeln der Page
+SUPPLY für einen Port:
+
+- Ein Fehler schreibt das OFF der Page, wer immer sie hält und was immer
+  das Panel von ihr liest (`error_sites.c`, `prog_supply_link_cut()`). Ein
+  Schreiben in den Speicher des Servos hält sie an, bis es endet,
+  höchstens 10000ms; vom OFF an, bis der Port loslässt, wird das eigene ON
+  des Ports abgelehnt.
+- Ein verlorener Heartbeat oder ein stummer Link schaltet sie sofort aus,
+  nach einem Frame auf der Leitung, höchstens 12ms.
+- Bei jedem Start des IOmcu ist sie aus, ab der ersten Anweisung von
+  `main()` low getrieben; der Pull-down an EN von M7 hält sie aus, solange
+  der IOmcu GPIO 21 nicht treibt.
+- Ein ON vom Panel wird ohne lebenden Heartbeat mit NOT_ARMED und mit
+  BAD_VALUE abgelehnt, solange ein Port die Versorgung hält.
+
+SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,
+`AUS` oder `UNBEKANNT`, wenn das letzte Lesen ohne Antwort blieb. Der
+Kern ist `shared/outputs/prog_supply.c` unter `test_prog_supply`; das Ende
+des Panels ist `shared/bench/prog_supply_link.c` unter
+`test_prog_supply_link`.
 
 Aktuelle Einschränkungen:
 

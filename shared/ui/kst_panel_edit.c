@@ -20,6 +20,7 @@
 #include "link_pages.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_widgets.h"
@@ -427,13 +428,21 @@ void kpn_act(const row_t *r)
         if (st == KST_PROG_PWM) {
             char label[KST_PANEL_LINE];
             const unsigned mv = kst_prog_supply_mv(p);
+            const int fixed = ui_board_prog_5v_pin();
 
-            snprintf(label, sizeof(label), TR(KP_SUPPLY_V), mv / 1000u,
-                     mv % 1000u / 100u);
-            choice_add(label, MORE_VOLTAGE);
-            snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
-                     (unsigned)kst_prog_supply_ma(p));
-            choice_add(label, MORE_CURRENT);
+            if (fixed >= 0) {
+                /* The carrier's buck: 5V, nothing to set. */
+                snprintf(label, sizeof(label), TR(KP_SUPPLY_5V_FIXED),
+                         (unsigned)fixed);
+                choice_add(label, MORE_FIXED);
+            } else {
+                snprintf(label, sizeof(label), TR(KP_SUPPLY_V), mv / 1000u,
+                         mv % 1000u / 100u);
+                choice_add(label, MORE_VOLTAGE);
+                snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
+                         (unsigned)kst_prog_supply_ma(p));
+                choice_add(label, MORE_CURRENT);
+            }
             snprintf(label, sizeof(label), TR(KP_PWM_WAIT),
                      (unsigned)kst_prog_wait_ms(p));
             choice_add(label, MORE_WAIT);
@@ -542,6 +551,8 @@ void kpn_choice_done(int value)
         (void)kst_prog_verify(p);
     } else if (value == MORE_DISCARD) {
         kst_prog_discard(p);
+    } else if (value == MORE_FIXED) {
+        /* The carrier's 5V: a line to read, nothing to set. */
     } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE) {
         kpn_warn_release();
     } else {

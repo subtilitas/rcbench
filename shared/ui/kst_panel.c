@@ -23,6 +23,7 @@
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "link_pages.h"
+#include "ui_board.h"
 #include "settings.h"
 #include "ui_card_text.h"
 #include "ui_tabs.h"
@@ -153,6 +154,9 @@ const char *kpn_row_label(const row_t *r)
         static char port[40];
         const unsigned mv = kst_prog_supply_mv(&k.prog);
 
+        if (ui_board_prog_5v_pin() >= 0) {
+            return TR(KP_PORT_5V_FIXED);
+        }
         snprintf(port, sizeof(port), TR(KP_PORT_SUPPLY), mv / 1000u,
                  mv % 1000u / 100u, (unsigned)kst_prog_supply_ma(&k.prog));
         return port;

@@ -21,6 +21,7 @@
 #include "pdmini.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -405,6 +406,13 @@ static void more_open(const hitec_prog_t *p)
         (void)more_held(true);
         return;
     }
+    if (ui_board_prog_5v_pin() >= 0) {
+        /* The carrier's buck: 5V, nothing to set. */
+        snprintf(label, sizeof(label), TR(KP_SUPPLY_5V_FIXED),
+                 (unsigned)ui_board_prog_5v_pin());
+        hpn_choice_add(label, MORE_FIXED);
+        return;
+    }
     snprintf(label, sizeof(label), TR(KP_SUPPLY_V), hitec_prog_mv(p) / 1000u,
              hitec_prog_mv(p) % 1000u / 100u);
     hpn_choice_add(label, MORE_VOLTAGE);
@@ -504,6 +512,8 @@ static void list_done(hitec_prog_t *p, int kind, int value)
         ask_write((uint8_t)HITEC_PROG_WR_REPAIR);
     } else if (value == MORE_FACTORY) {
         ask_write((uint8_t)HITEC_PROG_WR_FACTORY);
+    } else if (value == MORE_FIXED) {
+        /* The carrier's 5V: a line to read, nothing to set. */
     } else if (value == MORE_VOLTAGE) {
         ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_VOLTAGE), "V",
                        (float)hitec_prog_mv(p) / 1000.0f,

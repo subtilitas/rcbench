@@ -1322,12 +1322,13 @@ On board 2 the IOmcu holds every role to its pin:
   slot with a driver on a pin that is no servo output is cleared, and every
   port starts as NONE.
 
-GPIO 21 is driven low from the first statement of `main()` and kept low.
-M7's EN has a pull-down, so the programming ports' supply is off while the
-IOmcu does not drive GPIO 21: in reset, in BOOTSEL and unpowered.
-
-Current limitation: this release never switches GPIO 21 on, so the
-programming ports of a carrier have no supply from the carrier.
+GPIO 21 is driven low from the first statement of `main()`; from the main
+loop on the PROG_SUPPLY page (0x39, since 4.32) drives it, off until a KST
+or Hitec session switches it on. M7's EN has a pull-down, so the
+programming ports' supply is off while the IOmcu does not drive GPIO 21:
+in reset, in BOOTSEL and unpowered. On the carrier the KST and Hitec ports
+cycle this supply in place of the PD mini, and no port holds the SUPPLY
+page.
 
 A panel offers each IOmcu the image of the board it reports. The release
 panel carries both images; a board it carries no image for gets no offer,

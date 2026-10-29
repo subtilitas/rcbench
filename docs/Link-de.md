@@ -1444,13 +1444,13 @@ Auf Board 2 hält der IOmcu jede Rolle auf ihrem Pin:
   auf einem Pin, der kein Servoausgang ist, wird geleert, und jeder Port
   beginnt als NONE.
 
-GPIO 21 wird ab der ersten Anweisung von `main()` low getrieben und low
-gehalten. EN von M7 hat einen Pull-down, die Versorgung der
-Programmierports ist also aus, solange der IOmcu GPIO 21 nicht treibt: im
-Reset, im BOOTSEL und ohne Versorgung.
-
-Aktuelle Einschränkung: dieses Release schaltet GPIO 21 nie ein, die
-Programmierports eines Carriers haben also keine Versorgung vom Carrier.
+GPIO 21 wird ab der ersten Anweisung von `main()` low getrieben; ab der
+Hauptschleife treibt ihn die Page PROG_SUPPLY (0x39, seit 4.32), aus, bis
+eine Sitzung für KST oder Hitec ihn einschaltet. EN von M7 hat einen
+Pull-down, die Versorgung der Programmierports ist also aus, solange der
+IOmcu GPIO 21 nicht treibt: im Reset, im BOOTSEL und ohne Versorgung. Auf
+dem Carrier schalten die Ports für KST und Hitec diese Versorgung statt
+des PD mini, und kein Port hält die Page SUPPLY.
 
 Ein Panel bietet jedem IOmcu das Image des Boards an, das er meldet. Das
 Release-Panel trägt beide Images; ein Board, für das es kein Image trägt,

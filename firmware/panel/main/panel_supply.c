@@ -25,6 +25,7 @@
 #include "servo_source.h"
 #include "supply.h"
 #include "supply_link.h"
+#include "supply_screen.h"
 #include "supply_page.h"
 #include "touch_loss.h"
 #include "ui_text.h"
@@ -48,6 +49,7 @@
  */
 supply_sim_t          s_supply_sim;
 supply_link_t         s_supply_link;
+prog_supply_link_t    s_psup_link;
 /*
  * The supply command a programming port left on the SUPPLY page, for the
  * SUPPLY screen's set points: the values, and a count the control task
@@ -189,6 +191,11 @@ static error_bench_t error_bench(void)
         .supply_real = s_supply_is_real,
         .supply_page = s_supply_page,
         .far_minor   = s_far_minor,
+        /* The page served and the switch fitted, as read or as the board
+         * says before the first read. */
+        .prog_supply = s_psup_link.page
+                       && (s_psup_link.fitted
+                           || (outbind_roles(s_board) != NULL)),
     };
     return b;
 }
@@ -220,6 +227,9 @@ static void error_act(error_act_t a)
     }
     if (a.cut) {
         supply_link_cut(&s_supply_link);
+    }
+    if (a.prog_off) {
+        prog_supply_link_cut(&s_psup_link);
     }
 }
 
@@ -833,4 +843,29 @@ void supply_link_service(void)
         }
     }
     supply_link_alerts();
+}
+
+void prog_supply_service(void)
+{
+    uint8_t  off = 0u;
+    uint16_t v   = 0u;
+    if (prog_supply_link_next(&s_psup_link, &off, &v)) {
+        link_msg_t reply = { 0 };
+        int result = PROG_SUPPLY_LINK_NO_ANSWER;
+        if (write_regs(&s_host, LINK_PAGE_PROG_SUPPLY, off, 1u, &v, &reply)) {
+            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
+                                                : PROG_SUPPLY_LINK_ACK;
+        }
+        prog_supply_link_written(&s_psup_link, result);
+    }
+    if (prog_supply_link_read_due(&s_psup_link, now_ms())) {
+        link_msg_t reply = { 0 };
+        const bool read = poll_page(&s_host, LINK_PAGE_PROG_SUPPLY,
+                                    (uint8_t)LINK_PS_COUNT, &reply)
+                          && reply.op == LINK_OP_DATA;
+        prog_supply_link_read(&s_psup_link, read ? reply.regs : NULL,
+                              now_ms());
+    }
+    supply_screen_set_prog_5v((uint8_t)prog_supply_link_state(&s_psup_link),
+                              s_psup_link.pin);
 }

@@ -125,7 +125,7 @@ enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE };
  */
 #define FILES_NEXT (-2)
 enum { MORE_VERIFY = 0, MORE_DISCARD, MORE_RELEASE, MORE_VOLTAGE,
-       MORE_CURRENT, MORE_WAIT };
+       MORE_CURRENT, MORE_WAIT, MORE_FIXED };
 /** @brief List value of a restore's source list that forgets the restore. */
 #define RESTORE_FORGET ((int)KST_PROG_FROM_COUNT)
 
