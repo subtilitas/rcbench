@@ -3709,10 +3709,35 @@ fehl (otadata nicht geschrieben), sagt das Band
 `Panel-Firmware 0.22.1 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
 der Build läuft bis dahin.
 
+Vor dem Neustart hält die Installation die geschriebene Version im NVS
+(Non-Volatile Storage): ein Eintrag von 40 Byte, Namespace `fw_ota`, Key
+`restart_note`, mit einem Magic Word und einem FNV-1a-Hash (Fowler-Noll-Vo).
+Ein Neustart, ein Panic und ein Stromausfall behalten ihn. Der nächste Start
+liest ihn; hat der Bootloader den geschriebenen Slot als ungültig markiert,
+ist dieser Start der Build davor, und das Band zeigt die Zeile `ist nicht gestartet`. Der
+Eintrag wird nach jedem Start gelöscht außer nach einem Versuchsstart, der
+zurückgeht, also erscheint die Zeile einmal. Ein Eintrag anderer Größe,
+anderen Magic Words oder Hashs gilt als keine Notiz. Der erste Start nach
+einer Installation aus 0.23.2 oder älter findet keinen Eintrag, wie ein
+Panel, das nie installiert hat: Diese Builds halten die Notiz im LP-RAM
+(Low-Power), und einen Versuchsstart dieses Builds, der zurückgeht, meldet
+der alte Build von dort. Die Konsole nennt die Prüfung jedes Starts in
+einer Zeile:
+
+    I (…) fw_ota: start check: note 0.24.1, last invalid slot ota_0, result ROLLED_BACK
+    I (…) fw_ota: start check: note none, last invalid slot none, result NORMAL
+
+Die Notiz ist die Version oder `none`, oder `unreadable` für einen Eintrag,
+der als keine Notiz gilt; der Slot ist der letzte ungültige des Bootloaders
+oder `none`; das Ergebnis ist `NORMAL`, `UPDATED`, `ROLLED_BACK`,
+`UNCONFIRMED` oder `GOING_BACK`, Letzteres vor dem Neustart eines
+Versuchsstarts, der zurückgeht.
+
 Aktuelle Einschränkungen:
 
-- Ein Stromausfall während des Versuchsstarts verliert diese Zeile; das
-  Panel geht trotzdem zum Build davor zurück.
+- Eine Installation, deren NVS-Schreiben scheitert, meldet das auf der
+  Konsole (`restart note not kept`), und ein Start ihres Builds, der
+  zurückgeht, zeigt keine Zeile im Band.
 - Ein Versuchsstart, der vor der Bildschirmschleife stehen bleibt, etwa in
   einem Einhängen der Karte, das nicht zurückkehrt, bleibt nicht und wird
   auch nicht zurückgesetzt: Der Task-Watchdog meldet und startet nicht neu
