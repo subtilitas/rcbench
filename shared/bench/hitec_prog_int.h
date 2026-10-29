@@ -97,9 +97,11 @@ void hpw_off(hitec_prog_t *p);
  *
  * @param p    The programmer.
  * @param had  A servo was read before.
- * @param was  What that read found; NULL with none.
+ * @param was  What that read found; read only with @p had.
+ * @return true when an address a write compares differs from @p was, or
+ *         no servo was read before.
  */
-void hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was);
+bool hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was);
 
 /**
  * @brief A write operation ended with @p r.
@@ -172,12 +174,19 @@ void hpw_unconfirm(hitec_prog_t *p);
 void hpf_session(hitec_prog_t *p);
 
 /**
- * @brief A full read ended well: the first of the session, or the first of
- *        another servo, is the session's backup.
+ * @brief A full read ended well, its record compared: the first of the
+ *        session, or the first of another servo, is the session's backup.
  *
- * @param p The programmer.
+ * A D series read is of the servo before it by the session's chain only:
+ * with a write unverified, the record's verdict SAME, DONE or MIX; with
+ * none, or its record discarded, @p changed false.  Another servo's read
+ * says HITEC_PROG_MSG_OTHER_SERVO where no record stands to say more.
+ *
+ * @param p       The programmer.
+ * @param owed    A write of the session was unverified before this read.
+ * @param changed hpw_read_done()'s answer for this read.
  */
-void hpf_read_done(hitec_prog_t *p);
+void hpf_read_done(hitec_prog_t *p, bool owed, bool changed);
 
 /**
  * @brief Whether @p img differs from the servo read in an address a plan
