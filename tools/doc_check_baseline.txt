@@ -4827,7 +4827,10 @@ shared/webaccess/include/wa_send.h: warning: Member failed (variable) of struct 
 shared/webaccess/include/wa_send.h: warning: Member file (variable) of struct wa_send_t is not documented.
 shared/webaccess/include/wa_send.h: warning: Member fs (variable) of struct wa_send_t is not documented.
 shared/webaccess/include/wa_send.h: warning: Member sent (variable) of struct wa_send_t is not documented.
-shared/webaccess/include/wa_text.h: file has no @file block
+shared/webaccess/include/wa_text.h: warning: Found unknown command '\u2028'
+shared/webaccess/include/wa_text.h: warning: Found unknown command '\u2029'
+shared/webaccess/include/wa_text.h: warning: Found unknown command '\xHH'
+shared/webaccess/include/wa_text.h: warning: Member WA_OUT_BUF (macro definition) of file wa_text.h is not documented.
 shared/webaccess/include/wa_text.h: warning: Member buf[WA_OUT_BUF] (variable) of struct wa_out_t is not documented.
 shared/webaccess/include/wa_text.h: warning: Member ctx (variable) of struct wa_out_t is not documented.
 shared/webaccess/include/wa_text.h: warning: Member day (variable) of struct wa_civil_t is not documented.
@@ -4837,7 +4840,33 @@ shared/webaccess/include/wa_text.h: warning: Member month (variable) of struct w
 shared/webaccess/include/wa_text.h: warning: Member sec (variable) of struct wa_civil_t is not documented.
 shared/webaccess/include/wa_text.h: warning: Member sink (variable) of struct wa_out_t is not documented.
 shared/webaccess/include/wa_text.h: warning: Member used (variable) of struct wa_out_t is not documented.
+shared/webaccess/include/wa_text.h: warning: Member wa_out_init(wa_out_t *o, wa_sink_fn sink, void *ctx) (function) of file wa_text.h is not documented.
+shared/webaccess/include/wa_text.h: warning: Member wa_out_raw(wa_out_t *o, const void *data, size_t n) (function) of file wa_text.h is not documented.
+shared/webaccess/include/wa_text.h: warning: Member wa_out_str(wa_out_t *o, const char *s) (function) of file wa_text.h is not documented.
+shared/webaccess/include/wa_text.h: warning: Member wa_out_u64(wa_out_t *o, uint64_t v) (function) of file wa_text.h is not documented.
+shared/webaccess/include/wa_text.h: warning: Member wa_path_err_t (enumeration) of file wa_text.h is not documented.
 shared/webaccess/include/wa_text.h: warning: Member year (variable) of struct wa_civil_t is not documented.
+shared/webaccess/include/wa_text.h: warning: Unsupported xml/html tag </script> found
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_basename are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_civil are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_cookie_get are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_disposition are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_form_get are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_out_flush are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_out_html are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_out_js are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_out_time are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_out_url are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_path_decode are not documented
+shared/webaccess/include/wa_text.h: warning: parameters of member wa_utf8_units are not documented
+shared/webaccess/include/wa_text.h: warning: return type of member wa_basename is not documented
+shared/webaccess/include/wa_text.h: warning: return type of member wa_civil is not documented
+shared/webaccess/include/wa_text.h: warning: return type of member wa_cookie_get is not documented
+shared/webaccess/include/wa_text.h: warning: return type of member wa_disposition is not documented
+shared/webaccess/include/wa_text.h: warning: return type of member wa_form_get is not documented
+shared/webaccess/include/wa_text.h: warning: return type of member wa_out_flush is not documented
+shared/webaccess/include/wa_text.h: warning: return type of member wa_path_decode is not documented
+shared/webaccess/include/wa_text.h: warning: return type of member wa_utf8_units is not documented
 shared/webaccess/include/wa_walk.h: warning: Compound wa_dirent_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Compound wa_level_t is not documented.
 shared/webaccess/include/wa_walk.h: warning: Member close(void *ctx, void *file) (variable) of struct wa_fs_t is not documented.
@@ -4904,7 +4933,15 @@ shared/webaccess/wa_page.c: warning: Member firmware(wa_out_t *o, const wa_page_
 shared/webaccess/wa_page.c: warning: Member folder(wa_out_t *o, const wa_page_info_t *pi, const char *path) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_page.c: warning: Member head(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_send.c: file has no @file block
-shared/webaccess/wa_text.c: file has no @file block
+shared/webaccess/wa_text.c: warning: Member PUT(ch) (macro definition) of file wa_text.c is not documented.
+shared/webaccess/wa_text.c: warning: Member check_name(const char *s, size_t n) (function) of file wa_text.c is not documented.
+shared/webaccess/wa_text.c: warning: Member hexval(char c) (function) of file wa_text.c is not documented.
+shared/webaccess/wa_text.c: warning: Member out_2(wa_out_t *o, int v) (function) of file wa_text.c is not documented.
+shared/webaccess/wa_text.c: warning: Member unreserved(char c) (function) of file wa_text.c is not documented.
+shared/webaccess/wa_text.c: warning: Member wa_out_init(wa_out_t *o, wa_sink_fn sink, void *ctx) (function) of file wa_text.c is not documented.
+shared/webaccess/wa_text.c: warning: Member wa_out_raw(wa_out_t *o, const void *data, size_t n) (function) of file wa_text.c is not documented.
+shared/webaccess/wa_text.c: warning: Member wa_out_str(wa_out_t *o, const char *s) (function) of file wa_text.c is not documented.
+shared/webaccess/wa_text.c: warning: Member wa_out_u64(wa_out_t *o, uint64_t v) (function) of file wa_text.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member ATTR_DIR (macro definition) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member FLAGS (macro definition) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member SIG_CENTRAL (macro definition) of file wa_zip.c is not documented.

@@ -327,6 +327,21 @@ extern atomic_bool   s_enc_held;
 /** @brief FILES' way to the card: its requests run on the task cardjob. */
 extern const files_io_t k_files_io;
 
+/**
+ * @brief The card as FILES' core sees it (fm_io.h), for the Wi-Fi page's
+ *        file API, which calls it from the page server's task.
+ * @return the card's table of functions
+ */
+const fm_io_t *panel_files_card(void);
+
+/**
+ * @brief The bench for the page server's task: ARMED, the IOmcu link and
+ *        the logger's open files now, into marks of that task's own.
+ * @param out  takes the bench
+ * @param ctx  unused
+ */
+void panel_files_web_bench(fm_bench_t *out, void *ctx);
+
 /* ------------------------------------------------------------ panel_card.c */
 
 /* Read once at start-up, from bring_up(). */
