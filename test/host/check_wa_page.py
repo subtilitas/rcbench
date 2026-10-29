@@ -40,8 +40,11 @@ def data_of(html):
 
 
 def keys_read(js, api):
-    """Every text key app.js reads: literal ones, and the kind and place
-    words the API writes behind "k." and "r."."""
+    """Every text key app.js reads.
+
+    The literal ones, and the kind and place words the API writes behind
+    "k." and "r.".
+    """
     keys = set(re.findall(r"\bTX\.([A-Za-z_]\w*)", js))
     keys |= set(re.findall(r"\bTX\['([^']+)'\]", js))
     keys |= {"k." + w for w in re.findall(r'\[FM_KIND_\w+\] = "(\w+)"',

@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
-"""tools/gen_web_blob.py: what the page carries of each source, the pieces
-it is cut into, the C strings, the refusals and --check."""
+"""tools/gen_web_blob.py: what the page carries of each source.
+
+The pieces it is cut into, the C strings, the refusals and --check.
+"""
 
 import pathlib
 import shutil
@@ -13,6 +15,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 
 
 def test_comments_blank_lines_and_indents_are_left_out():
+    """Comment lines, blank lines and indents are not served."""
     js = "// a comment\n\n  var a = 1; // kept\n    //x\n  b();\n"
     assert g.served(js, "js") == "var a = 1; // kept\nb();\n"
     css = "/* one\n two */\n  a{b:c}\n\n/* x */d{e:f}\n"
@@ -23,11 +26,13 @@ def test_comments_blank_lines_and_indents_are_left_out():
                                   "x = '</script>';\n", "/* </STYLE> */\n",
                                   "<!-- a\n"])
 def test_what_the_page_cannot_carry_is_refused(text):
+    """Non-ASCII, a tab, a CR and an element's end are refused."""
     with pytest.raises(g.Bad):
         g.served(text, "js", "x.js")
 
 
 def test_pieces_are_whole_lines_of_at_most_the_limit():
+    """Pieces are whole lines of at most PIECE_MAX bytes."""
     text = "".join(f"line {i:04d} {'x' * 90}\n" for i in range(100))
     parts = g.pieces(text)
     assert "".join(parts) == text
@@ -42,11 +47,13 @@ def test_pieces_are_whole_lines_of_at_most_the_limit():
 
 
 def test_c_strings_escape_quotes_backslashes_and_trigraphs():
+    """Quotes, backslashes and "?" are escaped, a literal a line."""
     assert g.c_string('a"b\\c??=\n') == '    "a\\"b\\\\c\\?\\?=\\n"'
     assert g.c_string("1\n2\n").count("\n") == 1
 
 
 def test_the_checked_in_file_is_current_and_drift_fails(tmp_path, capsys):
+    """--check passes on the tree and fails on a changed source."""
     assert g.main(["--check"]) == 0
     root = tmp_path / "repo"
     (root / "shared/webaccess").mkdir(parents=True)
@@ -63,6 +70,7 @@ def test_the_checked_in_file_is_current_and_drift_fails(tmp_path, capsys):
 
 
 def test_a_bad_source_fails_the_run(tmp_path, capsys):
+    """A bad source fails the run and writes nothing."""
     root = tmp_path / "repo"
     (root / "shared/webaccess").mkdir(parents=True)
     shutil.copytree(REPO / g.SRC, root / g.SRC)
@@ -74,6 +82,7 @@ def test_a_bad_source_fails_the_run(tmp_path, capsys):
 
 
 def test_sizes_are_the_served_bytes(capsys):
+    """--sizes prints the bytes the page carries."""
     assert g.main(["--sizes"]) == 0
     out = capsys.readouterr().out
     total = sum(len(g.served((REPO / g.SRC / name).read_text(), kind))
