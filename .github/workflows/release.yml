@@ -177,7 +177,7 @@ jobs:
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.5.5
+          esp_idf_version: v6.1
           target: esp32p4
           path: 'firmware/panel'
           # A single image flashable at 0x0, as well as the three parts.
