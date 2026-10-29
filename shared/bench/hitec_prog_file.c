@@ -67,7 +67,8 @@ void hpf_session(hitec_prog_t *p)
  *        series one model number; for a classic servo one name, date,
  *        serial and version.
  *
- * Two servos of one D series model are not told apart.
+ * Two servos of one D series model are not told apart by this; the
+ * session's chain (chained()) tells them apart where their values differ.
  *
  * @param a An image of a full read.
  * @param b Another, of the same series.
@@ -121,10 +122,40 @@ static bool same_model(const hitec_image_t *a, const hitec_image_t *b)
     return true;
 }
 
-void hpf_read_done(hitec_prog_t *p)
+/**
+ * @brief Whether a D series read is of the servo read before it.  The port
+ *        is held, so only this session writes the servo: what changed in
+ *        it is this session's write, or another servo is on the port.
+ *
+ * The chain compares with the read before, not with the backup: a
+ * verified write of the session, its ID included, never breaks it.  After
+ * a write left unverified the record's verdict decides; with the record
+ * discarded, the values against the read before (for a failed check, its
+ * read-back) decide.
+ *
+ * @param p       The programmer, its record compared with the read.
+ * @param owed    A write of the session was unverified before the read.
+ * @param changed A writable register differs from the read before.
+ * @return true when the read is of that servo.
+ */
+static bool chained(const hitec_prog_t *p, bool owed, bool changed)
 {
-    if (p->have_bk && p->bk.series == p->servo.series
-        && same_servo(&p->bk, &p->servo)) {
+    const hitec_prog_rec_t v = hitec_prog_record_verdict(p);
+
+    if (owed && v != HITEC_PROG_REC_NONE) {
+        return v != HITEC_PROG_REC_OTHER;
+    }
+    return !changed;
+}
+
+void hpf_read_done(hitec_prog_t *p, bool owed, bool changed)
+{
+    const bool other = p->have_bk;
+
+    if (other && p->bk.series == p->servo.series
+        && same_servo(&p->bk, &p->servo)
+        && (p->servo.series != (uint8_t)HITEC_D
+            || chained(p, owed, changed))) {
         return;
     }
     /* The first read of the session, or another servo on the port: its
@@ -135,6 +166,10 @@ void hpf_read_done(hitec_prog_t *p)
     p->bk_saved = false;
     p->bk_no_file = false;
     p->bk_name[0] = '\0';
+    if (other && !p->rec) {
+        /* A record's verdict says more and stays. */
+        (void)say(p, HITEC_PROG_MSG_OTHER_SERVO, 0u, 0u);
+    }
 }
 
 /**
