@@ -638,10 +638,20 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   er abhebt, wohin er auch wandert. Die Ausnahme ist ein Druck auf ein
   Bedienelement, das anhält, was der Prüfstand treibt (DISARM, AUSGANG AUS,
   ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN), das die Seite
-  dem Router nennt (`safe_at` in ui_screen.h): Unter dem Alert-Band oder bei
-  offenem Hilfe-Kasten eines Chips gehört er der Seite, und Band oder Kasten
-  schließen sich. ARM wird nie genannt, also startet ein Druck auf ARM unter
-  beiden kein Halten. Ein Kontakt, der beim Bildschirmwechsel
+  dem Router nennt (`safe_at` in ui_screen.h): Unter dem Alert-Band, bei
+  offenem Hilfe-Kasten eines Chips oder bei offener Bildschirmhilfe gehört
+  er der Seite, und Band, Kasten oder Hilfe schließen sich. ARM wird nie
+  genannt, also startet ein Druck auf ARM unter keinem davon ein Halten.
+  Die Bildschirmhilfe ändert nie SAFE oder ARMED und sendet keinen Befehl.
+  Ein Druck auf STOP bei offener Hilfe schließt sie und stoppt beim Druck,
+  auf jeder Seite und mit einem Hinweis im Alert-Band. Das Öffnen der Hilfe
+  lässt die Kontakte der Seite los wie ein Druck auf das Band, ein Halten auf
+  ARM wird also abgebrochen und ein Gas-Drag endet. Solange die Hilfe offen
+  ist, bewegt ein Dreh am Knopf nichts (`ui_router_take_knob()`). In ARMED
+  bietet die Hilfe nur Seiten an, deren Dock kein Bedienelement aus
+  `safe_at` und kein Rechteck verdeckt, das die Seite sichtbar halten muss,
+  etwa die ZIEL-Zeile; `test_help_pages` prüft das Dock jeder solchen Seite
+  in einem Raster von 8px. Ein Kontakt, der beim Bildschirmwechsel
   oder beim Verlust von Touch-Events auf dem Glas lag, gehört niemandem, bis
   er abhebt und neu aufsetzt. Ein Kontakt der Seite, der das Statusband
   erreicht, wird für die Seite an der letzten Stelle losgelassen, die sie

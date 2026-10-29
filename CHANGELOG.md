@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- The screen guide: "?" in the band, 8px left of STOP, opens numbered marks
+  on the screen's controls and a dock of 480 x 488px that says what each
+  one does, 3 rows each, with PREV, NEXT, CLOSE and the web help's address
+  ([Screens, The screen guide](docs/Screens.md#the-screen-guide)). The menu
+  has a guide of 3 pages; the other screens follow. STOP, DISARM and the
+  other controls that stop an output act through it; the knob moves
+  nothing while it is open; while ARMED it offers only pages that cover no
+  such control. `test_help_router` and `test_help_pages` hold it.
 - `hardware/mechanical/`: STEP models of the M16 emergency stop button, its
   nut and its square anti-rotation shim as separate files, and an assembly
   of the three for a 1.6mm panel, generated from `estop_m16.py` by
@@ -22,6 +30,14 @@ history is in git.
 
 ### Changed
 
+- The band keeps 40px left of STOP for "?" on every screen. The chips stand
+  4px apart (6px before), their labels 22px into the chip (28px before),
+  and a tap finds a chip 2px beside it (3px before), so the widest row, a
+  run clock of 10 hours, ARMED MOTOR, FEHLER 7F, BENCH and LINK in German,
+  starts at x 270, 2px right of MOTOR & ESC's home tag
+  ([Screens, The status band](docs/Screens.md#the-status-band)).
+- `render_ui.py --fit` skips a string wholly outside its clip, such as a
+  tile under the guide's dock.
 - The text editor's keyboard has no digit row: 4 rows of keys of
   93 x 56px (5 rows of 93 x 59px before), and the text over it shows 8 rows
   (4 before), 10 with SMALL (5 before). `123`, left of DEL, shows the

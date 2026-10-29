@@ -65,6 +65,8 @@ typedef enum {
     SCREEN_COUNT
 } ui_screen_id_t;
 
+struct ui_help_page;
+
 typedef struct {
     const char *title;   /**< shown in the band                            */
     /**
@@ -117,6 +119,18 @@ typedef struct {
      * screen has no such control.
      */
     bool (*safe_at)(int x, int y);
+    /**
+     * The pages of the screen's guide for what it shows now: a tab, a
+     * level, the bench's state (ui_help.h).  0 while a level the guide
+     * does not explain is up -- a keypad, a keyboard, a question -- and
+     * then the band shows no "?".  NULL: the screen has no guide.
+     */
+    int (*help_count)(void);
+    /**
+     * Page @p i of the guide, from 0, into @p out.  False past the last.
+     * NULL when help_count is.
+     */
+    bool (*help_page)(int i, struct ui_help_page *out);
 } ui_screen_t;
 
 /*
@@ -304,11 +318,46 @@ bool ui_router_help_rect(gfx_rect_t *out);
  * @brief Whether a knob turn reaches the screen.
  *
  * An open help bubble takes the turn as it takes a DOWN: the bubble closes
- * and the turn moves nothing.  The next turn reaches the screen.
+ * and the turn moves nothing.  The next turn reaches the screen.  An open
+ * guide takes every turn and stays open.
  *
  * @return true when the screen may act on the turn.
  */
 bool ui_router_take_knob(void);
+
+/**
+ * @brief Whether the screen guide is open.
+ *
+ * A tap on the band's "?" opens it on the screen on top, at its first page
+ * (ui_help.h).  It closes on CLOSE, on "?", on a DOWN anywhere but the
+ * dock, on a change of screen and when the screen's pages change.  A DOWN
+ * on STOP closes it and presses STOP; a DOWN on a chip closes it and
+ * presses the chip; a DOWN on a control the screen's safe_at names closes
+ * it and is the screen's.  While it is open a knob turn moves nothing.
+ *
+ * @return true while it is open.
+ */
+bool ui_router_guide_open(void);
+
+/**
+ * @brief The page the open guide shows, from 0; -1 while it is closed.
+ * @return The page.
+ */
+int ui_router_guide_page(void);
+
+/**
+ * @brief The page the open guide shows, into @p out.
+ * @param out The page, filled.
+ * @return False while the guide is closed.
+ */
+bool ui_router_guide_now(struct ui_help_page *out);
+
+/**
+ * @brief Whether the band shows the "?" chip: the screen on top carries the
+ *        band and has guide pages for the bench state.
+ * @return true when it shows.
+ */
+bool ui_router_guide_shown(void);
 
 /** True while a STOP button is drawn; false on the splash, which has none. */
 bool ui_router_stop_live(void);

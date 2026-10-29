@@ -10,7 +10,7 @@ The status band is the top 60px of every screen except the splash, the bus-fault
 
 ## What the band shows
 
-From the left: the home tag with the screen's name, then the chips, then STOP at the right edge.
+From the left: the home tag with the screen's name, then the chips, then "?" on a screen with a guide, then STOP at the right edge.
 
 | Chip | Shows |
 |---|---|
@@ -72,6 +72,18 @@ The FAULT box spans the panel, 1008px, with one paragraph per set bit:
 | 40 | STORE_OFF | the IOmcu cannot write its flash this boot; set-ups sent to it last until it restarts |
 
 For a bit this release never sets, the box says to flash both boards from one release.
+
+## The screen guide
+
+![The menu's guide at page 1](view:help-overview)
+
+"?", 8px left of STOP, opens the guide of the screen on top. The menu has one; the other screens show no "?" yet. The guide numbers up to 5 controls of the screen with a badge and corner brackets and lists them in a dock of 480 x 488px on one half of the screen: each control's name, then what it does in 3 rows at most. The other half keeps running. The dock's last row names this help's address.
+
+- PREV and NEXT turn the pages. CLOSE or a tap on "?" closes the guide.
+- A tap anywhere else closes it and does nothing else.
+- STOP works through the guide: a press on STOP closes it and stops at once. DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN act on the same press, as with no guide.
+- The knob moves nothing while the guide is open.
+- While ARMED the guide shows only the pages that cover no control that stops an output and no TARGET row.
 
 ## The alert band
 

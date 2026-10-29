@@ -278,6 +278,12 @@ jobs:
              && python3 tools/frame_cost.py servo-grip --max-lines 1000
              && python3 tools/frame_cost.py servo-current --max-lines 4000
 
+      # The screen guide caches its dock and draws its badges and corner
+      # brackets every frame, about 330 fills on the menu; 1,000 catches
+      # marks that draw more, such as a full outline (about 4,400).
+      - name: The screen guide's marks stay cheap
+        run: python3 tools/frame_cost.py overview-guide --max-lines 1000
+
       - name: The SIMULATION watermark has not grown
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
              --max-lines 3600

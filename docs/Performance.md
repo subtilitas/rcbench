@@ -58,6 +58,7 @@ sim                         12,998    1625 KiB
 throttle                    11,164    1396 KiB
 chrome                      51,588    6448 KiB
 overview                         1       0 KiB
+overview-guide                 329      41 KiB
 servo                        2,170     271 KiB
 servo-grip                     532      66 KiB
 servo-current                3,127     391 KiB
@@ -102,6 +103,7 @@ est. ms and est. fps: not measured
 | `throttle` | the motor bench with a finger on the throttle, the drag case |
 | `chrome` | the motor bench with nothing cached, repainted in full |
 | `overview` | the menu, chrome cached |
+| `overview-guide` | the menu with its screen guide open at page 1: the dock cached, the badges and corner brackets of 4 tiles drawn every frame |
 | `servo` | the servo screen with the arm redrawn |
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
@@ -211,6 +213,7 @@ a change that makes the model draw more, not a frame that misses the panel:
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
 | `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
+| `overview-guide` | 1,000 | guide marks that draw more than their badges and brackets |
 | `servo` | 2,700 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
@@ -362,7 +365,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,648 | 1,520 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,760 | 1,408 |
 | `control` | `control_task` | 6,144 | 4,720 | 400 |
 | `runlog` | `log_task` | 6,656 | 4,528 | 1,104 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,056 | 992 |
@@ -421,7 +424,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  219 such
+  224 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its

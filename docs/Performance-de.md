@@ -62,6 +62,7 @@ sim                         12,998    1625 KiB
 throttle                    11,164    1396 KiB
 chrome                      51,588    6448 KiB
 overview                         1       0 KiB
+overview-guide                 329      41 KiB
 servo                        2,170     271 KiB
 servo-grip                     532      66 KiB
 servo-current                3,127     391 KiB
@@ -106,6 +107,7 @@ est. ms and est. fps: not measured
 | `throttle` | der Motorprüfstand mit einem Finger am Gas, der Drag-Fall |
 | `chrome` | der Motorprüfstand ohne Cache, vollständig neu gezeichnet |
 | `overview` | das Menü, Chrome gecacht |
+| `overview-guide` | das Menü mit offener Bildschirmhilfe auf Seite 1: das Dock gecacht, Abzeichen und Eckwinkel von 4 Kacheln in jedem Frame gezeichnet |
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
@@ -228,6 +230,7 @@ lässt, nicht einen Frame, der das Panel verpasst:
 | Modi | Obergrenze (Fills) | Fängt |
 | --- | ---: | --- |
 | `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
+| `overview-guide` | 1 000 | Marken der Hilfe, die mehr als ihre Abzeichen und Winkel zeichnen |
 | `servo` | 2 700 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
@@ -389,7 +392,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 648 | 1 520 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 760 | 1 408 |
 | `control` | `control_task` | 6 144 | 4 720 | 400 |
 | `runlog` | `log_task` | 6 656 | 4 528 | 1 104 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 056 | 992 |
@@ -454,7 +457,7 @@ oben ist deshalb eine Untergrenze:
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  219
+  224
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion

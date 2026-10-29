@@ -7,8 +7,9 @@ einzelnen Bildschirme bedient werden.
 
 ## Das Statusband
 
-Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
-Laufzeituhr (in ARMED oder nach einem Lauf), der Arm-Chip, ein
+Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, "?" auf
+einem Bildschirm mit Hilfe ([Die Bildschirmhilfe](#die-bildschirmhilfe)),
+die Laufzeituhr (in ARMED oder nach einem Lauf), der Arm-Chip, ein
 FEHLER-Code, sobald einer gemeldet wird, der Modus und LINK oder KEINE VERBINDUNG.
 Der Modus ist BENCH, solange der Link steht und das Panel die Ausgänge des
 IOmcu ansteuert, und SIM, solange kein IOmcu antwortet und das
@@ -63,16 +64,19 @@ Band sind die oberen 60px des Panels.
   noch auf dem Glas liegt, auf dem Bildschirm, zu dem das Tag führt, nichts.
 
 STOP ist 168 x 48px groß und sitzt am rechten Ende des Bands, ab x 850.
-Die Chips stehen von STOP aus nach links, 8px davon entfernt und 6px
+"?" ist 40 x 44px groß, 8px links von STOP, x 802 bis 842; sein Platz bleibt
+auf einem Bildschirm ohne Hilfe frei, damit die anderen Chips zwischen den
+Bildschirmen nicht wandern. Die Chips stehen von "?" aus nach links, 4px
 auseinander. Jeder Chip ist 44px hoch, seine Beschriftung in der Schrift
-10 x 20px, 28px von der linken Kante des Chips. Die breiteste Reihe, eine
-Laufzeituhr von 10 Stunden, ARMED MOTOR, ein FEHLER-Code, BENCH und LINK auf
-Deutsch, beginnt bei x 276.
+10 x 20px, 22px von der linken Kante des Chips. Ein Tipp trifft einen Chip
+über die Höhe des Bands und 2px links und rechts davon. Die breiteste Reihe,
+eine Laufzeituhr von 10 Stunden, ARMED MOTOR, ein FEHLER-Code, BENCH und LINK
+auf Deutsch, ist 528px breit und beginnt bei x 270.
 
 Das Home-Tag ist 44px hoch, bei x 8, y 8, sein Name in der Schrift
 20 x 36px. Die Home-Tags enden bei x 268 (MOTOR & ESC) und auf den anderen
 Bildschirmen bei x 248 oder weniger, also reicht keine Chip-Reihe unter ein
-Home-Tag.
+Home-Tag; im breitesten Fall bleiben 2px zwischen Tag und LINK.
 
 ### Hilfe zu den Chips
 
@@ -142,6 +146,62 @@ kennt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 ![Der Kasten von SAFE](img/de/band-safe.png)
 
 ![Der Kasten von ARMED MOTOR](img/de/band-armed.png)
+
+## Die Bildschirmhilfe
+
+"?" im Band öffnet die Hilfe des Bildschirms, der oben ist: nummerierte
+Marken an seinen Bedienelementen und ein Dock, das sagt, was jedes tut. Das
+Menü hat eine Hilfe; die anderen Bildschirme zeigen noch kein "?".
+Tastenfelder, Tastaturen und Fragen zeigen ebenfalls kein "?".
+
+![Die Hilfe des Menüs auf Seite 1](img/de/help-overview.png)
+
+| Teil | Maß |
+| --- | --- |
+| Dock | 480 x 488px, 8px vom linken oder rechten Rand des Panels, y 64 bis 552; die Seite bestimmt die Seite |
+| Lebende Hälfte | die anderen 528px des Bildschirms; der Bildschirm zeichnet dort und läuft weiter |
+| Kopf | der Titel der Seite und "Seite / Seiten" |
+| Eintrag | seine Nummer in einem Abzeichen von 28px, der Name des Bedienelements in der Akzentfarbe, dann was es tut, in der Schrift 10 x 20px, 41 Zeichen pro Zeile, höchstens 3 Zeilen |
+| Einträge pro Seite | höchstens 5 |
+| Web-Zeile | `Mehr: subtilitas.github.io/rcbench/help/de/`, auf Englisch die Adresse ohne `de/` |
+| Schaltflächen | VORIGE, NÄCHSTE und SCHLIESSEN, 140 x 48px, 10px auseinander, y 496 bis 544 |
+| Marken | ein Abzeichen von 28px mit der Nummer des Eintrags 4px innerhalb der oberen linken Ecke des Bedienelements, oder 4px links von einem Bedienelement unter 56px Höhe oder Breite; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
+
+Ein Bedienelement im Band hat sein Abzeichen unter dem Band, unter seinem
+linken Ende. Das Dock endet 4px über dem Alert-Band, ein Hinweis verdeckt
+also nichts davon.
+
+- Ein Tipp auf "?" öffnet Seite 1. Ein Druck, der von "?" rutscht, öffnet
+  nichts.
+- VORIGE und NÄCHSTE blättern und wirken beim Loslassen auf derselben
+  Schaltfläche. VORIGE auf der ersten Seite und NÄCHSTE auf der letzten sind
+  abgeblendet und tun nichts.
+- SCHLIESSEN schließt die Hilfe, ebenso ein Druck auf "?".
+- Ein Druck auf das Dock oder auf ein Abzeichen tut nichts.
+- Jeder andere Druck schließt die Hilfe und tut sonst nichts: auf der
+  lebenden Hälfte, auf dem Home-Tag, auf dem Band neben den Chips, auf dem
+  Alert-Band.
+- Ein Druck auf STOP schließt die Hilfe und stoppt sofort. Ein Druck auf
+  einen Chip schließt die Hilfe und öffnet beim Loslassen den Kasten des
+  Chips.
+- Ein Druck auf DISARM, AUSGANG AUS, ABBRECHEN, TEST BEENDEN oder LAUF
+  BEENDEN schließt die Hilfe und wirkt, wie ohne Hilfe.
+- Das Öffnen der Hilfe lässt los, was der Bildschirm hält: ein Ziehen endet,
+  wo es ist, ein Halten auf ARM wird abgebrochen.
+- Ein Dreh am Knopf bewegt nichts, solange die Hilfe offen ist, und die
+  Hilfe bleibt offen.
+- Das Verlassen des Bildschirms schließt die Hilfe, ebenso eine Änderung
+  der Seiten des Bildschirms. Ein verlorener oder zurückkehrender Link und
+  der Wechsel zwischen SAFE und ARMED lassen sie offen; die Namen auf ihrer
+  Seite folgen dem Zustand.
+- In ARMED bietet die Hilfe nur die Seiten an, deren Dock kein
+  Bedienelement verdeckt, das einen Ausgang anhält, und keine ZIEL-Zeile;
+  Seite 1 sagt das dann in einer Zeile. Die Seiten des Menüs zeigen alle
+  auch in ARMED.
+
+Die Hilfe des Menüs hat drei Seiten: die linken zwei Spalten der Kacheln mit
+dem Dock rechts, die rechten zwei mit dem Dock links, und STOP, der
+Arm-Chip, "?" und die Marke SIMULIERT mit dem Dock links.
 
 ## Das Alert-Band
 
