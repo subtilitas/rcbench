@@ -9,9 +9,10 @@
 # registers its boot leaves behind.  frame_watch.c is the panel's watchdog on
 # its render loop while the bench is ARMED or the supply's output is on.
 # error_stop.c is the panel's rule for an error: every output off and the
-# bench SAFE.
+# bench SAFE; error_sites.c applies it where the panel's control task finds
+# an error.
 set(SRCS heartbeat.c arming.c touch_loss.c safety_gate.c flash_gate.c
-         reset_cause.c frame_watch.c error_stop.c)
+         reset_cause.c frame_watch.c error_stop.c error_sites.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link)

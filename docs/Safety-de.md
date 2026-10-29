@@ -135,7 +135,9 @@ Prüfstand, der schon SAFE ist, wird nicht noch einmal auf SAFE geschaltet:
 in SAFE würde der zurückgehaltene Heartbeat die Sitzung eines
 Programmierports beenden, ohne dass dieser einen Ausgang treibt. Die Regel
 ist `error_stop()` in `shared/safety/error_stop.c`, getestet in
-`test_error_stop`.
+`test_error_stop`. Der Control-Task wendet sie dort, wo er einen Fehler
+findet, über `shared/safety/error_sites.c` an, getestet in
+`test_error_sites`.
 
 Die Zeilen oben gelten für einen IOmcu ab Link 4.31. Mit einem älteren
 IOmcu behält ein Programmierport, der das Netzteil hält, es bei einem
