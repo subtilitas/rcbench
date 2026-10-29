@@ -20,7 +20,7 @@ Processor Interface, Display Serial Interface), ESP32-C6 for Wi-Fi). Up to
 - 0.23.0 is the first release for the ESP32-P4 panel, a testing release.
   Its user interface is laid out for 1024 x 600; it is not the 800 x 480
   layout scaled up.
-- The ESP32-P4 board needs chip revision 3.2 (ESP-IDF v5.5.5).
+- The ESP32-P4 board needs chip revision 3.2 (ESP-IDF v6.1).
 - Both panels use the same IOmcu, IO board and CAN link.
 - On the ESP32-P4 board the heartbeat is IO28 and the rotary knob is IO30
   (SDA) and IO31 (SCL), all on the 12-pin header P3.
@@ -94,7 +94,7 @@ ctest --test-dir test/host/build --output-on-failure
 ```
 
 The panel firmware needs ESP-IDF (Espressif Internet-of-Things Development
-Framework) v5.5.5 or newer on the v5.5 line; the IOmcu firmware needs pico-sdk 2.0 or newer.
+Framework) v6.1; the IOmcu firmware needs pico-sdk 2.0 or newer.
 [Building](https://github.com/subtilitas/rcbench/wiki/Building) has the
 toolchains, the commands and the CI gates.
 

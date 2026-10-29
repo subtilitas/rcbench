@@ -15,7 +15,8 @@ one build at ESP-IDF v5.5.5 the decoder finds every one of the 11,903
 direct calls objdump lists in the panel's functions, and the frame of
 every function but two equals its largest `addi sp, sp, -N`: one sizes a
 buffer at run time, and one opens a second frame after an early return,
-which the decoder counts on top of the first.
+which the decoder counts on top of the first.  The count is not repeated
+on ESP-IDF v6.1.
 
 Calls the tool follows:
 
@@ -50,7 +51,7 @@ A task with any of these has a depth that is a lower bound, and the result
 says so.  The margin is what covers them.
 
 The margin is 1024 bytes.  OUTSIDE_FRAMES of it every task spends outside
-its frames on the ESP32-P4 under ESP-IDF v5.5.5 (rvruntime-frames.h and
+its frames on the ESP32-P4 under ESP-IDF v6.1 (rvruntime-frames.h and
 port.c of the RISC-V port):
 
 - 128 for the registers an interrupt saves on the task's stack before it

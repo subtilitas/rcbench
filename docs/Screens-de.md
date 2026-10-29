@@ -3899,7 +3899,7 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
 - Aktuelle Einschränkung: Ein erster DNS-Server, der nicht antwortet,
   verzögert nach einer Verbindung jede Namensauflösung um etwa 7s, die der
   NTP-Anfrage wie die der Release-Prüfung. lwIP fragt einen Server bei 0s,
-  1s, 2s und 4s und den nächsten bei 7s; ESP-IDF v5.5.5 bietet keinen der
+  1s, 2s und 4s und den nächsten bei 7s; ESP-IDF v6.1 bietet keinen der
   beiden Werte in seiner Konfiguration an.
 - Eine Antwort stellt die Uhr und schreibt eine Konsolenzeile: den Server,
   die gesetzte Zeit in UTC und wie weit sie die Uhr bewegt hat, zum Beispiel

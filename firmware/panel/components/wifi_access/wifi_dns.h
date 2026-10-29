@@ -5,7 +5,7 @@
  * One line a join, tag wifi, for example `wifi: dns 192.0.2.53, 192.0.2.1`:
  * the DNS (Domain Name System) servers lwIP asks, in the order it asks
  * them.  lwIP tries one server at 0s, 1s, 2s and 4s and moves to the next
- * at 7s (DNS_MAX_RETRIES 4, DNS_TMR_INTERVAL 1000ms; ESP-IDF v5.5.5 offers
+ * at 7s (DNS_MAX_RETRIES 4, DNS_TMR_INTERVAL 1000ms; ESP-IDF v6.1 offers
  * neither in its configuration), so a first server that does not answer
  * costs each name lookup about 7s.  The line goes to the console only: the
  * addresses are the home network's.

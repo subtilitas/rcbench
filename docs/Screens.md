@@ -3525,7 +3525,7 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
 - Current limitation: a first DNS server that does not answer delays every
   name lookup after a join by about 7s, the NTP request's and the release
   check's alike. lwIP tries a server at 0s, 1s, 2s and 4s and asks the
-  next at 7s; ESP-IDF v5.5.5 offers neither figure in its configuration.
+  next at 7s; ESP-IDF v6.1 offers neither figure in its configuration.
 - An answer sets the clock and writes one console line: the server, the
   time set in UTC and how far it moved the clock, for example
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
