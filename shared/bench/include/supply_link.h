@@ -373,6 +373,19 @@ bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
                          uint16_t *ma);
 
 /**
+ * @brief Whether the last read shows the supply free of every programming
+ *        port and its output off: LINK_SP_PORT clear, OUTPUT 0, and the
+ *        module neither read on nor possibly on (LINK_SP_ON, LINK_SP_LIVE).
+ *
+ * The moment a port's set points can give way to the caller's own without
+ * reaching an output that is on (supply_screen_port_done()).
+ *
+ * @param s The link state.
+ * @return true when it does; false for NULL and before the first read.
+ */
+bool supply_link_port_free_off(const supply_link_t *s);
+
+/**
  * @brief The events since the last call, SUPPLY_LINK_EV_*, and cleared.
  *
  * @param s The link state.

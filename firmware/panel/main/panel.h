@@ -1015,6 +1015,9 @@ extern atomic_uint    s_supply_adopt_mv;
 extern atomic_uint    s_supply_adopt_ma;
 extern atomic_uint    s_supply_adopt_gen;
 extern atomic_uint    s_supply_adopt_done;
+/** @brief The last read of the supply: no port holds it and its output is
+ *         off (supply_link_port_free_off()). */
+extern atomic_bool    s_supply_free_off;
 /* The ESC (electronic speed controller) model's profile and its runs. */
 extern atomic_uintptr_t s_escsim_profile;
 extern atomic_uint    s_escsim_runs;

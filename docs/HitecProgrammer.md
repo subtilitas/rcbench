@@ -94,7 +94,8 @@ and ends 4px above the alert band; the geometry is the KST programmer's
    - D series: POWER at the programming voltage with an off time of 0ms
      where a PD mini answers, then 1000ms for the servo to start. Without a
      PD mini the servo runs on the supply as it is.
-   - Classic: POWER with the supply off for 500ms, then on, and a LISTEN
+   - Classic: POWER with the supply off, 500ms from the read that shows it
+     off ([LEAVE](#leave) has the whole off time), then on, and a LISTEN
      for the servo's `+`; the servo's second `+` follows 250ms to 267ms
      later; 0x67 then reads the version.
 3. READ ALL: the series' set, each address with 3 tries.
@@ -121,6 +122,8 @@ While the port is held:
   points and ON are locked.` OUTPUT OFF works. From protocol 4.29 the IOmcu
   holds its SUPPLY page from OPEN to CLOSE as well
   ([The supply while a port is held](LinkHitec.md#the-supply-while-a-port-is-held)).
+  The set points from before CONNECT come back after LEAVE once the output
+  is off ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
 - The KST and Chaservo row and MOTOR & ESC's TARGET row take no press, and
   ESC STICK does not start a run.
 
@@ -663,7 +666,13 @@ hold of 2s on `HOLD 2s TO LEAVE` leaves:
 
 - D series: a reboot of the servo (register 0x46 = 1), which then ignores
   signals for 1s; the supply stays as it is.
-- Classic: the supply off for 500ms and on again.
+- Classic: the supply off and on again. The 500ms off time counts from
+  the PD mini's read that shows the output off, which the driver sends
+  250ms after the OFF (`PDMINI_CONFIRM_MS`). The ON goes after the
+  driver's reads of the set points and the active slot. The output is off
+  about 760ms: 762ms measured on one module, at the 1.4V threshold of a
+  logic analyser. How much of it is the module's own switching time is not
+  measured.
 
 Then CLOSE: the port is back in PWM and the message says
 `The port is back in tester mode.` LEAVE is taken on a stopped port, an
