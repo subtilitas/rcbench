@@ -316,22 +316,23 @@ def test_a_mode_measures_the_same_twice_from_any_directory(built, tmp_path,
 
 def test_a_full_repaint_measures_the_same_from_paths_of_any_length(
         built, tmp_path_factory):
-    """The same bench run from paths of 96 to 111 characters measures the same.
+    """The same bench run from sixteen path lengths in a row measures the same.
 
     The start-up's misses move with the length of the executable's path, and
     cancel only while the 1-frame and the 11-frame run lay out their stacks
     alike.  With a frame count of one digit and one of two, lengths 99 and
-    111 moved ten frames by one and two fills on x86-64 with glibc 2.39;
-    sixteen lengths in a row hold every offset within the stack's 16-byte
-    alignment.
+    111 moved ten frames by one and two fills on x86-64 with glibc 2.39.
+    The lengths are 96 to 111 where the temporary root is short enough, and
+    the sixteen after the root's own otherwise; sixteen in a row hold every
+    offset within the stack's 16-byte alignment.
     """
     root = tmp_path_factory.mktemp("p")
+    # The shortest path a padded directory gives: root, "/p/", the name.
+    shortest = len(str(root / "p" / built.name))
+    first = max(96, shortest)
     counts = set()
-    for length in range(96, 112):
-        pad = length - len(str(root / built.name)) - 1
-        if pad < 1:
-            continue
-        where = root / ("p" * pad)
+    for length in range(first, first + 16):
+        where = root / ("p" * (length - shortest + 1))
         where.mkdir()
         exe = where / built.name
         assert len(str(exe)) == length
