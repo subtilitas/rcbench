@@ -83,7 +83,10 @@ bool fw_note_write(const fw_note_ops_t *ops, const char *version)
 {
     uint8_t e[FW_NOTE_BYTES];
     memset(e, 0, sizeof(e));
-    const size_t n = strnlen(version, FW_TEXT_MAX - 1u);
+    size_t n = 0u;   /* strnlen() is POSIX, not C11 */
+    while (n < FW_TEXT_MAX - 1u && version[n] != '\0') {
+        ++n;
+    }
     memcpy(e + 4u, version, n);
     put_le32(e, FW_NOTE_MAGIC);
     put_le32(e + 4u + FW_TEXT_MAX, note_hash(e + 4u));
