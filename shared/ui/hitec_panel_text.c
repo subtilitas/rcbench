@@ -16,6 +16,7 @@
 
 #include "hitec_reg.h"
 #include "link_pages.h"
+#include "ui_board.h"
 #include "ui_text.h"
 
 /* Last: its layout macros and hp, the state, which no header included
@@ -373,7 +374,11 @@ static void supply_text(char *out, size_t n)
     const unsigned mv = held ? p->mv_open : hitec_prog_mv(p);
     const unsigned ma = held ? p->ma_open : hitec_prog_ma(p);
 
-    if (hitec_prog_series(p) == (uint8_t)HITEC_D && !hitec_prog_rail(p)) {
+    if (ui_board_prog_5v_pin() >= 0) {
+        /* The carrier's buck: 5V whatever is set. */
+        snprintf(out, n, "%s", TR(HP_SUPPLY_5V_FIXED));
+    } else if (hitec_prog_series(p) == (uint8_t)HITEC_D
+               && !hitec_prog_rail(p)) {
         snprintf(out, n, "%s", TR(HP_SUPPLY_AS_IS));
     } else {
         snprintf(out, n, "%u.%uV %umA", mv / 1000u, mv % 1000u / 100u, ma);
@@ -440,6 +445,9 @@ static void pwm_line(char *out, size_t n)
 
     if (!hitec_prog_on_port(p)) {
         snprintf(out, n, "%s", TR(KP_NEED_TARGET));
+    } else if (ui_board_prog_5v_pin() >= 0) {
+        snprintf(out, n, TR(KP_STATE_PWM_5V), port,
+                 (unsigned)ui_board_prog_5v_pin());
     } else if (hitec_prog_series(p) == (uint8_t)HITEC_CLASSIC
                || hitec_prog_rail(p)) {
         snprintf(out, n, TR(KP_STATE_PWM), port, mv / 1000u,

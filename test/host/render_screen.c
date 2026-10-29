@@ -61,6 +61,7 @@
 #include "esc_stick_panel.h"
 #include "esc_sim.h"
 #include "supply.h"
+#include "prog_supply_link.h"
 #include "supply_screen.h"
 #include "supply_link.h"
 #include "kst_rig.h"
@@ -3149,7 +3150,8 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        tapped, refused for slice 2.  outputs-rbmod-port: PROG PORT 1 on
  *        GP13.  setup-rbmod: the hub with LAYOUT in PICK A PIN's place.
  *        setup-rbmod-iface: INTERFACES with its pins soldered.
- *        layout-rbmod: LAYOUT with the same binding.
+ *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
+ *        SUPPLY with the PROG PORTS 5V line.
  * @param id   The screen of the shot.
  * @param view The golden's name.
  * @return true when the view is one of these and OUTPUTS is posed.
@@ -3171,6 +3173,8 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
     outbind_set_proto(&b, proto_named("DSHOT300"));
     (void)outbind_toggle(&b, outbind_index_of(brd, 1u));
     outputs_screen_set_binding(&b);
+    /* SUPPLY names the ports' own 5V, off between sessions. */
+    supply_screen_set_prog_5v((uint8_t)PROG_SUPPLY_OFF, 21u);
     if (id != SCREEN_OUTPUTS) {
         return false;
     }

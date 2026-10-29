@@ -1498,6 +1498,18 @@ UI_TEXT(MO_SET_THROTTLE, 0,
 UI_TEXT(MO_SET_SAFE_ONLY, 36,
     "Set on a SAFE bench only",
     "Nur bei SAFE einstellbar")
+UI_TEXT(SUP_PROG5V_LINE, 0,
+    "PROG PORTS 5V, GPIO %u: %s",
+    "PROG-PORTS 5V, GPIO %u: %s")
+UI_TEXT(SUP_PROG5V_ON, 11,
+    "ON",
+    "EIN")
+UI_TEXT(SUP_PROG5V_OFF, 0,
+    "OFF",
+    "AUS")
+UI_TEXT(SUP_PROG5V_UNKNOWN, 11,
+    "NOT READ",
+    "UNBEKANNT")
 UI_TEXT(MO_RESET_PEAKS, 0,
     "RESET PEAKS",
     "SPITZENWERTE ZURÜCKSETZEN")
@@ -4131,6 +4143,15 @@ UI_TEXT(KP_VALUES_MORE, 116,
 UI_TEXT(KP_WRITING, 116,
     "Writing. Do not disconnect.",
     "Schreibvorgang läuft. Nicht trennen.")
+UI_TEXT(KP_PORT_5V_FIXED, 30,
+    "PORT  5V FIXED",
+    "PORT  5V FEST")
+UI_TEXT(KP_STATE_PWM_5V, 116,
+    "Tester is using port %u. CONNECT switches the ports' 5V on, GPIO %u.",
+    "Tester nutzt Port %u. VERBINDEN schaltet die 5V der Ports ein, GPIO %u.")
+UI_TEXT(KP_SUPPLY_5V_FIXED, 58,
+    "PROGRAMMING VOLTAGE: 5V FIXED, GPIO %u",
+    "PROGRAMMIERSPANNUNG: 5V FEST, GPIO %u")
 UI_TEXT(KP_PORT_SUPPLY, 30,
     "PORT  %u.%uV  %umA",
     "PORT  %u.%uV  %umA")
@@ -4959,6 +4980,9 @@ UI_TEXT(HP_HELD, 20,
 UI_TEXT(HP_OTHER_LINE, 44,
     "Another Hitec session holds it.",
     "Eine andere Hitec-Sitzung belegt ihn.")
+UI_TEXT(HP_SUPPLY_5V_FIXED, 20,
+    "5V FIXED",
+    "5V FEST")
 UI_TEXT(HP_SUPPLY_AS_IS, 26,
     "SUPPLY AS IT IS",
     "VERSORGUNG UNVERÄNDERT")

@@ -23,6 +23,8 @@
  * channel over its limit; the SUPPLY page's TRIPPED and its ON let go; a
  * supply trip; an ON taken across lost touch events.  The operator's own
  * endings -- OUTPUT OFF on SUPPLY, STOP TEST -- leave the bench ARMED.
+ * On a board that switches the programming ports' own supply (4.32) every
+ * error writes that page's OFF.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -75,7 +77,7 @@ static error_bench_t bench_now(void)
 {
     const error_bench_t b = {
         arming_link_needed(&g.a, g.bank_armed), g.on, g.port, g.real,
-        g.page, g.minor,
+        g.page, g.minor, false,
     };
     return b;
 }
@@ -231,6 +233,7 @@ TEST_CASE(every_site_against_every_bench)
                     CHECK_EQ(g.on, on && !own && !defers && port && real);
                     const error_bench_t kb = {
                         false, on, port, real, k_far[f].page, k_far[f].minor,
+                        false,
                     };
                     CHECK_EQ(error_sites_keeps(&kb),
                              on && !defers && port && real);
@@ -254,7 +257,8 @@ TEST_CASE(the_iomcu_defers_from_4_31_with_the_supply_page)
  * after supply_switch(false) did: an older IOmcu gets no second OFF. */
 TEST_CASE(a_cut_judges_the_bench_with_the_output_off)
 {
-    error_bench_t b = { true, true, false, true, true, LINK_MINOR_PORT_CUT };
+    error_bench_t b = { true, true, false, true, true, LINK_MINOR_PORT_CUT,
+                        false };
     error_act_t e;
 
     b.far_minor = LINK_MINOR_PORT_CUT - 1u;
@@ -304,12 +308,55 @@ TEST_CASE(a_counter_acts_once_per_change)
     CHECK_EQ(g.cuts, 1u);
 }
 
+/* The programming ports' own supply (4.32, the carrier's GPIO 21): every
+ * site writes its OFF on every bench, whoever holds it and whatever the
+ * panel reads, and none without the page or the switch; a counter that
+ * has not moved writes nothing. */
+TEST_CASE(every_error_writes_the_ports_own_supply_off)
+{
+    for (int k = 0; k < 32; ++k) {
+        error_bench_t b = {
+            (k & 1) != 0, (k & 2) != 0, (k & 4) != 0, (k & 8) != 0, true,
+            LINK_MINOR_PROG_SUPPLY, true,
+        };
+        if ((k & 16) != 0) {
+            b.far_minor = LINK_MINOR_PORT_CUT - 1u;
+        }
+        CHECK(error_sites_stop(&b).prog_off);
+        CHECK(error_sites_cut(&b).prog_off);
+        error_watch_t w;
+        error_watch_init(&w, 7u);
+        CHECK(!error_sites_follow(&w, 7u, &b).prog_off);
+        CHECK(error_sites_follow(&w, 8u, &b).prog_off);
+        CHECK(!error_sites_follow(&w, 8u, &b).prog_off);
+        /* Across the counter's wrap: a change is a change. */
+        error_watch_init(&w, 0xFFFFFFFFu);
+        CHECK(error_sites_follow(&w, 0u, &b).prog_off);
+        error_reading_t told = ERROR_READING_NONE;
+        error_act_t a;
+        b.supply_on = true;
+        (void)error_sites_reading(&b, false, false, &told, &a);
+        CHECK(a.prog_off);              /* the fault's first pass acts */
+        /* No fault: nothing. */
+        told = ERROR_READING_NONE;
+        (void)error_sites_reading(&b, true, false, &told, &a);
+        CHECK(!a.prog_off);
+
+        b.prog_supply = false;
+        CHECK(!error_sites_stop(&b).prog_off);
+        CHECK(!error_sites_cut(&b).prog_off);
+        error_watch_init(&w, 0u);
+        CHECK(!error_sites_follow(&w, 1u, &b).prog_off);
+    }
+    CHECK(!error_sites_stop(NULL).prog_off);
+}
+
 TEST_CASE(nothing_is_done_without_a_bench)
 {
     error_watch_t watch;
-    error_act_t e = { true, true, true, true };
+    error_act_t e = { true, true, true, true, true };
     error_reading_t told = ERROR_READING_BLIND;
-    const error_bench_t b = { true, true, false, true, true, 31u };
+    const error_bench_t b = { true, true, false, true, true, 31u, false };
 
     bench(BENCH_ARMED, true);
     error_watch_init(&watch, 0u);
@@ -933,6 +980,7 @@ TEST_CASE(a_page_event_keeps_only_a_refused_on)
         const error_bench_t b = {
             true, (k & 1) != 0, (k & 2) != 0, (k & 4) != 0, true,
             ((k & 8) != 0) ? LINK_MINOR_PORT_CUT - 1u : LINK_MINOR_PORT_CUT,
+            false,
         };
         const bool kept = b.port_holds && b.supply_real
                           && b.far_minor < LINK_MINOR_PORT_CUT;
@@ -1066,6 +1114,7 @@ int main(void)
     RUN(a_cut_judges_the_bench_with_the_output_off);
     RUN(a_reading_is_judged_with_the_output_on);
     RUN(a_counter_acts_once_per_change);
+    RUN(every_error_writes_the_ports_own_supply_off);
     RUN(nothing_is_done_without_a_bench);
     RUN(the_run_logs_failed_write_is_one_error);
     RUN(the_tests_failed_csv_is_one_error);

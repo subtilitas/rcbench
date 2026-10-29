@@ -46,6 +46,9 @@ static uint16_t g_set_ma;    /* and its current limit, 0 not known   */
 /* The servo's supply is the PD mini's: the servo powers up and down with
  * the output (sim_power()). */
 static bool g_on_rail;
+/* The servo's supply is the ports' own fixed one (the rbmod carrier's 5V):
+ * the panel reads it on or off, and no voltage or current. */
+static bool g_fixed;
 static unsigned g_sup_offs, g_sup_ons;   /* switches of the output    */
 static uint32_t g_off_ms, g_on_ms;       /* g_ms at the last of each   */
 static uint32_t g_off_us, g_on_us;       /* the servo's clock then     */
@@ -199,6 +202,7 @@ static inline void fresh_at(uint32_t t0)
     g_set_mv = 0;
     g_set_ma = 0;
     g_on_rail = false;
+    g_fixed = false;
     g_sup_offs = 0;
     g_sup_ons = 0;
     g_off_ms = 0;
@@ -305,6 +309,12 @@ static inline void publish(void)
         f.supply_read = g_rail && g_sup_on;
         f.set_mv = f.supply_read ? g_sup_mv : 0u;
         f.set_ma = f.supply_read ? g_sup_ma : 0u;
+        if (g_fixed) {
+            f.fixed_on = f.supply_read;
+            f.supply_read = false;
+            f.set_mv = 0u;
+            f.set_ma = 0u;
+        }
     }
     kst_prog_feed(&g_p, &f);
 }

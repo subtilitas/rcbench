@@ -2148,6 +2148,15 @@ OPTIONEN und unter der Tastatur und der Frage bedienbar. Ein Finger zur Zeit: so
 Bedienelement hält, bewirkt ein zweiter Finger nirgends auf dem Bildschirm
 etwas.
 
+Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nennt eine Zeile unter
+AUSGANG die eigenen 5V der Programmierports: `PROG-PORTS 5V, GPIO 21: EIN`,
+`AUS` oder `UNBEKANNT` nach einem Lesen ohne Antwort, in der
+Akzentfarbe, solange sie an sind. Die Programmer für KST und Hitec schalten
+sie; SUPPLY hat keine Taste dafür. Ein Board ohne den Schalter zeigt keine
+Zeile.
+
+![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
+
 ### Netzteil, Optionen
 
 OPTIONEN, der zweite Reiter der Leiste, zeigt die Einstellungen des

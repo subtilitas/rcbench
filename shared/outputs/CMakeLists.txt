@@ -5,7 +5,7 @@
 set(SRCS outputs.c outputs_pages.c out_bind.c out_board_rbmod.c board_fix.c
          out_pwm_map.c out_store_map.c
          out_store_rec.c servo_page.c supply_page.c sense_page.c sense_map.c
-         sense_limit.c tone_page.c
+         sense_limit.c tone_page.c prog_supply.c
          out_stage.c bind_link.c kst_port.c hitec_port.c prog_port.c
          servo_cmd.c servo_link.c page_console.c)
 

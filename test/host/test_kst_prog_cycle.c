@@ -799,6 +799,28 @@ TEST_CASE(an_iomcu_below_4_30_cycles_without_the_wait_and_says_so)
     }
 }
 
+TEST_CASE(the_carriers_fixed_supply_cycles_at_connect_and_at_leave)
+{
+    /* The ports' own 5V on, with no reading: CONNECT and LEAVE after a
+     * write switch it off and on as they do a PD mini's output. */
+    on_pd();
+    g_fixed = true;
+    frames(5);
+    connect_cycled();
+    CHECK_EQ(g_sup_offs, 1u);
+    write_left(75u);
+    CHECK(kst_prog_leave_cycles(&g_p));
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    CHECK_EQ(kst_prog_op(&g_p), LINK_KST_OP_REBOOT);
+    (void)until_pwm();
+    CHECK_EQ(g_sup_offs, 2u);
+    CHECK_EQ(acting_left(), 75u);
+    /* Off: CONNECT powers the servo up without a cycle. */
+    g_sup_on = false;
+    frames(5);
+    CHECK(!kst_prog_connect_cycles(&g_p));
+}
+
 int main(void)
 {
     RUN(connect_with_the_output_on_switches_it_off_1s_then_on_then_syncs);
@@ -829,5 +851,6 @@ int main(void)
     RUN(a_supply_switched_off_in_the_wait_after_the_cycle_ends_it_in_pwm);
     RUN(the_wait_after_the_cycle_holds_across_the_clock_wrap);
     RUN(an_iomcu_below_4_30_cycles_without_the_wait_and_says_so);
+    RUN(the_carriers_fixed_supply_cycles_at_connect_and_at_leave);
     return test_summary("kst_prog_cycle");
 }

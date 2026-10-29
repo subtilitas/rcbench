@@ -126,6 +126,7 @@ static bool poll_bench(bench_state_t *bench)
                               || endpoints_held(&s_endpoints)));
         /* And the supply's page, a write only when one is owed. */
         supply_link_service();
+        prog_supply_service();
         /* And the current monitors': a set-up only with ARM written 0 and
          * acknowledged and the bank disarmed here, as the page refuses one
          * while the bank drives.  SENSE_MAP first: SENSE's mirror
@@ -436,6 +437,10 @@ static void link_came_up(const link_msg_t *reply)
     /* 4.4 finds the module's rate itself, and has BAUD_FOUND. */
     s_supply_auto = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 4u;
     supply_link_lost(&s_supply_link);
+    /* The programming ports' own supply (4.32): the IOmcu starts it off. */
+    prog_supply_link_init(&s_psup_link, reply->regs[LINK_ID_PROTOCOL_MINOR]
+                                            >= LINK_MINOR_PROG_SUPPLY);
+    prog_supply_publish();
     if (!s_supply_page && pdmini_wiring().en) {
         control_alert(TR(ALERT_NO_SUPPLY_PAGE));
     }
@@ -670,6 +675,9 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
              * switches an ON off as a supply not answering. */
             s_supply_page = false;
             supply_link_lost(&s_supply_link);
+            /* The IOmcu switches the ports' own supply off on its own. */
+            prog_supply_link_init(&s_psup_link, false);
+            prog_supply_publish();
             atomic_store(&s_supply_vin_mv, 0u);
             atomic_store(&s_supply_baud, 0u);
             /* And the monitors' pages: nothing on them is known until the

@@ -123,6 +123,18 @@ void supply_screen_set_baud(uint32_t baud);
 void supply_screen_set_pins(int tx, int rx);
 
 /**
+ * @brief The programming ports' own supply, on a board that switches one
+ *        (link 4.32, PROG_SUPPLY; the rbmod carrier's GPIO 21): CONTROL
+ *        shows it under OUTPUT as `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
+ *        `NOT READ`.  The KST and Hitec programmers switch it; SUPPLY
+ *        offers no key for it.  Any task: held atomically.
+ *
+ * @param state prog_supply_state_t: 0 (none) shows no line
+ * @param pin   the switching GPIO
+ */
+void supply_screen_set_prog_5v(uint8_t state, uint8_t pin);
+
+/**
  * @brief The left text of the header strip: the supply and its pins, the
  *        answer and the rate ("PD MINI TX GPIO 12 RX GPIO 13   ONLINE
  *        38400"), 47 characters at most.

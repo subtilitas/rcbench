@@ -66,6 +66,7 @@ add_executable(rcbench-iomcu
     src/iomcu_kst.c
     src/iomcu_hitec.c
     src/iomcu_sense.c
+    src/iomcu_psup.c
     src/iomcu_tone.c
     src/iomcu_bind.c
     src/iomcu_can.c

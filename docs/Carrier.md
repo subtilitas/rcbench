@@ -67,14 +67,21 @@ so the shared slice limits nothing.
 
 The programming ports run from M7's fixed 5V, not from the PD mini. KST and
 Chaservo servos program at 5V. On the carrier the programmers do not set the
-programming ports' voltage.
+programming ports' voltage: their MORE list reads
+`PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` and offers no voltage or current.
 
-The IOmcu drives GPIO 21 low from the first statement of `main()` and keeps
-it low. While the IOmcu does not drive GPIO 21 (in reset, in BOOTSEL,
-unpowered), the pull-down on EN holds M7 off.
+The KST and Hitec programmers switch GPIO 21 on and off for a session,
+through the PROG_SUPPLY page (link 4.32). The panel has no key for it.
+SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON` or `OFF`.
+Every error, a lost heartbeat and a silent link switch it off; a write to
+the servo's memory keeps it on until the write ends, 10000ms at most
+([Safety, The carrier's programming-port 5V](Safety.md#the-carriers-programming-port-5v)).
 
-Current limitation: this release never switches GPIO 21 on, so the
-programming ports have no supply from the carrier.
+The IOmcu drives GPIO 21 low from the first statement of `main()`. While
+the IOmcu does not drive GPIO 21 (in reset, in BOOTSEL, unpowered), the
+pull-down on EN holds M7 off.
+
+![SUPPLY on the carrier](img/supply-rbmod.png)
 
 ## The current monitor
 

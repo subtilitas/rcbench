@@ -116,7 +116,7 @@ enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE, C_FILES };
 /** @brief The entries of MORE: the supply's in PWM, the session's while
  *         held. */
 enum { MORE_VOLTAGE = 0, MORE_CURRENT, MORE_DISCARD, MORE_REPAIR,
-       MORE_FACTORY };
+       MORE_FACTORY, MORE_FIXED };
 /** @brief The entries of RESTORE. */
 enum { RS_RESTORE = 0, RS_FORGET, RS_BACKUP };
 /** @brief FILES' entries besides the files, numbered from 0. */

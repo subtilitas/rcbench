@@ -33,8 +33,10 @@ static bool port_holds(const error_bench_t *b)
 
 /**
  * @brief error_stop()'s answer as the steps the control task takes: DISARM,
- *        the output off, and to an IOmcu of 4.31 with the PD mini in use
- *        the page's OFF whatever the panel reads of the output.
+ *        the output off, to an IOmcu of 4.31 with the PD mini in use the
+ *        page's OFF whatever the panel reads of the output, and with the
+ *        programming ports' own supply fitted that page's OFF.  Called for
+ *        an error only.
  *
  * @param b The bench the answer was judged on.
  * @param e The answer.
@@ -42,12 +44,15 @@ static bool port_holds(const error_bench_t *b)
  */
 static error_act_t act_of(const error_bench_t *b, error_stop_t e)
 {
-    error_act_t a = { false, false, false, false };
+    error_act_t a = { false, false, false, false, false };
 
     a.disarm = e.disarm;
     a.supply_off = e.supply_off;
     a.cut = e.supply_off && b->supply_real
             && error_port_defers(b->supply_page, b->far_minor);
+    /* Every error, whoever holds it: the IOmcu holds the OFF for a port's
+     * write, so no write is cut. */
+    a.prog_off = b->prog_supply;
     return a;
 }
 
@@ -59,7 +64,7 @@ bool error_sites_keeps(const error_bench_t *b)
 
 error_act_t error_sites_stop(const error_bench_t *b)
 {
-    const error_act_t none = { false, false, false, false };
+    const error_act_t none = { false, false, false, false, false };
 
     if (b == NULL) {
         return none;
@@ -72,9 +77,9 @@ error_act_t error_sites_stop(const error_bench_t *b)
 error_act_t error_sites_follow(error_watch_t *watch, uint32_t count,
                                const error_bench_t *b)
 {
-    const error_act_t none = { false, false, false, false };
+    const error_act_t none = { false, false, false, false, false };
 
-    if (watch == NULL || b == NULL) {
+    if (watch == NULL || b == NULL || watch->seen == count) {
         return none;
     }
     return act_of(b, error_stop_take(watch, count, b->live, b->supply_on,
@@ -85,7 +90,7 @@ error_act_t error_sites_follow(error_watch_t *watch, uint32_t count,
 
 error_act_t error_sites_cut(const error_bench_t *b)
 {
-    const error_act_t none = { false, false, false, false };
+    const error_act_t none = { false, false, false, false, false };
 
     if (b == NULL) {
         return none;
@@ -102,7 +107,7 @@ error_reading_t error_sites_reading(const error_bench_t *b, bool online,
                                     bool blind, error_reading_t *told,
                                     error_act_t *act)
 {
-    const error_act_t none = { false, false, false, false };
+    const error_act_t none = { false, false, false, false, false };
 
     if (act != NULL) {
         *act = none;

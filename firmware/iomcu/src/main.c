@@ -153,6 +153,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SENSE_LIMIT, LINK_SL_COUNT, sense_limit_rd, sense_limit_wr },
     { LINK_PAGE_SENSE_WIN_A, LINK_SX_COUNT, sense_win_a_read, NULL },
     { LINK_PAGE_SENSE_WIN_B, LINK_SX_COUNT, sense_win_b_read, NULL },
+    { LINK_PAGE_PROG_SUPPLY, LINK_PS_COUNT, psup_read,      psup_write },
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
       update_hw_ctl_write },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
@@ -304,13 +305,15 @@ static void outputs_off(void)
 static bool flash_busy(void)
 {
     return flash_gate_busy(outputs_driving(&s_outputs),
-                           s_supply.regs[LINK_SP_OUTPUT] != 0u,
+                           s_supply.regs[LINK_SP_OUTPUT] != 0u
+                               || s_psup.drive,
                            s_pd_open && pdmini_may_be_on(&s_pd),
                            ports_quiet() != 0u);
 }
 
 /**
- * @brief Drive the programming ports' 5V enable low and hold it there.
+ * @brief Drive the programming ports' 5V enable low, before anything else
+ *        runs; psup_pass() drives it from the main loop on.
  *
  * @param r  The board's roles, or NULL for a board without the switch: then
  *           nothing is touched.
@@ -334,11 +337,11 @@ int main(void)
 {
     /*
      * The programming ports' 5V off before anything else, on a board that
-     * switches it (the rbmod carrier's GP21).  Driven low and kept low: no
-     * part of this build switches it on, so a lead on a programming port has
-     * no supply from the carrier.
+     * switches it (the rbmod carrier's GP21).  The PROG_SUPPLY page drives
+     * it from the main loop on, off until the panel or a port asks.
      */
     prog_5v_off(outbind_roles(IOMCU_BOARD_ID));
+    psup_init();
     stdio_init_all();
     /* Why this start happened, before anything else runs. */
     reset_start();
@@ -761,8 +764,7 @@ int main(void)
         sense_page_ports(&s_sense, ports_pulsing());
         /* And the SUPPLY page told that a port commands the module, and
          * whether it writes. */
-        supply_page_hold(&s_supply, ports_hold_supply());
-        supply_page_port_writes(&s_supply, ports_writing());
+        ports_tell_supply();
         /* The edge into driving starts a run on core 1: its peaks and the
          * INA228's totals.  One compare a pass, an order on the edge. */
         const bool driving_now = outputs_driving(&s_outputs);
@@ -795,11 +797,17 @@ int main(void)
          * whenever the panel's heartbeat is not there to switch it off.  A
          * port's write, as the ports' steps above left it, keeps the
          * panel's OFF of a held supply back until it ends. */
-        supply_pass(now,
-                    kst_port_frame_out(&s_kst)
-                        || hitec_port_frame_out(&s_hitec, now),
-                    ports_writing(),
-                    safety_gate_supply_ok(&s_beat, &s_dev));
+        /* On a board that switches the ports' own supply the ports' frame
+         * and write are that supply's business, and the PD mini feeds the
+         * servo rails only. */
+        const bool own_supply = prog_supply_fitted(&s_psup);
+        const bool frame_out = kst_port_frame_out(&s_kst)
+                               || hitec_port_frame_out(&s_hitec, now);
+        const bool supply_ok = safety_gate_supply_ok(&s_beat, &s_dev);
+        supply_pass(now, !own_supply && frame_out,
+                    !own_supply && ports_writing(), supply_ok);
+        psup_pass(now, own_supply && frame_out,
+                  own_supply && ports_writing(), supply_ok);
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */

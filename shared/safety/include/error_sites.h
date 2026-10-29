@@ -24,7 +24,10 @@
  * waits; the output off as error_stop() says; and to an IOmcu of link 4.31
  * (LINK_MINOR_PORT_CUT) that serves the SUPPLY page, with the PD (Power
  * Delivery) mini in use, the page's OFF whatever the panel reads of the
- * output (supply_link_cut()).
+ * output (supply_link_cut()).  On a board that switches the programming
+ * ports' own supply (link 4.32, PROG_SUPPLY), every error writes that
+ * page's OFF as well, whatever the panel reads of it: the IOmcu holds it for
+ * a port's write, 10000ms at most, as SUPPLY's from 4.31.
  *
  * A programming port holds the PD mini's output only, never the panel's
  * model.  With an IOmcu older than 4.31 a port that holds the supply keeps
@@ -66,6 +69,9 @@ typedef struct {
     bool     supply_real;  /**< the PD mini is the supply, not the model   */
     bool     supply_page;  /**< the IOmcu serves the SUPPLY page           */
     uint16_t far_minor;    /**< the IOmcu's link protocol minor            */
+    bool     prog_supply;  /**< the IOmcu serves PROG_SUPPLY (4.32) with a
+                                switch fitted: the programming ports' own
+                                supply, the rbmod carrier's GPIO 21       */
 } error_bench_t;
 
 /** @brief What the control task does for an error, in this order. */
@@ -75,6 +81,8 @@ typedef struct {
     bool supply_off;  /**< the supply's output off                      */
     bool cut;         /**< the SUPPLY page's OFF, written whatever the
                            panel reads (supply_link_cut())              */
+    bool prog_off;    /**< the PROG_SUPPLY page's OFF, written whatever
+                           the panel reads (prog_supply_link_cut())     */
 } error_act_t;
 
 /** @brief Which reading fault error_sites_reading() found. */
