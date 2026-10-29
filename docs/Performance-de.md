@@ -705,8 +705,15 @@ I (…) rcbench: files: cardjob started; internal RAM <n>B free before, <n>B aft
 ```
 
 Ohne den RAM lautet die Zeile `W (…) rcbench: files: no internal RAM for
-cardjob`, und FILES meldet `Nicht genug Speicher.` Die
-Zahlen auf einem Panel sind nicht gemessen.
+cardjob`, und FILES meldet `Nicht genug Speicher.` Die Aufgabe bleibt bis
+zum Neustart des Panels, also ist die Zahl von `wifi: radio up` nach der
+ersten Anfrage von FILES bei jedem Funkstart niedriger. Auf einem Panel
+fiel sie am 2026-10-29 um 23.456 Bytes, von 318.195 auf 294.739, zwischen
+zwei Funkstarts, zwischen denen FILES und die Datei-API der Wi-Fi-Seite
+benutzt wurden: Stack, Puffer und der Task-Kontrollblock von 108 Bytes
+machen 23.148 Bytes davon aus, die übrigen 308 Bytes sind nicht
+zugeordnet. Die Datei-API belegt keinen internen RAM
+([Screens, Die Datei-API](Screens-de.md#die-datei-api)).
 
 `firmware/panel/main/psram_bss.lf` legt die nullinitialisierten Daten (.bss)
 von 30 Objekten in den PSRAM (Pseudo-Static Random-Access Memory): den

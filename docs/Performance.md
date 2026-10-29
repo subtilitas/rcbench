@@ -657,8 +657,14 @@ I (…) rcbench: files: cardjob started; internal RAM <n>B free before, <n>B aft
 ```
 
 Without the RAM the line is `W (…) rcbench: files: no internal RAM for
-cardjob` and FILES says `Not enough memory.` The figures on a panel
-are not measured.
+cardjob` and FILES says `Not enough memory.` The task stays until the
+panel restarts, so the `wifi: radio up` figure is lower at every radio
+start after FILES' first request. On one panel on 2026-10-29 it fell by
+23,456 bytes, from 318,195 to 294,739, between two radio starts with
+FILES and the Wi-Fi page's file API used in between: the stack, the
+buffer and the task's control block of 108 bytes make 23,148 bytes of it,
+and the other 308 bytes are not attributed. The file API takes no
+internal RAM ([Screens, The file API](Screens.md#the-file-api)).
 
 `firmware/panel/main/psram_bss.lf` places the zero-initialised data (.bss)
 of 30 objects in PSRAM (pseudo-static random-access memory): the screens'
