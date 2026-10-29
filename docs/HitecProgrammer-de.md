@@ -458,14 +458,45 @@ sie angelegt hat; die Zeile bleibt, wie sie war.
 Das Backup der Sitzung ist das erste vollständige Lesen nach VERBINDEN,
 gehalten im Arbeitsspeicher des Panels. Ein späteres Lesen desselben
 Servos lässt es, wie es ist. Ein Lesen, das ein anderes Servo findet, macht
-dieses Lesen zum Backup: bei der D-Serie eine andere Modellnummer, bei
-einem klassischen Servo ein anderer Name, ein anderes Datum, eine andere
-Seriennummer oder Version. VERLASSEN, das nächste VERBINDEN, eine verlorene
-Verbindung und ein Neustart des Panels beenden es. Eine Datei, die die
+dieses Lesen zum Backup. Ein klassisches Servo ist ein anderes Servo durch
+einen anderen Namen, ein anderes Datum, eine andere Seriennummer oder
+Version. Ein Servo der D-Serie ist ein anderes Servo durch eine andere
+Modellnummer oder wenn das Lesen die Kette der Sitzung bricht. Der Port ist
+gehalten, also schreibt nur die Sitzung das Servo, und ein Lesen der
+D-Serie ist vom Servo des Lesens davor, wenn:
+
+- kein Schreiben der Sitzung ungeprüft ist und jedes Register, das ein
+  Schreiben sendet, den Wert des Lesens davor hält; oder
+- ein Schreiben ungeprüft ist (seine Prüfung scheiterte, oder es wurde
+  unterbrochen) und der Vermerk dieses Schreibens die Werte erklärt: das
+  Lesen findet die Werte vor dem Schreiben, seine neuen Werte oder von
+  beiden etwas ([Der Vermerk eines
+  Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)). Ist der Vermerk
+  verworfen, entscheiden die Werte, gegen die Werte, die die gescheiterte
+  Prüfung zurückgelesen hat.
+
+Die Kette vergleicht mit dem Lesen davor, nicht mit dem Backup: die eigenen
+geprüften Schreibvorgänge der Sitzung, die ID 0x32 eingeschlossen,
+erhalten sie. Ein Lesen eines anderen Servos sagt
+
+```
+Andere Werte als beim letzten Auslesen: als anderes Servo genommen.
+Sein Backup sind die jetzt ausgelesenen Werte.
+```
+
+Die Zeile der Backup-Datei entfällt, ZURÜCKSPIELEN bietet das Backup des
+ersten Servos nicht an, und das erste Schreiben auf das neue Servo
+speichert eine eigene Backup-Datei. Besteht ein Vermerk, steht seine Zeile
+an der Stelle dieser beiden. VERLASSEN, das nächste VERBINDEN, eine
+verlorene Verbindung und ein Neustart des Panels beenden das Backup; das
+erste Lesen der nächsten Sitzung ist ihr Backup ohne diese Zeilen. Eine
+Datei, die die
 Karte für ein Backup anlegt, oder ein Speichern von Hand zählt nur für das
 Backup, das bei der Anfrage bestand: eine späte Antwort nach VERLASSEN und
 VERBINDEN oder nach dem Lesen eines anderen Servos speichert nichts für das
 neue.
+
+![Ein anderes Servo in der Sitzung gelesen](img/de/servo-hitec-other-servo.png)
 
 Das erste Schreiben einer Sitzung, das einen Schritt sendet, n WERTE
 SCHREIBEN, PRÜFSUMME REPARIEREN, ein ZURÜCKSPIELEN oder WERKSEINSTELLUNG,
@@ -784,8 +815,12 @@ jedem Stopp: ARM wird nur abgelehnt, solange der Port gehalten ist.
   Servo, wie sie es dann vorfindet, mit den Werten des unterbrochenen
   Schreibens; der Vermerk des Schreibens und die Backup-Datei der alten
   Sitzung halten die Werte davor.
-- Zwei Servos der D-Serie desselben Modells werden nicht unterschieden: ein
-  zweites D485HW am Port behält das Backup des ersten.
+- Zwei Servos der D-Serie desselben Modells werden nur an ihren Werten
+  unterschieden. Ein zweites D485HW, dessen Register, die ein Schreiben
+  sendet, die Werte des letzten Lesens des ersten halten, behält das Backup
+  des ersten, und ZURÜCKSPIELEN des Backups der Sitzung schreibt die Werte
+  des ersten hinein. Welches Register, wenn überhaupt, sich zwischen zwei
+  Exemplaren eines Modells unterscheidet, ist nicht gemessen.
 - Eine außerhalb des Panels geschriebene oder bearbeitete Servodatei wird
   nicht geladen.
 - Der Vermerk wird nur beim Start des Panels von der Karte gelesen. Eine

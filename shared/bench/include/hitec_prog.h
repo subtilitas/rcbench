@@ -71,7 +71,12 @@
  *   - The session's backup: the first full read after CONNECT, kept in RAM
  *     until LEAVE, the next CONNECT or a lost session.  A read whose model,
  *     name, date or serial differs from it is another servo: that read
- *     becomes the session's backup.
+ *     becomes the session's backup (HITEC_PROG_MSG_OTHER_SERVO).  A D
+ *     series read is of the servo read before it only by the chain of the
+ *     session: with a write unverified, its record's verdict SAME, DONE
+ *     or MIX; otherwise every writable register as that read found it.
+ *     Two D series servos of one model with equal writable registers are
+ *     not told apart.
  *   - The backup file: before the first write of a session that sends a
  *     step (WRITE n VALUES, REPAIR, a RESTORE, FACTORY DEFAULT) the session's
  *     backup is saved to a new file, HITEC001 to HITEC999 (hitec_card.h),
@@ -294,6 +299,9 @@ typedef enum {
                                        stored values outside the editable
                                        parameters; arg the values that
                                        differ, reg those stored values     */
+    HITEC_PROG_MSG_OTHER_SERVO,   /**< a read of the session is not of the
+                                       servo before it: it is the session's
+                                       backup now                          */
     HITEC_PROG_MSG_COUNT
 } hitec_prog_msg_id_t;
 

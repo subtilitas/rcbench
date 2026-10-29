@@ -488,6 +488,22 @@ static bool files_view(const char *v)
         }
         return true;
     }
+    if (strcmp(v, "-other-servo") == 0) {
+        /* The backup file HITEC001 saved by a write, then another D485HW
+         * on the port, dead band 4, and READ ALL. */
+        hwrite_page();
+        hhold();
+        hwait(HITEC_PROG_HELD);
+        servo_d485();
+        g_drv.dreg[0x4Eu] = 4u;
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 1));
+        for (unsigned i = 0; i < 60000u && pstate() == HITEC_PROG_READING;
+             ++i) {
+            pms();
+        }
+        hwait(HITEC_PROG_HELD);
+        return true;
+    }
     if (strcmp(v, "-nofile") == 0) {
         g_card = false;
         prun(20u);

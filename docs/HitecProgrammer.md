@@ -424,12 +424,40 @@ as it was.
 
 The session's backup is the first full read after CONNECT, kept in the
 panel's RAM. A later read of the same servo leaves it as it is. A read
-that finds another servo makes that read the backup: for the D series
-another model number, for a classic servo another name, date, serial or
-version. LEAVE, the next CONNECT, a lost link and a panel restart end it.
+that finds another servo makes that read the backup. A classic servo is
+another servo by another name, date, serial or version. A D series servo
+is another servo by another model number, or when the read breaks the
+session's chain. The port is held, so only the session writes the servo,
+and a D series read is of the servo read before it when:
+
+- no write of the session is left unverified, and every register a write
+  sends holds the value the read before found; or
+- a write is left unverified (its check failed, or it was interrupted),
+  and the record of that write explains the values: the read finds the
+  values before the write, its new values, or some of each
+  ([The record of a write](#the-record-of-a-write)). With the record
+  discarded the values decide, against the values the failed check read
+  back.
+
+The chain compares with the read before, not with the backup: the
+session's own verified writes, the ID 0x32 included, keep it. A read of
+another servo says
+
+```
+Other values than the last read: taken as another servo.
+Its backup is this read.
+```
+
+The backup file line goes, RESTORE does not offer the first servo's
+backup, and the first write to the new servo saves a backup file of its
+own. Where a record stands, its line takes the place of these two. LEAVE,
+the next CONNECT, a lost link and a panel restart end the backup; the
+first read of the next session is its backup without these lines.
 A file the card makes for a backup, or a save by hand, counts only for the
 backup that stood when it was asked for: a late answer after LEAVE and
 CONNECT, or after another servo's read, saves nothing for the new one.
+
+![Another servo read in the session](img/servo-hitec-other-servo.png)
 
 The first write of a session that sends a step, WRITE n VALUES, REPAIR
 CHECKSUM, a RESTORE or FACTORY DEFAULT, saves the backup to a new file
@@ -722,8 +750,11 @@ as after any stop: ARM is refused only while the port is held.
   backup is the servo as found then, with the values of the cut write; the
   record of the write and the old session's backup file hold the values
   before it.
-- Two D series servos of one model are not told apart: a second D485HW on
-  the port keeps the first one's backup.
+- Two D series servos of one model are told apart by their values only. A
+  second D485HW whose registers a write sends hold the values of the first
+  one's last read keeps the first one's backup, and RESTORE of the
+  session's backup writes the first one's values into it. Which register,
+  if any, differs between two units of one model is not measured.
 - A servo file written or edited outside the panel does not load.
 - The record is read from the card at the panel's start only. A card put
   in later is not read for one, and a record made with no card mounted is
