@@ -3481,7 +3481,6 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_unheld is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warn_line is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warning is not documented
-shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_adopt are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_claim are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_entered are not documented
