@@ -74,7 +74,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.31. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.32. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -174,6 +174,10 @@ im Kommando eines Schritts, weitere Schritte dieses Schreibens folgen. Ein
 BAD_VALUE ab. Das Panel schaltet eine Versorgung, die ein Port hält, bei
 einem Fehler erst ab 4.31 aus und setzt das Bit erst ab 4.31
 ([Sicherheit, Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
+Ab 4.32 schaltet PROG_SUPPLY (0x39) die eigene Versorgung der
+Programmierports auf einem Board, das eine hat, GPIO 21 des
+rbmod-Carriers; ein älterer IOmcu lehnt die Page mit BAD_PAGE ab
+([Carrier, Versorgung](Carrier-de.md#versorgung)).
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -1026,6 +1030,7 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x36 | SENSE_LIMIT | lesen, schreiben | eine Stromgrenze je Kanal von SENSE_MAP (seit 4.27); der IOmcu markiert eine überschrittene Grenze, das Panel behandelt sie als Fehler. Register 0 bis 11 die Grenze jedes Kanals in mA (0 keine, 1 bis 32767), im Flash des IOmcu gehalten; nur lesbar: 12 `OVER`, Bit c ein Fenster von Kanal c über seiner Grenze seit dem letzten Lesen des Registers, das es löscht; 13 `OVER_COUNT`, Kanal-Fenster über der Grenze, modulo 65536; 14 und 15 reserviert. 16 Register. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md#sense_limit) nennt die Regeln |
 | 0x37 | SENSE_WIN_A | lesen | das letzte 50-ms-Fenster der Kanäle 0 bis 5 (seit 4.25): die Fensternummer, Flags, und 5 Register je Kanal: mittlerer und höchster Strom (mA, mit Vorzeichen), mittlere und niedrigste Busspannung (mV), Flags. Jedes Schreiben wird mit READ_ONLY abgewiesen. Nichts wird gehalten |
 | 0x38 | SENSE_WIN_B | lesen | das der Kanäle 6 bis 11, wie SENSE_WIN_A (seit 4.25) |
+| 0x39 | PROG_SUPPLY | lesen, schreiben | die eigene Versorgung der Programmierports auf einem Board, das sie mit einem Pin des IOmcu schaltet: GPIO 21 des rbmod-Carriers, der Enable seines 5V-Abwärtswandlers M7 (seit 4.32). Register 0: Ausgang, 1 ein, 0 aus. Ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgelehnt, und mit BAD_VALUE auf einem Board ohne den Schalter und solange ein Programmierport die Versorgung hält. Ein OFF wird immer genommen; während ein Port in den Speicher des Servos schreibt, wartet es auf das Ende des Schreibens, höchstens 10.000ms nach dem OFF, und das eigene ON des Ports wird danach abgelehnt, bis der Port loslässt. Der Ausgang geht aus, wenn der Heartbeat endet oder der Link verstummt, und ein OFF wartet auf das Ende eines Frames, den ein Port auf der Leitung hat, höchstens 12ms. Register 1 bis 3, nur lesen: Flags (Bit 0 das Board hat den Schalter, Bit 1 der Pin schaltet die Versorgung ein, Bit 2 ein Programmierport hält sie, Bit 3 das OFF des Panels wartet auf das Schreiben eines Ports), der schaltende GPIO (255 ohne) und die Spannung in mV (5000 auf dem Carrier, 0 ohne). Register 4, Panel: eine 1, allein geschrieben, sagt, dass das Panel die Page kennt; ohne lebenden Heartbeat mit NOT_ARMED abgelehnt, mit BAD_VALUE für jeden anderen Wert; es liest sich 0 ab jedem Start und ab jedem Verlust des Heartbeats. Ein Programmierport schaltet die Versorgung nur ein, solange es 1 liest, also bekommen die Ports eines Panels vor 4.32 sie nie; das Panel schreibt es, sobald ein Lesen 0 findet. Nicht gespeichert: bei jedem Start aus. Auf dem Carrier schalten die Ports für KST und Hitec diese Versorgung statt des PD mini |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
 | 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
 
@@ -1439,13 +1444,13 @@ Auf Board 2 hält der IOmcu jede Rolle auf ihrem Pin:
   auf einem Pin, der kein Servoausgang ist, wird geleert, und jeder Port
   beginnt als NONE.
 
-GPIO 21 wird ab der ersten Anweisung von `main()` low getrieben und low
-gehalten. EN von M7 hat einen Pull-down, die Versorgung der
-Programmierports ist also aus, solange der IOmcu GPIO 21 nicht treibt: im
-Reset, im BOOTSEL und ohne Versorgung.
-
-Aktuelle Einschränkung: dieses Release schaltet GPIO 21 nie ein, die
-Programmierports eines Carriers haben also keine Versorgung vom Carrier.
+GPIO 21 wird ab der ersten Anweisung von `main()` low getrieben; ab der
+Hauptschleife treibt ihn die Page PROG_SUPPLY (0x39, seit 4.32), aus, bis
+eine Sitzung für KST oder Hitec ihn einschaltet. EN von M7 hat einen
+Pull-down, die Versorgung der Programmierports ist also aus, solange der
+IOmcu GPIO 21 nicht treibt: im Reset, im BOOTSEL und ohne Versorgung. Auf
+dem Carrier schalten die Ports für KST und Hitec diese Versorgung statt
+des PD mini, und kein Port hält die Page SUPPLY.
 
 Ein Panel bietet jedem IOmcu das Image des Boards an, das er meldet. Das
 Release-Panel trägt beide Images; ein Board, für das es kein Image trägt,

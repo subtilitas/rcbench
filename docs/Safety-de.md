@@ -15,7 +15,7 @@ verifiziert.
 | Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des IOmcu, 200ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
-| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist oder der Ausgang des Netzteils an ist | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
+| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist, der Ausgang des Netzteils an ist oder die 5V der Programmierports auf dem Carrier an sind | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
 
 Ein gedrücktes STOP stoppt den Heartbeat, schaltet das eigene
 Ausgangsmodell des Panels auf SAFE und schreibt ARM = 0 auf die Control-Page. Bei
@@ -35,8 +35,11 @@ letztes Kommando.
 
 Die Render-Schleife zählt einen Zähler pro Durchlauf weiter. Der
 Control-Task liest ihn in jedem Durchlauf alle 5ms und in der Wartezeit
-jedes Link-Austauschs. Ist der Prüfstand ARMED oder der Ausgang des
-Netzteils an und hat sich der Zähler 1000ms lang nicht bewegt
+jedes Link-Austauschs. Ist der Prüfstand ARMED, der Ausgang des
+Netzteils an oder zählen auf dem rbmod-Carrier die 5V der
+Programmierports für die Sperren als an
+([Die 5V der Programmierports auf dem Carrier](#die-5v-der-programmierports-auf-dem-carrier))
+und hat sich der Zähler 1000ms lang nicht bewegt
 (`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`), ist das ein
 Stopp des Prüfstands selbst, auf dem Weg, den STOP nimmt:
 
@@ -105,7 +108,9 @@ Fehler.
 
 Die Ausgänge sind die Servo-PWM-Slots und DShot-Throttle-Kanäle der Bank,
 die vier Programmierports (Servo-PWM, DShot, die KST-Leitung, die
-Hitec-Leitung) und der Ausgang des PD (Power Delivery) mini. Der Phase Tap
+Hitec-Leitung), der Ausgang des PD (Power Delivery) mini und auf dem
+rbmod-Carrier die eigenen 5V der Programmierports an GPIO 21
+([Die 5V der Programmierports auf dem Carrier](#die-5v-der-programmierports-auf-dem-carrier)). Der Phase Tap
 auf der Page TONE ist ein Eingang und treibt nichts. Das Panel hat keinen
 Draht zu einem Ausgang: es handelt über den Link und den Heartbeat, und der
 IOmcu handelt selbst, wenn einer der beiden ausfällt.
@@ -238,6 +243,49 @@ Antwort, ein Zurücklesen mit Abweichung, ein Schritt, den der Decoder
 abwies. Keine Störung: eine Ablehnung, ein Plan, der nichts sendet, ABORT
 und ein Schritt, den ein Stopp oder eine verlorene Verbindung abbricht; die
 beenden die Sitzung selbst.
+
+#### Die 5V der Programmierports auf dem Carrier
+
+Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die
+Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
+4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
+Programmer für KST und Hitec schalten die 5V für eine Sitzung ein und aus;
+das Panel bietet keine Taste dafür. Die Programmer lesen auf dem Carrier
+nichts vom PD mini: sein Sollwert lehnt weder ein VERBINDEN unter 4.8V
+ab, noch setzt er die Spannung eines Power-Cycle, und die Grenzen der
+Ansicht SUPPLY begrenzen nur die Servoschienen, kein VERBINDEN. Sind die
+5V als ein gelesen, schalten VERBINDEN und VERLASSEN nach einem Schreiben
+sie aus und wieder ein, wie den Ausgang des PD mini; sind sie aus,
+schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln
+der Page SUPPLY für einen Port:
+
+- Ein Fehler schreibt das OFF der Page, wer immer sie hält und was immer
+  das Panel von ihr liest (`error_sites.c`, `prog_supply_link_cut()`). Ein
+  Schreiben in den Speicher des Servos hält sie an, bis es endet,
+  höchstens 10000ms; vom OFF an, bis der Port loslässt, wird das eigene ON
+  des Ports abgelehnt.
+- Ein verlorener Heartbeat oder ein stummer Link schaltet sie sofort aus,
+  nach einem Frame auf der Leitung, höchstens 12ms.
+- Bei jedem Start des IOmcu ist sie aus, ab der ersten Anweisung von
+  `main()` low getrieben; der Pull-down an EN von M7 hält sie aus, solange
+  der IOmcu GPIO 21 nicht treibt.
+- Ein ON vom Panel wird ohne lebenden Heartbeat mit NOT_ARMED und mit
+  BAD_VALUE abgelehnt, solange ein Port die Versorgung hält.
+- Ein Port schaltet sie nur ein, nachdem das Panel seit dem letzten
+  Verlust des Heartbeats das Register 4 der Page (PANEL) geschrieben hat.
+  Ein Panel vor Link 4.32, das weder diese Versorgung noch ihre Sperren
+  kennt, schreibt es nie, also bekommen seine Programmer die 5V nie.
+- Eine Firmware-Installation, ein Update des IOmcu, ein Schreiben in den
+  Flash des Panels und das WLAN des Panels warten, solange die 5V
+  an sind, seit dem Aufbau des Links oder seit einem Lesen ohne Antwort
+  nicht gelesen wurden oder ein Port eines Programmers sie hält, so wie sie
+  auf den Ausgang des PD mini warten (`prog_supply_link_live()`).
+
+SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,
+`AUS` oder `UNBEKANNT`, wenn das letzte Lesen ohne Antwort blieb. Der
+Kern ist `shared/outputs/prog_supply.c` unter `test_prog_supply`; das Ende
+des Panels ist `shared/bench/prog_supply_link.c` unter
+`test_prog_supply_link`.
 
 Aktuelle Einschränkungen:
 

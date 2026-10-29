@@ -38,8 +38,22 @@ history is in git.
   and GPIO 6, the tap on GPIO 22
   ([Link, Boards with soldered pins](docs/Link.md#boards-with-soldered-pins)).
   GPIO 21, the enable of the programming ports' 5V, is driven low from the
-  start of `main()`. Current limitation: nothing switches it on yet, so the
-  programming ports have no supply from the carrier.
+  start of `main()`.
+- Link 4.32, the PROG_SUPPLY page (0x39): the programming ports' own supply
+  on a board that switches one, the rbmod carrier's GPIO 21 and its 5V buck
+  M7. A port gets it only after the panel's write of register 4 (PANEL)
+  since the heartbeat last went, so a panel before 4.32 never powers it. The KST and Hitec programmers switch it for a session in place of the
+  PD mini; the panel has no key for it. Every error writes its OFF, held
+  for a write to the servo's memory 10000ms at most; a lost heartbeat or a
+  silent link switches it off. SUPPLY shows `PROG PORTS 5V, GPIO 21: ON` or
+  `OFF` under OUTPUT, and the programmers' MORE list reads
+  `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` in place of the voltage and the
+  current; they take no reading of the PD mini there, so neither its set
+  point nor the SUPPLY screen's limits refuse a CONNECT, and the ports' 5V
+  read on is power-cycled at CONNECT and after a write. A firmware install, an IOmcu update, a flash write
+  and the Wi-Fi wait for the ports' 5V as for the PD mini's output, and
+  the render-loop watchdog watches while it is live
+  ([Safety, The carrier's programming-port 5V](docs/Safety.md#the-carriers-programming-port-5v)).
 - The panel follows the board the IOmcu reports. On the rbmod carrier
   OUTPUTS shows PWM01 to PWM04 as its four cells and refuses a surface and
   a throttle protocol on PWM02 and PWM03 together, by name

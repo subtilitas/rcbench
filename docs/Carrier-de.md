@@ -67,14 +67,23 @@ geteilte Slice schränkt also nichts ein.
 
 Die Programmierports laufen aus den festen 5V von M7, nicht aus dem PD mini.
 KST- und Chaservo-Servos programmieren mit 5V. Auf dem Carrier stellen die
-Programmer die Spannung der Programmierports nicht ein.
+Programmer die Spannung der Programmierports nicht ein: ihre Liste MORE
+zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21` und bietet weder Spannung
+noch Strom an.
 
-Der IOmcu treibt GPIO 21 ab der ersten Anweisung von `main()` low und hält
-ihn low. Solange der IOmcu GPIO 21 nicht treibt (im Reset, im BOOTSEL, ohne
-Versorgung), hält der Pull-down an EN M7 aus.
+Die Programmer für KST und Hitec schalten GPIO 21 für eine Sitzung ein und
+aus, über die Page PROG_SUPPLY (Link 4.32). Das Panel hat keine Taste
+dafür. SUPPLY zeigt den Zustand unter OUTPUT:
+`PROG-PORTS 5V, GPIO 21: EIN` oder `AUS`. Jeder Fehler, ein verlorener
+Heartbeat und ein stummer Link schalten sie aus; ein Schreiben in den
+Speicher des Servos hält sie an, bis es endet, höchstens 10000ms
+([Sicherheit, Die 5V der Programmierports auf dem Carrier](Safety-de.md#die-5v-der-programmierports-auf-dem-carrier)).
 
-Aktuelle Einschränkung: dieses Release schaltet GPIO 21 nie ein, die
-Programmierports haben also keine Versorgung vom Carrier.
+Der IOmcu treibt GPIO 21 ab der ersten Anweisung von `main()` low. Solange
+der IOmcu GPIO 21 nicht treibt (im Reset, im BOOTSEL, ohne Versorgung),
+hält der Pull-down an EN M7 aus.
+
+![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 
 ## Der Strommonitor
 

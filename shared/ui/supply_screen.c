@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <stdatomic.h>
+
 #include "supply_screen.h"
 
 #include <math.h>
@@ -474,6 +476,20 @@ void supply_screen_set_pins(int tx, int rx)
         s.rx1 = r1;
         ++s.ctrl_rev;                   /* the header says it */
     }
+}
+
+/** @brief The ports' own supply as the control task last published it:
+ *         state << 8 | pin. */
+static atomic_uint s_prog_5v;
+
+void supply_screen_set_prog_5v(uint8_t state, uint8_t pin)
+{
+    atomic_store(&s_prog_5v, ((unsigned)state << 8) | pin);
+}
+
+uint32_t sup_prog_5v(void)
+{
+    return (uint32_t)atomic_load(&s_prog_5v);
 }
 
 void supply_screen_set_model(bool model)

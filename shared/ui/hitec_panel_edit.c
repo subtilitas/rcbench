@@ -21,6 +21,7 @@
 #include "pdmini.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -376,11 +377,18 @@ static void port_act(hitec_prog_t *p)
     const hitec_prog_state_t st = hitec_prog_state(p);
 
     if (st == HITEC_PROG_PWM) {
-        /* Against the SUPPLY screen's limits as they are now. */
-        const supply_caps_t caps = supply_screen_caps();
+        if (ui_board_prog_5v_pin() >= 0) {
+            /* The carrier's ports run from their own fixed 5V, which the
+             * PD mini's limits do not bound. */
+            hitec_prog_supply_caps(p, 0u, 0u);
+        } else {
+            /* Against the SUPPLY screen's limits as they are now. */
+            const supply_caps_t caps = supply_screen_caps();
 
-        hitec_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
-                               (uint16_t)lroundf(caps.i_max * 1000.0f));
+            hitec_prog_supply_caps(p,
+                                   (uint16_t)lroundf(caps.v_max * 1000.0f),
+                                   (uint16_t)lroundf(caps.i_max * 1000.0f));
+        }
         (void)hitec_prog_connect(p);
     } else if (st == HITEC_PROG_HELD) {
         hpn_page_leave();
@@ -403,6 +411,13 @@ static void more_open(const hitec_prog_t *p)
     hpn_choice_open(C_MORE, TR(KP_MORE));
     if (hitec_prog_state(p) == HITEC_PROG_HELD) {
         (void)more_held(true);
+        return;
+    }
+    if (ui_board_prog_5v_pin() >= 0) {
+        /* The carrier's buck: 5V, nothing to set. */
+        snprintf(label, sizeof(label), TR(KP_SUPPLY_5V_FIXED),
+                 (unsigned)ui_board_prog_5v_pin());
+        hpn_choice_add(label, MORE_FIXED);
         return;
     }
     snprintf(label, sizeof(label), TR(KP_SUPPLY_V), hitec_prog_mv(p) / 1000u,
@@ -504,6 +519,8 @@ static void list_done(hitec_prog_t *p, int kind, int value)
         ask_write((uint8_t)HITEC_PROG_WR_REPAIR);
     } else if (value == MORE_FACTORY) {
         ask_write((uint8_t)HITEC_PROG_WR_FACTORY);
+    } else if (value == MORE_FIXED) {
+        /* The carrier's 5V: a line to read, nothing to set. */
     } else if (value == MORE_VOLTAGE) {
         ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_VOLTAGE), "V",
                        (float)hitec_prog_mv(p) / 1000.0f,

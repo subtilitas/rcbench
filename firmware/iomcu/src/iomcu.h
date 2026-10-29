@@ -51,6 +51,7 @@
 #include "sense_page.h"
 #include "servo_page.h"
 #include "supply_page.h"
+#include "prog_supply.h"
 #include "tone_page.h"
 
 /* ------------------------------------------------------------- the pages */
@@ -888,6 +889,48 @@ uint8_t supply_take(uint8_t off, uint8_t n, const uint16_t *in,
  *                   (safety_gate_supply_ok()); false asks the output off.
  */
 void supply_pass(uint32_t now, bool frame_out, bool writing, bool supply_ok);
+
+/* --------------------------------------------------------- iomcu_psup.c */
+
+/**
+ * @brief The PROG_SUPPLY page: the programming ports' own supply on a board
+ *        that switches one (prog_supply.h), off at start.  Not kept.
+ */
+extern prog_supply_t s_psup;
+
+/** @brief The page set to the board's switch, or to none; off. */
+void psup_init(void);
+
+/**
+ * @brief Read PROG_SUPPLY registers.
+ * @param ctx unused
+ * @param off first register
+ * @param n   registers
+ * @param out the values
+ */
+void psup_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+
+/**
+ * @brief Write PROG_SUPPLY: OUTPUT, judged against the heartbeat and a
+ *        port's hold (prog_supply_write()).
+ * @param ctx unused
+ * @param off first register
+ * @param n   registers
+ * @param in  the values
+ * @return 0 or the NACK reason
+ */
+uint8_t psup_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
+/**
+ * @brief Once a pass, after supply_pass(): the page stepped and the pin
+ *        driven as it says, on a board with the switch.
+ * @param now       this pass's clock, ms
+ * @param frame_out a programming port has a frame on the wire
+ * @param writing   a programming port writes to the servo's memory
+ * @param supply_ok the heartbeat is trusted and the link is up; false
+ *                  switches the supply off
+ */
+void psup_pass(uint32_t now, bool frame_out, bool writing, bool supply_ok);
 /**
  * @brief The start-up's first act after the wiring is restored: the PD
  *        mini read and switched off before the rest of the start runs.
@@ -1068,6 +1111,24 @@ static inline bool ports_hold_supply(void)
 static inline bool ports_writing(void)
 {
     return kst_port_writing(&s_kst) || hitec_port_writing(&s_hitec);
+}
+
+/**
+ * @brief Tell the ports' supply that a port holds it and whether it writes:
+ *        the PROG_SUPPLY page on a board that switches the ports' own
+ *        supply, the SUPPLY page on any other.  The other one is told no
+ *        port holds it: on the rbmod carrier the PD mini feeds the servo
+ *        rails and no programming port.
+ */
+static inline void ports_tell_supply(void)
+{
+    const bool own = prog_supply_fitted(&s_psup);
+    const bool hold = ports_hold_supply();
+    const bool writing = ports_writing();
+    supply_page_hold(&s_supply, !own && hold);
+    supply_page_port_writes(&s_supply, !own && writing);
+    prog_supply_hold(&s_psup, own && hold);
+    prog_supply_port_writes(&s_psup, own && writing);
 }
 
 /**

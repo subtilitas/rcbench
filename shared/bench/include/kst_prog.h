@@ -532,6 +532,9 @@ typedef struct {
     uint16_t set_mv;           /**< and the voltage it is set to, mV      */
     uint16_t set_ma;           /**< and the current limit it is set to,
                                     mA; 0 not known                       */
+    bool     fixed_on;         /**< the ports' own fixed supply (the rbmod
+                                    carrier's 5V, GPIO 21) reads on; no
+                                    reading of its voltage or current      */
     bool stopped;              /**< STOP is latched: no heartbeat */
     bool armed;                /**< the panel's outputs are armed */
     bool card;                 /**< a card takes the file */

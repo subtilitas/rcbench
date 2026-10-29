@@ -1012,7 +1012,7 @@ hitec_prog_msg_id_t hitec_prog_leave(hitec_prog_t *p)
 hitec_prog_msg_id_t hitec_prog_clear(hitec_prog_t *p)
 {
     const hitec_prog_msg_id_t m = hpg_held_idle(p, false);
-    const bool supply_on = p->f.supply_read;
+    const bool supply_on = p->f.supply_read || p->f.fixed_on;
 
     if (m != HITEC_PROG_MSG_NONE) {
         return say(p, m, m == HITEC_PROG_MSG_HELD_OTHER ? p->f.rd.port_no

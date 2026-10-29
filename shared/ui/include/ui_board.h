@@ -43,6 +43,16 @@ uint16_t ui_board(void);
  */
 const outbind_roles_t *ui_board_roles(void);
 
+/**
+ * @brief The pin that switches the programming ports' own fixed supply on
+ *        the recorded board (the rbmod carrier's 5V buck: GPIO 21).  The
+ *        KST and Hitec programmers show its 5V as fixed there and offer no
+ *        voltage or current.
+ *
+ * @return The GPIO; -1 on a board without it.
+ */
+int ui_board_prog_5v_pin(void);
+
 /** @brief Called for each setting whose value ui_board_apply_pins() moved. */
 typedef void (*ui_board_changed_fn)(setting_id_t id);
 

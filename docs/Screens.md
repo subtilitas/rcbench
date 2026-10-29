@@ -1957,6 +1957,14 @@ OUTPUT ON and OFF, RESET PEAKS and the readings stay live on SETTINGS and
 under the keypad and the question. One finger at a time: while one holds a control, a
 second finger does nothing anywhere on the screen.
 
+On the [rbmod carrier](Carrier.md#power) a line under OUTPUT names the
+programming ports' own 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or
+`NOT READ` after an unanswered read, in the accent colour while on. The KST
+and Hitec programmers switch it; SUPPLY has no key for it. A board without
+the switch shows no line.
+
+![SUPPLY on the carrier](img/supply-rbmod.png)
+
 ### Supply settings
 
 SETTINGS, the strip's second tab, shows the supply's settings in the left

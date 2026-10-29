@@ -15,7 +15,7 @@ hardware.
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
 | IOmcu silence watchdog, 200ms | the link is dead in either direction | built and tested |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written |
-| Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED or the supply output is on | built; the decision is host-tested (`test_frame_watch`) |
+| Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED, the supply output is on or the carrier's programming-port 5V is live | built; the decision is host-tested (`test_frame_watch`) |
 
 A pressed STOP stops the heartbeat, switches the panel's own output model to SAFE
 and writes ARM = 0 to the control page. While the link is up the panel
@@ -33,7 +33,10 @@ the render loop's, and the outputs keep their last command.
 
 The render loop moves a counter once per pass. The control task reads it in
 every 5ms pass and inside every link exchange's wait. While the bench is
-ARMED, or while the supply output is on, a counter that has not moved for
+ARMED, while the supply output is on, or, on the rbmod carrier, while the
+programming ports' 5V counts as live for the gates
+([The carrier's programming-port 5V](#the-carriers-programming-port-5v)),
+a counter that has not moved for
 1000ms (`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`) is a stop
 of the bench's own, through the path STOP takes:
 
@@ -95,8 +98,9 @@ error is a fault that ends what the bench drives. The operator's own OFF,
 DISARM and edits are not errors.
 
 The outputs are the bank's servo PWM slots and DShot throttle channels, the
-four programming ports (servo PWM, DShot, the KST line, the Hitec line), and
-the PD (Power Delivery) mini's output. The phase tap on the TONE page is an
+four programming ports (servo PWM, DShot, the KST line, the Hitec line), the
+PD (Power Delivery) mini's output, and on the rbmod carrier the programming
+ports' own 5V on GPIO 21 ([The carrier's programming-port 5V](#the-carriers-programming-port-5v)). The phase tap on the TONE page is an
 input and drives nothing. The panel has no wire to any output: it acts
 through the link and the heartbeat, and the IOmcu acts on its own when
 either goes.
@@ -213,6 +217,45 @@ not switch. Hitec: no servo, a wrong entry answer, a failed read, a classic
 write without its answer, a read-back that differs, a step the decoder
 refused. Not a fault: a refusal, a plan that sends nothing, ABORT, and a
 step cut by a stop or a lost link, which end the session themselves.
+
+#### The carrier's programming-port 5V
+
+On the [rbmod carrier](Carrier.md#power) the programming ports run from
+the 5V buck M7, switched by GPIO 21 (link 4.32, the PROG_SUPPLY page). The
+PD mini feeds the servo rails only. The KST and Hitec programmers switch
+the 5V on and off for a session; the panel offers no key for it. The
+programmers take no reading of the PD mini on the carrier: its set point
+neither refuses a CONNECT under 4.8V nor sets the voltage of a power
+cycle, and the SUPPLY screen's limits bound the servo rails only, not a
+CONNECT. With the 5V read on, CONNECT and LEAVE after a write switch it
+off and on, as they do the PD mini's output; with it off, CONNECT powers
+the servo up. The page follows the SUPPLY page's rules for a port:
+
+- An error writes the page's OFF, whoever holds it and whatever the panel
+  reads of it (`error_sites.c`, `prog_supply_link_cut()`). A write to the
+  servo's memory keeps it on until the write ends, 10000ms at most; from
+  the OFF until the port lets go, the port's own ON is refused.
+- The heartbeat lost or the link silent switches it off at once, after a
+  frame on the wire, 12ms at most.
+- It is off at every start of the IOmcu, driven low from the first
+  statement of `main()`; the pull-down on M7's EN holds it off while the
+  IOmcu does not drive GPIO 21.
+- An ON from the panel is refused with NOT_ARMED without a live heartbeat
+  and with BAD_VALUE while a port holds the supply.
+- A port switches it on only after the panel has written the page's
+  register 4 (PANEL) since the heartbeat last went. A panel before link
+  4.32, which knows neither this supply nor its gates, never writes it, so
+  its programmers never get the 5V.
+- A firmware install, an IOmcu update, a write to the panel's flash and
+  the panel's Wi-Fi wait while the 5V is on, not read since the
+  link came up or since an unanswered read, or held by a programmer's
+  port, as they wait for the PD mini's output
+  (`prog_supply_link_live()`).
+
+SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
+or `NOT READ` when the last read went unanswered. The core is
+`shared/outputs/prog_supply.c` under `test_prog_supply`; the panel's end
+is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`.
 
 Current limitations:
 

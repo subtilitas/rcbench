@@ -578,10 +578,10 @@ void panel_frame_loop(void)
          * question, which comes first. */
         upd_remind_service(armed || arm_wanted_now,
                            armed || arm_wanted_now || supply_now
-                               || supply_live_or_coming(),
+                               || supplies_live_or_coming(),
                            &cu);
         cu_render_service(armed || arm_wanted_now || supply_now
-                              || supply_live_or_coming(),
+                              || supplies_live_or_coming(),
                           link_up, &cu);
 
         /* The interface pins of a board that solders them (the rbmod
@@ -654,7 +654,7 @@ void panel_frame_loop(void)
         wifi_service(arm_wanted_now || armed_now, stops_now);
         upd_service(arm_wanted_now || armed_now,
                     arm_wanted_now || armed_now || supply_now
-                        || supply_live_or_coming(),
+                        || supplies_live_or_coming(),
                     stops_now, &cu);
 
         /*
@@ -694,7 +694,7 @@ void panel_frame_loop(void)
          * -- the next frame is one.
          */
         const bool quiet =
-            flash_gate_open(arm_wanted_now, supply_live_or_coming());
+            flash_gate_open(arm_wanted_now, supplies_live_or_coming());
         (void)settings_save_tick(quiet && !s_artbusy
                                  && !atomic_load(&s_keeping));
         /* And the ramp, from the task that owns the values, for the control

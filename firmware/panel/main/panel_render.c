@@ -284,6 +284,11 @@ bool supply_live_or_coming(void)
     return coming || atomic_load(&s_supply_live);
 }
 
+bool supplies_live_or_coming(void)
+{
+    return supply_live_or_coming() || atomic_load(&s_psup_live);
+}
+
 /*
  * The supply screen's limits and set points, as the levels the control task
  * reads.  Every frame, from the render loop that owns the screen.

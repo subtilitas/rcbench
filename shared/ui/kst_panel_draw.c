@@ -19,6 +19,7 @@
 #include "kst_reg.h"
 #include "kst_session.h"
 #include "link_pages.h"
+#include "ui_board.h"
 #include "ui_card_text.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -214,6 +215,9 @@ static void state_line(char *out, size_t n)
     case KST_PROG_PWM:
         if (!kpn_on_port()) {
             snprintf(out, n, "%s", TR(KP_NEED_TARGET));
+        } else if (ui_board_prog_5v_pin() >= 0) {
+            snprintf(out, n, TR(KP_STATE_PWM_5V), (unsigned)kpn_port_no() + 1u,
+                     (unsigned)ui_board_prog_5v_pin());
         } else if (kpn_flag(LINK_KS_F_RAIL)) {
             snprintf(out, n, TR(KP_STATE_PWM), (unsigned)kpn_port_no() + 1u,
                      (unsigned)(kst_prog_supply_mv(p) / 1000u),

@@ -60,3 +60,9 @@ bool ui_board_apply_pins(ui_board_changed_fn changed)
     }
     return true;
 }
+
+int ui_board_prog_5v_pin(void)
+{
+    const outbind_roles_t *r = ui_board_roles();
+    return (r != NULL) ? (int)r->prog_5v_en : -1;
+}
