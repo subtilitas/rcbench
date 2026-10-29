@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- `protocols/hitec`: `hitec_session_move()` moves a Hitec servo inside its
+  programming session: D series 0x1E = target (0 to 6000), then a read of
+  0x0C; classic `66` (3600 to 8400, 0.25us), then `65`. It writes RAM only
+  and changes nothing in the image. `hitec_live.c` holds the D series
+  target-to-position mapping through the stored end points, the reach, a
+  pass's command (150 counts at most, inside the reach), the judges of a
+  pass (lag, current, AS5600) and FIND STOP. No screen calls them yet
+  ([hitec, Live loop](protocols/hitec/README.md#live-loop);
+  [Safety, A Hitec servo moved while SAFE](docs/Safety.md#a-hitec-servo-moved-while-safe)).
 - `hardware/mechanical/`: STEP models of the M16 emergency stop button, its
   nut and its square anti-rotation shim as separate files, and an assembly
   of the three for a 1.6mm panel, generated from `estop_m16.py` by

@@ -784,7 +784,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Finger, der auf dem Bedienelement liegt, bewegt nichts, bis er abhebt und
   neu drückt. Ein Wert, den der Bildschirm
   gepostet und die Anwendung bei einem DISARM oder STOP noch nicht abgeholt
-  hat, wird verworfen.
+  hat, wird verworfen. Die einzige Ausnahme ist ein Hitec-Servo in seiner
+  Programmiersitzung ([Ein Hitec-Servo bewegt sich bei SAFE](#ein-hitec-servo-bewegt-sich-bei-safe)).
 - Jedes ARM beginnt bei der Ruhelage des Kanals, nicht dort, wo der letzte
   Lauf das Bedienelement gelassen hat.
   - MOTOR & ESC: Der Gas-Schieberegler, seine Schritte `-1` und `+1` und der
@@ -924,6 +925,65 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Entscheidung: die Bank rampt ein Throttle nur aufwärts, ein Ramp auf dem
   Draht würde also nur den Anstieg verlangsamen und sonst nichts. [STATUS.md,
   Not planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
+
+### Ein Hitec-Servo bewegt sich bei SAFE
+
+Ein Hitec-Servo darf sich bewegen, während der Prüfstand SAFE ist, und nur
+in einer gehaltenen Programmiersitzung. Das ist die einzige Ausnahme von der
+Regel, dass sich ein Ausgangswert nur bei ARMED ändert. Der Prüfstand
+schaltet nicht auf ARMED, solange die HITEC-Seite einen Port hält
+([LinkHitec, STOP](LinkHitec-de.md#stop-schalten-auf-safe-heartbeat-verlust-und-link-verlust)), und ein Hitec-Servo nimmt sein Ziel über
+den Programmierdraht, nicht als Pulsbreite.
+
+Die Regel:
+
+- Eine Bewegung braucht eine betretene Sitzung (`hitec_session_move()`;
+  sonst abgelehnt mit `HITEC_SES_ERR_NOT_IN_MODE`). D series: ein Ziel von 0
+  bis 6000 in Register 0x1E geschrieben, dann Register 0x0C, die Position,
+  zurückgelesen. Classic: `66` mit einem Ziel von 3600 bis 8400 (900 bis
+  2100us), dann `65`. Ein Ziel außerhalb des Bereichs wird abgelehnt
+  (`HITEC_SES_ERR_ARG`).
+- Eine Bewegung schreibt nur ins RAM des Servos: keine EEPROM-Zelle, kein
+  Speichern (0x70), kein Neustart. Kein Schritt einer Bewegung trägt MORE,
+  ein OFF der Versorgung während einer Bewegung wird also nicht für ein
+  Schreiben gehalten ([Die Versorgung eines Programmierports](#die-versorgung-eines-programmierports)).
+  Ein Wert erreicht den Speicher des Servos nur über ein Schreiben mit
+  Backup, Protokoll und Rücklesen.
+- Die kommandierte Position bewegt sich höchstens 150 Zähler (2.0deg) je
+  Durchlauf und bleibt innerhalb der Reichweite der gespeicherten Endpunkte
+  des Servos: der Positionen der Ziele 0 und 6000, 2606 bis 13743 bei einem
+  D485HW im Werkszustand (`hitec_live_d_command()`).
+- Jeder Durchlauf wird beurteilt (`hitec_live_judge()`). Er gilt als
+  blockiert, wenn die gelesene Position bei einem Kommando, das steht oder
+  nach außen geht, in 2 Durchläufen hintereinander mehr als 150 Zähler vom
+  Kommando entfernt liegt, wenn der Strom der Versorgung 400ms lang bei oder
+  über 80% der Stromgrenze der Sitzung liegt (800mA bei den
+  voreingestellten 1000mA), oder wenn der AS5600-Winkel, sofern verbaut,
+  sich um weniger als die Hälfte einer kommandierten Änderung von 3deg oder
+  mehr bewegt hat. Eine Blockierung setzt das Kommando auf die letzte freie
+  Position zurück, 75 Zähler (1.0deg) zur Neutralstellung hin.
+- Die Abbildung nimmt nur ein auf CW gestelltes Servo
+  (`hitec_live_d_ends()`).
+- Bewegungen werden mit einem 2s langen Halten eingeschaltet, und nur mit
+  einem antwortenden PD mini mit eingeschaltetem Ausgang: STOP schaltet den
+  PD mini aus und damit das Servo. Die eigene Stromgrenze des PD mini ist
+  die feste Obergrenze.
+
+Aktuelle Einschränkungen:
+
+- Das Panel hat kein Bedienelement, das Bewegungen einschaltet (MOVE SERVO
+  auf dem Reiter WEG): nichts ruft `hitec_session_move()` auf.
+- Jede Schwelle der Beurteilung ist gewählt, nicht mit einem Servohebel an
+  einem Anschlag gemessen. Der Blockierstrom eines D485HW ist nicht bekannt.
+- Ob das Servo der Ziellinie unter 400 und über 5600 folgt oder an seinen
+  Endpunkten stehen bleibt, ist nicht gemessen; die Reichweite nimmt an,
+  dass die Linie weitergeht.
+- Ob ein Servo der D series ohne Frames sein letztes Ziel hält, ist nicht
+  gemessen. Ein Schalten auf SAFE am Prüfstand allein stoppt den Port und
+  lässt die Versorgung an ([LinkHitec, STOP](LinkHitec-de.md#stop-schalten-auf-safe-heartbeat-verlust-und-link-verlust)).
+- Ob ein Neustart einen nicht gespeicherten RAM-Wert verwirft, ist nicht
+  gemessen.
+- Die Abbildung eines auf CCW gestellten Servos ist nicht gemessen.
 
 ## Heartbeat statt Enable-Pegel
 

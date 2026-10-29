@@ -312,8 +312,8 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
 
     function go(i, path) {
       st.panes[i] = pane(path, null);
-      st.active = i;
       msg('');
+      activate(i);
       drawPane(i);
       return load(i, 'first');
     }
@@ -323,7 +323,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       if (!L || L.entries.length === 0) {
         return;
       }
-      st.active = i;
+      activate(i);
       load(i, dir, dir === 'prev' ? L.entries[0]
         : L.entries[L.entries.length - 1]);
     }
@@ -374,6 +374,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
     function row(i, e) {
       var p = st.panes[i];
       var tr = el('tr', (p.sel === e) ? 'sel' : '');
+      tr.rcbEntry = e;
       tr.tabIndex = 0;
       var name = el('td', 'nm');
       name.appendChild(el('div', e.d ? 'n dir' : 'n', e.n));
@@ -394,6 +395,9 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       });
       tr.addEventListener('keydown', function (ev) {
         if (ev.key === 'Enter') {
+          // The viewer takes the focus to its CLOSE: the key's default
+          // would press it.
+          ev.preventDefault();
           select(i, e);
           open();
         } else if (ev.key === ' ') {
@@ -422,10 +426,18 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       u.prev.disabled = !(L && L.prev);
       u.next.disabled = !(L && L.next);
       u.head.textContent = heading(p);
+      // A row with the focus gets it back in its new drawing, so Enter
+      // after Space or a click still reaches it.
+      var f = document.activeElement;
+      var had = (f && f.parentNode === u.body) ? f.rcbEntry : null;
       u.body.textContent = '';
       if (L && L.entries.length > 0) {
         L.entries.forEach(function (e) {
-          u.body.appendChild(row(i, e));
+          var tr = row(i, e);
+          u.body.appendChild(tr);
+          if (had && e.n === had.n && e.d === had.d) {
+            tr.focus();
+          }
         });
       } else if (p.read) {
         var tr = el('tr', 'none');
@@ -440,16 +452,26 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       footer();
     }
 
-    function select(i, e) {
-      var was = st.active;
-      st.active = i;
-      st.panes[i].sel = e;
-      msg('');
-      drawPane(i);
-      if (was !== i) {
-        drawPane(was);
+    // The active pane now @p i: both borders and the footer, whose
+    // DOWNLOAD names the active pane's selection, follow at once.
+    function activate(i) {
+      if (st.active !== i) {
+        st.active = i;
+        drawPane(0);
+        drawPane(1);
       }
       footer();
+    }
+
+    function select(i, e) {
+      st.panes[i].sel = e;
+      msg('');
+      if (st.active !== i) {
+        activate(i);
+      } else {
+        drawPane(i);
+        footer();
+      }
       save();
     }
 
@@ -715,10 +737,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       t.appendChild(u.body);
       u.box.appendChild(t);
       u.box.addEventListener('click', function () {
-        if (st.active !== i) {
-          st.active = i;
-          draw();
-        }
+        activate(i);
       });
       return u;
     }
@@ -739,7 +758,8 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       ui.info = button(TX.info, 'btn', act('info', info));
       ui.dl = el('a', 'btn', TX.dl);
       ui.dl.setAttribute('download', '');
-      ui.dl.addEventListener('click', act('dl', function () {}));
+      // The link is set from the selection as it stands at the click.
+      ui.dl.addEventListener('click', act('dl', footer));
       ui.open = button(TX.open, 'btn', open);
       [ui.info, ui.dl, ui.open].forEach(function (b) {
         foot.appendChild(b);
