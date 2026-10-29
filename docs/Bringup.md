@@ -128,7 +128,13 @@ bits and long runs of one level are what a marginal bus fails on.
 After bring-up the panel polls the IOmcu's identity page every second
 until it answers, then polls the bench page at 20Hz and the status page every
 500ms. Every 5s while the link is down, and once a minute while it is up, the
-panel prints a diagnosis:
+panel prints a diagnosis. The control task, which beats the heartbeat,
+takes the counters and hands them to the logger task, which formats and
+prints the lines: up to 7 lines take 50ms and more on the console, and the
+heartbeat's limit is 150ms. A queue of 2 reports holds them; with the
+logger held by the card and the queue full, the control task prints the
+report itself, and no line is dropped. The heartbeat gap with the report
+off the control task is not measured.
 
     I (…) rcbench: LINK answers arrive too late
     W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
