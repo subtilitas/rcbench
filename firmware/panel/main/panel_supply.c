@@ -15,7 +15,7 @@
 #include "freertos/queue.h"
 
 #include "arming.h"
-#include "error_stop.h"
+#include "error_sites.h"
 #include "esc_profile.h"
 #include "esc_sim.h"
 #include "link_host.h"
@@ -169,28 +169,25 @@ void supply_switch(bool on)
 }
 
 /**
- * @brief Whether the bench is live for an error: ARMED, or a switch to ARMED
- *        waiting.
- * @return true while an error asks DISARM (error_stop()).
+ * @brief The bench as an error finds it (error_sites.h): ARMED or a switch
+ *        to ARMED waiting, the output and who holds it, and the IOmcu.
+ * @return The bench now.
  */
-static bool bench_live(void)
+static error_bench_t error_bench(void)
 {
-    return arming_link_needed(&s_arm, outputs_armed(&s_out));
+    const error_bench_t b = {
+        .live        = arming_link_needed(&s_arm, outputs_armed(&s_out)),
+        .supply_on   = s_supply_on,
+        .port_holds  = s_prog_taken,
+        .supply_real = s_supply_is_real,
+        .supply_page = s_supply_page,
+        .far_minor   = s_far_minor,
+    };
+    return b;
 }
 
 /**
- * @brief Whether the IOmcu holds the panel's OFF for a programming port's
- *        write (link 4.31, LINK_MINOR_PORT_CUT): an error then switches the
- *        supply off whoever holds it (error_stop.h).
- * @return true for an IOmcu that serves the SUPPLY page at 4.31 or later.
- */
-static bool port_defers(void)
-{
-    return s_supply_page && s_far_minor >= LINK_MINOR_PORT_CUT;
-}
-
-/**
- * @brief What error_stop() asks, done from here.
+ * @brief What an error asks (error_sites.h), done from here, in order.
  *
  * The disarm is a request, the way a screen's DISARM is one, because this
  * runs inside an exchange's wait as well.  The request withholds the
@@ -201,46 +198,81 @@ static bool port_defers(void)
  * (supply_link_cut()): a port in a power cycle has it off and is about to
  * switch it on, and the page refuses that ON after the panel's OFF.
  *
- * @param e The act: DISARM asked, the supply's output switched off.
+ * @param a The act.
  */
-static void error_act(error_stop_t e)
+static void error_act(error_act_t a)
 {
-    if (e.disarm) {
+    if (a.off_first) {
+        supply_switch(false);
+    }
+    if (a.disarm) {
         atomic_store(&s_disarm_request, true);
     }
-    if (e.supply_off) {
+    if (a.supply_off) {
         supply_switch(false);
-        if (s_supply_is_real && port_defers()) {
-            supply_link_cut(&s_supply_link);
-        }
+    }
+    if (a.cut) {
+        supply_link_cut(&s_supply_link);
     }
 }
 
-void bench_error_stop(void)
+/*
+ * The sites below are kept out of line: the bench's copy and the act stay
+ * off the frame of supply_pump(), which the control task's deepest chain
+ * runs through (docs/Performance.md, "Stacks").
+ */
+__attribute__((noinline)) void bench_error_stop(void)
 {
-    error_act(error_stop(bench_live(), s_supply_on, s_prog_taken,
-                         port_defers()));
+    const error_bench_t b = error_bench();
+    error_act(error_sites_stop(&b));
+}
+
+/** @brief An error on the supply's own output: the output off first, then
+ *         the rule (error_sites_cut()); control task only. */
+static __attribute__((noinline)) void supply_error_cut(void)
+{
+    const error_bench_t b = error_bench();
+    error_act(error_sites_cut(&b));
+}
+
+/**
+ * @brief The supply's reading with its output on: silent, or the PD mini
+ *        answering ONLINE with a reading count that has stood for
+ *        SUPPLY_LINK_BLIND_MS, readings marked not valid that no trip acts
+ *        on.  Either is an error (error_sites_reading()).
+ * @return The fault found, for the band's alert.
+ */
+static __attribute__((noinline)) error_reading_t supply_reading_fault(void)
+{
+    const error_bench_t b = error_bench();
+    error_act_t act;
+    const error_reading_t fault =
+        error_sites_reading(&b, s_supply.online,
+                            supply_link_blind(&s_supply_link, now_ms()),
+                            &act);
+    error_act(act);
+    return fault;
 }
 
 /** @brief The card faults the logger counted (s_card_faults), each taken
  *         as an error once; control task only. */
 static error_watch_t s_card_watch;
 
-void card_faults_follow(void)
+__attribute__((noinline)) void card_faults_follow(void)
 {
-    error_act(error_stop_take(&s_card_watch, atomic_load(&s_card_faults),
-                              bench_live(), s_supply_on, s_prog_taken,
-                              port_defers()));
+    const error_bench_t b = error_bench();
+    error_act(error_sites_follow(&s_card_watch, atomic_load(&s_card_faults),
+                                 &b));
 }
 
 /** @brief The programmers' session faults (prog_faults()), each taken as an
  *         error once; control task only. */
 static error_watch_t s_prog_watch;
 
-void prog_faults_follow(void)
+__attribute__((noinline)) void prog_faults_follow(void)
 {
-    error_act(error_stop_take(&s_prog_watch, prog_faults(), bench_live(),
-                              s_supply_on, s_prog_taken, port_defers()));
+    const error_bench_t b = error_bench();
+    error_act(error_sites_follow(&s_prog_watch, prog_faults(), &b));
 }
 
 /* The operator's limits as the render side last stored them. */
@@ -465,17 +497,13 @@ static void supply_step(float step_s)
      * here so that it does not come back on by itself when the supply
      * answers again.  The model always answers.
      */
-    if (!s_supply.online && s_supply_on) {
-        supply_switch(false);
-        bench_error_stop();
+    /* A PD mini that answers and reads ONLINE, but whose reading count
+     * has stood for SUPPLY_LINK_BLIND_MS, gives readings marked not valid,
+     * which no trip acts on: off, as for a supply gone. */
+    const error_reading_t fault = supply_reading_fault();
+    if (fault == ERROR_READING_SILENT) {
         control_alert(TR(ALERT_SUPPLY_SILENT));
-    } else if (s_supply_is_real && s_supply_on
-               && supply_link_blind(&s_supply_link, now_ms())) {
-        /* The page answers and the module reads ONLINE, but its reading
-         * count has stood for SUPPLY_LINK_BLIND_MS: readings marked not
-         * valid, which no trip acts on.  Off, as for a supply gone. */
-        supply_switch(false);
-        bench_error_stop();
+    } else if (fault == ERROR_READING_BLIND) {
         control_alert(TR(ALERT_SUPPLY_NO_READING));
     }
     if (s_supply.output) {
@@ -495,8 +523,7 @@ static void supply_step(float step_s)
         /* The reading that tripped, as it was taken -- on -- so the plot
          * keeps it; the sample after the switch-off ends the run. */
         supply_queue_sample();
-        supply_switch(false);
-        bench_error_stop();
+        supply_error_cut();
         s_supply.trip = (uint8_t)trip;
         /* In integers: this can run inside an exchange's wait, deep on the
          * control task's stack, and a float conversion is the deepest thing
@@ -533,8 +560,7 @@ static void supply_watch_service(void)
     }
     if (arm_watch_lost(&s_supply_watch, atomic_load(&s_loss_gen),
                        atomic_load(&s_drv_gaps), atomic_load(&s_supply_ack))) {
-        supply_switch(false);
-        bench_error_stop();
+        supply_error_cut();
         control_alert(TR(ALERT_TOUCH_SWITCH_ON));
     }
 }
