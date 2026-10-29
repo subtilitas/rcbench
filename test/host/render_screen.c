@@ -4110,7 +4110,7 @@ int main(int argc, char **argv)
         band_view(view, &st);
     }
     if (render_help_view(view)) {
-        render_help_pose(view, &st);
+        render_help_pose(view);
     }
     pose_shown_views(view);
 

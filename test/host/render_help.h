@@ -11,8 +11,6 @@
 
 #include <stdbool.h>
 
-#include "ui_screen.h"
-
 /**
  * @brief Whether @p view is one of the guide's.
  * @param view  the view's name
@@ -22,11 +20,10 @@ bool render_help_view(const char *view);
 
 /**
  * @brief Pose @p view after the router opened its screen: help-<screen>
- *        and help-<screen>-<n> open the guide at page 1 or n with @p st on
- *        the band; help-band-worst puts the widest row of chips on it.
+ *        and help-<screen>-<n> open the guide at page 1 or n;
+ *        help-band-worst puts the widest row of chips on the band.
  * @param view  the view's name
- * @param st    the band's status, changed for help-band-worst
  */
-void render_help_pose(const char *view, ui_bench_status_t *st);
+void render_help_pose(const char *view);
 
 #endif

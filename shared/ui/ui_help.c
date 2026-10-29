@@ -93,7 +93,7 @@ int ui_help_count(const ui_screen_t *scr, bool armed)
     }
     int n = 0;
     for (int i = 0; i < all; ++i) {
-        ui_help_page_t p;
+        ui_help_page_t p = { 0 };
         if (scr->help_page(i, &p) && p.armed_ok) {
             ++n;
         }
@@ -145,14 +145,28 @@ static uint32_t fnv(uint32_t h, const void *p, size_t n)
     return h;
 }
 
+/**
+ * @brief One step of the hash over the four bytes of @p v, low first.
+ * @param h The hash so far.
+ * @param v The value.
+ * @return The hash with the value.
+ */
+static uint32_t fnv_int(uint32_t h, int v)
+{
+    const uint32_t u = (uint32_t)v;
+    const uint8_t b[4] = { (uint8_t)u, (uint8_t)(u >> 8), (uint8_t)(u >> 16),
+                           (uint8_t)(u >> 24) };
+    return fnv(h, b, sizeof(b));
+}
+
 uint32_t ui_help_set_key(const ui_screen_t *scr, bool armed)
 {
     const int count = ui_help_count(scr, armed);
-    uint32_t h = fnv(2166136261u, &count, sizeof(count));
+    uint32_t h = fnv_int(2166136261u, count);
     for (int i = 0; i < count; ++i) {
-        ui_help_page_t p;
+        ui_help_page_t p = { 0 };
         if (ui_help_page(scr, armed, i, &p)) {
-            h = fnv(h, &p.title, sizeof(p.title));
+            h = fnv_int(h, (int)p.title);
         }
     }
     return h;
@@ -381,16 +395,18 @@ uint32_t ui_help_dock_key(const ui_help_page_t *p, int n, int count,
     const int head[7] = { n, count, (int)note, (int)btn, (int)ui_theme_get(),
                           (int)ui_text_language(),
                           (p != NULL) ? (int)p->side : -1 };
-    h = fnv(h, head, sizeof(head));
+    for (int k = 0; k < 7; ++k) {
+        h = fnv_int(h, head[k]);
+    }
     if (p == NULL) {
         return h;
     }
-    h = fnv(h, &p->title, sizeof(p->title));
+    h = fnv_int(h, (int)p->title);
     for (int i = 0; i < p->count && i < UI_HELP_ITEMS; ++i) {
         const char *label = (p->item[i].label != NULL) ? p->item[i].label
                                                        : "";
         h = fnv(h, label, strlen(label) + 1u);
-        h = fnv(h, &p->item[i].text, sizeof(p->item[i].text));
+        h = fnv_int(h, (int)p->item[i].text);
     }
     return h;
 }
@@ -401,12 +417,10 @@ uint32_t ui_help_marks_key(const ui_help_page_t *p)
     if (p == NULL) {
         return h;
     }
-    const int head[2] = { (int)p->side, (int)p->count };
-    h = fnv(h, head, sizeof(head));
+    h = fnv_int(fnv_int(h, (int)p->side), (int)p->count);
     for (int i = 0; i < p->count && i < UI_HELP_ITEMS; ++i) {
-        const int16_t r[4] = { p->item[i].rect.x, p->item[i].rect.y,
-                               p->item[i].rect.w, p->item[i].rect.h };
-        h = fnv(h, r, sizeof(r));
+        const gfx_rect_t r = p->item[i].rect;
+        h = fnv_int(fnv_int(fnv_int(fnv_int(h, r.x), r.y), r.w), r.h);
     }
     return h;
 }

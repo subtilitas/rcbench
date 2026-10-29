@@ -339,8 +339,7 @@ TEST_CASE(every_page_of_every_screen_fits)
  * the screen repaints its chrome and the dock is not drawn again. */
 TEST_CASE(the_screen_draws_nothing_under_the_dock)
 {
-    gfx_color_t *alone = calloc((size_t)W * H, sizeof(gfx_color_t));
-    REQUIRE_ALLOC(alone);
+    static gfx_color_t alone[(size_t)W * H];
     for (int page = 0; page < 3; ++page) {
         fresh();
         to_overview();
@@ -379,7 +378,6 @@ TEST_CASE(the_screen_draws_nothing_under_the_dock)
                    diff);
         }
     }
-    free(alone);
 }
 
 int main(void)

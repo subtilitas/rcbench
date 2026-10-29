@@ -17,6 +17,7 @@
 
 #include "ui_band.h"
 #include "ui_help.h"
+#include "ui_screen.h"
 
 /**
  * @brief A tap of contact 1 at the middle of @p r, in panel coordinates.
@@ -39,17 +40,18 @@ bool render_help_view(const char *view)
     return strncmp(view, "help-", 5) == 0;
 }
 
-void render_help_pose(const char *view, ui_bench_status_t *st)
+void render_help_pose(const char *view)
 {
     if (strcmp(view, "help-band-worst") == 0) {
-        st->simulated   = false;
-        st->link_up     = true;
-        st->mode        = ui_band_mode(true);
-        st->armed       = true;
-        st->armed_roles = UI_ARMED_MOTOR;
-        st->faults      = 0x7Fu;
-        st->run_seconds = 10u * 3600u;
-        ui_router_set_status(st);
+        ui_bench_status_t st = *ui_router_status();
+        st.simulated   = false;
+        st.link_up     = true;
+        st.mode        = ui_band_mode(true);
+        st.armed       = true;
+        st.armed_roles = UI_ARMED_MOTOR;
+        st.faults      = 0x7Fu;
+        st.run_seconds = 10u * 3600u;
+        ui_router_set_status(&st);
         return;
     }
     /* help-<screen>-<n>: the page after the last dash, 1 without one. */
@@ -58,7 +60,7 @@ void render_help_pose(const char *view, ui_bench_status_t *st)
                          ? atoi(dash + 1) : 1;
     tap_mid(ui_band_guide_rect());
     for (int k = 1; k < page; ++k) {
-        ui_help_page_t p;
+        ui_help_page_t p = { 0 };
         if (!ui_router_guide_now(&p)) {
             return;
         }

@@ -350,7 +350,8 @@ static void cancel(void)
  * names no pin, so every page shows while ARMED as well.
  */
 /** @brief The slots of page 1, the left two columns, and of page 2. */
-static const int8_t k_page_slots[2][4] = { { 0, 1, 4, 5 }, { 2, 3, 6, 7 } };
+static const uint8_t k_page_slots[2][4] = { { 0, 1, 4, 5 },
+                                            { 2, 3, 6, 7 } };
 
 /**
  * @brief The menu's guide pages.
@@ -412,7 +413,7 @@ static bool help_page(int i, ui_help_page_t *out)
     out->item[out->count++] = (ui_help_item_t){
         "?", TX_HG_OV_GUIDE, band_item(ui_band_guide_rect()) };
     /* The first mark of the right half, top down by column. */
-    static const int8_t k_mark_slots[4] = { 2, 6, 3, 7 };
+    static const uint8_t k_mark_slots[4] = { 2, 6, 3, 7 };
     for (int k = 0; k < 4; ++k) {
         gfx_rect_t mark;
         if (mark_rect(k_mark_slots[k], &mark)) {

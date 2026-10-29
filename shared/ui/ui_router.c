@@ -683,7 +683,7 @@ void ui_router_event(const touch_event_t *evt)
             s.guide_press = false;
             if (evt->type != TOUCH_EVENT_DOWN) {
                 if (evt->type == TOUCH_EVENT_UP) {
-                    ui_help_page_t p;
+                    ui_help_page_t p = { 0 };
                     if (touch_event_is_tap_up(evt) && guide_page_now(&p)
                         && ui_help_hit(&p, evt->point.x, evt->point.y)
                                == s.guide_btn) {
@@ -703,7 +703,7 @@ void ui_router_event(const touch_event_t *evt)
             if (was >= 0) {
                 s.owned[was].live = false;
             }
-            ui_help_page_t p;
+            ui_help_page_t p = { 0 };
             const ui_help_hit_t hit =
                 (!safe && !in_home && guide_page_now(&p))
                     ? ui_help_hit(&p, evt->point.x, evt->point.y)
@@ -1130,7 +1130,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
      */
     const gfx_rect_t body = { 0, UI_BAND_H, PANEL_W, UI_BODY_H };
     gfx_canvas_t sub;
-    ui_help_page_t page;
+    ui_help_page_t page = { 0 };
     const bool guide = guide_page_now(&page);
     /* Marks that moved -- the arm chip on page 3 when the bench is ARMED,
      * a tile's mark that went -- repaint the screen first, as a bubble
