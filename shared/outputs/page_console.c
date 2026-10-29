@@ -528,7 +528,7 @@ static void say_flags(char *buf, size_t size, uint16_t st)
     static const struct { uint16_t bit; const char *name; } k[] = {
         { LINK_HT_F_STOPPED, "STOPPED" }, { LINK_HT_F_RAIL, "RAIL" },
         { LINK_HT_F_CAPTURE, "CAPTURE" }, { LINK_HT_F_KEY, "KEY" },
-        { LINK_HT_F_PRECHARGE, "PRECHARGE" },
+        { LINK_HT_F_PRECHARGE, "PRECHARGE" }, { LINK_HT_F_MORE, "MORE" },
     };
     size_t at = 0;
 
@@ -637,10 +637,17 @@ static void hitec_report(page_console_t *c, const char *what)
  * @param op   The operation.
  * @param port Programming port index.
  * @param key  true to put LINK_HITEC_WRITE_KEY in the command.
+ *
+ * A step the line marked `more` (c->more) carries LINK_HT_W_CMD_MORE; the
+ * mark is spent here, whatever becomes of the command.
  */
 static void hitec_command(page_console_t *c, link_hitec_op_t op,
                           uint32_t port, bool key)
 {
+    const uint16_t more = c->more != 0u ? (uint16_t)LINK_HT_W_CMD_MORE : 0u;
+
+    c->more = 0u;
+
     uint16_t seq;
     uint16_t in[LINK_HT_W_CMD_FRAME];
     uint16_t r[LINK_HT_RESULT + 1u];
@@ -657,7 +664,7 @@ static void hitec_command(page_console_t *c, link_hitec_op_t op,
         say(c, "err the HITEC page does not answer");
         return;
     }
-    in[LINK_HT_W_CMD] = LINK_HT_W_CMD_OF(op, port);
+    in[LINK_HT_W_CMD] = (uint16_t)(LINK_HT_W_CMD_OF(op, port) | more);
     in[LINK_HT_W_SEQ] = (uint16_t)(seq + 1u);
     in[LINK_HT_W_KEY] = key ? (uint16_t)LINK_HITEC_WRITE_KEY : 0u;
     in[LINK_HT_W_CRC] = staged ? link_kst_crc(c->staged, LINK_HT_W_STAGED)
@@ -1137,6 +1144,15 @@ static void cmd_hitec(page_console_t *c, char **tok, unsigned n)
     }
     tok += 3;
     n -= 3u;
+    /* A step of a write that more steps follow: the last token. */
+    c->more = 0u;
+    if (n > 0u && strcmp(tok[n - 1u], "more") == 0
+        && (strcmp(sub, "send") == 0 || strcmp(sub, "listen") == 0
+            || strcmp(sub, "power") == 0 || strcmp(sub, "level") == 0
+            || strcmp(sub, "c") == 0 || strcmp(sub, "d") == 0)) {
+        c->more = 1u;
+        n--;
+    }
     if (strcmp(sub, "open") == 0) {
         hitec_open(c, port, tok, n);
     } else if (strcmp(sub, "close") == 0 && n == 0u) {
@@ -1180,6 +1196,8 @@ static void cmd_help(page_console_t *c)
     say(c, "hitec c <port> <cmd> <p1> <p2> | hitec d <port> read <id> "
         "<addr> | hitec d <port> write <id> <addr> <value>");
     say(c, "dec=none|c:<cmd>|d:<addr>|l:<byte>; numbers decimal or 0x hex");
+    say(c, "more, last on send, listen, level, power, c or d: more steps "
+        "of this write follow");
 }
 
 /**

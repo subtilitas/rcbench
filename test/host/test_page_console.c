@@ -580,6 +580,59 @@ TEST_CASE(hitec_open_and_a_classic_command_report_the_reply)
     CHECK_STR_EQ(passes(5u), "");
 }
 
+/* `more` on a step: LINK_HT_W_CMD_MORE in its command, the page's latch
+ * and a write running until a step without it and its frame's tail;
+ * refused on the rest. */
+TEST_CASE(a_step_marked_more_carries_the_bit)
+{
+    static const char *const k_more[] = {
+        "hitec c 0 0x62 0x10 0x55 more",
+        "hitec send 0 lead=100 1 2 more",
+        "hitec listen 0 window=1000 rx=1 more",
+        "hitec level 0 0 1500 more",
+    };
+
+    fresh();
+    (void)type("hitec open 0 c");
+    (void)passes(60u);
+    for (unsigned i = 0; i < sizeof(k_more) / sizeof(k_more[0]); ++i) {
+        CHECK(has(type(k_more[i]), "started"));
+        CHECK_EQ(g_port.last_cmd[LINK_HT_W_CMD] & LINK_HT_W_CMD_MORE,
+                 LINK_HT_W_CMD_MORE);
+        CHECK(has(passes(3u), "flags=RAIL,CAPTURE,"));
+        CHECK(g_port.more != 0u);
+        CHECK(hitec_port_writing(&g_port));
+    }
+    /* The last step: none, and nothing runs once its frame's tail has
+     * gone. */
+    CHECK(has(type("hitec c 0 0x62 0x1C 0xAA"), "started"));
+    CHECK_EQ(g_port.last_cmd[LINK_HT_W_CMD] & LINK_HT_W_CMD_MORE, 0u);
+    CHECK_EQ(g_port.more, 0u);
+    (void)passes(3u);
+    CHECK(hitec_port_writing(&g_port));
+    (void)passes(HITEC_PORT_WRITE_TAIL_MS);
+    CHECK(!hitec_port_writing(&g_port));
+    /* The mark is the line's: the next line goes without it. */
+    CHECK(has(type("hitec c 0 0x61 0x12 0"), "started"));
+    CHECK_EQ(g_port.last_cmd[LINK_HT_W_CMD] & LINK_HT_W_CMD_MORE, 0u);
+    (void)passes(3u);
+    /* A D series write and a power. */
+    CHECK(has(type("hitec close 0"), "state=FREE"));
+    (void)type("hitec open 0 d");
+    (void)passes(60u);
+    CHECK(has(type("hitec d 0 write 0 0x30 0x0123 more"), "started"));
+    CHECK(g_port.more != 0u);
+    (void)passes(3u);
+    CHECK(has(type("hitec power 0 mv=5000 ma=800 off=100 window=1000 rx=1 "
+                   "more"), "started"));
+    CHECK(g_port.more != 0u);
+    CHECK(has(passes(200u), "flags=RAIL,CAPTURE,MORE"));
+    /* Not a step: the word is no argument there. */
+    CHECK(has(type("hitec open 0 c more"), "err usage: hitec open"));
+    CHECK(has(type("hitec d 0 read 0 0x32 more x"), "err usage: hitec d"));
+    CHECK(has(type("help"), "more, last on send"));
+}
+
 TEST_CASE(hitec_commands_stage_name_the_crc_and_carry_the_key)
 {
     fresh();
@@ -838,6 +891,7 @@ int main(void)
     RUN(hitec_open_writes_the_receive_mode_of_a_d_series_line);
     RUN(a_close_of_a_watched_transaction_reports_once);
     RUN(the_raw_example_of_the_docs_runs);
+    RUN(a_step_marked_more_carries_the_bit);
     RUN(the_console_does_not_hold_the_failsafe_off);
     return test_summary("page_console");
 }

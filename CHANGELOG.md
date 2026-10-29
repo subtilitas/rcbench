@@ -35,10 +35,34 @@ history is in git.
   not take an output or a set point, or an ON is undone for lost touch
   events; an INA3221 channel passes its limit
   (until now an alert only); a card write fails during a run. The supply's
-  output goes off with each, unless a programming port holds it. The
+  output goes off with each; with an IOmcu older than link 4.31, not when a
+  programming port holds it. The
   automatic servo test and the limit run switch the bench to SAFE when an
   error ends them: the supply or the meter failing, STALL AT, constant
   current, the 3.0A ceiling, 1.0A for 400ms.
+- Link protocol 4.31: a programming port's supply goes off on an error,
+  after a write to the servo's memory that runs
+  ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply)).
+  The panel writes the OFF on every error. The IOmcu's SUPPLY page holds an
+  OFF of a supply a port holds back from the PD mini while the port writes,
+  10000ms after the OFF at most: a KST WRITE, RESTORE or RELEASE from its
+  first write frame to the read-backs of its last and 150ms after, a
+  Hitec SEND whose
+  frame writes and 150ms after it, and the gap after a Hitec step whose
+  command carries the new HITEC bit 4 (`MORE`, more steps of this write
+  follow). The IOmcu tells a writing Hitec frame from its bytes; an OFF
+  during a read or a LISTEN is not held. The panel's Hitec programmer
+  sets the bit on every step of a write but the last; the bench console
+  sets it with `more`. After the panel's OFF the port's own ON is refused
+  until the port lets go: a KST power cycle ends with result 32, a Hitec
+  POWER's ON is refused. A lost heartbeat or a silent link still cuts at
+  once. Every OFF the panel writes is held for a write this way, the
+  operator's and the supply trips' included. A KST or Hitec operation that
+  ends in a fault of the servo or the wire (no servo, a failed read, a
+  write that failed, a read-back or verify that differs) is an error. A
+  panel of this version beside an IOmcu of 4.30 keeps a supply a port
+  holds through an error and sends no bit 4; an IOmcu of this version
+  beside an older panel holds that panel's OFF for a write the same way.
 - The IOmcu switches a PD mini left on off before the rest of its
   start-up: right after the wiring is restored and before the sensor bus,
   the store's erases, core 1 and the CAN controller. WHO_AM_I goes again as

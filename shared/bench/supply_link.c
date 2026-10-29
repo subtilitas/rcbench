@@ -50,6 +50,7 @@ void supply_link_lost(supply_link_t *s)
     s->port_held  = false;
     s->judge      = false;
     s->adopted    = false;
+    s->off_owed   = false;
     /* The caller sees the supply stop answering and switches its own ON
      * off with the operator told; this end only stops asking for it. */
     s->on = false;
@@ -113,6 +114,14 @@ void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma)
             : (ma < PAGE_MIN_MA) ? (uint16_t)PAGE_MIN_MA : ma;
 }
 
+void supply_link_cut(supply_link_t *s)
+{
+    if (s != NULL) {
+        s->on       = false;
+        s->off_owed = true;
+    }
+}
+
 void supply_link_reset(supply_link_t *s)
 {
     if (s != NULL) {
@@ -130,7 +139,7 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
 
     /* An OFF first, alone, whatever else is owed -- and while what the
      * page holds is not known, whatever is asked. */
-    if (!s->commanded || (!s->on && s->page_on)) {
+    if (!s->commanded || (!s->on && s->page_on) || s->off_owed) {
         s->out[LINK_SP_OUTPUT] = 0u;
         *off = (uint8_t)LINK_SP_OUTPUT;
         *n   = 1u;
@@ -220,6 +229,8 @@ void supply_link_written(supply_link_t *s, int result)
     }
     switch (w) {
     case SUPPLY_LINK_W_OFF:
+        /* Answered: an OFF the page refused is not asked again. */
+        s->off_owed = false;
         if (result == SUPPLY_LINK_ACK) {
             if (!s->commanded) {
                 /* What set points the page holds is not known yet. */
@@ -280,7 +291,8 @@ bool supply_link_settled(const supply_link_t *s)
         return false;
     }
     const supply_wiring_t w = as_written(&s->want);
-    return s->commanded && s->page_on == s->on && s->page_mv == s->mv
+    return s->commanded && !s->off_owed && s->page_on == s->on
+           && s->page_mv == s->mv
            && s->page_ma == s->ma
            && (s->refused || (s->wired && same_wiring(&s->page, &w)));
 }

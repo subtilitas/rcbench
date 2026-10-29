@@ -347,6 +347,7 @@ typedef struct {
  */
 typedef struct {
     _Atomic uint32_t pass;    /**< the id of the command offered; 0 none */
+    _Atomic uint32_t faults;  /**< session faults counted, modulo 2^32   */
 } hitec_prog_gate_t;
 
 /**
@@ -379,6 +380,29 @@ bool hitec_prog_gate_claim(hitec_prog_gate_t *g, uint32_t id);
  * @return true when the command is not carried out and never is.
  */
 bool hitec_prog_gate_revoke(hitec_prog_gate_t *g, uint32_t id);
+/**
+ * @brief The session's operations that ended in a fault
+ *        (hitec_prog_ses_fault()), counted by the model, modulo 2^32.
+ *
+ * @param g The gate.
+ * @return The count; 0 for NULL.
+ */
+uint32_t hitec_prog_gate_faults(const hitec_prog_gate_t *g);
+
+/**
+ * @brief Whether a session result is a fault of the servo or the wire, which
+ *        the panel takes as an error (error_stop.h).
+ *
+ * A fault: HITEC_SES_ERR_NO_SERVO, _ENTRY, _READ, _WRITE, _VERIFY and
+ * _STEP.  Not one: success, a refusal of the session (_BUSY, _ARG,
+ * _NOT_IN_MODE, _PLAN), a step that a stop, a close or the panel cut or
+ * that did not run (_CUT, _LINK: a stop and a lost link cut the session
+ * themselves), and an ABORT (_ABORTED).
+ *
+ * @param r A hitec_ses_t.
+ * @return true for a fault.
+ */
+bool hitec_prog_ses_fault(unsigned r);
 
 /** @brief What the task that owns the link module publishes, every frame. */
 typedef struct {

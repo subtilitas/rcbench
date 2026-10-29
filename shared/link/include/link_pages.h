@@ -140,6 +140,13 @@ typedef enum {
  * PROGRAMMING: the cycle ends in LEAVING for LINK_KS_W_LEAVE_MS before PWM.
  * An older IOmcu refuses the bit with LINK_NACK_BAD_VALUE; the panel sets it
  * from 4.30 only and sends an older IOmcu the REBOOT without the wait.
+ * From 4.31 SUPPLY holds an OFF the panel writes while a programming port
+ * holds it back from the module while the port writes to the servo's
+ * memory, SUPPLY_PAGE_WRITE_WAIT_MS (10000ms) at most, and refuses the
+ * port's own ON after it until the port lets go of SUPPLY; HITEC takes
+ * LINK_HT_W_CMD_MORE.  An older IOmcu switches the module off at once and
+ * refuses the bit with LINK_NACK_BAD_VALUE; the panel switches a held
+ * supply off on an error from 4.31 only, and sets the bit from 4.31 only.
  * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -152,8 +159,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 30, the KST wait after a cycle. */
-#define LINK_PROTOCOL_MINOR 30u
+/** @brief The minor this build speaks: 31, a held supply's OFF deferred
+ *         while a programming port writes. */
+#define LINK_PROTOCOL_MINOR 31u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -314,6 +322,19 @@ typedef enum {
  * REBOOT returns the port to PWM at the end of the cycle.
  */
 #define LINK_MINOR_KST_CYCLE_WAIT 30u
+
+/**
+ * @brief The first minor whose SUPPLY page holds the panel's OFF of a supply
+ * a programming port holds back from the module while the port writes to the
+ * servo's memory, SUPPLY_PAGE_WRITE_WAIT_MS at most, and refuses the port's
+ * ON after that OFF until the port lets go; and whose HITEC page takes
+ * LINK_HT_W_CMD_MORE.
+ *
+ * An older minor switches the module off at the panel's OFF, whatever the
+ * port does, takes the port's ON after it, and refuses a HITEC command with
+ * the bit with LINK_NACK_BAD_VALUE.
+ */
+#define LINK_MINOR_PORT_CUT 31u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -510,6 +531,13 @@ enum {
  *     on, the set points in mV and mA, clamped to the module's 1 to 20V
  *     and 0.05 to 3A.  An ON is refused with NOT_ARMED without a live
  *     heartbeat, and the output goes off when the heartbeat stops.
+ *
+ *     Protocol 4.31: an OFF written while a programming port holds the
+ *     page (bit 11) and writes to the servo's memory reads 0 at once and
+ *     reaches the module when the write ends, 10000ms after the OFF at the
+ *     latest; the heartbeat lost or the link silent switches it off at
+ *     once.  From such an OFF until the port lets go of the page, the
+ *     port's own ON is refused.
  *
  *     FLAGS onwards are read only, what the module last said: bit 0
  *     online, bit 1 output on, bits 3..2 the mode (0 normal, 1 constant
@@ -2249,7 +2277,10 @@ typedef enum {
  *
  * From 4.29 (LINK_MINOR_HITEC_HOLD) a held port holds SUPPLY as well, from
  * its OPEN to its CLOSE: SUPPLY sets LINK_SP_PORT and takes an OFF of the
- * panel's and no other change of OUTPUT, SET_MV or SET_MA.
+ * panel's and no other change of OUTPUT, SET_MV or SET_MA.  From 4.31
+ * (LINK_MINOR_PORT_CUT) the writer marks the steps of a write that more
+ * steps follow (LINK_HT_W_CMD_MORE), and SUPPLY holds the panel's OFF back
+ * from the module until the write ends.
  */
 enum {
     LINK_HT_STATE  = 0,  /**< bits 0-2 link_hitec_state_t, bits 3-11 the
@@ -2315,7 +2346,8 @@ enum {
 
 /** @brief What a write of the page takes. */
 enum {
-    LINK_HT_W_CMD  = 0,  /**< bits 0-3 link_hitec_op_t, bits 8-11 the
+    LINK_HT_W_CMD  = 0,  /**< bits 0-3 link_hitec_op_t, bit 4
+                              LINK_HT_W_CMD_MORE (4.31), bits 8-11 the
                               programming port; every other bit 0 */
     LINK_HT_W_SEQ  = 1,  /**< LINK_HT_SEQ + 1 modulo 65536 */
     LINK_HT_W_KEY  = 2,  /**< LINK_HITEC_WRITE_KEY for an operation that
@@ -2429,7 +2461,26 @@ enum {
                                       the wire */
     LINK_HT_F_PRECHARGE = 0x0080u, /**< (4.24) LINK_HT_W_RX_MODE holds
                                         LINK_HITEC_RX_PRECHARGE */
+    LINK_HT_F_MORE = 0x0100u,      /**< (4.31) the last command taken
+                                        carried LINK_HT_W_CMD_MORE and
+                                        started its transaction */
 };
+
+/**
+ * @brief Bit 4 of a SEND, LISTEN, LEVEL or POWER command (4.31): more steps
+ *        of the write this transaction belongs to follow it.
+ *
+ * The writer sets it on every step of a write to the servo's memory but
+ * the last.  While it stands (LINK_HT_F_MORE), while a SEND whose frame
+ * writes runs and for HITEC_PORT_WRITE_TAIL_MS after it, the SUPPLY page
+ * counts a write as running (LINK_MINOR_PORT_CUT).  The page tells a
+ * writing frame from its bytes, with or without the bit; a read and a
+ * LISTEN write nothing.  Any other
+ * command, one refused included, and a stop clear it.  A 4.30 IOmcu
+ * refuses a command with the bit with LINK_NACK_BAD_VALUE; on OPEN, CLOSE,
+ * ABORT and CLEAR it is refused with LINK_NACK_BAD_VALUE as well.
+ */
+#define LINK_HT_W_CMD_MORE 0x0010u
 
 /** @brief LINK_HT_CAP bits 8-11, as hitec_capture_t has them. */
 enum {

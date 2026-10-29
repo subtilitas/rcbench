@@ -218,6 +218,12 @@ extern "C" {
 #define KST_PORT_RAIL_WAIT_MS 1000u
 /** @brief The PD mini has this long to read as asked after a switch. */
 #define KST_PORT_SUPPLY_MS 3000u
+/** @brief A write counts as running this long after its last read-back
+ *  (kst_port_writing()).  The servo answers a write frame 3687 to 3714us
+ *  after it (measured); whether and when it commits the value is not
+ *  measured.  150ms is the HITEC page's bound for the same purpose, about
+ *  40 times that answer time. */
+#define KST_PORT_WRITE_TAIL_MS 150u
 /** @brief The highest supply voltage ENTER takes: the highest servo rail of the
  *        IO board (hardware/docs/IOBoard.md).
  *
@@ -317,6 +323,10 @@ typedef struct {
     uint8_t  again;      /**< RAIL_OFF switches the supply on afterwards */
     uint8_t  from_pwm;   /**< the cycle started in PWM */
     uint8_t  then_leave; /**< the running REBOOT ends in LEAVING (4.30) */
+    uint8_t  wrote;      /**< the last step found a write running (4.31) */
+    uint8_t  tail;       /**< a write ended less than
+                              KST_PORT_WRITE_TAIL_MS ago (4.31) */
+    uint32_t tail_t0;    /**< when it ended, ms */
 } kst_port_t;
 
 /** @brief Prepare a port in LINK_KST_PWM.
@@ -407,6 +417,23 @@ uint8_t kst_port_quiet_mask(const kst_port_t *p);
  *         false for a NULL p.
  */
 bool kst_port_frame_out(const kst_port_t *p);
+
+/**
+ * @brief A write to the servo's memory runs: a WRITE, a RESTORE or a RELEASE
+ *        of the session in PROGRAMMING sends a write frame or reads it back
+ *        (kst_session_writing()), or KST_PORT_WRITE_TAIL_MS has not gone
+ *        since it last did.
+ *
+ * The planning and the full reads before the first write and after the
+ * last write the operation makes write nothing and do not count; neither
+ * do a READ_ALL, a VERIFY, an ENTER, a power cycle and a LEAVE.  The
+ * SUPPLY page holds the panel's OFF back while it is true
+ * (supply_page_port_writes()).
+ *
+ * @param p The port, or NULL.
+ * @return true while such a write runs; false for a NULL p.
+ */
+bool kst_port_writing(const kst_port_t *p);
 
 /** @brief Whether the bank is armed.
  *

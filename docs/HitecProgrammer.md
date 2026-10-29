@@ -654,6 +654,7 @@ and the CLOSE is always taken.
 | ABORT | The operation ends; the port stays held | READ ALL again, or LEAVE |
 | The link goes silent | The IOmcu's failsafe latches and the port stays held; the panel's module does not count it as its own | Once the link is back the overlay says `Port held by another Hitec session.` and offers RELEASE PORT |
 | The panel starts again | As a lost link | As a lost link |
+| An error of the bench ([Safety, Errors](Safety.md#errors)), or an operation that ends in a fault of the servo or the wire: no servo, a wrong entry answer, a failed read, a classic write without its answer, a read-back that differs, a step the decoder refused | A write under way ends first: the IOmcu keeps the supply on until its last step and 150ms after it, 10000ms at most. Then the PD mini's output goes off, and the port stays held without it: a POWER's ON is refused. An IOmcu older than link 4.31 keeps the supply on ([A programming port's supply](Safety.md#a-programming-ports-supply)) | LEAVE, then CONNECT |
 
 ![STOP latched](img/servo-hitec-stopped.png)
 

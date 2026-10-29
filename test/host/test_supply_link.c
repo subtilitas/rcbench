@@ -438,6 +438,11 @@ TEST_CASE(a_command_under_a_programming_port_is_off_or_refused)
     CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
     CHECK_EQ(supply_link_events(&sl), SUPPLY_LINK_EV_ON_REFUSED);
     CHECK(!sl.on);
+    /* After the operator's OFF the port's own ON is refused until it lets
+     * go (4.31); a new hold takes it. */
+    CHECK(!supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    supply_page_hold(&pg, false);
+    supply_page_hold(&pg, true);
     /* A lost link forgets a command taken and not handed out. */
     CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
     far_step_and_read(true);

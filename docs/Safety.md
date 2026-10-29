@@ -103,20 +103,21 @@ either goes.
 
 | Fault | Servo PWM and DShot, on the bank and the ports | KST and Hitec sessions | PD mini output | Who acts |
 | --- | --- | --- | --- | --- |
-| Link silent 200ms, the IOmcu running | no pulse from the same pass | cut, line released | asked off in the same pass | the IOmcu (`safety_gate_step()`); the panel latches a stop when ARMED |
+| Link silent 200ms, the IOmcu running | no pulse from the same pass | cut, line released | asked off in the same pass, an OFF held for a write included | the IOmcu (`safety_gate_step()`); the panel latches a stop when ARMED |
 | The IOmcu held in reset or BOOTSEL | pins are inputs | pins are inputs | stays as it was | nobody: [Hardware limits](#hardware-limits) |
 | The IOmcu restarted | latched SAFE until CLEAR and ARM | none open | read and switched off before the rest of the start-up | the IOmcu (`supply_boot_off()`) |
-| Heartbeat lost at the IOmcu | no pulse within 150ms | cut | asked off | the IOmcu |
+| Heartbeat lost at the IOmcu | no pulse within 150ms | cut | asked off, an OFF held for a write included | the IOmcu |
 | The panel restarted, wedged or unplugged | no pulse within 150ms | cut | asked off | the IOmcu, by the heartbeat |
 | The panel's render loop stopped 1000ms | no pulse within 150ms more | cut | off | the panel's control task (`frame_watch.h`), then the IOmcu |
 | STOP | no pulse within 150ms | cut | off | the panel, then the IOmcu |
 | A run's meter or supply fails (`no INA3221 window for 0.2s` and the other errors in [Servo, What ends a run](Servo.md#what-ends-a-run)) | SAFE | none open: a run is ARMED | off | the SERVO screen |
 | A session cut by the link or the heartbeat | as in the rows above | transaction cut | off, after a frame on the wire, 12ms at most | the IOmcu |
-| A card write fails during a run | SAFE | kept | off, unless a port holds it | the panel (`card_faults_follow()`) |
-| The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | kept | off | the panel |
-| An INA3221 channel over its limit | SAFE | kept | off, unless a port holds it | the panel, at the 200ms read of `OVER` |
+| A card write fails during a run | SAFE | the port's supply off, after a write that runs ([below](#a-programming-ports-supply)) | off; a port's after its write, 10000ms at most | the panel (`card_faults_follow()`), the IOmcu for the write |
+| The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, the IOmcu for the write |
+| An INA3221 channel over its limit | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, at the 200ms read of `OVER`; the IOmcu for the write |
 | A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
-| The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | kept | off where it can be switched | the IOmcu's driver for the output, the panel for SAFE |
+| The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | the port's supply off, after a write that runs | off where it can be switched: the module's protection and a sagging input at once, a write included; the rest after a port's write, 10000ms at most | the IOmcu's driver for the output, the panel for SAFE |
+| A KST or Hitec operation ends in a fault of the servo or the wire (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`) | SAFE already: a session runs on a SAFE bench | the port's supply off; the operation has ended | off | the panel (`prog_faults_follow()`) |
 
 SAFE means the panel asks DISARM. The request withholds the heartbeat while
 it stands, so the IOmcu fails safe within 150ms even when the panel's
@@ -125,14 +126,85 @@ disarmed again: on a SAFE bench the withheld heartbeat would end a
 programming port's session for no output it drives. The rule is
 `error_stop()` in `shared/safety/error_stop.c`, under `test_error_stop`.
 
+The rows above are an IOmcu of link 4.31 or later. With an older IOmcu a
+programming port that holds the supply keeps it through an error the panel
+finds: the panel sends no OFF, since that IOmcu would cut a write to the
+servo's memory in the middle. The heartbeat or the link going still cuts
+it, and so do the panel's own supply trips.
+
+### A programming port's supply
+
+A KST or Hitec session holds the PD mini's output while it has a port. On
+an error the panel writes the supply's OFF to the IOmcu whoever holds it,
+and whether it reads the output on or not (`supply_link_cut()`). The IOmcu
+decides whether a write to the servo's memory runs, from its own state
+(`supply_page.h`):
+
+- No write runs: the OFF reaches the PD mini in the IOmcu's next pass.
+- A write runs: OUTPUT reads 0 at once; the PD mini and the port's view of
+  it stay on until the write ends, and the OFF reaches the PD mini in the
+  pass after, 10000ms after the OFF at the latest
+  (`SUPPLY_PAGE_WRITE_WAIT_MS`). The port does not cut itself in the
+  middle of the write.
+- A KST write is a WRITE, a RESTORE or a RELEASE of the session, from the
+  gap before its first write frame to the end of the read-backs of its
+  last, and 150ms after (`KST_PORT_WRITE_TAIL_MS`, `kst_port_writing()`).
+  Its planning and the full reads before the first and after the last
+  write frame send no write and are cut at once. An ENTER, a READ_ALL, a
+  VERIFY, a power cycle and a LEAVE write nothing.
+- A Hitec write runs while a SEND whose frame writes runs and for 150ms
+  after it (`HITEC_PORT_WRITE_TAIL_MS`), or while the last command of the
+  HITEC page started its step with `MORE` (`CMD` bit 4,
+  `hitec_port_writing()`). The IOmcu tells a writing frame from its bytes:
+  a classic WRITE_EEPROM or WRITE_RAM, a D series write request, the save
+  and the restart included, with or without `MORE`. A read and a LISTEN
+  write nothing, and an OFF during them is not held. How long a servo
+  needs its supply after a writing frame is not measured; the 150ms are
+  above the longest gap a vendor programmer leaves after one, 128ms
+  ([An OFF during a write](LinkHitec.md#an-off-during-a-write)). The
+  panel's programmer marks every step of a write but the last (`hitec_ses_step_t.more`): a plan step before the
+  last, and a classic try that may be tried again. The bench console marks
+  a step with `more` ([The bench console](BenchConsole.md)).
+- The heartbeat lost or the link silent is not held: off at once, after a
+  frame on the wire, 12ms at most.
+
+From the panel's OFF until the port lets go of the supply, the IOmcu
+refuses the port's own ON: a KST power cycle in its off time ends in PWM
+with result 32 (`SUPPLY`) and the supply off; a Hitec POWER switches it
+off and its ON is refused (`RESULT` 3), and the port stays held without
+supply until CLOSE. A KST port that finds the output off after a write
+keeps it off 1000ms and returns to PWM.
+
+The longest writes the code allows end inside 10000ms, computed and not
+measured: a KST write of 33 steps is 1.93s on the wire after its planning;
+a classic Hitec write of 56 steps with its read-back of 36 cells is 2.9s
+and a D series write of 21 registers with its save, its 1000ms reboot wait
+and its read-back 3.5s, at 32ms a step on the panel's host loopback.
+
+A session fault is an operation that ends in what the servo or the wire
+did. KST: no servo, a register without 3 equal reads, a servo that changed
+under the plan, a write that failed, was rolled back, was torn or changed
+another register, a verify that differs, a driver fault, a supply that did
+not switch. Hitec: no servo, a wrong entry answer, a failed read, a classic
+write without its answer, a read-back that differs, a step the decoder
+refused. Not a fault: a refusal, a plan that sends nothing, ABORT, and a
+step cut by a stop or a lost link, which end the session themselves.
+
 Current limitations:
 
-- A programming port that holds the supply keeps it through an error the
-  panel finds: a card write that fails, an INA3221 channel over its limit.
-  A session in the middle of a write to the servo's memory is the case the
-  rule must not cut. The heartbeat or the link going still cuts it.
-- A programmer session that ends in an error with the link and the
-  heartbeat up keeps the servo powered on its port until LEAVE.
+- An error during a write keeps the servo powered until the write ends,
+  10000ms at most. A write still running then, with retries, on a slow
+  link or typed step by step on the bench console, is cut in the middle.
+- Every OFF the panel writes is held for a write the same way: the
+  operator's OFF on SUPPLY and the panel's own trips (CURRENT TRIP,
+  VOLTAGE TRIP) as well as an error's. The PD mini's own protection and
+  the IOmcu's cut for a sagging input act at once, a write included.
+- A Hitec write that ends in a fault after a step with `MORE` keeps the
+  OFF held until the next command of the HITEC page or 10000ms.
+- A session fault ends the session with the supply. After a KST write that
+  failed, the session's own backup ends with it; the record made before
+  the write stands, and the read after CONNECT compares the servo with it
+  ([An interrupted write](ServoProgrammer.md#an-interrupted-write)).
 - The IOmcu's STATUS fault bits for overcurrent, over-temperature and stall
   (`LINK_FAULT_OVERCURRENT`, `LINK_FAULT_OVERTEMP`, `LINK_FAULT_STALL`) are
   defined and set by nothing.

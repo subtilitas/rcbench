@@ -127,9 +127,10 @@ Bauteil wird je Tick abgefragt.
 Eine Stromgrenze für jeden Kanal, und die Kanäle, deren Fenster sie
 überschritten hat. Der IOmcu markiert eine überschrittene Grenze und handelt
 selbst nicht. Das Panel liest die Markierung alle 200ms und behandelt sie als
-Fehler: der Prüfstand schaltet auf SAFE und der Ausgang des Netzteils aus,
-außer ein Programmierport hält das Netzteil
-([Sicherheit, Fehler](Safety-de.md#fehler)).
+Fehler: der Prüfstand schaltet auf SAFE und der Ausgang des Netzteils aus;
+hält ein Programmierport ihn, geht er ab Link 4.31 nach einem laufenden
+Schreiben in den Speicher des Servos aus
+([Sicherheit, Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
 
 | Register | Name | Bedeutung |
 | ---: | --- | --- |

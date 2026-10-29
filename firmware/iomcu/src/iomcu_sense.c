@@ -59,13 +59,14 @@ bool supply_rewire(void)
     return true;
 }
 
-void supply_pass(uint32_t now, bool frame_out, bool supply_ok)
+void supply_pass(uint32_t now, bool frame_out, bool writing, bool supply_ok)
 {
     /* The page first, so a heartbeat lost this pass reaches the driver as
      * an OFF before it steps and can send an ON already queued.  An OFF of
      * this pass waits for the end of a frame the programming port has on
-     * the wire. */
+     * the wire, and the panel's OFF for the end of a port's write. */
     supply_page_port_frame(&s_supply, frame_out, now);
+    supply_page_port_writes(&s_supply, writing);
     supply_page_step(&s_supply, supply_ok, s_pd_open ? &s_pd : NULL);
     /* A wiring change whose state read has just shown the module off:
      * taken now, before the driver's next transaction, so the module has
@@ -113,7 +114,7 @@ void supply_boot_off(void)
         if (!supply_page_boot_owed(&s_supply, &s_pd, now - t0)) {
             break;
         }
-        supply_pass(now, false, false);
+        supply_pass(now, false, false, false);
     }
     pdmini_hurry(&s_pd, false);
 }

@@ -719,8 +719,10 @@ int main(void)
         ports_exclusive();
         outputs_hw_ports_drive(ports_pulsing());
         sense_page_ports(&s_sense, ports_pulsing());
-        /* And the SUPPLY page told that a port commands the module. */
+        /* And the SUPPLY page told that a port commands the module, and
+         * whether it writes. */
         supply_page_hold(&s_supply, ports_hold_supply());
+        supply_page_port_writes(&s_supply, ports_writing());
         /* The edge into driving starts a run on core 1: its peaks and the
          * INA228's totals.  One compare a pass, an order on the edge. */
         const bool driving_now = outputs_driving(&s_outputs);
@@ -750,10 +752,13 @@ int main(void)
             sense_order();
         }
         /* The supply: its bytes in, a step of its driver, and the output off
-         * whenever the panel's heartbeat is not there to switch it off. */
+         * whenever the panel's heartbeat is not there to switch it off.  A
+         * port's write, as the ports' steps above left it, keeps the
+         * panel's OFF of a held supply back until it ends. */
         supply_pass(now,
                     kst_port_frame_out(&s_kst)
                         || hitec_port_frame_out(&s_hitec, now),
+                    ports_writing(),
                     safety_gate_supply_ok(&s_beat, &s_dev));
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
