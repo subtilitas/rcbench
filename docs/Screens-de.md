@@ -2670,7 +2670,9 @@ erscheint im Band:
 | `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
 Bei den ersten fünf gibt es keine Datei zu suchen. Bei den letzten vier gibt
-es eine, und sie hört zu früh auf.
+es eine, und sie hört zu früh auf. Ein gescheitertes Schreiben und ein
+gescheitertes Schließen eines Laufs sind ein Fehler: der Prüfstand geht auf
+SAFE und das Netzteil aus ([Sicherheit, Fehler](Safety-de.md#fehler)).
 
 Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
 Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ein
