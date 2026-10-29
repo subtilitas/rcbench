@@ -175,7 +175,8 @@ void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir)
 atomic_uint s_card_written;
 atomic_int  s_card_written_tab = LOG_TAB_BENCH;
 /* Card writes that failed during a run: the run log's and the automatic
- * test's CSV, each counted once at its failure's edge.  The control task
+ * test's CSV, their final commit and close included, each counted once a
+ * run at its first failure.  The control task
  * answers each as an error (card_faults_follow()): the bench SAFE and the
  * supply off.  A report written after its run, and the servo programmers'
  * records, are not counted: no output runs for the one, and the other
@@ -478,7 +479,11 @@ static void log_close(void)
     if (storage_fclose(s_log_file) != 0) {
         ESP_LOGW(TAG, "the log did not close: %u rows are not in it",
                  uncommitted);
-        if (!failed) {
+        if (error_card_close_edge(true, failed, false)) {
+            /* The run's card fault, unless a row's write was it already:
+             * the control task answers it as an error
+             * (card_faults_follow()). */
+            atomic_fetch_add(&s_card_faults, 1u);
             control_alert(TR(ALERT_CARD_LAST_WRITE));
         }
     } else if (!failed) {
@@ -581,6 +586,11 @@ static void test_close(void)
     }
     bool bad = fflush(s_test_fp) != 0 || fsync(fileno(s_test_fp)) != 0;
     bad = (storage_fclose(s_test_fp) != 0) || bad;
+    /* The CSV's final commit or close that failed is the run's card fault,
+     * unless a write of the run failed before; the report's is not. */
+    if (error_card_close_edge(bad, s_test_failed, s_test_txt)) {
+        atomic_fetch_add(&s_card_faults, 1u);
+    }
     /* This file's failure, not the run's: a CSV that failed does not make
      * a report written whole a bad one. */
     if (bad) {

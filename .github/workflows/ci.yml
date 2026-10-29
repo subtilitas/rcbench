@@ -176,6 +176,12 @@ jobs:
       - name: The checked-in ESC profile tables match their JSON
         run: python3 tools/gen_esc_profiles.py --check
 
+      # The Wi-Fi page's file manager is written as JavaScript and CSS
+      # (cascading style sheets) under shared/webaccess/web; the panel
+      # carries them as C strings generated from those files and checked in.
+      - name: The checked-in file manager strings match their sources
+        run: python3 tools/gen_web_blob.py --check
+
       # Every file over 1,000 code lines (not blank, not comment-only) is
       # in tools/check_sizes.txt with the reason it stays whole, and no
       # listed file is at or under 1,000 code lines.
@@ -633,7 +639,10 @@ jobs:
           if-no-files-found: warn
 
   panel:
-    name: Panel (ESP-IDF v5.5.5, ESP32-P4)
+    # The name is the status check the branch ruleset requires, and it
+    # stays "ESP-IDF v5.5.5" until the ruleset's required check is renamed
+    # to the same text as this name (tools/check_docs.py, PANEL_CHECK_NAME).
+    name: Panel (ESP-IDF v6.1, ESP32-P4)
     # The build carries the IOmcu image of this commit, as the release
     # does.
     needs: [iomcu]
@@ -666,9 +675,10 @@ jobs:
           path: firmware/panel/managed_components
           key: managed-components-${{ hashFiles('firmware/panel/dependencies.lock') }}
 
-      # v5.5.5 is the floor: a Rev3.2 ESP32-P4 needs v5.5.5 or v6.0.1 and
-      # later, and v5.5.0 and v5.5.1 send a DLC 0 CAN frame as DLC 8, which
-      # can_twai.c refuses.
+      # v6.1 is the version the panel is built with.  A Rev3.2
+      # ESP32-P4 needs v5.5.5 or v6.0.1 and later.  storage.c follows
+      # v6.1's SDMMC slot handling, and v6.1's legacy TWAI driver passes
+      # a DLC 0 CAN frame through as DLC 0, which can_twai.c needs.
       # No cache step: the build runs inside the espressif/idf container, so
       # ~/.espressif on the runner is never written or read and a cache would
       # never hit.  The checkout holds no sdkconfig, so every build
@@ -676,7 +686,7 @@ jobs:
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.5.5
+          esp_idf_version: v6.1
           target: esp32p4
           path: 'firmware/panel'
           # A single image flashable at 0x0, as well as the three parts.
@@ -756,7 +766,7 @@ jobs:
       - name: The build without the injector and the frame lines compiles
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.5.5
+          esp_idf_version: v6.1
           target: esp32p4
           path: 'firmware/panel'
           command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF

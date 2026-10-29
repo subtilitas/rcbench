@@ -3,7 +3,7 @@
  * for test_storage: a card supply on an on-chip LDO (low-dropout
  * regulator) that remembers it is on, a mount that finds a card or none,
  * and a log that records each line it would print with its level and tag.
- * Each stands in as ESP-IDF v5.5 behaves where the suite looks:
+ * Each stands in as ESP-IDF v6.1 behaves where the suite looks:
  * esp_vfs_fat_sdmmc_mount() with no card logs "sdmmc_card_init failed
  * (0x107)" at E level under the tag "vfs_fat_sdmmc" and returns
  * ESP_ERR_TIMEOUT, and with a card FatFs does not mount logs "failed to
@@ -32,6 +32,7 @@ typedef int esp_err_t;
 #define ESP_OK                    0
 #define ESP_FAIL                 (-1)
 #define ESP_ERR_NO_MEM           0x101
+#define ESP_ERR_INVALID_ARG      0x102
 #define ESP_ERR_INVALID_STATE    0x103
 #define ESP_ERR_INVALID_RESPONSE 0x108
 #define ESP_ERR_TIMEOUT          0x107

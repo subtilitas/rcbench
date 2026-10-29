@@ -666,8 +666,37 @@ bool supply_screen_port_held(void) { return s.port_held; }
 
 void supply_screen_adopt(float v, float i)
 {
+    /* The operator's: the set points before the first port's, or after a
+     * change made since the last port's were taken. */
+    if (!s.lent || s.cv != s.lent_v || s.ci != s.lent_i) {
+        s.own_v = s.cv;
+        s.own_i = s.ci;
+        s.lent  = true;
+    }
     s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
     s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    s.lent_v = s.cv;
+    s.lent_i = s.ci;
+    ui_slider_set(&s.v_slider, s.cv);
+    ui_slider_set(&s.i_slider, s.ci);
+    ++s.set_rev;
+}
+
+void supply_screen_port_done(bool free_off)
+{
+    /* Not under OUTPUT ON's hold either: an ON lands at the set points the
+     * hold began on. */
+    if (!s.lent || !free_off || s.port_held || s.on || s.on_asked
+        || supply_screen_output_held()) {
+        return;
+    }
+    s.lent = false;
+    /* Changed since the port's were taken: the change stands. */
+    if (s.cv != s.lent_v || s.ci != s.lent_i) {
+        return;
+    }
+    s.cv = supply_snap(s.own_v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
+    s.ci = supply_snap(s.own_i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
     ui_slider_set(&s.v_slider, s.cv);
     ui_slider_set(&s.i_slider, s.ci);
     ++s.set_rev;

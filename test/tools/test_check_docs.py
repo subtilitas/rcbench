@@ -326,24 +326,25 @@ def test_spdx_covers_the_tool_scripts(tree):
 
 def sdk_tree(tree, **change):
     """ci.yml, release.yml and the build and performance pages, agreeing on
-    pico-sdk 2.3.0 and ESP-IDF v5.5.5 unless a name in @p change
+    pico-sdk 2.3.0 and ESP-IDF v6.1, the panel job named as the ruleset
+    requires it, unless a name in @p change
     replaces its text."""
     files = {
         ".github/workflows/ci.yml":
             "env:\n  PICO_SDK_TAG: '2.3.0'\n"
-            "    name: Panel (ESP-IDF v5.5.5, ESP32-P4)\n"
-            "          esp_idf_version: v5.5.5\n"
-            "          esp_idf_version: v5.5.5\n"
+            "    name: Panel (ESP-IDF v6.1, ESP32-P4)\n"
+            "          esp_idf_version: v6.1\n"
+            "          esp_idf_version: v6.1\n"
             "    name: IOmcu (pico-sdk 2.3.0)\n",
         ".github/workflows/release.yml":
-            "env:\n  PICO_SDK_TAG: '2.3.0'\n  esp_idf_version: v5.5.5\n",
+            "env:\n  PICO_SDK_TAG: '2.3.0'\n  esp_idf_version: v6.1\n",
         "docs/Building.md":
             "| pico-sdk | 2.0 or newer | CI builds 2.3.0 |\n"
-            "CI builds v5.5.5\n"
+            "CI builds v6.1\n"
             "IOmcu build on pico-sdk 2.3.0 with\n",
         "docs/Building-de.md":
             "| pico-sdk | 2.0 oder neuer | CI baut 2.3.0 |\n"
-            "CI baut v5.5.5\n"
+            "CI baut v6.1\n"
             "IOmcu-Build mit pico-sdk 2.3.0 mit\n",
         "docs/Performance.md": "the image CI builds, pico-sdk 2.3.0 with\n",
         "docs/Performance-de.md": "Image, das CI baut, pico-sdk 2.3.0 mit\n",
@@ -375,14 +376,16 @@ def test_sdk_tags_that_agree_pass(tree):
      "Performance.md says pico-sdk 2.1.0"),
     (".github/workflows/ci.yml", "(pico-sdk 2.3.0)", "(pico-sdk 2.0.0)",
      "ci.yml job name says pico-sdk 2.0.0"),
-    (".github/workflows/release.yml", "esp_idf_version: v5.5.5",
+    (".github/workflows/release.yml", "esp_idf_version: v6.1",
      "esp_idf_version: v5.4", "release.yml builds ESP-IDF v5.4"),
-    ("docs/Building-de.md", "CI baut v5.5.5", "CI baut v5.5.3",
+    ("docs/Building-de.md", "CI baut v6.1", "CI baut v5.5.3",
      "Building-de.md says ESP-IDF v5.5.3"),
-    ("docs/Building.md", "CI builds v5.5.5", "CI builds v5.5",
+    ("docs/Building.md", "CI builds v6.1", "CI builds v5.5",
      "Building.md says ESP-IDF v5.5;"),
-    (".github/workflows/ci.yml", "Panel (ESP-IDF v5.5.5,",
-     "Panel (ESP-IDF v5.4,", "the ci.yml panel job is named for ESP-IDF v5.4"),
+    (".github/workflows/ci.yml", "Panel (ESP-IDF v6.1,",
+     "Panel (ESP-IDF v5.5.5,",
+     "the ci.yml panel job is named 'Panel (ESP-IDF v5.5.5, ESP32-P4)'; the "
+     "ruleset requires 'Panel (ESP-IDF v6.1, ESP32-P4)'"),
 ])
 def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
     out = sdk_tree(tree, **{rel: [(old, new)]})
@@ -390,8 +393,8 @@ def test_a_copy_that_differs_is_named(tree, rel, old, new, said):
 
 
 @pytest.mark.parametrize("rel, old, new", [
-    ("docs/Building.md", "CI builds v5.5.5", "CI builds the newest"),
-    ("docs/Building-de.md", "CI baut v5.5.5", "CI baut das neueste"),
+    ("docs/Building.md", "CI builds v6.1", "CI builds the newest"),
+    ("docs/Building-de.md", "CI baut v6.1", "CI baut das neueste"),
 ])
 def test_a_page_without_the_esp_idf_statement_is_named(tree, rel, old, new):
     out = sdk_tree(tree, **{rel: [(old, new)]})
@@ -403,19 +406,19 @@ def test_two_esp_idf_versions_in_ci_are_named(tree):
     """The build without the injector builds the same ESP-IDF as the
     first one."""
     ci = {".github/workflows/ci.yml": [
-        ("          esp_idf_version: v5.5.5\n"
-         "          esp_idf_version: v5.5.5\n",
-         "          esp_idf_version: v5.5.5\n"
+        ("          esp_idf_version: v6.1\n"
+         "          esp_idf_version: v6.1\n",
+         "          esp_idf_version: v6.1\n"
          "          esp_idf_version: v5.5.3\n")]}
     out = sdk_tree(tree, **ci)
     assert out == ["SDK tags: ci.yml builds the panel with 2 ESP-IDF "
-                   "versions (v5.5.3, v5.5.5); it names one"]
+                   "versions (v5.5.3, v6.1); it names one"]
 
 
 def test_a_ci_without_a_panel_build_is_named(tree):
     ci = {".github/workflows/ci.yml": [
-        ("          esp_idf_version: v5.5.5\n"
-         "          esp_idf_version: v5.5.5\n", "")]}
+        ("          esp_idf_version: v6.1\n"
+         "          esp_idf_version: v6.1\n", "")]}
     assert sdk_tree(tree, **ci)[0].endswith("(none); it names one")
 
 

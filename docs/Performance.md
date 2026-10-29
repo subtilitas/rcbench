@@ -374,15 +374,15 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,680 | 1,488 |
-| `control` | `control_task` | 6,144 | 4,720 | 400 |
-| `runlog` | `log_task` | 6,656 | 4,528 | 1,104 |
-| `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,056 | 992 |
-| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,296 | 1,776 |
-| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 3,744 | 2,144 |
-| `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,344 | 1,728 |
-| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 3,040 | 4,128 |
-| `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 3,504 | 2,128 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,144 | 3,008 |
+| `control` | `control_task` | 6,144 | 3,360 | 1,744 |
+| `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
+| `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
+| `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
+| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,624 | 3,248 |
+| `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
+| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
+| `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,048 | 3,568 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the TCP/IP (transmission control protocol, internet
@@ -397,18 +397,20 @@ never runs beside it; the handshake's depth is not measured.
 `runlog`'s deepest chain mounts the SD card: the listing of the servo
 files the card serves (`hitec_card_run()`, `list()`, `servo_store_preset()`,
 `io_walk()`, `storage_walk()`), the mount again of a card found gone
-(`storage_read_end()`, `mount_locked()`) and the `snprintf()` under it. The tool follows every call the mount can
-make, `f_mkfs()` among them, which a mount that never formats does not
-reach. A run's start mounts the card on this task as well
-(`storage_check()`). The chain needs 4,528 bytes; the stack of 6,656
-bytes leaves 1,104 above the 1,024-byte margin.
+(`storage_read_end()`, `mount_locked()`), `f_mkfs()` under the mount and
+the time stamp it writes (`get_fattime()`, `localtime_r()`, picolibc's
+time-zone parse `_tzset_unlocked()` and the `sscanf()` under it). The tool
+follows every call the mount can make, `f_mkfs()` among them, which a
+mount that never formats does not reach. A run's start mounts the card on this task as well
+(`storage_check()`). The chain needs 3,824 bytes; the stack of 6,656
+bytes leaves 1,792 above the 1,024-byte margin.
 
-`wifi_ctl`'s deepest chain is the radio's stop: `radio_down()`, the NTP
-(network time protocol) client's last poll (`wifi_ntp_poll()`) and the time
-line it logs (`wall_ntp_line()`, `wall_utc_text()`), whose `snprintf()`
-reaches newlib's float conversion. It leaves 2,144 bytes above the margin.
+`wifi_ctl`'s deepest chain is the start of the network stack in `worker()`:
+`esp_netif_init()` into lwIP's `netif_add()` and `netif_set_addr()`, the
+TCP code under it down to `ip6_frag()` and `pbuf_alloc()`, and the heap
+allocation and log call below those. It leaves 3,248 bytes above the margin.
 
-Measured on the ESP32-P4 build with ESP-IDF v5.5.5 at -O2. Of the margin,
+Measured on the ESP32-P4 build with ESP-IDF v6.1 at -O2. Of the margin,
 560 bytes are spent outside the frames:
 
 - 128 for the registers an interrupt saves on the task's stack before it
@@ -433,7 +435,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  220 such
+  269 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its
@@ -586,7 +588,7 @@ is a separate function, so only the page on screen holds its buffers: in
 ESC STICK, `esc_stick_panel_render()` calls the page on screen, and MOTOR &
 ESC's `mo_render()` calls the session's way and its body's as two
 functions, so a session's pages do not sit on the body's frame. A line
-copied for display is copied without `snprintf()`, which reaches newlib's
+copied for display is copied without `snprintf()`, which reaches picolibc's
 float conversion. The frame sizes on the ESP32-P4 are not measured.
 
 ## Internal RAM
@@ -663,7 +665,8 @@ of 30 objects in PSRAM (pseudo-static random-access memory): the screens'
 state and the card, page, settings and output helpers. The fragment names
 each object and the rules it meets. `tools/psram_bss.py` reads the build's
 linker map and fails CI when a named object keeps .bss in internal RAM.
-Static figures of the P4 build at ESP-IDF v5.5.5, from `idf.py size`:
+Static figures of the P4 build at ESP-IDF v5.5.5 with 30 objects in the
+fragment, from `idf.py size`; not repeated on v6.1:
 
 | Item | With the fragment | Without it |
 | --- | ---: | ---: |
@@ -706,7 +709,7 @@ period of 3. With ESP-IDF's default send buffer of 5,760 bytes, that is
 18,750 to 56,250B/s. Without power save the radio draws more current
 while it runs; how much more on the panel is not measured.
 
-The page's piece buffer, 4,096 bytes, is in PSRAM. ESP-IDF v5.5.5 reads a
+The page's piece buffer, 4,096 bytes, is in PSRAM. ESP-IDF v6.1 reads a
 piece into it by DMA (direct memory access) when the buffer is aligned to a
 cache line, and through a buffer of its own otherwise; which of the two the
 page's buffer takes is not measured. At the measured 14.6ms round trip the
@@ -768,14 +771,15 @@ Linux, `iw`:
 ## The SD card's file system
 
 The panel reads FAT12, FAT16, FAT32 and exFAT (extended File Allocation
-Table) through FatFs, the file system library in ESP-IDF. ESP-IDF v5.5
+Table) through FatFs, the file system library in ESP-IDF. ESP-IDF v6.1
 builds FatFs without exFAT, and no Kconfig option turns it on. The panel
 build takes a copy of ESP-IDF's `fatfs` component with `FF_FS_EXFAT` set to
 1 (`firmware/panel/fatfs_exfat.cmake`), and `storage_list.c` stops a build
 whose FatFs has no exFAT. Long file names stay as `sdkconfig.defaults` sets
 them: on, 255 characters, the working buffer on the heap.
 
-What exFAT costs, read from the P4 build at ESP-IDF v5.5.5 against the same
+What exFAT costs, read from the P4 build at ESP-IDF v5.5.5, not repeated on
+v6.1, against the same
 tree built with the `fatfs_exfat.cmake` include and that stop taken out,
 both without `RCBENCH_IOMCU_BIN`:
 

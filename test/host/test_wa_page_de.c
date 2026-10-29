@@ -52,7 +52,7 @@ static bool sink(void *ctx, const void *data, size_t n)
 TEST_CASE(a_text_without_german_shows_its_english_on_the_german_page)
 {
     static const wa_page_info_t de = { "rcbench-1A2B", "0.19.0", 0x3E0000u,
-                                       true };
+                                       true, NULL };
     CHECK(k_de[P_CODE_NOTE] == NULL);
     CHECK(k_de[P_CODE] != NULL);
     page_t p = { 0 };

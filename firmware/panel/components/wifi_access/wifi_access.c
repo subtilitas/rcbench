@@ -422,6 +422,7 @@ static void page_info(wa_page_info_t *pi)
     pi->version = s.running.version_text;
     pi->slot = s.slot;
     pi->de = atomic_load(&s.de);
+    pi->hl = wifi_files_hl();
 }
 
 /* ------------------------------------------- lent to the file API */

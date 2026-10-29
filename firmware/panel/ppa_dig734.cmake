@@ -4,7 +4,7 @@
 # Screen rotation 180 copies what each frame drew into the frame buffer
 # through the PPA's SRM (scale, rotate, mirror) engine
 # (components/display).  The ESP32-P4's SRM engine can hang on hardware
-# bug DIG-734.  ESP-IDF v5.5's esp_driver_ppa, src/ppa_srm.c, turns its
+# bug DIG-734.  ESP-IDF v6.1's esp_driver_ppa, src/ppa_srm.c, turns its
 # workaround (the macro-block order bypass) on only for some block sizes.
 # Espressif's esp_lvgl_adapter component, version 0.6.4, patches that
 # block to turn the bypass on for every transaction

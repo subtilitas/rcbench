@@ -1359,6 +1359,13 @@ def check_pin_counts(problems: list[str]) -> None:
                         f"{chips.get('measurement')}")
 
 
+# The panel job's name in ci.yml, as the branch ruleset requires it.  A job
+# renamed in ci.yml alone leaves the required check unreported and blocks
+# every merge; the ruleset's required check and this constant change
+# together.
+PANEL_CHECK_NAME = "Panel (ESP-IDF v6.1, ESP32-P4)"
+
+
 def check_sdk_tags(problems: list[str]) -> None:
     """Hold the SDK tags of ci.yml, release.yml and the pages together.
 
@@ -1367,7 +1374,8 @@ def check_sdk_tags(problems: list[str]) -> None:
     tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF (Espressif
     Internet-of-Things Development Framework) tag is the
     `esp_idf_version` of the panel builds in ci.yml, which release.yml
-    repeats, and the version in the panel job's name.
+    repeats.  The panel job's name is the branch ruleset's required status
+    check and is held to PANEL_CHECK_NAME instead of to the tag.
 
     Args:
         problems: Receives one line per disagreement.
@@ -1423,10 +1431,11 @@ def check_sdk_tags(problems: list[str]) -> None:
         problems.append(f"SDK tags: release.yml builds ESP-IDF {release}; "
                         f"ci.yml builds {idf}")
     job = first("'Panel (ESP-IDF vX, ...)' job name in ci.yml",
-                r"name: Panel \(ESP-IDF (v[\d.]+)[,)]", ci)
-    if job and job != idf:
-        problems.append(f"SDK tags: the ci.yml panel job is named for "
-                        f"ESP-IDF {job}; it builds {idf}")
+                r"(?m)^    name: (Panel \(ESP-IDF v[\d.]+[,)][^\n]*)$", ci)
+    if job and job != PANEL_CHECK_NAME:
+        problems.append(f"SDK tags: the ci.yml panel job is named "
+                        f"'{job}'; the ruleset requires "
+                        f"'{PANEL_CHECK_NAME}'")
     for page, verb in (("Building.md", "builds"), ("Building-de.md", "baut")):
         text = read(REPO / "docs" / page)
         stated = re.findall(

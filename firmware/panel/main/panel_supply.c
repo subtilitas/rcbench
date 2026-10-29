@@ -58,6 +58,13 @@ atomic_uint        s_supply_adopt_mv;
 atomic_uint        s_supply_adopt_ma;
 atomic_uint        s_supply_adopt_gen;
 atomic_uint        s_supply_adopt_done;
+/**
+ * @brief Whether the last read of the SUPPLY page showed no programming port
+ *        holding it and the output off (supply_link_port_free_off()): when
+ *        the screen gives the operator's set points back.  Stored before the
+ *        adopt count it is read with.
+ */
+atomic_bool        s_supply_free_off;
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
  *
@@ -227,20 +234,24 @@ __attribute__((noinline)) void bench_error_stop(void)
     error_act(error_sites_stop(&b));
 }
 
-/** @brief An error on the supply's own output: the output off first, then
- *         the rule (error_sites_cut()); control task only. */
+/** @brief The panel's own supply trip: the output off first, whoever holds
+ *         it, then the rule (error_sites_cut()); control task only. */
 static __attribute__((noinline)) void supply_error_cut(void)
 {
     const error_bench_t b = error_bench();
     error_act(error_sites_cut(&b));
 }
 
+/** @brief The reading fault of the last step, as error_sites_reading()
+ *         keeps it; control task only. */
+static error_reading_t s_reading_told;
+
 /**
  * @brief The supply's reading with its output on: silent, or the PD mini
  *        answering ONLINE with a reading count that has stood for
  *        SUPPLY_LINK_BLIND_MS, readings marked not valid that no trip acts
  *        on.  Either is an error (error_sites_reading()).
- * @return The fault found, for the band's alert.
+ * @return The fault acted on, for the band's alert.
  */
 static __attribute__((noinline)) error_reading_t supply_reading_fault(void)
 {
@@ -249,7 +260,7 @@ static __attribute__((noinline)) error_reading_t supply_reading_fault(void)
     const error_reading_t fault =
         error_sites_reading(&b, s_supply.online,
                             supply_link_blind(&s_supply_link, now_ms()),
-                            &act);
+                            &s_reading_told, &act);
     error_act(act);
     return fault;
 }
@@ -495,11 +506,12 @@ static void supply_step(float step_s)
     /*
      * A supply that stops answering takes its output with it, switched off
      * here so that it does not come back on by itself when the supply
-     * answers again.  The model always answers.
+     * answers again.  The model always answers.  A PD mini that answers
+     * and reads ONLINE, but whose reading count has stood for
+     * SUPPLY_LINK_BLIND_MS, gives readings marked not valid, which no trip
+     * acts on: off, as for a supply gone.  Either is left on for a
+     * programming port that keeps the supply (error_sites_keeps()).
      */
-    /* A PD mini that answers and reads ONLINE, but whose reading count
-     * has stood for SUPPLY_LINK_BLIND_MS, gives readings marked not valid,
-     * which no trip acts on: off, as for a supply gone. */
     const error_reading_t fault = supply_reading_fault();
     if (fault == ERROR_READING_SILENT) {
         control_alert(TR(ALERT_SUPPLY_SILENT));
@@ -550,7 +562,8 @@ static void supply_step(float step_s)
  * The ON in flight, against the touch stream: the arm watch's rules on the
  * supply's output.  Until the render side has acknowledged this ON from a
  * frame that began with the output on and found the stream whole, a loss of
- * either kind switches the output off again.
+ * either kind is an error: the output off again, unless a programming port
+ * has taken the supply since and keeps it (error_sites_keeps()).
  */
 static void supply_watch_service(void)
 {
@@ -560,7 +573,7 @@ static void supply_watch_service(void)
     }
     if (arm_watch_lost(&s_supply_watch, atomic_load(&s_loss_gen),
                        atomic_load(&s_drv_gaps), atomic_load(&s_supply_ack))) {
-        supply_error_cut();
+        bench_error_stop();
         control_alert(TR(ALERT_TOUCH_SWITCH_ON));
     }
 }
@@ -623,6 +636,49 @@ void supply_pump(void)
     snap_unlock();
 }
 
+/**
+ * @brief A programming port's command the link took from the page
+ *        (supply_link_adopted()): this end's copy follows it, so the next
+ *        command written is the port's and not the one from before it, and
+ *        the SUPPLY screen shows the set points in force.  Control task
+ *        only.
+ */
+static void supply_adopt(void)
+{
+    bool     on;
+    uint16_t mv, ma;
+    if (supply_link_adopted(&s_supply_link, &on, &mv, &ma)) {
+        s_supply_set_mv_applied = mv;
+        s_supply_set_ma_applied = ma;
+        atomic_store(&s_supply_adopt_mv, mv);
+        atomic_store(&s_supply_adopt_ma, ma);
+        atomic_fetch_add(&s_supply_adopt_gen, 1u);
+        supply_switch(on);
+    }
+}
+
+/**
+ * @brief A SUPPLY page event that ends the panel's ON: the output off here,
+ *        or, for an ON refused while a programming port keeps the supply
+ *        (error_sites_page_keeps()), the page's command left to the port
+ *        with no OFF written over it (supply_link_keep()).  The error's
+ *        own act follows (bench_error_stop()).  Control task only.
+ *
+ * @param ev The page's events, SUPPLY_LINK_EV_*.
+ */
+static __attribute__((noinline)) void supply_page_off(uint16_t ev)
+{
+    const error_bench_t b = error_bench();
+    const bool far_off = (ev & (SUPPLY_LINK_EV_ON_LOST | SUPPLY_LINK_EV_TRIPPED
+                                | SUPPLY_LINK_EV_SAGGED)) != 0u;
+    if (error_sites_page_keeps(&b, far_off)
+        && supply_link_keep(&s_supply_link)) {
+        supply_adopt();
+    } else {
+        supply_switch(false);
+    }
+}
+
 /* The last alert posted for a refused wiring, kept until the page holds
  * the wiring asked (supply_link_event_stands()): its number (0 none) and
  * its event.  Control task only. */
@@ -631,9 +687,9 @@ static uint16_t s_wire_alert_ev;
 
 /*
  * What the SUPPLY page said that the operator is told, and an ON it refused
- * or let go switched off here too.  An alert for a refused wiring is taken
- * back once the page holds the wiring asked: pins stepped back to ones it
- * takes.
+ * or let go switched off here too (supply_page_off()).  An alert for a
+ * refused wiring is taken back once the page holds the wiring asked: pins
+ * stepped back to ones it takes.
  */
 static void supply_link_alerts(void)
 {
@@ -643,11 +699,14 @@ static void supply_link_alerts(void)
         s_wire_alert_gen = 0u;
     }
     const uint16_t ev = supply_link_events(&s_supply_link);
+    if ((ev & (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST
+               | SUPPLY_LINK_EV_TRIPPED | SUPPLY_LINK_EV_SAGGED)) != 0u) {
+        supply_page_off(ev);
+    }
     /* An ON refused in the IOmcu's failsafe names it and the way out: only
      * the CLEAR an ARM writes lifts it (supply_link_on_ended()). */
     const supply_link_say_t say = supply_link_on_ended(ev, far_end_faults());
     if (say != SUPPLY_LINK_SAY_NONE) {
-        supply_switch(false);
         control_alert((say == SUPPLY_LINK_SAY_TRIPPED)
                           ? TR(ALERT_PDMINI_OFF)
                       : (say == SUPPLY_LINK_SAY_LOST)
@@ -659,7 +718,6 @@ static void supply_link_alerts(void)
     if ((ev & SUPPLY_LINK_EV_SAGGED) != 0u) {
         /* Switched off at the IOmcu for an input under the set point
          * and the headroom: the input and the set point it was read with. */
-        supply_switch(false);
         uint16_t vin = 0u;
         uint16_t set = 0u;
         supply_link_sag(&s_supply_link, &vin, &set);
@@ -758,24 +816,10 @@ void supply_link_service(void)
             reply.regs[LINK_SP_BAUD_FOUND] = SUPPLY_LINK_BAUD_AUTO;
         }
         supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
-        {
-            /*
-             * A programming port commanded the supply (4.13): this end's
-             * copy follows the page, so the next command written is the
-             * port's and not the one from before it, and the SUPPLY screen
-             * shows the set points in force.
-             */
-            bool     on;
-            uint16_t mv, ma;
-            if (supply_link_adopted(&s_supply_link, &on, &mv, &ma)) {
-                s_supply_set_mv_applied = mv;
-                s_supply_set_ma_applied = ma;
-                atomic_store(&s_supply_adopt_mv, mv);
-                atomic_store(&s_supply_adopt_ma, ma);
-                atomic_fetch_add(&s_supply_adopt_gen, 1u);
-                supply_switch(on);
-            }
-        }
+        atomic_store(&s_supply_free_off,
+                     read && supply_link_port_free_off(&s_supply_link));
+        /* A programming port commanded the supply (4.13). */
+        supply_adopt();
         if (read) {
             atomic_store(&s_supply_vin_mv, reply.regs[LINK_SP_VIN_MV]);
             /* 0 for a rate still being looked for: no rate in the header.

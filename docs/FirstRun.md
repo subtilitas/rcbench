@@ -74,7 +74,10 @@ not read ([below](#the-sd-card-of-0210-and-older)).
 | `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the four files above | the check in step 1 |
 
 Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
-`esptool.py` for the panel (`pip install esptool`; ESP-IDF carries it).
+`esptool.py` for the panel (`pip install esptool`; ESP-IDF v6.1 carries
+esptool 5.6.0). The `flash_args` file spells its options as esptool 5 does
+(`--flash-mode`); esptool 4.x, which ESP-IDF v5.5 carries, rejects that
+spelling, so `@flash_args` needs esptool 5 or later.
 `/dev/ttyACM0` below is `COMx` on Windows.
 
 1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
