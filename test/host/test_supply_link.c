@@ -479,12 +479,20 @@ TEST_CASE(the_supply_is_free_and_off_only_with_no_port_and_the_output_off)
     pump(true);
     CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
     CHECK(!supply_link_port_free_off(&sl));
-    /* On again and let go, as a classic LEAVE ends: on, not free. */
+    /* An error that leaves the supply to the port: kept, still not free. */
+    CHECK(supply_link_keep(&sl));
+    CHECK(sl.kept);
+    far_step_and_read(true);
+    CHECK(sl.kept);
+    CHECK(!supply_link_port_free_off(&sl));
+    /* On again and let go, as a classic LEAVE ends: on, not free, and the
+     * keep over with the port. */
     CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
     supply_page_hold(&pg, false);
     drv.st.output = true;
     pump(true);
     CHECK(!supply_link_port_held(&sl));
+    CHECK(!sl.kept);
     CHECK(!supply_link_port_free_off(&sl));
     /* The panel's OFF: asked off, the module still on. */
     supply_link_command(&sl, false, 5000u, 1000u);
