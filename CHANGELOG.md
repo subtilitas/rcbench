@@ -83,6 +83,17 @@ history is in git.
 
 ### Changed
 
+- The panel firmware builds on ESP-IDF v6.1 (v5.5.5 before): CI, the
+  release workflow, `dependencies.lock` (ESP-IDF 6.1.0, lock file version
+  3.0.0; the five managed components keep their versions) and
+  [Building](docs/Building.md). The SD card mount leaves the start of
+  SDMMC slot 0 to ESP-IDF's mount: v6.1 answers a second start of a started
+  slot with `ESP_ERR_INVALID_STATE`, which would keep every card from
+  mounting. The panel job is named `Panel (ESP-IDF v6.1, ESP32-P4)`, and
+  the branch ruleset requires that name. The task stack table in
+  [Performance](docs/Performance.md) follows the GCC 15.2 and picolibc
+  build. `flash_args` in a release archive is written for esptool 5
+  ([First run](docs/FirstRun.md)).
 - The Wi-Fi page no longer lists every file of the card, folder by folder;
   the two panes read a folder a page at a time. The ZIP link and its sizes
   stay. `/api/status` adds the User log folder (`user_logs`) and
