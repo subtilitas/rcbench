@@ -705,6 +705,67 @@ TEST_CASE(no_card_is_no_page_and_null_is_refused)
     fm_tree_init(NULL, "");
 }
 
+/*
+ * What a page tells of a file: on it, not there, or on another page.  100
+ * files F000.TXT to F693.TXT, every 7th number: page 1 runs F000 to F329,
+ * page 2 F336 to F665, and the last page, the last 48, F364 to F693.
+ */
+TEST_CASE(a_page_tells_a_file_there_not_there_or_on_another_page)
+{
+    fresh("D");
+    fill("D", 100);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F007.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "f007.txt"), FM_HAS_YES);
+    /* Inside the page's span and not on it. */
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F009.TXT"), FM_HAS_NO);
+    /* The last row, and one past it with a page after. */
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F329.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F330.TXT"), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F336.TXT"), FM_HAS_UNKNOWN);
+    /* Page 2: before its first row with a page ahead. */
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F335.TXT"), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F336.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F337.TXT"), FM_HAS_NO);
+    /* The last page: nothing after it. */
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_LAST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F693.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F999.TXT"), FM_HAS_NO);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F364.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F363.TXT"), FM_HAS_UNKNOWN);
+    /* A folder of the name is no file. */
+    fresh("E");
+    fk_dir(&g_card, "E");
+    fk_dir(&g_card, "E/ATEST001.TXT");
+    fk_file(&g_card, "E/ATEST001.CSV", NULL, 10u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "ATEST001.TXT"), FM_HAS_NO);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "ATEST001.CSV"), FM_HAS_YES);
+    /* An empty folder holds nothing. */
+    fresh("EMPTY");
+    fk_dir(&g_card, "EMPTY");
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F000.TXT"), FM_HAS_NO);
+    /* No card, no name, no pane. */
+    fk_pull(&g_card);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_ERR_NO_CARD);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F000.TXT"), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(&g_tree, ""), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(&g_tree, NULL), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(NULL, "F000.TXT"), FM_HAS_UNKNOWN);
+    /* A page whose row count is out of its bounds tells nothing. */
+    fresh("E");
+    fk_dir(&g_card, "E");
+    fk_file(&g_card, "E/A.TXT", NULL, 1u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_YES);
+    g_tree.held = FM_PAGE_MAX + 1;
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_UNKNOWN);
+    g_tree.held = -1;
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_UNKNOWN);
+}
+
 /* --------------------------------------------------- the page keeping */
 
 /**
@@ -794,6 +855,7 @@ int main(void)
     RUN(a_card_gone_during_a_walk_is_walked_again_once);
     RUN(a_card_that_fails_or_goes_at_both_walks_is_no_page);
     RUN(no_card_is_no_page_and_null_is_refused);
+    RUN(a_page_tells_a_file_there_not_there_or_on_another_page);
     RUN(the_page_keeping_takes_any_entry_size_and_null_edges);
     fk_free(&g_card);
     return test_summary("fm_tree");

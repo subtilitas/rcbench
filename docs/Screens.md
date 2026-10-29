@@ -2553,7 +2553,9 @@ the link down the panel writes to it every 5s.
 The footer, body y 440 to 492, holds RESCAN, 140 x 52px, at the left, as
 on [Logs](#logs), then COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN,
 118 x 52px, OPEN at the right margin; the buttons stand 6px apart, and the
-footer ends 4px above the alert band. A button that would be refused is
+footer ends 4px above the alert band. Each label is in the 10 x 20 face
+with at least 4px either side; the German AKTUALISIEREN is 130px wide and
+VERSCHIEBEN 110px. A button that would be refused is
 drawn dimmed; a tap on it says why in the message line, two lines of the
 12 x 24 face over the footer.
 
@@ -2832,8 +2834,11 @@ stops before its next chunk of 16KiB and says
 ![The DELETE question](img/files-delete.png)
 
 The DELETE question is a box of 700 x 280px with CANCEL and DELETE of
-300 x 56px. It names the entry and its size; for a run's CSV with a report
-of the same number it names the report that goes with it.
+300 x 56px. It names the entry and its size; for a run's CSV it names the
+report of the same number that goes with it when the pane's page lists
+that report. A report that would stand on the next or the previous page
+of a folder of more than 48 entries is named too: the page cannot tell,
+and DELETE takes the report along whenever the card holds it.
 
 ![A copy under way](img/files-copy.png)
 
