@@ -110,8 +110,10 @@ TEST_CASE(read_all_reads_the_set_again_and_says_what_it_found)
 
     rig();
     servo_d485();
-    connected();
+    /* ID 7 from the start: a change between two reads with no write is
+     * another servo (test_hitec_prog_chain). */
     g_drv.dreg[0x32] = 7u;
+    connected();
     CHECK_EQ(hitec_prog_read(model()), HITEC_PROG_MSG_NONE);
     CHECK_EQ(pstate(), HITEC_PROG_READING);
     prun(30u);

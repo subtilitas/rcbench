@@ -81,6 +81,16 @@ history is in git.
 
 - Safety: the claim that the IOmcu acts on overcurrent, over-temperature
   and stall. Its fault bits for those are defined and set by nothing.
+- Hitec programmer: a D series servo swapped for another of the same
+  model inside a session kept the first servo's backup, so RESTORE of the
+  session's backup wrote the first servo's values into it and its first
+  write saved no backup file. A D series read is of the servo before it
+  only while every register a write sends holds the value of the read
+  before, or, after a write left unverified, while the record's verdict
+  explains the values. Otherwise the read is another servo's backup, with
+  `Other values than the last read: taken as another servo.` A servo with
+  the values of the last read is not told apart
+  ([Hitec programmer, The backup before the first write](docs/HitecProgrammer.md#the-backup-before-the-first-write)).
 
 ## 0.23.2 - 2026-10-28
 
