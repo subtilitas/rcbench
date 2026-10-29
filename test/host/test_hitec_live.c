@@ -504,6 +504,19 @@ TEST_CASE(the_as5600_rule_binds_below_half_of_a_3deg_change)
     CHECK_EQ(jd(&j, obs_enc(550u, 8417u, 2037u)), HITEC_LIVE_FREE);
     CHECK_EQ(jd(&j, obs_enc(660u, 8567u, 2037u)), HITEC_LIVE_BOUND_ENC);
 
+    /* A command that stands still after moving keeps the reference: a
+     * blocked horn binds on the still pass, both ways. */
+    hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
+    CHECK_EQ(jd(&j, obs_enc(0u, 8192u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(110u, 8042u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(220u, 7892u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(330u, 7892u, 2048u)), HITEC_LIVE_BOUND_ENC);
+    hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
+    CHECK_EQ(jd(&j, obs_enc(0u, 8192u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(110u, 8342u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(220u, 8492u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(330u, 8492u, 2048u)), HITEC_LIVE_BOUND_ENC);
+
     /* A pass with no angle drops the reference. */
     hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
     CHECK_EQ(jd(&j, obs_enc(0u, 8192u, 2048u)), HITEC_LIVE_FREE);
