@@ -143,13 +143,19 @@ is not delayed. The time the PD mini's output takes to fall after the
 command is not measured.
 
 From 4.31 an OFF the panel writes while the port writes to the servo's
-memory waits for the write: a WRITE, a RESTORE or a RELEASE from the end
-of its planning to the end of its read-backs (`kst_port_writing()`). The
-port sees the supply on until the write ends, the write and its read-backs
-run whole, and the OFF reaches the PD mini in the pass after, 10,000ms
-after the OFF at the latest (`SUPPLY_PAGE_WRITE_WAIT_MS`). An OFF during
-the planning, or with no write running, is not held: nothing has gone to
-the servo, and the operation ends with result 19. The heartbeat lost is
+memory waits for the write: a WRITE, a RESTORE or a RELEASE from the gap
+before its first write frame to the end of the read-backs of its last,
+the roll-back's writes and a full read after a read-back that differs
+included, and 150ms after that (`KST_PORT_WRITE_TAIL_MS`,
+`kst_port_writing()`). The port sees the supply on until then, and the
+OFF reaches the PD mini in the pass after, 10,000ms after the OFF at the
+latest (`SUPPLY_PAGE_WRITE_WAIT_MS`). The full read after the last write
+is cut. The servo answers a write frame 3687 to 3714us after it
+(measured); whether and when it commits the value is not measured, and
+the 150ms are the HITEC page's bound. An OFF during the planning or the
+full read before the first write frame is not held: nothing has gone to
+the servo, and the operation ends with result 19. An OFF during an ENTER,
+a READ_ALL, a VERIFY, a power cycle or a LEAVE is not held either. The heartbeat lost is
 not held. From the panel's OFF until the port is in PWM again, SUPPLY
 refuses the port's own ON: a REBOOT whose cycle is in RAIL_OFF ends in PWM
 with result 32 (`SUPPLY`) and the supply off
@@ -174,7 +180,7 @@ Where the supply ends when something fails:
 | The supply does not read on within 3000ms in RAIL_WAIT | asked off | PWM, result 32 |
 | The supply is asked off in RAIL_WAIT (the panel, a lost heartbeat) | off | PWM, result 19 |
 | The panel asks the supply off in RAIL_OFF (4.31) | stays off: the cycle's ON is refused | PWM, result 32 |
-| The panel asks the supply off while a WRITE, RESTORE or RELEASE sends (4.31) | on until the write and its read-backs end, 10,000ms at most, then off | the operation ends as it would; then as for a supply asked off in PROGRAMMING |
+| The panel asks the supply off while a WRITE, RESTORE or RELEASE sends (4.31) | on until the last write frame's read-backs end and 150ms after, 10,000ms at most, then off | the operation ends as it would; then as for a supply asked off in PROGRAMMING |
 
 The supply ends off whenever no panel is there to switch it off: SUPPLY
 switches the PD mini off when the heartbeat stops, and the port switches

@@ -160,10 +160,12 @@ ein Schreiben in den Speicher des Servos läuft (`supply_page.h`):
   (`SUPPLY_PAGE_WRITE_WAIT_MS`). Der Port bricht sich nicht mitten im
   Schreiben selbst ab.
 - Ein KST-Schreiben ist ein WRITE, ein RESTORE oder ein RELEASE der Sitzung,
-  vom Ende seines Planens bis zum Ende seiner Rücklesungen
-  (`kst_port_writing()`). Sein Planen sendet nichts und wird sofort
-  abgebrochen. Ein Versorgungszyklus, ein LEAVE und ein Lesen schreiben
-  nichts.
+  von der Pause vor seinem ersten Schreib-Frame bis zum Ende der
+  Rücklesungen seines letzten, und 150ms danach (`KST_PORT_WRITE_TAIL_MS`,
+  `kst_port_writing()`). Sein Planen und die vollen Lesevorgänge vor dem
+  ersten und nach dem letzten Schreib-Frame senden kein Schreiben und
+  werden sofort abgebrochen. Ein ENTER, ein READ_ALL, ein VERIFY, ein
+  Versorgungszyklus und ein LEAVE schreiben nichts.
 - Ein Hitec-Schreiben läuft, solange ein SEND läuft, dessen Frame
   schreibt, und 150ms danach (`HITEC_PORT_WRITE_TAIL_MS`), oder solange das
   letzte Kommando der HITEC-Page seinen Schritt mit MORE gestartet hat

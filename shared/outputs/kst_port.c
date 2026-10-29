@@ -661,6 +661,20 @@ static bool writes_servo(link_kst_op_t op)
 }
 
 /**
+ * @brief A write frame of the session or its read-backs run now, without
+ *        the tail.
+ *
+ * @param p The port.
+ * @return true while a WRITE, a RESTORE or a RELEASE writes.
+ */
+static bool writing_now(const kst_port_t *p)
+{
+    return p->state == (uint8_t)LINK_KST_PROGRAMMING && p->running != 0u
+           && writes_servo((link_kst_op_t)p->op)
+           && kst_session_writing(&p->session);
+}
+
+/**
  * @brief Route one command to its operation, judged against the port's state.
  *
  * @param p      The port.
@@ -1306,6 +1320,20 @@ void kst_port_step(kst_port_t *p, bool safe, bool stop, uint32_t now_ms)
     default:
         break;
     }
+    /* The write's tail: from the step that finds it ended. */
+    {
+        const bool w = writing_now(p);
+
+        if (p->wrote != 0u && !w) {
+            p->tail = 1;
+            p->tail_t0 = now_ms;
+        } else if (p->tail != 0u
+                   && (uint32_t)(now_ms - p->tail_t0)
+                          >= KST_PORT_WRITE_TAIL_MS) {
+            p->tail = 0;
+        }
+        p->wrote = w ? 1u : 0u;
+    }
 }
 
 bool kst_port_init(kst_port_t *p, const kst_port_hw_t *hw)
@@ -1346,9 +1374,7 @@ bool kst_port_frame_out(const kst_port_t *p)
 
 bool kst_port_writing(const kst_port_t *p)
 {
-    return p != NULL && p->state == (uint8_t)LINK_KST_PROGRAMMING
-           && p->running != 0u && p->session.planning == 0u
-           && writes_servo((link_kst_op_t)p->op);
+    return p != NULL && (writing_now(p) || p->tail != 0u);
 }
 
 void kst_port_bench_armed(kst_port_t *p, bool armed)

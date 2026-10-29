@@ -13,9 +13,13 @@
  *
  * Under test: an OFF during a WRITE's planning switches the supply off at
  * once and nothing is written; an OFF in the middle of a WRITE, a RESTORE
- * and a RELEASE waits for the write and its read-backs, which end verified,
- * and switches the supply off in the pass after; an OFF in a write's last
- * pass the same; the port then keeps it off and returns to PWM; an OFF
+ * and a RELEASE waits for every write frame and its read-backs, the servo
+ * holding the target, and switches the supply off KST_PORT_WRITE_TAIL_MS
+ * after the last read-back to the millisecond, cutting the full read
+ * after it; an OFF in that tail the same, one after it at once; an OFF
+ * during an ENTER, a READ_ALL, a VERIFY and the full read before a WRITE's
+ * first write frame at once, the WRITE then writing nothing; the port then
+ * keeps the supply off and returns to PWM; an OFF
  * during a REBOOT's off time refuses the cycle's ON, and the port lets go
  * in PWM, after which an ENTER switches the supply on again; the heartbeat
  * lost during a held OFF switches it off at once, within the frame wait.
@@ -234,9 +238,9 @@ static void panel_off(void)
 
 /* ----------------------------------------------------------------- the bench */
 
-/* The servo holding @p img, the page wired with its output off, the port
- * entered (it switches the supply on) and the servo read. */
-static void up_holding(const kst_image_t *img)
+/* The servo holding @p img, the page wired with its output off, the
+ * port's ENTER sent (it switches the supply on). */
+static void entering(const kst_image_t *img)
 {
     static const uint16_t k_wiring[4] = { 1u, 8u, 9u, 1u };
     static const uint16_t k_supply[2] = { MV, MA };
@@ -272,6 +276,13 @@ static void up_holding(const kst_image_t *img)
              0);
     CHECK_EQ(cmd(LINK_KST_OP_ENTER, 0, 0), 0);
     CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+}
+
+/* The servo holding @p img, the page wired with its output off, the port
+ * entered (it switches the supply on) and the servo read. */
+static void up_holding(const kst_image_t *img)
+{
+    entering(img);
     settle();
     CHECK_EQ(result(), KST_SES_OK);
     CHECK_EQ(state(), LINK_KST_PROGRAMMING);
@@ -346,6 +357,50 @@ TEST_CASE(an_off_while_a_write_plans_is_at_once_and_writes_nothing)
     off_to_pwm();
 }
 
+/* A held OFF: the module on through every write frame and read-back and
+ * KST_PORT_WRITE_TAIL_MS after the last, to the millisecond of the port's
+ * clock; the hold ends then and the module goes off within the frame
+ * wait. */
+static void held_to_tail(void)
+{
+    uint32_t last = g_ms;
+
+    while (kst_session_writing(&g_port.session)) {
+        CHECK(g_drv.want_output);
+        tick();
+    }
+    CHECK(g_port.tail != 0u);
+    while (kst_port_writing(&g_port)) {
+        CHECK(g_drv.want_output);
+        last = g_ms;
+        tick();
+    }
+    CHECK_EQ(last - g_port.tail_t0, KST_PORT_WRITE_TAIL_MS);
+    CHECK(!supply_page_off_held(&g_sp));
+    /* The full read's frame on the wire: the frame wait as for any OFF. */
+    for (unsigned i = 0; i < 10u * (SUPPLY_PAGE_OFF_WAIT_MS + 1u)
+                         && g_drv.want_output;
+         ++i) {
+        tick();
+    }
+    CHECK(!g_drv.want_output);
+}
+
+/* An OFF while the port writes nothing: not held, the module off within
+ * the frame wait (SUPPLY_PAGE_OFF_WAIT_MS). */
+static void off_at_once(void)
+{
+    CHECK(!kst_port_writing(&g_port));
+    panel_off();
+    CHECK(!supply_page_off_held(&g_sp));
+    for (unsigned i = 0; i < 10u * (SUPPLY_PAGE_OFF_WAIT_MS + 1u)
+                         && g_drv.want_output;
+         ++i) {
+        tick();
+    }
+    CHECK(!g_drv.want_output);
+}
+
 /* The request of @p kind (0 WRITE, 1 RESTORE, 2 RELEASE) sent, on a bench
  * that is up; a RESTORE after a write, from the backup.  The image the
  * servo is to end with. */
@@ -397,50 +452,87 @@ TEST_CASE(an_off_mid_write_waits_for_each_write_kind_to_end_verified)
         CHECK(kst_port_writing(&g_port));
         panel_off();
         CHECK_EQ(supply_page_off_held(&g_sp), true);
-        while (busy()) {
-            CHECK(g_drv.want_output);
-            tick();
-        }
-        CHECK_EQ(result(), KST_SES_OK);
+        held_to_tail();
         CHECK(servo_is(&target));
-        /* The write ended in the last pass: off in it. */
-        CHECK(!kst_port_writing(&g_port));
-        CHECK(!g_drv.want_output);
+        /* The full read after the last write is cut. */
+        settle();
+        CHECK(result() != KST_SES_OK);
         off_to_pwm();
     }
 }
 
-/* The OFF in the pass before the one that ends the write: the write is
- * whole, the supply off right after it. */
-TEST_CASE(an_off_in_a_writes_last_pass_cuts_after_it)
+/* The OFF in the tail after the last read-back: held to the tail's end.
+ * An OFF after the tail, while the full read after the write runs: at
+ * once. */
+TEST_CASE(an_off_in_the_tail_waits_and_one_after_it_is_at_once)
 {
     kst_image_t target;
-    unsigned passes = 0;
-    unsigned at = 0;
-
-    /* Count the passes from the command to the write's end. */
-    up();
-    (void)send_kind(0u);
-    while (busy()) {
-        tick();
-        passes++;
-    }
-    CHECK_EQ(result(), KST_SES_OK);
 
     up();
     target = send_kind(0u);
-    for (at = 0; at + 1u < passes; ++at) {
+    for (unsigned i = 0; i < 200000u && g_port.tail == 0u; ++i) {
         tick();
     }
-    CHECK(kst_port_writing(&g_port));
-    CHECK(busy());
-    panel_off();
-    tick();
-    CHECK(!busy());
-    CHECK_EQ(result(), KST_SES_OK);
     CHECK(servo_is(&target));
-    CHECK(!g_drv.want_output);
+    CHECK(busy());
+    CHECK(kst_port_writing(&g_port));
+    panel_off();
+    CHECK(supply_page_off_held(&g_sp));
+    held_to_tail();
     off_to_pwm();
+
+    up();
+    target = send_kind(0u);
+    for (unsigned i = 0; i < 200000u && g_port.tail == 0u; ++i) {
+        tick();
+    }
+    run_ms(KST_PORT_WRITE_TAIL_MS);
+    CHECK(busy());
+    off_at_once();
+    CHECK(servo_is(&target));
+    off_to_pwm();
+}
+
+/* An OFF during an operation that writes nothing, at once: CONNECT's
+ * ENTER, a READ_ALL, a VERIFY, and the full read before a WRITE's first
+ * write frame, which then writes nothing. */
+TEST_CASE(an_off_during_an_operation_that_writes_nothing_is_at_once)
+{
+    unsigned writes;
+    kst_image_t img;
+
+    entering(NULL);
+    run_ms(20u);
+    CHECK(busy());
+    off_at_once();
+
+    up();
+    CHECK_EQ(cmd(LINK_KST_OP_READ_ALL, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    run_ms(20u);
+    CHECK(busy());
+    off_at_once();
+
+    up();
+    img = page_image();
+    CHECK_EQ(cmd(LINK_KST_OP_VERIFY, 0, stage(&img, 0, 0)), 0);
+    CHECK_EQ(refusal(), LINK_KST_REF_NONE);
+    run_ms(20u);
+    CHECK(busy());
+    off_at_once();
+
+    up();
+    writes = g_sim.n_writes;
+    (void)send_kind(0u);
+    for (unsigned i = 0; i < 200000u && g_port.session.planning != 0u; ++i) {
+        tick();
+    }
+    run_ms(20u);
+    CHECK(busy());
+    CHECK_EQ(g_sim.n_writes, writes);
+    off_at_once();
+    settle();
+    CHECK_EQ(g_sim.n_writes, writes);
 }
 
 /* A REBOOT's off time: the panel's OFF comes with the output already off,
@@ -499,7 +591,8 @@ int main(void)
 {
     RUN(an_off_while_a_write_plans_is_at_once_and_writes_nothing);
     RUN(an_off_mid_write_waits_for_each_write_kind_to_end_verified);
-    RUN(an_off_in_a_writes_last_pass_cuts_after_it);
+    RUN(an_off_in_the_tail_waits_and_one_after_it_is_at_once);
+    RUN(an_off_during_an_operation_that_writes_nothing_is_at_once);
     RUN(an_off_in_a_power_cycle_refuses_its_on);
     RUN(a_lost_heartbeat_during_a_held_off_cuts_at_once);
     return test_summary("kst_port_cut");

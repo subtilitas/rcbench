@@ -45,8 +45,9 @@ history is in git.
   ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply)).
   The panel writes the OFF on every error. The IOmcu's SUPPLY page holds an
   OFF of a supply a port holds back from the PD mini while the port writes,
-  10000ms after the OFF at most: a KST WRITE, RESTORE or RELEASE from the
-  end of its planning to the end of its read-backs, a Hitec SEND whose
+  10000ms after the OFF at most: a KST WRITE, RESTORE or RELEASE from its
+  first write frame to the read-backs of its last and 150ms after, a
+  Hitec SEND whose
   frame writes and 150ms after it, and the gap after a Hitec step whose
   command carries the new HITEC bit 4 (`MORE`, more steps of this write
   follow). The IOmcu tells a writing Hitec frame from its bytes; an OFF

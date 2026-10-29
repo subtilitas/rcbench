@@ -1064,6 +1064,12 @@ const kst_plan_t *kst_session_plan(const kst_session_t *s)
     return s == NULL ? NULL : &s->plan;
 }
 
+bool kst_session_writing(const kst_session_t *s)
+{
+    return s != NULL && s->op == OP_WRITE && s->planning == 0u
+           && s->phase >= W_WROTE && s->phase <= W_UNDO_READ2;
+}
+
 void kst_session_abort(kst_session_t *s)
 {
     if (s != NULL && s->op != OP_NONE) {

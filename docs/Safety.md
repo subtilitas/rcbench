@@ -147,9 +147,11 @@ decides whether a write to the servo's memory runs, from its own state
   (`SUPPLY_PAGE_WRITE_WAIT_MS`). The port does not cut itself in the
   middle of the write.
 - A KST write is a WRITE, a RESTORE or a RELEASE of the session, from the
-  end of its planning to the end of its read-backs (`kst_port_writing()`).
-  Its planning sends nothing and is cut at once. A power cycle, a LEAVE and
-  a read write nothing.
+  gap before its first write frame to the end of the read-backs of its
+  last, and 150ms after (`KST_PORT_WRITE_TAIL_MS`, `kst_port_writing()`).
+  Its planning and the full reads before the first and after the last
+  write frame send no write and are cut at once. An ENTER, a READ_ALL, a
+  VERIFY, a power cycle and a LEAVE write nothing.
 - A Hitec write runs while a SEND whose frame writes runs and for 150ms
   after it (`HITEC_PORT_WRITE_TAIL_MS`), or while the last command of the
   HITEC page started its step with `MORE` (`CMD` bit 4,
