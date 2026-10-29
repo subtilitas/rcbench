@@ -96,6 +96,22 @@ typedef struct {
 void fm_tree_init(fm_tree_t *tree, const char *dir);
 
 /**
+ * @brief Start a pane in folder @p dir with entry @p key as its one row, for
+ *        a caller that keeps no pane between two pages: the Wi-Fi page's
+ *        file API, which names a page by the entry at its edge.
+ *
+ * fm_tree_page() then reads with FM_GO_NEXT the page after @p key, with
+ * FM_GO_PREV the page before it and with FM_GO_SAME the page from it on.
+ * @p key need not be on the card: it names a place in the pane's order.
+ *
+ * @param tree  the pane
+ * @param dir   the folder, as fm_tree_init() takes it
+ * @param key   the entry at the page's edge: its name and whether it is a
+ *              folder are read; NULL starts the pane as fm_tree_init()
+ */
+void fm_tree_at(fm_tree_t *tree, const char *dir, const fm_entry_t *key);
+
+/**
  * @brief Read a page of the pane's folder.
  *
  * The selection stays on its name when the name is on the new page, and
