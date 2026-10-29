@@ -286,13 +286,19 @@ uint16_t hitec_live_slew(uint16_t from, uint16_t to);
  * @brief The command of one pass: @p want clamped to the reach, slew
  *        limited from @p last_p, and its target.
  *
+ * A @p last_p outside the reach, up to HITEC_LIVE_LAG_FREE from its
+ * edge, counts as the edge, so the first move is at most
+ * HITEC_LIVE_SLEW + HITEC_LIVE_LAG_FREE.
+ *
  * @param e       The stored positions, left < mid < right.
  * @param last_p  The command of the pass before; at the loop's start the
  *                position read.
  * @param want    The position wanted: the value being edited.
  * @param out     Receives the command.
- * @return false, and no command, for NULL or positions that do not
- *         ascend.
+ * @return false, and no command, for NULL, positions that do not ascend,
+ *         and a @p last_p further than HITEC_LIVE_LAG_FREE outside the
+ *         reach: no target puts the horn there, and the slew would not
+ *         bound the first move.
  */
 bool hitec_live_d_command(const hitec_live_ends_t *e, uint16_t last_p,
                           uint16_t want, hitec_live_cmd_t *out);
@@ -330,10 +336,12 @@ void hitec_live_judge_init(hitec_live_judge_t *j, uint16_t mid,
  *   run for HITEC_LIVE_STALL_MS or longer bind; a reading below ends the
  *   run; a pass with no reading leaves it.
  * - AS5600: the first pass with an angle sets the reference (the command
- *   and the angle); a pass with none drops it.  Once the command of the
- *   pass before lies HITEC_LIVE_ENC_MIN_CDEG or more from the reference's,
- *   an angle that moved less than half of that change binds; one that
- *   moved half or more sets the reference to this pass.  Judged against
+ *   and the angle); a pass with none drops it, and a command that turns
+ *   back from the way it went since the reference sets it again.  Once
+ *   the command of the pass before lies HITEC_LIVE_ENC_MIN_CDEG or more
+ *   from the reference's, an angle that moved less than half of that
+ *   change binds; one that moved half or more sets the reference to this
+ *   pass.  Judged against
  *   the pass before, the horn has one pass to follow; the direction of
  *   the angle is not judged.
  *

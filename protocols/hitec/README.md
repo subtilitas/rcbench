@@ -45,7 +45,7 @@ pull-up under [Line levels](#line-levels); nothing else of it has.
   on both; `hitec_session.c` is 3,108 bytes of code with
   arm-none-eabi-gcc 14.2 at `-Os`. A judge (`hitec_live_judge_t`) is 20
   bytes and a FIND STOP search (`hitec_live_find_t`) 36 bytes on both;
-  `hitec_live.c` is 1,216 bytes of code.
+  `hitec_live.c` is 1,276 bytes of code.
 - Non-blocking: `start()` and `poll()` return at once. Nothing waits.
 
 ## Wire
@@ -449,11 +449,11 @@ unsigned differences, so its wrap does not change one.
 | Position to target | the inverse, clamped to 0 to 6000 (`hitec_live_d_target()`) |
 | Reach | the positions of targets 0 and 6000: 2606 to 13743 on a factory D485HW (`hitec_live_d_reach()`) |
 | Pulse width | t = (us - 750) x 4 (`hitec_live_d_us_target()`); 1000us takes the horn 76.9% of the way to the left end (`hitec_live_d_share_pm()`) |
-| Command of a pass | the wanted position clamped to the reach, at most 150 counts (2.0deg) from the command before, and its target (`hitec_live_d_command()`) |
+| Command of a pass | the wanted position clamped to the reach, at most 150 counts (2.0deg) from the command before, and its target (`hitec_live_d_command()`); a command before up to 50 counts outside the reach counts as its edge, one further out is refused |
 | Free | the position read within 50 counts (0.7deg) of the command; it becomes the last free position |
 | Bound by lag | the position more than 150 counts from a command that stands still or moves outward, on 2 passes in a row |
 | Bound by current | readings at or above 80% of the session's current limit (800mA of 1000mA) for 400ms; a pass with no reading leaves the run |
-| Bound by AS5600 | the angle moved less than half of a commanded change of 3deg or more, counted to the pass before |
+| Bound by AS5600 | the angle moved less than half of a commanded change of 3deg or more, counted to the pass before; a command that turns back starts the count again |
 | Move back | the last free position, 75 counts (1.0deg) toward 0xC2, not past it (`hitec_live_back()`) |
 | FIND STOP | from 0xC2 outward in steps of 37 counts (0.5deg), 2 passes a position; a bind gives the stop (the last free position) and the end point 75 counts inside it; 2 passes at the reach edge with no bind end it with no stop; 40s cap; abort (`hitec_live_find_*()`) |
 

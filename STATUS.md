@@ -379,9 +379,11 @@ loop's core (`protocols/hitec/hitec_live.c`): the mapping at targets 0,
 400, 3000, 5600 and 6000 on a D485HW's stored ends and back, the clamp at
 0 and at the 16383 edge, the ends from a CW image only; the reach, the
 pulse width of a target and the 1000us share; the slew at 149, 150 and 151
-counts; the lag at 50, 150 and 151 counts and over 2 passes; the current
+counts and a start 50 and 51 counts outside the reach; the lag at 50,
+150 and 151 counts and over 2 passes; the current
 at the stall level for 399, 400 and 401ms; the AS5600 rule at half the
-change and at a commanded change of 3deg; FIND STOP to a block, to the
+change, at a commanded change of 3deg and with a command that turns
+back; FIND STOP to a block, to the
 reach edge, on the current, its abort, its 40s cap and the 32-bit
 millisecond wrap.
 `hitec_headers_cxx` calls the module through its 6 headers from C++11.

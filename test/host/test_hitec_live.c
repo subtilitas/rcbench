@@ -7,14 +7,15 @@
  *    stored ends, back and forth, the clamp at 0 and at the 16383 edge,
  *    the stored ends taken from an image;
  *  - the reach, the pulse width of a target and the 1000us share;
- *  - the slew at 149, 150 and 151 counts, the command clamped to the reach;
+ *  - the slew at 149, 150 and 151 counts, the command clamped to the reach,
+ *    a start 50 and 51 counts outside the reach;
  *  - the lag at 50, 150 and 151 counts, over 2 passes, a row broken, a
  *    command moving inward;
  *  - the current at the stall level for 399, 400 and 401ms, a reading
  *    below it, a pass with no reading, across the 32-bit ms wrap;
  *  - the AS5600 rule at half the change, below it, round the turn, with
  *    no angle, at a commanded change of 299 and 300 hundredths of a
- *    degree;
+ *    degree, a command that turns back;
  *  - the move back after a bind on both sides and near the neutral;
  *  - FIND STOP to a block, to the reach edge, on the current, its abort,
  *    its 40s cap and the cap across the wrap.
@@ -280,6 +281,28 @@ TEST_CASE(the_command_steps_150_and_stops_at_the_reach)
     CHECK_EQ(c.target, 6000u);
 }
 
+TEST_CASE(a_start_outside_the_reach_counts_as_its_edge_up_to_50)
+{
+    hitec_live_cmd_t c;
+
+    /* 50 below the reach: from the edge, 150 on. */
+    CHECK(hitec_live_d_command(&k_ends, 2556u, 8192u, &c));
+    CHECK_EQ(c.p, 2756u);
+    CHECK_EQ(c.target, hitec_live_d_target(&k_ends, 2756u));
+    CHECK(hitec_live_d_command(&k_ends, 2556u, 2000u, &c));
+    CHECK_EQ(c.p, 2606u);
+    CHECK_EQ(c.target, 0u);
+    /* 51 below: refused, as far below as 0. */
+    CHECK(!hitec_live_d_command(&k_ends, 2555u, 8192u, &c));
+    CHECK(!hitec_live_d_command(&k_ends, 2000u, 8192u, &c));
+    CHECK(!hitec_live_d_command(&k_ends, 0u, 8192u, &c));
+    /* Above: 50 taken, 51 refused, 65535 refused. */
+    CHECK(hitec_live_d_command(&k_ends, 13793u, 8192u, &c));
+    CHECK_EQ(c.p, 13593u);
+    CHECK(!hitec_live_d_command(&k_ends, 13794u, 8192u, &c));
+    CHECK(!hitec_live_d_command(&k_ends, 65535u, 8192u, &c));
+}
+
 /* --------------------------------------------------------------- judge */
 
 TEST_CASE(the_lag_at_50_150_and_151_binds_on_2_passes)
@@ -459,6 +482,27 @@ TEST_CASE(the_as5600_rule_binds_below_half_of_a_3deg_change)
     CHECK_EQ(jd(&j, obs_enc(0u, 8192u, 2048u)), HITEC_LIVE_FREE);
     CHECK_EQ(jd(&j, obs_enc(110u, 8416u, 2048u)), HITEC_LIVE_FREE);
     CHECK_EQ(jd(&j, obs_enc(220u, 8416u, 2048u)), HITEC_LIVE_BOUND_ENC);
+
+    /* A command that turns back starts a new reference: the horn follows
+     * 8192, 8342, 8417, 8267 exactly. */
+    hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
+    CHECK_EQ(jd(&j, obs_enc(0u, 8192u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(110u, 8342u, 2070u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(220u, 8417u, 2082u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(330u, 8267u, 2059u)), HITEC_LIVE_FREE);
+    CHECK_EQ(j.enc_p, 8267u);
+    CHECK_EQ(j.enc_a, 2059u);
+    /* The same the other way round. */
+    hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
+    CHECK_EQ(jd(&j, obs_enc(0u, 8192u, 2048u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(110u, 8042u, 2026u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(220u, 7967u, 2014u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(330u, 8117u, 2037u)), HITEC_LIVE_FREE);
+    CHECK_EQ(j.enc_p, 8117u);
+    /* From there on, a blocked horn still binds. */
+    CHECK_EQ(jd(&j, obs_enc(440u, 8267u, 2037u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(550u, 8417u, 2037u)), HITEC_LIVE_FREE);
+    CHECK_EQ(jd(&j, obs_enc(660u, 8567u, 2037u)), HITEC_LIVE_BOUND_ENC);
 
     /* A pass with no angle drops the reference. */
     hitec_live_judge_init(&j, 8192u, 8192u, 1000u);
@@ -669,6 +713,7 @@ int main(void)
     RUN(the_reach_the_pulse_width_and_the_1000us_share);
     RUN(the_slew_at_149_150_and_151);
     RUN(the_command_steps_150_and_stops_at_the_reach);
+    RUN(a_start_outside_the_reach_counts_as_its_edge_up_to_50);
     RUN(the_lag_at_50_150_and_151_binds_on_2_passes);
     RUN(a_row_broken_or_a_command_moving_inward_does_not_bind);
     RUN(the_move_back_goes_75_toward_the_neutral_and_not_past_it);

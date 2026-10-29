@@ -153,11 +153,27 @@ bool hitec_live_d_command(const hitec_live_ends_t *e, uint16_t last_p,
                           uint16_t want, hitec_live_cmd_t *out)
 {
     uint16_t w = want;
+    uint16_t lo;
+    uint16_t hi;
 
     if (!ends_ok(e) || out == NULL) {
         return false;
     }
-    hitec_live_d_reach(e, &out->lo, &out->hi);
+    hitec_live_d_reach(e, &lo, &hi);
+    /* A command before outside the reach is no target's position: within
+     * HITEC_LIVE_LAG_FREE of the edge it counts as the edge, further out
+     * the slew would not bound the first move. */
+    if ((unsigned)lo > (unsigned)last_p + HITEC_LIVE_LAG_FREE
+        || (unsigned)last_p > (unsigned)hi + HITEC_LIVE_LAG_FREE) {
+        return false;
+    }
+    if (last_p < lo) {
+        last_p = lo;
+    } else if (last_p > hi) {
+        last_p = hi;
+    }
+    out->lo = lo;
+    out->hi = hi;
     if (w < out->lo) {
         w = out->lo;
     } else if (w > out->hi) {
@@ -261,7 +277,12 @@ static bool enc_binds(hitec_live_judge_t *j, const hitec_live_obs_t *o)
         j->enc_on = 0;
         return false;
     }
-    if (j->enc_on == 0u) {
+    /* A command that turns back from the way it went since the reference
+     * starts a new reference: the change counted would run the other
+     * way. */
+    if (j->enc_on == 0u
+        || (o->p < j->last_p && j->last_p > j->enc_p)
+        || (o->p > j->last_p && j->last_p < j->enc_p)) {
         j->enc_on = 1;
         j->enc_p = o->p;
         j->enc_a = (uint16_t)a;
