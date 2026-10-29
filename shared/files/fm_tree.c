@@ -211,6 +211,21 @@ void fm_tree_init(fm_tree_t *tree, const char *dir)
     tree->selected = -1;
 }
 
+void fm_tree_at(fm_tree_t *tree, const char *dir, const fm_entry_t *key)
+{
+    fm_tree_init(tree, dir);
+    if (tree == NULL || key == NULL) {
+        return;
+    }
+    fm_entry_t *row = &tree->page[0];
+    memcpy(row->name, key->name, sizeof(row->name));
+    row->name[sizeof(row->name) - 1u] = '\0';
+    row->is_dir = key->is_dir;
+    tree->held = 1;
+    /* Not the first page: FM_GO_SAME reads from the key on. */
+    tree->ahead = 1;
+}
+
 fm_err_t fm_tree_page(fm_tree_t *tree, const fm_io_t *io,
                       const fm_bench_t *bench, fm_go_t go)
 {

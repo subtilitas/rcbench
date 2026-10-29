@@ -490,6 +490,26 @@ static char s_job_run_dir[CARD_DIR_MAX];
 static char s_job_test_dir[CARD_DIR_MAX];
 
 /**
+ * @brief The bench now: the control task's snapshot and the logger's open
+ *        files, into a task's own marks.
+ * @param out       takes the bench
+ * @param marks     takes the open files; outlives the bench's use
+ * @param run_dir   takes their run's folder, CARD_DIR_MAX bytes
+ * @param test_dir  takes their test's folder, CARD_DIR_MAX bytes
+ */
+static void bench_into(fm_bench_t *out, log_marks_t *marks, char *run_dir,
+                       char *test_dir)
+{
+    snap_lock();
+    out->armed = s_snap.armed || s_snap.arm_wanted;
+    out->link_up = s_snap.link_up;
+    snap_unlock();
+    out->fault_busy = log_fault_busy();
+    log_open_marks(marks, run_dir, test_dir);
+    out->marks = marks;
+}
+
+/**
  * @brief The runner's bench(): the control task's snapshot and the
  *        logger's open files, now.
  * @param out  takes the bench
@@ -498,13 +518,25 @@ static char s_job_test_dir[CARD_DIR_MAX];
 static void job_bench(fm_bench_t *out, void *ctx)
 {
     (void)ctx;
-    snap_lock();
-    out->armed = s_snap.armed || s_snap.arm_wanted;
-    out->link_up = s_snap.link_up;
-    snap_unlock();
-    out->fault_busy = log_fault_busy();
-    log_open_marks(&s_job_marks, s_job_run_dir, s_job_test_dir);
-    out->marks = &s_job_marks;
+    bench_into(out, &s_job_marks, s_job_run_dir, s_job_test_dir);
+}
+
+/** @brief The logger's open files as the page's server last read them. */
+static log_marks_t s_web_marks;
+/** @brief The folder of s_web_marks' run. */
+static char s_web_run_dir[CARD_DIR_MAX];
+/** @brief The folder of s_web_marks' test. */
+static char s_web_test_dir[CARD_DIR_MAX];
+
+void panel_files_web_bench(fm_bench_t *out, void *ctx)
+{
+    (void)ctx;
+    bench_into(out, &s_web_marks, s_web_run_dir, s_web_test_dir);
+}
+
+const fm_io_t *panel_files_card(void)
+{
+    return &k_io;
 }
 
 /**

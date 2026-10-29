@@ -333,6 +333,7 @@ TRACKED = [
     "shared/webaccess/wa_page.c",
     "shared/webaccess/wa_mdns.c",
     "shared/webaccess/wa_guard.c",
+    "shared/webaccess/wa_api.c",
     "shared/clock/wall_clock.c",
 ]
 
