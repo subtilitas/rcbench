@@ -208,6 +208,15 @@ uint32_t ui_help_dock_key(const ui_help_page_t *p, int n, int count,
                           bool note, ui_help_hit_t btn);
 
 /**
+ * @brief A number for where ui_help_render_marks() draws @p p's marks: the
+ *        side and each item's rect.  The router repaints the screen when it
+ *        moves, so a badge that moved leaves nothing behind.
+ * @param p The page.
+ * @return A 32-bit FNV-1a hash.
+ */
+uint32_t ui_help_marks_key(const ui_help_page_t *p);
+
+/**
  * @brief Paint the half of the body the dock takes: the background, the
  *        dock with its header, items, web line and buttons.
  * @param c     The panel's canvas.

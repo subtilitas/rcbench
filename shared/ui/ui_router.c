@@ -94,6 +94,8 @@ static struct {
     uint32_t      guide_set;    /**< ui_help_set_key() at the opening     */
     uint32_t      guide_key[2]; /**< ui_help_dock_key() of each buffer's dock */
     uint8_t       guide_drawn;  /**< the buffers whose guide_key holds    */
+    uint32_t      guide_marks;  /**< ui_help_marks_key() of the last frame */
+    bool          guide_marked; /**< guide_marks holds                    */
     bool          guide_press;  /**< a press on a button of the dock      */
     uint8_t       guide_id;     /**< its track id                         */
     ui_help_hit_t guide_btn;    /**< its button                           */
@@ -1130,6 +1132,16 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     gfx_canvas_t sub;
     ui_help_page_t page;
     const bool guide = guide_page_now(&page);
+    /* Marks that moved -- the arm chip on page 3 when the bench is ARMED,
+     * a tile's mark that went -- repaint the screen first, as a bubble
+     * that moved does: the screen drew its chrome once per framebuffer,
+     * and the old marks would stay where it is not drawn again. */
+    const uint32_t marks = guide ? ui_help_marks_key(&page) : 0u;
+    if (s.guide_marked && (!guide || marks != s.guide_marks)) {
+        ui_router_invalidate();
+    }
+    s.guide_marked = guide;
+    s.guide_marks  = marks;
     if (gfx_canvas_sub(c, body, &sub)) {
         if (guide) {
             /* The screen draws the live half; the dock takes the other. */

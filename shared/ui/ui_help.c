@@ -395,6 +395,22 @@ uint32_t ui_help_dock_key(const ui_help_page_t *p, int n, int count,
     return h;
 }
 
+uint32_t ui_help_marks_key(const ui_help_page_t *p)
+{
+    uint32_t h = 2166136261u;
+    if (p == NULL) {
+        return h;
+    }
+    const int head[2] = { (int)p->side, (int)p->count };
+    h = fnv(h, head, sizeof(head));
+    for (int i = 0; i < p->count && i < UI_HELP_ITEMS; ++i) {
+        const int16_t r[4] = { p->item[i].rect.x, p->item[i].rect.y,
+                               p->item[i].rect.w, p->item[i].rect.h };
+        h = fnv(h, r, sizeof(r));
+    }
+    return h;
+}
+
 /**
  * @brief A badge: a 28px accent disc with @p num in the dark text of the
  *        bright fills.

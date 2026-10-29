@@ -25,6 +25,7 @@
  * - five_contacts_on_the_dock_reach_no_screen
  * - the_dock_is_drawn_once_a_buffer_and_the_marks_every_frame
  * - a_closed_guide_leaves_no_pixels_behind
+ * - marks_that_move_leave_nothing_behind
  *
  * SPDX-License-Identifier: MIT
  */
@@ -524,6 +525,44 @@ TEST_CASE(a_closed_guide_leaves_no_pixels_behind)
     }
 }
 
+/** @brief A hash of the whole framebuffer. */
+static uint32_t frame_hash(void)
+{
+    uint32_t h = 2166136261u;
+    for (size_t i = 0; i < (size_t)W * H; ++i) {
+        h = (h ^ (uint32_t)fb[i]) * 16777619u;
+    }
+    return h;
+}
+
+/* Page 3 marks the arm chip, which moves when the bench is ARMED: the
+ * frame after the change equals one drawn from scratch, so the badge's old
+ * place is gone. */
+TEST_CASE(marks_that_move_leave_nothing_behind)
+{
+    open_on_menu();
+    tap_button(UI_HELP_HIT_NEXT);
+    tap_button(UI_HELP_HIT_NEXT);
+    REQUIRE(ui_router_guide_page() == 2);
+    ui_help_page_t safe;
+    REQUIRE(page_now(&safe));
+    ui_router_render(&cv, 0);
+    ui_router_render(&cv, 0);
+    const ui_bench_status_t armed = { .link_up = true, .mode = "BENCH",
+                                      .armed = true, .run_seconds = 5,
+                                      .armed_roles = UI_ARMED_MOTOR };
+    ui_router_set_status(&armed);
+    ui_help_page_t now;
+    REQUIRE(page_now(&now));
+    CHECK(ui_help_marks_key(&now) != ui_help_marks_key(&safe));
+    ui_router_render(&cv, 0);
+    const uint32_t got = frame_hash();
+    ui_router_invalidate();
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+    CHECK_EQ(got, frame_hash());
+}
+
 int main(void)
 {
     RUN(the_chip_shows_where_the_screen_has_pages);
@@ -545,5 +584,6 @@ int main(void)
     RUN(five_contacts_on_the_dock_reach_no_screen);
     RUN(the_dock_is_drawn_once_a_buffer_and_the_marks_every_frame);
     RUN(a_closed_guide_leaves_no_pixels_behind);
+    RUN(marks_that_move_leave_nothing_behind);
     return test_summary("help_router");
 }
