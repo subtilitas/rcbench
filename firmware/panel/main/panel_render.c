@@ -452,7 +452,8 @@ void flush_screen_commands(uint32_t stops_now)
     }
     /* And the operator's own back once the port is done and the output
      * reads off, read after the count: as new as the command taken. */
-    supply_screen_port_done(atomic_load(&s_supply_free_off));
+    supply_screen_port_done(atomic_load(&s_supply_free_off)
+                            && !servo_screen_output_held());
     /* The limits and the set points first, as levels; see
      * s_supply_set_mv. */
     publish_supply_levels();

@@ -666,7 +666,9 @@ bool supply_screen_port_held(void) { return s.port_held; }
 
 void supply_screen_adopt(float v, float i)
 {
-    if (!s.lent) {
+    /* The operator's: the set points before the first port's, or after a
+     * change made since the last port's were taken. */
+    if (!s.lent || s.cv != s.lent_v || s.ci != s.lent_i) {
         s.own_v = s.cv;
         s.own_i = s.ci;
         s.lent  = true;
@@ -682,7 +684,10 @@ void supply_screen_adopt(float v, float i)
 
 void supply_screen_port_done(bool free_off)
 {
-    if (!s.lent || !free_off || s.port_held || s.on || s.on_asked) {
+    /* Not under OUTPUT ON's hold either: an ON lands at the set points the
+     * hold began on. */
+    if (!s.lent || !free_off || s.port_held || s.on || s.on_asked
+        || supply_screen_output_held()) {
         return;
     }
     s.lent = false;

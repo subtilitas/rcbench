@@ -449,6 +449,13 @@ void servo_screen_sweep_refused(void);
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
 
+/**
+ * @brief Whether OUTPUT ON of the SET row is being held, from an output that
+ *        is off: an ON it sends lands at the set points the hold began on.
+ * @return true while the hold runs
+ */
+bool servo_screen_output_held(void);
+
 /** Whether a sweep is paused: PAUSE tapped, the hold in force, nothing
  *  else commanded since.  For tests. */
 bool servo_screen_paused(void);

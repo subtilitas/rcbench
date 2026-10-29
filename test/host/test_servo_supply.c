@@ -141,7 +141,11 @@ TEST_CASE(output_ons_hold_looks_at_the_set_point_again_as_it_completes)
     bench_fresh();
     supply_screen_put(5.0f, 1.0f);
     scr->tick(0.02f);
+    CHECK(!servo_screen_output_held());
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
+    /* The hold is told to the application: no set point given back under
+     * it (supply_screen_port_done()). */
+    CHECK(servo_screen_output_held());
     for (int i = 0; i < 40; ++i) {
         scr->tick(0.025f);
     }

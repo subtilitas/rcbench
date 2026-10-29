@@ -332,6 +332,8 @@ void svs_toggle_sweep(void)
 
 bool servo_screen_sweeping(void) { return s.sweeping; }
 
+bool servo_screen_output_held(void) { return s.out_down && !s.out_press_on; }
+
 bool servo_screen_paused(void) { return s.paused; }
 
 uint32_t servo_screen_curve_ms(void) { return s.clock_ms - s.sw.start_ms; }

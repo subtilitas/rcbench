@@ -353,7 +353,7 @@ Sitzung kommen mit der ersten Lesung der Versorgung zurück, die keinen Port
 mehr als Halter und den Ausgang aus zeigt: sofort, wo die Sitzung mit
 ausgeschaltetem Ausgang endet, beim nächsten Ausschalten nach einem
 Verlassen, das ihn eingeschaltet lässt. Ein eingeschalteter Ausgang bekommt
-sie nie. Ein Sollwert, der nach dem Freigeben des Ports geändert wurde, durch
+sie nie, auch keiner, dessen AUSGANG EIN gerade gehalten wird. Ein Sollwert, der nach dem Freigeben des Ports geändert wurde, durch
 Tippen, eine gesenkte Grenze oder einen Servotest, bleibt, und die früheren
 werden verworfen.
 
