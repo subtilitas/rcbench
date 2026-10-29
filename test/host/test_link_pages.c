@@ -1700,7 +1700,11 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 31u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 32u);
+    CHECK_EQ(LINK_MINOR_PROG_SUPPLY, 32u);
+    CHECK_EQ(LINK_PAGE_PROG_SUPPLY, 0x39);
+    CHECK_EQ(LINK_PS_COUNT, 4);
+    CHECK(LINK_PS_COUNT <= LINK_MAX_REGS);
     CHECK_EQ(LINK_MINOR_UPDATE, 22u);
     CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
 

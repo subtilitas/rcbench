@@ -276,6 +276,7 @@ TRACKED = [
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/servo_page.c",
     "shared/outputs/supply_page.c",
+    "shared/outputs/prog_supply.c",
     "shared/outputs/out_store_map.c",
     "shared/outputs/out_store_rec.c",
     "shared/outputs/out_stage.c",

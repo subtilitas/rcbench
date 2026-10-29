@@ -67,6 +67,8 @@ typedef enum {
                                        and the windows over them        */
     LINK_PAGE_SENSE_WIN_A = 0x37, /**< channels 0 to 5's last window, read-only */
     LINK_PAGE_SENSE_WIN_B = 0x38, /**< channels 6 to 11's, read-only         */
+    LINK_PAGE_PROG_SUPPLY = 0x39, /**< the programming ports' own supply, on
+                                       a board that switches one        */
     /* Frozen: the same numbers, layout and meaning under every major. */
     LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the IOmcu's own firmware update */
     LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
@@ -147,6 +149,9 @@ typedef enum {
  * LINK_HT_W_CMD_MORE.  An older IOmcu switches the module off at once and
  * refuses the bit with LINK_NACK_BAD_VALUE; the panel switches a held
  * supply off on an error from 4.31 only, and sets the bit from 4.31 only.
+ * From 4.32 PROG_SUPPLY (0x39) switches the programming ports' own supply
+ * on a board that has one; an older IOmcu refuses it with
+ * LINK_NACK_BAD_PAGE.
  * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -161,7 +166,7 @@ typedef enum {
 #define LINK_PROTOCOL_MAJOR 4u
 /** @brief The minor this build speaks: 31, a held supply's OFF deferred
  *         while a programming port writes. */
-#define LINK_PROTOCOL_MINOR 31u
+#define LINK_PROTOCOL_MINOR 32u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -335,6 +340,16 @@ typedef enum {
  * the bit with LINK_NACK_BAD_VALUE.
  */
 #define LINK_MINOR_PORT_CUT 31u
+
+/**
+ * @brief The first minor with the PROG_SUPPLY page (LINK_PAGE_PROG_SUPPLY):
+ * the switch of the programming ports' own supply on a board that has one
+ * (the rbmod carrier's GPIO 21, the enable of its 5V buck M7).
+ *
+ * An older minor refuses the page with LINK_NACK_BAD_PAGE; the panel reads
+ * and writes it from 4.32 only.
+ */
+#define LINK_MINOR_PROG_SUPPLY 32u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -594,6 +609,41 @@ enum {
  * A write of them is refused unless it leaves OUTPUT 0 and SET_MV no higher.
  */
 #define LINK_SP_PORT         0x800u
+
+/* --- the PROG_SUPPLY page (protocol 4.32): the programming ports' own
+ *     supply, on a board that switches one with a pin of the IOmcu (the
+ *     rbmod carrier: GPIO 21, the enable of its 5V buck M7).  It follows the
+ *     SUPPLY page's rules for a programming port:
+ *
+ *     OUTPUT  1 switches the supply on, 0 off.  ON is refused with
+ *             LINK_NACK_NOT_ARMED without a live heartbeat, and with
+ *             LINK_NACK_BAD_VALUE on a board without the switch and while a
+ *             programming port holds the supply (FLAGS bit 2).  OFF is
+ *             always taken; while a port writes to the servo's memory it is
+ *             held back from the pin until the write ends,
+ *             SUPPLY_PAGE_WRITE_WAIT_MS at most (FLAGS bit 3), and the
+ *             port's own ON is refused after it until the port lets go.
+ *             The IOmcu switches the supply off on its own when the
+ *             heartbeat or the link goes, and at start.  An OFF waits for
+ *             the end of a frame a port has on the wire,
+ *             SUPPLY_PAGE_OFF_WAIT_MS at most.  Not kept.
+ *     FLAGS   read only: bit 0 the board has the switch, bit 1 the pin
+ *             drives the supply on, bit 2 a programming port holds it,
+ *             bit 3 the panel's OFF waits for a port's write.
+ *     PIN     read only: the GPIO that switches it, LINK_PS_NO_PIN without.
+ *     MV      read only: the voltage it gives, in mV, 0 without. */
+enum {
+    LINK_PS_OUTPUT = 0,
+    LINK_PS_FLAGS  = 1,   /**< read only from here */
+    LINK_PS_PIN    = 2,
+    LINK_PS_MV     = 3,
+    LINK_PS_COUNT  = 4,
+};
+#define LINK_PS_FITTED 0x01u  /**< the board has the switch               */
+#define LINK_PS_ON     0x02u  /**< the pin drives the supply on           */
+#define LINK_PS_PORT   0x04u  /**< a programming port holds it            */
+#define LINK_PS_HELD   0x08u  /**< the panel's OFF waits for a port write */
+#define LINK_PS_NO_PIN 0xFFu  /**< PIN of a board without the switch      */
 
 /* --- the SENSE page (protocol 4.7): two I2C (Inter-Integrated Circuit)
  *     current monitors on one bus the IOmcu runs on two of its pins,

@@ -54,7 +54,8 @@ link_can_prio_t link_can_priority(uint8_t page, uint8_t op)
      * what it was told, and must not queue behind telemetry.
      */
     if (page == LINK_PAGE_CONTROL || page == LINK_PAGE_FAILSAFE
-        || page == LINK_PAGE_LIMITS || page == LINK_PAGE_SUPPLY) {
+        || page == LINK_PAGE_LIMITS || page == LINK_PAGE_SUPPLY
+        || page == LINK_PAGE_PROG_SUPPLY) {
         return LINK_CAN_PRIO_CONTROL;
     }
     /* A firmware update is 26,001 exchanges, 6.8 to 8.3s of frames for a
