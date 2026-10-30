@@ -57,6 +57,17 @@
  *     and while a record of an earlier write stands.
  *   - REPAIR writes the classic balance 0x1C alone when the cells 0x00 to
  *     0x1C of the servo read do not sum to 0.
+ *   - Every write reads the addresses its plan depends on a second time
+ *     before its plan runs (hitec_prog_rereading()): classic cells 0x00 to
+ *     0x23, and the factory block 0x30 to 0x53 for FACTORY DEFAULT; D
+ *     series the registers a plan writes (hitec_writable()).  A classic
+ *     reply carries no checksum, a D series reply its sum.  Where the
+ *     second read differs from the first in one address, the write is
+ *     refused (HITEC_PROG_MSG_READS_DIFFER): the image stays the first
+ *     read, and nothing is planned, recorded or sent.  A write tried again compares
+ *     a new second read with the same first one; READ ALL takes a new
+ *     first read.  An ABORT, a stop or a failed read during the second
+ *     read ends the write the same way, with its own message.
  *   - The record (hitec_card.h): before the first step of a write the
  *     servo's values, the target and the port are recorded, with a card
  *     in its file as well, and the write waits for the card.  A write that
@@ -302,6 +313,10 @@ typedef enum {
     HITEC_PROG_MSG_OTHER_SERVO,   /**< a read of the session is not of the
                                        servo before it: it is the session's
                                        backup now                          */
+    HITEC_PROG_MSG_READS_DIFFER,  /**< a write refused: the second read
+                                       before its plan differs from the
+                                       read the plan is made from; arg the
+                                       first address that differs          */
     HITEC_PROG_MSG_COUNT
 } hitec_prog_msg_id_t;
 
@@ -539,6 +554,8 @@ typedef struct {
     /* --- the write side, hitec_prog_write.c --------------------------- */
     hitec_image_t draft;      /**< the servo read with the edits          */
     hitec_image_t wr_target;  /**< what the running write is to leave     */
+    hitec_image_t rr_first;   /**< the read the write's plan is made from,
+                                   kept while the second read runs        */
     bool     write_on;        /**< ENABLE WRITE TO SERVO                  */
     bool     must_read;       /**< a write failed: READ ALL comes first   */
     bool     wrote;           /**< a write of this CONNECT went out       */
@@ -885,7 +902,8 @@ const hitec_model_t *hitec_prog_model(const hitec_prog_t *p);
 uint8_t hitec_prog_layout(const hitec_prog_t *p);
 
 /**
- * @brief The progress of the running read.
+ * @brief The progress of the running read: READ ALL's, or the second read
+ *        before a write's plan.
  *
  * @param p     The programmer.
  * @param done  Receives the addresses read.
@@ -894,6 +912,15 @@ uint8_t hitec_prog_layout(const hitec_prog_t *p);
  */
 bool hitec_prog_progress(const hitec_prog_t *p, unsigned *done,
                          unsigned *total);
+
+/**
+ * @brief Whether the running read is the second read before a write's plan
+ *        (hitec_prog_state() says HITEC_PROG_READING for it).
+ *
+ * @param p The programmer.
+ * @return true while it runs.
+ */
+bool hitec_prog_rereading(const hitec_prog_t *p);
 
 /**
  * @brief The decoder's code of the last failed try of the running

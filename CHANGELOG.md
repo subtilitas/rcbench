@@ -8,6 +8,27 @@ history is in git.
 
 ### Added
 
+- SERVO asks after a KST or Hitec LEAVE that leaves the PD mini's output on
+  at the session's set points: `Restore your supply set points 5.50V 2.00A
+  on the live output?`, YES or NO. YES gives the live output the set points
+  from before CONNECT, through HV SERVOS ONLY and its 2s hold where the
+  voltage rises from 6.0V or below to above it. NO keeps the session's set
+  points; the operator's come back at the output's next OFF.
+  No question while a port holds the supply, under another of SERVO's
+  panels or questions or OUTPUT ON's hold, after an OFF, an error or a
+  STOP, inside a limit run, or when the set points moved since the LEAVE
+  ([Servo programmer, The supply](docs/ServoProgrammer.md#the-supply);
+  [Hitec programmer, LEAVE](docs/HitecProgrammer.md#leave)).
+- The Hitec programmer reads the addresses a write's plan depends on a
+  second time before its plan runs: classic cells 0x00 to 0x23 (36), with the
+  factory block 0x30 to 0x53 (72 in all) for FACTORY DEFAULT; the 12 D
+  series registers a plan writes. Every write is covered: WRITE n VALUES,
+  a loaded file's, REPAIR CHECKSUM, RESTORE and FACTORY DEFAULT. Two reads
+  that differ refuse the write, `Two reads differ at 0x17: read again with
+  READ ALL.`, with nothing planned, recorded, saved or sent. On the host
+  model the second read takes 1152ms classic, 2304ms for FACTORY DEFAULT
+  and 704ms D series at a frame of 16ms
+  ([Hitec programmer, The second read](docs/HitecProgrammer.md#the-second-read)).
 - The screen guide: "?" in the band, 8px left of STOP, opens numbered marks
   on the screen's controls and a dock of 480 x 488px that says what each
   one does, 3 rows each, with PREV, NEXT, CLOSE and the web help's address

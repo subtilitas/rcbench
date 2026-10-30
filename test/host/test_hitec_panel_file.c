@@ -444,6 +444,7 @@ TEST_CASE(the_write_page_and_the_servo_tab_name_the_backup_file)
     CHECK(!page_has(TR(KP_NO_FILE_2)));
     g_files_slow = true;
     hold(2.1f);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     show();
     CHECK(note_has(TR(HP_ST_BACKUP)));

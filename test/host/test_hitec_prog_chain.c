@@ -39,6 +39,7 @@ static void d_ready(void)
 /* The write runs to its end: held, nothing running. */
 static void written(void)
 {
+    reread();
     for (unsigned i = 0; i < 60000u
                          && (pstate() == HITEC_PROG_BACKUP
                              || pstate() == HITEC_PROG_RECORDING
@@ -344,6 +345,7 @@ TEST_CASE(a_lost_link_starts_a_new_session_for_the_servo_found)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     for (unsigned i = 0; i < 60000u && g_drv.d_saves == 0u; ++i) {
         pms();
     }

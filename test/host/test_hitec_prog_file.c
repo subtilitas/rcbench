@@ -61,6 +61,7 @@ static void c_ready(void)
 /* The write runs to its end: held, nothing running. */
 static void written(void)
 {
+    reread();
     for (unsigned i = 0; i < 60000u
                          && (pstate() == HITEC_PROG_BACKUP
                              || pstate() == HITEC_PROG_RECORDING
@@ -132,6 +133,7 @@ TEST_CASE(the_first_write_saves_the_backup_file_first_and_once)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     CHECK(hitec_prog_card_busy(model()));
     /* A file request waits while the backup file is on its way. */
@@ -150,6 +152,7 @@ TEST_CASE(the_first_write_saves_the_backup_file_first_and_once)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 30),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
@@ -167,6 +170,7 @@ TEST_CASE(without_a_card_the_backup_stays_in_ram_until_a_card_comes)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK(pstate() != HITEC_PROG_BACKUP);
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
@@ -187,6 +191,7 @@ TEST_CASE(without_a_card_the_backup_stays_in_ram_until_a_card_comes)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 30),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
@@ -214,6 +219,7 @@ TEST_CASE(a_card_that_refuses_the_backup_file_keeps_the_write_from_going)
         CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
                  HITEC_PROG_EDIT_OK);
         CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+        reread();
         prun(200u);
         CHECK_EQ(pstate(), HITEC_PROG_HELD);
         CHECK_EQ(msg(), k_case[i].m);
@@ -234,6 +240,7 @@ TEST_CASE(a_card_that_refuses_the_backup_file_keeps_the_write_from_going)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     prun(50u);
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     g_card = false;
@@ -253,6 +260,7 @@ TEST_CASE(a_backup_file_not_answered_in_5000ms_ends_the_write_unsent)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     prun(HITEC_PROG_FILES_MS - 50u);
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     prun(100u);
@@ -269,6 +277,7 @@ TEST_CASE(a_backup_file_not_answered_in_5000ms_ends_the_write_unsent)
     /* The next write saves no second file. */
     g_files_slow = false;
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
@@ -282,6 +291,7 @@ TEST_CASE(abort_while_the_backup_file_is_saved_sends_nothing)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     prun(50u);
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     /* FORGET waits for the write as well. */
@@ -304,6 +314,7 @@ TEST_CASE(a_stop_while_the_backup_file_is_saved_sends_nothing)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     prun(50u);
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     press_stop();
@@ -329,6 +340,7 @@ TEST_CASE(the_backup_file_wait_runs_across_the_clocks_wrap)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     prun(HITEC_PROG_FILES_MS - 50u);
     CHECK(g_ms < 0x10000000u);
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
@@ -515,6 +527,7 @@ TEST_CASE(a_request_waits_for_the_card_and_its_id_wraps)
     CHECK(!hitec_prog_card_busy(model()));
     CHECK_EQ(msg(), HITEC_PROG_MSG_BUSY);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     g_files_slow = false;
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
@@ -869,6 +882,7 @@ TEST_CASE(a_load_needs_a_servo_read_in_programming_mode)
     CHECK_EQ(hitec_prog_save(model(), "PRE"), HITEC_PROG_MSG_NONE);
     answered();
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(hitec_prog_load(model(), "F"), HITEC_PROG_MSG_BUSY);
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_VERIFY_FAIL);
@@ -945,6 +959,7 @@ TEST_CASE(restore_of_the_backup_writes_every_value_back_raw_included)
     CHECK_EQ(hitec_prog_restore_backup(model()), HITEC_PROG_MSG_WRITE_OFF);
     CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     CHECK_EQ(hitec_prog_restore_backup(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_BACKUP_RESTORED);
@@ -967,6 +982,7 @@ TEST_CASE(after_a_lost_link_the_backup_file_brings_the_old_values_back)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     for (unsigned i = 0; i < 60000u && g_drv.d_saves == 0u; ++i) {
         pms();
     }
@@ -1043,6 +1059,7 @@ TEST_CASE(a_late_backup_file_saves_nothing_for_the_next_session)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     prun(HITEC_PROG_FILES_MS + 100u);
     CHECK_EQ(msg(), HITEC_PROG_MSG_CARD_WRITE);
     /* LEAVE and CONNECT before the card answers. */
@@ -1060,6 +1077,7 @@ TEST_CASE(a_late_backup_file_saves_nothing_for_the_next_session)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);

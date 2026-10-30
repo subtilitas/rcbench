@@ -547,8 +547,10 @@ void hpn_state_line(char *out, size_t n)
             snprintf(out, n, TR(HP_BAD_ANSWER), hitec_prog_retry_code(p));
         } else {
             (void)hitec_prog_progress(p, &done, &total);
-            snprintf(out, n, TR(HP_ST_READ), done < total ? done + 1u : done,
-                     total);
+            snprintf(out, n,
+                     hitec_prog_rereading(p) ? TR(HP_ST_REREAD)
+                                             : TR(HP_ST_READ),
+                     done < total ? done + 1u : done, total);
         }
         break;
     case HITEC_PROG_CLEARING:
@@ -656,8 +658,9 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_LOADED_RAW]    = { -1, -1 },
     [HITEC_PROG_MSG_OTHER_SERVO]   = { TX_HP_OTHER_SERVO,
                                        TX_HP_OTHER_SERVO_2 },
+    [HITEC_PROG_MSG_READS_DIFFER]  = { -1, -1 },
 };
-_Static_assert(HITEC_PROG_MSG_OTHER_SERVO + 1 == HITEC_PROG_MSG_COUNT,
+_Static_assert(HITEC_PROG_MSG_READS_DIFFER + 1 == HITEC_PROG_MSG_COUNT,
                "k_lines has a row for every message");
 
 /**
@@ -823,6 +826,10 @@ static int formatted(const hitec_prog_msg_t *m,
         return 1;
     case HITEC_PROG_MSG_READ_FAIL:
         snprintf(out[0], HITEC_PANEL_LINE, TR(HP_READ_FAIL),
+                 (unsigned)(m->arg & 0xFFu));
+        return 1;
+    case HITEC_PROG_MSG_READS_DIFFER:
+        snprintf(out[0], HITEC_PANEL_LINE, TR(HP_READS_DIFFER),
                  (unsigned)(m->arg & 0xFFu));
         return 1;
     case HITEC_PROG_MSG_RELEASED:

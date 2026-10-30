@@ -236,9 +236,98 @@ void ask_hv_on(void)
     servo_invalidate();
 }
 
+/**
+ * @brief The operator's set points offered back onto the live output a
+ *        programming port left on: SUPPLY's question, YES or NO.
+ * @param v the voltage set point offered, V
+ * @param i the current limit offered, A
+ */
+static void ask_restore(float v, float i)
+{
+    s.ask.open      = true;
+    s.ask.hv        = false;
+    s.ask.purpose   = ASK_RESTORE;
+    s.ask.target    = KT_NONE;
+    s.ask.off_count = supply_screen_off_count();
+    s.ask.stops     = s.stops;
+    s.ask.off_asks  = supply_screen_off_asks();
+    s.ask.v         = v;
+    s.ask.i         = i;
+    s.ask.down      = false;
+    ui_hold_reset(&s.ask.hold);
+    ++s.ctrl_rev;
+    servo_invalidate();
+}
+
+/**
+ * @brief Whether the restore question still stands: the output it is about
+ *        live and unstopped (ask_stands()), no OFF asked since it opened,
+ *        and no port holding the supply.
+ * @return true while it stands
+ */
+static bool restore_stands(void)
+{
+    return ask_stands() && supply_screen_off_asks() == s.ask.off_asks
+           && !supply_screen_port_held();
+}
+
+void ask_restore_follow(void)
+{
+    float v = 0.0f;
+    float i = 0.0f;
+
+    /* A limit run's read session takes the port and gives it back inside
+     * the run, which drives the supply at the set points it found: no
+     * question about them, now or after the run. */
+    if (servo_limrun_running(&s.lim) || s.lim_leaving) {
+        if (supply_screen_restore_offer(NULL, NULL)) {
+            supply_screen_restore_taken();
+        }
+        return;
+    }
+    /* A port that holds the supply again, an OFF asked, or an output gone
+     * off or stopped, takes the question with it, the HV warning after
+     * YES included: both are about the live output the port left. */
+    if (s.ask.open && s.ask.purpose == ASK_RESTORE && !restore_stands()) {
+        if (s.ov_pressed == OP_ASK_APPLY || s.ov_pressed == OP_ASK_CANCEL) {
+            ov_let_go();
+        }
+        close_alone();
+        return;
+    }
+    /* Not over another panel or question, a press on one, or a hold of
+     * OUTPUT ON here or on SUPPLY: the offer waits for them. */
+    if (modal_open() || s.ov_have || (s.out_down && !s.out_press_on)
+        || supply_screen_output_held()
+        || !supply_screen_restore_offer(&v, &i)) {
+        return;
+    }
+    supply_screen_restore_taken();
+    ask_restore(v, i);
+}
+
 /* The question answered with APPLY, or the HV warning's hold completed. */
 void ask_apply(void)
 {
+    /* The restore's answer after an OFF was asked in the same frame, before
+     * ask_restore_follow() saw it: nothing applied. */
+    if (s.ask.purpose == ASK_RESTORE && !restore_stands()) {
+        close_alone();
+        return;
+    }
+    /* YES to a voltage past a standard servo's rating, from at or under it:
+     * the HV warning and its hold, as a typed one takes. */
+    if (s.ask.purpose == ASK_RESTORE && !s.ask.hv
+        && s.ask.v > STD_SERVO_V_MAX + 0.001f
+        && supply_screen_set_v() <= STD_SERVO_V_MAX + 0.001f) {
+        s.ask.hv   = true;
+        s.ask.down = false;
+        ui_hold_reset(&s.ask.hold);
+        ++s.ask.rev;
+        ++s.ctrl_rev;
+        servo_invalidate();
+        return;
+    }
     s.ask.open = false;
     s.ask.down = false;
     /* Only the set point that was typed: the other may have moved while
@@ -248,6 +337,8 @@ void ask_apply(void)
         test_begin();
     } else if (s.ask.purpose == ASK_ON) {
         supply_screen_ask_on(SUPPLY_BY_SERVO);
+    } else if (s.ask.purpose == ASK_RESTORE) {
+        supply_screen_put(s.ask.v, s.ask.i);
     } else if (s.ask.target == KT_SUP_V) {
         supply_screen_put(s.ask.v, supply_screen_set_i());
     } else {

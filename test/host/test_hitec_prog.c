@@ -671,6 +671,7 @@ TEST_CASE(a_model_the_register_model_does_not_name_is_written_too)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     until(HITEC_PROG_HELD);
     CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
     CHECK_EQ(g_drv.dreg[0x54], 10u);

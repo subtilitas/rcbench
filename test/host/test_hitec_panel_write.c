@@ -447,6 +447,14 @@ TEST_CASE(the_overlay_hands_the_record_to_the_card_and_says_each_phase)
     tap(val(HITEC_PANEL_SERVO, 4, 1));
     CHECK(page_has(TR(HP_WRITE_RECORD)));
     hold(2.1f);
+    /* The second read first, said as such, with ABORT on the PORT row. */
+    CHECK_EQ(pstate(), HITEC_PROG_READING);
+    CHECK(hitec_prog_rereading(model()));
+    show();
+    CHECK(strncmp(hitec_panel_note(0), "Second read before the write: ",
+                  30) == 0);
+    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0), TR(KP_ABORT));
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     CHECK(note_has(TR(HP_ST_RECORD)));
     len = hitec_panel_file_take(text, sizeof(text));

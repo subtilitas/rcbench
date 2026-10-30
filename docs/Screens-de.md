@@ -1450,6 +1450,15 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
 
   ![Die HV-Warnung](img/de/servo-hv.png)
 
+- Nach einem Verlassen von KST oder Hitec, das den Ausgang bei den
+  Sollwerten der Sitzung eingeschaltet lässt, fragt SERVO unter AUSGANG IST
+  EINGESCHALTET, ob die Sollwerte von vor der Sitzung darauf zurückgehen:
+  `Deine Versorgungs-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang
+  wiederherstellen?`, mit JA und NEIN. JA nimmt den Weg eines getippten
+  Sollwerts, NUR HV-SERVOS eingeschlossen; NEIN behält die der Sitzung bis
+  zum nächsten AUS
+  ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
+
 - AUSGANG EIN ist ein Halten über zwei Sekunden, AUSGANG AUS ein Tippen, wie auf
   SUPPLY. STOP beendet ein laufendes Halten. Liegt der Spannungssollwert über
   6,0V, gleich wo er eingestellt wurde, öffnet AUSGANG EIN stattdessen NUR
