@@ -164,6 +164,15 @@ history is in git.
   of 4.30 and without the SUPPLY page, with and without a port holding the
   supply; OUTPUT OFF and STOP TEST leave the bench ARMED. What the bench
   does is unchanged.
+- With an IOmcu older than link 4.31, a programming port keeps the PD
+  mini's output through an error only while the SUPPLY page's FLAGS bit 11
+  (`LINK_SP_PORT`) says it holds the supply, as the panel last read it
+  (`supply_link_port_holds()`), and no longer while a KST or Hitec session
+  has a port. A Hitec session between two POWERs on an IOmcu older than
+  4.29 gets the OFF. A port that lets go between two reads, 100ms apart,
+  keeps the output through an error in that gap. From 4.31 nothing changes:
+  the panel writes the OFF either way
+  ([Safety, Errors](docs/Safety.md#errors)).
 
 ### Fixed
 
