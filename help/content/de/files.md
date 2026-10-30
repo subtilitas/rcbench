@@ -81,6 +81,7 @@ BEARBEITEN im Textbetrachter öffnet den Editor und seine Tastatur. Der Text än
 - Eine KST-Datei des Servo-Programmierers verliert ihre Prüfsummenzeile, wenn sie geändert gespeichert wird, in jeder Form, die der Programmierer als eine liest (`checksum`, `CHECKSUM=`, `Checksum:`): der Programmierer liest sie dann als Datei, die ein Mensch bearbeitet hat.
 - SPEICHERN lehnt einen Text mit einem NUL-Byte in den ersten 4kB ab, da FILES die Datei sonst nicht wieder öffnet: `Nicht gespeichert: ein NUL-Byte in den ersten 4kB. FILES öffnet die Datei nicht wieder.`
 - Ein ESC-Profil in `BENCH/ESC/CONF` liest das Panel beim nächsten Start.
+- SPEICHERN schreibt nur über die Datei, wie der Editor sie geöffnet hat. Eine Datei, die sich seitdem auf der Karte geändert hat, durch den Editor der WLAN-Seite oder einen Upload, wird nicht geschrieben: Die Notiz sagt `<Name> wurde seit dem Lesen auf der Karte geändert.`, und die Frage bietet BLEIBEN, das den Text behält, und NEU LESEN, das ihn verwirft und die Datei von der Karte liest.
 - VERWERFEN setzt den Text auf die Datei auf der Karte zurück. Es fragt zuerst, wie das Home-Tag bei ungespeichertem Text: BLEIBEN behält den Text, VERWERFEN lässt die Änderungen fallen.
 - Der Text hält bis zu 1MiB und 65.536 Zeilenenden. Die Tastatur tippt ASCII; einzelne Tasten lassen sich nicht rückgängig machen.
 - SETUP → PANEL → Tastatur durchsichtig auf 25% oder 50% lässt den übrigen Text durch die Tastatur scheinen; der Cursor bleibt auf den 8 Zeilen darüber.

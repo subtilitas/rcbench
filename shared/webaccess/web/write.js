@@ -519,7 +519,8 @@ var RcbWr = (function () {
     }
 
     build();
-    return { footer: footer, whyNot: whyNot };
+    // edit.js's SAVE goes through the same PUT and the same gate.
+    return { footer: footer, whyNot: whyNot, put: put, closed: closed };
   }
 
   return { attach: attach, form: form, reportOf: reportOf };

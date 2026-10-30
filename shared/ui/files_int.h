@@ -331,6 +331,8 @@ typedef struct {
     unsigned tv_mount;        /**< the mount it was listed from          */
     bool tv_save;             /**< the editor's save waits to go out     */
     bool tv_saving;           /**< the job under way is that save        */
+    uint32_t tv_sum;          /**< CRC-32 of the file as read or last
+                                   saved: what SAVE finds on the card    */
     /* An open held by the editor's question (files_screen_open_text()). */
     bool tv_pend;             /**< one is held                           */
     bool tv_pend_logs;        /**< LOGS asked for it                     */

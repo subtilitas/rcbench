@@ -6,7 +6,9 @@
  *        nothing written; a taken name fails ABSENT; ARMED, CANCEL and a
  *        card pulled while the old file is read stop the save with no
  *        ".NEW"; a ".NEW" already there is kept; and the check is refused
- *        for any job but a SAVE that has not run.
+ *        for any job but a SAVE that has not run.  A LOAD and a SAVE sum
+ *        the bytes they read or write (fm_job_sum()): the sum the next
+ *        SAVE of the file compares with.
  *
  * Cases:
  * - a_matching_sum_replaces_the_file
@@ -17,6 +19,7 @@
  * - a_card_pulled_while_summing_fails_card_gone
  * - a_new_there_already_is_kept_after_the_sum
  * - the_check_is_refused_for_other_jobs_and_after_a_step
+ * - a_load_and_a_save_sum_the_bytes_they_pass
  *
  * SPDX-License-Identifier: MIT
  */
@@ -366,6 +369,42 @@ TEST_CASE(the_check_is_refused_for_other_jobs_and_after_a_step)
     CHECK_EQ(fm_job_match(&g_job, FM_MATCH_ANY, NULL, 0u), FM_ERR_ARG);
 }
 
+/*
+ * fm_job_sum(): a LOAD's sum is the file's, a SAVE's the bytes it wrote,
+ * also with a sum checked first; refused for another job, without a sum
+ * and after a step.
+ */
+TEST_CASE(a_load_and_a_save_sum_the_bytes_they_pass)
+{
+    static uint8_t room[OLD_SIZE];
+    fresh();
+    fk_file(&g_card, "D/NOTE.TXT", NULL, OLD_SIZE);
+    CHECK_EQ(fm_job_load(&g_job, &g_bench, 1u, "D", "NOTE.TXT", room,
+                         sizeof(room)), FM_OK);
+    CHECK_EQ(fm_job_sum(&g_job, sum31), FM_OK);
+    CHECK_EQ(run(), FM_JOB_DONE);
+    CHECK_EQ(g_job.data_sum, sum_of("D/NOTE.TXT"));
+    const uint32_t old = g_job.data_sum;
+    save();
+    CHECK_EQ(fm_job_match(&g_job, FM_MATCH_SUM, sum31, old), FM_OK);
+    CHECK_EQ(fm_job_sum(&g_job, sum31), FM_OK);
+    CHECK_EQ(run(), FM_JOB_DONE);
+    CHECK(holds_text());
+    CHECK_EQ(g_job.data_sum, sum31(0u, g_text, sizeof(g_text)));
+    CHECK_EQ(g_job.data_sum, sum_of("D/NOTE.TXT"));
+    CHECK(clean());
+    /* Refusals leave the job as it was. */
+    CHECK_EQ(fm_job_sum(NULL, sum31), FM_ERR_ARG);
+    save();
+    CHECK_EQ(fm_job_sum(&g_job, NULL), FM_ERR_ARG);
+    CHECK_EQ(step(), FM_JOB_RUNNING);
+    CHECK_EQ(fm_job_sum(&g_job, sum31), FM_ERR_ARG);
+    CHECK(g_job.data_fn == NULL);
+    CHECK_EQ(run(), FM_JOB_DONE);
+    CHECK_EQ(fm_job_copy(&g_job, &g_bench, 1u, "D", "NOTE.TXT", ""), FM_OK);
+    CHECK_EQ(fm_job_sum(&g_job, sum31), FM_ERR_ARG);
+}
+
 int main(void)
 {
     RUN(a_matching_sum_replaces_the_file);
@@ -376,6 +415,7 @@ int main(void)
     RUN(a_card_pulled_while_summing_fails_card_gone);
     RUN(a_new_there_already_is_kept_after_the_sum);
     RUN(the_check_is_refused_for_other_jobs_and_after_a_step);
+    RUN(a_load_and_a_save_sum_the_bytes_they_pass);
     fk_free(&g_card);
     return test_summary("fm_match");
 }

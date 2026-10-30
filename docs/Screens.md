@@ -2850,7 +2850,8 @@ the text behind them.
 
 SAVE writes the text as `<name>.NEW` in the file's folder, in chunks of
 16KiB on the card task, deletes `<name>` and gives the new file its name;
-the note then says `<name> saved.` From the tap on SAVE until the save
+the note then says `<name> saved.`, and the header shows the size
+written. From the tap on SAVE until the save
 ends the text does not change: a key types nothing, REVERT and the home
 tag wait, and the question of an open over the text shows DISCARD grey.
 A save that writes the text closes that question and opens the other
@@ -2868,6 +2869,21 @@ the text unsaved with `Not saved: the card was taken out or swapped.`;
 taken out between the delete and the rename, the card holds the whole
 text as `<name>.NEW` and no `<name>`, and RENAME in FILES gives it its
 name back.
+
+SAVE writes only over the file the editor opened. The editor keeps the
+CRC-32 (cyclic redundancy check) of the file as it read it, and of the
+text each save wrote, the ETag of the Wi-Fi page's [file
+API](#the-file-api). SAVE first reads the file on the card and sums it, in
+the same job before the `.NEW` is opened: a save of 1MiB reads 1MiB first,
+in a time not measured. A file changed or removed since, by the Wi-Fi
+page's editor or an upload ([Browser writes](#browser-writes)), is not
+written. The note says `<name> changed on the card since it was read.`,
+and the question UNSAVED CHANGES says
+`<name> changed on the card since it was read. READ AGAIN drops these changes.`
+over STAY and READ AGAIN. STAY keeps the text; a second SAVE is refused
+the same way. READ AGAIN drops the text and reads the file from the card
+into the viewer. A question that was already open when the save ended,
+the one of an open over the text, stays as it was.
 
 A file opens only without a NUL byte in its first 4kB. SAVE holds the
 text to the same test: an edit that brings a NUL from further in into the
@@ -3215,15 +3231,18 @@ Current limitations:
 - A device that reads the traffic on a home network can send a write of
   its own while writes are allowed: the access code and the headers cross
   in plain form.
-- FILES' editor on the panel saves without comparing the file it opened:
-  a change the browser made between its open and its save is overwritten.
-  The page's writes compare with `If-Match`.
+- The browser's editor saves a file with mixed line ends with LF ends;
+  FILES' editor on the panel keeps them.
+- With Browser writes ACCESS CODE and ACCESS CODE off, the editor's SAVE
+  shows `Writes need the access code the panel's WI-FI screen shows.`
+  and opens no code box. The code box of the write buttons loads the page
+  again, and the editor's text goes after the browser's own question.
 - The panel joins only while this screen is open. A panel that stays joined
   whenever the bench is SAFE is not built.
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
   688-757kB/s. The cause is not measured. The page with the file manager
-  is 45,100 bytes in English on an empty card and has no card listing;
+  is 57,796 bytes in English on an empty card and has no card listing;
   its time is not measured.
 
 ### The access code
@@ -3268,8 +3287,8 @@ answer them with no body.
 ![After the hold, three writes made](img/wifi-writes-allowed.png)
 
 SETUP > SD CARD > Browser writes sets what a browser needs to change the
-card through the page: UPLOAD, NEW FOLDER, NEW TEXT FILE, RENAME, MOVE
-and DELETE ([the page](#the-page)). It is kept with the other settings.
+card through the page: UPLOAD, NEW FOLDER, NEW TEXT FILE, RENAME, MOVE,
+DELETE and the editor's SAVE ([the page](#the-page)). It is kept with the other settings.
 
 | Value | A write needs |
 | --- | --- |
@@ -3410,6 +3429,55 @@ reaches the next multiple of 8 cells. A control character and a byte that
 starts no UTF-8 sequence show as `?`. A file the file API refuses shows its
 refusal's text. The page draws the lines on screen and 200 lines above and
 below them.
+
+EDIT in the viewer's header opens the file in the browser's editor
+(`shared/webaccess/web/edit.js`): a text box over the same coloured
+lines, in the same font of 13px with lines 20px apart, so the browser's
+own caret, selection, undo, copy and paste and a phone's keyboard work on
+it. The lines in view and 200 above and below are split and coloured
+again one frame after each change and each scroll. The header then shows
+EDITING, or MODIFIED in the warning colour while the text differs from the
+file, `LINE 3 OF 59` for the top line, SAVE and CLOSE; Ctrl+S is SAVE.
+EDIT is refused, and a tap says why, where a write button is: while the
+panel takes no write, on a file the logger writes, on the servo
+programmers' records and on the fault log.
+
+The editor keeps the file's bytes. Its line ends, LF, CR LF or CR, go back
+in on SAVE, and so does a BOM (byte order mark) at its start; a line typed
+ends as the file's lines end. A file with more than one kind of line end
+is saved with LF ends; EDIT says
+`Mixed line ends: SAVE writes every line end as LF.` A file that is not
+UTF-8, or that the text box would not give back byte for byte, does not
+open in the editor:
+`The browser cannot keep every byte of this file (not UTF-8). Edit it on the panel: FILES > EDIT.`
+SAVE holds the viewer's limits on the bytes as saved, the BOM and CR LF
+ends counted: over 1,048,576 bytes it sends nothing and says
+`Text full: 1MB at most.`, over 65,536 line ends
+`Text full: 65536 lines at most.`
+
+SAVE sends `PUT /api/file` with `If-Match` and the ETag of the file as the
+viewer read it, or as the last SAVE wrote it; the editor sends no write
+without it. The note then says `<name> saved.` A KST file, first line
+`KST servo configuration, format` and a number, loses every checksum line
+first, by the rule FILES' editor uses ([the text
+editor](#the-text-editor)), and the note says
+`Saved without the checksum line: the servo programmer reads it as edited.`
+An ESC profile the panel reads at its start says
+`Saved. The panel reads it at its next start.` A file changed on the card
+since it was read, by FILES' editor, an upload or another browser, is
+refused 412 `CHANGED`. The header then shows
+`Changed on the card since it was read. Read it again.`, and the box
+UNSAVED CHANGES asks
+`<name> changed on the card since it was read. READ AGAIN drops these changes.`
+with STAY and READ AGAIN. STAY keeps the text; READ AGAIN drops it,
+reads the file from the card again and shows it. Any other refusal shows its text
+in the header, and the text stays. While a SAVE runs the text does not
+change, and CLOSE waits for it.
+
+CLOSE, or Escape, while the text differs from the file asks UNSAVED
+CHANGES: `Leave <name> without saving? The changes are lost.` with STAY
+and DISCARD. Leaving or reloading the page with changes asks through the
+browser's own question, whose words are the browser's.
 
 The page sends one request at a time. A request without an answer after 2s
 shows `Waiting for the panel: it answers one request at a time.`; a

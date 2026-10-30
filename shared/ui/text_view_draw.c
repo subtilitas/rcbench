@@ -448,7 +448,8 @@ static void draw_cursor(gfx_canvas_t *c)
 
 /**
  * @brief The question: UNSAVED CHANGES, what is lost and how, STAY and
- *        DISCARD.
+ *        DISCARD, or STAY and READ AGAIN after a save found the file
+ *        changed on the card.
  * @param c  the canvas
  */
 static void draw_question(gfx_canvas_t *c)
@@ -463,6 +464,9 @@ static void draw_question(gfx_canvas_t *c)
     case TEXT_VIEW_ASK_OPEN:
         snprintf(what, sizeof(what), TR(ED_Q_OPEN), tv.name);
         break;
+    case TEXT_VIEW_ASK_CHANGED:
+        snprintf(what, sizeof(what), TR(ED_Q_CHANGED), tv.name);
+        break;
     case TEXT_VIEW_ASK_BACK:
     case TEXT_VIEW_ASK_NONE:
     default:
@@ -474,8 +478,11 @@ static void draw_question(gfx_canvas_t *c)
                        30, what, TV_FONT_BODY, UI_TEXT);
     ui_button_font(c, TV_Q_STAY, TR(SET_STAY), UI_PANEL_HI,
                    tv.press == TV_HIT_STAY, true, TV_FONT_LABEL);
-    ui_button_font(c, TV_Q_DISCARD, TR(SET_DISCARD), UI_WARN,
-                   tv.press == TV_HIT_DISCARD, !tv.saving, TV_FONT_LABEL);
+    ui_button_font(c, TV_Q_DISCARD,
+                   (tv.ask == TEXT_VIEW_ASK_CHANGED) ? TR(ED_READ_AGAIN)
+                                                     : TR(SET_DISCARD),
+                   UI_WARN, tv.press == TV_HIT_DISCARD, !tv.saving,
+                   TV_FONT_LABEL);
 }
 
 void text_view_render(gfx_canvas_t *c)

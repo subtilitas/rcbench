@@ -330,6 +330,18 @@ fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
     return FM_OK;
 }
 
+fm_err_t fm_job_sum(fm_job_t *job, fm_sum_fn sum)
+{
+    if (job == NULL || sum == NULL
+        || (job->kind != FM_JOB_SAVE && job->kind != FM_JOB_LOAD)
+        || job->state != FM_JOB_RUNNING || job->step != STEP_CHECK) {
+        return FM_ERR_ARG;
+    }
+    job->data_fn = sum;
+    job->data_sum = 0u;
+    return FM_OK;
+}
+
 fm_err_t fm_job_load(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
                      const char *dir, const char *name, uint8_t *buf,
                      size_t cap)
@@ -705,6 +717,9 @@ static fm_err_t one_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
         if (err != FM_OK) {
             return err;
         }
+    }
+    if (job->data_fn != NULL) {
+        job->data_sum = job->data_fn(job->data_sum, chunk, got);
     }
     job->done += got;
     return FM_OK;

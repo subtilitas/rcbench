@@ -155,6 +155,7 @@ SOURCES = [
     "shared/files/fm_tree.c",
     "shared/files/fm_ops.c",
     "shared/files/fm_req.c",
+    "shared/files/fm_crc.c",
     "shared/clock/wall_clock.c",
     "shared/logfile/log_take.c",
     # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's

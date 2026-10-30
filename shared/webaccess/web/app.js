@@ -9,9 +9,10 @@
 // click) or Enter opens it.  RESCAN, INFO, DOWNLOAD and OPEN act on the
 // active pane's selected entry; a button that would be refused is drawn
 // dimmed and a tap on it says why.  OPEN shows a text file read-only, its
-// lines coloured as the panel's viewer colours them (hl.js).  The writes
-// (UPLOAD, NEW, RENAME, MOVE, DELETE) are write.js's, in a second row of
-// buttons, on the same panes and the same one request at a time.
+// lines coloured as the panel's viewer colours them (hl.js); its EDIT and
+// SAVE are edit.js's.  The writes (UPLOAD, NEW, RENAME, MOVE, DELETE) are
+// write.js's, in a second row of buttons, on the same panes and the same
+// one request at a time.
 //
 // The panel answers one request at a time, so the app sends one at a time.
 // The texts and the tables come from the page's data element (wa_app.c),
@@ -60,8 +61,20 @@ var RcbFm = (function () {
     return i < 0 ? '' : p.slice(0, i);
   }
 
+  function esc(t) {
+    return t.replace(/[&<>]/g, function (c) {
+      return c === '&' ? '&amp;' : (c === '<' ? '&lt;' : '&gt;');
+    });
+  }
+
+  // As the panel draws them: a control character and a byte that starts
+  // no UTF-8 sequence are a "?" each.
+  function clean(t) {
+    return t.replace(/[\u0000-\u0008\u000b-\u001f\u007f\ufffd]/g, '?');
+  }
+
   return { sizeText: sizeText, fmt: fmt, encPath: encPath, join: join,
-    parent: parent };
+    parent: parent, esc: esc, clean: clean };
 }());
 
 if (typeof document !== 'undefined' && document.getElementById('fm')) {
@@ -85,6 +98,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
     var viewSeq = 0;
     var infoSeq = 0;
     var writes = null;    // write.js's buttons, once attached
+    var editor = null;    // edit.js's EDIT and SAVE, once attached
 
     function el(tag, cls, text) {
       var e = document.createElement(tag);
@@ -627,18 +641,6 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
 
     // ----------------------------------------------------- the viewer
 
-    function esc(t) {
-      return t.replace(/[&<>]/g, function (c) {
-        return c === '&' ? '&amp;' : (c === '<' ? '&lt;' : '&gt;');
-      });
-    }
-
-    // As the panel draws them: a control character and a byte that starts
-    // no UTF-8 sequence are a "?" each.
-    function clean(t) {
-      return t.replace(/[\u0000-\u0008\u000b-\u001f\u007f\ufffd]/g, '?');
-    }
-
     function lineHtml(k) {
       var s = view.b.subarray(view.L.s[k], view.L.e[k]);
       var spans = RcbHl.line(HL, s, k, view.kind);
@@ -646,7 +648,8 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       for (var j = 0; j < spans.length; ++j) {
         var sp = spans[j];
         out += '<span class="h-' + D.hl.cls[sp[2]] + '">' +
-          esc(clean(view.dec.decode(s.subarray(sp[0], sp[0] + sp[1])))) +
+          F.esc(F.clean(view.dec.decode(s.subarray(sp[0],
+            sp[0] + sp[1])))) +
           '</span>';
       }
       return out;
@@ -702,7 +705,9 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
         }
         var b = new Uint8Array(a.body);
         view = { b: b, L: RcbHl.lines(b), kind: RcbHl.kindOf(e.n),
-          dec: new TextDecoder('utf-8'), from: 0, to: 0 };
+          dec: new TextDecoder('utf-8'), from: 0, to: 0, i: i, e: e,
+          path: path, mount: p.list ? p.list.mount : st.mount,
+          tag: a.r.headers.get('ETag') || '' };
         ui.vsize.textContent = F.sizeText(b.length);
         ui.vmixed.hidden = a.r.headers.get('X-Rcbench-Eol') !== 'mixed';
         if (view.L.s.length === 0) {
@@ -715,6 +720,9 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
     }
 
     function closeView() {
+      if (editor && editor.closing()) {
+        return;
+      }
       ui.viewer.hidden = true;
       viewSeq++;
       view = null;
@@ -803,8 +811,9 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       ui.vsize = el('span', '');
       ui.vline = el('span', '');
       ui.vmixed = el('span', 'w', TX.mixed);
+      ui.vro = el('span', 'ro', TX.ro);
       ui.vclose = button(TX.close, 'btn', closeView);
-      [ui.vpath, ui.vsize, el('span', 'ro', TX.ro), ui.vline, ui.vmixed,
+      [ui.vpath, ui.vsize, ui.vro, ui.vline, ui.vmixed,
         ui.vclose].forEach(function (x) {
         vh.appendChild(x);
       });
@@ -839,6 +848,20 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       writes = RcbWr.attach({ F: F, TX: TX, st: st, ui: ui, root: root,
         el: el, button: button, msg: msg, queue: queue, rescan: rescan,
         selected: selected });
+    }
+    if (typeof RcbEd !== 'undefined') {
+      editor = RcbEd.attach({ F: F, TX: TX, st: st, ui: ui, el: el,
+        button: button, hl: HL, cls: D.hl.cls, wr: writes, rescan: rescan,
+        view: function () {
+          return view;
+        },
+        reopen: function () {
+          var v = view;
+          if (v) {
+            openFile(v.i, v.e);
+          }
+        },
+        close: closeView });
     }
     places(false);
     draw();

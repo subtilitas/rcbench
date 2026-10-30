@@ -4893,8 +4893,6 @@ shared/webaccess/wa_zip.c: warning: Member put16(uint8_t *p, uint32_t v) (functi
 shared/webaccess/wa_zip.c: warning: Member put32(uint8_t *p, uint32_t v) (function) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member put64(uint8_t *p, uint64_t v) (function) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member queue(wa_zip_t *z, size_t n) (function) of file wa_zip.c is not documented.
-shared/webaccess/wa_zip.c: warning: Member s_table[256] (variable) of file wa_zip.c is not documented.
-shared/webaccess/wa_zip.c: warning: Member s_table_made (variable) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member wa_zip_central(uint8_t *out, const char *name, size_t name_len, uint64_t size, uint32_t crc, uint64_t offset, int64_t mtime, bool dir) (function) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member wa_zip_central_bytes(size_t name_len, uint64_t size, uint64_t offset) (function) of file wa_zip.c is not documented.
 shared/webaccess/wa_zip.c: warning: Member wa_zip_desc(uint8_t *out, uint32_t crc, uint64_t size) (function) of file wa_zip.c is not documented.

@@ -178,6 +178,7 @@ void text_view_loaded(fm_err_t err, size_t len)
         tv.state = TEXT_VIEW_FAILED;
         return;
     }
+    tv.size = len;                  /* the header: the file as read */
     tv.state = TEXT_VIEW_SHOWN;
 }
 
@@ -201,6 +202,11 @@ fm_err_t text_view_why(text_buf_err_t *tb_err)
         *tb_err = (tv.state == TEXT_VIEW_FAILED) ? tv.tb_err : TEXT_BUF_OK;
     }
     return (tv.state == TEXT_VIEW_FAILED) ? tv.err : FM_OK;
+}
+
+uint64_t text_view_size(void)
+{
+    return tv.size;
 }
 
 const char *text_view_name(void)

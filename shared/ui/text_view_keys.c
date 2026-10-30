@@ -30,6 +30,8 @@ static const char k_kst_head[] = "KST servo configuration, format ";
 
 /** @brief DISCARD on the host's question: TEXT_VIEW_LEAVE is to be taken. */
 static bool s_leave;
+/** @brief READ AGAIN was tapped: the host reads the file again. */
+static bool s_reload;
 /** @brief The save under way took a KST file's checksum line out. */
 static bool s_kst_cut;
 
@@ -318,6 +320,10 @@ static void answer_discard(void)
 
 text_view_result_t tv_edit_take(void)
 {
+    if (s_reload) {
+        s_reload = false;
+        return TEXT_VIEW_RELOAD;
+    }
     if (!s_leave) {
         return TEXT_VIEW_NONE;
     }
@@ -419,7 +425,13 @@ static void question_event(const touch_event_t *e)
                && gfx_rect_contains(TV_Q_DISCARD, x, y)) {
         /* Shut while a save reads the text; text_view_saved() answers
          * the question when the save ends. */
-        answer_discard();
+        if (tv.ask == TEXT_VIEW_ASK_CHANGED) {
+            tv.ask = TEXT_VIEW_ASK_NONE;    /* READ AGAIN: the host's */
+            s_reload = true;
+            ++tv.rev;
+        } else {
+            answer_discard();
+        }
     }
 }
 
@@ -593,6 +605,7 @@ text_view_result_t text_view_saved(fm_err_t err, bool stopped,
     text_view_result_t out = TEXT_VIEW_NONE;
     if (err == FM_OK) {
         text_buf_saved(&tv_tb);
+        tv.size = text_buf_size(&tv_tb);    /* the header: as saved */
         keep_original();
         tv_say(s_kst_cut ? TX_ED_SAVED_KST
                : restart ? TX_ED_SAVED_ESC
@@ -614,6 +627,11 @@ text_view_result_t text_view_saved(fm_err_t err, bool stopped,
         tv_say(TX_FM_E_STOP_LOGGING);
     } else if (err == FM_ERR_CARD_GONE) {
         tv_say(TX_ED_NOT_SAVED_CARD);
+    } else if (err == FM_ERR_CHANGED) {
+        tv_say_err(err);
+        if (tv.ask == TEXT_VIEW_ASK_NONE) {
+            tv.ask = TEXT_VIEW_ASK_CHANGED;     /* STAY or READ AGAIN */
+        }
     } else {
         tv_say_err(err);
     }

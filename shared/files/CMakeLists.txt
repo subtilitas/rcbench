@@ -20,6 +20,7 @@ set(SRCS
     fm_tree.c
     fm_ops.c
     fm_req.c
+    fm_crc.c
 )
 
 if(ESP_PLATFORM)

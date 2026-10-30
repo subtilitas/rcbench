@@ -188,6 +188,7 @@ TRACKED = [
     "shared/files/fm_tree.c",
     "shared/files/fm_ops.c",
     "shared/files/fm_req.c",
+    "shared/files/fm_crc.c",
     "shared/safety/heartbeat.c",
     "shared/safety/arming.c",
     "shared/safety/safety_gate.c",

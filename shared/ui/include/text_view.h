@@ -79,6 +79,16 @@
  * copy of TEXT_BUF_FILE_MAX bytes kept while the editor is open.  There is
  * no undo of single keys.
  *
+ * SAVE writes only over the file the editor opened: the host hands the
+ * save the CRC-32 (cyclic redundancy check) of the file as it was read or
+ * last saved, the Wi-Fi page's ETag, and the save compares it with the
+ * file on the card first (fm_ops.h fm_job_match()).  A file changed or
+ * removed since, by the Wi-Fi page's editor or an upload, fails the save
+ * with FM_ERR_CHANGED and nothing written: the note says so, and the
+ * question UNSAVED CHANGES offers STAY, which keeps the text, and READ
+ * AGAIN, which drops it and reads the file from the card
+ * (TEXT_VIEW_RELOAD).
+ *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
  * SPDX-License-Identifier: MIT
@@ -129,9 +139,12 @@ typedef enum {
     TEXT_VIEW_NONE = 0,    /**< nothing the host acts on                  */
     TEXT_VIEW_CHANGED,     /**< the view changed: draw it again           */
     TEXT_VIEW_SAVE,        /**< SAVE: write the text (text_view_save_len()) */
-    TEXT_VIEW_LEAVE        /**< DISCARD on a question the host asked
+    TEXT_VIEW_LEAVE,       /**< DISCARD on a question the host asked
                                 (text_view_ask_open()): go on with what
                                 it held                                  */
+    TEXT_VIEW_RELOAD       /**< READ AGAIN on the CHANGED question: read
+                                the file from the card again; the
+                                editor's text is dropped                 */
 } text_view_result_t;
 
 /** @brief The question over the editor. */
@@ -139,7 +152,8 @@ typedef enum {
     TEXT_VIEW_ASK_NONE = 0,  /**< no question                             */
     TEXT_VIEW_ASK_BACK,      /**< the home tag leaves the editor           */
     TEXT_VIEW_ASK_REVERT,    /**< REVERT                                   */
-    TEXT_VIEW_ASK_OPEN       /**< the host opens another file              */
+    TEXT_VIEW_ASK_OPEN,      /**< the host opens another file              */
+    TEXT_VIEW_ASK_CHANGED    /**< SAVE found the file changed on the card  */
 } text_view_ask_t;
 
 /** @brief Close the viewer and put the face back to NORMAL: the start. */
@@ -404,7 +418,9 @@ size_t text_view_fill(void *ctx, uint64_t at, uint8_t *dst, size_t cap);
  * @brief The save is answered.  A question that showed while it ran (its
  *        DISCARD shut meanwhile) closes after a save that wrote the text:
  *        the host's held open goes on, the home tag's leaves the editor.
- *        After a failed save it stays, DISCARD live again.
+ *        After a failed save it stays, DISCARD live again.  A save that
+ *        found the file changed on the card (FM_ERR_CHANGED) asks STAY or
+ *        READ AGAIN when no other question shows.
  * @param err      FM_OK when the file is on the card; else why not, the
  *                 text still dirty
  * @param stopped  the gate stopped it part way (FM_JOB_STOPPED)
@@ -413,6 +429,14 @@ size_t text_view_fill(void *ctx, uint64_t at, uint8_t *dst, size_t cap);
  *         TEXT_VIEW_NONE
  */
 text_view_result_t text_view_saved(fm_err_t err, bool stopped, bool restart);
+
+/**
+ * @brief The bytes the header shows: the file as listed while it is read,
+ *        as read once it shows, and as written after each SAVE that wrote
+ *        it, its BOM included.
+ * @return the bytes
+ */
+uint64_t text_view_size(void);
 
 /**
  * @brief Whether a save runs or waits to: the text does not change.

@@ -822,6 +822,9 @@ FIT_ONLY = {
     "files-edit-open": (None, "files", "dark"),
     "files-edit-saving": (None, "files", "dark"),
     "files-edit-saved": (None, "files", "dark"),
+    # SAVE over a file the Wi-Fi page wrote since it was read: STAY or
+    # READ AGAIN.
+    "files-edit-changed": (None, "files", "dark"),
     "files-edit-esc": (None, "files", "dark"),
     "files-edit-nochange": (None, "files", "dark"),
     "files-edit-armed": (None, "files", "dark"),
@@ -850,7 +853,7 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "picker-protocol",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-folder",
                  "files-edit-unsaved", "files-edit-revert",
-                 "files-edit-open", "files-edit-see25",
+                 "files-edit-open", "files-edit-changed", "files-edit-see25",
                  "files-edit-see50"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 

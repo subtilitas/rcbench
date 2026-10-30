@@ -176,7 +176,8 @@ TEST_CASE(a_log_that_opens_before_the_save_runs_stops_it)
 
 /*
  * ARMED after the save's first chunk of 16KiB: it stops at the next one,
- * its ".NEW" is removed and the old file stays.
+ * its ".NEW" is removed and the old file stays.  The save reads the old
+ * file first, 40,000B in 4 steps, to compare its sum (files_text.c).
  */
 TEST_CASE(armed_part_way_stops_the_save_and_removes_its_new)
 {
@@ -186,7 +187,7 @@ TEST_CASE(armed_part_way_stops_the_save_and_removes_its_new)
     ed_type("A");
     ed_key(UI_TK_DONE);
     g_h.steps = 0;
-    g_h.arm_after_steps = 2;
+    g_h.arm_after_steps = 6;
     save();
     CHECK(!text_view_saving());
     CHECK(text_view_dirty());

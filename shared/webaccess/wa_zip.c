@@ -14,6 +14,7 @@
 
 #include <string.h>
 
+#include "fm_crc.h"
 #include "wall_clock.h"
 
 #define SIG_LOCAL    0x04034b50u
@@ -33,27 +34,9 @@ enum { PH_ENTRIES = 0, PH_CENTRAL, PH_END, PH_DONE, PH_FAILED };
 
 /* ------------------------------------------------------------- CRC */
 
-static uint32_t s_table[256];
-static bool     s_table_made;
-
 uint32_t wa_crc32(uint32_t crc, const void *data, size_t n)
 {
-    if (!s_table_made) {
-        for (uint32_t i = 0; i < 256u; ++i) {
-            uint32_t c = i;
-            for (int k = 0; k < 8; ++k) {
-                c = (c & 1u) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
-            }
-            s_table[i] = c;
-        }
-        s_table_made = true;
-    }
-    const uint8_t *p = data;
-    crc = ~crc;
-    while (n-- > 0u) {
-        crc = s_table[(crc ^ *p++) & 0xFFu] ^ (crc >> 8);
-    }
-    return ~crc;
+    return fm_crc32(crc, data, n);
 }
 
 /* ------------------------------------------------------------- time */

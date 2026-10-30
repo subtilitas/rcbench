@@ -19,6 +19,27 @@ history is in git.
 - SETUP > SD CARD > Browser writes: OPEN (default), ACCESS CODE, HOLD or
   OFF. HOLD shows `HOLD 2s: ALLOW BROWSER WRITES` on WI-FI; a line under
   the rows names the mode and counts the writes.
+- WI-FI's page edits a text file: EDIT in the viewer opens a text box
+  over the coloured lines, and SAVE writes it back with `If-Match`, the
+  file's line ends (LF, CR LF or CR) and its BOM kept, within the
+  viewer's 1MiB and 65,536 line ends. A file changed on the card since it
+  was read is answered 412 `CHANGED`, and the editor asks STAY or READ
+  AGAIN. A KST file loses its checksum lines on SAVE, as on the panel; an
+  ESC profile says it is read at the next start. A file with mixed line
+  ends is saved with LF ends; a file that is not UTF-8 opens in the viewer
+  only. CLOSE and leaving the page ask first while the text has changes.
+
+### Changed
+
+- FILES' editor saves only over the file as it opened it or last saved
+  it: SAVE compares the file's CRC-32, the Wi-Fi page's ETag, before it
+  writes, and a file the Wi-Fi page changed since is not overwritten. The
+  question UNSAVED CHANGES then offers STAY or READ AGAIN.
+
+### Fixed
+
+- FILES' editor header shows the file's size as read when it opens and as
+  written after SAVE, not the size listed before the open.
 
 ## 0.23.3 - 2026-10-30
 
