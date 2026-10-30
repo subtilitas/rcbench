@@ -1,6 +1,8 @@
-/*
- * The CAN (Controller Area Network) bring-up self-test: the echo run, the
- * comparison of both ends' counters and the error-counter reading.
+/**
+ * @file selftest.h
+ * @brief The CAN (Controller Area Network) bring-up self-test: the echo run,
+ *        the comparison of both ends' counters and the error-counter
+ *        reading.
  *
  * It runs at every start-up, before the bench is usable.  The fault it
  * reports is invisible from every other screen -- a bus that does not carry
@@ -19,11 +21,15 @@
 #include "busfault_screen.h"
 
 /**
- * Wait up to CAN_SELFTEST_WAIT_MS for the far end's first status answer,
- * then echo probes across the bus for @p ms and fill @p out with what both
- * ends saw.  True when the verdict is CAN_SELFTEST_OK.
+ * @brief Wait up to CAN_SELFTEST_WAIT_MS for the far end's first status
+ *        answer, then echo probes across the bus for @p ms and fill @p out
+ *        with what both ends saw.
  *
  * It answers one question: do frames cross this bus intact?  Nothing above
  * the wire is involved.  See docs/Bringup.md.
+ *
+ * @param ms   How long the echo run lasts, after the wait.
+ * @param out  Receives the report; NULL for none.
+ * @return     true when the verdict is CAN_SELFTEST_OK.
  */
 bool can_selftest_run(uint32_t ms, busfault_report_t *out);

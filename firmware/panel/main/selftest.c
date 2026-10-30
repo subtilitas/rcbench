@@ -1,6 +1,7 @@
-/*
- * The CAN (Controller Area Network) bring-up self-test; selftest.h says what
- * it answers.
+/**
+ * @file selftest.c
+ * @brief The CAN (Controller Area Network) bring-up self-test; selftest.h
+ *        says what it answers.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -67,10 +68,10 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
         vTaskDelay(pdMS_TO_TICKS(20));
     }
     if (have_before) {
-        ESP_LOGI(TAG, "CAN self-test: the IOmcu answered after %lu ms",
+        ESP_LOGI(TAG, "CAN self-test: the IOmcu answered after %lums",
                  (unsigned long)(now_ms() - wait0));
     } else {
-        ESP_LOGW(TAG, "CAN self-test: no answer in %u ms, testing anyway",
+        ESP_LOGW(TAG, "CAN self-test: no answer in %ums, testing anyway",
                  (unsigned)CAN_SELFTEST_WAIT_MS);
     }
     /*

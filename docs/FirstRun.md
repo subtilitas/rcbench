@@ -309,7 +309,7 @@ USB-Serial-JTAG (the ESP32-P4's built-in USB serial and debug bridge) as
 the secondary console; which of the board's two USB-C sockets reaches which
 is not traced:
 
-    I (…) rcbench: CAN self-test: the IOmcu answered after 3 ms
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0
 

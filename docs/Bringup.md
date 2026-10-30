@@ -64,7 +64,7 @@ GPIO21; neither carries anything else. The controller's clock is
 the 40MHz crystal. It prints:
 
     I (…) can: 1000000 bit/s: brp 2, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
-    I (…) rcbench: CAN self-test: the IOmcu answered after 3 ms
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
     I (…) rcbench:   round trip min 334 max 1356 us

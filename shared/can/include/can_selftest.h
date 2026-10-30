@@ -1,6 +1,7 @@
-/*
- * The CAN (Controller Area Network) echo self-test: the first check when two
- * nodes are wired together.
+/**
+ * @file can_selftest.h
+ * @brief The CAN (Controller Area Network) echo self-test: the first check
+ *        when two nodes are wired together.
  *
  * It answers one question: do frames cross this bus intact?  The initiator
  * sends a frame with a sequence number and a payload, the responder sends it

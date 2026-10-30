@@ -1,4 +1,9 @@
-/*
+/**
+ * @file can_selftest.c
+ * @brief The CAN (Controller Area Network) echo self-test: probes, echoes,
+ *        the verdict and the start-up wait; can_selftest.h says what it
+ *        answers.
+ *
  * SPDX-License-Identifier: MIT
  */
 
