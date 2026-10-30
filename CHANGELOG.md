@@ -22,6 +22,11 @@ history is in git.
 
 ### Fixed
 
+- The CAN BUS FAULT screen's acknowledgement no longer fills by itself. A
+  finger that held it and lifted after the screen closed stayed pressed in
+  the screen's record, and the next fault, such as a pulled CAN cable,
+  acknowledged itself after 2s with nobody touching. Leaving the screen
+  drops the press.
 - STOP clears a hold button's amber hint on the alert band in the frame of
   the press, and so do a new FAULT code and a switch from ARMED to SAFE.
   The hint stayed for its 4s before. An alert is left as it is.
