@@ -107,7 +107,8 @@ static void limit_alerts(void)
 
 /**
  * @brief One console line for each channel of a trip: the part, channel,
- *        what it watches, the highest current read and the limit held.
+ *        what it watches, the highest current read and the limit the
+ *        trip was judged by.
  * @param trip The channels, bit c channel c (sense_limit_link_take_trip()).
  */
 static void log_trip(uint16_t trip)
@@ -125,7 +126,7 @@ static void log_trip(uint16_t trip)
                  sensors_rows_trip_line(
                      line, sizeof(line), c, watch[c],
                      (s_trip_peaks & (1u << c)) != 0u, s_trip_peak[c],
-                     sense_limit_link_held_ma(&s_sense_limit, c)));
+                     sense_limit_link_trip_ma(&s_sense_limit, c)));
     }
 }
 

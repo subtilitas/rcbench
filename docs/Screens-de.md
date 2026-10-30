@@ -4745,7 +4745,9 @@ I (123456) rcbench: INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: highest 
 
 Der Messwert ist der höchste Strom der Fenster des Kanals, die das Panel
 seit dem vorigen Lesen von OVER auf SENSE_WIN_A oder SENSE_WIN_B gelesen
-hat, der Wert, an dem der IOmcu prüft, auf 0.001A. Ein Fenster, das nach
+hat, der Wert, an dem der IOmcu prüft, auf 0.001A. Die Grenze ist die, an
+der die Auslösung geprüft wurde, auch wenn im selben Poll eine neue Grenze
+geschrieben wird. Ein Fenster, das nach
 dem letzten Lesen seiner Page geschlossen hat, ist nicht darin; der Wert
 kann also unter der Grenze liegen. `no window read` steht an seiner Stelle,
 wo das Panel keines gelesen hat. Ein Kanal, der darüber bleibt, schreibt
