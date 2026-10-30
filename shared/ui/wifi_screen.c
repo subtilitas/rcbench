@@ -70,6 +70,9 @@
 #define ROW_P    56          /**< The rows' pitch, px. */
 #define LINE_P   28          /**< The pitch of the lines under the rows, px. */
 #define OFF_Y    (FOOT - 8 - BH) /**< WI-FI OFF's top: body y 424. */
+/** @brief The browser writes' button, beside WI-FI OFF at the right edge,
+ *         the same size: body x 548. */
+#define WR_X     (W - 16 - BW)
 
 /*
  * The scan list: two columns of eight rows of 48px, 52px apart,
@@ -112,6 +115,7 @@ _Static_assert(BH >= UI_TAP_MIN && SC_H >= UI_TAP_MIN
                "a WI-FI control under UI_TAP_MIN");
 _Static_assert(BY + 4 * BPITCH + BH <= OFF_Y && OFF_Y + BH <= FOOT,
                "the buttons reach the alert band");
+_Static_assert(BX + BW + 16 <= WR_X, "the writes' button meets WI-FI OFF");
 _Static_assert(SC_Y + (SC_ROWS - 1) * SC_P + SC_H + 4 + 8 <= SC_BY,
                "the scan list reaches its buttons");
 _Static_assert(SC_X1 + SC_W + 4 <= W - UI_MARGIN
@@ -146,6 +150,8 @@ enum {
     HIT_RESCAN,
     HIT_HIDDEN,
     HIT_SCAN_CANCEL,
+    HIT_WRITES,        /* HOLD 2s: ALLOW BROWSER WRITES */
+    HIT_WRITES_OFF,    /* BROWSER WRITES OFF */
     HIT_ROW,           /* HIT_ROW + i for row i */
 };
 
@@ -161,7 +167,9 @@ static struct {
     uint8_t      press_id;
     bool         have_press;
     ui_hold_t    hold;
-    bool         installing;    /* INSTALL went: leaving keeps the image */
+    int          hold_hit;      /**< the held control: HIT_INSTALL or
+                                     HIT_WRITES                          */
+    bool         installing;    /**< INSTALL went: leaving keeps the image */
     bool         q_cancelled;   /**< the home tag answered the question */
     unsigned     drawn_mask;    /**< the buffers drawn since a change   */
 } s;  /**< the screen's state: the view, the keyboard, the press */
@@ -199,11 +207,41 @@ static bool radio_on(void)
     return s.v.radio != WIFI_RADIO_OFF && s.v.radio != WIFI_RADIO_SCANNING;
 }
 
+/** @brief The page is served: the access point up or the network joined.
+ *  @return true while a browser can reach it */
+static bool serving(void)
+{
+    return s.v.radio == WIFI_RADIO_AP || s.v.radio == WIFI_RADIO_JOINED;
+}
+
+/** @brief The writes' button shows: HOLD, the page served, no image
+ *         waiting.  @return true when it does */
+static bool writes_button(void)
+{
+    return s.v.writes == WIFI_WRITES_HOLD && serving() && !staged()
+           && s.sub != SUB_SCAN;
+}
+
+/** @brief HOLD 2s: ALLOW BROWSER WRITES takes a hold.
+ *  @return true while the button shows and writes are not allowed yet */
+static bool writes_hold_allowed(void)
+{
+    return writes_button() && !s.v.writes_open;
+}
+
+/** @brief Whether the control the hold is on may still act.
+ *  @return true for the INSTALL hold while an install is allowed, and the
+ *          writes' hold while it is allowed */
+static bool hold_allowed(void)
+{
+    return (s.hold_hit == HIT_WRITES) ? writes_hold_allowed()
+                                      : install_allowed();
+}
+
 /* A press on the hold that the model took away under it ends here. */
 static void drop_hold_if_gone(void)
 {
-    if (!install_allowed() && ui_hold_left(&s.hold)
-        && s.hit == HIT_INSTALL) {
+    if (!hold_allowed() && ui_hold_left(&s.hold) && s.hit == s.hold_hit) {
         s.hit = HIT_NONE;
         s.have_press = false;
     }
@@ -274,6 +312,12 @@ static gfx_rect_t off_rect(void) { return gfx_rect_make(BX, OFF_Y, BW, BH); }
 static gfx_rect_t q_cancel_rect(void)
 {
     return gfx_rect_make(Q_X + 16, Q_BY, Q_BW, Q_BH);
+}
+
+/** @brief The writes' button.  @return Its rectangle. */
+static gfx_rect_t writes_rect(void)
+{
+    return gfx_rect_make(WR_X, OFF_Y, BW, BH);
 }
 
 /** @brief HOLD 2s: INSTALL.  @return Its rectangle. */
@@ -356,6 +400,9 @@ static int hit_at(int x, int y)
         }
         return in(scan_cancel_rect(), x, y) ? HIT_SCAN_CANCEL : HIT_NONE;
     case VIEW_RUNNING:
+        if (writes_button() && in(writes_rect(), x, y)) {
+            return s.v.writes_open ? HIT_WRITES_OFF : HIT_WRITES;
+        }
         return in(off_rect(), x, y) ? HIT_OFF : HIT_NONE;
     case VIEW_MAIN:
     default: {
@@ -397,6 +444,8 @@ static gfx_rect_t hit_rect(int hit)
     case HIT_RESCAN:      return rescan_rect();
     case HIT_HIDDEN:      return hidden_rect();
     case HIT_SCAN_CANCEL: return scan_cancel_rect();
+    case HIT_WRITES:
+    case HIT_WRITES_OFF:  return writes_rect();
     default:
         return (hit >= HIT_ROW) ? row_rect(hit - HIT_ROW)
                                 : gfx_rect_make(0, 0, 0, 0);
@@ -417,6 +466,7 @@ static void act(int hit)
         s.req |= s.v.code_on ? WIFI_REQ_CODE_OFF : WIFI_REQ_CODE_ON;
         break;
     case HIT_OFF:     s.req |= WIFI_REQ_OFF; break;
+    case HIT_WRITES_OFF: s.req |= WIFI_REQ_WRITES_OFF; break;
     case HIT_Q_CANCEL:
         s.req |= WIFI_REQ_DISCARD;
         break;
@@ -491,8 +541,11 @@ static void event(const touch_event_t *evt)
         if (s.hit != HIT_NONE) {
             s.have_press = true;
             s.press_id = evt->point.id;
-            if (s.hit == HIT_INSTALL) {
-                ui_hold_begin(&s.hold, TX_HOLD_HINT_INSTALL);
+            if (s.hit == HIT_INSTALL || s.hit == HIT_WRITES) {
+                s.hold_hit = s.hit;
+                ui_hold_begin(&s.hold, (s.hit == HIT_INSTALL)
+                                           ? TX_HOLD_HINT_INSTALL
+                                           : TX_HOLD_HINT_WRITES);
             }
         }
         touched();
@@ -503,8 +556,8 @@ static void event(const touch_event_t *evt)
     }
     if (evt->type == TOUCH_EVENT_MOVE) {
         /* Sliding off the hold abandons it, as on every held control. */
-        if (s.hit == HIT_INSTALL && !in(install_rect(), x, y)
-            && ui_hold_leave(&s.hold)) {
+        if ((s.hit == HIT_INSTALL || s.hit == HIT_WRITES)
+            && !in(hit_rect(s.hit), x, y) && ui_hold_leave(&s.hold)) {
             s.hit = HIT_NONE;
             s.have_press = false;
             touched();
@@ -518,9 +571,9 @@ static void event(const touch_event_t *evt)
     s.hit = HIT_NONE;
     s.have_press = false;
     touched();
-    if (hit == HIT_INSTALL) {
+    if (hit == HIT_INSTALL || hit == HIT_WRITES) {
         /* The hold acts when it completes; the release only ends it. */
-        (void)ui_hold_end(&s.hold, evt, install_rect());
+        (void)ui_hold_end(&s.hold, evt, hit_rect(hit));
         return;
     }
     if (touch_event_is_tap_up(evt) && in(hit_rect(hit), x, y)
@@ -536,16 +589,20 @@ static void tick(float dt_s)
         touched();             /* the fill follows the hold */
     }
     ui_hold_flash_step(&s.hold, dt_s);
-    if (install_allowed() && ui_hold_tick(&s.hold, dt_s)) {
-        s.req |= WIFI_REQ_INSTALL;
-        s.installing = true;
+    if (hold_allowed() && ui_hold_tick(&s.hold, dt_s)) {
+        if (s.hold_hit == HIT_WRITES) {
+            s.req |= WIFI_REQ_WRITES_ON;
+        } else {
+            s.req |= WIFI_REQ_INSTALL;
+            s.installing = true;
+        }
         ui_hold_reached(&s.hold);
     }
 }
 
 static void cancel(void)
 {
-    if (s.hit == HIT_INSTALL) {
+    if (s.hit == HIT_INSTALL || s.hit == HIT_WRITES) {
         (void)ui_hold_left(&s.hold);
     }
     s.hit = HIT_NONE;
@@ -559,6 +616,7 @@ static void enter(void)
     s.sub = SUB_MAIN;
     s.installing = false;
     s.q_cancelled = false;
+    s.hold_hit = HIT_NONE;
     ui_hold_reset(&s.hold);
     touched();
 }
@@ -607,6 +665,7 @@ static void leave(void)
     s.sub = SUB_MAIN;
     s.hit = HIT_NONE;
     s.have_press = false;
+    s.hold_hit = HIT_NONE;
     ui_hold_reset(&s.hold);
 }
 
@@ -801,6 +860,44 @@ static int line_at(gfx_canvas_t *c, int y, const char *t, gfx_color_t col)
 }
 
 /**
+ * @brief A held button's fill: the hold's colour while held, its flash once
+ *        it completes.
+ * @return The fill.
+ */
+static gfx_color_t hold_fill(void)
+{
+    if (s.hold.flash_ms > 0) {
+        return ui_hold_flash(UI_OK, s.hold.flash_ms);
+    }
+    return ui_hold_fill(UI_PANEL_HI, UI_OK, s.hold.held_s);
+}
+
+/**
+ * @brief What a browser needs to write to the card, as a line under the
+ *        rows: allowed with the count of writes, the access code it needs,
+ *        the hold it needs, or off.
+ * @param c Canvas.
+ * @param y Its top.
+ * @return The y of the next line.
+ */
+static int writes_line(gfx_canvas_t *c, int y)
+{
+    char v[112];
+    gfx_color_t col = UI_TEXT;
+    if (s.v.writes == WIFI_WRITES_OFF) {
+        snprintf(v, sizeof(v), "%s", TR(WF_WR_OFF));
+        col = UI_TEXT_DIM;
+    } else if (s.v.writes == WIFI_WRITES_HOLD && !s.v.writes_open) {
+        snprintf(v, sizeof(v), "%s", TR(WF_WR_HOLD));
+    } else if (s.v.writes == WIFI_WRITES_CODE && !s.v.code_on) {
+        snprintf(v, sizeof(v), TR(WF_WR_CODE), s.v.code);
+    } else {
+        snprintf(v, sizeof(v), TR(WF_WR_OPEN), (unsigned)s.v.written);
+    }
+    return line_at(c, y, v, col);
+}
+
+/**
  * @brief The radio-on view: the rows, the lines under them, WI-FI OFF.
  * @param c Canvas.
  */
@@ -853,7 +950,8 @@ static void draw_running(gfx_canvas_t *c)
         }
         snprintf(v, sizeof(v), TR(WF_IDLE),
                  (unsigned)((s.v.idle_left_s + 59u) / 60u));
-        y = line_at(c, y, v, UI_TEXT_DIM) + 8;
+        y = line_at(c, y, v, UI_TEXT_DIM);
+        y = writes_line(c, y) + 8;
         if (s.v.up == WIFI_UP_RECEIVING) {
             const unsigned pct = (s.v.total > 0u)
                 ? (unsigned)((uint64_t)s.v.received * 100u / s.v.total) : 0u;
@@ -866,6 +964,14 @@ static void draw_running(gfx_canvas_t *c)
         }
     }
     button(c, off_rect(), TR(WF_OFF), UI_PANEL_HI, HIT_OFF, true);
+    if (writes_button() && s.v.writes_open) {
+        button(c, writes_rect(), TR(WF_WRITES_STOP), UI_PANEL_HI,
+               HIT_WRITES_OFF, true);
+    } else if (writes_button()) {
+        ui_button_font(c, writes_rect(), TR(WF_HOLD_WRITES),
+                       (s.hold_hit == HIT_WRITES) ? hold_fill() : UI_PANEL_HI,
+                       false, true, WF_FONT_LABEL);
+    }
 }
 
 /**
@@ -919,14 +1025,6 @@ static void draw_scan(gfx_canvas_t *c)
     }
     button(c, scan_cancel_rect(), TR(CANCEL), UI_PANEL_HI, HIT_SCAN_CANCEL,
            true);
-}
-
-static gfx_color_t install_fill(void)
-{
-    if (s.hold.flash_ms > 0) {
-        return ui_hold_flash(UI_OK, s.hold.flash_ms);
-    }
-    return ui_hold_fill(UI_PANEL_HI, UI_OK, s.hold.held_s);
 }
 
 /**
@@ -989,7 +1087,8 @@ static void draw_question(gfx_canvas_t *c)
         }
     }
     button(c, q_cancel_rect(), TR(CANCEL), UI_PANEL_HI, HIT_Q_CANCEL, true);
-    ui_button_font(c, install_rect(), TR(WF_HOLD_INSTALL), install_fill(),
+    ui_button_font(c, install_rect(), TR(WF_HOLD_INSTALL),
+                   (s.hold_hit == HIT_INSTALL) ? hold_fill() : UI_PANEL_HI,
                    false, install_allowed(), WF_FONT_LABEL);
 }
 

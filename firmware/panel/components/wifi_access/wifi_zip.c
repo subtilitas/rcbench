@@ -66,7 +66,7 @@ esp_err_t wifi_zip_get(httpd_req_t *r)
 {
     esp_err_t g = ESP_OK;
     wa_guard_t guard = WA_GUARD_OK;
-    const wifi_page_go_t go = wifi_page_begin(r, &g, &guard);
+    const wifi_page_go_t go = wifi_page_begin(r, WA_REQ_READ, &g, &guard);
     if (go == WIFI_PAGE_DONE) {
         return g;
     }

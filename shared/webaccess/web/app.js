@@ -9,8 +9,9 @@
 // click) or Enter opens it.  RESCAN, INFO, DOWNLOAD and OPEN act on the
 // active pane's selected entry; a button that would be refused is drawn
 // dimmed and a tap on it says why.  OPEN shows a text file read-only, its
-// lines coloured as the panel's viewer colours them (hl.js).  Nothing on
-// the card is written.
+// lines coloured as the panel's viewer colours them (hl.js).  The writes
+// (UPLOAD, NEW, RENAME, MOVE, DELETE) are write.js's, in a second row of
+// buttons, on the same panes and the same one request at a time.
 //
 // The panel answers one request at a time, so the app sends one at a time.
 // The texts and the tables come from the page's data element (wa_app.c),
@@ -83,6 +84,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
     var view = null;
     var viewSeq = 0;
     var infoSeq = 0;
+    var writes = null;    // write.js's buttons, once attached
 
     function el(tag, cls, text) {
       var e = document.createElement(tag);
@@ -128,15 +130,32 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       return { error: 'HTTP', text: TX.noans + ' HTTP ' + status };
     }
 
-    // One request after the one before: {ok, j} with the JSON answer or
-    // the refusal, and {body, r} for a file.  A connection that breaks,
-    // before the answer's head or during its body, is a refusal too, so
-    // every request ends here once.  A missing access code shows the code
-    // form again.
-    function api(url, file) {
+    // One request after the one before: @p send() starts it and answers
+    // {ok, j} with the JSON answer or the refusal.  A missing access code
+    // shows the code form again.
+    function queue(send) {
       function run() {
         pending++;
         armWait();
+        return send().then(function (a) {
+          pending--;
+          disarmWait();
+          if (!a.ok && a.j && a.j.error === 'CODE') {
+            location.reload();
+          }
+          return a;
+        });
+      }
+      var p = chain.then(run, run);
+      chain = p;
+      return p;
+    }
+
+    // A read: {ok, j}, and {body, r} for a file.  A connection that breaks,
+    // before the answer's head or during its body, is a refusal too, so
+    // every request ends here once.
+    function api(url, file) {
+      return queue(function () {
         return fetch(url, { cache: 'no-store', credentials: 'same-origin' })
           .then(function (r) {
             if (file && r.ok) {
@@ -152,19 +171,8 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
           })
           .catch(function () {
             return { ok: false, j: { error: 'NET', text: TX.noans } };
-          })
-          .then(function (a) {
-            pending--;
-            disarmWait();
-            if (!a.ok && a.j && a.j.error === 'CODE') {
-              location.reload();
-            }
-            return a;
           });
-      }
-      var p = chain.then(run, run);
-      chain = p;
-      return p;
+      });
     }
 
     // --------------------------------------------------------- places
@@ -516,6 +524,9 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       } else {
         ui.dl.removeAttribute('href');
       }
+      if (writes) {
+        writes.footer();
+      }
     }
 
     function act(what, fn) {
@@ -765,6 +776,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
         foot.appendChild(b);
       });
       bar.appendChild(foot);
+      ui.foot = foot;
       ui.msg = el('p', 'msg');
       ui.msg.setAttribute('aria-live', 'polite');
       ui.wait = el('p', 'msg');
@@ -821,7 +833,13 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       });
     }
 
-    build(document.getElementById('fm'));
+    var root = document.getElementById('fm');
+    build(root);
+    if (typeof RcbWr !== 'undefined') {
+      writes = RcbWr.attach({ F: F, TX: TX, st: st, ui: ui, root: root,
+        el: el, button: button, msg: msg, queue: queue, rescan: rescan,
+        selected: selected });
+    }
     places(false);
     draw();
     restart(true);

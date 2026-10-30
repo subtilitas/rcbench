@@ -36,6 +36,7 @@
 #include "fm_io.h"
 #include "fm_rules.h"
 #include "fw_upload.h"
+#include "wa_api.h"
 #include "wa_app.h"
 #include "wa_fetch.h"
 #include "wa_session.h"
@@ -183,6 +184,41 @@ void wifi_access_set_files(const fm_io_t *io,
  * @param auto_logs  AUTO LOG FOLDER; NULL or "" is CARD_AUTO_LOGS
  */
 void wifi_access_set_log_dirs(const char *user_logs, const char *auto_logs);
+
+/**
+ * @brief SETUP > SD CARD > Browser writes: what a browser needs to write
+ *        to the card (wa_api_may_write()).  Once a frame; until the first
+ *        call no browser write is taken.  From any task.
+ * @param mode  the setting
+ */
+void wifi_access_set_writes(wa_writes_t mode);
+
+/**
+ * @brief The hold on WI-FI allowed browser writes (true), or BROWSER
+ *        WRITES OFF ended them (false).  The radio going off ends them too.
+ *        From any task.
+ * @param open  allowed
+ */
+void wifi_access_writes_allow(bool open);
+
+/**
+ * @brief Whether the hold allowed browser writes, and how many the page
+ *        made this radio session.  From any task.
+ * @param written  takes the count; may be NULL
+ * @return true while the hold's window is open
+ */
+bool wifi_access_writes(uint32_t *written);
+
+/**
+ * @brief The card's job lock FILES' task holds while it runs a request
+ *        (panel_files.c), set once at start-up.  A browser write takes it
+ *        around its card job, waiting at most 2000ms; without it set every
+ *        write answers PANEL_BUSY.
+ * @param take  takes the lock within @p wait_ms; false when it could not
+ * @param give  gives it back; @p wrote when the card changed
+ */
+void wifi_access_set_card_lock(bool (*take)(uint32_t wait_ms),
+                               void (*give)(bool wrote));
 
 /**
  * @brief The words and colours the page's file manager classes a text

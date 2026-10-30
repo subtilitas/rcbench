@@ -8,7 +8,8 @@
  *
  *   - the buttons with the radio off: 460 x 60px at x 16, from y 16,
  *     68px apart; the card from x 492 to 1016, y 16 to 492;
- *   - WI-FI OFF with the radio on: 460 x 60px at x 16, y 424 to 484;
+ *   - WI-FI OFF with the radio on: 460 x 60px at x 16, y 424 to 484, and
+ *     the browser writes' button the same size at x 548;
  *   - the scan list: rows of 492 x 48px at x 12 and 520, from y 12,
  *     52px apart, eight a column; SCAN AGAIN, HIDDEN NETWORK and CANCEL
  *     328 x 56px at x 8, 348 and 688, y 436 to 492;
@@ -43,6 +44,11 @@
 #define WF_OFF_Y       424           /**< WI-FI OFF's top. */
 #define WF_OFF_CX      (WF_BTN_X + WF_BTN_W / 2) /**< Its middle column. */
 #define WF_OFF_CY      (WF_OFF_Y + WF_BTN_H / 2) /**< Its middle row. */
+/** @brief The browser writes' button beside WI-FI OFF, the same size:
+ *         its left edge. */
+#define WF_WR_X        548
+#define WF_WR_CX       (WF_WR_X + WF_BTN_W / 2) /**< Its middle column. */
+#define WF_WR_CY       WF_OFF_CY     /**< Its middle row. */
 
 #define WF_ROW_X0      12            /**< The scan list's left column. */
 #define WF_ROW_X1      520           /**< Its right column. */

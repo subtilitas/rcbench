@@ -65,6 +65,22 @@ static const app_text_t k_texts[] = {
     { "e.TOO_BIG", W_P_API_TOO_BIG },  { "e.ARG", W_P_API_ARG },
     { "up", W_P_FM_UP },               { "dl", W_P_FM_DOWNLOAD },
     { "wait", W_P_FM_WAIT },           { "noans", W_P_FM_NO_ANSWER },
+    /* write.js */
+    { "upload", W_P_FM_UPLOAD },       { "newdir", T_FM_TK_FOLDER },
+    { "newfile", T_FM_TK_FILE },       { "new", T_FM_NEW },
+    { "rename", T_FM_RENAME },         { "move", T_FM_MOVE },
+    { "delete", T_LOG_DELETE },        { "tkname", T_FM_TK_RENAME },
+    { "cancel", T_CANCEL },            { "deltitle", T_LOG_DELETE_TITLE },
+    { "delwhat", T_LOG_DELETE_WHAT },  { "deldir", T_FM_DELETE_FOLDER },
+    { "delrep", T_FM_DELETE_REPORT },  { "delfinal", T_LOG_DELETE_FINAL },
+    { "made", T_FM_MADE },             { "renamed", T_FM_RENAMED },
+    { "moved", T_FM_MOVED },           { "deleted", T_LOG_DELETED },
+    { "saved", T_ED_SAVED },           { "savedesc", T_ED_SAVED_ESC },
+    { "sending", W_P_FM_SENDING },     { "replaceq", W_P_FM_REPLACE_Q },
+    { "replace", W_P_FM_REPLACE },     { "code", W_P_CODE },
+    { "codego", W_P_FM_CODE_GO },      { "e.TOO_LARGE", W_P_API_TOO_LARGE },
+    { "e.SAME", W_P_API_SAME },        { "e.FIXED", W_P_API_FIXED },
+    { "e.REQUEST", W_P_API_REQUEST },
 };
 
 /** @brief Expands a row of TEXT_HL_CLASS_ROWS to its style sheet name. */
@@ -255,6 +271,8 @@ void wa_app_body(wa_out_t *o, bool de, const wa_hl_t *hl)
     tables(o, hl);
     wa_out_str(o, "}</script><script>");
     blob(o, wa_web_hl_js);
+    wa_out_str(o, "</script><script>");
+    blob(o, wa_web_write_js);
     wa_out_str(o, "</script><script>");
     blob(o, wa_web_app_js);
     wa_out_str(o, "</script>");

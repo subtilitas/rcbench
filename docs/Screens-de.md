@@ -3365,7 +3365,9 @@ gemessen.
 ![WI-FI, kein Heimnetz gespeichert](img/de/wifi.png)
 
 WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei
-der Karte zum Herunterladen und ein Panel-Firmware-Image zum Hochladen. Der
+der Karte zum Herunterladen und zum Ändern, so weit
+[Schreiben per Browser](#schreiben-per-browser) es erlaubt, und ein
+Panel-Firmware-Image zum Hochladen. Der
 Bildschirm öffnet über die Kachel WI-FI auf [SETUP](#setup) und über WLAN in
 der unteren Reihe von [LOGS](#logs). Sein Home-Tag führt zu dem Bildschirm
 zurück, der ihn geöffnet hat, SETUP oder LOGS; ebenso SCHLIESSEN auf PANEL
@@ -3389,7 +3391,7 @@ sind 48px hoch oder höher.
 | Ansicht | Aufbau |
 | --- | --- |
 | Funk aus | fünf Tasten von 460 x 60px (69,0 x 9,0mm), 8px Abstand, links; rechts eine Karte von 524px mit Zeilen von 49 Zeichen in 10 x 20, 24px Abstand |
-| Funk an | Zeilen von 56px: die Bezeichnung in 10 x 20 auf 240px, der Wert in 20 x 36 auf 740px, wo ein Netzwerkname von 32 Zeichen 640px braucht; die Zeilen darunter in 12 x 24, 28px Abstand; WLAN AUS 460 x 60px ab Körper-y 424 |
+| Funk an | Zeilen von 56px: die Bezeichnung in 10 x 20 auf 240px, der Wert in 20 x 36 auf 740px, wo ein Netzwerkname von 32 Zeichen 640px braucht; die Zeilen darunter in 12 x 24, 28px Abstand; WLAN AUS 460 x 60px ab Körper-y 424, und mit Schreiben per Browser HALTEN die Taste des Schreibens gleich groß daneben ab Körper-x 548 |
 | Netzwerkliste | zwei Spalten mit je acht Zeilen von 492 x 48px, 52px Abstand: der Name in 12 x 24 (32 Zeichen sind 384px), das Signal in 10 x 20; NEU SUCHEN, VERSTECKTES NETZWERK und ABBRECHEN je 328 x 56px |
 | Frage zu einem Image | eine Karte von 1008 x 484px: Titel und Versionen in 20 x 36, die Sätze in 12 x 24, umbrochen bei 80 Zeichen; ABBRECHEN und 2s HALTEN ZUM INSTALLIEREN 460 x 72px |
 | Tastatur | 1008 x 484px, Tasten von 93 x 71px ([Tastatur](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)) |
@@ -3551,13 +3553,20 @@ Aktuelle Einschränkungen:
   Gerät zwischen Browser und Panel das Image unterwegs austauschen. Das
   IOmcu-Image, das ein Panel-Image mitbringt, kommt mit und wird dem
   IOmcu beim nächsten Link-up angeboten.
+- Ein Gerät, das den Verkehr im Heimnetz mitliest, kann einen eigenen
+  Schreibzugriff senden, solange Schreiben erlaubt ist: Zugangscode und
+  Header gehen im Klartext.
+- Der Editor von FILES am Panel speichert, ohne die Datei zu vergleichen,
+  die er geöffnet hat: Eine Änderung des Browsers zwischen Öffnen und
+  Speichern wird überschrieben. Die Schreibzugriffe der Seite vergleichen
+  mit `If-Match`.
 - Das Panel ist nur verbunden, solange dieser Bildschirm offen ist. Ein
   Panel, das immer verbunden bleibt, solange der Prüfstand SAFE ist, ist
   nicht gebaut.
 - Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
   mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
   Downloads. Die Ursache ist nicht gemessen. Die Seite mit der
-  Dateiverwaltung hat 33.101 Bytes auf Englisch mit leerer Karte und keine
+  Dateiverwaltung hat 45.100 Bytes auf Englisch mit leerer Karte und keine
   Kartenliste; ihre Zeit ist nicht gemessen.
 
 ### Der Zugangscode
@@ -3582,19 +3591,79 @@ Jede Anfrage wird vor dem Zugangscode geprüft, mit Code ein und aus
 | --- | --- |
 | Der `Host`-Header nennt das Panel: `rcbench-3F7A.local`, `rcbench-3F7A` oder die Adresse, mit der sich der Browser verbunden hat (`192.168.4.1` als Access Point), in beliebiger Groß- und Kleinschreibung, ohne Port oder mit Port 80. Eine IPv6-Adresse wird abgelehnt. | 421 Misdirected Request |
 | Eine Anfrage nach der Seite, einer Datei, dem ZIP oder der Datei-API hat keinen Body. | 400 Bad Request |
-| Eine Code-Eingabe hat höchstens 95 Bytes Body. | 413 Content Too Large |
-| Code-Eingabe und Upload tragen einen `Origin`-Header aus `http://` und einem der Namen oben; ohne `Origin` einen `Referer`, der so beginnt. Keiner der beiden, `Origin: null` und jede andere Seite werden abgelehnt. | 403 Forbidden |
-| Ein Upload trägt den Header `X-Rcbench-Upload: 1`, den das Skript der Seite selbst sendet. | 403 Forbidden |
+| Eine Code-Eingabe hat höchstens 95 Bytes Body, ein PUT der Datei-API höchstens 1.048.576 und ein Formular der Datei-API höchstens 1.024. | 413 Content Too Large |
+| Code-Eingabe, Upload und jeder Schreibzugriff der Datei-API tragen einen `Origin`-Header aus `http://` und einem der Namen oben; ohne `Origin` einen `Referer`, der so beginnt. Keiner der beiden, `Origin: null` und jede andere Seite werden abgelehnt. | 403 Forbidden |
+| Ein Upload und jeder Schreibzugriff der Datei-API tragen den Header `X-Rcbench-Upload: 1`, den das Skript der Seite selbst sendet. | 403 Forbidden |
 
 Eine andere Webseite im selben Browser erreicht die Karte damit nicht
 unter einem eigenen DNS-Namen (Domain Name System), sendet keine Codes, die
-zu den 16 zählen, und sendet kein Image. Ein Browser sendet einen eigenen
+zu den 16 zählen, sendet kein Image und ändert die Karte nicht. Ein Browser sendet einen eigenen
 Header an eine andere Seite erst, nachdem er diese Seite gefragt hat, und
 das Panel beantwortet keine solche Frage mit Ja. Eine abgelehnte Anfrage
 wird beantwortet, bevor ihr Body gelesen ist, und die Verbindung schließt
-mit der Antwort. Die Datei-API beantwortet die 421 und die 400 in JSON wie
-ihre anderen Ablehnungen, mit `HOST` und `BODY` ([die Datei-API](#die-datei-api));
-die Seite, `/card/` und die ZIP-Datei beantworten sie ohne Body.
+mit der Antwort. Die Datei-API beantwortet die 421, die 413, die 403 und die
+400 in JSON wie ihre anderen Ablehnungen, mit `HOST`, `TOO_LARGE`, `ORIGIN`
+und `BODY` ([die Datei-API](#die-datei-api)); die Seite, `/card/` und die
+ZIP-Datei beantworten sie ohne Body.
+
+### Schreiben per Browser
+
+![Schreiben per Browser HALTEN, vor dem Halten](img/de/wifi-writes-hold.png)
+![Nach dem Halten, drei Schreibvorgänge](img/de/wifi-writes-allowed.png)
+
+SETUP > SD CARD > Schreiben per Browser legt fest, was ein Browser braucht,
+um die Karte über die Seite zu ändern: HOCHLADEN, NEUER ORDNER, NEUE
+TEXTDATEI, UMBENENNEN, VERSCHIEBEN und LÖSCHEN ([die Seite](#die-seite)).
+Die Einstellung wird mit den anderen gespeichert.
+
+| Wert | Ein Schreibzugriff braucht |
+| --- | --- |
+| OFFEN (Vorgabe) | nur die Seite: den Zugangscode, solange ZUGANGSCODE an ist |
+| ZUGANGSCODE | den Zugangscode dieser Sitzung, auch mit ZUGANGSCODE aus: Lesen braucht dann keinen Code, Schreiben schon, und die Seite fragt beim ersten Schreiben nach ihm |
+| HALTEN | ein Halten von 2s auf 2s HALTEN: BROWSER DARF SCHREIBEN, einmal je Sitzung des Funkmoduls |
+| AUS | kein Schreibzugriff wird angenommen |
+
+Solange die Seite bedient wird, sagt eine Zeile unter den Zeilen, was gilt:
+`Der Browser darf auf die Karte schreiben: bisher 3 Schreibvorgänge.`,
+`Schreiben per Browser braucht den Zugangscode r4tcw9pe.` (ZUGANGSCODE mit
+ZUGANGSCODE aus), `Der Browser darf erst nach dem Halten auf die Karte
+schreiben.` oder `Schreiben per Browser ist aus: SETUP > SD CARD.` Gezählt
+werden die Schreibvorgänge, die das Panel in dieser Sitzung des
+Funkmoduls für die Seite ausgeführt hat.
+
+Mit HALTEN steht 2s HALTEN: BROWSER DARF SCHREIBEN neben WLAN AUS,
+460 x 60px ab Körper-x 548. Loslassen vor 2s erlaubt nichts und zeigt
+`Halte 2s, um Schreiben per Browser zu erlauben.` im Warnband. Nach dem
+Halten heißt die Taste BROWSER-SCHREIBEN AUS, ein Tipp. Schreiben bleibt
+erlaubt, bis das Funkmodul abschaltet (WLAN AUS, der Bildschirm verlassen,
+10min ohne Anfrage, ARM, STOP, der Netzteilausgang, ein aufgezeichneter
+Lauf, 16 falsche Codes) oder BROWSER-SCHREIBEN AUS getippt wird; die
+nächste Sitzung beginnt ohne.
+
+Jeder Schreibzugriff durchläuft, in dieser Reihenfolge
+(`firmware/panel/components/wifi_access/wifi_write.c`):
+
+1. die Prüfungen der Tabelle oben: `Origin` der Seite, Header des Skripts,
+   höchstens 1.048.576 Bytes einer Datei oder 1.024 eines Formulars;
+2. den Zugangscode, solange ZUGANGSCODE an ist, dann die Einstellung;
+3. den Body, ganz ins PSRAM empfangen, bevor die Karte gerufen wird, in
+   Stücken von 4.096B; geht der Funk aus, schließt die Verbindung oder
+   kommt 30s kein Byte, endet die Anfrage, ohne dass etwas geschrieben ist;
+4. die Auftragssperre der Karte, die FILES am Panel hält, solange es einen
+   Auftrag ausführt: Der Schreibzugriff wartet höchstens 2000ms auf sie und
+   bekommt dann `PANEL_BUSY` mit `Retry-After: 2`; die Seite sendet ihn nach
+   2s noch einmal, höchstens 3 Mal;
+5. die Regeln und die Schreibsperre von FILES, wie für FILES selbst: SAFE,
+   kein aufgezeichneter Lauf, die Ordner des Prüfstands, die Vermerke der
+   Servoprogrammierung, die Dateien des Loggers, die Namen, die die
+   Tastatur des Panels tippt. Die Sperre wird vor jeden 16KiB neu gefragt,
+   also hält ein Wechsel zu ARMED einen Schreibzugriff am nächsten Stück an
+   und entfernt sein `.NEW`.
+
+Eine Ablehnung vor Schritt 3 schließt die Verbindung mit der Antwort: Der
+Body wird nie gelesen. Solange der Prüfstand ARMED ist, der Netzteilausgang
+an ist oder ein Lauf aufgezeichnet wird, ist der Funk aus und die Seite gar
+nicht erreichbar.
 
 ### Die Seite
 
@@ -3623,8 +3692,9 @@ läuft während jedes Flash-Löschens (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 zeigt, ist nicht gemessen.
 
 **Dateien auf der Karte.** Die Karte in zwei Spalten, wie [FILES](#files)
-sie zeigt, gelesen über [die Datei-API](#die-datei-api). Die Seite liest die
-Karte nur: Nichts darauf wird gelöscht, umbenannt oder geschrieben. Jede
+sie zeigt, gelesen über [die Datei-API](#die-datei-api). Sie ändert die
+Karte nur, so weit [Schreiben per Browser](#schreiben-per-browser) es
+erlaubt. Jede
 Spalte ist ein Ordner, bis zu 48 Einträge je Seite, Ordner zuerst, dann
 Namen ohne Rücksicht auf Groß- und Kleinschreibung. Die linke Spalte öffnet
 im Stammverzeichnis der Karte, die rechte im Ordner User-Logs (vorgegeben
@@ -3653,6 +3723,33 @@ Karte im Slot steckt; eine andere Karte beginnt beide wieder dort.
 | INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel des Eintrags wie der INFO-Kasten von FILES; die Zeit ist der Zeitstempel der Karte in der Zone von SETUP > PANEL, `Zeitzone`, `nicht bekannt` für einen Zeitstempel in 1980 |
 | HERUNTERLADEN | die gewählte Datei über `/card/<Pfad>`; auf einem Ordner gedimmt |
 | ÖFFNEN | geht in einen Ordner oder zeigt eine Datei im Betrachter über der Seite. Gedimmt auf einer Datei über 1.048.576 Bytes, einer Datei, die der Logger schreibt, und den Vermerken der Servoprogrammierung, die HERUNTERLADEN trotzdem sendet |
+
+Eine zweite Reihe hält die Schreibzugriffe. Jeder wartet auf die Antwort
+des Panels, und nach einem, der durchging, werden beide Spalten neu
+gelesen.
+
+| Taste | Was sie tut |
+|---|---|
+| HOCHLADEN | sendet eine Datei bis 1.048.576 Bytes in den Ordner der aktiven Spalte, mit Fortschrittsbalken; eine größere wird abgelehnt, bevor ein Byte gesendet ist. Ein vergebener Name fragt `UP.TXT gibt es in diesem Ordner schon. Ersetzen?` mit ERSETZEN und ABBRECHEN. Vor der Frage liest die Seite die Datei dort für ihr ETag, und ERSETZEN sendet `If-Match` mit ihm: Eine Änderung am Panel oder aus einem anderen Browser, während die Frage offen ist, wird mit `Seit dem Lesen auf der Karte geändert. Neu lesen.` abgelehnt. Eine Datei dort, die das Lesen ablehnt, über 1.048.576 Bytes oder kein Text, wird ohne den Vergleich ersetzt. Die Datei muss Text sein, wie der Betrachter ihn nimmt: kein NUL-Byte in den ersten 4.096 Bytes und höchstens 65.536 Zeilenenden |
+| NEUER ORDNER | ein Ordner mit dem getippten Namen im Ordner der aktiven Spalte |
+| NEUE TEXTDATEI | eine leere Datei mit dem getippten Namen dort; ein vergebener Name wird abgelehnt |
+| UMBENENNEN | der gewählte Eintrag unter dem getippten Namen in seinem Ordner; nur eine andere Groß- und Kleinschreibung ist auch ein Umbenennen |
+| VERSCHIEBEN | der gewählte Eintrag in den Ordner der anderen Spalte, unter seinem Namen; ein Ordner nur, wenn er leer ist |
+| LÖSCHEN | fragt `VON DER KARTE LÖSCHEN` mit dem Namen, ob es die Datei oder den leeren Ordner löscht, den Bericht, den ein Lauf-Log mitnimmt, und dass es sich nicht rückgängig machen lässt; ein Ordner nur, wenn er leer ist |
+
+Ein getippter oder hochgeladener Name folgt der Tastatur des Panels ohne
+die deutschen Buchstaben: 1 bis 59 Bytes ASCII (American Standard Code
+for Information Interchange); Buchstaben, Ziffern, Leerzeichen und
+Zeichen außer `" * / : < > ? \ |`; kein Punkt und kein Leerzeichen an
+einem Ende. Ein Eintrag, dessen Pfad ein Zeichen außerhalb von ASCII
+enthält, die deutschen Buchstaben eingeschlossen, wird nur auf FILES
+umbenannt, verschoben und gelöscht. Eine Schreibtaste ist gedimmt, solange das Panel keinen
+Schreibzugriff annimmt (die Einstellung, das Halten, ARMED, ein Lauf),
+ohne Auswahl, auf einem Ordner des Prüfstands, auf den Vermerken der
+Servoprogrammierung und auf einer Datei, die der Logger schreibt; ein Tipp
+darauf sagt, warum. Mit Schreiben per Browser ZUGANGSCODE und ZUGANGSCODE
+aus fragt der erste Schreibzugriff in einem Kasten nach dem Code; CODE
+SENDEN sendet ihn, und die Seite lädt mit ihm neu.
 
 Der Betrachter zeigt die Datei nur lesend über der Seite: Pfad, Größe,
 NUR LESEN, `ZEILE 23 VON 57` für die oberste Zeile, `GEMISCHTE ZEILENENDEN`
@@ -3753,16 +3850,17 @@ weiter.
 Der Server der Seite beantwortet auch vier Lesezugriffe für ein Skript:
 eine Seite eines Ordners, die Angaben zu einem Eintrag, eine Textdatei
 ganz und den Zustand des Panels (`shared/webaccess/wa_api.h`,
-`firmware/panel/components/wifi_access/wifi_files.c`). Die Dateiverwaltung
-der Seite liest die Karte über sie. Sie lesen die Karte nur, über dieselben Seiten,
-Regeln und dasselbe Laden wie FILES: Nichts wird geschrieben, umbenannt
-oder gelöscht. Jede läuft durch die Prüfungen der Tabelle oben und braucht
+`firmware/panel/components/wifi_access/wifi_files.c`); und vier
+Schreibzugriffe (`shared/webaccess/wa_api_write.c`,
+`firmware/panel/components/wifi_access/wifi_write.c`). Die Dateiverwaltung
+der Seite liest die Karte über sie, über dieselben Seiten, Regeln und
+dasselbe Laden wie FILES. Jede läuft durch die Prüfungen der Tabelle oben und braucht
 den Zugangscode wie ein Download; eine Anfrage ohne Code bekommt 403 und
 `CODE`.
 
 | Anfrage | Antwort |
 | --- | --- |
-| `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes":"closed"` mit dem Grund (`READ_ONLY`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift), Mount-Nummer, Name, Größe und freie Bytes der Karte, die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei, und der Ordner User-Logs, den SETUP > SD CARD nennt (vorgegeben `USER/LOGS`) |
+| `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes"` `open` oder `closed` mit dem ersten Grund, aus dem ein Schreibzugriff zum Zeitpunkt der Anfrage abgelehnt wird, und seinem Text (`WRITES_OFF`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift; `WRITES_HOLD`; leer, wenn offen) und `"mode"`, die Einstellung (`OPEN`, `CODE`, `HOLD`, `OFF`; bei `CODE` entscheidet der Code jedes Schreibzugriffs), Mount-Nummer, Name, Größe und freie Bytes der Karte, die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei, und der Ordner User-Logs, den SETUP > SD CARD nennt (vorgegeben `USER/LOGS`) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: bis zu 48 Einträge des Ordners `P`, Ordner zuerst, dann Namen ohne Rücksicht auf Groß- und Kleinschreibung, wie FILES sie listet. Jeder Eintrag hat Namen, ob er ein Ordner ist, Bytes, Art (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), Platz (`FREE`, `FIXED`, `LOCKED`, `FAULT`) und ob der Logger ihn schreibt. Dazu die Mount-Nummer, die Einträge vor der Seite, die Summe des Ordners, die nicht gelisteten Einträge und ob davor und danach eine Seite steht. `G` ist `first` (voreingestellt), `last`, `next`, `prev` oder `same`; die letzten drei nennen die Seite über den Eintrag `N` an ihrem Rand, `D` 1 für einen Ordner. |
 | `GET /api/info?path=P&dir=D&mount=M` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen, und diese Zeit, wie INFO sie zeigt, `2027-01-01 00:00` in der Zone von SETUP > PANEL, `Zeitzone`, leer für einen Zeitstempel in 1980 oder keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge |
 | `GET /api/file?path=P&mount=M` | die Bytes der Textdatei `P`, wie die Karte sie hält, BOM (Byte Order Mark) eingeschlossen, mit `ETag` (ihre CRC-32, Cyclic Redundancy Check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` oder `mixed`), `X-Rcbench-Lines` (die Zeilen, wie der Betrachter von FILES sie zählt: ein Zeilenende am Dateiende beginnt keine Zeile, also haben `a\nb\n` und `a\nb` 2 und eine leere Datei 0) und `X-Rcbench-Bom` (1 oder 0) |
@@ -3771,6 +3869,30 @@ Ein Pfad gilt ab der Wurzel der Karte und ist prozentkodiert, mit `/` als
 Trenner: `%2F` wird abgelehnt, `+` ist ein Plus. Er hat höchstens 120 Bytes
 und 16 Ordner, wie auf FILES. Mit `mount=M` wird INFO oder eine Datei von
 einer anderen Karte als der gelisteten mit `CARD_GONE` abgelehnt.
+
+Die Schreibzugriffe führen Aufträge von FILES aus, nach den Schritten von
+[Schreiben per Browser](#schreiben-per-browser). Ein Formular ist ein Body
+von höchstens 1.024 Bytes, gelesen wie ein Query-String.
+
+| Anfrage | Was sie tut |
+| --- | --- |
+| `PUT /api/file?path=P&mount=M` | speichert den Body, höchstens 1.048.576 Bytes, als Textdatei `P` über `P.NEW`, wie der Editor von FILES speichert. Mit `If-Match: "<ETag>"` nur, solange die CRC-32 der Datei dieses ETag ist, sonst 412 `CHANGED`; mit `If-None-Match: *` nur, wo kein Eintrag den Namen hat, sonst 409 `EXISTS`; mit keinem von beiden legt es die Datei an oder ersetzt sie. Der Body folgt den Grenzen des Betrachters: 415 `NOT_TEXT`, 422 `TOO_MANY_LINES`. Antwortet 201 für eine angelegte und 200 für eine ersetzte Datei, mit `ETag` und `{"path":"P","created":true,"etag":"...","note":""}`; `note` ist `ESC_NEXT_START` für ein ESC-Profil (Electronic Speed Controller), das der nächste Start liest |
+| `POST /api/mkdir` mit `path=P&mount=M` | legt den Ordner `P` an; 201 |
+| `POST /api/rename` mit `from=P&to=Q&dir=D&mount=M` | `Q` im Ordner von `P` benennt den Eintrag um; `Q` mit demselben Namen in einem anderen Ordner verschiebt ihn dorthin, einen Ordner nur, wenn er leer ist; jedes andere `Q` ist 400 `REQUEST`; 200 |
+| `POST /api/delete` mit `path=P&dir=D&mount=M` | löscht `P`, den Bericht eines Laufs mit, einen Ordner nur, wenn er leer ist; 200 |
+
+Ein neuer Name folgt der Tastatur des Panels: 1 bis 59 Bytes, keines von
+`" * / : < > ? \ |`, kein Punkt und kein Leerzeichen an einem Ende.
+`If-Match` nimmt ein ETag, wie `/api/file` es liefert; ein schwaches
+(`W/`) oder eine Liste ist 400 `REQUEST`. Jeder Pfad eines
+Schreibzugriffs nennt jeden Eintrag nur auf eine Weise: ein Name mit
+Leerzeichen am Anfang, Leerzeichen oder Punkt am Ende, `\`, `:`, einem
+Steuerbyte, `~` vor einer Ziffer (ein 8.3-Kurzname wie
+`LOG000~1.BFL`) oder einem Zeichen außerhalb von ASCII ist 400 `NAME`,
+weil FatFs ihn als anderen Eintrag läse: Es faltet die Schreibung von
+ganz Unicode, `ſ` (U+017F) ist für FatFs `S`. Groß- und Kleinschreibung
+in ASCII wird nicht abgelehnt: Die Regeln vergleichen Namen ohne sie, wie
+FatFs.
 
 Eine Ablehnung ist ein HTTP-Status und `{"error":"WORT","text":"..."}`, der
 Text in der Sprache des Panels:
@@ -3782,28 +3904,37 @@ Text in der Sprache des Panels:
 | `ARG` | 400 | ein Ordner, als Datei angefragt |
 | `BODY` | 400 | eine Leseanfrage mit Body (die Prüfung oben) |
 | `CODE` | 403 | kein Zugangscode oder ein falscher, der zu den 16 zählt |
+| `ORIGIN` | 403 | ein Schreibzugriff ohne den `Origin` der Seite oder den Header des Skripts (die Prüfung oben) |
+| `WRITES_OFF`, `WRITES_HOLD`, `WRITES_CODE` | 403 | ein Schreibzugriff, den [Schreiben per Browser](#schreiben-per-browser) nicht erlaubt: AUS, HALTEN vor dem Halten, ZUGANGSCODE ohne den Code dieser Sitzung |
+| `FIXED` | 403 | ein Ordner des Prüfstands, oder das Fehlerlog bei UMBENENNEN und VERSCHIEBEN |
+| `DENIED` | 403 | eine schreibgeschützte Karte |
 | `LOCKED` | 403 | die Vermerke der Servoprogrammierung, `KST.TXT` und `HITEC.TXT`: stattdessen herunterladen |
 | `NOT_FOUND` | 404 | kein solcher Eintrag, oder einer anderer Art |
+| `EXISTS`, `NOT_EMPTY`, `SAME` | 409 | ein vergebener Name; ein Ordner mit Einträgen; ein Verschieben in denselben Ordner oder in sich selbst |
+| `ARMED`, `LOGGING` | 409 | der Prüfstand wechselte zu ARMED, oder ein Lauf wird aufgezeichnet: Die Karte ist nur lesbar |
+| `CHANGED` | 412 | ein PUT mit `If-Match`, dessen Datei eine andere CRC-32 als das ETag hat oder fehlt |
 | `TOO_BIG` | 413 | eine Datei über 1.048.576 Bytes, abgelehnt, bevor ein Byte gelesen ist |
+| `TOO_LARGE` | 413 | der Body eines Schreibzugriffs über seiner Grenze (die Prüfung oben) |
 | `NOT_TEXT` | 415 | ein NUL-Byte in den ersten 4.096 Bytes |
 | `HOST` | 421 | ein `Host`, der nicht das Panel ist (die Prüfung oben) |
 | `TOO_MANY_LINES` | 422 | mehr als 65.536 Zeilenenden |
 | `BUSY` | 423 | eine Datei, die der Logger schreibt |
-| `IO` | 500 | die Karte hat einen Lesezugriff nicht ausgeführt |
+| `IO` | 500 | die Karte hat einen Lese- oder Schreibzugriff nicht ausgeführt |
 | `NO_CARD`, `CARD_GONE`, `MEMORY`, `CANCELLED` | 503 | keine Karte; Karte entnommen oder getauscht; kein PSRAM für die Anfrage; der Funk geht aus |
-
-Die Wörter der Schreibzugriffe von FILES (`EXISTS`, `FULL`, `DENIED`,
-`FIXED`, `NOT_EMPTY`, `SAME`, `ARMED`, `LOGGING`) haben ebenfalls Status
-und Text; kein Lesezugriff liefert sie.
+| `PANEL_BUSY` | 503 | FILES am Panel hielt die Karte 2000ms lang; mit `Retry-After: 2` |
+| `FULL` | 507 | die Karte oder der Ordner ist voll |
 
 Der Speicher der API ist PSRAM, genommen bei ihrer ersten Anfrage und
 zurückgegeben, wenn der Funk ausgeht: etwa 22kB für eine Anfrage und bei
 der ersten Datei 1MiB für deren Bytes und 256KiB für ihren Zeilenindex.
 Jede Anfrage nach Liste, INFO und Datei schreibt ihre Antwort, ihre Bytes,
 ihre Zeit und den ungenutzten Stack des Server-Tasks ins Log, als
-`api: <request> <answer>, <n>B in <t>ms; httpd stack <n>B unused`. Der Stack des
-Servers hat 8.192 Bytes; ein Kartenzugriff darauf ist auf einem Panel
-nicht gemessen.
+`api: <request> <answer>, <n>B in <t>ms; httpd stack <n>B unused`; jeder
+Schreibzugriff fügt den freien internen RAM an, als `api: put OK, 1048576B
+in <t>ms; httpd stack <n>B unused, internal RAM <n>B free`. Der Body eines
+Schreibzugriffs liegt in demselben 1MiB PSRAM; Formular und Header nutzen
+den Puffer der Seite von 4.096B. Der Stack des Servers hat 8.192 Bytes;
+ein Lese- oder Schreibzugriff darauf ist auf einem Panel nicht gemessen.
 
 ### Installieren: PANEL UPDATE
 
@@ -4793,6 +4924,7 @@ einem älteren IOmcu.
 | --- | --- | --- | --- |
 | Auto-Logs | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in Ordner Auto-Logs: ein Log je ARMED- und Netzteil-Lauf |
 | User-Logs | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT` und `LIMITnnn.TXT` in Ordner User-Logs: den AUTOMATISCHEN TEST und den ENDLAGENLAUF |
+| Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | selbst nichts: was ein Browser braucht, um die Karte über die Seite von WI-FI zu ändern ([Schreiben per Browser](#schreiben-per-browser)) |
 | Ordner Auto-Logs | ein Ordner, siehe unten | `BENCH/LOGS` | wohin Auto-Logs schreibt |
 | Ordner User-Logs | ein Ordner, siehe unten | `USER/LOGS` | wohin User-Logs schreibt |
 

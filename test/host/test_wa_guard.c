@@ -12,6 +12,8 @@
 
 #include "greatest.h"
 
+#include "text_buf.h"
+#include "wa_api.h"
 #include "wa_guard.h"
 
 static const wa_self_t k_ap = { "rcbench-1A2B", { 192, 168, 4, 1 } };
@@ -172,6 +174,60 @@ TEST_CASE(bodies_are_bounded_before_a_byte_is_read)
     CHECK_EQ(wa_guard(WA_REQ_UPLOAD, &r, &k_sta), WA_GUARD_OK);
 }
 
+/*
+ * The file API's writes: a PUT of 1MiB, the viewer's limit, and a form of
+ * 1kB pass; a byte more is refused unread.  Both need the page's Origin
+ * and the script's header, a missing or foreign one refused before the
+ * body; the Host before everything.
+ */
+TEST_CASE(file_api_writes_need_the_page_and_a_bounded_body)
+{
+    CHECK_EQ(WA_PUT_BODY_MAX, TEXT_BUF_FILE_MAX);
+    CHECK_EQ(WA_FORM_BODY_MAX, WA_API_FORM_MAX);
+    wa_req_t r = { "rcbench-1a2b.local", "http://rcbench-1A2B.local", NULL,
+                   WA_UPLOAD_VAL, WA_PUT_BODY_MAX };
+    CHECK_EQ(wa_guard(WA_REQ_PUT, &r, &k_sta), WA_GUARD_OK);
+    r.body = 0u;                              /* an empty file */
+    CHECK_EQ(wa_guard(WA_REQ_PUT, &r, &k_sta), WA_GUARD_OK);
+    r.body = WA_PUT_BODY_MAX + 1u;
+    CHECK_EQ(wa_guard(WA_REQ_PUT, &r, &k_sta), WA_GUARD_BIG);
+    r.body = UINT64_MAX;
+    CHECK_EQ(wa_guard(WA_REQ_PUT, &r, &k_sta), WA_GUARD_BIG);
+    r.body = WA_FORM_BODY_MAX;
+    CHECK_EQ(wa_guard(WA_REQ_FORM, &r, &k_sta), WA_GUARD_OK);
+    r.body = WA_FORM_BODY_MAX + 1u;
+    CHECK_EQ(wa_guard(WA_REQ_FORM, &r, &k_sta), WA_GUARD_BIG);
+    r.body = 10u;
+    /* The script's header, exactly, on both. */
+    static const wa_req_kind_t kinds[2] = { WA_REQ_PUT, WA_REQ_FORM };
+    for (int k = 0; k < 2; ++k) {
+        r.upload = NULL;
+        CHECK_EQ(wa_guard(kinds[k], &r, &k_sta), WA_GUARD_UPLOAD);
+        r.upload = "true";
+        CHECK_EQ(wa_guard(kinds[k], &r, &k_sta), WA_GUARD_UPLOAD);
+        r.upload = WA_UPLOAD_VAL;
+        CHECK_EQ(wa_guard(kinds[k], &r, &k_sta), WA_GUARD_OK);
+        /* Another page, with or without the header. */
+        r.origin = "http://evil.example";
+        CHECK_EQ(wa_guard(kinds[k], &r, &k_sta), WA_GUARD_ORIGIN);
+        r.origin = "null";
+        CHECK_EQ(wa_guard(kinds[k], &r, &k_sta), WA_GUARD_ORIGIN);
+        r.origin = NULL;
+        CHECK_EQ(wa_guard(kinds[k], &r, &k_sta), WA_GUARD_ORIGIN);
+        r.referer = "http://10.0.0.23/";
+        CHECK_EQ(wa_guard(kinds[k], &r, &k_sta), WA_GUARD_OK);
+        r.referer = NULL;
+        r.origin = "http://rcbench-1A2B.local";
+        /* A rebound name: the Host first. */
+        r.host = "evil.example";
+        CHECK_EQ(wa_guard(kinds[k], &r, &k_sta), WA_GUARD_HOST);
+        r.host = "rcbench-1a2b.local";
+    }
+    /* The code form needs no script header. */
+    r.upload = NULL;
+    CHECK_EQ(wa_guard(WA_REQ_CODE, &r, &k_sta), WA_GUARD_OK);
+}
+
 TEST_CASE(each_refusal_has_its_status_line)
 {
     CHECK_STR_EQ(wa_guard_status(WA_GUARD_HOST), "421 Misdirected Request");
@@ -190,6 +246,7 @@ int main(void)
     RUN(without_an_origin_the_referer_decides);
     RUN(the_guard_checks_host_body_origin_and_upload_in_order);
     RUN(bodies_are_bounded_before_a_byte_is_read);
+    RUN(file_api_writes_need_the_page_and_a_bounded_body);
     RUN(each_refusal_has_its_status_line);
     return test_summary("wa_guard");
 }

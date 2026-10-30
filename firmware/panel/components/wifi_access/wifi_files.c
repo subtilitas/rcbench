@@ -6,8 +6,8 @@
  * Each request runs on the server's task, one at a time, and makes its
  * card calls through the file manager's runner (fm_req.h) on the card the
  * panel set (wifi_access_set_files()).  Reads run beside FILES' own task
- * (cardjob) as the page's downloads do: FatFs takes one call at a time,
- * and nothing here writes.
+ * (cardjob) as the page's downloads do: FatFs takes one call at a time.
+ * The writes are wifi_write.c's, under the card's job lock.
  *
  * The PSRAM (pseudo-static random-access memory) is taken at the first
  * request that needs it and kept until the server stops: the request's
@@ -205,8 +205,23 @@ static bool text_take(void)
     return s_text != NULL && s_ends != NULL;
 }
 
+wa_api_t *wifi_files_api(bool text, wa_api_err_t *why)
+{
+    *why = WA_API_OK;
+    if (!room_take()) {
+        *why = (s_card.io == NULL) ? WA_API_NO_CARD : WA_API_MEMORY;
+        return NULL;
+    }
+    if (text && !text_take()) {
+        *why = WA_API_MEMORY;
+        return NULL;
+    }
+    return &s_room->api;
+}
+
 void wifi_files_free(void)
 {
+    wifi_write_reset();
     heap_caps_free(s_text);
     heap_caps_free(s_ends);
     heap_caps_free(s_room);
@@ -258,6 +273,7 @@ static void status_now(wa_api_status_t *st, const wa_page_info_t *pi,
     memset(&bench, 0, sizeof(bench));
     run_bench(&bench, NULL);
     st->gate = fm_gate(FM_OP_SAVE, &bench);
+    st->writes = wifi_write_mode(&st->window);
     taskENTER_CRITICAL(&s_card.mux);
     memcpy(logs, s_card.user_logs, CARD_DIR_MAX);
     taskEXIT_CRITICAL(&s_card.mux);
@@ -342,7 +358,7 @@ static esp_err_t serve(httpd_req_t *r, api_t kind)
 {
     esp_err_t e = ESP_OK;
     wa_guard_t guard = WA_GUARD_OK;
-    const wifi_page_go_t go = wifi_page_begin(r, &e, &guard);
+    const wifi_page_go_t go = wifi_page_begin(r, WA_REQ_READ, &e, &guard);
     if (go == WIFI_PAGE_DONE) {
         return e;
     }
@@ -421,13 +437,14 @@ static esp_err_t h_file(httpd_req_t *r) { return serve(r, API_FILE); }
 
 void wifi_files_register(httpd_handle_t h)
 {
-    static const httpd_uri_t uris[WIFI_FILES_URIS] = {
+    static const httpd_uri_t uris[] = {
         { .uri = WA_API_URL_STATUS, .method = HTTP_GET, .handler = h_status },
         { .uri = WA_API_URL_LIST,   .method = HTTP_GET, .handler = h_list },
         { .uri = WA_API_URL_INFO,   .method = HTTP_GET, .handler = h_info },
         { .uri = WA_API_URL_FILE,   .method = HTTP_GET, .handler = h_file },
     };
-    for (size_t i = 0; i < WIFI_FILES_URIS; ++i) {
+    for (size_t i = 0; i < sizeof(uris) / sizeof(uris[0]); ++i) {
         (void)httpd_register_uri_handler(h, &uris[i]);
     }
+    wifi_write_register(h);
 }

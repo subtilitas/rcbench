@@ -29,6 +29,7 @@ static fm_runner_t g_run;
 static bool g_armed;            /* bench(): ARMED                      */
 static int g_benches;           /* bench() calls                       */
 static int g_cancel_after;      /* CANCEL from this bench() call on; -1 */
+static int g_armed_after;       /* ARMED from this bench() call on; -1  */
 static log_marks_t g_marks;     /* the logger's open files             */
 
 /** @brief The JSON an answer wrote. */
@@ -39,7 +40,8 @@ static size_t g_json_len;
 static size_t g_json_cap;
 
 /**
- * @brief bench(): ARMED as the case sets it, the link up, g_marks open.
+ * @brief bench(): ARMED as the case sets it, or from g_armed_after calls
+ *        on, the link up, g_marks open.
  * @param out  takes the bench
  * @param ctx  unused
  */
@@ -47,7 +49,7 @@ static inline void rig_bench(fm_bench_t *out, void *ctx)
 {
     (void)ctx;
     ++g_benches;
-    out->armed = g_armed;
+    out->armed = g_armed || (g_armed_after >= 0 && g_benches > g_armed_after);
     out->link_up = true;
     out->marks = &g_marks;
 }
@@ -116,6 +118,7 @@ static inline void rig_fresh(void)
     g_armed = false;
     g_benches = 0;
     g_cancel_after = -1;
+    g_armed_after = -1;
     const fm_runner_t r = {
         .io = &g_io, .bench = rig_bench, .cancelled = rig_cancelled,
         .progress = NULL, .look = NULL, .chunk = g_chunk,

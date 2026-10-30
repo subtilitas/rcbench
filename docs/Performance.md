@@ -385,7 +385,7 @@ its stack less 1024 bytes.
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,624 | 3,248 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
-| `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,048 | 3,568 |
+| `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the TCP/IP (transmission control protocol, internet
@@ -667,7 +667,17 @@ start after FILES' first request. On one panel on 2026-10-29 it fell by
 FILES and the Wi-Fi page's file API used in between: the stack, the
 buffer and the task's control block of 108 bytes make 23,148 bytes of it,
 and the other 308 bytes are not attributed. The file API takes no
-internal RAM ([Screens, The file API](Screens.md#the-file-api)).
+internal RAM ([Screens, The file API](Screens.md#the-file-api)). Its
+writes take the body into the same PSRAM and share FILES' card task's
+lock, one FreeRTOS mutex taken from the heap at start-up; its bytes are
+not measured. Each write logs the internal RAM left free after it, and the
+stack the server's task left unused:
+
+```text
+I (…) wifi: api: put OK, 1048576B in <t>ms; httpd stack <n>B unused, internal RAM <n>B free
+```
+
+The server's stack after a 1MiB write is not measured on a panel.
 
 `firmware/panel/main/psram_bss.lf` places the zero-initialised data (.bss)
 of 30 objects in PSRAM (pseudo-static random-access memory): the screens'

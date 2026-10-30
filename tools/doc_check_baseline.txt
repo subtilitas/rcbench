@@ -329,7 +329,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_path(c
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_readdir(void *ctx, void *dir, wa_dirent_t *out) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member channel (variable) of struct [struct].s.job is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member chunked (variable) of struct http_ctx_t is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member closed(httpd_req_t *r) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member conf (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member de (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member disp[WA_NAME_BYTES *3u+64u] (variable) of struct bufs_t is not documented.
@@ -400,9 +399,7 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member pend (varia
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member poke(void) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member radio_up (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member rand32(void *ctx) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member refused(httpd_req_t *r, const char *status) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member req_begin(void) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member req_code(httpd_req_t *r) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member req_end(void) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member running (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member running_ok (variable) of struct [struct].s is not documented.
@@ -4672,8 +4669,6 @@ shared/ui/wifi_screen.c: warning: Member hit_rect(int hit) (function) of file wi
 shared/ui/wifi_screen.c: warning: Member hold (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member in(gfx_rect_t r, int x, int y) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member install_allowed(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member install_fill(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member installing (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member k_screen (variable) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member key_event(const touch_event_t *evt) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member leave(void) (function) of file wifi_screen.c is not documented.

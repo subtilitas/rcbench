@@ -2086,6 +2086,24 @@ static void pose_wifi(const char *view)
         v.up = WIFI_UP_RECEIVING;
         v.received = 917504u;
         v.total = 1843200u;
+    } else if (strncmp(view, "wifi-writes", 11) == 0) {
+        /* Browser writes by SETUP's setting: HOLD before and after the
+         * hold, ACCESS CODE with the code switch off, OFF. */
+        v.radio = WIFI_RADIO_AP;
+        strcpy(v.pass, "k7mqx3ha");
+        strcpy(v.code, "r4tcw9pe");
+        v.channel = 6;
+        v.idle_left_s = 574;
+        v.writes = WIFI_WRITES_HOLD;
+        if (strcmp(view, "wifi-writes-allowed") == 0) {
+            v.writes_open = true;
+            v.written = 3u;
+        } else if (strcmp(view, "wifi-writes-code") == 0) {
+            v.writes = WIFI_WRITES_CODE;
+            v.code_on = false;
+        } else if (strcmp(view, "wifi-writes-off") == 0) {
+            v.writes = WIFI_WRITES_OFF;
+        }
     } else if (strcmp(view, "wifi-joining") == 0) {
         v.have_net = true;
         strcpy(v.net, "Workshop 2.4");

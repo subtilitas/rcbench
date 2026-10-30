@@ -2,8 +2,9 @@
 """Generate the C file that carries the Wi-Fi page's file manager.
 
 The page's script and style sheet are written as plain files under
-shared/webaccess/web: app.css, hl.js and app.js.  The panel serves them
-inside the page (wa_app.c), so they are compiled in as C strings:
+shared/webaccess/web: app.css, hl.js, write.js and app.js.  The panel
+serves them inside the page (wa_app.c), so they are compiled in as C
+strings:
 shared/webaccess/wa_web_blob.c holds each file as an array of pieces of at
 most PIECE_MAX bytes, cut at line ends and ended by NULL.
 
@@ -39,6 +40,7 @@ OUT = "shared/webaccess/wa_web_blob.c"
 FILES = (
     ("wa_web_css", "app.css", "css"),
     ("wa_web_hl_js", "hl.js", "js"),
+    ("wa_web_write_js", "write.js", "js"),
     ("wa_web_app_js", "app.js", "js"),
 )
 

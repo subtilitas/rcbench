@@ -720,7 +720,21 @@ void wifi_service(bool armed, uint32_t stops_now)
         wifi_access_discard();
     }
 
+    /* What a browser needs to write to the card; the hold's window ends
+     * with the radio, and opens only while it is up. */
+    const wa_writes_t writes = (wa_writes_t)settings_get_int(SET_WEB_WRITES);
+    wifi_access_set_writes(writes);
+    const bool down = wifi_access_down();
+    if (down) {
+        wifi_access_writes_allow(false);
+    }
     const unsigned req = wifi_screen_take();
+    if ((req & WIFI_REQ_WRITES_ON) != 0u && !down) {
+        wifi_access_writes_allow(true);
+    }
+    if ((req & WIFI_REQ_WRITES_OFF) != 0u) {
+        wifi_access_writes_allow(false);
+    }
     if ((req & WIFI_REQ_OFF) != 0u) {
         wifi_access_close(WA_OFF_ASKED);
     }
@@ -818,6 +832,8 @@ void wifi_service(bool armed, uint32_t stops_now)
     v->gate = (wifi_gate_t)fgate;
     snprintf(v->new_ver, sizeof(v->new_ver), "%s", a->info.version_text);
     snprintf(v->run_ver, sizeof(v->run_ver), "%s", RCBENCH_VERSION_STRING);
+    v->writes = (wifi_writes_t)writes;
+    v->writes_open = wifi_access_writes(&v->written);
     wifi_screen_set(v);
 }
 

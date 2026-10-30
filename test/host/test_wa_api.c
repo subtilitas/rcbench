@@ -10,7 +10,9 @@
  * Cases:
  * - every_core_answer_has_a_reason_word_status_and_texts
  * - a_refusal_is_its_word_and_its_text_in_json
- * - the_status_says_the_card_and_why_writes_are_closed
+ * - the_status_says_the_card_and_whether_writes_are_open
+ * - the_status_says_why_a_write_is_refused_by_mode_gate_and_hold
+ * - a_write_is_allowed_by_mode_code_and_hold
  * - the_root_lists_folders_first_with_kind_place_and_busy
  * - pages_of_0_1_47_48_49_entries
  * - pages_of_999_entries_forward_and_back_by_key
@@ -132,8 +134,9 @@ TEST_CASE(every_core_answer_has_a_reason_word_status_and_texts)
     CHECK_EQ(wa_api_http((wa_api_err_t)-1), 500u);
 }
 
-/* The guard's refusals of a read (wa_guard.h) are the API's own reasons,
- * with the guard's status, so the file API answers them in JSON. */
+/* The guard's refusals (wa_guard.h) are the API's own reasons, with the
+ * guard's status, so the file API answers them in JSON: a read's and a
+ * write's. */
 TEST_CASE(a_guard_refusal_is_a_reason_with_the_guards_status)
 {
     CHECK_EQ(wa_api_of_guard(WA_GUARD_OK), WA_API_OK);
@@ -144,11 +147,16 @@ TEST_CASE(a_guard_refusal_is_a_reason_with_the_guards_status)
     CHECK_STR_EQ(wa_api_status_line(WA_API_HOST),
                  wa_guard_status(WA_GUARD_HOST));
     CHECK_STR_EQ(wa_api_status_line(WA_API_HOST), "421 Misdirected Request");
-    /* A write's refusals never reach a read: a request the API does not
-     * take. */
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_BIG), WA_API_REQUEST);
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_ORIGIN), WA_API_REQUEST);
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_UPLOAD), WA_API_REQUEST);
+    /* A write's: a body over its limit, another page, no script header. */
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_BIG), WA_API_TOO_LARGE);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_ORIGIN), WA_API_ORIGIN);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_UPLOAD), WA_API_ORIGIN);
+    CHECK_STR_EQ(wa_api_status_line(WA_API_TOO_LARGE),
+                 wa_guard_status(WA_GUARD_BIG));
+    CHECK_STR_EQ(wa_api_status_line(WA_API_ORIGIN),
+                 wa_guard_status(WA_GUARD_ORIGIN));
+    CHECK_STR_EQ(wa_api_status_line(WA_API_ORIGIN),
+                 wa_guard_status(WA_GUARD_UPLOAD));
     CHECK_EQ(wa_api_of_guard((wa_guard_t)-1), WA_API_REQUEST);
     json_begin();
     wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_BODY), false);
@@ -177,7 +185,7 @@ TEST_CASE(a_refusal_is_its_word_and_its_text_in_json)
                           "record. Download it to read it.\"}"));
 }
 
-TEST_CASE(the_status_says_the_card_and_why_writes_are_closed)
+TEST_CASE(the_status_says_the_card_and_whether_writes_are_open)
 {
     wa_api_status_t st = {
         .name = "rcbench-1A2B", .version = "0.23.2", .de = false,
@@ -188,8 +196,9 @@ TEST_CASE(the_status_says_the_card_and_why_writes_are_closed)
     wa_api_status_json(&g_out, &st);
     CHECK_STR_EQ(json_end(),
                  "{\"name\":\"rcbench-1A2B\",\"version\":\"0.23.2\","
-                 "\"lang\":\"en\",\"writes\":\"closed\","
-                 "\"why\":\"READ_ONLY\",\"card\":{\"mounted\":true,"
+                 "\"lang\":\"en\",\"writes\":\"open\","
+                 "\"why\":\"\",\"why_text\":\"\",\"mode\":\"OPEN\","
+                 "\"card\":{\"mounted\":true,"
                  "\"mount\":3,\"name\":\"RC \\\"BENCH\\\"\","
                  "\"total\":31914983424,\"free\":1099511627776},"
                  "\"page\":48,\"file_max\":1048576,\"lines_max\":65536,"
@@ -220,6 +229,88 @@ TEST_CASE(the_status_says_the_card_and_why_writes_are_closed)
     json_begin();
     wa_api_status_json(&g_out, &st);
     CHECK(has(json_end(), "\"why\":\"LOGGING\""));
+}
+
+/*
+ * The status says whether a write would pass now, and why not: OFF before
+ * the gate, the gate before the hold, the hold once the gate is open; with
+ * ACCESS CODE "open", since each write's cookie is checked.
+ */
+TEST_CASE(the_status_says_why_a_write_is_refused_by_mode_gate_and_hold)
+{
+    wa_api_status_t st = {
+        .name = "rcbench-1A2B", .version = "0.23.2", .de = false,
+        .mounted = true, .mount = 1u, .gate = FM_OK,
+        .writes = WA_WRITES_HOLD, .window = false,
+    };
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    const char *j = json_end();
+    CHECK(has(j, "\"writes\":\"closed\",\"why\":\"WRITES_HOLD\","));
+    CHECK(has(j, "\"mode\":\"HOLD\""));
+    CHECK(has(j, wa_api_text(WA_API_WRITES_HOLD, false)));
+    st.window = true;
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    CHECK(has(json_end(), "\"writes\":\"open\",\"why\":\"\""));
+    /* ARMED shuts an open window's writes too. */
+    st.gate = FM_ERR_ARMED;
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    CHECK(has(json_end(), "\"writes\":\"closed\",\"why\":\"ARMED\""));
+    st.window = false;
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    CHECK(has(json_end(), "\"why\":\"ARMED\""));
+    /* OFF is said before the gate. */
+    st.writes = WA_WRITES_OFF;
+    st.de = true;
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    j = json_end();
+    CHECK(has(j, "\"why\":\"WRITES_OFF\""));
+    CHECK(has(j, "\"mode\":\"OFF\""));
+    CHECK(has(j, wa_api_text(WA_API_WRITES_OFF, true)));
+    /* ACCESS CODE: open while the gate is. */
+    st.writes = WA_WRITES_CODE;
+    st.gate = FM_OK;
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    j = json_end();
+    CHECK(has(j, "\"writes\":\"open\""));
+    CHECK(has(j, "\"mode\":\"CODE\""));
+    /* A mode outside the enum is OFF. */
+    st.writes = WA_WRITES_COUNT;
+    json_begin();
+    wa_api_status_json(&g_out, &st);
+    CHECK(has(json_end(), "\"why\":\"WRITES_OFF\""));
+}
+
+/* What a write needs, by SETUP's mode: OPEN nothing, CODE the cookie,
+ * HOLD the window, OFF never. */
+TEST_CASE(a_write_is_allowed_by_mode_code_and_hold)
+{
+    for (int c = 0; c < 2; ++c) {
+        for (int w = 0; w < 2; ++w) {
+            CHECK_EQ(wa_api_may_write(WA_WRITES_OPEN, c, w), WA_API_OK);
+            CHECK_EQ(wa_api_may_write(WA_WRITES_CODE, c, w),
+                     c ? WA_API_OK : WA_API_WRITES_CODE);
+            CHECK_EQ(wa_api_may_write(WA_WRITES_HOLD, c, w),
+                     w ? WA_API_OK : WA_API_WRITES_HOLD);
+            CHECK_EQ(wa_api_may_write(WA_WRITES_OFF, c, w),
+                     WA_API_WRITES_OFF);
+            CHECK_EQ(wa_api_may_write((wa_writes_t)-1, c, w),
+                     WA_API_WRITES_OFF);
+        }
+    }
+    CHECK_STR_EQ(wa_api_writes_word(WA_WRITES_OPEN), "OPEN");
+    CHECK_STR_EQ(wa_api_writes_word(WA_WRITES_CODE), "CODE");
+    CHECK_STR_EQ(wa_api_writes_word(WA_WRITES_HOLD), "HOLD");
+    CHECK_STR_EQ(wa_api_writes_word(WA_WRITES_OFF), "OFF");
+    CHECK_STR_EQ(wa_api_writes_word(WA_WRITES_COUNT), "OFF");
+    CHECK_STR_EQ(wa_api_status_line(WA_API_CHANGED),
+                 "412 Precondition Failed");
+    CHECK_EQ(wa_api_of(FM_ERR_CHANGED), WA_API_CHANGED);
 }
 
 TEST_CASE(the_root_lists_folders_first_with_kind_place_and_busy)
@@ -544,7 +635,9 @@ int main(void)
     RUN(every_core_answer_has_a_reason_word_status_and_texts);
     RUN(a_guard_refusal_is_a_reason_with_the_guards_status);
     RUN(a_refusal_is_its_word_and_its_text_in_json);
-    RUN(the_status_says_the_card_and_why_writes_are_closed);
+    RUN(the_status_says_the_card_and_whether_writes_are_open);
+    RUN(the_status_says_why_a_write_is_refused_by_mode_gate_and_hold);
+    RUN(a_write_is_allowed_by_mode_code_and_hold);
     RUN(the_root_lists_folders_first_with_kind_place_and_busy);
     RUN(pages_of_0_1_47_48_49_entries);
     RUN(pages_of_999_entries_forward_and_back_by_key);

@@ -6,6 +6,7 @@
  */
 
 #include "wa_api.h"
+#include "wa_api_int.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -67,6 +68,7 @@ static const why_t k_why[WA_API_COUNT] = {
     [WA_API_ARMED] = { "ARMED", 409u, P_API_ARMED },
     [WA_API_LOGGING] = { "LOGGING", 409u, P_API_LOGGING },
     [WA_API_CANCELLED] = { "CANCELLED", 503u, P_API_CANCELLED },
+    [WA_API_CHANGED] = { "CHANGED", 412u, P_API_CHANGED },
     [WA_API_NOT_TEXT] = { "NOT_TEXT", 415u, P_API_NOT_TEXT },
     [WA_API_TOO_MANY_LINES] = { "TOO_MANY_LINES", 422u,
                                 P_API_TOO_MANY_LINES },
@@ -75,6 +77,12 @@ static const why_t k_why[WA_API_COUNT] = {
     [WA_API_REQUEST] = { "REQUEST", 400u, P_API_REQUEST },
     [WA_API_BODY] = { "BODY", 400u, P_API_BODY },
     [WA_API_HOST] = { "HOST", 421u, P_API_HOST },
+    [WA_API_TOO_LARGE] = { "TOO_LARGE", 413u, P_API_TOO_LARGE },
+    [WA_API_ORIGIN] = { "ORIGIN", 403u, P_API_ORIGIN },
+    [WA_API_WRITES_OFF] = { "WRITES_OFF", 403u, P_API_WRITES_OFF },
+    [WA_API_WRITES_HOLD] = { "WRITES_HOLD", 403u, P_API_WRITES_HOLD },
+    [WA_API_WRITES_CODE] = { "WRITES_CODE", 403u, P_API_WRITES_CODE },
+    [WA_API_PANEL_BUSY] = { "PANEL_BUSY", 503u, P_API_PANEL_BUSY },
 };
 
 /** @brief The API's reason for each answer of the core. */
@@ -98,6 +106,7 @@ static const wa_api_err_t k_of[FM_ERR_COUNT] = {
     [FM_ERR_ARMED] = WA_API_ARMED,
     [FM_ERR_LOGGING] = WA_API_LOGGING,
     [FM_ERR_CANCELLED] = WA_API_CANCELLED,
+    [FM_ERR_CHANGED] = WA_API_CHANGED,
 };
 
 /** @brief The kind words of fm_kind_t, as the list carries them. */
@@ -132,8 +141,10 @@ wa_api_err_t wa_api_of_guard(wa_guard_t g)
     case WA_GUARD_HOST:
         return WA_API_HOST;
     case WA_GUARD_BIG:
+        return WA_API_TOO_LARGE;
     case WA_GUARD_ORIGIN:
     case WA_GUARD_UPLOAD:
+        return WA_API_ORIGIN;
     default:
         return WA_API_REQUEST;
     }
@@ -170,6 +181,8 @@ const char *wa_api_status_line(wa_api_err_t e)
         return "404 Not Found";
     case 409u:
         return "409 Conflict";
+    case 412u:
+        return "412 Precondition Failed";
     case 413u:
         return "413 Content Too Large";
     case 415u:
@@ -200,37 +213,21 @@ const char *wa_api_text(wa_api_err_t e, bool de)
     return (de && k_de[t] != NULL) ? k_de[t] : k_en[t];
 }
 
-/**
- * @brief A JSON string: @p s between quotes.
- * @param o  the output
- * @param s  the text
- */
-static void json_str(wa_out_t *o, const char *s)
+void wa_api_json_str(wa_out_t *o, const char *s)
 {
     wa_out_str(o, "\"");
     wa_out_json(o, s);
     wa_out_str(o, "\"");
 }
 
-/**
- * @brief A JSON member: ",\"key\":" with no comma before the first.
- * @param o      the output
- * @param key    the member's name, plain ASCII
- * @param first  the object's first member
- */
-static void json_key(wa_out_t *o, const char *key, bool first)
+void wa_api_json_key(wa_out_t *o, const char *key, bool first)
 {
     wa_out_str(o, first ? "\"" : ",\"");
     wa_out_str(o, key);
     wa_out_str(o, "\":");
 }
 
-/**
- * @brief A JSON boolean.
- * @param o  the output
- * @param b  the value
- */
-static void json_bool(wa_out_t *o, bool b)
+void wa_api_json_bool(wa_out_t *o, bool b)
 {
     wa_out_str(o, b ? "true" : "false");
 }
@@ -253,65 +250,74 @@ static void json_i64(wa_out_t *o, int64_t v)
 void wa_api_error_json(wa_out_t *o, wa_api_err_t e, bool de)
 {
     wa_out_str(o, "{");
-    json_key(o, "error", true);
-    json_str(o, wa_api_word(e));
-    json_key(o, "text", false);
-    json_str(o, wa_api_text(e, de));
+    wa_api_json_key(o, "error", true);
+    wa_api_json_str(o, wa_api_word(e));
+    wa_api_json_key(o, "text", false);
+    wa_api_json_str(o, wa_api_text(e, de));
     wa_out_str(o, "}");
+}
+
+/**
+ * @brief Why a write is refused now, as /api/status says it.
+ * @param st  the panel's state
+ * @return WA_API_OK; WRITES_OFF, then the gate's refusal, then
+ *         WRITES_HOLD; never WRITES_CODE, which a write finds out
+ */
+static wa_api_err_t writes_why(const wa_api_status_t *st)
+{
+    const wa_api_err_t m = wa_api_may_write(st->writes, true, st->window);
+    if (m == WA_API_WRITES_OFF || st->gate == FM_OK) {
+        return m;
+    }
+    return wa_api_of(st->gate);
 }
 
 void wa_api_status_json(wa_out_t *o, const wa_api_status_t *st)
 {
-    const bool gate_open = (st->gate == FM_OK);
+    const wa_api_err_t shut = writes_why(st);
     wa_out_str(o, "{");
-    json_key(o, "name", true);
-    json_str(o, st->name);
-    json_key(o, "version", false);
-    json_str(o, st->version);
-    json_key(o, "lang", false);
-    json_str(o, st->de ? "de" : "en");
-    /* No write goes through the API: the gate's word when it is shut,
-     * READ_ONLY when it is open. */
-    json_key(o, "writes", false);
-    json_str(o, "closed");
-    json_key(o, "why", false);
-    json_str(o, gate_open ? "READ_ONLY" : wa_api_word(wa_api_of(st->gate)));
-    json_key(o, "card", false);
+    wa_api_json_key(o, "name", true);
+    wa_api_json_str(o, st->name);
+    wa_api_json_key(o, "version", false);
+    wa_api_json_str(o, st->version);
+    wa_api_json_key(o, "lang", false);
+    wa_api_json_str(o, st->de ? "de" : "en");
+    wa_api_json_key(o, "writes", false);
+    wa_api_json_str(o, (shut == WA_API_OK) ? "open" : "closed");
+    wa_api_json_key(o, "why", false);
+    wa_api_json_str(o, wa_api_word(shut));
+    wa_api_json_key(o, "why_text", false);
+    wa_api_json_str(o, wa_api_text(shut, st->de));
+    wa_api_json_key(o, "mode", false);
+    wa_api_json_str(o, wa_api_writes_word(st->writes));
+    wa_api_json_key(o, "card", false);
     wa_out_str(o, "{");
-    json_key(o, "mounted", true);
-    json_bool(o, st->mounted);
-    json_key(o, "mount", false);
+    wa_api_json_key(o, "mounted", true);
+    wa_api_json_bool(o, st->mounted);
+    wa_api_json_key(o, "mount", false);
     wa_out_u64(o, st->mount);
-    json_key(o, "name", false);
-    json_str(o, (st->card != NULL) ? st->card : "");
-    json_key(o, "total", false);
+    wa_api_json_key(o, "name", false);
+    wa_api_json_str(o, (st->card != NULL) ? st->card : "");
+    wa_api_json_key(o, "total", false);
     wa_out_u64(o, st->total);
-    json_key(o, "free", false);
+    wa_api_json_key(o, "free", false);
     wa_out_u64(o, st->free);
     wa_out_str(o, "}");
-    json_key(o, "page", false);
+    wa_api_json_key(o, "page", false);
     wa_out_u64(o, FM_PAGE_MAX);
-    json_key(o, "file_max", false);
+    wa_api_json_key(o, "file_max", false);
     wa_out_u64(o, TEXT_BUF_FILE_MAX);
-    json_key(o, "lines_max", false);
+    wa_api_json_key(o, "lines_max", false);
     wa_out_u64(o, TEXT_BUF_ENDS_MAX);
-    json_key(o, "user_logs", false);
-    json_str(o, (st->user_logs != NULL && st->user_logs[0] != '\0')
+    wa_api_json_key(o, "user_logs", false);
+    wa_api_json_str(o, (st->user_logs != NULL && st->user_logs[0] != '\0')
                     ? st->user_logs : CARD_USER_LOGS);
     wa_out_str(o, "}");
 }
 
 /* ---------------------------------------------------------- the query */
 
-/**
- * @brief The raw value of parameter @p key: the bytes after "key=" up to
- *        the next "&", at the query's start or after an "&".
- * @param query  the query string
- * @param key    the parameter's name
- * @param n      takes the value's bytes
- * @return the value, inside @p query; NULL when not given
- */
-static const char *q_raw(const char *query, const char *key, size_t *n)
+const char *wa_api_q_raw(const char *query, const char *key, size_t *n)
 {
     const size_t k = strlen(key);
     const char *p = query;
@@ -333,18 +339,10 @@ static const char *q_raw(const char *query, const char *key, size_t *n)
     return NULL;
 }
 
-/**
- * @brief Parameter @p key as a path from the card's root.
- * @param query  the query string
- * @param key    the parameter's name
- * @param out    takes the path; FM_PATH_SIZE bytes
- * @return WA_API_OK, the root for a value not given or empty; WA_API_NAME
- *         for one wa_path_decode() or fm_path_check() refuses
- */
-static wa_api_err_t q_path(const char *query, const char *key, char *out)
+wa_api_err_t wa_api_q_path(const char *query, const char *key, char *out)
 {
     size_t n = 0u;
-    const char *v = q_raw(query, key, &n);
+    const char *v = wa_api_q_raw(query, key, &n);
     out[0] = '\0';
     if (v == NULL || n == 0u) {
         return WA_API_OK;
@@ -357,17 +355,10 @@ static wa_api_err_t q_path(const char *query, const char *key, char *out)
     return WA_API_OK;
 }
 
-/**
- * @brief Parameter @p key as 0 or 1.
- * @param query  the query string
- * @param key    the parameter's name
- * @param out    takes the value; false when not given
- * @return false for a value other than "0" and "1"
- */
-static bool q_flag(const char *query, const char *key, bool *out)
+bool wa_api_q_flag(const char *query, const char *key, bool *out)
 {
     size_t n = 0u;
-    const char *v = q_raw(query, key, &n);
+    const char *v = wa_api_q_raw(query, key, &n);
     *out = false;
     if (v == NULL) {
         return true;
@@ -379,17 +370,10 @@ static bool q_flag(const char *query, const char *key, bool *out)
     return true;
 }
 
-/**
- * @brief Parameter "mount", a mount number of 1 to 10 digits.
- * @param query  the query string
- * @param io     the card, for the mount now when not given
- * @param out    takes the number
- * @return false for a value that is not a number up to UINT32_MAX
- */
-static bool q_mount(const char *query, const fm_io_t *io, unsigned *out)
+bool wa_api_q_mount(const char *query, const fm_io_t *io, unsigned *out)
 {
     size_t n = 0u;
-    const char *v = q_raw(query, "mount", &n);
+    const char *v = wa_api_q_raw(query, "mount", &n);
     if (v == NULL) {
         *out = io->mounts(io->ctx);
         return true;
@@ -428,7 +412,7 @@ static bool q_go(const char *query, fm_go_t *out)
         { "same", FM_GO_SAME },
     };
     size_t n = 0u;
-    const char *v = q_raw(query, "go", &n);
+    const char *v = wa_api_q_raw(query, "go", &n);
     *out = FM_GO_FIRST;
     if (v == NULL) {
         return true;
@@ -442,15 +426,7 @@ static bool q_go(const char *query, fm_go_t *out)
     return false;
 }
 
-/**
- * @brief The folder and the name of @p path, which is not the root.
- * @param path  a path fm_path_check() takes
- * @param dir   takes the folder; FM_PATH_SIZE bytes
- * @param name  takes the name; FM_NAME_BUF bytes
- * @return WA_API_REQUEST for the root, WA_API_NAME for a name the walk
- *         does not list
- */
-static wa_api_err_t split(const char *path, char *dir, char *name)
+wa_api_err_t wa_api_split(const char *path, char *dir, char *name)
 {
     const char *base = fm_path_base(path);
     const size_t n = strlen(base);
@@ -466,13 +442,7 @@ static wa_api_err_t split(const char *path, char *dir, char *name)
     return WA_API_OK;
 }
 
-/**
- * @brief An empty request with the API's log folders.
- * @param api   the API
- * @param kind  what it asks
- * @return the request
- */
-static fm_req_t *fresh_req(wa_api_t *api, fm_req_kind_t kind)
+fm_req_t *wa_api_req(wa_api_t *api, fm_req_kind_t kind)
 {
     fm_req_t *req = api->req;
     memset(req, 0, sizeof(*req));
@@ -529,19 +499,19 @@ wa_api_err_t wa_api_list(wa_api_t *api, const char *query)
         query = "";
     }
     char path[FM_PATH_SIZE];
-    const wa_api_err_t pe = q_path(query, "path", path);
+    const wa_api_err_t pe = wa_api_q_path(query, "path", path);
     if (pe != WA_API_OK) {
         return pe;
     }
     fm_go_t go;
     bool key_dir = false;
-    if (!q_go(query, &go) || !q_flag(query, "key_dir", &key_dir)) {
+    if (!q_go(query, &go) || !wa_api_q_flag(query, "key_dir", &key_dir)) {
         return WA_API_REQUEST;
     }
     fm_entry_t key;
     memset(&key, 0, sizeof(key));
     size_t n = 0u;
-    const char *kv = q_raw(query, "key", &n);
+    const char *kv = wa_api_q_raw(query, "key", &n);
     const bool keyed = (go == FM_GO_NEXT || go == FM_GO_PREV
                         || go == FM_GO_SAME);
     if (keyed) {
@@ -554,7 +524,7 @@ wa_api_err_t wa_api_list(wa_api_t *api, const char *query)
         }
         key.is_dir = key_dir;
     }
-    fm_req_t *req = fresh_req(api, FM_REQ_PAGE);
+    fm_req_t *req = wa_api_req(api, FM_REQ_PAGE);
     req->go = go;
     fm_tree_at(&req->tree, path, keyed ? &key : NULL);
     return wa_api_of(fm_req_run(req, api->run));
@@ -564,38 +534,38 @@ void wa_api_list_json(const wa_api_t *api, wa_out_t *o)
 {
     const fm_tree_t *t = &api->req->tree;
     wa_out_str(o, "{");
-    json_key(o, "path", true);
-    json_str(o, t->dir);
-    json_key(o, "mount", false);
+    wa_api_json_key(o, "path", true);
+    wa_api_json_str(o, t->dir);
+    wa_api_json_key(o, "mount", false);
     wa_out_u64(o, t->mount);
-    json_key(o, "ahead", false);
+    wa_api_json_key(o, "ahead", false);
     wa_out_u64(o, (uint64_t)(t->ahead > 0 ? t->ahead : 0));
-    json_key(o, "total", false);
+    wa_api_json_key(o, "total", false);
     wa_out_u64(o, (uint64_t)(t->total > 0 ? t->total : 0));
-    json_key(o, "unlisted", false);
+    wa_api_json_key(o, "unlisted", false);
     wa_out_u64(o, t->unlisted);
-    json_key(o, "prev", false);
-    json_bool(o, fm_tree_has_prev(t));
-    json_key(o, "next", false);
-    json_bool(o, fm_tree_has_next(t));
-    json_key(o, "entries", false);
+    wa_api_json_key(o, "prev", false);
+    wa_api_json_bool(o, fm_tree_has_prev(t));
+    wa_api_json_key(o, "next", false);
+    wa_api_json_bool(o, fm_tree_has_next(t));
+    wa_api_json_key(o, "entries", false);
     wa_out_str(o, "[");
     for (int i = 0; i < t->held; ++i) {
         const fm_entry_t *e = &t->page[i];
         wa_out_str(o, (i == 0) ? "{" : ",{");
-        json_key(o, "n", true);
-        json_str(o, e->name);
-        json_key(o, "d", false);
-        json_bool(o, e->is_dir);
-        json_key(o, "s", false);
+        wa_api_json_key(o, "n", true);
+        wa_api_json_str(o, e->name);
+        wa_api_json_key(o, "d", false);
+        wa_api_json_bool(o, e->is_dir);
+        wa_api_json_key(o, "s", false);
         wa_out_u64(o, e->size);
-        json_key(o, "k", false);
-        json_str(o, (e->kind < FM_KIND_COUNT) ? k_kind[e->kind] : "OTHER");
-        json_key(o, "p", false);
-        json_str(o, (e->place <= FM_PLACE_FAULT) ? k_place[e->place]
+        wa_api_json_key(o, "k", false);
+        wa_api_json_str(o, (e->kind < FM_KIND_COUNT) ? k_kind[e->kind] : "OTHER");
+        wa_api_json_key(o, "p", false);
+        wa_api_json_str(o, (e->place <= FM_PLACE_FAULT) ? k_place[e->place]
                                                  : "FREE");
-        json_key(o, "b", false);
-        json_bool(o, e->busy);
+        wa_api_json_key(o, "b", false);
+        wa_api_json_bool(o, e->busy);
         wa_out_str(o, "}");
     }
     wa_out_str(o, "]}");
@@ -609,18 +579,18 @@ wa_api_err_t wa_api_info(wa_api_t *api, const char *query)
         query = "";
     }
     char path[FM_PATH_SIZE];
-    const wa_api_err_t pe = q_path(query, "path", path);
+    const wa_api_err_t pe = wa_api_q_path(query, "path", path);
     if (pe != WA_API_OK) {
         return pe;
     }
     bool is_dir = false;
     unsigned mount = 0u;
-    if (!q_flag(query, "dir", &is_dir)
-        || !q_mount(query, api->run->io, &mount)) {
+    if (!wa_api_q_flag(query, "dir", &is_dir)
+        || !wa_api_q_mount(query, api->run->io, &mount)) {
         return WA_API_REQUEST;
     }
-    fm_req_t *req = fresh_req(api, FM_REQ_INFO);
-    const wa_api_err_t se = split(path, req->dir, req->name);
+    fm_req_t *req = wa_api_req(api, FM_REQ_INFO);
+    const wa_api_err_t se = wa_api_split(path, req->dir, req->name);
     if (se != WA_API_OK) {
         return se;
     }
@@ -638,21 +608,21 @@ void wa_api_info_json(const wa_api_t *api, wa_out_t *o)
         path[0] = '\0';
     }
     wa_out_str(o, "{");
-    json_key(o, "path", true);
-    json_str(o, path);
-    json_key(o, "d", false);
-    json_bool(o, req->is_dir);
-    json_key(o, "mount", false);
+    wa_api_json_key(o, "path", true);
+    wa_api_json_str(o, path);
+    wa_api_json_key(o, "d", false);
+    wa_api_json_bool(o, req->is_dir);
+    wa_api_json_key(o, "mount", false);
     wa_out_u64(o, req->mount);
-    json_key(o, "s", false);
+    wa_api_json_key(o, "s", false);
     wa_out_u64(o, req->info.size);
-    json_key(o, "t", false);
+    wa_api_json_key(o, "t", false);
     json_i64(o, req->info.mtime);
-    json_key(o, "entries", false);
+    wa_api_json_key(o, "entries", false);
     wa_out_u64(o, req->info.entries);
-    json_key(o, "unlisted", false);
+    wa_api_json_key(o, "unlisted", false);
     wa_out_u64(o, req->info.unlisted);
-    json_key(o, "time", false);
+    wa_api_json_key(o, "time", false);
     wa_out_str(o, "\"");
     if (wall_stamp_known(req->info.mtime)) {
         wa_out_time(o, wall_local_s(req->info.mtime));
@@ -662,12 +632,7 @@ void wa_api_info_json(const wa_api_t *api, wa_out_t *o)
 
 /* ---------------------------------------------------------- the file */
 
-/**
- * @brief The API's reason for a refused text.
- * @param e  text_buf_load_done()'s answer
- * @return the reason
- */
-static wa_api_err_t text_why(text_buf_err_t e)
+wa_api_err_t wa_api_text_why(text_buf_err_t e)
 {
     switch (e) {
     case TEXT_BUF_OK:
@@ -685,12 +650,7 @@ static wa_api_err_t text_why(text_buf_err_t e)
     }
 }
 
-/**
- * @brief The CRC-32 of the loaded file's bytes, read a chunk at a time.
- * @param api  the API, a file loaded
- * @return the CRC
- */
-static uint32_t file_crc(const wa_api_t *api)
+uint32_t wa_api_crc(const wa_api_t *api)
 {
     uint32_t crc = 0u;
     const size_t total = wa_api_file_size(api);
@@ -715,17 +675,17 @@ wa_api_err_t wa_api_file(wa_api_t *api, const char *query)
     memset(&api->tb, 0, sizeof(api->tb));
     api->etag = 0u;
     char path[FM_PATH_SIZE];
-    const wa_api_err_t pe = q_path(query, "path", path);
+    const wa_api_err_t pe = wa_api_q_path(query, "path", path);
     if (pe != WA_API_OK) {
         return pe;
     }
     unsigned mount = 0u;
-    if (!q_mount(query, api->run->io, &mount)) {
+    if (!wa_api_q_mount(query, api->run->io, &mount)) {
         return WA_API_REQUEST;
     }
-    fm_req_t *req = fresh_req(api, FM_REQ_JOB);
+    fm_req_t *req = wa_api_req(api, FM_REQ_JOB);
     char name[FM_NAME_BUF];
-    const wa_api_err_t se = split(path, req->dir, name);
+    const wa_api_err_t se = wa_api_split(path, req->dir, name);
     if (se != WA_API_OK) {
         return se;
     }
@@ -747,13 +707,13 @@ wa_api_err_t wa_api_file(wa_api_t *api, const char *query)
         memset(&api->tb, 0, sizeof(api->tb));
         return wa_api_of(le);
     }
-    const wa_api_err_t te = text_why(
+    const wa_api_err_t te = wa_api_text_why(
         text_buf_load_done(&api->tb, (size_t)req->job.done));
     if (te != WA_API_OK) {
         memset(&api->tb, 0, sizeof(api->tb));
         return te;
     }
-    api->etag = file_crc(api);
+    api->etag = wa_api_crc(api);
     return WA_API_OK;
 }
 

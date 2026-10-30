@@ -108,6 +108,29 @@ bool fm_name_new(const char *name, char *out, size_t n);
 fm_path_t fm_path_check(const char *path);
 
 /**
+ * @brief Whether every name in @p path names its entry on a FAT card one
+ *        way only, as a write needs it to.
+ *
+ * FatFs drops spaces at the start and spaces and full stops at the end of
+ * a name, takes "\" as a separator and "N:" as a drive, and finds an
+ * entry by its 8.3 short name as well (such as "LOG000~1.BFL"), so a path
+ * the rules (fm_rules.h) judge by its names could reach another entry.
+ * With UTF-8 names (CONFIG_FATFS_API_ENCODING_UTF_8) FatFs compares long
+ * names after ff_wtoupper(), which folds the whole of Unicode: U+017F
+ * LONG S is "S" and U+0131 DOTLESS I is "I" to it, where the rules fold
+ * ASCII and the German letters only.  Refused: a name with a space at the
+ * start, a space or a full stop at the end, a byte below 0x20, 0x7F or any
+ * byte above 0x7F (every character outside ASCII), one of
+ * " * : < > ? \ |, or a "~" followed by a digit.  "." and "..", empty
+ * names and "/" at an end are fm_path_check()'s.  ASCII case is not an
+ * alias here: the rules fold it as FatFs does.
+ *
+ * @param path A path fm_path_check() takes; NULL is refused.
+ * @return true when no name in it is an alias
+ */
+bool fm_path_plain(const char *path);
+
+/**
  * @brief Folders in @p path.
  *
  * @param path A path fm_path_check() takes.

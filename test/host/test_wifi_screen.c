@@ -3,8 +3,9 @@
  *
  * Under test: which control asks for what with and without a kept home
  * network, with the radio's gate shut, the home network picked from a scan
- * and typed on the Wi-Fi keyboard, and INSTALL as a 2s hold that a release,
- * a vanished image or a closed install gate ends without asking.  The
+ * and typed on the Wi-Fi keyboard, INSTALL as a 2s hold that a release,
+ * a vanished image or a closed install gate ends without asking, and the
+ * browser writes' line and hold by SETUP's Browser writes.  The
  * screens command nothing themselves; every test reads wifi_screen_take().
  *
  * SPDX-License-Identifier: MIT
@@ -21,6 +22,7 @@
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "wa_api.h"
 #include "wa_session.h"
 #include "wifi_screen.h"
 #include "wifi_spots.h"
@@ -45,6 +47,8 @@
 #define HIDDEN_CX    WF_HIDDEN_CX
 #define SCAN_CANCEL_CX WF_SCAN_CANCEL_CX
 #define SCAN_BY      WF_SCAN_CY
+#define WR_CX        WF_WR_CX
+#define WR_CY        WF_WR_CY
 
 #define TICK_S     (1.0f / 39.0f)
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -906,6 +910,186 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
 
 /* WF_JOBS_1 and WF_JOBS_2 are one sentence: wrapped as one, it takes the
  * card's 49 cells twice, with no line of one word between its parts. */
+/* ------------------------------------------------------ browser writes */
+
+/** @brief The page served on the access point, writes by @p mode. */
+static void serving(wifi_writes_t mode)
+{
+    fresh();
+    v.radio = WIFI_RADIO_AP;
+    strcpy(v.name, "rcbench-1A2B");
+    strcpy(v.pass, "abcd2345");
+    strcpy(v.code, "mnpq6789");
+    v.idle_left_s = 599;
+    v.writes = mode;
+    show();
+}
+
+/* The screen's modes are SETUP's, value for value (wa_writes_t). */
+TEST_CASE(the_writes_modes_mirror_the_api)
+{
+    CHECK_EQ((int)WIFI_WRITES_OPEN, (int)WA_WRITES_OPEN);
+    CHECK_EQ((int)WIFI_WRITES_CODE, (int)WA_WRITES_CODE);
+    CHECK_EQ((int)WIFI_WRITES_HOLD, (int)WA_WRITES_HOLD);
+    CHECK_EQ((int)WIFI_WRITES_OFF, (int)WA_WRITES_OFF);
+}
+
+/* HOLD: a 2s hold beside WI-FI OFF asks for writes once; a shorter press
+ * and a tap ask nothing; once allowed the button is a tap that asks them
+ * off, and a hold there asks nothing more. */
+TEST_CASE(the_writes_hold_allows_writes_and_a_tap_ends_them)
+{
+    serving(WIFI_WRITES_HOLD);
+    CHECK(render_lit() > 2000);
+    send(TOUCH_EVENT_DOWN, WR_CX, WR_CY);
+    ticks(HOLD_TICKS / 2);
+    send(TOUCH_EVENT_UP, WR_CX, WR_CY);
+    ticks(HOLD_TICKS);
+    CHECK_EQ(wifi_screen_take(), 0u);
+    tap(WR_CX, WR_CY);
+    ticks(HOLD_TICKS);
+    CHECK_EQ(wifi_screen_take(), 0u);
+    send(TOUCH_EVENT_DOWN, WR_CX, WR_CY);
+    ticks(HOLD_TICKS);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_WRITES_ON);
+    ticks(HOLD_TICKS);
+    send(TOUCH_EVENT_UP, WR_CX, WR_CY);
+    CHECK_EQ(wifi_screen_take(), 0u);
+    const uint32_t closed = render_hash();
+    /* The application allowed them: the button ends them with a tap. */
+    v.writes_open = true;
+    show();
+    CHECK(render_hash() != closed);
+    send(TOUCH_EVENT_DOWN, WR_CX, WR_CY);
+    ticks(HOLD_TICKS);
+    CHECK_EQ(wifi_screen_take(), 0u);
+    send(TOUCH_EVENT_UP, WR_CX, WR_CY);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_WRITES_OFF);
+    /* WI-FI OFF beside it still asks off. */
+    tap(OFF_CX, OFF_CY);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_OFF);
+}
+
+/* No button but with HOLD while the page is served: the other modes, and
+ * HOLD while the radio starts or joins, answer nothing there; each mode
+ * draws its own line. */
+TEST_CASE(the_writes_button_shows_only_for_hold_while_served)
+{
+    uint32_t seen[4];
+    for (int m = WIFI_WRITES_OPEN; m <= WIFI_WRITES_OFF; ++m) {
+        serving((wifi_writes_t)m);
+        seen[m] = render_hash();
+        /* ACCESS CODE with the code switch on reads as OPEN: the page's
+         * code is the write's. */
+        for (int k = 0; k < m; ++k) {
+            if (k != WIFI_WRITES_OPEN || m != WIFI_WRITES_CODE) {
+                CHECK(seen[k] != seen[m]);
+            }
+        }
+        if (m == WIFI_WRITES_HOLD) {
+            continue;
+        }
+        send(TOUCH_EVENT_DOWN, WR_CX, WR_CY);
+        ticks(HOLD_TICKS);
+        send(TOUCH_EVENT_UP, WR_CX, WR_CY);
+        CHECK_EQ(wifi_screen_take(), 0u);
+    }
+    for (int r = WIFI_RADIO_STARTING; r <= WIFI_RADIO_ADDRESS; ++r) {
+        if (r == WIFI_RADIO_AP || r == WIFI_RADIO_SCANNING) {
+            continue;
+        }
+        serving(WIFI_WRITES_HOLD);
+        v.radio = (wifi_radio_t)r;
+        show();
+        send(TOUCH_EVENT_DOWN, WR_CX, WR_CY);
+        ticks(HOLD_TICKS);
+        send(TOUCH_EVENT_UP, WR_CX, WR_CY);
+        CHECK_EQ(wifi_screen_take(), 0u);
+    }
+    /* Joined to the home network: served, the button is there. */
+    serving(WIFI_WRITES_HOLD);
+    v.radio = WIFI_RADIO_JOINED;
+    show();
+    send(TOUCH_EVENT_DOWN, WR_CX, WR_CY);
+    ticks(HOLD_TICKS);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_WRITES_ON);
+}
+
+/* The line counts the writes, and with ACCESS CODE and the code switch
+ * off it names the code a write needs. */
+TEST_CASE(the_writes_line_counts_and_names_the_code)
+{
+    serving(WIFI_WRITES_OPEN);
+    const uint32_t none = render_hash();
+    v.written = 3u;
+    show();
+    CHECK(render_hash() != none);
+    serving(WIFI_WRITES_CODE);
+    const uint32_t code_on = render_hash();
+    v.code_on = false;
+    show();
+    const uint32_t code_off = render_hash();
+    CHECK(code_off != code_on);
+    strcpy(v.code, "zzzz2222");
+    show();
+    CHECK(render_hash() != code_off);
+    /* Each line fits the body's width in both languages. */
+    char line[160];
+    for (int de = 0; de < 2; ++de) {
+        ui_text_set_language(de ? UI_LANG_DE : UI_LANG_EN);
+        snprintf(line, sizeof(line), TR(WF_WR_OPEN), 4294967295u);
+        CHECK(gfx_text_width(UI_FONT_BODY, line, 1) <= SCREEN_W - 32);
+        snprintf(line, sizeof(line), TR(WF_WR_CODE), "mnpq6789");
+        CHECK(gfx_text_width(UI_FONT_BODY, line, 1) <= SCREEN_W - 32);
+        CHECK(gfx_text_width(UI_FONT_BODY, TR(WF_WR_HOLD), 1) <= SCREEN_W - 32);
+        CHECK(gfx_text_width(UI_FONT_BODY, TR(WF_WR_OFF), 1) <= SCREEN_W - 32);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The radio going off, an image arriving, or the press sliding off ends
+ * the writes' hold unasked; a press the router cancels ends it too. */
+TEST_CASE(the_writes_hold_ends_unasked_when_its_button_goes)
+{
+    for (int how = 0; how < 5; ++how) {
+        serving(WIFI_WRITES_HOLD);
+        send(TOUCH_EVENT_DOWN, WR_CX, WR_CY);
+        ticks(HOLD_TICKS / 2);
+        if (how == 0) {
+            v.radio = WIFI_RADIO_OFF;        /* ARM, STOP, idle */
+            v.off = WIFI_WHY_ARMED;
+            show();
+        } else if (how == 1) {
+            staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+        } else if (how == 2) {
+            send(TOUCH_EVENT_MOVE, WR_CX, WR_CY - 200);
+            send(TOUCH_EVENT_MOVE, WR_CX, WR_CY);
+        } else if (how == 3) {
+            v.writes_open = true;            /* opened under the hold */
+            show();
+        } else {
+            scr()->cancel();
+        }
+        ticks(HOLD_TICKS);
+        send(TOUCH_EVENT_UP, WR_CX, WR_CY);
+        CHECK_EQ(wifi_screen_take() & WIFI_REQ_WRITES_ON, 0u);
+        ticks(HOLD_TICKS);
+        CHECK_EQ(wifi_screen_take() & WIFI_REQ_WRITES_ON, 0u);
+    }
+    /* Back on the screen with the window the application closed: the hold
+     * is offered again. */
+    serving(WIFI_WRITES_HOLD);
+    send(TOUCH_EVENT_DOWN, WR_CX, WR_CY);
+    ticks(HOLD_TICKS);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_WRITES_ON);
+    /* INSTALL's hold after it is INSTALL's. */
+    send(TOUCH_EVENT_UP, WR_CX, WR_CY);
+    staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    send(TOUCH_EVENT_DOWN, INSTALL_CX, Q_CY);
+    ticks(HOLD_TICKS);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_INSTALL);
+}
+
 TEST_CASE(the_first_sentence_is_wrapped_once_in_two_lines)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -947,5 +1131,10 @@ int main(void)
     RUN(leaving_switches_off_and_drops_the_image_unless_installing);
     RUN(a_cancelled_press_ends_the_hold);
     RUN(the_write_screen_closes_only_after_a_failure);
+    RUN(the_writes_modes_mirror_the_api);
+    RUN(the_writes_hold_allows_writes_and_a_tap_ends_them);
+    RUN(the_writes_button_shows_only_for_hold_while_served);
+    RUN(the_writes_line_counts_and_names_the_code);
+    RUN(the_writes_hold_ends_unasked_when_its_button_goes);
     return test_summary("wifi_screen");
 }

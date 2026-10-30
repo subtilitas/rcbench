@@ -2185,6 +2185,9 @@ UI_TEXT(FM_E_STOP_ARMED, 84,
 UI_TEXT(FM_E_STOP_LOGGING, 84,
     "Stopped: a run is being logged.",
     "Gestoppt: Ein Lauf wird aufgezeichnet.")
+UI_TEXT(FM_E_CHANGED, 84,
+    "%s changed on the card since it was read.",
+    "%s wurde seit dem Lesen auf der Karte geändert.")
 UI_TEXT(FM_SELECT_FIRST, 84,
     "Select an entry first.",
     "Wähle zuerst einen Eintrag.")
@@ -4079,6 +4082,9 @@ UI_TEXT(HOLD_HINT_RUN, 94,
 UI_TEXT(HOLD_HINT_INSTALL, 94,
     "Hold 2s to install.",
     "Halte 2s, um zu installieren.")
+UI_TEXT(HOLD_HINT_WRITES, 94,
+    "Hold 2s to allow browser writes.",
+    "Halte 2s, um Schreiben per Browser zu erlauben.")
 UI_TEXT(HOLD_HINT_DOWNLOAD, 94,
     "Hold 2s to download and install.",
     "Halte 2s, um zu laden und zu installieren.")
@@ -5721,6 +5727,27 @@ UI_TEXT(WF_IDLE, 0,
 UI_TEXT(WF_RECEIVING, 0,
     "Receiving %lu of %lu bytes (%u%%)",
     "Empfang: %lu von %lu Bytes (%u%%)")
+/* Browser writes to the card (SETUP > SD CARD > Browser writes), one line
+ * under the rows while the page is served, and the hold that opens them
+ * when the setting is HOLD. */
+UI_TEXT(WF_WR_OPEN, 0,
+    "The browser may write to the card: %u writes so far.",
+    "Der Browser darf auf die Karte schreiben: bisher %u Schreibvorgänge.")
+UI_TEXT(WF_WR_CODE, 0,
+    "Browser writes need the access code %s.",
+    "Schreiben per Browser braucht den Zugangscode %s.")
+UI_TEXT(WF_WR_HOLD, 0,
+    "The browser may not write to the card until the hold.",
+    "Der Browser darf erst nach dem Halten auf die Karte schreiben.")
+UI_TEXT(WF_WR_OFF, 0,
+    "Browser writes are off: SETUP > SD CARD.",
+    "Schreiben per Browser ist aus: SETUP > SD CARD.")
+UI_TEXT(WF_HOLD_WRITES, 0,
+    "HOLD 2s: ALLOW BROWSER WRITES",
+    "2s HALTEN: BROWSER DARF SCHREIBEN")
+UI_TEXT(WF_WRITES_STOP, 0,
+    "BROWSER WRITES OFF",
+    "BROWSER-SCHREIBEN AUS")
 UI_TEXT(WF_UP_REFUSED, 82,
     "The last upload was rejected. The web page shows why.",
     "Der letzte Upload wurde abgelehnt. Der Grund steht auf der Webseite.")
@@ -6921,6 +6948,12 @@ UI_SETTING_LABEL(SET_LOG_USER,
 UI_SETTING_HELP(SET_LOG_USER,
     "AUTOMATIC TEST, LIMIT RUN",
     "AUTOMATISCHER TEST, ENDLAGENLAUF")
+UI_SETTING_LABEL(SET_WEB_WRITES,
+    "Browser writes",
+    "Schreiben per Browser")
+UI_SETTING_HELP(SET_WEB_WRITES,
+    "What a browser needs to write to the card",
+    "Was ein Browser zum Schreiben auf die Karte braucht")
 
 /* --------------------------------------------------- the categories */
 UI_SETTING_CATEGORY(SET_CAT_APP,
@@ -7053,6 +7086,15 @@ UI_OPTIONS(upd_channel)
 UI_OPTION("STABLE", NULL)
 UI_OPTION("TESTING", NULL)
 UI_OPTIONS_END(upd_channel)
+
+/* What a browser write to the card needs (wa_writes_t's order): nothing
+ * beyond the page, the access code, a hold on WI-FI, or no write. */
+UI_OPTIONS(web_writes)
+UI_OPTION("OPEN", "OFFEN")
+UI_OPTION("ACCESS CODE", "ZUGANGSCODE")
+UI_OPTION("HOLD", "HALTEN")
+UI_OPTION("OFF", "AUS")
+UI_OPTIONS_END(web_writes)
 
 /* How a Hitec D series line on the programming port receives, in
  * link_hitec_rx_t's order. */
@@ -8286,6 +8328,31 @@ UI_WEB_TEXT(P_API_BODY,
 UI_WEB_TEXT(P_API_HOST,
     "Open the panel by its name or its address.",
     "Das Panel über seinen Namen oder seine Adresse öffnen.")
+UI_WEB_TEXT(P_API_CHANGED,
+    "Changed on the card since it was read. Read it again.",
+    "Seit dem Lesen auf der Karte geändert. Neu lesen.")
+UI_WEB_TEXT(P_API_TOO_LARGE,
+    "Too large for the panel: 1MB at most.",
+    "Zu groß für das Panel: höchstens 1MB.")
+UI_WEB_TEXT(P_API_ORIGIN,
+    "Refused: the write did not come from the panel's own page.",
+    "Abgelehnt: Der Schreibzugriff kam nicht von der Seite des Panels.")
+UI_WEB_TEXT(P_API_WRITES_OFF,
+    "The panel takes no writes from the browser: SETUP > SD CARD > "
+    "Browser writes.",
+    "Das Panel nimmt keine Schreibzugriffe vom Browser an: SETUP > "
+    "SD CARD > Schreiben per Browser.")
+UI_WEB_TEXT(P_API_WRITES_HOLD,
+    "Writes need the hold on the panel: WI-FI > HOLD 2s: ALLOW BROWSER "
+    "WRITES.",
+    "Schreiben braucht das Halten am Panel: WI-FI > 2s HALTEN: BROWSER "
+    "DARF SCHREIBEN.")
+UI_WEB_TEXT(P_API_WRITES_CODE,
+    "Writes need the access code the panel's WI-FI screen shows.",
+    "Schreiben braucht den Zugangscode, den WI-FI am Panel zeigt.")
+UI_WEB_TEXT(P_API_PANEL_BUSY,
+    "FILES on the panel is working on the card. Try again.",
+    "FILES am Panel arbeitet an der Karte. Noch einmal versuchen.")
 /* The file manager on the page (wa_app.c, app.js); its other words are
  * FILES' own UI_TEXT entries, so a button reads as on the panel. */
 UI_WEB_TEXT(P_FM_UP,
@@ -8300,6 +8367,21 @@ UI_WEB_TEXT(P_FM_WAIT,
 UI_WEB_TEXT(P_FM_NO_ANSWER,
     "No answer from the panel. Check the Wi-Fi and tap RESCAN.",
     "Keine Antwort vom Panel. Prüfe das WLAN und tippe auf AKTUALISIEREN.")
+UI_WEB_TEXT(P_FM_UPLOAD,
+    "UPLOAD",
+    "HOCHLADEN")
+UI_WEB_TEXT(P_FM_SENDING,
+    "Sending %s to the panel.",
+    "Sende %s an das Panel.")
+UI_WEB_TEXT(P_FM_REPLACE_Q,
+    "%s exists in this folder. Replace it?",
+    "%s gibt es in diesem Ordner schon. Ersetzen?")
+UI_WEB_TEXT(P_FM_REPLACE,
+    "REPLACE",
+    "ERSETZEN")
+UI_WEB_TEXT(P_FM_CODE_GO,
+    "SEND CODE",
+    "CODE SENDEN")
 UI_WEB_TEXT(P_FM_NOSCRIPT,
     "The file list needs JavaScript.",
     "Die Dateiliste braucht JavaScript.")

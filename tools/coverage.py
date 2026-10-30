@@ -343,6 +343,7 @@ TRACKED = [
     "shared/webaccess/wa_mdns.c",
     "shared/webaccess/wa_guard.c",
     "shared/webaccess/wa_api.c",
+    "shared/webaccess/wa_api_write.c",
     "shared/webaccess/wa_app.c",
     "shared/clock/wall_clock.c",
 ]

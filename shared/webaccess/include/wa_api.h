@@ -5,10 +5,9 @@
  *        JSON (JavaScript Object Notation) or as the file's bytes.
  *
  * Every card call runs through the file manager's runner (fm_req.h): the
- * same pages, rules, refusals and load as the FILES screen.  The API reads
- * only: nothing on the card is written, renamed or deleted through it.
+ * same pages, rules, refusals, load and jobs as the FILES screen.
  *
- * Requests are GET with a query string.  A path is relative to the card's
+ * Reads are GET with a query string.  A path is relative to the card's
  * root and percent-encoded as wa_path_decode() reads a URL (uniform
  * resource locator) path: "/" stays a separator, "%2F" is refused, "+" is a
  * plus.  An empty or missing path is the root.  Parameters not named here
@@ -33,6 +32,33 @@
  * count of lines (X-Rcbench-Lines) and whether a BOM leads
  * (X-Rcbench-Bom: 1 or 0).  Its limits are the viewer's (text_buf.h):
  * 1MiB, 65,536 line ends, no NUL in the first 4kB.
+ *
+ * Writes (wa_api_write.c) change the card through FILES' jobs (fm_ops.h),
+ * under the same write gate, places and names:
+ *
+ *   PUT  /api/file?path=P&mount=M   body: the file's bytes, 1MiB at most
+ *   POST /api/mkdir                 body: path=P&mount=M
+ *   POST /api/rename                body: from=P&to=Q&dir=D&mount=M
+ *   POST /api/delete                body: path=P&dir=D&mount=M
+ *
+ * A POST's body is a form of WA_API_FORM_MAX bytes at most, read as a
+ * query string is: each path percent-encoded as above.  A PUT's body is
+ * the file as it goes on the card, held to the viewer's limits (a NUL in
+ * the first 4kB, more than 65,536 line ends and more than 1MiB refused)
+ * before a byte is written, and saved through "<name>.NEW" (fm_job_save()).
+ * Its If-Match: "<ETag>" replaces the file only while its CRC-32 is the
+ * ETag a read of it gave (412 CHANGED otherwise); If-None-Match: * makes
+ * the file only where no entry has the name (409 EXISTS); neither header
+ * makes or replaces it.  A new file's name, every name of MKDIR and the
+ * new name of RENAME follow the panel keyboard's rule (fm_name_check()).
+ * RENAME with Q in P's folder renames the entry; with Q of the same name
+ * in another folder it moves it there, a folder only when empty; any
+ * other Q is a REQUEST.  DELETE takes a run's report along and a folder
+ * only when empty.
+ *
+ * Whether a browser may write at all is wa_api_may_write()'s: SETUP's
+ * Browser writes, the access code, the hold on the panel.  The request
+ * guard (wa_guard.h) refuses a write from another site before it.
  *
  * A refusal is an HTTP (hypertext transfer protocol) status and
  * {"error":"WORD","text":"..."}: the word is wa_api_word()'s, the text in
@@ -69,6 +95,15 @@ extern "C" {
 #define WA_API_URL_INFO   "/api/info"
 /** @brief The path of a text file. */
 #define WA_API_URL_FILE   "/api/file"
+/** @brief The path that makes a folder. */
+#define WA_API_URL_MKDIR  "/api/mkdir"
+/** @brief The path that renames or moves an entry. */
+#define WA_API_URL_RENAME "/api/rename"
+/** @brief The path that deletes an entry. */
+#define WA_API_URL_DELETE "/api/delete"
+
+/** @brief Bytes of a write's form at most (wa_guard.h WA_FORM_BODY_MAX). */
+#define WA_API_FORM_MAX   1024u
 
 /** @brief Bytes of a file answer's header at most (wa_api_file_head()). */
 #define WA_API_HEAD_MAX 320u
@@ -97,6 +132,7 @@ typedef enum {
     WA_API_ARMED,          /**< 409: the bench is ARMED                  */
     WA_API_LOGGING,        /**< 409: a run is being logged               */
     WA_API_CANCELLED,      /**< 503: the radio goes off                  */
+    WA_API_CHANGED,        /**< 412: the file is not the one read        */
     WA_API_NOT_TEXT,       /**< 415: a NUL in the first 4kB              */
     WA_API_TOO_MANY_LINES, /**< 422: more than 65,536 line ends          */
     WA_API_MEMORY,         /**< 503: no PSRAM for the request            */
@@ -104,8 +140,27 @@ typedef enum {
     WA_API_REQUEST,        /**< 400: a parameter the API does not take   */
     WA_API_BODY,           /**< 400: a read that carries a body (guard)  */
     WA_API_HOST,           /**< 421: a Host that is not the panel (guard) */
+    WA_API_TOO_LARGE,      /**< 413: a body over its limit (guard)       */
+    WA_API_ORIGIN,         /**< 403: a write from another page (guard)   */
+    WA_API_WRITES_OFF,     /**< 403: SETUP allows no browser writes      */
+    WA_API_WRITES_HOLD,    /**< 403: no hold on the panel this session   */
+    WA_API_WRITES_CODE,    /**< 403: a write without the access code     */
+    WA_API_PANEL_BUSY,     /**< 503: FILES holds the card: Retry-After 2 */
     WA_API_COUNT
 } wa_api_err_t;
+
+/**
+ * @brief What a browser write needs, SETUP > SD CARD > Browser writes, in
+ *        the option order of the setting.
+ */
+typedef enum {
+    WA_WRITES_OPEN = 0,  /**< nothing beyond reaching the page: the default */
+    WA_WRITES_CODE,      /**< this session's access code, with the code
+                              switch off too                             */
+    WA_WRITES_HOLD,      /**< a 2s hold on WI-FI, once a radio session    */
+    WA_WRITES_OFF,       /**< no write at all                            */
+    WA_WRITES_COUNT
+} wa_writes_t;
 
 /**
  * @brief What the API answers with.  The caller places every buffer; the
@@ -119,7 +174,13 @@ typedef struct {
     uint32_t *ends;                   /**< the line index, or NULL         */
     size_t ends_cap;                  /**< entries at @p ends              */
     text_buf_t tb;                    /**< the last file loaded            */
-    uint32_t etag;                    /**< its bytes' CRC-32               */
+    uint32_t etag;                    /**< its bytes' CRC-32, or a saved
+                                           file's                        */
+    bool created;                     /**< the last write made its entry   */
+    char done[FM_PATH_SIZE];          /**< the path the last write left    */
+    bool restart;                     /**< the last PUT saved a file the
+                                           panel reads at its next start */
+    bool put;                         /**< the last write was a PUT        */
     char user_logs[CARD_DIR_MAX];     /**< USER LOG FOLDER; "" default     */
     char auto_logs[CARD_DIR_MAX];     /**< AUTO LOG FOLDER; "" default     */
 } wa_api_t;
@@ -135,6 +196,8 @@ typedef struct {
     uint64_t total;       /**< its bytes; 0 when not known                 */
     uint64_t free;        /**< its free bytes; 0 when not known            */
     fm_err_t gate;        /**< fm_gate() of a write now                    */
+    wa_writes_t writes;   /**< SETUP's Browser writes                      */
+    bool window;          /**< WA_WRITES_HOLD: the hold opened writes      */
     const char *user_logs; /**< USER LOG FOLDER; NULL or "" the default    */
 } wa_api_status_t;
 
@@ -226,11 +289,104 @@ void wa_api_error_json(wa_out_t *o, wa_api_err_t e, bool de);
 
 /**
  * @brief /api/status's body.  "user_logs" is the User log folder, where
- *        FILES opens its right pane.
+ *        FILES opens its right pane.  "writes" is "open" or "closed",
+ *        "why" the first reason a write is refused now (the gate's word,
+ *        WRITES_OFF, WRITES_HOLD) or "", "why_text" its sentence, and
+ *        "mode" the setting: OPEN, CODE, HOLD or OFF.  With CODE the
+ *        answer says "open": the code is checked per write.
  * @param o   the output
  * @param st  the panel's state
  */
 void wa_api_status_json(wa_out_t *o, const wa_api_status_t *st);
+
+/**
+ * @brief Whether a browser write may go on to the card's rules.
+ * @param mode    SETUP's Browser writes
+ * @param code    the request carries this session's access code
+ * @param window  the hold on the panel opened writes this session
+ * @return WA_API_OK; WA_API_WRITES_OFF, WA_API_WRITES_HOLD or
+ *         WA_API_WRITES_CODE; WA_API_WRITES_OFF for a mode outside the enum
+ */
+wa_api_err_t wa_api_may_write(wa_writes_t mode, bool code, bool window);
+
+/**
+ * @brief The setting's word for @p mode: "OPEN", "CODE", "HOLD", "OFF".
+ * @param mode  the mode
+ * @return a constant string; "OFF" outside the enum
+ */
+const char *wa_api_writes_word(wa_writes_t mode);
+
+/**
+ * @brief Where a PUT's body goes: the API's text room, emptied.
+ * @param api  the API
+ * @param cap  takes the bytes it holds, TEXT_BUF_FILE_MAX on the panel
+ * @return the room; NULL without one (wa_api_set_text())
+ */
+uint8_t *wa_api_body(wa_api_t *api, size_t *cap);
+
+/**
+ * @brief PUT /api/file: the @p len bytes at wa_api_body() as file P.
+ * @param api       the API
+ * @param query     the query string, without "?"; NULL is ""
+ * @param if_match  the If-Match header, or NULL
+ * @param if_none   the If-None-Match header, or NULL
+ * @param len       bytes of the body received
+ * @return WA_API_OK, with created, etag and done set; or why not
+ */
+wa_api_err_t wa_api_put(wa_api_t *api, const char *query,
+                        const char *if_match, const char *if_none,
+                        size_t len);
+
+/**
+ * @brief POST /api/mkdir.
+ * @param api   the API
+ * @param form  the body, NUL-terminated; NULL is ""
+ * @return WA_API_OK, with done set; or why not
+ */
+wa_api_err_t wa_api_mkdir(wa_api_t *api, const char *form);
+
+/**
+ * @brief POST /api/rename: a rename in P's folder, or a move.
+ * @param api   the API
+ * @param form  the body, NUL-terminated; NULL is ""
+ * @return WA_API_OK, with done set; or why not
+ */
+wa_api_err_t wa_api_rename(wa_api_t *api, const char *form);
+
+/**
+ * @brief POST /api/delete.
+ * @param api   the API
+ * @param form  the body, NUL-terminated; NULL is ""
+ * @return WA_API_OK, with done set; or why not
+ */
+wa_api_err_t wa_api_delete(wa_api_t *api, const char *form);
+
+/**
+ * @brief The status of a write's answer: 201 for an entry made, 200 else.
+ * @param api  the API, after a write answered WA_API_OK
+ * @return "201 Created" or "200 OK"
+ */
+const char *wa_api_write_status(const wa_api_t *api);
+
+/**
+ * @brief A write's body: {"path":"...","created":B,"etag":"xxxxxxxx",
+ *        "note":"ESC_NEXT_START" or ""}; "etag" only after a PUT.
+ * @param api  the API, after a write answered WA_API_OK
+ * @param o    the output
+ */
+void wa_api_write_json(const wa_api_t *api, wa_out_t *o);
+
+/** @brief Room for an ETag header's value: '"', 8 hex digits, '"', NUL. */
+#define WA_API_ETAG_SIZE 11u
+
+/**
+ * @brief The ETag header a write's answer carries: the saved bytes'
+ *        CRC-32 as a GET of the file gives it, after a PUT only.
+ * @param api  the API, after a write answered WA_API_OK
+ * @param out  takes "\"xxxxxxxx\"", WA_API_ETAG_SIZE bytes
+ * @return true after a PUT; false, and @p out empty, otherwise
+ */
+bool wa_api_write_etag(const wa_api_t *api, char *out);
 
 /**
  * @brief Read the page /api/list asks for, into the API's request.

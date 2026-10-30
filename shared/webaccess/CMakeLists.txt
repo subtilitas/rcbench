@@ -10,7 +10,7 @@
 # transfer protocol) server and client and the sockets are
 # firmware/panel/components/wifi_access.
 set(SRCS wa_session.c wa_text.c wa_walk.c wa_send.c wa_zip.c wa_page.c wa_guard.c
-         wa_mdns.c wa_fetch.c wa_api.c wa_app.c wa_web_blob.c)
+         wa_mdns.c wa_fetch.c wa_api.c wa_api_write.c wa_app.c wa_web_blob.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include

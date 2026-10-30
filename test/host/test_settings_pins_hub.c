@@ -705,8 +705,8 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 /*
  * Nine tiles: PANEL, INTERFACES, SD CARD and SENSORS, then OUTPUTS, PICK
  * A PIN, WI-FI, UPDATES and FILES.  SD CARD's list is AUTO LOGS and USER LOGS, two
- * toggles, named in both languages, and the two log folders under them
- * (test_settings_folders).
+ * toggles, named in both languages, Browser writes, and the two log folders
+ * under them (test_settings_folders).
  */
 TEST_CASE(the_hub_holds_nine_tiles_and_sd_card_is_the_third)
 {
@@ -717,15 +717,18 @@ TEST_CASE(the_hub_holds_nine_tiles_and_sd_card_is_the_third)
     tap(tile_x(SET_CAT_CARD), tile_y(SET_CAT_CARD));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), SET_CAT_CARD);
-    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 4);
+    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 5);
     CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 1), 1);
-    CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 2), -1);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 2), 2);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_CARD, 3), -1);
     CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD CARD");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(ui_setting_category(SET_CAT_CARD), "SD CARD");
     CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto-Logs");
     CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "User-Logs");
+    CHECK_STR_EQ(ui_setting_label(SET_WEB_WRITES), "Schreiben per Browser");
     ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(ui_setting_label(SET_WEB_WRITES), "Browser writes");
     CHECK_STR_EQ(ui_setting_label(SET_LOG_AUTO), "Auto logs");
     CHECK_STR_EQ(ui_setting_label(SET_LOG_USER), "User logs");
     ui_router_render(&s_c, 0);

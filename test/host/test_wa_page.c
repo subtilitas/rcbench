@@ -170,17 +170,20 @@ TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
      * folders through the file API, a page at a time. */
     CHECK(strstr(g_p.buf, "LOG00001.CSV") == NULL);
     CHECK(strstr(g_p.buf, "href=\"/card/") == NULL);
-    /* The manager's element, its data, and the highlighter and the app,
-     * in that order, each once. */
+    /* The manager's element, its data, and the highlighter, the writes
+     * and the app, in that order, each once: the app attaches the writes
+     * it finds defined. */
     const char *app = strstr(g_p.buf, "<div id=\"fm\" class=\"fm\"></div>");
     const char *data = strstr(g_p.buf, "<script type=\"application/json\" "
                                        "id=\"fm-data\">{\"tx\":{");
     const char *hl = strstr(g_p.buf, "<script>var RcbHl");
+    const char *wr = strstr(g_p.buf, "<script>var RcbWr");
     const char *js = strstr(g_p.buf, "<script>var RcbFm");
-    CHECK(app != NULL && data != NULL && hl != NULL && js != NULL);
-    CHECK(app < data && data < hl && hl < js);
-    CHECK_EQ(count_of(g_p.buf, "<script>"), 3);
-    CHECK_EQ(count_of(g_p.buf, "</script>"), 4);
+    CHECK(app != NULL && data != NULL && hl != NULL && wr != NULL
+          && js != NULL);
+    CHECK(app < data && data < hl && hl < wr && wr < js);
+    CHECK_EQ(count_of(g_p.buf, "<script>"), 4);
+    CHECK_EQ(count_of(g_p.buf, "</script>"), 5);
     CHECK(strstr(g_p.buf, "<noscript><p>The file list needs JavaScript."
                           "</p></noscript>") != NULL);
     /* The texts are FILES' own where the panel has one. */
@@ -189,6 +192,14 @@ TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
     CHECK(strstr(g_elem, "\"k.KST\":\"SERVO FILE\"") != NULL);
     CHECK(strstr(g_elem, "\"of\":\"ENTRIES %d TO %d OF %d\"") != NULL);
     CHECK(strstr(g_elem, "\"dl\":\"DOWNLOAD\"") != NULL);
+    /* The writes' buttons are FILES' words; UPLOAD is the page's. */
+    CHECK(strstr(g_elem, "\"upload\":\"UPLOAD\"") != NULL);
+    CHECK(strstr(g_elem, "\"newdir\":\"NEW FOLDER\"") != NULL);
+    CHECK(strstr(g_elem, "\"rename\":\"RENAME\"") != NULL);
+    CHECK(strstr(g_elem, "\"move\":\"MOVE\"") != NULL);
+    CHECK(strstr(g_elem, "\"delete\":\"DELETE\"") != NULL);
+    CHECK(strstr(g_elem, "\"e.TOO_LARGE\":\"Too large for the panel: "
+                         "1MB at most.\"") != NULL);
     CHECK(strstr(g_elem, "\"e.TOO_BIG\":\"Over 1MB: too large to open. "
                          "Download it.\"") != NULL);
     /* Without the viewer's words: none, and the viewer's cap. */

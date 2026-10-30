@@ -1,11 +1,11 @@
 /**
  * @file
- * @brief The file manager of the Wi-Fi page: the card in two panes, INFO
- *        and a read-only text viewer, as a script in the page that reads
- *        the file API (wa_api.h).
+ * @brief The file manager of the Wi-Fi page: the card in two panes, INFO,
+ *        a read-only text viewer and the writes, as a script in the page
+ *        that calls the file API (wa_api.h).
  *
- * The script and its style sheet are shared/webaccess/web/app.js, hl.js
- * and app.css, carried as C strings (wa_web_blob.h).  This writes them
+ * The script and its style sheet are shared/webaccess/web/app.js, hl.js,
+ * write.js and app.css, carried as C strings (wa_web_blob.h).  This writes them
  * into the page with what they read from the C side:
  *
  *   - the texts, in the page's language: FILES' own (UI_TEXT entries of

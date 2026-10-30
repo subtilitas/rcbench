@@ -74,12 +74,12 @@ TEST_CASE(sd_card_lists_the_folders_under_the_switches)
 {
     fresh_card();
     CHECK_EQ(settings_screen_category(), SET_CAT_CARD);
-    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 4);
-    CHECK_EQ(settings_screen_text_row(SET_CAT_CARD, SET_TEXT_LOG_AUTO_DIR), 2);
-    CHECK_EQ(settings_screen_text_row(SET_CAT_CARD, SET_TEXT_LOG_USER_DIR), 3);
+    CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 5);
+    CHECK_EQ(settings_screen_text_row(SET_CAT_CARD, SET_TEXT_LOG_AUTO_DIR), 3);
+    CHECK_EQ(settings_screen_text_row(SET_CAT_CARD, SET_TEXT_LOG_USER_DIR), 4);
     CHECK_EQ(settings_screen_text_row(SET_CAT_CARD, SET_TEXT_DUT_NAME), -1);
     CHECK_EQ(settings_screen_text_row(SET_CAT_APP, SET_TEXT_LOG_AUTO_DIR), -1);
-    /* The four fit the list: nothing to scroll. */
+    /* The five fit the list: nothing to scroll. */
     int max = -1;
     (void)settings_screen_scroll(&max);
     CHECK_EQ(max, 0);

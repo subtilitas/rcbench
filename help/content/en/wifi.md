@@ -6,7 +6,7 @@ order: 51
 
 # Wi-Fi
 
-WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Secure Digital) card to download, and a panel firmware image to upload. It opens from the WI-FI tile on [SETUP](setup.md) and from WI-FI in the bottom row of [LOGS](logs.md). Its home tag returns to the screen that opened it. Over the network list or a keyboard it climbs one level first, as CANCEL does: from a keyboard to the list, keeping nothing typed, and from the list to the buttons. Over the question about an uploaded image it is CANCEL: the image is dropped and the screen stays; a second tap while the image is still there leaves. The radio runs only while this screen is open. It is off at every start of the panel.
+WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Secure Digital) card to download, and to change as [Browser writes](#browser-writes) allows, and a panel firmware image to upload. It opens from the WI-FI tile on [SETUP](setup.md) and from WI-FI in the bottom row of [LOGS](logs.md). Its home tag returns to the screen that opened it. Over the network list or a keyboard it climbs one level first, as CANCEL does: from a keyboard to the list, keeping nothing typed, and from the list to the buttons. Over the question about an uploaded image it is CANCEL: the image is dropped and the screen stays; a second tap while the image is still there leaves. The radio runs only while this screen is open. It is off at every start of the panel.
 
 ## The start screen
 
@@ -109,15 +109,34 @@ A failed join offers ACCESS POINT. WI-FI OFF switches the radio off.
 
 ## The access code
 
-The browser page asks for an 8-character code before it lists a file or takes an upload. The screen shows the code, and it is new at every start of the radio. 16 wrong codes switch the radio off. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the panel.
+The browser page asks for an 8-character code before it lists a file, changes the card or takes an upload. The screen shows the code, and it is new at every start of the radio. 16 wrong codes switch the radio off. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the panel.
+
+## Browser writes
+
+![Browser writes HOLD, before the hold](view:wifi-writes-hold)
+
+SETUP > SD CARD > Browser writes decides what the page needs to change the card:
+
+| Value | A write needs |
+|---|---|
+| OPEN (default) | nothing more than the page: the access code while ACCESS CODE is on |
+| ACCESS CODE | the access code, also with ACCESS CODE off; reads then need none, and the page asks for the code at the first write |
+| HOLD | a 2s hold on `HOLD 2s: ALLOW BROWSER WRITES` beside WI-FI OFF, once a radio session |
+| OFF | no write is taken |
+
+A line under the rows says which holds, for example `The browser may write to the card: 3 writes so far.` After the hold the button reads `BROWSER WRITES OFF`; a tap ends the writes. Writes end too when the radio goes off, and the next radio session starts without them.
+
+![After the hold, three writes made](view:wifi-writes-allowed)
+
+Each write is checked as FILES checks its own: the bench SAFE, no run logged, the bench's folders, the servo programmers' records and the files the logger writes are not touched, and a name follows the panel's keyboard. A switch to ARMED stops a write at its next 16KiB and drops its `.NEW` file. While FILES on the panel works on the card, a write waits up to 2s; then the page tries again after 2s, 3 times at most.
 
 ## The browser page
 
 The page uses the panel's language.
 
 - **Panel firmware**: the version installed, a file picker and Upload. The file is the release asset `rcbench-panel-p4-vX.Y.Z.bin`. A file larger than 8,126,464 bytes is refused before a byte is sent.
-- **Files on the card**: the card in two panes, as [FILES](files.md) shows it: the root on the left, the User log folder on the right, 48 entries a page with PREV and NEXT. A tap selects a row; RESCAN, INFO, DOWNLOAD and OPEN act on it, and a dimmed button says why when tapped. OPEN enters a folder or shows a text file read-only, coloured as on the panel, with `LINE n OF m` counted as the panel's viewer counts; a file over 1MiB, one the logger writes and the servo programmers' records only download. INFO gives the time in the zone of SETUP > PANEL's Time zone, `not known` for a 1980 date. The page follows the browser's light or dark scheme in the panel's theme colours. The page writes nothing on the card, and it needs JavaScript.
-- **Download all as one ZIP file**: the whole card, stored uncompressed. A file that grows by appending is sent as it was when the download started; a file added during it is left out. Removing or renaming a file during the download ends it as failed; the rotation of `BENCH/RCBENCH.LOG` at 1MiB is a rename. On a home network a 16MiB file came down at 688-757kB/s and a 2.56MB image went up at 556-599kB/s. The page itself, 18.9kB with its old card listing, took 4.54s; the page with the two panes is about 33kB, its time not measured.
+- **Files on the card**: the card in two panes, as [FILES](files.md) shows it: the root on the left, the User log folder on the right, 48 entries a page with PREV and NEXT. A tap selects a row; RESCAN, INFO, DOWNLOAD and OPEN act on it, and a dimmed button says why when tapped. OPEN enters a folder or shows a text file read-only, coloured as on the panel, with `LINE n OF m` counted as the panel's viewer counts; a file over 1MiB, one the logger writes and the servo programmers' records only download. INFO gives the time in the zone of SETUP > PANEL's Time zone, `not known` for a 1980 date. The page follows the browser's light or dark scheme in the panel's theme colours. A second row holds UPLOAD, NEW FOLDER, NEW TEXT FILE, RENAME, MOVE and DELETE, dimmed with the reason while [Browser writes](#browser-writes) or the bench refuses them. UPLOAD sends one text file of up to 1MiB into the active pane's folder with a progress bar, and asks before it replaces a file; a file changed on the card while the question is open is not replaced. MOVE moves the selected entry into the other pane's folder. DELETE asks first and takes a run's report along; a folder moves or goes only when it is empty. A name holds ASCII (American Standard Code for Information Interchange) only: a file with a German letter in its path is renamed, moved and deleted on FILES. A file the page opened and changed on the card since is refused with `Changed on the card since it was read. Read it again.` The page needs JavaScript.
+- **Download all as one ZIP file**: the whole card, stored uncompressed. A file that grows by appending is sent as it was when the download started; a file added during it is left out. Removing or renaming a file during the download ends it as failed; the rotation of `BENCH/RCBENCH.LOG` at 1MiB is a rename. On a home network a 16MiB file came down at 688-757kB/s and a 2.56MB image went up at 556-599kB/s. The page itself, 18.9kB with its old card listing, took 4.54s; the page with the two panes is about 45kB, its time not measured.
 
 The page answers one request at a time: a request made during a download waits for its end. A download the browser takes nothing of for 30s ends, and the browser reports it as failed.
 
@@ -140,5 +159,7 @@ The same version from another build is offered as a reinstall. The build that ru
 
 - NVS is not encrypted. The home network's password is kept in plain form in the panel's flash.
 - The page is plain HTTP (hypertext transfer protocol). On a home network the access code and every file cross the network unencrypted. The screen says so while joined.
+- A device that reads that traffic can send a write of its own while writes are allowed.
+- FILES' editor on the panel saves without comparing the file it opened: a change the browser made between its open and its save is overwritten. The page's own writes compare.
 - An uploaded image is checked against its own SHA-256 hash, not against a signature.
 - The panel stays joined only while this screen is open.

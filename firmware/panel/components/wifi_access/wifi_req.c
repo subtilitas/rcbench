@@ -79,7 +79,7 @@ wa_guard_t wifi_req_check(httpd_req_t *r, wa_req_kind_t kind,
         q.referer = wifi_req_hdr(r, "Referer", bufs->referer,
                                  sizeof(bufs->referer));
     }
-    if (kind == WA_REQ_UPLOAD) {
+    if (kind != WA_REQ_READ && kind != WA_REQ_CODE) {
         q.upload = wifi_req_hdr(r, WA_UPLOAD_HDR, bufs->upload,
                                 sizeof(bufs->upload));
     }
