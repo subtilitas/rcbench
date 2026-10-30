@@ -3242,7 +3242,7 @@ Current limitations:
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
   688-757kB/s. The cause is not measured. The page with the file manager
-  is 57,796 bytes in English on an empty card and has no card listing;
+  is 58,142 bytes in English on an empty card and has no card listing;
   its time is not measured.
 
 ### The access code
@@ -3477,7 +3477,9 @@ change, and CLOSE waits for it.
 CLOSE, or Escape, while the text differs from the file asks UNSAVED
 CHANGES: `Leave <name> without saving? The changes are lost.` with STAY
 and DISCARD. Leaving or reloading the page with changes asks through the
-browser's own question, whose words are the browser's.
+browser's own question, whose words are the browser's. While the viewer
+shows, the panes and the buttons behind it take no click, focus or key,
+so no file opens over the editor's text.
 
 The page sends one request at a time. A request without an answer after 2s
 shows `Waiting for the panel: it answers one request at a time.`; a

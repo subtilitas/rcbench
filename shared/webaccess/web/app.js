@@ -681,7 +681,24 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       ui.vline.textContent = '';
     }
 
+    // The panes and the buttons under the viewer take no focus, click or
+    // key while it shows, so nothing behind it acts on the card or opens
+    // another file over the editor.
+    function behind(off) {
+      [ui.panesEl, ui.barEl].forEach(function (x) {
+        x.inert = off;
+        if (off) {
+          x.setAttribute('aria-hidden', 'true');
+        } else {
+          x.removeAttribute('aria-hidden');
+        }
+      });
+    }
+
     function openFile(i, e) {
+      if (editor && editor.active()) {
+        return;               // the editor's text first: CLOSE asks
+      }
       var p = st.panes[i];
       var path = F.join(p.path, e.n);
       var seq = ++viewSeq;
@@ -691,6 +708,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       ui.vmixed.hidden = true;
       viewNote(TX.vreading);
       ui.viewer.hidden = false;
+      behind(true);
       ui.scroll.scrollTop = 0;
       ui.scroll.scrollLeft = 0;
       ui.vclose.focus();
@@ -724,6 +742,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
         return;
       }
       ui.viewer.hidden = true;
+      behind(false);
       viewSeq++;
       view = null;
       ui.pre.textContent = '';
@@ -767,6 +786,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       panes.appendChild(ui.panes[0].box);
       panes.appendChild(ui.panes[1].box);
       root.appendChild(panes);
+      ui.panesEl = panes;
       // The buttons and the message lines stay at the window's foot while
       // a pane of 48 rows scrolls.
       var bar = el('div', 'bar');
@@ -791,6 +811,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
       bar.appendChild(ui.msg);
       bar.appendChild(ui.wait);
       root.appendChild(bar);
+      ui.barEl = bar;
 
       ui.box = el('div', 'box');
       ui.box.hidden = true;

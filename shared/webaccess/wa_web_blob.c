@@ -1498,7 +1498,7 @@ const char *const wa_web_edit_js[] = {
     NULL,
 };
 
-/** @brief app.js, 16950 bytes. */
+/** @brief app.js, 17296 bytes. */
 const char *const wa_web_app_js[] = {
     "var RcbFm = (function () {\n"
     "'use strict';\n"
@@ -2066,7 +2066,20 @@ const char *const wa_web_app_js[] = {
     "ui.sizer.style.height = '0px';\n"
     "ui.vline.textContent = '';\n"
     "}\n"
+    "function behind(off) {\n"
+    "[ui.panesEl, ui.barEl].forEach(function (x) {\n"
+    "x.inert = off;\n"
+    "if (off) {\n"
+    "x.setAttribute('aria-hidden', 'true');\n"
+    "} else {\n"
+    "x.removeAttribute('aria-hidden');\n"
+    "}\n"
+    "});\n"
+    "}\n"
     "function openFile(i, e) {\n"
+    "if (editor && editor.active()) {\n"
+    "return;               // the editor's text first: CLOSE asks\n"
+    "}\n"
     "var p = st.panes[i];\n"
     "var path = F.join(p.path, e.n);\n"
     "var seq = ++viewSeq;\n"
@@ -2076,6 +2089,7 @@ const char *const wa_web_app_js[] = {
     "ui.vmixed.hidden = true;\n"
     "viewNote(TX.vreading);\n"
     "ui.viewer.hidden = false;\n"
+    "behind(true);\n"
     "ui.scroll.scrollTop = 0;\n"
     "ui.scroll.scrollLeft = 0;\n"
     "ui.vclose.focus();\n"
@@ -2106,8 +2120,9 @@ const char *const wa_web_app_js[] = {
     "function closeView() {\n"
     "if (editor && editor.closing()) {\n"
     "return;\n"
-    "}\n"
+    "}\n",
     "ui.viewer.hidden = true;\n"
+    "behind(false);\n"
     "viewSeq++;\n"
     "view = null;\n"
     "ui.pre.textContent = '';\n"
@@ -2120,7 +2135,7 @@ const char *const wa_web_app_js[] = {
     "go(i, F.parent(st.panes[i].path));\n"
     "});\n"
     "u.up.title = TX.up;\n"
-    "u.prev = button(TX.prev, 'pg', function () {\n",
+    "u.prev = button(TX.prev, 'pg', function () {\n"
     "page(i, 'prev');\n"
     "});\n"
     "u.next = button(TX.next, 'pg', function () {\n"
@@ -2147,6 +2162,7 @@ const char *const wa_web_app_js[] = {
     "panes.appendChild(ui.panes[0].box);\n"
     "panes.appendChild(ui.panes[1].box);\n"
     "root.appendChild(panes);\n"
+    "ui.panesEl = panes;\n"
     "var bar = el('div', 'bar');\n"
     "var foot = el('div', 'foot');\n"
     "foot.appendChild(button(TX.rescan, 'btn', function () {\n"
@@ -2168,6 +2184,7 @@ const char *const wa_web_app_js[] = {
     "bar.appendChild(ui.msg);\n"
     "bar.appendChild(ui.wait);\n"
     "root.appendChild(bar);\n"
+    "ui.barEl = bar;\n"
     "ui.box = el('div', 'box');\n"
     "ui.box.hidden = true;\n"
     "var card = el('div', 'card');\n"
@@ -2181,7 +2198,7 @@ const char *const wa_web_app_js[] = {
     "root.appendChild(ui.box);\n"
     "ui.viewer = el('div', 'viewer');\n"
     "ui.viewer.hidden = true;\n"
-    "var vh = el('div', 'vh');\n"
+    "var vh = el('div', 'vh');\n",
     "ui.vpath = el('span', 'vp');\n"
     "ui.vsize = el('span', '');\n"
     "ui.vline = el('span', '');\n"
@@ -2193,7 +2210,7 @@ const char *const wa_web_app_js[] = {
     "vh.appendChild(x);\n"
     "});\n"
     "ui.viewer.appendChild(vh);\n"
-    "ui.scroll = el('div', 'scroll');\n",
+    "ui.scroll = el('div', 'scroll');\n"
     "ui.sizer = el('div', 'sizer');\n"
     "ui.pre = el('pre', 'text');\n"
     "ui.scroll.appendChild(ui.sizer);\n"

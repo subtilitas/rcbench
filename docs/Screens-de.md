@@ -3589,7 +3589,7 @@ Aktuelle Einschränkungen:
 - Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
   mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
   Downloads. Die Ursache ist nicht gemessen. Die Seite mit der
-  Dateiverwaltung hat 57.796 Bytes auf Englisch mit leerer Karte und keine
+  Dateiverwaltung hat 58.142 Bytes auf Englisch mit leerer Karte und keine
   Kartenliste; ihre Zeit ist nicht gemessen.
 
 ### Der Zugangscode
@@ -3846,7 +3846,10 @@ SCHLIESSEN oder Escape, solange der Text von der Datei abweicht, fragt
 UNGESPEICHERTE ÄNDERUNGEN:
 `<Name> ohne Speichern verlassen? Die Änderungen gehen verloren.` mit
 BLEIBEN und VERWERFEN. Die Seite verlassen oder neu laden mit Änderungen
-fragt über die eigene Frage des Browsers, in dessen Worten.
+fragt über die eigene Frage des Browsers, in dessen Worten. Solange der
+Betrachter zu sehen ist, nehmen die Spalten und Tasten dahinter keinen
+Klick, keinen Fokus und keine Taste an, sodass sich keine Datei über dem
+Text des Editors öffnet.
 
 Die Seite sendet eine Anfrage nach der anderen. Eine Anfrage ohne Antwort
 nach 2s zeigt
