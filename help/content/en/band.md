@@ -79,7 +79,7 @@ For a bit this release never sets, the box says to flash both boards from one re
 
 "?", 8px left of STOP, opens the guide of the screen on top. The menu has one; the other screens show no "?" yet. The guide numbers up to 5 controls of the screen with a badge and corner brackets and lists them in a dock of 480 x 488px on one half of the screen: each control's name, then what it does in 3 rows at most. The other half keeps running. The dock's last row names this help's address.
 
-- PREV and NEXT turn the pages. CLOSE or a tap on "?" closes the guide.
+- PREV and NEXT turn the pages. They sit in the band in place of the home tag, the same spot on every page, so a second tap where the first landed turns the next page. CLOSE, at the dock's bottom, or a tap on "?" closes the guide.
 - A tap anywhere else closes it and does nothing else.
 - STOP works through the guide: a press on STOP closes it and stops at once. DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN act on the same press, as with no guide.
 - The knob moves nothing while the guide is open.
@@ -103,6 +103,7 @@ A hold button acts after 2s of contact. ARM, OUTPUT ON, START TEST, START LIMIT 
 - The hint shows only for a release the finger made on the button. It does not show when the finger slid off the button first, when the touch was lost, for a second finger's contact, or on a screen without the status band.
 - A release at 2s or later has acted and shows no hint.
 - A short tap is not a fault, so the hint is a notice and not an alert: a tap on the band clears it earlier, an alert showing keeps the band and no hint shows over it, and an alert that arrives while the hint shows replaces it.
+- STOP clears the hint at once, and so does a new FAULT code or a switch from ARMED to SAFE by an error.
 - The hints, one per action: `Hold 2s to switch to ARMED.`, `switch the output on`, `apply`, `start the test`, `start the limit run`, `enable`, `write`, `restore`, `continue`, `leave`, `load`, `release the port`, `repair`, `run`, `install`, `download and install`, `update the IOmcu` and `clear all pin assignments`, each after `Hold 2s to`.
 
 ## Touch near the band

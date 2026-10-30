@@ -43,6 +43,21 @@ history is in git.
 - FILES' editor header shows the file's size as read when it opens and as
   written after SAVE, not the size listed before the open.
 
+### Fixed
+
+- STOP clears a hold button's amber hint on the alert band in the frame of
+  the press, and so do a new FAULT code and a switch from ARMED to SAFE.
+  The hint stayed for its 4s before. An alert is left as it is.
+- The screen guide's PREV and NEXT keep one place on every page: in the
+  band, in the home tag's place, from x 8 to 264. A second tap at the
+  spot of NEXT turns the next page instead of landing on a tile and
+  closing the guide. CLOSE stays in the dock, centred at its bottom.
+- An INA3221 channel over its limit writes one INFO line to the console
+  for each channel at each trip: the part, the channel, what it watches,
+  the limit and the highest window current read, for example
+  `INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: highest window read
+  0.153A`.
+
 ## 0.23.3 - 2026-10-30
 
 0.23.3 is a testing release: its minor number, 23, is odd, and GitHub

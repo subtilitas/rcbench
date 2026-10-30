@@ -835,6 +835,13 @@ void sense_map_service(bool idle);
  * channel from the ring's window with @p ring.  Control task. */
 void sense_win_service(void);
 void sense_win_attach(bench_state_t *b, bool ring);
+/**
+ * @brief Each channel's highest current of the windows read since the last
+ *        call, and cleared (sense_win_link_take_peaks()); control task.
+ * @param out Receives 12 figures, mA, signed.
+ * @return Bit c set when channel c has a window in @p out.
+ */
+uint16_t sense_win_take_peaks(int16_t *out);
 /* The log's INA3221 columns for a file opened now (log_cols.h); false for
  * CH1 to CH3.  Any task. */
 bool sense_log_cols(log_cols_t *out);

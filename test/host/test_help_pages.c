@@ -10,7 +10,8 @@
  * - the_hit_test_finds_buttons_dock_and_badges
  * - armed_offers_only_armed_pages_and_says_so
  * - the_page_set_key_follows_the_titles
- * - every_page_of_every_screen_fits
+ * - every_page_of_every_screen_fits: also PREV and NEXT in one place on
+ *   every page, over no marked control, chip, "?" or STOP
  * - the_screen_draws_nothing_under_the_dock
  *
  * SPDX-License-Identifier: MIT
@@ -86,24 +87,33 @@ TEST_CASE(the_dock_and_the_live_half_split_the_body)
             CHECK_EQ(l.x, 0);
             CHECK_EQ(l.x + l.w + 8, d.x);
         }
-        /* The buttons: 140 x 48px, 10px apart, inside the dock, above the
-         * alert band. */
-        for (int h = UI_HELP_HIT_PREV; h <= UI_HELP_HIT_CLOSE; ++h) {
-            const gfx_rect_t b = ui_help_button_rect((ui_help_side_t)side,
-                                                     (ui_help_hit_t)h);
-            CHECK_EQ(b.w, 140);
-            CHECK(b.h >= UI_TAP_MIN);
-            CHECK(b.y + b.h < UI_ALERT_Y);
-            CHECK(b.x >= d.x && b.x + b.w <= d.x + d.w);
-            CHECK(b.y >= d.y && b.y + b.h <= d.y + d.h);
-            if (h > UI_HELP_HIT_PREV) {
-                const gfx_rect_t a = ui_help_button_rect(
-                    (ui_help_side_t)side, (ui_help_hit_t)(h - 1));
-                CHECK_EQ(b.x - (a.x + a.w), 10);
-            }
-        }
-        CHECK(ui_help_text_limit() <= ui_help_button_rect(
-                  (ui_help_side_t)side, UI_HELP_HIT_PREV).y - 21);
+        /* CLOSE: 140 x 48px, centred at the dock's bottom, above the
+         * alert band, a row and more under the dock's text. */
+        const gfx_rect_t b = ui_help_button_rect((ui_help_side_t)side,
+                                                 UI_HELP_HIT_CLOSE);
+        CHECK_EQ(b.w, 140);
+        CHECK(b.h >= UI_TAP_MIN);
+        CHECK(b.y + b.h < UI_ALERT_Y);
+        CHECK(b.x >= d.x && b.x + b.w <= d.x + d.w);
+        CHECK(b.y >= d.y && b.y + b.h <= d.y + d.h);
+        CHECK_EQ(b.x - d.x, d.x + d.w - (b.x + b.w));
+        CHECK(ui_help_text_limit() <= b.y - 21);
+        /* PREV and NEXT: 124 x 48px in the band, 8px apart, from the home
+         * tag's x 8 to x 264, the same for either side. */
+        const gfx_rect_t pv = ui_help_button_rect((ui_help_side_t)side,
+                                                  UI_HELP_HIT_PREV);
+        const gfx_rect_t nx = ui_help_button_rect((ui_help_side_t)side,
+                                                  UI_HELP_HIT_NEXT);
+        CHECK_EQ(pv.x, 8);
+        CHECK_EQ(pv.y, 6);
+        CHECK_EQ(pv.w, 124);
+        CHECK(pv.h >= UI_TAP_MIN);
+        CHECK_EQ(pv.y + pv.h, UI_BAND_H - 6);
+        CHECK_EQ(nx.x - (pv.x + pv.w), 8);
+        CHECK_EQ(nx.y, pv.y);
+        CHECK_EQ(nx.w, pv.w);
+        CHECK_EQ(nx.h, pv.h);
+        CHECK_EQ(nx.x + nx.w, 264);
     }
     CHECK_EQ(ui_help_button_rect(UI_HELP_DOCK_LEFT, UI_HELP_HIT_DOCK).w, 0);
 }
@@ -195,10 +205,43 @@ static bool inside(gfx_rect_t in, gfx_rect_t out)
            && in.y + in.h <= out.y + out.h;
 }
 
+/**
+ * @brief Whether @p a and @p b are the same rect.
+ * @param a A rect.
+ * @param b Another.
+ * @return True when x, y, w and h match.
+ */
+static bool same(gfx_rect_t a, gfx_rect_t b)
+{
+    return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
+}
+
 /** @brief Every page of @p scr, on top, as the bench is now. */
 static void check_pages(const ui_screen_t *scr, const char *what)
 {
+    /* PREV and NEXT where page 1 has them, on every page. */
     const bool armed = ui_router_status()->armed;
+    ui_help_page_t p0;
+    if (!ui_help_page(scr, armed, 0, &p0)) {
+        T_FAIL("%s: no page 1", what);
+        return;
+    }
+    const gfx_rect_t prev0 = ui_help_button_rect(p0.side, UI_HELP_HIT_PREV);
+    const gfx_rect_t next0 = ui_help_button_rect(p0.side, UI_HELP_HIT_NEXT);
+    /* And clear of every chip the band shows now, "?" and STOP. */
+    for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT;
+         ++chip) {
+        gfx_rect_t r;
+        if (ui_band_chip_rect(ui_router_status(), (ui_band_chip_t)chip, &r)
+            && (near(r, prev0, 2) || near(r, next0, 2))) {
+            T_FAIL("%s: chip %d at x %d is under PREV or NEXT", what, chip,
+                   r.x);
+        }
+    }
+    if (near(ui_band_guide_rect(), next0, 2)
+        || near(ui_band_stop_rect(), next0, 2)) {
+        T_FAIL("%s: NEXT covers \"?\" or STOP", what);
+    }
     const int count = ui_help_count(scr, armed);
     if (count != scr->help_count() && !armed) {
         T_FAIL("%s: %d pages offered, %d given", what, count,
@@ -214,6 +257,14 @@ static void check_pages(const ui_screen_t *scr, const char *what)
         }
         const gfx_rect_t dock = ui_help_dock_rect(p.side);
         const gfx_rect_t live = ui_help_live_rect(p.side);
+        const gfx_rect_t prev = ui_help_button_rect(p.side,
+                                                    UI_HELP_HIT_PREV);
+        const gfx_rect_t next = ui_help_button_rect(p.side,
+                                                    UI_HELP_HIT_NEXT);
+        if (!same(next, next0) || !same(prev, prev0)) {
+            T_FAIL("%s: NEXT at x %d y %d on page %d, x %d y %d on page 1",
+                   what, next.x, next.y, n + 1, next0.x, next0.y);
+        }
         if (p.count < 1 || p.count > UI_HELP_ITEMS) {
             T_FAIL("%s: page %d has %d items", what, n + 1, p.count);
         }
@@ -247,6 +298,10 @@ static void check_pages(const ui_screen_t *scr, const char *what)
             if (near(r, dock, 0)) {
                 T_FAIL("%s: page %d item %d under the dock", what, n + 1,
                        i + 1);
+            }
+            if (near(r, next, 0) || near(r, prev, 0)) {
+                T_FAIL("%s: page %d item %d (%s) under PREV or NEXT", what,
+                       n + 1, i + 1, it->label);
             }
             const gfx_rect_t b = ui_help_badge_rect(&p, i);
             if (!inside(b, live)) {

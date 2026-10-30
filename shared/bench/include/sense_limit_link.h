@@ -228,6 +228,17 @@ sense_limit_link_ev_t sense_limit_link_event(sense_limit_link_t *s,
 uint16_t sense_limit_link_take_trip(sense_limit_link_t *s);
 
 /**
+ * @brief The limit channel @p ch's last OVER bit was judged by: the limit
+ *        the page held when the read brought the bit, kept when a new
+ *        limit is written after it.  For the console line of a trip.
+ * @param s  the service.
+ * @param ch the channel, 0 to 11.
+ * @return the limit, mA; 0 before the channel's first bit, for @p ch out
+ *         of range and for a NULL @p s.
+ */
+uint16_t sense_limit_link_trip_ma(const sense_limit_link_t *s, unsigned ch);
+
+/**
  * @brief A channel's limit the page holds.
  * @param s  the service.
  * @param ch the channel, 0 to 11.

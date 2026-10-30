@@ -292,6 +292,11 @@ sense_limit_link_ev_t sense_limit_link_event(sense_limit_link_t *s,
     return ev;
 }
 
+uint16_t sense_limit_link_trip_ma(const sense_limit_link_t *s, unsigned ch)
+{
+    return (s != NULL && ch < LINK_SL_KEPT) ? s->ch_lim[ch] : 0u;
+}
+
 uint16_t sense_limit_link_held_ma(const sense_limit_link_t *s, unsigned ch)
 {
     return (s != NULL && s->known && ch < LINK_SL_KEPT) ? s->held[ch] : 0u;

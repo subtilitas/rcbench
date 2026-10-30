@@ -7,13 +7,15 @@
  * published by the settings observer on app_main and taken by the control
  * task, the page's service there, and the band alert when a channel's
  * window passed its limit.  A limit passed is an error of the bench as
- * well: the bench SAFE and the supply off (bench_error_stop()).
+ * well: the bench SAFE and the supply off (bench_error_stop()), and one
+ * console line a channel (log_trip()).
  *
  * SPDX-License-Identifier: MIT
  */
 #include <stdatomic.h>
 #include <string.h>
 
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 
 #include "link_host.h"
@@ -37,6 +39,9 @@ static uint8_t      s_limit_watch[LINK_SL_KEPT];
 
 /** @brief The page's service; control task only. */
 static sense_limit_link_t s_sense_limit;
+
+/** @brief The console's tag. */
+static const char *TAG = "rcbench";
 
 /** @brief SETUP > SENSORS' LIMIT marks, sensors_rows_set_limits()'s word.
  *         Control task writes, app_main reads. */
@@ -94,6 +99,33 @@ static void limit_alerts(void)
     (void)control_alert_numbered(line);
 }
 
+/**
+ * @brief One console line for each channel of a trip: the part, channel,
+ *        what it watches, the highest current read and the limit the
+ *        trip was judged by.
+ * @param trip  The channels, bit c channel c (sense_limit_link_take_trip()).
+ * @param peaks Bit c: @p peak holds a window of channel c.
+ * @param peak  Each channel's highest window current read, mA.
+ */
+static void log_trip(uint16_t trip, uint16_t peaks, const int16_t *peak)
+{
+    uint8_t watch[LINK_SL_KEPT];
+    taskENTER_CRITICAL(&s_limit_mux);
+    memcpy(watch, s_limit_watch, sizeof(watch));
+    taskEXIT_CRITICAL(&s_limit_mux);
+    for (unsigned c = 0u; c < LINK_SL_KEPT; ++c) {
+        if ((trip & (1u << c)) == 0u) {
+            continue;
+        }
+        char line[96];
+        ESP_LOGI(TAG, "%s",
+                 sensors_rows_trip_line(
+                     line, sizeof(line), c, watch[c],
+                     (peaks & (1u << c)) != 0u, peak[c],
+                     sense_limit_link_trip_ma(&s_sense_limit, c)));
+    }
+}
+
 /*
  * SENSE_LIMIT, from the poll on every pass, armed or not: the page takes
  * a limit in any bank state.  A limit passed is an error: the bench SAFE
@@ -108,6 +140,7 @@ void sense_limit_service(void)
     memcpy(want, s_limit_want, sizeof(want));
     taskEXIT_CRITICAL(&s_limit_mux);
     sense_limit_link_want(&s_sense_limit, want, now_ms());
+    bool over_read = false;
     for (int k = 0; k < 2; ++k) {
         sense_limit_link_op_t op;
         if (!sense_limit_link_next(&s_sense_limit, now_ms(), &op)) {
@@ -124,6 +157,10 @@ void sense_limit_service(void)
             result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
                                                 : SENSE_LIMIT_LINK_ACK;
         }
+        over_read = over_read
+                    || (answered && reply.op == LINK_OP_DATA
+                        && (op.kind == SENSE_LIMIT_LINK_OP_OVER
+                            || op.kind == SENSE_LIMIT_LINK_OP_READ));
         sense_limit_link_done(&s_sense_limit, result,
                               (answered && reply.op == LINK_OP_DATA)
                                   ? reply.regs : NULL,
@@ -132,8 +169,19 @@ void sense_limit_service(void)
             break;
         }
     }
-    if (sense_limit_link_take_trip(&s_sense_limit) != 0u) {
+    /* The windows read since the pass with the last read of OVER, both
+     * reads of a pass that makes two included: what the trip's bits were
+     * judged on, as far as the panel read them.  A trip comes only from a
+     * read in this pass, and is taken in it. */
+    int16_t  peak[LINK_SL_KEPT] = { 0 };
+    uint16_t peaks = 0u;
+    if (over_read) {
+        peaks = sense_win_take_peaks(peak);
+    }
+    const uint16_t trip = sense_limit_link_take_trip(&s_sense_limit);
+    if (trip != 0u) {
         bench_error_stop();
+        log_trip(trip, peaks, peak);
     }
     limit_alerts();
     atomic_store(&s_sense_limits,

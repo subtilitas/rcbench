@@ -79,7 +79,7 @@ Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit
 
 "?", 8px links von STOP, öffnet die Hilfe des Bildschirms, der oben ist. Das Menü hat eine; die anderen Bildschirme zeigen noch kein "?". Die Hilfe nummeriert bis zu 5 Bedienelemente des Bildschirms mit einem Abzeichen und Winkeln an den Ecken und listet sie in einem Dock von 480 x 488px auf einer Hälfte des Bildschirms: den Namen jedes Bedienelements, dann was es tut, in höchstens 3 Zeilen. Die andere Hälfte läuft weiter. Die letzte Zeile des Docks nennt die Adresse dieser Hilfe.
 
-- VORIGE und NÄCHSTE blättern. SCHLIESSEN oder ein Tipp auf "?" schließt die Hilfe.
+- VORIGE und NÄCHSTE blättern. Sie stehen im Band an der Stelle des Home-Tags, auf jeder Seite an derselben Stelle; ein zweiter Tipp dorthin, wo der erste lag, blättert also weiter. SCHLIESSEN unten im Dock oder ein Tipp auf "?" schließt die Hilfe.
 - Ein Tipp an jede andere Stelle schließt sie und tut sonst nichts.
 - STOP wirkt durch die Hilfe: Ein Druck auf STOP schließt sie und stoppt sofort. DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken mit demselben Druck, wie ohne Hilfe.
 - Der Knopf bewegt nichts, solange die Hilfe offen ist.
@@ -103,6 +103,7 @@ Ein Halte-Button wirkt nach 2s Kontakt. ARM, AUSGANG EIN, START TEST, START LIMI
 - Der Hinweis erscheint nur bei einem Loslassen, das der Finger auf dem Button gemacht hat. Er erscheint nicht, wenn der Finger vorher vom Button gerutscht ist, wenn der Touch verloren ging, bei dem Kontakt eines zweiten Fingers und auf einem Bildschirm ohne Statusband.
 - Ein Loslassen bei 2s oder später hat gewirkt und zeigt keinen Hinweis.
 - Ein kurzes Tippen ist keine Störung, also ist der Hinweis eine Meldung und kein Alert: Ein Tipp auf das Band löscht ihn früher, ein stehender Alert behält das Band und kein Hinweis erscheint darüber, und ein Alert, der während des Hinweises kommt, ersetzt ihn.
+- STOP löscht den Hinweis sofort, ebenso ein neuer FEHLER-Code oder ein Wechsel von ARMED nach SAFE durch einen Fehler.
 - Die Hinweise, einer je Aktion, jeweils nach `Halte 2s, um`: `auf ARMED zu schalten.`, `den Ausgang einzuschalten.`, `zu übernehmen.`, `den Test zu starten.`, `den Endlagenlauf zu starten.`, `freizugeben.`, `zu schreiben.`, `zurückzuspielen.`, `fortzufahren.`, `zu verlassen.`, `zu laden.`, `den Port freizugeben.`, `zu reparieren.`, `zu starten.`, `zu installieren.`, `zu laden und zu installieren.`, `den IOmcu zu aktualisieren.` und `alle Pin-Zuordnungen zu löschen.`
 
 ## Berührungen nahe am Band

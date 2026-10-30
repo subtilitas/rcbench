@@ -153,12 +153,21 @@ questions show no "?" either.
 | Item | its number in a 28px badge, the control's name in the accent colour, then what it does in the 10 x 20px face, 41 characters a row, 3 rows at most |
 | Items a page | 5 at most |
 | Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
-| Buttons | PREV, NEXT and CLOSE, 140 x 48px, 10px apart, y 496 to 544 |
+| PREV and NEXT | 124 x 48px, 8px apart, in the band from x 8 to 264, y 6 to 54, in the home tag's place, the same on every page |
+| CLOSE | 140 x 48px, centred at the dock's bottom, y 496 to 544 |
 | Marks | a 28px badge with the item's number 4px inside the control's top-left corner, or 4px left of a control less than 56px tall or wide; 2px brackets at the control's corners, 3px outside it |
 
 A control in the band has its badge under the band, below the control's
 left end. The dock ends 4px above the alert band, so an alert covers none
 of it.
+
+PREV and NEXT stay in one place while the dock changes sides, so a second
+tap at the spot of the first turns the next page. The band is the one
+place no page marks: on the menu the tiles fill the body, and each tile is
+marked on one of the pages. The home tag they cover does nothing while the
+guide is open, and the band's chips start at x 270 at the least, so the
+two buttons cover no chip, "?" or STOP. The home tag comes back when the
+guide closes.
 
 - A tap on "?" opens page 1. A press that slides off "?" opens nothing.
 - PREV and NEXT turn the pages and act on a release on the same button.
@@ -166,7 +175,7 @@ of it.
 - CLOSE closes the guide, and so does a press on "?".
 - A press on the dock or on a badge does nothing.
 - Any other press closes the guide and does nothing else: on the live half,
-  on the home tag, on the band beside the chips, on the alert band.
+  on the band beside the chips, on the alert band.
 - A press on STOP closes the guide and stops at once. A press on a chip
   closes the guide and opens the chip's box on its release.
 - A press on DISARM, OUTPUT OFF, ABORT, STOP TEST or STOP RUN closes the
@@ -230,6 +239,9 @@ it. The hint is one line of 97 characters at most.
   when the touch was lost or the release is not a tap (`TOUCH_FLAG_NO_TAP`),
   for a second finger's contact, or on a screen without the status band.
 - A release at 2s or later follows a hold that has acted and shows no hint.
+- A press on STOP clears the hint in the same frame, and so do a fault bit
+  that comes up on the FAULT chip and a switch from ARMED to SAFE, an
+  error's included. An alert stays through both.
 - HOLD 2s TO ACKNOWLEDGE on the bus-fault screen carries no hint: that screen
   has no band.
 
@@ -4348,6 +4360,24 @@ channel said last: with all 12 over, each is said within 12 alerts, 60s.
 
 OVER bits the IOmcu holds from before the link came up, also those of an
 IOmcu that started again, are said by channel at the first read.
+
+A read of OVER with a bit set is a trip: the bench switches to SAFE and
+every output goes off ([Safety](Safety.md#errors)).
+The panel also writes one INFO line a channel to the console, tag
+`rcbench`, in English:
+
+```
+I (123456) rcbench: INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: highest window read 0.153A
+```
+
+The reading is the highest current of the channel's windows the panel read
+on SENSE_WIN_A or SENSE_WIN_B since the poll that read OVER before, the figure
+the IOmcu judges by, to 0.001A. The limit is the one the trip was judged
+by, also when a new limit is written in the same poll. A window that closed after the panel's
+last read of its page is not in it, so the figure can be under the limit.
+`no window read` stands in its place where the panel read none. A channel
+that stays over writes its line at every read of OVER, every 200ms, while
+the band says it once every 30s.
 
 The panel writes the map to the IOmcu's SENSE_MAP page (protocol 4.25) in
 one write of 26 registers: the parts fitted, the channel read at 1kHz,

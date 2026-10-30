@@ -299,6 +299,11 @@ void sense_map_service(bool idle)
                                                  mirror, now_ms()));
 }
 
+uint16_t sense_win_take_peaks(int16_t *out)
+{
+    return sense_win_link_take_peaks(&s_sense_win, out);
+}
+
 /*
  * SENSE_WIN_A and SENSE_WIN_B, from the poll on every pass, armed or not:
  * the windows are readings and change nothing.  Each page due is read, two
