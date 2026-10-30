@@ -30,8 +30,10 @@
  * a port's write, 10000ms at most, as SUPPLY's from 4.31.
  *
  * A programming port holds the PD mini's output only, never the panel's
- * model.  With an IOmcu older than 4.31 a port that holds the supply keeps
- * it through every error here but the trip (error_sites_keeps()).  A SUPPLY
+ * model, and holds it while the SUPPLY page says so (LINK_SP_PORT), not
+ * while a programmer merely has a port.  With an IOmcu older than 4.31 a
+ * port that holds the supply keeps it through every error here but the
+ * trip (error_sites_keeps()).  A SUPPLY
  * page event whose output is off at the far end already -- the module's
  * protection, a sagging input, an ON the page let go -- is followed off
  * here whoever holds it; an ON the page refused is not, when the port keeps
@@ -64,8 +66,10 @@ extern "C" {
 typedef struct {
     bool     live;         /**< ARMED, or a switch to ARMED waits          */
     bool     supply_on;    /**< the output on, or an ON asked              */
-    bool     port_holds;   /**< a programming port holds the supply; taken
-                                for the PD mini only                      */
+    bool     port_holds;   /**< a programming port holds the supply: the
+                                SUPPLY page's LINK_SP_PORT as last read
+                                (supply_link_port_holds()); taken for the
+                                PD mini only                              */
     bool     supply_real;  /**< the PD mini is the supply, not the model   */
     bool     supply_page;  /**< the IOmcu serves the SUPPLY page           */
     uint16_t far_minor;    /**< the IOmcu's link protocol minor            */

@@ -163,6 +163,28 @@ steht. Weiterhin aus, gleich wer das Netzteil hält:
   (`error_sites_page_keeps()`). Einem ON, das die Page losgelassen hat,
   folgt es ebenso; die Page lässt ein ON nur los, wenn kein Port sie hält.
 
+Ein Port hält das Netzteil, solange FLAGS-Bit 11 der Page SUPPLY
+(`LINK_SP_PORT`) es sagt, so wie das Panel es zuletzt gelesen hat
+(`supply_link_port_holds()`). Eine KST- oder Hitec-Sitzung mit einem Port
+zählt nur über dieses Bit. Auf einem IOmcu vor 4.29 hält eine
+Hitec-Sitzung das Netzteil vom OFF eines POWER bis zum Ende seines
+Zuhörens, und ein Fehler zwischen zwei POWER schaltet es aus. Ein IOmcu vor
+4.13 hat dieses Bit nicht, und dort hält kein Port das Netzteil. Das Panel
+liest die Page alle 100ms, solange der PD mini in Gebrauch ist. Ein Port,
+der das Netzteil zwischen zwei Lesevorgängen übernimmt, bekommt das OFF
+eines Fehlers in dieser Lücke. Nachdem ein Port losgelassen hat, liest das
+Panel das Halten bis zu seinem nächsten beantworteten Lesen, und ein
+Fehler in dieser Lücke lässt den Ausgang an (derzeitige Grenze, nur IOmcu
+vor 4.31). Ab 4.31 ändert das Halten nichts: das Panel schreibt das OFF in
+jedem Fall, und der IOmcu hält es für ein laufendes Schreiben zurück.
+
+Die 5V der Programmierports auf dem Carrier haben keine solche Ausnahme.
+Ihre Page, PROG_SUPPLY, gibt es ab 4.32, und jeder IOmcu, der sie bedient,
+hält das OFF für ein Schreiben zurück; ihr eigenes Port-Bit
+(`LINK_PS_PORT`) geht nicht in die Regel ein. Auf dem Carrier bleibt das
+Bit der Page SUPPLY gelöscht, weil die Ports an den 5V hängen und nicht am
+PD mini.
+
 Ein Port hält nur den Ausgang des PD mini. Auf dem Modell des Panels liegt
 kein Port, und ein Fehler schaltet es aus. Ein Netzteil, das nicht
 antwortet oder keinen Messwert liefert und das kein Port hält, wird
@@ -178,7 +200,7 @@ wird das ON abgewiesen und ausgeschaltet.
 ### Die Versorgung eines Programmierports
 
 Eine KST- oder Hitec-Sitzung hält den Ausgang des PD mini, solange sie einen
-Port hat. Bei einem Fehler schreibt das Panel das OFF der Versorgung an den
+Port hat, auf einer Platine ohne eigene 5V der Programmierports. Bei einem Fehler schreibt das Panel das OFF der Versorgung an den
 IOmcu, gleich wer sie hält und ob es den Ausgang an liest oder nicht
 (`supply_link_cut()`). Der IOmcu entscheidet aus seinem eigenen Zustand, ob
 ein Schreiben in den Speicher des Servos läuft (`supply_page.h`):
