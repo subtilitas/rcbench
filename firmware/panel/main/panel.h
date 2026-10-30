@@ -926,8 +926,9 @@ typedef struct {
     /** And how many times the supply's output had been asked off; see
      *  s_supply_offs. */
     uint32_t         supply_offs;
-    /** And how many times the ports' 5V had been asked off (s_prog5v_offs):
-     *  an ON queued before an OFF is not applied after it. */
+    /** @brief And how many times the ports' 5V had been asked off
+     *  (s_prog5v_offs): an ON queued before an OFF is not applied after
+     *  it. */
     uint32_t         prog5v_offs;
     /** And how many edits the PD mini's wiring had had (s_pdmini_edits):
      *  an ON queued before an edit on SETUP is not applied after it, even
@@ -990,10 +991,11 @@ extern atomic_uint s_supply_ack;
 /** @brief The ports' 5V asked off from the PROG 5V box, counted; render
  *         side writes, control task reads. */
 extern atomic_uint s_prog5v_offs;
-/** @brief The PROG 5V ONs applied, numbered (control task), and the newest
- *         a whole frame has seen on (render side): see
+/** @brief The PROG 5V ONs applied, numbered; control task writes, see
  *         prog_supply_watch_service(). */
 extern atomic_uint s_psup_gen;
+/** @brief The newest PROG 5V ON a whole frame has seen on; render side
+ *         writes, see prog_supply_watch_service(). */
 extern atomic_uint s_psup_ack;
 extern atomic_bool s_supply_live;
 extern atomic_uint s_supply_ons_sent;

@@ -108,8 +108,8 @@ uint32_t              s_supply_step_ms;
  */
 static arm_watch_t    s_supply_watch;
 uint32_t              s_supply_gen;
-/* The PROG 5V box's ON in flight, watched the same way (s_psup_gen,
- * s_psup_ack). */
+/** @brief The PROG 5V box's ON in flight, watched the same way (s_psup_gen,
+ *         s_psup_ack). */
 static arm_watch_t    s_psup_watch;
 
 /*

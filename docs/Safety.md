@@ -244,7 +244,8 @@ step cut by a stop or a lost link, which end the session themselves.
 On the [rbmod carrier](Carrier.md#power) the programming ports run from
 the 5V buck M7, switched by GPIO 21 (link 4.32, the PROG_SUPPLY page). The
 PD mini feeds the servo rails only. The KST and Hitec programmers switch
-the 5V on and off for a session; the panel offers no key for it. The
+the 5V on and off for a session, and the PROG 5V box on SERVO and SUPPLY
+switches it by hand ([below](#the-prog-5v-box)). The
 programmers take no reading of the PD mini on the carrier: its set point
 neither refuses a CONNECT under 4.8V nor sets the voltage of a power
 cycle, and the SUPPLY screen's limits bound the servo rails only, not a
@@ -273,10 +274,29 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   port, as they wait for the PD mini's output
   (`prog_supply_link_live()`).
 
+##### The PROG 5V box
+
+The PROG 5V box on SERVO and SUPPLY switches the 5V by hand: PROG 5V ON is
+a 2s hold, PROG 5V OFF a tap. The panel judges the ON as it judges the PD
+mini's OUTPUT ON:
+
+- It is taken with the bench SAFE or ARMED; no switch to ARMED is asked.
+- It is dropped when a STOP, an OFF or a touch loss came after the hold
+  completed, and while a port holds the 5V.
+- It is written once as OUTPUT 1 and not repeated. The IOmcu refuses it
+  without a live heartbeat (NOT_ARMED) and while a port holds the 5V
+  (BAD_VALUE); each, and no answer, gets an alert
+  ([Carrier, Power](Carrier.md#power)).
+- An ON taken across lost touch events is an error: SAFE, the 5V off.
+- An error, PROG 5V OFF and leaving the screen whose box switched it on
+  write OFF. An error drops an ON not yet written.
+- While a port holds the 5V the box takes no press.
+
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
 or `NOT READ` when the last read went unanswered. The core is
 `shared/outputs/prog_supply.c` under `test_prog_supply`; the panel's end
-is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`.
+is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`, the
+box `shared/ui/prog5v_box.c` under `test_prog5v_box`.
 
 Current limitations:
 

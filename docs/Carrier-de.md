@@ -72,9 +72,23 @@ zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21` und bietet weder Spannung
 noch Strom an.
 
 Die Programmer für KST und Hitec schalten GPIO 21 für eine Sitzung ein und
-aus, über die Page PROG_SUPPLY (Link 4.32). Das Panel hat keine Taste
-dafür. SUPPLY zeigt den Zustand unter OUTPUT:
-`PROG-PORTS 5V, GPIO 21: EIN` oder `AUS`. Jeder Fehler, ein verlorener
+aus, über die Page PROG_SUPPLY (Link 4.32). Das Feld PROG 5V auf der
+Ausgangskarte von SERVO und auf LIVE von SUPPLY schaltet sie von Hand:
+PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei
+ARMED, wie AUSGANG EIN des PD mini. Das Feld nennt den Pin,
+`PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster von 50ms an
+0x40 CH3, `5.02V  0.120A` ([Der Strommonitor](#der-strommonitor)). Solange
+die Sitzung eines Programmers die 5V hält, nimmt das Feld keinen Druck an
+und zeigt `BELEGT VON PROG-PORT n`. SUPPLY zeigt den Zustand auch unter
+OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN` oder `AUS`.
+
+| Ein ON, das nicht greift | Warnung |
+| --- | --- |
+| kein lebender Heartbeat (NOT_ARMED) | `PROG-Ports 5V nicht eingeschaltet: der IOmcu hat keinen Heartbeat.` |
+| ein Port hält die 5V (BAD_VALUE) | `PROG-Ports 5V nicht eingeschaltet: ein Programmierport belegt sie.` |
+| keine Antwort | `PROG-Ports 5V EIN nicht beantwortet. Verbindung prüfen.` |
+| über verlorene Touch-Ereignisse hinweg; der Prüfstand geht auf SAFE | `Touch-Signal beim Einschalten verloren. PROG-Ports 5V aus.` |
+| ein Druck, solange ein Port die 5V hält oder die Page UNBEKANNT liest | `PROG-Ports 5V: von einem Programmierport belegt oder nicht gelesen.` | Jeder Fehler, ein verlorener
 Heartbeat und ein stummer Link schalten sie aus; ein Schreiben in den
 Speicher des Servos hält sie an, bis es endet, höchstens 10000ms
 ([Sicherheit, Die 5V der Programmierports auf dem Carrier](Safety-de.md#die-5v-der-programmierports-auf-dem-carrier)).
@@ -84,6 +98,10 @@ der IOmcu GPIO 21 nicht treibt (im Reset, im BOOTSEL, ohne Versorgung),
 hält der Pull-down an EN M7 aus.
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
+
+![SERVO auf dem Carrier, das Feld PROG 5V unter PD MINI](img/de/servo-rbmod.png)
+
+![Der KST-Programmer hält die 5V](img/de/servo-kst-rbmod.png)
 
 ## Der Strommonitor
 

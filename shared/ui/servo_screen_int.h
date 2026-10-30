@@ -482,12 +482,6 @@ typedef struct {
      * the output going off shows here at once.
      */
     gfx_rect_t out_btn;
-    /* The programming ports' own 5V on a board that switches it (the
-     * rbmod carrier): the PROG 5V box in the power plot's place
-     * (prog5v_box.h), one contact at a time. */
-    prog5v_box_t p5;
-    bool         p5_down;
-    int          p5_id;
     ui_hold_t  out_hold;
     bool       out_down;
     int        out_id;
@@ -496,6 +490,14 @@ typedef struct {
     float      sup_v, sup_i;  /**< the set points as last seen           */
     uint32_t   sup_rev;
     uint32_t   drawn_sup[2];
+    /** @brief The programming ports' own 5V on a board that switches it
+     *  (the rbmod carrier): the PROG 5V box in the power plot's place
+     *  (prog5v_box.h). */
+    prog5v_box_t p5;
+    /** @brief A contact is down on the box's button. */
+    bool         p5_down;
+    /** @brief That contact's id: one contact at a time. */
+    int          p5_id;
     /* A set point waiting for APPLY: typed while the output is live, or a
      * voltage raised past a standard servo's rating (hv), which takes the
      * two-second hold the profile warning takes.  OUTPUT ON with a set

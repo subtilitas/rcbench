@@ -143,7 +143,9 @@ _Static_assert(OUT_H >= UI_TAP_MIN, "OUTPUT is a finger tall");
  *        head, ending where the legend starts.
  */
 #define P5_X      (TAB_X + TAB_W + 8)
+/** @brief The box's top: PROG5V_BOX_H over the legend. */
 #define P5_Y      (LEG_Y - PROG5V_BOX_H)
+/** @brief The box's width, up to the card's inner edge. */
 #define P5_W      (LEFT_X + LEFT_W - INNER - P5_X)
 _Static_assert(P5_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the head");
 _Static_assert(P5_Y >= UP_Y + TITLE_H, "the PROG 5V box is under the title");

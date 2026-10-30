@@ -94,7 +94,7 @@ Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen
 
 ![SUPPLY auf dem Carrier](view:supply-rbmod)
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) speist der PD mini die Servoschienen, und die Programmierports haben eine eigene 5V-Versorgung, geschaltet über GPIO 21. Die Zeile unter AUSGANG nennt sie: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder `UNBEKANNT`, solange der IOmcu nicht antwortet. Die Programmer für KST und Hitec schalten sie für eine Sitzung; SUPPLY hat keine Taste dafür. Jeder Fehler schaltet sie aus, ein Schreiben in den Speicher eines Servos endet zuerst, höchstens 10000ms.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) speist der PD mini die Servoschienen, und die Programmierports haben eine eigene 5V-Versorgung, geschaltet über GPIO 21. Die Zeile unter AUSGANG nennt sie: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder `UNBEKANNT`, solange der IOmcu nicht antwortet. Die Programmer für KST und Hitec schalten sie für eine Sitzung. Auf LIVE schaltet das Feld PROG 5V rechts von GRAFIK und TABELLE sie von Hand: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED. Das Feld nennt den Pin, `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster des INA3221 an ihnen (0x40 CH3), `5.02V  0.120A`. Solange ein Programmer einen Port hält, zeigt das Feld `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Das Verlassen von SUPPLY schaltet 5V ab, die sein Feld eingeschaltet hat, außer ein Port hält sie. Jeder Fehler schaltet sie aus, ein Schreiben in den Speicher eines Servos endet zuerst, höchstens 10000ms.
 
 ## OPTIONEN
 

@@ -142,6 +142,13 @@ TEST_CASE(off_is_a_tap_that_lifts_on_the_button)
     CHECK(prog5v_box_press(&b));
     prog5v_box_release(&b, bx(), by_(), false);
     CHECK(!prog5v_box_poll_cmd(NULL));
+    /* A port that took the supply after the last tick: the tap asks
+     * nothing, the session's own LEAVE switches it. */
+    CHECK(prog5v_box_press(&b));
+    prog5v_box_publish(ST_ON, 21u, 1u);
+    prog5v_box_release(&b, bx(), by_(), true);
+    CHECK(!prog5v_box_poll_cmd(NULL));
+    prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     /* An OFF asked stands over an ON in the same poll. */
     CHECK(prog5v_box_press(&b));
     prog5v_box_release(&b, bx(), by_(), true);

@@ -271,8 +271,9 @@ beenden die Sitzung selbst.
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die
 Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
 4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
-Programmer für KST und Hitec schalten die 5V für eine Sitzung ein und aus;
-das Panel bietet keine Taste dafür. Die Programmer lesen auf dem Carrier
+Programmer für KST und Hitec schalten die 5V für eine Sitzung ein und aus,
+und das Feld PROG 5V auf SERVO und SUPPLY schaltet sie von Hand
+([unten](#das-feld-prog-5v)). Die Programmer lesen auf dem Carrier
 nichts vom PD mini: sein Sollwert lehnt weder ein VERBINDEN unter 4.8V
 ab, noch setzt er die Spannung eines Power-Cycle, und die Grenzen der
 Ansicht SUPPLY begrenzen nur die Servoschienen, kein VERBINDEN. Sind die
@@ -303,11 +304,32 @@ der Page SUPPLY für einen Port:
   nicht gelesen wurden oder ein Port eines Programmers sie hält, so wie sie
   auf den Ausgang des PD mini warten (`prog_supply_link_live()`).
 
+##### Das Feld PROG 5V
+
+Das Feld PROG 5V auf SERVO und SUPPLY schaltet die 5V von Hand: PROG 5V
+EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp. Das Panel beurteilt das ON,
+wie es AUSGANG EIN des PD mini beurteilt:
+
+- Es gilt bei SAFE und bei ARMED; ein Wechsel nach ARMED wird nicht verlangt.
+- Es verfällt, wenn nach dem vollendeten Halten ein STOP, ein AUS oder ein
+  Touch-Verlust kam, und solange ein Port die 5V hält.
+- Es wird einmal als OUTPUT 1 geschrieben und nicht wiederholt. Der IOmcu
+  lehnt es ohne lebenden Heartbeat ab (NOT_ARMED) und solange ein Port die
+  5V hält (BAD_VALUE); beides und keine Antwort melden eine Warnung
+  ([Carrier, Versorgung](Carrier-de.md#versorgung)).
+- Ein ON über verlorene Touch-Ereignisse hinweg ist ein Fehler: SAFE, die
+  5V aus.
+- Ein Fehler, PROG 5V AUS und das Verlassen der Ansicht, deren Feld sie
+  eingeschaltet hat, schreiben OFF. Ein Fehler verwirft ein noch nicht
+  geschriebenes ON.
+- Solange ein Port die 5V hält, nimmt das Feld keinen Druck an.
+
 SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,
 `AUS` oder `UNBEKANNT`, wenn das letzte Lesen ohne Antwort blieb. Der
 Kern ist `shared/outputs/prog_supply.c` unter `test_prog_supply`; das Ende
 des Panels ist `shared/bench/prog_supply_link.c` unter
-`test_prog_supply_link`.
+`test_prog_supply_link`, das Feld `shared/ui/prog5v_box.c` unter
+`test_prog5v_box`.
 
 Aktuelle Einschränkungen:
 

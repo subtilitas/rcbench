@@ -24,9 +24,9 @@ static atomic_uint s_state = ATOMIC_VAR_INIT((unsigned)PROG5V_HELD_NONE);
 /** @brief bit 31 a reading, mV in bits 16 to 30, mA as int16 in 0 to 15. */
 static atomic_uint s_read;
 
-/** @brief What the boxes asked and not yet polled, and who switched the
- *         supply on.  app_main only. */
+/** @brief What the boxes asked and not yet polled.  app_main only. */
 static prog5v_cmd_t s_cmd;
+/** @brief The screen whose box switched the supply on.  app_main only. */
 static prog5v_by_t  s_owner;
 
 void prog5v_box_publish(uint8_t state, uint8_t pin, uint8_t held_port)
@@ -136,11 +136,11 @@ void prog5v_box_release(prog5v_box_t *b, int x, int y, bool tap)
     if (b == NULL || !b->pressed) {
         return;
     }
-    const bool fired = ui_hold_end(&b->hold);
+    (void)ui_hold_end(&b->hold);
     /* Off is a tap; on is a hold that has sent its command by the time the
-     * finger lifts.  Which one is the press's: an ON reported during a
-     * hold does not make its release an OFF. */
-    if (tap && b->press_on && prog5v_box_on() && !fired
+     * finger lifts.  Which one is the press's (press_on): an ON reported
+     * during a hold does not make its release an OFF. */
+    if (tap && b->press_on && prog5v_box_on()
         && held() == PROG5V_HELD_NONE
         && gfx_rect_contains(prog5v_box_button(b), x, y)) {
         post(false, b->by);

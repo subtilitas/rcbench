@@ -374,7 +374,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,144 | 3,008 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,160 | 2,992 |
 | `control` | `control_task` | 6,144 | 3,360 | 1,744 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |

@@ -43,7 +43,7 @@ history is in git.
   on a board that switches one, the rbmod carrier's GPIO 21 and its 5V buck
   M7. A port gets it only after the panel's write of register 4 (PANEL)
   since the heartbeat last went, so a panel before 4.32 never powers it. The KST and Hitec programmers switch it for a session in place of the
-  PD mini; the panel has no key for it. Every error writes its OFF, held
+  PD mini. Every error writes its OFF, held
   for a write to the servo's memory 10000ms at most; a lost heartbeat or a
   silent link switches it off. SUPPLY shows `PROG PORTS 5V, GPIO 21: ON` or
   `OFF` under OUTPUT, and the programmers' MORE list reads
@@ -54,6 +54,17 @@ history is in git.
   and the Wi-Fi wait for the ports' 5V as for the PD mini's output, and
   the render-loop watchdog watches while it is live
   ([Safety, The carrier's programming-port 5V](docs/Safety.md#the-carriers-programming-port-5v)).
+- The PROG 5V box on SERVO's output card and SUPPLY's LIVE task, on a
+  board that switches the programming ports' own 5V (the rbmod carrier's
+  GPIO 21): `PROG PORTS 5V, GPIO 21: OFF`, the last 50ms window of the
+  INA3221 channel watching it (`5.02V  0.120A`), and PROG 5V ON (a 2s
+  hold) and PROG 5V OFF (a tap). An ON follows the PD mini's OUTPUT ON
+  rules: taken SAFE or ARMED, dropped after a STOP, an OFF or a touch loss
+  since the hold, refused while a programming port holds the 5V, written
+  once as PROG_SUPPLY OUTPUT 1; an ON taken across lost touch events is an
+  error. While a port holds the 5V the box reads `HELD BY PROG PORT n` and
+  takes no press. Leaving the screen whose box switched it on switches it
+  off ([Safety, The PROG 5V box](docs/Safety.md#the-prog-5v-box)).
 - Link 4.33: SENSE_MAP takes the WATCH values of a board's own rails, 0x30
   servo rail A, 0x31 servo rail B and 0x32 the programming ports' 5V. On
   the rbmod carrier the INA3221 at 0x40 is fixed as the board solders it:

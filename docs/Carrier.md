@@ -71,8 +71,23 @@ programming ports' voltage: their MORE list reads
 `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` and offers no voltage or current.
 
 The KST and Hitec programmers switch GPIO 21 on and off for a session,
-through the PROG_SUPPLY page (link 4.32). The panel has no key for it.
-SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON` or `OFF`.
+through the PROG_SUPPLY page (link 4.32). The PROG 5V box on SERVO's
+output card and on SUPPLY's LIVE task switches it by hand: PROG 5V ON is a
+2s hold, PROG 5V OFF a tap, taken with the bench SAFE or ARMED, as the PD
+mini's OUTPUT ON is. The box names the pin, `PROG PORTS 5V, GPIO 21: OFF`,
+and shows the last 50ms window of 0x40 CH3, `5.02V  0.120A`
+([The current monitor](#the-current-monitor)). While a programmer's
+session holds the 5V the box takes no press and reads
+`HELD BY PROG PORT n`. SUPPLY also shows the state under OUTPUT:
+`PROG PORTS 5V, GPIO 21: ON` or `OFF`.
+
+| An ON that does not take | Alert |
+| --- | --- |
+| no live heartbeat (NOT_ARMED) | `PROG ports 5V not switched on: the IOmcu has no heartbeat.` |
+| a port holds the 5V (BAD_VALUE) | `PROG ports 5V not switched on: a programming port holds it.` |
+| no answer | `PROG ports 5V ON not answered. Check the link.` |
+| taken across lost touch events; the bench goes SAFE | `Touch signal lost while switching on. PROG ports 5V off.` |
+| a press while a port holds the 5V or the page reads NOT READ | `PROG ports 5V: held by a programming port, or not read.` |
 Every error, a lost heartbeat and a silent link switch it off; a write to
 the servo's memory keeps it on until the write ends, 10000ms at most
 ([Safety, The carrier's programming-port 5V](Safety.md#the-carriers-programming-port-5v)).
@@ -82,6 +97,10 @@ the IOmcu does not drive GPIO 21 (in reset, in BOOTSEL, unpowered), the
 pull-down on EN holds M7 off.
 
 ![SUPPLY on the carrier](img/supply-rbmod.png)
+
+![SERVO on the carrier, the PROG 5V box under PD MINI](img/servo-rbmod.png)
+
+![The KST programmer holding the 5V](img/servo-kst-rbmod.png)
 
 ## The current monitor
 
