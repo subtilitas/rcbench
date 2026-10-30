@@ -3382,9 +3382,12 @@ both panes are read again after one that went through.
 | MOVE | the selected entry into the other pane's folder under its name; a folder only when it is empty |
 | DELETE | asks `DELETE FROM CARD` with the name, `This deletes the file from the card.` or `This deletes the empty folder from the card.`, the report a run log takes along, and `This cannot be undone.`; a folder only when it is empty |
 
-A name typed or uploaded follows the panel's keyboard: 1 to 59 bytes;
-letters, digits, the German letters, space and marks but
-`" * / : < > ? \ |`; no full stop or space at either end. A write button is
+A name typed or uploaded follows the panel's keyboard without the German
+letters: 1 to 59 bytes of ASCII (American Standard Code for Information
+Interchange); letters, digits, space and marks but `" * / : < > ? \ |`;
+no full stop or space at either end. An entry whose path holds a
+character outside ASCII, the German letters included, is renamed, moved
+and deleted on FILES only. A write button is
 dimmed while the panel takes no write (the setting, the hold, ARMED, a
 run), with nothing selected, on a folder of the bench, on the servo
 programmers' records and on a file the logger writes; a tap on it says
@@ -3512,10 +3515,11 @@ A new name follows the panel's keyboard: 1 to 59 bytes, none of
 one ETag as `/api/file` gives it; a weak one (`W/`) or a
 list is 400 `REQUEST`. Every path of a write names each entry one way
 only: a name with a space at the start, a space or a full stop at the
-end, `\`, `:`, a control byte, or `~` followed by a digit (an 8.3 short
-name such as `LOG000~1.BFL`) is 400 `NAME`, since FatFs would read it as
-another entry. Case is not refused: the rules compare names with case
-folded, as FatFs does.
+end, `\`, `:`, a control byte, `~` followed by a digit (an 8.3 short
+name such as `LOG000~1.BFL`) or any character outside ASCII is 400
+`NAME`, since FatFs would read it as another entry: it folds the case of
+all of Unicode, so `ſ` (U+017F) is `S` to it. ASCII case is not refused:
+the rules compare names with it folded, as FatFs does.
 
 A refusal is an HTTP status and `{"error":"WORD","text":"..."}`, the text
 in the panel's language:

@@ -3737,10 +3737,13 @@ gelesen.
 | VERSCHIEBEN | der gewählte Eintrag in den Ordner der anderen Spalte, unter seinem Namen; ein Ordner nur, wenn er leer ist |
 | LÖSCHEN | fragt `VON DER KARTE LÖSCHEN` mit dem Namen, ob es die Datei oder den leeren Ordner löscht, den Bericht, den ein Lauf-Log mitnimmt, und dass es sich nicht rückgängig machen lässt; ein Ordner nur, wenn er leer ist |
 
-Ein getippter oder hochgeladener Name folgt der Tastatur des Panels: 1 bis
-59 Bytes; Buchstaben, Ziffern, die deutschen Buchstaben, Leerzeichen und
+Ein getippter oder hochgeladener Name folgt der Tastatur des Panels ohne
+die deutschen Buchstaben: 1 bis 59 Bytes ASCII (American Standard Code
+for Information Interchange); Buchstaben, Ziffern, Leerzeichen und
 Zeichen außer `" * / : < > ? \ |`; kein Punkt und kein Leerzeichen an
-einem Ende. Eine Schreibtaste ist gedimmt, solange das Panel keinen
+einem Ende. Ein Eintrag, dessen Pfad ein Zeichen außerhalb von ASCII
+enthält, die deutschen Buchstaben eingeschlossen, wird nur auf FILES
+umbenannt, verschoben und gelöscht. Eine Schreibtaste ist gedimmt, solange das Panel keinen
 Schreibzugriff annimmt (die Einstellung, das Halten, ARMED, ein Lauf),
 ohne Auswahl, auf einem Ordner des Prüfstands, auf den Vermerken der
 Servoprogrammierung und auf einer Datei, die der Logger schreibt; ein Tipp
@@ -3884,10 +3887,12 @@ Ein neuer Name folgt der Tastatur des Panels: 1 bis 59 Bytes, keines von
 (`W/`) oder eine Liste ist 400 `REQUEST`. Jeder Pfad eines
 Schreibzugriffs nennt jeden Eintrag nur auf eine Weise: ein Name mit
 Leerzeichen am Anfang, Leerzeichen oder Punkt am Ende, `\`, `:`, einem
-Steuerbyte oder `~` vor einer Ziffer (ein 8.3-Kurzname wie
-`LOG000~1.BFL`) ist 400 `NAME`, weil FatFs ihn als anderen Eintrag läse.
-Groß- und Kleinschreibung wird nicht abgelehnt: Die Regeln vergleichen
-Namen ohne sie, wie FatFs.
+Steuerbyte, `~` vor einer Ziffer (ein 8.3-Kurzname wie
+`LOG000~1.BFL`) oder einem Zeichen außerhalb von ASCII ist 400 `NAME`,
+weil FatFs ihn als anderen Eintrag läse: Es faltet die Schreibung von
+ganz Unicode, `ſ` (U+017F) ist für FatFs `S`. Groß- und Kleinschreibung
+in ASCII wird nicht abgelehnt: Die Regeln vergleichen Namen ohne sie, wie
+FatFs.
 
 Eine Ablehnung ist ein HTTP-Status und `{"error":"WORT","text":"..."}`, der
 Text in der Sprache des Panels:

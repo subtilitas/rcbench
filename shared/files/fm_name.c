@@ -177,7 +177,7 @@ static bool plain_name(const char *s, size_t n)
     }
     for (size_t i = 0u; i < n; ++i) {
         const unsigned char c = (unsigned char)s[i];
-        if (c < 0x20u || c == 0x7Fu || strchr("\"*:<>?\\|", c) != NULL) {
+        if (c < 0x20u || c >= 0x7Fu || strchr("\"*:<>?\\|", c) != NULL) {
             return false;
         }
         if (c == '~' && i + 1u < n && s[i + 1u] >= '0' && s[i + 1u] <= '9') {

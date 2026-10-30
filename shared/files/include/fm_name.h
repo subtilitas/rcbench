@@ -115,11 +115,15 @@ fm_path_t fm_path_check(const char *path);
  * a name, takes "\" as a separator and "N:" as a drive, and finds an
  * entry by its 8.3 short name as well (such as "LOG000~1.BFL"), so a path
  * the rules (fm_rules.h) judge by its names could reach another entry.
- * Refused: a name with a space at the start, a space or a full stop at the
- * end, a byte below 0x20 or 0x7F, one of  " * : < > ? \ |, or a "~"
- * followed by a digit.  "." and "..", empty names and "/" at an end are
- * fm_path_check()'s.  Case is not an alias here: the rules fold it as
- * FatFs does.
+ * With UTF-8 names (CONFIG_FATFS_API_ENCODING_UTF_8) FatFs compares long
+ * names after ff_wtoupper(), which folds the whole of Unicode: U+017F
+ * LONG S is "S" and U+0131 DOTLESS I is "I" to it, where the rules fold
+ * ASCII and the German letters only.  Refused: a name with a space at the
+ * start, a space or a full stop at the end, a byte below 0x20, 0x7F or any
+ * byte above 0x7F (every character outside ASCII), one of
+ * " * : < > ? \ |, or a "~" followed by a digit.  "." and "..", empty
+ * names and "/" at an end are fm_path_check()'s.  ASCII case is not an
+ * alias here: the rules fold it as FatFs does.
  *
  * @param path A path fm_path_check() takes; NULL is refused.
  * @return true when no name in it is an alias

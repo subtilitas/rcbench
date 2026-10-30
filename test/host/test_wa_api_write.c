@@ -160,14 +160,14 @@ TEST_CASE(put_makes_a_new_file_and_answers_its_etag)
 {
     fresh();
     fk_dir(&g_card, CARD_USER_LOGS);
-    CHECK_EQ(put_s("path=USER/LOGS/N%C3%84.TXT", NULL, "*", "a\r\nb\n"),
+    CHECK_EQ(put_s("path=USER/LOGS/N%201.TXT", NULL, "*", "a\r\nb\n"),
              WA_API_OK);
-    CHECK(holds("USER/LOGS/N\xc3\x84.TXT", "a\r\nb\n"));
+    CHECK(holds("USER/LOGS/N 1.TXT", "a\r\nb\n"));
     CHECK(g_api.created);
     CHECK_STR_EQ(wa_api_write_status(&g_api), "201 Created");
     char want[96];
     (void)snprintf(want, sizeof(want),
-                   "{\"path\":\"USER/LOGS/N\xc3\x84.TXT\",\"created\":true,"
+                   "{\"path\":\"USER/LOGS/N 1.TXT\",\"created\":true,"
                    "\"etag\":\"%08" PRIx32 "\",\"note\":\"\"}",
                    wa_crc32(0u, "a\r\nb\n", 5u));
     CHECK_STR_EQ(answer(), want);
@@ -177,7 +177,7 @@ TEST_CASE(put_makes_a_new_file_and_answers_its_etag)
     (void)snprintf(want, sizeof(want), "\"%08" PRIx32 "\"",
                    wa_crc32(0u, "a\r\nb\n", 5u));
     CHECK_STR_EQ(tag, want);
-    CHECK(fk_get(&g_card, "USER/LOGS/N\xc3\x84.TXT.NEW") == NULL);
+    CHECK(fk_get(&g_card, "USER/LOGS/N 1.TXT.NEW") == NULL);
     CHECK(clean());
     /* An empty file: made, its ETag the CRC of nothing. */
     CHECK_EQ(put_s("path=EMPTY.TXT", NULL, "*", ""), WA_API_OK);
@@ -218,6 +218,9 @@ TEST_CASE(a_path_alias_is_refused_by_every_write)
         "BENCH/./KST/CONF/KST.TXT",  "BENCH/KST/../KST/CONF/KST.TXT",
         "BENCH//KST/CONF/KST.TXT",   "BENCH/KST/CONF/KST.TXT/",
         "/BENCH/KST/CONF/KST.TXT",
+        /* FatFs folds U+017F LONG S to "S", U+0131 DOTLESS I to "I". */
+        "BENCH/K%C5%BFT/CONF/KST.TXT", "BENCH/KST/CONF/K%C5%BFT.TXT",
+        "BENCH/H%C4%B1TEC/X.TXT",      "BENCH/KST/CONF/N%C3%84.TXT",
     };
     const long writes = g_card.calls[FK_WRITE];
     for (size_t i = 0u; i < sizeof(alias) / sizeof(alias[0]); ++i) {

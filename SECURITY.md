@@ -42,7 +42,8 @@ HOLD (a 2s hold on the panel once a radio session) or OFF. With OPEN and
 the code off, any device on the network can make, replace, rename and
 delete files on the card. No setting lets a write touch the bench's
 folders, the servo programmers' records, the files the logger writes or a
-name FatFs would read as another entry (`fm_path_plain()`), and every write
+name FatFs would read as another entry (`fm_path_plain()`: no character
+outside ASCII, since FatFs folds the case of all of Unicode), and every write
 stops at the bench's switch to ARMED.
 
 The second is the panel's own requests to GitHub over HTTPS (HTTP over TLS,
