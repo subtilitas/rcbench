@@ -56,6 +56,7 @@ docs/Link-de.md | none | F23: the optional firmware update page is not split now
 docs/Servo.md | none | F23: the optional automatic test page is not split now
 docs/Servo-de.md | none | F23: the optional automatic test page is not split now
 docs/ServoProgrammer.md | none | one page, left whole by the plan
+STATUS.md | none | the project's status page: one row per feature, the host suite's list and the coverage table with one row per tracked file; split, the record would be two pages to read at the start
 docs/ServoProgrammer-de.md | none | one page, left whole by the plan
 
 # Tests: one suite per module, with no cut that lands both halves under
