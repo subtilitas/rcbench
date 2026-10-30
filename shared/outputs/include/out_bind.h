@@ -152,6 +152,26 @@ typedef struct {
     uint8_t     gpio[2];  /**< its pins, OUTBIND_NO_GPIO for none          */
 } outbind_other_t;
 
+/** @brief The channels of an INA3221 part. */
+#define OUTBIND_INA_CHANNELS 3u
+
+/**
+ * @brief The INA3221 a board with soldered pins carries on its sensor bus,
+ *        and what each of its channels measures.
+ *
+ * On such a board the part is fitted and each channel watches its rail
+ * whatever the settings say: the IOmcu refuses a SENSE_MAP write that
+ * changes either (board_fix.h), and the panel shows the rows without keys.
+ */
+typedef struct {
+    bool     on;                            /**< the board carries one    */
+    uint8_t  part;                          /**< 0 to 3: at 0x40 + part   */
+    uint8_t  watch[OUTBIND_INA_CHANNELS];   /**< CHn+1's LINK_SM_WATCH_*  */
+    /** @brief CHn+1's rail: the GPIOs of the positions it feeds, bit g
+     *         for GPIO g. */
+    uint32_t feeds[OUTBIND_INA_CHANNELS];
+} outbind_ina_t;
+
 /**
  * @brief The pin of every role on a board whose pins are soldered.
  *
@@ -172,6 +192,7 @@ typedef struct {
     uint8_t tap;          /**< the phase tap                                */
     uint8_t prog_5v_en;   /**< enable of the programming ports' 5V DC-DC    */
     uint8_t heartbeat;    /**< the safety heartbeat from the panel          */
+    outbind_ina_t ina;    /**< the INA3221 it solders, if any               */
     const outbind_conn_t  *conns;      /**< the signal connectors          */
     uint8_t                conn_count; /**< entries in `conns`             */
     const outbind_other_t *others;     /**< the other connectors and nets  */

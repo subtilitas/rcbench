@@ -35,6 +35,15 @@ static bool target_name(uint16_t w, char *out, size_t n)
         snprintf(out, n, "supply");
         return true;
     }
+    if (w == LINK_SM_WATCH_RAIL_A || w == LINK_SM_WATCH_RAIL_B) {
+        snprintf(out, n, "rail %c",
+                 (w == LINK_SM_WATCH_RAIL_A) ? 'a' : 'b');
+        return true;
+    }
+    if (w == LINK_SM_WATCH_PROG_5V) {
+        snprintf(out, n, "prog 5v");
+        return true;
+    }
     return false;
 }
 

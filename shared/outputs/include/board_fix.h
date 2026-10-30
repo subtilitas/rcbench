@@ -19,6 +19,10 @@
  *   SENSE              SDA and SCL are roles.sda and roles.scl.
  *   TONE               PIN is roles.tap.
  *   SUPPLY             TX and RX are roles.pd_tx and roles.pd_rx.
+ *   SENSE_MAP          with roles.ina on, the part at 0x40 + roles.ina.part
+ *                      is fitted and its three channels' WATCH are
+ *                      roles.ina.watch (board_fix_map_ok()); shunts, FAST
+ *                      and the other parts stay the page's.
  *
  * With @p r NULL -- a board whose pins are chosen -- every function here
  * accepts everything and changes nothing.
@@ -39,6 +43,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @brief The shunt board_fix_store() gives each channel of the board's
+ *         INA3221 when all three are 0: 100.0mOhm in 0.1mOhm, SETUP >
+ *         SENSORS' default. */
+#define BOARD_FIX_INA_DMOHM 1000u
 
 /** @brief The kept function word with every port on FUNC NONE
  *         (prog_port_kept_func()). */
@@ -70,12 +79,24 @@ int board_fix_out_index(const outbind_roles_t *r, unsigned gpio);
 bool board_fix_slots_ok(const outbind_roles_t *r, const uint16_t *slots);
 
 /**
+ * @brief Whether a whole SENSE_MAP keeps the board's INA3221 as the board
+ *        solders it.
+ *
+ * @param r    The board's roles, or NULL for a board whose pins are chosen.
+ * @param map  LINK_SM_KEPT registers: the map as the write would leave it.
+ * @return     true when @p r is NULL or carries no INA3221, or when ENABLE
+ *             fits its part and each of its channels' WATCH is the role's;
+ *             false otherwise, and for @p map NULL with an INA3221 in @p r.
+ */
+bool board_fix_map_ok(const outbind_roles_t *r, const uint16_t *map);
+
+/**
  * @brief Whether a write of @p n registers from @p off to @p page keeps every
  *        role on its pin.
  *
- * Judges the registers the write carries and no other.  The OUTPUTS and
- * BIND_OUT pages are judged whole by board_fix_slots_ok() instead, and are
- * accepted here.
+ * Judges the registers the write carries and no other.  The OUTPUTS,
+ * BIND_OUT and SENSE_MAP pages are judged whole by board_fix_slots_ok() and
+ * board_fix_map_ok() instead, and are accepted here.
  *
  * @param r     The board's roles, or NULL.
  * @param page  A link_page_t number.
@@ -97,7 +118,10 @@ bool board_fix_write_ok(const outbind_roles_t *r, uint8_t page, uint8_t off,
  * output is cleared: driver, pin, range and rate 0.  The supply's TX and
  * RX, the sensor bus's SDA and SCL, the tap's pin and each programming
  * port's pin are set to the role's pin; every port's function to NONE.
- * Enables, addresses, ranges, rates and endpoints stay as kept.
+ * With roles.ina on, the kept SENSE_MAP fits the part and holds its
+ * channels' WATCH, and is in force (sense_map_set 1); a part whose three
+ * shunts are 0 gets BOARD_FIX_INA_DMOHM on each.  Other enables,
+ * addresses, ranges, rates, shunts and endpoints stay as kept.
  *
  * @param r    The board's roles, or NULL: then nothing changes.
  * @param cfg  The configuration, from out_store_cfg_read() or

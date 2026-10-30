@@ -94,8 +94,17 @@ const char *sensors_rows_why(setting_id_t id);
 const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
                                unsigned ch, uint16_t ma, int watch);
 
-/** Channel @p c (0 to 11) as the screens name it, "0x41 CH2", into @p buf;
- *  "" for no channel. */
+/**
+ * @brief Channel @p c as the screens name it.
+ *
+ * "0x41 CH2"; a channel that watches a board's rail by the rail's name,
+ * "RAIL B" (the rbmod carrier's INA3221), in the language showing.
+ *
+ * @param c   the channel, 0 to 11.
+ * @param buf where the name goes.
+ * @param n   the size of @p buf, bytes.
+ * @return @p buf; "" for no channel or no buffer.
+ */
 const char *sensors_rows_channel(int c, char *buf, size_t n);
 
 /** The same over SERVO's plot and on the TEST card: "INA 0x41 CH2", or
@@ -111,8 +120,22 @@ const char *sensors_rows_meter(char *buf, size_t n);
  *  page code @p code (LINK_SM_WATCH_*), 0 to 11; -1 for none. */
 int sensors_rows_watcher(uint16_t code);
 
-/** Each programming port's WATCHED BY line on OUTPUTS, from the settings
- *  as they stand (outputs_screen_set_port_watch()). */
+/**
+ * @brief Programming port @p port's WATCHED BY label: "INA3221 0x41 CH2"
+ *        for the channel watching PORT n, else "INA3221 PROG 5V" for the
+ *        one watching the ports' 5V (the rbmod carrier's CH3).
+ *
+ * @param port the port, 0 to 3.
+ * @param buf  where the label goes.
+ * @param n    the size of @p buf, bytes.
+ * @return @p buf; "" while no channel watches the port, for a port past 3
+ *         and for no buffer.
+ */
+const char *sensors_rows_port_watch(unsigned port, char *buf, size_t n);
+
+/** @brief Each programming port's WATCHED BY line on OUTPUTS, from the
+ *         settings as they stand (outputs_screen_set_port_watch(),
+ *         sensors_rows_port_watch()). */
 void sensors_rows_publish_watch(void);
 
 #ifdef __cplusplus

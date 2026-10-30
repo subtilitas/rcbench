@@ -18,6 +18,10 @@
  *   PDMINI TX / RX       GP7 / GP6
  *   TAP                  GP22
  *   PROGP_5V_EN          GP21, the enable of the programming ports' 5V
+ *   INA3221 M5           0x40 on the sensor bus: CH1 VCC_PDMINI to
+ *                        VCC_SERVOPORT_B (PWM03, PWM02), CH2 VCC_PDMINI to
+ *                        VCC_SERVOPORT_A (PWM01, PWM04), CH3
+ *                        VCC_PROGPORT_DCDC to VCC_PROGPORT (J1)
  *   HEARTBEAT            GP3
  *   CAN                  GP8 to GP12
  *   unused               GP20, GP26, GP27, GP28
@@ -32,6 +36,8 @@
 #include "out_board_rbmod.h"
 
 #include <stddef.h>
+
+#include "link_pages.h"
 
 const outbind_pin_t outbind_rbmod_pins[OUTBIND_RBMOD_PIN_COUNT] = {
     {  0,  1, false, NULL },             /* PROGP04 */
@@ -97,6 +103,14 @@ const outbind_roles_t outbind_rbmod_roles = {
     .tap        = 22u,
     .prog_5v_en = 21u,
     .heartbeat  = 3u,
+    .ina        = {
+        .on    = true,
+        .part  = 0u,
+        .watch = { (uint8_t)LINK_SM_WATCH_RAIL_B, (uint8_t)LINK_SM_WATCH_RAIL_A,
+                   (uint8_t)LINK_SM_WATCH_PROG_5V },
+        .feeds = { (1u << 5) | (1u << 4), (1u << 2) | (1u << 1),
+                   (1u << 0) | (1u << 13) | (1u << 14) | (1u << 15) },
+    },
     .conns       = k_conns,
     .conn_count  = (uint8_t)(sizeof(k_conns) / sizeof(k_conns[0])),
     .others      = k_others,

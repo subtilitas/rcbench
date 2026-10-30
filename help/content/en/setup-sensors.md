@@ -29,6 +29,24 @@ Each fitted part has a heading, `INA3221 0x40` to `INA3221 0x43`, and three rows
 - The channel read every millisecond, whose current the [SERVO](servo.md#the-servo-rail-s-meter) screen and the servo test use, is the lowest channel with a shunt on a fitted part that watches the servo tester's target: an output while the target is OUTPUTS, PORT n while it is programming port n.
 - The panel writes the set-up 500ms after the last edit, only while the bench is SAFE. The limits go 500ms after their last edit in any state, to an IOmcu of 0.22.0 or later.
 
+## On the rbmod carrier
+
+![SENSORS on the carrier, 0x40 soldered](view:setup-sensors-rbmod)
+
+The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders an INA3221 at 0x40. Its rows are drawn without keys and say `Soldered on this board. Not a setting here.`:
+
+| Row | Reads | Shunt between |
+|---|---|---|
+| 0x40 fitted | ON | |
+| 0x40 CH1 watches | SERVO RAIL B | the PD mini and servo rail B: PWM03, PWM02 |
+| 0x40 CH2 watches | SERVO RAIL A | the PD mini and servo rail A: PWM01, PWM04 |
+| 0x40 CH3 watches | PROG PORTS 5V | the 5V of GPIO 21 and the programming ports |
+
+- The shunts and the limits stay settings, with the ranges above.
+- 0x41 to 0x43 are free for parts on the sensor bus's connector J5.
+- The channel read every millisecond is the rail of the lowest GPIO the servo tester drives as SERVO PWM: CH2 for PWM01 (GPIO 2) or PWM04 (GPIO 1), CH1 for PWM02 (GPIO 4) or PWM03 (GPIO 5). With a programming port as the target it is CH3.
+- SERVO names the meter by its rail, `INA RAIL A`; a limit line reads `INA3221 0x40 CH2 (SERVO RAIL A) over its 0.80A limit.`.
+
 ## Limits
 
 ![A limit on an IOmcu older than 0.22.0](view:setup-sensors-limit)

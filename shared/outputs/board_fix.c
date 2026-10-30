@@ -48,6 +48,26 @@ bool board_fix_slots_ok(const outbind_roles_t *r, const uint16_t *slots)
     return true;
 }
 
+bool board_fix_map_ok(const outbind_roles_t *r, const uint16_t *map)
+{
+    if (r == NULL || !r->ina.on) {
+        return true;
+    }
+    if (map == NULL) {
+        return false;
+    }
+    if ((map[LINK_SM_ENABLE] & (1u << r->ina.part)) == 0u) {
+        return false;
+    }
+    for (unsigned k = 0; k < OUTBIND_INA_CHANNELS; ++k) {
+        if (map[LINK_SM_WATCH(OUTBIND_INA_CHANNELS * r->ina.part + k)]
+            != r->ina.watch[k]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /**
  * @brief The pin register @p reg of @p page must hold on this board.
  *
@@ -134,4 +154,18 @@ void board_fix_store(const outbind_roles_t *r, out_store_t *cfg)
         cfg->prog[(size_t)port * PROG_PORT_KEPT] = r->prog[port];
     }
     cfg->prog_func = BOARD_FIX_PROG_FUNC_NONE;
+    if (r->ina.on) {
+        uint16_t *map = cfg->sense_map;
+        const unsigned c0 = OUTBIND_INA_CHANNELS * r->ina.part;
+        map[LINK_SM_ENABLE] |= (uint16_t)(1u << r->ina.part);
+        bool dark = true;
+        for (unsigned k = 0; k < OUTBIND_INA_CHANNELS; ++k) {
+            map[LINK_SM_WATCH(c0 + k)] = r->ina.watch[k];
+            dark = dark && map[LINK_SM_SHUNT(c0 + k)] == 0u;
+        }
+        for (unsigned k = 0; dark && k < OUTBIND_INA_CHANNELS; ++k) {
+            map[LINK_SM_SHUNT(c0 + k)] = (uint16_t)BOARD_FIX_INA_DMOHM;
+        }
+        cfg->sense_map_set = 1u;
+    }
 }
