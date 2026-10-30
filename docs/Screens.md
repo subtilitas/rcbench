@@ -3233,16 +3233,12 @@ Current limitations:
   in plain form.
 - The browser's editor saves a file with mixed line ends with LF ends;
   FILES' editor on the panel keeps them.
-- With Browser writes ACCESS CODE and ACCESS CODE off, the editor's SAVE
-  shows `Writes need the access code the panel's WI-FI screen shows.`
-  and opens no code box. The code box of the write buttons loads the page
-  again, and the editor's text goes after the browser's own question.
 - The panel joins only while this screen is open. A panel that stays joined
   whenever the bench is SAFE is not built.
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
   688-757kB/s. The cause is not measured. The page with the file manager
-  is 58,142 bytes in English on an empty card and has no card listing;
+  is 59,770 bytes in English on an empty card and has no card listing;
   its time is not measured.
 
 ### The access code
@@ -3470,8 +3466,12 @@ refused 412 `CHANGED`. The header then shows
 UNSAVED CHANGES asks
 `<name> changed on the card since it was read. READ AGAIN drops these changes.`
 with STAY and READ AGAIN. STAY keeps the text; READ AGAIN drops it,
-reads the file from the card again and shows it. Any other refusal shows its text
-in the header, and the text stays. While a SAVE runs the text does not
+reads the file from the card again and shows it. With Browser writes ACCESS CODE and
+no code given yet, SAVE asks for the code in the editor's box: SEND CODE
+sends it to `/code` without leaving the page, the panel's answer sets the
+cookie, and SAVE goes out again with the text as it stands; a wrong code
+says `Wrong code.` and asks again. Any other refusal shows its text in the
+header, and the text stays. While a SAVE runs the text does not
 change, and CLOSE waits for it.
 
 CLOSE, or Escape, while the text differs from the file asks UNSAVED

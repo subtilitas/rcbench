@@ -204,6 +204,18 @@ async function saves() {
   }
 }
 
+// ------------------------------------------------- the access code's answer
+
+{
+  const a = r => RcbEd.codeAnswer(r);
+  check(a({ type: 'opaqueredirect', status: 0 }) === 'OK', 'code: 303 not OK');
+  check(a({ type: 'basic', status: 303 }) === 'OK', 'code: 303 status not OK');
+  check(a({ type: 'basic', status: 200, redirected: true }) === 'OK',
+    'code: followed redirect not OK');
+  check(a({ type: 'basic', status: 200 }) === 'WRONG', 'code: page not WRONG');
+  check(a({ type: 'basic', status: 503 }) === 'CLOSED', 'code: 503 not CLOSED');
+}
+
 // ---------------------------------------------------- the unsaved question
 
 {

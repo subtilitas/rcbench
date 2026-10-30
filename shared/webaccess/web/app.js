@@ -873,6 +873,7 @@ if (typeof document !== 'undefined' && document.getElementById('fm')) {
     if (typeof RcbEd !== 'undefined') {
       editor = RcbEd.attach({ F: F, TX: TX, st: st, ui: ui, el: el,
         button: button, hl: HL, cls: D.hl.cls, wr: writes, rescan: rescan,
+        queue: queue,
         view: function () {
           return view;
         },

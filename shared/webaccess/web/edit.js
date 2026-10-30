@@ -37,6 +37,11 @@
 // STAY or DISCARD), and leaving or reloading the page asks through the
 // browser's own question.
 //
+// A SAVE refused WRITES_CODE (Browser writes ACCESS CODE, no code given
+// yet) asks for the code in the editor's box and sends it to /code itself,
+// without leaving the page: the panel's answer sets the cookie, and SAVE
+// goes out again with the text as it stands.
+//
 // SPDX-License-Identifier: MIT
 
 var RcbEd = (function () {
@@ -203,6 +208,17 @@ var RcbEd = (function () {
       at = nl + 1;
     }
     return { text: out.join(''), cut: cut };
+  }
+
+  // The answer of POST /code with the redirect not followed: 'OK' for the
+  // panel's 303 to the page (the cookie set), 'WRONG' for the page again
+  // with its wrong-code line, else 'CLOSED'.
+  function codeAnswer(r) {
+    if (r.type === 'opaqueredirect' || r.redirected ||
+        (r.status >= 300 && r.status < 400)) {
+      return 'OK';
+    }
+    return r.status === 200 ? 'WRONG' : 'CLOSED';
   }
 
   function dirty(ed, text) {
@@ -423,6 +439,9 @@ var RcbEd = (function () {
     }
 
     function ask(changed) {
+      x.qtitle.textContent = TX.unsaved;
+      x.codeIn.hidden = true;
+      x.stay.textContent = TX.stay;
       x.qtext.textContent = F.fmt(changed ? TX.qchanged : TX.qleave,
         ed.name);
       x.go.textContent = changed ? TX.readagain : TX.discard;
@@ -461,10 +480,58 @@ var RcbEd = (function () {
       } else if (res.r === 'CHANGED') {
         note(res.a ? res.a.j.text : TX['e.CHANGED'], true);
         ask(true);
+      } else if (res.a.j.error === 'WRITES_CODE' && c.queue) {
+        note(res.a.j.text, true);
+        askCode(res.a.j.text);
       } else {
         note(res.a.j.text, true);
       }
       head();
+    }
+
+    // The access code asked in the box; SEND CODE posts it to /code and,
+    // taken, saves again.
+    function askCode(text) {
+      x.qtitle.textContent = TX.code;
+      x.qtext.textContent = text;
+      x.codeIn.hidden = false;
+      x.codeIn.value = '';
+      x.stay.textContent = TX.cancel;
+      x.go.textContent = TX.codego;
+      x.goFn = sendCode;
+      x.box.hidden = false;
+      x.codeIn.focus();
+    }
+
+    function sendCode() {
+      var v = x.codeIn.value;
+      if (v === '') {
+        return;
+      }
+      x.go.disabled = true;
+      c.queue(function () {
+        return fetch('/code', { method: 'POST', credentials: 'same-origin',
+          redirect: 'manual', cache: 'no-store',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'code=' + encodeURIComponent(v) })
+          .then(function (r) {
+            return { ok: true, w: codeAnswer(r) };
+          }, function () {
+            return { ok: false, w: 'CLOSED' };
+          });
+      }).then(function (a) {
+        x.go.disabled = false;
+        if (a.w === 'OK') {
+          stay();
+          save();
+        } else if (a.w === 'WRONG') {
+          x.qtext.textContent = TX.codewrong;
+          x.codeIn.select();
+        } else {
+          stay();
+          note(TX.noans, true);
+        }
+      });
     }
 
     function save() {
@@ -546,9 +613,20 @@ var RcbEd = (function () {
       x.box = c.el('div', 'box');
       x.box.hidden = true;
       var card = c.el('div', 'card');
-      card.appendChild(c.el('h3', '', TX.unsaved));
+      x.qtitle = c.el('h3', '', TX.unsaved);
+      card.appendChild(x.qtitle);
       x.qtext = c.el('p');
       card.appendChild(x.qtext);
+      x.codeIn = c.el('input');
+      x.codeIn.maxLength = 8;
+      x.codeIn.autocomplete = 'off';
+      x.codeIn.hidden = true;
+      x.codeIn.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' && x.goFn && !x.go.disabled) {
+          x.goFn();
+        }
+      });
+      card.appendChild(x.codeIn);
       var row = c.el('div', 'foot');
       x.stay = c.button(TX.stay, 'btn', stay);
       x.go = c.button('', 'btn', function () {
@@ -579,7 +657,8 @@ var RcbEd = (function () {
 
   return { decode: decode, encode: encode, open: open, eolOf: eolOf,
     endsOf: endsOf, fits: fits, sumLine: sumLine, cutSum: cutSum,
-    dirty: dirty, onClose: onClose, save: save, attach: attach };
+    dirty: dirty, onClose: onClose, codeAnswer: codeAnswer, save: save,
+    attach: attach };
 }());
 
 if (typeof module !== 'undefined') {

@@ -28,6 +28,8 @@ history is in git.
   ESC profile says it is read at the next start. A file with mixed line
   ends is saved with LF ends; a file that is not UTF-8 opens in the viewer
   only. CLOSE and leaving the page ask first while the text has changes.
+  A SAVE that needs the access code asks for it in the editor and keeps
+  the text.
 
 ### Changed
 
