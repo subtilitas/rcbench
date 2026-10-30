@@ -19,14 +19,27 @@
 #include "can_selftest.h"
 #include "can_twai.h"
 
+/** @brief Log tag. */
 static const char *TAG = "rcbench";
 
+/**
+ * @brief Time since boot.
+ *
+ * @return Milliseconds, wrapping at 2^32.
+ */
 static uint32_t now_ms(void)
 {
     return (uint32_t)(esp_timer_get_time() / 1000);
 }
 
-/* Ask the far end what it can see.  False if it did not answer. */
+/**
+ * @brief Ask the far end what it can see.
+ *
+ * Sends up to 5 requests and waits 50ms for each answer.
+ *
+ * @param out  Receives the far end's status.
+ * @return     false if it did not answer.
+ */
 static bool can_ask_remote(can_remote_status_t *out)
 {
     for (int try = 0; try < 5; ++try) {

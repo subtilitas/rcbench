@@ -56,6 +56,7 @@ extern "C" {
  */
 #define CAN_SELFTEST_WAIT_MS 5000u
 
+/** @brief The outcome of an echo run, from the counters in can_selftest_t. */
 typedef enum {
     CAN_SELFTEST_RUNNING = 0, /**< too early to say */
     CAN_SELFTEST_OK,
@@ -102,6 +103,13 @@ typedef struct {
     uint32_t bus_errors;
 } can_selftest_t;
 
+/**
+ * @brief Clear a self-test state and set the per-probe timeout.
+ *
+ * @param st          State to reset.  NULL is ignored.
+ * @param timeout_ms  Time in ms before an unanswered probe counts as timed
+ *                    out.  0 selects 50ms.
+ */
 void can_selftest_init(can_selftest_t *st, uint32_t timeout_ms);
 
 /**
@@ -115,28 +123,68 @@ void can_selftest_init(can_selftest_t *st, uint32_t timeout_ms);
 bool can_selftest_wait_more(uint32_t elapsed_ms, bool answered);
 
 /**
- * Build the next probe, if it is time for one.
+ * @brief Build the next probe, if it is time for one.
  *
  * False while a probe is still outstanding and has not timed out: one frame in
  * flight at a time, so a lost frame is attributed to the probe that was lost
  * rather than to whichever reply happens to arrive next.
+ *
+ * @param st      Test state.
+ * @param now_ms  Current time in ms; stored as the send time.
+ * @param out     Receives the 8-byte probe frame.
+ * @return        true if a probe was built, false if one is outstanding or an
+ *                argument is NULL.
  */
 bool can_selftest_probe(can_selftest_t *st, uint32_t now_ms,
                         link_can_frame_t *out);
 
 /**
- * Judge a received frame. True if it was this test's business.
+ * @brief Judge a received frame.
  *
  * @p rtt_us is folded in when the frame is the echo being waited for.
+ *
+ * @param st      Test state.
+ * @param f       The received frame.
+ * @param rtt_us  Round-trip time of the probe in us.
+ * @return        true if the frame was this test's business.
  */
 bool can_selftest_rx(can_selftest_t *st, const link_can_frame_t *f,
                      uint32_t rtt_us);
 
-/** Give up on an outstanding probe whose time is up. True if one was dropped. */
+/**
+ * @brief Give up on an outstanding probe whose time is up.
+ *
+ * @param st      Test state.
+ * @param now_ms  Current time in ms.
+ * @return        true if a probe was dropped.
+ */
 bool can_selftest_tick(can_selftest_t *st, uint32_t now_ms);
 
+/**
+ * @brief Judge the counters.
+ *
+ * @param st  Test state, with bus_errors filled in by the caller.
+ * @return    CAN_SELFTEST_RUNNING until CAN_SELFTEST_MIN_PROBES probes were
+ *            sent or when @p st is NULL, otherwise the first fault found, or
+ *            CAN_SELFTEST_OK.
+ */
 can_selftest_verdict_t can_selftest_verdict(const can_selftest_t *st);
+
+/**
+ * @brief One-line description of a verdict.
+ *
+ * @param v  The verdict.
+ * @return   A static string; "running" for an unknown value.
+ */
 const char *can_selftest_text(can_selftest_verdict_t v);
+
+/**
+ * @brief What to check for a verdict.
+ *
+ * @param v  The verdict.
+ * @return   A static string; empty for CAN_SELFTEST_OK and
+ *           CAN_SELFTEST_RUNNING.
+ */
 const char *can_selftest_hint(can_selftest_verdict_t v);
 
 /* ----------------------------------------------- the far end's own numbers */
@@ -158,20 +206,38 @@ typedef struct {
     uint16_t overflows;   /**< frames that arrived with nowhere to put them */
 } can_remote_status_t;
 
-/** Build the request: one frame, no payload. */
+/**
+ * @brief Build the request: one frame, no payload.
+ *
+ * @param out  Receives the request frame.
+ * @return     true on success, false if @p out is NULL.
+ */
 bool can_selftest_status_request(link_can_frame_t *out);
 
-/** The far end's answer. True if @p in was a status request. */
+/**
+ * @brief Build the far end's answer to a status request.
+ *
+ * @param in   The received frame.
+ * @param st   The status to report.
+ * @param out  Receives the 8-byte answer frame.
+ * @return     true if @p in was a status request.
+ */
 bool can_selftest_status_reply(const link_can_frame_t *in,
                                const can_remote_status_t *st,
                                link_can_frame_t *out);
 
-/** Read an answer. True if @p in was one. */
+/**
+ * @brief Read a status answer.
+ *
+ * @param in   The received frame.
+ * @param out  Receives the far end's status.
+ * @return     true if @p in was a status answer.
+ */
 bool can_selftest_status_parse(const link_can_frame_t *in,
                                can_remote_status_t *out);
 
 /**
- * Frames the far end answered that this end never heard.
+ * @brief Frames the far end answered that this end never heard.
  *
  * @p before and @p after are the far end's echo counter sampled either side
  * of the measurement; @p heard is everything this end received in between,
@@ -182,8 +248,13 @@ bool can_selftest_status_parse(const link_can_frame_t *in,
  * panel reboots is tens of thousands ahead of the panel's count.  The counter
  * is 16 bits and wraps; unsigned subtraction handles that.
  *
- * Returns how many went missing, or 0.  A probe in flight across either
- * boundary is not a fault, so a difference of up to 2 is not reported.
+ * A probe in flight across either boundary is not a fault, so a difference
+ * of up to 2 is not reported.
+ *
+ * @param before  Far end's echo counter before the measurement.
+ * @param after   Far end's echo counter after the measurement.
+ * @param heard   Frames this end received in between.
+ * @return        How many went missing, or 0.
  */
 uint16_t can_selftest_return_loss(uint16_t before, uint16_t after,
                                   uint32_t heard);
@@ -191,9 +262,14 @@ uint16_t can_selftest_return_loss(uint16_t before, uint16_t after,
 /* ------------------------------------------------------------- responder */
 
 /**
- * The responder: if @p in is a probe, fill @p out with the echo.  True when
- * it did.  Stateless, so the responder cannot disagree with the initiator
- * about what happened.
+ * @brief The responder: if @p in is a probe, fill @p out with the echo.
+ *
+ * Stateless, so the responder cannot disagree with the initiator about what
+ * happened.
+ *
+ * @param in   The received frame.
+ * @param out  Receives the echo frame.
+ * @return     true if @p in was a probe and @p out was filled.
  */
 bool can_selftest_echo(const link_can_frame_t *in, link_can_frame_t *out);
 

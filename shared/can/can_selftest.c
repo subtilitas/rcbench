@@ -11,43 +11,55 @@
 
 #include <string.h>
 
-/*
- * The payload patterns, chosen for their effect on bit stuffing.  CAN
+/**
+ * @brief The payload patterns, chosen for their effect on bit stuffing.  CAN
  * (Controller Area Network) inserts a complementary bit after five bits of
  * the same polarity, so a marginal bus fails on long runs of one level first.
  * Counting integers alone do not exercise that.
  */
 static const uint8_t k_patterns[] = { 0x00u, 0xFFu, 0x55u, 0xAAu };
+/** @brief Number of entries in k_patterns. */
 #define PATTERN_COUNT ((uint8_t)(sizeof(k_patterns) / sizeof(k_patterns[0])))
 
-/*
- * The status exchange shares the echo test's page; the identifier's offset
+/**
+ * @brief The status exchange shares the echo test's page; the identifier's offset
  * field tells them apart: 0 is an echo, 1 is a status.  One page keeps both
  * at the same lowest priority and under one filter.
  */
+/** @brief Identifier offset of an echo frame. */
 #define OFF_ECHO   0u
+/** @brief Identifier offset of a status frame. */
 #define OFF_STATUS 1u
 
-/* A probe is a READ from the initiator; the echo comes back as DATA, so a
- * node that hears its own traffic cannot mistake one for the other. */
+/**
+ * @brief The identifier of a probe.
+ *
+ * A probe is a READ from the initiator; the echo comes back as DATA, so a
+ * node that hears its own traffic cannot mistake one for the other.
+ *
+ * @return The 29-bit identifier.
+ */
 static uint32_t probe_id(void)
 {
     return link_can_id(LINK_CAN_PRIO_BULK, LINK_OP_READ, CAN_SELFTEST_PAGE,
                        OFF_ECHO, 4);
 }
 
+/** @brief The identifier of an echo: DATA on the self-test page, offset OFF_ECHO. */
 static uint32_t echo_id(void)
 {
     return link_can_id(LINK_CAN_PRIO_BULK, LINK_OP_DATA, CAN_SELFTEST_PAGE,
                        OFF_ECHO, 4);
 }
 
+/** @brief The identifier of a status request: READ, offset OFF_STATUS. */
 static uint32_t status_req_id(void)
 {
     return link_can_id(LINK_CAN_PRIO_BULK, LINK_OP_READ, CAN_SELFTEST_PAGE,
                        OFF_STATUS, 4);
 }
 
+/** @brief The identifier of a status answer: DATA, offset OFF_STATUS. */
 static uint32_t status_rsp_id(void)
 {
     return link_can_id(LINK_CAN_PRIO_BULK, LINK_OP_DATA, CAN_SELFTEST_PAGE,
@@ -106,7 +118,9 @@ bool can_selftest_status_parse(const link_can_frame_t *in,
     return true;
 }
 
-/*
+/**
+ * @brief Largest return-loss difference that is not reported.
+ *
  * One probe may be in flight across either edge of the window, so a
  * difference of one or two is the measurement's own resolution rather than a
  * fault.  Anything more is frames that were answered and never arrived.
@@ -124,10 +138,17 @@ uint16_t can_selftest_return_loss(uint16_t before, uint16_t after,
     return (uint16_t)((uint32_t)answered - heard);
 }
 
-/* Sequence in the first two bytes, the pattern in the remaining six.  The
- * pattern is derived from the sequence, so a frame that comes back with a
+/**
+ * @brief Fill a probe payload: sequence in the first two bytes, the pattern in
+ *        the remaining six.
+ *
+ * The pattern is derived from the sequence, so a frame that comes back with a
  * payload from a different probe is detectable as corrupt rather than being
- * quietly accepted. */
+ * quietly accepted.
+ *
+ * @param data  8-byte payload to fill.
+ * @param seq   Sequence number.
+ */
 static void fill(uint8_t *data, uint16_t seq)
 {
     data[0] = (uint8_t)(seq & 0xFFu);
