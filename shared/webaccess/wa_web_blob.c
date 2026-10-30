@@ -12,7 +12,7 @@
 
 #include <stddef.h>
 
-/** @brief app.css, 2768 bytes. */
+/** @brief app.css, 2824 bytes. */
 const char *const wa_web_css[] = {
     "[hidden]{display:none!important}\n"
     ".fm button,.fm .btn{font:inherit;padding:8px 12px;min-height:40px;\n"
@@ -65,7 +65,8 @@ const char *const wa_web_css[] = {
     ".fm .vp{font-weight:bold;word-break:break-all;flex:1 1 12em}\n"
     ".fm .ro{color:var(--pg-dim)}\n"
     ".fm .scroll{flex:1;position:relative;overflow:auto;\n"
-    "background:var(--h-bk,var(--pg-bg));color:var(--h-tx,var(--pg-fg))}\n"
+    "background:var(--h-bk,var(--pg-bg));color:var(--h-tx,var(--pg-fg));\n"
+    "scrollbar-color:var(--pg-dim) var(--h-bk,var(--pg-bg))}\n"
     ".fm .sizer{width:1px}\n"
     ".fm .text{position:absolute;left:0;top:0;margin:0;padding:0 8px;\n"
     "font:13px/20px ui-monospace,Menlo,Consolas,monospace;white-space:pre;\n"
