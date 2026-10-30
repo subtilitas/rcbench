@@ -1261,7 +1261,7 @@ Feld bleibt unter den Programmern für KST und Hitec. Das Verlassen von
 SERVO schaltet 5V ab, die das Feld auf SERVO eingeschaltet hat, außer ein
 Port hält sie. Mit dem Modell als Netzteil steht die Pille SIMULIERT unter
 dem Feld. SUPPLY zeigt dasselbe Feld ([Netzteil](#netzteil)); die Regeln
-stehen in [Sicherheit, Das Feld PROG 5V](Safety-de.md#das-feld-prog-5v).
+stehen in [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v).
 
 ![SERVO auf dem Carrier](img/de/servo-rbmod.png)
 
@@ -1649,7 +1649,9 @@ SOLL-PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
 mit einem antwortenden PD mini nennt die Zeile PORT des Programmierers die
 Spannung und die Stromgrenze, die VERBINDEN stellt, `PORT  5.0V  1000mA`.
 Die Sollwerte und AUSGANG EIN der Zeile SOLL und des SUPPLY-Bildschirms sind
-so lange gedimmt und nehmen keinen Druck; AUSGANG AUS funktioniert. Er verlässt das Programmieren, ohne die Versorgung
+so lange gedimmt und nehmen keinen Druck; AUSGANG AUS funktioniert. Auf dem
+rbmod-Carrier, dessen Programmierports an eigenen 5V hängen, bleiben sie
+aktiv ([Carrier, Versorgung](Carrier-de.md#versorgung)). Er verlässt das Programmieren, ohne die Versorgung
 des Servos aus- und einzuschalten. Ob ein KST-Servo im Programmiermodus PWM
 folgt, ist nicht gemessen.
 

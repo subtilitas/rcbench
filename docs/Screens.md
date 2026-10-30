@@ -1152,7 +1152,7 @@ under the KST and Hitec programmers. Leaving SERVO switches off a 5V
 SERVO's box switched on, unless a port holds it. With the model as the
 supply the SIMULATED pill sits under the box. SUPPLY shows the same box
 ([Supply](#supply)); the rules are in
-[Safety, The PROG 5V box](Safety.md#the-prog-5v-box).
+[Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box).
 
 ![SERVO on the carrier](img/servo-rbmod.png)
 
@@ -1500,7 +1500,9 @@ tester sends no pulse to the port. In PWM with a PD mini answering, the
 programmer's PORT row names the voltage and the current limit CONNECT sets,
 `PORT  5.0V  1000mA`. The set points and OUTPUT ON of
 the SET row and of the SUPPLY screen are dimmed and take no press for as
-long; OUTPUT OFF works.
+long; OUTPUT OFF works. On the rbmod carrier, whose programming ports run
+from their own 5V, they stay live
+([Carrier, Power](Carrier.md#power)).
 It leaves programming without a cycle of the servo's supply. Whether a KST
 servo follows PWM while in programming mode is not measured.
 

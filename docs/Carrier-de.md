@@ -66,7 +66,10 @@ geteilte Slice schränkt also nichts ein.
 | PD mini, an J8 | sein eigener Eingang | VCC_PDMINI: die Servoschienen A und B an J2 | die SUPPLY-Page |
 
 Die Programmierports laufen aus den festen 5V von M7, nicht aus dem PD mini.
-KST- und Chaservo-Servos programmieren mit 5V. Auf dem Carrier stellen die
+Eine KST- oder Hitec-Sitzung lässt den PD mini der bedienenden Person:
+SUPPLY und die Zeile SOLL des SERVO-Bildschirms nehmen während einer
+Sitzung AUSGANG EIN und Sollwerte an, die sie auf anderen Platinen
+abweisen. KST- und Chaservo-Servos programmieren mit 5V. Auf dem Carrier stellen die
 Programmer die Spannung der Programmierports nicht ein: ihre Liste MORE
 zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21` und bietet weder Spannung
 noch Strom an.
@@ -80,15 +83,7 @@ ARMED, wie AUSGANG EIN des PD mini. Das Feld nennt den Pin,
 0x40 CH3, `5.02V  0.120A` ([Der Strommonitor](#der-strommonitor)). Solange
 die Sitzung eines Programmers die 5V hält, nimmt das Feld keinen Druck an
 und zeigt `BELEGT VON PROG-PORT n`. SUPPLY zeigt den Zustand auch unter
-OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN` oder `AUS`.
-
-| Ein ON, das nicht greift | Warnung |
-| --- | --- |
-| kein lebender Heartbeat (NOT_ARMED) | `PROG-Ports 5V nicht eingeschaltet: der IOmcu hat keinen Heartbeat.` |
-| ein Port hält die 5V (BAD_VALUE) | `PROG-Ports 5V nicht eingeschaltet: ein Programmierport belegt sie.` |
-| keine Antwort; das OFF folgt | `PROG-Ports 5V EIN nicht beantwortet. Verbindung prüfen.` |
-| über verlorene Touch-Ereignisse hinweg; der Prüfstand geht auf SAFE | `Touch-Signal beim Einschalten verloren. PROG-Ports 5V aus.` |
-| ein Druck, solange ein Port die 5V hält oder die Page UNBEKANNT liest | `PROG-Ports 5V: von einem Programmierport belegt oder nicht gelesen.` | Jeder Fehler, ein verlorener
+OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN` oder `AUS`. Jeder Fehler, ein verlorener
 Heartbeat und ein stummer Link schalten sie aus; ein Schreiben in den
 Speicher des Servos hält sie an, bis es endet, höchstens 10000ms
 ([Sicherheit, Die 5V der Programmierports auf dem Carrier](Safety-de.md#die-5v-der-programmierports-auf-dem-carrier)).
@@ -96,6 +91,36 @@ Speicher des Servos hält sie an, bis es endet, höchstens 10000ms
 Der IOmcu treibt GPIO 21 ab der ersten Anweisung von `main()` low. Solange
 der IOmcu GPIO 21 nicht treibt (im Reset, im BOOTSEL, ohne Versorgung),
 hält der Pull-down an EN M7 aus.
+
+| Ein ON, das nicht greift | Warnung |
+| --- | --- |
+| kein lebender Heartbeat (NOT_ARMED) | `PROG-Ports 5V nicht eingeschaltet: der IOmcu hat keinen Heartbeat.` |
+| ein Port hält die 5V (BAD_VALUE) | `PROG-Ports 5V nicht eingeschaltet: ein Programmierport belegt sie.` |
+| keine Antwort; das OFF folgt | `PROG-Ports 5V EIN nicht beantwortet. Verbindung prüfen.` |
+| über verlorene Touch-Ereignisse hinweg; der Prüfstand geht auf SAFE | `Touch-Signal beim Einschalten verloren. PROG-Ports 5V aus.` |
+| ein Druck, solange ein Port die 5V hält oder die Page UNBEKANNT liest | `PROG-Ports 5V: von einem Programmierport belegt oder nicht gelesen.` |
+
+### Das Feld PROG 5V
+
+Das Feld PROG 5V auf SERVO und SUPPLY schaltet die 5V von Hand: PROG 5V
+EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp. Das Panel beurteilt das ON,
+wie es AUSGANG EIN des PD mini beurteilt:
+
+- Es gilt bei SAFE und bei ARMED; ein Wechsel nach ARMED wird nicht verlangt.
+- Es verfällt, wenn nach dem vollendeten Halten ein STOP, ein AUS oder ein
+  Touch-Verlust kam, und solange ein Port die 5V hält.
+- Es wird einmal als OUTPUT 1 geschrieben und nicht wiederholt. Der IOmcu
+  lehnt es ohne lebenden Heartbeat ab (NOT_ARMED) und solange ein Port die
+  5V hält (BAD_VALUE); beides und keine Antwort melden eine Warnung
+  (die Tabelle oben). Ein ON ohne Antwort
+  zieht ein OFF nach: der IOmcu kann es genommen haben.
+- Ein ON über verlorene Touch-Ereignisse hinweg ist ein Fehler: SAFE, die
+  5V aus.
+- Ein Fehler, PROG 5V AUS und das Verlassen der Ansicht, deren Feld sie
+  einschaltete, schreiben OFF, Letzteres auch bei einem ON unterwegs. Ein
+  Fehler verwirft ein ungeschriebenes ON. Das OFF ist auch ein Flag, wie
+  AUSGANG AUS: eine volle Warteschlange verliert es nicht.
+- Solange ein Port die 5V hält, nimmt das Feld keinen Druck an.
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 

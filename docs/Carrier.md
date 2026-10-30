@@ -65,7 +65,10 @@ so the shared slice limits nothing.
 | M8, buck | the +15V net | +5V: the module's VBUS and J7 | always on |
 | PD mini, on J8 | its own input | VCC_PDMINI: the servo rails A and B on J2 | the SUPPLY page |
 
-The programming ports run from M7's fixed 5V, not from the PD mini. KST and
+The programming ports run from M7's fixed 5V, not from the PD mini. A KST
+or Hitec session leaves the PD mini to the operator: SUPPLY and the SERVO
+screen's SET row take OUTPUT ON and set points through a session, which on
+other boards they refuse. KST and
 Chaservo servos program at 5V. On the carrier the programmers do not set the
 programming ports' voltage: their MORE list reads
 `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` and offers no voltage or current.
@@ -80,6 +83,13 @@ and shows the last 50ms window of 0x40 CH3, `5.02V  0.120A`
 session holds the 5V the box takes no press and reads
 `HELD BY PROG PORT n`. SUPPLY also shows the state under OUTPUT:
 `PROG PORTS 5V, GPIO 21: ON` or `OFF`.
+Every error, a lost heartbeat and a silent link switch it off; a write to
+the servo's memory keeps it on until the write ends, 10000ms at most
+([Safety, The carrier's programming-port 5V](Safety.md#the-carriers-programming-port-5v)).
+
+The IOmcu drives GPIO 21 low from the first statement of `main()`. While
+the IOmcu does not drive GPIO 21 (in reset, in BOOTSEL, unpowered), the
+pull-down on EN holds M7 off.
 
 | An ON that does not take | Alert |
 | --- | --- |
@@ -88,13 +98,27 @@ session holds the 5V the box takes no press and reads
 | no answer; the OFF follows | `PROG ports 5V ON not answered. Check the link.` |
 | taken across lost touch events; the bench goes SAFE | `Touch signal lost while switching on. PROG ports 5V off.` |
 | a press while a port holds the 5V or the page reads NOT READ | `PROG ports 5V: held by a programming port, or not read.` |
-Every error, a lost heartbeat and a silent link switch it off; a write to
-the servo's memory keeps it on until the write ends, 10000ms at most
-([Safety, The carrier's programming-port 5V](Safety.md#the-carriers-programming-port-5v)).
 
-The IOmcu drives GPIO 21 low from the first statement of `main()`. While
-the IOmcu does not drive GPIO 21 (in reset, in BOOTSEL, unpowered), the
-pull-down on EN holds M7 off.
+### The PROG 5V box
+
+The PROG 5V box on SERVO and SUPPLY switches the 5V by hand: PROG 5V ON is
+a 2s hold, PROG 5V OFF a tap. The panel judges the ON as it judges the PD
+mini's OUTPUT ON:
+
+- It is taken with the bench SAFE or ARMED; no switch to ARMED is asked.
+- It is dropped when a STOP, an OFF or a touch loss came after the hold
+  completed, and while a port holds the 5V.
+- It is written once as OUTPUT 1 and not repeated. The IOmcu refuses it
+  without a live heartbeat (NOT_ARMED) and while a port holds the 5V
+  (BAD_VALUE); each, and no answer, gets an alert
+  (the table above). An ON without an answer owes an
+  OFF: the IOmcu may have taken it and lost its reply.
+- An ON taken across lost touch events is an error: SAFE, the 5V off.
+- An error, PROG 5V OFF and leaving the screen whose box switched it on
+  write OFF, the last also while the ON is still on its way. An error
+  drops an ON not yet written. The OFF is a flag beside its queue entry,
+  as the PD mini's OUTPUT OFF is, so a full queue does not drop it.
+- While a port holds the 5V the box takes no press.
 
 ![SUPPLY on the carrier](img/supply-rbmod.png)
 

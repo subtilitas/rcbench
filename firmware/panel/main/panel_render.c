@@ -459,6 +459,9 @@ void flush_screen_commands(uint32_t stops_now)
                            .consumed_seq = consumed };
         send_cmd(&pc);
     }
+    /* On a board with the ports' own supply a programmer's port holds no
+     * PD mini control (supply_link_session_blocks()). */
+    supply_screen_set_ports_own(atomic_load(&s_psup_owns));
     /* A programming port's command on the supply, onto the screen before
      * the screen's set points are published; see s_supply_adopt_mv. */
     const unsigned adopt = atomic_load(&s_supply_adopt_gen);

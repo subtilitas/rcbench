@@ -24,8 +24,8 @@
  * supply trip; an ON taken across lost touch events.  The operator's own
  * endings -- OUTPUT OFF on SUPPLY, STOP TEST -- leave the bench ARMED.
  * On a board that switches the programming ports' own supply (4.32) every
- * error writes that page's OFF.  A port holds the supply as the SUPPLY
- * page's last read says (LINK_SP_PORT), not while a programmer has a port;
+ * error writes that page's OFF.  A port holds the supply while the SUPPLY
+ * page's last read (LINK_SP_PORT) and a programmer's session both say so;
  * a port that takes or lets go of it between two reads, on each IOmcu.
  *
  * SPDX-License-Identifier: MIT
@@ -78,13 +78,14 @@ static struct {
 } g;
 
 /* The bench as the control task's error_bench() reads it.  With the page's
- * link driven (g.link), a port holds the supply as the page's last read
- * says (supply_link_port_holds()); a programmer's session (g.session) does
- * not count. */
+ * link driven (g.link), a port holds the supply while the page's last read
+ * and a programmer's session (g.session) both say so
+ * (supply_link_port_holds()). */
 static error_bench_t bench_now(void)
 {
     const bool port = (g.link != NULL)
-                      ? supply_link_port_holds(g.link, g.real) : g.port;
+                      ? supply_link_port_holds(g.link, g.real, g.session)
+                      : g.port;
     const error_bench_t b = {
         arming_link_needed(&g.a, g.bank_armed), g.on, port, g.real,
         g.page, g.minor, false,
@@ -1024,7 +1025,7 @@ TEST_CASE(an_on_refused_under_a_ports_on_is_left_to_the_port)
         supply_page_hold(&g_pg, true);
         CHECK(supply_page_port_set(&g_pg, true, MV, MA, true));
         supply_page_port_writes(&g_pg, true);
-        g.port = true;
+        g.session = true;
         const unsigned offs = g_offs;
         for (int i = 0; i < 4; ++i) {
             serve(true);
@@ -1039,7 +1040,7 @@ TEST_CASE(an_on_refused_under_a_ports_on_is_left_to_the_port)
             /* The port lets go: refused again, and off. */
             supply_page_port_writes(&g_pg, false);
             supply_page_hold(&g_pg, false);
-            g.port = false;
+            g.session = false;
             for (int i = 0; i < 3; ++i) {
                 serve(true);
             }
@@ -1062,7 +1063,7 @@ TEST_CASE(a_trip_of_the_module_is_followed_off_under_a_port)
         supply_up((f == 0) ? LINK_MINOR_PORT_CUT : LINK_MINOR_PORT_CUT - 1u);
         supply_page_hold(&g_pg, true);
         CHECK(supply_page_port_set(&g_pg, true, MV, MA, true));
-        g.port = true;
+        g.session = true;
         serve(true);
         CHECK(g.on);
         CHECK_EQ(g.disarms, 0u);
@@ -1086,36 +1087,39 @@ static void port_on(bool held)
     }
 }
 
-/* A programmer with a port and the SUPPLY page's flag clear or set, on each
- * IOmcu, SAFE and ARMED.  Only the flag keeps the supply on an IOmcu older
- * than 4.31: a session whose port the page does not hold gets the OFF.
+/* A programmer with a port or none, the SUPPLY page's flag clear or set,
+ * on each IOmcu, SAFE and ARMED.  On an IOmcu older than 4.31 the supply
+ * is kept only while both say a port holds it: a session whose port the
+ * page does not hold gets the OFF, and so does a flag with no session.
  * From 4.31 the OFF is written either way and the page holds it for a
  * write. */
-TEST_CASE(only_the_pages_flag_keeps_the_supply_not_a_session)
+TEST_CASE(the_page_and_the_session_together_keep_the_supply)
 {
-    for (int k = 0; k < 8; ++k) {
+    for (int k = 0; k < 16; ++k) {
         const bool old  = (k & 1) != 0;
         const bool flag = (k & 2) != 0;
         const bool live = (k & 4) != 0;
+        const bool kept = old && flag && (k & 8) != 0;
 
         supply_up(old ? LINK_MINOR_PORT_CUT - 1u : LINK_MINOR_PORT_CUT);
         g.bank_armed = live;
-        g.session = true;
+        g.session = (k & 8) != 0;
         port_on(flag);
         serve(true);
-        CHECK_EQ(supply_link_port_holds(&g_sl, true), flag);
+        CHECK_EQ(supply_link_port_holds(&g_sl, true, g.session),
+                 flag && g.session);
         CHECK(g.on);
         const unsigned offs = g_offs;
         do_stop();
         CHECK_EQ(g.disarms, live ? 1u : 0u);
-        CHECK_EQ(g.on, old && flag);
+        CHECK_EQ(g.on, kept);
         CHECK_EQ(g.cuts, old ? 0u : 1u);
         serve(true);
-        CHECK_EQ(g_offs > offs, !(old && flag));
+        CHECK_EQ(g_offs > offs, !kept);
         /* Kept for the port, the page stays on; given the OFF, the page
          * reads 0 at once, a held OFF included. */
-        CHECK_EQ(page_reg(LINK_SP_OUTPUT), (old && flag) ? 1u : 0u);
-        CHECK_EQ(supply_page_off_held(&g_pg), !old && flag);
+        CHECK_EQ(page_reg(LINK_SP_OUTPUT), kept ? 1u : 0u);
+        CHECK_EQ(supply_page_off_held(&g_pg), !kept && flag);
     }
 }
 
@@ -1131,7 +1135,7 @@ TEST_CASE(a_port_that_takes_the_supply_between_reads_gets_the_off)
         supply_up(old ? LINK_MINOR_PORT_CUT - 1u : LINK_MINOR_PORT_CUT);
         g.session = true;
         port_on(true);                  /* not read yet */
-        CHECK(!supply_link_port_holds(&g_sl, true));
+        CHECK(!supply_link_port_holds(&g_sl, true, true));
         const unsigned offs = g_offs;
         do_stop();
         CHECK(!g.on);
@@ -1143,28 +1147,32 @@ TEST_CASE(a_port_that_takes_the_supply_between_reads_gets_the_off)
     }
 }
 
-/* A port that lets go between two reads: from 4.31 the OFF is written
- * whatever the panel read.  On an older IOmcu the panel still reads the
- * hold, and an error in that gap leaves the output on (docs/Safety.md,
- * Errors). */
+/* A port that lets go before the next read of the SUPPLY page: once the
+ * session has ended, the OFF is written on every IOmcu.  From 4.31 it is
+ * written whatever the panel read.  On an older IOmcu, while neither the
+ * SUPPLY page nor the port's own page has been read since, the panel
+ * still reads the hold, and an error in that gap leaves the output on
+ * (docs/Safety.md, Errors). */
 TEST_CASE(a_port_that_lets_go_between_reads)
 {
-    for (int f = 0; f < 2; ++f) {
-        const bool old = f != 0;
+    for (int f = 0; f < 4; ++f) {
+        const bool old = (f & 1) != 0;
+        const bool ended = (f & 2) != 0;
 
         supply_up(old ? LINK_MINOR_PORT_CUT - 1u : LINK_MINOR_PORT_CUT);
+        g.session = true;
         port_on(true);
         serve(true);
-        CHECK(supply_link_port_holds(&g_sl, true));
+        CHECK(supply_link_port_holds(&g_sl, true, true));
         supply_page_port_writes(&g_pg, false);
         supply_page_hold(&g_pg, false); /* not read yet */
-        g.session = false;
+        g.session = !ended;
         do_stop();
-        CHECK_EQ(g.on, old);
+        CHECK_EQ(g.on, old && !ended);
         CHECK_EQ(g.cuts, old ? 0u : 1u);
         serve(true);
-        CHECK(!supply_link_port_holds(&g_sl, true));
-        CHECK_EQ(page_reg(LINK_SP_OUTPUT), old ? 1u : 0u);
+        CHECK(!supply_link_port_holds(&g_sl, true, true));
+        CHECK_EQ(page_reg(LINK_SP_OUTPUT), (old && !ended) ? 1u : 0u);
     }
 }
 
@@ -1232,7 +1240,7 @@ int main(void)
     RUN(a_page_event_keeps_only_a_refused_on);
     RUN(an_on_refused_under_a_ports_on_is_left_to_the_port);
     RUN(a_trip_of_the_module_is_followed_off_under_a_port);
-    RUN(only_the_pages_flag_keeps_the_supply_not_a_session);
+    RUN(the_page_and_the_session_together_keep_the_supply);
     RUN(a_port_that_takes_the_supply_between_reads_gets_the_off);
     RUN(a_port_that_lets_go_between_reads);
     RUN(a_failed_close_is_one_error_a_run);
