@@ -312,15 +312,8 @@ der Page SUPPLY für einen Port:
 - Eine Firmware-Installation, ein Update des IOmcu, ein Schreiben in den
   Flash des Panels und das WLAN des Panels warten, solange die 5V
   an sind, seit dem Aufbau des Links oder seit einem Lesen ohne Antwort
-  nicht gelesen wurden, ein Port eines Programmers sie hält oder ein ON von
-  PROG 5V in der Warteschlange steht oder ein ON oder OFF aussteht, so wie
-  sie auf den Ausgang des PD mini warten (`prog_supply_link_live()`,
-  `supplies_live_or_coming()`).
-
-Das Feld PROG 5V auf SERVO und SUPPLY schaltet die 5V von Hand, nach den
-Regeln von AUSGANG EIN des PD mini; ein ON ohne Antwort zieht ein OFF nach,
-und das OFF ist ein Flag, das keine volle Warteschlange verliert
-([Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v)).
+  nicht gelesen wurden, ein Port sie hält oder ein ON oder OFF aussteht, so
+  wie sie auf den Ausgang des PD mini warten (`prog_supply_link_live()`).
 
 SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,
 `AUS` oder `UNBEKANNT`, wenn das letzte Lesen ohne Antwort blieb. Der
@@ -760,10 +753,20 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   er abhebt, wohin er auch wandert. Die Ausnahme ist ein Druck auf ein
   Bedienelement, das anhält, was der Prüfstand treibt (DISARM, AUSGANG AUS,
   ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN), das die Seite
-  dem Router nennt (`safe_at` in ui_screen.h): Unter dem Alert-Band oder bei
-  offenem Hilfe-Kasten eines Chips gehört er der Seite, und Band oder Kasten
-  schließen sich. ARM wird nie genannt, also startet ein Druck auf ARM unter
-  beiden kein Halten. Ein Kontakt, der beim Bildschirmwechsel
+  dem Router nennt (`safe_at` in ui_screen.h): Unter dem Alert-Band, bei
+  offenem Hilfe-Kasten eines Chips oder bei offener Bildschirmhilfe gehört
+  er der Seite, und Band, Kasten oder Hilfe schließen sich. ARM wird nie
+  genannt, also startet ein Druck auf ARM unter keinem davon ein Halten.
+  Die Bildschirmhilfe ändert nie SAFE oder ARMED und sendet keinen Befehl.
+  Ein Druck auf STOP bei offener Hilfe schließt sie und stoppt beim Druck,
+  auf jeder Seite und mit einem Hinweis im Alert-Band. Das Öffnen der Hilfe
+  lässt die Kontakte der Seite los wie ein Druck auf das Band, ein Halten auf
+  ARM wird also abgebrochen und ein Gas-Drag endet. Solange die Hilfe offen
+  ist, bewegt ein Dreh am Knopf nichts (`ui_router_take_knob()`). In ARMED
+  bietet die Hilfe nur Seiten an, deren Dock kein Bedienelement aus
+  `safe_at` und kein Rechteck verdeckt, das die Seite sichtbar halten muss,
+  etwa die ZIEL-Zeile; `test_help_pages` prüft das Dock jeder solchen Seite
+  in einem Raster von 8px. Ein Kontakt, der beim Bildschirmwechsel
   oder beim Verlust von Touch-Events auf dem Glas lag, gehört niemandem, bis
   er abhebt und neu aufsetzt. Ein Kontakt der Seite, der das Statusband
   erreicht, wird für die Seite an der letzten Stelle losgelassen, die sie

@@ -353,6 +353,64 @@ UI_TEXT(OV_MODELLED, 0,
     "SIMULATED",
     "SIMULIERT")
 
+/* ------------------------------------------------------- the guide */
+/* The dock of the screen guide (ui_help.h): its web line, the line that
+ * opens its first page while ARMED left pages out, and each screen's
+ * pages.  An item's text follows its label and two spaces in rows of 41
+ * cells, 3 rows at most (test_help_pages). */
+UI_TEXT(HG_WEB, 44,
+    "More: subtilitas.github.io/rcbench/help/",
+    "Mehr: subtilitas.github.io/rcbench/help/de/")
+UI_TEXT(HG_ARMED_NOTE, 44,
+    "ARMED: only pages that hide no live control",
+    "ARMED: nur Seiten ohne verdeckte Bedienung")
+/* The menu's three pages. */
+UI_TEXT(HG_OV_TITLE_LEFT, 0,
+    "MENU: LEFT TILES",
+    "MENÜ: LINKE KACHELN")
+UI_TEXT(HG_OV_TITLE_RIGHT, 0,
+    "MENU: RIGHT TILES",
+    "MENÜ: RECHTE KACHELN")
+UI_TEXT(HG_OV_TITLE_BAND, 0,
+    "MENU: BAND AND MARK",
+    "MENÜ: BAND UND MARKE")
+UI_TEXT(HG_OV_MOTOR, 0,
+    "Drives an ESC and records a run: volts, amps, power and rpm. PROGRAM sets up the ESC.",
+    "Steuert einen ESC, zeichnet Läufe auf: Volt, Ampere, Leistung, Drehzahl. PROGRAM stellt den ESC ein.")
+UI_TEXT(HG_OV_SERVO, 0,
+    "Drives a servo and measures its current. TEST runs the automatic test, PROGRAM programs the servo.",
+    "Steuert ein Servo und misst seinen Strom. TEST startet den automatischen Test, PROGRAM programmiert das Servo.")
+UI_TEXT(HG_OV_SUPPLY, 0,
+    "Sets, switches and records the PD mini supply: volts and amps.",
+    "Stellt die Versorgung des PD mini ein, schaltet und zeichnet sie auf: Volt und Ampere.")
+UI_TEXT(HG_OV_RECEIVER, 0,
+    "Shows what a receiver sends on S.BUS: 16 channels, the frame rate and the decoder's counters.",
+    "Zeigt, was ein Empfänger über S.BUS sendet: 16 Kanäle, die Pulsrate und die Zähler des Decoders.")
+UI_TEXT(HG_OV_BATTERY, 0,
+    "Shows how far each cell departs from the pack's mean, and a verdict on the pack.",
+    "Zeigt, wie weit jede Zelle vom Mittel des Packs abweicht, und ein Urteil über den Pack.")
+UI_TEXT(HG_OV_BALANCE, 0,
+    "Finds where a propeller or fan needs mass, and shows where the two sensors go.",
+    "Findet, wo ein Propeller oder Lüfter Masse braucht, und zeigt, wo die zwei Sensoren sitzen.")
+UI_TEXT(HG_OV_LOGS, 0,
+    "Lists the CSV logs and reports on the SD card and plots up to 4 columns of a log.",
+    "Listet die CSV-Logs und Berichte auf der SD-Karte und plottet bis zu 4 Spalten eines Logs.")
+UI_TEXT(HG_OV_SETUP, 0,
+    "The bench-wide settings: panel, interfaces, SD card and sensors.",
+    "Die Einstellungen des ganzen Prüfstands: Panel, Schnittstellen, SD-Karte und Sensoren.")
+UI_TEXT(HG_OV_STOP, 0,
+    "Switches the bench to SAFE and the supply output off, on every screen and with this guide open.",
+    "Schaltet den Prüfstand auf SAFE und den Ausgang der Versorgung ab, auf jedem Bildschirm, auch bei offener Hilfe.")
+UI_TEXT(HG_OV_ARM, 0,
+    "What the bench drives now: SAFE drives nothing. A tap on a chip of the band explains it.",
+    "Was der Prüfstand gerade ansteuert: SAFE steuert nichts an. Ein Tipp auf einen Chip erklärt ihn.")
+UI_TEXT(HG_OV_GUIDE, 0,
+    "Opens this guide where a screen has one. PREV and NEXT turn the pages, a tap elsewhere closes it.",
+    "Öffnet diese Hilfe, wo ein Bildschirm eine hat. VORIGE und NÄCHSTE blättern, ein Tipp daneben schließt sie.")
+UI_TEXT(HG_OV_MARK, 0,
+    "The IOmcu reports no hardware for this screen, or its sensor is off on SETUP.",
+    "Der IOmcu meldet keine Hardware für diesen Bildschirm, oder sein Sensor ist in SETUP aus.")
+
 /* -------------------------------------------------------------- splash */
 UI_TEXT(SPLASH_BOARD, 0,
     "BOARD",

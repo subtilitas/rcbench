@@ -123,6 +123,8 @@ wie es AUSGANG EIN des PD mini beurteilt:
   Fehler verwirft ein ungeschriebenes ON. Das OFF ist auch ein Flag, wie
   AUSGANG AUS: eine volle Warteschlange verliert es nicht.
 - Solange ein Port die 5V hält, nimmt das Feld keinen Druck an.
+- Firmware-Installation, IOmcu-Update, Flash-Schreiben und WLAN zählen das
+  ON ab dem Einreihen in die Warteschlange (`supplies_live_or_coming()`).
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 

@@ -279,15 +279,9 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   its programmers never get the 5V.
 - A firmware install, an IOmcu update, a write to the panel's flash and
   the panel's Wi-Fi wait while the 5V is on, not read since the
-  link came up or since an unanswered read, held by a programmer's
-  port, or while a PROG 5V ON is queued or an ON or OFF owed, as they wait
-  for the PD mini's output (`prog_supply_link_live()`,
-  `supplies_live_or_coming()`).
-
-The PROG 5V box on SERVO and SUPPLY switches the 5V by hand, under the PD
-mini's OUTPUT ON rules; an ON without an answer owes an OFF, and the OFF is
-a flag a full command queue does not drop
-([Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box)).
+  link came up or since an unanswered read, held by a port, or while an
+  ON or OFF is owed, as they wait for the PD mini's output
+  (`prog_supply_link_live()`).
 
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
 or `NOT READ` when the last read went unanswered. The core is
@@ -678,9 +672,18 @@ reads the state and shows the alert, is not in the coverage figure.
   travels. The exception is a press on a control that stops what the bench
   drives (DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN),
   which the screen names to the router (`safe_at` in ui_screen.h): under the
-  alert band or with a chip's help box open it is the screen's, and the band
-  or the box closes. ARM is never named, so a press on ARM under either
-  starts no hold. A contact that was down when the screen changed or when touch
+  alert band, with a chip's help box open or with the screen guide open it
+  is the screen's, and the band, the box or the guide closes. ARM is never
+  named, so a press on ARM under any of them starts no hold.
+- The screen guide never changes SAFE or ARMED and sends no command. A
+  press on STOP with the guide open closes it and stops at the press, on
+  every page and with an alert showing. Opening the guide releases the
+  contacts the screen owns as a press on the band does, so a hold on ARM is
+  abandoned and a throttle drag ends. While the guide is open a knob turn
+  moves nothing (`ui_router_take_knob()`). While ARMED the guide offers only
+  pages whose dock covers no control the screen names in `safe_at` and no
+  rect it must keep in view, such as the TARGET row; `test_help_pages`
+  sweeps each such page's dock on an 8px grid. A contact that was down when the screen changed or when touch
   events were lost is nobody's until it lifts and comes down again. A contact
   the screen owns that reaches the status band is released for the screen at
   the last point the screen was handed, and is the router's from there: a

@@ -55,40 +55,41 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        9,785    1223 KiB
+frame                        9,744    1218 KiB
 frame-idle                       0       0 KiB
-held                         5,229     654 KiB
-sim                         13,470    1684 KiB
-throttle                    11,656    1457 KiB
-chrome                      51,503    6438 KiB
-overview                         0       0 KiB
-servo                        2,431     304 KiB
-servo-grip                     642      80 KiB
-servo-current                3,358     420 KiB
-supply                       9,814    1227 KiB
-supply-chrome               47,311    5914 KiB
+held                         5,128     641 KiB
+sim                         13,435    1679 KiB
+throttle                    11,629    1454 KiB
+chrome                      51,486    6436 KiB
+overview                         1       0 KiB
+overview-guide                 356      44 KiB
+servo                        2,445     306 KiB
+servo-grip                     653      82 KiB
+servo-current                3,332     416 KiB
+supply                       9,754    1219 KiB
+supply-chrome               47,491    5936 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,560     195 KiB
-balance-sim                  3,112     389 KiB
-settings-sim                 3,237     405 KiB
-battery-sim                  3,114     389 KiB
-analyser-chrome             60,992    7624 KiB
+motor-stick                  1,619     202 KiB
+balance-sim                  3,209     401 KiB
+settings-sim                 3,246     406 KiB
+battery-sim                  3,249     406 KiB
+analyser-chrome             61,028    7628 KiB
 logs-chrome                 26,041    3255 KiB
-settings-chrome             37,547    4693 KiB
-settings-list-chrome        36,398    4550 KiB
-battery-chrome              58,171    7271 KiB
-balance-chrome              63,450    7931 KiB
-motor-stick-chrome          41,489    5186 KiB
+settings-chrome             37,584    4698 KiB
+settings-list-chrome        36,442    4555 KiB
+battery-chrome              58,182    7273 KiB
+balance-chrome              63,470    7934 KiB
+motor-stick-chrome          41,546    5193 KiB
 picker                           0       0 KiB
-picker-chrome               41,639    5205 KiB
+picker-chrome               41,730    5216 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,154    2769 KiB
-wifi-keys                   37,134    4642 KiB
+wifi-chrome                 22,166    2771 KiB
+wifi-keys                   37,142    4643 KiB
 clear                       19,206    2401 KiB
 vlines                      10,204    1276 KiB
 hlines                         171      21 KiB
@@ -106,6 +107,7 @@ est. ms and est. fps: not measured
 | `throttle` | the motor bench with a finger on the throttle, the drag case |
 | `chrome` | the motor bench with nothing cached, repainted in full |
 | `overview` | the menu, chrome cached |
+| `overview-guide` | the menu with its screen guide open at page 1: the dock cached, the badges and corner brackets of 4 tiles drawn every frame |
 | `servo` | the servo screen with the arm redrawn |
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
@@ -223,6 +225,7 @@ a change that makes the model draw more, not a frame that misses the panel:
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
 | `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
+| `overview-guide` | 1,000 | guide marks that draw more than their badges and brackets |
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
@@ -374,7 +377,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,160 | 2,992 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,256 | 2,896 |
 | `control` | `control_task` | 6,144 | 3,376 | 1,728 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
@@ -435,7 +438,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  272 such
+  277 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its

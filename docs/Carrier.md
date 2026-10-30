@@ -121,6 +121,8 @@ mini's OUTPUT ON:
   drops an ON not yet written. The OFF is a flag beside its queue entry,
   as the PD mini's OUTPUT OFF is, so a full queue does not drop it.
 - While a port holds the 5V the box takes no press.
+- A firmware install, an IOmcu update, a flash write and the Wi-Fi count
+  the ON from the moment it is queued (`supplies_live_or_coming()`).
 
 ![SUPPLY on the carrier](img/supply-rbmod.png)
 

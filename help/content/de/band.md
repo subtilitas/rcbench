@@ -10,7 +10,7 @@ Das Statusband sind die oberen 60px jedes Bildschirms außer dem Splash, dem Bus
 
 ## Was das Band zeigt
 
-Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann STOP am rechten Rand.
+Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann "?" auf einem Bildschirm mit Hilfe, dann STOP am rechten Rand.
 
 | Chip | Zeigt |
 |---|---|
@@ -72,6 +72,18 @@ Der Kasten von FEHLER reicht über das Panel, 1008px, mit einem Absatz je gesetz
 | 40 | STORE_OFF | der IOmcu kann in diesem Start nicht in seinen Flash schreiben; Einstellungen, die er bekommt, gelten bis zu seinem Neustart |
 
 Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
+
+## Die Bildschirmhilfe
+
+![Die Hilfe des Menüs auf Seite 1](view:help-overview)
+
+"?", 8px links von STOP, öffnet die Hilfe des Bildschirms, der oben ist. Das Menü hat eine; die anderen Bildschirme zeigen noch kein "?". Die Hilfe nummeriert bis zu 5 Bedienelemente des Bildschirms mit einem Abzeichen und Winkeln an den Ecken und listet sie in einem Dock von 480 x 488px auf einer Hälfte des Bildschirms: den Namen jedes Bedienelements, dann was es tut, in höchstens 3 Zeilen. Die andere Hälfte läuft weiter. Die letzte Zeile des Docks nennt die Adresse dieser Hilfe.
+
+- VORIGE und NÄCHSTE blättern. SCHLIESSEN oder ein Tipp auf "?" schließt die Hilfe.
+- Ein Tipp an jede andere Stelle schließt sie und tut sonst nichts.
+- STOP wirkt durch die Hilfe: Ein Druck auf STOP schließt sie und stoppt sofort. DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken mit demselben Druck, wie ohne Hilfe.
+- Der Knopf bewegt nichts, solange die Hilfe offen ist.
+- In ARMED zeigt die Hilfe nur die Seiten, die kein Bedienelement verdecken, das einen Ausgang anhält, und keine ZIEL-Zeile.
 
 ## Das Alert-Band
 

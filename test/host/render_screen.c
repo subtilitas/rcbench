@@ -35,6 +35,7 @@
 #include "wifi_spots.h"
 #include "coproc_update_screen.h"
 #include "render_files.h"
+#include "render_help.h"
 #include "render_hitec.h"
 #include "sense_link.h"
 #include "settings.h"
@@ -4215,6 +4216,9 @@ int main(int argc, char **argv)
     }
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);
+    }
+    if (render_help_view(view)) {
+        render_help_pose(view);
     }
     pose_shown_views(view);
 
