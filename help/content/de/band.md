@@ -79,10 +79,19 @@ Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit
 
 Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 44px hoch, über den unteren Rand des Bildschirms. Es verdeckt, was darunter liegt; ARM und die Bedienelemente, die den Prüfstand anhalten, enden darüber.
 
-- Es verschwindet 30s nach seinem Eintreffen. Ein neuer Alert startet die 30s neu.
+- Es verschwindet 30s nach seinem Eintreffen. Ein neuer Alert startet die 30s neu. Eine Meldung, der Hinweis eines [Halte-Buttons](#halte-buttons), steht 4s in Bernstein und weicht einem Alert.
 - Ein Tipp auf das Band, rechts mit einem `x` markiert, löscht es früher. Der Bildschirm darunter bekommt weder diesen Tipp noch einen zweiten Finger auf dem Band.
 - DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN enden über dem Band: Ein Druck darauf gehört dem Bedienelement, und der Alert bleibt. ARM und AUSGANG EIN unter dem Band werden nicht gedrückt.
 - "Touchscreen antwortet nicht. ARMED ist gesperrt.", beim Start gezeigt, bleibt bis zum Neustart und hat kein `x`.
+
+## Halte-Buttons
+
+Ein Halte-Button wirkt nach 2s Kontakt. ARM, AUSGANG EIN, START TEST, START LIMIT RUN, ÜBERNEHMEN und jeder Button mit der Beschriftung `2s HALTEN ZUM ...` sind Halte-Buttons. Ein Loslassen vor 2s sendet nichts und zeigt den Hinweis des Buttons 4s lang im Alert-Band, in Bernstein statt Rot, zum Beispiel `Halte 2s, um auf ARMED zu schalten.`
+
+- Der Hinweis erscheint nur bei einem Loslassen, das der Finger auf dem Button gemacht hat. Er erscheint nicht, wenn der Finger vorher vom Button gerutscht ist, wenn der Touch verloren ging, bei dem Kontakt eines zweiten Fingers und auf einem Bildschirm ohne Statusband.
+- Ein Loslassen bei 2s oder später hat gewirkt und zeigt keinen Hinweis.
+- Ein kurzes Tippen ist keine Störung, also ist der Hinweis eine Meldung und kein Alert: Ein Tipp auf das Band löscht ihn früher, ein stehender Alert behält das Band und kein Hinweis erscheint darüber, und ein Alert, der während des Hinweises kommt, ersetzt ihn.
+- Die Hinweise, einer je Aktion, jeweils nach `Halte 2s, um`: `auf ARMED zu schalten.`, `den Ausgang einzuschalten.`, `zu übernehmen.`, `den Test zu starten.`, `den Endlagenlauf zu starten.`, `freizugeben.`, `zu schreiben.`, `zurückzuspielen.`, `fortzufahren.`, `zu verlassen.`, `zu laden.`, `den Port freizugeben.`, `zu reparieren.`, `zu starten.`, `zu installieren.`, `zu laden und zu installieren.`, `den IOmcu zu aktualisieren.` und `alle Pin-Zuordnungen zu löschen.`
 
 ## Berührungen nahe am Band
 

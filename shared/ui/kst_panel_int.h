@@ -203,6 +203,7 @@ typedef struct {
         int       count;                /**< lines used */
         char      title[64];            /**< the page's title */
         char      apply[64];            /**< the label of the hold button */
+        int hint;              /**< the band's hint for a short release */
         char      lines[WARN_LINES][KST_PANEL_LINE];  /**< the page's lines */
         uint8_t   level[WARN_LINES];    /**< each line's level */
         bool      no_file;              /**< the page says: no card, no file */

@@ -70,6 +70,7 @@
 #include "stick_spots.h"
 #include "supply_spots.h"
 #include "logview_spots.h"
+#include "motor_spots.h"
 #include "ui_band.h"
 #include "ui_board.h"
 #include "ui_cats.h"
@@ -3757,6 +3758,15 @@ static void pose_shown_views(const char *view)
     /* An alert on the menu: the band across the bottom, with its x. */
     if (strcmp(view, "overview-alert") == 0) {
         ui_router_set_alert(TR(ALERT_COPRO_DISARMED));
+    }
+    /* A tap on a hold button, released before 2s: its hint in the band. */
+    if (strcmp(view, "hold-hint-arm") == 0) {
+        motor_screen_set_armed(false);
+        tap(MO_ARM_X, UI_BAND_H + MO_ARM_Y);
+    }
+    if (strcmp(view, "hold-hint-output") == 0) {
+        supply_screen_set_output(false);
+        tap(SU_OUT_X, UI_BAND_H + SU_OUT_Y);
     }
     if (strcmp(view, "motor-table") == 0) {
         tap(18 + 150, UI_BAND_H + 82 + 20);             /* TABLE */

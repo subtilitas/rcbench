@@ -547,7 +547,7 @@ static void event(const touch_event_t *evt)
             s.hit_kind = HIT_DD; touched(); return;
         }
         if (clear_offered() && inside(clear_rect(), x, y)) {
-            s.hit_kind = HIT_CLEAR; ui_hold_begin(&s.clear); touched();
+            s.hit_kind = HIT_CLEAR; ui_hold_begin(&s.clear, TX_HOLD_HINT_UNBIND); touched();
             return;
         }
         /* A binding that is not confirmed takes no press on a pin, and
@@ -612,7 +612,7 @@ static void event(const touch_event_t *evt)
         }
     } else if (kind == HIT_CLEAR) {
         /* The hold acts when it completes, not on the release. */
-        (void)ui_hold_end(&s.clear);
+        (void)ui_hold_end(&s.clear, evt, clear_rect());
         touched();
     } else {
         touched();
