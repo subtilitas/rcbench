@@ -163,27 +163,38 @@ steht. Weiterhin aus, gleich wer das Netzteil hält:
   (`error_sites_page_keeps()`). Einem ON, das die Page losgelassen hat,
   folgt es ebenso; die Page lässt ein ON nur los, wenn kein Port sie hält.
 
-Ein Port hält das Netzteil, solange FLAGS-Bit 11 der Page SUPPLY
-(`LINK_SP_PORT`) es sagt, so wie das Panel es zuletzt gelesen hat
-(`supply_link_port_holds()`). Eine KST- oder Hitec-Sitzung mit einem Port
-zählt nur über dieses Bit. Auf einem IOmcu vor 4.29 hält eine
-Hitec-Sitzung das Netzteil vom OFF eines POWER bis zum Ende seines
-Zuhörens, und ein Fehler zwischen zwei POWER schaltet es aus. Ein IOmcu vor
-4.13 hat dieses Bit nicht, und dort hält kein Port das Netzteil. Das Panel
-liest die Page alle 100ms, solange der PD mini in Gebrauch ist. Ein Port,
-der das Netzteil zwischen zwei Lesevorgängen übernimmt, bekommt das OFF
-eines Fehlers in dieser Lücke. Nachdem ein Port losgelassen hat, liest das
-Panel das Halten bis zu seinem nächsten beantworteten Lesen, und ein
-Fehler in dieser Lücke lässt den Ausgang an (derzeitige Grenze, nur IOmcu
-vor 4.31). Ab 4.31 ändert das Halten nichts: das Panel schreibt das OFF in
-jedem Fall, und der IOmcu hält es für ein laufendes Schreiben zurück.
+Ein Port hält das Netzteil, solange zwei Angaben es sagen: FLAGS-Bit 11
+der Page SUPPLY (`LINK_SP_PORT`), so wie das Panel es zuletzt gelesen hat,
+und eine KST- oder Hitec-Sitzung mit einem Port, so wie das Panel die Page
+KST oder HITEC zuletzt gelesen hat (`supply_link_port_holds()`). Das Halten
+endet bei der ersten der beiden, die sein Ende sagt. Auf einem IOmcu vor
+4.29 hält eine Hitec-Sitzung das Netzteil vom OFF eines POWER bis zum Ende
+seines Zuhörens, und ein Fehler zwischen zwei POWER schaltet es aus. Ein
+IOmcu vor 4.13 hat dieses Bit nicht, und dort hält kein Port das Netzteil.
+Das Panel liest die Page SUPPLY alle 100ms, solange der PD mini in Gebrauch
+ist, die Page KST alle 50ms, solange ihr Port nicht in PWM ist, und die
+Page HITEC alle 100ms, solange sie einen Port hält, und alle 5ms, solange
+eine Anfrage läuft. Ein Port, der das Netzteil zwischen zwei Lesevorgängen
+der Page SUPPLY übernimmt, bekommt das OFF eines Fehlers in dieser Lücke.
+Ein Port, der loslässt, zählt bis zum ersten beantworteten Lesen einer der
+beiden Pages, das ihn frei zeigt. Ein Fehler zwischen dem
+Loslassen im IOmcu und diesem Lesen lässt den Ausgang an (derzeitige
+Grenze, nur IOmcu vor 4.31); die Lücke wächst, solange die Lesevorgänge
+unbeantwortet bleiben. Ab 4.31 ändert das Halten nichts: das Panel schreibt
+das OFF in jedem Fall, und der IOmcu hält es für ein laufendes Schreiben
+zurück.
 
 Die 5V der Programmierports auf dem Carrier haben keine solche Ausnahme.
 Ihre Page, PROG_SUPPLY, gibt es ab 4.32, und jeder IOmcu, der sie bedient,
 hält das OFF für ein Schreiben zurück; ihr eigenes Port-Bit
 (`LINK_PS_PORT`) geht nicht in die Regel ein. Auf dem Carrier bleibt das
 Bit der Page SUPPLY gelöscht, weil die Ports an den 5V hängen und nicht am
-PD mini.
+PD mini (`ports_tell_supply()`). Eine Sitzung hält dort auch die bedienende
+Person nicht vom PD mini fern: SUPPLY und die Zeile SOLL des
+SERVO-Bildschirms nehmen AUSGANG EIN und Sollwerte während einer Sitzung
+an (`supply_link_session_blocks()`), und der IOmcu nimmt sie. Auf jeder
+anderen Platine hält eine Sitzung mit einem Port beides vom PD mini fern,
+und nur AUSGANG AUS funktioniert.
 
 Ein Port hält nur den Ausgang des PD mini. Auf dem Modell des Panels liegt
 kein Port, und ein Fehler schaltet es aus. Ein Netzteil, das nicht
@@ -258,17 +269,15 @@ Das zweite Lesen vor dem Plan eines Hitec-Schreibens
 nichts, und ein Ausschalten währenddessen wird nicht gehalten.
 
 Ein Port, der das Netzteil bei eingeschaltetem Ausgang freigibt, lässt
-seine eigenen Sollwerte am eingeschalteten Ausgang. Die Sollwerte des
-Bedieners von vor der Sitzung erreichen diesen Ausgang nur über die Frage
-von SERVO nach dem Verlassen (JA), und eine Spannung, die von 6,0V oder
+seine Sollwerte am Ausgang. Die des Bedieners erreichen ihn nur über JA auf
+die Frage von SERVO nach dem Verlassen, eine Spannung, die von 6,0V oder
 darunter über 6,0V steigt, nur über NUR HV-SERVOS und sein Halten von 2s
 ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
-Die Frage kommt nicht, solange ein Port das Netzteil hält, und nicht nach
-einem Ausschalten, einem Fehler, der den Ausgang ausschaltete, oder einem
-STOP seit dem Verlassen; ein Ausschalten, das angefordert wird, während sie
-steht, schließt sie, bevor der Ausgang aus liest.
-Sonst kommen die Sollwerte des Bedieners nur bei ausgeschaltet gelesenem
-Ausgang zurück (`supply_screen_port_done()`).
+Keine Frage, solange ein Port das Netzteil hält, und keine nach einem
+Ausschalten, einem Fehler, der den Ausgang ausschaltete, oder einem STOP
+seit dem Verlassen; ein angefordertes Ausschalten schließt sie, bevor der
+Ausgang aus liest. Sonst kommen die Sollwerte des Bedieners nur bei
+ausgeschaltet gelesenem Ausgang zurück (`supply_screen_port_done()`).
 
 Eine Störung der Sitzung ist ein Vorgang, der an dem endet, was das Servo
 oder die Leitung getan hat. KST: kein Servo, ein Register ohne 3 gleiche

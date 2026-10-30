@@ -207,6 +207,16 @@ void supply_screen_set_port_held(bool held);
  */
 void supply_screen_set_hitec_held(bool held);
 /**
+ * @brief Whether the programming ports run from their own supply (the
+ *        PROG_SUPPLY page, the rbmod carrier's 5V) and not from the PD
+ *        mini.  The programmers' words then hold nothing here: the IOmcu
+ *        never holds the SUPPLY page for a port on such a board, and the
+ *        PD mini stays the operator's through a session.
+ * @param own whether the ports' own supply is the programmers' supply
+ *        (prog_supply_link_owns())
+ */
+void supply_screen_set_ports_own(bool own);
+/**
  * @brief Whether a programming port holds the supply
  *        (supply_screen_set_port_held()).
  * @return True while it holds it.

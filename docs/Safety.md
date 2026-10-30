@@ -149,25 +149,34 @@ whoever holds the supply:
   (`error_sites_page_keeps()`). An ON the page let go is followed off the
   same way; the page lets an ON go only with no port holding it.
 
-A port holds the supply while the SUPPLY page's FLAGS bit 11
-(`LINK_SP_PORT`) says so, as the panel last read it
-(`supply_link_port_holds()`). A KST or Hitec session that has a port counts
-through that bit only. On an IOmcu older than 4.29 a Hitec session holds
-the supply from a POWER's OFF to the end of its listen, and an error between
-two POWERs switches it off. An IOmcu older than 4.13 has no such bit, and
-no port holds the supply there. The panel reads the page every 100ms while
-the PD mini is in use. A port that takes the supply between two reads gets
-the OFF of an error in that gap. After a port lets go, the panel reads the
-hold until its next answered read, and an error in that gap leaves the
-output on (current limitation, IOmcu older than 4.31 only). From 4.31 the
-hold changes nothing: the panel writes the OFF either way, and the IOmcu
-holds it for a write that runs.
+A port holds the supply while two words say so: the SUPPLY page's FLAGS
+bit 11 (`LINK_SP_PORT`) as the panel last read it, and a KST or Hitec
+session with a port as the panel last read the KST or HITEC page
+(`supply_link_port_holds()`). The hold ends at the first of the two that
+says it ended. On an IOmcu older than 4.29 a Hitec session holds the supply
+from a POWER's OFF to the end of its listen, and an error between two
+POWERs switches it off. An IOmcu older than 4.13 has no such bit, and no
+port holds the supply there. The panel reads the SUPPLY page every 100ms
+while the PD mini is in use, the KST page every 50ms while its port is out
+of PWM, and the HITEC page every 100ms while it holds a port and every 5ms
+while a request runs. A port that takes the supply between two reads of
+the SUPPLY page gets the OFF of an error in that gap. A port that lets go
+counts until the first answered read of either page that shows it gone. An error between the IOmcu letting go and that read leaves the
+output on (current limitation, IOmcu older than 4.31 only); the gap grows
+while the reads go unanswered. From 4.31 the hold changes nothing: the
+panel writes the OFF either way, and the IOmcu holds it for a write that
+runs.
 
 The carrier's programming-port 5V has no such exemption. Its page,
 PROG_SUPPLY, exists from 4.32, and every IOmcu that serves it holds the
 OFF for a write; its own port bit (`LINK_PS_PORT`) does not enter the rule.
 On the carrier the SUPPLY page's bit stays clear, since the ports run from
-the 5V and not from the PD mini.
+the 5V and not from the PD mini (`ports_tell_supply()`). A session there
+does not keep the operator off the PD mini either: SUPPLY and the SERVO
+screen's SET row take OUTPUT ON and set points through a session
+(`supply_link_session_blocks()`), and the IOmcu takes them. On any other
+board a session with a port keeps both off the PD mini, and only OUTPUT
+OFF works.
 
 A port holds the PD mini's output only. The panel's model has no port on
 it, and an error switches it off. A supply that stops answering or gives

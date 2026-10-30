@@ -17,6 +17,7 @@
  * - an_off_asked_ends_the_question_before_the_output_reads_off
  * - no_question_when_nothing_differs_or_a_set_point_moved
  * - the_question_draws_its_frame_title_yes_and_no
+ * - no_question_when_the_ports_run_from_their_own_supply
  *
  * SPDX-License-Identifier: MIT
  */
@@ -452,6 +453,27 @@ TEST_CASE(the_question_draws_its_frame_title_yes_and_no)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* On a board whose ports run from their own supply (the rbmod carrier's
+ * PROG_SUPPLY) a programmer's word holds nothing here: no hold, so no
+ * release, and no question at the LEAVE, even with set points from a port
+ * on the PD mini. */
+TEST_CASE(no_question_when_the_ports_run_from_their_own_supply)
+{
+    for (int kst = 0; kst < 2; ++kst) {
+        own(5.5f, 1.5f);
+        supply_screen_set_ports_own(true);
+        session_on(kst != 0);
+        CHECK(!supply_screen_port_held());
+        port_holds(kst != 0, false);
+        for (int i = 0; i < 5; ++i) {
+            frame_tick();
+        }
+        CHECK(!servo_screen_asks_restore());
+        CHECK(!supply_screen_restore_offer(NULL, NULL));
+        supply_screen_set_ports_own(false);
+    }
+}
+
 int main(void)
 {
     RUN(a_leave_with_the_output_on_asks_after_kst_and_hitec);
@@ -465,5 +487,6 @@ int main(void)
     RUN(an_off_asked_ends_the_question_before_the_output_reads_off);
     RUN(no_question_when_nothing_differs_or_a_set_point_moved);
     RUN(the_question_draws_its_frame_title_yes_and_no);
+    RUN(no_question_when_the_ports_run_from_their_own_supply);
     return test_summary("servo_restore");
 }
