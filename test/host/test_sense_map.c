@@ -13,7 +13,8 @@
  * shunts and none for WATCH alone; core 1's order from the map; the
  * snapshot into the map's read-only registers and both window pages, and
  * a set-up taken clearing them; a capture armed only with a FAST channel;
- * what is kept and its restore at boot.
+ * what is kept and its restore at boot; a carrier's first boot with its
+ * INA3221 in force.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,8 +22,11 @@
 
 #include "greatest.h"
 
+#include "board_fix.h"
 #include "link_msg.h"
 #include "link_pages.h"
+#include "out_bind.h"
+#include "out_store_rec.h"
 #include "outputs.h"
 #include "sense_map.h"
 #include "sense_page.h"
@@ -176,9 +180,10 @@ TEST_CASE(each_value_is_taken_at_its_limits_and_refused_past_them)
     CHECK_EQ(mwrite(LINK_SM_SHUNT(4u), 10000u), 0u);
     CHECK_EQ(mwrite(LINK_SM_SHUNT(4u), 0u), 0u);
     /* WATCH: the list and nothing else. */
-    static const uint16_t ok[] = { 0x00u, 0x01u, 0x08u, 0x10u, 0x13u, 0x20u };
+    static const uint16_t ok[] = { 0x00u, 0x01u, 0x08u, 0x10u, 0x13u, 0x20u,
+                                   0x30u, 0x31u, 0x32u };
     static const uint16_t bad[] = { 0x09u, 0x0Fu, 0x14u, 0x1Fu, 0x21u,
-                                    0xFFFFu };
+                                    0x2Fu, 0x33u, 0xFFFFu };
     for (unsigned k = 0; k < sizeof(ok) / sizeof(ok[0]); ++k) {
         CHECK_EQ(mwrite(LINK_SM_WATCH(11u), ok[k]), 0u);
     }
@@ -266,7 +271,7 @@ TEST_CASE(a_map_in_force_owns_senses_ina3221_bit_and_frame)
     CHECK_EQ(sense_page_caps(&pg) & LINK_CAP_SERVO_SENSE, 0u);
 }
 
-TEST_CASE(servo_sense_is_a_channel_watching_an_output_or_a_port)
+TEST_CASE(servo_sense_is_a_channel_watching_an_output_a_port_or_a_rail)
 {
     fresh();
     /* Derived: SENSE's INA3221 bit, as before the map. */
@@ -281,6 +286,8 @@ TEST_CASE(servo_sense_is_a_channel_watching_an_output_or_a_port)
         { LINK_SM_WATCH_OUT(0u), true },  { LINK_SM_WATCH_OUT(7u), true },
         { LINK_SM_WATCH_PORT(0u), true }, { LINK_SM_WATCH_PORT(3u), true },
         { LINK_SM_WATCH_SUPPLY, false },  { LINK_SM_WATCH_NONE, false },
+        { LINK_SM_WATCH_RAIL_A, true },   { LINK_SM_WATCH_RAIL_B, true },
+        { LINK_SM_WATCH_PROG_5V, true },
     };
     for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         CHECK_EQ(sense_map_write(&pg, (uint8_t)LINK_SM_WATCH(2u), 1u,
@@ -543,6 +550,31 @@ TEST_CASE(a_kept_map_comes_back_in_force_or_not_at_all)
     sense_map_read(&pg, 30u, 3u, kept);           /* off the page */
 }
 
+TEST_CASE(a_carriers_boot_puts_its_ina3221_in_force)
+{
+    /* Nothing kept on a fresh carrier: the record the IOmcu starts from
+     * (main.c), its pins and its INA3221 put on by board_fix_store(). */
+    out_store_t cfg;
+    out_store_cfg_defaults(&cfg);
+    board_fix_store(outbind_roles(OUTBIND_BOARD_RBMOD), &cfg);
+    fresh();
+    CHECK_EQ(sense_page_write(&pg, LINK_SN_ENABLE,
+                              (uint8_t)LINK_SN_CONFIG_COUNT, cfg.sense, &o,
+                              0u), 0u);
+    CHECK_EQ(sense_map_restore(&pg, cfg.sense_map, cfg.sense_map_set, &o, 0u),
+             0u);
+    CHECK(pg.map_set);
+    CHECK_EQ(mreg(LINK_SM_ENABLE) & 0x01u, 0x01u);
+    CHECK_EQ(mreg(LINK_SM_WATCH(0u)), LINK_SM_WATCH_RAIL_B);
+    CHECK_EQ(mreg(LINK_SM_WATCH(1u)), LINK_SM_WATCH_RAIL_A);
+    CHECK_EQ(mreg(LINK_SM_WATCH(2u)), LINK_SM_WATCH_PROG_5V);
+    /* SENSE mirrors it: the INA3221 on, at 0x40, on the carrier's bus. */
+    CHECK((sreg(LINK_SN_ENABLE) & LINK_SN_EN_I3221) != 0u);
+    CHECK_EQ(sreg(LINK_SN_I3221_ADDR), 0x40u);
+    CHECK_EQ(sreg(LINK_SN_SDA_PIN), 16u);
+    CHECK((sense_page_caps(&pg) & LINK_CAP_SERVO_SENSE) != 0u);
+}
+
 int main(void)
 {
     RUN(the_pages_are_where_protocol_4_25_puts_them);
@@ -551,12 +583,13 @@ int main(void)
     RUN(each_value_is_taken_at_its_limits_and_refused_past_them);
     RUN(the_ina228_and_a_fitted_part_never_share_an_address);
     RUN(a_map_in_force_owns_senses_ina3221_bit_and_frame);
-    RUN(servo_sense_is_a_channel_watching_an_output_or_a_port);
+    RUN(servo_sense_is_a_channel_watching_an_output_a_port_or_a_rail);
     RUN(nothing_changes_while_the_bank_drives);
     RUN(the_pins_are_judged_when_the_map_opens_the_bus);
     RUN(a_set_up_moves_for_the_bus_and_not_for_a_watch);
     RUN(every_channels_window_is_published_on_two_pages);
     RUN(a_capture_with_the_map_in_force_needs_a_fast_channel);
     RUN(a_kept_map_comes_back_in_force_or_not_at_all);
+    RUN(a_carriers_boot_puts_its_ina3221_in_force);
     return test_summary("sense_map");
 }

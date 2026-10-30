@@ -99,8 +99,42 @@ Pad-Pulls des RP2350.
 | CH2 | VCC_PDMINI | VCC_SERVOPORT_A, J2 Positionen 3 und 4 |
 | CH3 | VCC_PROGPORT_DCDC (M7) | VCC_PROGPORT, J1 |
 
-Die Kanäle werden in diesem Release wie an jeder Bench unter SETUP > SENSORS
-eingerichtet.
+Das Bauteil und seine Kanäle sind fest. Der IOmcu hält das Bauteil auf der
+Page SENSE_MAP bestückt und jeden Kanal auf seiner Schiene und lehnt eine
+Map ab, die eins davon verschiebt
+([Link, Boards mit verlöteten Pins](Link-de.md#boards-mit-verlöteten-pins)).
+SETUP > SENSORS zeigt die Zeilen ohne Tasten:
+
+| Zeile | Zeigt |
+| --- | --- |
+| 0x40 bestückt | EIN |
+| 0x40 CH1 misst | SCHIENE B (PWM03, PWM02) |
+| 0x40 CH2 misst | SCHIENE A (PWM01, PWM04) |
+| 0x40 CH3 misst | PROG PORTS 5V (PROGP01 bis PROGP04) |
+
+![SENSORS auf dem Carrier](img/de/setup-sensors-rbmod.png)
+
+- Die Shunts und die Grenzen sind Einstellungen wie an jeder Bench: Shunt
+  AUS oder 5.0 bis 1000.0mΩ, Vorgabe 100.0mΩ; Grenze AUS oder 10 bis
+  32767mA ([Bildschirme: SENSORS](Screens-de.md#sensors-die-ina3221-bausteine)).
+  Der Shuntwert von M5 auf dem Carrier steht hier nicht fest; 100.0mΩ ist
+  der des DAOKAI-Moduls.
+- 0x41 bis 0x43 sind frei für Bausteine an J5.
+- Der Kanal, der mit 1kHz gelesen wird und den der Servotest und der
+  Bildschirm SERVO lesen, ist die Schiene des niedrigsten GPIO, den der
+  Servotester als SERVO PWM treibt: CH2 für GPIO 1 oder GPIO 2, CH1 für
+  GPIO 4 oder GPIO 5. Mit SERVO PWM auf beiden Schienen liest er nur die
+  Schiene des niedrigsten GPIO. Mit einem Programmierport als Ziel des
+  Testers ist es CH3.
+- SERVO und der Limit-Lauf nennen das Messgerät nach seiner Schiene:
+  `INA SCHIENE A` über dem Plot, `INA3221 SCHIENE A` auf der Karte TEST.
+  Das Band nennt die Schiene eines Kanals über seiner Grenze:
+  `INA3221 0x40 CH2 (SCHIENE A) über der Grenze von 0.80A.`. Die Zeile
+  ÜBERWACHT VON jedes Programmierports nennt CH3, `INA3221 PROG 5V`. Die
+  Spalten des Laufprotokolls heißen `rail b`, `rail a` und `prog 5v`.
+- Ein IOmcu-Image älter als Protokoll 4.33 lehnt die Map des Carriers ab:
+  0x40 zeigt `VOM IOMCU NICHT ÜBERNOMMEN`, bis der IOmcu das Image des
+  Panels fährt.
 
 ## Das Image
 
@@ -125,6 +159,8 @@ fest:
   ([Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).
 - SETUP > INTERFACES zeigt Sensor SDA und SCL, Tap pin sowie PD mini TX
   und RX auf den Pins des Carriers, ohne Tasten und ohne Keypad.
+- SETUP > SENSORS zeigt 0x40 bestückt und seine drei Kanäle auf den
+  Schienen, ohne Tasten ([Der Strommonitor](#der-strommonitor)).
 - Die Kachel PICK A PIN öffnet LAYOUT: J1 und J2 in ihrer
   Positionsfolge mit Rolle, GPIO, Netz am + und dem gebundenen
   Protokoll jeder Position, und die weiteren Stecker

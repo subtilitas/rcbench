@@ -67,7 +67,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.32. The
+IOmcu transmits only in answer to a request. Protocol version 4.33. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -163,7 +163,12 @@ off on an error from 4.31 only, and sets the bit from 4.31 only
 ([Safety, A programming port's supply](Safety.md#a-programming-ports-supply)). From
 4.32 PROG_SUPPLY (0x39) switches the programming ports' own supply on a
 board that has one, the rbmod carrier's GPIO 21; an older IOmcu refuses
-the page with BAD_PAGE ([Carrier, Power](Carrier.md#power)). The
+the page with BAD_PAGE ([Carrier, Power](Carrier.md#power)). From
+4.33 SENSE_MAP takes the WATCH values of a board's own rails, 0x30 servo
+rail A, 0x31 servo rail B and 0x32 the programming ports' 5V, and on the
+rbmod carrier holds its INA3221 at 0x40 with its three channels on them;
+an older IOmcu refuses a map with them with BAD_VALUE
+([Carrier, The current monitor](Carrier.md#the-current-monitor)). The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -1317,10 +1322,18 @@ On board 2 the IOmcu holds every role to its pin:
 - SUPPLY TX and RX are GPIO 7 and GPIO 6, SENSE SDA and SCL GPIO 16 and
   GPIO 17, TONE's pin GPIO 22. A write of another pin is refused with
   BAD_VALUE. The other registers of the pages take their own rules.
+- SENSE_MAP (since 4.33): the INA3221 at 0x40 is fitted, CH1 watches 0x31
+  (servo rail B), CH2 0x30 (servo rail A) and CH3 0x32 (the programming
+  ports' 5V). The write is merged into the map and judged whole: a map
+  without bit 0 in `ENABLE` or with another `WATCH` on one of the three
+  channels is refused with BAD_VALUE. Shunts, `FAST` and the parts at 0x41
+  to 0x43 take the page's own rules.
 - At boot each role starts on its pin, whatever the flash kept. A record a
   module's image wrote keeps its enables, ranges, rates and endpoints. A
   slot with a driver on a pin that is no servo output is cleared, and every
-  port starts as NONE.
+  port starts as NONE. The kept map gets bit 0 in `ENABLE` and the three
+  `WATCH` values and is in force; a part whose three shunts are 0 gets
+  100.0mΩ (1000) on each.
 
 GPIO 21 is driven low from the first statement of `main()`; from the main
 loop on the PROG_SUPPLY page (0x39, since 4.32) drives it, off until a KST
@@ -1336,7 +1349,8 @@ and UPDATES reads `No IOmcu image for this board in this panel build.`.
 
 `test/host/test_board_fix.c` holds the carrier's catalogue against its
 roles, each page's pins at the role pin and the pins either side of it, a
-module's record put on the carrier's pins, and the image chosen per board.
+module's record put on the carrier's pins, the INA3221's map judged and
+kept, and the image chosen per board.
 
 ### Refused frames
 

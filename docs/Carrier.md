@@ -96,7 +96,40 @@ pull-ups hang on VPU, so they are bus 1's pull-ups: the firmware runs bus 1
 | CH2 | VCC_PDMINI | VCC_SERVOPORT_A, J2 positions 3 and 4 |
 | CH3 | VCC_PROGPORT_DCDC (M7) | VCC_PROGPORT, J1 |
 
-The channels are set up on SETUP > SENSORS as on any bench in this release.
+The part and its channels are fixed. The IOmcu keeps the part fitted and
+each channel on its rail on the SENSE_MAP page and refuses a map that moves
+either ([Link, Boards with soldered pins](Link.md#boards-with-soldered-pins)).
+SETUP > SENSORS shows the rows without keys:
+
+| Row | Reads |
+| --- | --- |
+| 0x40 fitted | ON |
+| 0x40 CH1 watches | SERVO RAIL B (PWM03, PWM02) |
+| 0x40 CH2 watches | SERVO RAIL A (PWM01, PWM04) |
+| 0x40 CH3 watches | PROG PORTS 5V (PROGP01 to PROGP04) |
+
+![SENSORS on the carrier](img/setup-sensors-rbmod.png)
+
+- The shunts and the limits are settings, as on any bench: shunt OFF or
+  5.0 to 1000.0mΩ, 100.0mΩ by default; limit OFF or 10 to 32767mA
+  ([Screens: SENSORS](Screens.md#sensors-the-ina3221-parts)). The shunt
+  value of M5 on the carrier is not stated here; 100.0mΩ is the DAOKAI
+  module's.
+- 0x41 to 0x43 are free for parts on J5.
+- The channel read at 1kHz, which the servo test and the SERVO screen
+  read, is the rail of the lowest GPIO the servo tester drives as SERVO
+  PWM: CH2 for GPIO 1 or GPIO 2, CH1 for GPIO 4 or GPIO 5. With SERVO PWM
+  on both rails it reads only the rail of the lowest GPIO. With a
+  programming port as the tester's target it is CH3.
+- SERVO and the limit run name the meter by its rail: `INA RAIL A` over
+  the plot, `INA3221 RAIL A` on the TEST card. The band names the rail of
+  a channel over its limit:
+  `INA3221 0x40 CH2 (SERVO RAIL A) over its 0.80A limit.`. Each
+  programming port's WATCHED BY line names CH3, `INA3221 PROG 5V`. The run
+  log's columns are `rail b`, `rail a` and `prog 5v`.
+- An IOmcu image older than protocol 4.33 refuses the carrier's map: 0x40
+  reads `NOT ACCEPTED BY THE IOMCU` until the IOmcu runs the panel's
+  image.
 
 ## The image
 
@@ -120,6 +153,8 @@ fixed:
   ([Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).
 - SETUP > INTERFACES shows Sensor SDA and SCL, Tap pin and PD mini TX and
   RX at the carrier's pins, with no keys and no keypad.
+- SETUP > SENSORS shows 0x40 fitted and its three channels on the rails,
+  with no keys ([The current monitor](#the-current-monitor)).
 - The PICK A PIN tile opens LAYOUT: J1 and J2 in their position order
   with each position's role, GPIO, net on its + and the protocol bound
   on it, and the other connectors
