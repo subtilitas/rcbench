@@ -162,6 +162,14 @@ TEST_CASE(the_gates_count_it_live_until_read_off_and_free)
     CHECK(prog_supply_link_live(&l, true, false));    /* read unanswered */
     read_flags(LINK_PS_FITTED, 0u);
     CHECK(!prog_supply_link_live(&l, true, false));
+    /* An ON asked and not yet written: live from the ask. */
+    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_live(&l, true, false));
+    /* Its OFF owed instead: live until written. */
+    prog_supply_link_ask_off(&l);
+    CHECK(prog_supply_link_live(&l, true, false));
+    prog_supply_link_written(&l, LINK_PS_OUTPUT, 0u, PROG_SUPPLY_LINK_ACK);
+    CHECK(!prog_supply_link_live(&l, true, false));
     /* The link lost: no page, nothing live here; the IOmcu cuts it. */
     prog_supply_link_init(&l, false);
     CHECK(!prog_supply_link_live(&l, true, true));
@@ -262,13 +270,20 @@ TEST_CASE(an_on_is_written_once_after_any_off)
     CHECK(!prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(prog_supply_link_state(&l), PROG_SUPPLY_OFF);
     CHECK_EQ(prog_supply_link_take_on_result(&l), (int)LINK_NACK_NOT_ARMED);
-    /* Unanswered: dropped, not written again. */
+    /* Unanswered: not written again, and an OFF owed, as the IOmcu may
+     * have taken it and lost its reply. */
     CHECK(prog_supply_link_ask_on(&l));
     CHECK(prog_supply_link_next(&l, &off, &v));
     prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_NO_ANSWER);
-    CHECK(!prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(prog_supply_link_take_on_result(&l), PROG_SUPPLY_LINK_NO_ANSWER);
     CHECK_EQ(prog_supply_link_state(&l), PROG_SUPPLY_OFF);
+    CHECK(prog_supply_link_live(&l, true, false));       /* until written */
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_OUTPUT);
+    CHECK_EQ(v, 0u);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
+    CHECK(!prog_supply_link_next(&l, &off, &v));
+    CHECK(!prog_supply_link_live(&l, true, false));
     /* A port took it between the ask and the write: BAD_VALUE. */
     CHECK(prog_supply_link_ask_on(&l));
     CHECK(prog_supply_link_next(&l, &off, &v));

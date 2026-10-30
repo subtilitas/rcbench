@@ -85,7 +85,7 @@ session holds the 5V the box takes no press and reads
 | --- | --- |
 | no live heartbeat (NOT_ARMED) | `PROG ports 5V not switched on: the IOmcu has no heartbeat.` |
 | a port holds the 5V (BAD_VALUE) | `PROG ports 5V not switched on: a programming port holds it.` |
-| no answer | `PROG ports 5V ON not answered. Check the link.` |
+| no answer; the OFF follows | `PROG ports 5V ON not answered. Check the link.` |
 | taken across lost touch events; the bench goes SAFE | `Touch signal lost while switching on. PROG ports 5V off.` |
 | a press while a port holds the 5V or the page reads NOT READ | `PROG ports 5V: held by a programming port, or not read.` |
 Every error, a lost heartbeat and a silent link switch it off; a write to

@@ -396,6 +396,10 @@ atomic_uint s_supply_ack;
 atomic_uint s_prog5v_offs;
 /** @brief A PROG 5V OFF asked, as s_supply_off_request is (panel.h). */
 atomic_bool s_prog5v_off_request;
+/** @brief The PROG 5V ONs queued (panel.h). */
+atomic_uint s_psup_ons_sent;
+/** @brief The PROG 5V ONs the control task is done with (panel.h). */
+atomic_uint s_psup_ons_taken;
 /** @brief The PROG 5V ONs applied, numbered (panel.h). */
 atomic_uint s_psup_gen;
 /** @brief The newest PROG 5V ON a whole frame has seen on (panel.h). */

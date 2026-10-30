@@ -254,11 +254,14 @@ static void send_cmd(const panel_cmd_t *in)
         return;
     }
     panel_cmd_t stale;
-    if (xQueueReceive(s_cmd_q, &stale, 0) == pdTRUE
-        && stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
+    if (xQueueReceive(s_cmd_q, &stale, 0) != pdTRUE) {
+        /* nothing taken out */
+    } else if (stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
         /* An ON the control task will never see is one it will never take
          * either; counted here, so nothing waits on it for ever. */
         atomic_fetch_add(&s_supply_ons_taken, 1u);
+    } else if (stale.kind == PANEL_CMD_PROG5V && stale.prog5v.on) {
+        atomic_fetch_add(&s_psup_ons_taken, 1u);
     }
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
@@ -289,7 +292,12 @@ bool supply_live_or_coming(void)
 
 bool supplies_live_or_coming(void)
 {
-    return supply_live_or_coming() || atomic_load(&s_psup_live);
+    /* The counters before the flag, as above: the control task publishes
+     * s_psup_live before it counts an ON taken. */
+    const bool psup_coming = atomic_load(&s_psup_ons_taken)
+                             != atomic_load(&s_psup_ons_sent);
+    return supply_live_or_coming() || psup_coming
+           || atomic_load(&s_psup_live);
 }
 
 /*
@@ -485,6 +493,10 @@ void flush_screen_commands(uint32_t stops_now)
     if (prog5v_box_poll_cmd(&p5)) {
         if (p5.off) {
             atomic_fetch_add(&s_prog5v_offs, 1u);
+        }
+        if (p5.on) {
+            /* Counted before it is queued: the gates see it coming. */
+            atomic_fetch_add(&s_psup_ons_sent, 1u);
         }
         panel_cmd_t pc = { .kind = PANEL_CMD_PROG5V, .prog5v = p5,
                            .stops = stops_now,

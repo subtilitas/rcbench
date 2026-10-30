@@ -270,9 +270,10 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   its programmers never get the 5V.
 - A firmware install, an IOmcu update, a write to the panel's flash and
   the panel's Wi-Fi wait while the 5V is on, not read since the
-  link came up or since an unanswered read, or held by a programmer's
-  port, as they wait for the PD mini's output
-  (`prog_supply_link_live()`).
+  link came up or since an unanswered read, held by a programmer's
+  port, or while a PROG 5V ON is queued or an ON or OFF owed, as they wait
+  for the PD mini's output (`prog_supply_link_live()`,
+  `supplies_live_or_coming()`).
 
 ##### The PROG 5V box
 
@@ -286,7 +287,8 @@ mini's OUTPUT ON:
 - It is written once as OUTPUT 1 and not repeated. The IOmcu refuses it
   without a live heartbeat (NOT_ARMED) and while a port holds the 5V
   (BAD_VALUE); each, and no answer, gets an alert
-  ([Carrier, Power](Carrier.md#power)).
+  ([Carrier, Power](Carrier.md#power)). An ON without an answer owes an
+  OFF: the IOmcu may have taken it and lost its reply.
 - An ON taken across lost touch events is an error: SAFE, the 5V off.
 - An error, PROG 5V OFF and leaving the screen whose box switched it on
   write OFF, the last also while the ON is still on its way. An error

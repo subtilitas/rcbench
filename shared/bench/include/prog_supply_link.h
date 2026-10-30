@@ -133,7 +133,8 @@ bool prog_supply_link_next(const prog_supply_link_t *l, uint8_t *off,
  *        PROG_SUPPLY_LINK_NO_ANSWER keeps it owed.  For an ON every outcome
  *        ends it and is kept for prog_supply_link_take_on_result(); an ACK
  *        reads the output on until the next read says otherwise, and an OFF
- *        cut during the exchange stays owed.
+ *        cut during the exchange stays owed.  An ON unanswered owes an OFF:
+ *        the IOmcu may have taken it and lost its reply.
  * @param l      the state
  * @param off    the register written
  * @param v      the value written
@@ -191,9 +192,10 @@ bool prog_supply_link_owns(const prog_supply_link_t *l, bool board_has);
 /**
  * @brief Whether the ports' own supply counts as live for the gates that
  *        wait for a bench with every supply off (a firmware install, a
- *        flash write): owned, and on as last read, not read since the
- *        start or since the last unanswered read, or a programmer holding
- *        a port, which switches it on.
+ *        flash write): owned, and on as last read or as an ON's ACK says,
+ *        an ON or an OFF owed, not read since the start or since the last
+ *        unanswered read, or a programmer holding a port, which switches
+ *        it on.
  * @param l          the state
  * @param board_has  as for prog_supply_link_owns()
  * @param port_taken a programmer session holds a port

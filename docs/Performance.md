@@ -75,7 +75,7 @@ battery                          0       0 KiB
 balance                          0       0 KiB
 motor-stick                  1,560     195 KiB
 balance-sim                  3,112     389 KiB
-settings-sim                 3,112     389 KiB
+settings-sim                 3,237     405 KiB
 battery-sim                  3,114     389 KiB
 analyser-chrome             60,992    7624 KiB
 logs-chrome                 26,041    3255 KiB

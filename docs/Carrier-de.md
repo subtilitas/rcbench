@@ -86,7 +86,7 @@ OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN` oder `AUS`.
 | --- | --- |
 | kein lebender Heartbeat (NOT_ARMED) | `PROG-Ports 5V nicht eingeschaltet: der IOmcu hat keinen Heartbeat.` |
 | ein Port hält die 5V (BAD_VALUE) | `PROG-Ports 5V nicht eingeschaltet: ein Programmierport belegt sie.` |
-| keine Antwort | `PROG-Ports 5V EIN nicht beantwortet. Verbindung prüfen.` |
+| keine Antwort; das OFF folgt | `PROG-Ports 5V EIN nicht beantwortet. Verbindung prüfen.` |
 | über verlorene Touch-Ereignisse hinweg; der Prüfstand geht auf SAFE | `Touch-Signal beim Einschalten verloren. PROG-Ports 5V aus.` |
 | ein Druck, solange ein Port die 5V hält oder die Page UNBEKANNT liest | `PROG-Ports 5V: von einem Programmierport belegt oder nicht gelesen.` | Jeder Fehler, ein verlorener
 Heartbeat und ein stummer Link schalten sie aus; ein Schreiben in den

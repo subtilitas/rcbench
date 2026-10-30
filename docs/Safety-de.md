@@ -301,8 +301,10 @@ der Page SUPPLY für einen Port:
 - Eine Firmware-Installation, ein Update des IOmcu, ein Schreiben in den
   Flash des Panels und das WLAN des Panels warten, solange die 5V
   an sind, seit dem Aufbau des Links oder seit einem Lesen ohne Antwort
-  nicht gelesen wurden oder ein Port eines Programmers sie hält, so wie sie
-  auf den Ausgang des PD mini warten (`prog_supply_link_live()`).
+  nicht gelesen wurden, ein Port eines Programmers sie hält oder ein ON von
+  PROG 5V in der Warteschlange steht oder ein ON oder OFF aussteht, so wie
+  sie auf den Ausgang des PD mini warten (`prog_supply_link_live()`,
+  `supplies_live_or_coming()`).
 
 ##### Das Feld PROG 5V
 
@@ -316,14 +318,14 @@ wie es AUSGANG EIN des PD mini beurteilt:
 - Es wird einmal als OUTPUT 1 geschrieben und nicht wiederholt. Der IOmcu
   lehnt es ohne lebenden Heartbeat ab (NOT_ARMED) und solange ein Port die
   5V hält (BAD_VALUE); beides und keine Antwort melden eine Warnung
-  ([Carrier, Versorgung](Carrier-de.md#versorgung)).
+  ([Carrier, Versorgung](Carrier-de.md#versorgung)). Ein ON ohne Antwort
+  zieht ein OFF nach: der IOmcu kann es genommen haben.
 - Ein ON über verlorene Touch-Ereignisse hinweg ist ein Fehler: SAFE, die
   5V aus.
 - Ein Fehler, PROG 5V AUS und das Verlassen der Ansicht, deren Feld sie
-  eingeschaltet hat, schreiben OFF, das Letzte auch, solange das ON noch
-  unterwegs ist. Ein Fehler verwirft ein noch nicht geschriebenes ON. Das
-  OFF ist ein Flag neben seinem Eintrag in der Warteschlange, wie AUSGANG
-  AUS des PD mini, also verwirft eine volle Warteschlange es nicht.
+  einschaltete, schreiben OFF, Letzteres auch bei einem ON unterwegs. Ein
+  Fehler verwirft ein ungeschriebenes ON. Das OFF ist auch ein Flag, wie
+  AUSGANG AUS: eine volle Warteschlange verliert es nicht.
 - Solange ein Port die 5V hält, nimmt das Feld keinen Druck an.
 
 SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,

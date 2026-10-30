@@ -444,7 +444,12 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
         atomic_store(&s_psup_gen, gen);
         arm_watch_begin(&s_psup_watch, pc->loss_gen,
                         atomic_load(&s_drv_gaps), gen);
+        /* The ON owed is live for the gates from here (on_owed). */
+        prog_supply_publish();
     }
+    /* Done with it, taken or refused, and only now: s_psup_live is stored
+     * first, so supplies_live_or_coming() never reads a gap. */
+    atomic_fetch_add(&s_psup_ons_taken, 1u);
 }
 
 void prog5v_off_service(void)
@@ -923,6 +928,9 @@ void prog_supply_service(void)
                                                 : PROG_SUPPLY_LINK_ACK;
         }
         prog_supply_link_written(&s_psup_link, off, v, result);
+        /* What the write left (an ON's ACK, an OFF owed) reaches the gates
+         * now, not after the next read. */
+        prog_supply_publish();
         /* An ON of the PROG 5V box the IOmcu did not take is said. */
         switch (prog_supply_link_take_on_result(&s_psup_link)) {
         case PROG_SUPPLY_LINK_NONE:

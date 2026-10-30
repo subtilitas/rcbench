@@ -92,6 +92,10 @@ void prog_supply_link_written(prog_supply_link_t *l, uint8_t off, uint16_t v,
         l->on_result = result;
         if (result == PROG_SUPPLY_LINK_ACK) {
             l->on = true;
+        } else if (result == PROG_SUPPLY_LINK_NO_ANSWER) {
+            /* The IOmcu may have taken it and its answer been lost: the
+             * OFF is owed, as for an error. */
+            l->owed = true;
         }
         return;
     }
@@ -162,5 +166,7 @@ bool prog_supply_link_live(const prog_supply_link_t *l, bool board_has,
     if (!prog_supply_link_owns(l, board_has)) {
         return false;
     }
-    return !l->answered || l->on || port_taken;
+    /* An OFF owed counts until written: what it switches off may be on,
+     * an ON whose reply was lost among it. */
+    return !l->answered || l->on || l->on_owed || l->owed || port_taken;
 }

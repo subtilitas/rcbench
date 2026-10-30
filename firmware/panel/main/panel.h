@@ -995,6 +995,14 @@ extern atomic_uint s_prog5v_offs;
  *         full queue; render side sets, control task takes
  *         (prog5v_off_service()). */
 extern atomic_bool s_prog5v_off_request;
+/** @brief The PROG 5V ONs the render side has queued; with s_psup_ons_taken
+ *         the gates count an ON still in the queue as live
+ *         (supplies_live_or_coming()). */
+extern atomic_uint s_psup_ons_sent;
+/** @brief The PROG 5V ONs refused, dropped from a full queue, or taken and
+ *         published in s_psup_live; control task, and send_cmd() for an
+ *         eviction. */
+extern atomic_uint s_psup_ons_taken;
 /** @brief The PROG 5V ONs applied, numbered; control task writes, see
  *         prog_supply_watch_service(). */
 extern atomic_uint s_psup_gen;
