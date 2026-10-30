@@ -75,6 +75,20 @@ history is in git.
   and the Wi-Fi wait for the ports' 5V as for the PD mini's output, and
   the render-loop watchdog watches while it is live
   ([Safety, The carrier's programming-port 5V](docs/Safety.md#the-carriers-programming-port-5v)).
+- Link 4.33: SENSE_MAP takes the WATCH values of a board's own rails, 0x30
+  servo rail A, 0x31 servo rail B and 0x32 the programming ports' 5V. On
+  the rbmod carrier the INA3221 at 0x40 is fixed as the board solders it:
+  the IOmcu keeps it fitted with CH1 on rail B (PWM03, PWM02), CH2 on rail
+  A (PWM01, PWM04) and CH3 on the programming ports' 5V, refuses a map
+  that moves them with BAD_VALUE, and starts a kept map with them in
+  force. SETUP > SENSORS shows those rows without keys (`SERVO RAIL B`,
+  `SERVO RAIL A`, `PROG PORTS 5V`); shunts and limits stay settings, and
+  0x41 to 0x43 stay free. The channel read at 1kHz is the rail of the
+  lowest GPIO the servo tester drives, CH3 for a programming port. SERVO,
+  the limit run, the limit alert, WATCHED BY and the run log's columns
+  name the rail (`INA RAIL A`, `rail a`)
+  ([Carrier, The current monitor](docs/Carrier.md#the-current-monitor)).
+  The SENSE pages move from `link_pages.h` to `link_pages_sense.h`.
 - The panel follows the board the IOmcu reports. On the rbmod carrier
   OUTPUTS shows PWM01 to PWM04 as its four cells and refuses a surface and
   a throttle protocol on PWM02 and PWM03 together, by name

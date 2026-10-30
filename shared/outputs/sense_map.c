@@ -89,7 +89,8 @@ static const uint16_t *kept_regs(const sense_page_t *p, uint16_t *buf)
  * @brief Whether a WATCH value is one the map accepts.
  *
  * Accepted: none, an output channel from OUT(0) to OUT(7), a programming port
- * from PORT(0) below LINK_PG_PORTS_MAX, and the supply.
+ * from PORT(0) below LINK_PG_PORTS_MAX, the supply, and from 4.33 a board's
+ * rails, RAIL_A, RAIL_B and PROG_5V.
  *
  * @param w The WATCH register value.
  * @return true for an accepted value, false otherwise.
@@ -100,7 +101,8 @@ static bool watch_ok(uint16_t w)
            || (w >= LINK_SM_WATCH_OUT(0u) && w <= LINK_SM_WATCH_OUT(7u))
            || (w >= LINK_SM_WATCH_PORT(0u)
                && w < LINK_SM_WATCH_PORT(LINK_PG_PORTS_MAX))
-           || w == LINK_SM_WATCH_SUPPLY;
+           || w == LINK_SM_WATCH_SUPPLY
+           || (w >= LINK_SM_WATCH_RAIL_A && w <= LINK_SM_WATCH_PROG_5V);
 }
 
 bool sense_map_on_addr(const uint16_t *map, uint16_t addr)
@@ -288,8 +290,10 @@ bool sense_map_watches(const sense_page_t *p)
         const uint16_t w = p->map[LINK_SM_WATCH(c)];
         if (fitted(p->map, c / INA3221_CHANNELS)
             && p->map[LINK_SM_SHUNT(c)] != 0u
-            && w >= LINK_SM_WATCH_OUT(0u)
-            && w < LINK_SM_WATCH_PORT(LINK_PG_PORTS_MAX)) {
+            && ((w >= LINK_SM_WATCH_OUT(0u)
+                 && w < LINK_SM_WATCH_PORT(LINK_PG_PORTS_MAX))
+                || (w >= LINK_SM_WATCH_RAIL_A
+                    && w <= LINK_SM_WATCH_PROG_5V))) {
             return true;
         }
     }

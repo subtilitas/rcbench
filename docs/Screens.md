@@ -3950,6 +3950,12 @@ INA228 and the bus's pins stay on INTERFACES.
 
 ![SENSORS, two parts fitted](img/setup-sensors.png)
 
+On the [rbmod carrier](Carrier.md#the-current-monitor) the board solders an
+INA3221 at 0x40: 0x40 FITTED reads ON, and its three WATCHES rows read
+SERVO RAIL B, SERVO RAIL A and PROG PORTS 5V. These rows have no keys and
+the help line `Soldered on this board. Not a setting here.`. No step
+reaches the three rail options on another row or another bench.
+
 The list starts with the heading INA3221 PARTS over four rows:
 
 | Setting | Range | Default | |
@@ -5141,6 +5147,9 @@ on the IOmcu's link (board 2).
 - SERVO TESTER and PORT PWM are not drawn.
 - The line under the rows reads
   `KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04`.
+- WATCHED BY names the carrier's INA3221 channel on the ports' 5V,
+  `WATCHED BY INA3221 PROG 5V`, while no channel watches the port itself
+  ([Carrier: The current monitor](Carrier.md#the-current-monitor)).
 
 ### The overview: OFF
 

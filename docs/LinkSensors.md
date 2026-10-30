@@ -25,7 +25,7 @@ is CH1 of the part at 0x40, channel 11 is CH3 of the part at 0x43.
 | 0 | `ENABLE` | bit a: the part at 0x40 + a is fitted. 0 to 15 |
 | 1 | `FAST` | the channel read every 1ms, 0 to 11, or 0xFF for none. SERVO_WIN carries its last 4 windows and SERVO_SENSE times a move on it |
 | 2 to 13 | `SHUNT[c]` | channel c's shunt in 0.1mΩ, 50 to 10000 (5mΩ to 1Ω); 0 switches the channel off: it is never read |
-| 14 to 25 | `WATCH[c]` | what channel c measures: 0 nothing named, 0x01 to 0x08 output channel 1 to 8, 0x10 to 0x13 programming port 1 to 4, 0x20 the supply. The IOmcu keeps it and acts on nothing in it |
+| 14 to 25 | `WATCH[c]` | what channel c measures: 0 nothing named, 0x01 to 0x08 output channel 1 to 8, 0x10 to 0x13 programming port 1 to 4, 0x20 the supply; from 4.33 a board's own rails, 0x30 servo rail A, 0x31 servo rail B, 0x32 the programming ports' 5V. The IOmcu keeps it and sets IDENTITY's capability bit 3 while a channel it reads watches an output, a port or a rail. On the rbmod carrier 0x40 CH1 to CH3 hold 0x31, 0x30 and 0x32 ([Link, Boards with soldered pins](Link.md#boards-with-soldered-pins)) |
 | 26 to 29 | `ID[a]` | read only: the die ID part a answered at its last probe, 0 before one |
 | 30 | `FLAGS` | read only: bit a part a online; bit 4 + a part a answered with another identity; bit 8 the map has been written and is kept (`IN_FORCE`); bit 9 it has never been written and is SENSE's one part (`DERIVED`) |
 | 31 | reserved | reads 0 |
@@ -40,6 +40,8 @@ every register as it was. Refused with BAD_VALUE:
   shunt is 0;
 - a shunt not 0 outside 50 to 10000;
 - a `WATCH` value outside the list above;
+- on the rbmod carrier, a map without the part at 0x40 or with another
+  `WATCH` on one of its three channels;
 - a fitted part with all three shunts 0;
 - a fitted part on the INA228's address while SENSE enables the INA228;
 - a map whose mirrored SENSE set-up (below) SENSE itself refuses: the bus's
@@ -177,6 +179,7 @@ version 8 record and starts as from an empty store.
 | Panel | IOmcu | SENSE_MAP, SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT |
 | --- | --- | --- |
 | 4.25 or later | 4.27 or later | served. The panel reads SENSE_MAP whole at every link-up, writes registers 0 to 25 in one write as SETUP > SENSORS sets them, and reads registers 26 to 30 every 500ms while a part is fitted. After a write taken it reads SENSE and IDENTITY again: capability bit 3 can change with `WATCH` alone. It reads SENSE_WIN_A whole while 0x40 or 0x41 is fitted in the map in force, and SENSE_WIN_B while 0x42 or 0x43 is, each on every poll after SERVO_WIN and at most every 40ms, ARMED or SAFE, for the run log's columns ([Screens](Screens.md#table-and-what-the-esc-says)). It reads SENSE_LIMIT whole at every link-up, writes registers 0 to 11 in one write 500ms after the last limit edit in any bank state and only where the page differs, and reads registers 12 and 13 every 200ms while the page holds a limit that is not 0 ([Screens](Screens.md#sensors-the-ina3221-parts)) |
+| 4.33 or later | 4.32 or older, on the rbmod carrier | SENSE_MAP refuses the carrier's map: its `WATCH` values 0x30 to 0x32 are not in that IOmcu's list. SETUP > SENSORS marks 0x40 `NOT ACCEPTED BY THE IOMCU` until the IOmcu runs the panel's image |
 | 4.25 or later | 4.25 or 4.26 | SENSE_MAP and SENSE_WIN as above; the panel sends nothing to SENSE_LIMIT, and SETUP > SENSORS marks every limit that is not OFF as not judged |
 | 4.25 or later | 4.24 or older | the panel sends nothing to the four pages and sets SENSE's one INA3221 to one fitted part ([Screens](Screens.md)) |
 | 4.24 or older | 4.25 or later, map derived | the panel never reads or writes the four pages. SENSE runs as before. Kept limits are judged and `OVER` holds its bits until something reads it |

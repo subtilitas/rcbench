@@ -40,6 +40,7 @@
 #include "servo_screen.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "settings_sensors.h"
 #include "splash_screen.h"
 #include "supply_screen.h"
 #include "touch.h"
@@ -270,6 +271,12 @@ void panel_frame_loop(void)
                 (uint8_t)atomic_load(&s_throttle_proto));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
+            /* On the carrier the INA3221 channel read at 1kHz is the rail
+             * of those pins: a new rail is a new map. */
+            if (settings_sensors_set_tester_rail(
+                    ui_board_tester_rail(atomic_load(&s_servo_pins)))) {
+                publish_sense();
+            }
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),

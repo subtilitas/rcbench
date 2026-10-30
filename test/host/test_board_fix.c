@@ -15,7 +15,10 @@
  * carrier with a servo output beside PROGP04 in the silicon; a board whose
  * pins are chosen untouched; the channel roles in the slots' order on
  * the carrier; the image chosen for each board, none for an
- * unknown one or one whose image is not carried.
+ * unknown one or one whose image is not carried; the carrier's INA3221 at
+ * 0x40 with CH1 on rail B, CH2 on rail A and CH3 on the programming ports,
+ * each SENSE_MAP judged whole on its part and its watches, and a kept map
+ * started with the part fitted and in force.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -337,6 +340,149 @@ TEST_CASE(a_record_of_the_module_starts_on_the_carriers_pins)
     board_fix_store(r, NULL);
 }
 
+/* ------------------------------------------------- the carrier's INA3221 */
+
+/* A whole SENSE_MAP: parts @p fit, every channel of a fitted part on
+ * 100.0mOhm, the carrier's three watches on 0x40, nothing else watched. */
+static void carrier_map(uint16_t *m, uint16_t fit)
+{
+    memset(m, 0, sizeof(uint16_t) * LINK_SM_KEPT);
+    m[LINK_SM_ENABLE] = fit;
+    m[LINK_SM_FAST]   = LINK_SM_FAST_NONE;
+    for (unsigned c = 0; c < LINK_SM_CHANNELS; ++c) {
+        m[LINK_SM_SHUNT(c)] = ((fit >> (c / 3u)) & 1u) ? 1000u : 0u;
+    }
+    m[LINK_SM_WATCH(0u)] = LINK_SM_WATCH_RAIL_B;
+    m[LINK_SM_WATCH(1u)] = LINK_SM_WATCH_RAIL_A;
+    m[LINK_SM_WATCH(2u)] = LINK_SM_WATCH_PROG_5V;
+}
+
+TEST_CASE(the_carriers_ina3221_is_at_0x40_watching_its_three_supplies)
+{
+    const outbind_roles_t *r = roles();
+    CHECK(r->ina.on);
+    CHECK_EQ(r->ina.part, 0u);                    /* 0x40 */
+    /* CH1 rail B (PWM03, PWM02), CH2 rail A (PWM01, PWM04), CH3 J1. */
+    CHECK_EQ(r->ina.watch[0], LINK_SM_WATCH_RAIL_B);
+    CHECK_EQ(r->ina.watch[1], LINK_SM_WATCH_RAIL_A);
+    CHECK_EQ(r->ina.watch[2], LINK_SM_WATCH_PROG_5V);
+    CHECK_EQ(r->ina.feeds[0], (uint32_t)(BIT(5) | BIT(4)));
+    CHECK_EQ(r->ina.feeds[1], (uint32_t)(BIT(2) | BIT(1)));
+    CHECK_EQ(r->ina.feeds[2],
+             (uint32_t)(BIT(0) | BIT(13) | BIT(14) | BIT(15)));
+    /* Each rail's GPIOs are J2's positions on that rail, and CH3's are
+     * J1's: the connector table and the monitor agree. */
+    for (unsigned i = 0; i < r->conn_count; ++i) {
+        const outbind_conn_t *cn = &r->conns[i];
+        for (unsigned p = 0; p < cn->count; ++p) {
+            const uint32_t g = (uint32_t)1u << cn->gpio[p];
+            const char *rail = cn->rail[p];
+            const unsigned k = (strcmp(rail, "VCC_SERVOPORT_B") == 0) ? 0u
+                             : (strcmp(rail, "VCC_SERVOPORT_A") == 0) ? 1u
+                                                                     : 2u;
+            CHECK((r->ina.feeds[k] & g) != 0u);
+        }
+    }
+    /* The module wired by hand solders none. */
+    CHECK(outbind_roles(OUTBIND_BOARD_PICO_HEADER) == NULL);
+}
+
+TEST_CASE(a_map_keeps_the_carriers_part_fitted_and_its_watches)
+{
+    const outbind_roles_t *r = roles();
+    uint16_t m[LINK_SM_KEPT];
+    carrier_map(m, 0x01u);
+    CHECK(board_fix_map_ok(r, m));
+    /* Other parts beside it are the operator's, watched as they like. */
+    carrier_map(m, 0x0Fu);
+    m[LINK_SM_WATCH(3u)] = LINK_SM_WATCH_OUT(0u);
+    m[LINK_SM_WATCH(11u)] = LINK_SM_WATCH_RAIL_A;
+    CHECK(board_fix_map_ok(r, m));
+    /* 0x40 not fitted: refused, whatever else is. */
+    carrier_map(m, 0x0Eu);
+    CHECK(!board_fix_map_ok(r, m));
+    carrier_map(m, 0x00u);
+    CHECK(!board_fix_map_ok(r, m));
+    /* Each channel's watch held to its rail; the codes either side and
+     * the other rails refused. */
+    static const uint16_t k_other[] = {
+        LINK_SM_WATCH_NONE, LINK_SM_WATCH_OUT(0u), LINK_SM_WATCH_PORT(0u),
+        LINK_SM_WATCH_SUPPLY, LINK_SM_WATCH_RAIL_A, LINK_SM_WATCH_RAIL_B,
+        LINK_SM_WATCH_PROG_5V, 0x2Fu, 0x33u,
+    };
+    for (unsigned k = 0; k < OUTBIND_INA_CHANNELS; ++k) {
+        for (size_t i = 0; i < sizeof(k_other) / sizeof(k_other[0]); ++i) {
+            carrier_map(m, 0x01u);
+            m[LINK_SM_WATCH(k)] = k_other[i];
+            if (board_fix_map_ok(r, m) != (k_other[i] == r->ina.watch[k])) {
+                T_FAIL("CH%u watch 0x%02X judged wrong", k + 1u,
+                       (unsigned)k_other[i]);
+            }
+        }
+    }
+    /* Shunts and FAST are the page's: CH1 off, FAST on CH2. */
+    carrier_map(m, 0x01u);
+    m[LINK_SM_SHUNT(0u)] = 0u;
+    m[LINK_SM_FAST] = 1u;
+    CHECK(board_fix_map_ok(r, m));
+    /* The gate on a write leaves SENSE_MAP to the whole-map judge. */
+    CHECK(board_fix_write_ok(r, LINK_PAGE_SENSE_MAP, LINK_SM_ENABLE, 1u,
+                             &m[LINK_SM_FAST]));
+    /* A board whose pins are chosen is not judged; no map with roles is
+     * refused. */
+    carrier_map(m, 0x00u);
+    CHECK(board_fix_map_ok(NULL, m));
+    CHECK(board_fix_map_ok(NULL, NULL));
+    CHECK(!board_fix_map_ok(r, NULL));
+}
+
+TEST_CASE(a_kept_map_starts_with_the_carriers_part_in_force)
+{
+    const outbind_roles_t *r = roles();
+    /* Nothing kept: the defaults, no part fitted, the map derived. */
+    out_store_t cfg;
+    out_store_cfg_defaults(&cfg);
+    cfg.sense_map[LINK_SM_FAST] = LINK_SM_FAST_NONE;
+    cfg.sense_map_set = 0u;
+    board_fix_store(r, &cfg);
+    CHECK_EQ(cfg.sense_map_set, 1u);
+    CHECK_EQ(cfg.sense_map[LINK_SM_ENABLE], 0x01u);
+    for (unsigned k = 0; k < OUTBIND_INA_CHANNELS; ++k) {
+        CHECK_EQ(cfg.sense_map[LINK_SM_WATCH(k)], r->ina.watch[k]);
+        CHECK_EQ(cfg.sense_map[LINK_SM_SHUNT(k)], BOARD_FIX_INA_DMOHM);
+    }
+    CHECK(board_fix_map_ok(r, cfg.sense_map));
+
+    /* A kept map of the module: its parts, shunts and FAST stay; 0x40 is
+     * added and its watches set. */
+    out_store_cfg_defaults(&cfg);
+    cfg.sense_map[LINK_SM_ENABLE] = 0x02u;
+    cfg.sense_map[LINK_SM_FAST] = 3u;
+    cfg.sense_map[LINK_SM_SHUNT(1u)] = 500u;      /* 0x40 CH2 only */
+    cfg.sense_map[LINK_SM_SHUNT(3u)] = 1000u;
+    cfg.sense_map[LINK_SM_WATCH(0u)] = LINK_SM_WATCH_OUT(0u);
+    cfg.sense_map[LINK_SM_WATCH(3u)] = LINK_SM_WATCH_PORT(1u);
+    cfg.sense_map_set = 1u;
+    board_fix_store(r, &cfg);
+    CHECK_EQ(cfg.sense_map[LINK_SM_ENABLE], 0x03u);
+    CHECK_EQ(cfg.sense_map[LINK_SM_FAST], 3u);
+    CHECK_EQ(cfg.sense_map[LINK_SM_SHUNT(0u)], 0u);
+    CHECK_EQ(cfg.sense_map[LINK_SM_SHUNT(1u)], 500u);
+    CHECK_EQ(cfg.sense_map[LINK_SM_SHUNT(2u)], 0u);
+    CHECK_EQ(cfg.sense_map[LINK_SM_SHUNT(3u)], 1000u);
+    CHECK_EQ(cfg.sense_map[LINK_SM_WATCH(0u)], LINK_SM_WATCH_RAIL_B);
+    CHECK_EQ(cfg.sense_map[LINK_SM_WATCH(3u)], LINK_SM_WATCH_PORT(1u));
+    CHECK(board_fix_map_ok(r, cfg.sense_map));
+
+    /* The module's own record keeps its map as it is. */
+    out_store_t mod, before;
+    out_store_cfg_defaults(&mod);
+    mod.sense_map[LINK_SM_ENABLE] = 0x04u;
+    memcpy(&before, &mod, sizeof(mod));
+    board_fix_store(NULL, &mod);
+    CHECK_EQ(memcmp(&mod, &before, sizeof(mod)), 0);
+}
+
 TEST_CASE(the_defaults_are_what_an_old_record_starts_from)
 {
     /* out_store_cfg_defaults() is the fill out_store_cfg_read() lays an old
@@ -588,5 +734,8 @@ int main(void)
     RUN(a_protocol_goes_to_a_servo_output_and_nowhere_else);
     RUN(the_channel_roles_follow_the_slots_on_the_carrier);
     RUN(a_surface_and_a_throttle_do_not_share_slice_2);
+    RUN(the_carriers_ina3221_is_at_0x40_watching_its_three_supplies);
+    RUN(a_map_keeps_the_carriers_part_fitted_and_its_watches);
+    RUN(a_kept_map_starts_with_the_carriers_part_in_force);
     return test_summary("board_fix");
 }

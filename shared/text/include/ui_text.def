@@ -1304,6 +1304,15 @@ UI_TEXT(SET_SENS_DARK, 65,
 UI_TEXT(SET_SENS_SAME_ADDR, 65,
     "The INA228 uses this address. Neither is read.",
     "Der INA228 nutzt diese Adresse. Keiner wird gelesen.")
+UI_TEXT(SENS_RAIL_A, 9,
+    "RAIL A",
+    "SCHIENE A")
+UI_TEXT(SENS_RAIL_B, 9,
+    "RAIL B",
+    "SCHIENE B")
+UI_TEXT(SENS_PROG_5V, 9,
+    "PROG 5V",
+    "PROG 5V")
 UI_TEXT(SET_SENS_NO_BUS, 65,
     "Sensor SDA or SCL unset. Set both on INTERFACES.",
     "SDA oder SCL der Sensoren fehlt. Beide auf INTERFACES festlegen.")
@@ -6917,8 +6926,9 @@ UI_OPTION("460800", NULL)
 UI_OPTION("AUTO", NULL)
 UI_OPTIONS_END(pdmini_baud)
 
-/* What a channel watches: the output channels, the programming ports and
- * the supply rail, in SENS_W_* order. */
+/* What a channel watches: the output channels, the programming ports,
+ * the supply rail, and a board's own rails (the rbmod carrier's INA3221,
+ * shown only where the board holds the row), in SENS_W_* order. */
 UI_OPTIONS(watch)
 UI_OPTION("NONE", "KEINE")
 UI_OPTION("OUT 1", "AUSGANG 1")
@@ -6934,6 +6944,9 @@ UI_OPTION("PORT 2", "PORT 2")
 UI_OPTION("PORT 3", "PORT 3")
 UI_OPTION("PORT 4", "PORT 4")
 UI_OPTION("SUPPLY", "NETZTEIL")
+UI_OPTION("SERVO RAIL A", "SCHIENE A")
+UI_OPTION("SERVO RAIL B", "SCHIENE B")
+UI_OPTION("PROG PORTS 5V", "PROG PORTS 5V")
 UI_OPTIONS_END(watch)
 
 UI_OPTIONS(old_addr)
