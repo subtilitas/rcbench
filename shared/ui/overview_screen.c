@@ -9,6 +9,8 @@
 
 #include <string.h>
 
+#include "ui_band.h"
+#include "ui_help.h"
 #include "ui_icons.h"
 #include "link_pages.h"
 #include "ui_text.h"
@@ -77,6 +79,7 @@ typedef struct {
     const char    *name;    /**< the screen's title: English always     */
     ui_text_id_t   line;    /**< the line under the name                */
     ui_icon_fn     icon;    /**< the icon over the name                 */
+    ui_text_id_t   help;    /**< what the screen does, for the guide    */
     uint16_t       needs;   /**< the hardware it needs, as link_cap_t     */
     /** Modelled on the panel whatever the IOmcu reports: no link
      *  capability names the hardware.  SUPPLY's holds only until SETUP
@@ -95,27 +98,35 @@ typedef struct {
  */
 static const tile_t k_workbenches[] = {
     { SCREEN_MOTOR,      "MOTOR & ESC", TX_OV_MOTOR,         ui_icon_motor,
+      TX_HG_OV_MOTOR,
       LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE, false },
     { SCREEN_SERVO,      "SERVO",       TX_OV_SERVO,         ui_icon_servo,
+      TX_HG_OV_SERVO,
       LINK_CAP_SERVO_PWM, false },
     { SCREEN_SUPPLY,     "SUPPLY",      TX_OV_SUPPLY,        ui_icon_supply,
+      TX_HG_OV_SUPPLY,
       0, true },   /* modelled unless SETUP enables the PD mini */
 };
 
 static const tile_t k_instruments[] = {
     { SCREEN_ANALYSER,   "RECEIVER",    TX_OV_RECEIVER,      ui_icon_chart,
+      TX_HG_OV_RECEIVER,
       LINK_CAP_RECEIVER, false },
     { SCREEN_BATTERY,    "BATTERY",     TX_OV_BATTERY,       ui_icon_battery,
+      TX_HG_OV_BATTERY,
       LINK_CAP_CELLS, false },
     { SCREEN_BALANCE,    "BALANCE",     TX_OV_BALANCE,       ui_icon_balance,
+      TX_HG_OV_BALANCE,
       LINK_CAP_VIBRATION, false },
 };
 
 /* The last column, top down. */
 static const tile_t k_last_column[] = {
     { SCREEN_LOGS,       "LOGS",        TX_OV_LOGS,          ui_icon_record,
+      TX_HG_OV_LOGS,
       0, false },   /* the card is on the panel; nothing needed from the IOmcu */
     { SCREEN_SETUP,      "SETUP",       TX_OV_SETUP,         ui_icon_sliders,
+      TX_HG_OV_SETUP,
       0, false },
 };
 
@@ -209,6 +220,41 @@ static gfx_rect_t tile_rect(int i)
 
 gfx_rect_t overview_screen_tile_rect(int slot) { return tile_rect(slot); }
 
+/**
+ * @brief The SIMULATED mark of slot @p i: shown while the tile's hardware
+ *        is not fitted or its values are modelled.
+ * @param i   The slot.
+ * @param out Where the mark is, in the screen's coordinates; may be NULL.
+ * @return True when the tile shows the mark.
+ */
+static bool mark_rect(int i, gfx_rect_t *out)
+{
+    const tile_t *t = tile_in(i);
+    if (t == NULL) {
+        return false;
+    }
+    /* Two states.  MODELLED: the hardware is not fitted, so the values are
+     * modelled.  No mark: the hardware is fitted. */
+    const uint16_t have = ui_router_status()->capabilities;
+    const bool modelled = t->model_only
+                          && !(t->id == SCREEN_SUPPLY && s_supply_real);
+    const bool fitted = !modelled
+                        && ((t->needs == 0) || ((have & t->needs) == t->needs));
+    if (fitted) {
+        return false;
+    }
+    /* MARK_W, or as wide as a longer word needs. */
+    int bw = MARK_INSET + gfx_text_width(&gfx_font_10x20, TR(OV_MODELLED), 1)
+             + 8;
+    bw = (bw < MARK_W) ? MARK_W : bw;
+    const gfx_rect_t r = tile_rect(i);
+    if (out != NULL) {
+        *out = (gfx_rect_t){ (int16_t)(r.x + (r.w - bw) / 2),
+                             (int16_t)(r.y + MARK_DY), (int16_t)bw, MARK_H };
+    }
+    return true;
+}
+
 static int tile_at(int x, int y)
 {
     for (int i = 0; i < SLOTS; ++i) {
@@ -271,25 +317,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
          * stays lit. */
         ui_tile(c, r, &k_look, t->icon, t->name, ui_tr(t->line), down);
 
-        /*
-         * Two states.  MODELLED: the hardware is not fitted, so the values
-         * are modelled.  No badge: the hardware is fitted.
-         */
-        const uint16_t have = ui_router_status()->capabilities;
-        const bool modelled = t->model_only
-                              && !(t->id == SCREEN_SUPPLY && s_supply_real);
-        const bool fitted = !modelled
-                            && ((t->needs == 0)
-                                || ((have & t->needs) == t->needs));
-        if (!fitted) {
-            /* MARK_W, or as wide as a longer word needs. */
-            const char *word = TR(OV_MODELLED);
-            int bw = MARK_INSET + gfx_text_width(&gfx_font_10x20, word, 1) + 8;
-            bw = (bw < MARK_W) ? MARK_W : bw;
-            const gfx_rect_t badge = { (int16_t)(r.x + (r.w - bw) / 2),
-                                       (int16_t)(r.y + MARK_DY),
-                                       (int16_t)bw, MARK_H };
-            ui_pill_font(c, badge, word, 0,
+        gfx_rect_t badge;
+        if (mark_rect(i, &badge)) {
+            ui_pill_font(c, badge, TR(OV_MODELLED), 0,
                          ui_theme_color(UI_C_PANEL_SUNK), MARK_INSET,
                          &gfx_font_10x20);
         }
@@ -311,6 +341,90 @@ static void cancel(void)
     s.drawn_mask = 0;
 }
 
+/* ---------------------------------------------------------- the guide */
+
+/*
+ * Three pages.  The left two columns with the dock on the right, the right
+ * two with the dock on the left, then the band and the SIMULATED mark with
+ * the dock on the left.  The menu has no control that stops an output and
+ * names no pin, so every page shows while ARMED as well.
+ */
+/** @brief The slots of page 1, the left two columns, and of page 2. */
+static const uint8_t k_page_slots[2][4] = { { 0, 1, 4, 5 },
+                                            { 2, 3, 6, 7 } };
+
+/**
+ * @brief The menu's guide pages.
+ * @return 3, in every state.
+ */
+static int help_count(void) { return 3; }
+
+/**
+ * @brief A rect of the band, in panel coordinates, in the screen's.
+ * @param r The rect.
+ * @return @p r moved up by the band's height.
+ */
+static gfx_rect_t band_item(gfx_rect_t r)
+{
+    r.y = (int16_t)(r.y - UI_BAND_H);
+    return r;
+}
+
+/**
+ * @brief Page @p i of the menu's guide.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+static bool help_page(int i, ui_help_page_t *out)
+{
+    if (i < 0 || i >= help_count() || out == NULL) {
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    out->armed_ok = true;
+    static const ui_text_id_t k_title[3] = { TX_HG_OV_TITLE_LEFT,
+                                             TX_HG_OV_TITLE_RIGHT,
+                                             TX_HG_OV_TITLE_BAND };
+    out->title = k_title[i];
+    if (i < 2) {
+        out->side = (i == 0) ? UI_HELP_DOCK_RIGHT : UI_HELP_DOCK_LEFT;
+        for (int k = 0; k < 4; ++k) {
+            const int slot = k_page_slots[i][k];
+            const tile_t *t = tile_in(slot);
+            if (t == NULL) {
+                continue;
+            }
+            out->item[out->count++] = (ui_help_item_t){
+                t->name, t->help, tile_rect(slot) };
+        }
+        return true;
+    }
+    out->side = UI_HELP_DOCK_LEFT;
+    const ui_bench_status_t *st = ui_router_status();
+    out->item[out->count++] = (ui_help_item_t){
+        "STOP", TX_HG_OV_STOP, band_item(ui_band_stop_rect()) };
+    gfx_rect_t chip;
+    if (ui_band_chip_rect(st, UI_BAND_CHIP_ARMED, &chip)) {
+        out->item[out->count++] = (ui_help_item_t){
+            st->armed ? ui_band_armed_label(st->armed_roles) : TR(BAND_SAFE),
+            TX_HG_OV_ARM, band_item(chip) };
+    }
+    out->item[out->count++] = (ui_help_item_t){
+        "?", TX_HG_OV_GUIDE, band_item(ui_band_guide_rect()) };
+    /* The first mark of the right half, top down by column. */
+    static const uint8_t k_mark_slots[4] = { 2, 6, 3, 7 };
+    for (int k = 0; k < 4; ++k) {
+        gfx_rect_t mark;
+        if (mark_rect(k_mark_slots[k], &mark)) {
+            out->item[out->count++] = (ui_help_item_t){
+                TR(OV_MODELLED), TX_HG_OV_MARK, mark };
+            break;
+        }
+    }
+    return true;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "rcbench",
     .reset  = reset,
@@ -320,6 +434,8 @@ static const ui_screen_t k_screen = {
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .help_count = help_count,
+    .help_page  = help_page,
 };
 
 const ui_screen_t *overview_screen(void) { return &k_screen; }

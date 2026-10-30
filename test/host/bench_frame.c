@@ -67,6 +67,7 @@
 #include "supply.h"
 #include "supply_screen.h"
 #include "telemetry_sim.h"
+#include "ui_band.h"
 #include "ui_screen.h"
 #include "motor_screen.h"
 #include "ui_theme.h"
@@ -160,7 +161,10 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
     const bool servo = (strncmp(mode, "servo", 5) == 0);
     const bool supply = (strncmp(mode, "supply", 6) == 0);
     ui_screen_id_t start = SCREEN_MOTOR;
-    if (strcmp(mode, "overview") == 0) {
+    /* "overview-guide": the menu with its guide open at page 1, the dock
+     * drawn and the marks over the live half every frame. */
+    const bool guide = (strcmp(mode, "overview-guide") == 0);
+    if (strcmp(mode, "overview") == 0 || guide) {
         start = SCREEN_OVERVIEW;
     } else if (supply) {
         start = SCREEN_SUPPLY;
@@ -223,6 +227,18 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
                                         board_drawing_rp2350_can_bytes, NULL);
     }
     ui_router_goto(start);
+
+    if (guide) {
+        /* A tap on the band's "?". */
+        const gfx_rect_t q = ui_band_guide_rect();
+        touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                            .point = { .id = 1,
+                                       .x = (int16_t)(q.x + q.w / 2),
+                                       .y = (int16_t)(q.y + q.h / 2) } };
+        ui_router_event(&e);
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+    }
 
     if (strncmp(mode, "motor-stick", 11) == 0) {
         /* PROGRAM, the strip's second tab at x 181, and its STICK MENU row

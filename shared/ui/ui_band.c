@@ -111,27 +111,38 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
 }
 
 /*
- * Chips are laid out right to left from 8px left of STOP, each placed at
- * the right edge the previous one leaves, so no chip needs another's width
- * in advance and a long mode string cannot push the clock under the ARMED
- * badge.  One layout for drawing and for hit-testing, so a tap finds the
- * chip that is drawn.  A chip is 44px tall, 8px from the band's top, its
- * label in UI_FONT_BAND.  Chips stand CHIP_GAP (6) px apart and each takes
- * the 3px beside it for a tap, so the strips meet without overlapping.  A
- * label starts CHIP_INSET (28) px into its chip and ends CHIP_PAD_R (4) px
- * short of its right edge, LINK's 16px.  The widest row, a clock of 10
- * hours or more, ARMED MOTOR, FEHLER 7F, BENCH and LINK in German, is
- * 566px and starts at x 276, right of MOTOR & ESC's home tag, the widest
- * (test_nav_bubble measures every screen's), which ends at x 268.
+ * The guide's "?" chip is the first left of STOP, 8px from it: x 802 to
+ * 842.  Its place is kept on every screen with the band, drawn or not, so
+ * the other chips stand still when a screen without guide pages opens.
+ *
+ * The other chips are laid out right to left from CHIP_GAP left of "?",
+ * each placed at the right edge the previous one leaves, so no chip needs
+ * another's width in advance and a long mode string cannot push the clock
+ * under the ARMED badge.  One layout for drawing and for hit-testing, so a
+ * tap finds the chip that is drawn.  A chip is 44px tall, 8px from the
+ * band's top, its label in UI_FONT_BAND.  Chips stand CHIP_GAP (4) px apart
+ * and each takes the CHIP_HIT (2) px beside it for a tap, so the strips
+ * meet without overlapping.  A label starts CHIP_INSET (22) px into its
+ * chip, right of LINK's dot, and ends CHIP_PAD_R (4) px short of its right
+ * edge, LINK's 16px.  The widest row, a clock of 10 hours or more, ARMED
+ * MOTOR, FEHLER 7F, BENCH and LINK in German, is 530px and starts at x
+ * 272, right of MOTOR & ESC's home tag, the widest (test_nav_bubble
+ * measures every screen's), which ends at x 268.
  */
 /** @brief A chip's top, from the band's: 8px. */
 #define CHIP_Y     8
 /** @brief A chip's height: 44px. */
 #define CHIP_H     44
-/** @brief The gap between two chips: 6px. */
-#define CHIP_GAP   6
-/** @brief A label's start from its chip's left edge: 28px. */
-#define CHIP_INSET 28
+/** @brief The gap between two chips: 4px. */
+#define CHIP_GAP   4
+/** @brief The strip beside a chip a tap still finds it in: 2px. */
+#define CHIP_HIT   (CHIP_GAP / 2)
+/** @brief A label's start from its chip's left edge: 22px. */
+#define CHIP_INSET 22
+/** @brief The "?" chip's width: 40px. */
+#define GUIDE_W    40
+/** @brief The "?" chip's distance to STOP: 8px. */
+#define GUIDE_GAP  8
 /** @brief A label's end from its chip's right edge: 4px. */
 #define CHIP_PAD_R 4
 /** @brief LINK's dot: 12px more right of its label. */
@@ -155,7 +166,7 @@ typedef struct {
 static void chips_layout(const ui_bench_status_t *st, chips_t *l)
 {
     memset(l, 0, sizeof(*l));
-    int right = PANEL_W - STOP_W - STOP_M - 8;
+    int right = ui_band_guide_rect().x - CHIP_GAP;
     for (size_t i = 0; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
         const ui_band_chip_t chip = k_order[i];
         if (!chip_shown(st, chip)) {
@@ -172,6 +183,43 @@ static void chips_layout(const ui_bench_status_t *st, chips_t *l)
                                     (int16_t)w, CHIP_H };
         right = right - w - CHIP_GAP;
     }
+}
+
+gfx_rect_t ui_band_guide_rect(void)
+{
+    return (gfx_rect_t){ (int16_t)(PANEL_W - STOP_W - STOP_M - GUIDE_GAP
+                                   - GUIDE_W),
+                         CHIP_Y, GUIDE_W, CHIP_H };
+}
+
+bool ui_band_guide_at(int x, int y)
+{
+    const gfx_rect_t r = ui_band_guide_rect();
+    return y >= 0 && y < UI_BAND_H && x >= r.x - CHIP_HIT
+           && x < r.x + r.w + CHIP_HIT;
+}
+
+/**
+ * @brief Draw the "?" chip: an accent "?" on the chips' sunk fill, and the
+ *        dark text of the bright fills on the accent while the guide is
+ *        open.
+ * @param c     The panel's canvas.
+ * @param guide What the band shows of the guide.
+ */
+static void guide_render(gfx_canvas_t *c, ui_band_guide_t guide)
+{
+    if (guide == UI_BAND_GUIDE_NONE) {
+        return;
+    }
+    const gfx_rect_t r = ui_band_guide_rect();
+    const bool open = guide == UI_BAND_GUIDE_OPEN;
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, r.h / 2,
+                        open ? ui_theme_color(UI_C_ACCENT)
+                             : ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_text_in(c, r, "?", UI_FONT_TAG,
+                open ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
+                     : ui_theme_color(UI_C_ACCENT),
+                1, GFX_ALIGN_CENTER);
 }
 
 bool ui_band_chip_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
@@ -197,8 +245,8 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
     chips_t l;
     chips_layout(st, &l);
     for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT; ++chip) {
-        if (l.on[chip] && x >= l.r[chip].x - 3
-            && x < l.r[chip].x + l.r[chip].w + 3) {
+        if (l.on[chip] && x >= l.r[chip].x - CHIP_HIT
+            && x < l.r[chip].x + l.r[chip].w + CHIP_HIT) {
             return (ui_band_chip_t)chip;
         }
     }
@@ -548,12 +596,12 @@ static uint32_t fnv(uint32_t h, const void *p, size_t n)
 
 uint32_t ui_band_key(const char *title, bool show_home,
                      const ui_bench_status_t *st, bool stop_pressed,
-                     bool home_pressed)
+                     bool home_pressed, ui_band_guide_t guide)
 {
     uint32_t h = 2166136261u;
-    const uint8_t flags[4] = {
+    const uint8_t flags[5] = {
         (uint8_t)(title != NULL), (uint8_t)show_home, (uint8_t)stop_pressed,
-        (uint8_t)home_pressed,
+        (uint8_t)home_pressed, (uint8_t)guide,
     };
     h = fnv(h, flags, sizeof(flags));
     const int theme = (int)ui_theme_get();
@@ -586,7 +634,7 @@ uint32_t ui_band_key(const char *title, bool show_home,
 
 void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
                     const ui_bench_status_t *st, bool stop_pressed,
-                    bool home_pressed)
+                    bool home_pressed, ui_band_guide_t guide)
 {
     gfx_fill_rect(c, 0, 0, PANEL_W, UI_BAND_H, ui_theme_color(UI_C_PANEL));
     ui_rule(c, 0, UI_BAND_H - 1, PANEL_W, ui_theme_color(UI_C_EDGE));
@@ -602,6 +650,7 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
     ui_button_font(c, ui_band_stop_rect(), "STOP",
                    ui_theme_color(UI_C_DANGER), stop_pressed, true,
                    UI_FONT_BAND);
+    guide_render(c, guide);
 
     if (st == NULL) {
         return;

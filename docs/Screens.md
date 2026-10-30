@@ -7,7 +7,8 @@ operated.
 
 ## The status band
 
-The top band is shared by every screen. From the right: STOP, the run clock
+The top band is shared by every screen. From the right: STOP, "?" on a
+screen with a guide ([The screen guide](#the-screen-guide)), the run clock
 (while ARMED or after a run), the arm chip, a FAULT code when one is reported,
 the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
 panel drives the IOmcu's outputs, and SIM while no IOmcu answers
@@ -56,15 +57,19 @@ A touch belongs to what it came down on until it lifts. The band is the top
   while the first finger drags. After the home tag, the finger still on the
   glass moves nothing on the screen the tag leads to.
 
-STOP is 168 x 48px at the right end of the band, from x 850. The chips
-stand from STOP to the left, 8px from it and 6px apart. Each chip is 44px
-tall, with its label in the 10 x 20px face, 28px in from the chip's left
-edge. The widest row, a run clock of 10 hours, ARMED MOTOR, a FAULT code,
-BENCH and LINK in German, starts at x 276.
+STOP is 168 x 48px at the right end of the band, from x 850. "?" is
+40 x 44px, 8px left of STOP, x 802 to 842; its place stays free on a screen
+without a guide, so the other chips do not move between screens. The chips
+stand from "?" to the left, 4px apart. Each chip is 44px tall, with its
+label in the 10 x 20px face, 22px in from the chip's left edge. A tap finds
+a chip across the band's height and 2px either side of it. The widest row,
+a run clock of 10 hours, ARMED MOTOR, a FAULT code, BENCH and LINK in
+German, is 528px wide and starts at x 270.
 
 The home tag is 44px tall at x 8, y 8, its name in the 20 x 36px face. The
 home tags end at x 268 (MOTOR & ESC) and at x 248 or less on the other
-screens, so no chip row reaches under a home tag.
+screens, so no chip row reaches under a home tag; in the widest case 2px
+stay between the tag and LINK.
 
 ### Chip help
 
@@ -130,6 +135,56 @@ says to flash both boards from one release.
 ![The SAFE box](img/band-safe.png)
 
 ![The ARMED MOTOR box](img/band-armed.png)
+
+## The screen guide
+
+"?" in the band opens the guide of the screen on top: numbered marks on
+its controls and a dock that says what each one does. The menu has a
+guide; the other screens show no "?" yet. Keypads, keyboards and
+questions show no "?" either.
+
+![The menu's guide at page 1](img/help-overview.png)
+
+| Part | Figure |
+| --- | --- |
+| Dock | 480 x 488px, 8px from the panel's left or right edge, y 64 to 552; the page says which side |
+| Live half | the other 528px of the body; the screen draws there and keeps running |
+| Header | the page's title and "page / pages" |
+| Item | its number in a 28px badge, the control's name in the accent colour, then what it does in the 10 x 20px face, 41 characters a row, 3 rows at most |
+| Items a page | 5 at most |
+| Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
+| Buttons | PREV, NEXT and CLOSE, 140 x 48px, 10px apart, y 496 to 544 |
+| Marks | a 28px badge with the item's number 4px inside the control's top-left corner, or 4px left of a control less than 56px tall or wide; 2px brackets at the control's corners, 3px outside it |
+
+A control in the band has its badge under the band, below the control's
+left end. The dock ends 4px above the alert band, so an alert covers none
+of it.
+
+- A tap on "?" opens page 1. A press that slides off "?" opens nothing.
+- PREV and NEXT turn the pages and act on a release on the same button.
+  PREV on the first page and NEXT on the last are dimmed and do nothing.
+- CLOSE closes the guide, and so does a press on "?".
+- A press on the dock or on a badge does nothing.
+- Any other press closes the guide and does nothing else: on the live half,
+  on the home tag, on the band beside the chips, on the alert band.
+- A press on STOP closes the guide and stops at once. A press on a chip
+  closes the guide and opens the chip's box on its release.
+- A press on DISARM, OUTPUT OFF, ABORT, STOP TEST or STOP RUN closes the
+  guide and acts, as with no guide.
+- Opening the guide releases what the screen holds: a drag ends where it
+  is, a hold on ARM is abandoned.
+- A knob turn moves nothing while the guide is open, and the guide stays
+  open.
+- Leaving the screen closes the guide, and so does a change of the
+  screen's pages. A link lost or back and the switch between SAFE and ARMED
+  leave it open; the names on its page follow the state.
+- While ARMED the guide offers only the pages whose dock covers no control
+  that stops an output and no TARGET row; page 1 then says so in one line.
+  The menu's pages all show while ARMED.
+
+The menu's guide has three pages: the left two columns of tiles with the
+dock on the right, the right two with the dock on the left, and STOP, the
+arm chip, "?" and the SIMULATED mark with the dock on the left.
 
 ## The alert band
 

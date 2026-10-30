@@ -417,10 +417,13 @@ static int chips_left(const ui_bench_status_t *st)
  * Every screen with the band and a home tag (all but the splash, the menu,
  * the bus-fault screen and the panel's own update, as in ui_router.c), every
  * row of chips the band can show, in each language: the row starts right of
- * the tag.  The link down means SIM, no fault and the arm local; a clock of
- * minutes, of hours, of 10 hours and of 99.  MOTOR & ESC's tag is the
- * widest and ends at x 268; the widest row, ARMED with a FAULT code in
- * German, starts at x 276.
+ * the tag, by the 2px a chip is hit beside it, so a tap finds one or the
+ * other.  The link down means SIM, no fault and the arm local; a clock of
+ * minutes, of hours, of 10 hours and of 99.  The row starts left of the
+ * guide's "?", which keeps its place on every screen.  MOTOR & ESC's tag is
+ * the widest and ends at x 268; the widest row, a clock of 10 hours or
+ * more, ARMED MOTOR, FEHLER 7F, BENCH and LINK in German, is 528px wide and
+ * starts at x 270.
  */
 TEST_CASE(the_widest_chip_row_clears_the_home_tag)
 {
@@ -430,6 +433,7 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
     const uint8_t roles[] = { 0u, UI_ARMED_MOTOR, UI_ARMED_SERVO,
                               UI_ARMED_MOTOR | UI_ARMED_SERVO };
     int widest = 0;
+    int least  = W;
 
     for (int id = SCREEN_MOTOR; id < SCREEN_COUNT; ++id) {
         if (id == SCREEN_BUSFAULT || id == SCREEN_UPDATE) {
@@ -459,7 +463,8 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
                                 st.faults      = fault ? 0x7Fu : 0u;
                                 st.run_seconds = runs[k];
                                 const int left = chips_left(&st);
-                                if (left < end + 6) {
+                                least = left < least ? left : least;
+                                if (left - 2 < end) {
                                     T_FAIL("screen %d, language %d, link %d, "
                                            "armed %d roles %u, faults %d, "
                                            "run %lu s: chips from x %d, the "
@@ -475,8 +480,9 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
         }
     }
     /* MOTOR & ESC's tag is the widest; every other ends at x 248 or
-     * less. */
+     * less.  The widest row starts at x 270. */
     CHECK_EQ(widest, 268);
+    CHECK_EQ(least, 270);
     CHECK_EQ(widest, ui_home_tag_rect(ui_router_title(SCREEN_MOTOR)).x
                      + ui_home_tag_rect(ui_router_title(SCREEN_MOTOR)).w);
     for (int id = SCREEN_MOTOR + 1; id < SCREEN_COUNT; ++id) {

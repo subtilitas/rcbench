@@ -3454,7 +3454,6 @@ shared/ui/include/ui_band.h: warning: parameters of member ui_band_chip_rect are
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_rect are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_render are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_mode are not documented
-shared/ui/include/ui_band.h: warning: parameters of member ui_band_render are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_link_refused_label are not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_armed_label is not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_chip_rect is not documented
