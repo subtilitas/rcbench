@@ -4,7 +4,9 @@
  * A release before UI_HOLD_S shows the button's hint on the alert band and
  * sends nothing.  A press that slid off the button, a touch that was lost, a
  * release that is not a tap, a second finger and a screen without the band
- * show nothing.  A hold that completes shows no hint.
+ * show nothing.  A hold that completes shows no hint.  A press on STOP, a
+ * fault bit that comes up and a switch from ARMED to SAFE clear the hint at
+ * once; an alert stays.
  *
  * The first cases drive ui_hold_t on its own with the router on a screen
  * with the band; the others drive the real buttons through the tracker and
@@ -17,6 +19,8 @@
 
 #include "greatest.h"
 #include "touch_feed.h"
+
+#include "link_pages.h"
 
 #include "gfx.h"
 #include "motor_screen.h"
@@ -90,6 +94,15 @@ static touch_event_t up_at(int x, int y, uint8_t flags)
     e.flags = flags;
     return e;
 }
+
+/* A step the rest of a case cannot do without: names it and ends the case. */
+#define REQUIRE(cond)                                                         \
+    do {                                                                      \
+        if (!(cond)) {                                                        \
+            T_FAIL("expected %s", #cond);                                     \
+            return;                                                           \
+        }                                                                     \
+    } while (0)
 
 static bool hint_shows(int id)
 {
@@ -331,6 +344,74 @@ TEST_CASE(a_tap_on_the_band_clears_the_hint)
     CHECK(ui_router_alert() == NULL);
 }
 
+/* A status with @p faults, ARMED when @p armed, the link up. */
+static void status_set(uint16_t faults, bool armed)
+{
+    ui_bench_status_t st;
+    memset(&st, 0, sizeof(st));
+    st.link_up = true;
+    st.armed   = armed;
+    st.faults  = faults;
+    ui_router_set_status(&st);
+}
+
+TEST_CASE(stop_clears_the_hint_in_the_next_frame)
+{
+    router_on(SCREEN_MOTOR);
+    release_early();
+    REQUIRE(ui_router_alert_is_notice());
+    const gfx_rect_t stop = ui_band_stop_rect();
+    finger(FEED_LONE, stop.x + stop.w / 2, stop.y + stop.h / 2);
+    ui_router_tick(1.0f / 60.0f);
+    CHECK(ui_router_alert() == NULL);
+    CHECK(!ui_router_alert_is_notice());
+    lift(FEED_LONE);
+    CHECK(ui_router_take_stop());
+
+    /* An alert is not a notice: STOP leaves it for its 30s. */
+    router_on(SCREEN_MOTOR);
+    ui_router_set_alert("Touch signal lost.");
+    finger(FEED_LONE, stop.x + stop.w / 2, stop.y + stop.h / 2);
+    ui_router_tick(1.0f / 60.0f);
+    CHECK(ui_router_alert() != NULL
+          && strcmp(ui_router_alert(), "Touch signal lost.") == 0);
+    lift(FEED_LONE);
+    (void)ui_router_take_stop();
+}
+
+TEST_CASE(a_switch_to_safe_or_a_new_fault_clears_the_hint)
+{
+    /* ARMED to SAFE, as STOP or an error leaves the bench. */
+    router_on(SCREEN_MOTOR);
+    status_set(0u, true);
+    release_early();
+    REQUIRE(ui_router_alert_is_notice());
+    status_set(0u, true);           /* the same status keeps it */
+    CHECK(ui_router_alert_is_notice());
+    status_set(0u, false);
+    CHECK(ui_router_alert() == NULL);
+
+    /* A fault bit that comes up, the bench SAFE throughout. */
+    router_on(SCREEN_MOTOR);
+    status_set(LINK_FAULT_OVERCURRENT, false);
+    release_early();
+    REQUIRE(ui_router_alert_is_notice());
+    status_set(LINK_FAULT_OVERCURRENT, false);  /* one that stands keeps it */
+    CHECK(ui_router_alert_is_notice());
+    status_set(0u, false);                      /* one that clears keeps it */
+    CHECK(ui_router_alert_is_notice());
+    status_set(LINK_FAULT_HEARTBEAT, false);
+    CHECK(ui_router_alert() == NULL);
+
+    /* An alert stays through both. */
+    router_on(SCREEN_MOTOR);
+    status_set(0u, true);
+    ui_router_set_alert("Touch signal lost.");
+    status_set(LINK_FAULT_HEARTBEAT, false);
+    CHECK(ui_router_alert() != NULL && !ui_router_alert_is_notice());
+    status_set(0u, false);
+}
+
 /* ----------------------------------------------------------------- MOTOR */
 
 TEST_CASE(arm_released_at_1999ms_shows_the_hint_and_sends_nothing)
@@ -506,6 +587,8 @@ int main(void)
     RUN(an_alert_that_arrives_replaces_the_hint);
     RUN(a_hint_does_not_show_while_an_alert_is_up);
     RUN(a_tap_on_the_band_clears_the_hint);
+    RUN(stop_clears_the_hint_in_the_next_frame);
+    RUN(a_switch_to_safe_or_a_new_fault_clears_the_hint);
     RUN(arm_released_at_1999ms_shows_the_hint_and_sends_nothing);
     RUN(arm_released_at_2000ms_arms_and_shows_no_hint);
     RUN(arm_slid_off_before_the_release_shows_no_hint);

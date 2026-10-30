@@ -304,6 +304,17 @@ static void clear_alert(void)
     s.alert[0]    = '\0';
 }
 
+/**
+ * @brief Clear the band's notice, if one shows: for a STOP and a switch to
+ *        SAFE, which outrank a hold button's hint.  An alert stays.
+ */
+static void drop_notice(void)
+{
+    if (s.has_alert && s.alert_notice) {
+        clear_alert();
+    }
+}
+
 void ui_router_tick(float dt_s)
 {
     /* The frame an alert arrives in does not count: its interval passed
@@ -337,6 +348,13 @@ void ui_router_set_status(const ui_bench_status_t *status)
      */
     const bool     was  = s.status.simulated;
     const uint16_t caps = s.status.capabilities;
+    /* A fault that came up or a switch to SAFE -- STOP, an error -- ends
+     * a hold button's hint at once: the hint is about a press that no
+     * longer matters, and the FAULT chip says what happened. */
+    if ((status->faults & (uint16_t)~s.status.faults) != 0u
+        || (s.status.armed && !status->armed)) {
+        drop_notice();
+    }
     s.status = *status;
     if (was != s.status.simulated || caps != s.status.capabilities) {
         ui_router_invalidate();
@@ -773,6 +791,7 @@ void ui_router_event(const touch_event_t *evt)
                  * loop that drives the heartbeat drains it, so a stop also
                  * stops the line. */
                 s.stop_latched = true;
+                drop_notice();
             }
             return;   /* consumed before the screen sees it */
         }
