@@ -4,7 +4,36 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
-## Unreleased
+## 0.23.3 - 2026-10-30
+
+0.23.3 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.2 does; an ESP32-S3 panel stays on the 0.22 line
+and is not offered it. The link protocol is 4.33 (0.23.2: 4.30). A panel of
+0.23.3 beside an IOmcu of 0.23.2 keeps a supply that a programming port
+holds through an error and sends no bit 4 with a Hitec write, since that
+IOmcu would cut a write to the servo's memory in the middle. On the rbmod
+carrier, an IOmcu image older than 4.33 refuses the INA3221 map, and
+SETUP > SENSORS reads `NOT ACCEPTED BY THE IOMCU` on 0x40 until the IOmcu
+runs the panel's image. The IOmcu build for the carrier is new; an IOmcu of
+0.23.2 has no PROG_SUPPLY page and refuses it with BAD_PAGE. An IOmcu of
+0.23.3 beside a panel of 0.23.2 holds that panel's OFF for a write to the
+servo's memory, 10000ms at most. It never switches the programming ports'
+own 5V on, since a panel before 4.32 does not write the page's register 4.
+
+A bench on 0.23.2 gets 0.23.3 over Wi-Fi: SETUP > UPDATES, RELEASES:
+TESTING, CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES:
+STABLE the check reads `releases/latest`, which names 0.22.1, and offers
+nothing. At link-up the panel offers the IOmcu's update over CAN
+(Controller Area Network) when the IOmcu runs another build. A new bench
+loads it over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, with
+`rcbench-panel-p4-v0.23.3.zip` and `rcbench-iomcu-install.uf2`; on the
+rbmod carrier the IOmcu loads from `rcbench-iomcu-rbmod-v0.23.3.zip` with
+its `rcbench-iomcu-rbmod-install.uf2`.
+
+The entries below cover the 30 pull requests merged since v0.23.2: #637
+and #639 to #667.
 
 ### Added
 
