@@ -336,7 +336,7 @@ bool ui_router_take_stop(void);
 /** How long an alert shows before it clears itself, in seconds. */
 #define UI_ALERT_SHOW_S 30.0f
 
-/** How long a notice shows before it clears itself, in seconds. */
+/** @brief How long a notice shows before it clears itself, in seconds. */
 #define UI_NOTICE_SHOW_S 4.0f
 
 /**
