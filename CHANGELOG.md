@@ -29,6 +29,11 @@ history is in git.
   asks the IOmcu for its status for up to 5000ms and starts the test at the
   first answer. `bus_err` on the bus-fault screen counts the test's bus
   errors only.
+- The CAN BUS FAULT screen's acknowledgement no longer fills by itself. A
+  finger that held it and lifted after the screen closed stayed pressed in
+  the screen's record, and the next fault, such as a pulled CAN cable,
+  acknowledged itself after 2s with nobody touching. Leaving the screen
+  drops the press.
 - STOP clears a hold button's amber hint on the alert band in the frame of
   the press, and so do a new FAULT code and a switch from ARMED to SAFE.
   The hint stayed for its 4s before. An alert is left as it is.
