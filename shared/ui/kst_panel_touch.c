@@ -292,9 +292,17 @@ bool kst_panel_has_press(uint8_t id)
 
 /* The supply's own controls follow the port: while one is out of PWM the
  * IOmcu takes an OFF and nothing else (supply_page.h), and SUPPLY and
- * the SERVO screen's SET row offer no more than that. */
+ * the SERVO screen's SET row offer no more than that.  A LEAVE is told
+ * before the word it ends: only its release offers the operator's set
+ * points back. */
 void kpn_supply_sync(void)
 {
+    const uint32_t leaves = kst_prog_leaves(&k.prog);
+
+    if (leaves != k.leaves_seen) {
+        k.leaves_seen = leaves;
+        supply_screen_kst_leave_done();
+    }
     supply_screen_set_port_held(kst_prog_holds_port(&k.prog));
 }
 

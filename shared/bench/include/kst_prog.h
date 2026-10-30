@@ -620,6 +620,8 @@ typedef struct {
     bool cycle_old;           /**< the IOmcu is below link 4.30: the
                                    LEAVE's REBOOT went without the
                                    wait after its cycle               */
+    uint32_t leaves;          /**< LEAVEs ended in PWM; see
+                                   kst_prog_leaves()                  */
     uint16_t cycle_mv;        /**< what the ENTER after a CONNECT's
                                    cycle asks: the lower of the
                                    programming voltage and the one the
@@ -1197,6 +1199,21 @@ bool kst_prog_port_taken(const kst_link_readout_t *rd);
  * @return true when nothing but the programmer reaches the port.
  */
 bool kst_prog_holds_port(const kst_prog_t *p);
+/**
+ * @brief The count of LEAVEs that ended with the port back in PWM: the ends
+ *        KST_PROG_MSG_LEFT, LEFT_NOTE, LEFT_NO_WAIT, LEFT_DOUBT, LEFT_CYCLED
+ *        and LEFT_CYCLED_OLD say.
+ *
+ * A LEAVE cut by an abort, a STOP or the supply off, a lost link, a restart
+ * of the IOmcu and a port back in PWM that no command of this model put
+ * there (KST_PROG_MSG_SESSION_ENDED) count none.  The SERVO
+ * screen's restore question follows a LEAVE only
+ * (supply_screen_kst_leave_done()).
+ *
+ * @param p The programmer state.
+ * @return The count since kst_prog_init(); it wraps at 2^32.
+ */
+uint32_t kst_prog_leaves(const kst_prog_t *p);
 /**
  * @brief What an ENTER asks of the PD mini: @p mv and its current limit @p ma.
  *

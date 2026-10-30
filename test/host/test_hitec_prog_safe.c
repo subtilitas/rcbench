@@ -7,7 +7,8 @@
  * opened, an IOmcu that does not trust the heartbeat, an arm asked while
  * the port is held, and a transaction that never ends.  ARM is refused
  * while a port is held; after LEAVE or RELEASE PORT the switch to ARMED
- * clears the failsafe and CONNECT runs again.  The rig is
+ * clears the failsafe and CONNECT runs again.  Only a LEAVE ended in PWM is
+ * counted (hitec_prog_leaves()), RELEASE PORT never.  The rig is
  * hitec_prog_rig.h.
  *
  * SPDX-License-Identifier: MIT
@@ -305,6 +306,56 @@ TEST_CASE(a_transaction_that_never_ends_is_ended_and_the_port_stays_held)
     CHECK_EQ(hitec_port_state(&g_port), LINK_HITEC_FREE);
 }
 
+/* hitec_prog_leaves(), which the SERVO screen's restore question follows:
+ * a LEAVE ended in PWM counts once, D series and classic; nothing counts
+ * before its end.  RELEASE PORT, of the port a lost link or a panel
+ * restart leaves held and of one another session opened, counts none. */
+TEST_CASE(only_a_leave_ended_in_pwm_is_counted)
+{
+    for (int series = 0; series < 2; ++series) {
+        rig();
+        if (series != 0) {
+            servo_hs5645();
+            CHECK(hitec_prog_series_set(model(), HITEC_CLASSIC));
+        } else {
+            servo_d485();
+        }
+        connected();
+        CHECK_EQ(hitec_prog_leave(model()), HITEC_PROG_MSG_NONE);
+        prun(5u);
+        CHECK_EQ(hitec_prog_leaves(model()), 0u);
+        until(HITEC_PROG_PWM);
+        CHECK_EQ(msg(), HITEC_PROG_MSG_LEFT);
+        CHECK_EQ(hitec_prog_leaves(model()), 1u);
+    }
+
+    for (int restart = 0; restart < 2; ++restart) {
+        rig();
+        servo_d485();
+        connected();
+        if (restart != 0) {
+            panel_restart();
+        } else {
+            link_silent();
+            prun(500u);
+            link_back();
+        }
+        until(HITEC_PROG_OTHER);
+        CHECK_EQ(hitec_prog_release(model()), HITEC_PROG_MSG_NONE);
+        until(HITEC_PROG_PWM);
+        CHECK_EQ(msg(), HITEC_PROG_MSG_RELEASED);
+        CHECK_EQ(hitec_prog_leaves(model()), 0u);
+    }
+
+    rig();
+    (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    until(HITEC_PROG_OTHER);
+    CHECK_EQ(hitec_prog_release(model()), HITEC_PROG_MSG_NONE);
+    until(HITEC_PROG_PWM);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_RELEASED);
+    CHECK_EQ(hitec_prog_leaves(model()), 0u);
+}
+
 int main(void)
 {
     RUN(a_stop_during_read_all_cuts_holds_the_port_and_leave_frees_it);
@@ -319,5 +370,6 @@ int main(void)
     RUN(an_iomcu_that_does_not_trust_the_heartbeat_refuses_connect_unsafe);
     RUN(an_arm_asked_while_the_port_is_held_refuses_read_all);
     RUN(a_transaction_that_never_ends_is_ended_and_the_port_stays_held);
+    RUN(only_a_leave_ended_in_pwm_is_counted);
     return test_summary("hitec_prog_safe");
 }

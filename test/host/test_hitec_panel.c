@@ -5,7 +5,8 @@
  * port and its GPIO in every state; CLOSE while the port is held opening
  * LEAVE, and a hold of 2s leaving; a port another session holds offering
  * RELEASE PORT; a classic servo with no PD mini refused with its reason;
- * the supply's lock while a port is held; every control a tap target above
+ * the supply's lock while a port is held; the restore question after a
+ * LEAVE and after no other end of the hold; every control a tap target above
  * the alert band, every label and value inside its field and every note
  * above the band, in English and German, for both series.
  *
@@ -335,6 +336,105 @@ TEST_CASE(the_supply_is_locked_while_a_port_is_held)
     CHECK(supply_screen_port_held());
 }
 
+/**
+ * @brief A D series session on the PD mini: the operator's 5.5V 1.5A on
+ *        SUPPLY, CONNECT, and the port's 5.0V 1.0A on the live output, as
+ *        panel_render.c hands them over (supply_screen_adopt()).
+ */
+static void session_on_the_pd_mini(void)
+{
+    open_en();
+    supply_screen_put(5.5f, 1.5f);
+    servo_d485();
+    tap_connect();
+    CHECK(supply_screen_port_held());
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(true);
+}
+
+/* The SERVO screen's restore question follows a LEAVE only: a LEAVE offers
+ * the operator's set points back onto the live output.  RELEASE PORT of a
+ * port another session holds, also the one a lost link leaves behind, ends
+ * the hold with no LEAVE and offers nothing, even with the output still
+ * read on. */
+TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
+{
+    float v = 0.0f;
+    float i = 0.0f;
+
+    session_on_the_pd_mini();
+    tap(hitec_panel_close_rect());
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    prun(50u);
+    CHECK(!supply_screen_port_held());
+    CHECK(supply_screen_restore_offer(&v, &i));
+    CHECK(fabsf(v - 5.5f) < 0.001f && fabsf(i - 1.5f) < 0.001f);
+
+    /* RELEASE PORT. */
+    open_en();
+    supply_screen_put(5.5f, 1.5f);
+    (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    until(HITEC_PROG_OTHER);
+    show();
+    CHECK(supply_screen_port_held());
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    prun(50u);
+    CHECK(!supply_screen_port_held());
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+
+    /* The link goes under the session and comes back: the IOmcu still
+     * holds the port, for no session of this panel, and RELEASE PORT gives
+     * it back. */
+    session_on_the_pd_mini();
+    link_silent();
+    prun(500u);
+    link_back();
+    until(HITEC_PROG_OTHER);
+    show();
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    prun(50u);
+    CHECK(!supply_screen_port_held());
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+}
+
+/* A KST session on the PD mini holds the SUPPLY page too, and the Hitec
+ * overlay passes the page's word on (LINK_SP_PORT) with no Hitec session.
+ * The KST LEAVE's word lets go first; the release at the page's word a
+ * read later offers the set points back.  Without the LEAVE it offers
+ * nothing. */
+TEST_CASE(the_supply_pages_word_after_a_kst_leave_asks)
+{
+    for (int leave = 0; leave < 2; ++leave) {
+        hitec_prog_feed_t f;
+
+        open_en();
+        memset(&f, 0, sizeof(f));
+        f.supply_held = true;
+        hitec_panel_feed(&f);
+        supply_screen_put(5.5f, 1.5f);
+        supply_screen_set_port_held(true);
+        supply_screen_adopt(5.0f, 1.0f);
+        supply_screen_set_output(true);
+        if (leave != 0) {
+            supply_screen_kst_leave_done();
+        }
+        supply_screen_set_port_held(false);
+        CHECK(supply_screen_port_held());
+        f.supply_held = false;
+        hitec_panel_feed(&f);
+        CHECK(!supply_screen_port_held());
+        CHECK_EQ(supply_screen_restore_offer(NULL, NULL), leave != 0);
+    }
+}
+
 /* ----------------------------------------------------------- the layout */
 
 static bool overlap(gfx_rect_t a, gfx_rect_t b)
@@ -494,6 +594,8 @@ int main(void)
     RUN(a_classic_leave_page_says_the_supply_cycles);
     RUN(a_port_another_session_holds_offers_release_port);
     RUN(the_supply_is_locked_while_a_port_is_held);
+    RUN(only_a_leave_offers_the_operators_set_points_back);
+    RUN(the_supply_pages_word_after_a_kst_leave_asks);
     RUN(every_control_label_value_and_note_fits_in_both_languages);
     RUN(every_message_fits_its_line_in_both_languages);
     free(fb);

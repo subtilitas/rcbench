@@ -265,7 +265,7 @@ mit 56 Schritten und dem Zurücklesen von 36 Zellen 2,9s und ein Schreiben
 der D-Serie mit 21 Registern, Speichern, 1000ms Warten nach dem Neustart
 und Zurücklesen 3,5s, bei 32ms je Schritt auf der Host-Schleife des Panels. Das zweite Lesen vor dem Plan eines Hitec-Schreibens ([Das zweite Lesen](HitecProgrammer-de.md#das-zweite-lesen)) schreibt nichts und hält kein Ausschalten auf.
 
-Ein Port, der das Netzteil bei eingeschaltetem Ausgang freigibt, lässt seine Sollwerte am Ausgang; die des Bedieners kommen nur über JA auf die Frage von SERVO nach dem Verlassen (über 6,0V nur über NUR HV-SERVOS und sein Halten von 2s) oder beim nächsten Ausschalten zurück ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
+Ein Port, der das Netzteil bei eingeschaltetem Ausgang freigibt, lässt seine Sollwerte am Ausgang; die des Bedieners kommen nur über JA auf die Frage von SERVO, die einem Verlassen folgt und keinem anderen Ende des Haltens, (über 6,0V nur über NUR HV-SERVOS und sein Halten von 2s) oder beim nächsten Ausschalten zurück ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
 
 Eine Störung der Sitzung ist ein Vorgang, der an dem endet, was das Servo
 oder die Leitung getan hat. KST: kein Servo, ein Register ohne 3 gleiche

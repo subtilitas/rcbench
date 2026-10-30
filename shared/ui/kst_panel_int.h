@@ -218,6 +218,7 @@ typedef struct {
     float   held_s;                     /**< seconds a plus or minus key has been held */
 
     kst_prog_state_t state_seen;        /**< the programmer's state as last drawn */
+    uint32_t leaves_seen;               /**< kst_prog_leaves() as last told to the supply screen */
     uint32_t sig;                       /**< signature of the last draw */
     /** @brief Revision, counted up when the overlay's picture changes */
     uint32_t rev;
@@ -558,7 +559,8 @@ bool kpn_row_live(const row_t *r);
 /* kst_panel_touch.c */
 
 /** @brief The supply's own controls follow the port: while one is out of
- *         PWM they offer an OFF and nothing else. */
+ *         PWM they offer an OFF and nothing else.  A LEAVE ended since the
+ *         last call is told first (supply_screen_kst_leave_done()). */
 void kpn_supply_sync(void);
 
 /* kst_panel_draw.c */

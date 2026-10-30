@@ -821,6 +821,93 @@ TEST_CASE(the_carriers_fixed_supply_cycles_at_connect_and_at_leave)
     CHECK(!kst_prog_connect_cycles(&g_p));
 }
 
+/* kst_prog_leaves(), which the SERVO screen's restore question follows: a
+ * LEAVE ended in PWM counts once, plain, after its supply cycle, or by an
+ * IOmcu below link 4.15 with no PD mini; nothing counts before its end.  A
+ * LEAVE cut by an abort, a cycle stopped, a lost link and a session the
+ * IOmcu ends by a restart count none. */
+TEST_CASE(only_a_leave_ended_in_pwm_is_counted)
+{
+    on_pd();
+    connect_cycled();
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    frames(5);
+    CHECK_EQ(kst_prog_leaves(&g_p), 0u);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK_EQ(kst_prog_leaves(&g_p), 1u);
+
+    on_pd();
+    connect_cycled();
+    write_left(75u);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT_CYCLED);
+    CHECK_EQ(kst_prog_leaves(&g_p), 1u);
+
+    /* An abort in the wait after the cycle, then the LEAVE again. */
+    cycled_to_the_wait_at(0u, 3000u);
+    frames(500);
+    kst_prog_abort(&g_p);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEAVE_CUT);
+    CHECK_EQ(kst_prog_leaves(&g_p), 0u);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK_EQ(kst_prog_leaves(&g_p), 1u);
+
+    /* STOP in a LEAVE's cycle. */
+    on_pd();
+    connect_cycled();
+    write_left(90u);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    until_offs(2u);
+    frames(200);
+    g_stopped = true;
+    g_stop = true;
+    frame();
+    g_stop = false;
+    kst_link_abort(&g_k);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_STOPPED);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK_EQ(kst_prog_leaves(&g_p), 0u);
+
+    /* The link lost under a session, and up again. */
+    on_pd();
+    connect_cycled();
+    g_safe = false;
+    kst_link_lost(&g_k);
+    frames(KST_PORT_RAIL_OFF_MS + KST_PORT_RAIL_WAIT_MS + 500u);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_DOWN);
+    CHECK(!kst_prog_holds_port(&g_p));
+    g_safe = true;
+    link_up();
+    CHECK_EQ(kst_prog_leaves(&g_p), 0u);
+
+    /* The IOmcu starts again under a session. */
+    on_pd();
+    connect_cycled();
+    port_fresh();
+    frames(600);
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PWM);
+    CHECK_EQ(msg(), KST_PROG_MSG_SESSION_ENDED);
+    CHECK_EQ(kst_prog_leaves(&g_p), 0u);
+
+    /* Below link 4.15 with no PD mini: POWER_CYCLED is the LEAVE. */
+    fresh_at(0u);
+    kst_link_came_up(&g_k, LINK_MINOR_KST_LEAVE - 1u);
+    settle();
+    CHECK_EQ(kst_prog_connect(&g_p, CH), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(kst_prog_state(&g_p), KST_PROG_PROGRAMMING);
+    CHECK_EQ(kst_prog_leave(&g_p), KST_PROG_MSG_NONE);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT_NO_WAIT);
+    CHECK_EQ(kst_prog_leaves(&g_p), 1u);
+}
+
 int main(void)
 {
     RUN(connect_with_the_output_on_switches_it_off_1s_then_on_then_syncs);
@@ -852,5 +939,6 @@ int main(void)
     RUN(the_wait_after_the_cycle_holds_across_the_clock_wrap);
     RUN(an_iomcu_below_4_30_cycles_without_the_wait_and_says_so);
     RUN(the_carriers_fixed_supply_cycles_at_connect_and_at_leave);
+    RUN(only_a_leave_ended_in_pwm_is_counted);
     return test_summary("kst_prog_cycle");
 }
