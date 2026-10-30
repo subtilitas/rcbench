@@ -516,22 +516,44 @@ bool supply_link_port_held(const supply_link_t *s);
 /**
  * @brief Whether a programming port holds the PD mini's output for the
  *        panel's error rule (error_bench_t.port_holds, error_sites.h): the
- *        PD mini in use and the last read of the page with LINK_SP_PORT set.
+ *        PD mini in use, the last read of the page with LINK_SP_PORT set,
+ *        and a programmer's session with a port.
  *
- * The page's flag and not a programmer's session: a session with a port
- * whose supply the page does not hold -- the rbmod carrier's ports, which
- * run from PROG_SUPPLY, or a Hitec session between two POWERs on an IOmcu
- * older than 4.29 -- does not count.  As last read: a port that takes the
- * supply counts from the next read, SUPPLY_LINK_READ_MS (100ms) apart while
- * the PD mini is in use, and one that lets go counts until it.  An
- * unanswered read keeps the last answer; a lost link clears it.
+ * Both words count, and the hold ends at the first that says it ended.  A
+ * session with a port whose supply the page does not hold -- the rbmod
+ * carrier's ports, which run from PROG_SUPPLY, or a Hitec session between
+ * two POWERs on an IOmcu older than 4.29 -- does not count.  Nor does the
+ * page's flag once the session has ended: a port that lets go before the
+ * next read of the page.  The page's flag is as last read: a port that
+ * takes the supply counts from the next read, SUPPLY_LINK_READ_MS (100ms)
+ * apart while the PD mini is in use.  An unanswered read keeps the last
+ * answer; a lost link clears it.
  *
- * @param s      The link state.
- * @param pdmini The PD mini is the supply, not the panel's model.
- * @return true while held; false for NULL, for the model, and before the
- *         first read since the link came up.
+ * @param s       The link state.
+ * @param pdmini  The PD mini is the supply, not the panel's model.
+ * @param session A KST or Hitec programmer has a port, as the panel last
+ *                read its page.
+ * @return true while held; false for NULL, for the model, without a
+ *         session, and before the first read since the link came up.
  */
-bool supply_link_port_holds(const supply_link_t *s, bool pdmini);
+bool supply_link_port_holds(const supply_link_t *s, bool pdmini,
+                            bool session);
+
+/**
+ * @brief Whether a programmer's session keeps the panel's own OUTPUT ON
+ *        and set points off the PD mini: a session with a port, on a board
+ *        whose programming ports run from the PD mini.
+ *
+ * On a board that switches the ports' own supply (PROG_SUPPLY, the rbmod
+ * carrier) the ports never take the PD mini, the IOmcu never holds the
+ * SUPPLY page for them, and the operator keeps the PD mini.
+ *
+ * @param session   A KST or Hitec programmer has a port.
+ * @param ports_own The ports' own supply is the programmers' supply
+ *                  (prog_supply_link_owns()).
+ * @return true when the panel takes no ON and writes no set point.
+ */
+bool supply_link_session_blocks(bool session, bool ports_own);
 
 #ifdef __cplusplus
 }

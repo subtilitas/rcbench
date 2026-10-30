@@ -181,13 +181,20 @@ history is in git.
   does is unchanged.
 - With an IOmcu older than link 4.31, a programming port keeps the PD
   mini's output through an error only while the SUPPLY page's FLAGS bit 11
-  (`LINK_SP_PORT`) says it holds the supply, as the panel last read it
-  (`supply_link_port_holds()`), and no longer while a KST or Hitec session
-  has a port. A Hitec session between two POWERs on an IOmcu older than
-  4.29 gets the OFF. A port that lets go between two reads, 100ms apart,
-  keeps the output through an error in that gap. From 4.31 nothing changes:
-  the panel writes the OFF either way
+  (`LINK_SP_PORT`), as the panel last read it, and a KST or Hitec session
+  with a port both say it holds the supply (`supply_link_port_holds()`). A
+  session alone no longer counts: a Hitec session between two POWERs on an
+  IOmcu older than 4.29 gets the OFF. Nor does the bit alone once the
+  session has ended: a port that lets go counts until the first read of the
+  SUPPLY page or of its own page that shows it gone. From 4.31 nothing
+  changes: the panel writes the OFF either way
   ([Safety, Errors](docs/Safety.md#errors)).
+- On a board whose programming ports have their own supply (the rbmod
+  carrier), a KST or Hitec session no longer keeps the operator off the PD
+  mini: SUPPLY and the SERVO screen's SET row take OUTPUT ON and set points
+  through a session (`supply_link_session_blocks()`,
+  `supply_screen_set_ports_own()`). Other boards keep the lock
+  ([Carrier, Power](docs/Carrier.md#power)).
 
 ### Fixed
 

@@ -94,7 +94,7 @@ Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen
 
 ![SUPPLY auf dem Carrier](view:supply-rbmod)
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) speist der PD mini die Servoschienen, und die Programmierports haben eine eigene 5V-Versorgung, geschaltet über GPIO 21. Die Zeile unter AUSGANG nennt sie: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder `UNBEKANNT`, solange der IOmcu nicht antwortet. Die Programmer für KST und Hitec schalten sie für eine Sitzung; SUPPLY hat keine Taste dafür. Jeder Fehler schaltet sie aus, ein Schreiben in den Speicher eines Servos endet zuerst, höchstens 10000ms.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) speist der PD mini die Servoschienen, und die Programmierports haben eine eigene 5V-Versorgung, geschaltet über GPIO 21. Die Zeile unter AUSGANG nennt sie: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder `UNBEKANNT`, solange der IOmcu nicht antwortet. Die Programmer für KST und Hitec schalten sie für eine Sitzung; SUPPLY hat keine Taste dafür. Der PD mini bleibt während einer Sitzung bei der bedienenden Person: AUSGANG EIN und die Sollwerte funktionieren wie ohne sie. Jeder Fehler schaltet sie aus, ein Schreiben in den Speicher eines Servos endet zuerst, höchstens 10000ms.
 
 ## OPTIONEN
 

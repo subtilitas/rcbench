@@ -94,7 +94,7 @@ An output another screen switched on stays as it is when SUPPLY is left. The out
 
 ![SUPPLY on the carrier](view:supply-rbmod)
 
-On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the PD mini feeds the servo rails, and the programming ports have a 5V supply of their own, switched by GPIO 21. The line under OUTPUT names it: `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or `NOT READ` while the IOmcu does not answer. The KST and Hitec programmers switch it for a session; SUPPLY has no key for it. Every error switches it off, a write to a servo's memory first ends, 10000ms at most.
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the PD mini feeds the servo rails, and the programming ports have a 5V supply of their own, switched by GPIO 21. The line under OUTPUT names it: `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or `NOT READ` while the IOmcu does not answer. The KST and Hitec programmers switch it for a session; SUPPLY has no key for it. The PD mini stays the operator's through a session: OUTPUT ON and the set points work as without one. Every error switches it off, a write to a servo's memory first ends, 10000ms at most.
 
 ## SETTINGS
 

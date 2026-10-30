@@ -86,14 +86,15 @@ static uint32_t           s_kst_stops;    /* stops an abort was sent for */
 /**
  * @brief Whether a servo programmer, KST or Hitec, has a port or an
  *        operation under way: the bench takes no arm then (kst_prog.h,
- *        hitec_prog.h), and the supply's set points are the port's.
+ *        hitec_prog.h), and on a board whose ports run from the PD mini
+ *        the supply's set points are the port's.
  *
  * Control task only.  Read once a pass by kst_port_look(), before the arms
  * of the pass are served: no command of a programmer is taken between the
  * two.  A HITEC port another writer holds counts: the bench console's, or
- * one held over a panel restart, until RELEASE PORT closes it.  Whether a
- * port holds the PD mini's output is the SUPPLY page's to say
- * (supply_link_port_holds()), and the error rule reads that.
+ * one held over a panel restart, until RELEASE PORT closes it.  The error
+ * rule counts a port's hold on the PD mini while this and the SUPPLY
+ * page's LINK_SP_PORT both say so (supply_link_port_holds()).
  */
 bool s_prog_taken;
 
