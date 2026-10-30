@@ -6,7 +6,8 @@
  * from y 64 to 552: 4px under the band and 4px above the alert band, so an
  * alert covers none of it.  Inside, in panel coordinates from the dock's
  * top: a 36px header with the page's title and "n / m", the items from
- * 44px, the web line and the buttons PREV, NEXT and CLOSE at the bottom.
+ * 44px, the web line and CLOSE at the bottom.  PREV and NEXT sit in the
+ * band, in the home tag's place, the same on every page and every screen.
  * An item is its number in a 28px badge, then its label in the accent
  * colour, two spaces and its text in the 10 x 20 face, broken at spaces
  * into rows of 41 cells, 21px apart, 8px between two items.  Five items of
@@ -58,9 +59,23 @@
 #define BTN_H      UI_BTN_H
 /** @brief Between two buttons: 10px. */
 #define BTN_GAP    10
-/** @brief The buttons' top: 8px above the dock's bottom less their
- *         height, y 496. */
+/** @brief CLOSE's top: 8px above the dock's bottom less its height,
+ *         y 496. */
 #define BTN_Y      (DOCK_Y + DOCK_H - DOCK_M - BTN_H)
+/** @brief PREV's left edge in the band: the home tag's, x 8. */
+#define NAV_X      UI_TAG_X
+/** @brief PREV's and NEXT's top in the band: STOP's, y 6. */
+#define NAV_Y      6
+/** @brief PREV's and NEXT's width: 124px. */
+#define NAV_W      124
+/** @brief Between PREV and NEXT: 8px. */
+#define NAV_GAP    8
+/**
+ * @brief Where NEXT ends: x 264.  The widest row of the band's chips starts
+ *        at x 270 and is hit from x 268 (test_nav_bubble), so the two
+ *        buttons never cover a chip, "?" or STOP.
+ */
+#define NAV_END    (NAV_X + 2 * NAV_W + NAV_GAP)
 /** @brief The web line's top: a row and 8px above the buttons, y 467. */
 #define WEB_Y      (BTN_Y - ITEM_GAP - PITCH)
 /** @brief The brackets' distance outside their control: 3px, 2px wide. */
@@ -70,6 +85,9 @@
 
 _Static_assert(DOCK_Y + DOCK_H + 4 == UI_ALERT_Y,
                "the dock ends 4px above the alert band");
+_Static_assert(NAV_END <= 268, "PREV and NEXT end left of every chip");
+_Static_assert(NAV_Y + BTN_H <= UI_BAND_H - 6,
+               "PREV and NEXT end 6px above the band's bottom, as STOP");
 _Static_assert(UI_HELP_ITEMS * UI_HELP_ROWS * PITCH
                    + (UI_HELP_ITEMS - 1) * ITEM_GAP
                    <= WEB_Y - ITEM_GAP - (DOCK_Y + HEAD_H + ITEM_GAP),
@@ -204,10 +222,14 @@ gfx_rect_t ui_help_button_rect(ui_help_side_t side, ui_help_hit_t hit)
         && hit != UI_HELP_HIT_CLOSE) {
         return gfx_rect_make(0, 0, 0, 0);
     }
-    const gfx_rect_t d = ui_help_dock_rect(side);
+    if (hit == UI_HELP_HIT_CLOSE) {
+        const gfx_rect_t d = ui_help_dock_rect(side);
+        return gfx_rect_make(d.x + (DOCK_W - BTN_W) / 2, BTN_Y, BTN_W, BTN_H);
+    }
+    /* PREV and NEXT in the band, whatever the side: a second tap at the
+     * same spot turns the next page, never a control under it. */
     const int k = (int)hit - (int)UI_HELP_HIT_PREV;
-    const int x0 = d.x + (DOCK_W - 3 * BTN_W - 2 * BTN_GAP) / 2;
-    return gfx_rect_make(x0 + k * (BTN_W + BTN_GAP), BTN_Y, BTN_W, BTN_H);
+    return gfx_rect_make(NAV_X + k * (NAV_W + NAV_GAP), NAV_Y, NAV_W, BTN_H);
 }
 
 gfx_rect_t ui_help_badge_rect(const ui_help_page_t *p, int i)
@@ -472,13 +494,22 @@ void ui_help_render_dock(gfx_canvas_t *c, const ui_help_page_t *p, int n,
     }
     (void)wrap(c, x, WEB_Y, TR(HG_WEB), 0, CELLS_FULL, 0);
 
-    static const ui_text_id_t k_btn[3] = { TX_LOG_PREV, TX_LOG_NEXT,
-                                           TX_FM_CLOSE };
-    const bool on[3] = { n > 0, n + 1 < count, true };
-    for (int k = 0; k < 3; ++k) {
+    ui_button(c, ui_help_button_rect(p->side, UI_HELP_HIT_CLOSE),
+              TR(FM_CLOSE), UI_PANEL_HI, btn == UI_HELP_HIT_CLOSE, true);
+    ui_help_render_nav(c, n, count, btn);
+}
+
+void ui_help_render_nav(gfx_canvas_t *c, int n, int count, ui_help_hit_t btn)
+{
+    if (c == NULL) {
+        return;
+    }
+    static const ui_text_id_t k_btn[2] = { TX_LOG_PREV, TX_LOG_NEXT };
+    const bool on[2] = { n > 0, n + 1 < count };
+    for (int k = 0; k < 2; ++k) {
         const ui_help_hit_t h = (ui_help_hit_t)(UI_HELP_HIT_PREV + k);
-        ui_button(c, ui_help_button_rect(p->side, h), ui_tr(k_btn[k]),
-                  UI_PANEL_HI, on[k] && btn == h, on[k]);
+        ui_button(c, ui_help_button_rect(UI_HELP_DOCK_LEFT, h),
+                  ui_tr(k_btn[k]), UI_PANEL_HI, on[k] && btn == h, on[k]);
     }
 }
 

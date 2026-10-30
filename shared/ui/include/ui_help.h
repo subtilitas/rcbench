@@ -8,7 +8,10 @@
  * brackets at their corners and lists them in a dock of 480 x 488px on one
  * half of the body.
  * The other half is the screen's, drawn live.  PREV and NEXT step the
- * pages, CLOSE and a tap anywhere else close the guide.  The router owns
+ * pages; they sit in the band in the home tag's place, the same on every
+ * page, so a second tap at the spot of the first turns the next page
+ * whichever half the dock takes.  CLOSE, at the dock's bottom, and a tap
+ * anywhere else close the guide.  The router owns
  * the guide's state and touches (ui_router.c); this file holds its pages'
  * shape, its geometry and its drawing.
  *
@@ -138,7 +141,11 @@ typedef enum {
 
 /**
  * @brief The PREV, NEXT or CLOSE button of a dock on @p side, in panel
- *        coordinates: 140 x 48px each, 10px apart, from y 496.
+ *        coordinates.  PREV and NEXT are in the band, whatever @p side:
+ *        124 x 48px each, 8px apart, from x 8 to 264 at y 6, where the
+ *        home tag is, which does nothing while the guide is open.  The
+ *        band's chips start at x 270 at the least, so the two cover none.
+ *        CLOSE is 140 x 48px, centred at the dock's bottom, from y 496.
  * @param side The dock's side.
  * @param hit  UI_HELP_HIT_PREV, _NEXT or _CLOSE.
  * @return The rect; empty for another @p hit.
@@ -217,8 +224,21 @@ uint32_t ui_help_dock_key(const ui_help_page_t *p, int n, int count,
 uint32_t ui_help_marks_key(const ui_help_page_t *p);
 
 /**
+ * @brief Paint PREV and NEXT in the band, PREV off on the first page and
+ *        NEXT on the last.  The band does not draw the home tag while the
+ *        guide is open (ui_band_render()); the router calls this after a
+ *        band it painted again.
+ * @param c     The panel's canvas.
+ * @param n     The page, from 0.
+ * @param count The pages.
+ * @param btn   The button held down, or UI_HELP_HIT_NONE.
+ */
+void ui_help_render_nav(gfx_canvas_t *c, int n, int count, ui_help_hit_t btn);
+
+/**
  * @brief Paint the half of the body the dock takes: the background, the
- *        dock with its header, items, web line and buttons.
+ *        dock with its header, items, web line and CLOSE, and PREV and
+ *        NEXT in the band (ui_help_render_nav()).
  * @param c     The panel's canvas.
  * @param p     The page.
  * @param n     Its number, from 0.

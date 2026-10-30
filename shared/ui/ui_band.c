@@ -639,7 +639,10 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
     gfx_fill_rect(c, 0, 0, PANEL_W, UI_BAND_H, ui_theme_color(UI_C_PANEL));
     ui_rule(c, 0, UI_BAND_H - 1, PANEL_W, ui_theme_color(UI_C_EDGE));
 
-    if (show_home && title != NULL) {
+    if (guide == UI_BAND_GUIDE_OPEN) {
+        /* The guide's PREV and NEXT take the tag's place (ui_help.h); the
+         * router draws them. */
+    } else if (show_home && title != NULL) {
         ui_home_tag(c, title, home_pressed);
     } else if (title != NULL) {
         ui_wordmark(c, title, ui_theme_color(UI_C_TEXT));
