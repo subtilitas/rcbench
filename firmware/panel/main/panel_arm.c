@@ -629,6 +629,10 @@ void drain_commands(bool link_up, bench_state_t *bench)
             apply_supply_cmd(&pc);
             continue;
         }
+        if (pc.kind == PANEL_CMD_PROG5V) {
+            apply_prog5v_cmd(&pc);
+            continue;
+        }
 
         /*
          * Nothing asked for before a stop drives anything after it.

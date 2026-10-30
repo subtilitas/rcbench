@@ -476,6 +476,20 @@ void flush_screen_commands(uint32_t stops_now)
                            .consumed_seq = consumed };
         send_cmd(&pc);
     }
+    /* And the PROG 5V box's: its OFF counted first, so an ON still in the
+     * queue behind an earlier frame is not applied after it. */
+    prog5v_cmd_t p5;
+    if (prog5v_box_poll_cmd(&p5)) {
+        if (p5.off) {
+            atomic_fetch_add(&s_prog5v_offs, 1u);
+        }
+        panel_cmd_t pc = { .kind = PANEL_CMD_PROG5V, .prog5v = p5,
+                           .stops = stops_now,
+                           .prog5v_offs = atomic_load(&s_prog5v_offs),
+                           .loss_gen = loss_gen,
+                           .consumed_seq = consumed };
+        send_cmd(&pc);
+    }
 }
 
 /**

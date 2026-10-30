@@ -108,6 +108,9 @@ uint32_t              s_supply_step_ms;
  */
 static arm_watch_t    s_supply_watch;
 uint32_t              s_supply_gen;
+/* The PROG 5V box's ON in flight, watched the same way (s_psup_gen,
+ * s_psup_ack). */
+static arm_watch_t    s_psup_watch;
 
 /*
  * The interval since the last step, up to now, on the reading that held
@@ -405,6 +408,48 @@ void apply_supply_cmd(const panel_cmd_t *pc)
     }
 }
 
+void apply_prog5v_cmd(const panel_cmd_t *pc)
+{
+    const prog5v_cmd_t *c = &pc->prog5v;
+    if (c->off) {
+        prog_supply_link_ask_off(&s_psup_link);
+        arm_watch_end(&s_psup_watch);
+        return;
+    }
+    if (!c->on) {
+        return;
+    }
+    /* The pump first, so a STOP or a loss still in the driver's queue is
+     * counted before the ON is judged against them; then the PD mini's
+     * OUTPUT ON rules. */
+    control_pump();
+    if (!s_prog_taken
+        && pc->stops == arming_stop_count(&s_arm)
+        && pc->prog5v_offs == atomic_load(&s_prog5v_offs)
+        && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
+                             s_lost_notice_seq, pc->consumed_seq)
+        && prog_supply_link_ask_on(&s_psup_link)) {
+        const uint32_t gen = atomic_load(&s_psup_gen) + 1u;
+        atomic_store(&s_psup_gen, gen);
+        arm_watch_begin(&s_psup_watch, pc->loss_gen,
+                        atomic_load(&s_drv_gaps), gen);
+    }
+}
+
+void prog_supply_watch_service(void)
+{
+    if (prog_supply_link_state(&s_psup_link) != PROG_SUPPLY_ON
+        && !s_psup_link.on_owed) {
+        arm_watch_end(&s_psup_watch);
+        return;
+    }
+    if (arm_watch_lost(&s_psup_watch, atomic_load(&s_loss_gen),
+                       atomic_load(&s_drv_gaps), atomic_load(&s_psup_ack))) {
+        bench_error_stop();
+        control_alert(TR(ALERT_P5_TOUCH));
+    }
+}
+
 /* The supply as it is now, for the screen; the oldest sample goes when the
  * queue is full, as the bench's do. */
 static void supply_queue_sample(void)
@@ -604,6 +649,7 @@ void supply_pump(void)
      * that loss is about to switch off. */
     supply_follow_stops();
     supply_watch_service();
+    prog_supply_watch_service();
     card_faults_follow();
     prog_faults_follow();
     supply_service();
@@ -858,6 +904,21 @@ void prog_supply_service(void)
                                                 : PROG_SUPPLY_LINK_ACK;
         }
         prog_supply_link_written(&s_psup_link, result);
+        /* An ON of the PROG 5V box the IOmcu did not take is said. */
+        switch (prog_supply_link_take_on_result(&s_psup_link)) {
+        case PROG_SUPPLY_LINK_NONE:
+        case PROG_SUPPLY_LINK_ACK:
+            break;
+        case PROG_SUPPLY_LINK_NO_ANSWER:
+            control_alert(TR(ALERT_P5_NO_ANSWER));
+            break;
+        case (int)LINK_NACK_NOT_ARMED:
+            control_alert(TR(ALERT_P5_NO_BEAT));
+            break;
+        default:
+            control_alert(TR(ALERT_P5_HELD));
+            break;
+        }
     }
     if (prog_supply_link_read_due(&s_psup_link, now_ms())) {
         link_msg_t reply = { 0 };
@@ -872,8 +933,31 @@ void prog_supply_service(void)
     prog_supply_publish();
 }
 
+/**
+ * @brief The port a programmer session holds the ports' 5V with, for the
+ *        PROG 5V box: the KST session's, else the Hitec page's; some port
+ *        while the page says one holds it and neither session does.
+ * @return 0 to 3, PROG5V_HELD_SOME or PROG5V_HELD_NONE
+ */
+static uint8_t prog5v_held_port(void)
+{
+    kst_link_readout_t rd;
+    kst_link_readout(&s_kst_link, &rd);
+    if (kst_prog_port_taken(&rd) && rd.port_no < LINK_PG_PORTS_MAX) {
+        return rd.port_no;
+    }
+    const int h = hitec_taken_port();
+    if (h >= 0) {
+        return (uint8_t)h;
+    }
+    return (s_prog_taken || prog_supply_link_port(&s_psup_link))
+               ? (uint8_t)PROG5V_HELD_SOME : (uint8_t)PROG5V_HELD_NONE;
+}
+
 void prog_supply_publish(void)
 {
+    prog5v_box_publish((uint8_t)prog_supply_link_state(&s_psup_link),
+                       s_psup_link.pin, prog5v_held_port());
     const bool board = outbind_roles(s_board) != NULL;
     atomic_store(&s_psup_owns, prog_supply_link_owns(&s_psup_link, board));
     atomic_store(&s_psup_live, prog_supply_link_live(&s_psup_link, board,

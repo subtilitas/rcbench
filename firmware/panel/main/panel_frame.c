@@ -124,6 +124,9 @@ void panel_frame_loop(void)
         arm_wanted_now = s_snap.arm_wanted;
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
+        /* The ports' 5V as this frame begins, and the newest ON of it. */
+        const uint32_t psup_gen_now = atomic_load(&s_psup_gen);
+        const bool     psup_now     = prog5v_box_on();
         stops_now      = s_snap.stops;
         pressed_now    = s_snap.pressed;
         arm_gen_now    = s_snap.arm_gen;
@@ -678,6 +681,10 @@ void panel_frame_loop(void)
         /* And the supply's ON the same way; see supply_watch_service(). */
         if (supply_now && !frame_lost) {
             atomic_store(&s_supply_ack, supply_gen_now);
+        }
+        /* And the PROG 5V box's ON; see prog_supply_watch_service(). */
+        if (psup_now && !frame_lost) {
+            atomic_store(&s_psup_ack, psup_gen_now);
         }
 
         /*

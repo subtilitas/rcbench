@@ -134,6 +134,31 @@ static bool holds(bool have, const uint16_t *r, uint16_t window)
            && r[LINK_SX_WINDOW] == window;
 }
 
+bool sense_win_link_last(const sense_win_link_t *s, unsigned c, uint16_t *mv,
+                         int16_t *ma)
+{
+    if (s == NULL || !s->up || !s->page || c >= LINK_SM_CHANNELS) {
+        return false;
+    }
+    const unsigned p = c / LINK_SX_PER_PAGE;
+    const unsigned k = c % LINK_SX_PER_PAGE;
+    const uint16_t *r = s->regs[p];
+    if (!s->have[p] || (r[LINK_SX_FLAGS] & LINK_SX_HAVE) == 0u) {
+        return false;
+    }
+    const uint16_t both = (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE);
+    if ((r[LINK_SX_E(k, LINK_SX_E_FLAGS)] & both) != both) {
+        return false;
+    }
+    if (mv != NULL) {
+        *mv = r[LINK_SX_E(k, LINK_SX_E_MEAN_MV)];
+    }
+    if (ma != NULL) {
+        *ma = (int16_t)r[LINK_SX_E(k, LINK_SX_E_MEAN_MA)];
+    }
+    return true;
+}
+
 bool sense_win_link_window(const sense_win_link_t *s, uint16_t window,
                            bench_chw_t *out)
 {

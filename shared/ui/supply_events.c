@@ -176,6 +176,17 @@ static void down(const touch_event_t *evt)
         take(evt, P_RESET);
         return;
     }
+    /* The PROG 5V box, on LIVE with nothing over it; locked while a port
+     * holds the ports' 5V or it is not read, and the band says why. */
+    if (sup_p5_shown()
+        && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
+        if (prog5v_box_press(&s.p5)) {
+            take(evt, P_PROG5V);
+        } else {
+            ui_router_set_alert(TR(P5_LOCKED));
+        }
+        return;
+    }
     /* A question being asked is answered before anything else is opened. */
     if (s.confirm_open) {
         if (gfx_rect_contains(s.apply_btn, x, y)) {
@@ -386,6 +397,7 @@ void sup_drop_press(void)
         ++s.set_rev;
     }
     ui_hold_reset(&s.hold);
+    prog5v_box_cancel(&s.p5);
     ui_tabs_cancel(&s.tabs);
     ui_wb_strip_cancel(&s.wb);
     ++s.strip_rev;
@@ -485,6 +497,16 @@ void sup_event(const touch_event_t *evt)
         }
         return;
     }
+    case P_PROG5V:
+        if (!up) {
+            if (prog5v_box_drag(&s.p5, x, y)) {
+                sup_let_go();
+            }
+            return;
+        }
+        prog5v_box_release(&s.p5, x, y, touch_event_is_tap_up(evt));
+        sup_let_go();
+        return;
     case P_STRIP:
         if (up) {
             sup_let_go();
@@ -563,5 +585,17 @@ void sup_tick(float dt_s)
     if (s.hold.flash_ms > 0) {
         ui_hold_flash_step(&s.hold, dt_s);
         ++s.out_rev;
+    }
+    /* The PROG 5V box: its hold; a press it dropped (a port took the
+     * supply) is over here too. */
+    prog5v_box_tick(&s.p5, dt_s);
+    if (s.pressed == P_PROG5V && !s.p5.pressed) {
+        sup_let_go();
+    }
+    /* The box coming or going (a board change, the link) repaints the
+     * card it sits in. */
+    if (sup_p5_shown() != s.p5_shown) {
+        s.p5_shown = sup_p5_shown();
+        supply_invalidate();
     }
 }

@@ -709,6 +709,12 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
         }
         draw_header(c);
     }
+    /* The PROG 5V box in the output card's head, on its own revision. */
+    if (sup_p5_shown()
+        && (s.drawn_p5[buf] != s.p5.rev || ctrl_moved || data_moved)) {
+        s.drawn_p5[buf] = s.p5.rev;
+        prog5v_box_render(&s.p5, c);
+    }
 
     if (s.kp.open) {
         if (s.drawn_kp[buf] != s.kp.revision) {

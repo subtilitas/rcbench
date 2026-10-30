@@ -239,6 +239,7 @@ void sense_map_lost(void)
 {
     sense_map_link_lost(&s_sense_map);
     sense_win_link_lost(&s_sense_win);
+    prog5v_box_reading(false, 0u, 0);
     publish_held();
     sense_link_set_map(&s_sense_link, false);
     sense_link_set_map_held(&s_sense_link, false);
@@ -325,6 +326,24 @@ void sense_win_service(void)
             return;
         }
     }
+}
+
+void prog5v_publish_reading(void)
+{
+    if (sense_map_link_in_force(&s_sense_map)) {
+        const unsigned en = s_sense_map.held[LINK_SM_ENABLE];
+        for (unsigned c = 0u; c < LINK_SM_CHANNELS; ++c) {
+            uint16_t mv = 0u;
+            int16_t  ma = 0;
+            if ((en & (1u << (c / 3u))) != 0u
+                && s_sense_map.held[LINK_SM_WATCH(c)] == LINK_SM_WATCH_PROG_5V
+                && sense_win_link_last(&s_sense_win, c, &mv, &ma)) {
+                prog5v_box_reading(true, mv, ma);
+                return;
+            }
+        }
+    }
+    prog5v_box_reading(false, 0u, 0);
 }
 
 void sense_win_attach(bench_state_t *b, bool ring)

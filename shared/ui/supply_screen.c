@@ -57,6 +57,7 @@ static void forget_drawn(void)
         s.drawn_ov[b]    = UINT32_MAX;
         s.drawn_kp[b]    = UINT32_MAX;
         s.drawn_strip[b] = UINT32_MAX;
+        s.drawn_p5[b]    = UINT32_MAX;
         s.drawn_title[b] = 0xFFu;
         s.drawn_save[b]  = 0xFFu;
     }
@@ -170,6 +171,12 @@ bool sup_on_live(void)
     return ui_wb_strip_task(&s.wb) == UI_WB_LIVE;
 }
 
+bool sup_p5_shown(void)
+{
+    return sup_on_live() && !s.kp.open && !s.confirm_open
+           && prog5v_box_shown();
+}
+
 gfx_rect_t sup_overlay_area(void)
 {
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
@@ -279,6 +286,8 @@ static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     forget_drawn();
+    prog5v_box_init(&s.p5, (gfx_rect_t){ P5_X, P5_Y, P5_W, PROG5V_BOX_H },
+                    PROG5V_BY_SUPPLY);
     const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
     s.caps = caps;
     /* Nothing limited and no trip until the settings are read, which is
@@ -822,6 +831,14 @@ void supply_screen_cancel_on(void)
     if (s.hold.down || s.hold.held_s > 0.0f) {
         changed = true;
     }
+    /* PROG 5V ON's hold: the stop cuts the ports' 5V as well. */
+    if (s.pressed == P_PROG5V || s.p5.hold.held_s > 0.0f) {
+        prog5v_box_cancel(&s.p5);
+        if (s.pressed == P_PROG5V) {
+            sup_let_go();
+        }
+        changed = true;
+    }
     if (changed) {
         ui_hold_reset(&s.hold);
         ++s.out_rev;
@@ -842,6 +859,9 @@ void supply_screen_cancel_on(void)
 static void leave(void)
 {
     supply_screen_left(SUPPLY_BY_SUPPLY);
+    /* And the ports' 5V switched on here; a hold on PROG 5V ON drops. */
+    prog5v_box_cancel(&s.p5);
+    prog5v_box_left(PROG5V_BY_SUPPLY);
     /* A press on OUTPUT OFF when the screen is left -- a second finger on
      * HOME, which the band handles without asking this screen -- is the OFF
      * the operator was making, and it is sent, as cancel() sends one. */

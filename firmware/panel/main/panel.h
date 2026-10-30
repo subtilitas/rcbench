@@ -50,6 +50,7 @@
 #include "out_bind.h"
 #include "outputs.h"
 #include "prog_link.h"
+#include "prog5v_box.h"
 #include "prog_supply_link.h"
 #include "safety_gate.h"
 #include "sense_link.h"
@@ -834,6 +835,9 @@ void hitec_pass(bool link_up);
 /** @brief Whether the HITEC page holds a port or a request runs.
  *  @return true while it does */
 bool hitec_taken(void);
+/** @brief The port the HITEC page holds, as last read.
+ *  @return 0 to 3; -1 while it holds none */
+int hitec_taken_port(void);
 /** @brief What the Hitec programmer's model is fed; under the snapshot's
  *         lock.
  *  @param f receives the feed */
@@ -895,7 +899,7 @@ static inline uint16_t panel_throttle_ramp(void)
 
 typedef enum { PANEL_CMD_MOTOR = 0, PANEL_CMD_SERVO,
                PANEL_CMD_STOP, PANEL_CMD_OUTPUTS,
-               PANEL_CMD_SUPPLY } panel_cmd_kind_t;
+               PANEL_CMD_SUPPLY, PANEL_CMD_PROG5V } panel_cmd_kind_t;
 
 typedef struct {
     panel_cmd_kind_t kind;
@@ -903,6 +907,7 @@ typedef struct {
     servo_cmd_t      servo;
     outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: the protocols and their pins */
     supply_cmd_t     supply; /**< PANEL_CMD_SUPPLY: set points and the switch */
+    prog5v_cmd_t     prog5v; /**< PANEL_CMD_PROG5V: the ports' 5V switch    */
     /**
      * How many stops the sender had seen when it queued this.
      *
@@ -919,6 +924,9 @@ typedef struct {
     /** And how many times the supply's output had been asked off; see
      *  s_supply_offs. */
     uint32_t         supply_offs;
+    /** And how many times the ports' 5V had been asked off (s_prog5v_offs):
+     *  an ON queued before an OFF is not applied after it. */
+    uint32_t         prog5v_offs;
     /** And how many edits the PD mini's wiring had had (s_pdmini_edits):
      *  an ON queued before an edit on SETUP is not applied after it, even
      *  one undone since. */
@@ -977,6 +985,14 @@ extern atomic_uint s_supply_trip_ma;
 extern atomic_uint s_supply_trip_mv;
 extern atomic_uint s_supply_trip_ms;
 extern atomic_uint s_supply_ack;
+/** @brief The ports' 5V asked off from the PROG 5V box, counted; render
+ *         side writes, control task reads. */
+extern atomic_uint s_prog5v_offs;
+/** @brief The PROG 5V ONs applied, numbered (control task), and the newest
+ *         a whole frame has seen on (render side): see
+ *         prog_supply_watch_service(). */
+extern atomic_uint s_psup_gen;
+extern atomic_uint s_psup_ack;
 extern atomic_bool s_supply_live;
 extern atomic_uint s_supply_ons_sent;
 extern atomic_uint s_supply_ons_taken;
@@ -1107,6 +1123,23 @@ extern atomic_bool s_psup_live;
 /** @brief Publish s_psup_owns and s_psup_live from s_psup_link, the board
  *         and s_prog_taken; control task only. */
 void prog_supply_publish(void);
+/**
+ * @brief The PROG 5V box's command (PANEL_CMD_PROG5V): its OFF owed at once;
+ *        its ON under the PD mini's OUTPUT ON rules -- no programmer holding
+ *        a port, no stop, no OFF and no touch loss since it was queued --
+ *        then owed to the page and watched until a whole frame has seen it.
+ *        Control task only.
+ * @param pc the command
+ */
+void apply_prog5v_cmd(const panel_cmd_t *pc);
+/** @brief An ON of the ports' 5V taken across lost touch events is an
+ *         error (the PD mini's rule); from the pump. */
+void prog_supply_watch_service(void);
+/**
+ * @brief Publish to the PROG 5V box the last window of the INA3221 channel
+ *        the held map has watching the ports' 5V; control task.
+ */
+void prog5v_publish_reading(void);
 
 /* ------------------------------------------------------------- panel_arm.c */
 

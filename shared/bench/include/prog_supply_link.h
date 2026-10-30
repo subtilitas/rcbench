@@ -4,13 +4,16 @@
  *        programming ports' own supply on a board that switches one, the
  *        rbmod carrier's GPIO 21.
  *
- * The panel never switches this supply on: the KST and Hitec programmers
- * do, on the IOmcu, for a session.  The panel reads the page, to show the
- * supply's state on SUPPLY, and writes its OFF on every error
+ * The KST and Hitec programmers switch this supply for a session, on the
+ * IOmcu.  The panel switches it too, from the PROG 5V box (prog5v_box.h):
+ * an ON the operator held for 2s, an OFF tapped.  The panel reads the page,
+ * to show the supply's state, and writes its OFF on every error
  * (error_sites.h), whatever it reads of the output; the IOmcu holds that
  * OFF for a port's write, SUPPLY_PAGE_WRITE_WAIT_MS at most.  An OFF that
  * gets no answer is written again at the next pass; one the IOmcu answers,
- * ACK or NACK, is done.  The panel writes PANEL 1 whenever a read finds it
+ * ACK or NACK, is done.  An ON is written once, after any OFF owed: an
+ * error or an OFF drops one not yet written, and one the IOmcu does not
+ * answer is not written again.  The panel writes PANEL 1 whenever a read finds it
  * 0 on a board with the switch: the IOmcu lets a programming port switch
  * the supply on only after that write, and clears it when the heartbeat
  * goes.
@@ -38,6 +41,8 @@ extern "C" {
 #define PROG_SUPPLY_LINK_NO_ANSWER (-1)
 /** @brief A write the IOmcu acknowledged. */
 #define PROG_SUPPLY_LINK_ACK       0
+/** @brief No ON written since the start, or since its outcome was taken. */
+#define PROG_SUPPLY_LINK_NONE      (-2)
 
 /** @brief The supply as SUPPLY shows it. */
 typedef enum {
@@ -55,6 +60,11 @@ typedef struct {
     bool     on;       /**< the last answered read: the pin drives on   */
     uint8_t  pin;      /**< the switching GPIO, as read                 */
     bool     owed;     /**< an OFF waits to be written                  */
+    bool     on_owed;  /**< the panel's ON waits to be written          */
+    int      on_result;/**< how the last ON went: PROG_SUPPLY_LINK_ACK,
+                            a NACK reason, PROG_SUPPLY_LINK_NO_ANSWER;
+                            PROG_SUPPLY_LINK_NONE before one            */
+    bool     port;     /**< the last answered read: a port holds it     */
     bool     declared; /**< PANEL reads 1, or its write was answered
                             since the last read                         */
     bool     read_once;/**< a read was made since the start            */
@@ -75,8 +85,38 @@ void prog_supply_link_init(prog_supply_link_t *l, bool page);
 void prog_supply_link_cut(prog_supply_link_t *l);
 
 /**
- * @brief The write owed, if any: OUTPUT 0 first, then PANEL 1 while a read
- *        found PANEL 0 on a board with the switch.
+ * @brief The operator's ON: owe OUTPUT 1, written after any OFF owed.
+ *
+ * Refused here, nothing owed: no page, no switch as last read, the last
+ * read unanswered, a port holding the supply as last read, or an OFF owed.
+ * The IOmcu judges it again: NOT_ARMED without a live heartbeat,
+ * BAD_VALUE while a port holds the supply.
+ *
+ * @param l the state
+ * @return true when the ON is owed
+ */
+bool prog_supply_link_ask_on(prog_supply_link_t *l);
+
+/**
+ * @brief The operator's OFF: owe OUTPUT 0 and drop an ON not yet written,
+ *        as an error does (prog_supply_link_cut()).
+ * @param l the state; nothing for NULL or without the page
+ */
+void prog_supply_link_ask_off(prog_supply_link_t *l);
+
+/**
+ * @brief How the last ON went, once: PROG_SUPPLY_LINK_ACK, a NACK reason or
+ *        PROG_SUPPLY_LINK_NO_ANSWER; PROG_SUPPLY_LINK_NONE when there is
+ *        none to tell.  The outcome is forgotten once taken.
+ * @param l the state
+ * @return the outcome; PROG_SUPPLY_LINK_NONE for NULL
+ */
+int prog_supply_link_take_on_result(prog_supply_link_t *l);
+
+/**
+ * @brief The write owed, if any: OUTPUT 0 first, then the operator's
+ *        OUTPUT 1, then PANEL 1 while a read found PANEL 0 on a board with
+ *        the switch.
  * @param l   the state
  * @param off receives the register, LINK_PS_OUTPUT or LINK_PS_PANEL
  * @param v   receives the value, 0 or 1
@@ -86,8 +126,11 @@ bool prog_supply_link_next(const prog_supply_link_t *l, uint8_t *off,
                            uint16_t *v);
 
 /**
- * @brief How that write went: PROG_SUPPLY_LINK_ACK or a NACK reason ends
- *        it until the next read, PROG_SUPPLY_LINK_NO_ANSWER keeps it owed.
+ * @brief How that write went.  For an OFF or PANEL: PROG_SUPPLY_LINK_ACK or
+ *        a NACK reason ends it until the next read,
+ *        PROG_SUPPLY_LINK_NO_ANSWER keeps it owed.  For an ON every outcome
+ *        ends it and is kept for prog_supply_link_take_on_result(); an ACK
+ *        reads the output on until the next read says otherwise.
  * @param l      the state
  * @param result the outcome
  */
@@ -118,6 +161,15 @@ void prog_supply_link_read(prog_supply_link_t *l, const uint16_t *regs,
  * @return PROG_SUPPLY_NONE for NULL, no page or no switch
  */
 prog_supply_state_t prog_supply_link_state(const prog_supply_link_t *l);
+
+/**
+ * @brief Whether a programming port holds the supply, as last read
+ *        (FLAGS bit 2).
+ * @param l the state
+ * @return false for NULL, without the page or the switch, or after an
+ *         unanswered read
+ */
+bool prog_supply_link_port(const prog_supply_link_t *l);
 
 /**
  * @brief Whether the ports' own supply is the programmers' supply: the

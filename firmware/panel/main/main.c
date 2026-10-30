@@ -391,6 +391,11 @@ atomic_uint s_supply_trip_ms;
  * supply_watch_service().
  */
 atomic_uint s_supply_ack;
+/* The PROG 5V box's OFFs, counted as s_supply_offs counts the supply's,
+ * and its ONs acknowledged as s_supply_ack does (panel.h). */
+atomic_uint s_prog5v_offs;
+atomic_uint s_psup_gen;
+atomic_uint s_psup_ack;
 /*
  * Whether the output is on, stored by the control task the moment it
  * switches, and the ONs the render side has queued against the ones the
