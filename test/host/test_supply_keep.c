@@ -3,8 +3,9 @@
  * (supply_link_keep(), for an IOmcu older than link 4.31): the panel's half
  * of the SUPPLY link page asks what the page held at its last read, writes
  * no OFF over it and does not refuse it again until the port lets go; and
- * nothing is left to a port the link cannot name.  Against the IOmcu's
- * half of the page.
+ * nothing is left to a port the link cannot name.  Whether a port holds
+ * the PD mini for the error rule (supply_link_port_holds()): the page's
+ * flag as last read.  Against the IOmcu's half of the page.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -193,9 +194,42 @@ TEST_CASE(a_keep_needs_a_held_page_and_no_cut)
     CHECK(!sl.kept);
 }
 
+/* The PD mini a port holds for the error rule: the page's flag as last
+ * read, the PD mini in use.  A hold counts from the read that shows it to
+ * the read that shows it gone; an unanswered read keeps the last answer, a
+ * lost link clears it, and the model is never held. */
+TEST_CASE(a_port_holds_the_pd_mini_as_the_page_last_said)
+{
+    fresh();
+    CHECK(!supply_link_port_holds(&sl, true));      /* before a read */
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, true, 7400u, 1500u);
+    pump(true);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    CHECK(!supply_link_port_holds(&sl, true));      /* flag clear */
+    supply_page_hold(&pg, true);
+    CHECK(!supply_link_port_holds(&sl, true));      /* not read yet */
+    far_step_and_read(true);
+    CHECK(supply_link_port_holds(&sl, true));
+    CHECK(!supply_link_port_holds(&sl, false));     /* the model */
+    CHECK(!supply_link_port_holds(NULL, true));
+    supply_link_read(&sl, NULL, now);               /* unanswered */
+    CHECK(supply_link_port_holds(&sl, true));
+    supply_page_hold(&pg, false);
+    CHECK(supply_link_port_holds(&sl, true));       /* not read yet */
+    far_step_and_read(true);
+    CHECK(!supply_link_port_holds(&sl, true));
+    supply_page_hold(&pg, true);
+    far_step_and_read(true);
+    CHECK(supply_link_port_holds(&sl, true));
+    supply_link_lost(&sl);
+    CHECK(!supply_link_port_holds(&sl, true));
+}
+
 int main(void)
 {
     RUN(an_on_left_to_a_port_is_not_cut_until_it_lets_go);
     RUN(a_keep_needs_a_held_page_and_no_cut);
+    RUN(a_port_holds_the_pd_mini_as_the_page_last_said);
     return test_summary("supply_keep");
 }

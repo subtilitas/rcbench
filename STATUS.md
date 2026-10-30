@@ -124,7 +124,7 @@ is taken in a gap ahead of the save that needs it.
 | CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test | built |
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
-| Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_prog_supply`, `test_prog_supply_link`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's error sites in `panel_supply.c`, `panel_limit.c`, `panel_log.c` and `panel_services.c` apply the rule through `shared/safety/error_sites.c` and `kst_link_faults()`, host-tested in `test_error_sites` with each finder: DISARM for an ARMED bench or one on its way, the supply off and the OFF written to an IOmcu of 4.31, a PD mini a port holds left to the port by an older IOmcu through every error but the panel's trip, the module's protection and a sagging input (`error_sites_keeps()`; an ON the page refuses under a port's ON through `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a port, a reading fault the port keeps acted on once while it stands, a failed final commit or close of the run log or the automatic test's CSV counted once a run (`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line calls into it in those files are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
+| Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_prog_supply`, `test_prog_supply_link`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's error sites in `panel_supply.c`, `panel_limit.c`, `panel_log.c` and `panel_services.c` apply the rule through `shared/safety/error_sites.c` and `kst_link_faults()`, host-tested in `test_error_sites` with each finder: DISARM for an ARMED bench or one on its way, the supply off and the OFF written to an IOmcu of 4.31, a PD mini a port holds left to the port by an older IOmcu through every error but the panel's trip, the module's protection and a sagging input (`error_sites_keeps()`; the hold is the SUPPLY page's `LINK_SP_PORT` as last read, `supply_link_port_holds()`, also in `test_supply_keep`, not a session with a port, with a port that takes or lets go of the supply between two reads; an ON the page refuses under a port's ON through `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a port, a reading fault the port keeps acted on once while it stands, a failed final commit or close of the run log or the automatic test's CSV counted once a run (`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line calls into it in those files are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
 | IOmcu firmware | answers the identity, status, control, bench and three output pages; fails safe at 200ms. The decision to switch to ARMED is `shared/safety/safety_gate.c`, called once a pass and at every CONTROL write and host-tested in `test_safety_gate` against a model of both main loops: an arm latch set at a start, on link silence, on a distrusted heartbeat and by a refused ARM, released by CLEAR alone. CHAN_CFG and OUTPUTS refuse a role, a throttle channel's range and a slot change while ARMED. It publishes what the ESC reports over extended DShot telemetry: speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
 | IOmcu firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the IOmcu restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7s watchdog returns to the old image. The IOmcu refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the IOmcu erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the IOmcu's build by SHA-256 at link-up and offers the update on a question that takes the 2s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold starts the same update, also after a declined question. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
 | Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md) |
@@ -654,7 +654,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
 | `shared/ui/ui_textkey.c` | 521 | 507 | 97.3% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
-| `shared/ui/ui_board.c` | 24 | 24 | 100.0% |
+| `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
 | `shared/ui/servo_screen_sweep.c` | 473 | 470 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 382 | 378 | 99.0% |
@@ -705,7 +705,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/settings_screen.c` | 509 | 503 | 98.8% |
 | `shared/ui/settings_draw.c` | 226 | 220 | 97.3% |
 | `shared/ui/settings_rows.c` | 58 | 57 | 98.3% |
-| `shared/ui/sensors_rows.c` | 128 | 128 | 100.0% |
+| `shared/ui/sensors_rows.c` | 147 | 147 | 100.0% |
 | `shared/ui/outputs_screen.c` | 514 | 509 | 99.0% |
 | `shared/ui/outputs_port.c` | 192 | 191 | 99.5% |
 | `shared/ui/outputs_port_entry.c` | 312 | 308 | 98.7% |
@@ -723,8 +723,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 272 | 271 | 99.6% |
 | `shared/ui/upd_screen.c` | 613 | 590 | 96.2% |
-| `shared/settings/settings.c` | 402 | 395 | 98.3% |
-| `shared/settings/settings_sensors.c` | 128 | 127 | 99.2% |
+| `shared/settings/settings.c` | 401 | 394 | 98.2% |
+| `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
 | `shared/logfile/log_csv.c` | 469 | 445 | 94.9% |
@@ -830,7 +830,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
 | `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
 | `shared/outputs/out_bind.c` | 562 | 548 | 97.5% |
-| `shared/outputs/board_fix.c` | 73 | 73 | 100.0% |
+| `shared/outputs/board_fix.c` | 96 | 96 | 100.0% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 236 | 234 | 99.2% |
 | `shared/outputs/supply_page.c` | 336 | 333 | 99.1% |
@@ -842,7 +842,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
 | `shared/outputs/servo_link.c` | 557 | 524 | 94.1% |
 | `shared/outputs/sense_page.c` | 514 | 514 | 100.0% |
-| `shared/outputs/sense_map.c` | 194 | 193 | 99.5% |
+| `shared/outputs/sense_map.c` | 197 | 196 | 99.5% |
 | `shared/outputs/sense_limit.c` | 36 | 36 | 100.0% |
 | `shared/outputs/tone_page.c` | 251 | 251 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
@@ -850,7 +850,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
 | `protocols/pdmini/pdmini_jobs.c` | 255 | 253 | 99.2% |
-| `shared/bench/supply_link.c` | 356 | 346 | 97.2% |
+| `shared/bench/supply_link.c` | 358 | 348 | 97.2% |
 | `shared/bench/prog_supply_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/sense_link.c` | 601 | 579 | 96.3% |
 | `shared/bench/sense_link_view.c` | 268 | 264 | 98.5% |
@@ -864,7 +864,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
 | `shared/bench/log_writer.c` | 300 | 288 | 96.0% |
-| `shared/bench/log_cols.c` | 47 | 47 | 100.0% |
+| `shared/bench/log_cols.c` | 53 | 53 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 66 | 66 | 100.0% |
 | `shared/sense/sense_bus.c` | 133 | 132 | 99.2% |
@@ -899,7 +899,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api.c` | 399 | 391 | 98.0% |
 | `shared/webaccess/wa_app.c` | 107 | 107 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **66551** | **65267** | **98.1%** |
+| **total** | **66657** | **65373** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

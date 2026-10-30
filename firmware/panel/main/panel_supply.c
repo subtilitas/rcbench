@@ -185,6 +185,14 @@ void supply_switch(bool on)
 /**
  * @brief The bench as an error finds it (error_sites.h): ARMED or a switch
  *        to ARMED waiting, the output and who holds it, and the IOmcu.
+ *
+ * A port holds the supply when the SUPPLY page's last read says so
+ * (supply_link_port_holds()), not when a programmer has a port
+ * (s_prog_taken): on the rbmod carrier the ports run from PROG_SUPPLY, and
+ * the PD mini is no port's.  The hold counts for an IOmcu older than 4.31
+ * only; from 4.31 an error writes the OFF whoever holds the supply and the
+ * IOmcu holds it for a write.
+ *
  * @return The bench now.
  */
 static error_bench_t error_bench(void)
@@ -192,7 +200,8 @@ static error_bench_t error_bench(void)
     const error_bench_t b = {
         .live        = arming_link_needed(&s_arm, outputs_armed(&s_out)),
         .supply_on   = s_supply_on,
-        .port_holds  = s_prog_taken,
+        .port_holds  = supply_link_port_holds(&s_supply_link,
+                                              s_supply_is_real),
         .supply_real = s_supply_is_real,
         .supply_page = s_supply_page,
         .far_minor   = s_far_minor,
@@ -321,9 +330,11 @@ void supply_follow_set(void)
      * points under them already, and this is what the supply obeys. */
     const unsigned vmax = atomic_load(&s_supply_vmax_mv);
     const unsigned imax = atomic_load(&s_supply_imax_ma);
-    /* A programming port holds the supply: the set points are the port's,
-     * and neither the screen's nor a limit that moved is written over
-     * them.  The IOmcu refuses it too (supply_page.h). */
+    /* A programmer has a port: the set points are the port's, and neither
+     * the screen's nor a limit that moved is written over them.  The
+     * session counts from the panel's own command, before the SUPPLY page
+     * says the port holds the supply; the IOmcu refuses them while it
+     * holds it (supply_page.h). */
     if (s_prog_taken) {
         return;
     }
