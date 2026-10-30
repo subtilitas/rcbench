@@ -24,7 +24,9 @@
  * supply trip; an ON taken across lost touch events.  The operator's own
  * endings -- OUTPUT OFF on SUPPLY, STOP TEST -- leave the bench ARMED.
  * On a board that switches the programming ports' own supply (4.32) every
- * error writes that page's OFF.
+ * error writes that page's OFF.  A port holds the supply as the SUPPLY
+ * page's last read says (LINK_SP_PORT), not while a programmer has a port;
+ * a port that takes or lets go of it between two reads, on each IOmcu.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -62,7 +64,10 @@ static struct {
     arming_t a;
     bool     bank_armed;
     bool     on;           /* the supply's output, as the panel asks it  */
-    bool     port;         /* a programming port holds the supply        */
+    bool     port;         /* a programming port holds the supply, for a
+                              bench without the page's link (g.link)     */
+    bool     session;      /* a programmer has a port (s_prog_taken),
+                              which error_bench() does not read          */
     bool     real;         /* the PD mini, not the model                 */
     bool     page;         /* the IOmcu serves the SUPPLY page           */
     uint16_t minor;
@@ -72,11 +77,16 @@ static struct {
     supply_link_t *link;   /* when set, act() drives it as the panel does */
 } g;
 
-/* The bench as the control task's error_bench() reads it. */
+/* The bench as the control task's error_bench() reads it.  With the page's
+ * link driven (g.link), a port holds the supply as the page's last read
+ * says (supply_link_port_holds()); a programmer's session (g.session) does
+ * not count. */
 static error_bench_t bench_now(void)
 {
+    const bool port = (g.link != NULL)
+                      ? supply_link_port_holds(g.link, g.real) : g.port;
     const error_bench_t b = {
-        arming_link_needed(&g.a, g.bank_armed), g.on, g.port, g.real,
+        arming_link_needed(&g.a, g.bank_armed), g.on, port, g.real,
         g.page, g.minor, false,
     };
     return b;
@@ -1064,6 +1074,100 @@ TEST_CASE(a_trip_of_the_module_is_followed_off_under_a_port)
     }
 }
 
+/* --------------------------------------- who holds the supply, as read */
+
+/* A port's ON on the page, a write running, and @p held the page's hold. */
+static void port_on(bool held)
+{
+    supply_page_hold(&g_pg, held);
+    if (held) {
+        CHECK(supply_page_port_set(&g_pg, true, MV, MA, true));
+        supply_page_port_writes(&g_pg, true);
+    }
+}
+
+/* A programmer with a port and the SUPPLY page's flag clear or set, on each
+ * IOmcu, SAFE and ARMED.  Only the flag keeps the supply on an IOmcu older
+ * than 4.31: a session whose port the page does not hold gets the OFF.
+ * From 4.31 the OFF is written either way and the page holds it for a
+ * write. */
+TEST_CASE(only_the_pages_flag_keeps_the_supply_not_a_session)
+{
+    for (int k = 0; k < 8; ++k) {
+        const bool old  = (k & 1) != 0;
+        const bool flag = (k & 2) != 0;
+        const bool live = (k & 4) != 0;
+
+        supply_up(old ? LINK_MINOR_PORT_CUT - 1u : LINK_MINOR_PORT_CUT);
+        g.bank_armed = live;
+        g.session = true;
+        port_on(flag);
+        serve(true);
+        CHECK_EQ(supply_link_port_holds(&g_sl, true), flag);
+        CHECK(g.on);
+        const unsigned offs = g_offs;
+        do_stop();
+        CHECK_EQ(g.disarms, live ? 1u : 0u);
+        CHECK_EQ(g.on, old && flag);
+        CHECK_EQ(g.cuts, old ? 0u : 1u);
+        serve(true);
+        CHECK_EQ(g_offs > offs, !(old && flag));
+        /* Kept for the port, the page stays on; given the OFF, the page
+         * reads 0 at once, a held OFF included. */
+        CHECK_EQ(page_reg(LINK_SP_OUTPUT), (old && flag) ? 1u : 0u);
+        CHECK_EQ(supply_page_off_held(&g_pg), !old && flag);
+    }
+}
+
+/* A port that takes the supply between two reads: the panel reads no hold
+ * yet, and an error writes the OFF on every IOmcu.  From 4.31 the page
+ * holds it for the write that runs.  The page here is 4.31's; an older
+ * IOmcu takes the OFF at once, which is the panel's side alike. */
+TEST_CASE(a_port_that_takes_the_supply_between_reads_gets_the_off)
+{
+    for (int f = 0; f < 2; ++f) {
+        const bool old = f != 0;
+
+        supply_up(old ? LINK_MINOR_PORT_CUT - 1u : LINK_MINOR_PORT_CUT);
+        g.session = true;
+        port_on(true);                  /* not read yet */
+        CHECK(!supply_link_port_holds(&g_sl, true));
+        const unsigned offs = g_offs;
+        do_stop();
+        CHECK(!g.on);
+        CHECK_EQ(g.cuts, old ? 0u : 1u);
+        serve(true);
+        CHECK(g_offs > offs);
+        CHECK_EQ(page_reg(LINK_SP_OUTPUT), 0u);
+        CHECK(supply_page_off_held(&g_pg));
+    }
+}
+
+/* A port that lets go between two reads: from 4.31 the OFF is written
+ * whatever the panel read.  On an older IOmcu the panel still reads the
+ * hold, and an error in that gap leaves the output on (docs/Safety.md,
+ * Errors). */
+TEST_CASE(a_port_that_lets_go_between_reads)
+{
+    for (int f = 0; f < 2; ++f) {
+        const bool old = f != 0;
+
+        supply_up(old ? LINK_MINOR_PORT_CUT - 1u : LINK_MINOR_PORT_CUT);
+        port_on(true);
+        serve(true);
+        CHECK(supply_link_port_holds(&g_sl, true));
+        supply_page_port_writes(&g_pg, false);
+        supply_page_hold(&g_pg, false); /* not read yet */
+        g.session = false;
+        do_stop();
+        CHECK_EQ(g.on, old);
+        CHECK_EQ(g.cuts, old ? 0u : 1u);
+        serve(true);
+        CHECK(!supply_link_port_holds(&g_sl, true));
+        CHECK_EQ(page_reg(LINK_SP_OUTPUT), old ? 1u : 0u);
+    }
+}
+
 /* ------------------------------------------------ the operator's endings */
 
 /* OUTPUT OFF on SUPPLY and STOP TEST end a run on an ARMED bench that
@@ -1128,6 +1232,9 @@ int main(void)
     RUN(a_page_event_keeps_only_a_refused_on);
     RUN(an_on_refused_under_a_ports_on_is_left_to_the_port);
     RUN(a_trip_of_the_module_is_followed_off_under_a_port);
+    RUN(only_the_pages_flag_keeps_the_supply_not_a_session);
+    RUN(a_port_that_takes_the_supply_between_reads_gets_the_off);
+    RUN(a_port_that_lets_go_between_reads);
     RUN(a_failed_close_is_one_error_a_run);
     RUN(the_tests_failed_close_is_one_error);
     RUN(the_operators_endings_leave_the_bench_armed);

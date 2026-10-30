@@ -124,7 +124,7 @@ is taken in a gap ahead of the save that needs it.
 | CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test | built |
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
-| Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_prog_supply`, `test_prog_supply_link`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's error sites in `panel_supply.c`, `panel_limit.c`, `panel_log.c` and `panel_services.c` apply the rule through `shared/safety/error_sites.c` and `kst_link_faults()`, host-tested in `test_error_sites` with each finder: DISARM for an ARMED bench or one on its way, the supply off and the OFF written to an IOmcu of 4.31, a PD mini a port holds left to the port by an older IOmcu through every error but the panel's trip, the module's protection and a sagging input (`error_sites_keeps()`; an ON the page refuses under a port's ON through `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a port, a reading fault the port keeps acted on once while it stands, a failed final commit or close of the run log or the automatic test's CSV counted once a run (`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line calls into it in those files are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
+| Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_prog_supply`, `test_prog_supply_link`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's error sites in `panel_supply.c`, `panel_limit.c`, `panel_log.c` and `panel_services.c` apply the rule through `shared/safety/error_sites.c` and `kst_link_faults()`, host-tested in `test_error_sites` with each finder: DISARM for an ARMED bench or one on its way, the supply off and the OFF written to an IOmcu of 4.31, a PD mini a port holds left to the port by an older IOmcu through every error but the panel's trip, the module's protection and a sagging input (`error_sites_keeps()`; the hold is the SUPPLY page's `LINK_SP_PORT` as last read, `supply_link_port_holds()`, also in `test_supply_keep`, not a session with a port, with a port that takes or lets go of the supply between two reads; an ON the page refuses under a port's ON through `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a port, a reading fault the port keeps acted on once while it stands, a failed final commit or close of the run log or the automatic test's CSV counted once a run (`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line calls into it in those files are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
 | IOmcu firmware | answers the identity, status, control, bench and three output pages; fails safe at 200ms. The decision to switch to ARMED is `shared/safety/safety_gate.c`, called once a pass and at every CONTROL write and host-tested in `test_safety_gate` against a model of both main loops: an arm latch set at a start, on link silence, on a distrusted heartbeat and by a refused ARM, released by CLEAR alone. CHAN_CFG and OUTPUTS refuse a role, a throttle channel's range and a slot change while ARMED. It publishes what the ESC reports over extended DShot telemetry: speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
 | IOmcu firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the IOmcu restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7s watchdog returns to the old image. The IOmcu refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the IOmcu erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the IOmcu's build by SHA-256 at link-up and offers the update on a question that takes the 2s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold starts the same update, also after a declined question. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
 | Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md) |
@@ -629,7 +629,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
-| `shared/ui/ui_widgets.c` | 350 | 343 | 98.0% |
+| `shared/ui/ui_widgets.c` | 350 | 342 | 97.7% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
 | `shared/ui/ui_band.c` | 283 | 269 | 95.0% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
@@ -650,37 +650,37 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
-| `shared/ui/supply_screen.c` | 503 | 494 | 98.2% |
+| `shared/ui/supply_screen.c` | 477 | 468 | 98.1% |
 | `shared/ui/supply_events.c` | 324 | 322 | 99.4% |
-| `shared/ui/supply_draw.c` | 414 | 395 | 95.4% |
+| `shared/ui/supply_draw.c` | 416 | 397 | 95.4% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
 | `shared/ui/ui_textkey.c` | 521 | 507 | 97.3% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 24 | 24 | 100.0% |
 | `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
-| `shared/ui/servo_screen_sweep.c` | 476 | 473 | 99.4% |
+| `shared/ui/servo_screen_sweep.c` | 473 | 470 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 382 | 378 | 99.0% |
 | `shared/ui/servo_screen_touch.c` | 289 | 275 | 95.2% |
-| `shared/ui/servo_screen_draw.c` | 529 | 516 | 97.5% |
-| `shared/ui/servo_settings_panel.c` | 555 | 540 | 97.3% |
-| `shared/ui/servo_settings_draw.c` | 369 | 337 | 91.3% |
+| `shared/ui/servo_screen_draw.c` | 530 | 517 | 97.5% |
+| `shared/ui/servo_settings_panel.c` | 511 | 496 | 97.1% |
+| `shared/ui/servo_settings_draw.c` | 349 | 342 | 98.0% |
 | `shared/ui/servo_test_panel.c` | 435 | 423 | 97.2% |
 | `shared/ui/servo_limit_panel.c` | 417 | 375 | 89.9% |
-| `shared/ui/servo_workbench.c` | 337 | 335 | 99.4% |
+| `shared/ui/servo_workbench.c` | 338 | 336 | 99.4% |
 | `shared/ui/kst_panel.c` | 337 | 333 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
-| `shared/ui/kst_panel_warn.c` | 275 | 272 | 98.9% |
+| `shared/ui/kst_panel_warn.c` | 276 | 273 | 98.9% |
 | `shared/ui/kst_panel_edit.c` | 365 | 358 | 98.1% |
 | `shared/ui/kst_panel_touch.c` | 217 | 214 | 98.6% |
 | `shared/ui/kst_panel_run.c` | 152 | 142 | 93.4% |
-| `shared/ui/kst_panel_draw.c` | 534 | 528 | 98.9% |
+| `shared/ui/kst_panel_draw.c` | 535 | 528 | 98.7% |
 | `shared/ui/hitec_panel.c` | 238 | 238 | 100.0% |
-| `shared/ui/hitec_panel_text.c` | 455 | 451 | 99.1% |
+| `shared/ui/hitec_panel_text.c` | 448 | 448 | 100.0% |
 | `shared/ui/hitec_panel_edit.c` | 333 | 333 | 100.0% |
-| `shared/ui/hitec_panel_page.c` | 229 | 229 | 100.0% |
+| `shared/ui/hitec_panel_page.c` | 230 | 230 | 100.0% |
 | `shared/ui/hitec_panel_touch.c` | 171 | 171 | 100.0% |
-| `shared/ui/hitec_panel_draw.c` | 238 | 238 | 100.0% |
+| `shared/ui/hitec_panel_draw.c` | 239 | 239 | 100.0% |
 | `shared/ui/hitec_panel_file.c` | 208 | 208 | 100.0% |
 | `shared/ui/analyser_screen.c` | 257 | 256 | 99.6% |
 | `shared/ui/balance_screen.c` | 381 | 381 | 100.0% |
@@ -688,25 +688,25 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/prog_models.c` | 8 | 8 | 100.0% |
 | `shared/ui/esc_stick_pages.c` | 111 | 104 | 93.7% |
 | `shared/ui/esc_stick_panel.c` | 489 | 473 | 96.7% |
-| `shared/ui/esc_stick_list.c` | 246 | 233 | 94.7% |
+| `shared/ui/esc_stick_list.c` | 246 | 231 | 93.9% |
 | `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
-| `shared/ui/esc_stick_draw.c` | 466 | 450 | 96.6% |
+| `shared/ui/esc_stick_draw.c` | 467 | 451 | 96.6% |
 | `shared/ui/esc_stick_draw_run.c` | 572 | 517 | 90.4% |
 | `shared/ui/log_viewer_screen.c` | 322 | 312 | 96.9% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
 | `shared/ui/log_viewer_draw.c` | 417 | 404 | 96.9% |
 | `shared/ui/log_viewer_events.c` | 436 | 424 | 97.2% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
-| `shared/ui/files_screen.c` | 688 | 663 | 96.4% |
+| `shared/ui/files_screen.c` | 688 | 662 | 96.2% |
 | `shared/ui/layout_screen.c` | 141 | 138 | 97.9% |
-| `shared/ui/files_draw.c` | 337 | 327 | 97.0% |
+| `shared/ui/files_draw.c` | 338 | 327 | 96.8% |
 | `shared/ui/files_events.c` | 213 | 212 | 99.5% |
 | `shared/ui/files_text.c` | 130 | 119 | 91.5% |
 | `shared/ui/text_view.c` | 381 | 374 | 98.2% |
 | `shared/ui/text_view_draw.c` | 259 | 242 | 93.4% |
 | `shared/ui/text_view_keys.c` | 370 | 354 | 95.7% |
 | `shared/ui/settings_screen.c` | 509 | 503 | 98.8% |
-| `shared/ui/settings_draw.c` | 226 | 221 | 97.8% |
+| `shared/ui/settings_draw.c` | 226 | 220 | 97.3% |
 | `shared/ui/settings_rows.c` | 58 | 57 | 98.3% |
 | `shared/ui/sensors_rows.c` | 128 | 128 | 100.0% |
 | `shared/ui/outputs_screen.c` | 514 | 509 | 99.0% |
@@ -714,7 +714,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/outputs_port_entry.c` | 312 | 308 | 98.7% |
 | `shared/ui/port_view.c` | 81 | 81 | 100.0% |
 | `shared/ui/port_mail.c` | 101 | 101 | 100.0% |
-| `shared/ui/picker_screen.c` | 318 | 316 | 99.4% |
+| `shared/ui/picker_screen.c` | 319 | 317 | 99.4% |
 | `shared/ui/picker_geometry.c` | 138 | 134 | 97.1% |
 | `shared/ui/picker_draw.c` | 312 | 295 | 94.5% |
 | `shared/ui/picker_cat.c` | 80 | 79 | 98.8% |
@@ -722,7 +722,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/picker_port.c` | 121 | 121 | 100.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 320 | 319 | 99.7% |
-| `shared/ui/wifi_screen.c` | 498 | 491 | 98.6% |
+| `shared/ui/wifi_screen.c` | 499 | 491 | 98.4% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 272 | 271 | 99.6% |
 | `shared/ui/upd_screen.c` | 613 | 590 | 96.2% |
@@ -730,14 +730,14 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/settings/settings_sensors.c` | 128 | 127 | 99.2% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
-| `shared/logfile/log_csv.c` | 468 | 444 | 94.9% |
+| `shared/logfile/log_csv.c` | 469 | 445 | 94.9% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
 | `shared/logfile/log_fields.c` | 72 | 71 | 98.6% |
 | `shared/logfile/log_name.c` | 120 | 120 | 100.0% |
 | `shared/logfile/log_take.c` | 96 | 95 | 99.0% |
 | `shared/logfile/card_tree.c` | 76 | 76 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
-| `shared/files/text_buf.c` | 473 | 472 | 99.8% |
+| `shared/files/text_buf.c` | 474 | 473 | 99.8% |
 | `shared/files/text_hl.c` | 337 | 337 | 100.0% |
 | `shared/files/fm_name.c` | 116 | 116 | 100.0% |
 | `shared/files/fm_select.c` | 76 | 76 | 100.0% |
@@ -761,7 +761,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/servo/servo_test.c` | 784 | 770 | 98.2% |
 | `shared/servo/servo_str.c` | 49 | 49 | 100.0% |
 | `shared/servo/servo_report.c` | 526 | 526 | 100.0% |
-| `shared/servo/servo_limrun.c` | 631 | 605 | 95.9% |
+| `shared/servo/servo_limrun.c` | 632 | 606 | 95.9% |
 | `shared/servo/servo_limrun_report.c` | 273 | 269 | 98.5% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
@@ -769,7 +769,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/esc/esc_json.c` | 601 | 559 | 93.0% |
 | `shared/esc/esc_json_lex.c` | 292 | 285 | 97.6% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
-| `shared/esc/esc_stick.c` | 552 | 540 | 97.8% |
+| `shared/esc/esc_stick.c` | 551 | 539 | 97.8% |
 | `shared/esc/esc_stick_rules.c` | 284 | 263 | 92.6% |
 | `shared/esc/esc_det.c` | 132 | 130 | 98.5% |
 | `shared/esc/esc_stick_read.c` | 72 | 69 | 95.8% |
@@ -782,31 +782,31 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `protocols/ppm/ppm.c` | 42 | 42 | 100.0% |
 | `protocols/kst/kst_wire.c` | 142 | 142 | 100.0% |
 | `protocols/kst/kst_reg.c` | 180 | 180 | 100.0% |
-| `protocols/kst/kst_limits.c` | 127 | 127 | 100.0% |
+| `protocols/kst/kst_limits.c` | 140 | 140 | 100.0% |
 | `protocols/kst/kst_plan.c` | 396 | 396 | 100.0% |
 | `protocols/kst/kst_session.c` | 587 | 586 | 99.8% |
 | `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
 | `protocols/kst/kst_file.c` | 593 | 593 | 100.0% |
 | `protocols/hitec/hitec_wire.c` | 247 | 247 | 100.0% |
 | `protocols/hitec/hitec_pio.c` | 159 | 159 | 100.0% |
-| `protocols/hitec/hitec_pre.c` | 216 | 208 | 96.3% |
+| `protocols/hitec/hitec_pre.c` | 215 | 207 | 96.3% |
 | `protocols/hitec/hitec_reg.c` | 497 | 497 | 100.0% |
 | `protocols/hitec/hitec_session.c` | 507 | 507 | 100.0% |
-| `protocols/hitec/hitec_live.c` | 208 | 208 | 100.0% |
+| `protocols/hitec/hitec_live.c` | 210 | 210 | 100.0% |
 | `protocols/i2c_txq/i2c_txq.c` | 364 | 364 | 100.0% |
 | `shared/logfile/servo_store.c` | 235 | 235 | 100.0% |
 | `shared/outputs/kst_port.c` | 665 | 664 | 99.8% |
-| `shared/outputs/hitec_port.c` | 524 | 523 | 99.8% |
+| `shared/outputs/hitec_port.c` | 525 | 524 | 99.8% |
 | `shared/outputs/page_console.c` | 577 | 552 | 95.7% |
 | `shared/outputs/prog_port.c` | 405 | 405 | 100.0% |
 | `shared/bench/kst_link.c` | 450 | 448 | 99.6% |
 | `shared/bench/hitec_link.c` | 529 | 529 | 100.0% |
-| `shared/bench/hitec_prog.c` | 658 | 658 | 100.0% |
-| `shared/bench/hitec_prog_write.c` | 561 | 558 | 99.5% |
+| `shared/bench/hitec_prog.c` | 652 | 652 | 100.0% |
+| `shared/bench/hitec_prog_write.c` | 520 | 519 | 99.8% |
 | `shared/bench/hitec_prog_file.c` | 454 | 451 | 99.3% |
-| `shared/bench/hitec_card.c` | 279 | 278 | 99.6% |
+| `shared/bench/hitec_card.c` | 278 | 277 | 99.6% |
 | `shared/bench/hitec_card_run.c` | 113 | 113 | 100.0% |
-| `shared/bench/kst_prog.c` | 1381 | 1359 | 98.4% |
+| `shared/bench/kst_prog.c` | 1382 | 1359 | 98.3% |
 | `shared/bench/kst_prog_card.c` | 315 | 300 | 95.2% |
 | `shared/bench/kst_prog_file.c` | 150 | 146 | 97.3% |
 | `shared/bench/kst_card.c` | 137 | 133 | 97.1% |
@@ -853,10 +853,10 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
 | `protocols/pdmini/pdmini_jobs.c` | 255 | 253 | 99.2% |
-| `shared/bench/supply_link.c` | 354 | 344 | 97.2% |
+| `shared/bench/supply_link.c` | 358 | 348 | 97.2% |
 | `shared/bench/prog_supply_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/sense_link.c` | 601 | 579 | 96.3% |
-| `shared/bench/sense_link_view.c` | 269 | 265 | 98.5% |
+| `shared/bench/sense_link_view.c` | 268 | 264 | 98.5% |
 | `shared/bench/sense_map_link.c` | 316 | 305 | 96.5% |
 | `shared/bench/sense_win_link.c` | 123 | 123 | 100.0% |
 | `shared/bench/sense_limit_link.c` | 199 | 199 | 100.0% |
@@ -866,7 +866,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
-| `shared/bench/log_writer.c` | 299 | 287 | 96.0% |
+| `shared/bench/log_writer.c` | 300 | 288 | 96.0% |
 | `shared/bench/log_cols.c` | 47 | 47 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 66 | 66 | 100.0% |
@@ -902,7 +902,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api.c` | 399 | 391 | 98.0% |
 | `shared/webaccess/wa_app.c` | 107 | 107 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **66667** | **65361** | **98.0%** |
+| **total** | **66553** | **65269** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
