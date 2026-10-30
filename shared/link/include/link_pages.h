@@ -164,9 +164,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 31, a held supply's OFF deferred
- *         while a programming port writes. */
-#define LINK_PROTOCOL_MINOR 32u
+/** @brief The minor this build speaks: 33, SENSE_MAP's WATCH values of a
+ *         board's soldered INA3221. */
+#define LINK_PROTOCOL_MINOR 33u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -350,6 +350,17 @@ typedef enum {
  * and writes it from 4.32 only.
  */
 #define LINK_MINOR_PROG_SUPPLY 32u
+
+/**
+ * @brief The first minor whose SENSE_MAP page takes the WATCH values of a
+ * board's own supply rails: LINK_SM_WATCH_RAIL_A, LINK_SM_WATCH_RAIL_B and
+ * LINK_SM_WATCH_PROG_5V, the three channels the rbmod carrier solders.  On
+ * that carrier the page refuses any other value for them, and a map without
+ * the carrier's INA3221 (board_fix.h).
+ *
+ * An older minor refuses a map with those values with LINK_NACK_BAD_VALUE.
+ */
+#define LINK_MINOR_SENSE_RAILS 33u
 
 /* ----------------------------------------------------------------- outputs */
 

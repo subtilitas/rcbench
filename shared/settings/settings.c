@@ -678,7 +678,7 @@ static float coerce(const setting_def_t *d, float v)
     case SET_TYPE_BOOL:
         return (v != 0.0f) ? 1.0f : 0.0f;
     case SET_TYPE_ENUM: {
-        int n = d->option_count ? d->option_count : 1;
+        int n = settings_sensors_offered(d);
         int i = (int)lrintf(v);
         /* Out of range means a corrupt or stale stored word, not "cycle
          * round": wrapping turns it into a different option that looks
@@ -946,7 +946,7 @@ void settings_adjust(setting_id_t id, int steps)
         return;
     }
     if (d->type == SET_TYPE_ENUM && !settings_cycles(id)) {
-        const int last = (d->option_count ? d->option_count : 1) - 1;
+        const int last = settings_sensors_offered(d) - 1;
         const int cur  = (int)lrintf(s.values[id]);
         /* In 64 bits: a step count near INT_MAX does not overflow. */
         int64_t next = (int64_t)cur + (int64_t)steps;
@@ -961,8 +961,7 @@ void settings_adjust(setting_id_t id, int steps)
     }
     if (d->type == SET_TYPE_BOOL || d->type == SET_TYPE_ENUM) {
         /* Cycling is the only sensible interpretation of "+1" on a list. */
-        int n = (d->type == SET_TYPE_BOOL) ? 2
-                                           : (d->option_count ? d->option_count : 1);
+        int n = (d->type == SET_TYPE_BOOL) ? 2 : settings_sensors_offered(d);
         int cur = (int)lrintf(s.values[id]);
         int next = ((cur + steps) % n + n) % n;
         settings_set(id, (float)next);

@@ -154,7 +154,7 @@ enum {
 
 /** @brief ENABLE's bits. */
 #define LINK_SN_EN_I228   0x01u
-#define LINK_SN_EN_I3221  0x02u
+#define LINK_SN_EN_I3221  0x02u  /**< the INA3221 */
 #define LINK_SN_EN_AS5600 0x04u     /**< protocol 4.9 */
 /** @brief Every bit ENABLE takes. */
 #define LINK_SN_EN_ALL    (LINK_SN_EN_I228 | LINK_SN_EN_I3221 | LINK_SN_EN_AS5600)
@@ -162,16 +162,19 @@ enum {
 /* The ranges a write is held to. */
 /** @brief The bus clock, the one KHZ takes: 400kHz, the parts' fast mode. */
 #define LINK_SN_KHZ_BUS          400u
-#define LINK_SN_I228_ADDR_MIN    0x40u
-#define LINK_SN_I228_ADDR_MAX    0x4Fu
-#define LINK_SN_I228_UOHM_MIN      50u
-#define LINK_SN_I228_UOHM_MAX   20000u
+#define LINK_SN_I228_ADDR_MIN    0x40u  /**< INA228 address, lowest */
+#define LINK_SN_I228_ADDR_MAX    0x4Fu  /**< INA228 address, highest */
+#define LINK_SN_I228_UOHM_MIN      50u  /**< INA228 shunt, uOhm, lowest */
+#define LINK_SN_I228_UOHM_MAX   20000u  /**< INA228 shunt, uOhm, highest */
+/** @brief INA228 maximum current, 0.1A, lowest. */
 #define LINK_SN_I228_DA_MIN        10u
+/** @brief INA228 maximum current, 0.1A, highest. */
 #define LINK_SN_I228_DA_MAX      3000u
-#define LINK_SN_I3221_ADDR_MIN   0x40u
-#define LINK_SN_I3221_ADDR_MAX   0x43u
-#define LINK_SN_I3221_DMOHM_MIN    50u
-#define LINK_SN_I3221_DMOHM_MAX 10000u
+#define LINK_SN_I3221_ADDR_MIN   0x40u  /**< INA3221 address, lowest */
+#define LINK_SN_I3221_ADDR_MAX   0x43u  /**< INA3221 address, highest */
+#define LINK_SN_I3221_DMOHM_MIN    50u  /**< INA3221 shunt, 0.1mOhm, lowest */
+#define LINK_SN_I3221_DMOHM_MAX 10000u  /**< INA3221 shunt, 0.1mOhm, highest */
+/** @brief Every INA3221 channel, CH1 to CH3. */
 #define LINK_SN_I3221_CH_ALL     0x07u
 
 /**
@@ -219,6 +222,7 @@ typedef enum {
 
 /** @brief RESETS' two counts, each modulo 256. */
 #define LINK_SN_RESETS_I228(r)  ((uint8_t)((r) & 0xFFu))
+/** @brief The INA3221's count. */
 #define LINK_SN_RESETS_I3221(r) ((uint8_t)(((r) >> 8) & 0xFFu))
 
 /** @brief AS5600_FLAGS' bits (protocol 4.9). */
@@ -246,7 +250,7 @@ typedef enum {
 
 /** @brief ESC_FLAGS' bits. */
 #define LINK_SN_ESC_VOLTAGE_OK 0x01u
-#define LINK_SN_ESC_CURRENT_OK 0x02u
+#define LINK_SN_ESC_CURRENT_OK 0x02u  /**< the ESC current reading is valid */
 
 /* --- the SERVO_SENSE page (protocol 4.7): the INA3221's three channels,
  *     and a move timed on the IOmcu's clock.
@@ -300,7 +304,7 @@ enum {
     LINK_SS_CH_MIN_MV   = 3,
     LINK_SS_CH_STRIDE   = 4,
 };
-#define LINK_SS_CHANNELS 3u
+#define LINK_SS_CHANNELS 3u  /**< the INA3221 channels the page carries */
 /**
  * @brief Register offsets of the SERVO_SENSE page's window fields, from
  * register 12.
@@ -326,7 +330,9 @@ enum {
 
 /** @brief CH_FLAGS' bits, for INA3221 channel 1 to 3. */
 #define LINK_SS_CH_VALID(ch)   ((uint16_t)(1u << ((unsigned)(ch) - 1u)))
+/** @brief Channel @p ch read the end of its range. */
 #define LINK_SS_CH_CLIPPED(ch) ((uint16_t)(1u << ((unsigned)(ch) + 3u)))
+/** @brief A sample of the capture was clipped. */
 #define LINK_SS_CAP_CLIPPED    0x80u
 
 /**
@@ -337,10 +343,13 @@ enum {
  * PROG page, 0 to 3.
  */
 #define LINK_SS_ARM            0x80u
+/** @brief Armed on INA3221 channel @p ch and output @p out. */
 #define LINK_SS_ARM_OF(ch, out) \
     ((uint16_t)(LINK_SS_ARM | ((unsigned)(ch) & 0x03u) \
                 | (((unsigned)(out) & 0x07u) << 8)))
+/** @brief CAP_ARM's INA3221 channel. */
 #define LINK_SS_ARM_CH(r)      ((uint8_t)((r) & 0x03u))
+/** @brief CAP_ARM's output channel or port. */
 #define LINK_SS_ARM_OUT(r)     ((uint8_t)(((r) >> 8) & 0x07u))
 /** @brief Every bit CAP_ARM may carry. */
 #define LINK_SS_ARM_BITS       0x0F83u
@@ -440,16 +449,19 @@ enum {
 
 /** @brief FLAGS' bits. */
 #define LINK_SW_HAVE        0x01u
-#define LINK_SW_CAP_CLIPPED 0x80u
+#define LINK_SW_CAP_CLIPPED 0x80u  /**< SERVO_SENSE's capture bit */
 
 /** @brief An entry's flags. */
 #define LINK_SW_E_CLIPPED(f) ((uint8_t)((f) & 0xFFu))
+/** @brief The clipped samples are held at this count. */
 #define LINK_SW_E_CLIPPED_MAX 255u
-#define LINK_SW_E_CURRENT   0x0100u
-#define LINK_SW_E_VOLTAGE   0x0200u
+#define LINK_SW_E_CURRENT   0x0100u  /**< the window holds current samples */
+#define LINK_SW_E_VOLTAGE   0x0200u  /**< the window holds voltage samples */
+/** @brief A current sample read the top of the range. */
 #define LINK_SW_E_CLIP_HI   0x0400u
+/** @brief A current sample read the bottom of the range. */
 #define LINK_SW_E_CLIP_LO   0x0800u
-#define LINK_SW_E_CLOSED    0x8000u
+#define LINK_SW_E_CLOSED    0x8000u  /**< a window closed with this number */
 
 /* --- the SENSE_MAP page (protocol 4.25): up to four INA3221 parts on the
  *     sensor bus, at 0x40 to 0x43, three channels each.  Channel c is
@@ -460,8 +472,12 @@ enum {
  *     on which SERVO_SENSE times a move; 0xFF (LINK_SM_FAST_NONE) none.
  *     SHUNT[c]: channel c's shunt in 0.1mOhm, 50 to 10000, 0 = the
  *     channel is off and never read.  WATCH[c]: what channel c measures,
- *     for the panel's screens and logs; the IOmcu keeps it and acts on
- *     nothing in it.
+ *     for the panel's screens and logs; the IOmcu keeps it, and sets
+ *     IDENTITY's SERVO_SENSE capability while a channel it reads watches
+ *     an output, a programming port or a rail.  On a board that solders
+ *     an INA3221 (the rbmod carrier) its part is fitted and its channels'
+ *     WATCH are the board's: a write that changes either is refused with
+ *     BAD_VALUE (4.33).
  *
  *     Registers 0 to 25 are kept in the IOmcu's flash.  A write lies
  *     within them: one that reaches register 26 is refused with
@@ -505,25 +521,42 @@ enum {
     LINK_SM_RESERVED_31 = 31,
     LINK_SM_COUNT    = 32,
 };
-#define LINK_SM_PARTS        4u
-#define LINK_SM_CHANNELS    12u
+#define LINK_SM_PARTS        4u  /**< INA3221 parts, 0x40 to 0x43 */
+#define LINK_SM_CHANNELS    12u  /**< channels, three a part */
+/** @brief Channel @p c's SHUNT register. */
 #define LINK_SM_SHUNT(c)    ((unsigned)LINK_SM_SHUNT_0 + (unsigned)(c))
+/** @brief Channel @p c's WATCH register. */
 #define LINK_SM_WATCH(c)    ((unsigned)LINK_SM_WATCH_0 + (unsigned)(c))
+/** @brief Part @p a's ID register. */
 #define LINK_SM_ID(a)       ((unsigned)LINK_SM_ID_0 + (unsigned)(a))
-#define LINK_SM_FIT_ALL     0x000Fu
-#define LINK_SM_FAST_NONE   0x00FFu
-#define LINK_SM_DMOHM_MIN   50u
-#define LINK_SM_DMOHM_MAX   10000u
+#define LINK_SM_FIT_ALL     0x000Fu  /**< every part fitted */
+#define LINK_SM_FAST_NONE   0x00FFu  /**< FAST: no channel */
+#define LINK_SM_DMOHM_MIN   50u  /**< a shunt not 0, 0.1mOhm, lowest */
+#define LINK_SM_DMOHM_MAX   10000u  /**< a shunt, 0.1mOhm, highest */
 /** @brief WATCH values. */
 #define LINK_SM_WATCH_NONE    0x00u
-#define LINK_SM_WATCH_OUT(n)  (0x01u + (unsigned)(n))   /**< output channel n, 0..7 */
-#define LINK_SM_WATCH_PORT(n) (0x10u + (unsigned)(n))   /**< programming port n, 0..3 */
+/** @brief Output channel n, 0..7. */
+#define LINK_SM_WATCH_OUT(n)  (0x01u + (unsigned)(n)) 
+/** @brief Programming port n, 0..3. */
+#define LINK_SM_WATCH_PORT(n) (0x10u + (unsigned)(n)) 
 #define LINK_SM_WATCH_SUPPLY  0x20u     /**< WATCH value: the supply */
+/** @brief WATCH value (4.33): servo rail A of a board that solders an
+ *         INA3221 on its rails; the rbmod carrier's VCC_SERVOPORT_A, PWM01
+ *         and PWM04. */
+#define LINK_SM_WATCH_RAIL_A  0x30u
+/** @brief WATCH value (4.33): servo rail B; the carrier's
+ *         VCC_SERVOPORT_B, PWM02 and PWM03. */
+#define LINK_SM_WATCH_RAIL_B  0x31u
+/** @brief WATCH value (4.33): the programming ports' own 5V; the
+ *         carrier's VCC_PROGPORT, PROGP01 to PROGP04. */
+#define LINK_SM_WATCH_PROG_5V 0x32u
 /** @brief FLAGS' bits. */
 #define LINK_SM_ONLINE(a)    (1u << (unsigned)(a))
+/** @brief FLAGS: part @p a answered with another identity. */
 #define LINK_SM_ID_WRONG(a)  (1u << (4u + (unsigned)(a)))
+/** @brief FLAGS: the map has been written and is kept. */
 #define LINK_SM_IN_FORCE     0x0100u
-#define LINK_SM_DERIVED      0x0200u
+#define LINK_SM_DERIVED      0x0200u  /**< FLAGS: the map is SENSE's one part */
 
 /* --- the SENSE_WIN_A and SENSE_WIN_B pages (protocol 4.25): every
  *     channel's last complete 50ms window, channels 0 to 5 on A and 6 to
@@ -547,7 +580,7 @@ enum {
     LINK_SX_ENTRIES  = 2,
     LINK_SX_COUNT    = 32,
 };
-#define LINK_SX_PER_PAGE 6u
+#define LINK_SX_PER_PAGE 6u  /**< channels a page carries */
 /**
  * @brief Register offsets within one entry of the SENSE_WIN_A and SENSE_WIN_B
  * pages.
@@ -563,10 +596,13 @@ enum {
 /** @brief Register @p r of the page's entry @p k (channel 6 * page + k). */
 #define LINK_SX_E(k, r) \
     ((unsigned)LINK_SX_ENTRIES + (unsigned)(k) * LINK_SX_E_STRIDE + (unsigned)(r))
+/** @brief FLAGS: a window has closed under the set-up. */
 #define LINK_SX_HAVE        0x0100u
-#define LINK_SX_E_CURRENT   0x0001u
-#define LINK_SX_E_VOLTAGE   0x0002u
+#define LINK_SX_E_CURRENT   0x0001u  /**< the entry holds current samples */
+#define LINK_SX_E_VOLTAGE   0x0002u  /**< the entry holds voltage samples */
+/** @brief A current sample at the top of the range. */
 #define LINK_SX_E_CLIP_HI   0x0004u
+/** @brief A current sample at the bottom of the range. */
 #define LINK_SX_E_CLIP_LO   0x0008u
 
 /* --- the SENSE_LIMIT page (protocol 4.27): a current limit for each of
@@ -601,6 +637,6 @@ enum {
     LINK_SL_OVER_COUNT = 13,
     LINK_SL_COUNT      = 16,
 };
-#define LINK_SL_MA_MAX 32767u
+#define LINK_SL_MA_MAX 32767u  /**< the highest LIMIT_MA */
 
 #endif /* RCBENCH_LINK_PAGES_SENSE_H */

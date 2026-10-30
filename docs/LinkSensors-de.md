@@ -26,7 +26,7 @@ Kanal 0 ist CH1 des Bauteils an 0x40, Kanal 11 ist CH3 des Bauteils an 0x43.
 | 0 | `ENABLE` | Bit a: das Bauteil an 0x40 + a ist bestückt. 0 bis 15 |
 | 1 | `FAST` | der Kanal, der jede 1ms gelesen wird, 0 bis 11, oder 0xFF für keinen. SERVO_WIN trägt seine letzten 4 Fenster, und SERVO_SENSE misst an ihm die Zeit einer Bewegung |
 | 2 bis 13 | `SHUNT[c]` | der Shunt von Kanal c in 0,1mΩ, 50 bis 10000 (5mΩ bis 1Ω); 0 schaltet den Kanal ab: er wird nie gelesen |
-| 14 bis 25 | `WATCH[c]` | was Kanal c misst: 0 nichts genannt, 0x01 bis 0x08 Ausgangskanal 1 bis 8, 0x10 bis 0x13 Programmierport 1 bis 4, 0x20 die Versorgung. Der IOmcu hält den Wert und handelt nach nichts davon |
+| 14 bis 25 | `WATCH[c]` | was Kanal c misst: 0 nichts genannt, 0x01 bis 0x08 Ausgangskanal 1 bis 8, 0x10 bis 0x13 Programmierport 1 bis 4, 0x20 die Versorgung; ab 4.33 die eigenen Schienen eines Boards, 0x30 Servoschiene A, 0x31 Servoschiene B, 0x32 die 5V der Programmierports. Der IOmcu hält den Wert und setzt Capability-Bit 3 von IDENTITY, solange ein Kanal, den er liest, einen Ausgang, einen Port oder eine Schiene misst. Auf dem rbmod-Carrier halten 0x40 CH1 bis CH3 die Werte 0x31, 0x30 und 0x32 ([Link, Boards mit verlöteten Pins](Link-de.md#boards-mit-verlöteten-pins)) |
 | 26 bis 29 | `ID[a]` | nur lesbar: die Die-ID, die Bauteil a bei seiner letzten Abfrage geantwortet hat, 0 vor der ersten |
 | 30 | `FLAGS` | nur lesbar: Bit a Bauteil a online; Bit 4 + a Bauteil a hat mit einer anderen Identität geantwortet; Bit 8 die Map wurde geschrieben und wird gehalten (`IN_FORCE`); Bit 9 sie wurde nie geschrieben und ist das eine Bauteil von SENSE (`DERIVED`) |
 | 31 | reserviert | liest 0 |
@@ -42,6 +42,8 @@ BAD_VALUE abgewiesen:
   einem Kanal mit Shunt 0;
 - ein Shunt ungleich 0 außerhalb von 50 bis 10000;
 - ein `WATCH`-Wert außerhalb der Liste oben;
+- auf dem rbmod-Carrier eine Map ohne das Bauteil auf 0x40 oder mit einem
+  anderen `WATCH` auf einem seiner drei Kanäle;
 - ein bestücktes Bauteil mit allen drei Shunts 0;
 - ein bestücktes Bauteil auf der Adresse des INA228, solange SENSE den
   INA228 freigibt;
@@ -195,6 +197,7 @@ Version 8 und startet wie mit einem leeren Speicher.
 | Panel | IOmcu | SENSE_MAP, SENSE_WIN_A, SENSE_WIN_B und SENSE_LIMIT |
 | --- | --- | --- |
 | 4.25 oder neuer | 4.27 oder neuer | bedient. Das Panel liest SENSE_MAP bei jedem Link-Aufbau ganz, schreibt die Register 0 bis 25 in einem Schreiben so, wie SETUP > SENSORS sie einstellt, und liest die Register 26 bis 30 alle 500ms, solange ein Baustein bestückt ist. Nach einem angenommenen Schreiben liest es SENSE und IDENTITY neu: Fähigkeitsbit 3 kann sich schon mit `WATCH` allein ändern. SENSE_WIN_A liest es ganz, solange 0x40 oder 0x41 in der Map in Kraft bestückt ist, SENSE_WIN_B, solange 0x42 oder 0x43 es ist, jede in jedem Poll nach SERVO_WIN und höchstens alle 40ms, in ARMED wie in SAFE, für die Spalten des Lauf-Logs ([Screens](Screens-de.md#tabelle-und-was-der-esc-meldet)). SENSE_LIMIT liest es bei jedem Link-Aufbau ganz, schreibt die Register 0 bis 11 in einem Schreiben 500ms nach der letzten Änderung einer Grenze, in jedem Zustand der Bank und nur, wo die Page abweicht, und liest die Register 12 und 13 alle 200ms, solange die Page eine Grenze hält, die nicht 0 ist ([Screens](Screens-de.md#sensors-die-ina3221-bausteine)) |
+| 4.33 oder neuer | 4.32 oder älter, auf dem rbmod-Carrier | SENSE_MAP lehnt die Map des Carriers ab: ihre `WATCH`-Werte 0x30 bis 0x32 stehen nicht in der Liste dieses IOmcu. SETUP > SENSORS markiert 0x40 mit `VOM IOMCU NICHT ÜBERNOMMEN`, bis der IOmcu das Image des Panels fährt |
 | 4.25 oder neuer | 4.25 oder 4.26 | SENSE_MAP und SENSE_WIN wie oben; das Panel sendet nichts an SENSE_LIMIT, und SETUP > SENSORS markiert jede Grenze, die nicht AUS ist, als nicht geprüft |
 | 4.25 oder neuer | 4.24 oder älter | das Panel sendet an keine der vier Pages und richtet den einen INA3221 von SENSE auf einen bestückten Baustein ein ([Screens](Screens-de.md)) |
 | 4.24 oder älter | 4.25 oder neuer, Map abgeleitet | das Panel liest und schreibt die vier Pages nie. SENSE läuft wie zuvor. Gehaltene Grenzen werden geprüft, und `OVER` hält seine Bits, bis etwas es liest |
