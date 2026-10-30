@@ -152,7 +152,8 @@ steht in der Schrift 10 x 20px, höchstens 97 Zeichen je Zeile auf bis zu
 ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
 
 - Es verschwindet 30s nach dem Frame, in dem es kam. Ein neuer Alert, auch
-  mit demselben Text, startet die 30s neu.
+  mit demselben Text, startet die 30s neu. Eine Meldung, der [Hinweis eines
+  Halte-Buttons](#halte-buttons), steht 4s in Bernstein und weicht einem Alert.
 - Ein Tippen auf das Band löscht es früher: auf dem Band drücken und
   loslassen, rechts mit einem `x` markiert. Der Bildschirm darunter bekommt
   weder dieses Tippen noch das eines zweiten Fingers auf dem Band; nur das
@@ -174,6 +175,48 @@ ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
 - "Touchscreen antwortet nicht. ARMED ist gesperrt." beim Start
   bleibt bis zum Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
   Ein späterer Alert erscheint darüber; ist er gelöscht, steht wieder dieser.
+
+## Halte-Buttons
+
+Ein Halte-Button wirkt nach 2s Kontakt (`UI_HOLD_S`). Ein Loslassen vor 2s
+sendet nichts und zeigt den Hinweis des Buttons im Alert-Band als Hinweis:
+das Band in Bernstein (`UI_C_WARN`) mit dunkler Schrift statt der Gefahrenfarbe,
+4s lang, durch einen Tipp auf das Band früher gelöscht. Ein kurzes Tippen ist
+keine Störung, also ist der Hinweis kein Alert. Ein Alert hat Vorrang: Solange
+einer steht, erscheint der Hinweis nicht, und ein Alert, der während des
+Hinweises kommt, ersetzt ihn. Der Hinweis ist eine Zeile von höchstens
+97 Zeichen.
+
+- Der Hinweis erscheint nur bei einem Loslassen, das der Finger auf dem Button
+  gemacht hat. Er erscheint nicht, wenn der Finger den Button vorher verlassen
+  hat (das Halten ist abgebrochen), wenn der Touch verloren ging oder das
+  Loslassen kein Tipp ist (`TOUCH_FLAG_NO_TAP`), bei dem Kontakt eines zweiten
+  Fingers und auf einem Bildschirm ohne Statusband.
+- Ein Loslassen bei 2s oder später folgt einem Halten, das gewirkt hat, und
+  zeigt keinen Hinweis.
+- 2s HALTEN ZUM BESTÄTIGEN auf dem Busfehler-Bildschirm trägt keinen Hinweis:
+  Dieser Bildschirm hat kein Band.
+
+| Button | Hinweis |
+| --- | --- |
+| ARM auf MOTOR & ESC und SERVO | `Halte 2s, um auf ARMED zu schalten.` |
+| AUSGANG EIN auf SUPPLY und im Versorgungskasten von SERVO | `Halte 2s, um den Ausgang einzuschalten.` |
+| ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
+| START TEST | `Halte 2s, um den Test zu starten.` |
+| ENDLAGENLAUF STARTEN | `Halte 2s, um den Endlagenlauf zu starten.` |
+| 2s HALTEN ZUM FREIGEBEN, außer auf PORT FREIGEBEN | `Halte 2s, um freizugeben.` |
+| 2s HALTEN ZUM SCHREIBEN | `Halte 2s, um zu schreiben.` |
+| 2s HALTEN ZUM ZURÜCKSPIELEN | `Halte 2s, um zurückzuspielen.` |
+| 2s HALTEN ZUM FORTFAHREN | `Halte 2s, um fortzufahren.` |
+| 2s HALTEN ZUM VERLASSEN | `Halte 2s, um zu verlassen.` |
+| 2s HALTEN ZUM LADEN | `Halte 2s, um zu laden.` |
+| 2s HALTEN ZUM FREIGEBEN auf PORT FREIGEBEN | `Halte 2s, um den Port freizugeben.` |
+| 2s HALTEN ZUM REPARIEREN | `Halte 2s, um zu reparieren.` |
+| 2s HALTEN ZUM STARTEN in der Warnung eines Stick-Laufs | `Halte 2s, um zu starten.` |
+| 2s HALTEN ZUM INSTALLIEREN auf Wi-Fi | `Halte 2s, um zu installieren.` |
+| 2s HALTEN ZUM LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
+| 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START in der Frage des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
+| 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 
 ## Marken im Menü
 

@@ -492,7 +492,7 @@ static void event(const touch_event_t *evt)
             s.have_press = true;
             s.press_id = evt->point.id;
             if (s.hit == HIT_INSTALL) {
-                ui_hold_begin(&s.hold);
+                ui_hold_begin(&s.hold, TX_HOLD_HINT_INSTALL);
             }
         }
         touched();
@@ -520,7 +520,7 @@ static void event(const touch_event_t *evt)
     touched();
     if (hit == HIT_INSTALL) {
         /* The hold acts when it completes; the release only ends it. */
-        (void)ui_hold_end(&s.hold);
+        (void)ui_hold_end(&s.hold, evt, install_rect());
         return;
     }
     if (touch_event_is_tap_up(evt) && in(hit_rect(hit), x, y)

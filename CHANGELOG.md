@@ -13,7 +13,7 @@ history is in git.
   on the live output?`, YES or NO. YES gives the live output the set points
   from before CONNECT, through HV SERVOS ONLY and its 2s hold where the
   voltage rises from 6.0V or below to above it. NO keeps the session's set
-  points; the operator's come back at the output's next OFF, as before.
+  points; the operator's come back at the output's next OFF.
   No question while a port holds the supply, under another of SERVO's
   panels or questions or OUTPUT ON's hold, after an OFF, an error or a
   STOP, inside a limit run, or when the set points moved since the LEAVE
@@ -29,6 +29,13 @@ history is in git.
   model the second read takes 1152ms classic, 2304ms for FACTORY DEFAULT
   and 704ms D series at a frame of 16ms
   ([Hitec programmer, The second read](docs/HitecProgrammer.md#the-second-read)).
+- Hold buttons: a release before 2s shows the button's hint in the alert
+  band, for example `Hold 2s to switch to ARMED.`, and sends nothing. It
+  applies to ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and the other
+  buttons labelled `HOLD 2s TO ...`. The hint is a notice: amber, 4s, cleared
+  by a tap on the band, and never over an alert; an alert that arrives
+  replaces it. A slide-off, a lost touch, a release that is not a tap, a
+  second finger's contact and a screen without the status band show no hint ([Screens, Hold buttons](docs/Screens.md#hold-buttons)).
 - `protocols/hitec`: `hitec_session_move()` moves a Hitec servo inside its
   programming session: D series 0x1E = target (0 to 6000), then a read of
   0x0C; classic `66` (3600 to 8400, 0.25us), then `65`. It writes RAM only

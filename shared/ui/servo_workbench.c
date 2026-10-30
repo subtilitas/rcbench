@@ -507,7 +507,7 @@ void test_page_down(const touch_event_t *evt)
         if (!servo_test_running(&s.test) && test_blocked() == 0
             && !test_needs_hv()) {
             s.test_down = true;
-            ui_hold_begin(&s.test_hold);
+            ui_hold_begin(&s.test_hold, TX_HOLD_HINT_TEST);
         }
         ++s.test_rev;
         return;
@@ -519,7 +519,7 @@ void test_page_down(const touch_event_t *evt)
         s.lim_note = NULL;
         if (!servo_limrun_running(&s.lim) && lim_blocked() == NULL) {
             s.lim_down = true;
-            ui_hold_begin(&s.lim_hold);
+            ui_hold_begin(&s.lim_hold, TX_HOLD_HINT_LIMIT_RUN);
         }
         ++s.test_rev;
     }

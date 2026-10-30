@@ -2887,7 +2887,6 @@ shared/ui/coproc_update_screen.c: warning: Member carried (variable) of struct [
 shared/ui/coproc_update_screen.c: warning: Member coproc_update_screen(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member coproc_update_screen_invalidate(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member coproc_update_screen_view(void) (function) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member drop_press(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member enter(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member event(const touch_event_t *evt) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member fmt_version(char *out, size_t n, cu_version_t v) (function) of file coproc_update_screen.c is not documented.
@@ -3626,9 +3625,7 @@ shared/ui/include/ui_widgets.h: warning: parameters of member ui_choice_face_loc
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_choice_row are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_clock are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_fmt are not documented
-shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_begin are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_credit are not documented
-shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_end are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_fill are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_leave are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_hold_left are not documented
@@ -3641,7 +3638,6 @@ shared/ui/include/ui_widgets.h: warning: parameters of member ui_panel_header ar
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_text_wrap are not documented
 shared/ui/include/ui_widgets.h: warning: parameters of member ui_value are not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_credit is not documented
-shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_end is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_fill is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_leave is not documented
 shared/ui/include/ui_widgets.h: warning: return type of member ui_hold_left is not documented

@@ -74,7 +74,7 @@ While the output is on, a new set point opens a question that names the change. 
 
 ## OUTPUT ON and OFF
 
-OUTPUT ON is a 2s hold, with the fade ARM uses. OUTPUT OFF is a tap. The output switches off, and stays off until the next hold, on:
+OUTPUT ON is a 2s hold, with the fade ARM uses. A release before 2s switches nothing and shows `Hold 2s to switch the output on.` in the alert band. OUTPUT OFF is a tap. The output switches off, and stays off until the next hold, on:
 
 - STOP, on any screen;
 - leaving SUPPLY, for an output SUPPLY switched on;

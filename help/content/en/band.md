@@ -79,10 +79,19 @@ For a bit this release never sets, the box says to flash both boards from one re
 
 A fault the open screen does not show appears in a red band, 44px high, across the bottom of the screen. It covers what is beneath it; ARM and the controls that stop the bench end above it.
 
-- It clears 30s after it arrived. A new alert starts the 30s again.
+- It clears 30s after it arrived. A new alert starts the 30s again. A notice, the hint of a [hold button](#hold-buttons), shows in amber for 4s and gives way to an alert.
 - A tap on the band, marked `x` at its right end, clears it earlier. The screen beneath receives neither that tap nor a second finger on the band.
 - DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN end above the band: a press on one is its own, and the alert stays. ARM and OUTPUT ON under the band are not pressed.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays until restart and has no `x`.
+
+## Hold buttons
+
+A hold button acts after 2s of contact. ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and every button labelled `HOLD 2s TO ...` are hold buttons. A release before 2s sends nothing and shows the button's hint in the alert band for 4s, in amber instead of red, for example `Hold 2s to switch to ARMED.`
+
+- The hint shows only for a release the finger made on the button. It does not show when the finger slid off the button first, when the touch was lost, for a second finger's contact, or on a screen without the status band.
+- A release at 2s or later has acted and shows no hint.
+- A short tap is not a fault, so the hint is a notice and not an alert: a tap on the band clears it earlier, an alert showing keeps the band and no hint shows over it, and an alert that arrives while the hint shows replaces it.
+- The hints, one per action: `Hold 2s to switch to ARMED.`, `switch the output on`, `apply`, `start the test`, `start the limit run`, `enable`, `write`, `restore`, `continue`, `leave`, `load`, `release the port`, `repair`, `run`, `install`, `download and install`, `update the IOmcu` and `clear all pin assignments`, each after `Hold 2s to`.
 
 ## Touch near the band
 
