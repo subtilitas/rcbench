@@ -21,6 +21,31 @@ extern "C" {
 /** Where STOP is, in panel coordinates.  The router hit-tests it. */
 gfx_rect_t ui_band_stop_rect(void);
 
+/** @brief What the band shows of the screen guide (ui_help.h). */
+typedef enum {
+    UI_BAND_GUIDE_NONE = 0, /**< no "?": the screen has no guide pages   */
+    UI_BAND_GUIDE_SHOWN,    /**< "?" in the accent colour                */
+    UI_BAND_GUIDE_OPEN,     /**< "?" on the accent: the guide is open    */
+} ui_band_guide_t;
+
+/**
+ * @brief Where the guide's "?" chip is, in panel coordinates: 40 x 44px,
+ *        8px left of STOP, x 802 to 842.  The other chips start left of
+ *        it whether it is drawn or not.
+ * @return The rect.
+ */
+gfx_rect_t ui_band_guide_rect(void);
+
+/**
+ * @brief Whether a touch lands on the "?" chip: across the band's height
+ *        and 2px either side, as the other chips.
+ * @param x The touch's panel x.
+ * @param y The touch's panel y.
+ * @return true on the chip, drawn or not; the router asks only while it
+ *         is drawn.
+ */
+bool ui_band_guide_at(int x, int y);
+
 /**
  * The mode the band names: BENCH while the link is up and the panel drives
  * the IOmcu's outputs, SIM while it runs on its own models.  Mode
@@ -65,8 +90,8 @@ bool ui_band_chip_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
 /**
  * @brief The chip a touch lands on.
  *
- * A chip is hit across the band's whole height and 3px either side, half
- * the gap to the next one; STOP and the home tag are not chips.
+ * A chip is hit across the band's whole height and 2px either side, half
+ * the gap to the next one; STOP, the home tag and "?" are not chips.
  * @param st The bench status the band shows.
  * @param x The touch's panel x.
  * @param y The touch's panel y.
@@ -118,19 +143,27 @@ bool ui_band_chip_colors(const ui_bench_status_t *st, ui_band_chip_t chip,
  * @param st the bench's status, or NULL
  * @param stop_pressed STOP is pressed
  * @param home_pressed the home tag is pressed
+ * @param guide what the band shows of the guide
  * @return the number, a 32-bit FNV-1a hash
  */
 uint32_t ui_band_key(const char *title, bool show_home,
                      const ui_bench_status_t *st, bool stop_pressed,
-                     bool home_pressed);
+                     bool home_pressed, ui_band_guide_t guide);
 
 /**
- * Draw the band.  @p title is the current screen's title, or NULL on the
- * splash, which has no home tag and no bench status.
+ * @brief Draw the band.
+ * @param c            The panel's canvas.
+ * @param title        The current screen's title, or NULL on the splash,
+ *                     which has no home tag and no bench status.
+ * @param show_home    Whether the title is the home tag.
+ * @param st           The bench's status, or NULL.
+ * @param stop_pressed STOP is pressed.
+ * @param home_pressed The home tag is pressed.
+ * @param guide        What the band shows of the screen guide.
  */
 void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
                     const ui_bench_status_t *st, bool stop_pressed,
-                    bool home_pressed);
+                    bool home_pressed, ui_band_guide_t guide);
 
 #ifdef __cplusplus
 }

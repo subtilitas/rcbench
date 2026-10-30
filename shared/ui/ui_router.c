@@ -30,6 +30,7 @@
 #include "overview_screen.h"
 #include "splash_screen.h"
 #include "ui_band.h"
+#include "ui_help.h"
 #include "ui_theme.h"
 #include "ui_watermark.h"
 #include "ui_widgets.h"
@@ -80,6 +81,26 @@ static struct {
     uint8_t band_id;
     bool    on_stop;      /**< the press started on STOP rather than home   */
     ui_band_chip_t on_chip; /**< or on this chip of the band              */
+    bool    on_home;      /**< or on the home tag                         */
+    bool    on_guide;     /**< or on "?" with the guide closed, to open it  */
+
+    /*
+     * The screen guide (ui_help.h): open or not, the page it shows, the
+     * page set it opened on (ui_help_set_key()), and what each framebuffer
+     * holds of its dock, as for the band.  A press on PREV, NEXT or CLOSE
+     * is held by track id until its release, which acts on the button it
+     * came down on.
+     */
+    bool          guide;        /**< the guide is open                    */
+    int           guide_page;   /**< its page, from 0                     */
+    uint32_t      guide_set;    /**< ui_help_set_key() at the opening     */
+    uint32_t      guide_key[2]; /**< ui_help_dock_key() of each buffer's dock */
+    uint8_t       guide_drawn;  /**< the buffers whose guide_key holds    */
+    uint32_t      guide_marks;  /**< ui_help_marks_key() of the last frame */
+    bool          guide_marked; /**< guide_marks holds                    */
+    bool          guide_press;  /**< a press on a button of the dock      */
+    uint8_t       guide_id;     /**< its track id                         */
+    ui_help_hit_t guide_btn;    /**< its button                           */
 
     /*
      * The chip whose help bubble is open, and what the last frame drew of
@@ -115,6 +136,8 @@ static struct {
 } s;
 
 static bool has_band(ui_screen_id_t id);
+static void release_owned(void);
+static void guide_check(void);
 
 /*
  * The screens with more than one opener, each opener on a row of its own.
@@ -222,6 +245,8 @@ void ui_router_goto(ui_screen_id_t id)
      * is the old screen's too. */
     s.band_press = false;
     s.help = UI_BAND_CHIP_NONE;
+    s.guide = false;
+    s.guide_press = false;
     s.alert_press = false;
     memset(s.alert_ids, 0, sizeof(s.alert_ids));
     memset(s.owned, 0, sizeof(s.owned));
@@ -243,6 +268,7 @@ uint32_t ui_router_dispatched(void) { return s.dispatched; }
 void ui_router_invalidate(void)
 {
     s.band_drawn = 0u;
+    s.guide_drawn = 0u;
     splash_invalidate();
     overview_invalidate();
     motor_invalidate();
@@ -315,6 +341,7 @@ void ui_router_set_status(const ui_bench_status_t *status)
     if (was != s.status.simulated || caps != s.status.capabilities) {
         ui_router_invalidate();
     }
+    guide_check();
     /* A bubble whose chip has gone -- the faults cleared, the run clock
      * gone -- has nothing left to explain, and closes. */
     if (s.help != UI_BAND_CHIP_NONE
@@ -333,6 +360,9 @@ bool ui_router_help_rect(gfx_rect_t *out)
 
 bool ui_router_take_knob(void)
 {
+    if (s.guide) {
+        return false;   /* a turn moves nothing under the dock */
+    }
     if (s.help != UI_BAND_CHIP_NONE) {
         s.help = UI_BAND_CHIP_NONE;
         return false;
@@ -370,6 +400,91 @@ static bool has_band(ui_screen_id_t id)
     }
     return id != SCREEN_SPLASH && id != SCREEN_BUSFAULT
            && id != SCREEN_UPDATE;
+}
+
+bool ui_router_guide_shown(void)
+{
+    return has_band(s.current)
+           && ui_help_count(screen_for(s.current), s.status.armed) > 0;
+}
+
+bool ui_router_guide_open(void) { return s.guide; }
+
+int ui_router_guide_page(void) { return s.guide ? s.guide_page : -1; }
+
+/** @brief Close the guide; every screen repaints what the dock covered. */
+static void guide_close(void)
+{
+    if (s.guide) {
+        s.guide = false;
+        s.guide_press = false;
+        ui_router_invalidate();
+    }
+}
+
+/**
+ * @brief Open the guide at its first page.  No event reaches the screen
+ *        while it is open, so what the screen owns is released first, as
+ *        for a bubble.
+ */
+static void guide_open(void)
+{
+    s.help        = UI_BAND_CHIP_NONE;
+    s.guide       = true;
+    s.guide_page  = 0;
+    s.guide_press = false;
+    s.guide_set   = ui_help_set_key(screen_for(s.current), s.status.armed);
+    release_owned();
+    ui_router_invalidate();
+}
+
+/** @brief Close a guide whose screen has no pages any more or other ones:
+ *         a tab, a level or the bench's state changed under it. */
+static void guide_check(void)
+{
+    if (s.guide
+        && (!ui_router_guide_shown()
+            || ui_help_set_key(screen_for(s.current), s.status.armed)
+                   != s.guide_set)) {
+        guide_close();
+    }
+}
+
+/**
+ * @brief The page the open guide shows.
+ * @param p The page, filled.
+ * @return False while the guide is closed.
+ */
+static bool guide_page_now(ui_help_page_t *p)
+{
+    return s.guide
+           && ui_help_page(screen_for(s.current), s.status.armed,
+                           s.guide_page, p);
+}
+
+bool ui_router_guide_now(ui_help_page_t *out)
+{
+    return out != NULL && guide_page_now(out);
+}
+
+/**
+ * @brief The release of a press on PREV, NEXT or CLOSE: a page back, a
+ *        page on, or closed.  PREV on the first page and NEXT on the last
+ *        do nothing.
+ * @param btn The button.
+ */
+static void guide_act(ui_help_hit_t btn)
+{
+    const int count = ui_help_count(screen_for(s.current), s.status.armed);
+    if (btn == UI_HELP_HIT_CLOSE) {
+        guide_close();
+    } else if (btn == UI_HELP_HIT_PREV && s.guide_page > 0) {
+        --s.guide_page;
+        ui_router_invalidate();
+    } else if (btn == UI_HELP_HIT_NEXT && s.guide_page + 1 < count) {
+        ++s.guide_page;
+        ui_router_invalidate();
+    }
 }
 
 /*
@@ -526,10 +641,19 @@ static int owned_find(uint8_t id)
  * that chip, so one tap moves the bubble to it.  A DOWN on STOP closes it
  * as well and presses STOP, as with no bubble.
  *
+ * The guide follows the bubble's rules.  "?" opens it on a tap, as a chip
+ * opens its bubble; a DOWN on "?" with the guide open closes it.  While it
+ * is open, a DOWN on PREV, NEXT or CLOSE is the guide's and acts on a
+ * release on the same button; a DOWN elsewhere on the dock or on a badge
+ * does nothing; a DOWN anywhere else -- the live half, the home tag, the
+ * alert band -- closes it and does nothing else.  A DOWN on STOP or on a
+ * chip closes it and presses STOP or the chip.
+ *
  * A press that stops what the bench drives is never the router's to keep.
  * A DOWN on a control the screen's safe_at() names -- DISARM on an armed
  * bench, a run's ABORT or STOP -- closes the bubble or the alert that
- * covers it and is the screen's, as if neither were there.  ARM is no such
+ * covers it, or the guide, and is the screen's, as if neither were there.
+ * ARM is no such
  * control: a press on ARM under the alert band closes the alert and starts
  * no hold.
  */
@@ -544,6 +668,7 @@ void ui_router_event(const touch_event_t *evt)
      * one. */
     const bool    safe = band && router_safe_at(evt);
 
+    guide_check();
     if (band) {
         const gfx_rect_t stop = ui_band_stop_rect();
         const gfx_rect_t home = ui_home_tag_rect(ui_router_title(s.current));
@@ -555,8 +680,58 @@ void ui_router_event(const touch_event_t *evt)
 
         const ui_band_chip_t chip =
             ui_band_chip_at(&s.status, evt->point.x, evt->point.y);
+        const bool on_guide = ui_router_guide_shown()
+                              && ui_band_guide_at(evt->point.x, evt->point.y);
 
-        if (evt->type == TOUCH_EVENT_DOWN && !in_stop
+        if (s.guide_press && id == s.guide_id) {
+            /* The press on a button of the dock: its release acts on the
+             * button it came down on; a DOWN is a new contact. */
+            s.guide_press = false;
+            if (evt->type != TOUCH_EVENT_DOWN) {
+                if (evt->type == TOUCH_EVENT_UP) {
+                    ui_help_page_t p = { 0 };
+                    if (touch_event_is_tap_up(evt) && guide_page_now(&p)
+                        && ui_help_hit(&p, evt->point.x, evt->point.y)
+                               == s.guide_btn) {
+                        guide_act(s.guide_btn);
+                    }
+                } else {
+                    s.guide_press = true;
+                }
+                return;
+            }
+        }
+        if (evt->type == TOUCH_EVENT_DOWN && s.guide && !in_stop && !on_guide
+            && chip == UI_BAND_CHIP_NONE) {
+            /* A DOWN is a new contact: the one this id named before is
+             * over, and this one is the guide's or nobody's. */
+            const int was = owned_find(id);
+            if (was >= 0) {
+                s.owned[was].live = false;
+            }
+            ui_help_page_t p = { 0 };
+            const ui_help_hit_t hit =
+                (!safe && !in_home && guide_page_now(&p))
+                    ? ui_help_hit(&p, evt->point.x, evt->point.y)
+                    : UI_HELP_HIT_NONE;
+            if (hit == UI_HELP_HIT_DOCK) {
+                return;
+            }
+            if (hit != UI_HELP_HIT_NONE) {
+                s.guide_press = true;
+                s.guide_id    = id;
+                s.guide_btn   = hit;
+                return;
+            }
+            /* The tap that closes the guide, except a press on DISARM or
+             * a run's STOP: the guide closes and the press is the
+             * screen's, below. */
+            guide_close();
+            if (!safe) {
+                return;
+            }
+        }
+        if (evt->type == TOUCH_EVENT_DOWN && !in_stop && !on_guide
             && s.help != UI_BAND_CHIP_NONE
             && (chip == UI_BAND_CHIP_NONE || chip == s.help)) {
             /* The tap that closes the bubble.  A contact this id named
@@ -576,12 +751,19 @@ void ui_router_event(const touch_event_t *evt)
             }
         }
         if (evt->type == TOUCH_EVENT_DOWN
-            && (in_stop || in_home || chip != UI_BAND_CHIP_NONE)) {
+            && (in_stop || in_home || chip != UI_BAND_CHIP_NONE
+                || on_guide)) {
+            /* "?" opens the guide on its release only when it was closed:
+             * a DOWN on it closes an open one. */
+            s.on_guide   = on_guide && !s.guide;
+            guide_close();
             s.help       = UI_BAND_CHIP_NONE;
             s.band_press = true;
             s.band_id    = evt->point.id;
             s.on_stop    = in_stop;
-            s.on_chip    = (in_stop || in_home) ? UI_BAND_CHIP_NONE : chip;
+            s.on_home    = in_home && !in_stop;
+            s.on_chip    = (in_stop || in_home || on_guide)
+                               ? UI_BAND_CHIP_NONE : chip;
             /* A press the screen is not handed still ends what it holds:
              * a drag left latched would go on commanding beside STOP. */
             release_owned();
@@ -605,13 +787,18 @@ void ui_router_event(const touch_event_t *evt)
                 s.band_press = false;
                 if (s.on_stop) {
                     /* STOP acted on the press; its release does nothing. */
+                } else if (s.on_guide) {
+                    if (on_guide && touch_event_is_tap_up(evt)) {
+                        guide_open();
+                    }
                 } else if (s.on_chip != UI_BAND_CHIP_NONE) {
                     /* A chip answers a release the finger made on the
                      * chip it came down on. */
                     if (chip == s.on_chip && touch_event_is_tap_up(evt)) {
                         help_open(chip);
                     }
-                } else if (in_home && touch_event_is_tap_up(evt)) {
+                } else if (s.on_home && in_home
+                           && touch_event_is_tap_up(evt)) {
                     /* The home tag takes a release the finger made. */
                     router_back();
                 }
@@ -728,6 +915,7 @@ void ui_router_cancel_gestures(void)
      * and comes down again.
      */
     s.band_press = false;
+    s.guide_press = false;   /* the guide stays open */
     memset(s.owned, 0, sizeof(s.owned));
 
     /*
@@ -868,6 +1056,36 @@ static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
     }
 }
 
+/**
+ * @brief The open guide over the screen: the dock when it changed in this
+ *        buffer or the buffer has not got it, as the band; the marks every
+ *        frame, as the bubble, because the screen draws under them.  Not
+ *        inlined, so tools/stack_check.py finds it by name.
+ * @param c            The panel's canvas.
+ * @param page         The page showing.
+ * @param buffer_index The framebuffer.
+ */
+static __attribute__((noinline)) void guide_render(gfx_canvas_t *c,
+                                                   const ui_help_page_t *page,
+                                                   int buffer_index)
+{
+    const ui_screen_t *scr = screen_for(s.current);
+    const unsigned buf = (unsigned)buffer_index & 1u;
+    const int count = ui_help_count(scr, s.status.armed);
+    const bool note = s.guide_page == 0
+                      && ui_help_armed_note(scr, s.status.armed);
+    const ui_help_hit_t btn = s.guide_press ? s.guide_btn : UI_HELP_HIT_NONE;
+    const uint32_t key = ui_help_dock_key(page, s.guide_page, count, note,
+                                          btn);
+    if (s.status.simulated || (s.guide_drawn & (1u << buf)) == 0u
+        || s.guide_key[buf] != key) {
+        ui_help_render_dock(c, page, s.guide_page, count, note, btn);
+        s.guide_key[buf] = key;
+        s.guide_drawn |= (uint8_t)(1u << buf);
+    }
+    ui_help_render_marks(c, page);
+}
+
 void ui_router_render(gfx_canvas_t *c, int buffer_index)
 {
     const ui_screen_t *scr = screen_for(s.current);
@@ -887,6 +1105,8 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         return;
     }
 
+    guide_check();
+
     /*
      * The band when it changed in this buffer, or the buffer has not got
      * it.  Over a simulated bench the watermark is laid over it every
@@ -896,14 +1116,18 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         const char *title = ui_router_title(s.current);
         const bool home = has_home(s.current);
         const bool stop_down = s.band_press && s.on_stop;
-        const bool home_down = s.band_press && !s.on_stop
-                               && s.on_chip == UI_BAND_CHIP_NONE;
+        const bool home_down = s.band_press && s.on_home;
         const unsigned buf = (unsigned)buffer_index & 1u;
+        const ui_band_guide_t guide = s.guide ? UI_BAND_GUIDE_OPEN
+                                      : ui_router_guide_shown()
+                                          ? UI_BAND_GUIDE_SHOWN
+                                          : UI_BAND_GUIDE_NONE;
         const uint32_t key = ui_band_key(title, home, &s.status, stop_down,
-                                         home_down);
+                                         home_down, guide);
         if (s.status.simulated || (s.band_drawn & (1u << buf)) == 0u
             || s.band_key[buf] != key) {
-            ui_band_render(c, title, home, &s.status, stop_down, home_down);
+            ui_band_render(c, title, home, &s.status, stop_down, home_down,
+                           guide);
             s.band_key[buf] = key;
             s.band_drawn |= (uint8_t)(1u << buf);
         }
@@ -933,8 +1157,29 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
      */
     const gfx_rect_t body = { 0, UI_BAND_H, PANEL_W, UI_BODY_H };
     gfx_canvas_t sub;
+    ui_help_page_t page = { 0 };
+    const bool guide = guide_page_now(&page);
+    /* Marks that moved -- the arm chip on page 3 when the bench is ARMED,
+     * a tile's mark that went -- repaint the screen first, as a bubble
+     * that moved does: the screen drew its chrome once per framebuffer,
+     * and the old marks would stay where it is not drawn again. */
+    const uint32_t marks = guide ? ui_help_marks_key(&page) : 0u;
+    if (s.guide_marked && (!guide || marks != s.guide_marks)) {
+        ui_router_invalidate();
+    }
+    s.guide_marked = guide;
+    s.guide_marks  = marks;
     if (gfx_canvas_sub(c, body, &sub)) {
+        if (guide) {
+            /* The screen draws the live half; the dock takes the other. */
+            gfx_rect_t live = ui_help_live_rect(page.side);
+            live.y = (int16_t)(live.y - UI_BAND_H);
+            (void)gfx_clip_intersect(&sub, live);
+        }
         scr->render(&sub, buffer_index);
+    }
+    if (guide) {
+        guide_render(c, &page, buffer_index);
     }
 
     if (show) {

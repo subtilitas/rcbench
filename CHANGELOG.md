@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- The screen guide: "?" in the band, 8px left of STOP, opens numbered marks
+  on the screen's controls and a dock of 480 x 488px that says what each
+  one does, 3 rows each, with PREV, NEXT, CLOSE and the web help's address
+  ([Screens, The screen guide](docs/Screens.md#the-screen-guide)). The menu
+  has a guide of 3 pages; the other screens follow. STOP, DISARM and the
+  other controls that stop an output act through it; the knob moves
+  nothing while it is open; while ARMED it offers only pages that cover no
+  such control. `test_help_router` and `test_help_pages` hold it.
 - Hold buttons: a release before 2s shows the button's hint in the alert
   band, for example `Hold 2s to switch to ARMED.`, and sends nothing. It
   applies to ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and the other
@@ -110,6 +118,14 @@ history is in git.
 
 ### Changed
 
+- The band keeps 40px left of STOP for "?" on every screen. The chips stand
+  4px apart (6px before), their labels 22px into the chip (28px before),
+  and a tap finds a chip 2px beside it (3px before), so the widest row, a
+  run clock of 10 hours, ARMED MOTOR, FEHLER 7F, BENCH and LINK in German,
+  starts at x 270, 2px right of MOTOR & ESC's home tag
+  ([Screens, The status band](docs/Screens.md#the-status-band)).
+- `render_ui.py --fit` skips a string wholly outside its clip, such as a
+  tile under the guide's dock.
 - The panel firmware builds on ESP-IDF v6.1 (v5.5.5 before): CI, the
   release workflow, `dependencies.lock` (ESP-IDF 6.1.0, lock file version
   3.0.0; the five managed components keep their versions) and

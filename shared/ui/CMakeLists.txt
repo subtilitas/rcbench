@@ -21,6 +21,7 @@ set(SRCS
     ui_pinlist.c
     ui_board.c
     ui_router.c
+    ui_help.c
     ui_alert_slot.c
     ui_text.c
     splash_screen.c

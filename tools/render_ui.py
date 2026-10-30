@@ -61,6 +61,8 @@ SOURCES = [
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
     "test/host/render_hitec.c",
+    # The screen guide's views: opened and turned by taps.
+    "test/host/render_help.c",
     "shared/bench/hitec_link.c",
     "shared/outputs/hitec_port.c",
     # The Hitec files' views run their requests on a folder in memory.
@@ -90,6 +92,9 @@ SCREENS = {
     "band-armed": ("band-armed.png", "overview", "dark"),
     # An alert across the bottom of the menu, with its x.
     "overview-alert": ("overview-alert.png", "overview", "dark"),
+    # The screen guide over the menu at page 1: the dock on the right, the
+    # left two columns of tiles marked.
+    "help-overview": ("help-overview.png", "overview", "dark"),
     "motor":      ("motor.png",      "motor",      "dark"),
     "motor-held": ("motor-held.png", "motor-held", "dark"),
     # A linked bench before its first run, no pin bound as a motor.
@@ -665,6 +670,12 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # The menu's guide at pages 2 and 3, and MOTOR & ESC's band with the
+    # widest row of chips: a clock of 10 hours, ARMED MOTOR, FAULT 7F,
+    # BENCH and LINK.
+    "help-overview-2": (None, "overview", "dark"),
+    "help-overview-3": (None, "overview", "dark"),
+    "help-band-worst": (None, "motor", "dark"),
     # A tap on ARM and on OUTPUT ON, released before 2s: the button's hint
     # in the alert band.
     "hold-hint-arm":    (None, "motor", "dark"),
@@ -934,8 +945,11 @@ def fit_problems(items, overlay=False):
         if it[0] != "T":
             continue
         _, t, clip, box, s = it
-        if t.y + t.h <= clip.y or t.y >= clip.b:
-            continue    # wholly above or below its clip: not drawn at all
+        if (t.y + t.h <= clip.y or t.y >= clip.b
+                or t.r <= clip.x or t.x >= clip.r):
+            # Wholly outside its clip, such as a screen's string on the
+            # half the screen guide's dock takes: not drawn at all.
+            continue
         if box is not None and t.w > box.w:
             problems.append((s, "is %d px wide in a %d px box"
                              % (t.w, box.w)))
