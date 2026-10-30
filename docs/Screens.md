@@ -237,6 +237,7 @@ it. The hint is one line of 97 characters at most.
 | --- | --- |
 | ARM on MOTOR & ESC and SERVO | `Hold 2s to switch to ARMED.` |
 | OUTPUT ON on SUPPLY and in SERVO's supply box | `Hold 2s to switch the output on.` |
+| PROG 5V ON in the PROG 5V box on SERVO and SUPPLY, rbmod carrier | `Hold 2s to switch the programming ports' 5V on.` |
 | APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
 | START TEST | `Hold 2s to start the test.` |
 | START LIMIT RUN | `Hold 2s to start the limit run.` |
@@ -1234,6 +1235,25 @@ channel is CH1 of the one part SENSE reads.
 
 ![The panel's model as the supply](img/servo-model.png)
 
+On the [rbmod carrier](Carrier.md#power) the PROG 5V box takes the plot's
+place under the line, 48px tall: the programming ports' own 5V. Its first
+line names the pin and the state, `PROG PORTS 5V, GPIO 21: OFF`; its second
+the last 50ms window of the INA3221 channel watching the 5V (0x40 CH3),
+`5.02V  0.120A`, or `--V  --A` without one. PROG 5V ON on its right is a 2s
+hold and PROG 5V OFF a tap, as OUTPUT ON and OFF are, with the bench SAFE
+or ARMED. While a programming port holds the 5V the second line reads
+`HELD BY PROG PORT n`, the button is dimmed, and a press on it shows
+`PROG ports 5V: held by a programming port, or not read.` The box stays
+under the KST and Hitec programmers. Leaving SERVO switches off a 5V
+SERVO's box switched on, unless a port holds it. With the model as the
+supply the SIMULATED pill sits under the box. SUPPLY shows the same box
+([Supply](#supply)); the rules are in
+[Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box).
+
+![SERVO on the carrier](img/servo-rbmod.png)
+
+![The KST programmer holding the 5V](img/servo-kst-rbmod.png)
+
 Which meter it is is decided once per poll
 ([the current monitors](#interfaces-the-current-monitors)): the INA3221
 1000ms after its conditions hold, the PD mini from the first poll in which
@@ -2064,8 +2084,11 @@ second finger does nothing anywhere on the screen.
 On the [rbmod carrier](Carrier.md#power) a line under OUTPUT names the
 programming ports' own 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or
 `NOT READ` after an unanswered read, in the accent colour while on. The KST
-and Hitec programmers switch it; SUPPLY has no key for it. A board without
-the switch shows no line.
+and Hitec programmers switch it. On LIVE the PROG 5V box in the output
+card's head, right of PLOT and TABLE, switches it by hand and shows its
+INA3221 reading, as on [SERVO](#servo); the line under OUTPUT stays on
+every task. Leaving SUPPLY switches off a 5V SUPPLY's box switched on,
+unless a port holds it. A board without the switch shows neither.
 
 ![SUPPLY on the carrier](img/supply-rbmod.png)
 

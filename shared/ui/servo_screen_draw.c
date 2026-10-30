@@ -513,7 +513,14 @@ static void draw_power(gfx_canvas_t *c)
                     txt[k], SV_FONT_LABEL, tc, 1, GFX_ALIGN_RIGHT);
         x += fw[k];
     }
-    ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
+    /* On a board that switches the ports' own 5V the PROG 5V box takes the
+     * plot's place; the readings above it stay. */
+    const bool p5 = prog5v_box_shown();
+    if (p5) {
+        prog5v_box_render(&s.p5, c);
+    } else {
+        ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
+    }
     /*
      * The readings of the panel's model are no measurement: the overview's
      * pill, 110px or as wide as a longer word and 26px high, on the
@@ -521,11 +528,16 @@ static void draw_power(gfx_canvas_t *c)
      * is full.
      */
     if (!ina && supply_screen_model()) {
-        int mw = 30 + gfx_text_width(SV_FONT_LABEL, TR(SV_MODELLED), 1);
+        /* Under the box 20px are left: the pill in the 8 x 16 face. */
+        const gfx_font_t *pf = p5 ? UI_FONT_FINE : SV_FONT_LABEL;
+        int mw = 30 + gfx_text_width(pf, TR(SV_MODELLED), 1);
         mw = (mw < 110) ? 110 : mw;
-        ui_pill_font(c, (gfx_rect_t){ RC_X + 2, PWR_Y + 2, (int16_t)mw, 26 },
+        ui_pill_font(c, (gfx_rect_t){ RC_X + 2,
+                                      (int16_t)(p5 ? P5_Y + PROG5V_BOX_H + 2
+                                                   : PWR_Y + 2),
+                                      (int16_t)mw, (int16_t)(p5 ? 18 : 26) },
                      TR(SV_MODELLED), ui_theme_color(UI_C_WARN),
-                     ui_theme_color(UI_C_PANEL_SUNK), 30, SV_FONT_LABEL);
+                     ui_theme_color(UI_C_PANEL_SUNK), 30, pf);
     }
 }
 

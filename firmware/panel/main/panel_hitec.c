@@ -181,6 +181,15 @@ bool hitec_taken(void)
     return hitec_prog_port_taken(&rd);
 }
 
+int hitec_taken_port(void)
+{
+    hitec_link_readout_t rd;
+
+    hitec_link_readout(&s_hitec_link, &rd);
+    return (hitec_prog_port_taken(&rd) && rd.port_no < LINK_PG_PORTS_MAX)
+               ? (int)rd.port_no : -1;
+}
+
 /* What the model is fed, as it stands.  Under the snapshot's lock. */
 __attribute__((noinline)) void hitec_publish(hitec_prog_feed_t *f)
 {

@@ -144,6 +144,43 @@ TEST_CASE(a_window_takes_the_channels_of_its_own_number)
     CHECK(sense_win_link_window(&s, 41u, &w));
 }
 
+/* The last read of a channel, for a reading shown live: any window, both
+ * kinds of sample, a closed one; channel 2 is 0x40 CH3, channel 11 the
+ * last. */
+TEST_CASE(the_last_window_of_a_channel_is_its_pages_last_read)
+{
+    sense_win_link_init(&s);
+    uint16_t mv = 9u;
+    int16_t ma = 9;
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));   /* no link */
+    sense_win_link_came_up(&s, 25u);
+    sense_win_link_want(&s, 0x0Fu);
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));   /* nothing read */
+    uint16_t a[LINK_SX_COUNT];
+    uint16_t b[LINK_SX_COUNT];
+    page_regs(a, 40u, (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE), 80);
+    page_regs(b, 41u, LINK_SX_E_VOLTAGE, -20);
+    b[LINK_SX_E(5, LINK_SX_E_FLAGS)] =
+        (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE);
+    CHECK(read_one(0u, a, NULL));
+    CHECK(read_one(0u, b, NULL));
+    CHECK(sense_win_link_last(&s, 2u, &mv, &ma));
+    CHECK_EQ(mv, 5000u);
+    CHECK_EQ(ma, 82);
+    CHECK(sense_win_link_last(&s, 11u, &mv, &ma));
+    CHECK_EQ(ma, -15);
+    CHECK(!sense_win_link_last(&s, 6u, &mv, &ma));   /* voltage only */
+    CHECK(!sense_win_link_last(&s, 12u, &mv, &ma));
+    CHECK(sense_win_link_last(&s, 0u, NULL, NULL));
+    CHECK(!sense_win_link_last(NULL, 0u, &mv, &ma));
+    /* A page with no window closed under the set-up: none. */
+    a[LINK_SX_FLAGS] = 0x03u;
+    CHECK(read_one(SENSE_WIN_LINK_READ_MS, a, NULL));
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));
+    sense_win_link_lost(&s);
+    CHECK(!sense_win_link_last(&s, 11u, &mv, &ma));
+}
+
 /* A page no longer wanted, BAD_PAGE, and a lost link forget what was
  * read. */
 TEST_CASE(a_page_gone_forgets_its_reads)
@@ -351,6 +388,7 @@ int main(void)
     RUN(nothing_goes_to_an_older_iomcu_or_with_no_part);
     RUN(the_pages_a_map_needs_are_read_in_turn);
     RUN(a_window_takes_the_channels_of_its_own_number);
+    RUN(the_last_window_of_a_channel_is_its_pages_last_read);
     RUN(a_page_gone_forgets_its_reads);
     RUN(the_read_before_answers_for_its_window);
     RUN(the_reads_keep_their_rate_across_the_clock_wrap);

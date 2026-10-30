@@ -59,6 +59,10 @@ Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Ne
 
 Ein Verlassen, das den Ausgang bei den Sollwerten der Sitzung eingeschaltet lässt, während die Sollwerte von vor der Sitzung andere sind, lässt SERVO fragen, sobald der Port in PWM ist: `Deine Versorgungs-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang wiederherstellen?` JA gibt dem eingeschalteten Ausgang beide; eine Spannung, die von 6,0V oder darunter über 6,0V steigt, öffnet zuerst NUR HV-SERVOS. NEIN behält die der Sitzung bis zum nächsten AUS. Die Frage kommt einmal je Verlassen, wartet auf Tastenfelder, Listen, Warnungen und Fragen von SERVO und das Halten von AUSGANG EIN, und kommt nicht, solange ein Port das Netzteil hält, nach einem AUS, einem Fehler oder einem STOP, innerhalb eines Endlagenlaufs oder wenn sich seitdem ein Sollwert änderte. Der Hitec-Programmierer fragt ebenso.
 
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) laufen die Programmierports an eigenen 5V, geschaltet über GPIO 21, nicht am PD mini; WEITERES zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21`. Die Sitzung schaltet die 5V dort, wo die Tabelle unten den Ausgang des PD mini schaltet. Das Feld PROG 5V unter PD MINI zeigt dann `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Ohne Sitzung schaltet das Feld die 5V von Hand: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp.
+
+![Der KST-Programmer hält die 5V](view:servo-kst-rbmod)
+
 ## Der Versorgungszyklus
 
 Ein KST- oder Chaservo-Servo tritt nur aus einem Einschalten in den Programmiermodus ein und handelt nach einem geschriebenen Wert erst ab seinem nächsten Einschalten: ein Chaservo am Prüfstand überging VERBINDEN bei eingeschalteter Versorgung und folgte nach einem Schreiben keinem PWM, bis seine Versorgung aus und wieder an war.

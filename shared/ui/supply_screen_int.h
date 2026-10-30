@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "prog5v_box.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "touch_types.h"
@@ -136,6 +137,18 @@ _Static_assert(OUT_H >= UI_TAP_MIN, "OUTPUT is a finger tall");
 #define TAB_W     200                     /**< The row: two of 100px. */
 #define LEG_Y     (TAB_Y + TAB_H + 4)     /**< The legend, px. */
 #define LEG_H     20                      /**< Its height, px. */
+/**
+ * @brief The PROG 5V box on LIVE, on a board that switches the ports' own
+ *        5V (prog5v_box.h): right of PLOT | TABLE, in the output card's
+ *        head, ending where the legend starts.
+ */
+#define P5_X      (TAB_X + TAB_W + 8)
+/** @brief The box's top: PROG5V_BOX_H over the legend. */
+#define P5_Y      (LEG_Y - PROG5V_BOX_H)
+/** @brief The box's width, up to the card's inner edge. */
+#define P5_W      (LEFT_X + LEFT_W - INNER - P5_X)
+_Static_assert(P5_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the head");
+_Static_assert(P5_Y >= UP_Y + TITLE_H, "the PROG 5V box is under the title");
 #define PLOT_X    (LEFT_X + INNER)        /**< The plot's left edge, px. */
 #define PLOT_W    (LEFT_W - 2 * INNER)    /**< Its width: 600px. */
 #define PLOT_Y    (LEG_Y + LEG_H + 4)     /**< Its top, px. */
@@ -245,7 +258,8 @@ enum { S_VOLT = 0, S_CURR, S_POWER, S_READINGS, S_VSET = S_READINGS, S_ISET,
 /* What a press is on.  One contact holds the screen at a time. */
 enum { P_NONE = 0, P_OUTPUT, P_RESET, P_V_DOWN, P_V_UP, P_I_DOWN, P_I_UP,
        P_V_SLIDER, P_I_SLIDER, P_TABS, P_CARD_V, P_CARD_I, P_VALUE_V,
-       P_VALUE_I, P_STRIP, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD, P_MODRESET };
+       P_VALUE_I, P_STRIP, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD, P_MODRESET,
+       P_PROG5V };
 
 /* Where a set point change came from, for the question it may need. */
 enum { FROM_SLIDER = 0, FROM_KEYPAD };
@@ -398,6 +412,9 @@ typedef struct {
     uint32_t        set_rev;            /**< revision of the set points */
     uint32_t        drawn_set[2];       /**< set point revision each frame buffer last drew */
     uint32_t        out_rev;            /**< revision of OUTPUT */
+    prog5v_box_t    p5;                 /**< the PROG 5V box on LIVE */
+    uint32_t        drawn_p5[2];        /**< its revision each buffer drew */
+    bool            p5_shown;           /**< it showed at the last tick */
     uint32_t        drawn_out[2];       /**< OUTPUT revision each frame buffer last drew */
     uint32_t        ov_rev;             /**< revision of SETTINGS' page */
     uint32_t        drawn_ov[2];        /**< SETTINGS revision each frame buffer last drew */
@@ -453,6 +470,13 @@ gfx_rect_t sup_strip_area(void);
  * @return true on LIVE, false on SETTINGS
  */
 bool sup_on_live(void);
+/**
+ * @brief Returns whether the PROG 5V box shows: on LIVE, with neither the
+ *        keypad nor the question over it, on a board that switches the
+ *        ports' own 5V.
+ * @return true while it shows
+ */
+bool sup_p5_shown(void);
 /**
  * @brief Returns the area the keypad, the question and SETTINGS' page take.
  * @return the left column under the strip, 620px wide

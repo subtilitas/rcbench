@@ -138,6 +138,7 @@ static bool poll_bench(bench_state_t *bench)
          * SERVO_WIN, so the pages hold the ring's newest window or a newer
          * one, and a row of the ring finds its window on them. */
         sense_win_service();
+        prog5v_publish_reading();
         /* And the channels' limits, armed or not: an alert only. */
         sense_limit_service();
         /* And the phase tap's: an input, taken armed or not. */

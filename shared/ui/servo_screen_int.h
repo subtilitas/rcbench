@@ -27,6 +27,7 @@
 
 #include "gfx.h"
 #include "kst_panel.h"
+#include "prog5v_box.h"
 #include "servo_limrun.h"
 #include "servo_screen.h"
 #include "servo_sweep.h"
@@ -121,6 +122,13 @@
 #define PWR_LAB_W_INA 134 /**< The same beside an INA3221 channel's name. */
 #define PWR_Y     (PWR_TXT_Y + 24) /**< The power plot's top, px. */
 #define PWR_H     70               /**< The power plot's height, px. */
+/** @brief The PROG 5V box in the plot's place on a board that switches
+ *         the ports' 5V (prog5v_box.h); the 20px under it hold the
+ *         MODELLED pill when the panel's model stands in for the PD mini. */
+#define P5_Y      (PWR_Y + 2)
+_Static_assert(P5_Y + PROG5V_BOX_H + 20 <= PWR_Y + PWR_H,
+               "the PROG 5V box and the pill fit the plot's place");
+_Static_assert(RC_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the card");
 /**
  * @brief The supply's set points, each a value the keypad opens on, and
  *        OUTPUT ON and OFF: the same set points and switch as SUPPLY's,
@@ -483,6 +491,14 @@ typedef struct {
     float      sup_v, sup_i;  /**< the set points as last seen           */
     uint32_t   sup_rev;
     uint32_t   drawn_sup[2];
+    /** @brief The programming ports' own 5V on a board that switches it
+     *  (the rbmod carrier): the PROG 5V box in the power plot's place
+     *  (prog5v_box.h). */
+    prog5v_box_t p5;
+    /** @brief A contact is down on the box's button. */
+    bool         p5_down;
+    /** @brief That contact's id: one contact at a time. */
+    int          p5_id;
     /* A set point waiting for APPLY: typed while the output is live, or a
      * voltage raised past a standard servo's rating (hv), which takes the
      * two-second hold the profile warning takes.  OUTPUT ON with a set

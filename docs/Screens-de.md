@@ -261,6 +261,7 @@ Hinweises kommt, ersetzt ihn. Der Hinweis ist eine Zeile von höchstens
 | --- | --- |
 | ARM auf MOTOR & ESC und SERVO | `Halte 2s, um auf ARMED zu schalten.` |
 | AUSGANG EIN auf SUPPLY und im Versorgungskasten von SERVO | `Halte 2s, um den Ausgang einzuschalten.` |
+| PROG 5V EIN im Feld PROG 5V auf SERVO und SUPPLY, rbmod-Carrier | `Halte 2s, um die 5V der Programmierports einzuschalten.` |
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
 | START TEST | `Halte 2s, um den Test zu starten.` |
 | ENDLAGENLAUF STARTEN | `Halte 2s, um den Endlagenlauf zu starten.` |
@@ -1350,6 +1351,26 @@ des Servotesters überwacht
 
 ![Das Modell des Panels als Netzteil](img/de/servo-model.png)
 
+Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nimmt das Feld PROG 5V
+den Platz der Grafik unter der Messzeile ein, 48px hoch: die eigenen 5V
+der Programmierports. Seine erste Zeile nennt Pin und Zustand,
+`PROG-PORTS 5V, GPIO 21: AUS`; seine zweite das letzte Fenster von 50ms des
+INA3221-Kanals, der die 5V misst (0x40 CH3), `5.02V  0.120A`, oder
+`--V  --A` ohne eines. PROG 5V EIN rechts ist ein Halten von 2s und
+PROG 5V AUS ein Tipp, wie AUSGANG EIN und AUS, bei SAFE und bei ARMED.
+Solange ein Programmierport die 5V hält, lautet die zweite Zeile
+`BELEGT VON PROG-PORT n`, die Taste ist gedimmt, und ein Druck darauf zeigt
+`PROG-Ports 5V: von einem Programmierport belegt oder nicht gelesen.` Das
+Feld bleibt unter den Programmern für KST und Hitec. Das Verlassen von
+SERVO schaltet 5V ab, die das Feld auf SERVO eingeschaltet hat, außer ein
+Port hält sie. Mit dem Modell als Netzteil steht die Pille SIMULIERT unter
+dem Feld. SUPPLY zeigt dasselbe Feld ([Netzteil](#netzteil)); die Regeln
+stehen in [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v).
+
+![SERVO auf dem Carrier](img/de/servo-rbmod.png)
+
+![Der KST-Programmer hält die 5V](img/de/servo-kst-rbmod.png)
+
 Welches Messgerät es ist, wird einmal je Poll entschieden
 ([die Strommonitore](#interfaces-die-strommonitore)): der INA3221 1000ms,
 nachdem seine Bedingungen gelten, der PD mini ab dem ersten Poll, in dem
@@ -2266,8 +2287,12 @@ Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nennt eine Zeile unter
 AUSGANG die eigenen 5V der Programmierports: `PROG-PORTS 5V, GPIO 21: EIN`,
 `AUS` oder `UNBEKANNT` nach einem Lesen ohne Antwort, in der
 Akzentfarbe, solange sie an sind. Die Programmer für KST und Hitec schalten
-sie; SUPPLY hat keine Taste dafür. Ein Board ohne den Schalter zeigt keine
-Zeile.
+sie. Auf LIVE schaltet das Feld PROG 5V im Kopf der Ausgangskarte, rechts
+von GRAFIK und TABELLE, sie von Hand und zeigt ihren INA3221-Messwert, wie
+auf [SERVO](#servo); die Zeile unter AUSGANG bleibt auf jedem Reiter. Das
+Verlassen von SUPPLY schaltet 5V ab, die das Feld auf SUPPLY eingeschaltet
+hat, außer ein Port hält sie. Ein Board ohne den Schalter zeigt keins von
+beiden.
 
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 

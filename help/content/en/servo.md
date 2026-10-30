@@ -97,6 +97,10 @@ The SET line holds the SUPPLY screen's two set points and its output switch. A c
 - Leaving SERVO switches off an output SERVO switched on.
 - After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)).
 
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the PROG 5V box stands under PD MINI in place of the plot. It switches the programming ports' own 5V, GPIO 21: PROG 5V ON is a 2s hold, PROG 5V OFF a tap, with the bench SAFE or ARMED. Its second line is the INA3221's last window of the 5V (0x40 CH3), `5.02V  0.120A`, or `HELD BY PROG PORT n` while a programmer holds a port; the button then takes no press. Leaving SERVO switches off a 5V the box switched on here, unless a port holds it. SUPPLY shows the same box.
+
+![SERVO on the carrier](view:servo-rbmod)
+
 ![HV SERVOS ONLY](view:servo-hv)
 
 Standard servos are rated for 4.8 to 6.0V. A voltage raised from 6.0V or below to above 6.0V opens HV SERVOS ONLY. The voltage is applied after HOLD 2s TO APPLY is held; CANCEL drops it. OUTPUT ON with a set point above 6.0V opens the same warning.

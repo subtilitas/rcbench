@@ -146,6 +146,22 @@ bool sense_win_link_window(const sense_win_link_t *s, uint16_t window,
                            bench_chw_t *out);
 
 /**
+ * @brief Channel @p c's last window as its page was last read: its mean bus
+ *        voltage and mean current, whatever the window's number.  For a
+ *        reading shown live (the PROG 5V box's 0x40 CH3).
+ *
+ * @param s  The link state.
+ * @param c  The channel, 0 to 11.
+ * @param mv Receives the mean bus voltage, mV; NULL is ignored.
+ * @param ma Receives the mean current, mA, signed; NULL is ignored.
+ * @return true when the page's last read holds a closed window with both
+ *         current and voltage samples of @p c; false otherwise, for no
+ *         link, no page, @p c past 11 and @p s NULL.
+ */
+bool sense_win_link_last(const sense_win_link_t *s, unsigned c, uint16_t *mv,
+                         int16_t *ma);
+
+/**
  * @brief FAST's channel @p fast (0 to 11) of @p out from the window ring's
  *        window that @p b carries in its first channel
  *        (sense_link_win_bench()): the ring holds every window of FAST, the
