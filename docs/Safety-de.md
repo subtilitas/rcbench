@@ -264,20 +264,10 @@ dauert 1,93s auf der Leitung nach seinem Planen; ein classic-Hitec-Schreiben
 mit 56 Schritten und dem Zurücklesen von 36 Zellen 2,9s und ein Schreiben
 der D-Serie mit 21 Registern, Speichern, 1000ms Warten nach dem Neustart
 und Zurücklesen 3,5s, bei 32ms je Schritt auf der Host-Schleife des Panels.
-Das zweite Lesen vor dem Plan eines Hitec-Schreibens
-([Das zweite Lesen](HitecProgrammer-de.md#das-zweite-lesen)) schreibt
-nichts, und ein Ausschalten währenddessen wird nicht gehalten.
+Das zweite Lesen vor dem Plan eines Hitec-Schreibens ([Das zweite Lesen](HitecProgrammer-de.md#das-zweite-lesen)) schreibt nichts und hält kein Ausschalten auf.
 
-Ein Port, der das Netzteil bei eingeschaltetem Ausgang freigibt, lässt
-seine Sollwerte am Ausgang. Die des Bedieners erreichen ihn nur über JA auf
-die Frage von SERVO nach dem Verlassen, eine Spannung, die von 6,0V oder
-darunter über 6,0V steigt, nur über NUR HV-SERVOS und sein Halten von 2s
-([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
-Keine Frage, solange ein Port das Netzteil hält, und keine nach einem
-Ausschalten, einem Fehler, der den Ausgang ausschaltete, oder einem STOP
-seit dem Verlassen; ein angefordertes Ausschalten schließt sie, bevor der
-Ausgang aus liest. Sonst kommen die Sollwerte des Bedieners nur bei
-ausgeschaltet gelesenem Ausgang zurück (`supply_screen_port_done()`).
+Ein Port, der das Netzteil bei eingeschaltetem Ausgang freigibt, lässt seine Sollwerte am Ausgang; die des Bedieners kommen nur über JA auf die Frage von SERVO nach dem Verlassen
+(über 6,0V nur über NUR HV-SERVOS und sein Halten von 2s) oder beim nächsten Ausschalten zurück ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
 
 Eine Störung der Sitzung ist ein Vorgang, der an dem endet, was das Servo
 oder die Leitung getan hat. KST: kein Servo, ein Register ohne 3 gleiche

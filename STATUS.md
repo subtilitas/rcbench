@@ -556,10 +556,8 @@ one count, is enough) and to one with the values of the last read (not
 told apart); a verified write of the ID; a write left unverified with the
 verdicts SAME, DONE, MIX and OTHER, and with its record discarded; LEAVE
 and CONNECT; a lost link; a classic servo of another serial; the message in
-both languages. `test_hitec_prog_reread` runs the second read before a
-write's plan (reads that agree or differ at the set's ends, ABORT and STOP
-in it, its time); `test_servo_restore` SERVO's question after a LEAVE that
-leaves the output on ([Servo programmer, Tests](docs/ServoProgrammer.md#tests)). `test_hitec_panel_file`
+both languages. `test_hitec_prog_reread` runs the second read before a write's plan (reads that agree or differ, ABORT, STOP, its time);
+`test_servo_restore` SERVO's question after a LEAVE ([Servo programmer, Tests](docs/ServoProgrammer.md#tests)). `test_hitec_panel_file`
 runs the overlay's FILES row, its pages and their turn back to the first,
 the keyboard of a new name and the names the card refuses, a load, CHECK
 THIS FILE, a backup file's stored values on the load page, in its message

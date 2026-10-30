@@ -238,20 +238,10 @@ measured: a KST write of 33 steps is 1.93s on the wire after its planning;
 a classic Hitec write of 56 steps with its read-back of 36 cells is 2.9s
 and a D series write of 21 registers with its save, its 1000ms reboot wait
 and its read-back 3.5s, at 32ms a step on the panel's host loopback.
-The second read before a Hitec write's plan
-([The second read](HitecProgrammer.md#the-second-read)) writes nothing, and
-an OFF during it is not held.
+The second read before a Hitec write's plan ([The second read](HitecProgrammer.md#the-second-read)) writes nothing and holds up no OFF.
 
-A port that lets go of the supply with the output on leaves its own set
-points on the live output. The operator's set points from before the
-session reach that output only through SERVO's question after the LEAVE
-(YES), and a voltage that rises from 6.0V or below to above it only
-through HV SERVOS ONLY and its 2s hold
-([Servo programmer, The supply](ServoProgrammer.md#the-supply)). The
-question is not asked while a port holds the supply, nor after an OFF, an
-error that switched the output off, or a STOP since the LEAVE; an OFF
-asked while it stands closes it before the output reads off. Otherwise the operator's set points come back
-only with the output read off (`supply_screen_port_done()`).
+A port that lets go of the supply with the output on leaves its own set points on the output; the operator's come back only by YES to SERVO's question after the LEAVE
+(above 6.0V only through HV SERVOS ONLY and its 2s hold) or at the next OFF ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
 
 A session fault is an operation that ends in what the servo or the wire
 did. KST: no servo, a register without 3 equal reads, a servo that changed
