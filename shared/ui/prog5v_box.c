@@ -20,7 +20,7 @@
 enum { ST_NONE = 0, ST_UNKNOWN = 1, ST_OFF = 2, ST_ON = 3 };
 
 /** @brief state << 16 | pin << 8 | held port, as published. */
-static atomic_uint s_state = ATOMIC_VAR_INIT((unsigned)PROG5V_HELD_NONE);
+static atomic_uint s_state = (unsigned)PROG5V_HELD_NONE;
 /** @brief bit 31 a reading, mV in bits 16 to 30, mA as int16 in 0 to 15. */
 static atomic_uint s_read;
 
@@ -159,6 +159,12 @@ void prog5v_box_cancel(prog5v_box_t *b)
     }
     b->pressed = false;
     ui_hold_reset(&b->hold);
+    /* An ON this screen's hold asked and nobody collected goes with the
+     * gesture: a touch loss found before the poll must not send it.  An
+     * OFF asked stays. */
+    if (s_cmd.on && s_cmd.by == b->by) {
+        s_cmd.on = false;
+    }
 }
 
 void prog5v_box_tick(prog5v_box_t *b, float dt_s)
@@ -293,10 +299,10 @@ void prog5v_box_left(prog5v_by_t by)
     if (by == PROG5V_BY_NONE || s_owner != by || held() != PROG5V_HELD_NONE) {
         return;
     }
-    if (prog5v_box_on() || s_cmd.on) {
-        post(false, by);
-    }
-    s_owner = PROG5V_BY_NONE;
+    /* Whether or not the ON has been read back yet: one collected and on
+     * its way reads OFF until the control task has written it, and an OFF
+     * after an ON that did not take costs nothing. */
+    post(false, by);
 }
 
 bool prog5v_box_poll_cmd(prog5v_cmd_t *out)

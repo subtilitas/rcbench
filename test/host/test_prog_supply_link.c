@@ -58,7 +58,7 @@ TEST_CASE(an_iomcu_without_the_page_gets_nothing)
     prog_supply_link_init(NULL, true);
     prog_supply_link_cut(NULL);
     CHECK(!prog_supply_link_next(NULL, &off, &v));
-    prog_supply_link_written(NULL, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(NULL, LINK_PS_OUTPUT, 0u, PROG_SUPPLY_LINK_ACK);
     CHECK(!prog_supply_link_read_due(NULL, 0u));
     prog_supply_link_read(NULL, NULL, 0u);
     CHECK_EQ(prog_supply_link_state(NULL), PROG_SUPPLY_NONE);
@@ -76,15 +76,15 @@ TEST_CASE(an_error_owes_one_off_until_the_iomcu_answers)
     CHECK_EQ(v, 0u);
     CHECK(prog_supply_link_next(&l, NULL, NULL));
     /* No answer: owed still. */
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_NO_ANSWER);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_NO_ANSWER);
     CHECK(prog_supply_link_next(&l, &off, &v));
     /* An ACK ends it. */
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
     CHECK(!prog_supply_link_next(&l, &off, &v));
     /* So does a NACK: the IOmcu answered. */
     prog_supply_link_cut(&l);
     prog_supply_link_cut(&l);               /* two errors, one OFF */
-    prog_supply_link_written(&l, (int)LINK_NACK_BAD_VALUE);
+    prog_supply_link_written(&l, off, v, (int)LINK_NACK_BAD_VALUE);
     CHECK(!prog_supply_link_next(&l, &off, &v));
 }
 
@@ -182,13 +182,13 @@ TEST_CASE(the_panel_gives_its_word_when_a_read_finds_none)
     CHECK_EQ(off, LINK_PS_PANEL);
     CHECK_EQ(v, 1u);
     /* Unanswered: again; answered, ACK or NACK: not before the next read. */
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_NO_ANSWER);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_NO_ANSWER);
     CHECK(prog_supply_link_next(&l, &off, &v));
-    prog_supply_link_written(&l, (int)LINK_NACK_NOT_ARMED);
+    prog_supply_link_written(&l, off, v, (int)LINK_NACK_NOT_ARMED);
     CHECK(!prog_supply_link_next(&l, &off, &v));
     read_page(LINK_PS_FITTED, 0u, 200u);
     CHECK(prog_supply_link_next(&l, &off, &v));
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
     read_page(LINK_PS_FITTED, 1u, 400u);
     CHECK(!prog_supply_link_next(&l, &off, &v));
     /* An unanswered read keeps what was read. */
@@ -200,7 +200,7 @@ TEST_CASE(the_panel_gives_its_word_when_a_read_finds_none)
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_OUTPUT);
     CHECK_EQ(v, 0u);
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_PANEL);
     CHECK_EQ(v, 1u);
@@ -226,7 +226,7 @@ TEST_CASE(the_operators_on_is_refused_where_it_cannot_land)
     read_flags(LINK_PS_FITTED, 800u);
     prog_supply_link_cut(&l);
     CHECK(!prog_supply_link_ask_on(&l));               /* an OFF owed */
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(&l, LINK_PS_OUTPUT, 0u, PROG_SUPPLY_LINK_ACK);
     CHECK(prog_supply_link_ask_on(&l));
     CHECK(!prog_supply_link_port(NULL));
     CHECK(!prog_supply_link_ask_on(NULL));
@@ -246,7 +246,7 @@ TEST_CASE(an_on_is_written_once_after_any_off)
     CHECK_EQ(off, LINK_PS_OUTPUT);
     CHECK_EQ(v, 1u);
     /* Taken: the output reads on before the next read, the outcome once. */
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
     CHECK(!prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(prog_supply_link_state(&l), PROG_SUPPLY_ON);
     CHECK_EQ(prog_supply_link_take_on_result(&l), PROG_SUPPLY_LINK_ACK);
@@ -257,19 +257,22 @@ TEST_CASE(an_on_is_written_once_after_any_off)
     /* Refused without a heartbeat: NOT_ARMED, kept for the alert, not
      * written again. */
     CHECK(prog_supply_link_ask_on(&l));
-    prog_supply_link_written(&l, (int)LINK_NACK_NOT_ARMED);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    prog_supply_link_written(&l, off, v, (int)LINK_NACK_NOT_ARMED);
     CHECK(!prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(prog_supply_link_state(&l), PROG_SUPPLY_OFF);
     CHECK_EQ(prog_supply_link_take_on_result(&l), (int)LINK_NACK_NOT_ARMED);
     /* Unanswered: dropped, not written again. */
     CHECK(prog_supply_link_ask_on(&l));
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_NO_ANSWER);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_NO_ANSWER);
     CHECK(!prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(prog_supply_link_take_on_result(&l), PROG_SUPPLY_LINK_NO_ANSWER);
     CHECK_EQ(prog_supply_link_state(&l), PROG_SUPPLY_OFF);
     /* A port took it between the ask and the write: BAD_VALUE. */
     CHECK(prog_supply_link_ask_on(&l));
-    prog_supply_link_written(&l, (int)LINK_NACK_BAD_VALUE);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    prog_supply_link_written(&l, off, v, (int)LINK_NACK_BAD_VALUE);
     CHECK_EQ(prog_supply_link_take_on_result(&l), (int)LINK_NACK_BAD_VALUE);
 }
 
@@ -285,13 +288,13 @@ TEST_CASE(an_error_or_an_off_drops_an_on_not_yet_written)
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_OUTPUT);
     CHECK_EQ(v, 0u);
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_NO_ANSWER);  /* again */
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_NO_ANSWER);  /* again */
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(v, 0u);
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_PANEL);            /* the word, no ON */
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
     CHECK(!prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(prog_supply_link_take_on_result(&l), PROG_SUPPLY_LINK_NONE);
     /* The ON first, then PANEL: the operator's ON goes before the word. */
@@ -305,12 +308,54 @@ TEST_CASE(an_error_or_an_off_drops_an_on_not_yet_written)
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_OUTPUT);
     CHECK_EQ(v, 0u);
-    prog_supply_link_written(&l, PROG_SUPPLY_LINK_ACK);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_PANEL);
     /* An error after an ON taken: the OFF is owed whatever is read. */
     read_flags(LINK_PS_FITTED | LINK_PS_ON, 400u);
     prog_supply_link_cut(&l);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_OUTPUT);
+    CHECK_EQ(v, 0u);
+}
+
+TEST_CASE(an_error_during_the_on_exchange_keeps_its_off)
+{
+    uint8_t off = 9u;
+    uint16_t v = 9u;
+    prog_supply_link_init(&l, true);
+    read_page(LINK_PS_FITTED, 1u, 0u);       /* PANEL written already */
+    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_OUTPUT);
+    CHECK_EQ(v, 1u);
+    /* An error found while the ON is on the wire (the pump runs inside
+     * the exchange's wait): its OFF is owed. */
+    prog_supply_link_cut(&l);
+    /* The ON's ACK arrives: taken as the ON, not as the OFF. */
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
+    CHECK_EQ(prog_supply_link_take_on_result(&l), PROG_SUPPLY_LINK_ACK);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_OUTPUT);
+    CHECK_EQ(v, 0u);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
+    CHECK(!prog_supply_link_next(&l, &off, &v));
+    /* The same with the ON unanswered. */
+    read_page(LINK_PS_FITTED, 1u, 200u);
+    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    prog_supply_link_cut(&l);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_NO_ANSWER);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_OUTPUT);
+    CHECK_EQ(v, 0u);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
+    /* And an error during PANEL's write: the OFF stays owed as well. */
+    read_page(LINK_PS_FITTED, 0u, 400u);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(off, LINK_PS_PANEL);
+    prog_supply_link_cut(&l);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_OUTPUT);
     CHECK_EQ(v, 0u);
@@ -328,5 +373,6 @@ int main(void)
     RUN(the_operators_on_is_refused_where_it_cannot_land);
     RUN(an_on_is_written_once_after_any_off);
     RUN(an_error_or_an_off_drops_an_on_not_yet_written);
+    RUN(an_error_during_the_on_exchange_keeps_its_off);
     return test_summary("prog_supply_link");
 }

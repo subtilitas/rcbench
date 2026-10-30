@@ -245,6 +245,9 @@ static void send_cmd(const panel_cmd_t *in)
         /* The supply's OFF, for the same reason as the disarm. */
         atomic_fetch_add(&s_supply_offs, 1u);
         atomic_store(&s_supply_off_request, true);
+    } else if (pc->kind == PANEL_CMD_PROG5V && pc->prog5v.off) {
+        /* The ports' 5V's OFF likewise; counted by the caller. */
+        atomic_store(&s_prog5v_off_request, true);
     }
 
     if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {

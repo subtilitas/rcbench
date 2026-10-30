@@ -289,7 +289,9 @@ mini's OUTPUT ON:
   ([Carrier, Power](Carrier.md#power)).
 - An ON taken across lost touch events is an error: SAFE, the 5V off.
 - An error, PROG 5V OFF and leaving the screen whose box switched it on
-  write OFF. An error drops an ON not yet written.
+  write OFF, the last also while the ON is still on its way. An error
+  drops an ON not yet written. The OFF is a flag beside its queue entry,
+  as the PD mini's OUTPUT OFF is, so a full queue does not drop it.
 - While a port holds the 5V the box takes no press.
 
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,

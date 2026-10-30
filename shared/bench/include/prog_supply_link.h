@@ -126,15 +126,21 @@ bool prog_supply_link_next(const prog_supply_link_t *l, uint8_t *off,
                            uint16_t *v);
 
 /**
- * @brief How that write went.  For an OFF or PANEL: PROG_SUPPLY_LINK_ACK or
- *        a NACK reason ends it until the next read,
+ * @brief How that write went, named by the register and value written
+ *        (prog_supply_link_next()'s), so a cut asked during the exchange
+ *        is never taken for it.  For an OFF or PANEL: PROG_SUPPLY_LINK_ACK
+ *        or a NACK reason ends it until the next read,
  *        PROG_SUPPLY_LINK_NO_ANSWER keeps it owed.  For an ON every outcome
  *        ends it and is kept for prog_supply_link_take_on_result(); an ACK
- *        reads the output on until the next read says otherwise.
+ *        reads the output on until the next read says otherwise, and an OFF
+ *        cut during the exchange stays owed.
  * @param l      the state
+ * @param off    the register written
+ * @param v      the value written
  * @param result the outcome
  */
-void prog_supply_link_written(prog_supply_link_t *l, int result);
+void prog_supply_link_written(prog_supply_link_t *l, uint8_t off, uint16_t v,
+                              int result);
 
 /**
  * @brief Whether a read is due: the page served, and none yet or

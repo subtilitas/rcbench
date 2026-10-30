@@ -991,6 +991,10 @@ extern atomic_uint s_supply_ack;
 /** @brief The ports' 5V asked off from the PROG 5V box, counted; render
  *         side writes, control task reads. */
 extern atomic_uint s_prog5v_offs;
+/** @brief A PROG 5V OFF asked, whether or not its queue entry survives a
+ *         full queue; render side sets, control task takes
+ *         (prog5v_off_service()). */
+extern atomic_bool s_prog5v_off_request;
 /** @brief The PROG 5V ONs applied, numbered; control task writes, see
  *         prog_supply_watch_service(). */
 extern atomic_uint s_psup_gen;
@@ -1077,6 +1081,13 @@ static inline void supply_follow_stops(void)
     }
 }
 
+/**
+ * @brief A PROG 5V OFF asked (s_prog5v_off_request), taken before the
+ *        queue's drain: the OFF owed on the PROG_SUPPLY page.  Control
+ *        task.
+ */
+void prog5v_off_service(void);
+
 /*
  * An OFF asked for, whether or not its queue entry survived; applying it
  * twice costs nothing.  Called before the drain, so an OFF is never left
@@ -1087,6 +1098,7 @@ static inline void supply_service(void)
     if (atomic_exchange(&s_supply_off_request, false)) {
         supply_switch(false);
     }
+    prog5v_off_service();
     supply_follow_set();
 }
 

@@ -126,6 +126,27 @@ TEST_CASE(a_hold_let_go_or_slid_off_asks_nothing)
     prog5v_box_cancel(&b);
     tick_n(8, 0.25f);
     CHECK(!prog5v_box_poll_cmd(NULL));
+    /* A hold completed in one frame, a touch loss found in the next before
+     * the poll: the ON goes with the gesture. */
+    CHECK(prog5v_box_press(&b));
+    tick_n(8, 0.25f);
+    prog5v_box_cancel(&b);
+    CHECK(!prog5v_box_poll_cmd(NULL));
+    /* An OFF asked stays through a cancel; another screen's ON stays. */
+    fresh(ST_ON);
+    CHECK(prog5v_box_press(&b));
+    prog5v_box_release(&b, bx(), by_(), true);
+    prog5v_box_cancel(&b);
+    CHECK(asked_off());
+    fresh(ST_OFF);
+    prog5v_box_t other;
+    prog5v_box_init(&other, BOX_R, PROG5V_BY_SUPPLY);
+    CHECK(prog5v_box_press(&other));
+    for (int i = 0; i < 8; ++i) {
+        prog5v_box_tick(&other, 0.25f);
+    }
+    prog5v_box_cancel(&b);
+    CHECK(asked_on());
 }
 
 TEST_CASE(off_is_a_tap_that_lifts_on_the_button)
@@ -224,6 +245,14 @@ TEST_CASE(leaving_the_screen_that_switched_it_on_switches_it_off)
     /* Once left, a second leave asks nothing. */
     prog5v_box_left(PROG5V_BY_SERVO);
     CHECK(!prog5v_box_poll_cmd(NULL));
+    /* An ON collected and on its way, still read OFF: left, it is asked
+     * off all the same. */
+    fresh(ST_OFF);
+    CHECK(prog5v_box_press(&b));
+    tick_n(8, 0.25f);
+    CHECK(asked_on());
+    prog5v_box_left(PROG5V_BY_SERVO);
+    CHECK(asked_off());
     /* An ON asked and not yet read is left as well. */
     fresh(ST_OFF);
     prog5v_box_init(&b, BOX_R, PROG5V_BY_SUPPLY);

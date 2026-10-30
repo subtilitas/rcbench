@@ -77,13 +77,17 @@ bool prog_supply_link_next(const prog_supply_link_t *l, uint8_t *off,
     return true;
 }
 
-void prog_supply_link_written(prog_supply_link_t *l, int result)
+void prog_supply_link_written(prog_supply_link_t *l, uint8_t off, uint16_t v,
+                              int result)
 {
     if (l == NULL) {
         return;
     }
-    if (!l->owed && l->on_owed) {
-        /* The ON, written once whatever became of it. */
+    const bool output = (off == LINK_PS_OUTPUT);
+    if (output && v != 0u) {
+        /* The ON, written once whatever became of it.  A cut asked while
+         * it was on the wire has dropped on_owed and set owed: that OFF
+         * is still to go. */
         l->on_owed   = false;
         l->on_result = result;
         if (result == PROG_SUPPLY_LINK_ACK) {
@@ -94,7 +98,7 @@ void prog_supply_link_written(prog_supply_link_t *l, int result)
     if (result == PROG_SUPPLY_LINK_NO_ANSWER) {
         return;
     }
-    if (l->owed) {
+    if (output) {
         l->owed = false;
     } else {
         /* Answered: done until a read says 0 again. */

@@ -447,6 +447,14 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
     }
 }
 
+void prog5v_off_service(void)
+{
+    if (atomic_exchange(&s_prog5v_off_request, false)) {
+        prog_supply_link_ask_off(&s_psup_link);
+        arm_watch_end(&s_psup_watch);
+    }
+}
+
 void prog_supply_watch_service(void)
 {
     if (prog_supply_link_state(&s_psup_link) != PROG_SUPPLY_ON
@@ -914,7 +922,7 @@ void prog_supply_service(void)
             result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
                                                 : PROG_SUPPLY_LINK_ACK;
         }
-        prog_supply_link_written(&s_psup_link, result);
+        prog_supply_link_written(&s_psup_link, off, v, result);
         /* An ON of the PROG 5V box the IOmcu did not take is said. */
         switch (prog_supply_link_take_on_result(&s_psup_link)) {
         case PROG_SUPPLY_LINK_NONE:

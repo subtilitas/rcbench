@@ -183,7 +183,8 @@ void prog5v_box_release(prog5v_box_t *b, int x, int y, bool tap);
 
 /**
  * @brief Every gesture dropped (a touch loss): a hold not complete asks
- *        nothing.
+ *        nothing, and an ON this box's hold asked that no poll has
+ *        collected yet is withdrawn; an OFF asked stays.
  * @param b the box
  */
 void prog5v_box_cancel(prog5v_box_t *b);
@@ -215,8 +216,8 @@ const char *prog5v_box_text(int line, char *buf, size_t n);
 void prog5v_box_render(const prog5v_box_t *b, gfx_canvas_t *c);
 
 /**
- * @brief The screen @p by was left: an OFF when it switched the supply on
- *        and no port holds it.
+ * @brief The screen @p by was left: an OFF when its box switched the
+ *        supply on, read ON yet or still on its way, and no port holds it.
  * @param by the screen
  */
 void prog5v_box_left(prog5v_by_t by);

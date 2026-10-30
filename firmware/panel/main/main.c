@@ -394,6 +394,8 @@ atomic_uint s_supply_ack;
 /** @brief The PROG 5V box's OFFs, counted as s_supply_offs counts the
  *         supply's (panel.h). */
 atomic_uint s_prog5v_offs;
+/** @brief A PROG 5V OFF asked, as s_supply_off_request is (panel.h). */
+atomic_bool s_prog5v_off_request;
 /** @brief The PROG 5V ONs applied, numbered (panel.h). */
 atomic_uint s_psup_gen;
 /** @brief The newest PROG 5V ON a whole frame has seen on (panel.h). */

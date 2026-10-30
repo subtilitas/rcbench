@@ -320,8 +320,10 @@ wie es AUSGANG EIN des PD mini beurteilt:
 - Ein ON über verlorene Touch-Ereignisse hinweg ist ein Fehler: SAFE, die
   5V aus.
 - Ein Fehler, PROG 5V AUS und das Verlassen der Ansicht, deren Feld sie
-  eingeschaltet hat, schreiben OFF. Ein Fehler verwirft ein noch nicht
-  geschriebenes ON.
+  eingeschaltet hat, schreiben OFF, das Letzte auch, solange das ON noch
+  unterwegs ist. Ein Fehler verwirft ein noch nicht geschriebenes ON. Das
+  OFF ist ein Flag neben seinem Eintrag in der Warteschlange, wie AUSGANG
+  AUS des PD mini, also verwirft eine volle Warteschlange es nicht.
 - Solange ein Port die 5V hält, nimmt das Feld keinen Druck an.
 
 SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,
