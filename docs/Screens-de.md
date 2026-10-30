@@ -164,12 +164,22 @@ Tastenfelder, Tastaturen und Fragen zeigen ebenfalls kein "?".
 | Eintrag | seine Nummer in einem Abzeichen von 28px, der Name des Bedienelements in der Akzentfarbe, dann was es tut, in der Schrift 10 x 20px, 41 Zeichen pro Zeile, höchstens 3 Zeilen |
 | Einträge pro Seite | höchstens 5 |
 | Web-Zeile | `Mehr: subtilitas.github.io/rcbench/help/de/`, auf Englisch die Adresse ohne `de/` |
-| Schaltflächen | VORIGE, NÄCHSTE und SCHLIESSEN, 140 x 48px, 10px auseinander, y 496 bis 544 |
+| VORIGE und NÄCHSTE | 124 x 48px, 8px auseinander, im Band von x 8 bis 264, y 6 bis 54, an der Stelle des Home-Tags, auf jeder Seite dieselbe |
+| SCHLIESSEN | 140 x 48px, mittig am unteren Rand des Docks, y 496 bis 544 |
 | Marken | ein Abzeichen von 28px mit der Nummer des Eintrags 4px innerhalb der oberen linken Ecke des Bedienelements, oder 4px links von einem Bedienelement unter 56px Höhe oder Breite; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
 
 Ein Bedienelement im Band hat sein Abzeichen unter dem Band, unter seinem
 linken Ende. Das Dock endet 4px über dem Alert-Band, ein Hinweis verdeckt
 also nichts davon.
+
+VORIGE und NÄCHSTE bleiben an einer Stelle, während das Dock die Seite
+wechselt; ein zweiter Tipp an die Stelle des ersten blättert also weiter.
+Das Band ist der einzige Ort, den keine Seite markiert: im Menü füllen die
+Kacheln den Bildschirm, und jede Kachel ist auf einer der Seiten markiert.
+Der Home-Tag, den sie verdecken, tut nichts, solange die Hilfe offen ist,
+und die Chips des Bands beginnen frühestens bei x 270; die zwei
+Schaltflächen verdecken also keinen Chip, kein "?" und kein STOP. Der
+Home-Tag kommt zurück, wenn die Hilfe schließt.
 
 - Ein Tipp auf "?" öffnet Seite 1. Ein Druck, der von "?" rutscht, öffnet
   nichts.
@@ -179,8 +189,7 @@ also nichts davon.
 - SCHLIESSEN schließt die Hilfe, ebenso ein Druck auf "?".
 - Ein Druck auf das Dock oder auf ein Abzeichen tut nichts.
 - Jeder andere Druck schließt die Hilfe und tut sonst nichts: auf der
-  lebenden Hälfte, auf dem Home-Tag, auf dem Band neben den Chips, auf dem
-  Alert-Band.
+  lebenden Hälfte, auf dem Band neben den Chips, auf dem Alert-Band.
 - Ein Druck auf STOP schließt die Hilfe und stoppt sofort. Ein Druck auf
   einen Chip schließt die Hilfe und öffnet beim Loslassen den Kasten des
   Chips.
@@ -254,6 +263,9 @@ Hinweises kommt, ersetzt ihn. Der Hinweis ist eine Zeile von höchstens
   Fingers und auf einem Bildschirm ohne Statusband.
 - Ein Loslassen bei 2s oder später folgt einem Halten, das gewirkt hat, und
   zeigt keinen Hinweis.
+- Ein Druck auf STOP löscht den Hinweis im selben Frame, ebenso ein
+  Fehlerbit, das am FEHLER-Chip neu erscheint, und ein Wechsel von ARMED nach
+  SAFE, auch durch einen Fehler. Ein Alert bleibt bei beidem stehen.
 - 2s HALTEN ZUM BESTÄTIGEN auf dem Busfehler-Bildschirm trägt keinen Hinweis:
   Dieser Bildschirm hat kein Band.
 
@@ -4720,6 +4732,25 @@ Meldungen gesagt, 60s.
 
 OVER-Bits, die der IOmcu von vor dem Link-Aufbau hält, auch die eines
 neu gestarteten IOmcu, sagt das erste Lesen mit ihrem Kanal.
+
+Ein Lesen von OVER mit einem gesetzten Bit ist eine Auslösung: der
+Prüfstand schaltet auf SAFE, und jeder Ausgang geht aus
+([Sicherheit](Safety-de.md#fehler)). Das Panel schreibt
+außerdem eine INFO-Zeile je Kanal auf die Konsole, Tag `rcbench`, auf
+Englisch:
+
+```
+I (123456) rcbench: INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: highest window read 0.153A
+```
+
+Der Messwert ist der höchste Strom der Fenster des Kanals, die das Panel
+seit dem vorigen Lesen von OVER auf SENSE_WIN_A oder SENSE_WIN_B gelesen
+hat, der Wert, an dem der IOmcu prüft, auf 0.001A. Ein Fenster, das nach
+dem letzten Lesen seiner Page geschlossen hat, ist nicht darin; der Wert
+kann also unter der Grenze liegen. `no window read` steht an seiner Stelle,
+wo das Panel keines gelesen hat. Ein Kanal, der darüber bleibt, schreibt
+seine Zeile bei jedem Lesen von OVER, alle 200ms, während das Band ihn
+einmal alle 30s sagt.
 
 Das Panel schreibt die Zuordnung in die Page SENSE_MAP des IOmcu
 (Protokoll 4.25), in einem Schreiben von 26 Registern: die bestückten
