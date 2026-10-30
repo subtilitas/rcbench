@@ -40,9 +40,16 @@ GPIO 12), not on the CAN bus.
 
 ### Panel
 
-The test runs at every start-up. It takes 1200ms, inside the splash and
-before the identity poll: a broken bus is then diagnosed as a broken bus
-rather than as an identity that never answered.
+The test runs at every start-up, inside the splash and before the identity
+poll: a broken bus is then diagnosed as a broken bus rather than as an
+identity that never answered.
+
+First the panel asks the IOmcu for its status, for up to 5000ms, and starts
+the test at the first answer. The IOmcu opens CAN after its supply boot-off,
+which takes up to 3500ms when the PD mini gets power at the same moment as
+the IOmcu. Without an answer in 5000ms the test runs anyway and reports the
+silent bus. The test itself takes 1200ms. `bus_err` counts the bus errors of
+the test only, not those of the wait.
 
 A verdict that is not `every probe came back intact` puts the panel on the
 [bus-fault screen](#the-bus-fault-screen) instead of the menu. Nothing has to
@@ -57,6 +64,7 @@ GPIO21; neither carries anything else. The controller's clock is
 the 40MHz crystal. It prints:
 
     I (…) can: 1000000 bit/s: brp 2, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
     I (…) rcbench:   round trip min 334 max 1356 us

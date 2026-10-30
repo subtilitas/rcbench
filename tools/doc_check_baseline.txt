@@ -1211,8 +1211,6 @@ firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t 
 firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.
-firmware/panel/main/selftest.c: file has no @file block
-firmware/panel/main/selftest.h: file has no @file block
 protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_CURRENT (macro definition) of file dshot_telem.c is not documented.
 protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_DEBUG1 (macro definition) of file dshot_telem.c is not documented.
 protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_DEBUG2 (macro definition) of file dshot_telem.c is not documented.
@@ -1747,9 +1745,7 @@ shared/bench/tone_link.c: warning: Member FRAME1_CFG (macro definition) of file 
 shared/bench/tone_link.c: warning: Member FRAME_N (macro definition) of file tone_link.c is not documented.
 shared/bench/tone_link.c: warning: Member RESTART_BEHIND (macro definition) of file tone_link.c is not documented.
 shared/bench/tone_link.c: warning: Member ST(reg) (macro definition) of file tone_link.c is not documented.
-shared/can/can_selftest.c: file has no @file block
 shared/can/can_timing.c: warning: Member sp_error(uint8_t tseg1, uint8_t tq, uint16_t target) (function) of file can_timing.c is not documented.
-shared/can/include/can_selftest.h: file has no @file block
 shared/can/include/can_selftest.h: warning: Compound can_remote_status_t is not documented.
 shared/can/include/can_selftest.h: warning: Compound can_selftest_t is not documented.
 shared/can/include/can_selftest.h: warning: Member rtt_max_us (variable) of struct can_selftest_t is not documented.
