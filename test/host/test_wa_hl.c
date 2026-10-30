@@ -298,7 +298,11 @@ TEST_CASE(the_whole_page_follows_the_dark_scheme)
                        "color:var(--pg-fg)") != NULL);
     CHECK(strstr(html, ".fm .vh{") != NULL);
     CHECK(strstr(html, "\nbackground:var(--h-bk,var(--pg-bg));"
-                       "color:var(--h-tx,var(--pg-fg))}") != NULL);
+                       "color:var(--h-tx,var(--pg-fg));") != NULL);
+    /* The text area paints its own background, so its scroll bar takes
+     * the same tokens, not the browser's light default. */
+    CHECK(strstr(html, "\nscrollbar-color:var(--pg-dim) "
+                       "var(--h-bk,var(--pg-bg))}") != NULL);
     /* The access code's page has the same tokens without the viewer. */
     const wa_page_info_t pi = { "rcbench-1A2B", "0.23.2", 0x7C0000u, false,
                                 NULL };

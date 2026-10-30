@@ -56,7 +56,8 @@ padding:8px 12px;border-bottom:1px solid var(--pg-ln)}
 .fm .vp{font-weight:bold;word-break:break-all;flex:1 1 12em}
 .fm .ro{color:var(--pg-dim)}
 .fm .scroll{flex:1;position:relative;overflow:auto;
-background:var(--h-bk,var(--pg-bg));color:var(--h-tx,var(--pg-fg))}
+background:var(--h-bk,var(--pg-bg));color:var(--h-tx,var(--pg-fg));
+scrollbar-color:var(--pg-dim) var(--h-bk,var(--pg-bg))}
 .fm .sizer{width:1px}
 .fm .text{position:absolute;left:0;top:0;margin:0;padding:0 8px;
 font:13px/20px ui-monospace,Menlo,Consolas,monospace;white-space:pre;

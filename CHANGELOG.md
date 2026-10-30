@@ -248,6 +248,9 @@ history is in git.
 
 ### Fixed
 
+- The file viewer of the Wi-Fi page draws its scroll bar in the page's
+  dim token on the viewer's background (`scrollbar-color`). In the
+  browser's dark scheme the bar was white on the dark text area.
 - `card.zip` reads each file in pieces of 16KiB at offsets that are
   multiples of 16KiB, into a buffer of PSRAM aligned for the card's DMA
   (direct memory access): one card transfer a piece. The headers before a
