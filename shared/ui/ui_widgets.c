@@ -11,11 +11,16 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* ui_text.h first: ui_theme.h defines UI_TEXT as a colour, the table's
+ * entry macro of the same name. */
+#include "ui_text.h"
 #include "ui_widgets.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "ui_screen.h"
 
 void ui_panel_header(gfx_canvas_t *c, gfx_rect_t r, const char *title,
                      gfx_color_t accent)
@@ -532,13 +537,14 @@ float ui_hold_credit(float dt_s)
     return (dt_s < 0.0f) ? 0.0f : dt_s;
 }
 
-void ui_hold_begin(ui_hold_t *h)
+void ui_hold_begin(ui_hold_t *h, int hint)
 {
     if (h == NULL) {
         return;
     }
     h->down = true;
     h->held_s = 0.0f;
+    h->hint = hint;
 }
 
 bool ui_hold_leave(ui_hold_t *h)
@@ -553,12 +559,20 @@ bool ui_hold_leave(ui_hold_t *h)
     return true;
 }
 
-bool ui_hold_end(ui_hold_t *h)
+bool ui_hold_end(ui_hold_t *h, const touch_event_t *up, gfx_rect_t rect)
 {
     if (h == NULL) {
         return false;
     }
     const bool fired = h->fired;
+    /* A press still on the control that lifted before it completed.  The
+     * band is the router's: a screen without one shows no alert, and an
+     * alert set there would show once the next screen has it. */
+    if (h->down && !fired && up != NULL && touch_event_is_tap_up(up)
+        && gfx_rect_contains(rect, up->point.x, up->point.y)
+        && ui_router_stop_live()) {
+        ui_router_set_alert(ui_tr((ui_text_id_t)h->hint));
+    }
     h->down = false;
     h->held_s = 0.0f;
     h->fired = false;

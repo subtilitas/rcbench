@@ -25,7 +25,7 @@
 #include "hitec_panel_int.h"
 
 void hpn_page_open(int kind, bool danger, const char *title,
-                   const char *apply)
+                   const char *apply, int hint)
 {
     hpn_close_editors();
     hp.page.open = true;
@@ -37,6 +37,7 @@ void hpn_page_open(int kind, bool danger, const char *title,
     hp.page.vtotal = 0;
     snprintf(hp.page.title, sizeof(hp.page.title), "%s", title);
     snprintf(hp.page.apply, sizeof(hp.page.apply), "%s", apply);
+    hp.page.hint = hint;
 }
 
 void hpn_page_add(unsigned level, const char *s)
@@ -50,7 +51,7 @@ void hpn_page_add(unsigned level, const char *s)
 
 void hpn_page_leave(void)
 {
-    hpn_page_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE));
+    hpn_page_open(W_LEAVE, false, TR(KP_LEAVE_TITLE),  TR(KP_HOLD_LEAVE), TX_HOLD_HINT_LEAVE);
     if (hitec_prog_series(&hp.prog) == (uint8_t)HITEC_CLASSIC) {
         hpn_page_add(HITEC_PROG_INFO, TR(HP_LEAVE_C));
     } else {
@@ -64,7 +65,7 @@ void hpn_page_release(void)
 {
     char line[HITEC_PANEL_LINE];
 
-    hpn_page_open(W_RELEASE, false, TR(HP_RELEASE), TR(HP_HOLD_RELEASE));
+    hpn_page_open(W_RELEASE, false, TR(HP_RELEASE),  TR(HP_HOLD_RELEASE), TX_HOLD_HINT_RELEASE);
     snprintf(line, sizeof(line), TR(HP_RELEASE_1),
              (unsigned)hitec_prog_port(&hp.prog) + 1u);
     hpn_page_add(HITEC_PROG_INFO, line);
@@ -268,7 +269,7 @@ void hpn_page_write(void)
     } else {
         snprintf(title, sizeof(title), TR(KP_WRITE_N), c);
     }
-    hpn_page_open(W_WRITE, true, title, TR(KP_HOLD_WRITE));
+    hpn_page_open(W_WRITE, true, title,  TR(KP_HOLD_WRITE), TX_HOLD_HINT_WRITE);
     /* The write gate has passed: a servo is read, so a draft stands. */
     if (to != NULL) {
         hpn_page_values(to, values_room(fixed));
@@ -293,7 +294,7 @@ void hpn_page_write(void)
 
 void hpn_page_enable(void)
 {
-    hpn_page_open(W_ENABLE, true, TR(KP_ENABLE_TITLE), TR(KP_HOLD_ENABLE));
+    hpn_page_open(W_ENABLE, true, TR(KP_ENABLE_TITLE),  TR(KP_HOLD_ENABLE), TX_HOLD_HINT_ENABLE);
     hpn_page_add(HITEC_PROG_DANGER, classic() ? TR(HP_ENABLE_C)
                                               : TR(HP_ENABLE_D));
     hpn_page_add(HITEC_PROG_INFO, TR(HP_ENABLE_2));
@@ -326,7 +327,7 @@ void hpn_page_soft(void)
     int32_t v = 0;
     const uint16_t rules = hitec_prog_pending(p, &id, &v);
 
-    hpn_page_open(W_SOFT, false, TR(KP_SOFT_TITLE), TR(SV_HOLD_TO_APPLY));
+    hpn_page_open(W_SOFT, false, TR(KP_SOFT_TITLE),  TR(SV_HOLD_TO_APPLY), TX_HOLD_HINT_APPLY);
     /* Opened for an edit that waits: a servo is read, so a draft stands. */
     if (draft != NULL) {
         hitec_image_t trial;
@@ -346,7 +347,7 @@ void hpn_page_repair(void)
 {
     const hitec_image_t *s = hitec_prog_servo(&hp.prog);
 
-    hpn_page_open(W_REPAIR, true, TR(HP_REPAIR), TR(HP_HOLD_REPAIR));
+    hpn_page_open(W_REPAIR, true, TR(HP_REPAIR),  TR(HP_HOLD_REPAIR), TX_HOLD_HINT_REPAIR);
     /* The write gate has passed: a servo is read. */
     if (s != NULL) {
         char line[HITEC_PANEL_LINE];
@@ -366,7 +367,7 @@ void hpn_page_restore(void)
 {
     hitec_image_t to;
 
-    hpn_page_open(W_RESTORE, true, TR(KP_RESTORE_TITLE), TR(KP_HOLD_RESTORE));
+    hpn_page_open(W_RESTORE, true, TR(KP_RESTORE_TITLE),  TR(KP_HOLD_RESTORE), TX_HOLD_HINT_RESTORE);
     hpn_page_add(HITEC_PROG_INFO, TR(KP_FROM_JOURNAL));
     /* The write gate has passed: a record of this servo stands. */
     if (hitec_prog_restore_image(&hp.prog, &to)) {

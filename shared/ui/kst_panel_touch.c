@@ -55,7 +55,7 @@ static void down(const touch_event_t *evt)
         if (gfx_rect_contains(kst_panel_apply_rect(), x, y)) {
             take(evt, P_APPLY, -1);
             k.warn.down = true;
-            ui_hold_begin(&k.warn.hold);
+            ui_hold_begin(&k.warn.hold, k.warn.hint);
         } else if (gfx_rect_contains(kst_panel_cancel_rect(), x, y)) {
             take(evt, P_CANCEL, -1);
         }
@@ -221,7 +221,7 @@ static void rest(const touch_event_t *evt)
             }
             return;
         }
-        (void)ui_hold_end(&k.warn.hold);
+        (void)ui_hold_end(&k.warn.hold, evt, kst_panel_apply_rect());
         k.warn.down = false;
         let_go();
         return;

@@ -54,7 +54,7 @@ static void down(const touch_event_t *evt)
         if (gfx_rect_contains(hitec_panel_apply_rect(), x, y)) {
             take(evt, P_APPLY, -1);
             hp.page.down = true;
-            ui_hold_begin(&hp.page.hold);
+            ui_hold_begin(&hp.page.hold, hp.page.hint);
         } else if (gfx_rect_contains(hitec_panel_cancel_rect(), x, y)) {
             take(evt, P_CANCEL, -1);
         }
@@ -184,7 +184,7 @@ static void rest(const touch_event_t *evt)
             }
             return;
         }
-        (void)ui_hold_end(&hp.page.hold);
+        (void)ui_hold_end(&hp.page.hold, evt, hitec_panel_apply_rect());
         hp.page.down = false;
         let_go();
         return;

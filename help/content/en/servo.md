@@ -138,7 +138,7 @@ The limit run finds where the installed servo binds at each end of its travel. I
 1. Tap SETTINGS on the card, then LIMIT RUN to choose SEARCH ONLY or SEARCH + PROGRAM.
 2. With TARGET on PROG PORT, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
 3. Tap the home tag to go back to the cards.
-4. Hold START LIMIT RUN for 2s while the bench is ARMED. A tap or a shorter hold starts nothing.
+4. Hold START LIMIT RUN for 2s while the bench is ARMED. A tap or a shorter hold starts nothing and shows `Hold 2s to start the limit run.` in the alert band.
 5. TEST stays shown. The box on LIVE's left card shows the phase, the side and the pulse, and the output it drives.
 
 The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. The TARGET row stays in sight as well.

@@ -15,6 +15,7 @@
 
 #include "gfx.h"
 #include "ui_icons.h"
+#include "touch_types.h"
 #include "ui_theme.h"
 
 #ifdef __cplusplus
@@ -418,13 +419,21 @@ typedef struct {
     bool  fired;       /**< the hold completed; it does not repeat     */
     int   flash_ms;    /**< ms of the flash still to run               */
     bool  flash_new;   /**< the flash started and no step has run yet  */
+    int   hint;        /**< ui_text_id_t of the band's hint for a release
+                            before UI_HOLD_S                              */
 } ui_hold_t;
 
 /** Nothing held, nothing fired, nothing flashing. */
 void ui_hold_reset(ui_hold_t *h);
 
-/** A press landed on the control: the hold starts from zero. */
-void ui_hold_begin(ui_hold_t *h);
+/**
+ * @brief A press landed on the control: the hold starts from zero.
+ * @param h     The hold.
+ * @param hint  The ui_text_id_t of the text the alert band shows when the press lifts before
+ *              UI_HOLD_S (a HOLD_HINT_ entry of ui_text.def): what the
+ *              hold does.
+ */
+void ui_hold_begin(ui_hold_t *h, int hint);
 
 /**
  * The press left the control, so the gesture is over: contact with the
@@ -434,9 +443,24 @@ void ui_hold_begin(ui_hold_t *h);
  */
 bool ui_hold_leave(ui_hold_t *h);
 
-/** The press lifted. Returns whether it was the press that fired, which the
- *  release consumes: a release that fired is not also a press. */
-bool ui_hold_end(ui_hold_t *h);
+/**
+ * @brief The press lifted, or was dropped.
+ *
+ * A release before UI_HOLD_S shows the hold's hint (ui_hold_begin()) on the
+ * alert band for UI_ALERT_SHOW_S, and sends nothing.  Only a release the
+ * finger made is one: a press that left the control (ui_hold_leave()), a
+ * hold the bench ended (ui_hold_left()), a release that is not a tap
+ * (TOUCH_FLAG_NO_TAP: a lost touch, a contact that reached the band) and a
+ * press dropped without a release show nothing, nor does a release off the
+ * control.  No hint shows on a screen without the band.
+ * @param h     The hold.
+ * @param up    The UP event of the contact that began the press, or NULL for
+ *              a press dropped without one.
+ * @param rect  The control, in the coordinates of @p up.
+ * @return Whether it was the press that fired, which the release consumes:
+ *         a release that fired is not also a press.
+ */
+bool ui_hold_end(ui_hold_t *h, const touch_event_t *up, gfx_rect_t rect);
 
 /**
  * What one frame is worth to a hold: @p dt_s, capped at

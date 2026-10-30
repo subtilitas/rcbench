@@ -159,6 +159,41 @@ the bench end above it.
   until restart and has no `x`: no touch is there to tap with. A later alert
   shows over it; once that one clears, it shows again.
 
+## Hold buttons
+
+A hold button acts after 2s of contact (`UI_HOLD_S`). A release before 2s
+sends nothing and shows the button's hint in the alert band, which clears it
+30s later like any alert. The hint is one line of 97 characters at most.
+
+- The hint shows only for a release the finger made on the button. It does
+  not show when the finger left the button first (the hold is abandoned),
+  when the touch was lost or the release is not a tap (`TOUCH_FLAG_NO_TAP`),
+  for a second finger's contact, or on a screen without the status band.
+- A release at 2s or later follows a hold that has acted and shows no hint.
+- HOLD 2s TO ACKNOWLEDGE on the bus-fault screen carries no hint: that screen
+  has no band.
+
+| Button | Hint |
+| --- | --- |
+| ARM on MOTOR & ESC and SERVO | `Hold 2s to switch to ARMED.` |
+| OUTPUT ON on SUPPLY and in SERVO's supply box | `Hold 2s to switch the output on.` |
+| APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
+| START TEST | `Hold 2s to start the test.` |
+| START LIMIT RUN | `Hold 2s to start the limit run.` |
+| HOLD 2s TO ENABLE | `Hold 2s to enable.` |
+| HOLD 2s TO WRITE | `Hold 2s to write.` |
+| HOLD 2s TO RESTORE | `Hold 2s to restore.` |
+| HOLD 2s TO CONTINUE | `Hold 2s to continue.` |
+| HOLD 2s TO LEAVE | `Hold 2s to leave.` |
+| HOLD 2s TO LOAD | `Hold 2s to load.` |
+| HOLD 2s TO RELEASE | `Hold 2s to release the port.` |
+| HOLD 2s TO REPAIR | `Hold 2s to repair.` |
+| HOLD 2s TO RUN on a stick run's warning | `Hold 2s to run.` |
+| HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
+| HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
+| HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
+| HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
+
 ## Menu marks
 
 ![The feature menu](img/overview.png)

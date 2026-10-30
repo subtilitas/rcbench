@@ -84,6 +84,15 @@ A fault the open screen does not show appears in a red band, 44px high, across t
 - DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN end above the band: a press on one is its own, and the alert stays. ARM and OUTPUT ON under the band are not pressed.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays until restart and has no `x`.
 
+## Hold buttons
+
+A hold button acts after 2s of contact. ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and every button labelled `HOLD 2s TO ...` are hold buttons. A release before 2s sends nothing and shows the button's hint in the alert band for 30s, for example `Hold 2s to switch to ARMED.`
+
+- The hint shows only for a release the finger made on the button. It does not show when the finger slid off the button first, when the touch was lost, for a second finger's contact, or on a screen without the status band.
+- A release at 2s or later has acted and shows no hint.
+- The hint is an alert: a tap on it clears it, and a new alert replaces it.
+- The hints, one per action: `Hold 2s to switch to ARMED.`, `switch the output on`, `apply`, `start the test`, `start the limit run`, `enable`, `write`, `restore`, `continue`, `leave`, `load`, `release the port`, `repair`, `run`, `install`, `download and install`, `update the IOmcu` and `clear all pin assignments`, each after `Hold 2s to`.
+
 ## Touch near the band
 
 - A touch that comes down on the band stays the band's. Sliding it into the screen moves nothing there.
