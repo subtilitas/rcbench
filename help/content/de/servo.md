@@ -96,6 +96,10 @@ Die Zeile SOLL trägt die beiden Sollwerte der Seite SUPPLY und ihren Ausgangssc
 - AUSGANG EIN ist ein Halten von 2s, AUSGANG AUS ein Tipp.
 - Das Verlassen von SERVO schaltet einen Ausgang ab, den SERVO eingeschaltet hat.
 
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) steht das Feld PROG 5V unter PD MINI anstelle der Grafik. Es schaltet die eigenen 5V der Programmierports, GPIO 21: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED. Seine zweite Zeile ist das letzte Fenster des INA3221 an den 5V (0x40 CH3), `5.02V  0.120A`, oder `BELEGT VON PROG-PORT n`, solange ein Programmer einen Port hält; die Taste nimmt dann keinen Druck an. Das Verlassen von SERVO schaltet 5V ab, die das Feld hier eingeschaltet hat, außer ein Port hält sie. SUPPLY zeigt dasselbe Feld.
+
+![SERVO auf dem Carrier](view:servo-rbmod)
+
 ![NUR HV-SERVOS](view:servo-hv)
 
 Standardservos sind für 4,8 bis 6,0V ausgelegt. Eine Spannung, die von 6,0V oder darunter auf über 6,0V steigt, öffnet NUR HV-SERVOS. Die Spannung gilt, nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde; ABBRECHEN verwirft sie. AUSGANG EIN mit einem Sollwert über 6,0V öffnet dieselbe Warnung.

@@ -73,6 +73,7 @@
 #include "logview_spots.h"
 #include "motor_spots.h"
 #include "ui_band.h"
+#include "prog5v_box.h"
 #include "ui_board.h"
 #include "ui_cats.h"
 #include "ui_keypad.h"
@@ -3153,7 +3154,9 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        GP13.  setup-rbmod: the hub with LAYOUT in PICK A PIN's place.
  *        setup-rbmod-iface: INTERFACES with its pins soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
- *        SUPPLY with the PROG PORTS 5V line.  setup-sensors-rbmod:
+ *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
+ *        servo-rbmod: SERVO's output card with the box.  servo-kst-rbmod:
+ *        the KST programmer, the box held by PROG PORT 1.  setup-sensors-rbmod:
  *        SENSORS with 0x40 soldered and its channels on the rails.
  * @param id   The screen of the shot.
  * @param view The golden's name.
@@ -3176,8 +3179,18 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
     outbind_set_proto(&b, proto_named("DSHOT300"));
     (void)outbind_toggle(&b, outbind_index_of(brd, 1u));
     outputs_screen_set_binding(&b);
-    /* SUPPLY names the ports' own 5V, off between sessions. */
+    /* SUPPLY names the ports' own 5V, off between sessions, and the PROG
+     * 5V box shows it with 0x40 CH3's reading; on the KST programmer a
+     * session on PROG PORT 1 holds it on. */
     supply_screen_set_prog_5v((uint8_t)PROG_SUPPLY_OFF, 21u);
+    if (strcmp(view, "servo-kst-rbmod") == 0) {
+        prog5v_box_publish((uint8_t)PROG_SUPPLY_ON, 21u, 0u);
+        prog5v_box_reading(true, 5018u, 86);
+    } else {
+        prog5v_box_publish((uint8_t)PROG_SUPPLY_OFF, 21u,
+                           (uint8_t)PROG5V_HELD_NONE);
+        prog5v_box_reading(true, 2u, 0);
+    }
     if (id != SCREEN_OUTPUTS) {
         return false;
     }

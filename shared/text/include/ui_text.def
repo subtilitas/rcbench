@@ -1577,6 +1577,23 @@ UI_TEXT(SUP_PROG5V_OFF, 0,
 UI_TEXT(SUP_PROG5V_UNKNOWN, 11,
     "NOT READ",
     "UNBEKANNT")
+/* The PROG 5V box (prog5v_box.h): its switch, and the line while a
+ * programming port holds the supply. */
+UI_TEXT(P5_ON, 13,
+    "PROG 5V ON",
+    "PROG 5V EIN")
+UI_TEXT(P5_OFF, 13,
+    "PROG 5V OFF",
+    "PROG 5V AUS")
+UI_TEXT(P5_HELD, 27,
+    "HELD BY PROG PORT %u",
+    "BELEGT VON PROG-PORT %u")
+UI_TEXT(P5_LOCKED, 94,
+    "PROG ports 5V: held by a programming port, or not read.",
+    "PROG-Ports 5V: von einem Programmierport belegt oder nicht gelesen.")
+UI_TEXT(P5_HELD_SOME, 27,
+    "HELD BY A PROG PORT",
+    "BELEGT VON EINEM PROG-PORT")
 UI_TEXT(MO_RESET_PEAKS, 0,
     "RESET PEAKS",
     "SPITZENWERTE ZURÜCKSETZEN")
@@ -3757,6 +3774,18 @@ UI_TEXT(ALERT_PDMINI_OLD, 94,
 UI_TEXT(ALERT_PDMINI_WIRING, 94,
     "PD mini wiring changed in SETUP. Output off.",
     "PD-mini-Anschlüsse in SETUP geändert. Ausgang aus.")
+UI_TEXT(ALERT_P5_NO_BEAT, 94,
+    "PROG ports 5V not switched on: the IOmcu has no heartbeat.",
+    "PROG-Ports 5V nicht eingeschaltet: der IOmcu hat keinen Heartbeat.")
+UI_TEXT(ALERT_P5_HELD, 94,
+    "PROG ports 5V not switched on: a programming port holds it.",
+    "PROG-Ports 5V nicht eingeschaltet: ein Programmierport belegt sie.")
+UI_TEXT(ALERT_P5_NO_ANSWER, 94,
+    "PROG ports 5V ON not answered. Check the link.",
+    "PROG-Ports 5V EIN nicht beantwortet. Verbindung prüfen.")
+UI_TEXT(ALERT_P5_TOUCH, 94,
+    "Touch signal lost while switching on. PROG ports 5V off.",
+    "Touch-Signal beim Einschalten verloren. PROG-Ports 5V aus.")
 UI_TEXT(ALERT_SUPPLY_CHANGED, 94,
     "Supply changed in SETUP. Output off.",
     "Netzteil in SETUP geändert. Ausgang aus.")
@@ -3996,6 +4025,9 @@ UI_TEXT(HOLD_HINT_ARM, 94,
 UI_TEXT(HOLD_HINT_OUTPUT_ON, 94,
     "Hold 2s to switch the output on.",
     "Halte 2s, um den Ausgang einzuschalten.")
+UI_TEXT(HOLD_HINT_PROG5V, 94,
+    "Hold 2s to switch the programming ports' 5V on.",
+    "Halte 2s, um die 5V der Programmierports einzuschalten.")
 UI_TEXT(HOLD_HINT_APPLY, 94,
     "Hold 2s to apply.",
     "Halte 2s, um zu übernehmen.")

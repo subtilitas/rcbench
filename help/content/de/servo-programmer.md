@@ -55,6 +55,10 @@ WEITERES stellt, solange der Tester den Port hat, was VERBINDEN anwendet:
 
 Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Netzteils dem Port: Die Zeile SOLL und der Bildschirm SUPPLY nehmen keine Änderung und kein EIN an. AUSGANG AUS und STOP wirken. Ohne PD mini werden Spannung und Stromgrenze gespeichert und nicht angewendet. Wieder in PWM kehren die Sollwerte von vor der Sitzung zurück, sobald der Ausgang aus ist, beim nächsten AUS, wenn die Sitzung ihn eingeschaltet gelassen hat; ein zwischendurch geänderter Sollwert bleibt.
 
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) laufen die Programmierports an eigenen 5V, geschaltet über GPIO 21, nicht am PD mini; WEITERES zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21`. Die Sitzung schaltet die 5V dort, wo die Tabelle unten den Ausgang des PD mini schaltet. Das Feld PROG 5V unter PD MINI zeigt dann `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Ohne Sitzung schaltet das Feld die 5V von Hand: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp.
+
+![Der KST-Programmer hält die 5V](view:servo-kst-rbmod)
+
 ## Der Versorgungszyklus
 
 Ein KST- oder Chaservo-Servo tritt nur aus einem Einschalten in den Programmiermodus ein und handelt nach einem geschriebenen Wert erst ab seinem nächsten Einschalten: ein Chaservo am Prüfstand überging VERBINDEN bei eingeschalteter Versorgung und folgte nach einem Schreiben keinem PWM, bis seine Versorgung aus und wieder an war.

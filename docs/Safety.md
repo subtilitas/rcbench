@@ -253,7 +253,8 @@ step cut by a stop or a lost link, which end the session themselves.
 On the [rbmod carrier](Carrier.md#power) the programming ports run from
 the 5V buck M7, switched by GPIO 21 (link 4.32, the PROG_SUPPLY page). The
 PD mini feeds the servo rails only. The KST and Hitec programmers switch
-the 5V on and off for a session; the panel offers no key for it. The
+the 5V on and off for a session, and the PROG 5V box on SERVO and SUPPLY
+switches it by hand ([Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box)). The
 programmers take no reading of the PD mini on the carrier: its set point
 neither refuses a CONNECT under 4.8V nor sets the voltage of a power
 cycle, and the SUPPLY screen's limits bound the servo rails only, not a
@@ -278,14 +279,15 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   its programmers never get the 5V.
 - A firmware install, an IOmcu update, a write to the panel's flash and
   the panel's Wi-Fi wait while the 5V is on, not read since the
-  link came up or since an unanswered read, or held by a programmer's
-  port, as they wait for the PD mini's output
+  link came up or since an unanswered read, held by a port, or while an
+  ON or OFF is owed, as they wait for the PD mini's output
   (`prog_supply_link_live()`).
 
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
 or `NOT READ` when the last read went unanswered. The core is
 `shared/outputs/prog_supply.c` under `test_prog_supply`; the panel's end
-is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`.
+is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`, the
+box `shared/ui/prog5v_box.c` under `test_prog5v_box`.
 
 Current limitations:
 

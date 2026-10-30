@@ -125,7 +125,7 @@ is taken in a gap ahead of the save that needs it.
 | CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test | built |
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
-| Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_prog_supply`, `test_prog_supply_link`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's error sites in `panel_supply.c`, `panel_limit.c`, `panel_log.c` and `panel_services.c` apply the rule through `shared/safety/error_sites.c` and `kst_link_faults()`, host-tested in `test_error_sites` with each finder: DISARM for an ARMED bench or one on its way, the supply off and the OFF written to an IOmcu of 4.31, a PD mini a port holds left to the port by an older IOmcu through every error but the panel's trip, the module's protection and a sagging input (`error_sites_keeps()`; the hold is the SUPPLY page's `LINK_SP_PORT` as last read and a session with a port, `supply_link_port_holds()`, also in `test_supply_keep`, with a port that takes or lets go of the supply between two reads; a session keeps the panel's ON and set points off the PD mini only on a board whose ports run from it, `supply_link_session_blocks()` in `test_supply_keep` and the SUPPLY screen's lock in `test_supply_screen_home`; an ON the page refuses under a port's ON through `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a port, a reading fault the port keeps acted on once while it stands, a failed final commit or close of the run log or the automatic test's CSV counted once a run (`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line calls into it in those files are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
+| Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_prog_supply`, `test_prog_supply_link`, `test_prog5v_box`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's error sites in `panel_supply.c`, `panel_limit.c`, `panel_log.c` and `panel_services.c` apply the rule through `shared/safety/error_sites.c` and `kst_link_faults()`, host-tested in `test_error_sites` with each finder: DISARM for an ARMED bench or one on its way, the supply off and the OFF written to an IOmcu of 4.31, a PD mini a port holds left to the port by an older IOmcu through every error but the panel's trip, the module's protection and a sagging input (`error_sites_keeps()`; the hold is the SUPPLY page's `LINK_SP_PORT` as last read and a session with a port, `supply_link_port_holds()`, also in `test_supply_keep`, with a port that takes or lets go of the supply between two reads; a session keeps the panel's ON and set points off the PD mini only on a board whose ports run from it, `supply_link_session_blocks()` in `test_supply_keep` and the SUPPLY screen's lock in `test_supply_screen_home`; an ON the page refuses under a port's ON through `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a port, a reading fault the port keeps acted on once while it stands, a failed final commit or close of the run log or the automatic test's CSV counted once a run (`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line calls into it in those files are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
 | IOmcu firmware | answers the identity, status, control, bench and three output pages; fails safe at 200ms. The decision to switch to ARMED is `shared/safety/safety_gate.c`, called once a pass and at every CONTROL write and host-tested in `test_safety_gate` against a model of both main loops: an arm latch set at a start, on link silence, on a distrusted heartbeat and by a refused ARM, released by CLEAR alone. CHAN_CFG and OUTPUTS refuse a role, a throttle channel's range and a slot change while ARMED. It publishes what the ESC reports over extended DShot telemetry: speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
 | IOmcu firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the IOmcu restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7s watchdog returns to the old image. The IOmcu refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the IOmcu erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the IOmcu's build by SHA-256 at link-up and offers the update on a question that takes the 2s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold starts the same update, also after a declined question. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
 | Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md) |
@@ -224,10 +224,10 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 363 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 366 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
-`test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_pdmini`,
+`test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
 `test_motor`, `test_motor_draw`, `test_motor_throttle`, `test_motor_arm`, `test_motor_workbench`, `test_motor_program`, `test_motor_layout`, `test_value_state`, `test_servo`, `test_servo_knob`, `test_servo_drag`, `test_servo_repaint`, `test_frame_work`, `test_servo_dial_sweep`, `test_servo_letgo`, `test_servo_curve`, `test_servo_supply`, `test_servo_run`, `test_servo_target`, `test_servo_rail`, `test_servo_meter`, `test_servo_settings`, `test_servo_trim_keypad`,
 `test_servo_test_panel`, `test_servo_error_safe`, `test_servo_limit_panel`, `test_servo_workbench`, `test_servo_arm`, `test_safe_press`,
 `test_analyser`, `test_prog_models`, `test_esc_stick_panel`, `test_esc_stick_panel_phases`, `test_esc_stick_panel_list`, `test_esc_stick_panel_steps`, `test_esc_stick_panel_makers`, `test_esc_stick_panel_hold`, `test_esc_stick_panel_touch`, `test_esc_stick_panel_home`, `test_esc_stick_panel_keypad`, `test_esc_stick_layout`, `test_balance`, `test_battery`, `test_instruments_layout`,
@@ -592,8 +592,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 668 committed screenshots to the current
-render, 334 in English and the same 334 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 672 committed screenshots to the current
+render, 336 in English and the same 336 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed). `image_slot.py`
 holds the panel image to the smaller of its two update slots.
@@ -649,19 +649,20 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
-| `shared/ui/supply_screen.c` | 483 | 474 | 98.1% |
-| `shared/ui/supply_events.c` | 324 | 322 | 99.4% |
-| `shared/ui/supply_draw.c` | 416 | 397 | 95.4% |
+| `shared/ui/supply_screen.c` | 495 | 486 | 98.2% |
+| `shared/ui/supply_events.c` | 345 | 343 | 99.4% |
+| `shared/ui/supply_draw.c` | 420 | 401 | 95.5% |
+| `shared/ui/prog5v_box.c` | 192 | 191 | 99.5% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
 | `shared/ui/ui_textkey.c` | 521 | 507 | 97.3% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
-| `shared/ui/servo_screen.c` | 364 | 355 | 97.5% |
-| `shared/ui/servo_screen_sweep.c` | 473 | 470 | 99.4% |
-| `shared/ui/servo_screen_link.c` | 382 | 378 | 99.0% |
-| `shared/ui/servo_screen_touch.c` | 289 | 275 | 95.2% |
-| `shared/ui/servo_screen_draw.c` | 530 | 517 | 97.5% |
+| `shared/ui/servo_screen.c` | 372 | 363 | 97.6% |
+| `shared/ui/servo_screen_sweep.c` | 479 | 476 | 99.4% |
+| `shared/ui/servo_screen_link.c` | 386 | 382 | 99.0% |
+| `shared/ui/servo_screen_touch.c` | 310 | 296 | 95.5% |
+| `shared/ui/servo_screen_draw.c` | 536 | 523 | 97.6% |
 | `shared/ui/servo_settings_panel.c` | 511 | 496 | 97.1% |
 | `shared/ui/servo_settings_draw.c` | 349 | 342 | 98.0% |
 | `shared/ui/servo_test_panel.c` | 435 | 423 | 97.2% |
@@ -853,11 +854,11 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
 | `protocols/pdmini/pdmini_jobs.c` | 255 | 253 | 99.2% |
 | `shared/bench/supply_link.c` | 360 | 350 | 97.2% |
-| `shared/bench/prog_supply_link.c` | 57 | 57 | 100.0% |
+| `shared/bench/prog_supply_link.c` | 96 | 96 | 100.0% |
 | `shared/bench/sense_link.c` | 601 | 579 | 96.3% |
 | `shared/bench/sense_link_view.c` | 268 | 264 | 98.5% |
 | `shared/bench/sense_map_link.c` | 316 | 305 | 96.5% |
-| `shared/bench/sense_win_link.c` | 123 | 123 | 100.0% |
+| `shared/bench/sense_win_link.c` | 139 | 139 | 100.0% |
 | `shared/bench/sense_limit_link.c` | 199 | 199 | 100.0% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
 | `shared/bench/tone_link.c` | 451 | 446 | 98.9% |
@@ -901,7 +902,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api.c` | 399 | 391 | 98.0% |
 | `shared/webaccess/wa_app.c` | 107 | 107 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **67102** | **65804** | **98.1%** |
+| **total** | **67431** | **66132** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -938,7 +939,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The clock on the board | the NTP request and its console line are not measured on the board. The RTC timer counts the 32.768kHz crystal Y3; its drift is at most about 30ppm, measured over 65min. On the internal RC oscillator, the fallback, the drift is not a fixed figure: 584ppm over 2h04min in one run, under 15ppm over 1h51min in another. The boot line naming the crystal is not measured, nor the start-up time the crystal adds (about 183ms from ESP-IDF's counts); how long an answer takes is not measured beyond one bench log, 7.2s after the address. A cell in the board's RTC battery holder BAT1 keeps no time: the ESP32-P4 keeps its RTC timer on VBAT only from deep sleep, which the panel never enters |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The scan-out reads PSRAM by DMA (direct memory access) with no bounce buffer, and the DSI host's interrupt runs during the write (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), so the picture is expected to stay; not measured | a photo of the home screen after a settings save and after a board drawing's keep, with the console's lines beside it |
 | Stick programming's beep timing | the engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 334 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 336 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 | Comment gaps of the existing tree | the comment rule ([CONTRIBUTING.md](CONTRIBUTING.md#comments)) holds new files, changed lines and the `@file` block of a changed file. The other gaps are listed: the Doxygen warnings in `tools/doc_check_baseline.txt`, the Python docstring codes per file in `ruff.toml`. A C file without a `@file` block is one line there, `file has no @file block`; Doxygen reports nothing inside such a file, so its other gaps are not listed until the block is added | documentation of the listed files |
 
 ## Constraints

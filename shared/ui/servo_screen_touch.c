@@ -328,6 +328,21 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
+        if (prog5v_box_shown()
+            && gfx_rect_contains(prog5v_box_button(&s.p5), px, py)) {
+            /* One contact owns PROG 5V, as OUTPUT; a port holding the
+             * supply locks it, and the band says why. */
+            if (!s.p5_down) {
+                if (prog5v_box_press(&s.p5)) {
+                    s.p5_down = true;
+                    s.p5_id   = evt->point.id;
+                    ++s.power_rev;
+                } else if (!prog5v_box_live()) {
+                    ui_router_set_alert(TR(P5_LOCKED));
+                }
+            }
+            return;
+        }
         if (gfx_rect_contains(s.out_btn, px, py)) {
             /* A programming port holds the supply: off is taken, on is
              * not. */
@@ -467,6 +482,22 @@ void svs_event_body(const touch_event_t *evt)
             s.arm_id   = evt->point.id;
             ui_hold_begin(&s.arm, TX_HOLD_HINT_ARM);
             ++s.arm_rev;
+        }
+    }
+
+    if (s.p5_down && evt->point.id == s.p5_id) {
+        if (evt->type == TOUCH_EVENT_MOVE) {
+            if (prog5v_box_drag(&s.p5, px, py)) {
+                s.p5_down = false;
+                ++s.power_rev;
+            }
+            return;
+        }
+        if (evt->type == TOUCH_EVENT_UP) {
+            prog5v_box_release(&s.p5, evt);
+            s.p5_down = false;
+            ++s.power_rev;
+            return;
         }
     }
 

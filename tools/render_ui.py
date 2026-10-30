@@ -462,6 +462,10 @@ SCREENS = {
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
     "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
     "supply-rbmod": ("supply-rbmod.png", "supply", "dark"),
+    # The PROG 5V box on SERVO's output card, and on the KST programmer
+    # while a session holds the ports' 5V.
+    "servo-rbmod": ("servo-rbmod.png", "servo", "dark"),
+    "servo-kst-rbmod": ("servo-kst-rbmod.png", "servo", "dark"),
     "setup-rbmod-iface": ("setup-rbmod-iface.png", "setup", "dark"),
     # SENSORS: 0x40 and 0x41 fitted, at the top with 0x40 online; and at
     # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.

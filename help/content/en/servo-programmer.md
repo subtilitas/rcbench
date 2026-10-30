@@ -55,6 +55,10 @@ MORE, while the tester has the port, sets what CONNECT applies:
 
 While the port is out of PWM, the supply's set points belong to the port: the SET row and the SUPPLY screen take no change and no ON. OUTPUT OFF and STOP work. Without a PD mini the voltage and current limit are stored and not applied. Back in PWM, the set points from before the session return once the output is off, at the next OFF when the session left it on; a set point changed in the meantime stays.
 
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the programming ports run from a 5V of their own, switched by GPIO 21, not from the PD mini; MORE reads `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21`. The session switches the 5V where the table below switches the PD mini's output. The PROG 5V box under PD MINI then reads `HELD BY PROG PORT n` and takes no press. With no session the box switches the 5V by hand: PROG 5V ON is a 2s hold, PROG 5V OFF a tap.
+
+![The KST programmer holding the 5V](view:servo-kst-rbmod)
+
 ## The power cycle
 
 A KST or Chaservo servo enters programming mode only from a power-up, and acts on a written value only from its next power-up: a Chaservo on the bench ignored CONNECT with its supply on, and followed no PWM after a write until its supply was off and on again.

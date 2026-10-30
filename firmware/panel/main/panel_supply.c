@@ -108,6 +108,9 @@ uint32_t              s_supply_step_ms;
  */
 static arm_watch_t    s_supply_watch;
 uint32_t              s_supply_gen;
+/** @brief The PROG 5V box's ON in flight, watched the same way (s_psup_gen,
+ *         s_psup_ack). */
+static arm_watch_t    s_psup_watch;
 
 /*
  * The interval since the last step, up to now, on the reading that held
@@ -251,7 +254,10 @@ static void error_act(error_act_t a)
         supply_link_cut(&s_supply_link);
     }
     if (a.prog_off) {
+        /* The cut counts: a PROG 5V ON queued or collected before this
+         * error is refused, even after its OFF is acknowledged. */
         prog_supply_link_cut(&s_psup_link);
+        prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
     }
 }
 
@@ -427,6 +433,63 @@ void apply_supply_cmd(const panel_cmd_t *pc)
          * stored s_supply_live first, so supply_live_or_coming() never
          * reads the gap between the two. */
         atomic_fetch_add(&s_supply_ons_taken, 1u);
+    }
+}
+
+void apply_prog5v_cmd(const panel_cmd_t *pc)
+{
+    const prog5v_cmd_t *c = &pc->prog5v;
+    if (c->off) {
+        prog_supply_link_ask_off(&s_psup_link);
+        prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
+        arm_watch_end(&s_psup_watch);
+        return;
+    }
+    if (!c->on) {
+        return;
+    }
+    /* The pump first, so a STOP or a loss still in the driver's queue is
+     * counted before the ON is judged against them; then the PD mini's
+     * OUTPUT ON rules. */
+    control_pump();
+    if (!s_prog_taken
+        && pc->stops == arming_stop_count(&s_arm)
+        && pc->prog5v_offs == atomic_load(&s_prog5v_offs)
+        && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
+                             s_lost_notice_seq, pc->consumed_seq)
+        && prog_supply_link_ask_on(&s_psup_link, c->cuts)) {
+        const uint32_t gen = atomic_load(&s_psup_gen) + 1u;
+        atomic_store(&s_psup_gen, gen);
+        arm_watch_begin(&s_psup_watch, pc->loss_gen,
+                        atomic_load(&s_drv_gaps), gen);
+        /* The ON owed is live for the gates from here (on_owed). */
+        prog_supply_publish();
+    }
+    /* Done with it, taken or refused, and only now: s_psup_live is stored
+     * first, so supplies_live_or_coming() never reads a gap. */
+    atomic_fetch_add(&s_psup_ons_taken, 1u);
+}
+
+void prog5v_off_service(void)
+{
+    if (atomic_exchange(&s_prog5v_off_request, false)) {
+        prog_supply_link_ask_off(&s_psup_link);
+        prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
+        arm_watch_end(&s_psup_watch);
+    }
+}
+
+void prog_supply_watch_service(void)
+{
+    if (prog_supply_link_state(&s_psup_link) != PROG_SUPPLY_ON
+        && !s_psup_link.on_owed) {
+        arm_watch_end(&s_psup_watch);
+        return;
+    }
+    if (arm_watch_lost(&s_psup_watch, atomic_load(&s_loss_gen),
+                       atomic_load(&s_drv_gaps), atomic_load(&s_psup_ack))) {
+        bench_error_stop();
+        control_alert(TR(ALERT_P5_TOUCH));
     }
 }
 
@@ -629,6 +692,7 @@ void supply_pump(void)
      * that loss is about to switch off. */
     supply_follow_stops();
     supply_watch_service();
+    prog_supply_watch_service();
     card_faults_follow();
     prog_faults_follow();
     supply_service();
@@ -882,7 +946,25 @@ void prog_supply_service(void)
             result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
                                                 : PROG_SUPPLY_LINK_ACK;
         }
-        prog_supply_link_written(&s_psup_link, result);
+        prog_supply_link_written(&s_psup_link, off, v, result);
+        /* What the write left (an ON's ACK, an OFF owed) reaches the gates
+         * now, not after the next read. */
+        prog_supply_publish();
+        /* An ON of the PROG 5V box the IOmcu did not take is said. */
+        switch (prog_supply_link_take_on_result(&s_psup_link)) {
+        case PROG_SUPPLY_LINK_NONE:
+        case PROG_SUPPLY_LINK_ACK:
+            break;
+        case PROG_SUPPLY_LINK_NO_ANSWER:
+            control_alert(TR(ALERT_P5_NO_ANSWER));
+            break;
+        case (int)LINK_NACK_NOT_ARMED:
+            control_alert(TR(ALERT_P5_NO_BEAT));
+            break;
+        default:
+            control_alert(TR(ALERT_P5_HELD));
+            break;
+        }
     }
     if (prog_supply_link_read_due(&s_psup_link, now_ms())) {
         link_msg_t reply = { 0 };
@@ -897,8 +979,28 @@ void prog_supply_service(void)
     prog_supply_publish();
 }
 
+/**
+ * @brief The port a programmer session holds the ports' 5V with, for the
+ *        PROG 5V box: the KST session's, else the Hitec page's; some port
+ *        while the page says one holds it and neither session does.
+ * @return 0 to 3, PROG5V_HELD_SOME or PROG5V_HELD_NONE
+ */
+static uint8_t prog5v_held_port(void)
+{
+    kst_link_readout_t rd;
+    kst_link_readout(&s_kst_link, &rd);
+    return prog5v_box_held_port(kst_prog_port_taken(&rd) ? (int)rd.port_no
+                                                         : -1,
+                                hitec_taken_port(),
+                                s_prog_taken
+                                || prog_supply_link_port(&s_psup_link));
+}
+
 void prog_supply_publish(void)
 {
+    prog5v_box_publish((uint8_t)prog_supply_link_state(&s_psup_link),
+                       s_psup_link.pin, prog5v_held_port());
+    prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
     const bool board = outbind_roles(s_board) != NULL;
     atomic_store(&s_psup_owns, prog_supply_link_owns(&s_psup_link, board));
     atomic_store(&s_psup_live, prog_supply_link_live(&s_psup_link, board,
