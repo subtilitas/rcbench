@@ -666,16 +666,32 @@ static void port_held_apply(bool held)
     supply_invalidate();
 }
 
+/**
+ * @brief The hold as the programmers' words and the board make it: either
+ *        programmer's word, on a board whose ports run from the PD mini.
+ * @return true while a port holds this screen.
+ */
+static bool port_held_now(void)
+{
+    return !s.ports_own && (s.held_kst || s.held_hitec);
+}
+
 void supply_screen_set_port_held(bool held)
 {
     s.held_kst = held;
-    port_held_apply(s.held_kst || s.held_hitec);
+    port_held_apply(port_held_now());
 }
 
 void supply_screen_set_hitec_held(bool held)
 {
     s.held_hitec = held;
-    port_held_apply(s.held_kst || s.held_hitec);
+    port_held_apply(port_held_now());
+}
+
+void supply_screen_set_ports_own(bool own)
+{
+    s.ports_own = own;
+    port_held_apply(port_held_now());
 }
 
 bool supply_screen_port_held(void) { return s.port_held; }

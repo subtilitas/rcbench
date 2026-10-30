@@ -180,15 +180,27 @@ void supply_switch(bool on)
 }
 
 /**
+ * @brief Whether the ports' own supply is the programmers' supply
+ *        (prog_supply_link_owns()): the PD mini is then no port's.
+ * @return true on a board that switches the ports' own supply.
+ */
+static bool ports_own_supply(void)
+{
+    return prog_supply_link_owns(&s_psup_link,
+                                 outbind_roles(s_board) != NULL);
+}
+
+/**
  * @brief The bench as an error finds it (error_sites.h): ARMED or a switch
  *        to ARMED waiting, the output and who holds it, and the IOmcu.
  *
- * A port holds the supply when the SUPPLY page's last read says so
- * (supply_link_port_holds()), not when a programmer has a port
- * (s_prog_taken): on the rbmod carrier the ports run from PROG_SUPPLY, and
- * the PD mini is no port's.  The hold counts for an IOmcu older than 4.31
- * only; from 4.31 an error writes the OFF whoever holds the supply and the
- * IOmcu holds it for a write.
+ * A port holds the supply while the SUPPLY page's last read says so and a
+ * programmer has a port (supply_link_port_holds()), and stops at the first
+ * of the two that says it ended: on the rbmod carrier the ports run from
+ * PROG_SUPPLY and the page never says so, and a port that let go before
+ * the page's next read no longer counts once its session has ended.  The
+ * hold counts for an IOmcu older than 4.31 only; from 4.31 an error writes
+ * the OFF whoever holds the supply and the IOmcu holds it for a write.
  *
  * @return The bench now.
  */
@@ -198,14 +210,14 @@ static error_bench_t error_bench(void)
         .live        = arming_link_needed(&s_arm, outputs_armed(&s_out)),
         .supply_on   = s_supply_on,
         .port_holds  = supply_link_port_holds(&s_supply_link,
-                                              s_supply_is_real),
+                                              s_supply_is_real,
+                                              s_prog_taken),
         .supply_real = s_supply_is_real,
         .supply_page = s_supply_page,
         .far_minor   = s_far_minor,
         /* The page served and the switch fitted, as read or as the board
          * says before the first read. */
-        .prog_supply = prog_supply_link_owns(&s_psup_link,
-                                             outbind_roles(s_board) != NULL),
+        .prog_supply = ports_own_supply(),
     };
     return b;
 }
@@ -327,12 +339,14 @@ void supply_follow_set(void)
      * points under them already, and this is what the supply obeys. */
     const unsigned vmax = atomic_load(&s_supply_vmax_mv);
     const unsigned imax = atomic_load(&s_supply_imax_ma);
-    /* A programmer has a port: the set points are the port's, and neither
-     * the screen's nor a limit that moved is written over them.  The
-     * session counts from the panel's own command, before the SUPPLY page
-     * says the port holds the supply; the IOmcu refuses them while it
-     * holds it (supply_page.h). */
-    if (s_prog_taken) {
+    /* A programmer has a port on a board whose ports run from the PD mini:
+     * the set points are the port's, and neither the screen's nor a limit
+     * that moved is written over them.  The session counts from the
+     * panel's own command, before the SUPPLY page says the port holds the
+     * supply; the IOmcu refuses them while it holds it (supply_page.h).
+     * On a board with the ports' own supply the PD mini stays the
+     * operator's (supply_link_session_blocks()). */
+    if (supply_link_session_blocks(s_prog_taken, ports_own_supply())) {
         return;
     }
     /* A programming port's command the screen has not taken yet: what the
@@ -394,7 +408,7 @@ void apply_supply_cmd(const panel_cmd_t *pc)
         /* The pump first, so a STOP or a loss still in the driver's queue
          * is counted before the ON is judged against them. */
         control_pump();
-        if (!s_prog_taken
+        if (!supply_link_session_blocks(s_prog_taken, ports_own_supply())
             && pc->stops == arming_stop_count(&s_arm)
             && pc->supply_offs == atomic_load(&s_supply_offs)
             && pc->pdmini_edits == atomic_load(&s_pdmini_edits)

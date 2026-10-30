@@ -596,7 +596,13 @@ bool supply_link_port_held(const supply_link_t *s)
     return s != NULL && s->port_held;
 }
 
-bool supply_link_port_holds(const supply_link_t *s, bool pdmini)
+bool supply_link_port_holds(const supply_link_t *s, bool pdmini,
+                            bool session)
 {
-    return pdmini && supply_link_port_held(s);
+    return pdmini && session && supply_link_port_held(s);
+}
+
+bool supply_link_session_blocks(bool session, bool ports_own)
+{
+    return session && !ports_own;
 }
