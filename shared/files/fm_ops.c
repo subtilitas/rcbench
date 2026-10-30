@@ -21,6 +21,7 @@ enum {
     STEP_SYNC,       /**< the ".NEW" on the card, and closed            */
     STEP_UNLINK,     /**< a save's old file deleted                     */
     STEP_RENAME,     /**< the ".NEW" given its name                     */
+    STEP_MATCH,      /**< a save's old file read and summed, one chunk  */
 };
 
 /* ------------------------------------------------------------- starting */
@@ -312,6 +313,23 @@ fm_err_t fm_job_save(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
     return (err != FM_OK) ? refuse(job, err) : run(job);
 }
 
+fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
+                      uint32_t want)
+{
+    if (job == NULL || job->kind != FM_JOB_SAVE
+        || job->state != FM_JOB_RUNNING || job->step != STEP_CHECK
+        || (match == FM_MATCH_SUM && sum == NULL)
+        || (match != FM_MATCH_ANY && match != FM_MATCH_SUM
+            && match != FM_MATCH_ABSENT)) {
+        return FM_ERR_ARG;
+    }
+    job->match = match;
+    job->sum = sum;
+    job->want = want;
+    job->got = 0u;
+    return FM_OK;
+}
+
 fm_err_t fm_job_load(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
                      const char *dir, const char *name, uint8_t *buf,
                      size_t cap)
@@ -513,8 +531,90 @@ static fm_err_t single(fm_job_t *job, const fm_io_t *io)
 }
 
 /**
+ * @brief A save's ".NEW", or a copy's: free, and opened.
+ * @param job  the job
+ * @param io   the card, held
+ * @return FM_OK or why not
+ */
+static fm_err_t open_new(fm_job_t *job, const fm_io_t *io)
+{
+    /* A ".NEW" there already can be the only whole copy of a save cut
+     * short: never written over. */
+    fm_err_t err = free_name(io, job->tmp);
+    if (err == FM_OK) {
+        err = io->open(io->ctx, job->tmp, FM_OPEN_NEW, &job->out);
+        if (err != FM_OK) {
+            job->out = NULL;
+        }
+    }
+    return err;
+}
+
+/**
+ * @brief A save's check of the file it replaces (fm_job_match()), before
+ *        its ".NEW": a name taken for FM_MATCH_ABSENT, a file gone for
+ *        FM_MATCH_SUM, which opens it to be summed.
+ * @param job  the save, its target's stat read
+ * @param io   the card, held
+ * @return FM_OK, job->step STEP_MATCH for a sum to read; or why not
+ */
+static fm_err_t match_start(fm_job_t *job, const fm_io_t *io)
+{
+    if (job->match == FM_MATCH_ABSENT) {
+        return job->dst_was ? FM_ERR_EXISTS : FM_OK;
+    }
+    if (job->match != FM_MATCH_SUM) {
+        return FM_OK;
+    }
+    if (!job->dst_was) {
+        return FM_ERR_CHANGED;     /* the file the sum was taken of is gone */
+    }
+    const fm_err_t err = io->open(io->ctx, job->dst, FM_OPEN_READ, &job->in);
+    if (err != FM_OK) {
+        job->in = NULL;
+        return (err == FM_ERR_NOT_FOUND) ? FM_ERR_CHANGED : err;
+    }
+    job->step = STEP_MATCH;
+    return FM_OK;
+}
+
+/**
+ * @brief One chunk of the file a save replaces, summed; at its end the
+ *        sum compared and the ".NEW" opened.
+ * @param job    the save at STEP_MATCH
+ * @param io     the card, held
+ * @param chunk  the chunk's room
+ * @param size   its bytes
+ * @return FM_OK, job->step STEP_DATA once the ".NEW" is open; or why not
+ */
+static fm_err_t match_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
+                            size_t size)
+{
+    size_t got = 0u;
+    const fm_err_t err = io->read(io->ctx, job->in, chunk, size, &got);
+    if (err != FM_OK) {
+        return err;
+    }
+    if (got > 0u) {
+        job->got = job->sum(job->got, chunk, got);
+        return FM_OK;
+    }
+    (void)io->close(io->ctx, job->in);
+    job->in = NULL;
+    if (job->got != job->want) {
+        return FM_ERR_CHANGED;
+    }
+    const fm_err_t opened = open_new(job, io);
+    if (opened == FM_OK) {
+        job->step = STEP_DATA;
+    }
+    return opened;
+}
+
+/**
  * @brief The first step of a job with data: the names checked and the
- *        files opened.
+ *        files opened.  A save that checks a sum opens its ".NEW" after
+ *        it (match_chunk()).
  * @param job  the job
  * @param io   the card, held
  * @return FM_OK or why not
@@ -540,24 +640,24 @@ static fm_err_t open_files(fm_job_t *job, const fm_io_t *io)
         err = io->stat(io->ctx, job->dst, &st);
         job->dst_was = (err == FM_OK);
         if (err == FM_OK && st.is_dir) {
-            err = FM_ERR_ARG;
+            /* A folder takes the name a new file asks for. */
+            err = (job->match == FM_MATCH_ABSENT) ? FM_ERR_EXISTS
+                                                  : FM_ERR_ARG;
         } else if (err == FM_ERR_NOT_FOUND) {
             err = FM_OK;
         }
-    }
-    /* A ".NEW" there already can be the only whole copy of a save cut
-     * short: never written over. */
-    if (err == FM_OK && job->kind != FM_JOB_LOAD) {
-        err = free_name(io, job->tmp);
+        if (err == FM_OK) {
+            err = match_start(job, io);
+        }
+        if (err != FM_OK || job->step == STEP_MATCH) {
+            return err;
+        }
     }
     if (err == FM_OK && job->kind != FM_JOB_SAVE) {
         err = io->open(io->ctx, job->src, FM_OPEN_READ, &job->in);
     }
     if (err == FM_OK && job->kind != FM_JOB_LOAD) {
-        err = io->open(io->ctx, job->tmp, FM_OPEN_NEW, &job->out);
-        if (err != FM_OK) {
-            job->out = NULL;
-        }
+        err = open_new(job, io);
     }
     return err;
 }
@@ -682,6 +782,7 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
     fm_err_t err = FM_OK;
     switch (job->step) {
     case STEP_CHECK:
+    case STEP_MATCH:
     case STEP_DATA: {
         if (job->cancel) {
             return finish(job, io, FM_JOB_STOPPED, FM_ERR_CANCELLED,
@@ -702,11 +803,21 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
                 return finish(job, io, FM_JOB_FAILED, err,
                               job->out != NULL);
             }
-            job->step = STEP_DATA;
+            if (job->step != STEP_MATCH) {
+                job->step = STEP_DATA;
+            }
             return FM_JOB_RUNNING;
         }
         if (chunk == NULL || size == 0u) {
-            return finish(job, io, FM_JOB_FAILED, FM_ERR_ARG, writes);
+            return finish(job, io, FM_JOB_FAILED, FM_ERR_ARG,
+                          writes && job->out != NULL);
+        }
+        if (job->step == STEP_MATCH) {
+            err = match_chunk(job, io, chunk, size);
+            if (err != FM_OK) {
+                return finish(job, io, FM_JOB_FAILED, err, job->out != NULL);
+            }
+            return FM_JOB_RUNNING;
         }
         err = one_chunk(job, io, chunk, size);
         if (err != FM_OK) {

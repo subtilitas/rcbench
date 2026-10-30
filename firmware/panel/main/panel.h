@@ -337,6 +337,29 @@ extern const files_io_t k_files_io;
 const fm_io_t *panel_files_card(void);
 
 /**
+ * @brief Make the card's job lock, which FILES' task and the Wi-Fi page's
+ *        writes share; once at start-up, again from FILES' first request
+ *        if it failed then.
+ * @return false with no RAM for it: FILES does not start, the page's
+ *         writes answer PANEL_BUSY
+ */
+bool panel_files_lock_init(void);
+
+/**
+ * @brief Take the card's job lock for one write of the Wi-Fi page.
+ * @param wait_ms  how long to wait for a FILES job to end
+ * @return false when FILES held it that long, or no lock was made
+ */
+bool panel_files_lock(uint32_t wait_ms);
+
+/**
+ * @brief Give the card's job lock back after panel_files_lock().
+ * @param wrote  the write changed the card: the logs' numbering is read
+ *               again at the next run
+ */
+void panel_files_unlock(bool wrote);
+
+/**
  * @brief The bench for the page server's task: ARMED, the IOmcu link and
  *        the logger's open files now, into marks of that task's own.
  * @param out  takes the bench

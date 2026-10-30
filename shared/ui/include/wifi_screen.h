@@ -11,6 +11,11 @@
  * needs -- network, password, address, name, access code -- and why the
  * radio went off when it did.
  *
+ * While the page is served a line says what a browser needs to write to
+ * the card (SETUP > SD CARD > Browser writes) and how many writes it made
+ * this radio session.  With the setting HOLD, a 2s hold here (UI_HOLD_S)
+ * allows writes until the radio goes off or BROWSER WRITES OFF is tapped.
+ *
  * An uploaded image waits on the panel as a question naming both versions.
  * The browser cannot start the write: INSTALL is a 2s hold here (UI_HOLD_S),
  * and the hold ends unfired when the image goes away under it -- a STOP, an
@@ -113,6 +118,14 @@ typedef enum {
     WIFI_GATE_COPROC,       /**< the IOmcu's update runs           */
 } wifi_gate_t;
 
+/** @brief What a browser write needs, SETUP's Browser writes (wa_writes_t). */
+typedef enum {
+    WIFI_WRITES_OPEN = 0,   /**< nothing beyond reaching the page        */
+    WIFI_WRITES_CODE,       /**< the access code, its switch off too     */
+    WIFI_WRITES_HOLD,       /**< the 2s hold on this screen              */
+    WIFI_WRITES_OFF,        /**< no write                                */
+} wifi_writes_t;
+
 typedef struct {
     /* The radio's gate: why it may not start now, or WIFI_WHY_NONE. */
     wifi_why_t   block;
@@ -148,6 +161,11 @@ typedef struct {
     wifi_gate_t  gate;
     char         new_ver[WIFI_VER_MAX + 1];
     char         run_ver[WIFI_VER_MAX + 1];
+
+    /* Browser writes to the card, this radio session. */
+    wifi_writes_t writes;      /**< what a write needs                    */
+    bool          writes_open; /**< WIFI_WRITES_HOLD: the hold allowed it */
+    uint32_t      written;     /**< writes the page made                  */
 } wifi_view_t;
 
 /** What the screen asks for: bits of wifi_screen_take(). */
@@ -161,6 +179,8 @@ typedef struct {
 #define WIFI_REQ_CODE_OFF  0x080u   /**< the page asks for no access code  */
 #define WIFI_REQ_DISCARD   0x100u   /**< drop the staged image           */
 #define WIFI_REQ_INSTALL   0x200u   /**< the 2s hold completed           */
+#define WIFI_REQ_WRITES_ON 0x400u   /**< the 2s hold allowed browser writes */
+#define WIFI_REQ_WRITES_OFF 0x800u  /**< BROWSER WRITES OFF was tapped    */
 
 /** Hand the screen what to show. */
 void wifi_screen_set(const wifi_view_t *v);

@@ -440,6 +440,16 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_LOG_USER] = {
         "log_user", "",
         SET_CAT_CARD, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    /*
+     * What a browser on the Wi-Fi page needs to write to the card
+     * (wa_writes_t, wa_api.h): OPEN nothing beyond reaching the page, the
+     * default; ACCESS CODE this session's access code, with the code
+     * switch off too; HOLD a 2s hold on WI-FI once a radio session; OFF no
+     * write.  The page's guards against other sites hold in every case.
+     */
+    [SET_WEB_WRITES] = {
+        "web_writes", "",
+        SET_CAT_CARD, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(web_writes) },
 };
 
 /** @brief The categories' names in English, from ui_text.def. */

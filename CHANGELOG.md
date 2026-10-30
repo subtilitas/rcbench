@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- WI-FI's page changes the card: UPLOAD (one text file up to 1MiB, with
+  a progress bar and a REPLACE question), NEW FOLDER, NEW TEXT FILE,
+  RENAME, MOVE and DELETE, through FILES' jobs, rules and write gate. The
+  file API takes `PUT /api/file` with `If-Match` (412 `CHANGED` when the
+  file's CRC-32 moved since it was read) or `If-None-Match: *`, and
+  `POST /api/mkdir`, `/api/rename` and `/api/delete`. A write waits up to
+  2000ms for FILES on the panel and is answered 503 `PANEL_BUSY` with
+  `Retry-After: 2` after that.
+- SETUP > SD CARD > Browser writes: OPEN (default), ACCESS CODE, HOLD or
+  OFF. HOLD shows `HOLD 2s: ALLOW BROWSER WRITES` on WI-FI; a line under
+  the rows names the mode and counts the writes.
 - SERVO asks after a KST or Hitec LEAVE that leaves the PD mini's output on
   at the session's set points: `Restore your supply set points 5.50V 2.00A
   on the live output?`, YES or NO. YES gives the live output the set points

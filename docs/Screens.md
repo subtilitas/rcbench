@@ -3035,7 +3035,8 @@ its rate on the console,
 ![WI-FI, no home network kept](img/wifi.png)
 
 WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the
-card to download, and a panel firmware image to upload. It opens from the
+card to download, and to change as [Browser writes](#browser-writes)
+allows, and a panel firmware image to upload. It opens from the
 WI-FI tile on [SETUP](#setup) and from WI-FI in the bottom row of
 [LOGS](#logs). Its home tag returns to the screen that opened it, SETUP or
 LOGS; so does CLOSE on PANEL UPDATE after an upload's install failed. Over
@@ -3057,7 +3058,7 @@ alert covers no control. Rows, buttons and keys are 48px or taller.
 | View | Layout |
 | --- | --- |
 | Radio off | five buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
-| Radio on | rows of 56px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424 |
+| Radio on | rows of 56px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424, and with Browser writes HOLD the writes' button the same size beside it from body x 548 |
 | Network list | two columns of eight rows of 492 x 48px, 52px apart: the name in 12 x 24 (32 characters are 384px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56px each |
 | Question about an image | a card of 1008 x 484px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2s TO INSTALL 460 x 72px |
 | Keyboard | 1008 x 484px, keys of 93 x 71px ([Keyboard](#keypad-keyboard-and-the-shared-controls)) |
@@ -3210,12 +3211,18 @@ Current limitations:
   and the panel can replace the image on its way. The IOmcu image a
   panel image carries comes with it and is offered to the IOmcu at the
   next link-up.
+- A device that reads the traffic on a home network can send a write of
+  its own while writes are allowed: the access code and the headers cross
+  in plain form.
+- FILES' editor on the panel saves without comparing the file it opened:
+  a change the browser made between its open and its save is overwritten.
+  The page's writes compare with `If-Match`.
 - The panel joins only while this screen is open. A panel that stays joined
   whenever the bench is SAFE is not built.
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
   688-757kB/s. The cause is not measured. The page with the file manager
-  is 33,101 bytes in English on an empty card and has no card listing;
+  is 44,220 bytes in English on an empty card and has no card listing;
   its time is not measured.
 
 ### The access code
@@ -3238,19 +3245,75 @@ off (`shared/webaccess/wa_guard.h`):
 | --- | --- |
 | The `Host` header names the panel: `rcbench-3F7A.local`, `rcbench-3F7A` or the address the browser connected to (`192.168.4.1` as an access point), in any letter case, with no port or port 80. An IPv6 address is refused. | 421 Misdirected Request |
 | A page, file, ZIP or file API request carries no body. | 400 Bad Request |
-| A code entry has at most 95 bytes of body. | 413 Content Too Large |
-| A code entry and an upload carry an `Origin` header of `http://` and a name above; without an `Origin`, a `Referer` that starts so. Neither header, `Origin: null` and any other site are refused. | 403 Forbidden |
-| An upload carries the header `X-Rcbench-Upload: 1`, which the page's own script sends. | 403 Forbidden |
+| A code entry has at most 95 bytes of body, a file API PUT at most 1,048,576 and a file API form at most 1,024. | 413 Content Too Large |
+| A code entry, an upload and every write of the file API carry an `Origin` header of `http://` and a name above; without an `Origin`, a `Referer` that starts so. Neither header, `Origin: null` and any other site are refused. | 403 Forbidden |
+| An upload and every write of the file API carry the header `X-Rcbench-Upload: 1`, which the page's own script sends. | 403 Forbidden |
 
 So another web page open in the same browser cannot reach the card under
 a DNS (domain name system) name of its own, cannot send codes that count
-toward the 16, and cannot send an image. A browser sends a header of its
+toward the 16, and cannot send an image or change the card. A browser
+sends a header of its
 own on a request to another site only after asking that site, and the
 panel answers no such question with a yes. A refused request is answered
 before its body is read, and the connection closes with the answer. The
-file API answers the 421 and the 400 in JSON as its other refusals, with
-`HOST` and `BODY` ([the file API](#the-file-api)); the page, `/card/` and
-the ZIP file answer them with no body.
+file API answers the 421, the 413, the 403 and the 400 in JSON as its
+other refusals, with `HOST`, `TOO_LARGE`, `ORIGIN` and `BODY`
+([the file API](#the-file-api)); the page, `/card/` and the ZIP file
+answer them with no body.
+
+### Browser writes
+
+![Browser writes HOLD, before the hold](img/wifi-writes-hold.png)
+![After the hold, three writes made](img/wifi-writes-allowed.png)
+
+SETUP > SD CARD > Browser writes sets what a browser needs to change the
+card through the page: UPLOAD, NEW FOLDER, NEW TEXT FILE, RENAME, MOVE
+and DELETE ([the page](#the-page)). It is kept with the other settings.
+
+| Value | A write needs |
+| --- | --- |
+| OPEN (default) | nothing beyond reaching the page: the access code while ACCESS CODE is on |
+| ACCESS CODE | this session's access code, with ACCESS CODE off as well: reads then need no code, writes do, and the page asks for the code at the first write |
+| HOLD | a 2s hold on HOLD 2s: ALLOW BROWSER WRITES, once a radio session |
+| OFF | no write is taken |
+
+While the page is served, a line under the rows says which holds:
+`The browser may write to the card: 3 writes so far.`,
+`Browser writes need the access code r4tcw9pe.` (ACCESS CODE with
+ACCESS CODE off), `The browser may not write to the card until the hold.`
+or `Browser writes are off: SETUP > SD CARD.` The count is of the writes
+the panel made for the page this radio session.
+
+With HOLD, HOLD 2s: ALLOW BROWSER WRITES stands beside WI-FI OFF,
+460 x 60px from body x 548. A release before 2s allows nothing and shows
+`Hold 2s to allow browser writes.` on the alert band. After the hold the
+button is BROWSER WRITES OFF, a tap. Writes stay allowed until the radio
+goes off (WI-FI OFF, the screen left, 10min without a request, ARM, STOP,
+the supply output, a log run, 16 wrong codes) or BROWSER WRITES OFF is
+tapped; the next radio session starts without them.
+
+Every write passes, in this order
+(`firmware/panel/components/wifi_access/wifi_write.c`):
+
+1. the guard of the table above: the page's `Origin`, the script's
+   header, at most 1,048,576 bytes of a file or 1,024 of a form;
+2. the access code while ACCESS CODE is on, then the setting;
+3. the body, received whole into PSRAM before any card call, in 4,096B
+   pieces; the radio going off, a closed connection or 30s without a byte
+   end the request with nothing written;
+4. the card's job lock, which FILES on the panel holds while it runs a
+   job: the write waits for it 2000ms at most, then is answered
+   `PANEL_BUSY` with `Retry-After: 2`; the page sends it again after 2s,
+   3 times at most;
+5. FILES' rules and write gate, as for FILES itself: SAFE, no run logged,
+   the bench's folders, the servo programmers' records, the logger's
+   files, the names the panel's keyboard types. The gate is asked again
+   before every 16KiB, so a switch to ARMED stops a write at its next
+   chunk and removes its `.NEW`.
+
+A refusal before step 3 closes the connection with the answer: the body is
+never read. While the bench is ARMED, the supply output is on or a run is
+logged, the radio is off and the page cannot be reached at all.
 
 ### The page
 
@@ -3278,8 +3341,8 @@ each flash erase (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 erases is not measured.
 
 **Files on the card.** The card in two panes, as [FILES](#files) shows
-it, read through [the file API](#the-file-api). The page reads the card
-only: nothing on it is deleted, renamed or written. Each pane is one folder,
+it, read through [the file API](#the-file-api). It changes the card only
+as [Browser writes](#browser-writes) allows. Each pane is one folder,
 up to 48 entries a page, folders first, then names with case folded. The
 left pane opens on the card's root, the right one on the User log folder
 (`USER/LOGS` by default). The browser keeps both places for its tab while
@@ -3305,6 +3368,28 @@ the same card is in the slot; another card starts both again there.
 | INFO | the entry's name, folder, kind, size or entries, time and rule, as FILES' INFO box; the time is the stamp the card holds in the zone of SETUP > PANEL's Time zone, `not known` for a stamp in 1980 |
 | DOWNLOAD | the selected file through `/card/<path>`; dimmed on a folder |
 | OPEN | enters a folder, or shows a file in the viewer over the page. Dimmed on a file over 1,048,576 bytes, on a file the logger writes and on the servo programmers' records, which DOWNLOAD still sends |
+
+A second row holds the writes. Each waits for the panel's answer, and
+both panes are read again after one that went through.
+
+| Button | What it does |
+|---|---|
+| UPLOAD | sends one file of up to 1,048,576 bytes into the active pane's folder, with a progress bar; a larger file is refused before a byte is sent. A name that is taken asks `UP.TXT exists in this folder. Replace it?` with REPLACE and CANCEL. The file has to be text as the viewer takes it: no NUL byte in its first 4,096 bytes and 65,536 line ends at most |
+| NEW FOLDER | a folder of the name typed, in the active pane's folder |
+| NEW TEXT FILE | an empty file of the name typed there; a taken name is refused |
+| RENAME | the selected entry under the name typed, in its folder; a change of case alone is a rename |
+| MOVE | the selected entry into the other pane's folder under its name; a folder only when it is empty |
+| DELETE | asks `DELETE FROM CARD` with the name, `This deletes the file from the card.` or `This deletes the empty folder from the card.`, the report a run log takes along, and `This cannot be undone.`; a folder only when it is empty |
+
+A name typed or uploaded follows the panel's keyboard: 1 to 59 bytes;
+letters, digits, the German letters, space and marks but
+`" * / : < > ? \ |`; no full stop or space at either end. A write button is
+dimmed while the panel takes no write (the setting, the hold, ARMED, a
+run), with nothing selected, on a folder of the bench, on the servo
+programmers' records and on a file the logger writes; a tap on it says
+why. With Browser writes ACCESS CODE and ACCESS CODE off, the first write
+asks for the code in a box; SEND CODE sends it, and the page loads again
+with it.
 
 The viewer shows the file read-only over the page: its path, its size,
 READ-ONLY, `LINE 23 OF 57` for the line at the top, `MIXED LINE ENDS` for
@@ -3390,15 +3475,17 @@ browser reports it as failed, and the panel runs on.
 
 The page's server also answers four reads for a script: a page of a
 folder, the facts of one entry, a text file whole, and the panel's state
-(`shared/webaccess/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`).
-The page's file manager reads the card through them. They read the card only, through
-the same pages, rules and file load as FILES: nothing is written, renamed
-or deleted. Each takes the guard of the table above and the access code
-as a download does; a request without a code gets 403 and `CODE`.
+(`shared/webaccess/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`);
+and four writes (`shared/webaccess/wa_api_write.c`,
+`firmware/panel/components/wifi_access/wifi_write.c`).
+The page's file manager reads the card through them, through the same
+pages, rules and file load as FILES. Each takes the guard of the table
+above and the access code as a download does; a request without a code
+gets 403 and `CODE`.
 
 | Request | Answer |
 | --- | --- |
-| `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes":"closed"` with the reason (`READ_ONLY`; `ARMED` or `LOGGING` while the write gate is shut), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
+| `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes"` `open` or `closed` with the first reason a write is refused at the time of the request and its text (`WRITES_OFF`; `ARMED` or `LOGGING` while the write gate is shut; `WRITES_HOLD`; empty while open) and `"mode"`, the setting (`OPEN`, `CODE`, `HOLD`, `OFF`; with `CODE` each write's code decides), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
 | `GET /api/info?path=P&dir=D&mount=M` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed |
 | `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` (the lines as FILES' viewer counts them: a line end at the file's end starts no line, so `a\nb\n` and `a\nb` have 2 and an empty file 0) and `X-Rcbench-Bom` (1 or 0) |
@@ -3407,6 +3494,22 @@ A path is relative to the card's root and percent-encoded with `/` as the
 separator: `%2F` is refused, `+` is a plus. It holds at most 120 bytes and
 16 folders, as on FILES. With `mount=M`, an INFO or a file read from
 another card than the one listed is refused with `CARD_GONE`.
+
+The writes run FILES' jobs, under the steps of
+[Browser writes](#browser-writes). A form is a body of at most 1,024
+bytes, read as a query string.
+
+| Request | What it does |
+| --- | --- |
+| `PUT /api/file?path=P&mount=M` | saves the body, at most 1,048,576 bytes, as text file `P` through `P.NEW`, as FILES' editor saves. With `If-Match: "<ETag>"` only while the file's CRC-32 is that ETag, else 412 `CHANGED`; with `If-None-Match: *` only where no entry has the name, else 409 `EXISTS`; with neither it makes or replaces the file. The body follows the viewer's limits: 415 `NOT_TEXT`, 422 `TOO_MANY_LINES`. Answers 201 for a file made and 200 for one replaced, with `ETag` and `{"path":"P","created":true,"etag":"...","note":""}`; `note` is `ESC_NEXT_START` for an ESC (electronic speed controller) profile, which the next start reads |
+| `POST /api/mkdir` with `path=P&mount=M` | makes folder `P`; 201 |
+| `POST /api/rename` with `from=P&to=Q&dir=D&mount=M` | `Q` in `P`'s folder renames the entry; `Q` of the same name in another folder moves it there, a folder only when it is empty; any other `Q` is 400 `REQUEST`; 200 |
+| `POST /api/delete` with `path=P&dir=D&mount=M` | deletes `P`, a run's report along with it, a folder only when it is empty; 200 |
+
+A new name follows the panel's keyboard: 1 to 59 bytes, none of
+`" * / : < > ? \ |`, no full stop or space at either end. `If-Match` takes
+one ETag as `/api/file` gives it; a weak one (`W/`) or a
+list is 400 `REQUEST`.
 
 A refusal is an HTTP status and `{"error":"WORD","text":"..."}`, the text
 in the panel's language:
@@ -3418,28 +3521,37 @@ in the panel's language:
 | `ARG` | 400 | a folder asked as a file |
 | `BODY` | 400 | a read that carries a body (the guard above) |
 | `CODE` | 403 | no access code, or a wrong one, which counts toward the 16 |
+| `ORIGIN` | 403 | a write without the page's `Origin` or the script's header (the guard above) |
+| `WRITES_OFF`, `WRITES_HOLD`, `WRITES_CODE` | 403 | a write [Browser writes](#browser-writes) does not allow: OFF, HOLD before the hold, ACCESS CODE without this session's code |
+| `FIXED` | 403 | a folder of the bench, or the fault log for RENAME and MOVE |
+| `DENIED` | 403 | a write-protected card |
 | `LOCKED` | 403 | the servo programmers' records, `KST.TXT` and `HITEC.TXT`: download them instead |
 | `NOT_FOUND` | 404 | no such entry, or one of another kind |
+| `EXISTS`, `NOT_EMPTY`, `SAME` | 409 | a name taken; a folder that holds entries; a move into the same folder or into itself |
+| `ARMED`, `LOGGING` | 409 | the bench switched to ARMED, or a run is logged: the card is read-only |
+| `CHANGED` | 412 | a PUT with `If-Match` whose file's CRC-32 is not the ETag, or whose file is gone |
 | `TOO_BIG` | 413 | a file over 1,048,576 bytes, refused before a byte is read |
+| `TOO_LARGE` | 413 | a write's body over its limit (the guard above) |
 | `NOT_TEXT` | 415 | a NUL byte in the first 4,096 bytes |
 | `HOST` | 421 | a `Host` that is not the panel (the guard above) |
 | `TOO_MANY_LINES` | 422 | more than 65,536 line ends |
 | `BUSY` | 423 | a file the logger writes |
-| `IO` | 500 | the card failed a read |
+| `IO` | 500 | the card failed a read or a write |
 | `NO_CARD`, `CARD_GONE`, `MEMORY`, `CANCELLED` | 503 | no card; the card taken out or swapped; no PSRAM for the request; the radio going off |
-
-The words of the writes FILES makes (`EXISTS`, `FULL`, `DENIED`, `FIXED`,
-`NOT_EMPTY`, `SAME`, `ARMED`, `LOGGING`) have their status and text too;
-no read gives them.
+| `PANEL_BUSY` | 503 | FILES on the panel held the card for 2000ms; with `Retry-After: 2` |
+| `FULL` | 507 | the card or the folder is full |
 
 The API's memory is PSRAM, taken at its first request and given back when
 the radio goes off: about 22kB for a request, and 1MiB for a file's bytes
 and 256KiB for its line index at the first file. Each list, INFO and file
 request logs its answer, its bytes, its time and the stack the server's
 task left unused, as `api: <request> <answer>, <n>B in <t>ms; httpd stack
-<n>B unused`.
-The server's stack is 8,192 bytes; a card read on it is not measured on a
-panel.
+<n>B unused`; each write adds the internal RAM left free, as `api: put OK,
+1048576B in <t>ms; httpd stack <n>B unused, internal RAM <n>B free`. A
+write's body is in the same 1MiB of PSRAM; its form and headers use the
+page's 4,096B buffer.
+The server's stack is 8,192 bytes; a card read or write on it is not
+measured on a panel.
 
 ### Installing: PANEL UPDATE
 
@@ -4355,6 +4467,7 @@ IOmcu.
 | --- | --- | --- | --- |
 | Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in Auto log folder: a log of each ARMED and supply run |
 | User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, and `LIMITnnn.TXT`, in User log folder: the AUTOMATIC TEST and the LIMIT RUN |
+| Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | nothing itself: what a browser needs to change the card through WI-FI's page ([Browser writes](#browser-writes)) |
 | Auto log folder | a folder, see below | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder, see below | `USER/LOGS` | where User logs writes |
 

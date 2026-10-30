@@ -6,7 +6,7 @@ order: 51
 
 # WLAN
 
-WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der SD-Karte (Secure Digital) zum Herunterladen und ein Firmware-Image des Panels zum Hochladen. Der Bildschirm öffnet über die Kachel WI-FI auf [SETUP](setup.md) und über WLAN in der unteren Reihe von [LOGS](logs.md). Sein Home-Tag führt zu dem Bildschirm zurück, der ihn geöffnet hat. Über der Netzwerkliste oder einer Tastatur führt es zuerst eine Ebene zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu behalten, und von der Liste zu den Tasten. Über der Frage zu einem hochgeladenen Image ist es ABBRECHEN: Das Image wird verworfen, und der Bildschirm bleibt; ein zweites Tippen, solange das Image noch da ist, verlässt ihn. Das Funkmodul läuft nur, solange dieser Bildschirm offen ist. Bei jedem Start des Panels ist es aus.
+WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der SD-Karte (Secure Digital) zum Herunterladen und zum Ändern, so weit [Schreiben per Browser](#schreiben-per-browser) es erlaubt, und ein Firmware-Image des Panels zum Hochladen. Der Bildschirm öffnet über die Kachel WI-FI auf [SETUP](setup.md) und über WLAN in der unteren Reihe von [LOGS](logs.md). Sein Home-Tag führt zu dem Bildschirm zurück, der ihn geöffnet hat. Über der Netzwerkliste oder einer Tastatur führt es zuerst eine Ebene zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu behalten, und von der Liste zu den Tasten. Über der Frage zu einem hochgeladenen Image ist es ABBRECHEN: Das Image wird verworfen, und der Bildschirm bleibt; ein zweites Tippen, solange das Image noch da ist, verlässt ihn. Das Funkmodul läuft nur, solange dieser Bildschirm offen ist. Bei jedem Start des Panels ist es aus.
 
 ## Der Startbildschirm
 
@@ -109,15 +109,34 @@ Ein gescheitertes Verbinden bietet WLAN-HOTSPOT an. WLAN AUS schaltet das Funkmo
 
 ## Der Zugangscode
 
-Die Browserseite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei listet oder einen Upload annimmt. Der Bildschirm zeigt den Code; er ist bei jedem Start des Funkmoduls neu. 16 falsche Codes schalten das Funkmodul ab. ZUGANGSCODE schaltet den Code für beide Wege ab; der Bildschirm zeigt dann `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload installiert trotzdem erst nach dem Halten von 2s am Panel.
+Die Browserseite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei listet, die Karte ändert oder einen Upload annimmt. Der Bildschirm zeigt den Code; er ist bei jedem Start des Funkmoduls neu. 16 falsche Codes schalten das Funkmodul ab. ZUGANGSCODE schaltet den Code für beide Wege ab; der Bildschirm zeigt dann `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload installiert trotzdem erst nach dem Halten von 2s am Panel.
+
+## Schreiben per Browser
+
+![Schreiben per Browser HALTEN, vor dem Halten](view:wifi-writes-hold)
+
+SETUP > SD CARD > Schreiben per Browser legt fest, was die Seite braucht, um die Karte zu ändern:
+
+| Wert | Ein Schreibzugriff braucht |
+|---|---|
+| OFFEN (Vorgabe) | nur die Seite: den Zugangscode, solange ZUGANGSCODE an ist |
+| ZUGANGSCODE | den Zugangscode, auch mit ZUGANGSCODE aus; Lesen braucht dann keinen, und die Seite fragt beim ersten Schreiben nach dem Code |
+| HALTEN | ein Halten von 2s auf `2s HALTEN: BROWSER DARF SCHREIBEN` neben WLAN AUS, einmal je Sitzung des Funkmoduls |
+| AUS | kein Schreibzugriff wird angenommen |
+
+Eine Zeile unter den Zeilen sagt, was gilt, zum Beispiel `Der Browser darf auf die Karte schreiben: bisher 3 Schreibvorgänge.` Nach dem Halten heißt die Taste `BROWSER-SCHREIBEN AUS`; ein Tipp beendet das Schreiben. Es endet auch, wenn das Funkmodul abschaltet, und die nächste Sitzung beginnt ohne.
+
+![Nach dem Halten, drei Schreibvorgänge](view:wifi-writes-allowed)
+
+Jeder Schreibzugriff wird geprüft wie die von FILES: Prüfstand SAFE, kein Lauf wird aufgezeichnet; die Ordner des Prüfstands, die Vermerke der Servoprogrammierung und die Dateien, die der Logger schreibt, bleiben unberührt; ein Name folgt der Tastatur des Panels. Ein Wechsel zu ARMED hält einen Schreibzugriff an seinen nächsten 16KiB an und verwirft seine `.NEW`-Datei. Solange FILES am Panel an der Karte arbeitet, wartet ein Schreibzugriff bis zu 2s; dann versucht die Seite es nach 2s noch einmal, höchstens 3 Mal.
 
 ## Die Browserseite
 
 Die Seite spricht die Sprache des Panels.
 
 - **Panel-Firmware**: die installierte Version, eine Dateiauswahl und Hochladen. Die Datei ist das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Eine Datei größer als 8.126.464 Bytes wird abgelehnt, bevor ein Byte gesendet ist.
-- **Dateien auf der Karte**: die Karte in zwei Spalten, wie [FILES](files.md) sie zeigt: links das Stammverzeichnis, rechts der Ordner User-Logs, 48 Einträge je Seite mit VORIGE und NÄCHSTE. Ein Tipp wählt eine Zeile; AKTUALISIEREN, INFO, HERUNTERLADEN und ÖFFNEN wirken auf sie, und eine gedimmte Taste sagt beim Tipp, warum. ÖFFNEN geht in einen Ordner oder zeigt eine Textdatei nur lesend, gefärbt wie am Panel, mit `ZEILE n VON m` gezählt wie im Betrachter des Panels; eine Datei über 1MiB, eine, die der Logger schreibt, und die Vermerke der Servoprogrammierung lassen sich nur herunterladen. INFO nennt die Zeit in der Zone von SETUP > PANEL, Zeitzone, `nicht bekannt` für ein Datum in 1980. Die Seite folgt dem hellen oder dunklen Schema des Browsers in den Theme-Farben des Panels. Die Seite schreibt nichts auf die Karte und braucht JavaScript.
-- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1MiB ist ein Umbenennen. In einem Heimnetz kam eine Datei von 16MiB mit 688-757kB/s herunter, und ein Image von 2,56MB ging mit 556-599kB/s hinauf. Die Seite selbst, 18,9kB mit ihrer alten Kartenliste, brauchte 4,54s; die Seite mit den zwei Spalten hat etwa 33kB, ihre Zeit ist nicht gemessen.
+- **Dateien auf der Karte**: die Karte in zwei Spalten, wie [FILES](files.md) sie zeigt: links das Stammverzeichnis, rechts der Ordner User-Logs, 48 Einträge je Seite mit VORIGE und NÄCHSTE. Ein Tipp wählt eine Zeile; AKTUALISIEREN, INFO, HERUNTERLADEN und ÖFFNEN wirken auf sie, und eine gedimmte Taste sagt beim Tipp, warum. ÖFFNEN geht in einen Ordner oder zeigt eine Textdatei nur lesend, gefärbt wie am Panel, mit `ZEILE n VON m` gezählt wie im Betrachter des Panels; eine Datei über 1MiB, eine, die der Logger schreibt, und die Vermerke der Servoprogrammierung lassen sich nur herunterladen. INFO nennt die Zeit in der Zone von SETUP > PANEL, Zeitzone, `nicht bekannt` für ein Datum in 1980. Die Seite folgt dem hellen oder dunklen Schema des Browsers in den Theme-Farben des Panels. Eine zweite Reihe hält HOCHLADEN, NEUER ORDNER, NEUE TEXTDATEI, UMBENENNEN, VERSCHIEBEN und LÖSCHEN, gedimmt mit dem Grund, solange [Schreiben per Browser](#schreiben-per-browser) oder der Prüfstand sie ablehnt. HOCHLADEN sendet eine Textdatei bis 1MiB in den Ordner der aktiven Spalte, mit Fortschrittsbalken, und fragt, bevor es eine Datei ersetzt. VERSCHIEBEN legt den gewählten Eintrag in den Ordner der anderen Spalte. LÖSCHEN fragt zuerst und nimmt den Bericht eines Laufs mit; ein Ordner wird nur leer verschoben oder gelöscht. Eine Datei, die die Seite geöffnet hat und die sich seitdem auf der Karte geändert hat, wird mit `Seit dem Lesen auf der Karte geändert. Neu lesen.` abgelehnt. Die Seite braucht JavaScript.
+- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1MiB ist ein Umbenennen. In einem Heimnetz kam eine Datei von 16MiB mit 688-757kB/s herunter, und ein Image von 2,56MB ging mit 556-599kB/s hinauf. Die Seite selbst, 18,9kB mit ihrer alten Kartenliste, brauchte 4,54s; die Seite mit den zwei Spalten hat etwa 44kB, ihre Zeit ist nicht gemessen.
 
 Die Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage während eines Downloads wartet auf dessen Ende. Ein Download, von dem der Browser 30s lang nichts annimmt, endet, und der Browser meldet ihn als fehlgeschlagen.
 
@@ -140,5 +159,7 @@ Dieselbe Version aus einem anderen Build wird als Neuinstallation angeboten. Der
 
 - Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes liegt im Klartext im Flash des Panels.
 - Die Seite ist reines HTTP (Hypertext Transfer Protocol). In einem Heimnetz gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der Bildschirm sagt das, solange er verbunden ist.
+- Ein Gerät, das diesen Verkehr mitliest, kann einen eigenen Schreibzugriff senden, solange Schreiben erlaubt ist.
+- Der Editor von FILES am Panel speichert, ohne die geöffnete Datei zu vergleichen: Eine Änderung des Browsers zwischen Öffnen und Speichern wird überschrieben. Die Schreibzugriffe der Seite vergleichen.
 - Ein hochgeladenes Image wird gegen seinen eigenen SHA-256-Hash geprüft, nicht gegen eine Signatur.
 - Das Panel bleibt nur verbunden, solange dieser Bildschirm offen ist.

@@ -18,14 +18,17 @@
  *   panel.  A write needs an Origin that is "http://" and an allowed Host;
  *   without an Origin, a Referer that starts that way.  Neither, "null",
  *   https and a foreign name are WA_GUARD_ORIGIN (HTTP 403).
- * - A cross-site upload that the browser sends without asking: the upload
- *   needs WA_UPLOAD_HDR: WA_UPLOAD_VAL, which the page's own script sets.
+ * - A cross-site upload that the browser sends without asking: the
+ *   firmware upload and every write of the file API need WA_UPLOAD_HDR:
+ *   WA_UPLOAD_VAL, which the page's own script sets.
  *   A header of its own makes a cross-site request a CORS (cross-origin
  *   resource sharing) one with a preflight, and the panel answers no
  *   preflight with an allow.  Missing or other: WA_GUARD_UPLOAD (403).
  *
  * And a slow body: a read takes none (WA_GUARD_BODY, HTTP 400), the code
- * form at most WA_CODE_BODY_MAX bytes (WA_GUARD_BIG, HTTP 413).  The body
+ * form at most WA_CODE_BODY_MAX bytes, a file API's PUT at most
+ * WA_PUT_BODY_MAX and its form at most WA_FORM_BODY_MAX (WA_GUARD_BIG,
+ * HTTP 413).  The body
  * of a refused request is never read; the connection closes with the
  * answer.
  *
@@ -51,6 +54,11 @@ extern "C" {
 /** @brief Bytes of the code form's body at most: "code=" and 8 characters,
  *         each up to 3 bytes percent-encoded, with room to spare. */
 #define WA_CODE_BODY_MAX  95u
+/** @brief Bytes of a PUT of the file API at most: the viewer's 1MiB
+ *         (TEXT_BUF_FILE_MAX), which test_wa_guard holds it to. */
+#define WA_PUT_BODY_MAX   1048576u
+/** @brief Bytes of the form of a file API write at most (WA_API_FORM_MAX). */
+#define WA_FORM_BODY_MAX  1024u
 /** @brief The port the page's server listens on. */
 #define WA_HTTP_PORT      80u
 
@@ -59,6 +67,9 @@ typedef enum {
     WA_REQ_READ = 0,  /**< GET: the page, a file, the ZIP              */
     WA_REQ_CODE,      /**< POST of the code form                       */
     WA_REQ_UPLOAD,    /**< POST of a firmware image                    */
+    WA_REQ_PUT,       /**< PUT of a file through the file API          */
+    WA_REQ_FORM,      /**< POST of a file API write: MKDIR, RENAME,
+                           DELETE                                      */
 } wa_req_kind_t;
 
 /** @brief The guard's answer. */
@@ -87,7 +98,8 @@ typedef struct {
     const char *host;      /**< Host                                   */
     const char *origin;    /**< Origin                                 */
     const char *referer;   /**< Referer                                */
-    const char *upload;    /**< WA_UPLOAD_HDR's value                  */
+    const char *upload;    /**< WA_UPLOAD_HDR's value; read for UPLOAD,
+                                PUT and FORM                           */
     uint64_t    body;      /**< Content-Length; 0 for none             */
 } wa_req_t;
 
@@ -111,8 +123,8 @@ bool wa_origin_ok(const char *origin, const char *referer,
                   const wa_self_t *self);
 
 /**
- * @brief The guard: Host first, then the body, then a write's Origin and
- *        the upload's header.
+ * @brief The guard: Host first, then the body, then a write's Origin and,
+ *        but for the code form, WA_UPLOAD_HDR.
  * @param kind  what the request is
  * @param req   its headers
  * @param self  the panel

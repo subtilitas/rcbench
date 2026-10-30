@@ -158,6 +158,7 @@ void fs_err_text(fm_err_t err, const char *name, char *out, size_t n)
     case FM_ERR_ARMED:      snprintf(out, n, "%s", TR(FM_GATE_ARMED)); break;
     case FM_ERR_LOGGING:    snprintf(out, n, "%s", TR(FM_GATE_LOGGING)); break;
     case FM_ERR_CANCELLED:  snprintf(out, n, "%s", TR(FM_E_CANCELLED)); break;
+    case FM_ERR_CHANGED:    snprintf(out, n, TR(FM_E_CHANGED), nm); break;
     case FM_ERR_ARG:        snprintf(out, n, TR(FM_E_ARG), nm); break;
     case FM_ERR_TOO_BIG:    snprintf(out, n, "%s", TR(ED_TOO_LARGE)); break;
     case FM_ERR_IO:

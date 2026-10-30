@@ -24,6 +24,7 @@
 #include "wa_guard.h"
 #include "wa_page.h"
 #include "wa_send.h"
+#include "wa_session.h"
 #include "wa_walk.h"
 #include "wa_text.h"
 
@@ -39,16 +40,27 @@ typedef enum {
 } wifi_page_go_t;
 
 /**
- * @brief The start of a read of the file API: the guard (Host and body,
- *        wa_guard.h), the request counted for the idle time-out, and the
- *        access code.
+ * @brief The start of a request of the file API: the guard (wa_guard.h:
+ *        Host and body, and for a write Origin and the script's header),
+ *        the request counted for the idle time-out, and the access code
+ *        while its switch is on.
  * @param r      the request
+ * @param kind   what it is: WA_REQ_READ, WA_REQ_PUT or WA_REQ_FORM
  * @param e      takes the handler's return for WIFI_PAGE_DONE
  * @param guard  takes the guard's refusal for WIFI_PAGE_REFUSED
  * @return what to do with it
  */
-wifi_page_go_t wifi_page_begin(httpd_req_t *r, esp_err_t *e,
-                               wa_guard_t *guard);
+wifi_page_go_t wifi_page_begin(httpd_req_t *r, wa_req_kind_t kind,
+                               esp_err_t *e, wa_guard_t *guard);
+
+/**
+ * @brief The access code check of a write with Browser writes ACCESS CODE:
+ *        the cookie against this session's code whether the code switch is
+ *        on or off, a wrong one counted toward the 16.
+ * @param r  the request, after wifi_page_begin() answered ANSWER
+ * @return WA_CODE_OK for this session's code
+ */
+wa_code_t wifi_page_code(httpd_req_t *r);
 
 /**
  * @brief The end of a request wifi_page_begin() did not answer.

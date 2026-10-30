@@ -418,13 +418,17 @@ static bool req_guard(httpd_req_t *r, wa_req_kind_t kind, esp_err_t *e)
     return wifi_req_guard(r, kind, s.name, &b->req, e);
 }
 
-/*
- * The access code check, the cookie's.  Counted like a typed one.  The
- * Cookie header is read whole, up to the server's header limit
+/**
+ * @brief The access code check, the cookie's.  Counted like a typed one.
+ *
+ * The Cookie header is read whole, up to the server's header limit
  * (CONFIG_HTTPD_MAX_REQ_HDR_LEN): at 192.168.4.1 it carries the cookies of
  * every gadget at that address, the panel's among them.
+ * @param r      the request
+ * @param force  check the code also while ACCESS CODE is off
+ * @return the check's verdict
  */
-static wa_code_t req_code(httpd_req_t *r)
+static wa_code_t req_code(httpd_req_t *r, bool force)
 {
     char given[WA_SECRET_LEN + 2u];
     given[0] = '\0';
@@ -433,7 +437,7 @@ static wa_code_t req_code(httpd_req_t *r)
         given[0] = '\0';
     }
     lock();
-    const wa_code_t c = wa_code_check(&s.w, given, s.conf.code_on);
+    const wa_code_t c = wa_code_check(&s.w, given, s.conf.code_on || force);
     unlock();
     return c;
 }
@@ -449,20 +453,44 @@ static void page_info(wa_page_info_t *pi)
 
 /* ------------------------------------------- lent to the file API */
 
-wifi_page_go_t wifi_page_begin(httpd_req_t *r, esp_err_t *e,
-                               wa_guard_t *guard)
+/**
+ * @brief Answers @p status with no body.
+ * @param r       the request
+ * @param status  the status line
+ * @return what the send returned
+ */
+static esp_err_t refused(httpd_req_t *r, const char *status)
 {
-    *guard = wifi_req_check(r, WA_REQ_READ, s.name, &b->req);
+    httpd_resp_set_status(r, status);
+    return httpd_resp_sendstr(r, "");
+}
+
+/**
+ * @brief Answers 503: the page's server is closing.
+ * @param r  the request
+ * @return what the send returned
+ */
+static esp_err_t closed(httpd_req_t *r)
+{
+    return refused(r, "503 Service Unavailable");
+}
+
+wifi_page_go_t wifi_page_begin(httpd_req_t *r, wa_req_kind_t kind,
+                               esp_err_t *e, wa_guard_t *guard)
+{
+    *guard = wifi_req_check(r, kind, s.name, &b->req);
     if (*guard != WA_GUARD_OK) {
         return WIFI_PAGE_REFUSED;
     }
     if (!req_begin()) {
-        httpd_resp_set_status(r, "503 Service Unavailable");
-        *e = httpd_resp_sendstr(r, "");
+        *e = closed(r);
         return WIFI_PAGE_DONE;
     }
-    return (req_code(r) == WA_CODE_OK) ? WIFI_PAGE_ANSWER : WIFI_PAGE_NO_CODE;
+    return (req_code(r, false) == WA_CODE_OK) ? WIFI_PAGE_ANSWER
+                                              : WIFI_PAGE_NO_CODE;
 }
+
+wa_code_t wifi_page_code(httpd_req_t *r) { return req_code(r, true); }
 
 void wifi_page_end(void) { req_end(); }
 
@@ -516,12 +544,6 @@ static esp_err_t send_page(httpd_req_t *r, bool code_form, bool wrong)
     return httpd_resp_send_chunk(r, NULL, 0);
 }
 
-static esp_err_t closed(httpd_req_t *r)
-{
-    httpd_resp_set_status(r, "503 Service Unavailable");
-    return httpd_resp_sendstr(r, "");
-}
-
 static esp_err_t h_root(httpd_req_t *r)
 {
     esp_err_t g = ESP_OK;
@@ -531,7 +553,7 @@ static esp_err_t h_root(httpd_req_t *r)
     if (!req_begin()) {
         return closed(r);
     }
-    const wa_code_t c = req_code(r);
+    const wa_code_t c = req_code(r, false);
     esp_err_t e;
     if (c == WA_CODE_CLOSED) {
         e = closed(r);
@@ -592,12 +614,6 @@ static esp_err_t h_code(httpd_req_t *r)
     return e;
 }
 
-static esp_err_t refused(httpd_req_t *r, const char *status)
-{
-    httpd_resp_set_status(r, status);
-    return httpd_resp_sendstr(r, "");
-}
-
 static bool upload_text(void *ctx, const void *data, size_t n)
 {
     char *t = ctx;
@@ -642,7 +658,7 @@ static esp_err_t h_update(httpd_req_t *r)
     if (!req_begin()) {
         return closed(r);
     }
-    if (req_code(r) != WA_CODE_OK) {
+    if (req_code(r, false) != WA_CODE_OK) {
         req_end();
         return refused(r, "403 Forbidden");
     }
@@ -780,7 +796,7 @@ static esp_err_t h_file(httpd_req_t *r)
     if (!req_begin()) {
         return closed(r);
     }
-    if (req_code(r) != WA_CODE_OK) {
+    if (req_code(r, false) != WA_CODE_OK) {
         req_end();
         return refused(r, "403 Forbidden");
     }

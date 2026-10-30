@@ -53,6 +53,14 @@
  * pulled part way fails the job with FM_ERR_CARD_GONE; a ".NEW" written so
  * far stays on that card.
  *
+ * A SAVE can be told what it replaces (fm_job_match()).  FM_MATCH_SUM
+ * reads the file there before its ".NEW" is opened, a chunk a step, and
+ * sums its bytes: a file that is gone, or whose sum is not the one given,
+ * fails the job with FM_ERR_CHANGED and nothing written.  FM_MATCH_ABSENT
+ * fails it with FM_ERR_EXISTS when the name is taken.  The check and the
+ * write run in one job, so between them only a writer outside the file
+ * manager's job (fm_req.h) can change the file.
+ *
  * DELETE of a run's log takes its report with it, as LOGS' DELETE does:
  * ATEST042.CSV takes ATEST042.TXT (log_name_report_of()).  A report that
  * cannot be deleted fails the job with the card's answer, the log gone
@@ -107,6 +115,25 @@ typedef enum {
 } fm_job_state_t;
 
 /**
+ * @brief What a SAVE checks of the file it replaces (fm_job_match()).
+ */
+typedef enum {
+    FM_MATCH_ANY = 0,   /**< nothing: a file there is replaced          */
+    FM_MATCH_SUM,       /**< the file is there and sums to a given value */
+    FM_MATCH_ABSENT     /**< no entry has the name                      */
+} fm_match_t;
+
+/**
+ * @brief A running sum over bytes, CRC-32 (cyclic redundancy check) on the
+ *        panel: the sum of @p n more bytes after @p sum, 0 at the start.
+ * @param sum   the sum so far; 0 before the first byte
+ * @param data  the bytes
+ * @param n     how many
+ * @return the sum with them
+ */
+typedef uint32_t (*fm_sum_fn)(uint32_t sum, const void *data, size_t n);
+
+/**
  * @brief The bytes a save writes, asked for one chunk at a time.
  * @param ctx  the caller's context
  * @param at   the offset of the first byte wanted
@@ -145,6 +172,10 @@ typedef struct {
     void *fill_ctx;          /**< passed to @p fill                     */
     uint8_t *buf;            /**< a load's room                         */
     size_t cap;              /**< bytes @p buf takes                    */
+    fm_match_t match;        /**< SAVE: what it checks of the old file  */
+    fm_sum_fn sum;           /**< FM_MATCH_SUM: the sum                 */
+    uint32_t want;           /**< FM_MATCH_SUM: the old file's sum      */
+    uint32_t got;            /**< FM_MATCH_SUM: the sum read so far     */
 } fm_job_t;
 
 /**
@@ -253,6 +284,19 @@ fm_err_t fm_job_create(fm_job_t *job, const fm_bench_t *bench,
 fm_err_t fm_job_save(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
                      const char *dir, const char *name, uint64_t len,
                      fm_fill_fn fill, void *fill_ctx);
+
+/**
+ * @brief What the SAVE fm_job_save() started checks of the file it
+ *        replaces, before it writes (the file's comment).
+ * @param job    a SAVE that fm_job_save() started and no step has run
+ * @param match  the check
+ * @param sum    FM_MATCH_SUM: the sum; NULL otherwise
+ * @param want   FM_MATCH_SUM: the sum the file has to have
+ * @return FM_OK; FM_ERR_ARG for another job, one that runs already or
+ *         was refused, or FM_MATCH_SUM without @p sum, the job unchanged
+ */
+fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
+                      uint32_t want);
 
 /**
  * @brief Read file @p name of folder @p dir into @p buf.  A read: the gate

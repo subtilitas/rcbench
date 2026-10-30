@@ -16,7 +16,7 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 |---|---|---|
 | PANEL | `12 SETTINGS` | the list of PANEL |
 | INTERFACES | `23 SETTINGS` | the list of INTERFACES |
-| SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
+| SD CARD | `5 SETTINGS` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
 | SENSORS | `4 SETTINGS`, and 9 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board. On the rbmod carrier, whose pins are soldered, the tile opens [Layout](layout.md) and reads `CONNECTORS AND PINS` |
@@ -147,6 +147,7 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of
 |---|---|---|---|
 | Auto logs | ON, OFF | ON | a log of each ARMED and supply run in Auto log folder: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
 | User logs | ON, OFF | ON | the AUTOMATIC TEST's `ATESTnnn.CSV` and report and the LIMIT RUN's `LIMITnnn.TXT` in User log folder |
+| Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | what WI-FI's browser page needs to change the card: [Wi-Fi](wifi.md#browser-writes) |
 | Auto log folder | a folder | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder | `USER/LOGS` | where User logs writes |
 

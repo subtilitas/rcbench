@@ -195,6 +195,7 @@ typedef enum {
     /* --- the SD card ----------------------------------------------------- */
     SET_LOG_AUTO,
     SET_LOG_USER,
+    SET_WEB_WRITES,
 
     SETTING_COUNT
 } setting_id_t;

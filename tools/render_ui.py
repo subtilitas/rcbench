@@ -587,6 +587,10 @@ SCREENS = {
     "wifi-ap": ("wifi-ap.png", "wifi", "dark"),
     "wifi-joining": ("wifi-joining.png", "wifi", "dark"),
     "wifi-joined": ("wifi-joined.png", "wifi", "dark"),
+    # Browser writes HOLD on the access point: before the hold, and after
+    # it with three writes made.
+    "wifi-writes-hold": ("wifi-writes-hold.png", "wifi", "dark"),
+    "wifi-writes-allowed": ("wifi-writes-allowed.png", "wifi", "dark"),
     # CHOOSE HOME NETWORK: the scan running, and its list.
     "wifi-scanning": ("wifi-scanning.png", "wifi", "dark"),
     "wifi-scan": ("wifi-scan.png", "wifi", "dark"),
@@ -718,6 +722,9 @@ FIT_ONLY = {
     "wifi-unavailable": (None, "wifi", "dark"),
     "wifi-save-failed": (None, "wifi", "dark"),
     "wifi-coproc":      (None, "wifi", "dark"),
+    # Browser writes ACCESS CODE with the code switch off, and OFF.
+    "wifi-writes-code": (None, "wifi", "dark"),
+    "wifi-writes-off":  (None, "wifi", "dark"),
     "updates-joining":  (None, "updates", "dark"),
     "updates-unexpected": (None, "updates", "dark"),
     "updates-nonet":    (None, "updates", "dark"),

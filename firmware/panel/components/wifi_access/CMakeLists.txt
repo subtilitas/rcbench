@@ -5,14 +5,14 @@
 # the file API's answers and the release check belong to shared/webaccess,
 # which the host suite holds; this is the ESP-IDF (Espressif
 # Internet-of-Things Development Framework) end of them.  wifi_files.c
-# serves the file API on the card FILES uses, wifi_zip.c the card's ZIP
-# file.
+# serves the file API's reads on the card FILES uses, wifi_write.c its
+# writes, wifi_zip.c the card's ZIP file.
 #
 # On the ESP32-P4 the radio is an ESP32-C6 on SDIO (Secure Digital
 # input/output), reached through the managed components esp_wifi_remote
 # and esp_hosted (idf_component.yml, wifi_radio.c).
 idf_component_register(
-    SRCS "wifi_access.c" "wifi_files.c" "wifi_zip.c" "wifi_radio.c" "wifi_sock.c" "wifi_req.c" "wifi_ntp.c" "wifi_dns.c"
+    SRCS "wifi_access.c" "wifi_files.c" "wifi_write.c" "wifi_zip.c" "wifi_radio.c" "wifi_sock.c" "wifi_req.c" "wifi_ntp.c" "wifi_dns.c"
     INCLUDE_DIRS include
     REQUIRES board webaccess files fwupdate storage clock esp_wifi esp_netif esp_event
              esp_http_server esp_http_client esp-tls mbedtls esp_timer

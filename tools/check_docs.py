@@ -305,8 +305,11 @@ OPTION_RE = re.compile(r'^UI_OPTION\("([^"]+)",', re.M)
 # INA3221 of 0.21 (old_addr, old_ch) is on no screen.  What a SENSORS
 # channel watches (watch) is the outputs' and ports' own names, which prose
 # names one at a time.  Keyboard see-through's OFF, 25% and 50% (kb_see)
-# are a word and two numbers prose uses for much else.
-NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch", "kb_see"}
+# are a word and two numbers prose uses for much else.  Browser writes'
+# OPEN, ACCESS CODE, HOLD and OFF (web_writes) are words every screen's
+# prose uses for its own buttons and states.
+NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch", "kb_see",
+             "web_writes"}
 
 
 def option_lists() -> dict[str, list[str]]:
@@ -399,6 +402,7 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "MOVE"),
     ("Servo-de.md", "MODEL"),
     ("Servo-de.md", "OFF"),
+    ("Servo-de.md", "HOLD"),
     ("EscProfiles-de.md", "none"),
     ("StickProgramming-de.md", "none"),
     ("LinkHitec-de.md", "RESULT"),

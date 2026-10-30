@@ -16,7 +16,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 |---|---|---|
 | PANEL | `12 EINSTELLUNGEN` | die Liste von PANEL |
 | INTERFACES | `23 EINSTELLUNGEN` | die Liste von INTERFACES |
-| SD CARD | `4 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin |
+| SD CARD | `5 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin, und was ein Browser zum Schreiben braucht |
 | SENSORS | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine. Auf dem rbmod-Carrier, dessen Pins verlötet sind, öffnet die Kachel [Layout](layout.md) und zeigt `STECKER UND PINS` |
@@ -147,6 +147,7 @@ Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Nichts
 |---|---|---|---|
 | Auto-Logs | EIN, AUS | EIN | ein Log je ARMED- und Netzteil-Lauf in Ordner Auto-Logs: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
 | User-Logs | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in Ordner User-Logs |
+| Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | was die Browserseite von WI-FI braucht, um die Karte zu ändern: [WLAN](wifi.md#schreiben-per-browser) |
 | Ordner Auto-Logs | ein Ordner | `BENCH/LOGS` | wohin Auto-Logs schreibt |
 | Ordner User-Logs | ein Ordner | `USER/LOGS` | wohin User-Logs schreibt |
 

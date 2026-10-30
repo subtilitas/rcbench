@@ -413,7 +413,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 624 | 3 248 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
-| `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 048 | 3 568 |
+| `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
 mit 8 192 Bytes, der TCP/IP-Stack (Transmission Control Protocol, Internet
@@ -716,7 +716,19 @@ zwei Funkstarts, zwischen denen FILES und die Datei-API der Wi-Fi-Seite
 benutzt wurden: Stack, Puffer und der Task-Kontrollblock von 108 Bytes
 machen 23.148 Bytes davon aus, die übrigen 308 Bytes sind nicht
 zugeordnet. Die Datei-API belegt keinen internen RAM
-([Screens, Die Datei-API](Screens-de.md#die-datei-api)).
+([Screens, Die Datei-API](Screens-de.md#die-datei-api)). Ihre
+Schreibzugriffe nehmen den Body in dasselbe PSRAM und teilen die Sperre
+des Karten-Tasks von FILES, einen FreeRTOS-Mutex, beim Start vom Heap
+genommen; seine Bytes sind nicht gemessen. Jeder Schreibzugriff schreibt
+den danach freien internen RAM und den ungenutzten Stack des Server-Tasks
+ins Log:
+
+```text
+I (…) wifi: api: put OK, 1048576B in <t>ms; httpd stack <n>B unused, internal RAM <n>B free
+```
+
+Der Stack des Servers nach einem Schreibzugriff von 1MiB ist auf einem
+Panel nicht gemessen.
 
 `firmware/panel/main/psram_bss.lf` legt die nullinitialisierten Daten (.bss)
 von 30 Objekten in den PSRAM (Pseudo-Static Random-Access Memory): den

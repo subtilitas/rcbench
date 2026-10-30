@@ -133,7 +133,9 @@ wa_guard_t wa_guard(wa_req_kind_t kind, const wa_req_t *req,
     if (kind == WA_REQ_READ && req->body > 0u) {
         return WA_GUARD_BODY;
     }
-    if (kind == WA_REQ_CODE && req->body > WA_CODE_BODY_MAX) {
+    if ((kind == WA_REQ_CODE && req->body > WA_CODE_BODY_MAX)
+        || (kind == WA_REQ_PUT && req->body > WA_PUT_BODY_MAX)
+        || (kind == WA_REQ_FORM && req->body > WA_FORM_BODY_MAX)) {
         return WA_GUARD_BIG;
     }
     if (kind == WA_REQ_READ) {
@@ -142,7 +144,7 @@ wa_guard_t wa_guard(wa_req_kind_t kind, const wa_req_t *req,
     if (!wa_origin_ok(req->origin, req->referer, self)) {
         return WA_GUARD_ORIGIN;
     }
-    if (kind == WA_REQ_UPLOAD
+    if (kind != WA_REQ_CODE
         && (req->upload == NULL || strcmp(req->upload, WA_UPLOAD_VAL) != 0)) {
         return WA_GUARD_UPLOAD;
     }
