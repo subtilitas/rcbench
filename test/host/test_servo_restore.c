@@ -21,6 +21,7 @@
  * - only_a_leave_ends_the_hold_with_the_question
  * - a_leave_counts_for_its_own_programmers_hold
  * - ports_turning_to_their_own_supply_ask_nothing
+ * - the_supply_pages_word_after_the_ports_keeps_what_ended_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -559,7 +560,9 @@ TEST_CASE(a_leave_counts_for_its_own_programmers_hold)
 
 /* The ports turning to their own supply while a session holds the PD mini
  * let go of this screen with no LEAVE: no question, then or at the LEAVE
- * that follows, which holds nothing here any more. */
+ * that follows, which holds nothing here any more, nor at the end of a
+ * hold of the SUPPLY page's word alone after it.  The same where the
+ * SUPPLY page's word still holds after the LEAVE. */
 TEST_CASE(ports_turning_to_their_own_supply_ask_nothing)
 {
     for (int kst = 0; kst < 2; ++kst) {
@@ -576,6 +579,67 @@ TEST_CASE(ports_turning_to_their_own_supply_ask_nothing)
         CHECK(!servo_screen_asks_restore());
         CHECK(!supply_screen_restore_offer(NULL, NULL));
         supply_screen_set_ports_own(false);
+        supply_screen_set_page_held(true);
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+
+        own(5.5f, 1.5f);
+        supply_screen_set_page_held(true);
+        session_on(kst != 0);
+        port_leaves(kst != 0);
+        CHECK(supply_screen_port_held());
+        supply_screen_set_ports_own(true);
+        CHECK(!supply_screen_port_held());
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+        supply_screen_set_ports_own(false);
+    }
+}
+
+/* The SUPPLY page's own word (LINK_SP_PORT) holds the supply for a port of
+ * either programmer and may let go a read after the programmer's word.  Its
+ * release asks after a LEAVE, once, and after nothing else; a session that
+ * begins meanwhile and ends without a LEAVE asks nothing. */
+TEST_CASE(the_supply_pages_word_after_the_ports_keeps_what_ended_it)
+{
+    for (int kst = 0; kst < 2; ++kst) {
+        own(5.5f, 1.5f);
+        supply_screen_set_page_held(true);
+        session_on(kst != 0);
+        port_leaves(kst != 0);
+        CHECK(supply_screen_port_held());
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(servo_screen_asks_restore());
+        /* A hold of the page's word alone takes the question, and its end
+         * is no LEAVE's: the LEAVE was spent on the release it ended. */
+        supply_screen_set_page_held(true);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+
+        own(5.5f, 1.5f);
+        supply_screen_set_page_held(true);
+        session_on(kst != 0);
+        port_holds(kst != 0, false);            /* no LEAVE */
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+
+        own(5.5f, 1.5f);
+        supply_screen_set_page_held(true);
+        session_on(kst != 0);
+        port_leaves(kst != 0);
+        port_holds(kst != 0, true);             /* CONNECT again */
+        port_holds(kst != 0, false);            /* and no LEAVE */
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
     }
 }
 
@@ -596,5 +660,6 @@ int main(void)
     RUN(only_a_leave_ends_the_hold_with_the_question);
     RUN(a_leave_counts_for_its_own_programmers_hold);
     RUN(ports_turning_to_their_own_supply_ask_nothing);
+    RUN(the_supply_pages_word_after_the_ports_keeps_what_ended_it);
     return test_summary("servo_restore");
 }

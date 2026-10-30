@@ -348,7 +348,9 @@ other end of a port's hold on the supply asks nothing: RELEASE PORT, a STOP, an 
 or the IOmcu, a port the IOmcu gives back without a LEAVE, and ports that
 turn to their own supply (the rbmod carrier's PROG_SUPPLY) while a session
 holds the PD mini. With the output on, the session's set points then stay
-until the next OFF.
+until the next OFF. The SUPPLY page's own word that a port holds it
+(`LINK_SP_PORT`) may let go a read after the programmer's; the question
+then comes at its release, and only after a LEAVE.
 A port that takes the supply,
 an OFF asked (OUTPUT OFF included) or an output that goes off while it
 stands closes it, before the output reads off. It stands on SERVO
@@ -1498,9 +1500,12 @@ its frame, YES and NO each pressed; no question on a board whose ports run
 from their own supply, where a session does not hold the SUPPLY screen;
 and no question at an end of the hold without a LEAVE, at a LEAVE of one
 programmer under the other's hold, or when the ports turn to their own
-supply under a session. `test_kst_panel_leave` and `test_hitec_panel` run
+supply under a session; and the question once at the release of the
+SUPPLY page's word after a LEAVE, and not after another end. `test_kst_panel_leave` and `test_hitec_panel` run
 the same end to end: a LEAVE offers the set points back; a STOP, a lost
-link, a restart of the IOmcu and RELEASE PORT offer nothing.
+link, a restart of the IOmcu and RELEASE PORT offer nothing; a KST LEAVE
+asks at the release of the SUPPLY page's word that the Hitec overlay
+passes on.
 `test_kst_prog_cycle` and `test_hitec_prog_safe` count the LEAVEs that
 end in PWM (`kst_prog_leaves()`, `hitec_prog_leaves()`) and none of the
 other ends. `test_kst_file` runs format 1 and format 2

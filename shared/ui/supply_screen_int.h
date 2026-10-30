@@ -351,6 +351,12 @@ typedef struct {
     bool            left_kst;
     /** @brief The same for the Hitec programmer */
     bool            left_hitec;
+    /** @brief The SUPPLY page's own word that a programming port holds it
+     *         (LINK_SP_PORT), any programmer's port */
+    bool            held_page;
+    /** @brief The last programmer's word to let go was a LEAVE's: the
+     *         release of the hold arms the restore offer */
+    bool            leave_end;
     /** @brief The programming ports run from their own supply, not the
      *         PD mini: neither programmer's word holds this screen */
     bool            ports_own;

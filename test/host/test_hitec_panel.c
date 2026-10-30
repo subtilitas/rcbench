@@ -405,6 +405,36 @@ TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
     CHECK(!supply_screen_restore_offer(NULL, NULL));
 }
 
+/* A KST session on the PD mini holds the SUPPLY page too, and the Hitec
+ * overlay passes the page's word on (LINK_SP_PORT) with no Hitec session.
+ * The KST LEAVE's word lets go first; the release at the page's word a
+ * read later offers the set points back.  Without the LEAVE it offers
+ * nothing. */
+TEST_CASE(the_supply_pages_word_after_a_kst_leave_asks)
+{
+    for (int leave = 0; leave < 2; ++leave) {
+        hitec_prog_feed_t f;
+
+        open_en();
+        memset(&f, 0, sizeof(f));
+        f.supply_held = true;
+        hitec_panel_feed(&f);
+        supply_screen_put(5.5f, 1.5f);
+        supply_screen_set_port_held(true);
+        supply_screen_adopt(5.0f, 1.0f);
+        supply_screen_set_output(true);
+        if (leave != 0) {
+            supply_screen_kst_leave_done();
+        }
+        supply_screen_set_port_held(false);
+        CHECK(supply_screen_port_held());
+        f.supply_held = false;
+        hitec_panel_feed(&f);
+        CHECK(!supply_screen_port_held());
+        CHECK_EQ(supply_screen_restore_offer(NULL, NULL), leave != 0);
+    }
+}
+
 /* ----------------------------------------------------------- the layout */
 
 static bool overlap(gfx_rect_t a, gfx_rect_t b)
@@ -565,6 +595,7 @@ int main(void)
     RUN(a_port_another_session_holds_offers_release_port);
     RUN(the_supply_is_locked_while_a_port_is_held);
     RUN(only_a_leave_offers_the_operators_set_points_back);
+    RUN(the_supply_pages_word_after_a_kst_leave_asks);
     RUN(every_control_label_value_and_note_fits_in_both_languages);
     RUN(every_message_fits_its_line_in_both_languages);
     free(fb);

@@ -160,7 +160,10 @@ history is in git.
   supply under a session ask nothing, and the session's set points stay
   until the next OFF. The programmers count the LEAVEs that end in PWM
   (`kst_prog_leaves()`, `hitec_prog_leaves()`) and the overlays hand each
-  one to the SUPPLY screen before the release it ends
+  one to the SUPPLY screen before the release it ends. The SUPPLY page's
+  own word that a port holds it (`LINK_SP_PORT`) is a word of its own
+  there, not the Hitec programmer's: its release a read after a KST LEAVE
+  asks
   ([Servo programmer, The supply](docs/ServoProgrammer.md#the-supply)).
 - The band keeps 40px left of STOP for "?" on every screen. The chips stand
   4px apart (6px before), their labels 22px into the chip (28px before),

@@ -202,10 +202,18 @@ void supply_screen_set_port_held(bool held);
  * @brief The Hitec programmer's word on the same hold: the supply is held
  *        while either programmer says so.  supply_screen_set_port_held() is
  *        the KST programmer's.
- * @param held whether the Hitec programmer, or the SUPPLY page's own
- *        LINK_SP_PORT, says a programming port holds the supply
+ * @param held whether the Hitec programmer says a programming port holds
+ *        the supply
  */
 void supply_screen_set_hitec_held(bool held);
+/**
+ * @brief The SUPPLY page's own word on the same hold (LINK_SP_PORT): held
+ *        while a port of either programmer holds the SUPPLY page.  It may
+ *        let go after the programmer's word; the release then arms the
+ *        restore offer as the programmer's end did.
+ * @param held whether the SUPPLY page says a programming port holds it
+ */
+void supply_screen_set_page_held(bool held);
 /**
  * @brief Whether the programming ports run from their own supply (the
  *        PROG_SUPPLY page, the rbmod carrier's 5V) and not from the PD
@@ -218,10 +226,10 @@ void supply_screen_set_hitec_held(bool held);
 void supply_screen_set_ports_own(bool own);
 /**
  * @brief The KST programmer's LEAVE has ended with the port back in PWM
- *        (kst_prog_leaves() counted up).  The end of the KST programmer's
- *        hold that follows it, if it ends the hold on this screen, arms the
- *        restore offer (supply_screen_restore_offer()); an end of the hold
- *        with no LEAVE before it arms nothing.
+ *        (kst_prog_leaves() counted up).  The release of the hold on this
+ *        screen arms the restore offer (supply_screen_restore_offer()) when
+ *        the last programmer's word to let go before it was let go after
+ *        that programmer's LEAVE; any other release arms nothing.
  */
 void supply_screen_kst_leave_done(void);
 /**

@@ -658,10 +658,8 @@ static bool offer_fits(void)
  * @brief The supply's lock as the two programmers' words make it: held while
  *        either holds a port.
  * @param held whether a programming port holds the supply
- * @param by_leave whether a programmer's LEAVE ends its hold with this call:
- *        only then does a release arm the restore offer
  */
-static void port_held_apply(bool held, bool by_leave)
+static void port_held_apply(bool held)
 {
     if (s.port_held == held) {
         return;
@@ -711,7 +709,8 @@ static void port_held_apply(bool held, bool by_leave)
      * points: the operator's are offered back onto it, once.  Any other
      * end of the hold offers nothing. */
     if (!held) {
-        s.offer       = by_leave && offer_fits();
+        s.offer       = s.leave_end && offer_fits();
+        s.leave_end   = false;
         s.offer_stops = s.stops;
         s.offer_offs  = s.off_count;
     }
@@ -722,55 +721,65 @@ static void port_held_apply(bool held, bool by_leave)
 }
 
 /**
- * @brief The hold as the programmers' words and the board make it: either
- *        programmer's word, on a board whose ports run from the PD mini.
+ * @brief The hold as the programmers' words, the SUPPLY page's and the board
+ *        make it: any of the three words, on a board whose ports run from
+ *        the PD mini.
  * @return true while a port holds this screen.
  */
 static bool port_held_now(void)
 {
-    return !s.ports_own && (s.held_kst || s.held_hitec);
+    return !s.ports_own && (s.held_kst || s.held_hitec || s.held_page);
 }
 
 /**
- * @brief One programmer's word on the hold, and whether its LEAVE ends it.
+ * @brief One programmer's word on the hold.  A word that lets go says
+ *        whether its LEAVE ended it (sup_state_t::leave_end).
  * @param held the programmer's word as this screen has it
  * @param left whether its LEAVE ended since the word last changed
  * @param now the word now
- * @return true when the word turns from held to free after a LEAVE
  */
-static bool port_word(bool *held, bool *left, bool now)
+static void port_word(bool *held, bool *left, bool now)
 {
-    const bool by_leave = *held && !now && *left;
-
+    if (*held && !now) {
+        s.leave_end = *left;
+    }
     /* A LEAVE counts for the end of the hold it ends: a hold that begins
      * or ends drops it either way. */
     if (*held != now) {
         *left = false;
     }
     *held = now;
-    return by_leave;
 }
 
 void supply_screen_set_port_held(bool held)
 {
-    const bool by_leave = port_word(&s.held_kst, &s.left_kst, held);
-
-    port_held_apply(port_held_now(), by_leave);
+    port_word(&s.held_kst, &s.left_kst, held);
+    port_held_apply(port_held_now());
 }
 
 void supply_screen_set_hitec_held(bool held)
 {
-    const bool by_leave = port_word(&s.held_hitec, &s.left_hitec, held);
+    port_word(&s.held_hitec, &s.left_hitec, held);
+    port_held_apply(port_held_now());
+}
 
-    port_held_apply(port_held_now(), by_leave);
+void supply_screen_set_page_held(bool held)
+{
+    /* No programmer's word: its end, which may come after the
+     * programmer's, keeps what the programmer's end said. */
+    s.held_page = held;
+    port_held_apply(port_held_now());
 }
 
 void supply_screen_set_ports_own(bool own)
 {
-    /* The ports on their own supply let go of this screen with the
-     * programmers' words still held: no LEAVE ends that. */
+    /* The ports on their own supply let go of this screen with the words
+     * still held: no LEAVE ends that. */
+    if (own != s.ports_own) {
+        s.leave_end = false;
+    }
     s.ports_own = own;
-    port_held_apply(port_held_now(), false);
+    port_held_apply(port_held_now());
 }
 
 void supply_screen_kst_leave_done(void)

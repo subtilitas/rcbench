@@ -243,10 +243,11 @@ void hpn_supply_sync(void)
         hp.leaves_seen = leaves;
         supply_screen_hitec_leave_done();
     }
+    supply_screen_set_hitec_held(hitec_prog_holds_port(p));
     /* The SUPPLY page's own word that a programming port holds it
-     * (LINK_SP_PORT) counts too: it comes before the HITEC page is read. */
-    supply_screen_set_hitec_held(hitec_prog_holds_port(p)
-                                 || (p->fed && p->f.supply_held));
+     * (LINK_SP_PORT) counts too: it comes before the HITEC page is read,
+     * and it says so of a KST port as well. */
+    supply_screen_set_page_held(p->fed && p->f.supply_held);
 }
 
 void hitec_panel_event(const touch_event_t *evt)
