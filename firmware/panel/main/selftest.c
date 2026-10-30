@@ -51,7 +51,36 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
      * the echo phase turns it into one.
      */
     can_remote_status_t before;
-    const bool have_before = can_ask_remote(&before);
+    bool have_before = false;
+    /*
+     * The far end first.  The IOmcu opens CAN after its supply boot-off,
+     * up to 3500ms after a cold start, and a run before that finds no node
+     * on the bus.  Its first answer ends the wait and is the baseline.
+     */
+    const uint32_t wait0 = now_ms();
+    for (;;) {
+        have_before = can_ask_remote(&before);
+        if (!can_selftest_wait_more(now_ms() - wait0, have_before)) {
+            break;
+        }
+        (void)can_twai_recover();
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+    if (have_before) {
+        ESP_LOGI(TAG, "CAN self-test: the IOmcu answered after %lu ms",
+                 (unsigned long)(now_ms() - wait0));
+    } else {
+        ESP_LOGW(TAG, "CAN self-test: no answer in %u ms, testing anyway",
+                 (unsigned)CAN_SELFTEST_WAIT_MS);
+    }
+    /*
+     * The wait's unanswered frames are in the controller's counters.  The
+     * bus error count is taken as a difference over the run; the transmit
+     * error counter falls by one per acknowledged frame, so a count of 128
+     * left from the wait does not mean nobody is answering now.
+     */
+    uint32_t tec0 = 0, bus_err0 = 0;
+    (void)can_twai_errors(&tec0, NULL, &bus_err0, NULL);
 
     can_selftest_t st;
     can_selftest_init(&st, 50);
@@ -90,7 +119,7 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
          * quiet direction is the right one for a message that sends the
          * operator to the wiring. */
         (void)can_twai_errors(&tec, NULL, NULL, NULL);
-        if (!said_unacked && tec >= 128u) {
+        if (!said_unacked && tec >= 128u && (tec0 < 128u || !have_before)) {
             said_unacked = true;
             ESP_LOGE(TAG, "nothing is acknowledging: transmit errors reached "
                           "%lu, so no other node is answering on this bus",
@@ -110,6 +139,7 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
     uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
     bool bus_off = false;
     (void)can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
+    bus_err -= bus_err0;
     st.bus_errors = bus_err;
 
     can_remote_status_t remote;

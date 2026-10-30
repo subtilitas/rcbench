@@ -7,6 +7,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdint.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -14,6 +15,7 @@
 
 #include "can_selftest.h"
 #include "link_pages.h"
+#include "supply_page.h"
 
 /* A bus with faults in it.  Frames go in one end and come out the other,
  * or do not. */
@@ -600,9 +602,26 @@ TEST_CASE(a_probe_times_out_at_its_timeout_across_the_tick_wrap)
     at_tick_0_and_before_the_wrap(a_probe_is_given_up_at_its_timeout, 25u);
 }
 
+/*
+ * The start-up waits for the far end until it answers or the bound passes,
+ * and the bound outlasts the IOmcu's supply boot-off: an IOmcu that opens
+ * CAN only after the PD mini read off is still waited for.
+ */
+TEST_CASE(the_wait_for_the_far_end_ends_at_an_answer_or_its_bound)
+{
+    CHECK(can_selftest_wait_more(0u, false));
+    CHECK(can_selftest_wait_more(CAN_SELFTEST_WAIT_MS - 1u, false));
+    CHECK(!can_selftest_wait_more(CAN_SELFTEST_WAIT_MS, false));
+    CHECK(!can_selftest_wait_more(UINT32_MAX, false));
+    CHECK(!can_selftest_wait_more(0u, true));
+    CHECK(!can_selftest_wait_more(CAN_SELFTEST_WAIT_MS - 1u, true));
+    CHECK(CAN_SELFTEST_WAIT_MS >= SUPPLY_PAGE_BOOT_OFF_MS + 1000u);
+}
+
 int main(void)
 {
     RUN(a_good_bus_echoes_everything_and_says_so);
+    RUN(the_wait_for_the_far_end_ends_at_an_answer_or_its_bound);
     RUN(no_verdict_before_enough_probes);
     RUN(a_silent_bus_is_reported_as_silent_not_as_timeouts);
     RUN(one_altered_bit_outranks_a_hundred_good_frames);

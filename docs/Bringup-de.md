@@ -44,9 +44,16 @@ nicht am CAN-Bus.
 
 ### Panel
 
-Der Test läuft bei jedem Start. Er dauert 1200ms, innerhalb des Splash und
-vor dem Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert
-und nicht als eine Identity, die nie geantwortet hat.
+Der Test läuft bei jedem Start, innerhalb des Splash und vor dem
+Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert und
+nicht als eine Identity, die nie geantwortet hat.
+
+Zuerst fragt das Panel den IOmcu bis zu 5000ms lang nach seinem Status und
+startet den Test bei der ersten Antwort. Der IOmcu öffnet CAN nach seinem
+Supply-Boot-off. Der dauert bis zu 3500ms, wenn der PD mini im selben Moment
+Strom bekommt wie der IOmcu. Ohne Antwort in 5000ms läuft der Test trotzdem
+und meldet den stummen Bus. Der Test selbst dauert 1200ms. `bus_err` zählt
+nur die Busfehler des Tests, nicht die der Wartezeit.
 
 Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` bringt das Panel auf den
 [Bus-Fehler-Bildschirm](#der-bus-fehler-bildschirm) statt ins Menü. Es muss
@@ -61,6 +68,7 @@ Input/Output 22), seine Empfangsleitung an GPIO21; keiner der beiden trägt
 sonst etwas. Der Takt des Controllers ist der 40-MHz-Quarz. Ausgegeben wird:
 
     I (…) can: 1000000 bit/s: brp 2, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3 ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
     I (…) rcbench:   round trip min 334 max 1356 us

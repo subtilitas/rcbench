@@ -142,6 +142,11 @@ void can_selftest_init(can_selftest_t *st, uint32_t timeout_ms)
     st->timeout_ms = (timeout_ms == 0) ? 50u : timeout_ms;
 }
 
+bool can_selftest_wait_more(uint32_t elapsed_ms, bool answered)
+{
+    return !answered && elapsed_ms < CAN_SELFTEST_WAIT_MS;
+}
+
 bool can_selftest_probe(can_selftest_t *st, uint32_t now_ms,
                         link_can_frame_t *out)
 {

@@ -289,7 +289,8 @@ The panel installs later releases over Wi-Fi from the release asset
 ## 2. The link, before anything else
 
 The panel runs the CAN echo self-test itself, at every start-up, for 1200ms
-inside the splash. It answers one question: do frames cross the bus intact? It
+inside the splash. It starts at the IOmcu's first answer, after up to 5000ms
+of waiting. It answers one question: do frames cross the bus intact? It
 uses no page protocol, so if it passes and the link still does not work, the
 fault is above the wire.
 
@@ -308,6 +309,7 @@ USB-Serial-JTAG (the ESP32-P4's built-in USB serial and debug bridge) as
 the secondary console; which of the board's two USB-C sockets reaches which
 is not traced:
 
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3 ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0
 

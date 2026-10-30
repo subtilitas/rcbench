@@ -42,6 +42,19 @@ extern "C" {
 /** How many probes before a verdict is worth stating. */
 #define CAN_SELFTEST_MIN_PROBES 8u
 
+/**
+ * @brief How long the start-up waits for the far end's first status answer
+ *        before the echo run starts.
+ *
+ * The IOmcu opens its CAN controller after its supply boot-off, which waits
+ * up to SUPPLY_PAGE_BOOT_OFF_MS (3500ms) for the PD mini to read off.  When
+ * both boards and the PD mini get power at the same moment, the PD mini
+ * does not answer yet and the whole bound passes.  An echo run in that time
+ * finds no node on the bus and reports a fault for a link that works.
+ * 5000ms covers the bound and the IOmcu's own start.
+ */
+#define CAN_SELFTEST_WAIT_MS 5000u
+
 typedef enum {
     CAN_SELFTEST_RUNNING = 0, /**< too early to say */
     CAN_SELFTEST_OK,
@@ -89,6 +102,16 @@ typedef struct {
 } can_selftest_t;
 
 void can_selftest_init(can_selftest_t *st, uint32_t timeout_ms);
+
+/**
+ * @brief Whether the start-up wait for the far end goes on.
+ *
+ * @param elapsed_ms  Time since the wait began.
+ * @param answered    The far end answered a status request.
+ * @return            true while nothing answered and CAN_SELFTEST_WAIT_MS
+ *                    has not passed.
+ */
+bool can_selftest_wait_more(uint32_t elapsed_ms, bool answered);
 
 /**
  * Build the next probe, if it is time for one.

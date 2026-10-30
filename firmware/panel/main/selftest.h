@@ -19,8 +19,9 @@
 #include "busfault_screen.h"
 
 /**
- * Echo probes across the bus for @p ms and fill @p out with what both ends
- * saw.  True when the verdict is CAN_SELFTEST_OK.
+ * Wait up to CAN_SELFTEST_WAIT_MS for the far end's first status answer,
+ * then echo probes across the bus for @p ms and fill @p out with what both
+ * ends saw.  True when the verdict is CAN_SELFTEST_OK.
  *
  * It answers one question: do frames cross this bus intact?  Nothing above
  * the wire is involved.  See docs/Bringup.md.
