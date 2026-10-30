@@ -19,6 +19,9 @@
 #include "can_selftest.h"
 #include "can_twai.h"
 
+/** @brief How long the replies left over from the wait are read, ms. */
+#define SELFTEST_DRAIN_MS 100u
+
 /** @brief Log tag. */
 static const char *TAG = "rcbench";
 
@@ -88,6 +91,23 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
                  (unsigned)CAN_SELFTEST_WAIT_MS);
     }
     /*
+     * The wait's requests still in the transmit queue go out once the IOmcu
+     * acknowledges, and their replies follow the first.  They are read
+     * here, the newest kept as the baseline, so the run and the reading
+     * after it find none left over.  SELFTEST_DRAIN_MS bounds it.
+     */
+    if (have_before) {
+        const uint32_t drain0 = now_ms();
+        link_can_frame_t in;
+        while ((uint32_t)(now_ms() - drain0) < SELFTEST_DRAIN_MS
+               && can_twai_recv(&in, 10)) {
+            can_remote_status_t later;
+            if (can_selftest_status_parse(&in, &later)) {
+                before = later;
+            }
+        }
+    }
+    /*
      * The wait's unanswered frames are in the controller's counters.  The
      * bus error count is taken as a difference over the run; the transmit
      * error counter falls by one per acknowledged frame, so a count of 128
@@ -102,10 +122,11 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
     uint32_t queue_full = 0;
     bool said_unacked = false;
 
+    int64_t sent_us = 0;
     while (now_ms() < until) {
         link_can_frame_t probe;
         if (can_selftest_probe(&st, now_ms(), &probe)) {
-            const int64_t sent_us = esp_timer_get_time();
+            sent_us = esp_timer_get_time();
             if (!can_twai_send(&probe, 10)) {
                 /*
                  * Counted, not printed: a bus with nobody on it fills the
@@ -113,11 +134,20 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
                  */
                 ++queue_full;
             }
-            link_can_frame_t in;
-            if (can_twai_recv(&in, 20)) {
-                can_selftest_rx(&st, &in,
-                                (uint32_t)(esp_timer_get_time() - sent_us));
-            }
+        }
+        /*
+         * Every frame that has come in until the probe's echo, for 20ms a
+         * pass, and in passes that sent nothing as well.  One read a probe
+         * let a frame that is not the echo -- a reply left over, a late
+         * echo -- hold the echo in the queue until its probe timed out, and
+         * every later echo one probe behind it.
+         */
+        const uint32_t rx0 = now_ms();
+        link_can_frame_t in;
+        while (st.waiting && (uint32_t)(now_ms() - rx0) < 20u
+               && can_twai_recv(&in, 5)) {
+            can_selftest_rx(&st, &in,
+                            (uint32_t)(esp_timer_get_time() - sent_us));
         }
         can_selftest_tick(&st, now_ms());
 
