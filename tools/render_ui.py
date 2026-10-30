@@ -468,6 +468,8 @@ SCREENS = {
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
+    # SENSORS on the rbmod carrier: 0x40 soldered, its rows on the rails.
+    "setup-sensors-rbmod": ("setup-sensors-rbmod.png", "setup", "dark"),
     # The keypad of 0x40 CH1's shunt, 44.4mOhm typed.
     "setup-sensors-keypad": ("setup-sensors-keypad.png", "setup", "dark"),
     # Values inside the range the steps never reach, refused with the

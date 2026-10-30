@@ -74,7 +74,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.32. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.33. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -177,7 +177,12 @@ einem Fehler erst ab 4.31 aus und setzt das Bit erst ab 4.31
 Ab 4.32 schaltet PROG_SUPPLY (0x39) die eigene Versorgung der
 Programmierports auf einem Board, das eine hat, GPIO 21 des
 rbmod-Carriers; ein älterer IOmcu lehnt die Page mit BAD_PAGE ab
-([Carrier, Versorgung](Carrier-de.md#versorgung)).
+([Carrier, Versorgung](Carrier-de.md#versorgung)). Ab 4.33 nimmt
+SENSE_MAP die WATCH-Werte der eigenen Schienen eines Boards, 0x30
+Servoschiene A, 0x31 Servoschiene B und 0x32 die 5V der Programmierports,
+und hält auf dem rbmod-Carrier seinen INA3221 auf 0x40 mit seinen drei
+Kanälen darauf; ein älterer IOmcu lehnt eine Map mit ihnen mit BAD_VALUE ab
+([Carrier, Der Strommonitor](Carrier-de.md#der-strommonitor)).
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -1438,11 +1443,19 @@ Auf Board 2 hält der IOmcu jede Rolle auf ihrem Pin:
   und GPIO 17, der Pin von TONE GPIO 22. Ein Schreiben eines anderen Pins
   wird mit BAD_VALUE abgelehnt. Die übrigen Register der Pages folgen ihren
   eigenen Regeln.
+- SENSE_MAP (seit 4.33): der INA3221 auf 0x40 ist bestückt, CH1 misst 0x31
+  (Servoschiene B), CH2 0x30 (Servoschiene A) und CH3 0x32 (die 5V der
+  Programmierports). Das Schreiben wird in die Map übernommen und als
+  Ganzes geprüft: eine Map ohne Bit 0 in `ENABLE` oder mit einem anderen
+  WATCH-Wert auf einem der drei Kanäle wird mit BAD_VALUE abgelehnt. Shunts,
+  `FAST` und die Bauteile auf 0x41 bis 0x43 folgen den Regeln der Page.
 - Beim Start beginnt jede Rolle auf ihrem Pin, was auch immer der Flash
   behalten hat. Ein Datensatz, den das Image des Moduls geschrieben hat,
   behält seine Enables, Bereiche, Raten und Endpunkte. Ein Slot mit Treiber
   auf einem Pin, der kein Servoausgang ist, wird geleert, und jeder Port
-  beginnt als NONE.
+  beginnt als NONE. Die gespeicherte Map bekommt Bit 0 in `ENABLE` und die
+  drei WATCH-Werte und gilt; ein Bauteil, dessen drei Shunts 0 sind,
+  bekommt auf jedem 100.0mΩ (1000).
 
 GPIO 21 wird ab der ersten Anweisung von `main()` low getrieben; ab der
 Hauptschleife treibt ihn die Page PROG_SUPPLY (0x39, seit 4.32), aus, bis
@@ -1459,7 +1472,8 @@ in diesem Panel-Build.`.
 
 `test/host/test_board_fix.c` hält den Katalog des Carriers gegen seine
 Rollen, die Pins jeder Page am Pin der Rolle und an den Pins daneben, einen
-Datensatz des Moduls auf den Pins des Carriers und das je Board gewählte
+Datensatz des Moduls auf den Pins des Carriers, die Map des INA3221 geprüft
+und gespeichert und das je Board gewählte
 Image.
 
 ### Abgelehnte Frames

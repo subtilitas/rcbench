@@ -64,14 +64,29 @@ extern "C" {
 /** @brief Channel @p c's LIMIT row, 0 to 11. */
 #define SET_INA_LIM(c) ((setting_id_t)(SET_INA_CH_0 + (int)(c) * SET_INA_CH_ROWS + 2))
 
-/** WATCHES' options, in their order. */
+/** @brief WATCHES' options, in their order.  The last three are a board's
+ *         rails: a row shows them while settings_fix() holds it there (the
+ *         rbmod carrier's INA3221, ui_board_apply_pins()), and no step
+ *         reaches them. */
 enum {
-    SENS_W_NONE   = 0,
-    SENS_W_OUT_1  = 1,     /**< OUT 1 to OUT 8: 1 to 8                   */
-    SENS_W_PORT_1 = 9,     /**< PORT 1 to PORT 4: 9 to 12                */
-    SENS_W_SUPPLY = 13,
-    SENS_W_COUNT  = 14,
+    SENS_W_NONE    = 0,
+    SENS_W_OUT_1   = 1,    /**< OUT 1 to OUT 8: 1 to 8                   */
+    SENS_W_PORT_1  = 9,    /**< PORT 1 to PORT 4: 9 to 12                */
+    SENS_W_SUPPLY  = 13,
+    SENS_W_OFFERED = 14,   /**< the options a step goes through          */
+    SENS_W_RAIL_A  = 14,   /**< servo rail A, LINK_SM_WATCH_RAIL_A        */
+    SENS_W_RAIL_B  = 15,   /**< servo rail B, LINK_SM_WATCH_RAIL_B        */
+    SENS_W_PROG_5V = 16,   /**< the programming ports' 5V                 */
+    SENS_W_COUNT   = 17,
 };
+
+/**
+ * @brief The options of an enum row a step and a stored value may take.
+ * @param d a schema row.
+ * @return SENS_W_OFFERED for a WATCHES row, the row's option count for any
+ *         other enum (1 for none), 1 for NULL.
+ */
+int settings_sensors_offered(const setting_def_t *d);
 
 _Static_assert(SET_INA_PARTS == (int)LINK_SM_PARTS
                && SET_INA_CHANNELS == (int)LINK_SM_CHANNELS,
@@ -146,12 +161,29 @@ typedef struct {
 } settings_sensors_map_t;
 
 /**
- * The map the values in force make, into @p m.  FAST is the lowest
- * channel with a shunt on a fitted part that watches the servo tester's
- * target: an output, OUT 1 to OUT 8, while the target is OUTPUTS, and
- * PORT n while it is programming port n (SET_SERVO_TARGET n).
+ * @brief The map the values in force make.
+ *
+ * FAST is the lowest channel with a shunt on a fitted part that watches
+ * the servo tester's target: an output, OUT 1 to OUT 8, or the rail
+ * settings_sensors_set_tester_rail() names, while the target is OUTPUTS;
+ * PORT n or PROG 5V while it is programming port n (SET_SERVO_TARGET n).
+ *
+ * @param m Receives the map; NULL does nothing.
  */
 void settings_sensors_map(settings_sensors_map_t *m);
+
+/**
+ * @brief Name the rail the servo tester's outputs are on, for FAST.
+ *
+ * On a board that solders an INA3221 on its servo rails (the rbmod
+ * carrier) a channel watches a rail, not an output; the panel says which
+ * rail holds the outputs the tester drives (ui_board_tester_rail()).
+ *
+ * @param code LINK_SM_WATCH_RAIL_A or LINK_SM_WATCH_RAIL_B, or
+ *             LINK_SM_WATCH_NONE for none: no rail channel is FAST then.
+ * @return true when the rail changed, so the map is to be published again.
+ */
+bool settings_sensors_set_tester_rail(uint16_t code);
 
 /** settings_sensors_map()'s FAST: the channel watching the servo tester's
  *  target, LINK_SM_FAST_NONE for none. */

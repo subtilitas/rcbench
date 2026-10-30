@@ -53,6 +53,19 @@ const outbind_roles_t *ui_board_roles(void);
  */
 int ui_board_prog_5v_pin(void);
 
+/**
+ * @brief The rail the servo tester's outputs are on, on a board that
+ *        solders an INA3221 on its servo rails (the rbmod carrier):
+ *        settings_sensors_set_tester_rail()'s argument.
+ *
+ * @param pins  The GPIOs bound as SERVO PWM in the binding the tester
+ *              drives, bit g for GPIO g.
+ * @return LINK_SM_WATCH_RAIL_A or LINK_SM_WATCH_RAIL_B: the rail of the
+ *         channel that feeds the lowest of @p pins; LINK_SM_WATCH_NONE on
+ *         another board, with no pin, or with that pin on no rail.
+ */
+uint16_t ui_board_tester_rail(uint64_t pins);
+
 /** @brief Called for each setting whose value ui_board_apply_pins() moved. */
 typedef void (*ui_board_changed_fn)(setting_id_t id);
 
@@ -61,7 +74,10 @@ typedef void (*ui_board_changed_fn)(setting_id_t id);
  *        solders, or let them go on a board whose pins are chosen.
  *
  * Sensor SDA and SCL, Tap pin, PD mini TX and RX: settings_fix() at the
- * roles' pins on a board with roles, settings_unfix() on any other.  Does
+ * roles' pins on a board with roles, settings_unfix() on any other.  On a
+ * board that solders an INA3221, SETUP > SENSORS' FITTED row of its part
+ * at ON and its three WATCHES rows at the board's rails; every FITTED and
+ * WATCHES row let go on any other board.  Does
  * nothing while the board is the one applied last.  Once a frame, on the
  * task that owns the settings.
  *

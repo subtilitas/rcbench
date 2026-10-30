@@ -101,12 +101,13 @@ void sense_page_forget(sense_page_t *p);
  */
 bool sense_map_on_addr(const uint16_t *map, uint16_t addr);
 
-/** @brief Whether a channel the map reads watches an output channel or a
- *  programming port: the map in force's LINK_CAP_SERVO_SENSE.
+/** @brief Whether a channel the map reads watches an output channel, a
+ *  programming port or a board's rail (LINK_SM_WATCH_RAIL_A to
+ *  LINK_SM_WATCH_PROG_5V): the map in force's LINK_CAP_SERVO_SENSE.
  *
  * @param p The page.
- * @return true when a channel the map reads watches an output channel or a
- *         programming port.
+ * @return true when a channel the map reads watches an output channel, a
+ *         programming port or a rail.
  */
 bool sense_map_watches(const sense_page_t *p);
 

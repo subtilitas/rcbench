@@ -3152,7 +3152,8 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        GP13.  setup-rbmod: the hub with LAYOUT in PICK A PIN's place.
  *        setup-rbmod-iface: INTERFACES with its pins soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
- *        SUPPLY with the PROG PORTS 5V line.
+ *        SUPPLY with the PROG PORTS 5V line.  setup-sensors-rbmod:
+ *        SENSORS with 0x40 soldered and its channels on the rails.
  * @param id   The screen of the shot.
  * @param view The golden's name.
  * @return true when the view is one of these and OUTPUTS is posed.
@@ -3902,14 +3903,19 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
      * with a limit of 800mA, and its CH3 off.  At the top, 0x40 online;
      * scrolled to 0x41's heading, an IOmcu older than 4.25 reading 0x40
      * alone; and scrolled to 0x41 CH2, both online on an IOmcu older than
-     * 4.27, which judges no limit.
+     * 4.27, which judges no limit.  On the carrier (setup-sensors-rbmod)
+     * 0x40 is the board's, scrolled to its rows.
      */
     if (strncmp(view, "setup-sensors", 13) == 0) {
         settings_set(SET_INA_FIT(1), 1.0f);
         settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
         settings_set(SET_INA_LIM(4), 800.0f);
         settings_set(SET_INA_SH(5), 0.0f);
+        const bool rbmod = strcmp(view, "setup-sensors-rbmod") == 0;
         setup_tile(SET_CAT_SENSORS);
+        if (rbmod) {
+            setup_scroll_rows(4);       /* to 0x40's heading and rows */
+        }
         if (strcmp(view, "setup-sensors-old") == 0
             || strcmp(view, "setup-sensors-limit") == 0) {
             const bool lim = strcmp(view, "setup-sensors-limit") == 0;

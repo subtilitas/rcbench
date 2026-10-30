@@ -310,6 +310,19 @@ uint8_t sense_map_wr(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
 {
     (void)ctx;
     sense_sync();
+    /* On a board that solders an INA3221 its part stays fitted and its
+     * channels watch the board's rails: judged on the map as the write
+     * would leave it.  A range past the kept registers is the page's to
+     * refuse. */
+    if (in != NULL && n != 0u
+        && (unsigned)off + (unsigned)n <= (unsigned)LINK_SM_KEPT) {
+        uint16_t next[LINK_SM_KEPT];
+        sense_map_read(&s_sense, 0u, (uint8_t)LINK_SM_KEPT, next);
+        memcpy(&next[off], in, (size_t)n * sizeof(uint16_t));
+        if (!board_fix_map_ok(outbind_roles(IOMCU_BOARD_ID), next)) {
+            return LINK_NACK_BAD_VALUE;
+        }
+    }
     const uint16_t gen = s_sense.cfg_gen;
     const bool was_set = s_sense.map_set;
     uint16_t was[LINK_SM_KEPT];

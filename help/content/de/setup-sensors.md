@@ -29,6 +29,24 @@ Jeder bestückte Baustein hat eine Überschrift, `INA3221 0x40` bis `INA3221 0x4
 - Der Kanal, der jede Millisekunde gelesen wird und dessen Strom der Bildschirm [SERVO](servo.md#das-messgerät-der-servoschiene) und der Servotest nutzen, ist der niedrigste Kanal mit Shunt an einem bestückten Baustein, der das Ziel des Servotesters misst: einen Ausgang, solange das Ziel OUTPUTS ist, PORT n, solange es Programmierport n ist.
 - Das Panel schreibt die Einstellung 500ms nach der letzten Änderung, nur bei einem Prüfstand in SAFE. Die Grenzen gehen 500ms nach ihrer letzten Änderung in jedem Zustand an einen IOmcu mit 0.22.0 oder neuer.
 
+## Auf dem rbmod-Carrier
+
+![SENSORS auf dem Carrier, 0x40 verlötet](view:setup-sensors-rbmod)
+
+Der [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) hat einen INA3221 auf 0x40 verlötet. Seine Zeilen stehen ohne Tasten und sagen `Auf diesem Board verlötet. Hier keine Einstellung.`:
+
+| Zeile | Zeigt | Shunt zwischen |
+|---|---|---|
+| 0x40 bestückt | EIN | |
+| 0x40 CH1 misst | SCHIENE B | dem PD mini und Servoschiene B: PWM03, PWM02 |
+| 0x40 CH2 misst | SCHIENE A | dem PD mini und Servoschiene A: PWM01, PWM04 |
+| 0x40 CH3 misst | PROG PORTS 5V | den 5V von GPIO 21 und den Programmierports |
+
+- Die Shunts und die Grenzen bleiben Einstellungen, mit den Bereichen oben.
+- 0x41 bis 0x43 sind frei für Bausteine am Stecker J5 des Sensorbusses.
+- Der Kanal, der jede Millisekunde gelesen wird, ist die Schiene des niedrigsten GPIO, den der Servotester als SERVO PWM treibt: CH2 für PWM01 (GPIO 2) oder PWM04 (GPIO 1), CH1 für PWM02 (GPIO 4) oder PWM03 (GPIO 5). Mit einem Programmierport als Ziel ist es CH3.
+- SERVO nennt das Messgerät nach seiner Schiene, `INA SCHIENE A`; eine Grenzmeldung lautet `INA3221 0x40 CH2 (SCHIENE A) über der Grenze von 0.80A.`.
+
 ## Grenzen
 
 ![Eine Grenze bei einem IOmcu älter als 0.22.0](view:setup-sensors-limit)

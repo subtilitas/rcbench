@@ -4414,6 +4414,13 @@ und die Pins des Busses bleiben unter INTERFACES.
 
 ![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
 
+Auf dem [rbmod-Carrier](Carrier-de.md#der-strommonitor) ist ein INA3221 auf
+0x40 verlötet: 0x40 BESTÜCKT zeigt EIN, und seine drei Zeilen MISST zeigen
+SCHIENE B, SCHIENE A und PROG PORTS 5V. Diese Zeilen haben keine Tasten und
+die Hilfezeile `Auf diesem Board verlötet. Hier keine Einstellung.`. Kein
+Schritt erreicht die drei Schienen auf einer anderen Zeile oder einer
+anderen Bench.
+
 Die Liste beginnt mit der Überschrift INA3221-BAUSTEINE über vier Zeilen:
 
 | Einstellung | Bereich | Standard | |
@@ -5690,6 +5697,10 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
 - SERVO-TESTER und PORT-PWM werden nicht gezeichnet.
 - Die Zeile unter den Zeilen lautet
   `NUR KST- UND HITEC-PROGRAMMER. SIGNALE: PWM01 BIS PWM04`.
+- Die Zeile ÜBERWACHT VON nennt den Kanal des INA3221 des Carriers auf den
+  5V der Ports, `ÜBERWACHT VON INA3221 PROG 5V`, solange kein Kanal den
+  Port selbst misst
+  ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)).
 
 ### Die Übersicht: OFF
 

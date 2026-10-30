@@ -2127,33 +2127,6 @@ shared/link/include/link_pages.h: warning: Member LINK_POLES_MAX (macro definiti
 shared/link/include/link_pages.h: warning: Member LINK_SH_CORNER(r) (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SH_LAYOUT_OF(corner, per_side) (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SH_PER_SIDE(r) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SL_MA_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_CHANNELS (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_DERIVED (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_DMOHM_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_DMOHM_MIN (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_FAST_NONE (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_FIT_ALL (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_ID(a) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_ID_WRONG(a) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_IN_FORCE (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_PARTS (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_SHUNT(c) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SM_WATCH(c) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_EN_I3221 (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_ESC_CURRENT_OK (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I228_ADDR_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I228_ADDR_MIN (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I228_DA_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I228_DA_MIN (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I228_UOHM_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I228_UOHM_MIN (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I3221_ADDR_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I3221_ADDR_MIN (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I3221_CH_ALL (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I3221_DMOHM_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_I3221_DMOHM_MIN (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SN_RESETS_I3221(r) (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SP_LIVE (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SP_MODE(f) (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SP_ON (macro definition) of file link_pages.h is not documented.
@@ -2161,25 +2134,6 @@ shared/link/include/link_pages.h: warning: Member LINK_SP_ONLINE (macro definiti
 shared/link/include/link_pages.h: warning: Member LINK_SP_SET_STUCK (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SP_STUCK (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_SP_TRIPPED (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SS_ARM_CH(r) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SS_ARM_OF(ch, out) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SS_ARM_OUT(r) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SS_CAP_CLIPPED (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SS_CHANNELS (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SS_CH_CLIPPED(ch) (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SW_CAP_CLIPPED (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SW_E_CLIPPED_MAX (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SW_E_CLIP_HI (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SW_E_CLIP_LO (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SW_E_CLOSED (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SW_E_CURRENT (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SW_E_VOLTAGE (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SX_E_CLIP_HI (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SX_E_CLIP_LO (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SX_E_CURRENT (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SX_E_VOLTAGE (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SX_HAVE (macro definition) of file link_pages.h is not documented.
-shared/link/include/link_pages.h: warning: Member LINK_SX_PER_PAGE (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_TN_DEFAULT_F_MAX (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_TN_DEFAULT_F_MIN (macro definition) of file link_pages.h is not documented.
 shared/link/include/link_pages.h: warning: Member LINK_TN_DEFAULT_GAP_MS (macro definition) of file link_pages.h is not documented.
@@ -2794,7 +2748,6 @@ shared/settings/include/settings_sensors.h: warning: Member one_addr (variable) 
 shared/settings/include/settings_sensors.h: warning: Member one_ch (variable) of struct settings_sensors_map_t is not documented.
 shared/settings/include/settings_sensors.h: warning: Member one_dmohm (variable) of struct settings_sensors_map_t is not documented.
 shared/settings/include/settings_sensors.h: warning: parameters of member settings_sensors_def are not documented
-shared/settings/include/settings_sensors.h: warning: parameters of member settings_sensors_map are not documented
 shared/settings/include/settings_sensors.h: warning: parameters of member settings_sensors_migrate are not documented
 shared/settings/include/settings_sensors.h: warning: parameters of member settings_sensors_part are not documented
 shared/settings/include/settings_sensors.h: warning: parameters of member settings_sensors_row are not documented
@@ -3377,7 +3330,6 @@ shared/ui/include/prog_registry.h: warning: return type of member prog_view_even
 shared/ui/include/prog_registry.h: warning: return type of member prog_view_has_bar is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_view_shown is not documented
 shared/ui/include/sensors_rows.h: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.h is not documented.
-shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_channel are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_heading are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_listed are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_meter are not documented
@@ -3388,7 +3340,6 @@ shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_sta
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_title are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_watcher are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_why are not documented
-shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_channel is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_heading is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_listed is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_meter is not documented
