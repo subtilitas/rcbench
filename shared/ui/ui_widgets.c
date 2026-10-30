@@ -571,7 +571,7 @@ bool ui_hold_end(ui_hold_t *h, const touch_event_t *up, gfx_rect_t rect)
     if (h->down && !fired && up != NULL && touch_event_is_tap_up(up)
         && gfx_rect_contains(rect, up->point.x, up->point.y)
         && ui_router_stop_live()) {
-        ui_router_set_alert(ui_tr((ui_text_id_t)h->hint));
+        ui_router_set_notice(ui_tr((ui_text_id_t)h->hint));
     }
     h->down = false;
     h->held_s = 0.0f;

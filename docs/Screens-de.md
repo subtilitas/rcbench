@@ -152,7 +152,8 @@ steht in der Schrift 10 x 20px, höchstens 97 Zeichen je Zeile auf bis zu
 ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
 
 - Es verschwindet 30s nach dem Frame, in dem es kam. Ein neuer Alert, auch
-  mit demselben Text, startet die 30s neu.
+  mit demselben Text, startet die 30s neu. Eine Meldung, der [Hinweis eines
+  Halte-Buttons](#halte-buttons), steht 4s in Bernstein und weicht einem Alert.
 - Ein Tippen auf das Band löscht es früher: auf dem Band drücken und
   loslassen, rechts mit einem `x` markiert. Der Bildschirm darunter bekommt
   weder dieses Tippen noch das eines zweiten Fingers auf dem Band; nur das
@@ -178,8 +179,12 @@ ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
 ## Halte-Buttons
 
 Ein Halte-Button wirkt nach 2s Kontakt (`UI_HOLD_S`). Ein Loslassen vor 2s
-sendet nichts und zeigt den Hinweis des Buttons im Alert-Band, das ihn wie
-jeden Alert nach 30s löscht. Der Hinweis ist eine Zeile von höchstens
+sendet nichts und zeigt den Hinweis des Buttons im Alert-Band als Hinweis:
+das Band in Bernstein (`UI_C_WARN`) mit dunkler Schrift statt der Gefahrenfarbe,
+4s lang, durch einen Tipp auf das Band früher gelöscht. Ein kurzes Tippen ist
+keine Störung, also ist der Hinweis kein Alert. Ein Alert hat Vorrang: Solange
+einer steht, erscheint der Hinweis nicht, und ein Alert, der während des
+Hinweises kommt, ersetzt ihn. Der Hinweis ist eine Zeile von höchstens
 97 Zeichen.
 
 - Der Hinweis erscheint nur bei einem Loslassen, das der Finger auf dem Button

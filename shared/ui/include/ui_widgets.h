@@ -446,8 +446,9 @@ bool ui_hold_leave(ui_hold_t *h);
 /**
  * @brief The press lifted, or was dropped.
  *
- * A release before UI_HOLD_S shows the hold's hint (ui_hold_begin()) on the
- * alert band for UI_ALERT_SHOW_S, and sends nothing.  Only a release the
+ * A release before UI_HOLD_S shows the hold's hint (ui_hold_begin()) in the
+ * alert band as a notice (ui_router_set_notice(): amber, UI_NOTICE_SHOW_S)
+ * and sends nothing.  An alert showing keeps the band.  Only a release the
  * finger made is one: a press that left the control (ui_hold_leave()), a
  * hold the bench ended (ui_hold_left()), a release that is not a tap
  * (TOUCH_FLAG_NO_TAP: a lost touch, a contact that reached the band) and a

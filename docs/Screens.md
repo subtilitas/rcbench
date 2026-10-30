@@ -140,7 +140,8 @@ bottom 44px of the screen while it shows; ARM and every control that stops
 the bench end above it.
 
 - It clears 30s after the frame it arrived in. A new alert, even with the
-  same text, starts the 30s again.
+  same text, starts the 30s again. A notice, the [hint of a hold
+  button](#hold-buttons), shows in amber for 4s and gives way to an alert.
 - A tap on the band clears it earlier: press and lift on the band, marked
   with an `x` at its right end. The screen beneath receives neither that tap
   nor a second finger's on the band; only the first finger's lift clears.
@@ -162,8 +163,12 @@ the bench end above it.
 ## Hold buttons
 
 A hold button acts after 2s of contact (`UI_HOLD_S`). A release before 2s
-sends nothing and shows the button's hint in the alert band, which clears it
-30s later like any alert. The hint is one line of 97 characters at most.
+sends nothing and shows the button's hint in the alert band as a notice: the
+band in amber (`UI_C_WARN`) with dark text instead of the danger colour, 4s
+long, cleared earlier by a tap on the band. A short tap is not a fault, so
+the hint is not an alert. An alert takes priority: the hint does not show
+while an alert is up, and an alert that arrives while the hint shows replaces
+it. The hint is one line of 97 characters at most.
 
 - The hint shows only for a release the finger made on the button. It does
   not show when the finger left the button first (the hold is abandoned),
