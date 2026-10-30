@@ -95,6 +95,47 @@ bool sense_win_link_next(sense_win_link_t *s, uint32_t now_ms,
     return true;
 }
 
+/**
+ * @brief Raise each channel's peak of page @p p by the window @p r holds.
+ * @param s The link state.
+ * @param p The page, 0 or 1.
+ * @param r Its registers as read.
+ */
+static void note_peaks(sense_win_link_t *s, unsigned p, const uint16_t *r)
+{
+    if ((r[LINK_SX_FLAGS] & LINK_SX_HAVE) == 0u) {
+        return;
+    }
+    for (unsigned k = 0u; k < LINK_SX_PER_PAGE; ++k) {
+        if ((r[LINK_SX_E(k, LINK_SX_E_FLAGS)] & LINK_SX_E_CURRENT) == 0u) {
+            continue;
+        }
+        const unsigned c = p * LINK_SX_PER_PAGE + k;
+        const uint16_t bit = (uint16_t)(1u << c);
+        const int16_t ma = (int16_t)r[LINK_SX_E(k, LINK_SX_E_MAX_MA)];
+        if ((s->peaks & bit) == 0u || ma > s->peak_ma[c]) {
+            s->peak_ma[c] = ma;
+        }
+        s->peaks = (uint16_t)(s->peaks | bit);
+    }
+}
+
+uint16_t sense_win_link_take_peaks(sense_win_link_t *s, int16_t *out)
+{
+    if (s == NULL) {
+        return 0u;
+    }
+    const uint16_t had = s->peaks;
+    if (out != NULL) {
+        for (unsigned c = 0u; c < LINK_SM_CHANNELS; ++c) {
+            out[c] = ((had & (1u << c)) != 0u) ? s->peak_ma[c] : (int16_t)0;
+        }
+    }
+    s->peaks = 0u;
+    memset(s->peak_ma, 0, sizeof(s->peak_ma));
+    return had;
+}
+
 void sense_win_link_done(sense_win_link_t *s, int result,
                          const uint16_t *regs)
 {
@@ -113,6 +154,9 @@ void sense_win_link_done(sense_win_link_t *s, int result,
         memcpy(s->regs[p], regs, sizeof(s->regs[p]));
         s->have[p] = (s->want & (1u << p)) != 0u;
         s->have_prev[p] = s->have_prev[p] && s->have[p];
+        if (s->have[p]) {
+            note_peaks(s, p, regs);
+        }
     } else if (result == (int)LINK_NACK_BAD_PAGE) {
         s->page = false;
         memset(s->have, 0, sizeof(s->have));

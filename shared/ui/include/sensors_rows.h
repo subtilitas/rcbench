@@ -95,6 +95,27 @@ const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
                                unsigned ch, uint16_t ma, int watch);
 
 /**
+ * @brief Builds the console line of a channel over its limit, in English:
+ *        the part and channel, what it watches, the highest current of its
+ *        windows the panel read since the last SENSE_LIMIT read, and the
+ *        limit.  For example "INA3221 0x40 CH1 (PORT 1) over its limit of
+ *        0.010A: highest window read 0.153A".
+ * @param buf     where the line goes.
+ * @param n       the size of @p buf, bytes; 96 holds every line.
+ * @param ch      the channel, 0 to 11.
+ * @param watch   the channel's WATCHES option, said in brackets; none for
+ *                SENS_W_NONE.
+ * @param have    a window of @p ch was read: @p peak_ma holds it; else the
+ *                line says "no window read".
+ * @param peak_ma the highest current, mA, signed, shown in A to 0.001A.
+ * @param limit_ma the limit the page held, mA, shown in A to 0.001A.
+ * @return @p buf; "" for a channel past 11 or no buffer.
+ */
+const char *sensors_rows_trip_line(char *buf, size_t n, unsigned ch,
+                                   int watch, bool have, int16_t peak_ma,
+                                   uint16_t limit_ma);
+
+/**
  * @brief Channel @p c as the screens name it.
  *
  * "0x41 CH2"; a channel that watches a board's rail by the rail's name,

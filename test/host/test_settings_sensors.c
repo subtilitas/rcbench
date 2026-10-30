@@ -707,6 +707,61 @@ TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * The console line of a trip: in English whatever the panel's language,
+ * the channel's part and number, what it watches, the limit and the
+ * highest window read, both to 0.001A; "no window read" without one; nothing for
+ * a channel past the twelfth or no buffer.
+ */
+TEST_CASE(a_trip_line_names_its_channel_reading_and_limit)
+{
+    char buf[96];
+    CHECK_STR_EQ(sensors_rows_trip_line(buf, sizeof(buf), 0u, SENS_W_PORT_1,
+                                        true, 153, 10u),
+                 "INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: "
+                 "highest window read 0.153A");
+    CHECK_STR_EQ(sensors_rows_trip_line(buf, sizeof(buf), 11u, SENS_W_NONE,
+                                        true, 32767, 32767u),
+                 "INA3221 0x43 CH3 over its limit of 32.767A: highest "
+                 "window read 32.767A");
+    CHECK_STR_EQ(sensors_rows_trip_line(buf, sizeof(buf), 4u, SENS_W_SUPPLY,
+                                        true, -32768, 1u),
+                 "INA3221 0x41 CH2 (SUPPLY) over its limit of 0.001A: "
+                 "highest window read -32.768A");
+    CHECK_STR_EQ(sensors_rows_trip_line(buf, sizeof(buf), 8u, SENS_W_NONE,
+                                        false, 999, 1000u),
+                 "INA3221 0x42 CH3 over its limit of 1.000A: no window "
+                 "read");
+    /* A WATCHES value past the list is said as none. */
+    CHECK_STR_EQ(sensors_rows_trip_line(buf, sizeof(buf), 1u, SENS_W_COUNT,
+                                        true, 0, 5u),
+                 "INA3221 0x40 CH2 over its limit of 0.005A: highest window "
+                 "read 0.000A");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(sensors_rows_trip_line(buf, sizeof(buf), 4u, SENS_W_SUPPLY,
+                                        true, 990, 500u),
+                 "INA3221 0x41 CH2 (SUPPLY) over its limit of 0.500A: "
+                 "highest window read 0.990A");
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(sensors_rows_trip_line(buf, sizeof(buf), 12u, SENS_W_NONE,
+                                        true, 1, 1u), "");
+    CHECK_STR_EQ(sensors_rows_trip_line(NULL, 0u, 0u, SENS_W_NONE, true, 1,
+                                        1u), "");
+    /* 96 bytes hold the longest: every WATCHES option, the widest
+     * figures. */
+    for (int w = SENS_W_NONE; w < SENS_W_COUNT; ++w) {
+        char wide[200];
+        (void)sensors_rows_trip_line(wide, sizeof(wide), 11u, w, true,
+                                     -32768, 32767u);
+        CHECK(strlen(wide) < sizeof(buf));
+        CHECK(strstr(wide, "-32.768A") != NULL);
+    }
+    /* A short buffer is cut, not overrun. */
+    char small[8];
+    CHECK_STR_EQ(sensors_rows_trip_line(small, sizeof(small), 0u, SENS_W_NONE,
+                                        true, 1, 1u), "INA3221");
+}
+
 int main(void)
 {
     RUN(the_monitor_addresses_stop_at_their_ends);
@@ -728,5 +783,6 @@ int main(void)
     RUN(every_part_state_has_its_words_and_colour);
     RUN(the_scroll_follows_a_list_that_shortens);
     RUN(an_over_alert_names_its_channel_target_and_limit);
+    RUN(a_trip_line_names_its_channel_reading_and_limit);
     return test_summary("settings_sensors");
 }
