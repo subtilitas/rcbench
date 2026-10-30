@@ -149,6 +149,26 @@ whoever holds the supply:
   (`error_sites_page_keeps()`). An ON the page let go is followed off the
   same way; the page lets an ON go only with no port holding it.
 
+A port holds the supply while the SUPPLY page's FLAGS bit 11
+(`LINK_SP_PORT`) says so, as the panel last read it
+(`supply_link_port_holds()`). A KST or Hitec session that has a port counts
+through that bit only. On an IOmcu older than 4.29 a Hitec session holds
+the supply from a POWER's OFF to the end of its listen, and an error between
+two POWERs switches it off. An IOmcu older than 4.13 has no such bit, and
+no port holds the supply there. The panel reads the page every 100ms while
+the PD mini is in use. A port that takes the supply between two reads gets
+the OFF of an error in that gap. After a port lets go, the panel reads the
+hold until its next answered read, and an error in that gap leaves the
+output on (current limitation, IOmcu older than 4.31 only). From 4.31 the
+hold changes nothing: the panel writes the OFF either way, and the IOmcu
+holds it for a write that runs.
+
+The carrier's programming-port 5V has no such exemption. Its page,
+PROG_SUPPLY, exists from 4.32, and every IOmcu that serves it holds the
+OFF for a write; its own port bit (`LINK_PS_PORT`) does not enter the rule.
+On the carrier the SUPPLY page's bit stays clear, since the ports run from
+the 5V and not from the PD mini.
+
 A port holds the PD mini's output only. The panel's model has no port on
 it, and an error switches it off. A supply that stops answering or gives
 no reading with no port holding it is switched off, so that it does not
@@ -162,7 +182,8 @@ switched off.
 
 ### A programming port's supply
 
-A KST or Hitec session holds the PD mini's output while it has a port. On
+A KST or Hitec session holds the PD mini's output while it has a port, on
+a board without the programming ports' own 5V. On
 an error the panel writes the supply's OFF to the IOmcu whoever holds it,
 and whether it reads the output on or not (`supply_link_cut()`). The IOmcu
 decides whether a write to the servo's memory runs, from its own state

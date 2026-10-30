@@ -91,7 +91,9 @@ static uint32_t           s_kst_stops;    /* stops an abort was sent for */
  * Control task only.  Read once a pass by kst_port_look(), before the arms
  * of the pass are served: no command of a programmer is taken between the
  * two.  A HITEC port another writer holds counts: the bench console's, or
- * one held over a panel restart, until RELEASE PORT closes it.
+ * one held over a panel restart, until RELEASE PORT closes it.  Whether a
+ * port holds the PD mini's output is the SUPPLY page's to say
+ * (supply_link_port_holds()), and the error rule reads that.
  */
 bool s_prog_taken;
 

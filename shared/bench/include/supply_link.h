@@ -513,6 +513,26 @@ bool supply_link_held_pins(const supply_link_t *s, int *tx, int *rx);
  */
 bool supply_link_port_held(const supply_link_t *s);
 
+/**
+ * @brief Whether a programming port holds the PD mini's output for the
+ *        panel's error rule (error_bench_t.port_holds, error_sites.h): the
+ *        PD mini in use and the last read of the page with LINK_SP_PORT set.
+ *
+ * The page's flag and not a programmer's session: a session with a port
+ * whose supply the page does not hold -- the rbmod carrier's ports, which
+ * run from PROG_SUPPLY, or a Hitec session between two POWERs on an IOmcu
+ * older than 4.29 -- does not count.  As last read: a port that takes the
+ * supply counts from the next read, SUPPLY_LINK_READ_MS (100ms) apart while
+ * the PD mini is in use, and one that lets go counts until it.  An
+ * unanswered read keeps the last answer; a lost link clears it.
+ *
+ * @param s      The link state.
+ * @param pdmini The PD mini is the supply, not the panel's model.
+ * @return true while held; false for NULL, for the model, and before the
+ *         first read since the link came up.
+ */
+bool supply_link_port_holds(const supply_link_t *s, bool pdmini);
+
 #ifdef __cplusplus
 }
 #endif

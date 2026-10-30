@@ -595,3 +595,8 @@ bool supply_link_port_held(const supply_link_t *s)
 {
     return s != NULL && s->port_held;
 }
+
+bool supply_link_port_holds(const supply_link_t *s, bool pdmini)
+{
+    return pdmini && supply_link_port_held(s);
+}
