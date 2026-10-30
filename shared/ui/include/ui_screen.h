@@ -369,7 +369,10 @@ void ui_router_set_alert(const char *text);
  */
 void ui_router_set_notice(const char *text);
 
-/** @brief Whether the passing alert is a notice, ui_router_set_notice(). */
+/**
+ * @brief Whether the passing alert is a notice, ui_router_set_notice().
+ * @return True while a notice shows; false for an alert and for none.
+ */
 bool ui_router_alert_is_notice(void);
 
 /**
