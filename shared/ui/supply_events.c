@@ -167,7 +167,7 @@ static void down(const touch_event_t *evt)
         take(evt, P_OUTPUT);
         s.press_on = s.on;
         if (!s.on) {
-            ui_hold_begin(&s.hold);
+            ui_hold_begin(&s.hold, TX_HOLD_HINT_OUTPUT_ON);
         }
         ++s.out_rev;
         return;
@@ -513,7 +513,7 @@ void sup_event(const touch_event_t *evt)
             return;
         }
         {
-            const bool fired = ui_hold_end(&s.hold);
+            const bool fired = ui_hold_end(&s.hold, evt, s.out_rect);
             ++s.out_rev;
             /* Off is a tap; on is a hold that has already sent its command
              * by the time the finger lifts.  Which one is the press's: an

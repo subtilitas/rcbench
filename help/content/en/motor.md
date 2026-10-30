@@ -79,7 +79,7 @@ ARM switches the whole bank of throttle outputs to ARMED, not only the pins name
 
 ![A run while ARMED, with no IOmcu: SIM and the SIMULATION watermark](view:motor)
 
-1. Hold ARM for 2s. The fill fades from green to red; the bench switches to ARMED when the fade completes. Letting go earlier switches nothing.
+1. Hold ARM for 2s. The fill fades from green to red; the bench switches to ARMED when the fade completes. Letting go earlier switches nothing and shows `Hold 2s to switch to ARMED.` in the alert band.
 2. Drag the throttle. It moves by how far the finger travels, not to where it lands. `-1` and `+1` step one percentage point.
 3. Tap DISARM, or press STOP, to end the run. Both stop the output at once, with no ramp, and return the throttle to 0%.
 

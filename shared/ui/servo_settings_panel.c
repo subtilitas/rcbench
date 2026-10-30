@@ -533,7 +533,7 @@ void ov_down(const touch_event_t *evt)
             ov_take(evt, OP_ASK_APPLY, -1);
             if (s.ask.hv) {
                 s.ask.down = true;
-                ui_hold_begin(&s.ask.hold);
+                ui_hold_begin(&s.ask.hold, TX_HOLD_HINT_APPLY);
                 ++s.ask.rev;
             }
         } else if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
@@ -545,7 +545,7 @@ void ov_down(const touch_event_t *evt)
         if (gfx_rect_contains(warn_apply_rect(), x, y)) {
             ov_take(evt, OP_WARN_APPLY, -1);
             s.warn.down = true;
-            ui_hold_begin(&s.warn.hold);
+            ui_hold_begin(&s.warn.hold, TX_HOLD_HINT_APPLY);
             ++s.warn.rev;
         } else if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
             ov_take(evt, OP_WARN_CANCEL, -1);
@@ -670,7 +670,7 @@ void ov_rest(const touch_event_t *evt)
             }
             return;
         }
-        (void)ui_hold_end(&s.ask.hold);
+        (void)ui_hold_end(&s.ask.hold, evt, warn_apply_rect());
         s.ask.down = false;
         ++s.ask.rev;
         ov_let_go();
@@ -689,7 +689,7 @@ void ov_rest(const touch_event_t *evt)
             }
             return;
         }
-        (void)ui_hold_end(&s.test_hold);
+        (void)ui_hold_end(&s.test_hold, evt, test_start_rect());
         s.test_down = false;
         ++s.test_rev;
         ov_let_go();
@@ -708,7 +708,7 @@ void ov_rest(const touch_event_t *evt)
             }
             return;
         }
-        (void)ui_hold_end(&s.lim_hold);
+        (void)ui_hold_end(&s.lim_hold, evt, lim_start_rect());
         s.lim_down = false;
         ++s.test_rev;
         ov_let_go();
@@ -724,7 +724,7 @@ void ov_rest(const touch_event_t *evt)
             }
             return;
         }
-        (void)ui_hold_end(&s.warn.hold);
+        (void)ui_hold_end(&s.warn.hold, evt, warn_apply_rect());
         s.warn.down = false;
         ++s.warn.rev;
         ov_let_go();

@@ -16,6 +16,13 @@ history is in git.
   other controls that stop an output act through it; the knob moves
   nothing while it is open; while ARMED it offers only pages that cover no
   such control. `test_help_router` and `test_help_pages` hold it.
+- Hold buttons: a release before 2s shows the button's hint in the alert
+  band, for example `Hold 2s to switch to ARMED.`, and sends nothing. It
+  applies to ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and the other
+  buttons labelled `HOLD 2s TO ...`. The hint is a notice: amber, 4s, cleared
+  by a tap on the band, and never over an alert; an alert that arrives
+  replaces it. A slide-off, a lost touch, a release that is not a tap, a
+  second finger's contact and a screen without the status band show no hint ([Screens, Hold buttons](docs/Screens.md#hold-buttons)).
 - `protocols/hitec`: `hitec_session_move()` moves a Hitec servo inside its
   programming session: D series 0x1E = target (0 to 6000), then a read of
   0x0C; classic `66` (3600 to 8400, 0.25us), then `65`. It writes RAM only

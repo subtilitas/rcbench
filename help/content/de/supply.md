@@ -74,7 +74,7 @@ Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die
 
 ## AUSGANG EIN und AUS
 
-AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. AUSGANG AUS ist ein Tipp. Der Ausgang schaltet ab und bleibt bis zum nächsten Halten aus bei:
+AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. Ein Loslassen vor 2s schaltet nichts und zeigt `Halte 2s, um den Ausgang einzuschalten.` im Alert-Band. AUSGANG AUS ist ein Tipp. Der Ausgang schaltet ab und bleibt bis zum nächsten Halten aus bei:
 
 - STOP, auf jedem Bildschirm;
 - Verlassen von SUPPLY, für einen Ausgang, den SUPPLY eingeschaltet hat;

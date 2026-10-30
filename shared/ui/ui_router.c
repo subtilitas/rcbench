@@ -54,6 +54,7 @@ static struct {
     ui_bench_status_t status;
     char              alert[UI_ALERT_MAX];
     bool              has_alert;
+    bool              alert_notice;   /**< the passing alert is a notice    */
     float             alert_age_s;
     bool              alert_fresh;    /**< set since the last tick          */
     uint32_t          alert_gen;      /**< counts alerts set                */
@@ -297,6 +298,7 @@ static void clear_alert(void)
         ui_router_invalidate();
     }
     s.has_alert   = false;
+    s.alert_notice = false;
     s.alert_fresh = false;
     s.alert_age_s = 0.0f;
     s.alert[0]    = '\0';
@@ -311,7 +313,8 @@ void ui_router_tick(float dt_s)
         s.alert_fresh = false;
     } else if (s.has_alert && dt_s > 0.0f) {
         s.alert_age_s += dt_s;
-        if (s.alert_age_s >= UI_ALERT_SHOW_S) {
+        if (s.alert_age_s >= (s.alert_notice ? UI_NOTICE_SHOW_S
+                                             : UI_ALERT_SHOW_S)) {
             clear_alert();
         }
     }
@@ -945,12 +948,27 @@ void ui_router_set_alert(const char *text)
     }
     snprintf(s.alert, sizeof(s.alert), "%s", text);
     s.has_alert   = true;
+    s.alert_notice = false;
     s.alert_fresh = true;
     s.alert_age_s = 0.0f;
     ++s.alert_gen;
     if (s.alert_gen == 0u) {
         s.alert_gen = 1u;           /* 0 is "none" to ui_router_alert_number() */
     }
+}
+
+void ui_router_set_notice(const char *text)
+{
+    if (text == NULL || s.has_held || (s.has_alert && !s.alert_notice)) {
+        return;
+    }
+    ui_router_set_alert(text);
+    s.alert_notice = true;
+}
+
+bool ui_router_alert_is_notice(void)
+{
+    return s.has_alert && s.alert_notice;
 }
 
 uint32_t ui_router_alert_number(void)
@@ -969,6 +987,9 @@ bool ui_router_withdraw_alert(uint32_t number)
 
 void ui_router_hold_alert(const char *text)
 {
+    if (text != NULL && s.alert_notice) {
+        clear_alert();                  /* a real alert replaces a notice */
+    }
     if (s.has_held && !s.has_alert) {
         ui_router_invalidate();         /* the band's red, as clear_alert() */
     }
@@ -1013,22 +1034,25 @@ int ui_router_alert_rows(const char *text)
  */
 static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
 {
+    /* A notice is amber with dark text; an alert is the danger colour. */
+    const bool notice = ui_router_alert_is_notice();
+    const gfx_color_t fill = ui_theme_color(notice ? UI_C_WARN : UI_C_DANGER);
+    const gfx_color_t ink = ui_theme_color(notice ? UI_C_TEXT_ON_LIGHT
+                                                  : UI_C_TEXT);
     const int y = PANEL_H - ALERT_H;
     /* One row centred in the band's height. */
     const int y1 = y + (ALERT_H - gfx_text_height(ALERT_FONT, 1)) / 2;
-    gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, ui_theme_color(UI_C_DANGER));
+    gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, fill);
     if (ui_router_alert_rows(text) <= 1) {
-        gfx_text(c, ALERT_TEXT_X, y1, text, ALERT_FONT,
-                 ui_theme_color(UI_C_TEXT), 1);
+        gfx_text(c, ALERT_TEXT_X, y1, text, ALERT_FONT, ink, 1);
     } else {
         (void)ui_text_wrap(c, gfx_rect_make(ALERT_TEXT_X, y + 2, ALERT_TEXT_W,
                                             ALERT_PITCH),
-                           ALERT_PITCH, text, ALERT_FONT,
-                           ui_theme_color(UI_C_TEXT));
+                           ALERT_PITCH, text, ALERT_FONT, ink);
     }
     if (closable) {
         gfx_text(c, PANEL_W - 12 - gfx_text_width(ALERT_FONT, "x", 1), y1,
-                 "x", ALERT_FONT, ui_theme_color(UI_C_TEXT), 1);
+                 "x", ALERT_FONT, ink, 1);
     }
 }
 
