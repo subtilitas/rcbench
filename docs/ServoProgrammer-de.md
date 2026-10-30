@@ -1643,7 +1643,7 @@ Ausschalten, das Ausschalten eines Fehlers, AUSGANG AUS und einen STOP,
 AUSGANG AUS, während sie oder die HV-Warnung steht,
 Sollwerte, die nicht abweichen, einen geänderten Sollwert, eine
 gesenkte Grenze und die gezeichnete Frage in beiden Sprachen: AUSGANG IST
-EINGESCHALTET in ihrem Rahmen, JA gedrückt und NEIN; und keine Frage auf
+EINGESCHALTET in ihrem Rahmen, JA und NEIN je gedrückt; und keine Frage auf
 einer Platine, deren Ports aus ihrer eigenen Versorgung laufen und auf der
 eine Sitzung den SUPPLY-Bildschirm nicht hält.
 `test_kst_file` fährt Dateien im Format 1 und 2: die Typzeile, ihr Fehlen,

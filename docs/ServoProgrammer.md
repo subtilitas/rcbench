@@ -1488,7 +1488,7 @@ keypad and question and OUTPUT ON's hold before it, an OFF, an error's
 OFF, OUTPUT OFF and a STOP, OUTPUT OFF while it or the HV warning stands,
 set points that do not differ, one moved, a
 lowered cap, and the question as drawn in both languages: OUTPUT IS ON in
-its frame, YES pressed and NO; and no question on a board whose ports run
+its frame, YES and NO each pressed; and no question on a board whose ports run
 from their own supply, where a session does not hold the SUPPLY screen. `test_kst_file` runs format 1 and format 2
 files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
