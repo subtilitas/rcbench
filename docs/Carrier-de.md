@@ -66,7 +66,10 @@ geteilte Slice schränkt also nichts ein.
 | PD mini, an J8 | sein eigener Eingang | VCC_PDMINI: die Servoschienen A und B an J2 | die SUPPLY-Page |
 
 Die Programmierports laufen aus den festen 5V von M7, nicht aus dem PD mini.
-KST- und Chaservo-Servos programmieren mit 5V. Auf dem Carrier stellen die
+Eine KST- oder Hitec-Sitzung lässt den PD mini der bedienenden Person:
+SUPPLY und die Zeile SOLL des SERVO-Bildschirms nehmen während einer
+Sitzung AUSGANG EIN und Sollwerte an, die sie auf anderen Platinen
+abweisen. KST- und Chaservo-Servos programmieren mit 5V. Auf dem Carrier stellen die
 Programmer die Spannung der Programmierports nicht ein: ihre Liste MORE
 zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21` und bietet weder Spannung
 noch Strom an.

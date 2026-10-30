@@ -469,6 +469,34 @@ TEST_CASE(a_supply_held_by_a_port_takes_off_and_no_other_press)
     CHECK(c.on);
 }
 
+/* On a board whose programming ports have their own supply (the rbmod
+ * carrier), neither programmer's port holds the screen: the PD mini takes
+ * set points and OUTPUT ON through a session.  On any other board it is
+ * held.  The board's word arriving or going moves the hold at once. */
+TEST_CASE(a_port_holds_the_screen_only_where_the_ports_use_the_pd_mini)
+{
+    supply_cmd_t c;
+
+    for (int k = 0; k < 4; ++k) {
+        const bool own = (k & 1) != 0;
+
+        fresh();
+        supply_screen_set_ports_own(own);
+        if ((k & 2) != 0) {
+            supply_screen_set_hitec_held(true);
+        } else {
+            supply_screen_set_port_held(true);
+        }
+        CHECK_EQ(supply_screen_port_held(), !own);
+        tap(V_UP_X, V_ROW_Y);
+        CHECK_NEAR(supply_screen_set_v(), own ? 6.1f : 6.0f, 1e-4f);
+        hold_on();
+        CHECK_EQ(supply_screen_poll_cmd(&c) && c.on, own);
+        supply_screen_set_ports_own(!own);
+        CHECK_EQ(supply_screen_port_held(), own);
+    }
+}
+
 /* What was under way when the port left PWM ends with nothing asked. */
 TEST_CASE(a_port_that_takes_the_supply_ends_what_was_under_way)
 {
@@ -723,6 +751,7 @@ int main(void)
     RUN(a_drag_the_home_tag_releases_opens_no_question);
     RUN(a_trip_shows_on_the_mode_card);
     RUN(a_supply_held_by_a_port_takes_off_and_no_other_press);
+    RUN(a_port_holds_the_screen_only_where_the_ports_use_the_pd_mini);
     RUN(a_port_that_takes_the_supply_ends_what_was_under_way);
     RUN(caps_reach_the_set_points_when_the_port_lets_go);
     RUN(the_operators_set_points_come_back_when_the_port_is_done);

@@ -748,10 +748,11 @@ void prog_ports_to_screens(void);
 #define DRIVE_HELD_SHIFT 20u
 extern atomic_uint    s_drive;
 /** @brief Whether a servo programmer, KST or Hitec, has a port or an
- *         operation under way: the bench takes no arm and no supply
- *         change then.  Not whether a port holds the supply: the error
- *         rule reads that from the SUPPLY page (supply_link_port_holds()).
- *         Control task only; kst_port_look(). */
+ *         operation under way: the bench takes no arm then, and no PD mini
+ *         change on a board whose ports run from it
+ *         (supply_link_session_blocks()).  The error rule's hold needs the
+ *         SUPPLY page's word as well (supply_link_port_holds()).  Control
+ *         task only; kst_port_look(). */
 extern bool            s_prog_taken;
 extern kst_prog_gate_t s_kst_gate;
 /** @brief The programmers' session faults: the KST outcomes

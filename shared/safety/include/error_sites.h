@@ -30,8 +30,8 @@
  * a port's write, 10000ms at most, as SUPPLY's from 4.31.
  *
  * A programming port holds the PD mini's output only, never the panel's
- * model, and holds it while the SUPPLY page says so (LINK_SP_PORT), not
- * while a programmer merely has a port.  With an IOmcu older than 4.31 a
+ * model, and holds it while the SUPPLY page says so (LINK_SP_PORT) and a
+ * programmer has a port, not while either alone says so.  With an IOmcu older than 4.31 a
  * port that holds the supply keeps it through every error here but the
  * trip (error_sites_keeps()).  A SUPPLY
  * page event whose output is off at the far end already -- the module's
@@ -68,6 +68,7 @@ typedef struct {
     bool     supply_on;    /**< the output on, or an ON asked              */
     bool     port_holds;   /**< a programming port holds the supply: the
                                 SUPPLY page's LINK_SP_PORT as last read
+                                and a programmer's session with a port
                                 (supply_link_port_holds()); taken for the
                                 PD mini only                              */
     bool     supply_real;  /**< the PD mini is the supply, not the model   */

@@ -65,7 +65,10 @@ so the shared slice limits nothing.
 | M8, buck | the +15V net | +5V: the module's VBUS and J7 | always on |
 | PD mini, on J8 | its own input | VCC_PDMINI: the servo rails A and B on J2 | the SUPPLY page |
 
-The programming ports run from M7's fixed 5V, not from the PD mini. KST and
+The programming ports run from M7's fixed 5V, not from the PD mini. A KST
+or Hitec session leaves the PD mini to the operator: SUPPLY and the SERVO
+screen's SET row take OUTPUT ON and set points through a session, which on
+other boards they refuse. KST and
 Chaservo servos program at 5V. On the carrier the programmers do not set the
 programming ports' voltage: their MORE list reads
 `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` and offers no voltage or current.
