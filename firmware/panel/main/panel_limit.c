@@ -43,12 +43,6 @@ static sense_limit_link_t s_sense_limit;
 /** @brief The console's tag. */
 static const char *TAG = "rcbench";
 
-/** @brief Each channel's highest window current read up to the last read
- *         of OVER, for the console line of a trip; control task only. */
-static int16_t  s_trip_peak[LINK_SL_KEPT];
-/** @brief Bit c: s_trip_peak[c] holds a window; control task only. */
-static uint16_t s_trip_peaks;
-
 /** @brief SETUP > SENSORS' LIMIT marks, sensors_rows_set_limits()'s word.
  *         Control task writes, app_main reads. */
 atomic_uint s_sense_limits;
@@ -109,9 +103,11 @@ static void limit_alerts(void)
  * @brief One console line for each channel of a trip: the part, channel,
  *        what it watches, the highest current read and the limit the
  *        trip was judged by.
- * @param trip The channels, bit c channel c (sense_limit_link_take_trip()).
+ * @param trip  The channels, bit c channel c (sense_limit_link_take_trip()).
+ * @param peaks Bit c: @p peak holds a window of channel c.
+ * @param peak  Each channel's highest window current read, mA.
  */
-static void log_trip(uint16_t trip)
+static void log_trip(uint16_t trip, uint16_t peaks, const int16_t *peak)
 {
     uint8_t watch[LINK_SL_KEPT];
     taskENTER_CRITICAL(&s_limit_mux);
@@ -125,7 +121,7 @@ static void log_trip(uint16_t trip)
         ESP_LOGI(TAG, "%s",
                  sensors_rows_trip_line(
                      line, sizeof(line), c, watch[c],
-                     (s_trip_peaks & (1u << c)) != 0u, s_trip_peak[c],
+                     (peaks & (1u << c)) != 0u, peak[c],
                      sense_limit_link_trip_ma(&s_sense_limit, c)));
     }
 }
@@ -144,6 +140,7 @@ void sense_limit_service(void)
     memcpy(want, s_limit_want, sizeof(want));
     taskEXIT_CRITICAL(&s_limit_mux);
     sense_limit_link_want(&s_sense_limit, want, now_ms());
+    bool over_read = false;
     for (int k = 0; k < 2; ++k) {
         sense_limit_link_op_t op;
         if (!sense_limit_link_next(&s_sense_limit, now_ms(), &op)) {
@@ -160,13 +157,10 @@ void sense_limit_service(void)
             result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
                                                 : SENSE_LIMIT_LINK_ACK;
         }
-        if (answered && reply.op == LINK_OP_DATA
-            && (op.kind == SENSE_LIMIT_LINK_OP_OVER
-                || op.kind == SENSE_LIMIT_LINK_OP_READ)) {
-            /* The windows OVER judged since its last read, as far as the
-             * panel read them, for the console line of a trip. */
-            s_trip_peaks = sense_win_take_peaks(s_trip_peak);
-        }
+        over_read = over_read
+                    || (answered && reply.op == LINK_OP_DATA
+                        && (op.kind == SENSE_LIMIT_LINK_OP_OVER
+                            || op.kind == SENSE_LIMIT_LINK_OP_READ));
         sense_limit_link_done(&s_sense_limit, result,
                               (answered && reply.op == LINK_OP_DATA)
                                   ? reply.regs : NULL,
@@ -175,10 +169,19 @@ void sense_limit_service(void)
             break;
         }
     }
+    /* The windows read since the pass with the last read of OVER, both
+     * reads of a pass that makes two included: what the trip's bits were
+     * judged on, as far as the panel read them.  A trip comes only from a
+     * read in this pass, and is taken in it. */
+    int16_t  peak[LINK_SL_KEPT] = { 0 };
+    uint16_t peaks = 0u;
+    if (over_read) {
+        peaks = sense_win_take_peaks(peak);
+    }
     const uint16_t trip = sense_limit_link_take_trip(&s_sense_limit);
     if (trip != 0u) {
         bench_error_stop();
-        log_trip(trip);
+        log_trip(trip, peaks, peak);
     }
     limit_alerts();
     atomic_store(&s_sense_limits,

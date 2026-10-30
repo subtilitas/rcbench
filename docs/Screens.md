@@ -4301,7 +4301,7 @@ I (123456) rcbench: INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: highest 
 ```
 
 The reading is the highest current of the channel's windows the panel read
-on SENSE_WIN_A or SENSE_WIN_B since the read of OVER before, the figure
+on SENSE_WIN_A or SENSE_WIN_B since the poll that read OVER before, the figure
 the IOmcu judges by, to 0.001A. The limit is the one the trip was judged
 by, also when a new limit is written in the same poll. A window that closed after the panel's
 last read of its page is not in it, so the figure can be under the limit.
