@@ -3609,7 +3609,7 @@ Aktuelle Einschränkungen:
 - Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
   mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
   Downloads. Die Ursache ist nicht gemessen. Die Seite mit der
-  Dateiverwaltung hat 59.770 Bytes auf Englisch mit leerer Karte und keine
+  Dateiverwaltung hat 62.815 Bytes auf Englisch mit leerer Karte und keine
   Kartenliste; ihre Zeit ist nicht gemessen.
 
 ### Der Zugangscode
@@ -3874,7 +3874,8 @@ ZUGANGSCODE und noch keinem Code fragt SPEICHERN im Feld des Editors nach
 dem Code: CODE SENDEN schickt ihn an `/code`, ohne die Seite zu verlassen,
 die Antwort des Panels setzt das Cookie, und SPEICHERN geht mit dem Text,
 wie er steht, noch einmal hinaus; ein falscher Code sagt
-`Falscher Code.` und fragt erneut. Jede andere Ablehnung zeigt ihren Text
+`Falscher Code.` und fragt erneut. Eine Antwort, die nach ABBRECHEN im Feld
+oder nach dem Schließen des Editors kommt, speichert nichts. Jede andere Ablehnung zeigt ihren Text
 im Kopf, und der Text bleibt. Während SPEICHERN läuft,
 ändert sich der Text nicht, und SCHLIESSEN wartet darauf.
 

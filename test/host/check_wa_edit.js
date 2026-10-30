@@ -400,6 +400,13 @@ async function saves() {
     'code: followed redirect not OK');
   check(a({ type: 'basic', status: 200 }) === 'WRONG', 'code: page not WRONG');
   check(a({ type: 'basic', status: 503 }) === 'CLOSED', 'code: 503 not CLOSED');
+  // An answer after CANCEL or the session's end does nothing.
+  for (const w of ['OK', 'WRONG', 'CLOSED']) {
+    check(RcbEd.codeNext(w, false) === 'DROP', `code: ${w} after CANCEL acts`);
+  }
+  check(RcbEd.codeNext('OK', true) === 'SAVE', 'code: OK does not save');
+  check(RcbEd.codeNext('WRONG', true) === 'ASK', 'code: WRONG does not ask');
+  check(RcbEd.codeNext('CLOSED', true) === 'CLOSED', 'code: no answer not said');
 }
 
 // ---------------------------------------------------- the unsaved question

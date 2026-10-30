@@ -3261,7 +3261,7 @@ Current limitations:
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
   688-757kB/s. The cause is not measured. The page with the file manager
-  is 59,770 bytes in English on an empty card and has no card listing;
+  is 62,815 bytes in English on an empty card and has no card listing;
   its time is not measured.
 
 ### The access code
@@ -3503,7 +3503,8 @@ the next SAVE is refused 412. With Browser writes ACCESS CODE and
 no code given yet, SAVE asks for the code in the editor's box: SEND CODE
 sends it to `/code` without leaving the page, the panel's answer sets the
 cookie, and SAVE goes out again with the text as it stands; a wrong code
-says `Wrong code.` and asks again. Any other refusal shows its text in the
+says `Wrong code.` and asks again. An answer that arrives after the box's
+CANCEL, or after the editor closed, saves nothing. Any other refusal shows its text in the
 header, and the text stays. While a SAVE runs the text does not
 change, and CLOSE waits for it.
 

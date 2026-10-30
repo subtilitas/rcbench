@@ -44,7 +44,8 @@
 // A SAVE refused WRITES_CODE (Browser writes ACCESS CODE, no code given
 // yet) asks for the code in the editor's box and sends it to /code itself,
 // without leaving the page: the panel's answer sets the cookie, and SAVE
-// goes out again with the text as it stands.
+// goes out again with the text as it stands.  An answer that arrives after
+// the box's CANCEL, or after the editor closed, saves nothing.
 //
 // SPDX-License-Identifier: MIT
 
@@ -223,6 +224,16 @@ var RcbEd = (function () {
       return 'OK';
     }
     return r.status === 200 ? 'WRONG' : 'CLOSED';
+  }
+
+  // What the answer @p w of codeAnswer() does: 'DROP' when the code's box
+  // or its session has ended since it was sent (@p live false), else
+  // 'SAVE', 'ASK' for a wrong code or 'CLOSED'.
+  function codeNext(w, live) {
+    if (!live) {
+      return 'DROP';
+    }
+    return w === 'OK' ? 'SAVE' : (w === 'WRONG' ? 'ASK' : 'CLOSED');
   }
 
   function dirty(ed, text) {
@@ -444,7 +455,15 @@ var RcbEd = (function () {
       return e.p === 'FREE' ? '' : TX['e.ARG'];
     }
 
+    // The code under way, if any, answers into nothing, and its box's
+    // button takes a tap again.
+    function codeEnd() {
+      x.codeFor = null;
+      x.go.disabled = false;
+    }
+
     function stop() {
+      codeEnd();
       ed = null;
       lines = null;
       saving = false;
@@ -522,6 +541,7 @@ var RcbEd = (function () {
     }
 
     function stay() {
+      codeEnd();
       holdEnd();
       x.box.hidden = true;
       x.ta.focus();
@@ -577,6 +597,8 @@ var RcbEd = (function () {
       if (v === '') {
         return;
       }
+      var mine = { s: ed };
+      x.codeFor = mine;
       x.go.disabled = true;
       c.queue(function () {
         return fetch('/code', { method: 'POST', credentials: 'same-origin',
@@ -589,11 +611,15 @@ var RcbEd = (function () {
             return { ok: false, w: 'CLOSED' };
           });
       }).then(function (a) {
-        x.go.disabled = false;
-        if (a.w === 'OK') {
+        var next = codeNext(a.w, x.codeFor === mine && ed === mine.s);
+        if (next === 'DROP') {
+          return;
+        }
+        codeEnd();
+        if (next === 'SAVE') {
           stay();
           save();
-        } else if (a.w === 'WRONG') {
+        } else if (next === 'ASK') {
           x.qtext.textContent = TX.codewrong;
           x.codeIn.select();
         } else {
@@ -789,7 +815,8 @@ var RcbEd = (function () {
 
   return { decode: decode, encode: encode, open: open, eolOf: eolOf,
     endsOf: endsOf, fits: fits, sumLine: sumLine, cutSum: cutSum,
-    dirty: dirty, onClose: onClose, codeAnswer: codeAnswer, save: save,
+    dirty: dirty, onClose: onClose, codeAnswer: codeAnswer,
+    codeNext: codeNext, save: save,
     foundTag: foundTag, holder: holder, attach: attach };
 }());
 
