@@ -1481,7 +1481,9 @@ tester sends no pulse to the port. In PWM with a PD mini answering, the
 programmer's PORT row names the voltage and the current limit CONNECT sets,
 `PORT  5.0V  1000mA`. The set points and OUTPUT ON of
 the SET row and of the SUPPLY screen are dimmed and take no press for as
-long; OUTPUT OFF works.
+long; OUTPUT OFF works. On the rbmod carrier, whose programming ports run
+from their own 5V, they stay live
+([Carrier, Power](Carrier.md#power)).
 It leaves programming without a cycle of the servo's supply. Whether a KST
 servo follows PWM while in programming mode is not measured.
 

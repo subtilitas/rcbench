@@ -332,6 +332,9 @@ typedef struct {
     bool            held_kst;
     /** @brief The Hitec programmer's word on the hold */
     bool            held_hitec;
+    /** @brief The programming ports run from their own supply, not the
+     *         PD mini: neither programmer's word holds this screen */
+    bool            ports_own;
     /* The operator's set points while a programming port's stand in their
      * place, and the port's as this screen took them; see
      * supply_screen_port_done(). */
