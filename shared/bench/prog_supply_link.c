@@ -15,7 +15,10 @@ void prog_supply_link_init(prog_supply_link_t *l, bool page)
     if (l == NULL) {
         return;
     }
+    /* A restart counts as a cut: an ON made before it is not taken after. */
+    const uint32_t cuts = l->cuts + 1u;
     memset(l, 0, sizeof(*l));
+    l->cuts      = cuts;
     l->page      = page;
     l->pin       = LINK_PS_NO_PIN;
     l->on_result = PROG_SUPPLY_LINK_NONE;
@@ -23,16 +26,24 @@ void prog_supply_link_init(prog_supply_link_t *l, bool page)
 
 void prog_supply_link_cut(prog_supply_link_t *l)
 {
+    if (l != NULL) {
+        ++l->cuts;               /* an ON made before it is refused */
+    }
     if (l != NULL && l->page) {
         l->owed    = true;
         l->on_owed = false;      /* an ON not yet written is dropped */
     }
 }
 
-bool prog_supply_link_ask_on(prog_supply_link_t *l)
+uint32_t prog_supply_link_cuts(const prog_supply_link_t *l)
+{
+    return (l != NULL) ? l->cuts : 0u;
+}
+
+bool prog_supply_link_ask_on(prog_supply_link_t *l, uint32_t cuts_seen)
 {
     if (l == NULL || !l->page || !l->answered || !l->fitted || l->port
-        || l->owed) {
+        || l->owed || cuts_seen != l->cuts) {
         return false;
     }
     l->on_owed   = true;

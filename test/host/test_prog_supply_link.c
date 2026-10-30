@@ -163,7 +163,7 @@ TEST_CASE(the_gates_count_it_live_until_read_off_and_free)
     read_flags(LINK_PS_FITTED, 0u);
     CHECK(!prog_supply_link_live(&l, true, false));
     /* An ON asked and not yet written: live from the ask. */
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(prog_supply_link_live(&l, true, false));
     /* Its OFF owed instead: live until written. */
     prog_supply_link_ask_off(&l);
@@ -219,25 +219,25 @@ TEST_CASE(the_operators_on_is_refused_where_it_cannot_land)
     /* No page, nothing read, an unanswered read, no switch, a port holding
      * it, an OFF owed: refused here, nothing written. */
     prog_supply_link_init(&l, false);
-    CHECK(!prog_supply_link_ask_on(&l));
+    CHECK(!prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     prog_supply_link_init(&l, true);
-    CHECK(!prog_supply_link_ask_on(&l));               /* not read yet */
+    CHECK(!prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));               /* not read yet */
     read_flags(0u, 0u);
-    CHECK(!prog_supply_link_ask_on(&l));               /* no switch */
+    CHECK(!prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));               /* no switch */
     read_flags(LINK_PS_FITTED | LINK_PS_PORT, 200u);
     CHECK(prog_supply_link_port(&l));
-    CHECK(!prog_supply_link_ask_on(&l));               /* a port holds it */
+    CHECK(!prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));               /* a port holds it */
     read_flags(LINK_PS_FITTED, 400u);
     CHECK(!prog_supply_link_port(&l));
     prog_supply_link_read(&l, NULL, 600u);
-    CHECK(!prog_supply_link_ask_on(&l));               /* NOT READ */
+    CHECK(!prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));               /* NOT READ */
     read_flags(LINK_PS_FITTED, 800u);
     prog_supply_link_cut(&l);
-    CHECK(!prog_supply_link_ask_on(&l));               /* an OFF owed */
+    CHECK(!prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));               /* an OFF owed */
     prog_supply_link_written(&l, LINK_PS_OUTPUT, 0u, PROG_SUPPLY_LINK_ACK);
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(!prog_supply_link_port(NULL));
-    CHECK(!prog_supply_link_ask_on(NULL));
+    CHECK(!prog_supply_link_ask_on(NULL, 0u));
     prog_supply_link_ask_off(NULL);
     CHECK_EQ(prog_supply_link_take_on_result(NULL), PROG_SUPPLY_LINK_NONE);
 }
@@ -249,7 +249,7 @@ TEST_CASE(an_on_is_written_once_after_any_off)
     prog_supply_link_init(&l, true);
     read_flags(LINK_PS_FITTED, 0u);
     CHECK_EQ(prog_supply_link_take_on_result(&l), PROG_SUPPLY_LINK_NONE);
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_OUTPUT);
     CHECK_EQ(v, 1u);
@@ -264,7 +264,7 @@ TEST_CASE(an_on_is_written_once_after_any_off)
     CHECK_EQ(prog_supply_link_state(&l), PROG_SUPPLY_OFF);
     /* Refused without a heartbeat: NOT_ARMED, kept for the alert, not
      * written again. */
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(prog_supply_link_next(&l, &off, &v));
     prog_supply_link_written(&l, off, v, (int)LINK_NACK_NOT_ARMED);
     CHECK(!prog_supply_link_next(&l, &off, &v));
@@ -272,7 +272,7 @@ TEST_CASE(an_on_is_written_once_after_any_off)
     CHECK_EQ(prog_supply_link_take_on_result(&l), (int)LINK_NACK_NOT_ARMED);
     /* Unanswered: not written again, and an OFF owed, as the IOmcu may
      * have taken it and lost its reply. */
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(prog_supply_link_next(&l, &off, &v));
     prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_NO_ANSWER);
     CHECK_EQ(prog_supply_link_take_on_result(&l), PROG_SUPPLY_LINK_NO_ANSWER);
@@ -285,7 +285,7 @@ TEST_CASE(an_on_is_written_once_after_any_off)
     CHECK(!prog_supply_link_next(&l, &off, &v));
     CHECK(!prog_supply_link_live(&l, true, false));
     /* A port took it between the ask and the write: BAD_VALUE. */
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(prog_supply_link_next(&l, &off, &v));
     prog_supply_link_written(&l, off, v, (int)LINK_NACK_BAD_VALUE);
     CHECK_EQ(prog_supply_link_take_on_result(&l), (int)LINK_NACK_BAD_VALUE);
@@ -298,7 +298,7 @@ TEST_CASE(an_error_or_an_off_drops_an_on_not_yet_written)
     /* An error during the ON: the OFF is written, the ON never. */
     prog_supply_link_init(&l, true);
     read_page(LINK_PS_FITTED, 0u, 0u);       /* PANEL 0 as well */
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     prog_supply_link_cut(&l);
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_OUTPUT);
@@ -314,7 +314,7 @@ TEST_CASE(an_error_or_an_off_drops_an_on_not_yet_written)
     CHECK_EQ(prog_supply_link_take_on_result(&l), PROG_SUPPLY_LINK_NONE);
     /* The ON first, then PANEL: the operator's ON goes before the word. */
     read_page(LINK_PS_FITTED, 0u, 200u);
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_OUTPUT);
     CHECK_EQ(v, 1u);
@@ -340,7 +340,7 @@ TEST_CASE(an_error_during_the_on_exchange_keeps_its_off)
     uint16_t v = 9u;
     prog_supply_link_init(&l, true);
     read_page(LINK_PS_FITTED, 1u, 0u);       /* PANEL written already */
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(prog_supply_link_next(&l, &off, &v));
     CHECK_EQ(off, LINK_PS_OUTPUT);
     CHECK_EQ(v, 1u);
@@ -357,7 +357,7 @@ TEST_CASE(an_error_during_the_on_exchange_keeps_its_off)
     CHECK(!prog_supply_link_next(&l, &off, &v));
     /* The same with the ON unanswered. */
     read_page(LINK_PS_FITTED, 1u, 200u);
-    CHECK(prog_supply_link_ask_on(&l));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
     CHECK(prog_supply_link_next(&l, &off, &v));
     prog_supply_link_cut(&l);
     prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_NO_ANSWER);
@@ -376,6 +376,37 @@ TEST_CASE(an_error_during_the_on_exchange_keeps_its_off)
     CHECK_EQ(v, 0u);
 }
 
+TEST_CASE(an_on_made_before_an_error_is_refused_after_its_off)
+{
+    uint8_t off = 9u;
+    uint16_t v = 9u;
+    prog_supply_link_init(&l, true);
+    read_page(LINK_PS_FITTED, 1u, 0u);
+    /* An ON made (its hold completed, queued) with the count as it was. */
+    const uint32_t made = prog_supply_link_cuts(&l);
+    /* An error before the queue is drained: the OFF, written and taken. */
+    prog_supply_link_cut(&l);
+    CHECK(prog_supply_link_next(&l, &off, &v));
+    CHECK_EQ(v, 0u);
+    prog_supply_link_written(&l, off, v, PROG_SUPPLY_LINK_ACK);
+    CHECK(!prog_supply_link_next(&l, &off, &v));
+    /* The ON drained now: refused, nothing owed. */
+    CHECK(!prog_supply_link_ask_on(&l, made));
+    CHECK(!prog_supply_link_next(&l, &off, &v));
+    /* The operator's OFF counts the same; an ON made after both is taken. */
+    const uint32_t before_off = prog_supply_link_cuts(&l);
+    prog_supply_link_ask_off(&l);
+    prog_supply_link_written(&l, LINK_PS_OUTPUT, 0u, PROG_SUPPLY_LINK_ACK);
+    CHECK(!prog_supply_link_ask_on(&l, before_off));
+    CHECK(prog_supply_link_ask_on(&l, prog_supply_link_cuts(&l)));
+    /* A restart of the state (the link lost and back) counts too. */
+    const uint32_t before_restart = prog_supply_link_cuts(&l);
+    prog_supply_link_init(&l, true);
+    read_page(LINK_PS_FITTED, 1u, 200u);
+    CHECK(!prog_supply_link_ask_on(&l, before_restart));
+    CHECK_EQ(prog_supply_link_cuts(NULL), 0u);
+}
+
 int main(void)
 {
     RUN(an_iomcu_without_the_page_gets_nothing);
@@ -389,5 +420,6 @@ int main(void)
     RUN(an_on_is_written_once_after_any_off);
     RUN(an_error_or_an_off_drops_an_on_not_yet_written);
     RUN(an_error_during_the_on_exchange_keeps_its_off);
+    RUN(an_on_made_before_an_error_is_refused_after_its_off);
     return test_summary("prog_supply_link");
 }

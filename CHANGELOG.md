@@ -68,7 +68,8 @@ history is in git.
   hold) and PROG 5V OFF (a tap). An ON follows the PD mini's OUTPUT ON
   rules: taken SAFE or ARMED, dropped after a STOP, an OFF or a touch loss
   since the hold, refused while a programming port holds the 5V, written
-  once as PROG_SUPPLY OUTPUT 1, an OFF written after one without an answer;
+  once as PROG_SUPPLY OUTPUT 1, refused after an error, an OFF or a link
+  restart since its hold began, an OFF written after one without an answer;
   an ON taken across lost touch events is an error. The install, update,
   flash and Wi-Fi gates count an ON from the moment it is queued. While a port holds the 5V the box reads `HELD BY PROG PORT n` and
   takes no press. Leaving the screen whose box switched it on switches it

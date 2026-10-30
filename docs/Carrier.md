@@ -107,7 +107,9 @@ mini's OUTPUT ON:
 
 - It is taken with the bench SAFE or ARMED; no switch to ARMED is asked.
 - It is dropped when a STOP, an OFF or a touch loss came after the hold
-  completed, and while a port holds the 5V.
+  completed, and while a port holds the 5V. An error, an OFF or a restart
+  of the link after the hold began refuses it as well, also once that OFF
+  is written (`prog_supply_link_cuts()`).
 - It is written once as OUTPUT 1 and not repeated. The IOmcu refuses it
   without a live heartbeat (NOT_ARMED) and while a port holds the 5V
   (BAD_VALUE); each, and no answer, gets an alert

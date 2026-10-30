@@ -366,6 +366,26 @@ TEST_CASE(the_box_is_drawn_inside_its_rect)
     prog5v_box_render(&b, NULL);
 }
 
+TEST_CASE(an_on_carries_the_cuts_published_as_its_hold_began)
+{
+    fresh(ST_OFF);
+    prog5v_box_publish_cuts(7u);
+    CHECK(prog5v_box_press(&b));
+    tick_n(7, 0.25f);
+    prog5v_box_publish_cuts(8u);              /* an error during the hold */
+    prog5v_box_tick(&b, 0.25f);               /* 2,000ms */
+    prog5v_cmd_t c;
+    CHECK(prog5v_box_poll_cmd(&c));
+    CHECK(c.on);
+    CHECK_EQ(c.cuts, 7u);                     /* refused by the link */
+    lift(&b, bx(), by_(), true);
+    /* A hold begun after it carries the new count. */
+    CHECK(prog5v_box_press(&b));
+    tick_n(8, 0.25f);
+    CHECK(prog5v_box_poll_cmd(&c));
+    CHECK_EQ(c.cuts, 8u);
+}
+
 TEST_CASE(the_holding_port_is_the_sessions_else_some)
 {
     CHECK_EQ(prog5v_box_held_port(-1, -1, false), PROG5V_HELD_NONE);
@@ -450,6 +470,7 @@ int main(void)
     RUN(leaving_the_screen_that_switched_it_on_switches_it_off);
     RUN(the_lines_name_the_pin_and_the_reading);
     RUN(the_box_is_drawn_inside_its_rect);
+    RUN(an_on_carries_the_cuts_published_as_its_hold_began);
     RUN(the_holding_port_is_the_sessions_else_some);
     RUN(nothing_happens_without_a_box);
     RUN(a_hold_let_go_at_1999ms_shows_its_hint);

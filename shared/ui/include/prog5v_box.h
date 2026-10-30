@@ -78,6 +78,10 @@ typedef struct {
     bool        off;   /**< a tap, or the screen that switched it on
                             was left: OUTPUT 0                        */
     prog5v_by_t by;    /**< the screen that asked                     */
+    uint32_t    cuts;  /**< for an ON: the PROG_SUPPLY cuts published
+                            as its hold began
+                            (prog5v_box_publish_cuts()); an error or an
+                            OFF since refuses it                      */
 } prog5v_cmd_t;
 
 /** @brief One box on one screen. */
@@ -91,6 +95,7 @@ typedef struct {
     uint32_t    rev;       /**< moves with anything the box shows       */
     uint32_t    seen;      /**< the published state word, last seen     */
     uint32_t    seen_read; /**< the published reading word, last seen   */
+    uint32_t    cuts;      /**< the cuts published as the press began   */
 } prog5v_box_t;
 
 /* --------------------------------------------- from the control task */
@@ -104,6 +109,14 @@ typedef struct {
  *                  PROG5V_HELD_SOME, PROG5V_HELD_NONE
  */
 void prog5v_box_publish(uint8_t state, uint8_t pin, uint8_t held_port);
+
+/**
+ * @brief Publish the PROG_SUPPLY link's cuts (prog_supply_link_cuts()): an
+ *        ON carries them from the moment its hold begins, so an error
+ *        during the hold refuses it as well.
+ * @param cuts the count
+ */
+void prog5v_box_publish_cuts(uint32_t cuts);
 
 /**
  * @brief The holding port to publish: the KST session's port, else the

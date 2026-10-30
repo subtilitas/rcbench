@@ -108,7 +108,9 @@ wie es AUSGANG EIN des PD mini beurteilt:
 
 - Es gilt bei SAFE und bei ARMED; ein Wechsel nach ARMED wird nicht verlangt.
 - Es verfällt, wenn nach dem vollendeten Halten ein STOP, ein AUS oder ein
-  Touch-Verlust kam, und solange ein Port die 5V hält.
+  Touch-Verlust kam, und solange ein Port die 5V hält. Ein Fehler, ein AUS
+  oder ein Neustart des Links nach Beginn des Haltens lehnt es ebenfalls
+  ab, auch wenn dieses OFF schon geschrieben ist (`prog_supply_link_cuts()`).
 - Es wird einmal als OUTPUT 1 geschrieben und nicht wiederholt. Der IOmcu
   lehnt es ohne lebenden Heartbeat ab (NOT_ARMED) und solange ein Port die
   5V hält (BAD_VALUE); beides und keine Antwort melden eine Warnung

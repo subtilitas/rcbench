@@ -254,7 +254,10 @@ static void error_act(error_act_t a)
         supply_link_cut(&s_supply_link);
     }
     if (a.prog_off) {
+        /* The cut counts: a PROG 5V ON queued or collected before this
+         * error is refused, even after its OFF is acknowledged. */
         prog_supply_link_cut(&s_psup_link);
+        prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
     }
 }
 
@@ -438,6 +441,7 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
     const prog5v_cmd_t *c = &pc->prog5v;
     if (c->off) {
         prog_supply_link_ask_off(&s_psup_link);
+        prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
         arm_watch_end(&s_psup_watch);
         return;
     }
@@ -453,7 +457,7 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
         && pc->prog5v_offs == atomic_load(&s_prog5v_offs)
         && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
                              s_lost_notice_seq, pc->consumed_seq)
-        && prog_supply_link_ask_on(&s_psup_link)) {
+        && prog_supply_link_ask_on(&s_psup_link, c->cuts)) {
         const uint32_t gen = atomic_load(&s_psup_gen) + 1u;
         atomic_store(&s_psup_gen, gen);
         arm_watch_begin(&s_psup_watch, pc->loss_gen,
@@ -470,6 +474,7 @@ void prog5v_off_service(void)
 {
     if (atomic_exchange(&s_prog5v_off_request, false)) {
         prog_supply_link_ask_off(&s_psup_link);
+        prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
         arm_watch_end(&s_psup_watch);
     }
 }
@@ -995,6 +1000,7 @@ void prog_supply_publish(void)
 {
     prog5v_box_publish((uint8_t)prog_supply_link_state(&s_psup_link),
                        s_psup_link.pin, prog5v_held_port());
+    prog5v_box_publish_cuts(prog_supply_link_cuts(&s_psup_link));
     const bool board = outbind_roles(s_board) != NULL;
     atomic_store(&s_psup_owns, prog_supply_link_owns(&s_psup_link, board));
     atomic_store(&s_psup_live, prog_supply_link_live(&s_psup_link, board,

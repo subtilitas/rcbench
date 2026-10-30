@@ -68,6 +68,9 @@ typedef struct {
     bool     declared; /**< PANEL reads 1, or its write was answered
                             since the last read                         */
     bool     read_once;/**< a read was made since the start            */
+    uint32_t cuts;     /**< OFFs asked (an error's, the operator's) and
+                            restarts of the state, counted: an ON made
+                            before the latest is refused               */
     uint32_t read_ms;  /**< when the last read was made                 */
 } prog_supply_link_t;
 
@@ -88,14 +91,25 @@ void prog_supply_link_cut(prog_supply_link_t *l);
  * @brief The operator's ON: owe OUTPUT 1, written after any OFF owed.
  *
  * Refused here, nothing owed: no page, no switch as last read, the last
- * read unanswered, a port holding the supply as last read, or an OFF owed.
- * The IOmcu judges it again: NOT_ARMED without a live heartbeat,
- * BAD_VALUE while a port holds the supply.
+ * read unanswered, a port holding the supply as last read, an OFF owed, or
+ * an OFF asked (an error's included) or a restart since the ON was made:
+ * @p cuts_seen is not prog_supply_link_cuts() any more.  The IOmcu judges
+ * it again: NOT_ARMED without a live heartbeat, BAD_VALUE while a port
+ * holds the supply.
  *
- * @param l the state
+ * @param l         the state
+ * @param cuts_seen prog_supply_link_cuts() as the ON was made
  * @return true when the ON is owed
  */
-bool prog_supply_link_ask_on(prog_supply_link_t *l);
+bool prog_supply_link_ask_on(prog_supply_link_t *l, uint32_t cuts_seen);
+
+/**
+ * @brief The OFFs asked and the restarts of the state, counted, for an ON
+ *        to carry from the moment it is made (prog_supply_link_ask_on()).
+ * @param l the state
+ * @return the count; 0 for NULL
+ */
+uint32_t prog_supply_link_cuts(const prog_supply_link_t *l);
 
 /**
  * @brief The operator's OFF: owe OUTPUT 0 and drop an ON not yet written,

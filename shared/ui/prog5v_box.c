@@ -23,6 +23,8 @@ enum { ST_NONE = 0, ST_UNKNOWN = 1, ST_OFF = 2, ST_ON = 3 };
 static atomic_uint s_state = (unsigned)PROG5V_HELD_NONE;
 /** @brief bit 31 a reading, mV in bits 16 to 30, mA as int16 in 0 to 15. */
 static atomic_uint s_read;
+/** @brief The PROG_SUPPLY link's cuts, as published. */
+static atomic_uint s_cuts;
 
 /** @brief What the boxes asked and not yet polled.  app_main only. */
 static prog5v_cmd_t s_cmd;
@@ -33,6 +35,11 @@ void prog5v_box_publish(uint8_t state, uint8_t pin, uint8_t held_port)
 {
     atomic_store(&s_state, ((unsigned)state << 16) | ((unsigned)pin << 8)
                                | held_port);
+}
+
+void prog5v_box_publish_cuts(uint32_t cuts)
+{
+    atomic_store(&s_cuts, cuts);
 }
 
 uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some)
@@ -96,15 +103,17 @@ gfx_rect_t prog5v_box_button(const prog5v_box_t *b)
 /**
  * @brief Ask for the supply @p on, from screen @p by: an OFF already asked
  *        stands over an ON in the same poll.
- * @param on whether ON
- * @param by the screen
+ * @param on   whether ON
+ * @param by   the screen
+ * @param cuts for an ON, the cuts its hold began under
  */
-static void post(bool on, prog5v_by_t by)
+static void post(bool on, prog5v_by_t by, uint32_t cuts)
 {
     if (on) {
         if (!s_cmd.off) {
-            s_cmd.on = true;
-            s_cmd.by = by;
+            s_cmd.on   = true;
+            s_cmd.by   = by;
+            s_cmd.cuts = cuts;
             s_owner  = by;
         }
         return;
@@ -122,6 +131,7 @@ bool prog5v_box_press(prog5v_box_t *b)
     }
     b->pressed  = true;
     b->press_on = prog5v_box_on();
+    b->cuts     = atomic_load(&s_cuts);
     if (!b->press_on) {
         ui_hold_begin(&b->hold, TX_HOLD_HINT_PROG5V);
     }
@@ -160,7 +170,7 @@ void prog5v_box_release(prog5v_box_t *b, const touch_event_t *up)
     if (tap && b->press_on && prog5v_box_on()
         && held() == PROG5V_HELD_NONE
         && gfx_rect_contains(btn, x, y)) {
-        post(false, b->by);
+        post(false, b->by, 0u);
     }
     b->pressed = false;
     ++b->rev;
@@ -218,7 +228,7 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
     if (b->pressed && !b->press_on && !on) {
         ++b->rev;
         if (ui_hold_tick(&b->hold, dt_s)) {
-            post(true, b->by);
+            post(true, b->by, b->cuts);
         }
     }
     if (b->hold.flash_ms > 0) {
@@ -319,7 +329,7 @@ void prog5v_box_left(prog5v_by_t by)
     /* Whether or not the ON has been read back yet: one collected and on
      * its way reads OFF until the control task has written it, and an OFF
      * after an ON that did not take costs nothing. */
-    post(false, by);
+    post(false, by, 0u);
 }
 
 bool prog5v_box_poll_cmd(prog5v_cmd_t *out)
@@ -340,4 +350,5 @@ void prog5v_box_reset(void)
     s_owner = PROG5V_BY_NONE;
     prog5v_box_publish(0u, 0u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_reading(false, 0u, 0);
+    prog5v_box_publish_cuts(0u);
 }
