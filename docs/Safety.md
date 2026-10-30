@@ -240,7 +240,7 @@ and a D series write of 21 registers with its save, its 1000ms reboot wait
 and its read-back 3.5s, at 32ms a step on the panel's host loopback.
 The second read before a Hitec write's plan ([The second read](HitecProgrammer.md#the-second-read)) writes nothing and holds up no OFF.
 
-A port that lets go of the supply with the output on leaves its own set points on the output; the operator's come back only by YES to SERVO's question after the LEAVE
+A port that lets go of the supply with the output on leaves its own set points on the output; the operator's come back only by YES to SERVO's question, which follows a LEAVE and no other end of the hold,
 (above 6.0V only through HV SERVOS ONLY and its 2s hold) or at the next OFF ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
 
 A session fault is an operation that ends in what the servo or the wire

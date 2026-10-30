@@ -1458,6 +1458,7 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   Sollwerts, NUR HV-SERVOS eingeschlossen; NEIN behält die der Sitzung bis
   zum nächsten AUS
   ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
+  Kein anderes Ende des Haltens eines Ports fragt.
 
 - AUSGANG EIN ist ein Halten über zwei Sekunden, AUSGANG AUS ein Tippen, wie auf
   SUPPLY. STOP beendet ein laufendes Halten. Liegt der Spannungssollwert über

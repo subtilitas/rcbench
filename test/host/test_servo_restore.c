@@ -18,6 +18,10 @@
  * - no_question_when_nothing_differs_or_a_set_point_moved
  * - the_question_draws_its_frame_title_yes_and_no
  * - no_question_when_the_ports_run_from_their_own_supply
+ * - only_a_leave_ends_the_hold_with_the_question
+ * - a_leave_counts_for_its_own_programmers_hold
+ * - ports_turning_to_their_own_supply_ask_nothing
+ * - the_supply_pages_word_after_the_ports_keeps_what_ended_it
  *
  * SPDX-License-Identifier: MIT
  */
@@ -72,11 +76,23 @@ static void session_on(bool kst)
     frame_tick();
 }
 
+/* A programmer's LEAVE ends: told first, then its word lets go of the
+ * supply, as kpn_supply_sync() and hpn_supply_sync() tell them. */
+static void port_leaves(bool kst)
+{
+    if (kst) {
+        supply_screen_kst_leave_done();
+    } else {
+        supply_screen_hitec_leave_done();
+    }
+    port_holds(kst, false);
+}
+
 /* As session_on(), then the LEAVE: the port lets go, the output stays on. */
 static void left_on(bool kst)
 {
     session_on(kst);
-    port_holds(kst, false);
+    port_leaves(kst);
 }
 
 /* The question's frame, title and buttons, as servo_settings_draw.c places
@@ -230,11 +246,11 @@ TEST_CASE(no_question_while_a_port_holds_the_supply)
         frame_tick();
     }
     CHECK(!servo_screen_asks_restore());
-    port_holds(false, false);
+    port_leaves(false);
     port_holds(false, true);                /* CONNECT again */
     frame_tick();
     CHECK(!servo_screen_asks_restore());
-    port_holds(false, false);               /* and its LEAVE */
+    port_leaves(false);                     /* and its LEAVE */
     frame_tick();
     CHECK(servo_screen_asks_restore());
 
@@ -251,7 +267,7 @@ TEST_CASE(no_question_while_a_port_holds_the_supply)
     own(5.5f, 1.5f);
     session_on(true);
     port_holds(false, true);
-    port_holds(true, false);
+    port_leaves(true);
     frame_tick();
     CHECK(!servo_screen_asks_restore());
 }
@@ -304,7 +320,7 @@ TEST_CASE(the_question_waits_for_output_ons_hold)
     /* A port takes the supply and lets go of it between two frames. */
     port_holds(false, true);
     supply_screen_adopt(PORT_V, PORT_I);
-    port_holds(false, false);
+    port_leaves(false);
     for (int i = 0; i < 10; ++i) {
         frame_tick();
     }
@@ -327,7 +343,7 @@ TEST_CASE(no_question_after_an_off_an_error_or_a_stop)
             /* The error's OFF read before the port let go. */
             session_on(false);
             supply_screen_set_output(false);
-            port_holds(false, false);
+            port_leaves(false);
         } else {
             left_on(false);
         }
@@ -468,13 +484,162 @@ TEST_CASE(no_question_when_the_ports_run_from_their_own_supply)
         supply_screen_set_ports_own(true);
         session_on(kst != 0);
         CHECK(!supply_screen_port_held());
-        port_holds(kst != 0, false);
+        port_leaves(kst != 0);
         for (int i = 0; i < 5; ++i) {
             frame_tick();
         }
         CHECK(!servo_screen_asks_restore());
         CHECK(!supply_screen_restore_offer(NULL, NULL));
         supply_screen_set_ports_own(false);
+    }
+}
+
+/* Only a LEAVE asks.  Every other end of a session's hold reaches this
+ * screen as the programmer's word let go with no LEAVE told before it:
+ * RELEASE PORT, a STOP, an error, a lost link, a restart of the IOmcu.  It
+ * asks nothing, now or later, and the session's set points stand until the
+ * OFF; the LEAVE of the next session asks again. */
+TEST_CASE(only_a_leave_ends_the_hold_with_the_question)
+{
+    for (int kst = 0; kst < 2; ++kst) {
+        own(5.5f, 1.5f);
+        session_on(kst != 0);
+        port_holds(kst != 0, false);            /* no LEAVE */
+        for (int i = 0; i < 10; ++i) {
+            frame_tick();
+        }
+        CHECK(!servo_screen_asks_restore());
+        CHECK(!supply_screen_restore_offer(NULL, NULL));
+        CHECK(set_at(PORT_V, PORT_I));
+        port_holds(kst != 0, true);             /* the next session */
+        port_leaves(kst != 0);                  /* and its LEAVE */
+        frame_tick();
+        CHECK(servo_screen_asks_restore());
+    }
+}
+
+/* A LEAVE counts for the end of its own programmer's hold.  The KST LEAVE
+ * while the Hitec port holds the supply, the Hitec port then let go without
+ * a LEAVE: no question.  The other way round, the LEAVE ending the hold:
+ * the question.  A LEAVE counts for the one hold it ends, and one told
+ * with no hold of its programmer counts for none that begins after it. */
+TEST_CASE(a_leave_counts_for_its_own_programmers_hold)
+{
+    for (int kst = 0; kst < 2; ++kst) {
+        own(5.5f, 1.5f);
+        session_on(kst != 0);
+        port_holds(kst == 0, true);
+        port_leaves(kst != 0);
+        CHECK(supply_screen_port_held());
+        port_holds(kst == 0, false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+        /* That LEAVE ended its own hold: the next session's end without
+         * one asks nothing either. */
+        port_holds(kst != 0, true);
+        port_holds(kst != 0, false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+
+        own(5.5f, 1.5f);
+        session_on(kst != 0);
+        port_holds(kst == 0, true);
+        port_holds(kst == 0, false);
+        port_leaves(kst != 0);
+        frame_tick();
+        CHECK(servo_screen_asks_restore());
+
+        own(5.5f, 1.5f);
+        port_leaves(kst != 0);
+        session_on(kst != 0);
+        port_holds(kst != 0, false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+    }
+}
+
+/* The ports turning to their own supply while a session holds the PD mini
+ * let go of this screen with no LEAVE: no question, then or at the LEAVE
+ * that follows, which holds nothing here any more, nor at the end of a
+ * hold of the SUPPLY page's word alone after it.  The same where the
+ * SUPPLY page's word still holds after the LEAVE. */
+TEST_CASE(ports_turning_to_their_own_supply_ask_nothing)
+{
+    for (int kst = 0; kst < 2; ++kst) {
+        own(5.5f, 1.5f);
+        session_on(kst != 0);
+        supply_screen_set_ports_own(true);
+        CHECK(!supply_screen_port_held());
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+        port_leaves(kst != 0);
+        for (int i = 0; i < 5; ++i) {
+            frame_tick();
+        }
+        CHECK(!servo_screen_asks_restore());
+        CHECK(!supply_screen_restore_offer(NULL, NULL));
+        supply_screen_set_ports_own(false);
+        supply_screen_set_page_held(true);
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+
+        own(5.5f, 1.5f);
+        supply_screen_set_page_held(true);
+        session_on(kst != 0);
+        port_leaves(kst != 0);
+        CHECK(supply_screen_port_held());
+        supply_screen_set_ports_own(true);
+        CHECK(!supply_screen_port_held());
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+        supply_screen_set_ports_own(false);
+    }
+}
+
+/* The SUPPLY page's own word (LINK_SP_PORT) holds the supply for a port of
+ * either programmer and may let go a read after the programmer's word.  Its
+ * release asks after a LEAVE, once, and after nothing else; a session that
+ * begins meanwhile and ends without a LEAVE asks nothing. */
+TEST_CASE(the_supply_pages_word_after_the_ports_keeps_what_ended_it)
+{
+    for (int kst = 0; kst < 2; ++kst) {
+        own(5.5f, 1.5f);
+        supply_screen_set_page_held(true);
+        session_on(kst != 0);
+        port_leaves(kst != 0);
+        CHECK(supply_screen_port_held());
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(servo_screen_asks_restore());
+        /* A hold of the page's word alone takes the question, and its end
+         * is no LEAVE's: the LEAVE was spent on the release it ended. */
+        supply_screen_set_page_held(true);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+
+        own(5.5f, 1.5f);
+        supply_screen_set_page_held(true);
+        session_on(kst != 0);
+        port_holds(kst != 0, false);            /* no LEAVE */
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
+
+        own(5.5f, 1.5f);
+        supply_screen_set_page_held(true);
+        session_on(kst != 0);
+        port_leaves(kst != 0);
+        port_holds(kst != 0, true);             /* CONNECT again */
+        port_holds(kst != 0, false);            /* and no LEAVE */
+        supply_screen_set_page_held(false);
+        frame_tick();
+        CHECK(!servo_screen_asks_restore());
     }
 }
 
@@ -492,5 +657,9 @@ int main(void)
     RUN(no_question_when_nothing_differs_or_a_set_point_moved);
     RUN(the_question_draws_its_frame_title_yes_and_no);
     RUN(no_question_when_the_ports_run_from_their_own_supply);
+    RUN(only_a_leave_ends_the_hold_with_the_question);
+    RUN(a_leave_counts_for_its_own_programmers_hold);
+    RUN(ports_turning_to_their_own_supply_ask_nothing);
+    RUN(the_supply_pages_word_after_the_ports_keeps_what_ended_it);
     return test_summary("servo_restore");
 }

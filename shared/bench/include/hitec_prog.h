@@ -525,6 +525,8 @@ typedef struct {
     uint8_t  st;              /**< the request phase, private             */
     uint8_t  op;              /**< the session operation, private         */
     bool     owned;           /**< this model opened the held port        */
+    uint32_t leaves;          /**< LEAVEs ended in PWM; see
+                                   hitec_prog_leaves()                    */
     bool     lost;            /**< a lost link took the session: the page's
                                    port is said when it comes back        */
     bool     armed;           /**< hitec_prog_bench_armed()               */
@@ -843,6 +845,19 @@ bool hitec_prog_on_port(const hitec_prog_t *p);
  * @return true while held.
  */
 bool hitec_prog_holds_port(const hitec_prog_t *p);
+
+/**
+ * @brief The count of LEAVEs that ended with the port back in PWM
+ *        (HITEC_PROG_MSG_LEFT).
+ *
+ * RELEASE PORT, a lost link, a restart of the IOmcu and a port the IOmcu
+ * gives back without a LEAVE count none.  The SERVO screen's restore
+ * question follows a LEAVE only (supply_screen_hitec_leave_done()).
+ *
+ * @param p The programmer.
+ * @return The count since hitec_prog_init(); it wraps at 2^32.
+ */
+uint32_t hitec_prog_leaves(const hitec_prog_t *p);
 
 /**
  * @brief The link task's view: the page holds a port, or a request runs.

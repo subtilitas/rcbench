@@ -378,7 +378,17 @@ nachdem der Ausgang zwischen dem Verlassen und der Frage ausging, ein
 Fehler ihn ausschaltete oder ein STOP kam; innerhalb eines Endlagenlaufs,
 dessen Lesesitzung durch dasselbe Verlassen geht; wenn sich seitdem ein
 Sollwert änderte; oder wenn die Sollwerte von vor der Sitzung, auf die
-SUPPLY-Grenzen gehalten, denen des Ports gleichen. Ein Port, der das
+SUPPLY-Grenzen gehalten, denen des Ports gleichen. Nur ein Verlassen
+fragt. Jedes andere Ende des Haltens eines Ports am Netzteil fragt nichts:
+PORT FREIGEBEN, ein STOP,
+ein Fehler, ein verlorener Link, ein Neustart des Panels oder des IOmcu,
+ein Port, den der IOmcu ohne Verlassen zurückgibt, und Ports, die auf ihre
+eigene Versorgung wechseln (PROG_SUPPLY des rbmod-Carriers), während eine
+Sitzung den PD mini hält. Bei eingeschaltetem Ausgang bleiben die Sollwerte
+der Sitzung dann bis zum nächsten Ausschalten. Die eigene Angabe der Page
+SUPPLY, dass ein Port sie hält (`LINK_SP_PORT`), kann einen Lesevorgang
+nach der des Programmierers enden; die Frage kommt dann bei ihrem Ende, und
+nur nach einem Verlassen. Ein Port, der das
 Netzteil nimmt, ein angefordertes Ausschalten (AUSGANG AUS eingeschlossen)
 oder ein Ausgang, der ausgeht, während sie steht, schließt sie, bevor der
 Ausgang aus liest. Sie steht nur auf SERVO: ein Verlassen, während eine andere Seite
@@ -1643,9 +1653,21 @@ Ausschalten, das Ausschalten eines Fehlers, AUSGANG AUS und einen STOP,
 AUSGANG AUS, während sie oder die HV-Warnung steht,
 Sollwerte, die nicht abweichen, einen geänderten Sollwert, eine
 gesenkte Grenze und die gezeichnete Frage in beiden Sprachen: AUSGANG IST
-EINGESCHALTET in ihrem Rahmen, JA und NEIN je gedrückt; und keine Frage auf
+EINGESCHALTET in ihrem Rahmen, JA und NEIN je gedrückt; keine Frage auf
 einer Platine, deren Ports aus ihrer eigenen Versorgung laufen und auf der
-eine Sitzung den SUPPLY-Bildschirm nicht hält.
+eine Sitzung den SUPPLY-Bildschirm nicht hält; und keine Frage bei einem
+Ende des Haltens ohne Verlassen, bei einem Verlassen des einen
+Programmierers unter dem Halten des anderen oder wenn die Ports unter einer
+Sitzung auf ihre eigene Versorgung wechseln; und die Frage einmal beim Ende
+der Angabe der Page SUPPLY nach einem Verlassen und nicht nach einem
+anderen Ende. `test_kst_panel_leave` und
+`test_hitec_panel` fahren dasselbe durchgehend: ein Verlassen bietet die
+Sollwerte zurück an; ein STOP, ein verlorener Link, ein Neustart des IOmcu
+und PORT FREIGEBEN bieten nichts an; ein Verlassen von KST fragt beim Ende
+der Angabe der Page SUPPLY, die das Hitec-Overlay weitergibt. `test_kst_prog_cycle` und
+`test_hitec_prog_safe` zählen die Verlassen, die in PWM enden
+(`kst_prog_leaves()`, `hitec_prog_leaves()`), und keines der anderen
+Enden.
 `test_kst_file` fährt Dateien im Format 1 und 2: die Typzeile, ihr Fehlen,
 eine Zeile im Format 1 gegen 20k_sel.
 `test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,

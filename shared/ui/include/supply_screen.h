@@ -202,10 +202,18 @@ void supply_screen_set_port_held(bool held);
  * @brief The Hitec programmer's word on the same hold: the supply is held
  *        while either programmer says so.  supply_screen_set_port_held() is
  *        the KST programmer's.
- * @param held whether the Hitec programmer, or the SUPPLY page's own
- *        LINK_SP_PORT, says a programming port holds the supply
+ * @param held whether the Hitec programmer says a programming port holds
+ *        the supply
  */
 void supply_screen_set_hitec_held(bool held);
+/**
+ * @brief The SUPPLY page's own word on the same hold (LINK_SP_PORT): held
+ *        while a port of either programmer holds the SUPPLY page.  It may
+ *        let go after the programmer's word; the release then arms the
+ *        restore offer as the programmer's end did.
+ * @param held whether the SUPPLY page says a programming port holds it
+ */
+void supply_screen_set_page_held(bool held);
 /**
  * @brief Whether the programming ports run from their own supply (the
  *        PROG_SUPPLY page, the rbmod carrier's 5V) and not from the PD
@@ -216,6 +224,18 @@ void supply_screen_set_hitec_held(bool held);
  *        (prog_supply_link_owns())
  */
 void supply_screen_set_ports_own(bool own);
+/**
+ * @brief The KST programmer's LEAVE has ended with the port back in PWM
+ *        (kst_prog_leaves() counted up).  The release of the hold on this
+ *        screen arms the restore offer (supply_screen_restore_offer()) when
+ *        the last programmer's word to let go before it was let go after
+ *        that programmer's LEAVE; any other release arms nothing.
+ */
+void supply_screen_kst_leave_done(void);
+/**
+ * @brief The same for the Hitec programmer's LEAVE (hitec_prog_leaves()).
+ */
+void supply_screen_hitec_leave_done(void);
 /**
  * @brief Whether a programming port holds the supply
  *        (supply_screen_set_port_held()).
@@ -253,16 +273,21 @@ void supply_screen_adopt(float v, float i);
 void supply_screen_port_done(bool free_off);
 
 /**
- * @brief The operator's set points offered back onto a live output: a
- *        programming port let go of the supply (a KST or Hitec LEAVE, or
- *        any other end of its hold) with the output reported on at the
- *        port's set points, no OFF on its way or owed, and the operator's
+ * @brief The operator's set points offered back onto a live output: a KST
+ *        or Hitec LEAVE ended the hold of a programming port on the supply
+ *        (supply_screen_kst_leave_done(), supply_screen_hitec_leave_done())
+ *        with the output reported on at the port's set points, no OFF on
+ *        its way or owed, and the operator's
  *        from before the port (supply_screen_adopt()) differ from them
  *        under the caps.  The offer stands while no port holds the supply
  *        again, the set points stay the port's and the output stays on: an
  *        OFF reported, a stop (supply_screen_cancel_on()) or an OFF asked
- *        ends it for good.  SERVO asks the operator with it and ends it
- *        with supply_screen_restore_taken().
+ *        ends it for good.  Any other end of the hold offers nothing:
+ *        RELEASE PORT, a STOP, an error, a lost link, a restart of the
+ *        panel or the IOmcu, a port the IOmcu gives back without a LEAVE,
+ *        and the ports turning to their own supply
+ *        (supply_screen_set_ports_own()).  SERVO asks the operator with it
+ *        and ends it with supply_screen_restore_taken().
  * @param v takes the operator's voltage set point under the caps, V;
  *        nothing is written with @p v or @p i NULL
  * @param i takes the operator's current limit under the caps, A

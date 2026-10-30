@@ -1332,6 +1332,7 @@ the change on both.
   on the live output?`, with YES and NO. YES takes the path of a typed set
   point, HV SERVOS ONLY included; NO keeps the session's until the next
   OFF ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
+  No other end of a port's hold asks.
 
 - OUTPUT ON is a two-second hold, OUTPUT OFF a tap, as on SUPPLY. STOP ends
   a hold under way. With a voltage set point above 6.0V, wherever it was

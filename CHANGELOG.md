@@ -163,6 +163,19 @@ history is in git.
 
 ### Changed
 
+- SERVO's question `Restore your supply set points 5.50V 2.00A on the
+  live output?` follows a KST or Hitec LEAVE that leaves the output on, and
+  no other end of a programming port's hold on the supply: RELEASE PORT, a
+  STOP, an error, a lost link, a restart of the panel or the IOmcu, a port
+  the IOmcu gives back without a LEAVE, and ports that turn to their own
+  supply under a session ask nothing, and the session's set points stay
+  until the next OFF. The programmers count the LEAVEs that end in PWM
+  (`kst_prog_leaves()`, `hitec_prog_leaves()`) and the overlays hand each
+  one to the SUPPLY screen before the release it ends. The SUPPLY page's
+  own word that a port holds it (`LINK_SP_PORT`) is a word of its own
+  there, not the Hitec programmer's: its release a read after a KST LEAVE
+  asks
+  ([Servo programmer, The supply](docs/ServoProgrammer.md#the-supply)).
 - The band keeps 40px left of STOP for "?" on every screen. The chips stand
   4px apart (6px before), their labels 22px into the chip (28px before),
   and a tap finds a chip 2px beside it (3px before), so the widest row, a

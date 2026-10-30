@@ -571,6 +571,9 @@ static void on_outcome(hitec_prog_t *p, const hitec_link_outcome_t *o)
             const bool release = p->st == ST_RELEASING;
 
             session_gone(p);
+            if (!release) {
+                ++p->leaves;
+            }
             (void)say(p, release ? HITEC_PROG_MSG_RELEASED
                                  : HITEC_PROG_MSG_LEFT, p->port);
         } else {
@@ -1154,6 +1157,11 @@ bool hitec_prog_holds_port(const hitec_prog_t *p)
     return p->fed && p->f.rd.phase != HITEC_LINK_DOWN
            && p->f.rd.phase != HITEC_LINK_NO_PAGE && p->f.rd.known
            && p->f.rd.held;
+}
+
+uint32_t hitec_prog_leaves(const hitec_prog_t *p)
+{
+    return p->leaves;
 }
 
 bool hitec_prog_in_mode(const hitec_prog_t *p)

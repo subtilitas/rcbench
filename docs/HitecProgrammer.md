@@ -755,9 +755,14 @@ The question is asked once per LEAVE, and not:
   included, closes it before the output reads off;
 - inside a limit run, whose read session leaves through the same LEAVE;
 - when a set point changed after the LEAVE, or the set points from before
-  CONNECT, held to the SUPPLY limits, equal the session's.
+  CONNECT, held to the SUPPLY limits, equal the session's;
+- at any other end of the port's hold on the supply: RELEASE PORT, a STOP,
+  an error, a lost link, a restart of the panel or the IOmcu, a port the
+  IOmcu gives back without a LEAVE, or ports that turn to their own supply
+  while a session holds the PD mini. With the output on, the session's set
+  points then stay until the next OFF.
 
-The question stands on SERVO only. A port that lets go while another
+The question stands on SERVO only. A LEAVE that ends while another
 screen is shown is asked about when SERVO is shown again, while the output
 stays on. Left unanswered when SERVO is left, the question is gone, as NO.
 
