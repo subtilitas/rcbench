@@ -265,7 +265,8 @@ darunter über 6,0V steigt, nur über NUR HV-SERVOS und sein Halten von 2s
 ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
 Die Frage kommt nicht, solange ein Port das Netzteil hält, und nicht nach
 einem Ausschalten, einem Fehler, der den Ausgang ausschaltete, oder einem
-STOP seit dem Verlassen; ein Ausschalten, während sie steht, schließt sie.
+STOP seit dem Verlassen; ein Ausschalten, das angefordert wird, während sie
+steht, schließt sie, bevor der Ausgang aus liest.
 Sonst kommen die Sollwerte des Bedieners nur bei ausgeschaltet gelesenem
 Ausgang zurück (`supply_screen_port_done()`).
 

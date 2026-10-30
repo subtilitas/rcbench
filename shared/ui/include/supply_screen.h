@@ -285,6 +285,15 @@ bool supply_screen_output_live(void);
  *  an OFF and a new ON between two frames end the run it was about. */
 uint32_t supply_screen_off_count(void);
 
+/**
+ * @brief How many OFFs this screen has posted, from any screen, counted
+ *        from the moment each is asked and not when the supply reports it.
+ *        SERVO's restore question records it and stands only while it is
+ *        unchanged: an OFF asked ends it before the output reads off.
+ * @return The count, modulo 2^32.
+ */
+uint32_t supply_screen_off_asks(void);
+
 /** OUTPUT ON's hold completed elsewhere, as it does here: an ON is posted
  *  unless an OFF already is, and the output is @p by's from then on. */
 void supply_screen_ask_on(supply_by_t by);

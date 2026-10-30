@@ -346,6 +346,7 @@ void sup_post_off(void)
 {
     s.pending.off = true;
     s.pending.on  = false;
+    ++s.off_asks;
     s.on_asked    = false;
     s.off_owed    = false;
     /* Nor is it the live output a port left: no set points are offered
@@ -798,6 +799,8 @@ bool supply_screen_output_on(void) { return s.on; }
 bool supply_screen_output_live(void) { return s.on || s.on_asked; }
 
 uint32_t supply_screen_off_count(void) { return s.off_count; }
+
+uint32_t supply_screen_off_asks(void) { return s.off_asks; }
 
 void supply_screen_ask_on(supply_by_t by) { sup_post_on(by); }
 

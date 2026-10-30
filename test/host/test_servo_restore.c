@@ -14,6 +14,7 @@
  * - the_question_waits_for_servos_own_panels
  * - the_question_waits_for_output_ons_hold
  * - no_question_after_an_off_an_error_or_a_stop
+ * - an_off_asked_ends_the_question_before_the_output_reads_off
  * - no_question_when_nothing_differs_or_a_set_point_moved
  *
  * SPDX-License-Identifier: MIT
@@ -319,6 +320,47 @@ TEST_CASE(no_question_after_an_off_an_error_or_a_stop)
     }
 }
 
+/* OUTPUT OFF tapped while the question or the HV warning after YES stands:
+ * it goes at once, before the supply reports the output off, and nothing
+ * is applied, in the same frame as the OFF or after it. */
+TEST_CASE(an_off_asked_ends_the_question_before_the_output_reads_off)
+{
+    for (int same_frame = 0; same_frame < 2; ++same_frame) {
+        own(5.5f, 1.5f);
+        left_on(false);
+        frame_tick();
+        CHECK(servo_screen_asks_restore());
+        tap(SUP_OUT_X, SUP_ROW_Y);              /* OUTPUT OFF */
+        supply_cmd_t c;
+        CHECK(supply_cmd(&c) && c.off);         /* sent; still reads on */
+        if (!same_frame) {
+            frame_tick();
+            CHECK(!servo_screen_asks_restore());
+        }
+        tap(WARN_APPLY_X, WARN_Y);
+        CHECK(!servo_screen_asks_restore());
+        CHECK(set_at(PORT_V, PORT_I));
+    }
+
+    own(7.4f, 1.5f);
+    left_on(false);
+    frame_tick();
+    tap(WARN_APPLY_X, WARN_Y);                  /* YES: the HV warning */
+    CHECK(servo_screen_asks_restore());
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+    for (int i = 0; i < 40; ++i) {
+        frame_tick();
+    }
+    supply_screen_ask_off();
+    CHECK(supply_cmd(NULL));
+    for (int i = 0; i < 60; ++i) {
+        frame_tick();
+    }
+    ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_asks_restore());
+    CHECK(set_at(PORT_V, PORT_I));
+}
+
 /* The operator's set points equal to the port's, or a set point moved
  * between the LEAVE and the frame: no question. */
 TEST_CASE(no_question_when_nothing_differs_or_a_set_point_moved)
@@ -363,6 +405,7 @@ int main(void)
     RUN(the_question_waits_for_servos_own_panels);
     RUN(the_question_waits_for_output_ons_hold);
     RUN(no_question_after_an_off_an_error_or_a_stop);
+    RUN(an_off_asked_ends_the_question_before_the_output_reads_off);
     RUN(no_question_when_nothing_differs_or_a_set_point_moved);
     return test_summary("servo_restore");
 }

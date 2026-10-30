@@ -751,7 +751,8 @@ The question is asked once per LEAVE, and not:
 - while a keypad, a list, a warning or another question of SERVO is open,
   or OUTPUT ON is held: it follows once they are closed;
 - after the output went off, an error switched it off, or a STOP, between
-  the LEAVE and the question; nor when the output goes off while it stands;
+  the LEAVE and the question; an OFF asked while it stands, OUTPUT OFF
+  included, closes it before the output reads off;
 - inside a limit run, whose read session leaves through the same LEAVE;
 - when a set point changed after the LEAVE, or the set points from before
   CONNECT, held to the SUPPLY limits, equal the session's.

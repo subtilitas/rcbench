@@ -344,7 +344,8 @@ error switched it off or a STOP came between the LEAVE and the question;
 inside a limit run, whose read session leaves through the same LEAVE; when
 a set point changed since; or when the set points from before the session,
 held to the SUPPLY limits, equal the port's. A port that takes the supply,
-or an output that goes off, while it stands closes it. It stands on SERVO
+an OFF asked (OUTPUT OFF included) or an output that goes off while it
+stands closes it, before the output reads off. It stands on SERVO
 only: a LEAVE seen while another screen is shown is asked about when SERVO
 is shown again and the output is still on, and leaving SERVO drops the
 question as NO. The
@@ -1484,7 +1485,8 @@ nothing about the set points. `test_servo_restore` runs SERVO's question
 after a LEAVE that leaves the output on: after KST and Hitec, YES, NO, YES
 above 6.0V through HV SERVOS ONLY, a port that holds the supply, SERVO's
 keypad and question and OUTPUT ON's hold before it, an OFF, an error's
-OFF, OUTPUT OFF and a STOP, set points that do not differ, one moved, and a
+OFF, OUTPUT OFF and a STOP, OUTPUT OFF while it or the HV warning stands,
+set points that do not differ, one moved, and a
 lowered cap. `test_kst_file` runs format 1 and format 2
 files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,

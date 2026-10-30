@@ -241,7 +241,7 @@ through HV SERVOS ONLY and its 2s hold
 ([Servo programmer, The supply](ServoProgrammer.md#the-supply)). The
 question is not asked while a port holds the supply, nor after an OFF, an
 error that switched the output off, or a STOP since the LEAVE; an OFF
-while it stands closes it. Otherwise the operator's set points come back
+asked while it stands closes it before the output reads off. Otherwise the operator's set points come back
 only with the output read off (`supply_screen_port_done()`).
 
 A session fault is an operation that ends in what the servo or the wire

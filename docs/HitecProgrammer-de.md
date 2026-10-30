@@ -818,8 +818,9 @@ Die Frage kommt einmal je Verlassen, und nicht:
   von SERVO offen ist oder AUSGANG EIN gehalten wird: sie folgt, sobald
   diese geschlossen sind;
 - nachdem der Ausgang zwischen dem Verlassen und der Frage ausging, ein
-  Fehler ihn ausschaltete oder ein STOP kam; auch nicht, wenn der Ausgang
-  ausgeht, während sie steht;
+  Fehler ihn ausschaltete oder ein STOP kam; ein Ausschalten, das
+  angefordert wird, während sie steht, AUSGANG AUS eingeschlossen,
+  schließt sie, bevor der Ausgang aus liest;
 - innerhalb eines Endlagenlaufs, dessen Lesesitzung durch dasselbe
   Verlassen geht;
 - wenn sich nach dem Verlassen ein Sollwert änderte oder die Sollwerte von

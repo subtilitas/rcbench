@@ -379,8 +379,9 @@ Fehler ihn ausschaltete oder ein STOP kam; innerhalb eines Endlagenlaufs,
 dessen Lesesitzung durch dasselbe Verlassen geht; wenn sich seitdem ein
 Sollwert änderte; oder wenn die Sollwerte von vor der Sitzung, auf die
 SUPPLY-Grenzen gehalten, denen des Ports gleichen. Ein Port, der das
-Netzteil nimmt, oder ein Ausgang, der ausgeht, während sie steht, schließt
-sie. Sie steht nur auf SERVO: ein Verlassen, während eine andere Seite
+Netzteil nimmt, ein angefordertes Ausschalten (AUSGANG AUS eingeschlossen)
+oder ein Ausgang, der ausgeht, während sie steht, schließt sie, bevor der
+Ausgang aus liest. Sie steht nur auf SERVO: ein Verlassen, während eine andere Seite
 angezeigt wird, wird erfragt, sobald SERVO wieder angezeigt wird und der
 Ausgang noch eingeschaltet ist, und das Verlassen von SERVO verwirft die
 Frage wie NEIN. Der [Hitec-Programmierer](HitecProgrammer-de.md#verlassen)
@@ -1639,6 +1640,7 @@ Verlassen, das den Ausgang eingeschaltet lässt: nach KST und Hitec, JA,
 NEIN, JA über 6,0V über NUR HV-SERVOS, einen Port, der das Netzteil hält,
 Tastenfeld und Frage von SERVO und das Halten von AUSGANG EIN davor, ein
 Ausschalten, das Ausschalten eines Fehlers, AUSGANG AUS und einen STOP,
+AUSGANG AUS, während sie oder die HV-Warnung steht,
 Sollwerte, die nicht abweichen, einen geänderten Sollwert und eine
 gesenkte Grenze.
 `test_kst_file` fährt Dateien im Format 1 und 2: die Typzeile, ihr Fehlen,

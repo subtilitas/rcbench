@@ -494,6 +494,7 @@ typedef struct {
         int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
         uint32_t  off_count; /**< supply_screen_off_count() at asking  */
         uint32_t  stops;     /**< the screen's stop count at asking     */
+        uint32_t  off_asks;  /**< supply_screen_off_asks() at asking    */
         float     v, i;
         ui_hold_t hold;
         bool      down;

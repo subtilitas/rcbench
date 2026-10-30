@@ -360,6 +360,7 @@ typedef struct {
     bool            off_owed;
     bool            confirm_open;       /**< whether the question about a change is open */
     uint32_t        off_count;          /**< reported ON-to-OFF edges */
+    uint32_t        off_asks;           /**< OFFs posted (sup_post_off()) */
     /* Stops seen (supply_screen_cancel_on()), and the count the question
      * was asked under: see sup_confirm_stands(). */
     uint32_t        stops;              /**< stops seen */

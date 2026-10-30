@@ -250,12 +250,25 @@ static void ask_restore(float v, float i)
     s.ask.target    = KT_NONE;
     s.ask.off_count = supply_screen_off_count();
     s.ask.stops     = s.stops;
+    s.ask.off_asks  = supply_screen_off_asks();
     s.ask.v         = v;
     s.ask.i         = i;
     s.ask.down      = false;
     ui_hold_reset(&s.ask.hold);
     ++s.ctrl_rev;
     servo_invalidate();
+}
+
+/**
+ * @brief Whether the restore question still stands: the output it is about
+ *        live and unstopped (ask_stands()), no OFF asked since it opened,
+ *        and no port holding the supply.
+ * @return true while it stands
+ */
+static bool restore_stands(void)
+{
+    return ask_stands() && supply_screen_off_asks() == s.ask.off_asks
+           && !supply_screen_port_held();
 }
 
 void ask_restore_follow(void)
@@ -272,11 +285,10 @@ void ask_restore_follow(void)
         }
         return;
     }
-    /* A port that holds the supply again, or an output gone off or
-     * stopped, takes the question with it, the HV warning after YES
-     * included: both are about the live output the port left. */
-    if (s.ask.open && s.ask.purpose == ASK_RESTORE
-        && (supply_screen_port_held() || !ask_stands())) {
+    /* A port that holds the supply again, an OFF asked, or an output gone
+     * off or stopped, takes the question with it, the HV warning after
+     * YES included: both are about the live output the port left. */
+    if (s.ask.open && s.ask.purpose == ASK_RESTORE && !restore_stands()) {
         if (s.ov_pressed == OP_ASK_APPLY || s.ov_pressed == OP_ASK_CANCEL) {
             ov_let_go();
         }
@@ -297,6 +309,12 @@ void ask_restore_follow(void)
 /* The question answered with APPLY, or the HV warning's hold completed. */
 void ask_apply(void)
 {
+    /* The restore's answer after an OFF was asked in the same frame, before
+     * ask_restore_follow() saw it: nothing applied. */
+    if (s.ask.purpose == ASK_RESTORE && !restore_stands()) {
+        close_alone();
+        return;
+    }
     /* YES to a voltage past a standard servo's rating, from at or under it:
      * the HV warning and its hold, as a typed one takes. */
     if (s.ask.purpose == ASK_RESTORE && !s.ask.hv
