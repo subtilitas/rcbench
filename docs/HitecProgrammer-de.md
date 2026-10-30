@@ -335,7 +335,8 @@ Eine klassische Antwort trägt keine Prüfsumme: ein falsch gelesener Wert
 erreicht den Plan unbemerkt. Eine Lesung am Prüfstand zeigte Zelle 0x17 als
 0x04, wo das Servo 0x05 hielt. Jedes Schreiben liest deshalb die Adressen,
 von denen sein Plan abhängt, ein zweites Mal, nach seinem Halten und bevor
-es plant, und vergleicht sie mit dem Lesen, aus dem der Plan entsteht:
+sein Plan läuft, und vergleicht sie mit dem Lesen, aus dem der Plan
+entsteht:
 
 | Schreiben | Erneut gelesen |
 | --- | --- |

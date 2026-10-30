@@ -16,6 +16,7 @@
  * - no_question_after_an_off_an_error_or_a_stop
  * - an_off_asked_ends_the_question_before_the_output_reads_off
  * - no_question_when_nothing_differs_or_a_set_point_moved
+ * - the_question_draws_its_frame_title_yes_and_no
  *
  * SPDX-License-Identifier: MIT
  */
@@ -75,6 +76,39 @@ static void left_on(bool kst)
 {
     session_on(kst);
     port_holds(kst, false);
+}
+
+/* The question's frame, title and buttons, as servo_settings_draw.c places
+ * them: the left column's panel, the title 20px in and 20px down, YES
+ * bottom left, 240 x 56px, NO bottom right, 180 x 56px. */
+#define Q_BTN_Y   (UI_ALERT_Y - UI_BAND_H - 4 - 56)
+#define Q_TITLE_Y (OV_Y0 + 20)
+
+/* Buffer 0 drawn, and whether the question shows OUTPUT IS ON over a
+ * frame in the warning colour, and YES and NO, @p yes_down pressed. */
+static bool question_drawn(bool yes_down)
+{
+    const gfx_rect_t yes = { OV_X0 + 20, Q_BTN_Y, 240, 56 };
+    const gfx_rect_t no = { OV_X0 + OV_W0 - 20 - 180, Q_BTN_Y, 180, 56 };
+
+    scr->render(&cv, 0);
+    want_fresh();
+    memcpy(want_fb, fb, (size_t)W * H * sizeof(gfx_color_t));
+    ui_button_font(&want_cv, yes, TR(SV_ASK_YES), ui_theme_color(UI_C_WARN),
+                   yes_down, true, &gfx_font_10x20);
+    ui_button_font(&want_cv, no, TR(SV_ASK_NO),
+                   ui_theme_color(UI_C_PANEL_SUNK), false, true,
+                   &gfx_font_10x20);
+    /* The title blends into what is under it: drawn on the panel's
+     * ground, as the screen draws it. */
+    gfx_fill_rect(&want_cv, OV_X0 + 20, Q_TITLE_Y,
+                  gfx_text_width(&gfx_font_20x36, TR(SUP_OUTPUT_IS_ON), 1), 36,
+                  fb[(size_t)(OV_Y0 + 4) * W + OV_X0 + 4]);
+    gfx_text(&want_cv, OV_X0 + 20, Q_TITLE_Y, TR(SUP_OUTPUT_IS_ON),
+             &gfx_font_20x36, ui_theme_color(UI_C_WARN), 1);
+    return fb[(size_t)OV_Y0 * W + OV_X0 + OV_W0 / 2]
+               == ui_theme_color(UI_C_WARN)
+           && same_in(fb, want_fb, 0, 0, W, H);
 }
 
 /* ------------------------------------------------------------- the cases */
@@ -395,6 +429,29 @@ TEST_CASE(no_question_when_nothing_differs_or_a_set_point_moved)
     CHECK(set_at(6.0f, 1.5f));
 }
 
+/* The question as drawn: OUTPUT IS ON in its warning frame, YES and NO in
+ * each language, YES pressed under a finger; NO closes it and the screen
+ * draws no frame there any more. */
+TEST_CASE(the_question_draws_its_frame_title_yes_and_no)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        own(5.5f, 1.5f);
+        left_on(false);
+        frame_tick();
+        CHECK(servo_screen_asks_restore());
+        CHECK(question_drawn(false));
+        ev(WARN_APPLY_X, WARN_Y, TOUCH_EVENT_DOWN, 1);
+        CHECK(question_drawn(true));
+        ev(WARN_APPLY_X + 400, WARN_Y - 200, TOUCH_EVENT_UP, 1);
+        CHECK(servo_screen_asks_restore());   /* lifted off YES: nothing */
+        tap(WARN_CANCEL_X, WARN_Y);
+        CHECK(!servo_screen_asks_restore());
+        CHECK(!question_drawn(false));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(a_leave_with_the_output_on_asks_after_kst_and_hitec);
@@ -407,5 +464,6 @@ int main(void)
     RUN(no_question_after_an_off_an_error_or_a_stop);
     RUN(an_off_asked_ends_the_question_before_the_output_reads_off);
     RUN(no_question_when_nothing_differs_or_a_set_point_moved);
+    RUN(the_question_draws_its_frame_title_yes_and_no);
     return test_summary("servo_restore");
 }

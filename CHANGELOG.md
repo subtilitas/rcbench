@@ -20,7 +20,7 @@ history is in git.
   ([Servo programmer, The supply](docs/ServoProgrammer.md#the-supply);
   [Hitec programmer, LEAVE](docs/HitecProgrammer.md#leave)).
 - The Hitec programmer reads the addresses a write's plan depends on a
-  second time before it plans: classic cells 0x00 to 0x23 (36), with the
+  second time before its plan runs: classic cells 0x00 to 0x23 (36), with the
   factory block 0x30 to 0x53 (72 in all) for FACTORY DEFAULT; the 12 D
   series registers a plan writes. Every write is covered: WRITE n VALUES,
   a loaded file's, REPAIR CHECKSUM, RESTORE and FACTORY DEFAULT. Two reads

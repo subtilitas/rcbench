@@ -1641,8 +1641,9 @@ NEIN, JA über 6,0V über NUR HV-SERVOS, einen Port, der das Netzteil hält,
 Tastenfeld und Frage von SERVO und das Halten von AUSGANG EIN davor, ein
 Ausschalten, das Ausschalten eines Fehlers, AUSGANG AUS und einen STOP,
 AUSGANG AUS, während sie oder die HV-Warnung steht,
-Sollwerte, die nicht abweichen, einen geänderten Sollwert und eine
-gesenkte Grenze.
+Sollwerte, die nicht abweichen, einen geänderten Sollwert, eine
+gesenkte Grenze und die gezeichnete Frage in beiden Sprachen: AUSGANG IST
+EINGESCHALTET in ihrem Rahmen, JA gedrückt und NEIN.
 `test_kst_file` fährt Dateien im Format 1 und 2: die Typzeile, ihr Fehlen,
 eine Zeile im Format 1 gegen 20k_sel.
 `test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,

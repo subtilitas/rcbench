@@ -668,8 +668,8 @@ hitec_prog_msg_id_t hpw_start(hitec_prog_t *p, uint8_t kind,
     p->wr_own_rec = false;
     hpw_unconfirm(p);
     /* The second read of what the plan depends on: a reply without a
-     * checksum can carry a wrong value, and a plan is made only from
-     * values two reads agree on (hpw_check_done()).  The gate holds the
+     * checksum can carry a wrong value, and a plan runs only when two
+     * reads agree on every value it depends on (hpw_check_done()).  The gate holds the
      * session idle and in programming mode: it takes the read. */
     n = reread_set(p, kind, addrs);
     p->rr_first = p->ses.image;
@@ -778,11 +778,10 @@ void hpw_check_done(hitec_prog_t *p, hitec_ses_t r)
             return;
         }
     }
-    /* The two reads agree: the plan from them. */
-    if (hitec_plan(img, &p->wr_target, &p->ses.plan) != HITEC_PLAN_OK) {
-        (void)say(p, HITEC_PROG_MSG_MUST_READ, 0u);
-        return;
-    }
+    /* The two reads agree on every address the plan depends on, and the
+     * second read leaves the rest of the image as the first read left it:
+     * the plan hpw_start() made from the first read is the plan from
+     * both. */
     if (p->ses.plan.n != 0u && hpf_backup(p)) {
         /* The session's backup goes to its file first. */
         return;

@@ -309,8 +309,8 @@ while the write waits for the card.
 A classic reply carries no checksum: a value read wrong reaches the plan
 unseen. One station read showed cell 0x17 as 0x04 where the servo held
 0x05. Every write therefore reads the addresses its plan depends on a
-second time, after its hold and before it plans, and compares them with the
-read the plan is made from:
+second time, after its hold and before its plan runs, and compares them
+with the read the plan is made from:
 
 | Write | Read again |
 | --- | --- |

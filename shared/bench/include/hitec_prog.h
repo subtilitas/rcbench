@@ -58,13 +58,13 @@
  *   - REPAIR writes the classic balance 0x1C alone when the cells 0x00 to
  *     0x1C of the servo read do not sum to 0.
  *   - Every write reads the addresses its plan depends on a second time
- *     before it plans (hitec_prog_rereading()): classic cells 0x00 to 0x23,
- *     and the factory block 0x30 to 0x53 for FACTORY DEFAULT; D series the
- *     registers a plan writes (hitec_writable()).  A classic reply carries
- *     no checksum, a D series reply its sum.  Where the second read
- *     differs from the first in one address, the write is refused
- *     (HITEC_PROG_MSG_READS_DIFFER): the image stays the first read, and
- *     nothing is planned, recorded or sent.  A write tried again compares
+ *     before its plan runs (hitec_prog_rereading()): classic cells 0x00 to
+ *     0x23, and the factory block 0x30 to 0x53 for FACTORY DEFAULT; D
+ *     series the registers a plan writes (hitec_writable()).  A classic
+ *     reply carries no checksum, a D series reply its sum.  Where the
+ *     second read differs from the first in one address, the write is
+ *     refused (HITEC_PROG_MSG_READS_DIFFER): the image stays the first
+ *     read, and nothing is planned, recorded or sent.  A write tried again compares
  *     a new second read with the same first one; READ ALL takes a new
  *     first read.  An ABORT, a stop or a failed read during the second
  *     read ends the write the same way, with its own message.

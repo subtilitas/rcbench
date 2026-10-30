@@ -1486,8 +1486,9 @@ after a LEAVE that leaves the output on: after KST and Hitec, YES, NO, YES
 above 6.0V through HV SERVOS ONLY, a port that holds the supply, SERVO's
 keypad and question and OUTPUT ON's hold before it, an OFF, an error's
 OFF, OUTPUT OFF and a STOP, OUTPUT OFF while it or the HV warning stands,
-set points that do not differ, one moved, and a
-lowered cap. `test_kst_file` runs format 1 and format 2
+set points that do not differ, one moved, a
+lowered cap, and the question as drawn in both languages: OUTPUT IS ON in
+its frame, YES pressed and NO. `test_kst_file` runs format 1 and format 2
 files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card
