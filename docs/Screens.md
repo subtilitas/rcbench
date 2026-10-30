@@ -266,6 +266,7 @@ it. The hint is one line of 97 characters at most.
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
+| OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 
 ## Menu marks
 
@@ -2892,9 +2893,19 @@ page's editor or an upload ([Browser writes](#browser-writes)), is not
 written. The note says `<name> changed on the card since it was read.`,
 and the question UNSAVED CHANGES says
 `<name> changed on the card since it was read. READ AGAIN drops these changes.`
-over STAY and READ AGAIN. STAY keeps the text; a second SAVE is refused
-the same way. READ AGAIN drops the text and reads the file from the card
-into the viewer. A question that was already open when the save ended,
+over STAY, READ AGAIN and OVERWRITE, 208 x 56px each. STAY keeps the text;
+a second SAVE is refused the same way. READ AGAIN drops the text and reads
+the file from the card into the viewer. OVERWRITE takes a 2s hold; a
+release before 2s writes nothing and shows `Hold 2s to overwrite.` on the
+alert band, and a press that slides off, the home tag and ARMED end the
+hold without a write. The completed hold saves the text over the file as
+the refused SAVE read it: its sum replaces the editor's for this one SAVE,
+and the same job compares it before the `.NEW` is opened. A file changed
+after that refusal, also during the hold, is refused in turn and the
+question shows again, with the sum of the file that SAVE found. A file removed
+has no sum: OVERWRITE is dimmed, takes no hold, and nothing makes the file
+again. A write that fails leaves the file as it was and the text unsaved,
+and the next SAVE is refused until a hold completes. A question that was already open when the save ended,
 the one of an open over the text, stays as it was.
 
 A file opens only without a NUL byte in its first 4kB. SAVE holds the
@@ -3477,8 +3488,18 @@ refused 412 `CHANGED`. The header then shows
 `Changed on the card since it was read. Read it again.`, and the box
 UNSAVED CHANGES asks
 `<name> changed on the card since it was read. READ AGAIN drops these changes.`
-with STAY and READ AGAIN. STAY keeps the text; READ AGAIN drops it,
-reads the file from the card again and shows it. With Browser writes ACCESS CODE and
+with STAY, READ AGAIN and OVERWRITE. STAY keeps the text; READ AGAIN drops
+it, reads the file from the card again and shows it. OVERWRITE takes a
+press of 2s, with a fill across the button; Space or Enter held count as
+the press. A release before 2s sends nothing and shows
+`Hold 2s to overwrite.` in the box, and a press that leaves the button,
+Escape and a lost focus end it without a write. The completed press sends
+SAVE with `If-Match` and the ETag the 412 carried, the file as that refusal
+found it. A file changed after that refusal, also during the press, is
+answered 412 again and the box asks again with the ETag of that answer. A file
+removed gives a 412 without an ETag: OVERWRITE is dimmed, and nothing goes
+out. A write that fails leaves the file as it was and the text unsaved, and
+the next SAVE is refused 412. With Browser writes ACCESS CODE and
 no code given yet, SAVE asks for the code in the editor's box: SEND CODE
 sends it to `/code` without leaving the page, the panel's answer sets the
 cookie, and SAVE goes out again with the text as it stands; a wrong code
@@ -3621,7 +3642,7 @@ in the panel's language:
 | `NOT_FOUND` | 404 | no such entry, or one of another kind |
 | `EXISTS`, `NOT_EMPTY`, `SAME` | 409 | a name taken; a folder that holds entries; a move into the same folder or into itself |
 | `ARMED`, `LOGGING` | 409 | the bench switched to ARMED, or a run is logged: the card is read-only |
-| `CHANGED` | 412 | a PUT with `If-Match` whose file's CRC-32 is not the ETag, or whose file is gone |
+| `CHANGED` | 412 | a PUT with `If-Match` whose file's CRC-32 is not the ETag, or whose file is gone. The JSON adds `"etag":"xxxxxxxx"`, the CRC-32 of the file it found; none for a file that is gone |
 | `TOO_BIG` | 413 | a file over 1,048,576 bytes, refused before a byte is read |
 | `TOO_LARGE` | 413 | a write's body over its limit (the guard above) |
 | `NOT_TEXT` | 415 | a NUL byte in the first 4,096 bytes |

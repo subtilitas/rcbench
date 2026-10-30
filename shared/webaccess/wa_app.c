@@ -91,7 +91,8 @@ static const app_text_t k_texts[] = {
     { "stay", T_SET_STAY },            { "discard", T_SET_DISCARD },
     { "readagain", T_ED_READ_AGAIN },  { "e.CHANGED", W_P_API_CHANGED },
     { "mixedlf", W_P_ED_MIXED_LF },    { "notutf8", W_P_ED_NOT_UTF8 },
-    { "codewrong", W_P_CODE_WRONG },
+    { "codewrong", W_P_CODE_WRONG },   { "overwrite", T_ED_OVERWRITE },
+    { "holdover", T_HOLD_HINT_OVERWRITE },
 };
 
 /** @brief Expands a row of TEXT_HL_CLASS_ROWS to its style sheet name. */

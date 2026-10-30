@@ -13,6 +13,7 @@
  * - put_of_1mib_is_saved_and_one_byte_more_refused
  * - put_holds_the_viewers_limits_before_any_card_call
  * - put_with_the_read_etag_replaces_and_a_stale_one_is_412
+ * - put_refused_changed_answers_the_etag_it_found
  * - put_if_none_match_refuses_a_taken_name
  * - put_headers_and_names_not_taken_are_refused
  * - put_into_a_locked_busy_or_missing_place_is_refused
@@ -349,6 +350,70 @@ TEST_CASE(put_with_the_read_etag_replaces_and_a_stale_one_is_412)
     fk_dir(&g_card, CARD_KST_CONF);
     CHECK_EQ(put_s("path=BENCH/KST/CONF/MG90S.TXT", tag, NULL, "w3\n"),
              WA_API_CHANGED);
+    CHECK(fk_get(&g_card, "BENCH/KST/CONF/MG90S.TXT") == NULL);
+}
+
+/**
+ * @brief The refusal's JSON for @p e.
+ * @param api  the API, or NULL
+ * @param e    why it is refused
+ * @return the text
+ */
+static const char *refusal(const wa_api_t *api, wa_api_err_t e)
+{
+    json_begin();
+    wa_api_refused_json(api, &g_out, e, false);
+    return json_end();
+}
+
+/*
+ * A 412 carries the ETag of the file it found, the one a GET gives, and a
+ * PUT with it replaces that file; one more change refuses it, with the new
+ * ETag.  A file that is gone, and any other refusal, carry none.
+ */
+TEST_CASE(put_refused_changed_answers_the_etag_it_found)
+{
+    fresh();
+    fk_dir(&g_card, CARD_KST_CONF);
+    fk_file(&g_card, "BENCH/KST/CONF/MG90S.TXT", (const uint8_t *)"v1\n",
+            3u);
+    char tag[12];
+    etag_of_get("BENCH/KST/CONF/MG90S.TXT", tag);
+    rewrite("BENCH/KST/CONF/MG90S.TXT", "v2\n", 3u);
+    CHECK_EQ(put_s("path=BENCH/KST/CONF/MG90S.TXT", tag, NULL, "web\n"),
+             WA_API_CHANGED);
+    char now[12];
+    char want[48];
+    /* The answer's JSON first: the read below starts a request of its own. */
+    char body[256];
+    (void)snprintf(body, sizeof(body), "%s",
+                   refusal(&g_api, WA_API_CHANGED));
+    CHECK(has(body, "\"error\":\"CHANGED\""));
+    CHECK(has(refusal(&g_api, WA_API_PANEL_BUSY), "\"error\":\"PANEL_BUSY\""));
+    CHECK(!has(refusal(&g_api, WA_API_PANEL_BUSY), "etag"));
+    CHECK(!has(refusal(NULL, WA_API_CHANGED), "etag"));
+    etag_of_get("BENCH/KST/CONF/MG90S.TXT", now);
+    (void)snprintf(want, sizeof(want), "\"etag\":%s", now);
+    CHECK(has(body, want));
+    /* The ETag found replaces the file. */
+    CHECK_EQ(put_s("path=BENCH/KST/CONF/MG90S.TXT", now, NULL, "web\n"),
+             WA_API_OK);
+    CHECK(holds("BENCH/KST/CONF/MG90S.TXT", "web\n"));
+    CHECK(!has(refusal(&g_api, WA_API_CHANGED), "etag"));
+    /* A third writer between the refusal and the PUT: refused again. */
+    rewrite("BENCH/KST/CONF/MG90S.TXT", "v3\n", 3u);
+    CHECK_EQ(put_s("path=BENCH/KST/CONF/MG90S.TXT", now, NULL, "w\n"),
+             WA_API_CHANGED);
+    CHECK(holds("BENCH/KST/CONF/MG90S.TXT", "v3\n"));
+    CHECK(has(refusal(&g_api, WA_API_CHANGED), "\"etag\":\""));
+    /* The file gone: CHANGED, without an ETag. */
+    etag_of_get("BENCH/KST/CONF/MG90S.TXT", tag);
+    fk_free(&g_card);
+    fk_init(&g_card);
+    fk_dir(&g_card, CARD_KST_CONF);
+    CHECK_EQ(put_s("path=BENCH/KST/CONF/MG90S.TXT", tag, NULL, "w3\n"),
+             WA_API_CHANGED);
+    CHECK(!has(refusal(&g_api, WA_API_CHANGED), "etag"));
     CHECK(fk_get(&g_card, "BENCH/KST/CONF/MG90S.TXT") == NULL);
 }
 
@@ -719,6 +784,7 @@ int main(void)
     RUN(put_of_1mib_is_saved_and_one_byte_more_refused);
     RUN(put_holds_the_viewers_limits_before_any_card_call);
     RUN(put_with_the_read_etag_replaces_and_a_stale_one_is_412);
+    RUN(put_refused_changed_answers_the_etag_it_found);
     RUN(put_if_none_match_refuses_a_taken_name);
     RUN(put_headers_and_names_not_taken_are_refused);
     RUN(a_path_alias_is_refused_by_every_write);

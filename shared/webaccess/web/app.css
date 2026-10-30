@@ -82,3 +82,9 @@ tab-size:8;overflow:auto;background:transparent;color:transparent;
 -webkit-text-fill-color:transparent;caret-color:var(--h-tx,var(--pg-fg))}
 .fm .ed textarea::selection{background:var(--pg-sel)}
 .fm .viewer .box{z-index:4}
+.fm .vn.hint{display:block;margin:6px 0 0;min-height:1.5em}
+.fm .btn.hold{touch-action:none;user-select:none;-webkit-user-select:none;
+background-image:linear-gradient(var(--pg-warn),var(--pg-warn));
+background-repeat:no-repeat;background-size:0 100%}
+.fm .btn.hold.holding{background-size:100% 100%;
+transition:background-size 2s linear}

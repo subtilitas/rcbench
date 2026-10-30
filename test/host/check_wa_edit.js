@@ -119,6 +119,191 @@ const k412 = { ok: false, status: 412,
 const session = over => Object.assign({ tag: '"0a1b2c3d"', eol: 'crlf',
   bom: true, base: 'one\ntwo\n', max: MAX, endsMax: ENDS }, over);
 
+// A card that compares as the panel does: a PUT with If-Match writes only
+// over the ETag the file has; a 412 carries the ETag found, none for a file
+// that is gone.
+function card(tag) {
+  const c = { tag, puts: 0, wrote: [], fail: null };
+  c.put = (b, hdr) => {
+    c.puts++;
+    if (c.fail) {
+      return Promise.resolve(c.fail);
+    }
+    if (c.tag === null || hdr['If-Match'] !== `"${c.tag}"`) {
+      const j = { error: 'CHANGED', text: 'Changed' };
+      if (c.tag !== null) {
+        j.etag = c.tag;
+      }
+      return Promise.resolve({ ok: false, status: 412, j });
+    }
+    c.wrote.push(hexOf(b));
+    c.tag = (0x10000000 + c.wrote.length).toString(16);
+    return Promise.resolve(ok(c.tag));
+  };
+  return c;
+}
+
+// A clock for RcbEd.holder(): timers that fire when run() passes them.
+function clock() {
+  const c = { now: 0, list: [] };
+  c.set = (f, ms) => {
+    const t = { f, at: c.now + ms };
+    c.list.push(t);
+    return t;
+  };
+  c.clear = t => {
+    c.list = c.list.filter(k => k !== t);
+  };
+  c.run = ms => {
+    c.now += ms;
+    const due = c.list.filter(k => k.at <= c.now);
+    c.list = c.list.filter(k => k.at > c.now);
+    due.forEach(k => k.f());
+  };
+  return c;
+}
+
+async function overwrites() {
+  const text = 'one\ntwo\nmine\n';
+  const fresh = () => session({ eol: 'lf', bom: false });
+  // The ETag of a 412: well formed or none.
+  check(RcbEd.foundTag({ j: { etag: '0a1b2c3d' } }) === '"0a1b2c3d"',
+    'foundTag: not taken');
+  for (const j of [{}, { etag: '' }, { etag: 'nothex!!' }, { etag: '0a1b' }]) {
+    check(RcbEd.foundTag({ j }) === '', `foundTag ${JSON.stringify(j)} taken`);
+  }
+  check(RcbEd.foundTag(null) === '', 'foundTag of nothing taken');
+  // A SAVE refused takes the ETag found; OVERWRITE sends that one and
+  // writes; the session is the file as written.
+  {
+    const c = card('aaaaaaaa');
+    const ed = fresh();
+    const r = await RcbEd.save(ed, text, c.put);
+    check(r.r === 'CHANGED' && ed.over === '"aaaaaaaa"' && c.wrote.length === 0,
+      `overwrite: first ${r.r} ${ed.over}`);
+    check(ed.tag === '"0a1b2c3d"', `overwrite: tag moved to ${ed.tag}`);
+    const o = await RcbEd.save(ed, text, c.put, true);
+    check(o.r === 'SAVED' && c.wrote.length === 1 && ed.base === text &&
+      ed.tag === `"${c.tag}"` && ed.over === '',
+    `overwrite: ${JSON.stringify(o)} ${JSON.stringify(ed)}`);
+  }
+  // A third change after the refusal: OVERWRITE gets 412 with the new
+  // ETag, the file stays; the next OVERWRITE compares with that one.
+  {
+    const c = card('aaaaaaaa');
+    const ed = fresh();
+    await RcbEd.save(ed, text, c.put);
+    c.tag = 'bbbbbbbb';
+    const o = await RcbEd.save(ed, text, c.put, true);
+    check(o.r === 'CHANGED' && c.wrote.length === 0,
+      `third change: ${o.r}, ${c.wrote.length} writes`);
+    check(ed.over === '"bbbbbbbb"', `third change: over ${ed.over}`);
+    check(RcbEd.dirty(ed, text), 'third change: text counts as saved');
+    const n = await RcbEd.save(ed, text, c.put, true);
+    check(n.r === 'SAVED' && c.wrote.length === 1, `fourth try: ${n.r}`);
+  }
+  // The file deleted after the refusal: 412 without an ETag, and then
+  // OVERWRITE sends nothing, as no SAVE goes out without If-Match.
+  {
+    const c = card('aaaaaaaa');
+    const ed = fresh();
+    await RcbEd.save(ed, text, c.put);
+    c.tag = null;
+    const o = await RcbEd.save(ed, text, c.put, true);
+    check(o.r === 'CHANGED' && ed.over === '' && c.puts === 2,
+      `deleted: ${o.r} over ${ed.over} ${c.puts} PUTs`);
+    const n = await RcbEd.save(ed, text, c.put, true);
+    check(n.r === 'CHANGED' && c.puts === 2 && c.wrote.length === 0,
+      `deleted, again: ${n.r}, ${c.puts} PUTs`);
+  }
+  // OVERWRITE with the box's ETag spent, and at the limits, sends nothing.
+  {
+    const c = card('aaaaaaaa');
+    const none = await RcbEd.save(fresh(), text, c.put, true);
+    check(none.r === 'CHANGED' && c.puts === 0, `no ETag found: ${none.r}`);
+    const full = fresh();
+    full.over = '"aaaaaaaa"';
+    const f = await RcbEd.save(full, 'y'.repeat(MAX + 1), c.put, true);
+    check(f.r === 'FULL' && c.puts === 0, `overwrite over the limit: ${f.r}`);
+  }
+  // The write fails: the session stays, the ETag found is spent, and a
+  // plain SAVE compares with the file as first read, so it is refused.
+  {
+    const c = card('aaaaaaaa');
+    const ed = fresh();
+    await RcbEd.save(ed, text, c.put);
+    c.fail = { ok: false, status: 507, j: { error: 'FULL', text: 'full' } };
+    const o = await RcbEd.save(ed, text, c.put, true);
+    check(o.r === 'REFUSED' && ed.over === '' && ed.tag === '"0a1b2c3d"' &&
+      RcbEd.dirty(ed, text), `failed write: ${o.r} ${JSON.stringify(ed)}`);
+    c.fail = null;
+    const s = await RcbEd.save(ed, text, c.put);
+    check(s.r === 'CHANGED' && c.wrote.length === 0,
+      `SAVE after a failed write: ${s.r}, ${c.wrote.length} writes`);
+  }
+  // The hold: nothing before 2000ms, once at it, a hint for a release
+  // before it, nothing for a press that went without a release.
+  {
+    const k = clock();
+    let fired = 0;
+    let hints = 0;
+    const h = RcbEd.holder(2000, k, () => {
+      fired++;
+    }, () => {
+      hints++;
+    });
+    h.down();
+    k.run(1999);
+    check(fired === 0 && h.on(), `hold: fired at 1999ms (${fired})`);
+    h.up();
+    check(fired === 0 && hints === 1 && !h.on(),
+      `hold: release at 1999ms: ${fired} fired, ${hints} hints`);
+    k.run(5000);
+    check(fired === 0, 'hold: fired after the release');
+    h.down();
+    k.run(1000);
+    check(h.leave() === true && hints === 1, 'hold: left, or a hint');
+    k.run(5000);
+    check(fired === 0 && hints === 1, 'hold: fired after it was left');
+    check(h.leave() === false, 'hold: left twice');
+    h.down();
+    k.run(1000);
+    h.down();                 // a second press does not move the clock
+    k.run(1000);
+    check(fired === 1 && !h.on(), `hold: at 2000ms ${fired} fired`);
+    h.up();
+    check(hints === 1, 'hold: a hint for the release after it fired');
+    k.run(5000);
+    check(fired === 1, 'hold: fired twice');
+  }
+  // Hold and save together: a release before 2s sends no PUT; a change
+  // during the hold is refused when it fires.
+  {
+    const k = clock();
+    const c = card('aaaaaaaa');
+    const ed = fresh();
+    await RcbEd.save(ed, text, c.put);
+    const puts = c.puts;
+    let run = null;
+    const h = RcbEd.holder(2000, k, () => {
+      run = RcbEd.save(ed, text, c.put, true);
+    }, () => {});
+    h.down();
+    k.run(1500);
+    h.up();
+    k.run(1000);
+    check(c.puts === puts && run === null, 'release before 2s: a PUT went out');
+    h.down();
+    k.run(1000);
+    c.tag = 'cccccccc';
+    k.run(1000);
+    const o = await run;
+    check(o.r === 'CHANGED' && c.wrote.length === 0 && c.tag === 'cccccccc',
+      `change during the hold: ${o.r}, ${c.wrote.length} writes`);
+    check(ed.over === '"cccccccc"', `change during the hold: over ${ed.over}`);
+  }
+}
+
 async function saves() {
   // 412 on a stale ETag: nothing taken, the text and the ETag kept, and
   // the PUT carried If-Match.
@@ -193,6 +378,7 @@ async function saves() {
     const r2 = await RcbEd.save(esc, '{"a":1}', p.put);
     check(r2.r === 'SAVED' && r2.esc && !r2.kst, `ESC: ${JSON.stringify(r2)}`);
   }
+  await overwrites();
   // Another refusal keeps the session and hands the answer on.
   {
     const p = putter([{ ok: false, status: 423,

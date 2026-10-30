@@ -16,7 +16,9 @@ what the C side gives:
 node runs the page's edit.js (check_wa_edit.js) in a context of its own,
 with no document, on those and on its own cases of the save: If-Match on
 every PUT, the 412 that keeps the text and the ETag, the limits at their
-edge, the KST and ESC notes, and the question on CLOSE.  Every difference
+edge, the KST and ESC notes, the question on CLOSE, and OVERWRITE: its 2s
+hold, its ETag and the refusals at a third change, a file deleted and a
+failed write.  Every difference
 is a failure; the first 20 are printed.
 
 Exit code 77 (skipped) when node is not on the PATH.

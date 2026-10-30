@@ -64,6 +64,8 @@ static void write_begin(wa_api_t *api)
     api->put = false;
     api->done[0] = '\0';
     api->etag = 0u;
+    api->found = false;
+    api->found_tag = 0u;
 }
 
 /**
@@ -265,6 +267,8 @@ wa_api_err_t wa_api_put(wa_api_t *api, const char *query,
         api->created = !req->job.dst_was;
         api->restart = req->job.note_restart;
         api->etag = wa_api_crc(api);
+    } else if (e == WA_API_CHANGED) {
+        api->found = fm_job_found(&req->job, &api->found_tag);
     }
     /* One body, one PUT: the next asks wa_api_body() again. */
     memset(&api->tb, 0, sizeof(api->tb));
@@ -399,6 +403,25 @@ bool wa_api_write_etag(const wa_api_t *api, char *out)
     }
     (void)snprintf(out, WA_API_ETAG_SIZE, "\"%08" PRIx32 "\"", api->etag);
     return true;
+}
+
+void wa_api_refused_json(const wa_api_t *api, wa_out_t *o, wa_api_err_t e,
+                         bool de)
+{
+    if (e != WA_API_CHANGED || api == NULL || !api->found) {
+        wa_api_error_json(o, e, de);
+        return;
+    }
+    char tag[12];
+    (void)snprintf(tag, sizeof(tag), "%08" PRIx32, api->found_tag);
+    wa_out_str(o, "{");
+    wa_api_json_key(o, "error", true);
+    wa_api_json_str(o, wa_api_word(e));
+    wa_api_json_key(o, "text", false);
+    wa_api_json_str(o, wa_api_text(e, de));
+    wa_api_json_key(o, "etag", false);
+    wa_api_json_str(o, tag);
+    wa_out_str(o, "}");
 }
 
 void wa_api_write_json(const wa_api_t *api, wa_out_t *o)

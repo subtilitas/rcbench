@@ -18,7 +18,11 @@
  * CRC-32, the Wi-Fi page's ETag), and the next SAVE writes only over a
  * file that still has that sum (fm_job_match() FM_MATCH_SUM): one changed
  * since, by the Wi-Fi page, fails it with FM_ERR_CHANGED and the editor
- * asks STAY or READ AGAIN.  READ AGAIN opens the file anew.  An open of
+ * asks STAY, READ AGAIN or OVERWRITE.  READ AGAIN opens the file anew.
+ * OVERWRITE, held 2s, saves over the file as the refused save found it
+ * (fm_job_found()): one changed after that refusal, also during the hold,
+ * is refused in turn, and a file that is gone offers no OVERWRITE.  The
+ * editor's own sum moves only with a save that wrote.  An open of
  * another file over an editor with unsaved text, from FILES or from LOGS,
  * is held until the editor's question is answered: DISCARD opens it,
  * STAY drops it.  Leaving FILES keeps such an editor, its text and its
@@ -90,10 +94,13 @@ static bool save_send(void)
                                      text_view_dir(), text_view_name(), len,
                                      text_view_fill, NULL);
     if (err != FM_OK) {
+        s.tv_over = false;
         (void)text_view_saved(err, false, false);
         return false;
     }
-    (void)fm_job_match(&s.req.job, FM_MATCH_SUM, fm_crc32, s.tv_sum);
+    (void)fm_job_match(&s.req.job, FM_MATCH_SUM, fm_crc32,
+                       s.tv_over ? s.tv_found : s.tv_sum);
+    s.tv_over = false;
     (void)fm_job_sum(&s.req.job, fm_crc32);
     s.req.kind = FM_REQ_JOB;
     s.req_pane = -1;
@@ -157,6 +164,7 @@ void fs_text_fail(fm_err_t err)
     }
     if (s.tv_save) {
         s.tv_save = false;
+        s.tv_over = false;
         (void)text_view_saved(err, false, false);
     }
 }
@@ -171,6 +179,7 @@ void fs_text_saved(void)
     if (j->state == FM_JOB_DONE) {
         s.tv_sum = j->data_sum;     /* the file as this save wrote it */
     }
+    text_view_offer_overwrite(fm_job_found(j, &s.tv_found));
     if (text_view_saved(s.req.err, j->state == FM_JOB_STOPPED,
                         j->note_restart) == TEXT_VIEW_LEAVE) {
         fs_text_result(TEXT_VIEW_LEAVE);    /* the open the question held */
@@ -197,6 +206,11 @@ static void text_reload(void)
 void fs_text_result(text_view_result_t r)
 {
     switch (r) {
+    case TEXT_VIEW_OVERWRITE:
+        s.tv_over = true;
+        s.tv_save = true;
+        fs_pump();
+        break;
     case TEXT_VIEW_SAVE:
         s.tv_save = true;
         fs_pump();
@@ -219,6 +233,13 @@ void fs_text_result(text_view_result_t r)
         break;
     }
     files_screen_invalidate();
+}
+
+void fs_text_tick(float dt_s)
+{
+    if (s.view == FILES_VIEW_TEXT) {
+        fs_text_result(text_view_tick(dt_s));
+    }
 }
 
 void fs_text_rules(void)

@@ -567,7 +567,7 @@ static void pose_editor(const char *view)
         ed_foot(FS_SPOT_TV_SAVE_CX);
     } else if (is(view, "files-edit-changed")) {
         /* The Wi-Fi page wrote the report since the editor read it: SAVE
-         * finds it changed and asks STAY or READ AGAIN. */
+         * finds it changed and asks STAY, READ AGAIN or OVERWRITE. */
         const fm_io_t io = fk_io(&s_fh.card);
         (void)io.unlink(io.ctx, "USER/LOGS/ATEST005.TXT");
         put("USER/LOGS/ATEST005.TXT", "web\n", 4u);

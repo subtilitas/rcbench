@@ -104,3 +104,7 @@ enum {
 #define FS_SPOT_TV_Q_CY        332
 #define FS_SPOT_TV_STAY_CX     336
 #define FS_SPOT_TV_DISCARD_CX  688
+/** @brief The CHANGED question's READ AGAIN and OVERWRITE, their middles;
+ *         its STAY takes FS_SPOT_TV_STAY_CX as well. */
+#define FS_SPOT_TV_READ_CX     512
+#define FS_SPOT_TV_OVER_CX     734

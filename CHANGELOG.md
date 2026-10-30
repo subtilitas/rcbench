@@ -36,7 +36,11 @@ history is in git.
 - FILES' editor saves only over the file as it opened it or last saved
   it: SAVE compares the file's CRC-32, the Wi-Fi page's ETag, before it
   writes, and a file the Wi-Fi page changed since is not overwritten. The
-  question UNSAVED CHANGES then offers STAY or READ AGAIN.
+  question UNSAVED CHANGES then offers STAY, READ AGAIN or OVERWRITE.
+- OVERWRITE, behind a 2s hold in both editors, saves over the file as the
+  refused SAVE found it. A further change, also during the hold, is
+  refused the same way, and a file that is gone offers no OVERWRITE. A 412
+  `CHANGED` of the file API carries `etag`, the ETag of the file it found.
 
 ### Fixed
 

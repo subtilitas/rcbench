@@ -448,8 +448,9 @@ static void draw_cursor(gfx_canvas_t *c)
 
 /**
  * @brief The question: UNSAVED CHANGES, what is lost and how, STAY and
- *        DISCARD, or STAY and READ AGAIN after a save found the file
- *        changed on the card.
+ *        DISCARD, or STAY, READ AGAIN and OVERWRITE after a save found the
+ *        file changed on the card.  OVERWRITE fills while it is held, and
+ *        is dimmed with nothing it can compare with.
  * @param c  the canvas
  */
 static void draw_question(gfx_canvas_t *c)
@@ -476,13 +477,20 @@ static void draw_question(gfx_canvas_t *c)
     (void)ui_text_wrap(c, gfx_rect_make(box.x + 24, box.y + 52, box.w - 48,
                                         24),
                        30, what, TV_FONT_BODY, UI_TEXT);
+    if (tv.ask == TEXT_VIEW_ASK_CHANGED) {
+        ui_button_font(c, TV_Q3_STAY, TR(SET_STAY), UI_PANEL_HI,
+                       tv.press == TV_HIT_STAY, true, TV_FONT_LABEL);
+        ui_button_font(c, TV_Q3_READ, TR(ED_READ_AGAIN), UI_WARN,
+                       tv.press == TV_HIT_DISCARD, !tv.saving, TV_FONT_LABEL);
+        ui_button_font(c, TV_Q3_OVER, TR(ED_OVERWRITE),
+                       ui_hold_fill(UI_PANEL_HI, UI_DANGER, tv.over.held_s),
+                       false, tv_over_live(), TV_FONT_LABEL);
+        return;
+    }
     ui_button_font(c, TV_Q_STAY, TR(SET_STAY), UI_PANEL_HI,
                    tv.press == TV_HIT_STAY, true, TV_FONT_LABEL);
-    ui_button_font(c, TV_Q_DISCARD,
-                   (tv.ask == TEXT_VIEW_ASK_CHANGED) ? TR(ED_READ_AGAIN)
-                                                     : TR(SET_DISCARD),
-                   UI_WARN, tv.press == TV_HIT_DISCARD, !tv.saving,
-                   TV_FONT_LABEL);
+    ui_button_font(c, TV_Q_DISCARD, TR(SET_DISCARD), UI_WARN,
+                   tv.press == TV_HIT_DISCARD, !tv.saving, TV_FONT_LABEL);
 }
 
 void text_view_render(gfx_canvas_t *c)

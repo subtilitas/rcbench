@@ -142,9 +142,13 @@ typedef enum {
     TEXT_VIEW_LEAVE,       /**< DISCARD on a question the host asked
                                 (text_view_ask_open()): go on with what
                                 it held                                  */
-    TEXT_VIEW_RELOAD       /**< READ AGAIN on the CHANGED question: read
+    TEXT_VIEW_RELOAD,      /**< READ AGAIN on the CHANGED question: read
                                 the file from the card again; the
                                 editor's text is dropped                 */
+    TEXT_VIEW_OVERWRITE    /**< OVERWRITE held 2s on the CHANGED question:
+                                write the text over the file as the
+                                refused save found it; a further change
+                                is refused again                         */
 } text_view_result_t;
 
 /** @brief The question over the editor. */
@@ -429,6 +433,25 @@ size_t text_view_fill(void *ctx, uint64_t at, uint8_t *dst, size_t cap);
  *         TEXT_VIEW_NONE
  */
 text_view_result_t text_view_saved(fm_err_t err, bool stopped, bool restart);
+
+/**
+ * @brief Whether the CHANGED question offers OVERWRITE: the host has the
+ *        sum of the file a refused save found.  A file that is gone has
+ *        none, and OVERWRITE shows dimmed.  Called before text_view_saved().
+ * @param can  the host holds that sum
+ */
+void text_view_offer_overwrite(bool can);
+
+/**
+ * @brief Time passed for OVERWRITE's hold.  A release before 2s writes
+ *        nothing and shows HOLD_HINT_OVERWRITE on the alert band.  A hold
+ *        whose question closed, or whose SAVE the rules shut, ends here.
+ * @param dt_s  seconds since the last tick
+ * @return TEXT_VIEW_OVERWRITE on the tick the hold completes, the save's
+ *         checks passed and the text held still as for SAVE;
+ *         TEXT_VIEW_CHANGED while the hold's fill moves; else TEXT_VIEW_NONE
+ */
+text_view_result_t text_view_tick(float dt_s);
 
 /**
  * @brief The bytes the header shows: the file as listed while it is read,

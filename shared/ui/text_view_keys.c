@@ -396,9 +396,16 @@ static void question_event(const touch_event_t *e)
         tv.tap_id = e->point.id;
         tv.tap_x0 = e->point.x;
         tv.tap_y0 = e->point.y;
-        tv.press = gfx_rect_contains(TV_Q_STAY, x, y)      ? TV_HIT_STAY
-                   : gfx_rect_contains(TV_Q_DISCARD, x, y) ? TV_HIT_DISCARD
-                                                           : TV_HIT_NONE;
+        const bool three = (tv.ask == TEXT_VIEW_ASK_CHANGED);
+        tv.press = gfx_rect_contains(three ? TV_Q3_STAY : TV_Q_STAY, x, y)
+                       ? TV_HIT_STAY
+                   : gfx_rect_contains(three ? TV_Q3_READ : TV_Q_DISCARD, x, y)
+                       ? TV_HIT_DISCARD
+                       : TV_HIT_NONE;
+        if (three && gfx_rect_contains(TV_Q3_OVER, x, y) && tv_over_live()) {
+            tv.press = TV_HIT_OVERWRITE;
+            ui_hold_begin(&tv.over, TX_HOLD_HINT_OVERWRITE);
+        }
         return;
     }
     if (!tv.tap_have || e->point.id != tv.tap_id) {
@@ -410,19 +417,33 @@ static void question_event(const touch_event_t *e)
         tv.tap_moved = true;
     }
     if (e->type != TOUCH_EVENT_UP) {
+        /* Sliding off the hold abandons it, as on every held control. */
+        if (tv.press == TV_HIT_OVERWRITE
+            && !gfx_rect_contains(TV_Q3_OVER, x, y)
+            && ui_hold_leave(&tv.over)) {
+            tv.press = TV_HIT_NONE;
+            tv.tap_have = false;
+        }
         return;
     }
     const int hit = tv.press;
     tv.tap_have = false;
     tv.press = TV_HIT_NONE;
+    if (hit == TV_HIT_OVERWRITE) {
+        /* The hold acts when it completes; the release only ends it. */
+        (void)ui_hold_end(&tv.over, e, TV_Q3_OVER);
+        return;
+    }
     if (!touch_event_is_tap_up(e) || tv.tap_moved) {
         return;
     }
-    if (hit == TV_HIT_STAY && gfx_rect_contains(TV_Q_STAY, x, y)) {
+    const bool three = (tv.ask == TEXT_VIEW_ASK_CHANGED);
+    if (hit == TV_HIT_STAY
+        && gfx_rect_contains(three ? TV_Q3_STAY : TV_Q_STAY, x, y)) {
         tv.ask = TEXT_VIEW_ASK_NONE;
         ++tv.rev;
     } else if (hit == TV_HIT_DISCARD && !tv.saving
-               && gfx_rect_contains(TV_Q_DISCARD, x, y)) {
+               && gfx_rect_contains(three ? TV_Q3_READ : TV_Q_DISCARD, x, y)) {
         /* Shut while a save reads the text; text_view_saved() answers
          * the question when the save ends. */
         if (tv.ask == TEXT_VIEW_ASK_CHANGED) {
@@ -561,6 +582,42 @@ static bool kst_cut(void)
     return cut;
 }
 
+bool tv_over_live(void)
+{
+    return tv.ask == TEXT_VIEW_ASK_CHANGED && tv.over_ok && !tv.saving
+           && tv.save_err == FM_OK;
+}
+
+void text_view_offer_overwrite(bool can)
+{
+    tv.over_ok = can;
+}
+
+text_view_result_t text_view_tick(float dt_s)
+{
+    if (tv.press != TV_HIT_OVERWRITE) {
+        return TEXT_VIEW_NONE;
+    }
+    if (!tv_over_live()) {
+        (void)ui_hold_left(&tv.over);    /* the question or the rule ended it */
+        tv.press = TV_HIT_NONE;
+        tv.tap_have = false;
+        ++tv.rev;
+        return TEXT_VIEW_CHANGED;
+    }
+    if (!ui_hold_tick(&tv.over, dt_s)) {
+        return TEXT_VIEW_CHANGED;        /* the fill follows the hold */
+    }
+    ui_hold_reset(&tv.over);
+    tv.press = TV_HIT_NONE;
+    tv.tap_have = false;                 /* the release acts on nothing */
+    tv.ask = TEXT_VIEW_ASK_NONE;
+    ++tv.rev;
+    return (tv_edit_button(TV_HIT_SMALL) == TEXT_VIEW_SAVE)
+               ? TEXT_VIEW_OVERWRITE
+               : TEXT_VIEW_CHANGED;
+}
+
 /**
  * @brief Whether the file as saved would hold a NUL in its first
  *        TEXT_BUF_PROBE bytes: FILES would not open it again.
@@ -630,7 +687,8 @@ text_view_result_t text_view_saved(fm_err_t err, bool stopped,
     } else if (err == FM_ERR_CHANGED) {
         tv_say_err(err);
         if (tv.ask == TEXT_VIEW_ASK_NONE) {
-            tv.ask = TEXT_VIEW_ASK_CHANGED;     /* STAY or READ AGAIN */
+            /* STAY, READ AGAIN, or OVERWRITE behind its hold */
+            tv.ask = TEXT_VIEW_ASK_CHANGED;
         }
     } else {
         tv_say_err(err);

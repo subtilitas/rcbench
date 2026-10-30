@@ -13,6 +13,7 @@
  * Cases:
  * - a_matching_sum_replaces_the_file
  * - a_different_sum_fails_changed_and_writes_nothing
+ * - a_refusal_gives_the_sum_it_found
  * - a_file_gone_since_its_sum_fails_changed
  * - absent_refuses_a_taken_name_and_makes_a_free_one
  * - armed_or_cancel_while_summing_stop_with_no_new
@@ -216,6 +217,51 @@ TEST_CASE(a_different_sum_fails_changed_and_writes_nothing)
     CHECK(holds_text());
 }
 
+/*
+ * fm_job_found(): a refusal over a file that is there gives the file's sum,
+ * which a next SAVE takes; no other answer gives one.
+ */
+TEST_CASE(a_refusal_gives_the_sum_it_found)
+{
+    fresh();
+    fk_file(&g_card, "D/NOTE.TXT", NULL, OLD_SIZE);
+    const uint32_t now = sum_of("D/NOTE.TXT");
+    uint32_t found = 0x5A5A5A5Au;
+    save();
+    CHECK(!fm_job_found(&g_job, &found));       /* no step has run */
+    CHECK_EQ(fm_job_match(&g_job, FM_MATCH_SUM, sum31, now + 1u), FM_OK);
+    CHECK_EQ(run(), FM_JOB_FAILED);
+    CHECK(fm_job_found(&g_job, &found));
+    CHECK_EQ(found, now);
+    CHECK(!fm_job_found(NULL, &found));
+    CHECK(!fm_job_found(&g_job, NULL));
+    /* The sum found replaces the file; a job that wrote has none to give. */
+    save();
+    CHECK(!fm_job_found(&g_job, &found));
+    CHECK_EQ(fm_job_match(&g_job, FM_MATCH_SUM, sum31, found), FM_OK);
+    CHECK_EQ(run(), FM_JOB_DONE);
+    CHECK(holds_text());
+    found = 0x5A5A5A5Au;
+    CHECK(!fm_job_found(&g_job, &found));
+    CHECK_EQ(found, 0x5A5A5A5Au);
+    /* A file that is gone has no sum. */
+    fresh();
+    fk_dir(&g_card, "D");
+    save();
+    CHECK_EQ(fm_job_match(&g_job, FM_MATCH_SUM, sum31, 0u), FM_OK);
+    CHECK_EQ(run(), FM_JOB_FAILED);
+    CHECK_EQ(g_job.err, FM_ERR_CHANGED);
+    CHECK(!fm_job_found(&g_job, &found));
+    /* A read that fails part way has none either. */
+    fresh();
+    fk_file(&g_card, "D/NOTE.TXT", NULL, OLD_SIZE);
+    save();
+    CHECK_EQ(fm_job_match(&g_job, FM_MATCH_SUM, sum31, 1u), FM_OK);
+    fk_fail(&g_card, FK_READ, 1, FM_ERR_IO);
+    CHECK_EQ(run(), FM_JOB_FAILED);
+    CHECK(!fm_job_found(&g_job, &found));
+}
+
 TEST_CASE(a_file_gone_since_its_sum_fails_changed)
 {
     fresh();
@@ -409,6 +455,7 @@ int main(void)
 {
     RUN(a_matching_sum_replaces_the_file);
     RUN(a_different_sum_fails_changed_and_writes_nothing);
+    RUN(a_refusal_gives_the_sum_it_found);
     RUN(a_file_gone_since_its_sum_fails_changed);
     RUN(absent_refuses_a_taken_name_and_makes_a_free_one);
     RUN(armed_or_cancel_while_summing_stop_with_no_new);

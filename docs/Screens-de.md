@@ -290,6 +290,7 @@ Hinweises kommt, ersetzt ihn. Der Hinweis ist eine Zeile von höchstens
 | 2s HALTEN ZUM LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START in der Frage des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
+| ÜBERSCHREIBEN auf der Frage des Editors von FILES | `Halte 2s, um zu überschreiben.` |
 
 ## Marken im Menü
 
@@ -3203,9 +3204,22 @@ durch den Editor der WLAN-Seite oder einen Upload
 Die Notiz sagt `<Name> wurde seit dem Lesen auf der Karte geändert.`, und
 die Frage UNGESPEICHERTE ÄNDERUNGEN sagt
 `<Name> wurde seit dem Lesen auf der Karte geändert. NEU LESEN verwirft diese Änderungen.`
-über BLEIBEN und NEU LESEN. BLEIBEN behält den Text; ein zweites
-SPEICHERN wird ebenso abgelehnt. NEU LESEN verwirft den Text und liest die
-Datei von der Karte in den Betrachter. Eine Frage, die schon offen war,
+über BLEIBEN, NEU LESEN und ÜBERSCHREIBEN, je 208 x 56px. BLEIBEN behält
+den Text; ein zweites SPEICHERN wird ebenso abgelehnt. NEU LESEN verwirft
+den Text und liest die Datei von der Karte in den Betrachter. ÜBERSCHREIBEN
+braucht 2s Halten; ein Loslassen vor 2s schreibt nichts und zeigt
+`Halte 2s, um zu überschreiben.` im Alarmband, und ein Finger, der von der
+Taste rutscht, der Home-Tag und ARMED beenden das Halten ohne Schreiben. Das
+vollendete Halten speichert den Text über die Datei, wie das abgelehnte
+SPEICHERN sie gelesen hat: Ihre Summe ersetzt die des Editors für dieses eine
+SPEICHERN, und derselbe Job vergleicht sie, bevor die `.NEW` geöffnet wird.
+Eine Datei, die sich nach dieser Ablehnung ändert, auch während des Haltens,
+wird ebenso abgelehnt, und die Frage erscheint erneut, mit der Summe der zuletzt
+gefundenen Datei. Eine entfernte Datei hat keine Summe: ÜBERSCHREIBEN ist
+gedimmt, nimmt kein Halten an, und nichts legt die Datei wieder an. Ein
+Schreiben, das fehlschlägt, lässt die Datei, wie sie war, und den Text
+ungespeichert, und das nächste SPEICHERN wird abgelehnt, bis ein Halten
+vollendet ist. Eine Frage, die schon offen war,
 als das Speichern endete, die eines Öffnens über dem Text, bleibt, wie sie
 war.
 
@@ -3843,8 +3857,19 @@ abgelehnt. Der Kopf zeigt dann
 `Seit dem Lesen auf der Karte geändert. Neu lesen.`, und das Feld
 UNGESPEICHERTE ÄNDERUNGEN fragt
 `<Name> wurde seit dem Lesen auf der Karte geändert. NEU LESEN verwirft diese Änderungen.`
-mit BLEIBEN und NEU LESEN. BLEIBEN behält den Text; NEU LESEN verwirft ihn,
-liest die Datei neu von der Karte und zeigt sie. Mit Schreiben per Browser
+mit BLEIBEN, NEU LESEN und ÜBERSCHREIBEN. BLEIBEN behält den Text; NEU LESEN
+verwirft ihn, liest die Datei neu von der Karte und zeigt sie. ÜBERSCHREIBEN
+braucht einen Druck von 2s, mit einer Füllung über die Taste; gehaltene
+Leertaste oder Eingabetaste zählen als Druck. Ein Loslassen vor 2s sendet
+nichts und zeigt `Halte 2s, um zu überschreiben.` im Feld, und ein Druck,
+der die Taste verlässt, Escape und ein verlorener Fokus beenden ihn ohne
+Schreiben. Der vollendete Druck sendet SPEICHERN mit `If-Match` und dem ETag,
+das die 412 trug: der Datei, wie diese Ablehnung sie fand. Eine Datei, die
+sich nach dieser Ablehnung ändert, auch während des Drucks, wird wieder mit
+412 beantwortet, und das Feld fragt erneut mit dem ETag dieser Antwort. Eine
+entfernte Datei gibt eine 412 ohne ETag: ÜBERSCHREIBEN ist gedimmt, und nichts
+geht hinaus. Ein Schreiben, das fehlschlägt, lässt die Datei, wie sie war, und
+den Text ungespeichert, und das nächste SPEICHERN wird mit 412 abgelehnt. Mit Schreiben per Browser
 ZUGANGSCODE und noch keinem Code fragt SPEICHERN im Feld des Editors nach
 dem Code: CODE SENDEN schickt ihn an `/code`, ohne die Seite zu verlassen,
 die Antwort des Panels setzt das Cookie, und SPEICHERN geht mit dem Text,
@@ -4005,7 +4030,7 @@ Text in der Sprache des Panels:
 | `NOT_FOUND` | 404 | kein solcher Eintrag, oder einer anderer Art |
 | `EXISTS`, `NOT_EMPTY`, `SAME` | 409 | ein vergebener Name; ein Ordner mit Einträgen; ein Verschieben in denselben Ordner oder in sich selbst |
 | `ARMED`, `LOGGING` | 409 | der Prüfstand wechselte zu ARMED, oder ein Lauf wird aufgezeichnet: Die Karte ist nur lesbar |
-| `CHANGED` | 412 | ein PUT mit `If-Match`, dessen Datei eine andere CRC-32 als das ETag hat oder fehlt |
+| `CHANGED` | 412 | ein PUT mit `If-Match`, dessen Datei eine andere CRC-32 als das ETag hat oder fehlt. Das JSON ergänzt `"etag":"xxxxxxxx"`, die CRC-32 der gefundenen Datei; keins für eine fehlende Datei |
 | `TOO_BIG` | 413 | eine Datei über 1.048.576 Bytes, abgelehnt, bevor ein Byte gelesen ist |
 | `TOO_LARGE` | 413 | der Body eines Schreibzugriffs über seiner Grenze (die Prüfung oben) |
 | `NOT_TEXT` | 415 | ein NUL-Byte in den ersten 4.096 Bytes |

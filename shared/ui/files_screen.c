@@ -1127,6 +1127,7 @@ static void tick(float dt_s)
         files_screen_invalidate();
     }
     fs_text_rules();
+    fs_text_tick(dt_s);
     if (s.busy) {
         const float before = s.busy_s;
         s.busy_s += (dt_s > 0.0f) ? dt_s : 0.0f;

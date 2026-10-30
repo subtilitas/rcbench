@@ -180,6 +180,8 @@ typedef struct {
     fm_sum_fn sum;           /**< FM_MATCH_SUM: the sum                 */
     uint32_t want;           /**< FM_MATCH_SUM: the old file's sum      */
     uint32_t got;            /**< FM_MATCH_SUM: the sum read so far     */
+    bool found;              /**< FM_MATCH_SUM: refused with got the sum
+                                  of the whole file there                */
     fm_sum_fn data_fn;       /**< fm_job_sum(): the sum, or NULL        */
     uint32_t data_sum;       /**< fm_job_sum(): the sum of the bytes
                                   loaded or saved so far                 */
@@ -304,6 +306,18 @@ fm_err_t fm_job_save(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
  */
 fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
                       uint32_t want);
+
+/**
+ * @brief The sum of the file a SAVE refused with FM_ERR_CHANGED read there:
+ *        what a SAVE that replaces that file as it stands now hands
+ *        fm_job_match(), so one more change is refused in its turn.
+ * @param job  the job
+ * @param sum  takes the sum
+ * @return true when the job read the whole file and its sum was not the
+ *         one wanted; false for a file that is gone, and for any other job
+ *         or answer, @p sum unchanged
+ */
+bool fm_job_found(const fm_job_t *job, uint32_t *sum);
 
 /**
  * @brief Sum the bytes a LOAD reads or a SAVE writes as they pass, into

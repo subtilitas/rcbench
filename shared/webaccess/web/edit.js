@@ -20,8 +20,12 @@
 // If-Match with the ETag of that read or of its own last save.  A file
 // changed on the card since, by FILES' editor on the panel, another
 // browser or an upload, is answered 412 CHANGED, and the editor asks STAY,
-// which keeps the text, or READ AGAIN, which drops it and reads the file
-// anew.  No SAVE goes out without If-Match.
+// which keeps the text, READ AGAIN, which drops it and reads the file
+// anew, or OVERWRITE, held 2s.  The 412 carries the ETag of the file it
+// found, and OVERWRITE sends If-Match with that one: a change after the
+// refusal, also during the hold, is answered 412 again and the box asks
+// again.  A file that is gone has no ETag: OVERWRITE stays dimmed.  No SAVE
+// goes out without If-Match.
 //
 // A KST file (first line "KST servo configuration, format ...") loses
 // every checksum line on SAVE (kst_file_checksum_line()), so the servo
@@ -241,15 +245,26 @@ var RcbEd = (function () {
     return dirty(ed, text) ? 'ask' : 'close';
   }
 
-  // SAVE of @p text over the file of session @p ed ({tag, eol, bom, base,
-  // max, endsMax}); @p put(bytes, headers) sends it and answers a promise
-  // of {ok, status, j}.  Answers a promise of {r, text, kst, esc, mixed,
-  // a}: r is SAVED, NONE (no changes), FULL, LINES, CHANGED (412, or no
-  // ETag to send), or REFUSED with the answer a; text is the text as sent
-  // (without its checksum lines when kst).  A save that wrote takes the
-  // answer's ETag and the text as the session's new state.
-  function save(ed, text, put) {
-    if (!dirty(ed, text)) {
+  // The If-Match form of the ETag answer @p a's refusal found, '' for none.
+  function foundTag(a) {
+    return (a && a.j && /^[0-9a-f]{8}$/.test(a.j.etag || ''))
+      ? '"' + a.j.etag + '"' : '';
+  }
+
+  // SAVE of @p text over the file of session @p ed ({tag, over, eol, bom,
+  // base, max, endsMax}); @p put(bytes, headers) sends it and answers a
+  // promise of {ok, status, j}.  Answers a promise of {r, text, kst, esc,
+  // mixed, a}: r is SAVED, NONE (no changes), FULL, LINES, CHANGED (412, or
+  // no ETag to send), or REFUSED with the answer a; text is the text as
+  // sent (without its checksum lines when kst).  A save that wrote takes
+  // the answer's ETag and the text as the session's new state.  @p over
+  // sends the ETag the last 412 found (ed.over) in place of ed.tag, once:
+  // ed.tag moves only with a save that wrote, and a 412 leaves ed.over its
+  // own answer's ETag, '' for a file that is gone.
+  function save(ed, text, put, over) {
+    var tag = over ? ed.over : ed.tag;
+    ed.over = '';
+    if (!over && !dirty(ed, text)) {
       return Promise.resolve({ r: 'NONE', text: text, kst: false });
     }
     var c = cutSum(text);
@@ -258,10 +273,10 @@ var RcbEd = (function () {
     if (why) {
       return Promise.resolve({ r: why, text: c.text, kst: c.cut });
     }
-    if (!ed.tag) {
+    if (!tag) {
       return Promise.resolve({ r: 'CHANGED', text: c.text, kst: c.cut });
     }
-    return put(b, { 'If-Match': ed.tag }).then(function (a) {
+    return put(b, { 'If-Match': tag }).then(function (a) {
       if (a.ok) {
         var mixed = ed.eol === 'mixed';
         ed.tag = (a.j && a.j.etag) ? '"' + a.j.etag + '"' : '';
@@ -273,9 +288,46 @@ var RcbEd = (function () {
           esc: !!(a.j && a.j.note === 'ESC_NEXT_START'), size: b.length };
       }
       var changed = a.status === 412 || (a.j && a.j.error === 'CHANGED');
+      ed.over = changed ? foundTag(a) : '';
       return { r: changed ? 'CHANGED' : 'REFUSED', text: c.text, kst: c.cut,
         a: a };
     });
+  }
+
+  // A press held @p ms before it acts, with @p timers {set, clear} for the
+  // clock: fire() when it completes, hint() for a release before that, and
+  // leave() for a press that goes without a release (slid off, the box
+  // closed, the focus lost), which does neither.  Answers {down, up, leave,
+  // on}; on() says a press runs.
+  function holder(ms, timers, fire, hint) {
+    var t = null;
+    function end() {
+      if (t === null) {
+        return false;
+      }
+      timers.clear(t);
+      t = null;
+      return true;
+    }
+    return {
+      down: function () {
+        if (t === null) {
+          t = timers.set(function () {
+            t = null;
+            fire();
+          }, ms);
+        }
+      },
+      up: function () {
+        if (end()) {
+          hint();
+        }
+      },
+      leave: end,
+      on: function () {
+        return t !== null;
+      }
+    };
   }
 
   // ------------------------------------------------------------ the page
@@ -286,6 +338,7 @@ var RcbEd = (function () {
     var ui = c.ui;
     var LH = 20;          // px of a line, as the viewer's
     var AROUND = 200;     // lines drawn above and below the window
+    var HOLD_MS = 2000;   // OVERWRITE's hold, as the panel's UI_HOLD_S
     var enc = new TextEncoder();
     var dec = new TextDecoder('utf-8');
     var ed = null;        // the session while the editor is on
@@ -395,6 +448,7 @@ var RcbEd = (function () {
       ed = null;
       lines = null;
       saving = false;
+      holdEnd();
       x.box.hidden = true;
       x.wrap.hidden = true;
       x.ta.value = '';
@@ -445,6 +499,11 @@ var RcbEd = (function () {
       x.qtext.textContent = F.fmt(changed ? TX.qchanged : TX.qleave,
         ed.name);
       x.go.textContent = changed ? TX.readagain : TX.discard;
+      holdEnd();
+      x.hint.textContent = '';
+      x.hint.hidden = !changed;
+      x.over.hidden = !changed;
+      x.over.disabled = !ed.over;
       x.goFn = changed ? function () {
         stop();
         c.reopen();
@@ -456,7 +515,14 @@ var RcbEd = (function () {
       x.stay.focus();
     }
 
+    // The press on OVERWRITE over, its fill back to nothing.
+    function holdEnd() {
+      x.hold.leave();
+      x.over.classList.remove('holding');
+    }
+
     function stay() {
+      holdEnd();
       x.box.hidden = true;
       x.ta.focus();
     }
@@ -496,6 +562,9 @@ var RcbEd = (function () {
       x.qtext.textContent = text;
       x.codeIn.hidden = false;
       x.codeIn.value = '';
+      holdEnd();
+      x.over.hidden = true;
+      x.hint.hidden = true;
       x.stay.textContent = TX.cancel;
       x.go.textContent = TX.codego;
       x.goFn = sendCode;
@@ -534,7 +603,9 @@ var RcbEd = (function () {
       });
     }
 
-    function save() {
+    // SAVE, or with @p over the hold on OVERWRITE completed: the same PUT,
+    // with the ETag the refusal found.
+    function save(over) {
       if (!ed || saving) {
         return;
       }
@@ -550,7 +621,7 @@ var RcbEd = (function () {
       var s = ed;
       RcbEd.save(s, x.ta.value, function (b, hdr) {
         return c.wr.put(s.path, s.mount, new Blob([b]), hdr);
-      }).then(function (res) {
+      }, over === true).then(function (res) {
         saving = false;
         x.ta.readOnly = false;
         if (ed === s) {
@@ -578,7 +649,9 @@ var RcbEd = (function () {
 
     function build() {
       x.edit = c.button(TX.edit, 'btn', start);
-      x.save = c.button(TX.save, 'btn', save);
+      x.save = c.button(TX.save, 'btn', function () {
+        save();
+      });
       x.save.hidden = true;
       x.note = c.el('span', 'vn');
       x.note.setAttribute('aria-live', 'polite');
@@ -634,9 +707,68 @@ var RcbEd = (function () {
           x.goFn();
         }
       });
+      x.over = c.button(TX.overwrite, 'btn hold', function () {});
+      x.over.hidden = true;
+      x.hold = holder(HOLD_MS, {
+        set: function (f, ms) {
+          return setTimeout(f, ms);
+        },
+        clear: function (t) {
+          clearTimeout(t);
+        }
+      }, function () {
+        x.over.classList.remove('holding');
+        if (x.box.hidden || !ed) {
+          return;
+        }
+        x.box.hidden = true;
+        save(true);
+      }, function () {
+        x.over.classList.remove('holding');
+        x.hint.textContent = TX.holdover;
+      });
+      function press() {
+        if (!x.over.disabled) {
+          x.over.classList.add('holding');
+          x.hold.down();
+        }
+      }
+      function lift() {
+        x.over.classList.remove('holding');
+        x.hold.up();
+      }
+      function isKey(ev) {
+        return ev.key === ' ' || ev.key === 'Enter';
+      }
+      x.over.addEventListener('pointerdown', press);
+      x.over.addEventListener('pointerup', lift);
+      ['pointerleave', 'pointercancel', 'blur'].forEach(function (k) {
+        x.over.addEventListener(k, holdEnd);
+      });
+      x.over.addEventListener('contextmenu', function (ev) {
+        ev.preventDefault();
+      });
+      x.over.addEventListener('keydown', function (ev) {
+        if (isKey(ev)) {
+          ev.preventDefault();
+          if (!ev.repeat) {
+            press();
+          }
+        }
+      });
+      x.over.addEventListener('keyup', function (ev) {
+        if (isKey(ev)) {
+          ev.preventDefault();
+          lift();
+        }
+      });
       row.appendChild(x.stay);
       row.appendChild(x.go);
+      row.appendChild(x.over);
       card.appendChild(row);
+      x.hint = c.el('p', 'vn w hint');   // keeps its line: nothing moves
+      x.hint.setAttribute('aria-live', 'polite');
+      card.appendChild(x.hint);
       x.box.appendChild(card);
       ui.viewer.appendChild(x.box);
 
@@ -658,7 +790,7 @@ var RcbEd = (function () {
   return { decode: decode, encode: encode, open: open, eolOf: eolOf,
     endsOf: endsOf, fits: fits, sumLine: sumLine, cutSum: cutSum,
     dirty: dirty, onClose: onClose, codeAnswer: codeAnswer, save: save,
-    attach: attach };
+    foundTag: foundTag, holder: holder, attach: attach };
 }());
 
 if (typeof module !== 'undefined') {

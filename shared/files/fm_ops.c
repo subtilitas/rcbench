@@ -327,7 +327,17 @@ fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
     job->sum = sum;
     job->want = want;
     job->got = 0u;
+    job->found = false;
     return FM_OK;
+}
+
+bool fm_job_found(const fm_job_t *job, uint32_t *sum)
+{
+    if (job == NULL || sum == NULL || !job->found) {
+        return false;
+    }
+    *sum = job->got;
+    return true;
 }
 
 fm_err_t fm_job_sum(fm_job_t *job, fm_sum_fn sum)
@@ -614,6 +624,7 @@ static fm_err_t match_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
     (void)io->close(io->ctx, job->in);
     job->in = NULL;
     if (job->got != job->want) {
+        job->found = true;
         return FM_ERR_CHANGED;
     }
     const fm_err_t opened = open_new(job, io);

@@ -47,7 +47,8 @@
  * the first 4kB, more than 65,536 line ends and more than 1MiB refused)
  * before a byte is written, and saved through "<name>.NEW" (fm_job_save()).
  * Its If-Match: "<ETag>" replaces the file only while its CRC-32 is the
- * ETag a read of it gave (412 CHANGED otherwise); If-None-Match: * makes
+ * ETag a read of it gave (412 CHANGED otherwise, with the ETag of the file
+ * it found, none for a file that is gone); If-None-Match: * makes
  * the file only where no entry has the name (409 EXISTS); neither header
  * makes or replaces it.  A new file's name, every name of MKDIR and the
  * new name of RENAME follow the panel keyboard's rule (fm_name_check()).
@@ -176,6 +177,9 @@ typedef struct {
     text_buf_t tb;                    /**< the last file loaded            */
     uint32_t etag;                    /**< its bytes' CRC-32, or a saved
                                            file's                        */
+    uint32_t found_tag;               /**< a PUT refused CHANGED: the CRC-32
+                                           of the file it found           */
+    bool found;                       /**< found_tag holds one            */
     bool created;                     /**< the last write made its entry   */
     char done[FM_PATH_SIZE];          /**< the path the last write left    */
     bool restart;                     /**< the last PUT saved a file the
@@ -375,6 +379,18 @@ const char *wa_api_write_status(const wa_api_t *api);
  * @param o    the output
  */
 void wa_api_write_json(const wa_api_t *api, wa_out_t *o);
+
+/**
+ * @brief A refused write's body: wa_api_error_json(), and for a PUT refused
+ *        CHANGED over a file that is there, "etag":"xxxxxxxx" of that file
+ *        as the compare read it.
+ * @param api  the API; may be NULL for a refusal before the core
+ * @param o    the output
+ * @param e    why it is refused
+ * @param de   German texts
+ */
+void wa_api_refused_json(const wa_api_t *api, wa_out_t *o, wa_api_err_t e,
+                         bool de);
 
 /** @brief Room for an ETag header's value: '"', 8 hex digits, '"', NUL. */
 #define WA_API_ETAG_SIZE 11u
