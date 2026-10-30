@@ -164,6 +164,48 @@ fm_path_t fm_path_check(const char *path)
     return (depth > FM_DEPTH_MAX) ? FM_PATH_DEEP : FM_PATH_OK;
 }
 
+/**
+ * @brief Whether one name of a path names its entry one way only.
+ * @param s  the name's first byte
+ * @param n  its bytes
+ * @return true when it is not an alias (fm_path_plain())
+ */
+static bool plain_name(const char *s, size_t n)
+{
+    if (n == 0u || s[0] == ' ' || s[n - 1u] == ' ' || s[n - 1u] == '.') {
+        return false;
+    }
+    for (size_t i = 0u; i < n; ++i) {
+        const unsigned char c = (unsigned char)s[i];
+        if (c < 0x20u || c == 0x7Fu || strchr("\"*:<>?\\|", c) != NULL) {
+            return false;
+        }
+        if (c == '~' && i + 1u < n && s[i + 1u] >= '0' && s[i + 1u] <= '9') {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool fm_path_plain(const char *path)
+{
+    if (path == NULL) {
+        return false;
+    }
+    size_t from = 0u;
+    const size_t n = strlen(path);
+    for (size_t i = 0u; i <= n && n > 0u; ++i) {
+        if (i < n && path[i] != '/') {
+            continue;
+        }
+        if (!plain_name(path + from, i - from)) {
+            return false;
+        }
+        from = i + 1u;
+    }
+    return true;
+}
+
 size_t fm_path_depth(const char *path)
 {
     size_t depth = 0u;

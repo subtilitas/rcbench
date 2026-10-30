@@ -153,6 +153,10 @@ static esp_err_t answer(httpd_req_t *r, wa_api_err_t why, const wa_api_t *api,
     if (why == WA_API_PANEL_BUSY) {
         httpd_resp_set_hdr(r, "Retry-After", "2");
     }
+    char etag[WA_API_ETAG_SIZE];     /* lives until the answer is sent */
+    if (why == WA_API_OK && wa_api_write_etag(api, etag)) {
+        httpd_resp_set_hdr(r, "ETag", etag);
+    }
     if (close) {
         httpd_resp_set_hdr(r, "Connection", "close");
     }

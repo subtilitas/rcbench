@@ -376,6 +376,18 @@ const char *wa_api_write_status(const wa_api_t *api);
  */
 void wa_api_write_json(const wa_api_t *api, wa_out_t *o);
 
+/** @brief Room for an ETag header's value: '"', 8 hex digits, '"', NUL. */
+#define WA_API_ETAG_SIZE 11u
+
+/**
+ * @brief The ETag header a write's answer carries: the saved bytes'
+ *        CRC-32 as a GET of the file gives it, after a PUT only.
+ * @param api  the API, after a write answered WA_API_OK
+ * @param out  takes "\"xxxxxxxx\"", WA_API_ETAG_SIZE bytes
+ * @return true after a PUT; false, and @p out empty, otherwise
+ */
+bool wa_api_write_etag(const wa_api_t *api, char *out);
+
 /**
  * @brief Read the page /api/list asks for, into the API's request.
  * @param api    the API

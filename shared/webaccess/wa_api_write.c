@@ -98,6 +98,26 @@ static void bench_now(const wa_api_t *api, const fm_req_t *req,
 }
 
 /**
+ * @brief A write's path from parameter @p key: wa_api_q_path()'s, and no
+ *        name in it an alias FatFs would read as another entry
+ *        (fm_path_plain()), so the rules judge the entry the card changes.
+ * @param query  the query string or form
+ * @param key    the parameter
+ * @param out    takes the path, FM_PATH_SIZE bytes
+ * @return WA_API_OK, or WA_API_NAME
+ */
+static wa_api_err_t write_path(const char *query, const char *key,
+                               char *out)
+{
+    const wa_api_err_t e = wa_api_q_path(query, key, out);
+    if (e == WA_API_OK && !fm_path_plain(out)) {
+        out[0] = '\0';
+        return WA_API_NAME;
+    }
+    return e;
+}
+
+/**
  * @brief An ETag as If-Match carries it: 8 hex digits between quotes.
  * @param s    the header's value
  * @param out  takes the value
@@ -200,7 +220,7 @@ wa_api_err_t wa_api_put(wa_api_t *api, const char *query,
         query = "";
     }
     char path[FM_PATH_SIZE];
-    wa_api_err_t e = wa_api_q_path(query, "path", path);
+    wa_api_err_t e = write_path(query, "path", path);
     unsigned mount = 0u;
     if (e == WA_API_OK && !wa_api_q_mount(query, api->run->io, &mount)) {
         e = WA_API_REQUEST;
@@ -258,7 +278,7 @@ wa_api_err_t wa_api_mkdir(wa_api_t *api, const char *form)
         form = "";
     }
     char path[FM_PATH_SIZE];
-    wa_api_err_t e = wa_api_q_path(form, "path", path);
+    wa_api_err_t e = write_path(form, "path", path);
     unsigned mount = 0u;
     if (e == WA_API_OK && !wa_api_q_mount(form, api->run->io, &mount)) {
         e = WA_API_REQUEST;
@@ -297,7 +317,7 @@ static wa_api_err_t entry_of(const wa_api_t *api, const char *form,
                              unsigned *mount)
 {
     char path[FM_PATH_SIZE];
-    const wa_api_err_t e = wa_api_q_path(form, key, path);
+    const wa_api_err_t e = write_path(form, key, path);
     if (e != WA_API_OK) {
         return e;
     }
@@ -321,7 +341,7 @@ wa_api_err_t wa_api_rename(wa_api_t *api, const char *form)
     wa_api_err_t e = entry_of(api, form, "from", req, name, &is_dir, &mount);
     char to[FM_PATH_SIZE];
     if (e == WA_API_OK) {
-        e = wa_api_q_path(form, "to", to);
+        e = write_path(form, "to", to);
     }
     char to_dir[FM_PATH_SIZE];
     char to_name[FM_NAME_BUF];
@@ -369,6 +389,16 @@ wa_api_err_t wa_api_delete(wa_api_t *api, const char *form)
 const char *wa_api_write_status(const wa_api_t *api)
 {
     return api->created ? "201 Created" : "200 OK";
+}
+
+bool wa_api_write_etag(const wa_api_t *api, char *out)
+{
+    out[0] = '\0';
+    if (!api->put) {
+        return false;
+    }
+    (void)snprintf(out, WA_API_ETAG_SIZE, "\"%08" PRIx32 "\"", api->etag);
+    return true;
 }
 
 void wa_api_write_json(const wa_api_t *api, wa_out_t *o)

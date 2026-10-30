@@ -171,6 +171,12 @@ TEST_CASE(put_makes_a_new_file_and_answers_its_etag)
                    "\"etag\":\"%08" PRIx32 "\",\"note\":\"\"}",
                    wa_crc32(0u, "a\r\nb\n", 5u));
     CHECK_STR_EQ(answer(), want);
+    /* The ETag header carries the same CRC-32, quoted as a GET gives it. */
+    char tag[WA_API_ETAG_SIZE];
+    CHECK(wa_api_write_etag(&g_api, tag));
+    (void)snprintf(want, sizeof(want), "\"%08" PRIx32 "\"",
+                   wa_crc32(0u, "a\r\nb\n", 5u));
+    CHECK_STR_EQ(tag, want);
     CHECK(fk_get(&g_card, "USER/LOGS/N\xc3\x84.TXT.NEW") == NULL);
     CHECK(clean());
     /* An empty file: made, its ETag the CRC of nothing. */
@@ -182,6 +188,65 @@ TEST_CASE(put_makes_a_new_file_and_answers_its_etag)
     CHECK(holds("EMPTY.TXT", "x"));
     CHECK(!g_api.created);
     CHECK_STR_EQ(wa_api_write_status(&g_api), "200 OK");
+    CHECK(wa_api_write_etag(&g_api, tag));
+    (void)snprintf(want, sizeof(want), "\"%08" PRIx32 "\"",
+                   wa_crc32(0u, "x", 1u));
+    CHECK_STR_EQ(tag, want);
+    /* A write that is not a PUT carries no ETag. */
+    CHECK_EQ(wa_api_mkdir(&g_api, "path=D"), WA_API_OK);
+    CHECK(!wa_api_write_etag(&g_api, tag));
+    CHECK_STR_EQ(tag, "");
+}
+
+/* FatFs reads "CONF." as "CONF", "\\" as "/", "0:" as a drive and
+ * "KST~1.TXT" as a short name: each would reach an entry the rules judge
+ * by another name.  Every write refuses them before a card call. */
+TEST_CASE(a_path_alias_is_refused_by_every_write)
+{
+    fresh();
+    fk_file(&g_card, "BENCH/KST/CONF/KST.TXT", (const uint8_t *)"j", 1u);
+    fk_file(&g_card, "NOTE.TXT", (const uint8_t *)"n", 1u);
+    char im[WA_API_ETAG_SIZE];
+    (void)snprintf(im, sizeof(im), "\"%08" PRIx32 "\"",
+                   wa_crc32(0u, "j", 1u));
+    static const char *const alias[] = {
+        "BENCH/KST/CONF./KST.TXT",   "BENCH/KST/CONF%20/KST.TXT",
+        "%20BENCH/KST/CONF/KST.TXT", "BENCH/KST/CONF/KST.TXT.",
+        "BENCH/KST/CONF/KST.TXT%20", "BENCH%5CKST%5CCONF%5CKST.TXT",
+        "0%3A/BENCH/KST/CONF/KST.TXT", "BENCH/KST/CONF/KST~1.TXT",
+        "BENCH/KST/CONF/LOG000~1.BFL", "BENCH/KST/CONF/K%01ST.TXT",
+        "BENCH/./KST/CONF/KST.TXT",  "BENCH/KST/../KST/CONF/KST.TXT",
+        "BENCH//KST/CONF/KST.TXT",   "BENCH/KST/CONF/KST.TXT/",
+        "/BENCH/KST/CONF/KST.TXT",
+    };
+    const long writes = g_card.calls[FK_WRITE];
+    for (size_t i = 0u; i < sizeof(alias) / sizeof(alias[0]); ++i) {
+        char q[160];
+        (void)snprintf(q, sizeof(q), "path=%s", alias[i]);
+        CHECK_EQ(put_s(q, im, NULL, "x"), WA_API_NAME);
+        CHECK_EQ(put_s(q, NULL, NULL, "x"), WA_API_NAME);
+        CHECK_EQ(wa_api_mkdir(&g_api, q), WA_API_NAME);
+        (void)snprintf(q, sizeof(q), "path=%s&dir=0", alias[i]);
+        CHECK_EQ(wa_api_delete(&g_api, q), WA_API_NAME);
+        (void)snprintf(q, sizeof(q), "from=%s&to=BENCH/KST/CONF/K2.TXT",
+                       alias[i]);
+        CHECK_EQ(wa_api_rename(&g_api, q), WA_API_NAME);
+        (void)snprintf(q, sizeof(q), "from=NOTE.TXT&to=%s", alias[i]);
+        CHECK_EQ(wa_api_rename(&g_api, q), WA_API_NAME);
+    }
+    CHECK_EQ(g_card.calls[FK_WRITE], writes);
+    CHECK(holds("BENCH/KST/CONF/KST.TXT", "j"));
+    CHECK(holds("NOTE.TXT", "n"));
+    CHECK(fk_get(&g_card, "BENCH/KST/CONF/K2.TXT") == NULL);
+    /* Case is no alias: the rules fold it, so the record stays LOCKED. */
+    CHECK_EQ(put_s("path=bench/kst/conf/kst.txt", im, NULL, "x"),
+             WA_API_LOCKED);
+    CHECK_EQ(wa_api_delete(&g_api, "path=Bench/Kst/Conf/Kst.Txt&dir=0"),
+             WA_API_LOCKED);
+    CHECK(holds("BENCH/KST/CONF/KST.TXT", "j"));
+    /* A name with a "~" and no digit after it is a name. */
+    CHECK_EQ(put_s("path=A~B.TXT", NULL, "*", "x"), WA_API_OK);
+    CHECK(clean());
 }
 
 TEST_CASE(put_of_1mib_is_saved_and_one_byte_more_refused)
@@ -653,6 +718,7 @@ int main(void)
     RUN(put_with_the_read_etag_replaces_and_a_stale_one_is_412);
     RUN(put_if_none_match_refuses_a_taken_name);
     RUN(put_headers_and_names_not_taken_are_refused);
+    RUN(a_path_alias_is_refused_by_every_write);
     RUN(put_into_a_locked_busy_or_missing_place_is_refused);
     RUN(a_card_pulled_mid_put_leaves_the_old_file);
     RUN(armed_or_the_radio_going_off_stop_a_put);

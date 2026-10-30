@@ -3881,7 +3881,13 @@ von höchstens 1.024 Bytes, gelesen wie ein Query-String.
 Ein neuer Name folgt der Tastatur des Panels: 1 bis 59 Bytes, keines von
 `" * / : < > ? \ |`, kein Punkt und kein Leerzeichen an einem Ende.
 `If-Match` nimmt ein ETag, wie `/api/file` es liefert; ein schwaches
-(`W/`) oder eine Liste ist 400 `REQUEST`.
+(`W/`) oder eine Liste ist 400 `REQUEST`. Jeder Pfad eines
+Schreibzugriffs nennt jeden Eintrag nur auf eine Weise: ein Name mit
+Leerzeichen am Anfang, Leerzeichen oder Punkt am Ende, `\`, `:`, einem
+Steuerbyte oder `~` vor einer Ziffer (ein 8.3-Kurzname wie
+`LOG000~1.BFL`) ist 400 `NAME`, weil FatFs ihn als anderen Eintrag läse.
+Groß- und Kleinschreibung wird nicht abgelehnt: Die Regeln vergleichen
+Namen ohne sie, wie FatFs.
 
 Eine Ablehnung ist ein HTTP-Status und `{"error":"WORT","text":"..."}`, der
 Text in der Sprache des Panels:

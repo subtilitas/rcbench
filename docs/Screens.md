@@ -3510,7 +3510,12 @@ bytes, read as a query string.
 A new name follows the panel's keyboard: 1 to 59 bytes, none of
 `" * / : < > ? \ |`, no full stop or space at either end. `If-Match` takes
 one ETag as `/api/file` gives it; a weak one (`W/`) or a
-list is 400 `REQUEST`.
+list is 400 `REQUEST`. Every path of a write names each entry one way
+only: a name with a space at the start, a space or a full stop at the
+end, `\`, `:`, a control byte, or `~` followed by a digit (an 8.3 short
+name such as `LOG000~1.BFL`) is 400 `NAME`, since FatFs would read it as
+another entry. Case is not refused: the rules compare names with case
+folded, as FatFs does.
 
 A refusal is an HTTP status and `{"error":"WORD","text":"..."}`, the text
 in the panel's language:

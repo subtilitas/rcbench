@@ -8,8 +8,8 @@ panel's Wi-Fi radio, and the radio runs only with the bench SAFE, the supply
 output off and no log run open.
 
 The first is the panel's Wi-Fi page: an HTTP (hypertext transfer protocol)
-server that lists and sends the card's files and takes a panel firmware
-image. It runs only while the WI-FI screen is open, and goes off
+server that lists and sends the card's files, changes them as SETUP >
+SD CARD > Browser writes allows, and takes a panel firmware image. It runs only while the WI-FI screen is open, and goes off
 after 10min without a request. It answers one request at a time; a
 download the receiver takes nothing of for 30s ends. It runs as a WPA2 (Wi-Fi Protected Access 2)
 access point for 1 client or joins a WPA2 or WPA3 home network. An
@@ -31,6 +31,19 @@ read with a body and a code entry over 95 bytes are refused before a byte
 of the body is read. With the code off, any device on the network can
 still use the page: the checks keep out other web pages in a browser, not
 other devices.
+
+The page's writes (`PUT /api/file`, `POST /api/mkdir`, `/api/rename`,
+`/api/delete`) take the same checks with an `Origin` and
+`X-Rcbench-Upload: 1` required, a body of at most 1,048,576 bytes for a
+file and 1,024 for a form, and then the setting Browser writes: OPEN (the
+default: a write needs what a read needs, so the access code while it is
+on), ACCESS CODE (the code also while it is off),
+HOLD (a 2s hold on the panel once a radio session) or OFF. With OPEN and
+the code off, any device on the network can make, replace, rename and
+delete files on the card. No setting lets a write touch the bench's
+folders, the servo programmers' records, the files the logger writes or a
+name FatFs would read as another entry (`fm_path_plain()`), and every write
+stops at the bench's switch to ARMED.
 
 The second is the panel's own requests to GitHub over HTTPS (HTTP over TLS,
 transport layer security), on the home network the panel keeps; the panel

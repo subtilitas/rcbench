@@ -298,6 +298,25 @@ TEST_CASE(up_and_the_last_name)
     CHECK_STR_EQ(fm_path_base(NULL), "");
 }
 
+TEST_CASE(a_path_with_an_alias_name_is_not_plain)
+{
+    CHECK(fm_path_plain(""));
+    CHECK(fm_path_plain("BENCH/KST/CONF/KST.TXT"));
+    CHECK(fm_path_plain("USER/LOGS/N\xc3\x84 1.TXT"));
+    CHECK(fm_path_plain("._A"));
+    CHECK(fm_path_plain("A~B/C~.TXT"));
+    static const char *const no[] = {
+        "BENCH/KST/CONF./KST.TXT", "BENCH/KST/CONF /KST.TXT",
+        " BENCH", "BENCH/A.", "BENCH/A ", "BENCH\\KST", "0:/BENCH",
+        "A\"B", "A*B", "A<B", "A>B", "A?B", "A|B", "A\x01B", "A\x7f",
+        "LOG000~1.BFL", "BENCH/KST~1", "~9",
+    };
+    for (size_t i = 0u; i < sizeof(no) / sizeof(no[0]); ++i) {
+        CHECK(!fm_path_plain(no[i]));
+    }
+    CHECK(!fm_path_plain(NULL));
+}
+
 int main(void)
 {
     RUN(the_limits_are_the_walks);
@@ -314,5 +333,6 @@ int main(void)
     RUN(a_join_is_refused_with_out_unchanged);
     RUN(a_folder_below_the_deepest_is_refused_a_file_is_not);
     RUN(up_and_the_last_name);
+    RUN(a_path_with_an_alias_name_is_not_plain);
     return test_summary("fm_name");
 }
