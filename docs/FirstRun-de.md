@@ -303,7 +303,8 @@ Das Panel installiert spätere Releases über WLAN aus dem Release-Asset
 ## 2. Der Link, vor allem anderen
 
 Das Panel führt den CAN-Echo-Selbsttest selbst aus, bei jedem Start, 1200ms
-lang innerhalb des Splash. Er beantwortet eine Frage: kommen Frames unversehrt
+lang innerhalb des Splash. Er beginnt bei der ersten Antwort des IOmcu, nach
+höchstens 5000ms Warten. Er beantwortet eine Frage: kommen Frames unversehrt
 über den Bus? Er benutzt kein Page-Protokoll; besteht er und der Link arbeitet
 trotzdem nicht, liegt der Fehler oberhalb des Drahts.
 
@@ -324,6 +325,7 @@ UART0, mit USB-Serial-JTAG (der eingebauten USB-Seriell- und Debug-Bridge
 des ESP32-P4) als Zweitkonsole; welche der zwei USB-C-Buchsen der Platine
 zu welcher führt, ist nicht verfolgt:
 
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0
 
