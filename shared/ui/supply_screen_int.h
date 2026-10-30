@@ -341,6 +341,13 @@ typedef struct {
           own_i,                            /**< the operator's current limit, A */
           lent_v,                           /**< the port's voltage as taken, V */
           lent_i;                           /**< the port's current limit as taken, A */
+    /* The operator's set points offered back onto the live output a port
+     * left on: armed as the port lets go, standing while that run lasts;
+     * see supply_screen_restore_offer(). */
+    /** @brief Whether the offer to restore the operator's set points stands */
+    bool            offer;
+    uint32_t        offer_stops;        /**< stop count the offer was made under */
+    uint32_t        offer_offs;         /**< off count the offer was made under */
     /* The screen whose ON the output is, while it is on or an ON is on
      * its way; and an OFF owed for leaving it while a programming port
      * held the supply, sent when the port lets go.  See

@@ -455,6 +455,24 @@ static inline hitec_prog_state_t pstate(void)
     return hitec_prog_state(model());
 }
 
+/* The second read a write runs before its plan, run to its end; 60s is the
+ * bound.  The card takes nothing meanwhile: the write stands where its
+ * call left it before the second read, waiting for the card's record or
+ * backup file, and the next frame hands that over. */
+static inline void reread(void)
+{
+    const bool slow = g_card_slow;
+    const bool files_slow = g_files_slow;
+
+    g_card_slow = true;
+    g_files_slow = true;
+    for (unsigned i = 0; i < 60000u && hitec_prog_rereading(model()); ++i) {
+        pms();
+    }
+    g_card_slow = slow;
+    g_files_slow = files_slow;
+}
+
 /* Run until the model is in @p s; 60s is the bound. */
 static inline void until(hitec_prog_state_t s)
 {

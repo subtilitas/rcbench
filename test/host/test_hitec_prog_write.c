@@ -59,6 +59,7 @@ static void c_ready(void)
 /* The write runs to its end: held, nothing running. */
 static void written(void)
 {
+    reread();
     for (unsigned i = 0; i < 60000u
                          && (pstate() == HITEC_PROG_RECORDING
                              || pstate() == HITEC_PROG_WRITING);
@@ -117,6 +118,7 @@ TEST_CASE(a_d_write_writes_saves_reboots_reads_back_and_clears_the_record)
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_changes(model()), 1u);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     /* The record goes to the card first. */
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     CHECK_EQ(g_card_writes, 0u);
@@ -398,6 +400,7 @@ TEST_CASE(a_card_that_refuses_the_record_keeps_the_write_from_going)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     written();
     CHECK_EQ(msg(), HITEC_PROG_MSG_RECORD_FAILED);
@@ -417,8 +420,9 @@ TEST_CASE(a_card_that_does_not_answer_in_3000ms_ends_the_write)
     prun(20u);
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
-    t0 = g_ms;
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
+    t0 = g_ms;
     while (g_ms - t0 < HITEC_PROG_CARD_MS - g_frame_ms) {
         pms();
     }
@@ -439,6 +443,7 @@ TEST_CASE(abort_while_the_write_waits_for_the_card_writes_nothing)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     prun(100u);
     hitec_prog_abort(model());
     CHECK_EQ(pstate(), HITEC_PROG_HELD);
@@ -456,6 +461,7 @@ TEST_CASE(without_a_card_the_record_is_kept_in_memory_only)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_WRITING);
     CHECK(hitec_prog_record(model()));
     CHECK(hitec_prog_file_due(model()));
@@ -661,6 +667,7 @@ TEST_CASE(an_arm_request_while_the_card_takes_the_record_writes_nothing)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     /* FORGET waits for the write. */
     CHECK_EQ(hitec_prog_forget(model()), HITEC_PROG_MSG_BUSY);
@@ -692,6 +699,7 @@ TEST_CASE(a_restore_to_a_servo_with_the_old_values_sends_nothing)
     writes = g_drv.d_writes;
     /* The plan is empty: done at once, the record cleared. */
     CHECK_EQ(hitec_prog_restore(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_HELD);
     CHECK_EQ(msg(), HITEC_PROG_MSG_RESTORED);
     CHECK(!hitec_prog_record(model()));
@@ -726,6 +734,7 @@ TEST_CASE(a_write_the_session_refuses_after_the_card_sends_nothing)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 60),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK(hitec_image_forget(&model()->ses.image, 0x54));
     g_card_slow = false;
     frame();
@@ -741,6 +750,7 @@ TEST_CASE(a_write_the_session_refuses_after_the_card_sends_nothing)
              HITEC_PROG_EDIT_OK);
     g_card_slow = true;
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     model()->ses.in_mode = 0u;
     g_card_slow = false;
     frame();
@@ -756,6 +766,7 @@ TEST_CASE(abort_before_the_first_step_sends_nothing_and_drops_the_record)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_WRITING);
     CHECK(hitec_prog_record(model()));
     hitec_prog_abort(model());
@@ -827,6 +838,7 @@ TEST_CASE(the_answer_to_an_aborted_writes_record_releases_no_later_write)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK(card_take(&r) > 0u);
     CHECK_EQ(hitec_image_reg(&r.target, 0x60), 1u);
     hitec_prog_abort(model());
@@ -835,6 +847,7 @@ TEST_CASE(the_answer_to_an_aborted_writes_record_releases_no_later_write)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     CHECK(!hitec_prog_file_due(model()));   /* the card is busy */
     hitec_prog_file_done(model(), true);    /* the first record's answer */
@@ -862,9 +875,11 @@ TEST_CASE(a_refusal_of_an_older_text_ends_no_later_write)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK(card_take(&r) > 0u);
     hitec_prog_abort(model());
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     hitec_prog_file_done(model(), false);
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     CHECK(hitec_prog_record(model()));
@@ -886,6 +901,7 @@ TEST_CASE(the_answer_to_a_record_clear_releases_no_later_write)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK(card_take(&r) > 0u);
     hitec_prog_file_done(model(), true);
     written();
@@ -896,6 +912,7 @@ TEST_CASE(the_answer_to_a_record_clear_releases_no_later_write)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     hitec_prog_file_done(model(), true);
     prun(50u);
@@ -920,10 +937,12 @@ TEST_CASE(an_older_text_never_answered_ends_the_write_at_3000ms)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK(card_take(&r) > 0u);
     hitec_prog_abort(model());
-    t0 = g_ms;
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
+    t0 = g_ms;
     while (g_ms - t0 < HITEC_PROG_CARD_MS - g_frame_ms) {
         pms();
     }
@@ -953,6 +972,7 @@ static void write_waits_for_the_card(void)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     CHECK(card_take(&r) > 0u);
 }

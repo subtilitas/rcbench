@@ -208,6 +208,12 @@ SCREENS = {
                                   "dark"),
     "servo-hitec-classic-sum": ("servo-hitec-classic-sum.png", "servo",
                                 "dark"),
+    "servo-hitec-classic-reread": ("servo-hitec-classic-reread.png",
+                                   "servo", "dark"),
+    "servo-hitec-restore-ask": ("servo-hitec-restore-ask.png", "servo",
+                                "dark"),
+    "servo-hitec-restore-hv": ("servo-hitec-restore-hv.png", "servo",
+                               "dark"),
     "servo-hitec-classic-repair": ("servo-hitec-classic-repair.png",
                                    "servo", "dark"),
     # The Hitec servo files on a card in memory: FILES' pages and an empty

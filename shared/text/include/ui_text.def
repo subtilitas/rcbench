@@ -3612,6 +3612,18 @@ UI_TEXT(SV_HV_5, 0,
 UI_TEXT(SV_HV_LIVE, 0,
     "The output is on. The voltage will change immediately.",
     "Der Ausgang ist eingeschaltet. Die Spannung ändert sich sofort.")
+UI_TEXT(SV_RESTORE_ASK, 0,
+    "Restore your supply set points %.2fV %.2fA on the live output?",
+    "Deine Versorgungs-Sollwerte %.2fV %.2fA am eingeschalteten Ausgang wiederherstellen?")
+UI_TEXT(SV_RESTORE_NO, 0,
+    "NO keeps the programming values until the output goes off.",
+    "NEIN behält die Programmierwerte, bis der Ausgang ausgeschaltet ist.")
+UI_TEXT(SV_ASK_YES, 0,
+    "YES",
+    "JA")
+UI_TEXT(SV_ASK_NO, 0,
+    "NO",
+    "NEIN")
 
 /* --------------- the alert band: the panel's control task raises these */
 UI_TEXT(ALERT_TOUCH_LOST_STOP, 94,
@@ -5253,6 +5265,12 @@ UI_TEXT(HP_ST_SAVE, 116,
 UI_TEXT(HP_ST_CHECK, 116,
     "Checking the values: reading %u of %u.",
     "Werte werden geprüft: Lese %u von %u.")
+UI_TEXT(HP_ST_REREAD, 116,
+    "Second read before the write: %u of %u.",
+    "Zweites Lesen vor dem Schreiben: %u von %u.")
+UI_TEXT(HP_READS_DIFFER, 116,
+    "Two reads differ at 0x%02X: read again with READ ALL.",
+    "Zwei Lesevorgänge weichen bei 0x%02X ab: mit ALLES AUSLESEN neu lesen.")
 UI_TEXT(HP_REPAIRED, 116,
     "Checksum written. Stored values 0x00-0x1C sum to 0.",
     "Prüfsumme geschrieben. Die gespeicherten Werte 0x00-0x1C ergeben 0.")

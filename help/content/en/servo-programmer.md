@@ -55,6 +55,10 @@ MORE, while the tester has the port, sets what CONNECT applies:
 
 While the port is out of PWM, the supply's set points belong to the port: the SET row and the SUPPLY screen take no change and no ON. OUTPUT OFF and STOP work. Without a PD mini the voltage and current limit are stored and not applied. Back in PWM, the set points from before the session return once the output is off, at the next OFF when the session left it on; a set point changed in the meantime stays.
 
+![The question after LEAVE](view:servo-hitec-restore-ask)
+
+A LEAVE that leaves the output on at the session's set points, with the set points from before the session different, makes SERVO ask once the port is in PWM: `Restore your supply set points 5.50V 2.00A on the live output?` YES gives the live output both of them; a voltage that rises from 6.0V or below to above it opens HV SERVOS ONLY first. NO keeps the session's until the next OFF. The question comes once per LEAVE, waits for SERVO's keypads, lists, warnings, questions and OUTPUT ON's hold, and does not come while a port holds the supply, after an OFF, an error or a STOP, inside a limit run, or when a set point changed since. The Hitec programmer asks the same.
+
 ## The power cycle
 
 A KST or Chaservo servo enters programming mode only from a power-up, and acts on a written value only from its next power-up: a Chaservo on the bench ignored CONNECT with its supply on, and followed no PWM after a write until its supply was off and on again.

@@ -474,6 +474,9 @@ static void ses_done(hitec_prog_t *p, hitec_ses_t r)
     case OP_WRITE:
         hpw_write_done(p, r);
         break;
+    case OP_CHECK:
+        hpw_check_done(p, r);
+        break;
     default: /* OP_LEAVE */
         /* Back to PWM whatever the leave came to: a STOPPED port refuses
          * the leave's frame and takes the CLOSE. */
@@ -1190,11 +1193,17 @@ uint8_t hitec_prog_layout(const hitec_prog_t *p)
 bool hitec_prog_progress(const hitec_prog_t *p, unsigned *done,
                          unsigned *total)
 {
-    const bool reading = p->st == ST_SES && p->op == OP_READ;
+    const bool reading = p->st == ST_SES
+                         && (p->op == OP_READ || p->op == OP_CHECK);
 
     *done = reading ? p->ses.done : 0u;
     *total = reading ? p->ses.total : 0u;
     return reading;
+}
+
+bool hitec_prog_rereading(const hitec_prog_t *p)
+{
+    return p->st == ST_SES && p->op == OP_CHECK;
 }
 
 unsigned hitec_prog_retry_code(const hitec_prog_t *p)

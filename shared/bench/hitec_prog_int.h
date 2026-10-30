@@ -33,7 +33,7 @@ enum {
 };
 
 /** @brief The session operations. */
-enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_LEAVE, OP_WRITE };
+enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_LEAVE, OP_WRITE, OP_CHECK };
 
 /* --- hitec_prog.c --------------------------------------------------------- */
 
@@ -128,8 +128,9 @@ void hpw_tick(hitec_prog_t *p);
 bool hpw_abort(hitec_prog_t *p);
 
 /**
- * @brief Start a write of @p kind to @p target: the gate, the plan, the
- *        backup file, the record, the steps.
+ * @brief Start a write of @p kind to @p target: the gate, the second read
+ *        (hpw_check_done()), the plan, the backup file, the record, the
+ *        steps.
  *
  * @param p      The programmer.
  * @param kind   hitec_prog_wr_t.
@@ -138,6 +139,17 @@ bool hpw_abort(hitec_prog_t *p);
  */
 hitec_prog_msg_id_t hpw_start(hitec_prog_t *p, uint8_t kind,
                               const hitec_image_t *target);
+
+/**
+ * @brief The second read before a write's plan ended with @p r: on
+ *        HITEC_SES_OK and every address equal to the first read, the plan,
+ *        the backup file, the record and the steps; otherwise the image is
+ *        the first read again and the write ends with nothing planned.
+ *
+ * @param p The programmer.
+ * @param r The read's result.
+ */
+void hpw_check_done(hitec_prog_t *p, hitec_ses_t r);
 
 /**
  * @brief The write whose backup file is saved, or needs none, goes on: its

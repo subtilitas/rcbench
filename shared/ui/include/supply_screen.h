@@ -231,14 +231,42 @@ void supply_screen_adopt(float v, float i);
  *        held (supply_screen_output_held()).  They come back only where
  *        the set points are still the port's; a change since, by the
  *        operator, a cap or another screen, stands.  Either way the
- *        operator's are then forgotten.  A live output is never given them:
- *        after a LEAVE that leaves the output on they wait for its OFF.
+ *        operator's are then forgotten.  A live output is given them only
+ *        through SERVO's question (supply_screen_restore_offer()): after a
+ *        LEAVE that leaves the output on, and an answer NO, they wait for
+ *        its OFF.
  * @param free_off the last read of the supply showed no programming port
  *        holding it and its output asked off and read off
  *        (supply_link_port_free_off()), and no other screen holds its
  *        OUTPUT ON (servo_screen_output_held())
  */
 void supply_screen_port_done(bool free_off);
+
+/**
+ * @brief The operator's set points offered back onto a live output: a
+ *        programming port let go of the supply (a KST or Hitec LEAVE, or
+ *        any other end of its hold) with the output reported on at the
+ *        port's set points, no OFF on its way or owed, and the operator's
+ *        from before the port (supply_screen_adopt()) differ from them
+ *        under the caps.  The offer stands while no port holds the supply
+ *        again, the set points stay the port's and the output stays on: an
+ *        OFF reported, a stop (supply_screen_cancel_on()) or an OFF asked
+ *        ends it for good.  SERVO asks the operator with it and ends it
+ *        with supply_screen_restore_taken().
+ * @param v takes the operator's voltage set point under the caps, V;
+ *        nothing is written with @p v or @p i NULL
+ * @param i takes the operator's current limit under the caps, A
+ * @return true while the offer stands
+ */
+bool supply_screen_restore_offer(float *v, float *i);
+
+/**
+ * @brief The offer of supply_screen_restore_offer() has been asked: it
+ *        ends, whatever the answer.  While the port's set points stand,
+ *        the operator's still come back at the output's next OFF
+ *        (supply_screen_port_done()).
+ */
+void supply_screen_restore_taken(void);
 
 /**
  * @brief Whether the output is on as this screen believes it: what the

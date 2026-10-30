@@ -289,9 +289,10 @@ enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_SUP_V, KT_SUP_I, KT_TRIM };
 
 /* What the question or the HV warning applies: a typed set point, the
- * supply's output switched on, or the automatic test started with steps
- * above 6.0V. */
-enum { ASK_SET = 0, ASK_ON, ASK_TEST };
+ * supply's output switched on, the automatic test started with steps
+ * above 6.0V, or the operator's set points back onto the live output a
+ * programming port left on (both set points). */
+enum { ASK_SET = 0, ASK_ON, ASK_TEST, ASK_RESTORE };
 
 #define CHOICE_MAX 10
 
@@ -885,6 +886,14 @@ bool target_locked(const ov_row_t *r);
  * warning.  The question or the warning answered: what it was about. */
 void ask_hv_on(void);
 void ask_apply(void);
+/**
+ * @brief The question after a programming port let go of a live output at
+ *        its own set points (supply_screen_restore_offer()): asked once no
+ *        panel, press or OUTPUT ON hold stands, none inside a limit run,
+ *        and closed, the HV warning after YES included, when a port holds
+ *        the supply again or the output is no longer live.  Every frame.
+ */
+void ask_restore_follow(void);
 /* A press on a page or a panel: its DOWN, and its moves and its release. */
 void ov_down(const touch_event_t *evt);
 void ov_rest(const touch_event_t *evt);

@@ -95,6 +95,7 @@ Die Zeile SOLL trägt die beiden Sollwerte der Seite SUPPLY und ihren Ausgangssc
 - Ein Tipp auf einen Sollwert öffnet das Tastenfeld über der linken Karte.
 - AUSGANG EIN ist ein Halten von 2s, AUSGANG AUS ein Tipp.
 - Das Verlassen von SERVO schaltet einen Ausgang ab, den SERVO eingeschaltet hat.
+- Nach einem VERLASSEN eines Programmierers, das den Ausgang eingeschaltet lässt, fragt SERVO, ob die Sollwerte von vor der Sitzung darauf zurückgehen ([Servo-Programmierer](servo-programmer.md)).
 
 ![NUR HV-SERVOS](view:servo-hv)
 

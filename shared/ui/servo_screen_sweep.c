@@ -337,6 +337,11 @@ bool servo_screen_output_held(void)
     return (s.out_down && !s.out_press_on) || s.ask.open;
 }
 
+bool servo_screen_asks_restore(void)
+{
+    return s.ask.open && s.ask.purpose == ASK_RESTORE;
+}
+
 bool servo_screen_paused(void) { return s.paused; }
 
 uint32_t servo_screen_curve_ms(void) { return s.clock_ms - s.sw.start_ms; }
@@ -772,6 +777,9 @@ void svs_tick_body(float dt_s)
         close_alone();
         servo_invalidate();
     }
+    /* A programming port that let go of a live output: the operator's set
+     * points offered back onto it. */
+    ask_restore_follow();
     if (s.out_down && !s.out_press_on && !on) {
         ++s.sup_rev;
         if (ui_hold_tick(&s.out_hold, dt_s)) {

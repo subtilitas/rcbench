@@ -348,6 +348,9 @@ void sup_post_off(void)
     s.pending.on  = false;
     s.on_asked    = false;
     s.off_owed    = false;
+    /* Nor is it the live output a port left: no set points are offered
+     * back onto it (supply_screen_restore_offer()). */
+    s.offer       = false;
     /* The OFF is asked: an output still reported on is nobody's to switch
      * off again on a leave. */
     s.owner       = SUPPLY_BY_NONE;
@@ -611,6 +614,37 @@ const ui_keypad_t *supply_screen_keypad(void) { return &s.kp; }
 bool supply_screen_typed_asks(void) { return sup_confirm_needed(FROM_KEYPAD); }
 
 /**
+ * @brief The operator's set points as the caps take them now.
+ * @param v takes the voltage, V
+ * @param i takes the current limit, A
+ */
+static void own_snapped(float *v, float *i)
+{
+    *v = supply_snap(s.own_v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
+    *i = supply_snap(s.own_i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+}
+
+/**
+ * @brief Whether the operator's set points can be offered back now: the
+ *        port's stand unchanged on an output reported on, no port holds
+ *        the supply, no OFF is on its way or owed, and the operator's
+ *        differ from the port's.
+ * @return true when they can
+ */
+static bool offer_fits(void)
+{
+    float v;
+    float i;
+
+    if (!s.lent || s.port_held || !s.on || s.pending.off || s.off_owed
+        || s.cv != s.lent_v || s.ci != s.lent_i) {
+        return false;
+    }
+    own_snapped(&v, &i);
+    return v != s.cv || i != s.ci;
+}
+
+/**
  * @brief The supply's lock as the two programmers' words make it: held while
  *        either holds a port.
  * @param held whether a programming port holds the supply
@@ -650,6 +684,7 @@ static void port_held_apply(bool held)
             s.kp_target = KP_NONE;
         }
         s.confirm_open = false;
+        s.offer = false;
         ui_slider_set(&s.v_slider, s.cv);
         ui_slider_set(&s.i_slider, s.ci);
         sup_owner_settle();
@@ -660,6 +695,13 @@ static void port_held_apply(bool held)
     }
     /* Let go, the set points come under the caps again. */
     apply_caps();
+    /* And a port that let go of an output it left on, at its own set
+     * points: the operator's are offered back onto it, once. */
+    if (!held) {
+        s.offer       = offer_fits();
+        s.offer_stops = s.stops;
+        s.offer_offs  = s.off_count;
+    }
     ++s.set_rev;
     ++s.out_rev;
     ++s.ctrl_rev;
@@ -707,16 +749,35 @@ void supply_screen_port_done(bool free_off)
         return;
     }
     s.lent = false;
+    s.offer = false;
     /* Changed since the port's were taken: the change stands. */
     if (s.cv != s.lent_v || s.ci != s.lent_i) {
         return;
     }
-    s.cv = supply_snap(s.own_v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
-    s.ci = supply_snap(s.own_i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    own_snapped(&s.cv, &s.ci);
     ui_slider_set(&s.v_slider, s.cv);
     ui_slider_set(&s.i_slider, s.ci);
     ++s.set_rev;
 }
+
+bool supply_screen_restore_offer(float *v, float *i)
+{
+    /* Only for the run the port left on: an OFF or a stop since ends it,
+     * and so does a change of a set point. */
+    if (s.offer && (s.stops != s.offer_stops || s.off_count != s.offer_offs
+                    || !offer_fits())) {
+        s.offer = false;
+    }
+    if (!s.offer) {
+        return false;
+    }
+    if (v != NULL && i != NULL) {
+        own_snapped(v, i);
+    }
+    return true;
+}
+
+void supply_screen_restore_taken(void) { s.offer = false; }
 
 void supply_screen_put(float v, float i)
 {

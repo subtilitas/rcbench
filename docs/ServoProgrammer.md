@@ -296,7 +296,8 @@ session starts 1000ms after the PD mini reads on. For an output that is
 on, the session runs at the lower of the two voltages and the lower of the
 two current limits: a voltage above the programming voltage is lowered to
 it, a current limit above CURRENT LIMIT is lowered to it, and neither is
-raised. Leaving programming does not restore a value **CONNECT** lowered.
+raised. Leaving programming does not restore a value **CONNECT** lowered
+by itself: SERVO asks first (below).
 
 The port programs at 4.8V or more. The supply voltage a servo needs to
 store a register is not measured. An
@@ -319,10 +320,37 @@ port is back in PWM for as long as the output it left on stays on. The set
 points from before the session come back at the first read of the supply
 that shows no port holding it and the output off: at once where the session
 ends with the output off, at the next OFF after a LEAVE that leaves it on.
-A live output is never given them, nor one whose OUTPUT ON is being
-held or whose HV warning stands on SERVO. A set point changed after the port let
-go, by a tap, a lowered limit or a servo test, stands, and the earlier ones
-are dropped.
+None comes back on its own while OUTPUT ON is being held or a question or
+the HV warning stands on SERVO. A set point changed after the port let go,
+by a tap, a lowered limit or a servo test, stands, and the earlier ones are
+dropped.
+
+A LEAVE that leaves the output on at the port's set points, with the set
+points from before the session different, makes SERVO ask once the port is
+in PWM: `Restore your supply set points 5.50V 2.00A on the live output?`,
+under OUTPUT IS ON, with the change of each set point that differs.
+
+- **YES** gives the live output both set points from before the session.
+  A voltage that rises from 6.0V or below to above it opens HV SERVOS ONLY
+  first, as a typed one does; **HOLD 2s TO APPLY** gives both, CANCEL keeps
+  the port's.
+- **NO** keeps the port's set points; the ones from before the session come
+  back at the next OFF, as above.
+
+The question is asked once per LEAVE and not: while a programming port
+holds the supply; under SERVO's keypad, list, warning or another question,
+or OUTPUT ON's hold, which it waits for; after the output went off, an
+error switched it off or a STOP came between the LEAVE and the question;
+inside a limit run, whose read session leaves through the same LEAVE; when
+a set point changed since; or when the set points from before the session,
+held to the SUPPLY limits, equal the port's. A port that takes the supply,
+or an output that goes off, while it stands closes it. It stands on SERVO
+only: a LEAVE seen while another screen is shown is asked about when SERVO
+is shown again and the output is still on, and leaving SERVO drops the
+question as NO. The
+[Hitec programmer](HitecProgrammer.md#leave) asks the same.
+
+![The question after LEAVE](img/servo-hitec-restore-ask.png)
 
 An OFF that arrives while a frame is on the wire, from **OUTPUT OFF**,
 **STOP** or a lost heartbeat, reads off at once and reaches the PD mini
@@ -1451,7 +1479,13 @@ and without a wait.
 cancelled list, a save of the type set, the lines after a write and on
 LEAVE's page with and without a PD mini. `test_kst_panel_limrun` runs the
 limit run with the servo behind the PD mini's output, and without a PD
-mini, where it writes nothing. `test_kst_file` runs format 1 and format 2
+mini, where it writes nothing, and a run whose read session's LEAVE asks
+nothing about the set points. `test_servo_restore` runs SERVO's question
+after a LEAVE that leaves the output on: after KST and Hitec, YES, NO, YES
+above 6.0V through HV SERVOS ONLY, a port that holds the supply, SERVO's
+keypad and question and OUTPUT ON's hold before it, an OFF, an error's
+OFF, OUTPUT OFF and a STOP, set points that do not differ, one moved, and a
+lowered cap. `test_kst_file` runs format 1 and format 2
 files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card

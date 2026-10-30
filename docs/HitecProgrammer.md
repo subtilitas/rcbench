@@ -123,7 +123,9 @@ While the port is held:
   holds its SUPPLY page from OPEN to CLOSE as well
   ([The supply while a port is held](LinkHitec.md#the-supply-while-a-port-is-held)).
   The set points from before CONNECT come back after LEAVE once the output
-  is off ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
+  is off, or onto the live output through SERVO's question after a LEAVE
+  that leaves it on ([LEAVE](#leave);
+  [Servo programmer, The supply](ServoProgrammer.md#the-supply)).
 - The KST and Chaservo row and MOTOR & ESC's TARGET row take no press, and
   ESC STICK does not start a run.
 
@@ -259,9 +261,12 @@ what the series does; the backup file or the lines of no backup file
 and where the values before the write are recorded.
 **HOLD 2s TO WRITE** starts it.
 
-1. The backup file, before the first write of the session with a card
+1. The second read of what the plan depends on
+   ([The second read](#the-second-read)). Two reads that differ end the
+   write here, with nothing sent.
+2. The backup file, before the first write of the session with a card
    mounted. The write waits up to 5000ms for the card.
-2. The record: the servo's values, the values the write is to leave, the
+3. The record: the servo's values, the values the write is to leave, the
    series, the port and its GPIO. With a card mounted it goes to
    `BENCH/HITEC/CONF/HITEC.TXT` first, and the write waits for it: a card
    that does not take it within 3000ms ends the write with
@@ -270,18 +275,19 @@ and where the values before the write are recorded.
    from before the write, the record of an aborted write or the text that
    clears a record, releases nothing: the write goes once the card has
    taken its own record, and the 3000ms count from the start of the write.
-3. The plan of `hitec_plan()`: only the settings that change. D series: the
+4. The plan of `hitec_plan()`: only the settings that change. D series: the
    setting's registers as the HFP-30 writes them, 20ms apart, then the save,
    100ms, the restart and 1000ms. Classic: each cell of a changed setting,
    then the balance in cell 0x1C, each answered `+ +` within 3 tries.
-4. The read-back: the D series set of 21 registers, or classic cells 0x00
+5. The read-back: the D series set of 21 registers, or classic cells 0x00
    to 0x23, held against the draft.
-5. `2 values written and verified.`, or `1 value written and verified.`,
+6. `2 values written and verified.`, or `1 value written and verified.`,
    ends it and clears the record. The switch stays on.
 
-In the host model (`test_hitec_prog_write`) a D series write of one value
-takes 2.5s and a classic one 1.2s at a frame of 16ms and 2.5s at one of
-33ms. On the bench these times are not measured.
+In the host model (`test_hitec_prog_reread`) a D series write of one value
+takes 3.2s at a frame of 16ms and 3.5s at one of 33ms, and a classic one
+2.4s and 4.9s, the second read included. On the bench these times are not
+measured.
 
 The write is refused on an ARMED bench or one asked to arm, with a STOP
 latched, on a stopped port, with no servo read, with the switch off, with
@@ -297,6 +303,49 @@ while the write waits for the card.
 ![A write under way](img/servo-hitec-writing.png)
 ![A write done](img/servo-hitec-written.png)
 ![The classic write page](img/servo-hitec-classic-write.png)
+
+### The second read
+
+A classic reply carries no checksum: a value read wrong reaches the plan
+unseen. One station read showed cell 0x17 as 0x04 where the servo held
+0x05. Every write therefore reads the addresses its plan depends on a
+second time, after its hold and before it plans, and compares them with the
+read the plan is made from:
+
+| Write | Read again |
+| --- | --- |
+| Classic: WRITE n VALUES, a loaded file's values, REPAIR CHECKSUM, RESTORE of a record or of the session's backup | cells 0x00 to 0x23, the balance 0x1C included: 36 |
+| Classic: FACTORY DEFAULT | cells 0x00 to 0x23 and the factory block 0x30 to 0x53 its values come from: 72 |
+| D series: every write | the 12 registers a plan writes (`hitec_writable()`): 0x32, 0x44, 0x4C, 0x4E, 0x54, 0x5E, 0x60, 0x6C, 0x9C, 0xB0, 0xB2, 0xC2 |
+
+A D series reply carries a sum, and the D series is read twice all the same.
+The state line reads `Second read before the write: 5 of 36.`, and
+**ABORT** is on the PORT row.
+
+- The reads agree in every address: the write goes on with the backup file,
+  the record and the plan.
+- They differ in one address: `Two reads differ at 0x17: read again with
+  READ ALL.` The first address that differs is named. Nothing is planned,
+  recorded, saved or sent; the servo read stays the first read, and the
+  edits and the switch stay. **WRITE n VALUES** tried again compares a new
+  second read with the same first read. **READ ALL** takes a new first read.
+- **ABORT**, a STOP or a read that fails during the second read ends the
+  write the same way, with `The operation was aborted.`, the STOP's line or
+  `Read failed at address 0x17. Tap READ ALL.`
+
+The time the second read adds, measured in the host model
+(`test_hitec_prog_reread`) from the end of the hold to the end of the read:
+
+| Read again | Frame of 16ms | Frame of 33ms |
+| --- | --- | --- |
+| Classic, 36 cells | 1152ms | 2376ms |
+| Classic FACTORY DEFAULT, 72 cells | 2304ms | 4752ms |
+| D series, 12 registers | 704ms | 792ms |
+
+A classic read takes 2 frames a cell. On the bench these times are not
+measured.
+
+![Two reads that differ](img/servo-hitec-classic-reread.png)
 
 | Message | The servo |
 | --- | --- |
@@ -682,6 +731,38 @@ and the CLOSE is always taken.
 ![LEAVE PROGRAMMING, D series](img/servo-hitec-leave.png)
 ![LEAVE PROGRAMMING, classic](img/servo-hitec-classic-leave.png)
 
+Both series end a LEAVE with the PD mini's output on, at the session's
+programming voltage and current limit. Where the set points from before
+CONNECT differ from them, SERVO asks once the port is back in PWM:
+`Restore your supply set points 5.50V 2.00A on the live output?`, under
+OUTPUT IS ON, with the change of each set point that differs.
+
+- **YES** gives the live output both set points from before CONNECT. A
+  voltage that rises from 6.0V or below to above it opens HV SERVOS ONLY
+  first, and **HOLD 2s TO APPLY** gives both set points; its CANCEL keeps
+  the session's.
+- **NO** keeps the session's set points. The ones from before CONNECT come
+  back at the output's next OFF.
+
+The question is asked once per LEAVE, and not:
+
+- while a programming port holds the supply, KST's or Hitec's; a port that
+  takes the supply while it stands closes it;
+- while a keypad, a list, a warning or another question of SERVO is open,
+  or OUTPUT ON is held: it follows once they are closed;
+- after the output went off, an error switched it off, or a STOP, between
+  the LEAVE and the question; nor when the output goes off while it stands;
+- inside a limit run, whose read session leaves through the same LEAVE;
+- when a set point changed after the LEAVE, or the set points from before
+  CONNECT, held to the SUPPLY limits, equal the session's.
+
+The question stands on SERVO only. A port that lets go while another
+screen is shown is asked about when SERVO is shown again, while the output
+stays on. Left unanswered when SERVO is left, the question is gone, as NO.
+
+![The question after LEAVE](img/servo-hitec-restore-ask.png)
+![YES above 6.0V](img/servo-hitec-restore-hv.png)
+
 ## STOP, SAFE and a lost link
 
 | Event | The port | What the operator does |
@@ -719,6 +800,7 @@ as after any stop: ARM is refused only while the port is held.
 | `The servo's answer to the entry was wrong. Check the series.` | bytes came that do not fit the entry |
 | `Bad answer from the servo (code 14). Reading again.` | a try failed; the code is the decoder's (`hitec_rx_t`) |
 | `Read failed at address 0x32. Tap READ ALL.` | every try of one address failed |
+| `Two reads differ at 0x17: read again with READ ALL.` | the second read before a write differs from the read the plan is made from ([The second read](#the-second-read)) |
 | `The IOmcu refused: its failsafe is latched.` | OPEN or CLEAR refused UNSAFE |
 | `The IOmcu ended the session. The port is back in tester mode.` | the port went back to PWM with no command of this panel |
 | `No answer from the IOmcu in time. The operation ended.` | a command not taken within 2000ms, or a request without an outcome within 30,000ms |

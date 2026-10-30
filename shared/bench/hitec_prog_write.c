@@ -608,16 +608,57 @@ static void go(hitec_prog_t *p)
     not_sent(p, r);
 }
 
+/** @brief The most addresses a second read reads: the classic cells 0x00
+ *         to 0x23 and the factory block 0x30 to 0x53. */
+#define REREAD_MAX (2u * HITEC_C_BLOCK_LEN)
+
+/**
+ * @brief The addresses the plan of a write of @p kind depends on, which the
+ *        second read reads again: classic cells 0x00 to 0x23, the balance
+ *        0x1C included, and for FACTORY DEFAULT the factory block 0x30 to
+ *        0x53 its target is copied from; D series the registers a plan
+ *        writes (hitec_writable()).
+ *
+ * @param p     The programmer.
+ * @param kind  hitec_prog_wr_t.
+ * @param addrs Receives them in ascending order, REREAD_MAX at most.
+ * @return Their count.
+ */
+static uint16_t reread_set(const hitec_prog_t *p, uint8_t kind,
+                           uint8_t addrs[REREAD_MAX])
+{
+    uint16_t n = 0;
+
+    if (p->ses.series == (uint8_t)HITEC_CLASSIC) {
+        for (unsigned a = 0; a < HITEC_C_BLOCK_LEN; ++a) {
+            addrs[n++] = (uint8_t)a;
+        }
+        for (unsigned a = 0; kind == (uint8_t)HITEC_PROG_WR_FACTORY
+                             && a < HITEC_C_BLOCK_LEN; ++a) {
+            addrs[n++] = (uint8_t)(HITEC_C_FACTORY + a);
+        }
+        return n;
+    }
+    for (unsigned a = 0; a < HITEC_MEM_SIZE && n < REREAD_MAX; a += 2u) {
+        if (hitec_writable((uint8_t)HITEC_D, (uint8_t)a)) {
+            addrs[n++] = (uint8_t)a;
+        }
+    }
+    return n;
+}
+
 hitec_prog_msg_id_t hpw_start(hitec_prog_t *p, uint8_t kind,
                               const hitec_image_t *target)
 {
     const hitec_prog_msg_id_t m = hitec_prog_write_gate(p, kind);
+    uint8_t addrs[REREAD_MAX];
+    uint16_t n;
 
     if (m != HITEC_PROG_MSG_NONE) {
         return say(p, m, 0u);
     }
-    /* The session plans it again; a plan refused here sends nothing and
-     * records nothing. */
+    /* The session plans it; a plan refused here reads, sends and records
+     * nothing. */
     if (hitec_plan(&p->ses.image, target, &p->ses.plan) != HITEC_PLAN_OK) {
         return say(p, HITEC_PROG_MSG_MUST_READ, 0u);
     }
@@ -626,11 +667,16 @@ hitec_prog_msg_id_t hpw_start(hitec_prog_t *p, uint8_t kind,
     p->wr_values = (uint8_t)hitec_prog_changes_in(p, target);
     p->wr_own_rec = false;
     hpw_unconfirm(p);
-    if (p->ses.plan.n != 0u && hpf_backup(p)) {
-        /* The session's backup goes to its file first. */
-        return HITEC_PROG_MSG_NONE;
-    }
-    hpw_after_backup(p);
+    /* The second read of what the plan depends on: a reply without a
+     * checksum can carry a wrong value, and a plan is made only from
+     * values two reads agree on (hpw_check_done()).  The gate holds the
+     * session idle and in programming mode: it takes the read. */
+    n = reread_set(p, kind, addrs);
+    p->rr_first = p->ses.image;
+    (void)hitec_session_read_set(&p->ses, addrs, n);
+    p->st = ST_SES;
+    p->op = OP_CHECK;
+    hpg_pump(p);
     return HITEC_PROG_MSG_NONE;
 }
 
@@ -702,6 +748,46 @@ static unsigned at(const hitec_image_t *img, uint8_t addr)
 {
     return img->series == (uint8_t)HITEC_D ? hitec_image_reg(img, addr)
                                            : hitec_image_cell(img, addr);
+}
+
+void hpw_check_done(hitec_prog_t *p, hitec_ses_t r)
+{
+    uint8_t addrs[REREAD_MAX];
+    const uint16_t n = reread_set(p, p->wr_kind, addrs);
+    const hitec_image_t *img = &p->ses.image;
+
+    p->st = ST_IDLE;
+    p->op = OP_NONE;
+    if (r != HITEC_SES_OK) {
+        /* Cut, aborted or failed part way: the first read stands, and
+         * nothing is planned. */
+        p->ses.image = p->rr_first;
+        memset(&p->ses.plan, 0, sizeof(p->ses.plan));
+        hpg_ses_say(p, r);
+        return;
+    }
+    for (uint16_t k = 0; k < n; ++k) {
+        const uint8_t a = addrs[k];
+
+        if (!hitec_image_known(img, a)
+            || !hitec_image_known(&p->rr_first, a)
+            || at(img, a) != at(&p->rr_first, a)) {
+            p->ses.image = p->rr_first;
+            memset(&p->ses.plan, 0, sizeof(p->ses.plan));
+            (void)say(p, HITEC_PROG_MSG_READS_DIFFER, a);
+            return;
+        }
+    }
+    /* The two reads agree: the plan from them. */
+    if (hitec_plan(img, &p->wr_target, &p->ses.plan) != HITEC_PLAN_OK) {
+        (void)say(p, HITEC_PROG_MSG_MUST_READ, 0u);
+        return;
+    }
+    if (p->ses.plan.n != 0u && hpf_backup(p)) {
+        /* The session's backup goes to its file first. */
+        return;
+    }
+    hpw_after_backup(p);
 }
 
 bool hitec_prog_restore_image(const hitec_prog_t *p, hitec_image_t *out)

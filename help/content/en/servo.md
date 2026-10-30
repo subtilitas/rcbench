@@ -95,6 +95,7 @@ The SET line holds the SUPPLY screen's two set points and its output switch. A c
 - A tap on a set point opens the keypad over the left card.
 - OUTPUT ON is a 2s hold, OUTPUT OFF a tap.
 - Leaving SERVO switches off an output SERVO switched on.
+- After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)).
 
 ![HV SERVOS ONLY](view:servo-hv)
 

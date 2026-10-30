@@ -326,8 +326,8 @@ Ausgang, der ein ist, läuft die Sitzung mit der niedrigeren der zwei
 Spannungen und der niedrigeren der zwei Stromgrenzen: eine Spannung über
 der Programmierspannung wird auf sie gesenkt, eine Stromgrenze über
 STROMBEGRENZUNG auf diese, und keine wird angehoben. Das Verlassen des
-Programmierens stellt einen Wert, den **VERBINDEN** gesenkt hat, nicht
-wieder her.
+Programmierens stellt einen Wert, den **VERBINDEN** gesenkt hat, nicht von
+selbst wieder her: SERVO fragt zuerst (unten).
 
 Der Port programmiert bei 4,8V oder mehr. Die Versorgungsspannung, die
 ein Servo zum Speichern eines Registers braucht, ist nicht gemessen. An einem Ausgang, der unter 4,8V ein
@@ -352,11 +352,41 @@ bleibt, den er eingeschaltet hinterlassen hat. Die Sollwerte von vor der
 Sitzung kommen mit der ersten Lesung der Versorgung zurück, die keinen Port
 mehr als Halter und den Ausgang aus zeigt: sofort, wo die Sitzung mit
 ausgeschaltetem Ausgang endet, beim nächsten Ausschalten nach einem
-Verlassen, das ihn eingeschaltet lässt. Ein eingeschalteter Ausgang bekommt
-sie nie, auch keiner, dessen AUSGANG EIN gerade gehalten wird oder
-dessen HV-Warnung auf SERVO steht. Ein Sollwert, der nach dem Freigeben des Ports geändert wurde, durch
-Tippen, eine gesenkte Grenze oder einen Servotest, bleibt, und die früheren
-werden verworfen.
+Verlassen, das ihn eingeschaltet lässt. Keiner kommt von selbst zurück,
+solange AUSGANG EIN gehalten wird oder eine Frage oder die HV-Warnung auf
+SERVO steht. Ein Sollwert, der nach dem Freigeben des Ports geändert wurde,
+durch Tippen, eine gesenkte Grenze oder einen Servotest, bleibt, und die
+früheren werden verworfen.
+
+Ein Verlassen, das den Ausgang bei den Sollwerten des Ports eingeschaltet
+lässt, während die Sollwerte von vor der Sitzung andere sind, lässt SERVO
+fragen, sobald der Port in PWM ist: `Deine Versorgungs-Sollwerte 5.50V
+2.00A am eingeschalteten Ausgang wiederherstellen?`, unter AUSGANG IST
+EINGESCHALTET, mit der Änderung jedes abweichenden Sollwerts.
+
+- **JA** gibt dem eingeschalteten Ausgang beide Sollwerte von vor der
+  Sitzung. Eine Spannung, die von 6,0V oder darunter über 6,0V steigt,
+  öffnet zuerst NUR HV-SERVOS, wie eine getippte; **2s HALTEN ZUM
+  ÜBERNEHMEN** gibt beide, ABBRECHEN behält die des Ports.
+- **NEIN** behält die Sollwerte des Ports; die von vor der Sitzung kommen
+  beim nächsten Ausschalten zurück, wie oben.
+
+Die Frage kommt einmal je Verlassen und nicht: solange ein Programmier-Port
+das Netzteil hält; unter Tastenfeld, Liste, Warnung oder einer anderen
+Frage von SERVO oder dem Halten von AUSGANG EIN, auf die sie wartet;
+nachdem der Ausgang zwischen dem Verlassen und der Frage ausging, ein
+Fehler ihn ausschaltete oder ein STOP kam; innerhalb eines Endlagenlaufs,
+dessen Lesesitzung durch dasselbe Verlassen geht; wenn sich seitdem ein
+Sollwert änderte; oder wenn die Sollwerte von vor der Sitzung, auf die
+SUPPLY-Grenzen gehalten, denen des Ports gleichen. Ein Port, der das
+Netzteil nimmt, oder ein Ausgang, der ausgeht, während sie steht, schließt
+sie. Sie steht nur auf SERVO: ein Verlassen, während eine andere Seite
+angezeigt wird, wird erfragt, sobald SERVO wieder angezeigt wird und der
+Ausgang noch eingeschaltet ist, und das Verlassen von SERVO verwirft die
+Frage wie NEIN. Der [Hitec-Programmierer](HitecProgrammer-de.md#verlassen)
+fragt ebenso.
+
+![Die Frage nach dem Verlassen](img/de/servo-hitec-restore-ask.png)
 
 Ein Ausschalten, das eintrifft, während ein Frame auf der Leitung ist, von
 **AUSGANG AUS**, **STOP** oder einem verlorenen Heartbeat, liest sofort aus
@@ -1602,7 +1632,15 @@ Link-Ausfall und dem ausgeschalteten Ausgang darin, über den Überlauf bei
 Laden, eine abgebrochene Liste, ein Speichern des gesetzten Typs, die
 Zeilen nach einem Schreiben und auf der Seite von VERLASSEN mit und ohne
 PD mini. `test_kst_panel_limrun` fährt den Endlagenlauf mit dem Servo
-hinter dem Ausgang des PD mini und ohne PD mini, wo er nichts schreibt.
+hinter dem Ausgang des PD mini und ohne PD mini, wo er nichts schreibt,
+und einen Lauf, dessen Verlassen der Lesesitzung nichts zu den Sollwerten
+fragt. `test_servo_restore` fährt die Frage von SERVO nach einem
+Verlassen, das den Ausgang eingeschaltet lässt: nach KST und Hitec, JA,
+NEIN, JA über 6,0V über NUR HV-SERVOS, einen Port, der das Netzteil hält,
+Tastenfeld und Frage von SERVO und das Halten von AUSGANG EIN davor, ein
+Ausschalten, das Ausschalten eines Fehlers, AUSGANG AUS und einen STOP,
+Sollwerte, die nicht abweichen, einen geänderten Sollwert und eine
+gesenkte Grenze.
 `test_kst_file` fährt Dateien im Format 1 und 2: die Typzeile, ihr Fehlen,
 eine Zeile im Format 1 gegen 20k_sel.
 `test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,

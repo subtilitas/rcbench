@@ -55,6 +55,10 @@ WEITERES stellt, solange der Tester den Port hat, was VERBINDEN anwendet:
 
 Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Netzteils dem Port: Die Zeile SOLL und der Bildschirm SUPPLY nehmen keine Änderung und kein EIN an. AUSGANG AUS und STOP wirken. Ohne PD mini werden Spannung und Stromgrenze gespeichert und nicht angewendet. Wieder in PWM kehren die Sollwerte von vor der Sitzung zurück, sobald der Ausgang aus ist, beim nächsten AUS, wenn die Sitzung ihn eingeschaltet gelassen hat; ein zwischendurch geänderter Sollwert bleibt.
 
+![Die Frage nach dem Verlassen](view:servo-hitec-restore-ask)
+
+Ein Verlassen, das den Ausgang bei den Sollwerten der Sitzung eingeschaltet lässt, während die Sollwerte von vor der Sitzung andere sind, lässt SERVO fragen, sobald der Port in PWM ist: `Deine Versorgungs-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang wiederherstellen?` JA gibt dem eingeschalteten Ausgang beide; eine Spannung, die von 6,0V oder darunter über 6,0V steigt, öffnet zuerst NUR HV-SERVOS. NEIN behält die der Sitzung bis zum nächsten AUS. Die Frage kommt einmal je Verlassen, wartet auf Tastenfelder, Listen, Warnungen und Fragen von SERVO und das Halten von AUSGANG EIN, und kommt nicht, solange ein Port das Netzteil hält, nach einem AUS, einem Fehler oder einem STOP, innerhalb eines Endlagenlaufs oder wenn sich seitdem ein Sollwert änderte. Der Hitec-Programmierer fragt ebenso.
+
 ## Der Versorgungszyklus
 
 Ein KST- oder Chaservo-Servo tritt nur aus einem Einschalten in den Programmiermodus ein und handelt nach einem geschriebenen Wert erst ab seinem nächsten Einschalten: ein Chaservo am Prüfstand überging VERBINDEN bei eingeschalteter Versorgung und folgte nach einem Schreiben keinem PWM, bis seine Versorgung aus und wieder an war.
