@@ -366,7 +366,7 @@ void svs_event_body(const touch_event_t *evt)
                 s.out_id       = evt->point.id;
                 s.out_press_on = supply_screen_output_on();
                 if (!s.out_press_on) {
-                    ui_hold_begin(&s.out_hold);
+                    ui_hold_begin(&s.out_hold, TX_HOLD_HINT_OUTPUT_ON);
                 }
                 ++s.sup_rev;
             }
@@ -480,7 +480,7 @@ void svs_event_body(const touch_event_t *evt)
             }
             s.arm_down = true;
             s.arm_id   = evt->point.id;
-            ui_hold_begin(&s.arm);
+            ui_hold_begin(&s.arm, TX_HOLD_HINT_ARM);
             ++s.arm_rev;
         }
     }
@@ -494,7 +494,7 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         if (evt->type == TOUCH_EVENT_UP) {
-            prog5v_box_release(&s.p5, px, py, touch_event_is_tap_up(evt));
+            prog5v_box_release(&s.p5, evt);
             s.p5_down = false;
             ++s.power_rev;
             return;
@@ -515,7 +515,7 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         if (evt->type == TOUCH_EVENT_UP) {
-            const bool fired = ui_hold_end(&s.out_hold);
+            const bool fired = ui_hold_end(&s.out_hold, evt, s.out_btn);
             s.out_down = false;
             ++s.sup_rev;
             /* Off is a tap; on is a hold that has already asked by the time
@@ -544,7 +544,7 @@ void svs_event_body(const touch_event_t *evt)
         if (evt->type == TOUCH_EVENT_UP) {
             /* Arming is a hold that has already sent its command by the
              * time the finger lifts; disarming acted on its press. */
-            (void)ui_hold_end(&s.arm);
+            (void)ui_hold_end(&s.arm, evt, s.arm_btn);
             s.arm_down = false;
             ++s.arm_rev;
             return;

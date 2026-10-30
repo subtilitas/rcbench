@@ -231,7 +231,7 @@ void mo_event(const touch_event_t *evt)
                 return;
             }
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
-            ui_hold_begin(&s.arm);
+            ui_hold_begin(&s.arm, TX_HOLD_HINT_ARM);
             ++s.arm_rev;
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.reset_rect, x, y)) {
@@ -270,7 +270,7 @@ void mo_event(const touch_event_t *evt)
             /* Arming is a hold that has already sent its command by the
              * time the finger lifts; a release that armed nothing sends
              * nothing.  DISARM acted on its press. */
-            (void)ui_hold_end(&s.arm);
+            (void)ui_hold_end(&s.arm, evt, s.arm_rect);
             ++s.arm_rev;
         }
         if (was == 2 && touch_event_is_tap_up(evt)

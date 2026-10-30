@@ -618,9 +618,9 @@ static void event(const touch_event_t *evt)
             s.have_press = true;
             s.press_id = evt->point.id;
             if (s.hit == HIT_DOWNLOAD) {
-                ui_hold_begin(&s.hold);
+                ui_hold_begin(&s.hold, TX_HOLD_HINT_DOWNLOAD);
             } else if (s.hit == HIT_COPROC) {
-                ui_hold_begin(&s.cu_hold);
+                ui_hold_begin(&s.cu_hold, TX_HOLD_HINT_IOMCU_UPDATE);
             }
         }
         touched();
@@ -650,11 +650,11 @@ static void event(const touch_event_t *evt)
     touched();
     if (hit == HIT_DOWNLOAD) {
         /* The hold acts when it completes; the release only ends it. */
-        (void)ui_hold_end(&s.hold);
+        (void)ui_hold_end(&s.hold, evt, btn(DL_ROW));
         return;
     }
     if (hit == HIT_COPROC) {
-        (void)ui_hold_end(&s.cu_hold);
+        (void)ui_hold_end(&s.cu_hold, evt, CU_BTN);
         return;
     }
     if (touch_event_is_tap_up(evt) && hit_at(x, y) == hit) {
@@ -942,7 +942,7 @@ static void r_event(const touch_event_t *evt)
             s_rem.have_press = true;
             s_rem.press_id = evt->point.id;
             if (s_rem.hit == HIT_DOWNLOAD) {
-                ui_hold_begin(&s_rem.hold);
+                ui_hold_begin(&s_rem.hold, TX_HOLD_HINT_DOWNLOAD);
             }
         }
         touched();
@@ -968,7 +968,7 @@ static void r_event(const touch_event_t *evt)
     s_rem.have_press = false;
     touched();
     if (hit == HIT_DOWNLOAD) {
-        (void)ui_hold_end(&s_rem.hold);
+        (void)ui_hold_end(&s_rem.hold, evt, R_HOLD);
         return;
     }
     if (!touch_event_is_tap_up(evt) || r_hit_at(x, y) != hit) {

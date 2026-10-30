@@ -223,10 +223,10 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 361 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 364 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
-`test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
-`test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_pdmini`,
+`test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
+`test_supply_screen`, `test_supply_screen_tasks`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
 `test_motor`, `test_motor_draw`, `test_motor_throttle`, `test_motor_arm`, `test_motor_workbench`, `test_motor_program`, `test_motor_layout`, `test_value_state`, `test_servo`, `test_servo_knob`, `test_servo_drag`, `test_servo_repaint`, `test_frame_work`, `test_servo_dial_sweep`, `test_servo_letgo`, `test_servo_curve`, `test_servo_supply`, `test_servo_run`, `test_servo_target`, `test_servo_rail`, `test_servo_meter`, `test_servo_settings`, `test_servo_trim_keypad`,
 `test_servo_test_panel`, `test_servo_error_safe`, `test_servo_limit_panel`, `test_servo_workbench`, `test_servo_arm`, `test_safe_press`,
 `test_analyser`, `test_prog_models`, `test_esc_stick_panel`, `test_esc_stick_panel_phases`, `test_esc_stick_panel_list`, `test_esc_stick_panel_steps`, `test_esc_stick_panel_makers`, `test_esc_stick_panel_hold`, `test_esc_stick_panel_touch`, `test_esc_stick_panel_home`, `test_esc_stick_panel_keypad`, `test_esc_stick_layout`, `test_balance`, `test_battery`, `test_instruments_layout`,
@@ -626,7 +626,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
-| `shared/ui/ui_widgets.c` | 350 | 342 | 97.7% |
+| `shared/ui/ui_widgets.c` | 355 | 347 | 97.8% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
 | `shared/ui/ui_band.c` | 283 | 269 | 95.0% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
@@ -637,7 +637,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 420 | 417 | 99.3% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 387 | 380 | 98.2% |
+| `shared/ui/ui_router.c` | 399 | 392 | 98.2% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 96 | 94 | 97.9% |
@@ -668,7 +668,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_workbench.c` | 338 | 336 | 99.4% |
 | `shared/ui/kst_panel.c` | 337 | 333 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
-| `shared/ui/kst_panel_warn.c` | 276 | 273 | 98.9% |
+| `shared/ui/kst_panel_warn.c` | 277 | 274 | 98.9% |
 | `shared/ui/kst_panel_edit.c` | 365 | 358 | 98.1% |
 | `shared/ui/kst_panel_touch.c` | 217 | 214 | 98.6% |
 | `shared/ui/kst_panel_run.c` | 152 | 142 | 93.4% |
@@ -676,7 +676,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/hitec_panel.c` | 238 | 238 | 100.0% |
 | `shared/ui/hitec_panel_text.c` | 448 | 448 | 100.0% |
 | `shared/ui/hitec_panel_edit.c` | 333 | 333 | 100.0% |
-| `shared/ui/hitec_panel_page.c` | 230 | 230 | 100.0% |
+| `shared/ui/hitec_panel_page.c` | 231 | 231 | 100.0% |
 | `shared/ui/hitec_panel_touch.c` | 171 | 171 | 100.0% |
 | `shared/ui/hitec_panel_draw.c` | 239 | 239 | 100.0% |
 | `shared/ui/hitec_panel_file.c` | 208 | 208 | 100.0% |
@@ -900,7 +900,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api.c` | 399 | 391 | 98.0% |
 | `shared/webaccess/wa_app.c` | 107 | 107 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **66971** | **65632** | **98.0%** |
+| **total** | **66684** | **65400** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

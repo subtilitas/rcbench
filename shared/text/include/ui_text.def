@@ -3959,6 +3959,66 @@ UI_TEXT(CU_WHY_NOT_STARTED, 36,
     "new firmware did not start",
     "neue Firmware ist nicht gestartet")
 
+/* The hint on the alert band when a 2s hold button lifts before 2s: one per
+ * action, ui_hold_begin() names it.  Nothing is sent by the short release. */
+UI_TEXT(HOLD_HINT_ARM, 94,
+    "Hold 2s to switch to ARMED.",
+    "Halte 2s, um auf ARMED zu schalten.")
+UI_TEXT(HOLD_HINT_OUTPUT_ON, 94,
+    "Hold 2s to switch the output on.",
+    "Halte 2s, um den Ausgang einzuschalten.")
+UI_TEXT(HOLD_HINT_PROG5V, 94,
+    "Hold 2s to switch the programming ports' 5V on.",
+    "Halte 2s, um die 5V der Programmierports einzuschalten.")
+UI_TEXT(HOLD_HINT_APPLY, 94,
+    "Hold 2s to apply.",
+    "Halte 2s, um zu übernehmen.")
+UI_TEXT(HOLD_HINT_TEST, 94,
+    "Hold 2s to start the test.",
+    "Halte 2s, um den Test zu starten.")
+UI_TEXT(HOLD_HINT_LIMIT_RUN, 94,
+    "Hold 2s to start the limit run.",
+    "Halte 2s, um den Endlagenlauf zu starten.")
+UI_TEXT(HOLD_HINT_ENABLE, 94,
+    "Hold 2s to enable.",
+    "Halte 2s, um freizugeben.")
+UI_TEXT(HOLD_HINT_WRITE, 94,
+    "Hold 2s to write.",
+    "Halte 2s, um zu schreiben.")
+UI_TEXT(HOLD_HINT_RESTORE, 94,
+    "Hold 2s to restore.",
+    "Halte 2s, um zurückzuspielen.")
+UI_TEXT(HOLD_HINT_CONTINUE, 94,
+    "Hold 2s to continue.",
+    "Halte 2s, um fortzufahren.")
+UI_TEXT(HOLD_HINT_LEAVE, 94,
+    "Hold 2s to leave.",
+    "Halte 2s, um zu verlassen.")
+UI_TEXT(HOLD_HINT_LOAD, 94,
+    "Hold 2s to load.",
+    "Halte 2s, um zu laden.")
+UI_TEXT(HOLD_HINT_RELEASE, 94,
+    "Hold 2s to release the port.",
+    "Halte 2s, um den Port freizugeben.")
+UI_TEXT(HOLD_HINT_REPAIR, 94,
+    "Hold 2s to repair.",
+    "Halte 2s, um zu reparieren.")
+UI_TEXT(HOLD_HINT_RUN, 94,
+    "Hold 2s to run.",
+    "Halte 2s, um zu starten.")
+UI_TEXT(HOLD_HINT_INSTALL, 94,
+    "Hold 2s to install.",
+    "Halte 2s, um zu installieren.")
+UI_TEXT(HOLD_HINT_DOWNLOAD, 94,
+    "Hold 2s to download and install.",
+    "Halte 2s, um zu laden und zu installieren.")
+UI_TEXT(HOLD_HINT_IOMCU_UPDATE, 94,
+    "Hold 2s to update the IOmcu.",
+    "Halte 2s, um den IOmcu zu aktualisieren.")
+UI_TEXT(HOLD_HINT_UNBIND, 94,
+    "Hold 2s to clear all pin assignments.",
+    "Halte 2s, um alle Pin-Zuordnungen zu löschen.")
+
 /* --------------------- the splash's details, from the panel's start-up */
 UI_TEXT(SPLASH_NO_PANEL, 47,
     "no panel",

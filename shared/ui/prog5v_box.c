@@ -35,6 +35,18 @@ void prog5v_box_publish(uint8_t state, uint8_t pin, uint8_t held_port)
                                | held_port);
 }
 
+uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some)
+{
+    if (kst_port >= 0 && kst_port < 4) {
+        return (uint8_t)kst_port;
+    }
+    if (hitec_port >= 0 && hitec_port < 4) {
+        return (uint8_t)hitec_port;
+    }
+    return (some || kst_port >= 4 || hitec_port >= 4)
+               ? (uint8_t)PROG5V_HELD_SOME : (uint8_t)PROG5V_HELD_NONE;
+}
+
 void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma)
 {
     atomic_store(&s_read, ok ? (0x80000000u | ((unsigned)(mv & 0x7FFFu) << 16)
@@ -111,7 +123,7 @@ bool prog5v_box_press(prog5v_box_t *b)
     b->pressed  = true;
     b->press_on = prog5v_box_on();
     if (!b->press_on) {
-        ui_hold_begin(&b->hold);
+        ui_hold_begin(&b->hold, TX_HOLD_HINT_PROG5V);
     }
     ++b->rev;
     return true;
@@ -131,18 +143,23 @@ bool prog5v_box_drag(prog5v_box_t *b, int x, int y)
     return false;
 }
 
-void prog5v_box_release(prog5v_box_t *b, int x, int y, bool tap)
+void prog5v_box_release(prog5v_box_t *b, const touch_event_t *up)
 {
     if (b == NULL || !b->pressed) {
         return;
     }
-    (void)ui_hold_end(&b->hold);
+    const gfx_rect_t btn = prog5v_box_button(b);
+    /* A hold let go early shows its hint on the band. */
+    (void)ui_hold_end(&b->hold, up, btn);
+    const bool tap = up != NULL && touch_event_is_tap_up(up);
+    const int  x   = (up != NULL) ? up->point.x : -1;
+    const int  y   = (up != NULL) ? up->point.y : -1;
     /* Off is a tap; on is a hold that has sent its command by the time the
      * finger lifts.  Which one is the press's (press_on): an ON reported
      * during a hold does not make its release an OFF. */
     if (tap && b->press_on && prog5v_box_on()
         && held() == PROG5V_HELD_NONE
-        && gfx_rect_contains(prog5v_box_button(b), x, y)) {
+        && gfx_rect_contains(btn, x, y)) {
         post(false, b->by);
     }
     b->pressed = false;

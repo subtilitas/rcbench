@@ -984,15 +984,11 @@ static uint8_t prog5v_held_port(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    if (kst_prog_port_taken(&rd) && rd.port_no < LINK_PG_PORTS_MAX) {
-        return rd.port_no;
-    }
-    const int h = hitec_taken_port();
-    if (h >= 0) {
-        return (uint8_t)h;
-    }
-    return (s_prog_taken || prog_supply_link_port(&s_psup_link))
-               ? (uint8_t)PROG5V_HELD_SOME : (uint8_t)PROG5V_HELD_NONE;
+    return prog5v_box_held_port(kst_prog_port_taken(&rd) ? (int)rd.port_no
+                                                         : -1,
+                                hitec_taken_port(),
+                                s_prog_taken
+                                || prog_supply_link_port(&s_psup_link));
 }
 
 void prog_supply_publish(void)

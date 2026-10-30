@@ -106,6 +106,18 @@ typedef struct {
 void prog5v_box_publish(uint8_t state, uint8_t pin, uint8_t held_port);
 
 /**
+ * @brief The holding port to publish: the KST session's port, else the
+ *        Hitec session's, else some port while either the panel or the
+ *        page says one holds the supply.
+ * @param kst_port   the KST session's port, 0 to 3; -1 without one
+ * @param hitec_port the Hitec session's port, 0 to 3; -1 without one
+ * @param some       a port holds it as the panel or the page has it
+ * @return 0 to 3, PROG5V_HELD_SOME or PROG5V_HELD_NONE; a port past 3
+ *         counts as none named
+ */
+uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some);
+
+/**
  * @brief Publish the last reading of the channel that watches the ports'
  *        5V.
  * @param ok whether there is one
@@ -173,13 +185,14 @@ bool prog5v_box_drag(prog5v_box_t *b, int x, int y);
 
 /**
  * @brief The press lifted: a tap on PROG 5V OFF, still on the button, asks
- *        OFF; a hold that completed asks nothing more.
- * @param b   the box
- * @param x   where it lifted, px
- * @param y   where it lifted, px
- * @param tap the UP is a tap (touch_event_is_tap_up())
+ *        OFF; a hold that completed asks nothing more; a hold let go
+ *        before UI_HOLD_S shows HOLD_HINT_PROG5V on the band
+ *        (ui_hold_end()).
+ * @param b  the box
+ * @param up the UP that ended the press, in screen coordinates; NULL for a
+ *           press dropped without one, which asks nothing
  */
-void prog5v_box_release(prog5v_box_t *b, int x, int y, bool tap);
+void prog5v_box_release(prog5v_box_t *b, const touch_event_t *up);
 
 /**
  * @brief Every gesture dropped (a touch loss): a hold not complete asks

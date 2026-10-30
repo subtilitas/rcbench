@@ -140,7 +140,8 @@ bottom 44px of the screen while it shows; ARM and every control that stops
 the bench end above it.
 
 - It clears 30s after the frame it arrived in. A new alert, even with the
-  same text, starts the 30s again.
+  same text, starts the 30s again. A notice, the [hint of a hold
+  button](#hold-buttons), shows in amber for 4s and gives way to an alert.
 - A tap on the band clears it earlier: press and lift on the band, marked
   with an `x` at its right end. The screen beneath receives neither that tap
   nor a second finger's on the band; only the first finger's lift clears.
@@ -158,6 +159,46 @@ the bench end above it.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays
   until restart and has no `x`: no touch is there to tap with. A later alert
   shows over it; once that one clears, it shows again.
+
+## Hold buttons
+
+A hold button acts after 2s of contact (`UI_HOLD_S`). A release before 2s
+sends nothing and shows the button's hint in the alert band as a notice: the
+band in amber (`UI_C_WARN`) with dark text instead of the danger colour, 4s
+long, cleared earlier by a tap on the band. A short tap is not a fault, so
+the hint is not an alert. An alert takes priority: the hint does not show
+while an alert is up, and an alert that arrives while the hint shows replaces
+it. The hint is one line of 97 characters at most.
+
+- The hint shows only for a release the finger made on the button. It does
+  not show when the finger left the button first (the hold is abandoned),
+  when the touch was lost or the release is not a tap (`TOUCH_FLAG_NO_TAP`),
+  for a second finger's contact, or on a screen without the status band.
+- A release at 2s or later follows a hold that has acted and shows no hint.
+- HOLD 2s TO ACKNOWLEDGE on the bus-fault screen carries no hint: that screen
+  has no band.
+
+| Button | Hint |
+| --- | --- |
+| ARM on MOTOR & ESC and SERVO | `Hold 2s to switch to ARMED.` |
+| OUTPUT ON on SUPPLY and in SERVO's supply box | `Hold 2s to switch the output on.` |
+| PROG 5V ON in the PROG 5V box on SERVO and SUPPLY, rbmod carrier | `Hold 2s to switch the programming ports' 5V on.` |
+| APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
+| START TEST | `Hold 2s to start the test.` |
+| START LIMIT RUN | `Hold 2s to start the limit run.` |
+| HOLD 2s TO ENABLE | `Hold 2s to enable.` |
+| HOLD 2s TO WRITE | `Hold 2s to write.` |
+| HOLD 2s TO RESTORE | `Hold 2s to restore.` |
+| HOLD 2s TO CONTINUE | `Hold 2s to continue.` |
+| HOLD 2s TO LEAVE | `Hold 2s to leave.` |
+| HOLD 2s TO LOAD | `Hold 2s to load.` |
+| HOLD 2s TO RELEASE | `Hold 2s to release the port.` |
+| HOLD 2s TO REPAIR | `Hold 2s to repair.` |
+| HOLD 2s TO RUN on a stick run's warning | `Hold 2s to run.` |
+| HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
+| HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
+| HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
+| HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 
 ## Menu marks
 

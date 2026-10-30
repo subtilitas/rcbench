@@ -161,6 +161,7 @@ typedef struct {
         bool      danger;       /**< the edge in the danger colour        */
         char      title[64];    /**< the title                            */
         char      apply[64];    /**< the hold button's label              */
+        int hint;      /**< the band's hint for a short release  */
         char      lines[HP_PAGE_LINES][HITEC_PANEL_LINE]; /**< the lines */
         uint8_t   level[HP_PAGE_LINES]; /**< each line's hitec_prog_level_t */
         int       vfirst;       /**< the first line of the changed values */
@@ -421,9 +422,10 @@ int hpn_page_part(int from);
  * @param danger the edge in the danger colour
  * @param title  its title
  * @param apply  the hold button's label
+ * @param hint   the hint the band shows when the hold lifts early
  */
 void hpn_page_open(int kind, bool danger, const char *title,
-                   const char *apply);
+                   const char *apply, int hint);
 /**
  * @brief The editor of a value row: its list or its keypad.
  * @param r the row

@@ -74,7 +74,7 @@ Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die
 
 ## AUSGANG EIN und AUS
 
-AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. AUSGANG AUS ist ein Tipp. Der Ausgang schaltet ab und bleibt bis zum nächsten Halten aus bei:
+AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. Ein Loslassen vor 2s schaltet nichts und zeigt `Halte 2s, um den Ausgang einzuschalten.` im Alert-Band. AUSGANG AUS ist ein Tipp. Der Ausgang schaltet ab und bleibt bis zum nächsten Halten aus bei:
 
 - STOP, auf jedem Bildschirm;
 - Verlassen von SUPPLY, für einen Ausgang, den SUPPLY eingeschaltet hat;
@@ -94,7 +94,7 @@ Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen
 
 ![SUPPLY auf dem Carrier](view:supply-rbmod)
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) speist der PD mini die Servoschienen, und die Programmierports haben eine eigene 5V-Versorgung, geschaltet über GPIO 21. Die Zeile unter AUSGANG nennt sie: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder `UNBEKANNT`, solange der IOmcu nicht antwortet. Die Programmer für KST und Hitec schalten sie für eine Sitzung. Der PD mini bleibt während einer Sitzung bei der bedienenden Person: AUSGANG EIN und die Sollwerte funktionieren wie ohne sie. Auf LIVE schaltet das Feld PROG 5V rechts von GRAFIK und TABELLE sie von Hand: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED. Das Feld nennt den Pin, `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster des INA3221 an ihnen (0x40 CH3), `5.02V  0.120A`. Solange ein Programmer einen Port hält, zeigt das Feld `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Das Verlassen von SUPPLY schaltet 5V ab, die sein Feld eingeschaltet hat, außer ein Port hält sie. Jeder Fehler schaltet sie aus, ein Schreiben in den Speicher eines Servos endet zuerst, höchstens 10000ms.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) speist der PD mini die Servoschienen, und die Programmierports haben eine eigene 5V-Versorgung, geschaltet über GPIO 21. Die Zeile unter AUSGANG nennt sie: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder `UNBEKANNT`, solange der IOmcu nicht antwortet. Die Programmer für KST und Hitec schalten sie für eine Sitzung. Der PD mini bleibt während einer Sitzung bei der bedienenden Person: AUSGANG EIN und die Sollwerte funktionieren wie ohne sie. Auf LIVE schaltet das Feld PROG 5V rechts von GRAFIK und TABELLE sie von Hand: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED; ein Loslassen vor 2s zeigt `Halte 2s, um die 5V der Programmierports einzuschalten.`. Das Feld nennt den Pin, `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster des INA3221 an ihnen (0x40 CH3), `5.02V  0.120A`. Solange ein Programmer einen Port hält, zeigt das Feld `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Das Verlassen von SUPPLY schaltet 5V ab, die sein Feld eingeschaltet hat, außer ein Port hält sie. Jeder Fehler schaltet sie aus, ein Schreiben in den Speicher eines Servos endet zuerst, höchstens 10000ms.
 
 ## OPTIONEN
 

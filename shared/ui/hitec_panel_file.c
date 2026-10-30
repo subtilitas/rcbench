@@ -174,7 +174,7 @@ void hpn_page_load_at(int from)
     char line[HITEC_PANEL_LINE];
     int fixed = 1;
 
-    hpn_page_open(W_LOAD, false, TR(KP_FILE_TITLE), TR(KP_HOLD_LOAD));
+    hpn_page_open(W_LOAD, false, TR(KP_FILE_TITLE),  TR(KP_HOLD_LOAD), TX_HOLD_HINT_LOAD);
     {
         const unsigned c = hitec_prog_changes_in(p, to);
 
@@ -230,7 +230,7 @@ void hpn_page_factory(void)
 {
     hitec_image_t to;
 
-    hpn_page_open(W_FACTORY, true, TR(HP_FACTORY), TR(KP_HOLD_WRITE));
+    hpn_page_open(W_FACTORY, true, TR(HP_FACTORY),  TR(KP_HOLD_WRITE), TX_HOLD_HINT_WRITE);
     hpn_page_add(HITEC_PROG_INFO, TR(HP_FACTORY_1));
     hpn_page_add(HITEC_PROG_INFO, TR(HP_FACTORY_2));
     /* The write gate has passed: a classic servo is read. */
@@ -255,7 +255,7 @@ void hpn_page_backup(void)
 {
     hitec_image_t to;
 
-    hpn_page_open(W_BACKUP, true, TR(KP_RESTORE_TITLE), TR(KP_HOLD_RESTORE));
+    hpn_page_open(W_BACKUP, true, TR(KP_RESTORE_TITLE),  TR(KP_HOLD_RESTORE), TX_HOLD_HINT_RESTORE);
     hpn_page_add(HITEC_PROG_INFO, TR(KP_FROM_SESSION));
     hpn_page_add(HITEC_PROG_WARN, TR(KP_RESTORE_UNCHECKED));
     /* The write gate has passed: the backup differs from the servo. */

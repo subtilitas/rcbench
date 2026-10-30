@@ -669,6 +669,10 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # A tap on ARM and on OUTPUT ON, released before 2s: the button's hint
+    # in the alert band.
+    "hold-hint-arm":    (None, "motor", "dark"),
+    "hold-hint-output": (None, "supply", "dark"),
     # MOTOR & ESC > SETTINGS: a pulse typed less than 100us from the other
     # one, refused with its reason.
     "motor-settings-gap-idle": (None, "motor", "dark"),
@@ -819,7 +823,7 @@ FIT_ONLY.update({f"picker-cat-{i}": (None, "picker", "dark")
 # list, the bubble, the band, the box or the keys cover the labels under it
 # by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "picker-protocol",
-                 "overview-alert",
+                 "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-folder",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-see25",

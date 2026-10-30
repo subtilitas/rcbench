@@ -11,7 +11,9 @@
  * an ON in the same poll; leaving the screen that switched it on asks OFF,
  * leaving another does not, nor does leaving while a port holds it; the
  * lines in EN and DE, the reading rounded, a negative current, none; the
- * box drawn inside its rect.
+ * box drawn inside its rect, under a hold and without the switch; NULL
+ * arguments and a press dropped without its UP; a hold let go at 1,999ms
+ * shows HOLD_HINT_PROG5V on the band, one at 2,000ms does not.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,7 +23,11 @@
 
 #include "guard_canvas.h"
 #include "prog5v_box.h"
+#include "settings.h"
+#include "splash_screen.h"
+#include "ui_screen.h"
 #include "ui_text.h"
+#include "ui_theme.h"
 
 enum { ST_UNKNOWN = 1, ST_OFF = 2, ST_ON = 3 };
 
@@ -41,6 +47,17 @@ static void fresh(uint8_t state)
 /* The button's centre. */
 static int bx(void) { const gfx_rect_t r = prog5v_box_button(&b); return r.x + r.w / 2; }
 static int by_(void) { const gfx_rect_t r = prog5v_box_button(&b); return r.y + r.h / 2; }
+
+/* An UP at (@p x, @p y), a tap or not. */
+static void lift(prog5v_box_t *bx_, int x, int y, bool tap)
+{
+    const touch_event_t up = {
+        .type  = TOUCH_EVENT_UP,
+        .point = { .x = (int16_t)x, .y = (int16_t)y },
+        .flags = tap ? 0u : TOUCH_FLAG_NO_TAP,
+    };
+    prog5v_box_release(bx_, &up);
+}
 
 /* Ticks of @p s seconds, @p n of them. */
 static void tick_n(int n, float s)
@@ -95,7 +112,7 @@ TEST_CASE(on_is_a_hold_of_2000ms_not_1999ms)
     prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_tick(&b, 0.02f);
     CHECK(b.hold.flash_ms > 0);               /* reached: the flash */
-    prog5v_box_release(&b, bx(), by_(), true);
+    lift(&b, bx(), by_(), true);
     CHECK(!prog5v_box_poll_cmd(NULL));
     /* A frame counts 250ms at most: one long frame is no hold. */
     fresh(ST_OFF);
@@ -109,7 +126,7 @@ TEST_CASE(a_hold_let_go_or_slid_off_asks_nothing)
     fresh(ST_OFF);
     CHECK(prog5v_box_press(&b));
     tick_n(7, 0.25f);
-    prog5v_box_release(&b, bx(), by_(), true);
+    lift(&b, bx(), by_(), true);
     tick_n(8, 0.25f);
     CHECK(!prog5v_box_poll_cmd(NULL));
     /* Slid off the button: over, and back on resumes nothing. */
@@ -135,7 +152,7 @@ TEST_CASE(a_hold_let_go_or_slid_off_asks_nothing)
     /* An OFF asked stays through a cancel; another screen's ON stays. */
     fresh(ST_ON);
     CHECK(prog5v_box_press(&b));
-    prog5v_box_release(&b, bx(), by_(), true);
+    lift(&b, bx(), by_(), true);
     prog5v_box_cancel(&b);
     CHECK(asked_off());
     fresh(ST_OFF);
@@ -155,24 +172,24 @@ TEST_CASE(off_is_a_tap_that_lifts_on_the_button)
     CHECK(prog5v_box_press(&b));
     tick_n(12, 0.25f);                        /* no hold on OFF */
     CHECK(!prog5v_box_poll_cmd(NULL));
-    prog5v_box_release(&b, bx(), by_(), true);
+    lift(&b, bx(), by_(), true);
     CHECK(asked_off());
     /* Lifted off the button, or an UP that is no tap: nothing. */
     CHECK(prog5v_box_press(&b));
-    prog5v_box_release(&b, bx(), by_() + PROG5V_BOX_H, true);
+    lift(&b, bx(), by_() + PROG5V_BOX_H, true);
     CHECK(prog5v_box_press(&b));
-    prog5v_box_release(&b, bx(), by_(), false);
+    lift(&b, bx(), by_(), false);
     CHECK(!prog5v_box_poll_cmd(NULL));
     /* A port that took the supply after the last tick: the tap asks
      * nothing, the session's own LEAVE switches it. */
     CHECK(prog5v_box_press(&b));
     prog5v_box_publish(ST_ON, 21u, 1u);
-    prog5v_box_release(&b, bx(), by_(), true);
+    lift(&b, bx(), by_(), true);
     CHECK(!prog5v_box_poll_cmd(NULL));
     prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     /* An OFF asked stands over an ON in the same poll. */
     CHECK(prog5v_box_press(&b));
-    prog5v_box_release(&b, bx(), by_(), true);
+    lift(&b, bx(), by_(), true);
     prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_tick(&b, 0.02f);
     CHECK(prog5v_box_press(&b));
@@ -218,7 +235,7 @@ TEST_CASE(the_button_is_locked_while_not_read_or_held)
     CHECK(prog5v_box_press(&b));
     prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_tick(&b, 0.02f);
-    prog5v_box_release(&b, bx(), by_(), true);
+    lift(&b, bx(), by_(), true);
     CHECK(!prog5v_box_poll_cmd(NULL));
 }
 
@@ -230,7 +247,7 @@ TEST_CASE(leaving_the_screen_that_switched_it_on_switches_it_off)
     CHECK(asked_on());
     prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_tick(&b, 0.02f);
-    prog5v_box_release(&b, bx(), by_(), true);
+    lift(&b, bx(), by_(), true);
     /* SUPPLY left: not its. */
     prog5v_box_left(PROG5V_BY_SUPPLY);
     prog5v_box_left(PROG5V_BY_NONE);
@@ -321,10 +338,106 @@ TEST_CASE(the_box_is_drawn_inside_its_rect)
     prog5v_box_tick(&b, 0.02f);
     prog5v_box_render(&b, &c);
     CHECK(guard_canvas_sum(&g) != off);
+    /* Under a hold the button's fill moves toward the danger colour. */
+    prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
+    prog5v_box_tick(&b, 0.02f);
+    prog5v_box_render(&b, &c);
+    const uint32_t idle = guard_canvas_sum(&g);
+    CHECK(prog5v_box_press(&b));
+    tick_n(4, 0.25f);
+    CHECK(b.hold.held_s > 0.0f);
+    prog5v_box_render(&b, &c);
+    CHECK(guard_canvas_sum(&g) != idle);
+    prog5v_box_cancel(&b);
+    /* Held by a port: the second line in the warning colour. */
+    prog5v_box_publish(ST_ON, 21u, 1u);
+    prog5v_box_render(&b, &c);
+    CHECK_EQ(guard_canvas_touched(&g), 0u);
+    /* Without the switch: the ground only. */
+    prog5v_box_publish(0u, 0u, (uint8_t)PROG5V_HELD_NONE);
+    prog5v_box_render(&b, &c);
+    const gfx_rect_t btn = prog5v_box_button(&b);
+    CHECK_EQ(gfx_pixel_get(&c, btn.x + btn.w / 2, btn.y + btn.h / 2),
+             ui_theme_color(UI_C_PANEL));
+    CHECK_EQ(guard_canvas_touched(&g), 0u);
     /* The width the lines and the button need. */
     CHECK(BOX_R.w >= PROG5V_BOX_MIN_W);
     prog5v_box_render(NULL, &c);
     prog5v_box_render(&b, NULL);
+}
+
+TEST_CASE(the_holding_port_is_the_sessions_else_some)
+{
+    CHECK_EQ(prog5v_box_held_port(-1, -1, false), PROG5V_HELD_NONE);
+    CHECK_EQ(prog5v_box_held_port(0, -1, false), 0u);
+    CHECK_EQ(prog5v_box_held_port(3, 1, true), 3u);   /* KST's first */
+    CHECK_EQ(prog5v_box_held_port(-1, 2, false), 2u);
+    CHECK_EQ(prog5v_box_held_port(-1, 3, true), 3u);
+    CHECK_EQ(prog5v_box_held_port(-1, -1, true), PROG5V_HELD_SOME);
+    CHECK_EQ(prog5v_box_held_port(4, -1, false), PROG5V_HELD_SOME);
+    CHECK_EQ(prog5v_box_held_port(-1, 4, false), PROG5V_HELD_SOME);
+    CHECK_EQ(prog5v_box_held_port(4, 1, false), 1u);
+}
+
+TEST_CASE(nothing_happens_without_a_box)
+{
+    fresh(ST_OFF);
+    CHECK(!prog5v_box_drag(NULL, 0, 0));
+    CHECK(!prog5v_box_drag(&b, bx(), by_()));     /* nothing pressed */
+    prog5v_box_release(NULL, NULL);
+    lift(&b, bx(), by_(), true);                 /* nothing pressed */
+    prog5v_box_cancel(NULL);
+    prog5v_box_tick(NULL, 0.25f);
+    prog5v_box_init(NULL, BOX_R, PROG5V_BY_SERVO);
+    CHECK_EQ(prog5v_box_button(NULL).w, 0);
+    CHECK(!prog5v_box_poll_cmd(NULL));
+    /* A press dropped without its UP asks nothing either. */
+    fresh(ST_ON);
+    CHECK(prog5v_box_press(&b));
+    prog5v_box_release(&b, NULL);
+    CHECK(!prog5v_box_poll_cmd(NULL));
+}
+
+/* The router on SUPPLY, the splash done: the band shows notices. */
+static void router_on_supply(void)
+{
+    ui_theme_set(UI_THEME_DARK);
+    settings_set_store(NULL);
+    settings_init();
+    ui_text_set_language(UI_LANG_EN);
+    ui_router_init();
+    for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
+        splash_screen_set((splash_step_t)i, SPLASH_OK, "");
+    }
+    ui_router_tick(2.0f);
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_goto(SCREEN_SUPPLY);
+    ui_router_set_alert(NULL);
+}
+
+TEST_CASE(a_hold_let_go_at_1999ms_shows_its_hint)
+{
+    router_on_supply();
+    fresh(ST_OFF);
+    CHECK(prog5v_box_press(&b));
+    tick_n(7, 0.25f);
+    prog5v_box_tick(&b, 0.249f);
+    CHECK(ui_router_alert() == NULL);
+    lift(&b, bx(), by_(), true);
+    CHECK(ui_router_alert() != NULL);
+    CHECK_STR_EQ(ui_router_alert(), ui_tr(TX_HOLD_HINT_PROG5V));
+    CHECK(!prog5v_box_poll_cmd(NULL));
+    /* At 2,000ms: ON, no hint. */
+    ui_router_set_alert(NULL);
+    CHECK(prog5v_box_press(&b));
+    tick_n(8, 0.25f);
+    lift(&b, bx(), by_(), true);
+    CHECK(ui_router_alert() == NULL);
+    CHECK(asked_on());
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(ui_tr(TX_HOLD_HINT_PROG5V),
+                 "Halte 2s, um die 5V der Programmierports einzuschalten.");
+    ui_text_set_language(UI_LANG_EN);
 }
 
 int main(void)
@@ -337,5 +450,8 @@ int main(void)
     RUN(leaving_the_screen_that_switched_it_on_switches_it_off);
     RUN(the_lines_name_the_pin_and_the_reading);
     RUN(the_box_is_drawn_inside_its_rect);
+    RUN(the_holding_port_is_the_sessions_else_some);
+    RUN(nothing_happens_without_a_box);
+    RUN(a_hold_let_go_at_1999ms_shows_its_hint);
     return test_summary("prog5v_box");
 }

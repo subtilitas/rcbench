@@ -336,6 +336,9 @@ bool ui_router_take_stop(void);
 /** How long an alert shows before it clears itself, in seconds. */
 #define UI_ALERT_SHOW_S 30.0f
 
+/** @brief How long a notice shows before it clears itself, in seconds. */
+#define UI_NOTICE_SHOW_S 4.0f
+
 /**
  * @brief Show @p text in a 34px band across the bottom of every screen, or
  *        NULL to clear it.
@@ -352,6 +355,25 @@ bool ui_router_take_stop(void);
  * @param text the alert, or NULL to clear it
  */
 void ui_router_set_alert(const char *text);
+
+/**
+ * @brief Show @p text in the alert band as a notice: amber (UI_C_WARN) with
+ *        dark text, for what is not a fault, such as the hint of a hold
+ *        button released early.
+ *
+ * A notice clears after UI_NOTICE_SHOW_S or at a tap on the band. An alert
+ * takes priority: a notice is not shown while ui_router_set_alert() or
+ * ui_router_hold_alert() has one up, and an alert set while a notice shows
+ * replaces it. A notice replaces another notice.
+ * @param text The notice; NULL does nothing.
+ */
+void ui_router_set_notice(const char *text);
+
+/**
+ * @brief Whether the passing alert is a notice, ui_router_set_notice().
+ * @return True while a notice shows; false for an alert and for none.
+ */
+bool ui_router_alert_is_notice(void);
 
 /**
  * The number of the alert ui_router_set_alert() shows now, 0 while none
