@@ -345,11 +345,31 @@ def analyse_thumb(elf: Elf, addr: int, size: int, name: str, marks: list,
     return f
 
 
+def iomcu_elf(build: Path) -> Path:
+    """The IOmcu image's ELF in a build directory.
+
+    Args:
+        build: The IOmcu build directory.
+
+    Returns:
+        rcbench-iomcu.elf, the module's image, when the directory holds it;
+        else the one rcbench-iomcu-<board>.elf of a board variant
+        (IOMCU_BOARD); else the path of rcbench-iomcu.elf, which does not
+        exist.
+    """
+    path = build / IOMCU_ELF
+    if not path.exists():
+        variants = sorted(build.glob("rcbench-iomcu-*.elf"))
+        if len(variants) == 1:
+            return variants[0]
+    return path
+
+
 def iomcu_check(build: Path, verbose: bool) -> tuple:
     """(rows, fails, lines to print) for the IOmcu image: one row per
     core, (name, entry, stack, depth, interrupt, spare, calls and jumps
     through a register reachable from the entry)."""
-    path = build / IOMCU_ELF
+    path = iomcu_elf(build)
     if not path.exists():
         die(f"{path} not found; build the IOmcu first")
     sys.setrecursionlimit(20000)

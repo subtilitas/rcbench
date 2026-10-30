@@ -72,7 +72,7 @@ python3 -m pytest test/tools          # the tools' own tests
 python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
 python3 tools/mutate.py               # what the suite misses in the changed lines
 
-# After a panel build on ESP-IDF v5.5.5 for the ESP32-P4: the image against
+# After a panel build on ESP-IDF v6.1 for the ESP32-P4: the image against
 # the smaller of its two update slots.
 python3 tools/image_slot.py firmware/panel/build
 # After an IOmcu build: the stacks of its two cores, and core 0's row

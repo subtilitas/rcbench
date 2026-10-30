@@ -72,17 +72,23 @@ liest ([unten](#die-sd-karte-von-0210-und-älter)).
 | Asset | Enthält | Für |
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | das USB-Laden des IOmcu: `rcbench-iomcu-install.uf2` |
+| `rcbench-iomcu-rbmod-vX.Y.Z.zip` | dieselben fünf Dateien, benannt `rcbench-iomcu-rbmod-*` | den IOmcu auf dem rbmod-Carrier ([Link: Boards mit verlöteten Pins](Link-de.md#boards-mit-verlöteten-pins)): `rcbench-iomcu-rbmod-install.uf2` |
 | `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf`, `NOTICE`, `LICENSE` | den USB-Flash des Panels |
-| `rcbench-panel-p4-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem IOmcu-Image, das es über CAN anbietet | ein Update über WLAN; nicht für USB |
-| `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der drei Dateien oben | die Prüfung in Schritt 1 |
+| `rcbench-panel-p4-vX.Y.Z.bin` | die Anwendung des Panels allein, mit den zwei IOmcu-Images, die es über CAN anbietet | ein Update über WLAN; nicht für USB |
+| `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der vier Dateien oben | die Prüfung in Schritt 1 |
 
 Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den IOmcu,
-`esptool.py` für das Panel (`pip install esptool`; ESP-IDF bringt es mit).
+`esptool.py` für das Panel (`pip install esptool`; ESP-IDF v6.1 bringt
+esptool 5.6.0 mit). Die Datei `flash_args` schreibt ihre Optionen wie
+esptool 5 (`--flash-mode`); esptool 4.x, das ESP-IDF v5.5 mitbringt, lehnt
+diese Schreibweise ab, sodass `@flash_args` esptool 5 oder neuer braucht.
 `/dev/ttyACM0` unten heißt unter Windows `COMx`.
 
-1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der drei
+1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der vier
    Dateien `OK` aus.
-2. **IOmcu.** `rcbench-iomcu-vX.Y.Z.zip` entpacken. BOOTSEL halten,
+2. **IOmcu.** `rcbench-iomcu-vX.Y.Z.zip` entpacken, oder auf dem
+   rbmod-Carrier `rcbench-iomcu-rbmod-vX.Y.Z.zip` und dessen
+   `rcbench-iomcu-rbmod-*`-Dateien statt der Namen unten. BOOTSEL halten,
    während die USB-Buchse des IOmcu angeschlossen wird, sodass das
    Modul sein Laufwerk `RP2350` zeigt. `rcbench-iomcu-install.uf2` auf das
    Laufwerk kopieren, oder:

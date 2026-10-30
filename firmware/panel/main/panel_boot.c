@@ -34,6 +34,7 @@
 #include "touch.h"
 #include "ui_card_text.h"
 #include "ui_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 #include "wifi_access.h"
 
@@ -240,6 +241,8 @@ bool bring_up(void)
     /* The Wi-Fi page's file API reads the same card from its server's
      * task. */
     wifi_access_set_files(panel_files_card(), panel_files_web_bench);
+    /* And its file manager colours a text as the viewer does. */
+    panel_files_web_hl();
     /* Before anything can ask for a profile; with no card, the built-in
      * ones alone. */
     esc_profiles_load();
@@ -332,6 +335,7 @@ bool bring_up(void)
              * safety line.
              */
             s_board               = reply.regs[LINK_ID_HARDWARE];
+            ui_board_set(s_board);
             s_bring.proto_major   = reply.regs[LINK_ID_PROTOCOL_MAJOR];
             s_bring.proto_minor   = reply.regs[LINK_ID_PROTOCOL_MINOR];
             const bool speaks_ours =

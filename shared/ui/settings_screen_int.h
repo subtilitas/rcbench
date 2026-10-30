@@ -356,6 +356,13 @@ extern stg_state_t stg_s;
  */
 gfx_rect_t stg_tile_rect(int i);
 /**
+ * @brief Hub tile @p i as the recorded board shows it: PICK A PIN's tile is
+ *        LAYOUT's on a board whose pins are soldered.
+ * @param i The tile, 0 to TILE_COUNT - 1.
+ * @return The tile.
+ */
+const hub_tile_t *stg_hub_tile(int i);
+/**
  * @brief Returns column @p col of the strip under the grid and the list.
  * @param col strip column, 0 to 2
  * @return the column's rectangle

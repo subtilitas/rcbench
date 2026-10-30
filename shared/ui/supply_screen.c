@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <stdatomic.h>
+
 #include "supply_screen.h"
 
 #include <math.h>
@@ -476,6 +478,20 @@ void supply_screen_set_pins(int tx, int rx)
     }
 }
 
+/** @brief The ports' own supply as the control task last published it:
+ *         state << 8 | pin. */
+static atomic_uint s_prog_5v;
+
+void supply_screen_set_prog_5v(uint8_t state, uint8_t pin)
+{
+    atomic_store(&s_prog_5v, ((unsigned)state << 8) | pin);
+}
+
+uint32_t sup_prog_5v(void)
+{
+    return (uint32_t)atomic_load(&s_prog_5v);
+}
+
 void supply_screen_set_model(bool model)
 {
     if (s.model != model) {
@@ -666,8 +682,37 @@ bool supply_screen_port_held(void) { return s.port_held; }
 
 void supply_screen_adopt(float v, float i)
 {
+    /* The operator's: the set points before the first port's, or after a
+     * change made since the last port's were taken. */
+    if (!s.lent || s.cv != s.lent_v || s.ci != s.lent_i) {
+        s.own_v = s.cv;
+        s.own_i = s.ci;
+        s.lent  = true;
+    }
     s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
     s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    s.lent_v = s.cv;
+    s.lent_i = s.ci;
+    ui_slider_set(&s.v_slider, s.cv);
+    ui_slider_set(&s.i_slider, s.ci);
+    ++s.set_rev;
+}
+
+void supply_screen_port_done(bool free_off)
+{
+    /* Not under OUTPUT ON's hold either: an ON lands at the set points the
+     * hold began on. */
+    if (!s.lent || !free_off || s.port_held || s.on || s.on_asked
+        || supply_screen_output_held()) {
+        return;
+    }
+    s.lent = false;
+    /* Changed since the port's were taken: the change stands. */
+    if (s.cv != s.lent_v || s.ci != s.lent_i) {
+        return;
+    }
+    s.cv = supply_snap(s.own_v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
+    s.ci = supply_snap(s.own_i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
     ui_slider_set(&s.v_slider, s.cv);
     ui_slider_set(&s.i_slider, s.ci);
     ++s.set_rev;

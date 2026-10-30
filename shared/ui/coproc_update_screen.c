@@ -420,6 +420,7 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
     case CU_CHECK_RUNNING:   return CU_SEC_CHECKING;
     case CU_CHECK_FAILED:    return CU_SEC_FAILED;
     case CU_CHECK_USB:       return CU_SEC_USB;
+    case CU_CHECK_NO_BOARD:  return CU_SEC_NO_BOARD;
     case CU_CHECK_SAME:      return CU_SEC_SAME;
     case CU_CHECK_DIFFERENT: break;
     case CU_CHECK_UPDATING:

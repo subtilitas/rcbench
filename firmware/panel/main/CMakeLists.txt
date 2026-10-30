@@ -15,7 +15,7 @@ idf_component_register(
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram files
              fwupdate webaccess fw_ota wifi_access clock
-             esp_driver_gpio esp_driver_uart esp_timer
+             esp_driver_gpio esp_driver_i2c esp_driver_tsens esp_driver_uart esp_timer
     LDFRAGMENTS "psram_bss.lf"
 )
 if(RCBENCH_PERF_LOG)
@@ -44,4 +44,19 @@ if(RCBENCH_IOMCU_BIN)
     target_add_binary_data(${COMPONENT_LIB} "${rcbench_iomcu_bin}" BINARY
                            RENAME_TO rcbench_iomcu_bin)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_IOMCU_IMAGE=1)
+endif()
+# And the rbmod carrier's IOmcu image, offered to an IOmcu that reports the
+# carrier on its identity page (main/panel_update.c):
+#   idf.py -D RCBENCH_IOMCU_RBMOD_BIN=<path>/rcbench-iomcu-rbmod.bin build
+if(RCBENCH_IOMCU_RBMOD_BIN)
+    get_filename_component(rcbench_iomcu_rbmod_bin "${RCBENCH_IOMCU_RBMOD_BIN}"
+                           ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+    if(NOT EXISTS "${rcbench_iomcu_rbmod_bin}")
+        message(FATAL_ERROR
+                "RCBENCH_IOMCU_RBMOD_BIN: ${rcbench_iomcu_rbmod_bin} not found")
+    endif()
+    target_add_binary_data(${COMPONENT_LIB} "${rcbench_iomcu_rbmod_bin}" BINARY
+                           RENAME_TO rcbench_iomcu_rbmod_bin)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE
+                               RCBENCH_IOMCU_RBMOD_IMAGE=1)
 endif()

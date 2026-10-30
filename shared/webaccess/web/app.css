@@ -1,0 +1,63 @@
+/* The file manager of the Wi-Fi page (app.js).  Every colour is a token:
+ * --pg-<name> the page's, from the panel's theme, light and dark (the
+ * page's head, wa_page.c); --h-<class> and --h-bk the viewer's, the
+ * panel's palettes by class (wa_app.c).  A page without the viewer's
+ * palettes shows the viewer's text in the page's own colours.
+ *
+ * SPDX-License-Identifier: MIT */
+[hidden]{display:none!important}
+.fm button,.fm .btn{font:inherit;padding:8px 12px;min-height:40px;
+border:1px solid var(--pg-ln);border-radius:4px;background:transparent;
+color:inherit;cursor:pointer;text-decoration:none;display:inline-block;
+box-sizing:border-box}
+.fm button:disabled{opacity:.4;cursor:default}
+.fm .btn.dim{opacity:.4}
+.fm .panes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:40em){.fm .panes{grid-template-columns:1fr}}
+.fm .pane{border:2px solid var(--pg-ln);border-radius:4px;padding:6px;
+min-width:0}
+.fm .pane.on{border-color:var(--pg-hi)}
+.fm .ph{display:flex;gap:6px}
+.fm .up{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;
+white-space:nowrap;min-width:0}
+.fm .pc{margin:6px 2px;font-size:.9em;color:var(--pg-dim)}
+.fm .pl{width:100%;border-collapse:collapse}
+.fm .pl td{padding:4px 6px;border-bottom:1px solid var(--pg-ln);
+vertical-align:top}
+.fm .pl tr{cursor:pointer}
+.fm .pl tr.none{cursor:default}
+.fm .pl tr.sel{background:var(--pg-sel);outline:1px solid var(--pg-hi)}
+.fm .nm{word-break:break-all}
+.fm .n.dir{font-weight:bold}
+.fm .k{font-size:.75em;color:var(--pg-faint)}
+.fm .w{color:var(--pg-warn);margin-left:1em}
+.fm .sz{text-align:right;white-space:nowrap;
+font-variant-numeric:tabular-nums}
+.fm .bar{position:sticky;bottom:0;background:var(--pg-bg);padding:8px 0 2px;
+border-top:1px solid var(--pg-ln);margin-top:8px}
+.fm .foot{display:flex;flex-wrap:wrap;gap:6px}
+.fm .msg{min-height:1.2em;margin:4px 2px}
+.fm .msg:empty{min-height:0;margin:0}
+.fm .box{position:fixed;inset:0;background:var(--pg-shade);display:flex;
+align-items:center;justify-content:center;padding:16px;z-index:2}
+.fm .card{background:var(--pg-bg);color:var(--pg-fg);border:2px solid
+var(--pg-hi);border-radius:4px;padding:12px 16px;max-width:40em;
+width:100%;box-sizing:border-box}
+.fm .card h3{margin:0 0 8px}
+.fm .rows{border-collapse:collapse;margin-bottom:12px;width:100%}
+.fm .rows th{text-align:left;padding:3px 12px 3px 0;font-weight:normal;
+color:var(--pg-dim);white-space:nowrap;vertical-align:top}
+.fm .rows td{word-break:break-all}
+.fm .warn,.fm .warn td{color:var(--pg-warn)}
+.fm .viewer{position:fixed;inset:0;display:flex;flex-direction:column;
+background:var(--pg-bg);color:var(--pg-fg);z-index:3}
+.fm .vh{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;
+padding:8px 12px;border-bottom:1px solid var(--pg-ln)}
+.fm .vp{font-weight:bold;word-break:break-all;flex:1 1 12em}
+.fm .ro{color:var(--pg-dim)}
+.fm .scroll{flex:1;position:relative;overflow:auto;
+background:var(--h-bk,var(--pg-bg));color:var(--h-tx,var(--pg-fg))}
+.fm .sizer{width:1px}
+.fm .text{position:absolute;left:0;top:0;margin:0;padding:0 8px;
+font:13px/20px ui-monospace,Menlo,Consolas,monospace;white-space:pre;
+tab-size:8}

@@ -15,7 +15,7 @@ verifiziert.
 | Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des IOmcu, 200ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
-| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist oder der Ausgang des Netzteils an ist | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
+| Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist, der Ausgang des Netzteils an ist oder die 5V der Programmierports auf dem Carrier an sind | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
 
 Ein gedrücktes STOP stoppt den Heartbeat, schaltet das eigene
 Ausgangsmodell des Panels auf SAFE und schreibt ARM = 0 auf die Control-Page. Bei
@@ -35,8 +35,11 @@ letztes Kommando.
 
 Die Render-Schleife zählt einen Zähler pro Durchlauf weiter. Der
 Control-Task liest ihn in jedem Durchlauf alle 5ms und in der Wartezeit
-jedes Link-Austauschs. Ist der Prüfstand ARMED oder der Ausgang des
-Netzteils an und hat sich der Zähler 1000ms lang nicht bewegt
+jedes Link-Austauschs. Ist der Prüfstand ARMED, der Ausgang des
+Netzteils an oder zählen auf dem rbmod-Carrier die 5V der
+Programmierports für die Sperren als an
+([Die 5V der Programmierports auf dem Carrier](#die-5v-der-programmierports-auf-dem-carrier))
+und hat sich der Zähler 1000ms lang nicht bewegt
 (`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`), ist das ein
 Stopp des Prüfstands selbst, auf dem Weg, den STOP nimmt:
 
@@ -105,7 +108,9 @@ Fehler.
 
 Die Ausgänge sind die Servo-PWM-Slots und DShot-Throttle-Kanäle der Bank,
 die vier Programmierports (Servo-PWM, DShot, die KST-Leitung, die
-Hitec-Leitung) und der Ausgang des PD (Power Delivery) mini. Der Phase Tap
+Hitec-Leitung), der Ausgang des PD (Power Delivery) mini und auf dem
+rbmod-Carrier die eigenen 5V der Programmierports an GPIO 21
+([Die 5V der Programmierports auf dem Carrier](#die-5v-der-programmierports-auf-dem-carrier)). Der Phase Tap
 auf der Page TONE ist ein Eingang und treibt nichts. Das Panel hat keinen
 Draht zu einem Ausgang: es handelt über den Link und den Heartbeat, und der
 IOmcu handelt selbst, wenn einer der beiden ausfällt.
@@ -121,7 +126,7 @@ IOmcu handelt selbst, wenn einer der beiden ausfällt.
 | STOP | kein Puls binnen 150ms | abgebrochen | aus | das Panel, dann der IOmcu |
 | Messgerät oder Netzteil eines Laufs fällt aus (`0.2s kein INA3221-Fenster` und die anderen Fehler in [Servo, Was einen Lauf beendet](Servo-de.md#was-einen-lauf-beendet)) | SAFE | keine offen: ein Lauf ist ARMED | aus | der SERVO-Bildschirm |
 | Eine Sitzung, die der Link oder der Heartbeat abbricht | wie in den Zeilen oben | Transaktion abgebrochen | aus, nach einem Frame auf der Leitung, höchstens 12ms | der IOmcu |
-| Ein Schreiben auf die Karte scheitert während eines Laufs | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben ([unten](#die-versorgung-eines-programmierports)) | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel (`card_faults_follow()`), der IOmcu für das Schreiben |
+| Ein Schreiben auf die Karte scheitert während eines Laufs, oder das letzte Festschreiben oder Schließen des Lauf-Logs oder der CSV-Datei (comma-separated values) des automatischen Tests danach, einmal je Lauf | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben ([unten](#die-versorgung-eines-programmierports)) | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel (`card_faults_follow()`), der IOmcu für das Schreiben |
 | Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, der IOmcu für das Schreiben |
 | Ein INA3221-Kanal über seiner Grenze | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, beim Lesen von `OVER` alle 200ms; der IOmcu für das Schreiben |
 | Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
@@ -141,10 +146,34 @@ findet, über `shared/safety/error_sites.c` an, getestet in
 
 Die Zeilen oben gelten für einen IOmcu ab Link 4.31. Mit einem älteren
 IOmcu behält ein Programmierport, der das Netzteil hält, es bei einem
-Fehler, den das Panel findet: das Panel sendet kein OFF, weil dieser IOmcu
-ein Schreiben in den Speicher des Servos mittendrin abbrechen würde. Ein
-verlorener Heartbeat oder Link bricht es weiterhin ab, ebenso die eigenen
-Abschaltschwellen des Panels für das Netzteil.
+Fehler, den das Panel findet: das Panel fordert DISARM an und sendet kein
+OFF, weil dieser IOmcu ein Schreiben in den Speicher des Servos mittendrin
+abbrechen würde (`error_sites_keeps()`). Das gilt für jeden Fehler oben,
+den das Panel findet, darunter ein Netzteil, das nicht antwortet oder
+keinen Messwert liefert, ein ON über verlorene Touch-Ereignisse hinweg und
+ein ON, das die Page SUPPLY abweist, während das ON eines Ports auf ihr
+steht. Weiterhin aus, gleich wer das Netzteil hält:
+
+- ein verlorener Heartbeat oder Link: der IOmcu schaltet ab;
+- die eigenen Abschaltschwellen des Panels für das Netzteil, ÜBERSTROM und
+  ÜBERSPANNUNG: das Panel schaltet den Ausgang zuerst aus
+  (`error_sites_cut()`);
+- der eigene Schutz des PD mini und ein absinkender Eingang: das Modul oder
+  der IOmcu hat den Ausgang schon ausgeschaltet, und das Panel folgt
+  (`error_sites_page_keeps()`). Einem ON, das die Page losgelassen hat,
+  folgt es ebenso; die Page lässt ein ON nur los, wenn kein Port sie hält.
+
+Ein Port hält nur den Ausgang des PD mini. Auf dem Modell des Panels liegt
+kein Port, und ein Fehler schaltet es aus. Ein Netzteil, das nicht
+antwortet oder keinen Messwert liefert und das kein Port hält, wird
+ausgeschaltet, damit es nicht von selbst wieder angeht, wenn es wieder
+antwortet. Behält ein Port es, wird die Störung einmal behandelt und
+genannt, solange sie besteht, wieder, wenn sie in die andere Störung
+übergeht, und noch einmal, wenn der Port loslässt, was den Ausgang
+ausschaltet. Ein ON, das die Page wegen einer Verdrahtung abweist, die die
+Einstellungen nennen und die die Page abgewiesen hat, gehört wieder dem
+Port, solange er die Page hält (`supply_link_keep()`); lässt der Port los,
+wird das ON abgewiesen und ausgeschaltet.
 
 ### Die Versorgung eines Programmierports
 
@@ -215,6 +244,49 @@ abwies. Keine Störung: eine Ablehnung, ein Plan, der nichts sendet, ABORT
 und ein Schritt, den ein Stopp oder eine verlorene Verbindung abbricht; die
 beenden die Sitzung selbst.
 
+#### Die 5V der Programmierports auf dem Carrier
+
+Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die
+Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
+4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
+Programmer für KST und Hitec schalten die 5V für eine Sitzung ein und aus;
+das Panel bietet keine Taste dafür. Die Programmer lesen auf dem Carrier
+nichts vom PD mini: sein Sollwert lehnt weder ein VERBINDEN unter 4.8V
+ab, noch setzt er die Spannung eines Power-Cycle, und die Grenzen der
+Ansicht SUPPLY begrenzen nur die Servoschienen, kein VERBINDEN. Sind die
+5V als ein gelesen, schalten VERBINDEN und VERLASSEN nach einem Schreiben
+sie aus und wieder ein, wie den Ausgang des PD mini; sind sie aus,
+schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln
+der Page SUPPLY für einen Port:
+
+- Ein Fehler schreibt das OFF der Page, wer immer sie hält und was immer
+  das Panel von ihr liest (`error_sites.c`, `prog_supply_link_cut()`). Ein
+  Schreiben in den Speicher des Servos hält sie an, bis es endet,
+  höchstens 10000ms; vom OFF an, bis der Port loslässt, wird das eigene ON
+  des Ports abgelehnt.
+- Ein verlorener Heartbeat oder ein stummer Link schaltet sie sofort aus,
+  nach einem Frame auf der Leitung, höchstens 12ms.
+- Bei jedem Start des IOmcu ist sie aus, ab der ersten Anweisung von
+  `main()` low getrieben; der Pull-down an EN von M7 hält sie aus, solange
+  der IOmcu GPIO 21 nicht treibt.
+- Ein ON vom Panel wird ohne lebenden Heartbeat mit NOT_ARMED und mit
+  BAD_VALUE abgelehnt, solange ein Port die Versorgung hält.
+- Ein Port schaltet sie nur ein, nachdem das Panel seit dem letzten
+  Verlust des Heartbeats das Register 4 der Page (PANEL) geschrieben hat.
+  Ein Panel vor Link 4.32, das weder diese Versorgung noch ihre Sperren
+  kennt, schreibt es nie, also bekommen seine Programmer die 5V nie.
+- Eine Firmware-Installation, ein Update des IOmcu, ein Schreiben in den
+  Flash des Panels und das WLAN des Panels warten, solange die 5V
+  an sind, seit dem Aufbau des Links oder seit einem Lesen ohne Antwort
+  nicht gelesen wurden oder ein Port eines Programmers sie hält, so wie sie
+  auf den Ausgang des PD mini warten (`prog_supply_link_live()`).
+
+SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,
+`AUS` oder `UNBEKANNT`, wenn das letzte Lesen ohne Antwort blieb. Der
+Kern ist `shared/outputs/prog_supply.c` unter `test_prog_supply`; das Ende
+des Panels ist `shared/bench/prog_supply_link.c` unter
+`test_prog_supply_link`.
+
 Aktuelle Einschränkungen:
 
 - Ein Fehler während eines Schreibens hält das Servo versorgt, bis das
@@ -240,6 +312,12 @@ Aktuelle Einschränkungen:
   `LINK_FAULT_STALL`) sind definiert und werden von nichts gesetzt.
 - Die Meldungen nennen den Fehler und sagen nicht, dass der Prüfstand auf
   SAFE geschaltet hat; die Leiste zeigt SAFE.
+- Mit einem IOmcu älter als 4.31 bleibt ein Netzteil, das ein Port über
+  eine fehlende Antwort oder einen fehlenden Messwert hinweg behält, an,
+  bis der Port loslässt. Das Panel hat währenddessen keinen gültigen
+  Messwert, daher greifen ÜBERSTROM und ÜBERSPANNUNG nicht; der eigene
+  Schutz des PD mini und die Abschaltung des IOmcu für einen absinkenden
+  Eingang greifen.
 
 ### Grenzen der Hardware
 
@@ -764,7 +842,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Finger, der auf dem Bedienelement liegt, bewegt nichts, bis er abhebt und
   neu drückt. Ein Wert, den der Bildschirm
   gepostet und die Anwendung bei einem DISARM oder STOP noch nicht abgeholt
-  hat, wird verworfen.
+  hat, wird verworfen. Die einzige Ausnahme ist ein Hitec-Servo in seiner
+  Programmiersitzung ([Ein Hitec-Servo bewegt sich bei SAFE](#ein-hitec-servo-bewegt-sich-bei-safe)).
 - Jedes ARM beginnt bei der Ruhelage des Kanals, nicht dort, wo der letzte
   Lauf das Bedienelement gelassen hat.
   - MOTOR & ESC: Der Gas-Schieberegler, seine Schritte `-1` und `+1` und der
@@ -904,6 +983,65 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Entscheidung: die Bank rampt ein Throttle nur aufwärts, ein Ramp auf dem
   Draht würde also nur den Anstieg verlangsamen und sonst nichts. [STATUS.md,
   Not planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
+
+### Ein Hitec-Servo bewegt sich bei SAFE
+
+Ein Hitec-Servo darf sich bewegen, während der Prüfstand SAFE ist, und nur
+in einer gehaltenen Programmiersitzung. Das ist die einzige Ausnahme von der
+Regel, dass sich ein Ausgangswert nur bei ARMED ändert. Der Prüfstand
+schaltet nicht auf ARMED, solange die HITEC-Seite einen Port hält
+([LinkHitec, STOP](LinkHitec-de.md#stop-schalten-auf-safe-heartbeat-verlust-und-link-verlust)), und ein Hitec-Servo nimmt sein Ziel über
+den Programmierdraht, nicht als Pulsbreite.
+
+Die Regel:
+
+- Eine Bewegung braucht eine betretene Sitzung (`hitec_session_move()`;
+  sonst abgelehnt mit `HITEC_SES_ERR_NOT_IN_MODE`). D series: ein Ziel von 0
+  bis 6000 in Register 0x1E geschrieben, dann Register 0x0C, die Position,
+  zurückgelesen. Classic: `66` mit einem Ziel von 3600 bis 8400 (900 bis
+  2100us), dann `65`. Ein Ziel außerhalb des Bereichs wird abgelehnt
+  (`HITEC_SES_ERR_ARG`).
+- Eine Bewegung schreibt nur ins RAM des Servos: keine EEPROM-Zelle, kein
+  Speichern (0x70), kein Neustart. Kein Schritt einer Bewegung trägt MORE,
+  ein OFF der Versorgung während einer Bewegung wird also nicht für ein
+  Schreiben gehalten ([Die Versorgung eines Programmierports](#die-versorgung-eines-programmierports)).
+  Ein Wert erreicht den Speicher des Servos nur über ein Schreiben mit
+  Backup, Protokoll und Rücklesen.
+- Die kommandierte Position bewegt sich höchstens 150 Zähler (2.0deg) je
+  Durchlauf und bleibt innerhalb der Reichweite der gespeicherten Endpunkte
+  des Servos: der Positionen der Ziele 0 und 6000, 2606 bis 13743 bei einem
+  D485HW im Werkszustand (`hitec_live_d_command()`).
+- Jeder Durchlauf wird beurteilt (`hitec_live_judge()`). Er gilt als
+  blockiert, wenn die gelesene Position bei einem Kommando, das steht oder
+  nach außen geht, in 2 Durchläufen hintereinander mehr als 150 Zähler vom
+  Kommando entfernt liegt, wenn der Strom der Versorgung 400ms lang bei oder
+  über 80% der Stromgrenze der Sitzung liegt (800mA bei den
+  voreingestellten 1000mA), oder wenn der AS5600-Winkel, sofern verbaut,
+  sich um weniger als die Hälfte einer kommandierten Änderung von 3deg oder
+  mehr bewegt hat. Eine Blockierung setzt das Kommando auf die letzte freie
+  Position zurück, 75 Zähler (1.0deg) zur Neutralstellung hin.
+- Die Abbildung nimmt nur ein auf CW gestelltes Servo
+  (`hitec_live_d_ends()`).
+- Bewegungen werden mit einem 2s langen Halten eingeschaltet, und nur mit
+  einem antwortenden PD mini mit eingeschaltetem Ausgang: STOP schaltet den
+  PD mini aus und damit das Servo. Die eigene Stromgrenze des PD mini ist
+  die feste Obergrenze.
+
+Aktuelle Einschränkungen:
+
+- Das Panel hat kein Bedienelement, das Bewegungen einschaltet (MOVE SERVO
+  auf dem Reiter WEG): nichts ruft `hitec_session_move()` auf.
+- Jede Schwelle der Beurteilung ist gewählt, nicht mit einem Servohebel an
+  einem Anschlag gemessen. Der Blockierstrom eines D485HW ist nicht bekannt.
+- Ob das Servo der Ziellinie unter 400 und über 5600 folgt oder an seinen
+  Endpunkten stehen bleibt, ist nicht gemessen; die Reichweite nimmt an,
+  dass die Linie weitergeht.
+- Ob ein Servo der D series ohne Frames sein letztes Ziel hält, ist nicht
+  gemessen. Ein Schalten auf SAFE am Prüfstand allein stoppt den Port und
+  lässt die Versorgung an ([LinkHitec, STOP](LinkHitec-de.md#stop-schalten-auf-safe-heartbeat-verlust-und-link-verlust)).
+- Ob ein Neustart einen nicht gespeicherten RAM-Wert verwirft, ist nicht
+  gemessen.
+- Die Abbildung eines auf CCW gestellten Servos ist nicht gemessen.
 
 ## Heartbeat statt Enable-Pegel
 

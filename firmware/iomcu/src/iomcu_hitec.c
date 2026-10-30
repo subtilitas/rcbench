@@ -70,8 +70,7 @@ uint8_t hitec_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
      * the frame of the CLOSE.  A step the command started is a write a
      * SUPPLY OFF behind it in the same batch of frames is judged against. */
     ports_exclusive();
-    supply_page_hold(&s_supply, ports_hold_supply());
-    supply_page_port_writes(&s_supply, ports_writing());
+    ports_tell_supply();
     /* And its pulses end in this frame, as a KST command's do. */
     outputs_hw_ports_drive(ports_pulsing());
     sense_page_ports(&s_sense, ports_pulsing());

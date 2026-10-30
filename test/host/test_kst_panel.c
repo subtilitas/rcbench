@@ -20,6 +20,7 @@
  * - a_port_without_a_pin_is_refused_by_name
  * - a_port_without_a_servo_says_so_and_gives_the_port_back
  * - the_programming_voltage_is_typed_inside_1_to_6_v
+ * - the_carrier_shows_the_ports_5v_as_fixed
  * - a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold
  * - a_stored_programming_voltage_above_6_v_is_loaded_as_6_v
  * - a_confirmed_voltage_above_6_v_is_not_kept
@@ -31,6 +32,7 @@
  */
 
 #include "kst_panel_screen_rig.h"
+#include "ui_board.h"
 
 /* ------------------------------------------------------------ port and tabs */
 
@@ -180,6 +182,46 @@ TEST_CASE(a_port_without_a_servo_says_so_and_gives_the_port_back)
     }
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_EQ(kst_link_faults(&g_rig.link), 1u);
+}
+
+/* On a board that switches the ports' own 5V (the rbmod carrier, GPIO
+ * 21): the voltage and the current are not offered, MORE names the 5V as
+ * fixed, its line sets nothing and releases nothing, and the state and
+ * the PORT row say 5V. */
+TEST_CASE(the_carrier_shows_the_ports_5v_as_fixed)
+{
+    char want[KST_PANEL_LINE];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        g_rig.rail = true;
+        link_up();
+        ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
+        snprintf(want, sizeof(want), TR(KP_STATE_PWM_5V), RIG_PORT + 1u,
+                 21u);
+        CHECK_STR_EQ(status(0), want);
+        tap(val(PG_SERVO, 2, 1));
+        CHECK_EQ(choices(), 2);
+        snprintf(want, sizeof(want), TR(KP_SUPPLY_5V_FIXED), 21u);
+        CHECK_STR_EQ(kst_panel_choice_label(0), want);
+        const uint16_t mv = kst_prog_supply_mv(M);
+        const unsigned said_before = msg();
+        tap(kst_panel_choice_rect(0));
+        CHECK_EQ(kst_panel_editor(), 0);
+        CHECK_EQ(msg(), said_before);      /* no RELEASE asked, no refusal */
+        CHECK_EQ(kst_prog_supply_mv(M), mv);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+        /* Back on the module: the voltage and the current again. */
+        ui_board_set((uint16_t)OUTBIND_BOARD_PICO_HEADER);
+        tap(val(PG_SERVO, 2, 1));
+        CHECK_EQ(choices(), 3);
+        snprintf(want, sizeof(want), TR(KP_SUPPLY_V), 5u, 0u);
+        CHECK_STR_EQ(kst_panel_choice_label(0), want);
+        tap(kst_panel_choice_cancel_rect());
+        ui_board_set((uint16_t)OUTBIND_BOARD_UNKNOWN);
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 TEST_CASE(the_programming_voltage_is_typed_inside_1_to_6_v)
@@ -608,6 +650,7 @@ int main(void)
     RUN(a_port_without_a_pin_is_refused_by_name);
     RUN(a_port_without_a_servo_says_so_and_gives_the_port_back);
     RUN(the_programming_voltage_is_typed_inside_1_to_6_v);
+    RUN(the_carrier_shows_the_ports_5v_as_fixed);
     RUN(a_programming_voltage_above_6_v_needs_hv_servo_and_a_hold);
     RUN(a_stored_programming_voltage_above_6_v_is_loaded_as_6_v);
     RUN(a_confirmed_voltage_above_6_v_is_not_kept);

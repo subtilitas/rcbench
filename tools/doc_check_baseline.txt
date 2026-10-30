@@ -150,13 +150,10 @@ firmware/panel/components/can_twai/include/can_twai.h: warning: return type of m
 firmware/panel/components/can_twai/include/can_twai.h: warning: return type of member can_twai_recv is not documented
 firmware/panel/components/can_twai/include/can_twai.h: warning: return type of member can_twai_send is not documented
 firmware/panel/components/display/display.c: warning: Member TAG (variable) of file display.c is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: warning: Member check (variable) of struct restart_note_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member h (variable) of struct ota_ctx_t is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: warning: Member magic (variable) of struct restart_note_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member next (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member open (variable) of struct ota_ctx_t is not documented.
 firmware/panel/components/fw_ota/fw_ota.c: warning: Member part (variable) of struct ota_ctx_t is not documented.
-firmware/panel/components/fw_ota/fw_ota.c: warning: Member version[FW_TEXT_MAX] (variable) of struct restart_note_t is not documented.
 firmware/panel/components/gt911/gt911.c: file has no @file block
 firmware/panel/components/gt911/gt911.c: warning: Compound gt911_dev_t is not documented.
 firmware/panel/components/gt911/gt911.c: warning: Member addr (variable) of struct gt911_dev_t is not documented.
@@ -327,10 +324,8 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member b (variable
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member c (variable) of struct http_ctx_t is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_close(void *ctx, void *file) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_closedir(void *ctx, void *dir) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_open(void *ctx, const char *path) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_opendir(void *ctx, const char *path) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_path(char *out, size_t cap, const char *rel) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_read(void *ctx, void *file, uint8_t *dst, uint32_t len) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member card_readdir(void *ctx, void *dir, wa_dirent_t *out) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member channel (variable) of struct [struct].s.job is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member chunked (variable) of struct http_ctx_t is not documented.
@@ -405,8 +400,6 @@ firmware/panel/components/wifi_access/wifi_access.c: warning: Member pend (varia
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member poke(void) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member radio_up (variable) of struct [struct].s is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member rand32(void *ctx) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member raw_head(httpd_req_t *r, uint64_t length, const char *name) (function) of file wifi_access.c is not documented.
-firmware/panel/components/wifi_access/wifi_access.c: warning: Member raw_send(httpd_req_t *r, const void *data, size_t n) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member refused(httpd_req_t *r, const char *status) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member req_begin(void) (function) of file wifi_access.c is not documented.
 firmware/panel/components/wifi_access/wifi_access.c: warning: Member req_code(httpd_req_t *r) (function) of file wifi_access.c is not documented.
@@ -1171,12 +1164,8 @@ firmware/panel/main/panel_supply.c: warning: Member supply_real_follow(void) (fu
 firmware/panel/main/panel_supply.c: warning: Member supply_step(float step_s) (function) of file panel_supply.c is not documented.
 firmware/panel/main/panel_supply.c: warning: Member supply_switch(bool on) (function) of file panel_supply.c is not documented.
 firmware/panel/main/panel_supply.c: warning: Member supply_watch_service(void) (function) of file panel_supply.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member CU_IMG (macro definition) of file panel_update.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member CU_LEN (macro definition) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member CU_SLICE_MS (macro definition) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member TAG (variable) of file panel_update.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member _binary_rcbench_iomcu_bin_end[] (variable) of file panel_update.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member _binary_rcbench_iomcu_bin_start[] (variable) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member cu_alert_failed(void) (function) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member cu_carried(void) (function) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member cu_checked(void) (function) of file panel_update.c is not documented.
@@ -1848,8 +1837,6 @@ shared/esc/include/esc_stick.h: warning: Member stuck_told (variable) of struct 
 shared/esc/include/esc_stick.h: warning: Member t (variable) of struct esc_det_t is not documented.
 shared/esc/include/esc_stick.h: warning: Member t (variable) of struct esc_stick_t is not documented.
 shared/esc/include/esc_stick.h: warning: Member valid (variable) of struct esc_det_t is not documented.
-shared/fwupdate/fw_boot.c: file has no @file block
-shared/fwupdate/fw_install.c: file has no @file block
 shared/fwupdate/fw_release.c: warning: Member fw_release_scan_init(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member fw_release_status(int status) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member hex(char ch) (function) of file fw_release.c is not documented.
@@ -1871,9 +1858,6 @@ shared/fwupdate/fw_release.c: warning: Member scan_tag(fw_rel_scan_t *s) (functi
 shared/fwupdate/fw_release.c: warning: Member scan_value(fw_rel_scan_t *s, uint8_t ch) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_release.c: warning: Member url_bytes(const char *s, size_t n) (function) of file fw_release.c is not documented.
 shared/fwupdate/fw_sha256.c: file has no @file block
-shared/fwupdate/include/fw_boot.h: file has no @file block
-shared/fwupdate/include/fw_boot.h: warning: Compound fw_boot_ops_t is not documented.
-shared/fwupdate/include/fw_boot.h: warning: Member ctx (variable) of struct fw_boot_ops_t is not documented.
 shared/fwupdate/include/fw_image.h: warning: Member bytes (variable) of struct fw_image_info_t is not documented.
 shared/fwupdate/include/fw_image.h: warning: Member elf_sha[FW_SHA256_BYTES] (variable) of struct fw_image_info_t is not documented.
 shared/fwupdate/include/fw_image.h: warning: Member major (variable) of struct fw_version_t is not documented.
@@ -3486,7 +3470,6 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_unheld is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warn_line is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warning is not documented
-shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_adopt are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_claim are not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_entered are not documented
@@ -3675,10 +3658,7 @@ shared/ui/include/ui_theme.h: warning: Member UI_VOLT (macro definition) of file
 shared/ui/include/ui_theme.h: warning: Member UI_WARN (macro definition) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_color_id_t (enumeration) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_seg_hero(void) (function) of file ui_theme.h is not documented.
-shared/ui/include/ui_theme.h: warning: Member ui_theme_brightness(void) (function) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_theme_color(ui_color_id_t id) (function) of file ui_theme.h is not documented.
-shared/ui/include/ui_theme.h: warning: Member ui_theme_contrast(void) (function) of file ui_theme.h is not documented.
-shared/ui/include/ui_theme.h: warning: Member ui_theme_get(void) (function) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: Member ui_theme_id_t (enumeration) of file ui_theme.h is not documented.
 shared/ui/include/ui_theme.h: warning: parameters of member ui_theme_set are not documented
 shared/ui/include/ui_value_gate.h: file has no @file block
@@ -3927,7 +3907,24 @@ shared/ui/motor_workbench.c: warning: Member target_with_ports(char *out, size_t
 shared/ui/motor_workbench.c: warning: Member trow (variable) of struct [struct].w is not documented.
 shared/ui/motor_workbench.c: warning: Member w (variable) of file motor_workbench.c is not documented.
 shared/ui/motor_workbench.c: warning: Member wb (variable) of struct [struct].w is not documented.
-shared/ui/outputs_port.c: file has no @file block
+shared/ui/outputs_port.c: warning: Member g_held[OUTPUTS_IFACE_COUNT] (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_open_kind (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_open_value (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_port_count (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_port_pin[LINK_PG_PORTS_MAX] (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member g_prog_gpio (variable) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member held_byte(int v) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT]) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_port_forget_open(void) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_port_holds(uint8_t gpio) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_port_open(void) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_port_pins(void) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_pwm_pins(const uint8_t *pins) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member outputs_screen_open_on_port(uint8_t port) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member pin_bit(int v) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member sense_part(setting_id_t en) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member sensors_on(void) (function) of file outputs_port.c is not documented.
+shared/ui/outputs_port.c: warning: Member touched(void) (function) of file outputs_port.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_close(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_event(const touch_event_t *evt) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_face(void) (function) of file outputs_port_entry.c is not documented.
@@ -4640,8 +4637,6 @@ shared/ui/ui_text.c: warning: Member ui_setting_category(setting_cat_t cat) (fun
 shared/ui/ui_text.c: warning: Member ui_setting_help(setting_id_t id) (function) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member ui_setting_label(setting_id_t id) (function) of file ui_text.c is not documented.
 shared/ui/ui_text.c: warning: Member ui_text_language(void) (function) of file ui_text.c is not documented.
-shared/ui/ui_theme.c: file has no @file block
-shared/ui/ui_theme.c: warning: Compound ui_rgb_t is not documented.
 shared/ui/ui_theme.c: warning: Member b (variable) of struct ui_rgb_t is not documented.
 shared/ui/ui_theme.c: warning: Member brightness (variable) of struct [struct].s is not documented.
 shared/ui/ui_theme.c: warning: Member built (variable) of struct [struct].s is not documented.
@@ -4816,7 +4811,6 @@ shared/webaccess/include/wa_page.h: warning: Member WA_URL_FILE (macro definitio
 shared/webaccess/include/wa_page.h: warning: Member WA_URL_UPDATE (macro definition) of file wa_page.h is not documented.
 shared/webaccess/include/wa_page.h: warning: Member WA_URL_ZIP (macro definition) of file wa_page.h is not documented.
 shared/webaccess/include/wa_page.h: warning: parameters of member wa_page_code are not documented
-shared/webaccess/include/wa_page.h: warning: parameters of member wa_page_main are not documented
 shared/webaccess/include/wa_page.h: warning: parameters of member wa_page_upload_result are not documented
 shared/webaccess/include/wa_send.h: file has no @file block
 shared/webaccess/include/wa_send.h: warning: Compound wa_send_t is not documented.
@@ -4927,10 +4921,7 @@ shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_bytes(wa_fetch_t *f, ui
 shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r) (function) of file wa_fetch.c is not documented.
 shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_phase(wa_fetch_t *f, uint32_t gen, wa_phase_t ph) (function) of file wa_fetch.c is not documented.
 shared/webaccess/wa_mdns.c: file has no @file block
-shared/webaccess/wa_page.c: warning: Member files(wa_out_t *o, const wa_page_info_t *pi, const wa_fs_t *fs) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_page.c: warning: Member firmware(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.
-shared/webaccess/wa_page.c: warning: Member folder(wa_out_t *o, const wa_page_info_t *pi, const char *path) (function) of file wa_page.c is not documented.
-shared/webaccess/wa_page.c: warning: Member head(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.
 shared/webaccess/wa_send.c: file has no @file block
 shared/webaccess/wa_text.c: warning: Member PUT(ch) (macro definition) of file wa_text.c is not documented.
 shared/webaccess/wa_text.c: warning: Member check_name(const char *s, size_t n) (function) of file wa_text.c is not documented.

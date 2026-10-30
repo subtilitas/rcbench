@@ -19,7 +19,7 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 | SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
 | SENSORS | `4 SETTINGS`, and 9 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
-| PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
+| PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board. On the rbmod carrier, whose pins are soldered, the tile opens [Layout](layout.md) and reads `CONNECTORS AND PINS` |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 | FILES | `FOLDERS AND FILES` | [Files](files.md): the card's folders and files in two panes, to copy, move, rename and delete |

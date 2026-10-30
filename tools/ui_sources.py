@@ -60,6 +60,7 @@ SOURCES = [
     "shared/ui/ui_setting_keypad.c",
     "shared/ui/ui_textkey.c",
     "shared/ui/ui_pinlist.c",
+    "shared/ui/ui_board.c",
     "shared/ui/servo_screen.c",
     "shared/ui/servo_screen_sweep.c",
     "shared/ui/servo_screen_link.c",
@@ -137,6 +138,7 @@ SOURCES = [
     # FILES, and the file manager's core it starts its jobs and keeps its
     # panes with (shared/files), the logger's open-file rule with it.
     "shared/ui/files_screen.c",
+    "shared/ui/layout_screen.c",
     "shared/ui/files_draw.c",
     "shared/ui/files_events.c",
     "shared/ui/files_text.c",
@@ -208,6 +210,8 @@ SOURCES = [
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/out_bind.c",
+    "shared/outputs/out_board_rbmod.c",
+    "shared/outputs/board_fix.c",
     "shared/outputs/servo_cmd.c",
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",

@@ -24,7 +24,7 @@ WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der
 
 ![Das Funkmodul darf nicht starten, nachdem es bei einem Schalten auf ARMED ausging](view:wifi-blocked)
 
-Das Funkmodul startet nur mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne offenen Log-Lauf. Sonst sind die Tasten, die es starten, grau, und die Karte sagt, was fehlt.
+Das Funkmodul startet nur mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne offenen Log-Lauf. Sonst sind die Tasten, die es starten, grau, und die Karte sagt, was fehlt. Auf dem rbmod-Carrier zählen die 5V der Programmierports, GPIO 21, ebenfalls als Netzteilausgang: solange ein Programmer einen Port hält und bis SUPPLY sie als `AUS` liest.
 
 Das Funkmodul geht von selbst aus, und die Karte nennt den Grund in einer Zeile:
 
@@ -116,8 +116,8 @@ Die Browserseite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei liste
 Die Seite spricht die Sprache des Panels.
 
 - **Panel-Firmware**: die installierte Version, eine Dateiauswahl und Hochladen. Die Datei ist das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Eine Datei größer als 8.126.464 Bytes wird abgelehnt, bevor ein Byte gesendet ist.
-- **Dateien auf der Karte**: jede Datei mit Name, Größe in Bytes und Zeit in der Zone von SETUP > PANEL, Zeitzone; ein Datum in 1980, das einer ungestellten Uhr, lässt die Zeit leer. Jeder Name lädt diese Datei herunter. Die Seite schreibt nichts auf die Karte.
-- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1MiB ist ein Umbenennen. In einem Heimnetz kam eine Datei von 16MiB mit 688-757kB/s herunter, und ein Image von 2,56MB ging mit 556-599kB/s hinauf. Die Seite selbst, 18,9kB mit ihrer Kartenliste, brauchte 4,54s.
+- **Dateien auf der Karte**: die Karte in zwei Spalten, wie [FILES](files.md) sie zeigt: links das Stammverzeichnis, rechts der Ordner User-Logs, 48 Einträge je Seite mit VORIGE und NÄCHSTE. Ein Tipp wählt eine Zeile; AKTUALISIEREN, INFO, HERUNTERLADEN und ÖFFNEN wirken auf sie, und eine gedimmte Taste sagt beim Tipp, warum. ÖFFNEN geht in einen Ordner oder zeigt eine Textdatei nur lesend, gefärbt wie am Panel, mit `ZEILE n VON m` gezählt wie im Betrachter des Panels; eine Datei über 1MiB, eine, die der Logger schreibt, und die Vermerke der Servoprogrammierung lassen sich nur herunterladen. INFO nennt die Zeit in der Zone von SETUP > PANEL, Zeitzone, `nicht bekannt` für ein Datum in 1980. Die Seite folgt dem hellen oder dunklen Schema des Browsers in den Theme-Farben des Panels. Die Seite schreibt nichts auf die Karte und braucht JavaScript.
+- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1MiB ist ein Umbenennen. In einem Heimnetz kam eine Datei von 16MiB mit 688-757kB/s herunter, und ein Image von 2,56MB ging mit 556-599kB/s hinauf. Die Seite selbst, 18,9kB mit ihrer alten Kartenliste, brauchte 4,54s; die Seite mit den zwei Spalten hat etwa 33kB, ihre Zeit ist nicht gemessen.
 
 Die Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage während eines Downloads wartet auf dessen Ende. Ein Download, von dem der Browser 30s lang nichts annimmt, endet, und der Browser meldet ihn als fehlgeschlagen.
 

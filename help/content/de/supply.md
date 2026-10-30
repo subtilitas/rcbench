@@ -84,7 +84,17 @@ AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. AUSGANG
 - einem Modul, das seinen Ausgang selbst abschaltet;
 - einer Änderung an Pins, Baudrate oder Einschalt-Einstellung des PD mini.
 
-Das Band nennt den Grund. Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Nach jedem Neustart ist der Ausgang aus, unabhängig von den Startwerten.
+Das Band nennt den Grund. Ein Loslassen vor 2s sendet nichts und zeigt nichts, wie bei ARM.
+
+Der IOmcu lehnt ein EIN ab, solange sein Failsafe ausgelöst ist: Das Band zeigt FEHLER 01 (der Link war 200ms still, was ein Neustart des IOmcu verursachen kann) oder FEHLER 10 (der Heartbeat hat aufgehört). Das Halten endet dann mit `Netzteil ließ sich nicht einschalten: IOmcu-Failsafe ausgelöst. ARM halten, dann DISARM.` Nur das CLEAR, das ein ARM schreibt, hebt den Failsafe auf: ARM auf SERVO oder MOTOR & ESC halten, DISARM, dann AUSGANG EIN erneut halten.
+
+Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Nach jedem Neustart ist der Ausgang aus, unabhängig von den Startwerten.
+
+## Auf dem rbmod-Carrier
+
+![SUPPLY auf dem Carrier](view:supply-rbmod)
+
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) speist der PD mini die Servoschienen, und die Programmierports haben eine eigene 5V-Versorgung, geschaltet über GPIO 21. Die Zeile unter AUSGANG nennt sie: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder `UNBEKANNT`, solange der IOmcu nicht antwortet. Die Programmer für KST und Hitec schalten sie für eine Sitzung; SUPPLY hat keine Taste dafür. Jeder Fehler schaltet sie aus, ein Schreiben in den Speicher eines Servos endet zuerst, höchstens 10000ms.
 
 ## OPTIONEN
 

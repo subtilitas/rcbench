@@ -65,6 +65,9 @@ typedef struct {
 /** @brief The card the API reads, and what its rules need. */
 static card_t s_card = { .mux = portMUX_INITIALIZER_UNLOCKED };
 
+/** @brief The page's words and colours; NULL until set. */
+static const wa_hl_t *s_hl;
+
 /** @brief The request's room; NULL until the first request needs it. */
 static room_t *s_room;
 /** @brief The text of a file, TEXT_BUF_FILE_MAX bytes; NULL until used. */
@@ -82,6 +85,16 @@ typedef enum {
 
 /** @brief Each request's name in the log. */
 static const char *const k_name[] = { "status", "list", "info", "file" };
+
+void wifi_access_set_hl(const wa_hl_t *hl)
+{
+    s_hl = hl;
+}
+
+const wa_hl_t *wifi_files_hl(void)
+{
+    return s_hl;
+}
 
 void wifi_access_set_files(const fm_io_t *io,
                            void (*bench)(fm_bench_t *out, void *ctx))
@@ -223,9 +236,10 @@ static bool sink_chunk(void *ctx, const void *data, size_t n)
  * @param st    takes them
  * @param pi    the page's name, version and language
  * @param card  room for the card's name, CARD_NAME_MAX bytes
+ * @param logs  room for the User log folder, CARD_DIR_MAX bytes
  */
 static void status_now(wa_api_status_t *st, const wa_page_info_t *pi,
-                       char *card)
+                       char *card, char *logs)
 {
     memset(st, 0, sizeof(*st));
     st->name = pi->name;
@@ -244,6 +258,10 @@ static void status_now(wa_api_status_t *st, const wa_page_info_t *pi,
     memset(&bench, 0, sizeof(bench));
     run_bench(&bench, NULL);
     st->gate = fm_gate(FM_OP_SAVE, &bench);
+    taskENTER_CRITICAL(&s_card.mux);
+    memcpy(logs, s_card.user_logs, CARD_DIR_MAX);
+    taskEXIT_CRITICAL(&s_card.mux);
+    st->user_logs = logs;
 }
 
 /**
@@ -270,7 +288,8 @@ static esp_err_t answer_json(httpd_req_t *r, api_t kind, wa_api_err_t why,
         wifi_page_info(&pi);
         wa_api_status_t st;
         char card[CARD_NAME_MAX];
-        status_now(&st, &pi, card);
+        char logs[CARD_DIR_MAX];
+        status_now(&st, &pi, card, logs);
         wa_api_status_json(o, &st);
     } else if (kind == API_LIST) {
         wa_api_list_json(&s_room->api, o);
@@ -322,9 +341,19 @@ static esp_err_t answer_file(httpd_req_t *r)
 static esp_err_t serve(httpd_req_t *r, api_t kind)
 {
     esp_err_t e = ESP_OK;
-    const wifi_page_go_t go = wifi_page_begin(r, &e);
+    wa_guard_t guard = WA_GUARD_OK;
+    const wifi_page_go_t go = wifi_page_begin(r, &e, &guard);
     if (go == WIFI_PAGE_DONE) {
         return e;
+    }
+    if (go == WIFI_PAGE_REFUSED) {
+        /* Its body is not read: the connection goes with the answer, as
+         * for the guard's other refusals (wifi_req.h). */
+        wa_page_info_t pi;
+        wifi_page_info(&pi);
+        httpd_resp_set_hdr(r, "Connection", "close");
+        (void)answer_json(r, kind, wa_api_of_guard(guard), pi.de);
+        return ESP_FAIL;
     }
     const int64_t t0 = esp_timer_get_time();
     const char *q = strchr(r->uri, '?');

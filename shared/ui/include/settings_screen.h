@@ -163,6 +163,14 @@ bool settings_hub_slot(int index, gfx_rect_t *out);
 
 /** The entries of the hub's tile table: its categories and its screens. */
 int settings_hub_tiles(void);
+/**
+ * @brief The screen hub tile @p i opens: PICK A PIN's tile opens BOARD
+ *        LAYOUT on a board whose pins are soldered (ui_board_roles()).
+ * @param i The tile, 0 to settings_hub_tiles() - 1.
+ * @return The screen; SCREEN_SETUP for a category's tile, SCREEN_COUNT for
+ *         a tile out of range.
+ */
+ui_screen_id_t settings_hub_tile_screen(int i);
 
 /**
  * Whether a tile of the hub opens screen @p id.  The home tag of such a

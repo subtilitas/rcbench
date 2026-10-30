@@ -198,14 +198,15 @@ static bool flag(const kst_prog_t *p, uint16_t f)
 
 /**
  * @brief Whether the servo's supply is the bench's to switch: a PD mini
- *        answers the port and the panel reads its output on.
+ *        answers the port and the panel reads its output on, or the
+ *        ports' own fixed supply serves the port and reads on.
  *
  * @param p The programmer state.
- * @return true when a PD mini answers with its output on.
+ * @return true when the port's supply is switchable and on.
  */
 static bool pd_on(const kst_prog_t *p)
 {
-    return flag(p, LINK_KS_F_RAIL) && p->f.supply_read;
+    return flag(p, LINK_KS_F_RAIL) && (p->f.supply_read || p->f.fixed_on);
 }
 
 /**

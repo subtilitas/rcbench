@@ -99,6 +99,7 @@ TRACKED = [
     "shared/ui/ui_setting_keypad.c",
     "shared/ui/ui_textkey.c",
     "shared/ui/ui_pinlist.c",
+    "shared/ui/ui_board.c",
     "shared/ui/servo_screen.c",
     "shared/ui/servo_screen_sweep.c",
     "shared/ui/servo_screen_link.c",
@@ -139,6 +140,7 @@ TRACKED = [
     "shared/ui/log_viewer_events.c",
     "shared/ui/log_select.c",
     "shared/ui/files_screen.c",
+    "shared/ui/layout_screen.c",
     "shared/ui/files_draw.c",
     "shared/ui/files_events.c",
     "shared/ui/files_text.c",
@@ -232,6 +234,7 @@ TRACKED = [
     "protocols/hitec/hitec_pre.c",
     "protocols/hitec/hitec_reg.c",
     "protocols/hitec/hitec_session.c",
+    "protocols/hitec/hitec_live.c",
     "protocols/i2c_txq/i2c_txq.c",
     "shared/logfile/servo_store.c",
     "shared/outputs/kst_port.c",
@@ -272,9 +275,11 @@ TRACKED = [
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_bind.c",
+    "shared/outputs/board_fix.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/servo_page.c",
     "shared/outputs/supply_page.c",
+    "shared/outputs/prog_supply.c",
     "shared/outputs/out_store_map.c",
     "shared/outputs/out_store_rec.c",
     "shared/outputs/out_stage.c",
@@ -291,6 +296,7 @@ TRACKED = [
     "protocols/pdmini/pdmini_codec.c",
     "protocols/pdmini/pdmini_jobs.c",
     "shared/bench/supply_link.c",
+    "shared/bench/prog_supply_link.c",
     "shared/bench/sense_link.c",
     "shared/bench/sense_link_view.c",
     "shared/bench/sense_map_link.c",
@@ -336,6 +342,7 @@ TRACKED = [
     "shared/webaccess/wa_mdns.c",
     "shared/webaccess/wa_guard.c",
     "shared/webaccess/wa_api.c",
+    "shared/webaccess/wa_app.c",
     "shared/clock/wall_clock.c",
 ]
 
@@ -357,6 +364,10 @@ DATA_ONLY = {
     "shared/ui/ui_cats_art.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
     "shared/esc/esc_profiles_gen.c",
+    # The rbmod carrier's pin catalogue and role table.
+    "shared/outputs/out_board_rbmod.c",
+    # The Wi-Fi page's file manager as C strings, by tools/gen_web_blob.py.
+    "shared/webaccess/wa_web_blob.c",
 }
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it

@@ -33,6 +33,13 @@
  * directory that large or that far in.  The value itself is the format's
  * "see ZIP64" mark, so it counts as past the limit.
  *
+ * A file's bytes are read into the archive's read buffer when it has one
+ * (wa_zip_set_read()): each read asks for the buffer's size at an offset of
+ * the file that is a multiple of it, so a card read is whole sectors into
+ * the caller's aligned buffer, one transfer, and the headers between the
+ * files never shift the file's reads off its sectors.  Without one, a read
+ * asks for what the caller's piece has room for.
+ *
  * A read error, a card pulled, a file that shrank, and an entry removed or
  * renamed after the first walk end the archive as failed; the response is
  * cut off after the bytes made up to the failure, and the browser reports
@@ -147,6 +154,10 @@ typedef struct {
     uint16_t spare;   /**< unused; pads the slot to 24 bytes            */
 } wa_zip_slot_t;
 
+/** @brief The panel's read buffer, bytes: 32 sectors of 512 bytes, inside
+ *  one cluster of 16KiB or more, so one card transfer a read. */
+#define WA_ZIP_READ_BYTES 16384u
+
 /** @brief Slots to allocate beyond the entries wa_zip_plan() counted: entries
  *  added to the card before wa_zip_begin() walks it again. */
 #define WA_ZIP_SPARE 16u
@@ -165,7 +176,11 @@ typedef struct {
     void          *file;      /**< the open file                          */
     uint64_t       left;      /**< bytes of the open file still to send   */
     uint64_t       size;      /**< bytes the open file is sent with       */
-    uint32_t       file_crc;  /**< CRC-32 of the open file's bytes sent   */
+    uint32_t       file_crc;  /**< CRC-32 of the open file's bytes read   */
+    uint8_t       *rbuf;      /**< the read buffer, or NULL               */
+    uint32_t       rcap;      /**< bytes @c rbuf holds                    */
+    uint32_t       roff;      /**< bytes of @c rbuf sent                  */
+    uint32_t       rlen;      /**< bytes in @c rbuf                       */
     uint8_t        piece[WA_ZIP_PIECE_MAX]; /**< a header or descriptor */
     size_t         piece_len; /**< bytes in @c piece                      */
     size_t         piece_off; /**< bytes of @c piece sent                 */
@@ -188,6 +203,25 @@ typedef struct {
  */
 wa_zip_err_t wa_zip_begin(wa_zip_t *z, const wa_fs_t *fs, wa_zip_slot_t *slot,
                           uint64_t slots);
+
+/**
+ * @brief Read the files through @p buf, @p cap bytes a read, each at an
+ *        offset of the file that is a multiple of @p cap.  After
+ *        wa_zip_begin() and before the first wa_zip_next().
+ * @param z    the archive
+ * @param buf  the buffer, aligned as the card's transfers want it; NULL
+ *             for none
+ * @param cap  bytes @p buf holds; 0 for none
+ */
+void wa_zip_set_read(wa_zip_t *z, uint8_t *buf, uint32_t cap);
+
+/**
+ * @brief A failure's name for the log: "no card", "card read failed" or
+ *        "no memory"; "done" for WA_ZIP_OK.
+ * @param e  the failure
+ * @return a constant string; "?" outside the enum
+ */
+const char *wa_zip_err_name(wa_zip_err_t e);
 
 /**
  * @brief The next bytes of the archive.

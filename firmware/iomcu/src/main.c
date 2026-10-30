@@ -29,6 +29,7 @@
 
 #include "iomcu_pins.h"
 #include "bench_state.h"
+#include "board_fix.h"
 #include "dshot.h"
 #include "flash_gate.h"
 #include "out_bind.h"
@@ -152,6 +153,7 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SENSE_LIMIT, LINK_SL_COUNT, sense_limit_rd, sense_limit_wr },
     { LINK_PAGE_SENSE_WIN_A, LINK_SX_COUNT, sense_win_a_read, NULL },
     { LINK_PAGE_SENSE_WIN_B, LINK_SX_COUNT, sense_win_b_read, NULL },
+    { LINK_PAGE_PROG_SUPPLY, LINK_PS_COUNT, psup_read,      psup_write },
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
       update_hw_ctl_write },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
@@ -303,9 +305,27 @@ static void outputs_off(void)
 static bool flash_busy(void)
 {
     return flash_gate_busy(outputs_driving(&s_outputs),
-                           s_supply.regs[LINK_SP_OUTPUT] != 0u,
+                           s_supply.regs[LINK_SP_OUTPUT] != 0u
+                               || s_psup.drive,
                            s_pd_open && pdmini_may_be_on(&s_pd),
                            ports_quiet() != 0u);
+}
+
+/**
+ * @brief Drive the programming ports' 5V enable low, before anything else
+ *        runs; psup_pass() drives it from the main loop on.
+ *
+ * @param r  The board's roles, or NULL for a board without the switch: then
+ *           nothing is touched.
+ */
+static void prog_5v_off(const outbind_roles_t *r)
+{
+    if (r == NULL) {
+        return;
+    }
+    gpio_init(r->prog_5v_en);
+    gpio_put(r->prog_5v_en, false);
+    gpio_set_dir(r->prog_5v_en, GPIO_OUT);
 }
 
 /**
@@ -315,6 +335,13 @@ static bool flash_busy(void)
  */
 int main(void)
 {
+    /*
+     * The programming ports' 5V off before anything else, on a board that
+     * switches it (the rbmod carrier's GP21).  The PROG_SUPPLY page drives
+     * it from the main loop on, off until the panel or a port asks.
+     */
+    prog_5v_off(outbind_roles(IOMCU_BOARD_ID));
+    psup_init();
     stdio_init_all();
     /* Why this start happened, before anything else runs. */
     reset_start();
@@ -371,6 +398,22 @@ int main(void)
      */
     static out_store_t saved;            /* 288 bytes, off main()'s frame */
     const bool have_saved = out_store_load(&saved);
+    /*
+     * A board with soldered pins starts each role on its pin, whatever the
+     * flash kept: a record written by the image of another board keeps its
+     * enables, ranges and endpoints and none of its pins
+     * (board_fix_store()).  Its interfaces are restored from that even with
+     * nothing kept, so the PD mini, the sensor bus and the tap start on
+     * their pins, disabled.
+     */
+    const outbind_roles_t *roles = outbind_roles(IOMCU_BOARD_ID);
+    if (roles != NULL) {
+        if (!have_saved) {
+            out_store_cfg_defaults(&saved);
+        }
+        board_fix_store(roles, &saved);
+    }
+    const bool have_ifaces = have_saved || roles != NULL;
     if (have_saved) {
         memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
         /* A kept slew above LINK_CC_SLEW_MAX starts as that maximum, here
@@ -467,7 +510,7 @@ int main(void)
      * and after the slots' hardware, so the UART takes what PIO the outputs
      * leave, as it does when written at run time, and never displaces one.
      */
-    if (have_saved
+    if (have_ifaces
         && supply_page_write(&s_supply, LINK_SP_ENABLE, LINK_SP_OUTPUT,
                              saved.supply, &s_outputs, false) == 0u) {
         if (!supply_rewire()) {
@@ -494,7 +537,7 @@ int main(void)
      * cannot reach that state with the tap running: it is refused, so the
      * order here and the one at run time agree.
      */
-    if (have_saved) {
+    if (have_ifaces) {
         /* The map, kept in force, after the SENSE frame it mirrors, and
          * only when that frame was taken: a map refused stays derived. */
         if (sense_page_write(&s_sense, LINK_SN_ENABLE,
@@ -521,13 +564,13 @@ int main(void)
      * record's (4.26), else port 0 SERVO PWM and the others NONE.
      */
     uint16_t prog_kept[PROG_PORT_KEPT_COUNT];
-    if (have_saved) {
+    if (have_ifaces) {
         memcpy(prog_kept, saved.prog, sizeof(prog_kept));
     } else {
         prog_port_defaults(prog_kept, PROG_PORT_DEFAULT_PIN);
     }
     prog_port_restore_fn(&s_prog, prog_kept,
-                         have_saved ? saved.prog_func : 0u, &s_outputs,
+                         have_ifaces ? saved.prog_func : 0u, &s_outputs,
                          supply_page_pins(&s_supply) | sense_page_held(&s_sense)
                              | tone_page_pins(&s_tone));
     reserve_held();
@@ -721,8 +764,7 @@ int main(void)
         sense_page_ports(&s_sense, ports_pulsing());
         /* And the SUPPLY page told that a port commands the module, and
          * whether it writes. */
-        supply_page_hold(&s_supply, ports_hold_supply());
-        supply_page_port_writes(&s_supply, ports_writing());
+        ports_tell_supply();
         /* The edge into driving starts a run on core 1: its peaks and the
          * INA228's totals.  One compare a pass, an order on the edge. */
         const bool driving_now = outputs_driving(&s_outputs);
@@ -755,11 +797,17 @@ int main(void)
          * whenever the panel's heartbeat is not there to switch it off.  A
          * port's write, as the ports' steps above left it, keeps the
          * panel's OFF of a held supply back until it ends. */
-        supply_pass(now,
-                    kst_port_frame_out(&s_kst)
-                        || hitec_port_frame_out(&s_hitec, now),
-                    ports_writing(),
-                    safety_gate_supply_ok(&s_beat, &s_dev));
+        /* On a board that switches the ports' own supply the ports' frame
+         * and write are that supply's business, and the PD mini feeds the
+         * servo rails only. */
+        const bool own_supply = prog_supply_fitted(&s_psup);
+        const bool frame_out = kst_port_frame_out(&s_kst)
+                               || hitec_port_frame_out(&s_hitec, now);
+        const bool supply_ok = safety_gate_supply_ok(&s_beat, &s_dev);
+        supply_pass(now, !own_supply && frame_out,
+                    !own_supply && ports_writing(), supply_ok);
+        psup_pass(now, own_supply && frame_out,
+                  own_supply && ports_writing(), supply_ok);
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */

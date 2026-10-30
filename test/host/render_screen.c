@@ -62,6 +62,7 @@
 #include "esc_stick_panel.h"
 #include "esc_sim.h"
 #include "supply.h"
+#include "prog_supply_link.h"
 #include "supply_screen.h"
 #include "supply_link.h"
 #include "kst_rig.h"
@@ -71,6 +72,7 @@
 #include "supply_spots.h"
 #include "logview_spots.h"
 #include "ui_band.h"
+#include "ui_board.h"
 #include "ui_cats.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -1957,6 +1959,7 @@ static ui_screen_id_t id_of(const char *name)
         { "panel-update", SCREEN_UPDATE },
         { "updates",    SCREEN_UPDATES },
         { "upd-remind", SCREEN_UPD_REMIND },
+        { "layout",     SCREEN_LAYOUT },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -2270,6 +2273,7 @@ static void pose_upd(const char *view)
         { "updates-cu-checking", CU_SEC_CHECKING },
         { "updates-cu-failed",   CU_SEC_FAILED },
         { "updates-cu-usb",      CU_SEC_USB },
+        { "updates-cu-noboard",  CU_SEC_NO_BOARD },
         { "updates-cu-unsafe",   CU_SEC_UNSAFE },
         { "updates-cu-radio",    CU_SEC_RADIO },
         { "updates-cu-install",  CU_SEC_INSTALL },
@@ -3141,6 +3145,73 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
 }
 
 /**
+ * @brief The rbmod carrier's views: the board recorded and its interface
+ *        pins held, before the screen is posed.  outputs-rbmod: SERVO PWM
+ *        on PWM01 and PWM02, DSHOT300 on PWM04, MOTOR PWM picked and PWM03
+ *        tapped, refused for slice 2.  outputs-rbmod-port: PROG PORT 1 on
+ *        GP13.  setup-rbmod: the hub with LAYOUT in PICK A PIN's place.
+ *        setup-rbmod-iface: INTERFACES with its pins soldered.
+ *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
+ *        SUPPLY with the PROG PORTS 5V line.
+ * @param id   The screen of the shot.
+ * @param view The golden's name.
+ * @return true when the view is one of these and OUTPUTS is posed.
+ */
+static bool pose_carrier_views(ui_screen_id_t id, const char *view)
+{
+    if (strstr(view, "-rbmod") == NULL) {
+        return false;
+    }
+    const uint16_t brd = OUTBIND_BOARD_RBMOD;
+    ui_board_set(brd);
+    (void)ui_board_apply_pins(NULL);
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, brd);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    (void)outbind_toggle(&b, outbind_index_of(brd, 2u));
+    (void)outbind_toggle(&b, outbind_index_of(brd, 4u));
+    outbind_set_proto(&b, proto_named("DSHOT300"));
+    (void)outbind_toggle(&b, outbind_index_of(brd, 1u));
+    outputs_screen_set_binding(&b);
+    /* SUPPLY names the ports' own 5V, off between sessions. */
+    supply_screen_set_prog_5v((uint8_t)PROG_SUPPLY_OFF, 21u);
+    if (id != SCREEN_OUTPUTS) {
+        return false;
+    }
+    port_view_t v;
+    port_view_unknown(&v);
+    v.count    = 4u;
+    v.has_func = true;
+    v.has_dshot = true;
+    static const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 14u, 15u, 0u };
+    for (unsigned n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        v.pin[n]  = pins[n];
+        v.func[n] = (uint8_t)LINK_PG_FN_NONE;
+    }
+    port_view_set(&v);
+    outputs_screen_set_prog_ports(4u, pins);
+    outputs_screen_set_result(OUTPUTS_OK);
+    if (strcmp(view, "outputs-rbmod-port") == 0) {
+        outputs_screen_open_on_port(0u);
+        ui_router_goto(SCREEN_OUTPUTS);
+        return true;
+    }
+    ui_router_goto(SCREEN_OUTPUTS);
+    outputs_screen_select(proto_named("MOTOR PWM"));
+    /* PWM03, the grid's third cell. */
+    touch_event_t d = { TOUCH_EVENT_DOWN,
+                        { 0, (int16_t)(OU_CELL_X(2) + 60),
+                          (int16_t)(UI_BAND_H + OU_CELL_Y(2) + 26), 40 },
+                        0u };
+    touch_event_t u = d;
+    u.type = TOUCH_EVENT_UP;
+    ui_router_event(&d);
+    ui_router_event(&u);
+    return true;
+}
+
+/**
  * @brief OUTPUTS and the INTERFACES views.
  * @param id   The screen of the shot.
  * @param view The golden's name.
@@ -3751,6 +3822,12 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
         setup_tile(SET_CAT_APP);
         setup_scroll_rows(4);
     }
+    /* The carrier's INTERFACES: the sensor bus's, the tap's and the PD
+     * mini's pins soldered, so their rows have no keys. */
+    if (strcmp(view, "setup-rbmod-iface") == 0) {
+        setup_tile(SET_CAT_IFACE);
+        setup_scroll_rows(4);
+    }
     /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
     if (strcmp(view, "setup-card") == 0) {
         setup_tile(SET_CAT_CARD);
@@ -4027,7 +4104,9 @@ int main(int argc, char **argv)
     pose_motor_tools(id, view);
     pose_bench_views(id, view);
     pose_analyser_views(id, view);
-    pose_outputs_views(id, view);
+    if (!pose_carrier_views(id, view)) {
+        pose_outputs_views(id, view);
+    }
     pose_picker_views(id, view);
     pose_servo_views(id, view);
 

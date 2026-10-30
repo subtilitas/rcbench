@@ -48,6 +48,11 @@ void kst_hw_give(void *ctx)
 void kst_hw_supply(void *ctx, supply_port_view_t *out)
 {
     (void)ctx;
+    /* On a board that switches the ports' own supply, that one. */
+    if (prog_supply_fitted(&s_psup)) {
+        prog_supply_port_view(&s_psup, out);
+        return;
+    }
     supply_page_port_view(&s_supply, out);
 }
 
@@ -56,6 +61,10 @@ void kst_hw_supply(void *ctx, supply_port_view_t *out)
 bool kst_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
 {
     (void)ctx;
+    if (prog_supply_fitted(&s_psup)) {
+        return prog_supply_port_set(&s_psup, on,
+                                    safety_gate_supply_ok(&s_beat, &s_dev));
+    }
     if (on && s_supply_unsaved) {
         return false;
     }
@@ -80,8 +89,7 @@ uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
      * the HITEC page refuses the port from this frame on.  Whether it
      * writes is told with it: a STOP ends a write in this frame. */
     ports_exclusive();
-    supply_page_hold(&s_supply, ports_hold_supply());
-    supply_page_port_writes(&s_supply, ports_writing());
+    ports_tell_supply();
     /* And its pulses end in this frame: a capture armed on the port behind
      * the command is judged against the port as it is. */
     outputs_hw_ports_drive(ports_pulsing());

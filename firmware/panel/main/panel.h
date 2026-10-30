@@ -50,6 +50,7 @@
 #include "out_bind.h"
 #include "outputs.h"
 #include "prog_link.h"
+#include "prog_supply_link.h"
 #include "safety_gate.h"
 #include "sense_link.h"
 #include "sense_map_link.h"
@@ -342,6 +343,13 @@ const fm_io_t *panel_files_card(void);
  */
 void panel_files_web_bench(fm_bench_t *out, void *ctx);
 
+/**
+ * @brief Give the Wi-Fi page's file manager the words, the span cap and
+ *        the colours the text viewer classes and draws a line with
+ *        (wifi_access_set_hl()), once at start-up.
+ */
+void panel_files_web_hl(void);
+
 /* ------------------------------------------------------------ panel_card.c */
 
 /* Read once at start-up, from bring_up(). */
@@ -515,6 +523,14 @@ typedef struct {
 #define LOG_NOTE_MAX   208
 #define LOG_NOTE_Q_LEN 4
 
+/** @brief The console reports link_report() hands the logger to print,
+ *         10s of them at the 5s cadence: up to 7 lines of up to 167
+ *         characters each, 50ms and more on the UART (universal
+ *         asynchronous receiver-transmitter) console, which would
+ *         otherwise stall the task that beats the safety line.  A full
+ *         queue is printed where it is made: no line is dropped. */
+#define CONSOLE_Q_LEN 2
+
 /* One line of a servo test's files, render loop -> logger. */
 typedef struct {
     uint8_t kind;                        /* servo_test_out_t */
@@ -525,6 +541,12 @@ typedef struct {
 
 extern QueueHandle_t s_log_q;
 extern QueueHandle_t s_note_q;
+/** @brief control task -> logger: link_report_in_t, CONSOLE_Q_LEN deep. */
+extern QueueHandle_t s_console_q;
+/** @brief The logger prints every console report waiting (panel_log.c). */
+void console_reports_print(void);
+/** @brief Print one console report on the calling task (panel_link.c). */
+void console_report_print(const link_report_in_t *r);
 /** @brief The fault log's lock (log_fault_lock()). */
 extern SemaphoreHandle_t s_note_mx;
 extern QueueHandle_t s_test_q;
@@ -665,7 +687,8 @@ static inline bool control_clear_failsafe(link_msg_t *reply)
 }
 
 /* What the panel knows about a link that stopped; the link report, every
- * 5s while the link is down and every 60s while it is up. */
+ * 5s while the link is down and every 60s while it is up, handed to the
+ * logger to print (console_reports_print()). */
 void link_lost_report(busfault_report_t *r);
 void link_report(void);
 
@@ -849,6 +872,9 @@ void advance_model_and_log(bool link_up, float emitted,
                            bool *new_sample);
 void publish_snapshot(const bench_state_t *bench, bool link_up,
                       bool new_sample);
+/* The IOmcu's STATUS fault bitmap at its last read, LINK_FAULT_* bits.
+ * Control task only. */
+uint16_t far_end_faults(void);
 
 /* ------------------------------------------------------- main.c, continued */
 
@@ -997,6 +1023,9 @@ extern atomic_uint    s_supply_adopt_mv;
 extern atomic_uint    s_supply_adopt_ma;
 extern atomic_uint    s_supply_adopt_gen;
 extern atomic_uint    s_supply_adopt_done;
+/** @brief The last read of the supply: no port holds it and its output is
+ *         off (supply_link_port_free_off()). */
+extern atomic_bool    s_supply_free_off;
 /* The ESC (electronic speed controller) model's profile and its runs. */
 extern atomic_uintptr_t s_escsim_profile;
 extern atomic_uint    s_escsim_runs;
@@ -1061,6 +1090,23 @@ extern atomic_uint s_card_faults;
 /* The supply's service, from control_pump(). */
 void supply_pump(void);
 void supply_link_service(void);
+/** @brief The PROG_SUPPLY page (link 4.32) on a board that switches the
+ *         programming ports' own supply: its state read, and the OFF an
+ *         error owes written; control task only. */
+extern prog_supply_link_t s_psup_link;
+/** @brief The PROG_SUPPLY page's service: the owed OFF written, the page
+ *         read every PROG_SUPPLY_LINK_READ_MS, its state published to
+ *         SUPPLY; from poll_bench(), after supply_link_service(). */
+void prog_supply_service(void);
+/** @brief The ports' own supply is the programmers' supply
+ *         (prog_supply_link_owns()), as the control task last published. */
+extern atomic_bool s_psup_owns;
+/** @brief The ports' own supply counts as live for the install and flash
+ *         gates (prog_supply_link_live()), as last published. */
+extern atomic_bool s_psup_live;
+/** @brief Publish s_psup_owns and s_psup_live from s_psup_link, the board
+ *         and s_prog_taken; control task only. */
+void prog_supply_publish(void);
 
 /* ------------------------------------------------------------- panel_arm.c */
 
@@ -1091,6 +1137,11 @@ void kst_ui_service(void);
 void hitec_ui_service(void);
 extern unsigned s_tq_lost;
 bool supply_live_or_coming(void);
+/** @brief supply_live_or_coming(), or the programming ports' own supply
+ *         live (s_psup_live): what the install, update and flash gates
+ *         wait on.
+ *  @return true while either supply is on or coming */
+bool supplies_live_or_coming(void);
 void publish_supply_levels(void);
 void test_lines_service(void);
 typedef struct {

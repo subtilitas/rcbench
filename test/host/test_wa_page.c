@@ -2,13 +2,12 @@
  * The Wi-Fi page as a browser receives it.
  *
  * The failures under test: a page that loads anything from elsewhere and so
- * fails on the panel's own access point, a file link that does not lead
- * back to the file it names, a name that breaks the HTML (hypertext markup
- * language), a ZIP size on the page that differs from the archive sent, a
- * card missing that takes the upload with it, and a browser gone part way
- * that leaves a folder handle open, and a text with an apostrophe that
- * ends a string of the page's script and leaves the Upload button without
- * its handler.
+ * fails on the panel's own access point, a ZIP size on the page that
+ * differs from the archive sent, a card missing that takes the upload with
+ * it, a browser gone part way that leaves a folder handle open, a text
+ * with an apostrophe that ends a string of the page's script and leaves
+ * the Upload button without its handler, and a file manager whose data,
+ * texts or scripts the page leaves out or lets end their element early.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,7 +23,6 @@
 #include "fw_fixture.h"
 #include "wa_fakefs.h"
 #include "wa_page.h"
-#include "wa_send.h"
 #include "wa_zip.h"
 
 /* Where the pages are written for check_wa_page.py, which hands each
@@ -78,9 +76,9 @@ static void begin(int refuse_after)
 }
 
 static const wa_page_info_t k_en = { "rcbench-1A2B", "0.19.0", 0x3E0000u,
-                                     false };
+                                     false, NULL };
 static const wa_page_info_t k_de = { "rcbench-1A2B", "0.19.0", 0x3E0000u,
-                                     true };
+                                     true, NULL };
 
 /* Nothing the page needs comes from another address. */
 static void self_contained(const char *html)
@@ -114,34 +112,44 @@ TEST_CASE(the_code_form_asks_for_the_code_and_shows_nothing_else)
     CHECK(strstr(g_p.buf, "lang=\"de\"") != NULL);
 }
 
-/* Every file link on the page, decoded as the server decodes it. */
-static int links(const char *html, char found[][WA_PATH_MAX + 1u], int max)
+/* The text between @p open and the next "</script>", copied into
+ * g_elem; false when the page has no such element. */
+static char g_elem[65536];
+
+static bool element(const char *html, const char *open)
+{
+    const char *b = strstr(html, open);
+    if (b == NULL) {
+        return false;
+    }
+    b += strlen(open);
+    const char *e = strstr(b, "</script>");
+    if (e == NULL || (size_t)(e - b) >= sizeof(g_elem)) {
+        return false;
+    }
+    memcpy(g_elem, b, (size_t)(e - b));
+    g_elem[e - b] = '\0';
+    return true;
+}
+
+/* How often @p needle stands in @p hay. */
+static int count_of(const char *hay, const char *needle)
 {
     int n = 0;
-    const char *p = html;
-    while ((p = strstr(p, "href=\"" WA_URL_FILE)) != NULL && n < max) {
-        p += strlen("href=\"" WA_URL_FILE);
-        const char *end = strchr(p, '"');
-        CHECK(end != NULL);
-        CHECK_EQ(wa_path_decode(p, (size_t)(end - p), found[n],
-                                WA_PATH_MAX + 1u),
-                 WA_PATH_OK);
+    for (const char *p = strstr(hay, needle); p != NULL;
+         p = strstr(p + 1, needle)) {
         ++n;
-        p = end;
     }
     return n;
 }
 
-static char g_found[16][WA_PATH_MAX + 1u];
-
-TEST_CASE(every_file_is_listed_with_a_link_back_to_it)
+TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
 {
     fake_fs_t fs;
     fake_init(&fs);
     fake_add(&fs, "LOG00001.CSV", false, 1234u, 1791961199);
     fake_add(&fs, "logs", true, 0u, 0);
     fake_add(&fs, "logs/run #7 & <x>.csv", false, 0u, 1791961199);
-    fake_add(&fs, "logs/M\xc3\xbcller \"q\" 'a'.csv", false, 99u, 0);
     fake_add(&fs, "logs/sub", true, 0u, 0);
     fake_add(&fs, "logs/sub/100%.txt", false, 5u, 0);
     const wa_fs_t w = fake_wa(&fs);
@@ -149,40 +157,97 @@ TEST_CASE(every_file_is_listed_with_a_link_back_to_it)
     wa_page_main(&g_o, &k_en, &w);
     CHECK(wa_out_flush(&g_o));
     self_contained(g_p.buf);
-    const char *want[] = { "LOG00001.CSV", "logs/run #7 & <x>.csv",
-                           "logs/M\xc3\xbcller \"q\" 'a'.csv",
-                           "logs/sub/100%.txt" };
-    CHECK_EQ(links(g_p.buf, g_found, 16), 4);
-    for (int i = 0; i < 4; ++i) {
-        CHECK_STR_EQ(g_found[i], want[i]);
-    }
-    /* Names are text, not markup. */
-    CHECK(strstr(g_p.buf, "<x>") == NULL);
-    CHECK(strstr(g_p.buf, "run #7 &amp; &lt;x&gt;.csv") != NULL);
-    CHECK(strstr(g_p.buf, "M\xc3\xbcller &quot;q&quot; &#39;a&#39;.csv")
-          != NULL);
-    /* Folders are headings, in walk order, with their files under them. */
-    const char *h1 = strstr(g_p.buf, "<h3>/</h3>");
-    const char *h2 = strstr(g_p.buf, "<h3>/logs</h3>");
-    const char *h3 = strstr(g_p.buf, "<h3>/logs/sub</h3>");
-    CHECK(h1 != NULL && h2 != NULL && h3 != NULL);
-    CHECK(h1 < h2 && h2 < h3);
-    CHECK(strstr(g_p.buf, "<td class=\"n\">1234</td><td>2026-10-14 06:59"
-                          "</td>") != NULL);
     /* The ZIP's size, as the archive will be. */
     wa_zip_plan_t plan;
     CHECK_EQ(wa_zip_plan(&w, &plan), WA_ZIP_OK);
     char line[160];
     snprintf(line, sizeof(line),
-             "4 files, 1338 bytes. The ZIP file is %llu bytes.",
+             "3 files, 1239 bytes. The ZIP file is %llu bytes.",
              (unsigned long long)plan.bytes);
     CHECK(strstr(g_p.buf, line) != NULL);
     CHECK(strstr(g_p.buf, "href=\"/card.zip\"") != NULL);
+    /* No name of the card is in the page: the file manager reads the
+     * folders through the file API, a page at a time. */
+    CHECK(strstr(g_p.buf, "LOG00001.CSV") == NULL);
+    CHECK(strstr(g_p.buf, "href=\"/card/") == NULL);
+    /* The manager's element, its data, and the highlighter and the app,
+     * in that order, each once. */
+    const char *app = strstr(g_p.buf, "<div id=\"fm\" class=\"fm\"></div>");
+    const char *data = strstr(g_p.buf, "<script type=\"application/json\" "
+                                       "id=\"fm-data\">{\"tx\":{");
+    const char *hl = strstr(g_p.buf, "<script>var RcbHl");
+    const char *js = strstr(g_p.buf, "<script>var RcbFm");
+    CHECK(app != NULL && data != NULL && hl != NULL && js != NULL);
+    CHECK(app < data && data < hl && hl < js);
+    CHECK_EQ(count_of(g_p.buf, "<script>"), 3);
+    CHECK_EQ(count_of(g_p.buf, "</script>"), 4);
+    CHECK(strstr(g_p.buf, "<noscript><p>The file list needs JavaScript."
+                          "</p></noscript>") != NULL);
+    /* The texts are FILES' own where the panel has one. */
+    CHECK(element(g_p.buf, "id=\"fm-data\">"));
+    CHECK(strstr(g_elem, "\"rescan\":\"RESCAN\"") != NULL);
+    CHECK(strstr(g_elem, "\"k.KST\":\"SERVO FILE\"") != NULL);
+    CHECK(strstr(g_elem, "\"of\":\"ENTRIES %d TO %d OF %d\"") != NULL);
+    CHECK(strstr(g_elem, "\"dl\":\"DOWNLOAD\"") != NULL);
+    CHECK(strstr(g_elem, "\"e.TOO_BIG\":\"Over 1MB: too large to open. "
+                         "Download it.\"") != NULL);
+    /* Without the viewer's words: none, and the viewer's cap. */
+    CHECK(strstr(g_elem, "\"ok\":[],\"fail\":[],\"warn\":[],\"cap\":128,"
+                         "\"label\":24}") != NULL);
+    /* The style: the page's tokens in the browser's scheme, a rule per
+     * class, no palette by class. */
+    CHECK(strstr(g_p.buf, ":root{color-scheme:light dark;--pg-bg:")
+          != NULL);
+    CHECK(strstr(g_p.buf, "a{color:var(--pg-ac);word-break:break-all}"
+                          ".h-tx{color:var(--h-tx)}") != NULL);
+    CHECK(strstr(g_p.buf, ".h-ch{color:var(--h-ch)}") != NULL);
+    CHECK(strstr(g_p.buf, "--h-tx:") == NULL);
     /* The upload is offered, with the slot as the size limit. */
     CHECK(strstr(g_p.buf, "f.size>4063232") != NULL);
     CHECK(strstr(g_p.buf, "Installed: 0.19.0") != NULL);
     CHECK(strstr(g_p.buf, "INSTALL is held for 2s on the panel") != NULL);
     CHECK_EQ(fs.dirs_open, 0);
+
+    /* In German, the panel's German. */
+    begin(-1);
+    wa_page_main(&g_o, &k_de, &w);
+    CHECK(wa_out_flush(&g_o));
+    CHECK(element(g_p.buf, "id=\"fm-data\">"));
+    CHECK(strstr(g_elem, "\"rescan\":\"AKTUALISIEREN\"") != NULL);
+    CHECK(strstr(g_elem, "\"dl\":\"HERUNTERLADEN\"") != NULL);
+    CHECK(strstr(g_elem, "\"next\":\"N\xc3\x84" "CHSTE\"") != NULL);
+    CHECK(strstr(g_p.buf, "Die Dateiliste braucht JavaScript.") != NULL);
+    fake_free(&fs);
+}
+
+/*
+ * No text of the data can end its element: a "<" in a text is written as
+ * \u003c, and the page carries no "</" between the data's start and its
+ * end but the end itself.
+ */
+TEST_CASE(the_data_keeps_inside_its_element_in_both_languages)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    const wa_fs_t w = fake_wa(&fs);
+    for (int de = 0; de < 2; ++de) {
+        begin(-1);
+        wa_page_main(&g_o, de != 0 ? &k_de : &k_en, &w);
+        CHECK(wa_out_flush(&g_o));
+        CHECK(element(g_p.buf, "id=\"fm-data\">"));
+        CHECK(strstr(g_elem, "<") == NULL);
+        CHECK(g_elem[strlen(g_elem) - 1u] == '}');
+        /* The highlighter's classes in the order of the X-macro. */
+        CHECK(strstr(g_elem, "\"cls\":[\"tx\",\"hd\",\"lb\",\"ok\",\"fl\","
+                             "\"wn\",\"vo\",\"cu\",\"pw\",\"rt\",\"un\","
+                             "\"cm\",\"hx\",\"ky\",\"nm\",\"lt\",\"pu\","
+                             "\"ch\"]") != NULL);
+        /* The unit table, the ohm sign as UTF-8. */
+        CHECK(strstr(g_elem, "\"units\":[[\"V\",6],[\"mV\",6],[\"A\",7],")
+              != NULL);
+        CHECK(strstr(g_elem, ",[\"m\xce\xa9\",10],[\"\xce\xa9\",10]]")
+              != NULL);
+    }
     fake_free(&fs);
 }
 
@@ -196,22 +261,25 @@ TEST_CASE(without_a_card_the_page_says_so_and_still_takes_an_upload)
     wa_page_main(&g_o, &k_en, &w);
     CHECK(wa_out_flush(&g_o));
     self_contained(g_p.buf);
-    CHECK(strstr(g_p.buf, "No card, or the card cannot be read.") != NULL);
+    /* No ZIP link; the file manager is there to say so and to read the
+     * card once it is in. */
+    CHECK(strstr(g_p.buf, "<div id=\"fm\" class=\"fm\"></div>") != NULL);
     CHECK(strstr(g_p.buf, "POST','/update'") != NULL);
     /* The upload's own header, which the panel requires (wa_guard.h): a
      * page of another site cannot send it without a preflight. */
     CHECK(strstr(g_p.buf, "x.setRequestHeader('X-Rcbench-Upload','1');")
           != NULL);
     CHECK(strstr(g_p.buf, "/card.zip") == NULL);
+    CHECK(strstr(g_p.buf, "The card holds no files.") == NULL);
     begin(-1);
     wa_page_main(&g_o, &k_de, &w);
     CHECK(wa_out_flush(&g_o));
-    CHECK(strstr(g_p.buf, "Keine Karte, oder die Karte ist nicht lesbar.")
-          != NULL);
+    CHECK(strstr(g_p.buf, "/card.zip") == NULL);
+    CHECK(strstr(g_p.buf, "<div id=\"fm\" class=\"fm\"></div>") != NULL);
     fake_free(&fs);
 }
 
-TEST_CASE(an_empty_card_and_names_left_out_are_said)
+TEST_CASE(an_empty_card_is_said_and_names_left_out_are_not_zipped)
 {
     fake_fs_t fs;
     fake_init(&fs);
@@ -227,12 +295,11 @@ TEST_CASE(an_empty_card_and_names_left_out_are_said)
     begin(-1);
     wa_page_main(&g_o, &k_de, &w);
     CHECK(wa_out_flush(&g_o));
-    CHECK(strstr(g_p.buf, "<p>2 Einträge fehlen in der Liste") != NULL);
     CHECK(strstr(g_p.buf, "1 Dateien, 1 Bytes.") != NULL);
     fake_free(&fs);
 }
 
-TEST_CASE(a_long_listing_streams_and_stops_when_the_browser_goes)
+TEST_CASE(the_page_streams_and_stops_when_the_browser_goes)
 {
     fake_fs_t fs;
     fake_init(&fs);
@@ -245,9 +312,11 @@ TEST_CASE(a_long_listing_streams_and_stops_when_the_browser_goes)
     begin(-1);
     wa_page_main(&g_o, &k_en, &w);
     CHECK(wa_out_flush(&g_o));
-    CHECK_EQ(links(g_p.buf, g_found, 16), 16);
-    CHECK(strstr(g_p.buf, "F4999.CSV") != NULL);
-    CHECK(g_p.pieces > 100);           /* in pieces, not one buffer */
+    /* The page's size does not grow with the card: no name is in it. */
+    CHECK(strstr(g_p.buf, "5000 files, 5000 bytes.") != NULL);
+    CHECK(strstr(g_p.buf, "F4999.CSV") == NULL);
+    CHECK(g_p.len < 64u * 1024u);
+    CHECK(g_p.pieces > 20);            /* in pieces, not one buffer */
     begin(10);
     wa_page_main(&g_o, &k_en, &w);
     CHECK(g_o.failed);
@@ -419,33 +488,8 @@ TEST_CASE(every_upload_answer_has_its_own_text_in_both_languages)
     memset(&g_p, 0, sizeof(g_p));
 }
 
-TEST_CASE(a_stamp_from_an_unset_clock_lists_no_date)
-{
-    fake_fs_t fs;
-    fake_init(&fs);
-    /* 1980-01-02 06:54: FatFs's stamp from a clock 1d 6h 54min after a
-     * power-on (wall_clock.h). */
-    fake_add(&fs, "SERVO001.CSV", false, 11u, 315644040);
-    /* No stamp at all, and the epoch. */
-    fake_add(&fs, "SERVO002.CSV", false, 12u, -1);
-    fake_add(&fs, "SERVO003.CSV", false, 13u, 0);
-    /* 1981-01-03 00:00 UTC: a date, written. */
-    fake_add(&fs, "SERVO004.CSV", false, 14u, 347328000);
-    const wa_fs_t w = fake_wa(&fs);
-    begin(-1);
-    wa_page_main(&g_o, &k_en, &w);
-    CHECK(wa_out_flush(&g_o));
-    CHECK(strstr(g_p.buf, "<td class=\"n\">11</td><td></td>") != NULL);
-    CHECK(strstr(g_p.buf, "<td class=\"n\">12</td><td></td>") != NULL);
-    CHECK(strstr(g_p.buf, "<td class=\"n\">13</td><td></td>") != NULL);
-    CHECK(strstr(g_p.buf, "<td class=\"n\">14</td><td>1981-01-03 00:00"
-                          "</td>") != NULL);
-    CHECK(strstr(g_p.buf, "1980-") == NULL);
-    CHECK(strstr(g_p.buf, "1970-") == NULL);
-    fake_free(&fs);
-}
-
-TEST_CASE(the_bench_tree_lists_every_file_under_its_folder)
+/* The bench tree's files are all counted for the ZIP file. */
+TEST_CASE(the_bench_tree_is_counted_for_the_zip_file)
 {
     fake_fs_t fs;
     fake_init(&fs);
@@ -454,86 +498,10 @@ TEST_CASE(the_bench_tree_lists_every_file_under_its_folder)
     begin(-1);
     wa_page_main(&g_o, &k_en, &w);
     CHECK(wa_out_flush(&g_o));
-    static char found[FAKE_TREE_FILES + 4][WA_PATH_MAX + 1u];
-    CHECK_EQ(links(g_p.buf, found, FAKE_TREE_FILES + 4), FAKE_TREE_FILES);
-    const char *want[] = {
-        "RCBENCH.LOG", "KST/KST001.TXT", "BENCH/RCBENCH.LOG",
-        "BENCH/RCBENCH.OLD", "BENCH/LOGS/MOTOR002.CSV",
-        "BENCH/ESC/CONF/hobbywing-flyfun-8item.json",
-        "BENCH/KST/CONF/KST.TXT", "BENCH/KST/CONF/Wing left.TXT",
-        "USER/LOGS/ATEST001.TXT", "USER/LOGS/LIMIT002.TXT",
-    };
-    for (size_t i = 0u; i < sizeof(want) / sizeof(want[0]); ++i) {
-        bool seen = false;
-        for (int j = 0; j < FAKE_TREE_FILES; ++j) {
-            seen = seen || strcmp(found[j], want[i]) == 0;
-        }
-        CHECK(seen);
-    }
-    /* Each folder of the tree is a heading, in walk order. */
-    const char *h_bench = strstr(g_p.buf, "<h3>/BENCH</h3>");
-    const char *h_kst = strstr(g_p.buf, "<h3>/BENCH/KST/CONF</h3>");
-    const char *h_user = strstr(g_p.buf, "<h3>/USER/LOGS</h3>");
-    CHECK(h_bench != NULL && h_kst != NULL && h_user != NULL);
-    CHECK(h_bench < h_kst && h_kst < h_user);
     char line[96];
     snprintf(line, sizeof(line), "%d files, %u bytes.", FAKE_TREE_FILES,
              FAKE_TREE_BYTES);
     CHECK(strstr(g_p.buf, line) != NULL);
-    CHECK_EQ(fs.dirs_open, 0);
-    fake_free(&fs);
-}
-
-/*
- * A report standing alone, a LIMIT RUN's LIMITnnn.TXT or the SERVOnnn.TXT
- * alone of a card of firmware 0.21.0, is offered as a run's report is: a
- * row of its folder's table whose link downloads it, and the link serves
- * every byte of it.  A card of such reports alone lists each of them.
- */
-TEST_CASE(a_report_standing_alone_is_a_download_as_a_runs_report_is)
-{
-    fake_fs_t fs;
-    fake_init(&fs);
-    fake_add(&fs, "SERVO043.TXT", false, 1702u, 315532800);
-    fake_add(&fs, CARD_USER, true, 0u, 0);
-    fake_add(&fs, CARD_USER_LOGS, true, 0u, 0);
-    const int limit = fake_add(&fs, CARD_USER_LOGS "/LIMIT001.TXT", false,
-                               1873u, 315532800);
-    fake_add(&fs, CARD_USER_LOGS "/LIMIT002.TXT", false, 1940u, 315532800);
-    const wa_fs_t w = fake_wa(&fs);
-    begin(-1);
-    wa_page_main(&g_o, &k_en, &w);
-    CHECK(wa_out_flush(&g_o));
-    CHECK_EQ(links(g_p.buf, g_found, 16), 3);
-    CHECK_STR_EQ(g_found[0], "SERVO043.TXT");
-    CHECK_STR_EQ(g_found[1], CARD_USER_LOGS "/LIMIT001.TXT");
-    CHECK_STR_EQ(g_found[2], CARD_USER_LOGS "/LIMIT002.TXT");
-    /* The row a run's report has: name, bytes, date. */
-    CHECK(strstr(g_p.buf, "<tr><td><a href=\"/card/USER/LOGS/LIMIT001.TXT\" "
-                          "download>LIMIT001.TXT</a></td><td class=\"n\">"
-                          "1873</td>") != NULL);
-    CHECK(strstr(g_p.buf, "3 files") != NULL);
-    /* The link serves the file whole. */
-    wa_send_t snd;
-    CHECK(wa_send_begin(&snd, &w, g_found[1], 1873u));
-    uint8_t buf[512];
-    uint64_t at = 0u;
-    bool same = true;
-    for (;;) {
-        const int32_t n = wa_send_next(&snd, buf, sizeof(buf));
-        CHECK(n >= 0);
-        if (n <= 0) {
-            break;
-        }
-        for (int32_t i = 0; i < n; ++i) {
-            same = same && buf[i] == fake_byte(limit, at + (uint64_t)i);
-        }
-        at += (uint64_t)n;
-    }
-    wa_send_end(&snd);
-    CHECK(same);
-    CHECK_EQ(at, 1873u);
-    CHECK_EQ(fs.files_open, 0);
     CHECK_EQ(fs.dirs_open, 0);
     fake_free(&fs);
 }
@@ -545,13 +513,12 @@ int main(void)
     (void)setenv("TZ", "UTC0", 1);
     tzset();
     RUN(the_code_form_asks_for_the_code_and_shows_nothing_else);
-    RUN(every_file_is_listed_with_a_link_back_to_it);
-    RUN(a_stamp_from_an_unset_clock_lists_no_date);
-    RUN(the_bench_tree_lists_every_file_under_its_folder);
-    RUN(a_report_standing_alone_is_a_download_as_a_runs_report_is);
+    RUN(the_card_part_is_the_zip_link_and_the_file_manager);
+    RUN(the_data_keeps_inside_its_element_in_both_languages);
+    RUN(the_bench_tree_is_counted_for_the_zip_file);
     RUN(without_a_card_the_page_says_so_and_still_takes_an_upload);
-    RUN(an_empty_card_and_names_left_out_are_said);
-    RUN(a_long_listing_streams_and_stops_when_the_browser_goes);
+    RUN(an_empty_card_is_said_and_names_left_out_are_not_zipped);
+    RUN(the_page_streams_and_stops_when_the_browser_goes);
     RUN(texts_in_the_upload_script_are_escaped_in_both_languages);
     RUN(the_pages_are_written_for_the_script_check);
     RUN(every_upload_answer_has_its_own_text_in_both_languages);

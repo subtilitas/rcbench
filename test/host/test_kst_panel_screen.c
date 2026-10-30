@@ -6,6 +6,7 @@
  * Cases:
  * - the_supplys_controls_are_held_for_as_long_as_the_port
  * - connect_is_refused_over_the_supplys_limits
+ * - the_carriers_fixed_5v_is_not_held_to_the_supplys_limits
  * - a_panel_that_starts_under_a_session_reads_its_options_at_the_entry
  * - the_port_row_names_the_programming_voltage_and_current
  * - commanded_shows_no_pulse_while_the_programmer_holds_the_port
@@ -26,6 +27,7 @@
  */
 
 #include "kst_panel_screen_rig.h"
+#include "ui_board.h"
 
 /* The PORT row carries what CONNECT asks of the supply, where the bench
  * sets the supply; the labels of the rows that are no register's name are
@@ -709,6 +711,31 @@ TEST_CASE(connect_is_refused_over_the_supplys_limits)
     settings_set(SET_SUPPLY_I_MAX, 5.0f);
 }
 
+/* On the carrier the ports run from their own fixed 5V: the PD mini's
+ * limits bound the servo rails only and refuse no CONNECT. */
+TEST_CASE(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits)
+{
+    for (int which = 0; which < 2; ++which) {
+        fresh_screen();
+        settings_set(SET_SUPPLY_V_MAX, which == 0 ? 3.3f : 21.0f);
+        settings_set(SET_SUPPLY_I_MAX, which == 0 ? 5.0f : 0.5f);
+        supply_screen_settings_loaded();
+        g_rig.rail = true;
+        link_up();
+        ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
+        program_open();
+        const unsigned starts = g_rig.starts;
+        tap(val(PG_SERVO, 0, 0));
+        settle();
+        CHECK(msg() != KST_PROG_MSG_SUPPLY_CAPS);
+        CHECK(g_rig.starts > starts);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        ui_board_set((uint16_t)OUTBIND_BOARD_UNKNOWN);
+    }
+    settings_set(SET_SUPPLY_V_MAX, 21.0f);
+    settings_set(SET_SUPPLY_I_MAX, 5.0f);
+}
+
 TEST_CASE(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry)
 {
     for (int wait = 0; wait <= 10000; wait += 2500) {
@@ -914,6 +941,7 @@ int main(void)
 {
     RUN(the_supplys_controls_are_held_for_as_long_as_the_port);
     RUN(connect_is_refused_over_the_supplys_limits);
+    RUN(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits);
     RUN(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry);
     RUN(the_port_row_names_the_programming_voltage_and_current);
     RUN(commanded_shows_no_pulse_while_the_programmer_holds_the_port);

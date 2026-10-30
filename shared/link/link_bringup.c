@@ -8,7 +8,9 @@
 
 #include "link_bringup.h"
 
+#include <inttypes.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "link_pages.h"
 
@@ -219,4 +221,130 @@ const char *link_diag_hint(link_diag_t d)
     default:
         return "";
     }
+}
+
+/* ------------------------------------------------------ console report */
+
+/** @brief The console report's lines, in the order they print. */
+typedef enum {
+    LINE_DIAG = 0,   /**< the window's diagnosis                        */
+    LINE_CHECK,      /**< what to check, for a fault                    */
+    LINE_WINDOW,     /**< the window's counts                           */
+    LINE_PANEL,      /**< the panel's totals                            */
+    LINE_IOMCU,      /**< the IOmcu's totals                            */
+    LINE_ROUND_TRIP, /**< the round trip, with samples                  */
+    LINE_BUS,        /**< the CAN controller                            */
+} report_line_t;
+
+/**
+ * @brief Write one line of the report.
+ *
+ * @param r     The report.
+ * @param k     The line.
+ * @param d     The window's diagnosis.
+ * @param out   Receives it; may be NULL with @p size 0.
+ * @param size  Bytes of @p out.
+ * @return      snprintf()'s count.
+ */
+static int format_line(const link_report_in_t *r, report_line_t k,
+                       link_diag_t d, char *out, size_t size)
+{
+    const link_bringup_t *w = &r->win;
+    const link_bringup_t *t = &r->total;
+    switch (k) {
+    case LINE_DIAG:
+        return snprintf(out, size, "LINK %s", link_diag_text(d));
+    case LINE_CHECK:
+        return snprintf(out, size, "  check: %s", link_diag_hint(d));
+    case LINE_WINDOW:
+        if (w->have_status) {
+            return snprintf(out, size,
+                            "  last %" PRIu32 "s  polls %" PRIu32
+                            " replies %" PRIu32 " timeouts %" PRIu32
+                            " stale %" PRIu32 " nack %" PRIu32
+                            "  iomcu frames %" PRIu32 " crc %" PRIu32
+                            " resync %" PRIu32 " refused %" PRIu32,
+                            r->win_s, w->polls, w->replies, w->timeouts,
+                            w->mismatches, w->nacks, w->dev_frames,
+                            w->dev_crc_errors, w->dev_resyncs,
+                            w->dev_refused);
+        }
+        return snprintf(out, size,
+                        "  last %" PRIu32 "s  polls %" PRIu32
+                        " replies %" PRIu32 " timeouts %" PRIu32
+                        " stale %" PRIu32 " nack %" PRIu32,
+                        r->win_s, w->polls, w->replies, w->timeouts,
+                        w->mismatches, w->nacks);
+    case LINE_PANEL:
+        return snprintf(out, size,
+                        "  panel  polls %" PRIu32 " replies %" PRIu32
+                        " timeouts %" PRIu32 " stale %" PRIu32
+                        " nack %" PRIu32 " crc %" PRIu32 " resync %" PRIu32,
+                        t->polls, t->replies, t->timeouts, t->mismatches,
+                        t->nacks, t->rx_crc_errors, t->rx_resyncs);
+    case LINE_IOMCU:
+        if (t->have_status) {
+            return snprintf(out, size,
+                            "  iomcu  frames %" PRIu32 " crc %" PRIu32
+                            " resync %" PRIu32 " refused %" PRIu32,
+                            t->dev_frames, t->dev_crc_errors,
+                            t->dev_resyncs, t->dev_refused);
+        }
+        return snprintf(out, size, "  iomcu  never answered a status read");
+    case LINE_ROUND_TRIP:
+        /* As measured: CAN arbitrates rather than taking turns, so there
+         * is no turnaround allowance to compare it against. */
+        return snprintf(out, size,
+                        "  round trip min %" PRIu32 " avg %" PRIu32
+                        " max %" PRIu32 " us",
+                        t->rt_min_us, t->rt_mean_us, t->rt_max_us);
+    case LINE_BUS:
+    default:
+        if (r->bus.have) {
+            return snprintf(out, size,
+                            "  bus    tx errors %" PRIu32 " rx errors %" PRIu32
+                            " bus errors %" PRIu32 "%s",
+                            r->bus.tx_errors, r->bus.rx_errors,
+                            r->bus.bus_errors, r->bus.off ? " -- BUS OFF" : "");
+        }
+        /* Zeros would read as a healthy bus: a controller that never
+         * started is another diagnosis than one with no errors. */
+        return snprintf(out, size, "  bus    the controller is not running");
+    }
+}
+
+size_t link_report_line(const link_report_in_t *r, unsigned i, char *out,
+                        size_t size, bool *warn)
+{
+    if (out != NULL && size > 0u) {
+        out[0] = '\0';
+    }
+    if (warn != NULL) {
+        *warn = false;
+    }
+    if (r == NULL) {
+        return 0u;
+    }
+    const link_diag_t d = link_bringup_diagnose(&r->win);
+    report_line_t k = LINE_DIAG;
+    unsigned n = 0u;
+    for (int j = (int)LINE_DIAG; j <= (int)LINE_BUS; ++j) {
+        const report_line_t kj = (report_line_t)j;
+        if ((kj == LINE_CHECK && d == LINK_DIAG_OK)
+            || (kj == LINE_ROUND_TRIP && r->total.rt_samples == 0u)) {
+            continue;
+        }
+        if (n++ == i) {
+            k = kj;
+            break;
+        }
+    }
+    if (n <= i) {
+        return 0u;   /* past the last line */
+    }
+    if (warn != NULL) {
+        *warn = k == LINE_CHECK;
+    }
+    const int len = format_line(r, k, d, out, size);
+    return (len > 0) ? (size_t)len : 0u;
 }

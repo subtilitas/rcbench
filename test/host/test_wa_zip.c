@@ -105,6 +105,17 @@ static void manifest_walk(fake_fs_t *fs, FILE *m, int node)
 
 static uint8_t g_buf[8192];
 
+/* The read buffer the archives below read through, as the panel's
+ * wifi_zip_get() gives it (WA_ZIP_READ_BYTES); g_read 0 reads without one. */
+static uint8_t g_rbuf[WA_ZIP_READ_BYTES];
+static uint32_t g_read = WA_ZIP_READ_BYTES;
+
+/* Give @p z the read buffer of g_read bytes, or none for 0. */
+static void use_read(wa_zip_t *z)
+{
+    wa_zip_set_read(z, (g_read > 0u) ? g_rbuf : NULL, g_read);
+}
+
 /* Called after each piece a stream takes, with the bytes taken so far: a
  * case changes the card there as a program writing to it would. */
 typedef void (*zip_hook_t)(fake_fs_t *fs, const wa_zip_t *z, uint64_t total);
@@ -130,6 +141,7 @@ static uint64_t write_zip_with(fake_fs_t *fs, const char *name,
     REQUIRE_ALLOC(z);
     REQUIRE_ALLOC(slot);
     CHECK_EQ(wa_zip_begin(z, &w, slot, plan.entries), WA_ZIP_OK);
+    use_read(z);
     CHECK_EQ(z->plan.bytes, plan.bytes);
     CHECK_EQ(z->plan.entries, plan.entries);
     char path[512];
@@ -413,6 +425,7 @@ static void zip_breaks(int how)
     wa_zip_t *z = malloc(sizeof(*z));
     REQUIRE_ALLOC(z);
     CHECK_EQ(wa_zip_begin(z, &w, slot, 8u), WA_ZIP_OK);
+    use_read(z);
     const wa_zip_plan_t plan = z->plan;
     if (how == 0) {
         fs.n[b].fail_at = 7000;          /* a read error in the second file */
@@ -458,9 +471,16 @@ static void zip_breaks(int how)
 
 TEST_CASE(a_read_error_or_a_pulled_card_ends_the_archive_failed)
 {
-    for (int how = 0; how < 7; ++how) {
-        zip_breaks(how);
+    /* Through the panel's read buffer, through one smaller than a file
+     * and through none, alike. */
+    static const uint32_t k_reads[] = { WA_ZIP_READ_BYTES, 4096u, 0u };
+    for (size_t r = 0u; r < sizeof(k_reads) / sizeof(k_reads[0]); ++r) {
+        g_read = k_reads[r];
+        for (int how = 0; how < 7; ++how) {
+            zip_breaks(how);
+        }
     }
+    g_read = WA_ZIP_READ_BYTES;
     /* No card at all: said before a byte goes. */
     fake_fs_t fs;
     fake_init(&fs);
@@ -891,6 +911,142 @@ TEST_CASE(an_added_entry_whose_path_hash_collides_is_left_out)
     fake_free(&fs);
 }
 
+/* Every read a ZIP of @p fs made, kept in @p log. */
+static void log_reads(fake_fs_t *fs, fake_read_t *log, int cap)
+{
+    fs->rlog = log;
+    fs->rlog_n = 0;
+    fs->rlog_cap = cap;
+}
+
+/*
+ * The panel's card reads: each file's bytes in reads of the read buffer's
+ * size into the buffer itself, at offsets of the file that are multiples
+ * of it, whatever the headers before shift the archive by.  A read that
+ * starts off a sector costs the card a transfer of its own for the sector
+ * it starts in, and a buffer the caller did not align for DMA (direct
+ * memory access) costs a copy through a bounce buffer of the driver's.
+ * A file of 16MiB + 1 byte goes as 1025 reads, the last of 1 byte.
+ */
+TEST_CASE(files_are_read_in_whole_pieces_of_the_read_buffer)
+{
+    static const uint64_t k_sizes[] = {
+        10u, 0u, WA_ZIP_READ_BYTES, 40000u, WA_ZIP_READ_BYTES + 1u, 16777217u,
+    };
+    static fake_read_t log[2048];
+    static const uint32_t k_pieces[] = { 4096u, 1u, 7u, 8192u };
+    for (size_t p = 0u; p < sizeof(k_pieces) / sizeof(k_pieces[0]); ++p) {
+        fake_fs_t fs;
+        fake_init(&fs);
+        int node[sizeof(k_sizes) / sizeof(k_sizes[0])];
+        char name[32];
+        fake_add(&fs, "d", true, 0u, 1760000000);
+        for (size_t i = 0u; i < sizeof(k_sizes) / sizeof(k_sizes[0]); ++i) {
+            snprintf(name, sizeof(name), "%sLOG%05u.BFL", (i % 2u) ? "d/" : "",
+                     (unsigned)i);
+            node[i] = fake_add(&fs, name, false, k_sizes[i], 1760000000);
+        }
+        /* The 16MiB file only once: its pieces of 1 byte take long. */
+        if (k_pieces[p] < 4096u) {
+            fs.n[node[5]].size = 70000u;
+        }
+        log_reads(&fs, log, (int)(sizeof(log) / sizeof(log[0])));
+        snprintf(name, sizeof(name), "read_%u", (unsigned)k_pieces[p]);
+        write_zip(&fs, name, k_pieces[p]);
+        CHECK(fs.rlog_n < fs.rlog_cap);
+        int reads[sizeof(k_sizes) / sizeof(k_sizes[0])] = { 0 };
+        for (int r = 0; r < fs.rlog_n; ++r) {
+            const fake_read_t *e = &log[r];
+            const uint64_t size = fs.n[e->node].size;
+            uint64_t want = size - e->pos;
+            if (want > WA_ZIP_READ_BYTES) {
+                want = WA_ZIP_READ_BYTES;
+            }
+            if (e->dst != g_rbuf || e->pos % WA_ZIP_READ_BYTES != 0u
+                || e->len != want) {
+                T_FAIL("piece %u: read of %s at %llu, %u bytes, %s",
+                       (unsigned)k_pieces[p], fs.n[e->node].path,
+                       (unsigned long long)e->pos, (unsigned)e->len,
+                       (e->dst == g_rbuf) ? "into the buffer"
+                                          : "not into the buffer");
+                break;
+            }
+            for (size_t i = 0u; i < sizeof(k_sizes) / sizeof(k_sizes[0]);
+                 ++i) {
+                reads[i] += (e->node == node[i]) ? 1 : 0;
+            }
+        }
+        for (size_t i = 0u; i < sizeof(k_sizes) / sizeof(k_sizes[0]); ++i) {
+            const uint64_t size = fs.n[node[i]].size;
+            CHECK_EQ((uint64_t)reads[i],
+                     (size + WA_ZIP_READ_BYTES - 1u) / WA_ZIP_READ_BYTES);
+        }
+        if (k_pieces[p] == 4096u) {
+            CHECK_EQ(reads[5], 1025);
+        }
+        fake_free(&fs);
+    }
+}
+
+/* Two archives' bytes, the same. */
+static bool same_zip(const char *a, const char *b)
+{
+    char pa[512], pb[512];
+    out_path(pa, sizeof(pa), a, "zip");
+    out_path(pb, sizeof(pb), b, "zip");
+    FILE *fa = fopen(pa, "rb");
+    FILE *fb = fopen(pb, "rb");
+    bool same = fa != NULL && fb != NULL;
+    while (same) {
+        const int ca = fgetc(fa);
+        same = ca == fgetc(fb);
+        if (ca == EOF) {
+            break;
+        }
+    }
+    if (fa != NULL) {
+        fclose(fa);
+    }
+    if (fb != NULL) {
+        fclose(fb);
+    }
+    return same;
+}
+
+/* With a read buffer of any size and without one, at any piece, the
+ * archive is the same bytes. */
+TEST_CASE(the_read_buffer_changes_no_byte_of_the_archive)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    fake_bench_tree(&fs);
+    fake_add(&fs, "USER/LOGS/LOG00030.BFL", false, 3u * WA_ZIP_READ_BYTES + 77u,
+             1760000000);
+    static const uint32_t k_reads[] = { 0u, 1u, 512u, 4096u, WA_ZIP_READ_BYTES };
+    static const uint32_t k_pieces[] = { 4096u, 13u, 8192u };
+    g_read = 0u;
+    const uint64_t n = write_zip(&fs, "rbuf_none", 4096u);
+    char name[32];
+    for (size_t r = 0u; r < sizeof(k_reads) / sizeof(k_reads[0]); ++r) {
+        for (size_t p = 0u; p < sizeof(k_pieces) / sizeof(k_pieces[0]); ++p) {
+            g_read = k_reads[r];
+            snprintf(name, sizeof(name), "rbuf_%u_%u", (unsigned)k_reads[r],
+                     (unsigned)k_pieces[p]);
+            CHECK_EQ(write_zip(&fs, name, k_pieces[p]), n);
+            if (!same_zip(name, "rbuf_none")) {
+                T_FAIL("%s differs from rbuf_none", name);
+            }
+        }
+    }
+    g_read = WA_ZIP_READ_BYTES;
+    CHECK_STR_EQ(wa_zip_err_name(WA_ZIP_OK), "done");
+    CHECK_STR_EQ(wa_zip_err_name(WA_ZIP_NO_CARD), "no card");
+    CHECK_STR_EQ(wa_zip_err_name(WA_ZIP_READ), "card read failed");
+    CHECK_STR_EQ(wa_zip_err_name(WA_ZIP_MEMORY), "no memory");
+    CHECK_STR_EQ(wa_zip_err_name((wa_zip_err_t)99), "?");
+    fake_free(&fs);
+}
+
 int main(void)
 {
     /* Dates as UTC whatever the shell's zone: the page and the ZIP read
@@ -906,6 +1062,8 @@ int main(void)
     RUN(entries_at_the_16_bit_count_switch_to_zip64);
     RUN(sizes_at_the_32_bit_limit_switch_to_zip64);
     RUN(a_read_error_or_a_pulled_card_ends_the_archive_failed);
+    RUN(files_are_read_in_whole_pieces_of_the_read_buffer);
+    RUN(the_read_buffer_changes_no_byte_of_the_archive);
     RUN(too_few_slots_are_refused_before_a_byte);
     RUN(entries_added_before_the_first_walk_fit_the_spare_slots);
     RUN(nothing_goes_past_the_announced_length);

@@ -123,6 +123,18 @@ void supply_screen_set_baud(uint32_t baud);
 void supply_screen_set_pins(int tx, int rx);
 
 /**
+ * @brief The programming ports' own supply, on a board that switches one
+ *        (link 4.32, PROG_SUPPLY; the rbmod carrier's GPIO 21): CONTROL
+ *        shows it under OUTPUT as `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
+ *        `NOT READ`.  The KST and Hitec programmers switch it; SUPPLY
+ *        offers no key for it.  Any task: held atomically.
+ *
+ * @param state prog_supply_state_t: 0 (none) shows no line
+ * @param pin   the switching GPIO
+ */
+void supply_screen_set_prog_5v(uint8_t state, uint8_t pin);
+
+/**
  * @brief The left text of the header strip: the supply and its pins, the
  *        answer and the rate ("PD MINI TX GPIO 12 RX GPIO 13   ONLINE
  *        38400"), 47 characters at most.
@@ -201,9 +213,32 @@ void supply_screen_set_hitec_held(bool held);
  */
 bool supply_screen_port_held(void);
 
-/** The set points a programming port gave the supply, onto the screen:
- *  supply_screen_put() for the one caller that reports and does not ask. */
+/**
+ * @brief The set points a programming port gave the supply, onto the screen:
+ *        supply_screen_put() for the one caller that reports and does not
+ *        ask.  The set points it replaces are kept as the operator's for
+ *        supply_screen_port_done(), unless they are the last port's
+ *        unchanged.
+ * @param v the port's voltage set point, V
+ * @param i the port's current limit, A
+ */
 void supply_screen_adopt(float v, float i);
+
+/**
+ * @brief The operator's set points back once the port is done with the
+ *        supply: when @p free_off, no programming port holds the screen,
+ *        the screen has no output on or asked, and OUTPUT ON is not being
+ *        held (supply_screen_output_held()).  They come back only where
+ *        the set points are still the port's; a change since, by the
+ *        operator, a cap or another screen, stands.  Either way the
+ *        operator's are then forgotten.  A live output is never given them:
+ *        after a LEAVE that leaves the output on they wait for its OFF.
+ * @param free_off the last read of the supply showed no programming port
+ *        holding it and its output asked off and read off
+ *        (supply_link_port_free_off()), and no other screen holds its
+ *        OUTPUT ON (servo_screen_output_held())
+ */
+void supply_screen_port_done(bool free_off);
 
 /**
  * @brief Whether the output is on as this screen believes it: what the

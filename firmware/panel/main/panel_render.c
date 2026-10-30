@@ -284,6 +284,11 @@ bool supply_live_or_coming(void)
     return coming || atomic_load(&s_supply_live);
 }
 
+bool supplies_live_or_coming(void)
+{
+    return supply_live_or_coming() || atomic_load(&s_psup_live);
+}
+
 /*
  * The supply screen's limits and set points, as the levels the control task
  * reads.  Every frame, from the render loop that owns the screen.
@@ -450,6 +455,10 @@ void flush_screen_commands(uint32_t stops_now)
         supply_screen_adopt((float)atomic_load(&s_supply_adopt_mv) / 1000.0f,
                             (float)atomic_load(&s_supply_adopt_ma) / 1000.0f);
     }
+    /* And the operator's own back once the port is done and the output
+     * reads off, read after the count: as new as the command taken. */
+    supply_screen_port_done(atomic_load(&s_supply_free_off)
+                            && !servo_screen_output_held());
     /* The limits and the set points first, as levels; see
      * s_supply_set_mv. */
     publish_supply_levels();

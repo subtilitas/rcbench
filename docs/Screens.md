@@ -2012,6 +2012,14 @@ OUTPUT ON and OFF, RESET PEAKS and the readings stay live on SETTINGS and
 under the keypad and the question. One finger at a time: while one holds a control, a
 second finger does nothing anywhere on the screen.
 
+On the [rbmod carrier](Carrier.md#power) a line under OUTPUT names the
+programming ports' own 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or
+`NOT READ` after an unanswered read, in the accent colour while on. The KST
+and Hitec programmers switch it; SUPPLY has no key for it. A board without
+the switch shows no line.
+
+![SUPPLY on the carrier](img/supply-rbmod.png)
+
 ### Supply settings
 
 SETTINGS, the strip's second tab, shows the supply's settings in the left
@@ -2466,7 +2474,9 @@ Nine messages say what a card did to a run. Each appears on the band:
 | `The last write to the card failed. Recording incomplete.` | the close failed, so the rows since the last commit are not in the file |
 
 The first five mean there is no file to look for. The last four mean there is
-one and it stops early.
+one and it stops early. A failed write and a failed close of a run are an
+error: the bench goes to SAFE and the supply off
+([Safety, Errors](Safety.md#errors)).
 
 A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open
@@ -2606,7 +2616,9 @@ the link down the panel writes to it every 5s.
 The footer, body y 440 to 492, holds RESCAN, 140 x 52px, at the left, as
 on [Logs](#logs), then COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN,
 118 x 52px, OPEN at the right margin; the buttons stand 6px apart, and the
-footer ends 4px above the alert band. A button that would be refused is
+footer ends 4px above the alert band. Each label is in the 10 x 20 face
+with at least 4px either side; the German AKTUALISIEREN is 130px wide and
+VERSCHIEBEN 110px. A button that would be refused is
 drawn dimmed; a tap on it says why in the message line, two lines of the
 12 x 24 face over the footer.
 
@@ -2885,8 +2897,11 @@ stops before its next chunk of 16KiB and says
 ![The DELETE question](img/files-delete.png)
 
 The DELETE question is a box of 700 x 280px with CANCEL and DELETE of
-300 x 56px. It names the entry and its size; for a run's CSV with a report
-of the same number it names the report that goes with it.
+300 x 56px. It names the entry and its size; for a run's CSV it names the
+report of the same number that goes with it when the pane's page lists
+that report. A report that would stand on the next or the previous page
+of a folder of more than 48 entries is named too: the page cannot tell,
+and DELETE takes the report along whenever the card holds it.
 
 ![A copy under way](img/files-copy.png)
 
@@ -3127,7 +3142,9 @@ Current limitations:
   whenever the bench is SAFE is not built.
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
-  688-757kB/s. The cause is not measured.
+  688-757kB/s. The cause is not measured. The page with the file manager
+  is 33,101 bytes in English on an empty card and has no card listing;
+  its time is not measured.
 
 ### The access code
 
@@ -3158,7 +3175,10 @@ a DNS (domain name system) name of its own, cannot send codes that count
 toward the 16, and cannot send an image. A browser sends a header of its
 own on a request to another site only after asking that site, and the
 panel answers no such question with a yes. A refused request is answered
-before its body is read, and the connection closes with the answer.
+before its body is read, and the connection closes with the answer. The
+file API answers the 421 and the 400 in JSON as its other refusals, with
+`HOST` and `BODY` ([the file API](#the-file-api)); the page, `/card/` and
+the ZIP file answer them with no body.
 
 ### The page
 
@@ -3185,14 +3205,56 @@ each flash erase (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 `firmware/panel/sdkconfig.defaults`). What the display shows during the
 erases is not measured.
 
-**Files on the card.** Every file, folder by folder, with its name, its size
-in bytes and its modification time as the card has it, in the zone of
-SETUP > PANEL's Time zone. A stamp in 1980, an unset clock's, leaves the
-time cell empty. Each name downloads
-that file. The page reads the card only: nothing on it is deleted, renamed or
-written. A name over 255 characters, a path over 384 bytes and a folder
-deeper than 16 are left out, and the page says how many. With no card, or a
-card that cannot be read, the page says so and the upload still works.
+**Files on the card.** The card in two panes, as [FILES](#files) shows
+it, read through [the file API](#the-file-api). The page reads the card
+only: nothing on it is deleted, renamed or written. Each pane is one folder,
+up to 48 entries a page, folders first, then names with case folded. The
+left pane opens on the card's root, the right one on the User log folder
+(`USER/LOGS` by default). The browser keeps both places for its tab while
+the same card is in the slot; another card starts both again there.
+
+- A pane's top row is its folder's path on a button that goes up one
+  folder; the root shows the card's volume label, or `SD CARD`. PREV and
+  NEXT stand beside it while the folder holds more than 48 entries.
+- The heading counts the entries as FILES does, `6 ENTRIES` or
+  `ENTRIES 49 TO 96 OF 120`, and the entries not listed after it.
+- A row shows the name, the size (`512B`, `14kB`, `7.0MB`; 1kB is 1,024
+  bytes), the kind word and the state word of FILES (`WRITING`, `LOCKED`,
+  `FIXED`).
+- A click or a tap selects a row and makes its pane the active one, drawn
+  with the accent border. A second tap, a double click or Enter is OPEN.
+- RESCAN, INFO, DOWNLOAD and OPEN, at the window's foot, act on the
+  active pane's selected entry. A button that would be refused is drawn dimmed, and a tap on it
+  says why under the buttons.
+
+| Button | What it does |
+|---|---|
+| RESCAN | asks the panel's state again, then reads each pane again at the page it shows, as FILES' [RESCAN](#rescan) does; a card swapped since starts both panes again in the root and the User log folder |
+| INFO | the entry's name, folder, kind, size or entries, time and rule, as FILES' INFO box; the time is the stamp the card holds in the zone of SETUP > PANEL's Time zone, `not known` for a stamp in 1980 |
+| DOWNLOAD | the selected file through `/card/<path>`; dimmed on a folder |
+| OPEN | enters a folder, or shows a file in the viewer over the page. Dimmed on a file over 1,048,576 bytes, on a file the logger writes and on the servo programmers' records, which DOWNLOAD still sends |
+
+The viewer shows the file read-only over the page: its path, its size,
+READ-ONLY, `LINE 23 OF 57` for the line at the top, `MIXED LINE ENDS` for
+a file with more than one kind, and CLOSE (or Escape). Its lines are
+coloured as the panel's [text viewer](#the-text-viewer) colours them, with
+the same rules, the same verdict words in English and German, and the
+panel's palettes: the light one, or the dark one when the browser asks for
+a dark scheme. A label (`Result:`, `name =`) is TEXT_DIM: #46586c in the
+light palette, #84acca in the dark one, as the panel draws it in each
+theme. The whole page follows the same scheme: its background, text,
+lines, panes, boxes and the viewer's header take the panel's theme
+colours, PANEL, TEXT, TEXT_DIM, EDGE and ACCENT, light or dark. A line is not wrapped; the text scrolls sideways. A tab
+reaches the next multiple of 8 cells. A control character and a byte that
+starts no UTF-8 sequence show as `?`. A file the file API refuses shows its
+refusal's text. The page draws the lines on screen and 200 lines above and
+below them.
+
+The page sends one request at a time. A request without an answer after 2s
+shows `Waiting for the panel: it answers one request at a time.`; a
+download through `/card/` holds the next request until it ends. A browser
+without JavaScript shows `The file list needs JavaScript.` and the ZIP
+link.
 
 **Download all as one ZIP file** sends the whole card as one ZIP file. The
 page gives the number of files, their bytes and the ZIP file's bytes before
@@ -3208,6 +3270,26 @@ do not fit in the free PSRAM gets 503 Service Unavailable.
 The download counts the entries, walks the card again to fix each one's
 size, and then passes each entry twice: once for its data, and once at the
 end for the ZIP file's directory.
+
+Each file is read in pieces of 16KiB (`WA_ZIP_READ_BYTES`), each at an
+offset of the file that is a multiple of 16KiB, into a buffer of 16KiB of
+PSRAM aligned to the cache line: a piece is one card transfer straight into
+the buffer, whatever the headers before the file shift the archive by. The
+buffer is taken for the download and given back at its end. FatFs finds a
+file in its folder by reading the folder from its first entry, so a folder
+of n files costs about n x n / 2 entries read for their opens; the time for
+a folder of 999 files is not measured. The panel logs each download's end,
+and for a failure its cause and the entry it was at:
+
+```text
+I (…) wifi: zip: sent, <n> of <n> B in <t> ms
+W (…) wifi: zip: card read failed at USER/LOGS/LOG00030.BFL, <n> of <n> B in <t> ms
+```
+
+The causes are the archive's, `card read failed` and `no card`, or the
+send's, `receiver gone`, `nothing taken for 30 s` and `radio going off`. A
+read or an open the card refuses logs `card: read of <n>B failed, errno <e>`
+or `card: open of <path> failed, errno <e>` before it.
 
 - A file that grows by appending, as a log does, is sent as it was when the
   download started: its first bytes, up to the size it had then.
@@ -3237,17 +3319,17 @@ browser reports it as failed, and the panel runs on.
 The page's server also answers four reads for a script: a page of a
 folder, the facts of one entry, a text file whole, and the panel's state
 (`shared/webaccess/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`).
-The page itself does not call them. They read the card only, through
+The page's file manager reads the card through them. They read the card only, through
 the same pages, rules and file load as FILES: nothing is written, renamed
 or deleted. Each takes the guard of the table above and the access code
 as a download does; a request without a code gets 403 and `CODE`.
 
 | Request | Answer |
 | --- | --- |
-| `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes":"closed"` with the reason (`READ_ONLY`; `ARMED` or `LOGGING` while the write gate is shut), the card's mount number, name, size and free bytes, and the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file |
+| `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes":"closed"` with the reason (`READ_ONLY`; `ARMED` or `LOGGING` while the write gate is shut), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
-| `GET /api/info?path=P&dir=D&mount=M` | JSON: the size and the time FAT stamped of `P`, -1 for none; for a folder (`D` 1) its entries, their bytes and the entries not listed |
-| `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` and `X-Rcbench-Bom` (1 or 0) |
+| `GET /api/info?path=P&dir=D&mount=M` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed |
+| `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` (the lines as FILES' viewer counts them: a line end at the file's end starts no line, so `a\nb\n` and `a\nb` have 2 and an empty file 0) and `X-Rcbench-Bom` (1 or 0) |
 
 A path is relative to the card's root and percent-encoded with `/` as the
 separator: `%2F` is refused, `+` is a plus. It holds at most 120 bytes and
@@ -3262,11 +3344,13 @@ in the panel's language:
 | `NAME` | 400 | a path the card or FILES does not take |
 | `REQUEST` | 400 | a parameter outside the ones above, or no path for INFO or a file |
 | `ARG` | 400 | a folder asked as a file |
+| `BODY` | 400 | a read that carries a body (the guard above) |
 | `CODE` | 403 | no access code, or a wrong one, which counts toward the 16 |
 | `LOCKED` | 403 | the servo programmers' records, `KST.TXT` and `HITEC.TXT`: download them instead |
 | `NOT_FOUND` | 404 | no such entry, or one of another kind |
 | `TOO_BIG` | 413 | a file over 1,048,576 bytes, refused before a byte is read |
 | `NOT_TEXT` | 415 | a NUL byte in the first 4,096 bytes |
+| `HOST` | 421 | a `Host` that is not the panel (the guard above) |
 | `TOO_MANY_LINES` | 422 | more than 65,536 line ends |
 | `BUSY` | 423 | a file the logger writes |
 | `IO` | 500 | the card failed a read |
@@ -3365,10 +3449,32 @@ same. When keeping a good start fails (otadata not written), the band says
 `Panel firmware 0.22.1 was not kept. The next restart restores the previous version.`; the build
 runs until then.
 
+Before the restart, the install keeps the version it wrote in NVS
+(non-volatile storage): one 40-byte entry, namespace `fw_ota`, key
+`restart_note`, with a magic word and an FNV-1a (Fowler-Noll-Vo) hash. A
+restart, a panic and a power cut keep it. The next start reads it; with the
+written slot marked invalid by the bootloader, that start is the build
+before, and the band says the `failed to start` line. The entry is erased after every
+start but a trial that goes back, so the line shows once. An entry of
+another size, magic or hash reads as no note. The first start after an
+install from 0.23.2 or older finds no entry, as a panel that never
+installed does: those builds keep the note in LP (low-power) RAM, and a
+trial of this build that goes back is reported by that build from there.
+The console states each start's check in one line:
+
+    I (…) fw_ota: start check: note 0.24.1, last invalid slot ota_0, result ROLLED_BACK
+    I (…) fw_ota: start check: note none, last invalid slot none, result NORMAL
+
+The note is the version or `none`, or `unreadable` for an entry that reads
+as none; the slot is the bootloader's last invalid one or `none`; the result
+is `NORMAL`, `UPDATED`, `ROLLED_BACK`, `UNCONFIRMED` or `GOING_BACK`, the
+last said before a trial that goes back restarts.
+
 Current limitations:
 
-- A power cut during the trial start loses that line; the panel still goes
-  back to the build before.
+- An install whose NVS write fails says so on the console
+  (`restart note not kept`), and a start of its build that goes back shows
+  no line on the band.
 - A trial start that stops before the screen loop runs, in a card mount
   that does not return for example, is not kept and not reset either: the
   task watchdog reports and does not restart (CONFIG_ESP_TASK_WDT_PANIC is
@@ -3633,7 +3739,7 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
 - Current limitation: a first DNS server that does not answer delays every
   name lookup after a join by about 7s, the NTP request's and the release
   check's alike. lwIP tries a server at 0s, 1s, 2s and 4s and asks the
-  next at 7s; ESP-IDF v5.5.5 offers neither figure in its configuration.
+  next at 7s; ESP-IDF v6.1 offers neither figure in its configuration.
 - An answer sets the clock and writes one console line: the server, the
   time set in UTC and how far it moved the clock, for example
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
@@ -3728,6 +3834,14 @@ AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical tacho), SUPPLY
 own, 64px high at the list's 70px pitch, in the accent colour over a rule,
 with no keys and no value: a tap or a drag on it changes nothing, and a drag
 scrolls the list. The list is 28 rows long.
+
+On the [rbmod carrier](Carrier.md) five rows are soldered pins: Sensor SDA
+16, Sensor SCL 17, Tap pin 22, PD mini TX 7 and PD mini RX 6. They have no
+keys, open no keypad and read
+`Soldered on this board. Not a setting here.` as their help line. The
+stored values stay and are in force again on a module wired by hand.
+
+![INTERFACES on the carrier](img/setup-rbmod-iface.png)
 
 ![INTERFACES, the current monitors](img/setup-interfaces.png)
 
@@ -4678,6 +4792,7 @@ grey, and the line names the first reason that holds, in this order:
 | `Checking the IOmcu's build.` | The SHA-256 comparison runs. |
 | `Build check failed. It runs again at the next link-up.` | The comparison ended without an answer. |
 | `No update over CAN. Install firmware once via USB.` | The IOmcu has no update pages or no partition table. |
+| `No IOmcu image for this board in this panel build.` | The IOmcu reports a board (IDENTITY register 5) this panel build carries no image for. No update is offered: another board's image would put its pin map on this one. |
 | `IOmcu runs the build this panel carries.` | The digests are equal: there is nothing to send. |
 | `The update requires SAFE and the supply output off.` | ARMED, an arm waiting, or the supply output on or switching on. |
 | `Waiting for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on, or it is still switching off. |
@@ -5045,6 +5160,36 @@ So a cell is in one of four states, and each says what to do about it: ticked
 in this protocol, held by another and named, reserved and struck through, or
 free and showing its pad number.
 
+### On the rbmod carrier
+
+The [rbmod carrier](Carrier.md) solders every lead to its pin, and no pin
+is chosen on the panel. The panel takes the board from IDENTITY register 5
+on the IOmcu's link (board 2).
+
+![OUTPUTS on the carrier](img/outputs-rbmod.png)
+
+- The grid has four cells: PWM01 to PWM04 on GPIO 2, 4, 5 and 1, the
+  name on top and the GPIO under it. A tap gives the selected protocol to
+  the output. Slot n drives PWM0(n+1); PWM01 is channel 0.
+- A protocol takes at most the 4 outputs: `SERVO PWM TAKES 4 PINS`.
+- PWM02 and PWM03 are PWM slice 2 and share one frame rate. A surface
+  protocol and a throttle protocol on the two together are refused. The
+  cell reads `SLICE OF PWM02`, and a tap on it
+  `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on a PIO
+  (programmable input/output) state machine and is offered beside either.
+- The line under the protocol counts against 4: `0 OF 4 PINS`.
+
+![A PROG PORT entry on the carrier](img/outputs-rbmod-port.png)
+
+- Each PROG PORT entry names its pin, `PROGP01 ON GPIO 13`. PIN takes no
+  tap and opens no picker.
+- FUNCTION reads `PROGRAMMING` and takes no tap. A programming port
+  carries the KST and Hitec programmers and no signal protocol; FUNC stays
+  NONE.
+- SERVO TESTER and PORT PWM are not drawn.
+- The line under the rows reads
+  `KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04`.
+
 ### The overview: OFF
 
 Every visit from SETUP opens with OFF selected; a TARGET row opens the
@@ -5120,6 +5265,7 @@ in its flash.
 ### Pick a pin
 
 Behind the PICK A PIN tile on SETUP, and its home tag leads back there.
+On the [rbmod carrier](Carrier.md) the tile opens [LAYOUT](#layout) instead.
 Over the open protocol list the home tag closes the list, choosing
 nothing, and the screen stays.
 The same binding the
@@ -5376,6 +5522,30 @@ Pages the screen cannot describe — one pin in two slots, a rate no entry
 offers, a pin that is not on the header — are shown as such and not as
 nothing configured: see [A binding that is not
 confirmed](#a-binding-that-is-not-confirmed).
+
+### Layout
+
+LAYOUT is behind the PICK A PIN tile on SETUP while the IOmcu reports a
+board with soldered pins, the [rbmod carrier](Carrier.md). The tile reads
+`CONNECTORS AND PINS` there. The home tag leads back to SETUP. The screen
+drives nothing and takes no tap.
+
+![LAYOUT on the carrier](img/layout-rbmod.png)
+
+| Column | Rows | Each row |
+| --- | --- | --- |
+| J1, `PROGRAMMING PORTS` | positions 1 to 4: PROGP04, PROGP01, PROGP02, PROGP03 | the position, the role, its GPIO and the net on its +, VCC_PROGPORT; on the right `PROGRAMMING` |
+| J2, `SERVO OUTPUTS` | positions 1 to 4: PWM03, PWM02, PWM01, PWM04 | the same, with VCC_SERVOPORT_B on positions 1 and 2 and VCC_SERVOPORT_A on 3 and 4; on the right the protocol bound on the output, `OFF` for none, `NOT READ` until the binding of this board is read |
+| `OTHER CONNECTORS` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NOT DRIVEN`), J6 PD MINI, J9 TAP, PROG 5V EN on no connector | the name, what it carries, its GPIO |
+
+The line under the columns reads
+`A REV 1 BOARD NEEDS TWO CHANGES BY HAND. THE HELP PAGE LISTS THEM.`
+([Carrier: Rev 1 rework](Carrier.md#rev-1-rework)).
+
+A protocol bound or let go on OUTPUTS, and a change of board, repaint the
+screen. On a board whose pins are chosen it reads
+`THIS BOARD HAS NO SOLDERED PINS.` and
+`ITS PINS ARE CHOSEN ON OUTPUTS AND PICK A PIN.`.
 
 ## Balancing
 

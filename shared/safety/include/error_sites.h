@@ -10,12 +10,13 @@
  *
  *     error_sites_stop()      an error found elsewhere: an INA3221 channel
  *                             over its limit, a SUPPLY page event that is
- *                             an error (supply_link_ev_error())
+ *                             an error (supply_link_ev_error()), an ON
+ *                             taken across lost touch events
  *     error_sites_follow()    a counter of errors: the card's failed
  *                             writes, the programmers' session faults
- *     error_sites_cut()       an error on the supply's own output: a trip,
- *                             an ON taken across lost touch events; the
- *                             output off first, then the rule
+ *     error_sites_cut()       the panel's own supply trip, CURRENT TRIP or
+ *                             VOLTAGE TRIP: the output off first, whoever
+ *                             holds it and with any IOmcu, then the rule
  *     error_sites_reading()   the supply silent, or answering without a
  *                             reading for SUPPLY_LINK_BLIND_MS
  *
@@ -23,10 +24,21 @@
  * waits; the output off as error_stop() says; and to an IOmcu of link 4.31
  * (LINK_MINOR_PORT_CUT) that serves the SUPPLY page, with the PD (Power
  * Delivery) mini in use, the page's OFF whatever the panel reads of the
- * output (supply_link_cut()).
+ * output (supply_link_cut()).  On a board that switches the programming
+ * ports' own supply (link 4.32, PROG_SUPPLY), every error writes that
+ * page's OFF as well, whatever the panel reads of it: the IOmcu holds it for
+ * a port's write, 10000ms at most, as SUPPLY's from 4.31.
  *
- * error_card_rows_edge() and error_card_csv_edge() say when the logger
- * counts a card fault of a run.
+ * A programming port holds the PD mini's output only, never the panel's
+ * model.  With an IOmcu older than 4.31 a port that holds the supply keeps
+ * it through every error here but the trip (error_sites_keeps()).  A SUPPLY
+ * page event whose output is off at the far end already -- the module's
+ * protection, a sagging input, an ON the page let go -- is followed off
+ * here whoever holds it; an ON the page refused is not, when the port keeps
+ * the supply (error_sites_page_keeps()).
+ *
+ * error_card_rows_edge(), error_card_csv_edge() and error_card_close_edge()
+ * say when the logger counts a card fault of a run.
  *
  * Values in, values out: no call through a pointer, so the stack check
  * (tools/stack_check.py) follows the control task's chain through here.
@@ -52,10 +64,14 @@ extern "C" {
 typedef struct {
     bool     live;         /**< ARMED, or a switch to ARMED waits          */
     bool     supply_on;    /**< the output on, or an ON asked              */
-    bool     port_holds;   /**< a programming port holds the supply        */
+    bool     port_holds;   /**< a programming port holds the supply; taken
+                                for the PD mini only                      */
     bool     supply_real;  /**< the PD mini is the supply, not the model   */
     bool     supply_page;  /**< the IOmcu serves the SUPPLY page           */
     uint16_t far_minor;    /**< the IOmcu's link protocol minor            */
+    bool     prog_supply;  /**< the IOmcu serves PROG_SUPPLY (4.32) with a
+                                switch fitted: the programming ports' own
+                                supply, the rbmod carrier's GPIO 21       */
 } error_bench_t;
 
 /** @brief What the control task does for an error, in this order. */
@@ -65,6 +81,8 @@ typedef struct {
     bool supply_off;  /**< the supply's output off                      */
     bool cut;         /**< the SUPPLY page's OFF, written whatever the
                            panel reads (supply_link_cut())              */
+    bool prog_off;    /**< the PROG_SUPPLY page's OFF, written whatever
+                           the panel reads (prog_supply_link_cut())     */
 } error_act_t;
 
 /** @brief Which reading fault error_sites_reading() found. */
@@ -106,9 +124,20 @@ error_act_t error_sites_follow(error_watch_t *watch, uint32_t count,
                                const error_bench_t *b);
 
 /**
- * @brief An error on the supply's own output: the output off first,
- *        whoever holds it and with any IOmcu, then error_sites_stop() on
- *        the bench with the output off.
+ * @brief Whether an error leaves the supply to a programming port: the
+ *        output on or asked on, a port holding it, the PD mini in use, and
+ *        an IOmcu older than 4.31 or without the SUPPLY page, which would
+ *        cut a write to the servo's memory at the panel's OFF.
+ *
+ * @param b The bench; false for NULL.
+ * @return true when the panel writes no OFF for the error.
+ */
+bool error_sites_keeps(const error_bench_t *b);
+
+/**
+ * @brief The panel's own supply trip, CURRENT TRIP or VOLTAGE TRIP: the
+ *        output off first, whoever holds it and with any IOmcu, then
+ *        error_sites_stop() on the bench with the output off.
  *
  * @param b The bench; nothing to do for NULL.
  * @return The act.
@@ -117,20 +146,44 @@ error_act_t error_sites_cut(const error_bench_t *b);
 
 /**
  * @brief The supply's reading, judged with its output on: silent, or
- *        answering without a reading; error_sites_cut() for either.
+ *        answering without a reading; error_sites_stop() for either.
+ *
+ * A fault the port's supply keeps (error_sites_keeps()) stands from pass to
+ * pass: it is acted on and named at its first pass, and again once it is
+ * another fault or the port no longer keeps the supply.
  *
  * @param b      The bench.
  * @param online The supply answers (supply_state_t.online).
  * @param blind  The PD mini's reading count has stood for
  *               SUPPLY_LINK_BLIND_MS (supply_link_blind()); for the PD
  *               mini only.
+ * @param told   The fault of the last pass, ERROR_READING_NONE at the
+ *               start; receives this pass's.
  * @param act    Receives the act; nothing to do without a fault.
- * @return The fault found, which the caller names on the band;
- *         ERROR_READING_NONE with the output off, and for a NULL @p b or
- *         @p act.
+ * @return The fault acted on, which the caller names on the band;
+ *         ERROR_READING_NONE with the output off, for a fault that stands
+ *         and keeps, and for a NULL @p b, @p told or @p act.
  */
 error_reading_t error_sites_reading(const error_bench_t *b, bool online,
-                                    bool blind, error_act_t *act);
+                                    bool blind, error_reading_t *told,
+                                    error_act_t *act);
+
+/**
+ * @brief Whether a SUPPLY page event that ends the panel's ON leaves the
+ *        page's command to a programming port instead of the panel's OFF
+ *        (supply_link_keep()).
+ *
+ * @param b       The bench.
+ * @param far_off The output is off at the far end already: the module's
+ *                protection (SUPPLY_LINK_EV_TRIPPED), the IOmcu's cut for a
+ *                sagging input (SUPPLY_LINK_EV_SAGGED), or an ON the page
+ *                let go with no port holding it (SUPPLY_LINK_EV_ON_LOST).
+ * @return true for an ON refused (SUPPLY_LINK_EV_ON_REFUSED) alone that
+ *         error_sites_keeps() leaves to the port, judged with the output
+ *         on whatever the panel reads of it: the port's ON on the page may
+ *         not have reached the panel yet; false for NULL.
+ */
+bool error_sites_page_keeps(const error_bench_t *b, bool far_off);
 
 /**
  * @brief Whether the run log's writes failed in this pass: a card fault
@@ -154,6 +207,19 @@ bool error_card_rows_edge(bool open, bool was_failed, bool failed);
  * @return true for the run's card fault.
  */
 bool error_card_csv_edge(bool bad, bool failed_before, bool txt);
+
+/**
+ * @brief Whether a failed final commit or close of a run's file is the
+ *        run's card fault: of the run log, or of the automatic test's CSV,
+ *        and the run's first failure.  A report written after the run is
+ *        not one.
+ *
+ * @param bad           The commit or the close failed.
+ * @param failed_before A write of the run failed before: counted then.
+ * @param report        The file is the report written after the run.
+ * @return true for the run's card fault.
+ */
+bool error_card_close_edge(bool bad, bool failed_before, bool report);
 
 #ifdef __cplusplus
 }

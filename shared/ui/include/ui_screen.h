@@ -62,6 +62,9 @@ typedef enum {
     /* FILES, from SETUP and from LOGS: the card's folders and files in two
      * panes. */
     SCREEN_FILES,
+    /* LAYOUT, from SETUP on a board with soldered pins: its
+     * connectors and the role of each position. */
+    SCREEN_LAYOUT,
     SCREEN_COUNT
 } ui_screen_id_t;
 

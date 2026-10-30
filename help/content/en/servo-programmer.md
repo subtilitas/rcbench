@@ -53,7 +53,7 @@ MORE, while the tester has the port, sets what CONNECT applies:
 ![A PD mini answers](view:servo-kst-supply)
 ![The supply in programming mode](view:servo-kst-supplied)
 
-While the port is out of PWM, the supply's set points belong to the port: the SET row and the SUPPLY screen take no change and no ON. OUTPUT OFF and STOP work. Without a PD mini the voltage and current limit are stored and not applied.
+While the port is out of PWM, the supply's set points belong to the port: the SET row and the SUPPLY screen take no change and no ON. OUTPUT OFF and STOP work. Without a PD mini the voltage and current limit are stored and not applied. Back in PWM, the set points from before the session return once the output is off, at the next OFF when the session left it on; a set point changed in the meantime stays.
 
 ## The power cycle
 

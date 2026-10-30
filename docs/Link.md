@@ -67,7 +67,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.31. The
+IOmcu transmits only in answer to a request. Protocol version 4.32. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -160,7 +160,10 @@ port lets go; HITEC takes bit 4 of a step's command, more steps of this
 write follow. An older IOmcu switches the PD mini off at the OFF and
 refuses the bit with BAD_VALUE. The panel switches a supply a port holds
 off on an error from 4.31 only, and sets the bit from 4.31 only
-([Safety, A programming port's supply](Safety.md#a-programming-ports-supply)). The
+([Safety, A programming port's supply](Safety.md#a-programming-ports-supply)). From
+4.32 PROG_SUPPLY (0x39) switches the programming ports' own supply on a
+board that has one, the rbmod carrier's GPIO 21; an older IOmcu refuses
+the page with BAD_PAGE ([Carrier, Power](Carrier.md#power)). The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -907,7 +910,7 @@ per 5s offer.
 
 | Page | Name | Access | Registers |
 | ---: | --- | --- | --- |
-| 0x00 | IDENTITY | read | protocol major, protocol minor, firmware major, minor, patch, hardware revision, capabilities bitmap |
+| 0x00 | IDENTITY | read | protocol major, protocol minor, firmware major, minor, patch, board (1 the RP2350-CAN wired by hand, 2 the rbmod carrier; [Boards with soldered pins](#boards-with-soldered-pins)), capabilities bitmap |
 | 0x01 | STATUS | read | 10 registers (since 4.21; 8 before it): state (0 idle, 1 armed, 2 failsafe), faults bitmap, uptime in ms (two registers), requests accepted (two registers), XL2515 receive error counter, XL2515 transmit error counter, CAN frames refused since power-up (two registers, low half first; [Refused frames](#refused-frames)) |
 | 0x10 | CONTROL | read, write | ARM (0 switches to SAFE; 1 switches every output to ARMED; from 4.18 0x0002 switches the throttle channels to ARMED, 0x0004 the surfaces and the SERVO PWM programming ports, 0x0006 both; a DShot programming port is a throttle (since 4.28); any other value is refused with BAD_VALUE, [An arm for one role](#an-arm-for-one-role)), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle and every DShot programming port, since 4.28), MOTOR_POLES, CLEAR (write 0x5AFE to leave failsafe). Registers 0 to 2 are the frame that switches to ARMED |
 | 0x11 | LIMITS | | declared, not served |
@@ -938,6 +941,7 @@ per 5s offer.
 | 0x36 | SENSE_LIMIT | read, write | a current limit per channel of SENSE_MAP (since 4.27); the IOmcu flags a limit passed and the panel answers it as an error. Registers 0 to 11 each channel's limit in mA (0 none, 1 to 32767), kept in the IOmcu's flash; read only: 12 `OVER`, bit c a window of channel c above its limit since the last read of the register, which clears it; 13 `OVER_COUNT`, channel windows over, modulo 65536; 14 and 15 reserved. 16 registers. [The INA3221 map and windows](LinkSensors.md#sense_limit) has the rules |
 | 0x37 | SENSE_WIN_A | read | channels 0 to 5's last 50ms window (since 4.25): the window number, flags, and 5 registers a channel: mean and highest current (mA, signed), mean and lowest bus voltage (mV), flags. Every write is refused with READ_ONLY. Nothing is kept |
 | 0x38 | SENSE_WIN_B | read | channels 6 to 11's, as SENSE_WIN_A (since 4.25) |
+| 0x39 | PROG_SUPPLY | read, write | the programming ports' own supply on a board that switches one with a pin of the IOmcu: the rbmod carrier's GPIO 21, the enable of its 5V buck M7 (since 4.32). Register 0: output, 1 on, 0 off. An ON is refused with NOT_ARMED without a live heartbeat, and with BAD_VALUE on a board without the switch and while a programming port holds the supply. An OFF is always taken; while a port writes to the servo's memory it waits for the write's end, 10,000ms after the OFF at most, and the port's own ON is refused after it until the port lets go. The output goes off when the heartbeat stops or the link goes silent, and an OFF waits for the end of a frame a port has on the wire, 12ms at most. Registers 1 to 3, read only: flags (bit 0 the board has the switch, bit 1 the pin switches the supply on, bit 2 a programming port holds it, bit 3 the panel's OFF waits for a port's write), the switching GPIO (255 without), and the voltage in mV (5000 on the carrier, 0 without). Register 4, panel: 1 written alone says the panel knows the page, refused with NOT_ARMED without a live heartbeat and with BAD_VALUE for any other value; it reads 0 from every start and from every loss of the heartbeat. A programming port switches the supply on only while it reads 1, so the ports of a panel before 4.32 never get it; the panel writes it whenever a read finds 0. Not kept: off at every start. On the carrier the KST and Hitec ports cycle this supply in place of the PD mini |
 | 0xF0 | UPDATE_CTL | read, write | the IOmcu's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
 | 0xF1 | UPDATE_DATA | read, write | the 64 bytes of the block in hand, low byte first in each register (since 4.22; frozen across majors): 32 registers. FINISH takes the expected SHA-256 from registers 0 to 15. Nothing is kept |
 
@@ -1283,6 +1287,56 @@ either half, a link lost at every transaction of a fetch, a kept drawing
 under the same board ID with another hash, and a board the panel's build
 does not know. `test/tools/test_gen_board_drawing.py` holds the generator to
 the same rules.
+
+### Boards with soldered pins
+
+IDENTITY register 5 names the board an IOmcu image is built for. The image
+is built per board (CMake `IOMCU_BOARD`), so the value is fixed in the
+image.
+
+| Value | Board | Image | Pins |
+|---|---|---|---|
+| 1 | RP2350-CAN module wired by hand | `rcbench-iomcu.*` | chosen on the panel |
+| 2 | rbmod carrier: the same module on a carrier board | `rcbench-iomcu-rbmod.*` | soldered; each role on one pin |
+
+The rbmod carrier's pins and connectors are in [The rbmod carrier](Carrier.md)
+(`shared/outputs/out_board_rbmod.c`).
+
+On board 2 the IOmcu holds every role to its pin:
+
+- CATALOGUE lists the module's 26 header pins. The role pins are free; every
+  other pin is reserved and refused to every page.
+- OUTPUTS and BIND_OUT: a slot with a driver sits on PWM01 to PWM04
+  (GPIO 2, 4, 5 or 1). A page with a driven slot on any other pin is refused
+  with BAD_VALUE. A slot with driver NONE is not judged.
+- PROG: each port's PIN is its own pin (port 0 GPIO 13, port 1 GPIO 14,
+  port 2 GPIO 15, port 3 GPIO 0), and FUNC is NONE. A programming port
+  carries the KST and HITEC wire protocols and no signal protocol. A PIN
+  write of another pin, `LINK_PG_PIN_NONE` included, and a FUNC write of
+  any other function are refused with BAD_VALUE.
+- SUPPLY TX and RX are GPIO 7 and GPIO 6, SENSE SDA and SCL GPIO 16 and
+  GPIO 17, TONE's pin GPIO 22. A write of another pin is refused with
+  BAD_VALUE. The other registers of the pages take their own rules.
+- At boot each role starts on its pin, whatever the flash kept. A record a
+  module's image wrote keeps its enables, ranges, rates and endpoints. A
+  slot with a driver on a pin that is no servo output is cleared, and every
+  port starts as NONE.
+
+GPIO 21 is driven low from the first statement of `main()`; from the main
+loop on the PROG_SUPPLY page (0x39, since 4.32) drives it, off until a KST
+or Hitec session switches it on. M7's EN has a pull-down, so the
+programming ports' supply is off while the IOmcu does not drive GPIO 21:
+in reset, in BOOTSEL and unpowered. On the carrier the KST and Hitec ports
+cycle this supply in place of the PD mini, and no port holds the SUPPLY
+page.
+
+A panel offers each IOmcu the image of the board it reports. The release
+panel carries both images; a board it carries no image for gets no offer,
+and UPDATES reads `No IOmcu image for this board in this panel build.`.
+
+`test/host/test_board_fix.c` holds the carrier's catalogue against its
+roles, each page's pins at the role pin and the pins either side of it, a
+module's record put on the carrier's pins, and the image chosen per board.
 
 ### Refused frames
 

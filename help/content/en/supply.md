@@ -84,7 +84,17 @@ OUTPUT ON is a 2s hold, with the fade ARM uses. OUTPUT OFF is a tap. The output 
 - the module switching its output off itself;
 - a change to the PD mini's pins, baud rate or enable setting.
 
-The band names the reason. An output another screen switched on stays as it is when SUPPLY is left. The output is off after every restart, whatever the start values.
+The band names the reason. A release before 2s sends nothing and shows nothing, as on ARM.
+
+The IOmcu refuses an ON while its failsafe is latched: the band shows FAULT 01 (the link was silent for 200ms, which an IOmcu restart can cause) or FAULT 10 (the heartbeat stopped). The hold then ends with `Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then DISARM.` Only the CLEAR an ARM writes lifts the failsafe: hold ARM on SERVO or MOTOR & ESC, DISARM, then hold OUTPUT ON again.
+
+An output another screen switched on stays as it is when SUPPLY is left. The output is off after every restart, whatever the start values.
+
+## On the rbmod carrier
+
+![SUPPLY on the carrier](view:supply-rbmod)
+
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the PD mini feeds the servo rails, and the programming ports have a 5V supply of their own, switched by GPIO 21. The line under OUTPUT names it: `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or `NOT READ` while the IOmcu does not answer. The KST and Hitec programmers switch it for a session; SUPPLY has no key for it. Every error switches it off, a write to a servo's memory first ends, 10000ms at most.
 
 ## SETTINGS
 

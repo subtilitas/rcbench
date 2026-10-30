@@ -9,7 +9,10 @@
  *
  * And the first start after a write: a start without display or touch kept
  * as valid -- which ends the rollback for good -- when the call that marks
- * it invalid returns instead of restarting.
+ * it invalid returns instead of restarting.  And the restart note that
+ * start reads: a start after a written build that did not stay with no
+ * rolled-back report, a corrupt or foreign entry read as a note, and a note
+ * left behind to report a second time.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -317,7 +320,17 @@ static bool b_pending(void *ctx)
     return f->pending;
 }
 
-static void b_invalid(void *ctx) { boot_note(ctx, 'i'); }
+/* The note fw_boot_settle() fills, as a restarting call would read it. */
+static const fw_note_seen_t *g_seen_watch;
+static int g_state_at_invalid = -1;
+
+static void b_invalid(void *ctx)
+{
+    boot_note(ctx, 'i');
+    if (g_seen_watch != NULL) {
+        g_state_at_invalid = (int)g_seen_watch->state;
+    }
+}
 
 static bool b_valid(void *ctx)
 {
@@ -393,6 +406,346 @@ TEST_CASE(a_start_that_is_no_trial_marks_nothing)
     CHECK(strchr(f.calls, 'r') == NULL);
 }
 
+/* ------------------------------------------------------- the restart note */
+
+/* A store in memory: one entry, the calls counted, each refusable. */
+typedef struct {
+    uint8_t  buf[FW_NOTE_BYTES + 8u];
+    uint32_t len;          /* 0: no entry */
+    unsigned saves, erases, loads;
+    bool     save_fails, erase_fails;
+} note_fake_t;
+
+static uint32_t n_load(void *ctx, uint8_t *buf, uint32_t cap)
+{
+    note_fake_t *n = ctx;
+    ++n->loads;
+    if (n->len > 0u && n->len <= cap) {
+        memcpy(buf, n->buf, n->len);
+    }
+    return n->len;
+}
+
+static bool n_save(void *ctx, const uint8_t *buf, uint32_t len)
+{
+    note_fake_t *n = ctx;
+    ++n->saves;
+    if (n->save_fails || len > sizeof(n->buf)) {
+        return false;
+    }
+    memcpy(n->buf, buf, len);
+    n->len = len;
+    return true;
+}
+
+static bool n_erase(void *ctx)
+{
+    note_fake_t *n = ctx;
+    ++n->erases;
+    if (n->erase_fails) {
+        return false;
+    }
+    n->len = 0u;
+    return true;
+}
+
+static fw_note_ops_t note_ops(note_fake_t *n)
+{
+    const fw_note_ops_t o = { n_load, n_save, n_erase, n };
+    return o;
+}
+
+static fw_boot_t settle(boot_fake_t *f, note_fake_t *n, bool ui_up,
+                        fw_note_seen_t *seen)
+{
+    const fw_boot_ops_t bops = {
+        b_pending, b_invalid, b_valid, b_restart, b_last_invalid, f,
+    };
+    const fw_note_ops_t nops = note_ops(n);
+    return fw_boot_settle(&bops, &nops, ui_up, seen);
+}
+
+/* FNV-1a over the version field, written out again as the layout says. */
+static uint32_t fnv(const uint8_t *p, size_t len)
+{
+    uint32_t h = 2166136261u;
+    for (size_t i = 0; i < len; ++i) {
+        h = (h ^ p[i]) * 16777619u;
+    }
+    return h;
+}
+
+static void le32(uint8_t *p, uint32_t v)
+{
+    p[0] = (uint8_t)v;
+    p[1] = (uint8_t)(v >> 8);
+    p[2] = (uint8_t)(v >> 16);
+    p[3] = (uint8_t)(v >> 24);
+}
+
+/* An entry built by hand: any magic, any field, its hash right. */
+static void forge(note_fake_t *n, uint32_t magic, const uint8_t *field)
+{
+    memset(n->buf, 0, sizeof(n->buf));
+    le32(n->buf, magic);
+    memcpy(n->buf + 4u, field, FW_TEXT_MAX);
+    le32(n->buf + 4u + FW_TEXT_MAX, fnv(field, FW_TEXT_MAX));
+    n->len = FW_NOTE_BYTES;
+}
+
+TEST_CASE(the_installers_note_reads_back_byte_for_byte)
+{
+    note_fake_t n = { 0 };
+    const fw_note_ops_t o = note_ops(&n);
+    CHECK(fw_note_write(&o, "0.24.1"));
+    CHECK_EQ(n.len, FW_NOTE_BYTES);
+    CHECK_EQ(FW_NOTE_BYTES, 40u);
+    /* "RCN1", little-endian, first. */
+    CHECK(memcmp(n.buf, "RCN1", 4u) == 0);
+    fw_note_seen_t seen;
+    CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOUND);
+    CHECK_STR_EQ(seen.version, "0.24.1");
+
+    /* The longest text the field holds, and one byte over it: cut. */
+    char longest[FW_TEXT_MAX + 1u];
+    memset(longest, '9', FW_TEXT_MAX);
+    longest[FW_TEXT_MAX] = '\0';
+    CHECK(fw_note_write(&o, longest));
+    CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOUND);
+    CHECK_EQ(strlen(seen.version), FW_TEXT_MAX - 1u);
+
+    /* An empty text is a note too. */
+    CHECK(fw_note_write(&o, ""));
+    CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOUND);
+    CHECK_STR_EQ(seen.version, "");
+
+    /* A store that refuses says so; what it held stays. */
+    n.save_fails = true;
+    CHECK(!fw_note_write(&o, "0.24.2"));
+    CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOUND);
+    CHECK_STR_EQ(seen.version, "");
+}
+
+TEST_CASE(a_noted_start_after_a_failed_one_reports_rolled_back_once)
+{
+    /* Walk 6.4: INSTALL notes 0.24.1, the written build aborts, the
+     * bootloader marks its slot and starts this one, no trial. */
+    note_fake_t n = { 0 };
+    const fw_note_ops_t o = note_ops(&n);
+    CHECK(fw_note_write(&o, "0.24.1"));
+    boot_fake_t f = { .pending = false, .last_invalid = true };
+    fw_note_seen_t seen;
+    CHECK_EQ(settle(&f, &n, true, &seen), FW_BOOT_ROLLED_BACK);
+    CHECK_EQ(seen.state, FW_NOTE_FOUND);
+    CHECK_STR_EQ(seen.version, "0.24.1");
+    CHECK_STR_EQ(f.calls, "pl");
+    CHECK_EQ(n.erases, 1u);
+    CHECK_EQ(n.len, 0u);
+
+    /* The slot stays marked invalid; the next start says nothing. */
+    boot_fake_t g = { .pending = false, .last_invalid = true };
+    CHECK_EQ(settle(&g, &n, true, &seen), FW_BOOT_NORMAL);
+    CHECK_EQ(seen.state, FW_NOTE_NONE);
+    CHECK_EQ(n.erases, 1u);
+
+    /* Without display or touch the report is the same. */
+    CHECK(fw_note_write(&o, "0.24.1"));
+    boot_fake_t h = { .pending = false, .last_invalid = true };
+    CHECK_EQ(settle(&h, &n, false, &seen), FW_BOOT_ROLLED_BACK);
+    CHECK_EQ(n.len, 0u);
+}
+
+TEST_CASE(no_note_is_a_normal_start_and_writes_nothing)
+{
+    /* A fresh panel, or the first start after an install from a build that
+     * kept the note in LP RAM: the store holds nothing. */
+    note_fake_t n = { 0 };
+    fw_note_seen_t seen;
+    boot_fake_t f = { .pending = false, .last_invalid = true };
+    CHECK_EQ(settle(&f, &n, true, &seen), FW_BOOT_NORMAL);
+    CHECK_EQ(seen.state, FW_NOTE_NONE);
+    CHECK_STR_EQ(seen.version, "");
+    CHECK_EQ(n.loads, 1u);
+    CHECK_EQ(n.erases, 0u);
+    CHECK_EQ(n.saves, 0u);
+
+    boot_fake_t g = { .pending = false, .last_invalid = false };
+    CHECK_EQ(settle(&g, &n, true, &seen), FW_BOOT_NORMAL);
+    CHECK_EQ(n.erases, 0u);
+}
+
+TEST_CASE(a_corrupt_note_reads_as_none_and_is_erased)
+{
+    fw_note_seen_t seen;
+    /* Each byte of a good entry flipped in turn: never a note. */
+    for (uint32_t at = 0u; at < FW_NOTE_BYTES; ++at) {
+        note_fake_t n = { 0 };
+        const fw_note_ops_t o = note_ops(&n);
+        CHECK(fw_note_write(&o, "0.24.1"));
+        n.buf[at] ^= 0x01u;
+        boot_fake_t f = { .pending = false, .last_invalid = true };
+        CHECK_EQ(settle(&f, &n, true, &seen), FW_BOOT_NORMAL);
+        CHECK_EQ(seen.state, FW_NOTE_FOREIGN);
+        CHECK_STR_EQ(seen.version, "");
+        CHECK_EQ(n.erases, 1u);
+        CHECK_EQ(n.len, 0u);
+    }
+    /* Cut short at every length, and one byte long. */
+    for (uint32_t len = 1u; len <= FW_NOTE_BYTES + 1u; ++len) {
+        if (len == FW_NOTE_BYTES) {
+            continue;
+        }
+        note_fake_t n = { 0 };
+        const fw_note_ops_t o = note_ops(&n);
+        CHECK(fw_note_write(&o, "0.24.1"));
+        n.len = len;
+        CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOREIGN);
+    }
+    /* A field with no terminator, its hash right: not a text. */
+    uint8_t field[FW_TEXT_MAX];
+    memset(field, '7', sizeof(field));
+    note_fake_t n = { 0 };
+    forge(&n, FW_NOTE_MAGIC, field);
+    const fw_note_ops_t o = note_ops(&n);
+    CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOREIGN);
+    /* The same field terminated, as a check of the forge. */
+    field[FW_TEXT_MAX - 1u] = '\0';
+    forge(&n, FW_NOTE_MAGIC, field);
+    CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOUND);
+    /* A store whose read fails reports an entry it cannot hand over. */
+    n.len = UINT32_MAX;
+    CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOREIGN);
+}
+
+TEST_CASE(a_note_of_another_layout_reads_as_none)
+{
+    uint8_t field[FW_TEXT_MAX] = { 0 };
+    memcpy(field, "0.24.1", 6u);
+    fw_note_seen_t seen;
+    /* The LP RAM note's magic "RCUP", a later layout "RCN2", and none. */
+    static const uint32_t k_magic[] = { 0x52435550u, 0x324E4352u, 0u };
+    for (size_t i = 0; i < sizeof(k_magic) / sizeof(k_magic[0]); ++i) {
+        note_fake_t n = { 0 };
+        forge(&n, k_magic[i], field);
+        boot_fake_t f = { .pending = false, .last_invalid = true };
+        CHECK_EQ(settle(&f, &n, true, &seen), FW_BOOT_NORMAL);
+        CHECK_EQ(seen.state, FW_NOTE_FOREIGN);
+        CHECK_EQ(n.len, 0u);
+    }
+    /* A larger entry of a later layout: its size alone says so. */
+    note_fake_t n = { 0 };
+    forge(&n, FW_NOTE_MAGIC, field);
+    n.len = FW_NOTE_BYTES + 8u;
+    const fw_note_ops_t o = note_ops(&n);
+    CHECK_EQ(fw_note_read(&o, &seen), FW_NOTE_FOREIGN);
+    /* A note naming any other build is reported with that text. */
+    note_fake_t m = { 0 };
+    const fw_note_ops_t mo = note_ops(&m);
+    CHECK(fw_note_write(&mo, "9.99.99-dev+abort"));
+    boot_fake_t g = { .pending = false, .last_invalid = true };
+    CHECK_EQ(settle(&g, &m, true, &seen), FW_BOOT_ROLLED_BACK);
+    CHECK_STR_EQ(seen.version, "9.99.99-dev+abort");
+}
+
+TEST_CASE(the_note_is_erased_after_each_outcome_but_going_back)
+{
+    fw_note_seen_t seen;
+    /* A trial kept: erased. */
+    {
+        note_fake_t n = { 0 };
+        const fw_note_ops_t o = note_ops(&n);
+        CHECK(fw_note_write(&o, "0.24.1"));
+        boot_fake_t f = { .pending = true, .valid_ok = true };
+        CHECK_EQ(settle(&f, &n, true, &seen), FW_BOOT_UPDATED);
+        CHECK_EQ(n.erases, 1u);
+        CHECK_EQ(n.len, 0u);
+    }
+    /* A good trial that cannot be kept: erased, as before. */
+    {
+        note_fake_t n = { 0 };
+        const fw_note_ops_t o = note_ops(&n);
+        CHECK(fw_note_write(&o, "0.24.1"));
+        boot_fake_t f = { .pending = true, .valid_ok = false };
+        CHECK_EQ(settle(&f, &n, true, &seen), FW_BOOT_UNCONFIRMED);
+        CHECK_EQ(n.len, 0u);
+    }
+    /* A note with no slot marked invalid: the written build stayed. */
+    {
+        note_fake_t n = { 0 };
+        const fw_note_ops_t o = note_ops(&n);
+        CHECK(fw_note_write(&o, "0.24.1"));
+        boot_fake_t f = { .pending = false, .last_invalid = false };
+        CHECK_EQ(settle(&f, &n, true, &seen), FW_BOOT_NORMAL);
+        CHECK_EQ(n.len, 0u);
+    }
+    /* A trial that goes back keeps it, and the build before reports it. */
+    {
+        note_fake_t n = { 0 };
+        const fw_note_ops_t o = note_ops(&n);
+        CHECK(fw_note_write(&o, "0.24.1"));
+        boot_fake_t f = { .pending = true, .valid_ok = true };
+        CHECK_EQ(settle(&f, &n, false, &seen), FW_BOOT_UNCONFIRMED);
+        CHECK_EQ(n.erases, 0u);
+        CHECK_EQ(n.len, FW_NOTE_BYTES);
+        boot_fake_t g = { .pending = false, .last_invalid = true };
+        CHECK_EQ(settle(&g, &n, true, &seen), FW_BOOT_ROLLED_BACK);
+        CHECK_STR_EQ(seen.version, "0.24.1");
+        CHECK_EQ(n.len, 0u);
+    }
+    /* An erase the store refuses leaves the outcome as it was. */
+    {
+        note_fake_t n = { 0 };
+        const fw_note_ops_t o = note_ops(&n);
+        CHECK(fw_note_write(&o, "0.24.1"));
+        n.erase_fails = true;
+        boot_fake_t f = { .pending = false, .last_invalid = true };
+        CHECK_EQ(settle(&f, &n, true, &seen), FW_BOOT_ROLLED_BACK);
+        CHECK_EQ(n.erases, 1u);
+    }
+}
+
+TEST_CASE(the_trial_path_is_unchanged_by_the_note)
+{
+    /* Each trial outcome with no note, a note and a corrupt one: the same
+     * result and the same calls as fw_boot_decide() alone. */
+    for (int kind = 0; kind < 3; ++kind) {
+        for (int ui = 0; ui < 2; ++ui) {
+            for (int ok = 0; ok < 2; ++ok) {
+                note_fake_t n = { 0 };
+                const fw_note_ops_t o = note_ops(&n);
+                if (kind > 0) {
+                    CHECK(fw_note_write(&o, "0.24.1"));
+                }
+                if (kind == 2) {
+                    n.buf[5] ^= 0x40u;
+                }
+                boot_fake_t f = { .pending = true, .valid_ok = ok != 0,
+                                  .last_invalid = true };
+                boot_fake_t g = f;
+                fw_note_seen_t seen;
+                const fw_boot_t want = boot(&g, ui != 0, kind == 1);
+                CHECK_EQ(settle(&f, &n, ui != 0, &seen), want);
+                CHECK_STR_EQ(f.calls, g.calls);
+                CHECK(ui == 0 || strchr(f.calls, 'i') == NULL);
+                CHECK(ui != 0 || strchr(f.calls, 'v') == NULL);
+            }
+        }
+    }
+    /* The note is read before the first call, so the call that restarts
+     * can name it. */
+    note_fake_t n = { 0 };
+    const fw_note_ops_t o = note_ops(&n);
+    CHECK(fw_note_write(&o, "0.24.1"));
+    fw_note_seen_t seen;
+    memset(&seen, 0xA5, sizeof(seen));
+    g_seen_watch = &seen;
+    g_state_at_invalid = -1;
+    boot_fake_t f = { .pending = true };
+    (void)settle(&f, &n, false, &seen);
+    g_seen_watch = NULL;
+    CHECK_EQ(g_state_at_invalid, FW_NOTE_FOUND);
+}
+
 int main(void)
 {
     g_img = malloc(SLOT + 64u);
@@ -414,6 +767,13 @@ int main(void)
     RUN(a_first_start_that_cannot_be_kept_says_so);
     RUN(a_start_after_a_failed_one_reports_once);
     RUN(a_start_that_is_no_trial_marks_nothing);
+    RUN(the_installers_note_reads_back_byte_for_byte);
+    RUN(a_noted_start_after_a_failed_one_reports_rolled_back_once);
+    RUN(no_note_is_a_normal_start_and_writes_nothing);
+    RUN(a_corrupt_note_reads_as_none_and_is_erased);
+    RUN(a_note_of_another_layout_reads_as_none);
+    RUN(the_note_is_erased_after_each_outcome_but_going_back);
+    RUN(the_trial_path_is_unchanged_by_the_note);
     free(g_img);
     free(g_slot);
     return test_summary("fw_install");

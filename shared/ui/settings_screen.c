@@ -39,6 +39,7 @@
 #include "settings_rows_int.h"
 #include "settings_sensors.h"
 #include "tone_link.h"
+#include "ui_board.h"
 #include "ui_icons.h"
 #include "ui_keypad.h"
 #include "ui_pinlist.h"
@@ -101,6 +102,9 @@ const char *settings_screen_help(setting_id_t id)
     if ((id == SET_PDMINI_TX || id == SET_PDMINI_RX)
         && settings_pdmini_same_pin()) {
         return TR(SET_PD_SAME_PIN);
+    }
+    if (settings_fixed(id) && !settings_screen_unheld(id)) {
+        return TR(SET_PIN_SOLDERED);
     }
     if (!settings_screen_unheld(id)) {
         return hitec && settings_get_int(SET_HITEC_RX)
@@ -174,6 +178,11 @@ int settings_hub_tiles(void)
     return TILE_COUNT;
 }
 
+/** @brief LAYOUT's tile, in PICK A PIN's place on a board whose pins
+ *         are soldered: that board has no pin to pick. */
+static const hub_tile_t k_layout_tile =
+    HUB_SCREEN(SCREEN_LAYOUT, TX_SET_HUB_LAYOUT, ui_icon_board);
+
 bool settings_screen_opens(ui_screen_id_t id)
 {
     for (int i = 0; i < TILE_COUNT; ++i) {
@@ -181,7 +190,7 @@ bool settings_screen_opens(ui_screen_id_t id)
             return true;
         }
     }
-    return false;
+    return id == k_layout_tile.screen;
 }
 
 int settings_screen_category(void)
@@ -194,6 +203,24 @@ gfx_rect_t stg_tile_rect(int i)
     gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
     (void)settings_hub_slot(i, &r);
     return r;
+}
+
+const hub_tile_t *stg_hub_tile(int i)
+{
+    const hub_tile_t *t = &k_tiles[i];
+    if (t->cat < 0 && t->screen == SCREEN_PICKER && ui_board_roles() != NULL) {
+        return &k_layout_tile;
+    }
+    return t;
+}
+
+ui_screen_id_t settings_hub_tile_screen(int i)
+{
+    if (i < 0 || i >= TILE_COUNT) {
+        return SCREEN_COUNT;
+    }
+    const hub_tile_t *t = stg_hub_tile(i);
+    return (t->cat < 0) ? t->screen : SCREEN_SETUP;
 }
 
 static int tile_at(int x, int y)
@@ -450,7 +477,8 @@ static bool on_key(int kind, int index, int x, int y)
     /* A row whose value follows another setting has no keys: a press
      * there is a press on the list.  Neither has a string's. */
     if (row_is_heading(index) || row_text(index) >= 0
-        || settings_derived(row_setting(index))) {
+        || settings_derived(row_setting(index))
+        || settings_fixed(row_setting(index))) {
         return false;
     }
     return gfx_rect_contains(stg_row_rect(index), x, y);
@@ -676,7 +704,7 @@ static void tick(float dt_s)
 /* A tap on tile @p index: a category's list, or a screen of its own. */
 static void open_tile(int index)
 {
-    const hub_tile_t *t = &k_tiles[index];
+    const hub_tile_t *t = stg_hub_tile(index);
     if (t->cat < 0) {
         ui_router_goto(t->screen);
         return;

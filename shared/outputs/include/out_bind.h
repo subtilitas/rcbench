@@ -62,6 +62,7 @@ extern "C" {
 typedef enum {
     OUTBIND_BOARD_UNKNOWN = 0,  /**< nothing answered, or unknown identity */
     OUTBIND_BOARD_PICO_HEADER = 1,  /**< Pico form factor, wired by hand    */
+    OUTBIND_BOARD_RBMOD = 2,        /**< the rbmod carrier: soldered pins   */
 } outbind_board_id_t;
 
 /** @brief The most pins any board in this build brings out. */
@@ -114,6 +115,69 @@ typedef struct {
     uint8_t decivolts;
 } outbind_pad_t;
 
+/** @brief The servo outputs a board with soldered pins has (PWM01 to PWM04). */
+#define OUTBIND_FIXED_OUTS 4u
+/** @brief The programming ports a board with soldered pins has (PROGP01 to
+ *         PROGP04). */
+#define OUTBIND_FIXED_PROGS 4u
+
+/** @brief The positions a connector of a board with soldered pins has, at
+ *         most. */
+#define OUTBIND_CONN_POSITIONS 4u
+
+/** @brief What a connector's positions carry. */
+typedef enum {
+    OUTBIND_CONN_PROG = 0, /**< programming ports: roles prog[]           */
+    OUTBIND_CONN_OUT,      /**< servo outputs: roles out[]                */
+} outbind_conn_kind_t;
+
+/**
+ * @brief One signal connector of a board with soldered pins, its positions
+ *        in the order the connector numbers them.
+ *
+ * Each position is signal, + and GND; @p rail names the net on its +.
+ */
+typedef struct {
+    const char *name;                         /**< "J1"                   */
+    uint8_t     kind;                         /**< outbind_conn_kind_t    */
+    uint8_t     count;                        /**< positions, at most 4   */
+    uint8_t     gpio[OUTBIND_CONN_POSITIONS]; /**< signal of position n+1 */
+    const char *rail[OUTBIND_CONN_POSITIONS]; /**< net on its +           */
+} outbind_conn_t;
+
+/** @brief One other connector or net of such a board, and its pins. */
+typedef struct {
+    const char *name;     /**< "J5", or "" for a net on no connector       */
+    const char *what;     /**< what it carries: "SENSOR I2C"               */
+    uint8_t     gpio[2];  /**< its pins, OUTBIND_NO_GPIO for none          */
+} outbind_other_t;
+
+/**
+ * @brief The pin of every role on a board whose pins are soldered.
+ *
+ * A carrier wires each lead to one GPIO (general-purpose input/output), so
+ * the pin of a role is a fact of the board and not a setting.  The IOmcu
+ * starts each role on its pin and refuses any other
+ * (shared/outputs/board_fix.h); the panel names each pin by its role.
+ */
+typedef struct {
+    uint8_t out[OUTBIND_FIXED_OUTS];   /**< the servo outputs: OUTPUTS slot n */
+    uint8_t prog[OUTBIND_FIXED_PROGS]; /**< the programming ports, port n    */
+    uint8_t sda;          /**< the sensor bus: SDA                          */
+    uint8_t scl;          /**< and SCL                                      */
+    uint8_t sda2;         /**< the second I2C bus: SDA (not driven yet)     */
+    uint8_t scl2;         /**< and SCL                                      */
+    uint8_t pd_tx;        /**< the PD mini's UART: TX, to the module's DM   */
+    uint8_t pd_rx;        /**< and RX, from the module's DP                 */
+    uint8_t tap;          /**< the phase tap                                */
+    uint8_t prog_5v_en;   /**< enable of the programming ports' 5V DC-DC    */
+    uint8_t heartbeat;    /**< the safety heartbeat from the panel          */
+    const outbind_conn_t  *conns;      /**< the signal connectors          */
+    uint8_t                conn_count; /**< entries in `conns`             */
+    const outbind_other_t *others;     /**< the other connectors and nets  */
+    uint8_t                other_count;/**< entries in `others`            */
+} outbind_roles_t;
+
 /**
  * @brief One board: its identity, catalogue, outline and pads.
  */
@@ -142,6 +206,9 @@ typedef struct {
      */
     const outbind_pad_t *pads;
     uint8_t              pad_count;   /**< entries in `pads`                  */
+    /** @brief The pin of each role on a board whose pins are soldered, or
+     *         NULL for a board whose pins are chosen. */
+    const outbind_roles_t *roles;
 } outbind_board_t;
 
 /**
@@ -158,6 +225,18 @@ typedef struct {
  *            has @p id.  OUTBIND_BOARD_UNKNOWN always returns NULL.
  */
 const outbind_board_t *outbind_board(uint16_t id);
+
+/**
+ * @brief The pin of each role on board @p id, or NULL for a board whose pins
+ *        are chosen and for one this build does not describe.
+ *
+ * A learned board is never one with roles: the catalogue page carries no
+ * roles.
+ *
+ * @param id  Identity the IOmcu reports, as for outbind_board().
+ * @return    The board's roles, or NULL.
+ */
+const outbind_roles_t *outbind_roles(uint16_t id);
 
 /* ------------------------------------------------ a board that describes itself */
 
@@ -377,6 +456,28 @@ uint8_t outbind_index_of(uint16_t board, uint8_t gpio);
  */
 uint64_t outbind_reserved_mask(uint16_t board);
 
+/**
+ * @brief How many cells the OUTPUTS grid shows for the board: its catalogue,
+ *        or on a board with roles its servo outputs only.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @return       The cells, or 0 for a board this build does not know.
+ */
+uint8_t outbind_cell_count(uint16_t board);
+
+/**
+ * @brief The catalogue index cell @p cell shows.
+ *
+ * Cell order is slot order: catalogue (GPIO) order, or on a board with roles
+ * PWM01 first, so slot n is output n + 1 there.
+ *
+ * @param board  Identity of the board, as for outbind_board().
+ * @param cell   Cell, 0 to outbind_cell_count() - 1.
+ * @return       The catalogue index, or the board's count for a cell past
+ *               the grid; 0 for a board this build does not know.
+ */
+uint8_t outbind_cell_index(uint16_t board, uint8_t cell);
+
 /* ------------------------------------------------------------- protocols */
 
 /**
@@ -583,6 +684,10 @@ typedef enum {
     OUTBIND_CLASH_PROG_SLICE,
     /** @brief The pin's compare register drives a pin already bound as PWM. */
     OUTBIND_CLASH_COMPARE,
+    /** @brief On a board with roles: the pin's slice holds a servo output
+     *         bound as PWM of the other role (a surface beside a
+     *         throttle), which may run at another frame rate. */
+    OUTBIND_CLASH_OUT_SLICE,
 } outbind_clash_t;
 
 /**
@@ -642,9 +747,10 @@ outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
  * selection does not use is set to no driver, so a page written from this is
  * the whole truth rather than a change to what was there.
  *
- * Slots are filled in pin order across every protocol and take channels from
- * zero upward, so the lowest chosen pin is channel 0 whichever protocol holds
- * it.  Filling stops at LINK_OUT_SLOTS slots or LINK_OUT_CHANNELS channels,
+ * Slots are filled in cell order (outbind_cell_index()) across every
+ * protocol and take channels from zero upward: pin order, so the lowest
+ * chosen pin is channel 0 whichever protocol holds it, or on a board with
+ * roles PWM01 to PWM04.  Filling stops at LINK_OUT_SLOTS slots or LINK_OUT_CHANNELS channels,
  * whichever comes first.  Returns how many slots were used.
  *
  * @param b     The selection.  NULL leaves @p regs with the default slots.

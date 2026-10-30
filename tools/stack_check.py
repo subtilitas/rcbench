@@ -15,7 +15,8 @@ one build at ESP-IDF v5.5.5 the decoder finds every one of the 11,903
 direct calls objdump lists in the panel's functions, and the frame of
 every function but two equals its largest `addi sp, sp, -N`: one sizes a
 buffer at run time, and one opens a second frame after an early return,
-which the decoder counts on top of the first.
+which the decoder counts on top of the first.  The count is not repeated
+on ESP-IDF v6.1.
 
 Calls the tool follows:
 
@@ -50,7 +51,7 @@ A task with any of these has a depth that is a lower bound, and the result
 says so.  The margin is what covers them.
 
 The margin is 1024 bytes.  OUTSIDE_FRAMES of it every task spends outside
-its frames on the ESP32-P4 under ESP-IDF v5.5.5 (rvruntime-frames.h and
+its frames on the ESP32-P4 under ESP-IDF v6.1 (rvruntime-frames.h and
 port.c of the RISC-V port):
 
 - 128 for the registers an interrupt saves on the task's stack before it
@@ -130,7 +131,7 @@ from pathlib import Path
 
 from stack_elf import (ROOT, STT_FUNC, STT_OBJECT, Elf, Graph, call_args,
                        die, doc_rows)
-from stack_iomcu import IOMCU_DIR, IOMCU_ELF, check_iomcu_doc, iomcu_check
+from stack_iomcu import IOMCU_DIR, check_iomcu_doc, iomcu_check, iomcu_elf
 from stack_riscv import EM_RISCV, analyse_riscv
 
 PANEL_DIR = ROOT / "firmware" / "panel"
@@ -304,12 +305,16 @@ SERVO_STORE_CALLS = {
                          "hitec_files.c:io_size", "hitec_files.c:io_read"),
 }
 
-# The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
-# check after an update, in components/fw_ota, which writes otadata on the
-# main task.  The same checks as PORT_CALLS.
+# The fw_boot_ops_t and fw_note_ops_t callbacks shared/fwupdate calls: the
+# panel's start check after an update, in components/fw_ota, which writes
+# otadata and erases the restart note in NVS on the main task, and the
+# install's write of that note.  The same checks as PORT_CALLS.
 BOOT_CALLS = {
     "fw_boot_decide": ("boot_pending", "boot_mark_invalid", "boot_mark_valid",
                        "boot_restart", "boot_last_invalid"),
+    "fw_note_read": ("note_load",),
+    "fw_note_write": ("note_save",),
+    "fw_boot_settle": ("note_erase",),
 }
 
 
@@ -647,7 +652,7 @@ def main() -> int:
         rows, fails, out = iomcu_check(build, args.verbose)
         if args.check_doc:
             fails += check_iomcu_doc(rows)
-        print(f"stack_check: {build / IOMCU_ELF}")
+        print(f"stack_check: {iomcu_elf(build)}")
         print("\n".join(out))
         for f in fails:
             print("FAIL " + f)

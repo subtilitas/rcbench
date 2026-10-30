@@ -16,6 +16,7 @@ set(SRCS
     perf_watch.c
     supply.c
     supply_link.c
+    prog_supply_link.c
     sense_link.c
     sense_link_view.c
     sense_map_link.c

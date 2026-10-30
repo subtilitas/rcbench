@@ -45,6 +45,7 @@
 #include "touch.h"
 #include "ui_band.h"
 #include "ui_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 
 /**
@@ -577,11 +578,18 @@ void panel_frame_loop(void)
          * question, which comes first. */
         upd_remind_service(armed || arm_wanted_now,
                            armed || arm_wanted_now || supply_now
-                               || supply_live_or_coming(),
+                               || supplies_live_or_coming(),
                            &cu);
         cu_render_service(armed || arm_wanted_now || supply_now
-                              || supply_live_or_coming(),
+                              || supplies_live_or_coming(),
                           link_up, &cu);
+
+        /* The interface pins of a board that solders them (the rbmod
+         * carrier) follow the board the IOmcu reports, and each one that
+         * moves is written as an edit by hand would be. */
+        if (ui_board_apply_pins(settings_changed)) {
+            settings_screen_invalidate();
+        }
 
         /*
          * A link that was up and has been gone for LINK_LOST_SCREEN_MS says
@@ -646,7 +654,7 @@ void panel_frame_loop(void)
         wifi_service(arm_wanted_now || armed_now, stops_now);
         upd_service(arm_wanted_now || armed_now,
                     arm_wanted_now || armed_now || supply_now
-                        || supply_live_or_coming(),
+                        || supplies_live_or_coming(),
                     stops_now, &cu);
 
         /*
@@ -686,7 +694,7 @@ void panel_frame_loop(void)
          * -- the next frame is one.
          */
         const bool quiet =
-            flash_gate_open(arm_wanted_now, supply_live_or_coming());
+            flash_gate_open(arm_wanted_now, supplies_live_or_coming());
         (void)settings_save_tick(quiet && !s_artbusy
                                  && !atomic_load(&s_keeping));
         /* And the ramp, from the task that owns the values, for the control

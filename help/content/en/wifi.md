@@ -24,7 +24,7 @@ WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Se
 
 ![The radio may not start, after it went off on a switch to ARMED](view:wifi-blocked)
 
-The radio starts only with the bench SAFE, the supply output off and no log run open. Otherwise the buttons that start it are grey and the card says what is missing.
+The radio starts only with the bench SAFE, the supply output off and no log run open. Otherwise the buttons that start it are grey and the card says what is missing. On the rbmod carrier the programming ports' 5V, GPIO 21, counts as a supply output as well: while a programmer holds a port, and until SUPPLY reads it `OFF`.
 
 The radio goes off on its own, and the card names the reason in one line:
 
@@ -116,8 +116,8 @@ The browser page asks for an 8-character code before it lists a file or takes an
 The page uses the panel's language.
 
 - **Panel firmware**: the version installed, a file picker and Upload. The file is the release asset `rcbench-panel-p4-vX.Y.Z.bin`. A file larger than 8,126,464 bytes is refused before a byte is sent.
-- **Files on the card**: every file with its name, size in bytes and time in the zone of SETUP > PANEL's Time zone; a 1980 date, an unset clock's, leaves the time empty. Each name downloads that file. The page writes nothing on the card.
-- **Download all as one ZIP file**: the whole card, stored uncompressed. A file that grows by appending is sent as it was when the download started; a file added during it is left out. Removing or renaming a file during the download ends it as failed; the rotation of `BENCH/RCBENCH.LOG` at 1MiB is a rename. On a home network a 16MiB file came down at 688-757kB/s and a 2.56MB image went up at 556-599kB/s. The page itself, 18.9kB with its card listing, took 4.54s.
+- **Files on the card**: the card in two panes, as [FILES](files.md) shows it: the root on the left, the User log folder on the right, 48 entries a page with PREV and NEXT. A tap selects a row; RESCAN, INFO, DOWNLOAD and OPEN act on it, and a dimmed button says why when tapped. OPEN enters a folder or shows a text file read-only, coloured as on the panel, with `LINE n OF m` counted as the panel's viewer counts; a file over 1MiB, one the logger writes and the servo programmers' records only download. INFO gives the time in the zone of SETUP > PANEL's Time zone, `not known` for a 1980 date. The page follows the browser's light or dark scheme in the panel's theme colours. The page writes nothing on the card, and it needs JavaScript.
+- **Download all as one ZIP file**: the whole card, stored uncompressed. A file that grows by appending is sent as it was when the download started; a file added during it is left out. Removing or renaming a file during the download ends it as failed; the rotation of `BENCH/RCBENCH.LOG` at 1MiB is a rename. On a home network a 16MiB file came down at 688-757kB/s and a 2.56MB image went up at 556-599kB/s. The page itself, 18.9kB with its old card listing, took 4.54s; the page with the two panes is about 33kB, its time not measured.
 
 The page answers one request at a time: a request made during a download waits for its end. A download the browser takes nothing of for 30s ends, and the browser reports it as failed.
 

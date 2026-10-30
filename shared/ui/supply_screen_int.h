@@ -112,6 +112,10 @@
 #define RESET_Y   (CTL_Y + TITLE_H + 14)  /**< RESET PEAKS: y 366. */
 #define OUT_Y     (RESET_Y + BTN_H + 10)  /**< OUTPUT ON / OFF: y 424. */
 #define OUT_H     60                      /**< Its height: 9.0mm. */
+/** @brief The programming ports' own supply's line under OUTPUT, px. */
+#define PROG5V_Y  (OUT_Y + OUT_H + 12)
+_Static_assert(PROG5V_Y + LINE_H <= CTL_Y + CTL_H - 4,
+               "the PROG PORTS 5V line ends inside CONTROL");
 _Static_assert(OUT_Y + OUT_H <= STOP_FLOOR,
                "OUTPUT OFF ends above the alert band");
 _Static_assert(OUT_H >= UI_TAP_MIN, "OUTPUT is a finger tall");
@@ -328,6 +332,15 @@ typedef struct {
     bool            held_kst;
     /** @brief The Hitec programmer's word on the hold */
     bool            held_hitec;
+    /* The operator's set points while a programming port's stand in their
+     * place, and the port's as this screen took them; see
+     * supply_screen_port_done(). */
+    /** @brief Whether a port's set points stand in for the operator's */
+    bool            lent;
+    float own_v,                            /**< the operator's voltage set point, V */
+          own_i,                            /**< the operator's current limit, A */
+          lent_v,                           /**< the port's voltage as taken, V */
+          lent_i;                           /**< the port's current limit as taken, A */
     /* The screen whose ON the output is, while it is on or an ON is on
      * its way; and an OFF owed for leaving it while a programming port
      * held the supply, sent when the port lets go.  See
@@ -368,6 +381,8 @@ typedef struct {
     uint32_t        drawn_plot[2];      /**< plot revision each frame buffer last drew */
     uint8_t         drawn_title[2];     /**< title tag each frame buffer last drew */
     uint32_t        ctrl_rev;           /**< revision of the CONTROL card */
+    uint32_t        prog_5v;            /**< the ports' own supply as last drawn:
+                                             state << 8 | pin                */
     uint32_t        drawn_ctrl[2];      /**< CONTROL revision each frame buffer last drew */
     uint32_t        set_rev;            /**< revision of the set points */
     uint32_t        drawn_set[2];       /**< set point revision each frame buffer last drew */
@@ -514,4 +529,10 @@ void sup_tick(float dt_s);
 
 /* --- supply_draw.c ------------------------------------------------------ */
 
-void sup_render(gfx_canvas_t *c, int buffer_index);
+void sup_render(gfx_canvas_t *c, int buffer_index);/**
+ * @brief The ports' own supply as published (supply_screen_set_prog_5v()).
+ * @return state << 8 | pin
+ */
+uint32_t sup_prog_5v(void);
+
+

@@ -54,6 +54,7 @@
 #include "fm_io.h"
 #include "fm_req.h"
 #include "text_buf.h"
+#include "wa_guard.h"
 #include "wa_text.h"
 
 #ifdef __cplusplus
@@ -101,6 +102,8 @@ typedef enum {
     WA_API_MEMORY,         /**< 503: no PSRAM for the request            */
     WA_API_CODE,           /**< 403: no access code, or a wrong one      */
     WA_API_REQUEST,        /**< 400: a parameter the API does not take   */
+    WA_API_BODY,           /**< 400: a read that carries a body (guard)  */
+    WA_API_HOST,           /**< 421: a Host that is not the panel (guard) */
     WA_API_COUNT
 } wa_api_err_t;
 
@@ -132,6 +135,7 @@ typedef struct {
     uint64_t total;       /**< its bytes; 0 when not known                 */
     uint64_t free;        /**< its free bytes; 0 when not known            */
     fm_err_t gate;        /**< fm_gate() of a write now                    */
+    const char *user_logs; /**< USER LOG FOLDER; NULL or "" the default    */
 } wa_api_status_t;
 
 /**
@@ -173,6 +177,17 @@ void wa_api_set_logs(wa_api_t *api, const char *user_logs,
 wa_api_err_t wa_api_of(fm_err_t e);
 
 /**
+ * @brief The API's reason for a refusal of the request guard (wa_guard.h),
+ *        so a read of the API refused there is answered in JSON as its
+ *        other refusals are.
+ * @param g  the guard's answer
+ * @return WA_API_OK for WA_GUARD_OK, WA_API_BODY and WA_API_HOST for the
+ *         two a read can meet, WA_API_REQUEST for the others, which only
+ *         a write meets
+ */
+wa_api_err_t wa_api_of_guard(wa_guard_t g);
+
+/**
  * @brief The reason word of @p e: "NOT_FOUND" and the like.
  * @param e  the reason
  * @return a constant string; "" for WA_API_OK, "IO" outside the enum
@@ -210,7 +225,8 @@ const char *wa_api_text(wa_api_err_t e, bool de);
 void wa_api_error_json(wa_out_t *o, wa_api_err_t e, bool de);
 
 /**
- * @brief /api/status's body.
+ * @brief /api/status's body.  "user_logs" is the User log folder, where
+ *        FILES opens its right pane.
  * @param o   the output
  * @param st  the panel's state
  */
@@ -240,7 +256,10 @@ void wa_api_list_json(const wa_api_t *api, wa_out_t *o);
 wa_api_err_t wa_api_info(wa_api_t *api, const char *query);
 
 /**
- * @brief The facts wa_api_info() read, as JSON.
+ * @brief The facts wa_api_info() read, as JSON.  "t" is the stamp the card
+ *        holds, -1 for none; "time" is it as INFO shows it,
+ *        "YYYY-MM-DD HH:MM" in the zone in force (wall_local_s()), and ""
+ *        for a stamp that says no date (wall_stamp_known()).
  * @param api  the API, after wa_api_info() answered WA_API_OK
  * @param o    the output
  */

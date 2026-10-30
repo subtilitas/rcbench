@@ -19,7 +19,7 @@ ist es das 7-Zoll-ESP32-S3-Displayboard von Waveshare
 - 0.23.0 ist das erste Release für das ESP32-P4-Panel, ein Testing-Release.
   Seine Bedienoberfläche ist für 1024 x 600 neu aufgeteilt; sie ist nicht
   das hochskalierte 800-x-480-Layout.
-- Das ESP32-P4-Board braucht die Chip-Revision 3.2 (ESP-IDF v5.5.5).
+- Das ESP32-P4-Board braucht die Chip-Revision 3.2 (ESP-IDF v6.1).
 - Beide Panels nutzen denselben IOmcu, dasselbe IO-Board und denselben CAN-Link.
 - Auf dem ESP32-P4-Board ist der Heartbeat IO28 und der Drehknopf IO30
   (SDA) und IO31 (SCL), alle auf der 12-poligen Stiftleiste P3.
@@ -98,7 +98,7 @@ ctest --test-dir test/host/build --output-on-failure
 ```
 
 Die Panel-Firmware braucht ESP-IDF (Espressif Internet-of-Things Development
-Framework) v5.5.5 oder neuer auf der Linie v5.5, die IOmcu-Firmware pico-sdk 2.0 oder neuer
+Framework) v6.1, die IOmcu-Firmware pico-sdk 2.0 oder neuer
 (SDK, Software Development Kit).
 [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de) beschreibt
 Toolchains, Befehle und die CI-Gates (Continuous Integration).
@@ -132,7 +132,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **98,1%**, 64 465 von 65 747 Zeilen in 276 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **98,1%**, 65 267 von 66 551 Zeilen in 282 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
