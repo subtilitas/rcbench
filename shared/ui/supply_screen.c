@@ -658,8 +658,10 @@ static bool offer_fits(void)
  * @brief The supply's lock as the two programmers' words make it: held while
  *        either holds a port.
  * @param held whether a programming port holds the supply
+ * @param by_leave whether a programmer's LEAVE ends its hold with this call:
+ *        only then does a release arm the restore offer
  */
-static void port_held_apply(bool held)
+static void port_held_apply(bool held, bool by_leave)
 {
     if (s.port_held == held) {
         return;
@@ -705,10 +707,11 @@ static void port_held_apply(bool held)
     }
     /* Let go, the set points come under the caps again. */
     apply_caps();
-    /* And a port that let go of an output it left on, at its own set
-     * points: the operator's are offered back onto it, once. */
+    /* And a LEAVE that let go of an output it left on, at the port's set
+     * points: the operator's are offered back onto it, once.  Any other
+     * end of the hold offers nothing. */
     if (!held) {
-        s.offer       = offer_fits();
+        s.offer       = by_leave && offer_fits();
         s.offer_stops = s.stops;
         s.offer_offs  = s.off_count;
     }
@@ -728,22 +731,56 @@ static bool port_held_now(void)
     return !s.ports_own && (s.held_kst || s.held_hitec);
 }
 
+/**
+ * @brief One programmer's word on the hold, and whether its LEAVE ends it.
+ * @param held the programmer's word as this screen has it
+ * @param left whether its LEAVE ended since the word last changed
+ * @param now the word now
+ * @return true when the word turns from held to free after a LEAVE
+ */
+static bool port_word(bool *held, bool *left, bool now)
+{
+    const bool by_leave = *held && !now && *left;
+
+    /* A LEAVE counts for the end of the hold it ends: a hold that begins
+     * or ends drops it either way. */
+    if (*held != now) {
+        *left = false;
+    }
+    *held = now;
+    return by_leave;
+}
+
 void supply_screen_set_port_held(bool held)
 {
-    s.held_kst = held;
-    port_held_apply(port_held_now());
+    const bool by_leave = port_word(&s.held_kst, &s.left_kst, held);
+
+    port_held_apply(port_held_now(), by_leave);
 }
 
 void supply_screen_set_hitec_held(bool held)
 {
-    s.held_hitec = held;
-    port_held_apply(port_held_now());
+    const bool by_leave = port_word(&s.held_hitec, &s.left_hitec, held);
+
+    port_held_apply(port_held_now(), by_leave);
 }
 
 void supply_screen_set_ports_own(bool own)
 {
+    /* The ports on their own supply let go of this screen with the
+     * programmers' words still held: no LEAVE ends that. */
     s.ports_own = own;
-    port_held_apply(port_held_now());
+    port_held_apply(port_held_now(), false);
+}
+
+void supply_screen_kst_leave_done(void)
+{
+    s.left_kst = true;
+}
+
+void supply_screen_hitec_leave_done(void)
+{
+    s.left_hitec = true;
 }
 
 bool supply_screen_port_held(void) { return s.port_held; }

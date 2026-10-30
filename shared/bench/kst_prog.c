@@ -1005,6 +1005,7 @@ static void done_ok(kst_prog_t *p, unsigned op)
                           && !flag(p, LINK_KS_F_RAIL);
 
         session_gone(p);
+        ++p->leaves;
         (void)kst_prog_say(p, owed ? KST_PROG_MSG_LEFT_NOTE
                                    : KST_PROG_MSG_LEFT, 0);
         break;
@@ -1012,6 +1013,7 @@ static void done_ok(kst_prog_t *p, unsigned op)
     case LINK_KST_OP_POWER_CYCLED:
         /* The exit where LEAVE is not taken: no wait was applied. */
         session_gone(p);
+        ++p->leaves;
         (void)kst_prog_say(p, p->leave_doubt ? KST_PROG_MSG_LEFT_DOUBT
                                        : KST_PROG_MSG_LEFT_NO_WAIT, 0);
         break;
@@ -1237,6 +1239,9 @@ static bool cycle_end(kst_prog_t *p, const kst_link_outcome_t *o)
         (void)kst_prog_say(p, p->f.stopped ? KST_PROG_MSG_STOPPED
                                            : KST_PROG_MSG_LEAVE_CUT, 0);
         return true;
+    }
+    if (!cut) {
+        ++p->leaves;
     }
     (void)kst_prog_say(p, !cut ? (p->cycle_old ? KST_PROG_MSG_LEFT_CYCLED_OLD
                                                : KST_PROG_MSG_LEFT_CYCLED)
@@ -2172,6 +2177,11 @@ bool kst_prog_holds_port(const kst_prog_t *p)
     default:
         return p->fed && kst_prog_port_taken(&p->f.rd);
     }
+}
+
+uint32_t kst_prog_leaves(const kst_prog_t *p)
+{
+    return p->leaves;
 }
 
 void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma)

@@ -346,6 +346,11 @@ typedef struct {
     bool            held_kst;
     /** @brief The Hitec programmer's word on the hold */
     bool            held_hitec;
+    /** @brief The KST programmer's LEAVE ended since its word on the hold
+     *         last changed: the end of its hold is a LEAVE's */
+    bool            left_kst;
+    /** @brief The same for the Hitec programmer */
+    bool            left_hitec;
     /** @brief The programming ports run from their own supply, not the
      *         PD mini: neither programmer's word holds this screen */
     bool            ports_own;
@@ -359,8 +364,8 @@ typedef struct {
           lent_v,                           /**< the port's voltage as taken, V */
           lent_i;                           /**< the port's current limit as taken, A */
     /* The operator's set points offered back onto the live output a port
-     * left on: armed as the port lets go, standing while that run lasts;
-     * see supply_screen_restore_offer(). */
+     * left on: armed as a LEAVE ends the hold, standing while that run
+     * lasts; see supply_screen_restore_offer(). */
     /** @brief Whether the offer to restore the operator's set points stands */
     bool            offer;
     uint32_t        offer_stops;        /**< stop count the offer was made under */

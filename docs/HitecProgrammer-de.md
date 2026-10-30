@@ -826,10 +826,16 @@ Die Frage kommt einmal je Verlassen, und nicht:
   Verlassen geht;
 - wenn sich nach dem Verlassen ein Sollwert änderte oder die Sollwerte von
   vor VERBINDEN, auf die SUPPLY-Grenzen gehalten, denen der Sitzung
-  gleichen.
+  gleichen;
+- bei jedem anderen Ende des Haltens des Ports am Netzteil: PORT
+  FREIGEBEN, ein STOP, ein Fehler, ein verlorener Link, ein Neustart des
+  Panels oder des IOmcu, ein Port, den der IOmcu ohne Verlassen
+  zurückgibt, oder Ports, die auf ihre eigene Versorgung wechseln, während
+  eine Sitzung den PD mini hält. Bei eingeschaltetem Ausgang bleiben die
+  Sollwerte der Sitzung dann bis zum nächsten Ausschalten.
 
-Die Frage steht nur auf SERVO. Gibt ein Port das Netzteil frei, während
-eine andere Seite angezeigt wird, kommt die Frage, sobald SERVO wieder
+Die Frage steht nur auf SERVO. Endet ein Verlassen, während eine andere
+Seite angezeigt wird, kommt die Frage, sobald SERVO wieder
 angezeigt wird, solange der Ausgang eingeschaltet bleibt. Bleibt sie
 unbeantwortet, wenn SERVO verlassen wird, ist sie weg, wie bei NEIN.
 

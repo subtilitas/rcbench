@@ -235,7 +235,14 @@ bool hitec_panel_has_press(uint8_t id)
 void hpn_supply_sync(void)
 {
     const hitec_prog_t *p = &hp.prog;
+    const uint32_t leaves = hitec_prog_leaves(p);
 
+    /* A LEAVE is told before the word it ends: only its release offers
+     * the operator's set points back. */
+    if (leaves != hp.leaves_seen) {
+        hp.leaves_seen = leaves;
+        supply_screen_hitec_leave_done();
+    }
     /* The SUPPLY page's own word that a programming port holds it
      * (LINK_SP_PORT) counts too: it comes before the HITEC page is read. */
     supply_screen_set_hitec_held(hitec_prog_holds_port(p)

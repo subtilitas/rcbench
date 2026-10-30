@@ -343,7 +343,13 @@ or OUTPUT ON's hold, which it waits for; after the output went off, an
 error switched it off or a STOP came between the LEAVE and the question;
 inside a limit run, whose read session leaves through the same LEAVE; when
 a set point changed since; or when the set points from before the session,
-held to the SUPPLY limits, equal the port's. A port that takes the supply,
+held to the SUPPLY limits, equal the port's. Only a LEAVE asks. Every
+other end of a port's hold on the supply asks nothing: RELEASE PORT, a STOP, an error, a lost link, a restart of the panel
+or the IOmcu, a port the IOmcu gives back without a LEAVE, and ports that
+turn to their own supply (the rbmod carrier's PROG_SUPPLY) while a session
+holds the PD mini. With the output on, the session's set points then stay
+until the next OFF.
+A port that takes the supply,
 an OFF asked (OUTPUT OFF included) or an output that goes off while it
 stands closes it, before the output reads off. It stands on SERVO
 only: a LEAVE seen while another screen is shown is asked about when SERVO
@@ -1488,8 +1494,16 @@ keypad and question and OUTPUT ON's hold before it, an OFF, an error's
 OFF, OUTPUT OFF and a STOP, OUTPUT OFF while it or the HV warning stands,
 set points that do not differ, one moved, a
 lowered cap, and the question as drawn in both languages: OUTPUT IS ON in
-its frame, YES and NO each pressed; and no question on a board whose ports run
-from their own supply, where a session does not hold the SUPPLY screen. `test_kst_file` runs format 1 and format 2
+its frame, YES and NO each pressed; no question on a board whose ports run
+from their own supply, where a session does not hold the SUPPLY screen;
+and no question at an end of the hold without a LEAVE, at a LEAVE of one
+programmer under the other's hold, or when the ports turn to their own
+supply under a session. `test_kst_panel_leave` and `test_hitec_panel` run
+the same end to end: a LEAVE offers the set points back; a STOP, a lost
+link, a restart of the IOmcu and RELEASE PORT offer nothing.
+`test_kst_prog_cycle` and `test_hitec_prog_safe` count the LEAVEs that
+end in PWM (`kst_prog_leaves()`, `hitec_prog_leaves()`) and none of the
+other ends. `test_kst_file` runs format 1 and format 2
 files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card

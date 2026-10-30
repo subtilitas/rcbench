@@ -95,7 +95,7 @@ The SET line holds the SUPPLY screen's two set points and its output switch. A c
 - A tap on a set point opens the keypad over the left card.
 - OUTPUT ON is a 2s hold, OUTPUT OFF a tap.
 - Leaving SERVO switches off an output SERVO switched on.
-- After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)).
+- After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)). No other end of a port's hold asks: RELEASE PORT, a STOP, an error, a lost link or a restart leaves the session's set points until the next OFF.
 
 On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the PROG 5V box stands under PD MINI in place of the plot. It switches the programming ports' own 5V, GPIO 21: PROG 5V ON is a 2s hold, PROG 5V OFF a tap, with the bench SAFE or ARMED. Its second line is the INA3221's last window of the 5V (0x40 CH3), `5.02V  0.120A`, or `HELD BY PROG PORT n` while a programmer holds a port; the button then takes no press. Leaving SERVO switches off a 5V the box switched on here, unless a port holds it. SUPPLY shows the same box.
 

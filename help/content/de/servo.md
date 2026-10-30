@@ -95,7 +95,7 @@ Die Zeile SOLL trägt die beiden Sollwerte der Seite SUPPLY und ihren Ausgangssc
 - Ein Tipp auf einen Sollwert öffnet das Tastenfeld über der linken Karte.
 - AUSGANG EIN ist ein Halten von 2s, AUSGANG AUS ein Tipp.
 - Das Verlassen von SERVO schaltet einen Ausgang ab, den SERVO eingeschaltet hat.
-- Nach einem VERLASSEN eines Programmierers, das den Ausgang eingeschaltet lässt, fragt SERVO, ob die Sollwerte von vor der Sitzung darauf zurückgehen ([Servo-Programmierer](servo-programmer.md)).
+- Nach einem VERLASSEN eines Programmierers, das den Ausgang eingeschaltet lässt, fragt SERVO, ob die Sollwerte von vor der Sitzung darauf zurückgehen ([Servo-Programmierer](servo-programmer.md)). Kein anderes Ende des Haltens eines Ports fragt: PORT FREIGEBEN, ein STOP, ein Fehler, ein verlorener Link oder ein Neustart lässt die Sollwerte der Sitzung bis zum nächsten AUS.
 
 Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) steht das Feld PROG 5V unter PD MINI anstelle der Grafik. Es schaltet die eigenen 5V der Programmierports, GPIO 21: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED. Seine zweite Zeile ist das letzte Fenster des INA3221 an den 5V (0x40 CH3), `5.02V  0.120A`, oder `BELEGT VON PROG-PORT n`, solange ein Programmer einen Port hält; die Taste nimmt dann keinen Druck an. Das Verlassen von SERVO schaltet 5V ab, die das Feld hier eingeschaltet hat, außer ein Port hält sie. SUPPLY zeigt dasselbe Feld.
 

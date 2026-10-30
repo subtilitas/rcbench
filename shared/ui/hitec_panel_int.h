@@ -185,6 +185,8 @@ typedef struct {
     int      row;               /**< the row or entry it is on            */
 
     hitec_prog_state_t state_seen; /**< the state as last drawn           */
+    uint32_t leaves_seen;          /**< hitec_prog_leaves() as last told
+                                        to the supply screen              */
     uint32_t sig;               /**< signature of the last draw           */
     uint32_t rev;               /**< counts the picture's changes         */
     uint32_t hold_rev;          /**< counts a hold's steps                */
@@ -508,5 +510,7 @@ void hpn_page_rules(uint16_t rules);
 /* hitec_panel_touch.c */
 
 /** @brief The supply's own controls follow the port: held, SUPPLY and the
- *         SERVO screen's SET row take an OFF and nothing else. */
+ *         SERVO screen's SET row take an OFF and nothing else.  A LEAVE
+ *         ended since the last call is told first
+ *         (supply_screen_hitec_leave_done()). */
 void hpn_supply_sync(void);

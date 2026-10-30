@@ -17,6 +17,7 @@
  * - the_wait_before_pwm_is_a_row_with_limits_and_is_kept
  * - a_count_of_1_is_said_in_the_singular
  * - connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held
+ * - only_a_leave_offers_the_operators_set_points_back
  *
  * SPDX-License-Identifier: MIT
  */
@@ -480,6 +481,74 @@ TEST_CASE(connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
 }
 
+/**
+ * @brief A session on the PD mini: the operator's 5.5V 1.5A on SUPPLY,
+ *        CONNECT, and the port's 5.0V 1.0A on the live output, as
+ *        panel_render.c hands them over (supply_screen_adopt()).
+ */
+static void session_on_the_pd_mini(void)
+{
+    fresh();
+    supply_screen()->reset();
+    supply_screen_settings_loaded();
+    supply_screen_put(5.5f, 1.5f);
+    g_rig.rail = true;
+    connected();
+    CHECK(supply_screen_port_held());
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(true);
+}
+
+/* The SERVO screen's restore question follows a LEAVE only: a LEAVE offers
+ * the operator's set points back onto the live output.  A STOP, a lost
+ * link and a restart of the IOmcu end the hold with no LEAVE and offer
+ * nothing, even with the output still read on; the session's set points
+ * stay until the OFF. */
+TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
+{
+    float v = 0.0f;
+    float i = 0.0f;
+
+    session_on_the_pd_mini();
+    tap(val(PG_SERVO, 0, 0));
+    hold(2.1f);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
+    CHECK(!supply_screen_port_held());
+    CHECK(supply_screen_restore_offer(&v, &i));
+    CHECK_NEAR(v, 5.5f, 0.001f);
+    CHECK_NEAR(i, 1.5f, 0.001f);
+
+    /* STOP under the session: the panel's STOP writes the supply off and
+     * the port finds it off; the screen has not read it off yet. */
+    session_on_the_pd_mini();
+    rig_stop(true);
+    g_rig.sup_on = false;
+    rig_frames(KST_PORT_RAIL_OFF_MS + KST_PORT_RAIL_WAIT_MS + 500u);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK(!supply_screen_port_held());
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+    rig_stop(false);
+
+    /* The link goes under the session. */
+    session_on_the_pd_mini();
+    rig_link_lost();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_DOWN);
+    CHECK(!supply_screen_port_held());
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 0.001f);
+
+    /* The IOmcu starts again: the port is back in PWM by no command. */
+    session_on_the_pd_mini();
+    rig_port_fresh();
+    rig_frames(600);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_EQ(msg(), KST_PROG_MSG_SESSION_ENDED);
+    CHECK(!supply_screen_port_held());
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+}
+
 int main(void)
 {
     RUN(the_current_limit_is_typed_inside_50_to_3000_ma);
@@ -494,5 +563,6 @@ int main(void)
     RUN(the_wait_before_pwm_is_a_row_with_limits_and_is_kept);
     RUN(a_count_of_1_is_said_in_the_singular);
     RUN(connect_reads_the_servo_and_keeps_the_overlay_while_the_port_is_held);
+    RUN(only_a_leave_offers_the_operators_set_points_back);
     return test_summary("kst_panel_leave");
 }
