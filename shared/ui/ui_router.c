@@ -304,6 +304,17 @@ static void clear_alert(void)
     s.alert[0]    = '\0';
 }
 
+/**
+ * @brief Clear the band's notice, if one shows: for a STOP and a switch to
+ *        SAFE, which outrank a hold button's hint.  An alert stays.
+ */
+static void drop_notice(void)
+{
+    if (s.has_alert && s.alert_notice) {
+        clear_alert();
+    }
+}
+
 void ui_router_tick(float dt_s)
 {
     /* The frame an alert arrives in does not count: its interval passed
@@ -337,6 +348,13 @@ void ui_router_set_status(const ui_bench_status_t *status)
      */
     const bool     was  = s.status.simulated;
     const uint16_t caps = s.status.capabilities;
+    /* A fault that came up or a switch to SAFE -- STOP, an error -- ends
+     * a hold button's hint at once: the hint is about a press that no
+     * longer matters, and the FAULT chip says what happened. */
+    if ((status->faults & (uint16_t)~s.status.faults) != 0u
+        || (s.status.armed && !status->armed)) {
+        drop_notice();
+    }
     s.status = *status;
     if (was != s.status.simulated || caps != s.status.capabilities) {
         ui_router_invalidate();
@@ -644,9 +662,10 @@ static int owned_find(uint8_t id)
  * The guide follows the bubble's rules.  "?" opens it on a tap, as a chip
  * opens its bubble; a DOWN on "?" with the guide open closes it.  While it
  * is open, a DOWN on PREV, NEXT or CLOSE is the guide's and acts on a
- * release on the same button; a DOWN elsewhere on the dock or on a badge
- * does nothing; a DOWN anywhere else -- the live half, the home tag, the
- * alert band -- closes it and does nothing else.  A DOWN on STOP or on a
+ * release on the same button; PREV and NEXT cover the home tag in the band
+ * (ui_help_button_rect()).  A DOWN elsewhere on the dock or on a badge
+ * does nothing; a DOWN anywhere else -- the live half, the band, the alert
+ * band -- closes it and does nothing else.  A DOWN on STOP or on a
  * chip closes it and presses STOP or the chip.
  *
  * A press that stops what the bench drives is never the router's to keep.
@@ -709,9 +728,11 @@ void ui_router_event(const touch_event_t *evt)
             if (was >= 0) {
                 s.owned[was].live = false;
             }
+            /* PREV and NEXT cover the home tag, which does nothing while
+             * the guide is open: a DOWN on either is the guide's. */
             ui_help_page_t p = { 0 };
             const ui_help_hit_t hit =
-                (!safe && !in_home && guide_page_now(&p))
+                (!safe && guide_page_now(&p))
                     ? ui_help_hit(&p, evt->point.x, evt->point.y)
                     : UI_HELP_HIT_NONE;
             if (hit == UI_HELP_HIT_DOCK) {
@@ -773,6 +794,7 @@ void ui_router_event(const touch_event_t *evt)
                  * loop that drives the heartbeat drains it, so a stop also
                  * stops the line. */
                 s.stop_latched = true;
+                drop_notice();
             }
             return;   /* consumed before the screen sees it */
         }
@@ -1058,16 +1080,20 @@ static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
 
 /**
  * @brief The open guide over the screen: the dock when it changed in this
- *        buffer or the buffer has not got it, as the band; the marks every
- *        frame, as the bubble, because the screen draws under them.  Not
- *        inlined, so tools/stack_check.py finds it by name.
+ *        buffer or the buffer has not got it, as the band; PREV and NEXT
+ *        with the dock and after a band painted again, which leaves their
+ *        place empty; the marks every frame, as the bubble, because the
+ *        screen draws under them.  Not inlined, so tools/stack_check.py
+ *        finds it by name.
  * @param c            The panel's canvas.
  * @param page         The page showing.
  * @param buffer_index The framebuffer.
+ * @param band         The band was painted in this frame.
  */
 static __attribute__((noinline)) void guide_render(gfx_canvas_t *c,
                                                    const ui_help_page_t *page,
-                                                   int buffer_index)
+                                                   int buffer_index,
+                                                   bool band)
 {
     const ui_screen_t *scr = screen_for(s.current);
     const unsigned buf = (unsigned)buffer_index & 1u;
@@ -1082,6 +1108,8 @@ static __attribute__((noinline)) void guide_render(gfx_canvas_t *c,
         ui_help_render_dock(c, page, s.guide_page, count, note, btn);
         s.guide_key[buf] = key;
         s.guide_drawn |= (uint8_t)(1u << buf);
+    } else if (band) {
+        ui_help_render_nav(c, s.guide_page, count, btn);
     }
     ui_help_render_marks(c, page);
 }
@@ -1112,6 +1140,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
      * it.  Over a simulated bench the watermark is laid over it every
      * frame, so it is drawn every frame, as the screens under it are.
      */
+    bool band_now = false;
     {
         const char *title = ui_router_title(s.current);
         const bool home = has_home(s.current);
@@ -1128,6 +1157,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
             || s.band_key[buf] != key) {
             ui_band_render(c, title, home, &s.status, stop_down, home_down,
                            guide);
+            band_now = true;
             s.band_key[buf] = key;
             s.band_drawn |= (uint8_t)(1u << buf);
         }
@@ -1179,7 +1209,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         scr->render(&sub, buffer_index);
     }
     if (guide) {
-        guide_render(c, &page, buffer_index);
+        guide_render(c, &page, buffer_index, band_now);
     }
 
     if (show) {

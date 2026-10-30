@@ -199,6 +199,53 @@ const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
 }
 
 /**
+ * @brief @p ma as amperes to 0.001A, with its sign: "0.153A", "-0.005A".
+ * @param buf where it goes.
+ * @param n   the size of @p buf, bytes.
+ * @param ma  the current, mA.
+ * @return @p buf.
+ */
+static const char *amps(char *buf, size_t n, long ma)
+{
+    const unsigned long m = (ma < 0) ? (unsigned long)(-ma)
+                                     : (unsigned long)ma;
+    snprintf(buf, n, "%s%lu.%03luA", (ma < 0) ? "-" : "", m / 1000ul,
+             m % 1000ul);
+    return buf;
+}
+
+const char *sensors_rows_trip_line(char *buf, size_t n, unsigned ch,
+                                   int watch, bool have, int16_t peak_ma,
+                                   uint16_t limit_ma)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    if (ch >= (unsigned)SET_INA_CHANNELS) {
+        return buf;
+    }
+    /* The settings' own option names: the console is English. */
+    const setting_def_t *d = settings_def(SET_INA_W(ch));
+    char target[24] = "";
+    if (watch > SENS_W_NONE && watch < SENS_W_COUNT && d != NULL
+        && d->options != NULL && watch < d->option_count) {
+        snprintf(target, sizeof(target), " (%s)", d->options[watch]);
+    }
+    char peak[40] = "no window read";
+    if (have) {
+        char a[16];
+        snprintf(peak, sizeof(peak), "highest window read %s",
+                 amps(a, sizeof(a), peak_ma));
+    }
+    char limit[16];
+    snprintf(buf, n, "INA3221 0x%02X CH%u%s over its limit of %s: %s",
+             (unsigned)(LINK_SN_I3221_ADDR_MIN + ch / 3u), ch % 3u + 1u,
+             target, amps(limit, sizeof(limit), limit_ma), peak);
+    return buf;
+}
+
+/**
  * @brief The short name of a board's rail a channel watches, in the
  *        language showing.
  * @param code a SENSE_MAP WATCH value.

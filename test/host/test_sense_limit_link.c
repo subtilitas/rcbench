@@ -455,6 +455,32 @@ TEST_CASE(a_bit_is_told_with_the_limit_it_passed)
     CHECK_EQ(ma, 300u);
 }
 
+/* The trip's console line takes the limit the bit was judged by, also
+ * when a new limit is written in the same pass, before the trip is
+ * taken: 500mA, not the 900mA or OFF written after the read. */
+TEST_CASE(a_trip_keeps_the_limit_it_was_judged_by)
+{
+    fresh(27u, 1000u);
+    CHECK_EQ(sense_limit_link_trip_ma(&ll, 2u), 0u);   /* none read yet */
+    want_one(2, 500u);
+    polls(20);
+    over(2);
+    want_one(2, 900u);
+    polls(11);                          /* the settle, then read, write */
+    CHECK_EQ(pg.limit[2], 900u);
+    CHECK_EQ(sense_limit_link_held_ma(&ll, 2u), 900u);
+    CHECK_EQ(sense_limit_link_take_trip(&ll), (uint16_t)(1u << 2));
+    CHECK_EQ(sense_limit_link_trip_ma(&ll, 2u), 500u);
+    over(2);
+    want_one(2, 0u);
+    polls(11);
+    CHECK_EQ(sense_limit_link_held_ma(&ll, 2u), 0u);
+    CHECK_EQ(sense_limit_link_take_trip(&ll), (uint16_t)(1u << 2));
+    CHECK_EQ(sense_limit_link_trip_ma(&ll, 2u), 900u);
+    CHECK_EQ(sense_limit_link_trip_ma(&ll, LINK_SL_KEPT), 0u);
+    CHECK_EQ(sense_limit_link_trip_ma(NULL, 2u), 0u);
+}
+
 /* Twelve channels that keep passing take turns: each is told within
  * twelve gaps, none starved by a lower one. */
 TEST_CASE(twelve_channels_over_each_get_their_turn)
@@ -494,6 +520,7 @@ int main(void)
     RUN(the_clocks_hold_across_the_wrap);
     RUN(a_reply_lost_with_the_link_is_said_at_the_link_up);
     RUN(a_bit_is_told_with_the_limit_it_passed);
+    RUN(a_trip_keeps_the_limit_it_was_judged_by);
     RUN(twelve_channels_over_each_get_their_turn);
     return test_summary("sense_limit_link");
 }

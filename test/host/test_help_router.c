@@ -12,6 +12,8 @@
  * - a_slide_off_the_chip_opens_nothing
  * - next_and_prev_turn_the_pages_and_stop_at_the_ends
  * - a_button_acts_on_a_release_on_itself_only
+ * - next_at_one_spot_turns_every_page
+ * - the_band_keeps_prev_and_next_while_the_guide_is_open
  * - close_and_the_chip_close_it
  * - a_tap_elsewhere_closes_it_and_reaches_no_screen
  * - a_press_on_the_dock_or_a_badge_does_nothing
@@ -243,6 +245,93 @@ TEST_CASE(a_button_acts_on_a_release_on_itself_only)
     CHECK_EQ(ui_router_guide_page(), 1);
     touch(nx, ny, TOUCH_EVENT_UP, 1);
     CHECK_EQ(ui_router_guide_page(), 2);
+}
+
+/*
+ * Two taps at the spot of page 1's NEXT turn two pages: NEXT does not move
+ * when the dock changes sides, and no tile lies under it to close the
+ * guide.  Back the same way with PREV.
+ */
+TEST_CASE(next_at_one_spot_turns_every_page)
+{
+    open_on_menu();
+    ui_help_page_t p;
+    REQUIRE(page_now(&p));
+    int nx, ny, px, py;
+    mid(ui_help_button_rect(p.side, UI_HELP_HIT_NEXT), &nx, &ny);
+    mid(ui_help_button_rect(p.side, UI_HELP_HIT_PREV), &px, &py);
+    const int count = ui_help_count(overview_screen(), false);
+    REQUIRE(count == 3);
+    for (int n = 1; n < count; ++n) {
+        tap(nx, ny);
+        CHECK(ui_router_guide_open());
+        CHECK_EQ(ui_router_guide_page(), n);
+    }
+    tap(nx, ny);                         /* the last page: nothing */
+    CHECK(ui_router_guide_open());
+    CHECK_EQ(ui_router_guide_page(), count - 1);
+    for (int n = count - 2; n >= 0; --n) {
+        tap(px, py);
+        CHECK(ui_router_guide_open());
+        CHECK_EQ(ui_router_guide_page(), n);
+    }
+    /* No screen saw a tap: the menu is still on top. */
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/*
+ * PREV and NEXT stay drawn in the band when the band paints again without
+ * the dock -- the run clock moving, a fault coming up -- and the tag comes
+ * back when the guide closes.
+ */
+TEST_CASE(the_band_keeps_prev_and_next_while_the_guide_is_open)
+{
+    static gfx_color_t alone[(size_t)W * H];
+    open_on_menu();
+    for (int f = 0; f < 2; ++f) {
+        ui_router_tick(0.05f);
+        ui_router_render(&cv, f & 1);
+    }
+    /* A band change alone: the dock stays as it was drawn. */
+    ui_bench_status_t st = { .link_up = true, .mode = "BENCH",
+                             .run_seconds = 61u, .faults = 0x10u };
+    ui_router_set_status(&st);
+    REQUIRE(ui_router_guide_open());
+    for (int f = 0; f < 2; ++f) {
+        ui_router_tick(0.05f);
+        ui_router_render(&cv, f & 1);
+    }
+    gfx_canvas_t c2;
+    gfx_canvas_init(&c2, alone, W, H, W);
+    /* On the band's fill, which the buttons' round corners show. */
+    gfx_clear(&c2, ui_theme_color(UI_C_PANEL));
+    ui_help_render_nav(&c2, 0, 3, UI_HELP_HIT_NONE);
+    const gfx_rect_t pv = ui_help_button_rect(UI_HELP_DOCK_LEFT,
+                                              UI_HELP_HIT_PREV);
+    const gfx_rect_t nx = ui_help_button_rect(UI_HELP_DOCK_LEFT,
+                                              UI_HELP_HIT_NEXT);
+    int diff = 0;
+    for (int y = pv.y; y < pv.y + pv.h; ++y) {
+        for (int x = pv.x; x < nx.x + nx.w; ++x) {
+            if (x >= pv.x + pv.w && x < nx.x) {
+                continue;
+            }
+            diff += fb[(size_t)y * W + x] != alone[(size_t)y * W + x];
+        }
+    }
+    CHECK_EQ(diff, 0);
+    /* Closed: the band draws its tag where the buttons were. */
+    tap_button(UI_HELP_HIT_CLOSE);
+    REQUIRE(!ui_router_guide_open());
+    ui_router_tick(0.05f);
+    ui_router_render(&cv, 0);
+    diff = 0;
+    for (int y = pv.y; y < pv.y + pv.h; ++y) {
+        for (int x = pv.x; x < nx.x + nx.w; ++x) {
+            diff += fb[(size_t)y * W + x] != alone[(size_t)y * W + x];
+        }
+    }
+    CHECK(diff > 0);
 }
 
 TEST_CASE(close_and_the_chip_close_it)
@@ -571,6 +660,8 @@ int main(void)
     RUN(a_slide_off_the_chip_opens_nothing);
     RUN(next_and_prev_turn_the_pages_and_stop_at_the_ends);
     RUN(a_button_acts_on_a_release_on_itself_only);
+    RUN(next_at_one_spot_turns_every_page);
+    RUN(the_band_keeps_prev_and_next_while_the_guide_is_open);
     RUN(close_and_the_chip_close_it);
     RUN(a_tap_elsewhere_closes_it_and_reaches_no_screen);
     RUN(a_press_on_the_dock_or_a_badge_does_nothing);

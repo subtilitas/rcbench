@@ -413,7 +413,9 @@ void ui_router_set_alert(const char *text);
  * A notice clears after UI_NOTICE_SHOW_S or at a tap on the band. An alert
  * takes priority: a notice is not shown while ui_router_set_alert() or
  * ui_router_hold_alert() has one up, and an alert set while a notice shows
- * replaces it. A notice replaces another notice.
+ * replaces it. A notice replaces another notice. A DOWN on STOP, a fault
+ * bit that comes up in ui_router_set_status() and a switch from ARMED to
+ * SAFE clear a notice at once.
  * @param text The notice; NULL does nothing.
  */
 void ui_router_set_notice(const char *text);

@@ -159,7 +159,9 @@ uint32_t ui_band_key(const char *title, bool show_home,
  * @param st           The bench's status, or NULL.
  * @param stop_pressed STOP is pressed.
  * @param home_pressed The home tag is pressed.
- * @param guide        What the band shows of the screen guide.
+ * @param guide        What the band shows of the screen guide.  With the
+ *                     guide open the home tag is not drawn: the guide's
+ *                     PREV and NEXT take its place (ui_help_render_nav()).
  */
 void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
                     const ui_bench_status_t *st, bool stop_pressed,
