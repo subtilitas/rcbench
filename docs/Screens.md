@@ -3223,7 +3223,7 @@ Current limitations:
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
   688-757kB/s. The cause is not measured. The page with the file manager
-  is 44,220 bytes in English on an empty card and has no card listing;
+  is 45,100 bytes in English on an empty card and has no card listing;
   its time is not measured.
 
 ### The access code
@@ -3375,7 +3375,7 @@ both panes are read again after one that went through.
 
 | Button | What it does |
 |---|---|
-| UPLOAD | sends one file of up to 1,048,576 bytes into the active pane's folder, with a progress bar; a larger file is refused before a byte is sent. A name that is taken asks `UP.TXT exists in this folder. Replace it?` with REPLACE and CANCEL. The file has to be text as the viewer takes it: no NUL byte in its first 4,096 bytes and 65,536 line ends at most |
+| UPLOAD | sends one file of up to 1,048,576 bytes into the active pane's folder, with a progress bar; a larger file is refused before a byte is sent. A name that is taken asks `UP.TXT exists in this folder. Replace it?` with REPLACE and CANCEL. Before the question the page reads the file there for its ETag, and REPLACE sends `If-Match` with it: a change on the panel or from another browser while the question is open is refused with `Changed on the card since it was read. Read it again.` A file there that the read refuses, over 1,048,576 bytes or not text, is replaced without the compare. The file has to be text as the viewer takes it: no NUL byte in its first 4,096 bytes and 65,536 line ends at most |
 | NEW FOLDER | a folder of the name typed, in the active pane's folder |
 | NEW TEXT FILE | an empty file of the name typed there; a taken name is refused |
 | RENAME | the selected entry under the name typed, in its folder; a change of case alone is a rename |

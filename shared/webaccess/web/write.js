@@ -14,7 +14,11 @@
 //
 // UPLOAD sends one file of 1MiB at most with its progress, makes it only
 // where no entry has its name (If-None-Match: *), and asks before it
-// replaces one.  A write the panel answers PANEL_BUSY (FILES on the panel
+// replaces one.  Before the question it reads the file there for its ETag
+// and replaces it only with If-Match on it, so a change made on the panel
+// or by another browser while the question is open is refused (CHANGED),
+// not overwritten.  A file the read refuses as too large or not text is
+// replaced without the compare.  A write the panel answers PANEL_BUSY (FILES on the panel
 // runs a job) is sent again after 2s, three times at most.  A write that
 // needs the access code shows the code form; the code is sent to /code and
 // the page loads again with it.
@@ -228,6 +232,42 @@ var RcbWr = (function () {
       });
     }
 
+    // The ETag of file @p path, read as GET /api/file gives it:
+    // {tag} on 200, {tag: ''} for a file the read cannot hold (too large,
+    // not text), else {a} with the refusal.
+    function etagOf(path, mount) {
+      return c.queue(function () {
+        return new Promise(function (done) {
+          var x = new XMLHttpRequest();
+          x.open('GET', '/api/file?path=' + F.encPath(path) + '&mount=' +
+            mount);
+          x.onload = function () {
+            if (x.status === 200) {
+              done({ tag: x.getResponseHeader('ETag') || '' });
+              return;
+            }
+            var j;
+            try {
+              j = JSON.parse(x.responseText);
+            } catch (e) {
+              j = { error: 'HTTP', text: TX.noans + ' HTTP ' + x.status };
+            }
+            if (j.error === 'TOO_BIG' || j.error === 'NOT_TEXT' ||
+                j.error === 'TOO_MANY_LINES') {
+              done({ tag: '' });
+              return;
+            }
+            done({ a: { ok: false, status: x.status, j: j } });
+          };
+          x.onerror = x.onabort = function () {
+            done({ a: { ok: false, status: 0,
+              j: { error: 'NET', text: TX.noans } } });
+          };
+          x.send();
+        });
+      });
+    }
+
     function put(path, mount, blob, hdr, prog) {
       return retried(function () {
         return send('PUT', '/api/file?path=' + F.encPath(path) + '&mount=' +
@@ -293,7 +333,9 @@ var RcbWr = (function () {
       };
     }
 
-    function upload(file, replace) {
+    // @p tag: undefined for the first try (If-None-Match: *); the ETag
+    // read for a replace (If-Match); '' for a replace without one.
+    function upload(file, tag) {
       var p = pane();
       var path = F.join(p.path, file.name);
       if (c.st.status && file.size > c.st.status.file_max) {
@@ -305,7 +347,9 @@ var RcbWr = (function () {
       ui.bar.hidden = false;
       ui.bar.value = 0;
       ui.cancel.disabled = true;
-      put(path, mountOf(p), file, replace ? {} : { 'If-None-Match': '*' },
+      var hdr = tag === undefined ? { 'If-None-Match': '*' }
+        : tag ? { 'If-Match': tag } : {};
+      put(path, mountOf(p), file, hdr,
         function (done, total) {
           ui.bar.value = total > 0 ? done / total : 0;
         }).then(function (a) {
@@ -313,14 +357,19 @@ var RcbWr = (function () {
           return after(a.j.note === 'ESC_NEXT_START' ? TX.savedesc
             : F.fmt(TX.saved, file.name));
         }
-        if (a.j.error === 'EXISTS' && !replace) {
-          ui.bar.hidden = true;
-          ui.cancel.disabled = false;
-          ask(TX.upload, [F.fmt(TX.replaceq, file.name)], TX.replace,
-            function () {
-              upload(file, true);
-            });
-          return null;
+        if (a.j.error === 'EXISTS' && tag === undefined) {
+          return etagOf(path, mountOf(p)).then(function (e) {
+            if (e.a) {
+              return refused(e.a);
+            }
+            ui.bar.hidden = true;
+            ui.cancel.disabled = false;
+            ask(TX.upload, [F.fmt(TX.replaceq, file.name)], TX.replace,
+              function () {
+                upload(file, e.tag);
+              });
+            return null;
+          });
         }
         return refused(a);
       });
@@ -412,7 +461,7 @@ var RcbWr = (function () {
       ui.file.hidden = true;
       ui.file.addEventListener('change', function () {
         if (ui.file.files && ui.file.files.length === 1) {
-          upload(ui.file.files[0], false);
+          upload(ui.file.files[0]);
         }
       });
       row.appendChild(ui.file);

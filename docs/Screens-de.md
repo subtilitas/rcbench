@@ -3566,7 +3566,7 @@ Aktuelle Einschränkungen:
 - Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
   mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
   Downloads. Die Ursache ist nicht gemessen. Die Seite mit der
-  Dateiverwaltung hat 44.220 Bytes auf Englisch mit leerer Karte und keine
+  Dateiverwaltung hat 45.100 Bytes auf Englisch mit leerer Karte und keine
   Kartenliste; ihre Zeit ist nicht gemessen.
 
 ### Der Zugangscode
@@ -3730,7 +3730,7 @@ gelesen.
 
 | Taste | Was sie tut |
 |---|---|
-| HOCHLADEN | sendet eine Datei bis 1.048.576 Bytes in den Ordner der aktiven Spalte, mit Fortschrittsbalken; eine größere wird abgelehnt, bevor ein Byte gesendet ist. Ein vergebener Name fragt `UP.TXT gibt es in diesem Ordner schon. Ersetzen?` mit ERSETZEN und ABBRECHEN. Die Datei muss Text sein, wie der Betrachter ihn nimmt: kein NUL-Byte in den ersten 4.096 Bytes und höchstens 65.536 Zeilenenden |
+| HOCHLADEN | sendet eine Datei bis 1.048.576 Bytes in den Ordner der aktiven Spalte, mit Fortschrittsbalken; eine größere wird abgelehnt, bevor ein Byte gesendet ist. Ein vergebener Name fragt `UP.TXT gibt es in diesem Ordner schon. Ersetzen?` mit ERSETZEN und ABBRECHEN. Vor der Frage liest die Seite die Datei dort für ihr ETag, und ERSETZEN sendet `If-Match` mit ihm: Eine Änderung am Panel oder aus einem anderen Browser, während die Frage offen ist, wird mit `Seit dem Lesen auf der Karte geändert. Neu lesen.` abgelehnt. Eine Datei dort, die das Lesen ablehnt, über 1.048.576 Bytes oder kein Text, wird ohne den Vergleich ersetzt. Die Datei muss Text sein, wie der Betrachter ihn nimmt: kein NUL-Byte in den ersten 4.096 Bytes und höchstens 65.536 Zeilenenden |
 | NEUER ORDNER | ein Ordner mit dem getippten Namen im Ordner der aktiven Spalte |
 | NEUE TEXTDATEI | eine leere Datei mit dem getippten Namen dort; ein vergebener Name wird abgelehnt |
 | UMBENENNEN | der gewählte Eintrag unter dem getippten Namen in seinem Ordner; nur eine andere Groß- und Kleinschreibung ist auch ein Umbenennen |
