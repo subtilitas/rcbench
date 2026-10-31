@@ -8,6 +8,12 @@ history is in git.
 
 ### Added
 
+- SETUP > SENSORS is a split pane: a left list of 8 entries (SENSOR BUS, INA228,
+  INA3221 0x40 to 0x43, AS5600, PHASE TAP) with each entry's state under its
+  name, and the selected entry's rows beside it. A sensor's rows appear when it
+  is enabled. Each entry keeps its scroll. RESET names the entry and resets its
+  rows alone. The INA228 entry reads ONLINE, NOT ANSWERING, ANOTHER ID ANSWERS
+  and NOT ACCEPTED BY THE IOMCU from what SENSE holds and reads.
 - WI-FI's page changes the card: UPLOAD (one text file up to 1MiB, with
   a progress bar and a REPLACE question), NEW FOLDER, NEW TEXT FILE,
   RENAME, MOVE and DELETE, through FILES' jobs, rules and write gate. The
@@ -40,6 +46,13 @@ history is in git.
   show the pin grid. The carrier keeps its LAYOUT tile, now the last one. The
   cat stays on the board view: a cat the entry's column covers moves to the
   other spot. TARGET rows open the screen on their entry as before.
+- The rows of the INA228, the sensor bus, the AS5600 and the phase tap move from
+  SETUP > INTERFACES to SENSORS; their stored keys stay and a panel's values load
+  unchanged. INTERFACES holds the PD mini and Hitec D receive. Vibration and
+  Optical tacho keep their keys and show no row: no firmware reads them.
+- SETUP's texts and alerts about those rows name SENSORS, and six help lines and
+  three state words are shorter to fit the pane.
+- A flick that lands on RESET or on the warning's DISCARD arms nothing.
 - FILES' editor saves only over the file as it opened it or last saved
   it: SAVE compares the file's CRC-32, the Wi-Fi page's ETag, before it
   writes, and a file the Wi-Fi page changed since is not overwritten. The

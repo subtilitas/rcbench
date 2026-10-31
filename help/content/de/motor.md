@@ -118,7 +118,7 @@ Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und dan
 
 TABELLE listet Spannung, Strom, Leistung und Drehzahl, jeweils mit ihrer Spitze. Ein Kanal, für den nichts geantwortet hat, zeigt `--`.
 
-- Ist der INA228 unter SETUP, INTERFACES eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz. Die Überschrift nennt `INA228`.
+- Ist der INA228 unter SETUP, SENSORS eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz. Die Überschrift nennt `INA228`.
 - `ÜBERSTEUERT` folgt der Überschrift, solange ein Strom das Ende des Messbereichs erreicht hat: Strom und Leistung sind dann Grenzen, keine Werte.
 - `ESC MELDET` listet Spannung und Strom aus der eigenen Telemetrie des ESC, und `Abw.` ist der Wert des ESC minus dem des INA228.
 - Ohne INA228 sind die Kanäle die Telemetrie des ESC, und `ESC MELDET` fehlt.
@@ -138,4 +138,4 @@ Jedes Schalten auf ARMED schreibt eine Datei, `MOTORnnn.CSV`, in `BENCH/LOGS` au
 - [ESC STICK](motor-stick.md): einen ESC über sein Gasknüppel-Menü programmieren.
 - [Ausgänge](outputs.md): welche Pins der Throttle treibt.
 - [Setup](setup.md): der Drehknopf.
-- [Anschlüsse](setup-interfaces.md): der INA228.
+- [Sensoren](setup-sensors.md): der INA228.

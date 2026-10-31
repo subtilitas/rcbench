@@ -462,7 +462,7 @@ SCREENS = {
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
     "setup-folder": ("setup-folder.png", "setup", "dark"),
-    # INTERFACES with the INA228 enabled, at the top of the list.
+    # INTERFACES: the PD mini and Hitec D receive.
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
     # The rbmod carrier: the LAYOUT tile, and soldered pin rows.
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
@@ -473,13 +473,15 @@ SCREENS = {
     "servo-rbmod": ("servo-rbmod.png", "servo", "dark"),
     "servo-kst-rbmod": ("servo-kst-rbmod.png", "servo", "dark"),
     "setup-rbmod-iface": ("setup-rbmod-iface.png", "setup", "dark"),
-    # SENSORS: 0x40 and 0x41 fitted, at the top with 0x40 online; and at
-    # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.
+    # SENSORS: 0x40 and 0x41 fitted, on 0x40 online; and on 0x41, marked as an
+    # IOmcu older than 4.25 leaves its rows.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
     # SENSORS on the rbmod carrier: 0x40 soldered, its rows on the rails.
     "setup-sensors-rbmod": ("setup-sensors-rbmod.png", "setup", "dark"),
+    # SENSORS on the INA228, online with its 4 rows.
+    "setup-sensors-ina228": ("setup-sensors-ina228.png", "setup", "dark"),
     # The keypad of 0x40 CH1's shunt, 44.4mOhm typed.
     "setup-sensors-keypad": ("setup-sensors-keypad.png", "setup", "dark"),
     # Values inside the range the steps never reach, refused with the
@@ -491,12 +493,12 @@ SCREENS = {
     # name the pin word first, "GPIO -1 to 47" and "GPIO 1".
     "setup-sda-keypad": ("setup-sda-keypad.png", "setup", "dark"),
     "setup-pdmini-why": ("setup-pdmini-why.png", "setup", "dark"),
-    # INTERFACES drawn on to the bus's pins, which the IOmcu has not taken:
-    # the mark on Sensor SDA and Sensor SCL.
+    # SENSOR BUS, its pins not taken by the IOmcu: the mark on Sensor SDA and
+    # Sensor SCL and the entry's state.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
-    # The same list past them, to the phase tap's rows, the tap enabled.
+    # PHASE TAP's rows, the tap enabled.
     "setup-tap": ("setup-tap.png", "setup", "dark"),
-    # The list's end: Hitec D receive at PRECHARGE under PROG PORT, marked
+    # INTERFACES' end: Hitec D receive at PRECHARGE under PROG PORT, marked
     # as an IOmcu older than protocol 4.24 leaves it.
     "setup-prog": ("setup-prog.png", "setup", "dark"),
     # The warning on leaving SETUP unsaved: one change, and twelve, of

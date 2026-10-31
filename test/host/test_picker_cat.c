@@ -6,9 +6,9 @@
  *        a visit; a row that grows into it hides it; a frame that repaints
  *        nothing draws nothing for it.
  *
- * Every state of the screen's screenshots (tools/render_ui.py: picker,
- * picker-drawn, picker-prog, picker-port, picker-full, picker-protocol,
- * picker-off, picker-iface) and a few more (no pin bound, 8 pins, the list
+ * Every state of the screen's screenshots (tools/render_ui.py: outputs,
+ * outputs-shape, outputs-prog, outputs-port3, outputs-full, outputs-protocol,
+ * outputs-off, outputs-iface) and a few more (no pin bound, 8 pins, the list
  * open beside 4 ports, a binding no read confirmed, a board that cannot be
  * drawn, a learned board with no end margin), each in English and German,
  * dark and light, with every pose forced and as many rolls as spots it

@@ -958,6 +958,120 @@ TEST_CASE(the_meter_is_held_beside_a_part_the_ina228_takes_out)
     sense_link_set_map(NULL, true);
 }
 
+/* ------------------------------------------------------- the INA228's state */
+
+/* The INA228 on, written and the wait running from @p now. */
+static void i228_on(uint16_t m)
+{
+    fresh(m);
+    polls(1);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    want(&w);
+    polls(12);
+}
+
+TEST_CASE(the_ina228_state_follows_what_sense_holds_and_reads)
+{
+    /* Off: nothing to say. */
+    fresh(7u);
+    polls(2);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_UNKNOWN);
+    CHECK_EQ(sense_map_link_i228(NULL, now), SENS_PART_UNKNOWN);
+
+    /* Asked, inside its settle time: the old frame's flags say nothing. */
+    fresh(7u);
+    polls(1);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE);
+    polls(1);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    want(&w);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_PENDING);
+
+    i228_on(7u);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE | LINK_SN_I228_ID_OK);
+    polls(2);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_ONLINE);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ID_WRONG);
+    polls(2);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_WRONG);
+
+    /* A lost link knows nothing; the state comes back with the next read. */
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE);
+    polls(2);
+    sense_link_lost(&sl);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_UNKNOWN);
+    sense_link_came_up(&sl, 7u, now);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_UNKNOWN);   /* unread */
+    polls(3);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_ONLINE);
+}
+
+/* Not answering only once the wait is over, as SENSE_LINK_EV_I228_SILENT;
+ * across the 32-bit wrap of the clock; at once for a part that was online. */
+TEST_CASE(the_ina228_state_waits_out_the_grace_and_keeps_silent)
+{
+    i228_on(7u);
+    far_flags(LINK_SN_BUS_OPEN);
+    polls(2);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_SEARCHING);
+    const uint32_t from = sl.setup_ms;
+    CHECK_EQ(sense_map_link_i228(&sl, from + SENSE_LINK_GRACE_MS - 1u),
+             SENS_PART_SEARCHING);
+    CHECK_EQ(sense_map_link_i228(&sl, from + SENSE_LINK_GRACE_MS),
+             SENS_PART_SILENT);
+    sl.setup_ms = UINT32_MAX - 10u;
+    CHECK_EQ(sense_map_link_i228(&sl, 5u), SENS_PART_SEARCHING);
+    CHECK_EQ(sense_map_link_i228(&sl, SENSE_LINK_GRACE_MS - 11u),
+             SENS_PART_SILENT);
+    sl.setup_ms = from;
+
+    i228_on(7u);
+    far_flags(LINK_SN_BUS_OPEN | LINK_SN_I228_ONLINE);
+    polls(2);
+    far_flags(LINK_SN_BUS_OPEN);
+    polls(2);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_SILENT);
+}
+
+TEST_CASE(the_ina228_state_says_why_it_is_not_read)
+{
+    /* No bus pins: known without an IOmcu. */
+    fresh(7u);
+    sense_setup_t w = setup_default();
+    w.i228 = true;
+    w.sda = -1;
+    w.scl = -1;
+    want(&w);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_NO_BUS);
+    w.sda = 16;
+    want(&w);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_NO_BUS);
+
+    /* On an INA3221's address: sense_link_want() enables neither. */
+    fresh(7u);
+    w = setup_default();
+    w.i228 = true;
+    w.i3221 = true;
+    w.i228_addr = 0x40u;
+    w.i3221_addr = 0x40u;
+    want(&w);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_SAME_ADDR);
+
+    /* An IOmcu without SENSE holds no part. */
+    i228_on(6u);
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_REFUSED);
+
+    /* A refused frame, and a refused bus. */
+    i228_on(7u);
+    sl.refused_i228 = true;
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_REFUSED);
+    sl.refused_i228 = false;
+    sl.refused_bus = true;
+    CHECK_EQ(sense_map_link_i228(&sl, now), SENS_PART_REFUSED);
+}
+
 int main(void)
 {
     RUN(nothing_goes_to_an_iomcu_older_than_4_25);
@@ -989,5 +1103,8 @@ int main(void)
     RUN(a_reread_reads_the_setup_and_the_identity_again);
     RUN(the_meter_follows_fast_with_the_map_and_ch1_without);
     RUN(the_meter_is_held_beside_a_part_the_ina228_takes_out);
+    RUN(the_ina228_state_follows_what_sense_holds_and_reads);
+    RUN(the_ina228_state_waits_out_the_grace_and_keeps_silent);
+    RUN(the_ina228_state_says_why_it_is_not_read);
     return test_summary("sense_map_link");
 }

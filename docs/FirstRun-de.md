@@ -523,7 +523,7 @@ Widerstände 2,2kΩ, ein Multimeter, ein Oszilloskop oder Logikanalysator mit
 I2C-Dekodierung, ein Servo, und der ESC mit Motor oder eine ohmsche Last an
 einem Netzteil mit Strombegrenzung.
 
-**Am Panel einrichten.** SETUP → INTERFACES: `INA228` auf ON; SETUP →
+**Am Panel einrichten.** SETUP → SENSORS: `INA228` auf ON; SETUP →
 SENSORS: `0x40 bestückt` auf ON. Die übrigen Sensoreinstellungen passen in
 der Vorgabe zu den Modulen oben: INA228 auf 0x45 mit 200 µΩ, der INA3221 auf
 0x40 mit 0,1Ω je Kanal und CH1, der AUSGANG 1 misst, SDA an GPIO 16 und SCL an
@@ -951,7 +951,7 @@ des Arms ist, beantwortet er nicht.
 **Teil B: mit dem AS5600.** Dieselben Bewegungen mit dem Encoder auf der
 Welle.
 
-1. SETUP → INTERFACES: `AS5600` auf ON, bei einem Prüfstand in SAFE. Auf der Seite
+1. SETUP → SENSORS: `AS5600` auf ON, bei einem Prüfstand in SAFE. Auf der Seite
    PRÜFLING des Bildschirms SERVO, Servo in Neutralstellung, SENSOR-MITTE
    antippen.
 2. Die Schritte 5 bis 7 von Teil A wiederholen.

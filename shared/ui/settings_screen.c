@@ -5,10 +5,11 @@
  *
  * SETUP opens on a grid of tiles, the menu's kind: one per category it
  * holds (PANEL, INTERFACES, SD CARD, SENSORS), and one per screen of its own that SETUP
- * reaches (OUTPUTS, WI-FI, UPDATES).  A category's tile opens its list across the screen's width.
- * The list walks the rows shared/settings declares (settings_rows.c; SENSORS
- * lists a fitted part's rows only, sensors_rows.h) and draws each row by
- * its type: a stepper for a number, a toggle for a bool, a choice for an
+ * reaches (OUTPUTS, WI-FI, UPDATES).  A category's tile opens its list across the screen's width;
+ * SENSORS' list stands right of a left list of its 8 sensors and shows the
+ * selected one's rows (sensors_pane.h), each entry with its own scroll.
+ * The list walks the rows shared/settings declares (settings_rows.c) and
+ * draws each row by its type: a stepper for a number, a toggle for a bool, a choice for an
  * enum.  A tap on a number's value, between its "-" and "+" keys, opens the
  * keypad over the list (ui_setting_keypad.h); its OK sets the value through
  * settings_set(), as a step does.  A category's strings follow its
@@ -34,6 +35,7 @@
 #include "hitec_rx_link.h"
 #include "link_pages.h"
 #include "sense_link.h"
+#include "sensors_pane.h"
 #include "sensors_rows.h"
 #include "settings.h"
 #include "settings_rows_int.h"
@@ -195,6 +197,16 @@ bool settings_screen_opens(ui_screen_id_t id)
 int settings_screen_category(void)
 {
     return s.list ? (int)s.cat : -1;
+}
+
+int stg_list_x(void)
+{
+    return (s.list && s.cat == SET_CAT_SENSORS) ? PANE_X : HUB_M;
+}
+
+gfx_rect_t settings_screen_entry_rect(int entry)
+{
+    return gfx_rect_make(HUB_M, LIST_Y + entry * ENTRY_PITCH, ENTRY_W, ENTRY_H);
 }
 
 gfx_rect_t stg_tile_rect(int i)
@@ -438,8 +450,8 @@ static int row_at(int x, int y)
     return (idx >= 0 && idx < stg_row_count()) ? idx : -1;
 }
 
-/* The entry of row @p index; a heading's carries heading or part >= 0, a
- * string's text >= 0. */
+/* The entry of row @p index; a heading's carries heading >= 0, a string's
+ * text >= 0. */
 settings_row_t stg_row_entry(int index)
 {
     return settings_rows_entry(s.cat, index);
@@ -447,8 +459,7 @@ settings_row_t stg_row_entry(int index)
 
 static bool row_is_heading(int index)
 {
-    const settings_row_t e = stg_row_entry(index);
-    return e.heading >= 0 || e.part >= 0;
+    return stg_row_entry(index).heading >= 0;
 }
 
 /* The string of row @p index, or -1 for a setting or a heading. */
@@ -585,6 +596,7 @@ static void reset(void)
     s.hit_index = -1;
     s.tk.pressed = -1;
     s.kp.pressed = -1;
+    sensors_pane_select(SENS_ENTRY_BUS);
     stg_clamp_scroll();
 }
 
@@ -710,12 +722,65 @@ static void open_tile(int index)
         return;
     }
     if (s.cat != (setting_cat_t)t->cat) {
+        if (s.cat == SET_CAT_SENSORS) {
+            s.entry_scroll[sensors_pane_selected()] = s.scroll;
+        }
         s.cat = (setting_cat_t)t->cat;
-        s.scroll = 0;
+        s.scroll = (s.cat == SET_CAT_SENSORS)
+                       ? s.entry_scroll[sensors_pane_selected()] : 0;
     }
     s.list = true;
     stg_clamp_scroll();
     settings_screen_invalidate();
+}
+
+/**
+ * @brief A tap on an entry of SENSORS' left list: its rows, at the scroll the
+ *        entry had.  What is unsaved stays unsaved and stays in the warning.
+ * @param entry The entry.
+ */
+static void open_entry(int entry)
+{
+    s.entry_scroll[sensors_pane_selected()] = s.scroll;
+    sensors_pane_select(entry);
+    s.scroll = s.entry_scroll[sensors_pane_selected()];
+    stg_clamp_scroll();
+    settings_screen_invalidate();
+}
+
+/**
+ * @brief The entry of SENSORS' left list under a point.
+ * @param x The point's x, in the screen's coordinates.
+ * @param y Its y.
+ * @return The entry; -1 off every entry and on any other list.
+ */
+static int entry_at(int x, int y)
+{
+    if (!s.list || s.cat != SET_CAT_SENSORS) {
+        return -1;
+    }
+    for (int e = 0; e < SENS_ENTRY_COUNT; ++e) {
+        if (gfx_rect_contains(settings_screen_entry_rect(e), x, y)) {
+            return e;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Whether a contact pressed on entry @p entry still is a tap on it:
+ *        on the entry and no further than DRAG_SLOP from the press.
+ * @param entry The entry.
+ * @param x The contact's x, in the screen's coordinates.
+ * @param y Its y.
+ * @return True where its release selects the entry.
+ */
+static bool still_on_entry(int entry, int x, int y)
+{
+    int dx = x - s.press_x, dy = y - s.press_y;
+    if (dx < 0) { dx = -dx; }
+    if (dy < 0) { dy = -dy; }
+    return dx <= DRAG_SLOP && dy <= DRAG_SLOP && entry_at(x, y) == entry;
 }
 
 /* A tap on the row of string @p id: its keyboard, on the text in force.
@@ -740,13 +805,17 @@ static void open_text(setting_text_id_t id)
  */
 static void press(const touch_event_t *evt, int x, int y)
 {
+    /* A DOWN the tracker made for a jump arms nothing that throws values
+     * away, as it arms no key: a flick down the list arrives as one, and its
+     * lift is a tap.  SAVE, STAY and a tile take it. */
+    const bool jump = (evt->flags & TOUCH_FLAG_JUMP) != 0u;
     if (s.warn) {
         /* The warning covers the screen: its three buttons and nothing
          * under them.  DISCARD presses only while it is offered. */
         s.hit_kind = gfx_rect_contains(stg_stay_rect(), x, y)   ? HIT_STAY
                      : gfx_rect_contains(stg_save_rect(), x, y) ? HIT_LEAVE_SAVE
                      : (gfx_rect_contains(stg_discard_rect(), x, y)
-                        && !stg_bench_armed())                  ? HIT_DISCARD
+                        && !stg_bench_armed() && !jump)         ? HIT_DISCARD
                                                             : HIT_NONE;
         if (s.hit_kind != HIT_NONE) {
             settings_screen_invalidate();
@@ -761,7 +830,7 @@ static void press(const touch_event_t *evt, int x, int y)
             settings_screen_invalidate();
             return;
         }
-    } else if (gfx_rect_contains(stg_reset_rect(), x, y)) {
+    } else if (!jump && gfx_rect_contains(stg_reset_rect(), x, y)) {
         s.hit_kind = HIT_RESET;
         settings_screen_invalidate();
         return;
@@ -777,13 +846,19 @@ static void press(const touch_event_t *evt, int x, int y)
         return;
     }
 
+    /* An entry arms here and selects on its release, as a row's key. */
+    const int entry = jump ? -1 : entry_at(x, y);
+    if (entry >= 0) {
+        s.hit_kind = HIT_ENTRY;
+        s.hit_index = entry;
+        settings_screen_invalidate();
+        return;
+    }
+
     const int row = s.list ? row_at(x, y) : -1;
     if (row >= 0) {
         /* A key is armed here and steps nothing: its release steps it, or
-         * the repeat while it is held.  A DOWN the tracker made for a jump
-         * arms none: a flick up the list arrives as one, and its lift on a
-         * key in the next report would be a tap. */
-        const bool jump = (evt->flags & TOUCH_FLAG_JUMP) != 0u;
+         * the repeat while it is held. */
         s.hit_index = row;
         s.hit_kind = jump                          ? HIT_LIST
                      : row_text(row) >= 0           ? HIT_TEXT
@@ -831,9 +906,15 @@ static void release(int kind, int index, bool repeated, int x, int y)
     } else if (kind == HIT_TILE && !s.list
                && gfx_rect_contains(stg_tile_rect(index), x, y)) {
         open_tile(index);
+    } else if (kind == HIT_ENTRY && still_on_entry(index, x, y)) {
+        open_entry(index);
     } else if (kind == HIT_RESET && s.list
                && gfx_rect_contains(stg_reset_rect(), x, y)) {
-        settings_reset(s.cat);
+        if (s.cat == SET_CAT_SENSORS) {
+            sensors_pane_reset(sensors_pane_selected());
+        } else {
+            settings_reset(s.cat);
+        }
         settings_apply_ui();
     } else if (kind == HIT_SAVE && stg_save_offered()
                && gfx_rect_contains(stg_save_rect(), x, y)) {
@@ -947,6 +1028,15 @@ static void event(const touch_event_t *evt)
         int dy = y - s.last_y;
         s.last_y = y;
         if (s.hit_kind == HIT_NONE) {
+            break;
+        }
+        if (s.hit_kind == HIT_ENTRY) {
+            /* Slid off: the press ends and this contact selects nothing and
+             * scrolls nothing. */
+            if (!still_on_entry(s.hit_index, x, y)) {
+                s.hit_kind = HIT_NONE;
+                settings_screen_invalidate();
+            }
             break;
         }
         int moved = y - s.press_y;

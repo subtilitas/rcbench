@@ -4,7 +4,7 @@
  *        ports as outputs.  See outputs_screen.h.
  *
  * One entry a port the IOmcu reports; outputs_port_entry.c draws the one
- * shown.  This file holds what the entries and PICK A PIN share: the
+ * shown.  This file holds what the entries and the board view share: the
  * ports' pins, the pins SETUP > INTERFACES holds, the entry the screen
  * opens on.
  *

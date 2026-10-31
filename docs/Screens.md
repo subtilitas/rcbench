@@ -296,7 +296,7 @@ Each tile carries a line under its name, 2 rows of at most 22 characters,
 
 A tile marked SIMULATED opens a screen whose source the bench does not
 report: the IOmcu reports no capability for it, or its sensor is not
-enabled on SETUP under INTERFACES. A screen without its hardware opens and runs
+enabled on SETUP under SENSORS. A screen without its hardware opens and runs
 from the model. The mark does not classify each value on a screen. RECEIVER
 and BATTERY carry the mark and show no values. SERVO without the mark shows the
 panel's supply model as its rail meter when neither a PD mini nor an INA3221 is
@@ -304,7 +304,7 @@ enabled. Each screen names the source of its readings itself.
 
 | Tile | Without the mark when |
 | --- | --- |
-| MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
+| MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, SENSORS |
 | SERVO | the IOmcu drives servo PWM outputs |
 | SUPPLY | the PD mini is enabled on SETUP, INTERFACES, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
@@ -634,7 +634,7 @@ than as a modelled number.
 TABLE lists the four channels, each with its extreme. A channel nothing
 answered for reads `--`.
 
-With the INA228 enabled on SETUP under INTERFACES and answering (BENCH flag
+With the INA228 enabled on SETUP under SENSORS and answering (BENCH flag
 bit 5), voltage, current and power are the INA228's: the means of the
 IOmcu's last 50ms window, read at 20Hz, with the run's peaks from its
 500Hz samples. The heading names the source, `INA228`, and adds `CLIPPED`
@@ -1268,7 +1268,7 @@ supply the SIMULATED pill sits under the box. SUPPLY shows the same box
 ![The KST programmer holding the 5V](img/servo-kst-rbmod.png)
 
 Which meter it is is decided once per poll
-([the current monitors](#interfaces-the-current-monitors)): the INA3221
+([the current monitors](#sensors-the-current-monitors)): the INA3221
 1000ms after its conditions hold, the PD mini from the first poll in which
 one fails.
 
@@ -1308,7 +1308,7 @@ supply is the PD mini, the PD mini's readings otherwise, and the model's
 with the supply modelled ([The meter](Servo.md#the-meter)).
 
 MEASURED is the horn's angle from the centre count while AS5600 is on in
-SETUP, INTERFACES, the sensor answers and it detects its magnet: `+38.0deg`,
+SETUP, SENSORS, the sensor answers and it detects its magnet: `+38.0deg`,
 tenths of a degree, -180.0 to +179.9, read 20 times a second. It is `---`
 while the sensor does not answer and while it reports no magnet (STATUS MD
 clear): its count is no angle then. A magnet reported too weak or too strong
@@ -1729,7 +1729,7 @@ two columns of five, 48px tall and 56px apart; the warnings read in
 | LIMIT RUN > SETTINGS | SERVO PULSES | KEEP or 1000-2000, a tap switches; shown with TARGET on PROG PORT only. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
 | SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
 | SETTINGS > DUT | REPORT | a text report beside each test's log |
-| SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+| SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 centre |
 
 TRIM's keypad is the one signed keypad: its `+/-` key, between the point
 and OK, puts a minus sign in front of the entry or takes it away, before or
@@ -1741,8 +1741,8 @@ stay where they are.
 
 ![TRIM's keypad, -25us typed](img/servo-trim-keypad.png)
 
-AS5600, the output encoder, is switched on and off on SETUP > INTERFACES
-alone ([the output encoder](#interfaces-the-output-encoder)); DUT's note
+AS5600, the output encoder, is switched on and off on SETUP > SENSORS
+alone ([the output encoder](#sensors-the-output-encoder)); DUT's note
 says so. It adds the horn's angle to the MEASURED row and to a run's CSV
 and report ([Servo](Servo.md#the-output-encoder)).
 
@@ -3793,8 +3793,9 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 ![Setup](img/setup.png)
 
 - Four categories: PANEL, INTERFACES, SD CARD and SENSORS, the bench-wide
-  settings. Each tile names the number of settings its list shows. A tap
-  opens the category's list.
+  settings. A tile names the number of settings its list shows; SENSORS'
+  says what it holds, `CURRENT, ANGLE, PHASE TAP`. A tap opens the category's
+  list.
   The settings of the pack, the motor and the throttle output are on
   MOTOR & ESC > SETTINGS
   ([MOTOR & ESC settings](#motor--esc-settings)).
@@ -4124,31 +4125,83 @@ across a third of its travel from -travel to +travel.
 - The knob is not measured on hardware: its direction, its noise and its
   behaviour with no magnet over it.
 
-### INTERFACES: the current monitors
+### SENSORS: the split pane
 
-INTERFACES lists its 23 settings in five sections. A heading above the first
-row of each names it: I2C BUS (the INA228, Sensor SDA and SCL, and the
-AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical tacho), SUPPLY
-(the PD mini) and PROG PORT (Hitec D receive). A heading is a row of its
-own, 64px high at the list's 70px pitch, in the accent colour over a rule,
-with no keys and no value: a tap or a drag on it changes nothing, and a drag
-scrolls the list. The list is 28 rows long.
+SENSORS holds every device the IOmcu reads, in a split pane: a left list of 8
+entries, and right of it the selected entry's rows.
 
-On the [rbmod carrier](Carrier.md) five rows are soldered pins: Sensor SDA
-16, Sensor SCL 17, Tap pin 22, PD mini TX 7 and PD mini RX 6. They have no
-keys, open no keypad and read
-`Soldered on this board. Not a setting here.` as their help line. The
-stored values stay and are in force again on a module wired by hand.
+![SENSORS, two parts fitted](img/setup-sensors.png)
+
+The left list runs from body y 8 to 436: 8 entries of 220 x 50px at a 54px
+pitch, top to bottom SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600 and
+PHASE TAP. An entry shows its name in the 12 x 24px face and its state under
+it in the 8 x 16px face. The selected entry has the lit fill and the accent
+edge; the first entry is selected at start-up. The list on its right is 754px
+wide from x 240: the keys, the value field, the keypad and the scroll bar stand
+where they stand on any list, and a row's name and help have 438px, 43 cells
+of the 10 x 20px face.
+
+| Entry | State while on | Rows |
+| --- | --- | --- |
+| SENSOR BUS | `GPIO 16 / 17`, `NO PINS SET`, `NOT ACCEPTED BY THE IOMCU`, on the carrier `GPIO 16 / 17 SOLDERED` | 2, always |
+| INA228 | a state of the table below, or `SAME ADDRESS AS INA3221` | 4 |
+| INA3221 0x40 to 0x43 | a state of the table in [SENSORS: the INA3221 parts](#sensors-the-ina3221-parts) | 10 |
+| AS5600 | `ON`, `NOT ACCEPTED BY THE IOMCU` | 2 |
+| PHASE TAP | `ON`, `NOT ACCEPTED BY THE IOMCU` | 7 |
+
+- An entry with an enable row shows that row alone and reads `OFF` while it is
+  off. ON adds the entry's other rows under it.
+- A press arms an entry and its release selects it, within 8px of the press,
+  on the entry. A contact that slides further selects nothing and scrolls
+  nothing. Nothing presses under the keypad.
+- Each entry keeps its scroll, through another entry, the tiles and another
+  category, inside the range its rows have when it opens.
+- A change of entry keeps what is unsaved: SAVE and the leave warning count
+  every entry's changes.
+- RESET names the entry, `RESET INA228`, and resets all that entry's rows,
+  the hidden rows included. It stays where RESET CATEGORY stands. A flick that
+  lands on it arms nothing.
+- The strip's first column names the category, as on any list.
+
+Vibration and Optical tacho have keys in this category and no entry: no
+firmware reads them. A stored value stays stored and has no effect.
+
+The knob does nothing on SETUP: the panel routes a turn to MOTOR & ESC and
+SERVO only.
+
+### INTERFACES: the PD mini and the programming port
+
+INTERFACES lists 5 settings in two sections. A heading above the first row of
+each names it: SUPPLY (the PD mini, [Supply](#supply)) and PROG PORT (Hitec D receive,
+[INTERFACES: the programming port](#interfaces-the-programming-port)). A heading
+is a row of its own, 64px high at the list's 70px pitch, in the accent colour
+over a rule, with no keys and no value: a tap or a drag on it changes nothing,
+and a drag scrolls the list. The list is 7 rows long.
+
+![INTERFACES](img/setup-interfaces.png)
+
+On the [rbmod carrier](Carrier.md) PD mini TX reads 7 and PD mini RX 6. They
+have no keys, open no keypad and read
+`Soldered on this board. Not a setting here.` as their help line. The stored
+values stay and are in force again on a module wired by hand.
 
 ![INTERFACES on the carrier](img/setup-rbmod-iface.png)
 
-![INTERFACES, the current monitors](img/setup-interfaces.png)
+### SENSORS: the current monitors
 
 The IOmcu reads I2C (Inter-Integrated Circuit) current monitors on one bus
 on two of its pins: a TI INA228 in the ESC's power path, set up here, and up
-to four TI INA3221, set up on SENSORS ([SENSORS: the INA3221
-parts](#sensors-the-ina3221-parts)). The INA228's rows and the bus's pins
-are at the top of INTERFACES:
+to four TI INA3221 ([SENSORS: the INA3221 parts](#sensors-the-ina3221-parts)).
+The rows of the SENSOR BUS and INA228 entries:
+
+![SENSORS on the INA228](img/setup-sensors-ina228.png)
+
+The INA228 entry's state comes from what SENSE holds and reads
+(`sense_map_link_i228()`), in the words of the [parts' table](#sensors-the-ina3221-parts):
+`ONLINE`, `LOOKING FOR THE PART`, `NOT ANSWERING`, `ANOTHER ID ANSWERS`,
+`NOT WRITTEN YET`, `NOT READ YET`, `NOT ACCEPTED BY THE IOMCU` for a refused
+frame, refused pins or an IOmcu without the SENSE page, and `NO BUS PINS`.
+`SAME ADDRESS AS INA3221` says a fitted part has its address: neither is read.
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
@@ -4230,10 +4283,10 @@ both said. In order:
 | Message | When |
 | --- | --- |
 | `IOmcu has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the IOmcu speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
-| `Sensor SDA or SCL not set. Check SETUP > INTERFACES.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
-| `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.` | the INA228 on the address of a fitted INA3221; neither is read |
-| `Sensor pins GPIO 16/GPIO 17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
-| `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84mV, or the range it gives passes 2000A; the INA228 stays off |
+| `Sensor SDA or SCL not set. Check SETUP > SENSORS.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
+| `INA228 and INA3221 both use 0x40. Check SETUP > SENSORS.` | the INA228 on the address of a fitted INA3221; neither is read |
+| `Sensor pins GPIO 16/GPIO 17 rejected. Check SETUP > SENSORS.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
+| `INA228 shunt or maximum current rejected. Check SETUP > SENSORS.` | the shunt's voltage at the max current passes 163.84mV, or the range it gives passes 2000A; the INA228 stays off |
 | `INA3221 settings rejected. Check SETUP > SENSORS.` | the IOmcu refused the INA3221 set-up: the SENSE_MAP map, or on an IOmcu older than 4.25 the one-part frame; the IOmcu keeps what it held |
 | `INA3221 0x41 has every channel off. Check SETUP > SENSORS.` | a fitted part has all three shunts at OFF; no map is written until one is on again, and the line leaves the band then |
 | `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA or SCL held low and clocks the bus free. A line that reads low with nothing holding it (pins with no part and no pull-up wired to them) is not this: it rises within 50µs on the IOmcu's own pad pull-up (32 to 86kΩ), and the monitors read as not answering |
@@ -4265,7 +4318,10 @@ bus) stays for its 30s or until tapped.
 
 #### A row the IOmcu does not hold
 
-![INTERFACES, pins the IOmcu has not taken](img/setup-unheld.png)
+![SENSORS, pins the IOmcu has not taken](img/setup-unheld.png)
+
+The mark on Sensor SDA, on AS5600 and on the phase tap's rows also turns the
+entry's state to `NOT ACCEPTED BY THE IOMCU`.
 
 A row whose value is not the one the IOmcu's page holds is marked: its
 edge and its value are drawn in the warning colour, and its help line reads
@@ -4291,11 +4347,8 @@ as described above.
 
 ### SENSORS: the INA3221 parts
 
-SENSORS sets up to four TI INA3221 three-channel current monitors on the
-sensor bus, at 0x40 to 0x43, and says per channel what it measures. The
-INA228 and the bus's pins stay on INTERFACES.
-
-![SENSORS, two parts fitted](img/setup-sensors.png)
+An entry each sets up to four TI INA3221 three-channel current monitors on the
+sensor bus, at 0x40 to 0x43, and says per channel what it measures.
 
 On the [rbmod carrier](Carrier.md#the-current-monitor) the board solders an
 INA3221 at 0x40: 0x40 FITTED reads ON, and its three WATCHES rows read
@@ -4303,15 +4356,14 @@ SERVO RAIL B, SERVO RAIL A and PROG PORTS 5V. These rows have no keys and
 the help line `Soldered on this board. Not a setting here.`. No step
 reaches the three rail options on another row or another bench.
 
-The list starts with the heading INA3221 PARTS over four rows:
+An entry's first row:
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | 0x40 fitted to 0x43 fitted | ON, OFF | OFF | an INA3221 at this address. The DAOKAI module takes 0x40 with its A0 solder bridge closed to GND. As shipped all four A0 bridges are open and the address floats between 0x40 and 0x41 |
 
-Each fitted part follows under a heading of its own, `INA3221 0x40` to
-`INA3221 0x43`, with nine rows, three a channel. A part that is not fitted
-has no heading and no rows.
+A fitted part has nine rows more, three a channel. A part that is not fitted
+has no others.
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
@@ -4330,7 +4382,7 @@ A LIMIT row takes 0 (OFF) or 10 to 32767mA; 1 to 9 is refused with
 
 ![3mΩ refused, the reason in place of the range](img/setup-sensors-why.png)
 
-The heading of a part shows on its right what the part is doing:
+The entry of a part says under its name what the part is doing:
 
 | State | When |
 | --- | --- |
@@ -4343,20 +4395,20 @@ The heading of a part shows on its right what the part is doing:
 | `NOT ACCEPTED BY THE IOMCU` | the IOmcu refused the map; it keeps the one it held |
 | `EVERY CHANNEL OFF` | all three shunts of the part are OFF: no map is written |
 | `INA228 ON THIS ADDRESS` | the INA228 is on at the part's address: the part is left out of the map and the INA228 off |
-| `IOMCU OLDER THAN 0.22.0: NOT READ` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
-| `SENSOR SDA OR SCL UNSET` | INTERFACES has no pin for the sensor bus's SDA or SCL: no part is enabled |
+| `NOT READ, IOMCU < 0.22.0` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
+| `NO BUS PINS` | SENSOR BUS has no pin for SDA or SCL: no part is enabled |
 
 The rows of a part refused, with every channel off, on the INA228's
 address, without a sensor bus or not read by an older IOmcu are marked as a row the IOmcu does
 not hold: edge and value in the warning colour, and a line in place of the
-help. On an IOmcu older than 4.25 that line reads `IOmcu older than 0.22.0: one INA3221, CH1 at 1kHz.`:
+help. On an IOmcu older than 4.25 that line reads `IOmcu before 0.22.0: one part, CH1 at 1kHz.`:
 
 ![SENSORS on an IOmcu older than 4.25](img/setup-sensors-old.png)
 
 A LIMIT row is marked the same way while the IOmcu does not hold its
 limit: from the edit to the write taken, after a refused write or a
 refused page with `Not accepted by the IOmcu.`, and on an IOmcu older than 4.27, for every
-limit that is not OFF, with `IOmcu older than 0.22.0: no limit is judged.`:
+limit that is not OFF, with `IOmcu before 0.22.0: no limit is judged.`:
 
 ![A limit on an IOmcu older than 4.27](img/setup-sensors-limit.png)
 
@@ -4409,7 +4461,7 @@ page first at every link-up, writes 500ms after the last edit and only
 while the bench is SAFE, and writes nothing the page holds. A refused map is
 not written again until it changes. While a part is fitted the panel reads
 the parts' IDs and states every 500ms. A part that stops answering, or
-that answers as something else, is said on the band once, as on INTERFACES;
+that answers as something else, is said on the band once, as the INA228;
 the part SENSE reports on (below) is said by SENSE's own reads.
 
 The channel read at 1kHz, whose windows the servo test and the SERVO
@@ -4443,7 +4495,7 @@ The old settings
 stay stored, unchanged, so a panel taken back to 0.21 finds its set-up. The
 next SAVE writes every SENSORS key.
 
-### INTERFACES: the output encoder
+### SENSORS: the output encoder
 
 An ams OSRAM AS5600 magnetic angle sensor on the servo's output shaft, on the
 sensor bus beside the monitors, at its fixed address 0x36 (protocol 4.9):
@@ -4469,7 +4521,7 @@ once and one at a time like the monitors':
 
 A magnet message is said once while the sensor's STATUS bits MD, ML and MH
 stay as they were said, also across the set-ups an edit of another row of
-INTERFACES writes. It is said again when one of the bits changes (a weak
+a SENSORS row writes. It is said again when one of the bits changes (a weak
 magnet that goes missing, a missing one that comes back weak, a weak one
 that reads strong), when the field read right in between, when the sensor
 was said not to answer, after the sensor was switched off, and after a
@@ -4478,16 +4530,15 @@ clears and returns when it is set again. The sensor's
 DIR pin sets the direction its count rises in; the panel takes the count to
 rise with the servo's pulse width.
 
-### INTERFACES: the phase tap
+### SENSORS: the phase tap
 
-![INTERFACES, the phase tap](img/setup-tap.png)
+![SENSORS, the phase tap](img/setup-tap.png)
 
 The phase tap hears an ESC's beeps on one motor phase. One IOmcu
 GPIO reads the phase through a series resistor and a zener clamp; the
 IOmcu times the pin's edges and reports each beep's length and pitch.
 The wiring is not in the build guide. The tap is an input: it drives
-nothing, and the IOmcu takes a change ARMED or not. Its rows follow
-the bus's pins:
+nothing, and the IOmcu takes a change ARMED or not. Its rows:
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
@@ -4539,9 +4590,9 @@ current monitors:
 | Message | When |
 | --- | --- |
 | `IOmcu has no TONE page. Phase tap not read.` | the tap is enabled and the IOmcu speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
-| `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
-| `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the IOmcu refused the second frame; not written again until a value changes |
-| `Phase tap pin GPIO 22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
+| `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > SENSORS.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP SENSORS or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
+| `Phase tap split, gap or periods rejected. Check SETUP > SENSORS.` | the IOmcu refused the second frame; not written again until a value changes |
+| `Phase tap pin GPIO 22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP SENSORS or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > SENSORS.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 The three alerts about the set-up (the first frame rejected, the second
@@ -5315,7 +5366,7 @@ A stored binding that holds that pin keeps it: the port then has no pin, and
 the programmer's CONNECT ends with the line for a port without a pin
 ([the port](ServoProgrammer.md#the-port)).
 
-A pin SETUP > INTERFACES holds is shown the same way, red and struck
+A pin SETUP > SENSORS or INTERFACES holds is shown the same way, red and struck
 through, with what holds it under its name, and cannot be ticked:
 
 | Under the name | Pins | While |
@@ -5726,7 +5777,7 @@ nothing and puts the reason under the count:
 
 ![GPIO 13 held by the programming port](img/outputs-prog.png)
 
-A pin SETUP > INTERFACES holds is grey the same way while no protocol holds
+A pin SETUP > SENSORS or INTERFACES holds is grey the same way while no protocol holds
 it, a tap on it changes nothing, and IN USE lists it after the programming
 port, under `SENSOR BUS`, `PD MINI` or `PHASE TAP` in red, without a
 channel. Which pins those are, and when, is in the table under

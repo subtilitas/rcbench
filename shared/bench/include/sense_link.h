@@ -6,7 +6,7 @@
  *        operator.
  *
  * The IOmcu reads the two current monitors and the output encoder (an
- * AS5600 angle sensor); the panel sets them up from SETUP INTERFACES and
+ * AS5600 angle sensor); the panel sets them up from SETUP > SENSORS and
  * reads what they measured.  An IOmcu whose protocol minor is below
  * SENSE_LINK_MINOR has neither page, and nothing is sent to it: not a write
  * and not a read.  One below SENSE_LINK_ENC_MINOR has no encoder: ENABLE
@@ -192,7 +192,7 @@ typedef enum {
     SENSE_LINK_INA3221 = 1,
 } sense_link_part_t;
 
-/** @brief The set-up as SETUP INTERFACES has it. */
+/** @brief The set-up as SETUP > SENSORS has it. */
 typedef struct {
     bool     i228, i3221;     /**< enabled                              */
     bool     as5600;          /**< the output encoder, enabled          */
@@ -628,7 +628,7 @@ void sense_link_event_back(sense_link_t *s, uint32_t ev);
  */
 bool sense_link_settled(const sense_link_t *s);
 
-/** @brief The rows of SETUP INTERFACES, for sense_link_unheld(). */
+/** @brief The rows of SETUP > SENSORS, for sense_link_unheld(). */
 enum {
     SENSE_LINK_ROW_I228        = 0x0001,  /**< INA228 on or off         */
     SENSE_LINK_ROW_I3221       = 0x0002,  /**< INA3221 on or off        */

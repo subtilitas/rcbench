@@ -193,7 +193,7 @@ run's end: if it stops answering, those fields go empty rather than back to
 the ESC's telemetry. A capture's level before the command is CH1's mean
 over the 50ms before the edge; an arm while the INA3221 is not reading CH1
 ends at once as lost and counts in CAP_SEQ. This build's panel reads SENSE's registers 0 to 11 at every
-link-up, writes the set-up from SETUP INTERFACES one frame at a time where it
+link-up, writes the set-up from SETUP SENSORS one frame at a time where it
 differs (`shared/bench/sense_link.c`, `test_sense_link`), and reads the
 identity page again after a write is taken. It writes no capture to
 SERVO_SENSE. It reads SERVO_WIN (0x31) on a 4.11 IOmcu:
@@ -203,7 +203,7 @@ The page refuses SDA and SCL that are not one block's pair whatever ENABLE
 holds; an IOmcu of 0.15.0 or older takes them with ENABLE 0 and refuses
 the part enabled afterwards. The wire format and the protocol minor are the
 same. A panel of 0.15.0 or older, whose two pin settings are independent,
-sees the refusal at the edit in place of at the enable: its alert `Sensor pins GPIO 15/GPIO 17 rejected. Check SETUP > INTERFACES.`, once per edit and per
+sees the refusal at the edit in place of at the enable: its alert `Sensor pins GPIO 15/GPIO 17 rejected. Check SETUP > SENSORS.`, once per edit and per
 link-up, and the page keeps the pins it had. Its pins at −1 are written as
 ENABLE 0 with 0 for the pin and are taken. A set-up in the
 IOmcu's flash whose pins are not a pair is refused whole at boot, and
@@ -323,7 +323,7 @@ that state machine is free.
 The panel (`shared/bench/tone_link.c`) says a refused first frame once on
 the band. It offers a frame refused with BUSY again every 5s
 (`TONE_LINK_RETRY_MS`), one write each time, and writes one refused with
-BAD_VALUE again only after the set-up on SETUP INTERFACES changes or the
+BAD_VALUE again only after the set-up on SETUP SENSORS changes or the
 link comes up again.
 
 | Panel | IOmcu | A refused first frame |
@@ -907,7 +907,7 @@ Clearing a latched failsafe is such a side effect.
 
 A NACK is an answer, not a link fault. The panel counts them in its link
 report (`nack`, [Bring-up](Bringup.md#link-report)): a set-up from SETUP
-INTERFACES that a page refuses is one NACK per refused value, written once
+that a page refuses is one NACK per refused value, written once
 until the value changes, and a pin a page refuses as held elsewhere is one
 per 5s offer.
 

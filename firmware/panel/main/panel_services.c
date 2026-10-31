@@ -404,7 +404,7 @@ static void servo_source_alerts(void)
  * from the last SENSE read, the INA228's clipped flag, and its totals in
  * SENSE's finer steps while that read is younger than two polls.
  */
-/* The INTERFACES rows the IOmcu does not hold, for SETUP's marks:
+/* The SENSORS rows the IOmcu does not hold, for SETUP's marks:
  * sense_link_unheld() and tone_link_unheld() as of the last poll, and 0
  * with the link down.  Control task writes, app_main reads. */
 atomic_uint s_sense_unheld;

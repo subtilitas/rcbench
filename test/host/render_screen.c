@@ -40,6 +40,7 @@
 #include "sense_link.h"
 #include "settings.h"
 #include "sense_limit_link.h"
+#include "sensors_pane.h"
 #include "sensors_rows.h"
 #include "settings_sensors.h"
 #include "settings_screen.h"
@@ -670,6 +671,16 @@ static void setup_value(setting_cat_t cat, setting_id_t id)
         exit(1);
     }
     setup_row_value(row);
+}
+
+/**
+ * @brief An entry of SENSORS' left list tapped.
+ * @param e The entry.
+ */
+static void setup_entry(int e)
+{
+    const gfx_rect_t r = settings_screen_entry_rect(e);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 
 /**
@@ -3169,8 +3180,8 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        pins held, before the screen is posed.  outputs-rbmod: SERVO PWM
  *        on PWM01 and PWM02, DSHOT300 on PWM04, MOTOR PWM picked and PWM03
  *        tapped, refused for slice 2.  outputs-rbmod-port: PROG PORT 1 on
- *        GP13.  setup-rbmod: the hub with LAYOUT in PICK A PIN's place.
- *        setup-rbmod-iface: INTERFACES with its pins soldered.
+ *        GP13.  setup-rbmod: the hub with LAYOUT as its last tile.
+ *        setup-rbmod-iface: INTERFACES with the PD mini's pins soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
  *        servo-rbmod: SERVO's output card with the box.  servo-kst-rbmod:
@@ -3770,11 +3781,10 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
         setup_tile(SET_CAT_APP);
         setup_scroll_rows(4);
     }
-    /* The carrier's INTERFACES: the sensor bus's, the tap's and the PD
-     * mini's pins soldered, so their rows have no keys. */
+    /* The carrier's INTERFACES: the PD mini's pins soldered, so their rows
+     * have no keys. */
     if (strcmp(view, "setup-rbmod-iface") == 0) {
         setup_tile(SET_CAT_IFACE);
-        setup_scroll_rows(4);
     }
     /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
     if (strcmp(view, "setup-card") == 0) {
@@ -3801,68 +3811,61 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
         ktap(ui_textkey_key_rect(k, UI_TK_OK));
     }
     /*
-     * SETUP's INTERFACES, the current monitors' rows at the top, and the
-     * same list drawn on by four rows to the INA3221's and the bus's pins.
+     * SETUP's INTERFACES: the PD mini, and the list's end with Hitec D receive
+     * at PRECHARGE, marked as an IOmcu older than 4.24 (or 4.23) leaves it, or
+     * held, with PRECHARGE's own help line.
      */
     if (strcmp(view, "setup-interfaces") == 0
-        || strcmp(view, "setup-unheld") == 0
-        || strcmp(view, "setup-tap") == 0
-        || strcmp(view, "setup-tap-why") == 0
         || strcmp(view, "setup-prog") == 0
         || strcmp(view, "setup-prog-noline") == 0
         || strcmp(view, "setup-prog-pre") == 0) {
         setup_tile(SET_CAT_IFACE);
-        if (strcmp(view, "setup-unheld") == 0) {
-            /* The pins refused: their two rows. */
-            settings_screen_set_unheld(SENSE_LINK_ROW_PINS, 0u);
-            /* Five rows, the I2C BUS heading and the four of the INA228. */
-            setup_scroll_rows(5);
-        } else if (strcmp(view, "setup-tap") == 0) {
-            /* Past the 9 rows above the PHASE TAP heading (the I2C BUS
-             * section and its heading): two drags, as one longer than the
-             * list is high leaves the screen. */
-            setup_scroll_rows(4);
-            setup_scroll_rows(5);
-        } else if (strcmp(view, "setup-tap-why") == 0) {
-            /* GP23, a pin the module does not bring out, typed for Tap
-             * pin: refused with the pins the row takes. */
-            setup_value(SET_CAT_IFACE, SET_TONE_PIN);
-            kp_type(settings_screen_keypad(), "23");
-            ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
-        } else if (strncmp(view, "setup-prog", 10) == 0) {
-            /* The list's end: PROG PORT and Hitec D receive at PRECHARGE,
-             * marked as an IOmcu older than 4.24 (or 4.23) leaves it, or
-             * held, with PRECHARGE's own help line. */
+        if (strncmp(view, "setup-prog", 10) == 0) {
             settings_set(SET_HITEC_RX, 1.0f);
             settings_screen_set_hitec_rx(
                 strcmp(view, "setup-prog") == 0 ? HITEC_RX_LINK_OLD
                 : strcmp(view, "setup-prog-pre") == 0
                     ? HITEC_RX_LINK_HELD
                     : HITEC_RX_LINK_NO_LINE);
-            for (int k = 0; k < 6; ++k) {
-                setup_scroll_rows(5);
-            }
+        }
+    }
+    /* SENSORS' other entries: the INA228 online, the bus's pins refused, and
+     * the tap on with its rows. */
+    if (strcmp(view, "setup-sensors-ina228") == 0) {
+        sensors_rows_set_i228(SENS_PART_ONLINE);
+        setup_tile(SET_CAT_SENSORS);
+        setup_entry(SENS_ENTRY_INA228);
+    }
+    if (strcmp(view, "setup-unheld") == 0) {
+        setup_tile(SET_CAT_SENSORS);
+        settings_screen_set_unheld(SENSE_LINK_ROW_PINS, 0u);
+    }
+    if (strcmp(view, "setup-tap") == 0 || strcmp(view, "setup-tap-why") == 0) {
+        setup_tile(SET_CAT_SENSORS);
+        setup_entry(SENS_ENTRY_TAP);
+        if (strcmp(view, "setup-tap-why") == 0) {
+            /* GP23, a pin the module does not bring out, typed for Tap pin:
+             * refused with the pins the row takes. */
+            setup_value(SET_CAT_SENSORS, SET_TONE_PIN);
+            kp_type(settings_screen_keypad(), "23");
+            ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
         }
     }
 
     /*
-     * SETUP > SENSORS: 0x40 and 0x41 fitted, 0x41's CH2 watching PORT 1
-     * with a limit of 800mA, and its CH3 off.  At the top, 0x40 online;
-     * scrolled to 0x41's heading, an IOmcu older than 4.25 reading 0x40
-     * alone; and scrolled to 0x41 CH2, both online on an IOmcu older than
-     * 4.27, which judges no limit.  On the carrier (setup-sensors-rbmod)
-     * 0x40 is the board's, scrolled to its rows.
+     * SETUP > SENSORS: 0x40 and 0x41 fitted, 0x41's CH2 watching PORT 1 with a
+     * limit of 800mA, and its CH3 off.  0x40 online, 0x41 not answering; on
+     * 0x41, an IOmcu older than 4.25 reading 0x40 alone; and scrolled to 0x41
+     * CH2, both online on an IOmcu older than 4.27, which judges no limit.  On
+     * the carrier (setup-sensors-rbmod) 0x40 is the board's.
      */
-    if (strncmp(view, "setup-sensors", 13) == 0) {
+    if (strncmp(view, "setup-sensors", 13) == 0
+        && strcmp(view, "setup-sensors-ina228") != 0) {
         settings_set(SET_INA_FIT(1), 1.0f);
         settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
         settings_set(SET_INA_LIM(4), 800.0f);
         settings_set(SET_INA_SH(5), 0.0f);
-        const bool rbmod = strcmp(view, "setup-sensors-rbmod") == 0;
         setup_tile(SET_CAT_SENSORS);
-        if (rbmod) {
-            setup_scroll_rows(4);       /* to 0x40's heading and rows */
-        }
         if (strcmp(view, "setup-sensors-old") == 0
             || strcmp(view, "setup-sensors-limit") == 0) {
             const bool lim = strcmp(view, "setup-sensors-limit") == 0;
@@ -3874,45 +3877,43 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
                 sensors_rows_set_limits((uint16_t)((SENSE_LIMIT_ST_OLD << 12)
                                                    | (1u << 4)));
             }
-            /* The 15 rows above 0x41's heading: three drags; to 0x41
-             * CH2's rows, two more. */
-            const int drags = lim ? 5 : 3;
-            for (int k = 0; k < drags; ++k) {
-                setup_scroll_rows(4);
+            setup_entry(SENS_ENTRY_INA3221_0 + 1);
+            if (lim) {
+                setup_scroll_rows(4);   /* to 0x41 CH2's rows */
             }
         } else {
             sensors_rows_set_status((uint16_t)(SENS_PART_ONLINE
                                                | (SENS_PART_SILENT << 4)));
+            setup_entry(SENS_ENTRY_INA3221_0);
         }
         /* 0x40 CH1's shunt, scrolled into view and its value tapped:
          * 44.4mOhm typed, the station's value. */
         if (strcmp(view, "setup-sensors-keypad") == 0) {
-            settings_set(SET_INA_FIT(0), 1.0f);
             setup_value(SET_CAT_SENSORS, SET_INA_SH(0));
             kp_type(settings_screen_keypad(), "44.4");
         }
         /* The same shunt, 3mOhm typed and refused: the reason in place
          * of the range. */
         if (strcmp(view, "setup-sensors-why") == 0) {
-            settings_set(SET_INA_FIT(0), 1.0f);
             setup_value(SET_CAT_SENSORS, SET_INA_SH(0));
             kp_type(settings_screen_keypad(), "3");
             ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
         }
     }
-    /* INTERFACES: GPIO 5 typed for Sensor SDA, and PD mini RX's GPIO 9 for
-     * PD mini TX, each refused with its reason in place of the range. */
+    /* GPIO 5 typed for Sensor SDA, and PD mini RX's GPIO 9 for PD mini TX,
+     * each refused with its reason in place of the range. */
     if (strcmp(view, "setup-sda-keypad") == 0) {
-        setup_tile(SET_CAT_IFACE);
-        setup_value(SET_CAT_IFACE, SET_SENSE_SDA);
+        setup_tile(SET_CAT_SENSORS);
+        setup_value(SET_CAT_SENSORS, SET_SENSE_SDA);
         kp_type(settings_screen_keypad(), "1");
     }
     if (strcmp(view, "setup-sda-why") == 0
         || strcmp(view, "setup-pdmini-why") == 0) {
         const bool sda = strcmp(view, "setup-sda-why") == 0;
         settings_set(SET_PDMINI_RX, 9.0f);
-        setup_tile(SET_CAT_IFACE);
-        setup_value(SET_CAT_IFACE, sda ? SET_SENSE_SDA : SET_PDMINI_TX);
+        const setting_cat_t cat = sda ? SET_CAT_SENSORS : SET_CAT_IFACE;
+        setup_tile(cat);
+        setup_value(cat, sda ? SET_SENSE_SDA : SET_PDMINI_TX);
         kp_type(settings_screen_keypad(), sda ? "5" : "9");
         ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
     }

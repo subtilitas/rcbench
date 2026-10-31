@@ -24,8 +24,10 @@
 #include "outputs.h"
 #include "sense_link.h"
 #include "sense_page.h"
+#include "sensors_pane.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "settings_sensors.h"
 #include "tone_link.h"
 #include "ui_band.h"
 #include "ui_screen.h"
@@ -245,12 +247,24 @@ static inline void fresh_hub(void)
 }
 
 /*
- * The list the screen tests open: INTERFACES, SETUP's longest, with a
- * number row of a wide range (INA228 SHUNT, 50 to 20,000 uOhm).  ESC /
- * BENCH's rows, which these tests opened before, are MOTOR & ESC >
- * SETTINGS' (test_motor_workbench).
+ * The list the screen tests open: INTERFACES, full width, with a number row
+ * first in each section.  ESC / BENCH's rows are MOTOR & ESC > SETTINGS'
+ * (test_motor_workbench), and the sensors' are SENSORS' (open_sensor()).
  */
 #define LIST_CAT SET_CAT_IFACE
+
+/* The point inside entry @p e of SENSORS' left list, in panel coordinates. */
+static inline int entry_x(int e)
+{
+    const gfx_rect_t r = settings_screen_entry_rect(e);
+    return r.x + r.w / 2;
+}
+
+static inline int entry_y(int e)
+{
+    const gfx_rect_t r = settings_screen_entry_rect(e);
+    return UI_BAND_H + r.y + r.h / 2;
+}
 
 /* SETUP on LIST_CAT's list, opened from its tile. */
 static inline void fresh_screen(void)
@@ -266,6 +280,20 @@ static inline void tap(int x, int y)
     ui_router_event(&e);
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
+}
+
+/* SENSORS' list on the entry that holds @p id, its sensor enabled, opened by
+ * its tile and the entry's tap as the panel does. */
+static inline void open_sensor(setting_id_t id)
+{
+    const int e = sensors_pane_entry_of(id);
+    setting_id_t rows[SENS_ENTRY_ROWS_MAX];
+    (void)sensors_pane_rows(e, rows, SENS_ENTRY_ROWS_MAX);
+    if (e != SENS_ENTRY_BUS) {
+        settings_set(rows[0], 1.0f);
+    }
+    open_category(SET_CAT_SENSORS);
+    tap(entry_x(e), entry_y(e));
 }
 
 /* The middle of the row of the @p index-th setting of the open list, which
@@ -302,10 +330,9 @@ static inline unsigned save_face(void)
 #define XL       400
 #define XM       (MINUS_X + BTN_W / 2)
 #define XP       (PLUS_X + BTN_W / 2)
-/* The key the gesture tests press: INA228 max current, a number of
- * 0.1A steps on row 3 of INTERFACES, in view with the list at its
- * top. */
-#define KEY_ID   SET_INA228_MAX_A
+/* The key the gesture tests press: 0x40 CH1's shunt, a number of 0.1mOhm
+ * steps on row 2 of its pane, in view with the list at its top. */
+#define KEY_ID   SET_INA_SH(0)
 
 static float s_before[SETTING_COUNT];
 
@@ -335,13 +362,18 @@ static inline void idle(float seconds)
     }
 }
 
-/* SETUP on @p cat at its defaults, the list at its top. */
+/* SETUP on @p cat at its defaults, the list at its top; SENSORS on 0x40. */
 static inline void gesture_screen(setting_cat_t cat)
 {
-    fresh_screen();
+    fresh_hub();
+    if (cat == SET_CAT_SENSORS) {
+        open_sensor(KEY_ID);      /* 0x40 fitted: 10 rows, a list that scrolls */
+    } else {
+        open_category(LIST_CAT);
+    }
     feed_reset();
     feed_tick_per_report(REPORT_S);
-    if (cat != LIST_CAT) {
+    if (cat != LIST_CAT && cat != SET_CAT_SENSORS) {
         feed_tap(FEED_LONE, home_x(), home_y());
         feed_tap(FEED_LONE, tile_x((int)cat), tile_y((int)cat));
     }

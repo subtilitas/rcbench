@@ -492,7 +492,7 @@ are open and the address floats between 0x40 and 0x41), two
 a servo, and the ESC and motor or a resistive load on a current-limited
 supply.
 
-**Set it up on the panel.** SETUP → INTERFACES: `INA228` ON; SETUP →
+**Set it up on the panel.** SETUP → SENSORS: `INA228` ON; SETUP →
 SENSORS: `0x40 fitted` ON. The other sensor settings default to the modules
 above: INA228 at 0x45 with 200 µΩ, the INA3221 at 0x40 with 0.1Ω on each
 channel and CH1 watching OUT 1, SDA on GPIO 16 and SCL on GPIO 17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
@@ -882,7 +882,7 @@ answer whether an arrival is the horn's.
 
 **Part B: with the AS5600.** The same moves with the encoder on the shaft.
 
-1. SETUP → INTERFACES: `AS5600` ON, with the bank SAFE. On the SERVO
+1. SETUP → SENSORS: `AS5600` ON, with the bank SAFE. On the SERVO
    screen's SETTINGS > DUT, with the servo at its neutral, tap ENC CENTRE.
 2. Repeat part A's steps 5 to 7.
 3. Keep each log together with its test's `ATESTnnn.CSV` from the SD card's

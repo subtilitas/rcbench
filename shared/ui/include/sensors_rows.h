@@ -1,13 +1,8 @@
 /**
  * @file sensors_rows.h
- * @brief SETUP > SENSORS' list: which SENSORS rows show, the headings over
- *        them, and what each fitted part is doing.  The list is SETUP's own
- *        list renderer (settings_draw.c); this file decides its rows.
- *
- * The list: the heading INA3221 PARTS over 0x40 FITTED to 0x43 FITTED,
- * then per fitted part a heading "INA3221 0x4n" with the part's state on
- * its right, over its channels' WATCHES, SHUNT and LIMIT rows.  A part
- * not fitted has no heading and no rows.
+ * @brief What SETUP > SENSORS says of its INA228 and INA3221 entries
+ *        (sensors_pane.h): each part's state, the marks on its rows, and the
+ *        words other screens use for its channels.
  *
  * A row of a part the IOmcu does not read is marked as SETUP marks a value
  * the IOmcu does not hold: its edge and value in the warning colour and a
@@ -52,20 +47,44 @@ sens_part_t sensors_rows_status(int a);
  */
 void sensors_rows_set_limits(uint16_t word);
 
-/** Whether SETUP lists @p id: any id that is not a SENSORS row, a FITTED
- *  row, and the channel rows of a fitted part. */
-bool sensors_rows_listed(setting_id_t id);
+/**
+ * @brief Sets the INA228's state.  A change repaints SETUP.
+ * @param st sense_map_link_i228()'s word; SENS_PART_UNKNOWN at start.
+ */
+void sensors_rows_set_i228(sens_part_t st);
 
-/** The part whose heading stands above @p id, 0 to 3: @p id is the first
- *  row of a fitted part.  -1 otherwise. */
-int sensors_rows_heading(setting_id_t id);
+/**
+ * @brief The INA228's state as last set.
+ * @return The state.
+ */
+sens_part_t sensors_rows_i228(void);
 
-/** Part @p a's heading, "INA3221 0x4n", into @p buf. */
+/**
+ * @brief Part @p a's name, "INA3221 0x4n".
+ * @param a   The part, 0 to 3.
+ * @param buf Takes the name.
+ * @param n   The size of @p buf, bytes.
+ * @return @p buf; "" with no buffer.
+ */
 const char *sensors_rows_title(int a, char *buf, size_t n);
 
 /** Part @p a's state in words, and the colour it is drawn in. */
 const char *sensors_rows_state(int a);
 gfx_color_t sensors_rows_state_color(int a);
+
+/**
+ * @brief A state in words, in the language showing.
+ * @param st The state; one out of range reads as SENS_PART_UNKNOWN.
+ * @return The words, at most 25 cells.
+ */
+const char *sensors_rows_word(sens_part_t st);
+
+/**
+ * @brief The colour a state is drawn in.
+ * @param st The state.
+ * @return UI_OK online, dim while it is not known yet, else UI_WARN.
+ */
+gfx_color_t sensors_rows_word_color(sens_part_t st);
 
 /**
  * @brief Whether the row of @p id is marked.
