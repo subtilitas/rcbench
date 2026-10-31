@@ -422,7 +422,7 @@ TEST_CASE(the_screen_draws_nothing_under_the_dock)
         gfx_canvas_t c2;
         gfx_canvas_init(&c2, alone, W, H, W);
         gfx_clear(&c2, 0);
-        ui_help_render_dock(&c2, &p, page, 3, false, UI_HELP_HIT_NONE);
+        ui_help_render_dock(&c2, &p, page, 4, false, UI_HELP_HIT_NONE);
         const gfx_rect_t d = ui_help_dock_rect(p.side);
         int diff = 0;
         for (int y = UI_BAND_H; y < UI_ALERT_Y; ++y) {
