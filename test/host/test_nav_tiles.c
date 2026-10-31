@@ -27,7 +27,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "logs_strip.h"
 #include "nav_rig.h"
 #include "motor_spots.h"
 #include "stick_spots.h"
