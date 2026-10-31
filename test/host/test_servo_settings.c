@@ -476,7 +476,7 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
             }
             const bool rc = x >= SV_RC_X && x < SV_RC_X + SV_RC_W;
             const bool in = rc && y >= 70 && y < 166;
-            const bool row = x >= 416 && x < 610 && y >= 476 && y < 520;
+            const bool row = x >= 416 && x < 610 && y >= 448 && y < 492;
             if (in) { ++inside; } else if (row) { ++in_row; } else { ++outside; }
         }
     }

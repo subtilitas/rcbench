@@ -44,9 +44,11 @@ _Static_assert(SHAFT_X - BODY_W + 24 - 62 >= PAD + 12,
                "the servo's lead starts inside LIVE's card");
 _Static_assert(SHAFT_X + ARC_R + 26 + 24 <= PAD + LCARD_W - 12,
                "the dial's labels end inside LIVE's card");
-_Static_assert(SHAFT_Y - ARC_R - 36 >= CARD_Y + 4,
+/* The +90 and -90 labels sit left of their ticks, level with the arc's ends:
+ * 10px above and below them, half the label's height. */
+_Static_assert(SHAFT_Y - ARC_R - 10 >= CARD_Y + 4,
                "the dial's +90 label ends inside LIVE's card");
-_Static_assert(SHAFT_Y + ARC_R + 36 <= READ_LBL_Y - 4,
+_Static_assert(SHAFT_Y + ARC_R + 10 <= READ_LBL_Y - 4,
                "the dial's -90 label ends above the readings");
 _Static_assert(PAD + 10 + BOX_W <= SHAFT_X - 36,
                "the run's box stays clear of the horn and its rings");

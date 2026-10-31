@@ -1103,7 +1103,8 @@ LIVE's card holds the horn's angle in the bench's numerals top left, with
 `ARM FIRST` under it while the bench is SAFE, the dial (radius 150px)
 with the servo, and along its foot the three readings, a third of the card
 each: COMMANDED in microseconds, MEASURED in degrees and CURRENT in amps,
-the label and unit over numerals 44px tall. Numerals wider than their
+the label and unit over numerals 44px tall, ending 4px above the alert band.
+The dial's +90 and -90 labels stand left of their ticks. Numerals wider than their
 198px column (a current held at `-1000000.00`) are drawn in a
 smaller face, so they stay inside it. The readings are on LIVE only; on
 the other tasks the line over the plot carries the current.
@@ -4285,9 +4286,18 @@ frame, refused pins or an IOmcu without the SENSE page, and `NO BUS PINS`.
 | INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
 | INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
-| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50 µΩ, does not reach it |
+| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. Up to 40.96mV across the shunt it takes ±40.96mV, 78.125nV a step; up to 163.84mV ±163.84mV, 312.5nV a step; past that the IOmcu refuses the pair. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50 µΩ, does not reach it |
 | Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | IOmcu GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
 | Sensor SCL | SDA + 1, or −1 | 17 | the GPIO after Sensor SDA, and −1 with it. The row shows the value and has no keys |
+
+The two rows replace their help with the value that works with the other row:
+`Up to 300.0A on 200uΩ (163.84mV)` on INA228 max current, `Up to 800uΩ at 204.8A
+(163.84mV)` on INA228 shunt. Shunt in µΩ times maximum in A is at most 163840.
+Any shunt takes a maximum of at least 8.1A, at 20000 µΩ; up to 546 µΩ takes the
+whole 300.0A. 201 µΩ at 204.8A is 41.16mV and takes the wider range; lowering
+the maximum to 203.7A brings it back to the narrower one. A pair past 163.84mV
+is marked on both rows and said on the band: `INA228 shunt x maximum is over
+163.84mV: on 1000uΩ up to 163.8A. Check SENSORS.`.
 
 SDA and SCL are one I2C block's pair: SDA's GPIO number mod 4 is 0 or 2, and
 SCL is the GPIO after it. Sensor SDA takes only the pins of such a pair that
