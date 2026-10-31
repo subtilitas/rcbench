@@ -57,7 +57,7 @@ mode                   lines/frame     traffic
 ----------------------------------------------
 frame                        9,744    1218 KiB
 frame-idle                       0       0 KiB
-held                         5,128     641 KiB
+held                         5,258     657 KiB
 sim                         13,435    1679 KiB
 throttle                    11,629    1454 KiB
 chrome                      51,486    6436 KiB
