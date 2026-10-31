@@ -12,6 +12,7 @@
 #include "guard_canvas.h"
 
 #include "coproc_update_screen.h"
+#include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -176,15 +177,27 @@ TEST_CASE(a_second_finger_does_not_end_the_first_ones_hold)
     CHECK(coproc_update_screen_take_start());
 }
 
-TEST_CASE(leaving_the_question_declines_and_leaving_the_progress_does_not)
+/* The screen's home tag hook, as the router calls it: false sends the router
+ * on to the parent. */
+static bool home_answers(void)
+{
+    return scr()->back != NULL && !scr()->back();
+}
+
+/* The home tag answers the question.  A move of the router answers nothing. */
+TEST_CASE(the_home_tag_declines_and_leaving_declines_nothing)
 {
     fresh(k_old, k_new);
     scr()->leave();
+    CHECK(!coproc_update_screen_take_cancel());
+
+    CHECK(home_answers());
     CHECK(coproc_update_screen_take_cancel());
 
     fresh(k_old, k_new);
     ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
     ticks(HOLD_TICKS);
+    CHECK(home_answers());
     scr()->leave();
     CHECK(!coproc_update_screen_take_cancel());
     CHECK(coproc_update_screen_take_start());
@@ -338,41 +351,283 @@ TEST_CASE(cancel_declines_once_and_the_question_stays_shut)
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
-/*
- * The HOME tag, an alert's jump, STOP's way to the menu, any screen the
- * router goes to: CANCEL latches on the way out, after the router has left
- * the question, and the next frame hands it over as a decline.
- */
-TEST_CASE(every_way_off_the_question_is_a_decline_handed_over_once)
+static void home_tag(void)
+{
+    const gfx_rect_t home =
+        ui_home_tag_rect(ui_router_title(SCREEN_COPROC_UPDATE));
+    router_tap(home.x + home.w / 2, home.y + home.h / 2);
+}
+
+/* The other link-up: the check withdraws the offer, then makes it anew. */
+static cu_hand_t link_up_again(void)
+{
+    g_feed.offered = false;
+    (void)frame();
+    g_feed.offered = true;
+    ++g_feed.offer_gen;
+    return frame();
+}
+
+TEST_CASE(the_home_tag_declines_once_and_the_question_stays_shut)
 {
     drive_fresh();
     offer();
     CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
-    const gfx_rect_t home =
-        ui_home_tag_rect(ui_router_title(SCREEN_COPROC_UPDATE));
-    router_tap(home.x + home.w / 2, home.y + home.h / 2);
+    home_tag();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
     cu_hand_t h = frame();
     CHECK(h.decline);
     h = frame();
     CHECK(!h.decline);
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);   /* not reopened */
+}
 
+/*
+ * Every screen the panel can force over the question, and the rest of the
+ * router's jumps: nobody answered.  The two the panel forces today are
+ * SCREEN_BUSFAULT (panel_frame.c, a link gone for 4000ms) and SCREEN_UPDATE
+ * (panel_update.c, a download whose hold completed on the reminder).
+ */
+TEST_CASE(a_screen_forced_over_the_question_declines_nothing)
+{
     static const ui_screen_id_t k_to[] = {
-        SCREEN_OVERVIEW, SCREEN_MOTOR, SCREEN_LOGS, SCREEN_SETUP,
-        SCREEN_OUTPUTS, SCREEN_SUPPLY,
+        SCREEN_BUSFAULT, SCREEN_UPDATE, SCREEN_OVERVIEW, SCREEN_MOTOR,
+        SCREEN_LOGS, SCREEN_SETUP, SCREEN_OUTPUTS, SCREEN_SUPPLY,
     };
     for (size_t i = 0; i < sizeof(k_to) / sizeof(k_to[0]); ++i) {
         drive_fresh();
         offer();
         CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
         ui_router_goto(k_to[i]);
-        h = frame();
-        CHECK(h.decline);
+        cu_hand_t h = frame();
+        CHECK(!h.decline);
         CHECK_EQ(ui_router_current(), k_to[i]);
         h = frame();
         CHECK(!h.decline);
+        CHECK(!coproc_update_screen_take_cancel());
     }
+}
+
+/* STOP leaves the question up and answers nothing; the fault screen after it
+ * answers nothing either. */
+TEST_CASE(stop_then_the_fault_screen_declines_nothing)
+{
+    drive_fresh();
+    offer();
+    const gfx_rect_t stop = ui_band_stop_rect();
+    router_tap(stop.x + stop.w / 2, stop.y + stop.h / 2);
+    CHECK(ui_router_take_stop());
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    ui_router_goto(SCREEN_BUSFAULT);
+    h = frame();
+    CHECK(!h.decline);
+}
+
+/* What the station saw: no tap, the link gone, the fault screen.  The link
+ * still gone at the acknowledgement: the menu, and no question over a dead
+ * link.  The next link-up's check: the question again. */
+TEST_CASE(the_next_link_up_offers_again_after_the_fault_screen)
+{
+    drive_fresh();
+    offer();
+    ui_router_goto(SCREEN_BUSFAULT);
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_BUSFAULT);
+
+    ui_router_goto(SCREEN_OVERVIEW);    /* acknowledged */
+    for (int i = 0; i < 3; ++i) {
+        h = frame();
+        CHECK(!h.decline);
+        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    }
+
+    h = link_up_again();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    CHECK_EQ(coproc_update_screen_view(), CU_VIEW_QUESTION);
+    CHECK_EQ(g_drv.shown_gen, 2u);
+
+    /* And that question takes an answer of its own. */
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    h = frame();
+    CHECK(h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/* The link back under the fault screen: the screen stays until its
+ * acknowledgement, and the question opens on the menu after it. */
+TEST_CASE(a_link_up_under_the_fault_screen_waits_for_the_acknowledgement)
+{
+    drive_fresh();
+    offer();
+    ui_router_goto(SCREEN_BUSFAULT);
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    h = link_up_again();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_BUSFAULT);
+    ui_router_goto(SCREEN_OVERVIEW);
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+}
+
+/* The new offer after the fault screen pops over nothing the first one
+ * would not have: each condition holds it back, and it opens once all have
+ * gone. */
+TEST_CASE(the_offer_after_the_fault_screen_keeps_the_question_s_conditions)
+{
+    drive_fresh();
+    offer();
+    ui_router_goto(SCREEN_BUSFAULT);
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    ui_router_goto(SCREEN_OVERVIEW);
+    g_feed.offered = false;
+    (void)frame();
+    g_feed.offered = true;
+    ++g_feed.offer_gen;
+
+    coproc_update_drive(&g_drv, &g_feed, true, &h);     /* ARMED */
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    CHECK(!h.decline);
+    g_feed.radio_up = true;
+    (void)frame();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    g_feed.radio_up = false;
+    g_feed.installing = true;
+    (void)frame();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    g_feed.installing = false;
+    ui_router_goto(SCREEN_MOTOR);
+    (void)frame();
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+    ui_router_goto(SCREEN_OVERVIEW);
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+}
+
+/* An operator's CANCEL just before the link goes is still his answer, the
+ * fault screen on top of it or not; the fault screen alone is none. */
+TEST_CASE(a_cancel_just_before_the_fault_screen_still_declines)
+{
+    drive_fresh();
+    offer();
+    ui_router_goto(SCREEN_BUSFAULT);
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+
+    drive_fresh();
+    offer();
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ui_router_goto(SCREEN_BUSFAULT);
+    h = frame();
+    CHECK(h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_BUSFAULT);   /* the fault stays */
+    h = frame();
+    CHECK(!h.decline);
+    ui_router_goto(SCREEN_OVERVIEW);
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/* A press on START the fault screen ended starts nothing and declines
+ * nothing, and the new offer's START takes the whole hold. */
+TEST_CASE(a_hold_the_fault_screen_ended_starts_nothing)
+{
+    drive_fresh();
+    offer();
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
+    ticks(HOLD_TICKS / 2);
+    ui_router_goto(SCREEN_BUSFAULT);
+    ticks(HOLD_TICKS);
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(h.starts, 0u);
+    ui_router_goto(SCREEN_OVERVIEW);
+    h = link_up_again();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    ticks(HOLD_TICKS);
+    h = frame();
+    CHECK_EQ(h.starts, 0u);
+}
+
+/* The fault screen and a new offer between two frames: nothing declined. */
+TEST_CASE(a_forced_screen_as_the_offer_changes_declines_nothing)
+{
+    drive_fresh();
+    offer();
+    ui_router_goto(SCREEN_BUSFAULT);
+    ++g_feed.offer_gen;
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_BUSFAULT);
+    ui_router_goto(SCREEN_OVERVIEW);
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    CHECK_EQ(g_drv.shown_gen, g_feed.offer_gen);
+}
+
+/* The home tag on the question of an offer a newer link-up has replaced, the
+ * withdrawal between two frames: an answer to the old versions, not to the
+ * new offer, whose question opens. */
+TEST_CASE(the_home_tag_on_a_replaced_offer_declines_nothing)
+{
+    drive_fresh();
+    offer();
+    home_tag();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    ++g_feed.offer_gen;
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    CHECK_EQ(g_drv.shown_gen, g_feed.offer_gen);
+}
+
+/* The same for CANCEL: the question stays, on the new offer, and takes a
+ * CANCEL given to it. */
+TEST_CASE(cancel_on_a_replaced_offer_declines_nothing)
+{
+    drive_fresh();
+    offer();
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ++g_feed.offer_gen;
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    CHECK_EQ(g_drv.shown_gen, g_feed.offer_gen);
+
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CU_Q_CANCEL_X, CU_Q_BTN_Y, 0);
+    h = frame();
+    CHECK(h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/* A hold on START when the offer is replaced does not carry over: the
+ * question of the new offer takes a hold of its own. */
+TEST_CASE(a_replaced_offer_ends_a_hold_on_start)
+{
+    drive_fresh();
+    offer();
+    ev(TOUCH_EVENT_DOWN, 1, CU_Q_START_X, CU_Q_BTN_Y, 0);
+    ticks(HOLD_TICKS - 8);
+    ++g_feed.offer_gen;
+    (void)frame();
+    ticks(8);
+    cu_hand_t h = frame();
+    CHECK_EQ(h.starts, 0u);
+    CHECK_EQ(coproc_update_screen_view(), CU_VIEW_QUESTION);
 }
 
 TEST_CASE(an_offer_that_goes_closes_the_question_and_declines_nothing)
@@ -497,7 +752,7 @@ int main(void)
     RUN(cancel_is_a_tap_and_is_handed_over_once);
     RUN(a_release_off_cancel_or_flagged_is_no_cancel);
     RUN(a_second_finger_does_not_end_the_first_ones_hold);
-    RUN(leaving_the_question_declines_and_leaving_the_progress_does_not);
+    RUN(the_home_tag_declines_and_leaving_declines_nothing);
     RUN(the_progress_view_takes_no_touch);
     RUN(a_new_offer_returns_to_the_question_with_clear_latches);
     RUN(the_router_draws_the_band_over_the_question_only);
@@ -505,7 +760,18 @@ int main(void)
     RUN(every_view_renders_inside_its_canvas);
     RUN(an_offer_opens_the_question_once_on_a_safe_menu);
     RUN(cancel_declines_once_and_the_question_stays_shut);
-    RUN(every_way_off_the_question_is_a_decline_handed_over_once);
+    RUN(the_home_tag_declines_once_and_the_question_stays_shut);
+    RUN(a_screen_forced_over_the_question_declines_nothing);
+    RUN(stop_then_the_fault_screen_declines_nothing);
+    RUN(the_next_link_up_offers_again_after_the_fault_screen);
+    RUN(a_link_up_under_the_fault_screen_waits_for_the_acknowledgement);
+    RUN(the_offer_after_the_fault_screen_keeps_the_question_s_conditions);
+    RUN(a_cancel_just_before_the_fault_screen_still_declines);
+    RUN(a_hold_the_fault_screen_ended_starts_nothing);
+    RUN(a_forced_screen_as_the_offer_changes_declines_nothing);
+    RUN(the_home_tag_on_a_replaced_offer_declines_nothing);
+    RUN(cancel_on_a_replaced_offer_declines_nothing);
+    RUN(a_replaced_offer_ends_a_hold_on_start);
     RUN(an_offer_that_goes_closes_the_question_and_declines_nothing);
     RUN(start_runs_the_progress_and_the_end_returns_to_the_menu);
     RUN(the_driver_takes_no_null);

@@ -617,6 +617,8 @@ void panel_frame_loop(void)
          * OFF stay on screen for as long as it is live.  Nor over WI-FI,
          * whose Wi-Fi does not need the link, nor over PANEL
          * UPDATE, which withholds the heartbeat on purpose while it writes.
+         * The IOmcu's question under it stays unanswered: the next link-up's
+         * check offers again.
          *
          * The timestamp is read once and tested twice.  The control task
          * clears it on the other core the moment the link answers, and a

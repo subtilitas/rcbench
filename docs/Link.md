@@ -1544,8 +1544,10 @@ with the IOmcu's HASH_RUNNING over the same number of bytes.
 
 The check runs at a protocol major mismatch as well: the identity registers
 and the update pages answer across majors, and the update moves the
-IOmcu to the panel's own major. A CANCEL is kept for that IOmcu
-version until the panel restarts. An older carried image is offered too; the
+IOmcu to the panel's own major. A CANCEL or the home tag on the question is
+kept for that IOmcu version until the panel restarts. A question the panel's
+fault screen covered after a lost link is not answered, and the next link-up
+offers again. An older carried image is offered too; the
 question then says so. [Screens](Screens.md#iomcu-update) shows the
 question and the progress.
 

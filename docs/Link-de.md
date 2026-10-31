@@ -1680,8 +1680,10 @@ gelesen, mit HASH_RUNNING des IOmcu über dieselbe Zahl von Bytes.
 
 Die Prüfung läuft auch bei einer abweichenden Protokoll-Major: die
 Identitätsregister und die Update-Pages antworten über Majors hinweg, und das
-Update bringt den IOmcu auf die Major des Panels. Ein CANCEL gilt für
-diese Version des IOmcu, bis das Panel neu startet. Ein älteres
+Update bringt den IOmcu auf die Major des Panels. Ein CANCEL oder der Home-Tag
+auf der Frage gilt für diese Version des IOmcu, bis das Panel neu startet. Eine
+Frage, die der Busfehler-Bildschirm nach einem verlorenen Link verdeckt hat, ist
+nicht beantwortet, und der nächste Link-Aufbau bietet erneut an. Ein älteres
 mitgebrachtes Image wird ebenfalls angeboten; die Frage sagt das dann.
 [Screens](Screens-de.md#iomcu-update) zeigt Frage und Fortschritt.
 
