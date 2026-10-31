@@ -305,6 +305,10 @@ abgebrochenes Sichern oder eine gezogene Karte hinterlässt keine Datei dieses
 Namens. Ein Stromausfall hinterlässt die `.NEW`; das nächste Sichern dieses
 Namens löscht sie.
 
+![Ein laufendes Sichern](img/de/shot-saving.png)
+
+![Eine volle Karte](img/de/shot-full.png)
+
 | Beim Sichern oder danach | Das Popup sagt |
 | --- | --- |
 | währenddessen | `Sichere 42%` und ein Balken. Nur CANCEL nimmt einen Druck an |
@@ -320,7 +324,7 @@ Jeder Fehler bleibt auf dem Popup, das Bild bleibt erhalten. Die Sperre der
 Karten-Aufträge ist die von FILES und der Wi-Fi-Seite: ein Auftrag zur Zeit;
 die Schreibvorgänge der Seite warten bis 2000ms auf ein Sichern und antworten dann
 `PANEL_BUSY`. CANCEL beim Sichern stoppt es an der nächsten Zeile, und das Bild geht,
-wenn es gestoppt hat. Ein Prüfstand, der nicht mehr ruht, tut dasselbe und behält
+sobald es steht. Ein Prüfstand, der aufhört zu ruhen, tut dasselbe und behält
 das Bild.
 
 Die Kopie sind 1 228 800B auf der Render-Task in einem Frame. Sie ist nicht auf

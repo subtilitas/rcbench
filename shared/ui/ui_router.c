@@ -138,21 +138,20 @@ static struct {
         int16_t x, y;
     } owned[TOUCH_MAX_POINTS];
 
-    /*
+    /**
      * Every contact on the glass, whoever owns it, by track id: what a
      * screenshot's hold takes for a second contact, and what the popup
      * waits for to lift.  Set at a DOWN, cleared at its UP and at a touch
      * loss.
      */
     uint8_t  glass[256u / 8u];
-    /* The screenshot's hold (ui_router_shot_gap()): the contact, where it
-     * last was, and its time. */
-    bool     shot_hold;
-    uint8_t  shot_id;
-    int16_t  shot_x, shot_y;
-    uint32_t shot_ms;
-    /* The bench is idle (shot_gate.h), as the application last said; false
-     * until it says so. */
+    bool     shot_hold;   /**< the screenshot's hold runs                  */
+    uint8_t  shot_id;     /**< its contact                                 */
+    int16_t  shot_x;      /**< where its contact last was, panel x         */
+    int16_t  shot_y;      /**< and panel y                                 */
+    uint32_t shot_ms;     /**< how long it has run, ms                     */
+    /** The bench is idle (shot_gate.h), as the application last said; false
+     *  until it says so. */
     bool     shot_idle;
 } s;
 

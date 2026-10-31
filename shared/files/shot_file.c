@@ -22,14 +22,14 @@ typedef struct {
     void    *file;          /**< the open file                    */
     size_t   used;          /**< bytes in the chunk               */
     fm_err_t err;           /**< the first failure                */
-} sink_t;
+} shot_sink_t;
 
 /**
  * @brief Write out what the chunk holds.
  * @param k  the writer
  * @return true when it went
  */
-static bool flush_chunk(sink_t *k)
+static bool flush_chunk(shot_sink_t *k)
 {
     if (k->used == 0u) {
         return k->err == FM_OK;
@@ -50,7 +50,7 @@ static bool flush_chunk(sink_t *k)
  */
 static bool sink_write(const uint8_t *data, size_t n, void *ctx)
 {
-    sink_t *k = (sink_t *)ctx;
+    shot_sink_t *k = (shot_sink_t *)ctx;
     while (n != 0u) {
         const size_t room = k->s->chunk_size - k->used;
         const size_t take = (n < room) ? n : room;
@@ -181,7 +181,7 @@ fm_err_t shot_file_next(const fm_io_t *io, unsigned *number)
  */
 static fm_err_t write_new(const shot_save_t *s, const char *temp)
 {
-    sink_t k = { .s = s, .file = NULL, .used = 0u, .err = FM_OK };
+    shot_sink_t k = { .s = s, .file = NULL, .used = 0u, .err = FM_OK };
     fm_err_t e = s->io->open(s->io->ctx, temp, FM_OPEN_NEW, &k.file);
     if (e != FM_OK) {
         return e;

@@ -32,7 +32,7 @@
 #define BAR_H 16
 /** @brief The progress bar's top, below six rows of status. */
 #define BAR_Y (STATUS_Y + 6 * LINE_PITCH + 8)
-/** @brief The colour the first lines of the left column take: 10 x 20px. */
+/** @brief The left column's face: 10 x 20px. */
 #define COL_FONT UI_FONT_BAND
 
 /** @brief Where a picture stands. */
@@ -43,9 +43,10 @@ typedef enum {
     ST_DROPPING,    /**< CANCEL during a save: gone when the save stops  */
 } state_t;
 
-static struct {
-    const ui_shot_io_t *io;
-    state_t       state;
+/** @brief The picture and the popup. */
+typedef struct {
+    const ui_shot_io_t *io;     /**< the application's side              */
+    state_t       state;        /**< where the picture stands            */
     bool          want;         /**< the next frame's end takes it       */
     gfx_color_t  *image;        /**< UI_SHOT_PIXELS, then the preview    */
     bool          previewed;    /**< the preview shows this picture      */
@@ -57,7 +58,10 @@ static struct {
     int           percent;      /**< the save's progress as drawn        */
     uint32_t      key[2];       /**< what each buffer holds              */
     uint8_t       drawn;        /**< the buffers whose key holds         */
-} s;
+} shot_t;
+
+/** @brief The one picture, render task only. */
+static shot_t s;
 
 void ui_shot_bind(const ui_shot_io_t *io) { s.io = io; }
 

@@ -54,13 +54,21 @@ static const char *TAG = "rcbench";
 /** @brief Where the job stands. */
 enum { JOB_IDLE = 0, JOB_RUNNING, JOB_ANSWERED };
 
+/** @brief JOB_IDLE, JOB_RUNNING or JOB_ANSWERED. */
 static atomic_int  s_state;
+/** @brief How far a save has come, 0 to 100. */
 static atomic_int  s_percent;
+/** @brief The popup asked the save to stop. */
 static atomic_bool s_cancel;
+/** @brief What the task is asked for. */
 static ui_shot_job_t s_job;
+/** @brief The picture of a save. */
 static const gfx_color_t *s_pixels;
+/** @brief The name of a save, without its extension. */
 static const char *s_base;
+/** @brief What the job came to. */
 static fm_err_t s_err;
+/** @brief The next number, from UI_SHOT_JOB_NEXT. */
 static unsigned s_number;
 
 /**

@@ -284,6 +284,10 @@ A file is written as `<name>.PNG.NEW`, then renamed, so a save stopped or a
 card pulled leaves no file of the name. A power cut leaves the `.NEW`; the next
 save of that name deletes it.
 
+![A save under way](img/shot-saving.png)
+
+![A card that was full](img/shot-full.png)
+
 | While it saves or after | The popup says |
 | --- | --- |
 | during | `Saving 42%` and a bar. Only CANCEL takes a press |
