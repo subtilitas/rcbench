@@ -4472,7 +4472,6 @@ shared/ui/settings_screen.c: warning: Member hold(ui_screen_id_t to) (function) 
 shared/ui/settings_screen.c: warning: Member leave_held(void) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member on_key(int kind, int index, int x, int y) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member open_text(setting_text_id_t id) (function) of file settings_screen.c is not documented.
-shared/ui/settings_screen.c: warning: Member open_tile(int index) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member row_at(int x, int y) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member row_setting(int index) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member row_text(int index) (function) of file settings_screen.c is not documented.
