@@ -609,9 +609,9 @@ TEST_CASE(opening_a_report_hands_it_to_the_viewer_on_files)
         CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
         CHECK_STR_EQ(log_viewer_open_name(), "LIMIT005.TXT");
         /* The home tag leaves the viewer for LOGS, which opened it. */
-        CHECK(!files_screen()->back());
-        CHECK_EQ(ui_router_parent(SCREEN_FILES), SCREEN_LOGS);
-        ui_router_goto(SCREEN_LOGS);
+        CHECK(files_screen()->back());
+        CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+        CHECK_EQ(ui_router_parent(SCREEN_FILES), SCREEN_OVERVIEW);
         CHECK_EQ(text_view_state(), TEXT_VIEW_CLOSED);
         CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
     }

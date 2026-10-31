@@ -65,9 +65,8 @@ static atomic_bool s_fw_installing;
 static atomic_bool s_cu_busy;
 /* False when wifi_access_init() failed: no call into wifi_access then. */
 bool        s_wifi_ok;
-/* Where PANEL UPDATE's CLOSE leads: to the screen that opened WI-FI, LOGS
- * or SETUP, after an upload's install, to UPDATES or OVERVIEW after a
- * download. */
+/* Where PANEL UPDATE's CLOSE leads: to WI-FI's parent, the menu, after an
+ * upload's install, to UPDATES or OVERVIEW after a download. */
 static ui_screen_id_t s_update_back = SCREEN_LOGS;
 
 

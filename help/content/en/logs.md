@@ -34,12 +34,12 @@ The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and name
 
 LOGS opens on the tab of the file the panel wrote last, and on BENCH after a start until one is written. Back on LOGS with nothing written since, the tab stays as it was left. A tap on a tab reads its folder from the first page.
 
+The strip on top, LOGS | FILES | WI-FI, holds the tile's three screens: a tap on a tab opens [Files](files.md) or [Wi-Fi](wifi.md), and the home tag of each leads to the menu. It shows on the file list; over a file, a question or a box it does not. A tab that leaves WI-FI switches the radio off.
+
 | Button | What it does |
 |---|---|
 | RESCAN | reads the page on screen again and selects its newest run |
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
-| WI-FI | opens [Wi-Fi](wifi.md) |
-| FILES | opens [Files](files.md) |
 | DELETE | asks, then removes the selected file; grey with nothing selected |
 | OPEN | opens the selected CSV file in the import view, a report in the text viewer; grey with nothing selected |
 

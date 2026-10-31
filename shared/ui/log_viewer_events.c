@@ -221,13 +221,25 @@ static void question_event(const touch_event_t *e)
 }
 
 /**
- * @brief Takes a touch event for the browse view: the tabs, the list and its
- *        scroll bar, and the footer's buttons.
+ * @brief Takes a touch event for the browse view: the tile's strip, the
+ *        folder tabs, the list and its scroll bar, and the footer's buttons.
  */
 static void browse_event(const touch_event_t *e)
 {
     if (s.doomed[0] != '\0') {
+        logs_strip_cancel();
         question_event(e);
+        return;
+    }
+
+    /* The tile's strip, while no other contact holds a press here. */
+    if ((!s.tap_have || e->point.id == s.tap_id)
+        && logs_strip_event(e, SCREEN_LOGS)) {
+        s.tap_have = false;
+        s.pressing = false;
+        s.press_btn = -1;
+        s.bar_drag = false;
+        log_viewer_invalidate();
         return;
     }
 
@@ -246,9 +258,9 @@ static void browse_event(const touch_event_t *e)
     }
 
     /* PREV and NEXT are buttons only while they show. */
-    const gfx_rect_t btns[7] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI,
-                                 BR_FILES, BR_PREV, BR_NEXT };
-    const int n_btns = lv_paged() ? 7 : 5;
+    const gfx_rect_t btns[5] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_PREV,
+                                 BR_NEXT };
+    const int n_btns = lv_paged() ? 5 : 3;
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
@@ -326,22 +338,16 @@ static void browse_event(const touch_event_t *e)
         const bool on = btn >= 0 && tap_on(e, btns[btn]);
         if (on && btn == 0) {
             lv_rescan();
-        } else if (on && btn == 5) {
+        } else if (on && btn == 3) {
             if (lv_can_prev()) {
                 lv_read_page(LOG_PAGE_BEFORE, lv_page_edge(1));
             }
-        } else if (on && btn == 6) {
+        } else if (on && btn == 4) {
             if (lv_can_next()) {
                 lv_read_page(LOG_PAGE_AFTER, lv_page_edge(-1));
             }
         } else if (on && btn == 1) {
             lv_open_selected();
-        } else if (on && btn == 3) {
-            ui_router_goto(SCREEN_WIFI);
-            return;
-        } else if (on && btn == 4) {
-            ui_router_goto(SCREEN_FILES);
-            return;
         } else if (on) {
             ask_delete();
         } else if (btn < 0 && row) {

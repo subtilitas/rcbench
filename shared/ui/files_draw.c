@@ -611,6 +611,7 @@ static void draw_body(gfx_canvas_t *c)
         draw_job(c);
     } else {
         /* The panes, also under a single call that is quick: no box. */
+        logs_strip_render(c, SCREEN_FILES);
         draw_pane(c, 0);
         draw_pane(c, 1);
         draw_message(c);

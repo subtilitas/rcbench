@@ -1182,11 +1182,13 @@ static bool back(void)
         if (fs_text_back()) {
             break;                  /* a level of the editor */
         }
-        if (s.tv_from_logs) {
-            fs_text_close();
-            return false;           /* back to LOGS, which opened it */
-        }
         fs_text_close();
+        if (s.tv_from_logs) {
+            /* Back to LOGS, which opened it: FILES' own way out is the
+             * menu.  The router has released the contacts. */
+            ui_router_goto(SCREEN_LOGS);
+            return true;
+        }
         break;
     case FILES_VIEW_PANES:
     default:

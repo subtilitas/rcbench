@@ -187,6 +187,7 @@ static void render_browse(gfx_canvas_t *c)
         return;
     }
     /* Not under the question: its only answers are CANCEL and DELETE. */
+    logs_strip_render(c, SCREEN_LOGS);
     ui_tabs_render(&s.tabs, c);
 
     if (s.listed != 1 || s.n_files == 0) {
@@ -256,13 +257,6 @@ static void render_browse(gfx_canvas_t *c)
                    s.press_btn == 0, true,
                    ui_button_face(TR(LOG_RESCAN), BR_PG_W, FOOT_H, 6,
                                   LV_FONT_LABEL, &gfx_font_8x16));
-    /* WI-FI: the card's files to a browser, over the panel's
-     * Wi-Fi.  The screen there says when Wi-Fi may not start. */
-    ui_button_font(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3,
-                   true, LV_FONT_LABEL);
-    /* FILES: every folder and file of the card, in two panes. */
-    ui_button_font(c, BR_FILES, TR(LOG_FILES), UI_PANEL_HI, s.press_btn == 4,
-                   true, LV_FONT_LABEL);
     int msg_end = BR_OPEN.x;
     if (s.n_files > 0) {
         ui_button_font(c, BR_OPEN, TR(LOG_OPEN), UI_ACCENT, s.press_btn == 1,

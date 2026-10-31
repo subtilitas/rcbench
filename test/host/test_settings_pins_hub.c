@@ -703,15 +703,15 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 }
 
 /*
- * Nine tiles: PANEL, INTERFACES, SD CARD and SENSORS, then OUTPUTS, PICK
- * A PIN, WI-FI, UPDATES and FILES.  SD CARD's list is AUTO LOGS and USER LOGS, two
+ * Seven tiles: PANEL, INTERFACES, SD CARD and SENSORS, then OUTPUTS, PICK
+ * A PIN and UPDATES.  SD CARD's list is AUTO LOGS and USER LOGS, two
  * toggles, named in both languages, Browser writes, and the two log folders
  * under them (test_settings_folders).
  */
-TEST_CASE(the_hub_holds_nine_tiles_and_sd_card_is_the_third)
+TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_third)
 {
     fresh_hub();
-    CHECK_EQ(settings_hub_tiles(), 9);
+    CHECK_EQ(settings_hub_tiles(), 7);
     CHECK_EQ(SET_CAT_SENSORS, 3);
     CHECK_EQ(SET_CAT_CARD, 2);
     tap(tile_x(SET_CAT_CARD), tile_y(SET_CAT_CARD));
@@ -919,7 +919,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         icon_over_name(r, &k_menu, menu[i].name, menu[i].name);
     }
     /* SETUP's, as the screen draws them: the categories, then OUTPUTS,
-     * PICK A PIN, WI-FI, UPDATES and FILES.  The 36px icon's box starts 14px
+     * PICK A PIN and UPDATES.  The 36px icon's box starts 14px
      * down, the name in the body face at 60 (settings_screen_int.h). */
     static const ui_tile_look_t k_hub = {
         .icon_dy = 14, .icon = 36, .name_dy = 60, .line_dy = 94,
@@ -927,9 +927,8 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         .line_f = &gfx_font_10x20,
     };
     static const ui_screen_id_t screens[] = { SCREEN_OUTPUTS, SCREEN_PICKER,
-                                              SCREEN_WIFI, SCREEN_UPDATES,
-                                              SCREEN_FILES };
-    CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 5);
+                                              SCREEN_UPDATES };
+    CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 3);
     ui_router_render(&s_c, 0);
     for (int i = 0; i < settings_hub_tiles(); ++i) {
         gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
@@ -999,7 +998,7 @@ int main(void)
     RUN(a_stored_pd_mini_on_one_pin_loads_and_is_named);
     RUN(pd_mini_rows_on_one_pin_are_marked_and_nothing_else);
     RUN(the_hub_has_nine_slots_and_no_tenth);
-    RUN(the_hub_holds_nine_tiles_and_sd_card_is_the_third);
+    RUN(the_hub_holds_seven_tiles_and_sd_card_is_the_third);
     RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);

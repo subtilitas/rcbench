@@ -212,7 +212,7 @@ TEST_CASE(a_list_scrolls_by_a_drag_and_by_its_bar)
          FS_SPOT_BAR_TOP + FS_SPOT_BAR_H + 50);
     send(TOUCH_EVENT_UP, FS_SPOT_BAR_CX(0),
          FS_SPOT_BAR_TOP + FS_SPOT_BAR_H + 50);
-    CHECK_EQ(files_screen_scroll(0), 14);
+    CHECK_EQ(files_screen_scroll(0), 20 - FS_SPOT_ROWS);
     draw();
     /* A press on the track above the thumb brings it there. */
     send(TOUCH_EVENT_DOWN, FS_SPOT_BAR_CX(0), FS_SPOT_BAR_TOP + 2);
@@ -500,7 +500,7 @@ static void scroll_down(int i, int rows)
 {
     while (rows > 0) {
         const int k = (rows > 4) ? 4 : rows;
-        const int y0 = FS_SPOT_ROW_CY(5);
+        const int y0 = FS_SPOT_ROW_CY(FS_SPOT_ROWS - 1);
         const int y1 = y0 - k * 48 - 10;
         send(TOUCH_EVENT_DOWN, FS_SPOT_ROW_CX(i), y0);
         send(TOUCH_EVENT_MOVE, FS_SPOT_ROW_CX(i), y1);
@@ -661,8 +661,8 @@ TEST_CASE(rescan_selects_none_when_the_selected_entry_is_gone)
     /* The other pane keeps its selection. */
     CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
     /* The folder's last entry gone: nothing selected either. */
-    scroll_down(1, 3);
-    tap_row(1, 5);
+    scroll_down(1, 4);
+    tap_row(1, FS_SPOT_ROWS - 1);
     CHECK_STR_EQ(chosen(1), "ATEST012.CSV");
     gone("USER/LOGS/ATEST012.CSV");
     tap_foot(FS_SPOT_RESCAN);
@@ -704,8 +704,8 @@ TEST_CASE(rescan_selects_none_when_the_selection_leaves_the_page)
     screen()->enter();
     settle();
     CHECK(open_dir(0, "BIG"));
-    scroll_down(0, 42);
-    tap_row(0, 5);
+    scroll_down(0, 43);
+    tap_row(0, FS_SPOT_ROWS - 1);
     CHECK_STR_EQ(chosen(0), "F047.TXT");
     /* An entry new ahead of F047: the page fills up to F046, F047 stands
      * on the next page, and nothing is selected. */

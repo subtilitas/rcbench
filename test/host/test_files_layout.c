@@ -12,13 +12,14 @@
  * - sizes_read_as_the_rows_write_them
  * - times_read_as_info_writes_them
  * - the_name_keyboard_takes_a_name_by_the_cards_rules
- * - files_returns_to_the_screen_that_opened_it
+ * - files_home_tag_goes_to_the_menu
  * - every_view_draws_in_both_languages_and_both_themes
  * - the_footer_runs_rescan_to_open_as_logs_does
  *
  * SPDX-License-Identifier: MIT
  */
 #include "files_rig.h"
+#include "logs_strip.h"
 
 #include "files_int.h"
 #include "settings_screen.h"
@@ -106,9 +107,6 @@ TEST_CASE(every_label_fits_its_button_in_both_languages)
         CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_NEXT), 88, 48, 4));
         CHECK(ui_text_fits(&gfx_font_10x20, TR(CANCEL), 300, 56, 4));
         CHECK(ui_text_fits(&gfx_font_10x20, TR(FM_CLOSE), 300, 56, 4));
-        /* LOGS' FILES and WI-FI, 100px. */
-        CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_FILES), 100, 52, 8));
-        CHECK(ui_text_fits(&gfx_font_10x20, TR(LOG_WIFI), 100, 52, 8));
         /* A row's kind and its state word in its 8 x 16 line. */
         int widest = 0;
         for (int k = 0; k < FM_KIND_COUNT; ++k) {
@@ -269,30 +267,21 @@ static void router_home(void)
     router_tap(r.x + r.w / 2, r.y + r.h / 2);
 }
 
-TEST_CASE(files_returns_to_the_screen_that_opened_it)
+TEST_CASE(files_home_tag_goes_to_the_menu)
 {
     fresh();
     CHECK_STR_EQ(ui_router_title(SCREEN_FILES), "FILES");
-    /* Not opened from an opener yet: SETUP, the tile's screen. */
-    CHECK_EQ(ui_router_parent(SCREEN_FILES), SCREEN_SETUP);
-    CHECK(settings_screen_opens(SCREEN_FILES));
-    /* LOGS' FILES button, between WI-FI and the message: x 264 to 363. */
+    CHECK_EQ(ui_router_parent(SCREEN_FILES), SCREEN_OVERVIEW);
+    CHECK(!settings_screen_opens(SCREEN_FILES));
+    /* LOGS' strip: the FILES tab, and the menu from there. */
     ui_router_goto(SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_LOGS);
-    router_tap(314, UI_BAND_H + FS_SPOT_FOOT_CY);
+    router_tap(LOGS_STRIP_X + 331 + 4 + 165,
+               UI_BAND_H + LOGS_STRIP_Y + LOGS_STRIP_H / 2);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
     settle();
     router_home();
-    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
-    /* SETUP's ninth tile, the last of the third row. */
-    ui_router_goto(SCREEN_OVERVIEW);
-    ui_router_goto(SCREEN_SETUP);
-    gfx_rect_t t = gfx_rect_make(0, 0, 0, 0);
-    CHECK(settings_hub_slot(8, &t));
-    router_tap(t.x + t.w / 2, UI_BAND_H + t.y + t.h / 2);
-    CHECK_EQ(ui_router_current(), SCREEN_FILES);
-    router_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
     /* A box closes before the screen is left. */
     ui_router_goto(SCREEN_FILES);
     settle();
@@ -302,7 +291,7 @@ TEST_CASE(files_returns_to_the_screen_that_opened_it)
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
     CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
     router_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
 TEST_CASE(every_view_draws_in_both_languages_and_both_themes)
@@ -395,7 +384,7 @@ int main(void)
     RUN(sizes_read_as_the_rows_write_them);
     RUN(times_read_as_info_writes_them);
     RUN(the_name_keyboard_takes_a_name_by_the_cards_rules);
-    RUN(files_returns_to_the_screen_that_opened_it);
+    RUN(files_home_tag_goes_to_the_menu);
     RUN(every_view_draws_in_both_languages_and_both_themes);
     RUN(the_footer_runs_rescan_to_open_as_logs_does);
     fh_free(&g_h);

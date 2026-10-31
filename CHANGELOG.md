@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- The LOGS tile holds LOGS, FILES and WI-FI under one strip of three tabs, on
+  each screen's first level. The home tag of each leads to the menu. SETUP's
+  WI-FI and FILES tiles and LOGS' WI-FI and FILES footer buttons are gone, so
+  SETUP's hub has 2 free slots. LOGS shows 6 file rows, FILES 5 a pane. A tab
+  that leaves WI-FI switches the radio off, as the home tag does.
 - WI-FI's page changes the card: UPLOAD (one text file up to 1MiB, with
   a progress bar and a REPLACE question), NEW FOLDER, NEW TEXT FILE,
   RENAME, MOVE and DELETE, through FILES' jobs, rules and write gate. The

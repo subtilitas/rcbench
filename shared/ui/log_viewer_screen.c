@@ -2,7 +2,8 @@
  * @file log_viewer_screen.c
  * @brief The log viewer: browse the card, review the import, plot the file.
  *
- * Three views behind one tile: a file browser, an import view that shows
+ * The first screen of the LOGS tile's strip (logs_strip.h), which the file
+ * browser draws.  Three views: a file browser, an import view that shows
  * what the CSV (comma-separated values) reader made of the file, and the
  * plot.  The reader detects the delimiter, the decimal convention and the
  * time column (see shared/logfile); the import view shows the detection and
@@ -531,6 +532,7 @@ static void cancel(void)
     s.panning   = false;
     s.bar_drag  = false;
     ui_tabs_cancel(&s.tabs);
+    logs_strip_cancel();
     log_viewer_invalidate();
 }
 
@@ -636,6 +638,10 @@ static void select_name(const char *name)
     }
 }
 
+/**
+ * @brief On the way in: no question and no press left from the last visit,
+ *        the tab of a file written since, and the list read again.
+ */
 static void enter(void)
 {
     /* A question left open by leaving the screen is not asked again on the
@@ -648,6 +654,7 @@ static void enter(void)
     s.q_down    = false;
     s.bar_drag  = false;
     ui_tabs_cancel(&s.tabs);
+    logs_strip_cancel();
     /*
      * The tab of the file the logger created last, when it has created one
      * since the screen last looked: the run just recorded is what the
