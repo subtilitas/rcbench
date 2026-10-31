@@ -114,6 +114,7 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 an einem eigenen Bus, IO30 und IO31 des Headers P3 (I2C: Inter-Integrated Circuit), dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
 | Knopf-Skala | 90 bis 720deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
 | Tastatur durchsichtig | AUS, 25%, 50% | AUS | wie viel des Texts durch die Tastatur des Texteditors auf [Files](files.md#der-texteditor) scheint; andere Tastaturen bleiben deckend |
+| Demo-Modus | EIN, AUS | AUS | blendet das Wasserzeichen SIMULATION ab dem nächsten Bild aus; das Band zeigt weiter SIM, und die Kacheln zeigen weiter SIMULIERT. Das Panel zeichnet das Wasserzeichen nur, solange kein IOmcu antwortet, die Einstellung ändert also nichts an einem Prüfstand mit IOmcu |
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 
