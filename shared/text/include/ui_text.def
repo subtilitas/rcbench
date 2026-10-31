@@ -1376,6 +1376,12 @@ UI_TEXT(SET_SAVE, 0,
 UI_TEXT(SET_PIN_SOLDERED, 43,
     "Soldered on this board. Not a setting here.",
     "Auf dem Board verlötet. Keine Einstellung.")
+UI_TEXT(SET_I228_MAX_LINE, 0,
+    "Up to %u.%uA on %uuΩ (163.84mV)",
+    "Bis %u.%uA an %uuΩ (163.84mV)")
+UI_TEXT(SET_I228_SHUNT_LINE, 0,
+    "Up to %uuΩ at %u.%uA (163.84mV)",
+    "Bis %uuΩ bei %u.%uA (163.84mV)")
 UI_TEXT(SET_UNHELD, 0,
     "Not accepted by the IOmcu.",
     "Vom IOmcu nicht übernommen.")
@@ -3942,6 +3948,12 @@ UI_TEXT(ALERT_SENSE_PINS, 94,
 UI_TEXT(ALERT_SENSE_I228_SETUP, 94,
     "INA228 shunt or maximum current rejected. Check SENSORS.",
     "INA228-Shunt oder Höchststrom abgelehnt. SENSORS prüfen.")
+UI_TEXT(ALERT_SENSE_I228_RANGE, 94,
+    "INA228 shunt x maximum is over 163.84mV: on %uuΩ up to %u.%uA. Check SENSORS.",
+    "INA228 Shunt x Höchststrom über 163.84mV: an %uuΩ bis %u.%uA. SENSORS prüfen.")
+UI_TEXT(ALERT_SENSE_KEPT, 94,
+    "IOmcu is ARMED and keeps the sensor set-up. Switch to SAFE, then edit SENSORS again.",
+    "IOmcu ist ARMED und behält die Sensor-Werte. Auf SAFE schalten, SENSORS neu ändern.")
 UI_TEXT(ALERT_SENSE_I3221_SETUP, 94,
     "INA3221 settings rejected. Check SENSORS.",
     "INA3221-Einstellungen abgelehnt. SENSORS prüfen.")

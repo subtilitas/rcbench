@@ -214,7 +214,8 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
                                 | SENSE_LINK_EV_SAME_ADDR
                                 | SENSE_LINK_EV_BUS_REFUSED
                                 | SENSE_LINK_EV_I228_REFUSED
-                                | SENSE_LINK_EV_I3221_REFUSED);
+                                | SENSE_LINK_EV_I3221_REFUSED
+                                | SENSE_LINK_EV_KEPT);
     if (!w->i228 && !w->i3221) {
         stale |= (uint32_t)SENSE_LINK_EV_NO_PAGE;
     }
@@ -304,9 +305,14 @@ sense_link_op_kind_t sense_link_write_owed(const sense_link_t *s,
         if (s->refused_bus) {
             return SENSE_LINK_OP_NONE;
         }
-        /* Both monitors off; the encoder shares the bus pins, not their
-         * addresses, and stays as it is. */
-        regs[0] = (uint16_t)(s->held[LINK_SN_ENABLE] & LINK_SN_EN_AS5600);
+        /* The monitors off; the encoder shares the bus pins, not their
+         * addresses, and stays as it is.  With the map in force ENABLE bit 1
+         * is its mirror, which the page refuses a write to change: the
+         * INA228 alone goes off, and the map already keeps its address clear
+         * of the parts'. */
+        const uint16_t keep = (uint16_t)(LINK_SN_EN_AS5600
+                                         | (s->map ? LINK_SN_EN_I3221 : 0u));
+        regs[0] = (uint16_t)(s->held[LINK_SN_ENABLE] & keep);
         regs[1] = s->held[LINK_SN_SDA_PIN];
         regs[2] = s->held[LINK_SN_SCL_PIN];
         regs[3] = (uint16_t)LINK_SN_KHZ_BUS;
@@ -557,7 +563,7 @@ static void written(sense_link_t *s, sense_link_op_kind_t w, int result,
         s->refused_i3221 = true;
         s->refused_bus   = true;
         s->bus_retry     = false;
-        s->events |= SENSE_LINK_EV_BUS_REFUSED;
+        s->events |= SENSE_LINK_EV_KEPT;
         break;
     case SENSE_LINK_OP_BUS:
     default:
@@ -990,6 +996,8 @@ bool sense_link_event_stands(const sense_link_t *s, uint32_t ev)
     case SENSE_LINK_EV_I3221_REFUSED:
         return !s->map
                && (!known || s->refused_i3221 || frame_differs(s, I3221_AT));
+    case SENSE_LINK_EV_KEPT:
+        return !known || s->refused_bus;
     default:
         return true;
     }
@@ -1002,6 +1010,7 @@ uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms)
     static const uint32_t k_order[] = {
         SENSE_LINK_EV_NO_PAGE,      SENSE_LINK_EV_PINS_UNSET,
         SENSE_LINK_EV_SAME_ADDR,    SENSE_LINK_EV_BUS_REFUSED,
+        SENSE_LINK_EV_KEPT,
         SENSE_LINK_EV_I228_REFUSED, SENSE_LINK_EV_I3221_REFUSED,
         SENSE_LINK_EV_STUCK,        SENSE_LINK_EV_I228_SILENT,
         SENSE_LINK_EV_I3221_SILENT, SENSE_LINK_EV_I228_WRONG,

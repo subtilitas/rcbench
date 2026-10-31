@@ -92,6 +92,14 @@ const char *settings_screen_help(setting_id_t id)
     if (settings_fixed(id) && !settings_screen_unheld(id)) {
         return TR(SET_PIN_SOLDERED);
     }
+    if (id == SET_INA228_UOHM || id == SET_INA228_MAX_A) {
+        /* What works with the other row, in place of the general help and of
+         * the general mark's line when this pair is why it is refused. */
+        if (!settings_screen_unheld(id) || sensors_rows_i228_over()) {
+            return sensors_rows_i228_line(id);
+        }
+        return TR(SET_UNHELD);
+    }
     if (!settings_screen_unheld(id)) {
         return ui_setting_help(id);
     }

@@ -427,6 +427,13 @@ session's backup file and the last message. A message in the warning colour is a
 that needs a second look; one in the danger colour says the servo's content
 is in doubt.
 
+A session that goes, by a lost link, an IOmcu that starts again or the port
+back in PWM, takes the lines about what it held with it: `All 32 registers
+read.`, `KST004 loaded.`, a file compared with the servo, an edit's refusal and
+what an edit or a load waits for. What happened stays: a write and its check, a
+file saved, a file refused, how an operation ended and every line in the danger
+colour.
+
 ### A servo of unknown layout
 
 The IOmcu compares the image with the layout of the known servo, its
@@ -931,6 +938,13 @@ as [the write page](#writing) lists them, 4 or 3 and `and 2 more`, and the
 same warning lines an edit past those limits shows; with more warnings than
 lines the last line counts the rest. **HOLD 2s TO LOAD** takes the
 values into the draft. **CANCEL** leaves the draft as it was.
+
+The soft limits compare with the servo as the session found it, not as last
+written, and ENABLE WRITE TO SERVO plays no part. A servo found at Left Angle
+100 and written to 97 takes a file at 98 with no page: 98 is under what the
+session found. The next session finds 97, and the same file is a raise and
+opens the page. The page says nothing of a file's check value: a file edited
+by hand says so on its own line, with or without the page.
 
 ![The warnings of a file](img/servo-kst-file-soft.png)
 

@@ -959,6 +959,30 @@ static int ink_under_the_alert_band(void)
  * page's notes at their longest, a refused or unsupported rate, and the
  * save line at its longest, SETUP's changes not saved.
  */
+/*
+ * LIVE's three readings end above the alert band in both languages, and the
+ * band's own rows draw on the card's foot: "Hold 2s to switch to ARMED." leaves
+ * COMMANDED, MEASURED and CURRENT whole.
+ */
+TEST_CASE(lives_readings_end_above_the_alert_band)
+{
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        bench_fresh();
+        CHECK_EQ(ink_under_the_alert_band(), 0);
+        /* The numerals are there: ink in their row, 4px over the floor. */
+        int ink = 0;
+        const gfx_color_t fill = ui_theme_color(UI_C_PANEL);
+        for (int y = TEXT_FLOOR - 44; y < TEXT_FLOOR; ++y) {
+            for (int x = UI_MARGIN + 1; x < UI_MARGIN + 620 - 1; ++x) {
+                ink += fb[(size_t)y * W + x] != fill;
+            }
+        }
+        CHECK(ink > 100);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(no_text_lies_under_the_alert_band)
 {
     for (int lang = 0; lang < 2; ++lang) {
@@ -1016,6 +1040,7 @@ int main(void)
     RUN(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing);
     RUN(a_runs_stops_are_a_finger_tall_and_clear_of_the_alert_band);
     RUN(a_second_tap_on_a_run_cards_settings_changes_no_setting);
+    RUN(lives_readings_end_above_the_alert_band);
     RUN(no_text_lies_under_the_alert_band);
     RUN(a_tile_opens_live_and_each_task_keeps_its_place);
     RUN(the_strip_reads_live_test_program_settings);

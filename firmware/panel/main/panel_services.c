@@ -25,6 +25,7 @@
 #include "prog_link.h"
 #include "sense_link.h"
 #include "sense_page.h"
+#include "sensors_rows.h"
 #include "servo_link.h"
 #include "servo_screen.h"
 #include "servo_source.h"
@@ -254,7 +255,13 @@ void sense_link_alerts(void)
         s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I3221_SETUP));
     }
     if ((ev & SENSE_LINK_EV_I228_REFUSED) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I228_SETUP));
+        s_sense_alert_gen = control_alert_numbered(
+            sensors_rows_i228_alert(line, sizeof(line),
+                                    s_sense_link.want[LINK_SN_I228_SHUNT_UOHM],
+                                    s_sense_link.want[LINK_SN_I228_MAX_DA]));
+    }
+    if ((ev & SENSE_LINK_EV_KEPT) != 0u) {
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_KEPT));
     }
     if ((ev & SENSE_LINK_EV_BUS_REFUSED) != 0u) {
         snprintf(line, sizeof(line), TR(ALERT_SENSE_PINS),

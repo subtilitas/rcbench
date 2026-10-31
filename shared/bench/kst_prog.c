@@ -217,6 +217,9 @@ static bool pd_on(const kst_prog_t *p)
  */
 static void session_gone(kst_prog_t *p)
 {
+    if (kst_prog_msg_of_session(p->msg.id)) {
+        hush(p);
+    }
     p->have_servo = false;
     p->fp_ok = false;
     p->need_read = false;
@@ -1652,12 +1655,13 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         if (f->rd.port == LINK_KST_PWM) {
             if (p->have_servo || p->write_enabled || p->written
                 || p->need_read) {
-                /* No command of this model put the port there. */
-                session_gone(p);
-                if (p->msg.seq == said) {
-                    /* Unless this feed said how an operation ended. */
+                /* No command of this model put the port there.  Unless this
+                 * feed said how an operation ended, in a line that outlasts
+                 * the session. */
+                if (p->msg.seq == said || kst_prog_msg_of_session(p->msg.id)) {
                     (void)kst_prog_say(p, KST_PROG_MSG_SESSION_ENDED, 0);
                 }
+                session_gone(p);
             }
         } else {
             p->port = f->rd.port_no;

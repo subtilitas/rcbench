@@ -22,8 +22,10 @@
  *   1. what the page holds is read first, SENSE 0 to 11, once per link-up,
  *      and nothing is written that it already holds;
  *   2. while a part's frame is to change and the page enables both parts,
- *      the bus frame with ENABLE 0 and the page's own pins, so no
- *      intermediate set-up has two enabled parts on one address;
+ *      the bus frame with both monitors off and the page's own pins, so no
+ *      intermediate set-up has two enabled parts on one address.  With
+ *      SENSE_MAP in force the INA228 alone goes off: ENABLE bit 1 is the
+ *      map's mirror, and the page refuses a write that changes it;
  *   3. the part frames that differ;
  *   4. the bus frame: the pins, and ENABLE without a part whose frame was
  *      refused, so no part runs on a shunt or an address it was not given.
@@ -277,6 +279,13 @@ enum {
      *  switches it off, and after a link-up.
      */
     SENSE_LINK_EV_ENC_MAGNET    = 0x10000,
+    /**
+     * @brief The page refused to take the monitors off before a part's frame:
+     *        no pin and no value of the set-up asked was judged, and the bank
+     *        driving at the IOmcu is what refuses that frame.  Every frame
+     *        waits for the next edit.
+     */
+    SENSE_LINK_EV_KEPT          = 0x20000,
 };
 
 /**
@@ -287,7 +296,8 @@ enum {
                                         | SENSE_LINK_EV_SAME_ADDR       \
                                         | SENSE_LINK_EV_BUS_REFUSED     \
                                         | SENSE_LINK_EV_I228_REFUSED    \
-                                        | SENSE_LINK_EV_I3221_REFUSED))
+                                        | SENSE_LINK_EV_I3221_REFUSED   \
+                                        | SENSE_LINK_EV_KEPT))
 
 /** @brief The exchange sense_link_next() asks for. */
 typedef enum {
@@ -594,8 +604,9 @@ uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms);
  * known to hold the frame as asked: not refused, and written and taken.  A
  * refused value stepped back on SETUP ends it once the IOmcu takes the frame;
  * the rest and the write take SENSE_LINK_SETTLE_MS and a poll.  With no IOmcu
- * answering a refusal stands.  True for every other event: what a read raised
- * ends with the band's own time.
+ * answering a refusal stands.  SENSE_LINK_EV_KEPT until the next edit asks
+ * again.  True for every other event: what a read raised ends with the band's
+ * own time.
  *
  * The caller takes back an alert it showed for such an event once this
  * is false; sense_link_event() drops one waiting that is over.
