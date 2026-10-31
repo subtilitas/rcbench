@@ -44,27 +44,36 @@ enum {
     A_FINISH_READ,
 };
 
+/** @brief The first contact. */
 static const uint8_t k_contact_seq[] = { A_CONTACT };
+/** @brief What identifies an EFM8. */
 static const uint8_t k_id_efm8[] = { A_SET_BASE, A_READ_ID, A_FINISH_ID };
+/** @brief What identifies an ARM part with bootloader protocol 2. */
 static const uint8_t k_id_arm2[] = { A_SET_BASE, A_READ_ID, A_SET_NAME,
                                      A_READ_NAME, A_FINISH_ID };
+/** @brief The same with protocol 3: its record too. */
 static const uint8_t k_id_arm3[] = { A_SET_BASE, A_READ_ID, A_SET_NAME,
                                      A_READ_NAME, A_SET_RECORD, A_READ_RECORD,
                                      A_FINISH_ID };
+/** @brief A read of the whole page. */
 static const uint8_t k_read[] = { A_SET_BASE, A_READ_PAGE, A_FINISH_READ };
 /** @brief Where the procedure itself starts in both write lists. */
 #define WRITE_FROM 3u
+/** @brief A write on an EFM8. */
 static const uint8_t k_write_efm8[] = {
     A_SET_BASE, A_READ_PAGE, A_CHECK_BEFORE,
     A_SET_BASE, A_ERASE, A_SET_BASE, A_DATA, A_PROGRAM,
     A_SET_BASE, A_READ_PAGE, A_CHECK_AFTER,
 };
+/** @brief A write on AM32: the ESC erases by itself. */
 static const uint8_t k_write_am[] = {
     A_SET_BASE, A_READ_PAGE, A_CHECK_BEFORE,
     A_SET_BASE, A_DATA, A_PROGRAM,
     A_SET_BASE, A_READ_PAGE, A_CHECK_AFTER,
 };
+/** @brief The read after a failed step of a write. */
 static const uint8_t k_recover[] = { A_SET_BASE, A_READ_PAGE, A_CHECK_AFTER };
+/** @brief A leave. */
 static const uint8_t k_leave[] = { A_LEAVE };
 
 static void run(ew_session_t *s);

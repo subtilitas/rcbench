@@ -43,7 +43,7 @@ in reflected form, initial value 0, no final XOR, low byte first.
 |---|---|---|---|
 | first contact | 17 bytes, no frame | 9 bytes starting `471` | 100ms, 3 |
 | address | `FF 00 high low` | `30` | 4ms, 3 |
-| read | `03 N`, 0 for 256 | N bytes, CRC, `30` | 80ms for the first byte, 2ms between bytes, 3 |
+| read | `03` and the count, 0 for 256 | the bytes, CRC, `30` | 80ms for the first byte, 2ms between bytes, 3 |
 | announce and data | `FE 00 high low`, 2 idle bit times (104us), the data and their CRC | `30` | 80ms, 3 |
 | program | `01 01` | `30` | 500ms, 1 |
 | erase | `02 01` | `30` | 3000ms, 1 |
