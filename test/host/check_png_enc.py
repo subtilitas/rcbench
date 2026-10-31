@@ -82,7 +82,8 @@ def pattern(kind, x, y):
 def rgb(v):
     """RGB565 to the bytes the file must hold."""
     r, g, b = (v >> 11) & 31, (v >> 5) & 63, v & 31
-    return bytes(((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)))
+    return bytes(((r << 3) | (r >> 2), (g << 2) | (g >> 4),
+                  (b << 3) | (b >> 2)))
 
 
 def main():
