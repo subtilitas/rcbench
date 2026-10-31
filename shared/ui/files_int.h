@@ -331,6 +331,11 @@ typedef struct {
     unsigned tv_mount;        /**< the mount it was listed from          */
     bool tv_save;             /**< the editor's save waits to go out     */
     bool tv_saving;           /**< the job under way is that save        */
+    uint32_t tv_sum;          /**< CRC-32 of the file as read or last
+                                   saved: what SAVE finds on the card    */
+    uint32_t tv_found;        /**< CRC-32 of the file a refused save found:
+                                   what OVERWRITE finds on the card      */
+    bool tv_over;             /**< the save waiting to go out is OVERWRITE */
     /* An open held by the editor's question (files_screen_open_text()). */
     bool tv_pend;             /**< one is held                           */
     bool tv_pend_logs;        /**< LOGS asked for it                     */
@@ -562,6 +567,13 @@ void fs_text_result(text_view_result_t r);
  *        bench as FILES read it last: EDIT and SAVE (fm_allowed()).
  */
 void fs_text_rules(void);
+
+/**
+ * @brief Time passed for the editor's OVERWRITE hold, while the viewer
+ *        shows; a hold that completes sends its save.
+ * @param dt_s  seconds since the last tick
+ */
+void fs_text_tick(float dt_s);
 
 /**
  * @brief The home tag over the viewer.

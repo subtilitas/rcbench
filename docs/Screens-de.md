@@ -290,6 +290,7 @@ Hinweises kommt, ersetzt ihn. Der Hinweis ist eine Zeile von höchstens
 | 2s HALTEN ZUM LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START in der Frage des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
+| ÜBERSCHREIBEN auf der Frage des Editors von FILES | `Halte 2s, um zu überschreiben.` |
 
 ## Marken im Menü
 
@@ -3168,7 +3169,8 @@ nicht: die Ränder der Tasten verschwinden dann im Text dahinter.
 
 SPEICHERN schreibt den Text als `<Name>.NEW` in den Ordner der Datei, in
 Stücken von 16KiB auf der Kartenaufgabe, löscht `<Name>` und gibt der
-neuen Datei ihren Namen; die Notiz sagt dann `<Name> gespeichert.` Vom
+neuen Datei ihren Namen; die Notiz sagt dann `<Name> gespeichert.`, und
+der Kopf zeigt die geschriebene Größe. Vom
 Tipp auf SPEICHERN bis zum Ende des Speicherns ändert sich der Text nicht:
 eine Taste tippt nichts, VERWERFEN und das Home-Tag warten, und die Frage
 eines Öffnens über dem Text zeigt VERWERFEN grau. Ein Speichern, das den
@@ -3189,6 +3191,37 @@ Speicherns entnommen wird, lässt den Text ungespeichert mit
 dem Löschen und dem Umbenennen entnommen, hält die Karte den ganzen Text
 als `<Name>.NEW` und kein `<Name>`, und UMBENENNEN in FILES gibt ihr den
 Namen zurück.
+
+SPEICHERN schreibt nur über die Datei, die der Editor geöffnet hat. Der
+Editor behält die CRC-32 (Cyclic Redundancy Check) der Datei, wie er sie
+gelesen hat, und des Texts, den jedes Speichern schrieb: das ETag der
+[Datei-API](#die-datei-api) der WLAN-Seite. SPEICHERN liest zuerst die
+Datei auf der Karte und summiert sie, im selben Job, bevor die `.NEW`
+geöffnet wird: Ein Speichern von 1MiB liest zuerst 1MiB, in einer nicht
+gemessenen Zeit. Eine Datei, die seitdem geändert oder entfernt wurde,
+durch den Editor der WLAN-Seite oder einen Upload
+([Schreiben per Browser](#schreiben-per-browser)), wird nicht geschrieben.
+Die Notiz sagt `<Name> wurde seit dem Lesen auf der Karte geändert.`, und
+die Frage UNGESPEICHERTE ÄNDERUNGEN sagt
+`<Name> wurde seit dem Lesen auf der Karte geändert. NEU LESEN verwirft diese Änderungen.`
+über BLEIBEN, NEU LESEN und ÜBERSCHREIBEN, je 208 x 56px. BLEIBEN behält
+den Text; ein zweites SPEICHERN wird ebenso abgelehnt. NEU LESEN verwirft
+den Text und liest die Datei von der Karte in den Betrachter. ÜBERSCHREIBEN
+braucht 2s Halten; ein Loslassen vor 2s schreibt nichts und zeigt
+`Halte 2s, um zu überschreiben.` im Alarmband, und ein Finger, der von der
+Taste rutscht, der Home-Tag und ARMED beenden das Halten ohne Schreiben. Das
+vollendete Halten speichert den Text über die Datei, wie das abgelehnte
+SPEICHERN sie gelesen hat: Ihre Summe ersetzt die des Editors für dieses eine
+SPEICHERN, und derselbe Job vergleicht sie, bevor die `.NEW` geöffnet wird.
+Eine Datei, die sich nach dieser Ablehnung ändert, auch während des Haltens,
+wird ebenso abgelehnt, und die Frage erscheint erneut, mit der Summe der zuletzt
+gefundenen Datei. Eine entfernte Datei hat keine Summe: ÜBERSCHREIBEN ist
+gedimmt, nimmt kein Halten an, und nichts legt die Datei wieder an. Ein
+Schreiben, das fehlschlägt, lässt die Datei, wie sie war, und den Text
+ungespeichert, und das nächste SPEICHERN wird abgelehnt, bis ein Halten
+vollendet ist. Eine Frage, die schon offen war,
+als das Speichern endete, die eines Öffnens über dem Text, bleibt, wie sie
+war.
 
 Eine Datei öffnet sich nur ohne NUL-Byte in den ersten 4kB. SPEICHERN
 hält den Text an dieselbe Prüfung: eine Änderung, die ein NUL-Byte von
@@ -3568,17 +3601,15 @@ Aktuelle Einschränkungen:
 - Ein Gerät, das den Verkehr im Heimnetz mitliest, kann einen eigenen
   Schreibzugriff senden, solange Schreiben erlaubt ist: Zugangscode und
   Header gehen im Klartext.
-- Der Editor von FILES am Panel speichert, ohne die Datei zu vergleichen,
-  die er geöffnet hat: Eine Änderung des Browsers zwischen Öffnen und
-  Speichern wird überschrieben. Die Schreibzugriffe der Seite vergleichen
-  mit `If-Match`.
+- Der Editor des Browsers speichert eine Datei mit gemischten
+  Zeilenenden mit LF; der Editor von FILES am Panel behält sie.
 - Das Panel ist nur verbunden, solange dieser Bildschirm offen ist. Ein
   Panel, das immer verbunden bleibt, solange der Prüfstand SAFE ist, ist
   nicht gebaut.
 - Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
   mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
   Downloads. Die Ursache ist nicht gemessen. Die Seite mit der
-  Dateiverwaltung hat 45.100 Bytes auf Englisch mit leerer Karte und keine
+  Dateiverwaltung hat 62.815 Bytes auf Englisch mit leerer Karte und keine
   Kartenliste; ihre Zeit ist nicht gemessen.
 
 ### Der Zugangscode
@@ -3625,7 +3656,8 @@ ZIP-Datei beantworten sie ohne Body.
 
 SETUP > SD CARD > Schreiben per Browser legt fest, was ein Browser braucht,
 um die Karte über die Seite zu ändern: HOCHLADEN, NEUER ORDNER, NEUE
-TEXTDATEI, UMBENENNEN, VERSCHIEBEN und LÖSCHEN ([die Seite](#die-seite)).
+TEXTDATEI, UMBENENNEN, VERSCHIEBEN, LÖSCHEN und SPEICHERN im Editor
+([die Seite](#die-seite)).
 Die Einstellung wird mit den anderen gespeichert.
 
 | Wert | Ein Schreibzugriff braucht |
@@ -3781,6 +3813,81 @@ UTF-8-Folge beginnt, erscheinen als `?`. Eine Datei, die die Datei-API
 ablehnt, zeigt den Text ihrer Ablehnung. Die Seite zeichnet die Zeilen auf
 dem Schirm und 200 Zeilen darüber und darunter.
 
+BEARBEITEN im Kopf des Betrachters öffnet die Datei im Editor des Browsers
+(`shared/webaccess/web/edit.js`): ein Textfeld über denselben farbigen
+Zeilen, in derselben Schrift von 13px mit 20px Zeilenabstand, sodass
+Cursor, Auswahl, Rückgängig, Kopieren und Einfügen des Browsers und die
+Tastatur eines Telefons darauf wirken. Die sichtbaren Zeilen und je 200
+darüber und darunter werden einen Frame nach jeder Änderung und jedem
+Scrollen neu geteilt und gefärbt. Der Kopf zeigt dann BEARBEITUNG, oder
+GEÄNDERT in der Warnfarbe, solange der Text von der Datei abweicht,
+`ZEILE 3 VON 59` für die oberste Zeile, SPEICHERN und SCHLIESSEN; Strg+S
+ist SPEICHERN. BEARBEITEN wird abgelehnt, und ein Tipp sagt warum, wo eine
+Schreibtaste es wird: solange das Panel keinen Schreibzugriff nimmt, bei
+einer Datei, die der Logger schreibt, bei den Vermerken der
+Servoprogrammierung und beim Fehlerlog.
+
+Der Editor behält die Bytes der Datei. Ihre Zeilenenden, LF, CR LF oder
+CR, setzt SPEICHERN wieder ein, und ebenso ein BOM (Byte Order Mark) an
+ihrem Anfang; eine getippte Zeile endet wie die Zeilen der Datei. Eine
+Datei mit mehr als einer Art Zeilenende wird mit LF gespeichert;
+BEARBEITEN sagt
+`Gemischte Zeilenenden: SPEICHERN schreibt jedes Zeilenende als LF.`
+Eine Datei, die kein UTF-8 ist oder die das Textfeld nicht Byte für Byte
+zurückgäbe, öffnet sich nicht im Editor:
+`Der Browser kann nicht jedes Byte dieser Datei erhalten (kein UTF-8). Am Panel bearbeiten: DATEIEN > BEARBEITEN.`
+SPEICHERN hält die Grenzen des Betrachters an den Bytes, wie sie
+gespeichert würden, BOM und CR LF mitgezählt: über 1.048.576 Bytes sendet
+es nichts und sagt `Text voll: höchstens 1MB.`, über 65.536 Zeilenenden
+`Text voll: höchstens 65536 Zeilen.`
+
+SPEICHERN sendet `PUT /api/file` mit `If-Match` und dem ETag der Datei,
+wie der Betrachter sie las oder das letzte SPEICHERN sie schrieb; ohne es
+sendet der Editor keinen Schreibzugriff. Die Notiz sagt dann
+`<Name> gespeichert.` Eine KST-Datei, erste Zeile
+`KST servo configuration, format` und eine Zahl, verliert zuerst jede
+Prüfsummenzeile, nach der Regel des Editors von FILES
+([der Texteditor](#der-texteditor)), und die Notiz sagt
+`Ohne Prüfsummenzeile gespeichert: der Servo-Programmierer liest sie als bearbeitet.`
+Ein ESC-Profil, das das Panel beim Start liest, sagt
+`Gespeichert. Das Panel liest die Datei beim nächsten Start.` Eine Datei,
+die seit dem Lesen auf der Karte geändert wurde, durch den Editor von
+FILES, einen Upload oder einen anderen Browser, wird mit 412 `CHANGED`
+abgelehnt. Der Kopf zeigt dann
+`Seit dem Lesen auf der Karte geändert. Neu lesen.`, und das Feld
+UNGESPEICHERTE ÄNDERUNGEN fragt
+`<Name> wurde seit dem Lesen auf der Karte geändert. NEU LESEN verwirft diese Änderungen.`
+mit BLEIBEN, NEU LESEN und ÜBERSCHREIBEN. BLEIBEN behält den Text; NEU LESEN
+verwirft ihn, liest die Datei neu von der Karte und zeigt sie. ÜBERSCHREIBEN
+braucht einen Druck von 2s, mit einer Füllung über die Taste; gehaltene
+Leertaste oder Eingabetaste zählen als Druck. Ein Loslassen vor 2s sendet
+nichts und zeigt `Halte 2s, um zu überschreiben.` im Feld, und ein Druck,
+der die Taste verlässt, Escape und ein verlorener Fokus beenden ihn ohne
+Schreiben. Der vollendete Druck sendet SPEICHERN mit `If-Match` und dem ETag,
+das die 412 trug: der Datei, wie diese Ablehnung sie fand. Eine Datei, die
+sich nach dieser Ablehnung ändert, auch während des Drucks, wird wieder mit
+412 beantwortet, und das Feld fragt erneut mit dem ETag dieser Antwort. Eine
+entfernte Datei gibt eine 412 ohne ETag: ÜBERSCHREIBEN ist gedimmt, und nichts
+geht hinaus. Ein Schreiben, das fehlschlägt, lässt die Datei, wie sie war, und
+den Text ungespeichert, und das nächste SPEICHERN wird mit 412 abgelehnt. Mit Schreiben per Browser
+ZUGANGSCODE und noch keinem Code fragt SPEICHERN im Feld des Editors nach
+dem Code: CODE SENDEN schickt ihn an `/code`, ohne die Seite zu verlassen,
+die Antwort des Panels setzt das Cookie, und SPEICHERN geht mit dem Text,
+wie er steht, noch einmal hinaus; ein falscher Code sagt
+`Falscher Code.` und fragt erneut. Eine Antwort, die nach ABBRECHEN im Feld
+oder nach dem Schließen des Editors kommt, speichert nichts. Jede andere Ablehnung zeigt ihren Text
+im Kopf, und der Text bleibt. Während SPEICHERN läuft,
+ändert sich der Text nicht, und SCHLIESSEN wartet darauf.
+
+SCHLIESSEN oder Escape, solange der Text von der Datei abweicht, fragt
+UNGESPEICHERTE ÄNDERUNGEN:
+`<Name> ohne Speichern verlassen? Die Änderungen gehen verloren.` mit
+BLEIBEN und VERWERFEN. Die Seite verlassen oder neu laden mit Änderungen
+fragt über die eigene Frage des Browsers, in dessen Worten. Solange der
+Betrachter zu sehen ist, nehmen die Spalten und Tasten dahinter keinen
+Klick, keinen Fokus und keine Taste an, sodass sich keine Datei über dem
+Text des Editors öffnet.
+
 Die Seite sendet eine Anfrage nach der anderen. Eine Anfrage ohne Antwort
 nach 2s zeigt
 `Warte auf das Panel: Es beantwortet eine Anfrage nach der anderen.`; ein
@@ -3924,7 +4031,7 @@ Text in der Sprache des Panels:
 | `NOT_FOUND` | 404 | kein solcher Eintrag, oder einer anderer Art |
 | `EXISTS`, `NOT_EMPTY`, `SAME` | 409 | ein vergebener Name; ein Ordner mit Einträgen; ein Verschieben in denselben Ordner oder in sich selbst |
 | `ARMED`, `LOGGING` | 409 | der Prüfstand wechselte zu ARMED, oder ein Lauf wird aufgezeichnet: Die Karte ist nur lesbar |
-| `CHANGED` | 412 | ein PUT mit `If-Match`, dessen Datei eine andere CRC-32 als das ETag hat oder fehlt |
+| `CHANGED` | 412 | ein PUT mit `If-Match`, dessen Datei eine andere CRC-32 als das ETag hat oder fehlt. Das JSON ergänzt `"etag":"xxxxxxxx"`, die CRC-32 der gefundenen Datei; keins für eine fehlende Datei |
 | `TOO_BIG` | 413 | eine Datei über 1.048.576 Bytes, abgelehnt, bevor ein Byte gelesen ist |
 | `TOO_LARGE` | 413 | der Body eines Schreibzugriffs über seiner Grenze (die Prüfung oben) |
 | `NOT_TEXT` | 415 | ein NUL-Byte in den ersten 4.096 Bytes |

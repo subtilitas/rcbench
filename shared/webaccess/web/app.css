@@ -70,3 +70,21 @@ border-radius:4px;background:var(--pg-bg);color:var(--pg-fg)}
 .fm .card .code input{flex:1;margin:0}
 .fm .card progress{width:100%;height:16px;margin-bottom:8px}
 .fm .card p{margin:4px 0;word-break:break-word}
+.fm .vn{flex-basis:100%;min-height:0}
+.fm .vn:empty{display:none}
+.fm .ed{flex:1;position:relative;overflow:hidden;
+background:var(--h-bk,var(--pg-bg));color:var(--h-tx,var(--pg-fg))}
+.fm .ed .text{will-change:transform}
+.fm .ed textarea{position:absolute;inset:0;width:100%;height:100%;margin:0;
+border:0;padding:0 8px;box-sizing:border-box;resize:none;outline:none;
+font:13px/20px ui-monospace,Menlo,Consolas,monospace;white-space:pre;
+tab-size:8;overflow:auto;background:transparent;color:transparent;
+-webkit-text-fill-color:transparent;caret-color:var(--h-tx,var(--pg-fg))}
+.fm .ed textarea::selection{background:var(--pg-sel)}
+.fm .viewer .box{z-index:4}
+.fm .vn.hint{display:block;margin:6px 0 0;min-height:1.5em}
+.fm .btn.hold{touch-action:none;user-select:none;-webkit-user-select:none;
+background-image:linear-gradient(var(--pg-warn),var(--pg-warn));
+background-repeat:no-repeat;background-size:0 100%}
+.fm .btn.hold.holding{background-size:100% 100%;
+transition:background-size 2s linear}

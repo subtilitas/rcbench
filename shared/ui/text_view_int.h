@@ -134,6 +134,10 @@
 #define TV_Q_BOX     gfx_rect_make(162, 100, 700, 280)
 #define TV_Q_STAY    gfx_rect_make(186, 304, 300, 56)  /**< STAY. */
 #define TV_Q_DISCARD gfx_rect_make(538, 304, 300, 56)  /**< DISCARD. */
+/* The CHANGED question's three buttons. */
+#define TV_Q3_STAY   gfx_rect_make(186, 304, 208, 56)  /**< STAY. */
+#define TV_Q3_READ   gfx_rect_make(408, 304, 208, 56)  /**< READ AGAIN. */
+#define TV_Q3_OVER   gfx_rect_make(630, 304, 208, 56)  /**< OVERWRITE. */
 
 /** @brief A press that moves further than this, px, in x or in y, is a
  *         drag, not a tap: FILES' slop. */
@@ -189,7 +193,8 @@ typedef enum {
     TV_HIT_TEXT,        /**< the text: a drag, or the cursor's tap   */
     TV_HIT_BAR,         /**< the scroll bar      */
     TV_HIT_STAY,        /**< the question's STAY                     */
-    TV_HIT_DISCARD      /**< and DISCARD                             */
+    TV_HIT_DISCARD,     /**< and DISCARD, or READ AGAIN              */
+    TV_HIT_OVERWRITE    /**< and OVERWRITE, held                     */
 } tv_hit_t;
 
 /** @brief What the note says. */
@@ -227,6 +232,8 @@ typedef struct {
     bool edit;                /**< the editor is on                      */
     bool saving;              /**< a save runs: the text holds still     */
     text_view_ask_t ask;      /**< the question that shows               */
+    bool over_ok;             /**< the CHANGED question offers OVERWRITE */
+    ui_hold_t over;           /**< OVERWRITE's hold                      */
     fm_err_t edit_err;        /**< the host's rule for EDIT              */
     fm_err_t save_err;        /**< and for SAVE                          */
     tv_note_t note;           /**< what the note says                    */
@@ -361,6 +368,13 @@ void tv_edit_tap(int x, int y);
  * @return TEXT_VIEW_SAVE for SAVE that may write, else TEXT_VIEW_NONE
  */
 text_view_result_t tv_edit_button(int hit);
+
+/**
+ * @brief Whether OVERWRITE takes a hold now.
+ * @return true on the CHANGED question with a sum to compare with, no save
+ *         running and SAVE open by the rules
+ */
+bool tv_over_live(void);
 
 /**
  * @brief The answer the last tv_edit_event() leaves for the host:

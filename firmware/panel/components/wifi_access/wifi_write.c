@@ -165,7 +165,7 @@ static esp_err_t answer(httpd_req_t *r, wa_api_err_t why, const wa_api_t *api,
     if (why == WA_API_OK) {
         wa_api_write_json(api, o);
     } else {
-        wa_api_error_json(o, why, de);
+        wa_api_refused_json(api, o, why, de);
     }
     if (!wa_out_flush(o) || httpd_resp_send_chunk(r, NULL, 0) != ESP_OK) {
         return ESP_FAIL;

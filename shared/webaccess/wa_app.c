@@ -81,6 +81,18 @@ static const app_text_t k_texts[] = {
     { "codego", W_P_FM_CODE_GO },      { "e.TOO_LARGE", W_P_API_TOO_LARGE },
     { "e.SAME", W_P_API_SAME },        { "e.FIXED", W_P_API_FIXED },
     { "e.REQUEST", W_P_API_REQUEST },
+    /* edit.js */
+    { "edit", T_ED_EDIT },             { "save", T_SET_SAVE },
+    { "editing", T_ED_EDITING },       { "modified", T_ED_MODIFIED },
+    { "saving", T_ED_SAVING },         { "savedkst", T_ED_SAVED_KST },
+    { "nochg", T_ED_NO_CHANGES },      { "full", T_ED_FULL },
+    { "linesfull", T_ED_LINES_FULL },  { "unsaved", T_SET_LEAVE_TITLE },
+    { "qleave", T_ED_Q_LEAVE },        { "qchanged", T_ED_Q_CHANGED },
+    { "stay", T_SET_STAY },            { "discard", T_SET_DISCARD },
+    { "readagain", T_ED_READ_AGAIN },  { "e.CHANGED", W_P_API_CHANGED },
+    { "mixedlf", W_P_ED_MIXED_LF },    { "notutf8", W_P_ED_NOT_UTF8 },
+    { "codewrong", W_P_CODE_WRONG },   { "overwrite", T_ED_OVERWRITE },
+    { "holdover", T_HOLD_HINT_OVERWRITE },
 };
 
 /** @brief Expands a row of TEXT_HL_CLASS_ROWS to its style sheet name. */
@@ -273,6 +285,8 @@ void wa_app_body(wa_out_t *o, bool de, const wa_hl_t *hl)
     blob(o, wa_web_hl_js);
     wa_out_str(o, "</script><script>");
     blob(o, wa_web_write_js);
+    wa_out_str(o, "</script><script>");
+    blob(o, wa_web_edit_js);
     wa_out_str(o, "</script><script>");
     blob(o, wa_web_app_js);
     wa_out_str(o, "</script>");

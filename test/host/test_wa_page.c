@@ -170,20 +170,21 @@ TEST_CASE(the_card_part_is_the_zip_link_and_the_file_manager)
      * folders through the file API, a page at a time. */
     CHECK(strstr(g_p.buf, "LOG00001.CSV") == NULL);
     CHECK(strstr(g_p.buf, "href=\"/card/") == NULL);
-    /* The manager's element, its data, and the highlighter, the writes
-     * and the app, in that order, each once: the app attaches the writes
-     * it finds defined. */
+    /* The manager's element, its data, and the highlighter, the writes,
+     * the editor and the app, in that order, each once: the app attaches
+     * the writes and the editor it finds defined. */
     const char *app = strstr(g_p.buf, "<div id=\"fm\" class=\"fm\"></div>");
     const char *data = strstr(g_p.buf, "<script type=\"application/json\" "
                                        "id=\"fm-data\">{\"tx\":{");
     const char *hl = strstr(g_p.buf, "<script>var RcbHl");
     const char *wr = strstr(g_p.buf, "<script>var RcbWr");
+    const char *ed = strstr(g_p.buf, "<script>var RcbEd");
     const char *js = strstr(g_p.buf, "<script>var RcbFm");
     CHECK(app != NULL && data != NULL && hl != NULL && wr != NULL
-          && js != NULL);
-    CHECK(app < data && data < hl && hl < wr && wr < js);
-    CHECK_EQ(count_of(g_p.buf, "<script>"), 4);
-    CHECK_EQ(count_of(g_p.buf, "</script>"), 5);
+          && ed != NULL && js != NULL);
+    CHECK(app < data && data < hl && hl < wr && wr < ed && ed < js);
+    CHECK_EQ(count_of(g_p.buf, "<script>"), 5);
+    CHECK_EQ(count_of(g_p.buf, "</script>"), 6);
     CHECK(strstr(g_p.buf, "<noscript><p>The file list needs JavaScript."
                           "</p></noscript>") != NULL);
     /* The texts are FILES' own where the panel has one. */

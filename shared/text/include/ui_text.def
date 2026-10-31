@@ -2399,6 +2399,20 @@ UI_TEXT(ED_Q_REVERT, 0,
 UI_TEXT(ED_Q_OPEN, 0,
     "Discard the changes to %s to open another file?",
     "Änderungen an %s verwerfen, um eine andere Datei zu öffnen?")
+/* The same question after SAVE found the file changed on the card since
+ * the editor read it (the Wi-Fi page wrote it): STAY keeps the text, READ
+ * AGAIN in DISCARD's place reads the file anew, and OVERWRITE behind a 2s
+ * hold replaces the file as it is on the card now.  The Wi-Fi page's editor
+ * asks it with the same three words. */
+UI_TEXT(ED_Q_CHANGED, 0,
+    "%s changed on the card since it was read. READ AGAIN drops these changes.",
+    "%s wurde seit dem Lesen auf der Karte geändert. NEU LESEN verwirft diese Änderungen.")
+UI_TEXT(ED_READ_AGAIN, 0,
+    "READ AGAIN",
+    "NEU LESEN")
+UI_TEXT(ED_OVERWRITE, 0,
+    "OVERWRITE",
+    "ÜBERSCHREIBEN")
 
 /* --------------------------------------------- the modelled protocols */
 /* The parameter tables of prog_models.c, which no list shows: no transport
@@ -4094,6 +4108,9 @@ UI_TEXT(HOLD_HINT_IOMCU_UPDATE, 94,
 UI_TEXT(HOLD_HINT_UNBIND, 94,
     "Hold 2s to clear all pin assignments.",
     "Halte 2s, um alle Pin-Zuordnungen zu löschen.")
+UI_TEXT(HOLD_HINT_OVERWRITE, 94,
+    "Hold 2s to overwrite.",
+    "Halte 2s, um zu überschreiben.")
 
 /* --------------------- the splash's details, from the panel's start-up */
 UI_TEXT(SPLASH_NO_PANEL, 47,
@@ -8385,6 +8402,16 @@ UI_WEB_TEXT(P_FM_CODE_GO,
 UI_WEB_TEXT(P_FM_NOSCRIPT,
     "The file list needs JavaScript.",
     "Die Dateiliste braucht JavaScript.")
+/* The editor of the page (edit.js), on the viewer's line under its
+ * buttons: a file with mixed line ends, said when EDIT opens it; and a
+ * file the browser cannot give back byte for byte, said instead of
+ * opening the editor. */
+UI_WEB_TEXT(P_ED_MIXED_LF,
+    "Mixed line ends: SAVE writes every line end as LF.",
+    "Gemischte Zeilenenden: SPEICHERN schreibt jedes Zeilenende als LF.")
+UI_WEB_TEXT(P_ED_NOT_UTF8,
+    "The browser cannot keep every byte of this file (not UTF-8). Edit it on the panel: FILES > EDIT.",
+    "Der Browser kann nicht jedes Byte dieser Datei erhalten (kein UTF-8). Am Panel bearbeiten: DATEIEN > BEARBEITEN.")
 
 #undef UI_TEXT
 #undef UI_SETTING_LABEL

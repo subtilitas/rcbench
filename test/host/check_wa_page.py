@@ -8,7 +8,7 @@ a string early, or a "</script>" inside a text, fails here as it fails in a
 browser.
 
 The file manager's data element (id "fm-data") is read as JSON, and every
-text the file manager's script (shared/webaccess/web/app.js) reads by its
+text the file manager's scripts (shared/webaccess/web/*.js) read by their
 key is in it: each literal key, a "k." key per kind word and an "r." key
 per place word the file API writes (shared/webaccess/wa_api.c).  These
 checks run without node.
@@ -28,7 +28,7 @@ import sys
 import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
-APP_JS = ROOT / "shared/webaccess/web/app.js"
+WEB = ROOT / "shared/webaccess/web"
 WA_API = ROOT / "shared/webaccess/wa_api.c"
 
 
@@ -40,7 +40,7 @@ def data_of(html):
 
 
 def keys_read(js, api):
-    """Every text key app.js reads.
+    """Every text key the scripts read.
 
     The literal ones, and the kind and place words the API writes behind
     "k." and "r.".
@@ -79,7 +79,8 @@ def main(argv):
     if len(pages) != 2:
         print(f"{argv[1]}: {len(pages)} pages, want 2", file=sys.stderr)
         return 1
-    js = APP_JS.read_text(encoding="utf-8")
+    js = "\n".join(f.read_text(encoding="utf-8")
+                   for f in sorted(WEB.glob("*.js")))
     api = WA_API.read_text(encoding="utf-8")
     bad = [f for page in pages for f in check_data(page, js, api)]
     if bad:

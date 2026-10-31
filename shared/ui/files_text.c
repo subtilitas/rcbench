@@ -13,7 +13,16 @@
  * until that answer is in, so no two reads write the buffer.
  *
  * The editor's SAVE is a SAVE job (fm_job_save()) that reads the text
- * through text_view_fill() while the editor holds it still.  An open of
+ * through text_view_fill() while the editor holds it still.  The LOAD and
+ * every SAVE that wrote sum the file's bytes as they pass (fm_job_sum(),
+ * CRC-32, the Wi-Fi page's ETag), and the next SAVE writes only over a
+ * file that still has that sum (fm_job_match() FM_MATCH_SUM): one changed
+ * since, by the Wi-Fi page, fails it with FM_ERR_CHANGED and the editor
+ * asks STAY, READ AGAIN or OVERWRITE.  READ AGAIN opens the file anew.
+ * OVERWRITE, held 2s, saves over the file as the refused save found it
+ * (fm_job_found()): one changed after that refusal, also during the hold,
+ * is refused in turn, and a file that is gone offers no OVERWRITE.  The
+ * editor's own sum moves only with a save that wrote.  An open of
  * another file over an editor with unsaved text, from FILES or from LOGS,
  * is held until the editor's question is answered: DISCARD opens it,
  * STAY drops it.  Leaving FILES keeps such an editor, its text and its
@@ -26,6 +35,7 @@
 #include <string.h>
 
 #include "files_screen.h"
+#include "fm_crc.h"
 #include "fm_ops.h"
 #include "text_view.h"
 #include "ui_screen.h"
@@ -84,9 +94,14 @@ static bool save_send(void)
                                      text_view_dir(), text_view_name(), len,
                                      text_view_fill, NULL);
     if (err != FM_OK) {
+        s.tv_over = false;
         (void)text_view_saved(err, false, false);
         return false;
     }
+    (void)fm_job_match(&s.req.job, FM_MATCH_SUM, fm_crc32,
+                       s.tv_over ? s.tv_found : s.tv_sum);
+    s.tv_over = false;
+    (void)fm_job_sum(&s.req.job, fm_crc32);
     s.req.kind = FM_REQ_JOB;
     s.req_pane = -1;
     if (!fs_submit()) {
@@ -119,6 +134,7 @@ bool fs_text_send(void)
         text_view_loaded(err, 0u);
         return false;
     }
+    (void)fm_job_sum(&s.req.job, fm_crc32);
     s.req.kind = FM_REQ_JOB;
     s.req_pane = -1;
     if (!fs_submit()) {
@@ -136,6 +152,7 @@ void fs_text_take(void)
     }
     s.tv_live = false;
     const uint64_t done = s.req.job.done;
+    s.tv_sum = s.req.job.data_sum;
     text_view_loaded(s.req.err, (size_t)done);
 }
 
@@ -147,6 +164,7 @@ void fs_text_fail(fm_err_t err)
     }
     if (s.tv_save) {
         s.tv_save = false;
+        s.tv_over = false;
         (void)text_view_saved(err, false, false);
     }
 }
@@ -158,15 +176,41 @@ void fs_text_saved(void)
     }
     s.tv_saving = false;
     const fm_job_t *j = &s.req.job;
+    if (j->state == FM_JOB_DONE) {
+        s.tv_sum = j->data_sum;     /* the file as this save wrote it */
+    }
+    text_view_offer_overwrite(fm_job_found(j, &s.tv_found));
     if (text_view_saved(s.req.err, j->state == FM_JOB_STOPPED,
                         j->note_restart) == TEXT_VIEW_LEAVE) {
         fs_text_result(TEXT_VIEW_LEAVE);    /* the open the question held */
     }
 }
 
+/**
+ * @brief READ AGAIN: the editor's text dropped and the file it holds read
+ *        from the card anew, on the mount and for the screen it was
+ *        opened from.
+ */
+static void text_reload(void)
+{
+    char dir[FM_PATH_SIZE];
+    char name[FM_NAME_BUF];
+    snprintf(dir, sizeof(dir), "%s", text_view_dir());
+    snprintf(name, sizeof(name), "%s", text_view_name());
+    const unsigned mount = s.tv_mount;
+    const bool logs = s.tv_from_logs;
+    fs_text_close();
+    (void)files_screen_open_text(dir, name, mount, 0u, logs);
+}
+
 void fs_text_result(text_view_result_t r)
 {
     switch (r) {
+    case TEXT_VIEW_OVERWRITE:
+        s.tv_over = true;
+        s.tv_save = true;
+        fs_pump();
+        break;
     case TEXT_VIEW_SAVE:
         s.tv_save = true;
         fs_pump();
@@ -179,6 +223,9 @@ void fs_text_result(text_view_result_t r)
                                          s.tv_pend_logs);
         }
         break;
+    case TEXT_VIEW_RELOAD:
+        text_reload();
+        break;
     case TEXT_VIEW_NONE:
         return;
     case TEXT_VIEW_CHANGED:
@@ -186,6 +233,13 @@ void fs_text_result(text_view_result_t r)
         break;
     }
     files_screen_invalidate();
+}
+
+void fs_text_tick(float dt_s)
+{
+    if (s.view == FILES_VIEW_TEXT) {
+        fs_text_result(text_view_tick(dt_s));
+    }
 }
 
 void fs_text_rules(void)

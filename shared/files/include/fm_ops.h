@@ -59,7 +59,11 @@
  * fails the job with FM_ERR_CHANGED and nothing written.  FM_MATCH_ABSENT
  * fails it with FM_ERR_EXISTS when the name is taken.  The check and the
  * write run in one job, so between them only a writer outside the file
- * manager's job (fm_req.h) can change the file.
+ * manager's job (fm_req.h) can change the file.  A LOAD and a SAVE can sum
+ * the bytes they read or write as they pass (fm_job_sum()): FILES' editor
+ * keeps the sum of the file it opened and of the text it saved last, and
+ * hands it to the next SAVE as FM_MATCH_SUM, so a write of the file from
+ * the Wi-Fi page in between fails that SAVE with FM_ERR_CHANGED.
  *
  * DELETE of a run's log takes its report with it, as LOGS' DELETE does:
  * ATEST042.CSV takes ATEST042.TXT (log_name_report_of()).  A report that
@@ -176,6 +180,11 @@ typedef struct {
     fm_sum_fn sum;           /**< FM_MATCH_SUM: the sum                 */
     uint32_t want;           /**< FM_MATCH_SUM: the old file's sum      */
     uint32_t got;            /**< FM_MATCH_SUM: the sum read so far     */
+    bool found;              /**< FM_MATCH_SUM: refused with got the sum
+                                  of the whole file there                */
+    fm_sum_fn data_fn;       /**< fm_job_sum(): the sum, or NULL        */
+    uint32_t data_sum;       /**< fm_job_sum(): the sum of the bytes
+                                  loaded or saved so far                 */
 } fm_job_t;
 
 /**
@@ -297,6 +306,31 @@ fm_err_t fm_job_save(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
  */
 fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
                       uint32_t want);
+
+/**
+ * @brief The sum of the file a SAVE refused with FM_ERR_CHANGED read there:
+ *        what a SAVE that replaces that file as it stands now hands
+ *        fm_job_match(), so one more change is refused in its turn.
+ * @param job  the job
+ * @param sum  takes the sum
+ * @return true when the job read the whole file and its sum was not the
+ *         one wanted; false for a file that is gone, and for any other job
+ *         or answer, @p sum unchanged
+ */
+bool fm_job_found(const fm_job_t *job, uint32_t *sum);
+
+/**
+ * @brief Sum the bytes a LOAD reads or a SAVE writes as they pass, into
+ *        the job's data_sum: once the job is FM_JOB_DONE it is the sum of
+ *        the file as the card holds it, which a later SAVE of the same
+ *        file hands fm_job_match().
+ * @param job  a LOAD or a SAVE that its fm_job_*() call started and no
+ *             step has run
+ * @param sum  the sum
+ * @return FM_OK; FM_ERR_ARG for another job, one that runs already or was
+ *         refused, or no @p sum, the job unchanged
+ */
+fm_err_t fm_job_sum(fm_job_t *job, fm_sum_fn sum);
 
 /**
  * @brief Read file @p name of folder @p dir into @p buf.  A read: the gate
