@@ -220,7 +220,7 @@ guide and the help say where it is.
 | No memory | the band says `Screenshot not taken: 1,305,600B of PSRAM are not free.`, and nothing else changes |
 | A hold while one waits | replaces it in the same memory: `New screenshot taken. It replaces the waiting one.` |
 | A hold while a stopped save ends | no picture: `Screenshot not taken: the last one is still being written.`, for at most one row of the PNG |
-| Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
+| Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. The IOmcu update's question and the release reminder: they cannot say whether a box covers them, and the popup would open after they have gone. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
 
 The picture is taken in that frame, on the render task, whatever the bench
 does. It reads no output and writes none; STOP, DISARM and the rest stay live.
@@ -264,8 +264,7 @@ again with the name as typed. Only CANCEL or a save that worked ends it.
 
 Outputs are driven only while ARMED, so SAFE covers a pulse on a pin. A FAULT
 bit left up holds the popup back until it is cleared. A screen's keypad,
-keyboard, list, box or question holds it back too, and so do the IOmcu's
-question and the release reminder.
+keyboard, list, box or question holds it back too.
 
 ### Saving
 
@@ -280,10 +279,13 @@ lists the new file when it is next read.
 | Default name | `SHOT` and 4 digits, one above the highest such name in the folder; `SHOT9999` at most |
 | Name | up to 55 bytes in front of `.PNG`, the rules of FILES' names (`fm_name.h`) |
 | A taken name | refused: `This name is taken. Type another one.` Nothing is overwritten |
-| Size | 34,071 to 69,467B on seven rendered screens; not measured on a card |
-| Time | 11 to 14ms on the build machine for the encoding alone; on the panel not measured. The console logs each save's time and each copy's |
+| Size | 38,388 to 77,840B on the card, 8 files; the OUTPUTS screen with the board drawing gave the largest |
+| Time | 5.3 to 6.3s alone; 0.40 to 1.00s with a Wi-Fi page write waiting for the card's lock. The cause of the difference is not traced. The console logs each save's time and each copy's |
 | Memory while saving | 36,928B of PSRAM for the encoder, 16,384B of internal RAM for the card's buffer and 7,168B of internal RAM for the task's stack, freed at its end |
 | Task | `shot`, priority 0 on core 0, below the render loop. The control task and the heartbeat take no part |
+| Stack of `shot` | lowest 5,116B unused of 7,168B |
+| Runs on a panel | 30 shots in a row: no error, no restart. No FLIP TIMEOUT and no watchdog line. `FM_ERR_BUSY` was not produced in 3 runs with a save and a Wi-Fi page write overlapping: both sides wait and complete |
+| Not run on a panel | no card in the slot, a second contact during a hold, pixel equality of the PNG with a rendered frame |
 
 A file is written as `<name>.PNG.NEW`, then renamed, so a save stopped or a
 card pulled leaves no file of the name. A power cut leaves the `.NEW`; the next
@@ -303,19 +305,24 @@ save of that name deletes it.
 | a write failed | `The write failed. The picture is kept: SAVE again.` |
 | no memory for the encoder or the buffer | `No memory to write the PNG. Nothing was written.` |
 | another card job holds the card past 2000ms | `The card is busy. SAVE again in a moment.` |
+| the bench stopped being idle during the save | on the next opening: `The bench was busy. Nothing saved. Tap SAVE again.` |
 
 Each failure stays on the popup with the picture kept. The card job lock is
 FILES' and the Wi-Fi page's: one job at a time, and the page's writes wait up
 to 2000ms for a save and then answer `PANEL_BUSY`. CANCEL during a save stops it
 at its next row, and the picture goes when it has stopped. A bench that stops
-being idle does the same and keeps the picture.
+being idle does the same and keeps the picture. The line of that stop, or of a
+failure answered while the popup is shut, shows when the popup opens again. A
+new picture or CANCEL clears it.
 
 The copy is 1,228,800B on the render task in one frame. It is not split across
 frames: the frame buffers change every frame, so a copy over several would mix
-frames. It takes 0.1ms on the build machine; its time on the panel is not
-measured, and the console logs it. The control
-task, on the other core, does not wait for it, and the frame watch allows
-1000ms.
+frames. It takes 0.1ms on the build machine and 25.8 to 31.6ms on the panel,
+median 28.3ms over 54 copies; the console logs each. At least 1 panel frame
+was missed in the run. The frame rate on a sweep is 30 to 37fps, and the 5s
+figure is unchanged around a hold. The time of the single frame that holds
+the copy is not measured. The control task, on the other core, does not wait
+for it, and the frame watch allows 1000ms.
 
 ## The alert band
 

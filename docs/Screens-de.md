@@ -239,7 +239,7 @@ und die Web-Hilfe sagen, wo sie ist.
 | Kein Speicher | das Band sagt `Kein Screenshot: 1 305 600B PSRAM sind nicht frei.`, sonst ändert sich nichts |
 | Halten, während eines wartet | ersetzt es im selben Speicher: `Neuer Screenshot aufgenommen. Er ersetzt den wartenden.` |
 | Halten, während ein gestopptes Sichern endet | kein Bild: `Kein Screenshot: Der letzte wird noch geschrieben.`, höchstens eine PNG-Zeile lang |
-| Bildschirme ohne dieses Halten | SPLASH, der Bus-Fehler-Bildschirm, PANEL UPDATE und der Fortschritt des IOmcu-Updates: Sie haben kein Band. MOTOR & ESC, der längste Titel, hat mit ARMED MOTOR und einem langen FAULT-Chip keine Lücke |
+| Bildschirme ohne dieses Halten | SPLASH, der Bus-Fehler-Bildschirm, PANEL UPDATE und der Fortschritt des IOmcu-Updates: Sie haben kein Band. Die Frage des IOmcu-Updates und die Release-Erinnerung: Sie können nicht sagen, ob ein Kasten sie verdeckt, und das Popup würde sich erst öffnen, nachdem sie weg sind. MOTOR & ESC, der längste Titel, hat mit ARMED MOTOR und einem langen FAULT-Chip keine Lücke |
 
 Das Bild entsteht in diesem Frame auf der Render-Task, was auch immer der
 Prüfstand tut. Es liest keinen Ausgang und schreibt keinen; STOP, DISARM und der
@@ -287,7 +287,7 @@ gelungenes Sichern beenden es.
 Ausgänge werden nur in ARMED getrieben, also deckt SAFE den Puls an einem Pin
 ab. Ein stehendes FAULT-Bit hält das Popup zurück, bis es gelöscht ist. Auch ein
 Tastenfeld, eine Tastatur, eine Liste, eine Box oder eine Frage eines Bildschirms
-halten es zurück, ebenso die Frage des IOmcu und die Erinnerung an ein Release.
+halten es zurück.
 
 ### Sichern
 
@@ -302,10 +302,13 @@ das den Ordner zeigt, listet die neue Datei beim nächsten Lesen.
 | Standardname | `SHOT` und 4 Ziffern, eins über dem höchsten solchen Namen im Ordner; höchstens `SHOT9999` |
 | Name | bis 55 Bytes vor `.PNG`, die Regeln der Namen von FILES (`fm_name.h`) |
 | Ein vergebener Name | abgelehnt: `Dieser Name ist vergeben. Bitte einen anderen eingeben.` Nichts wird überschrieben |
-| Größe | 34 071 bis 69 467B auf sieben gerenderten Bildschirmen; auf einer Karte nicht gemessen |
-| Zeit | 11 bis 14ms auf dem Build-Rechner nur fürs Kodieren; auf dem Panel nicht gemessen. Die Konsole schreibt die Zeit jedes Sicherns und jeder Kopie |
+| Größe | 38 388 bis 77 840B auf der Karte, 8 Dateien; der Bildschirm OUTPUTS mit der Platinenzeichnung gab die größte |
+| Zeit | 5,3 bis 6,3s allein; 0,40 bis 1,00s mit einem Schreibvorgang der Wi-Fi-Seite, der auf die Sperre der Karte wartet. Die Ursache des Unterschieds ist nicht untersucht. Die Konsole schreibt die Zeit jedes Sicherns und jeder Kopie |
 | Speicher beim Sichern | 36 928B PSRAM für den Encoder, 16 384B internes RAM für den Kartenpuffer und 7 168B internes RAM für den Stack der Task, am Ende frei |
 | Task | `shot`, Priorität 0 auf Kern 0, unter der Render-Schleife. Control-Task und Heartbeat sind nicht beteiligt |
+| Stack von `shot` | niedrigster Stand 5 116B unbenutzt von 7 168B |
+| Läufe auf einem Panel | 30 Screenshots hintereinander: kein Fehler, kein Neustart. Kein FLIP TIMEOUT und keine Watchdog-Zeile. `FM_ERR_BUSY` trat in 3 Läufen mit überlappendem Sichern und Schreibvorgang der Wi-Fi-Seite nicht auf: Beide Seiten warten und enden |
+| Auf einem Panel nicht gelaufen | keine Karte im Schacht, ein zweiter Kontakt während des Haltens, Pixelgleichheit des PNG mit einem gerenderten Frame |
 
 Eine Datei wird als `<Name>.PNG.NEW` geschrieben und dann umbenannt: Ein
 abgebrochenes Sichern oder eine gezogene Karte hinterlässt keine Datei dieses
@@ -326,19 +329,26 @@ Namens löscht sie.
 | Schreiben fehlgeschlagen | `Schreiben fehlgeschlagen. Das Bild bleibt: erneut SICHERN.` |
 | kein Speicher für Encoder oder Puffer | `Kein Speicher für das PNG. Nichts wurde geschrieben.` |
 | ein anderer Karten-Auftrag länger als 2000ms | `Die Karte ist belegt. Gleich erneut SICHERN.` |
+| der Prüfstand hörte während des Sicherns auf zu ruhen | beim nächsten Öffnen: `Der Prüfstand war beschäftigt. Nichts gespeichert. Tippe erneut auf SICHERN.` |
 
 Jeder Fehler bleibt auf dem Popup, das Bild bleibt erhalten. Die Sperre der
 Karten-Aufträge ist die von FILES und der Wi-Fi-Seite: ein Auftrag zur Zeit;
 die Schreibvorgänge der Seite warten bis 2000ms auf ein Sichern und antworten dann
 `PANEL_BUSY`. CANCEL beim Sichern stoppt es an der nächsten Zeile, und das Bild geht,
 sobald es steht. Ein Prüfstand, der aufhört zu ruhen, tut dasselbe und behält
-das Bild.
+das Bild. Die Zeile dieses Stopps oder eines Fehlers, der bei geschlossenem Popup
+eintrifft, erscheint, wenn sich das Popup wieder öffnet. Ein neues Bild oder
+CANCEL löscht sie.
 
 Die Kopie sind 1 228 800B auf der Render-Task in einem Frame. Sie ist nicht auf
 mehrere Frames verteilt: Die Bildpuffer ändern sich mit jedem Frame, eine Kopie
-über mehrere würde Frames mischen. Auf dem Build-Rechner dauert sie 0,1ms; ihre
-Zeit auf dem Panel ist nicht gemessen, die Konsole schreibt sie. Die Control-Task auf dem anderen Kern wartet nicht darauf,
-und die Frame-Überwachung erlaubt 1000ms.
+über mehrere würde Frames mischen. Auf dem Build-Rechner dauert sie 0,1ms, auf
+dem Panel 25,8 bis 31,6ms, Median 28,3ms über 54 Kopien; die Konsole schreibt
+jede. Mindestens 1 Frame des Panels wurde im Lauf verpasst. Die Bildrate bei
+einem Sweep liegt bei 30 bis 37fps, und der 5s-Wert bleibt um ein Halten
+unverändert. Die Zeit des einzelnen Frames mit der Kopie ist nicht gemessen. Die
+Control-Task auf dem anderen Kern wartet nicht darauf, und die
+Frame-Überwachung erlaubt 1000ms.
 
 ## Das Alert-Band
 

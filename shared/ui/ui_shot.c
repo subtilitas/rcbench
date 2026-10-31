@@ -160,6 +160,7 @@ void ui_shot_capture(const gfx_canvas_t *c, bool opens_now)
         s.io->copied(s.io->now_us(s.io->ctx) - t0, s.io->ctx);
     }
     s.previewed = false;
+    s.status[0] = '\0';
     s.state = ST_WAITING;
     ui_router_set_notice(replaced    ? TR(SHOT_REPLACED)
                          : opens_now ? TR(SHOT_TAKEN)
@@ -224,7 +225,6 @@ static void popup_open(void)
         name_keep(s.fallback);
     }
     kb_open(s.name, UI_TK_UPPER);
-    s.status[0] = '\0';
     s.percent = 0;
     s.drawn = 0u;
     s.state = ST_OPEN;
@@ -248,6 +248,7 @@ static void popup_close(state_t to)
     if (s.job == UI_SHOT_JOB_SAVE) {
         s.io->cancel(s.io->ctx);
     }
+    s.status[0] = '\0';
     s.state = to;
     s.drawn = 0u;
 }
@@ -330,10 +331,12 @@ void ui_shot_poll(void)
         ui_router_set_notice(line);
         return;
     }
-    if (s.state != ST_OPEN) {
-        return;     /* the bench stopped it: the picture waits */
-    }
-    (void)snprintf(s.status, sizeof(s.status), "%s", err_text(err));
+    /* Shut popup: the bench stopped the save and the picture waits.  The
+     * line stays for the popup's next opening. */
+    (void)snprintf(s.status, sizeof(s.status), "%s",
+                   (s.state != ST_OPEN && err == FM_ERR_CANCELLED)
+                       ? TR(SHOT_E_STOPPED)
+                       : err_text(err));
 }
 
 /**

@@ -608,7 +608,7 @@ TEST_CASE(not_idle_while_it_writes_stops_it_and_the_picture_waits)
     ui_router_tick(0.016f);
     CHECK(ui_shot_open());
     CHECK(ui_shot_image() != NULL);
-    CHECK_STR_EQ(ui_shot_status(), "");
+    CHECK_STR_EQ(ui_shot_status(), TR(SHOT_E_STOPPED));
 
     /* A write that finished whole as the state turned: the file is there. */
     start();
@@ -621,6 +621,96 @@ TEST_CASE(not_idle_while_it_writes_stops_it_and_the_picture_waits)
     g_answered = true;
     ui_router_tick(0.016f);
     CHECK(!ui_shot_held());
+}
+
+/** @brief A popup on a save under way: the number answered, SAVE tapped. */
+static void saving(void)
+{
+    start();
+    open_popup();
+    g_answered = true;
+    ui_router_tick(0.016f);
+    tap_key(UI_TK_OK);
+    REQUIRE(g_job == UI_SHOT_JOB_SAVE);
+}
+
+TEST_CASE(a_save_the_bench_stopped_says_so_when_the_popup_opens_again)
+{
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
+        saving();
+        ui_router_shot_set_idle(false);
+        g_err = FM_ERR_CANCELLED;
+        g_answered = true;
+        ui_router_tick(0.016f);
+        CHECK(!ui_shot_open());
+        CHECK(ui_shot_held());
+        ui_router_shot_set_idle(true);
+        ui_router_tick(0.016f);
+        REQUIRE(ui_shot_open());
+        CHECK_STR_EQ(ui_shot_status(), TR(SHOT_E_STOPPED));
+        CHECK(strstr(ui_shot_status(), TR(SHOT_SAVE)) != NULL);
+        frame();
+        /* A good SAVE clears the line, once the number is answered. */
+        g_err = FM_OK;
+        g_answered = true;
+        ui_router_tick(0.016f);
+        CHECK_STR_EQ(ui_shot_status(), TR(SHOT_E_STOPPED));
+        tap_key(UI_TK_OK);
+        CHECK_STR_EQ(ui_shot_status(), "");
+        CHECK_EQ(g_job, UI_SHOT_JOB_SAVE);
+        g_answered = true;
+        ui_router_tick(0.016f);
+        CHECK(!ui_shot_held());
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(a_failure_answered_while_the_popup_is_shut_shows_its_text_later)
+{
+    saving();
+    ui_router_shot_set_idle(false);
+    g_err = FM_ERR_FULL;
+    g_answered = true;
+    ui_router_tick(0.016f);
+    ui_router_shot_set_idle(true);
+    ui_router_tick(0.016f);
+    REQUIRE(ui_shot_open());
+    CHECK_STR_EQ(ui_shot_status(), TR(SHOT_E_FULL));
+    g_err = FM_OK;
+    g_answered = true;      /* the number */
+    ui_router_tick(0.016f);
+    tap_key(UI_TK_OK);
+    CHECK_STR_EQ(ui_shot_status(), "");
+}
+
+TEST_CASE(a_line_does_not_outlive_the_popup_or_the_picture_it_belonged_to)
+{
+    /* A failure on the open popup, then the bench stops being idle: the
+     * popup opens again with no line. */
+    saving();
+    g_err = FM_ERR_FULL;
+    g_answered = true;
+    ui_router_tick(0.016f);
+    CHECK_STR_EQ(ui_shot_status(), TR(SHOT_E_FULL));
+    ui_router_shot_set_idle(false);
+    ui_router_shot_set_idle(true);
+    ui_router_tick(0.016f);
+    REQUIRE(ui_shot_open());
+    CHECK_STR_EQ(ui_shot_status(), "");
+
+    /* A stopped save's line, then a new picture replaces the waiting one. */
+    saving();
+    ui_router_shot_set_idle(false);
+    g_err = FM_ERR_CANCELLED;
+    g_answered = true;
+    ui_router_tick(0.016f);
+    hold_shot();
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+    ui_router_shot_set_idle(true);
+    ui_router_tick(0.016f);
+    REQUIRE(ui_shot_open());
+    CHECK_STR_EQ(ui_shot_status(), "");
 }
 
 TEST_CASE(a_name_the_rules_refuse_is_said_and_saves_nothing)
@@ -796,6 +886,9 @@ int main(void)
     RUN(cancel_drops_the_picture);
     RUN(cancel_while_it_writes_stops_it_and_then_drops_the_picture);
     RUN(not_idle_while_it_writes_stops_it_and_the_picture_waits);
+    RUN(a_save_the_bench_stopped_says_so_when_the_popup_opens_again);
+    RUN(a_failure_answered_while_the_popup_is_shut_shows_its_text_later);
+    RUN(a_line_does_not_outlive_the_popup_or_the_picture_it_belonged_to);
     RUN(a_name_the_rules_refuse_is_said_and_saves_nothing);
     RUN(the_popup_covers_the_screen_and_repaints_it_closed);
     RUN(a_picture_of_no_canvas_is_no_picture);

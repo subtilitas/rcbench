@@ -246,9 +246,11 @@ bool ui_screen_not_covered(void);
  *        there takes a screenshot (ui_shot.h): it ends on a slide out of it,
  *        on a chip that appears under it, on any other contact and on a lost
  *        event; its release does nothing.  No screen sees the contact.  A
- *        screen with no band has no such hold.
+ *        screen with no band, or with no covered() to say whether a box is up
+ *        on it (the IOmcu update's question, the release reminder), has no
+ *        such hold.
  * @param out  takes it in panel coordinates; may be NULL
- * @return false where there is no band or no room
+ * @return false where there is no band, no covered() or no room
  */
 bool ui_router_shot_gap(gfx_rect_t *out);
 

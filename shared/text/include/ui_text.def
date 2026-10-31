@@ -4209,6 +4209,10 @@ UI_TEXT(SHOT_E_WRITE, 100,
     "The write failed. The picture is kept: SAVE again.",
     "Schreiben fehlgeschlagen. Das Bild bleibt: erneut SICHERN.")
 
+UI_TEXT(SHOT_E_STOPPED, 100,
+    "The bench was busy. Nothing saved. Tap SAVE again.",
+    "Der Prüfstand war beschäftigt. Nichts gespeichert. Tippe erneut auf SICHERN.")
+
 /* --------------------- the splash's details, from the panel's start-up */
 UI_TEXT(SPLASH_NO_PANEL, 47,
     "no panel",
