@@ -79,8 +79,8 @@ balance-sim                  3,209     401 KiB
 settings-sim                 3,088     386 KiB
 battery-sim                  3,093     387 KiB
 analyser-chrome             61,028    7628 KiB
-logs-chrome                 26,041    3255 KiB
-settings-chrome             37,584    4698 KiB
+logs-chrome                 27,126    3391 KiB
+settings-chrome             33,645    4206 KiB
 settings-list-chrome        36,442    4555 KiB
 battery-chrome              58,182    7273 KiB
 balance-chrome              63,470    7934 KiB
@@ -88,7 +88,7 @@ motor-stick-chrome          41,546    5193 KiB
 picker                           0       0 KiB
 picker-chrome               41,730    5216 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,166    2771 KiB
+wifi-chrome                 23,936    2992 KiB
 wifi-keys                   37,142    4643 KiB
 clear                       19,206    2401 KiB
 vlines                      10,204    1276 KiB
