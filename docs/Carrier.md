@@ -198,10 +198,12 @@ fixed:
   by name. The PROG PORT entries name PROGP01 to PROGP04 and their GPIO,
   offer no pin and no function, and show no tester
   ([Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).
-- SETUP > INTERFACES shows Sensor SDA and SCL, Tap pin and PD mini TX and
-  RX at the carrier's pins, with no keys and no keypad.
-- SETUP > SENSORS shows 0x40 fitted and its three channels on the rails,
-  with no keys ([The current monitor](#the-current-monitor)).
+- SETUP > SENSORS shows Sensor SDA and SCL and Tap pin at the carrier's pins,
+  with no keys and no keypad, the SENSOR BUS entry reads
+  `GPIO 16 / 17 SOLDERED`, and 0x40 reads fitted with its three channels on
+  the rails, with no keys ([The current monitor](#the-current-monitor)).
+- SETUP > INTERFACES shows PD mini TX and RX at the carrier's pins, with no
+  keys and no keypad.
 - The PICK A PIN tile opens LAYOUT: J1 and J2 in their position order
   with each position's role, GPIO, net on its + and the protocol bound
   on it, and the other connectors

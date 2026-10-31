@@ -151,6 +151,7 @@ TRACKED = [
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",
     "shared/ui/settings_rows.c",
+    "shared/ui/sensors_pane.c",
     "shared/ui/sensors_rows.c",
     "shared/ui/outputs_screen.c",
     "shared/ui/outputs_port.c",

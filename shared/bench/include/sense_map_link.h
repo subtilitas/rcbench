@@ -395,6 +395,19 @@ uint16_t sense_map_link_status(const sense_map_link_t *s,
 /** @brief Part @p a's field of a status word. */
 #define SENS_PART_OF(word, a) ((sens_part_t)(((word) >> (4u * (a))) & 0x0Fu))
 
+/**
+ * @brief What the INA228 is doing, in the words of an INA3221 part: for SETUP >
+ *        SENSORS' INA228 entry, from the same SENSE state its alerts come from.
+ *
+ * SENS_PART_SAME_ADDR says an INA3221 part shares its address, so neither is
+ * read.  SENS_PART_REFUSED covers an IOmcu without the SENSE page.
+ *
+ * @param sl     The SENSE link.
+ * @param now_ms The time, in ms.
+ * @return The state; SENS_PART_UNKNOWN while it is off or no IOmcu answers.
+ */
+sens_part_t sense_map_link_i228(const sense_link_t *sl, uint32_t now_ms);
+
 #ifdef __cplusplus
 }
 #endif

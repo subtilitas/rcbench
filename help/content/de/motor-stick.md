@@ -75,7 +75,7 @@ Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt wird, mindesten
 
 ![Ein Lauf mit laufendem Phasenabgriff](view:motor-stick-tone)
 
-Ist der Phasenabgriff unter SETUP, INTERFACES eingeschaltet, fügt die Seite eine Anzeige hinzu, die nur liest: den Zustand des Abgriffs, die Tonhöhe seines letzten 8-ms-Fensters, die Zahl verlorener und nicht gelesener Pieptöne und die letzten 4 Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz. Der Lauf zählt seine Pieptöne weiter aus dem Strom des Netzteils.
+Ist der Phasenabgriff unter SETUP, SENSORS eingeschaltet, fügt die Seite eine Anzeige hinzu, die nur liest: den Zustand des Abgriffs, die Tonhöhe seines letzten 8-ms-Fensters, die Zahl verlorener und nicht gelesener Pieptöne und die letzten 4 Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz. Der Lauf zählt seine Pieptöne weiter aus dem Strom des Netzteils.
 
 | Zustand des Abgriffs | Bedeutung |
 |---|---|

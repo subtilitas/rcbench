@@ -8,7 +8,7 @@
  *
  * The INA3221 is the meter while all of these hold:
  *
- *   1. SETUP INTERFACES has the INA3221 on with CH1 among its channels;
+ *   1. SETUP > SENSORS has the INA3221 on with CH1 among its channels;
  *   2. the IOmcu speaks protocol 4.11 or newer, the one with the
  *      window ring (SERVO_WIN) and SENSE's RESETS;
  *   3. the IOmcu's SENSE page holds that set-up: registers 0 to 11

@@ -1291,77 +1291,85 @@ UI_TEXT(SET_HUB_WIFI, 0,
 UI_TEXT(SET_HUB_UPDATES, 0,
     "RELEASES ON GITHUB",
     "VERSIONEN AUF GITHUB")
+UI_TEXT(SET_HUB_SENSORS, 0,
+    "CURRENT, ANGLE, PHASE TAP",
+    "STROM, WINKEL, PHASENABGRIFF")
 UI_TEXT(SET_HUB_FILES, 0,
     "FOLDERS AND FILES",
     "ORDNER UND DATEIEN")
 /* INTERFACES' section headings, in the order of its rows.  A heading is
  * drawn in a list row of 776px, 16px a character less the margins. */
-UI_TEXT(SET_HD_I2C, 40,
-    "I2C BUS",
-    "I2C-BUS")
-UI_TEXT(SET_HD_TAP, 40,
-    "PHASE TAP",
-    "PHASENABGRIFF")
-UI_TEXT(SET_HD_BALANCE, 40,
-    "BALANCE SENSORS",
-    "BALANCE SENSORS")
 UI_TEXT(SET_HD_SUPPLY, 40,
     "SUPPLY",
     "SUPPLY")
 UI_TEXT(SET_HD_PROG, 40,
     "PROG PORT",
     "PROG-PORT")
-UI_TEXT(SET_HD_INA_PARTS, 40,
-    "INA3221 PARTS",
-    "INA3221-BAUSTEINE")
-UI_TEXT(SET_HD_INA_PART, 40,
+/* SENSORS' left list: an entry's name in the body face, its state under it
+ * in 25 cells of the 8 x 16 face. */
+UI_TEXT(SENS_BUS, 16,
+    "SENSOR BUS",
+    "SENSORBUS")
+UI_TEXT(SET_HD_TAP, 16,
+    "PHASE TAP",
+    "PHASENABGRIFF")
+UI_TEXT(SET_HD_INA_PART, 16,
     "INA3221 0x%02X",
     "INA3221 0x%02X")
-UI_TEXT(SENS_ST_UNKNOWN, 56,
+UI_TEXT(SENS_ST_NO_PINS, 25,
+    "NO PINS SET",
+    "KEINE PINS GESETZT")
+UI_TEXT(SENS_ST_SOLDERED_PINS, 25,
+    "GPIO %d / %d SOLDERED",
+    "GPIO %d / %d VERLÖTET")
+UI_TEXT(SENS_ST_SAME_I3221, 25,
+    "SAME ADDRESS AS INA3221",
+    "ADRESSE WIE INA3221")
+UI_TEXT(SENS_ST_UNKNOWN, 25,
     "NOT READ YET",
     "NOCH NICHT GELESEN")
-UI_TEXT(SENS_ST_PENDING, 56,
+UI_TEXT(SENS_ST_PENDING, 25,
     "NOT WRITTEN YET",
     "NOCH NICHT GESCHRIEBEN")
-UI_TEXT(SENS_ST_SEARCHING, 56,
+UI_TEXT(SENS_ST_SEARCHING, 25,
     "LOOKING FOR THE PART",
     "SUCHT DEN BAUSTEIN")
-UI_TEXT(SENS_ST_ONLINE, 56,
+UI_TEXT(SENS_ST_ONLINE, 25,
     "ONLINE",
     "ONLINE")
-UI_TEXT(SENS_ST_SILENT, 56,
+UI_TEXT(SENS_ST_SILENT, 25,
     "NOT ANSWERING",
     "ANTWORTET NICHT")
-UI_TEXT(SENS_ST_WRONG, 56,
+UI_TEXT(SENS_ST_WRONG, 25,
     "ANOTHER ID ANSWERS",
     "ANDERE ID ANTWORTET")
-UI_TEXT(SENS_ST_REFUSED, 56,
+UI_TEXT(SENS_ST_REFUSED, 25,
     "NOT ACCEPTED BY THE IOMCU",
-    "VOM IOMCU NICHT ÜBERNOMMEN")
-UI_TEXT(SENS_ST_DARK, 56,
+    "VOM IOMCU ABGELEHNT")
+UI_TEXT(SENS_ST_DARK, 25,
     "EVERY CHANNEL OFF",
     "ALLE KANÄLE AUS")
-UI_TEXT(SENS_ST_SAME_ADDR, 56,
+UI_TEXT(SENS_ST_SAME_ADDR, 25,
     "INA228 ON THIS ADDRESS",
     "INA228 AUF DIESER ADRESSE")
-UI_TEXT(SENS_ST_OLD, 56,
-    "IOMCU OLDER THAN 0.22.0: NOT READ",
-    "IOMCU ÄLTER ALS 0.22.0: NICHT GELESEN")
-UI_TEXT(SENS_ST_NO_BUS, 56,
-    "SENSOR SDA OR SCL UNSET",
-    "SENSOR-SDA ODER -SCL NICHT FESTGELEGT")
-UI_TEXT(SET_SENS_OLD, 65,
-    "IOmcu older than 0.22.0: one INA3221, CH1 at 1kHz.",
-    "IOmcu älter als 0.22.0: ein INA3221, CH1 mit 1kHz.")
-UI_TEXT(SET_SENS_LIM_OLD, 65,
-    "IOmcu older than 0.22.0: no limit is judged.",
-    "IOmcu älter als 0.22.0: keine Grenze wird geprüft.")
-UI_TEXT(SET_SENS_DARK, 65,
-    "Every channel off. The IOmcu takes no such part.",
-    "Alle Kanäle aus. Der IOmcu nimmt so keinen Baustein.")
-UI_TEXT(SET_SENS_SAME_ADDR, 65,
-    "The INA228 uses this address. Neither is read.",
-    "Der INA228 nutzt diese Adresse. Keiner wird gelesen.")
+UI_TEXT(SENS_ST_OLD, 25,
+    "NOT READ, IOMCU < 0.22.0",
+    "UNGELESEN, IOMCU < 0.22.0")
+UI_TEXT(SENS_ST_NO_BUS, 25,
+    "NO BUS PINS",
+    "KEINE BUS-PINS")
+UI_TEXT(SET_SENS_OLD, 43,
+    "IOmcu before 0.22.0: one part, CH1 at 1kHz.",
+    "IOmcu vor 0.22.0: ein Teil, CH1 mit 1kHz.")
+UI_TEXT(SET_SENS_LIM_OLD, 43,
+    "IOmcu before 0.22.0: no limit is judged.",
+    "IOmcu vor 0.22.0: keine Grenze geprüft.")
+UI_TEXT(SET_SENS_DARK, 43,
+    "Every channel off. The IOmcu takes none.",
+    "Alle Kanäle aus. Der IOmcu nimmt keinen.")
+UI_TEXT(SET_SENS_SAME_ADDR, 43,
+    "INA228 on this address. Neither is read.",
+    "INA228 auf dieser Adresse. Keiner gelesen.")
 UI_TEXT(SENS_RAIL_A, 9,
     "RAIL A",
     "SCHIENE A")
@@ -1371,12 +1379,16 @@ UI_TEXT(SENS_RAIL_B, 9,
 UI_TEXT(SENS_PROG_5V, 9,
     "PROG 5V",
     "PROG 5V")
-UI_TEXT(SET_SENS_NO_BUS, 65,
-    "Sensor SDA or SCL unset. Set both on INTERFACES.",
-    "SDA oder SCL der Sensoren fehlt. Beide auf INTERFACES festlegen.")
+UI_TEXT(SET_SENS_NO_BUS, 43,
+    "No bus pins. Set them on SENSOR BUS.",
+    "Keine Bus-Pins. Unter SENSORBUS setzen.")
 UI_TEXT(SET_RESET, 0,
     "RESET CATEGORY",
     "KATEGORIE ZURÜCKSETZEN")
+/* RESET on SENSORS, with the selected entry's name. */
+UI_TEXT(SET_RESET_ONE, 32,
+    "RESET %s",
+    "%s ZURÜCKSETZEN")
 UI_TEXT(SET_SAVED, 0,
     "SAVED",
     "GESPEICHERT")
@@ -1389,11 +1401,11 @@ UI_TEXT(SET_NOT_SAVED, 26,
 UI_TEXT(SET_SAVE, 0,
     "SAVE",
     "SPEICHERN")
-/* SETUP > INTERFACES: the help line of a pin row the board solders (the
- * rbmod carrier); the row has no keys. */
-UI_TEXT(SET_PIN_SOLDERED, 0,
+/* The help line of a row the board solders (the rbmod carrier); the row has
+ * no keys. */
+UI_TEXT(SET_PIN_SOLDERED, 43,
     "Soldered on this board. Not a setting here.",
-    "Auf diesem Board verlötet. Hier keine Einstellung.")
+    "Auf dem Board verlötet. Keine Einstellung.")
 UI_TEXT(SET_UNHELD, 0,
     "Not accepted by the IOmcu.",
     "Vom IOmcu nicht übernommen.")
@@ -3637,8 +3649,8 @@ UI_TEXT(SV_DUT_NOTE, 58,
     "This name appears at the top of every test report.",
     "Dieser Name steht oben auf jedem Testbericht.")
 UI_TEXT(SV_ENC_NOTE_1, 58,
-    "AS5600 on or off: SETUP > INTERFACES.",
-    "AS5600 ein oder aus: SETUP > INTERFACES.")
+    "AS5600 on or off: SETUP > SENSORS.",
+    "AS5600 ein oder aus: SETUP > SENSORS.")
 UI_TEXT(SV_ENC_NOTE_2, 58,
     "Centre the servo, then tap ENC CENTRE.",
     "Stelle das Servo auf Mitte und tippe auf SENSOR-MITTE.")
@@ -3929,17 +3941,17 @@ UI_TEXT(ALERT_NO_SENSE_PAGE, 94,
     "IOmcu has no SENSE page. Current monitors cannot be read.",
     "IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.")
 UI_TEXT(ALERT_SENSE_PINS_UNSET, 94,
-    "Sensor SDA or SCL not set. Check SETUP > INTERFACES.",
-    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.")
+    "Sensor SDA or SCL not set. Check SETUP > SENSORS.",
+    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_SAME_ADDR, 94,
-    "INA228 and INA3221 both use 0x%02X. Check SETUP > INTERFACES.",
-    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > INTERFACES prüfen.")
+    "INA228 and INA3221 both use 0x%02X. Check SETUP > SENSORS.",
+    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_PINS, 94,
-    "Sensor pins GPIO %d/GPIO %d rejected. Check SETUP > INTERFACES.",
-    "Sensor-Pins GPIO %d/GPIO %d abgelehnt. SETUP > INTERFACES prüfen.")
+    "Sensor pins GPIO %d/GPIO %d rejected. Check SETUP > SENSORS.",
+    "Sensor-Pins GPIO %d/GPIO %d abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_I228_SETUP, 94,
-    "INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.",
-    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.")
+    "INA228 shunt or maximum current rejected. Check SETUP > SENSORS.",
+    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_I3221_SETUP, 94,
     "INA3221 settings rejected. Check SETUP > SENSORS.",
     "INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.")
@@ -4001,11 +4013,11 @@ UI_TEXT(ALERT_NO_TONE_PAGE, 94,
     "IOmcu has no TONE page. Phase tap not read.",
     "IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.")
 UI_TEXT(ALERT_TONE_PIN, 94,
-    "Phase tap on GPIO %u, %u to %uHz rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff an GPIO %u, %u bis %uHz abgelehnt. SETUP > INTERFACES prüfen.")
+    "Phase tap on GPIO %u, %u to %uHz rejected. Check SETUP > SENSORS.",
+    "Phasenabgriff an GPIO %u, %u bis %uHz abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_TONE_SETUP, 94,
-    "Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.",
-    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > INTERFACES prüfen.")
+    "Phase tap split, gap or periods rejected. Check SETUP > SENSORS.",
+    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > SENSORS prüfen.")
 UI_TEXT(ALERT_TONE_BUSY, 94,
     "Phase tap pin GPIO %u is in use. Capture not running.",
     "Pin GPIO %u für den Phasenabgriff ist belegt. Erfassung läuft nicht.")

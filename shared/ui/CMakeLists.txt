@@ -78,6 +78,7 @@ set(SRCS
     settings_draw.c
     settings_rows.c
     prog5v_box.c
+    sensors_pane.c
     sensors_rows.c
     outputs_screen.c
     outputs_port.c

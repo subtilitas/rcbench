@@ -75,6 +75,21 @@ static void scroll_by(int dy)
 static int show(setting_id_t id)
 {
     const setting_cat_t cat = settings_def(id)->cat;
+    if (cat == SET_CAT_SENSORS) {
+        /* A sensor enabled for its rows is the pose, not an edit under test. */
+        setting_id_t rows[SENS_ENTRY_ROWS_MAX];
+        const int e = sensors_pane_entry_of(id);
+        (void)sensors_pane_rows(e, rows, SENS_ENTRY_ROWS_MAX);
+        const bool pose = e != SENS_ENTRY_BUS && !settings_get_bool(rows[0]);
+        open_sensor(id);
+        if (pose) {
+            (void)settings_save();
+            s_save_calls = 0;
+            snap();
+        }
+    } else if (settings_screen_category() != (int)cat) {
+        open_category(cat);
+    }
     setting_id_t ids[64];
     const int n = settings_in_category(cat, ids, 64);
     int row = -1;
@@ -135,7 +150,7 @@ static void set_armed(bool armed)
 
 TEST_CASE(a_tap_on_a_value_opens_its_keypad)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     const setting_id_t id = SET_INA228_MAX_A;
     open_on(id);
     const ui_keypad_t *k = settings_screen_keypad();
@@ -161,7 +176,7 @@ TEST_CASE(a_tap_on_a_value_opens_its_keypad)
 
 TEST_CASE(a_tap_beside_the_value_opens_nothing)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     snap();
     /* The label, a switch's value, and a press that turns into a scroll. */
     tap(XL, show(SET_INA228_MAX_A));
@@ -193,7 +208,7 @@ TEST_CASE(a_tap_beside_the_value_opens_nothing)
 
 TEST_CASE(the_range_ends_are_taken_and_a_value_past_them_refused)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     const setting_id_t id = SET_INA228_MAX_A;
     open_on(id);
     type("1");
@@ -226,7 +241,7 @@ TEST_CASE(the_range_ends_are_taken_and_a_value_past_them_refused)
 
 TEST_CASE(a_digit_past_the_steps_decimals_is_not_typed)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     const setting_id_t id = SET_INA228_MAX_A;     /* steps of 0.1A */
     open_on(id);
     type("12.345");
@@ -247,7 +262,7 @@ TEST_CASE(a_digit_past_the_steps_decimals_is_not_typed)
 
 TEST_CASE(cancel_and_the_home_tag_change_nothing)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     snap();
     open_on(SET_INA228_UOHM);
     type("1234");
@@ -265,7 +280,7 @@ TEST_CASE(cancel_and_the_home_tag_change_nothing)
     type("999");
     tap(home_x(), home_y());
     CHECK(!settings_screen_keypad()->open);
-    CHECK_EQ(settings_screen_category(), (int)SET_CAT_IFACE);
+    CHECK_EQ(settings_screen_category(), (int)SET_CAT_SENSORS);
     CHECK_EQ(changed(), 0);
     CHECK(!settings_dirty());
     /* Leaving SETUP takes the keypad with it. */
@@ -278,7 +293,7 @@ TEST_CASE(cancel_and_the_home_tag_change_nothing)
 
 TEST_CASE(nothing_under_the_keypad_presses)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     snap();
     open_on(SET_INA228_UOHM);
     /* The first row's "+" key lies under the keypad's title, and a row's
@@ -375,7 +390,7 @@ TEST_CASE(a_shunt_between_off_and_five_milliohm_is_refused)
 
 TEST_CASE(a_pin_the_row_does_not_take_is_refused)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     /* Sensor SDA takes 0, 4, 6, 14, 16, 18, 20 and 26. */
     open_on(SET_SENSE_SDA);
     type("5");
@@ -449,7 +464,7 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
         key(UI_KEY_CANCEL);
         CHECK_EQ(settings_get_int(SET_INA_LIM(0)), 0);
 
-        list_of(SET_CAT_IFACE);
+        list_of(SET_CAT_SENSORS);
         CHECK_STR_EQ(refused_why(SET_SENSE_SDA, "5"), k_why[i].sda);
         key(UI_KEY_1);
         CHECK(!settings_screen_keypad()->refused);
@@ -465,7 +480,7 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
         CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
 
         /* Past the range: the range itself, no reason. */
-        list_of(SET_CAT_IFACE);
+        list_of(SET_CAT_SENSORS);
         CHECK_STR_EQ(refused_why(SET_SENSE_SDA, "48"), "");
         key(UI_KEY_CANCEL);
     }
@@ -653,7 +668,7 @@ static bool hold_one(setting_id_t id)
  * open when its row is held closes on the next frame with nothing set. */
 TEST_CASE(armed_steps_and_keypad_alike_and_a_held_row_refuses_both)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     set_armed(true);
     open_on(SET_INA228_UOHM);
     type("300");
@@ -686,7 +701,7 @@ TEST_CASE(armed_steps_and_keypad_alike_and_a_held_row_refuses_both)
  * stays. */
 TEST_CASE(a_lost_press_keeps_what_was_typed)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     open_on(SET_INA228_UOHM);
     type("12");
     const gfx_rect_t r = ui_keypad_key_rect(settings_screen_keypad(),
@@ -727,23 +742,23 @@ TEST_CASE(a_shunt_takes_1000_0_and_refuses_1000_1)
 TEST_CASE(a_pin_from_minus_1_takes_0_on_an_unsigned_keypad)
 {
     list_of(SET_CAT_IFACE);
-    CHECK_EQ(settings_get_int(SET_OPTICAL_PIN), -1);
-    open_on(SET_OPTICAL_PIN);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
+    open_on(SET_PDMINI_TX);
     CHECK(!settings_screen_keypad()->sign);
     CHECK_NEAR(settings_screen_keypad()->min, -1.0f, 1e-6f);
     CHECK_EQ(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_SIGN).w, 0);
     type("0");
     key(UI_KEY_OK);
-    CHECK_EQ(settings_get_int(SET_OPTICAL_PIN), 0);
-    tap(MINUS_X + BTN_W / 2, show(SET_OPTICAL_PIN));     /* back to -1 */
-    CHECK_EQ(settings_get_int(SET_OPTICAL_PIN), -1);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 0);
+    tap(MINUS_X + BTN_W / 2, show(SET_PDMINI_TX));     /* back to -1 */
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
 }
 
 /* STOP in the band works over the keypad, and the keypad stays as it was:
  * open, what was typed kept, nothing set. */
 TEST_CASE(stop_over_the_keypad_stops_and_sets_nothing)
 {
-    list_of(SET_CAT_IFACE);
+    list_of(SET_CAT_SENSORS);
     snap();
     open_on(SET_INA228_UOHM);
     type("123");

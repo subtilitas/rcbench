@@ -215,10 +215,10 @@ count is described [below](#the-stack-light).
 
 ![A run counting item groups, a beep under way](img/motor-stick-run.png)
 
-With the phase tap enabled on SETUP under INTERFACES the page adds a
+With the phase tap enabled on SETUP under SENSORS the page adds a
 read-only readout of the tap under the current line: its state, the pitch of
 its last 8ms window, the counts of beeps lost and beeps not read, and the
-last four beeps with their number, length in ms and pitch in Hz ([the tap's rows and states](Screens.md#interfaces-the-phase-tap)). The
+last four beeps with their number, length in ms and pitch in Hz ([the tap's rows and states](Screens.md#sensors-the-phase-tap)). The
 run counts its beeps from the supply current; it does not use the
 tap's beeps.
 

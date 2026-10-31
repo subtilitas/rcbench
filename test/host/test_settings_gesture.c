@@ -50,7 +50,10 @@ static int swipe_matrix(const int *cols, int ncols, int *unscrolled,
                         int y1 = y0 + dir * 150;
                         if (y1 < 2)   { y1 = 2; }
                         if (y1 > H - 1) { y1 = H - 1; }
-                        swipe(cols[c], y0, cols[c], y1, speeds[sp]);
+                        /* On SENSORS the rows start right of the left list. */
+                        const int x = (cat == SET_CAT_SENSORS && cols[c] < 240)
+                                          ? 244 : cols[c];
+                        swipe(x, y0, x, y1, speeds[sp]);
                         idle(0.5f);
                         ++*total;
                         bad += (changed() != 0) ? 1 : 0;
@@ -143,18 +146,15 @@ TEST_CASE(every_list_at_its_end_shows_its_last_row_whole)
 }
 
 /* What a tester's panel showed: INA3221 shunt 99.9mOhm and Sensor SDA 15
- * after the INTERFACES list was scrolled twice from its bottom row.  The
- * INA3221's rows are SENSORS' now; the INA228's shunt stands in. */
+ * after the list was scrolled twice from its bottom row. */
 TEST_CASE(two_scrolls_from_the_bottom_row_leave_the_shunt_and_the_pins)
 {
-    gesture_screen(SET_CAT_IFACE);
-    CHECK_EQ(row_of(SET_INA228_UOHM), 2);
-    CHECK_EQ(row_of(SET_SENSE_SDA), 4);
+    gesture_screen(SET_CAT_SENSORS);
     swipe(XM, LIST_Y + LIST_H - 8, XM, LIST_Y + LIST_H - 132, 4);
     CHECK_EQ(settings_screen_scroll(NULL), 116);
     swipe(XM, LIST_Y + LIST_H - 8, XM, LIST_Y + LIST_H - 132, 4);
     CHECK_EQ(settings_screen_scroll(NULL), 232);
-    CHECK_EQ(settings_get_int(SET_INA228_UOHM), 200);
+    CHECK(settings_get(SET_INA_SH(0)) == 100.0f);
     CHECK_EQ(settings_get_int(SET_SENSE_SDA), 16);
     CHECK_EQ(changed(), 0);
 }
@@ -175,6 +175,9 @@ TEST_CASE(a_tap_steps_each_kind_of_key_once)
             seen[d->type] = true;
             for (int by = -1; by <= 1; by += 2) {
                 gesture_screen((setting_cat_t)cat);
+                if (cat == SET_CAT_SENSORS) {
+                    open_sensor(ids[row]);
+                }
                 /* Off both ends, so either key has a step to make. */
                 if (d->type == SET_TYPE_INT || d->type == SET_TYPE_FLOAT) {
                     settings_set(ids[row], d->min + 3.0f * d->step);
@@ -207,7 +210,7 @@ TEST_CASE(a_tap_steps_each_kind_of_key_once)
  * 2.25s.  5 steps after 1.00s and 38 after 3.00s. */
 TEST_CASE(a_held_key_repeats_five_times_in_one_second_and_38_in_three)
 {
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     const int y = row_y(row_of(KEY_ID));
     finger(FEED_LONE, XM, y);                 /* its tick: 0.01s held */
     idle(0.43f);
@@ -229,7 +232,7 @@ TEST_CASE(a_held_key_repeats_five_times_in_one_second_and_38_in_three)
  * crossing of the delay adds. */
 TEST_CASE(a_stalled_frame_adds_at_most_the_capped_steps_to_a_held_key)
 {
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     feed_tick_per_report(0.0f);
     const int y = row_y(row_of(KEY_ID));
     finger(FEED_LONE, XP, y);
@@ -267,7 +270,7 @@ TEST_CASE(the_repeat_starts_at_450_ms)
         { 0.449f, 0 }, { 0.450f, 1 }, { 0.451f, 1 },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-        gesture_screen(SET_CAT_IFACE);
+        gesture_screen(SET_CAT_SENSORS);
         feed_tick_per_report(0.0f);
         const int y = row_y(row_of(KEY_ID));
         finger(FEED_LONE, XP, y);
@@ -280,7 +283,7 @@ TEST_CASE(the_repeat_starts_at_450_ms)
     }
     /* In 10ms frames: 44 are short of it and 46 are past it. */
     for (int frames = 44; frames <= 46; frames += 2) {
-        gesture_screen(SET_CAT_IFACE);
+        gesture_screen(SET_CAT_SENSORS);
         feed_tick_per_report(0.0f);
         finger(FEED_LONE, XP, row_y(row_of(KEY_ID)));
         for (int f = 0; f < frames; ++f) {
@@ -300,7 +303,7 @@ TEST_CASE(the_repeat_starts_at_450_ms)
 TEST_CASE(a_hold_that_turns_into_a_swipe_stops_repeating_at_the_slop)
 {
     for (int dir = -1; dir <= 1; dir += 2) {
-        gesture_screen(SET_CAT_IFACE);
+        gesture_screen(SET_CAT_SENSORS);
         const int y = row_y(row_of(KEY_ID));
         finger(FEED_LONE, XM, y);
         idle(0.99f);
@@ -335,7 +338,7 @@ TEST_CASE(a_tap_may_move_8_px_and_not_9)
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         for (int stride = 1; stride <= 9; stride += 8) {
-            gesture_screen(SET_CAT_IFACE);
+            gesture_screen(SET_CAT_SENSORS);
             const int y = row_y(row_of(KEY_ID));
             finger(FEED_LONE, XP, y);
             /* Px by px, and in one report. */
@@ -352,7 +355,7 @@ TEST_CASE(a_tap_may_move_8_px_and_not_9)
  * while the finger rests where it went. */
 TEST_CASE(a_press_that_slides_off_a_key_sideways_steps_nothing)
 {
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     const int y = row_y(row_of(KEY_ID));
 
     /* 300px left onto the label, and held there. */
@@ -393,11 +396,11 @@ TEST_CASE(a_press_that_slides_off_a_key_sideways_steps_nothing)
  * into the gap is not a tap. */
 TEST_CASE(the_gap_between_two_rows_is_no_key)
 {
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_IFACE, ids, 64);
-    const int row = 2;
-    const int top = LIST_Y + settings_screen_row_of(SET_CAT_IFACE, row)
+    settings_in_category(SET_CAT_SENSORS, ids, 64);
+    const int row = row_of(KEY_ID);
+    const int top = LIST_Y + settings_screen_row_of(SET_CAT_SENSORS, row)
                              * ROW_PITCH;
     for (int y = top + ROW_H; y < top + ROW_PITCH; ++y) {
         feed_tap(FEED_LONE, XM, y);
@@ -422,7 +425,7 @@ TEST_CASE(the_gap_between_two_rows_is_no_key)
  * nothing. */
 TEST_CASE(a_second_finger_does_nothing_on_the_setup_screen)
 {
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     const int y = row_y(row_of(KEY_ID));
 
     /* The first scrolls on the label; the second rests 2s on a key. */
@@ -441,7 +444,7 @@ TEST_CASE(a_second_finger_does_nothing_on_the_setup_screen)
     CHECK_EQ(changed(), 0);
 
     /* The first rests on the label; the second taps a key, then holds it. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(0, XL, y);
     finger(1, XM, y);
     lift(1);
@@ -454,7 +457,7 @@ TEST_CASE(a_second_finger_does_nothing_on_the_setup_screen)
 
     /* The first holds a key; the second's tap elsewhere does not end the
      * repeat and steps nothing of its own. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(0, XM, y);
     idle(0.99f);
     CHECK_EQ(steps_off(KEY_ID), -5);
@@ -478,7 +481,7 @@ TEST_CASE(a_second_finger_does_nothing_on_the_setup_screen)
 TEST_CASE(a_contact_that_drops_out_of_a_swipe_changes_no_value)
 {
     /* On the label, and it returns on a key column. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(FEED_LONE, XL, LIST_Y + LIST_H - 8);
     glide(FEED_LONE, XL, LIST_Y + 330, 9);
     lift(FEED_LONE);
@@ -489,7 +492,7 @@ TEST_CASE(a_contact_that_drops_out_of_a_swipe_changes_no_value)
     CHECK_EQ(changed(), 0);
 
     /* On a key column from the start. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(FEED_LONE, XM, LIST_Y + LIST_H - 8);
     glide(FEED_LONE, XM, LIST_Y + 330, 9);
     lift(FEED_LONE);
@@ -506,7 +509,7 @@ TEST_CASE(a_contact_that_drops_out_of_a_swipe_changes_no_value)
 TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
 {
     /* Down a key column, 140px a report, lifted on the column. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(FEED_LONE, XM, LIST_Y + 340);
     finger(FEED_LONE, XM, LIST_Y + 200);
     finger(FEED_LONE, XM, LIST_Y + 60);
@@ -516,7 +519,7 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
     CHECK_EQ(changed(), 0);
 
     /* From the label onto a key in one report, then a swipe. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(FEED_LONE, XM - 70, LIST_Y + 340);
     finger(FEED_LONE, XM, LIST_Y + 260);
     glide(FEED_LONE, XM, LIST_Y + 150, 9);
@@ -526,7 +529,7 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
 
     /* From the label onto a key in one report, lifted in the next: a DOWN
      * and an UP in one place, which is a tap but for the DOWN's flag. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(FEED_LONE, XL, LIST_Y + LIST_H - 8);
     finger(FEED_LONE, XM, LIST_Y + 236);
     lift(FEED_LONE);
@@ -544,8 +547,8 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
     CHECK_EQ(steps_off(KEY_ID), -1);
 }
 
-/* A jump's DOWN is a press on every control that is not a key of the
- * scrolling list: a category's tile pressed right after a touch elsewhere
+/* A jump's DOWN is a press on every control but a key of the scrolling list,
+ * RESET and DISCARD: a category's tile pressed right after a touch elsewhere
  * whose release frame went missing is still opened. */
 TEST_CASE(a_category_takes_the_press_the_tracker_made_for_a_jump)
 {
@@ -571,7 +574,7 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
 {
     /* Straight into the band in one report: the release is at the press.
      * The list's first row is a heading; the key is the first setting's. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     const int top = row_y(0) - ROW_H / 2 + 4;
     finger(FEED_LONE, XM, top);
     finger(FEED_LONE, XM, UI_BAND_H - 8);
@@ -583,7 +586,7 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
     CHECK_EQ(changed(), 0);
 
     /* 8px up inside the body first. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(FEED_LONE, XM, top + 8);
     finger(FEED_LONE, XM, top);
     finger(FEED_LONE, XM, UI_BAND_H - 8);
@@ -593,23 +596,21 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
     CHECK_EQ(changed(), 0);
 
     /* Held until it repeats, then into the band: the repeat ends there. */
-    gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XP, row_y(2));
+    gesture_screen(SET_CAT_SENSORS);
+    finger(FEED_LONE, XP, row_y(row_of(KEY_ID)));
     idle(0.99f);
-    setting_id_t ids[64];
-    settings_in_category(SET_CAT_IFACE, ids, 64);
-    const float held = settings_get(ids[2]);
-    CHECK(held != s_before[ids[2]]);
-    finger(FEED_LONE, XP, row_y(2) - 100);
+    const float held = settings_get(KEY_ID);
+    CHECK(held != s_before[KEY_ID]);
+    finger(FEED_LONE, XP, row_y(row_of(KEY_ID)) - 100);
     finger(FEED_LONE, XP, UI_BAND_H - 8);
     idle(3.0f);
     lift(FEED_LONE);
     idle(3.0f);
-    CHECK(settings_get(ids[2]) == held);
+    CHECK(settings_get(KEY_ID) == held);
 
     /* The same contact back in the body is the router's: it steps nothing.
      * The next one is a tap. */
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     finger(FEED_LONE, XM, top);
     finger(FEED_LONE, XM, UI_BAND_H - 8);
     finger(FEED_LONE, XM, top);
@@ -656,13 +657,13 @@ TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
  * right of "+" and outside the list. */
 TEST_CASE(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar)
 {
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     swipe(PLUS_X + BTN_W - 1, LIST_Y + LIST_H - 8, PLUS_X + BTN_W - 1,
           LIST_Y + LIST_H - 208, 9);
     CHECK_EQ(changed(), 0);
     CHECK_EQ(settings_screen_scroll(NULL), 200);
 
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     swipe(1008, LIST_Y + LIST_H - 8, 1008, LIST_Y + LIST_H - 208, 9);
     CHECK_EQ(changed(), 0);
     CHECK_EQ(settings_screen_scroll(NULL), 0);
@@ -672,7 +673,7 @@ TEST_CASE(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar)
  * nothing afterwards: no repeat, and the next touch is taken. */
 TEST_CASE(a_key_press_that_loses_its_release_stops_and_holds_nothing)
 {
-    gesture_screen(SET_CAT_IFACE);
+    gesture_screen(SET_CAT_SENSORS);
     const int y = row_y(row_of(KEY_ID));
     finger(0, XM, y);
     idle(0.99f);
@@ -693,7 +694,7 @@ TEST_CASE(a_key_press_that_loses_its_release_stops_and_holds_nothing)
     idle(2.0f);
     lift(0);
     CHECK_EQ(settings_screen_category(), -1);
-    feed_tap(1, tile_x(SET_CAT_IFACE), tile_y(SET_CAT_IFACE));
+    feed_tap(1, tile_x(SET_CAT_SENSORS), tile_y(SET_CAT_SENSORS));
     CHECK_EQ(steps_off(KEY_ID), -6);
     feed_tap(1, XM, y);
     CHECK_EQ(steps_off(KEY_ID), -7);

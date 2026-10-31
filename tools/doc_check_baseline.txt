@@ -3322,23 +3322,17 @@ shared/ui/include/prog_registry.h: warning: return type of member prog_view_even
 shared/ui/include/prog_registry.h: warning: return type of member prog_view_has_bar is not documented
 shared/ui/include/prog_registry.h: warning: return type of member prog_view_shown is not documented
 shared/ui/include/sensors_rows.h: warning: Member sensors_rows_state_color(int a) (function) of file sensors_rows.h is not documented.
-shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_heading are not documented
-shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_listed are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_meter are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_set_status are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_short are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_state are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_status are not documented
-shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_title are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_watcher are not documented
 shared/ui/include/sensors_rows.h: warning: parameters of member sensors_rows_why are not documented
-shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_heading is not documented
-shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_listed is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_meter is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_short is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_state is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_status is not documented
-shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_title is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_watcher is not documented
 shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_why is not documented
 shared/ui/include/servo_screen.h: warning: Member servo_screen(void) (function) of file servo_screen.h is not documented.
@@ -3394,10 +3388,8 @@ shared/ui/include/settings_screen.h: warning: Member settings_screen_invalidate(
 shared/ui/include/settings_screen.h: warning: parameters of member settings_hub_slot are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_help are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_opens are not documented
-shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_row_of are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_rows are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_set_hitec_rx are not documented
-shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_set_unheld are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_text_row are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_unheld are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_warn_line are not documented
@@ -3406,7 +3398,6 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_hub
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_category is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_help is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_opens is not documented
-shared/ui/include/settings_screen.h: warning: return type of member settings_screen_row_of is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_rows is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_text_row is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_textkey is not documented
@@ -4462,10 +4453,8 @@ shared/ui/servo_workbench_int.h: warning: Member wb_leave(void) (function) of fi
 shared/ui/servo_workbench_int.h: warning: Member wb_rest(const touch_event_t *evt) (function) of file servo_workbench_int.h is not documented.
 shared/ui/servo_workbench_int.h: warning: Member wb_task(void) (function) of file servo_workbench_int.h is not documented.
 shared/ui/settings_rows.c: warning: Compound heading_t is not documented.
-shared/ui/settings_rows.c: warning: Member MAX_ENTRIES (macro definition) of file settings_rows.c is not documented.
 shared/ui/settings_rows.c: warning: Member N_HEADINGS (macro definition) of file settings_rows.c is not documented.
 shared/ui/settings_rows.c: warning: Member entries(setting_cat_t cat, settings_row_t *out, int max) (function) of file settings_rows.c is not documented.
-shared/ui/settings_rows.c: warning: Member k_headings[] (variable) of file settings_rows.c is not documented.
 shared/ui/settings_rows.c: warning: Member text (variable) of struct heading_t is not documented.
 shared/ui/settings_screen.c: warning: Member change_line(int k, char *line, size_t n) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member drop_press(void) (function) of file settings_screen.c is not documented.

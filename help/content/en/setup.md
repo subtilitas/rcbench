@@ -15,9 +15,9 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 | Tile | Second line | What it opens |
 |---|---|---|
 | PANEL | `12 SETTINGS` | the list of PANEL |
-| INTERFACES | `23 SETTINGS` | the list of INTERFACES |
+| INTERFACES | `5 SETTINGS` | the list of [INTERFACES](setup-interfaces.md) |
 | SD CARD | `5 SETTINGS` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
-| SENSORS | `4 SETTINGS`, and 9 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
+| SENSORS | `CURRENT, ANGLE, PHASE TAP` | [Sensors](setup-sensors.md): the sensor bus, the INA228 and INA3221 current monitors, the AS5600 and the phase tap, a left list of 8 beside the selected one's rows |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board. On the rbmod carrier, whose pins are soldered, the tile opens [Layout](layout.md) and reads `CONNECTORS AND PINS` |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
@@ -40,7 +40,7 @@ The home tag at the top left climbs one level at a time:
 
 ![INTERFACES, everything saved](view:setup-interfaces)
 
-The list is 984px wide and shows 6 rows of 64px. Under it a strip, 48px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4px above the band an alert shows across the bottom, so an alert covers no key, row or button.
+The list is 984px wide (754px on SENSORS) and shows 6 rows of 64px. Under it a strip, 48px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4px above the band an alert shows across the bottom, so an alert covers no key, row or button.
 
 A row shows the setting, a help line and its value with its unit. A number has `-` and `+` keys; a switch or a choice has `<` and `>`.
 
@@ -50,7 +50,7 @@ A row shows the setting, a help line and its value with its unit. A number has `
 - **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73% brightness is 75%. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit between 0 and 10mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `The other PD mini pin holds this GPIO` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
 - One finger at a time: a second finger does nothing while one presses or scrolls.
 
-A changed value is in force at once. RESET CATEGORY sets every value of the open category back to its default.
+A changed value is in force at once. RESET CATEGORY sets every value of the open category back to its default; on SENSORS `RESET INA228` does it for the selected entry alone.
 
 | Button | What it does |
 |---|---|
@@ -175,11 +175,11 @@ OK keeps the keyboard open, and the folder as it was, for a folder the card cann
 
 ## INTERFACES
 
-INTERFACES holds the INA228 current monitor, the sensor bus's pins, the output encoder, the phase tap, the vibration sensor, the optical tacho, the PD mini and the Hitec receive mode. The list has five headings: I2C BUS, PHASE TAP, BALANCE SENSORS, SUPPLY and PROG PORT. [Interfaces](setup-interfaces.md) describes them.
+INTERFACES holds the PD mini and the Hitec receive mode, under the headings SUPPLY and PROG PORT. [Interfaces](setup-interfaces.md) describes them.
 
 ## SENSORS
 
-SENSORS holds up to four INA3221 current monitors: which are fitted, each channel's shunt and what each channel measures. [Sensors](setup-sensors.md) describes them.
+SENSORS holds every device the IOmcu reads, an entry each in a list on the left: the sensor bus, the INA228, the four INA3221, the AS5600 and the phase tap. [Sensors](setup-sensors.md) describes them.
 
 ## Related pages
 

@@ -802,7 +802,7 @@ bis 0,342A.
 ### Der Ausgangsencoder
 
 Ein magnetischer Winkelsensor AS5600 auf der Ausgangswelle des Servos, in
-SETUP, INTERFACES unter AS5600 eingestellt (Standard AUS) und vom IOmcu
+SETUP, SENSORS unter AS5600 eingestellt (Standard AUS) und vom IOmcu
 gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
@@ -1224,8 +1224,8 @@ erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 ## Voraussetzungen
 
 Die Strommessung an der Servoschiene. Die Endlagensuche liest den
-INA3221-Kanal, der das Ziel des Testers überwacht, verdrahtet in SETUP
-INTERFACES und bestückt in SETUP > SENSORS, und sonst nichts. Der
+INA3221-Kanal, der das Ziel des Testers überwacht, verdrahtet und
+bestückt in SETUP > SENSORS, und sonst nichts. Der
 Abgleich braucht einen Sensor über das Paar der Ausgänge, der nicht bestückt
 ist. Der automatische Test liest den INA3221 oder den PD mini, oder läuft am
 Netzteilmodell des Panels. Das Programmieren von LEFT ANGLE und RIGHT ANGLE

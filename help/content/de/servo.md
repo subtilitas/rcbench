@@ -260,4 +260,5 @@ Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS`, geschrieben unabhäng
 
 - [Servo-Optionen](servo-settings.md): Typ, Frame Rate, Pulse, der Sweep, die Optionen jedes Laufs und das Ziel.
 - [Servo-Programmierer](servo-programmer.md): die Zeile auf PROGRAMMIEREN für KST- und Chaservo-Servos.
-- [Netzteil](supply.md) und [Anschlüsse](setup-interfaces.md): der PD mini, der INA3221 und der AS5600.
+- [Netzteil](supply.md) und [Anschlüsse](setup-interfaces.md): der PD mini.
+- [Sensoren](setup-sensors.md): der INA3221 und der AS5600.
