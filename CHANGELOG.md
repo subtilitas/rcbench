@@ -4,35 +4,26 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
-## Unreleased
+## 0.23.4 - 2026-10-31
 
-### Changed
+0.23.4 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.3 does; an ESP32-S3 panel stays on the 0.22 line and
+is not offered it. The link protocol is 4.33, as in 0.23.3. The assets are
+`rcbench-panel-p4-v0.23.4.zip`, `rcbench-panel-p4-v0.23.4.bin`,
+`rcbench-iomcu-v0.23.4.zip`, `rcbench-iomcu-rbmod-v0.23.4.zip` and
+`SHA256SUMS`.
 
-- WI-FI has its own tile on SETUP's hub, in the second row after SD CARD: PANEL,
-  SENSORS, OUTPUTS / SD CARD, WI-FI, UPDATES; the carrier adds LAYOUT. Its home
-  tag returns to SETUP, or to what opened it: LOGS' WI-FI button, restored in
-  LOGS' footer, or UPDATES' button. PANEL UPDATE's CLOSE after a failed upload's
-  install goes there too.
-- The LOGS tile's strip is LOGS | FILES, two tabs of 499px. WI-FI draws no strip:
-  its buttons and card start at body y 16, its radio-on rows are 56px from y 16.
-- FILES and the Wi-Fi page: a folder of the bench takes DELETE while it is
-  empty, so a folder NEW made can be removed. RENAME and MOVE stay refused.
-  The bench makes its folder again before it next writes there.
-- The Wi-Fi page's PUT compares `If-Match` and `If-None-Match` before its body
-  is read and again directly before the write.
-- UPLOAD's REPLACE asks `GET /api/info` with `etag=1` for the ETag; the file no
-  longer crosses the network, and a file that is not text is compared too.
-- A write on the Wi-Fi page that asks for the access code goes out again once
-  the code is taken, without a page load. An answer after CANCEL sends nothing.
+A bench on 0.23.3 gets 0.23.4 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers the IOmcu's update over CAN (Controller Area Network)
+when the IOmcu runs another build. A new bench loads both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
 
-### Fixed
-
-- A request the Wi-Fi page refuses before its body answers with its status and
-  JSON and closes cleanly: the bytes still arriving are read and dropped, up
-  to 10s, and the client no longer sees a reset connection.
-- A form over 1,024B is answered `FORM_TOO_LARGE`, with the form's limit in its
-  text, in place of the file's.
-- WI-FI's line says `1 write so far`, `bisher 1 Schreibvorgang`, for one write.
+The entries below cover the 15 pull requests merged since v0.23.3: #668 and
+#670 to #683.
 
 ### Added
 
@@ -50,17 +41,6 @@ history is in git.
   holds SERVO TESTER.
 - SERVO > SETTINGS > OUTPUT names the port SERVO TESTER is set to and its home
   OUTPUTS, read-only.
-- SETUP's PANEL and SD CARD tiles name their content in place of a count. TEST's
-  run cards are 188px tall, 12px less, and their START holds 48px, 8px less.
-- UI texts name one tile at most: alerts read `Check SENSORS.`, and MOTOR &
-  ESC's say TARGET, which opens OUTPUTS in one tap. Kept paths are the supply
-  question's row, Hitec's checksum hint and the browser's texts.
-
-- The LOGS tile holds LOGS, FILES and WI-FI under one strip of three tabs, on
-  each screen's first level. The home tag of each leads to the menu. SETUP's
-  WI-FI and FILES tiles and LOGS' WI-FI and FILES footer buttons are gone, so
-  SETUP's hub has 2 free slots. LOGS shows 6 file rows, FILES 5 a pane. A tab
-  that leaves WI-FI switches the radio off, as the home tag does.
 - SETUP > SENSORS is a split pane: a left list of 8 entries (SENSOR BUS, INA228,
   INA3221 0x40 to 0x43, AS5600, PHASE TAP) with each entry's state under its
   name, and the selected entry's rows beside it. A sensor's rows appear when it
@@ -92,6 +72,30 @@ history is in git.
 
 ### Changed
 
+- WI-FI has its own tile on SETUP's hub, in the second row after SD CARD: PANEL,
+  SENSORS, OUTPUTS / SD CARD, WI-FI, UPDATES; the carrier adds LAYOUT. 3 slots
+  stay free, 2 on the carrier. Its home tag returns to SETUP, or to what opened
+  it: LOGS' WI-FI button, in LOGS' footer, or UPDATES' button. PANEL UPDATE's
+  CLOSE after a failed upload's install goes there too.
+- The LOGS tile holds LOGS and FILES under one strip of two tabs of 499px, on
+  each screen's first level. The home tag of each leads to the menu. LOGS shows
+  6 file rows, FILES 5 a pane. WI-FI draws no strip: its buttons and card start
+  at body y 16, its radio-on rows are 56px from y 16. LOGS' footer holds
+  RESCAN and WI-FI; FILES has no WI-FI button.
+- FILES and the Wi-Fi page: a folder of the bench takes DELETE while it is
+  empty, so a folder NEW made can be removed. RENAME and MOVE stay refused.
+  The bench makes its folder again before it next writes there.
+- The Wi-Fi page's PUT compares `If-Match` and `If-None-Match` before its body
+  is read and again directly before the write.
+- UPLOAD's REPLACE asks `GET /api/info` with `etag=1` for the ETag; the file does
+  not cross the network, and a file that is not text is compared too.
+- A write on the Wi-Fi page that asks for the access code goes out again once
+  the code is taken, without a page load. An answer after CANCEL sends nothing.
+- SETUP's PANEL and SD CARD tiles name their content in place of a count. TEST's
+  run cards are 188px tall, 12px less, and their START holds 48px, 8px less.
+- UI texts name one tile at most: alerts read `Check SENSORS.`, and MOTOR &
+  ESC's say TARGET, which opens OUTPUTS in one tap. Kept paths are the supply
+  question's row, Hitec's checksum hint and the browser's texts.
 - SETUP's INTERFACES tile goes. The PD mini's enable, TX, RX and baud move to a
   PD MINI tab on SUPPLY > SETTINGS, beside LIMITS: a change applies at once and
   is saved when the bench is idle, and LIMITS' reset leaves them. They take no
@@ -105,9 +109,9 @@ history is in git.
   board with a drawing or a shape shows the board as the pin control, the PROG
   PORT rows in the column beside it, LAST WRITE right of the protocol list and
   UNBIND ALL PINS under IN USE. A board with neither, and the rbmod carrier,
-  show the pin grid. The carrier keeps its LAYOUT tile, now the last one. The
+  show the pin grid. The carrier keeps its LAYOUT tile, the last one. The
   cat stays on the board view: a cat the entry's column covers moves to the
-  other spot. TARGET rows open the screen on their entry as before.
+  other spot. TARGET rows open the screen on their entry.
 - The rows of the INA228, the sensor bus, the AS5600 and the phase tap move from
   SETUP > INTERFACES to SENSORS; their stored keys stay and a panel's values load
   unchanged. Vibration and
@@ -126,6 +130,12 @@ history is in git.
 
 ### Fixed
 
+- A request the Wi-Fi page refuses before its body answers with its status and
+  JSON and closes cleanly: the bytes still arriving are read and dropped, up
+  to 10s, and the client sees no reset connection.
+- A form over 1,024B is answered `FORM_TOO_LARGE`, with the form's limit in its
+  text, in place of the file's.
+- WI-FI's line says `1 write so far`, `bisher 1 Schreibvorgang`, for one write.
 - A shunt or maximum edited on SETUP > SENSORS with the INA3221 parts on SENSE_MAP
   reaches the IOmcu. The panel takes the INA228 alone off for the frame. The
   frame that took both monitors off changed the map's mirror bit, which the
@@ -153,24 +163,18 @@ history is in git.
   question records no decline, and the next link-up's check offers again.
   A CANCEL on a question whose offer a newer link-up has replaced declines
   nothing, and the question shows the new offer.
-
-### Fixed
-
-- A cold start of panel and IOmcu from one supply no longer shows CAN BUS
-  FAULT for a working link. The IOmcu opens CAN after its supply boot-off,
-  up to 3500ms when the PD mini starts at the same moment, and the panel's
-  1200ms echo test ended before that with no node on the bus. The panel now
-  asks the IOmcu for its status for up to 5000ms and starts the test at the
-  first answer. `bus_err` on the bus-fault screen counts the test's bus
-  errors only.
-- The CAN BUS FAULT screen's acknowledgement no longer fills by itself. A
-  finger that held it and lifted after the screen closed stayed pressed in
-  the screen's record, and the next fault, such as a pulled CAN cable,
-  acknowledged itself after 2s with nobody touching. Leaving the screen
-  drops the press.
+- A cold start of panel and IOmcu from one supply shows no CAN BUS FAULT for a
+  working link. The IOmcu opens CAN after its supply boot-off, up to 3500ms
+  when the PD mini starts at the same moment. The panel asks the IOmcu for its
+  status for up to 5000ms and starts the echo test, 1200ms, at the first
+  answer. `bus_err` on the bus-fault screen counts the test's bus errors only.
+- The CAN BUS FAULT screen's acknowledgement does not fill by itself. Leaving
+  the screen drops a press that is still held, so the next fault, such as a
+  pulled CAN cable, waits for a finger; a held press would acknowledge it
+  after 2s.
 - STOP clears a hold button's amber hint on the alert band in the frame of
   the press, and so do a new FAULT code and a switch from ARMED to SAFE.
-  The hint stayed for its 4s before. An alert is left as it is.
+  An alert is left as it is.
 - The screen guide's PREV and NEXT keep one place on every page: in the
   band, in the home tag's place, from x 8 to 264. A second tap at the
   spot of NEXT turns the next page instead of landing on a tile and
