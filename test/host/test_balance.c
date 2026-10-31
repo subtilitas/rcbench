@@ -236,8 +236,10 @@ TEST_CASE(a_tap_on_the_blade_count_opens_its_keypad)
     tap(BLADE_UP_X, BLADE_Y);
     CHECK(!balance_screen_keypad()->open);
     CHECK_EQ(balance_screen_blades(), 3);
+    CHECK(!balance_screen()->covered());
     tap_count();
     const ui_keypad_t *k = balance_screen_keypad();
+    CHECK(balance_screen()->covered());
     CHECK(k->open);
     CHECK_STR_EQ(k->title, TR(BAL_BLADES));
     CHECK_NEAR(k->min, 2.0f, 1e-6f);

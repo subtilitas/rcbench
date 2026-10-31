@@ -114,6 +114,7 @@ is taken in a gap ahead of the save that needs it.
 | Wall clock and time zone | built and host-tested (`shared/clock/wall_clock.c`, `test_wall_clock`): the panel board has no RTC (real-time clock) chip, so the clock starts unset at each power-on and a software restart keeps it. Each join of the home network asks `pool.ntp.org` once, for at most 30000ms (`firmware/panel/components/wifi_access/wifi_ntp.c`); a join that ends for OFF, its release check's own end or the idle time-out while the request asks keeps the radio up for it, 30000ms from the request at most, and every other end takes the radio down at once (`wa_lingers()`, `wall_ntp_holds()`). FAT stamps are local time at the write and do not move with a later zone change. SETUP > PANEL's Time zone (10 zones, BERLIN by default) applies to FatFs's stamps, FILES INFO, the Wi-Fi page and the ZIP file; a 1980 stamp reads `not known` on INFO and empty on the page ([Building](docs/Building.md#the-panels-clock)) |
 | Shell: band, router, splash, menu, simulation watermark | built; the router repaints the band in a framebuffer only when what it shows changes there, and every frame over a simulated bench (`ui_band_key()`, `test_frame_work`) |
 | Screen guide | built and tested on the host (`shared/ui/ui_help.c`, the router's guide in `ui_router.c`; `test_help_router`, `test_help_pages`): "?" in the band opens numbered marks and a dock with up to 5 controls a page, 3 rows each. The menu has 3 pages; the other screens have none yet. PREV and NEXT stand in the band, in the home tag's place, the same on every page. |
+| Screenshot | built and tested on the host (`shared/ui/ui_shot.c`, `shot_gate.c`, `shot_hold.c`, `shared/files/png_enc.c`, `shot_file.c`; `test_shot`, `test_shot_popup`, `test_shot_file`, `test_png_enc`, `png_enc_check` decodes with Python's zlib); `firmware/panel/main/panel_shot.c` not host-tested. A 1000ms hold on the band's empty part takes the frame at once in any bench state; the popup waits for `shot_gate()`. Not run on a panel: the copy's time, a save's time and size on a card. [Screenshot](docs/Screens.md#screenshot) |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the IOmcu's control page at every 50ms poll while the link is up; switching to ARMED writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel SAFE. The throttle changes only while ARMED: while SAFE, the slider, its `-1` and `+1` steps and the rotary knob are refused and the value is 0%, which every switch to SAFE returns it to; both bench screens read the value's state (OFF, ARMING, LIVE, LEAVING) from `ui_value_gate.h` (`test_motor_arm`, `test_value_state`; host suite only) |
 | Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to an IOmcu speaking protocol 4.1, and a sweep (square, sine or triangle, run by the IOmcu) to one speaking 4.2, which PAUSE holds (the button then reads PAUSED) and a tap on PAUSED carries on from the phase it was held at on an IOmcu speaking 4.6 (`LINK_SV_RESUME`), and starts over from the curve's beginning, with an alert, on an older one or one that refuses; SPEED's row reads SPEED LIMITS THE SWEEP while SPEED is slower than the curve's fastest change. The screen is a workbench (`ui_workbench.h`, `servo_workbench.c`): a strip with LIVE, TEST, PROGRAM and SETTINGS, a tile opening LIVE, each task keeping its page for the session, PROGRAM listing the programmers from one table (`prog_registry.h`: a row each, dimmed with its reason when the IOmcu does not report its capability, two rows on one port exclusive, SEARCH over 9 rows and headings over 8 shown; `test_prog_registry`) whose KST and Chaservo row opens that programmer one level down, and an output card on every task whose TARGET row (`ui_target_row.h`) names the target as `protocol pins` and opens the choice OUTPUTS / PROG PORT, locked while ARMED, during a sweep or a run, and while the programmer holds the port (`test_workbench`, `test_servo_workbench`). SETTINGS sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session on its OUTPUT page, and SWEEP's curve and the device under test in NVS; each run's settings open from its card on TEST, and SUPPLY's caps show there read-only; a heli type or a rate above 60Hz is applied only through a warning held for 2s, and every restart is STANDARD PWM at 50Hz. The right card shows the servo rail as its meter reads it (`servo_source.h`), in the CURRENT row, on the line over the plot and in the plot: CH1's 50ms windows under the name `INA3221 CH1` while the INA3221 is the meter, the supply's samples under `PD MINI` otherwise. The PD mini's samples show when SETUP enables it, `supply_sim_t`'s with a SIMULATED pill if not. A current is signed and shown in hundredths of an amp, a window with a sample at an end of the range in the warning colour, a reading that did not arrive as dashes; the row's value is repainted by itself when its digits or colour change (`test_servo_meter`; host suite only). START TEST on its card on TEST runs the automatic test (`shared/servo/servo_test.c`): the supply stepped through 4.8 and 6.0V, and 7.4 and 8.4V with HV SERVO on (session only, through the HV warning's 2s hold), idle, moving and holding current and the travel time at each, a brown-out walk from 5.0V down in 0.2V steps, and `ATESTnnn.CSV` and `ATESTnnn.TXT` written to `USER/LOGS` by the `runlog` task. A run reads one meter from its start to its end, the servo rail's at START TEST: the PD mini's readings, or, while the INA3221 is the meter and the supply is the PD mini, CH1's 50ms windows (mean current, the highest and lowest 1ms sample, the bus voltage at the load side of the shunt and its lowest sample), with the supply read for its state only (`test_servo_test_win` and `test_servo_test_win_read` with windows given by hand, `test_servo_test_win_chain` through the modelled INA3221, the IOmcu's schedule and pages, `sense_link` and `servo_source`). A run on the INA3221 ends ABORTED when the INA3221 stops being the meter or no window arrives for 200ms (`SERVO_TEST_WIN_STALE_MS`, 199, 200 and 201ms and the millis wrap in `test_servo_test_win`), and never goes on with the PD mini. Currents are compared by magnitude in whole mA; the supply in constant current for 1000ms ends a run whatever STALL AT is, and a STALL AT at or above the current limit or the INA3221's range is said on the automatic test's card and in the report. Movement is a reading max(0.020A, 3 x the idle readings' standard deviation) from the level before the command; a move with none is unseen, neither timed nor late, and a run with unseen moves and nothing failed reads NOT MEASURABLE. On the PD mini, whose readings lag about 0.3s and repeat, and on the INA3221's windows, from which the panel times a move to 50ms, every travel time is an upper bound and TRAVEL TIME is reported, not checked. STOP, a switch to SAFE, link loss, the supply and the operator end a run with the output off and a report marked ABORTED. A position is taken only while ARMED: while SAFE, the dial, the rotary knob, CENTRE and SWEEP are refused and the value shown is the one last driven, and at every switch to ARMED the commanded value is the surface's rest, the midpoint of the channel's endpoints; RELEASE while ARMED sets it to that rest as well (`test_servo_arm`; host suite only). A drag on the dial goes through a one-pole filter of 20ms (`SV_DRAG_TAU_MS`), reckoned from each frame's length, which the horn and the pulse sent both follow; DISARM, STOP and SAFE end it at once and an ARM starts from the rest (`test_servo_drag`; host suite only). The horn is drawn in fractions of a pixel (`gfx_subpixel.h`, `test_gfx_subpixel`), and a horn that moves repaints the boxes around it and the numerals that follow it, not the two cards (`test_servo_repaint`: both buffers pixel for pixel the same as frames drawn whole). A repaint clipped to a box walks what lies in the box: the rasteriser skips a glyph, a digit or a stretch of arc outside the clip and walks the antialiased shapes row by row over their own pixels (`test_gfx_clip`). ARMED at rest draws what SAFE at rest draws plus the band's run clock once a second, a held position draws the grip's box, and a moving arm stays under 140,000 pixel visits a frame (`test_frame_work`; host suite only). |
 | Supply screen | built and tested on the host; the control task drives the PD mini through the SUPPLY page (`shared/bench/supply_link.c`) when SUPPLY's PD MINI tab enables it, and runs `supply_sim_t` otherwise. Set points shown beside their readings, a keypad, a SETTINGS overlay (caps, start values, current and voltage trips, the confirmation for live changes) kept in NVS, and a question before a set point changes a live output. Every stop, a trip, a lost ON and a supply that stops answering switch the output off; the supply is stepped and logged from `control_pump()`, so it keeps its 50ms cadence while an exchange waits. A supply run is logged with its own columns |
@@ -224,7 +225,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 379 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 383 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
@@ -239,7 +240,7 @@ The host suite is 379 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`, `test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_error`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_report_width`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_supply_hold`, `test_supply_boot`, `test_sense_page`, `test_sense_i228_setup`, `test_supply_link`, `test_supply_keep`, `test_sense_link`, `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`, `test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`, `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`, `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_match`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`, `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`, `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_prog_cycle`, `test_kst_prog_gone`, `test_kst_cycle_wait`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`, `test_hitec_session_move`, `test_hitec_live`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`, `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`, `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`, `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_reread`, `test_hitec_prog_reread`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`, `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`, `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_trial`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`, `test_wa_guard`, `test_wa_api`, `test_wa_api_file`, `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`, `test_i2c_txq_wire`, `test_fm_name` and `test_wall_clock`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_match`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`, `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`, `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_prog_cycle`, `test_kst_prog_gone`, `test_kst_cycle_wait`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`, `test_hitec_session_move`, `test_hitec_live`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`, `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`, `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`, `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_reread`, `test_hitec_prog_reread`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`, `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`, `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_trial`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`, `test_wa_guard`, `test_wa_api`, `test_wa_api_file`, `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`, `test_i2c_txq_wire`, `test_fm_name`, `test_png_enc`, `test_shot_file`, `test_shot`, `test_shot_popup` and `test_wall_clock`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -600,8 +601,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 672 committed screenshots to the current
-render, 336 in English and the same 336 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 678 committed screenshots to the current
+render, 339 in English and the same 339 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed). `image_slot.py`
 holds the panel image to the smaller of its two update slots.
@@ -647,27 +648,30 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 420 | 417 | 99.3% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 537 | 526 | 98.0% |
+| `shared/ui/ui_router.c` | 615 | 606 | 98.5% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
-| `shared/ui/overview_screen.c` | 138 | 133 | 96.4% |
-| `shared/ui/motor_screen.c` | 262 | 255 | 97.3% |
+| `shared/ui/overview_screen.c` | 147 | 142 | 96.6% |
+| `shared/ui/motor_screen.c` | 263 | 256 | 97.3% |
 | `shared/ui/motor_events.c` | 170 | 166 | 97.7% |
 | `shared/ui/motor_draw.c` | 359 | 347 | 96.7% |
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
-| `shared/ui/supply_screen.c` | 548 | 539 | 98.4% |
+| `shared/ui/supply_screen.c` | 549 | 540 | 98.4% |
 | `shared/ui/supply_events.c` | 379 | 377 | 99.5% |
 | `shared/ui/supply_draw.c` | 433 | 414 | 95.6% |
 | `shared/ui/supply_pdmini.c` | 167 | 161 | 96.4% |
 | `shared/ui/prog5v_box.c` | 192 | 191 | 99.5% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
-| `shared/ui/ui_textkey.c` | 521 | 507 | 97.3% |
+| `shared/ui/ui_textkey.c` | 523 | 509 | 97.3% |
+| `shared/ui/ui_shot.c` | 240 | 240 | 100.0% |
+| `shared/ui/shot_gate.c` | 56 | 56 | 100.0% |
+| `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
-| `shared/ui/servo_screen.c` | 372 | 363 | 97.6% |
+| `shared/ui/servo_screen.c` | 373 | 364 | 97.6% |
 | `shared/ui/servo_screen_sweep.c` | 482 | 479 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 386 | 382 | 99.0% |
 | `shared/ui/servo_screen_touch.c` | 310 | 296 | 95.5% |
@@ -676,7 +680,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_settings_draw.c` | 390 | 383 | 98.2% |
 | `shared/ui/servo_test_panel.c` | 435 | 423 | 97.2% |
 | `shared/ui/servo_limit_panel.c` | 417 | 375 | 89.9% |
-| `shared/ui/servo_workbench.c` | 360 | 358 | 99.4% |
+| `shared/ui/servo_workbench.c` | 362 | 360 | 99.5% |
 | `shared/ui/kst_panel.c` | 337 | 333 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 277 | 274 | 98.9% |
@@ -692,7 +696,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/hitec_panel_draw.c` | 239 | 239 | 100.0% |
 | `shared/ui/hitec_panel_file.c` | 208 | 208 | 100.0% |
 | `shared/ui/analyser_screen.c` | 257 | 256 | 99.6% |
-| `shared/ui/balance_screen.c` | 381 | 381 | 100.0% |
+| `shared/ui/balance_screen.c` | 382 | 382 | 100.0% |
 | `shared/ui/battery_screen.c` | 222 | 217 | 97.8% |
 | `shared/ui/prog_models.c` | 8 | 8 | 100.0% |
 | `shared/ui/esc_stick_pages.c` | 111 | 104 | 93.7% |
@@ -701,13 +705,13 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
 | `shared/ui/esc_stick_draw.c` | 467 | 451 | 96.6% |
 | `shared/ui/esc_stick_draw_run.c` | 572 | 517 | 90.4% |
-| `shared/ui/log_viewer_screen.c` | 324 | 314 | 96.9% |
+| `shared/ui/log_viewer_screen.c` | 325 | 315 | 96.9% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
 | `shared/ui/log_viewer_draw.c` | 417 | 404 | 96.9% |
 | `shared/ui/log_viewer_events.c` | 443 | 431 | 97.3% |
 | `shared/ui/logs_strip.c` | 31 | 29 | 93.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
-| `shared/ui/files_screen.c` | 690 | 665 | 96.4% |
+| `shared/ui/files_screen.c` | 691 | 666 | 96.4% |
 | `shared/ui/layout_screen.c` | 141 | 138 | 97.9% |
 | `shared/ui/files_draw.c` | 339 | 328 | 96.8% |
 | `shared/ui/files_events.c` | 222 | 221 | 99.5% |
@@ -715,18 +719,18 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 420 | 405 | 96.4% |
-| `shared/ui/settings_screen.c` | 549 | 543 | 98.9% |
+| `shared/ui/settings_screen.c` | 550 | 544 | 98.9% |
 | `shared/ui/settings_draw.c` | 229 | 223 | 97.4% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
 | `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
 | `shared/ui/sensors_rows.c` | 196 | 196 | 100.0% |
-| `shared/ui/outputs_screen.c` | 542 | 537 | 99.1% |
-| `shared/ui/outputs_view.c` | 56 | 56 | 100.0% |
+| `shared/ui/outputs_screen.c` | 543 | 538 | 99.1% |
+| `shared/ui/outputs_view.c` | 58 | 58 | 100.0% |
 | `shared/ui/outputs_port.c` | 192 | 191 | 99.5% |
 | `shared/ui/outputs_port_entry.c` | 366 | 361 | 98.6% |
 | `shared/ui/port_view.c` | 81 | 81 | 100.0% |
 | `shared/ui/port_mail.c` | 101 | 101 | 100.0% |
-| `shared/ui/picker_screen.c` | 323 | 319 | 98.8% |
+| `shared/ui/picker_screen.c` | 324 | 320 | 98.8% |
 | `shared/ui/picker_geometry.c` | 155 | 151 | 97.4% |
 | `shared/ui/picker_draw.c` | 330 | 328 | 99.4% |
 | `shared/ui/picker_cat.c` | 94 | 93 | 98.9% |
@@ -734,7 +738,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/picker_port.c` | 116 | 109 | 94.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 320 | 319 | 99.7% |
-| `shared/ui/wifi_screen.c` | 543 | 536 | 98.7% |
+| `shared/ui/wifi_screen.c` | 544 | 537 | 98.7% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 276 | 275 | 99.6% |
 | `shared/ui/upd_screen.c` | 628 | 605 | 96.3% |
@@ -758,6 +762,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/files/fm_ops.c` | 499 | 493 | 98.8% |
 | `shared/files/fm_req.c` | 89 | 88 | 98.9% |
 | `shared/files/fm_crc.c` | 6 | 6 | 100.0% |
+| `shared/files/png_enc.c` | 217 | 217 | 100.0% |
+| `shared/files/shot_file.c` | 133 | 133 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/safety/arming.c` | 220 | 214 | 97.3% |
 | `shared/safety/safety_gate.c` | 55 | 55 | 100.0% |
@@ -916,7 +922,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **69040** | **67729** | **98.1%** |
+| **total** | **69856** | **68547** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -953,7 +959,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The clock on the board | the NTP request and its console line are not measured on the board. The RTC timer counts the 32.768kHz crystal Y3; its drift is at most about 30ppm, measured over 65min. On the internal RC oscillator, the fallback, the drift is not a fixed figure: 584ppm over 2h04min in one run, under 15ppm over 1h51min in another. The boot line naming the crystal is not measured, nor the start-up time the crystal adds (about 183ms from ESP-IDF's counts); how long an answer takes is not measured beyond one bench log, 7.2s after the address. A cell in the board's RTC battery holder BAT1 keeps no time: the ESP32-P4 keeps its RTC timer on VBAT only from deep sleep, which the panel never enters |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The scan-out reads PSRAM by DMA (direct memory access) with no bounce buffer, and the DSI host's interrupt runs during the write (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), so the picture is expected to stay; not measured | a photo of the home screen after a settings save and after a board drawing's keep, with the console's lines beside it |
 | Stick programming's beep timing | the engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 336 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 339 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 | Comment gaps of the existing tree | the comment rule ([CONTRIBUTING.md](CONTRIBUTING.md#comments)) holds new files, changed lines and the `@file` block of a changed file. The other gaps are listed: the Doxygen warnings in `tools/doc_check_baseline.txt`, the Python docstring codes per file in `ruff.toml`. A C file without a `@file` block is one line there, `file has no @file block`; Doxygen reports nothing inside such a file, so its other gaps are not listed until the block is added | documentation of the listed files |
 
 ## Constraints

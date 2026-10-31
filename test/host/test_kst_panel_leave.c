@@ -22,6 +22,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "shot_facts_rig.h"
 #include "kst_panel_screen_rig.h"
 
 TEST_CASE(the_current_limit_is_typed_inside_50_to_3000_ma)
@@ -175,6 +176,11 @@ TEST_CASE(a_leave_gives_the_port_back_and_switches_no_supply)
          * says that no pulse runs. */
         CHECK_EQ(kst_prog_state(M), KST_PROG_LEAVING);
         CHECK(kst_panel_holds_port());
+        /* The programmer's own word, with SUPPLY's left out. */
+        const bool held = supply_screen_port_held();
+        supply_screen_set_port_held(false);
+        CHECK(!shot_facts_now().port_free);
+        supply_screen_set_port_held(held);
         CHECK_STR_EQ(status(0), TR(KP_STATE_LEAVING));
         /* No other row starts anything under it. */
         tap(val(PG_SERVO, 1, 0));

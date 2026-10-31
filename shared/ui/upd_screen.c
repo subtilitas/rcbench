@@ -929,6 +929,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
 static const ui_screen_t k_screen = {
     .title  = "UPDATES",
+    .covered = ui_screen_not_covered,
     .reset  = reset,
     .enter  = enter,
     .leave  = leave,

@@ -377,7 +377,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,256 | 2,896 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,288 | 2,864 |
 | `control` | `control_task` | 6,144 | 3,376 | 1,728 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
@@ -386,6 +386,7 @@ its stack less 1024 bytes.
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
+| `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,416 | 3,712 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the TCP/IP (transmission control protocol, internet
@@ -438,7 +439,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  284 such
+  295 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its
@@ -498,6 +499,7 @@ not follow.
 | `mdns` | 4,096 | not measured |
 | `wifi_get` | 8,192 | not measured |
 | `cardjob` | 6,656 | not measured |
+| `shot` | 7,168 | not measured |
 
 The tasks of ESP-IDF and esp_hosted are not in the table: their names and
 figures come from the console of a sample, and none is recorded.

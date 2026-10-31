@@ -54,6 +54,7 @@ FP_FLAGS = ["-ffp-contract=off"]
 # ports and the wire under them.
 SOURCES = [
     "test/host/render_screen.c",
+    "test/host/render_shot.c",
     *ui_sources.SOURCES,
     "shared/bench/kst_link.c",
     "shared/outputs/kst_port.c",
@@ -95,6 +96,11 @@ SCREENS = {
     # The screen guide over the menu at page 1: the dock on the right, the
     # left two columns of tiles marked.
     "help-overview": ("help-overview.png", "overview", "dark"),
+    # The screenshot's popup over the menu, a save under way and a card that
+    # was full.
+    "shot-popup": ("shot-popup.png", "shot", "dark"),
+    "shot-saving": ("shot-saving.png", "shot", "dark"),
+    "shot-full": ("shot-full.png", "shot", "dark"),
     "motor":      ("motor.png",      "motor",      "dark"),
     "motor-held": ("motor-held.png", "motor-held", "dark"),
     # A linked bench before its first run, no pin bound as a motor.

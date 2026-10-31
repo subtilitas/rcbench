@@ -1152,7 +1152,14 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/**
+ * @brief ui_screen_t's covered: the scan, a keyboard or a staged image's question.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.sub != SUB_MAIN || staged(); }
+
 static const ui_screen_t k_screen = {
+    .covered = covered,
     .title  = "WI-FI",
     .reset  = reset,
     .enter  = enter,

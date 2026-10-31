@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "shot_facts_rig.h"
 #include "touch_feed.h"
 
 #include "kst_panel.h"
@@ -43,6 +44,7 @@ static void run_under_way(bool ina)
     servo_screen_set_link(true);
     hold_start(2.3f);
     CHECK(servo_screen_testing());
+    CHECK(!shot_facts_now().no_test);
     bench_frames(3000u);
     CHECK(bench.out);
     bench.released = false;

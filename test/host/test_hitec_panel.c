@@ -12,6 +12,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "shot_facts_rig.h"
 #include "hitec_panel_rig.h"
 
 /* --------------------------------------------------------------- series */
@@ -334,6 +335,7 @@ TEST_CASE(close_while_held_opens_leave_and_a_2s_hold_leaves)
     tap_connect();
     tap(hitec_panel_close_rect());
     CHECK(hitec_panel_is_open());
+    CHECK(!shot_facts_now().no_session);
     CHECK_EQ(hitec_panel_editor(), 3);
     CHECK_EQ(strcmp(hitec_panel_page_line(0), TR(KP_LEAVE_TITLE)), 0);
     CHECK_EQ(strcmp(hitec_panel_page_line(2), TR(HP_LEAVE_D)), 0);
@@ -658,8 +660,21 @@ TEST_CASE(every_message_fits_its_line_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The screenshot's gate reads the programmer's own word, with SUPPLY's gone. */
+TEST_CASE(the_screenshot_gate_reads_the_hold_of_the_port)
+{
+    open_en();
+    (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    until(HITEC_PROG_OTHER);
+    CHECK(hitec_panel_holds_port());
+    supply_screen()->reset();
+    CHECK(!supply_screen_port_held());
+    CHECK(!shot_facts_now().port_free);
+}
+
 int main(void)
 {
+    RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
     RUN(hitec_d_receive_is_set_on_more_in_pwm);

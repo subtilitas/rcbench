@@ -43,6 +43,10 @@ static bool ends_with(const char *s, const char *tail)
 TEST_CASE(the_protocol_list_opens_and_a_choice_closes_it)
 {
     fresh();
+    CHECK(!outputs_screen()->covered());
+    tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
+    CHECK(outputs_screen()->covered());
+    tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
     choose_named("SERVO PWM");
     CHECK_EQ(outputs_screen_binding()->proto, 1);
     /* A pick is not a change of the binding: the seam is not called. */

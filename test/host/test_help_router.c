@@ -192,7 +192,7 @@ TEST_CASE(next_and_prev_turn_the_pages_and_stop_at_the_ends)
 {
     open_on_menu();
     const int count = ui_help_count(overview_screen(), false);
-    CHECK_EQ(count, 3);
+    CHECK_EQ(count, 4);
     for (int i = 1; i < count; ++i) {
         tap_button(UI_HELP_HIT_NEXT);
         CHECK_EQ(ui_router_guide_page(), i);
@@ -261,7 +261,7 @@ TEST_CASE(next_at_one_spot_turns_every_page)
     mid(ui_help_button_rect(p.side, UI_HELP_HIT_NEXT), &nx, &ny);
     mid(ui_help_button_rect(p.side, UI_HELP_HIT_PREV), &px, &py);
     const int count = ui_help_count(overview_screen(), false);
-    REQUIRE(count == 3);
+    REQUIRE(count == 4);
     for (int n = 1; n < count; ++n) {
         tap(nx, ny);
         CHECK(ui_router_guide_open());

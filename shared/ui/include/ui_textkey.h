@@ -178,6 +178,7 @@ typedef struct {
     bool       search;      /**< a search pattern: see the top        */
     bool       folder;      /**< a folder of the card: see the top    */
     bool       file;        /**< a file name: see the top             */
+    const char *ok_label;   /**< what OK reads; NULL is "OK"           */
     uint8_t    why;         /**< a folder's refusal, card_folder_t; a
                                  file name's, fm_name_t              */
     bool       wifi;        /**< a Wi-Fi name or password             */

@@ -358,10 +358,11 @@ jobs:
       # The analyser and the bug-shaped checks over the pure-C core, the
       # protocol cores and the host tests.  A module's rp2350/ folder is not
       # in the host build; cppcheck reads it with the firmware.
-      # render_screen.c, render_files.c, render_hitec.c, render_help.c and
-      # bench_frame.c are built by tools/render_ui.py and tools/frame_cost.py,
-      # not by CMake, so they have no compile command here; render_ui.py
-      # builds the first four with -Werror, cppcheck reads all five.
+      # render_screen.c, render_files.c, render_hitec.c, render_help.c,
+      # render_shot.c and bench_frame.c are built by tools/render_ui.py and
+      # tools/frame_cost.py, not by CMake, so they have no compile command
+      # here; render_ui.py builds the first five with -Werror, cppcheck reads
+      # all six.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
       # run; no result is kept between runs.
@@ -374,6 +375,7 @@ jobs:
                         -e 'test/host/render_files.c' \
                         -e 'test/host/render_hitec.c' \
                         -e 'test/host/render_help.c' \
+                        -e 'test/host/render_shot.c' \
                         -e 'test/host/bench_frame.c' \
               | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 

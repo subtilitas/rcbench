@@ -367,8 +367,10 @@ TEST_CASE(a_folder_is_deleted_only_when_empty)
 TEST_CASE(new_makes_a_folder_and_an_empty_text_file)
 {
     fresh();
+    CHECK(!files_screen()->covered());
     tap_foot(FS_SPOT_NEW);
     CHECK_EQ(files_screen_view(), FILES_VIEW_NEW);
+    CHECK(files_screen()->covered());
     draw();
     tap(FS_SPOT_NEW_CX, FS_SPOT_NEW_CY(0));
     CHECK_EQ(files_screen_view(), FILES_VIEW_NAME);

@@ -574,6 +574,11 @@ static bool run_open_now(void)
                   != atomic_load(&s_test_opens_done);
 }
 
+bool panel_run_open(void)
+{
+    return run_open_now();
+}
+
 /* Whether flash may be written now, and if not why: see fw_gate(). */
 static fw_gate_t fw_gate_now(bool armed)
 {
@@ -1103,4 +1108,12 @@ void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs)
     if (hand.decline) {
         atomic_store(&s_cu_declined_gen, feed.offer_gen);
     }
+}
+
+bool panel_update_busy(void)
+{
+    wa_fetch_t f;
+    wifi_access_fetch_get(&f);
+    return atomic_load(&s_cu_busy) || atomic_load(&s_fw_installing) || s_upd_dl
+           || wa_fetch_busy(&f);
 }

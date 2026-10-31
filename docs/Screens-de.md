@@ -104,6 +104,9 @@ Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
   Kastens, auf das Band neben den Chips, auf das Home-Tag oder auf den
   Bildschirm. Eine Kachel, eine Schaltfläche oder das Alert-Band unter dem
   Finger wird nicht gedrückt.
+- Ein Halten von 1000ms auf dem leeren Teil des Bands nimmt einen
+  [Screenshot](#screenshot) auf: Der Kasten bleibt für das Bild stehen und
+  schließt danach.
 - STOP ist die Ausnahme: Ein Druck auf STOP schließt den Kasten und stoppt
   sofort, wie ohne Kasten.
 - Ebenso ein Bedienelement, das anhält, was der Prüfstand treibt: DISARM,
@@ -190,6 +193,9 @@ Home-Tag kommt zurück, wenn die Hilfe schließt.
 - Ein Druck auf das Dock oder auf ein Abzeichen tut nichts.
 - Jeder andere Druck schließt die Hilfe und tut sonst nichts: auf der
   lebenden Hälfte, auf dem Band neben den Chips, auf dem Alert-Band.
+- Ein Halten von 1000ms auf dem leeren Teil des Bands nimmt einen
+  [Screenshot](#screenshot) auf: Die Hilfe bleibt für das Bild stehen und
+  schließt danach.
 - Ein Druck auf STOP schließt die Hilfe und stoppt sofort. Ein Druck auf
   einen Chip schließt die Hilfe und öffnet beim Loslassen den Kasten des
   Chips.
@@ -208,9 +214,131 @@ Home-Tag kommt zurück, wenn die Hilfe schließt.
   Seite 1 sagt das dann in einer Zeile. Die Seiten des Menüs zeigen alle
   auch in ARMED.
 
-Die Hilfe des Menüs hat drei Seiten: die linken zwei Spalten der Kacheln mit
-dem Dock rechts, die rechten zwei mit dem Dock links, und STOP, der
-Arm-Chip, "?" und die Marke SIMULIERT mit dem Dock links.
+Die Hilfe des Menüs hat vier Seiten: die linken zwei Spalten der Kacheln mit
+dem Dock rechts, die rechten zwei mit dem Dock links, STOP, der
+Arm-Chip, "?" und die Marke SIMULIERT mit dem Dock links, und der leere Teil
+des Bands für das Halten zum Screenshot mit dem Dock rechts.
+
+## Screenshot
+
+Ein Halten von 1000ms auf dem leeren Teil des Bands nimmt auf, was das Panel
+zeigt, samt Band. Nichts auf dem Panel markiert die Stelle; die Hilfe des Menüs
+und die Web-Hilfe sagen, wo sie ist.
+
+![Das Popup des Screenshots](img/de/shot-popup.png)
+
+| Teil | Wert |
+| --- | --- |
+| Wo | die ganze Höhe des Bands, von 8px rechts des Home-Tags bis 8px links des Chips ganz links, aus den Rechtecken berechnet, die das Band zeichnet. Die schmalste Lücke über alle Bildschirme mit Band, Englisch und Deutsch: 176px in SAFE ohne FAULT-Chip, 106px in ARMED MOTOR |
+| Das Halten | 1000ms an Frames, ein später Frame zählt höchstens 100ms, wie bei einem Halte-Button. Bei 999ms nichts |
+| Was es beendet | ein Gleiten aus der Lücke, ein Chip, der unter dem Kontakt erscheint, jedes Ereignis eines anderen Kontakts, ein verlorenes Touch-Ereignis, ein Wechsel des Bildschirms. Das Loslassen tut nichts |
+| Über dem Kasten eines Chips oder der Hilfe | sie bleiben für das Bild stehen und schließen, wenn das Halten endet, mit Bild oder ohne. Ein Loslassen vor 1000ms schließt sie und nimmt nichts auf. Ein zweiter Kontakt beendet das Halten und trifft sie nach ihren eigenen Regeln: sein Druck schließt sie |
+| Was es nicht ist | ein Druck auf einen Chip, das Home-Tag, "?" oder STOP. Kein Bildschirm sieht den Kontakt |
+| Antwort bei 1000ms | die Notiz im Band, keine Füllung während des Haltens: `Screenshot aufgenommen.` oder `Screenshot aufgenommen. Er öffnet sich, sobald der Prüfstand ruht.` |
+| Speicher | 1 305 600B PSRAM (pseudo-statisches RAM), 1 228 800B fürs Bild und 76 800B für die Vorschau, von der Aufnahme bis CANCEL oder einem gelungenen Sichern. Ein Neustart verliert es |
+| Kein Speicher | das Band sagt `Kein Screenshot: 1 305 600B PSRAM sind nicht frei.`, sonst ändert sich nichts |
+| Halten, während eines wartet | ersetzt es im selben Speicher: `Neuer Screenshot aufgenommen. Er ersetzt den wartenden.` |
+| Halten, während ein gestopptes Sichern endet | kein Bild: `Kein Screenshot: Der letzte wird noch geschrieben.`, höchstens eine PNG-Zeile lang |
+| Bildschirme ohne dieses Halten | SPLASH, der Bus-Fehler-Bildschirm, PANEL UPDATE und der Fortschritt des IOmcu-Updates: Sie haben kein Band. MOTOR & ESC, der längste Titel, hat mit ARMED MOTOR und einem langen FAULT-Chip keine Lücke |
+
+Das Bild entsteht in diesem Frame auf der Render-Task, was auch immer der
+Prüfstand tut. Es liest keinen Ausgang und schreibt keinen; STOP, DISARM und der
+Rest bleiben aktiv. Es ist der Frame, wie ihn der Bediener sieht, auch über einer
+Box, einer Liste oder einem Tastenfeld, und bei `Bilddrehung` 180°, denn der
+Frame wird aufrecht gezeichnet und auf dem Weg zum Panel gedreht. Die Notiz kommt
+einen Frame später und ist nicht im Bild.
+
+### Das Popup
+
+Das Popup öffnet sich, wenn der Prüfstand ruht, auf einem Bildschirm mit Band,
+wenn dort sonst nichts offen ist und kein Kontakt auf dem Glas liegt. Der Druck,
+der entschärft oder quittiert hat, landet nicht darauf: Es nimmt nur einen neuen
+Druck an.
+
+| Teil | Wert |
+| --- | --- |
+| Vorschau | 256 x 150px, jedes Pixel der Mittelwert von 4 x 4, oben links im Inhalt |
+| Ordner und Name | `screenshots/` und der Name mit `.PNG`, unter der Vorschau |
+| Tastatur | die Dateinamen-Tastatur, x 280 bis zum Panelrand. OK heißt `SICHERN` |
+| Band | STOP und die Chips bleiben aktiv. Home-Tag und Knopf tun nichts, "?" zeigt sich nicht |
+
+Das Popup schließt sich in dem Moment, in dem eine dieser Bedingungen falsch
+wird, und das Bild wartet wieder, mit dem Namen wie getippt. Nur CANCEL oder ein
+gelungenes Sichern beenden es.
+
+| Der Prüfstand ruht, wenn | Gelesen aus |
+| --- | --- |
+| der Link antwortet oder der Prüfstand simuliert ist | `link_up` des Snapshots, das Flag des Modells |
+| SAFE, kein Arm wartet | `armed`, `arm_wanted` des Snapshots |
+| keine STOP-Anforderung wartet | `s_stop_request` |
+| das Netzteil aus ist, kein ON unterwegs | `supply.output` des Snapshots, der Ausgang des neuesten Samples, `supply_live_or_coming()` |
+| PROG 5V aus ist, kein ON unterwegs | `prog5v_box_on()`, `supplies_live_or_coming()` |
+| kein Port gehalten wird | `supply_screen_port_held()`, `kst_panel_holds_port()`, `hitec_panel_holds_port()`, die Holds der HITEC-Seite in `s_drive` |
+| keine Programmier-Session offen ist | `kst_panel_is_open()`, `hitec_panel_is_open()`, `esc_stick_panel_stage()` |
+| kein Karten-Auftrag eines Programmers läuft | die Datei- und Karten-Zähler von KST und Hitec |
+| kein Sweep und keine Pause | `servo_screen_sweeping()`, `servo_screen_paused()` |
+| kein automatischer Test und kein Limit-Lauf | `servo_screen_testing()`, `servo_screen_limit_running()`, `s_servo_testing` |
+| kein ESC-STICK-Lauf | `esc_stick_panel_profile()` |
+| kein Update, keine Installation, kein Download | `cu.active` des Snapshots, `s_cu_busy`, `s_fw_installing`, Flag und Abruf des Downloads |
+| kein FAULT-Bit gesetzt ist | `faults` des Snapshots |
+| kein Fehler-Log geschrieben wird | `log_fault_busy()` |
+| kein Log-Lauf, keine Testdatei, keine Aufzeichnung offen ist | `panel_run_open()` |
+
+Ausgänge werden nur in ARMED getrieben, also deckt SAFE den Puls an einem Pin
+ab. Ein stehendes FAULT-Bit hält das Popup zurück, bis es gelöscht ist. Auch ein
+Tastenfeld, eine Tastatur, eine Liste, eine Box oder eine Frage eines Bildschirms
+halten es zurück, ebenso die Frage des IOmcu und die Erinnerung an ein Release.
+
+### Sichern
+
+SICHERN schreibt `screenshots/<Name>.PNG` und legt den Ordner an, wenn er fehlt.
+Der Ordner ist kein FIXED-Ordner: Nichts vom Prüfstand liest ihn, FILES und die
+Wi-Fi-Seite benennen ihn um und löschen ihn wie jeden anderen. Ein FILES-Fenster,
+das den Ordner zeigt, listet die neue Datei beim nächsten Lesen.
+
+| Teil | Wert |
+| --- | --- |
+| Format | PNG (Portable Network Graphics), 1024 x 600, 8 Bit RGB, jeder RGB565-Wert mit seinen oberen Bits in den unteren wiederholt |
+| Standardname | `SHOT` und 4 Ziffern, eins über dem höchsten solchen Namen im Ordner; höchstens `SHOT9999` |
+| Name | bis 55 Bytes vor `.PNG`, die Regeln der Namen von FILES (`fm_name.h`) |
+| Ein vergebener Name | abgelehnt: `Dieser Name ist vergeben. Bitte einen anderen eingeben.` Nichts wird überschrieben |
+| Größe | 34 071 bis 69 467B auf sieben gerenderten Bildschirmen; auf einer Karte nicht gemessen |
+| Zeit | 11 bis 14ms auf dem Build-Rechner nur fürs Kodieren; auf dem Panel nicht gemessen. Die Konsole schreibt die Zeit jedes Sicherns und jeder Kopie |
+| Speicher beim Sichern | 36 928B PSRAM für den Encoder, 16 384B internes RAM für den Kartenpuffer und 7 168B internes RAM für den Stack der Task, am Ende frei |
+| Task | `shot`, Priorität 0 auf Kern 0, unter der Render-Schleife. Control-Task und Heartbeat sind nicht beteiligt |
+
+Eine Datei wird als `<Name>.PNG.NEW` geschrieben und dann umbenannt: Ein
+abgebrochenes Sichern oder eine gezogene Karte hinterlässt keine Datei dieses
+Namens. Ein Stromausfall hinterlässt die `.NEW`; das nächste Sichern dieses
+Namens löscht sie.
+
+![Ein laufendes Sichern](img/de/shot-saving.png)
+
+![Eine volle Karte](img/de/shot-full.png)
+
+| Beim Sichern oder danach | Das Popup sagt |
+| --- | --- |
+| währenddessen | `Sichere 42%` und ein Balken. Nur CANCEL nimmt einen Druck an |
+| ein gelungenes Sichern | schließt sich; das Band: `Gesichert: screenshots/SHOT0007.PNG` |
+| keine Karte, Karte weg | `Keine Karte. Karte einsetzen und erneut SICHERN.` |
+| volle Karte | `Die Karte ist voll. Platz schaffen und erneut SICHERN.` |
+| schreibgeschützt | `Die Karte ist schreibgeschützt.` |
+| Schreiben fehlgeschlagen | `Schreiben fehlgeschlagen. Das Bild bleibt: erneut SICHERN.` |
+| kein Speicher für Encoder oder Puffer | `Kein Speicher für das PNG. Nichts wurde geschrieben.` |
+| ein anderer Karten-Auftrag länger als 2000ms | `Die Karte ist belegt. Gleich erneut SICHERN.` |
+
+Jeder Fehler bleibt auf dem Popup, das Bild bleibt erhalten. Die Sperre der
+Karten-Aufträge ist die von FILES und der Wi-Fi-Seite: ein Auftrag zur Zeit;
+die Schreibvorgänge der Seite warten bis 2000ms auf ein Sichern und antworten dann
+`PANEL_BUSY`. CANCEL beim Sichern stoppt es an der nächsten Zeile, und das Bild geht,
+sobald es steht. Ein Prüfstand, der aufhört zu ruhen, tut dasselbe und behält
+das Bild.
+
+Die Kopie sind 1 228 800B auf der Render-Task in einem Frame. Sie ist nicht auf
+mehrere Frames verteilt: Die Bildpuffer ändern sich mit jedem Frame, eine Kopie
+über mehrere würde Frames mischen. Auf dem Build-Rechner dauert sie 0,1ms; ihre
+Zeit auf dem Panel ist nicht gemessen, die Konsole schreibt sie. Die Control-Task auf dem anderen Kern wartet nicht darauf,
+und die Frame-Überwachung erlaubt 1000ms.
 
 ## Das Alert-Band
 

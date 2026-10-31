@@ -360,6 +360,7 @@ static void reset(void)
 /** @brief The screen's table for the router. */
 static const ui_screen_t k_screen = {
     .title  = "LAYOUT",
+    .covered = ui_screen_not_covered,
     .reset  = reset,
     .enter  = enter,
     .render = render,

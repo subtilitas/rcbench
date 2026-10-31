@@ -73,6 +73,21 @@ Der Kasten von FEHLER reicht über das Panel, 1008px, mit einem Absatz je gesetz
 
 Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 
+## Screenshot
+
+Den leeren Teil des Bands 1s halten, zwischen Home-Tag und den Chips. Nichts auf dem Panel markiert die Stelle. Die Notiz im Band sagt nach 1s `Screenshot aufgenommen.`, das Loslassen tut nichts. Ein Druck auf einen Chip, das Home-Tag, "?" oder STOP ist kein Screenshot, ebenso wenig ein Gleiten aus der Lücke, ein zweiter Finger oder ein verlorener Touch.
+
+Das Bild ist, was das Panel zeigt, samt Band, auch über einer Box, einer Liste oder einem Tastenfeld. Es entsteht auch in ARMED sofort und berührt keinen Ausgang; STOP und DISARM bleiben aktiv. Ein Bild bleibt im Speicher: Ein weiteres Halten ersetzt es, ein Neustart verliert es. Splash, Bus-Fehler-Bildschirm, PANEL UPDATE und der Fortschritt eines IOmcu-Updates haben kein Band und kein Halten.
+
+![Das Popup des Screenshots](view:shot-popup)
+
+Das Popup öffnet sich, sobald der Prüfstand ruht und sonst nichts offen ist: SAFE, Netzteil und PROG 5V aus, kein Port gehalten, keine Programmier-Session, kein Sweep, Test oder Lauf, kein Update, kein FAULT, kein Log offen, der Link da oder der Prüfstand simuliert. Endet das, schließt sich das Popup und das Bild wartet wieder.
+
+- Die Tastatur ändert den Namen, standardmäßig `SHOT` und die nächste Nummer, bis 55 Bytes. `.PNG` bleibt.
+- `SICHERN` schreibt `screenshots/<Name>.PNG` auf die Karte und legt den Ordner an, wenn er fehlt. Ein vergebener Name wird abgelehnt; nichts wird überschrieben.
+- CANCEL verwirft das Bild. Ein Fehler, keine Karte oder eine volle Karte, bleibt auf dem Popup, das Bild bleibt erhalten.
+- Die Datei ist ein PNG von 1024 x 600px, für jeden Browser und PC. Sie zeigt sich in [FILES](files.md) und auf der Wi-Fi-Seite.
+
 ## Die Bildschirmhilfe
 
 ![Die Hilfe des Menüs auf Seite 1](view:help-overview)

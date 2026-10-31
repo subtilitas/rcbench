@@ -324,6 +324,19 @@ extern atomic_bool   s_servo_pins_known;
 /* For the SERVO screen's runs: the SENSE page holds the encoder enabled. */
 extern atomic_bool   s_enc_held;
 
+/**
+ * @brief Whether a run's log or a servo run's files are open or about to be.
+ * @return true while one is (panel_update.c)
+ */
+bool panel_run_open(void);
+
+/**
+ * @brief Whether an update runs: the IOmcu's, the panel's install or its
+ *        download.  Render task.
+ * @return true while one does (panel_update.c)
+ */
+bool panel_update_busy(void);
+
 /* ----------------------------------------------------------- panel_files.c */
 
 /** @brief FILES' way to the card: its requests run on the task cardjob. */

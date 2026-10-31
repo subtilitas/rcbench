@@ -352,6 +352,11 @@ void wb_cancel(void)
     ++s.strip_rev;
 }
 
+bool svs_covered(void)
+{
+    return modal_open() || prog_shown();
+}
+
 bool wb_back(void)
 {
     /* Over a panel the tag closes the panel, as its CANCEL does, and the

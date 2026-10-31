@@ -334,6 +334,9 @@ static const char *editor_label(const ui_textkey_t *k, int key)
 
 const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
 {
+    if (k != NULL && k->ok_label != NULL && key == UI_TK_OK) {
+        return k->ok_label;
+    }
     if (k != NULL && k->search && key == UI_TK_MARK) {
         return "*";
     }

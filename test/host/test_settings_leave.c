@@ -327,6 +327,7 @@ TEST_CASE(leaving_with_one_change_warns_and_names_it)
     warn_up();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
+    CHECK(settings_screen()->covered());
     CHECK_EQ(warn_lines(), 1);
     CHECK_STR_EQ(warn_line(0), "Capacity: 5000mAh -> 5200mAh");
     CHECK_STR_EQ(warn_line(1), "");

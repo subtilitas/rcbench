@@ -18,6 +18,9 @@ set(SRCS
     ui_keypad.c
     ui_setting_keypad.c
     ui_textkey.c
+    ui_shot.c
+    shot_gate.c
+    shot_hold.c
     ui_pinlist.c
     ui_board.c
     ui_router.c

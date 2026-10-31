@@ -73,6 +73,21 @@ The FAULT box spans the panel, 1008px, with one paragraph per set bit:
 
 For a bit this release never sets, the box says to flash both boards from one release.
 
+## Screenshot
+
+Hold the empty part of the band for 1s, between the home tag and the chips. Nothing on the panel marks the place. The band's notice says `Screenshot taken.` at 1s, and the release does nothing. A press on a chip, the home tag, "?" or STOP is no screenshot, and neither is a slide out of the gap, a second finger or a lost touch.
+
+The picture is what the panel shows, band included, also over a box, a list or a keypad. It is taken at once while ARMED too and touches no output; STOP and DISARM stay live. One picture is held in memory: another hold replaces it, and a restart loses it. The splash, the bus-fault screen, PANEL UPDATE and the progress of an IOmcu update have no band and no hold.
+
+![The screenshot's popup](view:shot-popup)
+
+The popup opens once the bench is idle and nothing else is up: SAFE, supply and PROG 5V off, no port held, no programming session, sweep, test or run, no update, no FAULT, no log open, the link up or the bench simulated. If that stops, the popup closes and the picture waits again.
+
+- The keyboard edits the name, `SHOT` and the next number by default, up to 55 bytes. `.PNG` stays.
+- SAVE writes `screenshots/<name>.PNG` on the card and makes the folder when it is missing. A taken name is refused; nothing is overwritten.
+- CANCEL drops the picture. A failure, no card or a full card, stays on the popup with the picture kept.
+- The file is a PNG of 1024 x 600px, for any browser or PC. It shows in [FILES](files.md) and on the Wi-Fi page.
+
 ## The screen guide
 
 ![The menu's guide at page 1](view:help-overview)

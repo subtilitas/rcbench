@@ -159,7 +159,7 @@ TEST_CASE(armed_offers_only_armed_pages_and_says_so)
     CHECK(!ui_help_armed_note(&k_fake, false));
     /* The menu's pages all show while ARMED: no note. */
     CHECK(!ui_help_armed_note(overview_screen(), true));
-    CHECK_EQ(ui_help_count(overview_screen(), true), 3);
+    CHECK_EQ(ui_help_count(overview_screen(), true), 4);
     /* A screen without a guide. */
     CHECK_EQ(ui_help_count(servo_screen(), false), 0);
     CHECK_EQ(ui_help_count(NULL, false), 0);
@@ -380,13 +380,15 @@ TEST_CASE(every_page_of_every_screen_fits)
     }
     ui_text_set_language(UI_LANG_EN);
     ui_theme_set(UI_THEME_DARK);
-    /* The menu's pages: four tiles, four tiles, the band and the mark. */
+    /* The menu's pages: four tiles, four tiles, the band and the mark,
+     * the screenshot's hold. */
     fresh();
     to_overview();
     ui_help_page_t p;
     CHECK(ui_help_page(overview_screen(), false, 0, &p) && p.count == 4);
     CHECK(ui_help_page(overview_screen(), false, 1, &p) && p.count == 4);
     CHECK(ui_help_page(overview_screen(), false, 2, &p) && p.count == 4);
+    CHECK(ui_help_page(overview_screen(), false, 3, &p) && p.count == 1);
 }
 
 /* The dock's half of the panel holds the dock and nothing of the screen:
@@ -420,7 +422,7 @@ TEST_CASE(the_screen_draws_nothing_under_the_dock)
         gfx_canvas_t c2;
         gfx_canvas_init(&c2, alone, W, H, W);
         gfx_clear(&c2, 0);
-        ui_help_render_dock(&c2, &p, page, 3, false, UI_HELP_HIT_NONE);
+        ui_help_render_dock(&c2, &p, page, 4, false, UI_HELP_HIT_NONE);
         const gfx_rect_t d = ui_help_dock_rect(p.side);
         int diff = 0;
         for (int y = UI_BAND_H; y < UI_ALERT_Y; ++y) {

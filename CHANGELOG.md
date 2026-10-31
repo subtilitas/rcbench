@@ -4,6 +4,16 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
+### Added
+
+- Screenshot: a 1000ms hold on the empty part of the band, on any screen with
+  the band, takes the frame at once, in any bench state. One picture is held in
+  1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes
+  `screenshots/<name>.PNG`, an 8-bit RGB PNG of 1024 x 600px, on the card. The
+  menu's guide has a fourth page for it.
+
 ## 0.23.4 - 2026-10-31
 
 0.23.4 is a testing release: its minor number, 23, is odd, and GitHub

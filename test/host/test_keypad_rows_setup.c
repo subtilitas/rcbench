@@ -185,6 +185,7 @@ TEST_CASE(a_value_the_steps_never_reach_is_refused_and_kept)
     kkey(UI_KEY_OK);
     CHECK(kp()->open);
     CHECK(kp()->refused);
+    CHECK(settings_screen()->covered());
     char why[64];
     CHECK_STR_EQ(kp()->reason, ui_setting_keypad_why(id, 3.0f, why,
                                                      sizeof(why)));

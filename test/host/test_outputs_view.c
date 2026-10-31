@@ -220,6 +220,9 @@ TEST_CASE(a_drawn_board_gets_the_board_and_any_other_the_grid)
     CHECK(serve_drawing());
     CHECK(outputs_view_is_board());
     CHECK_STR_EQ(ui_router_title(SCREEN_OUTPUTS), "OUTPUTS");
+    /* What is up is what the board's view has up. */
+    CHECK_EQ(view()->covered(), picker_screen()->covered());
+    CHECK(!view()->covered());
 
     /* A learned board with pins and no shape: the grid. */
     fresh_view();

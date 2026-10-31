@@ -1198,8 +1198,15 @@ static bool back(void)
     return true;
 }
 
+/**
+ * @brief ui_screen_t's covered: anything over the two panes.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.view != FILES_VIEW_PANES; }
+
 /** @brief The screen's table for the router. */
 static const ui_screen_t s_screen = {
+    .covered = covered,
     .title = "FILES",
     .reset = reset,
     .enter = enter,

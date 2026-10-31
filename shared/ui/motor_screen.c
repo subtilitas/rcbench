@@ -637,7 +637,14 @@ static void cancel(void)
 
 /* The title keeps its 11 characters, the one title over 10 (owner's
  * decision): its home tag ends at x 226, over the band's chip row. */
+/**
+ * @brief ui_screen_t's covered: a keypad or a programming page.
+ * @return true while one is up
+ */
+static bool covered(void) { return msp_modal() || mpp_shown() != NULL; }
+
 static const ui_screen_t k_screen = {
+    .covered = covered,
     .title  = "MOTOR & ESC",
     .reset  = reset,
     .enter  = enter,

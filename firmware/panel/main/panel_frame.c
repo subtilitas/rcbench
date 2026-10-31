@@ -32,6 +32,7 @@
 #include "panel.h"
 #include "panel_main.h"
 #include "panel_perf.h"
+#include "panel_shot.h"
 #include "panel_trial.h"
 #include "pdmini.h"
 #include "picker_screen.h"
@@ -80,6 +81,8 @@ void panel_frame_loop(void)
     bool     was_armed = false;
     uint32_t last_stops = 0;
 
+    panel_shot_init();
+
     for (;;) {
         /* A pass, for the control task's watchdog: a counter that stands
          * still for FRAME_WATCH_MS on an ARMED bench or under a live supply
@@ -126,6 +129,10 @@ void panel_frame_loop(void)
         supply_gen_now = s_snap.supply_gen;
         /* The ports' 5V as this frame begins, and the newest ON of it. */
         const uint32_t psup_gen_now = atomic_load(&s_psup_gen);
+        const uint16_t faults_now = s_snap.faults;
+        const bool     simulated_now = bench_state_simulated(&s_snap.bench)
+                                       && !s_snap.cu.active;
+        const bool     cu_active_now = s_snap.cu.active;
         const bool     psup_now     = prog5v_box_on();
         stops_now      = s_snap.stops;
         pressed_now    = s_snap.pressed;
@@ -400,6 +407,17 @@ void panel_frame_loop(void)
         atomic_store(&s_escsim_runs, (unsigned)esc_stick_panel_runs());
         atomic_store(&s_escsim_profile,
                      (uintptr_t)esc_stick_panel_profile());
+
+        /* Whether the screenshot's popup may stand, before this frame's
+         * touch: it closes on the frame the bench stops being idle. */
+        const panel_shot_in_t shot_in = {
+            .armed = armed_now, .arm_wanted = arm_wanted_now,
+            .supply_now = supply_now, .supply_seen = supply_seen,
+            .psup_now = psup_now, .link_up = link_now,
+            .simulated = simulated_now, .cu_active = cu_active_now,
+            .faults = faults_now,
+        };
+        panel_shot_frame(&shot_in);
 
         if (drain_touch(stops_now)) {
             frame_lost = true;

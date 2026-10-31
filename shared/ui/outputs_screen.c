@@ -1158,7 +1158,14 @@ static void cancel(void)
     outputs_screen_invalidate();
 }
 
+/**
+ * @brief ui_screen_t's covered: the protocol list or the FUNCTION list.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.open || outputs_port_fn_open(); }
+
 static const ui_screen_t s_screen = {
+    .covered = covered,
     .title  = "OUTPUTS",
     .reset  = reset,
     .enter  = enter,

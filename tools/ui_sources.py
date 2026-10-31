@@ -60,6 +60,9 @@ SOURCES = [
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_setting_keypad.c",
     "shared/ui/ui_textkey.c",
+    "shared/ui/ui_shot.c",
+    "shared/ui/shot_gate.c",
+    "shared/ui/shot_hold.c",
     "shared/ui/ui_pinlist.c",
     "shared/ui/ui_board.c",
     "shared/ui/servo_screen.c",
@@ -158,6 +161,8 @@ SOURCES = [
     "shared/files/fm_ops.c",
     "shared/files/fm_req.c",
     "shared/files/fm_crc.c",
+    "shared/files/png_enc.c",
+    "shared/files/shot_file.c",
     "shared/clock/wall_clock.c",
     "shared/logfile/log_take.c",
     # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
