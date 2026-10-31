@@ -411,6 +411,7 @@ atomic_uint s_sense_unheld;
 atomic_uint s_tone_unheld;
 
 hitec_rx_link_t s_hitec_rx_link;
+/** @brief The mode SET_HITEC_RX asks, link_hitec_rx_t. */
 atomic_uint     s_hitec_rx_want;
 
 /*

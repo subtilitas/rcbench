@@ -788,10 +788,10 @@ uint32_t prog_faults(void);
 /* The SENSE and TONE set-ups that are not held at the far end. */
 extern atomic_uint s_sense_unheld;
 extern atomic_uint s_tone_unheld;
-/* Hitec D receive (HITEC, 4.24): the module, the mode SETUP asks
- * (link_hitec_rx_t, from the render loop) and what its row says
- * (hitec_rx_link_mark_t, to the render loop). */
+/* Hitec D receive (HITEC, 4.24): the module and the mode the setting asks
+ * (link_hitec_rx_t, from the render loop). */
 extern hitec_rx_link_t s_hitec_rx_link;
+/** @brief The mode SET_HITEC_RX asks, link_hitec_rx_t. */
 extern atomic_uint     s_hitec_rx_want;
 
 void kst_port_look(void);

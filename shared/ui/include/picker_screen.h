@@ -217,7 +217,7 @@ typedef enum {
 /** Whether group @p g is an interface's, and which. */
 #define PICKER_USE_IS_IFACE(g) ((g) > 0xF0u && (g) < 0xF0u + OUTPUTS_IFACE_COUNT)
 
-/** Pins SENSORS and PD MINI can hold: SDA and SCL, TX and RX, the tap. */
+/** @brief Pins SENSORS and PD MINI can hold: SDA and SCL, TX and RX, the tap. */
 #define PICKER_USE_IFACE_PINS 5u
 
 /** The most lines the table can list: the PROG PORT name and a pin for

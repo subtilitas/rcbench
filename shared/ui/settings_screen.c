@@ -59,6 +59,7 @@ stg_state_t stg_s;
  * is reset.
  */
 static uint16_t s_sense_unheld;
+/** @brief The tap's rows the IOmcu does not hold, TONE_LINK_ROWS_*. */
 static uint8_t  s_tone_unheld;
 
 void settings_screen_invalidate(void)

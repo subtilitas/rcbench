@@ -47,7 +47,11 @@ void settings_screen_invalidate(void);
  */
 void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows);
 
-/** Whether the row of @p id is marked by settings_screen_set_unheld(). */
+/**
+ * @brief Whether the row of @p id is marked by settings_screen_set_unheld().
+ * @param id The setting.
+ * @return true while it is.
+ */
 bool settings_screen_unheld(setting_id_t id);
 
 /**

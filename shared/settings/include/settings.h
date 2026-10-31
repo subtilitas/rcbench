@@ -46,7 +46,7 @@ typedef enum {
 } setting_cat_t;
 
 /**
- * The categories SETUP opens from its tiles, which come first.  SET_CAT_ESC
+ * @brief The categories SETUP opens from its tiles, which come first.  SET_CAT_ESC
  * is edited on MOTOR & ESC > SETTINGS, SET_CAT_SUPPLY, SET_CAT_PDMINI,
  * SET_CAT_SERVO and SET_CAT_STICK on their own screens, beside what they
  * set, and
