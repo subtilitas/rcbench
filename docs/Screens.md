@@ -5643,7 +5643,8 @@ list's face (x 8 to 288), the count and the reason (to x 358). Such a key
 is drawn over them, and a press on its part over the face opens the
 protocol list instead of taking the pin. The RP2350-CAN's pads in that
 corner are rails and ground, so none of its keys lies there
-(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`).
+(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`). A key
+over FUNCTION's face takes the press there.
 
 A key's colour says what a tap on it does:
 

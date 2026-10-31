@@ -1,5 +1,6 @@
-/*
- * The programming ports between the control task and the screens: the
+/**
+ * @file
+ * @brief The programming ports between the control task and the screens: the
  * PROG page as both views of OUTPUTS draw it, and the operator's asks
  * for a port's PIN or FUNC, through one mailbox (port_mail.h).  Nothing
  * here writes the link.

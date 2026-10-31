@@ -1,5 +1,6 @@
-/*
- * The programming ports as the screens see them, and the operator's asks
+/**
+ * @file
+ * @brief The programming ports as the screens see them, and the operator's asks
  * that change one (protocol 4.26).
  *
  * The control task reads the IOmcu's PROG page (prog_link.h) and hands

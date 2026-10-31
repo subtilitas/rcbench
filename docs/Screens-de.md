@@ -6200,7 +6200,8 @@ den Grund (bis x 358). Eine solche Taste wird über sie gezeichnet, und ein
 Druck auf ihren Teil über der Fläche öffnet die Protokoll-Liste, statt den
 Pin zu nehmen. Die Pads des RP2350-CAN in dieser Ecke sind Schienen und
 Masse, also liegt keine seiner Tasten dort
-(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`).
+(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`). Eine Taste
+über der Fläche von FUNKTION nimmt dort den Druck.
 
 Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 

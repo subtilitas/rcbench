@@ -207,8 +207,8 @@ _Static_assert(USE_TOP + ((int)PICKER_USE_MAX - 1) * USE_PIN_H_D
  *        24, 10 x 20 and 8 x 16 that holds it on one line: "NICHT
  *        GESCHRIEBEN" is 17 cells of 8 x 16.  Both cat spots stay free.
  *
- * A board with a key there gets it at the foot of the IN USE column instead
- * (pk_last_rect()).
+ * A board with a key there gets it at the foot of the IN USE column instead,
+ * above UNBIND ALL PINS while that is offered (pk_last_rect()).
  */
 #define LAST_X (HEAD_X + FACE_W + 8)
 #define LAST_Y 4              /**< Its top. */
@@ -309,6 +309,12 @@ gfx_rect_t pk_last_rect(void);
  * @return true when it is drawn
  */
 bool pk_last_shown(void);
+/**
+ * @brief Where the IN USE table's lines end: at the foot, or 8px above UNBIND
+ *        ALL PINS and above LAST WRITE when they stand in its column.
+ * @return the row, px
+ */
+int pk_use_foot(void);
 
 /* --- picker_geometry.c ------------------------------------------------- */
 

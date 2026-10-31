@@ -1,7 +1,8 @@
-/*
- * The board view of OUTPUTS on a programming port: what PROG PORT n in the
- * protocol list makes of the buttons.  picker_screen.c holds the screen; this holds the
- * rules for a port's pin, as the panel can judge them before the IOmcu
+/**
+ * @file
+ * @brief The board view of OUTPUTS on a programming port: what PROG PORT n in
+ * the protocol list makes of the buttons.  picker_screen.c holds the screen;
+ * this holds the rules for a port's pin, as the panel can judge them before the IOmcu
  * does (prog_port.h), and the asks a tap makes.
  *
  * SPDX-License-Identifier: MIT

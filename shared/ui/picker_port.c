@@ -1,5 +1,6 @@
-/*
- * OUTPUTS' board view on a programming port.  See picker_port.h.
+/**
+ * @file
+ * @brief OUTPUTS' board view on a programming port.  See picker_port.h.
  *
  * SPDX-License-Identifier: MIT
  */

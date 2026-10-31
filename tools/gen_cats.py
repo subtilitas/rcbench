@@ -54,8 +54,8 @@ S = 4
 # The spots, in the order of their bits in a pose's mask.  A spot is one
 # free place on one screen; the screen anchors it (ui_cats.h).
 SPOTS = (
-    "picker_left",    # OUTPUTS board view, bottom left, under the PINS table
-    "picker_right",   # OUTPUTS board view, bottom right, under the IN USE table
+    "picker_left",    # OUTPUTS, bottom left, under the PINS table
+    "picker_right",   # OUTPUTS, bottom right, under the IN USE table
 )
 
 RUN_SKIP, RUN_FILL, RUN_COPY, RUN_BLEND = 0, 1, 2, 3

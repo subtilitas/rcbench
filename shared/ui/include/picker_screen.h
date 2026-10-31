@@ -115,7 +115,7 @@ void picker_screen_set_prog_pin(uint8_t gpio);
  */
 void picker_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
 
-/**
+/*
  * With a port picked, in this list or by outputs_screen_open_on_port(), a
  * button is the port's pin: its own pin is ticked and a tap on it asks the
  * IOmcu for no pin, a tap on a free pin asks for that pin (port_view_ask()).
@@ -241,8 +241,12 @@ typedef struct {
 /** Line @p k of the IN USE table; false past the last. */
 bool picker_screen_in_use(uint8_t k, picker_use_t *out);
 
-/** The count under the protocol list: slots in use of 8, every protocol; an
- *  empty string with a port picked. */
+/**
+ * @brief The count under the protocol list: slots in use of 8, every protocol;
+ *        an empty string with a port picked.
+ * @param buf takes the line
+ * @param cap bytes at @p buf
+ */
 void picker_screen_count(char *buf, size_t cap);
 
 /**
@@ -293,7 +297,7 @@ bool picker_screen_set_drawing(const uint8_t *data, uint32_t bytes,
                                const char **why);
 
 /**
- * Asked on entering OUTPUTS, for the board the binding names.
+ * @brief Asked on entering OUTPUTS, for the board the binding names.
  *
  * The function calls picker_screen_set_drawing(), with NULL when there is
  * no drawing for that board, so a drawing that arrived since the last visit

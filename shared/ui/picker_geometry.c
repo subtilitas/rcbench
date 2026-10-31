@@ -282,13 +282,26 @@ gfx_rect_t pk_last_rect(void)
     for (int i = 0; i < (int)n; ++i) {
         gfx_rect_t k;
         if (pk_button_at(i, &k, NULL) && gfx_rect_intersect(top, k, &out)) {
-            return gfx_rect_make(USE_X, FOOT - LAST_H, USE_W, LAST_H);
+            const int foot = outputs_unbind_offered() ? OB_CLR_Y - 8 : FOOT;
+            return gfx_rect_make(USE_X, foot - LAST_H, USE_W, LAST_H);
         }
     }
     return top;
 }
 
 bool pk_last_shown(void) { return s.port < 0; }
+
+int pk_use_foot(void)
+{
+    int foot = outputs_unbind_offered() ? OB_CLR_Y - 8 : USE_FOOT;
+    if (pk_last_shown()) {
+        const gfx_rect_t last = pk_last_rect();
+        if (last.x == USE_X && last.y - 8 < foot) {
+            foot = last.y - 8;
+        }
+    }
+    return foot;
+}
 
 gfx_rect_t picker_screen_last_rect(void) { return pk_last_rect(); }
 

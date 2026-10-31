@@ -126,6 +126,10 @@ static gfx_rect_t pin_rect(void)
     return gfx_rect_make(COL_X, PIN_Y, COL_W, PIN_H);
 }
 
+/**
+ * @brief FUNCTION's face in the view in force.
+ * @return its rectangle
+ */
 static gfx_rect_t fn_face(void)
 {
     return p.board ? gfx_rect_make(OB_FN_X, OB_FN_Y, OB_FN_W, UI_TAP_MIN)
@@ -178,6 +182,7 @@ static void lay_out_tabs(void)
     p.tester.label[1] = p.tester_port;
 }
 
+/** @brief The entry's state laid out for the grid and dropped: none shown. */
 void outputs_port_reset(void)
 {
     p.port = -1;

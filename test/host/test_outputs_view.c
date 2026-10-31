@@ -13,6 +13,7 @@
  * - the_port_rows_act_in_the_column
  * - a_locked_row_takes_the_press_and_does_nothing
  * - a_key_asks_for_the_ports_pin_and_the_column_names_it
+ * - a_key_over_the_function_face_takes_its_press
  * - the_column_holds_every_reason_and_meets_no_key
  * - last_write_shows_the_result_and_leaves_both_cat_spots_free
  * - a_board_with_a_key_there_has_last_write_at_the_foot
@@ -426,6 +427,46 @@ TEST_CASE(a_key_asks_for_the_ports_pin_and_the_column_names_it)
     frame();
 }
 
+TEST_CASE(a_key_over_the_function_face_takes_its_press)
+{
+    /* A learned board with a free pin in the upper left: its key stands from
+     * x 187, over FUNCTION's face. */
+    fresh_view();
+    learn_board(4242u, true);
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, 4242u);
+    hold_binding(&b);
+    outputs_screen_open_on_port(2u);
+    view()->enter();
+    CHECK_EQ(picker_screen_port_shown(), 2);
+    gfx_rect_t k = gfx_rect_make(0, 0, 0, 0);
+    bool over = false;
+    for (uint8_t i = 0; i < 4u && !over; ++i) {
+        CHECK(picker_screen_button_rect(i, &k));
+        over = overlap(k, FN_FACE);
+    }
+    CHECK(over);
+    const int x = (k.x > OB_FN_X ? k.x : OB_FN_X) + 4;
+    const int y = (k.y > OB_FN_Y ? k.y : OB_FN_Y) + 4;
+    send(TOUCH_EVENT_DOWN, x, y);
+    send(TOUCH_EVENT_UP, x, y);
+    CHECK(!outputs_port_fn_open());
+    CHECK_EQ(s_asks, 1);
+    CHECK_EQ(s_ask_kind, PROG_LINK_ASK_PIN);
+    /* The rest of the face still opens the list, and an open list takes the
+     * press over the key. */
+    port_view_set_ask_state(port_view_ask_seq(), PROG_LINK_ASK_DONE);
+    const int free_x = (k.x >= OB_FN_X + 20) ? OB_FN_X + 4 : OB_FN_X + OB_FN_W - 4;
+    send(TOUCH_EVENT_DOWN, free_x, OB_FN_Y + 24);
+    send(TOUCH_EVENT_UP, free_x, OB_FN_Y + 24);
+    CHECK(outputs_port_fn_open());
+    send(TOUCH_EVENT_DOWN, x, y);
+    send(TOUCH_EVENT_UP, x, y);
+    CHECK_EQ(s_asks, 1);
+    view()->back();
+}
+
 TEST_CASE(the_column_holds_every_reason_and_meets_no_key)
 {
     static const ui_text_id_t k_why[] = {
@@ -546,6 +587,35 @@ TEST_CASE(a_board_with_a_key_there_has_last_write_at_the_foot)
     const gfx_rect_t r = picker_screen_last_rect();
     CHECK_EQ(r.x, OB_CLR_X);
     CHECK_EQ(r.y + r.h, OU_FOOT);
+    /* The IN USE table ends above it. */
+    picker_use_t u;
+    for (uint8_t i = 0; picker_screen_in_use(i, &u); ++i) {
+        CHECK(u.rect.y + u.rect.h <= r.y - 8);
+    }
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    for (uint8_t i = 0; i < 8u; ++i) {
+        CHECK(outbind_toggle(&b, i));
+    }
+    outbind_set_proto(&b, 0u);
+    hold_binding(&b);
+    for (uint8_t i = 0; picker_screen_in_use(i, &u); ++i) {
+        CHECK(u.rect.y + u.rect.h <= r.y - 8);
+    }
+    /* Pages no binding describes: above UNBIND ALL PINS, neither under it. */
+    static bind_reading_t odd;
+    outbind_init(&odd.bind);
+    outbind_set_board(&odd.bind, 4244u);
+    odd.state = BIND_READ_ODD;
+    outputs_screen_set_reading(&odd);
+    view()->tick(0.016f);
+    CHECK(outputs_unbind_offered());
+    const gfx_rect_t above = picker_screen_last_rect();
+    CHECK(!overlap(above, outputs_unbind_rect()));
+    CHECK_EQ(above.y + above.h, OB_CLR_Y - 8);
+    for (uint8_t i = 0; picker_screen_in_use(i, &u); ++i) {
+        CHECK(u.rect.y + u.rect.h <= above.y - 8);
+    }
+    frame();
     for (uint8_t i = 0; i < 12u; ++i) {
         gfx_rect_t k;
         if (picker_screen_button_rect(i, &k)) {
@@ -860,6 +930,7 @@ int main(void)
     RUN(the_port_rows_act_in_the_column);
     RUN(a_locked_row_takes_the_press_and_does_nothing);
     RUN(a_key_asks_for_the_ports_pin_and_the_column_names_it);
+    RUN(a_key_over_the_function_face_takes_its_press);
     RUN(the_column_holds_every_reason_and_meets_no_key);
     RUN(last_write_shows_the_result_and_leaves_both_cat_spots_free);
     RUN(a_board_with_a_key_there_has_last_write_at_the_foot);

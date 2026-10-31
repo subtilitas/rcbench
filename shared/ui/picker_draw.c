@@ -415,9 +415,7 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
     for (uint8_t i = 0; i < k; ++i) {
         if (t[i].kind == PICKER_USE_PIN) { ++pins_n; } else { ++names; }
     }
-    /* UNBIND ALL PINS stands on the foot while it is offered. */
-    const int foot = outputs_unbind_offered() ? OB_CLR_Y - 8 : USE_FOOT;
-    const int room = foot - USE_TOP;
+    const int room = pk_use_foot() - USE_TOP;
     const bool compact = pins_n * USE_PIN_H > room - names * USE_NAME_H;
     const int pin_h = !compact ? USE_PIN_H
                       : (pins_n * USE_PIN_H_C <= room - names * USE_NAME_H)

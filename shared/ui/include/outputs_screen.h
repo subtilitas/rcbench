@@ -64,7 +64,10 @@ const ui_screen_t *outputs_view_screen(void);
  */
 bool outputs_view_is_board(void);
 
-/** The grid view's hooks. */
+/**
+ * @brief The grid view.
+ * @return its hooks
+ */
 const ui_screen_t *outputs_screen(void);
 
 /** Repaint the cached chrome in every framebuffer. */
@@ -228,11 +231,15 @@ void outputs_screen_set_port_watch(uint8_t port, const char *label);
 bool outputs_screen_reason(char *buf, size_t cap);
 
 /**
- * The part of that line the protocol's rules give, for binding @p b: OFF
+ * @brief The part of that line the protocol's rules give, for binding @p b: OFF
  * edits nothing, the protocol has all its pins, all 8 slots are in use, or
  * the protocol needs more channels than are free.  The board view draws the
  * same line from its own binding.  An empty string and false when a pin can
  * still be added.
+ * @param b the binding
+ * @param buf takes the line
+ * @param cap bytes at @p buf
+ * @return true when there is a line
  */
 bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
 
@@ -292,7 +299,7 @@ bool outputs_clash_reason(const outbind_t *b, int index,
                           size_t cap);
 
 /**
- * What SETUP > INTERFACES has on the IOmcu's pins: the sensor bus, the PD
+ * @brief What SETUP > INTERFACES has on the IOmcu's pins: the sensor bus, the PD
  * mini's UART and the phase tap.  While the IOmcu answers and its page
  * has been read, a function holds the pins that page holds by its last
  * read (outputs_screen_set_iface_held()): a refused relocation keeps the
@@ -343,8 +350,11 @@ uint64_t outputs_iface_pins(outputs_iface_t which);
  *  set to one pin: the first in the order of outputs_iface_t. */
 outputs_iface_t outputs_iface_at(uint8_t gpio);
 
-/** The name a taken pin's cell and the IN USE table give
- *  function @p which, in the language in force; "" for none. */
+/**
+ * @brief The name a taken pin's cell and the IN USE table give a function.
+ * @param which the function
+ * @return its name in the language in force; "" for none
+ */
 const char *outputs_iface_name(outputs_iface_t which);
 
 /**
@@ -372,13 +382,14 @@ int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
                  bool centre);
 
 /**
- * Select protocol @p proto, as a pick in the list does: the set shown and
+ * @brief Select protocol @p proto, as a pick in the list does: the set shown and
  * the group the next tick joins.  Writes nothing and calls nothing.  OFF
  * (0) is the overview: entering OUTPUTS from SETUP selects it,
  * and so does a change of board.  It stays selected across readings until
  * another protocol is selected.  An index past the table is ignored.  The
  * board view's list selects through this, so the two views show one
  * selection.
+ * @param proto the protocol
  */
 void outputs_screen_select(uint8_t proto);
 

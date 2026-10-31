@@ -478,8 +478,13 @@ static void event(const touch_event_t *evt)
     const int x = evt->point.x, y = evt->point.y;
 
     /* The entry's rows, its open FUNCTION list and UNBIND ALL PINS first:
-     * each takes the press it is under, and nothing under it sees it. */
-    if (!s.open && ((s.port >= 0 && outputs_port_event(evt))
+     * each takes the press it is under, and nothing under it sees it.  A key
+     * is drawn over the FUNCTION face on a board with a pin there, and what
+     * is on top takes the press. */
+    const bool key_on_top = evt->type == TOUCH_EVENT_DOWN
+                            && !outputs_port_fn_open()
+                            && button_under(x, y) >= 0;
+    if (!s.open && ((s.port >= 0 && !key_on_top && outputs_port_event(evt))
                     || outputs_unbind_event(evt))) {
         return;
     }
