@@ -100,9 +100,6 @@ int shot_name_check(const char *base)
 {
     char name[FM_NAME_BUF];
     const size_t len = (base != NULL) ? strlen(base) : 0u;
-    if (len > SHOT_BASE_MAX) {
-        return (int)FM_NAME_LONG;
-    }
     (void)snprintf(name, sizeof(name), "%s%s", (base != NULL) ? base : "",
                    SHOT_EXT);
     /* An empty name is empty, not one of just the extension. */

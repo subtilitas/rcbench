@@ -737,6 +737,7 @@ TEST_CASE(a_pause_not_yet_sent_is_dropped_by_a_disarm)
     frames(12);
     feed_tap(FEED_LONE, SWEEP_X, BTN_Y);        /* PAUSE: a HOLD waits */
     CHECK(servo_screen_paused());
+    CHECK(!shot_facts_now().no_motion);
     servo_screen_set_armed(false);
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
     feed_tap(FEED_LONE, SWEEP_X, BTN_Y);

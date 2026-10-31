@@ -137,7 +137,8 @@ typedef struct {
      * @brief Whether a level that covers the screen is up: a keypad, a
      * keyboard, a list, a box or a question.  The screenshot's popup waits
      * until it is gone (ui_shot.h).  NULL: the screen cannot say, and a
-     * popup never opens over it.
+     * popup never opens over it: a screen with no band, and the questions
+     * that are screens of their own, stay NULL.
      */
     bool (*covered)(void);
 } ui_screen_t;

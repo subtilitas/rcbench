@@ -345,10 +345,6 @@ static void save_start(const char *typed, ui_textkey_layer_t layer)
 {
     kb_open(typed, layer);
     s.percent = 0;
-    if (shot_name_check(typed) != (int)FM_NAME_OK) {
-        (void)snprintf(s.status, sizeof(s.status), "%s", TR(SHOT_E_NAME));
-        return;
-    }
     name_keep(typed);
     if (s.job != UI_SHOT_JOB_NONE
         || !s.io->start(UI_SHOT_JOB_SAVE, s.image, s.name, s.io->ctx)) {

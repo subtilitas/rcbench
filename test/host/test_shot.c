@@ -301,7 +301,7 @@ TEST_CASE(a_second_contact_ends_it_and_blocks_it)
     start();
     touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
     wait_ms(500);
-    touch(600, 30, TOUCH_EVENT_MOVE, 3);        /* an event of another id */
+    touch(gap_x(), 30, TOUCH_EVENT_MOVE, 3);    /* another id, in the gap too */
     wait_ms(1000);
     CHECK(!ui_shot_wanted());
 }
@@ -924,7 +924,6 @@ TEST_CASE(stop_acts_over_the_popup_and_the_band_stays_the_tag_does_nothing)
     tap(tag.x + 5, 30);
     CHECK_EQ(ui_router_navigations(), navs);
     CHECK(ui_shot_open());
-    CHECK(!ui_router_guide_shown());
     CHECK(!ui_router_take_knob());
     /* A hold in the gap over the popup is none. */
     touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
@@ -936,6 +935,50 @@ TEST_CASE(stop_acts_over_the_popup_and_the_band_stays_the_tag_does_nothing)
     const uint32_t d = ui_router_dispatched();
     tap(100, 500);
     CHECK_EQ(ui_router_dispatched(), d);
+}
+
+TEST_CASE(the_menus_guide_chip_goes_with_the_popup_and_save_reads_save)
+{
+    start();
+    CHECK(ui_router_guide_shown());
+    open_popup();
+    REQUIRE(ui_shot_open());
+    CHECK(!ui_router_guide_shown());
+    CHECK_STR_EQ(ui_textkey_key_label(ui_shot_keyboard(), UI_TK_OK),
+                 TR(SHOT_SAVE));
+    /* A press on a key slid onto the band acts on nothing. */
+    const gfx_rect_t cancel = ui_shot_key_rect(UI_TK_CANCEL);
+    touch(cancel.x + 5, cancel.y + 5 + UI_BAND_H, TOUCH_EVENT_DOWN, 1);
+    touch(gap_x(), 30, TOUCH_EVENT_MOVE, 1);
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+    CHECK(ui_shot_open());
+}
+
+TEST_CASE(the_preview_is_of_the_picture_that_replaced_the_last)
+{
+    start();
+    open_popup();
+    REQUIRE(ui_shot_open());
+    ui_router_shot_set_idle(false);         /* the picture waits, previewed */
+    gfx_clear(&cv, GFX_RED);
+    ui_router_goto(SCREEN_SUPPLY);
+    hold_shot();
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+    ui_router_shot_set_idle(true);
+    REQUIRE(ui_shot_open());
+    const gfx_color_t *img = ui_shot_image();
+    unsigned r = 0u, g = 0u, b = 0u;
+    for (int j = 0; j < 4; ++j) {
+        for (int i = 0; i < 4; ++i) {
+            const unsigned v = img[j * W + 400 + i];
+            r += v >> 11;
+            g += (v >> 5) & 63u;
+            b += v & 31u;
+        }
+    }
+    const unsigned want = (((r + 8u) / 16u) << 11) | (((g + 8u) / 16u) << 5)
+                          | ((b + 8u) / 16u);
+    CHECK_EQ(ui_shot_preview()[100], want);
 }
 
 TEST_CASE(the_default_name_is_the_next_number_a_typed_one_stays)
@@ -1166,6 +1209,8 @@ int main(void)
     RUN(a_keypad_or_question_keeps_it_shut_until_closed);
     RUN(screens_that_cannot_say_keep_it_shut);
     RUN(stop_acts_over_the_popup_and_the_band_stays_the_tag_does_nothing);
+    RUN(the_menus_guide_chip_goes_with_the_popup_and_save_reads_save);
+    RUN(the_preview_is_of_the_picture_that_replaced_the_last);
     RUN(the_default_name_is_the_next_number_a_typed_one_stays);
     RUN(save_shows_progress_and_a_good_write_ends_the_picture);
     RUN(a_card_error_stays_on_the_popup_with_the_picture);

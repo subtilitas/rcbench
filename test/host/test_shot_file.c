@@ -107,7 +107,9 @@ TEST_CASE(a_taken_name_is_refused_and_keeps_its_file)
     REQUIRE(f != NULL);
     const size_t len = f->size;
     g_px[0] ^= 0xFFFFu;
+    g_rows = 0;
     CHECK_EQ(save("a"), FM_ERR_EXISTS);     /* FAT folds case */
+    CHECK_EQ(g_rows, 0);                    /* and nothing was encoded */
     CHECK_EQ(fk_get(&g_card, "screenshots/A.PNG")->size, len);
     CHECK(fk_get(&g_card, "screenshots/a.PNG.NEW") == NULL);
 }

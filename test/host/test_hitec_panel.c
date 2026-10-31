@@ -378,6 +378,10 @@ TEST_CASE(a_port_another_session_holds_offers_release_port)
     until(HITEC_PROG_OTHER);
     show();
     CHECK(hitec_panel_holds_port());
+    const bool held = supply_screen_port_held();
+    supply_screen_set_port_held(false);
+    CHECK(!shot_facts_now().port_free);
+    supply_screen_set_port_held(held);
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
                     TR(HP_RELEASE)),
              0);

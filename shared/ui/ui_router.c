@@ -367,17 +367,13 @@ static void drop_notice(void)
 }
 
 /**
- * @brief The screen on top carries the band and nothing is up on it: no
- *        question, no box, no list, no keypad.  A screen that cannot say
- *        counts as covered.
+ * @brief Nothing is up on the screen on top: no question, no box, no list, no
+ *        keypad.  A screen that cannot say counts as covered: those with no
+ *        band, the IOmcu's question and the release reminder.
  * @return true when a popup may stand over it
  */
 static bool shot_screen_free(void)
 {
-    if (!has_band(s.current) || s.current == SCREEN_COPROC_UPDATE
-        || s.current == SCREEN_UPD_REMIND) {
-        return false;
-    }
     const ui_screen_t *scr = screen_for(s.current);
     return scr != NULL && scr->covered != NULL && !scr->covered();
 }
@@ -698,7 +694,8 @@ static void shot_feed(const touch_event_t *evt)
 
 /**
  * @brief A press came down on the band and no control of it: the hold starts
- *        when it is the only contact, in the gap, with no popup up.
+ *        when it is the only contact, in the gap.  The popup takes every press
+ *        before this one is asked.
  * @param evt  the DOWN
  */
 static void shot_hold_begin(const touch_event_t *evt)
@@ -708,7 +705,7 @@ static void shot_hold_begin(const touch_event_t *evt)
     s.glass[id >> 3] &= (uint8_t)~bit;
     const bool alone = glass_clear();
     s.glass[id >> 3] |= bit;
-    if (alone && !ui_shot_open() && (evt->flags & TOUCH_FLAG_JUMP) == 0u
+    if (alone && (evt->flags & TOUCH_FLAG_JUMP) == 0u
         && shot_gap_at(evt->point.x, evt->point.y)) {
         s.shot_hold = true;
         s.shot_id   = id;
@@ -885,9 +882,8 @@ void ui_router_event(const touch_event_t *evt)
     const bool    band = has_band(s.current);
     const bool    popup = ui_shot_open();
     /* Only where the band is: no alert or bubble covers a screen without
-     * one.  And no screen shows under the popup, which stands only over an
-     * idle bench. */
-    const bool    safe = band && !popup && router_safe_at(evt);
+     * one. */
+    const bool    safe = band && router_safe_at(evt);
 
     shot_feed(evt);
 
@@ -1064,10 +1060,9 @@ void ui_router_event(const touch_event_t *evt)
     }
 
     if (popup) {
-        /* The popup's, as the screen's would be.  A contact from before it
-         * opened presses nothing: the keyboard acts on the release of a
-         * contact it saw come down.  One that reaches the band is released
-         * as for a screen. */
+        /* The popup's.  A contact from before it opened presses nothing:
+         * the keyboard acts on the release of a contact it saw come down, on
+         * the key it came down on, so one that slid to the band ends there. */
         touch_event_t local = *evt;
         if (evt->type == TOUCH_EVENT_DOWN && s.has_alert && in_alert(evt)) {
             s.alert_ids[id >> 3] |= bit;
@@ -1075,15 +1070,6 @@ void ui_router_event(const touch_event_t *evt)
                 s.alert_press     = true;
                 s.alert_id        = id;
                 s.alert_press_gen = s.alert_gen;
-            }
-            return;
-        }
-        if (evt->point.y < UI_BAND_H) {
-            if (evt->type != TOUCH_EVENT_DOWN) {
-                local.type = TOUCH_EVENT_UP;
-                local.flags = TOUCH_FLAG_NO_TAP;
-                local.point.y = 0;
-                ui_shot_event(&local);
             }
             return;
         }
