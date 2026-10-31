@@ -423,6 +423,185 @@ TEST_CASE(every_outcome_has_a_name)
     CHECK_STR_EQ(wa_send_res_name((wa_send_res_t)99), "?");
 }
 
+/* ------------------------------------------------- the refused body */
+
+/** @brief A client that is scripted a read at a time. */
+typedef struct {
+    const int32_t *script;  /**< each get()'s answer                    */
+    size_t n;               /**< answers; after them the last again     */
+    size_t at;              /**< the next                               */
+    uint32_t now;           /**< the clock                              */
+    uint32_t step_ms;       /**< what a get() takes                     */
+    int stop_at;            /**< stop() from this get() on; -1 never    */
+    uint32_t max_ask;       /**< the largest read asked                 */
+    uint64_t got;           /**< bytes handed over                      */
+    int gets;               /**< get() calls                            */
+} client_t;
+
+/**
+ * @brief wa_source_t's get(): the script's next answer, the clock moved.
+ * @param ctx  the client
+ * @param p    unused
+ * @param n    bytes asked at most
+ * @return as wa_source_t says
+ */
+static int32_t client_get(void *ctx, uint8_t *p, uint32_t n)
+{
+    client_t *c = ctx;
+    (void)p;
+    c->gets++;
+    c->now += c->step_ms;
+    if (n > c->max_ask) {
+        c->max_ask = n;
+    }
+    int32_t a = c->script[(c->at < c->n) ? c->at : c->n - 1u];
+    c->at++;
+    if (a > (int32_t)n) {
+        a = (int32_t)n;
+    }
+    if (a > 0) {
+        c->got += (uint64_t)a;
+    }
+    return a;
+}
+
+/**
+ * @brief wa_source_t's stop().
+ * @param ctx  the client
+ * @return true from its stop_at on
+ */
+static bool client_stop(void *ctx)
+{
+    const client_t *c = ctx;
+    return c->stop_at >= 0 && c->gets >= c->stop_at;
+}
+
+/**
+ * @brief wa_source_t's now_ms().
+ * @param ctx  the client
+ * @return its clock
+ */
+static uint32_t client_now(void *ctx)
+{
+    const client_t *c = ctx;
+    return c->now;
+}
+
+/**
+ * @brief wa_linger() over @p c with the 4,096B buffer.
+ * @param c     the client
+ * @param left  the body's bytes
+ * @return how it ended
+ */
+static wa_linger_t linger(client_t *c, uint64_t left)
+{
+    const wa_source_t s = { client_get, client_stop, client_now, c };
+    return wa_linger(&s, left, g_buf, sizeof(g_buf));
+}
+
+TEST_CASE(a_refused_body_is_read_to_its_end_and_no_further)
+{
+    static const int32_t all[] = { 4096 };
+    client_t c = { .script = all, .n = 1u, .step_ms = 1u, .stop_at = -1 };
+    /* No body: no read. */
+    CHECK_EQ(linger(&c, 0u), WA_LINGER_DONE);
+    CHECK_EQ(c.gets, 0);
+    /* 1MiB: every byte, never a read past the end or the buffer. */
+    CHECK_EQ(linger(&c, 1048576u + 1u), WA_LINGER_DONE);
+    CHECK_EQ((long long)c.got, 1048577LL);
+    CHECK_EQ(c.max_ask, 4096u);
+    /* Shorter reads add up; the last asks only what is left. */
+    static const int32_t some[] = { 1, 2, 3 };
+    client_t d = { .script = some, .n = 3u, .step_ms = 1u, .stop_at = -1 };
+    CHECK_EQ(linger(&d, 6u), WA_LINGER_DONE);
+    CHECK_EQ(d.gets, 3);
+    CHECK_EQ(d.max_ask, 6u);
+}
+
+TEST_CASE(a_client_that_closes_or_fails_ends_it_at_once)
+{
+    static const int32_t closes[] = { 100, 0 };
+    client_t c = { .script = closes, .n = 2u, .step_ms = 1u, .stop_at = -1 };
+    CHECK_EQ(linger(&c, 4096u), WA_LINGER_GONE);
+    CHECK_EQ(c.gets, 2);
+    static const int32_t fails[] = { WA_GET_FAILED };
+    client_t d = { .script = fails, .n = 1u, .step_ms = 1u, .stop_at = -1 };
+    CHECK_EQ(linger(&d, 4096u), WA_LINGER_GONE);
+    CHECK_EQ(d.gets, 1);
+}
+
+TEST_CASE(no_byte_for_2_s_ends_it_and_a_byte_starts_the_2_s_again)
+{
+    static const int32_t idle[] = { WA_GET_IDLE };
+    client_t c = { .script = idle, .n = 1u, .step_ms = WA_SEND_SLICE_MS,
+                   .stop_at = -1 };
+    CHECK_EQ(linger(&c, 4096u), WA_LINGER_QUIET);
+    CHECK_EQ(c.now, WA_LINGER_QUIET_MS);
+    CHECK_EQ(c.gets, (int)(WA_LINGER_QUIET_MS / WA_SEND_SLICE_MS));
+    /* One millisecond short of the limit is still waiting, and the byte
+     * starts it again: the second idle read still waits, the third does not
+     * come. */
+    static const int32_t late[] = { WA_GET_IDLE, 1, WA_GET_IDLE };
+    client_t d = { .script = late, .n = 3u,
+                   .step_ms = WA_LINGER_QUIET_MS - 1u, .stop_at = -1 };
+    CHECK_EQ(linger(&d, 4096u), WA_LINGER_QUIET);
+    CHECK_EQ(d.gets, 4);
+}
+
+TEST_CASE(a_body_still_arriving_after_10_s_is_late)
+{
+    /* A byte a second: no quiet, and the server held 10s at most. */
+    static const int32_t drip[] = { 1 };
+    client_t c = { .script = drip, .n = 1u, .step_ms = 1000u, .stop_at = -1 };
+    CHECK_EQ(linger(&c, 1048576u), WA_LINGER_LATE);
+    CHECK_EQ(c.now, WA_LINGER_TOTAL_MS);
+    CHECK_EQ((long)c.got, 10L);
+    /* Just inside the limit it ends well. */
+    client_t d = { .script = drip, .n = 1u, .step_ms = 1000u, .stop_at = -1 };
+    CHECK_EQ(linger(&d, 10u), WA_LINGER_DONE);
+    /* The clock's wrap at 2^32 moves neither limit. */
+    client_t e = { .script = drip, .n = 1u, .step_ms = 1000u, .stop_at = -1,
+                   .now = 0xFFFFF000u };
+    CHECK_EQ(linger(&e, 1048576u), WA_LINGER_LATE);
+    CHECK_EQ((long)e.got, 10L);
+    static const int32_t idle[] = { WA_GET_IDLE };
+    client_t f = { .script = idle, .n = 1u, .step_ms = WA_SEND_SLICE_MS,
+                   .stop_at = -1, .now = 0xFFFFFF00u };
+    CHECK_EQ(linger(&f, 4096u), WA_LINGER_QUIET);
+}
+
+TEST_CASE(the_radio_going_off_ends_it_within_a_slice)
+{
+    static const int32_t idle[] = { WA_GET_IDLE };
+    /* Before the first read, then after one slice. */
+    client_t c = { .script = idle, .n = 1u, .step_ms = WA_SEND_SLICE_MS,
+                   .stop_at = 0 };
+    CHECK_EQ(linger(&c, 4096u), WA_LINGER_STOPPED);
+    CHECK_EQ(c.gets, 0);
+    client_t d = { .script = idle, .n = 1u, .step_ms = WA_SEND_SLICE_MS,
+                   .stop_at = 1 };
+    CHECK_EQ(linger(&d, 4096u), WA_LINGER_STOPPED);
+    CHECK_EQ(d.gets, 1);
+    /* No stop() is never. */
+    const wa_source_t none = { client_get, NULL, client_now, &c };
+    c.gets = 0;
+    c.now = 0u;
+    CHECK_EQ(wa_linger(&none, 4096u, g_buf, sizeof(g_buf)), WA_LINGER_QUIET);
+}
+
+TEST_CASE(every_way_a_refused_body_ends_has_a_name)
+{
+    const wa_linger_t all[] = { WA_LINGER_DONE, WA_LINGER_GONE, WA_LINGER_QUIET,
+                                WA_LINGER_LATE, WA_LINGER_STOPPED };
+    for (size_t i = 0; i < sizeof(all) / sizeof(all[0]); ++i) {
+        CHECK(strcmp(wa_linger_name(all[i]), "?") != 0);
+        for (size_t j = 0; j < i; ++j) {
+            CHECK(strcmp(wa_linger_name(all[i]), wa_linger_name(all[j])) != 0);
+        }
+    }
+    CHECK_STR_EQ(wa_linger_name((wa_linger_t)99), "?");
+}
+
 int main(void)
 {
     RUN(an_empty_file_is_sent_as_no_bytes);
@@ -436,5 +615,11 @@ int main(void)
     RUN(the_radio_going_off_ends_the_send_within_a_slice);
     RUN(a_card_read_error_part_way_ends_the_send);
     RUN(every_outcome_has_a_name);
+    RUN(a_refused_body_is_read_to_its_end_and_no_further);
+    RUN(a_client_that_closes_or_fails_ends_it_at_once);
+    RUN(no_byte_for_2_s_ends_it_and_a_byte_starts_the_2_s_again);
+    RUN(a_body_still_arriving_after_10_s_is_late);
+    RUN(the_radio_going_off_ends_it_within_a_slice);
+    RUN(every_way_a_refused_body_ends_has_a_name);
     return test_summary("wa_send");
 }

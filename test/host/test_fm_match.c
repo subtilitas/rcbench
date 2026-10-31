@@ -21,6 +21,9 @@
  * - a_new_there_already_is_kept_after_the_sum
  * - the_check_is_refused_for_other_jobs_and_after_a_step
  * - a_load_and_a_save_sum_the_bytes_they_pass
+ * - a_save_that_only_checks_writes_nothing_and_answers_as_the_save
+ * - a_sum_of_a_file_reads_up_to_its_limit_and_holds_no_byte
+ * - what_new_can_make_delete_can_remove_every_fixed_folder
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,6 +36,7 @@
 #include "fm_fake.h"
 #include "fm_io.h"
 #include "fm_ops.h"
+#include "fm_rules.h"
 
 static fk_card_t g_card;
 static fm_io_t g_io;
@@ -451,6 +455,185 @@ TEST_CASE(a_load_and_a_save_sum_the_bytes_they_pass)
     CHECK_EQ(fm_job_sum(&g_job, sum31), FM_ERR_ARG);
 }
 
+/**
+ * @brief A sum for the cases: the bytes added up.
+ * @param sum   the sum so far
+ * @param data  the bytes
+ * @param n     how many
+ * @return the sum with them
+ */
+static uint32_t add_sum(uint32_t sum, const void *data, size_t n)
+{
+    const uint8_t *b = data;
+    for (size_t i = 0u; i < n; ++i) {
+        sum += b[i];
+    }
+    return sum;
+}
+
+/**
+ * @brief fm_fill_fn over nothing: a check never asks for a byte.
+ * @param ctx  unused
+ * @param at   unused
+ * @param dst  unused
+ * @param cap  unused
+ * @return 0
+ */
+static size_t no_fill(void *ctx, uint64_t at, uint8_t *dst, size_t cap)
+{
+    (void)ctx;
+    (void)at;
+    (void)dst;
+    (void)cap;
+    return 0u;
+}
+
+/**
+ * @brief The SAVE of @p name in USER as a check alone, run to its end.
+ * @param name   the name
+ * @param match  the check of the file there
+ * @param want   FM_MATCH_SUM: the sum
+ * @return the job's err
+ */
+static fm_err_t check_run(const char *name, fm_match_t match, uint32_t want)
+{
+    CHECK_EQ(fm_job_save(&g_job, &g_bench, 1u, "USER", name, 2048u, no_fill,
+                         NULL), FM_OK);
+    CHECK_EQ(fm_job_match(&g_job, match, add_sum, want), FM_OK);
+    CHECK_EQ(fm_job_check_only(&g_job), FM_OK);
+    (void)run();
+    return g_job.err;
+}
+
+TEST_CASE(a_save_that_only_checks_writes_nothing_and_answers_as_the_save)
+{
+    fresh();
+    const uint8_t old[3] = { 1u, 2u, 3u };
+    fk_file(&g_card, "USER/OLD.TXT", old, 3u);
+    /* Every answer of the check, with no ".NEW" and the file as it was. */
+    CHECK_EQ(check_run("OLD.TXT", FM_MATCH_SUM, 6u), FM_OK);
+    CHECK_EQ(fm_job_state(&g_job, NULL, NULL), FM_JOB_DONE);
+    CHECK_EQ(g_job.done, 0u);
+    CHECK_EQ(check_run("OLD.TXT", FM_MATCH_SUM, 7u), FM_ERR_CHANGED);
+    uint32_t found = 0u;
+    CHECK(fm_job_found(&g_job, &found));
+    CHECK_EQ(found, 6u);
+    CHECK_EQ(check_run("OLD.TXT", FM_MATCH_ABSENT, 0u), FM_ERR_EXISTS);
+    CHECK_EQ(check_run("NEW.TXT", FM_MATCH_ABSENT, 0u), FM_OK);
+    CHECK_EQ(check_run("NEW.TXT", FM_MATCH_ANY, 0u), FM_OK);
+    CHECK_EQ(check_run("NEW.TXT", FM_MATCH_SUM, 6u), FM_ERR_CHANGED);
+    CHECK(fk_get(&g_card, "USER/NEW.TXT") == NULL);
+    CHECK(fk_get(&g_card, "USER/NEW.TXT.NEW") == NULL);
+    CHECK(fk_get(&g_card, "USER/OLD.TXT.NEW") == NULL);
+    CHECK_EQ(g_card.calls[FK_WRITE], 0);
+    CHECK_EQ(fk_open_files(&g_card), 0);
+    /* A ".NEW" left there can be the only whole copy: refused, and kept. */
+    fk_file(&g_card, "USER/OLD.TXT.NEW", old, 2u);
+    CHECK_EQ(check_run("OLD.TXT", FM_MATCH_SUM, 6u), FM_ERR_EXISTS);
+    CHECK_EQ(check_run("OLD.TXT", FM_MATCH_ANY, 0u), FM_ERR_EXISTS);
+    CHECK_EQ(fk_get(&g_card, "USER/OLD.TXT.NEW")->size, 2u);
+    /* A card that fails while the old file is read: the card's answer. */
+    fresh();
+    fk_file(&g_card, "USER/OLD.TXT", old, 3u);
+    fk_fail(&g_card, FK_READ, 1, FM_ERR_IO);
+    CHECK_EQ(check_run("OLD.TXT", FM_MATCH_SUM, 6u), FM_ERR_IO);
+    CHECK_EQ(fk_open_files(&g_card), 0);
+    /* Only a SAVE that has not stepped takes it. */
+    CHECK_EQ(fm_job_check_only(NULL), FM_ERR_ARG);
+    fresh();
+    fk_file(&g_card, "USER/OLD.TXT", old, 3u);
+    CHECK_EQ(fm_job_save(&g_job, &g_bench, 1u, "USER", "OLD.TXT", 3u, no_fill,
+                         NULL), FM_OK);
+    (void)step();
+    CHECK_EQ(fm_job_check_only(&g_job), FM_ERR_ARG);
+    fm_job_cancel(&g_job);
+    (void)run();
+    uint8_t room[8];
+    CHECK_EQ(fm_job_load(&g_job, &g_bench, 1u, "USER", "OLD.TXT", room,
+                         sizeof(room)), FM_OK);
+    CHECK_EQ(fm_job_check_only(&g_job), FM_ERR_ARG);
+}
+
+TEST_CASE(a_sum_of_a_file_reads_up_to_its_limit_and_holds_no_byte)
+{
+    fresh();
+    fk_file(&g_card, "USER/A.BIN", NULL, 70000u);
+    uint32_t want = 0u;
+    for (size_t i = 0u; i < 70000u; ++i) {
+        const uint8_t b = fk_pattern("USER/A.BIN", i);
+        want = add_sum(want, &b, 1u);
+    }
+    /* At the limit: the sum; one byte under: too big, no read. */
+    CHECK_EQ(fm_job_sum_file(&g_job, &g_bench, 1u, "USER", "A.BIN", 70000u,
+                             add_sum), FM_OK);
+    (void)run();
+    CHECK_EQ(fm_job_state(&g_job, NULL, NULL), FM_JOB_DONE);
+    CHECK_EQ(g_job.data_sum, want);
+    CHECK_EQ(g_job.done, 70000u);
+    CHECK_EQ(fm_job_sum_file(&g_job, &g_bench, 1u, "USER", "A.BIN", 69999u,
+                             add_sum), FM_OK);
+    (void)run();
+    CHECK_EQ(g_job.err, FM_ERR_TOO_BIG);
+    CHECK_EQ(fk_open_files(&g_card), 0);
+    /* The rules of a read, and its arguments. */
+    fk_dir(&g_card, CARD_KST_CONF);
+    fk_file(&g_card, "BENCH/KST/CONF/KST.TXT", NULL, 1u);
+    CHECK_EQ(fm_job_sum_file(&g_job, &g_bench, 1u, CARD_KST_CONF, "KST.TXT",
+                             8u, add_sum), FM_ERR_LOCKED);
+    CHECK_EQ(fm_job_sum_file(&g_job, &g_bench, 1u, "USER", "A.BIN", 8u, NULL),
+             FM_ERR_ARG);
+    CHECK_EQ(fm_job_sum_file(&g_job, &g_bench, 1u, NULL, "A.BIN", 8u, add_sum),
+             FM_ERR_ARG);
+    CHECK_EQ(fm_job_sum_file(NULL, &g_bench, 1u, "USER", "A.BIN", 8u, add_sum),
+             FM_ERR_ARG);
+    /* A file gone since its listing. */
+    CHECK_EQ(fm_job_sum_file(&g_job, &g_bench, 1u, "USER", "NONE", 8u, add_sum),
+             FM_OK);
+    (void)run();
+    CHECK_EQ(g_job.err, FM_ERR_NOT_FOUND);
+}
+
+TEST_CASE(what_new_can_make_delete_can_remove_every_fixed_folder)
+{
+    fresh();
+    /* The list of fm_rules.c's fixed folders, deepest last: NEW makes each on
+     * a bare card, each is FIXED once made, and DELETE takes them back. */
+    static const char *const k_rows[][2] = {
+        { "", "BENCH" }, { "BENCH", "LOGS" }, { "BENCH", "ESC" },
+        { "BENCH/ESC", "CONF" }, { "BENCH", "KST" }, { "BENCH/KST", "CONF" },
+        { "BENCH", "HITEC" }, { "BENCH/HITEC", "CONF" },
+        { "", "USER" }, { "USER", "LOGS" },
+    };
+    const size_t n = sizeof(k_rows) / sizeof(k_rows[0]);
+    for (size_t i = 0u; i < n; ++i) {
+        CHECK_EQ(fm_job_mkdir(&g_job, &g_bench, 1u, k_rows[i][0], k_rows[i][1]),
+                 FM_OK);
+        (void)run();
+        CHECK_EQ(g_job.err, FM_OK);
+        CHECK_EQ(fm_place_of(&g_bench, k_rows[i][0], k_rows[i][1], true),
+                 FM_PLACE_FIXED);
+        /* What keeps the contents where the bench reads them. */
+        CHECK_EQ(fm_allowed(&g_bench, FM_OP_RENAME, k_rows[i][0], k_rows[i][1],
+                            true), FM_ERR_FIXED);
+        CHECK_EQ(fm_allowed(&g_bench, FM_OP_MOVE, k_rows[i][0], k_rows[i][1],
+                            true), FM_ERR_FIXED);
+    }
+    for (size_t i = n; i-- > 0u;) {
+        CHECK_EQ(fm_job_delete(&g_job, &g_bench, 1u, k_rows[i][0], k_rows[i][1],
+                               true), FM_OK);
+        (void)run();
+        CHECK_EQ(g_job.err, FM_OK);
+    }
+    CHECK(fk_get(&g_card, "BENCH") == NULL);
+    CHECK(fk_get(&g_card, "USER") == NULL);
+    /* The gate still comes first. */
+    fk_dir(&g_card, "USER");
+    g_bench.armed = true;
+    CHECK_EQ(fm_job_delete(&g_job, &g_bench, 1u, "", "USER", true),
+             FM_ERR_ARMED);
+    CHECK(fk_get(&g_card, "USER") != NULL);
+}
+
 int main(void)
 {
     RUN(a_matching_sum_replaces_the_file);
@@ -463,6 +646,9 @@ int main(void)
     RUN(a_new_there_already_is_kept_after_the_sum);
     RUN(the_check_is_refused_for_other_jobs_and_after_a_step);
     RUN(a_load_and_a_save_sum_the_bytes_they_pass);
+    RUN(a_save_that_only_checks_writes_nothing_and_answers_as_the_save);
+    RUN(a_sum_of_a_file_reads_up_to_its_limit_and_holds_no_byte);
+    RUN(what_new_can_make_delete_can_remove_every_fixed_folder);
     fk_free(&g_card);
     return test_summary("fm_match");
 }

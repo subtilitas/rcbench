@@ -331,6 +331,16 @@ fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
     return FM_OK;
 }
 
+fm_err_t fm_job_check_only(fm_job_t *job)
+{
+    if (job == NULL || job->kind != FM_JOB_SAVE
+        || job->state != FM_JOB_RUNNING || job->step != STEP_CHECK) {
+        return FM_ERR_ARG;
+    }
+    job->check_only = true;
+    return FM_OK;
+}
+
 bool fm_job_found(const fm_job_t *job, uint32_t *sum)
 {
     if (job == NULL || sum == NULL || !job->found) {
@@ -369,6 +379,26 @@ fm_err_t fm_job_load(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
     }
     job->buf = buf;
     job->cap = cap;
+    return (err != FM_OK) ? refuse(job, err) : run(job);
+}
+
+fm_err_t fm_job_sum_file(fm_job_t *job, const fm_bench_t *bench,
+                         unsigned mount, const char *dir, const char *name,
+                         size_t cap, fm_sum_fn sum)
+{
+    if (job == NULL) {
+        return FM_ERR_ARG;
+    }
+    begin(job, FM_JOB_LOAD, mount);
+    if (dir == NULL || name == NULL || sum == NULL) {
+        return refuse(job, FM_ERR_ARG);
+    }
+    fm_err_t err = fm_allowed(bench, FM_OP_OPEN, dir, name, false);
+    if (err == FM_OK) {
+        err = join(job->src, dir, name, false);
+    }
+    job->cap = cap;
+    job->data_fn = sum;
     return (err != FM_OK) ? refuse(job, err) : run(job);
 }
 
@@ -573,6 +603,18 @@ static fm_err_t open_new(fm_job_t *job, const fm_io_t *io)
 }
 
 /**
+ * @brief The ".NEW" a job goes on with: opened, or for fm_job_check_only()
+ *        only asked to be free.
+ * @param job  the job
+ * @param io   the card, held
+ * @return FM_OK or why not
+ */
+static fm_err_t new_ready(fm_job_t *job, const fm_io_t *io)
+{
+    return job->check_only ? free_name(io, job->tmp) : open_new(job, io);
+}
+
+/**
  * @brief A save's check of the file it replaces (fm_job_match()), before
  *        its ".NEW": a name taken for FM_MATCH_ABSENT, a file gone for
  *        FM_MATCH_SUM, which opens it to be summed.
@@ -627,7 +669,7 @@ static fm_err_t match_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
         job->found = true;
         return FM_ERR_CHANGED;
     }
-    const fm_err_t opened = open_new(job, io);
+    const fm_err_t opened = new_ready(job, io);
     if (opened == FM_OK) {
         job->step = STEP_DATA;
     }
@@ -680,7 +722,7 @@ static fm_err_t open_files(fm_job_t *job, const fm_io_t *io)
         err = io->open(io->ctx, job->src, FM_OPEN_READ, &job->in);
     }
     if (err == FM_OK && job->kind != FM_JOB_LOAD) {
-        err = open_new(job, io);
+        err = new_ready(job, io);
     }
     return err;
 }
@@ -722,7 +764,9 @@ static fm_err_t one_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
         if (got > job->cap || job->done > (uint64_t)(job->cap - got)) {
             return FM_ERR_TOO_BIG;      /* the file grew since its stat */
         }
-        memcpy(job->buf + job->done, chunk, got);
+        if (job->buf != NULL) {
+            memcpy(job->buf + job->done, chunk, got);
+        }
     } else {
         const fm_err_t err = io->write(io->ctx, job->out, chunk, got);
         if (err != FM_OK) {
@@ -832,7 +876,9 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
             if (job->step != STEP_MATCH) {
                 job->step = STEP_DATA;
             }
-            return FM_JOB_RUNNING;
+            return (job->check_only && job->step == STEP_DATA)
+                       ? finish(job, io, FM_JOB_DONE, FM_OK, false)
+                       : FM_JOB_RUNNING;
         }
         if (chunk == NULL || size == 0u) {
             return finish(job, io, FM_JOB_FAILED, FM_ERR_ARG,
@@ -843,7 +889,9 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
             if (err != FM_OK) {
                 return finish(job, io, FM_JOB_FAILED, err, job->out != NULL);
             }
-            return FM_JOB_RUNNING;
+            return (job->check_only && job->step == STEP_DATA)
+                       ? finish(job, io, FM_JOB_DONE, FM_OK, false)
+                       : FM_JOB_RUNNING;
         }
         err = one_chunk(job, io, chunk, size);
         if (err != FM_OK) {

@@ -220,6 +220,15 @@ gfx_rect_t wifi_screen_key_area(void);
 const ui_textkey_t *wifi_screen_textkey(void);
 
 /**
+ * @brief The line under the rows while a browser may write: the writes so
+ *        far, in the singular for one.
+ * @param out      takes the line
+ * @param n        bytes of @p out
+ * @param written  the writes this radio session
+ */
+void wifi_screen_writes_text(char *out, size_t n, unsigned written);
+
+/**
  * @brief The WI-FI screen, for the router.
  * @return The screen.
  */

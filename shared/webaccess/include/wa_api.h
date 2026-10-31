@@ -50,7 +50,8 @@
  * ETag a read of it gave (412 CHANGED otherwise, with the ETag of the file
  * it found, none for a file that is gone); If-None-Match: * makes
  * the file only where no entry has the name (409 EXISTS); neither header
- * makes or replaces it.  A new file's name, every name of MKDIR and the
+ * makes or replaces it.  Both are asked before the body is read
+ * (wa_api_put_check()) and again directly before the write.  A new file's name, every name of MKDIR and the
  * new name of RENAME follow the panel keyboard's rule (fm_name_check()).
  * RENAME with Q in P's folder renames the entry; with Q of the same name
  * in another folder it moves it there, a folder only when empty; any
@@ -147,6 +148,7 @@ typedef enum {
     WA_API_WRITES_HOLD,    /**< 403: no hold on the panel this session   */
     WA_API_WRITES_CODE,    /**< 403: a write without the access code     */
     WA_API_PANEL_BUSY,     /**< 503: FILES holds the card: Retry-After 2 */
+    WA_API_FORM_LARGE,     /**< 413: a POST's form over WA_API_FORM_MAX  */
     WA_API_COUNT
 } wa_api_err_t;
 
@@ -180,6 +182,9 @@ typedef struct {
     uint32_t found_tag;               /**< a PUT refused CHANGED: the CRC-32
                                            of the file it found           */
     bool found;                       /**< found_tag holds one            */
+    bool info_asked;                  /**< the last INFO asked etag=1 of a
+                                           file                           */
+    bool info_summed;                 /**< ... and etag holds its CRC-32  */
     bool created;                     /**< the last write made its entry   */
     char done[FM_PATH_SIZE];          /**< the path the last write left    */
     bool restart;                     /**< the last PUT saved a file the
@@ -247,12 +252,14 @@ wa_api_err_t wa_api_of(fm_err_t e);
  * @brief The API's reason for a refusal of the request guard (wa_guard.h),
  *        so a read of the API refused there is answered in JSON as its
  *        other refusals are.
- * @param g  the guard's answer
- * @return WA_API_OK for WA_GUARD_OK, WA_API_BODY and WA_API_HOST for the
- *         two a read can meet, WA_API_REQUEST for the others, which only
- *         a write meets
+ * @param g     the guard's answer
+ * @param kind  the request: a body over its limit names that limit
+ * @return WA_API_OK for WA_GUARD_OK; WA_API_BODY and WA_API_HOST for the two
+ *         a read can meet; WA_API_TOO_LARGE, or WA_API_FORM_LARGE for a
+ *         POST's form, for a body over its limit; WA_API_ORIGIN for another
+ *         page; WA_API_REQUEST for a value outside the enum
  */
-wa_api_err_t wa_api_of_guard(wa_guard_t g);
+wa_api_err_t wa_api_of_guard(wa_guard_t g, wa_req_kind_t kind);
 
 /**
  * @brief The reason word of @p e: "NOT_FOUND" and the like.
@@ -327,6 +334,23 @@ const char *wa_api_writes_word(wa_writes_t mode);
  * @return the room; NULL without one (wa_api_set_text())
  */
 uint8_t *wa_api_body(wa_api_t *api, size_t *cap);
+
+/**
+ * @brief What PUT /api/file asks before its body: the query and the headers,
+ *        the rules, and the file there against If-Match or If-None-Match.
+ *        Nothing is written.  wa_api_put() asks all of it again, at the
+ *        write: a file changed while the body arrived is refused there.
+ * @param api       the API
+ * @param query     the query string, without "?"; NULL is ""
+ * @param if_match  the If-Match header, or NULL
+ * @param if_none   the If-None-Match header, or NULL
+ * @param len       the body's bytes, Content-Length
+ * @return WA_API_OK, or the refusal wa_api_put() would give, with the ETag
+ *         of the file a CHANGED found
+ */
+wa_api_err_t wa_api_put_check(wa_api_t *api, const char *query,
+                              const char *if_match, const char *if_none,
+                              size_t len);
 
 /**
  * @brief PUT /api/file: the @p len bytes at wa_api_body() as file P.
@@ -420,7 +444,11 @@ wa_api_err_t wa_api_list(wa_api_t *api, const char *query);
 void wa_api_list_json(const wa_api_t *api, wa_out_t *o);
 
 /**
- * @brief Read what /api/info asks for, into the API's request.
+ * @brief Read what /api/info asks for, into the API's request.  With etag=1
+ *        a file of TEXT_BUF_FILE_MAX bytes at most is read for the CRC-32
+ *        GET /api/file would give as its ETag, a chunk at a time and in no
+ *        room of its own: the bytes do not cross the network.  A larger
+ *        file has no ETag; what the rules refuse a read of is refused.
  * @param api    the API
  * @param query  the query string, without "?"; NULL is ""
  * @return WA_API_OK, or why not
@@ -431,7 +459,9 @@ wa_api_err_t wa_api_info(wa_api_t *api, const char *query);
  * @brief The facts wa_api_info() read, as JSON.  "t" is the stamp the card
  *        holds, -1 for none; "time" is it as INFO shows it,
  *        "YYYY-MM-DD HH:MM" in the zone in force (wall_local_s()), and ""
- *        for a stamp that says no date (wall_stamp_known()).
+ *        for a stamp that says no date (wall_stamp_known()).  "etag" only
+ *        when a file was asked with etag=1: its CRC-32, 8 hex digits, or ""
+ *        for a file over TEXT_BUF_FILE_MAX.
  * @param api  the API, after wa_api_info() answered WA_API_OK
  * @param o    the output
  */

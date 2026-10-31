@@ -22,7 +22,7 @@ Jede Zeile zeigt den Namen, die Größe (`512B`, `14kB`, `7.0MB`; 1kB sind 1.024
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein Ordner, den der Prüfstand führt, etwa `BENCH`, `USER` und die Log-Ordner: kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN |
+| FEST | ein Ordner, den der Prüfstand führt, etwa `BENCH`, `USER` und die Log-Ordner: kein UMBENENNEN oder VERSCHIEBEN; LÖSCHEN nur leer, und der Prüfstand legt ihn beim nächsten Schreiben dort wieder an |
 | GESPERRT | der Vermerk der Servoprogrammierung, `BENCH/KST/CONF/KST.TXT`: nur INFO |
 | WIRD GESCHRIEBEN | eine Datei, die der Logger offen hat: nur INFO |
 

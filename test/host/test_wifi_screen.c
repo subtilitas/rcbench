@@ -1037,13 +1037,33 @@ TEST_CASE(the_writes_line_counts_and_names_the_code)
     char line[160];
     for (int de = 0; de < 2; ++de) {
         ui_text_set_language(de ? UI_LANG_DE : UI_LANG_EN);
-        snprintf(line, sizeof(line), TR(WF_WR_OPEN), 4294967295u);
+        wifi_screen_writes_text(line, sizeof(line), 4294967295u);
+        CHECK(gfx_text_width(UI_FONT_BODY, line, 1) <= SCREEN_W - 32);
+        wifi_screen_writes_text(line, sizeof(line), 1u);
         CHECK(gfx_text_width(UI_FONT_BODY, line, 1) <= SCREEN_W - 32);
         snprintf(line, sizeof(line), TR(WF_WR_CODE), "mnpq6789");
         CHECK(gfx_text_width(UI_FONT_BODY, line, 1) <= SCREEN_W - 32);
         CHECK(gfx_text_width(UI_FONT_BODY, TR(WF_WR_HOLD), 1) <= SCREEN_W - 32);
         CHECK(gfx_text_width(UI_FONT_BODY, TR(WF_WR_OFF), 1) <= SCREEN_W - 32);
     }
+    /* One write in the singular, in both languages; 0 and 2 in the plural. */
+    ui_text_set_language(UI_LANG_EN);
+    wifi_screen_writes_text(line, sizeof(line), 1u);
+    CHECK_STR_EQ(line, "The browser may write to the card: 1 write so far.");
+    wifi_screen_writes_text(line, sizeof(line), 0u);
+    CHECK_STR_EQ(line, "The browser may write to the card: 0 writes so far.");
+    wifi_screen_writes_text(line, sizeof(line), 2u);
+    CHECK_STR_EQ(line, "The browser may write to the card: 2 writes so far.");
+    ui_text_set_language(UI_LANG_DE);
+    wifi_screen_writes_text(line, sizeof(line), 1u);
+    CHECK_STR_EQ(line,
+                 "Der Browser darf auf die Karte schreiben: bisher 1 Schreibvorgang.");
+    wifi_screen_writes_text(line, sizeof(line), 0u);
+    CHECK_STR_EQ(line,
+                 "Der Browser darf auf die Karte schreiben: bisher 0 Schreibvorgänge.");
+    wifi_screen_writes_text(line, sizeof(line), 2u);
+    CHECK_STR_EQ(line,
+                 "Der Browser darf auf die Karte schreiben: bisher 2 Schreibvorgänge.");
     ui_text_set_language(UI_LANG_EN);
 }
 

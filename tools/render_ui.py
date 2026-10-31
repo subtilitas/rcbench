@@ -719,6 +719,7 @@ FIT_ONLY = {
     "wifi-save-failed": (None, "wifi", "dark"),
     "wifi-coproc":      (None, "wifi", "dark"),
     # Browser writes ACCESS CODE with the code switch off, and OFF.
+    "wifi-writes-one":  (None, "wifi", "dark"),
     "wifi-writes-code": (None, "wifi", "dark"),
     "wifi-writes-off":  (None, "wifi", "dark"),
     "updates-joining":  (None, "updates", "dark"),

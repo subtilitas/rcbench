@@ -307,7 +307,12 @@ fm_err_t fm_allowed(const fm_bench_t *bench, fm_op_t op, const char *dir,
     }
     switch (fm_place_of(bench, dir, name, is_dir)) {
     case FM_PLACE_FIXED:
-        if (op == FM_OP_MOVE || op == FM_OP_RENAME || op == FM_OP_DELETE) {
+        /* RENAME and MOVE would take what the folder holds away from where
+         * the bench reads it.  DELETE takes an empty folder alone (FM_ERR_
+         * NOT_EMPTY otherwise), as NEW makes one: every writer makes its
+         * folder again (card_make_dirs()), and the readers take a missing
+         * folder as a card without it. */
+        if (op == FM_OP_MOVE || op == FM_OP_RENAME) {
             return FM_ERR_FIXED;
         }
         break;
