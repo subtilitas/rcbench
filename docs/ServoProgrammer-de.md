@@ -473,6 +473,14 @@ Warnfarbe ist eine Ablehnung oder ein Ergebnis, das einen zweiten Blick
 braucht; eine in der Gefahrenfarbe sagt, dass der Inhalt des Servos unklar
 ist.
 
+Eine Sitzung, die endet, durch einen verlorenen Link, einen IOmcu, der neu
+startet, oder den Port zurück in PWM, nimmt die Zeilen über das mit, was sie
+hielt: `Alle 32 Register ausgelesen.`, `KST004 geladen.`, eine mit dem Servo
+verglichene Datei, die Ablehnung einer Änderung und worauf eine Änderung oder
+ein Laden wartet. Was geschah, bleibt: ein Schreiben und seine Prüfung, eine
+gespeicherte Datei, eine abgelehnte Datei, wie ein Vorgang endete und jede Zeile
+in der Gefahrenfarbe.
+
 ### Ein Servo mit unbekanntem Layout
 
 Der IOmcu vergleicht das Abbild mit dem Layout des bekannten Servos,
@@ -1014,6 +1022,14 @@ listet, 4 oder 3 und `und 2 weitere`, und dieselben Warnzeilen wie eine
 letzte Zeile den Rest. **2s HALTEN ZUM
 LADEN** für 2s übernimmt die Werte in den Entwurf. **ABBRECHEN** lässt den
 Entwurf, wie er war.
+
+Die weichen Limits vergleichen mit dem Servo, wie die Sitzung es vorfand, nicht
+wie zuletzt geschrieben, und SCHREIBEN INS SERVO FREIGEBEN spielt keine Rolle.
+Ein Servo, gefunden mit Left Angle 100 und auf 97 geschrieben, nimmt eine Datei
+mit 98 ohne Seite: 98 liegt unter dem, was die Sitzung vorfand. Die nächste
+Sitzung findet 97, und dieselbe Datei ist eine Erhöhung und öffnet die Seite.
+Die Seite sagt nichts über den Prüfwert einer Datei: Eine von Hand bearbeitete
+Datei sagt das in ihrer eigenen Zeile, mit oder ohne Seite.
 
 ![Die Warnungen einer Datei](img/de/servo-kst-file-soft.png)
 

@@ -599,3 +599,31 @@ const char *kst_prog_run_backup(const kst_prog_t *p)
 {
     return p->run_hold ? p->run_backup : "";
 }
+
+/* ----------------------------------------------- the lines of a session */
+
+bool kst_prog_msg_of_session(unsigned id)
+{
+    switch (id) {
+    case KST_PROG_MSG_READ:
+    case KST_PROG_MSG_READ_ONLY:
+    case KST_PROG_MSG_VERIFIED:
+    case KST_PROG_MSG_LOAD_SAME:
+    case KST_PROG_MSG_LOAD_SOFT:
+    case KST_PROG_MSG_LOADED:
+    case KST_PROG_MSG_LOADED_EDITED:
+    case KST_PROG_MSG_LOADED_UNTYPED:
+    case KST_PROG_MSG_NO_CHANGES:
+    case KST_PROG_MSG_NEED_ENABLE:
+    case KST_PROG_MSG_NEED_READ:
+    case KST_PROG_MSG_NEED_TYPE:
+    case KST_PROG_MSG_EDIT_HARD:
+    case KST_PROG_MSG_EDIT_LOCKED:
+    case KST_PROG_MSG_JOURNAL_SAME:
+    case KST_PROG_MSG_JOURNAL_DONE:
+    case KST_PROG_MSG_BACKUP_OTHER:
+        return true;
+    default:
+        return false;
+    }
+}

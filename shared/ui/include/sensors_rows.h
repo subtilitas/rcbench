@@ -99,6 +99,35 @@ bool sensors_rows_unheld(setting_id_t id);
 const char *sensors_rows_why(setting_id_t id);
 
 /**
+ * @brief The band's line for an INA228 frame the IOmcu refused: the shunt and
+ *        maximum past 163.84mV, with the highest maximum for that shunt; any
+ *        other refusal in general words.
+ * @param buf  where the line goes.
+ * @param n    the size of @p buf, bytes.
+ * @param uohm the shunt asked, uOhm.
+ * @param da   the maximum asked, 0.1A.
+ * @return @p buf; "" for no buffer.
+ */
+const char *sensors_rows_i228_alert(char *buf, size_t n, unsigned uohm,
+                                    unsigned da);
+
+/**
+ * @brief The help line of INA228 shunt and INA228 max current: the highest
+ *        value that works with the other row's value as it stands, so the row
+ *        says what the IOmcu takes before anything is written.
+ * @param id the row's setting.
+ * @return the line, valid until the next call; "" for any other row.
+ */
+const char *sensors_rows_i228_line(setting_id_t id);
+
+/**
+ * @brief Whether the INA228's shunt and maximum as set are a pair the IOmcu
+ *        refuses: more than 163.84mV across the shunt.
+ * @return true when the IOmcu refuses them.
+ */
+bool sensors_rows_i228_over(void);
+
+/**
  * @brief Builds the band's line for a SENSE_LIMIT alert, in the panel's
  *        language.
  * @param buf   where the line goes.

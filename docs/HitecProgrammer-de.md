@@ -853,6 +853,12 @@ unbeantwortet, wenn SERVO verlassen wird, ist sie weg, wie bei NEIN.
 | Das Panel startet neu | Wie bei einer verlorenen Verbindung | Wie bei einer verlorenen Verbindung |
 | Ein Fehler des Prüfstands ([Sicherheit, Fehler](Safety-de.md#fehler)) oder ein Vorgang, der in einer Störung des Servos oder der Leitung endet: kein Servo, eine falsche Antwort beim Einstieg, ein gescheitertes Lesen, ein klassisches Schreiben ohne Antwort, ein Zurücklesen mit Abweichung, ein Schritt, den der Decoder abwies | Ein laufendes Schreiben endet zuerst: der IOmcu hält die Versorgung bis zu seinem letzten Schritt und 150ms danach an, höchstens 10000ms. Dann geht der Ausgang des PD mini aus, und der Port bleibt ohne ihn gehalten: das ON eines POWER wird abgewiesen. Ein IOmcu älter als Link 4.31 lässt die Versorgung an ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)) | VERLASSEN, dann VERBINDEN |
 
+Eine Sitzung, die endet, nimmt die Zeilen über das mit, was sie hielt: das
+Auslesen, eine verglichene oder geladene Datei, die Ablehnung einer Änderung und
+worauf ein Schreiben wartet. Was geschah, bleibt: ein Schreiben und seine
+Prüfung, eine gespeicherte Datei, eine abgelehnte Datei, wie ein Vorgang endete
+und jede Zeile in der Gefahrenfarbe.
+
 ![STOP gesetzt](img/de/servo-hitec-stopped.png)
 
 ## Ein Port, den eine andere Sitzung hält

@@ -76,7 +76,7 @@ static void measured_row(gfx_color_t *out)
 {
     for (int y = 0; y < 20; ++y) {
         memcpy(out + y * SV_RCARD_W,
-               fb + (size_t)(476 + 12 + y) * W + UI_MARGIN + 12 + 198,
+               fb + (size_t)(448 + 12 + y) * W + UI_MARGIN + 12 + 198,
                SV_RCARD_W * sizeof(gfx_color_t));
     }
 }

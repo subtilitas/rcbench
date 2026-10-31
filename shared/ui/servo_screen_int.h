@@ -178,7 +178,9 @@ _Static_assert(ARM_Y + ARM_H <= RCARD_Y + RCARD_H,
 /** @brief Reading @p k's column (0 COMMANDED, 1 MEASURED, 2 CURRENT). */
 #define READ_X(k)  (PAD + 12 + (k) * READ_W)
 #define READ_NUM_H 44                    /**< A reading's numerals, px. */
-#define READ_NUM_Y (H - PAD - 12 - READ_NUM_H) /**< Their top, px. */
+/** @brief Their top, px: they end 4px above the alert band, which shows over
+ *         the card's foot. */
+#define READ_NUM_Y (UI_ALERT_Y - UI_BAND_H - 4 - READ_NUM_H)
 #define READ_LBL_Y (READ_NUM_Y - 26)     /**< The label and unit row. */
 #define SEG_X      (PAD + 16)            /**< The horn's angle, top left. */
 #define SEG_Y      (CARD_Y + 14)         /**< Its top, px. */

@@ -193,6 +193,47 @@ static inline bool link_sn_pins_pair(unsigned sda, unsigned scl)
     return (sda % 2u) == 0u && scl == sda + 1u;
 }
 
+/**
+ * @brief The most an INA228 shunt in uOhm times its maximum in 0.1A can be:
+ *        163.84mV, the part's wider range, as 0.1A x uOhm.
+ *
+ * Inside the page's ranges this is the only pair the driver refuses: every
+ * shunt from 50uOhm up has a full scale under 2000A at the range the maximum
+ * chooses.  ina228_calibrate() is the rule; test_sense_i228_setup.c holds the
+ * two together for every shunt the page takes.
+ */
+#define LINK_SN_I228_DA_UOHM_MAX 1638400u
+
+/**
+ * @brief The highest maximum the page takes with an INA228 shunt.
+ * @param uohm the shunt, uOhm
+ * @return the maximum in 0.1A, at most LINK_SN_I228_DA_MAX; 0 for no shunt
+ */
+static inline unsigned link_sn_i228_max_da(unsigned uohm)
+{
+    if (uohm == 0u) {
+        return 0u;
+    }
+    const unsigned da = LINK_SN_I228_DA_UOHM_MAX / uohm;
+    return (da > (unsigned)LINK_SN_I228_DA_MAX) ? (unsigned)LINK_SN_I228_DA_MAX
+                                                : da;
+}
+
+/**
+ * @brief The largest INA228 shunt the page takes with a maximum.
+ * @param da the maximum, 0.1A
+ * @return the shunt in uOhm, at most LINK_SN_I228_UOHM_MAX; 0 for no maximum
+ */
+static inline unsigned link_sn_i228_max_uohm(unsigned da)
+{
+    if (da == 0u) {
+        return 0u;
+    }
+    const unsigned uohm = LINK_SN_I228_DA_UOHM_MAX / da;
+    return (uohm > (unsigned)LINK_SN_I228_UOHM_MAX)
+               ? (unsigned)LINK_SN_I228_UOHM_MAX : uohm;
+}
+
 /** @brief What the IOmcu says about the bus and the two parts. */
 typedef enum {
     LINK_SN_I228_ONLINE    = 1u << 0, /**< answering, identity good, in use */

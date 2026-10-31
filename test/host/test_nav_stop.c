@@ -370,8 +370,8 @@ static uint16_t servo_last_position(void)
 }
 
 /*
- * The station's plain drag: one contact down the dial from (495, 258) to
- * (495, 368), a report every 10ms and a frame every 16.6ms, then the lift.
+ * The station's plain drag: one contact down the dial from (495, 244) to
+ * (495, 354), a report every 10ms and a frame every 16.6ms, then the lift.
  * The last command, and the horn drawn, is the pulse a tap at the lift's
  * point commands: the filter lands on it and stops nowhere short.
  */
@@ -380,7 +380,7 @@ TEST_CASE(a_plain_drag_settles_on_the_fingers_pulse)
     on_screen(SCREEN_SERVO);
     servo_screen_set_armed(true);
     drain_servo();
-    feed_tap(FEED_LONE, 495, 368);
+    feed_tap(FEED_LONE, 495, 354);
     const uint16_t want = servo_last_position();
     /* 95px right of the shaft and 55px under it: -30.07deg, 1333us on
      * STANDARD PWM (1500us + deg * 500us / 90deg, rounded). */
@@ -390,8 +390,8 @@ TEST_CASE(a_plain_drag_settles_on_the_fingers_pulse)
     servo_screen_set_armed(true);
     drain_servo();
     float t_frame = 0.0f;
-    finger(FEED_LONE, 495, 258);
-    for (int y = 259; y <= 368; ++y) {
+    finger(FEED_LONE, 495, 244);
+    for (int y = 245; y <= 354; ++y) {
         finger(FEED_LONE, 495, y);
         t_frame += 0.010f;
         while (t_frame >= FRAME_S) {

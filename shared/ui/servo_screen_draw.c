@@ -275,6 +275,15 @@ static void draw_dial(gfx_canvas_t *c)
         char lbl[8];
         snprintf(lbl, sizeof(lbl), "%+d", (int)a);
         int lx, ly;
+        if (i == -2 || i == 2) {
+            /* Left of the tick, level with the arc's end: the room above and
+             * below the arc is the readings' and the strip's. */
+            at(a, ARC_R, &lx, &ly);
+            gfx_text_in(c, (gfx_rect_t){ (int16_t)(lx - 6 - 48),
+                                         (int16_t)(ly - 10), 48, 20 },
+                        lbl, SV_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
+            continue;
+        }
         at(a, ARC_R + 26, &lx, &ly);
         gfx_text_in(c, (gfx_rect_t){ (int16_t)(lx - 24), (int16_t)(ly - 10),
                                      48, 20 },
