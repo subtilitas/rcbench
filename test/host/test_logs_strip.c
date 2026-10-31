@@ -301,6 +301,14 @@ TEST_CASE(a_second_finger_on_the_strip_ends_no_press_of_the_first)
     body(TOUCH_EVENT_UP, 1, TAB_CX(TAB_FILES), TAB_CY);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
     fresh_strip();
+    /* LOGS: a folder tab held. */
+    const uint32_t nav0 = ui_router_navigations();
+    body(TOUCH_EVENT_DOWN, 1, LV_TAB_CX(0), LV_HEAD_CY);
+    body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_WIFI), TAB_CY);
+    body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_WIFI), TAB_CY);
+    CHECK_EQ(ui_router_navigations(), nav0);
+    body(TOUCH_EVENT_UP, 1, LV_TAB_CX(0), LV_HEAD_CY);
+    CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
     /* LOGS: a row held. */
     const uint32_t nav1 = ui_router_navigations();
     body(TOUCH_EVENT_DOWN, 1, LV_ROW_CX, LV_ROW_CY(1));

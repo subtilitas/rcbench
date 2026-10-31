@@ -232,8 +232,10 @@ static void browse_event(const touch_event_t *e)
         return;
     }
 
-    /* The tile's strip, while no other contact holds a press here. */
+    /* The tile's strip, while no other contact holds a press here, on a
+     * folder tab as elsewhere. */
     if ((!s.tap_have || e->point.id == s.tap_id)
+        && (s.tabs.pressed < 0 || e->point.id == s.tabs.press_id)
         && logs_strip_event(e, SCREEN_LOGS)) {
         s.tap_have = false;
         s.pressing = false;
