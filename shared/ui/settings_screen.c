@@ -743,7 +743,7 @@ static void open_entry(int entry)
 {
     s.entry_scroll[sensors_pane_selected()] = s.scroll;
     sensors_pane_select(entry);
-    s.scroll = s.entry_scroll[entry];
+    s.scroll = s.entry_scroll[sensors_pane_selected()];
     stg_clamp_scroll();
     settings_screen_invalidate();
 }
