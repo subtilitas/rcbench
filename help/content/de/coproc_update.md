@@ -19,7 +19,7 @@ Die Frage öffnet aus dem [Menü](overview.md), mit UPDATE im Band, solange der 
 | 2s HALTEN ZUM STARTEN | startet das Update nach einem Halten von 2s, mit der Geste und dem Übergang von ARM |
 | ABBRECHEN | schließt die Frage; das Panel fragt für diese Version bis zu seinem Neustart nicht erneut, und [Updates](updates.md#der-iomcu) startet das Update weiterhin |
 
-Ein anderes Verlassen der Frage lehnt sie ab wie ABBRECHEN.
+Der Home-Tag lehnt sie ab wie ABBRECHEN. Ein Bildschirm, den das Panel über die Frage legt, lehnt nichts ab: der [Fehlerbildschirm](busfault.md) eines verlorenen Links und der Download eines Panel-Updates. Der nächste Link-Aufbau bietet erneut an, und die Frage öffnet auf dem Menü unter denselben Bedingungen.
 
 ![Ein älteres Image](view:coproc-update-older)
 

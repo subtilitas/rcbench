@@ -244,12 +244,26 @@ static void tick(float dt_s)
     ui_hold_flash_step(&s.hold, dt_s);
 }
 
-/* Leaving the question any other way than START declines the offer. */
-static void leave(void)
+/**
+ * @brief The home tag: on the question it is the operator's answer, as
+ *        CANCEL is.
+ * @return false: the router goes on to the screen's parent.
+ */
+static bool back(void)
 {
     if (s.view == CU_VIEW_QUESTION && !s.start) {
         s.cancel = true;
     }
+    return false;
+}
+
+/**
+ * @brief The router has moved off the screen.  A move answers nothing: only
+ *        CANCEL and back() decline, and a screen the panel forces over the
+ *        question leaves the offer standing.
+ */
+static void leave(void)
+{
     drop_press(NULL);
 }
 
@@ -487,18 +501,19 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
         start_from_updates(f);
     }
 
-    /* Both latches, wherever the router is: a way off the question other
-     * than START latches CANCEL as the screen is left. */
+    /* Both latches, wherever the router is: a home tag has left the screen
+     * by now.  A decline counts for the offer its question showed: one
+     * given on the question of an offer since replaced declines nothing. */
     if (coproc_update_screen_take_start()) {
         ++d->starts_sent;
         ++out->starts;
     }
-    if (coproc_update_screen_take_cancel() && f->offered) {
+    if (coproc_update_screen_take_cancel() && f->offered
+        && f->offer_gen == d->shown_gen) {
         out->decline = true;
         if (ui_router_current() == SCREEN_COPROC_UPDATE
             && s.view == CU_VIEW_QUESTION) {
             ui_router_goto(SCREEN_OVERVIEW);
-            (void)coproc_update_screen_take_cancel();
         }
     }
 
@@ -531,7 +546,11 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
             /* The offer went -- another link-up checks again -- and with
              * it the question.  Leaving it declines nothing. */
             ui_router_goto(SCREEN_OVERVIEW);
-            (void)coproc_update_screen_take_cancel();
+        } else if (f->offer_gen != d->shown_gen) {
+            /* A newer link-up's offer, its withdrawal between two frames:
+             * the question shows the versions it is about. */
+            d->shown_gen = f->offer_gen;
+            coproc_update_screen_offer(f->running, f->carried);
         }
         return;
     }
@@ -554,6 +573,7 @@ static const ui_screen_t k_screen = {
     .tick   = tick,
     .event  = event,
     .cancel = cancel,
+    .back   = back,
     .render = render,
 };
 
