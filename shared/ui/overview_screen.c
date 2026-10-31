@@ -353,11 +353,15 @@ static void cancel(void)
 static const uint8_t k_page_slots[2][4] = { { 0, 1, 4, 5 },
                                             { 2, 3, 6, 7 } };
 
+/** @brief Where the guide marks the band's empty part at the left: past PREV
+ *         and NEXT, which end at x 264. */
+#define HELP_SHOT_X 272
+
 /**
  * @brief The menu's guide pages.
- * @return 3, in every state.
+ * @return 4, in every state.
  */
-static int help_count(void) { return 3; }
+static int help_count(void) { return 4; }
 
 /**
  * @brief A rect of the band, in panel coordinates, in the screen's.
@@ -383,10 +387,24 @@ static bool help_page(int i, ui_help_page_t *out)
     }
     memset(out, 0, sizeof(*out));
     out->armed_ok = true;
-    static const ui_text_id_t k_title[3] = { TX_HG_OV_TITLE_LEFT,
+    static const ui_text_id_t k_title[4] = { TX_HG_OV_TITLE_LEFT,
                                              TX_HG_OV_TITLE_RIGHT,
-                                             TX_HG_OV_TITLE_BAND };
+                                             TX_HG_OV_TITLE_BAND,
+                                             TX_HG_OV_TITLE_SHOT };
     out->title = k_title[i];
+    if (i == 3) {
+        /* The band's empty part, right of PREV and NEXT, in the half the
+         * dock leaves. */
+        out->side = UI_HELP_DOCK_RIGHT;
+        gfx_rect_t gap = gfx_rect_make(HELP_SHOT_X, 0, 8, UI_BAND_H);
+        if (ui_router_shot_gap(&gap) && gap.x < HELP_SHOT_X) {
+            gap.w = (int16_t)(gap.w - (HELP_SHOT_X - gap.x));
+            gap.x = HELP_SHOT_X;
+        }
+        out->item[out->count++] = (ui_help_item_t){
+            TR(HG_OV_SHOT_NAME), TX_HG_OV_SHOT, band_item(gap) };
+        return true;
+    }
     if (i < 2) {
         out->side = (i == 0) ? UI_HELP_DOCK_RIGHT : UI_HELP_DOCK_LEFT;
         for (int k = 0; k < 4; ++k) {
@@ -427,6 +445,7 @@ static bool help_page(int i, ui_help_page_t *out)
 
 static const ui_screen_t k_screen = {
     .title  = "rcbench",
+    .covered = ui_screen_not_covered,
     .reset  = reset,
     .enter  = NULL,
     .leave  = NULL,

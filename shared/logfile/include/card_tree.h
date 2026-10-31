@@ -28,7 +28,9 @@
  * card_folder_check() takes, the defaults CARD_AUTO_LOGS and
  * CARD_USER_LOGS.  The other places are fixed.
  *
- * The panel reads and writes these places only.  Folders of firmware 0.21
+ * The panel reads and writes these places only, and one more of the
+ * operator's own: "screenshots" in the root, a name of 11 lower-case letters
+ * that no file of the bench is in (shot_file.h).  Folders of firmware 0.21
  * and older, /ESC and /KST, and its /RCBENCH.LOG are neither read nor
  * moved: their files are moved on a computer.
  *

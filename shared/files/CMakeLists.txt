@@ -9,7 +9,8 @@
 # places the bench keeps and the write gate (fm_rules.c), and the jobs that
 # copy, move, rename, delete, make, save and load (fm_ops.c), and the
 # runner of the FILES screen's requests on the card's task (fm_req.c).
-# Nothing here draws or reaches a card: the panel supplies the card
+# png_enc.c encodes a picture row by row and shot_file.c writes it as a
+# screenshot.  Nothing here draws or reaches a card: the panel supplies the card
 # (firmware/panel), the host suite a card in memory that fails on request.
 set(SRCS
     text_buf.c
@@ -21,6 +22,8 @@ set(SRCS
     fm_ops.c
     fm_req.c
     fm_crc.c
+    png_enc.c
+    shot_file.c
 )
 
 if(ESP_PLATFORM)

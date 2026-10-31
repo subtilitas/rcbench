@@ -1107,7 +1107,14 @@ static void cancel(void)
     settings_screen_invalidate();
 }
 
+/**
+ * @brief ui_screen_t's covered: a keypad, a keyboard or the leave warning.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.kp.open || s.tk.open || s.warn; }
+
 static const ui_screen_t s_screen = {
+    .covered = covered,
     .title = "SETUP",
     .reset = reset,
     .enter = enter,

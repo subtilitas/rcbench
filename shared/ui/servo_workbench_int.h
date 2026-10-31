@@ -103,6 +103,9 @@ void wb_cancel(void);
  * programming asks for LEAVE); a run's settings close to TEST.  Whether
  * it did one; false lets the screen go. */
 bool wb_back(void);
+/** @brief A panel or a programming page covers the screen.
+ *  @return true while one does */
+bool svs_covered(void);
 /* A DOWN on the strip or the TARGET row, and the rest of a press on
  * either: whether it was theirs. */
 bool wb_down(const touch_event_t *evt);

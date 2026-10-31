@@ -36,6 +36,7 @@
 #include "coproc_update_screen.h"
 #include "render_files.h"
 #include "render_help.h"
+#include "render_shot.h"
 #include "render_hitec.h"
 #include "sense_link.h"
 #include "settings.h"
@@ -1955,6 +1956,7 @@ static ui_screen_id_t id_of(const char *name)
     static const struct { const char *name; ui_screen_id_t id; } k[] = {
         { "splash",     SCREEN_SPLASH },
         { "overview",   SCREEN_OVERVIEW },
+        { "shot",       SCREEN_OVERVIEW },
         { "motor",      SCREEN_MOTOR },
         { "motor-held", SCREEN_MOTOR },
         { "servo",      SCREEN_SERVO },
@@ -4164,6 +4166,9 @@ int main(int argc, char **argv)
     gfx_canvas_init(&c, fb, W, H, W);
 
     gfx_clear(&c, ui_theme_color(UI_C_BG));
+    if (render_shot_view(view)) {
+        render_shot_pose(&c, view);
+    }
 #ifdef GFX_TEXT_TRACE
     /* The frame starts here: what was drawn before it is gone. */
     if (s_trace != NULL) {

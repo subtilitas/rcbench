@@ -191,9 +191,122 @@ guide closes.
   that stops an output and no TARGET row; page 1 then says so in one line.
   The menu's pages all show while ARMED.
 
-The menu's guide has three pages: the left two columns of tiles with the
-dock on the right, the right two with the dock on the left, and STOP, the
-arm chip, "?" and the SIMULATED mark with the dock on the left.
+The menu's guide has four pages: the left two columns of tiles with the
+dock on the right, the right two with the dock on the left, STOP, the
+arm chip, "?" and the SIMULATED mark with the dock on the left, and the
+band's empty part, for the screenshot's hold, with the dock on the right.
+
+## Screenshot
+
+A 1000ms hold on the empty part of the band takes a screenshot of what the
+panel shows, band included. Nothing on the panel marks the place; the menu's
+guide and the help say where it is.
+
+![The screenshot's popup](img/shot-popup.png)
+
+| Part | Figure |
+| --- | --- |
+| Where | the band's whole height, from 8px right of the home tag to 8px left of the leftmost chip, worked out from the rectangles the band draws. The narrowest gap, over every screen with the band in English and German, is 176px SAFE with no FAULT chip and 106px ARMED MOTOR |
+| The hold | 1000ms of frames, a late frame counting 100ms at most, as for a hold button. Nothing at 999ms |
+| What ends it | a slide out of the gap, a chip that appears under the contact, any event of another contact, a lost touch event, a change of screen. Its release does nothing |
+| What it is not | a press on a chip, the home tag, "?" or STOP. No screen sees the contact |
+| Response at 1000ms | the band's notice, no fill while held: `Screenshot taken.`, or `Screenshot taken. It opens when the bench is idle.` |
+| Memory | 1,305,600B of PSRAM (pseudo-static RAM), the picture's 1,228,800B and the preview's 76,800B, from the capture to CANCEL or a save that worked. A restart loses it |
+| No memory | the band says `Screenshot not taken: 1,305,600B of PSRAM are not free.`, and nothing else changes |
+| A hold while one waits | replaces it in the same memory: `New screenshot taken. It replaces the waiting one.` |
+| A hold while a stopped save ends | no picture: `Screenshot not taken: the last one is still being written.`, for at most one row of the PNG |
+| Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
+
+The picture is taken in that frame, on the render task, whatever the bench
+does. It reads no output and writes none; STOP, DISARM and the rest stay live.
+It is the frame as the operator sees it, also over a box, a list or a keypad,
+and with Screen rotation 180°, since the frame is drawn upright and turned on
+its way to the panel. The notice comes a frame later and is not in it.
+
+### The popup
+
+The popup opens when the bench is idle, on a screen with the band, with
+nothing else up on it, and with no contact on the glass. The press that
+disarmed or acknowledged cannot land on it: it takes only a new press.
+
+| Part | Figure |
+| --- | --- |
+| Preview | 256 x 150px, each pixel the mean of 4 x 4, top left of the body |
+| Folder and name | `screenshots/` and the name with `.PNG`, under the preview |
+| Keyboard | the file-name keyboard, x 280 to the panel's edge. OK reads SAVE, `SICHERN` in German |
+| Band | STOP and the chips stay live. The home tag and the knob do nothing, and "?" does not show |
+
+The popup closes the moment one of these turns false, and the picture waits
+again with the name as typed. Only CANCEL or a save that worked ends it.
+
+| The bench is idle when | Read from |
+| --- | --- |
+| the link answers, or the bench is simulated | the snapshot's `link_up`, the model's flag |
+| SAFE, no arm waits | the snapshot's `armed`, `arm_wanted` |
+| no STOP request waits | `s_stop_request` |
+| the supply is off, no ON on its way | the snapshot's `supply.output`, the newest sample's output, `supply_live_or_coming()` |
+| PROG 5V is off, no ON on its way | `prog5v_box_on()`, `supplies_live_or_coming()` |
+| no port is held | `supply_screen_port_held()`, `kst_panel_holds_port()`, `hitec_panel_holds_port()`, the HITEC page's holds in `s_drive` |
+| no programming session is open | `kst_panel_is_open()`, `hitec_panel_is_open()`, `esc_stick_panel_stage()` |
+| no programmer's card job is out | the KST and Hitec file and card counters |
+| no sweep or pause | `servo_screen_sweeping()`, `servo_screen_paused()` |
+| no automatic test or limit run | `servo_screen_testing()`, `servo_screen_limit_running()`, `s_servo_testing` |
+| no ESC STICK run | `esc_stick_panel_profile()` |
+| no update, install or download | the snapshot's `cu.active`, `s_cu_busy`, `s_fw_installing`, the download's flag and fetch |
+| no FAULT bit is up | the snapshot's `faults` |
+| no fault log write is out | `log_fault_busy()` |
+| no log run, test file or capture is open | `panel_run_open()` |
+
+Outputs are driven only while ARMED, so SAFE covers a pulse on a pin. A FAULT
+bit left up holds the popup back until it is cleared. A screen's keypad,
+keyboard, list, box or question holds it back too, and so do the IOmcu's
+question and the release reminder.
+
+### Saving
+
+SAVE writes `screenshots/<name>.PNG`, making the folder when it is missing. The
+folder is no FIXED folder: nothing of the bench reads it, and FILES and the
+Wi-Fi page rename and delete it as any other. A FILES pane that shows the folder
+lists the new file when it is next read.
+
+| Part | Figure |
+| --- | --- |
+| Format | PNG (Portable Network Graphics), 1024 x 600, 8-bit RGB, each RGB565 value with its top bits repeated in the low bits |
+| Default name | `SHOT` and 4 digits, one above the highest such name in the folder; `SHOT9999` at most |
+| Name | up to 55 bytes in front of `.PNG`, the rules of FILES' names (`fm_name.h`) |
+| A taken name | refused: `This name is taken. Type another one.` Nothing is overwritten |
+| Size | 34,071 to 69,467B on seven rendered screens; not measured on a card |
+| Time | 11 to 14ms on the build machine for the encoding alone; on the panel not measured. The console logs each save's time and each copy's |
+| Memory while saving | 36,928B of PSRAM for the encoder, 16,384B of internal RAM for the card's buffer and 7,168B of internal RAM for the task's stack, freed at its end |
+| Task | `shot`, priority 0 on core 0, below the render loop. The control task and the heartbeat take no part |
+
+A file is written as `<name>.PNG.NEW`, then renamed, so a save stopped or a
+card pulled leaves no file of the name. A power cut leaves the `.NEW`; the next
+save of that name deletes it.
+
+| While it saves or after | The popup says |
+| --- | --- |
+| during | `Saving 42%` and a bar. Only CANCEL takes a press |
+| a save that worked | closes; the band: `Saved: screenshots/SHOT0007.PNG` |
+| no card, a card gone | `No card. Put one in and SAVE again.` |
+| a full card | `The card is full. Free some room and SAVE again.` |
+| write-protected | `The card is write-protected.` |
+| a write failed | `The write failed. The picture is kept: SAVE again.` |
+| no memory for the encoder or the buffer | `No memory to write the PNG. Nothing was written.` |
+| another card job holds the card past 2000ms | `The card is busy. SAVE again in a moment.` |
+
+Each failure stays on the popup with the picture kept. The card job lock is
+FILES' and the Wi-Fi page's: one job at a time, and the page's writes wait up
+to 2000ms for a save and then answer `PANEL_BUSY`. CANCEL during a save stops it
+at its next row, and the picture goes when it has stopped. A bench that stops
+being idle does the same and keeps the picture.
+
+The copy is 1,228,800B on the render task in one frame. It is not split across
+frames: the frame buffers change every frame, so a copy over several would mix
+frames. It takes 0.1ms on the build machine; its time on the panel is not
+measured, and the console logs it. The control
+task, on the other core, does not wait for it, and the frame watch allows
+1000ms.
 
 ## The alert band
 

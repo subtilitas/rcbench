@@ -29,6 +29,11 @@ history is in git.
 
 ### Added
 
+- Screenshot: a 1000ms hold on the empty part of the band, on any screen with
+  the band, takes the frame at once, in any bench state. One picture is held in
+  1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes
+  `screenshots/<name>.PNG`, an 8-bit RGB PNG of 1024 x 600px, on the card. The
+  menu's guide has a fourth page for it.
 - Openers replace texts that named a path, each returning by the home tag:
   SERVO's caps line under TEST's cards and on DUT is a button to SUPPLY's
   SETTINGS, LIMITS; DUT's AS5600 note is a button to SENSORS' AS5600 entry;

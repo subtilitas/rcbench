@@ -812,7 +812,14 @@ static bool back(void)
     return wb_back();
 }
 
+/**
+ * @brief ui_screen_t's covered: a panel or a programming page.
+ * @return true while one is up
+ */
+static bool covered(void) { return svs_covered(); }
+
 static const ui_screen_t k_screen = {
+    .covered = covered,
     .title  = "SERVO",
     .reset  = reset,
     .enter  = enter,

@@ -141,7 +141,17 @@ static bool back(void)
 }
 
 /** @brief The screen's hooks for the router. */
+/**
+ * @brief ui_screen_t's covered: what the view drawn has up.
+ * @return true while one is up
+ */
+static bool covered(void)
+{
+    return (s_board ? picker_screen() : outputs_screen())->covered();
+}
+
 static const ui_screen_t s_screen = {
+    .covered = covered,
     .title  = "OUTPUTS",
     .reset  = reset,
     .enter  = enter,

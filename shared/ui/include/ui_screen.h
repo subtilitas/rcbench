@@ -133,6 +133,13 @@ typedef struct {
      *        last.  NULL when help_count is.
      */
     bool (*help_page)(int i, struct ui_help_page *out);
+    /**
+     * @brief Whether a level that covers the screen is up: a keypad, a
+     * keyboard, a list, a box or a question.  The screenshot's popup waits
+     * until it is gone (ui_shot.h).  NULL: the screen cannot say, and a
+     * popup never opens over it.
+     */
+    bool (*covered)(void);
 } ui_screen_t;
 
 /*
@@ -223,6 +230,33 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index);
 
 /** Repaint every screen's cached chrome into every framebuffer. */
 void ui_router_invalidate(void);
+
+/**
+ * @brief ui_screen_t's covered for a screen with no level over it.
+ * @return false
+ */
+bool ui_screen_not_covered(void);
+
+/**
+ * @brief The empty part of the band, this moment: from 8px right of the home
+ *        tag to 8px left of the leftmost chip or "?", the band's whole height,
+ *        worked out from the rectangles the band draws.  A hold of 1000ms
+ *        there takes a screenshot (ui_shot.h): it ends on a slide out of it,
+ *        on a chip that appears under it, on any other contact and on a lost
+ *        event; its release does nothing.  No screen sees the contact.  A
+ *        screen with no band has no such hold.
+ * @param out  takes it in panel coordinates; may be NULL
+ * @return false where there is no band or no room
+ */
+bool ui_router_shot_gap(gfx_rect_t *out);
+
+/**
+ * @brief Whether the bench is idle (shot_gate.h), once a frame.  False, the
+ *        start's state, shuts an open popup at once and keeps a waiting
+ *        picture waiting.
+ * @param idle  shot_gate_idle() of the frame's facts
+ */
+void ui_router_shot_set_idle(bool idle);
 
 /* ------------------------------------------------------------ bench state */
 

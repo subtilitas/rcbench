@@ -407,6 +407,15 @@ UI_TEXT(HG_OV_ARM, 0,
 UI_TEXT(HG_OV_GUIDE, 0,
     "Opens this guide where a screen has one. PREV and NEXT turn the pages, a tap elsewhere closes it.",
     "Öffnet diese Hilfe, wo ein Bildschirm eine hat. VORIGE und NÄCHSTE blättern, ein Tipp daneben schließt sie.")
+UI_TEXT(HG_OV_TITLE_SHOT, 0,
+    "Taking a screenshot",
+    "Screenshot aufnehmen")
+UI_TEXT(HG_OV_SHOT_NAME, 0,
+    "SCREENSHOT",
+    "SCREENSHOT")
+UI_TEXT(HG_OV_SHOT, 0,
+    "Hold this empty part of the band for 1s, on any screen with the band: a screenshot of what shows. It opens to save when the bench is idle.",
+    "Diesen leeren Teil des Bands 1s halten, auf jedem Bildschirm mit Band: ein Screenshot des Bildes. Er öffnet sich zum Sichern, sobald der Prüfstand ruht.")
 UI_TEXT(HG_OV_MARK, 0,
     "The IOmcu reports no hardware for this screen, or its sensor is off on SETUP.",
     "Der IOmcu meldet keine Hardware für diesen Bildschirm, oder sein Sensor ist in SETUP aus.")
@@ -4113,6 +4122,74 @@ UI_TEXT(HOLD_HINT_UNBIND, 94,
 UI_TEXT(HOLD_HINT_OVERWRITE, 94,
     "Hold 2s to overwrite.",
     "Halte 2s, um zu überschreiben.")
+
+UI_TEXT(SHOT_TAKEN, 94,
+    "Screenshot taken.",
+    "Screenshot aufgenommen.")
+
+UI_TEXT(SHOT_WAITS, 94,
+    "Screenshot taken. It opens when the bench is idle.",
+    "Screenshot aufgenommen. Er öffnet sich, sobald der Prüfstand ruht.")
+
+UI_TEXT(SHOT_REPLACED, 94,
+    "New screenshot taken. It replaces the waiting one.",
+    "Neuer Screenshot aufgenommen. Er ersetzt den wartenden.")
+
+UI_TEXT(SHOT_BUSY, 94,
+    "Screenshot not taken: the last one is still being written.",
+    "Kein Screenshot: Der letzte wird noch geschrieben.")
+
+UI_TEXT(SHOT_NO_MEMORY, 94,
+    "Screenshot not taken: 1,305,600B of PSRAM are not free.",
+    "Kein Screenshot: 1 305 600B PSRAM sind nicht frei.")
+
+UI_TEXT(SHOT_TITLE, 46,
+    "Screenshot file name",
+    "Dateiname des Screenshots")
+
+UI_TEXT(SHOT_SAVE, 8,
+    "SAVE",
+    "SICHERN")
+
+UI_TEXT(SHOT_SAVING, 25,
+    "Saving %d%%",
+    "Sichere %d%%")
+
+UI_TEXT(SHOT_SAVED, 94,
+    "Saved: %s/%s%s",
+    "Gesichert: %s/%s%s")
+
+UI_TEXT(SHOT_E_NOCARD, 100,
+    "No card. Put one in and SAVE again.",
+    "Keine Karte. Karte einsetzen und erneut SICHERN.")
+
+UI_TEXT(SHOT_E_FULL, 100,
+    "The card is full. Free some room and SAVE again.",
+    "Die Karte ist voll. Platz schaffen und erneut SICHERN.")
+
+UI_TEXT(SHOT_E_EXISTS, 100,
+    "This name is taken. Type another one.",
+    "Dieser Name ist vergeben. Bitte einen anderen eingeben.")
+
+UI_TEXT(SHOT_E_DENIED, 100,
+    "The card is write-protected.",
+    "Die Karte ist schreibgeschützt.")
+
+UI_TEXT(SHOT_E_NAME, 100,
+    "The card does not take this name. Type another one.",
+    "Die Karte nimmt diesen Namen nicht an. Bitte einen anderen eingeben.")
+
+UI_TEXT(SHOT_E_BUSY, 100,
+    "The card is busy. SAVE again in a moment.",
+    "Die Karte ist belegt. Gleich erneut SICHERN.")
+
+UI_TEXT(SHOT_E_MEMORY, 100,
+    "No memory to write the PNG. Nothing was written.",
+    "Kein Speicher für das PNG. Nichts wurde geschrieben.")
+
+UI_TEXT(SHOT_E_WRITE, 100,
+    "The write failed. The picture is kept: SAVE again.",
+    "Schreiben fehlgeschlagen. Das Bild bleibt: erneut SICHERN.")
 
 /* --------------------- the splash's details, from the panel's start-up */
 UI_TEXT(SPLASH_NO_PANEL, 47,

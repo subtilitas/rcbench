@@ -722,7 +722,14 @@ static bool back(void)
     return false;
 }
 
+/**
+ * @brief ui_screen_t's covered: the delete question.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.doomed[0] != '\0'; }
+
 static const ui_screen_t s_screen = {
+    .covered = covered,
     .title = "LOGS",
     .reset = reset,
     .enter = enter,

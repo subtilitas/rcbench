@@ -1070,7 +1070,14 @@ static bool back(void)
     return true;
 }
 
+/**
+ * @brief ui_screen_t's covered: the question or a keypad.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.confirm_open || s.kp.open; }
+
 static const ui_screen_t k_screen = {
+    .covered = covered,
     .title  = "SUPPLY",
     .reset  = reset,
     .enter  = enter,

@@ -16,6 +16,7 @@
 #include "upd_screen.h"
 #include "wifi_screen.h"
 #include "ui_screen.h"
+#include "ui_shot.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -41,6 +42,11 @@
 #define PANEL_H UI_PANEL_H
 /** @brief The alert band's height, across the bottom. */
 #define ALERT_H UI_ALERT_H
+/** @brief The hold that takes a screenshot, ms. */
+#define SHOT_HOLD_MS 1000u
+/** @brief What the band's empty part keeps from the home tag and from the
+ *         chips: 8px, four times what a chip takes beside it for a tap. */
+#define SHOT_GAP_M 8
 
 static struct {
     ui_screen_id_t    current;
@@ -131,11 +137,31 @@ static struct {
         uint8_t id;
         int16_t x, y;
     } owned[TOUCH_MAX_POINTS];
+
+    /*
+     * Every contact on the glass, whoever owns it, by track id: what a
+     * screenshot's hold takes for a second contact, and what the popup
+     * waits for to lift.  Set at a DOWN, cleared at its UP and at a touch
+     * loss.
+     */
+    uint8_t  glass[256u / 8u];
+    /* The screenshot's hold (ui_router_shot_gap()): the contact, where it
+     * last was, and its time. */
+    bool     shot_hold;
+    uint8_t  shot_id;
+    int16_t  shot_x, shot_y;
+    uint32_t shot_ms;
+    /* The bench is idle (shot_gate.h), as the application last said; false
+     * until it says so. */
+    bool     shot_idle;
 } s;
 
 static bool has_band(ui_screen_id_t id);
 static void release_owned(void);
+static void drop_notice(void);
 static void guide_check(void);
+static void shot_service(void);
+static bool glass_clear(void);
 
 /*
  * The openers, each on a row of its own: a control on one screen that opens
@@ -214,6 +240,7 @@ void ui_router_init(void)
     if (scr != NULL && scr->enter != NULL) {
         scr->enter();
     }
+    ui_shot_reset();
     ui_router_invalidate();
 }
 
@@ -243,12 +270,16 @@ void ui_router_goto(ui_screen_id_t id)
     s.guide = false;
     s.guide_press = false;
     s.alert_press = false;
+    s.shot_hold = false;
     memset(s.alert_ids, 0, sizeof(s.alert_ids));
     memset(s.owned, 0, sizeof(s.owned));
     ui_router_invalidate();
+    shot_service();
 }
 
 ui_screen_id_t ui_router_current(void) { return s.current; }
+
+bool ui_screen_not_covered(void) { return false; }
 
 ui_screen_id_t ui_router_parent(ui_screen_id_t id)
 {
@@ -264,6 +295,7 @@ void ui_router_invalidate(void)
 {
     s.band_drawn = 0u;
     s.guide_drawn = 0u;
+    ui_shot_invalidate();
     splash_invalidate();
     overview_invalidate();
     motor_invalidate();
@@ -283,6 +315,31 @@ void ui_router_invalidate(void)
     upd_screen_invalidate();
     files_screen_invalidate();
     layout_screen_invalidate();
+}
+
+bool ui_router_shot_gap(gfx_rect_t *out)
+{
+    if (!has_band(s.current)) {
+        return false;
+    }
+    const gfx_rect_t tag = ui_home_tag_rect(ui_router_title(s.current));
+    int right = ui_band_guide_rect().x;
+    for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT; ++chip) {
+        gfx_rect_t r;
+        if (ui_band_chip_rect(&s.status, (ui_band_chip_t)chip, &r)
+            && r.x < right) {
+            right = r.x;
+        }
+    }
+    const int left = tag.x + tag.w + SHOT_GAP_M;
+    right -= SHOT_GAP_M;
+    if (right <= left) {
+        return false;
+    }
+    if (out != NULL) {
+        *out = gfx_rect_make(left, 0, right - left, UI_BAND_H);
+    }
+    return true;
 }
 
 static void clear_alert(void)
@@ -310,6 +367,88 @@ static void drop_notice(void)
     }
 }
 
+/**
+ * @brief The screen on top carries the band and nothing is up on it: no
+ *        question, no box, no list, no keypad.  A screen that cannot say
+ *        counts as covered.
+ * @return true when a popup may stand over it
+ */
+static bool shot_screen_free(void)
+{
+    if (!has_band(s.current) || s.current == SCREEN_COPROC_UPDATE
+        || s.current == SCREEN_UPD_REMIND) {
+        return false;
+    }
+    const ui_screen_t *scr = screen_for(s.current);
+    return scr != NULL && scr->covered != NULL && !scr->covered();
+}
+
+/**
+ * @brief The popup against the bench and the screen.  It opens with no
+ *        contact on the glass; opening ends what the screen and the guide
+ *        hold, and closing repaints the screen.
+ */
+static void shot_service(void)
+{
+    const bool may = s.shot_idle && shot_screen_free();
+    const ui_shot_change_t c = ui_shot_service(may, may && glass_clear());
+    if (c == UI_SHOT_OPENED) {
+        s.shot_hold = false;
+        s.help = UI_BAND_CHIP_NONE;
+        s.guide = false;
+        s.guide_press = false;
+        release_owned();
+        drop_notice();
+        ui_router_invalidate();
+    } else if (c == UI_SHOT_CLOSED) {
+        ui_router_invalidate();
+    }
+}
+
+void ui_router_shot_set_idle(bool idle)
+{
+    s.shot_idle = idle;
+    shot_service();
+}
+
+/**
+ * @brief Whether the point is on the empty part of the band, this moment.
+ * @param x  panel x
+ * @param y  panel y
+ * @return true on the gap, on a screen with the band
+ */
+static bool shot_gap_at(int x, int y)
+{
+    gfx_rect_t gap;
+    return ui_router_shot_gap(&gap) && gfx_rect_contains(gap, x, y)
+           && ui_band_chip_at(&s.status, x, y) == UI_BAND_CHIP_NONE
+           && !ui_band_guide_at(x, y)
+           && !gfx_rect_contains(ui_band_stop_rect(), x, y);
+}
+
+/**
+ * @brief The screenshot's hold, a frame on: it ends where the gap no longer
+ *        holds the contact, a chip that appeared under it included, and
+ *        takes the picture at SHOT_HOLD_MS.  A late frame counts for no more
+ *        than any hold's (ui_hold_credit()).
+ * @param dt_s  the frame's time, s
+ */
+static void shot_hold_tick(float dt_s)
+{
+    if (!s.shot_hold) {
+        return;
+    }
+    if (!shot_gap_at(s.shot_x, s.shot_y)) {
+        s.shot_hold = false;
+        return;
+    }
+    s.shot_ms += (uint32_t)(ui_hold_credit(dt_s) * 1000.0f + 0.5f);
+    if (s.shot_ms >= SHOT_HOLD_MS) {
+        s.shot_hold = false;
+        ui_shot_want();
+    }
+}
+
 void ui_router_tick(float dt_s)
 {
     /* The frame an alert arrives in does not count: its interval passed
@@ -324,6 +463,9 @@ void ui_router_tick(float dt_s)
             clear_alert();
         }
     }
+    shot_hold_tick(dt_s);
+    ui_shot_poll();
+    shot_service();
     const ui_screen_t *scr = screen_for(s.current);
     if (scr != NULL && scr->tick != NULL) {
         scr->tick(dt_s);
@@ -373,8 +515,8 @@ bool ui_router_help_rect(gfx_rect_t *out)
 
 bool ui_router_take_knob(void)
 {
-    if (s.guide) {
-        return false;   /* a turn moves nothing under the dock */
+    if (s.guide || ui_shot_open()) {
+        return false;   /* a turn moves nothing under the dock or the popup */
     }
     if (s.help != UI_BAND_CHIP_NONE) {
         s.help = UI_BAND_CHIP_NONE;
@@ -417,7 +559,7 @@ static bool has_band(ui_screen_id_t id)
 
 bool ui_router_guide_shown(void)
 {
-    return has_band(s.current)
+    return has_band(s.current) && !ui_shot_open()
            && ui_help_count(screen_for(s.current), s.status.armed) > 0;
 }
 
@@ -511,6 +653,70 @@ static bool in_alert(const touch_event_t *evt)
 {
     return evt->point.y >= PANEL_H - ALERT_H && evt->point.y < PANEL_H
            && evt->point.x >= 0 && evt->point.x < PANEL_W;
+}
+
+/**
+ * @brief No contact is on the glass.
+ * @return true when none is
+ */
+static bool glass_clear(void)
+{
+    for (size_t i = 0u; i < sizeof(s.glass); ++i) {
+        if (s.glass[i] != 0u) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief Keep the glass's table, and end the screenshot's hold on anything
+ *        that is not its contact staying in the gap: its release, another
+ *        contact's event of any kind, a DOWN of its id (a new contact), a
+ *        slide out of the gap.
+ * @param evt  the event
+ */
+static void shot_feed(const touch_event_t *evt)
+{
+    const uint8_t id  = evt->point.id;
+    const uint8_t bit = (uint8_t)(1u << (id & 7u));
+    if (evt->type == TOUCH_EVENT_DOWN) {
+        s.glass[id >> 3] |= bit;
+    } else if (evt->type == TOUCH_EVENT_UP) {
+        s.glass[id >> 3] &= (uint8_t)~bit;
+    }
+    if (!s.shot_hold) {
+        return;
+    }
+    if (id != s.shot_id || evt->type != TOUCH_EVENT_MOVE
+        || !shot_gap_at(evt->point.x, evt->point.y)) {
+        s.shot_hold = false;
+        return;
+    }
+    s.shot_x = evt->point.x;
+    s.shot_y = evt->point.y;
+}
+
+/**
+ * @brief A press came down on the band and no control of it: the hold starts
+ *        when it is the only contact, in the gap, with no popup up.
+ * @param evt  the DOWN
+ */
+static void shot_hold_begin(const touch_event_t *evt)
+{
+    const uint8_t id  = evt->point.id;
+    const uint8_t bit = (uint8_t)(1u << (id & 7u));
+    s.glass[id >> 3] &= (uint8_t)~bit;
+    const bool alone = glass_clear();
+    s.glass[id >> 3] |= bit;
+    if (alone && !ui_shot_open() && (evt->flags & TOUCH_FLAG_JUMP) == 0u
+        && shot_gap_at(evt->point.x, evt->point.y)) {
+        s.shot_hold = true;
+        s.shot_id   = id;
+        s.shot_x    = evt->point.x;
+        s.shot_y    = evt->point.y;
+        s.shot_ms   = 0u;
+    }
 }
 
 static bool has_home(ui_screen_id_t id)
@@ -678,9 +884,13 @@ void ui_router_event(const touch_event_t *evt)
     }
     const uint8_t id   = evt->point.id;
     const bool    band = has_band(s.current);
+    const bool    popup = ui_shot_open();
     /* Only where the band is: no alert or bubble covers a screen without
-     * one. */
-    const bool    safe = band && router_safe_at(evt);
+     * one.  And no screen shows under the popup, which stands only over an
+     * idle bench. */
+    const bool    safe = band && !popup && router_safe_at(evt);
+
+    shot_feed(evt);
 
     guide_check();
     if (band) {
@@ -688,7 +898,8 @@ void ui_router_event(const touch_event_t *evt)
         const gfx_rect_t home = ui_home_tag_rect(ui_router_title(s.current));
         const bool in_stop = gfx_rect_contains(stop, evt->point.x,
                                                evt->point.y);
-        const bool in_home = has_home(s.current)
+        /* The popup ends by its own keys alone. */
+        const bool in_home = has_home(s.current) && !popup
                              && gfx_rect_contains(home, evt->point.x,
                                                   evt->point.y);
 
@@ -853,6 +1064,35 @@ void ui_router_event(const touch_event_t *evt)
         return;
     }
 
+    if (popup) {
+        /* The popup's, as the screen's would be.  A contact from before it
+         * opened presses nothing: the keyboard acts on the release of a
+         * contact it saw come down.  One that reaches the band is released
+         * as for a screen. */
+        touch_event_t local = *evt;
+        if (evt->type == TOUCH_EVENT_DOWN && s.has_alert && in_alert(evt)) {
+            s.alert_ids[id >> 3] |= bit;
+            if (!s.alert_press) {
+                s.alert_press     = true;
+                s.alert_id        = id;
+                s.alert_press_gen = s.alert_gen;
+            }
+            return;
+        }
+        if (evt->point.y < UI_BAND_H) {
+            if (evt->type != TOUCH_EVENT_DOWN) {
+                local.type = TOUCH_EVENT_UP;
+                local.flags = TOUCH_FLAG_NO_TAP;
+                local.point.y = 0;
+                ui_shot_event(&local);
+            }
+            return;
+        }
+        local.point.y = (int16_t)(local.point.y - UI_BAND_H);
+        ui_shot_event(&local);
+        return;
+    }
+
     int slot = owned_find(id);
     if (evt->type == TOUCH_EVENT_DOWN && slot >= 0) {
         /* A DOWN is a new contact: the one this id named before is over. */
@@ -870,6 +1110,7 @@ void ui_router_event(const touch_event_t *evt)
         if (slot < 0) {
             if (evt->type == TOUCH_EVENT_DOWN) {
                 release_owned();   /* a press on the band, as above */
+                shot_hold_begin(evt);
             }
             return;
         }
@@ -933,6 +1174,9 @@ void ui_router_cancel_gestures(void)
      */
     s.band_press = false;
     s.guide_press = false;   /* the guide stays open */
+    s.shot_hold = false;
+    memset(s.glass, 0, sizeof(s.glass));
+    ui_shot_cancel_press();
     memset(s.owned, 0, sizeof(s.owned));
 
     /*
@@ -1125,6 +1369,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         if (s.status.simulated) {
             ui_watermark(c);
         }
+        ui_shot_capture(c, false);
         return;
     }
 
@@ -1201,7 +1446,11 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
             live.y = (int16_t)(live.y - UI_BAND_H);
             (void)gfx_clip_intersect(&sub, live);
         }
-        scr->render(&sub, buffer_index);
+        if (ui_shot_open()) {
+            ui_shot_render(&sub, buffer_index);
+        } else {
+            scr->render(&sub, buffer_index);
+        }
     }
     if (guide) {
         guide_render(c, &page, buffer_index, band_now);
@@ -1222,4 +1471,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     if (s.status.simulated) {
         ui_watermark(c);
     }
+
+    /* The frame as the operator sees it, before the notice about it. */
+    ui_shot_capture(c, s.shot_idle && shot_screen_free());
 }
