@@ -77,13 +77,13 @@ settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,619     202 KiB
+motor-stick                  1,720     215 KiB
 balance-sim                  3,209     401 KiB
 settings-sim                 3,196     400 KiB
 battery-sim                  3,093     387 KiB
 analyser-chrome             61,028    7628 KiB
 logs-chrome                 27,412    3426 KiB
-settings-chrome             32,122    4015 KiB
+settings-chrome             30,133    3767 KiB
 settings-list-chrome        37,188    4648 KiB
 battery-chrome              58,182    7273 KiB
 balance-chrome              63,470    7934 KiB
@@ -247,7 +247,7 @@ lässt, nicht einen Frame, der das Panel verpasst:
 | `servo` | 2 800 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
-| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 560 Fills in der Tabelle oben |
+| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 720 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die zehn `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
 | `wifi-keys` | 42 000 | eine Taste der WLAN-Tastatur, die mehr als den Bildschirm neu zeichnet |
