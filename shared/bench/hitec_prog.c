@@ -264,12 +264,53 @@ void hitec_prog_gate_set(hitec_prog_t *p, hitec_prog_gate_t *g)
 }
 
 /**
+ * @brief Whether a message speaks of the servo or the draft as they stand:
+ *        the read, a loaded or compared file, an edit, what a write waits for.
+ *
+ * A session gone takes them with it.  What stays is what happened and stays
+ * true: a write and its check, a file saved or refused, how an operation
+ * ended, and every message of the danger level.
+ *
+ * @param id The message id.
+ * @return true when the message goes with the session.
+ */
+static bool of_the_session(unsigned id)
+{
+    switch (id) {
+    case HITEC_PROG_MSG_READ:
+    case HITEC_PROG_MSG_WRITE_OFF:
+    case HITEC_PROG_MSG_NOT_READ:
+    case HITEC_PROG_MSG_MUST_READ:
+    case HITEC_PROG_MSG_NO_CHANGES:
+    case HITEC_PROG_MSG_EDITS_PENDING:
+    case HITEC_PROG_MSG_EDIT_REFUSED:
+    case HITEC_PROG_MSG_REC_SAME:
+    case HITEC_PROG_MSG_REC_DONE:
+    case HITEC_PROG_MSG_RECORD_HELD:
+    case HITEC_PROG_MSG_SUM_OK:
+    case HITEC_PROG_MSG_LOAD_SAME:
+    case HITEC_PROG_MSG_LOAD_CHECK:
+    case HITEC_PROG_MSG_LOADED:
+    case HITEC_PROG_MSG_LOADED_RAW:
+    case HITEC_PROG_MSG_OTHER_SERVO:
+    case HITEC_PROG_MSG_READS_DIFFER:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/**
  * @brief The session ends: nothing of it is in mode any more.
  *
  * @param p The programmer.
  */
 static void session_gone(hitec_prog_t *p)
 {
+    if (of_the_session(p->msg.id)) {
+        p->msg.id = HITEC_PROG_MSG_NONE;
+        ++p->msg.seq;
+    }
     p->owned = false;
     p->op = OP_NONE;
     hpf_session(p);

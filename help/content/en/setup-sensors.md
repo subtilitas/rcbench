@@ -40,6 +40,8 @@ The IOmcu reads a TI INA228 in the ESC's power path and up to four TI INA3221 on
 | INA228 shunt | 50 to 20000uΩ | 200 | the shunt it measures across |
 | INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for |
 
+The shunt and the maximum go together: shunt in uΩ times maximum in A is at most 163840, which is 163.84mV across the shunt. Each row says what works with the other: `Up to 300.0A on 200uΩ (163.84mV)`. Every shunt has a maximum that works: up to 546uΩ all of 300.0A, at 1000uΩ 163.8A, at 20000uΩ 8.1A. Up to 40.96mV the part reads in steps of 78.125nV, above it in steps of 312.5nV.
+
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Sensor SDA | -1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | the IOmcu GPIO (general-purpose input/output) for SDA; -1 sets no bus |

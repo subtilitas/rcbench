@@ -1306,7 +1306,8 @@ des Prüfstands, darunter `ZUERST ARM`, solange der Prüfstand in SAFE ist,
 das Zifferblatt (Radius 150px) mit dem Servo und an ihrem Fuß die drei
 Messwerte, je ein Drittel der Karte: SOLL-PULSBREITE in Mikrosekunden,
 GEMESSEN in Grad und STROM in Ampere, Name und Einheit über 44px hohen
-Ziffern. Ziffern, die breiter als ihre Spalte von 198px sind (ein auf
+Ziffern, die 4px über dem Alarmband enden. Die Marken +90 und -90 des
+Zifferblatts stehen links ihrer Striche. Ziffern, die breiter als ihre Spalte von 198px sind (ein auf
 `-1000000.00` begrenzter Strom), stehen in einer kleineren Schrift und
 bleiben so in ihr. Die Messwerte stehen nur auf LIVE; auf den anderen
 Aufgaben trägt die Zeile über dem Plot den Strom.
@@ -4835,9 +4836,18 @@ Adresse hat: keiner wird gelesen.
 | INA228 | EIN, AUS | AUS | der Monitor im Strompfad des ESC |
 | INA228 Adresse | 0x40 bis 0x4F | 0x45 | der MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41 |
 | INA228 Shunt | 50 bis 20000 µΩ, Schritte von 1 µΩ | 200 | der des MATEK |
-| INA228 Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der IOmcu ab. Seine Ablehnung eines Bereichs über 2000A Vollausschlag bleibt, und 300A am kleinsten Shunt, 50 µΩ, erreichen sie nicht |
+| INA228 Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der IOmcu ab. Seine Ablehnung eines Bereichs über 2000A Vollausschlag bleibt, und 300A am kleinsten Shunt, 50 µΩ, erreichen sie nicht. Bis 40,96mV über dem Shunt nimmt er ±40,96mV, 78,125nV je Schritt; bis 163,84mV ±163,84mV, 312,5nV je Schritt; darüber lehnt der IOmcu das Paar ab |
 | Sensor-SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | GPIO des IOmcu (GPIO: General-Purpose Input/Output). `-` und `+` gehen von einem dieser Werte zum nächsten und halten bei −1 und bei 26. −1: die Pins sind nicht gesetzt, und auf der Page ist kein Bauteil eingeschaltet |
 | Sensor-SCL | SDA + 1 oder −1 | 17 | der GPIO nach Sensor-SDA, und −1 mit ihm. Die Zeile zeigt den Wert und hat keine Tasten |
+
+Die beiden Zeilen ersetzen ihre Hilfe durch den Wert, der zur anderen Zeile
+passt: `Bis 300.0A an 200uΩ (163.84mV)` bei INA228 Höchststrom, `Bis 800uΩ bei
+204.8A (163.84mV)` bei INA228 Shunt. Shunt in µΩ mal Höchststrom in A ist
+höchstens 163840. Jeder Shunt nimmt einen Höchststrom von mindestens 8,1A, bei
+20000 µΩ; bis 546 µΩ nimmt er die vollen 300,0A. 201 µΩ bei 204,8A sind 41,16mV
+und nehmen den weiteren Bereich; 203,7A bringen ihn in den engeren zurück. Ein
+Paar über 163,84mV ist auf beiden Zeilen markiert und steht im Band: `INA228
+Shunt x Höchststrom über 163.84mV: an 1000uΩ bis 163.8A. SENSORS prüfen.`.
 
 SDA und SCL sind das Paar eines I2C-Blocks: die GPIO-Nummer von SDA ist
 modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach. Sensor-SDA nimmt nur

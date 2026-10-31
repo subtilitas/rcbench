@@ -7,6 +7,7 @@
 
 #include "sensors_rows.h"
 
+#include <math.h>
 #include <stdio.h>
 
 #include "link_pages.h"
@@ -172,6 +173,58 @@ const char *sensors_rows_why(setting_id_t id)
         return TR(SET_SENS_LIM_OLD);
     }
     return TR(SET_UNHELD);
+}
+
+/**
+ * @brief Whether a row is one of the INA228's shunt and maximum rows.
+ * @param id the row's setting
+ * @return true for INA228 shunt and INA228 max current
+ */
+static bool i228_pair_row(setting_id_t id)
+{
+    return id == SET_INA228_UOHM || id == SET_INA228_MAX_A;
+}
+
+const char *sensors_rows_i228_alert(char *buf, size_t n, unsigned uohm,
+                                    unsigned da)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    if (uohm * da <= LINK_SN_I228_DA_UOHM_MAX) {
+        snprintf(buf, n, "%s", TR(ALERT_SENSE_I228_SETUP));
+    } else {
+        const unsigned top = link_sn_i228_max_da(uohm);
+        snprintf(buf, n, TR(ALERT_SENSE_I228_RANGE), uohm, top / 10u, top % 10u);
+    }
+    return buf;
+}
+
+const char *sensors_rows_i228_line(setting_id_t id)
+{
+    /* One line a frame: the row being drawn. */
+    static char s_line[48];
+    if (!i228_pair_row(id)) {
+        return "";
+    }
+    const unsigned uohm = (unsigned)settings_get_int(SET_INA228_UOHM);
+    const unsigned da = (unsigned)lrintf(settings_get(SET_INA228_MAX_A) * 10.0f);
+    if (id == SET_INA228_MAX_A) {
+        const unsigned top = link_sn_i228_max_da(uohm);
+        snprintf(s_line, sizeof(s_line), TR(SET_I228_MAX_LINE), top / 10u,
+                 top % 10u, uohm);
+    } else {
+        snprintf(s_line, sizeof(s_line), TR(SET_I228_SHUNT_LINE),
+                 link_sn_i228_max_uohm(da), da / 10u, da % 10u);
+    }
+    return s_line;
+}
+
+bool sensors_rows_i228_over(void)
+{
+    const unsigned uohm = (unsigned)settings_get_int(SET_INA228_UOHM);
+    const unsigned da = (unsigned)lrintf(settings_get(SET_INA228_MAX_A) * 10.0f);
+    return uohm * da > LINK_SN_I228_DA_UOHM_MAX;
 }
 
 const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,

@@ -32,9 +32,9 @@
 #include "ui_layout.h"
 
 /** @brief The output shaft on LIVE's card: SHAFT_X and SHAFT_Y of
- *         servo_screen_core_int.h, (56 + 450) / 2. */
+ *         servo_screen_core_int.h, (56 + 422) / 2. */
 #define SV_SHAFT_X         400
-#define SV_SHAFT_Y         253                /**< The shaft's row. */
+#define SV_SHAFT_Y         239                /**< The shaft's row. */
 
 #define SV_TAB_Y           28                 /**< The strip's tabs. */
 #define SV_TAB_LIVE_X      84                 /**< LIVE's tab. */
