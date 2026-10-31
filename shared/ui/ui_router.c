@@ -27,6 +27,7 @@
 #include "balance_screen.h"
 #include "battery_screen.h"
 #include "servo_screen.h"
+#include "settings.h"
 #include "settings_screen.h"
 #include "overview_screen.h"
 #include "splash_screen.h"
@@ -67,6 +68,8 @@ static struct {
     char              held[UI_ALERT_MAX];
     bool              has_held;
     bool              stop_latched;
+    bool              demo_seen;      /**< Demo mode as the last frame saw it;
+                                           a flip repaints every screen    */
 
     /* A press that began on the alert band, by track id, held until its
      * release even if the alert clears meanwhile: the screen beneath never
@@ -1343,6 +1346,14 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     const ui_screen_t *scr = screen_for(s.current);
     if (scr == NULL || scr->render == NULL || c == NULL) {
         return;
+    }
+
+    /* The mark goes or comes back with the setting, whichever path changed
+     * it: the pixels it covered are repainted in every buffer. */
+    const bool demo = settings_get_bool(SET_DEMO_MODE);
+    if (demo != s.demo_seen) {
+        s.demo_seen = demo;
+        ui_router_invalidate();
     }
 
     if (!has_band(s.current)) {

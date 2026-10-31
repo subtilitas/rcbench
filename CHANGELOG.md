@@ -34,6 +34,11 @@ history is in git.
   1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes
   `screenshots/<name>.PNG`, an 8-bit RGB PNG of 1024 x 600px, on the card. The
   menu's guide has a fourth page for it.
+- SETUP > PANEL > Demo mode (Demo-Modus), ON or OFF, OFF by default, stored as
+  `demo_mode`: ON hides the SIMULATION watermark from the next frame. The
+  band's SIM chip, the tiles' SIMULATED chips and every other statement that
+  values are simulated stay. A bench with an IOmcu draws no watermark either
+  way.
 - Openers replace texts that named a path, each returning by the home tag:
   SERVO's caps line under TEST's cards and on DUT is a button to SUPPLY's
   SETTINGS, LIMITS; DUT's AS5600 note is a button to SENSORS' AS5600 entry;

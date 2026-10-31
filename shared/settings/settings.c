@@ -112,6 +112,11 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_KB_SEE] = {
         "kb_see", "",
         SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(kb_see) },
+    /* Hides the SIMULATION watermark (ui_watermark()); the band's SIM chip
+     * and every other statement that values are simulated stay. */
+    [SET_DEMO_MODE] = {
+        "demo_mode", "",
+        SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
 
     /*
      * The current monitors, on the IOmcu's I2C (Inter-Integrated

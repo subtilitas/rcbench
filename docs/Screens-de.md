@@ -802,6 +802,13 @@ seine eigenen Sensoren, sobald ein Messfrontend bestückt ist. Eine Größe, die
 nichts misst, wird als leeres Feld gezeichnet und nicht als modellierter
 Wert.
 
+SETUP > PANEL > Demo-Modus, standardmäßig AUS, blendet das Wasserzeichen
+SIMULATION aus und sonst nichts: Das Band zeigt weiter SIM, die Kacheln zeigen
+weiter SIMULIERT, und jede andere Angabe, dass Werte simuliert sind, bleibt.
+Die Änderung zeigt sich im nächsten Bild. Antwortet ein IOmcu, wird kein
+Wasserzeichen gezeichnet; die Einstellung ändert an einem echten Prüfstand
+also nichts.
+
 ### TABELLE, und was der ESC meldet
 
 ![Die TABELLE-Seite mit einem INA228 als Quelle](img/de/motor-table.png)
@@ -4460,6 +4467,8 @@ Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht unter
 [Logs](#logs) beschrieben. Tastatur durchsichtig legt fest, wie viel des
 Texts durch die Tastatur des Texteditors scheint: AUS, 25% oder 50%,
 standardmäßig AUS; beschrieben unter [Der Texteditor](#der-texteditor).
+Demo-Modus blendet das Wasserzeichen SIMULATION aus und lässt den SIM-Chip des
+Bands stehen ([Das Statusband](#das-statusband)).
 
 Acht Einstellungen werden gespeichert und angezeigt, und kein Teil der
 Firmware liest sie: Einheiten und Dimmen nach unter PANEL;

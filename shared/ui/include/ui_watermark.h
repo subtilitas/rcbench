@@ -17,10 +17,16 @@
 extern "C" {
 #endif
 
-/** Draw "SIMULATION" across the whole canvas, blended over what is there. */
+/**
+ * @brief Draw "SIMULATION" across the whole canvas, blended over what is
+ *        there.  Draws nothing while SETUP > PANEL > Demo mode (SET_DEMO_MODE)
+ *        is ON; the screens under the mark repaint in full when the setting
+ *        changes (settings_apply_ui()).
+ * @param c The canvas.
+ */
 void ui_watermark(gfx_canvas_t *c);
 
-/** Drop the cached stencil, so the next call rebuilds it. */
+/** @brief Drop the cached stencil, so the next call rebuilds it. */
 void ui_watermark_invalidate(void);
 
 #ifdef __cplusplus

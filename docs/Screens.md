@@ -744,6 +744,12 @@ from bidirectional DShot today, and its own sensors when a measurement front
 end is fitted. A quantity nothing measures is drawn as an empty field rather
 than as a modelled number.
 
+SETUP > PANEL > Demo mode, OFF by default, hides the SIMULATION watermark and
+nothing else: the band still shows SIM, the tiles still show SIMULATED and
+every other statement that values are simulated stays. The change shows on the
+next frame. With an IOmcu answering no watermark is drawn, so the setting
+changes nothing on a real bench.
+
 ### TABLE, and what the ESC says
 
 ![The TABLE pane with an INA228 as the source](img/motor-table.png)
@@ -4050,7 +4056,9 @@ English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
 default and is described under [Logs](#logs). Keyboard see-through sets how
 much of the text shows through the text editor's keyboard: OFF, 25% or 50%,
-OFF by default; described under [The text editor](#the-text-editor).
+OFF by default; described under [The text editor](#the-text-editor). Demo mode
+hides the SIMULATION watermark and leaves the band's SIM chip
+([The status band](#the-status-band)).
 
 Eight settings are stored and shown, and no part of the firmware reads them:
 Units and Dim after under PANEL; Cells, Capacity and

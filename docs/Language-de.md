@@ -373,7 +373,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.558
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.560
 Einträge mit ID und 88 Optionen, 10 davon mit leerem Englisch.
 
 1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

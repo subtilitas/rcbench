@@ -96,7 +96,7 @@ Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der G
 
 Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der aufhört zu antworten, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0%.
 
-Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels.
+Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels. SETUP, PANEL, Demo-Modus EIN blendet das Wasserzeichen SIMULATION aus; SIM bleibt.
 
 ## Ein gehaltener Lauf
 

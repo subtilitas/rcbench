@@ -75,6 +75,12 @@ docs/Screens.md: stale-simulation: SIMULATION is drawn across the screen
 docs/Screens.md: stale-simulation: under the SIMULATION watermark
 docs/Screens-de.md: stale-simulation: steht SIMULATION quer
 docs/Screens-de.md: stale-simulation: unter dem SIMULATION-Watermark
+docs/Screens.md: stale-simulation: Demo mode, OFF by default, hides the SIMULATION watermark
+docs/Screens.md: stale-simulation: hides the SIMULATION watermark and leaves
+docs/Screens-de.md: stale-simulation: SIMULATION aus und sonst nichts
+docs/Screens-de.md: stale-simulation: Demo-Modus blendet das Wasserzeichen SIMULATION aus
+help/content/en/setup.md: stale-simulation: hides the SIMULATION watermark
+help/content/de/setup.md: stale-simulation: blendet das Wasserzeichen SIMULATION
 hardware/docs/IOBoard.md: stale-simulation: the panel draws SIMULATION
 help/content/en/motor.md: stale-simulation: the SIMULATION watermark
 help/content/en/motor.md: stale-simulation: SIMULATION is drawn across the screen

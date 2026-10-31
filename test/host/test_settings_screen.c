@@ -892,6 +892,82 @@ TEST_CASE(screen_rotation_draws_the_same_frame_buffer)
     settings_set_store(NULL);
 }
 
+/*
+ * Demo mode stepped from the screen: the SIMULATION mark leaves both
+ * framebuffers on the next frames, with nothing of it left behind, and
+ * stepping back brings it back.  The framebuffers are never cleared, as the
+ * panel's are not.
+ */
+TEST_CASE(demo_mode_stepped_on_the_screen_takes_the_mark_off_both_buffers)
+{
+    enum { PX = UI_PANEL_W * UI_PANEL_H };
+    fresh_screen();
+    ui_bench_status_t st = *ui_router_status();
+    st.simulated = true;
+    ui_router_set_status(&st);
+
+    gfx_color_t *buf[2];
+    gfx_canvas_t cvs[2];
+    for (int i = 0; i < 2; ++i) {
+        buf[i] = calloc(PX, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(buf[i]);
+        gfx_canvas_init(&cvs[i], buf[i], UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+    }
+    gfx_color_t *fresh_on = calloc(PX, sizeof(gfx_color_t));
+    REQUIRE_ALLOC(fresh_on);
+    gfx_canvas_t fc;
+    gfx_canvas_init(&fc, fresh_on, UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+
+    ui_router_render(&cvs[0], 0);
+    ui_router_render(&cvs[1], 1);
+
+    /* The row is past the 6 that fit: scroll to the end of the list. */
+    for (int i = 0; i < 6; ++i) {
+        swipe(300, UI_BAND_H + 400, 300, UI_BAND_H + 100, 8);
+    }
+    const int row = row_of(SET_DEMO_MODE);
+    CHECK(row >= 0);
+    const int y = row_y(row) - settings_screen_scroll(NULL);
+    CHECK(y > UI_BAND_H && y < UI_PANEL_H);
+
+    tap(PLUS_X + BTN_W / 2, y);
+    CHECK(settings_get_bool(SET_DEMO_MODE));
+    ui_router_render(&cvs[0], 0);
+    ui_router_render(&cvs[1], 1);
+
+    /* The same screen on a bench that is not simulated, drawn from nothing. */
+    st.simulated = false;
+    ui_router_set_status(&st);
+    ui_router_render(&fc, 0);
+    st.simulated = true;
+    ui_router_set_status(&st);
+    long left0 = 0, left1 = 0;
+    for (int i = 0; i < PX; ++i) {
+        left0 += (buf[0][i] != fresh_on[i]);
+        left1 += (buf[1][i] != fresh_on[i]);
+    }
+    CHECK_EQ(left0, 0);
+    CHECK_EQ(left1, 0);
+
+    tap(MINUS_X + BTN_W / 2, y);
+    CHECK(!settings_get_bool(SET_DEMO_MODE));
+    ui_router_render(&cvs[0], 0);
+    ui_router_render(&cvs[1], 1);
+    long back = 0;
+    for (int i = 0; i < PX; ++i) {
+        back += (buf[0][i] != buf[1][i]);
+    }
+    CHECK_EQ(back, 0);
+    long off_mark = 0;
+    for (int i = 0; i < PX; ++i) {
+        off_mark += (buf[0][i] != fresh_on[i]);
+    }
+    CHECK(off_mark > 3000);
+    free(fresh_on);
+    free(buf[0]);
+    free(buf[1]);
+}
+
 int main(void)
 {
     RUN(a_held_setting_is_left_by_every_call_that_changes_one);
@@ -901,6 +977,7 @@ int main(void)
     RUN(plus_and_minus_change_the_setting_under_them);
     RUN(a_setup_key_notifies_once_per_press);
     RUN(changing_the_theme_from_the_screen_takes_effect);
+    RUN(demo_mode_stepped_on_the_screen_takes_the_mark_off_both_buffers);
     RUN(a_theme_stepped_back_shows_saved_on_the_next_frame);
     RUN(a_drag_scrolls_instead_of_pressing);
     RUN(holding_a_key_repeats_with_acceleration);
