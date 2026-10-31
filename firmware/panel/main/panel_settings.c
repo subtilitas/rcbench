@@ -103,7 +103,7 @@ void publish_pdmini(void)
 }
 
 /**
- * @brief The phase tap's set-up, as SETUP INTERFACES left it, for the control
+ * @brief The phase tap's set-up, as SETUP > SENSORS left it, for the control
  *        task's TONE writes (tone_link.h).  Seven values do not fit an atomic
  *        word, so the copy is taken under a spinlock both ways, as the current
  *        monitors' is.  Written by the settings observer on app_main, read once a
@@ -129,7 +129,7 @@ void publish_tone(void)
 }
 
 /**
- * @brief Returns the phase tap's set-up as SETUP INTERFACES left it, copied
+ * @brief Returns the phase tap's set-up as SETUP > SENSORS left it, copied
  *        under the spinlock.
  * @return the set-up
  */

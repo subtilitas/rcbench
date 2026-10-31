@@ -6,7 +6,7 @@
  *
  * The IOmcu reads one motor phase on a GPIO (the phase tap) and
  * turns its edges into beeps and their pitch; the panel sets the tap up
- * from SETUP INTERFACES and reads the beeps.  An IOmcu whose protocol
+ * from SETUP > SENSORS and reads the beeps.  An IOmcu whose protocol
  * minor is below TONE_LINK_MINOR has no such page and nothing is sent to
  * it: not a write and not a read.  With the tap enabled on SETUP, the
  * operator is told so.
@@ -130,7 +130,7 @@ extern "C" {
 #define TONE_LINK_NO_ANSWER (-1)
 #define TONE_LINK_ACK       0
 
-/** @brief The set-up as SETUP INTERFACES has it. */
+/** @brief The set-up as SETUP > SENSORS has it. */
 typedef struct {
     bool     enable;          /**< the tap runs                         */
     uint8_t  pin;             /**< IOmcu GPIO                     */
@@ -421,7 +421,7 @@ void tone_link_event_back(tone_link_t *t, uint16_t ev);
 bool tone_link_settled(const tone_link_t *t);
 
 /**
- * @brief The rows of SETUP INTERFACES, for tone_link_unheld(): the first
+ * @brief The rows of SETUP > SENSORS, for tone_link_unheld(): the first
  *        frame's  -- Phase tap, Tap pin and the two tones -- and the second's
  *        -- pitch  split, gap and periods.
  */

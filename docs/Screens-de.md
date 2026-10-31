@@ -321,7 +321,7 @@ Zeichen, 8px frei von den Seiten der Kachel:
 
 Eine Kachel mit der Marke SIMULIERT öffnet einen Bildschirm, dessen Quelle
 der Prüfstand nicht meldet: Der IOmcu meldet dafür keine Fähigkeit, oder
-sein Sensor ist in SETUP unter INTERFACES nicht aktiviert. Ein Bildschirm ohne
+sein Sensor ist in SETUP unter SENSORS nicht aktiviert. Ein Bildschirm ohne
 seine Hardware öffnet trotzdem und arbeitet aus dem Modell. Die Marke ordnet
 nicht jeden Wert auf einem Bildschirm ein. RECEIVER und BATTERY tragen die
 Marke und zeigen keine Werte. SERVO ohne Marke zeigt das Versorgungsmodell des
@@ -330,7 +330,7 @@ aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
 
 | Kachel | Ohne Marke, wenn |
 | --- | --- |
-| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, INTERFACES eingeschaltet ist |
+| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, SENSORS eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
 | SUPPLY | der PD mini unter SETUP, INTERFACES eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel sein eigenes Modell eines Netzteils |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
@@ -688,7 +688,7 @@ Wert.
 TABELLE listet die vier Kanäle, jeden mit seinem Extremwert. Ein Kanal, für
 den nichts geantwortet hat, liest `--`.
 
-Ist der INA228 unter SETUP, INTERFACES eingeschaltet und antwortet er
+Ist der INA228 unter SETUP, SENSORS eingeschaltet und antwortet er
 (BENCH-Flag Bit 5), sind Spannung, Strom und Leistung die des INA228: die
 Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz,
 mit den Spitzen des Laufs aus seinen 500-Hz-Abtastungen. Die Kopfzeile nennt
@@ -1385,7 +1385,7 @@ stehen in [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v).
 ![Der KST-Programmer hält die 5V](img/de/servo-kst-rbmod.png)
 
 Welches Messgerät es ist, wird einmal je Poll entschieden
-([die Strommonitore](#interfaces-die-strommonitore)): der INA3221 1000ms,
+([die Strommonitore](#sensors-die-strommonitore)): der INA3221 1000ms,
 nachdem seine Bedingungen gelten, der PD mini ab dem ersten Poll, in dem
 eine nicht gilt.
 
@@ -1429,7 +1429,7 @@ mini, und die des Modells, wenn das Netzteil modelliert ist
 ([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)).
 
 GEMESSEN ist der Winkel des Horns ab dem Mittenwert, solange AS5600 in SETUP,
-INTERFACES eingeschaltet ist, der Sensor antwortet und seinen Magneten
+SENSORS eingeschaltet ist, der Sensor antwortet und seinen Magneten
 erkennt: `+38.0deg`, Zehntelgrad, -180.0 bis +179.9, 20-mal in der Sekunde
 gelesen. Antwortet der Sensor nicht oder meldet er keinen Magneten (STATUS MD
 nicht gesetzt), steht dort `---`: sein Zählerstand ist dann kein Winkel. Ein
@@ -1897,7 +1897,7 @@ enden.
 | ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur mit ZIEL auf PROG-PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | OPTIONEN > PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
-| OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, INTERFACES, AS5600-Mitte |
+| OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
 
 Das Tastenfeld der TRIMMUNG ist das eine Tastenfeld mit Vorzeichen: Seine
 Taste `+/-`, zwischen dem Punkt und OK, setzt ein Minuszeichen vor die
@@ -1910,8 +1910,8 @@ bleiben, wo sie sind.
 
 ![Das Tastenfeld der TRIMMUNG, -25us getippt](img/de/servo-trim-keypad.png)
 
-AS5600, der Ausgangsencoder, wird nur auf SETUP > INTERFACES ein- und
-ausgeschaltet ([der Ausgangsencoder](#interfaces-der-ausgangsencoder)); der
+AS5600, der Ausgangsencoder, wird nur auf SETUP > SENSORS ein- und
+ausgeschaltet ([der Ausgangsencoder](#sensors-der-ausgangsencoder)); der
 Hinweis auf PRÜFLING sagt das. Er fügt den Winkel des Horns der Zeile
 GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu
 ([Servo](Servo-de.md#der-ausgangsencoder)).
@@ -4204,9 +4204,9 @@ Zeile in der Schrift 10 x 20px.
 ![Setup](img/de/setup.png)
 
 - Vier Kategorien: PANEL, INTERFACES, SD CARD und SENSORS, die
-  Einstellungen für den ganzen Prüfstand. Jede Kachel nennt die Zahl der
-  Einstellungen, die ihre Liste zeigt. Ein Tippen öffnet die Liste der
-  Kategorie. Die Einstellungen von Akku,
+  Einstellungen für den ganzen Prüfstand. Eine Kachel nennt die Zahl der
+  Einstellungen, die ihre Liste zeigt; die von SENSORS sagt, was sie hält,
+  `STROM, WINKEL, PHASENABGRIFF`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Drei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
@@ -4568,33 +4568,90 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.
 
-### INTERFACES: die Strommonitore
+### SENSORS: die geteilte Ansicht
 
-INTERFACES listet seine 23 Einstellungen in fünf Abschnitten. Eine
-Überschrift über der ersten Zeile jedes Abschnitts benennt ihn: I2C-BUS (der
-INA228, Sensor SDA und SCL und der AS5600), PHASENABGRIFF,
-BALANCE SENSORS (Vibration und Optischer Tacho), SUPPLY (der PD mini) und
-PROG-PORT (Hitec-D-Empfang).
-Eine Überschrift ist eine eigene Zeile, 64px hoch bei 70px Zeilenabstand
-der Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert:
-ein Tippen darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die
-Liste ist 28 Zeilen lang.
+SENSORS hält jedes Gerät, das der IOmcu liest, in einer geteilten Ansicht: eine
+linke Liste mit 8 Einträgen und rechts daneben die Zeilen des gewählten
+Eintrags.
 
-Auf dem [rbmod-Carrier](Carrier-de.md) sind fünf Zeilen verlötete Pins:
-Sensor SDA 16, Sensor SCL 17, Tap pin 22, PD mini TX 7 und PD mini RX 6.
-Sie haben keine Tasten, öffnen kein Keypad und zeigen als Hilfezeile
-`Auf diesem Board verlötet. Hier keine Einstellung.`. Die gespeicherten
-Werte bleiben und gelten wieder auf einem von Hand verdrahteten Modul.
+![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
+
+Die linke Liste reicht von Body-y 8 bis 436: 8 Einträge von 220 x 50px im Abstand
+von 54px, von oben nach unten SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600
+und PHASENABGRIFF. Ein Eintrag zeigt seinen Namen im 12 x 24px-Font und darunter
+seinen Zustand im 8 x 16px-Font. Der gewählte Eintrag hat die helle Füllung und
+die Akzentkante; beim Start ist der erste Eintrag gewählt. Die Liste rechts ist
+754px breit ab x 240: Tasten, Wertfeld, Keypad und Scrollbalken stehen wie auf
+jeder Liste, und Name und Hilfe einer Zeile haben 438px, 43 Zellen des
+10 x 20px-Fonts.
+
+| Eintrag | Zustand im Betrieb | Zeilen |
+| --- | --- | --- |
+| SENSORBUS | `GPIO 16 / 17`, `KEINE PINS GESETZT`, `VOM IOMCU ABGELEHNT`, auf dem Carrier `GPIO 16 / 17 VERLÖTET` | 2, immer |
+| INA228 | ein Zustand der Tabelle unten, oder `ADRESSE WIE INA3221` | 4 |
+| INA3221 0x40 bis 0x43 | ein Zustand der Tabelle unter [SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine) | 10 |
+| AS5600 | `EIN`, `VOM IOMCU ABGELEHNT` | 2 |
+| PHASENABGRIFF | `EIN`, `VOM IOMCU ABGELEHNT` | 7 |
+
+- Ein Eintrag mit Einschaltzeile zeigt allein diese Zeile und liest `AUS`,
+  solange er aus ist. EIN ergänzt die übrigen Zeilen darunter.
+- Ein Druck spannt einen Eintrag, und sein Loslassen wählt ihn, innerhalb 8px
+  vom Druck, auf dem Eintrag. Ein Kontakt, der weiter rutscht, wählt nichts und
+  verschiebt nichts. Unter dem Keypad drückt nichts.
+- Jeder Eintrag behält seine Scrollposition, über einen anderen Eintrag, die
+  Kacheln und eine andere Kategorie hinweg, innerhalb des Bereichs, den seine
+  Zeilen beim Öffnen haben.
+- Ein Wechsel des Eintrags behält, was ungespeichert ist: SAVE und die Warnung
+  beim Verlassen zählen die Änderungen jedes Eintrags.
+- RESET nennt den Eintrag, `INA228 ZURÜCKSETZEN`, und setzt alle Zeilen dieses
+  Eintrags zurück, auch die verborgenen. Die Taste steht, wo KATEGORIE
+  ZURÜCKSETZEN steht. Ein Wischen, das auf ihr landet, spannt nichts.
+- Die erste Spalte des Streifens nennt die Kategorie, wie auf jeder Liste.
+
+Vibration und Optischer Tacho haben Schlüssel in dieser Kategorie und keinen
+Eintrag: keine Firmware liest sie. Ein gespeicherter Wert bleibt gespeichert und
+wirkt nicht.
+
+Der Drehknopf tut auf SETUP nichts: das Panel gibt eine Drehung nur an
+MOTOR & ESC und SERVO weiter.
+
+### INTERFACES: der PD mini und der Programmierport
+
+INTERFACES listet 5 Einstellungen in zwei Abschnitten. Eine Überschrift über der
+ersten Zeile jedes Abschnitts benennt ihn: SUPPLY (der PD mini) und PROG-PORT
+(Hitec-D-Empfang, [INTERFACES: der Programmierport](#interfaces-der-programmierport)).
+Eine Überschrift ist eine eigene Zeile, 64px hoch bei 70px Zeilenabstand der
+Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert: ein Tippen
+darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die Liste ist 7 Zeilen
+lang.
+
+![INTERFACES](img/de/setup-interfaces.png)
+
+Auf dem [rbmod-Carrier](Carrier-de.md) liest PD mini TX 7 und PD mini RX 6. Sie
+haben keine Tasten, öffnen kein Keypad und zeigen als Hilfezeile
+`Auf dem Board verlötet. Keine Einstellung.`. Die gespeicherten Werte bleiben
+und gelten wieder auf einem von Hand verdrahteten Modul.
 
 ![INTERFACES auf dem Carrier](img/de/setup-rbmod-iface.png)
 
-![INTERFACES, die Strommonitore](img/de/setup-interfaces.png)
+### SENSORS: die Strommonitore
 
 Der IOmcu liest I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem
 Bus auf zwei seiner Pins: einen TI INA228 im Strompfad des ESC, hier
-eingestellt, und bis zu vier TI INA3221, unter SENSORS eingestellt
-([SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine)). Die
-Zeilen des INA228 und die Pins des Busses stehen oben unter INTERFACES:
+eingestellt, und bis zu vier TI INA3221
+([SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine)). Die Zeilen
+der Einträge SENSORBUS und INA228:
+
+![SENSORS auf dem INA228](img/de/setup-sensors-ina228.png)
+
+Der Zustand des Eintrags INA228 stammt aus dem, was SENSE hält und liest
+(`sense_map_link_i228()`), in den Worten der
+[Tabelle der Bausteine](#sensors-die-ina3221-bausteine): `ONLINE`,
+`SUCHT DEN BAUSTEIN`, `ANTWORTET NICHT`, `ANDERE ID ANTWORTET`,
+`NOCH NICHT GESCHRIEBEN`, `NOCH NICHT GELESEN`, `VOM IOMCU ABGELEHNT` für einen
+abgelehnten Frame, abgelehnte Pins oder einen IOmcu ohne die Page SENSE, und
+`KEINE BUS-PINS`. `ADRESSE WIE INA3221` sagt, dass ein bestückter Baustein seine
+Adresse hat: keiner wird gelesen.
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
@@ -4685,10 +4742,10 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.` | ein Monitor ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
-| `SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
-| `INA228 und INA3221 nutzen beide 0x40. SETUP > INTERFACES prüfen.` | der INA228 auf der Adresse eines bestückten INA3221; keiner wird gelesen |
-| `Sensor-Pins GPIO 16/GPIO 17 abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30s lang gezeigt oder bis zum Antippen, einmal je Änderung |
-| `INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84mV, oder der Messbereich, den er ergibt, übersteigt 2000A; der INA228 bleibt aus |
+| `SDA oder SCL der Sensoren nicht festgelegt. SETUP > SENSORS prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
+| `INA228 und INA3221 nutzen beide 0x40. SETUP > SENSORS prüfen.` | der INA228 auf der Adresse eines bestückten INA3221; keiner wird gelesen |
+| `Sensor-Pins GPIO 16/GPIO 17 abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30s lang gezeigt oder bis zum Antippen, einmal je Änderung |
+| `INA228-Shunt oder Höchststrom abgelehnt. SETUP > SENSORS prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84mV, oder der Messbereich, den er ergibt, übersteigt 2000A; der INA228 bleibt aus |
 | `INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Einstellung der INA3221 abgelehnt: die Zuordnung auf SENSE_MAP, bei einem IOmcu älter als 4.25 den Frame des einen Bausteins; der IOmcu behält, was er hielt |
 | `INA3221 0x41 hat alle Kanäle aus. SETUP > SENSORS prüfen.` | alle drei Shunts eines bestückten Bausteins stehen auf AUS; keine Zuordnung wird geschrieben, bis einer wieder an ist, und die Zeile verlässt dann das Band |
 | `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der IOmcu fand SDA oder SCL auf low gehalten und taktet den Bus frei. Eine Leitung, die low liest, ohne dass etwas sie hält (Pins ohne angeschlossenes Bauteil und ohne Pull-up), ist das nicht: sie steigt innerhalb von 50µs am eigenen Pad-Pull-up des IOmcu (32 bis 86kΩ), und die Monitore gelten als nicht antwortend |
@@ -4722,7 +4779,10 @@ zum Antippen.
 
 #### Eine Zeile, die der IOmcu nicht hält
 
-![INTERFACES, Pins, die der IOmcu nicht übernommen hat](img/de/setup-unheld.png)
+![SENSORS, Pins, die der IOmcu nicht übernommen hat](img/de/setup-unheld.png)
+
+Die Markierung auf Sensor SDA, auf AS5600 und auf den Zeilen des Phasenabgriffs
+stellt auch den Zustand des Eintrags auf `VOM IOMCU ABGELEHNT`.
 
 Eine Zeile, deren Wert nicht der ist, den die Page des IOmcu hält,
 ist markiert: ihr Rand und ihr Wert sind in der Warnfarbe gezeichnet, und
@@ -4750,28 +4810,24 @@ auf dem Band ist davon getrennt und bleibt wie oben beschrieben.
 
 ### SENSORS: die INA3221-Bausteine
 
-SENSORS stellt bis zu vier TI INA3221 ein, Dreikanal-Strommonitore am
-Sensorbus auf 0x40 bis 0x43, und sagt je Kanal, was er misst. Der INA228
-und die Pins des Busses bleiben unter INTERFACES.
-
-![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
+Je ein Eintrag stellt bis zu vier TI INA3221 ein, Dreikanal-Strommonitore am
+Sensorbus auf 0x40 bis 0x43, und sagt je Kanal, was er misst.
 
 Auf dem [rbmod-Carrier](Carrier-de.md#der-strommonitor) ist ein INA3221 auf
 0x40 verlötet: 0x40 BESTÜCKT zeigt EIN, und seine drei Zeilen MISST zeigen
 SCHIENE B, SCHIENE A und PROG PORTS 5V. Diese Zeilen haben keine Tasten und
-die Hilfezeile `Auf diesem Board verlötet. Hier keine Einstellung.`. Kein
+die Hilfezeile `Auf dem Board verlötet. Keine Einstellung.`. Kein
 Schritt erreicht die drei Schienen auf einer anderen Zeile oder einer
 anderen Bench.
 
-Die Liste beginnt mit der Überschrift INA3221-BAUSTEINE über vier Zeilen:
+Die erste Zeile eines Eintrags:
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | 0x40 bestückt bis 0x43 bestückt | EIN, AUS | AUS | ein INA3221 an dieser Adresse. Das DAOKAI-Modul nimmt 0x40 mit geschlossener A0-Lötbrücke nach GND. Ab Werk sind alle vier A0-Brücken offen, und die Adresse schwankt zwischen 0x40 und 0x41 |
 
-Jeder bestückte Baustein folgt unter einer eigenen Überschrift,
-`INA3221 0x40` bis `INA3221 0x43`, mit neun Zeilen, drei je Kanal. Ein
-Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
+Ein bestückter Baustein hat neun Zeilen mehr, drei je Kanal. Ein Baustein, der
+nicht bestückt ist, hat keine weiteren.
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
@@ -4791,7 +4847,7 @@ Eine Zeile LIMIT nimmt 0 (AUS) oder 10 bis 32767mA; 1 bis 9 wird mit
 
 ![3mΩ abgelehnt, der Grund statt des Bereichs](img/de/setup-sensors-why.png)
 
-Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
+Der Eintrag eines Bausteins sagt unter seinem Namen, was der Baustein tut:
 
 | Zustand | Wann |
 | --- | --- |
@@ -4801,18 +4857,18 @@ Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 | `ANDERE ID ANTWORTET` | an der Adresse antwortet etwas mit einer anderen Identität |
 | `NOCH NICHT GESCHRIEBEN` | eine Änderung wartet: 500ms nach der letzten Änderung, und nur bei einem Prüfstand in SAFE |
 | `NOCH NICHT GELESEN` | kein IOmcu antwortet, oder seine Page ist seit dem Link-Aufbau nicht gelesen |
-| `VOM IOMCU NICHT ÜBERNOMMEN` | der IOmcu hat die Zuordnung abgelehnt; er behält die, die er hielt |
+| `VOM IOMCU ABGELEHNT` | der IOmcu hat die Zuordnung abgelehnt; er behält die, die er hielt |
 | `ALLE KANÄLE AUS` | alle drei Shunts des Bausteins stehen auf AUS: keine Zuordnung wird geschrieben |
 | `INA228 AUF DIESER ADRESSE` | der INA228 ist auf der Adresse des Bausteins eingeschaltet: der Baustein bleibt aus der Zuordnung und der INA228 aus |
-| `IOMCU ÄLTER ALS 0.22.0: NICHT GELESEN` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
-| `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | INTERFACES hat keinen Pin für SDA oder SCL des Sensorbusses: kein Baustein ist eingeschaltet |
+| `UNGELESEN, IOMCU < 0.22.0` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
+| `KEINE BUS-PINS` | SENSORBUS hat keinen Pin für SDA oder SCL: kein Baustein ist eingeschaltet |
 
 Die Zeilen eines abgelehnten Bausteins, eines mit allen Kanälen aus, eines
 auf der Adresse des INA228, eines ohne Sensorbus oder eines, den ein
 älterer IOmcu nicht liest,
 sind markiert wie eine Zeile, die der IOmcu nicht hält: Rand und Wert in
 der Warnfarbe und eine Zeile statt der Hilfe. Bei einem IOmcu älter als
-4.25 lautet sie `IOmcu älter als 0.22.0: ein INA3221, CH1 mit 1kHz.`:
+4.25 lautet sie `IOmcu vor 0.22.0: ein Teil, CH1 mit 1kHz.`:
 
 ![SENSORS bei einem IOmcu älter als 4.25](img/de/setup-sensors-old.png)
 
@@ -4821,7 +4877,7 @@ hält: von der Änderung bis zum angenommenen Schreiben, nach einem
 abgelehnten Schreiben oder einer abgelehnten Page mit
 `Vom IOmcu nicht übernommen.` und bei einem IOmcu
 älter als 4.27 für jede Grenze, die nicht AUS ist, mit
-`IOmcu älter als 0.22.0: keine Grenze wird geprüft.`:
+`IOmcu vor 0.22.0: keine Grenze geprüft.`:
 
 ![Eine Grenze bei einem IOmcu älter als 4.27](img/de/setup-sensors-limit.png)
 
@@ -4882,7 +4938,7 @@ Prüfstand in SAFE, und schreibt nichts, was die Page hält. Eine abgelehnte
 Zuordnung wird erst wieder geschrieben, wenn sie sich ändert. Solange ein
 Baustein bestückt ist, liest das Panel alle 500ms die IDs und Zustände der
 Bausteine. Ein Baustein, der aufhört zu antworten oder als etwas anderes
-antwortet, wird einmal auf dem Band gesagt, wie unter INTERFACES; den
+antwortet, wird einmal auf dem Band gesagt, wie beim INA228; den
 Baustein, über den SENSE berichtet (unten), sagen die Lesevorgänge von
 SENSE selbst.
 
@@ -4919,7 +4975,7 @@ unverändert gespeichert, damit ein Panel, das auf 0.21 zurückgeht, seine
 Einstellung findet. Das nächste SPEICHERN schreibt jeden Schlüssel von
 SENSORS.
 
-### INTERFACES: der Ausgangsencoder
+### SENSORS: der Ausgangsencoder
 
 Ein magnetischer Winkelsensor AS5600 von ams OSRAM auf der Ausgangswelle des
 Servos, am Sensorbus neben den Monitoren, an seiner festen Adresse 0x36
@@ -4946,7 +5002,7 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 
 Eine Magnetmeldung wird einmal gesagt, solange die STATUS-Bits MD, ML und MH
 des Sensors bleiben, wie sie gesagt wurden, auch über die Konfigurationen
-hinweg, die eine Änderung einer anderen Zeile von INTERFACES schreibt. Sie
+hinweg, die eine Änderung einer anderen Zeile von SENSORS schreibt. Sie
 wird noch einmal gesagt, wenn sich eines der Bits ändert (ein schwacher
 Magnet, der verschwindet, ein fehlender, der schwach zurückkommt, ein
 schwacher, der stark liest), wenn das Feld dazwischen stimmte, wenn der
@@ -4956,9 +5012,9 @@ Winkel hört auf, wenn MD erlischt, und kommt wieder, wenn es gesetzt ist. Der D
 des Sensors bestimmt die Richtung, in der sein Zählerstand steigt; das Panel
 nimmt an, dass er mit der Pulsbreite des Servos steigt.
 
-### INTERFACES: der Phasenabgriff
+### SENSORS: der Phasenabgriff
 
-![INTERFACES, der Phasenabgriff](img/de/setup-tap.png)
+![SENSORS, der Phasenabgriff](img/de/setup-tap.png)
 
 Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO
 des IOmcu liest die Phase über einen Vorwiderstand und eine
@@ -5012,9 +5068,9 @@ wie bei den Strommonitoren:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.` | der Abgriff ist eingeschaltet und der IOmcu spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
-| `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
-| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
-| `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
+| `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
+| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
+| `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > SENSORS prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des IOmcu ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
 Die drei Alerts über die Einstellung (erster Frame abgelehnt, zweiter
@@ -5860,7 +5916,7 @@ Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
 dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
 einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
 
-Ein Pin, den SETUP > INTERFACES hält, wird ebenso gezeigt, rot und
+Ein Pin, den SETUP > SENSORS oder INTERFACES hält, wird ebenso gezeigt, rot und
 durchgestrichen, mit dem, was ihn hält, unter seinem Namen, und lässt sich
 nicht anhaken:
 
@@ -6287,7 +6343,7 @@ Outputs-Bildschirms unter die Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT 
 
 ![GPIO 13 beim Programmierport](img/de/picker-prog.png)
 
-Ein Pin, den SETUP > INTERFACES hält, ist ebenso grau, solange kein
+Ein Pin, den SETUP > SENSORS oder INTERFACES hält, ist ebenso grau, solange kein
 Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
 nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`
 in Rot, ohne Kanal. Welche Pins das sind und wann, steht in der Tabelle

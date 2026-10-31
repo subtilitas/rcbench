@@ -150,7 +150,7 @@ TEST_CASE(sensor_scl_is_derived_and_takes_no_value_of_its_own)
     settings_adjust(SET_SENSE_SDA, 1);
     CHECK_EQ(s_observed, 0);
     /* RESET CATEGORY puts both back. */
-    settings_reset(SET_CAT_IFACE);
+    settings_reset(SET_CAT_SENSORS);
     CHECK_EQ(settings_get_int(SET_SENSE_SDA), 16);
     CHECK_EQ(settings_get_int(SET_SENSE_SCL), 17);
     settings_set_observer(NULL);
@@ -254,16 +254,14 @@ TEST_CASE(the_scl_key_is_saved_with_the_derived_pin)
     CHECK_EQ(settings_get_int(SET_SENSE_SCL), -1);
 }
 
-/* INTERFACES scrolled so Sensor SDA and Sensor SCL are both on the glass:
- * the I2C BUS heading and the 8 monitor rows above them, 9 rows of 58px,
- * less the 8px a finger moves before the list takes it for a scroll. */
+/* SENSORS on SENSOR BUS: Sensor SDA and Sensor SCL, both on the glass. */
 static void pins_screen(void)
 {
-    gesture_screen(SET_CAT_IFACE);
-    swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 132, 4);
-    swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 132, 4);
-    swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 66, 4);
-    CHECK_EQ(settings_screen_scroll(NULL), 282);
+    fresh_hub();
+    open_category(SET_CAT_SENSORS);
+    CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_BUS);
+    feed_reset();
+    feed_tick_per_report(REPORT_S);
     snap();
 }
 
@@ -349,11 +347,9 @@ TEST_CASE(a_tap_on_sensor_scls_row_changes_nothing)
     feed_tap(FEED_LONE, XP, scrolled_y(SET_SENSE_SDA) + ROW_H / 2 - 1);
     CHECK_EQ(settings_get_int(SET_SENSE_SDA), 18);
     snap();
-    /* And a drag from where a key would be scrolls. */
-    const int from = settings_screen_scroll(NULL);
+    /* And a drag from where a key would be steps nothing. */
     swipe(XM, scrolled_y(SET_SENSE_SCL), XM,
           scrolled_y(SET_SENSE_SCL) - 60, 4);
-    CHECK_EQ(settings_screen_scroll(NULL), from + 52);
     CHECK_EQ(changed(), 0);
 }
 
@@ -439,16 +435,18 @@ TEST_CASE(the_mark_repaints_the_row_when_it_comes_and_when_it_goes)
     ui_router_tick(0.05f);
     ui_router_render(&s_c, 0);
     memcpy(marked, s_fb, sizeof(marked));
-    /* The two pin rows differ, and no pixel outside them. */
+    /* The two pin rows differ and the bus entry's state, and no pixel
+     * outside them. */
+    const gfx_rect_t bus = settings_screen_entry_rect(SENS_ENTRY_BUS);
     const int top = scrolled_y(SET_SENSE_SDA) - ROW_H / 2;
     const int bottom = scrolled_y(SET_SENSE_SCL) + ROW_H / 2;
     int inside = 0, outside = 0;
     for (int y = 0; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
             if (plain[y * W + x] != marked[y * W + x]) {
-                if (y >= top && y < bottom && x >= LIST_X) {
+                if (y >= top && y < bottom && x >= 240) {
                     ++inside;
-                } else {
+                } else if (!gfx_rect_contains(bus, x, y - UI_BAND_H)) {
                     ++outside;
                 }
             }
@@ -770,7 +768,7 @@ TEST_CASE(a_free_slot_opens_nothing)
 TEST_CASE(entering_setup_shows_the_tiles_and_the_list_keeps_its_place)
 {
     fresh_hub();
-    open_category(SET_CAT_IFACE);
+    open_category(SET_CAT_APP);
     finger(FEED_LONE, XL, LIST_Y + 300);
     glide(FEED_LONE, XL, LIST_Y + 200, 10);
     lift(FEED_LONE);
@@ -779,7 +777,7 @@ TEST_CASE(entering_setup_shows_the_tiles_and_the_list_keeps_its_place)
     ui_router_goto(SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), -1);
-    open_category(SET_CAT_IFACE);
+    open_category(SET_CAT_APP);
     CHECK_EQ(settings_screen_scroll(NULL), scrolled);
 }
 

@@ -186,7 +186,7 @@ ist übergelaufen), und das Fenster nimmt seinen neuen Wert. `crc` und
 `nack` in der Panel-Zeile zählt Anfragen, die der IOmcu mit einem NACK
 (Negative Acknowledge) beantwortet hat. Ein NACK ist eine Antwort: der Link
 arbeitet, und die Page behielt, was sie hielt ([Frames](Link-de.md#frames)).
-Eine Einstellung aus SETUP INTERFACES, die eine Page ablehnt, zählt je
+Eine Einstellung aus SETUP, die eine Page ablehnt, zählt je
 einmal: ein Schreiben je abgelehntem Wert, das erst wieder geschrieben wird,
 wenn sich der Wert ändert. Wer auf SETUP durch Zeilen schaltet, zählt also
 ein NACK für jeden Wert, den der IOmcu ablehnt (Abgriff-Pause 2ms mit

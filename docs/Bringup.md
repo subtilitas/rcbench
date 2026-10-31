@@ -175,7 +175,7 @@ not counts, and appear in the `last` line as read: see below.
 `nack` in the panel line counts requests the IOmcu answered with a NACK
 (negative acknowledge). A NACK is an answer: the link works, and the page
 kept what it held ([Frames](Link.md#frames)). A set-up from SETUP
-INTERFACES that a page refuses is one each: one write per refused value,
+that a page refuses is one each: one write per refused value,
 not written again until the value changes, so stepping through rows on SETUP
 counts one NACK for each value the IOmcu refuses (Tap gap 2ms with Tap
 lowest tone at 400Hz, or PD mini RX on the sensor bus's SCL) and none for

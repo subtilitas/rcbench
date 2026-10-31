@@ -113,7 +113,7 @@ The voltage and current caps the set points and a run's steps stay inside show r
 | REPORT | a text report, `ATESTnnn.TXT`, beside each test's log, while User logs on SETUP > SD CARD is ON |
 | ENC CENTRE | a tap takes the live count, 0 to 4095, as the centre, with the servo at neutral |
 
-AS5600, the output encoder, is switched on [Interfaces](setup-interfaces.md) alone. PORT PWM, the pulse on the programming port, is set on the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) alone.
+AS5600, the output encoder, is switched on [Sensors](setup-sensors.md) alone. PORT PWM, the pulse on the programming port, is set on the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) alone.
 
 ## The TARGET row
 

@@ -509,13 +509,13 @@ TEST_CASE(the_supply_caps_show_read_only_with_their_home)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* AS5600 has one home, SETUP > INTERFACES; DUT keeps ENC CENTRE, the
- * action on the servo. */
-TEST_CASE(the_as5600_lives_on_interfaces)
+/* AS5600 has one home, SETUP > SENSORS; DUT keeps ENC CENTRE, the action on
+ * the servo. */
+TEST_CASE(the_as5600_lives_on_sensors)
 {
     const setting_def_t *d = settings_def(SET_ENC_EN);
     CHECK(d != NULL);
-    CHECK(d != NULL && d->cat == SET_CAT_IFACE);
+    CHECK(d != NULL && d->cat == SET_CAT_SENSORS);
 }
 
 /* ------------------------------------------------------------------ the knob */
@@ -992,7 +992,7 @@ int main(void)
     RUN(the_target_row_opens_on_the_drive_not_the_setting);
     RUN(the_run_cards_say_what_their_start_needs);
     RUN(the_supply_caps_show_read_only_with_their_home);
-    RUN(the_as5600_lives_on_interfaces);
+    RUN(the_as5600_lives_on_sensors);
     RUN(the_knob_moves_the_horn_on_live_alone);
     return test_summary("servo_workbench");
 }

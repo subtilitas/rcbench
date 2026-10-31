@@ -35,12 +35,15 @@ const ui_screen_t *settings_screen(void);
 void settings_screen_invalidate(void);
 
 /**
- * The INTERFACES rows whose value the IOmcu does not hold:
- * @p sense_rows is sense_link_unheld()'s SENSE_LINK_ROW_* and @p tone_rows
- * tone_link_unheld()'s TONE_LINK_ROWS_*.  Such a row is drawn marked -- its
- * edge and its value in the warning colour, and "Not taken by the
- * IOmcu" in place of its help line -- until a call names it no
- * longer.  Sensor SDA and Sensor SCL are one mark: the pins are one frame.
+ * @brief Sets the SENSORS rows whose value the IOmcu does not hold.
+ *
+ * Such a row is drawn marked -- its edge and its value in the warning colour,
+ * and "Not taken by the IOmcu" in place of its help line -- until a call names
+ * it no longer.  Sensor SDA and Sensor SCL are one mark: the pins are one
+ * frame.
+ *
+ * @param sense_rows sense_link_unheld()'s SENSE_LINK_ROW_*.
+ * @param tone_rows  tone_link_unheld()'s TONE_LINK_ROWS_*.
  */
 void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows);
 
@@ -88,6 +91,14 @@ gfx_rect_t settings_screen_list_rect(void);
 gfx_rect_t settings_screen_row_rect(int row);
 
 /**
+ * @brief Where entry @p entry of SENSORS' left list lies, in the screen's own
+ *        coordinates.
+ * @param entry The entry, sensors_pane.h's.
+ * @return The entry's rectangle.
+ */
+gfx_rect_t settings_screen_entry_rect(int entry);
+
+/**
  * @brief The parts of list row @p row a tap acts on, in the screen's own
  *        coordinates at the list's present scroll: the "-" key, the value
  *        between the keys and the "+" key, each over the row's height.
@@ -109,11 +120,15 @@ typedef enum {
 gfx_rect_t settings_screen_row_part(int row, settings_row_part_t part);
 
 /**
- * The list row that shows the @p index-th setting of @p cat (as
- * settings_in_category() orders them), or -1 past the last and for a
- * setting not listed (SENSORS' rows of a part not fitted).  A category
- * with section headings has a row for each, above its section, so the row
- * is the index plus the headings above it.
+ * @brief The list row that shows a setting of a category.
+ *
+ * A category with section headings has a row for each, above its section, so
+ * the row is the index plus the headings above it.
+ *
+ * @param cat   The category.
+ * @param index The setting's place, as settings_in_category() orders them.
+ * @return The row; -1 past the last and for a setting not listed (on SENSORS,
+ *         every row but the selected entry's).
  */
 int settings_screen_row_of(setting_cat_t cat, int index);
 

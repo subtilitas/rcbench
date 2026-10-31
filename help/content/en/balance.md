@@ -53,5 +53,5 @@ Without an index pulse, balancing takes four runs: a baseline, then a trial mass
 
 ## Related pages
 
-- [Interfaces](setup-interfaces.md): the Vibration and Optical tacho settings, stored and not read in this release.
+- [Sensors](setup-sensors.md): the Vibration and Optical tacho keys, stored and not read in this release; no row shows them.
 - [Balancing](https://github.com/subtilitas/rcbench/blob/main/docs/Balance.md): sensor choice and placement in detail.

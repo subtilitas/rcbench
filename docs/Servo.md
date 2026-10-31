@@ -741,7 +741,7 @@ held it for 0.43s twice during healthy moves, at 0.004 to 0.342A.
 ### The output encoder
 
 An AS5600 magnetic angle sensor on the servo's output shaft, set up under
-SETUP, INTERFACES, AS5600 (default OFF) and read by the IOmcu
+SETUP, SENSORS, AS5600 (default OFF) and read by the IOmcu
 ([Link](Link.md), SENSE registers 26 to 31), adds the horn's angle to a run.
 The current's results are unchanged and the angle decides nothing: it is not
 part of the verdict and has no limit. Without AS5600 on, the run, its CSV and
@@ -1211,7 +1211,7 @@ runs at the new rate.
 ## Prerequisites
 
 Current sensing on the servo rail. The limit search reads the INA3221
-channel that watches the tester's target, wired in SETUP INTERFACES and
+channel that watches the tester's target, wired and
 fitted in SETUP > SENSORS, and nothing else. The synchroniser
 needs a sensor across the pair of outputs, which is not fitted. The
 automatic test reads the INA3221 or the PD mini, or runs on the panel's
