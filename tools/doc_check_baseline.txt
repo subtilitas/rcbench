@@ -3606,7 +3606,6 @@ shared/ui/include/ui_theme.h: warning: Member ui_theme_id_t (enumeration) of fil
 shared/ui/include/ui_theme.h: warning: parameters of member ui_theme_set are not documented
 shared/ui/include/ui_value_gate.h: file has no @file block
 shared/ui/include/ui_value_gate.h: warning: Compound ui_value_gate_t is not documented.
-shared/ui/include/ui_watermark.h: warning: parameters of member ui_watermark are not documented
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_MAX_CREDIT_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member UI_HOLD_S (macro definition) of file ui_widgets.h is not documented.
 shared/ui/include/ui_widgets.h: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.h is not documented.
