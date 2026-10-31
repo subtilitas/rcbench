@@ -20,8 +20,8 @@
 /** @brief How long the hold on the band's gap takes, ms. */
 #define SHOT_HOLD_MS 1000u
 
-/** @brief The hold's state, render task only. */
-static struct {
+/** @brief The hold's state. */
+typedef struct {
     /**
      * @brief Every contact on the glass, whoever owns it, by track id: what a
      * screenshot's hold takes for a second contact, and what the popup
@@ -36,7 +36,10 @@ static struct {
     uint32_t ms;     /**< how long it has run, ms                        */
     bool     over;   /**< it began over the guide or a bubble, which stay
                           for the picture and close after it             */
-} s;
+} shot_hold_t;
+
+/** @brief The hold, render task only. */
+static shot_hold_t s;
 
 void shot_hold_reset(void) { memset(&s, 0, sizeof(s)); }
 
