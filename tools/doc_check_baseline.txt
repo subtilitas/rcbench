@@ -2884,7 +2884,6 @@ shared/ui/coproc_update_screen.c: warning: Member enter(void) (function) of file
 shared/ui/coproc_update_screen.c: warning: Member event(const touch_event_t *evt) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member fmt_version(char *out, size_t n, cu_version_t v) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member k_screen (variable) of file coproc_update_screen.c is not documented.
-shared/ui/coproc_update_screen.c: warning: Member leave(void) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member progress_done(const cu_driver_t *d) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file coproc_update_screen.c is not documented.
 shared/ui/coproc_update_screen.c: warning: Member reset(void) (function) of file coproc_update_screen.c is not documented.
@@ -3001,13 +3000,11 @@ shared/ui/include/coproc_update_screen.h: warning: Member cu_view_t (enumeration
 shared/ui/include/coproc_update_screen.h: warning: Member major (variable) of struct cu_version_t is not documented.
 shared/ui/include/coproc_update_screen.h: warning: Member minor (variable) of struct cu_version_t is not documented.
 shared/ui/include/coproc_update_screen.h: warning: Member patch (variable) of struct cu_version_t is not documented.
-shared/ui/include/coproc_update_screen.h: warning: parameters of member coproc_update_drive are not documented
 shared/ui/include/coproc_update_screen.h: warning: parameters of member coproc_update_older are not documented
 shared/ui/include/coproc_update_screen.h: warning: parameters of member coproc_update_screen_offer are not documented
 shared/ui/include/coproc_update_screen.h: warning: parameters of member coproc_update_screen_progress are not documented
 shared/ui/include/coproc_update_screen.h: warning: parameters of member coproc_update_section are not documented
 shared/ui/include/coproc_update_screen.h: warning: return type of member coproc_update_older is not documented
-shared/ui/include/coproc_update_screen.h: warning: return type of member coproc_update_screen_take_cancel is not documented
 shared/ui/include/coproc_update_screen.h: warning: return type of member coproc_update_screen_take_start is not documented
 shared/ui/include/coproc_update_screen.h: warning: return type of member coproc_update_section is not documented
 shared/ui/include/esc_stick_panel.h: warning: Member esc_stick_panel_maker(void) (function) of file esc_stick_panel.h is not documented.

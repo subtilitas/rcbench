@@ -5344,10 +5344,17 @@ START rechts; ihre Mitten liegen auf dem Panel bei x 305 und 719, y 376.
 Die Frage nennt die Version, die der IOmcu laufen hat, und die Version,
 die dieses Panel mitbringt. CANCEL ist ein Tippen: die Frage schließt sich,
 und das Panel fragt für diese IOmcu-Version nicht noch einmal, bis es
-neu startet. Die Frage auf andere Weise zu verlassen lehnt ebenso ab.
+neu startet. Der Home-Tag lehnt ebenso ab.
 SETUP > UPDATES startet das Update auch nach einer Ablehnung
 ([Der IOmcu](#der-iomcu)). START braucht das 2-s-Halten, die
 ARM-Geste mit demselben Überblenden.
+
+Ein Bildschirm, den das Panel über die Frage legt, lehnt nichts ab: der
+Busfehler-Bildschirm nach 4000ms ohne Link und der Download von PANEL UPDATE.
+Das Angebot bleibt stehen wie eines, das noch niemand beantwortet hat, und die
+Prüfung des nächsten Link-Aufbaus bietet erneut an. Die Frage öffnet dann auf
+dem Menü unter denselben Bedingungen wie beim ersten Mal. Ein Druck auf START,
+den der Bildschirm beendet hat, startet nichts.
 
 Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe, und START braucht dasselbe
 Halten.

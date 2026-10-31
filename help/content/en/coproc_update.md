@@ -19,7 +19,7 @@ The question opens from the [menu](overview.md), with UPDATE in the band, while 
 | HOLD 2s TO START | starts the update after a 2s hold, with the gesture and fade of ARM |
 | CANCEL | closes the question; the panel does not ask again for that version until it restarts, and [Updates](updates.md#the-iomcu) still starts the update |
 
-Leaving the question another way declines it as CANCEL does.
+The home tag declines it as CANCEL does. A screen the panel forces over the question declines nothing: the [fault screen](busfault.md) of a lost link, and a panel update's download. The next link-up offers again, and the question opens on the menu under the same conditions.
 
 ![An older image](view:coproc-update-older)
 
