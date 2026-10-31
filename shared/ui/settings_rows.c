@@ -91,10 +91,5 @@ settings_row_t settings_rows_entry(setting_cat_t cat, int index)
     return e[index];
 }
 
-int settings_rows_listed(setting_cat_t cat)
-{
-    return entries(cat, NULL, 0);
-}
-
 _Static_assert(MAX_ROWS == SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 18,
                "SENSORS' rows fit a list");

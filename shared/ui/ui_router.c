@@ -44,10 +44,8 @@
 
 static struct {
     ui_screen_id_t    current;
-    /* The screen that opened one with two openers, for its home tag;
-     * SCREEN_COUNT until one has.  One field for WI-FI, FILES and OUTPUTS:
-     * only the screen on top reads it, and entering one from an opener
-     * sets it. */
+    /* The screen that opened the one on top through k_openers, for its home
+     * tag; SCREEN_COUNT when it was entered any other way. */
     ui_screen_id_t    opener;
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
@@ -140,10 +138,12 @@ static void release_owned(void);
 static void guide_check(void);
 
 /*
- * The screens with more than one opener, each opener on a row of its own.
- * The home tag of such a screen returns to the one that opened it: OUTPUTS
- * opens from the TARGET rows of MOTOR & ESC and SERVO and from SETUP's
- * OUTPUTS tile.
+ * The openers, each on a row of its own: a control on one screen that opens
+ * another, whose home tag then returns to the opener.  OUTPUTS opens from the
+ * TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile; SUPPLY
+ * and SETUP from SERVO's caps and AS5600 buttons; WI-FI from UPDATES' button.
+ * A screen with no row here, or entered from a screen not on its row, leaves
+ * to its tile's parent (ui_router_parent()).
  */
 static const struct {
     ui_screen_id_t screen;
@@ -152,6 +152,9 @@ static const struct {
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
     { SCREEN_OUTPUTS, SCREEN_SERVO },
     { SCREEN_OUTPUTS, SCREEN_SETUP },
+    { SCREEN_SUPPLY,  SCREEN_SERVO },
+    { SCREEN_SETUP,   SCREEN_SERVO },
+    { SCREEN_WIFI,    SCREEN_UPDATES },
 };
 
 static bool opens(ui_screen_id_t opener, ui_screen_id_t id)
@@ -223,11 +226,9 @@ void ui_router_goto(ui_screen_id_t id)
     if (old != NULL && old->leave != NULL) {
         old->leave();
     }
-    /* Recorded on the way in from an opener only: entered from anywhere
-     * else, the screen keeps the opener it had. */
-    if (opens(s.current, id)) {
-        s.opener = s.current;
-    }
+    /* Holds for this one entry: a tile, a strip's tab or a route of the
+     * application that enters the screen later finds no opener. */
+    s.opener = opens(s.current, id) ? s.current : SCREEN_COUNT;
     s.current = id;
     ++s.nav_count;
     const ui_screen_t *now = screen_for(id);

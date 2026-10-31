@@ -19,11 +19,11 @@ Acht Kacheln zu je 243 x 255px, in 4 Spalten und 2 Reihen: die Werkbänke in der
 | MOTOR & ESC | Antrieb, V/A, Drehzahl | [Motor und ESC](motor.md) |
 | SERVO | Weg, Strom, Programm | [Servo](servo.md) |
 | SUPPLY | V/A einstellen, aufzeichnen | [Netzteil](supply.md) |
-| LOGS | Läufe und Dateien | [Logs](logs.md) |
+| LOGS | Läufe, Dateien, WLAN | [Logs](logs.md) |
 | RECEIVER | S.BUS, PPM, Frames | [Receiver](analyser.md) |
 | BATTERY | Zellen, iR, mAh | [Akku](battery.md) |
 | BALANCE | Vibration, Phase | [Wuchten](balance.md) |
-| SETUP | Pins, Sensoren, Panel | [Setup](setup.md) |
+| SETUP | Panel, Pins, Karte | [Setup](setup.md) |
 
 Das Programmieren hat keine Kachel: ESCs werden auf [PROGRAMMIEREN](motor.md#programmieren) von MOTOR & ESC programmiert, Servos auf PROGRAMMIEREN von SERVO.
 

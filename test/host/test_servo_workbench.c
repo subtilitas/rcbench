@@ -1,7 +1,7 @@
 /*
  * SERVO as a workbench: the strip's tasks and what each keeps, the home
- * tag's levels, the TARGET row's lock, the run cards' lines, the read-only
- * supply caps and the knob on each task.
+ * tag's levels, the TARGET row's lock, the run cards' lines, the caps
+ * button, OUTPUT's read-only tester line and the knob on each task.
  *
  * The screen and its fixtures are servo_rig.h, the bench
  * servo_bench_rig.h, the spots servo_spots.h.
@@ -459,7 +459,8 @@ TEST_CASE(the_run_cards_say_what_their_start_needs)
 
 /* ------------------------------------------------------- the read-only caps */
 
-/* Whether the caps line at (@p x, @p y) reads SUPPLY's caps in force. */
+/* Whether the caps button with its top at (@p x, @p y) reads SUPPLY's caps in
+ * force. */
 static bool caps_read(int x, int y)
 {
     const supply_caps_t caps = supply_screen_caps();
@@ -468,24 +469,25 @@ static bool caps_read(int x, int y)
              (double)caps.i_max);
     scr->render(&cv, 0);
     want_fresh();
-    const gfx_color_t bg = fb[(size_t)y * W + (size_t)(x - 2)];
-    gfx_fill_rect(&want_cv, (int16_t)(x - 4), (int16_t)y, 600, 20, bg);
-    gfx_text(&want_cv, x, y, line, &gfx_font_10x20,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-    return same_in(fb, want_fb, x - 4, y, 600, 20);
+    const gfx_rect_t r = gfx_rect_make(x, y, 600, UI_TAP_MIN);
+    const gfx_color_t bg = fb[(size_t)(y - 2) * W + (size_t)(x + 8)];
+    gfx_fill_rect(&want_cv, r.x - 2, r.y - 1, r.w + 4, r.h + 2, bg);
+    ui_button_font(&want_cv, r, line, ui_theme_color(UI_C_PANEL_HI), false,
+                   true, &gfx_font_10x20);
+    return same_in(fb, want_fb, r.x, r.y, r.w, r.h);
 }
 
-/* The caps line under TEST's cards and on SETTINGS > DUT reads SUPPLY's
- * caps in force, follows them when they change, names their home in both
- * languages, and a tap on it edits nothing. */
-TEST_CASE(the_supply_caps_show_read_only_with_their_home)
+/* The caps button under TEST's cards and on SETTINGS > DUT reads SUPPLY's
+ * caps in force and follows them when they change, in both languages.  What
+ * a tap on it does: test_menu_openers. */
+TEST_CASE(the_supply_caps_show_on_their_button)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         fresh();
         scr->enter();
         open_test();
-        CHECK(caps_read(UI_MARGIN + 10, 468));
+        CHECK(caps_read(UI_MARGIN + 10, 444));
         supply_caps_t caps = supply_screen_caps();
         CHECK_NEAR(caps.v_max, 21.0f, 1e-4f);
         settings_set(SET_SUPPLY_V_MAX, 12.0f);
@@ -494,18 +496,54 @@ TEST_CASE(the_supply_caps_show_read_only_with_their_home)
         servo_invalidate();
         caps = supply_screen_caps();
         CHECK_NEAR(caps.v_max, 12.0f, 1e-4f);
-        CHECK(caps_read(UI_MARGIN + 10, 468));
-        tap(60, 476);
-        CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 12.0f, 1e-4f);
-        CHECK(caps_read(UI_MARGIN + 10, 468));                      /* no keypad */
+        CHECK(caps_read(UI_MARGIN + 10, 444));
 
         open_settings();
         tap(TAB_X(PAGE_DUT), TAB_Y);
-        CHECK(caps_read(UI_MARGIN + 10, 354));
-        tap(60, 362);
-        CHECK(caps_read(UI_MARGIN + 10, 354));
-        CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 3.0f, 1e-4f);
+        CHECK(caps_read(UI_MARGIN + 10, 374));
     }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
+ * OUTPUT's read-only line names the port SERVO TESTER is set to and its home,
+ * in both languages, and follows the setting.  A tap on it changes nothing:
+ * it is no second writable place.
+ */
+TEST_CASE(the_output_page_names_the_tester_port_read_only)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        static const float k_ports[] = { 0.0f, 1.0f, 4.0f };
+        for (int i = 0; i < 3; ++i) {
+            fresh();
+            scr->enter();
+            settings_set(SET_SERVO_TARGET, k_ports[i]);
+            open_settings();
+            char what[16], line[96];
+            if (k_ports[i] == 0.0f) {
+                snprintf(what, sizeof(what), "%s", TR(OUT_TESTER_OUTPUTS));
+            } else {
+                snprintf(what, sizeof(what), TR(OUT_TESTER_PORT),
+                         (unsigned)k_ports[i]);
+            }
+            snprintf(line, sizeof(line), TR(SV_TESTER_HOME), what);
+            CHECK(strstr(line, "OUTPUTS") != NULL);
+            const int x = UI_MARGIN + 10, y = 366;
+            scr->render(&cv, 0);
+            want_fresh();
+            const gfx_color_t bg = fb[(size_t)y * W + (size_t)(x - 2)];
+            gfx_fill_rect(&want_cv, (int16_t)(x - 4), (int16_t)y, 600, 20, bg);
+            gfx_text(&want_cv, x, y, line, &gfx_font_10x20,
+                     ui_theme_color(UI_C_TEXT_FAINT), 1);
+            CHECK(same_in(fb, want_fb, x - 4, y, 600, 20));
+            const uint32_t nav = ui_router_navigations();
+            tap(x + 40, y + 10);
+            CHECK_EQ(ui_router_navigations(), nav);
+            CHECK_NEAR(settings_get(SET_SERVO_TARGET), k_ports[i], 1e-4f);
+        }
+    }
+    settings_set(SET_SERVO_TARGET, 0.0f);
     ui_text_set_language(UI_LANG_EN);
 }
 
@@ -991,7 +1029,8 @@ int main(void)
     RUN(the_target_row_opens_outputs_on_what_the_tester_drives);
     RUN(the_target_row_opens_on_the_drive_not_the_setting);
     RUN(the_run_cards_say_what_their_start_needs);
-    RUN(the_supply_caps_show_read_only_with_their_home);
+    RUN(the_supply_caps_show_on_their_button);
+    RUN(the_output_page_names_the_tester_port_read_only);
     RUN(the_as5600_lives_on_sensors);
     RUN(the_knob_moves_the_horn_on_live_alone);
     return test_summary("servo_workbench");

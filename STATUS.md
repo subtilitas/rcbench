@@ -224,9 +224,9 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 376 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 377 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
-`test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
+`test_nav`, `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
 `test_motor`, `test_motor_draw`, `test_motor_throttle`, `test_motor_arm`, `test_motor_workbench`, `test_motor_program`, `test_motor_layout`, `test_value_state`, `test_servo`, `test_servo_knob`, `test_servo_drag`, `test_servo_repaint`, `test_frame_work`, `test_servo_dial_sweep`, `test_servo_letgo`, `test_servo_curve`, `test_servo_supply`, `test_servo_restore`, `test_servo_run`, `test_servo_target`, `test_servo_rail`, `test_servo_meter`, `test_servo_settings`, `test_servo_trim_keypad`,
 `test_servo_test_panel`, `test_servo_error_safe`, `test_servo_limit_panel`, `test_servo_workbench`, `test_servo_arm`, `test_safe_press`,
@@ -289,7 +289,7 @@ on one of its 4 layers, the digits one layer key away.
 `test_textkey_see` holds Keyboard see-through: the steps OFF, 25% and 50%,
 the default, a save and a restart, a stored value off the list, the share
 of the text behind that shows through keys and gaps, opaque labels, and
-the opaque keyboard of every other kind. `test_logs_strip` drives the LOGS tile's strip through the router: each tab and the home tag of each screen, a press slid off, cancelled or a second contact's, no tab over a level below the first (a file's views, a box, a keyboard, the viewer, the editor, a job, the network list, the image question), the radio off by any way off WI-FI and never on by a tab, ARMED, a CSV from FILES to LOGS, a report from LOGS to FILES' viewer and back. `test_files_rescan` writes logs, an upload and a folder onto
+the opaque keyboard of every other kind. `test_menu_openers` drives the openers through the router: SERVO's caps and AS5600 buttons, UPDATES' button to WI-FI and TARGET in a programmer asking for a port; each one's way back to the task and page it was tapped on, the refusal while ARMED, a press armed or slid off, a keypad, an unsaved edit, WI-FI's levels and a staged image on the target, a later tile or strip tab finding no opener, and the table of the texts that keep a path. `test_logs_strip` drives the LOGS tile's strip through the router: each tab and the home tag of each screen, a press slid off, cancelled or a second contact's, no tab over a level below the first (a file's views, a box, a keyboard, the viewer, the editor, a job, the network list, the image question), the radio off by any way off WI-FI and never on by a tab, ARMED, a CSV from FILES to LOGS, a report from LOGS to FILES' viewer and back. `test_files_rescan` writes logs, an upload and a folder onto
 the card behind FILES' back, each ranked before every row, and checks
 that RESCAN and the way back into FILES list them, in a folder of 60
 entries too. The test's card
@@ -646,7 +646,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 420 | 417 | 99.3% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 534 | 523 | 97.9% |
+| `shared/ui/ui_router.c` | 533 | 522 | 97.9% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 138 | 133 | 96.4% |
@@ -659,7 +659,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/supply_screen.c` | 548 | 539 | 98.4% |
 | `shared/ui/supply_events.c` | 379 | 377 | 99.5% |
 | `shared/ui/supply_draw.c` | 433 | 414 | 95.6% |
-| `shared/ui/supply_pdmini.c` | 160 | 154 | 96.2% |
+| `shared/ui/supply_pdmini.c` | 167 | 161 | 96.4% |
 | `shared/ui/prog5v_box.c` | 192 | 191 | 99.5% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
@@ -671,11 +671,11 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_screen_link.c` | 386 | 382 | 99.0% |
 | `shared/ui/servo_screen_touch.c` | 310 | 296 | 95.5% |
 | `shared/ui/servo_screen_draw.c` | 536 | 523 | 97.6% |
-| `shared/ui/servo_settings_panel.c` | 561 | 546 | 97.3% |
-| `shared/ui/servo_settings_draw.c` | 380 | 373 | 98.2% |
+| `shared/ui/servo_settings_panel.c` | 575 | 563 | 97.9% |
+| `shared/ui/servo_settings_draw.c` | 390 | 383 | 98.2% |
 | `shared/ui/servo_test_panel.c` | 435 | 423 | 97.2% |
 | `shared/ui/servo_limit_panel.c` | 417 | 375 | 89.9% |
-| `shared/ui/servo_workbench.c` | 338 | 336 | 99.4% |
+| `shared/ui/servo_workbench.c` | 360 | 358 | 99.4% |
 | `shared/ui/kst_panel.c` | 337 | 333 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 277 | 274 | 98.9% |
@@ -714,9 +714,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 420 | 405 | 96.4% |
-| `shared/ui/settings_screen.c` | 535 | 529 | 98.9% |
-| `shared/ui/settings_draw.c` | 233 | 227 | 97.4% |
-| `shared/ui/settings_rows.c` | 38 | 37 | 97.4% |
+| `shared/ui/settings_screen.c` | 545 | 539 | 98.9% |
+| `shared/ui/settings_draw.c` | 229 | 223 | 97.4% |
+| `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
 | `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
 | `shared/ui/sensors_rows.c` | 172 | 172 | 100.0% |
 | `shared/ui/outputs_screen.c` | 542 | 537 | 99.1% |
@@ -736,7 +736,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/wifi_screen.c` | 553 | 547 | 98.9% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 276 | 275 | 99.6% |
-| `shared/ui/upd_screen.c` | 613 | 590 | 96.2% |
+| `shared/ui/upd_screen.c` | 628 | 605 | 96.3% |
 | `shared/settings/settings.c` | 415 | 408 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
@@ -915,7 +915,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api_write.c` | 211 | 208 | 98.6% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **68810** | **67488** | **98.1%** |
+| **total** | **68881** | **67562** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

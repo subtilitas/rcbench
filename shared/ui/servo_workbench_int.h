@@ -85,6 +85,13 @@ void draw_rows_page(gfx_canvas_t *c);
 
 /* --- servo_workbench.c's side, which the screen calls -------------------- */
 
+/* A press on an opener's button, under the TARGET setting's lock; SUPPLY's
+ * LIMITS and SENSORS' AS5600 entry opened, the home tag there coming back
+ * to the task they were opened from. */
+bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code);
+void wb_open_caps(void);
+void wb_open_encoder(void);
+
 /* The strip, the TARGET row and PROGRAM's list laid out (reset); a tile's
  * entry (LIVE); leaving (the run's settings close); touch events lost. */
 void wb_init(void);
@@ -111,7 +118,7 @@ void draw_strip(gfx_canvas_t *c);
 void draw_test_page(gfx_canvas_t *c);
 void draw_prog_page(gfx_canvas_t *c);
 void draw_target(gfx_canvas_t *c);
-void draw_caps_line(gfx_canvas_t *c, int x, int y);
+void draw_caps_button(gfx_canvas_t *c);
 /* The strip's row, and START LIMIT RUN on its card. */
 gfx_rect_t strip_area(void);
 gfx_rect_t lim_start_rect(void);
@@ -132,22 +139,22 @@ static inline gfx_rect_t page_area(void)
  */
 #define RUN_CARD_X  (PAD + 10)     /**< The run cards' left edge, px. */
 #define RUN_CARD_W  (LCARD_W - 20) /**< Their width: 600px. */
-#define RUN_CARD_H  200            /**< A run card's height, px. */
+#define RUN_CARD_H  188            /**< A run card's height, px. */
 #define RUN_CARD_GAP 4             /**< Above and between the cards, px. */
 /** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN). */
 #define RUN_CARD_Y(k) (CARD_Y + RUN_CARD_GAP + (k) * (RUN_CARD_H + RUN_CARD_GAP))
 #define RUN_NAME_DY 8              /**< A card's name, from its top. */
 #define RUN_SUM_DY  32             /**< A card's summary line, in it. */
-#define RUN_BTN_DY  60             /**< Its START's top, in it. */
+#define RUN_BTN_DY  56             /**< Its START's top, in it. */
 #define RUN_BTN_W   300            /**< START's width, px. */
-#define RUN_BTN_H   56             /**< START's height, px. */
-#define RUN_LINE_DY 120            /**< The lines under START, in it. */
+#define RUN_BTN_H   UI_TAP_MIN             /**< START's height, px. */
+#define RUN_LINE_DY 108            /**< The lines under START, in it. */
 #define RUN_LINE_P  22             /**< Their pitch in SV_FONT_LABEL. */
 #define RUN_SET_W   160            /**< A card's SETTINGS, px. */
-/** @brief The caps line under the two cards. */
+/** @brief The caps button under the two cards. */
 #define RUN_CAPS_Y  (RUN_CARD_Y(1) + RUN_CARD_H + RUN_CARD_GAP)
-_Static_assert(RUN_CAPS_Y + 20 <= STOP_FLOOR,
-               "the caps line ends above the alert band");
+_Static_assert(RUN_CAPS_Y + UI_TAP_MIN <= STOP_FLOOR,
+               "the caps button ends above the alert band");
 _Static_assert(RUN_LINE_DY + 2 * RUN_LINE_P + 20 <= RUN_CARD_H,
                "a card's three lines under START end inside it");
 
@@ -213,6 +220,37 @@ static inline gfx_rect_t save_line_rect(void)
 }
 _Static_assert(CARD_Y + RUN_PAGE_SAVE_DY + 20 <= RL_ROW0 - 4,
                "a run's save line ends over its first row");
+
+/** @brief DUT's notes, under its three rows. */
+#define DUT_NOTE_Y (OV_ROW0 + 3 * OV_PITCH + 6)
+/** @brief DUT's AS5600 button, under its two lines of notes. */
+#define DUT_ENC_Y  (DUT_NOTE_Y + 2 * NOTE_PITCH + 6)
+/** @brief DUT's caps button, under the AS5600 button. */
+#define DUT_CAPS_Y (DUT_ENC_Y + UI_TAP_MIN + 8)
+_Static_assert(DUT_CAPS_Y + UI_TAP_MIN + 4 <= OV_SAVE_Y,
+               "DUT's buttons end above the save line");
+
+/**
+ * @brief The caps button, which opens SUPPLY's LIMITS: under TEST's cards,
+ *        or on SETTINGS' DUT page.
+ * @return the button, 600 x UI_TAP_MIN px
+ */
+static inline gfx_rect_t caps_open_rect(void)
+{
+    return (gfx_rect_t){ RUN_CARD_X,
+                         (int16_t)((wb_task() == UI_WB_TEST) ? RUN_CAPS_Y
+                                                             : DUT_CAPS_Y),
+                         RUN_CARD_W, UI_TAP_MIN };
+}
+
+/**
+ * @brief DUT's AS5600 button, which opens SENSORS on the AS5600 entry.
+ * @return the button, 600 x UI_TAP_MIN px
+ */
+static inline gfx_rect_t enc_open_rect(void)
+{
+    return (gfx_rect_t){ RUN_CARD_X, DUT_ENC_Y, RUN_CARD_W, UI_TAP_MIN };
+}
 
 /** @brief START TEST, on the AUTOMATIC TEST card. @return the button */
 static inline gfx_rect_t test_start_rect(void)

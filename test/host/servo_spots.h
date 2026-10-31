@@ -15,8 +15,8 @@
  *   - SETTINGS' own page tabs OUTPUT, SWEEP, DUT from x 18, 197px each,
  *     y 64 to 104, and their rows from y 108, 48px tall and 52px apart,
  *     the left column from x 18, the right from x 323;
- *   - TEST's two run cards from y 60 and 264, each with START and SETTINGS
- *     60px down; a run's settings' rows in three columns of 193px from x
+ *   - TEST's two run cards from y 60 and 252, each with START and SETTINGS
+ *     56px down, and the caps button at y 444 to 492; a run's settings' rows in three columns of 193px from x
  *     18, 203px apart, each its label over its 48px value, 71px apart
  *     from y 112; its CLOSE x 478 to 618, y 60 to 108;
  *   - the output card from SV_RCARD_X, its inner column SV_RC_X and
@@ -54,16 +54,21 @@
 
 #define SV_RUN_SET_X       528                /**< A run card's SETTINGS. */
 /** @brief Run card @p k's SETTINGS (0 AUTOMATIC TEST, 1 LIMIT RUN). */
-#define SV_RUN_SET_Y(k)    (148 + 204 * (k))
+#define SV_RUN_SET_Y(k)    (140 + 192 * (k))
 #define SV_RUN_CLOSE_X     548                /**< CLOSE on a run's page. */
 #define SV_RUN_CLOSE_Y     84                 /**< Its row. */
 #define SV_START_X         178                /**< A run card's START. */
 /** @brief Run card @p k's START. */
-#define SV_START_Y(k)      (148 + 204 * (k))
+#define SV_START_Y(k)      (140 + 192 * (k))
 /** @brief Run card @p k's top (0 AUTOMATIC TEST, 1 LIMIT RUN). */
-#define SV_RUN_CARD_Y(k)   (60 + 204 * (k))
+#define SV_RUN_CARD_Y(k)   (60 + 192 * (k))
+/** @brief The caps button under TEST's cards, 600 x 48px, its middle. */
+#define SV_CAPS_X          300
+#define SV_CAPS_TEST_Y     468                /**< Its middle row on TEST. */
+#define SV_CAPS_DUT_Y      398                /**< Its middle row on DUT. */
+#define SV_ENC_OPEN_Y      342                /**< DUT's AS5600 button's. */
 /** @brief The lines under a run card's START, from its top. */
-#define SV_RUN_LINE_DY     120
+#define SV_RUN_LINE_DY     108
 /** @brief The run's box on LIVE's card, left under ARM FIRST: 346px wide, its
  *        lines
  *         24px apart from 10px in, its button 150 x 48px 112px down. */

@@ -221,7 +221,7 @@ auch immer ENABLE hält; ein IOmcu von 0.15.0 oder älter nimmt sie mit
 ENABLE 0 an und weist das danach freigegebene Bauteil ab. Das Format auf dem
 Draht und die Protokoll-Minor sind dieselben. Ein Panel von 0.15.0 oder
 älter, dessen zwei Pin-Einstellungen unabhängig sind, sieht die Abweisung bei
-der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GPIO 15/GPIO 17 abgelehnt. SETUP > SENSORS prüfen.`, einmal je Änderung und je Link-Aufbau,
+der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GPIO 15/GPIO 17 abgelehnt. SENSORS prüfen.`, einmal je Änderung und je Link-Aufbau,
 und die Page behält die Pins, die sie hatte. Seine Pins auf −1 werden als
 ENABLE 0 mit 0 für den Pin geschrieben und angenommen. Eine
 Konfiguration im Flash des IOmcu, deren Pins kein Paar sind, wird
@@ -1674,7 +1674,7 @@ gelesen, mit HASH_RUNNING des IOmcu über dieselbe Zahl von Bytes.
 | Ergebnis | Panel |
 | --- | --- |
 | gleich | nichts |
-| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
+| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Update unter UPDATES.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
 | ein Image auf Probe | schreibt sofort BUY und meldet `Neue IOmcu-Firmware dauerhaft übernommen.` |
 | BAD_PAGE oder keine Slots | der Alarm `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` |
 

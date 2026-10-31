@@ -289,7 +289,7 @@ typedef struct {
 enum { OP_NONE = 0, OP_TAB, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
        OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
-       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE };
+       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE, OP_OPEN_CAPS, OP_OPEN_ENC };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };

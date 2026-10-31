@@ -191,6 +191,17 @@ ui_screen_id_t settings_hub_tile_screen(int i);
 int settings_hub_cat_tile(setting_cat_t cat);
 
 /**
+ * @brief The list of @p cat, as a control on another screen opens it: called
+ *        after the router's entry, which shows the tiles.  The home tag then
+ *        leaves for the opener (ui_router_parent()) through the leave warning,
+ *        with no tiles in between.
+ * @param cat   The category.
+ * @param entry SENSORS' left list's entry to show; ignored for any other
+ *              category.
+ */
+void settings_screen_open_on(setting_cat_t cat, int entry);
+
+/**
  * Whether a tile of the hub opens screen @p id.  The home tag of such a
  * screen leads back to SETUP rather than to the menu.
  */

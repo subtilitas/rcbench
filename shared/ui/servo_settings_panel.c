@@ -674,6 +674,12 @@ void ov_down(const touch_event_t *evt)
         return;
     }
     const int page = rows_page();
+    /* DUT's two buttons, which open their settings' homes. */
+    if (page == PG_DUT
+        && (opener_down(evt, enc_open_rect(), OP_OPEN_ENC)
+            || opener_down(evt, caps_open_rect(), OP_OPEN_CAPS))) {
+        return;
+    }
     /* A run's settings: CLOSE, back to TEST's cards. */
     if (page >= PG_COUNT && gfx_rect_contains(run_close_rect(), x, y)) {
         ov_take(evt, OP_RUN_CLOSE, -1);
@@ -905,6 +911,19 @@ void ov_rest(const touch_event_t *evt)
             && wb_task() == UI_WB_TEST && s.run_list != RL_NONE) {
             s.run_list = RL_NONE;
             servo_invalidate();
+        }
+        break;
+    case OP_OPEN_CAPS:
+        /* Asked again: a bench that armed under the finger stays armed. */
+        if (gfx_rect_contains(caps_open_rect(), x, y)
+            && !target_locked_for(SET_SERVO_TARGET)) {
+            wb_open_caps();
+        }
+        break;
+    case OP_OPEN_ENC:
+        if (gfx_rect_contains(enc_open_rect(), x, y)
+            && !target_locked_for(SET_SERVO_TARGET)) {
+            wb_open_encoder();
         }
         break;
     case OP_RUN_SET:

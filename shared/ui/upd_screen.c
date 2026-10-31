@@ -114,6 +114,7 @@ enum {
     HIT_IGNORE,
     HIT_NEVER,
     HIT_COPROC,         /* HOLD 2s: UPDATE IOMCU */
+    HIT_NET,            /* no home network: opens WI-FI */
 };
 
 /* What both screens show, and what they ask for. */
@@ -551,8 +552,36 @@ static gfx_rect_t btn(int row)
 
 static bool testing_set(void) { return settings_get_int(SET_UPD_CHANNEL) == 1; }
 
+/**
+ * @brief The button that opens WI-FI shows: no home network, and Wi-Fi at
+ *        this start.
+ * @return Whether it is on the card.
+ */
+static bool net_shown(void)
+{
+    return !s_v.unavailable && !s_v.have_net;
+}
+
+/**
+ * @brief The button that opens WI-FI, on the card under its lines on the
+ *        running version and the home network.
+ * @return Its rectangle in the body.
+ */
+static gfx_rect_t net_rect(void)
+{
+    const int x = RX + RPAD, w = RW - 2 * RPAD;
+    char line[96];
+    snprintf(line, sizeof(line), TR(WF_Q_RUN), s_v.running);
+    int y = para(NULL, x, RY + RPAD, w, line, UI_TEXT) + 4;
+    y = para(NULL, x, y, w, TR(WF_HOME_NONE), UI_WARN);
+    return gfx_rect_make(x, y + 4, w, BH);
+}
+
 static int hit_at(int x, int y)
 {
+    if (net_shown() && !upd_busy(&s_v) && gfx_rect_contains(net_rect(), x, y)) {
+        return HIT_NET;
+    }
     if (gfx_rect_contains(btn(0), x, y)
         && (check_allowed() || cancel_allowed())) {
         return HIT_CHECK;
@@ -588,6 +617,10 @@ static void act(int hit)
     case HIT_CHANNEL:
         settings_set(SET_UPD_CHANNEL, testing_set() ? 0.0f : 1.0f);
         settings_request_save();
+        break;
+    case HIT_NET:
+        /* WI-FI's home tag comes back here (ui_router_parent()). */
+        ui_router_goto(SCREEN_WIFI);
         break;
     default:
         break;
@@ -834,7 +867,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, line, UI_TEXT_DIM) + 12;
     } else {
         y = para(c, x, y, w, TR(WF_HOME_NONE), UI_WARN);
-        y = para(c, x, y, w, TR(UPD_KEEP_NET), UI_TEXT_DIM) + 12;
+        button(c, net_rect(), TR(UPD_OPEN_WIFI), UI_PANEL_HI,
+               s.have_press && s.hit == HIT_NET, !upd_busy(&s_v));
+        y += 4 + BH + 12;
     }
 
     /* The job under way, or how the last one ended.  A check that ended

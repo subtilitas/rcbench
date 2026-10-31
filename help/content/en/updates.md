@@ -22,7 +22,7 @@ UPDATES asks GitHub which panel firmware release is the newest and installs it. 
 
 The card names the running version and the kept home network. The check and the download need:
 
-- a home network kept on [Wi-Fi](wifi.md#choosing-a-home-network). Without one the card says `No home network saved.` and CHECK FOR UPDATES is grey;
+- a home network kept on [Wi-Fi](wifi.md#choosing-a-home-network). Without one the card says `No home network saved.` over the button `SAVE A NETWORK: OPEN WI-FI`, which opens WI-FI and comes back by the home tag, and CHECK FOR UPDATES is grey;
 - the bench SAFE, the supply output off and no log run open. Otherwise the key is grey and the card says `Wi-Fi requires SAFE, the supply output off,`;
 - no IOmcu update running and no panel install under way.
 

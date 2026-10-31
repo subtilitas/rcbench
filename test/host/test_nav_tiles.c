@@ -709,14 +709,14 @@ TEST_CASE(the_home_tiles_carry_the_planned_names_and_lines)
     static const char *const k_line[UI_LANG_COUNT][8] = {
         [UI_LANG_EN] = {
             "drive, V/A, rpm", "travel, current, program", "set and log V/A",
-            "runs and files", "S.BUS, PPM, frames", "cells, iR, mAh",
-            "vibration, phase", "pins, sensors, panel",
+            "runs, files, Wi-Fi", "S.BUS, PPM, frames", "cells, iR, mAh",
+            "vibration, phase", "panel, pins, card",
         },
         [UI_LANG_DE] = {
             "Antrieb, V/A, Drehzahl", "Weg, Strom, Programm",
-            "V/A einstellen, aufzeichnen", "Läufe und Dateien",
+            "V/A einstellen, aufzeichnen", "Läufe, Dateien, WLAN",
             "S.BUS, PPM, Frames", "Zellen, iR, mAh", "Vibration, Phase",
-            "Pins, Sensoren, Panel",
+            "Panel, Pins, Karte",
         },
     };
     fresh();
@@ -840,7 +840,7 @@ TEST_CASE(a_tile_line_breaks_at_a_space_inside_its_padding)
         { "V/A einstellen, aufzeichnen", true },
         { "travel, current, program", true },
         { "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD", false },
-        { "runs and files", false },
+        { "runs, files, Wi-Fi", false },
     };
     for (size_t i = 0; i < sizeof(k_case) / sizeof(k_case[0]); ++i) {
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));

@@ -8,6 +8,21 @@ history is in git.
 
 ### Added
 
+- Openers replace texts that named a path, each returning by the home tag:
+  SERVO's caps line under TEST's cards and on DUT is a button to SUPPLY's
+  SETTINGS, LIMITS; DUT's AS5600 note is a button to SENSORS' AS5600 entry;
+  UPDATES' no-network line is a button to WI-FI. SERVO's two are grey under
+  TARGET's lock: ARMED, a sweep, a run, or a programmer holding the port.
+  TARGET in a programmer asking for a port opens PROG PORT 1's entry, which
+  holds SERVO TESTER.
+- SERVO > SETTINGS > OUTPUT names the port SERVO TESTER is set to and its home
+  OUTPUTS, read-only.
+- SETUP's PANEL and SD CARD tiles name their content in place of a count. TEST's
+  run cards are 188px tall, 12px less, and their START holds 48px, 8px less.
+- UI texts name one tile at most: alerts read `Check SENSORS.`, and MOTOR &
+  ESC's say TARGET, which opens OUTPUTS in one tap. Kept paths are the supply
+  question's row, Hitec's checksum hint and the browser's texts.
+
 - The LOGS tile holds LOGS, FILES and WI-FI under one strip of three tabs, on
   each screen's first level. The home tag of each leads to the menu. SETUP's
   WI-FI and FILES tiles and LOGS' WI-FI and FILES footer buttons are gone, so

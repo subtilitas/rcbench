@@ -584,6 +584,7 @@ static void reset(void)
 static void enter(void)
 {
     s.list = false;
+    s.opened = false;
     s.warn = false;
     ui_textkey_close(&s.tk);
     ui_keypad_close(&s.kp);
@@ -614,7 +615,8 @@ static void leave(void)
 }
 
 /**
- * @brief The home tag: on a list it goes back to the tiles; on the tiles it
+ * @brief The home tag: on a list it goes back to the tiles; on the tiles, or
+ *        on a list another screen opened (settings_screen_open_on()), it
  *        leaves, through hold().  Over the warning it is STAY, over the
  *        keyboard and the keypad CANCEL.
  * @return True when it closed something or climbed to the tiles; false to
@@ -637,7 +639,7 @@ static bool back(void)
         settings_screen_invalidate();
         return true;
     }
-    if (!s.list) {
+    if (!s.list || s.opened) {
         return false;
     }
     s.list = false;
@@ -689,7 +691,30 @@ static void tick(float dt_s)
     }
 }
 
-/* A tap on tile @p index: a category's list, or a screen of its own. */
+/**
+ * @brief A category's list shown, at the scroll SENSORS' entry had or at its
+ *        top.
+ * @param cat The category.
+ */
+static void open_list(setting_cat_t cat)
+{
+    if (s.cat != cat) {
+        if (s.cat == SET_CAT_SENSORS) {
+            s.entry_scroll[sensors_pane_selected()] = s.scroll;
+        }
+        s.cat = cat;
+        s.scroll = (s.cat == SET_CAT_SENSORS)
+                       ? s.entry_scroll[sensors_pane_selected()] : 0;
+    }
+    s.list = true;
+    stg_clamp_scroll();
+    settings_screen_invalidate();
+}
+
+/**
+ * @brief A tap on a tile: a category's list, or a screen of its own.
+ * @param index The tile.
+ */
 static void open_tile(int index)
 {
     const hub_tile_t *t = stg_hub_tile(index);
@@ -697,17 +722,7 @@ static void open_tile(int index)
         ui_router_goto(t->screen);
         return;
     }
-    if (s.cat != (setting_cat_t)t->cat) {
-        if (s.cat == SET_CAT_SENSORS) {
-            s.entry_scroll[sensors_pane_selected()] = s.scroll;
-        }
-        s.cat = (setting_cat_t)t->cat;
-        s.scroll = (s.cat == SET_CAT_SENSORS)
-                       ? s.entry_scroll[sensors_pane_selected()] : 0;
-    }
-    s.list = true;
-    stg_clamp_scroll();
-    settings_screen_invalidate();
+    open_list((setting_cat_t)t->cat);
 }
 
 /**
@@ -722,6 +737,15 @@ static void open_entry(int entry)
     s.scroll = s.entry_scroll[sensors_pane_selected()];
     stg_clamp_scroll();
     settings_screen_invalidate();
+}
+
+void settings_screen_open_on(setting_cat_t cat, int entry)
+{
+    open_list(cat);
+    if (cat == SET_CAT_SENSORS) {
+        open_entry(entry);
+    }
+    s.opened = true;
 }
 
 /**

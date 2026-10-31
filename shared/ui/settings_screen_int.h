@@ -209,12 +209,6 @@ typedef struct {
 } hub_tile_t;
 
 /**
- * @brief Tile that opens category @p cat_ with icon @p icon_; its line counts
- *        the settings.
- */
-#define HUB_CATEGORY(cat_, icon_) \
-    { (icon_), (int8_t)(cat_), SCREEN_SETUP, TX_SET_COUNT }
-/**
  * @brief Tile that opens screen @p screen_ with icon @p icon_ and the line @p
  *        line_ under its name.
  */
@@ -229,10 +223,10 @@ typedef struct {
 
 /** @brief The hub's tiles in grid order, row by row. */
 static const hub_tile_t k_tiles[] = {
-    HUB_CATEGORY(SET_CAT_APP,   ui_icon_sliders),
+    HUB_CATEGORY_LINE(SET_CAT_APP, TX_SET_HUB_PANEL, ui_icon_sliders),
     HUB_CATEGORY_LINE(SET_CAT_SENSORS, TX_SET_HUB_SENSORS, ui_icon_supply),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
-    HUB_CATEGORY(SET_CAT_CARD,  ui_icon_chart),
+    HUB_CATEGORY_LINE(SET_CAT_CARD, TX_SET_HUB_CARD, ui_icon_chart),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
 };
 
@@ -309,6 +303,7 @@ typedef struct {
     int      scroll;                    /**< list scroll, px */
     /** @brief The scroll each SENSORS entry had when last left, px */
     int      entry_scroll[SENS_ENTRY_COUNT];
+    bool     opened;   /**< another screen opened the list: no tiles above it */
     int      scroll_max;                /**< largest scroll, px */
 
     /* One contact holds the screen from its DOWN to its UP; any other

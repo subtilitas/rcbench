@@ -61,7 +61,7 @@ Ein Pin steht mit dem Wort voran, `GPIO 1`, im Eintrag des Tastenfelds, in der Z
 
 ![Das Tastenfeld von Sensor-SDA, GPIO 1 getippt](view:setup-sda-keypad)
 
-Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > SENSORS prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > SENSORS prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung (Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert) verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
+Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SENSORS prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SENSORS prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung (Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert) verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
 
 Der Zustand des Eintrags INA228 liest sich wie der eines Bausteins ([Was ein Baustein tut](#was-ein-baustein-tut)): `VOM IOMCU ABGELEHNT` auch für abgelehnte Pins und für einen IOmcu ohne die Page SENSE, und `ADRESSE WIE INA3221`, wenn ein bestückter Baustein seine Adresse hat, sodass keiner gelesen wird.
 
@@ -112,7 +112,7 @@ Solange eine Grenze gesetzt ist, prüft der IOmcu jedes 50-ms-Fenster eines Kana
 |---|---|
 | `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80A.` | ein Fenster hat die Grenze des Kanals überschritten; in Klammern, was der Kanal misst; die Grenze, an der das Fenster geprüft wurde |
 | `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | die Antwort, die den Kanal nannte, ging verloren; gesagt nach dem nächsten Link-Aufbau, nicht nach einem Neustart des IOmcu |
-| `INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Grenzen abgelehnt und behält seine, oder er hat die Page abgelehnt |
+| `INA3221-Grenzen abgelehnt. SENSORS prüfen.` | der IOmcu hat die Grenzen abgelehnt und behält seine, oder er hat die Page abgelehnt |
 
 Eine Zeile GRENZE, die der IOmcu nicht hält, steht in der Warnfarbe: solange ihr Schreiben wartet, nach einer Ablehnung und bei einem IOmcu älter als 0.22.0 (Protokoll 4.27), der keine Grenze prüft (`IOmcu vor 0.22.0: keine Grenze geprüft.`).
 

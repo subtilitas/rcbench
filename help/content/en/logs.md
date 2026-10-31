@@ -12,7 +12,7 @@ LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separat
 
 ![LOGS with no card in the slot](view:logs-nocard)
 
-With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
+With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
 
 ## A card that does not mount
 

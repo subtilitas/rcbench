@@ -100,7 +100,9 @@ OPTIONEN auf der Karte ENDLAGENLAUF öffnet sie.
 
 ## Die Grenzen von SUPPLY
 
-Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Laufs bleiben, stehen nur lesbar unter den Karten auf TEST und auf PRÜFLING: `Grenzen 21.00V 5.00A: SUPPLY > OPTIONEN`, die geltenden Werte. Eingestellt werden sie auf [SUPPLY](supply.md) > OPTIONEN.
+Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Laufs bleiben, stehen unter den Karten auf TEST und auf PRÜFLING auf einer Taste, `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`, die geltenden Werte. Die Taste öffnet [SUPPLY](supply.md) auf OPTIONEN, GRENZEN, wo sie eingestellt werden, und das Home-Tag dort führt zurück. Sie ist grau, solange ZIEL gesperrt ist: Das Verlassen von SERVO schaltete den Prüfstand auf SAFE.
+
+Der erste Hinweis auf AUSGANG nennt den Port, auf dem SERVO-TESTER steht, `SERVO-TESTER: PORT 1. Einstellbar unter OUTPUTS.` Er nimmt keinen Tipp an: Die Einstellung gehört zu [Outputs](outputs.md#der-eintrag-prog-port).
 
 ## PRÜFLING
 
@@ -113,7 +115,7 @@ Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Lau
 | BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange User-Logs unter SETUP > SD CARD EIN ist |
 | SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
 
-AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Sensoren](setup-sensors.md) geschaltet. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.
+AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Sensoren](setup-sensors.md) geschaltet; die Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING öffnet diesen Eintrag, und das Home-Tag dort führt zurück. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.
 
 ## Die Zeile ZIEL
 

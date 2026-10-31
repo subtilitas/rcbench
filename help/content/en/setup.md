@@ -14,10 +14,10 @@ SETUP holds the panel's bench-wide settings in three categories: PANEL, SENSORS 
 
 | Tile | Second line | What it opens |
 |---|---|---|
-| PANEL | `12 SETTINGS` | the list of PANEL |
+| PANEL | `THEME, LANGUAGE, KNOB` | the list of PANEL |
 | SENSORS | `CURRENT, ANGLE, PHASE TAP` | [Sensors](setup-sensors.md): the sensor bus, the INA228 and INA3221 current monitors, the AS5600 and the phase tap, a left list of 8 beside the selected one's rows |
 | OUTPUTS | `PROTOCOLS, PINS, BOARD` | [Outputs](outputs.md): the role of each IOmcu pin, on a drawing of the board |
-| SD CARD | `5 SETTINGS` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
+| SD CARD | `LOGS, BROWSER WRITES` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 | LAYOUT | `CONNECTORS AND PINS` | [Layout](layout.md), on the rbmod carrier only, whose pins are soldered |
 

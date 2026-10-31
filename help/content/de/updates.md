@@ -22,7 +22,7 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche und Download brauchen:
 
-- ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.`, und NACH UPDATES SUCHEN ist grau;
+- ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` über der Taste `NETZWERK SPEICHERN: WI-FI ÖFFNEN`, die WI-FI öffnet und über das Home-Tag zurückführt, und NACH UPDATES SUCHEN ist grau;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf. Sonst ist die Taste grau, und die Karte sagt `Für WLAN muss SAFE aktiv und das Netzteil aus sein.`;
 - kein laufendes Update des IOmcu und keine Panel-Installation im Gang.
 

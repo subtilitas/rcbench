@@ -61,7 +61,7 @@ A pin is written with the word first, `GPIO 1`, in the keypad's entry, on the ro
 
 ![The keypad of Sensor SDA, GPIO 1 typed](view:setup-sda-keypad)
 
-The band names what goes wrong, one message at a time, at most one every 5s. For example: `Sensor SDA or SCL not set. Check SETUP > SENSORS.`, `INA228 and INA3221 both use 0x40. Check SETUP > SENSORS.`, `INA228 is not responding at 0x45.`, `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.`. A message about the set-up (pins not set, one address, a value rejected) leaves the band as soon as the setting is right again and the IOmcu holds it.
+The band names what goes wrong, one message at a time, at most one every 5s. For example: `Sensor SDA or SCL not set. Check SENSORS.`, `INA228 and INA3221 both use 0x40. Check SENSORS.`, `INA228 is not responding at 0x45.`, `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.`. A message about the set-up (pins not set, one address, a value rejected) leaves the band as soon as the setting is right again and the IOmcu holds it.
 
 The INA228 entry's state reads as a part's ([What a part is doing](#what-a-part-is-doing)): `NOT ACCEPTED BY THE IOMCU` also for refused pins and for an IOmcu without the SENSE page, and `SAME ADDRESS AS INA3221` when a fitted part has its address, so neither is read.
 
@@ -112,7 +112,7 @@ While a limit is set, the IOmcu judges each channel window of 50ms, and the pane
 |---|---|
 | `INA3221 0x41 CH2 (PORT 1) over its 0.80A limit.` | a window passed the channel's limit; in brackets what the channel watches; the limit the window was judged by |
 | `An INA3221 channel passed its limit; which one was lost on the link.` | the reply that named the channel was lost; said after the next link-up, not after an IOmcu restart |
-| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the limits and keeps its own, or refused the page |
+| `INA3221 limits rejected. Check SENSORS.` | the IOmcu refused the limits and keeps its own, or refused the page |
 
 A limit row the IOmcu does not hold is drawn in the warning colour: while its write waits, after a refusal, and on an IOmcu older than 0.22.0 (protocol 4.27), which judges no limit (`IOmcu before 0.22.0: no limit is judged.`).
 

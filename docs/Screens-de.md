@@ -313,11 +313,11 @@ Zeichen, 8px frei von den Seiten der Kachel:
 | MOTOR & ESC | Antrieb, V/A, Drehzahl |
 | SERVO | Weg, Strom, Programm |
 | SUPPLY | V/A einstellen, aufzeichnen |
-| LOGS | Läufe und Dateien |
+| LOGS | Läufe, Dateien, WLAN |
 | RECEIVER | S.BUS, PPM, Frames |
 | BATTERY | Zellen, iR, mAh |
 | BALANCE | Vibration, Phase |
-| SETUP | Pins, Sensoren, Panel |
+| SETUP | Panel, Pins, Karte |
 
 Eine Kachel mit der Marke SIMULIERT öffnet einen Bildschirm, dessen Quelle
 der Prüfstand nicht meldet: Der IOmcu meldet dafür keine Fähigkeit, oder
@@ -1605,9 +1605,9 @@ ab TEMPO 63%, beim Dreieck ab 40%.
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es aufhört, sich zu bewegen. [Servoverfahren](Servo-de.md#automatischer-test)
-beschreibt das Verfahren und die Dateien. Die Karte, 600 x 200px, trägt
+beschreibt das Verfahren und die Dateien. Die Karte, 600 x 188px, trägt
 den Namen des Laufs, eine Zusammenfassung (`4.8 6.0V BROWN-OUT, JE
-60s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 56px) mit den
+60s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 48px) mit den
 OPTIONEN der Karte (160 x 48px) daneben, die Zustandszeile, das
 letzte Ergebnis mit seinen Dateien (`ZULETZT: BESTANDEN ATEST004.CSV +
 .TXT`) und den Hinweis zu BLOCKIERT AB. TEST STARTEN braucht einen Prüfstand
@@ -1691,7 +1691,7 @@ kein Kanal das Ziel überwacht), die nächste sagt, warum er nicht starten
 kann oder was er gerade tut, dann folgen das letzte Ergebnis und sein
 Bericht. Diese vier Zeilen stehen in der Schrift 10 x 20, 20px
 auseinander, die erste 2px unter ENDLAGENLAUF STARTEN, sodass die vierte
-2px innerhalb der 200px hohen Karte endet. TEST bleibt beim Start zu
+2px innerhalb der 188px hohen Karte endet. TEST bleibt beim Start zu
 sehen. Sein Feld auf der linken Karte von
 LIVE zeigt die geschriebenen Werte
 von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
@@ -1764,7 +1764,7 @@ Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport,
 den der Tester treibt, aus PWM (Pulsweitenmodulation) und liest und
 schreibt die Einstellungen des Servos über dessen Signalleitung. PROG-PORT 1
 ist im Auslieferzustand GPIO 13 an Pad 17. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
-einem Port steht, PORT 1, PORT 2, PORT 3 oder PORT 4; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
+einem Port steht, PORT 1, PORT 2, PORT 3 oder PORT 4; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `ZIEL antippen und SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und VERBINDEN ist gesperrt. ZIEL öffnet dann OUTPUTS auf dem Eintrag von PROG-PORT 1, der SERVO-TESTER hält, und das Home-Tag dort führt zum Programmierer zurück. Solange er den Port hält,
 bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
 VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
 tun sie nichts. Das Verlassen von SERVO lässt den Port, wie er ist; zurück
@@ -1912,14 +1912,26 @@ bleiben, wo sie sind.
 
 AS5600, der Ausgangsencoder, wird nur auf SETUP > SENSORS ein- und
 ausgeschaltet ([der Ausgangsencoder](#sensors-der-ausgangsencoder)); der
-Hinweis auf PRÜFLING sagt das. Er fügt den Winkel des Horns der Zeile
+Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING, 600 x 48px, öffnet SENSORS auf dem Eintrag AS5600. Er fügt den Winkel des Horns der Zeile
 GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu
 ([Servo](Servo-de.md#der-ausgangsencoder)).
 
 Die Grenzen von SUPPLY, Spannung und Strom, in denen die Sollwerte und die
-Stufen eines Laufs bleiben, stehen nur lesbar unter den Karten auf TEST und
-auf PRÜFLING, mit ihrem Ort und den geltenden Werten: `Grenzen 21.00V 5.00
-A: SUPPLY > OPTIONEN`. Eingestellt werden sie auf SUPPLY > OPTIONEN.
+Stufen eines Laufs bleiben, stehen unter den Karten auf TEST und auf PRÜFLING
+auf einer Taste von 600 x 48px: `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`.
+Eingestellt werden sie auf SUPPLY > OPTIONEN, GRENZEN, was die Taste öffnet.
+
+Beide Tasten öffnen einen anderen Bildschirm wie ZIEL: Das Home-Tag dort führt
+zu der Aufgabe und der Seite zurück, auf denen sie getippt wurden. Das Verlassen
+von SERVO schaltet den Prüfstand auf SAFE, beendet einen Sweep oder einen Test
+und schaltet eine von SERVO eingeschaltete Versorgung aus. Darum sind sie grau
+und nehmen keinen Druck an, solange ZIEL gesperrt ist: ARMED, ein Sweep, ein
+Lauf oder ein Programmierer, der den Port hält. Von SENSORS aus geht das
+Home-Tag bei einem ungespeicherten Wert über die Warnung beim Verlassen.
+
+Der erste Hinweis auf AUSGANG nennt, worauf SERVO-TESTER steht, OUTPUTS, PORT 1,
+PORT 2, PORT 3 oder PORT 4, und wo er eingestellt wird:
+`SERVO-TESTER: PORT 1. Einstellbar unter OUTPUTS.` Er nimmt keinen Tipp an.
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
@@ -2726,7 +2738,7 @@ am rechten Rand der Liste, und links von VORIGE, wenn VORIGE und NÄCHSTE
 sichtbar sind. Ein leerer Ordner
 sagt, warum, und was hineingehört: `Keine .csv-Dateien in BENCH/LOGS.` und
 die Namen, die er aufnimmt, oder mit seinem Schalter auf AUS
-`AUTO-LOGS AUS unter SETUP > SD CARD.`. Unter der Rückfrage zu LÖSCHEN sind
+`AUTO-LOGS AUS unter SD CARD.`. Unter der Rückfrage zu LÖSCHEN sind
 die Tabs ausgeblendet. Eine Datei, die von einem Tab aus geöffnet wurde,
 bleibt die Datei dieses Tabs: Ihre Importansicht und ihr Plot lesen sie aus
 diesem Ordner, gleich welcher Tab inzwischen gewählt ist.
@@ -3734,7 +3746,7 @@ Solange die Seite bedient wird, sagt eine Zeile unter den Zeilen, was gilt:
 `Der Browser darf auf die Karte schreiben: bisher 3 Schreibvorgänge.`,
 `Schreiben per Browser braucht den Zugangscode r4tcw9pe.` (ZUGANGSCODE mit
 ZUGANGSCODE aus), `Der Browser darf erst nach dem Halten auf die Karte
-schreiben.` oder `Schreiben per Browser ist aus: SETUP > SD CARD.` Gezählt
+schreiben.` oder `Schreiben per Browser ist aus: SD CARD.` Gezählt
 werden die Schreibvorgänge, die das Panel in dieser Sitzung des
 Funkmoduls für die Seite ausgeführt hat.
 
@@ -4774,12 +4786,12 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.` | ein Monitor ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
-| `SDA oder SCL der Sensoren nicht festgelegt. SETUP > SENSORS prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
-| `INA228 und INA3221 nutzen beide 0x40. SETUP > SENSORS prüfen.` | der INA228 auf der Adresse eines bestückten INA3221; keiner wird gelesen |
-| `Sensor-Pins GPIO 16/GPIO 17 abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30s lang gezeigt oder bis zum Antippen, einmal je Änderung |
-| `INA228-Shunt oder Höchststrom abgelehnt. SETUP > SENSORS prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84mV, oder der Messbereich, den er ergibt, übersteigt 2000A; der INA228 bleibt aus |
-| `INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Einstellung der INA3221 abgelehnt: die Zuordnung auf SENSE_MAP, bei einem IOmcu älter als 4.25 den Frame des einen Bausteins; der IOmcu behält, was er hielt |
-| `INA3221 0x41 hat alle Kanäle aus. SETUP > SENSORS prüfen.` | alle drei Shunts eines bestückten Bausteins stehen auf AUS; keine Zuordnung wird geschrieben, bis einer wieder an ist, und die Zeile verlässt dann das Band |
+| `SDA oder SCL der Sensoren nicht festgelegt. SENSORS prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
+| `INA228 und INA3221 nutzen beide 0x40. SENSORS prüfen.` | der INA228 auf der Adresse eines bestückten INA3221; keiner wird gelesen |
+| `Sensor-Pins GPIO 16/GPIO 17 abgelehnt. SENSORS prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30s lang gezeigt oder bis zum Antippen, einmal je Änderung |
+| `INA228-Shunt oder Höchststrom abgelehnt. SENSORS prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84mV, oder der Messbereich, den er ergibt, übersteigt 2000A; der INA228 bleibt aus |
+| `INA3221-Einstellungen abgelehnt. SENSORS prüfen.` | der IOmcu hat die Einstellung der INA3221 abgelehnt: die Zuordnung auf SENSE_MAP, bei einem IOmcu älter als 4.25 den Frame des einen Bausteins; der IOmcu behält, was er hielt |
+| `INA3221 0x41 hat alle Kanäle aus. SENSORS prüfen.` | alle drei Shunts eines bestückten Bausteins stehen auf AUS; keine Zuordnung wird geschrieben, bis einer wieder an ist, und die Zeile verlässt dann das Band |
 | `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der IOmcu fand SDA oder SCL auf low gehalten und taktet den Bus frei. Eine Leitung, die low liest, ohne dass etwas sie hält (Pins ohne angeschlossenes Bauteil und ohne Pull-up), ist das nicht: sie steigt innerhalb von 50µs am eigenen Pad-Pull-up des IOmcu (32 bis 86kΩ), und die Monitore gelten als nicht antwortend |
 | `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `Ein Gerät antwortet unter 0x44.` wird angefügt, wenn der Adress-Scan des IOmcu dort etwas gefunden hat, wo das Bauteil sein könnte |
 | `0x40 meldet 1408h, kein INA3221. Gerät wird nicht verwendet.` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
@@ -4935,7 +4947,7 @@ Meldungen gesagt, 60s.
 | --- | --- |
 | `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80A.` | ein Fenster des Kanals hat seit dem letzten Lesen seine Grenze überschritten; in Klammern, was der Kanal misst, nichts bei KEINE; die Grenze ist die, an der das Fenster geprüft wurde |
 | `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | OVER_COUNT hat sich ohne OVER-Bit bewegt: die Antwort mit den Bits kam nicht an. Eine Antwort, die nicht ankommt, beendet den Link; das sagt also das Lesen beim nächsten Link-Aufbau. Ein Zähler von 0 dort ist ein neu gestarteter IOmcu und wird nicht gesagt |
-| `INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat das Schreiben abgelehnt; er behält die Grenzen, die er hielt, und das Panel schreibt erst wieder, wenn sich eine Grenze ändert. Ebenso ein IOmcu, der Protokoll 4.27 oder neuer nennt und die Page mit BAD_PAGE beantwortet: das Panel schickt der Page bis zum nächsten Link-Aufbau nichts mehr |
+| `INA3221-Grenzen abgelehnt. SENSORS prüfen.` | der IOmcu hat das Schreiben abgelehnt; er behält die Grenzen, die er hielt, und das Panel schreibt erst wieder, wenn sich eine Grenze ändert. Ebenso ein IOmcu, der Protokoll 4.27 oder neuer nennt und die Page mit BAD_PAGE beantwortet: das Panel schickt der Page bis zum nächsten Link-Aufbau nichts mehr |
 
 OVER-Bits, die der IOmcu von vor dem Link-Aufbau hält, auch die eines
 neu gestarteten IOmcu, sagt das erste Lesen mit ihrem Kanal.
@@ -5100,9 +5112,9 @@ wie bei den Strommonitoren:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.` | der Abgriff ist eingeschaltet und der IOmcu spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
-| `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
-| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
-| `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > SENSORS prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
+| `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SENSORS prüfen.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
+| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SENSORS prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
+| `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SENSORS prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des IOmcu ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
 Die drei Alerts über die Einstellung (erster Frame abgelehnt, zweiter
@@ -5389,7 +5401,7 @@ Ein Panel, das mit dem Image des IOmcu gebaut ist, bringt es mit und
 bietet es an, wenn der IOmcu einen anderen Build laufen hat. Die
 Prüfung läuft bei jedem Link-up und vergleicht SHA-256-Digests (Secure Hash
 Algorithm), nicht Versionsnummern. Ein anderer Build meldet den Alarm
-`IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`, und
+`IOmcu nutzt einen anderen Build. Update unter UPDATES.`, und
 die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
 Ausgang der Versorgung aus, der Funk des Panels ganz aus und
 keine Installation eines Panel-Images im Gang. Ein START, während eines
@@ -5498,8 +5510,12 @@ Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
 
 - ein auf WI-FI gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
-  Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` und
-  `Speichere ein Netzwerk unter LOGS > WI-FI.`, und NACH UPDATES SUCHEN ist grau;
+  Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` über der Taste
+  `NETZWERK SPEICHERN: WI-FI ÖFFNEN`, und NACH UPDATES SUCHEN ist grau. Die
+  Taste öffnet WI-FI, dessen Home-Tag hierher zurückführt; der Funk geht dabei
+  aus, wie auf jedem Weg von WI-FI weg. Ein Tab der Leiste von LOGS auf WI-FI
+  beendet das: Von dort führt das Home-Tag zum Menü. Eine Prüfung, die mangels
+  Netz endete, sagt auf PANEL UPDATE `Speichere ein Netzwerk unter WI-FI.`;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf.
   Sonst ist die Taste grau, und die Karte sagt
   `Für WLAN muss SAFE aktiv und das Netzteil aus sein.` und `Es darf kein Aufzeichnungslauf offen sein.`;
