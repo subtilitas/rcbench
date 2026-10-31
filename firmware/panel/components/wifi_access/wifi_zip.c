@@ -21,6 +21,7 @@
 #include "wa_session.h"
 #include "wa_zip.h"
 #include "wifi_access_int.h"
+#include "wifi_req.h"
 #include "wifi_sock.h"
 
 /** @brief The log tag, wifi_access.c's. */
@@ -75,7 +76,7 @@ esp_err_t wifi_zip_get(httpd_req_t *r)
          * connection goes with the answer (wifi_req.h). */
         httpd_resp_set_hdr(r, "Connection", "close");
         (void)refused(r, wa_guard_status(guard));
-        return ESP_FAIL;
+        return wifi_req_close(r);
     }
     if (go != WIFI_PAGE_ANSWER) {
         wifi_page_end();

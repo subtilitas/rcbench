@@ -6,6 +6,27 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- FILES and the Wi-Fi page: a folder of the bench takes DELETE while it is
+  empty, so a folder NEW made can be removed. RENAME and MOVE stay refused.
+  The bench makes its folder again before it next writes there.
+- The Wi-Fi page's PUT compares `If-Match` and `If-None-Match` before its body
+  is read and again directly before the write.
+- UPLOAD's REPLACE asks `GET /api/info` with `etag=1` for the ETag; the file no
+  longer crosses the network, and a file that is not text is compared too.
+- A write on the Wi-Fi page that asks for the access code goes out again once
+  the code is taken, without a page load. An answer after CANCEL sends nothing.
+
+### Fixed
+
+- A request the Wi-Fi page refuses before its body answers with its status and
+  JSON and closes cleanly: the bytes still arriving are read and dropped, up
+  to 10s, and the client no longer sees a reset connection.
+- A form over 1,024B is answered `FORM_TOO_LARGE`, with the form's limit in its
+  text, in place of the file's.
+- WI-FI's line says `1 write so far`, `bisher 1 Schreibvorgang`, for one write.
+
 ### Added
 
 - Openers replace texts that named a path, each returning by the home tag:

@@ -29,8 +29,9 @@
  * form at most WA_CODE_BODY_MAX bytes, a file API's PUT at most
  * WA_PUT_BODY_MAX and its form at most WA_FORM_BODY_MAX (WA_GUARD_BIG,
  * HTTP 413).  The body
- * of a refused request is never read; the connection closes with the
- * answer.
+ * of a refused request never reaches a buffer of the bench: the connection
+ * closes with the answer, the bytes still arriving read and dropped
+ * (wa_linger()).
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *

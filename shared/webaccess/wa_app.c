@@ -78,7 +78,8 @@ static const app_text_t k_texts[] = {
     { "saved", T_ED_SAVED },           { "savedesc", T_ED_SAVED_ESC },
     { "sending", W_P_FM_SENDING },     { "replaceq", W_P_FM_REPLACE_Q },
     { "replace", W_P_FM_REPLACE },     { "code", W_P_CODE },
-    { "codego", W_P_FM_CODE_GO },      { "e.TOO_LARGE", W_P_API_TOO_LARGE },
+    { "codego", W_P_FM_CODE_GO },      { "codewrong", W_P_CODE_WRONG },
+    { "e.TOO_LARGE", W_P_API_TOO_LARGE },
     { "e.SAME", W_P_API_SAME },        { "e.FIXED", W_P_API_FIXED },
     { "e.REQUEST", W_P_API_REQUEST },
     /* edit.js */
@@ -91,7 +92,7 @@ static const app_text_t k_texts[] = {
     { "stay", T_SET_STAY },            { "discard", T_SET_DISCARD },
     { "readagain", T_ED_READ_AGAIN },  { "e.CHANGED", W_P_API_CHANGED },
     { "mixedlf", W_P_ED_MIXED_LF },    { "notutf8", W_P_ED_NOT_UTF8 },
-    { "codewrong", W_P_CODE_WRONG },   { "overwrite", T_ED_OVERWRITE },
+    { "overwrite", T_ED_OVERWRITE },
     { "holdover", T_HOLD_HINT_OVERWRITE },
 };
 

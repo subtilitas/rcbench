@@ -2265,8 +2265,8 @@ UI_TEXT(FM_RULE_FREE, 0,
     "none",
     "keine")
 UI_TEXT(FM_RULE_FIXED, 0,
-    "A folder of the bench: no RENAME, MOVE or DELETE.",
-    "Prüfstand-Ordner: kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN.")
+    "Bench folder: no RENAME or MOVE, DELETE only when empty.",
+    "Prüfstand: kein UMBENENNEN/VERSCHIEBEN, LÖSCHEN nur leer.")
 UI_TEXT(FM_RULE_LOCKED, 62,
     "The servo programmer's record: INFO only.",
     "Vermerk der Servoprogrammierung: nur INFO.")
@@ -5752,6 +5752,9 @@ UI_TEXT(WF_RECEIVING, 0,
 UI_TEXT(WF_WR_OPEN, 0,
     "The browser may write to the card: %u writes so far.",
     "Der Browser darf auf die Karte schreiben: bisher %u Schreibvorgänge.")
+UI_TEXT(WF_WR_OPEN_ONE, 0,
+    "The browser may write to the card: 1 write so far.",
+    "Der Browser darf auf die Karte schreiben: bisher 1 Schreibvorgang.")
 UI_TEXT(WF_WR_CODE, 0,
     "Browser writes need the access code %s.",
     "Schreiben per Browser braucht den Zugangscode %s.")
@@ -8372,6 +8375,9 @@ UI_WEB_TEXT(P_API_WRITES_HOLD,
 UI_WEB_TEXT(P_API_WRITES_CODE,
     "Writes need the access code the panel's WI-FI screen shows.",
     "Schreiben braucht den Zugangscode, den WI-FI am Panel zeigt.")
+UI_WEB_TEXT(P_API_FORM_LARGE,
+    "Too long for the panel: a write's form is 1kB at most.",
+    "Zu lang für das Panel: das Formular eines Schreibvorgangs hat höchstens 1kB.")
 UI_WEB_TEXT(P_API_PANEL_BUSY,
     "FILES on the panel is working on the card. Try again.",
     "FILES am Panel arbeitet an der Karte. Noch einmal versuchen.")

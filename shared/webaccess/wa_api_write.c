@@ -213,36 +213,111 @@ static wa_api_err_t put_match(const char *if_match, const char *if_none,
     return WA_API_OK;
 }
 
+/** @brief What a PUT's query and headers ask. */
+typedef struct {
+    char path[FM_PATH_SIZE];   /**< the file                               */
+    char name[FM_NAME_BUF];    /**< its name; its folder is the request's  */
+    unsigned mount;            /**< the mount it was listed from           */
+    fm_match_t match;          /**< what it checks of the file there       */
+    uint32_t want;             /**< FM_MATCH_SUM: the ETag                 */
+} put_args_t;
+
+/**
+ * @brief A PUT's query and headers, read and held to their rules.
+ * @param api       the API
+ * @param query     the query string; NULL is ""
+ * @param if_match  the If-Match header, or NULL
+ * @param if_none   the If-None-Match header, or NULL
+ * @param req       the request, which takes the folder in dir
+ * @param a         takes the rest
+ * @return WA_API_OK, or why not
+ */
+static wa_api_err_t put_args(const wa_api_t *api, const char *query,
+                             const char *if_match, const char *if_none,
+                             fm_req_t *req, put_args_t *a)
+{
+    if (query == NULL) {
+        query = "";
+    }
+    wa_api_err_t e = write_path(query, "path", a->path);
+    a->mount = 0u;
+    if (e == WA_API_OK && !wa_api_q_mount(query, api->run->io, &a->mount)) {
+        e = WA_API_REQUEST;
+    }
+    a->match = FM_MATCH_ANY;
+    a->want = 0u;
+    if (e == WA_API_OK) {
+        e = put_match(if_match, if_none, &a->match, &a->want);
+    }
+    if (e == WA_API_OK) {
+        e = wa_api_split(a->path, req->dir, a->name);
+    }
+    /* A name the browser brings follows the panel keyboard's rule; one
+     * read from the card and written back keeps the card's. */
+    if (e == WA_API_OK && a->match != FM_MATCH_SUM
+        && fm_name_check(a->name) != FM_NAME_OK) {
+        e = WA_API_NAME;
+    }
+    return e;
+}
+
+/**
+ * @brief Start the SAVE of a PUT: fm_job_save() with fm_job_match().
+ * @param api  the API
+ * @param req  the request
+ * @param a    what the PUT asks
+ * @param len  the body's bytes
+ */
+static void put_job(wa_api_t *api, fm_req_t *req, const put_args_t *a,
+                    uint64_t len)
+{
+    fm_bench_t bench;
+    bench_now(api, req, &bench);
+    const fm_err_t se = fm_job_save(&req->job, &bench, a->mount, req->dir,
+                                    a->name, len, put_fill, api);
+    if (se == FM_OK) {
+        (void)fm_job_match(&req->job, a->match, put_sum, a->want);
+    }
+}
+
+/**
+ * @brief The ETag of the file a refused save found, into the API.
+ * @param api  the API
+ * @param req  the request, its job refused
+ */
+static void put_found(wa_api_t *api, const fm_req_t *req)
+{
+    api->found = fm_job_found(&req->job, &api->found_tag);
+}
+
+wa_api_err_t wa_api_put_check(wa_api_t *api, const char *query,
+                              const char *if_match, const char *if_none,
+                              size_t len)
+{
+    write_begin(api);
+    fm_req_t *req = wa_api_req(api, FM_REQ_JOB);
+    put_args_t a;
+    wa_api_err_t e = put_args(api, query, if_match, if_none, req, &a);
+    if (e != WA_API_OK) {
+        return e;
+    }
+    put_job(api, req, &a, (uint64_t)len);
+    (void)fm_job_check_only(&req->job);
+    e = wa_api_of(fm_req_run(req, api->run));
+    if (e == WA_API_CHANGED) {
+        put_found(api, req);
+    }
+    return e;
+}
+
 wa_api_err_t wa_api_put(wa_api_t *api, const char *query,
                         const char *if_match, const char *if_none,
                         size_t len)
 {
     write_begin(api);
-    if (query == NULL) {
-        query = "";
-    }
-    char path[FM_PATH_SIZE];
-    wa_api_err_t e = write_path(query, "path", path);
-    unsigned mount = 0u;
-    if (e == WA_API_OK && !wa_api_q_mount(query, api->run->io, &mount)) {
-        e = WA_API_REQUEST;
-    }
-    fm_match_t match = FM_MATCH_ANY;
-    uint32_t want = 0u;
-    if (e == WA_API_OK) {
-        e = put_match(if_match, if_none, &match, &want);
-    }
     fm_req_t *req = wa_api_req(api, FM_REQ_JOB);
-    char name[FM_NAME_BUF];
-    if (e == WA_API_OK) {
-        e = wa_api_split(path, req->dir, name);
-    }
-    /* A name the browser brings follows the panel keyboard's rule; one
-     * read from the card and written back keeps the card's. */
-    if (e == WA_API_OK && match != FM_MATCH_SUM
-        && fm_name_check(name) != FM_NAME_OK) {
-        e = WA_API_NAME;
-    }
+    put_args_t a;
+    wa_api_err_t e = put_args(api, query, if_match, if_none, req, &a);
     if (e == WA_API_OK && (api->text == NULL || api->tb.mem != api->text)) {
         e = WA_API_MEMORY;          /* no room, or wa_api_body() not asked */
     }
@@ -253,22 +328,15 @@ wa_api_err_t wa_api_put(wa_api_t *api, const char *query,
         memset(&api->tb, 0, sizeof(api->tb));
         return e;
     }
-    fm_bench_t bench;
-    bench_now(api, req, &bench);
-    const fm_err_t se = fm_job_save(&req->job, &bench, mount, req->dir, name,
-                                    (uint64_t)wa_api_file_size(api),
-                                    put_fill, api);
-    if (se == FM_OK) {
-        (void)fm_job_match(&req->job, match, put_sum, want);
-    }
-    e = run_job(api, req, path);
+    put_job(api, req, &a, (uint64_t)wa_api_file_size(api));
+    e = run_job(api, req, a.path);
     if (e == WA_API_OK) {
         api->put = true;
         api->created = !req->job.dst_was;
         api->restart = req->job.note_restart;
         api->etag = wa_api_crc(api);
     } else if (e == WA_API_CHANGED) {
-        api->found = fm_job_found(&req->job, &api->found_tag);
+        put_found(api, req);
     }
     /* One body, one PUT: the next asks wa_api_body() again. */
     memset(&api->tb, 0, sizeof(api->tb));

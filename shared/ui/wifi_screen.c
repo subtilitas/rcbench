@@ -901,6 +901,15 @@ static gfx_color_t hold_fill(void)
     return ui_hold_fill(UI_PANEL_HI, UI_OK, s.hold.held_s);
 }
 
+void wifi_screen_writes_text(char *out, size_t n, unsigned written)
+{
+    if (written == 1u) {
+        snprintf(out, n, "%s", TR(WF_WR_OPEN_ONE));
+    } else {
+        snprintf(out, n, TR(WF_WR_OPEN), written);
+    }
+}
+
 /**
  * @brief What a browser needs to write to the card, as a line under the
  *        rows: allowed with the count of writes, the access code it needs,
@@ -921,7 +930,7 @@ static int writes_line(gfx_canvas_t *c, int y)
     } else if (s.v.writes == WIFI_WRITES_CODE && !s.v.code_on) {
         snprintf(v, sizeof(v), TR(WF_WR_CODE), s.v.code);
     } else {
-        snprintf(v, sizeof(v), TR(WF_WR_OPEN), (unsigned)s.v.written);
+        wifi_screen_writes_text(v, sizeof(v), (unsigned)s.v.written);
     }
     return line_at(c, y, v, col);
 }

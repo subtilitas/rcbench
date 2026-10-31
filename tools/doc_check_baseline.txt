@@ -4741,7 +4741,6 @@ shared/webaccess/include/wa_page.h: warning: Member WA_URL_UPDATE (macro definit
 shared/webaccess/include/wa_page.h: warning: Member WA_URL_ZIP (macro definition) of file wa_page.h is not documented.
 shared/webaccess/include/wa_page.h: warning: parameters of member wa_page_code are not documented
 shared/webaccess/include/wa_page.h: warning: parameters of member wa_page_upload_result are not documented
-shared/webaccess/include/wa_send.h: file has no @file block
 shared/webaccess/include/wa_send.h: warning: Compound wa_send_t is not documented.
 shared/webaccess/include/wa_send.h: warning: Compound wa_sink_t is not documented.
 shared/webaccess/include/wa_send.h: warning: Member ctx (variable) of struct wa_sink_t is not documented.
@@ -4851,7 +4850,6 @@ shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_end(wa_fetch_t *f, uint
 shared/webaccess/wa_fetch.c: warning: Member wa_fetch_on_phase(wa_fetch_t *f, uint32_t gen, wa_phase_t ph) (function) of file wa_fetch.c is not documented.
 shared/webaccess/wa_mdns.c: file has no @file block
 shared/webaccess/wa_page.c: warning: Member firmware(wa_out_t *o, const wa_page_info_t *pi) (function) of file wa_page.c is not documented.
-shared/webaccess/wa_send.c: file has no @file block
 shared/webaccess/wa_text.c: warning: Member PUT(ch) (macro definition) of file wa_text.c is not documented.
 shared/webaccess/wa_text.c: warning: Member check_name(const char *s, size_t n) (function) of file wa_text.c is not documented.
 shared/webaccess/wa_text.c: warning: Member hexval(char c) (function) of file wa_text.c is not documented.

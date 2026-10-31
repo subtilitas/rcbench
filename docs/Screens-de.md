@@ -3051,7 +3051,7 @@ und unter dem Namen die Art und ein Zustandswort:
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein Ordner, den der Prüfstand führt: die beiden Log-Ordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` und die Ordner auf dem Weg dorthin, darunter `BENCH` und `USER`. Kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN |
+| FEST | ein Ordner, den der Prüfstand führt: die beiden Log-Ordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` und die Ordner auf dem Weg dorthin, darunter `BENCH` und `USER`. Kein UMBENENNEN oder VERSCHIEBEN, das seinen Inhalt von dort wegnähme, wo der Prüfstand ihn liest. NEU legt einen an und LÖSCHEN nimmt einen leeren: Jeder Schreiber des Prüfstands legt seinen Ordner vor dem Schreiben wieder an, und ein fehlender Ordner liest sich wie auf einer neuen Karte |
 | GESPERRT | die Vermerke der Servoprogrammierungen, `BENCH/KST/CONF/KST.TXT` und `BENCH/HITEC/CONF/HITEC.TXT`, und ihre `KST.NEW` und `HITEC.NEW`, solange sie geschrieben werden. Nur INFO |
 | WIRD GESCHRIEBEN | eine Datei, die der Logger offen hat. Nur INFO |
 
@@ -3684,7 +3684,7 @@ Aktuelle Einschränkungen:
 - Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
   mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
   Downloads. Die Ursache ist nicht gemessen. Die Seite mit der
-  Dateiverwaltung hat 62.815 Bytes auf Englisch mit leerer Karte und keine
+  Dateiverwaltung hat 64.045 Bytes auf Englisch mit leerer Karte und keine
   Kartenliste; ihre Zeit ist nicht gemessen.
 
 ### Der Zugangscode
@@ -3719,10 +3719,16 @@ zu den 16 zählen, sendet kein Image und ändert die Karte nicht. Ein Browser se
 Header an eine andere Seite erst, nachdem er diese Seite gefragt hat, und
 das Panel beantwortet keine solche Frage mit Ja. Eine abgelehnte Anfrage
 wird beantwortet, bevor ihr Body gelesen ist, und die Verbindung schließt
-mit der Antwort. Die Datei-API beantwortet die 421, die 413, die 403 und die
-400 in JSON wie ihre anderen Ablehnungen, mit `HOST`, `TOO_LARGE`, `ORIGIN`
-und `BODY` ([die Datei-API](#die-datei-api)); die Seite, `/card/` und die
-ZIP-Datei beantworten sie ohne Body.
+mit der Antwort. Was der Client noch sendet, wird gelesen und verworfen, bis
+der Body zu Ende ist, der Client schließt, 2s lang kein Byte kommt oder 10s
+vergangen sind, damit der Client die Antwort liest, bevor die Verbindung
+geht: Ein Schließen mit ungelesenen Bytes setzte die Verbindung zurück und
+verlöre sie. Ein Body, der nach 10s noch ankommt, endet mit diesem
+Zurücksetzen; 1MiB in 10s sind 105kB/s. Die Datei-API beantwortet die 421,
+die 413, die 403 und die
+400 in JSON wie ihre anderen Ablehnungen, mit `HOST`, `TOO_LARGE`,
+`FORM_TOO_LARGE`, `ORIGIN` und `BODY` ([die Datei-API](#die-datei-api)); die
+Seite, `/card/` und die ZIP-Datei beantworten sie ohne Body.
 
 ### Schreiben per Browser
 
@@ -3765,22 +3771,29 @@ Jeder Schreibzugriff durchläuft, in dieser Reihenfolge
 1. die Prüfungen der Tabelle oben: `Origin` der Seite, Header des Skripts,
    höchstens 1.048.576 Bytes einer Datei oder 1.024 eines Formulars;
 2. den Zugangscode, solange ZUGANGSCODE an ist, dann die Einstellung;
-3. den Body, ganz ins PSRAM empfangen, bevor die Karte gerufen wird, in
+3. bei einem PUT, unter der Auftragssperre der Karte, was ihn schon vor seinem
+   Body ablehnen kann: die Regeln von FILES, `If-Match` gegen die Datei auf der
+   Karte und `If-None-Match`. Nichts wird geschrieben. Ein Ersetzen liest die
+   alte Datei hier und noch einmal in Schritt 6;
+4. den Body, ganz ins PSRAM empfangen, bevor die Karte gerufen wird, in
    Stücken von 4.096B; geht der Funk aus, schließt die Verbindung oder
    kommt 30s kein Byte, endet die Anfrage, ohne dass etwas geschrieben ist;
-4. die Auftragssperre der Karte, die FILES am Panel hält, solange es einen
+5. die Auftragssperre der Karte, die FILES am Panel hält, solange es einen
    Auftrag ausführt: Der Schreibzugriff wartet höchstens 2000ms auf sie und
    bekommt dann `PANEL_BUSY` mit `Retry-After: 2`; die Seite sendet ihn nach
    2s noch einmal, höchstens 3 Mal;
-5. die Regeln und die Schreibsperre von FILES, wie für FILES selbst: SAFE,
+6. die Regeln und die Schreibsperre von FILES, wie für FILES selbst: SAFE,
    kein aufgezeichneter Lauf, die Ordner des Prüfstands, die Vermerke der
    Servoprogrammierung, die Dateien des Loggers, die Namen, die die
-   Tastatur des Panels tippt. Die Sperre wird vor jeden 16KiB neu gefragt,
+   Tastatur des Panels tippt. `If-Match` und `If-None-Match` eines PUT werden
+   hier, direkt vor dem Schreiben, noch einmal verglichen, also wird eine
+   Datei abgelehnt, die sich änderte, während der Body ankam. Die Sperre wird vor jeden 16KiB neu gefragt,
    also hält ein Wechsel zu ARMED einen Schreibzugriff am nächsten Stück an
    und entfernt sein `.NEW`.
 
-Eine Ablehnung vor Schritt 3 schließt die Verbindung mit der Antwort: Der
-Body wird nie gelesen. Solange der Prüfstand ARMED ist, der Netzteilausgang
+Eine Ablehnung vor Schritt 4 schließt die Verbindung mit der Antwort: Der
+Body erreicht keinen Puffer des Panels, die noch ankommenden Bytes werden wie
+oben verworfen. Solange der Prüfstand ARMED ist, der Netzteilausgang
 an ist oder ein Lauf aufgezeichnet wird, ist der Funk aus und die Seite gar
 nicht erreichbar.
 
@@ -3849,7 +3862,7 @@ gelesen.
 
 | Taste | Was sie tut |
 |---|---|
-| HOCHLADEN | sendet eine Datei bis 1.048.576 Bytes in den Ordner der aktiven Spalte, mit Fortschrittsbalken; eine größere wird abgelehnt, bevor ein Byte gesendet ist. Ein vergebener Name fragt `UP.TXT gibt es in diesem Ordner schon. Ersetzen?` mit ERSETZEN und ABBRECHEN. Vor der Frage liest die Seite die Datei dort für ihr ETag, und ERSETZEN sendet `If-Match` mit ihm: Eine Änderung am Panel oder aus einem anderen Browser, während die Frage offen ist, wird mit `Seit dem Lesen auf der Karte geändert. Neu lesen.` abgelehnt. Eine Datei dort, die das Lesen ablehnt, über 1.048.576 Bytes oder kein Text, wird ohne den Vergleich ersetzt. Die Datei muss Text sein, wie der Betrachter ihn nimmt: kein NUL-Byte in den ersten 4.096 Bytes und höchstens 65.536 Zeilenenden |
+| HOCHLADEN | sendet eine Datei bis 1.048.576 Bytes in den Ordner der aktiven Spalte, mit Fortschrittsbalken; eine größere wird abgelehnt, bevor ein Byte gesendet ist. Ein vergebener Name fragt `UP.TXT gibt es in diesem Ordner schon. Ersetzen?` mit ERSETZEN und ABBRECHEN. Vor der Frage fragt die Seite `/api/info` nach dem ETag der Datei dort, und ERSETZEN sendet `If-Match` mit ihm: Eine Änderung am Panel oder aus einem anderen Browser, während die Frage offen ist, wird mit `Seit dem Lesen auf der Karte geändert. Neu lesen.` abgelehnt. Eine Datei dort über 1.048.576 Bytes hat kein ETag und wird ohne den Vergleich ersetzt. Die Datei muss Text sein, wie der Betrachter ihn nimmt: kein NUL-Byte in den ersten 4.096 Bytes und höchstens 65.536 Zeilenenden |
 | NEUER ORDNER | ein Ordner mit dem getippten Namen im Ordner der aktiven Spalte |
 | NEUE TEXTDATEI | eine leere Datei mit dem getippten Namen dort; ein vergebener Name wird abgelehnt |
 | UMBENENNEN | der gewählte Eintrag unter dem getippten Namen in seinem Ordner; nur eine andere Groß- und Kleinschreibung ist auch ein Umbenennen |
@@ -3864,11 +3877,13 @@ einem Ende. Ein Eintrag, dessen Pfad ein Zeichen außerhalb von ASCII
 enthält, die deutschen Buchstaben eingeschlossen, wird nur auf FILES
 umbenannt, verschoben und gelöscht. Eine Schreibtaste ist gedimmt, solange das Panel keinen
 Schreibzugriff annimmt (die Einstellung, das Halten, ARMED, ein Lauf),
-ohne Auswahl, auf einem Ordner des Prüfstands, auf den Vermerken der
-Servoprogrammierung und auf einer Datei, die der Logger schreibt; ein Tipp
+ohne Auswahl, UMBENENNEN und VERSCHIEBEN auf einem Ordner des Prüfstands, auf
+den Vermerken der Servoprogrammierung und auf einer Datei, die der Logger schreibt; ein Tipp
 darauf sagt, warum. Mit Schreiben per Browser ZUGANGSCODE und ZUGANGSCODE
-aus fragt der erste Schreibzugriff in einem Kasten nach dem Code; CODE
-SENDEN sendet ihn, und die Seite lädt mit ihm neu.
+aus fragt der erste Schreibzugriff in einem Kasten nach dem Code. CODE
+SENDEN schickt ihn an `/code`, ohne die Seite zu verlassen, und der
+Schreibzugriff, der gefragt hat, geht noch einmal hinaus. Eine Antwort nach
+ABBRECHEN des Kastens sendet nichts; ein falscher Code fragt noch einmal.
 
 Der Betrachter zeigt die Datei nur lesend über der Seite: Pfad, Größe,
 NUR LESEN, `ZEILE 23 VON 57` für die oberste Zeile, `GEMISCHTE ZEILENENDEN`
@@ -4056,7 +4071,7 @@ den Zugangscode wie ein Download; eine Anfrage ohne Code bekommt 403 und
 | --- | --- |
 | `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes"` `open` oder `closed` mit dem ersten Grund, aus dem ein Schreibzugriff zum Zeitpunkt der Anfrage abgelehnt wird, und seinem Text (`WRITES_OFF`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift; `WRITES_HOLD`; leer, wenn offen) und `"mode"`, die Einstellung (`OPEN`, `CODE`, `HOLD`, `OFF`; bei `CODE` entscheidet der Code jedes Schreibzugriffs), Mount-Nummer, Name, Größe und freie Bytes der Karte, die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei, und der Ordner User-Logs, den SETUP > SD CARD nennt (vorgegeben `USER/LOGS`) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: bis zu 48 Einträge des Ordners `P`, Ordner zuerst, dann Namen ohne Rücksicht auf Groß- und Kleinschreibung, wie FILES sie listet. Jeder Eintrag hat Namen, ob er ein Ordner ist, Bytes, Art (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), Platz (`FREE`, `FIXED`, `LOCKED`, `FAULT`) und ob der Logger ihn schreibt. Dazu die Mount-Nummer, die Einträge vor der Seite, die Summe des Ordners, die nicht gelisteten Einträge und ob davor und danach eine Seite steht. `G` ist `first` (voreingestellt), `last`, `next`, `prev` oder `same`; die letzten drei nennen die Seite über den Eintrag `N` an ihrem Rand, `D` 1 für einen Ordner. |
-| `GET /api/info?path=P&dir=D&mount=M` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen, und diese Zeit, wie INFO sie zeigt, `2027-01-01 00:00` in der Zone von SETUP > PANEL, `Zeitzone`, leer für einen Zeitstempel in 1980 oder keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge |
+| `GET /api/info?path=P&dir=D&mount=M&etag=1` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen, und diese Zeit, wie INFO sie zeigt, `2027-01-01 00:00` in der Zone von SETUP > PANEL, `Zeitzone`, leer für einen Zeitstempel in 1980 oder keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge. Mit `etag=1` hat eine Datei auch `"etag"`, die CRC-32, die `/api/file` als ETag gibt, beliebiger Bytes: Das Panel liest dafür die Karte, und die Datei geht nicht über das Netz. `""` für eine Datei über 1.048.576 Bytes, die nicht gelesen wird |
 | `GET /api/file?path=P&mount=M` | die Bytes der Textdatei `P`, wie die Karte sie hält, BOM (Byte Order Mark) eingeschlossen, mit `ETag` (ihre CRC-32, Cyclic Redundancy Check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` oder `mixed`), `X-Rcbench-Lines` (die Zeilen, wie der Betrachter von FILES sie zählt: ein Zeilenende am Dateiende beginnt keine Zeile, also haben `a\nb\n` und `a\nb` 2 und eine leere Datei 0) und `X-Rcbench-Bom` (1 oder 0) |
 
 Ein Pfad gilt ab der Wurzel der Karte und ist prozentkodiert, mit `/` als
@@ -4070,7 +4085,7 @@ von höchstens 1.024 Bytes, gelesen wie ein Query-String.
 
 | Anfrage | Was sie tut |
 | --- | --- |
-| `PUT /api/file?path=P&mount=M` | speichert den Body, höchstens 1.048.576 Bytes, als Textdatei `P` über `P.NEW`, wie der Editor von FILES speichert. Mit `If-Match: "<ETag>"` nur, solange die CRC-32 der Datei dieses ETag ist, sonst 412 `CHANGED`; mit `If-None-Match: *` nur, wo kein Eintrag den Namen hat, sonst 409 `EXISTS`; mit keinem von beiden legt es die Datei an oder ersetzt sie. Der Body folgt den Grenzen des Betrachters: 415 `NOT_TEXT`, 422 `TOO_MANY_LINES`. Antwortet 201 für eine angelegte und 200 für eine ersetzte Datei, mit `ETag` und `{"path":"P","created":true,"etag":"...","note":""}`; `note` ist `ESC_NEXT_START` für ein ESC-Profil (Electronic Speed Controller), das der nächste Start liest |
+| `PUT /api/file?path=P&mount=M` | speichert den Body, höchstens 1.048.576 Bytes, als Textdatei `P` über `P.NEW`, wie der Editor von FILES speichert. Mit `If-Match: "<ETag>"` nur, solange die CRC-32 der Datei dieses ETag ist, sonst 412 `CHANGED`; mit `If-None-Match: *` nur, wo kein Eintrag den Namen hat, sonst 409 `EXISTS`; mit keinem von beiden legt es die Datei an oder ersetzt sie. Beide werden verglichen, bevor der Body gelesen ist, und noch einmal direkt vor dem Schreiben. Der Body folgt den Grenzen des Betrachters: 415 `NOT_TEXT`, 422 `TOO_MANY_LINES`. Antwortet 201 für eine angelegte und 200 für eine ersetzte Datei, mit `ETag` und `{"path":"P","created":true,"etag":"...","note":""}`; `note` ist `ESC_NEXT_START` für ein ESC-Profil (Electronic Speed Controller), das der nächste Start liest |
 | `POST /api/mkdir` mit `path=P&mount=M` | legt den Ordner `P` an; 201 |
 | `POST /api/rename` mit `from=P&to=Q&dir=D&mount=M` | `Q` im Ordner von `P` benennt den Eintrag um; `Q` mit demselben Namen in einem anderen Ordner verschiebt ihn dorthin, einen Ordner nur, wenn er leer ist; jedes andere `Q` ist 400 `REQUEST`; 200 |
 | `POST /api/delete` mit `path=P&dir=D&mount=M` | löscht `P`, den Bericht eines Laufs mit, einen Ordner nur, wenn er leer ist; 200 |
@@ -4100,7 +4115,7 @@ Text in der Sprache des Panels:
 | `CODE` | 403 | kein Zugangscode oder ein falscher, der zu den 16 zählt |
 | `ORIGIN` | 403 | ein Schreibzugriff ohne den `Origin` der Seite oder den Header des Skripts (die Prüfung oben) |
 | `WRITES_OFF`, `WRITES_HOLD`, `WRITES_CODE` | 403 | ein Schreibzugriff, den [Schreiben per Browser](#schreiben-per-browser) nicht erlaubt: AUS, HALTEN vor dem Halten, ZUGANGSCODE ohne den Code dieser Sitzung |
-| `FIXED` | 403 | ein Ordner des Prüfstands, oder das Fehlerlog bei UMBENENNEN und VERSCHIEBEN |
+| `FIXED` | 403 | ein Ordner des Prüfstands oder das Fehlerlog, bei UMBENENNEN und VERSCHIEBEN |
 | `DENIED` | 403 | eine schreibgeschützte Karte |
 | `LOCKED` | 403 | die Vermerke der Servoprogrammierung, `KST.TXT` und `HITEC.TXT`: stattdessen herunterladen |
 | `NOT_FOUND` | 404 | kein solcher Eintrag, oder einer anderer Art |
@@ -4108,7 +4123,8 @@ Text in der Sprache des Panels:
 | `ARMED`, `LOGGING` | 409 | der Prüfstand wechselte zu ARMED, oder ein Lauf wird aufgezeichnet: Die Karte ist nur lesbar |
 | `CHANGED` | 412 | ein PUT mit `If-Match`, dessen Datei eine andere CRC-32 als das ETag hat oder fehlt. Das JSON ergänzt `"etag":"xxxxxxxx"`, die CRC-32 der gefundenen Datei; keins für eine fehlende Datei |
 | `TOO_BIG` | 413 | eine Datei über 1.048.576 Bytes, abgelehnt, bevor ein Byte gelesen ist |
-| `TOO_LARGE` | 413 | der Body eines Schreibzugriffs über seiner Grenze (die Prüfung oben) |
+| `TOO_LARGE` | 413 | der Body eines PUT über 1.048.576 Bytes (die Prüfung oben) |
+| `FORM_TOO_LARGE` | 413 | das Formular eines POST über 1.024 Bytes (die Prüfung oben) |
 | `NOT_TEXT` | 415 | ein NUL-Byte in den ersten 4.096 Bytes |
 | `HOST` | 421 | ein `Host`, der nicht das Panel ist (die Prüfung oben) |
 | `TOO_MANY_LINES` | 422 | mehr als 65.536 Zeilenenden |

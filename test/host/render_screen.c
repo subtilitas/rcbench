@@ -2109,6 +2109,9 @@ static void pose_wifi(const char *view)
         if (strcmp(view, "wifi-writes-allowed") == 0) {
             v.writes_open = true;
             v.written = 3u;
+        } else if (strcmp(view, "wifi-writes-one") == 0) {
+            v.writes_open = true;
+            v.written = 1u;
         } else if (strcmp(view, "wifi-writes-code") == 0) {
             v.writes = WIFI_WRITES_CODE;
             v.code_on = false;
