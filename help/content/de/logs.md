@@ -34,7 +34,9 @@ Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die
 
 LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und nach einem Start auf BENCH, bis eine geschrieben ist. Ist seit dem letzten Besuch nichts geschrieben worden, bleibt der Tab, wie er verlassen wurde. Ein Tipp auf einen Tab liest seinen Ordner ab der ersten Seite.
 
-Der Streifen oben, LOGS | FILES | WI-FI, hält die drei Bildschirme der Kachel: Ein Tipp auf einen Tab öffnet [Files](files.md) oder [WLAN](wifi.md), und das Home-Tag jedes der drei führt zum Menü. Er steht auf der Dateiliste, nicht über einer Datei, einer Frage oder einer Box. Ein Tab, der WI-FI verlässt, schaltet den Funk aus.
+Der Streifen oben, LOGS | FILES, hält die zwei Bildschirme der Kachel: Ein Tipp auf einen Tab öffnet [Files](files.md), und das Home-Tag jedes der beiden führt zum Menü. Er steht auf der Dateiliste, nicht über einer Datei, einer Frage oder einer Box.
+
+WI-FI in der Fußzeile öffnet [WLAN](wifi.md), um ein Log im Browser von der Karte zu holen, und sein Home-Tag führt hierher zurück. Über der Rückfrage zu LÖSCHEN oder einer Datei steht es nicht. Bei ARMED öffnet es ebenso, und die Tasten von WLAN lehnen ab.
 
 | Taste | Was sie tut |
 |---|---|

@@ -247,9 +247,9 @@ static void render_browse(gfx_canvas_t *c)
     }
 
     if (lv_paged()) {
-        ui_button_font(c, BR_PREV, TR(LOG_PREV), UI_PANEL_HI, s.press_btn == 3,
+        ui_button_font(c, BR_PREV, TR(LOG_PREV), UI_PANEL_HI, s.press_btn == 4,
                        lv_can_prev(), LV_FONT_LABEL);
-        ui_button_font(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 4,
+        ui_button_font(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 5,
                        lv_can_next(), LV_FONT_LABEL);
     }
     /* 6px each side of the label: a longer one takes the 8 x 16 face. */
@@ -257,6 +257,10 @@ static void render_browse(gfx_canvas_t *c)
                    s.press_btn == 0, true,
                    ui_button_face(TR(LOG_RESCAN), BR_PG_W, FOOT_H, 6,
                                   LV_FONT_LABEL, &gfx_font_8x16));
+    /* WI-FI: the card's files to a browser, over the panel's Wi-Fi.  The
+     * screen there says when Wi-Fi may not start. */
+    ui_button_font(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3,
+                   true, LV_FONT_LABEL);
     int msg_end = BR_OPEN.x;
     if (s.n_files > 0) {
         ui_button_font(c, BR_OPEN, TR(LOG_OPEN), UI_ACCENT, s.press_btn == 1,

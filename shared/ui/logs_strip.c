@@ -13,13 +13,13 @@
 
 /** @brief The screens in the strip's order, left to right. */
 static const ui_screen_id_t k_screens[] = {
-    SCREEN_LOGS, SCREEN_FILES, SCREEN_WIFI,
+    SCREEN_LOGS, SCREEN_FILES,
 };
 
 /** @brief How many tabs the strip has. */
 #define STRIP_TABS ((int)(sizeof(k_screens) / sizeof(k_screens[0])))
 
-/** @brief The tabs: one row, whichever of the three screens draws it. */
+/** @brief The tabs: one row, whichever of the two screens draws it. */
 static ui_tabs_t s_tabs;
 /** @brief s_tabs holds its labels and its rectangles. */
 static bool s_made;

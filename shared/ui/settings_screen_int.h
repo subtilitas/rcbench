@@ -227,6 +227,7 @@ static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY_LINE(SET_CAT_SENSORS, TX_SET_HUB_SENSORS, ui_icon_supply),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
     HUB_CATEGORY_LINE(SET_CAT_CARD, TX_SET_HUB_CARD, ui_icon_chart),
+    HUB_SCREEN(SCREEN_WIFI, TX_SET_HUB_WIFI, ui_icon_wifi),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
 };
 

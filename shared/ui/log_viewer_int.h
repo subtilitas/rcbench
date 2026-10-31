@@ -154,19 +154,22 @@
 /**
  * @brief The footer's buttons, 52px tall, in the order browse_event()
  *        hit-tests them: RESCAN, DELETE and OPEN 140px wide, DELETE and
- *        OPEN under PREV and NEXT.
+ *        OPEN under PREV and NEXT; WI-FI BR_WIFI_W (100px) wide after RESCAN.
  */
 #define BR_RESCAN gfx_rect_make(LV_L, FOOT_Y, BR_PG_W, FOOT_H)
+#define BR_WIFI_W 100  /**< WI-FI's width. */
+/** @brief WI-FI. */
+#define BR_WIFI   gfx_rect_make(LV_L + BR_PG_W + 8, FOOT_Y, BR_WIFI_W, FOOT_H)
 /** @brief OPEN. */
 #define BR_OPEN   gfx_rect_make(LV_R - BR_PG_W, FOOT_Y, BR_PG_W, FOOT_H)
 #define BR_DELETE gfx_rect_make(LV_R - 2 * BR_PG_W - 8, FOOT_Y, BR_PG_W, \
                                 FOOT_H)  /**< DELETE. */
 /**
- * @brief A message's left edge in the footer: two lines of 46 cells of the
- *        12 x 24 face from RESCAN to DELETE, room for the 28 a message about
+ * @brief A message's left edge in the footer: two lines of 37 cells of the
+ *        12 x 24 face from WI-FI to DELETE, room for the 28 a message about
  *        a file declares and the file's name.  BR_MSG_LH is a line's pitch.
  */
-#define BR_MSG_X  (LV_L + BR_PG_W + 8 + 8)
+#define BR_MSG_X  (LV_L + BR_PG_W + 8 + BR_WIFI_W + 8 + 8)
 #define BR_MSG_LH 24  /**< A line's pitch. */
 
 /** @brief The box an empty list shows in its place: two lines of 64 cells
@@ -278,7 +281,8 @@ _Static_assert(LV_L + 3 + 3 * BR_TAB_W + 2 * 4 + 3 + 16 <= BR_HEAD_X,
 _Static_assert(BR_HEAD_X + (11 + 17) * 10 + 16 <= BR_HEAD_END,
                "the header's text ends at PREV");
 _Static_assert(BR_MSG_X + 28 * 12 + 8 <= LV_R - 2 * BR_PG_W - 8,
-               "a footer message's 28 cells stand between RESCAN and DELETE");
+               "a footer message's 28 cells stand between WI-FI and DELETE");
+_Static_assert(BR_WIFI_W >= 5 * 10 + 2 * 8, "WI-FI holds its 5 cells of 10 x 20");
 _Static_assert(LOGS_STRIP_FOOT + 4 <= BR_PG_Y,
                "the header row starts below the tile's strip");
 _Static_assert(BR_SIZE_W >= 10 * 10,

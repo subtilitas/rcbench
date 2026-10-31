@@ -65,9 +65,10 @@ static atomic_bool s_fw_installing;
 static atomic_bool s_cu_busy;
 /* False when wifi_access_init() failed: no call into wifi_access then. */
 bool        s_wifi_ok;
-/* Where PANEL UPDATE's CLOSE leads: to WI-FI's parent, the menu, after an
- * upload's install, to UPDATES or OVERVIEW after a download. */
-static ui_screen_id_t s_update_back = SCREEN_LOGS;
+/* Where PANEL UPDATE's CLOSE leads: after an upload's install to WI-FI's
+ * parent (SETUP, or the LOGS or UPDATES that opened it), after a download to
+ * UPDATES or OVERVIEW. */
+static ui_screen_id_t s_update_back = SCREEN_SETUP;
 
 
 /* -------------------------------------------- the IOmcu's update */

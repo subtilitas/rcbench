@@ -28,7 +28,7 @@ Der erste Start eines neuen Builds ist ein Probestart. Ohne Touch kehrt das Pane
 
 ![Das Schreiben schlug fehl](view:panel-update-failed)
 
-Ein Schreiben, das fehlschlägt, ändert nichts an dem, was startet: Die laufende Firmware bleibt. SCHLIESSEN führt nach einem Upload zurück zu dem Bildschirm, der [WLAN](wifi.md) geöffnet hat, [SETUP](setup.md) oder [LOGS](logs.md), nach einem Download zu [Updates](updates.md) oder zum Menü.
+Ein Schreiben, das fehlschlägt, ändert nichts an dem, was startet: Die laufende Firmware bleibt. SCHLIESSEN führt nach einem Upload zurück zu dem Bildschirm, der [WLAN](wifi.md) geöffnet hat, [SETUP](setup.md), [LOGS](logs.md) oder [Updates](updates.md), nach einem Download zu [Updates](updates.md) oder zum Menü.
 
 ## Aktuelle Einschränkungen
 

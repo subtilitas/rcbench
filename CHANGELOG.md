@@ -8,6 +8,13 @@ history is in git.
 
 ### Changed
 
+- WI-FI has its own tile on SETUP's hub, in the second row after SD CARD: PANEL,
+  SENSORS, OUTPUTS / SD CARD, WI-FI, UPDATES; the carrier adds LAYOUT. Its home
+  tag returns to SETUP, or to what opened it: LOGS' WI-FI button, restored in
+  LOGS' footer, or UPDATES' button. PANEL UPDATE's CLOSE after a failed upload's
+  install goes there too.
+- The LOGS tile's strip is LOGS | FILES, two tabs of 499px. WI-FI draws no strip:
+  its buttons and card start at body y 16, its radio-on rows are 56px from y 16.
 - FILES and the Wi-Fi page: a folder of the bench takes DELETE while it is
   empty, so a folder NEW made can be removed. RENAME and MOVE stay refused.
   The bench makes its folder again before it next writes there.

@@ -6,9 +6,8 @@
  * If the layout moves these move with it.  Taken by the screen's suites
  * and render_screen.c.
  *
- *   - the LOGS tile's strip, tabs at y 5 to 45;
- *   - the buttons with the radio off: 460 x 60px at x 16, from y 56,
- *     68px apart; the card from x 492 to 1016, y 56 to 492;
+ *   - the buttons with the radio off: 460 x 60px at x 16, from y 16,
+ *     68px apart; the card from x 492 to 1016, y 16 to 492;
  *   - WI-FI OFF with the radio on: 460 x 60px at x 16, y 424 to 484, and
  *     the browser writes' button the same size at x 548;
  *   - the scan list: rows of 492 x 48px at x 12 and 520, from y 12,
@@ -28,7 +27,7 @@
 #define WF_FOOT        (UI_ALERT_Y - UI_BAND_H - 4)
 
 #define WF_BTN_X       16            /**< The buttons' left edge. */
-#define WF_BTN_Y       56            /**< The first button's top. */
+#define WF_BTN_Y       16            /**< The first button's top. */
 #define WF_BTN_W       460           /**< A button's width, px. */
 #define WF_BTN_H       60            /**< Its height, px. */
 #define WF_BTN_P       68            /**< The buttons' pitch, px. */
@@ -39,7 +38,7 @@
 #define WF_BTN_CY(i)   (WF_BTN_Y + (i) * WF_BTN_P + WF_BTN_H / 2)
 
 #define WF_CARD_X      492           /**< The card's left edge. */
-#define WF_CARD_Y      56            /**< Its top. */
+#define WF_CARD_Y      16            /**< Its top. */
 #define WF_CARD_W      524           /**< Its width, px. */
 
 #define WF_OFF_Y       424           /**< WI-FI OFF's top. */

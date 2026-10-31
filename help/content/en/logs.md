@@ -34,7 +34,9 @@ The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and name
 
 LOGS opens on the tab of the file the panel wrote last, and on BENCH after a start until one is written. Back on LOGS with nothing written since, the tab stays as it was left. A tap on a tab reads its folder from the first page.
 
-The strip on top, LOGS | FILES | WI-FI, holds the tile's three screens: a tap on a tab opens [Files](files.md) or [Wi-Fi](wifi.md), and the home tag of each leads to the menu. It shows on the file list; over a file, a question or a box it does not. A tab that leaves WI-FI switches the radio off.
+The strip on top, LOGS | FILES, holds the tile's two screens: a tap on a tab opens [Files](files.md), and the home tag of each leads to the menu. It shows on the file list; over a file, a question or a box it does not.
+
+WI-FI in the footer opens [Wi-Fi](wifi.md), to get a log off the card in a browser, and its home tag comes back here. Over the DELETE question or a file it is not there. ARMED it opens as well, and Wi-Fi's own buttons refuse.
 
 | Button | What it does |
 |---|---|

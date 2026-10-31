@@ -338,11 +338,11 @@ UI_TEXT(OV_RECEIVER, 0,
     "S.BUS, PPM, frames",
     "S.BUS, PPM, Frames")
 UI_TEXT(OV_LOGS, 0,
-    "runs, files, Wi-Fi",
-    "Läufe, Dateien, WLAN")
+    "runs, files",
+    "Läufe, Dateien")
 UI_TEXT(OV_SETUP, 0,
-    "panel, pins, card",
-    "Panel, Pins, Karte")
+    "panel, pins, card, Wi-Fi",
+    "Panel, Pins, Karte, WLAN")
 UI_TEXT(OV_BATTERY, 0,
     "cells, iR, mAh",
     "Zellen, iR, mAh")
@@ -393,11 +393,11 @@ UI_TEXT(HG_OV_BALANCE, 0,
     "Finds where a propeller or fan needs mass, and shows where the two sensors go.",
     "Findet, wo ein Propeller oder Lüfter Masse braucht, und zeigt, wo die zwei Sensoren sitzen.")
 UI_TEXT(HG_OV_LOGS, 0,
-    "Lists the logs on the SD card and plots up to 4 columns. FILES and WI-FI are its other two tabs.",
-    "Listet die Logs auf der SD-Karte und plottet bis zu 4 Spalten. DATEIEN und WI-FI sind seine anderen Tabs.")
+    "Lists the logs on the SD card and plots up to 4 columns. FILES is a tab, WI-FI a button.",
+    "Listet die Logs auf der SD-Karte und plottet bis zu 4 Spalten. FILES ist ein Tab, WI-FI eine Taste.")
 UI_TEXT(HG_OV_SETUP, 0,
-    "The bench-wide settings: panel, sensors, outputs, SD card and updates.",
-    "Die Einstellungen des ganzen Prüfstands: Panel, Sensoren, Ausgänge, SD-Karte und Updates.")
+    "The bench-wide settings: panel, sensors, outputs, SD card, Wi-Fi and updates.",
+    "Die Einstellungen des ganzen Prüfstands: Panel, Sensoren, Ausgänge, SD-Karte, WLAN und Updates.")
 UI_TEXT(HG_OV_STOP, 0,
     "Switches the bench to SAFE and the supply output off, on every screen and with this guide open.",
     "Schaltet den Prüfstand auf SAFE und den Ausgang der Versorgung ab, auf jedem Bildschirm, auch bei offener Hilfe.")
@@ -1269,6 +1269,9 @@ UI_TEXT(LAYOUT_NONE, 0,
 UI_TEXT(LAYOUT_NONE_WHERE, 0,
     "ITS PINS ARE CHOSEN ON OUTPUTS.",
     "SEINE PINS WERDEN UNTER OUTPUTS GEWÄHLT.")
+UI_TEXT(SET_HUB_WIFI, 0,
+    "NETWORK, FILES, UPLOAD",
+    "NETZWERK, DATEIEN, UPLOAD")
 UI_TEXT(SET_HUB_UPDATES, 0,
     "RELEASES ON GITHUB",
     "VERSIONEN AUF GITHUB")
@@ -1888,6 +1891,9 @@ UI_TEXT(LOG_RESCAN, 0,
 UI_TEXT(LOG_OPEN, 0,
     "OPEN",
     "ÖFFNEN")
+UI_TEXT(LOG_WIFI, 0,
+    "WI-FI",
+    "WI-FI")
 UI_TEXT(LOG_CANNOT_READ, 64,
     "CANNOT READ",
     "NICHT LESBAR")

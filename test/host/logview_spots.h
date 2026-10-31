@@ -6,15 +6,15 @@
  * If the layout moves these move with it.  Taken by logview_rig.h, the
  * screen's suites and render_screen.c.
  *
- *   - the LOGS tile's strip: LOGS, FILES, WI-FI 331 x 40px from x 11, y 5,
- *     4px apart;
+ *   - the LOGS tile's strip: LOGS, FILES 499 x 40px from x 11, y 5, 4px
+ *     apart;
  *   - the header row y 52 to 100: ROOT, USER, BENCH 110 x 40px from x 11,
  *     4px apart; PREV x 728 and NEXT x 876, 140 x 48px;
  *   - the file list from y 108, 1008px wide: its rows under a 30px heading
  *     at a pitch of 48px, drawn 44px tall from x 16; the scroll bar
  *     x 952 to 1008, from y 138, 284px tall;
  *   - the footer y 440 to 492: RESCAN x 8, DELETE x 728, OPEN x 876,
- *     140px each; the import's four buttons 246px from x 8, 8px apart; the plot's BACK x 8 (140px), < x 156 and > x 260 (96px);
+ *     140px each, WI-FI x 156, 100px; the import's four buttons 246px from x 8, 8px apart; the plot's BACK x 8 (140px), < x 156 and > x 260 (96px);
  *   - the import's column list from x 416, y 44: its rows at a pitch of
  *     48px under a 30px heading;
  *   - the plot x 16 to 1008, y 88 to 404;
@@ -60,6 +60,7 @@
 #define LV_FOOT_Y     (UI_BODY_H - UI_ALERT_H - 4 - 52)
 #define LV_FOOT_CY    (LV_FOOT_Y + 26)          /**< Its middle row. */
 #define LV_RESCAN_CX  78            /**< RESCAN. */
+#define LV_WIFI_CX    206           /**< WI-FI. */
 #define LV_DELETE_CX  798           /**< DELETE. */
 #define LV_OPEN_CX    946           /**< OPEN. */
 
