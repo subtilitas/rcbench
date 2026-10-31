@@ -131,7 +131,8 @@ history is in git.
   the dial's +90 and -90 labels moved left of their ticks.
 - A KST session that goes takes the lines about what it held with it: `All 32
   registers read.`, `KST004 loaded.`, the edit and load lines. A past write, a
-  saved file, a refusal and a danger line stay.
+  saved file, a refusal and a danger line stay. A Hitec session that goes does
+  the same, on a lost link and on an IOmcu without the page.
 
 - FILES' editor header shows the file's size as read when it opens and as
   written after SAVE, not the size listed before the open.
