@@ -1,16 +1,13 @@
 /**
  * @file
- * @brief The strip of the LOGS tile: one tile, three screens.
+ * @brief The strip of the LOGS tile: one tile, two screens.
  *
- * LOGS, FILES and WI-FI stay screens of their own and each draws this strip
- * at the top of its first level.  A tab tapped is a change of screen
- * (ui_router_goto()): the screen left runs its leave(), so leaving WI-FI by
- * a tab switches the radio off and drops a waiting image, as its home tag
- * does.  The radio is up only while WI-FI shows; the strip has no way to
- * keep it on.  A level under the first one of a screen (a file's views, a
- * keyboard, a box, a question, the text viewer and its editor, the network
- * list) does not draw the strip and takes no tab, so such a level is left by
- * its own controls and the home tag first.
+ * LOGS and FILES stay screens of their own and each draws this strip at the
+ * top of its first level.  A tab tapped is a change of screen
+ * (ui_router_goto()).  A level under the first one of a screen (a file's
+ * views, a keyboard, a box, a question, the text viewer and its editor) does
+ * not draw the strip and takes no tab, so such a level is left by its own
+ * controls and the home tag first.
  *
  * The labels are the screens' titles, in every language.
  *
@@ -29,8 +26,8 @@ extern "C" {
 #endif
 
 /**
- * @brief The strip's row in the body: 1002 x 40px at (11, 5), three tabs of
- *        331px, the trough 3px round it, y 2 to 48.  It spans the screen, so
+ * @brief The strip's row in the body: 1002 x 40px at (11, 5), two tabs of
+ *        499px, the trough 3px round it, y 2 to 48.  It spans the screen, so
  *        it does not read as one row with LOGS' folder tabs of 110px under it.
  */
 #define LOGS_STRIP_X 11
@@ -43,7 +40,7 @@ extern "C" {
 /**
  * @brief Draw the strip with the tab of @p here selected.
  * @param c    The canvas of the screen's body.
- * @param here SCREEN_LOGS, SCREEN_FILES or SCREEN_WIFI.
+ * @param here SCREEN_LOGS or SCREEN_FILES.
  */
 void logs_strip_render(gfx_canvas_t *c, ui_screen_id_t here);
 
@@ -57,7 +54,7 @@ void logs_strip_render(gfx_canvas_t *c, ui_screen_id_t here);
  * true: the tab's look changed.
  *
  * @param e    The event, in the body's coordinates.
- * @param here SCREEN_LOGS, SCREEN_FILES or SCREEN_WIFI.
+ * @param here SCREEN_LOGS or SCREEN_FILES.
  * @return True when the event belongs to a press on the strip.
  */
 bool logs_strip_event(const touch_event_t *e, ui_screen_id_t here);

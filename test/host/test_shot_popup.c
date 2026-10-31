@@ -654,6 +654,126 @@ TEST_CASE(the_popup_covers_the_screen_and_repaints_it_closed)
           || gfx_pixel_get(&cv, 400, 200) != UI_BG);
 }
 
+TEST_CASE(a_picture_of_no_canvas_is_no_picture)
+{
+    start();
+    ui_shot_want();
+    ui_shot_capture(NULL, false);
+    CHECK(!ui_shot_wanted());
+    CHECK(!ui_shot_held());
+    ui_shot_want();
+    gfx_canvas_t small = cv;
+    small.width = W - 1;
+    ui_shot_capture(&small, false);
+    CHECK(!ui_shot_held());
+    CHECK_EQ(g_allocs, 0);
+}
+
+TEST_CASE(a_hold_that_ends_on_a_screen_without_the_band_takes_that_screen)
+{
+    start();
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    wait_ms(1000);
+    REQUIRE(ui_shot_wanted());
+    ui_router_goto(SCREEN_BUSFAULT);
+    frame();
+    CHECK(!ui_shot_wanted());
+    CHECK(ui_shot_held());
+    CHECK(!ui_shot_open());
+    const gfx_color_t *img = ui_shot_image();
+    REQUIRE(img != NULL);
+    CHECK(memcmp(img, fb, (size_t)W * H * sizeof(gfx_color_t)) == 0);
+}
+
+TEST_CASE(a_lost_touch_event_drops_the_keys_press_and_the_popup_stays)
+{
+    start();
+    open_popup();
+    REQUIRE(ui_shot_open());
+    const gfx_rect_t key = ui_shot_key_rect(UI_TK_CANCEL);
+    const int x = key.x + key.w / 2;
+    const int y = key.y + key.h / 2 + UI_BAND_H;
+    touch(x, y, TOUCH_EVENT_DOWN, 1);
+    ui_router_cancel_gestures();
+    touch(x, y, TOUCH_EVENT_UP, 1);
+    CHECK(ui_shot_open());
+}
+
+TEST_CASE(the_popup_draws_once_per_buffer_until_something_changes)
+{
+    start();
+    open_popup();
+    REQUIRE(ui_shot_open());
+    ui_shot_render(NULL, 0);
+    gfx_canvas_t *body = &cv;
+    ui_shot_invalidate();
+    ui_shot_render(body, 0);
+    const gfx_color_t was = body->pixels[0];
+    body->pixels[0] = (gfx_color_t)~was;
+    ui_shot_render(body, 0);
+    CHECK_EQ(body->pixels[0], (gfx_color_t)~was);
+    /* The other buffer has its own turn. */
+    body->pixels[0] = (gfx_color_t)~was;
+    ui_shot_render(body, 1);
+    CHECK_EQ(body->pixels[0], was);
+    ui_shot_invalidate();
+    body->pixels[0] = (gfx_color_t)~was;
+    ui_shot_render(body, 0);
+    CHECK_EQ(body->pixels[0], was);
+    /* Closed, it draws nothing. */
+    tap_key(UI_TK_CANCEL);
+    REQUIRE(!ui_shot_held());
+    body->pixels[0] = (gfx_color_t)~was;
+    ui_shot_render(body, 0);
+    CHECK_EQ(body->pixels[0], (gfx_color_t)~was);
+}
+
+TEST_CASE(a_press_on_the_alert_under_the_popup_is_the_alerts)
+{
+    start();
+    open_popup();
+    REQUIRE(ui_shot_open());
+    ui_router_set_alert("FAULT");
+    const int y = H - UI_ALERT_H / 2;
+    touch(100, y, TOUCH_EVENT_DOWN, 1);
+    touch(101, y, TOUCH_EVENT_DOWN, 2);
+    CHECK(ui_router_alert() != NULL);
+    touch(100, y, TOUCH_EVENT_UP, 1);
+    touch(101, y, TOUCH_EVENT_UP, 2);
+    CHECK(ui_router_alert() == NULL);
+    CHECK(ui_shot_open());
+    CHECK(g_job != UI_SHOT_JOB_SAVE);
+}
+
+TEST_CASE(a_press_in_the_gap_under_the_popup_closes_a_bubble_and_takes_nothing)
+{
+    start();
+    ui_router_goto(SCREEN_SUPPLY);
+    open_popup();
+    REQUIRE(ui_shot_open());
+    gfx_rect_t chip;
+    REQUIRE(ui_band_chip_rect(ui_router_status(), UI_BAND_CHIP_LINK, &chip));
+    touch(chip.x + 1, 30, TOUCH_EVENT_DOWN, 2);
+    touch(chip.x + 1, 30, TOUCH_EVENT_UP, 2);
+    REQUIRE(ui_router_help() == UI_BAND_CHIP_LINK);
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+    wait_ms(1200);
+    frame();
+    CHECK(!ui_shot_wanted());
+    CHECK(ui_router_alert() == NULL);
+}
+
+TEST_CASE(facts_with_nowhere_to_go_are_refused)
+{
+    const shot_bench_t idle = { .read = true };
+    shot_facts_read(&idle, NULL);
+    shot_facts_t f;
+    memset(&f, 0xff, sizeof(f));
+    shot_facts_read(NULL, &f);
+    CHECK(shot_gate(&f) != SHOT_IDLE);
+}
+
 int main(void)
 {
     RUN(the_gate_is_true_only_with_every_fact_idle);
@@ -678,5 +798,12 @@ int main(void)
     RUN(not_idle_while_it_writes_stops_it_and_the_picture_waits);
     RUN(a_name_the_rules_refuse_is_said_and_saves_nothing);
     RUN(the_popup_covers_the_screen_and_repaints_it_closed);
+    RUN(a_picture_of_no_canvas_is_no_picture);
+    RUN(a_hold_that_ends_on_a_screen_without_the_band_takes_that_screen);
+    RUN(a_lost_touch_event_drops_the_keys_press_and_the_popup_stays);
+    RUN(the_popup_draws_once_per_buffer_until_something_changes);
+    RUN(a_press_on_the_alert_under_the_popup_is_the_alerts);
+    RUN(a_press_in_the_gap_under_the_popup_closes_a_bubble_and_takes_nothing);
+    RUN(facts_with_nowhere_to_go_are_refused);
     return test_summary("shot_popup");
 }

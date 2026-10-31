@@ -211,6 +211,127 @@ TEST_CASE(the_next_number_is_one_above_the_highest)
     CHECK_EQ(n, 9999);
 }
 
+TEST_CASE(what_a_caller_leaves_out_is_refused)
+{
+    fresh();
+    unsigned n = 0u;
+    CHECK_EQ(shot_file_next(NULL, &n), FM_ERR_ARG);
+    CHECK_EQ(shot_file_next(&g_io, NULL), FM_ERR_ARG);
+    CHECK_EQ(shot_file_save(NULL, NULL, 0u), FM_ERR_ARG);
+    shot_save_t s = {
+        .io = &g_io, .pixels = g_px, .w = 32, .h = 16, .base = "A",
+        .enc = &g_enc, .chunk = g_chunk, .chunk_size = 0u,
+    };
+    CHECK_EQ(shot_file_save(&s, NULL, 0u), FM_ERR_ARG);
+    CHECK(shot_name_check(NULL) != (int)FM_NAME_OK);
+    CHECK(fk_get(&g_card, "screenshots") == NULL);
+}
+
+TEST_CASE(a_card_pulled_before_the_hold_is_said_and_holds_nothing)
+{
+    fresh();
+    unsigned n = 7u;
+    fk_fail(&g_card, FK_HOLD, 1, FM_ERR_CARD_GONE);
+    CHECK_EQ(shot_file_next(&g_io, &n), FM_ERR_CARD_GONE);
+    CHECK_EQ(n, 1);
+    CHECK_EQ(g_card.holds, 0);
+    fresh();
+    fk_fail(&g_card, FK_HOLD, 1, FM_ERR_CARD_GONE);
+    CHECK_EQ(save("A"), FM_ERR_CARD_GONE);
+    CHECK_EQ(g_card.holds, 0);
+    CHECK(fk_get(&g_card, "screenshots") == NULL);
+}
+
+TEST_CASE(a_chunk_of_one_byte_writes_the_same_file_as_a_whole_one)
+{
+    fresh();
+    CHECK_EQ(save("A"), FM_OK);
+    const fk_node_t *whole = fk_get(&g_card, "screenshots/A.PNG");
+    REQUIRE(whole != NULL);
+    shot_save_t s = {
+        .io = &g_io, .pixels = g_px, .w = 32, .h = 16, .base = "B",
+        .enc = &g_enc, .chunk = g_chunk, .chunk_size = 1u,
+    };
+    /* The stream ends on the chunk's edge: the last flush has nothing. */
+    CHECK_EQ(shot_file_save(&s, NULL, 0u), FM_OK);
+    const fk_node_t *small = fk_get(&g_card, "screenshots/B.PNG");
+    REQUIRE(small != NULL);
+    CHECK_EQ(small->size, whole->size);
+    CHECK(memcmp(small->data, whole->data, whole->size) == 0);
+    /* And a write that fails in the stream stops it. */
+    fk_fail(&g_card, FK_WRITE, 3, FM_ERR_FULL);
+    s.base = "C";
+    CHECK_EQ(shot_file_save(&s, NULL, 0u), FM_ERR_FULL);
+    CHECK(fk_get(&g_card, "screenshots/C.PNG") == NULL);
+    CHECK(fk_get(&g_card, "screenshots/C.PNG.NEW") == NULL);
+}
+
+TEST_CASE(an_open_or_stat_error_is_said_and_leaves_no_file)
+{
+    fresh();
+    fk_fail(&g_card, FK_OPEN, 1, FM_ERR_DENIED);
+    CHECK_EQ(save("A"), FM_ERR_DENIED);
+    CHECK(fk_get(&g_card, "screenshots/A.PNG") == NULL);
+    fresh();
+    fk_dir(&g_card, "screenshots");
+    fk_fail(&g_card, FK_STAT, 2, FM_ERR_IO);
+    CHECK_EQ(save("A"), FM_ERR_IO);
+    CHECK(fk_get(&g_card, "screenshots/A.PNG") == NULL);
+    CHECK(fk_get(&g_card, "screenshots/A.PNG.NEW") == NULL);
+}
+
+TEST_CASE(an_encoder_that_refuses_is_a_failed_save_with_no_file)
+{
+    fresh();
+    const shot_save_t s = {
+        .io = &g_io, .pixels = g_px, .w = 0, .h = 16, .base = "A",
+        .enc = &g_enc, .chunk = g_chunk, .chunk_size = sizeof(g_chunk),
+    };
+    CHECK_EQ(shot_file_save(&s, NULL, 0u), FM_ERR_IO);
+    CHECK(fk_get(&g_card, "screenshots/A.PNG") == NULL);
+    CHECK(fk_get(&g_card, "screenshots/A.PNG.NEW") == NULL);
+}
+
+TEST_CASE(the_save_says_the_path_it_wrote_cut_to_the_callers_room)
+{
+    fresh();
+    const shot_save_t s = {
+        .io = &g_io, .pixels = g_px, .w = 32, .h = 16, .base = "A",
+        .enc = &g_enc, .chunk = g_chunk, .chunk_size = sizeof(g_chunk),
+    };
+    char path[64] = "x";
+    CHECK_EQ(shot_file_save(&s, path, sizeof(path)), FM_OK);
+    CHECK_STR_EQ(path, "screenshots/A.PNG");
+    const shot_save_t again = {
+        .io = &g_io, .pixels = g_px, .w = 32, .h = 16, .base = "B",
+        .enc = &g_enc, .chunk = g_chunk, .chunk_size = sizeof(g_chunk),
+    };
+    char room[5] = "wxyz";
+    CHECK_EQ(shot_file_save(&again, room, sizeof(room)), FM_OK);
+    CHECK_STR_EQ(room, "scre");
+    /* A refusal says no path. */
+    strcpy(path, "x");
+    CHECK_EQ(shot_file_save(&s, path, sizeof(path)), FM_ERR_EXISTS);
+    CHECK_STR_EQ(path, "x");
+}
+
+TEST_CASE(a_folder_and_a_name_with_no_number_do_not_count_for_the_next)
+{
+    fresh();
+    fk_dir(&g_card, "screenshots");
+    fk_dir(&g_card, "screenshots/SHOT0077.PNG");
+    fk_file(&g_card, "screenshots/SHOT.PNG", (const uint8_t *)"x", 1u);
+    fk_file(&g_card, "screenshots/SH", (const uint8_t *)"x", 1u);
+    unsigned n = 0u;
+    CHECK_EQ(shot_file_next(&g_io, &n), FM_OK);
+    CHECK_EQ(n, 1);
+    /* A walk that fails says so and leaves 1. */
+    fk_fail(&g_card, FK_WALK, 1, FM_ERR_IO);
+    n = 9u;
+    CHECK_EQ(shot_file_next(&g_io, &n), FM_ERR_IO);
+    CHECK_EQ(n, 1);
+}
+
 int main(void)
 {
     RUN(the_folder_is_made_and_the_file_has_its_extension);
@@ -222,6 +343,13 @@ int main(void)
     RUN(cancel_stops_at_a_row_and_leaves_no_file);
     RUN(a_new_a_power_cut_left_goes_with_the_next_save);
     RUN(the_next_number_is_one_above_the_highest);
+    RUN(what_a_caller_leaves_out_is_refused);
+    RUN(a_card_pulled_before_the_hold_is_said_and_holds_nothing);
+    RUN(a_chunk_of_one_byte_writes_the_same_file_as_a_whole_one);
+    RUN(an_open_or_stat_error_is_said_and_leaves_no_file);
+    RUN(an_encoder_that_refuses_is_a_failed_save_with_no_file);
+    RUN(the_save_says_the_path_it_wrote_cut_to_the_callers_room);
+    RUN(a_folder_and_a_name_with_no_number_do_not_count_for_the_next);
     fk_free(&g_card);
     return test_summary("shot_file");
 }

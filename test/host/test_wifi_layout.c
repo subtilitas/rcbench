@@ -544,8 +544,21 @@ TEST_CASE(an_ssid_of_32_characters_shows_whole)
     show();
     render();
     const int val = WF_BTN_X + 240 + 8;
-    CHECK(right_ink(52, 52 + 54, val, W, bg) >= val + 31 * 20);
-    CHECK(right_ink(52, 52 + 54, val, W, bg) < val + 740);
+    CHECK(right_ink(16, 16 + 56, val, W, bg) >= val + 31 * 20);
+    CHECK(right_ink(16, 16 + 56, val, W, bg) < val + 740);
+
+    /* The radio-on rows, 56px from body y 16: the fourth, the access code's
+     * 20 x 36 value centred at y 212, keeps its ink from y 194 to 230. */
+    fresh();
+    v.radio = WIFI_RADIO_JOINED;
+    v.have_net = true;
+    strcpy(v.net, "Workshop 2.4");
+    v.code_on = false;
+    v.ip[0] = 192;
+    show();
+    render();
+    CHECK_EQ(right_ink(184, 194, val, W, bg), -1);
+    CHECK(right_ink(218, 224, val, W, bg) >= val);
 
     fresh();
     ui_text_set_language(UI_LANG_DE);
@@ -556,8 +569,8 @@ TEST_CASE(an_ssid_of_32_characters_shows_whole)
     char line[96];
     snprintf(line, sizeof(line), ui_tr(TX_WF_JOINING), ssid);
     const int cells = gfx_text_cells(line);
-    CHECK(right_ink(52, 52 + 54, 0, W, bg) >= 16 + (cells - 1) * 12);
-    CHECK(right_ink(52, 52 + 54, 0, W, bg) < W - 16);
+    CHECK(right_ink(16, 16 + 56, 0, W, bg) >= 16 + (cells - 1) * 12);
+    CHECK(right_ink(16, 16 + 56, 0, W, bg) < W - 16);
 
     pose(V_KEY_PASS, UI_LANG_DE);
     CHECK(strstr(wifi_screen_textkey()->title, ssid) != NULL);

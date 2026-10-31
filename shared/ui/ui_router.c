@@ -17,6 +17,7 @@
 #include "wifi_screen.h"
 #include "ui_screen.h"
 #include "ui_shot.h"
+#include "shot_hold.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -43,8 +44,6 @@
 #define PANEL_H UI_PANEL_H
 /** @brief The alert band's height, across the bottom. */
 #define ALERT_H UI_ALERT_H
-/** @brief The hold that takes a screenshot, ms. */
-#define SHOT_HOLD_MS 1000u
 /** @brief What the band's empty part keeps from the home tag and from the
  *         chips: 8px, four times what a chip takes beside it for a tap. */
 #define SHOT_GAP_M 8
@@ -141,18 +140,6 @@ static struct {
         int16_t x, y;
     } owned[TOUCH_MAX_POINTS];
 
-    /**
-     * @brief Every contact on the glass, whoever owns it, by track id: what a
-     * screenshot's hold takes for a second contact, and what the popup
-     * waits for to lift.  Set at a DOWN, cleared at its UP and at a touch
-     * loss.
-     */
-    uint8_t  glass[256u / 8u];
-    bool     shot_hold;   /**< the screenshot's hold runs                  */
-    uint8_t  shot_id;     /**< its contact                                 */
-    int16_t  shot_x;      /**< where its contact last was, panel x         */
-    int16_t  shot_y;      /**< and panel y                                 */
-    uint32_t shot_ms;     /**< how long it has run, ms                     */
     /** @brief The bench is idle (shot_gate.h), as the application last said;
      *         false until it says so. */
     bool     shot_idle;
@@ -163,13 +150,15 @@ static void release_owned(void);
 static void drop_notice(void);
 static void guide_check(void);
 static void shot_service(void);
-static bool glass_clear(void);
+static void guide_close(void);
 
 /*
  * The openers, each on a row of its own: a control on one screen that opens
  * another, whose home tag then returns to the opener.  OUTPUTS opens from the
  * TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile; SUPPLY
- * and SETUP from SERVO's caps and AS5600 buttons; WI-FI from UPDATES' button.
+ * and SETUP from SERVO's caps and AS5600 buttons; WI-FI from UPDATES' button
+ * and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row: WI-FI's parent is
+ * SETUP.
  * A screen with no row here, or entered from a screen not on its row, leaves
  * to its tile's parent (ui_router_parent()).
  */
@@ -183,6 +172,7 @@ static const struct {
     { SCREEN_SUPPLY,  SCREEN_SERVO },
     { SCREEN_SETUP,   SCREEN_SERVO },
     { SCREEN_WIFI,    SCREEN_UPDATES },
+    { SCREEN_WIFI,    SCREEN_LOGS },
 };
 
 static bool opens(ui_screen_id_t opener, ui_screen_id_t id)
@@ -243,6 +233,7 @@ void ui_router_init(void)
         scr->enter();
     }
     ui_shot_reset();
+    shot_hold_reset();
     ui_router_invalidate();
 }
 
@@ -272,7 +263,7 @@ void ui_router_goto(ui_screen_id_t id)
     s.guide = false;
     s.guide_press = false;
     s.alert_press = false;
-    s.shot_hold = false;
+    shot_hold_end();
     memset(s.alert_ids, 0, sizeof(s.alert_ids));
     memset(s.owned, 0, sizeof(s.owned));
     ui_router_invalidate();
@@ -389,9 +380,10 @@ static bool shot_screen_free(void)
 static void shot_service(void)
 {
     const bool may = s.shot_idle && shot_screen_free();
-    const ui_shot_change_t c = ui_shot_service(may, may && glass_clear());
+    const ui_shot_change_t c =
+        ui_shot_service(may, may && shot_hold_glass_clear());
     if (c == UI_SHOT_OPENED) {
-        s.shot_hold = false;
+        shot_hold_end();
         s.help = UI_BAND_CHIP_NONE;
         s.guide = false;
         s.guide_press = false;
@@ -410,40 +402,13 @@ void ui_router_shot_set_idle(bool idle)
 }
 
 /**
- * @brief Whether the point is on the empty part of the band, this moment.
- * @param x  panel x
- * @param y  panel y
- * @return true on the gap, on a screen with the band
+ * @brief Close the guide or the bubble a hold began over, when the hold says.
  */
-static bool shot_gap_at(int x, int y)
+static void shot_over_settle(void)
 {
-    gfx_rect_t gap;
-    return ui_router_shot_gap(&gap) && gfx_rect_contains(gap, x, y)
-           && ui_band_chip_at(&s.status, x, y) == UI_BAND_CHIP_NONE
-           && !ui_band_guide_at(x, y)
-           && !gfx_rect_contains(ui_band_stop_rect(), x, y);
-}
-
-/**
- * @brief The screenshot's hold, a frame on: it ends where the gap no longer
- *        holds the contact, a chip that appeared under it included, and
- *        takes the picture at SHOT_HOLD_MS.  A late frame counts for no more
- *        than any hold's (ui_hold_credit()).
- * @param dt_s  the frame's time, s
- */
-static void shot_hold_tick(float dt_s)
-{
-    if (!s.shot_hold) {
-        return;
-    }
-    if (!shot_gap_at(s.shot_x, s.shot_y)) {
-        s.shot_hold = false;
-        return;
-    }
-    s.shot_ms += (uint32_t)(ui_hold_credit(dt_s) * 1000.0f + 0.5f);
-    if (s.shot_ms >= SHOT_HOLD_MS) {
-        s.shot_hold = false;
-        ui_shot_want();
+    if (shot_hold_settled()) {
+        s.help = UI_BAND_CHIP_NONE;
+        guide_close();
     }
 }
 
@@ -462,6 +427,7 @@ void ui_router_tick(float dt_s)
         }
     }
     shot_hold_tick(dt_s);
+    shot_over_settle();
     ui_shot_poll();
     shot_service();
     const ui_screen_t *scr = screen_for(s.current);
@@ -653,71 +619,6 @@ static bool in_alert(const touch_event_t *evt)
            && evt->point.x >= 0 && evt->point.x < PANEL_W;
 }
 
-/**
- * @brief No contact is on the glass.
- * @return true when none is
- */
-static bool glass_clear(void)
-{
-    for (size_t i = 0u; i < sizeof(s.glass); ++i) {
-        if (s.glass[i] != 0u) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
- * @brief Keep the glass's table, and end the screenshot's hold on anything
- *        that is not its contact staying in the gap: its release, another
- *        contact's event of any kind, a DOWN of its id (a new contact), a
- *        slide out of the gap.
- * @param evt  the event
- */
-static void shot_feed(const touch_event_t *evt)
-{
-    const uint8_t id  = evt->point.id;
-    const uint8_t bit = (uint8_t)(1u << (id & 7u));
-    if (evt->type == TOUCH_EVENT_DOWN) {
-        s.glass[id >> 3] |= bit;
-    } else if (evt->type == TOUCH_EVENT_UP) {
-        s.glass[id >> 3] &= (uint8_t)~bit;
-    }
-    if (!s.shot_hold) {
-        return;
-    }
-    if (id != s.shot_id || evt->type != TOUCH_EVENT_MOVE
-        || !shot_gap_at(evt->point.x, evt->point.y)) {
-        s.shot_hold = false;
-        return;
-    }
-    s.shot_x = evt->point.x;
-    s.shot_y = evt->point.y;
-}
-
-/**
- * @brief A press came down on the band and no control of it: the hold starts
- *        when it is the only contact, in the gap.  The popup takes every press
- *        before this one is asked.
- * @param evt  the DOWN
- */
-static void shot_hold_begin(const touch_event_t *evt)
-{
-    const uint8_t id  = evt->point.id;
-    const uint8_t bit = (uint8_t)(1u << (id & 7u));
-    s.glass[id >> 3] &= (uint8_t)~bit;
-    const bool alone = glass_clear();
-    s.glass[id >> 3] |= bit;
-    if (alone && (evt->flags & TOUCH_FLAG_JUMP) == 0u
-        && shot_gap_at(evt->point.x, evt->point.y)) {
-        s.shot_hold = true;
-        s.shot_id   = id;
-        s.shot_x    = evt->point.x;
-        s.shot_y    = evt->point.y;
-        s.shot_ms   = 0u;
-    }
-}
-
 static bool has_home(ui_screen_id_t id)
 {
     return id != SCREEN_SPLASH && id != SCREEN_OVERVIEW
@@ -859,6 +760,10 @@ static int owned_find(uint8_t id)
  * that chip, so one tap moves the bubble to it.  A DOWN on STOP closes it
  * as well and presses STOP, as with no bubble.
  *
+ * A DOWN in the band's gap with no other contact on the glass is the
+ * screenshot's hold, over a bubble or the guide as well: they stay up for the
+ * picture and close when the hold ends, with or without one.
+ *
  * The guide follows the bubble's rules.  "?" opens it on a tap, as a chip
  * opens its bubble; a DOWN on "?" with the guide open closes it.  While it
  * is open, a DOWN on PREV, NEXT or CLOSE is the guide's and acts on a
@@ -888,7 +793,8 @@ void ui_router_event(const touch_event_t *evt)
      * one. */
     const bool    safe = band && router_safe_at(evt);
 
-    shot_feed(evt);
+    shot_hold_feed(evt);
+    shot_over_settle();
 
     guide_check();
     if (band) {
@@ -951,6 +857,9 @@ void ui_router_event(const touch_event_t *evt)
             /* The tap that closes the guide, except a press on DISARM or
              * a run's STOP: the guide closes and the press is the
              * screen's, below. */
+            if (shot_hold_over(evt, popup)) {
+                return;
+            }
             guide_close();
             if (!safe) {
                 return;
@@ -964,11 +873,14 @@ void ui_router_event(const touch_event_t *evt)
              * screen: the screen never owned it.  A DOWN on another chip
              * is that chip's press, below: the bubble closes with it and
              * the release opens that chip's bubble. */
-            s.help = UI_BAND_CHIP_NONE;
             const int was = owned_find(id);
             if (was >= 0) {
                 s.owned[was].live = false;
             }
+            if (shot_hold_over(evt, popup)) {
+                return;
+            }
+            s.help = UI_BAND_CHIP_NONE;
             /* Except a press on DISARM or a run's STOP: the bubble closes
              * and the press is the screen's, below. */
             if (!safe) {
@@ -1098,7 +1010,7 @@ void ui_router_event(const touch_event_t *evt)
         if (slot < 0) {
             if (evt->type == TOUCH_EVENT_DOWN) {
                 release_owned();   /* a press on the band, as above */
-                shot_hold_begin(evt);
+                (void)shot_hold_begin(evt);
             }
             return;
         }
@@ -1162,8 +1074,7 @@ void ui_router_cancel_gestures(void)
      */
     s.band_press = false;
     s.guide_press = false;   /* the guide stays open */
-    s.shot_hold = false;
-    memset(s.glass, 0, sizeof(s.glass));
+    shot_hold_lost();
     ui_shot_cancel_press();
     memset(s.owned, 0, sizeof(s.owned));
 

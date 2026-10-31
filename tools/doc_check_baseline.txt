@@ -1201,7 +1201,6 @@ firmware/panel/main/panel_update.c: warning: Member s_fw_quiet_req (variable) of
 firmware/panel/main/panel_update.c: warning: Member s_upd (variable) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member s_upd_boot_gen (variable) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member s_upd_dl (variable) of file panel_update.c is not documented.
-firmware/panel/main/panel_update.c: warning: Member s_update_back (variable) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member s_wifi_ok (variable) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member upd_channel(void) (function) of file panel_update.c is not documented.
 firmware/panel/main/panel_update.c: warning: Member upd_check_gate(bool armed) (function) of file panel_update.c is not documented.

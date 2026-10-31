@@ -71,9 +71,9 @@ void ui_shot_bind(const ui_shot_io_t *io) { s.io = io; }
  */
 static void name_keep(const char *text)
 {
-    size_t n = strlen(text);
-    if (n > SHOT_BASE_MAX) {
-        n = SHOT_BASE_MAX;
+    size_t n = 0u;   /* strnlen() is POSIX, not C11 */
+    while (n < SHOT_BASE_MAX && text[n] != '\0') {
+        ++n;
     }
     memcpy(s.name, text, n);
     s.name[n] = '\0';

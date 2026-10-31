@@ -707,7 +707,7 @@ TEST_CASE(the_way_back_in_lists_new_runs_after_delete_swap_and_sub_views)
     check_tab(1, 48, 98);
     check_top(397);
 
-    /* WI-FI on the strip and back by its LOGS tab. */
+    /* WI-FI and back by a route of its own. */
     ui_router_goto(SCREEN_WIFI);
     g_card_runs = 99;
     ui_router_goto(SCREEN_LOGS);

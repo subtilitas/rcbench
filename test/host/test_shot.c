@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "shot_rig.h"
+#include "ui_help.h"
 
 /* ------------------------------------------------------------ the hold */
 
@@ -168,6 +169,182 @@ TEST_CASE(a_press_on_chip_tag_guide_or_stop_is_no_screenshot)
     CHECK_EQ(g.x, tag.x + tag.w + 8);
     CHECK_EQ(g.x + g.w, chip.x - 8);
     touch(g.x - 1, 30, TOUCH_EVENT_DOWN, 1);
+    wait_ms(1200);
+    CHECK(!ui_shot_wanted());
+}
+
+/** @brief A menu with the LINK chip's bubble open, by a tap on the chip. */
+static void open_bubble(void)
+{
+    start();
+    ui_router_goto(SCREEN_SUPPLY);
+    gfx_rect_t chip;
+    REQUIRE(ui_band_chip_rect(ui_router_status(), UI_BAND_CHIP_LINK, &chip));
+    touch(chip.x + 1, 30, TOUCH_EVENT_DOWN, 2);
+    touch(chip.x + 1, 30, TOUCH_EVENT_UP, 2);
+    REQUIRE(ui_router_help() == UI_BAND_CHIP_LINK);
+}
+
+TEST_CASE(a_hold_over_a_bubble_takes_the_bubble_and_then_closes_it)
+{
+    open_bubble();
+    frame();
+    gfx_rect_t bubble;
+    REQUIRE(ui_router_help_rect(&bubble));
+    const int dispatched = ui_router_dispatched();
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    CHECK(ui_router_help() == UI_BAND_CHIP_LINK);
+    wait_ms(999);
+    CHECK(!ui_shot_wanted());
+    CHECK(ui_router_help() == UI_BAND_CHIP_LINK);
+    ui_router_tick(0.001f);
+    CHECK(ui_shot_wanted());
+    CHECK(ui_router_help() == UI_BAND_CHIP_LINK);
+    /* The picture holds the bubble as the frame drew it. */
+    ui_router_tick(0.016f);
+    CHECK(ui_router_help() == UI_BAND_CHIP_LINK);
+    frame();
+    const gfx_color_t *img = ui_shot_image();
+    REQUIRE(img != NULL);
+    const size_t row = (size_t)(bubble.y + bubble.h / 2) * W;
+    CHECK(memcmp(img + row + bubble.x, fb + row + bubble.x,
+                 (size_t)bubble.w * sizeof(gfx_color_t)) == 0);
+    /* Taken, it closes, the finger still down; no screen saw the contact. */
+    ui_router_tick(0.016f);
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+    frame();
+    CHECK(memcmp(img + row + bubble.x, fb + row + bubble.x,
+                 (size_t)bubble.w * sizeof(gfx_color_t)) != 0);
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(ui_router_dispatched(), dispatched);
+}
+
+TEST_CASE(a_tap_in_the_gap_still_closes_a_bubble_and_takes_nothing)
+{
+    open_bubble();
+    const int dispatched = ui_router_dispatched();
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    wait_ms(200);
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+    wait_ms(1200);
+    frame();
+    CHECK(!ui_shot_held());
+    CHECK_EQ(ui_router_dispatched(), dispatched);
+}
+
+TEST_CASE(a_slide_out_closes_a_bubble_at_once_and_takes_nothing)
+{
+    open_bubble();
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    touch(gap_x(), 200, TOUCH_EVENT_MOVE, 1);
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+    wait_ms(1200);
+    frame();
+    CHECK(!ui_shot_held());
+}
+
+TEST_CASE(a_second_contact_over_a_bubble_ends_the_hold_and_closes_it)
+{
+    open_bubble();
+    const int dispatched = ui_router_dispatched();
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    touch(500, 300, TOUCH_EVENT_DOWN, 3);
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+    /* The bubble's closing press, as with no hold: no screen sees it. */
+    CHECK_EQ(ui_router_dispatched(), dispatched);
+    wait_ms(1200);
+    frame();
+    CHECK(!ui_shot_held());
+}
+
+TEST_CASE(stop_under_a_hold_over_a_bubble_acts_on_its_press)
+{
+    open_bubble();
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    const gfx_rect_t stop = ui_band_stop_rect();
+    touch(stop.x + 1, stop.y + 1, TOUCH_EVENT_DOWN, 3);
+    CHECK(ui_router_take_stop());
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+    wait_ms(1200);
+    CHECK(!ui_shot_wanted());
+}
+
+TEST_CASE(a_press_in_the_gap_beside_another_contact_closes_a_bubble_at_once)
+{
+    start();
+    ui_router_goto(SCREEN_SUPPLY);
+    touch(500, 300, TOUCH_EVENT_DOWN, 3);
+    gfx_rect_t chip;
+    REQUIRE(ui_band_chip_rect(ui_router_status(), UI_BAND_CHIP_LINK, &chip));
+    touch(chip.x + 1, 30, TOUCH_EVENT_DOWN, 2);
+    touch(chip.x + 1, 30, TOUCH_EVENT_UP, 2);
+    REQUIRE(ui_router_help() == UI_BAND_CHIP_LINK);
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+    wait_ms(1200);
+    CHECK(!ui_shot_wanted());
+}
+
+TEST_CASE(a_lost_touch_event_closes_a_bubble_the_hold_began_over)
+{
+    open_bubble();
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    ui_router_cancel_gestures();
+    CHECK(ui_router_help() == UI_BAND_CHIP_LINK);
+    ui_router_tick(0.016f);
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+    CHECK(!ui_shot_wanted());
+}
+
+TEST_CASE(a_new_press_between_the_picture_and_its_frame_meets_the_bubble)
+{
+    open_bubble();
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    wait_ms(1000);
+    REQUIRE(ui_shot_wanted());
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+    CHECK(ui_router_help() == UI_BAND_CHIP_LINK);
+    touch(500, 300, TOUCH_EVENT_DOWN, 3);
+    CHECK(ui_router_help() == UI_BAND_CHIP_NONE);
+}
+
+TEST_CASE(a_hold_over_the_guide_takes_the_guide_and_then_closes_it)
+{
+    start();
+    const gfx_rect_t q = ui_band_guide_rect();
+    touch(q.x + 1, q.y + 1, TOUCH_EVENT_DOWN, 2);
+    touch(q.x + 1, q.y + 1, TOUCH_EVENT_UP, 2);
+    ui_help_page_t page;
+    REQUIRE(ui_router_guide_now(&page));
+    const int x = gap_x();
+    touch(x, 30, TOUCH_EVENT_DOWN, 1);
+    REQUIRE(ui_router_guide_now(&page));
+    wait_ms(1000);
+    REQUIRE(ui_shot_wanted());
+    ui_router_tick(0.016f);
+    REQUIRE(ui_router_guide_now(&page));
+    frame();
+    const gfx_color_t *img = ui_shot_image();
+    REQUIRE(img != NULL);
+    CHECK(memcmp(img, fb, (size_t)W * H * sizeof(gfx_color_t)) == 0);
+    /* A popup that opens with the hold's release takes the guide's place. */
+    ui_router_tick(0.016f);
+    CHECK(!ui_router_guide_now(&page));
+}
+
+TEST_CASE(a_tap_in_the_gap_closes_the_guide_and_takes_nothing)
+{
+    start();
+    const gfx_rect_t q = ui_band_guide_rect();
+    touch(q.x + 1, q.y + 1, TOUCH_EVENT_DOWN, 2);
+    touch(q.x + 1, q.y + 1, TOUCH_EVENT_UP, 2);
+    ui_help_page_t page;
+    REQUIRE(ui_router_guide_now(&page));
+    const int x = gap_x();
+    touch(x, 30, TOUCH_EVENT_DOWN, 1);
+    touch(x, 30, TOUCH_EVENT_UP, 1);
+    CHECK(!ui_router_guide_now(&page));
     wait_ms(1200);
     CHECK(!ui_shot_wanted());
 }
@@ -363,6 +540,16 @@ int main(void)
     RUN(a_lost_event_and_a_change_of_screen_end_it);
     RUN(a_late_frame_does_not_finish_the_hold);
     RUN(a_press_on_chip_tag_guide_or_stop_is_no_screenshot);
+    RUN(a_hold_over_a_bubble_takes_the_bubble_and_then_closes_it);
+    RUN(a_tap_in_the_gap_still_closes_a_bubble_and_takes_nothing);
+    RUN(a_slide_out_closes_a_bubble_at_once_and_takes_nothing);
+    RUN(a_second_contact_over_a_bubble_ends_the_hold_and_closes_it);
+    RUN(stop_under_a_hold_over_a_bubble_acts_on_its_press);
+    RUN(a_press_in_the_gap_beside_another_contact_closes_a_bubble_at_once);
+    RUN(a_lost_touch_event_closes_a_bubble_the_hold_began_over);
+    RUN(a_new_press_between_the_picture_and_its_frame_meets_the_bubble);
+    RUN(a_hold_over_the_guide_takes_the_guide_and_then_closes_it);
+    RUN(a_tap_in_the_gap_closes_the_guide_and_takes_nothing);
     RUN(the_gap_follows_title_and_chips_and_a_screen_without_band_has_none);
     RUN(every_screen_with_the_band_keeps_a_gap_but_at_its_fullest);
     RUN(no_screen_sees_the_hold_and_it_works_over_a_keypad);

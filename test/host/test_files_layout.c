@@ -276,7 +276,7 @@ TEST_CASE(files_home_tag_goes_to_the_menu)
     /* LOGS' strip: the FILES tab, and the menu from there. */
     ui_router_goto(SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_LOGS);
-    router_tap(LOGS_STRIP_X + 331 + 4 + 165,
+    router_tap(LOGS_STRIP_X + 499 + 4 + 249,
                UI_BAND_H + LOGS_STRIP_Y + LOGS_STRIP_H / 2);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
     settle();
