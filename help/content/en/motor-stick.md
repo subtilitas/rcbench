@@ -75,7 +75,7 @@ The stack light's green is lit while a beep is detected, for at least 150ms.
 
 ![A run with the phase tap running](view:motor-stick-tone)
 
-With the phase tap enabled on SETUP, INTERFACES, the page adds a read-only readout: the tap's state, the pitch of its last 8ms window, the counts of beeps lost and not read, and the last 4 beeps with number, length in ms and pitch in Hz. The run still counts its beeps from the supply current.
+With the phase tap enabled on SETUP, SENSORS, the page adds a read-only readout: the tap's state, the pitch of its last 8ms window, the counts of beeps lost and not read, and the last 4 beeps with number, length in ms and pitch in Hz. The run still counts its beeps from the supply current.
 
 | Tap state | Meaning |
 |---|---|

@@ -29,6 +29,22 @@ void sensors_rows_set_status(uint16_t word)
     }
 }
 
+/** @brief The INA228's state as the control task last said; see s_status. */
+static sens_part_t s_i228;
+
+void sensors_rows_set_i228(sens_part_t st)
+{
+    if (st != s_i228) {
+        s_i228 = st;
+        settings_screen_invalidate();
+    }
+}
+
+sens_part_t sensors_rows_i228(void)
+{
+    return s_i228;
+}
+
 /** @brief The limits' marks as the control task last said: bits 0 to 11
  *         the channels, 12 to 15 sense_limit_st_t. */
 static uint16_t s_limits;
@@ -70,20 +86,6 @@ static bool fitted(int a)
     return a >= 0 && a < SET_INA_PARTS && settings_get_bool(SET_INA_FIT(a));
 }
 
-bool sensors_rows_listed(setting_id_t id)
-{
-    if (!settings_sensors_row(id) || id <= SET_INA_FIT_LAST) {
-        return true;
-    }
-    return fitted(settings_sensors_part(id));
-}
-
-int sensors_rows_heading(setting_id_t id)
-{
-    const int a = settings_sensors_part(id);
-    return (a >= 0 && id == SET_INA_W(3 * a) && fitted(a)) ? a : -1;
-}
-
 const char *sensors_rows_title(int a, char *buf, size_t n)
 {
     if (buf == NULL || n == 0u) {
@@ -94,7 +96,7 @@ const char *sensors_rows_title(int a, char *buf, size_t n)
     return buf;
 }
 
-const char *sensors_rows_state(int a)
+const char *sensors_rows_word(sens_part_t st)
 {
     static const ui_text_id_t k_words[SENS_PART_COUNT] = {
         [SENS_PART_UNKNOWN]   = TX_SENS_ST_UNKNOWN,
@@ -109,14 +111,23 @@ const char *sensors_rows_state(int a)
         [SENS_PART_OLD]       = TX_SENS_ST_OLD,
         [SENS_PART_NO_BUS]    = TX_SENS_ST_NO_BUS,
     };
-    const sens_part_t st = sensors_rows_status(a);
     return ui_tr(((unsigned)st < (unsigned)SENS_PART_COUNT)
                      ? k_words[st] : TX_SENS_ST_UNKNOWN);
 }
 
+const char *sensors_rows_state(int a)
+{
+    return sensors_rows_word(sensors_rows_status(a));
+}
+
 gfx_color_t sensors_rows_state_color(int a)
 {
-    switch (sensors_rows_status(a)) {
+    return sensors_rows_word_color(sensors_rows_status(a));
+}
+
+gfx_color_t sensors_rows_word_color(sens_part_t st)
+{
+    switch (st) {
     case SENS_PART_ONLINE:
         return UI_OK;
     case SENS_PART_UNKNOWN:

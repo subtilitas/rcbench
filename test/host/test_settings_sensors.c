@@ -96,9 +96,10 @@ TEST_CASE(every_row_names_its_part_and_has_its_own_key)
     CHECK_EQ(settings_def(SET_INA3221_EN)->cat, SET_CAT_COUNT);
     CHECK_STR_EQ(settings_def(SET_INA3221_MOHM)->key, "ina3221_mohm");
     CHECK(settings_sensors_def(SET_HITEC_RX) == NULL);
-    setting_id_t ids[48];
-    CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 48),
-             SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS);
+    setting_id_t ids[64];
+    /* The 40 INA3221 rows, and the 18 of the other sensors. */
+    CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 64),
+             SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 18);
 }
 
 TEST_CASE(every_watch_option_is_the_page_code)
@@ -464,35 +465,35 @@ TEST_CASE(a_fitted_part_with_every_channel_off_is_dark)
 
 /* ------------------------------------------------------- SETUP's list */
 
-TEST_CASE(sensors_lists_a_fitted_parts_rows_under_its_heading)
+TEST_CASE(a_part_entry_lists_fitted_and_its_rows_when_fitted)
 {
     fresh_model();
-    /* Nothing fitted: the heading and the four FITTED rows. */
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 5);
-    CHECK(sensors_rows_listed(SET_INA_FIT(3)));
-    CHECK(!sensors_rows_listed(SET_INA_W(0)));
-    CHECK(sensors_rows_listed(SET_HITEC_RX));
-    CHECK_EQ(sensors_rows_heading(SET_INA_W(0)), -1);
-    settings_set(SET_INA_FIT(0), 1.0f);
+    sensors_pane_select(SENS_ENTRY_INA3221_0 + 2);
+    /* Not fitted: the FITTED row alone. */
+    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 1);
     settings_set(SET_INA_FIT(2), 1.0f);
-    /* Two parts: a heading and nine rows each. */
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 5 + 2 * 10);
-    CHECK_EQ(sensors_rows_heading(SET_INA_W(0)), 0);
-    CHECK_EQ(sensors_rows_heading(SET_INA_SH(0)), -1);
-    CHECK_EQ(sensors_rows_heading(SET_INA_W(6)), 2);
-    CHECK_EQ(sensors_rows_heading(SET_INA_W(3)), -1);
-    /* The fifth setting listed is 0x40 CH1 WATCHES, under its heading. */
-    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 0), 1);
-    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4), 6);
-    /* By schema index: 0x42 CH1 WATCHES under its heading, 0x41's rows
-     * not listed. */
-    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4 + 18), 16);
-    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 4 + 9), -1);
+    /* Fitted: and 9 rows, no heading. */
+    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 10);
+    setting_id_t rows[SENS_ENTRY_ROWS_MAX];
+    CHECK_EQ(sensors_pane_rows(sensors_pane_selected(), rows,
+                               SENS_ENTRY_ROWS_MAX), 10);
+    CHECK_EQ(rows[0], SET_INA_FIT(2));
+    CHECK_EQ(rows[1], SET_INA_W(6));
+    CHECK_EQ(rows[9], SET_INA_LIM(8));
+    /* By schema index: another part's rows are not listed. */
+    setting_id_t ids[64];
+    const int n = settings_in_category(SET_CAT_SENSORS, ids, 64);
+    for (int i = 0; i < n; ++i) {
+        const int row = settings_screen_row_of(SET_CAT_SENSORS, i);
+        CHECK(row == -1 || sensors_pane_entry_of(ids[i])
+                               == SENS_ENTRY_INA3221_0 + 2);
+    }
     CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, -1), -1);
-    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, 40), -1);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_SENSORS, n), -1);
     char buf[24];
     CHECK_STR_EQ(sensors_rows_title(2, buf, sizeof(buf)), "INA3221 0x42");
     CHECK_STR_EQ(sensors_rows_title(2, NULL, 0u), "");
+    sensors_pane_select(SENS_ENTRY_BUS);
 }
 
 TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
@@ -517,11 +518,11 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     CHECK(!sensors_rows_unheld(SET_INA_FIT(1)));
     CHECK(!sensors_rows_unheld(SET_HITEC_RX));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(3)),
-                 "IOmcu older than 0.22.0: one INA3221, CH1 at 1kHz.");
+                 "IOmcu before 0.22.0: one part, CH1 at 1kHz.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(6)),
-                 "Every channel off. The IOmcu takes no such part.");
+                 "Every channel off. The IOmcu takes none.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(9)),
-                 "The INA228 uses this address. Neither is read.");
+                 "INA228 on this address. Neither is read.");
     sensors_rows_set_status((uint16_t)SENS_PART_REFUSED);
     CHECK(sensors_rows_unheld(SET_INA_W(0)));
     CHECK(settings_screen_unheld(SET_INA_W(0)));
@@ -529,7 +530,7 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     sensors_rows_set_status((uint16_t)SENS_PART_NO_BUS);
     CHECK(sensors_rows_unheld(SET_INA_SH(2)));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_SH(2)),
-                 "Sensor SDA or SCL unset. Set both on INTERFACES.");
+                 "No bus pins. Set them on SENSOR BUS.");
     sensors_rows_set_status(0u);
 }
 
@@ -552,14 +553,14 @@ TEST_CASE(a_limit_the_iomcu_does_not_hold_marks_its_row)
                                        | (1u << 11)));
     CHECK(sensors_rows_unheld(SET_INA_LIM(11)));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(11)),
-                 "IOmcu older than 0.22.0: no limit is judged.");
+                 "IOmcu before 0.22.0: no limit is judged.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(11)),
                  "Not accepted by the IOmcu.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_FIT(0)),
                  "Not accepted by the IOmcu.");
     sensors_rows_set_status((uint16_t)(SENS_PART_DARK << 12));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(11)),
-                 "Every channel off. The IOmcu takes no such part.");
+                 "Every channel off. The IOmcu takes none.");
     /* The row reads OFF at 0 and mA as the page takes them. */
     settings_set(SET_INA_LIM(3), 1250.0f);
     CHECK_EQ(settings_sensors_limit_ma(3), 1250u);
@@ -587,10 +588,7 @@ TEST_CASE(a_limit_the_iomcu_does_not_hold_marks_its_row)
 TEST_CASE(the_scroll_follows_a_list_that_shortens)
 {
     fresh_hub();
-    for (int a = 0; a < SET_INA_PARTS; ++a) {
-        settings_set(SET_INA_FIT(a), 1.0f);
-    }
-    open_category(SET_CAT_SENSORS);
+    open_sensor(SET_INA_FIT(0));
     ui_router_render(&s_c, 0);
     int max = 0;
     (void)settings_screen_scroll(&max);
@@ -619,8 +617,8 @@ TEST_CASE(every_part_state_has_its_words_and_colour)
         { SENS_PART_REFUSED,   "NOT ACCEPTED BY THE IOMCU", UI_C_WARN },
         { SENS_PART_DARK,      "EVERY CHANNEL OFF",         UI_C_WARN },
         { SENS_PART_SAME_ADDR, "INA228 ON THIS ADDRESS",    UI_C_WARN },
-        { SENS_PART_OLD,       "IOMCU OLDER THAN 0.22.0: NOT READ", UI_C_WARN },
-        { SENS_PART_NO_BUS,    "SENSOR SDA OR SCL UNSET",   UI_C_WARN },
+        { SENS_PART_OLD,       "NOT READ, IOMCU < 0.22.0",  UI_C_WARN },
+        { SENS_PART_NO_BUS,    "NO BUS PINS",               UI_C_WARN },
     };
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
         sensors_rows_set_status((uint16_t)((unsigned)k[i].st << 8));
@@ -777,7 +775,7 @@ int main(void)
     RUN(the_one_part_frame_reads_the_channels_on_its_shunt);
     RUN(fast_is_the_lowest_channel_watching_the_target);
     RUN(a_fitted_part_with_every_channel_off_is_dark);
-    RUN(sensors_lists_a_fitted_parts_rows_under_its_heading);
+    RUN(a_part_entry_lists_fitted_and_its_rows_when_fitted);
     RUN(a_part_the_iomcu_does_not_read_marks_its_rows);
     RUN(a_limit_the_iomcu_does_not_hold_marks_its_row);
     RUN(every_part_state_has_its_words_and_colour);

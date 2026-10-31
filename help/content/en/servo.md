@@ -260,4 +260,5 @@ The report is a `LIMITnnn.TXT` of its own in `USER/LOGS`, written whatever REPOR
 
 - [Servo settings](servo-settings.md): type, frame rate, pulses, the sweep, each run's settings and the target.
 - [Servo programmer](servo-programmer.md): PROGRAM's row for KST and Chaservo servos.
-- [Supply](supply.md) and [Interfaces](setup-interfaces.md): the PD mini, the INA3221 and the AS5600.
+- [Supply](supply.md) and [Interfaces](setup-interfaces.md): the PD mini.
+- [Sensors](setup-sensors.md): the INA3221 and the AS5600.

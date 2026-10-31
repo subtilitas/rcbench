@@ -131,14 +131,15 @@ TEST_CASE(the_pd_minis_one_pin_rule_reads_the_pins_in_force)
     (void)ui_board_apply_pins(NULL);
 }
 
-/* The list row of @p id in INTERFACES. */
-static int iface_row(setting_id_t id)
+/* The list row of @p id in its open list. */
+static int list_row(setting_id_t id)
 {
+    const setting_cat_t cat = settings_def(id)->cat;
     setting_id_t ids[64];
-    const int n = settings_in_category(SET_CAT_IFACE, ids, 64);
+    const int n = settings_in_category(cat, ids, 64);
     for (int i = 0; i < n; ++i) {
         if (ids[i] == id) {
-            return settings_screen_row_of(SET_CAT_IFACE, i);
+            return settings_screen_row_of(cat, i);
         }
     }
     return -1;
@@ -149,8 +150,8 @@ TEST_CASE(a_soldered_pin_row_has_no_keys_and_says_so)
     fresh_hub();
     ui_board_set(RBMOD);
     (void)ui_board_apply_pins(NULL);
-    open_category(SET_CAT_IFACE);
-    const int row = iface_row(SET_SENSE_SDA);
+    open_sensor(SET_SENSE_SDA);
+    const int row = list_row(SET_SENSE_SDA);
     CHECK(row >= 0);
     const int before = (int)lrintf(settings_get(SET_SENSE_SDA));
     const gfx_rect_t pl = settings_screen_row_part(row, SETTINGS_ROW_PLUS);

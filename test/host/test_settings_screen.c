@@ -58,7 +58,8 @@ TEST_CASE(plus_and_minus_change_the_setting_under_them)
  */
 TEST_CASE(a_setup_key_notifies_once_per_press)
 {
-    fresh_screen();
+    fresh_hub();
+    open_sensor(SET_INA228_UOHM);
     const int row = row_of(SET_INA228_UOHM);
     CHECK(row >= 0);
 
@@ -181,9 +182,10 @@ TEST_CASE(a_drag_scrolls_instead_of_pressing)
 
 TEST_CASE(holding_a_key_repeats_with_acceleration)
 {
-    fresh_screen();
+    fresh_hub();
+    open_sensor(SET_INA228_UOHM);
     setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    settings_in_category(SET_CAT_SENSORS, ids, 64);
 
     /* INA228 SHUNT: 50..20000 uOhm in steps of 1, which is why holding has
      * to work at all.  ids[] holds it at its row. */
@@ -583,11 +585,11 @@ TEST_CASE(the_encoder_settings_start_off_with_a_12_bit_centre)
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
     const setting_def_t *d = settings_def(SET_ENC_EN);
     CHECK_EQ(d->type, SET_TYPE_BOOL);
-    CHECK_EQ(d->cat, SET_CAT_IFACE);
+    CHECK_EQ(d->cat, SET_CAT_SENSORS);
     CHECK_STR_EQ(settings_label(SET_ENC_EN), "AS5600");
     d = settings_def(SET_ENC_CENTRE);
     CHECK_EQ(d->type, SET_TYPE_INT);
-    CHECK_EQ(d->cat, SET_CAT_IFACE);
+    CHECK_EQ(d->cat, SET_CAT_SENSORS);
     CHECK_EQ((int)d->min, 0);
     CHECK_EQ((int)d->max, 4095);
     settings_set(SET_ENC_CENTRE, 5000.0f);
@@ -769,17 +771,16 @@ TEST_CASE(setup_changes_no_held_setting)
 /* INTERFACES carries five headings, each above the first row of its
  * section; SENSORS one over its FITTED rows and one a fitted part
  * (test_settings_sensors.c); no other list has one. */
-TEST_CASE(interfaces_has_five_headings_above_its_sections)
+TEST_CASE(interfaces_has_two_headings_above_its_sections)
 {
     fresh_hub();
     setting_id_t ids[64];
     const int n = settings_in_category(SET_CAT_IFACE, ids, 64);
-    CHECK_EQ(settings_screen_rows(SET_CAT_IFACE), n + 5);
-    static const setting_id_t first[5] = { SET_INA228_EN, SET_TONE_EN,
-                                           SET_VIBE_EN, SET_PDMINI_EN,
-                                           SET_HITEC_RX };
+    CHECK_EQ(n, 5);
+    CHECK_EQ(settings_screen_rows(SET_CAT_IFACE), n + 2);
+    static const setting_id_t first[2] = { SET_PDMINI_EN, SET_HITEC_RX };
     int prev = -1;
-    for (int h = 0; h < 5; ++h) {
+    for (int h = 0; h < 2; ++h) {
         const int row = settings_screen_row_of(SET_CAT_IFACE,
                                                row_of(first[h]));
         /* The heading stands on the row above, the section's first. */
@@ -787,8 +788,6 @@ TEST_CASE(interfaces_has_five_headings_above_its_sections)
         CHECK_EQ(row, row_of(first[h]) + h + 1);
         prev = row;
     }
-    /* SENSORS with nothing fitted: its heading and four FITTED rows. */
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 1 + SET_INA_PARTS);
     /* Hitec D receive is the last row, alone under PROG PORT. */
     CHECK_EQ(row_of(SET_HITEC_RX), n - 1);
     CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, 0), 1);
@@ -1023,7 +1022,7 @@ TEST_CASE(screen_rotation_draws_the_same_frame_buffer)
 
 int main(void)
 {
-    RUN(interfaces_has_five_headings_above_its_sections);
+    RUN(interfaces_has_two_headings_above_its_sections);
     RUN(the_hitec_receive_row_is_marked_as_the_iomcu_holds_it);
     RUN(the_hitec_receive_help_follows_the_value);
     RUN(a_heading_shows_its_text_and_has_no_keys);

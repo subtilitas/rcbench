@@ -28,10 +28,12 @@ extern "C" {
 typedef enum {
     SET_CAT_APP = 0,     /**< theme, brightness, rotation, language,
                               units, time zone, plot                   */
-    SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
+    SET_CAT_IFACE,       /**< the PD mini and Hitec D receive         */
     SET_CAT_CARD,        /**< the SD card: which logs are written     */
-    SET_CAT_SENSORS,     /**< the INA3221 parts: fitted, shunts, what
-                              each channel watches (settings_sensors.h) */
+    SET_CAT_SENSORS,     /**< what the IOmcu reads: the sensor bus, the
+                              INA228, the INA3221 parts (settings_sensors.h),
+                              the AS5600, the phase tap; vibration and the
+                              optical tacho hold keys and show no row   */
     SET_CAT_ESC,         /**< pack, motor, telemetry, throttle output */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
@@ -433,6 +435,14 @@ bool settings_pdmini_same_pin(void);
 /** Restore one category, or all of them, to the schema defaults: its
  *  values and its strings (settings_text_category()). */
 void settings_reset(setting_cat_t cat);
+/**
+ * @brief Settings back to their defaults, as settings_reset() does for a
+ *        category: a held row stays, an observer hears each change, and only
+ *        an actual change is an edit.
+ * @param ids The settings; NULL resets none.
+ * @param n   How many.
+ */
+void settings_reset_rows(const setting_id_t *ids, int n);
 void settings_reset_all(void);
 
 /** Ids in a category, in schema order.  Returns how many there are. */

@@ -245,11 +245,11 @@ beschrieben.
 
 ![Ein Lauf zählt Punktgruppen, ein Piepton läuft](img/de/motor-stick-run.png)
 
-Ist der Phasenabgriff unter SETUP bei INTERFACES eingeschaltet, ergänzt die
+Ist der Phasenabgriff unter SETUP bei SENSORS eingeschaltet, ergänzt die
 Seite unter der Stromzeile eine reine Anzeige des Abgriffs: seinen Zustand,
 die Tonhöhe seines letzten 8-ms-Fensters, die Zähler der verlorenen
 Pieptöne und der nicht gelesenen Pieptöne, und die letzten vier Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz
-([die Zeilen und Zustände des Abgriffs](Screens-de.md#interfaces-der-phasenabgriff)).
+([die Zeilen und Zustände des Abgriffs](Screens-de.md#sensors-der-phasenabgriff)).
 Der Lauf zählt seine Pieptöne aus dem Netzteilstrom; die Pieptöne
 des Abgriffs benutzt er nicht.
 

@@ -15,9 +15,9 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
 | PANEL | `12 EINSTELLUNGEN` | die Liste von PANEL |
-| INTERFACES | `23 EINSTELLUNGEN` | die Liste von INTERFACES |
+| INTERFACES | `5 EINSTELLUNGEN` | die Liste von [INTERFACES](setup-interfaces.md) |
 | SD CARD | `5 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin, und was ein Browser zum Schreiben braucht |
-| SENSORS | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
+| SENSORS | `STROM, WINKEL, PHASENABGRIFF` | [Sensoren](setup-sensors.md): der Sensorbus, die Strommonitore INA228 und INA3221, der AS5600 und der Phasenabgriff, eine linke Liste von 8 neben den Zeilen des gewählten |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine. Auf dem rbmod-Carrier, dessen Pins verlötet sind, öffnet die Kachel [Layout](layout.md) und zeigt `STECKER UND PINS` |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |
@@ -40,7 +40,7 @@ Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
 
 ![INTERFACES, alles gespeichert](view:setup-interfaces)
 
-Die Liste ist 984px breit und zeigt 6 Zeilen zu 64px. Darunter trägt eine Leiste, 48px hoch, den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
+Die Liste ist 984px breit (754px auf SENSORS) und zeigt 6 Zeilen zu 64px. Darunter trägt eine Leiste, 48px hoch, den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
 
 Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Eine Zahl hat die Tasten `-` und `+`; ein Schalter oder eine Auswahl hat `<` und `>`.
 
@@ -50,7 +50,7 @@ Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Ei
 - **Tastenfeld**: Ein Tippen auf den Wert einer Zahl, zwischen ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste. Es nennt die Einstellung, ihren Bereich und ihre Einheit und nimmt so viele Stellen nach dem Punkt, wie der Schritt hat. OK setzt den Wert wie ein Schritt auf den näheren Schritt: 73% Helligkeit sind 75%. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es offen und nennt dort stattdessen den Grund in der Warnfarbe: `0 oder 5.0 bis 1000.0mΩ` für einen Shunt zwischen 0 und 5,0mΩ, `0 oder 10 bis 32767mA` für eine Stromgrenze zwischen 0 und 10mA, `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für Sensor-SDA, den der Bus nicht haben kann, `Diesen GPIO hält der andere PD-mini-Pin` für den GPIO des anderen PD-mini-Pins. Die nächste Taste bringt den Bereich zurück. ABBRECHEN und das Home-Tag ändern nichts. -1, ein nicht gesetzter Pin, wird mit `-` gesetzt: Das Tastenfeld eines Pins hat keine Taste `+/-`.
 - Ein Finger zur selben Zeit: Ein zweiter Finger tut nichts, solange einer drückt oder scrollt.
 
-Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der offenen Kategorie auf seine Vorgabe zurück.
+Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der offenen Kategorie auf seine Vorgabe zurück; auf SENSORS tut `INA228 ZURÜCKSETZEN` das allein für den gewählten Eintrag.
 
 | Taste | Was sie tut |
 |---|---|
@@ -175,11 +175,11 @@ Für einen Ordner, den die Karte nicht nehmen kann, lässt OK die Tastatur offen
 
 ## INTERFACES
 
-INTERFACES hält den Strommonitor INA228, die Pins des Sensorbusses, den Winkelsensor, den Phasenabgriff, den Vibrationssensor, den optischen Tacho, den PD mini und den Hitec-Empfang. Die Liste hat fünf Überschriften: I2C-BUS, PHASENABGRIFF, BALANCE SENSORS, SUPPLY und PROG-PORT. [Anschlüsse](setup-interfaces.md) beschreibt sie.
+INTERFACES hält den PD mini und den Hitec-Empfang, unter den Überschriften SUPPLY und PROG-PORT. [Anschlüsse](setup-interfaces.md) beschreibt sie.
 
 ## SENSORS
 
-SENSORS hält bis zu vier Strommonitore INA3221: welche bestückt sind, den Shunt jedes Kanals und was jeder Kanal misst. [Sensoren](setup-sensors.md) beschreibt sie.
+SENSORS hält jedes Gerät, das der IOmcu liest, je einen Eintrag in einer Liste links: den Sensorbus, den INA228, die vier INA3221, den AS5600 und den Phasenabgriff. [Sensoren](setup-sensors.md) beschreibt sie.
 
 ## Verwandte Seiten
 

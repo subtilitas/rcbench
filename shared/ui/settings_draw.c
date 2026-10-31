@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 
-#include "sensors_rows.h"
+#include "sensors_pane.h"
 #include "settings.h"
 #include "settings_rows_int.h"
 #include "settings_screen.h"
@@ -31,7 +31,7 @@
  *        moment to write it in (WHEN IDLE), and an attempt the store refused (NOT
  *        SAVED).  WHEN IDLE is seen only while the bench is armed or a transfer is
  *        running; disarmed, the write is taken on the next frame.  SAVE takes the
- *        accent rather than the warning colour: RESET CATEGORY sits beside it and
+ *        accent rather than the warning colour: RESET sits beside it and
  *        two amber buttons in a row read as one control.  NOT SAVED takes the
  *        danger colour, because the values on this screen are not the values the
  *        next boot will load and nothing else on the panel says so.  The same
@@ -75,8 +75,12 @@ static void draw_hub(gfx_canvas_t *c)
             continue;
         }
         char count[40];
-        snprintf(count, sizeof(count), TR(SET_COUNT),
-                 settings_rows_listed((setting_cat_t)t->cat));
+        if (t->line == TX_SET_COUNT) {
+            snprintf(count, sizeof(count), TR(SET_COUNT),
+                     settings_rows_listed((setting_cat_t)t->cat));
+        } else {
+            snprintf(count, sizeof(count), "%s", ui_tr(t->line));
+        }
         ui_tile(c, stg_tile_rect(i), &k_hub_look, t->icon,
                 ui_setting_category((setting_cat_t)t->cat), count, down);
     }
@@ -140,23 +144,12 @@ static void draw_row(gfx_canvas_t *c, int index)
         return;
     }
     const settings_row_t e = stg_row_entry(index);
-    if (e.heading >= 0 || e.part >= 0) {
-        /* The heading stands on the row's lower edge, over a rule; a
-         * part's carries its state on the right (sensors_rows.h). */
+    if (e.heading >= 0) {
+        /* The heading stands on the row's lower edge, over a rule. */
         const gfx_font_t *hf = STG_F_HEAD;
-        char title[24];
-        const char *t = (e.part >= 0)
-                            ? sensors_rows_title(e.part, title, sizeof(title))
-                            : ui_tr(settings_rows_heading_text(e.heading));
+        const char *t = ui_tr(settings_rows_heading_text(e.heading));
         gfx_text(c, r.x + 16, r.y + ROW_H - gfx_text_height(hf, 1) - 6, t,
                  hf, UI_ACCENT, 1);
-        if (e.part >= 0) {
-            const char *st = sensors_rows_state(e.part);
-            const gfx_font_t *sf = STG_F_LABEL;
-            gfx_text(c, PLUS_X + BTN_W - gfx_text_width(sf, st, 1),
-                     r.y + ROW_H - gfx_text_height(sf, 1) - 6, st, sf,
-                     sensors_rows_state_color(e.part), 1);
-        }
         ui_rule(c, r.x, r.y + ROW_H - 2, r.w, UI_EDGE);
         return;
     }
@@ -249,16 +242,47 @@ static void draw_row(gfx_canvas_t *c, int index)
 }
 
 /**
+ * @brief SENSORS' left list: each entry's name and its state under it, the
+ *        selected entry lit, a pressed one with the accent edge.
+ * @param c The canvas.
+ */
+static void draw_entries(gfx_canvas_t *c)
+{
+    for (int e = 0; e < SENS_ENTRY_COUNT; ++e) {
+        const gfx_rect_t r = settings_screen_entry_rect(e);
+        const bool sel = e == sensors_pane_selected();
+        const bool down = s.hit_kind == HIT_ENTRY && s.hit_index == e;
+        gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
+                                 sel ? UI_PANEL_HI : UI_PANEL);
+        gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
+                                 (sel || down) ? UI_ACCENT : UI_EDGE);
+        char name[24], state[48];
+        gfx_color_t ink = UI_TEXT_DIM;
+        (void)sensors_pane_name(e, name, sizeof(name));
+        (void)sensors_pane_state(e, state, sizeof(state), &ink);
+        gfx_text(c, r.x + 12, r.y + ENTRY_NAME_DY, name, STG_F_BODY,
+                 sel ? UI_ACCENT : UI_TEXT, 1);
+        gfx_text(c, r.x + 12, r.y + ENTRY_STATE_DY, state, &gfx_font_8x16, ink,
+                 1);
+    }
+}
+
+/**
  * @brief Draws the list of the open category: a row per setting, clipped to
- *        the pane.
+ *        the pane, on SENSORS beside its left list.
+ * @param c The canvas.
  */
 static void draw_list(gfx_canvas_t *c)
 {
+    const bool sensors = s.cat == SET_CAT_SENSORS;
+    if (sensors) {
+        draw_entries(c);
+    }
     /* The list is clipped rather than masked, so a part-scrolled row is cut
      * cleanly at the pane edge instead of drawing over the strip. */
     gfx_rect_t saved = gfx_clip_get(c);
     gfx_clip_set(c, gfx_rect_make(LIST_X, LIST_Y, LIST_W, LIST_H));
-    /* SENSORS' list changes length with a FITTED edit or a reset: the
+    /* SENSORS' list changes length with an enable row or a reset: the
      * scroll follows before a row is placed. */
     stg_clamp_scroll();
     int n = stg_row_count();
@@ -285,10 +309,18 @@ static void draw_list(gfx_canvas_t *c)
     const char *name = ui_setting_category(s.cat);
     const bool big = gfx_text_width(STG_F_HEAD, name, 1) <= nr.w - 16;
     const gfx_font_t *nf = big ? STG_F_HEAD : STG_F_BODY;
-    gfx_text(c, LIST_X + 16, nr.y + (nr.h - gfx_text_height(nf, 1)) / 2,
+    gfx_text(c, nr.x + 16, nr.y + (nr.h - gfx_text_height(nf, 1)) / 2,
              name, nf, UI_TEXT, 1);
 
-    ui_button_font(c, stg_reset_rect(), TR(SET_RESET), UI_WARN,
+    /* RESET names what it resets on SENSORS: the selected entry alone. */
+    char entry[24], reset[48];
+    if (sensors) {
+        snprintf(reset, sizeof(reset), TR(SET_RESET_ONE),
+                 sensors_pane_name(sensors_pane_selected(), entry, sizeof(entry)));
+    } else {
+        snprintf(reset, sizeof(reset), "%s", TR(SET_RESET));
+    }
+    ui_button_font(c, stg_reset_rect(), reset, UI_WARN,
                    s.hit_kind == HIT_RESET, true, STG_F_LABEL);
 }
 

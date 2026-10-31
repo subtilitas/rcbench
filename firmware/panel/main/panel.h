@@ -303,7 +303,7 @@ static inline supply_wiring_t pdmini_wiring(void)
     return wiring_of(atomic_load(&s_pdmini_wiring));
 }
 
-/* What SETUP INTERFACES and SETUP > SENSORS left for the current monitors
+/* What SETUP > SENSORS left for the current monitors
  * and the phase tap, read by the control task; panel_sense.c publishes the
  * monitors' from the settings observer. */
 void            publish_sense(void);
@@ -806,6 +806,8 @@ void sense_link_service(bool idle, bench_state_t *bench);
  * s_sense_parts, which app_main reads. */
 extern sense_map_link_t s_sense_map;
 extern atomic_uint      s_sense_parts;
+/** @brief The INA228's state in the same words, sense_map_link_i228()'s. */
+extern atomic_uint      s_sense_i228;
 /* SENSE_LIMIT (4.27, panel_limit.c): SETUP > SENSORS' LIMIT rows taken on
  * app_main by publish_limits(), the page served by the control task, and
  * s_sense_limits, sensors_rows_set_limits()'s word, for app_main. */
