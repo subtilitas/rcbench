@@ -70,6 +70,16 @@ static bool button_point(uint8_t gpio, int *bxp, int *byp)
     return button_point_on(BOARD, gpio, bxp, byp);
 }
 
+TEST_CASE(the_protocol_list_covers_the_screen_while_open)
+{
+    fresh();
+    CHECK(!picker_screen()->covered());
+    tap_rect(picker_screen_list_face());
+    CHECK(picker_screen()->covered());
+    tap_rect(picker_screen_list_row(proto_named("SERVO PWM")));
+    CHECK(!picker_screen()->covered());
+}
+
 TEST_CASE(a_button_binds_the_pad_it_is_wired_to)
 {
     /*
@@ -699,6 +709,7 @@ int main(void)
 {
     RUN(an_unconfirmed_binding_takes_no_tap);
     RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
+    RUN(the_protocol_list_covers_the_screen_while_open);
     RUN(a_button_binds_the_pad_it_is_wired_to);
     RUN(every_button_binds_its_own_pin_and_no_other);
     RUN(a_reserved_pin_has_no_button_to_press);

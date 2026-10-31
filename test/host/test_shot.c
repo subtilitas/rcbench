@@ -967,18 +967,27 @@ TEST_CASE(the_preview_is_of_the_picture_that_replaced_the_last)
     ui_router_shot_set_idle(true);
     REQUIRE(ui_shot_open());
     const gfx_color_t *img = ui_shot_image();
-    unsigned r = 0u, g = 0u, b = 0u;
-    for (int j = 0; j < 4; ++j) {
-        for (int i = 0; i < 4; ++i) {
-            const unsigned v = img[j * W + 400 + i];
-            r += v >> 11;
-            g += (v >> 5) & 63u;
-            b += v & 31u;
+    const gfx_color_t *pv = ui_shot_preview();
+    int differ = 0;
+    for (int y = 0; y < UI_SHOT_PREVIEW_H; ++y) {
+        for (int x = 0; x < UI_SHOT_PREVIEW_W; ++x) {
+            unsigned r = 0u, g = 0u, b = 0u;
+            for (int j = 0; j < 4; ++j) {
+                for (int i = 0; i < 4; ++i) {
+                    const unsigned v = img[(y * 4 + j) * W + x * 4 + i];
+                    r += v >> 11;
+                    g += (v >> 5) & 63u;
+                    b += v & 31u;
+                }
+            }
+            const unsigned want = (((r + 8u) / 16u) << 11)
+                                  | (((g + 8u) / 16u) << 5) | ((b + 8u) / 16u);
+            if (pv[y * UI_SHOT_PREVIEW_W + x] != want) {
+                ++differ;
+            }
         }
     }
-    const unsigned want = (((r + 8u) / 16u) << 11) | (((g + 8u) / 16u) << 5)
-                          | ((b + 8u) / 16u);
-    CHECK_EQ(ui_shot_preview()[100], want);
+    CHECK_EQ(differ, 0);
 }
 
 TEST_CASE(the_default_name_is_the_next_number_a_typed_one_stays)
