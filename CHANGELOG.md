@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `protocols/escwire/`: the core for reading and writing ESC settings over the
+  signal wire, for BLHeli_S layout 33, Bluejay layout 208 and AM32 settings
+  revisions 3 and 4; older layouts are shown read-only. It holds protocol A at
+  52us a bit, a guard every outgoing frame passes, identification, field maps
+  and a non-blocking session with read-back. It has no pin driver, link page or
+  screen. Written from a behavioural specification, without access to the
+  firmware sources.
 - Screenshot: a 1000ms hold on the empty part of the band, on any screen with
   the band, takes the frame at once, in any bench state. One picture is held in
   1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes
