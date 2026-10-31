@@ -285,7 +285,8 @@ lists the new file when it is next read.
 | Task | `shot`, priority 0 on core 0, below the render loop. The control task and the heartbeat take no part |
 | Stack of `shot` | lowest 5,116B unused of 7,168B |
 | Runs on a panel | 30 shots in a row: no error, no restart. No FLIP TIMEOUT and no watchdog line. `FM_ERR_BUSY` was not produced in 3 runs with a save and a Wi-Fi page write overlapping: both sides wait and complete |
-| Not run on a panel | no card in the slot, a second contact during a hold, pixel equality of the PNG with a rendered frame |
+| Second contact on a panel | 6 of 6 checks passed: a second contact during a hold takes no picture and its press acts; a contact already down takes no hold; STOP during a hold acts; a hold over the guide with a second contact takes none; the popup waits for all contacts to lift and presses no key; 5 contacts down at once on a list leave no stuck press |
+| Not run on a panel | no card in the slot, pixel equality of the PNG with a rendered frame, a glass contact together with an injector contact |
 
 A file is written as `<name>.PNG.NEW`, then renamed, so a save stopped or a
 card pulled leaves no file of the name. A power cut leaves the `.NEW`; the next

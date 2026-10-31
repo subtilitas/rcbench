@@ -16,8 +16,9 @@
  * page write waiting for the lock (the cause of the difference is not
  * traced), the copy in 25.8 to 31.6ms (median 28.3ms over 54 copies) and the
  * lowest unused stack of the task 5,116B of 7,168B.  30 shots in a row ended
- * with no error and no restart.  Not run on a panel: no card in the slot, a
- * second contact during a hold, pixel equality with a rendered frame.
+ * with no error and no restart.  A second contact during a hold passed 6 of 6
+ * checks.  Not run on a panel: no card in the slot, pixel equality with a
+ * rendered frame, a glass contact together with an injector contact.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -308,7 +308,8 @@ das den Ordner zeigt, listet die neue Datei beim nächsten Lesen.
 | Task | `shot`, Priorität 0 auf Kern 0, unter der Render-Schleife. Control-Task und Heartbeat sind nicht beteiligt |
 | Stack von `shot` | niedrigster Stand 5 116B unbenutzt von 7 168B |
 | Läufe auf einem Panel | 30 Screenshots hintereinander: kein Fehler, kein Neustart. Kein FLIP TIMEOUT und keine Watchdog-Zeile. `FM_ERR_BUSY` trat in 3 Läufen mit überlappendem Sichern und Schreibvorgang der Wi-Fi-Seite nicht auf: Beide Seiten warten und enden |
-| Auf einem Panel nicht gelaufen | keine Karte im Schacht, ein zweiter Kontakt während des Haltens, Pixelgleichheit des PNG mit einem gerenderten Frame |
+| Zweiter Kontakt auf einem Panel | 6 von 6 Prüfungen bestanden: Ein zweiter Kontakt während des Haltens nimmt kein Bild auf, und sein Druck wirkt; ein schon liegender Kontakt beginnt kein Halten; STOP während eines Haltens wirkt; ein Halten über der Hilfe mit einem zweiten Kontakt nimmt keins auf; das Popup wartet, bis alle Kontakte abgehoben sind, und drückt keine Taste; 5 gleichzeitige Kontakte auf einer Liste hinterlassen keinen hängenden Druck |
+| Auf einem Panel nicht gelaufen | keine Karte im Schacht, Pixelgleichheit des PNG mit einem gerenderten Frame, ein Glaskontakt zusammen mit einem Injektor-Kontakt |
 
 Eine Datei wird als `<Name>.PNG.NEW` geschrieben und dann umbenannt: Ein
 abgebrochenes Sichern oder eine gezogene Karte hinterlässt keine Datei dieses
