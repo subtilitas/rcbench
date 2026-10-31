@@ -40,6 +40,8 @@ Der IOmcu liest einen TI INA228 im Strompfad des ESC und bis zu vier TI INA3221 
 | INA228 Shunt | 50 bis 20000uΩ | 200 | der Shunt, über dem er misst |
 | INA228 Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich gesetzt ist |
 
+Shunt und Höchststrom gehören zusammen: Shunt in uΩ mal Höchststrom in A ist höchstens 163840, also 163,84mV über dem Shunt. Jede Zeile nennt, was zur anderen passt: `Bis 300.0A an 200uΩ (163.84mV)`. Jeder Shunt hat einen passenden Höchststrom: bis 546uΩ die vollen 300,0A, bei 1000uΩ 163,8A, bei 20000uΩ 8,1A. Bis 40,96mV misst das Bauteil in Schritten von 78,125nV, darüber in Schritten von 312,5nV.
+
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Sensor-SDA | -1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | der GPIO (General-Purpose Input/Output) des IOmcu für SDA; -1 setzt keinen Bus |

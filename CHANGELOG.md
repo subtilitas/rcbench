@@ -93,6 +93,25 @@ history is in git.
 
 ### Fixed
 
+- A shunt or maximum edited on SETUP > SENSORS with the INA3221 parts on SENSE_MAP
+  reaches the IOmcu. The panel takes the INA228 alone off for the frame. The
+  frame that took both monitors off changed the map's mirror bit, which the
+  page refuses, and every value but the one held read `Not accepted by the
+  IOmcu.`.
+- The band says why the INA228's shunt and maximum are refused:
+  `INA228 shunt x maximum is over 163.84mV: on 1000uΩ up to 163.8A. Check
+  SENSORS.`. A page that keeps its parts because the bank drives says
+  `IOmcu is ARMED and keeps the sensor set-up.`, not that the sensor pins are
+  rejected.
+- INA228 shunt and INA228 max current name, on the row, the highest value that
+  works with the other row: `Up to 300.0A on 200uΩ (163.84mV)`.
+- SERVO LIVE's three readings end 4px above the alert band, so a hold hint
+  leaves them whole. The readings moved up 28px, the dial's shaft up 14px, and
+  the dial's +90 and -90 labels moved left of their ticks.
+- A KST session that goes takes the lines about what it held with it: `All 32
+  registers read.`, `KST004 loaded.`, the edit and load lines. A past write, a
+  saved file, a refusal and a danger line stay.
+
 - FILES' editor header shows the file's size as read when it opens and as
   written after SAVE, not the size listed before the open.
 - The IOmcu's update question is declined by CANCEL and the home tag only. A
