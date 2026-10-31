@@ -55,6 +55,110 @@
 #define DD_Y     44    /**< The protocol list's face: its top. */
 #define DD_H     64    /**< Its height, px (9.6mm). */
 
+/**
+ * @brief The board view's PROG PORT entry (picker_draw.c): the FUNCTION face
+ *        under the list's face, and the rows in the column left of the board.
+ *
+ * The column is the PINS table's, 171px from x 8, so it ends 8px left of any
+ * key a board can place (picker_screen_int.h holds that).  The face is 196 x
+ * 48px (UI_TAP_MIN) right of its FUNCTION label, ending where the list's face
+ * ends; the FUNCTION list opens under them, as wide as both, over the column.
+ * The reason has 100px down to the foot: four
+ * lines of OU_FONT_LABEL 22px apart, or five of OU_FONT_FINE 18px apart.
+ */
+#define OB_COL_X     8
+#define OB_COL_W     171  /**< The column's width, px: 17 cells of the label. */
+#define OB_FN_Y      68   /**< The FUNCTION face's top. */
+#define OB_FN_X      92   /**< Its left edge: 8 cells of label from x 8. */
+#define OB_FN_W      196  /**< Its width, px. */
+#define OB_LIST_W    280  /**< The FUNCTION list's width, px. */
+#define OB_PIN_Y     122  /**< PIN GPIO n's first line, 12 x 24. */
+#define OB_PIN_PITCH 26   /**< Between its two lines, px. */
+#define OB_WATCH_Y   174  /**< WATCHED BY's first of three lines. */
+#define OB_TESTER_Y  242  /**< SERVO TESTER's label. */
+#define OB_PWM_Y     316  /**< PORT PWM's label. */
+#define OB_WHY_Y     392  /**< The reason's first line. */
+#define OB_WHY_FINE  18   /**< Its pitch in OU_FONT_FINE, px. */
+
+_Static_assert(OB_FN_Y + UI_TAP_MIN + 6 <= OB_PIN_Y,
+               "PIN GPIO n starts under the FUNCTION face");
+_Static_assert(OB_WATCH_Y + 3 * OU_LINE <= OB_TESTER_Y,
+               "WATCHED BY's three lines end above SERVO TESTER");
+_Static_assert(OB_TESTER_Y + 22 + UI_TAP_MIN + 4 <= OB_PWM_Y,
+               "SERVO TESTER's segments end above PORT PWM");
+_Static_assert(OB_PWM_Y + 22 + UI_TAP_MIN + 4 <= OB_WHY_Y,
+               "PORT PWM's segments end above the reason");
+_Static_assert(OB_WHY_Y + 3 * OU_LINE + 20 <= OU_FOOT
+                   && OB_WHY_Y + 4 * OB_WHY_FINE + 16 <= OU_FOOT,
+               "the reason's last line ends above the alert band");
+_Static_assert(OB_FN_Y + UI_TAP_MIN + 4 + 5 * UI_TAP_MIN + 8 + 4 <= OU_FOOT,
+               "the FUNCTION list and its shadow end above the alert band");
+
+/**
+ * @brief The board view's UNBIND ALL PINS: under the IN USE table, 168 x
+ *        80px from x 848, standing on the foot; up to four lines of
+ *        OU_FONT_FINE.  The table ends 8px over it while it is offered.
+ */
+#define OB_CLR_X     848
+#define OB_CLR_W     168  /**< Its width, px. */
+#define OB_CLR_H     80   /**< Its height, px. */
+#define OB_CLR_Y     (OU_FOOT - OB_CLR_H) /**< Its top. */
+
+/**
+ * @brief Which view of OUTPUTS is drawn (outputs_view.c): the board, or the
+ *        grid.  The PROG PORT entry's rows and UNBIND ALL PINS move with it;
+ *        a press on them under way is dropped.
+ * @param board true for the board view
+ */
+void outputs_screen_set_board_view(bool board);
+
+/**
+ * @brief Counts every change of what the grid view and the entry draw; the
+ *        board view repaints on a change of it.
+ * @return the count
+ */
+uint32_t outputs_screen_revision(void);
+
+/**
+ * @brief Whether UNBIND ALL PINS is offered: the pages read describe no
+ *        binding and a protocol, not a PROG PORT entry, is shown.
+ * @return true when it is drawn and takes a hold
+ */
+bool outputs_unbind_offered(void);
+
+/**
+ * @brief The key's rectangle in the view drawn.
+ * @return the rectangle
+ */
+gfx_rect_t outputs_unbind_rect(void);
+
+/**
+ * @brief A touch event for the key: a press on it begins the hold, a slide
+ *        off it or a release ends the hold.
+ * @param evt the event
+ * @return true when the event was the key's
+ */
+bool outputs_unbind_event(const touch_event_t *evt);
+
+/**
+ * @brief Draws the key, filling towards danger red as it is held; nothing
+ *        while it is not offered.
+ * @param c canvas drawn on
+ */
+void outputs_unbind_draw(gfx_canvas_t *c);
+
+/**
+ * @brief The word for the last write.
+ * @return the text in the language in force
+ */
+const char *outputs_result_text(void);
+
+/**
+ * @brief The colour of that word.
+ * @return the colour
+ */
+gfx_color_t outputs_result_color(void);
+
 /* The entry's state laid out and dropped, as the screen's reset() does:
  * no entry shown. */
 void outputs_port_reset(void);
@@ -90,6 +194,29 @@ void outputs_port_touched(void);
  * @p open. */
 void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
                        bool open);
+
+/**
+ * @brief Where the entry's controls lie: under the grid's list, or in the
+ *        board view's column.  A press under way is dropped.
+ * @param board true for the board view
+ */
+void outputs_port_set_view(bool board);
+
+/**
+ * @brief The entry's rows in the board view: FUNCTION, PIN and its pad,
+ *        WATCHED BY, SERVO TESTER, PORT PWM and @p why under them.  No PIN
+ *        button: the board's keys are the pin control.
+ * @param c canvas drawn on
+ * @param why the amber line, or NULL or "" for none
+ */
+void outputs_port_draw_board(gfx_canvas_t *c, const char *why);
+
+/**
+ * @brief The open FUNCTION list, over whatever the view drew under it;
+ *        nothing while it is shut.
+ * @param c canvas drawn on
+ */
+void outputs_port_draw_list(gfx_canvas_t *c);
 
 /* Entry @p port's name in the list and on the dropdown: PROG PORT, or
  * PROG PORT n where the list holds several. */

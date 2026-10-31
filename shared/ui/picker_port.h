@@ -1,7 +1,8 @@
-/*
- * PICK A PIN on a programming port: what PROG PORT n in the protocol list
- * makes of the buttons.  picker_screen.c holds the screen; this holds the
- * rules for a port's pin, as the panel can judge them before the IOmcu
+/**
+ * @file
+ * @brief The board view of OUTPUTS on a programming port: what PROG PORT n in
+ * the protocol list makes of the buttons.  picker_screen.c holds the screen;
+ * this holds the rules for a port's pin, as the panel can judge them before the IOmcu
  * does (prog_port.h), and the asks a tap makes.
  *
  * SPDX-License-Identifier: MIT
@@ -52,5 +53,3 @@ bool picker_port_row(const outbind_t *b, uint8_t k, picker_row_t *out);
  *  none picked): listed under PINS, not IN USE. */
 bool picker_port_own_pin(const outbind_t *b, uint8_t index, int port);
 
-/** The count line's text with port @p port picked: its function. */
-void picker_port_count(uint8_t port, char *buf, size_t cap);

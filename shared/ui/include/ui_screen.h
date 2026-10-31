@@ -39,7 +39,6 @@ typedef enum {
     SCREEN_BATTERY,
     SCREEN_BALANCE,
     SCREEN_OUTPUTS,
-    SCREEN_PICKER,
     SCREEN_SUPPLY,
     /* Start-up only, and not reachable from the menu: the bus self-test
      * failed and the panel says so before anything else. */

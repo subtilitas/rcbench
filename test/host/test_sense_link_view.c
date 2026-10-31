@@ -131,7 +131,7 @@ TEST_CASE(a_row_is_unheld_from_its_edit_to_the_acknowledgement)
 }
 
 /*
- * The pins the page holds, for OUTPUTS and PICK A PIN: not known before a
+ * The pins the page holds, for both views of OUTPUTS: not known before a
  * read; none with no part on; the pair once a part is on; the old pair
  * while a move onto pins the page refuses stands; none from an IOmcu with
  * no SENSE page; not known once the link is lost.

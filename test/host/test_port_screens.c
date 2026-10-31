@@ -1,7 +1,7 @@
 /*
  * The programming ports on the screens (protocol 4.26): the view the
  * control task hands them (shared/ui/port_view.c), the OUTPUTS PROG PORT
- * entry (outputs_port_entry.c) and PICK A PIN with a port picked
+ * entry (outputs_port_entry.c) and the board view with a port picked
  * (picker_port.c).
  *
  * Under test: the view not known until the page is read, and an ask
@@ -18,7 +18,7 @@
  * not for a NONE port, the reason lines, every state drawn inside the
  * canvas; the port rules at their edges: no binding, an index past the
  * catalogue, a locked free pin, an interface's pin, each reason line,
- * a function not known, PICK A PIN opened on a port OUTPUTS lacks; a
+ * a function not known, the board view opened on a port OUTPUTS lacks; a
  * NONE port's pin holding no PWM slice for an output on either screen;
  * another port's refused pin held neither as a pin nor as a compare
  * mate.
@@ -426,28 +426,35 @@ TEST_CASE(a_dshot_port_locks_the_tester_segment)
     const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 14u, 15u, 16u };
     CHECK_EQ(outputs_pwm_pins(pins)[1], OUTBIND_NO_GPIO);
     CHECK_EQ(outputs_pwm_pins(pins)[0], 13u);
-    char buf[48];
-    picker_port_count(1u, buf, sizeof(buf));
-    CHECK_STR_EQ(buf, "FUNCTION: DSHOT300");
+    CHECK_STR_EQ(port_view_fn_name(port_view_func(1u)), "DSHOT300");
     render_out();
     v.has_dshot = false;
     v.func[1] = (uint8_t)LINK_PG_FN_NONE;
     port_view_set(&v);
 }
 
-TEST_CASE(the_pin_button_names_the_pin_and_opens_pick_a_pin_on_the_port)
+TEST_CASE(the_pin_row_only_names_the_pin_and_the_board_view_takes_the_port)
 {
     fresh();
     ui_router_goto(SCREEN_OUTPUTS);
     out_port(2u);                             /* no pin */
     render_both();
-    out_tap(PIN_X, PIN_Y);                    /* the router enters it */
+    /* The grid view's PIN row takes no press: no ask, no other screen. */
+    out_tap(PIN_X, PIN_Y);
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    CHECK_EQ(g_ask.n, 0);
+    CHECK_EQ(outputs_screen_port_shown(), 2);
+    /* A workbench's ask opens the board view on the port, once. */
+    outputs_screen_open_on_port(2u);
+    outputs_view_screen()->leave();
+    outputs_view_screen()->enter();
+    CHECK(outputs_view_is_board());
     CHECK_EQ(picker_screen_port_shown(), 2);
     CHECK_EQ(outputs_screen_port_shown(), 2);
-    /* Once: the next visit opens on OFF. */
-    picker_screen()->leave();
-    picker_screen()->enter();
+    outputs_view_screen()->leave();
+    outputs_view_screen()->enter();
     CHECK_EQ(picker_screen_port_shown(), -1);
+    CHECK_EQ(outputs_screen_port_shown(), -1);
     /* A refused pin and an unknown view draw inside the canvas. */
     port_view_t v = *port_view_get();
     v.pin[2] = 40u;
@@ -539,7 +546,7 @@ TEST_CASE(the_tester_takes_port_3_and_the_watch_line_follows_the_map)
     outputs_screen_set_port_watch(LINK_PG_PORTS_MAX, "X");
 }
 
-/* --------------------------------------------------------- PICK A PIN */
+/* --------------------------------------------------------- the board view */
 
 static picker_pin_t pin_of(uint8_t gpio, char *holder, size_t cap)
 {
@@ -553,7 +560,7 @@ static void pk_tap_pin(uint8_t gpio)
     tap_on(picker_screen(), r.x + r.w / 2, r.y + r.h / 2);
 }
 
-/* PICK A PIN on port @p n, picked from its list. */
+/* the board view on port @p n, picked from its list. */
 static void pk_port(uint8_t n)
 {
     picker_screen()->enter();
@@ -579,8 +586,10 @@ TEST_CASE(a_port_picked_ticks_its_pin_and_asks_for_another)
     CHECK_EQ(pin_of(14u, holder, sizeof(holder)), PICKER_PIN_HELD);
     CHECK_STR_EQ(holder, "PROG PORT 2");
     CHECK_EQ(pin_of(20u, NULL, 0), PICKER_PIN_FREE);
+    CHECK_STR_EQ(port_view_fn_name(port_view_func(2u)), "SERVO PWM");
+    /* The FUNCTION face says it; no count line beside it. */
     picker_screen_count(buf, sizeof(buf));
-    CHECK_STR_EQ(buf, "FUNCTION: SERVO PWM");
+    CHECK_STR_EQ(buf, "");
     pk_tap_pin(20u);
     CHECK_EQ(g_ask.n, 1);
     CHECK_EQ(g_ask.port, 0u);
@@ -638,8 +647,7 @@ TEST_CASE(a_servo_pwm_port_is_refused_the_pwm_rules_and_a_none_port_not)
     pk_port(3u);
     CHECK_EQ(pin_of(5u, NULL, 0), PICKER_PIN_FREE);
     CHECK_EQ(pin_of(28u, NULL, 0), PICKER_PIN_FREE);
-    picker_screen_count(buf, sizeof(buf));
-    CHECK_STR_EQ(buf, "FUNCTION: NONE");
+    CHECK_STR_EQ(port_view_fn_name(port_view_func(1u)), "NONE");
     pk_tap_pin(5u);
     CHECK_EQ(g_ask.n, 1);
     CHECK_EQ(g_ask.port, 3u);
@@ -712,11 +720,9 @@ TEST_CASE(the_port_rules_hold_at_their_edges)
     CHECK(picker_port_reason(&b, 2u, (int)outbind_index_of(BOARD, 28u), buf,
                              sizeof(buf)));
     CHECK_STR_EQ(buf, "GPIO 28: SAME PWM CHANNEL AS GPIO 12");
-    picker_port_count(2u, NULL, 0);
-    /* A port not known counts "?". */
+    /* A port not known has no function to name. */
     view_unknown();
-    picker_port_count(2u, buf, sizeof(buf));
-    CHECK_STR_EQ(buf, "FUNCTION: ?");
+    CHECK_EQ(port_view_func(2u), PORT_VIEW_FN_UNKNOWN);
     /* No row past the port's one pin, nor one with no pin. */
     view_four(true);
     picker_row_t row;
@@ -724,9 +730,9 @@ TEST_CASE(the_port_rules_hold_at_their_edges)
     CHECK(!picker_port_row(&b, 1u, &row));
     CHECK(!picker_port_own_pin(&b, gp20, -1));
     CHECK(!picker_port_own_pin(&b, gp20, 4));
-    /* PICK A PIN opened on a port OUTPUTS does not have: on the protocols. */
-    picker_screen_open_on_port(9u);
-    picker_screen()->enter();
+    /* OUTPUTS opened on a port it does not have: on the protocols. */
+    outputs_screen_open_on_port(9u);
+    outputs_view_screen()->enter();
     CHECK_EQ(picker_screen_port_shown(), -1);
     /* The entry's guards: no buffer, no port shown, no canvas. */
     outputs_port_name(0u, NULL, 0);
@@ -800,7 +806,7 @@ int main(void)
     RUN(function_is_locked_where_the_iomcu_would_refuse_it);
     RUN(function_list_offers_dshot_from_4_28_and_takes_every_press);
     RUN(a_dshot_port_locks_the_tester_segment);
-    RUN(the_pin_button_names_the_pin_and_opens_pick_a_pin_on_the_port);
+    RUN(the_pin_row_only_names_the_pin_and_the_board_view_takes_the_port);
     RUN(the_tester_takes_port_3_and_the_watch_line_follows_the_map);
     RUN(a_port_picked_ticks_its_pin_and_asks_for_another);
     RUN(a_servo_pwm_port_is_refused_the_pwm_rules_and_a_none_port_not);

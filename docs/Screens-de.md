@@ -396,7 +396,7 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
   der in 20 x 36 nicht vor den Winkel passt, steht in 16 x 28:
   `DSHOT600 BIDIR` auf einem Feld von 292px. Jedes Feld und jede Zeile
   wählt für sich, die Zeilen einer Liste können sich also unterscheiden.
-  OUTPUTS und PICK A PIN zeichnen ihre niedriger als 56px.
+  OUTPUTS zeichnet seine niedriger als 56px.
 - **Reiter.** Eine Reiterzeile ab 32px Höhe zeigt ihre Beschriftungen im
   Font 10 x 20, wenn jede in der gezeigten Sprache mit 6px Rand je Seite
   auf ihren Reiter passt; sonst in 8 x 16. ROOT, USER und BENCH auf LOGS und
@@ -4209,13 +4209,14 @@ Zeile in der Schrift 10 x 20px.
   `STROM, WINKEL, PHASENABGRIFF`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
-- Drei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-  ([Pin auswählen](#pin-auswählen)) und UPDATES ([Updates](#updates)). Das
-  Band jedes Bildschirms nennt ihn wie seine Kachel, und das Band dieser Seite
-  zeigt SETUP. [WLAN](#wlan) und [Files](#files) sind Tabs der Kachel
-  [LOGS](#logs).
-- 2 Plätze sind frei. Die Seite fasst 9, und der Build scheitert an einem
-  zehnten Eintrag.
+- Zwei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)) und UPDATES
+  ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie seine Kachel,
+  und das Band dieser Seite zeigt SETUP. [WLAN](#wlan) und [Files](#files) sind
+  Tabs der Kachel [LOGS](#logs).
+- LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 3 Plätze
+  frei, auf diesem 2. Die Seite hält 9, und der Build schlägt bei einem zehnten
+  Eintrag fehl.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
   einer beliebigen Kategorie zeigt sich auch hier:
@@ -4246,7 +4247,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, UPDATES | den Kacheln; OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [Pin auswählen](#pin-auswählen)) |
+| OUTPUTS, UPDATES | den Kacheln; OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs)) |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -5290,7 +5291,7 @@ Die Warnung hält nur das Home-Tag:
 
 - Nichts ungespeichert oder ein Speichern angefordert (`BEI STILLSTAND`):
   keine Warnung, das Menü öffnet.
-- OUTPUTS, PICK A PIN und UPDATES öffnen von einer Kachel
+- OUTPUTS und UPDATES öffnen von einer Kachel
   und kehren zu SETUP zurück: keine Warnung auf dem Hin- oder Rückweg.
 - Das Home-Tag über der Warnung ist BLEIBEN.
 - STOP stoppt den Prüfstand und lässt die Warnung, wie sie ist.
@@ -5831,18 +5832,11 @@ einer Zeile ZIEL aus öffnet er auf dem, was diese Werkbank treibt:
 
 ![Outputs](img/de/outputs.png)
 
-Die linke Spalte ist 300px breit: das Label PROTOKOLL, die Fläche der
-Protokoll-Liste (300 x 64px), darunter Anzahl und Grund in 10 x 20 und am
-Fuß der Spalte LETZTER SCHREIBVORGANG mit dem Ergebnis in 20 x 36. Die Pins
-liegen in einem Raster aus 4 Spalten zu 7 Zellen, je 167 x 64px
-(25,1 x 9,6mm), quer 8px und längs 6px auseinander, ab x 324. Eine Zelle
-hält ein Ankreuzfeld von 24px, den Pin-Namen in 16 x 28 (`GPIO 28`, 112px) und darunter, was
-den Pin hält, oder sein Pad in 8 x 16, höchstens 18 Zeichen. Die letzte
-Rasterzeile endet bei Körper-y 492, 4px über dem Alarmband. Die offene
-Protokoll-Liste hält die 8 Protokolle in einer Spalte mit Zeilen von 48px
-(7,2mm) ab der Oberkante der Fläche und die Einträge PROG-PORT in einer
-zweiten Spalte mit denselben Zeilen daneben; mit 4 Einträgen ist die Liste
-600 x 392px groß und endet bei Körper-y 436.
+Ein Bildschirm mit zwei Ansichten einer Bindung. Eine Platine mit Zeichnung
+oder Form bekommt [die Platinenansicht](#die-platinenansicht): Die Platine ist
+die Pin-Steuerung. Eine Platine ohne beides und der
+[rbmod-Carrier](#auf-dem-rbmod-carrier) bekommen
+[die Rasteransicht](#die-rasteransicht).
 
 Ein Pin-Satz je Protokoll, nicht acht unabhängige Slots: ein Prüfstand wird
 protokollweise verkabelt — vier Servokabel, dann ein ESC (Electronic Speed
@@ -5894,7 +5888,7 @@ darunter: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder
 wie ein Defekt, und PPM färbt die ganze Platine grau, sobald irgendetwas
 anderes gebunden ist.
 
-![PPM bei schon gebundenen Servo-Pins](img/de/outputs-full.png)
+![Acht von acht Slots belegt](img/de/outputs-full.png)
 
 Das Protokoll ist eine Liste und kein Stepper: es gibt acht davon, und sich
 an sieben vorbeizuschieben, um das achte zu erreichen, ist keine Auswahl.
@@ -5961,14 +5955,17 @@ Zeilen:
 
 | Zeile | Was sie zeigt und tut |
 | --- | --- |
-| PIN | eine Taste: `PIN GPIO 13`, `PIN WÄHLEN` für einen Port ohne Pin, `PIN GPIO 14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Ein Tippen öffnet [PICK A PIN](#pin-auswählen) auf diesem Port |
+| PIN | `PIN GPIO 13` und sein Pad, `PIN WÄHLEN` in Amber für einen Port ohne Pin, `PIN GPIO 14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Die Tasten der [Platinenansicht](#die-platinenansicht) setzen ihn; die Zeile nimmt keinen Tipp |
 | FUNKTION | ein Auswahlfeld mit dem, was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen öffnet die Liste über den Zeilen darunter: SERVO PWM, KEINE, und bei einem IOmcu ab Protokoll 4.28 DSHOT150, DSHOT300 und DSHOT600. Ein Tippen auf einen Eintrag erbittet ihn beim IOmcu und schließt die Liste; ein Druck neben die Liste schließt sie und erreicht nichts darunter. Das Feld ist vertieft und matt gezeichnet und nimmt kein Tippen an, solange die Zeile gesperrt ist |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSORS überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`: der niedrigste Kanal mit Shunt auf einem bestückten Baustein; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS \| PORT n: das Ziel des Testers ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
 | PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist |
 
-Die Pins rechts sind gezeichnet, wie die Übersicht sie benennt, den
-eigenen Pin des Ports hervorgehoben; kein Pin nimmt dort einen Haken an.
+In der Platinenansicht stehen die Zeilen in der Spalte links der Platine, und
+die Tasten setzen den Pin des Ports. In der Rasteransicht stehen die Zeilen
+unter der Liste, die Zellen sind benannt wie in der Übersicht, der eigene Pin
+des Ports hervorgehoben, und keine Zelle nimmt einen Haken: Eine Platine ohne
+Zeichnung kann den Pin eines Ports nicht wählen.
 
 | Funktion | Der Pin | Pin-Regel |
 | --- | --- | --- |
@@ -5979,7 +5976,7 @@ eigenen Pin des Ports hervorgehoben; kein Pin nimmt dort einen Haken an.
 Port 1 beginnt als SERVO PWM auf GPIO 13, die Ports 2 bis 4 als KEINE ohne
 Pin. Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash mit der
 Bindung der Ausgänge, sie gehören also zur Platine, nicht zum Panel. Ein
-Tippen auf FUNKTION und ein in PICK A PIN getippter Pin sind Bitten: das
+Tippen auf FUNKTION und ein Tippen auf eine Taste der Platinenansicht sind Bitten: das
 Panel schreibt sie bei einem Prüfstand in Ruhe (SAFE, kein Test, kein
 Sweep, keine Sitzung des Servo-Programmierers) und sagt in der gelben
 Zeile, wie die Bitte steht: `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER
@@ -6072,23 +6069,38 @@ gebunden, und die Pins des erreichten kommen zurück, wie sie waren. Ein
 Selektor, der die aktuellen Pins umlenkte, hieße, dass ein zweites Protokoll
 zu binden das erste löst. Beim Betreten zeigt die Liste OFF, die Übersicht.
 Ein gewähltes Protokoll bleibt über das Zurücklesen derselben Platine
-gewählt. Die Liste auf PICK A PIN wählt dasselbe Protokoll.
+gewählt. Beide Ansichten zeigen eine Auswahl.
 
 `DSHOT600 BIDIR` und `DSHOT300 BIDIR` sind die längsten Einträge, 14 Zeichen:
 
 ![Der längste Protokollname in der Liste](img/de/outputs-bidir.png)
+
+### Die Rasteransicht
+
+OUTPUTS auf einer Platine ohne Zeichnung und ohne Form und auf dem
+rbmod-Carrier: Ein geratenes Bild zeigte ebenso überzeugt auf das falsche Pad
+wie auf das richtige.
+
+![Das Raster auf einer Platine ohne Form](img/de/outputs-grid.png)
+
+Die linke Spalte ist 300px breit: das Label PROTOKOLL, die Fläche der
+Protokoll-Liste (300 x 64px), darunter Anzahl und Grund in 10 x 20 und am
+Fuß der Spalte LETZTER SCHREIBVORGANG mit dem Ergebnis in 20 x 36. Die Pins
+liegen in einem Raster aus 4 Spalten zu 7 Zellen, je 167 x 64px
+(25,1 x 9,6mm), quer 8px und längs 6px auseinander, ab x 324. Eine Zelle
+hält ein Ankreuzfeld von 24px, den Pin-Namen in 16 x 28 (`GPIO 28`, 112px) und darunter, was
+den Pin hält, oder sein Pad in 8 x 16, höchstens 18 Zeichen. Die letzte
+Rasterzeile endet bei Körper-y 492, 4px über dem Alarmband. Die offene
+Protokoll-Liste hält die 8 Protokolle in einer Spalte mit Zeilen von 48px
+(7,2mm) ab der Oberkante der Fläche und die Einträge PROG-PORT in einer
+zweiten Spalte mit denselben Zeilen daneben; mit 4 Einträgen ist die Liste
+600 x 392px groß und endet bei Körper-y 436. Darauf wird keine Katze gezeichnet.
 
 Ein Pin, den ein anderes Protokoll hält, wird grau gezeichnet, mit dem Namen
 dieses Protokolls darunter, wo ein freier Pin seine Pad-Nummer zeigt. Das ist
 eine Auswahl, rückgängig gemacht bei diesem Protokoll — anders als ein
 reservierter Pin, der rot und durchgestrichen ist, weil er die Verkabelung ist
 und keine Auswahl.
-
-Vier Servokabel und ein ESC, mit DSHOT300 als bearbeitetem Protokoll. GPIO 5 ist
-angehakt; GPIO 0, GPIO 1, GPIO 2 und GPIO 4 sagen SERVO PWM und lassen sich hier nicht
-anhaken; GPIO 3 und GPIO 8 bis GPIO 12 sind rot, weil der IOmcu sie reserviert:
-
-![Outputs mit Pins, die ein anderes Protokoll hält](img/de/outputs-held.png)
 
 Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
 ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
@@ -6151,7 +6163,7 @@ was auch gewählt war: ein IOmcu, der während des Besuchs zum ersten
 Mal antwortet, oder einer, der gegen eine andere Platine getauscht wird. Ein
 zuvor gewähltes Protokoll geht nicht auf die Platine über, die antwortet;
 der nächste Tipp schreibt also nichts. Ein Druck auf einen Pin zeigt keine
-gedrückte Fläche. PICK A PIN öffnet ebenfalls mit OFF gewählt.
+gedrückte Fläche.
 
 Ein Schreibvorgang ist mit OFF gewählt erreichbar. Bei Pages, die keine
 Bindung beschreiben, lautet die Zeile `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES`,
@@ -6159,15 +6171,9 @@ und `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` gehalten schreibt eine Bindun
 ohne Pin. Dieses Halten ist der Weg aus diesen Pages
 ([Eine Bindung, die nicht bestätigt ist](#eine-bindung-die-nicht-bestätigt-ist)).
 
-GPIO 0 als DSHOT600 BIDIR gebunden, GPIO 1 als MOTOR PWM, GPIO 2 und GPIO 13 als SERVO
-PWM, mit OFF gewählt. Auf diesem Prüfstand hält ein Slot GPIO 13, der
-Programmierport hat also keinen Pin:
+Mit OFF gewählt listet BELEGT jeden gebundenen Pin unter seinem Protokoll:
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](img/de/outputs-off.png)
-
-Mit SERVO PWM gewählt sind auf demselben Prüfstand GPIO 2 und GPIO 13 angehakt und
-zeigen `PAD 4` und `PAD 17`: ein im gewählten Protokoll angehakter Pin zeigt
-seine Pad-Nummer, denn das Protokoll ist das in der Liste genannte.
 
 ### Eine Bindung, die nicht bestätigt ist
 
@@ -6177,12 +6183,12 @@ Lesen hat eines von vier Ergebnissen:
 | Gelesen | Der Bildschirm |
 | --- | --- |
 | beide Pages gelesen, und sie beschreiben eine Bindung, auch eine ohne gebundenen Pin | zeigt sie und nimmt Änderungen an |
-| eine Page wurde nicht gelesen: keine Antwort in 1000ms, eine Ablehnung, oder der Link ist unten | behält die zuletzt gelesene Bindung, abgedunkelt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.` |
+| eine Page wurde nicht gelesen: keine Antwort in 1000ms, eine Ablehnung, oder der Link ist unten | behält die zuletzt gelesene Bindung, jede Taste grau mit `NICHT AUSGELESEN`; in der Rasteransicht abgedunkelt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.` |
 | beide Pages gelesen, und keine Bindung beschreibt sie: ein Pin in zwei Slots, eine Rate oder ein Treiber, den kein Protokolleintrag hat, ein Pin außerhalb der Platine oder reserviert, Kanäle nicht in Slot-Reihenfolge | behält die zuletzt gelesene Bindung, abgedunkelt, mit `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und der Taste `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` |
 | der IOmcu ist eine Platine, für die dieser Build keine Pin-Tabelle hat | zeigt keine Pins |
 
-Im zweiten und dritten Zustand bewirkt ein Tippen auf einen Pin hier und auf
-PICK A PIN nichts, und es wird nichts geschrieben. Ein Haken, der kurz vor dem
+Im zweiten und dritten Zustand bewirkt ein Tippen auf eine Taste oder eine
+Zelle nichts, und es wird nichts geschrieben. Ein Haken, der kurz vor dem
 fehlgeschlagenen Lesen gesetzt wurde, wird zurückgenommen: gezeigt werden die
 zuletzt gelesenen Pins, nicht die zuletzt angetippten. Die Liste öffnet sich
 weiterhin, und eine Wahl ändert weiterhin, welches Protokolls Pins ihre
@@ -6194,7 +6200,8 @@ Lesen, das eine Bindung ergibt, beendet den Zustand.
 
 Pages, die keine Bindung beschreibt, werden durch erneutes Lesen nicht
 lesbar. `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN`, gehalten, schreibt eine Bindung ohne
-Pin; das Zurücklesen zeigt dann nichts gebunden, und Änderungen werden wieder
+Pin: eine Taste von 168 x 80px am Fuß unter BELEGT, deren Tabelle 8px darüber
+endet; das Zurücklesen zeigt dann nichts gebunden, und Änderungen werden wieder
 angenommen. Es ist der einzige Schreibvorgang, den der Bildschirm in diesem
 Zustand sendet. Ein Finger, der die Taste verlässt, ein Abheben vor 2s und
 das Verlassen des Bildschirms brechen das Halten ab.
@@ -6207,17 +6214,13 @@ mittendrin einen Frame verlor, in diesem Zustand bleiben. Ein IOmcu mit
 Pages, die ein anderer Host oder ein älteres Panel in seinem Flash
 hinterlassen hat.
 
-### Pin auswählen
+### Die Platinenansicht
 
-Hinter der Kachel PICK A PIN auf SETUP; das Home-Tag führt dorthin zurück.
-Auf dem [rbmod-Carrier](Carrier-de.md) öffnet die Kachel stattdessen [LAYOUT](#layout).
-Über der offenen Protokollliste schließt das Home-Tag die Liste, ohne zu
-wählen, und der Bildschirm bleibt.
-Dieselbe Bindung,
-die der Outputs-Bildschirm hält. Die Liste beantwortet „welcher GPIO ist
-gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
+OUTPUTS auf einer Platine mit Zeichnung oder Form. Die Liste beantwortet
+„welcher GPIO ist gebunden“; die Platine beantwortet „wo stecke ich das Kabel
+an“.
 
-![Der Pin-Picker](img/de/picker.png)
+![Die Platinenansicht](img/de/outputs.png)
 
 Die Tasten sind nicht die Pads. In jeder Größe, die auf ein Panel mit 1024 x
 600 Pixeln passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
@@ -6233,12 +6236,28 @@ stehen oben links; die Tabelle PINS darunter, 171px breit, Zeilen von
 36px mit dem Pin-Namen in 16 x 28; BELEGT rechts, 168px breit. Beide
 Tabellen stehen 8px frei von der äußersten Taste, die eine 600px breite
 Platine haben kann, auch bei einem Pad direkt an ihrer Kante. Die
-Protokoll-Liste öffnet wie auf Outputs: die Protokolle in einer Spalte mit
+Protokoll-Liste öffnet über der Platine: die Protokolle in einer Spalte mit
 Zeilen von 48px, die Einträge PROG-PORT in einer zweiten Spalte daneben.
+
+LETZTER SCHREIBVORGANG steht rechts der Fläche der Liste, 140 x 56px ab x 296:
+das Label in 8 x 16, das Ergebnis in der größten Schrift von 12 x 24, 10 x 20
+und 8 x 16, die es fasst. Auf einer Platine mit einer Taste dort steht es am
+Fuß der Spalte BELEGT. Auf einem Eintrag PROG-PORT, der keine Bindung schreibt,
+wird es nicht gezeigt.
+
+Mit einem gewählten Eintrag PROG-PORT belegen seine Zeilen die Spalte unter der
+Fläche der Liste: das Label FUNKTION und seine Fläche von 196 x 48px, PIN in
+12 x 24 mit dem Pad darunter, ÜBERWACHT VON auf bis zu 3 Zeilen, SERVO-TESTER
+und PORT-PWM als Segmentzeilen von 171 x 48px und die gelbe Zeile, 4 Zeilen in
+10 x 20 oder 5 in 8 x 16. Die Liste FUNKTION öffnet unter ihrer Fläche, 280px
+breit, über der Spalte und der Platine.
 
 Jeder Besuch zeichnet eine von 8 Katzenzeichnungen, zufällig gewählt, unten
 links oder unten rechts, wo keine Zeile, Taste oder Liste näher als 4px
-kommt; sie nimmt kein Tippen an.
+kommt; sie nimmt kein Tippen an. Die Spalte des Eintrags deckt den linken Platz
+ab, und eine Katze dort wechselt nach rechts, wenn ein Eintrag gewählt wird.
+Eine Katze weicht einer langen Tabelle BELEGT und
+`2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN`. Die Rasteransicht zeichnet keine.
 
 Aktuelle Einschränkung: Der Kopf bleibt, wo er ist, welche Platine es auch
 ist. Auf einer Platine, deren Shape-Page einen Pin in die obere linke Ecke
@@ -6248,7 +6267,8 @@ den Grund (bis x 358). Eine solche Taste wird über sie gezeichnet, und ein
 Druck auf ihren Teil über der Fläche öffnet die Protokoll-Liste, statt den
 Pin zu nehmen. Die Pads des RP2350-CAN in dieser Ecke sind Schienen und
 Masse, also liegt keine seiner Tasten dort
-(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`).
+(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`). Eine Taste
+über der Fläche von FUNKTION nimmt dort den Druck.
 
 Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 
@@ -6263,24 +6283,21 @@ Benachbarte Tasten unterscheiden sich in Höhe und Farbe, wie die Tasten einer
 Klaviatur. Ein reservierter Pin hat keine Taste, denn eine Taste unter einem
 Pin, der nicht gewählt werden kann, sagt, er ließe sich wählen.
 
-Oben links steht die Protokollliste, dasselbe Bedienelement wie auf dem
-Outputs-Bildschirm. Sie nennt das gewählte Protokoll. Ein Tippen öffnet sie
-über der Platine; eine Wahl bestimmt das Protokoll, dem ein Tippen auf eine
-Taste zufällt, auf diesem Bildschirm und auf dem Outputs-Bildschirm, und
-schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
-nichts. Jeder Besuch öffnet mit OFF gewählt, auf diesem Bildschirm und auf
-dem Outputs-Bildschirm von SETUP aus: keine Taste bindet oder löst einen Pin, bis ein
-Protokoll gewählt ist, und die Zeile unter der Liste sagt
+Oben links steht die Protokollliste. Sie nennt das gewählte Protokoll. Ein
+Tippen öffnet sie über der Platine; eine Wahl bestimmt das Protokoll, dem ein
+Tippen auf eine Taste zufällt, und schreibt nichts. Ein Tippen neben die offene
+Liste schließt sie und wählt nichts. Ein Besuch von SETUP aus öffnet mit OFF
+gewählt: keine Taste bindet oder löst einen Pin, bis ein Protokoll gewählt ist,
+und die Zeile unter der Liste sagt
 `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. OFF bleibt über das Zurücklesen
 gewählt, bis ein Protokoll gewählt wird, und ein Wechsel der Platine wählt
 OFF, was auch gewählt war.
 
-![Die Protokollliste im Picker](img/de/picker-protocol.png)
+![Die Protokollliste über der Platine](img/de/outputs-protocol.png)
 
 Unter der Liste steht `N VON 8 PLÄTZEN BELEGT`, gezählt über alle Protokolle:
 die Protokolle teilen sich die 8 Slots der OUTPUTS-Page. Darunter steht in
-Bernstein der Grund, warum keine Taste hinzukommen kann, in den Worten des
-Outputs-Bildschirms:
+Bernstein der Grund, warum keine Taste hinzukommen kann:
 
 | Zeile | Wann |
 | --- | --- |
@@ -6289,10 +6306,11 @@ Outputs-Bildschirms:
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
 | `PROTOKOLL WÄHLEN, DANN PIN TIPPEN` | OFF ist gewählt |
 | `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt |
+| `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` | die Pages beschreiben keine Bindung |
 
 Ohne diese Zeile liest sich eine ganz grau gezeichnete Platine als Fehler.
 
-![Acht von acht Slots belegt](img/de/picker-full.png)
+![Acht von acht Slots belegt](img/de/outputs-full.png)
 
 Links unter PINS stehen die Pins des gewählten Protokolls in
 Kanalreihenfolge, jeder mit der auf der Platine aufgedruckten Padnummer in
@@ -6313,10 +6331,8 @@ Protokoll, dessen gespeicherte Bindung diesen Pin hält, behält ihn, der
 IOmcu gibt dem Port dann keinen Pin, und die Taste gehört diesem
 Protokoll wie jede andere.
 
-Die Liste endet mit den Einträgen PROG-PORT, wie auf dem
-Outputs-Bildschirm, und beide Bildschirme zeigen eine Auswahl: die Taste
-PIN von OUTPUTS öffnet diesen Bildschirm auf ihrem Port. Mit einem
-gewählten Port setzen die Tasten den Pin dieses Ports:
+Die Liste endet mit den Einträgen PROG-PORT. Mit einem gewählten Port setzen
+die Tasten den Pin dieses Ports:
 
 | Taste | Ein Tippen |
 | --- | --- |
@@ -6325,23 +6341,21 @@ gewählten Port setzen die Tasten den Pin dieses Ports:
 | grau, unter dem Namen eines anderen Ports (`PROG-PORT 2`), eines Protokolls oder einer Schnittstelle | ändert nichts |
 | grau, `SLICE VON GPIO 4` oder `KANAL VON GPIO 12`, auf einem SERVO-PWM-Port | ändert nichts; die Zeile sagt `GPIO 5: TEILT PWM-SLICE MIT OUTPUT GPIO 4` oder `GPIO 28: GLEICHER PWM-KANAL WIE GPIO 12` |
 
-Die Zählzeile nennt die Funktion des Ports, `FUNKTION: SERVO PWM`, und PINS
-hält den einen Pin des Ports mit seinem Pad. Ein Port mit KEINE nimmt
-jede freie Taste. Eine Bitte wartet auf einen Prüfstand in Ruhe und sagt
-das in der gelben Zeile, wie auf dem Outputs-Bildschirm. Bevor die Ports
+Ein Port mit KEINE nimmt jede freie Taste. Eine Bitte wartet auf einen Prüfstand
+in Ruhe und sagt das in der gelben Zeile. Bevor die Ports
 gelesen sind, ist jede Taste grau, und die Zeile lautet `PORTS NOCH NICHT
 GELESEN`.
 
-![PROG-PORT 3 gewählt](img/de/picker-port.png)
+![PROG-PORT 3 gewählt](img/de/outputs-port3.png)
 
 Unter SERVO PWM und MOTOR PWM ist auch eine Taste grau, die der IOmcu
-auf einem PWM-Slice ablehnt, wie auf dem Outputs-Bildschirm: GPIO 28, solange
+auf einem PWM-Slice ablehnt: GPIO 28, solange
 der Port GPIO 13 hält, und der Partner eines als PWM gebundenen Pins, GPIO 16
-neben GPIO 0. Ein Tippen darauf ändert nichts und setzt die Zeile des
-Outputs-Bildschirms unter die Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
+neben GPIO 0. Ein Tippen darauf ändert nichts und setzt den Grund unter die
+Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
 `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0`.
 
-![GPIO 13 beim Programmierport](img/de/picker-prog.png)
+![GPIO 13 beim Programmierport](img/de/outputs-prog.png)
 
 Ein Pin, den SETUP > SENSORS oder INTERFACES hält, ist ebenso grau, solange kein
 Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
@@ -6351,7 +6365,7 @@ unter [Outputs](#outputs). Eine in SETUP verstellte Zeile, oder ein Teil,
 das der IOmcu übernimmt oder ablehnt, zeichnet die Tasten und die Tabelle
 im nächsten Frame neu.
 
-![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](img/de/picker-iface.png)
+![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](img/de/outputs-iface.png)
 
 BELEGT führt jeden Pin, den es hält. Der Name eines Protokolls nimmt eine
 Zeile von 20px, ein Pin eine von 28px. Reichen diese über den Fuß der
@@ -6365,12 +6379,12 @@ und die Anschlüsse zuerst, in den kleineren Zeilen. Eine Tabelle, die dann
 noch über den Fuß reicht, hält die Zeilen, die passen, und endet in `+N`,
 N die ausgelassenen Zeilen.
 
-![Die höchste BELEGT-Tabelle](img/de/picker-off.png)
+![Die höchste BELEGT-Tabelle](img/de/outputs-off.png)
 
-Ein Tippen auf eine Taste schreibt die Bindung über dieselbe Folge wie ein
-Haken auf dem Outputs-Bildschirm, mit denselben Ergebnissen. Solange die
+Ein Tippen auf eine Taste schreibt die Bindung sofort, und LETZTER
+SCHREIBVORGANG sagt, was daraus wurde. Solange die
 Bindung nicht bestätigt ist — ein Lesen schlug fehl, oder die Pages
-beschreiben keine Bindung — ist jede Taste grau, `NICHT AUSGELESEN` steht unter
+beschreiben keine Bindung — ist jede Taste grau, der Grund steht unter
 der Zählung, und ein Tippen auf eine Taste ändert nichts und schreibt nichts.
 Die Protokollliste wählt weiterhin.
 
@@ -6379,8 +6393,8 @@ Wo die Pads liegen, kommt von der Platine und nicht vom Panel: die
 an der Pad 1 sitzt. Eine Platine, die das nicht sagt, wird gar nicht
 gezeichnet — ein Bild aus einer geratenen Form zeigt mit derselben
 Überzeugung auf den falschen wie auf den richtigen Pad, und die ganze Aufgabe
-dieses Bildschirms ist es, einen Pad auf der Platine vor dir zu finden. Ihre
-Pins stehen weiterhin auf dem Outputs-Bildschirm.
+der Platinenansicht ist es, einen Pad auf der Platine vor dir zu finden.
+OUTPUTS zeichnet dann die Rasteransicht.
 
 Auch die Zeichnung der Platine kommt von der Platine. Der IOmcu trägt
 eine Zeichnung von sich selbst, die, die der Konfigurator zeichnet: den
@@ -6391,7 +6405,7 @@ Bildschirm ist also angeordnet wie die Platine in deinen Händen. Ohne
 Zeichnung werden Umriss und jedes Pad aus der Form gezeichnet, und die
 Tasten liegen an denselben Stellen:
 
-![Der Picker ohne Zeichnung](img/de/picker-drawn.png)
+![Die Platine ohne Zeichnung](img/de/outputs-shape.png)
 
 Das Panel zeigt eine Zeichnung nur, wenn sie die Platine beschreibt, die das
 Panel bindet: Umriss und jede Pad-Position stimmen mit der Form überein, jedes
@@ -6494,7 +6508,7 @@ ist](#eine-bindung-die-nicht-bestätigt-ist).
 
 ### Layout
 
-LAYOUT liegt hinter der Kachel PICK A PIN auf SETUP, solange der IOmcu
+LAYOUT liegt hinter einer eigenen Kachel auf SETUP, solange der IOmcu
 ein Board mit verlöteten Pins meldet, den
 [rbmod-Carrier](Carrier-de.md). Die Kachel zeigt dort
 `STECKER UND PINS`. Das Home-Tag führt zurück zu SETUP. Der Bildschirm
@@ -6515,7 +6529,7 @@ Die Zeile unter den Spalten lautet
 Ein Protokoll, das unter OUTPUTS gebunden oder gelöst wird, und ein
 Wechsel des Boards zeichnen den Bildschirm neu. Auf einem Board mit
 gewählten Pins zeigt er `DIESES BOARD HAT KEINE VERLÖTETEN PINS.` und
-`SEINE PINS WERDEN UNTER OUTPUTS UND PICK A PIN GEWÄHLT.`.
+`SEINE PINS WERDEN UNTER OUTPUTS GEWÄHLT.`.
 
 ## Auswuchten
 

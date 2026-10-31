@@ -66,7 +66,7 @@ static const ui_tile_look_t k_hub_look = {
 /** @brief Draws the hub: the tiles in a grid, a tile lit while pressed. */
 static void draw_hub(gfx_canvas_t *c)
 {
-    for (int i = 0; i < TILE_COUNT; ++i) {
+    for (int i = 0; i < stg_tile_count(); ++i) {
         const hub_tile_t *t = stg_hub_tile(i);
         const bool down = (s.hit_kind == HIT_TILE && s.hit_index == i);
         if (t->cat < 0) {

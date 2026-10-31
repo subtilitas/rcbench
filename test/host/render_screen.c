@@ -67,6 +67,7 @@
 #include "supply_screen.h"
 #include "supply_link.h"
 #include "kst_rig.h"
+#include "../../shared/ui/outputs_screen_int.h"
 #include "outputs_spots.h"
 #include "servo_spots.h"
 #include "stick_spots.h"
@@ -1964,7 +1965,6 @@ static ui_screen_id_t id_of(const char *name)
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
         { "outputs",    SCREEN_OUTPUTS },
-        { "picker",     SCREEN_PICKER },
         { "busfault",   SCREEN_BUSFAULT },
         { "coproc-update", SCREEN_COPROC_UPDATE },
         { "supply",     SCREEN_SUPPLY },
@@ -3180,7 +3180,7 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        pins held, before the screen is posed.  outputs-rbmod: SERVO PWM
  *        on PWM01 and PWM02, DSHOT300 on PWM04, MOTOR PWM picked and PWM03
  *        tapped, refused for slice 2.  outputs-rbmod-port: PROG PORT 1 on
- *        GP13.  setup-rbmod: the hub with LAYOUT in PICK A PIN's place.
+ *        GP13.  setup-rbmod: the hub with LAYOUT as its last tile.
  *        setup-rbmod-iface: INTERFACES with the PD mini's pins soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
@@ -3262,8 +3262,7 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
  */
 static void pose_outputs_views(ui_screen_id_t id, const char *view)
 {
-    if ((id == SCREEN_OUTPUTS && strcmp(view, "outputs-iface") == 0)
-        || (id == SCREEN_PICKER && strcmp(view, "picker-iface") == 0)) {
+    if (id == SCREEN_OUTPUTS && strcmp(view, "outputs-iface") == 0) {
         /* SETUP > INTERFACES as the bench is wired: the INA228 and the
          * INA3221 on the sensor bus at GP16 and GP17, the PD mini on RX
          * GP18 and TX GP19, the phase tap on GP22. */
@@ -3278,7 +3277,7 @@ static void pose_outputs_views(ui_screen_id_t id, const char *view)
 
     if (strcmp(view, "outputs-port") == 0 || strcmp(view, "outputs-port2") == 0
         || strcmp(view, "outputs-port-dshot") == 0
-        || strcmp(view, "picker-port") == 0) {
+        || strcmp(view, "outputs-port3") == 0) {
         /* A 4.26 IOmcu's four ports: port 1 SERVO PWM on GP13, port 2
          * NONE on GP14, port 3 SERVO PWM and port 4 NONE without a pin. */
         port_view_t v;
@@ -3301,267 +3300,174 @@ static void pose_outputs_views(ui_screen_id_t id, const char *view)
         picker_screen_set_prog_ports(4u, held);
     }
 
-    if (id == SCREEN_OUTPUTS) {
-        /* Four servo leads on the first four free pins: the state an
-         * operator reaches in four taps, and the one worth a picture. */
-        const uint16_t brd = OUTBIND_BOARD_PICO_HEADER;
-        const bool three = strcmp(view, "outputs-bidir") == 0
-                           || strcmp(view, "outputs-off") == 0
-                           || strcmp(view, "outputs-unread") == 0
-                           || strcmp(view, "outputs-odd") == 0;
-        outbind_t b;
-        outbind_init(&b);
-        outbind_set_board(&b, brd);
-        if (three) {
-            /*
-             * Three protocols on one bench: an ESC on GP0 with telemetry,
-             * a second on GP1 by pulse, servos on GP2 and GP13.  The
-             * longest protocol name is in the list for outputs-bidir and
-             * under a pin for the others.
-             */
-            outbind_set_proto(&b, proto_named("SERVO PWM"));
-            (void)outbind_toggle(&b, outbind_index_of(brd, 2));
-            (void)outbind_toggle(&b, outbind_index_of(brd, 13));
-            outbind_set_proto(&b, proto_named("MOTOR PWM"));
-            (void)outbind_toggle(&b, outbind_index_of(brd, 1));
-            outbind_set_proto(&b, proto_named("DSHOT600 BIDIR"));
-            (void)outbind_toggle(&b, outbind_index_of(brd, 0));
-        } else {
-            outbind_set_proto(&b, proto_named("SERVO PWM"));
-            static const uint8_t gp[4] = { 0, 1, 2, 4 };
-            for (unsigned i = 0; i < 4u; ++i) {
-                (void)outbind_toggle(&b, outbind_index_of(brd, gp[i]));
-            }
-        }
-        if (strcmp(view, "outputs-held") == 0) {
-            /*
-             * An ESC beside the servos.  Under DSHOT300 the four servo pins
-             * are drawn greyed with SERVO PWM under them, which is the state
-             * the grid exists to make readable: those pins are taken, by a
-             * choice, and giving them back is done from the protocol that
-             * holds them.
-             */
-            outbind_set_proto(&b, proto_named("DSHOT300"));
-            (void)outbind_toggle(&b, outbind_index_of(brd, 5));
-        }
-        if (strcmp(view, "outputs-prog") == 0) {
-            /* The IOmcu's programming port on GP13: not to be had. */
-            static const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 0xFFu,
-                                                             0xFFu, 0xFFu };
-            outputs_screen_set_prog_ports(1u, pins);
-        }
-        outputs_screen_set_binding(&b);
-        outputs_screen_set_result(OUTPUTS_OK);
-        if (strcmp(view, "outputs-port") == 0) {
-            /* From SERVO's TARGET row with the IOmcu driving the port: on
-             * the PROG PORT entry, the servo PWM pins as the overview
-             * names them, and 0x41 CH2 watching the port. */
-            settings_set(SET_INA_FIT(1), 1.0f);
-            settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
-            sensors_rows_publish_watch();
-            settings_set(SET_SERVO_TARGET, 1.0f);
-            settings_set(SET_SERVO_PORT_PWM, 1.0f);
-            servo_screen_set_drive(1u, 13u, true);
-            ui_router_goto(SCREEN_SERVO);
-            tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
-        } else if (strcmp(view, "outputs-port2") == 0) {
-            /* PROG PORT 2 from the list, SERVO PWM asked of it: the ask
-             * waits for a bench at rest. */
-            port_view_set_ask(render_port_ask);
-            outputs_screen_open_on_port(1u);
-            ui_router_goto(SCREEN_OUTPUTS);
-            (void)port_view_ask(1u, PROG_LINK_ASK_FUNC,
-                                (uint16_t)LINK_PG_FN_SERVO_PWM);
-        } else if (strcmp(view, "outputs-port-dshot") == 0) {
-            /* PROG PORT 2 from the list, its FUNCTION face tapped. */
-            outputs_screen_open_on_port(1u);
-            ui_router_goto(SCREEN_OUTPUTS);
-            tap(16 + 3 + 130, UI_BAND_H + 154 + 20 + 18);
-        } else {
-            ui_router_goto(SCREEN_OUTPUTS);
-        }
-        if (strcmp(view, "outputs-off") != 0
-            && strcmp(view, "outputs-port") != 0
-            && strcmp(view, "outputs-port2") != 0
-            && strcmp(view, "outputs-port-dshot") != 0
-            && strcmp(view, "outputs-iface") != 0) {
-            /* Every visit opens on the overview, OFF; the views of a
-             * protocol being edited pick it, as the operator does. */
-            outputs_screen_select(b.proto);
-        }
-        if (strcmp(view, "outputs-full") == 0) {
-            /*
-             * PPM with servo pins already bound: the whole board greyed and
-             * a line saying why. An operator met this state and could not
-             * tell it from a fault.
-             */
-            outbind_set_proto(&b, proto_named("PPM"));
-            outputs_screen_set_binding(&b);
-        }
-        if (strcmp(view, "outputs-prog") == 0) {
-            /* GP28 tapped: slice 6 is the port's, so the line under the
-             * protocol says why the cell is held.  Its cell from
-             * outputs_spots.h, by its catalogue entry. */
-            const int gp28 = (int)outbind_index_of(brd, 28u);
-            touch_event_t d = { TOUCH_EVENT_DOWN,
-                                { 0, (int16_t)(OU_CELL_X(gp28) + 60),
-                                  (int16_t)(UI_BAND_H + OU_CELL_Y(gp28)
-                                            + 26), 40 }, 0u };
-            touch_event_t u = d;
-            u.type = TOUCH_EVENT_UP;
-            ui_router_event(&d);
-            ui_router_event(&u);
-        }
-        if (strcmp(view, "outputs-protocol") == 0) {
-            /* Tap the dropdown open. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, UI_BAND_H + 70, 40 }, 0u };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, UI_BAND_H + 70, 40 }, 0u };
-            ui_router_event(&d);
-            ui_router_event(&u);
-        }
-        if (strcmp(view, "outputs-unread") == 0
-            || strcmp(view, "outputs-odd") == 0) {
-            /*
-             * The last binding read, after a read that failed
-             * (outputs-unread) or that gave pages no binding describes
-             * (outputs-odd): dimmed, with the reason, and for the second
-             * the key that unbinds every pin.
-             */
-            static bind_reading_t r;
-            outbind_init(&r.bind);
-            outbind_set_board(&r.bind, brd);
-            r.state = (strcmp(view, "outputs-odd") == 0) ? BIND_READ_ODD
-                                                         : BIND_READ_NONE;
-            outputs_screen_set_reading(&r);
-            outputs_screen_set_result(OUTPUTS_NO_LINK);
-        }
+    if (id != SCREEN_OUTPUTS) {
+        return;
     }
-}
-
-/**
- * @brief The PICKER's views: the list, the port and the tap on a pin.
- * @param id   The screen of the shot.
- * @param view The golden's name.
- */
-static void pose_picker_views(ui_screen_id_t id, const char *view)
-{
-    if (id == SCREEN_PICKER) {
-        /* The first cat pose wherever it fits, so every shot is
-         * repeatable; picker-cat-N draws pose N. */
-        ui_cats_force(strncmp(view, "picker-cat-", 11) == 0
-                          ? (int)strtol(view + 11, NULL, 10) : 0);
-        /*
-         * The same bench the outputs screen is posed with: four servo leads
-         * and an ESC, so the picture shows a pin this protocol holds, pins
-         * another one does, and the reserved ones crossed on the pad.
-         */
-        outbind_t b;
-        outbind_init(&b);
-        outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
-        outbind_set_proto(&b, 1u);                 /* SERVO PWM */
+    /* The first cat pose wherever it fits, so every shot is repeatable;
+     * outputs-cat-N draws pose N. */
+    ui_cats_force(strncmp(view, "outputs-cat-", 12) == 0
+                      ? (int)strtol(view + 12, NULL, 10)
+                  : strcmp(view, "outputs-port") == 0 ? UI_CAT_RANDOM : 0);
+    const uint16_t brd = OUTBIND_BOARD_PICO_HEADER;
+    if (strcmp(view, "outputs-grid") == 0) {
+        /* A board that reports pins and neither a shape nor a drawing: the
+         * grid view, three servo leads on it. */
+        const uint16_t learned = 4242u;
+        uint16_t cat[LINK_CAT_COUNT] = { 0 };
+        for (unsigned i = 0; i < 12u && i < LINK_CAT_COUNT; ++i) {
+            cat[i] = LINK_CAT_OF(i, i + 1u, LINK_PIN_FREE);
+        }
+        (void)outbind_learn_board(learned, cat);
+        outbind_t g;
+        outbind_init(&g);
+        outbind_set_board(&g, learned);
+        outbind_set_proto(&g, proto_named("SERVO PWM"));
+        for (uint8_t i = 0; i < 3u; ++i) {
+            (void)outbind_toggle(&g, i);
+        }
+        outputs_screen_set_binding(&g);
+        outputs_screen_set_result(OUTPUTS_OK);
+        ui_router_goto(SCREEN_OUTPUTS);
+        outputs_screen_select(g.proto);
+        return;
+    }
+    const bool three = strcmp(view, "outputs-bidir") == 0
+                       || strcmp(view, "outputs-unread") == 0
+                       || strcmp(view, "outputs-odd") == 0;
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, brd);
+    if (three) {
+        /* Three protocols on one bench: an ESC on GP0 with telemetry, a
+         * second on GP1 by pulse, servos on GP2 and GP13.  The longest
+         * protocol name is in the list for outputs-bidir. */
+        outbind_set_proto(&b, proto_named("SERVO PWM"));
+        (void)outbind_toggle(&b, outbind_index_of(brd, 2));
+        (void)outbind_toggle(&b, outbind_index_of(brd, 13));
+        outbind_set_proto(&b, proto_named("MOTOR PWM"));
+        (void)outbind_toggle(&b, outbind_index_of(brd, 1));
+        outbind_set_proto(&b, proto_named("DSHOT600 BIDIR"));
+        (void)outbind_toggle(&b, outbind_index_of(brd, 0));
+    } else if (strcmp(view, "outputs-off") == 0) {
+        /* The tallest IN USE table: OFF picked, the programming port on GP13,
+         * and the 8 slots over the 6 protocols that take one channel a pin. */
+        static const struct { const char *proto; uint8_t gp; } k[8] = {
+            { "SERVO PWM", 0 },      { "SERVO PWM", 4 },
+            { "MOTOR PWM", 5 },      { "MOTOR PWM", 7 },
+            { "DSHOT300", 6 },       { "DSHOT600", 14 },
+            { "DSHOT300 BIDIR", 1 }, { "DSHOT600 BIDIR", 2 },
+        };
+        for (unsigned i = 0; i < 8u; ++i) {
+            outbind_set_proto(&b, proto_named(k[i].proto));
+            (void)outbind_toggle(&b, outbind_index_of(brd, k[i].gp));
+        }
+    } else {
+        /* Three servo leads and an ESC: a pin this protocol holds, a pin
+         * another one does, and the reserved ones crossed on the pad. */
+        outbind_set_proto(&b, proto_named("SERVO PWM"));
         static const uint8_t gp[3] = { 0, 1, 2 };
         for (unsigned i = 0; i < 3u; ++i) {
-            (void)outbind_toggle(&b,
-                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, gp[i]));
+            (void)outbind_toggle(&b, outbind_index_of(brd, gp[i]));
         }
         outbind_set_proto(&b, proto_named("DSHOT300"));
-        (void)outbind_toggle(&b,
-            outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 6));
-        if (strcmp(view, "picker-full") == 0) {
-            /*
-             * Eight of eight: two more servo leads and two more ESCs, so
-             * every free key is grey and the reason line says why.
-             */
-            (void)outbind_toggle(&b,
-                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 7));
-            (void)outbind_toggle(&b,
-                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 14));
+        (void)outbind_toggle(&b, outbind_index_of(brd, 6));
+        if (strcmp(view, "outputs-full") == 0) {
+            /* Eight of eight: every free key grey and the line says why. */
+            (void)outbind_toggle(&b, outbind_index_of(brd, 7));
+            (void)outbind_toggle(&b, outbind_index_of(brd, 14));
             outbind_set_proto(&b, proto_named("SERVO PWM"));
-            (void)outbind_toggle(&b,
-                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 4));
-            (void)outbind_toggle(&b,
-                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 5));
-        }
-        if (strcmp(view, "picker-off") == 0) {
-            /*
-             * The tallest IN USE table: OFF picked, so every bound pin is
-             * another protocol's, the programming port on GP13, and the 8
-             * slots over the 6 protocols that take one channel a pin.  GP1
-             * and GP2 go from SERVO PWM to the two BIDIR protocols.
-             */
-            static const struct { const char *proto; uint8_t gp; } move[8] = {
-                { "SERVO PWM", 1 },      { "SERVO PWM", 2 },
-                { "SERVO PWM", 4 },      { "MOTOR PWM", 5 },
-                { "MOTOR PWM", 7 },      { "DSHOT600", 14 },
-                { "DSHOT300 BIDIR", 1 }, { "DSHOT600 BIDIR", 2 },
-            };
-            for (unsigned i = 0; i < 8u; ++i) {
-                outbind_set_proto(&b, proto_named(move[i].proto));
-                (void)outbind_toggle(&b,
-                    outbind_index_of(OUTBIND_BOARD_PICO_HEADER, move[i].gp));
-            }
+            (void)outbind_toggle(&b, outbind_index_of(brd, 4));
+            (void)outbind_toggle(&b, outbind_index_of(brd, 5));
         }
         outbind_set_proto(&b, proto_named("SERVO PWM"));
-        if (strcmp(view, "picker-off") == 0) {
-            outbind_set_proto(&b, 0u);
+    }
+    if (strcmp(view, "outputs-prog") == 0 || strcmp(view, "outputs-off") == 0
+        || strcmp(view, "outputs-iface") == 0) {
+        /* The IOmcu's programming port on GP13: drawn held, and named first
+         * under IN USE. */
+        static const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 0xFFu, 0xFFu,
+                                                         0xFFu };
+        outputs_screen_set_prog_ports(1u, pins);
+        picker_screen_set_prog_ports(1u, pins);
+    }
+    picker_screen_set_binding(&b);
+    outputs_screen_set_binding(&b);
+    outputs_screen_set_result(OUTPUTS_OK);
+    /* With the IOmcu's drawing unless the view asks for the board from its
+     * shape: an IOmcu that serves no drawing is what the shape page covers. */
+    if (strcmp(view, "outputs-shape") == 0) {
+        (void)picker_screen_set_drawing(NULL, 0u, NULL);
+    } else {
+        (void)picker_screen_set_drawing(board_drawing_rp2350_can,
+                                        board_drawing_rp2350_can_bytes, NULL);
+    }
+    if (strcmp(view, "outputs-port") == 0) {
+        /* From SERVO's TARGET row with the IOmcu driving the port: on the
+         * PROG PORT entry, 0x41 CH2 watching the port. */
+        settings_set(SET_INA_FIT(1), 1.0f);
+        settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
+        sensors_rows_publish_watch();
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        settings_set(SET_SERVO_PORT_PWM, 1.0f);
+        servo_screen_set_drive(1u, 13u, true);
+        ui_router_goto(SCREEN_SERVO);
+        tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
+    } else if (strcmp(view, "outputs-port2") == 0) {
+        /* PROG PORT 2 from the list, SERVO PWM asked of it: the ask waits
+         * for a bench at rest. */
+        port_view_set_ask(render_port_ask);
+        outputs_screen_open_on_port(1u);
+        ui_router_goto(SCREEN_OUTPUTS);
+        (void)port_view_ask(1u, PROG_LINK_ASK_FUNC,
+                            (uint16_t)LINK_PG_FN_SERVO_PWM);
+    } else if (strcmp(view, "outputs-port-dshot") == 0) {
+        /* PROG PORT 2 from the list, its FUNCTION face tapped. */
+        outputs_screen_open_on_port(1u);
+        ui_router_goto(SCREEN_OUTPUTS);
+        tap(OB_FN_X + 100, UI_BAND_H + OB_FN_Y + 24);
+    } else if (strcmp(view, "outputs-port3") == 0) {
+        /* PROG PORT 3, a SERVO PWM port without a pin. */
+        outputs_screen_open_on_port(2u);
+        ui_router_goto(SCREEN_OUTPUTS);
+    } else {
+        ui_router_goto(SCREEN_OUTPUTS);
+        /* Every visit opens on the overview, OFF; the views of a protocol
+         * being edited pick it, as the operator does. */
+        if (strcmp(view, "outputs-off") != 0
+            && strcmp(view, "outputs-iface") != 0) {
+            outputs_screen_select(b.proto);
         }
-        picker_screen_set_binding(&b);
-        if (strcmp(view, "picker-prog") == 0
-            || strcmp(view, "picker-off") == 0
-            || strcmp(view, "picker-iface") == 0) {
-            /* The IOmcu's programming port on GP13: drawn held, and
-             * named first under IN USE. */
-            picker_screen_set_prog_pin(13u);
+    }
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    if (strcmp(view, "outputs-prog") == 0) {
+        /* GP28 tapped: slice 6 is the port's, so the line under the count
+         * says why it is held. */
+        gfx_rect_t k;
+        if (picker_screen_button_rect(outbind_index_of(brd, 28u), &k)) {
+            tap(k.x + k.w / 2, UI_BAND_H + k.y + k.h / 2);
         }
-        /*
-         * With the IOmcu's drawing unless the view asks for the board
-         * from its shape: an IOmcu that serves no drawing is the case
-         * the shape page exists to cover, and it is worth a view of its own.
-         */
-        if (strcmp(view, "picker-drawn") == 0) {
-            (void)picker_screen_set_drawing(NULL, 0u, NULL);
-        } else {
-            (void)picker_screen_set_drawing(board_drawing_rp2350_can,
-                                            board_drawing_rp2350_can_bytes,
-                                            NULL);
-        }
-        ui_router_goto(SCREEN_PICKER);
-        /* Every visit opens on OFF; the protocol is picked after, as the
-         * panel's follow of the Outputs screen brings one. */
-        if (strcmp(view, "picker-off") != 0) {
-            picker_screen_follow(b.proto, picker_screen_editable());
-        }
-        if (strcmp(view, "picker-prog") == 0) {
-            /* GP28 tapped: slice 6 is the port's, so the line under the
-             * count says why it is held. */
-            gfx_rect_t k;
-            if (picker_screen_button_rect(
-                    outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 28u), &k)) {
-                const int16_t kx = (int16_t)(k.x + k.w / 2);
-                const int16_t ky = (int16_t)(k.y + k.h / 2 + UI_BAND_H);
-                touch_event_t d = { TOUCH_EVENT_DOWN, { 0, kx, ky, 40 }, 0u };
-                touch_event_t u = { TOUCH_EVENT_UP,   { 0, kx, ky, 40 }, 0u };
-                ui_router_event(&d);
-                ui_router_event(&u);
-            }
-        }
-        if (strcmp(view, "picker-port") == 0) {
-            /* PROG PORT 3 picked, as from the OUTPUTS entry's PIN
-             * button. */
-            picker_screen_open_on_port(2u);
-            ui_router_goto(SCREEN_OUTPUTS);
-            ui_router_goto(SCREEN_PICKER);
-        }
-        if (strcmp(view, "picker-protocol") == 0) {
-            /* The protocol list tapped open over the board. */
-            const gfx_rect_t f = picker_screen_list_face();
-            const int16_t fx = (int16_t)(f.x + f.w / 2);
-            const int16_t fy = (int16_t)(f.y + f.h / 2 + UI_BAND_H);
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, fx, fy, 40 }, 0u };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, fx, fy, 40 }, 0u };
-            ui_router_event(&d);
-            ui_router_event(&u);
-        }
+    }
+    if (strcmp(view, "outputs-protocol") == 0) {
+        /* The protocol list tapped open over the board. */
+        const gfx_rect_t f = picker_screen_list_face();
+        tap(f.x + f.w / 2, UI_BAND_H + f.y + f.h / 2);
+    }
+    if (strcmp(view, "outputs-unread") == 0
+        || strcmp(view, "outputs-odd") == 0) {
+        /* The last binding read, after a read that failed (outputs-unread)
+         * or that gave pages no binding describes (outputs-odd): the keys
+         * dimmed, with the reason, and for the second the key that unbinds
+         * every pin. */
+        static bind_reading_t r;
+        outbind_init(&r.bind);
+        outbind_set_board(&r.bind, brd);
+        r.state = (strcmp(view, "outputs-odd") == 0) ? BIND_READ_ODD
+                                                     : BIND_READ_NONE;
+        outputs_screen_set_reading(&r);
+        outputs_screen_set_result(OUTPUTS_NO_LINK);
+        picker_screen_follow(outputs_screen_binding()->proto,
+                             outputs_screen_editable());
     }
 }
 
@@ -4155,7 +4061,6 @@ int main(int argc, char **argv)
     if (!pose_carrier_views(id, view)) {
         pose_outputs_views(id, view);
     }
-    pose_picker_views(id, view);
     pose_servo_views(id, view);
 
     ui_bench_status_t st = k_status;

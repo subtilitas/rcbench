@@ -176,8 +176,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_BATTERY:  return battery_screen();
     case SCREEN_LOGS:     return log_viewer_screen();
     case SCREEN_SETUP:    return settings_screen();
-    case SCREEN_OUTPUTS:  return outputs_screen();
-    case SCREEN_PICKER:   return picker_screen();
+    case SCREEN_OUTPUTS:  return outputs_view_screen();
     case SCREEN_SUPPLY:   return supply_screen();
     case SCREEN_BUSFAULT: return busfault_screen();
     case SCREEN_WIFI:     return wifi_screen();

@@ -57,16 +57,16 @@ mode                   lines/frame     traffic
 ----------------------------------------------
 frame                        9,744    1218 KiB
 frame-idle                       0       0 KiB
-held                         5,128     641 KiB
+held                         5,258     657 KiB
 sim                         13,435    1679 KiB
 throttle                    11,629    1454 KiB
 chrome                      51,486    6436 KiB
 overview                         1       0 KiB
 overview-guide                 356      44 KiB
-servo                        2,445     306 KiB
-servo-grip                     653      82 KiB
-servo-current                3,332     416 KiB
-supply                       9,754    1219 KiB
+servo                        2,157     270 KiB
+servo-grip                     529      66 KiB
+servo-current                3,214     402 KiB
+supply                       9,959    1245 KiB
 supply-chrome               47,491    5936 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
@@ -76,12 +76,12 @@ battery                          0       0 KiB
 balance                          0       0 KiB
 motor-stick                  1,619     202 KiB
 balance-sim                  3,209     401 KiB
-settings-sim                 3,088     386 KiB
+settings-sim                 3,196     400 KiB
 battery-sim                  3,093     387 KiB
 analyser-chrome             61,028    7628 KiB
-logs-chrome                 27,126    3391 KiB
-settings-chrome             33,645    4206 KiB
-settings-list-chrome        36,442    4555 KiB
+logs-chrome                 26,041    3255 KiB
+settings-chrome             35,964    4496 KiB
+settings-list-chrome        37,188    4648 KiB
 battery-chrome              58,182    7273 KiB
 balance-chrome              63,470    7934 KiB
 motor-stick-chrome          41,546    5193 KiB
@@ -332,7 +332,7 @@ fill and a write-back for every line. The time of one clear, set as
 | `battery` | BATTERY | not measured | not measured | not measured | not measured | not measured |
 | `balance` | BALANCE | not measured | not measured | not measured | not measured | not measured |
 | `motor-stick` | ESC STICK open on MOTOR & ESC > PROGRAM | not measured | not measured | not measured | not measured | not measured |
-| `picker` | PICK A PIN | not measured | not measured | not measured | not measured | not measured |
+| `picker` | OUTPUTS, board view | not measured | not measured | not measured | not measured | not measured |
 | `wifi` | WI-FI with ACCESS POINT on | not measured | not measured | not measured | not measured | not measured |
 | `wifi-keys` | WI-FI > CHOOSE HOME NETWORK, the password keyboard, a key typed every second | not measured | not measured | not measured | not measured | not measured |
 
@@ -438,7 +438,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  277 such
+  284 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its

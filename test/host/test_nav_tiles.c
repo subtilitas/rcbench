@@ -5,9 +5,8 @@
  * languages, and every screen's title.
  *
  * Cases:
- * - the_setup_tiles_open_the_outputs_the_picker_and_updates
+ * - the_setup_tiles_open_the_outputs_and_updates
  * - the_band_titles_match_the_tiles
- * - wifi_returns_to_the_screen_that_opened_it
  * - wifi_goes_home_over_stop_and_link_loss
  * - the_home_tag_climbs_one_level_from_every_screen
  * - the_home_tag_climbs_the_stick_session_one_level_at_a_time
@@ -53,18 +52,17 @@ static void tap_home(void)
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
  * can reach.  The table's order, row by row: PANEL, INTERFACES and SD
- * CARD; SENSORS, OUTPUTS and PICK A PIN; UPDATES.  ESC / BENCH is no tile:
- * its rows are MOTOR & ESC > SETTINGS'.  WI-FI and FILES are no tiles either:
- * they are tabs of LOGS' strip.
+ * CARD; SENSORS and OUTPUTS; UPDATES, with room for the carrier's LAYOUT.
+ * ESC / BENCH is no tile: its rows are MOTOR & ESC > SETTINGS'.  WI-FI and
+ * FILES are no tiles either: they are tabs of LOGS' strip.
  */
-TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_and_updates)
+TEST_CASE(the_setup_tiles_open_the_outputs_and_updates)
 {
     static const struct {
         ui_screen_id_t id;
         const char    *title;
     } k_tools[] = {
-        { SCREEN_OUTPUTS, "OUTPUTS" }, { SCREEN_PICKER, "PICK A PIN" },
-        { SCREEN_UPDATES, "UPDATES" },
+        { SCREEN_OUTPUTS, "OUTPUTS" }, { SCREEN_UPDATES, "UPDATES" },
     };
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
@@ -498,7 +496,7 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
 }
 
 /*
- * SUPPLY, WI-FI, OUTPUTS and PICK A PIN through the router's home tag:
+ * SUPPLY, WI-FI and OUTPUTS in both views through the router's home tag:
  * over what the screen opened the tag closes it, one level a tap, and the
  * screen stays; with nothing open it goes to the screen's parent, for
  * OUTPUTS the workbench whose TARGET row opened it.  SUPPLY's SETTINGS is
@@ -521,7 +519,7 @@ TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
         { SCREEN_OUTPUTS, SCREEN_MOTOR,    open_outputs_list,    1 },
         { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list,    1 },
         { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list_on_port, 1 },
-        { SCREEN_PICKER,  SCREEN_SETUP,    open_picker_list,     1 },
+        { SCREEN_OUTPUTS, SCREEN_SETUP,    open_picker_list,     1 },
     };
     for (size_t k = 0; k < sizeof(k_cases) / sizeof(k_cases[0]); ++k) {
         fresh();
@@ -902,7 +900,7 @@ TEST_CASE(every_menu_mark_and_label_ends_above_the_alert_band)
 
 int main(void)
 {
-    RUN(the_setup_tiles_open_the_outputs_the_picker_and_updates);
+    RUN(the_setup_tiles_open_the_outputs_and_updates);
     RUN(the_band_titles_match_the_tiles);
         RUN(wifi_goes_home_over_stop_and_link_loss);
     RUN(the_home_tag_climbs_one_level_from_every_screen);
