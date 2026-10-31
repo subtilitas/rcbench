@@ -1,11 +1,13 @@
 /**
  * @file test_logs_strip.c
- * @brief The LOGS tile's strip: one tile, three screens.  Tabs change screen,
+ * @brief The LOGS tile's strip: one tile, two screens.  Tabs change screen,
  *        the home tag of each goes to the menu, a level under the first takes
- *        no tab, and the radio goes off with WI-FI by any way out.
+ *        no tab.  LOGS' WI-FI button: where it sits, what takes no press on
+ *        it, and the way back from WI-FI.
  *
- * Coverage: logs_strip.c, the strip's calls in log_viewer_events.c,
- * files_events.c and wifi_screen.c, FILES' way back to LOGS from a report.
+ * Coverage: logs_strip.c, the strip's calls in log_viewer_events.c and
+ * files_events.c, the footer's WI-FI button, FILES' way back to LOGS from a
+ * report.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -29,11 +31,10 @@
 
 #include "files_int.h"
 
-/** @brief The tabs' middles: 331px wide, 4px apart. */
-#define TAB_CX(i) (LOGS_STRIP_X + (i) * 335 + 165)
+/** @brief The tabs' middles: 499px wide, 4px apart. */
+#define TAB_CX(i) (LOGS_STRIP_X + (i) * 503 + 249)
 #define TAB_LOGS  0
 #define TAB_FILES 1
-#define TAB_WIFI  2
 /** @brief Their middle row, in the screen's coordinates. */
 #define TAB_CY    (LOGS_STRIP_Y + LOGS_STRIP_H / 2)
 
@@ -193,10 +194,9 @@ static void paint(void)
 TEST_CASE(each_tab_opens_its_screen_and_the_selected_tab_does_nothing)
 {
     fresh_strip();
-    const ui_screen_id_t order[] = { SCREEN_FILES, SCREEN_WIFI, SCREEN_LOGS,
-                                     SCREEN_WIFI, SCREEN_FILES, SCREEN_LOGS };
-    const int tabs[] = { TAB_FILES, TAB_WIFI, TAB_LOGS, TAB_WIFI, TAB_FILES,
-                         TAB_LOGS };
+    const ui_screen_id_t order[] = { SCREEN_FILES, SCREEN_LOGS, SCREEN_FILES,
+                                     SCREEN_LOGS };
+    const int tabs[] = { TAB_FILES, TAB_LOGS, TAB_FILES, TAB_LOGS };
     for (size_t i = 0; i < sizeof(tabs) / sizeof(tabs[0]); ++i) {
         tab(tabs[i]);
         paint();
@@ -208,16 +208,15 @@ TEST_CASE(each_tab_opens_its_screen_and_the_selected_tab_does_nothing)
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
     CHECK_EQ(ui_router_navigations(), nav);
     /* The gap between two tabs is no tab. */
-    btap(LOGS_STRIP_X + 332, TAB_CY);
+    btap(LOGS_STRIP_X + 500, TAB_CY);
     CHECK_EQ(ui_router_navigations(), nav);
 }
 
 TEST_CASE(the_home_tag_of_each_tab_goes_to_the_menu_whichever_opened_it)
 {
-    const ui_screen_id_t screens[] = { SCREEN_LOGS, SCREEN_FILES,
-                                       SCREEN_WIFI };
-    for (int from = 0; from < 3; ++from) {
-        for (int to = 0; to < 3; ++to) {
+    const ui_screen_id_t screens[] = { SCREEN_LOGS, SCREEN_FILES };
+    for (int from = 0; from < 2; ++from) {
+        for (int to = 0; to < 2; ++to) {
             fresh_strip();
             tab(from);
             tab(to);
@@ -236,8 +235,8 @@ TEST_CASE(a_press_that_slid_off_lifted_for_the_finger_or_cancelled_is_no_tab)
     const uint32_t nav = ui_router_navigations();
     /* Slid off its tab: released over the next one, and under the strip. */
     body(TOUCH_EVENT_DOWN, 1, TAB_CX(TAB_FILES), TAB_CY);
-    body(TOUCH_EVENT_MOVE, 1, TAB_CX(TAB_WIFI), TAB_CY);
-    body(TOUCH_EVENT_UP, 1, TAB_CX(TAB_WIFI), TAB_CY);
+    body(TOUCH_EVENT_MOVE, 1, TAB_CX(TAB_LOGS), TAB_CY);
+    body(TOUCH_EVENT_UP, 1, TAB_CX(TAB_LOGS), TAB_CY);
     body(TOUCH_EVENT_DOWN, 1, TAB_CX(TAB_FILES), TAB_CY);
     body(TOUCH_EVENT_UP, 1, TAB_CX(TAB_FILES), TAB_CY + 100);
     CHECK_EQ(ui_router_navigations(), nav);
@@ -266,13 +265,12 @@ TEST_CASE(a_press_that_slid_off_lifted_for_the_finger_or_cancelled_is_no_tab)
  */
 TEST_CASE(each_screen_drops_a_press_on_the_strip_when_events_are_lost)
 {
-    const int tabs[] = { TAB_LOGS, TAB_FILES, TAB_WIFI };
-    const ui_screen_t *const screens[] = { log_viewer_screen(), files_screen(),
-                                           wifi_screen() };
-    for (int k = 0; k < 3; ++k) {
+    const int tabs[] = { TAB_LOGS, TAB_FILES };
+    const ui_screen_t *const screens[] = { log_viewer_screen(), files_screen() };
+    for (int k = 0; k < 2; ++k) {
         fresh_strip();
         tab(tabs[k]);
-        const int other = tabs[(k + 1) % 3];
+        const int other = tabs[(k + 1) % 2];
         const uint32_t nav = ui_router_navigations();
         touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                             .point = { .id = 1, .x = (int16_t)TAB_CX(other),
@@ -292,8 +290,8 @@ TEST_CASE(a_second_finger_on_the_strip_ends_no_press_of_the_first)
     /* A tab held: another contact's tab and row press nothing, and the first
      * contact's lift is the tap. */
     body(TOUCH_EVENT_DOWN, 1, TAB_CX(TAB_FILES), TAB_CY);
-    body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_WIFI), TAB_CY);
-    body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_WIFI), TAB_CY);
+    body(TOUCH_EVENT_DOWN, 2, LV_WIFI_CX, LV_FOOT_CY);
+    body(TOUCH_EVENT_UP, 2, LV_WIFI_CX, LV_FOOT_CY);
     body(TOUCH_EVENT_DOWN, 2, LV_ROW_CX, LV_ROW_CY(1));
     body(TOUCH_EVENT_UP, 2, LV_ROW_CX, LV_ROW_CY(1));
     CHECK_EQ(ui_router_navigations(), nav);
@@ -304,138 +302,26 @@ TEST_CASE(a_second_finger_on_the_strip_ends_no_press_of_the_first)
     /* LOGS: a folder tab held. */
     const uint32_t nav0 = ui_router_navigations();
     body(TOUCH_EVENT_DOWN, 1, LV_TAB_CX(0), LV_HEAD_CY);
-    body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_WIFI), TAB_CY);
-    body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_WIFI), TAB_CY);
+    body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_FILES), TAB_CY);
+    body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_FILES), TAB_CY);
     CHECK_EQ(ui_router_navigations(), nav0);
     body(TOUCH_EVENT_UP, 1, LV_TAB_CX(0), LV_HEAD_CY);
     CHECK_EQ(log_viewer_tab(), LOG_TAB_ROOT);
     /* LOGS: a row held. */
     const uint32_t nav1 = ui_router_navigations();
     body(TOUCH_EVENT_DOWN, 1, LV_ROW_CX, LV_ROW_CY(1));
-    body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_WIFI), TAB_CY);
-    body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_WIFI), TAB_CY);
+    body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_FILES), TAB_CY);
+    body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_FILES), TAB_CY);
     CHECK_EQ(ui_router_navigations(), nav1);
     body(TOUCH_EVENT_UP, 1, LV_ROW_CX, LV_ROW_CY(1));
     /* FILES: a footer button held. */
     tab(TAB_FILES);
     const uint32_t nav2 = ui_router_navigations();
     body(TOUCH_EVENT_DOWN, 1, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(1));
-    body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_WIFI), TAB_CY);
-    body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_WIFI), TAB_CY);
-    CHECK_EQ(ui_router_navigations(), nav2);
-    body(TOUCH_EVENT_UP, 1, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(1));
-    /* WI-FI: a button held. */
-    tab(TAB_WIFI);
-    const uint32_t nav3 = ui_router_navigations();
-    body(TOUCH_EVENT_DOWN, 1, WF_BTN_CX(0), WF_BTN_CY(0));
     body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_LOGS), TAB_CY);
     body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_LOGS), TAB_CY);
-    CHECK_EQ(ui_router_navigations(), nav3);
-    body(TOUCH_EVENT_UP, 1, WF_BTN_CX(0), WF_BTN_CY(0));
-}
-
-/* ------------------------------------------------------------ the radio */
-
-/** @brief WI-FI on top with the access point up. */
-static void wifi_up(void)
-{
-    fresh_strip();
-    tab(TAB_WIFI);
-    wifi_view_t v;
-    memset(&v, 0, sizeof(v));
-    v.code_on = true;
-    v.radio = WIFI_RADIO_AP;
-    wifi_screen_set(&v);
-    (void)wifi_screen_take();
-}
-
-TEST_CASE(the_radio_goes_off_by_any_way_off_wifi_and_never_comes_on_by_a_tab)
-{
-    /* Opening the tab asks for nothing. */
-    fresh_strip();
-    tab(TAB_WIFI);
-    CHECK_EQ(wifi_screen_take(), 0u);
-    /* Each way off asks for OFF and drops an image that waits. */
-    const int tabs[] = { TAB_LOGS, TAB_FILES };
-    for (int k = 0; k < 2; ++k) {
-        wifi_up();
-        tab(tabs[k]);
-        CHECK(ui_router_current() != SCREEN_WIFI);
-        const unsigned r = wifi_screen_take();
-        CHECK((r & WIFI_REQ_OFF) != 0u);
-        CHECK((r & WIFI_REQ_DISCARD) != 0u);
-        CHECK((r & (WIFI_REQ_AP | WIFI_REQ_JOIN | WIFI_REQ_SCAN)) == 0u);
-    }
-    wifi_up();
-    tag();
-    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
-    CHECK((wifi_screen_take() & WIFI_REQ_OFF) != 0u);
-    /* The way back in brings no radio with it. */
-    wifi_up();
-    tab(TAB_LOGS);
-    (void)wifi_screen_take();
-    tab(TAB_WIFI);
-    CHECK_EQ(wifi_screen_take(), 0u);
-}
-
-TEST_CASE(wifi_takes_no_tab_over_the_list_the_keyboard_or_the_image_question)
-{
-    /* The network list. */
-    fresh_strip();
-    tab(TAB_WIFI);
-    btap(WF_BTN_CX(2), WF_BTN_CY(2));
-    const uint32_t nav = ui_router_navigations();
-    tab(TAB_LOGS);
-    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-    /* Its keyboard, by HIDDEN NETWORK. */
-    wifi_view_t v;
-    memset(&v, 0, sizeof(v));
-    v.code_on = true;
-    wifi_screen_set(&v);
-    btap(WF_HIDDEN_CX, WF_SCAN_CY);
-    tab(TAB_FILES);
-    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-    CHECK_EQ(ui_router_navigations(), nav);
-    /* The home tag climbs them, then the strip is back. */
-    tag();
-    tag();
-    tab(TAB_LOGS);
-    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
-
-    /* An image waits: its question has only CANCEL and the hold. */
-    fresh_strip();
-    tab(TAB_WIFI);
-    v.up = WIFI_UP_STAGED;
-    wifi_screen_set(&v);
-    const uint32_t nav2 = ui_router_navigations();
-    tab(TAB_LOGS);
-    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
     CHECK_EQ(ui_router_navigations(), nav2);
-    /* The home tag answers CANCEL and stays. */
-    tag();
-    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-    CHECK((wifi_screen_take() & WIFI_REQ_DISCARD) != 0u);
-}
-
-TEST_CASE(a_press_on_the_strip_ends_when_the_question_comes_up_under_it)
-{
-    fresh_strip();
-    tab(TAB_WIFI);
-    const uint32_t nav = ui_router_navigations();
-    body(TOUCH_EVENT_DOWN, 1, TAB_CX(TAB_LOGS), TAB_CY);
-    wifi_view_t v;
-    memset(&v, 0, sizeof(v));
-    v.code_on = true;
-    v.up = WIFI_UP_STAGED;
-    wifi_screen_set(&v);
-    /* The finger lifts with the question up, and later the question goes:
-     * that release ended the press, and the next lift has none. */
-    body(TOUCH_EVENT_UP, 1, TAB_CX(TAB_LOGS), TAB_CY);
-    v.up = WIFI_UP_IDLE;
-    wifi_screen_set(&v);
-    body(TOUCH_EVENT_UP, 1, TAB_CX(TAB_LOGS), TAB_CY);
-    CHECK_EQ(ui_router_navigations(), nav);
-    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    body(TOUCH_EVENT_UP, 1, FS_SPOT_ROW_CX(0), FS_SPOT_ROW_CY(1));
 }
 
 /* ------------------------------------------------------------ the bench */
@@ -452,18 +338,6 @@ TEST_CASE(armed_the_strip_works_and_each_screen_keeps_its_own_refusal)
     fm_err_t why = FM_OK;
     CHECK(!fs_foot_live(FS_COPY, &why));
     CHECK_EQ(why, FM_ERR_ARMED);
-    /* WI-FI: the application blocks its three radio buttons. */
-    tab(TAB_WIFI);
-    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-    wifi_view_t v;
-    memset(&v, 0, sizeof(v));
-    v.code_on = true;
-    v.block = WIFI_WHY_ARMED;
-    wifi_screen_set(&v);
-    (void)wifi_screen_take();
-    btap(WF_BTN_CX(0), WF_BTN_CY(0));
-    btap(WF_BTN_CX(2), WF_BTN_CY(2));
-    CHECK_EQ(wifi_screen_take(), 0u);
     tab(TAB_LOGS);
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
 }
@@ -523,7 +397,7 @@ TEST_CASE(logs_opens_a_report_in_the_viewer_and_the_tag_returns_to_logs)
     CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
     /* The viewer takes no tab. */
     const uint32_t nav = ui_router_navigations();
-    tab(TAB_WIFI);
+    tab(TAB_LOGS);
     CHECK_EQ(ui_router_navigations(), nav);
     CHECK_EQ(files_screen_view(), FILES_VIEW_TEXT);
     /* One tag back to LOGS, one more to the menu. */
@@ -615,7 +489,7 @@ TEST_CASE(a_box_takes_no_tab)
     for (size_t k = 0; k < sizeof(boxes) / sizeof(boxes[0]); ++k) {
         tap_foot(boxes[k]);
         CHECK(files_screen_view() != FILES_VIEW_PANES);
-        tab(TAB_WIFI);
+        tab(TAB_LOGS);
         CHECK_EQ(ui_router_navigations(), nav);
         /* NEW's choice closed on that press; the rest close by the tag. */
         if (files_screen_view() != FILES_VIEW_PANES) {
@@ -632,19 +506,174 @@ TEST_CASE(the_strip_fits_in_both_languages_and_stands_above_each_first_row)
         ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
         ui_tabs_t t;
         const char *labels[] = { ui_router_title(SCREEN_LOGS),
-                                 ui_router_title(SCREEN_FILES),
-                                 ui_router_title(SCREEN_WIFI) };
-        ui_tabs_init(&t, labels, 3,
+                                 ui_router_title(SCREEN_FILES) };
+        ui_tabs_init(&t, labels, 2,
                      gfx_rect_make(LOGS_STRIP_X, LOGS_STRIP_Y, LOGS_STRIP_W,
                                    LOGS_STRIP_H));
         CHECK(ui_tabs_font(&t) == &gfx_font_10x20);
-        CHECK_EQ(t.rect[0].w, 331);
-        CHECK(t.rect[2].x + t.rect[2].w + 3 <= UI_PANEL_W - 8);
+        CHECK_EQ(t.rect[0].w, 499);
+        CHECK_EQ(t.rect[1].x, LOGS_STRIP_X + 503);
+        CHECK(t.rect[1].x + t.rect[1].w + 3 <= UI_PANEL_W - 8);
     }
     ui_text_set_language(UI_LANG_EN);
     CHECK(LOGS_STRIP_FOOT < LV_HEAD_TOP);
     CHECK(LOGS_STRIP_FOOT < FS_SPOT_HEAD_CY - 24);
-    CHECK(LOGS_STRIP_FOOT < WF_BTN_Y);
+}
+
+/* ------------------------------------------------- LOGS' WI-FI button */
+
+/* The button opens WI-FI; the home tag comes back, the radio off on the way. */
+TEST_CASE(the_wifi_button_opens_wifi_and_the_tag_returns_to_logs)
+{
+    fresh_strip();
+    btap(LV_WIFI_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_LOGS);
+    CHECK_EQ(wifi_screen_take(), 0u);       /* opening starts no radio */
+    wifi_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.code_on = true;
+    v.radio = WIFI_RADIO_AP;
+    wifi_screen_set(&v);
+    tag();
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+    const unsigned r = wifi_screen_take();
+    CHECK((r & WIFI_REQ_OFF) != 0u);
+    CHECK((r & WIFI_REQ_DISCARD) != 0u);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    /* LOGS is the menu's again from here. */
+    CHECK_EQ(ui_router_parent(SCREEN_LOGS), SCREEN_OVERVIEW);
+    tag();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/* The network list climbs to the buttons, a staged image's first tag answers
+ * CANCEL, and only then the tag leaves for LOGS. */
+TEST_CASE(wifi_levels_from_logs_climb_before_the_tag_returns_to_logs)
+{
+    fresh_strip();
+    btap(LV_WIFI_CX, LV_FOOT_CY);
+    btap(WF_BTN_CX(2), WF_BTN_CY(2));
+    const uint32_t nav = ui_router_navigations();
+    tag();
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    CHECK_EQ(ui_router_navigations(), nav);
+    wifi_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.code_on = true;
+    v.up = WIFI_UP_STAGED;
+    wifi_screen_set(&v);
+    tag();
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    CHECK((wifi_screen_take() & WIFI_REQ_DISCARD) != 0u);
+    tag();
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+}
+
+/* ARMED the button opens WI-FI as its tile does, and WI-FI's own buttons
+ * refuse: the application blocks them. */
+TEST_CASE(armed_the_wifi_button_opens_wifi_and_its_buttons_refuse)
+{
+    fresh_strip();
+    const ui_bench_status_t armed = { .link_up = true, .armed = true };
+    ui_router_set_status(&armed);
+    btap(LV_WIFI_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    wifi_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.code_on = true;
+    v.block = WIFI_WHY_ARMED;
+    wifi_screen_set(&v);
+    (void)wifi_screen_take();
+    btap(WF_BTN_CX(0), WF_BTN_CY(0));
+    btap(WF_BTN_CX(2), WF_BTN_CY(2));
+    CHECK_EQ(wifi_screen_take(), 0u);
+    tag();
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+    const ui_bench_status_t safe = { .link_up = true };
+    ui_router_set_status(&safe);
+}
+
+/* Slid off, a second contact, or a broken touch stream: no way to WI-FI. */
+TEST_CASE(a_press_that_slid_off_the_wifi_button_or_was_lost_opens_nothing)
+{
+    fresh_strip();
+    const uint32_t nav = ui_router_navigations();
+    /* Slid onto RESCAN. */
+    body(TOUCH_EVENT_DOWN, 1, LV_WIFI_CX, LV_FOOT_CY);
+    body(TOUCH_EVENT_MOVE, 1, LV_RESCAN_CX, LV_FOOT_CY);
+    body(TOUCH_EVENT_UP, 1, LV_RESCAN_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_navigations(), nav);
+    /* A row held: another contact on the button presses nothing. */
+    body(TOUCH_EVENT_DOWN, 1, LV_ROW_CX, LV_ROW_CY(1));
+    body(TOUCH_EVENT_DOWN, 2, LV_WIFI_CX, LV_FOOT_CY);
+    body(TOUCH_EVENT_UP, 2, LV_WIFI_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_navigations(), nav);
+    body(TOUCH_EVENT_UP, 1, LV_ROW_CX, LV_ROW_CY(1));
+    /* The stream broke: the release of a reused track id is no tap. */
+    body(TOUCH_EVENT_DOWN, 1, LV_WIFI_CX, LV_FOOT_CY);
+    log_viewer_screen()->cancel();
+    touch_event_t e = { .type = TOUCH_EVENT_UP,
+                        .point = { .id = 1, .x = LV_WIFI_CX, .y = LV_FOOT_CY,
+                                   .strength = 40 } };
+    log_viewer_screen()->event(&e);
+    CHECK_EQ(ui_router_navigations(), nav);
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+}
+
+/* The DELETE question replaces the footer; a file's views have their own. */
+TEST_CASE(the_wifi_button_takes_no_press_under_a_question_or_a_file)
+{
+    fresh_strip();
+    const uint32_t nav = ui_router_navigations();
+    btap(LV_DELETE_CX, LV_FOOT_CY);
+    btap(LV_WIFI_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_navigations(), nav);
+    tag();                              /* CANCEL */
+    /* The CSV's import view: the spot is its first footer button. */
+    btap(LV_ROW_CX, LV_ROW_CY(1));
+    btap(LV_OPEN_CX, LV_FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    btap(LV_WIFI_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_navigations(), nav);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
+    tag();
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    /* And back on the list it works. */
+    btap(LV_WIFI_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+}
+
+/* A card with no file to list keeps the button: WI-FI also takes an upload. */
+TEST_CASE(the_wifi_button_shows_with_nothing_listed_and_files_has_none)
+{
+    fresh_strip();
+    const log_viewer_io_t none = { .folder = lv_folder, .mounts = lv_mounts };
+    log_viewer_set_io(&none);
+    log_viewer_refresh();
+    settle();
+    btap(LV_WIFI_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    /* FILES has no such button: the spot is RESCAN's or nothing there. */
+    fresh_strip();
+    tab(TAB_FILES);
+    const uint32_t nav = ui_router_navigations();
+    btap(LV_WIFI_CX, LV_FOOT_CY);
+    CHECK_EQ(ui_router_navigations(), nav);
+    CHECK_EQ(ui_router_current(), SCREEN_FILES);
+}
+
+/* The button's word is the screen's title, in both languages, in its 100px. */
+TEST_CASE(the_wifi_button_label_fits_in_both_languages)
+{
+    fresh_strip();
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        CHECK(gfx_text_width(&gfx_font_10x20, TR(LOG_WIFI), 1) + 2 * 8 <= 100);
+        /* The word of the screen it opens, as a tile's. */
+        CHECK_STR_EQ(TR(LOG_WIFI), ui_router_title(SCREEN_WIFI));
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 int main(void)
@@ -654,9 +683,6 @@ int main(void)
     RUN(a_press_that_slid_off_lifted_for_the_finger_or_cancelled_is_no_tab);
     RUN(each_screen_drops_a_press_on_the_strip_when_events_are_lost);
     RUN(a_second_finger_on_the_strip_ends_no_press_of_the_first);
-    RUN(the_radio_goes_off_by_any_way_off_wifi_and_never_comes_on_by_a_tab);
-    RUN(wifi_takes_no_tab_over_the_list_the_keyboard_or_the_image_question);
-    RUN(a_press_on_the_strip_ends_when_the_question_comes_up_under_it);
     RUN(armed_the_strip_works_and_each_screen_keeps_its_own_refusal);
     RUN(logs_takes_no_tab_over_a_file_or_the_delete_question);
     RUN(files_opens_a_csv_in_logs_and_the_strip_goes_back);
@@ -665,6 +691,13 @@ int main(void)
     RUN(a_running_job_keeps_its_box_and_takes_no_tab);
     RUN(a_box_takes_no_tab);
     RUN(the_strip_fits_in_both_languages_and_stands_above_each_first_row);
+    RUN(the_wifi_button_opens_wifi_and_the_tag_returns_to_logs);
+    RUN(wifi_levels_from_logs_climb_before_the_tag_returns_to_logs);
+    RUN(armed_the_wifi_button_opens_wifi_and_its_buttons_refuse);
+    RUN(a_press_that_slid_off_the_wifi_button_or_was_lost_opens_nothing);
+    RUN(the_wifi_button_takes_no_press_under_a_question_or_a_file);
+    RUN(the_wifi_button_shows_with_nothing_listed_and_files_has_none);
+    RUN(the_wifi_button_label_fits_in_both_languages);
     fh_free(&g_h);
     free(s_fb);
     return test_summary("logs_strip");

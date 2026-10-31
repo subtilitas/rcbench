@@ -43,8 +43,8 @@ typedef enum {
     /* Start-up only, and not reachable from the menu: the bus self-test
      * failed and the panel says so before anything else. */
     SCREEN_BUSFAULT,
-    /* WI-FI, a tab of the LOGS tile's strip (logs_strip.h): the panel's
-     * Wi-Fi for card downloads and firmware uploads. */
+    /* WI-FI, from SETUP's tile and the buttons of LOGS and UPDATES: the
+     * panel's Wi-Fi for card downloads and firmware uploads. */
     SCREEN_WIFI,
     /* While the panel writes its own firmware, and not reachable from the
      * menu: nothing on the bench runs, so it carries no band either. */
@@ -165,10 +165,11 @@ ui_screen_id_t ui_router_current(void);
  * @brief Where the home tag of screen @p id leads when it leaves the
  *        screen.  A
  * screen with several openers returns to the one that last opened it:
- * OUTPUTS to MOTOR & ESC, SERVO or SETUP, and to SETUP until one opened it.
+ * OUTPUTS to MOTOR & ESC, SERVO or SETUP, and to SETUP until one opened it;
+ * WI-FI to LOGS or UPDATES, and to SETUP from its tile.
  * A screen a tile of SETUP opens returns to SETUP, and every other to the
- * menu: LOGS, FILES and WI-FI, the tabs of one tile's strip, return to the
- * menu whichever tab opened them.
+ * menu: LOGS and FILES, the tabs of one tile's strip, return to the menu
+ * whichever tab opened them.
  * @param id  the screen
  * @return the screen the home tag leads to
  */

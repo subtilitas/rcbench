@@ -28,7 +28,7 @@ The first start of a new build is a trial. Without touch the panel goes back to 
 
 ![The write failed](view:panel-update-failed)
 
-A write that fails changes nothing that starts: the running firmware stays. CLOSE goes back after an upload to the screen that opened [Wi-Fi](wifi.md), [SETUP](setup.md) or [LOGS](logs.md), and to [Updates](updates.md) or the menu after a download.
+A write that fails changes nothing that starts: the running firmware stays. CLOSE goes back after an upload to the screen that opened [Wi-Fi](wifi.md), [SETUP](setup.md), [LOGS](logs.md) or [Updates](updates.md), and to [Updates](updates.md) or the menu after a download.
 
 ## Current limitations
 

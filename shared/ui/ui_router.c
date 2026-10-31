@@ -144,7 +144,9 @@ static void guide_check(void);
  * The openers, each on a row of its own: a control on one screen that opens
  * another, whose home tag then returns to the opener.  OUTPUTS opens from the
  * TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile; SUPPLY
- * and SETUP from SERVO's caps and AS5600 buttons; WI-FI from UPDATES' button.
+ * and SETUP from SERVO's caps and AS5600 buttons; WI-FI from UPDATES' button
+ * and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row: WI-FI's parent is
+ * SETUP.
  * A screen with no row here, or entered from a screen not on its row, leaves
  * to its tile's parent (ui_router_parent()).
  */
@@ -158,6 +160,7 @@ static const struct {
     { SCREEN_SUPPLY,  SCREEN_SERVO },
     { SCREEN_SETUP,   SCREEN_SERVO },
     { SCREEN_WIFI,    SCREEN_UPDATES },
+    { SCREEN_WIFI,    SCREEN_LOGS },
 };
 
 static bool opens(ui_screen_id_t opener, ui_screen_id_t id)

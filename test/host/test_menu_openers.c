@@ -1,15 +1,15 @@
 /**
  * @file test_menu_openers.c
  * @brief The menu's openers through the router: SERVO's caps button to SUPPLY's
- * LIMITS, DUT's AS5600 button to SENSORS, UPDATES' button to WI-FI and the
- * TARGET row from a programmer asking for a port.  Each one's way back by the
+ * LIMITS, DUT's AS5600 button to SENSORS, UPDATES' and LOGS' buttons to WI-FI
+ * and the TARGET row from a programmer asking for a port.  Each one's way back by the
  * home tag, its refusal while the target refuses, a busy target, what a later
- * entry by a tile or a tab finds, and the rule that no text names a path.
+ * entry by a tile finds, and the rule that no text names a path.
  *
  * SPDX-License-Identifier: MIT
  */
 
-#include "logs_strip.h"
+#include "logview_spots.h"
 #include "nav_rig.h"
 #include "sensors_pane.h"
 #include "supply_spots.h"
@@ -23,9 +23,10 @@
 #define ENC_DUT    SV_CAPS_X, (UI_BAND_H + SV_ENC_OPEN_Y)
 /** @brief UPDATES' button that opens WI-FI: on the card, under its two lines. */
 #define UPD_NET    750, (UI_BAND_H + 120)
-#define STRIP_PY   (UI_BAND_H + LOGS_STRIP_Y + LOGS_STRIP_H / 2)
-/** @brief The middle of the strip's tab @p i. */
-#define STRIP_X(i) (LOGS_STRIP_X + (i) * (331 + 4) + 165)
+/** @brief LOGS' WI-FI button. */
+#define LOGS_WIFI  LV_WIFI_CX, (UI_BAND_H + LV_FOOT_CY)
+/** @brief SETUP's WI-FI tile, the 5th. */
+#define WIFI_TILE  4
 /** @brief The leave warning's buttons (test_settings_leave.c). */
 #define WARN_Y      (UI_PANEL_H - UI_ALERT_H - 4 - 24)
 #define WARN_STAY_X 136
@@ -394,9 +395,9 @@ TEST_CASE(the_network_button_shows_only_with_no_network_and_nothing_running)
     CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
 }
 
-/* ARMED, WI-FI opens as the strip opens it and its own buttons refuse; the
+/* ARMED, WI-FI opens as its tile opens it and its own buttons refuse; the
  * tag still returns. */
-TEST_CASE(armed_the_network_button_opens_wifi_as_the_strip_does)
+TEST_CASE(armed_the_network_button_opens_wifi_as_the_tile_does)
 {
     start();
     updates_no_net();
@@ -408,34 +409,129 @@ TEST_CASE(armed_the_network_button_opens_wifi_as_the_strip_does)
     set_armed(false);
 }
 
-/* A tab of LOGS' strip ends the opener: from there each of the three screens'
- * tags goes to the menu, WI-FI too when the strip comes back to it. */
-TEST_CASE(a_strip_tab_from_wifi_ends_the_opener)
+/** @brief WI-FI on top from its SETUP tile. */
+static void wifi_from_tile(void)
 {
-    for (int to = 0; to < 2; ++to) {
-        start();
-        updates_no_net();
-        tap(UPD_NET);
-        CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_UPDATES);
-        tap(STRIP_X(to), STRIP_PY);
-        const ui_screen_id_t there = (to == 0) ? SCREEN_LOGS : SCREEN_FILES;
-        CHECK_EQ(ui_router_current(), there);
-        CHECK_EQ(ui_router_parent(there), SCREEN_OVERVIEW);
-        tap(STRIP_X(2), STRIP_PY);
-        CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-        CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_OVERVIEW);
-        tap_home();
-        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
-    }
-    /* And the tile after an opener that returned. */
+    ui_router_goto(SCREEN_SETUP);
+    int x = 0;
+    int y = 0;
+    hub_point(WIFI_TILE, &x, &y);
+    tap(x, y);
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+}
+
+/* WI-FI's home is SETUP: the tile opens it and the tag returns to the hub, with
+ * the radio down on the way. */
+TEST_CASE(the_wifi_tile_opens_wifi_and_the_tag_returns_to_setup)
+{
+    start();
+    wifi_from_tile();
+    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
+    CHECK(settings_screen_opens(SCREEN_WIFI));
+    CHECK_EQ(wifi_screen_take(), 0u);      /* opening starts no radio */
+    wifi_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.code_on = true;
+    v.radio = WIFI_RADIO_AP;
+    wifi_screen_set(&v);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(settings_screen_category(), -1);
+    const unsigned req = wifi_screen_take();
+    CHECK((req & WIFI_REQ_OFF) != 0u);
+    CHECK((req & WIFI_REQ_DISCARD) != 0u);
+    CHECK((req & (WIFI_REQ_AP | WIFI_REQ_JOIN | WIFI_REQ_SCAN)) == 0u);
+    /* The way back in brings no radio with it. */
+    wifi_from_tile();
+    CHECK_EQ(wifi_screen_take(), 0u);
+}
+
+/* An opener holds for one entry: the tile after UPDATES' or LOGS' button that
+ * returned leads to SETUP, and each button after the tile to its own screen. */
+TEST_CASE(wifi_returns_to_what_opened_it_this_time)
+{
     start();
     updates_no_net();
     tap(UPD_NET);
     tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+    tap_home();
+    wifi_from_tile();
+    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
+
     ui_router_goto(SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_LOGS);
-    tap(STRIP_X(2), STRIP_PY);
-    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_OVERVIEW);
+    tap(LOGS_WIFI);
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_LOGS);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+    wifi_from_tile();
+    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+
+    updates_no_net();
+    tap(UPD_NET);
+    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_UPDATES);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+}
+
+/* WI-FI draws no strip and takes no tab: where the tabs were is nothing, on the
+ * start screen and with the radio up. */
+TEST_CASE(wifi_has_no_strip_and_its_rows_start_under_the_band)
+{
+    start();
+    wifi_from_tile();
+    const uint32_t nav = ui_router_navigations();
+    (void)wifi_screen_take();
+    for (int x = 100; x < 1000; x += 200) {
+        tap(x, UI_BAND_H + 8);
+    }
+    CHECK_EQ(ui_router_navigations(), nav);
+    CHECK_EQ(WF_BTN_Y, 16);
+    /* The first button's top row takes the press the strip's foot once had. */
+    tap(WF_BTN_CX(0), UI_BAND_H + WF_BTN_Y + 1);
+    CHECK((wifi_screen_take() & WIFI_REQ_AP) != 0u);
+}
+
+/* What the application reads when an upload's install closes: PANEL UPDATE's
+ * CLOSE leads to WI-FI's parent, read with WI-FI on top
+ * (firmware/panel/main/panel_update.c).  SETUP for the tile, LOGS and UPDATES
+ * for their buttons, each a screen with a way home of its own. */
+TEST_CASE(the_way_back_from_a_failed_upload_is_what_opened_wifi)
+{
+    static const struct {
+        int            from;   /* 0 tile, 1 LOGS, 2 UPDATES */
+        ui_screen_id_t back;
+        ui_screen_id_t then;
+    } k_routes[] = {
+        { 0, SCREEN_SETUP,   SCREEN_OVERVIEW },
+        { 1, SCREEN_LOGS,    SCREEN_OVERVIEW },
+        { 2, SCREEN_UPDATES, SCREEN_SETUP },
+    };
+    for (size_t i = 0u; i < sizeof(k_routes) / sizeof(k_routes[0]); ++i) {
+        start();
+        if (k_routes[i].from == 0) {
+            wifi_from_tile();
+        } else if (k_routes[i].from == 1) {
+            ui_router_goto(SCREEN_LOGS);
+            tap(LOGS_WIFI);
+        } else {
+            updates_no_net();
+            tap(UPD_NET);
+        }
+        CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+        const ui_screen_id_t back = ui_router_parent(SCREEN_WIFI);
+        CHECK_EQ(back, k_routes[i].back);
+        ui_router_goto(SCREEN_UPDATE);
+        (void)wifi_screen_take();
+        ui_router_goto(back);
+        CHECK_EQ(ui_router_current(), k_routes[i].back);
+        tap_home();
+        CHECK_EQ(ui_router_current(), k_routes[i].then);
+    }
 }
 
 /* ---------------------------------------------------- TARGET, the programmer */
@@ -512,7 +608,8 @@ TEST_CASE(every_tile_line_names_content_and_no_count)
         ui_text_set_language((ui_lang_t)lang);
         static const ui_text_id_t k_hub[] = {
             TX_SET_HUB_PANEL, TX_SET_HUB_SENSORS, TX_SET_HUB_OUTPUTS,
-            TX_SET_HUB_CARD, TX_SET_HUB_UPDATES, TX_SET_HUB_LAYOUT,
+            TX_SET_HUB_CARD, TX_SET_HUB_WIFI, TX_SET_HUB_UPDATES,
+            TX_SET_HUB_LAYOUT,
         };
         for (size_t i = 0u; i < sizeof(k_hub) / sizeof(k_hub[0]); ++i) {
             const char *t = ui_tr(k_hub[i]);
@@ -527,6 +624,10 @@ TEST_CASE(every_tile_line_names_content_and_no_count)
     /* The guide says what the two tiles hold now. */
     CHECK(strstr(TR(HG_OV_SETUP), "interfaces") == NULL);
     CHECK(strstr(TR(HG_OV_LOGS), "WI-FI") != NULL);
+    CHECK(strstr(TR(HG_OV_LOGS), "tabs") == NULL);
+    CHECK(strstr(TR(HG_OV_SETUP), "Wi-Fi") != NULL);
+    CHECK(strstr(TR(OV_LOGS), "Wi-Fi") == NULL);
+    CHECK(strstr(TR(OV_SETUP), "Wi-Fi") != NULL);
 }
 
 int main(void)
@@ -542,8 +643,11 @@ int main(void)
     RUN(the_network_button_opens_wifi_and_the_tag_returns_to_updates);
     RUN(wifi_levels_and_a_staged_image_climb_before_the_tag_returns);
     RUN(the_network_button_shows_only_with_no_network_and_nothing_running);
-    RUN(armed_the_network_button_opens_wifi_as_the_strip_does);
-    RUN(a_strip_tab_from_wifi_ends_the_opener);
+    RUN(armed_the_network_button_opens_wifi_as_the_tile_does);
+    RUN(the_wifi_tile_opens_wifi_and_the_tag_returns_to_setup);
+    RUN(wifi_returns_to_what_opened_it_this_time);
+    RUN(wifi_has_no_strip_and_its_rows_start_under_the_band);
+    RUN(the_way_back_from_a_failed_upload_is_what_opened_wifi);
     RUN(target_opens_the_tester_entry_from_a_programmer_asking_for_a_port);
     RUN(no_text_names_a_path_but_the_listed_ones);
     RUN(every_tile_line_names_content_and_no_count);

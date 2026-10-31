@@ -4,7 +4,8 @@
  * on the card to download, and a panel firmware image to upload -- and the
  * screen that writes an uploaded image (PANEL UPDATE).
  *
- * The screen is a tab of the LOGS tile's strip (logs_strip.h) and runs the
+ * The screen opens from SETUP's WI-FI tile, LOGS' WI-FI button and UPDATES'
+ * button, its home tag returns to the one that opened it, and it runs the
  * radio only while it is open.  It
  * offers the panel's own access point always, and the home network when one
  * is kept: chosen from a scan, or typed for a hidden one, the password typed
