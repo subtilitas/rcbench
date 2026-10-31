@@ -538,9 +538,9 @@ SCREENS = {
     # PROG PORT 2 on a 4.28 IOmcu, DSHOT300 on GP14: the FUNCTION list open
     # over the column, five entries.
     "outputs-port-dshot": ("outputs-port-dshot.png", "outputs", "dark"),
-    # The overview with SENSORS and PD MINI wired: GP16 and GP17 the sensor bus's,
-    # GP18 and GP19 the PD mini's, GP22 the phase tap's, held and named under
-    # IN USE after the programming port.
+    # The overview with SENSORS and PD MINI wired: GP16 and GP17 the sensor
+    # bus's, GP18 and GP19 the PD mini's, GP22 the phase tap's, held and named
+    # under IN USE after the programming port.
     "outputs-iface": ("outputs-iface.png", "outputs", "dark"),
     # The grid view of a board with neither a shape nor a drawing.
     "outputs-grid": ("outputs-grid.png", "outputs", "dark"),
