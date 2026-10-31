@@ -127,7 +127,7 @@ is taken in a gap ahead of the save that needs it.
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
 | Errors | built: an error switches every output off and the bench to SAFE ([Safety, Errors](docs/Safety.md#errors)). The rule is `shared/safety/error_stop.c`, host-tested in `test_error_stop`; the supply link's errors are `supply_link_ev_error()`, an INA3221 limit passed `sense_limit_link_take_trip()` (`test_sense_limit_link`); a programming session's faults `kst_link_outcome_fault()` and `hitec_prog_ses_fault()`, and the OFF written whatever the panel reads (`supply_link_cut()`), in `test_error_stop`; from link 4.31 the IOmcu holds the OFF of a supply a programming port holds for the port's write, 10000ms at most, and refuses the port's ON after it ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply); `test_supply_hold`, `test_prog_supply`, `test_prog_supply_link`, `test_prog5v_box`, `test_kst_port_cut`, `test_hitec_port_cut`); the automatic test's and the limit run's error ends ask SAFE (`servo_test_abort_error()`, `servo_limrun_why_error()`; `test_servo_error_safe`, `test_servo_limrun_error`). The panel's error sites in `panel_supply.c`, `panel_limit.c`, `panel_log.c` and `panel_services.c` apply the rule through `shared/safety/error_sites.c` and `kst_link_faults()`, host-tested in `test_error_sites` with each finder: DISARM for an ARMED bench or one on its way, the supply off and the OFF written to an IOmcu of 4.31, a PD mini a port holds left to the port by an older IOmcu through every error but the panel's trip, the module's protection and a sagging input (`error_sites_keeps()`; the hold is the SUPPLY page's `LINK_SP_PORT` as last read and a session with a port, `supply_link_port_holds()`, also in `test_supply_keep`, with a port that takes or lets go of the supply between two reads; a session keeps the panel's ON and set points off the PD mini only on a board whose ports run from it, `supply_link_session_blocks()` in `test_supply_keep` and the SUPPLY screen's lock in `test_supply_screen_home`; an ON the page refuses under a port's ON through `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a port, a reading fault the port keeps acted on once while it stands, a failed final commit or close of the run log or the automatic test's CSV counted once a run (`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line calls into it in those files are not host-tested. The IOmcu switches a PD mini left on off before the rest of its start-up (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in `test_supply_boot` against a modelled module at each of the seven rates); the time on hardware is not measured |
 | IOmcu firmware | answers the identity, status, control, bench and three output pages; fails safe at 200ms. The decision to switch to ARMED is `shared/safety/safety_gate.c`, called once a pass and at every CONTROL write and host-tested in `test_safety_gate` against a model of both main loops: an arm latch set at a start, on link silence, on a distrusted heartbeat and by a refused ARM, released by CLEAR alone. CHAN_CFG and OUTPUTS refuse a role, a throttle channel's range and a slot change while ARMED. It publishes what the ESC reports over extended DShot telemetry: speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
-| IOmcu firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the IOmcu restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7s watchdog returns to the old image. The IOmcu refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the IOmcu erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the IOmcu's build by SHA-256 at link-up and offers the update on a question that takes the 2s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold starts the same update, also after a declined question. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
+| IOmcu firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the IOmcu restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7s watchdog returns to the old image. The IOmcu refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the IOmcu erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the IOmcu's build by SHA-256 at link-up and offers the update on a question that takes the 2s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress, with CANCEL and the home tag as the only declines and a forced screen over the question declining nothing; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold starts the same update, also after a declined question. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
 | Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md) |
 | S.BUS decoder | built and tested; the PIO (programmable input/output) receiver is not written |
 | Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the IOmcu answers, at every edit, and in the frame that switches to ARMED, so a run starts on the count that was sent or does not start; with none sent the IOmcu reports no speed rather than one derived from a guess |
@@ -699,16 +699,15 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
 | `shared/ui/esc_stick_draw.c` | 467 | 451 | 96.6% |
 | `shared/ui/esc_stick_draw_run.c` | 572 | 517 | 90.4% |
-| `shared/ui/log_viewer_screen.c` | 324 | 314 | 96.9% |
+| `shared/ui/log_viewer_screen.c` | 322 | 312 | 96.9% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
-| `shared/ui/log_viewer_draw.c` | 416 | 403 | 96.9% |
-| `shared/ui/log_viewer_events.c` | 439 | 427 | 97.3% |
-| `shared/ui/logs_strip.c` | 29 | 27 | 93.1% |
+| `shared/ui/log_viewer_draw.c` | 417 | 404 | 96.9% |
+| `shared/ui/log_viewer_events.c` | 436 | 424 | 97.2% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
-| `shared/ui/files_screen.c` | 690 | 665 | 96.4% |
+| `shared/ui/files_screen.c` | 690 | 664 | 96.2% |
 | `shared/ui/layout_screen.c` | 141 | 138 | 97.9% |
-| `shared/ui/files_draw.c` | 339 | 328 | 96.8% |
-| `shared/ui/files_events.c` | 222 | 221 | 99.5% |
+| `shared/ui/files_draw.c` | 338 | 327 | 96.8% |
+| `shared/ui/files_events.c` | 213 | 212 | 99.5% |
 | `shared/ui/files_text.c` | 161 | 148 | 91.9% |
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
@@ -730,9 +729,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/picker_port.c` | 121 | 121 | 100.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 320 | 319 | 99.7% |
-| `shared/ui/wifi_screen.c` | 553 | 547 | 98.9% |
+| `shared/ui/wifi_screen.c` | 538 | 531 | 98.7% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
-| `shared/ui/coproc_update_screen.c` | 272 | 271 | 99.6% |
+| `shared/ui/coproc_update_screen.c` | 276 | 275 | 99.6% |
 | `shared/ui/upd_screen.c` | 613 | 590 | 96.2% |
 | `shared/settings/settings.c` | 401 | 394 | 98.2% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
@@ -912,7 +911,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api_write.c` | 211 | 208 | 98.6% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **68219** | **66914** | **98.1%** |
+| **total** | **68165** | **66860** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

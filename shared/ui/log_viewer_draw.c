@@ -247,9 +247,9 @@ static void render_browse(gfx_canvas_t *c)
     }
 
     if (lv_paged()) {
-        ui_button_font(c, BR_PREV, TR(LOG_PREV), UI_PANEL_HI, s.press_btn == 5,
+        ui_button_font(c, BR_PREV, TR(LOG_PREV), UI_PANEL_HI, s.press_btn == 3,
                        lv_can_prev(), LV_FONT_LABEL);
-        ui_button_font(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 6,
+        ui_button_font(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 4,
                        lv_can_next(), LV_FONT_LABEL);
     }
     /* 6px each side of the label: a longer one takes the 8 x 16 face. */

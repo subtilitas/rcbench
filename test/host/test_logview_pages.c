@@ -822,6 +822,27 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
 /* ---------------------------------------------------------- scroll bar --- */
 
 
+/*
+ * PREV and NEXT show the press under the finger, and no other button does for
+ * them: the index the event keeps is the one the drawing asks.
+ */
+TEST_CASE(prev_and_next_draw_their_press)
+{
+    runs_card(150);
+    next_page();    /* the middle page: both are live */
+    const int xs[] = { PREV_X, LV_NEXT_CX };
+    for (int k = 0; k < 2; ++k) {
+        draw();
+        const gfx_color_t up = gfx_pixel_get(&s_c, xs[k] - 60, LV_HEAD_TOP + 8);
+        send(TOUCH_EVENT_DOWN, xs[k], LV_HEAD_CY);
+        draw();
+        CHECK(gfx_pixel_get(&s_c, xs[k] - 60, LV_HEAD_TOP + 8) != up);
+        screen()->cancel();
+        draw();
+        CHECK_EQ(gfx_pixel_get(&s_c, xs[k] - 60, LV_HEAD_TOP + 8), up);
+    }
+}
+
 TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
 {
     /* 48 runs: rows are runs 48 to 1 top down, and 42 is the last scroll. */
@@ -941,6 +962,7 @@ int main(void)
     RUN(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card);
     RUN(prev_reads_the_first_page_from_the_top_whatever_changed_ahead);
     RUN(a_card_swapped_mid_page_opens_on_its_first_page);
+    RUN(prev_and_next_draw_their_press);
     RUN(the_scroll_bar_jumps_drags_and_stays_on_its_page);
     RUN(re_reading_the_card_selects_the_newest_run);
     return test_summary("logview_pages");

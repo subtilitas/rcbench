@@ -51,6 +51,11 @@ history is in git.
 
 - FILES' editor header shows the file's size as read when it opens and as
   written after SAVE, not the size listed before the open.
+- The IOmcu's update question is declined by CANCEL and the home tag only. A
+  fault screen after a lost link, or a panel update's download, over the
+  question records no decline, and the next link-up's check offers again.
+  A CANCEL on a question whose offer a newer link-up has replaced declines
+  nothing, and the question shows the new offer.
 
 ### Fixed
 
