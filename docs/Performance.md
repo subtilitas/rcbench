@@ -55,44 +55,44 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        9,744    1218 KiB
+frame                        9,600    1200 KiB
 frame-idle                       0       0 KiB
-held                         5,258     657 KiB
-sim                         13,435    1679 KiB
-throttle                    11,629    1454 KiB
-chrome                      51,486    6436 KiB
-overview                         1       0 KiB
-overview-guide                 356      44 KiB
-servo                        2,157     270 KiB
-servo-grip                     529      66 KiB
-servo-current                3,214     402 KiB
-supply                       9,959    1245 KiB
-supply-chrome               47,491    5936 KiB
+held                         5,233     654 KiB
+sim                         13,303    1663 KiB
+throttle                    11,418    1427 KiB
+chrome                      51,865    6483 KiB
+overview                         0       0 KiB
+overview-guide                 349      44 KiB
+servo                        2,189     274 KiB
+servo-grip                     531      66 KiB
+servo-current                3,155     394 KiB
+supply                       9,850    1231 KiB
+supply-chrome               47,990    5999 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,720     215 KiB
-balance-sim                  3,209     401 KiB
-settings-sim                 3,196     400 KiB
-battery-sim                  3,093     387 KiB
-analyser-chrome             61,028    7628 KiB
-logs-chrome                 27,412    3426 KiB
-settings-chrome             30,133    3767 KiB
-settings-list-chrome        37,188    4648 KiB
-battery-chrome              58,182    7273 KiB
-balance-chrome              63,470    7934 KiB
-motor-stick-chrome          41,546    5193 KiB
+motor-stick                  1,722     215 KiB
+balance-sim                  3,158     395 KiB
+settings-sim                 3,133     392 KiB
+battery-sim                  3,129     391 KiB
+analyser-chrome             61,095    7637 KiB
+logs-chrome                 27,342    3418 KiB
+settings-chrome             29,815    3727 KiB
+settings-list-chrome        37,115    4639 KiB
+battery-chrome              58,086    7261 KiB
+balance-chrome              63,403    7925 KiB
+motor-stick-chrome          41,953    5244 KiB
 picker                           0       0 KiB
-picker-chrome               41,730    5216 KiB
+picker-chrome               41,552    5194 KiB
 wifi                             0       0 KiB
-wifi-chrome                 23,936    2992 KiB
-wifi-keys                   37,142    4643 KiB
+wifi-chrome                 23,949    2994 KiB
+wifi-keys                   36,907    4613 KiB
 clear                       19,206    2401 KiB
 vlines                      10,204    1276 KiB
-hlines                         171      21 KiB
+hlines                         180      22 KiB
 
 est. ms and est. fps: not measured
 ```

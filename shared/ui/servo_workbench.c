@@ -279,8 +279,11 @@ void draw_prog_page(gfx_canvas_t *c)
 
 /* ------------------------------------------------------------ the strip */
 
-/* ui_router_navigations() just after the TARGET row opened OUTPUTS, or 0:
- * the entry one navigation later is the way back. */
+/**
+ * @brief ui_router_navigations() just after the TARGET row or an opener's
+ *        button left this screen, or 0: the entry one navigation later is the
+ *        way back.
+ */
 static uint32_t s_opened_nav;
 
 /**

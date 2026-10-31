@@ -711,7 +711,10 @@ static void open_list(setting_cat_t cat)
     settings_screen_invalidate();
 }
 
-/* A tap on tile @p index: a category's list, or a screen of its own. */
+/**
+ * @brief A tap on a tile: a category's list, or a screen of its own.
+ * @param index The tile.
+ */
 static void open_tile(int index)
 {
     const hub_tile_t *t = stg_hub_tile(index);
