@@ -38,18 +38,31 @@ typedef struct {
     bool           failed;
 } wa_send_t;
 
-/** Open @p path, announced as @p size bytes.  False when it cannot be. */
+/**
+ * @brief Open @p path, announced as @p size bytes.
+ * @param s     takes the transfer
+ * @param fs    the card
+ * @param path  the file
+ * @param size  the bytes announced
+ * @return false when it cannot be opened
+ */
 bool wa_send_begin(wa_send_t *s, const wa_fs_t *fs, const char *path,
                    uint64_t size);
 
 /**
- * The next piece into @p buf of @p cap bytes: how many, 0 when all @c size
- * bytes have gone, -1 on a failure (the file is closed either way at the
- * end).
+ * @brief The next piece into @p buf of @p cap bytes.
+ * @param s    the transfer
+ * @param buf  takes the piece
+ * @param cap  bytes of @p buf
+ * @return how many, 0 when all @c size bytes have gone, -1 on a failure (the
+ *         file is closed either way at the end)
  */
 int32_t wa_send_next(wa_send_t *s, uint8_t *buf, uint32_t cap);
 
-/** Close the file; for a transfer given up part way. */
+/**
+ * @brief Close the file; for a transfer given up part way.
+ * @param s  the transfer
+ */
 void wa_send_end(wa_send_t *s);
 
 /*
@@ -97,18 +110,33 @@ typedef enum {
     WA_SEND_READ_FAILED,  /**< the file: a read error, or not its size   */
 } wa_send_res_t;
 
-/** All @p n bytes of @p data into @p k. */
+/**
+ * @brief All @p n bytes of @p data into @p k.
+ * @param k     the connection
+ * @param data  the bytes
+ * @param n     how many
+ * @return how it ended
+ */
 wa_send_res_t wa_sink_all(const wa_sink_t *k, const void *data, uint32_t n);
 
 /**
- * The rest of the file begun with wa_send_begin() into @p k, a piece of at
- * most @p cap bytes of @p buf at a time.  The file is closed whatever the
- * outcome.
+ * @brief The rest of the file begun with wa_send_begin() into @p k, a piece
+ *        of at most @p cap bytes of @p buf at a time.  The file is closed
+ *        whatever the outcome.
+ * @param s    the transfer
+ * @param buf  room for a piece
+ * @param cap  bytes of @p buf
+ * @param k    the connection
+ * @return how it ended
  */
 wa_send_res_t wa_send_run(wa_send_t *s, uint8_t *buf, uint32_t cap,
                           const wa_sink_t *k);
 
-/** A short English name of @p r for the log. */
+/**
+ * @brief A short English name of @p r for the log.
+ * @param r  the outcome
+ * @return its name
+ */
 const char *wa_send_res_name(wa_send_res_t r);
 
 /*

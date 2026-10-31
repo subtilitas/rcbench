@@ -30,6 +30,11 @@ void wa_send_end(wa_send_t *s)
     }
 }
 
+/**
+ * @brief End a transfer as failed, its file closed.
+ * @param s  the transfer
+ * @return -1
+ */
 static int32_t fail(wa_send_t *s)
 {
     s->failed = true;
