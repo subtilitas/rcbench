@@ -312,7 +312,11 @@ void ui_router_invalidate(void)
 
 bool ui_router_shot_gap(gfx_rect_t *out)
 {
-    if (!has_band(s.current)) {
+    /* A screen that cannot say whether a box covers it gets no hold: the
+     * copy would show nothing and the popup would open after the question
+     * has gone. */
+    const ui_screen_t *scr = screen_for(s.current);
+    if (!has_band(s.current) || scr == NULL || scr->covered == NULL) {
         return false;
     }
     const gfx_rect_t tag = ui_home_tag_rect(ui_router_title(s.current));
@@ -362,8 +366,8 @@ static void drop_notice(void)
 
 /**
  * @brief Nothing is up on the screen on top: no question, no box, no list, no
- *        keypad.  A screen that cannot say counts as covered: those with no
- *        band, the IOmcu's question and the release reminder.
+ *        keypad.  A screen that cannot say counts as covered; none of them
+ *        has a hold (ui_router_shot_gap()), so this is the second guard.
  * @return true when a popup may stand over it
  */
 static bool shot_screen_free(void)

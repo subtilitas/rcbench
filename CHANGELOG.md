@@ -14,6 +14,15 @@ history is in git.
   `screenshots/<name>.PNG`, an 8-bit RGB PNG of 1024 x 600px, on the card. The
   menu's guide has a fourth page for it.
 
+### Fixed
+
+- Screenshot: the IOmcu update's question and the release reminder take no
+  hold. They cannot say whether a box covers them, so a hold there copied a
+  picture and the popup would have opened after the screen had gone.
+- Screenshot: a save that the bench stopped by leaving idle shows `The bench
+  was busy. Nothing saved. Tap SAVE again.` when the popup opens again. A
+  failure answered while the popup is shut shows its own text the same way.
+
 ## 0.23.4 - 2026-10-31
 
 0.23.4 is a testing release: its minor number, 23, is odd, and GitHub

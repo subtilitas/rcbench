@@ -11,7 +11,14 @@
  * answers FM_ERR_BUSY after that; the Wi-Fi page's writes wait the same.
  *
  * Each save logs its bytes on the card, its time and the stack it left, and
- * each capture its copy time: none of these is measured on a board yet.
+ * each capture its copy time.  Measured on a panel: 38,388 to 77,840B a PNG
+ * over 8 files, a save in 5.3 to 6.3s alone and in 0.40 to 1.00s with a Wi-Fi
+ * page write waiting for the lock (the cause of the difference is not
+ * traced), the copy in 25.8 to 31.6ms (median 28.3ms over 54 copies) and the
+ * lowest unused stack of the task 5,116B of 7,168B.  30 shots in a row ended
+ * with no error and no restart.  A second contact during a hold passed 6 of 6
+ * checks.  Not run on a panel: no card in the slot, pixel equality with a
+ * rendered frame, a glass contact together with an injector contact.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "shot_rig.h"
+#include "coproc_update_screen.h"
 #include "ui_help.h"
 
 /* ------------------------------------------------------------ the hold */
@@ -369,6 +370,34 @@ TEST_CASE(the_gap_follows_title_and_chips_and_a_screen_without_band_has_none)
     CHECK(!ui_shot_wanted());
 }
 
+TEST_CASE(a_screen_that_cannot_say_whether_it_is_covered_has_no_hold)
+{
+    start();
+    gfx_rect_t g;
+    REQUIRE(ui_router_shot_gap(&g));
+    static const ui_screen_id_t k_ids[] = { SCREEN_COPROC_UPDATE,
+                                            SCREEN_UPD_REMIND };
+    for (size_t i = 0u; i < sizeof(k_ids) / sizeof(k_ids[0]); ++i) {
+        start();
+        if (k_ids[i] == SCREEN_COPROC_UPDATE) {
+            coproc_update_screen_offer((cu_version_t){ 0, 17, 0 },
+                                       (cu_version_t){ 0, 18, 0 });
+        }
+        ui_router_goto(k_ids[i]);
+        CHECK_EQ(ui_router_current(), k_ids[i]);
+        CHECK(ui_router_stop_live());       /* the band is up ... */
+        CHECK(!ui_router_shot_gap(NULL));   /* ... and has no gap */
+        touch(300, 30, TOUCH_EVENT_DOWN, 1);
+        wait_ms(1500);
+        frame();
+        CHECK(!ui_shot_wanted());
+        CHECK(!ui_shot_held());
+        CHECK_EQ(g_copies, 0);
+        CHECK(ui_router_alert() == NULL);
+        touch(300, 30, TOUCH_EVENT_UP, 1);
+    }
+}
+
 /**
  * @brief The smallest gap over every screen with the band in one status.
  * @param st  the status
@@ -380,8 +409,9 @@ static int narrowest_gap(const ui_bench_status_t *st)
     ui_router_set_status(st);
     for (int id = SCREEN_OVERVIEW; id < SCREEN_COUNT; ++id) {
         ui_router_goto((ui_screen_id_t)id);
-        if (!ui_router_stop_live()) {
-            continue;
+        if (!ui_router_stop_live() || id == SCREEN_COPROC_UPDATE
+            || id == SCREEN_UPD_REMIND) {
+            continue;       /* no band, or no covered(): no hold */
         }
         gfx_rect_t g = { 0, 0, 0, 0 };
         (void)ui_router_shot_gap(&g);
@@ -551,6 +581,7 @@ int main(void)
     RUN(a_hold_over_the_guide_takes_the_guide_and_then_closes_it);
     RUN(a_tap_in_the_gap_closes_the_guide_and_takes_nothing);
     RUN(the_gap_follows_title_and_chips_and_a_screen_without_band_has_none);
+    RUN(a_screen_that_cannot_say_whether_it_is_covered_has_no_hold);
     RUN(every_screen_with_the_band_keeps_a_gap_but_at_its_fullest);
     RUN(no_screen_sees_the_hold_and_it_works_over_a_keypad);
     RUN(a_screens_press_is_its_own_as_before);
