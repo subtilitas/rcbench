@@ -414,8 +414,8 @@ UI_TEXT(HG_OV_SHOT_NAME, 0,
     "SCREENSHOT",
     "SCREENSHOT")
 UI_TEXT(HG_OV_SHOT, 0,
-    "Hold this empty part of the band 1s, on any screen with the band: a screenshot. It opens to save when the bench is idle.",
-    "Diesen leeren Teil des Bands 1s halten, auf jedem Bildschirm mit Band: ein Screenshot. Er öffnet sich, sobald der Prüfstand ruht.")
+    "Hold this empty part of the band 1s, on any screen with it. The popup opens when the bench is idle.",
+    "Diesen leeren Bandteil 1s halten, auf jedem Bildschirm mit Band. Das Popup folgt, sobald der Prüfstand ruht.")
 UI_TEXT(HG_OV_MARK, 0,
     "The IOmcu reports no hardware for this screen, or its sensor is off on SETUP.",
     "Der IOmcu meldet keine Hardware für diesen Bildschirm, oder sein Sensor ist in SETUP aus.")
