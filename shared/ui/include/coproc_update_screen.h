@@ -73,7 +73,10 @@ cu_view_t coproc_update_screen_view(void);
 /** True once after START's hold completed; the view is then PROGRESS. */
 bool coproc_update_screen_take_start(void);
 
-/** True once after CANCEL or the home tag on the question. */
+/**
+ * @brief Take the latch of an operator's decline.
+ * @return True once after CANCEL or the home tag on the question.
+ */
 bool coproc_update_screen_take_cancel(void);
 
 void coproc_update_screen_invalidate(void);
@@ -166,9 +169,9 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
                                bool unsafe);
 
 /**
- * The screen's half of the update, once a frame, whichever screen is
- * current: moves the router to the question, the progress and back, and
- * drains both latches.
+ * @brief The screen's half of the update, once a frame, whichever screen is
+ *        current: moves the router to the question, the progress and back,
+ *        and drains both latches.
  *
  * Only an operator's act declines: CANCEL, or the HOME tag, which latches
  * CANCEL as the router leaves the question.  The latch is drained here on the
@@ -188,6 +191,11 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
  * and hands over a START as the question's does.  That progress returns to
  * UPDATES when the update ends or its START was spent; the question's
  * returns to the menu.
+ *
+ * @param d      What the driver keeps between frames.
+ * @param f      The update as the application knows it this frame.
+ * @param unsafe ARMED, an arm waiting, or the supply's output on or coming.
+ * @param out    What this frame hands to the update side.
  */
 void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
                          cu_hand_t *out);

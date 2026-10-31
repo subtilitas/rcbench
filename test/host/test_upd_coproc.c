@@ -366,7 +366,7 @@ TEST_CASE(an_offer_under_the_fault_screen_stands_for_updates)
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_NO_LINK);
 
     g_feed.reachable = true;
-    h = frame();
+    (void)frame();
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_READY);
     hold_for(2.00f);
     upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
