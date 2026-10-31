@@ -483,7 +483,8 @@ static bool client_stop(void *ctx)
  */
 static uint32_t client_now(void *ctx)
 {
-    return ((const client_t *)ctx)->now;
+    const client_t *c = ctx;
+    return c->now;
 }
 
 /**

@@ -1,5 +1,6 @@
-/*
- * One file off the card, a piece at a time.
+/**
+ * @file
+ * @brief One file off the card, a piece at a time.
  *
  * The size is taken before the first byte goes, so the response can say how
  * long it is (Content-Length); the file then has to deliver exactly that.
@@ -123,28 +124,31 @@ const char *wa_send_res_name(wa_send_res_t r);
  * 1MiB in WA_LINGER_TOTAL_MS is 105kB/s.
  */
 
-/** A body still arriving is dropped with the connection after this long. */
+/** @brief A body still arriving is dropped with the connection after this
+ *         long. */
 #define WA_LINGER_TOTAL_MS 10000u
-/** A body ends unread after this long with no byte. */
+/** @brief A body ends unread after this long with no byte. */
 #define WA_LINGER_QUIET_MS 2000u
 
-/** What get() answers for a slice of WA_SEND_SLICE_MS without a byte. */
+/** @brief What get() answers for a slice of WA_SEND_SLICE_MS without a
+ *         byte. */
 #define WA_GET_IDLE (-1)
-/** What get() answers for a connection that failed. */
+/** @brief What get() answers for a connection that failed. */
 #define WA_GET_FAILED (-2)
 
+/** @brief The connection a refused request's body arrives on. */
 typedef struct {
-    /** Up to @p n bytes, waiting one slice at most: the bytes, 0 when the
-     *  client closed, WA_GET_IDLE or WA_GET_FAILED. */
+    /** @brief Up to @p n bytes, waiting one slice at most: the bytes, 0 when
+     *         the client closed, WA_GET_IDLE or WA_GET_FAILED. */
     int32_t  (*get)(void *ctx, uint8_t *p, uint32_t n);
-    /** True when the wait is to end now; NULL for never. */
+    /** @brief True when the wait is to end now; NULL for never. */
     bool     (*stop)(void *ctx);
-    /** Milliseconds; wraps at 2^32. */
+    /** @brief Milliseconds; wraps at 2^32. */
     uint32_t (*now_ms)(void *ctx);
-    void     *ctx;
+    void     *ctx;     /**< @brief passed to each of them */
 } wa_source_t;
 
-/** How the body of a refused request ended. */
+/** @brief How the body of a refused request ended. */
 typedef enum {
     WA_LINGER_DONE = 0, /**< read to its end                              */
     WA_LINGER_GONE,     /**< the client closed, or the connection failed  */

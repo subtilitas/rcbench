@@ -1,5 +1,6 @@
-/*
- * One file off the card. See wa_send.h.
+/**
+ * @file
+ * @brief One file off the card. See wa_send.h.
  *
  * SPDX-License-Identifier: MIT
  */
