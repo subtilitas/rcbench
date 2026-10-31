@@ -1,11 +1,19 @@
 /**
  * @file
- * @brief The outputs screen: choose a protocol, then tick the pins it drives.
+ * @brief OUTPUTS: choose a protocol or a programming port, then its pins.
+ *
+ * The router's screen is outputs_view_screen() (outputs_view.c), with two
+ * views of one choice.  A board with a drawing or a shape gets the board view
+ * (picker_screen()): the board is the pin control, and the PROG PORT entry's
+ * rows stand in the column beside it.  A board with neither, and the rbmod
+ * carrier, get the grid view (outputs_screen(), this header): a tick box a
+ * pin.  A board that answers or goes during a visit moves the screen to the
+ * view it wants, keeping the selection.
  *
  * A visit from SETUP opens on the overview: OFF selected, every bound pin
  * named by its protocol, and a tap on a pin changes nothing until a
  * protocol is picked.  Selecting OFF in the list goes back to the overview.
- * The pin picker opens on it too.  A visit from a workbench's TARGET row
+ * A visit from a workbench's TARGET row
  * opens on what that workbench drives (outputs_screen_open_on()).
  *
  * The list ends in one PROG PORT entry per programming port the IOmcu
@@ -44,6 +52,22 @@
 extern "C" {
 #endif
 
+/**
+ * @brief The router's OUTPUTS, which draws one of the two views.
+ * @return its hooks
+ */
+const ui_screen_t *outputs_view_screen(void);
+
+/**
+ * @brief Which view OUTPUTS draws for the board it holds now.
+ * @return true for the board view, false for the grid
+ */
+bool outputs_view_is_board(void);
+
+/**
+ * @brief The grid view.
+ * @return its hooks
+ */
 const ui_screen_t *outputs_screen(void);
 
 /** Repaint the cached chrome in every framebuffer. */
@@ -207,11 +231,15 @@ void outputs_screen_set_port_watch(uint8_t port, const char *label);
 bool outputs_screen_reason(char *buf, size_t cap);
 
 /**
- * The part of that line the protocol's rules give, for binding @p b: OFF
+ * @brief The part of that line the protocol's rules give, for binding @p b: OFF
  * edits nothing, the protocol has all its pins, all 8 slots are in use, or
- * the protocol needs more channels than are free.  The pin picker draws the
+ * the protocol needs more channels than are free.  The board view draws the
  * same line from its own binding.  An empty string and false when a pin can
  * still be added.
+ * @param b the binding
+ * @param buf takes the line
+ * @param cap bytes at @p buf
+ * @return true when there is a line
  */
 bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
 
@@ -221,7 +249,7 @@ bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
  *        port pins @p ports): "SLICE OF GPIO 13" beside a programming
  *        port's pin, "PWM CH OF GPIO 0" beside a pin bound as PWM.
  *
- * The pin picker names the holder with the same line.
+ * The board view names the holder with the same line.
  *
  * @param b      the binding
  * @param index  the pin's catalogue entry
@@ -290,7 +318,7 @@ bool outputs_clash_reason(const outbind_t *b, int index,
  * The pins follow the settings: a row stepped on SETUP frees the old pin
  * and holds the new, once the page holds it.
  *
- * OUTPUTS and PICK A PIN show such a pin taken and named, as a
+ * Both views of OUTPUTS show such a pin taken and named, as a
  * programming port's pin is, and take no tick on it; a protocol that holds
  * it already keeps it, as against a port.
  */
@@ -322,8 +350,11 @@ uint64_t outputs_iface_pins(outputs_iface_t which);
  *  set to one pin: the first in the order of outputs_iface_t. */
 outputs_iface_t outputs_iface_at(uint8_t gpio);
 
-/** The name a taken pin's cell and PICK A PIN's IN USE table give
- *  function @p which, in the language in force; "" for none. */
+/**
+ * @brief The name a taken pin's cell and the IN USE table give a function.
+ * @param which the function
+ * @return its name in the language in force; "" for none
+ */
 const char *outputs_iface_name(outputs_iface_t which);
 
 /**
@@ -351,13 +382,14 @@ int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
                  bool centre);
 
 /**
- * Select protocol @p proto, as a pick in the list does: the set shown and
+ * @brief Select protocol @p proto, as a pick in the list does: the set shown and
  * the group the next tick joins.  Writes nothing and calls nothing.  OFF
- * (0) is the overview: entering this screen or the pin picker selects it,
+ * (0) is the overview: entering OUTPUTS from SETUP selects it,
  * and so does a change of board.  It stays selected across readings until
  * another protocol is selected.  An index past the table is ignored.  The
- * pin picker's list selects through this, so the two screens show one
+ * board view's list selects through this, so the two views show one
  * selection.
+ * @param proto the protocol
  */
 void outputs_screen_select(uint8_t proto);
 

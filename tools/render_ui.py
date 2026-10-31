@@ -468,7 +468,7 @@ SCREENS = {
     "supply-pdmini": ("supply-pdmini.png", "supply", "dark"),
     "supply-pdmini-rbmod": ("supply-pdmini-rbmod.png", "supply", "dark"),
     "supply-pdmini-why": ("supply-pdmini-why.png", "supply", "dark"),
-    # The rbmod carrier: no PICK A PIN tile, and soldered pin rows.
+    # The rbmod carrier: the LAYOUT tile, and soldered pin rows.
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
     "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
     "supply-rbmod": ("supply-rbmod.png", "supply", "dark"),
@@ -504,55 +504,50 @@ SCREENS = {
     # which nine fit beside the count of the rest.
     "setup-leave": ("setup-leave.png", "setup", "dark"),
     "setup-leave-many": ("setup-leave-many.png", "setup", "dark"),
+    # OUTPUTS on a drawn board: SERVO PWM on three pins, DSHOT300 on one under
+    # IN USE, LAST WRITE and the cat.
     "outputs":    ("outputs.png",    "outputs",    "dark"),
+    # The board from its shape, without the IOmcu's drawing.
+    "outputs-shape": ("outputs-shape.png", "outputs", "dark"),
+    # The protocol list open over the board.
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
-    "outputs-held": ("outputs-held.png", "outputs", "dark"),
+    # Eight of eight slots: every free key grey, and the reason why.
     "outputs-full": ("outputs-full.png", "outputs", "dark"),
     # The longest protocol name, DSHOT600 BIDIR, in the closed list.
     "outputs-bidir": ("outputs-bidir.png", "outputs", "dark"),
-    # The overview every visit opens on, OFF: every bound pin names its
-    # protocol, the longest among them.
+    # OFF picked, GP13 the programming port's, 8 pins over 6 protocols: the
+    # tallest IN USE table, in its 20px rows.
     "outputs-off": ("outputs-off.png", "outputs", "dark"),
     # The binding last read, after a read that failed.
     "outputs-unread": ("outputs-unread.png", "outputs", "dark"),
     # The same after a read of pages no binding describes, with the key
     # that unbinds every pin.
     "outputs-odd": ("outputs-odd.png", "outputs", "dark"),
-    # GP13 is the programming port's.
+    # GP13 is the programming port's: held, and named under IN USE; GP28
+    # tapped, refused for its slice.
     "outputs-prog": ("outputs-prog.png", "outputs", "dark"),
     # The PROG PORT entry, as SERVO's TARGET row opens it with the port as
-    # the tester's target: GP13 lit, SERVO TESTER and PORT PWM.
+    # the tester's target: its rows beside the board and the cat.
     "outputs-port": ("outputs-port.png", "outputs", "dark"),
-    # The rbmod carrier: PWM01 to PWM04 and a refusal for slice 2, PROG
-    # PORT 1 on its soldered pin.
-    "outputs-rbmod": ("outputs-rbmod.png", "outputs", "dark"),
-    "outputs-rbmod-port": ("outputs-rbmod-port.png", "outputs", "dark"),
     # PROG PORT 2, function NONE on GP14, its FUNCTION ask waiting for a
     # bench at rest.
     "outputs-port2": ("outputs-port2.png", "outputs", "dark"),
-    # PROG PORT 2 on a 4.28 IOmcu, DSHOT300 on GP14: the FUNCTION list
-    # open over the column, five entries.
+    # PROG PORT 3, a SERVO PWM port without a pin: GP13 port 1's, GP14 port
+    # 2's, the slice of each PWM output held.
+    "outputs-port3": ("outputs-port3.png", "outputs", "dark"),
+    # PROG PORT 2 on a 4.28 IOmcu, DSHOT300 on GP14: the FUNCTION list open
+    # over the column, five entries.
     "outputs-port-dshot": ("outputs-port-dshot.png", "outputs", "dark"),
-    # The overview with SENSORS and PD MINI wired: GP16 and GP17 the sensor
-    # bus's, GP18 and GP19 the PD mini's, GP22 the phase tap's.
+    # The overview with SENSORS and PD MINI wired: GP16 and GP17 the sensor bus's,
+    # GP18 and GP19 the PD mini's, GP22 the phase tap's, held and named under
+    # IN USE after the programming port.
     "outputs-iface": ("outputs-iface.png", "outputs", "dark"),
-    "picker": ("picker.png", "picker", "dark"),
-    "picker-drawn": ("picker-drawn.png", "picker", "dark"),
-    # GP13 is the programming port's: held, and named under IN USE.
-    "picker-prog": ("picker-prog.png", "picker", "dark"),
-    # PROG PORT 3 picked, a SERVO PWM port without a pin: GP13 port 1's,
-    # GP14 port 2's, the slice of each PWM output held.
-    "picker-port": ("picker-port.png", "picker", "dark"),
-    # Eight of eight slots: every free key grey, and the reason why.
-    "picker-full": ("picker-full.png", "picker", "dark"),
-    # The protocol list open over the board.
-    "picker-protocol": ("picker-protocol.png", "picker", "dark"),
-    # OFF picked, GP13 the programming port's, 8 pins over 6 protocols:
-    # the tallest IN USE table, in its 20px rows.
-    "picker-off": ("picker-off.png", "picker", "dark"),
-    # The same interfaces on PICK A PIN: held, and named under IN USE after
-    # the programming port.
-    "picker-iface": ("picker-iface.png", "picker", "dark"),
+    # The grid view of a board with neither a shape nor a drawing.
+    "outputs-grid": ("outputs-grid.png", "outputs", "dark"),
+    # The rbmod carrier: the grid view, PWM01 to PWM04 and a refusal for
+    # slice 2, PROG PORT 1 on its soldered pin.
+    "outputs-rbmod": ("outputs-rbmod.png", "outputs", "dark"),
+    "outputs-rbmod-port": ("outputs-rbmod-port.png", "outputs", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),
     "supply": ("supply.png", "supply", "dark"),
     "supply-settings": ("supply-settings.png", "supply", "dark"),
@@ -840,17 +835,17 @@ FIT_ONLY = {
     "files-edit-see50": (None, "files", "dark"),
 }
 
-# Every cat pose but the first, on PICK A PIN posed as "picker" is:
-# picker-cat-1 and on, in tools/gen_cats.py's POSES order.  The first is the
+# Every cat pose but the first, on OUTPUTS posed as "outputs" is:
+# outputs-cat-1 and on, in tools/gen_cats.py's POSES order.  The first is the
 # one every view draws where it fits.
-FIT_ONLY.update({f"picker-cat-{i}": (None, "picker", "dark")
+FIT_ONLY.update({f"outputs-cat-{i}": (None, "outputs", "dark")
                  for i in range(1, len(gen_cats.POSES))})
 
 # Views that open a drop-down, a chip's help bubble, the alert band, the
 # text editor's question or its see-through keyboard over the screen: the
 # list, the bubble, the band, the box or the keys cover the labels under it
 # by design, so a fill drawn over a string is not a finding there.
-OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "picker-protocol",
+OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-folder",
                  "files-edit-unsaved", "files-edit-revert",

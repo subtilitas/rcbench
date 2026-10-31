@@ -210,12 +210,12 @@ fest:
   den Schienen, ohne Tasten ([Der Strommonitor](#der-strommonitor)).
 - Der Tab PD MINI auf SUPPLY zeigt PD mini TX und RX auf den Pins des Carriers, ohne
   Tasten und ohne Keypad.
-- Die Kachel PICK A PIN öffnet LAYOUT: J1 und J2 in ihrer
+- Eine Kachel LAYOUT öffnet LAYOUT: J1 und J2 in ihrer
   Positionsfolge mit Rolle, GPIO, Netz am + und dem gebundenen
   Protokoll jeder Position, und die weiteren Stecker
   ([Bildschirme: Layout](Screens-de.md#layout)).
 
-![SETUP auf dem Carrier, LAYOUT an der Stelle von PICK A PIN](img/de/setup-rbmod.png)
+![SETUP auf dem Carrier, LAYOUT die letzte Kachel](img/de/setup-rbmod.png)
 
 ![LAYOUT](img/de/layout-rbmod.png)
 

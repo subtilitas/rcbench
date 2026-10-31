@@ -19,6 +19,9 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+/** @brief The board view is drawn, not this grid (outputs_view.c). */
+static bool s_board_view;
+
 /** @brief The screen's width: the panel's 1024px. */
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H    /**< The body under the band: 540px. */
@@ -200,6 +203,11 @@ void outputs_screen_invalidate(void)
 }
 
 const outbind_t *outputs_screen_binding(void) { return &s.bind; }
+
+uint32_t outputs_screen_revision(void)
+{
+    return s.gen + outputs_port_revision();
+}
 
 /* The hold on UNBIND ALL PINS, and the press that began it, are over. */
 static void drop_clear_hold(void)
@@ -383,8 +391,11 @@ static gfx_rect_t pop_row_rect(int i)
 
 static gfx_rect_t clear_rect(void)
 {
-    return gfx_rect_make(COL_X, CLR_Y, COL_W, CLR_H);
+    return s_board_view ? gfx_rect_make(OB_CLR_X, OB_CLR_Y, OB_CLR_W, OB_CLR_H)
+                        : gfx_rect_make(COL_X, CLR_Y, COL_W, CLR_H);
 }
+
+gfx_rect_t outputs_unbind_rect(void) { return clear_rect(); }
 
 /* UNBIND ALL PINS is drawn, and so takes a hold: a binding read that is
  * not one, and a protocol's column, not a PROG PORT entry's. */
@@ -392,6 +403,8 @@ static bool clear_offered(void)
 {
     return s.read == BIND_READ_ODD && outputs_screen_port_shown() < 0;
 }
+
+bool outputs_unbind_offered(void) { return clear_offered(); }
 
 /**
  * @brief The grid position of catalogue pin @p i: its index, or on a board
@@ -442,9 +455,23 @@ static int cell_at(int x, int y)
 
 /* ------------------------------------------------------------------- input */
 
+void outputs_screen_set_board_view(bool board)
+{
+    if (board != s_board_view) {
+        s_board_view = board;
+        drop_clear_hold();
+        s.open = false;
+        s.hit_kind = HIT_NONE;
+        outputs_port_set_view(board);
+        outputs_screen_invalidate();
+        touched();
+    }
+}
+
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
+    s_board_view = false;
     outbind_init(&s.bind);
     s.confirmed = s.bind;
     s.read = BIND_READ_OK;
@@ -528,7 +555,7 @@ static void event(const touch_event_t *evt)
     }
     const int x = evt->point.x, y = evt->point.y;
 
-    if (!s.open && outputs_port_event(evt)) {
+    if (!s.open && (outputs_port_event(evt) || outputs_unbind_event(evt))) {
         return;
     }
 
@@ -546,10 +573,6 @@ static void event(const touch_event_t *evt)
         if (inside(dd_rect(), x, y)) {
             s.hit_kind = HIT_DD; touched(); return;
         }
-        if (clear_offered() && inside(clear_rect(), x, y)) {
-            s.hit_kind = HIT_CLEAR; ui_hold_begin(&s.clear, TX_HOLD_HINT_UNBIND); touched();
-            return;
-        }
         /* A binding that is not confirmed takes no press on a pin, and
          * neither does OFF, which edits none: the reason is under the
          * protocol, and a cell that lit under the finger would say a tap
@@ -559,17 +582,6 @@ static void event(const touch_event_t *evt)
                           ? cell_at(x, y) : -1;
         if (c >= 0) {
             s.hit_kind = HIT_CELL; s.hit_index = c; touched();
-        }
-        return;
-    }
-
-    if (evt->type == TOUCH_EVENT_MOVE) {
-        /* A finger that slides off the key abandons the hold, as on every
-         * held control (ui_hold_leave()). */
-        if (s.hit_kind == HIT_CLEAR && !inside(clear_rect(), x, y)
-            && ui_hold_leave(&s.clear)) {
-            s.hit_kind = HIT_NONE;
-            touched();
         }
         return;
     }
@@ -610,13 +622,40 @@ static void event(const touch_event_t *evt)
             s.refused = -1;
             changed();
         }
-    } else if (kind == HIT_CLEAR) {
-        /* The hold acts when it completes, not on the release. */
-        (void)ui_hold_end(&s.clear, evt, clear_rect());
-        touched();
     } else {
         touched();
     }
+}
+
+bool outputs_unbind_event(const touch_event_t *evt)
+{
+    const int x = evt->point.x, y = evt->point.y;
+    if (evt->type == TOUCH_EVENT_DOWN) {
+        if (!clear_offered() || !inside(clear_rect(), x, y)) {
+            return false;
+        }
+        s.hit_kind = HIT_CLEAR;
+        ui_hold_begin(&s.clear, TX_HOLD_HINT_UNBIND);
+        touched();
+        return true;
+    }
+    if (s.hit_kind != HIT_CLEAR) {
+        return false;
+    }
+    if (evt->type == TOUCH_EVENT_MOVE) {
+        /* A finger that slides off the key abandons the hold, as on every
+         * held control (ui_hold_leave()). */
+        if (!inside(clear_rect(), x, y) && ui_hold_leave(&s.clear)) {
+            s.hit_kind = HIT_NONE;
+            touched();
+        }
+    } else if (evt->type == TOUCH_EVENT_UP) {
+        s.hit_kind = HIT_NONE;
+        /* The hold acts when it completes, not on the release. */
+        (void)ui_hold_end(&s.clear, evt, clear_rect());
+        touched();
+    }
+    return true;
 }
 
 /* ------------------------------------------------------------------ render */
@@ -691,7 +730,7 @@ int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
     return lines;
 }
 
-static const char *result_text(void)
+const char *outputs_result_text(void)
 {
     switch (s.result) {
     case OUTPUTS_OK:      return TR(OUT_WRITTEN);
@@ -702,7 +741,7 @@ static const char *result_text(void)
     }
 }
 
-static gfx_color_t result_color(void)
+gfx_color_t outputs_result_color(void)
 {
     switch (s.result) {
     case OUTPUTS_OK:      return UI_OK;
@@ -878,6 +917,34 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
     return (held != 0u) ? OUTPUTS_CELL_TICKED : OUTPUTS_CELL_FREE;
 }
 
+void outputs_unbind_draw(gfx_canvas_t *c)
+{
+    if (!clear_offered()) {
+        return;
+    }
+    /* Danger red as it is held, as the other held controls fade to the
+     * colour of what they are about to do. */
+    const gfx_rect_t k = clear_rect();
+    const gfx_color_t fill = ui_hold_fill(UI_PANEL, UI_DANGER, s.clear.held_s);
+    gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
+    gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, UI_DANGER);
+    /* Centred, 10px in from either end: on the grid in the label face, two
+     * lines at most; on the narrower board view's key in 8 x 16, four. */
+    const char *label = TR(OUT_HOLD_UNBIND);
+    const gfx_font_t *font = s_board_view ? OU_FONT_FINE : OU_FONT_LABEL;
+    const int pitch = s_board_view ? OB_WHY_FINE : OU_LINE;
+    const int most = s_board_view ? 4 : 2;
+    const int h = gfx_text_height(font, 1);
+    const gfx_rect_t in = gfx_rect_make(k.x + 10, k.y, k.w - 20, h);
+    const int lines = outputs_wrap(NULL, in, pitch, label, most, font, UI_TEXT,
+                                   true);
+    (void)outputs_wrap(c,
+                       gfx_rect_make(in.x, k.y + (k.h - h) / 2
+                                               - (lines - 1) * pitch / 2,
+                                     in.w, h),
+                       pitch, label, most, font, UI_TEXT, true);
+}
+
 static void draw_left(gfx_canvas_t *c)
 {
     if (outputs_screen_port_shown() >= 0) {
@@ -912,40 +979,19 @@ static void draw_left(gfx_canvas_t *c)
                            OU_LINE, buf, 2, OU_FONT_LABEL, UI_WARN, false);
     }
 
-    if (s.read == BIND_READ_ODD) {
-        /* Danger red as it is held, as the other held controls fade to the
-         * colour of what they are about to do. */
-        const gfx_rect_t k = clear_rect();
-        const gfx_color_t fill = ui_hold_fill(UI_PANEL, UI_DANGER,
-                                              s.clear.held_s);
-        gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
-        gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0,
-                                 UI_DANGER);
-        /* One line in the middle, or two 22px apart about it, 10px in
-         * from either end. */
-        const char *label = TR(OUT_HOLD_UNBIND);
-        const gfx_rect_t in = gfx_rect_make(k.x + 10, k.y, k.w - 20, 20);
-        const int lines = outputs_wrap(NULL, in, OU_LINE, label, 2,
-                                       OU_FONT_LABEL, UI_TEXT, true);
-        (void)outputs_wrap(c,
-                           gfx_rect_make(in.x, k.y + (k.h - 20) / 2
-                                                   - (lines - 1)
-                                                         * (OU_LINE / 2),
-                                         in.w, 20),
-                           OU_LINE, label, 2, OU_FONT_LABEL, UI_TEXT, true);
-    }
+    outputs_unbind_draw(c);
 
     /* The result in the head face, on a second line where it is wider
      * than the column, its last line ending on the column's foot; LAST
      * WRITE right above its first. */
     const int lines = outputs_wrap(NULL, gfx_rect_make(COL_X, 0, COL_W, 36),
-                                   RESULT_PITCH, result_text(), 2,
-                                   OU_FONT_HEAD, result_color(), false);
+                                   RESULT_PITCH, outputs_result_text(), 2,
+                                   OU_FONT_HEAD, outputs_result_color(), false);
     const int ry = RESULT_Y + (2 - lines) * RESULT_PITCH;
     gfx_text(c, COL_X, ry - LAST_ABOVE, TR(OUT_LAST_WRITE), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     (void)outputs_wrap(c, gfx_rect_make(COL_X, ry, COL_W, 36), RESULT_PITCH,
-                       result_text(), 2, OU_FONT_HEAD, result_color(),
+                       outputs_result_text(), 2, OU_FONT_HEAD, outputs_result_color(),
                        false);
 }
 

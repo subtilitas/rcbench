@@ -233,16 +233,15 @@ static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY(SET_CAT_CARD,  ui_icon_chart),
     HUB_CATEGORY_LINE(SET_CAT_SENSORS, TX_SET_HUB_SENSORS, ui_icon_supply),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
-    HUB_SCREEN(SCREEN_PICKER,  TX_SET_HUB_PICKER,  ui_icon_board),
     HUB_SCREEN(SCREEN_WIFI,    TX_SET_HUB_WIFI,    ui_icon_wifi),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
     HUB_SCREEN(SCREEN_FILES,   TX_SET_HUB_FILES,   ui_icon_folder),
 };
 
-/** @brief Number of tiles, at most SETTINGS_HUB_SLOTS (9). */
+/** @brief Tiles of every board; a board that solders its pins adds LAYOUT. */
 #define TILE_COUNT ((int)(sizeof(k_tiles) / sizeof(k_tiles[0])))
 
-_Static_assert(TILE_COUNT <= SETTINGS_HUB_SLOTS,
+_Static_assert(TILE_COUNT + 1 <= SETTINGS_HUB_SLOTS,
                "a tenth SETUP tile needs the hub's second page");
 _Static_assert(SETTINGS_HUB_SLOTS == HUB_COLS * HUB_ROWS,
                "the hub's slots are its grid");
@@ -381,12 +380,19 @@ extern stg_state_t stg_s;
  */
 gfx_rect_t stg_tile_rect(int i);
 /**
- * @brief Hub tile @p i as the recorded board shows it: PICK A PIN's tile is
- *        LAYOUT's on a board whose pins are soldered.
- * @param i The tile, 0 to TILE_COUNT - 1.
+ * @brief Hub tile @p i: past the table's tiles, LAYOUT's, which a board whose
+ *        pins are soldered shows last.
+ * @param i The tile, 0 to stg_tile_count() - 1.
  * @return The tile.
  */
 const hub_tile_t *stg_hub_tile(int i);
+
+/**
+ * @brief The tiles the hub shows: TILE_COUNT, and LAYOUT last on a board that
+ *        solders its pins.
+ * @return their number
+ */
+int stg_tile_count(void);
 /**
  * @brief Returns column @p col of the strip under the grid and the list.
  * @param col strip column, 0 to 2

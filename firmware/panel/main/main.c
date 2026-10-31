@@ -844,14 +844,13 @@ void app_main(void)
      */
     outputs_screen_set_apply(outputs_apply);
     /*
-     * The picker is the same choice seen as the board, so it applies through
-     * the same seam, selects its protocol on the outputs screen, and takes
-     * the board's drawing the control task published.
+     * OUTPUTS' board view is the same choice seen as the board, so it applies
+     * through the same seam and takes the board's drawing the control task
+     * published.
      */
     picker_screen_set_apply(outputs_apply);
-    picker_screen_set_select(outputs_screen_select);
     picker_screen_set_drawing_source(drawing_for_picker);
-    /* PICK A PIN's cat is picked with the hardware random source. */
+    /* The cat on OUTPUTS' board view is picked with the hardware random source. */
     ui_cats_set_random(esp_random);
     /* A port's PIN or FUNC asked on either screen goes to the control
      * task, which writes it on a bench at rest. */

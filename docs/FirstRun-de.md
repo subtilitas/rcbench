@@ -406,7 +406,7 @@ behaltene Kopie, wenn alle drei übereinstimmen:
 Ein IOmcu, der mit einer anderen Zeichnung geflasht wurde, meldet einen
 anderen Hash, und das Panel holt die Zeichnung neu. Ein IOmcu mit
 Protokoll 4.19 oder älter liefert keine Zeichnung; das Panel schreibt
-`hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its
+`hardware 1 serves no board drawing (protocol 4.19); OUTPUTS draws its
 shape` ins Log und zeichnet die Platine aus ihrem Umriss.
 
 ---
@@ -456,7 +456,7 @@ OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
 also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
 
 Am Panel: **Setup → OUTPUTS**, `SERVO PWM` wählen, einen Pin anhaken. Oder
-**Setup → PICK A PIN**, in dessen Liste `SERVO PWM` wählen und eine Taste auf
+**Setup → OUTPUTS**, in dessen Liste `SERVO PWM` wählen und eine Taste auf
 der Platinenzeichnung antippen — Massen sind mit `G` markiert,
 Versorgungen tragen ihre Spannung.
 

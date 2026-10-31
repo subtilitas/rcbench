@@ -381,7 +381,7 @@ frames one host sent. CHAN_CFG and OUTPUTS stay writable one entry a frame,
 in force as each is acknowledged: the SERVO screen writes a channel's range
 that way, and the panel the throttle's endpoints.
 
-| Panel | IOmcu | A binding edited on OUTPUTS or PICK A PIN |
+| Panel | IOmcu | A binding edited on OUTPUTS |
 | --- | --- | --- |
 | 4.10 | 4.10 | prepared and committed: SERVO `FRAME_HZ` = 0, 8 frames to BIND_CFG, 8 to BIND_OUT, `COMMIT`, then OUTPUTS and CHAN_CFG read back. 20 exchanges |
 | 4.10 | 4.9 or older | the panel reads the minor at link-up and sends nothing to the three pages. SERVO `FRAME_HZ` = 0 (4.1 and later), 8 frames to CHAN_CFG, 8 to OUTPUTS, each its own acknowledged exchange and in force as acknowledged, then both pages read back. 19 exchanges. A frame lost part way leaves the entries before it in force; the panel then shows the pages as they read and writes nothing over them but a binding with no pin |
@@ -780,7 +780,7 @@ A DShot function is stored as 3 to 5.
 | older than 4.25 | reads no version 8 record and starts with an empty store | every port is at its default pin and function |
 
 The panel writes `PIN` and `FUNC` only when the operator asks, on OUTPUTS'
-PROG PORT entry or in PICK A PIN ([Screens](Screens.md#the-prog-port-entry)),
+PROG PORT entry ([Screens](Screens.md#the-prog-port-entry)),
 never from a stored setting: the ports are the board's, as the outputs'
 binding is. An ask waits for a bench at rest. A port that is the
 `TARGET` is let go first (its `PWM` bit off, `TARGET` 0), and the target
@@ -1239,7 +1239,7 @@ ARMED, and the panel's tracking of a `TARGET` change.
 
 From 4.20 the IOmcu serves a drawing of its own board on ARTWORK
 (0x26) and ART_DATA (0x27): the outline, the parts as flat shapes and every
-pad with what it is. PICK A PIN draws the board from it to scale. A new board
+pad with what it is. OUTPUTS draws the board from it to scale. A new board
 brings its drawing in its own IOmcu image; the panel needs no change
 for it. The RP2350-CAN's drawing is 1,560 bytes in 26 blocks: 40 pads and
 102 shapes on an outline of 51.00 × 21.00mm.
@@ -1281,7 +1281,7 @@ refuse. CI (continuous integration) runs it with `--check`.
 | Panel | IOmcu | Behaviour |
 | --- | --- | --- |
 | 4.20 | 4.20 | as above |
-| 4.20 | 4.19 or older | the panel does not read ARTWORK and draws the board from SHAPE. The log says `hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its shape` |
+| 4.20 | 4.19 or older | the panel does not read ARTWORK and draws the board from SHAPE. The log says `hardware 1 serves no board drawing (protocol 4.19); OUTPUTS draws its shape` |
 | 4.19 or older | 4.20 | the panel reads seven ARTWORK registers, finds format 2 and fetches nothing: `no photograph from hardware 1: it describes a photograph that cannot be one`. A photograph it kept before still shows |
 
 `test_link_drawing`, `test_board_drawing`, `test_link_artxfer`,

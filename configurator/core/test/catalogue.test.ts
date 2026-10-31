@@ -69,7 +69,7 @@ function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = (
   const entry = (line: number, key: string, def: number): void => {
     settings[line - 1] = `    [${key}] = {`;
     settings[line] = `        "key", "GPIO",`;
-    settings[line + 1] = `        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, ${def}, NULL, 0 },`;
+    settings[line + 1] = `        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, ${def}, NULL, 0 },`;
   };
   entry(149, 'SET_SENSE_SDA', 16);
   entry(152, 'SET_SENSE_SCL', 17);
@@ -988,7 +988,7 @@ test('tree: the firmware parsers read the table formats of the release', () => {
   const settings = [
     '    [SET_SENSE_SDA] = {',
     '        "sns_sda", "Sensor SDA", "IOmcu GPIO; -1: no sensor bus", "GPIO",',
-    '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },',
+    '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },',
   ].join('\n');
   assert.deepEqual(parseSettingDefault(settings, 'SET_SENSE_SDA'), { def: 16, line: 1 });
   assert.equal(parseSettingDefault(settings, 'SET_TONE_PIN'), null);
@@ -1055,13 +1055,13 @@ test('tree: a data file that is stale against the firmware tables is reported', 
 
 test('tree: stale pin defaults are reported', () => {
   const sda = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[150] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+    lines(files, SETTINGS)[150] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, sda), 'pin.sda', /GPIO 16 in the data and 18/);
 
   // The firmware has a default for a pin the data calls a proposal.
   const pd = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[215] = '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
+    lines(files, SETTINGS)[215] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, pd), 'pin.pd_tx', /proposal in the data/);
 

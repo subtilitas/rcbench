@@ -6,7 +6,7 @@ order: 63
 
 # Layout
 
-LAYOUT shows the connectors of a board with soldered pins, the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier). It opens from the PICK A PIN tile on [Setup](setup.md) while the IOmcu reports that board; the tile reads `CONNECTORS AND PINS` there. Its home tag leads back to SETUP. The screen drives nothing and takes no tap: the pins are soldered, and [Outputs](outputs.md) gives each servo output its protocol.
+LAYOUT shows the connectors of a board with soldered pins, the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier). It opens from its LAYOUT tile on [Setup](setup.md) while the IOmcu reports that board; the tile reads `CONNECTORS AND PINS` there. Its home tag leads back to SETUP. The screen drives nothing and takes no tap: the pins are soldered, and [Outputs](outputs.md) gives each servo output its protocol.
 
 ![LAYOUT on the carrier](view:layout-rbmod)
 

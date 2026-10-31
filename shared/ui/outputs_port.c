@@ -4,13 +4,13 @@
  *        ports as outputs.  See outputs_screen.h.
  *
  * One entry a port the IOmcu reports; outputs_port_entry.c draws the one
- * shown.  This file holds what the entries and PICK A PIN share: the
+ * shown.  This file holds what the entries and the board view share: the
  * ports' pins, the pins SENSORS and SUPPLY's PD MINI hold, the entry the screen
  * opens on.
  *
  * The lines that name a PWM pin the IOmcu refuses beside a port's pin or a
  * bound PWM pin (outputs_clash_label(), outputs_clash_reason()) are here
- * too, for OUTPUTS and PICK A PIN alike, and the role names of a board
+ * too, for both views of OUTPUTS, and the role names of a board
  * that solders its pins (outputs_role_name()).
  *
  * SPDX-License-Identifier: MIT

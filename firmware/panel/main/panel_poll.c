@@ -45,7 +45,7 @@ static uint16_t s_dev_faults;
 
 /*
  * What the sensor bus, the PD mini and the phase tap hold on the IOmcu's
- * pins by their pages' last reads, for OUTPUTS and PICK A PIN: a refused
+ * pins by their pages' last reads, for both views of OUTPUTS: a refused
  * part or relocation leaves the pins the page keeps.  With the link down
  * none is known, and the screens follow the settings.  An IOmcu without
  * the SUPPLY page holds no PD mini pin.

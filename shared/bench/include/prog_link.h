@@ -480,7 +480,7 @@ uint8_t prog_link_count(const prog_link_t *p);
  */
 uint8_t prog_link_pin(const prog_link_t *p, uint8_t port);
 
-/** @brief A port as the page holds it, for the OUTPUTS entry and PICK A PIN. */
+/** @brief A port as the page holds it, for the OUTPUTS entry and the board view. */
 typedef struct {
     uint8_t pin;        /**< the PIN register, PROG_LINK_NO_PIN for none  */
     uint8_t func;       /**< a link_pg_func_t                              */

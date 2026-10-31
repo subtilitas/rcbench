@@ -744,7 +744,7 @@ UI_TEXT(OUT_PROG_PORT, 14,
     "PROG PORT",
     "PROG-PORT")
 /* What SENSORS or PD MINI holds a pin for (outputs_iface_name()): a
- * taken pin's cell on OUTPUTS and a name in PICK A PIN's IN USE table. */
+ * taken pin's cell in the grid view and a name in the IN USE table. */
 UI_TEXT(OUT_IFACE_SENSE, 14,
     "SENSOR BUS",
     "SENSORBUS")
@@ -870,11 +870,7 @@ UI_TEXT(OUT_SLICE_OF_OUT, 18,
 UI_TEXT(OUT_OUT_SLICE_WHY, 60,
     "%s GPIO %u: SAME PWM SLICE AS %s GPIO %u",
     "%s GPIO %u: GLEICHER PWM-SLICE WIE %s GPIO %u")
-/* PICK A PIN with a PROG PORT picked: the count line names its function,
- * and a pin refused beside a PWM output says why. */
-UI_TEXT(PK_PORT_FN, 0,
-    "FUNCTION: %s",
-    "FUNKTION: %s")
+/* A pin refused beside a PWM output says why. */
 UI_TEXT(PK_PORT_SLICE_WHY, 52,
     "GPIO %u: SHARES PWM SLICE WITH OUTPUT GPIO %u",
     "GPIO %u: TEILT PWM-SLICE MIT OUTPUT GPIO %u")
@@ -902,7 +898,7 @@ UI_TEXT(OUT_NOT_READ, 60,
 UI_TEXT(OUT_NOT_MAPPED, 60,
     "NO VALID ASSIGNMENT IN THE PAGES",
     "KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES")
-/* What holds a reserved pin, under its GPIO on OUTPUTS and PICK A PIN
+/* What holds a reserved pin, under its GPIO in the grid view of OUTPUTS
  * (ui_pin_holder()), 14 cells as PROG PORT: the IOmcu catalogue's
  * LINK_PIN_* kinds.  HEARTBEAT,
  * FLASH, DEBUG and SENSOR are the field's words in German too. */
@@ -950,18 +946,6 @@ UI_TEXT(PK_NONE, 17,
 UI_TEXT(PK_NOT_READ, 35,
     "NOT READ",
     "NICHT AUSGELESEN")
-UI_TEXT(PK_NO_ART_1, 31,
-    "NO BOARD IMAGE AVAILABLE",
-    "KEIN PLATINENBILD VERFÜGBAR")
-UI_TEXT(PK_NO_ART_2, 52,
-    "THE BOARD DOES NOT REPORT ITS PAD POSITIONS.",
-    "DIE PLATINE MELDET KEINE PAD-POSITIONEN.")
-UI_TEXT(PK_NO_ART_3, 52,
-    "AN ACCURATE DRAWING IS NOT POSSIBLE.",
-    "EINE GENAUE ZEICHNUNG IST DAHER NICHT MÖGLICH.")
-UI_TEXT(PK_NO_ART_4, 52,
-    "SEE ITS PINS ON THE OUTPUTS SCREEN.",
-    "DIE PINS FINDEN SICH AUF DER SEITE OUTPUTS.")
 
 /* ------------------------------------------------------------ analyser */
 UI_TEXT(AN_TAB_CHANNELS, 0,
@@ -1256,11 +1240,8 @@ UI_TEXT(SET_COUNT, 0,
     "%d SETTINGS",
     "%d EINSTELLUNGEN")
 UI_TEXT(SET_HUB_OUTPUTS, 0,
-    "PROTOCOLS AND PINS",
-    "PROTOKOLLE UND PINS")
-UI_TEXT(SET_HUB_PICKER, 0,
-    "ON THE BOARD DRAWING",
-    "AUF DER PLATINE")
+    "PROTOCOLS, PINS, BOARD",
+    "PROTOKOLLE, PINS, PLATINE")
 UI_TEXT(SET_HUB_LAYOUT, 0,
     "CONNECTORS AND PINS",
     "STECKER UND PINS")
@@ -1283,8 +1264,8 @@ UI_TEXT(LAYOUT_NONE, 0,
     "THIS BOARD HAS NO SOLDERED PINS.",
     "DIESES BOARD HAT KEINE VERLÖTETEN PINS.")
 UI_TEXT(LAYOUT_NONE_WHERE, 0,
-    "ITS PINS ARE CHOSEN ON OUTPUTS AND PICK A PIN.",
-    "SEINE PINS WERDEN UNTER OUTPUTS UND PICK A PIN GEWÄHLT.")
+    "ITS PINS ARE CHOSEN ON OUTPUTS.",
+    "SEINE PINS WERDEN UNTER OUTPUTS GEWÄHLT.")
 UI_TEXT(SET_HUB_WIFI, 0,
     "NETWORK, FILES, UPLOAD",
     "NETZWERK, DATEIEN, UPLOAD")

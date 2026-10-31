@@ -5,7 +5,7 @@
  * languages, and every screen's title.
  *
  * Cases:
- * - the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files
+ * - the_setup_tiles_open_the_outputs_wifi_updates_and_files
  * - the_band_titles_match_the_tiles
  * - wifi_returns_to_the_screen_that_opened_it
  * - wifi_keeps_its_opener_over_stop_link_loss_and_home
@@ -52,16 +52,16 @@ static void tap_home(void)
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
  * can reach.  The table's order, row by row: PANEL, SD CARD and SENSORS;
- * OUTPUTS, PICK A PIN and WI-FI; UPDATES and FILES.  ESC / BENCH is no tile: its rows are MOTOR & ESC >
+ * OUTPUTS, WI-FI and UPDATES; FILES, with the carrier's LAYOUT after it.  ESC / BENCH is no tile: its rows are MOTOR & ESC >
  * SETTINGS'.
  */
-TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files)
+TEST_CASE(the_setup_tiles_open_the_outputs_wifi_updates_and_files)
 {
     static const struct {
         ui_screen_id_t id;
         const char    *title;
     } k_tools[] = {
-        { SCREEN_OUTPUTS, "OUTPUTS" }, { SCREEN_PICKER, "PICK A PIN" },
+        { SCREEN_OUTPUTS, "OUTPUTS" },
         { SCREEN_WIFI, "WI-FI" },      { SCREEN_UPDATES, "UPDATES" },
         { SCREEN_FILES, "FILES" },
     };
@@ -156,7 +156,7 @@ static void wifi_from_setup(void)
 {
     ui_router_goto(SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_SETUP);
-    tap_tile(SET_CAT_SETUP_COUNT + 2);
+    tap_tile(SET_CAT_SETUP_COUNT + 1);
     CHECK_EQ(ui_router_current(), SCREEN_WIFI);
 }
 
@@ -640,7 +640,7 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
 }
 
 /*
- * SUPPLY, WI-FI, OUTPUTS and PICK A PIN through the router's home tag:
+ * SUPPLY, WI-FI and OUTPUTS in both views through the router's home tag:
  * over what the screen opened the tag closes it, one level a tap, and the
  * screen stays; with nothing open it goes to the screen's parent, for
  * OUTPUTS the workbench whose TARGET row opened it.  SUPPLY's SETTINGS is
@@ -663,7 +663,7 @@ TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
         { SCREEN_OUTPUTS, SCREEN_MOTOR,    open_outputs_list,    1 },
         { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list,    1 },
         { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list_on_port, 1 },
-        { SCREEN_PICKER,  SCREEN_SETUP,    open_picker_list,     1 },
+        { SCREEN_OUTPUTS, SCREEN_SETUP,    open_picker_list,     1 },
     };
     for (size_t k = 0; k < sizeof(k_cases) / sizeof(k_cases[0]); ++k) {
         fresh();
@@ -1044,7 +1044,7 @@ TEST_CASE(every_menu_mark_and_label_ends_above_the_alert_band)
 
 int main(void)
 {
-    RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files);
+    RUN(the_setup_tiles_open_the_outputs_wifi_updates_and_files);
     RUN(the_band_titles_match_the_tiles);
     RUN(wifi_returns_to_the_screen_that_opened_it);
     RUN(wifi_from_the_setup_tile_returns_to_setup_after_any_history);

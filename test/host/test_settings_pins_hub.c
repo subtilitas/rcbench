@@ -639,15 +639,15 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 }
 
 /*
- * Eight tiles: PANEL, SD CARD and SENSORS, then OUTPUTS, PICK
- * A PIN, WI-FI, UPDATES and FILES.  SD CARD's list is AUTO LOGS and USER LOGS, two
+ * Seven tiles: PANEL, SD CARD and SENSORS, then OUTPUTS, WI-FI,
+ * UPDATES and FILES.  SD CARD's list is AUTO LOGS and USER LOGS, two
  * toggles, named in both languages, Browser writes, and the two log folders
  * under them (test_settings_folders).
  */
-TEST_CASE(the_hub_holds_eight_tiles_and_sd_card_is_the_second)
+TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_second)
 {
     fresh_hub();
-    CHECK_EQ(settings_hub_tiles(), 8);
+    CHECK_EQ(settings_hub_tiles(), 7);
     CHECK_EQ(SET_CAT_SENSORS, 2);
     CHECK_EQ(SET_CAT_CARD, 1);
     tap(tile_x(SET_CAT_CARD), tile_y(SET_CAT_CARD));
@@ -839,7 +839,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         { ui_icon_record, "LOGS" },       { ui_icon_sliders, "SETUP" },
         { ui_icon_battery, "BATTERY" },   { ui_icon_balance, "BALANCE" },
         { ui_icon_chart, "SD CARD" },     { ui_icon_list, "OUTPUTS" },
-        { ui_icon_board, "PICK A PIN" },  { ui_icon_wifi, "WI-FI" },
+        { ui_icon_wifi, "WI-FI" },
     };
     /* The menu's tile, 243 x 255px: the 40px icon 30px down, the name
      * in the head face at 84 (overview_screen.c). */
@@ -855,17 +855,17 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         icon_over_name(r, &k_menu, menu[i].name, menu[i].name);
     }
     /* SETUP's, as the screen draws them: the categories, then OUTPUTS,
-     * PICK A PIN, WI-FI, UPDATES and FILES.  The 36px icon's box starts 14px
+     * WI-FI, UPDATES and FILES.  The 36px icon's box starts 14px
      * down, the name in the body face at 60 (settings_screen_int.h). */
     static const ui_tile_look_t k_hub = {
         .icon_dy = 14, .icon = 36, .name_dy = 60, .line_dy = 94,
         .line_pitch = 0, .name_f = &gfx_font_12x24,
         .line_f = &gfx_font_10x20,
     };
-    static const ui_screen_id_t screens[] = { SCREEN_OUTPUTS, SCREEN_PICKER,
+    static const ui_screen_id_t screens[] = { SCREEN_OUTPUTS,
                                               SCREEN_WIFI, SCREEN_UPDATES,
                                               SCREEN_FILES };
-    CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 5);
+    CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 4);
     ui_router_render(&s_c, 0);
     for (int i = 0; i < settings_hub_tiles(); ++i) {
         gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
@@ -934,7 +934,7 @@ int main(void)
     RUN(pd_mini_tx_and_rx_step_over_the_pin_the_other_holds);
     RUN(a_stored_pd_mini_on_one_pin_loads_and_is_named);
     RUN(the_hub_has_nine_slots_and_no_tenth);
-    RUN(the_hub_holds_eight_tiles_and_sd_card_is_the_second);
+    RUN(the_hub_holds_seven_tiles_and_sd_card_is_the_second);
     RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);

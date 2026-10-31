@@ -204,12 +204,12 @@ fixed:
   the rails, with no keys ([The current monitor](#the-current-monitor)).
 - SUPPLY's PD MINI tab shows PD mini TX and RX at the carrier's pins, with no
   keys and no keypad.
-- The PICK A PIN tile opens LAYOUT: J1 and J2 in their position order
+- A LAYOUT tile opens LAYOUT: J1 and J2 in their position order
   with each position's role, GPIO, net on its + and the protocol bound
   on it, and the other connectors
   ([Screens: Layout](Screens.md#layout)).
 
-![SETUP on the carrier, LAYOUT in PICK A PIN's place](img/setup-rbmod.png)
+![SETUP on the carrier, LAYOUT the last tile](img/setup-rbmod.png)
 
 ![LAYOUT](img/layout-rbmod.png)
 
