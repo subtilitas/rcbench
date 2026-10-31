@@ -93,6 +93,7 @@ TEST_CASE(a_tap_on_a_folder_row_opens_the_folder_keyboard_on_it)
     open_folder(SET_TEXT_LOG_AUTO_DIR);
     CHECK(kb()->open);
     CHECK(kb()->folder);
+    CHECK(settings_screen()->covered());
     CHECK_STR_EQ(kb()->text, CARD_AUTO_LOGS);
     CHECK_STR_EQ(kb()->title, "Auto log folder");
     CHECK_STR_EQ(ui_textkey_key_label(kb(), UI_TK_DOT), "/");

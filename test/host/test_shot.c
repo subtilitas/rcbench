@@ -23,6 +23,7 @@
 #include "busfault_screen.h"
 #include "shot_file.h"
 #include "shot_gate.h"
+#include "fm_name.h"
 #include "ui_shot.h"
 #include "ui_textkey.h"
 
@@ -417,6 +418,7 @@ TEST_CASE(every_screen_with_the_band_keeps_a_gap_but_at_its_fullest)
         ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
         CHECK(narrowest_gap(&safe) >= 40);
         CHECK(narrowest_gap(&armed) >= 40);
+        CHECK_EQ(narrowest_gap(&st), 0);
     }
     /* MOTOR & ESC, ARMED MOTOR and every FAULT bit up: no room is no hold,
      * and the band's controls are not crowded. */
@@ -597,7 +599,178 @@ TEST_CASE(the_gate_is_true_only_with_every_fact_idle)
 
 /* ------------------------------------------------------------- the popup */
 
-TEST_CASE(armed_the_picture_waits_and_stop_and_disarm_stay_live)
+/**
+ * @brief The readings of an idle bench with one set by the case.
+ * @param off  the field's offset; sizeof for none
+ * @return the bench
+ */
+static shot_bench_t bench_with(size_t off)
+{
+    shot_bench_t b = { .read = true, .link_up = true };
+    if (off < sizeof(b)) {
+        *((bool *)&b + off) = true;
+    }
+    return b;
+}
+
+TEST_CASE(each_reading_of_the_panel_reaches_its_fact)
+{
+    start();
+    shot_facts_t f;
+    const shot_bench_t idle = bench_with(sizeof(shot_bench_t));
+    shot_facts_read(&idle, &f);
+    CHECK_EQ(shot_gate(&f), SHOT_IDLE);
+    static const struct {
+        size_t off;
+        shot_wait_t why;
+    } k[] = {
+        { offsetof(shot_bench_t, armed), SHOT_WAIT_ARMED },
+        { offsetof(shot_bench_t, arm_wanted), SHOT_WAIT_ARMED },
+        { offsetof(shot_bench_t, stop_request), SHOT_WAIT_STOP },
+        { offsetof(shot_bench_t, supply_on), SHOT_WAIT_SUPPLY },
+        { offsetof(shot_bench_t, supply_sample), SHOT_WAIT_SUPPLY },
+        { offsetof(shot_bench_t, supply_coming), SHOT_WAIT_SUPPLY },
+        { offsetof(shot_bench_t, prog5v_on), SHOT_WAIT_PROG5V },
+        { offsetof(shot_bench_t, prog5v_coming), SHOT_WAIT_PROG5V },
+        { offsetof(shot_bench_t, hitec_holds), SHOT_WAIT_PORT },
+        { offsetof(shot_bench_t, card_job_out), SHOT_WAIT_PROGRAM_IO },
+        { offsetof(shot_bench_t, testing), SHOT_WAIT_TEST },
+        { offsetof(shot_bench_t, cu_active), SHOT_WAIT_UPDATE },
+        { offsetof(shot_bench_t, update_busy), SHOT_WAIT_UPDATE },
+        { offsetof(shot_bench_t, fault_log_out), SHOT_WAIT_CARD_FAULT },
+        { offsetof(shot_bench_t, run_open), SHOT_WAIT_RECORDING },
+    };
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        const shot_bench_t b = bench_with(k[i].off);
+        shot_facts_read(&b, &f);
+        CHECK_EQ(shot_gate(&f), k[i].why);
+    }
+    shot_bench_t b = bench_with(sizeof(shot_bench_t));
+    b.faults = 0x40u;
+    shot_facts_read(&b, &f);
+    CHECK_EQ(shot_gate(&f), SHOT_WAIT_FAULT);
+    /* No link, and the simulated bench that stands in for it. */
+    b = bench_with(sizeof(shot_bench_t));
+    b.link_up = false;
+    shot_facts_read(&b, &f);
+    CHECK_EQ(shot_gate(&f), SHOT_WAIT_LINK);
+    b.simulated = true;
+    shot_facts_read(&b, &f);
+    CHECK_EQ(shot_gate(&f), SHOT_IDLE);
+    /* Readings nobody filled in. */
+    const shot_bench_t none = { .link_up = true };
+    shot_facts_read(&none, &f);
+    CHECK(!shot_gate_idle(&f));
+    shot_facts_read(NULL, &f);
+    CHECK(!shot_gate_idle(&f));
+    /* What SUPPLY says of a port. */
+    supply_screen_set_port_held(true);
+    shot_facts_read(&idle, &f);
+    CHECK_EQ(shot_gate(&f), SHOT_WAIT_PORT);
+    supply_screen_set_port_held(false);
+}
+
+TEST_CASE(armed_a_hold_acts_on_no_control_and_disarm_stays_live)
+{
+    start();
+    ui_router_goto(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    ui_bench_status_t st = status();
+    st.armed = true;
+    st.armed_roles = UI_ARMED_MOTOR;
+    ui_router_set_status(&st);
+    ui_router_shot_set_idle(false);
+    motor_cmd_t c;
+    while (motor_screen_poll_cmd(&c)) { }
+
+    /* A whole hold: no command. */
+    hold_shot();
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+    CHECK(ui_shot_held());
+    CHECK(!motor_screen_poll_cmd(&c));
+
+    /* DISARM's press during a hold: it acts on its press, and ends the
+     * hold. */
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    wait_ms(500);
+    touch(MO_ARM_X, UI_BAND_H + MO_ARM_Y, TOUCH_EVENT_DOWN, 2);
+    REQUIRE(motor_screen_poll_cmd(&c));
+    CHECK_EQ(c.kind, MOTOR_CMD_DISARM);
+    wait_ms(1000);
+    CHECK(!ui_shot_wanted());
+    touch(MO_ARM_X, UI_BAND_H + MO_ARM_Y, TOUCH_EVENT_UP, 2);
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+
+    /* The disarm comes through: the popup after the finger has lifted, and
+     * the press that disarmed was no press of the popup. */
+    ui_router_shot_set_idle(true);
+    CHECK(ui_shot_open());
+    motor_screen_set_armed(false);
+}
+
+/**
+ * @brief Tap the key that shows @p ch on the popup's keyboard.
+ * @param ch  the character, on the layer showing
+ */
+static void type_char(char ch)
+{
+    const char want[2] = { ch, '\0' };
+    for (int key = 0; key < UI_TK_DEL; ++key) {
+        if (strcmp(ui_textkey_key_label(ui_shot_keyboard(), key), want) == 0) {
+            tap_key(key);
+            return;
+        }
+    }
+    T_FAIL("no key shows %c", ch);
+}
+
+/**
+ * @brief Clear the name and type @p text in capitals, then tap SAVE.
+ * @param text  the name, in capitals and digits
+ */
+static void type_and_save(const char *text)
+{
+    tap_key(UI_TK_CLR);
+    for (const char *p = text; *p != '\0'; ++p) {
+        type_char(*p);
+    }
+    tap_key(UI_TK_OK);
+}
+
+TEST_CASE(names_the_rules_refuse_save_nothing_and_stay)
+{
+    /* A device name, alone. */
+    start();
+    open_popup();
+    g_answered = true;
+    ui_router_tick(0.016f);
+    g_job = UI_SHOT_JOB_NONE;
+    type_and_save("CON");
+    CHECK(ui_shot_open());
+    CHECK(g_job != UI_SHOT_JOB_SAVE);
+    CHECK_EQ(ui_shot_keyboard()->why, FM_NAME_RESERVED);
+    /* A space at the end is the keyboard's refusal as well. */
+    tap_key(UI_TK_CLR);
+    type_char('A');
+    tap_key(UI_TK_SPACE);
+    tap_key(UI_TK_OK);
+    CHECK(g_job != UI_SHOT_JOB_SAVE);
+    CHECK_EQ(ui_shot_keyboard()->why, FM_NAME_EDGE);
+    /* 55 bytes go in; the 56th is not typed, and it saves. */
+    tap_key(UI_TK_CLR);
+    for (int i = 0; i < 60; ++i) {
+        type_char('A');
+    }
+    CHECK_EQ(strlen(ui_shot_name()), SHOT_BASE_MAX);
+    tap_key(UI_TK_OK);
+    CHECK_EQ(g_job, UI_SHOT_JOB_SAVE);
+    CHECK_EQ(strlen(g_base), SHOT_BASE_MAX);
+    /* And a name the file's own check refuses never reaches the task: the
+     * extension counts. */
+    CHECK_EQ(shot_name_check(g_base), FM_NAME_OK);
+}
+
+TEST_CASE(armed_the_picture_waits_and_stop_and_stays_live)
 {
     start();
     ui_bench_status_t st = status();
@@ -983,7 +1156,10 @@ int main(void)
     RUN(a_second_hold_replaces_the_waiting_picture_in_the_same_memory);
     RUN(the_preview_is_the_mean_of_four_by_four);
     RUN(the_gate_is_true_only_with_every_fact_idle);
-    RUN(armed_the_picture_waits_and_stop_and_disarm_stay_live);
+    RUN(each_reading_of_the_panel_reaches_its_fact);
+    RUN(armed_a_hold_acts_on_no_control_and_disarm_stays_live);
+    RUN(names_the_rules_refuse_save_nothing_and_stay);
+    RUN(armed_the_picture_waits_and_stop_and_stays_live);
     RUN(the_finger_that_made_the_bench_idle_presses_nothing);
     RUN(not_idle_closes_the_popup_and_the_picture_waits_with_its_name);
     RUN(a_fault_screen_closes_it_and_it_waits_for_the_acknowledge);

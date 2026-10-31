@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,6 +64,41 @@ typedef enum {
     SHOT_WAIT_RECORDING,
     SHOT_WAIT_COUNT
 } shot_wait_t;
+
+/**
+ * @brief What only the panel's tasks know of the bench, read each frame.
+ *        Named for what each means, so false is the idle side; @c read false
+ *        keeps every fact false whatever the rest says.
+ */
+typedef struct {
+    bool     read;           /**< the frame loop filled this in             */
+    bool     link_up;        /**< the snapshot's link                       */
+    bool     simulated;      /**< the numbers are the panel's model         */
+    bool     armed;          /**< the snapshot's ARMED                      */
+    bool     arm_wanted;     /**< the snapshot's arm waiting                */
+    bool     stop_request;   /**< a STOP waits for the control task         */
+    bool     supply_on;      /**< the snapshot's supply output              */
+    bool     supply_sample;  /**< the newest sample's output                */
+    bool     supply_coming;  /**< supply_live_or_coming()                   */
+    bool     prog5v_on;      /**< the PROG 5V box's output                  */
+    bool     prog5v_coming;  /**< supplies_live_or_coming()                 */
+    bool     hitec_holds;    /**< the HITEC page holds a port               */
+    bool     card_job_out;   /**< a programmer's file or card job is out    */
+    bool     testing;        /**< s_servo_testing                           */
+    bool     cu_active;      /**< the IOmcu's update runs                   */
+    bool     update_busy;    /**< panel_update_busy()                       */
+    uint16_t faults;         /**< the snapshot's FAULT bits                 */
+    bool     fault_log_out;  /**< log_fault_busy()                          */
+    bool     run_open;       /**< panel_run_open()                          */
+} shot_bench_t;
+
+/**
+ * @brief The facts from @p b and from what the screens say of themselves:
+ *        a port held, a session open, a sweep, a test, a stick run.
+ * @param b    the bench; NULL or @c read false leaves every fact false
+ * @param out  takes the facts
+ */
+void shot_facts_read(const shot_bench_t *b, shot_facts_t *out);
 
 /**
  * @brief Why the popup waits.

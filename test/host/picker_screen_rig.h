@@ -141,6 +141,7 @@ static inline void pick(const char *name)
 {
     tap_rect(picker_screen_list_face());
     CHECK(picker_screen_list_open());
+    CHECK(picker_screen()->covered());
     tap_rect(picker_screen_list_row(proto_named(name)));
     CHECK(!picker_screen_list_open());
 }

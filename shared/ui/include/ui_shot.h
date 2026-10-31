@@ -40,6 +40,7 @@
 #include "gfx.h"
 #include "touch_types.h"
 #include "ui_layout.h"
+#include "ui_textkey.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -226,6 +227,12 @@ const char *ui_shot_name(void);
  * @return the text, "" for none
  */
 const char *ui_shot_status(void);
+
+/**
+ * @brief The popup's keyboard, for tests.
+ * @return the keyboard
+ */
+const ui_textkey_t *ui_shot_keyboard(void);
 
 /**
  * @brief Where a key of the popup's keyboard is, for tests.

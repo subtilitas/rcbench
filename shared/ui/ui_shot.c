@@ -115,6 +115,7 @@ const gfx_color_t *ui_shot_preview(void)
 }
 const char *ui_shot_status(void) { return s.status; }
 void ui_shot_invalidate(void) { s.drawn = 0u; }
+const ui_textkey_t *ui_shot_keyboard(void) { return &s.tk; }
 gfx_rect_t ui_shot_key_rect(int key)
 {
     return ui_textkey_key_rect(&s.tk, key);

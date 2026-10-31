@@ -12,6 +12,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "shot_facts_rig.h"
 #include "hitec_panel_rig.h"
 
 /* --------------------------------------------------------------- series */
@@ -334,6 +335,7 @@ TEST_CASE(close_while_held_opens_leave_and_a_2s_hold_leaves)
     tap_connect();
     tap(hitec_panel_close_rect());
     CHECK(hitec_panel_is_open());
+    CHECK(!shot_facts_now().no_session);
     CHECK_EQ(hitec_panel_editor(), 3);
     CHECK_EQ(strcmp(hitec_panel_page_line(0), TR(KP_LEAVE_TITLE)), 0);
     CHECK_EQ(strcmp(hitec_panel_page_line(2), TR(HP_LEAVE_D)), 0);

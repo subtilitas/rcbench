@@ -57,7 +57,9 @@ TEST_CASE(a_drag_moves_the_set_point_by_the_distance_dragged)
         ev(TRACK_X + 100 + k, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
     }
     ev(TRACK_X + 110, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_screen()->covered());
     tap(APPLY_X, ASK_Y);
+    CHECK(!supply_screen()->covered());
     const float at_100 = 3.3f + 100.0f * per_px;
     CHECK_NEAR(supply_screen_set_v(), at_100 + 10.0f * per_px, 0.03f);
 }

@@ -139,7 +139,7 @@ static struct {
     } owned[TOUCH_MAX_POINTS];
 
     /**
-     * Every contact on the glass, whoever owns it, by track id: what a
+     * @brief Every contact on the glass, whoever owns it, by track id: what a
      * screenshot's hold takes for a second contact, and what the popup
      * waits for to lift.  Set at a DOWN, cleared at its UP and at a touch
      * loss.
@@ -150,8 +150,8 @@ static struct {
     int16_t  shot_x;      /**< where its contact last was, panel x         */
     int16_t  shot_y;      /**< and panel y                                 */
     uint32_t shot_ms;     /**< how long it has run, ms                     */
-    /** The bench is idle (shot_gate.h), as the application last said; false
-     *  until it says so. */
+    /** @brief The bench is idle (shot_gate.h), as the application last said;
+     *         false until it says so. */
     bool     shot_idle;
 } s;
 

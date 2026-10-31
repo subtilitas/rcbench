@@ -415,6 +415,7 @@ TEST_CASE(a_network_picked_from_the_scan_is_kept_with_its_password)
     CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
     v.radio = WIFI_RADIO_SCANNING;
     show();
+    CHECK(wifi_screen()->covered());
     CHECK(render_lit() > 1000);
     tap(ROW_CX(0), ROW_CY(0));               /* nothing listed yet */
     CHECK_EQ(wifi_screen_take(), 0u);

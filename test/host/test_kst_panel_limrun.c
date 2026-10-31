@@ -8,6 +8,7 @@
  */
 #include <math.h>
 
+#include "shot_facts_rig.h"
 #include "kst_panel_rig.h"
 #include "settings_sensors.h"
 /* kst_prog_say(): the test plants a message the programmer said earlier. */
@@ -316,6 +317,7 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         lr_fresh(rev != 0);
         lr_start();
         CHECK(servo_screen_limit_running());
+        CHECK(!shot_facts_now().no_test);
         lr_run_out();
         CHECK(!servo_screen_limit_running());
         CHECK(strstr(lr.report, "RCBENCH SERVO LIMIT REPORT\n") == lr.report);

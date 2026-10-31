@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "shot_facts_rig.h"
 #include "touch_feed.h"
 
 #include "esc_stick_panel.h"
@@ -141,8 +142,11 @@ static void fresh(void)
 
 static void open_session(void)
 {
+    CHECK(!motor_screen()->covered());
     feed_tap(FEED_LONE, ROW_X, ROW_Y);
     frames(2);
+    CHECK(motor_screen()->covered());
+    CHECK(!shot_facts_now().no_session);
 }
 
 static void home_tag(void)

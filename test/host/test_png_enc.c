@@ -49,8 +49,7 @@ static bool sink(const uint8_t *data, size_t n, void *ctx)
     }
     if (g_len + n > g_cap) {
         g_cap = (g_len + n) * 2u;
-        g_file = realloc(g_file, g_cap);
-        REQUIRE_ALLOC(g_file);
+        REQUIRE_REALLOC(g_file, g_cap);
     }
     memcpy(g_file + g_len, data, n);
     g_len += n;
@@ -160,7 +159,7 @@ TEST_CASE(the_state_and_a_flat_panel_stay_small)
 
 TEST_CASE(limits_are_refused)
 {
-    static uint16_t row[4];
+    static const uint16_t row[4] = { 0u, 0u, 0u, 0u };
     CHECK(!png_enc_start(&g_enc, 0, 1, sink, NULL));
     CHECK(!png_enc_start(&g_enc, PNG_ENC_MAX_W + 1, 1, sink, NULL));
     CHECK(!png_enc_start(&g_enc, 1, 0, sink, NULL));

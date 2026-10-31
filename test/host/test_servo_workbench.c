@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "shot_facts_rig.h"
 
 #include "kst_panel.h"
 #include "link_pages.h"
@@ -157,8 +158,10 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     open_run_settings(0);
     tap(LROW_X(1), LROW_Y(1));
     CHECK(servo_screen_keypad()->open);
+    CHECK(servo_screen()->covered());
     CHECK(home_tag());
     CHECK(!servo_screen_keypad()->open);
+    CHECK(!servo_screen()->covered());
     CHECK_EQ(servo_screen_run_settings(), 1);
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), idle, 1e-6f);
     CHECK(home_tag());
@@ -604,6 +607,8 @@ TEST_CASE(the_knob_moves_the_horn_on_live_alone)
     CHECK(!knob_moves());
     tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
     CHECK(kst_panel_is_open());
+    CHECK(servo_screen()->covered());
+    CHECK(!shot_facts_now().no_session);
     CHECK(!knob_moves());
     close_kst();
     CHECK(!kst_panel_is_open());

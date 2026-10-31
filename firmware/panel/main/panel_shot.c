@@ -26,16 +26,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "esc_stick_panel.h"
 #include "fm_ops.h"
-#include "hitec_panel.h"
-#include "kst_panel.h"
 #include "panel.h"
-#include "servo_screen.h"
 #include "shot_file.h"
 #include "shot_gate.h"
 #include "storage.h"
-#include "supply_screen.h"
 #include "ui_screen.h"
 #include "ui_shot.h"
 
@@ -64,8 +59,8 @@ static atomic_bool s_cancel;
 static ui_shot_job_t s_job;
 /** @brief The picture of a save. */
 static const gfx_color_t *s_pixels;
-/** @brief The name of a save, without its extension. */
-static const char *s_base;
+/** @brief The name of a save, without its extension: the task's own copy. */
+static char s_base[SHOT_BASE_MAX + 1u];
 /** @brief What the job came to. */
 static fm_err_t s_err;
 /** @brief The next number, from UI_SHOT_JOB_NEXT. */
@@ -188,7 +183,7 @@ static bool io_start(ui_shot_job_t job, const gfx_color_t *pixels,
     }
     s_job = job;
     s_pixels = pixels;
-    s_base = base;
+    (void)snprintf(s_base, sizeof(s_base), "%s", (base != NULL) ? base : "");
     s_number = 1u;
     atomic_store(&s_percent, 0);
     atomic_store(&s_cancel, false);
@@ -279,34 +274,35 @@ void panel_shot_init(void)
 void panel_shot_frame(const panel_shot_in_t *in)
 {
     const unsigned drive = atomic_load(&s_drive);
-    const shot_facts_t f = {
-        .link_known = in->link_up || in->simulated,
-        .safe = !in->armed && !in->arm_wanted,
-        .stop_served = !atomic_load(&s_stop_request),
-        .supply_off = !in->supply_now && !in->supply_seen
-                      && !supply_live_or_coming(),
-        .prog5v_off = !in->psup_now && !supplies_live_or_coming(),
-        .port_free = !supply_screen_port_held() && !kst_panel_holds_port()
-                     && !hitec_panel_holds_port()
-                     && ((drive >> DRIVE_HELD_SHIFT) & 0xFu) == 0u,
-        .no_session = !kst_panel_is_open() && !hitec_panel_is_open()
-                      && esc_stick_panel_stage() == 0,
-        .no_program_io =
-            atomic_load(&s_kst_file_sent) == atomic_load(&s_kst_file_done)
-            && atomic_load(&s_kst_card_sent)
-                   == atomic_load(&s_kst_card_answered)
-            && atomic_load(&s_hitec_file_sent)
-                   == atomic_load(&s_hitec_file_done)
-            && atomic_load(&s_hitec_card_sent)
-                   == atomic_load(&s_hitec_card_answered),
-        .no_motion = !servo_screen_sweeping() && !servo_screen_paused(),
-        .no_test = !servo_screen_testing() && !servo_screen_limit_running()
-                   && !atomic_load(&s_servo_testing),
-        .no_stick_run = esc_stick_panel_profile() == NULL,
-        .no_update = !in->cu_active && !panel_update_busy(),
-        .no_fault = in->faults == 0u,
-        .no_card_fault = !log_fault_busy(),
-        .no_recording = !panel_run_open(),
+    const shot_bench_t b = {
+        .read = true,
+        .link_up = in->link_up,
+        .simulated = in->simulated,
+        .armed = in->armed,
+        .arm_wanted = in->arm_wanted,
+        .stop_request = atomic_load(&s_stop_request),
+        .supply_on = in->supply_now,
+        .supply_sample = in->supply_seen,
+        .supply_coming = supply_live_or_coming(),
+        .prog5v_on = in->psup_now,
+        .prog5v_coming = supplies_live_or_coming(),
+        .hitec_holds = ((drive >> DRIVE_HELD_SHIFT) & 0xFu) != 0u,
+        .card_job_out =
+            atomic_load(&s_kst_file_sent) != atomic_load(&s_kst_file_done)
+            || atomic_load(&s_kst_card_sent)
+                   != atomic_load(&s_kst_card_answered)
+            || atomic_load(&s_hitec_file_sent)
+                   != atomic_load(&s_hitec_file_done)
+            || atomic_load(&s_hitec_card_sent)
+                   != atomic_load(&s_hitec_card_answered),
+        .testing = atomic_load(&s_servo_testing),
+        .cu_active = in->cu_active,
+        .update_busy = panel_update_busy(),
+        .faults = in->faults,
+        .fault_log_out = log_fault_busy(),
+        .run_open = panel_run_open(),
     };
+    shot_facts_t f;
+    shot_facts_read(&b, &f);
     ui_router_shot_set_idle(shot_gate_idle(&f));
 }

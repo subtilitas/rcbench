@@ -346,6 +346,7 @@ TEST_CASE(function_list_offers_dshot_from_4_28_and_takes_every_press)
      * and reaches no row under it. */
     out_tap(FACE_X, FN_Y);
     CHECK(outputs_port_fn_open());
+    CHECK(outputs_screen()->covered());
     render_out();
     const int target = settings_get_int(SET_SERVO_TARGET);
     out_tap(SEG_X(1), FN_ROW_Y(2));

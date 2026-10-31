@@ -40,6 +40,7 @@ TEST_CASE(delete_asks_first_and_deletes_only_the_file_it_named)
     tap(400, BR_ROW_Y(1));
     draw();
     CHECK_EQ(g_remove_calls, 0);
+    CHECK(log_viewer_screen()->covered());
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     CHECK(log_viewer_analysis() == NULL);
 

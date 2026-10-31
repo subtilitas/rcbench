@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "shot_facts_rig.h"
 #include "touch_feed.h"
 
 #include "gfx.h"
@@ -710,6 +711,7 @@ TEST_CASE(a_sweep_ended_by_a_disarm_leaves_nothing_to_send)
     CHECK_EQ(start_sweep(), SERVO_CMD_SWEEP);
     frames(12);
     CHECK(servo_screen_sweeping());
+    CHECK(!shot_facts_now().no_motion);
     servo_screen_set_armed(false);
     CHECK(!servo_screen_sweeping());
     CHECK_EQ(took().kind, SERVO_CMD_NONE);
