@@ -154,7 +154,7 @@ register 23, the receive mode the next OPEN of a D series line takes.
 line's while a line is open, and kept after CLOSE. They differ after
 register 23 is written while a line is open: the open line keeps its mode
 until CLOSE. The panel writes register 23 at every link-up
-and at every edit of SETUP > INTERFACES > Hitec D receive, saved or not:
+and at every edit of Hitec D receive on the Hitec tab's MORE list:
 every value set on SETUP is in force at once.
 
 `lead_ns` runs from the lead's first edge to the release of the line: the
@@ -256,8 +256,7 @@ hitec line pin=13 line=0x11 rx=pre ...
 > hitec d 0 read 0 0x32
 ```
 
-`pre` and `pu` write the same register the panel writes from SETUP >
-INTERFACES > Hitec D receive. The panel writes it again at its next edit
+`pre` and `pu` write the same register the panel writes from SETUP Hitec D receive (the Hitec tab's MORE list). The panel writes it again at its next edit
 of that row and at every link-up.
 
 A raw `w` of the HITEC page gets no report and no key; the

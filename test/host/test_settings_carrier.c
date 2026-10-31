@@ -176,7 +176,7 @@ TEST_CASE(a_soldered_pin_row_has_no_keys_and_says_so)
 
 /* PICK A PIN's tile: the sixth, after the four categories and OUTPUTS
  * (settings_screen_int.h, test_settings_pins_hub). */
-#define PICKER_TILE 5
+#define PICKER_TILE 4
 
 TEST_CASE(pick_a_pins_tile_opens_board_layout_on_the_carrier)
 {

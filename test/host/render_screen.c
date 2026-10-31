@@ -2503,6 +2503,43 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
         }
     }
 
+    if (id == SCREEN_SUPPLY && strncmp(view, "supply-pdmini", 13) == 0) {
+        /*
+         * The PD MINI tab with the module answering: as wired; with the keypad
+         * refusing RX's GPIO 9; with the output on and the rows locked; or
+         * stored on one pin for both.  The carrier's rows are soldered by its
+         * board (the -rbmod views).
+         */
+        const supply_caps_t caps = SUPPLY_CAPS_PDMINI;
+        const bool why = strcmp(view, "supply-pdmini-why") == 0;
+        const bool rbmod = strcmp(view, "supply-pdmini-rbmod") == 0;
+        settings_set(SET_PDMINI_EN, 1.0f);
+        settings_set(SET_PDMINI_TX, why ? -1.0f : 8.0f);
+        settings_set(SET_PDMINI_RX,
+                     strcmp(view, "supply-pdmini-same") == 0 ? 8.0f : 9.0f);
+        settings_request_save();        /* as the tab asks at a change */
+        supply_screen_set_caps(&caps);
+        supply_screen_set_model(false);
+        supply_screen_set_pins(rbmod ? 7 : why ? -1 : 8, rbmod ? 6 : 9);
+        supply_screen_set_baud(19200u);
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.online = true;
+        st.set_v = 6.0f;
+        st.set_i = 2.0f;
+        supply_screen_push(&st);
+        ui_router_goto(SCREEN_SUPPLY);
+        tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
+        tap(SU_OV_PDMINI_X, UI_BAND_H + SU_OV_TAB_Y);
+        if (why) {
+            tap(SU_PD_VALUE_X, UI_BAND_H + SU_PD_Y(1));
+            kp_type(supply_screen_keypad(), "9");
+            ktap(ui_keypad_key_rect(supply_screen_keypad(), UI_KEY_OK));
+        } else if (strcmp(view, "supply-pdmini-on") == 0) {
+            supply_screen_set_output(true);
+        }
+    }
+
     if (id == SCREEN_SUPPLY && strncmp(view, "supply-offline", 14) == 0) {
         /*
          * The PD mini enabled on GP12 and GP13 and not answering, the
@@ -2528,7 +2565,8 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             tap(SU_TAB_SETTINGS_X, UI_BAND_H + SU_TAB_Y);
             settings_set(SET_SUPPLY_TRIP_MS, 300.0f);
         }
-    } else if (id == SCREEN_SUPPLY) {
+    } else if (id == SCREEN_SUPPLY
+               && strncmp(view, "supply-pdmini", 13) != 0) {
         /* A run of the panel's model, as the panel drives it: the output on
          * at 6V and a 2A limit, the load's bursts holding the limit, the
          * extremes and totals counted from the switch-on. */
@@ -3181,7 +3219,7 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        on PWM01 and PWM02, DSHOT300 on PWM04, MOTOR PWM picked and PWM03
  *        tapped, refused for slice 2.  outputs-rbmod-port: PROG PORT 1 on
  *        GP13.  setup-rbmod: the hub with LAYOUT in PICK A PIN's place.
- *        setup-rbmod-iface: INTERFACES with the PD mini's pins soldered.
+ *        supply-pdmini-rbmod: PD MINI with the PD mini's pins soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
  *        servo-rbmod: SERVO's output card with the box.  servo-kst-rbmod:
@@ -3256,7 +3294,7 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
 }
 
 /**
- * @brief OUTPUTS and the INTERFACES views.
+ * @brief OUTPUTS and the views of the pins SENSORS and PD MINI hold.
  * @param id   The screen of the shot.
  * @param view The golden's name.
  */
@@ -3264,7 +3302,7 @@ static void pose_outputs_views(ui_screen_id_t id, const char *view)
 {
     if ((id == SCREEN_OUTPUTS && strcmp(view, "outputs-iface") == 0)
         || (id == SCREEN_PICKER && strcmp(view, "picker-iface") == 0)) {
-        /* SETUP > INTERFACES as the bench is wired: the INA228 and the
+        /* SENSORS and PD MINI as the bench is wired: the INA228 and the
          * INA3221 on the sensor bus at GP16 and GP17, the PD mini on RX
          * GP18 and TX GP19, the phase tap on GP22. */
         settings_set(SET_INA228_EN, 1.0f);
@@ -3861,9 +3899,9 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
         const gfx_rect_t home = ui_home_tag_rect(ui_router_title(id));
         tap(home.x + home.w / 2, home.y + home.h / 2);
     }
-    /* SETUP opens on its tiles; INTERFACES' list with a value unsaved. */
+    /* SETUP opens on its tiles; PANEL's list with a value unsaved. */
     if (strcmp(view, "setup-dirty") == 0) {
-        setup_tile(SET_CAT_IFACE);
+        setup_tile(SET_CAT_APP);
     }
     /* SETUP's PANEL category: the language, the theme, the knob. */
     if (strcmp(view, "setup-application") == 0
@@ -3874,11 +3912,6 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
     if (strcmp(view, "setup-time-zone") == 0) {
         setup_tile(SET_CAT_APP);
         setup_scroll_rows(4);
-    }
-    /* The carrier's INTERFACES: the PD mini's pins soldered, so their rows
-     * have no keys. */
-    if (strcmp(view, "setup-rbmod-iface") == 0) {
-        setup_tile(SET_CAT_IFACE);
     }
     /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
     if (strcmp(view, "setup-card") == 0) {
@@ -3903,25 +3936,6 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
             ktap(ui_textkey_key_rect(k, (int)(strchr(chars, *p) - chars)));
         }
         ktap(ui_textkey_key_rect(k, UI_TK_OK));
-    }
-    /*
-     * SETUP's INTERFACES: the PD mini, and the list's end with Hitec D receive
-     * at PRECHARGE, marked as an IOmcu older than 4.24 (or 4.23) leaves it, or
-     * held, with PRECHARGE's own help line.
-     */
-    if (strcmp(view, "setup-interfaces") == 0
-        || strcmp(view, "setup-prog") == 0
-        || strcmp(view, "setup-prog-noline") == 0
-        || strcmp(view, "setup-prog-pre") == 0) {
-        setup_tile(SET_CAT_IFACE);
-        if (strncmp(view, "setup-prog", 10) == 0) {
-            settings_set(SET_HITEC_RX, 1.0f);
-            settings_screen_set_hitec_rx(
-                strcmp(view, "setup-prog") == 0 ? HITEC_RX_LINK_OLD
-                : strcmp(view, "setup-prog-pre") == 0
-                    ? HITEC_RX_LINK_HELD
-                    : HITEC_RX_LINK_NO_LINE);
-        }
     }
     /* SENSORS' other entries: the INA228 online, the bus's pins refused, and
      * the tap on with its rows. */
@@ -4001,14 +4015,10 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
         setup_value(SET_CAT_SENSORS, SET_SENSE_SDA);
         kp_type(settings_screen_keypad(), "1");
     }
-    if (strcmp(view, "setup-sda-why") == 0
-        || strcmp(view, "setup-pdmini-why") == 0) {
-        const bool sda = strcmp(view, "setup-sda-why") == 0;
-        settings_set(SET_PDMINI_RX, 9.0f);
-        const setting_cat_t cat = sda ? SET_CAT_SENSORS : SET_CAT_IFACE;
-        setup_tile(cat);
-        setup_value(cat, sda ? SET_SENSE_SDA : SET_PDMINI_TX);
-        kp_type(settings_screen_keypad(), sda ? "5" : "9");
+    if (strcmp(view, "setup-sda-why") == 0) {
+        setup_tile(SET_CAT_SENSORS);
+        setup_value(SET_CAT_SENSORS, SET_SENSE_SDA);
+        kp_type(settings_screen_keypad(), "5");
         ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
     }
 }
@@ -4113,8 +4123,7 @@ int main(int argc, char **argv)
     const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
     s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
                                                        : UI_LANG_EN;
-    s_monitors_on = strcmp(view, "setup-interfaces") == 0
-                    || strncmp(view, "setup-sensors", 13) == 0
+    s_monitors_on = strncmp(view, "setup-sensors", 13) == 0
                     || strcmp(view, "setup-unheld") == 0;
     s_tap_on = strcmp(view, "setup-tap") == 0
                || strcmp(view, "setup-tap-why") == 0;

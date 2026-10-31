@@ -589,7 +589,7 @@ reads the state and shows the alert, is not in the coverage figure.
   counts the stops it is told of, and a question stands only under the count
   it was asked with, so an APPLY tapped in the same frame as STOP changes no
   set point, though the supply reports its output off a sample later.
-- The PD mini's wiring (SETUP INTERFACES) changes, once the module has
+- The PD mini's wiring (SUPPLY's PD MINI tab) changes, once the module has
   answered, only on a state read sent after the change that shows the output
   off. A module that switched itself on in the 500ms between two reads keeps
   its pins and so its OFF path; the IOmcu switches it off.

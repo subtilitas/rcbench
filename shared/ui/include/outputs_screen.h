@@ -271,7 +271,7 @@ bool outputs_clash_reason(const outbind_t *b, int index,
                           size_t cap);
 
 /**
- * What SETUP > INTERFACES has on the IOmcu's pins: the sensor bus, the PD
+ * What SENSORS and SUPPLY's PD MINI have on the IOmcu's pins: the sensor bus, the PD
  * mini's UART and the phase tap.  While the IOmcu answers and its page
  * has been read, a function holds the pins that page holds by its last
  * read (outputs_screen_set_iface_held()): a refused relocation keeps the

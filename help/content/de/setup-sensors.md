@@ -190,5 +190,5 @@ Vibration und Optischer Tacho haben gespeicherte Schlüssel und keinen Eintrag: 
 ## Verwandte Seiten
 
 - [Setup](setup.md)
-- [Anschlüsse](setup-interfaces.md)
+- [Netzteil](supply.md): die Verdrahtung des PD mini, im Tab PD MINI.
 - [Servo](servo.md)

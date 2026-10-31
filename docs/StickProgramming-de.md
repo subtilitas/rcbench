@@ -774,7 +774,7 @@ Pieptöne, die nicht gemessen ist. Es wird nicht gemacht.
 
 ## Simulation
 
-Ist das PD mini in SETUP INTERFACES aus, betreibt der Bildschirm SUPPLY das
+Ist das PD mini im Tab PD MINI auf SUPPLY aus, betreibt der Bildschirm SUPPLY das
 Modell eines Netzteils im Panel. Während eines Stick-Laufs ist der Strom
 dieses Modells ein simulierter ESC (`shared/esc/esc_sim.c`), der dem Profil
 folgt: Einschalten in der Einstiegsstellung betritt das Menü nach dem

@@ -154,7 +154,7 @@ static void st_off(void)
     picker_screen_follow(0u, true);
 }
 
-/** @brief The bench with every interface of SETUP > INTERFACES on. */
+/** @brief The bench with the sensor bus, the PD mini and the tap on. */
 static void st_iface(void)
 {
     st_bench();

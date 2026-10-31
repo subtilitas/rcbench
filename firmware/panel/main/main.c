@@ -416,7 +416,7 @@ atomic_bool s_supply_live;
 atomic_uint s_supply_ons_sent;
 atomic_uint s_supply_ons_taken;
 /*
- * Where the PD mini is wired, from SETUP INTERFACES, in one word so a write
+ * Where the PD mini is wired, from SUPPLY's PD MINI tab, in one word so a write
  * never pairs one edit's TX with another's RX: bit 24 enabled, bits 23..16
  * the TX GPIO and 15..8 the RX, each plus one with 0 for unset, bits 7..0
  * the baud setting.  Published as the pole count is; see publish_pdmini().
@@ -427,7 +427,7 @@ atomic_uint s_pdmini_wiring;
 atomic_uint s_pdmini_edits;
 /*
  * Whether the SUPPLY screen drives the PD mini rather than the panel's
- * model: SETUP INTERFACES enables it.  Stored by the control task, read by
+ * model: SUPPLY's PD MINI tab enables it.  Stored by the control task, read by
  * app_main for the screen's header, caps and the menu's badge.
  */
 atomic_bool s_supply_real;

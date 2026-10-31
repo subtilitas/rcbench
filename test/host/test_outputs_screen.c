@@ -305,7 +305,7 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
 }
 
 /*
- * What SETUP > INTERFACES holds is taken: the sensor bus on Sensor SDA and
+ * What SENSORS and PD MINI hold is taken: the sensor bus on Sensor SDA and
  * the SCL after it while the INA228, the INA3221 or the AS5600 is on, the
  * PD mini's TX and RX while it is on, the tap pin while the phase tap is
  * on.  The cell names the function and takes no tick; the pins follow the

@@ -36,7 +36,7 @@
  * The programmable supply.
  *
  * The PD mini, driven by the IOmcu over the SUPPLY page (protocol 4.3)
- * when one answers that speaks it and SETUP INTERFACES enables the module;
+ * when one answers that speaks it and SUPPLY's PD MINI tab enables the module;
  * the panel's model, supply_sim_t, otherwise, so the screen, the log and the
  * rules here are the same either way.  s_supply_on is what the operator
  * asked; the readings come from the source in use.  Control task only,
@@ -511,7 +511,7 @@ static void supply_queue_sample(void)
 }
 
 /*
- * Which supply the screen drives: the PD mini whenever SETUP INTERFACES
+ * Which supply the screen drives: the PD mini whenever SUPPLY's PD MINI tab
  * enables it -- not answering while no IOmcu that speaks the SUPPLY
  * page does -- and the model otherwise.  A change switches the output off.
  * No exchange here: called from the step, inside the pump.  Returns the
@@ -866,7 +866,7 @@ void supply_link_service(void)
     supply_wiring_t w = { 0 };
     for (int k = 0; k < 3; ++k) {
         /*
-         * An edit on SETUP is followed straight before each write, and the
+         * An edit on the PD MINI tab is followed straight before each write, and the
          * write chosen after it, with no exchange between: an ON taken
          * before the edit is switched off before it can reach the page with
          * the old wiring.  The exchanges of the writes before this one run

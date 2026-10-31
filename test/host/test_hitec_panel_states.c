@@ -265,8 +265,11 @@ TEST_CASE(the_carrier_shows_the_ports_5v_as_fixed)
     CHECK_EQ(hitec_panel_editor(), 2);
     snprintf(want, sizeof(want), TR(KP_SUPPLY_5V_FIXED), 21u);
     CHECK_STR_EQ(hitec_panel_choice_label(0), want);
-    CHECK(hitec_panel_choice_label(1) == NULL
-          || hitec_panel_choice_label(1)[0] == '\0');
+    /* Hitec D receive under it, the list's end. */
+    CHECK(strstr(hitec_panel_choice_label(1), ui_setting_label(SET_HITEC_RX))
+          != NULL);
+    CHECK(hitec_panel_choice_label(2) == NULL
+          || hitec_panel_choice_label(2)[0] == '\0');
     const unsigned mv = hitec_prog_mv(model());
     tap(hitec_panel_choice_rect(0));
     CHECK_EQ(hitec_panel_editor(), 0);

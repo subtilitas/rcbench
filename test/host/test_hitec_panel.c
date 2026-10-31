@@ -93,6 +93,83 @@ static void tabs_not_read(void)
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
 }
 
+/* Hitec D receive on MORE, in PWM, beside the series: the list names both
+ * modes, the one set lit; a tap sets it and asks a save; the IOmcu's word is
+ * owed through the settings as before. */
+TEST_CASE(hitec_d_receive_is_set_on_more_in_pwm)
+{
+    open_en();
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK(strstr(hitec_panel_choice_label(2), "PULL-UP") != NULL);
+    CHECK(strstr(hitec_panel_choice_label(2), ui_setting_label(SET_HITEC_RX))
+          != NULL);
+    tap(hitec_panel_choice_rect(2));
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK_STR_EQ(hitec_panel_choice_label(0), ui_setting_help(SET_HITEC_RX));
+    CHECK_STR_EQ(hitec_panel_choice_label(1), TR(SET_HITEC_RX_PRE));
+    CHECK(hitec_panel_choice_label(2) == NULL);
+    CHECK(!settings_save_asked());
+    tap(hitec_panel_choice_rect(1));
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
+    CHECK(settings_save_asked());
+    /* MORE names what is set; CANCEL keeps it. */
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    CHECK(strstr(hitec_panel_choice_label(2), "PRECHARGE") != NULL);
+    tap(hitec_panel_choice_rect(2));
+    tap(hitec_panel_choice_cancel_rect());
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
+}
+
+/* A session offers no change: a list left open closes as a session starts, and
+ * what a tap there lands on is no mode.  MORE in a session lists no such row
+ * (test_hitec_panel_write.c). */
+TEST_CASE(a_session_closes_hitec_d_receives_list)
+{
+    open_en();
+    servo_d485();
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(hitec_panel_choice_rect(2));
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK_EQ(hitec_prog_connect(model()), HITEC_PROG_MSG_NONE);
+    prun(5000u);
+    CHECK(hitec_prog_state(model()) != HITEC_PROG_PWM);
+    CHECK_EQ(hitec_panel_editor(), 0);
+    tap(hitec_panel_choice_rect(1));
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
+}
+
+/* What the IOmcu does not hold shows under the modes as a line that sets
+ * nothing: each mark its words, EN and DE, none while held. */
+TEST_CASE(hitec_d_receive_says_what_the_iomcu_does_not_hold)
+{
+    static const struct { uint8_t mark; ui_text_id_t why; } k[] = {
+        { HITEC_RX_LINK_OLD, TX_SET_HITEC_RX_OLD },
+        { HITEC_RX_LINK_NO_LINE, TX_SET_HITEC_RX_NO_LINE },
+        { HITEC_RX_LINK_PENDING, TX_SET_UNHELD },
+        { HITEC_RX_LINK_REFUSED, TX_SET_UNHELD },
+    };
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+            open_at(SUPPLY_ON, (ui_lang_t)lang);
+            settings_set(SET_HITEC_RX, 1.0f);
+            g_rx_mark = k[i].mark;
+            prun(20u);
+            tap(val(HITEC_PANEL_SERVO, 2, 0));
+            tap(hitec_panel_choice_rect(2));
+            CHECK_STR_EQ(hitec_panel_choice_label(2), ui_tr(k[i].why));
+            tap(hitec_panel_choice_rect(2));        /* a line to read */
+            CHECK_EQ(hitec_panel_editor(), 0);
+            CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
+            g_rx_mark = (uint8_t)HITEC_RX_LINK_HELD;
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(a_change_of_series_drops_what_the_other_series_read)
 {
     open_en();
@@ -585,6 +662,9 @@ int main(void)
 {
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
+    RUN(hitec_d_receive_is_set_on_more_in_pwm);
+    RUN(a_session_closes_hitec_d_receives_list);
+    RUN(hitec_d_receive_says_what_the_iomcu_does_not_hold);
     RUN(a_change_of_series_drops_what_the_other_series_read);
     RUN(connect_reads_the_d485hw_and_the_tabs_show_its_values);
     RUN(before_a_read_the_value_tabs_say_so);

@@ -199,6 +199,12 @@ A write counts as interrupted when the link goes, a board restarts, ABORT or a s
 
 LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM and the servo may move. After a write with a PD mini the page says the output goes off for 1s and on first; without a PD mini it says the values act after the supply is switched off and on. With nothing written the supply stays as it is. HOLD 2s TO LEAVE takes it after 2s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
 
+## Hitec D receive
+
+MORE lists Hitec D receive while the tester has the port. PULL-UP (the default) needs a 2.2kΩ resistor from the signal wire to the servo supply. PRECHARGE needs none: the IOmcu drives the pad high for 100ns every 1.09us and samples it 113ns later. The IOmcu takes the value at its next OPEN of a D series line, so a session offers no change: LEAVE, set it, CONNECT. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore it. An IOmcu of 0.21.1 or 0.21.2 (protocol 4.23) receives with PULL-UP; with PRECHARGE set the list then reads `IOmcu older than 0.22.0: receives with PULL-UP.` An IOmcu older than 0.21.1 has no Hitec line; with PRECHARGE set the list reads `IOmcu older than 0.21.1: no Hitec line.`
+
+![Hitec D receive's list](view:servo-hitec-rx)
+
 ## Related pages
 
 - [Servo](servo.md) and [Servo settings](servo-settings.md)

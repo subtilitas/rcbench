@@ -247,11 +247,11 @@ static inline void fresh_hub(void)
 }
 
 /*
- * The list the screen tests open: INTERFACES, full width, with a number row
- * first in each section.  ESC / BENCH's rows are MOTOR & ESC > SETTINGS'
+ * The list the screen tests open: PANEL, full width, 12 rows that scroll.
+ * ESC / BENCH's rows are MOTOR & ESC > SETTINGS'
  * (test_motor_workbench), and the sensors' are SENSORS' (open_sensor()).
  */
-#define LIST_CAT SET_CAT_IFACE
+#define LIST_CAT SET_CAT_APP
 
 /* The point inside entry @p e of SENSORS' left list, in panel coordinates. */
 static inline int entry_x(int e)
@@ -297,7 +297,7 @@ static inline void open_sensor(setting_id_t id)
 }
 
 /* The middle of the row of the @p index-th setting of the open list, which
- * lies below the headings above it (INTERFACES has four). */
+ * is its row. */
 static inline int row_y(int index)
 {
     const int cat = settings_screen_category();

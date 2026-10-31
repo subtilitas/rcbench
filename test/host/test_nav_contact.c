@@ -354,9 +354,9 @@ TEST_CASE(home_under_a_setup_scroll_leaves_the_contact_to_no_screen)
     on_screen(SCREEN_SETUP);
     feed_reset();
     int x = 0, y = 0;
-    hub_point(SET_CAT_IFACE, &x, &y);
+    hub_point(SET_CAT_APP, &x, &y);
     feed_tap(FEED_LONE, x, y);
-    CHECK_EQ(settings_screen_category(), SET_CAT_IFACE);
+    CHECK_EQ(settings_screen_category(), SET_CAT_APP);
 
     finger(0, 300, UI_BAND_H + 300);
     glide(0, 300, UI_BAND_H + 200, 8);

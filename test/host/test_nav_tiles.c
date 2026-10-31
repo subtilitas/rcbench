@@ -51,9 +51,8 @@ static void tap_home(void)
 /*
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
- * can reach.  The table's order, row by row: PANEL, INTERFACES and SD
- * CARD; SENSORS, OUTPUTS and PICK A PIN; WI-FI, UPDATES and FILES, which
- * fill the grid.  ESC / BENCH is no tile: its rows are MOTOR & ESC >
+ * can reach.  The table's order, row by row: PANEL, SD CARD and SENSORS;
+ * OUTPUTS, PICK A PIN and WI-FI; UPDATES and FILES.  ESC / BENCH is no tile: its rows are MOTOR & ESC >
  * SETTINGS'.
  */
 TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files)
@@ -69,8 +68,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files)
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
     CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + n);
-    CHECK_EQ(SET_CAT_SETUP_COUNT, 4);   /* PANEL, INTERFACES, SD CARD,
-                                           SENSORS */
+    CHECK_EQ(SET_CAT_SETUP_COUNT, 3);   /* PANEL, SD CARD, SENSORS */
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         ui_router_goto(SCREEN_SETUP);
         tap_tile(cat);
@@ -548,8 +546,8 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
     /* SETUP opens on its tiles again, whichever list was open when it
      * was left. */
     ui_router_goto(SCREEN_SETUP);
-    tap_tile(SET_CAT_IFACE);
-    CHECK_EQ(settings_screen_category(), SET_CAT_IFACE);
+    tap_tile(SET_CAT_APP);
+    CHECK_EQ(settings_screen_category(), SET_CAT_APP);
     ui_router_goto(SCREEN_MOTOR);
     ui_router_goto(SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), -1);
@@ -887,7 +885,7 @@ TEST_CASE(the_setup_hub_names_its_first_category_panel_in_both_languages)
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         CHECK_STR_EQ(ui_setting_category(SET_CAT_APP), "PANEL");
-        CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "INTERFACES");
+        CHECK_STR_EQ(ui_setting_category(SET_CAT_PDMINI), "PD MINI");
     }
     ui_text_set_language(UI_LANG_EN);
 }

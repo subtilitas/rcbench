@@ -603,68 +603,6 @@ TEST_CASE(a_stored_pd_mini_on_one_pin_loads_and_is_named)
     CHECK_EQ(settings_get_int(SET_PDMINI_TX), 46);
 }
 
-/* The mark on SETUP: both PD mini rows and nothing else, gone with it. */
-TEST_CASE(pd_mini_rows_on_one_pin_are_marked_and_nothing_else)
-{
-    static gfx_color_t apart[W * H];
-    static gfx_color_t same[W * H];
-    int max = 0;
-
-    gesture_screen(SET_CAT_IFACE);
-    for (int i = 0; i < 12; ++i) {
-        swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + 40, 4);
-    }
-    CHECK_EQ(settings_screen_scroll(&max), max);
-    const int y_tx = scrolled_y(SET_PDMINI_TX);
-    const int y_rx = scrolled_y(SET_PDMINI_RX);
-    CHECK(y_tx - ROW_H / 2 >= LIST_Y);
-    CHECK(y_rx + ROW_H / 2 <= LIST_Y + LIST_H);
-
-    settings_set(SET_PDMINI_TX, 18.0f);
-    settings_set(SET_PDMINI_RX, 19.0f);
-    settings_screen_invalidate();
-    ui_router_tick(0.05f);
-    ui_router_render(&s_c, 0);
-    memcpy(apart, s_fb, sizeof(apart));
-
-    settings_set(SET_PDMINI_RX, 18.0f);
-    settings_screen_invalidate();
-    ui_router_tick(0.05f);
-    ui_router_render(&s_c, 0);
-    memcpy(same, s_fb, sizeof(same));
-    int in_tx = 0, in_rx = 0, outside = 0;
-    for (int y = 0; y < H; ++y) {
-        for (int x = 0; x < W; ++x) {
-            if (apart[y * W + x] == same[y * W + x]) {
-                continue;
-            }
-            if (x >= LIST_X && y >= y_tx - ROW_H / 2 && y < y_tx + ROW_H / 2) {
-                ++in_tx;
-            } else if (x >= LIST_X && y >= y_rx - ROW_H / 2
-                       && y < y_rx + ROW_H / 2) {
-                ++in_rx;
-            } else {
-                ++outside;
-            }
-        }
-    }
-    CHECK(in_tx > 200);
-    CHECK(in_rx > 200);
-    CHECK_EQ(outside, 0);
-
-    /* A step on TX's "+" takes them apart, and the mark with them. */
-    feed_tap(FEED_LONE, XP, y_tx);
-    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 19);
-    settings_set(SET_PDMINI_TX, 18.0f);
-    settings_set(SET_PDMINI_RX, 19.0f);
-    settings_screen_invalidate();
-    ui_router_tick(0.05f);
-    ui_router_render(&s_c, 0);
-    CHECK(memcmp(apart, s_fb, sizeof(apart)) == 0);
-}
-
-/* ------------------------------------------------------------------- hub */
-
 /*
  * The hub is one page of three by three tiles.  The tile table fills them
  * in order; a tenth entry has no slot, and the build stops at it
@@ -701,17 +639,17 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 }
 
 /*
- * Nine tiles: PANEL, INTERFACES, SD CARD and SENSORS, then OUTPUTS, PICK
+ * Eight tiles: PANEL, SD CARD and SENSORS, then OUTPUTS, PICK
  * A PIN, WI-FI, UPDATES and FILES.  SD CARD's list is AUTO LOGS and USER LOGS, two
  * toggles, named in both languages, Browser writes, and the two log folders
  * under them (test_settings_folders).
  */
-TEST_CASE(the_hub_holds_nine_tiles_and_sd_card_is_the_third)
+TEST_CASE(the_hub_holds_eight_tiles_and_sd_card_is_the_second)
 {
     fresh_hub();
-    CHECK_EQ(settings_hub_tiles(), 9);
-    CHECK_EQ(SET_CAT_SENSORS, 3);
-    CHECK_EQ(SET_CAT_CARD, 2);
+    CHECK_EQ(settings_hub_tiles(), 8);
+    CHECK_EQ(SET_CAT_SENSORS, 2);
+    CHECK_EQ(SET_CAT_CARD, 1);
     tap(tile_x(SET_CAT_CARD), tile_y(SET_CAT_CARD));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), SET_CAT_CARD);
@@ -793,10 +731,10 @@ TEST_CASE(the_tiles_show_and_save_what_a_list_left_unsaved)
     s_save_calls = 0;
     const unsigned clean = save_face();
 
-    open_category(LIST_CAT);
+    open_category(SET_CAT_CARD);
     const unsigned list_clean = save_face();
     CHECK_EQ(list_clean, clean);
-    tap(XP, row_y(0));
+    tap(XM, row_y(0));
     CHECK(settings_dirty());
     const unsigned list_dirty = save_face();
     CHECK(list_dirty != clean);
@@ -900,7 +838,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         { ui_icon_supply, "SUPPLY" },     { ui_icon_chart, "RECEIVER" },
         { ui_icon_record, "LOGS" },       { ui_icon_sliders, "SETUP" },
         { ui_icon_battery, "BATTERY" },   { ui_icon_balance, "BALANCE" },
-        { ui_icon_chip, "INTERFACES" },   { ui_icon_list, "OUTPUTS" },
+        { ui_icon_chart, "SD CARD" },     { ui_icon_list, "OUTPUTS" },
         { ui_icon_board, "PICK A PIN" },  { ui_icon_wifi, "WI-FI" },
     };
     /* The menu's tile, 243 x 255px: the 40px icon 30px down, the name
@@ -995,9 +933,8 @@ int main(void)
     RUN(the_mark_repaints_the_row_when_it_comes_and_when_it_goes);
     RUN(pd_mini_tx_and_rx_step_over_the_pin_the_other_holds);
     RUN(a_stored_pd_mini_on_one_pin_loads_and_is_named);
-    RUN(pd_mini_rows_on_one_pin_are_marked_and_nothing_else);
     RUN(the_hub_has_nine_slots_and_no_tenth);
-    RUN(the_hub_holds_nine_tiles_and_sd_card_is_the_third);
+    RUN(the_hub_holds_eight_tiles_and_sd_card_is_the_second);
     RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);

@@ -141,6 +141,11 @@ TEST_CASE(a_value_edited_by_its_list_is_marked_and_counted)
     /* MORE now offers DISCARD EDITS, which takes it back. */
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
     tap(val(HITEC_PANEL_SERVO, 2, 0));
+    /* And no Hitec D receive: the IOmcu takes it at its next OPEN. */
+    for (int e = 0; hitec_panel_choice_label(e) != NULL; ++e) {
+        CHECK(strstr(hitec_panel_choice_label(e),
+                     ui_setting_label(SET_HITEC_RX)) == NULL);
+    }
     pick(TR(KP_DISCARD));
     CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 4, 1),
                  "WRITE 0 VALUES");

@@ -283,7 +283,7 @@ extern atomic_uint s_poles_value;
  * ARMED with the link up is refused while it stands. */
 extern endpoints_debt_t s_endpoints;
 
-/* Where the PD mini is wired, from SETUP INTERFACES, in one word; see
+/* Where the PD mini is wired, from SUPPLY's PD MINI tab, in one word; see
  * main.c. */
 extern atomic_uint s_pdmini_wiring;
 
@@ -793,7 +793,6 @@ extern atomic_uint s_tone_unheld;
  * (hitec_rx_link_mark_t, to the render loop). */
 extern hitec_rx_link_t s_hitec_rx_link;
 extern atomic_uint     s_hitec_rx_want;
-extern atomic_uint     s_hitec_rx_mark;
 
 void kst_port_look(void);
 void sense_link_alerts(void);

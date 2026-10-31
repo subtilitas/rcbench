@@ -743,7 +743,7 @@ UI_TEXT(OUT_NEEDS_CHANNELS, 27,
 UI_TEXT(OUT_PROG_PORT, 14,
     "PROG PORT",
     "PROG-PORT")
-/* What SETUP > INTERFACES holds a pin for (outputs_iface_name()): a
+/* What SENSORS or PD MINI holds a pin for (outputs_iface_name()): a
  * taken pin's cell on OUTPUTS and a name in PICK A PIN's IN USE table. */
 UI_TEXT(OUT_IFACE_SENSE, 14,
     "SENSOR BUS",
@@ -1297,14 +1297,6 @@ UI_TEXT(SET_HUB_SENSORS, 0,
 UI_TEXT(SET_HUB_FILES, 0,
     "FOLDERS AND FILES",
     "ORDNER UND DATEIEN")
-/* INTERFACES' section headings, in the order of its rows.  A heading is
- * drawn in a list row of 776px, 16px a character less the margins. */
-UI_TEXT(SET_HD_SUPPLY, 40,
-    "SUPPLY",
-    "SUPPLY")
-UI_TEXT(SET_HD_PROG, 40,
-    "PROG PORT",
-    "PROG-PORT")
 /* SENSORS' left list: an entry's name in the body face, its state under it
  * in 25 cells of the 8 x 16 face. */
 UI_TEXT(SENS_BUS, 16,
@@ -1409,10 +1401,10 @@ UI_TEXT(SET_PIN_SOLDERED, 43,
 UI_TEXT(SET_UNHELD, 0,
     "Not accepted by the IOmcu.",
     "Vom IOmcu nicht übernommen.")
-UI_TEXT(SET_HITEC_RX_OLD, 0,
+UI_TEXT(SET_HITEC_RX_OLD, 58,
     "IOmcu older than 0.22.0: receives with PULL-UP.",
     "IOmcu älter als 0.22.0: empfängt mit PULL-UP.")
-UI_TEXT(SET_HITEC_RX_NO_LINE, 0,
+UI_TEXT(SET_HITEC_RX_NO_LINE, 58,
     "IOmcu older than 0.21.1: no Hitec line.",
     "IOmcu älter als 0.21.1: keine Hitec-Leitung.")
 /* Hitec D receive's help line at PRECHARGE, unmarked; PULL-UP keeps the
@@ -1422,9 +1414,9 @@ UI_TEXT(SET_HITEC_RX_PRE, 0,
     "PRECHARGE: kein Pull-up an der Signalleitung")
 /* In place of the help of PD mini TX and PD mini RX while both hold one
  * GPIO, a stored set-up: SETUP's help line, 65 cells of the label face. */
-UI_TEXT(SET_PD_SAME_PIN, 65,
+UI_TEXT(SET_PD_SAME_PIN, 44,
     "TX and RX on one pin. The PD mini stays off.",
-    "TX und RX auf einem Pin. Der PD mini bleibt aus.")
+    "TX und RX auf einem Pin. PD mini bleibt aus.")
 UI_TEXT(SET_LEAVE_TITLE, 0,
     "UNSAVED CHANGES",
     "UNGESPEICHERTE ÄNDERUNGEN")
@@ -1674,9 +1666,9 @@ UI_TEXT(SUP_HELD_REFUSED, 94,
 UI_TEXT(SUP_LINE_PORT, 0,
     "Servo programmer.",
     "Servoprogrammierung.")
-UI_TEXT(SUP_MODEL, 0,
-    "SIMULATED SUPPLY",
-    "SIMULIERTES NETZTEIL")
+UI_TEXT(SUP_MODEL, 33,
+    "SIMULATED: SWITCH ON IN PD MINI",
+    "SIMULIERT: IN PD MINI EINSCHALTEN")
 UI_TEXT(SUP_PD_PINS, 29,
     "PD MINI TX GPIO %d RX GPIO %d",
     "PD MINI TX GPIO %d RX GPIO %d")
@@ -1704,8 +1696,28 @@ UI_TEXT(SUP_CLOSE, 0,
 UI_TEXT(SUP_RESET_PDMINI, 0,
     "RESET PD MINI",
     "PD MINI ZURÜCKSETZEN")
-UI_TEXT(SUP_CAPS, 0,
+UI_TEXT(SUP_TAB_LIMITS, 0,
     "LIMITS",
+    "GRENZEN")
+UI_TEXT(SUP_TAB_PDMINI, 0,
+    "PD MINI",
+    "PD MINI")
+/* The PD MINI tab: why its rows take no press, in a help line of 44 cells of
+ * the 8 x 16 face, and the two lines under the rows, in 74. */
+UI_TEXT(SUP_PD_LOCK_ON, 44,
+    "Output on: switch it off first",
+    "Ausgang an: zuerst ausschalten")
+UI_TEXT(SUP_PD_LOCK_PORT, 44,
+    "A programming port holds the supply",
+    "Ein Programmierport hält die Versorgung")
+UI_TEXT(SUP_PD_NOTE_1, 74,
+    "A change applies at once and is saved when the bench is idle.",
+    "Eine Änderung gilt sofort und wird gespeichert, wenn der Prüfstand ruht.")
+UI_TEXT(SUP_PD_NOTE_2, 74,
+    "No change while the output is on, a port holds it or the bench is ARMED.",
+    "Keine Änderung bei Ausgang an, belegtem Port oder ARMED.")
+UI_TEXT(SUP_CAPS, 0,
+    "OUTPUT CAPS",
     "OBERGRENZEN")
 UI_TEXT(SUP_AFTER_RESTART, 0,
     "AFTER RESTART",
@@ -3813,8 +3825,8 @@ UI_TEXT(ALERT_PDMINI_OLD, 94,
     "IOmcu firmware too old to reset the PD mini.",
     "IOmcu-Firmware zu alt, um den PD mini zurückzusetzen.")
 UI_TEXT(ALERT_PDMINI_WIRING, 94,
-    "PD mini wiring changed in SETUP. Output off.",
-    "PD-mini-Anschlüsse in SETUP geändert. Ausgang aus.")
+    "PD mini wiring changed. Output off.",
+    "PD-mini-Anschlüsse geändert. Ausgang aus.")
 UI_TEXT(ALERT_P5_NO_BEAT, 94,
     "PROG ports 5V not switched on: the IOmcu has no heartbeat.",
     "PROG-Ports 5V nicht eingeschaltet: der IOmcu hat keinen Heartbeat.")
@@ -3911,8 +3923,8 @@ UI_TEXT(ALERT_SUPPLY_REFUSED_FAILSAFE, 94,
     "Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then DISARM.",
     "Netzteil ließ sich nicht einschalten: IOmcu-Failsafe ausgelöst. ARM halten, dann DISARM.")
 UI_TEXT(ALERT_PDMINI_PINS, 94,
-    "PD mini pins rejected. Check SETUP > INTERFACES.",
-    "PD-mini-Pins abgelehnt. SETUP > INTERFACES prüfen.")
+    "PD mini pins rejected. Check SUPPLY, tab PD MINI.",
+    "PD-mini-Pins abgelehnt. SUPPLY, Tab PD MINI prüfen.")
 UI_TEXT(ALERT_PDMINI_SWITCH, 94,
     "PD mini output could not be switched.",
     "PD-mini-Ausgang ließ sich nicht schalten.")
@@ -6418,7 +6430,7 @@ UI_SETTING_LABEL(SET_PDMINI_BAUD,
 UI_SETTING_HELP(SET_PDMINI_BAUD,
     "The module's UART Baudrate; AUTO finds it",
     "UART Baudrate des Moduls; AUTO sucht")
-/* --- the programming port ------------------------------------------ */
+/* --- the Hitec tab's MORE list ------------------------------------- */
 UI_SETTING_LABEL(SET_HITEC_RX,
     "Hitec D receive",
     "Hitec-D-Empfang")
@@ -6988,9 +7000,6 @@ UI_SETTING_HELP(SET_WEB_WRITES,
 UI_SETTING_CATEGORY(SET_CAT_APP,
     "PANEL",
     "PANEL")
-UI_SETTING_CATEGORY(SET_CAT_IFACE,
-    "INTERFACES",
-    "INTERFACES")
 UI_SETTING_CATEGORY(SET_CAT_CARD,
     "SD CARD",
     "SD CARD")
@@ -7003,6 +7012,9 @@ UI_SETTING_CATEGORY(SET_CAT_ESC,
 UI_SETTING_CATEGORY(SET_CAT_SUPPLY,
     "SUPPLY",
     "SUPPLY")
+UI_SETTING_CATEGORY(SET_CAT_PDMINI,
+    "PD MINI",
+    "PD MINI")
 UI_SETTING_CATEGORY(SET_CAT_SERVO,
     "SERVO TEST",
     "SERVO TEST")

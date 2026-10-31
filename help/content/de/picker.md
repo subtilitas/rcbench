@@ -70,7 +70,7 @@ Die Protokollliste endet mit den Einträgen PROG-PORT, wie auf [Outputs](outputs
 
 ![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](view:picker-iface)
 
-Ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder [INTERFACES](setup-interfaces.md) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.
+Ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder der [Tab PD MINI auf SUPPLY](supply.md#tab-pd-mini) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.
 
 ![OFF gewählt: jeder gebundene Pin unter BELEGT](view:picker-off)
 

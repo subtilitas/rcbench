@@ -57,7 +57,7 @@ läuft, beschreibt
   KLASSISCH braucht ein PD mini, das antwortet, sonst `Klassische Servos
   brauchen ein PD mini: Der Prüfstand schaltet die Versorgung.`
 - Ein Servo der D-Serie antwortet auf der Leitung so, wie SETUP >
-  INTERFACES > Hitec-D-Empfang es einstellt, PULL-UP oder PRECHARGE
+  Hitec-D-Empfang unter WEITERES es einstellt, PULL-UP oder PRECHARGE
   ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)). VERBINDEN wartet, bis
   der IOmcu diesen Modus hält: `Empfangsart im IOmcu noch nicht gesetzt.
   Erneut versuchen.`
@@ -891,6 +891,40 @@ jedem Stopp: ARM wird nur abgelehnt, solange der Port gehalten ist.
 
 ![Klassisches VERBINDEN ohne PD mini](img/de/servo-hitec-nopd.png)
 ![WEITERES](img/de/servo-hitec-more.png)
+
+## Hitec-D-Empfang
+
+WEITERES listet Hitec-D-Empfang, solange der Tester den Port hat, wie SERIE nur
+dann ein Tippen nimmt. Seine Liste bietet zwei Modi, im NVS unter `hitec_rx`:
+
+| Modus | Die Leitung | Hinweis |
+| --- | --- | --- |
+| PULL-UP (Vorgabe) | ein Widerstand von 2,2kΩ von der Signalleitung zur Servoversorgung hebt die Leitung, und der IOmcu liest sie losgelassen | `PULL-UP braucht 2.2kΩ an der Signalleitung` |
+| PRECHARGE | kein Widerstand; der IOmcu treibt das Pad alle 1086,7ns für 100,0ns auf High und tastet es 113,3ns nach dem Loslassen ab | `PRECHARGE: kein Pull-up an der Signalleitung` |
+
+Ein fehlender oder unlesbarer gespeicherter Wert ist PULL-UP. Das Panel schreibt
+den Modus bei jedem Link-Aufbau und nach jeder Änderung auf die HITEC-Page, ARMED
+oder nicht. Der IOmcu nimmt ihn beim nächsten OPEN einer Leitung der D-Serie und
+ändert nichts, was läuft. In einer Sitzung gibt es keine Änderung: WEITERES listet
+die Zeile dann nicht, die Portzeile zeigt den Modus (`RX PULL-UP`), und eine
+Liste, die beim Start einer Sitzung noch offen ist, schließt. VERLASSEN, Modus
+setzen, VERBINDEN. VERBINDEN wartet, bis der IOmcu den Modus hält: `Empfangsart im
+IOmcu noch nicht gesetzt. Erneut versuchen.` classic-Servos (HS-5xxx, HS-7xxx)
+brauchen keins davon und übergehen ihn. Die Einstellung erreicht die Leitungen
+dieser Programmierung und die der [Prüfstandskonsole](BenchConsole-de.md).
+
+Unter den beiden Modi sagt die Liste, was der IOmcu nicht hält:
+
+| Die Zeile lautet | Solange |
+| --- | --- |
+| `Vom IOmcu nicht übernommen.` | der Wert noch nicht bestätigt ist oder der IOmcu ihn abgewiesen hat |
+| `IOmcu älter als 0.22.0: empfängt mit PULL-UP.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.23 spricht: er hat kein Register für den Modus |
+| `IOmcu älter als 0.21.1: keine Hitec-Leitung.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.22 oder älter spricht: er hat keine HITEC-Seite |
+
+Keine Zeile, solange kein IOmcu antwortet, und keine für PULL-UP an einem älteren
+IOmcu.
+
+![Die Liste von Hitec-D-Empfang](img/de/servo-hitec-rx.png)
 
 ## Bekannte Grenzen
 

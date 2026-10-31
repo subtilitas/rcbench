@@ -39,9 +39,18 @@ history is in git.
 
 ### Changed
 
+- SETUP's INTERFACES tile goes. The PD mini's enable, TX, RX and baud move to a
+  PD MINI tab on SUPPLY > SETTINGS, beside LIMITS: a change applies at once and
+  is saved when the bench is idle, and LIMITS' reset leaves them. They take no
+  press while the output is on or an ON is on its way, while a programming port
+  holds the supply, or while the bench is ARMED, so a mistaken pin cuts no live
+  supply. Hitec D receive moves to the Hitec tab's MORE list, offered only while
+  the tester has the port. Stored keys stay and a panel's values load unchanged.
+- SUPPLY's source line on the model reads `SIMULATED: SWITCH ON IN PD MINI`, a
+  button that opens the PD MINI tab.
 - The rows of the INA228, the sensor bus, the AS5600 and the phase tap move from
   SETUP > INTERFACES to SENSORS; their stored keys stay and a panel's values load
-  unchanged. INTERFACES holds the PD mini and Hitec D receive. Vibration and
+  unchanged. Vibration and
   Optical tacho keep their keys and show no row: no firmware reads them.
 - SETUP's texts and alerts about those rows name SENSORS, and six help lines and
   three state words are shorter to fit the pane.

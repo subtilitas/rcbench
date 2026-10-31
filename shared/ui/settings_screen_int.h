@@ -230,7 +230,6 @@ typedef struct {
 /** @brief The hub's tiles in grid order, row by row. */
 static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY(SET_CAT_APP,   ui_icon_sliders),
-    HUB_CATEGORY(SET_CAT_IFACE, ui_icon_chip),
     HUB_CATEGORY(SET_CAT_CARD,  ui_icon_chart),
     HUB_CATEGORY_LINE(SET_CAT_SENSORS, TX_SET_HUB_SENSORS, ui_icon_supply),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
@@ -447,8 +446,7 @@ gfx_rect_t stg_row_rect(int index);
  */
 int stg_list_x(void);
 /**
- * @brief Returns the entry of row @p index; a heading's carries heading >= 0,
- *        a string's text >= 0.
+ * @brief Returns the entry of row @p index; a string's carries text >= 0.
  * @param index row index
  * @return the entry
  */

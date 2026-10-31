@@ -210,26 +210,27 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      */
     [SET_PDMINI_EN] = {
         "pdm_en", "",
-        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+        SET_CAT_PDMINI, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_PDMINI_TX] = {
         "pdm_tx", "GPIO",
-        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
+        SET_CAT_PDMINI, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
     [SET_PDMINI_RX] = {
         "pdm_rx", "GPIO",
-        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
+        SET_CAT_PDMINI, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
     [SET_PDMINI_BAUD] = {
         "pdm_baud", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 7, ENUM_OPTS(pdmini_baud) },
+        SET_CAT_PDMINI, SET_TYPE_ENUM, 0, 0, 1, 7, ENUM_OPTS(pdmini_baud) },
     /*
      * How the IOmcu receives a Hitec D series answer on its programming
      * port (the HITEC page's register 23, link_hitec_rx_t): PULL-UP, the
      * line released with a 2.2kOhm pull-up on the signal wire, or
      * PRECHARGE, with none.  The IOmcu takes it at its next OPEN of a
-     * D series line; classic servos need neither.
+     * D series line; classic servos need neither.  Set on the Hitec tab's
+     * MORE list, beside the series.
      */
     [SET_HITEC_RX] = {
         "hitec_rx", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(hitec_rx) },
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(hitec_rx) },
 
     /*
      * The supply's.  The ranges are a USB-PD PPS (Programmable Power Supply)
@@ -589,7 +590,8 @@ void settings_set_armed(settings_armed_fn fn)
 /** @brief Whether @p id changes on a SAFE bench only (settings.h). */
 bool settings_safe_only(setting_id_t id)
 {
-    return id == SET_SCREEN_ROT;
+    return id == SET_SCREEN_ROT || id == SET_PDMINI_EN || id == SET_PDMINI_TX
+           || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD;
 }
 
 bool settings_held(setting_id_t id)

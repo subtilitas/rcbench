@@ -704,8 +704,6 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
             hitec_rx_link_lost(&s_hitec_rx_link);
-            atomic_store(&s_hitec_rx_mark,
-                         (unsigned)hitec_rx_link_mark(&s_hitec_rx_link));
             iface_pins_publish(false);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
             bench->servo_new = false;

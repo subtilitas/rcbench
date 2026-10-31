@@ -18,6 +18,8 @@
 #include <stdio.h>
 
 #include "hitec_reg.h"
+#include "hitec_rx_link.h"
+#include "link_pages.h"
 #include "pdmini.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -400,8 +402,45 @@ static void port_act(hitec_prog_t *p)
 }
 
 /**
- * @brief MORE opened: the supply's entries in PWM, the session's while
- *        held.
+ * @brief Hitec D receive (SET_HITEC_RX), as MORE's entry names it.
+ * @param label takes the entry's words
+ * @param n its size
+ */
+static void rx_label(char *label, size_t n)
+{
+    char v[24];
+
+    (void)ui_setting_value(SET_HITEC_RX, v, sizeof(v));
+    snprintf(label, n, "%s: %s", ui_setting_label(SET_HITEC_RX), v);
+}
+
+/**
+ * @brief Hitec D receive's list: the two modes, the one set lit, and what the
+ *        IOmcu does not hold of it (hitec_rx_link_mark_t), a line to read.
+ * @param p the programmer
+ */
+static void rx_open(const hitec_prog_t *p)
+{
+    const uint8_t mark = p->f.rx_mark;
+
+    hpn_choice_open(C_RX, ui_setting_label(SET_HITEC_RX));
+    hp.ch.current = settings_get_int(SET_HITEC_RX);
+    hpn_choice_add(ui_setting_help(SET_HITEC_RX), (int)LINK_HITEC_RX_PULL_UP);
+    hpn_choice_add(TR(SET_HITEC_RX_PRE), (int)LINK_HITEC_RX_PRECHARGE);
+    if (mark == (uint8_t)HITEC_RX_LINK_OLD) {
+        hpn_choice_add(TR(SET_HITEC_RX_OLD), HP_RX_LINE);
+    } else if (mark == (uint8_t)HITEC_RX_LINK_NO_LINE) {
+        hpn_choice_add(TR(SET_HITEC_RX_NO_LINE), HP_RX_LINE);
+    } else if (mark != (uint8_t)HITEC_RX_LINK_HELD) {
+        hpn_choice_add(TR(SET_UNHELD), HP_RX_LINE);
+    }
+}
+
+/**
+ * @brief MORE opened: the supply's entries and Hitec D receive in PWM, the
+ *        session's while held.  The receive mode is no entry of a session:
+ *        the IOmcu takes it at its next OPEN, so a change would do nothing
+ *        until the next CONNECT.  LEAVE, then set it, as the series.
  * @param p the programmer
  */
 static void more_open(const hitec_prog_t *p)
@@ -418,6 +457,8 @@ static void more_open(const hitec_prog_t *p)
         snprintf(label, sizeof(label), TR(KP_SUPPLY_5V_FIXED),
                  (unsigned)ui_board_prog_5v_pin());
         hpn_choice_add(label, MORE_FIXED);
+        rx_label(label, sizeof(label));
+        hpn_choice_add(label, MORE_RX);
         return;
     }
     snprintf(label, sizeof(label), TR(KP_SUPPLY_V), hitec_prog_mv(p) / 1000u,
@@ -426,6 +467,8 @@ static void more_open(const hitec_prog_t *p)
     snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
              (unsigned)hitec_prog_ma(p));
     hpn_choice_add(label, MORE_CURRENT);
+    rx_label(label, sizeof(label));
+    hpn_choice_add(label, MORE_RX);
 }
 
 void hpn_act(const hpn_row_t *r)
@@ -521,6 +564,8 @@ static void list_done(hitec_prog_t *p, int kind, int value)
         ask_write((uint8_t)HITEC_PROG_WR_FACTORY);
     } else if (value == MORE_FIXED) {
         /* The carrier's 5V: a line to read, nothing to set. */
+    } else if (value == MORE_RX) {
+        rx_open(p);
     } else if (value == MORE_VOLTAGE) {
         ui_keypad_open(&hp.kp, hp.area, TR(KP_PROG_VOLTAGE), "V",
                        (float)hitec_prog_mv(p) / 1000.0f,
@@ -544,6 +589,13 @@ void hpn_choice_done(int value)
     if (kind == C_SERIES) {
         if (hitec_prog_series_set(p, (uint8_t)value)) {
             options_keep();
+        }
+    } else if (kind == C_RX) {
+        /* A change of state closes the list (hpn_moved()): a session opens
+         * with what it had. */
+        if (value != HP_RX_LINE) {
+            settings_set(SET_HITEC_RX, (float)value);
+            settings_request_save();
         }
     } else if (kind == C_FILES) {
         hpn_files_choice(value);

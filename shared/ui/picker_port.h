@@ -18,7 +18,7 @@
 /**
  * Catalogue entry @p index as a button with port @p port picked: TICKED
  * for the pin the port names; HELD for another port's pin, a protocol's,
- * one SETUP > INTERFACES holds, and for a SERVO PWM port one on the PWM
+ * one SENSORS or SUPPLY's PD MINI holds, and for a SERVO PWM port one on the PWM
  * slice of a bound PWM output or on the compare register of another
  * SERVO PWM port; LOCKED while @p locked or the ports are not read; FREE
  * otherwise.  A reserved pin is the caller's.  @p holder as

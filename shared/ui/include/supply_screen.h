@@ -143,6 +143,19 @@ void supply_screen_set_prog_5v(uint8_t state, uint8_t pin);
  */
 void supply_screen_header_text(char *out, size_t size);
 
+/**
+ * @brief SETTINGS' PD MINI tab, as a tap on the SIMULATED line opens it: the
+ *        PD mini's enable, TX, RX and baud.  Nothing else changes, and nothing
+ *        is sent.
+ */
+void supply_screen_open_pdmini(void);
+
+/**
+ * @brief SETTINGS' tab selected.
+ * @return 0 for LIMITS, 1 for PD MINI
+ */
+int supply_screen_settings_tab(void);
+
 /** The set points as the screen holds them, snapped to the caps. */
 float supply_screen_set_v(void);
 /**

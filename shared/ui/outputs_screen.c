@@ -135,7 +135,7 @@ static struct {
 
     outputs_apply_fn apply;
 
-    /* The pins SETUP > INTERFACES held at the last frame. */
+    /* The pins SENSORS and PD MINI held at the last frame. */
     uint64_t  iface[OUTPUTS_IFACE_COUNT];
 
     bool      chrome_valid[MAX_FBS];
@@ -162,7 +162,7 @@ static bool prog_taken(uint8_t index)
     return outputs_port_holds(outbind_pins(s.bind.board)[index].gpio);
 }
 
-/* What SETUP > INTERFACES holds pin @p index for, or OUTPUTS_IFACE_NONE:
+/* What SENSORS or PD MINI holds pin @p index for, or OUTPUTS_IFACE_NONE:
  * no protocol and no port holds it, and the IOmcu does not reserve it.  A
  * pin a protocol holds is that protocol's, as against a port: the IOmcu
  * refused the interface its pin then, and SETUP says so. */

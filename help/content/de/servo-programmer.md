@@ -199,6 +199,12 @@ Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu st
 
 VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, und das Servo kann fahren. Nach einem Schreiben mit PD mini sagt die Seite, dass der Ausgang zuerst 1s aus und wieder an geht; ohne PD mini sagt sie, dass die Werte nach Aus- und Einschalten der Versorgung wirken. Ohne Geschriebenes bleibt die Versorgung, wie sie ist. 2s HALTEN ZUM VERLASSEN übernimmt es nach 2s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
 
+## Hitec-D-Empfang
+
+WEITERES listet Hitec-D-Empfang, solange der Tester den Port hat. PULL-UP (die Vorgabe) braucht einen Widerstand von 2,2kΩ von der Signalleitung zur Servoversorgung. PRECHARGE braucht keinen: der IOmcu treibt das Pad alle 1,09us für 100ns auf High und tastet es 113ns später ab. Der IOmcu nimmt den Wert beim nächsten OPEN einer Leitung der D-Serie, deshalb gibt es in einer Sitzung keine Änderung: VERLASSEN, setzen, VERBINDEN. classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen ihn. Ein IOmcu mit 0.21.1 oder 0.21.2 (Protokoll 4.23) empfängt mit PULL-UP; mit PRECHARGE lautet die Liste dann `IOmcu älter als 0.22.0: empfängt mit PULL-UP.` Ein IOmcu älter als 0.21.1 hat keine Hitec-Leitung; mit PRECHARGE lautet die Liste `IOmcu älter als 0.21.1: keine Hitec-Leitung.`
+
+![Die Liste von Hitec-D-Empfang](view:servo-hitec-rx)
+
 ## Verwandte Seiten
 
 - [Servo](servo.md) und [Servo-Optionen](servo-settings.md)

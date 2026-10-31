@@ -501,7 +501,7 @@ ausgelegt ist; und die Spannung, unter der es sich nicht bewegt
 (Brown-out). Nichts am Prüfstand misst das Horn, solange der Ausgangsencoder
 (siehe unten) nicht an ist, also wird jedes Ergebnis am Strom des Netzteils
 abgelesen, das das Servo versorgt: am PD mini (WeAct PD
-Power Mini V1), wenn SETUP INTERFACES ihn freigibt, sonst am Netzteilmodell
+Power Mini V1), wenn der Tab PD MINI auf SUPPLY ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
 Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen den

@@ -1,6 +1,6 @@
 /**
  * @file test_keypad_rows_setup.c
- * @brief Every number row of SETUP's lists (PANEL, INTERFACES, SD CARD,
+ * @brief Every number row of SETUP's lists (PANEL, SD CARD,
  *        SENSORS) held to keypad_rows_rig.h's four rules: a tap on its
  *        value opens the keypad with the row's label, unit, range and its
  *        step's digits; a value past the range is refused and the row
@@ -22,7 +22,7 @@
 
 /** @brief SETUP's lists: the categories its tiles open. */
 static const setting_cat_t k_cats[] = {
-    SET_CAT_APP, SET_CAT_IFACE, SET_CAT_CARD, SET_CAT_SENSORS,
+    SET_CAT_APP, SET_CAT_CARD, SET_CAT_SENSORS,
 };
 #define CAT_COUNT ((int)(sizeof(k_cats) / sizeof(k_cats[0])))
 
@@ -165,8 +165,8 @@ TEST_CASE(every_number_row_on_setup_takes_ok_and_refuses_and_cancels)
             ++rows;
         }
     }
-    /* PANEL 4, INTERFACES 2, SENSORS 34: every number row an entry shows. */
-    CHECK_EQ(rows, 40);
+    /* PANEL 4, SENSORS 34: every number row an entry shows. */
+    CHECK_EQ(rows, 38);
 }
 
 /*

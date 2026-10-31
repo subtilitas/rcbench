@@ -306,7 +306,7 @@ enabled. Each screen names the source of its readings itself.
 | --- | --- |
 | MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, SENSORS |
 | SERVO | the IOmcu drives servo PWM outputs |
-| SUPPLY | the PD mini is enabled on SETUP, INTERFACES, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
+| SUPPLY | the PD mini is enabled on SUPPLY's PD MINI tab, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | always: they hold no measurement |
 
@@ -716,7 +716,7 @@ columns before `source`:
 - A cell is empty while its meter has not delivered that reading.
 - A row takes a figure only from a source that is the row's `source`:
   - all five meter cells are empty on a `measured` row while the supply is
-    the panel's model (PD mini disabled on SETUP under INTERFACES);
+    the panel's model (PD mini disabled on SUPPLY's PD MINI tab);
   - they are empty on a `model` row while the PD mini's last reading is
     still shown after the link went down;
   - a `model` row has no INA3221 figure and no `angle`, which read through
@@ -1230,12 +1230,12 @@ typed in the settings reaches the row at once.
 | --- | --- | --- |
 | an INA3221 channel | `INA`, its part's address and channel: `INA 0x41 CH2` | the channel's last 50ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
 | the PD mini | `PD MINI` | the supply's last sample. One point per sample |
-| the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
+| the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SUPPLY's PD MINI tab enables the PD mini, which does not answer without the link |
 
 ![The INA3221 as the meter](img/servo-ina.png)
 
 The name stays `PD MINI` in both languages. While the PD mini is disabled on
-SETUP under INTERFACES, the supply is the panel's model of it, as on SUPPLY:
+SUPPLY's PD MINI tab, the supply is the panel's model of it, as on SUPPLY:
 then a SIMULATED pill (SIMULIERT in German), 26px high and 30px plus the word
 wide but at least 110px (120px for SIMULATED and SIMULIERT), sits
 on the plot's top-left corner under the name, because the line beside the
@@ -1906,11 +1906,11 @@ Power Delivery) trigger controlled over a UART (universal asynchronous
 receiver-transmitter). The IOmcu drives it on a PIO (programmable
 input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100ms. With
-the PD mini enabled on SETUP under INTERFACES, the header names the module
+the PD mini enabled on SUPPLY's PD MINI tab, the header names the module
 and the IOmcu's UART pins that carry it, `PD MINI TX GPIO 12 RX GPIO 13`,
 from the PD mini TX and PD mini RX settings. With either pin not set, or
 both on one GPIO, the header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
-says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
+says `SIMULATED: SWITCH ON IN PD MINI` and the menu tile is marked SIMULATED.
 
 SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
 (German `LIVE`, `OPTIONEN`), each 150 x 40px, and a page under it. The
@@ -1920,7 +1920,7 @@ is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 | Task | The left column, 620px |
 | --- | --- |
 | LIVE | the plot or the table over the set points |
-| SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |
+| SETTINGS | the tabs LIMITS, the 9 supply settings under OUTPUT CAPS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)), and PD MINI, the module's wiring ([The PD MINI tab](#the-pd-mini-tab)) |
 
 The header is the row right of the strip: the module and its pins, ONLINE
 or NOT ANSWERING, in 10 x 20, and at the right end the range the set points
@@ -2109,7 +2109,8 @@ unless a port holds it. A board without the switch shows neither.
 ### Supply settings
 
 SETTINGS, the strip's second tab, shows the supply's settings in the left
-column: the caps and the start values on the left, the trips and the
+column, under the tabs LIMITS and PD MINI, 40px tall: on LIMITS the caps and
+the start values on the left, the trips and the
 confirmations on the right, each a 48px row with its value in a 120 x
 48px box, and the save line at the foot. Each is kept in the panel's NVS (non-volatile storage) and survives
 a restart. A value opens the keypad over the page; a switch flips on the
@@ -2186,7 +2187,7 @@ burst takes it into CC. Its readings are not measured and nothing on the bench
 is powered.
 
 The PD mini's wiring (PD mini, PD mini TX, PD mini RX and PD mini baud) is
-on SETUP under INTERFACES. TX and RX are IOmcu GPIO numbers: TX goes to
+on SETTINGS' PD MINI tab ([The PD MINI tab](#the-pd-mini-tab)). TX and RX are IOmcu GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. Their `-` and `+` keys step over the
 GPIO the other row holds, and at the end of the range do nothing: with RX on
 GPIO 47, TX stops at GPIO 46. The keypad refuses the other row's GPIO and shows
@@ -2195,8 +2196,8 @@ stored: the panel writes the page disabled, the PD mini stays off, and both
 rows say `TX and RX on one pin. The PD mini stays off.` until one is
 stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is
 reserved, bound to an output, held by the sensor bus or the phase tap, or
-the other pin, and the band says `PD mini pins rejected. Check SETUP >
-INTERFACES.`: RX on GPIO 17 is refused while Sensor SDA is GPIO 16, as Sensor SCL
+the other pin, and the band says `PD mini pins rejected. Check SUPPLY, tab
+PD MINI.`: RX on GPIO 17 is refused while Sensor SDA is GPIO 16, as Sensor SCL
 is then GPIO 17. The alert leaves the band once a read shows the page holding
 the wiring asked: at once when the pin is stepped back to the one the page
 still holds. Once the module has
@@ -2206,7 +2207,7 @@ module can switch itself on between two state reads, by its button
 or its AUTO OUT setting, and new pins would leave it no OFF path. A read
 that shows the output on, or fails, refuses the change, and the band says
 `PD mini wiring rejected. Its output may still be on.`. A refused change is not
-written again until the wiring changes in SETUP; this alert too leaves the
+written again until the wiring changes; this alert too leaves the
 band once a read shows the page holding the wiring asked. PD mini baud is the module's
 own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
@@ -2214,7 +2215,56 @@ IOmcu find it: it tries each of the 7 rates, one a second. The
 SUPPLY header shows the rate in use after ONLINE, e.g. `ONLINE 38400`, with
 AUTO and with a fixed rate alike.
 
-![RX's GPIO 9 refused for PD mini TX](img/setup-pdmini-why.png)
+![RX's GPIO 9 refused for PD mini TX](img/supply-pdmini-why.png)
+
+#### The PD MINI tab
+
+PD MINI holds the wiring, four rows at a 56px pitch: each its label and help
+line, its value in a 120 x 48px box, and - and + keys of 56 x 48px.
+
+| Row | Values | Default | A press |
+| --- | --- | --- | --- |
+| PD mini | ON, OFF | OFF | a tap on the value flips it |
+| PD mini TX | GPIO -1 to 47 | -1 | - and + step, the value opens the keypad |
+| PD mini RX | GPIO -1 to 47 | -1 | - and + step, the value opens the keypad |
+| PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | < and > and the value step round the 8 values |
+
+A change applies at once and is saved by the rule above, as a change on LIMITS.
+There is no SAVE and no leave warning. The stored keys are `pdm_en`, `pdm_tx`,
+`pdm_rx` and `pdm_baud`. RESET PD MINI restarts the module and writes none of the
+four.
+
+Any change of the wiring switches a live output off, so a row changes nothing
+in these states:
+
+| State | A press on a row | The row's help line and the band |
+| --- | --- | --- |
+| the output on, or an ON on its way, from any screen, on the PD mini or the model | changes nothing | `Output on: switch it off first` |
+| a programming port holds the supply | changes nothing | `A programming port holds the supply` |
+| the bench ARMED | changes nothing; `settings_set()` and a reset leave the rows too | `Set on a SAFE bench only` |
+
+A keypad open on a pin closes when one of these states begins, and what it holds
+is not taken. A press under way ends the same way, and its release changes
+nothing. With the output off and SAFE, enable, a pin or the baud reaches the
+IOmcu's SUPPLY page as [Supply](#supply) says, with the module's own off state
+checked first. A change that still reaches a live output, a refused save's
+DISCARD on SETUP's leave warning, switches it off and says
+`PD mini wiring changed. Output off.`. RESET PD MINI stays on LIMITS.
+
+![The PD MINI tab](img/supply-pdmini.png)
+
+On the [rbmod carrier](Carrier.md) PD mini TX reads 7 and PD mini RX 6. They
+have no keys, open no keypad and read
+`Soldered on this board. Not a setting here.` as their help line. The stored
+values stay and are in force again on a module wired by hand. PD mini and PD mini
+baud take presses under the same three states.
+
+![The PD MINI tab on the carrier](img/supply-pdmini-rbmod.png)
+
+While the panel runs its model, the header's source reads
+`SIMULATED: SWITCH ON IN PD MINI`, a button: a tap opens this tab, from LIVE,
+from LIMITS and over a keypad, which closes. A question about a live output is
+answered first.
 
 ## Receiver
 
@@ -3792,7 +3842,7 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 ![Setup](img/setup.png)
 
-- Four categories: PANEL, INTERFACES, SD CARD and SENSORS, the bench-wide
+- Three categories: PANEL, SD CARD and SENSORS, the bench-wide
   settings. A tile names the number of settings its list shows; SENSORS'
   says what it holds, `CURRENT, ANGLE, PHASE TAP`. A tap opens the category's
   list.
@@ -4167,24 +4217,6 @@ firmware reads them. A stored value stays stored and has no effect.
 
 The knob does nothing on SETUP: the panel routes a turn to MOTOR & ESC and
 SERVO only.
-
-### INTERFACES: the PD mini and the programming port
-
-INTERFACES lists 5 settings in two sections. A heading above the first row of
-each names it: SUPPLY (the PD mini, [Supply](#supply)) and PROG PORT (Hitec D receive,
-[INTERFACES: the programming port](#interfaces-the-programming-port)). A heading
-is a row of its own, 64px high at the list's 70px pitch, in the accent colour
-over a rule, with no keys and no value: a tap or a drag on it changes nothing,
-and a drag scrolls the list. The list is 7 rows long.
-
-![INTERFACES](img/setup-interfaces.png)
-
-On the [rbmod carrier](Carrier.md) PD mini TX reads 7 and PD mini RX 6. They
-have no keys, open no keypad and read
-`Soldered on this board. Not a setting here.` as their help line. The stored
-values stay and are in force again on a module wired by hand.
-
-![INTERFACES on the carrier](img/setup-rbmod-iface.png)
 
 ### SENSORS: the current monitors
 
@@ -4604,43 +4636,6 @@ pin taken, or once the tap is switched off and the page holds it off. Tap gap
 2ms with Tap lowest tone at 400Hz is refused by design: the gap has to be
 at least one period of the lowest tone, 2.5ms at 400Hz
 (`tone_init()`, `protocols/phase_tap/tone.c`).
-
-### INTERFACES: the programming port
-
-The last row of INTERFACES, under PROG PORT, says how the IOmcu receives
-the answer of a Hitec D series servo on its programming port, GPIO 13 by
-default ([Receive mode](LinkHitec.md#receive-mode)):
-
-| Setting | Values | Default | |
-| --- | --- | --- | --- |
-| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: a 2.2kΩ resistor from the signal wire to the servo supply lifts the line, and the IOmcu reads it released. PRECHARGE: no resistor; the IOmcu drives the pad high for 100.0ns every 1086.7ns and samples it 113.3ns after it lets go |
-
-It is kept in NVS like the other rows; a missing or unreadable stored value
-is PULL-UP. The panel writes it to the HITEC page at every link-up and
-after every change, armed or not; the IOmcu takes it at its next OPEN of a
-D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore
-it. The setting reaches the lines the Hitec programmer on SERVO opens
-([Servo programmer for Hitec servos](HitecProgrammer.md)) and those the
-bench console opens ([The bench console](BenchConsole.md)).
-
-Unmarked, the help line follows the value: `PULL-UP needs 2.2kΩ on the
-signal wire` at PULL-UP, `PRECHARGE: no pull-up on the signal wire` at
-PRECHARGE.
-
-The row is marked as the rows of
-[A row the IOmcu does not hold](#a-row-the-iomcu-does-not-hold) are, with its
-own help line:
-
-| The help line reads | While |
-| --- | --- |
-| `Not accepted by the IOmcu.` | the value is not acknowledged yet, or the IOmcu refused it |
-| `IOmcu older than 0.22.0: receives with PULL-UP.` | PRECHARGE is set and the IOmcu speaks protocol 4.23: it has no register for the mode |
-| `IOmcu older than 0.21.1: no Hitec line.` | PRECHARGE is set and the IOmcu speaks protocol 4.22 or older: it has no HITEC page |
-
-No mark shows while no IOmcu answers, and none for PULL-UP on an older
-IOmcu.
-
-![INTERFACES, Hitec D receive at PRECHARGE on an IOmcu older than 4.24](img/setup-prog.png)
 
 ### SD CARD: which logs are written, and where
 
@@ -5372,7 +5367,7 @@ A stored binding that holds that pin keeps it: the port then has no pin, and
 the programmer's CONNECT ends with the line for a port without a pin
 ([the port](ServoProgrammer.md#the-port)).
 
-A pin SETUP > SENSORS or INTERFACES holds is shown the same way, red and struck
+A pin SETUP > SENSORS or SUPPLY's PD MINI tab holds is shown the same way, red and struck
 through, with what holds it under its name, and cannot be ticked:
 
 | Under the name | Pins | While |
@@ -5769,7 +5764,7 @@ nothing and puts the Outputs screen's line under the count:
 
 ![GPIO 13 held by the programming port](img/picker-prog.png)
 
-A pin SETUP > SENSORS or INTERFACES holds is grey the same way while no protocol holds
+A pin SETUP > SENSORS or SUPPLY's PD MINI tab holds is grey the same way while no protocol holds
 it, a tap on it changes nothing, and IN USE lists it after the programming
 port, under `SENSOR BUS`, `PD MINI` or `PHASE TAP` in red, without a
 channel. Which pins those are, and when, is in the table under

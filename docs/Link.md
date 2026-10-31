@@ -123,7 +123,7 @@ older IOmcu refuses both with BAD_PAGE, and the panel then says a USB
 programming port, and the KST page refuses ENTER and a REBOOT from PWM with
 BUSY while HITEC holds the port; an older IOmcu refuses HITEC with
 BAD_PAGE. From 4.24 HITEC takes the receive mode of a D series line in
-write register 23; the panel writes SETUP's Hitec D receive there, and a
+write register 23; the panel writes Hitec D receive there, and a
 4.23 IOmcu refuses the register with READ_ONLY and receives with the
 pull-up. The panel sends no Hitec transaction
 ([The programming port for Hitec servos](LinkHitec.md)). From 4.25

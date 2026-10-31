@@ -546,7 +546,7 @@ TEST_CASE(stay_keeps_the_list_and_its_scroll)
 {
     for (int how = 0; how < 2; ++how) {
         fresh_hub();
-        open_category(SET_CAT_IFACE);
+        open_category(SET_CAT_APP);
         finger(FEED_LONE, XL, LIST_Y + 300);
         glide(FEED_LONE, XL, LIST_Y + 200, 10);
         lift(FEED_LONE);
@@ -566,7 +566,7 @@ TEST_CASE(stay_keeps_the_list_and_its_scroll)
         CHECK_EQ(settings_screen_scroll(NULL), scrolled);
         CHECK_EQ(settings_get_int(SET_PACK_CELLS), 4);
         CHECK(settings_dirty());
-        open_category(SET_CAT_IFACE);
+        open_category(SET_CAT_APP);
         CHECK_EQ(settings_screen_scroll(NULL), scrolled);
     }
 }

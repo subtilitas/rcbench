@@ -1,8 +1,9 @@
 /**
  * @file
- * @brief The panel's half of the Hitec receive mode: SETUP > INTERFACES > Hitec
- *        D receive (SET_HITEC_RX) written to the HITEC page's register 23
- *        (LINK_HT_W_RX_MODE, protocol 4.24), and what SETUP marks on the row.
+ * @brief The panel's half of the Hitec receive mode: Hitec D receive
+ *        (SET_HITEC_RX), on the Hitec tab's MORE list, written to the HITEC
+ *        page's register 23 (LINK_HT_W_RX_MODE, protocol 4.24), and what the
+ *        list says of it.
  *
  * The mode is owed to the IOmcu at every link-up, an IOmcu restart
  * included (it starts at PULL-UP), and at every edit.  It is written while
@@ -14,9 +15,9 @@
  *
  * An IOmcu older than 4.24 is sent nothing: it refuses the register with
  * LINK_NACK_READ_ONLY and receives with the pull-up.  With PRECHARGE asked
- * the row says so (HITEC_RX_LINK_OLD); with PULL-UP asked there is nothing
+ * the list says so (HITEC_RX_LINK_OLD); with PULL-UP asked there is nothing
  * to say.  An IOmcu older than 4.23 has no HITEC page and no Hitec line;
- * with PRECHARGE asked the row says that instead (HITEC_RX_LINK_NO_LINE).
+ * with PRECHARGE asked the list says that instead (HITEC_RX_LINK_NO_LINE).
  *
  * Pure logic: the caller makes the exchange and reports how it went.
  *
@@ -42,7 +43,7 @@ extern "C" {
 /** @brief A write nobody answered goes again this much later. */
 #define HITEC_RX_LINK_RETRY_MS 500u
 
-/** @brief What the row of SETUP says, hitec_rx_link_mark(). */
+/** @brief What the Hitec tab's list says, hitec_rx_link_mark(). */
 typedef enum {
     /**
      * @brief Nothing: the IOmcu holds the mode, no IOmcu answers, or one  older
@@ -137,10 +138,10 @@ bool hitec_rx_link_next(const hitec_rx_link_t *l, uint32_t now_ms,
 void hitec_rx_link_done(hitec_rx_link_t *l, int result, uint32_t now_ms);
 
 /**
- * @brief What the row says now.
+ * @brief What the list says now.
  *
  * @param l The link state.
- * @return The mark the row shows now.
+ * @return The mark the list shows now.
  */
 hitec_rx_link_mark_t hitec_rx_link_mark(const hitec_rx_link_t *l);
 

@@ -70,7 +70,7 @@ The protocol list ends in the PROG PORT entries, as on [Outputs](outputs.md), wh
 
 ![The interfaces' pins held and named under IN USE](view:picker-iface)
 
-A pin [SETUP > SENSORS](setup-sensors.md) or [INTERFACES](setup-interfaces.md) holds is grey the same way, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.
+A pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD MINI tab](supply.md#pd-mini-tab) holds is grey the same way, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.
 
 ![OFF selected: every bound pin under IN USE](view:picker-off)
 
