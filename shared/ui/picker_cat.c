@@ -1,17 +1,19 @@
 /**
  * @file picker_cat.c
- * @brief PICK A PIN's cat: the two spots it offers, what keeps a spot
+ * @brief OUTPUTS' board view's cat: the two spots it offers, what keeps a spot
  *        clear, the pick on the first frame of a visit, and the drawing
  *        with the screen's static parts.
  *
  * A spot is clear when its box, grown by UI_CAT_GAP, meets nothing the
  * screen draws in the state it is in: the head, the PINS table to its last
  * row, the IN USE table to its last line, the board with every key and the
- * traces between them, the open list, or the panel shown for a board that
- * cannot be drawn.  The pose is picked once a visit, on its first frame,
- * from the roll entering took; a row or a line that grows into the box
- * later hides the cat until it shrinks back.  A tap on the cat lands on
- * nothing the screen hit-tests, so it does nothing.
+ * traces between them, or the open list.  The PROG PORT entry's column, LAST
+ * WRITE and UNBIND ALL PINS count too; the grid view draws no cat.  The pose
+ * is picked on a visit's first frame from the roll entering took, and again
+ * from that roll when another protocol or port is picked and the cat no
+ * longer fits: the entry's column covers the left spot.  In one selection a
+ * row or a line that grows into the box hides the cat until it shrinks back.
+ * A tap on the cat lands on nothing the screen hit-tests, so it does nothing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -90,7 +92,7 @@ static gfx_rect_t board_and_keys(void)
  */
 static gfx_rect_t pins_table(void)
 {
-    if (outbind_protos()[pk_proto_shown()].max_pins == 0u && s.port < 0) {
+    if (outbind_protos()[pk_proto_shown()].max_pins == 0u || s.port >= 0) {
         return gfx_rect_make(0, 0, 0, 0);
     }
     int rows = 0;
@@ -150,9 +152,18 @@ static bool clear(gfx_rect_t r)
                                        r.w + 2 * UI_CAT_GAP,
                                        r.h + 2 * UI_CAT_GAP);
     if (!picker_screen_can_draw()) {
-        return !meets(g, gfx_rect_make((SCREEN_W - NOART_W) / 2,
-                                       (FOOT - NOART_H) / 2, NOART_W,
-                                       NOART_H));
+        return false;
+    }
+    /* The entry's rows and its FUNCTION list, down to the foot. */
+    if (s.port >= 0 && meets(g, gfx_rect_make(OB_COL_X, OB_FN_Y, OB_LIST_W,
+                                              FOOT - OB_FN_Y))) {
+        return false;
+    }
+    if (pk_last_shown() && meets(g, pk_last_rect())) {
+        return false;
+    }
+    if (outputs_unbind_offered() && meets(g, outputs_unbind_rect())) {
+        return false;
     }
     const int head_w = (HEAD_W > FACE_W) ? HEAD_W : FACE_W;
     return !meets(g, gfx_rect_make(HEAD_X, HEAD_Y, head_w, HEAD_H))
@@ -167,6 +178,16 @@ void pk_cat_reset(void)
     s.cat_pending = false;
     s.cat = UI_CAT_PICK_NONE;
     s.cat_drawn = gfx_rect_make(0, 0, 0, 0);
+    s.cat_view = -1;
+}
+
+/**
+ * @brief The selection shown, as one number: a protocol, or a port past them.
+ * @return the number
+ */
+static int view_key(void)
+{
+    return (s.port >= 0) ? (int)OUTBIND_PROTOS + s.port : (int)pk_proto_shown();
 }
 
 void pk_cat_enter(void)
@@ -178,9 +199,18 @@ void pk_cat_enter(void)
 
 void pk_cat_render(gfx_canvas_t *c)
 {
-    if (s.cat_pending) {
+    /* A new selection keeps a cat that still fits: it does not jump about
+     * on every pick in the list. */
+    const bool moved = view_key() != s.cat_view
+                       && (s.cat.pose < 0
+                           || !clear(ui_cat_rect(s.cat.pose,
+                                                 &k_spots[s.cat.spot])));
+    if (s.cat_pending || (s.cat_view >= 0 && moved)) {
         s.cat_pending = false;
         s.cat = ui_cats_pick(k_spots, SPOTS, clear, s.cat_roll);
+    }
+    if (s.cat_view >= 0 || view_key() >= 0) {
+        s.cat_view = view_key();
     }
     s.cat_drawn = gfx_rect_make(0, 0, 0, 0);
     if (s.cat.pose < 0 || ui_cats_forced() == UI_CAT_NONE

@@ -1037,7 +1037,12 @@ firmware/panel/main/panel_poll.c: warning: Member s_throttle_pins (variable) of 
 firmware/panel/main/panel_poll.c: warning: Member s_throttle_pins_known (variable) of file panel_poll.c is not documented.
 firmware/panel/main/panel_poll.c: warning: Member s_throttle_proto (variable) of file panel_poll.c is not documented.
 firmware/panel/main/panel_poll.c: warning: Member servo_window_take(bench_state_t *bench) (function) of file panel_poll.c is not documented.
-firmware/panel/main/panel_ports.c: file has no @file block
+firmware/panel/main/panel_ports.c: warning: Member ask_post(uint8_t seq, uint8_t port, prog_link_ask_kind_t kind, uint16_t value) (function) of file panel_ports.c is not documented.
+firmware/panel/main/panel_ports.c: warning: Member prog_ports_init_screens(void) (function) of file panel_ports.c is not documented.
+firmware/panel/main/panel_ports.c: warning: Member prog_ports_lost(void) (function) of file panel_ports.c is not documented.
+firmware/panel/main/panel_ports.c: warning: Member prog_ports_publish(void) (function) of file panel_ports.c is not documented.
+firmware/panel/main/panel_ports.c: warning: Member prog_ports_to_screens(void) (function) of file panel_ports.c is not documented.
+firmware/panel/main/panel_ports.c: warning: Member s_mail (variable) of file panel_ports.c is not documented.
 firmware/panel/main/panel_render.c: warning: Member TAG (variable) of file panel_render.c is not documented.
 firmware/panel/main/panel_render.c: warning: Member flush_screen_commands(uint32_t stops_now) (function) of file panel_render.c is not documented.
 firmware/panel/main/panel_render.c: warning: Member knob_apply(const knob_turn_t *turn, bool frame_lost) (function) of file panel_render.c is not documented.
@@ -3170,20 +3175,16 @@ shared/ui/include/motor_screen.h: warning: return type of member motor_settings_
 shared/ui/include/motor_screen.h: warning: return type of member motor_settings_heading is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_settings_rows is not documented
 shared/ui/include/motor_screen.h: warning: return type of member motor_target_cells is not documented
-shared/ui/include/outputs_screen.h: warning: Member outputs_screen(void) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen_open_on_port(uint8_t port) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_apply(outputs_apply_fn fn) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: Member outputs_screen_set_result(outputs_result_t r) (function) of file outputs_screen.h is not documented.
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_at are not documented
-shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_name are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_iface_pins are not documented
-shared/ui/include/outputs_screen.h: warning: parameters of member outputs_reason_of are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_cell are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_open_on are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_pin are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_port_reason are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_reason are not documented
-shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_select are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_select_port are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_binding are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_iface_held are not documented
@@ -3192,9 +3193,7 @@ shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_prog_ports are not documented
 shared/ui/include/outputs_screen.h: warning: parameters of member outputs_screen_set_reading are not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_at is not documented
-shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_name is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_iface_pins is not documented
-shared/ui/include/outputs_screen.h: warning: return type of member outputs_reason_of is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_binding is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_cell is not documented
 shared/ui/include/outputs_screen.h: warning: return type of member outputs_screen_editable is not documented
@@ -3217,11 +3216,9 @@ shared/ui/include/picker_screen.h: warning: Compound picker_use_t is not documen
 shared/ui/include/picker_screen.h: warning: Member gpio (variable) of struct picker_row_t is not documented.
 shared/ui/include/picker_screen.h: warning: Member kind (variable) of struct picker_use_t is not documented.
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_button_rect are not documented
-shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_count are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_follow are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_in_use are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_marker_rect are not documented
-shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_open_on_port are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_reason are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_row are not documented
 shared/ui/include/picker_screen.h: warning: parameters of member picker_screen_set_binding are not documented
@@ -3243,8 +3240,30 @@ shared/ui/include/picker_screen.h: warning: return type of member picker_screen_
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_set_drawing is not documented
 shared/ui/include/port_mail.h: file has no @file block
 shared/ui/include/port_mail.h: warning: Compound port_mail_t is not documented.
-shared/ui/include/port_view.h: file has no @file block
 shared/ui/include/port_view.h: warning: Compound port_view_t is not documented.
+shared/ui/include/port_view.h: warning: Member port_view_get(void) (function) of file port_view.h is not documented.
+shared/ui/include/port_view.h: warning: Member port_view_revision(void) (function) of file port_view.h is not documented.
+shared/ui/include/port_view.h: warning: Member port_view_set_ask(port_view_ask_fn fn) (function) of file port_view.h is not documented.
+shared/ui/include/port_view.h: warning: parameters of member port_view_ask are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_ask_line are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_ask_state are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_dshot are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_fn_name are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_func are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_has are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_pwm are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_set are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_set_ask_state are not documented
+shared/ui/include/port_view.h: warning: parameters of member port_view_unknown are not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_ask is not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_ask_line is not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_ask_seq is not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_ask_state is not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_dshot is not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_fn_name is not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_func is not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_has is not documented
+shared/ui/include/port_view.h: warning: return type of member port_view_pwm is not documented
 shared/ui/include/prog_models.h: warning: parameters of member prog_models are not documented
 shared/ui/include/prog_models.h: warning: return type of member prog_models is not documented
 shared/ui/include/prog_registry.h: warning: Compound prog_list_t is not documented.
@@ -3855,7 +3874,6 @@ shared/ui/outputs_port.c: warning: Member sensors_on(void) (function) of file ou
 shared/ui/outputs_port.c: warning: Member touched(void) (function) of file outputs_port.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_close(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_event(const touch_event_t *evt) (function) of file outputs_port_entry.c is not documented.
-shared/ui/outputs_port_entry.c: warning: Member fn_face(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_list(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_locked(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member fn_pwm(void) (function) of file outputs_port_entry.c is not documented.
@@ -3871,11 +3889,9 @@ shared/ui/outputs_port_entry.c: warning: Member outputs_port_event(const touch_e
 shared/ui/outputs_port_entry.c: warning: Member outputs_port_fn_open(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member outputs_port_hide(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member outputs_port_name(uint8_t port, char *buf, size_t cap) (function) of file outputs_port_entry.c is not documented.
-shared/ui/outputs_port_entry.c: warning: Member outputs_port_reset(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member outputs_port_revision(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member outputs_port_tick(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member outputs_port_touched(void) (function) of file outputs_port_entry.c is not documented.
-shared/ui/outputs_port_entry.c: warning: Member pin_event(const touch_event_t *evt) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member pin_label(char *buf, size_t cap) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member pin_rect(void) (function) of file outputs_port_entry.c is not documented.
 shared/ui/outputs_port_entry.c: warning: Member pwm_locked(void) (function) of file outputs_port_entry.c is not documented.
@@ -3916,7 +3932,6 @@ shared/ui/outputs_screen.c: warning: Member inside(gfx_rect_t r, int x, int y) (
 shared/ui/outputs_screen.c: warning: Member leave(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member off_picked (variable) of struct [struct].s is not documented.
 shared/ui/outputs_screen.c: warning: Member open (variable) of struct [struct].s is not documented.
-shared/ui/outputs_screen.c: warning: Member outputs_screen(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member outputs_screen_set_apply(outputs_apply_fn fn) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member outputs_screen_set_result(outputs_result_t r) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member pop_rect(void) (function) of file outputs_screen.c is not documented.
@@ -3928,8 +3943,6 @@ shared/ui/outputs_screen.c: warning: Member refused (variable) of struct [struct
 shared/ui/outputs_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member reset(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member result (variable) of struct [struct].s is not documented.
-shared/ui/outputs_screen.c: warning: Member result_color(void) (function) of file outputs_screen.c is not documented.
-shared/ui/outputs_screen.c: warning: Member result_text(void) (function) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member s (variable) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member s_screen (variable) of file outputs_screen.c is not documented.
 shared/ui/outputs_screen.c: warning: Member shown_port_pin(void) (function) of file outputs_screen.c is not documented.
@@ -3948,7 +3961,6 @@ shared/ui/outputs_screen_int.h: warning: Member outputs_port_holds(uint8_t gpio)
 shared/ui/outputs_screen_int.h: warning: Member outputs_port_name(uint8_t port, char *buf, size_t cap) (function) of file outputs_screen_int.h is not documented.
 shared/ui/outputs_screen_int.h: warning: Member outputs_port_open(void) (function) of file outputs_screen_int.h is not documented.
 shared/ui/outputs_screen_int.h: warning: Member outputs_port_pins(void) (function) of file outputs_screen_int.h is not documented.
-shared/ui/outputs_screen_int.h: warning: Member outputs_port_reset(void) (function) of file outputs_screen_int.h is not documented.
 shared/ui/outputs_screen_int.h: warning: Member outputs_port_revision(void) (function) of file outputs_screen_int.h is not documented.
 shared/ui/outputs_screen_int.h: warning: Member outputs_port_tick(void) (function) of file outputs_screen_int.h is not documented.
 shared/ui/outputs_screen_int.h: warning: Member outputs_port_touched(void) (function) of file outputs_screen_int.h is not documented.
@@ -3975,8 +3987,23 @@ shared/ui/overview_screen.c: warning: Member s_supply_real (variable) of file ov
 shared/ui/overview_screen.c: warning: Member tile_at(int x, int y) (function) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member tile_in(int i) (function) of file overview_screen.c is not documented.
 shared/ui/overview_screen.c: warning: Member tile_rect(int i) (function) of file overview_screen.c is not documented.
-shared/ui/picker_port.c: file has no @file block
-shared/ui/picker_port.h: file has no @file block
+shared/ui/picker_port.c: warning: Member clash(const outbind_t *b, uint8_t index, uint8_t port, uint8_t *with) (function) of file picker_port.c is not documented.
+shared/ui/picker_port.c: warning: Member clash_t (enumeration) of file picker_port.c is not documented.
+shared/ui/picker_port.c: warning: Member hold(char *holder, size_t cap, const char *what) (function) of file picker_port.c is not documented.
+shared/ui/picker_port.c: warning: Member holds(const port_view_t *v, uint8_t n) (function) of file picker_port.c is not documented.
+shared/ui/picker_port.c: warning: Member port_pwm(uint8_t port) (function) of file picker_port.c is not documented.
+shared/ui/picker_port.h: warning: parameters of member picker_port_clashes are not documented
+shared/ui/picker_port.h: warning: parameters of member picker_port_own_pin are not documented
+shared/ui/picker_port.h: warning: parameters of member picker_port_pin are not documented
+shared/ui/picker_port.h: warning: parameters of member picker_port_reason are not documented
+shared/ui/picker_port.h: warning: parameters of member picker_port_row are not documented
+shared/ui/picker_port.h: warning: parameters of member picker_port_tap are not documented
+shared/ui/picker_port.h: warning: return type of member picker_port_clashes is not documented
+shared/ui/picker_port.h: warning: return type of member picker_port_own_pin is not documented
+shared/ui/picker_port.h: warning: return type of member picker_port_pin is not documented
+shared/ui/picker_port.h: warning: return type of member picker_port_reason is not documented
+shared/ui/picker_port.h: warning: return type of member picker_port_row is not documented
+shared/ui/picker_port.h: warning: return type of member picker_port_tap is not documented
 shared/ui/port_mail.c: file has no @file block
 shared/ui/port_view.c: file has no @file block
 shared/ui/prog_models.c: warning: Member MODEL_COUNT (macro definition) of file prog_models.c is not documented.

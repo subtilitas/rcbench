@@ -258,7 +258,7 @@ void art_begin(uint16_t board)
 
     if (s_far_minor < LINK_MINOR_DRAWING) {
         ESP_LOGI(TAG, "hardware %u serves no board drawing (protocol 4.%u); "
-                      "PICK A PIN draws its shape", (unsigned)board,
+                      "OUTPUTS draws its shape", (unsigned)board,
                  (unsigned)s_far_minor);
         return;
     }

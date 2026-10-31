@@ -1,14 +1,14 @@
 /**
  * @file test_picker_cat.c
- * @brief PICK A PIN's cat: it covers nothing the screen draws or takes a
+ * @brief The cat on OUTPUTS' board view: it covers nothing the screen draws or takes a
  *        press on, in every state the screen shows; a tap on it does
  *        nothing; the pick is random among the poses that fit and made once
  *        a visit; a row that grows into it hides it; a frame that repaints
  *        nothing draws nothing for it.
  *
- * Every state of the screen's screenshots (tools/render_ui.py: picker,
- * picker-drawn, picker-prog, picker-port, picker-full, picker-protocol,
- * picker-off, picker-iface) and a few more (no pin bound, 8 pins, the list
+ * Every state of the screen's screenshots (tools/render_ui.py: outputs,
+ * outputs-shape, outputs-prog, outputs-port3, outputs-full, outputs-protocol,
+ * outputs-off, outputs-iface) and a few more (no pin bound, 8 pins, the list
  * open beside 4 ports, a binding no read confirmed, a board that cannot be
  * drawn, a learned board with no end margin), each in English and German,
  * dark and light, with every pose forced and as many rolls as spots it
@@ -34,6 +34,7 @@
 
 #include "gfx_work.h"
 #include "outputs_screen.h"
+#include "../../shared/ui/outputs_screen_int.h"
 #include "port_view.h"
 #include "ui_cats.h"
 
@@ -183,8 +184,9 @@ static void st_port(void)
     static const uint8_t held[LINK_PG_PORTS_MAX] = { 13u, 14u, 0xFFu, 0xFFu };
     outputs_screen_set_prog_ports(4u, held);
     picker_screen_set_prog_ports(4u, held);
-    picker_screen_open_on_port(2u);
-    scr()->enter();
+    outputs_screen_set_board_view(true);
+    outputs_screen_select_port(2u);
+    picker_screen_follow(0u, true);
 }
 
 /** @brief The bench as last read, not confirmed: no key acts. */
@@ -197,7 +199,7 @@ static void st_unread(void)
 /** @brief SERVO PWM on 8 pins: the PINS table down to the foot. */
 static void st_eight(void) { servo_pins(8u); }
 
-/** @brief A board nothing knows: the panel of prose. */
+/** @brief A board nothing knows: OUTPUTS draws its grid view, with no cat. */
 static void st_cannot(void)
 {
     outbind_t b;
@@ -255,6 +257,7 @@ static const struct {
 /** @brief Puts back what a state set beyond the picker's own state. */
 static void undo_state(void)
 {
+    outputs_screen()->reset();
     picker_screen_set_prog_ports(0u, NULL);
     outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
     port_view_t v;
@@ -300,6 +303,13 @@ static unsigned meets_any(gfx_rect_t r)
         if (picker_screen_marker_rect(e, &m) && meets(r, UI_CAT_GAP, m)) {
             ++n;
         }
+    }
+    if (picker_screen_port_shown() >= 0) {
+        /* The entry's rows, down the column. */
+        n += meets(r, UI_CAT_GAP, gfx_rect_make(OB_COL_X, OB_FN_Y, OB_LIST_W,
+                                                OU_FOOT - OB_FN_Y)) ? 1u : 0u;
+    } else {
+        n += meets(r, UI_CAT_GAP, picker_screen_last_rect()) ? 1u : 0u;
     }
     if (picker_screen_can_draw()) {
         n += meets(r, UI_CAT_GAP, picker_screen_list_face()) ? 1u : 0u;

@@ -1,8 +1,9 @@
 /**
  * @file picker_draw.c
- * @brief PICK A PIN's drawing: the board, its buttons and marks, the head with
- *        the protocol list's face, the PINS and IN USE tables and the open
- *        list. picker_screen.c holds the state, the touch handling and the
+ * @brief OUTPUTS' board view's drawing: the board, its buttons and marks, the
+ *        head with the protocol list's face, the PINS and IN USE tables, the
+ *        PROG PORT entry's rows, LAST WRITE, UNBIND ALL PINS and the open
+ *        lists. picker_screen.c holds the state, the touch handling and the
  *        screen's interface (picker_screen.h); picker_geometry.c says where
  *        things sit; picker_screen_int.h is what the three share.
  *
@@ -240,6 +241,9 @@ static void draw_head(gfx_canvas_t *c)
     }
     ui_choice_face(c, picker_screen_list_face(), buf, s.hit_kind == HIT_FACE,
                    s.open);
+    if (s.port >= 0) {
+        return;                 /* the entry's rows say the rest */
+    }
     picker_screen_count(buf, sizeof(buf));
     gfx_text(c, HEAD_X, COUNT_Y, buf, PK_FONT_LABEL, UI_TEXT_DIM, 1);
     if (picker_screen_reason(buf, sizeof(buf))) {
@@ -250,14 +254,56 @@ static void draw_head(gfx_canvas_t *c)
 }
 
 /**
+ * @brief The PROG PORT entry's rows in the left column, with why a key or a
+ *        row takes no press: why a pin tapped was refused or how the ask
+ *        stands, else what the entry's rows say.
+ */
+static void draw_entry(gfx_canvas_t *c)
+{
+    char why[96];
+    if (!picker_screen_reason(why, sizeof(why))) {
+        (void)outputs_screen_port_reason(why, sizeof(why));
+    }
+    outputs_port_draw_board(c, why);
+}
+
+/**
+ * @brief LAST WRITE: what became of the last write of the binding, the label
+ *        over the result, both ending at the box's foot.
+ */
+static void draw_last_write(gfx_canvas_t *c)
+{
+    const gfx_rect_t r = pk_last_rect();
+    const char *res = outputs_result_text();
+    const gfx_font_t *const faces[] = { UI_FONT_BODY, PK_FONT_LABEL,
+                                        PK_FONT_FINE };
+    const gfx_font_t *rf = PK_FONT_FINE;
+    for (unsigned i = 0; i < sizeof(faces) / sizeof(faces[0]); ++i) {
+        if (gfx_text_width(faces[i], res, 1) <= r.w) {
+            rf = faces[i];
+            break;
+        }
+    }
+    const int rh = gfx_text_height(rf, 1);
+    const int ry = r.y + r.h - rh;
+    const int lines = outputs_wrap(NULL, gfx_rect_make(r.x, 0, r.w, 16), 16,
+                                   TR(OUT_LAST_WRITE), 2, PK_FONT_FINE,
+                                   UI_TEXT_FAINT, false);
+    (void)outputs_wrap(c, gfx_rect_make(r.x, ry - 2 - lines * 16, r.w, 16), 16,
+                       TR(OUT_LAST_WRITE), 2, PK_FONT_FINE, UI_TEXT_FAINT,
+                       false);
+    gfx_text(c, r.x, ry, res, rf, outputs_result_color(), 1);
+}
+
+/**
  * @brief The left column: what this protocol holds, in channel order, with the
  *        pad number printed on the board beside each.
  */
 static void draw_mine(gfx_canvas_t *c)
 {
-    /* OFF holds no pin, so a table of its pins says nothing, as the count
-     * on the Outputs screen. */
-    if (outbind_protos()[pk_proto_shown()].max_pins == 0u && s.port < 0) {
+    /* OFF holds no pin, so a table of its pins says nothing; a port's one
+     * pin stands in the entry's rows. */
+    if (outbind_protos()[pk_proto_shown()].max_pins == 0u || s.port >= 0) {
         return;
     }
     const int tx = PINS_X;
@@ -369,7 +415,7 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
     for (uint8_t i = 0; i < k; ++i) {
         if (t[i].kind == PICKER_USE_PIN) { ++pins_n; } else { ++names; }
     }
-    const int room = USE_FOOT - USE_TOP;
+    const int room = pk_use_foot() - USE_TOP;
     const bool compact = pins_n * USE_PIN_H > room - names * USE_NAME_H;
     const int pin_h = !compact ? USE_PIN_H
                       : (pins_n * USE_PIN_H_C <= room - names * USE_NAME_H)
@@ -519,6 +565,12 @@ void pk_render(gfx_canvas_t *c, int buffer_index)
         s.view_rev = port_view_revision();
         pk_touched();
     }
+    /* And the last write, the hold on UNBIND ALL PINS, a setting or a lock
+     * the entry's rows show. */
+    if (outputs_screen_revision() != s.out_rev) {
+        s.out_rev = outputs_screen_revision();
+        pk_touched();
+    }
     if (buffer_index >= 0 && buffer_index < MAX_FBS
         && s.chrome_valid[buffer_index]) {
         return;
@@ -526,43 +578,27 @@ void pk_render(gfx_canvas_t *c, int buffer_index)
 
     gfx_fill_rect(c, 0, 0, c->width, c->height, UI_BG);
 
-    if (!picker_screen_can_draw()) {
-        /*
-         * A board that does not say where its pads are cannot be drawn, and
-         * drawing a guessed one would point at the wrong pad as confidently
-         * as the right one.
-         *
-         * Drawn as a panel rather than a line of text: an empty screen reads
-         * as a screen that failed, and this one is working -- it is saying
-         * what it does not know, and where the pins are still to be had.
-         */
-        /* 640 x 180px: the title in the head face, the three lines of
-         * prose in 12 x 24, 52 cells inside the panel's 8px margins. */
-        const int pw = NOART_W, ph = NOART_H;
-        const int px = (SCREEN_W - pw) / 2, py = (FOOT - ph) / 2;
-        gfx_fill_chamfer_rect_ex(c, px, py, pw, ph, 12, 0, 12, 0, UI_PANEL);
-        gfx_draw_chamfer_rect_ex(c, px, py, pw, ph, 12, 0, 12, 0, UI_EDGE);
-        const char *const lines[] = {
-            TR(PK_NO_ART_1), TR(PK_NO_ART_2), TR(PK_NO_ART_3),
-            TR(PK_NO_ART_4),
-        };
-        int ty = py + 24;
-        for (unsigned i = 0; i < sizeof(lines) / sizeof(lines[0]); ++i) {
-            const gfx_font_t *font = (i == 0u) ? PK_FONT_HEAD : UI_FONT_BODY;
-            const gfx_color_t ink = (i == 0u) ? UI_TEXT : UI_TEXT_FAINT;
-            const int w = gfx_text_width(font, lines[i], 1);
-            gfx_text(c, px + (pw - w) / 2, ty, lines[i], font, ink, 1);
-            ty += (i == 0u) ? 48 : 30;
-        }
-    } else {
+    /* OUTPUTS draws its grid view for a board that does not say where its
+     * pads are: a guessed drawing would point at the wrong pad as confidently
+     * as the right one. */
+    if (picker_screen_can_draw()) {
         draw_board(c);
         draw_pads_that_are_not_pins(c);
         /* The text before the buttons, so a string that grows into a button
          * is painted over and the fit check sees it. */
         draw_head(c);
-        draw_mine(c);
+        if (s.port >= 0) {
+            draw_entry(c);
+        } else {
+            draw_mine(c);
+        }
         draw_theirs(c);
+        if (pk_last_shown()) {
+            draw_last_write(c);
+        }
+        outputs_unbind_draw(c);
         draw_buttons(c);
+        outputs_port_draw_list(c);
         if (s.open) {
             draw_list(c);
         }

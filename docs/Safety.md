@@ -512,7 +512,7 @@ IOmcu connected the panel switches its own bank to ARMED after the 100ms.
 
 The frame that switches to ARMED carries ARM, THROTTLE and the pole count,
 and no CHAN_CFG. The throttle's Idle pulse and Full pulse reach the IOmcu on
-their own path: an edit, a binding written on OUTPUTS or PICK A PIN, a
+their own path: an edit, a binding written on OUTPUTS, a
 link-up edge or the panel's start owes the IOmcu the pair. An IOmcu restart
 or update comes back as a link-up edge. The panel pays the debt at a 50ms
 poll whose write of ARM = 0 was acknowledged, once 300ms
@@ -662,7 +662,7 @@ reads the state and shows the alert, is not in the coverage figure.
 - Every control that holds state between a press and its release cancels.
   MOTOR & ESC, SERVO and CAN BUS FAULT have a gesture that completes on a
   timer, so a lost release there switches to ARMED or acknowledges on its own; the
-  overview's tiles, the outputs and picker screens' cells, the settings
+  overview's tiles, the keys and cells of OUTPUTS, the settings
   screen's keys, the log viewer's buttons, rows and DELETE question and the
   tab rows of MOTOR & ESC, RECEIVER and BALANCE act on the release instead,
   and a press left latched owns a track id the controller reuses, so a later

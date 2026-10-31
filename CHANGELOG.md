@@ -39,6 +39,13 @@ history is in git.
 
 ### Changed
 
+- OUTPUTS and PICK A PIN are one screen named OUTPUTS, with one SETUP tile. A
+  board with a drawing or a shape shows the board as the pin control, the PROG
+  PORT rows in the column beside it, LAST WRITE right of the protocol list and
+  UNBIND ALL PINS under IN USE. A board with neither, and the rbmod carrier,
+  show the pin grid. The carrier keeps its LAYOUT tile, now the last one. The
+  cat stays on the board view: a cat the entry's column covers moves to the
+  other spot. TARGET rows open the screen on their entry as before.
 - The rows of the INA228, the sensor bus, the AS5600 and the phase tap move from
   SETUP > INTERFACES to SENSORS; their stored keys stay and a panel's values load
   unchanged. INTERFACES holds the PD mini and Hitec D receive. Vibration and

@@ -6,7 +6,7 @@ order: 63
 
 # Layout
 
-LAYOUT zeigt die Stecker eines Boards mit verlöteten Pins, des [rbmod-Carriers](https://github.com/subtilitas/rcbench/wiki/Carrier-de). Es öffnet über die Kachel PICK A PIN auf [SETUP](setup.md), solange der IOmcu dieses Board meldet; die Kachel zeigt dort `STECKER UND PINS`. Sein Home-Tag führt zurück zu SETUP. Der Bildschirm treibt nichts und nimmt keinen Tipp: die Pins sind verlötet, und [Ausgänge](outputs.md) gibt jedem Servoausgang sein Protokoll.
+LAYOUT zeigt die Stecker eines Boards mit verlöteten Pins, des [rbmod-Carriers](https://github.com/subtilitas/rcbench/wiki/Carrier-de). Es öffnet über seine Kachel LAYOUT auf [SETUP](setup.md), solange der IOmcu dieses Board meldet; die Kachel zeigt dort `STECKER UND PINS`. Sein Home-Tag führt zurück zu SETUP. Der Bildschirm treibt nichts und nimmt keinen Tipp: die Pins sind verlötet, und [Ausgänge](outputs.md) gibt jedem Servoausgang sein Protokoll.
 
 ![LAYOUT auf dem Carrier](view:layout-rbmod)
 

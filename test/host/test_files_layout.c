@@ -284,11 +284,11 @@ TEST_CASE(files_returns_to_the_screen_that_opened_it)
     settle();
     router_home();
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
-    /* SETUP's ninth tile, the last of the third row. */
+    /* SETUP's eighth tile, the middle of the third row. */
     ui_router_goto(SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_SETUP);
     gfx_rect_t t = gfx_rect_make(0, 0, 0, 0);
-    CHECK(settings_hub_slot(8, &t));
+    CHECK(settings_hub_slot(7, &t));
     router_tap(t.x + t.w / 2, UI_BAND_H + t.y + t.h / 2);
     CHECK_EQ(ui_router_current(), SCREEN_FILES);
     router_home();

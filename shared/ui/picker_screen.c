@@ -1,7 +1,8 @@
 /**
  * @file picker_screen.c
- * @brief PICK A PIN's state, touch handling and interface: the board, with
- *        a button on every pin an output may have.  See picker_screen.h.
+ * @brief OUTPUTS' board view, its state, touch handling and interface: the
+ *        board, with a button on every pin an output may have.  See
+ *        picker_screen.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,10 +24,6 @@
 
 /** @brief The screen's state; picker_screen_int.h names it s. */
 pk_state_t pk_s;
-
-/** @brief The port the next entry opens on, -1 for OFF:
- *         picker_screen_open_on_port(), once. */
-static int g_open_port = -1;
 
 /** @brief The GPIOs the IOmcu's programming ports are bound to,
  *         PICKER_NO_PIN for none.  Kept out of `s` so a reset of the
@@ -379,9 +376,9 @@ void picker_screen_count(char *buf, size_t cap)
     if (buf == NULL || cap == 0u) {
         return;
     }
+    buf[0] = '\0';
     if (s.port >= 0) {
-        picker_port_count((uint8_t)s.port, buf, cap);
-        return;
+        return;                 /* the FUNCTION face says what the port carries */
     }
     /* Slots used by every protocol, not by this one: they share the eight,
      * so this protocol's own count says nothing about what is left. */
@@ -397,8 +394,11 @@ bool picker_screen_reason(char *buf, size_t cap)
     }
     buf[0] = '\0';
     if (s.unread) {
-        /* Why no button acts: the binding drawn is the last one read. */
-        snprintf(buf, cap, "%s", TR(PK_NOT_READ));
+        /* Why no button acts: the binding drawn is the last one read, or
+         * pages no binding describes, which UNBIND ALL PINS answers. */
+        snprintf(buf, cap, "%s",
+                 (outputs_screen_read_state() == BIND_READ_ODD)
+                     ? TR(OUT_NOT_MAPPED) : TR(PK_NOT_READ));
         return true;
     }
     if (s.port >= 0) {
@@ -464,8 +464,6 @@ static void pick_port(uint8_t port)
     s.port = outputs_screen_port_shown();
 }
 
-void picker_screen_open_on_port(uint8_t port) { g_open_port = (int)port; }
-
 int picker_screen_port_shown(void) { return s.port; }
 
 /**
@@ -478,6 +476,18 @@ static void event(const touch_event_t *evt)
         return;
     }
     const int x = evt->point.x, y = evt->point.y;
+
+    /* The entry's rows, its open FUNCTION list and UNBIND ALL PINS first:
+     * each takes the press it is under, and nothing under it sees it.  A key
+     * is drawn over the FUNCTION face on a board with a pin there, and what
+     * is on top takes the press. */
+    const bool key_on_top = evt->type == TOUCH_EVENT_DOWN
+                            && !outputs_port_fn_open()
+                            && button_under(x, y) >= 0;
+    if (!s.open && ((s.port >= 0 && !key_on_top && outputs_port_event(evt))
+                    || outputs_unbind_event(evt))) {
+        return;
+    }
 
     if (evt->type == TOUCH_EVENT_DOWN) {
         s.hit_kind = HIT_NONE;
@@ -612,11 +622,6 @@ static void enter(void)
     if (s.select != NULL) {
         s.select(0u);
     }
-    /* Or on the port the OUTPUTS entry's PIN button named. */
-    if (g_open_port >= 0) {
-        pick_port((uint8_t)g_open_port);
-        g_open_port = -1;
-    }
     /* Asked on the way in, so a drawing that arrived since the last visit
      * is the one shown, and one for a board that has been swapped is not. */
     if (s.source != NULL) {
@@ -636,14 +641,14 @@ static void leave(void)
 }
 
 /**
- * @brief The home tag closes an open protocol list without choosing; with
- *        none open it leaves the screen.
- * @return true when it closed the list
+ * @brief The home tag closes an open protocol or FUNCTION list without
+ *        choosing; with none open it leaves the screen.
+ * @return true when it closed a list
  */
 static bool back(void)
 {
     if (!s.open) {
-        return false;
+        return outputs_port_back();
     }
     leave();
     pk_touched();
@@ -669,7 +674,7 @@ static void cancel(void)
 
 /** @brief The screen's hooks for the router. */
 static const ui_screen_t s_screen = {
-    .title  = "PICK A PIN",
+    .title  = "OUTPUTS",
     .reset  = reset,
     .enter  = enter,
     .leave  = leave,
@@ -681,7 +686,7 @@ static const ui_screen_t s_screen = {
 };
 
 /**
- * @brief The pin picker.
+ * @brief OUTPUTS' board view.
  * @return its hooks
  */
 const ui_screen_t *picker_screen(void) { return &s_screen; }

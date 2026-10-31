@@ -1,6 +1,6 @@
 /**
  * @file picker_geometry.c
- * @brief PICK A PIN's geometry: the box the board takes, where each pad sits,
+ * @brief OUTPUTS' board view's geometry: the box the board takes, where each pad sits,
  *        the buttons above and below the board, the marks inside it, and the
  *        protocol list's rows.  picker_screen.c holds the state, the touch
  *        handling and the screen's interface (picker_screen.h); picker_draw.c
@@ -273,6 +273,37 @@ gfx_rect_t picker_screen_area(picker_area_t area)
         return gfx_rect_make(HEAD_X, HEAD_Y, HEAD_W, HEAD_H);
     }
 }
+
+gfx_rect_t pk_last_rect(void)
+{
+    const gfx_rect_t top = gfx_rect_make(LAST_X, LAST_Y, LAST_W, LAST_H);
+    const uint8_t n = outbind_pin_count(s.bind.board);
+    gfx_rect_t out;
+    for (int i = 0; i < (int)n; ++i) {
+        gfx_rect_t k;
+        if (pk_button_at(i, &k, NULL) && gfx_rect_intersect(top, k, &out)) {
+            const int foot = outputs_unbind_offered() ? OB_CLR_Y - 8 : FOOT;
+            return gfx_rect_make(USE_X, foot - LAST_H, USE_W, LAST_H);
+        }
+    }
+    return top;
+}
+
+bool pk_last_shown(void) { return s.port < 0; }
+
+int pk_use_foot(void)
+{
+    int foot = outputs_unbind_offered() ? OB_CLR_Y - 8 : USE_FOOT;
+    if (pk_last_shown()) {
+        const gfx_rect_t last = pk_last_rect();
+        if (last.x == USE_X && last.y - 8 < foot) {
+            foot = last.y - 8;
+        }
+    }
+    return foot;
+}
+
+gfx_rect_t picker_screen_last_rect(void) { return pk_last_rect(); }
 
 gfx_rect_t picker_screen_list_face(void)
 {

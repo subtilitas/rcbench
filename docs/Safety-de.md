@@ -564,8 +564,7 @@ angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
 
 Der Frame, der auf ARMED schaltet, trägt ARM, THROTTLE und die Polzahl,
 aber kein CHAN_CFG. Leerlaufpuls und Vollpuls des Gases erreichen den IOmcu
-auf einem eigenen Weg: eine Änderung, eine auf OUTPUTS oder PICK A PIN
-geschriebene Zuordnung, eine Link-up-Flanke oder der Start des Panels
+auf einem eigenen Weg: eine Änderung, eine auf OUTPUTS geschriebene Zuordnung, eine Link-up-Flanke oder der Start des Panels
 schuldet dem IOmcu das Paar. Ein Neustart oder ein Update des IOmcu kommt
 als Link-up-Flanke zurück. Das Panel begleicht die Schuld bei einem Poll im
 50-ms-Takt, dessen Schreiben von ARM = 0 quittiert wurde, sobald 300ms
