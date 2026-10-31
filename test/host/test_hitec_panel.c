@@ -674,6 +674,7 @@ TEST_CASE(the_screenshot_gate_reads_the_hold_of_the_port)
 
 int main(void)
 {
+    RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
     RUN(hitec_d_receive_is_set_on_more_in_pwm);
@@ -693,6 +694,5 @@ int main(void)
     RUN(every_control_label_value_and_note_fits_in_both_languages);
     RUN(every_message_fits_its_line_in_both_languages);
     free(fb);
-    RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     return test_summary("hitec_panel");
 }
