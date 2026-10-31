@@ -184,6 +184,9 @@ static inline void every_id_observer(setting_id_t id)
     }
 }
 
+/* OUTPUTS's tile, between SENSORS and SD CARD. */
+#define OUTPUTS_TILE 2
+
 /* The middle of the hub's tile @p index, in panel coordinates. */
 static inline int tile_x(int index)
 {
@@ -227,7 +230,7 @@ static inline void to_hub(void)
 static inline void open_category(setting_cat_t cat)
 {
     to_hub();
-    tap(tile_x((int)cat), tile_y((int)cat));
+    tap(tile_x(settings_hub_cat_tile(cat)), tile_y(settings_hub_cat_tile(cat)));
 }
 
 /* SETUP on its tiles, the model at its defaults. */
@@ -247,11 +250,11 @@ static inline void fresh_hub(void)
 }
 
 /*
- * The list the screen tests open: INTERFACES, full width, with a number row
- * first in each section.  ESC / BENCH's rows are MOTOR & ESC > SETTINGS'
+ * The list the screen tests open: PANEL, full width, 12 rows that scroll.
+ * ESC / BENCH's rows are MOTOR & ESC > SETTINGS'
  * (test_motor_workbench), and the sensors' are SENSORS' (open_sensor()).
  */
-#define LIST_CAT SET_CAT_IFACE
+#define LIST_CAT SET_CAT_APP
 
 /* The point inside entry @p e of SENSORS' left list, in panel coordinates. */
 static inline int entry_x(int e)
@@ -297,7 +300,7 @@ static inline void open_sensor(setting_id_t id)
 }
 
 /* The middle of the row of the @p index-th setting of the open list, which
- * lies below the headings above it (INTERFACES has four). */
+ * is its row. */
 static inline int row_y(int index)
 {
     const int cat = settings_screen_category();
@@ -375,7 +378,7 @@ static inline void gesture_screen(setting_cat_t cat)
     feed_tick_per_report(REPORT_S);
     if (cat != LIST_CAT && cat != SET_CAT_SENSORS) {
         feed_tap(FEED_LONE, home_x(), home_y());
-        feed_tap(FEED_LONE, tile_x((int)cat), tile_y((int)cat));
+        feed_tap(FEED_LONE, tile_x(settings_hub_cat_tile(cat)), tile_y(settings_hub_cat_tile(cat)));
     }
     snap();
 }

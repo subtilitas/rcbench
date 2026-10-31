@@ -357,7 +357,7 @@ static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
 /**
  * @brief The IN USE table: the programming port's pin first, because a pin the port
  *        drives is the one a lead must not go on without knowing; then what SETUP
- *        > INTERFACES holds, for the same reason; then the pins other protocols
+ *        > SENSORS or SUPPLY's PD MINI holds, for the same reason; then the pins other protocols
  *        hold, groups in the order their first pin falls, so the channels count
  *        down the page rather than jumping about with the protocol numbering.
  *        Returns the number of lines.

@@ -547,7 +547,7 @@ TEST_CASE(stay_keeps_the_list_and_its_scroll)
 {
     for (int how = 0; how < 2; ++how) {
         fresh_hub();
-        open_category(SET_CAT_IFACE);
+        open_category(SET_CAT_APP);
         finger(FEED_LONE, XL, LIST_Y + 300);
         glide(FEED_LONE, XL, LIST_Y + 200, 10);
         lift(FEED_LONE);
@@ -567,7 +567,7 @@ TEST_CASE(stay_keeps_the_list_and_its_scroll)
         CHECK_EQ(settings_screen_scroll(NULL), scrolled);
         CHECK_EQ(settings_get_int(SET_PACK_CELLS), 4);
         CHECK(settings_dirty());
-        open_category(SET_CAT_IFACE);
+        open_category(SET_CAT_APP);
         CHECK_EQ(settings_screen_scroll(NULL), scrolled);
     }
 }
@@ -581,7 +581,7 @@ TEST_CASE(the_warning_covers_the_tiles)
     tap(tile_x(0), tile_y(0));
     CHECK(settings_screen_warning());
     CHECK_EQ(settings_screen_category(), -1);
-    tap(tile_x(SET_CAT_SETUP_COUNT), tile_y(SET_CAT_SETUP_COUNT));
+    tap(tile_x(OUTPUTS_TILE), tile_y(OUTPUTS_TILE));
                                          /* OUTPUTS's tile */
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
@@ -713,9 +713,6 @@ static void count_apply(const outbind_t *b)
     (void)b;
     ++s_out_applied;
 }
-
-/* The OUTPUTS tile's slot: after the categories. */
-#define OUTPUTS_TILE SET_CAT_SETUP_COUNT
 
 /*
  * The OUTPUTS tile opens the overview, and nothing about it is a setting:

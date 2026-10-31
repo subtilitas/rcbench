@@ -332,7 +332,7 @@ aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
 | --- | --- |
 | MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, SENSORS eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
-| SUPPLY | der PD mini unter SETUP, INTERFACES eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel sein eigenes Modell eines Netzteils |
+| SUPPLY | der PD mini im Tab PD MINI auf SUPPLY eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel sein eigenes Modell eines Netzteils |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | immer: sie enthalten keine Messung |
 
@@ -782,7 +782,7 @@ zeigt. Eine SERVO-Datei, nach einem ARM auf SERVO, hat zwei Spalten mehr vor
 - Eine Zeile nimmt einen Wert nur aus einer Quelle, die ihre `source` ist:
   - alle fünf Zellen des Messgeräts sind leer in einer `measured`-Zeile,
     solange das Netzteil das Modell des Panels ist (PD mini in SETUP
-    INTERFACES ausgeschaltet);
+    im Tab PD MINI auf SUPPLY ausgeschaltet);
   - sie sind leer in einer `model`-Zeile, solange nach dem Verlust des Links
     noch der letzte Messwert des PD mini gezeigt wird;
   - eine `model`-Zeile hat keinen Wert des INA3221 und kein `angle`, die über
@@ -1345,12 +1345,12 @@ erscheint sofort in der Zeile.
 | --- | --- | --- |
 | ein INA3221-Kanal | `INA`, die Adresse seines Bausteins und der Kanal: `INA 0x41 CH2` | das letzte 50-ms-Fenster des Kanals: den mittleren Strom, die mittlere Busspannung auf der Lastseite des Shunts und ihr Produkt. Ein Punkt im Plot je Fenster, 20 in der Sekunde |
 | der PD mini | `PD MINI` | das letzte Sample des Netzteils. Ein Punkt je Sample |
-| das Modell, solange kein IOmcu antwortet | `PD MINI` | das letzte Sample des Netzteils: das des Netzteilmodells unter dem SIMULATION-Watermark, und keinen Messwert, wo SETUP INTERFACES den PD mini einschaltet, der ohne Link nicht antwortet |
+| das Modell, solange kein IOmcu antwortet | `PD MINI` | das letzte Sample des Netzteils: das des Netzteilmodells unter dem SIMULATION-Watermark, und keinen Messwert, wo der Tab PD MINI auf SUPPLY den PD mini einschaltet, der ohne Link nicht antwortet |
 
 ![Der INA3221 als Messgerät](img/de/servo-ina.png)
 
 Der Name bleibt in beiden Sprachen `PD MINI`. Solange der PD mini in SETUP
-unter INTERFACES abgeschaltet ist, ist das Netzteil das Modell des Panels,
+im Tab PD MINI auf SUPPLY abgeschaltet ist, ist das Netzteil das Modell des Panels,
 wie auf SUPPLY: dann sitzt eine Pille SIMULIERT (englisch SIMULATED), 26px
 hoch und 30px plus das Wort breit, mindestens 110px (120px für SIMULATED
 und SIMULIERT), auf der oberen linken Ecke des Plots unter dem Namen,
@@ -2086,11 +2086,11 @@ PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
 IOmcu steuert ihn über einen PIO-UART (PIO: Programmable
 Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 4.3). Das Panel schreibt die Page und liest sie alle 100ms. Ist der PD mini
-in SETUP unter INTERFACES eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des IOmcu, an denen
+im Tab PD MINI auf SUPPLY eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des IOmcu, an denen
 es hängt: `PD MINI TX GPIO 12 RX GPIO 13`, aus den Einstellungen PD mini TX und
 PD mini RX. Ist einer der beiden Pins nicht gesetzt oder liegen beide auf
 einem GPIO, steht `PD MINI OHNE PINS` in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
-Netzteils: die Kopfzeile sagt SIMULIERTES NETZTEIL, und die Kachel im Menü trägt
+Netzteils: die Kopfzeile sagt `SIMULIERT: IN PD MINI EINSCHALTEN`, und die Kachel im Menü trägt
 SIMULIERT.
 
 SUPPLY ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE und OPTIONEN,
@@ -2102,7 +2102,7 @@ sie war.
 | Aufgabe | Die linke Spalte, 620px |
 | --- | --- |
 | LIVE | der Plot oder die Tabelle über den Sollwerten |
-| OPTIONEN | die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
+| OPTIONEN | die Tabs GRENZEN und PD MINI ([Der Tab PD MINI](#der-tab-pd-mini)); auf GRENZEN die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
 
 Die Kopfzeile ist die Zeile rechts neben der Leiste: das Modul und seine
 Pins, ONLINE oder ANTWORTET NICHT in 10 x 20 und am rechten Ende der Bereich,
@@ -2402,19 +2402,18 @@ und 2,00A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
 und am Prüfstand wird nichts versorgt.
 
 Die Verdrahtung des PD mini (PD mini, PD mini TX, PD mini RX und PD mini
-Baud) steht in SETUP unter INTERFACES. TX und RX sind GPIO-Nummern des
+Baud) steht in OPTIONEN im Tab PD MINI ([Der Tab PD MINI](#der-tab-pd-mini)). TX und RX sind GPIO-Nummern des
 IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Ihre Tasten `-`
 und `+` springen über den GPIO, den die andere Zeile hält, und tun am Ende
 des Bereichs nichts: mit RX auf GPIO 47 bleibt TX auf GPIO 46. Das Tastenfeld
 lehnt den GPIO der anderen Zeile ab und zeigt statt des Bereichs `Diesen
 GPIO hält der andere PD-mini-Pin`. Eine gespeicherte
 Einstellung mit beiden auf einem GPIO wird so geladen: das Panel schreibt die
-Page abgeschaltet, der PD mini bleibt aus, und beide Zeilen sagen `TX und RX
-auf einem Pin. Der PD mini bleibt aus.`, bis eine verstellt wird. Der
+Page abgeschaltet, der PD mini bleibt aus, und beide Zeilen sagen `TX und RX auf einem Pin. PD mini bleibt aus.`, bis eine verstellt wird. Der
 Schalter PD mini schaltet das Modul ab. Der
 IOmcu weist einen Pin ab, der reserviert, an einen Ausgang gebunden,
 vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist, und
-das Band sagt `PD-mini-Pins abgelehnt. SETUP > INTERFACES prüfen.`: RX auf
+das Band sagt `PD-mini-Pins abgelehnt. SUPPLY, Tab PD MINI prüfen.`: RX auf
 GPIO 17 wird abgewiesen, solange Sensor-SDA GPIO 16 ist, denn Sensor-SCL ist dann
 GPIO 17. Der Alert verlässt das Band, sobald eine Lesung die Page mit der
 verlangten Verdrahtung zeigt: sofort, wenn der Pin auf den zurückgestellt
@@ -2427,7 +2426,7 @@ zum OFF. Zeigt die Lesung den Ausgang an oder schlägt sie fehl, wird die
 Änderung abgewiesen, und das Band sagt
 `PD-mini-Anschlüsse abgelehnt. Sein Ausgang kann noch eingeschaltet sein.`. Eine
 abgewiesene Änderung wird erst wieder geschrieben, wenn sich die Verdrahtung
-in SETUP ändert; auch dieser Alert verlässt das Band, sobald eine Lesung die
+ändert; auch dieser Alert verlässt das Band, sobald eine Lesung die
 Page mit der verlangten Verdrahtung zeigt. PD mini Baud ist die eigene UART-Baudrate-
 Einstellung des Moduls: 9600, 19200 (ab Werk), 38400, 57600, 115200, 230400
 oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den IOmcu sie
@@ -2435,7 +2434,58 @@ finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von
 SUPPLY zeigt die Rate in Gebrauch hinter ONLINE, z. B. `ONLINE 38400`, bei
 AUTO wie bei einer festen Rate.
 
-![GPIO 9 von RX für PD mini TX abgelehnt](img/de/setup-pdmini-why.png)
+![GPIO 9 von RX für PD mini TX abgelehnt](img/de/supply-pdmini-why.png)
+
+#### Der Tab PD MINI
+
+OPTIONEN zeigt die Tabs GRENZEN und PD MINI, 40px hoch. PD MINI hält die
+Verdrahtung, vier Zeilen bei 56px Abstand: jede mit Name und Hilfezeile, ihrem
+Wert in einem Feld von 120 x 48px und Tasten - und + von 56 x 48px.
+
+| Zeile | Werte | Vorgabe | Ein Druck |
+| --- | --- | --- | --- |
+| PD mini | EIN, AUS | AUS | ein Tippen auf den Wert schaltet um |
+| PD mini TX | GPIO -1 bis 47 | -1 | - und + springen, der Wert öffnet das Keypad |
+| PD mini RX | GPIO -1 bis 47 | -1 | - und + springen, der Wert öffnet das Keypad |
+| PD mini Baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | < und > und der Wert gehen durch die 8 Werte |
+
+Eine Änderung gilt sofort und wird nach der Regel oben gespeichert, wie eine
+Änderung auf GRENZEN. Es gibt kein SPEICHERN und keine Warnung beim Verlassen. Die
+gespeicherten Schlüssel sind `pdm_en`, `pdm_tx`, `pdm_rx` und `pdm_baud`. PD MINI
+ZURÜCKSETZEN startet das Modul neu und schreibt keine der vier Zeilen.
+
+Jede Änderung der Verdrahtung schaltet einen eingeschalteten Ausgang ab, deshalb
+ändert eine Zeile in diesen Zuständen nichts:
+
+| Zustand | Ein Druck auf eine Zeile | Hilfezeile und Band |
+| --- | --- | --- |
+| Ausgang an oder ein ON unterwegs, von jedem Bildschirm, am PD mini oder am Modell | ändert nichts | `Ausgang an: zuerst ausschalten` |
+| ein Programmierport hält das Netzteil | ändert nichts | `Ein Programmierport hält die Versorgung` |
+| Prüfstand ARMED | ändert nichts; auch `settings_set()` und eine Rücksetzung lassen die Zeilen | `Nur bei SAFE einstellbar` |
+
+Ein auf einem Pin offenes Keypad schließt, sobald einer dieser Zustände beginnt,
+und was es hält, wird nicht übernommen. Ein laufender Druck endet ebenso, sein
+Loslassen ändert nichts. Mit Ausgang aus und SAFE erreicht die Änderung die
+SUPPLY-Page des IOmcu, wie unter [Netzteil](#netzteil) beschrieben. Eine Änderung,
+die doch einen eingeschalteten Ausgang erreicht, das VERWERFEN einer abgelehnten
+Speicherung in der Warnung beim Verlassen von SETUP, schaltet ihn ab und sagt
+`PD-mini-Anschlüsse geändert. Ausgang aus.`. PD MINI
+ZURÜCKSETZEN bleibt auf GRENZEN.
+
+![Der Tab PD MINI](img/de/supply-pdmini.png)
+
+Auf dem [rbmod-Carrier](Carrier-de.md) liest PD mini TX 7 und PD mini RX 6. Sie
+haben keine Tasten, öffnen kein Keypad und zeigen als Hilfezeile
+`Auf dem Board verlötet. Keine Einstellung.`. Die gespeicherten Werte bleiben
+und gelten wieder auf einem von Hand verdrahteten Modul. PD mini und PD mini Baud
+nehmen Drücke unter denselben drei Zuständen.
+
+![Der Tab PD MINI auf dem Carrier](img/de/supply-pdmini-rbmod.png)
+
+Rechnet das Panel sein Modell, lautet die Quelle in der Kopfzeile
+`SIMULIERT: IN PD MINI EINSCHALTEN`, eine Taste: ein Tippen öffnet diesen Tab, von
+LIVE, von GRENZEN und über einem Keypad, das schließt. Eine Rückfrage zu einem
+eingeschalteten Ausgang wird zuerst beantwortet.
 
 ## Receiver
 
@@ -4203,7 +4253,7 @@ Zeile in der Schrift 10 x 20px.
 
 ![Setup](img/de/setup.png)
 
-- Vier Kategorien: PANEL, INTERFACES, SD CARD und SENSORS, die
+- Drei Kategorien: PANEL, SENSORS und SD CARD, die
   Einstellungen für den ganzen Prüfstand. Eine Kachel nennt die Zahl der
   Einstellungen, die ihre Liste zeigt; die von SENSORS sagt, was sie hält,
   `STROM, WINKEL, PHASENABGRIFF`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
@@ -4214,8 +4264,8 @@ Zeile in der Schrift 10 x 20px.
   und das Band dieser Seite zeigt SETUP. [WLAN](#wlan) und [Files](#files) sind
   Tabs der Kachel [LOGS](#logs).
 - LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
-  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 3 Plätze
-  frei, auf diesem 2. Die Seite hält 9, und der Build schlägt bei einem zehnten
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 4 Plätze
+  frei, auf diesem 3. Die Seite hält 9, und der Build schlägt bei einem zehnten
   Eintrag fehl.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -4615,25 +4665,6 @@ wirkt nicht.
 
 Der Drehknopf tut auf SETUP nichts: das Panel gibt eine Drehung nur an
 MOTOR & ESC und SERVO weiter.
-
-### INTERFACES: der PD mini und der Programmierport
-
-INTERFACES listet 5 Einstellungen in zwei Abschnitten. Eine Überschrift über der
-ersten Zeile jedes Abschnitts benennt ihn: SUPPLY (der PD mini) und PROG-PORT
-(Hitec-D-Empfang, [INTERFACES: der Programmierport](#interfaces-der-programmierport)).
-Eine Überschrift ist eine eigene Zeile, 64px hoch bei 70px Zeilenabstand der
-Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert: ein Tippen
-darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die Liste ist 7 Zeilen
-lang.
-
-![INTERFACES](img/de/setup-interfaces.png)
-
-Auf dem [rbmod-Carrier](Carrier-de.md) liest PD mini TX 7 und PD mini RX 6. Sie
-haben keine Tasten, öffnen kein Keypad und zeigen als Hilfezeile
-`Auf dem Board verlötet. Keine Einstellung.`. Die gespeicherten Werte bleiben
-und gelten wieder auf einem von Hand verdrahteten Modul.
-
-![INTERFACES auf dem Carrier](img/de/setup-rbmod-iface.png)
 
 ### SENSORS: die Strommonitore
 
@@ -5085,45 +5116,6 @@ ausgeschaltet ist und die Page ihn aus hält. Abgriff-Pause 2ms mit Tiefster
 Ton 400Hz wird gewollt abgelehnt: die Pause muss mindestens eine Periode
 des tiefsten Tons lang sein, 2,5ms bei 400Hz (`tone_init()`,
 `protocols/phase_tap/tone.c`).
-
-### INTERFACES: der Programmierport
-
-Die letzte Zeile von INTERFACES, unter PROG-PORT, sagt, wie der IOmcu die
-Antwort eines Hitec-Servos der D-Serie an seinem Programmierport empfängt,
-GPIO 13 als Voreinstellung ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)):
-
-| Einstellung | Werte | Voreinstellung | |
-| --- | --- | --- | --- |
-| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: ein Widerstand von 2,2kΩ von der Signalleitung zur Servoversorgung hebt die Leitung, und der IOmcu liest sie losgelassen. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1086,7ns für 100,0ns auf High und tastet es 113,3ns nach dem Loslassen ab |
-
-Sie wird wie die übrigen Zeilen im NVS gehalten; ein fehlender oder
-unlesbarer gespeicherter Wert ist PULL-UP. Das Panel schreibt sie bei jedem
-Link-Aufbau und nach jeder Änderung auf die HITEC-Page, ARMED oder nicht;
-der IOmcu nimmt sie beim nächsten OPEN einer Leitung der D-Serie.
-classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen sie.
-Die Einstellung erreicht die Leitungen, die die Hitec-Programmierung auf
-SERVO öffnet ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)),
-und die, die die Prüfstandskonsole öffnet
-([Die Prüfstandskonsole](BenchConsole-de.md)).
-
-Unmarkiert folgt die Hilfezeile dem Wert: `PULL-UP braucht 2.2kΩ an der
-Signalleitung` bei PULL-UP, `PRECHARGE: kein Pull-up an der Signalleitung`
-bei PRECHARGE.
-
-Die Zeile wird markiert wie die Zeilen unter
-[Eine Zeile, die der IOmcu nicht hält](#eine-zeile-die-der-iomcu-nicht-hält),
-mit eigener Hilfezeile:
-
-| Die Hilfezeile lautet | Solange |
-| --- | --- |
-| `Vom IOmcu nicht übernommen.` | der Wert noch nicht bestätigt ist oder der IOmcu ihn abgewiesen hat |
-| `IOmcu älter als 0.22.0: empfängt mit PULL-UP.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.23 spricht: er hat kein Register für den Modus |
-| `IOmcu älter als 0.21.1: keine Hitec-Leitung.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.22 oder älter spricht: er hat keine HITEC-Seite |
-
-Keine Markierung, solange kein IOmcu antwortet, und keine für PULL-UP an
-einem älteren IOmcu.
-
-![INTERFACES, Hitec-D-Empfang auf PRECHARGE an einem IOmcu älter als 4.24](img/de/setup-prog.png)
 
 ### SD CARD: welche Logs geschrieben werden, und wohin
 
@@ -5910,7 +5902,7 @@ Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
 dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
 einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
 
-Ein Pin, den SETUP > SENSORS oder INTERFACES hält, wird ebenso gezeigt, rot und
+Ein Pin, den SETUP > SENSORS oder der Tab PD MINI auf SUPPLY hält, wird ebenso gezeigt, rot und
 durchgestrichen, mit dem, was ihn hält, unter seinem Namen, und lässt sich
 nicht anhaken:
 
@@ -6357,7 +6349,7 @@ Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
 
 ![GPIO 13 beim Programmierport](img/de/outputs-prog.png)
 
-Ein Pin, den SETUP > SENSORS oder INTERFACES hält, ist ebenso grau, solange kein
+Ein Pin, den SETUP > SENSORS oder der Tab PD MINI auf SUPPLY hält, ist ebenso grau, solange kein
 Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
 nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`
 in Rot, ohne Kanal. Welche Pins das sind und wann, steht in der Tabelle

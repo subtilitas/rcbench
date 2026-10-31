@@ -411,8 +411,8 @@ atomic_uint s_sense_unheld;
 atomic_uint s_tone_unheld;
 
 hitec_rx_link_t s_hitec_rx_link;
+/** @brief The mode SET_HITEC_RX asks, link_hitec_rx_t. */
 atomic_uint     s_hitec_rx_want;
-atomic_uint     s_hitec_rx_mark;
 
 /*
  * Hitec D receive to the HITEC page's register 23 (hitec_rx_link.h): one
@@ -437,8 +437,6 @@ void hitec_rx_service(void)
         }
         hitec_rx_link_done(&s_hitec_rx_link, result, now_ms());
     }
-    atomic_store(&s_hitec_rx_mark,
-                 (unsigned)hitec_rx_link_mark(&s_hitec_rx_link));
 }
 
 void sense_link_service(bool idle, bench_state_t *bench)

@@ -101,7 +101,7 @@ Der Pin des Programmierports, ab Werk GPIO 13 (Pad 17), ist grau, solange kein P
 
 ![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](view:outputs-iface)
 
-Ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder [INTERFACES](setup-interfaces.md) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.
+Ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder der [Tab PD MINI auf SUPPLY](supply.md#tab-pd-mini) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.
 
 ![OFF gewählt: jeder gebundene Pin unter BELEGT](view:outputs-off)
 
@@ -156,7 +156,7 @@ Eine Platine, die weder Zeichnung noch Form meldet, lässt sich nicht zeichnen: 
 | ausgegraut, der Name des anderen Protokolls | von einem anderen Protokoll gehalten | tut nichts |
 | rot, durchgestrichen | reserviert: GPIO 3 trägt den Sicherheits-Heartbeat, GPIO 8 bis GPIO 12 den CAN-Controller (Controller Area Network) | tut nichts |
 | `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GPIO 13 | tut nichts |
-| rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder [INTERFACES](setup-interfaces.md) hält: Sensor-SDA und -SCL, solange INA228 oder AS5600 EIN ist oder ein INA3221 unter [SETUP > SENSORS](setup-sensors.md) bestückt ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | tut nichts |
+| rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder der [Tab PD MINI auf SUPPLY](supply.md#tab-pd-mini) hält: Sensor-SDA und -SCL, solange INA228 oder AS5600 EIN ist oder ein INA3221 unter [SETUP > SENSORS](setup-sensors.md) bestückt ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | tut nichts |
 | ausgegraut, `SLICE VON GPIO 13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin eines Programmierports, jedes Ports, den der IOmcu meldet; GPIO 28 und GPIO 13 sind Slice 6 | tut nichts; `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` unter der Zahl |
 | ausgegraut, `KANAL VON GPIO 0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und GPIO 21, GPIO 6 und GPIO 22) | tut nichts; `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` unter der Zahl |
 | frei, `PAD 7` | nicht gebunden | bindet ihn |

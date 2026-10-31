@@ -1,8 +1,8 @@
 /**
  * @file settings_rows_int.h
  * @brief SETUP's list rows: what settings_rows.c, settings_screen.c and
- *        settings_draw.c share and nobody else sees.  A row is a setting, a
- *        heading above the next one, or a string.
+ *        settings_draw.c share and nobody else sees.  A row is a setting or
+ *        a string.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,16 +14,15 @@
 #include "settings.h"
 #include "ui_text.h"
 
-/** @brief One row of a list: a setting, a heading or a string. */
+/** @brief One row of a list: a setting or a string. */
 typedef struct {
-    setting_id_t id;                     /**< the setting; 0 for a heading or a string */
-    int8_t       heading;    /**< a section heading's index, or -1        */
+    setting_id_t id;                     /**< the setting; 0 for a string */
     int8_t       text;       /**< a setting_text_id_t, or -1              */
 } settings_row_t;
 
 /**
- * @brief Returns row @p index of @p cat's list; a setting of id 0 with every
- *        index -1 past the last.
+ * @brief Returns row @p index of @p cat's list; a setting of id 0 with text
+ *        -1 past the last.
  * @param cat the category
  * @param index the row
  * @return the row
@@ -31,15 +30,7 @@ typedef struct {
 settings_row_t settings_rows_entry(setting_cat_t cat, int index);
 
 /**
- * @brief Returns the words of section heading @p heading.
- * @param heading the heading's index
- * @return the text id
- */
-ui_text_id_t settings_rows_heading_text(int heading);
-
-/**
- * @brief Counts the settings and strings @p cat lists: its rows less its
- *        headings.
+ * @brief Counts the settings and strings @p cat lists.
  * @param cat the category
  * @return the count
  */

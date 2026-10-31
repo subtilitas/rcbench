@@ -556,8 +556,8 @@ TEST_CASE(a_category_takes_the_press_the_tracker_made_for_a_jump)
     feed_tap(FEED_LONE, home_x(), home_y());
     setting_id_t app[64];
     settings_in_category(SET_CAT_APP, app, 64);
-    finger(FEED_LONE, tile_x(LIST_CAT), tile_y(LIST_CAT) + 200);
-    finger(FEED_LONE, tile_x(SET_CAT_APP), tile_y(SET_CAT_APP));
+    finger(FEED_LONE, tile_x(settings_hub_cat_tile(LIST_CAT)), tile_y(settings_hub_cat_tile(LIST_CAT)) + 200);
+    finger(FEED_LONE, tile_x(settings_hub_cat_tile(SET_CAT_APP)), tile_y(settings_hub_cat_tile(SET_CAT_APP)));
     lift(FEED_LONE);
     CHECK_EQ(settings_screen_category(), SET_CAT_APP);
     snap();
@@ -631,11 +631,11 @@ TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
 
     /* The other category's tile, into the band in one report. */
     feed_tap(FEED_LONE, home_x(), home_y());
-    finger(FEED_LONE, tile_x(SET_CAT_APP), tile_y(SET_CAT_APP));
-    finger(FEED_LONE, tile_x(SET_CAT_APP), UI_BAND_H - 8);
+    finger(FEED_LONE, tile_x(settings_hub_cat_tile(SET_CAT_APP)), tile_y(settings_hub_cat_tile(SET_CAT_APP)));
+    finger(FEED_LONE, tile_x(settings_hub_cat_tile(SET_CAT_APP)), UI_BAND_H - 8);
     lift(FEED_LONE);
     CHECK_EQ(settings_screen_category(), -1);
-    feed_tap(FEED_LONE, tile_x(LIST_CAT), tile_y(LIST_CAT));
+    feed_tap(FEED_LONE, tile_x(settings_hub_cat_tile(LIST_CAT)), tile_y(settings_hub_cat_tile(LIST_CAT)));
     feed_tap(FEED_LONE, XP, row_y(0));
     CHECK(settings_get(ids[0]) != s_before[ids[0]]);  /* LIST_CAT open */
     CHECK_EQ(changed(), 1);
@@ -694,7 +694,8 @@ TEST_CASE(a_key_press_that_loses_its_release_stops_and_holds_nothing)
     idle(2.0f);
     lift(0);
     CHECK_EQ(settings_screen_category(), -1);
-    feed_tap(1, tile_x(SET_CAT_SENSORS), tile_y(SET_CAT_SENSORS));
+    feed_tap(1, tile_x(settings_hub_cat_tile(SET_CAT_SENSORS)),
+             tile_y(settings_hub_cat_tile(SET_CAT_SENSORS)));
     CHECK_EQ(steps_off(KEY_ID), -6);
     feed_tap(1, XM, y);
     CHECK_EQ(steps_off(KEY_ID), -7);

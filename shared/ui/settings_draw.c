@@ -131,7 +131,7 @@ static void draw_text_row(gfx_canvas_t *c, int index, gfx_rect_t r,
 }
 
 /**
- * @brief List row @p index: a heading, a string, or a setting with its
+ * @brief List row @p index: a string, or a setting with its
  *        value and its keys.  A setting's edge takes the accent while its
  *        value is pressed.
  * @param c The canvas.
@@ -144,15 +144,6 @@ static void draw_row(gfx_canvas_t *c, int index)
         return;
     }
     const settings_row_t e = stg_row_entry(index);
-    if (e.heading >= 0) {
-        /* The heading stands on the row's lower edge, over a rule. */
-        const gfx_font_t *hf = STG_F_HEAD;
-        const char *t = ui_tr(settings_rows_heading_text(e.heading));
-        gfx_text(c, r.x + 16, r.y + ROW_H - gfx_text_height(hf, 1) - 6, t,
-                 hf, UI_ACCENT, 1);
-        ui_rule(c, r.x, r.y + ROW_H - 2, r.w, UI_EDGE);
-        return;
-    }
     if (e.text >= 0) {
         draw_text_row(c, index, r, (setting_text_id_t)e.text);
         return;
@@ -163,12 +154,9 @@ static void draw_row(gfx_canvas_t *c, int index)
         return;
     }
 
-    /* A value the IOmcu does not hold, or PD mini TX and RX on one pin:
-     * the row's edge, its value and one line in place of its help, in the
-     * colour of a write that waits. */
-    const bool same_pin = (id == SET_PDMINI_TX || id == SET_PDMINI_RX)
-                          && settings_pdmini_same_pin();
-    const bool unheld = settings_screen_unheld(id) || same_pin;
+    /* A value the IOmcu does not hold: the row's edge, its value and one
+     * line in place of its help, in the colour of a write that waits. */
+    const bool unheld = settings_screen_unheld(id);
     /* A press on the value, which opens the keypad on its release, lights
      * the row's edge as a press on a string's row does. */
     const bool value_down = (s.hit_kind == HIT_VALUE && s.hit_index == index);

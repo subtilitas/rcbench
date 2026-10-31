@@ -403,17 +403,6 @@ TEST_CASE(a_pin_the_row_does_not_take_is_refused)
     CHECK(!settings_screen_keypad()->open);
     CHECK_EQ(settings_get_int(SET_SENSE_SDA), 14);
     CHECK_EQ(settings_get_int(SET_SENSE_SCL), 15);
-    /* PD mini TX never on RX's pin. */
-    settings_set(SET_PDMINI_RX, 9.0f);
-    open_on(SET_PDMINI_TX);
-    type("9");
-    key(UI_KEY_OK);
-    CHECK(settings_screen_keypad()->refused);
-    CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
-    key(UI_KEY_CLR);
-    type("8");
-    key(UI_KEY_OK);
-    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 8);
 }
 
 /* ------------------------------------------------ why a value is refused */
@@ -440,14 +429,12 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
 {
     static const struct {
         ui_lang_t lang;
-        const char *shunt, *limit, *sda, *pdmini;
+        const char *shunt, *limit, *sda;
     } k_why[] = {
         { UI_LANG_EN, "0 or 5.0 to 1000.0mΩ", "0 or 10 to 32767mA",
-          "Pins the bus takes: 0 4 6 14 16 18 20 26",
-          "The other PD mini pin holds this GPIO" },
+          "Pins the bus takes: 0 4 6 14 16 18 20 26" },
         { UI_LANG_DE, "0 oder 5.0 bis 1000.0mΩ", "0 oder 10 bis 32767mA",
-          "Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26",
-          "Diesen GPIO hält der andere PD-mini-Pin" },
+          "Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26" },
     };
     for (size_t i = 0; i < sizeof(k_why) / sizeof(k_why[0]); ++i) {
         ui_text_set_language(k_why[i].lang);
@@ -471,13 +458,6 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
         CHECK_STR_EQ(settings_screen_keypad()->reason, "");
         key(UI_KEY_CANCEL);
         CHECK_EQ(settings_get_int(SET_SENSE_SDA), 16);
-
-        settings_set(SET_PDMINI_RX, 9.0f);
-        CHECK_STR_EQ(refused_why(SET_PDMINI_TX, "9"), k_why[i].pdmini);
-        key(UI_KEY_CLR);
-        CHECK_STR_EQ(settings_screen_keypad()->reason, "");
-        key(UI_KEY_CANCEL);
-        CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
 
         /* Past the range: the range itself, no reason. */
         list_of(SET_CAT_SENSORS);
@@ -737,23 +717,6 @@ TEST_CASE(a_shunt_takes_1000_0_and_refuses_1000_1)
     CHECK_NEAR(settings_get(id), 1000.0f, 1e-3f);
 }
 
-/* A pin's -1 is "not set", not a sign: its keypad has no +/- key and
- * takes 0, the lowest pin. */
-TEST_CASE(a_pin_from_minus_1_takes_0_on_an_unsigned_keypad)
-{
-    list_of(SET_CAT_IFACE);
-    CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
-    open_on(SET_PDMINI_TX);
-    CHECK(!settings_screen_keypad()->sign);
-    CHECK_NEAR(settings_screen_keypad()->min, -1.0f, 1e-6f);
-    CHECK_EQ(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_SIGN).w, 0);
-    type("0");
-    key(UI_KEY_OK);
-    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 0);
-    tap(MINUS_X + BTN_W / 2, show(SET_PDMINI_TX));     /* back to -1 */
-    CHECK_EQ(settings_get_int(SET_PDMINI_TX), -1);
-}
-
 /* STOP in the band works over the keypad, and the keypad stays as it was:
  * open, what was typed kept, nothing set. */
 TEST_CASE(stop_over_the_keypad_stops_and_sets_nothing)
@@ -847,7 +810,6 @@ int main(void)
     RUN(armed_steps_and_keypad_alike_and_a_held_row_refuses_both);
     RUN(a_lost_press_keeps_what_was_typed);
     RUN(a_shunt_takes_1000_0_and_refuses_1000_1);
-    RUN(a_pin_from_minus_1_takes_0_on_an_unsigned_keypad);
     RUN(stop_over_the_keypad_stops_and_sets_nothing);
     RUN(the_helper_takes_its_decimals_from_the_step);
     RUN(a_pin_setting_shows_gpio_before_its_number);

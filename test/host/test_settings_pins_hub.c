@@ -603,68 +603,6 @@ TEST_CASE(a_stored_pd_mini_on_one_pin_loads_and_is_named)
     CHECK_EQ(settings_get_int(SET_PDMINI_TX), 46);
 }
 
-/* The mark on SETUP: both PD mini rows and nothing else, gone with it. */
-TEST_CASE(pd_mini_rows_on_one_pin_are_marked_and_nothing_else)
-{
-    static gfx_color_t apart[W * H];
-    static gfx_color_t same[W * H];
-    int max = 0;
-
-    gesture_screen(SET_CAT_IFACE);
-    for (int i = 0; i < 12; ++i) {
-        swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + 40, 4);
-    }
-    CHECK_EQ(settings_screen_scroll(&max), max);
-    const int y_tx = scrolled_y(SET_PDMINI_TX);
-    const int y_rx = scrolled_y(SET_PDMINI_RX);
-    CHECK(y_tx - ROW_H / 2 >= LIST_Y);
-    CHECK(y_rx + ROW_H / 2 <= LIST_Y + LIST_H);
-
-    settings_set(SET_PDMINI_TX, 18.0f);
-    settings_set(SET_PDMINI_RX, 19.0f);
-    settings_screen_invalidate();
-    ui_router_tick(0.05f);
-    ui_router_render(&s_c, 0);
-    memcpy(apart, s_fb, sizeof(apart));
-
-    settings_set(SET_PDMINI_RX, 18.0f);
-    settings_screen_invalidate();
-    ui_router_tick(0.05f);
-    ui_router_render(&s_c, 0);
-    memcpy(same, s_fb, sizeof(same));
-    int in_tx = 0, in_rx = 0, outside = 0;
-    for (int y = 0; y < H; ++y) {
-        for (int x = 0; x < W; ++x) {
-            if (apart[y * W + x] == same[y * W + x]) {
-                continue;
-            }
-            if (x >= LIST_X && y >= y_tx - ROW_H / 2 && y < y_tx + ROW_H / 2) {
-                ++in_tx;
-            } else if (x >= LIST_X && y >= y_rx - ROW_H / 2
-                       && y < y_rx + ROW_H / 2) {
-                ++in_rx;
-            } else {
-                ++outside;
-            }
-        }
-    }
-    CHECK(in_tx > 200);
-    CHECK(in_rx > 200);
-    CHECK_EQ(outside, 0);
-
-    /* A step on TX's "+" takes them apart, and the mark with them. */
-    feed_tap(FEED_LONE, XP, y_tx);
-    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 19);
-    settings_set(SET_PDMINI_TX, 18.0f);
-    settings_set(SET_PDMINI_RX, 19.0f);
-    settings_screen_invalidate();
-    ui_router_tick(0.05f);
-    ui_router_render(&s_c, 0);
-    CHECK(memcmp(apart, s_fb, sizeof(apart)) == 0);
-}
-
-/* ------------------------------------------------------------------- hub */
-
 /*
  * The hub is one page of three by three tiles.  The tile table fills them
  * in order; a tenth entry has no slot, and the build stops at it
@@ -701,18 +639,21 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 }
 
 /*
- * Six tiles: PANEL, INTERFACES, SD CARD and SENSORS, then OUTPUTS and
- * UPDATES.  SD CARD's list is AUTO LOGS and USER LOGS, two
- * toggles, named in both languages, Browser writes, and the two log folders
- * under them (test_settings_folders).
+ * Five tiles: PANEL, SENSORS, OUTPUTS, SD CARD and UPDATES.  SD CARD's list
+ * is AUTO LOGS and USER LOGS, two toggles, named in both languages, Browser
+ * writes, and the two log folders under them (test_settings_folders).
  */
-TEST_CASE(the_hub_holds_six_tiles_and_sd_card_is_the_third)
+TEST_CASE(the_hub_holds_five_tiles_and_sd_card_is_the_fourth)
 {
     fresh_hub();
-    CHECK_EQ(settings_hub_tiles(), 6);
-    CHECK_EQ(SET_CAT_SENSORS, 3);
-    CHECK_EQ(SET_CAT_CARD, 2);
-    tap(tile_x(SET_CAT_CARD), tile_y(SET_CAT_CARD));
+    CHECK_EQ(settings_hub_tiles(), 5);
+    CHECK_EQ(settings_hub_cat_tile(SET_CAT_APP), 0);
+    CHECK_EQ(settings_hub_cat_tile(SET_CAT_SENSORS), 1);
+    CHECK_EQ(settings_hub_tile_screen(2), SCREEN_OUTPUTS);
+    CHECK_EQ(settings_hub_cat_tile(SET_CAT_CARD), 3);
+    CHECK_EQ(settings_hub_tile_screen(4), SCREEN_UPDATES);
+    CHECK_EQ(settings_hub_cat_tile(SET_CAT_ESC), -1);   /* no tile */
+    tap(tile_x(3), tile_y(3));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), SET_CAT_CARD);
     CHECK_EQ(settings_screen_rows(SET_CAT_CARD), 5);
@@ -737,7 +678,8 @@ TEST_CASE(each_category_tile_opens_its_list_and_the_home_tag_returns)
     for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
         fresh_hub();
         CHECK_EQ(settings_screen_category(), -1);
-        tap(tile_x(c), tile_y(c));
+        const int t = settings_hub_cat_tile((setting_cat_t)c);
+        tap(tile_x(t), tile_y(t));
         CHECK_EQ(ui_router_current(), SCREEN_SETUP);
         CHECK_EQ(settings_screen_category(), c);
         CHECK_EQ(settings_screen_scroll(NULL), 0);
@@ -793,10 +735,10 @@ TEST_CASE(the_tiles_show_and_save_what_a_list_left_unsaved)
     s_save_calls = 0;
     const unsigned clean = save_face();
 
-    open_category(LIST_CAT);
+    open_category(SET_CAT_CARD);
     const unsigned list_clean = save_face();
     CHECK_EQ(list_clean, clean);
-    tap(XP, row_y(0));
+    tap(XM, row_y(0));
     CHECK(settings_dirty());
     const unsigned list_dirty = save_face();
     CHECK(list_dirty != clean);
@@ -891,6 +833,18 @@ static void icon_over_name(gfx_rect_t r, const ui_tile_look_t *look,
     }
 }
 
+/** @brief The category hub tile @p tile opens. */
+static setting_cat_t hub_tile_category(int tile)
+{
+    int c = 0;
+    while (c < SET_CAT_SETUP_COUNT
+           && settings_hub_cat_tile((setting_cat_t)c) != tile) {
+        ++c;
+    }
+    CHECK(c < SET_CAT_SETUP_COUNT);
+    return (setting_cat_t)c;
+}
+
 /* Every icon a tile draws, the menu's and SETUP's, in the tiles' sizes. */
 TEST_CASE(every_tile_icon_is_centred_over_its_name)
 {
@@ -900,7 +854,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         { ui_icon_supply, "SUPPLY" },     { ui_icon_chart, "RECEIVER" },
         { ui_icon_record, "LOGS" },       { ui_icon_sliders, "SETUP" },
         { ui_icon_battery, "BATTERY" },   { ui_icon_balance, "BALANCE" },
-        { ui_icon_chip, "INTERFACES" },   { ui_icon_list, "OUTPUTS" },
+        { ui_icon_chart, "SD CARD" },     { ui_icon_list, "OUTPUTS" },
         { ui_icon_wifi, "WI-FI" },
     };
     /* The menu's tile, 243 x 255px: the 40px icon 30px down, the name
@@ -916,24 +870,24 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         ui_tile(&s_c, r, &k_menu, menu[i].icon, menu[i].name, "", false);
         icon_over_name(r, &k_menu, menu[i].name, menu[i].name);
     }
-    /* SETUP's, as the screen draws them: the categories, then OUTPUTS,
-     * and UPDATES.  The 36px icon's box starts 14px
+    /* SETUP's, as the screen draws them: PANEL, SENSORS, OUTPUTS,
+     * SD CARD and UPDATES.  The 36px icon's box starts 14px
      * down, the name in the body face at 60 (settings_screen_int.h). */
     static const ui_tile_look_t k_hub = {
         .icon_dy = 14, .icon = 36, .name_dy = 60, .line_dy = 94,
         .line_pitch = 0, .name_f = &gfx_font_12x24,
         .line_f = &gfx_font_10x20,
     };
-    static const ui_screen_id_t screens[] = { SCREEN_OUTPUTS, SCREEN_UPDATES };
     CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 2);
     ui_router_render(&s_c, 0);
     for (int i = 0; i < settings_hub_tiles(); ++i) {
         gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
         CHECK(settings_hub_slot(i, &r));
         r.y = (int16_t)(r.y + UI_BAND_H);
-        const char *name = (i < SET_CAT_SETUP_COUNT)
-            ? ui_setting_category((setting_cat_t)i)
-            : ui_router_title(screens[i - SET_CAT_SETUP_COUNT]);
+        const ui_screen_id_t opens = settings_hub_tile_screen(i);
+        const char *name = (opens == SCREEN_SETUP)
+            ? ui_setting_category(hub_tile_category(i))
+            : ui_router_title(opens);
         icon_over_name(r, &k_hub, name, name);
     }
 }
@@ -993,9 +947,8 @@ int main(void)
     RUN(the_mark_repaints_the_row_when_it_comes_and_when_it_goes);
     RUN(pd_mini_tx_and_rx_step_over_the_pin_the_other_holds);
     RUN(a_stored_pd_mini_on_one_pin_loads_and_is_named);
-    RUN(pd_mini_rows_on_one_pin_are_marked_and_nothing_else);
     RUN(the_hub_has_nine_slots_and_no_tenth);
-    RUN(the_hub_holds_six_tiles_and_sd_card_is_the_third);
+    RUN(the_hub_holds_five_tiles_and_sd_card_is_the_fourth);
     RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);

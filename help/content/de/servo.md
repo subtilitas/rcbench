@@ -84,7 +84,7 @@ Der INA3221 wird 1000ms, nachdem seine Bedingungen erfüllt sind, zum Messgerät
 
 ![Das Netzteilmodell des Panels als Messgerät, mit der Marke SIMULIERT](view:servo-model)
 
-Solange der PD mini unter SETUP, INTERFACES abgeschaltet ist, ist das Netzteil das Modell des Panels, und eine Marke SIMULIERT steht auf der Grafik. Seine Messwerte sind simuliert, nicht gemessen.
+Solange der PD mini im Tab PD MINI auf SUPPLY abgeschaltet ist, ist das Netzteil das Modell des Panels, und eine Marke SIMULIERT steht auf der Grafik. Seine Messwerte sind simuliert, nicht gemessen.
 
 Ein Messwert, der nicht angekommen ist, steht als `---` in STROM auf LIVE, als `--` auf der Messzeile und als Lücke in der Grafik.
 
@@ -260,5 +260,5 @@ Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS`, geschrieben unabhäng
 
 - [Servo-Optionen](servo-settings.md): Typ, Frame Rate, Pulse, der Sweep, die Optionen jedes Laufs und das Ziel.
 - [Servo-Programmierer](servo-programmer.md): die Zeile auf PROGRAMMIEREN für KST- und Chaservo-Servos.
-- [Netzteil](supply.md) und [Anschlüsse](setup-interfaces.md): der PD mini.
+- [Netzteil](supply.md): der PD mini.
 - [Sensoren](setup-sensors.md): der INA3221 und der AS5600.

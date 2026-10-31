@@ -188,7 +188,7 @@ bool picker_screen_row(uint8_t k, picker_row_t *out);
  * @brief The kinds of a line of the IN USE table.
  *
  * A line of the IN USE table, right of the board: the programming ports'
- * pins first, under one PROG PORT name, then the pins SETUP > INTERFACES
+ * pins first, under one PROG PORT name, then the pins SENSORS or PD MINI
  * holds, each function's under its name (outputs_iface_name()), then each
  * other protocol's pins under its name, groups in the order their first
  * pin falls.
@@ -206,7 +206,7 @@ bool picker_screen_row(uint8_t k, picker_row_t *out);
  */
 typedef enum {
     PICKER_USE_NAME = 0,  /**< a protocol's name, PROG PORT or a function
-                               of SETUP > INTERFACES                         */
+                               of SENSORS or PD MINI                         */
     PICKER_USE_PIN,       /**< a pin of the group named above it            */
     PICKER_USE_MORE,      /**< "+N": gpio holds N, the lines left out       */
 } picker_use_kind_t;
@@ -218,7 +218,7 @@ typedef enum {
 /** Whether group @p g is an interface's, and which. */
 #define PICKER_USE_IS_IFACE(g) ((g) > 0xF0u && (g) < 0xF0u + OUTPUTS_IFACE_COUNT)
 
-/** Pins SETUP > INTERFACES can hold: SDA and SCL, TX and RX, the tap. */
+/** @brief Pins SENSORS and PD MINI can hold: SDA and SCL, TX and RX, the tap. */
 #define PICKER_USE_IFACE_PINS 5u
 
 /** The most lines the table can list: the PROG PORT name and a pin for

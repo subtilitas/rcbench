@@ -111,12 +111,15 @@ enum {
     P_APPLY, P_CANCEL, P_TEXTKEY
 };
 
+/** @brief A line of Hitec D receive's list that sets nothing. */
+#define HP_RX_LINE (-1)
+
 /** @brief What a list was opened for. */
-enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE, C_FILES };
+enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE, C_FILES, C_RX };
 /** @brief The entries of MORE: the supply's in PWM, the session's while
  *         held. */
 enum { MORE_VOLTAGE = 0, MORE_CURRENT, MORE_DISCARD, MORE_REPAIR,
-       MORE_FACTORY, MORE_FIXED };
+       MORE_FACTORY, MORE_FIXED, MORE_RX };
 /** @brief The entries of RESTORE. */
 enum { RS_RESTORE = 0, RS_FORGET, RS_BACKUP };
 /** @brief FILES' entries besides the files, numbered from 0. */

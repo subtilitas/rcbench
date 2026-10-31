@@ -283,7 +283,7 @@ extern atomic_uint s_poles_value;
  * ARMED with the link up is refused while it stands. */
 extern endpoints_debt_t s_endpoints;
 
-/* Where the PD mini is wired, from SETUP INTERFACES, in one word; see
+/* Where the PD mini is wired, from SUPPLY's PD MINI tab, in one word; see
  * main.c. */
 extern atomic_uint s_pdmini_wiring;
 
@@ -788,12 +788,11 @@ uint32_t prog_faults(void);
 /* The SENSE and TONE set-ups that are not held at the far end. */
 extern atomic_uint s_sense_unheld;
 extern atomic_uint s_tone_unheld;
-/* Hitec D receive (HITEC, 4.24): the module, the mode SETUP asks
- * (link_hitec_rx_t, from the render loop) and what its row says
- * (hitec_rx_link_mark_t, to the render loop). */
+/* Hitec D receive (HITEC, 4.24): the module and the mode the setting asks
+ * (link_hitec_rx_t, from the render loop). */
 extern hitec_rx_link_t s_hitec_rx_link;
+/** @brief The mode SET_HITEC_RX asks, link_hitec_rx_t. */
 extern atomic_uint     s_hitec_rx_want;
-extern atomic_uint     s_hitec_rx_mark;
 
 void kst_port_look(void);
 void sense_link_alerts(void);

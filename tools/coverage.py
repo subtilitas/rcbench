@@ -95,6 +95,7 @@ TRACKED = [
     "shared/ui/supply_screen.c",
     "shared/ui/supply_events.c",
     "shared/ui/supply_draw.c",
+    "shared/ui/supply_pdmini.c",
     "shared/ui/prog5v_box.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_setting_keypad.c",

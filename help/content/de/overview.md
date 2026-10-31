@@ -39,7 +39,7 @@ Die Marke folgt den Fähigkeits-Bits, die der IOmcu beim Link-Aufbau meldet:
 |---|---|
 | MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, SENSORS eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge (Pulsweitenmodulation) ansteuert |
-| SUPPLY | der PD mini unter SETUP, INTERFACES eingeschaltet ist |
+| SUPPLY | der PD mini unter SUPPLY, Tab PD MINI eingeschaltet ist |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | nie markiert: sie enthalten keine Messung |
 

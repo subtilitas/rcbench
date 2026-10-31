@@ -74,13 +74,13 @@ settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,619     202 KiB
+motor-stick                  1,720     215 KiB
 balance-sim                  3,209     401 KiB
 settings-sim                 3,196     400 KiB
 battery-sim                  3,093     387 KiB
 analyser-chrome             61,028    7628 KiB
 logs-chrome                 27,412    3426 KiB
-settings-chrome             32,122    4015 KiB
+settings-chrome             30,133    3767 KiB
 settings-list-chrome        37,188    4648 KiB
 battery-chrome              58,182    7273 KiB
 balance-chrome              63,470    7934 KiB
@@ -229,7 +229,7 @@ a change that makes the model draw more, not a frame that misses the panel:
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
-| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,560 fills in the table above |
+| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,720 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the ten `-chrome` modes | 72,000 | a growing full repaint |
 | `wifi-keys` | 42,000 | a key of the Wi-Fi keyboard that repaints more than the screen |

@@ -5,7 +5,7 @@
  *
  * One entry a port the IOmcu reports; outputs_port_entry.c draws the one
  * shown.  This file holds what the entries and the board view share: the
- * ports' pins, the pins SETUP > INTERFACES holds, the entry the screen
+ * ports' pins, the pins SENSORS and SUPPLY's PD MINI hold, the entry the screen
  * opens on.
  *
  * The lines that name a PWM pin the IOmcu refuses beside a port's pin or a
@@ -103,7 +103,7 @@ void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
     }
 }
 
-/* ------------------------------------------------- SETUP > INTERFACES */
+/* ---------------------------------------- SENSORS and SUPPLY's PD MINI */
 
 /* Set by the control task (panel_poll.c), read by the task that draws:
  * 0 while what the page holds is not known, else bit 0 set and each pin

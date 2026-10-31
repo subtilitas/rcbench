@@ -39,7 +39,7 @@ The mark follows the capability bits the IOmcu reports at link-up:
 |---|---|
 | MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, SENSORS |
 | SERVO | the IOmcu drives servo PWM (pulse-width modulation) outputs |
-| SUPPLY | the PD mini is enabled on SETUP, INTERFACES |
+| SUPPLY | the PD mini is enabled on SUPPLY, tab PD MINI |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | never marked: they hold no measurement |
 

@@ -193,7 +193,7 @@ static void interfaces_on(int sda)
 }
 
 /*
- * What SETUP > INTERFACES holds is a held key that takes no tap, and IN
+ * What SENSORS and PD MINI hold is a held key that takes no tap, and IN
  * USE names it after the programming port: each function's name, then its
  * pins.  The pins follow the settings: the bus moved frees its old pins,
  * which then bind.

@@ -51,8 +51,8 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 - A classic servo enters programming mode only at power-up, so the bench
   cycles its supply: CONNECT for CLASSIC needs a PD mini that answers,
   otherwise `Classic servos need a PD mini: the bench cycles the supply.`
-- A D series servo answers on the line as SETUP > INTERFACES > Hitec D
-  receive sets it, PULL-UP or PRECHARGE
+- A D series servo answers on the line as Hitec D receive on MORE
+  sets it, PULL-UP or PRECHARGE
   ([Receive mode](LinkHitec.md#receive-mode)). CONNECT waits until the
   IOmcu holds that mode: `Receive mode not set on the IOmcu yet. Try
   again.`
@@ -71,7 +71,7 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 | SERIES | D SERIES or CLASSIC, chosen before CONNECT; kept with the SERVO settings (SET_HITEC_SERIES). While the port is held the PORT row names the series and FILES takes this place |
 | FILES | While the port is held: the servo files on the card, a save and a load ([Servo files](#servo-files)) |
 | SERVO | The model read, `D485HW` or `HS-5645MG`; READ ALL reads the series' set again |
-| MORE | The programming voltage and current limit, each on the keypad, while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, REPAIR CHECKSUM with a classic checksum that is wrong, and FACTORY DEFAULT for a classic servo read ([FACTORY DEFAULT](#factory-default)) |
+| MORE | The programming voltage and current limit, each on the keypad, and [Hitec D receive](#hitec-d-receive), while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, REPAIR CHECKSUM with a classic checksum that is wrong, and FACTORY DEFAULT for a classic servo read ([FACTORY DEFAULT](#factory-default)) |
 | AFTER STOP | CLEAR after a switch to SAFE at the bench: the IOmcu clears the port's STOPPED flag and the read goes on, or the entry again where the supply went off |
 | ENABLE WRITE TO SERVO | The write switch, OFF or ON ([The write switch](#the-write-switch)) |
 | RESTORE | The session's backup back to the servo, while it differs from the servo ([Restore of the session's backup](#restore-of-the-sessions-backup)); while a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
@@ -816,6 +816,38 @@ as after any stop: ARM is refused only while the port is held.
 
 ![A classic CONNECT with no PD mini](img/servo-hitec-nopd.png)
 ![MORE](img/servo-hitec-more.png)
+
+## Hitec D receive
+
+MORE lists Hitec D receive while the tester has the port, as SERIES takes a tap
+only then. Its list offers two modes, kept in NVS under `hitec_rx`:
+
+| Mode | The line | Note |
+| --- | --- | --- |
+| PULL-UP (default) | a 2.2kΩ resistor from the signal wire to the servo supply lifts the line, and the IOmcu reads it released | `PULL-UP needs 2.2kΩ on the signal wire` |
+| PRECHARGE | no resistor; the IOmcu drives the pad high for 100.0ns every 1086.7ns and samples it 113.3ns after it lets go | `PRECHARGE: no pull-up on the signal wire` |
+
+A missing or unreadable stored value is PULL-UP. The panel writes the mode to the
+HITEC page at every link-up and after every change, armed or not. The IOmcu takes
+it at its next OPEN of a D series line and changes nothing that runs. A session
+offers no change: MORE in a session does not list the row, the port line shows
+the mode (`RX PULL-UP`), and a list left open closes as a session starts.
+LEAVE, set the mode, CONNECT. CONNECT waits until the IOmcu holds the mode:
+`Receive mode not set on the IOmcu yet. Try again.` Classic servos (HS-5xxx,
+HS-7xxx) need neither and ignore it. The setting reaches the lines this programmer
+opens and those the [bench console](BenchConsole.md) opens.
+
+Under the two modes the list says what the IOmcu does not hold:
+
+| The line reads | While |
+| --- | --- |
+| `Not accepted by the IOmcu.` | the value is not acknowledged yet, or the IOmcu refused it |
+| `IOmcu older than 0.22.0: receives with PULL-UP.` | PRECHARGE is set and the IOmcu speaks protocol 4.23: it has no register for the mode |
+| `IOmcu older than 0.21.1: no Hitec line.` | PRECHARGE is set and the IOmcu speaks protocol 4.22 or older: it has no HITEC page |
+
+No line shows while no IOmcu answers, and none for PULL-UP on an older IOmcu.
+
+![Hitec D receive's list](img/servo-hitec-rx.png)
 
 ## Current limitations
 

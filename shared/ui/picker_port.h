@@ -17,13 +17,20 @@
 #include "picker_screen.h"
 
 /**
- * Catalogue entry @p index as a button with port @p port picked: TICKED
+ * @brief Catalogue entry @p index as a button with port @p port picked: TICKED
  * for the pin the port names; HELD for another port's pin, a protocol's,
- * one SETUP > INTERFACES holds, and for a SERVO PWM port one on the PWM
+ * one SENSORS or SUPPLY's PD MINI holds, and for a SERVO PWM port one on the PWM
  * slice of a bound PWM output or on the compare register of another
  * SERVO PWM port; LOCKED while @p locked or the ports are not read; FREE
  * otherwise.  A reserved pin is the caller's.  @p holder as
  * picker_screen_pin() fills it.
+ * @param b The binding.
+ * @param index The catalogue entry.
+ * @param port The port picked.
+ * @param locked Whether the port's pin takes no change now.
+ * @param holder Takes who holds the pin.
+ * @param cap The size of @p holder in bytes.
+ * @return The button's state.
  */
 picker_pin_t picker_port_pin(const outbind_t *b, uint8_t index, uint8_t port,
                              bool locked, char *holder, size_t cap);

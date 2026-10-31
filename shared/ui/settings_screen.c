@@ -4,7 +4,7 @@
  * schema.
  *
  * SETUP opens on a grid of tiles, the menu's kind: one per category it
- * holds (PANEL, INTERFACES, SD CARD, SENSORS), and one per screen of its own that SETUP
+ * holds (PANEL, SD CARD, SENSORS), and one per screen of its own that SETUP
  * reaches (OUTPUTS, WI-FI, UPDATES).  A category's tile opens its list across the screen's width;
  * SENSORS' list stands right of a left list of its 8 sensors and shows the
  * selected one's rows (sensors_pane.h), each entry with its own scroll.
@@ -32,8 +32,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hitec_rx_link.h"
-#include "link_pages.h"
 #include "sense_link.h"
 #include "sensors_pane.h"
 #include "sensors_rows.h"
@@ -61,8 +59,8 @@ stg_state_t stg_s;
  * is reset.
  */
 static uint16_t s_sense_unheld;
+/** @brief The tap's rows the IOmcu does not hold, TONE_LINK_ROWS_*. */
 static uint8_t  s_tone_unheld;
-static uint8_t  s_hitec_rx_mark;   /* hitec_rx_link_mark_t */
 
 void settings_screen_invalidate(void)
 {
@@ -89,48 +87,22 @@ void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows)
     }
 }
 
-void settings_screen_set_hitec_rx(uint8_t mark)
-{
-    if (mark != s_hitec_rx_mark) {
-        s_hitec_rx_mark = mark;
-        settings_screen_invalidate();
-    }
-}
-
 const char *settings_screen_help(setting_id_t id)
 {
-    const bool hitec = id == SET_HITEC_RX;
-
-    if ((id == SET_PDMINI_TX || id == SET_PDMINI_RX)
-        && settings_pdmini_same_pin()) {
-        return TR(SET_PD_SAME_PIN);
-    }
     if (settings_fixed(id) && !settings_screen_unheld(id)) {
         return TR(SET_PIN_SOLDERED);
     }
     if (!settings_screen_unheld(id)) {
-        return hitec && settings_get_int(SET_HITEC_RX)
-                            == (int)LINK_HITEC_RX_PRECHARGE
-                   ? TR(SET_HITEC_RX_PRE)
-                   : ui_setting_help(id);
+        return ui_setting_help(id);
     }
     if (settings_sensors_row(id)) {
         return sensors_rows_why(id);
-    }
-    if (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_OLD) {
-        return TR(SET_HITEC_RX_OLD);
-    }
-    if (hitec && s_hitec_rx_mark == (uint8_t)HITEC_RX_LINK_NO_LINE) {
-        return TR(SET_HITEC_RX_NO_LINE);
     }
     return TR(SET_UNHELD);
 }
 
 bool settings_screen_unheld(setting_id_t id)
 {
-    if (id == SET_HITEC_RX) {
-        return s_hitec_rx_mark != (uint8_t)HITEC_RX_LINK_HELD;
-    }
     if (settings_sensors_row(id)) {
         return sensors_rows_unheld(id);
     }
@@ -233,6 +205,16 @@ ui_screen_id_t settings_hub_tile_screen(int i)
     }
     const hub_tile_t *t = stg_hub_tile(i);
     return (t->cat < 0) ? t->screen : SCREEN_SETUP;
+}
+
+int settings_hub_cat_tile(setting_cat_t cat)
+{
+    for (int i = 0; i < TILE_COUNT; ++i) {
+        if (k_tiles[i].cat == (int)cat) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 static int tile_at(int x, int y)
@@ -450,19 +432,13 @@ static int row_at(int x, int y)
     return (idx >= 0 && idx < stg_row_count()) ? idx : -1;
 }
 
-/* The entry of row @p index; a heading's carries heading >= 0, a string's
- * text >= 0. */
+/* The entry of row @p index; a string's carries text >= 0. */
 settings_row_t stg_row_entry(int index)
 {
     return settings_rows_entry(s.cat, index);
 }
 
-static bool row_is_heading(int index)
-{
-    return stg_row_entry(index).heading >= 0;
-}
-
-/* The string of row @p index, or -1 for a setting or a heading. */
+/* The string of row @p index, or -1 for a setting. */
 static int row_text(int index)
 {
     return stg_row_entry(index).text;
@@ -487,7 +463,7 @@ static bool on_key(int kind, int index, int x, int y)
     }
     /* A row whose value follows another setting has no keys: a press
      * there is a press on the list.  Neither has a string's. */
-    if (row_is_heading(index) || row_text(index) >= 0
+    if (row_text(index) >= 0
         || settings_derived(row_setting(index))
         || settings_fixed(row_setting(index))) {
         return false;
@@ -507,7 +483,7 @@ static bool on_key(int kind, int index, int x, int y)
 static bool on_value(int index, int x, int y)
 {
     if (x < VALUE_X || x >= VALUE_X + VALUE_W || row_at(x, y) != index
-        || row_is_heading(index) || row_text(index) >= 0) {
+        || row_text(index) >= 0) {
         return false;
     }
     return ui_setting_keypad_offered(row_setting(index))
@@ -532,13 +508,13 @@ static void value_changed(setting_id_t id)
 
 /**
  * @brief The "-" or "+" key of row @p index stepped @p steps times through
- *        settings_adjust(); a heading's and a string's row take none.
+ *        settings_adjust(); a string's row takes none.
  * @param index The row.
  * @param steps The steps, negative for "-".
  */
 static void step_row(int index, int steps)
 {
-    if (row_is_heading(index) || row_text(index) >= 0) {
+    if (row_text(index) >= 0) {
         return;
     }
     setting_id_t id = row_setting(index);

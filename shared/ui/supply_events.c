@@ -89,6 +89,11 @@ static void keypad_done(ui_keypad_result_t r, float v)
                                                    s.eff.i_step));
             s.kp_target = KP_NONE;
             sup_propose(FROM_KEYPAD);
+        } else if (s.kp_target == KP_PD) {
+            sup_pd_keypad_ok(v);
+            if (s.kp.open) {
+                return;                     /* refused: the keypad says why */
+            }
         } else if (s.kp_target == KP_SETTING) {
             /* Onto the setting's own step the safe way: a cap rounds down,
              * so a typed 12.01V allows no more than 12.00V; a trip typed
@@ -116,6 +121,8 @@ static void keypad_done(ui_keypad_result_t r, float v)
 
 /* ------------------------------------------------------------------ events */
 
+static void task_changed(void);
+
 /**
  * @brief A set point moved by @p dv volts and @p di amps, snapped to the caps.
  */
@@ -129,8 +136,7 @@ static void nudge(float dv, float di)
     sup_propose(FROM_SLIDER);
 }
 
-/** @brief Takes a press: remembers its contact and what it is on. */
-static void take(const touch_event_t *evt, int code)
+void sup_take(const touch_event_t *evt, int code)
 {
     s.have_press = true;
     s.press_id   = evt->point.id;
@@ -149,6 +155,17 @@ static void held_refused(void)
 }
 
 /**
+ * @brief Where a press takes the SIMULATED line: its button, from the top of
+ *        the body to the page, so the 40px button is a finger tall.
+ * @return the area, px
+ */
+static gfx_rect_t model_line_hit(void)
+{
+    const gfx_rect_t r = sup_model_line_rect();
+    return (gfx_rect_t){ r.x, 0, r.w, OV_Y };
+}
+
+/**
  * @brief A contact coming down: the control under it takes the press,
  *        the output and the peaks first, whatever covers the left column.
  * @param evt the DOWN event
@@ -164,7 +181,7 @@ static void down(const touch_event_t *evt)
             held_refused();
             return;
         }
-        take(evt, P_OUTPUT);
+        sup_take(evt, P_OUTPUT);
         s.press_on = s.on;
         if (!s.on) {
             ui_hold_begin(&s.hold, TX_HOLD_HINT_OUTPUT_ON);
@@ -173,7 +190,7 @@ static void down(const touch_event_t *evt)
         return;
     }
     if (gfx_rect_contains(s.reset_rect, x, y)) {
-        take(evt, P_RESET);
+        sup_take(evt, P_RESET);
         return;
     }
     /* The PROG 5V box, on LIVE with nothing over it; locked while a port
@@ -181,7 +198,7 @@ static void down(const touch_event_t *evt)
     if (sup_p5_shown()
         && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
         if (prog5v_box_press(&s.p5)) {
-            take(evt, P_PROG5V);
+            sup_take(evt, P_PROG5V);
         } else {
             ui_router_set_alert(TR(P5_LOCKED));
         }
@@ -190,23 +207,28 @@ static void down(const touch_event_t *evt)
     /* A question being asked is answered before anything else is opened. */
     if (s.confirm_open) {
         if (gfx_rect_contains(s.apply_btn, x, y)) {
-            take(evt, P_APPLY);
+            sup_take(evt, P_APPLY);
         } else if (gfx_rect_contains(s.discard_btn, x, y)) {
-            take(evt, P_DISCARD);
+            sup_take(evt, P_DISCARD);
         }
         return;
     }
     /* The strip, over the keypad too: a tap on the other task takes the
      * keypad with it (task_changed()). */
     if (gfx_rect_contains(sup_strip_area(), x, y)) {
-        take(evt, P_STRIP);
+        sup_take(evt, P_STRIP);
         (void)ui_wb_strip_event(&s.wb, evt);
         ++s.strip_rev;
         return;
     }
+    /* The SIMULATED line, over the keypad too, as the strip: PD MINI. */
+    if (s.model && gfx_rect_contains(model_line_hit(), x, y)) {
+        sup_take(evt, P_MODEL_LINE);
+        return;
+    }
     if (gfx_rect_contains(sup_card_rect(0), x, y)) {
         if (!s.port_held) {
-            take(evt, P_CARD_V);
+            sup_take(evt, P_CARD_V);
         } else {
             held_refused();
         }
@@ -214,7 +236,7 @@ static void down(const touch_event_t *evt)
     }
     if (gfx_rect_contains(sup_card_rect(1), x, y)) {
         if (!s.port_held) {
-            take(evt, P_CARD_I);
+            sup_take(evt, P_CARD_I);
         } else {
             held_refused();
         }
@@ -223,19 +245,29 @@ static void down(const touch_event_t *evt)
 
     if (s.kp.open) {
         if (gfx_rect_contains(sup_overlay_area(), x, y)) {
-            take(evt, P_KEYPAD);
+            sup_take(evt, P_KEYPAD);
             (void)ui_keypad_event(&s.kp, evt, NULL);
         }
         return;
     }
     if (!sup_on_live()) {
+        if (gfx_rect_contains(s.ov_tabs.rect[0], x, y)
+            || gfx_rect_contains(s.ov_tabs.rect[1], x, y)) {
+            sup_take(evt, P_OV_TABS);
+            (void)ui_tabs_event(&s.ov_tabs, evt);
+            return;
+        }
+        if (sup_on_pdmini()) {
+            sup_pd_down(evt, x, y);
+            return;
+        }
         if (!s.model && gfx_rect_contains(s.modreset_btn, x, y)) {
-            take(evt, P_MODRESET);
+            sup_take(evt, P_MODRESET);
             return;
         }
         for (int i = 0; i < ROW_COUNT; ++i) {
             if (gfx_rect_contains(sup_row_rect(i), x, y)) {
-                take(evt, P_ROW);
+                sup_take(evt, P_ROW);
                 s.press_row = i;
                 return;
             }
@@ -245,7 +277,7 @@ static void down(const touch_event_t *evt)
 
     /* LIVE, nothing over the left column: its own controls. */
     if (gfx_rect_contains((gfx_rect_t){ TAB_X, TAB_Y, TAB_W, TAB_H }, x, y)) {
-        take(evt, P_TABS);
+        sup_take(evt, P_TABS);
         (void)ui_tabs_event(&s.tabs, evt);
         return;
     }
@@ -266,7 +298,7 @@ static void down(const touch_event_t *evt)
     if (gfx_rect_contains(s.v_slider.track, x, y)
         || gfx_rect_contains(s.i_slider.track, x, y)) {
         const bool v = gfx_rect_contains(s.v_slider.track, x, y);
-        take(evt, v ? P_V_SLIDER : P_I_SLIDER);
+        sup_take(evt, v ? P_V_SLIDER : P_I_SLIDER);
         if (ui_slider_event(v ? &s.v_slider : &s.i_slider, evt)) {
             ++s.set_rev;
             /* Live as it moves, unless the change needs a question: then
@@ -286,15 +318,15 @@ static void down(const touch_event_t *evt)
     for (size_t k = 0; k < sizeof(k_steps) / sizeof(k_steps[0]); ++k) {
         if (gfx_rect_contains(k_steps[k].r, x, y)) {
             /* On the press: a fine step should feel immediate. */
-            take(evt, k_steps[k].code);
+            sup_take(evt, k_steps[k].code);
             nudge(k_steps[k].dv, k_steps[k].di);
             return;
         }
     }
     if (gfx_rect_contains(sup_set_value_rect(0), x, y)) {
-        take(evt, P_VALUE_V);
+        sup_take(evt, P_VALUE_V);
     } else if (gfx_rect_contains(sup_set_value_rect(1), x, y)) {
-        take(evt, P_VALUE_I);
+        sup_take(evt, P_VALUE_I);
     }
 }
 
@@ -345,6 +377,17 @@ static void released(int was, int row, int x, int y)
             } else {
                 open_keypad(KP_SETTING, id);
             }
+        }
+        break;
+    case P_PD_VALUE:
+    case P_PD_MINUS:
+    case P_PD_PLUS:
+        sup_pd_released(was, row, x, y);
+        break;
+    case P_MODEL_LINE:
+        if (gfx_rect_contains(model_line_hit(), x, y)) {
+            task_changed();
+            supply_screen_open_pdmini();
         }
         break;
     case P_APPLY:
@@ -399,6 +442,7 @@ void sup_drop_press(void)
     ui_hold_reset(&s.hold);
     prog5v_box_cancel(&s.p5);
     ui_tabs_cancel(&s.tabs);
+    ui_tabs_cancel(&s.ov_tabs);
     ui_wb_strip_cancel(&s.wb);
     ++s.strip_rev;
     ui_keypad_cancel_press(&s.kp);
@@ -524,6 +568,14 @@ void sup_event(const touch_event_t *evt)
             sup_let_go();
         }
         return;
+    case P_OV_TABS:
+        if (ui_tabs_event(&s.ov_tabs, evt)) {
+            ++s.ov_rev;
+        }
+        if (up) {
+            sup_let_go();
+        }
+        return;
     case P_OUTPUT:
         if (!up) {
             /* A finger that leaves the switch abandons the hold. */
@@ -565,6 +617,7 @@ void sup_event(const touch_event_t *evt)
 
 void sup_tick(float dt_s)
 {
+    sup_pd_tick();
     /* A question about a live output goes once there is none: off, and no
      * ON on its way -- a STOP or a lost touch can drop one that was -- or
      * once a stop has come since it was asked. */

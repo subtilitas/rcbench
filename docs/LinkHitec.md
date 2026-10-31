@@ -203,7 +203,7 @@ On a PRECHARGE line:
 open line receives by PRECHARGE. An IOmcu speaking 4.23 refuses a write
 that reaches register 23 with READ_ONLY and receives with the pull-up; the
 panel then marks the setting on SETUP
-([INTERFACES: the programming port](Screens.md#interfaces-the-programming-port)).
+([Hitec D receive](HitecProgrammer.md#hitec-d-receive)).
 What is measured and what is not:
 [`protocols/hitec`](../protocols/hitec/README.md#receive-by-precharge-and-sample).
 

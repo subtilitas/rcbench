@@ -94,10 +94,10 @@ TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
     CHECK_STR_EQ(settings_def(SET_VIBE_EN)->key, "vibe_en");
     CHECK_STR_EQ(settings_def(SET_OPTICAL_EN)->key, "optical_en");
     CHECK_STR_EQ(settings_def(SET_OPTICAL_PIN)->key, "optical_pin");
-    /* INTERFACES keeps the PD mini and Hitec D receive. */
-    CHECK_EQ(settings_in_category(SET_CAT_IFACE, ids, 64), 5);
-    for (int i = 0; i < 5; ++i) {
-        CHECK(ids[i] >= SET_PDMINI_EN);
+    /* The PD mini's wiring is SUPPLY's PD MINI tab's. */
+    CHECK_EQ(settings_in_category(SET_CAT_PDMINI, ids, 64), 4);
+    for (int i = 0; i < 4; ++i) {
+        CHECK(ids[i] >= SET_PDMINI_EN && ids[i] <= SET_PDMINI_BAUD);
     }
 }
 
@@ -166,11 +166,11 @@ TEST_CASE(the_pane_stands_beside_the_list_and_the_keys_stay)
     gfx_rect_t last = settings_screen_entry_rect(SENS_ENTRY_COUNT - 1);
     CHECK(last.x + last.w < PANE_X);
     CHECK_EQ(last.y + last.h, 8 + 428);   /* where the list ends */
-    open_category(SET_CAT_IFACE);
+    open_category(SET_CAT_APP);
     CHECK_EQ(settings_screen_list_rect().x, 10);
     CHECK_EQ(settings_screen_list_rect().w, 984);
     CHECK_EQ(settings_screen_row_part(0, SETTINGS_ROW_PLUS).x, PLUS_X);
-    /* INTERFACES has no left list: a tap there is on a row's label. */
+    /* PANEL has no left list: a tap there is on a row's label. */
     snap();
     tap(entry_x(0), entry_y(3));
     CHECK_EQ(changed(), 0);

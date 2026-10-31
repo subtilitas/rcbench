@@ -5,7 +5,7 @@
  *        the supply the screen shows.
  *
  * The IOmcu drives the PD mini; the panel asks.  Two things are
- * written: the wiring (ENABLE to BAUD, from SETUP INTERFACES) and the
+ * written: the wiring (ENABLE to BAUD, from SUPPLY's PD MINI tab) and the
  * command (OUTPUT to SET_MA, from the SUPPLY screen).  The order is fixed:
  *
  *   1. an OFF, alone in OUTPUT, before anything else owed, and first of
@@ -81,7 +81,7 @@ extern "C" {
 /** @brief The baud setting that asks the IOmcu to find the rate (4.4). */
 #define SUPPLY_LINK_BAUD_AUTO 7u
 
-/** @brief Where the PD mini is wired, as SETUP INTERFACES has it. */
+/** @brief Where the PD mini is wired, as SUPPLY's PD MINI tab has it. */
 typedef struct {
     bool    en;
     int8_t  tx, rx;   /**< IOmcu GPIO; -1 not set          */

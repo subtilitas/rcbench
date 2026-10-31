@@ -101,7 +101,7 @@ The programming port's pin, GPIO 13 (pad 17) by default, is grey while no protoc
 
 ![The interfaces' pins held and named under IN USE](view:outputs-iface)
 
-A pin [SETUP > SENSORS](setup-sensors.md) or [INTERFACES](setup-interfaces.md) holds is grey the same way, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.
+A pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD MINI tab](supply.md#pd-mini-tab) holds is grey the same way, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.
 
 ![OFF selected: every bound pin under IN USE](view:outputs-off)
 
@@ -156,7 +156,7 @@ A board that reports neither a drawing nor a shape cannot be drawn: a guessed pi
 | greyed, the other protocol's name | held by another protocol | does nothing |
 | red, struck through | reserved: GPIO 3 carries the safety heartbeat, GPIO 8 to GPIO 12 the CAN (Controller Area Network) controller | does nothing |
 | `PROG PORT` | the pin of the IOmcu's programming port, GPIO 13 by default | does nothing |
-| red, `SENSOR BUS`, `PD MINI` or `PHASE TAP` | a pin [SETUP > SENSORS](setup-sensors.md) or [INTERFACES](setup-interfaces.md) holds: Sensor SDA and SCL while the INA228 or AS5600 is ON or an INA3221 is fitted on [SETUP > SENSORS](setup-sensors.md); PD mini TX and RX while the PD mini is ON with both pins set; the tap pin while the phase tap is ON. The cell follows those settings | does nothing |
+| red, `SENSOR BUS`, `PD MINI` or `PHASE TAP` | a pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD MINI tab](supply.md#pd-mini-tab) holds: Sensor SDA and SCL while the INA228 or AS5600 is ON or an INA3221 is fitted on [SETUP > SENSORS](setup-sensors.md); PD mini TX and RX while the PD mini is ON with both pins set; the tap pin while the phase tap is ON. The cell follows those settings | does nothing |
 | greyed, `SLICE OF GPIO 13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with a programming port's pin, any port the IOmcu reports; GPIO 28 and GPIO 13 are slice 6 | does nothing; `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13` under the count |
 | greyed, `PWM CH OF GPIO 0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GPIO 0 and GPIO 16, GPIO 1 and GPIO 17, GPIO 2 and GPIO 18, GPIO 4 and GPIO 20, GPIO 5 and GPIO 21, GPIO 6 and GPIO 22) | does nothing; `GPIO 16: SAME PWM CHANNEL AS GPIO 0` under the count |
 | free, `PAD 7` | not bound | binds it |

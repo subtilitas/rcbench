@@ -84,7 +84,7 @@ The INA3221 becomes the meter 1000ms after its conditions hold: a channel of a f
 
 ![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 
-While the PD mini is disabled on SETUP, INTERFACES, the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
+While the PD mini is disabled on SUPPLY's PD MINI tab, the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
 
 A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a gap in the plot.
 
@@ -260,5 +260,5 @@ The report is a `LIMITnnn.TXT` of its own in `USER/LOGS`, written whatever REPOR
 
 - [Servo settings](servo-settings.md): type, frame rate, pulses, the sweep, each run's settings and the target.
 - [Servo programmer](servo-programmer.md): PROGRAM's row for KST and Chaservo servos.
-- [Supply](supply.md) and [Interfaces](setup-interfaces.md): the PD mini.
+- [Supply](supply.md): the PD mini.
 - [Sensors](setup-sensors.md): the INA3221 and the AS5600.

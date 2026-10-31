@@ -287,10 +287,6 @@ void panel_frame_loop(void)
             sensors_rows_set_status((uint16_t)atomic_load(&s_sense_parts));
             sensors_rows_set_i228((sens_part_t)atomic_load(&s_sense_i228));
             sensors_rows_set_limits((uint16_t)atomic_load(&s_sense_limits));
-            /* What the IOmcu holds of Hitec D receive, back to SETUP's
-             * row. */
-            settings_screen_set_hitec_rx(
-                (uint8_t)atomic_load(&s_hitec_rx_mark));
             if (servo_link_take_sweep_refused()) {
                 servo_screen_sweep_refused();
             }

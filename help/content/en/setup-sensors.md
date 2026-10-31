@@ -190,5 +190,5 @@ Vibration and Optical tacho have stored keys and no entry: no screen or IOmcu re
 ## Related pages
 
 - [Setup](setup.md)
-- [Interfaces](setup-interfaces.md)
+- [Supply](supply.md): the PD mini's wiring, on the PD MINI tab.
 - [Servo](servo.md)

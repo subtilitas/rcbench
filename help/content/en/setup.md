@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACES, SD CARD and SENSORS. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
+SETUP holds the panel's bench-wide settings in three categories: PANEL, SENSORS and SD CARD. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
 
 ## The tiles
 
@@ -15,14 +15,13 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 | Tile | Second line | What it opens |
 |---|---|---|
 | PANEL | `12 SETTINGS` | the list of PANEL |
-| INTERFACES | `5 SETTINGS` | the list of [INTERFACES](setup-interfaces.md) |
-| SD CARD | `5 SETTINGS` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
 | SENSORS | `CURRENT, ANGLE, PHASE TAP` | [Sensors](setup-sensors.md): the sensor bus, the INA228 and INA3221 current monitors, the AS5600 and the phase tap, a left list of 8 beside the selected one's rows |
 | OUTPUTS | `PROTOCOLS, PINS, BOARD` | [Outputs](outputs.md): the role of each IOmcu pin, on a drawing of the board |
+| SD CARD | `5 SETTINGS` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 | LAYOUT | `CONNECTORS AND PINS` | [Layout](layout.md), on the rbmod carrier only, whose pins are soldered |
 
-3 slots are free, and the carrier's LAYOUT takes one. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+4 slots are free, and the carrier's LAYOUT takes one. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
@@ -36,7 +35,7 @@ The home tag at the top left climbs one level at a time:
 
 ## Changing a value
 
-![INTERFACES, everything saved](view:setup-interfaces)
+![The hub, everything saved](view:setup)
 
 The list is 984px wide (754px on SENSORS) and shows 6 rows of 64px. Under it a strip, 48px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4px above the band an alert shows across the bottom, so an alert covers no key, row or button.
 
@@ -171,17 +170,13 @@ OK keeps the keyboard open, and the folder as it was, for a folder the card cann
 | a Windows device name: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
 | `BENCH/ESC`, `BENCH/KST` or `BENCH/HITEC`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Folder of the bench's own files` |
 
-## INTERFACES
-
-INTERFACES holds the PD mini and the Hitec receive mode, under the headings SUPPLY and PROG PORT. [Interfaces](setup-interfaces.md) describes them.
-
 ## SENSORS
 
 SENSORS holds every device the IOmcu reads, an entry each in a list on the left: the sensor bus, the INA228, the four INA3221, the AS5600 and the phase tap. [Sensors](setup-sensors.md) describes them.
 
 ## Related pages
 
-- [Interfaces](setup-interfaces.md)
+- [Supply](supply.md): the PD mini's wiring, on the PD MINI tab.
 - [Sensors](setup-sensors.md)
 - [Outputs](outputs.md)
 - [Updates](updates.md)

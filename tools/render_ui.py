@@ -178,6 +178,7 @@ SCREENS = {
     "servo-hitec": ("servo-hitec.png", "servo", "dark"),
     "servo-hitec-series": ("servo-hitec-series.png", "servo", "dark"),
     "servo-hitec-more": ("servo-hitec-more.png", "servo", "dark"),
+    "servo-hitec-rx": ("servo-hitec-rx.png", "servo", "dark"),
     "servo-hitec-reading": ("servo-hitec-reading.png", "servo", "dark"),
     "servo-hitec-read": ("servo-hitec-read.png", "servo", "dark"),
     "servo-hitec-motion": ("servo-hitec-motion.png", "servo", "dark"),
@@ -445,7 +446,7 @@ SCREENS = {
     "files-edit": ("files-edit.png", "files", "dark"),
     "files-edit-kst": ("files-edit-kst.png", "files", "dark"),
     "files-edit-unsaved": ("files-edit-unsaved.png", "files", "dark"),
-    # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
+    # SETUP's tiles, clean and with a value unsaved; PANEL's list
     # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
     "setup-hub-dirty": ("setup-hub-dirty.png", "setup", "dark"),
@@ -462,8 +463,11 @@ SCREENS = {
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
     "setup-folder": ("setup-folder.png", "setup", "dark"),
-    # INTERFACES: the PD mini and Hitec D receive.
-    "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
+    # SUPPLY > SETTINGS' PD MINI tab: as wired, and on the carrier with TX and
+    # RX soldered.  Its keypad refusing the other pin's GPIO.
+    "supply-pdmini": ("supply-pdmini.png", "supply", "dark"),
+    "supply-pdmini-rbmod": ("supply-pdmini-rbmod.png", "supply", "dark"),
+    "supply-pdmini-why": ("supply-pdmini-why.png", "supply", "dark"),
     # The rbmod carrier: the LAYOUT tile, and soldered pin rows.
     "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
     "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
@@ -472,7 +476,6 @@ SCREENS = {
     # while a session holds the ports' 5V.
     "servo-rbmod": ("servo-rbmod.png", "servo", "dark"),
     "servo-kst-rbmod": ("servo-kst-rbmod.png", "servo", "dark"),
-    "setup-rbmod-iface": ("setup-rbmod-iface.png", "setup", "dark"),
     # SENSORS: 0x40 and 0x41 fitted, on 0x40 online; and on 0x41, marked as an
     # IOmcu older than 4.25 leaves its rows.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
@@ -492,15 +495,11 @@ SCREENS = {
     # The same keypad with 1 typed: the range in its header and the entry
     # name the pin word first, "GPIO -1 to 47" and "GPIO 1".
     "setup-sda-keypad": ("setup-sda-keypad.png", "setup", "dark"),
-    "setup-pdmini-why": ("setup-pdmini-why.png", "setup", "dark"),
     # SENSOR BUS, its pins not taken by the IOmcu: the mark on Sensor SDA and
     # Sensor SCL and the entry's state.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
     # PHASE TAP's rows, the tap enabled.
     "setup-tap": ("setup-tap.png", "setup", "dark"),
-    # INTERFACES' end: Hitec D receive at PRECHARGE under PROG PORT, marked
-    # as an IOmcu older than protocol 4.24 leaves it.
-    "setup-prog": ("setup-prog.png", "setup", "dark"),
     # The warning on leaving SETUP unsaved: one change, and twelve, of
     # which nine fit beside the count of the rest.
     "setup-leave": ("setup-leave.png", "setup", "dark"),
@@ -539,9 +538,9 @@ SCREENS = {
     # PROG PORT 2 on a 4.28 IOmcu, DSHOT300 on GP14: the FUNCTION list open
     # over the column, five entries.
     "outputs-port-dshot": ("outputs-port-dshot.png", "outputs", "dark"),
-    # The overview with the interfaces wired: GP16 and GP17 the sensor bus's,
-    # GP18 and GP19 the PD mini's, GP22 the phase tap's, held and named under
-    # IN USE after the programming port.
+    # The overview with SENSORS and PD MINI wired: GP16 and GP17 the sensor
+    # bus's, GP18 and GP19 the PD mini's, GP22 the phase tap's, held and named
+    # under IN USE after the programming port.
     "outputs-iface": ("outputs-iface.png", "outputs", "dark"),
     # The grid view of a board with neither a shape nor a drawing.
     "outputs-grid": ("outputs-grid.png", "outputs", "dark"),
@@ -697,10 +696,10 @@ FIT_ONLY = {
     "motor-settings-gap-full": (None, "motor", "dark"),
     # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
     "setup-tap-why": (None, "setup", "dark"),
-    # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23, and
-    # PRECHARGE held, with its own help line.
-    "setup-prog-noline": (None, "setup", "dark"),
-    "setup-prog-pre": (None, "setup", "dark"),
+    # SUPPLY's PD MINI tab with the output on, the rows locked, and stored on
+    # one pin for both.
+    "supply-pdmini-on": (None, "supply", "dark"),
+    "supply-pdmini-same": (None, "supply", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
     # SERVO > PROGRAM with a table of 12 rows: SEARCH, the page keys, two
     # group headings and a row dimmed with its reason.

@@ -227,7 +227,7 @@ bool pk_prog_taken(uint8_t index)
 }
 
 /**
- * @brief What SETUP > INTERFACES holds pin @p index for: no protocol and no
+ * @brief What SENSORS or SUPPLY's PD MINI holds pin @p index for: no protocol and no
  *        port holds it, and the IOmcu does not reserve it.  A pin a
  *        protocol holds is that protocol's, as against a port.
  * @param index the pin's index in the board's catalogue

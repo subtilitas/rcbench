@@ -42,6 +42,9 @@ const ui_plot_series_t sup_series[S_COUNT] = {
 
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
                                               TX_MO_TAB_TABLE };
+/** @brief SETTINGS' page tabs. */
+static const ui_text_id_t k_ov_labels[SUP_OV_COUNT] = { TX_SUP_TAB_LIMITS,
+                                                         TX_SUP_TAB_PDMINI };
 /* The screen's state; supply_screen_int.h names it s. */
 sup_state_t sup_s;
 
@@ -169,6 +172,11 @@ static void strip_widen(void)
 bool sup_on_live(void)
 {
     return ui_wb_strip_task(&s.wb) == UI_WB_LIVE;
+}
+
+bool sup_on_pdmini(void)
+{
+    return !sup_on_live() && s.ov_tabs.selected == SUP_OV_PDMINI;
 }
 
 bool sup_p5_shown(void)
@@ -319,6 +327,10 @@ static void reset(void)
                                   ASK_BTN_W, ASK_BTN_H };
     s.discard_btn = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 40 - ASK_BTN_W),
                                   ASK_BTN_Y, ASK_BTN_W, ASK_BTN_H };
+    ui_tabs_init_text(&s.ov_tabs, k_ov_labels, SUP_OV_COUNT,
+                      (gfx_rect_t){ (int16_t)(OV_X + INNER),
+                                    (int16_t)(OV_Y + OV_TAB_DY),
+                                    (int16_t)(OV_W - 2 * INNER), OV_TAB_H });
     s.pressed = P_NONE;
     s.kp.pressed = -1;
     sup_bind_colours();
@@ -998,6 +1010,7 @@ static void leave(void)
     ui_slider_release(&s.i_slider);
     ui_hold_reset(&s.hold);
     ui_tabs_cancel(&s.tabs);
+    ui_tabs_cancel(&s.ov_tabs);
     ui_wb_strip_cancel(&s.wb);
     ++s.strip_rev;
     ui_keypad_close(&s.kp);

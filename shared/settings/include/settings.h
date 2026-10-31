@@ -28,7 +28,6 @@ extern "C" {
 typedef enum {
     SET_CAT_APP = 0,     /**< theme, brightness, rotation, language,
                               units, time zone, plot                   */
-    SET_CAT_IFACE,       /**< the PD mini and Hitec D receive         */
     SET_CAT_CARD,        /**< the SD card: which logs are written     */
     SET_CAT_SENSORS,     /**< what the IOmcu reads: the sensor bus, the
                               INA228, the INA3221 parts (settings_sensors.h),
@@ -36,6 +35,9 @@ typedef enum {
                               optical tacho hold keys and show no row   */
     SET_CAT_ESC,         /**< pack, motor, telemetry, throttle output */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
+    SET_CAT_PDMINI,      /**< the PD mini's wiring, on SUPPLY's PD MINI
+                              tab: apart from the limits, so a reset of
+                              SET_CAT_SUPPLY leaves the wiring          */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
     SET_CAT_STICK,       /**< stick programming: supply and timing    */
     SET_CAT_UPDATE,      /**< the release reminder and the releases a
@@ -44,9 +46,10 @@ typedef enum {
 } setting_cat_t;
 
 /**
- * The categories SETUP opens from its tiles, which come first.  SET_CAT_ESC
- * is edited on MOTOR & ESC > SETTINGS, SET_CAT_SUPPLY, SET_CAT_SERVO and
- * SET_CAT_STICK on their own screens, beside what they set, and
+ * @brief The categories SETUP opens from its tiles, which come first.  SET_CAT_ESC
+ * is edited on MOTOR & ESC > SETTINGS, SET_CAT_SUPPLY, SET_CAT_PDMINI,
+ * SET_CAT_SERVO and SET_CAT_STICK on their own screens, beside what they
+ * set, and
  * SET_CAT_UPDATE on the UPDATES screen a SETUP tile opens.
  */
 #define SET_CAT_SETUP_COUNT SET_CAT_ESC
@@ -303,9 +306,12 @@ void settings_set_armed(settings_armed_fn fn);
  * @brief Whether @p id changes on a SAFE bench only: held while the
  *        source settings_set_armed() installed says ARMED, as the throttle
  *        endpoints on MOTOR & ESC > SETTINGS are locked while ARMED.
- *        Screen rotation, which moves every control under the finger.
+ *        Screen rotation, which moves every control under the finger, and
+ *        the PD mini's wiring, whose change switches off the supply an
+ *        ARMED servo may run from.
  * @param id The setting.
- * @return True for SET_SCREEN_ROT.
+ * @return True for SET_SCREEN_ROT, SET_PDMINI_EN, SET_PDMINI_TX, SET_PDMINI_RX
+ *         and SET_PDMINI_BAUD.
  */
 bool settings_safe_only(setting_id_t id);
 

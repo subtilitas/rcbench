@@ -35,6 +35,7 @@ set(SRCS
     supply_screen.c
     supply_events.c
     supply_draw.c
+    supply_pdmini.c
     servo_screen.c
     servo_screen_sweep.c
     servo_screen_link.c

@@ -460,7 +460,7 @@ What a servo draws at rest, moving and holding an end, and how long it takes
 from end to end, at the supply voltages it is rated for; and the voltage
 below which it stops moving (brown-out). Nothing on the bench measures the
 horn unless the output encoder is on (see below), so every result is read from
-the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SETUP INTERFACES enables it,
+the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SUPPLY's PD MINI tab enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
 and its numbers are simulated. While the INA3221 is the servo rail's meter
 at START TEST and the supply is the PD mini, the run reads the INA3221

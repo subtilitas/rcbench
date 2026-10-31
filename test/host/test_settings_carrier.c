@@ -174,9 +174,6 @@ TEST_CASE(a_soldered_pin_row_has_no_keys_and_says_so)
     CHECK(settings_get_int(SET_SENSE_SDA) != before);
 }
 
-/* The tiles of every board: the categories, OUTPUTS, WI-FI, UPDATES, FILES. */
-#define OUTPUTS_TILE (SET_CAT_SETUP_COUNT)
-
 TEST_CASE(the_carrier_adds_a_layout_tile_and_keeps_outputs)
 {
     fresh_hub();

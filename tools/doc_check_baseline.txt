@@ -680,8 +680,6 @@ firmware/panel/main/panel.h: warning: Member s_far_minor (variable) of file pane
 firmware/panel/main/panel.h: warning: Member s_fw_quiet_ack (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_fw_quiet_req (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_hitec_rx_link (variable) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member s_hitec_rx_mark (variable) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member s_hitec_rx_want (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_host (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_keeping (variable) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member s_kst_card_answered (variable) of file panel.h is not documented.
@@ -1092,8 +1090,6 @@ firmware/panel/main/panel_services.c: warning: Member prog_link_service(void) (f
 firmware/panel/main/panel_services.c: warning: Member prog_page_read(void) (function) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_drive (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_hitec_rx_link (variable) of file panel_services.c is not documented.
-firmware/panel/main/panel_services.c: warning: Member s_hitec_rx_mark (variable) of file panel_services.c is not documented.
-firmware/panel/main/panel_services.c: warning: Member s_hitec_rx_want (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_kst_answer (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_kst_answer_id (variable) of file panel_services.c is not documented.
 firmware/panel/main/panel_services.c: warning: Member s_kst_gate (variable) of file panel_services.c is not documented.
@@ -3405,9 +3401,7 @@ shared/ui/include/settings_screen.h: warning: parameters of member settings_hub_
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_help are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_opens are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_rows are not documented
-shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_set_hitec_rx are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_text_row are not documented
-shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_unheld are not documented
 shared/ui/include/settings_screen.h: warning: parameters of member settings_screen_warn_line are not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_hub_slot is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_hub_tiles is not documented
@@ -3417,7 +3411,6 @@ shared/ui/include/settings_screen.h: warning: return type of member settings_scr
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_rows is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_text_row is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_textkey is not documented
-shared/ui/include/settings_screen.h: warning: return type of member settings_screen_unheld is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warn_line is not documented
 shared/ui/include/settings_screen.h: warning: return type of member settings_screen_warning is not documented
 shared/ui/include/supply_screen.h: warning: parameters of member supply_screen_ask_on are not documented
@@ -3993,13 +3986,11 @@ shared/ui/picker_port.c: warning: Member holds(const port_view_t *v, uint8_t n) 
 shared/ui/picker_port.c: warning: Member port_pwm(uint8_t port) (function) of file picker_port.c is not documented.
 shared/ui/picker_port.h: warning: parameters of member picker_port_clashes are not documented
 shared/ui/picker_port.h: warning: parameters of member picker_port_own_pin are not documented
-shared/ui/picker_port.h: warning: parameters of member picker_port_pin are not documented
 shared/ui/picker_port.h: warning: parameters of member picker_port_reason are not documented
 shared/ui/picker_port.h: warning: parameters of member picker_port_row are not documented
 shared/ui/picker_port.h: warning: parameters of member picker_port_tap are not documented
 shared/ui/picker_port.h: warning: return type of member picker_port_clashes is not documented
 shared/ui/picker_port.h: warning: return type of member picker_port_own_pin is not documented
-shared/ui/picker_port.h: warning: return type of member picker_port_pin is not documented
 shared/ui/picker_port.h: warning: return type of member picker_port_reason is not documented
 shared/ui/picker_port.h: warning: return type of member picker_port_row is not documented
 shared/ui/picker_port.h: warning: return type of member picker_port_tap is not documented
@@ -4475,10 +4466,7 @@ shared/ui/servo_workbench_int.h: warning: Member wb_enter(void) (function) of fi
 shared/ui/servo_workbench_int.h: warning: Member wb_leave(void) (function) of file servo_workbench_int.h is not documented.
 shared/ui/servo_workbench_int.h: warning: Member wb_rest(const touch_event_t *evt) (function) of file servo_workbench_int.h is not documented.
 shared/ui/servo_workbench_int.h: warning: Member wb_task(void) (function) of file servo_workbench_int.h is not documented.
-shared/ui/settings_rows.c: warning: Compound heading_t is not documented.
-shared/ui/settings_rows.c: warning: Member N_HEADINGS (macro definition) of file settings_rows.c is not documented.
 shared/ui/settings_rows.c: warning: Member entries(setting_cat_t cat, settings_row_t *out, int max) (function) of file settings_rows.c is not documented.
-shared/ui/settings_rows.c: warning: Member text (variable) of struct heading_t is not documented.
 shared/ui/settings_screen.c: warning: Member change_line(int k, char *line, size_t n) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member drop_press(void) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member hold(ui_screen_id_t to) (function) of file settings_screen.c is not documented.
@@ -4487,13 +4475,10 @@ shared/ui/settings_screen.c: warning: Member on_key(int kind, int index, int x, 
 shared/ui/settings_screen.c: warning: Member open_text(setting_text_id_t id) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member open_tile(int index) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member row_at(int x, int y) (function) of file settings_screen.c is not documented.
-shared/ui/settings_screen.c: warning: Member row_is_heading(int index) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member row_setting(int index) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member row_text(int index) (function) of file settings_screen.c is not documented.
-shared/ui/settings_screen.c: warning: Member s_hitec_rx_mark (variable) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member s_screen (variable) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member s_sense_unheld (variable) of file settings_screen.c is not documented.
-shared/ui/settings_screen.c: warning: Member s_tone_unheld (variable) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member settings_screen(void) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member settings_screen_invalidate(void) (function) of file settings_screen.c is not documented.
 shared/ui/settings_screen.c: warning: Member textkey_event(const touch_event_t *evt) (function) of file settings_screen.c is not documented.

@@ -21,9 +21,9 @@ The right column is the same on both tasks: the readings, and the CONTROL card w
 
 ## The supply model
 
-![SUPPLY with the PD mini disabled: SIMULATED SUPPLY](view:supply)
+![SUPPLY with the PD mini disabled: SIMULATED](view:supply)
 
-With the PD mini disabled on SETUP, INTERFACES, the panel runs a model of a supply. The header reads `SIMULATED SUPPLY` and the menu tile is marked SIMULATED. The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a 0.05Ω source resistance. Its readings are not measured, and nothing on the bench is powered.
+With the PD mini disabled on the [PD MINI tab](#pd-mini-tab), the panel runs a model of a supply. The header reads `SIMULATED: SWITCH ON IN PD MINI`, a button that opens the tab, and the menu tile is marked SIMULATED. The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a 0.05Ω source resistance. Its readings are not measured, and nothing on the bench is powered.
 
 ## The PD mini
 
@@ -122,6 +122,31 @@ The settings are kept in NVS (non-volatile storage). They are written on the nex
 
 With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It switches the output off and restarts the module, for a module that shows ERR. Whether a restart clears every ERR is not measured.
 
+## PD MINI tab
+
+![The PD MINI tab](view:supply-pdmini)
+
+SETTINGS has two tabs, LIMITS and PD MINI. PD MINI wires the module.
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| PD mini | ON, OFF | OFF | the programmable supply on SUPPLY and SERVO; OFF runs the panel's supply model |
+| PD mini TX | -1 to 47 | -1 | the IOmcu GPIO to the module's DM |
+| PD mini RX | -1 to 47 | -1 | the IOmcu GPIO from the module's DP |
+| PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | the module's UART (universal asynchronous receiver-transmitter) rate; AUTO tries each of the 7 rates, one a second |
+
+A change applies at once and is saved as a change on LIMITS is. There is no SAVE. The reset on LIMITS leaves these rows.
+
+A change to the wiring switches a live output off, so no row takes a press while the output is on or an ON is on its way, while a programming port holds the supply, or while the bench is ARMED: the help line and the band say which. A keypad open on a pin closes when one of these begins, and what it holds is not taken.
+
+The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other row holds: with RX on GPIO 18, TX steps from GPIO 19 to GPIO 17. At either end of the range the key then does nothing: with RX on GPIO 47, TX stops at GPIO 46. The keypad refuses the other row's GPIO and shows `The other PD mini pin holds this GPIO` in place of the range. A set-up stored with both rows on one GPIO loads as stored; the PD mini stays off, the header says `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini stays off.` until one of them is stepped. The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GPIO 17 is refused while Sensor SCL is GPIO 17. The message leaves the band once the pin is set back to one the IOmcu takes.
+
+![RX's GPIO 9 refused for PD mini TX](view:supply-pdmini-why)
+
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) PD mini TX reads GPIO 7 and PD mini RX GPIO 6. These rows have no keys and open no keypad, and their help line reads `Soldered on this board. Not a setting here.`. The values stored for them stay as they are and are in force again on a module wired by hand.
+
+![PD mini TX and RX soldered](view:supply-pdmini-rbmod)
+
 ## The log of a run
 
 A run is one switch-on of the output. The plot clears when the output comes on and holds the run after it goes off. The mAh and Wh on the CONTROL card's title line count the run. RESET PEAKS starts the lowest and highest values again from the current reading.
@@ -130,5 +155,4 @@ Each run is written to its own `SUPPLnnn.CSV` in `BENCH/LOGS` on the SD (Secure 
 
 ## Related pages
 
-- [Interfaces](setup-interfaces.md): PD mini, PD mini TX, PD mini RX and PD mini baud.
 - [Servo](servo.md): the same set points and output switch on the SERVO screen.

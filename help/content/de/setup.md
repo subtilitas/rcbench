@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kategorien: PANEL, INTERFACES, SD CARD und SENSORS. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
+SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in drei Kategorien: PANEL, SENSORS und SD CARD. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
 
 ## Die Kacheln
 
@@ -15,14 +15,13 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
 | PANEL | `12 EINSTELLUNGEN` | die Liste von PANEL |
-| INTERFACES | `5 EINSTELLUNGEN` | die Liste von [INTERFACES](setup-interfaces.md) |
-| SD CARD | `5 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin, und was ein Browser zum Schreiben braucht |
 | SENSORS | `STROM, WINKEL, PHASENABGRIFF` | [Sensoren](setup-sensors.md): der Sensorbus, die Strommonitore INA228 und INA3221, der AS5600 und der Phasenabgriff, eine linke Liste von 8 neben den Zeilen des gewählten |
 | OUTPUTS | `PROTOKOLLE, PINS, PLATINE` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, auf einer Zeichnung der Platine |
+| SD CARD | `5 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin, und was ein Browser zum Schreiben braucht |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
 | LAYOUT | `STECKER UND PINS` | [Layout](layout.md), nur auf dem rbmod-Carrier, dessen Pins verlötet sind |
 
-3 Plätze sind frei, und LAYOUT des Carriers nimmt einen. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
+4 Plätze sind frei, und LAYOUT des Carriers nimmt einen. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
 
 ![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
 
@@ -36,7 +35,7 @@ Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
 
 ## Einen Wert ändern
 
-![INTERFACES, alles gespeichert](view:setup-interfaces)
+![Die Kacheln, alles gespeichert](view:setup)
 
 Die Liste ist 984px breit (754px auf SENSORS) und zeigt 6 Zeilen zu 64px. Darunter trägt eine Leiste, 48px hoch, den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
 
@@ -171,17 +170,13 @@ Für einen Ordner, den die Karte nicht nehmen kann, lässt OK die Tastatur offen
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
 | `BENCH/ESC`, `BENCH/KST` oder `BENCH/HITEC`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Ordner der Prüfstand-Dateien` |
 
-## INTERFACES
-
-INTERFACES hält den PD mini und den Hitec-Empfang, unter den Überschriften SUPPLY und PROG-PORT. [Anschlüsse](setup-interfaces.md) beschreibt sie.
-
 ## SENSORS
 
 SENSORS hält jedes Gerät, das der IOmcu liest, je einen Eintrag in einer Liste links: den Sensorbus, den INA228, die vier INA3221, den AS5600 und den Phasenabgriff. [Sensoren](setup-sensors.md) beschreibt sie.
 
 ## Verwandte Seiten
 
-- [Anschlüsse](setup-interfaces.md)
+- [Netzteil](supply.md): die Verdrahtung des PD mini, im Tab PD MINI.
 - [Sensoren](setup-sensors.md)
 - [Ausgänge](outputs.md)
 - [Updates](updates.md)

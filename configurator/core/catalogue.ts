@@ -1727,8 +1727,8 @@ const checks: Check[] = [
   {
     id: 'pd-pins', kind: 'note',
     text: t(
-      'GPIO 7 (PD mini TX) and GPIO 6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SETUP → INTERFACES.',
-      'GPIO 7 (PD mini TX) und GPIO 6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SETUP → INTERFACES einstellen.',
+      'GPIO 7 (PD mini TX) and GPIO 6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SUPPLY → PD MINI.',
+      'GPIO 7 (PD mini TX) und GPIO 6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SUPPLY → PD MINI einstellen.',
     ),
     when: { has: 'pdmini' }, src: OWNER,
   },

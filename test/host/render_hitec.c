@@ -608,6 +608,12 @@ void render_hitec_view(const char *view)
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
         return;
     }
+    if (strcmp(v, "-rx") == 0) {
+        /* MORE's third entry in PWM: Hitec D receive's list. */
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        htap(hitec_panel_choice_rect(2));
+        return;
+    }
     if (strcmp(v, "-other") == 0 || strcmp(v, "-release") == 0
         || strcmp(v, "-released") == 0) {
         /* The bench console's session on port 1, as the panel sees it. */

@@ -51,27 +51,27 @@ static void tap_home(void)
 /*
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
- * can reach.  The table's order, row by row: PANEL, INTERFACES and SD
- * CARD; SENSORS and OUTPUTS; UPDATES, with room for the carrier's LAYOUT.
+ * can reach.  The table's order, row by row: PANEL, SENSORS and OUTPUTS;
+ * SD CARD and UPDATES, with room for the carrier's LAYOUT.
  * ESC / BENCH is no tile: its rows are MOTOR & ESC > SETTINGS'.  WI-FI and
  * FILES are no tiles either: they are tabs of LOGS' strip.
  */
 TEST_CASE(the_setup_tiles_open_the_outputs_and_updates)
 {
     static const struct {
+        int            tile;
         ui_screen_id_t id;
         const char    *title;
     } k_tools[] = {
-        { SCREEN_OUTPUTS, "OUTPUTS" }, { SCREEN_UPDATES, "UPDATES" },
+        { 2, SCREEN_OUTPUTS, "OUTPUTS" }, { 4, SCREEN_UPDATES, "UPDATES" },
     };
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
     CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + n);
-    CHECK_EQ(SET_CAT_SETUP_COUNT, 4);   /* PANEL, INTERFACES, SD CARD,
-                                           SENSORS */
+    CHECK_EQ(SET_CAT_SETUP_COUNT, 3);   /* PANEL, SD CARD, SENSORS */
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         ui_router_goto(SCREEN_SETUP);
-        tap_tile(cat);
+        tap_tile(settings_hub_cat_tile((setting_cat_t)cat));
         CHECK_EQ(ui_router_current(), SCREEN_SETUP);
         CHECK_EQ(settings_screen_category(), cat);
         ui_router_goto(SCREEN_OVERVIEW);
@@ -79,7 +79,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_and_updates)
     for (int i = 0; i < n; ++i) {
         ui_router_goto(SCREEN_SETUP);
         CHECK_EQ(settings_screen_category(), -1);
-        tap_tile(SET_CAT_SETUP_COUNT + i);
+        tap_tile(k_tools[i].tile);
         CHECK_EQ(ui_router_current(), k_tools[i].id);
         CHECK_STR_EQ(ui_router_title(k_tools[i].id), k_tools[i].title);
         CHECK(settings_screen_opens(k_tools[i].id));
@@ -91,7 +91,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_and_updates)
 
     /* A tile's edge rows are the tile's; the margin between two is not. */
     gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
-    CHECK(settings_hub_slot(SET_CAT_SETUP_COUNT, &r));
+    CHECK(settings_hub_slot(k_tools[0].tile, &r));
     ui_router_goto(SCREEN_SETUP);
     tap(r.x + 1, UI_BAND_H + r.y + r.h - 1);
     CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
@@ -387,7 +387,7 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
     ui_router_goto(SCREEN_SETUP);
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         const uint32_t n0 = ui_router_navigations();
-        tap_tile(cat);
+        tap_tile(settings_hub_cat_tile((setting_cat_t)cat));
         CHECK_EQ(ui_router_current(), SCREEN_SETUP);
         CHECK_EQ(settings_screen_category(), cat);
         CHECK_EQ(ui_router_navigations(), n0);
@@ -402,8 +402,8 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
     /* SETUP opens on its tiles again, whichever list was open when it
      * was left. */
     ui_router_goto(SCREEN_SETUP);
-    tap_tile(SET_CAT_IFACE);
-    CHECK_EQ(settings_screen_category(), SET_CAT_IFACE);
+    tap_tile(settings_hub_cat_tile(SET_CAT_APP));
+    CHECK_EQ(settings_screen_category(), SET_CAT_APP);
     ui_router_goto(SCREEN_MOTOR);
     ui_router_goto(SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), -1);
@@ -741,7 +741,7 @@ TEST_CASE(the_setup_hub_names_its_first_category_panel_in_both_languages)
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         CHECK_STR_EQ(ui_setting_category(SET_CAT_APP), "PANEL");
-        CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "INTERFACES");
+        CHECK_STR_EQ(ui_setting_category(SET_CAT_PDMINI), "PD MINI");
     }
     ui_text_set_language(UI_LANG_EN);
 }

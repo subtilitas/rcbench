@@ -204,15 +204,18 @@ _Static_assert(SET_CTRL_DY >= SET_TEXT_H + UI_SLIDER_OVERHANG + 1,
 #define OV_W      LEFT_W                  /**< 620px. */
 #define OV_H      (H - OV_Y - PAD)        /**< To the body's margin. */
 /*
- * SETTINGS' page: two columns of 48px rows at a 56px pitch, each a label
- * left of its 120px value.  The caps and start values on the left, 260
- * px, for labels of up to 13 cells; the trips, their help in the 8 x 16
- * face and the confirmations on the right, 324px, for labels of up to 19
- * cells and help lines of up to 36.  The save line at the page's foot
- * ends 4px above the alert band.
+ * SETTINGS' page: LIMITS | PD MINI in a row at its top, the save line at its
+ * foot, ending 4px above the alert band.  LIMITS: two columns of 48px rows at
+ * a 52px pitch, each a label left of its 120px value.  The caps and start
+ * values on the left, 260px, for labels of up to 13 cells; the trips, their
+ * help in the 8 x 16 face and the confirmations on the right, 324px, for
+ * labels of up to 19 cells and help lines of up to 36.  PD MINI: one column
+ * of four rows at a 56px pitch (supply_pdmini.c).
  */
 #define OV_ROW_H  UI_TAP_MIN              /**< A row's height, px. */
-#define OV_PITCH  56                      /**< From row to row, px. */
+#define OV_PITCH  56                      /**< PD MINI's rows, px. */
+#define OV_TAB_DY 6                       /**< The tabs, from the page's top. */
+#define OV_TAB_H  40                      /**< Their height, as SERVO's, px. */
 #define OV_HEAD_H 28                      /**< A heading's line, px. */
 #define OV_VAL_W  120                     /**< A row's value, px. */
 #define OV_COL_W  260                     /**< The left column, px. */
@@ -220,17 +223,31 @@ _Static_assert(SET_CTRL_DY >= SET_TEXT_H + UI_SLIDER_OVERHANG + 1,
 #define OV_COL1_X (OV_COL0_X + OV_COL_W + 16)      /**< The right: 294. */
 #define OV_COL1_W (OV_X + OV_W - INNER - OV_COL1_X) /**< Its width: 324. */
 #define OV_SAVE_Y (STOP_FLOOR - LINE_H)   /**< The save line, px. */
-#define OV_HELP_PITCH 18                  /**< The help's lines, px. */
+#define OV_HELP_PITCH 16                  /**< The help's lines, px. */
 /* From the page's top: the headings, the trips' help, RESET PD MINI. */
-#define OV_CAPS_DY     8                  /**< LIMITS and TRIPS, px. */
-#define OV_RESTART_DY  152                /**< AFTER RESTART, px. */
-#define OV_HELP_DY     204                /**< The trips' help, px. */
-#define OV_CONFIRM_DY  268                /**< CONFIRM WHILE ON, px. */
-#define OV_MODRESET_DY 300                /**< RESET PD MINI, px. */
-_Static_assert(OV_Y + 352 + OV_ROW_H <= OV_SAVE_Y,
+#define OV_CAPS_DY     50                 /**< The caps and TRIPS, px. */
+#define OV_RESTART_DY  184                /**< AFTER RESTART, px. */
+#define OV_HELP_DY     234                /**< The trips' help, px. */
+#define OV_CONFIRM_DY  284                /**< CONFIRM WHILE ON, px. */
+#define OV_MODRESET_DY 324                /**< RESET PD MINI, px. */
+_Static_assert(OV_Y + 364 + OV_ROW_H <= OV_SAVE_Y,
                "KEYPAD's row ends over the save line");
 _Static_assert(OV_HELP_DY + 3 * OV_HELP_PITCH <= OV_CONFIRM_DY,
                "the trips' help ends over CONFIRM WHILE ON");
+_Static_assert(OV_TAB_DY + OV_TAB_H <= OV_CAPS_DY,
+               "the tabs end over the page's headings");
+_Static_assert(OV_MODRESET_DY + OV_ROW_H + OV_Y <= OV_SAVE_Y,
+               "RESET PD MINI ends over the save line");
+/* The PD MINI tab's rows: the label and help left, then -, value and +. */
+#define SUP_PD_ROWS    4                  /**< Enable, TX, RX, baud. */
+#define OV_PD_DY       54                 /**< The first row, px. */
+#define OV_PD_KEY_W    56                 /**< A - or + key, px. */
+#define OV_PD_GAP      4                  /**< Between key and value, px. */
+_Static_assert(OV_Y + OV_PD_DY + SUP_PD_ROWS * OV_PITCH + 4
+                   + 2 * OV_HELP_PITCH <= OV_SAVE_Y,
+               "the PD MINI tab's notes end over the save line");
+/** @brief SETTINGS' page tabs in their order. */
+enum { SUP_OV_LIMITS = 0, SUP_OV_PDMINI, SUP_OV_COUNT };
 
 /*
  * The question: its title, why it asks, the change, APPLY and CANCEL, and
@@ -259,13 +276,21 @@ enum { S_VOLT = 0, S_CURR, S_POWER, S_READINGS, S_VSET = S_READINGS, S_ISET,
 enum { P_NONE = 0, P_OUTPUT, P_RESET, P_V_DOWN, P_V_UP, P_I_DOWN, P_I_UP,
        P_V_SLIDER, P_I_SLIDER, P_TABS, P_CARD_V, P_CARD_I, P_VALUE_V,
        P_VALUE_I, P_STRIP, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD, P_MODRESET,
-       P_PROG5V };
+       P_PROG5V, P_OV_TABS, P_PD_VALUE, P_PD_MINUS, P_PD_PLUS, P_MODEL_LINE };
 
 /* Where a set point change came from, for the question it may need. */
 enum { FROM_SLIDER = 0, FROM_KEYPAD };
 
 /* What the keypad is typing. */
-enum { KP_NONE = 0, KP_SET_V, KP_SET_I, KP_SETTING };
+enum { KP_NONE = 0, KP_SET_V, KP_SET_I, KP_SETTING, KP_PD };
+
+/** @brief Why the PD MINI tab's rows take no press now. */
+typedef enum {
+    SUP_PD_FREE = 0,    /**< they take one                                   */
+    SUP_PD_LOCK_PORT,   /**< a programming port holds the supply             */
+    SUP_PD_LOCK_LIVE,   /**< the output is on, or an ON is on its way        */
+    SUP_PD_LOCK_ARMED,  /**< the bench is ARMED (settings_safe_only())       */
+} sup_pd_lock_t;
 
 /*
  * The settings SETTINGS' page edits, in two columns.  A start value is
@@ -292,15 +317,15 @@ typedef struct {
  *        capped like the set point it starts and a trip of 0 is off.
  */
 static const limit_row_t k_rows[] = {
-    { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 36,  2 },
-    { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 92,  2 },
-    { SET_SUPPLY_V_START, TX_SUP_ROW_V_START, 0, 180, 2 },
-    { SET_SUPPLY_I_START, TX_SUP_ROW_I_START, 0, 236, 2 },
-    { SET_SUPPLY_TRIP_I,  TX_SUP_ROW_TRIP_I,  1, 36,  2 },
-    { SET_SUPPLY_TRIP_V,  TX_SUP_ROW_TRIP_V,  1, 92,  2 },
-    { SET_SUPPLY_TRIP_MS, TX_SUP_ROW_TRIP_MS, 1, 148, 0 },
-    { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 296, 0 },
-    { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 352, 0 },
+    { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 78,  2 },
+    { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 130, 2 },
+    { SET_SUPPLY_V_START, TX_SUP_ROW_V_START, 0, 212, 2 },
+    { SET_SUPPLY_I_START, TX_SUP_ROW_I_START, 0, 264, 2 },
+    { SET_SUPPLY_TRIP_I,  TX_SUP_ROW_TRIP_I,  1, 78,  2 },
+    { SET_SUPPLY_TRIP_V,  TX_SUP_ROW_TRIP_V,  1, 130, 2 },
+    { SET_SUPPLY_TRIP_MS, TX_SUP_ROW_TRIP_MS, 1, 182, 0 },
+    { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 312, 0 },
+    { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 364, 0 },
 };
 /** @brief Number of rows in k_rows. */
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
@@ -316,6 +341,9 @@ typedef struct {
     uint32_t        strip_rev;          /**< revision of the strip, counted up when it changes */
     uint32_t        drawn_strip[2];     /**< strip revision each frame buffer last drew */
     ui_tabs_t       tabs;               /**< PLOT | TABLE tabs, on LIVE */
+    ui_tabs_t       ov_tabs;            /**< LIMITS | PD MINI, on SETTINGS */
+    uint8_t         pd_lock;            /**< sup_pd_lock_t at the last tick */
+    uint32_t        pd_sig;             /**< the tab's rows as last looked at */
     ui_slider_t     v_slider;           /**< voltage slider */
     ui_slider_t     i_slider;           /**< current slider */
     supply_caps_t   caps;               /**< what the supply can be set to */
@@ -482,6 +510,22 @@ gfx_rect_t sup_strip_area(void);
  */
 bool sup_on_live(void);
 /**
+ * @brief The press under way begins: its contact and what it is on.
+ * @param evt the DOWN event
+ * @param code what it is on, P_*
+ */
+void sup_take(const touch_event_t *evt, int code);
+/**
+ * @brief Whether SETTINGS' page shows PD MINI: on SETTINGS, on that tab.
+ * @return true when it does
+ */
+bool sup_on_pdmini(void);
+/**
+ * @brief Where the SIMULATED line's button is, which opens the PD MINI tab.
+ * @return the button as drawn; its height is the strip's
+ */
+gfx_rect_t sup_model_line_rect(void);
+/**
  * @brief Returns whether the PROG 5V box shows: on LIVE, with neither the
  *        keypad nor the question over it, on a board that switches the
  *        ports' own 5V.
@@ -572,6 +616,66 @@ void sup_event(const touch_event_t *evt);
  * @param dt_s time since the last tick, s
  */
 void sup_tick(float dt_s);
+
+/* --- supply_pdmini.c ---------------------------------------------------- */
+
+/**
+ * @brief Why the PD MINI tab's rows take no press now.
+ * @return the lock, SUP_PD_FREE with none
+ */
+sup_pd_lock_t sup_pd_lock(void);
+/**
+ * @brief PD MINI's row @p i: its label, help, keys and value.
+ * @param i the row, 0 to SUP_PD_ROWS - 1
+ * @return the row, px
+ */
+gfx_rect_t sup_pd_row_rect(int i);
+/**
+ * @brief The value of PD MINI's row @p i.
+ * @param i the row
+ * @return its box, px
+ */
+gfx_rect_t sup_pd_value_rect(int i);
+/**
+ * @brief The - or + key of PD MINI's row @p i.
+ * @param i the row
+ * @param plus the + key
+ * @return the key, px
+ */
+gfx_rect_t sup_pd_key_rect(int i, bool plus);
+/**
+ * @brief A press on the PD MINI tab: taken on a key or a value, refused with
+ *        the lock's reason on the band while a lock stands.
+ * @param evt the DOWN event
+ * @param x its column, px
+ * @param y its row, px
+ */
+void sup_pd_down(const touch_event_t *evt, int x, int y);
+/**
+ * @brief The tap that ends a press on the PD MINI tab.  Under a lock that
+ *        came since the press it changes nothing.
+ * @param was what the press was on, P_PD_*
+ * @param row its row
+ * @param x the release's column, px
+ * @param y the release's row, px
+ */
+void sup_pd_released(int was, int row, int x, int y);
+/**
+ * @brief OK on the keypad of a PD MINI pin: set, or refused with the keypad
+ *        open (ui_setting_keypad_ok()); nothing under a lock.
+ * @param v the value typed
+ */
+void sup_pd_keypad_ok(float v);
+/**
+ * @brief The frame's look at the lock: a change repaints the tab; a lock ends
+ *        a press on it and closes its keypad.
+ */
+void sup_pd_tick(void);
+/**
+ * @brief The PD MINI tab's rows and notes.
+ * @param c the canvas
+ */
+void sup_pd_draw(gfx_canvas_t *c);
 
 /* --- supply_draw.c ------------------------------------------------------ */
 

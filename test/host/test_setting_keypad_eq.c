@@ -4,7 +4,7 @@
  *        setting's keypad, typed on the keypad: the stored float equals the
  *        stepped one bit for bit.
  *
- * For each number of SETUP's PANEL, INTERFACES and SENSORS lists and of
+ * For each number of SETUP's PANEL and SENSORS lists, SUPPLY's PD MINI tab and of
  * ESC STICK's TIMING (Sensor SCL has no keys), the walk starts at the
  * range's minimum and steps "+" (settings_adjust()) to the maximum.  Each
  * value it reaches is written as "%.*f" with settings_decimals() digits,
@@ -71,7 +71,7 @@ static ui_keypad_result_t type_ok(ui_keypad_t *k, const char *text,
 /**
  * @brief Whether a setting is a row these keypads serve.
  * @param id The setting.
- * @return True for a keyed number of PANEL, INTERFACES, SENSORS or STICK.
+ * @return True for a keyed number of PANEL, PD MINI, SENSORS or STICK.
  */
 static bool served(setting_id_t id)
 {
@@ -79,7 +79,7 @@ static bool served(setting_id_t id)
     if (d == NULL || !ui_setting_keypad_offered(id)) {
         return false;
     }
-    return d->cat == SET_CAT_APP || d->cat == SET_CAT_IFACE
+    return d->cat == SET_CAT_APP || d->cat == SET_CAT_PDMINI
            || d->cat == SET_CAT_SENSORS || d->cat == SET_CAT_STICK;
 }
 
