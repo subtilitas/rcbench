@@ -3732,7 +3732,6 @@ shared/ui/kst_panel.c: warning: Member kst_panel_keypad(void) (function) of file
 shared/ui/kst_panel.c: warning: Member kst_panel_textkey(void) (function) of file kst_panel.c is not documented.
 shared/ui/kst_panel.c: warning: Member next_row(const char *s, size_t len) (function) of file kst_panel.c is not documented.
 shared/ui/kst_panel.c: warning: Member row_len(const char *s) (function) of file kst_panel.c is not documented.
-shared/ui/log_viewer_screen.c: warning: Member enter(void) (function) of file log_viewer_screen.c is not documented.
 shared/ui/log_viewer_screen.c: warning: Member k_tab_text[LOG_TAB_COUNT] (variable) of file log_viewer_screen.c is not documented.
 shared/ui/log_viewer_screen.c: warning: Member list_once(log_page_dir_t dir, const char *key, int cap) (function) of file log_viewer_screen.c is not documented.
 shared/ui/log_viewer_screen.c: warning: Member log_viewer_invalidate(void) (function) of file log_viewer_screen.c is not documented.
@@ -4667,10 +4666,7 @@ shared/ui/upd_screen.c: warning: Member upd_screen(void) (function) of file upd_
 shared/ui/upd_screen.c: warning: Member yield (variable) of struct [struct].s_rem is not documented.
 shared/ui/wifi_screen.c: warning: Member act(int hit) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member back(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member cancel(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member drop_hold_if_gone(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member enter(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member event(const touch_event_t *evt) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member have_press (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member hit (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member hit_at(int x, int y) (function) of file wifi_screen.c is not documented.
@@ -4684,7 +4680,6 @@ shared/ui/wifi_screen.c: warning: Member leave(void) (function) of file wifi_scr
 shared/ui/wifi_screen.c: warning: Member pick[WIFI_SSID_MAX+1] (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member press_id (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member radio_on(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member render(gfx_canvas_t *c, int buffer_index) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member req (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member reset(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member save_pass[WIFI_PASS_MAX+1] (variable) of struct [struct].s is not documented.

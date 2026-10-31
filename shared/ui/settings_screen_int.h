@@ -234,9 +234,7 @@ static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY(SET_CAT_CARD,  ui_icon_chart),
     HUB_CATEGORY_LINE(SET_CAT_SENSORS, TX_SET_HUB_SENSORS, ui_icon_supply),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
-    HUB_SCREEN(SCREEN_WIFI,    TX_SET_HUB_WIFI,    ui_icon_wifi),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
-    HUB_SCREEN(SCREEN_FILES,   TX_SET_HUB_FILES,   ui_icon_folder),
 };
 
 /** @brief Tiles of every board; a board that solders its pins adds LAYOUT. */

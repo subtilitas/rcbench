@@ -24,6 +24,7 @@
 #include "fm_rules.h"
 #include "fm_tree.h"
 #include "gfx.h"
+#include "logs_strip.h"
 #include "text_view.h"
 #include "touch_types.h"
 #include "ui_layout.h"
@@ -57,10 +58,11 @@
 /**
  * @brief The two panes, 500px wide at x 8 and x 516, 8px apart.
  *
- * A pane's header row, body y 4 to 52, holds UP: a button with the
+ * The LOGS tile's strip (logs_strip.h) stands above them while the panes are
+ * the level on top.  A pane's header row, body y 52 to 100, holds UP: a button with the
  * folder's path that goes up one folder, 312px wide; and while the folder
  * holds more than one page, PREV and NEXT, 88 x 48px, at the pane's right
- * end.  The list's panel from y 60 holds FS_ROWS rows at a pitch of
+ * end.  The list's panel from y 108 holds FS_ROWS rows at a pitch of
  * FS_ROW_H (48px, UI_TAP_MIN) under its 30px heading, the rows drawn
  * 44px tall, and the scroll bar, FS_BAR_W (56px) wide, at its right edge.
  */
@@ -68,7 +70,7 @@
 #define FS_PANE_GAP 8                                /**< Between them. */
 /** @brief Pane @p i's left edge: 8 or 516. */
 #define FS_PANE_X(i) (FS_L + (i) * (FS_PANE_W + FS_PANE_GAP))
-#define FS_HDR_Y    4                                /**< The header row. */
+#define FS_HDR_Y    52                               /**< The header row. */
 #define FS_HDR_H    UI_TAP_MIN                       /**< Its height. */
 #define FS_PG_W     88          /**< PREV's and NEXT's width. */
 #define FS_UP_W     312         /**< UP's width. */
@@ -80,10 +82,10 @@
 /** @brief Pane @p i's NEXT. */
 #define FS_NEXT(i)  gfx_rect_make(FS_PANE_X(i) + FS_PANE_W - FS_PG_W, \
                                   FS_HDR_Y, FS_PG_W, FS_HDR_H)
-#define FS_LIST_Y   60          /**< The list's panel's top. */
+#define FS_LIST_Y   108         /**< The list's panel's top. */
 #define FS_HEAD_H   30          /**< Its heading. */
 #define FS_ROW_H    48          /**< A row's pitch, UI_TAP_MIN. */
-#define FS_ROWS     6           /**< The rows a pane shows at once. */
+#define FS_ROWS     5           /**< The rows a pane shows at once. */
 /** @brief Pane @p i's list panel: its heading and its rows. */
 #define FS_LIST(i)  gfx_rect_make(FS_PANE_X(i), FS_LIST_Y, FS_PANE_W, \
                                   FS_HEAD_H + FS_ROWS * FS_ROW_H + 4)
@@ -254,8 +256,10 @@ _Static_assert(FS_MSG_Y + 2 * FS_MSG_LH + 4 <= FOOT_Y,
                "the message line's two lines end 4px above the footer");
 _Static_assert(FS_ICON + 8 + 28 * 10 + 8 + FS_SIZE_W + 8 <= FS_ROW_W,
                "a row holds its icon, 28 cells of name and the size");
-_Static_assert((FS_ROWS * FS_ROW_H - 4) * FS_ROWS / FM_PAGE_MAX >= 32,
-               "the scroll bar's thumb is 32px or more on a full page");
+_Static_assert((FS_ROWS * FS_ROW_H - 4) >= 4 * FS_BAR_MIN,
+               "the scroll bar's thumb of FS_BAR_MIN has a track to travel");
+_Static_assert(LOGS_STRIP_FOOT + 4 <= FS_HDR_Y,
+               "the header row starts below the tile's strip");
 _Static_assert(FS_NEW_Y + FS_NEW_H + 8 <= FOOT_Y,
                "NEW's choice ends 8px above the footer");
 _Static_assert(FS_NEW_ROW_H >= UI_TAP_MIN, "a choice row is a finger tall");

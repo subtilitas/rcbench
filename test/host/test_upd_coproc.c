@@ -775,12 +775,12 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     CHECK(upd_screen_take_coproc());
 }
 
-TEST_CASE(the_wifi_hint_names_setup)
+TEST_CASE(the_wifi_hint_names_logs)
 {
     ui_text_set_language(UI_LANG_EN);
-    CHECK_STR_EQ(TR(UPD_KEEP_NET), "Save a network under SETUP > WI-FI.");
+    CHECK_STR_EQ(TR(UPD_KEEP_NET), "Save a network under LOGS > WI-FI.");
     ui_text_set_language(UI_LANG_DE);
-    CHECK(strstr(TR(UPD_KEEP_NET), "SETUP > WI-FI") != NULL);
+    CHECK(strstr(TR(UPD_KEEP_NET), "LOGS > WI-FI") != NULL);
     ui_text_set_language(UI_LANG_EN);
 }
 
@@ -830,7 +830,7 @@ int main(void)
     RUN(every_section_state_says_why_in_two_lines);
     RUN(only_a_ready_section_takes_the_hold);
     RUN(the_section_hold_slides_off_cancels_and_leaves_unfired);
-    RUN(the_wifi_hint_names_setup);
+    RUN(the_wifi_hint_names_logs);
     RUN(every_section_state_renders_inside_its_canvas);
     return test_summary("upd_coproc");
 }

@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "logs_strip.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
@@ -40,24 +41,26 @@
 #define FOOT    (UI_ALERT_Y - UI_BAND_H - 4)
 
 /*
- * With the radio off: five buttons of 460 x 60px (69.0 x 9.0mm)
- * 8px apart on the left, from body y 16; the card on the right,
- * 16px beside them, to 8px from the right edge and down to FOOT.
+ * With the radio off: under the LOGS tile's strip (logs_strip.h), five
+ * buttons of 460 x 60px (69.0 x 9.0mm) 8px apart on the left, from body
+ * y 56; the card on the right, 16px beside them, to 8px from the right
+ * edge and down to FOOT.
  * The card's lines are 49 cells of WF_FONT_LABEL, 24px apart.
  */
 #define BX       16          /**< The buttons' left edge. */
-#define BY       16          /**< The first button's top. */
+#define BY       56          /**< The first button's top. */
 #define BW       460         /**< A button's width, px. */
 #define BH       60          /**< A button's height, px. */
 #define BPITCH   68          /**< The buttons' pitch, px. */
 #define RX       (BX + BW + 16) /**< The card's left edge. */
-#define RY       16          /**< Its top. */
+#define RY       56          /**< Its top. */
 #define RW       (W - UI_MARGIN - RX) /**< Its width: 524px. */
-#define RH       (FOOT - RY) /**< Its height: 476px. */
+#define RH       (FOOT - RY) /**< Its height: 436px. */
 #define CARD_P   24          /**< The card's line pitch, px. */
 
 /*
- * With the radio on: rows of 56px from body y 16, a label column
+ * With the radio on: under the strip, rows of 54px from body y 52, a label
+ * column
  * of 240px and a value column of 740px, an SSID of 32 characters
  * 640px of it in WF_FONT_HEAD; the lines under the rows in
  * WF_FONT_BODY 28px apart; WI-FI OFF 460 x 60px, 8px above FOOT.
@@ -66,8 +69,8 @@
 #define LBL_W    240         /**< Its width, px. */
 #define VAL_X    (LBL_X + LBL_W + 8) /**< The value column's left edge. */
 #define VAL_W    740         /**< Its width, px. */
-#define ROW_Y    16          /**< The first row's top. */
-#define ROW_P    56          /**< The rows' pitch, px. */
+#define ROW_Y    52          /**< The first row's top. */
+#define ROW_P    54          /**< The rows' pitch, px. */
 #define LINE_P   28          /**< The pitch of the lines under the rows, px. */
 #define OFF_Y    (FOOT - 8 - BH) /**< WI-FI OFF's top: body y 424. */
 /** @brief The browser writes' button, beside WI-FI OFF at the right edge,
@@ -115,6 +118,12 @@ _Static_assert(BH >= UI_TAP_MIN && SC_H >= UI_TAP_MIN
                "a WI-FI control under UI_TAP_MIN");
 _Static_assert(BY + 4 * BPITCH + BH <= OFF_Y && OFF_Y + BH <= FOOT,
                "the buttons reach the alert band");
+_Static_assert(LOGS_STRIP_FOOT + 4 <= ROW_Y && LOGS_STRIP_FOOT + 4 <= BY,
+               "the first row starts below the tile's strip");
+/* The most the running view holds: four rows, then the lines OPEN_ALL,
+ * PLAIN or CHANNEL, IDLE, WRITES and, 8px on, RECEIVING. */
+_Static_assert(ROW_Y + 4 * ROW_P + 4 + 4 * LINE_P + 8 + LINE_P <= OFF_Y,
+               "the running view's lines reach WI-FI OFF");
 _Static_assert(BX + BW + 16 <= WR_X, "the writes' button meets WI-FI OFF");
 _Static_assert(SC_Y + (SC_ROWS - 1) * SC_P + SC_H + 4 + 8 <= SC_BY,
                "the scan list reaches its buttons");
@@ -519,6 +528,11 @@ static void key_event(const touch_event_t *evt)
     touched();
 }
 
+/**
+ * @brief One touch event: the keyboard while it shows, the tile's strip on
+ *        the first level, else the buttons of the view showing.
+ * @param evt The event, in the body's coordinates.
+ */
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -531,6 +545,17 @@ static void event(const touch_event_t *evt)
         }
         ui_textkey_close(&s.tk);   /* an image arrived: the question first */
         s.sub = SUB_MAIN;
+    }
+    /* The tile's strip, on the first level and while no other contact holds
+     * a press here.  A tab leaves the screen: leave() switches the radio off. */
+    if (view_of() != VIEW_MAIN && view_of() != VIEW_RUNNING) {
+        logs_strip_cancel();
+    } else if ((!s.have_press || evt->point.id == s.press_id)
+               && logs_strip_event(evt, SCREEN_WIFI)) {
+        s.hit = HIT_NONE;
+        s.have_press = false;
+        touched();
+        return;
     }
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
@@ -600,6 +625,7 @@ static void tick(float dt_s)
     }
 }
 
+/** @brief The touch stream lost an event: every press under way ends here. */
 static void cancel(void)
 {
     if (s.hit == HIT_INSTALL || s.hit == HIT_WRITES) {
@@ -608,9 +634,11 @@ static void cancel(void)
     s.hit = HIT_NONE;
     s.have_press = false;
     ui_textkey_cancel_press(&s.tk);
+    logs_strip_cancel();
     touched();
 }
 
+/** @brief On the way in: the first level, no hold and no press under way. */
 static void enter(void)
 {
     s.sub = SUB_MAIN;
@@ -618,6 +646,7 @@ static void enter(void)
     s.q_cancelled = false;
     s.hold_hit = HIT_NONE;
     ui_hold_reset(&s.hold);
+    logs_strip_cancel();
     touched();
 }
 
@@ -1092,6 +1121,11 @@ static void draw_question(gfx_canvas_t *c)
                    false, install_allowed(), WF_FONT_LABEL);
 }
 
+/**
+ * @brief The view showing, the tile's strip over the first level's two.
+ * @param c            Canvas.
+ * @param buffer_index The framebuffer, whose cache it follows.
+ */
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -1115,9 +1149,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
         switch (view_of()) {
         case VIEW_QUESTION: draw_question(c); break;
         case VIEW_SCAN:     draw_scan(c);     break;
-        case VIEW_RUNNING:  draw_running(c);  break;
+        case VIEW_RUNNING:
+            logs_strip_render(c, SCREEN_WIFI);
+            draw_running(c);
+            break;
         case VIEW_MAIN:
-        default:            draw_main(c);     break;
+        default:
+            logs_strip_render(c, SCREEN_WIFI);
+            draw_main(c);
+            break;
         }
     }
     if (s.hold.flash_ms > 0) {

@@ -1266,18 +1266,12 @@ UI_TEXT(LAYOUT_NONE, 0,
 UI_TEXT(LAYOUT_NONE_WHERE, 0,
     "ITS PINS ARE CHOSEN ON OUTPUTS.",
     "SEINE PINS WERDEN UNTER OUTPUTS GEWÄHLT.")
-UI_TEXT(SET_HUB_WIFI, 0,
-    "NETWORK, FILES, UPLOAD",
-    "NETZWERK, DATEIEN, UPLOAD")
 UI_TEXT(SET_HUB_UPDATES, 0,
     "RELEASES ON GITHUB",
     "VERSIONEN AUF GITHUB")
 UI_TEXT(SET_HUB_SENSORS, 0,
     "CURRENT, ANGLE, PHASE TAP",
     "STROM, WINKEL, PHASENABGRIFF")
-UI_TEXT(SET_HUB_FILES, 0,
-    "FOLDERS AND FILES",
-    "ORDNER UND DATEIEN")
 /* INTERFACES' section headings, in the order of its rows.  A heading is
  * drawn in a list row of 776px, 16px a character less the margins. */
 UI_TEXT(SET_HD_SUPPLY, 40,
@@ -1879,9 +1873,6 @@ UI_TEXT(LOG_RESCAN, 0,
 UI_TEXT(LOG_OPEN, 0,
     "OPEN",
     "ÖFFNEN")
-UI_TEXT(LOG_WIFI, 0,
-    "WI-FI",
-    "WLAN")
 UI_TEXT(LOG_CANNOT_READ, 64,
     "CANNOT READ",
     "NICHT LESBAR")
@@ -5860,8 +5851,8 @@ UI_TEXT(UPD_HOLD_DL, 0,
     "HOLD 2s TO DOWNLOAD & INSTALL",
     "2s HALTEN ZUM LADEN & INSTALLIEREN")
 UI_TEXT(UPD_KEEP_NET, 0,
-    "Save a network under SETUP > WI-FI.",
-    "Speichere ein Netzwerk unter SETUP > WI-FI.")
+    "Save a network under LOGS > WI-FI.",
+    "Speichere ein Netzwerk unter LOGS > WI-FI.")
 /* UPDATES' IOmcu section: one view per state measures each. */
 UI_TEXT(UPD_CU_HEAD, 0,
     "IOMCU",

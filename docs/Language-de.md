@@ -62,8 +62,8 @@ passen.
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
-  BATTERY, BALANCE, OUTPUTS, WI-FI, UPDATES, UPDATE,
-  CAN BUS FAULT, LINK LOST, PANEL UPDATE. Eine Kachel und das Band des
+  BATTERY, BALANCE, OUTPUTS, WI-FI, FILES, UPDATES, UPDATE,
+  CAN BUS FAULT, LINK LOST, PANEL UPDATE. Eine Kachel, ein Tab des Streifens von LOGS und das Band des
   Bildschirms, den sie öffnet, tragen dasselbe Wort. Ein Hinweis, der eine
   Seite nennt, nennt sie beim Titel: "der Seite SUPPLY".
 - Protokoll- und Modusnamen: DShot, PWM (Pulse-Width Modulation), PPM
@@ -373,7 +373,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.528
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.525
 Einträge mit ID und 88 Optionen, 10 davon mit leerem Englisch.
 
 1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

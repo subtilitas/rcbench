@@ -141,19 +141,14 @@ static void guide_check(void);
 
 /*
  * The screens with more than one opener, each opener on a row of its own.
- * The home tag of such a screen returns to the one that opened it: WI-FI
- * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, FILES from
- * LOGS' FILES button and from SETUP's FILES tile, OUTPUTS from the TARGET
- * rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile.
+ * The home tag of such a screen returns to the one that opened it: OUTPUTS
+ * opens from the TARGET rows of MOTOR & ESC and SERVO and from SETUP's
+ * OUTPUTS tile.
  */
 static const struct {
     ui_screen_id_t screen;
     ui_screen_id_t opener;
 } k_openers[] = {
-    { SCREEN_WIFI,    SCREEN_LOGS },
-    { SCREEN_WIFI,    SCREEN_SETUP },
-    { SCREEN_FILES,   SCREEN_LOGS },
-    { SCREEN_FILES,   SCREEN_SETUP },
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
     { SCREEN_OUTPUTS, SCREEN_SERVO },
     { SCREEN_OUTPUTS, SCREEN_SETUP },

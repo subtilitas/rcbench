@@ -6,7 +6,7 @@ order: 51
 
 # Wi-Fi
 
-WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Secure Digital) card to download, and to change as [Browser writes](#browser-writes) allows, and a panel firmware image to upload. It opens from the WI-FI tile on [SETUP](setup.md) and from WI-FI in the bottom row of [LOGS](logs.md). Its home tag returns to the screen that opened it. Over the network list or a keyboard it climbs one level first, as CANCEL does: from a keyboard to the list, keeping nothing typed, and from the list to the buttons. Over the question about an uploaded image it is CANCEL: the image is dropped and the screen stays; a second tap while the image is still there leaves. The radio runs only while this screen is open. It is off at every start of the panel.
+WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Secure Digital) card to download, and to change as [Browser writes](#browser-writes) allows, and a panel firmware image to upload. It is a tab of the strip on the [LOGS](logs.md) tile. Its home tag leads to the menu. Over the network list or a keyboard it climbs one level first, as CANCEL does: from a keyboard to the list, keeping nothing typed, and from the list to the buttons. Over the question about an uploaded image it is CANCEL: the image is dropped and the screen stays; a second tap while the image is still there leaves. The radio runs only while this screen is open: a tab of the strip that leaves it switches the radio off, as the home tag does. It is off at every start of the panel.
 
 ## The start screen
 

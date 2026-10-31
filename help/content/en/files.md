@@ -6,7 +6,7 @@ order: 53
 
 # Files
 
-FILES shows the SD (Secure Digital) card in two panes. It copies, moves, renames and deletes files, makes folders and empty text files, shows a file as text and edits it. It opens from FILES at the bottom of [LOGS](logs.md) and from the FILES tile on [SETUP](setup.md). The home tag closes a box or the keyboard first, then leads back to the screen that opened FILES. FILES drives no output.
+FILES shows the SD (Secure Digital) card in two panes. It copies, moves, renames and deletes files, makes folders and empty text files, shows a file as text and edits it. It is a tab of the strip on the [LOGS](logs.md) tile. The home tag closes a box or the keyboard first, then leads to the menu. FILES drives no output.
 
 ## The two panes
 

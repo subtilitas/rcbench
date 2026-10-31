@@ -178,6 +178,7 @@ SOURCES = [
     "shared/ui/log_viewer_load.c",
     "shared/ui/log_viewer_draw.c",
     "shared/ui/log_viewer_events.c",
+    "shared/ui/logs_strip.c",
     "shared/ui/log_select.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",

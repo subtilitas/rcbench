@@ -707,11 +707,10 @@ TEST_CASE(the_way_back_in_lists_new_runs_after_delete_swap_and_sub_views)
     check_tab(1, 48, 98);
     check_top(397);
 
-    /* WI-FI opened from LOGS and closed by its home tag, which returns to
-     * LOGS. */
+    /* WI-FI on the strip and back by its LOGS tab. */
     ui_router_goto(SCREEN_WIFI);
     g_card_runs = 99;
-    ui_router_goto(ui_router_parent(SCREEN_WIFI));
+    ui_router_goto(SCREEN_LOGS);
     CHECK_EQ(ui_router_current(), SCREEN_LOGS);
     check_tab(1, 48, 99);
     check_top(398);

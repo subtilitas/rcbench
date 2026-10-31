@@ -2277,13 +2277,23 @@ Browse the card, open a file, check what the import detected, then plot:
 ![A SERVO run as it opens: pulse, angle, current and voltage](img/logs-servo-plot.png)
 
 The home tag climbs one level, as BACK does: the plot to the import view,
-the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
-RESCAN, opens [Wi-Fi](#wi-fi), and FILES beside it opens [Files](#files).
+the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
-The file list takes the body in three parts. The header row, body y 4 to
-52, holds ROOT, USER and BENCH (110 x 40px each), the folder and the
+The LOGS tile holds three screens under one strip, LOGS | FILES | WI-FI,
+three tabs of 331 x 40px across the top of the body, y 5 to 45. The labels are
+the screens' titles, in every language. A tap on a tab opens that screen, and
+the home tag of each goes to the menu, whichever tab opened it. The strip
+shows on a screen's first level only: LOGS' file list, FILES' panes, WI-FI's
+buttons or its running rows. Over a file's import or plot, a question, a box, a
+keyboard, the text viewer, the editor or the network list it does not show and
+takes no tap, and the home tag climbs first. A tab that leaves WI-FI switches
+the radio off, as the home tag does.
+
+The file list takes the body in four parts. The strip is on top, FILES and
+WI-FI on it opening [Files](#files) and [Wi-Fi](#wi-fi). The header row, body
+y 52 to 100, holds ROOT, USER and BENCH (110 x 40px each), the folder and the
 card's name, and PREV and NEXT (140 x 48px) while the folder holds more
-than one page. The list under it is 1008px wide and shows 7 rows of 44px
+than one page. The list under it is 1008px wide and shows 6 rows of 44px
 at a pitch of 48px: each row takes a tap anywhere in its 48px. A row
 shows the file's name, its date and, right-aligned, its size, in the
 10 x 20 face. The name takes up to 60 characters; a longer one shows its
@@ -2293,10 +2303,10 @@ first 58 and `..`. The date is the modification time the card holds, as
 clock's ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)),
 or with no stamp leaves the column empty. The size stands in a box of
 100px at the row's end. The file's kind and length are not shown. The footer, body y 440 to 492, holds RESCAN
-(140 x 52px), WI-FI and FILES (100 x 52px) at the left and DELETE and
+(140 x 52px) at the left and DELETE and
 OPEN (140 x 52px) at the right, and ends 4px above the alert band. A
-message about a file stands between FILES and DELETE on up to two lines of
-28 characters.
+message about a file stands between RESCAN and DELETE on up to two lines of
+46 characters.
 
 The import view shows DETECTED (400px wide) beside the column list (600px,
 7 rows at a pitch of 48px), with four buttons of 246 x 52px under them.
@@ -2460,7 +2470,7 @@ screen against the rows on the page, and it scrolls within the page. A tap on
 the track brings the thumb's middle to the finger; a finger on the thumb drags
 it.
 
-LOGS reads the card each time it opens, from the menu or back from WI-FI:
+LOGS reads the card each time it opens, from the menu or by its tab:
 the first page of the tab's folder, its newest run selected, so a run
 recorded while LOGS was closed is on the list without RESCAN. When the panel
 has written a file since LOGS was last open, LOGS opens on that file's tab;
@@ -2645,10 +2655,10 @@ holds.
 FILES shows the SD (Secure Digital) card in two panes and copies, moves,
 renames and deletes its files, makes folders and empty text files, and
 shows a file as text in its [text viewer](#the-text-viewer). It
-opens from FILES in the bottom row of [Logs](#logs) and from the FILES tile
-of [Setup](#setup). The home tag closes a box or the keyboard
-first, then leads back to the screen that opened FILES. FILES drives no
-output.
+is a tab of the [LOGS](#logs) tile's strip. The home tag closes a box or the
+keyboard first, then leads to the menu. FILES drives no output. A tab leaves
+the panes at once; a copy under way shows its box and takes no tab, so CANCEL
+or the home tag answers first.
 
 ![FILES](img/files.png)
 
@@ -2660,7 +2670,7 @@ its selected entry to the other pane's folder. A tap on a row selects it
 and makes its pane the active one; a second tap on the selected row is
 OPEN.
 
-A pane's header row, body y 4 to 52, holds the folder's path on a button
+A pane's header row, body y 52 to 100, under the strip, holds the folder's path on a button
 312px wide that goes up one folder; the root shows the card's volume
 label, or `SD CARD`, and goes nowhere. PREV and NEXT, 88 x 48px, stand at
 the pane's right end while the folder holds more than 48 entries:
@@ -2673,7 +2683,7 @@ panel does not list are counted after it, `+ 1 NOT LISTED`: names that start
 with a full stop (`.DS_Store`, `._RCBENCH.LOG`) and names over 63 bytes. A
 folder that holds only such entries is not empty, and DELETE refuses it.
 
-The list shows 6 rows at a pitch of 48px, drawn 44px tall; a drag on the
+The list shows 5 rows at a pitch of 48px, drawn 44px tall; a drag on the
 list or on the 56px scroll bar moves it. Folders come first, then files,
 each group in name order. A row shows an icon, the name, the size
 right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
@@ -3076,10 +3086,9 @@ its rate on the console,
 
 WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the
 card to download, and to change as [Browser writes](#browser-writes)
-allows, and a panel firmware image to upload. It opens from the
-WI-FI tile on [SETUP](#setup) and from WI-FI in the bottom row of
-[LOGS](#logs). Its home tag returns to the screen that opened it, SETUP or
-LOGS; so does CLOSE on PANEL UPDATE after an upload's install failed. Over
+allows, and a panel firmware image to upload. It is a tab of the
+[LOGS](#logs) tile's strip. Its home tag leads to the menu; so does CLOSE on
+PANEL UPDATE after an upload's install failed. Over
 the network list or a keyboard the home tag climbs one level first, as
 CANCEL does: from a keyboard to the list, keeping nothing typed, and from the
 list to the buttons. Over the question about an uploaded image the home tag
@@ -3089,16 +3098,18 @@ there leaves the screen. The
 radio runs only while
 this screen is open, and for the release check and the download of
 [Updates](#updates). It is off at every start of the panel, and it goes off
-when the screen is left, before an install writes the flash, and after
-10min without a request.
+when the screen is left, by a tab of the strip as by the home tag, before an
+install writes the flash, and after 10min without a request. A tab tapped with
+a browser connected or an upload under way ends them the same way. Opening the
+tab starts no radio.
 
 Every view of WI-FI ends 4px above the alert band, at body y 492, so an
 alert covers no control. Rows, buttons and keys are 48px or taller.
 
 | View | Layout |
 | --- | --- |
-| Radio off | five buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
-| Radio on | rows of 56px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424, and with Browser writes HOLD the writes' button the same size beside it from body x 548 |
+| Radio off | under the strip from body y 56, five buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
+| Radio on | under the strip from body y 52, rows of 54px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424, and with Browser writes HOLD the writes' button the same size beside it from body x 548 |
 | Network list | two columns of eight rows of 492 x 48px, 52px apart: the name in 12 x 24 (32 characters are 384px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56px each |
 | Question about an image | a card of 1008 x 484px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2s TO INSTALL 460 x 72px |
 | Keyboard | 1008 x 484px, keys of 93 x 71px ([Keyboard](#keypad-keyboard-and-the-shared-controls)) |
@@ -3141,7 +3152,7 @@ or a computer needs:
 | IP address | `http://192.168.4.1/` |
 | Range | not measured |
 
-1. SETUP → WI-FI → ACCESS POINT, or LOGS → WI-FI → ACCESS POINT.
+1. LOGS → WI-FI → ACCESS POINT.
 2. On the phone or the computer, join the network the screen names, with
    the password it shows.
 3. Open `http://192.168.4.1/` and enter the access code the screen shows.
@@ -3708,9 +3719,8 @@ the panel restarts.
 
 The splash shows the new version, and the band says
 `Panel firmware 0.22.1 installed.`. A write that fails changes nothing that
-starts: the running build stays, and CLOSE goes back to the screen that
-opened WI-FI, SETUP or LOGS, or after a download from GitHub to where the
-download started.
+starts: the running build stays, and CLOSE goes back to the menu, or after a
+download from GitHub to where the download started.
 
 ![The write failed](img/panel-update-failed.png)
 
@@ -3799,13 +3809,13 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
   The settings of the pack, the motor and the throttle output are on
   MOTOR & ESC > SETTINGS
   ([MOTOR & ESC settings](#motor--esc-settings)).
-- Four screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
-  ([Wi-Fi](#wi-fi)), UPDATES
-  ([Updates](#updates)) and FILES ([Files](#files)). The band of each
-  names it as its tile does, and the band of this page reads SETUP.
+- Two screens of their own: OUTPUTS ([Outputs](#outputs)) and UPDATES
+  ([Updates](#updates)). The band of each names it as its tile does, and the
+  band of this page reads SETUP. [Wi-Fi](#wi-fi) and [Files](#files) are tabs
+  of the [LOGS](#logs) tile.
 - LAYOUT ([Layout](#layout)) as the last tile on a board with soldered pins,
-  the [rbmod carrier](Carrier.md). One slot is free on any other board. A
-  tenth entry has no slot: the page holds 9, and the build fails at the tenth.
+  the [rbmod carrier](Carrier.md). 3 slots are free on any other board and 2
+  on that one. The page holds 9, and the build fails at a tenth entry.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
   category shows here too:
@@ -3834,7 +3844,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, WI-FI, UPDATES, FILES | the tiles; WI-FI and FILES opened from LOGS go back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Wi-Fi](#wi-fi)) |
+| OUTPUTS, UPDATES | the tiles; OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs)) |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -4785,7 +4795,7 @@ the danger colour after a refused save.
 The warning holds only the home tag:
 
 - Nothing unsaved, or a save asked (`WHEN IDLE`): no warning, the menu opens.
-- OUTPUTS, WI-FI, UPDATES and FILES open from a tile and
+- OUTPUTS and UPDATES open from a tile and
   return to SETUP: no warning on the way out or back.
 - The home tag over the warning is STAY.
 - STOP stops the bench and leaves the warning as it is.
@@ -4983,7 +4993,7 @@ check and the download need:
 
 - a home network kept on WI-FI ([Home network](#home-network)).
   Without one, the card says `No home network saved.` and
-  `Save a network under SETUP > WI-FI.`, and CHECK FOR UPDATES is grey;
+  `Save a network under LOGS > WI-FI.`, and CHECK FOR UPDATES is grey;
 - the bench SAFE, the supply output off and no log run open. Otherwise the
   key is grey and the card says `Wi-Fi requires SAFE, the supply output off,` and
   `and no open recording session.`;
