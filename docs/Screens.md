@@ -4842,10 +4842,16 @@ START on the right; their middles are at panel x 305 and 719, y 376.
 
 The question names the version the IOmcu runs and the version this
 panel carries. CANCEL is a tap: the question closes, and the panel does not
-ask again for that IOmcu version until it restarts. Leaving the
-question another way declines the same way. SETUP > UPDATES still starts
-the update after a decline ([The IOmcu](#the-iomcu)). START
-takes the 2s hold, the ARM gesture and the same fade.
+ask again for that IOmcu version until it restarts. The home tag declines
+the same way. SETUP > UPDATES still starts the update after a decline
+([The IOmcu](#the-iomcu)). START takes the 2s hold, the ARM gesture and the
+same fade.
+
+A screen the panel forces over the question declines nothing: the fault
+screen after 4000ms without the link, and PANEL UPDATE's download. The offer
+stands, as one nobody has answered yet, and the next link-up's check offers
+again. The question then opens on the menu under the same conditions as
+the first time. A press on START that the forced screen ended starts nothing.
 
 An older image is offered too. The question then says `The firmware on this panel is older.` in the warning colour, and START takes the same hold.
 

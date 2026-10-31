@@ -73,7 +73,7 @@ cu_view_t coproc_update_screen_view(void);
 /** True once after START's hold completed; the view is then PROGRESS. */
 bool coproc_update_screen_take_start(void);
 
-/** True once after CANCEL, or after the question was left another way. */
+/** True once after CANCEL or the home tag on the question. */
 bool coproc_update_screen_take_cancel(void);
 
 void coproc_update_screen_invalidate(void);
@@ -170,12 +170,17 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
  * current: moves the router to the question, the progress and back, and
  * drains both latches.
  *
- * Leaving the question any way but START -- CANCEL, the HOME tag, an alert,
- * STOP, any jump of the router -- latches CANCEL on the way out, after the
- * router has left the screen; the latch is drained here on the next frame
- * and handed over as a decline while the offer stands.  The question
- * opens once per offer, on the overview of a bench that is not @p unsafe,
- * with the radio wholly off and no panel install under way.
+ * Only an operator's act declines: CANCEL, or the HOME tag, which latches
+ * CANCEL as the router leaves the question.  The latch is drained here on the
+ * next frame and handed over as a decline while the offer the question
+ * showed stands.  A screen the panel forces over the question (the fault
+ * screen of a lost link, PANEL UPDATE's download) declines nothing: the offer
+ * stands, and a new offer opens the question again.  STOP leaves the question
+ * on screen and declines nothing.  The question opens once per offer, on the
+ * overview of a bench that is not @p unsafe, with the radio wholly off and no
+ * panel install under way.  Its offer replaced while it shows (another
+ * offer_gen, the withdrawal between two frames), it takes the new versions and
+ * clears both latches.
  *
  * And UPDATES' section: its state (coproc_update_section()) and the two
  * versions go to upd_screen_set_coproc() every frame, and a completed hold

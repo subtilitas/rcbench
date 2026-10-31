@@ -346,6 +346,36 @@ TEST_CASE(the_updates_hold_at_2_00_s_starts_once_and_opens_the_progress)
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_BUSY);
 }
 
+/* A question the fault screen covered: not declined, and UPDATES takes it as
+ * any open offer once the link is back; while it is gone, it says so. */
+TEST_CASE(an_offer_under_the_fault_screen_stands_for_updates)
+{
+    drive_fresh();
+    feed_ready();
+    offer();
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    g_feed.reachable = false;
+    ui_router_goto(SCREEN_BUSFAULT);
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    ui_router_goto(SCREEN_OVERVIEW);    /* acknowledged */
+    upd()->reset();
+    ui_router_goto(SCREEN_UPDATES);
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_NO_LINK);
+
+    g_feed.reachable = true;
+    h = frame();
+    CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_READY);
+    hold_for(2.00f);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
+    h = frame();
+    CHECK_EQ(h.starts, 1u);
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+}
+
 TEST_CASE(a_declined_offer_starts_from_updates_and_returns_there)
 {
     drive_fresh();
@@ -788,6 +818,7 @@ int main(void)
     RUN(the_driver_hands_updates_its_section_every_frame);
     RUN(the_updates_hold_at_1_99_s_starts_nothing);
     RUN(the_updates_hold_at_2_00_s_starts_once_and_opens_the_progress);
+    RUN(an_offer_under_the_fault_screen_stands_for_updates);
     RUN(a_declined_offer_starts_from_updates_and_returns_there);
     RUN(a_start_from_updates_the_control_task_spends_returns_to_updates);
     RUN(a_start_seen_taken_before_active_still_returns_to_updates);
