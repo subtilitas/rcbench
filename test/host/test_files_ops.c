@@ -458,7 +458,11 @@ TEST_CASE(the_places_the_bench_keeps_refuse_what_they_refuse)
     CHECK(pick(0, "BENCH"));
     tap_foot(FS_SPOT_RENAME);
     CHECK_STR_EQ(files_screen_message(), msg(TX_FM_E_FIXED, "BENCH"));
+    /* DELETE asks: the card takes an empty folder alone. */
     tap_foot(FS_SPOT_DELETE);
+    CHECK_EQ(files_screen_view(), FILES_VIEW_DELETE);
+    draw();
+    tap(FS_SPOT_Q_CANCEL_CX, FS_SPOT_BOX_CY);
     CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
     tap_foot(FS_SPOT_MOVE);
     CHECK_STR_EQ(files_screen_message(), msg(TX_FM_E_FIXED, "BENCH"));

@@ -400,6 +400,16 @@ add_test(NAME wa_edit_script
 set_tests_properties(wa_edit_script PROPERTIES
     FIXTURES_REQUIRED wa_edit_files SKIP_RETURN_CODE 77)
 
+# node runs the page's write.js and edit.js over a document and a panel of
+# its own: the code question's bound write, its late answer, REPLACE's ETag
+# from /api/info; skipped (77) without node.
+add_test(NAME wa_write_script
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_wa_write.py"
+            "${CMAKE_CURRENT_BINARY_DIR}/wa_edit")
+set_tests_properties(wa_write_script PROPERTIES
+    FIXTURES_REQUIRED wa_edit_files SKIP_RETURN_CODE 77)
+
 # The profile generator against the card reader: fuzz_parity.py changes the
 # profiles of record, reads each result with tools/gen_esc_profiles.py and,
 # through esc_parse_dump, with esc_profile_parse(), and fails on a file the

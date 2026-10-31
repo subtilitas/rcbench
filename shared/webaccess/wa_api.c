@@ -83,6 +83,7 @@ static const why_t k_why[WA_API_COUNT] = {
     [WA_API_WRITES_HOLD] = { "WRITES_HOLD", 403u, P_API_WRITES_HOLD },
     [WA_API_WRITES_CODE] = { "WRITES_CODE", 403u, P_API_WRITES_CODE },
     [WA_API_PANEL_BUSY] = { "PANEL_BUSY", 503u, P_API_PANEL_BUSY },
+    [WA_API_FORM_LARGE] = { "FORM_TOO_LARGE", 413u, P_API_FORM_LARGE },
 };
 
 /** @brief The API's reason for each answer of the core. */
@@ -131,7 +132,7 @@ wa_api_err_t wa_api_of(fm_err_t e)
     return ((unsigned)e < (unsigned)FM_ERR_COUNT) ? k_of[e] : WA_API_IO;
 }
 
-wa_api_err_t wa_api_of_guard(wa_guard_t g)
+wa_api_err_t wa_api_of_guard(wa_guard_t g, wa_req_kind_t kind)
 {
     switch (g) {
     case WA_GUARD_OK:
@@ -141,7 +142,7 @@ wa_api_err_t wa_api_of_guard(wa_guard_t g)
     case WA_GUARD_HOST:
         return WA_API_HOST;
     case WA_GUARD_BIG:
-        return WA_API_TOO_LARGE;
+        return (kind == WA_REQ_FORM) ? WA_API_FORM_LARGE : WA_API_TOO_LARGE;
     case WA_GUARD_ORIGIN:
     case WA_GUARD_UPLOAD:
         return WA_API_ORIGIN;
@@ -573,19 +574,52 @@ void wa_api_list_json(const wa_api_t *api, wa_out_t *o)
 
 /* ---------------------------------------------------------- the info */
 
+/**
+ * @brief etag=1 of an INFO: the file's CRC-32.
+ * @param api    the API, its request holding the file and its INFO
+ * @param mount  the mount it was listed from
+ * @return WA_API_OK, with a file too large left without a sum; or why not
+ */
+static wa_api_err_t info_sum(wa_api_t *api, unsigned mount)
+{
+    fm_req_t *req = api->req;
+    fm_bench_t bench;
+    memset(&bench, 0, sizeof(bench));
+    api->run->bench(&bench, api->run->ctx);
+    fm_req_bench(req, &bench);
+    (void)fm_job_sum_file(&req->job, &bench, mount, req->dir, req->name,
+                          TEXT_BUF_FILE_MAX, wa_crc32);
+    req->kind = FM_REQ_JOB;
+    const fm_err_t e = fm_req_run(req, api->run);
+    req->kind = FM_REQ_INFO;
+    if (e == FM_ERR_TOO_BIG) {
+        return WA_API_OK;
+    }
+    if (e != FM_OK) {
+        return wa_api_of(e);
+    }
+    api->etag = req->job.data_sum;
+    api->info_summed = true;
+    return WA_API_OK;
+}
+
 wa_api_err_t wa_api_info(wa_api_t *api, const char *query)
 {
     if (query == NULL) {
         query = "";
     }
+    api->info_asked = false;
+    api->info_summed = false;
     char path[FM_PATH_SIZE];
     const wa_api_err_t pe = wa_api_q_path(query, "path", path);
     if (pe != WA_API_OK) {
         return pe;
     }
     bool is_dir = false;
+    bool etag = false;
     unsigned mount = 0u;
     if (!wa_api_q_flag(query, "dir", &is_dir)
+        || !wa_api_q_flag(query, "etag", &etag)
         || !wa_api_q_mount(query, api->run->io, &mount)) {
         return WA_API_REQUEST;
     }
@@ -596,7 +630,12 @@ wa_api_err_t wa_api_info(wa_api_t *api, const char *query)
     }
     req->is_dir = is_dir;
     req->mount = mount;
-    return wa_api_of(fm_req_run(req, api->run));
+    const wa_api_err_t ie = wa_api_of(fm_req_run(req, api->run));
+    if (ie != WA_API_OK || !etag || is_dir) {
+        return ie;
+    }
+    api->info_asked = true;
+    return info_sum(api, mount);
 }
 
 void wa_api_info_json(const wa_api_t *api, wa_out_t *o)
@@ -627,7 +666,16 @@ void wa_api_info_json(const wa_api_t *api, wa_out_t *o)
     if (wall_stamp_known(req->info.mtime)) {
         wa_out_time(o, wall_local_s(req->info.mtime));
     }
-    wa_out_str(o, "\"}");
+    wa_out_str(o, "\"");
+    if (api->info_asked) {
+        char tag[12] = "";
+        if (api->info_summed) {
+            (void)snprintf(tag, sizeof(tag), "%08" PRIx32, api->etag);
+        }
+        wa_api_json_key(o, "etag", false);
+        wa_api_json_str(o, tag);
+    }
+    wa_out_str(o, "}");
 }
 
 /* ---------------------------------------------------------- the file */

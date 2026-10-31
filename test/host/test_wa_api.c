@@ -139,32 +139,60 @@ TEST_CASE(every_core_answer_has_a_reason_word_status_and_texts)
  * write's. */
 TEST_CASE(a_guard_refusal_is_a_reason_with_the_guards_status)
 {
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_OK), WA_API_OK);
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_BODY), WA_API_BODY);
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_HOST), WA_API_HOST);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_OK, WA_REQ_PUT), WA_API_OK);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_BODY, WA_REQ_PUT), WA_API_BODY);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_HOST, WA_REQ_PUT), WA_API_HOST);
     CHECK_STR_EQ(wa_api_status_line(WA_API_BODY),
                  wa_guard_status(WA_GUARD_BODY));
     CHECK_STR_EQ(wa_api_status_line(WA_API_HOST),
                  wa_guard_status(WA_GUARD_HOST));
     CHECK_STR_EQ(wa_api_status_line(WA_API_HOST), "421 Misdirected Request");
     /* A write's: a body over its limit, another page, no script header. */
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_BIG), WA_API_TOO_LARGE);
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_ORIGIN), WA_API_ORIGIN);
-    CHECK_EQ(wa_api_of_guard(WA_GUARD_UPLOAD), WA_API_ORIGIN);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_BIG, WA_REQ_PUT), WA_API_TOO_LARGE);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_ORIGIN, WA_REQ_PUT), WA_API_ORIGIN);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_UPLOAD, WA_REQ_PUT), WA_API_ORIGIN);
     CHECK_STR_EQ(wa_api_status_line(WA_API_TOO_LARGE),
                  wa_guard_status(WA_GUARD_BIG));
     CHECK_STR_EQ(wa_api_status_line(WA_API_ORIGIN),
                  wa_guard_status(WA_GUARD_ORIGIN));
     CHECK_STR_EQ(wa_api_status_line(WA_API_ORIGIN),
                  wa_guard_status(WA_GUARD_UPLOAD));
-    CHECK_EQ(wa_api_of_guard((wa_guard_t)-1), WA_API_REQUEST);
+    CHECK_EQ(wa_api_of_guard((wa_guard_t)-1, WA_REQ_PUT), WA_API_REQUEST);
     json_begin();
-    wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_BODY), false);
+    wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_BODY, WA_REQ_PUT), false);
     CHECK_STR_EQ(json_end(), "{\"error\":\"BODY\",\"text\":"
                              "\"A read carries no body.\"}");
     json_begin();
-    wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_HOST), true);
+    wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_HOST, WA_REQ_PUT), true);
     CHECK(has(json_end(), "{\"error\":\"HOST\",\"text\":\"Das Panel"));
+}
+
+/* A form over its limit names the form's limit, not the file's. */
+TEST_CASE(a_form_over_its_limit_says_the_forms_limit)
+{
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_BIG, WA_REQ_FORM), WA_API_FORM_LARGE);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_BIG, WA_REQ_PUT), WA_API_TOO_LARGE);
+    CHECK_EQ(wa_api_of_guard(WA_GUARD_BIG, WA_REQ_READ), WA_API_TOO_LARGE);
+    CHECK_EQ(wa_api_http(WA_API_FORM_LARGE), 413u);
+    CHECK_STR_EQ(wa_api_status_line(WA_API_FORM_LARGE),
+                 wa_guard_status(WA_GUARD_BIG));
+    CHECK_STR_EQ(wa_api_word(WA_API_FORM_LARGE), "FORM_TOO_LARGE");
+    for (int de = 0; de < 2; ++de) {
+        CHECK(has(wa_api_text(WA_API_FORM_LARGE, de != 0), "1kB"));
+        CHECK(!has(wa_api_text(WA_API_FORM_LARGE, de != 0), "MB"));
+        CHECK(has(wa_api_text(WA_API_TOO_LARGE, de != 0), "1MB"));
+    }
+    /* The guard's limit at its edge, the reason on its one side. */
+    static const char *const k_host = "192.168.4.1";
+    static const uint8_t k_ip[4] = { 192u, 168u, 4u, 1u };
+    wa_self_t me = { .name = "rcbench-1A2B" };
+    memcpy(me.ip, k_ip, sizeof(me.ip));
+    wa_req_t q = { .host = k_host, .origin = "http://192.168.4.1",
+                   .upload = WA_UPLOAD_VAL, .body = WA_FORM_BODY_MAX };
+    CHECK_EQ(wa_guard(WA_REQ_FORM, &q, &me), WA_GUARD_OK);
+    q.body = WA_FORM_BODY_MAX + 1u;
+    CHECK_EQ(wa_api_of_guard(wa_guard(WA_REQ_FORM, &q, &me), WA_REQ_FORM),
+             WA_API_FORM_LARGE);
 }
 
 TEST_CASE(a_refusal_is_its_word_and_its_text_in_json)
@@ -644,6 +672,7 @@ int main(void)
     RUN(a_bad_path_is_refused_before_any_card_call);
     RUN(a_bad_page_parameter_is_refused_before_any_card_call);
     RUN(no_card_and_a_card_gone_at_both_walks_are_refused);
+    RUN(a_form_over_its_limit_says_the_forms_limit);
     RUN(info_reads_a_file_and_a_folder);
     RUN(info_of_another_card_kind_or_the_root_is_refused);
     RUN(the_query_reads_first_values_and_ignores_the_rest);

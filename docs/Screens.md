@@ -2765,7 +2765,7 @@ right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder the bench keeps: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` and the folders on the way to them, `BENCH` and `USER` among them. No RENAME, MOVE or DELETE |
+| FIXED | a folder the bench keeps: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` and the folders on the way to them, `BENCH` and `USER` among them. No RENAME or MOVE, which would take what it holds away from where the bench reads it. NEW makes one and DELETE takes one that is empty: every writer of the bench makes its folder again before it writes, and a missing folder reads as on a new card |
 | LOCKED | the servo programmers' records, `BENCH/KST/CONF/KST.TXT` and `BENCH/HITEC/CONF/HITEC.TXT`, and their `KST.NEW` and `HITEC.NEW` while they are written. INFO only |
 | WRITING | a file the logger has open. INFO only |
 
@@ -3335,7 +3335,7 @@ Current limitations:
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
   688-757kB/s. The cause is not measured. The page with the file manager
-  is 62,815 bytes in English on an empty card and has no card listing;
+  is 64,045 bytes in English on an empty card and has no card listing;
   its time is not measured.
 
 ### The access code
@@ -3368,10 +3368,15 @@ toward the 16, and cannot send an image or change the card. A browser
 sends a header of its
 own on a request to another site only after asking that site, and the
 panel answers no such question with a yes. A refused request is answered
-before its body is read, and the connection closes with the answer. The
+before its body is read, and the connection closes with the answer. What
+the client still sends is read and dropped, until the body has ended, the
+client closes, 2s pass without a byte or 10s have passed, so the client
+reads the answer before the connection goes: a close with unread bytes
+would reset the connection and lose it. A body still arriving after 10s
+ends in that reset; 1MiB in 10s is 105kB/s. The
 file API answers the 421, the 413, the 403 and the 400 in JSON as its
-other refusals, with `HOST`, `TOO_LARGE`, `ORIGIN` and `BODY`
-([the file API](#the-file-api)); the page, `/card/` and the ZIP file
+other refusals, with `HOST`, `TOO_LARGE`, `FORM_TOO_LARGE`, `ORIGIN` and
+`BODY` ([the file API](#the-file-api)); the page, `/card/` and the ZIP file
 answer them with no body.
 
 ### Browser writes
@@ -3411,21 +3416,28 @@ Every write passes, in this order
 1. the guard of the table above: the page's `Origin`, the script's
    header, at most 1,048,576 bytes of a file or 1,024 of a form;
 2. the access code while ACCESS CODE is on, then the setting;
-3. the body, received whole into PSRAM before any card call, in 4,096B
+3. for a PUT, under the card's job lock, what it can be refused for before
+   its body: FILES' rules, `If-Match` against the file on the card and
+   `If-None-Match`. Nothing is written. A replace reads the old file here
+   and again in step 6;
+4. the body, received whole into PSRAM before any card call, in 4,096B
    pieces; the radio going off, a closed connection or 30s without a byte
    end the request with nothing written;
-4. the card's job lock, which FILES on the panel holds while it runs a
+5. the card's job lock, which FILES on the panel holds while it runs a
    job: the write waits for it 2000ms at most, then is answered
    `PANEL_BUSY` with `Retry-After: 2`; the page sends it again after 2s,
    3 times at most;
-5. FILES' rules and write gate, as for FILES itself: SAFE, no run logged,
+6. FILES' rules and write gate, as for FILES itself: SAFE, no run logged,
    the bench's folders, the servo programmers' records, the logger's
-   files, the names the panel's keyboard types. The gate is asked again
+   files, the names the panel's keyboard types. A PUT's `If-Match` and
+   `If-None-Match` are compared again here, directly before the write, so a
+   file changed while the body arrived is refused. The gate is asked again
    before every 16KiB, so a switch to ARMED stops a write at its next
    chunk and removes its `.NEW`.
 
-A refusal before step 3 closes the connection with the answer: the body is
-never read. While the bench is ARMED, the supply output is on or a run is
+A refusal before step 4 closes the connection with the answer: the body
+reaches no buffer of the panel's, the bytes still arriving are dropped as
+above. While the bench is ARMED, the supply output is on or a run is
 logged, the radio is off and the page cannot be reached at all.
 
 ### The page
@@ -3487,7 +3499,7 @@ both panes are read again after one that went through.
 
 | Button | What it does |
 |---|---|
-| UPLOAD | sends one file of up to 1,048,576 bytes into the active pane's folder, with a progress bar; a larger file is refused before a byte is sent. A name that is taken asks `UP.TXT exists in this folder. Replace it?` with REPLACE and CANCEL. Before the question the page reads the file there for its ETag, and REPLACE sends `If-Match` with it: a change on the panel or from another browser while the question is open is refused with `Changed on the card since it was read. Read it again.` A file there that the read refuses, over 1,048,576 bytes or not text, is replaced without the compare. The file has to be text as the viewer takes it: no NUL byte in its first 4,096 bytes and 65,536 line ends at most |
+| UPLOAD | sends one file of up to 1,048,576 bytes into the active pane's folder, with a progress bar; a larger file is refused before a byte is sent. A name that is taken asks `UP.TXT exists in this folder. Replace it?` with REPLACE and CANCEL. Before the question the page asks `/api/info` for the ETag of the file there, and REPLACE sends `If-Match` with it: a change on the panel or from another browser while the question is open is refused with `Changed on the card since it was read. Read it again.` A file there over 1,048,576 bytes has no ETag and is replaced without the compare. The file has to be text as the viewer takes it: no NUL byte in its first 4,096 bytes and 65,536 line ends at most |
 | NEW FOLDER | a folder of the name typed, in the active pane's folder |
 | NEW TEXT FILE | an empty file of the name typed there; a taken name is refused |
 | RENAME | the selected entry under the name typed, in its folder; a change of case alone is a rename |
@@ -3501,11 +3513,12 @@ no full stop or space at either end. An entry whose path holds a
 character outside ASCII, the German letters included, is renamed, moved
 and deleted on FILES only. A write button is
 dimmed while the panel takes no write (the setting, the hold, ARMED, a
-run), with nothing selected, on a folder of the bench, on the servo
-programmers' records and on a file the logger writes; a tap on it says
+run), with nothing selected, RENAME and MOVE on a folder of the bench, on the
+servo programmers' records and on a file the logger writes; a tap on it says
 why. With Browser writes ACCESS CODE and ACCESS CODE off, the first write
-asks for the code in a box; SEND CODE sends it, and the page loads again
-with it.
+asks for the code in a box. SEND CODE sends it to `/code` without leaving the
+page, and the write that asked goes out again. An answer that arrives after
+the box's CANCEL sends nothing; a wrong code asks again.
 
 The viewer shows the file read-only over the page: its path, its size,
 READ-ONLY, `LINE 23 OF 57` for the line at the top, `MIXED LINE ENDS` for
@@ -3669,7 +3682,7 @@ gets 403 and `CODE`.
 | --- | --- |
 | `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes"` `open` or `closed` with the first reason a write is refused at the time of the request and its text (`WRITES_OFF`; `ARMED` or `LOGGING` while the write gate is shut; `WRITES_HOLD`; empty while open) and `"mode"`, the setting (`OPEN`, `CODE`, `HOLD`, `OFF`; with `CODE` each write's code decides), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
 | `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
-| `GET /api/info?path=P&dir=D&mount=M` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed |
+| `GET /api/info?path=P&dir=D&mount=M&etag=1` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed. With `etag=1` a file also has `"etag"`, the CRC-32 `/api/file` gives as its ETag, of any bytes: the panel reads the card for it and the file does not cross the network. `""` for a file over 1,048,576 bytes, which is not read |
 | `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` (the lines as FILES' viewer counts them: a line end at the file's end starts no line, so `a\nb\n` and `a\nb` have 2 and an empty file 0) and `X-Rcbench-Bom` (1 or 0) |
 
 A path is relative to the card's root and percent-encoded with `/` as the
@@ -3683,7 +3696,7 @@ bytes, read as a query string.
 
 | Request | What it does |
 | --- | --- |
-| `PUT /api/file?path=P&mount=M` | saves the body, at most 1,048,576 bytes, as text file `P` through `P.NEW`, as FILES' editor saves. With `If-Match: "<ETag>"` only while the file's CRC-32 is that ETag, else 412 `CHANGED`; with `If-None-Match: *` only where no entry has the name, else 409 `EXISTS`; with neither it makes or replaces the file. The body follows the viewer's limits: 415 `NOT_TEXT`, 422 `TOO_MANY_LINES`. Answers 201 for a file made and 200 for one replaced, with `ETag` and `{"path":"P","created":true,"etag":"...","note":""}`; `note` is `ESC_NEXT_START` for an ESC (electronic speed controller) profile, which the next start reads |
+| `PUT /api/file?path=P&mount=M` | saves the body, at most 1,048,576 bytes, as text file `P` through `P.NEW`, as FILES' editor saves. With `If-Match: "<ETag>"` only while the file's CRC-32 is that ETag, else 412 `CHANGED`; with `If-None-Match: *` only where no entry has the name, else 409 `EXISTS`; with neither it makes or replaces the file. Both are compared before the body is read and again directly before the write. The body follows the viewer's limits: 415 `NOT_TEXT`, 422 `TOO_MANY_LINES`. Answers 201 for a file made and 200 for one replaced, with `ETag` and `{"path":"P","created":true,"etag":"...","note":""}`; `note` is `ESC_NEXT_START` for an ESC (electronic speed controller) profile, which the next start reads |
 | `POST /api/mkdir` with `path=P&mount=M` | makes folder `P`; 201 |
 | `POST /api/rename` with `from=P&to=Q&dir=D&mount=M` | `Q` in `P`'s folder renames the entry; `Q` of the same name in another folder moves it there, a folder only when it is empty; any other `Q` is 400 `REQUEST`; 200 |
 | `POST /api/delete` with `path=P&dir=D&mount=M` | deletes `P`, a run's report along with it, a folder only when it is empty; 200 |
@@ -3711,7 +3724,7 @@ in the panel's language:
 | `CODE` | 403 | no access code, or a wrong one, which counts toward the 16 |
 | `ORIGIN` | 403 | a write without the page's `Origin` or the script's header (the guard above) |
 | `WRITES_OFF`, `WRITES_HOLD`, `WRITES_CODE` | 403 | a write [Browser writes](#browser-writes) does not allow: OFF, HOLD before the hold, ACCESS CODE without this session's code |
-| `FIXED` | 403 | a folder of the bench, or the fault log for RENAME and MOVE |
+| `FIXED` | 403 | a folder of the bench or the fault log, for RENAME and MOVE |
 | `DENIED` | 403 | a write-protected card |
 | `LOCKED` | 403 | the servo programmers' records, `KST.TXT` and `HITEC.TXT`: download them instead |
 | `NOT_FOUND` | 404 | no such entry, or one of another kind |
@@ -3719,7 +3732,8 @@ in the panel's language:
 | `ARMED`, `LOGGING` | 409 | the bench switched to ARMED, or a run is logged: the card is read-only |
 | `CHANGED` | 412 | a PUT with `If-Match` whose file's CRC-32 is not the ETag, or whose file is gone. The JSON adds `"etag":"xxxxxxxx"`, the CRC-32 of the file it found; none for a file that is gone |
 | `TOO_BIG` | 413 | a file over 1,048,576 bytes, refused before a byte is read |
-| `TOO_LARGE` | 413 | a write's body over its limit (the guard above) |
+| `TOO_LARGE` | 413 | a PUT's body over 1,048,576 bytes (the guard above) |
+| `FORM_TOO_LARGE` | 413 | a POST's form over 1,024 bytes (the guard above) |
 | `NOT_TEXT` | 415 | a NUL byte in the first 4,096 bytes |
 | `HOST` | 421 | a `Host` that is not the panel (the guard above) |
 | `TOO_MANY_LINES` | 422 | more than 65,536 line ends |

@@ -12,18 +12,22 @@
  *   2. the access code while its switch is on, and SETUP's Browser writes
  *      (wa_api_may_write()): the code with ACCESS CODE, the window the
  *      hold on WI-FI opened with HOLD, none with OFF;
- *   3. the room, then the body, received whole into PSRAM (pseudo-static
+ *   3. a PUT's checks under the card's job lock (wa_api_put_check()): the
+ *      rules, If-Match and If-None-Match, with nothing written;
+ *   4. the room, then the body, received whole into PSRAM (pseudo-static
  *      random-access memory) in 4,096B pieces; the radio going off, a
  *      closed connection or 30s without a byte end the request with
  *      nothing written;
- *   4. the card's job lock, 2000ms at most behind a FILES job (503
+ *   5. the card's job lock, 2000ms at most behind a FILES job (503
  *      PANEL_BUSY, Retry-After: 2);
- *   5. the core's rules and the card (wa_api_put() and the others), the
- *      gate read before each 16KiB chunk.
+ *   6. the core's rules and the card (wa_api_put() and the others), the
+ *      gate read before each 16KiB chunk.  A PUT's checks run again here,
+ *      so a file changed while its body arrived is refused.
  *
- * A refusal before the body is read closes the connection with the answer,
- * as the guard's do: the body is never read.  The radio going off closes
- * the window and starts the count again (wifi_write_reset()).
+ * A refusal before the body is read closes the connection with the answer
+ * (wifi_req_close()): the client reads the refusal, and the bytes it still
+ * sends are dropped.  The radio going off closes the window and starts the
+ * count again (wifi_write_reset()).
  *
  * Each write logs its answer, its bytes, its time, the stack the server's
  * task left unused and the internal RAM free: the depth of a card write on
@@ -141,7 +145,7 @@ static bool sink_chunk(void *ctx, const void *data, size_t n)
  * @param api    the API, for a write done; may be NULL otherwise
  * @param de     German texts
  * @param close  the body was not read: the connection closes with it
- * @return ESP_OK when the answer went out and the connection stays
+ * @return the handler's return; ESP_FAIL when the answer did not go out
  */
 static esp_err_t answer(httpd_req_t *r, wa_api_err_t why, const wa_api_t *api,
                         bool de, bool close)
@@ -170,7 +174,7 @@ static esp_err_t answer(httpd_req_t *r, wa_api_err_t why, const wa_api_t *api,
     if (!wa_out_flush(o) || httpd_resp_send_chunk(r, NULL, 0) != ESP_OK) {
         return ESP_FAIL;
     }
-    return close ? ESP_FAIL : ESP_OK;
+    return close ? wifi_req_close(r) : ESP_OK;
 }
 
 /**
@@ -256,6 +260,46 @@ static wa_api_err_t take_body(httpd_req_t *r, wr_t kind, wa_api_t *api,
 }
 
 /**
+ * @brief A PUT's query and its two headers, the headers in the server's
+ *        chunk buffer: the body goes into the text room.
+ * @param r      the request
+ * @param query  takes the query string, without "?"
+ * @param im     takes If-Match, or NULL
+ * @param inm    takes If-None-Match, or NULL
+ */
+static void put_headers(httpd_req_t *r, const char **query, const char **im,
+                        const char **inm)
+{
+    size_t cap = 0u;
+    char *h = (char *)wifi_page_io(&cap);
+    const char *q = strchr(r->uri, '?');
+    *query = (q != NULL) ? q + 1 : "";
+    *im = wifi_req_hdr(r, "If-Match", h, cap / 2u);
+    *inm = wifi_req_hdr(r, "If-None-Match", h + cap / 2u, cap / 2u);
+}
+
+/**
+ * @brief A PUT's checks before its body, under the card's job lock.
+ * @param r    the request
+ * @param api  the API
+ * @return WA_API_OK, or why not
+ */
+static wa_api_err_t put_check(httpd_req_t *r, wa_api_t *api)
+{
+    if (s_take == NULL || s_give == NULL || !s_take(LOCK_WAIT_MS)) {
+        return WA_API_PANEL_BUSY;
+    }
+    const char *query;
+    const char *im;
+    const char *inm;
+    put_headers(r, &query, &im, &inm);
+    const wa_api_err_t why = wa_api_put_check(api, query, im, inm,
+                                              r->content_len);
+    s_give(false);
+    return why;
+}
+
+/**
  * @brief The card job of @p kind, under the card's job lock.
  * @param r     the request, for a PUT's headers
  * @param kind  the write
@@ -272,16 +316,11 @@ static wa_api_err_t run_write(httpd_req_t *r, wr_t kind, wa_api_t *api,
     wa_api_err_t why;
     switch (kind) {
     case WR_PUT: {
-        /* The headers into the server's chunk buffer, behind nothing: the
-         * PUT's body is in the text room. */
-        size_t cap = 0u;
-        char *h = (char *)wifi_page_io(&cap);
-        const char *q = strchr(r->uri, '?');
-        const char *im = wifi_req_hdr(r, "If-Match", h, cap / 2u);
-        const char *inm = wifi_req_hdr(r, "If-None-Match", h + cap / 2u,
-                                       cap / 2u);
-        why = wa_api_put(api, (q != NULL) ? q + 1 : "", im, inm,
-                         r->content_len);
+        const char *query;
+        const char *im;
+        const char *inm;
+        put_headers(r, &query, &im, &inm);
+        why = wa_api_put(api, query, im, inm, r->content_len);
         break;
     }
     case WR_MKDIR:
@@ -320,8 +359,9 @@ static esp_err_t serve(httpd_req_t *r, wr_t kind)
     wa_page_info_t pi;
     wifi_page_info(&pi);
     if (go == WIFI_PAGE_REFUSED) {
-        (void)answer(r, wa_api_of_guard(guard), NULL, pi.de, true);
-        return ESP_FAIL;
+        return answer(r, wa_api_of_guard(guard, (kind == WR_PUT) ? WA_REQ_PUT
+                                                                 : WA_REQ_FORM),
+                      NULL, pi.de, true);
     }
     const int64_t t0 = esp_timer_get_time();
     wa_api_err_t why = (go == WIFI_PAGE_NO_CODE) ? WA_API_CODE
@@ -329,6 +369,9 @@ static esp_err_t serve(httpd_req_t *r, wr_t kind)
     wa_api_t *api = NULL;
     if (why == WA_API_OK) {
         api = wifi_files_api(kind == WR_PUT, &why);
+    }
+    if (why == WA_API_OK && kind == WR_PUT) {
+        why = put_check(r, api);
     }
     const char *form = NULL;
     if (why == WA_API_OK) {

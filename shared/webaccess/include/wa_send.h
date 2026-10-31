@@ -110,6 +110,67 @@ wa_send_res_t wa_send_run(wa_send_t *s, uint8_t *buf, uint32_t cap,
 /** A short English name of @p r for the log. */
 const char *wa_send_res_name(wa_send_res_t r);
 
+/*
+ * The body of a request refused before it was read.
+ *
+ * TCP (Transmission Control Protocol) answers a close with unread bytes
+ * with a reset, and a reset makes the receiver drop what it has not read
+ * yet, the refusal among it.  So the refusal goes out, the sending side
+ * closes, and what the client still sends is read and dropped until the
+ * body has ended, the client closes, no byte comes for WA_LINGER_QUIET_MS
+ * or WA_LINGER_TOTAL_MS have passed: a client that goes on sending holds
+ * the server, which answers one request at a time, for that long at most.
+ * 1MiB in WA_LINGER_TOTAL_MS is 105kB/s.
+ */
+
+/** A body still arriving is dropped with the connection after this long. */
+#define WA_LINGER_TOTAL_MS 10000u
+/** A body ends unread after this long with no byte. */
+#define WA_LINGER_QUIET_MS 2000u
+
+/** What get() answers for a slice of WA_SEND_SLICE_MS without a byte. */
+#define WA_GET_IDLE (-1)
+/** What get() answers for a connection that failed. */
+#define WA_GET_FAILED (-2)
+
+typedef struct {
+    /** Up to @p n bytes, waiting one slice at most: the bytes, 0 when the
+     *  client closed, WA_GET_IDLE or WA_GET_FAILED. */
+    int32_t  (*get)(void *ctx, uint8_t *p, uint32_t n);
+    /** True when the wait is to end now; NULL for never. */
+    bool     (*stop)(void *ctx);
+    /** Milliseconds; wraps at 2^32. */
+    uint32_t (*now_ms)(void *ctx);
+    void     *ctx;
+} wa_source_t;
+
+/** How the body of a refused request ended. */
+typedef enum {
+    WA_LINGER_DONE = 0, /**< read to its end                              */
+    WA_LINGER_GONE,     /**< the client closed, or the connection failed  */
+    WA_LINGER_QUIET,    /**< no byte for WA_LINGER_QUIET_MS               */
+    WA_LINGER_LATE,     /**< still arriving after WA_LINGER_TOTAL_MS      */
+    WA_LINGER_STOPPED,  /**< stop() said so                               */
+} wa_linger_t;
+
+/**
+ * @brief Read and drop the @p left bytes of a body not read.
+ * @param s     the connection
+ * @param left  the body's bytes, Content-Length
+ * @param buf   room for one read
+ * @param cap   bytes of @p buf, more than 0
+ * @return how it ended
+ */
+wa_linger_t wa_linger(const wa_source_t *s, uint64_t left, uint8_t *buf,
+                      uint32_t cap);
+
+/**
+ * @brief A short English name of @p r for the log.
+ * @param r  the outcome
+ * @return its name
+ */
+const char *wa_linger_name(wa_linger_t r);
+
 #ifdef __cplusplus
 }
 #endif

@@ -112,7 +112,51 @@ wa_send_res_t wa_send_run(wa_send_t *s, uint8_t *buf, uint32_t cap,
     return r;
 }
 
+wa_linger_t wa_linger(const wa_source_t *s, uint64_t left, uint8_t *buf,
+                      uint32_t cap)
+{
+    const uint32_t start = s->now_ms(s->ctx);
+    uint32_t last = start;
+    while (left > 0u) {
+        if (s->stop != NULL && s->stop(s->ctx)) {
+            return WA_LINGER_STOPPED;
+        }
+        const uint32_t now = s->now_ms(s->ctx);
+        if (now - start >= WA_LINGER_TOTAL_MS) {
+            return WA_LINGER_LATE;
+        }
+        if (now - last >= WA_LINGER_QUIET_MS) {
+            return WA_LINGER_QUIET;
+        }
+        const uint32_t want = (left < (uint64_t)cap) ? (uint32_t)left : cap;
+        const int32_t got = s->get(s->ctx, buf, want);
+        if (got == WA_GET_IDLE) {
+            continue;
+        }
+        if (got <= 0) {
+            return WA_LINGER_GONE;
+        }
+        left -= (uint64_t)got;
+        last = s->now_ms(s->ctx);
+    }
+    return WA_LINGER_DONE;
+}
+
+const char *wa_linger_name(wa_linger_t r)
+{
+    switch (r) {
+    case WA_LINGER_DONE:    return "read to its end";
+    case WA_LINGER_GONE:    return "client closed";
+    case WA_LINGER_QUIET:   return "no byte for 2 s";
+    case WA_LINGER_LATE:    return "still arriving after 10 s";
+    case WA_LINGER_STOPPED: return "radio going off";
+    }
+    return "?";
+}
+
 _Static_assert(WA_SEND_QUIET_MS == 30000u, "the log name says 30 s");
+_Static_assert(WA_LINGER_QUIET_MS == 2000u && WA_LINGER_TOTAL_MS == 10000u,
+               "the log names say 2 s and 10 s");
 
 const char *wa_send_res_name(wa_send_res_t r)
 {

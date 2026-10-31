@@ -27,6 +27,10 @@
  * - delete_refusals
  * - a_write_from_another_card_is_card_gone
  * - a_saved_esc_profile_carries_its_note
+ * - the_check_before_the_body_refuses_as_the_put_and_writes_nothing
+ * - a_change_after_the_check_is_still_refused_at_the_write
+ * - info_with_etag_gives_the_etag_a_read_gives_without_the_room
+ * - every_fixed_folder_the_api_makes_it_can_delete
  *
  * SPDX-License-Identifier: MIT
  */
@@ -721,7 +725,7 @@ TEST_CASE(delete_refusals)
     fk_file(&g_card, "USER/HID/.x", NULL, 1u);
     CHECK_EQ(wa_api_delete(&g_api, "path=USER/HID&dir=1"),
              WA_API_NOT_EMPTY);
-    CHECK_EQ(wa_api_delete(&g_api, "path=USER&dir=1"), WA_API_FIXED);
+    CHECK_EQ(wa_api_delete(&g_api, "path=USER&dir=1"), WA_API_NOT_EMPTY);
     CHECK_EQ(wa_api_delete(&g_api, "path=USER/NONE.TXT"),
              WA_API_NOT_FOUND);
     CHECK_EQ(wa_api_delete(&g_api, "path=USER/FULL"), WA_API_ARG);
@@ -778,6 +782,208 @@ TEST_CASE(a_saved_esc_profile_carries_its_note)
     CHECK(!has(answer(), "etag"));
 }
 
+/**
+ * @brief The ETag form of a CRC-32, as If-Match carries it.
+ * @param out  takes it, 12 bytes
+ * @param crc  the CRC-32
+ */
+static void etag_form(char *out, uint32_t crc)
+{
+    (void)snprintf(out, 12u, "\"%08" PRIx32 "\"", crc);
+}
+
+/**
+ * @brief The ETag INFO gives for a file, "" for none.
+ * @param query  INFO's query
+ * @return the JSON answer
+ */
+static const char *info_answer(const char *query)
+{
+    CHECK_EQ(wa_api_info(&g_api, query), WA_API_OK);
+    json_begin();
+    wa_api_info_json(&g_api, &g_out);
+    return json_end();
+}
+
+TEST_CASE(the_check_before_the_body_refuses_as_the_put_and_writes_nothing)
+{
+    fresh();
+    fk_dir(&g_card, CARD_USER_LOGS);
+    CHECK_EQ(put_s("path=USER/LOGS/A.TXT", NULL, "*", "old\n"), WA_API_OK);
+    char tag[12];
+    etag_form(tag, g_api.etag);
+    const long writes = g_card.calls[FK_WRITE];
+    const long opens = g_card.calls[FK_OPEN];
+    /* If-Match: the ETag taken, the file read and nothing opened to write. */
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", tag, NULL,
+                              TEXT_BUF_FILE_MAX), WA_API_OK);
+    CHECK_EQ(g_card.calls[FK_OPEN], opens + 1);
+    /* A stale one: 412 before the body, with the ETag it found. */
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", "\"00000000\"",
+                              NULL, 4u), WA_API_CHANGED);
+    json_begin();
+    wa_api_refused_json(&g_api, &g_out, WA_API_CHANGED, false);
+    char want[32];
+    (void)snprintf(want, sizeof(want), "\"etag\":\"%.8s\"", tag + 1);
+    CHECK(has(json_end(), want));
+    /* The rest of the refusals of the head of a PUT. */
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", NULL, "*", 4u),
+             WA_API_EXISTS);
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/NONE.TXT", tag, NULL, 4u),
+             WA_API_CHANGED);
+    json_begin();
+    wa_api_refused_json(&g_api, &g_out, WA_API_CHANGED, false);
+    CHECK(!has(json_end(), "etag"));
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", tag, "*", 4u),
+             WA_API_REQUEST);
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", "*", NULL, 4u),
+             WA_API_REQUEST);
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A%3F.TXT", NULL, "*", 4u),
+             WA_API_NAME);
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT&mount=9", tag, NULL,
+                              4u), WA_API_CARD_GONE);
+    CHECK_EQ(wa_api_put_check(&g_api, NULL, NULL, NULL, 4u), WA_API_REQUEST);
+    fk_dir(&g_card, CARD_KST_CONF);
+    fk_file(&g_card, "BENCH/KST/CONF/KST.TXT", NULL, 1u);
+    CHECK_EQ(wa_api_put_check(&g_api, "path=BENCH/KST/CONF/KST.TXT", NULL, NULL,
+                              4u), WA_API_LOCKED);
+    /* The gate; a missing folder is the write's to find, at its ".NEW". */
+    g_armed = true;
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", tag, NULL, 4u),
+             WA_API_ARMED);
+    g_armed = false;
+    /* A card that fails in the compare: its answer, the file as it was. */
+    fk_fail(&g_card, FK_READ, 1, FM_ERR_IO);
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", tag, NULL, 4u),
+             WA_API_IO);
+    fk_fail(&g_card, FK_READ, -1, FM_OK);
+    /* The radio going off during the check. */
+    g_benches = 0;
+    g_cancel_after = 0;
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", tag, NULL, 4u),
+             WA_API_CANCELLED);
+    g_cancel_after = -1;
+    /* Nothing of it reached the card. */
+    CHECK_EQ(g_card.calls[FK_WRITE], writes);
+    CHECK(holds("USER/LOGS/A.TXT", "old\n"));
+    CHECK(fk_get(&g_card, "USER/LOGS/A.TXT.NEW") == NULL);
+    CHECK_EQ(fk_open_files(&g_card), 0);
+}
+
+TEST_CASE(a_change_after_the_check_is_still_refused_at_the_write)
+{
+    fresh();
+    fk_dir(&g_card, CARD_USER_LOGS);
+    CHECK_EQ(put_s("path=USER/LOGS/A.TXT", NULL, "*", "old\n"), WA_API_OK);
+    char tag[12];
+    etag_form(tag, g_api.etag);
+    /* The check passes; the panel saves while the body arrives. */
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/A.TXT", tag, NULL, 4u),
+             WA_API_OK);
+    const uint8_t other[] = "panel\n";
+    rewrite("USER/LOGS/A.TXT", other, 6u);
+    CHECK_EQ(put_s("path=USER/LOGS/A.TXT", tag, NULL, "mine"), WA_API_CHANGED);
+    CHECK(holds("USER/LOGS/A.TXT", "panel\n"));
+    CHECK(fk_get(&g_card, "USER/LOGS/A.TXT.NEW") == NULL);
+    /* A name free at the check and taken at the write. */
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/B.TXT", NULL, "*", 4u),
+             WA_API_OK);
+    fk_file(&g_card, "USER/LOGS/B.TXT", other, 6u);
+    CHECK_EQ(put_s("path=USER/LOGS/B.TXT", NULL, "*", "mine"), WA_API_EXISTS);
+    CHECK(holds("USER/LOGS/B.TXT", "panel\n"));
+    /* The check leaves the room and the body alone: a good one writes. */
+    CHECK_EQ(wa_api_put_check(&g_api, "path=USER/LOGS/C.TXT", NULL, "*", 4u),
+             WA_API_OK);
+    CHECK_EQ(put_s("path=USER/LOGS/C.TXT", NULL, "*", "mine"), WA_API_OK);
+    CHECK(holds("USER/LOGS/C.TXT", "mine"));
+}
+
+TEST_CASE(info_with_etag_gives_the_etag_a_read_gives_without_the_room)
+{
+    fresh();
+    fk_dir(&g_card, CARD_USER_LOGS);
+    CHECK_EQ(put_s("path=USER/LOGS/A.TXT", NULL, "*", "old\n"), WA_API_OK);
+    char want[32];
+    (void)snprintf(want, sizeof(want), "\"etag\":\"%08" PRIx32 "\"}",
+                   g_api.etag);
+    /* The same value as a read's ETag, and no room asked. */
+    wa_api_set_text(&g_api, NULL, 0u, NULL, 0u);
+    const long reads = g_card.calls[FK_READ];
+    CHECK(has(info_answer("path=USER/LOGS/A.TXT&etag=1"), want));
+    CHECK(g_card.calls[FK_READ] > reads);
+    /* Without etag=1 no file is read and no key is there. */
+    const long none = g_card.calls[FK_READ];
+    CHECK(!has(info_answer("path=USER/LOGS/A.TXT"), "etag"));
+    CHECK(!has(info_answer("path=USER/LOGS/A.TXT&etag=0"), "etag"));
+    CHECK_EQ(g_card.calls[FK_READ], none);
+    /* A folder: its INFO, no sum. */
+    CHECK(!has(info_answer("path=USER/LOGS&dir=1&etag=1"), "etag"));
+    /* A text the viewer would refuse has an ETag: the sum reads any bytes. */
+    const uint8_t nul[3] = { 'a', 0u, 'b' };
+    fk_file(&g_card, "USER/LOGS/B.BIN", nul, 3u);
+    CHECK(has(info_answer("path=USER/LOGS/B.BIN&etag=1"), "\"etag\":\""));
+    /* And 1MiB has one, one byte more has an empty one, no read. */
+    fk_file(&g_card, "USER/LOGS/M.BIN", NULL, TEXT_BUF_FILE_MAX);
+    CHECK(!has(info_answer("path=USER/LOGS/M.BIN&etag=1"), "\"etag\":\"\""));
+    fk_file(&g_card, "USER/LOGS/L.BIN", NULL, TEXT_BUF_FILE_MAX + 1u);
+    const long big = g_card.calls[FK_READ];
+    CHECK(has(info_answer("path=USER/LOGS/L.BIN&etag=1"), "\"etag\":\"\"}"));
+    CHECK_EQ(g_card.calls[FK_READ], big);
+    /* The next INFO without it does not carry the last sum. */
+    CHECK(!has(info_answer("path=USER/LOGS/A.TXT"), "etag"));
+    /* The refusals: a read's. */
+    CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS/A.TXT&etag=2"), WA_API_REQUEST);
+    CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS/NONE&etag=1"),
+             WA_API_NOT_FOUND);
+    CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS/A.TXT&mount=9&etag=1"),
+             WA_API_CARD_GONE);
+    fk_dir(&g_card, CARD_KST_CONF);
+    fk_file(&g_card, "BENCH/KST/CONF/KST.TXT", NULL, 1u);
+    CHECK_EQ(wa_api_info(&g_api, "path=BENCH/KST/CONF/KST.TXT"), WA_API_OK);
+    CHECK_EQ(wa_api_info(&g_api, "path=BENCH/KST/CONF/KST.TXT&etag=1"),
+             WA_API_LOCKED);
+    /* A file that fails part way: the card's answer, closed. */
+    fk_fail(&g_card, FK_READ, 1, FM_ERR_IO);
+    CHECK_EQ(wa_api_info(&g_api, "path=USER/LOGS/A.TXT&etag=1"), WA_API_IO);
+    CHECK_EQ(fk_open_files(&g_card), 0);
+}
+
+TEST_CASE(every_fixed_folder_the_api_makes_it_can_delete)
+{
+    fresh();
+    /* A bare card: the folders a profile and a servo file need, in order. */
+    static const char *const k_dirs[] = {
+        "BENCH", "BENCH/ESC", "BENCH/ESC/CONF", "BENCH/KST", "BENCH/KST/CONF",
+        "BENCH/HITEC", "BENCH/HITEC/CONF", "BENCH/LOGS", "USER", "USER/LOGS",
+    };
+    const size_t n = sizeof(k_dirs) / sizeof(k_dirs[0]);
+    char form[64];
+    for (size_t i = 0u; i < n; ++i) {
+        (void)snprintf(form, sizeof(form), "path=%s", k_dirs[i]);
+        CHECK_EQ(wa_api_mkdir(&g_api, form), WA_API_OK);
+    }
+    /* A profile goes in; the folder that holds it stays; never renamed. */
+    CHECK_EQ(put_s("path=BENCH/ESC/CONF/P.JSON", NULL, "*", "{}"), WA_API_OK);
+    CHECK_EQ(wa_api_delete(&g_api, "path=BENCH/ESC/CONF&dir=1"),
+             WA_API_NOT_EMPTY);
+    CHECK_EQ(wa_api_rename(&g_api, "from=BENCH/ESC/CONF&to=BENCH/ESC/OLD&dir=1"),
+             WA_API_FIXED);
+    CHECK_EQ(wa_api_delete(&g_api, "path=BENCH/ESC/CONF/P.JSON"), WA_API_OK);
+    for (size_t i = n; i-- > 0u;) {
+        (void)snprintf(form, sizeof(form), "path=%s&dir=1", k_dirs[i]);
+        CHECK_EQ(wa_api_delete(&g_api, form), WA_API_OK);
+        CHECK(fk_get(&g_card, k_dirs[i]) == NULL);
+    }
+    CHECK(fk_get(&g_card, "BENCH") == NULL);
+    CHECK(fk_get(&g_card, "USER") == NULL);
+    /* Armed: the gate's answer, the folder there. */
+    CHECK_EQ(wa_api_mkdir(&g_api, "path=USER"), WA_API_OK);
+    g_armed = true;
+    CHECK_EQ(wa_api_delete(&g_api, "path=USER&dir=1"), WA_API_ARMED);
+    CHECK(fk_get(&g_card, "USER") != NULL);
+    g_armed = false;
+}
+
 int main(void)
 {
     RUN(put_makes_a_new_file_and_answers_its_etag);
@@ -799,6 +1005,10 @@ int main(void)
     RUN(delete_refusals);
     RUN(a_write_from_another_card_is_card_gone);
     RUN(a_saved_esc_profile_carries_its_note);
+    RUN(the_check_before_the_body_refuses_as_the_put_and_writes_nothing);
+    RUN(a_change_after_the_check_is_still_refused_at_the_write);
+    RUN(info_with_etag_gives_the_etag_a_read_gives_without_the_room);
+    RUN(every_fixed_folder_the_api_makes_it_can_delete);
     fk_free(&g_card);
     free(g_text);
     free(g_ends);

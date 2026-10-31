@@ -65,6 +65,11 @@
  * hands it to the next SAVE as FM_MATCH_SUM, so a write of the file from
  * the Wi-Fi page in between fails that SAVE with FM_ERR_CHANGED.
  *
+ * A SAVE can stop after its checks (fm_job_check_only()): the rules, the
+ * target, the match and a ".NEW" left there are asked, nothing is opened
+ * for writing, and the job ends FM_JOB_DONE.  The Wi-Fi page asks so before
+ * it takes a body, and the SAVE of that body asks everything again.
+ *
  * DELETE of a run's log takes its report with it, as LOGS' DELETE does:
  * ATEST042.CSV takes ATEST042.TXT (log_name_report_of()).  A report that
  * cannot be deleted fails the job with the card's answer, the log gone
@@ -182,6 +187,8 @@ typedef struct {
     uint32_t got;            /**< FM_MATCH_SUM: the sum read so far     */
     bool found;              /**< FM_MATCH_SUM: refused with got the sum
                                   of the whole file there                */
+    bool check_only;         /**< fm_job_check_only(): ends after the
+                                  checks, nothing written                */
     fm_sum_fn data_fn;       /**< fm_job_sum(): the sum, or NULL        */
     uint32_t data_sum;       /**< fm_job_sum(): the sum of the bytes
                                   loaded or saved so far                 */
@@ -308,6 +315,15 @@ fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
                       uint32_t want);
 
 /**
+ * @brief End the SAVE fm_job_save() started after its checks: it answers as
+ *        it would up to the first byte of its ".NEW", which it never opens.
+ * @param job  a SAVE that fm_job_save() started and no step has run
+ * @return FM_OK; FM_ERR_ARG for another job, one that runs already or was
+ *         refused, the job unchanged
+ */
+fm_err_t fm_job_check_only(fm_job_t *job);
+
+/**
  * @brief The sum of the file a SAVE refused with FM_ERR_CHANGED read there:
  *        what a SAVE that replaces that file as it stands now hands
  *        fm_job_match(), so one more change is refused in its turn.
@@ -347,6 +363,23 @@ fm_err_t fm_job_sum(fm_job_t *job, fm_sum_fn sum);
 fm_err_t fm_job_load(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
                      const char *dir, const char *name, uint8_t *buf,
                      size_t cap);
+
+/**
+ * @brief Read file @p name of folder @p dir for its sum alone, a chunk a
+ *        step: as fm_job_load() with no room for the bytes.  At
+ *        FM_JOB_DONE the job's data_sum is the sum of the file.
+ * @param job    the job
+ * @param bench  the rules; may be NULL
+ * @param mount  the mount the file was listed from
+ * @param dir    the file's folder
+ * @param name   the file's name
+ * @param cap    bytes it reads at most; a larger file is FM_ERR_TOO_BIG
+ * @param sum    the sum
+ * @return FM_OK, or the refusal
+ */
+fm_err_t fm_job_sum_file(fm_job_t *job, const fm_bench_t *bench,
+                         unsigned mount, const char *dir, const char *name,
+                         size_t cap, fm_sum_fn sum);
 
 /**
  * @brief Run the job's next step.

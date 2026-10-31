@@ -22,7 +22,7 @@ Each row shows the name, the size (`512B`, `14kB`, `7.0MB`; 1kB is 1,024 bytes),
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder the bench keeps, such as `BENCH`, `USER` and the log folders: no RENAME, MOVE or DELETE |
+| FIXED | a folder the bench keeps, such as `BENCH`, `USER` and the log folders: no RENAME or MOVE; DELETE only when empty, and the bench makes it again when it next writes there |
 | LOCKED | the servo programmer's record, `BENCH/KST/CONF/KST.TXT`: INFO only |
 | WRITING | a file the logger has open: INFO only |
 

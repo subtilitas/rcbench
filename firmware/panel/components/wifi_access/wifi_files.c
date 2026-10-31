@@ -36,6 +36,7 @@
 #include "wa_api.h"
 #include "wifi_access.h"
 #include "wifi_access_int.h"
+#include "wifi_req.h"
 #include "wifi_sock.h"
 
 /** @brief The log tag, wifi_access.c's. */
@@ -368,8 +369,9 @@ static esp_err_t serve(httpd_req_t *r, api_t kind)
         wa_page_info_t pi;
         wifi_page_info(&pi);
         httpd_resp_set_hdr(r, "Connection", "close");
-        (void)answer_json(r, kind, wa_api_of_guard(guard), pi.de);
-        return ESP_FAIL;
+        (void)answer_json(r, kind, wa_api_of_guard(guard, WA_REQ_READ),
+                          pi.de);
+        return wifi_req_close(r);
     }
     const int64_t t0 = esp_timer_get_time();
     const char *q = strchr(r->uri, '?');

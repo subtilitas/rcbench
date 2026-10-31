@@ -14,14 +14,20 @@
 //
 // UPLOAD sends one file of 1MiB at most with its progress, makes it only
 // where no entry has its name (If-None-Match: *), and asks before it
-// replaces one.  Before the question it reads the file there for its ETag
-// and replaces it only with If-Match on it, so a change made on the panel
-// or by another browser while the question is open is refused (CHANGED),
-// not overwritten.  A file the read refuses as too large or not text is
-// replaced without the compare.  A write the panel answers PANEL_BUSY (FILES on the panel
-// runs a job) is sent again after 2s, three times at most.  A write that
-// needs the access code shows the code form; the code is sent to /code and
-// the page loads again with it.
+// replaces one.  Before the question it asks the panel for the file's ETag
+// (GET /api/info with etag=1: the panel sums the card's bytes, the file does
+// not cross the network) and replaces it only with If-Match on it, so a
+// change made on the panel or by another browser while the question is open
+// is refused (CHANGED), not overwritten.  A file over 1MiB has no ETag and
+// is replaced without the compare.  A write the panel answers PANEL_BUSY
+// (FILES on the panel runs a job) is sent again after 2s, three times at
+// most.
+//
+// A write refused WRITES_CODE (Browser writes ACCESS CODE, no code given
+// yet) asks for the code in the box and sends it to /code itself, without
+// leaving the page.  Each code sent belongs to the write that asked: the
+// panel's answer sets the cookie, and that write goes out again.  An answer
+// that arrives after the box's CANCEL sends nothing.
 //
 // Every write carries the X-Rcbench-Upload header the panel asks of the
 // page's own script (wa_guard.h).
@@ -99,7 +105,7 @@ var RcbWr = (function () {
       if (e.p === 'LOCKED') {
         return TX['e.LOCKED'];
       }
-      if (e.p === 'FIXED' || (e.p === 'FAULT' && what !== 'delete')) {
+      if ((e.p === 'FIXED' || e.p === 'FAULT') && what !== 'delete') {
         return TX['e.FIXED'];
       }
       if (what === 'move') {
@@ -136,9 +142,17 @@ var RcbWr = (function () {
       ui.box.hidden = false;
     }
 
+    // The code under way, if any, answers into nothing, and its button
+    // takes a tap again.
+    function codeEnd() {
+      ui.codeFor = null;
+      ui.codeGo.disabled = false;
+    }
+
     function closeBox() {
       ui.box.hidden = true;
       ui.goFn = null;
+      codeEnd();
     }
 
     // A question with an action button; @p fn runs on it.
@@ -232,29 +246,24 @@ var RcbWr = (function () {
       });
     }
 
-    // The ETag of file @p path, read as GET /api/file gives it:
-    // {tag} on 200, {tag: ''} for a file the read cannot hold (too large,
-    // not text), else {a} with the refusal.
+    // The ETag of file @p path, the form If-Match takes, as GET /api/info
+    // gives it with etag=1: {tag} on 200, {tag: ''} for a file over 1MiB,
+    // else {a} with the refusal.
     function etagOf(path, mount) {
       return c.queue(function () {
         return new Promise(function (done) {
           var x = new XMLHttpRequest();
-          x.open('GET', '/api/file?path=' + F.encPath(path) + '&mount=' +
-            mount);
+          x.open('GET', '/api/info?path=' + F.encPath(path) + '&dir=0&mount=' +
+            mount + '&etag=1');
           x.onload = function () {
-            if (x.status === 200) {
-              done({ tag: x.getResponseHeader('ETag') || '' });
-              return;
-            }
             var j;
             try {
               j = JSON.parse(x.responseText);
             } catch (e) {
               j = { error: 'HTTP', text: TX.noans + ' HTTP ' + x.status };
             }
-            if (j.error === 'TOO_BIG' || j.error === 'NOT_TEXT' ||
-                j.error === 'TOO_MANY_LINES') {
-              done({ tag: '' });
+            if (x.status === 200 && !j.error) {
+              done({ tag: j.etag ? '"' + j.etag + '"' : '' });
               return;
             }
             done({ a: { ok: false, status: x.status, j: j } });
@@ -285,13 +294,14 @@ var RcbWr = (function () {
       });
     }
 
-    // A refusal: the access code form for WRITES_CODE, the status read
-    // again for the setting's and the gate's refusals, its text shown in
-    // the box when one is open.
-    function refused(a) {
+    // A refusal: the access code form for WRITES_CODE, with @p again the
+    // write that goes out once the code is taken; the status read again for
+    // the setting's and the gate's refusals; its text shown in the box when
+    // one is open.
+    function refused(a, again) {
       var e = a.j.error;
       if (e === 'WRITES_CODE') {
-        codeBox(a.j.text);
+        codeBox(a.j.text, again);
         return null;
       }
       if (/^WRITES_|^ARMED$|^LOGGING$|^CARD_GONE$|^NO_CARD$/.test(e)) {
@@ -311,12 +321,50 @@ var RcbWr = (function () {
       return null;
     }
 
-    function codeBox(text) {
+    function codeBox(text, again) {
       box(TX.code, [text]);
       ui.go.hidden = true;
       ui.code.hidden = false;
       ui.codeIn.value = '';
       ui.codeIn.focus();
+      ui.codeAgain = again;
+    }
+
+    // SEND CODE: posts the code to /code and, taken, sends the write that
+    // asked again.
+    function sendCode() {
+      var v = ui.codeIn.value;
+      if (v === '' || ui.codeFor) {
+        return;
+      }
+      var mine = { again: ui.codeAgain };
+      ui.codeFor = mine;
+      ui.codeGo.disabled = true;
+      c.queue(function () {
+        return fetch('/code', { method: 'POST', credentials: 'same-origin',
+          redirect: 'manual', cache: 'no-store',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'code=' + encodeURIComponent(v) })
+          .then(function (r) {
+            return { w: RcbEd.codeAnswer(r) };
+          }, function () {
+            return { w: 'CLOSED' };
+          });
+      }).then(function (a) {
+        var next = RcbEd.codeNext(a.w, ui.codeFor === mine);
+        if (next === 'DROP') {
+          return;
+        }
+        codeEnd();
+        if (next === 'SAVE') {
+          mine.again();
+        } else if (next === 'ASK') {
+          ui.err.textContent = TX.codewrong;
+          ui.codeIn.select();
+        } else {
+          ui.err.textContent = TX.noans;
+        }
+      });
     }
 
     // -------------------------------------------------------- actions
@@ -349,6 +397,9 @@ var RcbWr = (function () {
       ui.cancel.disabled = true;
       var hdr = tag === undefined ? { 'If-None-Match': '*' }
         : tag ? { 'If-Match': tag } : {};
+      function again() {
+        upload(file, tag);
+      }
       put(path, mountOf(p), file, hdr,
         function (done, total) {
           ui.bar.value = total > 0 ? done / total : 0;
@@ -360,7 +411,7 @@ var RcbWr = (function () {
         if (a.j.error === 'EXISTS' && tag === undefined) {
           return etagOf(path, mountOf(p)).then(function (e) {
             if (e.a) {
-              return refused(e.a);
+              return refused(e.a, again);
             }
             ui.bar.hidden = true;
             ui.cancel.disabled = false;
@@ -371,40 +422,50 @@ var RcbWr = (function () {
             return null;
           });
         }
-        return refused(a);
+        return refused(a, again);
+      });
+    }
+
+    // A name asked in the box, @p send(name, again) its write on the action
+    // button.  @p again opens the box anew with the name and sends it: what
+    // a code taken does, and a refusal after it keeps the name to change.
+    function named(title, value, label, send) {
+      askName(title, value, label, function (n) {
+        busy(true);
+        send(n, function () {
+          named(title, n, label, send);
+          ui.goFn();
+        });
       });
     }
 
     function newDir() {
       var p = pane();
-      askName(TX.newdir, '', TX['new'], function (n) {
-        busy(true);
+      named(TX.newdir, '', TX['new'], function (n, again) {
         post('mkdir', { path: F.encPath(F.join(p.path, n)),
           mount: mountOf(p) }).then(function (a) {
-          return a.ok ? after(F.fmt(TX.made, n)) : refused(a);
+          return a.ok ? after(F.fmt(TX.made, n)) : refused(a, again);
         });
       });
     }
 
     function newFile() {
       var p = pane();
-      askName(TX.newfile, '', TX['new'], function (n) {
-        busy(true);
+      named(TX.newfile, '', TX['new'], function (n, again) {
         put(F.join(p.path, n), mountOf(p), '', { 'If-None-Match': '*' })
           .then(function (a) {
-            return a.ok ? after(F.fmt(TX.made, n)) : refused(a);
+            return a.ok ? after(F.fmt(TX.made, n)) : refused(a, again);
           });
       });
     }
 
     function rename() {
       var s = selected();
-      askName(TX.tkname, s.e.n, TX.rename, function (n) {
-        busy(true);
+      named(TX.tkname, s.e.n, TX.rename, function (n, again) {
         post('rename', { from: F.encPath(F.join(s.p.path, s.e.n)),
           to: F.encPath(F.join(s.p.path, n)), dir: s.e.d ? 1 : 0,
           mount: mountOf(s.p) }).then(function (a) {
-          return a.ok ? after(F.fmt(TX.renamed, s.e.n, n)) : refused(a);
+          return a.ok ? after(F.fmt(TX.renamed, s.e.n, n)) : refused(a, again);
         });
       });
     }
@@ -412,11 +473,15 @@ var RcbWr = (function () {
     function move() {
       var s = selected();
       var o = c.st.panes[1 - c.st.active];
-      post('rename', { from: F.encPath(F.join(s.p.path, s.e.n)),
-        to: F.encPath(F.join(o.path, s.e.n)), dir: s.e.d ? 1 : 0,
-        mount: mountOf(s.p) }).then(function (a) {
-        return a.ok ? after(F.fmt(TX.moved, s.e.n)) : refused(a);
-      });
+      function send() {
+        closeBox();
+        post('rename', { from: F.encPath(F.join(s.p.path, s.e.n)),
+          to: F.encPath(F.join(o.path, s.e.n)), dir: s.e.d ? 1 : 0,
+          mount: mountOf(s.p) }).then(function (a) {
+          return a.ok ? after(F.fmt(TX.moved, s.e.n)) : refused(a, send);
+        });
+      }
+      send();
     }
 
     function del() {
@@ -430,13 +495,20 @@ var RcbWr = (function () {
         lines.push(F.fmt(TX.delrep, rep));
       }
       lines.push(TX.delfinal);
-      ask(TX.deltitle, lines, TX['delete'], function () {
-        busy(true);
-        post('delete', { path: F.encPath(F.join(s.p.path, s.e.n)),
-          dir: s.e.d ? 1 : 0, mount: mountOf(s.p) }).then(function (a) {
-          return a.ok ? after(F.fmt(TX.deleted, s.e.n)) : refused(a);
+      function question() {
+        ask(TX.deltitle, lines, TX['delete'], function () {
+          busy(true);
+          post('delete', { path: F.encPath(F.join(s.p.path, s.e.n)),
+            dir: s.e.d ? 1 : 0, mount: mountOf(s.p) }).then(function (a) {
+            return a.ok ? after(F.fmt(TX.deleted, s.e.n))
+              : refused(a, function () {
+                question();
+                ui.goFn();
+              });
+          });
         });
-      });
+      }
+      question();
     }
 
     // ------------------------------------------------------- the build
@@ -480,19 +552,19 @@ var RcbWr = (function () {
           ui.goFn();
         }
       });
-      // The code form posts to /code itself: the panel answers with the
-      // cookie and the page again.
       ui.code = c.el('form', 'code');
-      ui.code.method = 'post';
-      ui.code.action = '/code';
+      ui.code.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        sendCode();
+      });
       ui.codeIn = c.el('input');
       ui.codeIn.name = 'code';
       ui.codeIn.maxLength = 8;
       ui.codeIn.autocomplete = 'off';
-      var codeGo = c.el('button', 'btn', TX.codego);
-      codeGo.type = 'submit';
+      ui.codeGo = c.el('button', 'btn', TX.codego);
+      ui.codeGo.type = 'submit';
       ui.code.appendChild(ui.codeIn);
-      ui.code.appendChild(codeGo);
+      ui.code.appendChild(ui.codeGo);
       ui.bar = c.el('progress');
       ui.bar.max = 1;
       ui.err = c.el('p', 'warn');
