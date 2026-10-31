@@ -96,7 +96,7 @@ While ARMED the panel tag reads `LIVE TELEMETRY` and the plot's right edge reads
 
 Leaving the screen, TARGET, a lost link or a touch controller that stops answering also switches to SAFE and returns the throttle to 0%.
 
-While no IOmcu answers, the band shows SIM and SIMULATION is drawn across the screen: every value is the panel's model.
+While no IOmcu answers, the band shows SIM and SIMULATION is drawn across the screen: every value is the panel's model. SETUP, PANEL, Demo mode ON hides the SIMULATION watermark; SIM stays.
 
 ## A held run
 

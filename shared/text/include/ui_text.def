@@ -6257,6 +6257,12 @@ UI_SETTING_LABEL(SET_KB_SEE,
 UI_SETTING_HELP(SET_KB_SEE,
     "Text editor: the text shows through the keys",
     "Texteditor: der Text scheint durch die Tasten")
+UI_SETTING_LABEL(SET_DEMO_MODE,
+    "Demo mode",
+    "Demo-Modus")
+UI_SETTING_HELP(SET_DEMO_MODE,
+    "Hides the SIMULATION watermark. The band still says SIM.",
+    "Blendet das Wasserzeichen aus; das Band zeigt weiter SIM.")
 /* --- interfaces ---------------------------------------------------- */
 UI_SETTING_LABEL(SET_INA228_EN,
     "INA228",

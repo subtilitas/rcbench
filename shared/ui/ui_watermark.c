@@ -10,6 +10,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "settings.h"
 #include "ui_theme.h"
 
 #define TEXT "SIMULATION"
@@ -46,6 +47,12 @@ void ui_watermark_invalidate(void)
 void ui_watermark(gfx_canvas_t *c)
 {
     if (c == NULL || c->width <= 0 || c->height <= 0) {
+        return;
+    }
+
+    /* SETUP > PANEL > Demo mode: the mark is not drawn.  The stencil stays
+     * cached, so the mark is back on the next frame it is asked for. */
+    if (settings_get_bool(SET_DEMO_MODE)) {
         return;
     }
 

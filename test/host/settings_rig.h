@@ -250,7 +250,7 @@ static inline void fresh_hub(void)
 }
 
 /*
- * The list the screen tests open: PANEL, full width, 12 rows that scroll.
+ * The list the screen tests open: PANEL, full width, 13 rows that scroll.
  * ESC / BENCH's rows are MOTOR & ESC > SETTINGS'
  * (test_motor_workbench), and the sensors' are SENSORS' (open_sensor()).
  */
