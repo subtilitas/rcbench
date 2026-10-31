@@ -684,8 +684,71 @@ TEST_CASE(a_restore_refused_or_failing)
     CHECK_EQ(ew_session_restore(&s, &from, g_before, 192u), EW_SES_BUSY);
     CHECK_EQ(sim_run(&s, &esc), EW_SES_ERR_WRITE_FAILED);
     CHECK(s.id.erased);
+    CHECK_EQ(esc.programs, 0);
     CHECK_EQ(s.attempts, EW_SES_ATTEMPTS);
     CHECK(!s.restoring);
+    /* A build for CAN boards: erased, and its backup refused. */
+    sim_init_am(&esc, 4u, 3u);
+    attach();
+    ready();
+    g_draft[0x18] = 48u;
+    esc.am_record[19] = 0u;
+    esc.am_record[20] = 0x40u;
+    memset(esc.am, 0xFF, sizeof(esc.am));
+    sim_power_cycle(&esc);
+    CHECK_EQ(sim_enter(&s, &esc), EW_SES_OK);
+    CHECK(s.id.erased);
+    CHECK_EQ(s.id.why, EW_WHY_CAN_BUILD);
+    ew_session_backup_id(&s, &from);
+    CHECK_EQ(ew_session_restore(&s, &from, g_before, 192u), EW_SES_ERR_REFUSED);
+    CHECK_EQ(s.refuse, EW_REF_RESTORE);
+    CHECK_EQ(esc.programs, 0);
+}
+
+TEST_CASE(a_restore_left_half_done_takes_its_backup_again)
+{
+    ew_backup_id_t from;
+    static uint8_t other[EW_PAGE_MAX];
+
+    /* A wrong byte every time: neither erased nor the backup. */
+    erased_am();
+    CHECK_EQ(sim_enter(&s, &esc), EW_SES_OK);
+    ew_session_backup_id(&s, &from);
+    esc.programs = 0;
+    sim_script(&esc, F_CORRUPT, 0, 100, 0x1Bu);
+    CHECK_EQ(ew_session_restore(&s, &from, g_before, 192u), EW_SES_BUSY);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_ERR_TORN);
+    CHECK(s.dirty);
+    CHECK(s.id.erased);
+    /* Only that backup; no write of its own, and no leave. */
+    memcpy(other, g_before, sizeof(other));
+    other[0x18] = 30u;
+    CHECK_EQ(ew_session_restore(&s, &from, other, 192u), EW_SES_ERR_DIRTY);
+    CHECK_EQ(ew_session_write(&s, g_before, 192u), EW_SES_ERR_ERASED);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_ERR_ERASED);
+    /* The fault gone: it goes in, with no compare against the erased page. */
+    esc.fail = F_NONE;
+    CHECK_EQ(ew_session_restore(&s, &from, g_before, 192u), EW_SES_BUSY);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    CHECK(memcmp(esc.am + 3, g_before + 3, 189u) == 0);
+    CHECK(!s.id.erased);
+    CHECK(!s.dirty);
+    CHECK(s.id.writable);
+    /* The ESC gone in the program: a read comes first. */
+    erased_am();
+    CHECK_EQ(sim_enter(&s, &esc), EW_SES_OK);
+    ew_session_backup_id(&s, &from);
+    sim_script(&esc, F_ERASE_DEAD, 0, 100, 0u);
+    CHECK_EQ(ew_session_restore(&s, &from, g_before, 192u), EW_SES_BUSY);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_ERR_LOST);
+    CHECK_EQ(ew_session_restore(&s, &from, g_before, 192u), EW_SES_ERR_MUST_READ);
+    esc.dead = false;
+    esc.fail = F_NONE;
+    CHECK_EQ(ew_session_read(&s), EW_SES_BUSY);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    CHECK_EQ(ew_session_restore(&s, &from, g_before, 192u), EW_SES_BUSY);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    CHECK(!s.id.erased);
 }
 
 /* Step until transaction @p n of the write runs. */
@@ -757,6 +820,25 @@ TEST_CASE(a_frame_the_guard_refuses_inside_a_write)
     CHECK_EQ(esc.programs, 0);
 }
 
+TEST_CASE(a_page_that_moved_during_a_write_that_never_programmed)
+{
+    /* Every buffer refused, and the page changes behind the re-read. */
+    up_am();
+    g_draft[0x18] = 48u;
+    const int at = esc.starts;
+
+    sim_script(&esc, F_BAD_BUFFER, 0, 100, 0u);
+    CHECK_EQ(ew_session_write(&s, g_draft, 192u), EW_SES_BUSY);
+    run_to(at, 2);
+    esc.am[0x19] = 99u;
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_ERR_TORN);
+    CHECK_EQ(esc.programs, 0);
+    /* Neither page: the same rules as after a program. */
+    CHECK(s.dirty);
+    CHECK(s.reread);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_ERR_DIRTY);
+}
+
 TEST_CASE(a_whole_write_across_the_wrap)
 {
     sim_init_efm8(&esc, 0xB2u, false);
@@ -811,7 +893,9 @@ int main(void)
     RUN(a_power_loss_at_every_transaction);
     RUN(an_erased_am32_takes_only_its_backup);
     RUN(a_restore_refused_or_failing);
+    RUN(a_restore_left_half_done_takes_its_backup_again);
     RUN(a_frame_the_guard_refuses_inside_a_write);
+    RUN(a_page_that_moved_during_a_write_that_never_programmed);
     RUN(a_whole_write_across_the_wrap);
     RUN(the_waits_of_an_erase_and_a_program);
     return test_summary("ew_session_write");

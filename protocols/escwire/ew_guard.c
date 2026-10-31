@@ -84,7 +84,7 @@ ew_refuse_t ew_guard_approve_restore(ew_guard_t *g, const ew_ident_t *id,
     if (g == NULL || id == NULL || orig == NULL || page == NULL) {
         return EW_REF_ARG;
     }
-    if (id->fw != (uint8_t)EW_FW_AM || !id->erased) {
+    if (id->fw != (uint8_t)EW_FW_AM || !id->erased || id->can_build) {
         return EW_REF_RESTORE;
     }
     const ew_refuse_t r = am_page_rules(page, n);

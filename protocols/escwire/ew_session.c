@@ -367,6 +367,9 @@ static bool check_after(ew_session_t *s)
         ew_guard_done(&s->guard);
         finish(s, EW_SES_ERR_WRITE_FAILED);
     } else {
+        /* Neither page, whoever moved it: only these two go now. */
+        s->dirty = true;
+        s->reread = true;
         finish(s, EW_SES_ERR_TORN);
     }
     return false;
@@ -725,6 +728,24 @@ ew_ses_t ew_session_read(ew_session_t *s)
     return begin(s, OP_READ, k_read);
 }
 
+/**
+ * @brief Run the write procedure again on a page left half written, with no
+ *        compare against the page read: it is no longer that page.
+ * @param s the session
+ * @return EW_SES_BUSY, or the result when it ended at once
+ */
+static ew_ses_t resume_write(ew_session_t *s)
+{
+    s->attempts = 0u;
+    s->op = OP_WRITE;
+    s->refuse = (uint8_t)EW_REF_NONE;
+    s->result = EW_SES_BUSY;
+    s->phase = PH_IDLE;
+    restart_write(s);
+    run(s);
+    return s->op != OP_NONE ? EW_SES_BUSY : s->result;
+}
+
 ew_ses_t ew_session_write(ew_session_t *s, const uint8_t *draft, size_t n)
 {
     if (s == NULL || draft == NULL) {
@@ -768,14 +789,7 @@ ew_ses_t ew_session_write(ew_session_t *s, const uint8_t *draft, size_t n)
     }
     s->attempts = 1u;
     if (s->dirty) {
-        s->attempts = 0u;
-        s->op = OP_WRITE;
-        s->refuse = (uint8_t)EW_REF_NONE;
-        s->result = EW_SES_BUSY;
-        s->phase = PH_IDLE;
-        restart_write(s);
-        run(s);
-        return s->op != OP_NONE ? EW_SES_BUSY : s->result;
+        return resume_write(s);
     }
     return begin(s, OP_WRITE,
                  s->id.fw == (uint8_t)EW_FW_AM ? k_write_am : k_write_efm8);
@@ -815,6 +829,15 @@ ew_ses_t ew_session_restore(ew_session_t *s, const ew_backup_id_t *from,
     if (n > EW_PAGE_MAX) {
         return EW_SES_ERR_ARG;
     }
+    if (s->dirty) {
+        /* A restore left half done: this backup again, and only this one. */
+        if (!s->reread) {
+            return EW_SES_ERR_MUST_READ;
+        }
+        if (n != s->id.len || memcmp(page, s->target, n) != 0) {
+            return EW_SES_ERR_DIRTY;
+        }
+    }
     memmove(s->target, page, n);
     const ew_refuse_t r = ew_guard_approve_restore(&s->guard, &s->id, s->orig,
                                                    s->target, n);
@@ -825,6 +848,9 @@ ew_ses_t ew_session_restore(ew_session_t *s, const ew_backup_id_t *from,
     }
     s->restoring = true;
     s->attempts = 1u;
+    if (s->dirty) {
+        return resume_write(s);
+    }
     return begin(s, OP_WRITE, k_write_am);
 }
 

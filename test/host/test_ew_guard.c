@@ -499,6 +499,11 @@ TEST_CASE(a_restore_is_am32_on_an_erased_page)
     CHECK_EQ(ew_guard_approve_restore(&g, &id, g_orig, g_draft, 192u),
              EW_REF_AM_REVISION);
     g_draft[1] = 4u;
+    /* A build for CAN boards takes no write at all. */
+    id.can_build = true;
+    CHECK_EQ(ew_guard_approve_restore(&g, &id, g_orig, g_draft, 192u),
+             EW_REF_RESTORE);
+    id.can_build = false;
     /* A page that is not wholly erased. */
     g_orig[191] = 0u;
     CHECK_EQ(ew_guard_approve_restore(&g, &id, g_orig, g_draft, 192u),

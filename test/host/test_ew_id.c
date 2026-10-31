@@ -307,6 +307,24 @@ TEST_CASE(a_can_build_is_read_only)
     g_record[0] = 0x00u;
     ew_id_arm(&c3, g_am, g_region, g_record, &id);
     CHECK(id.writable);
+    /* Erased settings say so, and the build stays what it is. */
+    g_record[19] = 0x00u;
+    g_record[20] = 0x40u;
+    arm_of(0xFF, 0xFF);
+    memcpy(g_record, "\xDA\xE3\x25\x59\xD9\x63\xB8\x4E", 8u);
+    g_record[19] = 0x00u;
+    g_record[20] = 0x40u;
+    ew_id_arm(&c3, g_am, g_region, g_record, &id);
+    CHECK(id.erased);
+    CHECK(id.can_build);
+    CHECK(!id.writable);
+    CHECK_EQ(id.why, EW_WHY_CAN_BUILD);
+    arm_of(0xFF, 0xFF);
+    ew_id_arm(&c3, g_am, g_region, g_record, &id);
+    CHECK(id.erased);
+    CHECK(!id.can_build);
+    CHECK_EQ(id.why, EW_WHY_ERASED);
+    arm_of(0x01, 4);
     /* A protocol with no record. */
     g_record[0] = 0xDAu;
     ew_id_arm(&c2, g_am, g_region, g_record, &id);

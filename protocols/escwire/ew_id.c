@@ -205,19 +205,33 @@ static void name_from_region(const uint8_t *region, char *out)
     out[i] = '\0';
 }
 
-void ew_id_arm(const ew_contact_t *c, const uint8_t *page,
-               const uint8_t *region, const uint8_t *record, ew_ident_t *out)
+/**
+ * @brief Whether a device-info record marks a build for CAN boards.
+ * @param c      the contact
+ * @param record the record, NULL when the bootloader protocol has none
+ * @return true for a record of protocol 3 whose firmware start says so
+ */
+static bool is_can_build(const ew_contact_t *c, const uint8_t *record)
 {
     static const uint8_t k_magic[8] = { 0xDA, 0xE3, 0x25, 0x59,
                                         0xD9, 0x63, 0xB8, 0x4E };
 
+    return record != NULL && c->protocol == 3u
+           && memcmp(record, k_magic, sizeof(k_magic)) == 0
+           && (((uint16_t)record[20] << 8) | record[19]) == EW_ID_CAN_START;
+}
+
+void ew_id_arm(const ew_contact_t *c, const uint8_t *page,
+               const uint8_t *region, const uint8_t *record, ew_ident_t *out)
+{
     memset(out, 0, sizeof(*out));
     out->len = EW_MAP_LEN_AM;
+    out->can_build = is_can_build(c, record);
     name_from_region(region, out->name);
     if (page[0] == 0xFFu) {
         out->fw = EW_FW_AM;
         out->erased = true;
-        out->why = EW_WHY_ERASED;
+        out->why = out->can_build ? EW_WHY_CAN_BUILD : EW_WHY_ERASED;
         return;
     }
     if (page[0] != 0x01u) {
@@ -230,10 +244,7 @@ void ew_id_arm(const ew_contact_t *c, const uint8_t *page,
         out->why = EW_WHY_OLD_REVISION;
     } else if (page[1] > 4u) {
         out->why = EW_WHY_NEW_REVISION;
-    } else if (record != NULL && memcmp(record, k_magic, sizeof(k_magic)) == 0
-               && c->protocol == 3u
-               && (((uint16_t)record[20] << 8) | record[19])
-                      == EW_ID_CAN_START) {
+    } else if (out->can_build) {
         out->why = EW_WHY_CAN_BUILD;
     } else {
         out->writable = true;

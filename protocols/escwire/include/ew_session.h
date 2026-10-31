@@ -177,7 +177,8 @@ ew_ses_t ew_session_read(ew_session_t *s);
 ew_ses_t ew_session_write(ew_session_t *s, const uint8_t *draft, size_t n);
 
 /**
- * @brief Write a backup to an AM32 whose settings read erased.
+ * @brief Write a backup to an AM32 whose settings read erased.  A restore left
+ *        half written takes the same backup again, after a read, and no other.
  * @param s    the session
  * @param from the identity the backup was read from
  * @param page the backup, EW_MAP_LEN_AM bytes

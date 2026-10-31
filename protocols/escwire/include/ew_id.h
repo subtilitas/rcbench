@@ -101,6 +101,7 @@ typedef struct {
     uint8_t  why;      /**< an ew_why_t                                   */
     bool     writable; /**< a write is possible                           */
     bool     erased;   /**< AM32 settings erased: only a backup restores  */
+    bool     can_build; /**< AM32 built for CAN boards: nothing is written */
     uint16_t len;      /**< bytes read and written of the page            */
     char     name[EW_ID_NAME_MAX + 1u]; /**< AM32's name, "" for none     */
 } ew_ident_t;
