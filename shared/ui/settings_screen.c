@@ -207,6 +207,16 @@ ui_screen_id_t settings_hub_tile_screen(int i)
     return (t->cat < 0) ? t->screen : SCREEN_SETUP;
 }
 
+int settings_hub_cat_tile(setting_cat_t cat)
+{
+    for (int i = 0; i < TILE_COUNT; ++i) {
+        if (k_tiles[i].cat == (int)cat) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 static int tile_at(int x, int y)
 {
     for (int i = 0; i < stg_tile_count(); ++i) {

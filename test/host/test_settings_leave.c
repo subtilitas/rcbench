@@ -581,7 +581,7 @@ TEST_CASE(the_warning_covers_the_tiles)
     tap(tile_x(0), tile_y(0));
     CHECK(settings_screen_warning());
     CHECK_EQ(settings_screen_category(), -1);
-    tap(tile_x(SET_CAT_SETUP_COUNT), tile_y(SET_CAT_SETUP_COUNT));
+    tap(tile_x(OUTPUTS_TILE), tile_y(OUTPUTS_TILE));
                                          /* OUTPUTS's tile */
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
@@ -713,9 +713,6 @@ static void count_apply(const outbind_t *b)
     (void)b;
     ++s_out_applied;
 }
-
-/* The OUTPUTS tile's slot: after the categories. */
-#define OUTPUTS_TILE SET_CAT_SETUP_COUNT
 
 /*
  * The OUTPUTS tile opens the overview, and nothing about it is a setting:

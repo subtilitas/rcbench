@@ -398,10 +398,10 @@ TEST_CASE(a_cancelled_hit_presses_nothing)
     fresh_hub();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 
-    /* Press the tile of the outputs screen, the first after the
-     * categories', then the events stop arriving. */
-    const int dx = tile_x(SET_CAT_SETUP_COUNT);
-    const int dy = tile_y(SET_CAT_SETUP_COUNT);
+    /* Press the tile of the outputs screen, then the events stop
+     * arriving. */
+    const int dx = tile_x(OUTPUTS_TILE);
+    const int dy = tile_y(OUTPUTS_TILE);
     touch_event_t d = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1, .x = (int16_t)dx,
                                    .y = (int16_t)dy } };

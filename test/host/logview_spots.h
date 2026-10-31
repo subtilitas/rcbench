@@ -6,14 +6,15 @@
  * If the layout moves these move with it.  Taken by logview_rig.h, the
  * screen's suites and render_screen.c.
  *
- *   - the header row y 4 to 52: ROOT, USER, BENCH 110 x 40px from x 11,
+ *   - the LOGS tile's strip: LOGS, FILES, WI-FI 331 x 40px from x 11, y 5,
+ *     4px apart;
+ *   - the header row y 52 to 100: ROOT, USER, BENCH 110 x 40px from x 11,
  *     4px apart; PREV x 728 and NEXT x 876, 140 x 48px;
- *   - the file list from y 60, 1008px wide: its rows under a 30px heading
+ *   - the file list from y 108, 1008px wide: its rows under a 30px heading
  *     at a pitch of 48px, drawn 44px tall from x 16; the scroll bar
- *     x 952 to 1008, from y 90, 332px tall;
+ *     x 952 to 1008, from y 138, 284px tall;
  *   - the footer y 440 to 492: RESCAN x 8, DELETE x 728, OPEN x 876,
- *     140px each, WI-FI x 156 and FILES x 264, 100px each; the import's four buttons 246px from x 8, 8px
- *     apart; the plot's BACK x 8 (140px), < x 156 and > x 260 (96px);
+ *     140px each; the import's four buttons 246px from x 8, 8px apart; the plot's BACK x 8 (140px), < x 156 and > x 260 (96px);
  *   - the import's column list from x 416, y 44: its rows at a pitch of
  *     48px under a 30px heading;
  *   - the plot x 16 to 1008, y 88 to 404;
@@ -28,7 +29,7 @@
 
 #include "ui_layout.h"
 
-#define LV_HEAD_CY    28            /**< The header row's middle. */
+#define LV_HEAD_CY    76            /**< The header row's middle. */
 /** @brief The middle of the header row's tab at position @p i: 0 ROOT,
  *  1 USER, 2 BENCH. */
 #define LV_TAB_CX(i)  (11 + (i) * 114 + 55)
@@ -36,17 +37,17 @@
 #define LV_TAB_PITCH  114           /**< One tab to the next. */
 #define LV_PREV_CX    798           /**< PREV. */
 #define LV_NEXT_CX    946           /**< NEXT. */
-#define LV_HEAD_TOP   4             /**< The header row's top. */
-#define LV_HEAD_BOT   52            /**< Its bottom. */
+#define LV_HEAD_TOP   52            /**< The header row's top. */
+#define LV_HEAD_BOT   100           /**< Its bottom. */
 #define LV_HEAD_TEXT_X 368          /**< The folder's left edge. */
 #define LV_HEAD_END   720           /**< The card's name ends here with
                                          PREV and NEXT showing, */
 #define LV_HEAD_FAR   1016          /**< and here without them. */
 
 #define LV_LIST_X     8             /**< The list's left edge. */
-#define LV_LIST_Y     60            /**< Its top, where its tag starts. */
+#define LV_LIST_Y     108           /**< Its top, where its tag starts. */
 #define LV_ROW_PITCH  48            /**< One row to the next. */
-#define LV_ROWS       7             /**< The rows it shows at once. */
+#define LV_ROWS       6             /**< The rows it shows at once. */
 /** @brief The middle of the list's row @p i on screen. */
 #define LV_ROW_CY(i)  (LV_LIST_Y + 30 + (i) * LV_ROW_PITCH + 22)
 #define LV_ROW_CX     400           /**< A point inside every row. */
@@ -59,8 +60,6 @@
 #define LV_FOOT_Y     (UI_BODY_H - UI_ALERT_H - 4 - 52)
 #define LV_FOOT_CY    (LV_FOOT_Y + 26)          /**< Its middle row. */
 #define LV_RESCAN_CX  78            /**< RESCAN. */
-#define LV_WIFI_CX    206           /**< WI-FI. */
-#define LV_FILES_CX   314           /**< FILES. */
 #define LV_DELETE_CX  798           /**< DELETE. */
 #define LV_OPEN_CX    946           /**< OPEN. */
 

@@ -127,7 +127,7 @@ static void put(const char *path, const char *text)
  *        it: in each of LOGS' three folders a servo automatic test's CSV
  *        with its report, a report whose CSV is missing and a LIMIT RUN's
  *        report; two text files that are no reports in USER/LOGS, and a
- *        report in USER.  Each folder fits a pane's 6 rows.
+ *        report in USER.
  */
 static void fresh_reports(void)
 {
@@ -315,9 +315,8 @@ TEST_CASE(logs_own_list_holds_and_opens_the_same_reports)
         CHECK_STR_EQ(view_row0(), "RCBENCH SERVO TEST REPORT");
         /* The panes stay unread: the viewer's read alone went out. */
         CHECK(!files_screen_busy());
-        CHECK(!screen()->back());
-        CHECK_EQ(ui_router_parent(SCREEN_FILES), SCREEN_LOGS);
-        ui_router_goto(SCREEN_LOGS);
+        CHECK(screen()->back());
+        CHECK_EQ(ui_router_current(), SCREEN_LOGS);
         CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
         CHECK_EQ(log_viewer_tab(), LOG_TAB_USER);
         /* LOGS chose the report again: OPEN opens it, not the newest. */
@@ -383,7 +382,8 @@ TEST_CASE(a_report_finished_off_screen_opens_from_logs)
     CHECK_EQ(text_view_state(), TEXT_VIEW_SHOWN);
     CHECK_STR_EQ(text_view_name(), "LIMIT013.TXT");
     CHECK_STR_EQ(view_row0(), "RCBENCH SERVO TEST REPORT");
-    CHECK(!screen()->back());
+    CHECK(screen()->back());
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
     log_viewer_set_io(NULL);
 }
 

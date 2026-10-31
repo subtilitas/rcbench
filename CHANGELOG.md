@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- The LOGS tile holds LOGS, FILES and WI-FI under one strip of three tabs, on
+  each screen's first level. The home tag of each leads to the menu. SETUP's
+  WI-FI and FILES tiles and LOGS' WI-FI and FILES footer buttons are gone, so
+  SETUP's hub has 2 free slots. LOGS shows 6 file rows, FILES 5 a pane. A tab
+  that leaves WI-FI switches the radio off, as the home tag does.
 - SETUP > SENSORS is a split pane: a left list of 8 entries (SENSOR BUS, INA228,
   INA3221 0x40 to 0x43, AS5600, PHASE TAP) with each entry's state under its
   name, and the selected entry's rows beside it. A sensor's rows appear when it

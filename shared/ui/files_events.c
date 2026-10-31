@@ -1,7 +1,7 @@
 /**
  * @file files_events.c
- * @brief FILES' touch events: the rows, the scroll bars, the headers and
- *        the footer of the panes, NEW's choice, the DELETE question, the
+ * @brief FILES' touch events: the tile's strip, the rows, the scroll bars,
+ *        the headers and the footer of the panes, NEW's choice, the DELETE question, the
  *        INFO box, the progress box and the keyboard.  files_screen.c holds
  *        the state; files_int.h is what the screen's three files share.
  *
@@ -102,6 +102,7 @@ void fs_cancel_press(void)
     s.dragged = false;
     ui_textkey_cancel_press(&s.tk);
     text_view_cancel_press();
+    logs_strip_cancel();
     files_screen_invalidate();
 }
 
@@ -346,6 +347,17 @@ static void new_event(const touch_event_t *e)
 void fs_event(const touch_event_t *e)
 {
     if (e == NULL) {
+        return;
+    }
+    /* The tile's strip takes a press on the panes alone, while no other
+     * contact holds one here. */
+    if (s.view != FILES_VIEW_PANES) {
+        logs_strip_cancel();
+    } else if ((!s.tap_have || e->point.id == s.tap_id)
+               && logs_strip_event(e, SCREEN_FILES)) {
+        s.tap_have = false;
+        s.press = FS_HIT_NONE;
+        files_screen_invalidate();
         return;
     }
     switch (s.view) {

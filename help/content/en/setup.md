@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's bench-wide settings in three categories: PANEL, SD CARD and SENSORS. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
+SETUP holds the panel's bench-wide settings in three categories: PANEL, SENSORS and SD CARD. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
 
 ## The tiles
 
@@ -15,15 +15,13 @@ SETUP holds the panel's bench-wide settings in three categories: PANEL, SD CARD 
 | Tile | Second line | What it opens |
 |---|---|---|
 | PANEL | `12 SETTINGS` | the list of PANEL |
-| SD CARD | `5 SETTINGS` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
 | SENSORS | `CURRENT, ANGLE, PHASE TAP` | [Sensors](setup-sensors.md): the sensor bus, the INA228 and INA3221 current monitors, the AS5600 and the phase tap, a left list of 8 beside the selected one's rows |
 | OUTPUTS | `PROTOCOLS, PINS, BOARD` | [Outputs](outputs.md): the role of each IOmcu pin, on a drawing of the board |
-| WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
+| SD CARD | `5 SETTINGS` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
-| FILES | `FOLDERS AND FILES` | [Files](files.md): the card's folders and files in two panes, to copy, move, rename and delete |
 | LAYOUT | `CONNECTORS AND PINS` | [Layout](layout.md), on the rbmod carrier only, whose pins are soldered |
 
-One slot stays free, and the carrier's LAYOUT takes it. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+4 slots are free, and the carrier's LAYOUT takes one. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
@@ -33,7 +31,7 @@ The home tag at the top left climbs one level at a time:
 |---|---|
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, WI-FI, UPDATES, FILES | the tiles; WI-FI and FILES opened from LOGS go back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first |
+| OUTPUTS, UPDATES | the tiles; OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first |
 
 ## Changing a value
 

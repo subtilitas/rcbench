@@ -354,7 +354,7 @@ TEST_CASE(home_under_a_setup_scroll_leaves_the_contact_to_no_screen)
     on_screen(SCREEN_SETUP);
     feed_reset();
     int x = 0, y = 0;
-    hub_point(SET_CAT_APP, &x, &y);
+    hub_point(settings_hub_cat_tile(SET_CAT_APP), &x, &y);
     feed_tap(FEED_LONE, x, y);
     CHECK_EQ(settings_screen_category(), SET_CAT_APP);
 
@@ -366,7 +366,7 @@ TEST_CASE(home_under_a_setup_scroll_leaves_the_contact_to_no_screen)
     CHECK_EQ(settings_screen_category(), -1);
 
     const uint32_t d0 = ui_router_dispatched();
-    hub_point(SET_CAT_SETUP_COUNT, &x, &y);
+    hub_point(2, &x, &y);
     glide(0, x, y, 8);                  /* onto OUTPUTS */
     lift(0);
     CHECK_EQ(ui_router_dispatched(), d0);

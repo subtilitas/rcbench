@@ -74,6 +74,7 @@ set(SRCS
     log_viewer_load.c
     log_viewer_draw.c
     log_viewer_events.c
+    logs_strip.c
     log_select.c
     settings_screen.c
     settings_draw.c

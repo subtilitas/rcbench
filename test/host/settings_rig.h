@@ -184,6 +184,9 @@ static inline void every_id_observer(setting_id_t id)
     }
 }
 
+/* OUTPUTS's tile, between SENSORS and SD CARD. */
+#define OUTPUTS_TILE 2
+
 /* The middle of the hub's tile @p index, in panel coordinates. */
 static inline int tile_x(int index)
 {
@@ -227,7 +230,7 @@ static inline void to_hub(void)
 static inline void open_category(setting_cat_t cat)
 {
     to_hub();
-    tap(tile_x((int)cat), tile_y((int)cat));
+    tap(tile_x(settings_hub_cat_tile(cat)), tile_y(settings_hub_cat_tile(cat)));
 }
 
 /* SETUP on its tiles, the model at its defaults. */
@@ -375,7 +378,7 @@ static inline void gesture_screen(setting_cat_t cat)
     feed_tick_per_report(REPORT_S);
     if (cat != LIST_CAT && cat != SET_CAT_SENSORS) {
         feed_tap(FEED_LONE, home_x(), home_y());
-        feed_tap(FEED_LONE, tile_x((int)cat), tile_y((int)cat));
+        feed_tap(FEED_LONE, tile_x(settings_hub_cat_tile(cat)), tile_y(settings_hub_cat_tile(cat)));
     }
     snap();
 }

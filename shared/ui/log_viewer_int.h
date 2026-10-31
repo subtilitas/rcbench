@@ -22,6 +22,7 @@
 #include "card_state.h"
 #include "gfx.h"
 #include "log_viewer_screen.h"
+#include "logs_strip.h"
 #include "touch_types.h"
 #include "ui_screen.h"
 #include "ui_tabs.h"
@@ -76,9 +77,9 @@
 #define FOOT_GAP  8   /**< Above the footer, px. */
 
 /**
- * @brief The header row, body y 4 to 52: ROOT / USER / BENCH, the folder
- *        and the card's name, and PREV and NEXT while the card holds more
- *        than one page.
+ * @brief The header row under the tile's strip (logs_strip.h), body y 52 to
+ *        100: ROOT / USER / BENCH, the folder and the card's name, and PREV
+ *        and NEXT while the card holds more than one page.
  *
  * PREV and NEXT are 140 x 48px over DELETE and OPEN.  The tabs are 110 x
  * 40px, 4px apart, centred on the row; ui_tabs draws its trough 3px
@@ -88,7 +89,7 @@
  * of the 10 x 20 face: an 11-character volume label and a 17-character
  * folder with the 16px between them.
  */
-#define BR_PG_Y     4
+#define BR_PG_Y     52
 #define BR_PG_H     UI_TAP_MIN                /**< PREV and NEXT, 48px. */
 #define BR_PG_W     140                       /**< Their width. */
 #define BR_TAB_W    110                       /**< A folder tab's width. */
@@ -110,16 +111,16 @@
  *        BR_ROW_H under its 30px heading.
  *
  * A row is drawn BR_ROW_H - 4 (44) px tall; the pitch, 48px, is what a
- * finger hits, UI_TAP_MIN.  The list is 372px tall: seven rows under the
- * heading take 366px of it.  A row shows the file's name, its date and,
+ * finger hits, UI_TAP_MIN.  The list is 324px tall: six rows under the
+ * heading take 318px of it.  A row shows the file's name, its date and,
  * right-aligned, its size.
  */
-#define BR_LIST_Y 60
+#define BR_LIST_Y 108
 /** @brief The list's panel. */
 #define BR_LIST   gfx_rect_make(LV_L, BR_LIST_Y, LV_W, \
                                 FOOT_Y - FOOT_GAP - BR_LIST_Y)
 #define BR_ROW_H  48  /**< A row's pitch, UI_TAP_MIN. */
-#define BR_ROWS   7        /**< The rows the list shows at once. */
+#define BR_ROWS   6        /**< The rows the list shows at once. */
 
 /**
  * @brief The scroll bar along the list's right edge, BR_BAR_W px wide:
@@ -153,26 +154,19 @@
 /**
  * @brief The footer's buttons, 52px tall, in the order browse_event()
  *        hit-tests them: RESCAN, DELETE and OPEN 140px wide, DELETE and
- *        OPEN under PREV and NEXT; WI-FI and FILES BR_SMALL_W (100px)
- *        wide after RESCAN.
+ *        OPEN under PREV and NEXT.
  */
 #define BR_RESCAN gfx_rect_make(LV_L, FOOT_Y, BR_PG_W, FOOT_H)
-#define BR_SMALL_W 100  /**< WI-FI's and FILES' width. */
-/** @brief WI-FI. */
-#define BR_WIFI   gfx_rect_make(LV_L + BR_PG_W + 8, FOOT_Y, BR_SMALL_W, FOOT_H)
-/** @brief FILES, the card's folders and files (files_screen.h). */
-#define BR_FILES  gfx_rect_make(LV_L + BR_PG_W + 8 + BR_SMALL_W + 8, FOOT_Y, \
-                                BR_SMALL_W, FOOT_H)
 /** @brief OPEN. */
 #define BR_OPEN   gfx_rect_make(LV_R - BR_PG_W, FOOT_Y, BR_PG_W, FOOT_H)
 #define BR_DELETE gfx_rect_make(LV_R - 2 * BR_PG_W - 8, FOOT_Y, BR_PG_W, \
                                 FOOT_H)  /**< DELETE. */
 /**
- * @brief A message's left edge in the footer: two lines of 28 cells of the
- *        12 x 24 face from FILES to DELETE, the 28 a message about a file
- *        declares and the file's name.  BR_MSG_LH is a line's pitch.
+ * @brief A message's left edge in the footer: two lines of 46 cells of the
+ *        12 x 24 face from RESCAN to DELETE, room for the 28 a message about
+ *        a file declares and the file's name.  BR_MSG_LH is a line's pitch.
  */
-#define BR_MSG_X  (LV_L + BR_PG_W + 8 + 2 * (BR_SMALL_W + 8) + 8)
+#define BR_MSG_X  (LV_L + BR_PG_W + 8 + 8)
 #define BR_MSG_LH 24  /**< A line's pitch. */
 
 /** @brief The box an empty list shows in its place: two lines of 64 cells
@@ -284,9 +278,9 @@ _Static_assert(LV_L + 3 + 3 * BR_TAB_W + 2 * 4 + 3 + 16 <= BR_HEAD_X,
 _Static_assert(BR_HEAD_X + (11 + 17) * 10 + 16 <= BR_HEAD_END,
                "the header's text ends at PREV");
 _Static_assert(BR_MSG_X + 28 * 12 + 8 <= LV_R - 2 * BR_PG_W - 8,
-               "a footer message's 28 cells stand between FILES and DELETE");
-_Static_assert(BR_SMALL_W >= 7 * 10 + 2 * 8,
-               "WI-FI and FILES hold DATEIEN's 7 cells of 10 x 20");
+               "a footer message's 28 cells stand between RESCAN and DELETE");
+_Static_assert(LOGS_STRIP_FOOT + 4 <= BR_PG_Y,
+               "the header row starts below the tile's strip");
 _Static_assert(BR_SIZE_W >= 10 * 10,
                "a row's size box holds LOG_DIR's 10 cells");
 _Static_assert(BR_DATE_W >= 16 * 10, "a row's date box holds 16 cells");

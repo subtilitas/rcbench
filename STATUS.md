@@ -224,7 +224,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 375 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 376 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
@@ -239,7 +239,7 @@ The host suite is 375 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`, `test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_error`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_report_width`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_supply_hold`, `test_supply_boot`, `test_sense_page`, `test_supply_link`, `test_supply_keep`, `test_sense_link`, `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`, `test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`, `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`, `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_match`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`, `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`, `test_files_rescan`, `test_textkey_editor`, `test_textkey_see`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_prog_cycle`, `test_kst_cycle_wait`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`, `test_hitec_session_move`, `test_hitec_live`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`, `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`, `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`, `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_reread`, `test_hitec_prog_reread`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`, `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`, `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_trial`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`, `test_wa_guard`, `test_wa_api`, `test_wa_api_file`, `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`, `test_i2c_txq_wire`, `test_fm_name` and `test_wall_clock`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_parts`, `test_sense_map`, `test_sense_limit`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_hitec_rx_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_servo_link_restart`, `test_logview`, `test_logview_report`, `test_logview_plot`, `test_logview_rank`, `test_logview_pages`, `test_logview_tabs`, `test_logview_delete`, `test_logview_touch`, `test_logview_layout`, `test_logview_row`, `test_log_name`, `test_log_take`, `test_card_tree`, `test_fm_tree`, `test_fm_ops`, `test_fm_match`, `test_fm_recheck`, `test_fm_req`, `test_files_screen`, `test_files_ops`, `test_files_open`, `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`, `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`, `test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`, `test_prog_port_fn`, `test_kst_file`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_prog_cycle`, `test_kst_cycle_wait`, `test_kst_panel`, `test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`, `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`, `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`, `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`, `test_hitec_session_move`, `test_hitec_live`, `test_hitec_port`, `test_hitec_port_stop`, `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`, `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`, `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`, `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_reread`, `test_hitec_prog_reread`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`, `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_write`, `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`, `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`, `test_wifi_layout`, `test_fw_image`, `test_fw_install`, `test_fw_trial`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`, `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`, `test_wa_guard`, `test_wa_api`, `test_wa_api_file`, `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`, `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`, `test_i2c_txq_wire`, `test_fm_name` and `test_wall_clock`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -289,7 +289,7 @@ on one of its 4 layers, the digits one layer key away.
 `test_textkey_see` holds Keyboard see-through: the steps OFF, 25% and 50%,
 the default, a save and a restart, a stored value off the list, the share
 of the text behind that shows through keys and gaps, opaque labels, and
-the opaque keyboard of every other kind. `test_files_rescan` writes logs, an upload and a folder onto
+the opaque keyboard of every other kind. `test_logs_strip` drives the LOGS tile's strip through the router: each tab and the home tag of each screen, a press slid off, cancelled or a second contact's, no tab over a level below the first (a file's views, a box, a keyboard, the viewer, the editor, a job, the network list, the image question), the radio off by any way off WI-FI and never on by a tab, ARMED, a CSV from FILES to LOGS, a report from LOGS to FILES' viewer and back. `test_files_rescan` writes logs, an upload and a folder onto
 the card behind FILES' back, each ranked before every row, and checks
 that RESCAN and the way back into FILES list them, in a folder of 60
 entries too. The test's card
@@ -635,7 +635,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
 | `shared/ui/ui_widgets.c` | 355 | 347 | 97.8% |
-| `shared/ui/ui_icons.c` | 189 | 173 | 91.5% |
+| `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
 | `shared/ui/ui_band.c` | 302 | 288 | 95.4% |
 | `shared/ui/ui_help.c` | 241 | 233 | 96.7% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
@@ -656,10 +656,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
 | `shared/ui/motor_program_page.c` | 170 | 165 | 97.1% |
-| `shared/ui/supply_screen.c` | 548 | 539 | 98.4% |
-| `shared/ui/supply_events.c` | 379 | 377 | 99.5% |
-| `shared/ui/supply_draw.c` | 433 | 414 | 95.6% |
-| `shared/ui/supply_pdmini.c` | 160 | 154 | 96.2% |
+| `shared/ui/supply_screen.c` | 543 | 534 | 98.3% |
+| `shared/ui/supply_events.c` | 345 | 343 | 99.4% |
+| `shared/ui/supply_draw.c` | 420 | 401 | 95.5% |
 | `shared/ui/prog5v_box.c` | 192 | 191 | 99.5% |
 | `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
@@ -685,7 +684,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/kst_panel_draw.c` | 535 | 528 | 98.7% |
 | `shared/ui/hitec_panel.c` | 238 | 238 | 100.0% |
 | `shared/ui/hitec_panel_text.c` | 455 | 451 | 99.1% |
-| `shared/ui/hitec_panel_edit.c` | 360 | 360 | 100.0% |
+| `shared/ui/hitec_panel_edit.c` | 333 | 333 | 100.0% |
 | `shared/ui/hitec_panel_page.c` | 231 | 231 | 100.0% |
 | `shared/ui/hitec_panel_touch.c` | 175 | 175 | 100.0% |
 | `shared/ui/hitec_panel_draw.c` | 239 | 239 | 100.0% |
@@ -700,22 +699,23 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
 | `shared/ui/esc_stick_draw.c` | 467 | 451 | 96.6% |
 | `shared/ui/esc_stick_draw_run.c` | 572 | 517 | 90.4% |
-| `shared/ui/log_viewer_screen.c` | 322 | 312 | 96.9% |
+| `shared/ui/log_viewer_screen.c` | 324 | 314 | 96.9% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
-| `shared/ui/log_viewer_draw.c` | 417 | 404 | 96.9% |
-| `shared/ui/log_viewer_events.c` | 436 | 424 | 97.2% |
+| `shared/ui/log_viewer_draw.c` | 416 | 403 | 96.9% |
+| `shared/ui/log_viewer_events.c` | 440 | 428 | 97.3% |
+| `shared/ui/logs_strip.c` | 31 | 29 | 93.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
-| `shared/ui/files_screen.c` | 690 | 664 | 96.2% |
+| `shared/ui/files_screen.c` | 690 | 665 | 96.4% |
 | `shared/ui/layout_screen.c` | 141 | 138 | 97.9% |
-| `shared/ui/files_draw.c` | 338 | 327 | 96.8% |
-| `shared/ui/files_events.c` | 213 | 212 | 99.5% |
+| `shared/ui/files_draw.c` | 339 | 328 | 96.8% |
+| `shared/ui/files_events.c` | 222 | 221 | 99.5% |
 | `shared/ui/files_text.c` | 161 | 148 | 91.9% |
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 420 | 405 | 96.4% |
-| `shared/ui/settings_screen.c` | 530 | 524 | 98.9% |
-| `shared/ui/settings_draw.c` | 233 | 227 | 97.4% |
-| `shared/ui/settings_rows.c` | 38 | 37 | 97.4% |
+| `shared/ui/settings_screen.c` | 549 | 543 | 98.9% |
+| `shared/ui/settings_draw.c` | 242 | 236 | 97.5% |
+| `shared/ui/settings_rows.c` | 51 | 50 | 98.0% |
 | `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
 | `shared/ui/sensors_rows.c` | 172 | 172 | 100.0% |
 | `shared/ui/outputs_screen.c` | 542 | 537 | 99.1% |
@@ -732,11 +732,11 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/picker_port.c` | 116 | 109 | 94.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 320 | 319 | 99.7% |
-| `shared/ui/wifi_screen.c` | 538 | 531 | 98.7% |
+| `shared/ui/wifi_screen.c` | 553 | 547 | 98.9% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 276 | 275 | 99.6% |
 | `shared/ui/upd_screen.c` | 613 | 590 | 96.2% |
-| `shared/settings/settings.c` | 415 | 408 | 98.3% |
+| `shared/settings/settings.c` | 414 | 407 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
@@ -914,7 +914,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api_write.c` | 211 | 208 | 98.6% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **68744** | **67422** | **98.1%** |
+| **total** | **68606** | **67306** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -580,11 +580,11 @@ static void tap(int x, int y)
     ui_router_event(&e);
 }
 
-/* A tap on SETUP's tile @p index, the categories' first in their order. */
-static void setup_tile(int index)
+/* A tap on the SETUP tile of category @p cat. */
+static void setup_tile(setting_cat_t cat)
 {
     gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
-    (void)settings_hub_slot(index, &r);
+    (void)settings_hub_slot(settings_hub_cat_tile(cat), &r);
     tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
 }
 

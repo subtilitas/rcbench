@@ -2553,14 +2553,25 @@ plotten:
 
 Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
 von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der
-Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
-AKTUALISIEREN, öffnet [WLAN](#wlan), und DATEIEN daneben öffnet
-[Files](#files).
+Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
-Die Dateiliste teilt den Körper in drei Teile. Die Kopfzeile, Körper-y 4 bis
-52, trägt STAMM, USER und BENCH (je 110 x 40px), den Ordner und den Namen
+Die Kachel LOGS hält drei Bildschirme unter einem Streifen, LOGS | FILES |
+WI-FI, drei Tabs von 331 x 40px über die Breite des Körpers, y 5 bis 45. Die
+Beschriftungen sind die Titel der Bildschirme, in jeder Sprache. Ein Tipp auf
+einen Tab öffnet diesen Bildschirm, und das Home-Tag jedes der drei führt zum
+Menü, gleich welcher Tab ihn geöffnet hat. Der Streifen steht nur auf der ersten
+Ebene eines Bildschirms: der Dateiliste von LOGS, den Spalten von FILES, den
+Tasten von WI-FI oder seinen Zeilen bei laufendem Funk. Über Import oder Plot
+einer Datei, einer Frage, einer Box, einer Tastatur, dem Textbetrachter, dem
+Editor oder der Netzwerkliste steht er nicht und nimmt keinen Tipp an, und das
+Home-Tag führt zuerst eine Ebene zurück. Ein Tab, der WI-FI verlässt, schaltet
+den Funk aus, wie das Home-Tag.
+
+Die Dateiliste teilt den Körper in vier Teile. Oben steht der Streifen; FILES
+und WI-FI darauf öffnen [Files](#files) und [WLAN](#wlan). Die Kopfzeile,
+Körper-y 52 bis 100, trägt STAMM, USER und BENCH (je 110 x 40px), den Ordner und den Namen
 der Karte und, solange der Ordner mehr als eine Seite hält, VORIGE und
-NÄCHSTE (140 x 48px). Die Liste darunter ist 1008px breit und zeigt 7
+NÄCHSTE (140 x 48px). Die Liste darunter ist 1008px breit und zeigt 6
 Zeilen von 44px im Abstand von 48px: Jede Zeile nimmt einen Tipp auf ihren
 ganzen 48px an. Eine Zeile zeigt den Namen der Datei, ihr Datum und
 rechtsbündig ihre Größe, in der Schrift 10 x 20. Der Name nimmt bis zu 60
@@ -2571,10 +2582,10 @@ Spalte von 160px. Eine Datei mit einem Zeitstempel in 1980, dem einer nicht
 gestellten Uhr ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)), oder
 ohne Zeitstempel lässt die Spalte leer. Die Größe steht in einem Feld von
 100px am Ende der Zeile. Art und Länge der Datei zeigt sie nicht. Die Fußzeile,
-Körper-y 440 bis 492, trägt links AKTUALISIEREN (140 x 52px), WLAN und
-DATEIEN (100 x 52px), rechts LÖSCHEN und ÖFFNEN (140 x 52px), und endet
-4px über dem Alarmband. Eine Meldung zu einer Datei steht zwischen DATEIEN
-und LÖSCHEN auf bis zu zwei Zeilen von 28 Zeichen.
+Körper-y 440 bis 492, trägt links AKTUALISIEREN (140 x 52px), rechts LÖSCHEN und ÖFFNEN
+(140 x 52px), und endet
+4px über dem Alarmband. Eine Meldung zu einer Datei steht zwischen
+AKTUALISIEREN und LÖSCHEN auf bis zu zwei Zeilen von 46 Zeichen.
 
 Die Importansicht zeigt ERKANNT (400px breit) neben der Spaltenliste
 (600px, 7 Zeilen im Abstand von 48px), darunter vier Tasten von 246 x
@@ -2977,10 +2988,11 @@ trägt.
 FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten und kopiert,
 verschiebt, benennt um und löscht ihre Dateien; er legt Ordner und leere
 Textdateien an und zeigt eine Datei als Text im
-[Textbetrachter](#der-textbetrachter). Er öffnet über DATEIEN in der unteren Reihe von
-[Logs](#logs) und über die Kachel FILES auf [Setup](#setup). Das Home-Tag
-schließt zuerst eine Box oder die Tastatur und führt dann zu dem
-Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
+[Textbetrachter](#der-textbetrachter). Er ist ein Tab des Streifens der Kachel
+[LOGS](#logs). Das Home-Tag schließt zuerst eine Box oder die Tastatur und führt
+dann zum Menü. FILES steuert keinen Ausgang. Ein Tab verlässt die Spalten sofort;
+ein laufendes Kopieren zeigt seine Box und nimmt keinen Tab an, also antworten
+zuerst ABBRECHEN oder das Home-Tag.
 
 ![FILES](img/de/files.png)
 
@@ -2992,7 +3004,7 @@ KOPIEREN und VERSCHIEBEN bringen ihren gewählten Eintrag in den Ordner der
 anderen Spalte. Ein Tipp auf eine Zeile wählt sie und macht ihre Spalte
 zur aktiven; ein zweiter Tipp auf die gewählte Zeile ist ÖFFNEN.
 
-Die Kopfzeile einer Spalte, Körper-y 4 bis 52, trägt den Pfad des Ordners
+Die Kopfzeile einer Spalte, Körper-y 52 bis 100, unter dem Streifen, trägt den Pfad des Ordners
 auf einer 312px breiten Taste, die einen Ordner höher geht; im
 Stammverzeichnis zeigt sie den Volumennamen der Karte oder `SD CARD` und
 führt nirgendwohin. VORIGE und NÄCHSTE, 88 x 48px, stehen am rechten Ende
@@ -3007,7 +3019,7 @@ Einträge, die das Panel nicht listet, zählt sie dahinter,
 `._RCBENCH.LOG`), und Namen über 63 Bytes. Ein Ordner, der nur solche
 Einträge hält, ist nicht leer, und LÖSCHEN lehnt ihn ab.
 
-Die Liste zeigt 6 Zeilen im Abstand von 48px, 44px hoch gezeichnet; ein
+Die Liste zeigt 5 Zeilen im Abstand von 48px, 44px hoch gezeichnet; ein
 Ziehen auf der Liste oder auf dem 56px breiten Rollbalken bewegt sie.
 Zuerst kommen die Ordner, dann die Dateien, jede Gruppe nach Namen
 geordnet. Eine Zeile zeigt ein Symbol, den Namen, rechtsbündig die Größe
@@ -3463,9 +3475,8 @@ WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei
 der Karte zum Herunterladen und zum Ändern, so weit
 [Schreiben per Browser](#schreiben-per-browser) es erlaubt, und ein
 Panel-Firmware-Image zum Hochladen. Der
-Bildschirm öffnet über die Kachel WI-FI auf [SETUP](#setup) und über WLAN in
-der unteren Reihe von [LOGS](#logs). Sein Home-Tag führt zu dem Bildschirm
-zurück, der ihn geöffnet hat, SETUP oder LOGS; ebenso SCHLIESSEN auf PANEL
+Bildschirm ist ein Tab des Streifens der Kachel [LOGS](#logs). Sein Home-Tag
+führt zum Menü; ebenso SCHLIESSEN auf PANEL
 UPDATE, nachdem die Installation eines Uploads scheiterte. Über der
 Netzwerkliste oder einer Tastatur führt das Home-Tag zuerst eine Ebene
 zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu
@@ -3476,8 +3487,10 @@ Bildschirm bleibt. Ein zweites Tippen, solange das Image noch da ist,
 verlässt den Bildschirm. Der Funk läuft nur, solange dieser Bildschirm offen ist,
 und für die Release-Suche und den Download unter [Updates](#updates). Er
 ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
-verlassen wird, bevor eine Installation den Flash schreibt und nach 10min
-ohne Anfrage.
+verlassen wird, über einen Tab des Streifens wie über das Home-Tag, bevor eine
+Installation den Flash schreibt und nach 10min ohne Anfrage. Ein Tab, getippt
+bei verbundenem Browser oder laufendem Upload, beendet beide ebenso. Das Öffnen
+des Tabs startet keinen Funk.
 
 Jede Ansicht von WI-FI endet 4px über dem Alarmband, bei Körper-y 492,
 damit ein Alarm keine Taste verdeckt. Zeilen, Tasten und Tastaturtasten
@@ -3485,8 +3498,8 @@ sind 48px hoch oder höher.
 
 | Ansicht | Aufbau |
 | --- | --- |
-| Funk aus | fünf Tasten von 460 x 60px (69,0 x 9,0mm), 8px Abstand, links; rechts eine Karte von 524px mit Zeilen von 49 Zeichen in 10 x 20, 24px Abstand |
-| Funk an | Zeilen von 56px: die Bezeichnung in 10 x 20 auf 240px, der Wert in 20 x 36 auf 740px, wo ein Netzwerkname von 32 Zeichen 640px braucht; die Zeilen darunter in 12 x 24, 28px Abstand; WLAN AUS 460 x 60px ab Körper-y 424, und mit Schreiben per Browser HALTEN die Taste des Schreibens gleich groß daneben ab Körper-x 548 |
+| Funk aus | unter dem Streifen ab Körper-y 56 fünf Tasten von 460 x 60px (69,0 x 9,0mm), 8px Abstand, links; rechts eine Karte von 524px mit Zeilen von 49 Zeichen in 10 x 20, 24px Abstand |
+| Funk an | unter dem Streifen ab Körper-y 52 Zeilen von 54px: die Bezeichnung in 10 x 20 auf 240px, der Wert in 20 x 36 auf 740px, wo ein Netzwerkname von 32 Zeichen 640px braucht; die Zeilen darunter in 12 x 24, 28px Abstand; WLAN AUS 460 x 60px ab Körper-y 424, und mit Schreiben per Browser HALTEN die Taste des Schreibens gleich groß daneben ab Körper-x 548 |
 | Netzwerkliste | zwei Spalten mit je acht Zeilen von 492 x 48px, 52px Abstand: der Name in 12 x 24 (32 Zeichen sind 384px), das Signal in 10 x 20; NEU SUCHEN, VERSTECKTES NETZWERK und ABBRECHEN je 328 x 56px |
 | Frage zu einem Image | eine Karte von 1008 x 484px: Titel und Versionen in 20 x 36, die Sätze in 12 x 24, umbrochen bei 80 Zeichen; ABBRECHEN und 2s HALTEN ZUM INSTALLIEREN 460 x 72px |
 | Tastatur | 1008 x 484px, Tasten von 93 x 71px ([Tastatur](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)) |
@@ -3529,7 +3542,7 @@ ein Telefon oder ein Rechner braucht:
 | IP-Adresse | `http://192.168.4.1/` |
 | Reichweite | nicht gemessen |
 
-1. SETUP → WI-FI → WLAN-HOTSPOT, oder LOGS → WLAN → WLAN-HOTSPOT.
+1. LOGS → WI-FI → WLAN-HOTSPOT.
 2. Am Telefon oder Rechner dem Netz beitreten, das der Bildschirm nennt, mit
    dem Passwort, das er zeigt.
 3. `http://192.168.4.1/` öffnen und den Zugangscode eingeben, den der
@@ -4150,8 +4163,7 @@ startet neu.
 Der Splash zeigt die neue Version, und das Band sagt
 `Panel-Firmware 0.22.1 installiert.`. Ein Schreiben, das fehlschlägt, ändert
 nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
-zu dem Bildschirm, der WI-FI geöffnet hat, SETUP oder LOGS, nach einem
-Download von GitHub dorthin, wo der Download begann.
+zum Menü, nach einem Download von GitHub dorthin, wo der Download begann.
 
 ![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
 
@@ -4241,21 +4253,20 @@ Zeile in der Schrift 10 x 20px.
 
 ![Setup](img/de/setup.png)
 
-- Drei Kategorien: PANEL, SD CARD und SENSORS, die
+- Drei Kategorien: PANEL, SENSORS und SD CARD, die
   Einstellungen für den ganzen Prüfstand. Eine Kachel nennt die Zahl der
   Einstellungen, die ihre Liste zeigt; die von SENSORS sagt, was sie hält,
   `STROM, WINKEL, PHASENABGRIFF`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
-- Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI
-  ([WLAN](#wlan)), UPDATES
-  ([Updates](#updates)) und FILES ([Files](#files)). Das Band jedes
-  Bildschirms nennt ihn wie seine Kachel, und das Band dieser Seite zeigt
-  SETUP.
+- Zwei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)) und UPDATES
+  ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie seine Kachel,
+  und das Band dieser Seite zeigt SETUP. [WLAN](#wlan) und [Files](#files) sind
+  Tabs der Kachel [LOGS](#logs).
 - LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
-  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board ist ein
-  Platz frei. Ein zehnter Eintrag hat keinen Platz: Die Seite hält 9, und der
-  Build schlägt beim zehnten fehl.
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 4 Plätze
+  frei, auf diesem 3. Die Seite hält 9, und der Build schlägt bei einem zehnten
+  Eintrag fehl.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
   einer beliebigen Kategorie zeigt sich auch hier:
@@ -4286,7 +4297,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, WI-FI, UPDATES, FILES | den Kacheln; WI-FI und FILES, aus LOGS geöffnet, führen zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [WLAN](#wlan)) |
+| OUTPUTS, UPDATES | den Kacheln; OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs)) |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -5272,7 +5283,7 @@ Die Warnung hält nur das Home-Tag:
 
 - Nichts ungespeichert oder ein Speichern angefordert (`BEI STILLSTAND`):
   keine Warnung, das Menü öffnet.
-- OUTPUTS, WI-FI, UPDATES und FILES öffnen von einer Kachel
+- OUTPUTS und UPDATES öffnen von einer Kachel
   und kehren zu SETUP zurück: keine Warnung auf dem Hin- oder Rückweg.
 - Das Home-Tag über der Warnung ist BLEIBEN.
 - STOP stoppt den Prüfstand und lässt die Warnung, wie sie ist.
@@ -5488,7 +5499,7 @@ und Download brauchen:
 
 - ein auf WI-FI gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
   Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` und
-  `Speichere ein Netzwerk unter SETUP > WI-FI.`, und NACH UPDATES SUCHEN ist grau;
+  `Speichere ein Netzwerk unter LOGS > WI-FI.`, und NACH UPDATES SUCHEN ist grau;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf.
   Sonst ist die Taste grau, und die Karte sagt
   `Für WLAN muss SAFE aktiv und das Netzteil aus sein.` und `Es darf kein Aufzeichnungslauf offen sein.`;

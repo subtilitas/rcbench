@@ -183,6 +183,14 @@ int settings_hub_tiles(void);
 ui_screen_id_t settings_hub_tile_screen(int i);
 
 /**
+ * @brief The hub tile that opens the list of category @p cat.
+ * @param cat The category.
+ * @return The tile, 0 to settings_hub_tiles() - 1; -1 for a category with no
+ *         tile.
+ */
+int settings_hub_cat_tile(setting_cat_t cat);
+
+/**
  * Whether a tile of the hub opens screen @p id.  The home tag of such a
  * screen leads back to SETUP rather than to the menu.
  */

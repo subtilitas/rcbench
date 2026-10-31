@@ -64,20 +64,46 @@ static void foot(int b)
 }
 
 /**
+ * @brief A drag of pane @p i's list up by @p rows rows.
+ * @param i     the pane
+ * @param rows  the rows
+ */
+static void drag_up(int i, int rows)
+{
+    const int x = FS_SPOT_ROW_CX(i);
+    const int y0 = UI_BAND_H + FS_SPOT_ROW_CY(FS_SPOT_ROWS - 1);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x, .y = (int16_t)y0,
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_MOVE;
+    e.point.y = (int16_t)(y0 - rows * 48 - 10);
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+/**
  * @brief Select @p name on pane @p i: a tap makes the pane the active one
- *        and selects the row.  Exits when the row is not on screen, so a
- *        view cannot come to show the row beside the one it names.
+ *        and selects the row, dragged on screen first.  Exits when the page
+ *        does not hold the row, so a view cannot come to show the row beside
+ *        the one it names.
  */
 static void pick(int i, const char *name)
 {
     const fm_tree_t *t = files_screen_pane(i);
-    for (int r = 0; r < t->held && r < FS_SPOT_ROWS; ++r) {
+    for (int r = 0; r < t->held; ++r) {
         if (strcmp(t->page[r].name, name) == 0) {
+            const int past = r - (files_screen_scroll(i) + FS_SPOT_ROWS - 1);
+            if (past > 0) {
+                drag_up(i, past);
+            }
+            const int on = r - files_screen_scroll(i);
             if (t->selected != r || files_screen_active() != i) {
-                ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(r));
+                ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(on));
             }
             if (t->selected != r) {
-                ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(r));
+                ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(on));
             }
             if (t->selected == r) {
                 return;
@@ -92,7 +118,8 @@ static void pick(int i, const char *name)
 static void enter_dir(int i, const char *name)
 {
     pick(i, name);
-    ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(files_screen_pane(i)->selected));
+    ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(files_screen_pane(i)->selected
+                                           - files_screen_scroll(i)));
 }
 
 /** @brief Key @p key of the name keyboard, on FILES' keyboard area. */

@@ -60,9 +60,9 @@ manual beside the bench.
   paused sweep, is a state rather than the control and reads PAUSIERT;
   PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
-  BATTERY, BALANCE, OUTPUTS, WI-FI, UPDATES, UPDATE,
-  CAN BUS FAULT, LINK LOST, PANEL UPDATE. A tile and the band of the screen
-  it opens carry the same word. A note that names a screen names it by its
+  BATTERY, BALANCE, OUTPUTS, WI-FI, FILES, UPDATES, UPDATE,
+  CAN BUS FAULT, LINK LOST, PANEL UPDATE. A tile, a tab of LOGS' strip and the
+  band of the screen it opens carry the same word. A note that names a screen names it by its
   title: "der Seite SUPPLY".
 - Protocol and mode names: DShot, PWM (pulse-width modulation), PPM
   (pulse-position modulation), OneShot, S.BUS, CAN (Controller Area
@@ -354,7 +354,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 2,532 entries
+A language is one more column in every entry of the table: 2,529 entries
 with an ID and 88 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

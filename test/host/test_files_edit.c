@@ -372,8 +372,9 @@ TEST_CASE(logs_returns_after_the_question_and_another_open_is_held)
     CHECK(home());
     CHECK_EQ(text_view_ask(), TEXT_VIEW_ASK_BACK);
     tap(FS_SPOT_TV_DISCARD_CX, FS_SPOT_TV_Q_CY);
-    CHECK(!home());                         /* the router goes to LOGS */
-    CHECK_EQ(ui_router_parent(SCREEN_FILES), SCREEN_LOGS);
+    CHECK(home());                          /* FILES goes to LOGS */
+    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+    ui_router_goto(SCREEN_FILES);
 
     /* Another open over unsaved text. */
     CHECK_EQ(files_screen_open_text(CARD_USER_LOGS, "ATEST007.TXT",

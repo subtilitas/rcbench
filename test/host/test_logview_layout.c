@@ -8,7 +8,7 @@
  *        A report opens in the text viewer, test_files_view.c's.
  *
  * Cases:
- * - a_card_of_20_runs_shows_seven_rows_a_finger_tall
+ * - a_card_of_20_runs_shows_six_rows_a_finger_tall
  * - the_list_draws_seven_rows_and_the_gaps_between_them
  * - an_empty_folder_and_a_full_page_keep_to_the_list
  * - nothing_is_drawn_under_the_alert_band
@@ -29,7 +29,7 @@
  * first pixel row of a row's pitch selects it and one on the pitch's last
  * row, 47px lower, opens it: the hit area is the whole 48px.
  */
-TEST_CASE(a_card_of_20_runs_shows_seven_rows_a_finger_tall)
+TEST_CASE(a_card_of_20_runs_shows_six_rows_a_finger_tall)
 {
     CHECK_EQ(LV_ROW_PITCH, UI_TAP_MIN);
     for (int r = 0; r < LV_ROWS; ++r) {
@@ -39,11 +39,11 @@ TEST_CASE(a_card_of_20_runs_shows_seven_rows_a_finger_tall)
         CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
         CHECK_EQ(log_run_number(log_viewer_open_name()), 20 - r);
     }
-    /* The bar's foot brings the last seven runs up: the top row is run 7,
+    /* The bar's foot brings the last six runs up: the top row is run 6,
      * the bottom one run 1. */
     runs_card(20);
     tap(LV_BAR_CX, LV_BAR_TOP + LV_BAR_H - 2);
-    CHECK_EQ(top_row_run(), 7);
+    CHECK_EQ(top_row_run(), LV_ROWS);
     tap(LV_ROW_CX, LV_ROW_CY(LV_ROWS - 1));
     tap(LV_ROW_CX, LV_ROW_CY(LV_ROWS - 1));
     CHECK_EQ(log_run_number(log_viewer_open_name()), 1);
@@ -189,7 +189,7 @@ TEST_CASE(nothing_is_drawn_under_the_alert_band)
 
 int main(void)
 {
-    RUN(a_card_of_20_runs_shows_seven_rows_a_finger_tall);
+    RUN(a_card_of_20_runs_shows_six_rows_a_finger_tall);
     RUN(the_list_draws_seven_rows_and_the_gaps_between_them);
     RUN(an_empty_folder_and_a_full_page_keep_to_the_list);
     RUN(nothing_is_drawn_under_the_alert_band);
