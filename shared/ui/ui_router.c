@@ -62,9 +62,8 @@ static struct {
     char              held[UI_ALERT_MAX];
     bool              has_held;
     bool              stop_latched;
-    /* SETUP > PANEL > Demo mode as the last frame saw it.  The screens under
-     * the watermark repaint only what changed, so a flip repaints them all. */
-    bool              demo_seen;
+    bool              demo_seen;      /**< Demo mode as the last frame saw it;
+                                           a flip repaints every screen    */
 
     /* A press that began on the alert band, by track id, held until its
      * release even if the alert clears meanwhile: the screen beneath never
