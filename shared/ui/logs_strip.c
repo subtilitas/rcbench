@@ -61,6 +61,9 @@ bool logs_strip_event(const touch_event_t *e, ui_screen_id_t here)
     }
     ui_tabs_t *t = tabs_for(here);
     const bool held = t->pressed >= 0 && e->point.id == t->press_id;
+    if (e->type == TOUCH_EVENT_DOWN && t->pressed >= 0 && !held) {
+        return true;        /* one contact at a time: the press stays */
+    }
     if (e->type == TOUCH_EVENT_DOWN && held) {
         t->pressed = -1;    /* that contact has gone, its release with it */
     }

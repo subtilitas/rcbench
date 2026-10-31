@@ -289,11 +289,24 @@ TEST_CASE(a_second_finger_on_the_strip_ends_no_press_of_the_first)
 {
     fresh_strip();
     const uint32_t nav = ui_router_navigations();
+    /* A tab held: another contact's tab and row press nothing, and the first
+     * contact's lift is the tap. */
+    body(TOUCH_EVENT_DOWN, 1, TAB_CX(TAB_FILES), TAB_CY);
+    body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_WIFI), TAB_CY);
+    body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_WIFI), TAB_CY);
+    body(TOUCH_EVENT_DOWN, 2, LV_ROW_CX, LV_ROW_CY(1));
+    body(TOUCH_EVENT_UP, 2, LV_ROW_CX, LV_ROW_CY(1));
+    CHECK_EQ(ui_router_navigations(), nav);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    body(TOUCH_EVENT_UP, 1, TAB_CX(TAB_FILES), TAB_CY);
+    CHECK_EQ(ui_router_current(), SCREEN_FILES);
+    fresh_strip();
     /* LOGS: a row held. */
+    const uint32_t nav1 = ui_router_navigations();
     body(TOUCH_EVENT_DOWN, 1, LV_ROW_CX, LV_ROW_CY(1));
     body(TOUCH_EVENT_DOWN, 2, TAB_CX(TAB_WIFI), TAB_CY);
     body(TOUCH_EVENT_UP, 2, TAB_CX(TAB_WIFI), TAB_CY);
-    CHECK_EQ(ui_router_navigations(), nav);
+    CHECK_EQ(ui_router_navigations(), nav1);
     body(TOUCH_EVENT_UP, 1, LV_ROW_CX, LV_ROW_CY(1));
     /* FILES: a footer button held. */
     tab(TAB_FILES);

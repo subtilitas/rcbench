@@ -52,7 +52,9 @@ void logs_strip_render(gfx_canvas_t *c, ui_screen_id_t here);
  *        another tab than @p here's opens that screen.
  *
  * A DOWN elsewhere is not the strip's; the event the strip takes is not the
- * screen's.  The caller draws again after a true: the tab's look changed.
+ * screen's.  While a contact holds a tab, a DOWN of any other contact presses
+ * nothing, on the strip or on the screen.  The caller draws again after a
+ * true: the tab's look changed.
  *
  * @param e    The event, in the body's coordinates.
  * @param here SCREEN_LOGS, SCREEN_FILES or SCREEN_WIFI.
