@@ -19,11 +19,11 @@ Eight tiles, 243 x 255px each, in 4 columns and 2 rows: the workbenches in the f
 | MOTOR & ESC | drive, V/A, rpm | [Motor and ESC](motor.md) |
 | SERVO | travel, current, program | [Servo](servo.md) |
 | SUPPLY | set and log V/A | [Supply](supply.md) |
-| LOGS | runs and files | [Logs](logs.md) |
+| LOGS | runs, files, Wi-Fi | [Logs](logs.md) |
 | RECEIVER | S.BUS, PPM, frames | [Receiver](analyser.md) |
 | BATTERY | cells, iR, mAh | [Battery](battery.md) |
 | BALANCE | vibration, phase | [Balance](balance.md) |
-| SETUP | pins, sensors, panel | [Setup](setup.md) |
+| SETUP | panel, pins, card | [Setup](setup.md) |
 
 Programming has no tile: ESCs are programmed on MOTOR & ESC's [PROGRAM](motor.md#program), servos on SERVO's PROGRAM.
 

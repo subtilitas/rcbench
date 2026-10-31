@@ -100,7 +100,9 @@ SETTINGS on the LIMIT RUN card opens them.
 
 ## SUPPLY's caps
 
-The voltage and current caps the set points and a run's steps stay inside show read-only under TEST's cards and on DUT: `Caps 21.00V 5.00A: SUPPLY > SETTINGS`, the caps in force. They are set on [SUPPLY](supply.md) > SETTINGS.
+The voltage and current caps the set points and a run's steps stay inside show under TEST's cards and on DUT on a button, `CAPS 21.00V 5.00A: OPEN SUPPLY`, the caps in force. The button opens [SUPPLY](supply.md) on SETTINGS, LIMITS, where they are set, and the home tag there comes back. It is grey while TARGET is locked: leaving SERVO would switch the bench to SAFE.
+
+OUTPUT's first note names the port SERVO TESTER is set to, `SERVO TESTER: PORT 1. Set it on OUTPUTS.` It takes no tap: the setting's home is [Outputs](outputs.md#the-prog-port-entry).
 
 ## DUT
 
@@ -113,7 +115,7 @@ The voltage and current caps the set points and a run's steps stay inside show r
 | REPORT | a text report, `ATESTnnn.TXT`, beside each test's log, while User logs on SETUP > SD CARD is ON |
 | ENC CENTRE | a tap takes the live count, 0 to 4095, as the centre, with the servo at neutral |
 
-AS5600, the output encoder, is switched on [Sensors](setup-sensors.md) alone. PORT PWM, the pulse on the programming port, is set on the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) alone.
+AS5600, the output encoder, is switched on [Sensors](setup-sensors.md) alone; DUT's button `AS5600 ON OR OFF: OPEN SENSORS` opens that entry and the home tag there comes back. PORT PWM, the pulse on the programming port, is set on the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) alone.
 
 ## The TARGET row
 

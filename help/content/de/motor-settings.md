@@ -41,7 +41,7 @@ Eine Änderung von Leerlaufpuls oder Vollpuls erreicht den IOmcu beim ersten Pol
 |---|---|
 | `Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.` | den IOmcu aktualisieren: Das Panel bietet das mitgebrachte Image an, wenn der IOmcu sich verbindet |
 | `Leerlaufpuls liegt nicht 100us oder mehr unter Vollpuls. Einen ändern, dann ARM erneut halten.` | Leerlaufpuls senken oder Vollpuls erhöhen |
-| `Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.` | den Puls kürzen oder den Motor-Pin auf OUTPUTS mit einer langsameren Rate zuordnen: Ein Puls, der länger als sein PWM-Frame ist, wird abgelehnt |
+| `Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder ZIEL ändern.` | den Puls kürzen oder den Motor-Pin auf OUTPUTS mit einer langsameren Rate zuordnen: Ein Puls, der länger als sein PWM-Frame ist, wird abgelehnt |
 | `Der IOmcu hält einen anderen Pulsbereich. Leerlaufpuls oder Vollpuls ändern.` | einen der beiden Werte ändern; das Panel sendet das Paar erneut |
 
 Eine auf OUTPUTS geschriebene Zuordnung und ein erneutes Verbinden des IOmcu senden das Paar ebenfalls erneut.

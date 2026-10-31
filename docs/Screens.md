@@ -288,11 +288,11 @@ Each tile carries a line under its name, 2 rows of at most 22 characters,
 | MOTOR & ESC | drive, V/A, rpm |
 | SERVO | travel, current, program |
 | SUPPLY | set and log V/A |
-| LOGS | runs and files |
+| LOGS | runs, files, Wi-Fi |
 | RECEIVER | S.BUS, PPM, frames |
 | BATTERY | cells, iR, mAh |
 | BALANCE | vibration, phase |
-| SETUP | pins, sensors, panel |
+| SETUP | panel, pins, card |
 
 A tile marked SIMULATED opens a screen whose source the bench does not
 report: the IOmcu reports no capability for it, or its sensor is not
@@ -1466,9 +1466,9 @@ clears at SPEED 63%, and for a triangle at 40%.
 through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
-files. The card, 600 x 200px, holds the run's name, a summary line
+files. The card, 600 x 188px, holds the run's name, a summary line
 (`4.8 6.0V BROWN-OUT, 60s EACH`, or `..., 20 MOVEMENTS EACH`), START
-TEST (300 x 56px) with the card's SETTINGS (160 x 48px) beside it, the
+TEST (300 x 48px) with the card's SETTINGS (160 x 48px) beside it, the
 state line, the last result with its files
 (`LAST: PASS ATEST004.CSV + .TXT`) and the STALL AT note. START TEST needs
 the bench in ARMED and a supply that answers; the state line says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
@@ -1539,7 +1539,7 @@ INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`
 (`CURRENT INA3221` while no channel watches the target), the next line says why
 it cannot start or what it does, then the last result and its report.
 These four lines are in the 10 x 20 face, 20px apart, the first 2px under
-START LIMIT RUN, so the fourth ends 2px inside the 200px card.
+START LIMIT RUN, so the fourth ends 2px inside the 188px card.
 TEST stays shown as the run starts. Its box on LIVE's left card shows the
 values written of 8, the phase with the side and the pulse, and the output
 it drives, with STOP RUN; after the run, the verdict, the values or the
@@ -1605,8 +1605,9 @@ drives out of PWM (pulse-width modulation) and reads and writes the
 servo's settings on its signal wire. PROG PORT 1 is GPIO 13 on pad 17 by
 default. It connects only with SERVO TESTER on SETUP > OUTPUTS set to a
 port, PORT 1, PORT 2, PORT 3 or PORT 4; with OUTPUTS it shows `Use the programming port to
-program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP >
-OUTPUTS.`, and CONNECT is locked. While it holds the port it stays open: CLOSE and the
+program a servo.` and `Tap TARGET and set SERVO TESTER to PORT 1 to PORT 4.`,
+and CONNECT is locked. TARGET then opens OUTPUTS on PROG PORT 1's entry, which
+holds SERVO TESTER, and the home tag there comes back to the programmer. While it holds the port it stays open: CLOSE and the
 home tag open LEAVE PROGRAMMING, and while the port moves into or out of
 programming they do nothing. Leaving SERVO leaves the port as it is; back
 on SERVO the programmer is open again on PROGRAM. ARM is drawn disabled; a
@@ -1742,15 +1743,27 @@ stay where they are.
 ![TRIM's keypad, -25us typed](img/servo-trim-keypad.png)
 
 AS5600, the output encoder, is switched on and off on SETUP > SENSORS
-alone ([the output encoder](#sensors-the-output-encoder)); DUT's note
-says so. It adds the horn's angle to the MEASURED row and to a run's CSV
+alone ([the output encoder](#sensors-the-output-encoder)). DUT's button
+`AS5600 ON OR OFF: OPEN SENSORS`, 600 x 48px, opens SENSORS on the AS5600
+entry. It adds the horn's angle to the MEASURED row and to a run's CSV
 and report ([Servo](Servo.md#the-output-encoder)).
 
 SUPPLY's caps, the voltage and current the set points and a run's steps stay
-inside, show read-only under TEST's cards and on DUT, with their home and
-the caps in force: `Caps 21.00V 5.00A: SUPPLY > SETTINGS` (German
-`Grenzen 21.00V 5.00A: SUPPLY > OPTIONEN`). They are set on SUPPLY >
-SETTINGS.
+inside, show under TEST's cards and on DUT on a button of 600 x 48px:
+`CAPS 21.00V 5.00A: OPEN SUPPLY` (German
+`GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`). They are set on SUPPLY > SETTINGS,
+LIMITS, which the button opens.
+
+Both buttons open another screen as TARGET does: the home tag there comes back
+to the task and the page they were tapped on. Leaving SERVO switches the bench
+to SAFE, ends a sweep or a test and switches off a supply SERVO switched on, so
+they are grey and take no press under TARGET's lock: ARMED, a sweep, a run, or
+a programmer holding the port. From SENSORS the home tag passes through
+[the leave warning](#keeping-the-values) with a value unsaved.
+
+OUTPUT's first note reads what SERVO TESTER is set to, OUTPUTS, PORT 1, PORT 2,
+PORT 3 or PORT 4, and that it is set on OUTPUTS:
+`SERVO TESTER: PORT 1. Set it on OUTPUTS.` It takes no tap.
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
@@ -2479,7 +2492,7 @@ shows the folder, `BENCH/LOGS`, and nothing on ROOT. The card's name,
 `UNITEST`, ends the row, right-aligned: at the right edge of the list, and
 left of PREV when PREV and NEXT show. An empty folder says why and what goes there:
 `No .csv files in BENCH/LOGS.` and the names it takes, or with its switch OFF
-`AUTO LOGS OFF in SETUP > SD CARD.`. Under the DELETE question the tabs are
+`AUTO LOGS OFF on SD CARD.`. Under the DELETE question the tabs are
 hidden. A file opened from one tab stays that tab's file: its import view
 and plot read it from that folder whichever tab is chosen since.
 
@@ -3381,7 +3394,7 @@ While the page is served, a line under the rows says which holds:
 `The browser may write to the card: 3 writes so far.`,
 `Browser writes need the access code r4tcw9pe.` (ACCESS CODE with
 ACCESS CODE off), `The browser may not write to the card until the hold.`
-or `Browser writes are off: SETUP > SD CARD.` The count is of the writes
+or `Browser writes are off: SD CARD.` The count is of the writes
 the panel made for the page this radio session.
 
 With HOLD, HOLD 2s: ALLOW BROWSER WRITES stands beside WI-FI OFF,
@@ -4325,12 +4338,12 @@ both said. In order:
 | Message | When |
 | --- | --- |
 | `IOmcu has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the IOmcu speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
-| `Sensor SDA or SCL not set. Check SETUP > SENSORS.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
-| `INA228 and INA3221 both use 0x40. Check SETUP > SENSORS.` | the INA228 on the address of a fitted INA3221; neither is read |
-| `Sensor pins GPIO 16/GPIO 17 rejected. Check SETUP > SENSORS.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
-| `INA228 shunt or maximum current rejected. Check SETUP > SENSORS.` | the shunt's voltage at the max current passes 163.84mV, or the range it gives passes 2000A; the INA228 stays off |
-| `INA3221 settings rejected. Check SETUP > SENSORS.` | the IOmcu refused the INA3221 set-up: the SENSE_MAP map, or on an IOmcu older than 4.25 the one-part frame; the IOmcu keeps what it held |
-| `INA3221 0x41 has every channel off. Check SETUP > SENSORS.` | a fitted part has all three shunts at OFF; no map is written until one is on again, and the line leaves the band then |
+| `Sensor SDA or SCL not set. Check SENSORS.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
+| `INA228 and INA3221 both use 0x40. Check SENSORS.` | the INA228 on the address of a fitted INA3221; neither is read |
+| `Sensor pins GPIO 16/GPIO 17 rejected. Check SENSORS.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
+| `INA228 shunt or maximum current rejected. Check SENSORS.` | the shunt's voltage at the max current passes 163.84mV, or the range it gives passes 2000A; the INA228 stays off |
+| `INA3221 settings rejected. Check SENSORS.` | the IOmcu refused the INA3221 set-up: the SENSE_MAP map, or on an IOmcu older than 4.25 the one-part frame; the IOmcu keeps what it held |
+| `INA3221 0x41 has every channel off. Check SENSORS.` | a fitted part has all three shunts at OFF; no map is written until one is on again, and the line leaves the band then |
 | `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA or SCL held low and clocks the bus free. A line that reads low with nothing holding it (pins with no part and no pull-up wired to them) is not this: it rises within 50µs on the IOmcu's own pad pull-up (32 to 86kΩ), and the monitors read as not answering |
 | `INA228 is not responding at 0x45.` | enabled, and not answering 2.5s after its set-up was taken, or having stopped answering after it did. `A device responds at 0x44.` is added when the IOmcu's address scan found something where the part could be |
 | `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
@@ -4473,7 +4486,7 @@ channel said last: with all 12 over, each is said within 12 alerts, 60s.
 | --- | --- |
 | `INA3221 0x41 CH2 (PORT 1) over its 0.80A limit.` | a window of the channel passed its limit since the last read; the target in brackets is what the channel watches, none for NONE; the limit is the one the window was judged by |
 | `An INA3221 channel passed its limit; which one was lost on the link.` | OVER_COUNT moved with no OVER bit: the reply that carried the bits did not arrive. A reply that does not arrive takes the link down, so this is said after the read at the next link-up. A count of 0 there is an IOmcu that started again and is not said |
-| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes. Also an IOmcu that names protocol 4.27 or later and answers the page with BAD_PAGE: the panel sends the page nothing more until the next link-up |
+| `INA3221 limits rejected. Check SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes. Also an IOmcu that names protocol 4.27 or later and answers the page with BAD_PAGE: the panel sends the page nothing more until the next link-up |
 
 OVER bits the IOmcu holds from before the link came up, also those of an
 IOmcu that started again, are said by channel at the first read.
@@ -4632,9 +4645,9 @@ current monitors:
 | Message | When |
 | --- | --- |
 | `IOmcu has no TONE page. Phase tap not read.` | the tap is enabled and the IOmcu speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
-| `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > SENSORS.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP SENSORS or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
-| `Phase tap split, gap or periods rejected. Check SETUP > SENSORS.` | the IOmcu refused the second frame; not written again until a value changes |
-| `Phase tap pin GPIO 22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP SENSORS or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > SENSORS.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
+| `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SENSORS.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP SENSORS or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
+| `Phase tap split, gap or periods rejected. Check SENSORS.` | the IOmcu refused the second frame; not written again until a value changes |
+| `Phase tap pin GPIO 22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP SENSORS or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SENSORS.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 The three alerts about the set-up (the first frame rejected, the second
@@ -4886,7 +4899,7 @@ pin carries anything else.
 A panel built with the IOmcu's image carries it and offers it when the
 IOmcu runs another build. The check runs at every link-up and compares
 SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
-build raises the alert `IOmcu runs a different build. Update it under SETUP > UPDATES.`, and the question opens on the menu while the bench is SAFE, the
+build raises the alert `IOmcu runs a different build. Update it on UPDATES.`, and the question opens on the menu while the bench is SAFE, the
 supply's output is off, the panel's Wi-Fi radio is wholly off and no install
 of a panel image is under way. A START given while either holds is spent,
 and the question opens again once both have ended.
@@ -4987,8 +5000,12 @@ The card names the running version and the kept home network. Both the
 check and the download need:
 
 - a home network kept on WI-FI ([Home network](#home-network)).
-  Without one, the card says `No home network saved.` and
-  `Save a network under LOGS > WI-FI.`, and CHECK FOR UPDATES is grey;
+  Without one, the card says `No home network saved.` over the button
+  `SAVE A NETWORK: OPEN WI-FI`, and CHECK FOR UPDATES is grey. The button
+  opens WI-FI, whose home tag comes back here; the radio goes off on the way,
+  as by any way off WI-FI. A tab of LOGS' strip on WI-FI ends that: from there
+  the home tag goes to the menu. A check that ended for want of a network says
+  `Save a network on WI-FI.` on PANEL UPDATE;
 - the bench SAFE, the supply output off and no log run open. Otherwise the
   key is grey and the card says `Wi-Fi requires SAFE, the supply output off,` and
   `and no open recording session.`;

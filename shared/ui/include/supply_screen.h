@@ -151,6 +151,13 @@ void supply_screen_header_text(char *out, size_t size);
 void supply_screen_open_pdmini(void);
 
 /**
+ * @brief SETTINGS' LIMITS tab, as SERVO's caps button opens it: where the caps
+ *        are set.  Called after the router's entry, which opens LIVE.  Nothing
+ *        else changes, and nothing is sent.
+ */
+void supply_screen_open_limits(void);
+
+/**
  * @brief SETTINGS' tab selected.
  * @return 0 for LIMITS, 1 for PD MINI
  */

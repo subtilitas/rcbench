@@ -29,11 +29,4 @@ typedef struct {
  */
 settings_row_t settings_rows_entry(setting_cat_t cat, int index);
 
-/**
- * @brief Counts the settings and strings @p cat lists.
- * @param cat the category
- * @return the count
- */
-int settings_rows_listed(setting_cat_t cat);
-
 #endif /* SETTINGS_ROWS_INT_H */

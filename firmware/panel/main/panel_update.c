@@ -160,7 +160,7 @@ typedef enum {
     CU_IDLE = 0,
     CU_CHECKING,    /* does it run the carried build: link_uph_check()   */
     CU_OFFERED,     /* it does not; the question waits for START         */
-    CU_DECLINED,    /* CANCEL, until the next link-up                    */
+    CU_DECLINED,    /* CANCEL, until the panel restarts (s_cu_declined)  */
     CU_UPDATING,    /* link_uph_update(): the link is the update's       */
     CU_CONFIRMING,  /* an image found on trial is bought                 */
 } cu_state_t;

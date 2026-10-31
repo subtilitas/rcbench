@@ -37,7 +37,9 @@
 #include "outputs_screen.h"
 #include "servo_limrun.h"
 #include "prog_registry.h"
+#include "sensors_pane.h"
 #include "settings.h"
+#include "settings_screen.h"
 #include "supply_screen.h"
 #include "ui_target_row.h"
 #include "ui_text.h"
@@ -279,7 +281,7 @@ void draw_prog_page(gfx_canvas_t *c)
 
 /* ui_router_navigations() just after the TARGET row opened OUTPUTS, or 0:
  * the entry one navigation later is the way back. */
-static uint32_t s_outputs_nav;
+static uint32_t s_opened_nav;
 
 /**
  * @brief The strip's tabs laid out again at SERVO's sizes, SV_TAB_W x
@@ -304,7 +306,7 @@ static void strip_widen(void)
 /** @brief The strip, the TARGET row and PROGRAM's list laid out; LIVE. */
 void wb_init(void)
 {
-    s_outputs_nav = 0u;
+    s_opened_nav = 0u;
     ui_wb_strip_init(&s.wb, SERVO_TASKS, SV_STRIP_X, SV_STRIP_Y);
     strip_widen();
     s.run_list = RL_NONE;
@@ -316,12 +318,12 @@ void wb_init(void)
 
 void wb_enter(void)
 {
-    /* Back from OUTPUTS, which the TARGET row opened, with no screen in
-     * between: the task it was opened from.  Any other entry is a tile's,
-     * which opens LIVE. */
-    const bool back = s_outputs_nav != 0u
-                      && ui_router_navigations() == s_outputs_nav + 1u;
-    s_outputs_nav = 0u;
+    /* Back from a screen this one opened (the TARGET row, the caps and
+     * AS5600 buttons), with no screen in between: the task it was opened
+     * from.  Any other entry is a tile's, which opens LIVE. */
+    const bool back = s_opened_nav != 0u
+                      && ui_router_navigations() == s_opened_nav + 1u;
+    s_opened_nav = 0u;
     if (!back) {
         ui_wb_strip_open(&s.wb);
     }
@@ -426,6 +428,9 @@ static void open_outputs(void)
         outputs_screen_open_on(0u);
     } else if (target != 0u) {
         outputs_screen_open_on_port((uint8_t)(target - 1u));
+    } else if (prog_shown()) {
+        /* A programmer asks for a port: SERVO TESTER is on this entry. */
+        outputs_screen_open_on_port(0u);
     } else {
         const outbind_proto_t *p = outbind_protos();
         for (uint8_t i = 0; i < OUTBIND_PROTOS; ++i) {
@@ -437,7 +442,50 @@ static void open_outputs(void)
         }
     }
     ui_router_goto(SCREEN_OUTPUTS);
-    s_outputs_nav = ui_router_navigations();
+    s_opened_nav = ui_router_navigations();
+}
+
+/**
+ * @brief The caps button tapped: SUPPLY's LIMITS.  The router leaves this
+ *        screen for it, and the home tag there comes back to this task.
+ */
+void wb_open_caps(void)
+{
+    ui_router_goto(SCREEN_SUPPLY);
+    supply_screen_open_limits();
+    s_opened_nav = ui_router_navigations();
+}
+
+/**
+ * @brief DUT's AS5600 button tapped: SENSORS on the AS5600 entry.  The router
+ *        leaves this screen for it, and the home tag there comes back to DUT.
+ */
+void wb_open_encoder(void)
+{
+    ui_router_goto(SCREEN_SETUP);
+    settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_AS5600);
+    s_opened_nav = ui_router_navigations();
+}
+
+/**
+ * @brief The caps button's and DUT's AS5600 button's press, where @p r holds
+ *        the point.  They open another screen, as TARGET does: leaving
+ *        switches the bench to SAFE and ends a sweep or a test, so they take
+ *        no press under the TARGET setting's lock.
+ * @param evt  the DOWN
+ * @param r    the button
+ * @param code the press's OP_ code
+ * @return whether the point is on the button
+ */
+bool opener_down(const touch_event_t *evt, gfx_rect_t r, int code)
+{
+    if (!gfx_rect_contains(r, evt->point.x, evt->point.y)) {
+        return false;
+    }
+    if (!target_locked_for(SET_SERVO_TARGET)) {
+        ov_take(evt, code, -1);
+    }
+    return true;
 }
 
 bool wb_down(const touch_event_t *evt)
@@ -492,6 +540,9 @@ bool wb_rest(const touch_event_t *evt)
 void test_page_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
+    if (opener_down(evt, caps_open_rect(), OP_OPEN_CAPS)) {
+        return;
+    }
     for (int k = 0; k < 2; ++k) {
         if (gfx_rect_contains(run_set_rect(k), x, y)) {
             ov_take(evt, OP_RUN_SET, k);
@@ -535,19 +586,20 @@ void draw_strip(gfx_canvas_t *c)
 }
 
 /**
- * @brief SUPPLY's caps in force, which a run's steps and a set point stay
- *        inside, read-only here: their home is SUPPLY > SETTINGS.
+ * @brief The caps button: SUPPLY's caps in force, which a run's steps and a
+ *        set point stay inside, read-only here; a tap opens their home on
+ *        SUPPLY.  Grey while the TARGET setting's lock holds.
  * @param c the canvas
- * @param x the line's left edge, px
- * @param y its top, px
  */
-void draw_caps_line(gfx_canvas_t *c, int x, int y)
+void draw_caps_button(gfx_canvas_t *c)
 {
     const supply_caps_t caps = supply_screen_caps();
     char line[64];
     snprintf(line, sizeof(line), TR(SV_CAPS), (double)caps.v_max,
              (double)caps.i_max);
-    gfx_text(c, x, y, line, SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+    ui_button_font(c, caps_open_rect(), line, ui_theme_color(UI_C_PANEL_HI),
+                   s.ov_have && s.ov_pressed == OP_OPEN_CAPS,
+                   !target_locked_for(SET_SERVO_TARGET), SV_FONT_LABEL);
 }
 
 /**
@@ -579,7 +631,7 @@ void draw_test_page(gfx_canvas_t *c)
     draw_test_lines(c);
     draw_lim_start(c);
     draw_lim_lines(c);
-    draw_caps_line(c, RUN_CARD_X, RUN_CAPS_Y);
+    draw_caps_button(c);
 }
 
 /*

@@ -289,6 +289,15 @@ void supply_screen_open_pdmini(void)
     supply_invalidate();
 }
 
+void supply_screen_open_limits(void)
+{
+    (void)ui_wb_strip_select(&s.wb, UI_WB_SETTINGS);
+    s.ov_tabs.selected = SUP_OV_LIMITS;
+    ++s.strip_rev;
+    ++s.ov_rev;
+    supply_invalidate();
+}
+
 int supply_screen_settings_tab(void)
 {
     return s.ov_tabs.selected;

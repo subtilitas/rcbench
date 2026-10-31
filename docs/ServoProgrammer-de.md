@@ -160,7 +160,7 @@ was immer die Zeile sagt.
 Mit den Standardausgängen als Ziel, SERVO-TESTER auf OUTPUTS, zeigt der
 Programmierer
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
-`Unter SETUP > OUTPUTS den SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und jedes
+`ZIEL antippen und SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und jedes
 Bedienelement außer **SCHLIESSEN** ist aus. Er verbindet auf PORT 1, PORT 2,
 PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 

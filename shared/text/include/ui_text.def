@@ -338,11 +338,11 @@ UI_TEXT(OV_RECEIVER, 0,
     "S.BUS, PPM, frames",
     "S.BUS, PPM, Frames")
 UI_TEXT(OV_LOGS, 0,
-    "runs and files",
-    "Läufe und Dateien")
+    "runs, files, Wi-Fi",
+    "Läufe, Dateien, WLAN")
 UI_TEXT(OV_SETUP, 0,
-    "pins, sensors, panel",
-    "Pins, Sensoren, Panel")
+    "panel, pins, card",
+    "Panel, Pins, Karte")
 UI_TEXT(OV_BATTERY, 0,
     "cells, iR, mAh",
     "Zellen, iR, mAh")
@@ -393,11 +393,11 @@ UI_TEXT(HG_OV_BALANCE, 0,
     "Finds where a propeller or fan needs mass, and shows where the two sensors go.",
     "Findet, wo ein Propeller oder Lüfter Masse braucht, und zeigt, wo die zwei Sensoren sitzen.")
 UI_TEXT(HG_OV_LOGS, 0,
-    "Lists the CSV logs and reports on the SD card and plots up to 4 columns of a log.",
-    "Listet die CSV-Logs und Berichte auf der SD-Karte und plottet bis zu 4 Spalten eines Logs.")
+    "Lists the logs on the SD card and plots up to 4 columns. FILES and WI-FI are its other two tabs.",
+    "Listet die Logs auf der SD-Karte und plottet bis zu 4 Spalten. DATEIEN und WI-FI sind seine anderen Tabs.")
 UI_TEXT(HG_OV_SETUP, 0,
-    "The bench-wide settings: panel, interfaces, SD card and sensors.",
-    "Die Einstellungen des ganzen Prüfstands: Panel, Schnittstellen, SD-Karte und Sensoren.")
+    "The bench-wide settings: panel, sensors, outputs, SD card and updates.",
+    "Die Einstellungen des ganzen Prüfstands: Panel, Sensoren, Ausgänge, SD-Karte und Updates.")
 UI_TEXT(HG_OV_STOP, 0,
     "Switches the bench to SAFE and the supply output off, on every screen and with this guide open.",
     "Schaltet den Prüfstand auf SAFE und den Ausgang der Versorgung ab, auf jedem Bildschirm, auch bei offener Hilfe.")
@@ -1236,9 +1236,12 @@ UI_TEXT(BAL_NOTE_3, 0,
     "Ein Indexpuls halbiert die Laufzahl.")
 
 /* --------------------------------------------------------------- SETUP */
-UI_TEXT(SET_COUNT, 0,
-    "%d SETTINGS",
-    "%d EINSTELLUNGEN")
+UI_TEXT(SET_HUB_PANEL, 0,
+    "THEME, LANGUAGE, KNOB",
+    "THEMA, SPRACHE, DREHKNOPF")
+UI_TEXT(SET_HUB_CARD, 0,
+    "LOGS, BROWSER WRITES",
+    "LOGS, BROWSER-SCHREIBEN")
 UI_TEXT(SET_HUB_OUTPUTS, 0,
     "PROTOCOLS, PINS, BOARD",
     "PROTOKOLLE, PINS, PLATINE")
@@ -1848,11 +1851,11 @@ UI_TEXT(LOG_ROOT_HERE, 64,
     "Runs of firmware 0.21.0 and older.",
     "Läufe von Firmware 0.21.0 und älter.")
 UI_TEXT(LOG_AUTO_OFF, 64,
-    "AUTO LOGS OFF in SETUP > SD CARD.",
-    "AUTO-LOGS AUS unter SETUP > SD CARD.")
+    "AUTO LOGS OFF on SD CARD.",
+    "AUTO-LOGS AUS unter SD CARD.")
 UI_TEXT(LOG_USER_OFF, 64,
-    "USER LOGS OFF in SETUP > SD CARD.",
-    "USER-LOGS AUS unter SETUP > SD CARD.")
+    "USER LOGS OFF on SD CARD.",
+    "USER-LOGS AUS unter SD CARD.")
 /* The folder tabs: the card's folder names, the same in every language
  * but the root's. */
 UI_TEXT(LOG_TAB_USER, 0,
@@ -3367,7 +3370,7 @@ UI_TEXT(SV_NOT_RECORDED, 31,
 UI_TEXT(SV_WRITING, 31,
     "WRITING",
     "SCHREIBEN LÄUFT")
-/* In place of a test's file with USER LOGS off on SETUP > SD CARD. */
+/* In place of a test's file with USER LOGS off on SD CARD. */
 UI_TEXT(SV_USER_LOGS_OFF, 31,
     "USER LOGS OFF",
     "USER-LOGS AUS")
@@ -3491,7 +3494,7 @@ UI_TEXT(SV_REFUSED_1, 58,
     "Abgelehnt: Puls länger als die Periode, oder ein Pin")
 UI_TEXT(SV_REFUSED_2, 0,
     "shares a PWM slice at a different rate. Settings unchanged.",
-    "teilt einen PWM-Slice mit anderer Rate. Einstellungen unverändert.")
+    "teilt einen PWM-Slice mit anderer Rate. Nichts geändert.")
 UI_TEXT(SV_UNSUPPORTED_1, 0,
     "This IOmcu cannot set the frame rate.",
     "Dieser IOmcu unterstützt keine einstellbare Pulsrate.")
@@ -3633,13 +3636,13 @@ UI_TEXT(SV_DUT_NOTE, 58,
     "This name appears at the top of every test report.",
     "Dieser Name steht oben auf jedem Testbericht.")
 UI_TEXT(SV_ENC_NOTE_1, 58,
-    "AS5600 on or off: SETUP > SENSORS.",
-    "AS5600 ein oder aus: SETUP > SENSORS.")
+    "AS5600 ON OR OFF: OPEN SENSORS",
+    "AS5600 EIN ODER AUS: SENSORS ÖFFNEN")
 UI_TEXT(SV_ENC_NOTE_2, 58,
     "Centre the servo, then tap ENC CENTRE.",
     "Stelle das Servo auf Mitte und tippe auf SENSOR-MITTE.")
 /* TEST's run cards: a summary of the run's settings, the last result with
- * its file, and SUPPLY's caps, read-only, naming their home. */
+ * its file, and SUPPLY's caps on the button that opens their home. */
 UI_TEXT(SV_SUM_TIME, 0,
     "%s, %us EACH",
     "%s, JE %us")
@@ -3653,8 +3656,11 @@ UI_TEXT(SV_CARD_LAST, 0,
     "LAST: %s %s",
     "ZULETZT: %s %s")
 UI_TEXT(SV_CAPS, 0,
-    "Caps %.2fV %.2fA: SUPPLY > SETTINGS",
-    "Grenzen %.2fV %.2fA: SUPPLY > OPTIONEN")
+    "CAPS %.2fV %.2fA: OPEN SUPPLY",
+    "GRENZEN %.2fV %.2fA: SUPPLY ÖFFNEN")
+UI_TEXT(SV_TESTER_HOME, 58,
+    "SERVO TESTER: %s. Set it on OUTPUTS.",
+    "SERVO-TESTER: %s. Einstellbar unter OUTPUTS.")
 UI_TEXT(SV_HOLD_TO_APPLY, 0,
     "HOLD 2s TO APPLY",
     "2s HALTEN ZUM ÜBERNEHMEN")
@@ -3850,8 +3856,8 @@ UI_TEXT(ALERT_ARM_RANGE_ORDER, 94,
     "Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.",
     "Leerlaufpuls liegt nicht 100us oder mehr unter Vollpuls. Einen ändern, dann ARM erneut halten.")
 UI_TEXT(ALERT_ARM_RANGE_REFUSED, 94,
-    "The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.",
-    "Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.")
+    "The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or TARGET.",
+    "Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder ZIEL ändern.")
 UI_TEXT(ALERT_ARM_RANGE_DIFFERS, 94,
     "The IOmcu holds another pulse range. Change Idle pulse or Full pulse.",
     "Der IOmcu hält einen anderen Pulsbereich. Leerlaufpuls oder Vollpuls ändern.")
@@ -3862,8 +3868,8 @@ UI_TEXT(ALERT_ARM_PROG, 94,
     "Cannot switch to ARMED: a port is in use by the servo programmer.",
     "ARMED gesperrt: Die Servoprogrammierung belegt einen Port.")
 UI_TEXT(ALERT_ARM_NO_PIN, 94,
-    "Cannot switch to ARMED: no motor pin. Choose a TARGET on OUTPUTS.",
-    "ARMED gesperrt: kein Motor-Pin. Unter OUTPUTS ein ZIEL wählen.")
+    "Cannot switch to ARMED: no motor pin. Tap TARGET to choose one.",
+    "ARMED gesperrt: kein Motor-Pin. ZIEL antippen und einen wählen.")
 UI_TEXT(ALERT_SWEEP_RESUME_OLD, 94,
     "IOmcu firmware older than 0.13.0. Sweep starts again.",
     "IOmcu-Firmware älter als 0.13.0. Sweep beginnt von vorn.")
@@ -3925,23 +3931,23 @@ UI_TEXT(ALERT_NO_SENSE_PAGE, 94,
     "IOmcu has no SENSE page. Current monitors cannot be read.",
     "IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.")
 UI_TEXT(ALERT_SENSE_PINS_UNSET, 94,
-    "Sensor SDA or SCL not set. Check SETUP > SENSORS.",
-    "SDA oder SCL der Sensoren nicht festgelegt. SETUP > SENSORS prüfen.")
+    "Sensor SDA or SCL not set. Check SENSORS.",
+    "SDA oder SCL der Sensoren nicht festgelegt. SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_SAME_ADDR, 94,
-    "INA228 and INA3221 both use 0x%02X. Check SETUP > SENSORS.",
-    "INA228 und INA3221 nutzen beide 0x%02X. SETUP > SENSORS prüfen.")
+    "INA228 and INA3221 both use 0x%02X. Check SENSORS.",
+    "INA228 und INA3221 nutzen beide 0x%02X. SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_PINS, 94,
-    "Sensor pins GPIO %d/GPIO %d rejected. Check SETUP > SENSORS.",
-    "Sensor-Pins GPIO %d/GPIO %d abgelehnt. SETUP > SENSORS prüfen.")
+    "Sensor pins GPIO %d/GPIO %d rejected. Check SENSORS.",
+    "Sensor-Pins GPIO %d/GPIO %d abgelehnt. SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_I228_SETUP, 94,
-    "INA228 shunt or maximum current rejected. Check SETUP > SENSORS.",
-    "INA228-Shunt oder Höchststrom abgelehnt. SETUP > SENSORS prüfen.")
+    "INA228 shunt or maximum current rejected. Check SENSORS.",
+    "INA228-Shunt oder Höchststrom abgelehnt. SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_I3221_SETUP, 94,
-    "INA3221 settings rejected. Check SETUP > SENSORS.",
-    "INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.")
+    "INA3221 settings rejected. Check SENSORS.",
+    "INA3221-Einstellungen abgelehnt. SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_DARK, 94,
-    "INA3221 0x%02X has every channel off. Check SETUP > SENSORS.",
-    "INA3221 0x%02X hat alle Kanäle aus. SETUP > SENSORS prüfen.")
+    "INA3221 0x%02X has every channel off. Check SENSORS.",
+    "INA3221 0x%02X hat alle Kanäle aus. SENSORS prüfen.")
 UI_TEXT(ALERT_SENSE_SILENT, 94,
     "%s is not responding at 0x%02X.",
     "%s antwortet nicht unter 0x%02X.")
@@ -3967,8 +3973,8 @@ UI_TEXT(ALERT_SENSE_OVER_LOST, 94,
     "An INA3221 channel passed its limit; which one was lost on the link.",
     "Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.")
 UI_TEXT(ALERT_SENSE_LIMITS, 94,
-    "INA3221 limits rejected. Check SETUP > SENSORS.",
-    "INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.")
+    "INA3221 limits rejected. Check SENSORS.",
+    "INA3221-Grenzen abgelehnt. SENSORS prüfen.")
 UI_TEXT(ALERT_ENC_OLD, 94,
     "IOmcu firmware older than 0.15.0. AS5600 not read.",
     "IOmcu-Firmware älter als 0.15.0. AS5600 nicht ausgelesen.")
@@ -3997,11 +4003,11 @@ UI_TEXT(ALERT_NO_TONE_PAGE, 94,
     "IOmcu has no TONE page. Phase tap not read.",
     "IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.")
 UI_TEXT(ALERT_TONE_PIN, 94,
-    "Phase tap on GPIO %u, %u to %uHz rejected. Check SETUP > SENSORS.",
-    "Phasenabgriff an GPIO %u, %u bis %uHz abgelehnt. SETUP > SENSORS prüfen.")
+    "Phase tap on GPIO %u, %u to %uHz rejected. Check SENSORS.",
+    "Phasenabgriff an GPIO %u, %u bis %uHz abgelehnt. SENSORS prüfen.")
 UI_TEXT(ALERT_TONE_SETUP, 94,
-    "Phase tap split, gap or periods rejected. Check SETUP > SENSORS.",
-    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > SENSORS prüfen.")
+    "Phase tap split, gap or periods rejected. Check SENSORS.",
+    "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SENSORS prüfen.")
 UI_TEXT(ALERT_TONE_BUSY, 94,
     "Phase tap pin GPIO %u is in use. Capture not running.",
     "Pin GPIO %u für den Phasenabgriff ist belegt. Erfassung läuft nicht.")
@@ -4009,8 +4015,8 @@ UI_TEXT(ALERT_TONE_OVERRUN, 94,
     "Phase tap capture overflow. Beeps are incomplete.",
     "Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.")
 UI_TEXT(ALERT_CU_OFFER, 94,
-    "IOmcu runs a different build. Update it under SETUP > UPDATES.",
-    "IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.")
+    "IOmcu runs a different build. Update it on UPDATES.",
+    "IOmcu nutzt einen anderen Build. Update unter UPDATES.")
 UI_TEXT(ALERT_CU_USB, 94,
     "IOmcu cannot update over CAN. Install firmware once via USB.",
     "IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.")
@@ -4433,8 +4439,8 @@ UI_TEXT(KP_NEED_TARGET, 116,
     "Use the programming port to program a servo.",
     "Zum Programmieren muss das Servo am Programmierport angeschlossen sein.")
 UI_TEXT(KP_NEED_TARGET_2, 116,
-    "Set SERVO TESTER to PORT 1 to PORT 4 on SETUP > OUTPUTS.",
-    "Unter SETUP > OUTPUTS den SERVO-TESTER auf PORT 1 bis PORT 4 stellen.")
+    "Tap TARGET and set SERVO TESTER to PORT 1 to PORT 4.",
+    "ZIEL antippen und SERVO-TESTER auf PORT 1 bis PORT 4 stellen.")
 UI_TEXT(KP_DOUBT, 116,
     "The settings currently in the servo are unknown.",
     "Die aktuellen Werte im Servo sind unbekannt.")
@@ -5753,8 +5759,8 @@ UI_TEXT(WF_WR_HOLD, 0,
     "The browser may not write to the card until the hold.",
     "Der Browser darf erst nach dem Halten auf die Karte schreiben.")
 UI_TEXT(WF_WR_OFF, 0,
-    "Browser writes are off: SETUP > SD CARD.",
-    "Schreiben per Browser ist aus: SETUP > SD CARD.")
+    "Browser writes are off: SD CARD.",
+    "Schreiben per Browser ist aus: SD CARD.")
 UI_TEXT(WF_HOLD_WRITES, 0,
     "HOLD 2s: ALLOW BROWSER WRITES",
     "2s HALTEN: BROWSER DARF SCHREIBEN")
@@ -5863,8 +5869,11 @@ UI_TEXT(UPD_HOLD_DL, 0,
     "HOLD 2s TO DOWNLOAD & INSTALL",
     "2s HALTEN ZUM LADEN & INSTALLIEREN")
 UI_TEXT(UPD_KEEP_NET, 0,
-    "Save a network under LOGS > WI-FI.",
-    "Speichere ein Netzwerk unter LOGS > WI-FI.")
+    "Save a network on WI-FI.",
+    "Speichere ein Netzwerk unter WI-FI.")
+UI_TEXT(UPD_OPEN_WIFI, 0,
+    "SAVE A NETWORK: OPEN WI-FI",
+    "NETZWERK SPEICHERN: WI-FI ÖFFNEN")
 /* UPDATES' IOmcu section: one view per state measures each. */
 UI_TEXT(UPD_CU_HEAD, 0,
     "IOMCU",
@@ -6088,8 +6097,8 @@ UI_TEXT(UPD_R_WHAT_2, 0,
     "It is then installed and the panel restarts.",
     "Danach wird sie installiert und das Panel startet neu.")
 UI_TEXT(UPD_R_NEVER, 0,
-    "Turn reminders back on under SETUP > UPDATES.",
-    "Erinnerungen unter SETUP > UPDATES wieder einschalten.")
+    "Turn reminders back on under UPDATES.",
+    "Erinnerungen unter UPDATES wieder einschalten.")
 UI_TEXT(UPD_IGNORE, 0,
     "NOT NOW",
     "JETZT NICHT")

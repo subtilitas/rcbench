@@ -14,10 +14,10 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in drei Kate
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| PANEL | `12 EINSTELLUNGEN` | die Liste von PANEL |
+| PANEL | `THEMA, SPRACHE, DREHKNOPF` | die Liste von PANEL |
 | SENSORS | `STROM, WINKEL, PHASENABGRIFF` | [Sensoren](setup-sensors.md): der Sensorbus, die Strommonitore INA228 und INA3221, der AS5600 und der Phasenabgriff, eine linke Liste von 8 neben den Zeilen des gewählten |
 | OUTPUTS | `PROTOKOLLE, PINS, PLATINE` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, auf einer Zeichnung der Platine |
-| SD CARD | `5 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin, und was ein Browser zum Schreiben braucht |
+| SD CARD | `LOGS, BROWSER-SCHREIBEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin, und was ein Browser zum Schreiben braucht |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
 | LAYOUT | `STECKER UND PINS` | [Layout](layout.md), nur auf dem rbmod-Carrier, dessen Pins verlötet sind |
 

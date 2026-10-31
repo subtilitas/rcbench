@@ -203,7 +203,7 @@ The page refuses SDA and SCL that are not one block's pair whatever ENABLE
 holds; an IOmcu of 0.15.0 or older takes them with ENABLE 0 and refuses
 the part enabled afterwards. The wire format and the protocol minor are the
 same. A panel of 0.15.0 or older, whose two pin settings are independent,
-sees the refusal at the edit in place of at the enable: its alert `Sensor pins GPIO 15/GPIO 17 rejected. Check SETUP > SENSORS.`, once per edit and per
+sees the refusal at the edit in place of at the enable: its alert `Sensor pins GPIO 15/GPIO 17 rejected. Check SENSORS.`, once per edit and per
 link-up, and the page keeps the pins it had. Its pins at −1 are written as
 ENABLE 0 with 0 for the pin and are taken. A set-up in the
 IOmcu's flash whose pins are not a pair is refused whole at boot, and
@@ -1538,7 +1538,7 @@ with the IOmcu's HASH_RUNNING over the same number of bytes.
 | Result | Panel |
 | --- | --- |
 | same | nothing |
-| different | the alert `IOmcu runs a different build. Update it under SETUP > UPDATES.`; the question opens on the menu while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
+| different | the alert `IOmcu runs a different build. Update it on UPDATES.`; the question opens on the menu while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
 | an image on trial | writes BUY at once and says `New IOmcu firmware kept.` |
 | BAD_PAGE or no slots | the alert `IOmcu cannot update over CAN. Install firmware once via USB.` |
 

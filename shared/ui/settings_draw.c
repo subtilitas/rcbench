@@ -74,15 +74,9 @@ static void draw_hub(gfx_canvas_t *c)
                     ui_router_title(t->screen), ui_tr(t->line), down);
             continue;
         }
-        char count[40];
-        if (t->line == TX_SET_COUNT) {
-            snprintf(count, sizeof(count), TR(SET_COUNT),
-                     settings_rows_listed((setting_cat_t)t->cat));
-        } else {
-            snprintf(count, sizeof(count), "%s", ui_tr(t->line));
-        }
         ui_tile(c, stg_tile_rect(i), &k_hub_look, t->icon,
-                ui_setting_category((setting_cat_t)t->cat), count, down);
+                ui_setting_category((setting_cat_t)t->cat), ui_tr(t->line),
+                down);
     }
 }
 
