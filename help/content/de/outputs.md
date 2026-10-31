@@ -6,20 +6,44 @@ order: 62
 
 # Ausgänge
 
-OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet er auf dem Protokoll, an das die Gas-Pins gebunden sind (der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist), und über ZIEL auf [SERVO](servo-settings.md#die-zeile-ziel) auf dem, was diese Zeile zeigt: dem [Eintrag PROG-PORT](#der-eintrag-prog-port), solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde; über der offenen Protokollliste schließt es zuerst die Liste, ohne zu wählen. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
+OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet er auf dem Protokoll, an das die Gas-Pins gebunden sind (der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist), und über ZIEL auf [SERVO](servo-settings.md#die-zeile-ziel) auf dem, was diese Zeile zeigt: dem [Eintrag PROG-PORT](#der-eintrag-prog-port), solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde; über der offenen Protokollliste schließt es zuerst die Liste, ohne zu wählen. Eine Platine mit Zeichnung oder Form zeigt [ihre Tasten](#die-platine-und-ihre-tasten): Die Liste beantwortet, welcher GPIO (General-Purpose Input/Output) gebunden ist, die Platine, wo das Kabel hin muss. Eine Platine ohne beides und der rbmod-Carrier zeigen [ein Raster der Pins](#die-rasteransicht).
+
+## Die Platine und ihre Tasten
+
+![Drei als SERVO PWM gebundene Pins auf der Platine](view:outputs)
+
+Ein Pad misst unter 40px, weniger als eine Fingerkuppe. Deshalb hat jeder Pin eine Taste, 50 x 56px, an einer geraden Leiterbahn zu seinem Pad: zwei versetzte Reihen über der Platine und zwei darunter.
+
+| Taste | Pin | Ein Tipp |
+|---|---|---|
+| elfenbein oder ebenholz | frei | bindet ihn an das gewählte Protokoll |
+| Akzentfarbe | im gewählten Protokoll gebunden | gibt ihn frei |
+| grau | von einem anderen Protokoll oder dem Programmierport gehalten, das Protokoll ist voll, oder die Bindung ist nicht bestätigt | ändert nichts |
+| keine Taste, rotes Kreuz auf dem Pad | reserviert: GPIO 3 Heartbeat, GPIO 8 bis GPIO 12 CAN (Controller Area Network) | keiner |
+
+Ein Tipp auf eine Taste schreibt die Bindung sofort; [LETZTER SCHREIBVORGANG](#letzter-schreibvorgang) sagt, was daraus wurde.
+
+Aktuelle Einschränkung: Auf einer Platine mit einem Pin in der oberen linken Ecke ihres Umrisses liegen die Tasten der oberen Reihen unter der Protokoll-Liste, der Anzahl und dem Grund. Ein Tipp auf den Teil einer solchen Taste über der Protokoll-Liste öffnet die Liste, statt den Pin zu nehmen. Der RP2350-CAN hat dort keinen Pin.
+
+Die Platine markiert auch die anderen Adern eines Servokabels:
+
+| Marke | Pad |
+|---|---|
+| weiße runde Marke mit **G** | Masse |
+| amberfarbene runde Marke mit **5V0** oder **3V3** | eine Schiene mit dieser Spannung |
+| amberfarbene runde Marke mit **PWR** | VSYS, eine Schiene, die ein Eingang ist |
+| blasses Kreuz auf dem Pad | keins von beiden, etwa RUN und 3V3_EN |
 
 ## Pins binden
 
-![Vier Pins als SERVO PWM gebunden](view:outputs)
-
-1. Ein Protokoll in der Liste PROTOKOLL wählen. Bis dahin tut ein Tipp auf einen Pin nichts.
-2. Einen Pin antippen, um ihn abzuhaken. Ein Haken bindet den Pin sofort an das Protokoll; es gibt keine Taste zum Übernehmen.
-3. Einen abgehakten Pin antippen, um ihn freizugeben.
+1. Ein Protokoll in der Liste wählen. Bis dahin tut ein Tipp auf eine Taste nichts.
+2. Eine Taste antippen. Der Tipp bindet den Pin sofort an das Protokoll; es gibt keine Taste zum Übernehmen.
+3. Eine hervorgehobene Taste antippen, um ihren Pin freizugeben.
 4. OFF wählen, um zur Übersicht zurückzukehren.
 
-Die Zahl unter der Liste, `4 VON 8 PINS`, sagt, wie viele Pins das Protokoll hält und wie viele es nimmt. Ein Pin gehört höchstens einem Protokoll. Mehrere Protokolle können gleichzeitig gebunden sein.
+Ein Pin gehört höchstens einem Protokoll. Mehrere Protokolle können gleichzeitig gebunden sein.
 
-Jeder abgehakte Pin ist ein Slot der OUTPUTS-Seite des IOmcu, in Pin-Reihenfolge über alle Protokolle. Der niedrigste abgehakte Pin ist Kanal 0. Es gibt 8 Slots und 8 Kanäle, geteilt von allen Protokollen.
+Jeder gebundene Pin ist ein Slot der OUTPUTS-Seite des IOmcu, in Pin-Reihenfolge über alle Protokolle. Der niedrigste gebundene Pin ist Kanal 0. Es gibt 8 Slots und 8 Kanäle, geteilt von allen Protokollen.
 
 ## Die Protokolle
 
@@ -38,7 +62,7 @@ Ein Servokanal zentriert, wenn nichts ihn ansteuert; ein Motorkanal stoppt. Der 
 
 ![Die längsten Protokollnamen](view:outputs-bidir)
 
-Das Wählen eines Protokolls schreibt nichts. Es bestimmt, welche Pins abgehakt erscheinen und zu welchem Protokoll der nächste Haken kommt. Die Pins der anderen Protokolle bleiben gebunden.
+Das Wählen eines Protokolls schreibt nichts. Es bestimmt, welche Tasten hervorgehoben erscheinen und zu welchem Protokoll der nächste Tipp kommt. Die Pins der anderen Protokolle bleiben gebunden.
 
 ## Leerlaufpuls und Vollpuls
 
@@ -46,51 +70,63 @@ Ein MOTOR-PWM-Kanal sendet 0% Throttle als Leerlaufpuls und 100% als Vollpuls, a
 
 Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses Senders als null. Leerlaufpuls auf oder unter diesen Puls setzen und Vollpuls auf oder über den längsten: Für einen Sender, der 985 bis 2012us sendet, 980us und 2020us.
 
-## Was eine Pin-Zelle zeigt
+## Die Protokollliste und die Zähler
 
-![DSHOT300 gewählt, vier Pins von SERVO PWM gehalten](view:outputs-held)
+![Die Protokollliste über der Platine](view:outputs-protocol)
 
-| Zelle | Bedeutung | Ein Tipp |
-|---|---|---|
-| abgehakt, `PAD 6` | im gewählten Protokoll gebunden; die auf der Platine gedruckte Pad-Nummer | gibt ihn frei |
-| ausgegraut, der Name des anderen Protokolls | von einem anderen Protokoll gehalten | tut nichts |
-| rot, durchgestrichen | reserviert: GPIO 3 trägt den Sicherheits-Heartbeat, GPIO 8 bis GPIO 12 den CAN-Controller (Controller Area Network) | tut nichts |
-| `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GPIO 13 | tut nichts |
-| rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > INTERFACES](setup-interfaces.md) hält: Sensor-SDA und -SCL, solange INA228 oder AS5600 EIN ist oder ein INA3221 unter [SETUP > SENSORS](setup-sensors.md) bestückt ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | tut nichts |
-| ausgegraut, `SLICE VON GPIO 13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin eines Programmierports, jedes Ports, den der IOmcu meldet; GPIO 28 und GPIO 13 sind Slice 6 | tut nichts; `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` unter der Zahl |
-| ausgegraut, `KANAL VON GPIO 0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und GPIO 21, GPIO 6 und GPIO 22) | tut nichts; `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` unter der Zahl |
-| frei, `PAD 7` | nicht gebunden | bindet ihn |
+Oben links steht die Protokollliste, dasselbe Bedienelement wie unter Ausgänge. Eine Wahl bestimmt das Protokoll, zu dem ein Tipp auf eine Taste kommt, und schreibt nichts. Ein Tipp außerhalb der offenen Liste schließt sie.
 
-![PPM mit bereits gebundenen Servo-Pins](view:outputs-full)
+Unter der Liste zählt `4 VON 8 PLÄTZEN BELEGT` die Pins über alle Protokolle. Darunter steht in Amber der Grund, warum keine Taste hinzukommen kann:
 
-Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber unter der Zahl: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder `SERVO PWM BELEGT 8 PINS`.
+| Zeile | Wann |
+|---|---|
+| `ALLE 8 PLÄTZE BELEGT` | 8 Pins sind über alle Protokolle gebunden |
+| `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, mit 4 gebundenen Servo-Pins |
+| `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
+| `PROTOKOLL WÄHLEN, DANN PIN TIPPEN` | OFF ist gewählt |
+| `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt; jede Taste ist grau |
+| `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` | die Seiten beschreiben keine Bindung; jede Taste ist grau |
+| `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` | ein Tipp auf GPIO 28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GPIO 13 hält: ein PWM-Slice; die Taste ist grau |
+| `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` | ein Tipp auf GPIO 16 unter SERVO PWM oder MOTOR PWM bei GPIO 0 als PWM gebunden: ein PWM-Compare-Register; die Taste ist grau |
+
+![Acht von acht Slots belegt](view:outputs-full)
+
+## PINS und BELEGT
+
+PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfolge mit der auf der Platine gedruckten Pad-Nummer. BELEGT, rechts abwärts, listet die Pins, die andere Protokolle halten, jede Gruppe unter dem Namen ihres Protokolls. Mit OFF gewählt fehlt PINS, denn OFF hält keinen Pin, und BELEGT führt jeden gebundenen Pin.
 
 ![GPIO 13 vom Programmierport gehalten](view:outputs-prog)
 
-![Sensorbus, PD mini und Phasenabgriff auf ihren Pins](view:outputs-iface)
+Der Pin des Programmierports, ab Werk GPIO 13 (Pad 17), ist grau, solange kein Protokoll ihn hält, und BELEGT listet ihn zuerst unter `PROG-PORT`. Jeder weitere Port, den der IOmcu meldet, hält seinen Pin ebenso, unter demselben Namen gelistet.
 
-Eine gespeicherte Bindung, die GPIO 13 hält, behält ihn: Der Programmierport hat dann keinen Pin, und der [Servo-Programmierer](servo-programmer.md) sagt das bei VERBINDEN.
+![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](view:outputs-iface)
+
+Ein Pin, den [SETUP > INTERFACES](setup-interfaces.md) hält, ist ebenso grau, und BELEGT listet ihn nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Eine Tabelle mit mehr Zeilen, als passen, endet in `+N`, N die ausgelassenen Zeilen.
+
+![OFF gewählt: jeder gebundene Pin unter BELEGT](view:outputs-off)
 
 ## Der Eintrag PROG-PORT
 
 ![Der Eintrag PROG-PORT](view:outputs-port)
 
-Die offene Protokollliste zeigt einen Eintrag PROG-PORT je Programmierport, den der IOmcu meldet, in einer zweiten Spalte neben den Protokollen: 4 ab IOmcu 0.22.0, 1 bei einem älteren Build, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein IOmcu älter als 0.17.0 hat keinen Programmierport und keinen Eintrag. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Jeder Eintrag hat dieselben Zeilen:
+Die offene Protokollliste zeigt einen Eintrag PROG-PORT je Programmierport, den der IOmcu meldet, in einer zweiten Spalte neben den Protokollen: 4 ab IOmcu 0.22.0, 1 bei einem älteren Build, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein IOmcu älter als 0.17.0 hat keinen Programmierport und keinen Eintrag. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Jeder Eintrag hat dieselben Zeilen, in der Spalte links der Platine:
 
 | Zeile | Zeigt und tut |
 |---|---|
-| PIN | `PIN GPIO 13`, `PIN WÄHLEN`, `PIN GPIO 14 ABGELEHNT` oder `KEIN PIN BEKANNT`; ein Tipp öffnet [PICK A PIN](picker.md) auf dem Port, wo ein Tipp auf einen Pin ihn setzt |
-| FUNKTION | was der Pin trägt, solange keine Programmiersitzung ihn hält; ein Tipp öffnet die Liste. SERVO PWM ist der Servopuls auf einem PWM-Pin; KEINE lässt den Pin einen Eingang mit seinem Pull-down, auf jedem freien Pin; DSHOT150, DSHOT300 und DSHOT600 (IOmcu ab 0.22.0) senden DShot mit dem Gas von MOTOR & ESC, ein Frame alle 1ms, solange für das Gas ARMED, auf jedem freien Pin |
+| PIN | `PIN GPIO 13` mit seinem Pad, `PIN WÄHLEN`, `PIN GPIO 14 ABGELEHNT` oder `KEIN PIN BEKANNT`. Die Tasten auf der Platine setzen ihn: eine freie Taste erbittet beim IOmcu diesen Pin, die hervorgehobene Taste des Ports erbittet keinen |
+| FUNKTION | was der Pin trägt, solange keine Programmiersitzung ihn hält; ein Tipp auf die Fläche öffnet die Liste über der Spalte. SERVO PWM ist der Servopuls auf einem PWM-Pin; KEINE lässt den Pin einen Eingang mit seinem Pull-down, auf jedem freien Pin; DSHOT150, DSHOT300 und DSHOT600 (IOmcu ab 0.22.0) senden DShot mit dem Gas von MOTOR & ESC, ein Frame alle 1ms, solange für das Gas ARMED, auf jedem freien Pin |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSORS überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS oder PORT n: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der IOmcu den Port treibt |
 | PORT-PWM | EIN oder AUS: der Puls des Ports, der das Ziel des Testers ist |
 
-Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung der Ausgänge: sie gehören zur Platine. Port 1 beginnt als SERVO PWM auf GPIO 13, die Ports 2 bis 4 als KEINE ohne Pin. Ein Tipp auf FUNKTION und ein in PICK A PIN getippter Pin sind Bitten: das Panel schreibt sie bei einem Prüfstand in Ruhe, und die gelbe Zeile sagt, wie sie stehen.
+Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung der Ausgänge: sie gehören zur Platine. Port 1 beginnt als SERVO PWM auf GPIO 13, die Ports 2 bis 4 als KEINE ohne Pin. Ein Tipp auf FUNKTION und ein Tipp auf eine Taste sind Bitten: das Panel schreibt sie bei einem Prüfstand in Ruhe, und die gelbe Zeile sagt, wie sie stehen.
 
 ![PROG-PORT 2, die Bitte wartet](view:outputs-port2)
 
 | Zeile unter den Zeilen | Bedingung |
 |---|---|
+| `GPIO 5: TEILT PWM-SLICE MIT OUTPUT GPIO 4` | eine Taste getippt auf dem PWM-Slice eines gebundenen PWM-Ausgangs, bei einem SERVO-PWM-Port; die Taste ist grau |
+| `GPIO 28: GLEICHER PWM-KANAL WIE GPIO 12` | eine Taste getippt auf dem Compare-Register eines anderen SERVO-PWM-Ports; die Taste ist grau |
 | `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der [Servo-Programmierer](servo-programmer.md) hat einen Port |
 | `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER SERVO-PROGRAMMIERER` | eine Bitte für diesen Port wartet auf einen Prüfstand in Ruhe |
 | `DER IOMCU HAT ES ABGELEHNT` | der IOmcu hat die letzte Bitte abgelehnt oder nicht beantwortet |
@@ -103,6 +139,31 @@ Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung de
 | `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
 
 Das Wählen des Eintrags schreibt nichts an den IOmcu, und LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt. Die zwei Einstellungen des Testers hält das Panel, und sie erreichen den IOmcu bei einem Prüfstand in Ruhe. Bei mehr als einem Port heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`.
+
+Der Pin eines anderen Ports, eines Protokolls und einer Schnittstelle bleibt grau. Ein Port mit KEINE nimmt jede freie Taste. Bevor die Ports des IOmcu gelesen sind, ist jede Taste grau.
+
+![PROG-PORT 3, ein Port ohne Pin](view:outputs-port3)
+
+## Die Rasteransicht
+
+Eine Platine, die weder Zeichnung noch Form meldet, lässt sich nicht zeichnen: Ein geratenes Bild zeigte ebenso überzeugt auf das falsche Pad wie auf das richtige. OUTPUTS zeigt ihre Pins dann als Raster, 4 Spalten zu 7 Zellen, und in der linken Spalte die Protokollliste, die Zahl `3 VON 8 PINS` und LETZTER SCHREIBVORGANG. Ein Tipp auf eine Zelle hakt sie ab. Der [rbmod-Carrier](#auf-dem-rbmod-carrier) hat dasselbe Raster. Darauf wird keine Katze gezeichnet. Die Zeile PIN eines Eintrags PROG-PORT nimmt dort keinen Tipp: Nur die Tasten einer gezeichneten Platine setzen den Pin eines Ports.
+
+![Drei Pins auf einer Platine ohne Form](view:outputs-grid)
+
+| Zelle | Bedeutung | Ein Tipp |
+|---|---|---|
+| abgehakt, `PAD 6` | im gewählten Protokoll gebunden; die auf der Platine gedruckte Pad-Nummer | gibt ihn frei |
+| ausgegraut, der Name des anderen Protokolls | von einem anderen Protokoll gehalten | tut nichts |
+| rot, durchgestrichen | reserviert: GPIO 3 trägt den Sicherheits-Heartbeat, GPIO 8 bis GPIO 12 den CAN-Controller (Controller Area Network) | tut nichts |
+| `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GPIO 13 | tut nichts |
+| rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > INTERFACES](setup-interfaces.md) hält: Sensor-SDA und -SCL, solange INA228 oder AS5600 EIN ist oder ein INA3221 unter [SETUP > SENSORS](setup-sensors.md) bestückt ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | tut nichts |
+| ausgegraut, `SLICE VON GPIO 13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin eines Programmierports, jedes Ports, den der IOmcu meldet; GPIO 28 und GPIO 13 sind Slice 6 | tut nichts; `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` unter der Zahl |
+| ausgegraut, `KANAL VON GPIO 0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und GPIO 21, GPIO 6 und GPIO 22) | tut nichts; `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` unter der Zahl |
+| frei, `PAD 7` | nicht gebunden | bindet ihn |
+
+Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber unter der Zahl: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder `SERVO PWM BELEGT 8 PINS`.
+
+Eine gespeicherte Bindung, die GPIO 13 hält, behält ihn: Der Programmierport hat dann keinen Pin, und der [Servo-Programmierer](servo-programmer.md) sagt das bei VERBINDEN.
 
 ## Auf dem rbmod-Carrier
 
@@ -120,11 +181,11 @@ Die Einträge PROG PORT nennen den Pin jedes Ports, `PROGP01 AUF GPIO 13`, und d
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
 
-Jeder Besuch von SETUP aus öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. Jeder gebundene Pin zeigt den Namen seines Protokolls; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt nichts an den IOmcu. OFF bleibt gewählt, bis ein Protokoll gewählt wird, auch über das Verlassen des Bildschirms. Ein Wechsel der Platine, etwa ein IOmcu, der während des Besuchs antwortet, oder einer, der gegen einen anderen getauscht wird, wählt OFF, was auch gewählt war; ein zuvor gewähltes Protokoll geht also nicht auf ihn über. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren. [PICK A PIN](picker.md) öffnet ebenfalls mit OFF gewählt.
+Jeder Besuch von SETUP aus öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. BELEGT listet jeden gebundenen Pin unter seinem Protokoll; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf eine Taste tut nichts, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt nichts an den IOmcu. OFF bleibt gewählt, bis ein Protokoll gewählt wird, auch über das Verlassen des Bildschirms. Ein Wechsel der Platine, etwa ein IOmcu, der während des Besuchs antwortet, oder einer, der gegen einen anderen getauscht wird, wählt OFF, was auch gewählt war; ein zuvor gewähltes Protokoll geht also nicht auf ihn über. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren.
 
 ## LETZTER SCHREIBVORGANG
 
-Jeder Haken wird sofort geschrieben. Danach liest das Panel die Seiten des IOmcu zurück und zeigt, was er hält.
+Jeder Tipp auf eine Taste wird sofort geschrieben. LETZTER SCHREIBVORGANG steht rechts der Protokollliste, in der Rasteransicht am Fuß der linken Spalte; die Bitten eines Eintrags PROG-PORT melden sich stattdessen in seiner eigenen Zeile. Danach liest das Panel die Seiten des IOmcu zurück und zeigt, was er hält.
 
 | LETZTER SCHREIBVORGANG | Bedeutung |
 |---|---|
@@ -135,15 +196,25 @@ Jeder Haken wird sofort geschrieben. Danach liest das Panel die Seiten des IOmcu
 
 Ein IOmcu mit 0.15.0 oder neuer übernimmt die Bindung als Ganzes: `KEINE VERBINDUNG` und `ABGELEHNT` lassen die gültige Bindung, wie sie war.
 
+## Die Platinenzeichnung
+
+Der IOmcu trägt eine Zeichnung von sich selbst: Umriss, Bauteile und jedes Pad, maßstäblich in 0,01mm. Das Panel lädt sie über den Link, hält sie im Flash und zeigt sie nur, wenn sie zu Form und Pin-Katalog der Platine passt.
+
+![Die Platine, allein aus der Form gezeichnet](view:outputs-shape)
+
+Ohne Zeichnung, oder solange die Übertragung nicht fertig ist, werden Umriss und Pads aus der Form der Platine gezeichnet, und die Tasten liegen an denselben Stellen. Eine Platine, die ihre Form nicht meldet, wird nicht gezeichnet: OUTPUTS zeigt [die Rasteransicht](#die-rasteransicht).
+
+Die Zeichnung des RP2350-CAN hat 1.560 Bytes, geladen in 26 Blöcken zu 62 Bytes. Die Dauer ist nicht gemessen. Das Schreiben in den Flash wartet auf einen Prüfstand, der SAFE ist und dessen Netzteil aus ist.
+
 ## Eine Bindung, die nicht bestätigt ist
 
 ![Die zuletzt gelesene Bindung nach einem gescheiterten Lesen](view:outputs-unread)
 
-Der Bildschirm ändert eine Bindung erst, nachdem er sie gelesen hat. Solange eine Seite nicht gelesen wurde, behält der Bildschirm die zuletzt gelesene Bindung, gedimmt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.`. Ein Tipp auf einen Pin tut nichts, hier und auf PICK A PIN. Das Panel liest bei jedem Link-Aufbau und alle 500ms erneut.
+Der Bildschirm ändert eine Bindung erst, nachdem er sie gelesen hat. Solange eine Seite nicht gelesen wurde, behält der Bildschirm die zuletzt gelesene Bindung, jede Taste grau, mit `NICHT AUSGELESEN` (`ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.` in der Rasteransicht). Ein Tipp auf eine Taste tut nichts. Das Panel liest bei jedem Link-Aufbau und alle 500ms erneut.
 
 ![Seiten, die keine Bindung beschreiben](view:outputs-odd)
 
-Werden die Seiten gelesen, beschreiben aber keine Bindung, die der Bildschirm kennt, zum Beispiel ein Pin in zwei Slots, lautet er `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und bietet `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` an. Gehalten schreibt es eine Bindung ohne Pin, und Änderungen werden wieder angenommen. Ein Finger, der die Taste verlässt, ein Abheben vor 2s oder das Verlassen des Bildschirms bricht das Halten ab.
+Werden die Seiten gelesen, beschreiben aber keine Bindung, die der Bildschirm kennt, zum Beispiel ein Pin in zwei Slots, lautet er `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und bietet unter BELEGT `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` an. Gehalten schreibt es eine Bindung ohne Pin, und Änderungen werden wieder angenommen. Ein Finger, der die Taste verlässt, ein Abheben vor 2s oder das Verlassen des Bildschirms bricht das Halten ab.
 
 ## Der IOmcu behält die Bindung
 
@@ -151,6 +222,6 @@ Der IOmcu speichert die Bindung in seinem eigenen Flash und stellt sie beim Star
 
 ## Verwandte Seiten
 
-- [Pin-Auswahl](picker.md): dieselbe Bindung auf der Platine.
+- [Setup](setup.md)
 - [Motor und ESC](motor.md#ziel): die Pins, die der Throttle treibt.
 - [Servo-Optionen](servo-settings.md#die-zeile-ziel): die Pins, die der Servotester treibt.

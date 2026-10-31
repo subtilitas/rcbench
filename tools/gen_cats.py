@@ -54,8 +54,8 @@ S = 4
 # The spots, in the order of their bits in a pose's mask.  A spot is one
 # free place on one screen; the screen anchors it (ui_cats.h).
 SPOTS = (
-    "picker_left",    # PICK A PIN, bottom left, under the PINS table
-    "picker_right",   # PICK A PIN, bottom right, under the IN USE table
+    "picker_left",    # OUTPUTS board view, bottom left, under the PINS table
+    "picker_right",   # OUTPUTS board view, bottom right, under the IN USE table
 )
 
 RUN_SKIP, RUN_FILL, RUN_COPY, RUN_BLEND = 0, 1, 2, 3
@@ -377,7 +377,7 @@ class Pose:
 
 # One row per cat, the owner's set of 2026-10-24.  The first is the one
 # render_ui draws for the docs.  Sitting cats, the raised paw and the loaf
-# take the bottom right of PICK A PIN; the sleeping and peeking ones, low
+# take the bottom right of OUTPUTS; the sleeping and peeking ones, low
 # and wide, the bottom left.
 GINGER = {"fur": (255, 176, 96), "dark": (120, 70, 40), "pink": PINK}
 POSES = (

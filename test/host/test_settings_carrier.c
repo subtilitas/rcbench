@@ -7,8 +7,8 @@
  * board the IOmcu reports, once per change of board, and each one that
  * moves is announced; on the carrier the Sensor SDA row has no keys, opens
  * no keypad and says it is soldered; the PD mini's one-pin rule reads the
- * pins in force; PICK A PIN's tile opens LAYOUT on the carrier and
- * PICK A PIN on the module.
+ * pins in force; the carrier adds a LAYOUT tile, and OUTPUTS' tile opens
+ * the one screen on either.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -173,17 +173,16 @@ TEST_CASE(a_soldered_pin_row_has_no_keys_and_says_so)
     CHECK(settings_get_int(SET_SENSE_SDA) != before);
 }
 
-/* PICK A PIN's tile: the sixth, after the four categories and OUTPUTS
- * (settings_screen_int.h, test_settings_pins_hub). */
-#define PICKER_TILE 5
+/* The tiles of every board: the categories, OUTPUTS, WI-FI, UPDATES, FILES. */
+#define OUTPUTS_TILE (SET_CAT_SETUP_COUNT)
 
-TEST_CASE(pick_a_pins_tile_opens_board_layout_on_the_carrier)
+TEST_CASE(the_carrier_adds_a_layout_tile_and_keeps_outputs)
 {
     fresh_hub();
     ui_board_set(RBMOD);
-    const int t = PICKER_TILE;
+    const int t = settings_hub_tiles() - 1;
     CHECK_EQ(settings_hub_tile_screen(t), SCREEN_LAYOUT);
-    CHECK_EQ(settings_hub_tile_screen(t - 1), SCREEN_OUTPUTS);
+    CHECK_EQ(settings_hub_tile_screen(OUTPUTS_TILE), SCREEN_OUTPUTS);
     CHECK_EQ(settings_hub_tile_screen(0), SCREEN_SETUP);
     CHECK_EQ(settings_hub_tile_screen(-1), SCREEN_COUNT);
     CHECK_EQ(settings_hub_tile_screen(settings_hub_tiles()), SCREEN_COUNT);
@@ -193,11 +192,18 @@ TEST_CASE(pick_a_pins_tile_opens_board_layout_on_the_carrier)
     CHECK_EQ(ui_router_current(), SCREEN_LAYOUT);
     CHECK_EQ(ui_router_parent(SCREEN_LAYOUT), SCREEN_SETUP);
     ui_router_goto(SCREEN_SETUP);
+    tap(tile_x(OUTPUTS_TILE), tile_y(OUTPUTS_TILE));
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    ui_router_goto(SCREEN_SETUP);
 
+    /* The module: one tile fewer, LAYOUT's slot opening nothing. */
     ui_board_set(MODULE);
-    CHECK_EQ(settings_hub_tile_screen(t), SCREEN_PICKER);
+    CHECK_EQ(settings_hub_tiles(), t);
+    CHECK_EQ(settings_hub_tile_screen(t), SCREEN_COUNT);
     tap(tile_x(t), tile_y(t));
-    CHECK_EQ(ui_router_current(), SCREEN_PICKER);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    tap(tile_x(OUTPUTS_TILE), tile_y(OUTPUTS_TILE));
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
 }
 
 int main(void)
@@ -206,6 +212,6 @@ int main(void)
     RUN(the_interface_pins_follow_the_board_once_per_change);
     RUN(the_pd_minis_one_pin_rule_reads_the_pins_in_force);
     RUN(a_soldered_pin_row_has_no_keys_and_says_so);
-    RUN(pick_a_pins_tile_opens_board_layout_on_the_carrier);
+    RUN(the_carrier_adds_a_layout_tile_and_keeps_outputs);
     return test_summary("settings_carrier");
 }

@@ -4,7 +4,7 @@
  *
  * The control task reads the IOmcu's PROG page (prog_link.h) and hands
  * the UI task what each port holds: its PIN register, whether the IOmcu
- * refused that pin, and its FUNC.  OUTPUTS and PICK A PIN draw from this
+ * refused that pin, and its FUNC.  both views of OUTPUTS draw from this
  * view.  A port's PIN and FUNC are the IOmcu's, kept in its flash; a
  * screen changes one only by asking (port_view_ask()), which the control
  * task carries to prog_link_ask() and writes on a bench at rest.  The

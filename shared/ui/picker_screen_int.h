@@ -1,6 +1,6 @@
 /**
  * @file picker_screen_int.h
- * @brief PICK A PIN's private seam between picker_screen.c, the state, the
+ * @brief OUTPUTS' board view's private seam between picker_screen.c, the state, the
  *        touch handling and the screen's interface, picker_geometry.c, where
  *        the board, its pads, buttons and marks and the protocol list sit, and
  *        picker_draw.c, the drawing: the layout they work on, the state and
@@ -22,6 +22,7 @@
 #include "link_drawing.h"
 #include "out_bind.h"
 #include "outputs_screen.h"
+#include "outputs_screen_int.h"
 #include "picker_screen.h"
 #include "ui_cats.h"
 #include "ui_layout.h"
@@ -39,7 +40,7 @@
 #define FOOT (UI_ALERT_Y - UI_BAND_H - 4)
 
 /**
- * @brief The faces of the 1024 x 600 type scale PICK A PIN draws in.
+ * @brief The faces of the 1024 x 600 type scale the board view draws in.
  *
  * PK_FONT_LABEL (10 x 20) for the count, the reason, the PAD head, a
  * channel, a pad number, a name in IN USE and a pin there in the 20px
@@ -200,11 +201,27 @@ _Static_assert(USE_TOP + ((int)PICKER_USE_MAX - 1) * USE_PIN_H_D
                "the IN USE table holds its fullest list");
 
 /**
- * @brief The panel PICK A PIN shows when it cannot draw the board: 640 x
- *        180px, centred over the body above FOOT.
+ * @brief LAST WRITE, right of the list's face and left of the first key of
+ *        the upper tier on the RP2350-CAN (x 444): 140 x 56px.  The label in
+ *        8 x 16 on one line or two, the result in the largest face of 12 x
+ *        24, 10 x 20 and 8 x 16 that holds it on one line: "NICHT
+ *        GESCHRIEBEN" is 17 cells of 8 x 16.  Both cat spots stay free.
+ *
+ * A board with a key there gets it at the foot of the IN USE column instead
+ * (pk_last_rect()).
  */
-#define NOART_W 640
-#define NOART_H 180   /**< Its height, px. */
+#define LAST_X (HEAD_X + FACE_W + 8)
+#define LAST_Y 4              /**< Its top. */
+#define LAST_W 140            /**< Its width, px. */
+#define LAST_H 56             /**< Its height, px. */
+
+_Static_assert(OB_COL_X == PINS_X && OB_COL_W == PINS_W,
+               "the PROG PORT entry's column is the PINS table's");
+_Static_assert(OB_CLR_X == USE_X && OB_CLR_W == USE_W,
+               "UNBIND ALL PINS stands in the IN USE column");
+_Static_assert(OB_FN_X + OB_FN_W == HEAD_X + FACE_W && OB_LIST_W == FACE_W,
+               "FUNCTION's face ends where the list's does");
+_Static_assert(OB_FN_Y >= HEAD_Y + FACE_H, "FUNCTION's face is under the list's");
 
 #define IVORY GFX_RGB(236, 235, 228)    /**< board colour of the ivory (white) key */
 #define EBONY GFX_RGB(22, 23, 28)       /**< board colour of the ebony (black) key */
@@ -214,7 +231,7 @@ _Static_assert(USE_TOP + ((int)PICKER_USE_MAX - 1) * USE_PIN_H_D
 enum { HIT_NONE = 0, HIT_FACE, HIT_ROW, HIT_BUTTON };
 
 /**
- * @brief PICK A PIN's state: the binding shown, the callbacks that apply
+ * @brief The board view's state: the binding shown, the callbacks that apply
  *        and select, the IOmcu's drawing of the board, the press, the open
  *        protocol list, the pins of each interface and the cat.
  */
@@ -255,6 +272,7 @@ typedef struct {
      * ports' view drawn. */
     int      port;                      /**< PROG PORT picked, -1 for a protocol */
     uint32_t view_rev;                  /**< revision of the ports' view as drawn */
+    uint32_t out_rev;                   /**< outputs_screen_revision() as drawn */
     bool     chrome_valid[MAX_FBS];     /**< per frame buffer: whether its chrome is current */
     /* The cat (picker_cat.c): picked on the first frame of a visit from
      * the roll entering took, and drawn while its box stays clear. */
@@ -262,6 +280,7 @@ typedef struct {
     uint32_t      cat_roll;    /**< the roll entering took               */
     ui_cat_pick_t cat;         /**< the pose and spot picked             */
     gfx_rect_t    cat_drawn;  /**< the box drawn last, empty for none */
+    int           cat_view;   /**< the selection the pick was last held to */
 } pk_state_t;
 
 /* Defined in picker_screen.c. */
@@ -278,6 +297,18 @@ uint8_t pk_proto_shown(void);
 bool pk_prog_taken(uint8_t index);
 outputs_iface_t pk_iface_taken(uint8_t index);
 int8_t pk_channel_of(uint8_t index);
+/**
+ * @brief Where LAST WRITE stands: right of the list's face, or at the foot of
+ *        the IN USE column on a board with a key there.
+ * @return the box
+ */
+gfx_rect_t pk_last_rect(void);
+/**
+ * @brief Whether LAST WRITE is drawn: on a protocol's view, not a PROG PORT
+ *        entry's, whose PIN and FUNCTION asks report on their own line.
+ * @return true when it is drawn
+ */
+bool pk_last_shown(void);
 
 /* --- picker_geometry.c ------------------------------------------------- */
 

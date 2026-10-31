@@ -33,6 +33,13 @@ history is in git.
 
 ### Changed
 
+- OUTPUTS and PICK A PIN are one screen named OUTPUTS, with one SETUP tile. A
+  board with a drawing or a shape shows the board as the pin control, the PROG
+  PORT rows in the column beside it, LAST WRITE right of the protocol list and
+  UNBIND ALL PINS under IN USE. A board with neither, and the rbmod carrier,
+  show the pin grid. The carrier keeps its LAYOUT tile, now the last one. The
+  cat stays on the board view: a cat the entry's column covers moves to the
+  other spot. TARGET rows open the screen on their entry as before.
 - FILES' editor saves only over the file as it opened it or last saved
   it: SAVE compares the file's CRC-32, the Wi-Fi page's ETag, before it
   writes, and a file the Wi-Fi page changed since is not overwritten. The

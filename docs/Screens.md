@@ -365,8 +365,8 @@ the faces and the spacing inside are theirs.
   right edge. A shorter one draws in 16 x 28, 10px in, with a 7px chevron
   22px from the edge. A text that does not fit before the chevron in
   20 x 36 draws in 16 x 28: `DSHOT600 BIDIR` on a face of 292px. Each face
-  and row picks its own, so the rows of one list can differ. OUTPUTS and
-  PICK A PIN draw theirs under 56px.
+  and row picks its own, so the rows of one list can differ. OUTPUTS draws
+  its faces under 56px.
 - **Tabs.** A row of tabs 32px tall or taller draws its labels in the
   10 x 20 face when every label fits its tab with 6px each side in the
   language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
@@ -3798,12 +3798,13 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
   The settings of the pack, the motor and the throttle output are on
   MOTOR & ESC > SETTINGS
   ([MOTOR & ESC settings](#motor--esc-settings)).
-- Five screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-  ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)), UPDATES
+- Four screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
+  ([Wi-Fi](#wi-fi)), UPDATES
   ([Updates](#updates)) and FILES ([Files](#files)). The band of each
   names it as its tile does, and the band of this page reads SETUP.
-- No slot is free. A tenth entry has no slot: the page holds 9, and the
-  build fails at the tenth.
+- LAYOUT ([Layout](#layout)) as the last tile on a board with soldered pins,
+  the [rbmod carrier](Carrier.md). One slot is free on any other board. A
+  tenth entry has no slot: the page holds 9, and the build fails at the tenth.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
   category shows here too:
@@ -3832,7 +3833,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES, FILES | the tiles; WI-FI and FILES opened from LOGS go back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Pick a pin](#pick-a-pin), [Wi-Fi](#wi-fi)) |
+| OUTPUTS, WI-FI, UPDATES, FILES | the tiles; WI-FI and FILES opened from LOGS go back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Wi-Fi](#wi-fi)) |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -4733,7 +4734,7 @@ the danger colour after a refused save.
 The warning holds only the home tag:
 
 - Nothing unsaved, or a save asked (`WHEN IDLE`): no warning, the menu opens.
-- OUTPUTS, PICK A PIN, WI-FI, UPDATES and FILES open from a tile and
+- OUTPUTS, WI-FI, UPDATES and FILES open from a tile and
   return to SETUP: no warning on the way out or back.
 - The home tag over the warning is STAY.
 - STOP stops the bench and leaves the warning as it is.
@@ -5236,17 +5237,10 @@ it opens on what that workbench drives:
 
 ![Outputs](img/outputs.png)
 
-The left column is 300px wide: the PROTOCOL label, the protocol list's
-face (300 x 64px), the count and the reason under it in 10 x 20, and
-LAST WRITE at the column's foot with the result in 20 x 36. The pins take a
-grid of 4 columns of 7 cells, 167 x 64px each (25.1 x 9.6mm), 8px apart
-across and 6px apart down, from x 324. A cell holds a 24px tick box, the
-pin name in 16 x 28 (`GPIO 28`, 112px) and, under them, what holds the pin or its pad in
-8 x 16, 18 characters at most. The grid's last row ends at body y 492,
-4px above the alert band. The open protocol list holds the 8 protocols in
-a column of 48px rows (7.2mm) from the face's top and the PROG PORT
-entries in a second column of the same rows beside it; with 4 entries the
-list is 600 x 392px and ends at body y 436.
+One screen with two views of one binding. A board with a drawing or a shape
+gets [the board view](#the-board-view): the board is the pin control. A board
+with neither, and the [rbmod carrier](#on-the-rbmod-carrier), get
+[the grid view](#the-grid-view).
 
 A set of pins per protocol, not eight independent slots: a bench is wired a
 protocol at a time — four servo leads, then one ESC (electronic speed
@@ -5288,12 +5282,12 @@ rapidly in that state. Set the Idle pulse at or below the transmitter's
 shortest pulse and the Full pulse at or above its longest: for a transmitter
 that sends 985 to 2012us, 980us and 2020us.
 
-When the protocol can take no more pins, the reason is under it in amber:
+When the protocol can take no more pins, the reason is under the count in amber:
 `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM TAKES 8
 PINS`. A board drawn entirely in grey with nothing beside it reads as a
 fault, and PPM greys the whole board whenever anything else is bound.
 
-![PPM with servo pins already bound](img/outputs-full.png)
+![Eight of eight slots in use](img/outputs-full.png)
 
 The protocol is a list rather than a stepper, because there are eight of them
 and stepping past seven to reach the eighth is not choosing:
@@ -5356,14 +5350,16 @@ output of its own kind, no slot and no protocol
 
 | Row | What it shows and does |
 | --- | --- |
-| PIN | a button: `PIN GPIO 13`, `SET A PIN` for a port without one, `PIN GPIO 14 REFUSED` for a pin the IOmcu does not hold, `NO PIN KNOWN` before the first read. A tap opens [PICK A PIN](#pick-a-pin) on this port |
+| PIN | `PIN GPIO 13` and its pad, `SET A PIN` in amber for a port without one, `PIN GPIO 14 REFUSED` for a pin the IOmcu does not hold, `NO PIN KNOWN` before the first read. The keys of [the board view](#the-board-view) set it; the row takes no tap |
 | FUNCTION | a choice face with what the pin carries while no programming session holds it. A tap opens the list over the rows under it: SERVO PWM, NONE, and on an IOmcu of protocol 4.28 or later DSHOT150, DSHOT300 and DSHOT600. A tap on an entry asks the IOmcu for it and shuts the list; a press beside the list shuts it and reaches nothing under it. The face is drawn sunk and dim, and takes no tap, while the row is locked |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`: the lowest channel with a shunt on a fitted part; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS \| PORT n: the tester's target ([the target](ServoProgrammer.md#the-target)) |
 | PORT PWM | ON \| OFF: the pulse of the port that is the tester's target |
 
-The pins on the right are drawn as the overview names them, the port's
-own pin lit; no pin takes a tick there.
+In the board view the rows stand in the column left of the board and the
+keys set the port's pin. In the grid view the rows stand under the list, the
+cells are drawn as the overview names them with the port's own pin lit, and
+no cell takes a tick: a board with no drawing has no way to pick a port's pin.
 
 | Function | The pin | Pin rule |
 | --- | --- | --- |
@@ -5374,7 +5370,7 @@ own pin lit; no pin takes a tick there.
 Port 1 starts as SERVO PWM on GPIO 13, ports 2 to 4 as NONE with no pin. The
 IOmcu keeps each port's pin and function in its flash with the outputs'
 binding, so they belong to the board, not to the panel. A FUNCTION tap and
-a pin tapped in PICK A PIN are asks: the panel writes them on a bench at
+a key tapped in the board view are asks: the panel writes them on a bench at
 rest (SAFE, no test, no sweep, no servo programmer session) and says how
 the ask stands in the amber line, `WAITS FOR SAFE, NO TEST, SWEEP OR SERVO
 PROGRAMMER`, `THE IOMCU REFUSED IT` or `LINK LOST BEFORE THE WRITE`. A port
@@ -5461,23 +5457,36 @@ the pins ticked for the protocol being left stay bound, and the pins of the
 one arrived at come back as they were. A selector that retargeted the current
 pins would make binding a second protocol mean unbinding the first. On entry
 the list shows OFF, the overview. A protocol picked stays selected across
-read-backs of the same board. The list on PICK A PIN selects the same
-protocol.
+read-backs of the same board. Both views show one selection.
 
 `DSHOT600 BIDIR` and `DSHOT300 BIDIR` are the longest entries, 14 characters:
 
 ![The longest protocol name in the list](img/outputs-bidir.png)
 
+### The grid view
+
+OUTPUTS on a board with neither a drawing nor a shape, and on the rbmod
+carrier: a guessed picture would point at the wrong pad as confidently as the
+right one.
+
+![The grid on a board with no shape](img/outputs-grid.png)
+
+The left column is 300px wide: the PROTOCOL label, the protocol list's
+face (300 x 64px), the count and the reason under it in 10 x 20, and
+LAST WRITE at the column's foot with the result in 20 x 36. The pins take a
+grid of 4 columns of 7 cells, 167 x 64px each (25.1 x 9.6mm), 8px apart
+across and 6px apart down, from x 324. A cell holds a 24px tick box, the
+pin name in 16 x 28 (`GPIO 28`, 112px) and, under them, what holds the pin or its pad in
+8 x 16, 18 characters at most. The grid's last row ends at body y 492,
+4px above the alert band. The open protocol list holds the 8 protocols in
+a column of 48px rows (7.2mm) from the face's top and the PROG PORT
+entries in a second column of the same rows beside it; with 4 entries the
+list is 600 x 392px and ends at body y 436. No cat is drawn on it.
+
 A pin another protocol holds is drawn greyed, with that protocol's name under
 it where a free pin shows its pad number. That is a choice, undone by going to
 that protocol and unticking it there — unlike a reserved pin, which is drawn
 red and struck through because it is the wiring rather than a choice.
-
-Four servo leads and an ESC, with DSHOT300 the protocol being edited. GPIO 5 is
-ticked; GPIO 0, GPIO 1, GPIO 2 and GPIO 4 say SERVO PWM and cannot be ticked here; GPIO 3 and
-GPIO 8 to GPIO 12 are red because the IOmcu reserves them:
-
-![Outputs with pins held by another protocol](img/outputs-held.png)
 
 So a cell is in one of four states, and each says what to do about it: ticked
 in this protocol, held by another and named, reserved and struck through, or
@@ -5534,8 +5543,7 @@ repaints, a link that goes down and comes back, and leaving the screen. A
 change of board selects OFF, whatever was selected: an IOmcu that
 answers for the first time during the visit, or one swapped for another
 board. A protocol picked before is not carried to the board that answers,
-so the next tap writes nothing. A press on a pin draws no pressed face.
-PICK A PIN opens with OFF selected too.
+so the next tap writes nothing. A press on a key draws no pressed face.
 
 One write is reachable with OFF selected. With pages that describe no
 binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
@@ -5543,15 +5551,9 @@ binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
 hold is the way out of those pages
 ([A binding that is not confirmed](#a-binding-that-is-not-confirmed)).
 
-GPIO 0 bound as DSHOT600 BIDIR, GPIO 1 as MOTOR PWM, GPIO 2 and GPIO 13 as SERVO PWM,
-with OFF selected. A slot holds GPIO 13 on this bench, so the programming port
-has no pin:
+With OFF selected IN USE lists every bound pin under its protocol:
 
 ![OFF shows the protocol of every bound pin](img/outputs-off.png)
-
-With SERVO PWM picked on the same bench, GPIO 2 and GPIO 13 are ticked and show
-`PAD 4` and `PAD 17`: a pin ticked in the selected protocol shows its pad
-number, because the protocol is the one named in the list.
 
 ### A binding that is not confirmed
 
@@ -5561,12 +5563,12 @@ results:
 | Read | The screen |
 | --- | --- |
 | both pages read and they describe a binding, one with no pin bound included | shows it and takes edits |
-| a page did not read: no answer within 1000ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
+| a page did not read: no answer within 1000ms, a refusal, or the link is down | keeps the last binding read, every key grey with `NOT READ`; in the grid view dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
 | both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `NO VALID ASSIGNMENT IN THE PAGES` and the key `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS` |
 | the IOmcu is a board this build has no pin map for | shows no pins |
 
-In the second and third state a tap on a pin does nothing here and on PICK
-A PIN, and no write is sent. A tick made just before the read failed is
+In the second and third state a tap on a key or a cell does nothing, and no
+write is sent. A tick made just before the read failed is
 taken back: the pins shown are the ones last read, not the ones last
 tapped. The list still opens, and a pick still changes which protocol's pins
 show their pad. The panel reads again at every link-up and every 500ms while
@@ -5576,7 +5578,8 @@ binding ends the state.
 ![The last binding read, after a read that failed](img/outputs-unread.png)
 
 Pages no binding describes do not become readable by reading them again.
-`HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`, held, writes a binding with no pin; the
+`HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`, held, writes a binding with no pin: a
+168 x 80px key on the foot under IN USE, whose table ends 8px above it; the
 read-back then shows nothing bound and edits are taken again. It is the one
 write the screen sends in this state. A finger that leaves the key, a lift
 before 2s, and leaving the screen abandon the hold.
@@ -5588,17 +5591,12 @@ lost a frame part way. An IOmcu speaking 4.10 written by this panel is
 not; it shows this state only for pages another host or an older panel left
 in its flash.
 
-### Pick a pin
+### The board view
 
-Behind the PICK A PIN tile on SETUP, and its home tag leads back there.
-On the [rbmod carrier](Carrier.md) the tile opens [LAYOUT](#layout) instead.
-Over the open protocol list the home tag closes the list, choosing
-nothing, and the screen stays.
-The same binding the
-Outputs screen holds. The list answers "which GPIO is bound"; this answers
-"where do I put the lead".
+OUTPUTS on a board with a drawing or a shape. The list answers "which GPIO is
+bound"; the board answers "where do I put the lead".
 
-![The pin picker](img/picker.png)
+![The board view](img/outputs.png)
 
 The keys are not the pads. At any size that fits a 1024 x 600 panel a pad is
 under 40 pixels across, which is smaller than a fingertip, so the pads are
@@ -5612,12 +5610,25 @@ protocol list's face (280 x 56px), the count and the reason are top left;
 the PINS table is under them, 171px wide, rows of 36px with the pin name
 in 16 x 28; IN USE is on the right, 168px wide. Both tables stand 8px
 clear of the outermost key a 600px board can have, a pad on its very edge
-included. The protocol list opens as on Outputs: the protocols in a column
+included. The protocol list opens over the board: the protocols in a column
 of 48px rows, the PROG PORT entries in a second column beside it.
+
+LAST WRITE stands right of the list's face, 140 x 56px from x 296: the label in
+8 x 16, the result in the largest of 12 x 24, 10 x 20 and 8 x 16 that holds it.
+On a board with a key there it stands at the foot of the IN USE column. It is
+not shown on a PROG PORT entry, which writes no binding.
+
+With a PROG PORT entry picked its rows take the column under the list's face:
+FUNCTION's label and its 196 x 48px face, PIN in 12 x 24 with the pad under
+it, WATCHED BY on up to 3 lines, SERVO TESTER and PORT PWM as segment rows 171
+x 48px, and the amber line, 4 lines of 10 x 20 or 5 of 8 x 16. The FUNCTION
+list opens under its face, 280px wide, over the column and the board.
 
 Each visit draws one of 8 cat drawings, picked at random, bottom left or
 bottom right where no row, key or list comes within 4px of it; it takes no
-taps.
+taps. The entry's column covers the left spot, and a cat there moves to the
+right spot when an entry is picked. A cat yields to a long IN USE table and to
+`HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`. The grid view draws none.
 
 Current limitation: the head stays where it is whatever the board. On a
 board whose shape page puts a pin in the top-left corner of its outline,
@@ -5641,21 +5652,19 @@ Neighbouring keys differ in height and in colour, like the keys of a
 keyboard. A reserved pin has no key because a key under a pin that cannot be
 chosen says it could be.
 
-Top left is the protocol list, the same control as on the Outputs screen. It
-names the selected protocol. A tap opens it over the board; a pick selects
-the protocol a tap on a key joins, on this screen and on the Outputs screen,
-and writes nothing. A tap outside the open list closes it and picks nothing.
-Every visit opens with OFF selected, on this screen and on the Outputs
-screen from SETUP: no key binds or unbinds a pin until a protocol is picked, and the
-line under the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. OFF stays
+Top left is the protocol list. It names the selected protocol. A tap opens it
+over the board; a pick selects the protocol a tap on a key joins, and writes
+nothing. A tap outside the open list closes it and picks nothing. A visit from
+SETUP opens with OFF selected: no key binds or unbinds a pin until a protocol
+is picked, and the line under the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. OFF stays
 selected across read-backs until a protocol is picked, and a change of
 board selects OFF, whatever was selected.
 
-![The protocol list on the picker](img/picker-protocol.png)
+![The protocol list over the board](img/outputs-protocol.png)
 
 Under the list is `N OF 8 SLOTS IN USE`, counted over every protocol: the
 protocols share the 8 slots of the OUTPUTS page. Under that, in amber, is
-the reason no key can be added, in the words of the Outputs screen:
+the reason no key can be added:
 
 | Line | When |
 | --- | --- |
@@ -5664,10 +5673,11 @@ the reason no key can be added, in the words of the Outputs screen:
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
 | `CHOOSE A PROTOCOL, THEN TAP PINS` | OFF is selected |
 | `NOT READ` | the binding is not confirmed |
+| `NO VALID ASSIGNMENT IN THE PAGES` | the pages describe no binding |
 
 Without the line a board drawn all grey reads as a fault.
 
-![Eight of eight slots in use](img/picker-full.png)
+![Eight of eight slots in use](img/outputs-full.png)
 
 Down the left, under PINS, are the selected protocol's pins in channel
 order, each with the pad number printed on the board in the PAD column. Down
@@ -5685,9 +5695,8 @@ one `PROG PORT` name, and the slice rule below is checked against each.
 A protocol whose stored binding holds that pin keeps it, the IOmcu gives
 the port no pin then, and the key is that protocol's like any other.
 
-The list ends in the PROG PORT entries, as on the Outputs screen, and the
-two screens show one selection: OUTPUTS' PIN button opens this screen on
-its port. With a port picked the keys set that port's pin:
+The list ends in the PROG PORT entries. With a port picked the keys set that
+port's pin:
 
 | Key | A tap |
 | --- | --- |
@@ -5696,21 +5705,19 @@ its port. With a port picked the keys set that port's pin:
 | grey, under another port's name (`PROG PORT 2`), a protocol's or an interface's | changes nothing |
 | grey, `SLICE OF GPIO 4` or `PWM CH OF GPIO 12`, on a SERVO PWM port | changes nothing; the line says `GPIO 5: SHARES PWM SLICE WITH OUTPUT GPIO 4` or `GPIO 28: SAME PWM CHANNEL AS GPIO 12` |
 
-The count line names the port's function, `FUNCTION: SERVO PWM`, and PINS
-holds the port's one pin with its pad. A NONE port takes any free key. An
-ask waits for a bench at rest and says so in the amber line, as on the
-Outputs screen. Before the ports are read every key is grey and the line
+A NONE port takes any free key. An ask waits for a bench at rest and says so
+in the amber line. Before the ports are read every key is grey and the line
 reads `PORTS NOT READ YET`.
 
-![PROG PORT 3 picked](img/picker-port.png)
+![PROG PORT 3 picked](img/outputs-port3.png)
 
 Under SERVO PWM and MOTOR PWM a key the IOmcu refuses on a PWM slice
-is grey too, as on the Outputs screen: GPIO 28 while the port holds GPIO 13, and
+is grey too: GPIO 28 while the port holds GPIO 13, and
 the partner of a pin bound as PWM, GPIO 16 beside GPIO 0. A tap on it changes
-nothing and puts the Outputs screen's line under the count:
+nothing and puts the reason under the count:
 `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13`, `GPIO 16: SAME PWM CHANNEL AS GPIO 0`.
 
-![GPIO 13 held by the programming port](img/picker-prog.png)
+![GPIO 13 held by the programming port](img/outputs-prog.png)
 
 A pin SETUP > INTERFACES holds is grey the same way while no protocol holds
 it, a tap on it changes nothing, and IN USE lists it after the programming
@@ -5719,7 +5726,7 @@ channel. Which pins those are, and when, is in the table under
 [Outputs](#outputs). A row stepped on SETUP, or the IOmcu taking or
 refusing a part, redraws the keys and the table on the next frame.
 
-![The interfaces' pins held and named under IN USE](img/picker-iface.png)
+![The interfaces' pins held and named under IN USE](img/outputs-iface.png)
 
 IN USE lists every pin it holds. A protocol's name takes a 20px line and a
 pin a 28px line. When those run past the foot of the table, every pin line
@@ -5731,20 +5738,20 @@ every interface on beside that binding, the table lists 27 lines, the ports
 and the interfaces first, in the smaller lines. A table that still runs past
 the foot holds the lines that fit and ends in `+N`, N the lines left out.
 
-![The tallest IN USE table](img/picker-off.png)
+![The tallest IN USE table](img/outputs-off.png)
 
-A tap on a key writes the binding through the same sequence as a tick on the
-Outputs screen, with the same results. While the binding is not confirmed — a
-read failed, or the pages describe no binding — every key is grey, `NOT
-READ` stands under the count, and a tap on a key changes nothing and writes
+A tap on a key writes the binding at once and LAST WRITE says what became of
+it. While the binding is not confirmed — a
+read failed, or the pages describe no binding — every key is grey, the reason
+stands under the count, and a tap on a key changes nothing and writes
 nothing. The protocol list still selects.
 
 Where the pads are comes from the board, not from the panel: the [shape
 page](Link.md#page-map) carries the outline, the pitch and the corner pad 1
 sits at. A board that does not say is not drawn at all — a picture from a
 guessed shape points at the wrong pad as confidently as the right one, and
-this screen's whole job is finding a pad on the board in front of you. Its
-pins are still on the Outputs screen.
+the board view's whole job is finding a pad on the board in front of you.
+OUTPUTS draws the grid view then.
 
 The board's drawing comes from the board as well. The IOmcu carries a
 drawing of itself, the one the configurator draws: the outline, the parts as
@@ -5754,7 +5761,7 @@ grid, so the board on screen is laid out like the board in your hands.
 Without a drawing, the outline and every pad are drawn from the shape and
 the keys are in the same places:
 
-![The picker without a drawing](img/picker-drawn.png)
+![The board without a drawing](img/outputs-shape.png)
 
 The panel shows a drawing only when it describes the board the panel binds:
 the outline and every pad position match the shape, every pin pad carries
@@ -5851,7 +5858,7 @@ confirmed](#a-binding-that-is-not-confirmed).
 
 ### Layout
 
-LAYOUT is behind the PICK A PIN tile on SETUP while the IOmcu reports a
+LAYOUT is behind a tile of its own on SETUP while the IOmcu reports a
 board with soldered pins, the [rbmod carrier](Carrier.md). The tile reads
 `CONNECTORS AND PINS` there. The home tag leads back to SETUP. The screen
 drives nothing and takes no tap.
@@ -5871,7 +5878,7 @@ The line under the columns reads
 A protocol bound or let go on OUTPUTS, and a change of board, repaint the
 screen. On a board whose pins are chosen it reads
 `THIS BOARD HAS NO SOLDERED PINS.` and
-`ITS PINS ARE CHOSEN ON OUTPUTS AND PICK A PIN.`.
+`ITS PINS ARE CHOSEN ON OUTPUTS.`.
 
 ## Balancing
 

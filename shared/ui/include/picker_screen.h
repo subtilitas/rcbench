@@ -1,12 +1,12 @@
 /**
  * @file
- * @brief The pin picker: the board itself, with a button on every pin an output
- * may have.
+ * @brief OUTPUTS' board view: the board itself, with a button on every pin an
+ * output may have.  The router reaches it through outputs_view_screen().
  *
- * The outputs screen lists pins in a grid, which answers "which GPIO
- * (general-purpose input/output) is bound" and not "where do I put the lead".
- * This screen answers the second one: a picture of the board with a straight
- * trace from each pad to a button large enough to press.
+ * A grid of GPIO (general-purpose input/output) numbers answers "which GPIO
+ * is bound" and not "where do I put the lead".  This view answers the second
+ * one: a picture of the board with a straight trace from each pad to a button
+ * large enough to press.
  *
  * The buttons are not the pads. At any size that fits a 1024 x 600 panel a pad
  * is under 40 pixels across, which is smaller than a fingertip; so the pads
@@ -18,8 +18,7 @@
  * outbind_pad_xy() turns a pad number into a position on it; the board's
  * drawing carries every pad's position itself. A board with neither is not
  * drawn at all, because a picture from a guessed shape points at the wrong
- * pad as confidently as the right one; its pins are still offered on the
- * outputs screen.
+ * pad as confidently as the right one; OUTPUTS draws its grid view then.
  *
  * The IOmcu's drawing of its board is optional in the same way. With
  * one, the board on screen shows the parts of the board in the operator's
@@ -28,9 +27,15 @@
  * (board_drawing_agrees()), so the pads it draws are the pads the buttons
  * bind.
  *
- * The protocol a tap binds to is chosen here or on the outputs screen, with
- * the same list; the two screens show one selection.  Every visit opens with
- * OFF selected, the overview: no key acts until a protocol is picked.
+ * The protocol a tap binds to is chosen in the list; outputs_screen.c holds
+ * the selection for both views.  A visit from SETUP opens with OFF selected,
+ * the overview: no key acts until a protocol is picked.  A TARGET row opens it
+ * on what its workbench drives (outputs_screen_open_on()).
+ *
+ * The rest of what OUTPUTS shows stands around the board: with a PROG PORT
+ * entry picked its rows in the column left of it, on a protocol LAST WRITE
+ * right of the list's face, and after a read no binding describes UNBIND ALL
+ * PINS under IN USE.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -111,18 +116,14 @@ void picker_screen_set_prog_pin(uint8_t gpio);
 void picker_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
 
 /**
- * The next entry to this screen opens on PROG PORT @p port (0 for port
- * 1), as the OUTPUTS entry's PIN button asks, instead of on OFF; once.
- *
- * With a port picked, in this list or on OUTPUTS, a button is the port's
- * pin: its own pin is ticked and a tap on it asks the IOmcu for no pin,
- * a tap on a free pin asks for that pin (port_view_ask()).  A SERVO PWM
- * port is refused the slice of a bound PWM output and the compare
- * register of another SERVO PWM port; a NONE port takes any free pin.
- * The pins are the IOmcu's to take: the ask waits for a bench at rest,
- * and the line under the count says how it stands.
+ * With a port picked, in this list or by outputs_screen_open_on_port(), a
+ * button is the port's pin: its own pin is ticked and a tap on it asks the
+ * IOmcu for no pin, a tap on a free pin asks for that pin (port_view_ask()).
+ * A SERVO PWM port is refused the slice of a bound PWM output and the compare
+ * register of another SERVO PWM port; a NONE port takes any free pin.  The
+ * pins are the IOmcu's to take: the ask waits for a bench at rest, and the
+ * amber line says how it stands.
  */
-void picker_screen_open_on_port(uint8_t port);
 
 /** The port picked, 0 for port 1, or -1 for a protocol. */
 int picker_screen_port_shown(void);
@@ -132,7 +133,7 @@ uint8_t picker_screen_prog_listed(void);
 
 /** What a pin's button shows and does. */
 typedef enum {
-    PICKER_PIN_NONE = 0,  /**< no such pin, or a board this screen cannot draw */
+    PICKER_PIN_NONE = 0,  /**< no such pin, or a board this view cannot draw   */
     PICKER_PIN_FREE,      /**< ivory or ebony: a tap binds it                 */
     PICKER_PIN_TICKED,    /**< accented: bound in the protocol selected; a tap
                                frees it                                       */
@@ -240,7 +241,8 @@ typedef struct {
 /** Line @p k of the IN USE table; false past the last. */
 bool picker_screen_in_use(uint8_t k, picker_use_t *out);
 
-/** The count under the protocol list: slots in use of 8, every protocol. */
+/** The count under the protocol list: slots in use of 8, every protocol; an
+ *  empty string with a port picked. */
 void picker_screen_count(char *buf, size_t cap);
 
 /**
@@ -265,6 +267,12 @@ gfx_rect_t picker_screen_list_face(void);
 gfx_rect_t picker_screen_list_row(uint8_t proto);
 bool picker_screen_list_open(void);
 
+/**
+ * @brief Where LAST WRITE stands on this board.
+ * @return the box
+ */
+gfx_rect_t picker_screen_last_rect(void);
+
 /** Whether a tap on a button can change the binding. */
 bool picker_screen_editable(void);
 
@@ -285,7 +293,7 @@ bool picker_screen_set_drawing(const uint8_t *data, uint32_t bytes,
                                const char **why);
 
 /**
- * Asked on entering the screen, for the board the binding names.
+ * Asked on entering OUTPUTS, for the board the binding names.
  *
  * The function calls picker_screen_set_drawing(), with NULL when there is
  * no drawing for that board, so a drawing that arrived since the last visit

@@ -5,7 +5,7 @@
  *
  * SETUP opens on a grid of tiles, the menu's kind: one per category it
  * holds (PANEL, INTERFACES, SD CARD, SENSORS), and one per screen of its own that SETUP
- * reaches (OUTPUTS, PICK A PIN, WI-FI, UPDATES).  A category's tile opens its list across the screen's width.
+ * reaches (OUTPUTS, WI-FI, UPDATES).  A category's tile opens its list across the screen's width.
  * The list walks the rows shared/settings declares (settings_rows.c; SENSORS
  * lists a fitted part's rows only, sensors_rows.h) and draws each row by
  * its type: a stepper for a number, a toggle for a bool, a choice for an
@@ -175,11 +175,10 @@ bool settings_hub_slot(int index, gfx_rect_t *out)
 
 int settings_hub_tiles(void)
 {
-    return TILE_COUNT;
+    return stg_tile_count();
 }
 
-/** @brief LAYOUT's tile, in PICK A PIN's place on a board whose pins
- *         are soldered: that board has no pin to pick. */
+/** @brief LAYOUT's tile, last on a board whose pins are soldered. */
 static const hub_tile_t k_layout_tile =
     HUB_SCREEN(SCREEN_LAYOUT, TX_SET_HUB_LAYOUT, ui_icon_board);
 
@@ -205,18 +204,19 @@ gfx_rect_t stg_tile_rect(int i)
     return r;
 }
 
+int stg_tile_count(void)
+{
+    return TILE_COUNT + ((ui_board_roles() != NULL) ? 1 : 0);
+}
+
 const hub_tile_t *stg_hub_tile(int i)
 {
-    const hub_tile_t *t = &k_tiles[i];
-    if (t->cat < 0 && t->screen == SCREEN_PICKER && ui_board_roles() != NULL) {
-        return &k_layout_tile;
-    }
-    return t;
+    return (i >= TILE_COUNT) ? &k_layout_tile : &k_tiles[i];
 }
 
 ui_screen_id_t settings_hub_tile_screen(int i)
 {
-    if (i < 0 || i >= TILE_COUNT) {
+    if (i < 0 || i >= stg_tile_count()) {
         return SCREEN_COUNT;
     }
     const hub_tile_t *t = stg_hub_tile(i);
@@ -225,7 +225,7 @@ ui_screen_id_t settings_hub_tile_screen(int i)
 
 static int tile_at(int x, int y)
 {
-    for (int i = 0; i < TILE_COUNT; ++i) {
+    for (int i = 0; i < stg_tile_count(); ++i) {
         if (gfx_rect_contains(stg_tile_rect(i), x, y)) {
             return i;
         }

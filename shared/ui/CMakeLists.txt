@@ -80,6 +80,7 @@ set(SRCS
     prog5v_box.c
     sensors_rows.c
     outputs_screen.c
+    outputs_view.c
     outputs_port.c
     outputs_port_entry.c
     port_view.c

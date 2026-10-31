@@ -414,7 +414,7 @@ bleiben Eintrag für Eintrag beschreibbar und gelten mit jeder Bestätigung:
 so schreibt der SERVO-Bildschirm den Bereich eines Kanals und das Panel die
 Endpunkte des Throttle.
 
-| Panel | IOmcu | Eine auf OUTPUTS oder PICK A PIN geänderte Bindung |
+| Panel | IOmcu | Eine auf OUTPUTS geänderte Bindung |
 | --- | --- | --- |
 | 4.10 | 4.10 | vorbereitet und übernommen: SERVO `FRAME_HZ` = 0, 8 Frames an BIND_CFG, 8 an BIND_OUT, `COMMIT`, dann OUTPUTS und CHAN_CFG zurückgelesen. 20 Austausche |
 | 4.10 | 4.9 oder älter | das Panel liest die Minor beim Link-up und sendet nichts an die drei Pages. SERVO `FRAME_HZ` = 0 (ab 4.1), 8 Frames an CHAN_CFG, 8 an OUTPUTS, jeder ein eigener bestätigter Austausch und mit der Bestätigung in Kraft, dann beide Pages zurückgelesen. 19 Austausche. Ein mittendrin verlorener Frame lässt die Einträge davor in Kraft; das Panel zeigt die Pages dann, wie sie sich lesen, und schreibt nichts darüber außer einer Bindung ohne Pin |
@@ -856,7 +856,7 @@ Eine DShot-Funktion wird als 3 bis 5 gespeichert.
 | älter als 4.25 | liest keinen Datensatz der Version 8 und startet mit leerem Speicher | jeder Port steht auf seinem Standardpin und seiner Standardfunktion |
 
 Das Panel schreibt `PIN` und `FUNC` nur, wenn der Bediener darum bittet,
-auf dem Eintrag PROG-PORT von OUTPUTS oder in PICK A PIN
+auf dem Eintrag PROG-PORT von OUTPUTS
 ([Bildschirme](Screens-de.md#der-eintrag-prog-port)), nie aus einer
 gespeicherten Einstellung: die Ports gehören zur Platine, wie die Bindung
 der Ausgänge. Eine Bitte wartet auf einen Prüfstand in Ruhe. Ein Port, der
@@ -1351,7 +1351,7 @@ geteilten Slice, der 0 und 50Hz nimmt und 40, 300 und 560Hz abweist, eine
 
 Ab 4.20 liefert der IOmcu auf ARTWORK (0x26) und ART_DATA (0x27) eine
 Zeichnung seiner eigenen Platine: den Umriss, die Bauteile als flache Formen
-und jedes Pad mit dem, was es ist. PICK A PIN zeichnet die Platine daraus
+und jedes Pad mit dem, was es ist. OUTPUTS zeichnet die Platine daraus
 maßstäblich. Eine neue Platine bringt ihre Zeichnung im eigenen
 IOmcu-Image mit; das Panel braucht dafür keine Änderung. Die Zeichnung
 des RP2350-CAN hat 1 560 Bytes in 26 Blöcken: 40 Pads und 102 Formen auf
@@ -1398,7 +1398,7 @@ führt es mit `--check` aus.
 | Panel | IOmcu | Verhalten |
 | --- | --- | --- |
 | 4.20 | 4.20 | wie oben |
-| 4.20 | 4.19 oder älter | das Panel liest ARTWORK nicht und zeichnet die Platine aus SHAPE. Das Log sagt `hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its shape` |
+| 4.20 | 4.19 oder älter | das Panel liest ARTWORK nicht und zeichnet die Platine aus SHAPE. Das Log sagt `hardware 1 serves no board drawing (protocol 4.19); OUTPUTS draws its shape` |
 | 4.19 oder älter | 4.20 | das Panel liest sieben ARTWORK-Register, findet Format 2 und holt nichts: `no photograph from hardware 1: it describes a photograph that cannot be one`. Ein früher behaltenes Foto erscheint weiter |
 
 `test_link_drawing`, `test_board_drawing`, `test_link_artxfer`,

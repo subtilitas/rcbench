@@ -185,7 +185,7 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         { "motor-stick", SCREEN_MOTOR },
         /* The picker with the IOmcu's drawing of the RP2350-CAN: an
          * outline, 102 shapes and 40 pad rings on a full repaint. */
-        { "picker",     SCREEN_PICKER },
+        { "picker",     SCREEN_OUTPUTS },
         /* WI-FI with the access point up; "wifi-keys" is the same
          * screen with the Wi-Fi keyboard open, a key typed every frame. */
         { "wifi-keys",  SCREEN_WIFI },
@@ -217,11 +217,12 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
             break;
         }
     }
-    if (start == SCREEN_PICKER) {
+    if (start == SCREEN_OUTPUTS) {
         outbind_t b;
         outbind_init(&b);
         outbind_set_board(&b, (uint16_t)OUTBIND_BOARD_PICO_HEADER);
         outbind_set_proto(&b, 1u);                 /* SERVO PWM */
+        outputs_screen_set_binding(&b);
         picker_screen_set_binding(&b);
         (void)picker_screen_set_drawing(board_drawing_rp2350_can,
                                         board_drawing_rp2350_can_bytes, NULL);

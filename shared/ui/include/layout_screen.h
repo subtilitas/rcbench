@@ -4,8 +4,8 @@
  *        position with its role, its GPIO, the net on its + and what it
  *        carries now.
  *
- * The SETUP tile that opens PICK A PIN on a board whose pins are chosen
- * opens this screen on one whose pins are soldered (the rbmod carrier).
+ * A SETUP tile of its own on a board whose pins are soldered (the rbmod
+ * carrier).
  * It draws what the board table says (outbind_roles_t's connectors) and
  * the binding OUTPUTS holds; it drives nothing and takes no tap.  On a
  * board without soldered pins it says so.

@@ -119,6 +119,7 @@ SOURCES = [
     "shared/ui/esc_stick_draw.c",
     "shared/ui/esc_stick_draw_run.c",
     "shared/ui/outputs_screen.c",
+    "shared/ui/outputs_view.c",
     "shared/ui/outputs_port.c",
     "shared/ui/outputs_port_entry.c",
     "shared/ui/port_view.c",

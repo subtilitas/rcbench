@@ -332,7 +332,7 @@ fill and a write-back for every line. The time of one clear, set as
 | `battery` | BATTERY | not measured | not measured | not measured | not measured | not measured |
 | `balance` | BALANCE | not measured | not measured | not measured | not measured | not measured |
 | `motor-stick` | ESC STICK open on MOTOR & ESC > PROGRAM | not measured | not measured | not measured | not measured | not measured |
-| `picker` | PICK A PIN | not measured | not measured | not measured | not measured | not measured |
+| `picker` | OUTPUTS, board view | not measured | not measured | not measured | not measured | not measured |
 | `wifi` | WI-FI with ACCESS POINT on | not measured | not measured | not measured | not measured | not measured |
 | `wifi-keys` | WI-FI > CHOOSE HOME NETWORK, the password keyboard, a key typed every second | not measured | not measured | not measured | not measured | not measured |
 

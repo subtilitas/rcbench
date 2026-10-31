@@ -386,7 +386,7 @@ when all three match:
 An IOmcu flashed with another drawing reports another hash, and the
 panel fetches the drawing again. An IOmcu on protocol 4.19 or older
 serves no drawing; the panel logs `hardware 1 serves no board drawing
-(protocol 4.19); PICK A PIN draws its shape` and draws the board from its
+(protocol 4.19); OUTPUTS draws its shape` and draws the board from its
 outline.
 
 ---
@@ -431,7 +431,7 @@ first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
 the screen goes on looking configured while the lead produces no pulse.
 
 On the panel: **Setup → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
-**Setup → PICK A PIN**, choose `SERVO PWM` in its list and tap one key on the
+**Setup → OUTPUTS**, choose `SERVO PWM` in its list and tap one key on the
 board drawing — grounds are marked `G`, rails carry their voltage.
 
 **Scope the pin before connecting the servo.**
