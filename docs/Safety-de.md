@@ -385,11 +385,7 @@ dem OFF des Starts anlässt, ist nicht gemessen.
 
 ## ESC-Einstellungen über den Signaldraht
 
-[Die Pages für ESC-Einstellungen](LinkEsc-de.md#was-jedes-ereignis-tut) nennen Leitung und
-Versorgung für jedes von ARMED, STOP, verlorenem Link, Fehler und Neustart. Solange die Page
-einen Pin hält, armt die Bank nicht, und ein Fehler parkt die Leitung und schaltet den PD mini
-aus. Ein Pin mit bidirektionalem DShot ruht auf SAFE high, die Eintrittsbedingung dreier
-ESC-Bootloader ([die Einschränkung](LinkEsc-de.md#aktuelle-einschränkungen)).
+[Die Pages für ESC-Einstellungen](LinkEsc-de.md#was-jedes-ereignis-tut) nennen Leitung und Versorgung für jedes von ARMED, STOP, verlorenem Link, Fehler und Neustart, und [die Einschränkung](LinkEsc-de.md#aktuelle-einschränkungen) eines Pins mit bidirektionalem DShot, der auf SAFE high ruht.
 
 ## Vorausgesetzte externe Schaltung: das Monoflop
 
