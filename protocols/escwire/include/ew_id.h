@@ -57,6 +57,7 @@ typedef enum {
     EW_CPU_NONE = 0, /**< no acceptable answer       */
     EW_CPU_EFM8,     /**< BLHeli_S or Bluejay        */
     EW_CPU_ARM,      /**< AM32, or a firmware not supported */
+    EW_CPU_TEXT,     /**< ESCape32: no first contact, a text interface */
 } ew_cpu_t;
 
 /** @brief Why a page is not written, or why an ESC is refused. */
@@ -70,6 +71,8 @@ typedef enum {
     EW_WHY_NEW_REVISION, /**< AM32 revision above 4                        */
     EW_WHY_ERASED,       /**< AM32: byte 0 is 0xFF                         */
     EW_WHY_CAN_BUILD,    /**< AM32 built for CAN boards                    */
+    EW_WHY_TEXT_REVISION, /**< ESCape32: a revision not written            */
+    EW_WHY_SHOW_KEYS,    /**< ESCape32: `show` lacks a key or has others   */
     /* Refused, the firmware not known. */
     EW_WHY_SIGNATURE,    /**< a pair of signature bytes no part has        */
     EW_WHY_PROTOCOL,     /**< AM32 bootloader protocol not 2 or 3          */

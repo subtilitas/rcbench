@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "ew_a.h"
+#include "ew_text.h"
 
 void ew_guard_init(ew_guard_t *g)
 {
@@ -22,6 +23,12 @@ void ew_guard_target(ew_guard_t *g, const ew_contact_t *c)
     g->base = c->base;
     g->page = c->page;
     g->boot = c->boot;
+}
+
+void ew_guard_text_target(ew_guard_t *g)
+{
+    ew_guard_init(g);
+    g->cpu = EW_CPU_TEXT;
 }
 
 /**
@@ -251,6 +258,9 @@ ew_refuse_t ew_guard_frame(ew_guard_t *g, const uint8_t *f, size_t n)
     if (g == NULL || f == NULL || n == 0u) {
         return EW_REF_ARG;
     }
+    if (g->cpu == (uint8_t)EW_CPU_TEXT) {
+        return EW_REF_INTERFACE;
+    }
     if (g->cpu == (uint8_t)EW_CPU_NONE) {
         uint8_t contact[EW_A_CONTACT_LEN];
 
@@ -299,18 +309,43 @@ ew_refuse_t ew_guard_frame(ew_guard_t *g, const uint8_t *f, size_t n)
 }
 
 /**
- * @brief Whether a line starts with a word that ends at a blank or the end.
+ * @brief Whether a line is exactly a word.
  * @param s    the line, without its LF
  * @param n    its length
  * @param word the word
- * @return true when it does
+ * @return true when it is
  */
-static bool first_word(const uint8_t *s, size_t n, const char *word)
+static bool is_word(const uint8_t *s, size_t n, const char *word)
 {
-    const size_t len = strlen(word);
+    return n == strlen(word) && memcmp(s, word, n) == 0;
+}
 
-    return n >= len && memcmp(s, word, len) == 0
-           && (n == len || s[len] == ' ');
+/**
+ * @brief Split `set <key> <value>`, one blank between words: a key of the map
+ *        and one of its values.
+ * @param s    the line, without its LF
+ * @param n    its length
+ * @param slot takes the key's place
+ * @param v    takes the value
+ * @return true when the line is one
+ */
+static bool parse_set(const uint8_t *s, size_t n, size_t *slot, int16_t *v)
+{
+    static const char k_set[] = "set ";
+    const size_t head = sizeof(k_set) - 1u;
+
+    if (n <= head || memcmp(s, k_set, head) != 0) {
+        return false;
+    }
+    const uint8_t *blank = memchr(s + head, ' ', n - head);
+
+    if (blank == NULL) {
+        return false;
+    }
+    const size_t key_n = (size_t)(blank - (s + head));
+    const ew_key_t *k = ew_key_find((const char *)(s + head), key_n, slot);
+
+    return ew_text_num(blank + 1, n - head - key_n - 1u, v) && ew_key_ok(k, *v);
 }
 
 ew_refuse_t ew_guard_line(const uint8_t *line, size_t n)
@@ -318,24 +353,63 @@ ew_refuse_t ew_guard_line(const uint8_t *line, size_t n)
     if (line == NULL || n == 0u) {
         return EW_REF_ARG;
     }
-    if (n - 1u > EW_LINE_MAX || line[n - 1u] != '\n') {
+    if (n - 1u > EW_LINE_MAX) {
+        return EW_REF_LINE_LONG;
+    }
+    if (line[n - 1u] != '\n') {
         return EW_REF_LINE;
     }
     const size_t len = n - 1u;
+    size_t slot = 0u;
+    int16_t v = 0;
 
     for (size_t i = 0; i < len; ++i) {
         if (line[i] < 0x20u || line[i] > 0x7Eu) {
             return EW_REF_LINE;
         }
     }
-    if (first_word(line, len, "info") || first_word(line, len, "show")
-        || first_word(line, len, "save") || first_word(line, len, "help")
-        || first_word(line, len, "get")) {
+    if (is_word(line, len, "info") || is_word(line, len, "show")
+        || is_word(line, len, "save") || is_word(line, len, "help")
+        || is_word(line, len, "get music")
+        || parse_set(line, len, &slot, &v)) {
         return EW_REF_NONE;
     }
-    if (first_word(line, len, "set") && len > 4u
-        && !first_word(line + 4, len - 4u, "music")) {
+    if (len > 4u && memcmp(line, "get ", 4u) == 0
+        && ew_key_find((const char *)(line + 4), len - 4u, NULL) != NULL) {
         return EW_REF_NONE;
     }
     return EW_REF_LINE;
+}
+
+ew_refuse_t ew_guard_text(const ew_guard_t *g, const uint8_t *line, size_t n)
+{
+    if (g == NULL) {
+        return EW_REF_ARG;
+    }
+    const ew_refuse_t r = ew_guard_line(line, n);
+
+    if (r != EW_REF_NONE) {
+        return r;
+    }
+    const size_t len = n - 1u;
+
+    if (g->cpu == (uint8_t)EW_CPU_EFM8 || g->cpu == (uint8_t)EW_CPU_ARM) {
+        return EW_REF_INTERFACE;
+    }
+    if (g->cpu == (uint8_t)EW_CPU_NONE) {
+        return is_word(line, len, "info") ? EW_REF_NONE : EW_REF_NO_CONTACT;
+    }
+    if (is_word(line, len, "save")) {
+        return g->approved != NULL ? EW_REF_NONE : EW_REF_NOT_APPROVED;
+    }
+    size_t slot = 0u;
+    int16_t v = 0;
+
+    if (parse_set(line, len, &slot, &v)) {
+        if (g->approved == NULL) {
+            return EW_REF_NOT_APPROVED;
+        }
+        return ew_e32_get(g->approved, slot) == v ? EW_REF_NONE : EW_REF_DATA;
+    }
+    return EW_REF_NONE;
 }

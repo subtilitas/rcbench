@@ -223,6 +223,13 @@ TEST_CASE(a_load_refuses_another_esc)
     CHECK(memcmp(g_load.target, s.orig, 255u) == 0);
     up_s();
     CHECK_EQ(ew_file_load(&am4, &s.id, s.orig, &g_load), EW_LOAD_FIRMWARE);
+    /* Into an ESCape32. */
+    id = s.id;
+    id.fw = EW_FW_E32;
+    id.layout = 17u;
+    id.len = EW_MAP_LEN_E32;
+    id.writable = true;
+    CHECK_EQ(ew_file_load(&am4, &id, s.orig, &g_load), EW_LOAD_FIRMWARE);
     /* A file of another firmware into an AM32. */
     CHECK_EQ(parse_len(g_len), EW_FILE_OK);
     {

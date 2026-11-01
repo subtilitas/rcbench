@@ -21,6 +21,12 @@ history is in git.
   A verified file of an AM32 restores an ESC whose 192B read 0xFF when its pin
   code, flash code, bootloader protocol and name are the ESC's. Files go to
   `BENCH/ESCW/CONF`, `ESCW001.TXT` to `ESCW999.TXT`. No screen uses it.
+- `protocols/escwire/`: ESCape32's text interface at 38400baud. It holds the
+  lines `info`, `show`, `set` and `save`, their replies, the 46 numeric keys of
+  revision 17 as data, and the session's branch: after 3 silent first contacts a
+  2500ms hold with the line high, then `info`; `set` per changed key, `save` and
+  a read-back. A clipped `set` ends with no `save`. Other revisions are shown
+  read-only. A reply takes up to 1536B of a new buffer in the session.
 - Screenshot: a 1000ms hold on the empty part of the band, on any screen with
   the band, takes the frame at once, in any bench state. One picture is held in
   1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes

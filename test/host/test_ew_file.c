@@ -190,6 +190,13 @@ TEST_CASE(a_capture_refuses_what_does_not_fit)
     c.cpu = EW_CPU_NONE;
     CHECK(!ew_file_capture(&g_f, &c, &id, page));
     c.cpu = EW_CPU_ARM;
+    /* ESCape32's page, by whichever processor. */
+    {
+        static const ew_ident_t k_e32 = { .fw = EW_FW_E32, .layout = 17u,
+                                          .len = EW_MAP_LEN_E32 };
+
+        CHECK(!ew_file_capture(&g_f, &c, &k_e32, page));
+    }
     /* A name the format cannot hold. */
     memset(id.name, 'x', EW_ID_NAME_MAX);
     id.name[EW_ID_NAME_MAX] = '\0';
@@ -765,6 +772,9 @@ TEST_CASE(an_edited_file_names_what_it_is_for)
              EW_FILE_ERR_VALUE);
     CHECK_EQ(edited_text(ED_HEAD "Firmware: AM32\nLayout: 256\nedited\n"),
              EW_FILE_ERR_VALUE);
+    /* ESCape32 has no file. */
+    CHECK_EQ(edited_text(ED_HEAD "Firmware: ESCape32\nLayout: 17\nedited\n"),
+             EW_FILE_ERR_FIRMWARE);
     /* A layout with no table has no fields to name. */
     CHECK_EQ(edited_text(ED_HEAD "Firmware: AM32\nLayout: 2\nMIN DUTY = 1\n"
                                  "edited\n"), EW_FILE_ERR_FIELD);

@@ -65,6 +65,7 @@ typedef enum {
     EW_ANS_BAD_CRC,  /**< the ESC answered EW_A_REF_CRC                     */
     EW_ANS_REFUSED,  /**< the ESC answered EW_A_REF_PROGRAM                 */
     EW_ANS_OTHER,    /**< any other single byte                             */
+    EW_ANS_TEXT_ERROR, /**< text interface: the reply's last line is `ERROR` */
 } ew_ans_t;
 
 /**

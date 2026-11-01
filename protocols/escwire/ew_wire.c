@@ -12,7 +12,8 @@ bool ew_xfer_valid(const ew_xfer_t *x)
         || x->n_tx == 0u || x->n_tx > EW_TX_MAX || x->n_head >= x->n_tx
         || x->pause_bits > EW_PAUSE_BITS_MAX
         || (x->pause_bits != 0u && x->n_head == 0u)
-        || x->max_rx > EW_RX_MAX) {
+        || x->max_rx > (x->rate == (uint8_t)EW_RATE_TEXT ? EW_RX_TEXT_MAX
+                                                         : EW_RX_MAX)) {
         return false;
     }
     if (x->max_rx == 0u) {
