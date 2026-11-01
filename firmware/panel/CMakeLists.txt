@@ -46,6 +46,18 @@ option(RCBENCH_TOUCH_INJECTOR "Read a touch injector at I2C 0x14" ON)
 # builds a panel that prints none of them and holds none of their code.
 option(RCBENCH_PERF_LOG "Log the frame times, stacks and heap on the console" ON)
 
+# The IOmcu's bench console on this panel's serial port, over the CONSOLE
+# page (main/panel_console.h, docs/BenchConsole.md).  A debug tool, off in
+# every released image; tools/check_panel_console.py reads an image for it.
+# RCBENCH_IOMCU_BIN names the IOmcu image built with IOMCU_CONSOLE=ON, so
+# UPDATES offers it over CAN.
+#   idf.py -D RCBENCH_PANEL_CONSOLE=ON -D RCBENCH_IOMCU_BIN=<console image> build
+option(RCBENCH_PANEL_CONSOLE "The IOmcu's bench console over the link" OFF)
+if(RCBENCH_PANEL_CONSOLE AND NOT RCBENCH_IOMCU_BIN)
+    message(WARNING "RCBENCH_PANEL_CONSOLE without RCBENCH_IOMCU_BIN: this panel "
+                    "offers an IOmcu no console image")
+endif()
+
 # The DSI (Display Serial Interface) host's colour bars for 3s at start-up,
 # for a first look at a board (components/display).
 #   idf.py -D RCBENCH_DISPLAY_BARS=ON build

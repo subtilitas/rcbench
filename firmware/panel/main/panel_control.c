@@ -27,6 +27,7 @@
 #include "gfx.h"
 #include "heartbeat.h"
 #include "outputs.h"
+#include "panel_console.h"
 #include "panel.h"
 #include "panel_main.h"
 #include "panel_trial.h"
@@ -502,6 +503,7 @@ void control_task(void *arg)
         if (!cu_service(&link_up, &bench, &last_poll, &last_status)) {
             new_sample = poll_far_end(&link_up, &bench, &last_poll,
                                       &last_status);
+            panel_console_pass(link_up);
         }
 
         advance_model_and_log(link_up, emitted, &sim, &bench, &new_sample);

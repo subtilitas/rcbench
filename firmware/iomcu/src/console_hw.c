@@ -8,12 +8,14 @@
 
 #include <stdarg.h>
 
+#include "pico/rand.h"
 #include "pico/stdio.h"
 #include "pico/stdio_usb.h"
 #include "pico/stdlib.h"
 #include "tusb.h"
 
 #include "ewline_console.h"
+#include "console_tunnel.h"
 #include "page_console.h"
 
 /**
@@ -23,6 +25,8 @@
 #define CONSOLE_HW_KEYS_PER_PASS 64u
 
 static page_console_t s_console;
+/** @brief The console's bytes over the link (the CONSOLE page). */
+static console_tunnel_t s_tunnel;
 /**
  * @brief The output of one pass, off the main loop's stack.
  */
@@ -32,6 +36,7 @@ void console_hw_init(const link_dev_t *dev)
 {
     page_console_init(&s_console, dev);
     page_console_set_ext(&s_console, ewline_console_line, NULL);
+    console_tunnel_init(&s_tunnel, &s_console, (uint16_t)get_rand_32());
 }
 
 void console_hw_pass(void)
@@ -50,21 +55,52 @@ void console_hw_pass(void)
      * where it ends, so a line of any length leaves whatever
      * CFG_TUD_CDC_TX_BUFSIZE is.  Nothing else writes to the port in this
      * build after the boot (IOMCU_SAY in main.c), so nothing lands inside
-     * a cut line. */
+     * a cut line.
+     *
+     * With a panel reading the CONSOLE page, the output also fills its window
+     * and leaves at the window's pace.  With no USB host and no panel nothing
+     * leaves, and the buffer holds a start's first lines for whoever comes. */
+    const uint32_t now_ms = to_ms_since_boot(get_absolute_time());
+
+    console_tunnel_pass(&s_tunnel, now_ms);
+
+    const bool tunnel = console_tunnel_active(&s_tunnel, now_ms);
     const bool connected = stdio_usb_connected();
-    const size_t avail = connected ? (size_t)tud_cdc_write_available() : 0u;
-    const size_t room = (avail > sizeof(s_out)) ? sizeof(s_out) : avail;
-    const size_t n = page_console_take_part(&s_console, s_out, room);
-    if (n > 0u) {
-        (void)stdio_put_string(s_out, (int)n, false, false);
+    size_t room = connected ? (size_t)tud_cdc_write_available()
+                            : (tunnel ? sizeof(s_out) : 0u);
+
+    if (room > sizeof(s_out)) {
+        room = sizeof(s_out);
     }
+    if (tunnel && room > console_tunnel_room(&s_tunnel)) {
+        room = console_tunnel_room(&s_tunnel);
+    }
+    const size_t n = page_console_take_part(&s_console, s_out, room);
+
+    if (n > 0u) {
+        if (connected) {
+            (void)stdio_put_string(s_out, (int)n, false, false);
+        }
+        if (tunnel) {
+            console_tunnel_put(&s_tunnel, s_out, n);
+        }
+    }
+}
+
+void console_hw_page_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    console_tunnel_read(&s_tunnel, off, n, out);
+}
+
+uint8_t console_hw_page_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
+{
+    (void)ctx;
+    return console_tunnel_write(&s_tunnel, off, n, in);
 }
 
 void console_hw_say(const char *fmt, ...)
 {
-    if (!stdio_usb_connected()) {
-        return;
-    }
     va_list ap;
     va_start(ap, fmt);
     page_console_vsay(&s_console, fmt, ap);

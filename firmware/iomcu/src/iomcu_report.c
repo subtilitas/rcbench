@@ -115,6 +115,16 @@ void reset_start(void)
     printf("rcbench-iomcu: reset %s\n", text);
 }
 
+#if IOMCU_CONSOLE
+void reset_say(void)
+{
+    char why[RESET_CAUSE_FULL_MAX];
+
+    (void)reset_cause_full(&s_reset, why, sizeof(why));
+    IOMCU_SAY("rcbench-iomcu: reset %s\n", why);
+}
+#endif
+
 /**
  * @brief The current monitors as the pages show them, with can_report()
  * every 3s, while either part is enabled: what a bench session reads before

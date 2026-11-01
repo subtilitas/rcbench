@@ -36,12 +36,33 @@ void console_hw_init(const link_dev_t *dev);
 void console_hw_pass(void);
 
 /**
+ * @brief The CONSOLE page's read (link_pages_console.h).
+ *
+ * @param ctx  Unused.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param out  Takes them.
+ */
+void console_hw_page_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+
+/**
+ * @brief The CONSOLE page's write.
+ *
+ * @param ctx  Unused.
+ * @param off  First register.
+ * @param n    Registers.
+ * @param in   Their values.
+ * @return 0, or a link_nack_t.
+ */
+uint8_t console_hw_page_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
+/**
  * @brief A line for the USB serial port, formatted as printf() formats,
  * through the console's output: it leaves after the lines said before it and
  * never inside one, and saying it does not wait for the host.
  *
- * Dropped while no
- * host has the port open, as printf() drops it.
+ * Held until a USB host or a panel on the CONSOLE page takes it, as far as the
+ * console's buffer holds it.
  *
  * @param fmt  printf() format string.
  * @param ...  Arguments for the format string.

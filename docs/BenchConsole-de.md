@@ -2,8 +2,8 @@
 
 <sub>[English](BenchConsole.md) · **Deutsch**</sub>
 
-Die Prüfstandskonsole ist ein Werkzeug für den Prüfstand. Sie ist in keinem
-veröffentlichten Image. Ein IOmcu, der mit der Option `IOMCU_CONSOLE` gebaut
+Die Prüfstandskonsole ist ein Werkzeug für den Prüfstand, nur für Debug-Builds.
+Sie ist in keinem veröffentlichten Image. Ein IOmcu, der mit der Option `IOMCU_CONSOLE` gebaut
 ist, liest Kommandozeilen auf seiner seriellen USB-Schnittstelle (Universal
 Serial Bus) und liest und schreibt damit die Link-Pages aus
 [Der Link](Link-de.md). Eine Station an dieser Schnittstelle bedient die
@@ -47,8 +47,8 @@ Standard-Image ein Symbol der Konsole enthält. `IOMCU_CONSOLE` und
 `SENSE_TRACE` lesen beide die USB-Konsole; CMake weist einen Build mit
 beiden ab.
 
-Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 17.784
-Byte größer als das Standard-Image und belegt 9.216 Byte mehr RAM
+Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 17.444
+Byte größer als das Standard-Image und belegt 9.664 Byte mehr RAM
 (Random-Access Memory): 2.048 davon der Ausgabepuffer, 960 der USB-Sendepuffer
 von 1.024 Byte statt der 64 des SDK, 3.488 der Pin-Treiber der Signalleitung
 und 1.536 die Antwort seines Tests. Die tiefste
@@ -74,7 +74,7 @@ Jede Antwort ist eine Zeile oder mehr, jede beginnt mit einem Wort:
 | `page` | eine Zeile von `pages` |
 | `hitec` | ein hitec-Kommando und sein Bericht |
 
-Die Ausgabe geht in ganzen Zeilen durch einen Puffer von 2.048 Byte hinaus,
+Die Ausgabe geht in ganzen Zeilen, auch über den Link an ein Panel, durch einen Puffer von 2.048 Byte hinaus,
 so schnell der USB-Host sie nimmt. Was nicht passt, fällt weg, und eine
 Zeile `err output full, N bytes dropped` folgt.
 
@@ -345,6 +345,61 @@ esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 w
 
 `state`, `result`, `ref`, `flags` und `line` sind die Register
 [ihrer Page](LinkEsc-de.md#register); `ses` ist das letzte Ergebnis der Session.
+
+## Über den Link, ohne USB am IOmcu
+
+Nur Debug-Builds. Kein veröffentlichtes Image beider Seiten enthält etwas davon.
+
+Ein Panel, gebaut mit `RCBENCH_PANEL_CONSOLE`, leitet seine seriellen Ports, UART0 und USB-Serial-JTAG, über die CONSOLE-Page (0xE0) des Links an ein IOmcu, gebaut mit `IOMCU_CONSOLE`. Jeder Befehl dieser Seite läuft auf dem IOmcu wie an USB, `ewline` und andere Befehle, die Leitungen treiben, eingeschlossen, und lehnt ab, was er dort ablehnt. USB funktioniert weiter, wenn es gesteckt ist.
+
+```bash
+export PICO_SDK_PATH=/path/to/pico-sdk
+cmake -S firmware/iomcu -B firmware/iomcu/build-console -DIOMCU_CONSOLE=ON
+cmake --build firmware/iomcu/build-console
+cp firmware/iomcu/build-console/rcbench-iomcu.bin firmware/panel/iomcu-console.bin
+idf.py -C firmware/panel -B firmware/panel/build-console \
+    -D RCBENCH_PANEL_CONSOLE=ON -D RCBENCH_IOMCU_BIN=iomcu-console.bin build
+```
+
+Das Panel trägt dieses Image. Ein IOmcu mit einem anderen Build meldet bei der Build-Prüfung einen Unterschied, also bietet UPDATES das Image an, bei gleicher Versionsnummer: `Gleiche Versionsnummer, aber ein anderer Build.` Nach dem Update findet die Prüfung denselben Build und bietet nichts an. Ein Panel mit einem veröffentlichten Image bietet dieses einem Konsolen-IOmcu ebenso wieder an. Ein rbmod-Carrier braucht ein eigenes Konsolen-Image, gebaut mit `-DIOMCU_BOARD=rbmod`, in `RCBENCH_IOMCU_RBMOD_BIN`. Ein Panel mit der Option und ohne Image bietet nichts an.
+
+| Zeile | Bedeutet |
+| --- | --- |
+| `console: link up t_ms=<ms>` | der Link kam, in der Zeit des Panels seit seinem Start |
+| `console: link down t_ms=<ms>` | der Link ging |
+| `console: the IOmcu has no console. Take the update UPDATES offers, or flash a build with IOMCU_CONSOLE=ON` | die Page antwortete `BAD_PAGE`; einmal gesagt, und das Panel schaut alle 5000ms wieder |
+| `console: the IOmcu's output restarted at <n>, expected <m>` | die Stelle der Ausgabe sprang: das IOmcu startete neu |
+| `err no link: line dropped` | eine Zeile bei getrenntem Link |
+| `err line lost: the link went down inside it` | der Link ging, während die Zeile unterwegs war |
+| `err line lost: the IOmcu restarted inside it` | das IOmcu startete neu, während die Zeile unterwegs war |
+| `err no answer: line lost` | ein Stück der Zeile blieb ohne Antwort |
+| `err the IOmcu has no console` | eine Zeile, und keine Page dafür |
+| `err line longer than 160 characters` | die Zeile wird ganz abgelehnt |
+| `err line dropped: 8 lines wait` | eine Zeile, während 8 auf den Link warten |
+
+Das Panel findet die Page, indem es sie liest. Die Page hat kein Capability-Bit und keine Protokoll-Minor: ein IOmcu ohne sie antwortet `BAD_PAGE`, wie für jede Page, die es nicht hat.
+
+### Raten
+
+Das Relay macht höchstens einen Austausch je Control-Durchlauf, 5ms, wenn nichts sonst den Durchlauf hält, nach dem eigenen Polling des Panels, und keinen, solange ein IOmcu-Update den Link hält. Diese Zahlen sind aus den Frames berechnet und nicht gemessen.
+
+| Verkehr | Frames | Rate |
+| --- | --- | --- |
+| Ein Blick in Ruhe | 2 alle 50ms | 40 Frames/s |
+| Ein Fenster Ausgabe, 60 Byte in 30 Registern | 9, eine Anfrage und 8 Antworten mit 4 Registern | ein Durchlauf |
+| Seine Bestätigung | 2 | ein Durchlauf |
+| Ausgabe, dauerhaft | 11 je 60 Byte, 2 Durchläufe | 6.000 Byte/s, 1.100 Frames/s |
+| Eingabe, 6 Byte je Stück | 2 je Stück, ein Durchlauf | 1.200 Byte/s, 135ms für eine Zeile mit 160 Zeichen |
+
+Bei 1Mbit/s dauert ein Frame mit 8 Byte etwa 150us, dauerhafte Ausgabe belegt also etwa 17% des Busses. Der Puffer von 2.048 Byte leert sich in etwa 340ms. Ausgabe über 6.000 Byte/s, länger als dieser Puffer reicht, verliert ganze Zeilen; die nächste Zeile sagt `err output full, N bytes dropped` wie an USB. Ausgabe wird auch zurückgehalten, wenn der eigene Puffer des Panels von 4.096 Byte unter 188 Byte frei hat, etwa wenn ein serieller Host das Lesen einstellt.
+
+Ein Fenster bleibt am IOmcu, bis es bestätigt ist, also kostet eine verlorene Antwort einen zweiten Lesevorgang und kein Byte. Ein unbeantworteter Austausch hält den Control-Durchlauf bis zu 1000ms, wie jeder Austausch des Panels, und der Heartbeat läuft weiter.
+
+### Was sich nicht ändert
+
+Die Befehle erreichen die Pages über `link_dev_apply()`. Eine Anfrage der Konsole ist kein Link-Verkehr: sie hält den Stille-Failsafe nicht auf. Die Frames der CONSOLE-Page sind Anfragen des Panels, wie seine Polls, und enden, wenn das Panel endet. Die eigenen Module des Panels schreiben weiter: der Supply-Link, `hitec_link`, `kst_link`, `esc_link` und das Schreiben von ARM und THROTTLE alle 50ms können überschreiben, was ein `w` der Konsole in dieselben Register schrieb. Ein Schreiben von ARM aus der Konsole erreicht die Page, und das nächste Schreiben des Panels nach 50ms überschreibt es mit dessen eigenem Arming-Zustand.
+
+Beim Start des IOmcu warten seine Zeilen im Puffer auf einen USB-Host oder ein Panel, soweit die 2.048 Byte sie halten. `rcbench-iomcu: reset ...` ist die erste davon, mit der Ursache des Starts, und wiederholt sich alle 3s. Eine Zeile vom Panel läuft ganz und lässt die unfertige Zeile eines USB-Hosts, wie sie war. Sind USB-Host und Panel beide da, geht die Ausgabe im Tempo des langsameren; ein USB-Host, der den Port offen hat und das Lesen einstellt, hält sie ebenfalls auf.
 
 ## Grenzen
 

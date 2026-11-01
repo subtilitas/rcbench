@@ -197,6 +197,10 @@ jobs:
       - name: The image carries no frame, stack and heap lines
         run: python3 tools/check_perf_log.py off firmware/panel/build/rcbench-panel.elf
 
+      # The bench console over the link is a debug tool.
+      - name: The image carries no console relay
+        run: python3 tools/check_panel_console.py off firmware/panel/build/rcbench-panel.elf
+
       # The trial start's rollback test build aborts every trial start;
       # it is never a release.
       - name: The image is no trial crash test build
