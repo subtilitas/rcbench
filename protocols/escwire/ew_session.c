@@ -12,37 +12,8 @@
 
 #include <string.h>
 
-/** @brief The session's phases. */
-enum {
-    PH_IDLE = 0,  /**< no operation; the last result stands         */
-    PH_HELD,      /**< the line high, waiting for ew_session_enter() */
-    PH_HOLD,      /**< the hold before the first contact runs        */
-    PH_XFER,      /**< a transaction runs                            */
-    PH_LOW,       /**< the line low after a leave                    */
-};
-
-/** @brief The operations. */
-enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_WRITE, OP_LEAVE };
-
-/** @brief The actions.  Every list ends in one that ends the operation. */
-enum {
-    A_CONTACT = 0,
-    A_SET_BASE,
-    A_SET_NAME,
-    A_SET_RECORD,
-    A_READ_ID,
-    A_READ_NAME,
-    A_READ_RECORD,
-    A_READ_PAGE,
-    A_CHECK_BEFORE,
-    A_ERASE,
-    A_DATA,
-    A_PROGRAM,
-    A_CHECK_AFTER,
-    A_LEAVE,
-    A_FINISH_ID,
-    A_FINISH_READ,
-};
+#include "ew_session_int.h"
+#include "ew_text.h"
 
 /** @brief The first contact. */
 static const uint8_t k_contact_seq[] = { A_CONTACT };
@@ -75,6 +46,17 @@ static const uint8_t k_write_am[] = {
 static const uint8_t k_recover[] = { A_SET_BASE, A_READ_PAGE, A_CHECK_AFTER };
 /** @brief A leave. */
 static const uint8_t k_leave[] = { A_LEAVE };
+/** @brief What identifies an ESC on the text interface. */
+static const uint8_t k_id_text[] = { A_TEXT_INFO, A_FINISH_ID };
+/** @brief A read on the text interface. */
+static const uint8_t k_read_text[] = { A_TEXT_SHOW, A_FINISH_READ };
+/** @brief A write on the text interface: WRITE_FROM is its first `set`. */
+static const uint8_t k_write_text[] = {
+    A_TEXT_INFO, A_TEXT_SHOW, A_CHECK_BEFORE,
+    A_TEXT_SET, A_TEXT_SAVE, A_TEXT_SHOW, A_CHECK_AFTER,
+};
+/** @brief The read after a failed step of such a write. */
+static const uint8_t k_recover_text[] = { A_TEXT_SHOW, A_CHECK_AFTER };
 
 static void run(ew_session_t *s);
 
@@ -127,12 +109,7 @@ ew_ses_t ew_session_enter(ew_session_t *s, uint32_t hold_ms)
     return EW_SES_BUSY;
 }
 
-/**
- * @brief An operation ends.  A stop that waited for it parks the line now.
- * @param s the session
- * @param r the result
- */
-static void finish(ew_session_t *s, ew_ses_t r)
+void ew_ses_finish(ew_session_t *s, ew_ses_t r)
 {
     s->op = OP_NONE;
     s->phase = PH_IDLE;
@@ -157,21 +134,27 @@ static void driver_failed(ew_session_t *s)
     s->in_mode = false;
     s->d.line(s->d.ctx, EW_LINE_PARK);
     s->stop_wanted = false;
-    finish(s, EW_SES_ERR_DRIVER);
+    ew_ses_finish(s, EW_SES_ERR_DRIVER);
 }
 
-/**
- * @brief The guard refused a frame the session built: the session stops.
- * @param s the session
- * @param r the refusal
- */
-static void refused(ew_session_t *s, ew_refuse_t r)
+void ew_ses_refused(ew_session_t *s, ew_refuse_t r)
 {
     s->refuse = (uint8_t)r;
     s->in_mode = false;
     s->d.line(s->d.ctx, EW_LINE_PARK);
     s->stop_wanted = false;
-    finish(s, EW_SES_ERR_REFUSED);
+    ew_ses_finish(s, EW_SES_ERR_REFUSED);
+}
+
+void ew_ses_launch(ew_session_t *s)
+{
+    if (!s->d.start(s->d.ctx, &s->x)) {
+        driver_failed(s);
+        return;
+    }
+    s->t0 = s->d.now_us(s->d.ctx);
+    s->wait_us = ew_xfer_span_us(&s->x) + EW_SES_GRACE_US;
+    s->phase = PH_XFER;
 }
 
 /**
@@ -196,13 +179,7 @@ static void start_xfer(ew_session_t *s, uint16_t n_tx, uint16_t n_head,
         .tx = s->tx,
         .rx = max_rx != 0u ? s->rx : NULL,
     };
-    if (!s->d.start(s->d.ctx, &s->x)) {
-        driver_failed(s);
-        return;
-    }
-    s->t0 = s->d.now_us(s->d.ctx);
-    s->wait_us = ew_xfer_span_us(&s->x) + EW_SES_GRACE_US;
-    s->phase = PH_XFER;
+    ew_ses_launch(s);
 }
 
 /**
@@ -216,7 +193,7 @@ static void act_address(ew_session_t *s, uint16_t addr)
     const ew_refuse_t r = ew_guard_frame(&s->guard, s->tx, n);
 
     if (r != EW_REF_NONE) {
-        refused(s, r);
+        ew_ses_refused(s, r);
         return;
     }
     start_xfer(s, (uint16_t)n, 0u, 1u, EW_A_ADDRESS_US);
@@ -233,7 +210,7 @@ static void act_read(ew_session_t *s, uint16_t n)
     const ew_refuse_t r = ew_guard_frame(&s->guard, s->tx, f);
 
     if (r != EW_REF_NONE) {
-        refused(s, r);
+        ew_ses_refused(s, r);
         return;
     }
     start_xfer(s, (uint16_t)f, 0u, (uint16_t)(n + 3u), EW_A_READ_US);
@@ -252,7 +229,7 @@ static void act_flash(ew_session_t *s, uint8_t cmd, uint32_t wait_us)
     const ew_refuse_t r = ew_guard_frame(&s->guard, s->tx, n);
 
     if (r != EW_REF_NONE) {
-        refused(s, r);
+        ew_ses_refused(s, r);
         return;
     }
     s->dirty = true;
@@ -280,7 +257,7 @@ static void act_data(ew_session_t *s)
             return;
         }
     }
-    refused(s, r);
+    ew_ses_refused(s, r);
 }
 
 /**
@@ -309,7 +286,7 @@ static bool check_before(ew_session_t *s)
 {
     if (!same_page(s, s->page, s->orig)) {
         ew_guard_done(&s->guard);
-        finish(s, EW_SES_ERR_CHANGED);
+        ew_ses_finish(s, EW_SES_ERR_CHANGED);
         return false;
     }
     if (s->id.fw == (uint8_t)EW_FW_AM && !s->restoring) {
@@ -322,13 +299,26 @@ static bool check_before(ew_session_t *s)
 }
 
 /**
+ * @brief The actions of a write on this firmware.
+ * @param s the session
+ * @return the list
+ */
+static const uint8_t *write_list(const ew_session_t *s)
+{
+    if (s->id.fw == (uint8_t)EW_FW_E32) {
+        return k_write_text;
+    }
+    return s->id.fw == (uint8_t)EW_FW_AM ? k_write_am : k_write_efm8;
+}
+
+/**
  * @brief Enter the write procedure from its start.
  * @param s the session
  */
 static void restart_write(ew_session_t *s)
 {
     s->attempts++;
-    s->seq = s->id.fw == (uint8_t)EW_FW_AM ? k_write_am : k_write_efm8;
+    s->seq = write_list(s);
     s->pc = WRITE_FROM;
     s->tries = 0u;
 }
@@ -341,7 +331,8 @@ static void restart_write(ew_session_t *s)
 static bool check_after(ew_session_t *s)
 {
     s->reread = s->dirty;
-    if (same_page(s, s->page, s->target)) {
+    /* A `save` with no answer: RAM says nothing about the flash. */
+    if (same_page(s, s->page, s->target) && !s->save_open) {
         memcpy(s->orig, s->page, s->id.len);
         memcpy(s->target, s->page, s->id.len);
         s->dirty = false;
@@ -354,23 +345,23 @@ static bool check_after(ew_session_t *s)
             s->id.writable = true;
         }
         ew_guard_done(&s->guard);
-        finish(s, EW_SES_OK);
+        ew_ses_finish(s, EW_SES_OK);
         return false;
     }
     if (s->attempts < EW_SES_ATTEMPTS && !s->stop_wanted) {
         restart_write(s);
         return true;
     }
-    if (same_page(s, s->page, s->orig)) {
+    if (same_page(s, s->page, s->orig) && !s->save_open) {
         s->dirty = false;
         s->reread = false;
         ew_guard_done(&s->guard);
-        finish(s, EW_SES_ERR_WRITE_FAILED);
+        ew_ses_finish(s, EW_SES_ERR_WRITE_FAILED);
     } else {
         /* Neither page, whoever moved it: only these two go now. */
         s->dirty = true;
         s->reread = true;
-        finish(s, EW_SES_ERR_TORN);
+        ew_ses_finish(s, EW_SES_ERR_TORN);
     }
     return false;
 }
@@ -381,13 +372,17 @@ static bool check_after(ew_session_t *s)
  */
 static void finish_id(ew_session_t *s)
 {
+    if (s->contact.cpu == (uint8_t)EW_CPU_TEXT) {
+        ew_ses_finish(s, EW_SES_OK);
+        return;
+    }
     if (s->contact.cpu == (uint8_t)EW_CPU_EFM8) {
         ew_id_efm8(&s->contact, s->orig, &s->id);
     } else {
         ew_id_arm(&s->contact, s->orig, s->name_region,
                   s->contact.protocol == 3u ? s->record : NULL, &s->id);
     }
-    finish(s, s->id.fw == (uint8_t)EW_FW_NONE ? EW_SES_ERR_NOT_KNOWN
+    ew_ses_finish(s, s->id.fw == (uint8_t)EW_FW_NONE ? EW_SES_ERR_NOT_KNOWN
                                               : EW_SES_OK);
 }
 
@@ -406,7 +401,7 @@ static void run(ew_session_t *s)
             const ew_refuse_t r = ew_guard_frame(&s->guard, s->tx, n);
 
             if (r != EW_REF_NONE) {
-                refused(s, r);
+                ew_ses_refused(s, r);
             } else {
                 start_xfer(s, (uint16_t)n, 0u, EW_A_ANSWER_LEN,
                            EW_A_CONTACT_US);
@@ -450,12 +445,23 @@ static void run(ew_session_t *s)
             const ew_refuse_t r = ew_guard_frame(&s->guard, s->tx, n);
 
             if (r != EW_REF_NONE) {
-                refused(s, r);
+                ew_ses_refused(s, r);
             } else {
                 start_xfer(s, (uint16_t)n, 0u, 0u, 0u);
             }
             return;
         }
+        case A_TEXT_INFO:
+        case A_TEXT_SHOW:
+        case A_TEXT_SAVE:
+            ew_ses_text_act(s, a);
+            return;
+        case A_TEXT_SET:
+            if (ew_ses_text_set(s)) {
+                return;
+            }
+            s->pc++;
+            break;
         case A_CHECK_BEFORE:
             if (!check_before(s)) {
                 return;
@@ -476,7 +482,7 @@ static void run(ew_session_t *s)
             if (s->dirty) {
                 s->reread = true;
             }
-            finish(s, EW_SES_OK);
+            ew_ses_finish(s, EW_SES_OK);
             return;
         }
     }
@@ -491,45 +497,60 @@ static void step_failed(ew_session_t *s)
 {
     const bool in_proc = s->op == OP_WRITE && s->pc >= WRITE_FROM;
 
-    if (s->op == OP_ENTER && s->seq == k_contact_seq) {
-        finish(s, (ew_ans_t)s->last_ans == EW_ANS_SILENT ? EW_SES_ERR_SILENT
-                                                         : EW_SES_ERR_CONTACT);
+    const bool silent = (ew_ans_t)s->last_ans == EW_ANS_SILENT;
+    const bool text = s->id.fw == (uint8_t)EW_FW_E32;
+
+    if (s->op == OP_ENTER && s->seq == k_contact_seq && silent) {
+        /* A first contact is a framing error on the text interface and resets
+         * that ESC: it opens again after a hold with the line high. */
+        s->seq = k_id_text;
+        s->pc = 0u;
+        s->tries = 0u;
+        s->d.line(s->d.ctx, EW_LINE_HIGH);
+        s->t0 = s->d.now_us(s->d.ctx);
+        s->wait_us = EW_SES_TEXT_HOLD_MS * 1000u;
+        s->phase = PH_HOLD;
         return;
     }
-    if (in_proc && s->seq != k_recover) {
-        s->seq = k_recover;
+    if (s->op == OP_ENTER && (s->seq == k_contact_seq || s->seq == k_id_text)) {
+        ew_ses_finish(s, silent ? EW_SES_ERR_SILENT : EW_SES_ERR_CONTACT);
+        return;
+    }
+    if (in_proc) {
+        s->seq = text ? k_recover_text : k_recover;
         s->pc = 0u;
         s->tries = 0u;
         return;
     }
     if (s->op == OP_WRITE && s->dirty) {
-        finish(s, EW_SES_ERR_LOST);
+        /* Before a `save` the flash is as read, whatever RAM holds. */
+        const bool flash_kept = text && !s->save_open && !s->saved;
+
+        if (flash_kept) {
+            ew_guard_done(&s->guard);
+        }
+        ew_ses_finish(s, flash_kept ? EW_SES_ERR_WRITE_FAILED : EW_SES_ERR_LOST);
         return;
     }
     if (s->op == OP_WRITE) {
         ew_guard_done(&s->guard);
     }
-    finish(s, EW_SES_ERR_READ);
+    ew_ses_finish(s, EW_SES_ERR_READ);
 }
 
 /**
  * @brief Whether an action may be repeated when its answer does not fit.  An
- *        erase and a program are not: the read that follows says what they
- *        did.
+ *        erase, a program and a `save` are not: the read that follows says what
+ *        they did, or that the procedure runs again.
  * @param a the action
  * @return true when it may
  */
 static bool may_retry(uint8_t a)
 {
-    return a != A_ERASE && a != A_PROGRAM;
+    return a != A_ERASE && a != A_PROGRAM && a != A_TEXT_SAVE;
 }
 
-/**
- * @brief A try of the running action failed.
- * @param s the session
- * @param a the action
- */
-static void try_failed(ew_session_t *s, uint8_t a)
+void ew_ses_try_failed(ew_session_t *s, uint8_t a)
 {
     const bool is_read = a == A_READ_ID || a == A_READ_NAME
                          || a == A_READ_RECORD || a == A_READ_PAGE;
@@ -559,7 +580,7 @@ static void contact_done(ew_session_t *s)
     if (s->contact.why != (uint8_t)EW_WHY_NONE) {
         s->id.fw = EW_FW_NONE;
         s->id.why = s->contact.why;
-        finish(s, EW_SES_ERR_NOT_KNOWN);
+        ew_ses_finish(s, EW_SES_ERR_NOT_KNOWN);
     } else if (s->contact.cpu == (uint8_t)EW_CPU_EFM8) {
         s->seq = k_id_efm8;
     } else {
@@ -580,6 +601,10 @@ static void xfer_done(ew_session_t *s, const ew_capture_t *c)
     uint8_t *to = NULL;
 
     s->phase = PH_IDLE;
+    if (a >= A_TEXT_INFO) {
+        ew_ses_text_done(s, a, c);
+        return;
+    }
     switch (a) {
     case A_CONTACT:
         ans = ew_a_contact_reply(c, s->rx);
@@ -623,7 +648,7 @@ static void xfer_done(ew_session_t *s, const ew_capture_t *c)
     ans = to != NULL ? ew_a_read_reply(c, s->rx, n) : ew_a_one(c, s->rx);
     s->last_ans = (uint8_t)ans;
     if (ans != EW_ANS_OK) {
-        try_failed(s, a);
+        ew_ses_try_failed(s, a);
         return;
     }
     if (to != NULL) {
@@ -671,7 +696,7 @@ ew_ses_t ew_session_step(ew_session_t *s)
             return EW_SES_BUSY;
         }
         s->d.line(s->d.ctx, EW_LINE_PARK);
-        finish(s, EW_SES_OK);
+        ew_ses_finish(s, EW_SES_OK);
         break;
     default:
         break;
@@ -725,7 +750,8 @@ ew_ses_t ew_session_read(ew_session_t *s)
     if (s->id.len == 0u) {
         return EW_SES_ERR_STATE;
     }
-    return begin(s, OP_READ, k_read);
+    return begin(s, OP_READ,
+                 s->id.fw == (uint8_t)EW_FW_E32 ? k_read_text : k_read);
 }
 
 /**
@@ -788,11 +814,11 @@ ew_ses_t ew_session_write(ew_session_t *s, const uint8_t *draft, size_t n)
         return EW_SES_ERR_REFUSED;
     }
     s->attempts = 1u;
+    s->saved = false;
     if (s->dirty) {
         return resume_write(s);
     }
-    return begin(s, OP_WRITE,
-                 s->id.fw == (uint8_t)EW_FW_AM ? k_write_am : k_write_efm8);
+    return begin(s, OP_WRITE, write_list(s));
 }
 
 void ew_session_backup_id(const ew_session_t *s, ew_backup_id_t *out)
@@ -867,6 +893,17 @@ ew_ses_t ew_session_leave(ew_session_t *s)
     if (s->id.erased) {
         return EW_SES_ERR_ERASED;
     }
+    if (s->id.fw == (uint8_t)EW_FW_E32) {
+        /* No command leaves: the caller switches the supply off.  Only a `save`
+         * with no answer leaves the flash in doubt. */
+        if (s->save_open) {
+            return EW_SES_ERR_DIRTY;
+        }
+        s->in_mode = false;
+        s->d.line(s->d.ctx, EW_LINE_PARK);
+        s->result = EW_SES_OK;
+        return EW_SES_OK;
+    }
     if (s->dirty) {
         return EW_SES_ERR_DIRTY;
     }
@@ -905,7 +942,7 @@ void ew_session_abort(ew_session_t *s)
     s->stop_wanted = false;
     const ew_ses_t kept = s->result;
 
-    finish(s, was_running ? EW_SES_ERR_ABORTED : kept);
+    ew_ses_finish(s, was_running ? EW_SES_ERR_ABORTED : kept);
 }
 
 bool ew_session_writing(const ew_session_t *s)

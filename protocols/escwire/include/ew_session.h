@@ -1,8 +1,8 @@
 /**
  * @file ew_session.h
  * @brief One ESC (electronic speed controller) on one wire: holding the line,
- *        first contact, identification, reads, writes with read-back, leaving.
- *        A state machine that never waits.
+ *        first contact or `info`, identification, reads, writes with read-back,
+ *        leaving.  A state machine that never waits.
  *
  * ```c
  * ew_session_init(&s, &driver);
@@ -37,6 +37,7 @@
 #include "ew_guard.h"
 #include "ew_id.h"
 #include "ew_map.h"
+#include "ew_text.h"
 #include "ew_wire.h"
 
 #ifdef __cplusplus
@@ -56,6 +57,9 @@ extern "C" {
 #define EW_SES_ATTEMPTS 3u
 /** @brief Idle bit times between an announcement and its data. */
 #define EW_SES_PAUSE_BITS 2u
+/** @brief The hold between a silent first contact and `info`, ms: over the 2s
+ *         an ESC with the text interface needs after a reset. */
+#define EW_SES_TEXT_HOLD_MS 2500u
 /** @brief A driver that has not ended a transaction this long after its
  *         longest time has failed, us. */
 #define EW_SES_GRACE_US 5000u
@@ -84,6 +88,8 @@ typedef enum {
     EW_SES_ERR_ABORTED,    /**< cut by ew_session_abort()                    */
     EW_SES_ERR_STOPPED,    /**< cut by ew_session_stop()                     */
     EW_SES_ERR_DRIVER,     /**< the driver refused, or did not end           */
+    EW_SES_ERR_CLIPPED,    /**< text: a `set` stored another value; no `save` */
+    EW_SES_ERR_ESC_ERROR,  /**< text: a `set` or `save` was answered `ERROR` */
 } ew_ses_t;
 
 /** @brief The identity a backup was read from. */
@@ -117,8 +123,12 @@ typedef struct {
     bool         stop_wanted; /**< a stop waits for the write's end          */
     bool         stopped;     /**< a stop parked the line                    */
     bool         restoring;   /**< the operation writes a backup             */
+    bool         save_open;   /**< text: a `save` went and no answer came    */
+    bool         saved;       /**< text: this write's `save` was answered OK */
     ew_ses_t     result;      /**< the last operation's result               */
-    uint16_t     bad_off;     /**< the byte the guard refused                */
+    uint16_t     bad_off;     /**< the byte the guard refused; text: the low
+                                   byte of the key a write ended on          */
+    int16_t      clipped;     /**< text: the value a clipping `set` stored   */
     uint32_t     t0;          /**< when the wait or transaction started      */
     uint32_t     wait_us;     /**< the wait, or the transaction's longest    */
     uint8_t      name_region[EW_ID_NAME_REGION]; /**< as read                */
@@ -128,6 +138,9 @@ typedef struct {
     uint8_t      page[EW_PAGE_MAX];   /**< the page as last read             */
     uint8_t      tx[EW_TX_MAX];       /**< the transaction's bytes           */
     uint8_t      rx[EW_RX_MAX];       /**< the answer                        */
+    ew_text_info_t info;      /**< text: what `info` said last               */
+    char         music[EW_E32_MUSIC_MAX + 1u]; /**< text: `music` as read    */
+    uint8_t      rx_text[EW_RX_TEXT_MAX];      /**< text: the reply          */
 } ew_session_t;
 
 /**
@@ -147,8 +160,10 @@ ew_ses_t ew_session_hold(ew_session_t *s);
 
 /**
  * @brief The supply came on: hold the line @p hold_ms longer, then first
- *        contact and identification.  Ends EW_SES_OK, or EW_SES_ERR_NOT_KNOWN
- *        with the line still up, or EW_SES_ERR_SILENT or EW_SES_ERR_CONTACT.
+ *        contact and identification.  A first contact with no answer holds the
+ *        line high EW_SES_TEXT_HOLD_MS more and asks `info` at 38400baud.  Ends
+ *        EW_SES_OK, or EW_SES_ERR_NOT_KNOWN with the line still up, or
+ *        EW_SES_ERR_SILENT or EW_SES_ERR_CONTACT.
  * @param s       the session, after ew_session_hold()
  * @param hold_ms EW_HOLD_MIN_MS to EW_HOLD_MAX_MS
  * @return EW_SES_BUSY when it started
@@ -165,8 +180,9 @@ ew_ses_t ew_session_read(ew_session_t *s);
 
 /**
  * @brief Write a draft: read again and compare, erase where the firmware needs
- *        it, send, program, read back.  A draft equal to the page read ends
- *        EW_SES_OK with no frame sent.
+ *        it, send, program, read back; on the text interface `info`, `show`, a
+ *        `set` per changed key, `save`, `show`.  A draft equal to the page read
+ *        ends EW_SES_OK with no frame sent.
  * @param s     the session
  * @param draft the page, @c id.len bytes
  * @param n     bytes at @p draft
@@ -198,6 +214,9 @@ void ew_session_backup_id(const ew_session_t *s, ew_backup_id_t *out);
 /**
  * @brief Leave to the application, then drive the line low EW_LEAVE_LOW_MS and
  *        park it.  Refused while a page is half written and on erased settings.
+ *        The text interface has no command to leave: the line parks at once,
+ *        the call returns EW_SES_OK and the caller cuts the supply; refused
+ *        only while a `save` has no answer.
  * @param s the session
  * @return EW_SES_BUSY when it started, else the refusal
  */
@@ -220,7 +239,7 @@ void ew_session_abort(ew_session_t *s);
 /**
  * @brief Whether a write is under way that the supply should not be cut in.
  * @param s the session
- * @return true from the operation's first erase or program to its end
+ * @return true from the operation's first erase, program or `save` to its end
  */
 bool ew_session_writing(const ew_session_t *s);
 

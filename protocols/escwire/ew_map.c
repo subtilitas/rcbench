@@ -63,6 +63,7 @@ bool ew_map_writable(uint8_t fw, uint8_t layout)
     case EW_FW_S:  return layout == 33u;
     case EW_FW_BJ: return layout == 208u;
     case EW_FW_AM: return layout == 3u || layout == 4u;
+    case EW_FW_E32: return layout == EW_E32_REVISION;
     default:       return false;
     }
 }
@@ -73,6 +74,7 @@ uint16_t ew_map_len(uint8_t fw)
     case EW_FW_S:  return EW_MAP_LEN_S;
     case EW_FW_BJ: return EW_MAP_LEN_BJ;
     case EW_FW_AM: return EW_MAP_LEN_AM;
+    case EW_FW_E32: return EW_MAP_LEN_E32;
     default:       return 0u;
     }
 }
@@ -174,9 +176,115 @@ size_t ew_field_text(const ew_field_t *f, uint8_t raw, char *out, size_t size)
     return add_text(out, size, at, f->unit);
 }
 
+const ew_key_t *ew_key_find(const char *s, size_t n, size_t *slot)
+{
+    for (size_t i = 0; i < EW_E32_KEYS; ++i) {
+        const char *key = ew_map_e32[i].key;
+
+        if (strlen(key) == n && memcmp(key, s, n) == 0) {
+            if (slot != NULL) {
+                *slot = i;
+            }
+            return &ew_map_e32[i];
+        }
+    }
+    return NULL;
+}
+
+bool ew_key_ok(const ew_key_t *k, int16_t v)
+{
+    if (k == NULL) {
+        return false;
+    }
+    if (k->has_alt && v == k->alt) {
+        return true;
+    }
+    const int32_t step = k->step != 0u ? k->step : 1;
+
+    return v >= k->lo && v <= k->hi && ((int32_t)v - k->lo) % step == 0;
+}
+
+size_t ew_key_text(const ew_key_t *k, int16_t v, char *out, size_t size)
+{
+    size_t at;
+
+    if (size == 0u) {
+        return 0u;
+    }
+    out[0] = '\0';
+    if (v == EW_KEY_NONE) {
+        return 0u;
+    }
+    if (k->has_alt && v == k->alt) {
+        return add_text(out, size, 0u, k->alt_label);
+    }
+    if (!ew_key_ok(k, v)) {
+        at = add_text(out, size, 0u, "raw ");
+        return add_number(out, size, at, v, 0u);
+    }
+    if (k->labels != NULL) {
+        return add_text(out, size, 0u, k->labels[v - k->lo]);
+    }
+    at = add_number(out, size, 0u, (int32_t)v * (k->mul != 0 ? k->mul : 1),
+                    k->dec);
+    return add_text(out, size, at, k->unit);
+}
+
+int16_t ew_e32_get(const uint8_t *page, size_t slot)
+{
+    const uint16_t u = (uint16_t)(page[slot * 2u]
+                                  | ((uint16_t)page[slot * 2u + 1u] << 8));
+
+    return (int16_t)u;
+}
+
+void ew_e32_put(uint8_t *page, size_t slot, int16_t v)
+{
+    const uint16_t u = (uint16_t)v;
+
+    page[slot * 2u] = (uint8_t)(u & 0xFFu);
+    page[slot * 2u + 1u] = (uint8_t)(u >> 8);
+}
+
+/**
+ * @brief ew_image_check() on an ESCape32 page.
+ * @param orig  the page as read
+ * @param draft the draft
+ * @param off   takes the first offending key's low byte, may be NULL
+ * @return EW_IMG_OK, or what is wrong
+ */
+static ew_img_t e32_check(const uint8_t *orig, const uint8_t *draft,
+                          uint16_t *off)
+{
+    for (size_t i = 0; i < EW_E32_KEYS; ++i) {
+        const ew_key_t *k = &ew_map_e32[i];
+        const int16_t v = ew_e32_get(draft, i);
+        bool changed = v != ew_e32_get(orig, i);
+        bool bad = changed && !ew_key_ok(k, v);
+
+        if (k->floor != NULL) {
+            size_t f = 0u;
+
+            (void)ew_key_find(k->floor, strlen(k->floor), &f);
+            changed = changed || ew_e32_get(draft, f) != ew_e32_get(orig, f);
+            bad = bad || (changed && v < ew_e32_get(draft, f));
+        }
+        if (bad) {
+            if (off != NULL) {
+                *off = (uint16_t)(i * 2u);
+            }
+            return EW_IMG_VALUE;
+        }
+    }
+    return EW_IMG_OK;
+}
+
 ew_img_t ew_image_check(uint8_t fw, uint8_t layout, const uint8_t *orig,
                         const uint8_t *draft, size_t n, uint16_t *off)
 {
+    if (fw == (uint8_t)EW_FW_E32) {
+        return e32_check(orig, draft, off);
+    }
     for (size_t i = 0; i < n; ++i) {
         if (orig[i] == draft[i]) {
             continue;
