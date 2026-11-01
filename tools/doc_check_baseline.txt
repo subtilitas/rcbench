@@ -2211,8 +2211,6 @@ shared/outputs/include/outputs.h: warning: Member OUT_CEILING_US (macro definiti
 shared/outputs/include/page_console.h: warning: Member data[3][16] (variable) of struct page_console_t is not documented.
 shared/outputs/include/page_console.h: warning: Member dev (variable) of struct page_console_t is not documented.
 shared/outputs/include/page_console.h: warning: Member fmt[PAGE_CONSOLE_OUT_LINE] (variable) of struct page_console_t is not documented.
-shared/outputs/include/page_console.h: warning: Member len (variable) of struct page_console_t is not documented.
-shared/outputs/include/page_console.h: warning: Member line[PAGE_CONSOLE_LINE_MAX+1u] (variable) of struct page_console_t is not documented.
 shared/outputs/include/page_console.h: warning: Member regs[LINK_HT_COUNT] (variable) of struct page_console_t is not documented.
 shared/outputs/include/page_console.h: warning: Member reply (variable) of struct page_console_t is not documented.
 shared/outputs/include/page_console.h: warning: Member req (variable) of struct page_console_t is not documented.

@@ -110,8 +110,8 @@ typedef struct {
     const link_dev_t *dev;
     page_console_ext_fn ext; /**< a build's own commands, or NULL */
     void    *ext_ctx;        /**< and its context */
-    char     line[PAGE_CONSOLE_LINE_MAX + 1u];
-    uint16_t len;
+    char     line[PAGE_CONSOLE_LINE_MAX + 1u]; /**< the line so far */
+    uint16_t len;        /**< its characters */
     uint8_t  overlong;   /**< the line ran past PAGE_CONSOLE_LINE_MAX */
     char     out[PAGE_CONSOLE_OUT_MAX];  /**< the output ring */
     uint16_t head;       /**< the next byte to take */
