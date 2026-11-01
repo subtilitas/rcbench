@@ -125,8 +125,8 @@ static void type_n(int n)
 static unsigned apply(void)
 {
     const unsigned r = wifi_screen_take();
-    char value[WIFI_PASS_MAX + 1];
     if ((r & (WIFI_REQ_KEPT_PASS | WIFI_REQ_KEPT_CODE)) != 0u) {
+        char value[WIFI_PASS_MAX + 1];
         wifi_screen_kept(value);
         if ((r & WIFI_REQ_KEPT_PASS) != 0u) {
             snprintf(v.kept_pass, sizeof(v.kept_pass), "%s", value);

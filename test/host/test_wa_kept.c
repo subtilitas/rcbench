@@ -15,6 +15,7 @@
  * - values_survive_a_save_and_a_load
  * - forget_keeps_both_values_through_the_store
  * - forget_with_nothing_kept_owes_only_the_erase
+ * - a_value_typed_after_forget_is_saved_with_no_erase_before_it
  * - a_start_takes_the_kept_values_and_random_stays_fresh
  * - a_code_changed_ends_the_old_one_at_the_next_start
  * - the_check_takes_kept_codes_of_8_and_63_and_nothing_near
@@ -45,6 +46,7 @@ static wa_conf_t g_stored;
 static bool g_have;
 static int g_saves;
 static int g_erases;
+static bool g_save_fails;
 
 /**
  * @brief The store's load.
@@ -70,6 +72,9 @@ static bool st_load(void *ctx, wa_conf_t *out)
 static bool st_save(void *ctx, const wa_conf_t *c)
 {
     (void)ctx;
+    if (g_save_fails) {
+        return false;
+    }
     g_stored = *c;
     g_have = true;
     ++g_saves;
@@ -278,10 +283,23 @@ TEST_CASE(forget_keeps_both_values_through_the_store)
     CHECK_STR_EQ(c.web_code, "webcode1");
     /* In the store, after its write: the same. */
     CHECK(wa_pending_due(&p, true, 0u));
+    CHECK(!p.erase);
     bool erase_ok = false;
     bool save_ok = false;
+    const int erases = g_erases;
+    /* A save that fails, or a power cut before it: the store is as it was,
+     * the values there, and the save still owed. */
+    g_save_fails = true;
+    wa_pending_write(&k_st, &p, &c, &erase_ok, &save_ok);
+    g_save_fails = false;
+    CHECK(erase_ok && !save_ok);
+    wa_pending_done(&p, &p, erase_ok, save_ok, 0u);
+    CHECK(p.save);
+    CHECK_STR_EQ(g_stored.ap_pass, "password");
+    CHECK_STR_EQ(g_stored.web_code, "webcode1");
     wa_pending_write(&k_st, &p, &c, &erase_ok, &save_ok);
     CHECK(erase_ok && save_ok);
+    CHECK_EQ(g_erases, erases);
     wa_conf_t back;
     wa_conf_load(&k_st, &back);
     CHECK(!back.have_net);
@@ -300,6 +318,29 @@ TEST_CASE(forget_with_nothing_kept_owes_only_the_erase)
     wa_forget(&c, &p);
     CHECK(p.erase);
     CHECK(!p.save);
+}
+
+TEST_CASE(a_value_typed_after_forget_is_saved_with_no_erase_before_it)
+{
+    wa_conf_t c;
+    wa_conf_defaults(&c);
+    CHECK_EQ(wa_conf_set_net(&c, "Workshop", 8u, "netpass1", 8u), WA_CONF_OK);
+    g_have = false;
+    CHECK(wa_conf_save(&k_st, &c));
+    wa_pending_t p;
+    wa_pending_init(&p);
+    wa_forget(&c, &p);
+    CHECK_EQ(wa_conf_set_kept(&c, WA_KEPT_CODE, "webcode1", 8u), WA_CONF_OK);
+    wa_pending_change(&p);
+    CHECK(p.erase && p.save);
+    bool erase_ok = false;
+    bool save_ok = false;
+    const int erases = g_erases;
+    wa_pending_write(&k_st, &p, &c, &erase_ok, &save_ok);
+    CHECK(erase_ok && save_ok);
+    CHECK_EQ(g_erases, erases);
+    CHECK(!g_stored.have_net);
+    CHECK_STR_EQ(g_stored.web_code, "webcode1");
 }
 
 TEST_CASE(a_start_takes_the_kept_values_and_random_stays_fresh)
@@ -593,6 +634,7 @@ int main(void)
     RUN(values_survive_a_save_and_a_load);
     RUN(forget_keeps_both_values_through_the_store);
     RUN(forget_with_nothing_kept_owes_only_the_erase);
+    RUN(a_value_typed_after_forget_is_saved_with_no_erase_before_it);
     RUN(a_start_takes_the_kept_values_and_random_stays_fresh);
     RUN(a_code_changed_ends_the_old_one_at_the_next_start);
     RUN(the_check_takes_kept_codes_of_8_and_63_and_nothing_near);

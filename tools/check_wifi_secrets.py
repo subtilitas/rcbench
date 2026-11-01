@@ -45,6 +45,13 @@ LOG_CALL = re.compile(
 )
 
 
+# A comment, a string literal or a character literal, whichever opens first.
+LITERALS = re.compile(
+    r"""/\*.*?\*/|//[^\n]*|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'""",
+    re.S,
+)
+
+
 def statements(text):
     """Split C source into statements with the line each starts on.
 
@@ -74,17 +81,20 @@ def statements(text):
 
 
 def strip_comments(text):
-    """Blank C comments, keeping the line count.
+    """Blank C comments and string and character literals, keeping the lines.
+
+    One pass over all of them: "//" in a string opens no comment, and a ";" or
+    a brace in a format string ends no statement.
 
     Args:
         text: The source.
 
     Returns:
-        The source without its comments.
+        The source with only its code.
     """
     def blank(match):
         return re.sub(r"[^\n]", " ", match.group(0))
-    return re.sub(r"/\*.*?\*/|//[^\n]*", blank, text, flags=re.S)
+    return LITERALS.sub(blank, text)
 
 
 def check_file(rel, text):

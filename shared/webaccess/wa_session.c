@@ -219,12 +219,23 @@ void wa_pending_forget(wa_pending_t *p)
     pending_touched(p);
 }
 
+/**
+ * @brief Whether @p c holds a HOTSPOT PASSWORD or a WEB CODE.
+ * @param c The settings.
+ * @return true with either kept
+ */
+static bool has_kept(const wa_conf_t *c)
+{
+    return c->ap_pass[0] != '\0' || c->web_code[0] != '\0';
+}
+
 void wa_forget(wa_conf_t *c, wa_pending_t *p)
 {
     wa_conf_forget_net(c);
-    wa_pending_forget(p);
-    if (c->ap_pass[0] != '\0' || c->web_code[0] != '\0') {
-        wa_pending_change(p);     /* the erase takes the store's whole */
+    if (has_kept(c)) {
+        wa_pending_change(p);     /* a save removes the network's keys */
+    } else {
+        wa_pending_forget(p);
     }
 }
 
@@ -246,7 +257,9 @@ void wa_pending_write(const wa_store_t *st, const wa_pending_t *snap,
 {
     *erase_ok = true;
     *save_ok = true;
-    if (snap->erase) {
+    /* A save with a kept value does the erase's work without the moment in
+     * which a power cut or a failed save would lose that value. */
+    if (snap->erase && !(snap->save && has_kept(c))) {
         wa_conf_t gone;
         *erase_ok = wa_conf_forget(st, &gone);
     }

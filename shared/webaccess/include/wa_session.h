@@ -290,7 +290,8 @@ void wa_pending_forget(wa_pending_t *p);
 
 /**
  * @brief FORGET of @p c, in memory and owed to the store: wa_conf_forget_net()
- *        and an erase, then a save when a kept value has to outlast it.
+ *        and an erase; with a kept value a save instead, which removes the
+ *        network's keys and at no moment leaves the value out of the store.
  * @param c The settings.
  * @param p The writes owed.
  */
