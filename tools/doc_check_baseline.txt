@@ -4636,7 +4636,6 @@ shared/ui/wifi_screen.c: warning: Member back(void) (function) of file wifi_scre
 shared/ui/wifi_screen.c: warning: Member drop_hold_if_gone(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member hit_at(int x, int y) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member hit_rect(int hit) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member hold (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member in(gfx_rect_t r, int x, int y) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member install_allowed(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member k_screen (variable) of file wifi_screen.c is not documented.
