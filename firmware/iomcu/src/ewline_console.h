@@ -6,7 +6,8 @@
  *
  * A bench tool for a logic analyser.  It sends fixed bytes: no throttle signal,
  * no erase, no program.  It takes a pin only while the bank is SAFE and nothing
- * holds the pin, and closes the line at once when the bank arms.
+ * holds the pin, reserves it against every page until it ends, and closes the
+ * line at once when the bank arms.
  *
  * SPDX-License-Identifier: MIT
  */

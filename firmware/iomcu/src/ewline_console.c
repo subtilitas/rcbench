@@ -7,7 +7,6 @@
  */
 #include "ewline_console.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "hardware/gpio.h"
@@ -18,6 +17,7 @@
 #include "console_hw.h"
 #include "ew_line.h"
 #include "iomcu.h"
+#include "page_console.h"
 
 /** @brief What one step does. */
 typedef enum {
@@ -129,6 +129,8 @@ static const step_t k_rx[] = {
     { STEP_END, 0u, 0u, 0u, 0u },
 };
 
+uint64_t s_console_pins;             /* see iomcu.h */
+
 static ew_pin_line_t s_line;        /**< the line under test */
 static const step_t *s_step;        /**< the step, NULL with no test running */
 static uint32_t s_t0_us;            /**< the step's start */
@@ -157,20 +159,27 @@ static void note(uint32_t *max, uint32_t t0)
 
 /**
  * @brief Whether the test may take a pin: the bank SAFE, nothing reserved, no
- *        driver on it, and it is no output.
+ *        slot and no driver on it, and it is no output.
  * @param pin the GPIO
  * @return true when it may
  */
 static bool pin_free(unsigned pin)
 {
-    const uint64_t held = s_base_reserved | supply_page_pins(&s_supply)
-                          | sense_page_held(&s_sense) | tone_page_pins(&s_tone)
-                          | prog_port_pins(&s_prog);
     const gpio_function_t fn = gpio_get_function(pin);
 
-    return !s_outputs.armed && ((held >> pin) & 1u) == 0u
-           && (fn == GPIO_FUNC_SIO || fn == GPIO_FUNC_NULL)
-           && !gpio_is_dir_out(pin);
+    reserve_held();
+    if (s_outputs.armed || !outputs_pin_available(&s_outputs, (uint8_t)pin)
+        || (fn != GPIO_FUNC_SIO && fn != GPIO_FUNC_NULL)
+        || gpio_is_dir_out(pin)) {
+        return false;
+    }
+    for (unsigned i = 0u; i < OUT_MAX_SLOTS; ++i) {
+        if (s_outputs.slot[i].driver != OUT_DRIVER_NONE
+            && s_outputs.slot[i].pin == pin) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**
@@ -182,6 +191,8 @@ static void finish(const char *why)
     const unsigned pin = s_line.pin;
 
     ew_line_close(&s_line);
+    s_console_pins = 0u;
+    reserve_held();
     s_step = NULL;
     console_hw_say("ewline %s gpio=%u start_max=%luus poll_max=%luus "
                    "level_max=%luus abort=%luus\n",
@@ -193,7 +204,7 @@ static void finish(const char *why)
 bool ewline_console_line(void *ctx, char **tok, unsigned n)
 {
     const step_t *steps = NULL;
-    unsigned long pin;
+    uint32_t pin = NUM_BANK0_GPIOS;
     ew_line_err_t e;
 
     (void)ctx;
@@ -207,8 +218,8 @@ bool ewline_console_line(void *ctx, char **tok, unsigned n)
     } else if (n == 3u && strcmp(tok[2], "rx") == 0) {
         steps = k_rx;
     }
-    pin = n == 3u ? strtoul(tok[1], NULL, 0) : NUM_BANK0_GPIOS;
-    if (steps == NULL || pin >= NUM_BANK0_GPIOS) {
+    if (steps == NULL || !page_console_number(tok[1], &pin)
+        || pin >= NUM_BANK0_GPIOS) {
         console_hw_say("err usage: ewline <gpio> tx|abort|rx\n");
         return true;
     }
@@ -218,7 +229,7 @@ bool ewline_console_line(void *ctx, char **tok, unsigned n)
     }
     if (!pin_free((unsigned)pin)) {
         console_hw_say("err ewline: gpio %lu is held, or the bank is ARMED\n",
-                       pin);
+                       (unsigned long)pin);
         return true;
     }
     ew_line_init(&s_line);
@@ -227,7 +238,11 @@ bool ewline_console_line(void *ctx, char **tok, unsigned n)
         console_hw_say("err ewline: open %d\n", (int)e);
         return true;
     }
-    console_hw_say("ewline open gpio=%lu bit_a=%luns bit_text=%luns\n", pin,
+    /* From here on no page takes the pin; finish() gives it back. */
+    s_console_pins = (uint64_t)1u << pin;
+    reserve_held();
+    console_hw_say("ewline open gpio=%lu bit_a=%luns bit_text=%luns\n",
+                   (unsigned long)pin,
                    (unsigned long)ew_line_bit_ns(&s_line, EW_RATE_A),
                    (unsigned long)ew_line_bit_ns(&s_line, EW_RATE_TEXT));
     s_start_max = 0u;
@@ -299,6 +314,11 @@ static void feed_answer(uint8_t bad, uint32_t bit_ns)
     gpio_set_oeover(pin, GPIO_OVERRIDE_HIGH);
     for (uint32_t i = 0u; i < sizeof(k_answer); ++i) {
         feed_byte(k_answer[i], bad != i + 1u, bit_ns);
+        /* The receiver waits for the idle level after a low stop bit. */
+        if (bad == i + 1u) {
+            gpio_set_outover(pin, GPIO_OVERRIDE_HIGH);
+            busy_wait_us_32(2u * bit_ns / 1000u);
+        }
     }
     gpio_set_outover(pin, GPIO_OVERRIDE_NORMAL);
     gpio_set_oeover(pin, GPIO_OVERRIDE_NORMAL);

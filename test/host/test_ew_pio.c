@@ -574,6 +574,27 @@ TEST_CASE(a_low_stop_bit_is_marked_and_the_next_byte_counts)
     CHECK_EQ(ew_a_read_reply(&c, rx_bytes, 1u), EW_ANS_FRAMING);
 }
 
+TEST_CASE(a_low_stop_bit_and_2_idle_bits_lose_no_byte)
+{
+    static const uint8_t ask[] = { 0x03 };
+    ew_xfer_t x = xfer_of(EW_RATE_A, ask, 1u, 3u, 80000u, 2000u);
+    ew_capture_t c;
+
+    /* As the console test drives it: the next start bit 2 bit times after the
+     * low stop bit's end. */
+    ext_clear(true);
+    ext_byte(100000.0, 52000.0, 0x31, true);
+    ext_byte(620000.0, 52000.0, 0x64, false);
+    ext_byte(620000.0 + 12.0 * 52000.0, 52000.0, 0xE8, true);
+    CHECK(load(&x));
+    model_run(&m, 3000u);
+    capture(&c);
+    CHECK_EQ(c.n, 3u);
+    CHECK_EQ(c.bad_stop, 2u);
+    CHECK_EQ(rx_bytes[1], 0x64u);
+    CHECK_EQ(rx_bytes[2], 0xE8u);
+}
+
 TEST_CASE(a_line_held_low_is_one_byte)
 {
     static const uint8_t ask[] = { 0x03 };
@@ -861,6 +882,7 @@ int main(void)
     RUN(a_byte_just_inside_and_just_outside_the_first_wait);
     RUN(a_byte_just_inside_and_just_outside_the_later_wait);
     RUN(a_low_stop_bit_is_marked_and_the_next_byte_counts);
+    RUN(a_low_stop_bit_and_2_idle_bits_lose_no_byte);
     RUN(a_line_held_low_is_one_byte);
     RUN(a_line_low_at_the_release_is_no_byte);
     RUN(a_low_too_short_for_a_start_bit_is_no_byte);

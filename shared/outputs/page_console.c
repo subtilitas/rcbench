@@ -1230,6 +1230,11 @@ static void run_line(page_console_t *c)
 
 /* --- the console ----------------------------------------------------------- */
 
+bool page_console_number(const char *s, uint32_t *out)
+{
+    return s != NULL && out != NULL && parse_u32(s, out);
+}
+
 void page_console_set_ext(page_console_t *c, page_console_ext_fn fn, void *ctx)
 {
     if (c != NULL) {

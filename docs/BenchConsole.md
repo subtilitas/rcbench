@@ -42,8 +42,8 @@ with it, checks the stacks of both cores, and fails when the default image
 holds a console symbol. `IOMCU_CONSOLE` and `SENSE_TRACE` both read the USB
 console; CMake refuses a build with both.
 
-Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 17,880
-bytes larger than the default image and holds 9,520 bytes more RAM
+Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 17,712
+bytes larger than the default image and holds 9,216 bytes more RAM
 (random-access memory): 2,048 of them the output buffer, 960 the USB
 transmit buffer of 1,024 bytes in place of the SDK's 64, 3,488 the signal
 wire's pin driver and 1,536 its test's reply. Core 0's deepest
@@ -271,14 +271,16 @@ controller) signal wire (`protocols/escwire/rp2350/ew_line.h`) on a free pin,
 for a logic analyser with no ESC attached. It is not a page and has no key: it
 sends fixed bytes, none of them a throttle signal, an erase or a program. It
 refuses a pin the outputs, ports, supply, sensor bus or tone capture hold, a pin
-that drives, and any pin while the bank is ARMED. An ARM during a test closes
-the line at once and answers `ewline armed`.
+that drives, and any pin while the bank is ARMED. A programming port that names
+the pin holds it, so that port's PIN goes to 0xFFFF first. During a test the pin
+is reserved: the pages refuse it. An ARM during a test closes the line at once
+and answers `ewline armed`.
 
 | Test | On the pin, in order |
 |---|---|
 | `tx` | parked 20ms; high 50ms; the first contact (17B at 52us a bit) 3 times, each followed by its 100ms wait; pull-up 20ms; 12B with 4 idle bit times after the sixth; pull-up 20ms; `info` and LF at 38400baud and a 200ms wait; pull-up 20ms; 0x55 at 52us a bit into a pull-down; pull-up 20ms; 0x55 at 38400baud into a pull-down; parked 20ms; low 300ms; parked 20ms |
 | `abort` | high 5ms; the first contact, cut 3ms after its start; parked 20ms; high 5ms; 0x55 into a pull-down; parked 20ms |
-| `rx` | high 5ms; 3 times 0x55 and a 9B answer driven on the pad by the pin's overrides: at 52us a bit, with a low stop bit on the third byte, at 38400baud; each followed by 5ms |
+| `rx` | high 5ms; 3 times 0x55 and a 9B answer driven on the pad by the pin's overrides: at 52us a bit, with a low stop bit on the third byte and 2 idle bit times after it, at 38400baud; each followed by 5ms |
 
 0x55 into a pull-down shows the release: the stop bit's rising edge, then the
 pad falls 1 bit time later, when it stops driving. The `rx` test blocks the main

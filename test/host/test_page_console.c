@@ -905,10 +905,33 @@ TEST_CASE(a_build_takes_the_lines_no_command_takes)
     page_console_set_ext(NULL, ext_mine, NULL);
 }
 
+TEST_CASE(a_number_is_digits_and_nothing_else)
+{
+    uint32_t v = 0u;
+
+    CHECK(page_console_number("13", &v));
+    CHECK_EQ(v, 13u);
+    CHECK(page_console_number("0x0D", &v));
+    CHECK_EQ(v, 13u);
+    CHECK(page_console_number("0", &v));
+    CHECK_EQ(v, 0u);
+    CHECK(page_console_number("4294967295", &v));
+    CHECK(!page_console_number("4294967296", &v));
+    CHECK(!page_console_number("13junk", &v));
+    CHECK(!page_console_number("junk", &v));
+    CHECK(!page_console_number("-1", &v));
+    CHECK(!page_console_number("+1", &v));
+    CHECK(!page_console_number("", &v));
+    CHECK(!page_console_number("0x", &v));
+    CHECK(!page_console_number(NULL, &v));
+    CHECK(!page_console_number("1", NULL));
+}
+
 int main(void)
 {
     RUN(pages_lists_every_page);
     RUN(a_build_takes_the_lines_no_command_takes);
+    RUN(a_number_is_digits_and_nothing_else);
     RUN(a_read_answers_data_and_a_refusal_is_a_nack);
     RUN(a_write_echoes_what_was_stored);
     RUN(a_line_is_edited_and_an_overlong_one_refused);

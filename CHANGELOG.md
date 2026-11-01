@@ -19,8 +19,8 @@ history is in git.
   (programmable input/output) state machine of 25 words and 2 DMA (direct memory
   access) channels behind `ew_driver_t`. 16 cycles a bit, 52us and 38400baud,
   8N1, idle high; the pad is released 1 bit time after the last stop bit's edge
-  and receives with its pull-up. An abort leaves the pad an input with its
-  pull-down. The IOmcu links it and the released image holds none of it: nothing
+  and receives with its pull-up. An abort or a capture marked aborted or
+  overflow leaves the pad an input with its pull-down. The IOmcu links it and the released image holds none of it: nothing
   calls it there. No byte has been to an ESC.
 - Bench console: `ewline <gpio> tx|abort|rx`, in the `IOMCU_CONSOLE` build, runs
   the pin driver on a free pin for a logic analyser. Fixed bytes, SAFE only.

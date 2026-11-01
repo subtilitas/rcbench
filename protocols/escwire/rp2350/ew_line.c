@@ -367,8 +367,11 @@ bool ew_line_poll(void *ctx, ew_capture_t *out)
         if (!ew_pio_late(&l->run, time_us_32(), l->t_start_us)) {
             return false;
         }
+        /* A driver fault: stopped and parked before anything else, with the
+         * pad possibly still driven. */
         cut = true;
         pio_sm_set_enabled(line_pio(l), l->sm, false);
+        pad_park(l);
     }
     rx_settle(l);
     n = rx_count(l);
@@ -380,6 +383,9 @@ bool ew_line_poll(void *ctx, ew_capture_t *out)
      * wire. */
     line_restart(l);
     ew_pio_capture(&l->run, l->rx, n, stalled, cut, out);
+    if (out->overflow) {
+        pad_park(l);
+    }
     l->busy = 0u;
     return true;
 }

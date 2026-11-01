@@ -137,6 +137,15 @@ typedef struct {
 void page_console_init(page_console_t *c, const link_dev_t *dev);
 
 /**
+ * @brief A number as the console reads one: decimal or 0x hexadecimal, digits
+ *        only, up to 32 bits.
+ * @param s   the text, may be NULL
+ * @param out takes the value, may be changed on a refusal
+ * @return false for anything else: no digit, a sign, a letter after the digits
+ */
+bool page_console_number(const char *s, uint32_t *out);
+
+/**
  * @brief Hand lines no command here takes to @p fn.
  * @param c   the console
  * @param fn  the handler, NULL for none

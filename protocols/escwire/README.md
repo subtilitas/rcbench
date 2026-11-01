@@ -197,15 +197,16 @@ a bit time more than 0.05% off.
 
 | Moment | Pad |
 |---|---|
-| open, `EW_LINE_PARK`, an abort, a stop | input, pull-down, input buffer off |
+| open, `EW_LINE_PARK`, an abort, a stop, a capture marked aborted or overflow | input, pull-down, input buffer off |
 | `EW_LINE_HIGH`, before the first bit | push-pull high, 2mA |
 | the bytes | push-pull, both levels, 2mA; no gap between bytes |
 | 1 bit time after the last stop bit's edge | released: a reply and the rest between exchanges, input, pull-up |
 | `EW_LINE_LOW` | push-pull low, 2mA, 300ms in a leave |
 | close | input, pull-down, the drive and slew as found |
 
-The input buffer is off when parked, since erratum RP2350-E9 can hold an A2
-chip's pad near 2V against its pull-down. A chip that restarts leaves the pad at
+The input buffer is off when parked, since erratum RP2350-E9 holds an A2 chip's
+input pad at around 2.2V, leaking typically 120uA, against its pull-down while
+the buffer is on. An A2 pad can sit there between a close and the next driver. A chip that restarts leaves the pad at
 its reset state. Nothing in the driver makes a throttle signal.
 
 Reception:
@@ -224,11 +225,11 @@ Reception:
   Each lasts up to 2 ticks more than asked.
 
 A transaction ends at `max_rx`, at a wait's end, or, with the capture marked
-aborted, 1ms past `ew_xfer_span_us()`.
+aborted and the pad parked at once, 1ms past `ew_xfer_span_us()`.
 
-Each call returns without waiting for the wire. Longest time at 150MHz, computed
-and not measured: `ew_line_start()` 100us, `ew_line_poll()` 100us at the end of a
-capture of 1536B and 2us otherwise, `ew_line_abort()` and `ew_line_level()` 5us,
+Each call returns without waiting for the wire. Longest time at 150MHz, as an
+estimate, neither computed nor measured: `ew_line_start()` 100us,
+`ew_line_poll()` 100us at the end of a capture of 1536B and 2us otherwise, `ew_line_abort()` and `ew_line_level()` 5us,
 `ew_line_open()` and `ew_line_close()` 50us. The console test prints measured
 values.
 
@@ -263,7 +264,9 @@ with their authors. The full notice is in the repository's
 `test_ew_session.c` and `test_ew_session_write.c` run the core; the last two
 against the simulated ESC of `test/host/ew_sim.h`. `test_ew_pio.c` assembles
 `rp2350/ew_line.pio` and runs it in a model of the state machine; the IOmcu build
-fails when pioasm's words differ from `test/host/fixtures/ew_line_words.txt`. That simulation is written
+fails when pioasm's words differ from `test/host/fixtures/ew_line_words.txt`.
+`test_ew_line.c` runs the driver on a fake of the pico-sdk calls it makes: the pad
+at each moment, every error path, the resources. That simulation is written
 from the same specification and shares its misreadings until a real ESC answers.
 
 ```sh

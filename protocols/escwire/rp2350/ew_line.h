@@ -24,6 +24,7 @@
  * | State | Pad | Input buffer |
  * |---|---|---|
  * | ew_line_open(), EW_LINE_PARK, abort() | input, pull-down | off |
+ * | a capture marked aborted or overflow | input, pull-down | off |
  * | EW_LINE_HIGH | driven high | on |
  * | a transaction's bytes | driven, both levels | on |
  * | a reply, the rest after a transaction, EW_LINE_UP | input, pull-up | on |
@@ -31,15 +32,17 @@
  * | ew_line_close() | input, pull-down, SIO function | on |
  * | a restart of the chip | the chip's reset state | |
  *
- * The input buffer is off in EW_LINE_PARK since erratum RP2350-E9 lets a pad
- * with its buffer on and its pull-down on stay near 2V on an A2 chip.  The next
- * driver takes the pad after a close, so its buffer is on there.
+ * The input buffer is off in EW_LINE_PARK since erratum RP2350-E9 holds an A2
+ * chip's input pad at around 2.2V, leaking typically 120uA, against its
+ * pull-down while the buffer is on; the buffer off removes the leak.  The next
+ * driver takes the pad after a close, so its buffer is on there, and an A2 pad
+ * can sit at 2.2V until then.  The pull-up is not affected.
  *
  * The pad's pull-up is 50 to 80kOhm.  Whether it raises an open-drain reply at
  * 52us a bit on a real board is not measured.
  *
- * Time of a call at 150MHz, computed from instruction counts and not measured
- * (the console test prints the measured worst cases):
+ * Time of a call at 150MHz.  These are estimates: neither computed nor measured.
+ * The console test prints the measured worst cases.
  *
  * | Call | Longest |
  * |---|---|
@@ -52,9 +55,11 @@
  * EW_LINE_RX_SETTLE_SPINS reads of a register at most.
  *
  * Every function is called from one context.  ew_line_poll() ends a transaction
- * whose state machine still runs EW_PIO_GRACE_US after ew_xfer_span_us(), with
- * the capture marked aborted; the session's own limit is 5ms past the same
- * time.
+ * whose state machine still runs EW_PIO_GRACE_US after ew_xfer_span_us(): the
+ * machine stops and the pad parks at once, and the capture is marked aborted.
+ * The session's own limit is 5ms past the same time.  A bad stop bit is an
+ * answer and rests on the pull-up, for the session to judge.  The next start
+ * takes the pad from any of these.
  *
  * Not measured: no byte of this driver has been to an ESC.
  *
