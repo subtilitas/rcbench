@@ -94,10 +94,6 @@ extern "C" {
 #define PAGE_CONSOLE_OUT_MAX 2048u
 
 /**
- * @brief The console state: the command line being read, the output buffer,
- *        the staged HITEC registers and the work space of the requests.
- */
-/**
  * @brief A build's own console command: a line none of the commands here took.
  * @param ctx the context given to page_console_set_ext()
  * @param tok the line's tokens
@@ -106,12 +102,15 @@ extern "C" {
  */
 typedef bool (*page_console_ext_fn)(void *ctx, char **tok, unsigned n);
 
-/** @brief One console: its line, its output and its work space. */
+/**
+ * @brief The console state: the command line being read, the output buffer,
+ *        the staged HITEC registers and the work space of the requests.
+ */
 typedef struct {
     const link_dev_t *dev;
     page_console_ext_fn ext; /**< a build's own commands, or NULL */
     void    *ext_ctx;        /**< and its context */
-    char     line[PAGE_CONSOLE_LINE_MAX + 1u]; /**< the line so far */
+    char     line[PAGE_CONSOLE_LINE_MAX + 1u];
     uint16_t len;
     uint8_t  overlong;   /**< the line ran past PAGE_CONSOLE_LINE_MAX */
     char     out[PAGE_CONSOLE_OUT_MAX];  /**< the output ring */
