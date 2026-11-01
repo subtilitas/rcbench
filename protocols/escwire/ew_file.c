@@ -389,7 +389,7 @@ static bool next_line(cur_t *c, line_t *l)
 
     l->s = start;
     l->open = lf == NULL;
-    l->n = l->open ? left : (size_t)(lf - start);
+    l->n = lf != NULL ? (size_t)(lf - start) : left;
     l->cr = !l->open && l->n > 0u && start[l->n - 1u] == '\r';
     if (left == 0u) {
         return false;
