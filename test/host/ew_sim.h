@@ -10,7 +10,8 @@
  * bends single transactions.  On AM32 a gap ends a message: data less than
  * 234us behind their announcement are lost and no answer comes.  It counts what a host must never do: a
  * transaction outside its limits, a line() during a transaction, a first byte
- * while the pad is parked, a frame before the hold ended.
+ * while the pad is parked, a frame before the hold ended.  A third kind answers
+ * the text interface (ew_sim_text.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,6 +24,8 @@
 
 #include "ew_session.h"
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 #define SIM_LOG_MAX 96u
 #define SIM_FLASH 0x10000u
 #define SIM_AM_PAGE 1024u
@@ -31,7 +34,7 @@
 /* AM32: that idle, then one bit time, rounded up: an answer's start, us. */
 #define SIM_AM_ANSWER_US 350u
 
-typedef enum { SIM_EFM8 = 0, SIM_AM } sim_kind_t;
+typedef enum { SIM_EFM8 = 0, SIM_AM, SIM_E32 } sim_kind_t;
 
 typedef enum {
     F_NONE = 0,
@@ -49,6 +52,11 @@ typedef enum {
     F_NO_TAKE,      /* a program answers 0x30 and changes nothing */
     F_CORRUPT,      /* a program stores a wrong byte at offset fail_byte */
     F_BAD_BUFFER,   /* a data buffer is answered 0xC2, whatever else goes on */
+    F_TEXT_ERROR,   /* text: the ESC does nothing and answers ERROR */
+    F_TEXT_CUT,     /* text: the last 3 bytes of the reply are lost */
+    F_TEXT_BYTE,    /* text: the reply's first byte is 0x01 */
+    F_TEXT_FLOOD,   /* text: a reply with no end, longer than any buffer */
+    F_TEXT_HEARD,   /* text: the ESC acts, its reply is swap_reply */
 } sim_fault_t;
 
 typedef struct {
@@ -86,7 +94,7 @@ typedef struct {
     uint32_t done_at;
     uint8_t *rx;
     uint16_t n_rx, bad_stop;
-    uint8_t  reply[260];
+    uint8_t  reply[EW_RX_TEXT_MAX + 512u];
     uint8_t  line;
     /* The script: from transaction fail_at on, fail_n times. */
     uint8_t  fail;
@@ -99,7 +107,26 @@ typedef struct {
     uint8_t  line_log[16];
     int      n_line_log;
     uint32_t first_tx_at;
+    /* The text interface. */
+    int16_t  ram[EW_E32_KEYS];
+    int16_t  saved[EW_E32_KEYS];
+    char     music[EW_E32_MUSIC_MAX + 1u];
+    char     banner[80];
+    bool     low;
+    uint32_t open_at;
+    int      resets, forbidden, sets, saves, clip_slot;
+    int16_t  clip_to;
+    const char *show_extra;  /* one more line in `show` */
+    int      show_drop;      /* a key `show` leaves out, -1 for none */
+    const char *mute_word;   /* a line starting so gets no reply */
+    bool     mute_heard;     /* and the ESC acts on it */
+    int      drift_slot;     /* a key each `save` moves in RAM, -1 for none */
+    const char *swap_reply;  /* see F_TEXT_HEARD */
+    const char *save_plan;   /* per `save`: O as usual, L its reply lost, E ERROR,
+                                U nothing done and a line before its OK */
 } sim_t;
+
+#include "ew_sim_text.h"
 
 static uint32_t sim_now(void *ctx)
 {
@@ -110,6 +137,9 @@ static void sim_line(void *ctx, ew_line_t level)
 {
     sim_t *e = (sim_t *)ctx;
 
+    if (e->kind == SIM_E32) {
+        sim_text_line_state(e, level);
+    }
     e->line = (uint8_t)level;
     e->line_calls++;
     if (e->running) {
@@ -325,7 +355,8 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
         e->mute_next = false;
         e->dead = true;
     }
-    const uint32_t bit_us = 52u;
+    const bool text_rate = x->rate == (uint8_t)EW_RATE_TEXT;
+    const uint32_t bit_us = text_rate ? 26u : 52u;
     const uint32_t send_us = ((uint32_t)x->n_tx * 10u + x->pause_bits) * bit_us;
 
     if (!e->dead && !(faulted && saved == F_SILENT)) {
@@ -334,7 +365,9 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
 
         e->fail = (faulted && (saved == F_NO_TAKE || saved == F_CORRUPT))
                       ? saved : (uint8_t)F_NONE;
-        if (faulted && saved == F_ERASE_DEAD && x->tx[0] == EW_A_CMD_PROGRAM) {
+        if (e->kind == SIM_E32) {
+            sim_text_heard(e, x, faulted ? saved : (uint8_t)F_NONE);
+        } else if (faulted && saved == F_ERASE_DEAD && x->tx[0] == EW_A_CMD_PROGRAM) {
             memset(e->am, 0xFF, sizeof(e->am));
             e->dead = true;
         } else if (e->swallowed) {
@@ -390,6 +423,20 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
         case F_STUCK:
             e->stuck = true;
             break;
+        case F_TEXT_HEARD:
+            e->n_rx = 0u;
+            sim_text_say(e, e->swap_reply);
+            break;
+        case F_TEXT_CUT:
+            e->n_rx = e->n_rx >= 3u ? (uint16_t)(e->n_rx - 3u) : 0u;
+            break;
+        case F_TEXT_BYTE:
+            e->reply[0] = 0x01u;
+            break;
+        case F_TEXT_FLOOD:
+            memset(e->reply, 'x', sizeof(e->reply));
+            e->n_rx = (uint16_t)sizeof(e->reply);
+            break;
         case F_BAD_BUFFER:
             if (x->n_head != 0u) {
                 e->reply[0] = EW_A_REF_CRC;
@@ -423,7 +470,9 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
     e->done_at = e->now + send_us
                  + (x->max_rx == 0u
                         ? 0u
-                        : (e->n_rx != 0u ? answer_us : x->first_us + 1u));
+                        : (e->n_rx == 0u ? x->first_us + 1u
+                           : text_rate ? 52u + (uint32_t)e->n_rx * 260u + x->gap_us
+                                       : answer_us));
     return true;
 }
 
@@ -586,6 +635,15 @@ static ew_ses_t sim_enter(ew_session_t *s, sim_t *e)
     (void)ew_session_hold(s);
     (void)ew_session_enter(s, 3000u);
     return sim_run(s, e);
+}
+
+/* A transaction's bytes are this line. */
+static bool sim_sent_line(const sim_t *e, int index, const char *line)
+{
+    const size_t n = strlen(line);
+
+    return index < (int)SIM_LOG_MAX && e->log[index].n == n
+           && memcmp(e->log[index].b, line, n) == 0;
 }
 
 /* The first bytes of a transaction are these. */

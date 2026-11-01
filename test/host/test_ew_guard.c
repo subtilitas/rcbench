@@ -19,6 +19,7 @@
 
 #include "ew_guard.h"
 #include "ew_a.h"
+#include "ew_map.h"
 
 static ew_guard_t g;
 static uint8_t g_orig[256];
@@ -557,11 +558,147 @@ TEST_CASE(the_text_lines)
         memset(l, 'x', sizeof(l));
         memcpy(l, "get ", 4u);
         l[EW_LINE_MAX] = '\n';
-        CHECK_EQ(ew_guard_line(l, EW_LINE_MAX + 1u), EW_REF_NONE);
+        /* 1023 characters pass the limit and then fail on the key. */
+        CHECK_EQ(ew_guard_line(l, EW_LINE_MAX + 1u), EW_REF_LINE);
         l[EW_LINE_MAX] = 'x';
         l[EW_LINE_MAX + 1u] = '\n';
-        CHECK_EQ(ew_guard_line(l, EW_LINE_MAX + 2u), EW_REF_LINE);
+        CHECK_EQ(ew_guard_line(l, EW_LINE_MAX + 2u), EW_REF_LINE_LONG);
     }
+}
+
+TEST_CASE(a_line_has_exactly_its_words)
+{
+    /* Words on a word that takes none. */
+    CHECK_EQ(line("info x\n"), EW_REF_LINE);
+    CHECK_EQ(line("show x\n"), EW_REF_LINE);
+    CHECK_EQ(line("save 1\n"), EW_REF_LINE);
+    CHECK_EQ(line("help x\n"), EW_REF_LINE);
+    CHECK_EQ(line(" info\n"), EW_REF_LINE);
+    CHECK_EQ(line("info \n"), EW_REF_LINE);
+    CHECK_EQ(line("INFO\n"), EW_REF_LINE);
+    /* `get`: a key of the map or `music`, nothing else. */
+    CHECK_EQ(line("get music\n"), EW_REF_NONE);
+    CHECK_EQ(line("get led\n"), EW_REF_NONE);
+    CHECK_EQ(line("get\n"), EW_REF_LINE);
+    CHECK_EQ(line("get \n"), EW_REF_LINE);
+    CHECK_EQ(line("get nokey\n"), EW_REF_LINE);
+    CHECK_EQ(line("get timing 1\n"), EW_REF_LINE);
+    /* `set music` however it is spelled: the ESC takes any run of blanks. */
+    CHECK_EQ(line("set music\n"), EW_REF_LINE);
+    CHECK_EQ(line("set  music dfa#\n"), EW_REF_LINE);
+    CHECK_EQ(line("set music  dfa#\n"), EW_REF_LINE);
+    CHECK_EQ(line("set music 1\n"), EW_REF_LINE);
+    /* A key outside the map, a value that is none of the key's. */
+    CHECK_EQ(line("set nokey 1\n"), EW_REF_LINE);
+    CHECK_EQ(line("set timing\n"), EW_REF_LINE);
+    CHECK_EQ(line("set timing \n"), EW_REF_LINE);
+    CHECK_EQ(line("set  timing 20\n"), EW_REF_LINE);
+    CHECK_EQ(line("set timing  20\n"), EW_REF_LINE);
+    CHECK_EQ(line("set timing 20 1\n"), EW_REF_LINE);
+    CHECK_EQ(line("set timing x\n"), EW_REF_LINE);
+    CHECK_EQ(line("set timing 020\n"), EW_REF_LINE);
+    CHECK_EQ(line("set timing 0\n"), EW_REF_LINE);
+    CHECK_EQ(line("set timing 31\n"), EW_REF_NONE);
+    CHECK_EQ(line("set timing 32\n"), EW_REF_LINE);
+    CHECK_EQ(line("set telem_volt -80\n"), EW_REF_NONE);
+    CHECK_EQ(line("set telem_volt -81\n"), EW_REF_LINE);
+    CHECK_EQ(line("set throt_min 905\n"), EW_REF_LINE);
+    /* The commands a settings host never sends, in any company. */
+    CHECK_EQ(line("reset 1\n"), EW_REF_LINE);
+    CHECK_EQ(line("throt -2000\n"), EW_REF_LINE);
+    CHECK_EQ(line("set reset 1\n"), EW_REF_LINE);
+    CHECK_EQ(line("get throt\n"), EW_REF_LINE);
+    /* Characters that delete what the guard read. */
+    CHECK_EQ(line("set timing 20\x08\n"), EW_REF_LINE);
+    CHECK_EQ(line("set musicx\x7F 1\n"), EW_REF_LINE);
+    /* A line feed inside. */
+    CHECK_EQ(line("info\nreset\n"), EW_REF_LINE);
+}
+
+TEST_CASE(a_line_against_the_session)
+{
+    ew_guard_t gd;
+    uint8_t orig[EW_MAP_LEN_E32];
+    uint8_t draft[EW_MAP_LEN_E32];
+    ew_ident_t id;
+    uint16_t off = 0u;
+    size_t timing = 0u;
+
+    (void)ew_key_find("timing", 6u, &timing);
+    for (size_t i = 0; i < EW_E32_KEYS; ++i) {
+        ew_e32_put(orig, i, ew_map_e32[i].lo);
+    }
+    memcpy(draft, orig, sizeof(orig));
+    memset(&id, 0, sizeof(id));
+    id.fw = EW_FW_E32;
+    id.layout = 17u;
+    id.len = EW_MAP_LEN_E32;
+    id.writable = true;
+#define TEXT(s) ew_guard_text(&gd, (const uint8_t *)(s), strlen(s))
+    CHECK_EQ(ew_guard_text(NULL, (const uint8_t *)"info\n", 5u), EW_REF_ARG);
+    /* Before an ESC answered: `info` alone. */
+    ew_guard_init(&gd);
+    CHECK_EQ(TEXT("info\n"), EW_REF_NONE);
+    CHECK_EQ(TEXT("show\n"), EW_REF_NO_CONTACT);
+    CHECK_EQ(TEXT("save\n"), EW_REF_NO_CONTACT);
+    CHECK_EQ(TEXT("set timing 20\n"), EW_REF_NO_CONTACT);
+    CHECK_EQ(TEXT("reset\n"), EW_REF_LINE);
+    CHECK_EQ(TEXT("x"), EW_REF_LINE);
+    /* An ESC of protocol A takes no line at all. */
+    gd.cpu = EW_CPU_EFM8;
+    CHECK_EQ(TEXT("info\n"), EW_REF_INTERFACE);
+    gd.cpu = EW_CPU_ARM;
+    CHECK_EQ(TEXT("show\n"), EW_REF_INTERFACE);
+    /* And an ESC of the text interface no frame, the first contact included. */
+    ew_guard_text_target(&gd);
+    {
+        uint8_t f[EW_A_CONTACT_LEN];
+        const size_t n = ew_a_contact(f);
+
+        CHECK_EQ(ew_guard_frame(&gd, f, n), EW_REF_INTERFACE);
+        CHECK_EQ(ew_guard_frame(&gd, f, ew_a_short(f, EW_A_CMD_LEAVE, 1u)),
+                 EW_REF_INTERFACE);
+    }
+    /* Reads go. A `set` and a `save` need a judged page. */
+    CHECK_EQ(TEXT("info\n"), EW_REF_NONE);
+    CHECK_EQ(TEXT("show\n"), EW_REF_NONE);
+    CHECK_EQ(TEXT("get timing\n"), EW_REF_NONE);
+    CHECK_EQ(TEXT("help\n"), EW_REF_NONE);
+    CHECK_EQ(TEXT("save\n"), EW_REF_NOT_APPROVED);
+    CHECK_EQ(TEXT("set timing 20\n"), EW_REF_NOT_APPROVED);
+    /* The judged page's value, and no other. */
+    ew_e32_put(draft, timing, 20);
+    CHECK_EQ(ew_guard_approve(&gd, &id, orig, draft, sizeof(draft), &off),
+             EW_REF_NONE);
+    CHECK_EQ(TEXT("set timing 20\n"), EW_REF_NONE);
+    CHECK_EQ(TEXT("set timing 21\n"), EW_REF_DATA);
+    CHECK_EQ(TEXT("save\n"), EW_REF_NONE);
+    /* Every refused word stays refused with a page judged. */
+    CHECK_EQ(TEXT("reset\n"), EW_REF_LINE);
+    CHECK_EQ(TEXT("throt 100\n"), EW_REF_LINE);
+    CHECK_EQ(TEXT("play\n"), EW_REF_LINE);
+    CHECK_EQ(TEXT("beep\n"), EW_REF_LINE);
+    CHECK_EQ(TEXT("set music dfa#\n"), EW_REF_LINE);
+    CHECK_EQ(ew_guard_text(&gd, (const uint8_t *)"\x00\xFF\n", 3u), EW_REF_LINE);
+    ew_guard_done(&gd);
+    CHECK_EQ(TEXT("save\n"), EW_REF_NOT_APPROVED);
+#undef TEXT
+    /* A judged page: another revision, length, a value, a floor. */
+    id.layout = 18u;
+    CHECK_EQ(ew_guard_approve(&gd, &id, orig, draft, sizeof(draft), &off),
+             EW_REF_NOT_WRITABLE);
+    id.layout = 17u;
+    id.writable = false;
+    CHECK_EQ(ew_guard_approve(&gd, &id, orig, draft, sizeof(draft), &off),
+             EW_REF_NOT_WRITABLE);
+    id.writable = true;
+    CHECK_EQ(ew_guard_approve(&gd, &id, orig, draft, sizeof(draft) - 1u, &off),
+             EW_REF_COUNT);
+    ew_e32_put(draft, timing, 32);
+    CHECK_EQ(ew_guard_approve(&gd, &id, orig, draft, sizeof(draft), &off),
+             EW_REF_VALUE);
+    CHECK_EQ(off, timing * 2u);
+    CHECK(gd.approved == NULL);
 }
 
 int main(void)
@@ -579,5 +716,7 @@ int main(void)
     RUN(am32_data_erase_and_addresses_of_a_write);
     RUN(a_restore_is_am32_on_an_erased_page);
     RUN(the_text_lines);
+    RUN(a_line_has_exactly_its_words);
+    RUN(a_line_against_the_session);
     return test_summary("ew_guard");
 }

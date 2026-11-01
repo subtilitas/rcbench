@@ -5,8 +5,9 @@
  *
  * ew_guard_frame() judges one frame of protocol A against what was sent
  * before it.  An erase and a program need a page ew_guard_approve() has
- * judged, and the data frame has to hold exactly that page.  No function here
- * touches a wire.
+ * judged, and the data frame has to hold exactly that page.  ew_guard_text()
+ * does the same for a line of the text interface.  No function here touches a
+ * wire.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -55,6 +56,8 @@ typedef enum {
     EW_REF_VALUE,          /**< an editable field holds no value of its own */
     EW_REF_RESTORE,        /**< a restore other than AM32 on an erased page */
     EW_REF_LINE,           /**< a line of the text interface that is refused */
+    EW_REF_LINE_LONG,      /**< a line over EW_LINE_MAX characters          */
+    EW_REF_INTERFACE,      /**< a frame or line this ESC's interface has not */
 } ew_refuse_t;
 
 /** @brief The guard's memory of the session. */
@@ -83,6 +86,12 @@ void ew_guard_init(ew_guard_t *g);
  * @param c the contact
  */
 void ew_guard_target(ew_guard_t *g, const ew_contact_t *c);
+
+/**
+ * @brief An ESC answered `info` on the text interface: lines go, frames do not.
+ * @param g the guard
+ */
+void ew_guard_text_target(ew_guard_t *g);
 
 /**
  * @brief Judge a page before a write.  @p draft has to stay valid and
@@ -131,14 +140,27 @@ void ew_guard_done(ew_guard_t *g);
 ew_refuse_t ew_guard_frame(ew_guard_t *g, const uint8_t *f, size_t n);
 
 /**
- * @brief Judge one line of the text interface: `info`, `show`, `get <key>`,
- *        `set <key> <value>` other than `music`, `save` or `help`, up to
- *        EW_LINE_MAX characters and its LF, with no control character.
+ * @brief Judge one line of the text interface by itself: `info`, `show`,
+ *        `save` or `help` alone, `get <key>` with `music` among the keys,
+ *        `set <key> <value>` with a key of the map and one of its values, one
+ *        blank between words, up to EW_LINE_MAX characters and its LF, with no
+ *        control character.
  * @param line the bytes, the LF last
  * @param n    their count
- * @return EW_REF_NONE, or EW_REF_ARG or EW_REF_LINE
+ * @return EW_REF_NONE, or EW_REF_ARG, EW_REF_LINE or EW_REF_LINE_LONG
  */
 ew_refuse_t ew_guard_line(const uint8_t *line, size_t n);
+
+/**
+ * @brief Judge a line against the session too: before an ESC answered only
+ *        `info` goes; `set` needs a judged page holding that value, and `save`
+ *        a judged page.
+ * @param g    the guard
+ * @param line the bytes, the LF last
+ * @param n    their count
+ * @return EW_REF_NONE when it may go
+ */
+ew_refuse_t ew_guard_text(const ew_guard_t *g, const uint8_t *line, size_t n);
 
 #ifdef __cplusplus
 }

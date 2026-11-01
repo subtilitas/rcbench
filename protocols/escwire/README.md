@@ -1,10 +1,10 @@
 # escwire
 
 Reading and writing the settings of an ESC (electronic speed controller) over
-its signal wire, for ESCs with BLHeli_S, Bluejay and AM32 firmware. The core
-holds the transaction, the frames of the binary bootloader protocol (protocol
-A), the guard every outgoing frame passes, identification, the field maps and
-the session. A driver with 5 functions (`ew_driver_t`) connects the core to a
+its signal wire, for ESCs with BLHeli_S, Bluejay, AM32 and ESCape32 firmware.
+The core holds the transaction, the frames of the binary bootloader protocol
+(protocol A), the lines of the text interface, the guard every outgoing frame
+and line passes, identification, the field maps and the session. A driver with 5 functions (`ew_driver_t`) connects the core to a
 pin. The folder holds no pin driver yet, and nothing in this repository calls
 the module yet.
 
@@ -14,7 +14,7 @@ on the wire; its values are not measured on hardware.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `ew_wire.c`, `ew_a.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_session.c`, 6 headers under `include/` | C11 standard headers |
+| Core | `ew_wire.c`, `ew_a.c`, `ew_text.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_map_e32.c`, `ew_session.c`, `ew_session_text.c`, 7 headers under `include/`, `ew_session_int.h` | C11 standard headers |
 
 ## Constraints
 
@@ -27,11 +27,13 @@ on the wire; its values are not measured on hardware.
   tables are `const`.
 - Non-blocking: `ew_session_step()` reads the clock, polls the driver and
   returns. Call it every 1ms or more often. There is no delay function.
-- A session (`ew_session_t`) holds 3 pages of 256B, a send buffer of 264B and
-  a receive buffer of 259B. It is not moved while it runs: the guard and the
+- A session (`ew_session_t`) holds 3 pages of 256B, a send buffer of 264B, a
+  receive buffer of 259B, a text reply buffer of 1536B (`EW_RX_TEXT_MAX`) and
+  `music` of 256B. It is not moved while it runs: the guard and the
   transaction point into it.
-- No function makes a throttle signal. `ew_guard_frame()` passes the commands
-  of the list below and nothing else, and the caller holds the bench SAFE.
+- No function makes a throttle signal. `ew_guard_frame()` and `ew_guard_text()`
+  pass the commands of the lists below and nothing else, and the caller holds
+  the bench SAFE.
 
 ## Wire
 
@@ -67,6 +69,7 @@ follows says what they did. A read goes with a new address on every try.
 | BLHeli_S | EFM8 | 112 | layout 33 | layout 32 | 12 |
 | Bluejay | EFM8BB2, EFM8BB5x | 255 | layout 208 | layouts 33, 200, 201, 203, 204, 206, 207 | 15 |
 | AM32 | ARM parts | 192 | revisions 3 and 4 | revisions below 3, above 4 with no field names | 39 on revision 3, 40 on revision 4 |
+| ESCape32 | ARM parts | 92, 46 keys | revision 17 | other revisions | 46 |
 
 - `ew_id.h` holds identification from the first contact's answer and the first
   reads, with a reason for every read-only or refused result (`ew_why_t`).
@@ -84,6 +87,81 @@ follows says what they did. A read goes with a new address on every try.
 
 Melody and tune areas, tags, markers and every byte no field names go back as
 they were read. A stored value that is none of a field's own reads `raw 17`.
+
+## Text interface
+
+ESCape32 has no bootloader frames: a command line on the signal wire, 38400baud,
+8N1, half duplex, no echo, no checksum, LF line ends. A reply ends with a line
+`OK` or `ERROR`.
+
+| Line | Answer | Wait for the first byte, ends after | Tries |
+|---|---|---|---|
+| `info` | `ESCape32 rev<N>.<M> [<target>]`, live values | 200ms, 20ms with no byte | 3 |
+| `show` | 47 lines `key: value` | 200ms, 20ms with no byte | 3 |
+| `set <key> <value>` | `key: value`, the value stored | 200ms, 20ms with no byte | 3 |
+| `save` | `OK` or `ERROR` | 2000ms, 20ms with no byte | 1 |
+
+A reply with no last line, a low stop bit, or a byte other than a printable
+character or LF is a failed try. These times are a host's choice.
+
+**Entry.** 3 silent tries of the first contact are followed by 2500ms with the
+line driven high (`EW_SES_TEXT_HOLD_MS`), then `info`. The first contact is a
+framing error to this ESC and resets it; it opens its command line after 2s with
+the line high. Any byte on any of the 3 tries sends no line:
+`EW_SES_ERR_CONTACT`. Worst case
+without an answer: the hold, 300ms, 2500ms and 600ms.
+
+**The page.** `ew_map_e32` holds 46 numeric keys in the order of the wire's key
+numbers. The page in `orig`, `page` and a draft is 92B: each key a 16-bit integer,
+low byte first, at its place in that table (`ew_e32_get()`, `ew_e32_put()`), so
+`ew_session_read()` and `ew_session_write()` take it as they take any other page.
+A key a read did not bring holds `EW_KEY_NONE`. `music` is text in `s.music`, up
+to 255 characters; no write changes it. `s.info` holds the live values as the ESC
+spelled them.
+
+**The write.**
+
+1. The guard judges the draft: every changed key holds one of its values;
+   `freq_max` is not below `freq_min`, `duty_max` not below `duty_min`.
+2. `info`: the revision is still 17. `show`: the keys are still as read.
+   Otherwise `EW_SES_ERR_CHANGED`.
+3. `set` for each key that differs, in table order; the reply is the value
+   stored.
+4. `save`, then `show`, compared with the draft.
+
+A failed `set` is repeated 3 times, then a `show`, then the procedure from step 3,
+3 times at most. A `save` with no answer, or with any line before its `OK`, is
+not repeated on its own: a `show` follows, then the procedure. Only a `save`
+answered `OK` alone, followed by a `show` equal to the draft, ends a write with
+`EW_SES_OK`. `save_open` stands from the first `save` until then, and RAM equal
+to the draft or to the page read does not clear it. An `ERROR` to a `save` clears
+it only when no earlier `save` left it standing.
+
+| Result | Flash | RAM | What goes next |
+|---|---|---|---|
+| `EW_SES_OK` | the draft | the draft | anything |
+| `EW_SES_ERR_READ`, `EW_SES_ERR_CHANGED` | as read | as read | anything |
+| `EW_SES_ERR_CLIPPED` (`clipped`, `bad_off`): the ESC stored another value, no `save` follows | as read, unless `save_open` | some keys set | a read, then the draft or the page read; a leave unless `save_open` |
+| `EW_SES_ERR_ESC_ERROR` (`bad_off` for a `set`): a `set` or `save` answered `ERROR` | as read, unless `save_open` | some keys set | as above |
+| `EW_SES_ERR_WRITE_FAILED` | as read | as read, or not known with `dirty` | as above |
+| `EW_SES_ERR_TORN` | as read, unless `save_open` | any | a read, then the draft or the page read; no leave with `save_open` |
+| `EW_SES_ERR_LOST` | not known with `save_open`, else as read | not known | a read, or a power cycle; no leave with `save_open` |
+
+`show` reads RAM, so a read-back alone does not prove the flash. The `OK` of a
+`save` says the flash holds the values; nothing here reads the flash after a
+power cycle. `ew_session_writing()` is true from the `save` on, and `ew_session_stop()`
+before a `save` cuts at once, as the flash is untouched.
+
+A `show` that lacks a key, repeats one or holds another is a failed try. On a
+read's third try it is taken: the values it holds are shown, `id.writable` is
+false and `id.why` is `EW_WHY_SHOW_KEYS`, until a read that is whole. A revision
+other than 17, a revision above 255 or one that does not read as `rev<N>.<M>` is
+read-only (`EW_WHY_TEXT_REVISION`), and its `show` is taken on the first try.
+
+**Leaving.** The interface has no command to leave. `ew_session_leave()` sends
+nothing, parks the line at once and returns `EW_SES_OK`; the caller switches the
+supply off. It is refused while `save_open` stands. On an ESC on its own
+supply a person disconnects it.
 
 ## Use
 
@@ -159,10 +237,15 @@ link is lost. Power lost between an erase and a program leaves the page empty.
   length is not 192B.
 - On an EFM8 a page of a layout not written, or with a changed tag, marker or
   unused byte.
-- On the text interface, `ew_guard_line()` allows `info`, `show`, `get`, `set`
-  other than `music`, `save` and `help`, at most 1023 characters and a line
-  feed. `reset`, `throt`, `play`, `beep` and a line starting 0x00 0xFF are
-  refused.
+- On the text interface, `ew_guard_line()` allows `info`, `show`, `save` and
+  `help` alone, `get` with a key of the map or `music`, and `set` with a key of
+  the map and one of its values, one blank between words, at most 1023 characters
+  and a line feed. `reset`, `throt`, `play`, `beep`, `set music`, a line starting
+  0x00 0xFF, a control character, DEL and any other word are refused.
+- `ew_guard_text()` adds the session: before an ESC answered only `info`, on
+  protocol A no line, a `set` only of a value in the judged draft, a `save` only
+  with a judged draft. `ew_guard_frame()` refuses every frame on the text
+  interface.
 
 ## Driver interface
 
@@ -188,7 +271,7 @@ A driver that does not end a transaction 5ms after its longest time
 
 ## Not measured
 
-No frame of this code has been sent to an ESC, and every time and value in
+No frame or line of this code has been sent to an ESC, and every time and value in
 this file comes from the specification or is a host's choice:
 
 - the receive tolerance of an ESC and its transmit bit time;
@@ -202,11 +285,14 @@ this file comes from the specification or is a host's choice:
 - what an AM32 does after it answered 0xC2 to a cut data block: the specification
   does not state it. Such an answer behind an announcement lies under the host's
   own data and is not read, so the session sees no answer on that try. The tests
-  hold the session for an ESC that says nothing more and for one that listens on.
+  hold the session for an ESC that says nothing more and for one that listens on;
+- on the text interface: the reply latency, the time a `save` takes, the pull on
+  the signal pin, whether the startup music overlaps the entry, a parameter page
+  of another revision.
 
 ## Trademarks
 
-BLHeli_S, Bluejay, AM32 and SimonK are names of firmwares; they are used here
+BLHeli_S, Bluejay, AM32, ESCape32 and SimonK are names of firmwares; they are used here
 only to say which ESCs this module works with. The project is not affiliated
 with their authors. The full notice is in the repository's
 [README](../../README.md#legal-notice-and-disclaimer).
@@ -214,8 +300,9 @@ with their authors. The full notice is in the repository's
 ## Tests
 
 `test/host/test_ew_a.c`, `test_ew_id.c`, `test_ew_map.c`, `test_ew_guard.c`,
-`test_ew_session.c` and `test_ew_session_write.c` run the core; the last two
-against the simulated ESC of `test/host/ew_sim.h`. That simulation is written
+`test_ew_text.c`, `test_ew_session.c`, `test_ew_session_write.c` and
+`test_ew_session_text.c` run the core; the session suites against the simulated
+ESC of `test/host/ew_sim.h` and `ew_sim_text.h`. That simulation is written
 from the same specification and shares its misreadings until a real ESC answers.
 
 ```sh

@@ -10,6 +10,7 @@
 #include "ew_id.h"
 #include "ew_map.h"
 #include "ew_session.h"
+#include "ew_text.h"
 #include "ew_wire.h"
 
 /* A reference to every module's entry point: with C++ linkage on a
@@ -24,6 +25,8 @@ int main()
     (void)ew_map_table(EW_FW_S, &count);
     (void)ew_xfer_valid(nullptr);
     (void)ew_session_step(nullptr);
+    uint8_t line[8] = {};
+    (void)ew_text_word(line, sizeof(line), "info");
     uint8_t answer[EW_A_ANSWER_LEN] = {};
     ew_contact_t contact;
     ew_id_contact(answer, &contact);
