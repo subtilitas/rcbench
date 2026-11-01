@@ -226,7 +226,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 389 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 391 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
@@ -355,7 +355,10 @@ identification, the field maps at both ends of every value, and one case per
 refusal of the guard. `test_ew_session` and `test_ew_session_write` run the
 session against a simulated ESC (`test/host/ew_sim.h`): entry, reads, writes of
 each firmware, a failure, an abort and a power loss at every transaction, the
-restore of an erased AM32, across the clock's wrap. No ESC is connected.
+restore of an erased AM32, across the clock's wrap. `test_ew_file` runs the
+settings file: the round trip of each firmware, a file cut at every byte and
+damaged in every byte, each refusal of a file. `test_ew_file_load` holds a file
+against the same simulated ESC: a load and a restore, each refusal. No ESC is connected.
 ctest also builds and runs `escwire_headers_cxx`.
 `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both
 wire families, the transactions and every refusal of the reply decoders,

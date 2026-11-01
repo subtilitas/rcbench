@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "ew_a.h"
+#include "ew_file.h"
 #include "ew_guard.h"
 #include "ew_id.h"
 #include "ew_map.h"
@@ -21,6 +22,7 @@ int main()
 
     ew_guard_init(&guard);
     (void)ew_crc16(nullptr, 0);
+    (void)ew_file_crc32(nullptr, 0);
     (void)ew_map_table(EW_FW_S, &count);
     (void)ew_xfer_valid(nullptr);
     (void)ew_session_step(nullptr);

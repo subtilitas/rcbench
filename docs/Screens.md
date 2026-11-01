@@ -2902,8 +2902,8 @@ right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder the bench keeps: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` and the folders on the way to them, `BENCH` and `USER` among them. No RENAME or MOVE, which would take what it holds away from where the bench reads it. NEW makes one and DELETE takes one that is empty: every writer of the bench makes its folder again before it writes, and a missing folder reads as on a new card |
-| LOCKED | the servo programmers' records, `BENCH/KST/CONF/KST.TXT` and `BENCH/HITEC/CONF/HITEC.TXT`, and their `KST.NEW` and `HITEC.NEW` while they are written. INFO only |
+| FIXED | a folder the bench keeps: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` and the folders on the way to them, `BENCH` and `USER` among them. No RENAME or MOVE, which would take what it holds away from where the bench reads it. NEW makes one and DELETE takes one that is empty: every writer of the bench makes its folder again before it writes, and a missing folder reads as on a new card |
+| LOCKED | the programmers' records, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` and `BENCH/ESCW/CONF/ESCW.TXT`, and their `KST.NEW`, `HITEC.NEW` and `ESCW.NEW` while they are written. INFO only |
 | WRITING | a file the logger has open. INFO only |
 
 The fault log takes COPY and DELETE only while the IOmcu link is up: with
@@ -4864,7 +4864,7 @@ in force unchanged, and the line right of the title says why:
 | more than 2 folders | `A/B/C` (`A/B` is taken) | `2 folders deep at most` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a device name of Windows: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Folder of the bench's own files` |
+| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Folder of the bench's own files` |
 
 Every folder name the panel takes is a FAT (File Allocation Table) 8.3 short
 name, the same on every computer. The longest folder is 17 characters,

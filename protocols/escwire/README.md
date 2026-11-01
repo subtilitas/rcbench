@@ -3,8 +3,8 @@
 Reading and writing the settings of an ESC (electronic speed controller) over
 its signal wire, for ESCs with BLHeli_S, Bluejay and AM32 firmware. The core
 holds the transaction, the frames of the binary bootloader protocol (protocol
-A), the guard every outgoing frame passes, identification, the field maps and
-the session. A driver with 5 functions (`ew_driver_t`) connects the core to a
+A), the guard every outgoing frame passes, identification, the field maps, the
+session and the settings file. A driver with 5 functions (`ew_driver_t`) connects the core to a
 pin. The folder holds no pin driver yet, and nothing in this repository calls
 the module yet.
 
@@ -14,7 +14,7 @@ on the wire; its values are not measured on hardware.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `ew_wire.c`, `ew_a.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_session.c`, 6 headers under `include/` | C11 standard headers |
+| Core | `ew_wire.c`, `ew_a.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_session.c`, `ew_file.c`, 7 headers under `include/` | C11 standard headers |
 
 ## Constraints
 
@@ -157,6 +157,89 @@ link is lost. Power lost between an erase and a program leaves the page empty.
   feed. `reset`, `throt`, `play`, `beep` and a line starting 0x00 0xFF are
   refused.
 
+## The settings file
+
+`ew_file.h` writes a page as text, reads a text back and holds it against an
+ESC. It has no file access and no heap: the caller holds a buffer of
+`EW_FILE_MAX` (5280B), and `ew_file_t` takes 330B.
+
+```text
+ESC settings backup, format 1
+Firmware: AM32
+Layout: 4
+Processor: ARM
+Pin code: 14
+Flash code: 35
+Bootloader protocol: 2
+Bootloader version: 2
+Name: BOARD_F421
+START MARKER = 1 [not loaded]
+PWM FREQUENCY = 24kHz
+bytes 192
+00: 01 04 02 02 15 01 ...
+checksum 1A2B3C4D
+```
+
+An EFM8's file has `Signature: E8B2` in place of the 5 lines from the pin code
+to the name. A page of an ESC no firmware was found for goes out as
+`Firmware: none`, `Layout: 0`, with its bytes and no field lines. A backup holds
+the page as read, whole, melody and tune included. Lines are ASCII (American
+Standard Code for Information Interchange), at most 64 characters. The checksum
+is CRC-32 (IEEE 802.3) over the lines before it, a line end counted as one LF
+(line feed), so a transfer that turns every LF into CR LF (carriage return, line
+feed) keeps it valid.
+
+The last line that is not blank says what the text is:
+
+| Last line | Kind | Read as |
+|---|---|---|
+| `checksum xxxxxxxx` | `EW_FILE_VERIFIED` | the bytes are the page; every line is as written, or the file is refused |
+| `edited` | `EW_FILE_EDITED` | a person's input: `<name> = <value>` lines, `#` comments; a field with no line keeps the ESC's value; the bytes give no value |
+| anything else | refused | `EW_FILE_ERR_TRUNCATED` |
+
+To change a file by hand, change its field lines and put `edited` in place of
+the checksum line. A changed line under a kept checksum line is
+`EW_FILE_ERR_CHECKSUM`. A file cut at any byte has neither last line and loads
+nothing. A value is the text the file shows, its unit optional, or `raw <n>` for
+the byte. Where several bytes read as one text, the lowest is taken, and a line
+that reads as the ESC's value changes nothing.
+
+`ew_file_load()` builds the draft for `ew_session_write()`.
+
+| Result | Condition |
+|---|---|
+| `EW_LOAD_OK` | `target` is the ESC's page with the file's editable fields; `changed`, `named` of `fields`, and `skipped`, the bytes the file holds otherwise and the load keeps |
+| `EW_LOAD_FIRMWARE` | a file of another firmware |
+| `EW_LOAD_LAYOUT` | a file of another layout or revision |
+| `EW_LOAD_ERASED` | AM32 settings erased |
+| `EW_LOAD_READ_ONLY` | a page that is not written |
+| `EW_LOAD_VALUE` | a field would take no value of its own: `bad_off`; nothing is loaded |
+
+`ew_file_restore_check()` judges a file for `ew_session_restore()`, which is the
+one write to an AM32 whose settings read erased:
+
+| Check | Result on failure |
+|---|---|
+| kind verified: the CRC-32 holds | `EW_RESTORE_NOT_VERIFIED` |
+| file and ESC are AM32 | `EW_RESTORE_FIRMWARE` |
+| the ESC's 192B all read 0xFF | `EW_RESTORE_NOT_ERASED` |
+| no build for CAN boards | `EW_RESTORE_CAN_BUILD` |
+| the file's byte 0 is 0x01, its revision 3 or 4 | `EW_RESTORE_BAD_PAGE` |
+| same pin code | `EW_RESTORE_PIN_CODE` |
+| same flash code | `EW_RESTORE_FLASH_CODE` |
+| same bootloader protocol | `EW_RESTORE_PROTOCOL` |
+| same name, up to 29 characters | `EW_RESTORE_NAME` |
+
+The bootloader version, byte 2 of a page, reads 0xFF on an erased ESC, so the
+comparison uses the bootloader protocol, byte 7 of the first contact. The file
+states the version as `Bootloader version`, and the bootloader overwrites byte 2
+on every write.
+
+On the card a file goes through `shared/logfile/servo_store.h` with the stem
+`EW_FILE_STEM`: `BENCH/ESCW/CONF/ESCW001.TXT` to `ESCW999.TXT`, a base name of
+at most 32 characters, `ESCW.TXT` being the record of a write. ESCape32's
+parameters are not in this format yet: the file names the 3 firmwares above.
+
 ## Driver interface
 
 ```c
@@ -204,8 +287,8 @@ with their authors. The full notice is in the repository's
 ## Tests
 
 `test/host/test_ew_a.c`, `test_ew_id.c`, `test_ew_map.c`, `test_ew_guard.c`,
-`test_ew_session.c` and `test_ew_session_write.c` run the core; the last two
-against the simulated ESC of `test/host/ew_sim.h`. That simulation is written
+`test_ew_session.c`, `test_ew_session_write.c`, `test_ew_file.c` and
+`test_ew_file_load.c` run the core; the last four against the simulated ESC of `test/host/ew_sim.h`. That simulation is written
 from the same specification and shares its misreadings until a real ESC answers.
 
 ```sh

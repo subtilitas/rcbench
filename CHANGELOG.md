@@ -15,6 +15,12 @@ history is in git.
   and a non-blocking session with read-back. It has no pin driver, link page or
   screen. Written from a behavioural specification, without access to the
   firmware sources.
+- `protocols/escwire/ew_file.c`: an ESC's settings as a text file of at most
+  5280B, with the page as read, whole, and a CRC-32 (32-bit cyclic redundancy
+  check). A load takes editable fields only, into the same firmware and layout.
+  A verified file of an AM32 restores an ESC whose 192B read 0xFF when its pin
+  code, flash code, bootloader protocol and name are the ESC's. Files go to
+  `BENCH/ESCW/CONF`, `ESCW001.TXT` to `ESCW999.TXT`. No screen uses it.
 - Screenshot: a 1000ms hold on the empty part of the band, on any screen with
   the band, takes the frame at once, in any bench state. One picture is held in
   1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes
