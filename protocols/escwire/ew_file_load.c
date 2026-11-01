@@ -110,7 +110,7 @@ ew_load_t ew_file_load(const ew_file_t *f, const ew_ident_t *id,
             out->skipped++;
         }
     }
-    if (f->fw == (uint8_t)EW_FW_E32) {
+    if (f->fw == (uint8_t)EW_FW_E32 && id->len == EW_MAP_LEN_E32) {
         load_keys(f, esc, out);
     }
     uint16_t off = 0u;

@@ -248,6 +248,11 @@ TEST_CASE(an_edited_file)
     CHECK_EQ(ew_e32_get(g_r.page, slot_of("timing")), 20);
     CHECK_EQ(ew_e32_get(g_r.page, slot_of("telem_volt")), -5);
     CHECK_STR_EQ(g_r.music, "");
+    /* A trailing note, as on any other firmware's line. */
+    CHECK_EQ(edited("timing: 21 [note]\narm = 0 [not loaded]\n"), EW_FILE_OK);
+    CHECK_EQ(ew_e32_get(g_r.page, slot_of("timing")), 21);
+    CHECK_EQ(ew_e32_get(g_r.page, slot_of("arm")), 0);
+    CHECK_EQ(edited("timing: note]\n"), EW_FILE_ERR_VALUE);
     CHECK_EQ(edited("arm: 1\narm = 0\n"), EW_FILE_ERR_DUPLICATE);
     CHECK_EQ(edited("nokey: 1\n"), EW_FILE_ERR_FIELD);
     CHECK_EQ(edited("nokey = 1\n"), EW_FILE_ERR_FIELD);
@@ -335,6 +340,19 @@ TEST_CASE(a_load_refuses)
     CHECK_EQ(edited("freq_min: 48\nfreq_max: 47\n"), EW_FILE_OK);
     CHECK_EQ(ew_file_load(&g_r, &s.id, s.orig, &g_load), EW_LOAD_VALUE);
     CHECK_EQ(g_load.bad_off, (uint16_t)(slot_of("freq_max") * 2u));
+    /* A length other than ESCape32's reads no key, past its end included. */
+    {
+        ew_ident_t id = s.id;
+        uint8_t esc91[91];
+
+        memcpy(esc91, s.orig, sizeof(esc91));
+        id.len = 91u;
+        CHECK_EQ(edited("led: 1\n"), EW_FILE_OK);
+        CHECK_EQ(ew_file_load(&g_r, &id, esc91, &g_load), EW_LOAD_VALUE);
+        CHECK_EQ(g_load.changed, 0u);
+        CHECK_EQ(g_load.named, 0u);
+        CHECK(memcmp(g_load.target, esc91, sizeof(esc91)) == 0);
+    }
     /* Another revision, either way round; a revision shown and not written. */
     read_e32("ESCape32 rev16.1 [BOARD_F051]");
     CHECK(!s.id.writable);

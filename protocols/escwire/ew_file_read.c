@@ -792,15 +792,15 @@ static ew_file_err_t edit_field(edit_t *e, const char *k, size_t kn,
     if (!e->has_fw || !e->has_layout) {
         return EW_FILE_ERR_NO_TARGET;
     }
-    if (f->fw == (uint8_t)EW_FW_E32) {
-        return edit_key(e, k, kn, s, n);
-    }
     if (n > 0u && s[n - 1u] == ']') {
         while (n > 0u && s[n - 1u] != '[') {
             n--;
         }
         n = n > 0u ? n - 1u : 0u;
         trim(&s, &n);
+    }
+    if (f->fw == (uint8_t)EW_FW_E32) {
+        return edit_key(e, k, kn, s, n);
     }
     for (size_t i = 0;; ++i) {
         const ew_field_t *fd = ew_map_nth(f->fw, f->layout, i);
