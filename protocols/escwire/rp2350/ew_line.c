@@ -258,6 +258,8 @@ void ew_line_close(ew_pin_line_t *line)
     gpio_set_slew_rate(line->pin, (enum gpio_slew_rate)line->was_slew);
 
     pio_sm_set_enabled(pio, line->sm, false);
+    /* No direction left behind for the block's next user of this pin. */
+    pad_release(line);
     dma_channel_abort((uint)line->dma_tx);
     dma_channel_abort((uint)line->dma_rx);
     dma_channel_unclaim((uint)line->dma_tx);
@@ -402,6 +404,9 @@ void ew_line_abort(void *ctx)
     if (!ew_line_is_open(l)) {
         return;
     }
+    /* Stopped first: early in a stream the machine is about to drive the pad,
+     * and would do so over the pull-down. */
+    pio_sm_set_enabled(line_pio(l), l->sm, false);
     pad_park(l);
     line_restart(l);
     l->busy = 0u;

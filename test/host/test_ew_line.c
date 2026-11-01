@@ -41,6 +41,10 @@ static struct {
     unsigned pad_writes;
     bool latch_at_drive; /* the latch when the pad last went driven */
     unsigned rises;      /* driven pad released onto its pull-up */
+    bool about_to_drive; /* the machine's next instruction: set pindirs, 1 */
+    unsigned redrives;   /* it ran with the pad released */
+    unsigned restarts_running; /* a restart of a machine not stopped */
+    unsigned driven_at_mux;    /* the pad given to a machine with direction 1 */
     unsigned dips;       /* undriven pad put on its pull-down */
     /* the machine */
     pio_hw_t hw;
@@ -76,12 +80,25 @@ static struct {
 
 const pio_program_t ew_line_program = { -1 };
 
+/* The machine runs between any two writes: one about to drive does. */
+static void machine_runs(void)
+{
+    if (g.enabled && g.about_to_drive && !g.out) {
+        g.out = true;
+        g.redrives++;
+    }
+}
+
 uint32_t clock_get_hz(enum clock_index c) { (void)c; return g.sys_hz; }
 uint32_t time_us_32(void) { return g.now_us; }
 void tight_loop_contents(void) { g.rx_empty = true; }
 
 bool dma_channel_is_busy(uint ch) { return g.dma_busy[ch]; }
-void dma_channel_abort(uint ch) { g.dma_busy[ch] = false; }
+void dma_channel_abort(uint ch)
+{
+    machine_runs();
+    g.dma_busy[ch] = false;
+}
 void dma_channel_unclaim(uint ch) { (void)ch; g.claimed--; g.free_channels++; }
 int dma_claim_unused_channel(bool required)
 {
@@ -134,10 +151,11 @@ void dma_channel_configure(uint ch, const dma_channel_config *c,
 void gpio_init(uint pin)
 {
     (void)pin;
-    if (g.out && g.pull_up) {
+    machine_runs();
+    if (g.pio_func && g.out && g.pull_up) {
         g.rises++;
     }
-    g.out = false;
+    /* The machine's direction stays: only the mux moves. */
     g.pio_func = false;
     g.input = true;
 }
@@ -145,6 +163,7 @@ void gpio_set_dir(uint pin, bool out) { (void)pin; (void)out; }
 void gpio_set_pulls(uint pin, bool up, bool down)
 {
     (void)pin;
+    machine_runs();
     if (down && !g.pull_down && !g.out) {
         g.dips++;
     }
@@ -155,6 +174,7 @@ void gpio_set_pulls(uint pin, bool up, bool down)
 void gpio_set_input_enabled(uint pin, bool on)
 {
     (void)pin;
+    machine_runs();
     g.input = on;
     g.pad_writes++;
 }
@@ -186,8 +206,10 @@ void pio_sm_exec(PIO pio, uint sm, uint instr)
 {
     (void)pio;
     (void)sm;
+    machine_runs();
     if ((instr & 0xF000u) == 0x2000u) {
         g.pc = instr & 0xFFFu;
+        g.about_to_drive = false;
     } else if (((instr >> 4) & 0xFu) == (uint)pio_pins) {
         g.latch = (instr & 1u) != 0u;
     } else {
@@ -211,10 +233,20 @@ void pio_sm_clear_fifos(PIO pio, uint sm)
 {
     (void)pio;
     (void)sm;
+    machine_runs();
     g.rx_empty = true;
     g.tx_empty = true;
 }
-void pio_sm_restart(PIO pio, uint sm) { (void)pio; (void)sm; g.restarts++; }
+void pio_sm_restart(PIO pio, uint sm)
+{
+    (void)pio;
+    (void)sm;
+    machine_runs();
+    if (g.enabled) {
+        g.restarts_running++;
+    }
+    g.restarts++;
+}
 void pio_sm_init(PIO pio, uint sm, uint pc, const pio_sm_config *c)
 {
     (void)pio;
@@ -241,6 +273,7 @@ bool pio_sm_is_rx_fifo_empty(PIO pio, uint sm)
 {
     (void)pio;
     (void)sm;
+    machine_runs();
     if (!g.settle_seen) {
         g.settle_seen = true;
         g.out_at_settle = g.out;
@@ -259,6 +292,9 @@ void pio_gpio_init(PIO pio, uint pin)
 {
     (void)pio;
     (void)pin;
+    if (g.out) {
+        g.driven_at_mux++;
+    }
     g.pio_func = true;
     g.input = true;
 }
@@ -741,6 +777,72 @@ TEST_CASE(no_error_path_lets_a_driven_pad_rise)
     check_parked();
 }
 
+TEST_CASE(a_machine_about_to_drive_does_not_get_to)
+{
+    ew_capture_t c;
+
+    /* An abort early in the stream: the machine on `set pindirs, 1`, with the
+     * pad not yet its own to release.  Stopped first, or it drives over the
+     * pull-down. */
+    running(4u);
+    g.out = false;
+    g.about_to_drive = true;
+    ew_line_abort(&line);
+    CHECK_EQ(g.redrives, 0u);
+    check_parked();
+
+    /* line(PARK) over a running transaction, the same. */
+    running(4u);
+    g.out = false;
+    g.about_to_drive = true;
+    ew_line_level(&line, EW_LINE_PARK);
+    CHECK_EQ(g.redrives, 0u);
+    check_parked();
+
+    /* And a cut. */
+    running(4u);
+    g.out = false;
+    g.about_to_drive = true;
+    g.now_us = line.t_start_us + line.run.span_us + EW_PIO_GRACE_US + 1u;
+    CHECK(ew_line_poll(&line, &c));
+    CHECK_EQ(g.redrives, 0u);
+    check_parked();
+}
+
+TEST_CASE(a_restart_stops_the_machine_and_releases)
+{
+    ew_capture_t c;
+
+    /* A transaction at its count: the machine runs on, waiting on the wire.
+     * Its direction at 1 stands for anything a restart must not leave. */
+    running(2u);
+    g.dma_hw[1].transfer_count = 0u;
+    line.rx[0] = line.rx[1] = (uint16_t)(0x8000u | (0x55u << 7));
+    CHECK(ew_line_poll(&line, &c));
+    CHECK_EQ(g.restarts_running, 0u);
+    CHECK(!g.out);
+    CHECK(g.enabled);
+    CHECK_EQ(g.pc, OFFSET);
+}
+
+TEST_CASE(an_open_clears_a_stale_direction_before_the_mux)
+{
+    /* What a machine of this block left behind. */
+    fresh();
+    g.out = true;
+    CHECK_EQ(ew_line_open(&line, PIN), EW_LINE_OK);
+    CHECK_EQ(g.driven_at_mux, 0u);
+    check_parked();
+
+    /* A close in the middle of a frame leaves none. */
+    running(4u);
+    ew_line_close(&line);
+    CHECK(!g.out);
+    g.driven_at_mux = 0u;
+    CHECK_EQ(ew_line_open(&line, PIN), EW_LINE_OK);
+    CHECK_EQ(g.driven_at_mux, 0u);
+}
+
 TEST_CASE(a_start_from_the_rest_does_not_dip)
 {
     ew_xfer_t x = xfer(1u);
@@ -831,6 +933,9 @@ int main(void)
     RUN(a_capture_with_lost_bytes_parks);
     RUN(an_abort_parks_at_once_with_no_capture);
     RUN(no_error_path_lets_a_driven_pad_rise);
+    RUN(a_machine_about_to_drive_does_not_get_to);
+    RUN(a_restart_stops_the_machine_and_releases);
+    RUN(an_open_clears_a_stale_direction_before_the_mux);
     RUN(a_start_from_the_rest_does_not_dip);
     RUN(a_level_over_a_running_transaction_cuts_it);
     RUN(the_rest_into_a_pull_down_only_with_no_receive);
