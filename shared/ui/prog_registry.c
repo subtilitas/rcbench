@@ -14,6 +14,7 @@
 
 #include "esc_profile.h"
 #include "esc_stick_panel.h"
+#include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
@@ -81,7 +82,8 @@ uint8_t prog_reg_port(const prog_reg_row_t *r)
 
 bool prog_reg_servo_holds(void)
 {
-    return kst_panel_holds_port() || hitec_panel_holds_port();
+    return kst_panel_holds_port() || hitec_panel_holds_port()
+           || esc_wire_panel_holds_port();
 }
 
 const prog_reg_row_t *prog_registry(size_t *count)

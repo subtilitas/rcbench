@@ -184,6 +184,7 @@ void panel_frame_loop(void)
         /* And the servo programmer on SERVO. */
         kst_ui_service();
         hitec_ui_service();
+        esc_wire_ui_service();
 
         /* The slider follows the bench: a disarm returns the command to
          * zero, so the control the operator picks up next is at zero too. */

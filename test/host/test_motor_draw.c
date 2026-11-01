@@ -22,6 +22,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "esc_wire_panel.h"
 #include "motor_rig.h"
 
 TEST_CASE(the_tabs_switch_panes_and_both_render)
@@ -480,6 +481,36 @@ TEST_CASE(a_cancel_drops_an_arm_the_hold_already_posted)
 
 /* And the other way: a disarm waiting to be collected survives a cancel,
  * because losing it leaves an armed bench driving. */
+/* An ARM posted as a programmer took a pin is refused: no answer comes, and the
+ * ask does not stand after the hold.  The TARGET row says it: locked while one
+ * is asked. */
+TEST_CASE(a_hold_drops_an_arm_already_posted)
+{
+    static esc_prog_feed_t f;
+    static esc_prog_gate_t gate;
+
+    fresh();
+    esc_prog_gate_init(&gate);
+    esc_wire_panel_gate(&gate);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    tick_for(2);
+    CHECK(motor_screen_target_locked());
+    memset(&f, 0, sizeof(f));
+    f.rd.known = true;
+    f.rd.held = true;
+    esc_wire_panel_feed(&f);
+    tick_for(2);
+    f.rd.held = false;
+    esc_wire_panel_feed(&f);
+    tick_for(2);
+    CHECK(!motor_screen_target_locked());
+    /* Nothing is posted by it. */
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
 TEST_CASE(a_cancel_keeps_a_disarm_already_posted)
 {
     fresh();
@@ -506,6 +537,7 @@ int main(void)
     RUN(a_cancelled_disarm_still_disarms);
     RUN(a_cancelled_arm_asks_for_nothing);
     RUN(a_cancel_drops_an_arm_the_hold_already_posted);
+    RUN(a_hold_drops_an_arm_already_posted);
     RUN(a_cancel_keeps_a_disarm_already_posted);
     return test_summary("motor_draw");
 }

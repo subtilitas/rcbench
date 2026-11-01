@@ -41,6 +41,7 @@ void supply_link_lost(supply_link_t *s)
     s->wired     = false;
     s->wire_wait = false;
     s->refused   = false;
+    s->wire_busy = false;
     s->commanded = false;
     s->pending   = SUPPLY_LINK_W_NONE;
     s->read_any  = false;
@@ -157,6 +158,11 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
     }
     s->pending = SUPPLY_LINK_W_NONE;
 
+    /* Who holds the page first: a read shows a port's hold, and a panel that
+     * has just started writes no OFF of its own over it.  A cut goes anyway. */
+    if (!s->read_any && !s->off_owed) {
+        return SUPPLY_LINK_W_NONE;
+    }
     /* An OFF first, alone, whatever else is owed -- and while what the
      * page holds is not known, whatever is asked. */
     if (!s->commanded || (!s->on && s->page_on) || s->off_owed) {
@@ -182,7 +188,8 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
          * it, or waits on the module for it.  Nothing goes before. */
         return SUPPLY_LINK_W_NONE;
     }
-    if (!s->refused && (!s->wired || !same_wiring(&s->page, &w))) {
+    if (!s->refused && !s->wire_busy
+        && (!s->wired || !same_wiring(&s->page, &w))) {
         const bool page_off = s->commanded && !s->page_on && s->read_any
                               && s->regs[LINK_SP_OUTPUT] == 0u
                               && (s->regs[LINK_SP_FLAGS] & LINK_SP_LIVE) == 0u;
@@ -215,7 +222,7 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
      * the settings name other pins, and that may be another supply. */
     if (s->on && (s->refused || !s->wired || !s->page.en)) {
         /* Not an ON left to the port that holds the page: the port's. */
-        if (!s->kept && (s->refused || (s->wired && !s->page.en))) {
+        if (!s->kept && !s->port_held && (s->refused || (s->wired && !s->page.en))) {
             s->on = false;
             s->events |= SUPPLY_LINK_EV_ON_REFUSED;
         }
@@ -272,6 +279,10 @@ void supply_link_written(supply_link_t *s, int result)
             s->page.tx   = (int8_t)s->out[LINK_SP_TX_PIN];
             s->page.rx   = (int8_t)s->out[LINK_SP_RX_PIN];
             s->page.baud = (uint8_t)s->out[LINK_SP_BAUD];
+        } else if (result == LINK_NACK_BUSY) {
+            /* A port's hold keeps the wiring for now: no word on these
+             * pins.  Written again when a read shows the hold over. */
+            s->wire_busy = true;
         } else {
             s->refused = true;
             s->events |= SUPPLY_LINK_EV_WIRING_REFUSED;
@@ -389,6 +400,19 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
     const bool judge = s->judge;
     s->port_held = (f & LINK_SP_PORT) != 0u;
     s->kept = s->kept && s->port_held;
+    s->wire_busy = s->wire_busy && s->port_held;
+    /* A port's hold found by a panel that commanded nothing yet: what the page
+     * holds is the port's, and nothing is owed against it. */
+    if (s->port_held && !s->commanded && !s->off_owed) {
+        s->commanded = true;
+        s->page_on = regs[LINK_SP_OUTPUT] != 0u;
+        s->page_mv = regs[LINK_SP_SET_MV];
+        s->page_ma = regs[LINK_SP_SET_MA];
+        s->on = s->page_on;
+        s->mv = s->page_mv;
+        s->ma = s->page_ma;
+        s->adopted = true;
+    }
     s->judge = false;
     if (judge && !port) {
         /* Refused, and by no port: the ON is over, as ever. */
@@ -465,8 +489,11 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     const bool fresh = s->read_any
                        && (uint32_t)(now_ms - s->read_ms) < SUPPLY_LINK_STALE_MS;
     const uint16_t f = s->regs[LINK_SP_FLAGS];
-    st->online = fresh && s->wired && s->page.en
-                 && (f & LINK_SP_ONLINE) != 0u;
+    /* Under a port's hold that keeps the wiring, the page's own is in force. */
+    const bool wired = (s->wired && s->page.en)
+                       || (s->wire_busy && s->regs[LINK_SP_ENABLE] != 0u);
+
+    st->online = fresh && wired && (f & LINK_SP_ONLINE) != 0u;
     if (!st->online) {
         st->mode = SUPPLY_MODE_OFF;
         st->ok   = 0u;

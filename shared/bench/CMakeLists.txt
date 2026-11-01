@@ -25,6 +25,9 @@ set(SRCS
     servo_source.c
     tone_link.c
     endpoints_link.c
+    esc_link.c
+    esc_prog.c
+    esc_prog_file.c
     hitec_rx_link.c
     hitec_link.c
     hitec_prog.c
@@ -47,12 +50,12 @@ set(SRCS
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} kst_card.c hitec_card_run.c
                            INCLUDE_DIRS include
-                           REQUIRES link kst hitec dshot logfile)
+                           REQUIRES link kst hitec escwire dshot logfile)
 else()
     add_library(rcbench_bench STATIC ${SRCS})
     target_include_directories(rcbench_bench PUBLIC include)
     target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst
-                          rcbench_hitec rcbench_dshot m)
+                          rcbench_hitec rcbench_escwire rcbench_dshot m)
     if(TARGET rcbench_logfile)
         target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c)
         target_link_libraries(rcbench_bench PUBLIC rcbench_logfile)

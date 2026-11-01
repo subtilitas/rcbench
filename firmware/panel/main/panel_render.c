@@ -14,6 +14,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "knob.h"
 #include "knob_task.h"
@@ -650,4 +651,21 @@ void outputs_apply(const outbind_t *b)
     }
     panel_cmd_t pc = { .kind = PANEL_CMD_OUTPUTS, .bind = *b };
     send_cmd(&pc);
+}
+
+void esc_wire_ui_service(void)
+{
+    static esc_prog_feed_t feed;
+    static esc_prog_cmd_t cmd;
+
+    snap_lock();
+    feed = s_snap.esc;
+    snap_unlock();
+    esc_wire_panel_feed(&feed);
+    while (uxQueueSpacesAvailable(s_esc_q) > 0u
+           && esc_wire_panel_next_cmd(&cmd)) {
+        if (xQueueSend(s_esc_q, &cmd, 0) != pdTRUE) {
+            break;
+        }
+    }
 }

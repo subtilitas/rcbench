@@ -8,6 +8,8 @@
  * written: the wiring (ENABLE to BAUD, from SUPPLY's PD MINI tab) and the
  * command (OUTPUT to SET_MA, from the SUPPLY screen).  The order is fixed:
  *
+ *   0. a read, before anything but a cut: it shows whether a port holds the
+ *      page, and then nothing of the panel's own goes over it;
  *   1. an OFF, alone in OUTPUT, before anything else owed, and first of
  *      all while what the page holds is not known;
  *   2. the wiring, only with OUTPUT 0 on the page and FLAGS bit 6 clear,
@@ -38,6 +40,13 @@
  * read: with the bit set the page's values are adopted as above and the
  * output stays on, without it the ON is refused as ever.  Nothing is
  * written between the refusal and that read except an OFF asked for.
+ *
+ * A panel that has just started and finds a port's hold on its first read
+ * adopts the page: no OFF of its own goes over it, since the page would refuse
+ * the port's next ON until the port lets go.  An ON the port holds is not
+ * refused here for a refused wiring until the port lets go.  A wiring answered
+ * LINK_NACK_BUSY, under an ESC_WIRE hold, is no refusal: the page's wiring stays
+ * in force, and it is written again once a read shows the hold over.
  *
  * Pure C, no link of its own: the caller makes each exchange and reports
  * how it went.  Control task only.
@@ -134,6 +143,8 @@ typedef struct {
     bool     wire_wait;      /* page.wiring acknowledged, not yet read held */
     supply_wiring_t page;
     bool     refused;        /* `want` was refused; not written again   */
+    bool     wire_busy;      /**< a port's hold answered BUSY: written again
+                                  once a read shows the hold over        */
     bool     commanded;      /* the page holds page_on, page_mv, page_ma */
     bool     page_on;
     uint16_t page_mv, page_ma;

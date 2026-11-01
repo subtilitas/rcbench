@@ -32,6 +32,8 @@
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
 #include "files_screen.h"
+#include "esc_link.h"
+#include "esc_prog.h"
 #include "hitec_link.h"
 #include "hitec_prog.h"
 #include "hitec_rx_link.h"
@@ -196,6 +198,8 @@ typedef struct {
     /** @brief What the Hitec programmer's model is fed; see
      *         hitec_publish(). */
     hitec_prog_feed_t hitec;
+    /** @brief What the ESC programmer's model is fed; see esc_publish(). */
+    esc_prog_feed_t esc;
     /* The IOmcu's update; see cu_service(). */
     cu_snap_t     cu;
 } panel_snap_t;
@@ -890,6 +894,24 @@ int hitec_taken_port(void);
  *  @param f receives the feed */
 void hitec_publish(hitec_prog_feed_t *f);
 
+/** @brief The ESC_WIRE page's module (4.34); control task only. */
+extern esc_link_t      s_esc_link;
+/** @brief The gate the ESC programmer's commands are claimed at. */
+extern esc_prog_gate_t s_esc_gate;
+/** @brief The ESC programmer's commands, app_main -> control task. */
+extern QueueHandle_t   s_esc_q;
+/** @brief The ESC programmer's commands, and a stop; control task. */
+void esc_commands(void);
+/** @brief One pass of the ESC_WIRE page's module; control task, every pass.
+ *  @param link_up whether the IOmcu answers */
+void esc_pass(bool link_up);
+/** @brief Whether the ESC_WIRE page holds a pin.
+ *  @return true while it does */
+bool esc_taken(void);
+/** @brief What the ESC programmer's model is fed; under the snapshot's lock.
+ *  @param f receives the feed */
+void esc_publish(esc_prog_feed_t *f);
+
 /* Where the tester's commands go, into s_drive for the SERVO screen: from
  * each pass of prog_link_service() and from the link-lost edge. */
 static inline void prog_drive_publish(void)
@@ -1237,6 +1259,8 @@ void drain_commands(bool link_up, bench_state_t *bench);
 void kst_ui_service(void);
 /** @brief The Hitec programmer's model, once a frame on app_main. */
 void hitec_ui_service(void);
+/** @brief The ESC programmer in the render loop: fed, and its commands queued. */
+void esc_wire_ui_service(void);
 extern unsigned s_tq_lost;
 bool supply_live_or_coming(void);
 /** @brief supply_live_or_coming(), or the programming ports' own supply

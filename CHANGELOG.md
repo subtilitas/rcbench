@@ -8,6 +8,12 @@ history is in git.
 
 ### Added
 
+- Panel: the half of the `ESC_WIRE` and `ESC_DATA` pages (`esc_link`, `esc_prog`,
+  `esc_prog_file`), with no screen yet. A panel restart closes what the page holds at
+  the first read, and again every 1000ms; a pin that does not come back is an error
+  and an alert that names the slot or port. The STOP key is the page's STOP. `FAULT`
+  and `NOT_BACK` count as errors, so all outputs go off. A held pin counts for ARM,
+  the motor's TARGET row, ESC STICK and the limit run.
 - Link 4.34: the pages `ESC_WIRE` (0x3A) and `ESC_DATA` (0x3B) read and write an
   ESC's settings over its signal wire, on the pin of a throttle slot or a DShot
   programming port, and the IOmcu reports `LINK_CAP_PROGRAM`. The output gets back
@@ -57,6 +63,15 @@ history is in git.
   1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes
   `screenshots/<name>.PNG`, an 8-bit RGB PNG of 1024 x 600px, on the card. The
   menu's guide has a fourth page for it.
+
+### Changed
+
+- SUPPLY link: after a start the panel reads the page before it writes. A port's hold
+  found there is adopted, and no OFF of the panel's goes over it; the operator's OFF and
+  an error's cut stay. A wiring answered `BUSY` is no refusal and goes again after the
+  hold. An ON a port holds is not refused for a refused wiring until the port lets go,
+  on every IOmcu: a KST or Hitec session with refused settings keeps its supply to its
+  end, and the refusal is an error then.
 
 ### Fixed
 
