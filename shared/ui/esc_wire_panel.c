@@ -29,3 +29,8 @@ bool esc_wire_panel_holds_port(void)
 {
     return esc_prog_holds_port(&s_prog);
 }
+
+bool esc_wire_panel_idle(void)
+{
+    return esc_prog_idle(&s_prog);
+}

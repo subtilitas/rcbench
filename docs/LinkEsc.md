@@ -118,7 +118,8 @@ so nothing is shown but the alert below.
 | The STOP key, or any stop the panel latches | the `STOP` operation, as soon as the page is known and holds a pin. A `BAD_VALUE`, a SEQ another writer moved: read, and again, 6 times at most. |
 | `FAULT` rises, or the state reaches `NOT_BACK` | an error: all outputs off (`prog_faults_follow()`). A `FAULT` standing on the first read after a link came up is not counted. |
 | The state reaches `NOT_BACK` | an alert naming the slot or port |
-| A pin held, any writer's | ARM, the motor's TARGET row, ESC STICK and the limit run wait (`prog_reg_servo_holds()`), and an ARM asked and refused is dropped on the motor screen |
+| A pin held, any writer's | ARM on MOTOR and SERVO, the motor's TARGET row, ESC STICK, the limit run and the screenshot wait; an ARM asked and refused is dropped on MOTOR and SERVO |
+| A stop latched | no command but CLOSE, LEAVE and ABORT goes (`esc_prog_cmd_allowed()`) |
 | A read copy with a new `READS` or `READ_CRC` | fetched in blocks and checked against `READ_CRC`, 3 tries |
 
 The SUPPLY page's half (`shared/bench/supply_link.c`) under a hold:
@@ -127,7 +128,7 @@ The SUPPLY page's half (`shared/bench/supply_link.c`) under a hold:
 |---|---|
 | Its first write after a start | none before a read. A hold found there is adopted; no OFF of its own goes over it. The operator's OFF and an error's cut stay. |
 | Its wiring, with the page answering `BUSY` | no refusal: the page's wiring counts as in force, and it is written again when a read shows the hold over |
-| An ON a port holds, with a wiring refused | not refused until the port lets go; then `ON_REFUSED`, an error, and OFF |
+| A wiring refused, not `BUSY`, with an ON a port holds | `ON_REFUSED` at once: an error, all outputs off |
 
 ## Current limitations
 

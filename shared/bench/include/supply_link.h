@@ -43,8 +43,7 @@
  *
  * A panel that has just started and finds a port's hold on its first read
  * adopts the page: no OFF of its own goes over it, since the page would refuse
- * the port's next ON until the port lets go.  An ON the port holds is not
- * refused here for a refused wiring until the port lets go.  A wiring answered
+ * the port's next ON until the port lets go.  A wiring answered
  * LINK_NACK_BUSY, under an ESC_WIRE hold, is no refusal: the page's wiring stays
  * in force, and it is written again once a read shows the hold over.
  *

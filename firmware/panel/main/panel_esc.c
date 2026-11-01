@@ -51,13 +51,19 @@ static uint32_t           s_esc_stops;
 
 /**
  * @brief Carry out one command.  No pin is taken on an armed bench: an OPEN is
- *        answered BUSY and nothing is sent.
+ *        answered BUSY and nothing is sent.  With a stop latched only what gives
+ *        the pin back or cuts goes (esc_prog_cmd_allowed()).
  * @param c The command.
  */
 static void esc_command(const esc_prog_cmd_t *c)
 {
     esc_link_start_t a = ESC_LINK_START_ARG;
 
+    if (!esc_prog_cmd_allowed(c->kind, arming_stopped(&s_arm))) {
+        s_esc_answer = (uint8_t)ESC_LINK_START_BUSY;
+        s_esc_answer_id = c->id;
+        return;
+    }
     switch (c->kind) {
     case ESC_PROG_CMD_OPEN:
         a = outputs_armed(&s_out) ? ESC_LINK_START_BUSY

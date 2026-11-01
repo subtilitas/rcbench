@@ -9,6 +9,8 @@
 #include "esc_prog.h"
 #include "esc_wire_panel.h"
 #include "ew_file.h"
+#include "ew_id.h"
+#include "shot_gate.h"
 
 static esc_prog_t g_m;
 static esc_prog_gate_t g_gate;
@@ -512,6 +514,124 @@ TEST_CASE(the_word_of_arm_and_the_runs)
     CHECK(!esc_wire_panel_holds_port());
 }
 
+/* The most serious way a write could rest on the wrong ESC: the backup taken at OPEN
+ * of a second session, from what the registers and the copy still say. */
+TEST_CASE(no_backup_is_taken_before_this_sessions_read)
+{
+    static esc_prog_feed_t f;
+    static esc_prog_t m;
+
+    esc_prog_init(&m);
+    memset(&f, 0, sizeof(f));
+    f.rd.phase = ESC_LINK_READY;
+    f.rd.known = true;
+    f.rd.held = true;
+    f.rd.fw = EW_FW_AM;
+    f.rd.layout = 4u;
+    f.rd.cpu = EW_CPU_ARM;
+    f.rd.len = EW_MAP_LEN_AM;
+    f.rd.reads = 2u;
+    f.rd.read_crc = 0x1234u;
+    f.image.gen = 1u;
+    f.image.reads = 2u;
+    f.image.read_crc = 0x1234u;
+    f.image.len = EW_MAP_LEN_AM;
+    f.image.page[0] = 0x01u;
+    f.image.page[1] = 4u;
+    f.rd.state = LINK_ESC_OPEN;
+    f.rd.flags = LINK_EW_F_HAVE_READ;
+    esc_prog_feed(&m, &f);
+    CHECK_EQ(esc_prog_backup_state(&m), ESC_PROG_BACKUP_NONE);
+    f.rd.state = LINK_ESC_READY;
+    f.rd.flags = 0u;
+    esc_prog_feed(&m, &f);
+    CHECK_EQ(esc_prog_backup_state(&m), ESC_PROG_BACKUP_NONE);
+}
+
+/* A second CONNECT holds the first session's backup for nothing: the session's own
+ * read gives it, on an ESC of other bytes. */
+TEST_CASE(a_second_session_has_its_own_backup)
+{
+    up_am_rig();
+    model_up();
+    connected();
+    const uint8_t first = esc.am[0x18];
+
+    CHECK_EQ(g_m.file.page[0x18], first);
+    CHECK_EQ(esc_prog_leave(&g_m), ESC_PROG_MSG_NONE);
+    model_run(2000u);
+    esc.am[0x18] = (uint8_t)(first == 48u ? 24u : 48u);
+    connected();
+    CHECK_EQ(esc_prog_backup_state(&g_m), ESC_PROG_BACKUP_OWED);
+    CHECK(g_m.file.page[0x18] != first);
+}
+
+/* A stop between OPEN and ENTER: no entry starts under it. */
+TEST_CASE(a_stop_between_the_steps_starts_no_entry)
+{
+    up_am_rig();
+    model_up();
+    CHECK_EQ(esc_prog_connect(&g_m, &k_conn), ESC_PROG_MSG_NONE);
+    model_run(10u);
+    g_stopped = true;
+    model_run(200u);
+    CHECK_EQ(esc_prog_message(&g_m, NULL), ESC_PROG_MSG_STOPPED);
+    CHECK_EQ(g.ons, 0);
+    CHECK(esc_port_state(&g_p) == LINK_ESC_OPEN
+          || esc_port_state(&g_p) == LINK_ESC_STOPPING);
+    /* What the control task lets through under a stop. */
+    CHECK(esc_prog_cmd_allowed(ESC_PROG_CMD_ENTER, false));
+    CHECK(esc_prog_cmd_allowed(ESC_PROG_CMD_CLOSE, true));
+    CHECK(esc_prog_cmd_allowed(ESC_PROG_CMD_LEAVE, true));
+    CHECK(esc_prog_cmd_allowed(ESC_PROG_CMD_ABORT, true));
+    CHECK(!esc_prog_cmd_allowed(ESC_PROG_CMD_OPEN, true));
+    CHECK(!esc_prog_cmd_allowed(ESC_PROG_CMD_ENTER, true));
+    CHECK(!esc_prog_cmd_allowed(ESC_PROG_CMD_POWERED, true));
+    CHECK(!esc_prog_cmd_allowed(ESC_PROG_CMD_READ, true));
+    CHECK(!esc_prog_cmd_allowed(ESC_PROG_CMD_WRITE, true));
+    CHECK(!esc_prog_cmd_allowed(ESC_PROG_CMD_RESTORE, true));
+    CHECK(!esc_prog_cmd_allowed(ESC_PROG_CMD_CLEAR, true));
+}
+
+/* What the screenshot's gate reads: closed on anything not known free. */
+TEST_CASE(the_screenshot_waits_for_the_page)
+{
+    static esc_prog_feed_t f;
+    static esc_prog_gate_t g2;
+    const shot_bench_t b = { .read = true, .link_up = true };
+    shot_facts_t s;
+
+    esc_prog_gate_init(&g2);
+    esc_wire_panel_gate(&g2);
+    CHECK(!esc_prog_idle(NULL));
+    memset(&f, 0, sizeof(f));
+    /* No link, or an IOmcu with no page: none to wait for. */
+    f.rd.phase = ESC_LINK_NO_PAGE;
+    esc_wire_panel_feed(&f);
+    shot_facts_read(&b, &s);
+    CHECK(s.port_free);
+    CHECK(s.no_session);
+    /* Not read yet. */
+    f.rd.phase = ESC_LINK_SYNC;
+    esc_wire_panel_feed(&f);
+    shot_facts_read(&b, &s);
+    CHECK(!s.port_free);
+    CHECK(!s.no_session);
+    /* Known free. */
+    f.rd.phase = ESC_LINK_READY;
+    f.rd.known = true;
+    esc_wire_panel_feed(&f);
+    shot_facts_read(&b, &s);
+    CHECK(s.port_free);
+    CHECK(s.no_session);
+    /* Held. */
+    f.rd.held = true;
+    esc_wire_panel_feed(&f);
+    shot_facts_read(&b, &s);
+    CHECK(!s.port_free);
+    CHECK(!s.no_session);
+}
+
 int main(void)
 {
     RUN(connect_is_open_enter_read);
@@ -525,5 +645,9 @@ int main(void)
     RUN(a_stop_or_lost_link_ends_a_flow);
     RUN(a_command_the_task_never_took_is_given_up);
     RUN(the_word_of_arm_and_the_runs);
+    RUN(no_backup_is_taken_before_this_sessions_read);
+    RUN(a_second_session_has_its_own_backup);
+    RUN(a_stop_between_the_steps_starts_no_entry);
+    RUN(the_screenshot_waits_for_the_page);
     return test_summary("esc_prog");
 }

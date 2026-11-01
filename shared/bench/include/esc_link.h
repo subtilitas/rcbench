@@ -31,7 +31,7 @@
  * **After a panel restart** the page may hold a pin nobody here knows of: the
  * first read that shows one is followed by CLOSE, again every
  * ESC_LINK_CLOSE_RETRY_MS while the page answers WRITING or NOT_BACK.  No request
- * is taken until it is free.  A link that came back without a restart closes
+ * is taken until it is free.  A NOT_BACK after any CLOSE retries the same way.  A link that came back without a restart closes
  * nothing: readout.ours is false, and the caller decides.
  *
  * **Errors.** esc_link_faults() counts each rising LINK_EW_F_FAULT and each
@@ -87,6 +87,9 @@ extern "C" {
  *         here, ms: the longest hold 120000ms, its supply 3000ms + 10000ms + 3000ms
  *         and an identification under 10000ms. */
 #define ESC_LINK_RUN_MAX_MS 150000u
+/** @brief Failed reads of the page in a row after which a request is given up:
+ *         50ms at ESC_LINK_POLL_MS. */
+#define ESC_LINK_STATUS_FAILS 10u
 /** @brief Bytes of the read copy and the draft at most: 4 blocks. */
 #define ESC_LINK_PAGE_MAX (4u * LINK_ED_BLOCK_BYTES)
 /** @brief Fetches of a read copy with the wrong CRC before it is given up. */
@@ -235,6 +238,7 @@ typedef struct {
     uint8_t  poll_now;   /**< a status read is owed at once                   */
     uint8_t  pending;    /**< the exchange in flight                          */
     uint8_t  tries;      /**< exchanges unanswered in a row                   */
+    uint8_t  status_fails; /**< reads of the page failed in a row             */
     uint32_t status_ms;  /**< when status was last asked                      */
     uint32_t now_ms;     /**< the time esc_link_next() last had               */
     uint16_t status[LINK_EW_COUNT]; /**< the page as last read                */

@@ -384,6 +384,131 @@ TEST_CASE(errors_count_on_their_edge)
     CHECK_EQ(esc_port_state(&g_p), LINK_ESC_FREE);
 }
 
+/* A STOP while a command waits for its answer, the page free in the last read: not
+ * dropped, and the command not sent again.  A read says whether it was taken. */
+TEST_CASE(a_stop_with_a_command_unanswered)
+{
+    esc_link_outcome_t o;
+    esc_link_xfer_t x;
+
+    /* Not taken: nothing ran, and nothing goes. */
+    up_am_rig();
+    link_up();
+    CHECK_EQ(esc_link_open(&g_l, 2u, 1u), ESC_LINK_START_OK);
+    for (int i = 0; i < 8; ++i) {
+        const uint32_t t = esc.now / 1000u;
+
+        CHECK(esc_link_next(&g_l, t, &x));
+        if (x.off == 0u) {
+            esc_link_done(&g_l, ESC_LINK_NO_ANSWER, NULL);
+            break;
+        }
+        esc_link_done(&g_l, link_xchg(NULL, &x, NULL), NULL);
+    }
+    const int cmds = g_commands;
+
+    esc_link_stop(&g_l);
+    CHECK(link_wait(&o, 100u));
+    CHECK_EQ(o.kind, ESC_LINK_OUT_DROPPED);
+    CHECK_EQ(g_commands, cmds);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_FREE);
+    /* Taken, the answer lost: the STOP goes to what it took. */
+    g_drop_cmd = 1;
+    CHECK_EQ(esc_link_open(&g_l, 2u, 2u), ESC_LINK_START_OK);
+    link_run(5u);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_STOPPING);
+    esc_link_stop(&g_l);
+    CHECK(link_wait(&o, 500u));
+    CHECK_EQ(reg(LINK_EW_OP), LINK_ESC_OP_STOP);
+    CHECK(o.taken);
+    CHECK(esc_port_state(&g_p) != LINK_ESC_OPEN || flag(LINK_EW_F_STOPPED));
+}
+
+/* Reads of the page that fail, other pages answering: a request has an end. */
+TEST_CASE(failed_reads_of_the_page_end_a_request)
+{
+    esc_link_outcome_t o;
+    esc_link_xfer_t x;
+
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    CHECK_EQ(esc_link_read(&g_l, 5u), ESC_LINK_START_OK);
+    link_run(5u);
+    for (unsigned i = 0u; i < ESC_LINK_STATUS_FAILS; ++i) {
+        CHECK(!esc_link_outcome(&g_l, &o));
+        esc.now += 5000u;
+        CHECK(esc_link_next(&g_l, esc.now / 1000u, &x));
+        CHECK(!x.write);
+        esc_link_done(&g_l, LINK_NACK_BUSY, NULL);
+    }
+    CHECK(esc_link_outcome(&g_l, &o));
+    CHECK_EQ(o.kind, ESC_LINK_OUT_NACK);
+    CHECK_EQ(o.nack, LINK_NACK_BUSY);
+    /* And unanswered reads the same, the count starting over after a good one. */
+    link_run(100u);
+    CHECK_EQ(esc_link_read(&g_l, 6u), ESC_LINK_START_OK);
+    link_run(5u);
+    for (unsigned i = 0u; i < ESC_LINK_STATUS_FAILS; ++i) {
+        esc.now += 5000u;
+        CHECK(esc_link_next(&g_l, esc.now / 1000u, &x));
+        esc_link_done(&g_l, ESC_LINK_NO_ANSWER, NULL);
+    }
+    CHECK(esc_link_outcome(&g_l, &o));
+    CHECK_EQ(o.kind, ESC_LINK_OUT_NO_ANSWER);
+}
+
+/* NOT_BACK from any CLOSE, no restart: the text says CLOSE tries again. */
+TEST_CASE(not_back_tries_again_without_a_restart)
+{
+    esc_link_outcome_t o;
+    uint16_t target = 0u;
+
+    up_am_rig();
+    link_up();
+    CHECK_EQ(esc_link_open(&g_l, 2u, 1u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 500u));
+    g.give_refused = true;
+    CHECK_EQ(esc_link_close(&g_l, 2u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 100u));
+    CHECK_EQ(o.result, LINK_ESC_RESULT_NOT_BACK);
+    CHECK(esc_link_not_back(&g_l, &target));
+    CHECK_EQ(esc_link_phase(&g_l), ESC_LINK_SYNC);
+    const int cmds = g_commands;
+
+    link_run(900u);
+    CHECK_EQ(g_commands, cmds);
+    link_run(200u);
+    CHECK_EQ(g_commands, cmds + 1);
+    g.give_refused = false;
+    link_run(1100u);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_FREE);
+    CHECK_EQ(esc_link_phase(&g_l), ESC_LINK_READY);
+    CHECK(!esc_link_outcome(&g_l, &o));
+}
+
+/* A copy is its session's: gone when the page has no read, so an ESC with equal
+ * bytes brings its own name. */
+TEST_CASE(the_read_copy_goes_with_its_session)
+{
+    esc_link_outcome_t o;
+    const esc_link_image_t *im = esc_link_image(&g_l);
+
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    CHECK_EQ(esc_link_read(&g_l, 3u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 20000u));
+    link_run(100u);
+    CHECK(im->gen != 0u);
+    CHECK_EQ(esc_link_leave(&g_l, 4u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 5000u));
+    CHECK_EQ(esc_link_close(&g_l, 5u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 100u));
+    link_run(600u);
+    CHECK_EQ(im->gen, 0u);
+}
+
 int main(void)
 {
     RUN(an_older_iomcu_is_sent_nothing);
@@ -401,5 +526,9 @@ int main(void)
     RUN(a_page_that_moved_under_a_request_is_said);
     RUN(a_refusal_is_said_as_the_page_says_it);
     RUN(errors_count_on_their_edge);
+    RUN(a_stop_with_a_command_unanswered);
+    RUN(failed_reads_of_the_page_end_a_request);
+    RUN(not_back_tries_again_without_a_restart);
+    RUN(the_read_copy_goes_with_its_session);
     return test_summary("esc_link");
 }

@@ -1002,8 +1002,9 @@ TEST_CASE(a_page_event_keeps_only_a_refused_on)
 }
 
 /* A port's ON on a page whose wiring the settings' refused: the ON is
- * refused, an error, once the port lets go: the panel writes no OFF over the
- * port's ON until then, on any IOmcu.  SAFE and ARMED. */
+ * refused, an error.  On an IOmcu older than 4.31 the panel writes no OFF
+ * over the port's ON until the port lets go; on 4.31 it writes the OFF and
+ * the page holds it for the port's write.  SAFE and ARMED. */
 TEST_CASE(an_on_refused_under_a_ports_on_is_left_to_the_port)
 {
     static const supply_wiring_t k_bad = { true, 3, 9, 1u };   /* reserved */
@@ -1030,19 +1031,24 @@ TEST_CASE(an_on_refused_under_a_ports_on_is_left_to_the_port)
             serve(true);
             g_now += 100u;
         }
-        CHECK_EQ(g.disarms, 0u);
-        CHECK_EQ(g_offs, offs);
-        CHECK_EQ(page_reg(LINK_SP_OUTPUT), 1u);
-        CHECK(g.on);
-        CHECK_EQ(g.cuts, 0u);
-        /* The port lets go: refused now, and off. */
-        supply_page_port_writes(&g_pg, false);
-        supply_page_hold(&g_pg, false);
-        g.session = false;
-        for (int i = 0; i < 3; ++i) {
-            serve(true);
-        }
         CHECK_EQ(g.disarms, d);
+        if (old) {
+            CHECK_EQ(g_offs, offs);
+            CHECK_EQ(page_reg(LINK_SP_OUTPUT), 1u);
+            CHECK(g.on);
+            CHECK_EQ(g.cuts, 0u);
+            /* The port lets go: refused again, and off. */
+            supply_page_port_writes(&g_pg, false);
+            supply_page_hold(&g_pg, false);
+            g.session = false;
+            for (int i = 0; i < 3; ++i) {
+                serve(true);
+            }
+            CHECK_EQ(g.disarms, 2u * d);
+        } else {
+            CHECK(supply_page_off_held(&g_pg));
+            CHECK_EQ(g.cuts, 1u);
+        }
         CHECK(g_offs > offs);
         CHECK_EQ(page_reg(LINK_SP_OUTPUT), 0u);
         CHECK(!g.on);

@@ -136,6 +136,10 @@ static void absorb(esc_link_t *l, const uint16_t *regs)
         ++l->faults;
         l->not_back = 1u;
         l->not_back_target = regs[LINK_EW_TARGET];
+        /* CLOSE tries again, as after a restart. */
+        l->close_owed = 1u;
+        l->close_timed = 1u;
+        l->close_at = l->now_ms + ESC_LINK_CLOSE_RETRY_MS;
     }
     memcpy(l->status, regs, sizeof(l->status));
     l->known = 1u;
@@ -143,7 +147,10 @@ static void absorb(esc_link_t *l, const uint16_t *regs)
         l->ours = 0u;
         l->close_owed = 0u;
     }
-    if ((flags & LINK_EW_F_HAVE_READ) == 0u) {
+    if (state == (uint16_t)LINK_ESC_FREE
+        || (flags & LINK_EW_F_HAVE_READ) == 0u) {
+        /* The next session's copy is its own, also with equal bytes. */
+        l->image.gen = 0u;
         l->fetching = 0u;
         l->fetch_given_up = 0u;
         return;
@@ -178,8 +185,9 @@ static void judge(esc_link_t *l)
         if (!took) {
             /* Unanswered, and no sign of it: nothing ran.  Acknowledged, and
              * the page has another SEQ: it started again, or another writer. */
-            finish(l, l->doubt ? ESC_LINK_OUT_NO_ANSWER
-                               : ESC_LINK_OUT_RESTARTED, 0u);
+            finish(l, !l->doubt ? ESC_LINK_OUT_RESTARTED
+                      : l->urgent != 0u ? ESC_LINK_OUT_DROPPED
+                                        : ESC_LINK_OUT_NO_ANSWER, 0u);
             return;
         }
         l->verdict = 0u;
@@ -392,6 +400,11 @@ static void ask_urgent(esc_link_t *l, link_esc_op_t op)
     }
     if (l->active && !l->cmd_gone && !l->taken) {
         finish(l, ESC_LINK_OUT_DROPPED, 0u);
+    } else if (l->active && !l->taken && !l->verdict) {
+        /* Gone with no answer yet: not sent again.  A read says whether the
+         * page took it, and the STOP or ABORT goes to what that shows. */
+        l->doubt = 1u;
+        l->poll_now = 1u;
     }
     /* ABORT is the stronger one: a STOP owed does not hold it back. */
     if (l->urgent != (uint8_t)LINK_ESC_OP_ABORT) {
@@ -639,7 +652,8 @@ bool esc_link_next(esc_link_t *l, uint32_t now_ms, esc_link_xfer_t *x)
     }
     /* What a stop asks first. */
     if (l->urgent != 0u) {
-        if (l->status[LINK_EW_STATE] == (uint16_t)LINK_ESC_FREE) {
+        /* A request under way may have taken a pin the last read did not show. */
+        if (l->status[LINK_EW_STATE] == (uint16_t)LINK_ESC_FREE && !l->active) {
             l->urgent = 0u;
         } else {
             command_frame(l, l->urgent, x);
@@ -695,10 +709,17 @@ void esc_link_done(esc_link_t *l, int result, const uint16_t *regs)
     switch (was) {
     case X_STATUS:
         if (result == ESC_LINK_ACK && regs != NULL) {
+            l->status_fails = 0u;
             absorb(l, regs);
             if (l->active && (l->verdict || l->doubt || l->taken)) {
                 judge(l);
             }
+        } else if (l->active && ++l->status_fails >= ESC_LINK_STATUS_FAILS) {
+            /* Other pages may still answer, so no link loss ends this. */
+            l->status_fails = 0u;
+            finish(l, result == ESC_LINK_NO_ANSWER ? ESC_LINK_OUT_NO_ANSWER
+                                                   : ESC_LINK_OUT_NACK,
+                   result == ESC_LINK_NO_ANSWER ? 0u : (uint8_t)result);
         }
         break;
     case X_FRAME:

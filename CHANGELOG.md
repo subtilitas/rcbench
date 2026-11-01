@@ -69,9 +69,7 @@ history is in git.
 - SUPPLY link: after a start the panel reads the page before it writes. A port's hold
   found there is adopted, and no OFF of the panel's goes over it; the operator's OFF and
   an error's cut stay. A wiring answered `BUSY` is no refusal and goes again after the
-  hold. An ON a port holds is not refused for a refused wiring until the port lets go,
-  on every IOmcu: a KST or Hitec session with refused settings keeps its supply to its
-  end, and the refusal is an error then.
+  hold.
 
 ### Fixed
 

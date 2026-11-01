@@ -120,6 +120,13 @@ static esc_prog_msg_t mode_gate(const esc_prog_t *p)
  */
 static void connect_goes_on(esc_prog_t *p, const esc_link_outcome_t *o)
 {
+    /* A stop between two steps ends the flow: no entry starts under it. */
+    if (p->f.stopped || p->f.armed) {
+        p->flow = ESC_PROG_FLOW_NONE;
+        (void)esc_prog_say(p, p->f.stopped ? ESC_PROG_MSG_STOPPED
+                                           : ESC_PROG_MSG_ARMED, 0u);
+        return;
+    }
     if (o->op == (uint8_t)LINK_ESC_OP_OPEN) {
         esc_prog_issue(p, ESC_PROG_CMD_ENTER)->power = p->conn.power;
     } else if (o->state == (uint8_t)LINK_ESC_HAND_WAIT) {
@@ -485,6 +492,25 @@ esc_prog_msg_t esc_prog_message(const esc_prog_t *p, uint16_t *detail)
         *detail = p->detail;
     }
     return p->msg;
+}
+
+bool esc_prog_cmd_allowed(uint8_t kind, bool stopped)
+{
+    return !stopped || kind == (uint8_t)ESC_PROG_CMD_CLOSE
+           || kind == (uint8_t)ESC_PROG_CMD_LEAVE
+           || kind == (uint8_t)ESC_PROG_CMD_ABORT;
+}
+
+bool esc_prog_idle(const esc_prog_t *p)
+{
+    if (p == NULL) {
+        return false;
+    }
+    if (p->f.rd.phase == ESC_LINK_DOWN || p->f.rd.phase == ESC_LINK_NO_PAGE) {
+        return true;
+    }
+    return p->f.rd.phase == ESC_LINK_READY && !esc_prog_holds_port(p)
+           && p->wait_id == 0u;
 }
 
 bool esc_prog_port_taken(const esc_link_readout_t *rd)

@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "esc_wire_panel.h"
 #include "kst_panel.h"
 #include "outputs_screen.h"
 #include "servo_limrun.h"
@@ -86,7 +87,9 @@ bool prog_holds(void)
             return true;
         }
     }
-    return false;
+    /* The ESC_WIRE page is no page set of the SERVO screen, and one pin held
+     * holds the bank down all the same. */
+    return esc_wire_panel_holds_port();
 }
 
 void prog_init(void)
@@ -721,6 +724,11 @@ int servo_screen_task(void) { return (int)wb_task(); }
 int servo_screen_settings_page(void) { return (int)s.tabs.selected; }
 
 int servo_screen_run_settings(void) { return (int)s.run_list; }
+
+bool servo_screen_arm_asked(void)
+{
+    return s.gate.arm_asked;
+}
 
 bool servo_screen_target_locked(void)
 {

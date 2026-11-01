@@ -222,7 +222,7 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
      * the settings name other pins, and that may be another supply. */
     if (s->on && (s->refused || !s->wired || !s->page.en)) {
         /* Not an ON left to the port that holds the page: the port's. */
-        if (!s->kept && !s->port_held && (s->refused || (s->wired && !s->page.en))) {
+        if (!s->kept && (s->refused || (s->wired && !s->page.en))) {
             s->on = false;
             s->events |= SUPPLY_LINK_EV_ON_REFUSED;
         }
@@ -489,9 +489,11 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     const bool fresh = s->read_any
                        && (uint32_t)(now_ms - s->read_ms) < SUPPLY_LINK_STALE_MS;
     const uint16_t f = s->regs[LINK_SP_FLAGS];
-    /* Under a port's hold that keeps the wiring, the page's own is in force. */
+    /* Under a port's hold, before this end's wiring is the page's, the page's
+     * own is in force.  A wiring refused is an error of its own. */
     const bool wired = (s->wired && s->page.en)
-                       || (s->wire_busy && s->regs[LINK_SP_ENABLE] != 0u);
+                       || (s->port_held && !s->refused
+                           && s->regs[LINK_SP_ENABLE] != 0u);
 
     st->online = fresh && wired && (f & LINK_SP_ONLINE) != 0u;
     if (!st->online) {

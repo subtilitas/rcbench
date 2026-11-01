@@ -64,7 +64,11 @@ void esc_prog_backup_follow(esc_prog_t *p)
         p->backup_state = (uint8_t)ESC_PROG_BACKUP_NONE;
         return;
     }
+    /* An ESC of this session that answered and was read: at OPEN the registers
+     * and the copy may still be the session's before. */
     if (p->backup_state != (uint8_t)ESC_PROG_BACKUP_NONE || im->gen == 0u
+        || p->f.rd.state != (uint8_t)LINK_ESC_READY
+        || (p->f.rd.flags & LINK_EW_F_HAVE_READ) == 0u
         || im->reads != p->f.rd.reads || im->read_crc != p->f.rd.read_crc) {
         return;
     }

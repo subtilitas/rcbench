@@ -288,6 +288,25 @@ esc_prog_msg_t esc_prog_message(const esc_prog_t *p, uint16_t *detail);
 bool esc_prog_holds_port(const esc_prog_t *p);
 
 /**
+ * @brief Whether a command may go with a stop latched at the panel: CLOSE and
+ *        LEAVE give the pin back, and ABORT cuts; nothing else starts under a
+ *        stop.
+ * @param kind    An esc_prog_cmd_kind_t.
+ * @param stopped STOP is latched.
+ * @return true when it may go.
+ */
+bool esc_prog_cmd_allowed(uint8_t kind, bool stopped);
+
+/**
+ * @brief Whether the page is known free with nothing asked of it, or the IOmcu
+ *        has none.  Fails closed: a page not read yet, a command out and a
+ *        CLOSE under way all say no.
+ * @param p The model.
+ * @return true then.
+ */
+bool esc_prog_idle(const esc_prog_t *p);
+
+/**
  * @brief Whether the readout says a pin is held: the link's task's word for the
  *        PROG page and the supply's error rule.
  * @param rd The readout.

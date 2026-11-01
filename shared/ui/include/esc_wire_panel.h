@@ -42,6 +42,12 @@ bool esc_wire_panel_next_cmd(esc_prog_cmd_t *out);
  */
 bool esc_wire_panel_holds_port(void);
 
+/**
+ * @brief Whether nothing of the ESC_WIRE page is under way (esc_prog_idle()).
+ * @return true then; false for a page not known.
+ */
+bool esc_wire_panel_idle(void);
+
 #ifdef __cplusplus
 }
 #endif
