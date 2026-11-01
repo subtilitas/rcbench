@@ -89,6 +89,8 @@ kst_port_t      s_kst;
 kst_line_t      s_kst_line;
 hitec_port_t    s_hitec;
 hitec_line_t    s_hitec_line;
+esc_port_t      s_esc;
+ew_pin_line_t   s_esc_line;
 link_dev_t      s_dev;
 outputs_t       s_outputs;
 heartbeat_mon_t s_beat;
@@ -154,6 +156,8 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SENSE_WIN_A, LINK_SX_COUNT, sense_win_a_read, NULL },
     { LINK_PAGE_SENSE_WIN_B, LINK_SX_COUNT, sense_win_b_read, NULL },
     { LINK_PAGE_PROG_SUPPLY, LINK_PS_COUNT, psup_read,      psup_write },
+    { LINK_PAGE_ESC_WIRE,  LINK_EW_COUNT,  esc_read,       esc_write },
+    { LINK_PAGE_ESC_DATA,  LINK_ED_COUNT,  esc_data_read,  esc_data_write },
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
       update_hw_ctl_write },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
@@ -501,6 +505,7 @@ int main(void)
         .driver     = hitec_line_driver(&s_hitec_line),
     };
     (void)hitec_port_init(&s_hitec, &hitec_hw);
+    esc_init();
     hw_apply();
     /*
      * The PD mini's wiring, as last written, driven with the output off: a
@@ -746,6 +751,7 @@ int main(void)
                           now);
         kst_port_bench_armed(&s_kst, arm_now);
         hitec_port_bench_armed(&s_hitec, arm_now);
+        esc_port_bench_armed(&s_esc, arm_now);
         /*
          * The KST port: a failsafe edge and a disarm stop its session, and
          * no frame starts while the heartbeat or the link is not trusted.
@@ -758,6 +764,9 @@ int main(void)
         /* The HITEC port the same way: a stop cuts its transaction and
          * keeps the port with the pin released. */
         hitec_port_step(&s_hitec, port_safe, port_stop, now);
+        /* The ESC the same way, and an update that started stops it. */
+        esc_port_step(&s_esc, port_safe, port_stop || update_hw_holds_arm(),
+                      now);
         s_kst_armed = arm_now;
         ports_exclusive();
         outputs_hw_ports_drive(ports_pulsing());
@@ -805,7 +814,8 @@ int main(void)
                                || hitec_port_frame_out(&s_hitec, now);
         const bool supply_ok = safety_gate_supply_ok(&s_beat, &s_dev);
         supply_pass(now, !own_supply && frame_out,
-                    !own_supply && ports_writing(), supply_ok);
+                    (!own_supply && ports_writing()) || esc_port_writing(&s_esc),
+                    supply_ok);
         psup_pass(now, own_supply && frame_out,
                   own_supply && ports_writing(), supply_ok);
         outputs_step(&s_outputs, now);

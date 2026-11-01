@@ -300,6 +300,31 @@ load on the line, such as a servo's signal wire, reads low on the pull-up alone,
 and a high pulse of 6.5us, 3.26us at 38400baud, shows before each frame's first
 start bit. A test on such a line can end in `n=` values that do not match.
 
+## The ESC settings page
+
+`esc` drives [the ESC_WIRE page](LinkEsc.md) in the frames a panel sends: the same
+checks, the same refusals. It needs a running panel beside the console, as every page
+that needs a heartbeat does. No command of it writes to an ESC. It is not in a released
+image.
+
+```
+esc
+esc open slot <n>
+esc open port <n>
+esc enter [mv=<mV>] [ma=<mA>] [hold=<ms>] [off=<ms>] [hand]
+esc done|read|leave|stop|abort|clear|close
+```
+
+`esc enter` defaults to 7400mV, 1000mA, 3000ms and 3000ms, SWITCHED. Each command
+answers one line:
+
+```
+esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 why=0 t=52ms
+```
+
+`state`, `result`, `ref`, `flags` and `line` are the registers of
+[its page](LinkEsc.md#registers); `ses` is the session's last result.
+
 ## Limits
 
 - The console reads nothing while the IOmcu writes flash: a line typed then

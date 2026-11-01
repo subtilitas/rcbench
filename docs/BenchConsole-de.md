@@ -320,6 +320,31 @@ low, und vor dem ersten Startbit jedes Frames zeigt sich ein High-Puls von 6,5us
 3,26us bei 38400baud. Ein Test auf so einer Leitung kann mit `n=`-Werten enden,
 die nicht passen.
 
+## Die ESC-Einstellungs-Page
+
+`esc` treibt [die Page ESC_WIRE](LinkEsc-de.md) mit den Frames, die ein Panel sendet:
+dieselben Prüfungen, dieselben Ablehnungen. Es braucht ein laufendes Panel neben der
+Konsole, wie jede Page, die einen Heartbeat braucht. Kein Befehl davon schreibt in einen
+ESC. Es ist in keinem veröffentlichten Image.
+
+```
+esc
+esc open slot <n>
+esc open port <n>
+esc enter [mv=<mV>] [ma=<mA>] [hold=<ms>] [off=<ms>] [hand]
+esc done|read|leave|stop|abort|clear|close
+```
+
+`esc enter` nimmt ohne Angaben 7400mV, 1000mA, 3000ms und 3000ms, SWITCHED. Jeder Befehl
+antwortet mit einer Zeile:
+
+```
+esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 why=0 t=52ms
+```
+
+`state`, `result`, `ref`, `flags` und `line` sind die Register
+[ihrer Page](LinkEsc-de.md#register); `ses` ist das letzte Ergebnis der Session.
+
 ## Grenzen
 
 - Die Konsole liest nichts, solange der IOmcu Flash schreibt: eine dann

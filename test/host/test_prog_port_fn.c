@@ -530,6 +530,13 @@ TEST_CASE(a_wire_session_gets_no_pin_on_a_dshot_port)
     CHECK_EQ(prog_port_wire_pin(&pg, 0u, 0x7u), 13u);   /* SERVO PWM */
     CHECK_EQ(prog_port_wire_pin(&pg, 1u, 0x7u), 14u);   /* NONE */
     CHECK_EQ(prog_port_wire_pin(&pg, 2u, 0x7u), PROG_PORT_NO_PIN);
+    /* The ESC's page has the opposite rule. */
+    CHECK_EQ(prog_port_esc_pin(&pg, 2u, 0x7u), 15u);
+    CHECK_EQ(prog_port_esc_pin(&pg, 0u, 0x7u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, 1u, 0x7u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, 2u, 0x3u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, LINK_PG_PORTS_MAX, 0xFFu), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(NULL, 2u, 0x7u), PROG_PORT_NO_PIN);
     /* Not held, past the ports, no page: none. */
     CHECK_EQ(prog_port_wire_pin(&pg, 0u, 0x6u), PROG_PORT_NO_PIN);
     CHECK_EQ(prog_port_wire_pin(&pg, 3u, 0xFu), PROG_PORT_NO_PIN);

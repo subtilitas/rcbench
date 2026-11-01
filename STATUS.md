@@ -40,7 +40,7 @@ results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.33. [Reference](docs/Link.md).
+4.34. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
 not draw. The task runs every 5ms; the line edges every 20ms
@@ -192,7 +192,7 @@ rcbench/
 | `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
-| `escwire` | | yes | yes |
+| `escwire` | yes | yes | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -226,7 +226,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 393 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 397 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
@@ -435,6 +435,17 @@ an abort mid-transaction, the timeout at 999us and 1000us, also across the
 wrap, the bus clear's 9 clocks and STOP, a part it frees and one that
 holds on, SCL stretched, and the trial after it. `i2c_txq_headers_cxx`
 calls the core from C++11. The RP2350 driver has not run on a chip.
+`test_esc_port`, `test_esc_port_data` and `test_esc_port_stop` run the ESC_WIRE and
+ESC_DATA pages (`shared/outputs/esc_port.c`) on the simulated ESC of
+`test/host/ew_sim.h`, with the pin's and the supply's hooks faked
+(`test/host/esc_port_rig.h`): every refusal of OPEN and ENTER at its limit, a slot's
+and a port's way to the line and back, the supply's order and times, BY HAND, reads,
+writes, RESTORE and the text line by the blocks, the read copy's name and the draft's
+CRC on a write, and for a stop, an abort, a lost link and each session error, TORN
+and LOST included, the line parked and the supply off. `test_esc_console` runs the
+console's `esc` command on the page. `test_outputs_hw` and `test_outputs_hw_ports`
+hold that a held slot or DShot port is let go alone and comes back the same.
+
 `test_hitec_port` and `test_hitec_port_stop` run the HITEC page
 (`shared/outputs/hitec_port.c`) against a model of the wire driver with a
 classic and a D series servo on it and a PD mini (both over

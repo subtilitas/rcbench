@@ -53,10 +53,9 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
 # The Hitec wire's core and pin driver, which the HITEC page runs
 # (src/iomcu_hitec.c); its PIO program is assembled and checked below.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/hitec"   hitec)
-# The signal wire of an ESC and its pin driver.  Linked and not called yet in
-# the default image, and --gc-sections drops them; the console build's test
-# (src/ewline_console.c) calls the driver.  Its PIO program is assembled and
-# checked below.
+# The signal wire of an ESC and its pin driver, which the ESC_WIRE page runs
+# (src/iomcu_esc.c); the console build's test (src/ewline_console.c) calls the
+# driver as well.  Its PIO program is assembled and checked below.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/escwire" escwire)
 # The I2C transaction queue and its driver on the I2C blocks.  Linked and
 # not called yet: the sensor bus still runs on src/sense_i2c.c, and
@@ -70,6 +69,7 @@ add_executable(rcbench-iomcu
     src/iomcu_pages.c
     src/iomcu_kst.c
     src/iomcu_hitec.c
+    src/iomcu_esc.c
     src/iomcu_sense.c
     src/iomcu_psup.c
     src/iomcu_tone.c

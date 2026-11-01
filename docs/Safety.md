@@ -345,6 +345,14 @@ of the IOmcu in BOOTSEL, and a power-on reset drops the IOmcu's USB for
 14.5 to 15s. How long a real reset leaves the PD mini on before the start-up's OFF
 is not measured.
 
+## ESC settings over the signal wire
+
+[The ESC settings pages](LinkEsc.md#what-each-event-does) state the line and the supply
+for each of ARMED, STOP, a lost link, an error and a restart. While the page holds a pin
+the bank does not arm, and an error parks the line and switches the PD mini off. A
+bidirectional DShot pin rests high on SAFE, the entry condition of three ESC bootloaders
+([the limitation](LinkEsc.md#current-limitations)).
+
 ## Required external circuit: the monostable
 
 The safety line is panel GPIO28 (general-purpose input/output pin 28), a free

@@ -41,6 +41,7 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 | [Der Link](Link-de.md) | CAN-Verkabelung, Verhalten bei Ausfall, das Page-Protokoll |
 | [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) | Das Drahtprotokoll des Programmierports für Servos von KST und Chaservo |
 | [Der Programmierport für Servos von Hitec](LinkHitec-de.md) | Das Drahtprotokoll des Programmierports für Servos von Hitec |
+| [Die Pages für ESC-Einstellungen](LinkEsc-de.md) | Die Pages, die die Einstellungen eines ESC über seinen Signaldraht lesen und schreiben |
 | [Die INA3221-Map und ihre Fenster](LinkSensors-de.md) | Die Map der INA3221-Strommonitore und ihre Abtastfenster |
 | [Die Prüfstandskonsole](BenchConsole-de.md) | Die Befehlskonsole des IOmcu an seinem USB-Serial-Port, ein Werkzeug des Prüfstands |
 | [DShot und die Output-Treiber](DShot-de.md) | DShot-Frames, Telemetrie und die Output-Treiber |

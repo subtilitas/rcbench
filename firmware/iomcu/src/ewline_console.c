@@ -16,6 +16,7 @@
 
 #include "console_hw.h"
 #include "ew_line.h"
+#include "esc_console.h"
 #include "iomcu.h"
 #include "page_console.h"
 
@@ -201,6 +202,34 @@ static void finish(const char *why)
                    (unsigned long)s_abort_us);
 }
 
+/**
+ * @brief A read of ESC_WIRE, as a link request reads it.
+ * @param off the first register
+ * @param n   registers
+ * @param out takes them
+ */
+static void esc_io_read(uint8_t off, uint8_t n, uint16_t *out)
+{
+    esc_read(&s_state, off, n, out);
+}
+
+/**
+ * @brief A write of ESC_WIRE, as a link request writes it.
+ * @param off the first register
+ * @param n   registers
+ * @param in  their values
+ * @return 0, or a link_nack_t
+ */
+static uint8_t esc_io_write(uint8_t off, uint8_t n, const uint16_t *in)
+{
+    return esc_write(&s_state, off, n, in);
+}
+
+/** @brief The `esc` command's way to the page. */
+static const esc_console_io_t k_esc_io = {
+    esc_io_read, esc_io_write, console_hw_say,
+};
+
 bool ewline_console_line(void *ctx, char **tok, unsigned n)
 {
     const step_t *steps = NULL;
@@ -208,6 +237,9 @@ bool ewline_console_line(void *ctx, char **tok, unsigned n)
     ew_line_err_t e;
 
     (void)ctx;
+    if (n != 0u && strcmp(tok[0], "esc") == 0) {
+        return esc_console_line(&k_esc_io, tok, n);
+    }
     if (n == 0u || strcmp(tok[0], "ewline") != 0) {
         return false;
     }
