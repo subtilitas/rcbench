@@ -85,25 +85,23 @@ static const char *const k_e_throt[] = { "throt_mode", "throt_rev", "throt_brk",
                                          "throt_set", "throt_ztc", "throt_cal",
                                          "throt_min", "throt_mid", "throt_max",
                                          "analog_min", "analog_max" };
-/** @brief ESCape32: input and telemetry. */
+/** @brief ESCape32: input, telemetry, sound and light. */
 static const char *const k_e_input[] = { "input_mode", "input_ch1", "input_ch2",
                                          "telem_mode", "telem_phid", "telem_poles",
-                                         "telem_volt", "telem_curr" };
+                                         "telem_volt", "telem_curr", "volume", "beacon",
+                                         "led" };
 /** @brief ESCape32: protection. */
 static const char *const k_e_prot[] = { "prot_stall", "prot_temp", "prot_sens",
                                         "prot_volt", "prot_cells", "prot_curr",
                                         "prot_park" };
-/** @brief ESCape32: sound and light. */
-static const char *const k_e_sound[] = { "volume", "beacon", "led" };
-
 /** @brief A tab's table row of keys. */
 #define TAB_K(id, a) { TX_##id, (a), (uint8_t)(sizeof(a) / sizeof((a)[0])) }
 
 /** @brief ESCape32's tabs. */
 static const tab_keys_t k_tabs_e[] = {
     TAB_K(EW_TAB_MOTOR, k_e_motor), TAB_K(EW_TAB_DUTY, k_e_duty),
-    TAB_K(EW_TAB_THROTTLE, k_e_throt), TAB_K(EW_TAB_INPUT, k_e_input),
-    TAB_K(EW_TAB_PROTECT, k_e_prot), TAB_K(EW_TAB_SOUND, k_e_sound),
+    TAB_K(EW_TAB_THROTTLE, k_e_throt), TAB_K(EW_TAB_INPUT_SOUND, k_e_input),
+    TAB_K(EW_TAB_PROTECT, k_e_prot),
 };
 
 _Static_assert(sizeof(k_tabs_e) / sizeof(k_tabs_e[0]) + 1u <= EWP_TABS,

@@ -384,6 +384,16 @@ void render_esc_wire_view(const char *view)
     } else if (strcmp(view, "motor-wire-bj") == 0) {
         feed_read(EW_FW_BJ, 208u, LINK_EW_F_WRITABLE, 0u);
         tap(esc_wire_panel_tab_rect(1));
+    } else if (strcmp(view, "motor-wire-s-id") == 0) {
+        feed_read(EW_FW_S, 33u, LINK_EW_F_WRITABLE, 0u);
+    } else if (strcmp(view, "motor-wire-s-2") == 0) {
+        feed_read(EW_FW_S, 33u, LINK_EW_F_WRITABLE, 0u);
+        tap(esc_wire_panel_tab_rect(2));
+    } else if (strcmp(view, "motor-wire-bj-id") == 0) {
+        feed_read(EW_FW_BJ, 208u, LINK_EW_F_WRITABLE, 0u);
+    } else if (strcmp(view, "motor-wire-bj-2") == 0) {
+        feed_read(EW_FW_BJ, 208u, LINK_EW_F_WRITABLE, 0u);
+        tap(esc_wire_panel_tab_rect(2));
     } else if (strcmp(view, "motor-wire-readonly") == 0) {
         feed_read(EW_FW_BJ, 204u, 0u, EW_WHY_OLD_LAYOUT);
     } else if (strcmp(view, "motor-wire-readonly-rows") == 0) {
@@ -398,7 +408,7 @@ void render_esc_wire_view(const char *view)
 
         if (strcmp(rest, "-leave") == 0) {
             tap(esc_wire_panel_back_rect());
-        } else if (rest[0] == '-' && rest[1] >= '1' && rest[1] <= '6') {
+        } else if (rest[0] == '-' && rest[1] >= '1' && rest[1] <= '5') {
             tap(esc_wire_panel_tab_rect(rest[1] - '0'));
         }
     }

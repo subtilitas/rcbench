@@ -133,6 +133,83 @@ TEST_CASE(a_latched_supply_refuses_the_enter_as_what_it_is)
     CHECK_EQ(esc_wire_panel_hold_rect().w, 0);
 }
 
+TEST_CASE(an_off_under_pin_held_shows_only_the_refusals_line)
+{
+    held_after_abort();
+    CHECK(ewp_held_line() == NULL);
+    g.v.latched = true;
+    ew_hold(2.2f);
+    bench_run(2000u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_PIN_HELD);
+    CHECK(ewp_s.no_again);
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_REF_SUPPLY_OFF));
+    CHECK(ewp_held_line() == NULL);
+}
+
+TEST_CASE(a_stop_or_a_fault_shows_its_line_until_the_pin_is_free)
+{
+    held_after_page_stop();
+    CHECK_STR_EQ(ewp_held_line(), TR(EW_HELD_AFTER_STOP));
+    /* The pin free ends it: the next hold starts with no line of the last. */
+    ew_tap(esc_wire_panel_action_rect(2));
+    bench_run(500u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_CONNECT);
+    CHECK(ewp_held_line() == NULL);
+}
+
+TEST_CASE(a_press_on_a_hidden_button_clears_no_word)
+{
+    /* STOPPED under the band's STOP: no CLEAR STOP at action 0. */
+    session_up(up_am_rig);
+    connected();
+    panel_stop();
+    const esc_prog_msg_t band = esc_wire_panel_model()->msg;
+
+    CHECK(band != ESC_PROG_MSG_NONE);
+    ew_tap(esc_wire_panel_action_rect(0));
+    CHECK_EQ(esc_wire_panel_model()->msg, band);
+    /* The button shown beside it takes it. */
+    press(esc_wire_panel_action_rect(1));
+    CHECK(esc_wire_panel_model()->msg != band);
+    /* PIN HELD with PIN BACK only: action 0 and 1 are empty. */
+    held_after_page_stop();
+    esc_wire_panel_model()->msg = ESC_PROG_MSG_CLEARED;
+    ew_tap(esc_wire_panel_action_rect(0));
+    ew_tap(esc_wire_panel_action_rect(1));
+    CHECK_EQ(esc_wire_panel_model()->msg, ESC_PROG_MSG_CLEARED);
+    /* OTHER and NOT_BACK have one button. */
+    session_up(up_am_rig);
+    connected();
+    g_f.rd.ours = false;
+    g_f.rd.state = LINK_ESC_OPEN;
+    g_hand = true;
+    bench_run(20u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_OTHER);
+    esc_wire_panel_model()->msg = ESC_PROG_MSG_CLEARED;
+    ew_tap(esc_wire_panel_action_rect(1));
+    CHECK_EQ(esc_wire_panel_model()->msg, ESC_PROG_MSG_CLEARED);
+    /* A session: WRITE without WRITABLE, and an erased AM32's RESTORE alone. */
+    g_f.rd.ours = true;
+    g_f.rd.state = LINK_ESC_READY;
+    g_f.rd.flags = (uint16_t)(LINK_EW_F_HAVE_READ | LINK_EW_F_IN_MODE);
+    bench_run(20u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_SESSION);
+    esc_wire_panel_model()->msg = ESC_PROG_MSG_CLEARED;
+    ew_tap(esc_wire_panel_action_rect(2));
+    CHECK_EQ(esc_wire_panel_model()->msg, ESC_PROG_MSG_CLEARED);
+    g_f.rd.flags = (uint16_t)(g_f.rd.flags | LINK_EW_F_ERASED);
+    bench_run(20u);
+    ew_tap(esc_wire_panel_action_rect(1));
+    CHECK_EQ(esc_wire_panel_model()->msg, ESC_PROG_MSG_CLEARED);
+    /* Between two tabs. */
+    const gfx_rect_t t0 = esc_wire_panel_tab_rect(0);
+    const gfx_rect_t t1 = esc_wire_panel_tab_rect(1);
+
+    CHECK(t1.x > t0.x + t0.w);
+    ew_tap((gfx_rect_t){ (int16_t)(t0.x + t0.w), t0.y, 1, t0.h });
+    CHECK_EQ(esc_wire_panel_model()->msg, ESC_PROG_MSG_CLEARED);
+}
+
 TEST_CASE(the_keypads_top_out_at_supplys_limits)
 {
     session_up(up_am_rig);
@@ -374,6 +451,9 @@ int main(void)
     RUN(an_abort_keeps_enter_again);
     RUN(a_refused_enter_keeps_enter_again);
     RUN(a_latched_supply_refuses_the_enter_as_what_it_is);
+    RUN(an_off_under_pin_held_shows_only_the_refusals_line);
+    RUN(a_stop_or_a_fault_shows_its_line_until_the_pin_is_free);
+    RUN(a_press_on_a_hidden_button_clears_no_word);
     RUN(the_keypads_top_out_at_supplys_limits);
     RUN(a_connect_above_supplys_limit_goes_nowhere);
     RUN(a_falling_link_closes_connects_keypad);

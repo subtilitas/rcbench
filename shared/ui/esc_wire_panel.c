@@ -555,6 +555,7 @@ static uint32_t signature(void)
         rd->layout, rd->why, rd->result, rd->ses, rd->target, m->f.image.gen,
         (uint32_t)m->msg, m->detail, m->backup_state, ticks, m->f.stopped,
         m->f.armed, ewp_s.mv, ewp_s.ma, ewp_s.target_count, ewp_s.no_again,
+        ewp_s.held_stop,
     };
     uint32_t h = 2166136261u;
 
@@ -639,9 +640,13 @@ void esc_wire_panel_feed(const esc_prog_feed_t *f)
      * has the panel's OFF latched on the SUPPLY page until the hold ends. */
     if (m->f.rd.known && !m->f.rd.held) {
         ewp_s.no_again = false;
-    } else if ((m->f.rd.flags & (LINK_EW_F_STOPPED | LINK_EW_F_FAULT)) != 0u || m->f.stopped
-               || (m->msg == ESC_PROG_MSG_REFUSED
-                   && m->detail == (uint16_t)LINK_ESC_REF_SUPPLY_OFF)) {
+        ewp_s.held_stop = false;
+    } else if ((m->f.rd.flags & (LINK_EW_F_STOPPED | LINK_EW_F_FAULT)) != 0u
+               || m->f.stopped) {
+        ewp_s.no_again = true;
+        ewp_s.held_stop = true;
+    } else if (m->msg == ESC_PROG_MSG_REFUSED
+               && m->detail == (uint16_t)LINK_ESC_REF_SUPPLY_OFF) {
         ewp_s.no_again = true;
     }
     const uint32_t sig = signature();

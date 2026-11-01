@@ -266,6 +266,11 @@ static void action_btn(gfx_canvas_t *c, int i, const char *label, bool danger, b
                    false, on, EWP_FONT);
 }
 
+const char *ewp_held_line(void)
+{
+    return ewp_s.held_stop ? TR(EW_HELD_AFTER_STOP) : NULL;
+}
+
 /**
  * @brief The note, or the model's message, on its line over the action row.
  * @param c The canvas.
@@ -759,7 +764,9 @@ static void draw_pin_held(gfx_canvas_t *c)
                        ui_theme_color(UI_C_WARN), 1);
         ewp_line_text(s_text, sizeof(s_text));
         line_at(c, x0, y0 + 50, s_text, UI_C_TEXT);
-        line_at(c, x0, y0 + 50 + EWP_LINE_H, TR(EW_HELD_AFTER_STOP), UI_C_WARN);
+        if (ewp_held_line() != NULL) {
+            line_at(c, x0, y0 + 50 + EWP_LINE_H, ewp_held_line(), UI_C_WARN);
+        }
     } else {
         draw_values(c, false);
         (void)gfx_text(c, x, y, TR(EW_HELD_TITLE), &gfx_font_16x28,
