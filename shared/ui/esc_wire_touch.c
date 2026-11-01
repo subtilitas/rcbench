@@ -5,6 +5,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
+
 #include "esc_wire_int.h"
 
 /** @brief What a press is on. */
@@ -20,6 +22,8 @@ enum {
     P_CHOICE,
     P_CHOICE_CANCEL,
     P_KEYPAD,
+    P_NEXT,
+    P_PREV,
 };
 
 /**
@@ -88,7 +92,11 @@ static void action(int i)
             ewp_s.files_first = 0u;
             ewp_files_open(false);
         } else if (i == 2 && (flags & LINK_EW_F_WRITABLE) != 0u) {
-            if (ewp_changed_count() > 0) {
+            if (ewp_card_busy()) {
+                ewp_note(TR(EW_CARD_BUSY), true);
+            } else if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_NONE) {
+                ewp_note(ewp_no_backup_text(), true);
+            } else if (ewp_changed_count() > 0) {
                 ewp_page_write();
             } else {
                 ewp_note(TR(EW_NO_CHANGE), false);
@@ -114,6 +122,11 @@ static void action(int i)
             (void)esc_prog_close(m);
         }
         break;
+    case ESC_WIRE_PIN_HELD:
+        if (i == 2) {
+            (void)esc_prog_close(m);
+        }
+        break;
     default:
         break;
     }
@@ -130,6 +143,7 @@ static int action_count(void)
     case ESC_WIRE_STOPPED:
         return 2;
     case ESC_WIRE_SESSION:
+    case ESC_WIRE_PIN_HELD:
         return 3;
     case ESC_WIRE_OTHER:
     case ESC_WIRE_NOT_BACK:
@@ -150,7 +164,13 @@ static void down_rows(const touch_event_t *evt)
     const ewp_stage_t st = ewp_stage();
 
     if (st == ESC_WIRE_CONNECT) {
+        const bool hand = ewp_s.power == (uint8_t)LINK_ESC_BY_HAND;
+
         for (int i = 0; i < EWP_ROWS; ++i) {
+            /* BY HAND has no voltage, limit or off time of this bench's. */
+            if (hand && (i == 2 || i == 3 || i == 5)) {
+                continue;
+            }
             if (gfx_rect_contains(ewp_value_rect(i), x, y)) {
                 take(evt, P_CONNECT_ROW, i);
                 return;
@@ -207,24 +227,25 @@ static void down(const touch_event_t *evt)
         && gfx_rect_contains(esc_wire_panel_hold_rect(), x, y)) {
         take(evt, P_HOLD, -1);
         ewp_s.hold_down = true;
-        ui_hold_begin(&ewp_s.hold, ewp_s.page == EWP_PAGE_LEAVE ? TX_HOLD_HINT_LEAVE
-                                   : ewp_s.page == EWP_PAGE_NONE ? TX_EW_HOLD_CONNECT
-                                                                 : TX_HOLD_HINT_WRITE);
+        ui_hold_begin(&ewp_s.hold,
+                      ewp_s.page == EWP_PAGE_LEAVE ? TX_HOLD_HINT_LEAVE
+                      : ewp_s.page != EWP_PAGE_NONE ? TX_HOLD_HINT_WRITE
+                      : ewp_stage() == ESC_WIRE_PIN_HELD ? TX_EW_HOLD_ENTER
+                                                         : TX_EW_HOLD_CONNECT);
         return;
     }
     if (ewp_s.page != EWP_PAGE_NONE) {
         if (gfx_rect_contains(esc_wire_panel_cancel_rect(), x, y)) {
             take(evt, P_CANCEL, -1);
+        } else if (gfx_rect_contains(esc_wire_panel_next_rect(), x, y)) {
+            take(evt, P_NEXT, -1);
+        } else if (gfx_rect_contains(esc_wire_panel_prev_rect(), x, y)) {
+            take(evt, P_PREV, -1);
         }
         return;
     }
     if (gfx_rect_contains(esc_wire_panel_back_rect(), x, y)) {
         take(evt, P_BACK, -1);
-        return;
-    }
-    if (abort_shows() && gfx_rect_contains(ewp_action_rect(0), x, y)) {
-        /* On the press: a stop does not wait for the finger. */
-        esc_prog_abort(&ewp_s.prog);
         return;
     }
     for (int i = 0; i < action_count(); ++i) {
@@ -274,6 +295,16 @@ static void release(const touch_event_t *evt)
     case P_CANCEL:
         if (gfx_rect_contains(esc_wire_panel_cancel_rect(), x, y)) {
             ewp_s.page = EWP_PAGE_NONE;
+        }
+        break;
+    case P_NEXT:
+        if (gfx_rect_contains(esc_wire_panel_next_rect(), x, y)) {
+            ewp_write_turn(1);
+        }
+        break;
+    case P_PREV:
+        if (gfx_rect_contains(esc_wire_panel_prev_rect(), x, y)) {
+            ewp_write_turn(-1);
         }
         break;
     case P_CHOICE:
@@ -337,8 +368,11 @@ static void rest(const touch_event_t *evt)
         let_go();
         return;
     default:
-        if (up) {
+        /* A press cut by the band or another finger ends here and does nothing. */
+        if (touch_event_is_tap_up(evt)) {
             release(evt);
+        } else if (up) {
+            let_go();
         }
         return;
     }
@@ -349,7 +383,12 @@ void ewp_event(const touch_event_t *evt)
     if (evt == NULL || !ewp_s.open) {
         return;
     }
-    if (ewp_s.have && evt->point.id == ewp_s.id && evt->type != TOUCH_EVENT_DOWN) {
+    /* ABORT on the press, whatever another finger holds: a stop waits for no one. */
+    if (evt->type == TOUCH_EVENT_DOWN && !ewp_s.kp.open && ewp_s.ch_what == EWP_CH_NONE
+        && ewp_s.page == EWP_PAGE_NONE && abort_shows()
+        && gfx_rect_contains(ewp_action_rect(0), evt->point.x, evt->point.y)) {
+        ewp_abort();
+    } else if (ewp_s.have && evt->point.id == ewp_s.id && evt->type != TOUCH_EVENT_DOWN) {
         rest(evt);
     } else if (evt->type == TOUCH_EVENT_DOWN && !ewp_s.have) {
         down(evt);
@@ -395,6 +434,12 @@ void ewp_back(void)
         break;
     case ESC_WIRE_SESSION:
         ewp_page_open(EWP_PAGE_LEAVE);
+        if ((ewp_s.prog.f.rd.flags & LINK_EW_F_ERASED) != 0u) {
+            ewp_page_add(TR(EW_LEAVE_ERASED_1));
+            ewp_page_add(ewp_s.power == (uint8_t)LINK_ESC_BY_HAND
+                             ? TR(EW_LEAVE_ERASED_HAND) : TR(EW_LEAVE_ERASED_2));
+            break;
+        }
         if (ewp_s.prog.f.rd.fw == (uint8_t)EW_FW_E32) {
             ewp_page_add(TR(EW_LEAVE_E32));
             ewp_page_add(ewp_s.power == (uint8_t)LINK_ESC_BY_HAND
@@ -407,10 +452,19 @@ void ewp_back(void)
             ewp_page_add(TR(EW_LEAVE_DRAFT));
         }
         break;
-    default:
-        /* A session on its way or a stop: its own buttons end it. */
-        ewp_note(TR(EW_BACK_HELD), true);
+    default: {
+        /* A session on its way or a stop: its own button ends it, and BACK names it. */
+        const ewp_stage_t st = ewp_stage();
+        char line[EWP_LINE];
+
+        snprintf(line, sizeof(line), TR(EW_BACK_FIRST),
+                 st == ESC_WIRE_STOPPED || st == ESC_WIRE_PIN_HELD ? TR(EW_CLOSE_PIN)
+                 : st == ESC_WIRE_OTHER ? TR(EW_RELEASE_BTN)
+                 : st == ESC_WIRE_NOT_BACK ? TR(EW_CLOSE_AGAIN)
+                                           : TR(EW_ABORT));
+        ewp_note(line, true);
         break;
+    }
     }
     ++ewp_s.rev;
 }

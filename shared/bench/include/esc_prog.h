@@ -244,6 +244,13 @@ esc_prog_msg_t esc_prog_powered(esc_prog_t *p);
 esc_prog_msg_t esc_prog_read(esc_prog_t *p);
 
 /**
+ * @brief ENTER again on a pin held in OPEN, with the power of the last connect.
+ * @param p The model.
+ * @return ESC_PROG_MSG_NONE when it goes, else why not.
+ */
+esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p);
+
+/**
  * @brief WRITE a draft of the read copy.
  * @param p     The model.
  * @param draft The draft.
@@ -360,6 +367,22 @@ size_t esc_prog_backup_text(const esc_prog_t *p, char *out, size_t size);
  * @param p The model.
  */
 void esc_prog_backup_settled(esc_prog_t *p);
+
+/** @brief Why the session has no backup to make. */
+typedef enum {
+    ESC_PROG_NO_BACKUP_HAS = 0,   /**< one can be made                        */
+    ESC_PROG_NO_BACKUP_NOT_READ,  /**< no read copy                           */
+    ESC_PROG_NO_BACKUP_ERASED,    /**< an erased page is no backup            */
+    ESC_PROG_NO_BACKUP_MUSIC,     /**< `music` holds a byte the format has not */
+    ESC_PROG_NO_BACKUP_FORMAT,    /**< the read copy gives no file            */
+} esc_prog_no_backup_t;
+
+/**
+ * @brief Why no backup can be made of the read copy.
+ * @param p The model.
+ * @return ESC_PROG_NO_BACKUP_HAS, or why not.
+ */
+esc_prog_no_backup_t esc_prog_no_backup(const esc_prog_t *p);
 
 /** @brief The first line of the record of a write. */
 #define ESC_PROG_RECORD_HEAD "RCBENCH ESCW RECORD 1"

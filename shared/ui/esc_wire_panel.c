@@ -30,7 +30,11 @@ static esc_prog_gate_t *s_gate;
 
 /* ------------------------------------------------------------------ stages */
 
-ewp_stage_t ewp_stage(void)
+/**
+ * @brief Where the page and the model are, with no write waiting for the card in it.
+ * @return The stage.
+ */
+static ewp_stage_t page_stage(void)
 {
     const esc_prog_t *m = &ewp_s.prog;
     const esc_link_readout_t *rd = &m->f.rd;
@@ -64,10 +68,21 @@ ewp_stage_t ewp_stage(void)
         return (rd->flags & LINK_EW_F_HAVE_READ) != 0u ? ESC_WIRE_RUNNING
                                                        : ESC_WIRE_ENTERING;
     case LINK_ESC_OPEN:
-        return stood && !busy ? ESC_WIRE_STOPPED : ESC_WIRE_ENTERING;
+        if (busy) {
+            return ESC_WIRE_ENTERING;
+        }
+        return stood ? ESC_WIRE_STOPPED : ESC_WIRE_PIN_HELD;
     default:
         return ESC_WIRE_ENTERING;
     }
+}
+
+ewp_stage_t ewp_stage(void)
+{
+    const ewp_stage_t st = page_stage();
+
+    /* From the hold to the write's outcome: ABORT and STOP, nothing else. */
+    return st == ESC_WIRE_SESSION && ewp_s.w_step != EWP_W_NONE ? ESC_WIRE_RUNNING : st;
 }
 
 esc_wire_stage_t esc_wire_panel_stage(void)
@@ -117,8 +132,50 @@ bool esc_wire_panel_card_take(esc_card_req_t *out)
  */
 static void write_now(void)
 {
-    (void)esc_prog_write(&ewp_s.prog, ewp_s.draft, ewp_s.prog.f.image.len);
+    (void)esc_prog_write(&ewp_s.prog, ewp_s.w_draft, ewp_s.prog.f.image.len);
     ewp_s.w_step = EWP_W_NONE;
+    memset(ewp_s.w_draft, 0, sizeof(ewp_s.w_draft));
+}
+
+/**
+ * @brief No write goes on: its step and snapshot go, and an answer still out finds
+ *        another request's number and acts on nothing.
+ */
+static void write_give_up(void)
+{
+    ewp_s.w_step = EWP_W_NONE;
+    memset(ewp_s.w_draft, 0, sizeof(ewp_s.w_draft));
+    ewp_s.card_want = false;
+    ++ewp_s.card_id;
+}
+
+void ewp_abort(void)
+{
+    if (ewp_s.w_step != EWP_W_NONE) {
+        write_give_up();
+        ewp_note(TR(EW_WRITE_GIVEN_UP), true);
+        return;
+    }
+    esc_prog_abort(&ewp_s.prog);
+}
+
+bool ewp_card_busy(void)
+{
+    return ewp_s.card_want || ewp_s.card_out;
+}
+
+const char *ewp_no_backup_text(void)
+{
+    switch (esc_prog_no_backup(&ewp_s.prog)) {
+    case ESC_PROG_NO_BACKUP_ERASED:
+        return TR(EW_ERASED_NO_BACKUP);
+    case ESC_PROG_NO_BACKUP_MUSIC:
+        return TR(EW_MUSIC_NO_BACKUP);
+    case ESC_PROG_NO_BACKUP_FORMAT:
+        return TR(EW_FORMAT_NO_BACKUP);
+    default:
+        return TR(EW_NOT_READ);
+    }
 }
 
 void ewp_write_go(void)
@@ -129,7 +186,7 @@ void ewp_write_go(void)
         write_now();
         return;
     }
-    ewp_s.card.len = esc_prog_record_text(m, ewp_s.draft, ewp_s.card.text,
+    ewp_s.card.len = esc_prog_record_text(m, ewp_s.w_draft, ewp_s.card.text,
                                           sizeof(ewp_s.card.text));
     if (ewp_s.card.len == 0u) {
         ewp_s.w_step = EWP_W_NONE;
@@ -233,6 +290,17 @@ static void recorded(const esc_card_done_t *d)
 }
 
 /**
+ * @brief Whether a list or a load has to stay out: a hold page or an editor is open,
+ *        or the session is no longer on its rows.
+ * @return true then.
+ */
+static bool under_page(void)
+{
+    return ewp_s.page != EWP_PAGE_NONE || ewp_s.kp.open
+           || ewp_s.ch_what != EWP_CH_NONE || ewp_stage() != ESC_WIRE_SESSION;
+}
+
+/**
  * @brief A LIST answered: the choice list, one entry to save and the next page's.
  * @param d The answer.
  */
@@ -240,6 +308,10 @@ static void listed(const esc_card_done_t *d)
 {
     if (d->result != ESC_CARD_DONE_OK) {
         ewp_note(card_words(d->result), true);
+        return;
+    }
+    if (under_page()) {
+        ewp_note(TR(EW_CARD_LATE), true);
         return;
     }
     ewp_s.files_total = d->total;
@@ -268,6 +340,10 @@ static void loaded(const esc_card_done_t *d)
 
     if (d->result != ESC_CARD_DONE_OK) {
         ewp_note(card_words(d->result), true);
+        return;
+    }
+    if (under_page()) {
+        ewp_note(TR(EW_CARD_LATE), true);
         return;
     }
     memcpy(ewp_s.file_text, d->text, d->len + 1u);
@@ -318,6 +394,10 @@ void esc_wire_panel_card_done(const esc_card_done_t *d)
         default:
             break;
         }
+    } else if (ewp_s.w_step != EWP_W_NONE && !ewp_s.card_want) {
+        /* The request of this write has no answer to come: it does not wait on. */
+        write_give_up();
+        ewp_note(TR(EW_WRITE_GIVEN_UP), true);
     }
     ++ewp_s.rev;
 }
@@ -338,7 +418,7 @@ void ewp_file_chosen(int value)
         ewp_files_open(ewp_s.files_for_restore);
     } else if (value < 0) {
         if (!backup_ask()) {
-            ewp_note(TR(EW_NOT_READ), true);
+            ewp_note(ewp_no_backup_text(), true);
         }
     } else if (value < (int)ESC_CARD_FILES) {
         snprintf(ewp_s.file_name, sizeof(ewp_s.file_name), "%s", ewp_s.names[value]);
@@ -369,6 +449,7 @@ static void connect_now(void)
     c.power.off_ms = ewp_s.off_ms;
     ewp_s.note[0] = '\0';
     ewp_s.no_card_ok = false;
+    write_give_up();
     (void)esc_prog_connect(&ewp_s.prog, &c);
 }
 
@@ -381,14 +462,20 @@ void ewp_hold_apply(void)
     ewp_s.note[0] = '\0';
     switch (page) {
     case EWP_PAGE_NONE:
-        connect_now();
+        if (ewp_stage() == ESC_WIRE_PIN_HELD) {
+            (void)esc_prog_enter_again(m);
+        } else if (ewp_stage() == ESC_WIRE_CONNECT) {
+            connect_now();
+        }
         break;
     case EWP_PAGE_WRITE:
-        if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_OWED) {
+        if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_NONE) {
+            ewp_note(ewp_no_backup_text(), true);
+        } else if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_OWED) {
             if (backup_ask()) {
                 ewp_s.w_step = EWP_W_BACKUP;
             } else {
-                ewp_note(TR(EW_NOT_READ), true);
+                ewp_note(ewp_no_backup_text(), true);
             }
         } else {
             ewp_write_go();
@@ -400,6 +487,7 @@ void ewp_hold_apply(void)
         ewp_write_go();
         break;
     case EWP_PAGE_LEAVE:
+        write_give_up();
         (void)esc_prog_leave(m);
         break;
     case EWP_PAGE_RELEASE:
@@ -475,6 +563,18 @@ void esc_wire_panel_feed(const esc_prog_feed_t *f)
         ewp_s.ma = (uint16_t)(supply_screen_set_i() * 1000.0f + 0.5f);
     }
     ewp_tabs_follow();
+    /* A stop, a supply or a link gone: what was open answers to a stage that is over. */
+    const ewp_stage_t now = page_stage();
+
+    if (now != ewp_s.stage_seen) {
+        ewp_s.stage_seen = now;
+        ewp_cancel();
+        ewp_editors_close();
+        ewp_s.page = EWP_PAGE_NONE;
+        if (ewp_s.w_step != EWP_W_NONE) {
+            write_give_up();
+        }
+    }
     const uint32_t sig = signature();
 
     if (sig != ewp_s.sig) {

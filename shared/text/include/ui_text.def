@@ -2591,9 +2591,66 @@ UI_TEXT(EW_PAGE_RELEASE, 56,
 UI_TEXT(EW_WRITE_WARN_LINE, 100,
     "CHECK %s: %s -> %s",
     "PRÜFE %s: %s -> %s")
-UI_TEXT(EW_WRITE_MORE, 100,
-    "and %u more values.",
-    "und %u weitere Werte.")
+UI_TEXT(EW_WRITE_GIVEN_UP, 100,
+    "Write given up: nothing written.",
+    "Schreiben aufgegeben: nichts geschrieben.")
+UI_TEXT(EW_CARD_BUSY, 100,
+    "The card is busy: WRITE waits for its answer.",
+    "Die Karte arbeitet: SCHREIBEN wartet auf ihre Antwort.")
+UI_TEXT(EW_CARD_LATE, 100,
+    "The card answered under an open page: nothing loaded.",
+    "Die Karte antwortete unter einer offenen Seite: nichts geladen.")
+UI_TEXT(EW_CARD_WAIT, 96,
+    "The backup and the record go to the card, then the write starts.",
+    "Backup und Eintrag gehen auf die Karte, dann startet das Schreiben.")
+UI_TEXT(EW_BACK_FIRST, 100,
+    "The session holds the pin. First: %s.",
+    "Die Sitzung hält den Pin. Zuerst: %s.")
+UI_TEXT(EW_HELD_TITLE, 56,
+    "PIN HELD",
+    "PIN GEHALTEN")
+UI_TEXT(EW_HELD_1, 96,
+    "The pin is held. No ESC session runs.",
+    "Der Pin ist gehalten. Keine ESC-Sitzung läuft.")
+UI_TEXT(EW_HOLD_ENTER_BTN, 0,
+    "HOLD 2s TO ENTER AGAIN",
+    "2s HALTEN: NEU STARTEN")
+UI_TEXT(EW_HOLD_ENTER, 94,
+    "Hold 2s to enter again.",
+    "Halte 2s, um neu zu starten.")
+UI_TEXT(EW_ERASED_NO_BACKUP, 100,
+    "AM32 settings erased. An erased page is no backup: RESTORE FROM BACKUP.",
+    "AM32-Einstellungen gelöscht. Eine gelöschte Seite ist kein Backup: AUS BACKUP HERSTELLEN.")
+UI_TEXT(EW_MUSIC_NO_BACKUP, 100,
+    "`music` holds a byte a settings file cannot hold: no backup, nothing written.",
+    "`music` enthält ein Byte, das keine Datei fasst: kein Backup, nichts geschrieben.")
+UI_TEXT(EW_FORMAT_NO_BACKUP, 100,
+    "This read gives no settings file: no backup, nothing written.",
+    "Dieses Lesen ergibt keine Datei: kein Backup, nichts geschrieben.")
+UI_TEXT(EW_LEAVE_ERASED_1, 100,
+    "The ESC stays erased until RESTORE FROM BACKUP.",
+    "Der ESC bleibt gelöscht bis AUS BACKUP HERSTELLEN.")
+UI_TEXT(EW_LEAVE_ERASED_2, 100,
+    "The pin goes back to its output and the supply goes off.",
+    "Der Pin geht an seinen Ausgang zurück, die Versorgung geht aus.")
+UI_TEXT(EW_LEAVE_ERASED_HAND, 100,
+    "The pin goes back to its output. Disconnect the ESC's power now.",
+    "Der Pin geht an seinen Ausgang zurück. Trenne jetzt den Strom des ESC.")
+UI_TEXT(EW_WRITE_NEXT, 0,
+    "NEXT",
+    "WEITER")
+UI_TEXT(EW_WRITE_PREV, 0,
+    "PREV",
+    "ZURÜCK")
+UI_TEXT(EW_WRITE_PAGE_OF, 0,
+    "%s  %u/%u",
+    "%s  %u/%u")
+UI_TEXT(EW_WRITE_HOLD_LATER, 42,
+    "NEXT: the hold follows the last page.",
+    "WEITER: Halten kommt nach letzter Seite.")
+UI_TEXT(EW_ID_MUSIC, 0,
+    "MUSIC %s",
+    "MUSIC %s")
 UI_TEXT(EW_WRITE_NOTE, 100,
     "Keep the power on. A cut in the write can leave the page erased.",
     "Strom anlassen. Ein Schnitt im Schreiben kann die Seite gelöscht lassen.")
@@ -2639,9 +2696,6 @@ UI_TEXT(EW_RELEASE_1, 100,
 UI_TEXT(EW_RELEASE_2, 100,
     "The pin goes back to its output, and that session ends.",
     "Der Pin geht an seinen Ausgang zurück, und diese Sitzung endet.")
-UI_TEXT(EW_BACK_HELD, 100,
-    "The session holds the pin: ABORT, or end the stop first.",
-    "Die Sitzung hält den Pin: erst ABBRUCH, oder den Stop beenden.")
 UI_TEXT(EW_STOPPED_TITLE, 0,
     "STOPPED",
     "STOPPED")
@@ -2933,6 +2987,9 @@ UI_TEXT(EW_REF_STOPPED, 100,
 UI_TEXT(EW_REF_NO_PIN, 100,
     "No throttle slot or DShot port there.",
     "Kein Gas-Slot oder DShot-Port dort.")
+UI_TEXT(EW_REF_RANGE, 100,
+    "Refused: a value out of range, or the voltage too close to the source.",
+    "Abgelehnt: ein Wert außerhalb, oder die Spannung zu nah an der Quelle.")
 UI_TEXT(EW_REF_NO_SUPPLY, 100,
     "SWITCHED: no PD mini answers.",
     "SWITCHED: kein PD mini antwortet.")

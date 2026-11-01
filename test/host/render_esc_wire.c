@@ -14,10 +14,12 @@
 #include <string.h>
 
 #include "esc_wire_panel.h"
+#include "ew_id.h"
 #include "ew_map.h"
 #include "link_pages.h"
 #include "motor_screen.h"
 #include "supply_screen.h"
+#include "ui_keypad.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
 
@@ -114,6 +116,8 @@ static void feed_read(uint8_t fw, uint8_t layout, uint16_t flags, uint8_t why)
     s_f.rd.reads = 1u;
     s_f.rd.read_crc = 0x1234u;
     s_f.rd.signature = 0xE8B2u;
+    s_f.rd.cpu = fw == (uint8_t)EW_FW_AM ? EW_CPU_ARM
+                 : fw == (uint8_t)EW_FW_E32 ? EW_CPU_TEXT : EW_CPU_EFM8;
     s_f.rd.flags = (uint16_t)(flags | LINK_EW_F_HAVE_READ | LINK_EW_F_IN_MODE);
     im->gen = 1u;
     im->reads = 1u;
@@ -125,6 +129,7 @@ static void feed_read(uint8_t fw, uint8_t layout, uint16_t flags, uint8_t why)
             ew_e32_put(im->page, i, ew_map_e32[i].lo);
         }
         snprintf(im->name, sizeof(im->name), "BOARD_F051");
+        snprintf(im->music, sizeof(im->music), "C4 E4 G4 C5");
     } else {
         for (size_t i = 0u; (f = ew_map_nth(fw, layout, i)) != NULL; ++i) {
             im->page[f->off] = f->lo;
@@ -150,6 +155,45 @@ static void feed_read(uint8_t fw, uint8_t layout, uint16_t flags, uint8_t why)
 static void open_write(void)
 {
     tap(esc_wire_panel_action_rect(2));
+}
+
+/**
+ * @brief Changes the row: its choice's first entry, or the keypad's lowest.
+ * @param row The row.
+ */
+static void change_row(int row)
+{
+    tap(esc_wire_panel_value_rect(row));
+    if (esc_wire_panel_keypad()->open) {
+        tap(ui_keypad_key_rect(esc_wire_panel_keypad(), UI_KEY_0));
+        tap(ui_keypad_key_rect(esc_wire_panel_keypad(), UI_KEY_OK));
+        if (esc_wire_panel_keypad()->open) {
+            tap(ui_keypad_key_rect(esc_wire_panel_keypad(), UI_KEY_CANCEL));
+        }
+    } else {
+        tap(esc_wire_panel_choice_rect(0));
+    }
+}
+
+/**
+ * @brief A finger on the hold for 2.2s, and off.
+ */
+static void hold_down_2s(void)
+{
+    const gfx_rect_t r = esc_wire_panel_hold_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(r.y + r.h / 2 + UI_BAND_H),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < 110; ++i) {
+        ui_router_tick(0.02f);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    feed();
+    ui_router_tick(0.02f);
 }
 
 void render_esc_wire_view(const char *view)
@@ -181,6 +225,11 @@ void render_esc_wire_view(const char *view)
         s_f.rd.flags = LINK_EW_F_STOPPED | LINK_EW_F_FAULT;
         s_f.rd.result = LINK_ESC_RESULT_SESSION;
         feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);
+    } else if (strcmp(view, "motor-wire-held") == 0) {
+        s_f.rd.flags = 0u;
+        feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);
+        esc_wire_panel_model()->msg = ESC_PROG_MSG_REFUSED;
+        esc_wire_panel_model()->detail = LINK_ESC_REF_NO_SUPPLY;
     } else if (strcmp(view, "motor-wire-other") == 0) {
         s_f.rd.state = LINK_ESC_OPEN;
         s_f.rd.held = true;
@@ -214,6 +263,35 @@ void render_esc_wire_view(const char *view)
             tap(esc_wire_panel_value_rect(1));
             tap(esc_wire_panel_choice_rect(2));
             open_write();
+        } else if (strcmp(rest, "-long") == 0 || strcmp(rest, "-last") == 0) {
+            /* Every field at its highest, then the rows of 4 tabs moved off it:
+             * more than a page, second-look fields first. */
+            const ew_field_t *fd;
+
+            for (size_t i = 0u; (fd = ew_map_nth(EW_FW_AM, 4u, i)) != NULL; ++i) {
+                if (fd->access == (uint8_t)EW_ACC_EDIT) {
+                    s_f.image.page[fd->off] = fd->hi;
+                }
+            }
+            s_f.image.gen = 2u;
+            feed();
+            for (int tab = 1; tab <= 4; ++tab) {
+                tap(esc_wire_panel_tab_rect(tab));
+                for (int row = 0; row < 12 && esc_wire_panel_value_rect(row).w > 0; ++row) {
+                    change_row(row);
+                }
+            }
+            open_write();
+            while (strcmp(rest, "-last") == 0 && esc_wire_panel_hold_rect().w == 0) {
+                tap(esc_wire_panel_next_rect());
+            }
+        } else if (strcmp(rest, "-card") == 0) {
+            /* The hold done, the card not answered. */
+            tap(esc_wire_panel_tab_rect(4));
+            tap(esc_wire_panel_value_rect(3));
+            tap(esc_wire_panel_choice_rect(0));
+            open_write();
+            hold_down_2s();
         } else if (strcmp(rest, "-leave") == 0) {
             tap(esc_wire_panel_back_rect());
         } else if (strcmp(rest, "-running") == 0) {
@@ -222,6 +300,10 @@ void render_esc_wire_view(const char *view)
         }
     } else if (strcmp(view, "motor-wire-erased") == 0) {
         feed_read(EW_FW_AM, 0u, LINK_EW_F_ERASED, EW_WHY_ERASED);
+        esc_wire_panel_model()->msg = ESC_PROG_MSG_READ_DONE;
+    } else if (strcmp(view, "motor-wire-erased-leave") == 0) {
+        feed_read(EW_FW_AM, 0u, LINK_EW_F_ERASED, EW_WHY_ERASED);
+        tap(esc_wire_panel_back_rect());
     } else if (strcmp(view, "motor-wire-s") == 0) {
         feed_read(EW_FW_S, 33u, LINK_EW_F_WRITABLE, 0u);
         tap(esc_wire_panel_tab_rect(1));

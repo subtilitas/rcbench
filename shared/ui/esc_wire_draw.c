@@ -20,6 +20,8 @@
 #define ACT_W 243
 /** @brief The gap between two actions. */
 #define ACT_GAP 10
+/** @brief The WRITE list's NEXT and PREV. */
+#define TURN_W 180
 /** @brief The left column's width on the connect page. */
 #define CONNECT_W 497
 
@@ -96,8 +98,12 @@ gfx_rect_t ewp_editor_area(void)
 
 gfx_rect_t esc_wire_panel_hold_rect(void)
 {
+    const ewp_stage_t st = ewp_stage();
+
     if (ewp_s.kp.open || ewp_s.ch_what != EWP_CH_NONE
-        || (ewp_s.page == EWP_PAGE_NONE && ewp_stage() != ESC_WIRE_CONNECT)) {
+        || (ewp_s.page == EWP_PAGE_NONE && st != ESC_WIRE_CONNECT
+            && st != ESC_WIRE_PIN_HELD)
+        || (ewp_s.page == EWP_PAGE_WRITE && !ewp_s.w_seen_last)) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     return (gfx_rect_t){ (int16_t)(ewp_s.area.x + 10), (int16_t)act_y(), HOLD_W,
@@ -107,6 +113,30 @@ gfx_rect_t esc_wire_panel_hold_rect(void)
 gfx_rect_t esc_wire_panel_cancel_rect(void)
 {
     return ewp_choice_cancel_rect();
+}
+
+/**
+ * @brief The WRITE list's turn buttons.
+ * @param place 0 for PREV, 1 for NEXT.
+ * @return The rectangle; empty with one page.
+ */
+static gfx_rect_t turn_rect(int place)
+{
+    if (ewp_s.page != EWP_PAGE_WRITE || ewp_write_pages() < 2) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    return (gfx_rect_t){ (int16_t)(ewp_s.area.x + 10 + HOLD_W + 10 + place * (TURN_W + 10)),
+                         (int16_t)act_y(), TURN_W, EWP_ACT_H };
+}
+
+gfx_rect_t esc_wire_panel_prev_rect(void)
+{
+    return turn_rect(0);
+}
+
+gfx_rect_t esc_wire_panel_next_rect(void)
+{
+    return turn_rect(1);
 }
 
 gfx_rect_t esc_wire_panel_value_rect(int i)
@@ -167,6 +197,37 @@ int esc_wire_panel_page(void)
 const char *esc_wire_panel_page_line(int i)
 {
     return i >= 0 && i < ewp_s.page_lines ? ewp_s.lines[i] : NULL;
+}
+
+bool esc_wire_panel_page_line_warns(int i)
+{
+    return i >= 0 && i < ewp_s.page_lines && ewp_s.line_warn[i];
+}
+
+const char *esc_wire_panel_name_line(void)
+{
+    static char s_text[EWP_LINE];
+
+    snprintf(s_text, sizeof(s_text), TR(EW_ID_TAG), (int)sizeof(ewp_s.prog.f.image.name),
+             ewp_s.prog.f.image.name);
+    return s_text;
+}
+
+const char *esc_wire_panel_music_line(void)
+{
+    static char s_text[sizeof(ewp_s.prog.f.image.music) + 16u];
+    static char s_music[sizeof(ewp_s.prog.f.image.music)];
+    const char *m = ewp_s.prog.f.image.music;
+    size_t n = 0u;
+
+    for (; n + 1u < sizeof(s_music) && m[n] != '\0'; ++n) {
+        const unsigned char b = (unsigned char)m[n];
+
+        s_music[n] = b >= 0x20u && b <= 0x7Eu ? (char)b : '?';
+    }
+    s_music[n] = '\0';
+    snprintf(s_text, sizeof(s_text), TR(EW_ID_MUSIC), n != 0u ? s_music : "--");
+    return s_text;
 }
 
 ui_keypad_t *esc_wire_panel_keypad(void)
@@ -338,7 +399,10 @@ static void draw_progress(gfx_canvas_t *c)
              (unsigned)rd->t_ms % 1000u / 100u);
     line_at(c, x, y, s_text, UI_C_TEXT_DIM);
     y += EWP_LINE_H + 8;
-    if (ewp_stage() == ESC_WIRE_ENTERING && ewp_s.power == (uint8_t)LINK_ESC_SWITCHED) {
+    if (ewp_s.w_step != EWP_W_NONE) {
+        line_at(c, x, y, TR(EW_CARD_WAIT), UI_C_WARN);
+    } else if (ewp_stage() == ESC_WIRE_ENTERING
+               && ewp_s.power == (uint8_t)LINK_ESC_SWITCHED) {
         snprintf(s_text, sizeof(s_text), TR(EW_ENTRY_HOLD_IS),
                  (unsigned long)ewp_s.hold_ms / 1000ul,
                  (unsigned long)ewp_s.hold_ms % 1000ul / 100ul);
@@ -400,12 +464,21 @@ static void draw_identity(gfx_canvas_t *c)
         snprintf(s_text, sizeof(s_text), TR(EW_ID_BOOTLOADER), (unsigned)im->page[2]);
         line_at(c, x, y, s_text, UI_C_TEXT);
         y += EWP_LINE_H;
-        snprintf(s_text, sizeof(s_text), TR(EW_ID_TAG), 16, im->name);
+        snprintf(s_text, sizeof(s_text), "%s", esc_wire_panel_name_line());
     } else {
-        snprintf(s_text, sizeof(s_text), TR(EW_ID_TAG), 16, im->name);
+        snprintf(s_text, sizeof(s_text), "%s", esc_wire_panel_name_line());
     }
     line_at(c, x, y, s_text, UI_C_TEXT);
-    y += EWP_LINE_H + 12;
+    y += EWP_LINE_H;
+    if (rd->fw == (uint8_t)EW_FW_E32) {
+        const gfx_rect_t box = { (int16_t)x, (int16_t)y,
+                                 (int16_t)(ewp_s.area.w - 2 * (x - ewp_s.area.x)),
+                                 EWP_LINE_H };
+
+        y += EWP_LINE_H * ui_text_wrap(c, box, EWP_LINE_H, esc_wire_panel_music_line(),
+                                       EWP_FONT, ui_theme_color(UI_C_TEXT_DIM));
+    }
+    y += 12;
     if (can) {
         (void)gfx_text(c, x, y, TR(EW_WRITABLE), &gfx_font_16x28,
                        ui_theme_color(UI_C_OK), 1);
@@ -520,13 +593,38 @@ static void draw_page(gfx_canvas_t *c)
         apply = TR(EW_HOLD_RESTORE);
         break;
     }
-    (void)gfx_text(c, x, ewp_s.area.y + 6, title, &gfx_font_16x28,
+    const int pages = ewp_s.page == EWP_PAGE_WRITE ? ewp_write_pages() : 1;
+    char head[EWP_LINE];
+
+    if (pages > 1) {
+        snprintf(head, sizeof(head), TR(EW_WRITE_PAGE_OF), title,
+                 (unsigned)ewp_s.w_page + 1u, (unsigned)pages);
+    } else {
+        snprintf(head, sizeof(head), "%s", title);
+    }
+    (void)gfx_text(c, x, ewp_s.area.y + 6, head, &gfx_font_16x28,
                    ui_theme_color(UI_C_TEXT), 1);
     for (int i = 0; i < ewp_s.page_lines; ++i) {
-        line_at(c, x, y, ewp_s.lines[i], UI_C_TEXT);
+        line_at(c, x, y, ewp_s.lines[i], ewp_s.line_warn[i] ? UI_C_WARN : UI_C_TEXT);
         y += EWP_LINE_H;
     }
-    hold_btn(c, apply);
+    /* A page's own lines are what stands: only a note goes under them. */
+    if (ewp_s.note[0] != '\0') {
+        line_at(c, ewp_s.area.x + 10, act_y() - 24, ewp_s.note,
+                ewp_s.note_warn ? UI_C_WARN : UI_C_TEXT);
+    }
+    if (esc_wire_panel_hold_rect().w != 0) {
+        hold_btn(c, apply);
+    } else {
+        line_at(c, ewp_s.area.x + 10, act_y() + 14, TR(EW_WRITE_HOLD_LATER), UI_C_TEXT_DIM);
+    }
+    if (pages > 1) {
+        ui_button_font(c, esc_wire_panel_prev_rect(), TR(EW_WRITE_PREV),
+                       ui_theme_color(UI_C_PANEL_HI), false, ewp_s.w_page > 0, EWP_FONT);
+        ui_button_font(c, esc_wire_panel_next_rect(), TR(EW_WRITE_NEXT),
+                       ui_theme_color(UI_C_PANEL_HI), false, ewp_s.w_page < pages - 1,
+                       EWP_FONT);
+    }
     ui_button_font(c, esc_wire_panel_cancel_rect(), TR(EW_CANCEL),
                    ui_theme_color(UI_C_PANEL_HI), false, true, EWP_FONT);
 }
@@ -564,12 +662,17 @@ static void draw_held(gfx_canvas_t *c, ewp_stage_t st)
     back_btn(c);
     (void)gfx_text(c, x, y,
                    st == ESC_WIRE_STOPPED ? TR(EW_STOPPED_TITLE)
+                   : st == ESC_WIRE_PIN_HELD ? TR(EW_HELD_TITLE)
                    : st == ESC_WIRE_OTHER ? TR(EW_OTHER_TITLE) : TR(EW_NOT_BACK_TITLE),
                    &gfx_font_16x28, ui_theme_color(UI_C_WARN), 1);
     ewp_line_text(s_text, sizeof(s_text));
     line_at(c, x, y + 50, s_text, UI_C_TEXT);
     message_line(c);
-    if (st == ESC_WIRE_STOPPED) {
+    if (st == ESC_WIRE_PIN_HELD) {
+        line_at(c, x, y + 50 + EWP_LINE_H + 8, TR(EW_HELD_1), UI_C_TEXT_DIM);
+        hold_btn(c, TR(EW_HOLD_ENTER_BTN));
+        action_btn(c, 2, TR(EW_CLOSE_PIN), false, true);
+    } else if (st == ESC_WIRE_STOPPED) {
         action_btn(c, 0, TR(EW_CLEAR), false, true);
         action_btn(c, 1, TR(EW_CLOSE_PIN), false, true);
     } else if (st == ESC_WIRE_OTHER) {

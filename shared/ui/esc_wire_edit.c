@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -575,6 +576,7 @@ void ewp_page_open(int kind)
     ewp_editors_close();
     ewp_s.page = kind;
     ewp_s.page_lines = 0;
+    memset(ewp_s.line_warn, 0, sizeof(ewp_s.line_warn));
     ewp_s.note[0] = '\0';
 }
 
@@ -584,22 +586,6 @@ void ewp_page_add(const char *s)
         snprintf(ewp_s.lines[ewp_s.page_lines], sizeof(ewp_s.lines[0]), "%s", s);
         ++ewp_s.page_lines;
     }
-}
-
-/**
- * @brief One changed field or key on the WRITE page.
- * @param name  Its name.
- * @param from  Its value as read.
- * @param to    Its value in the draft.
- * @param warns It is a second-look field.
- */
-static void write_line(const char *name, const char *from, const char *to, bool warns)
-{
-    char line[EWP_LINE];
-
-    snprintf(line, sizeof(line), warns ? TR(EW_WRITE_WARN_LINE) : "%s: %s -> %s", name,
-             from, to);
-    ewp_page_add(line);
 }
 
 /**
@@ -616,17 +602,47 @@ static bool warns_on(uint8_t flags, int to)
     return (flags & EW_FF_WARN_ZERO) == 0u || to == 0;
 }
 
-void ewp_page_write(void)
+/** @brief The WRITE list's walk: the page it fills and where it is. */
+typedef struct {
+    int at;    /**< the changes passed            */
+    int first; /**< the page's first change       */
+} write_walk_t;
+
+/**
+ * @brief One changed field or key: its line when it falls on the page shown.
+ * @param w     The walk.
+ * @param name  Its name.
+ * @param from  Its value as read.
+ * @param to    Its value in the snapshot.
+ * @param warns It is a second-look field.
+ */
+static void write_line(write_walk_t *w, const char *name, const char *from,
+                       const char *to, bool warns)
+{
+    if (w->at >= w->first && w->at < w->first + EWP_WRITE_PER_PAGE) {
+        char line[EWP_LINE];
+
+        snprintf(line, sizeof(line), warns ? TR(EW_WRITE_WARN_LINE) : "%s: %s -> %s",
+                 name, from, to);
+        ewp_page_add(line);
+        if (warns) {
+            ewp_s.line_warn[ewp_s.page_lines - 1] = true;
+        }
+    }
+    ++w->at;
+}
+
+/**
+ * @brief The snapshot's changes in the list's order, second-look fields first.
+ * @param w The walk; its @c at ends as their count.
+ */
+static void write_walk(write_walk_t *w)
 {
     const esc_link_readout_t *rd = &ewp_s.prog.f.rd;
     const uint8_t *page = ewp_s.prog.f.image.page;
     char from[32];
     char to[32];
-    int shown = 0;
-    const int room = EWP_PAGE_LINES - 2;
 
-    ewp_page_open(EWP_PAGE_WRITE);
-    /* The second-look fields first: they go on the page whatever else does. */
     for (int pass = 0; pass < 2; ++pass) {
         const bool want = pass == 0;
 
@@ -634,14 +650,12 @@ void ewp_page_write(void)
             for (size_t i = 0u; i < EW_E32_KEYS; ++i) {
                 const ew_key_t *k = &ew_map_e32[i];
                 const int16_t a = ew_e32_get(page, i);
-                const int16_t b = ew_e32_get(ewp_s.draft, i);
+                const int16_t b = ew_e32_get(ewp_s.w_draft, i);
 
-                if (a != b && warns_on(k->flags, b) == want
-                    && (want || shown < room)) {
+                if (a != b && warns_on(k->flags, b) == want) {
                     (void)ew_key_text(k, a, from, sizeof(from));
                     (void)ew_key_text(k, b, to, sizeof(to));
-                    write_line(k->key, from, to, want);
-                    ++shown;
+                    write_line(w, k->key, from, to, want);
                 }
             }
         } else {
@@ -649,25 +663,59 @@ void ewp_page_write(void)
 
             for (size_t i = 0u; (f = ew_map_nth(rd->fw, rd->layout, i)) != NULL; ++i) {
                 const uint8_t a = page[f->off];
-                const uint8_t b = ewp_s.draft[f->off];
+                const uint8_t b = ewp_s.w_draft[f->off];
 
-                if (a != b && warns_on(f->flags, b) == want
-                    && (want || shown < room)) {
+                if (a != b && warns_on(f->flags, b) == want) {
                     (void)ew_field_text(f, a, from, sizeof(from));
                     (void)ew_field_text(f, b, to, sizeof(to));
-                    write_line(f->name, from, to, want);
-                    ++shown;
+                    write_line(w, f->name, from, to, want);
                 }
             }
         }
     }
-    const int total = ewp_changed_count();
+}
 
-    if (total > shown) {
-        char line[EWP_LINE];
+int ewp_write_pages(void)
+{
+    write_walk_t w = { 0, INT_MAX - EWP_WRITE_PER_PAGE };
 
-        snprintf(line, sizeof(line), TR(EW_WRITE_MORE), (unsigned)(total - shown));
-        ewp_page_add(line);
+    write_walk(&w);
+    return w.at > 0 ? (w.at + EWP_WRITE_PER_PAGE - 1) / EWP_WRITE_PER_PAGE : 1;
+}
+
+/**
+ * @brief The WRITE list's page shown, as lines.
+ */
+static void write_fill(void)
+{
+    const int pages = ewp_write_pages();
+    write_walk_t w = { 0, ewp_s.w_page * EWP_WRITE_PER_PAGE };
+
+    ewp_s.page_lines = 0;
+    memset(ewp_s.line_warn, 0, sizeof(ewp_s.line_warn));
+    write_walk(&w);
+    if (ewp_s.w_page == pages - 1) {
+        ewp_s.w_seen_last = true;
+        ewp_page_add(TR(EW_WRITE_NOTE));
     }
-    ewp_page_add(TR(EW_WRITE_NOTE));
+    ++ewp_s.rev;
+}
+
+void ewp_page_write(void)
+{
+    ewp_page_open(EWP_PAGE_WRITE);
+    memcpy(ewp_s.w_draft, ewp_s.draft, sizeof(ewp_s.w_draft));
+    ewp_s.w_page = 0;
+    ewp_s.w_seen_last = false;
+    write_fill();
+}
+
+void ewp_write_turn(int delta)
+{
+    const int to = ewp_s.w_page + delta;
+
+    if (ewp_s.page == EWP_PAGE_WRITE && to >= 0 && to < ewp_write_pages()) {
+        ewp_s.w_page = to;
+        write_fill();
+    }
 }

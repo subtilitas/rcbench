@@ -28,7 +28,7 @@ Tap a number for the keypad, or a choice for its list. Each editor shows one lin
 
 ## Write
 
-The page lists the changes, each hazardous field first, with `CHECK` and its new value. Hold 2s. The first write of a session saves the backup first. With no card, the page asks.
+The page lists the changes, each hazardous field first, with `CHECK` and its new value. A long list has `NEXT` and `PREV`: the hold comes once the last page has been shown. Hold 2s. Then only `ABORT` and `STOP` act until the write has ended. The first write of a session saves the backup first, and an erased page is no backup. With no card, the page asks.
 
 A write on BLHeli_S or Bluejay takes about 3848ms. Keep the power on.
 
@@ -38,4 +38,4 @@ A write on BLHeli_S or Bluejay takes about 3848ms. Keep the power on.
 
 ## Leave
 
-`BACK` opens the leave page: hold 2s. ESCape32 has no LEAVE: a power cycle ends its session, and with `BY HAND` you disconnect its power.
+`BACK` opens the leave page: hold 2s. An erased AM32 stays erased until `RESTORE FROM BACKUP`; the pin goes back and the supply goes off. ESCape32 has no LEAVE: a power cycle ends its session, and with `BY HAND` you disconnect its power.

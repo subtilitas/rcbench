@@ -108,6 +108,8 @@ enum {
 #define EWP_LINE 101
 /** @brief Tabs at most. */
 #define EWP_TABS 7
+/** @brief Changes on a page of the WRITE list. */
+#define EWP_WRITE_PER_PAGE 12
 /** @brief A value above any of a choice's own: enter a number on the keypad. */
 #define EWP_CHOICE_NUMBER 0x7FFF
 /** @brief A choice's value that goes to the next page of files. */
@@ -150,6 +152,9 @@ typedef struct {
     int        page;      /**< an EWP_PAGE_*                                  */
     int        page_lines; /**< its lines                                     */
     char       lines[EWP_PAGE_LINES][EWP_LINE]; /**< them                     */
+    bool       line_warn[EWP_PAGE_LINES]; /**< in the warning colour          */
+    int        w_page;    /**< the WRITE list's page shown                    */
+    bool       w_seen_last; /**< its last page was shown: the hold is offered */
     /* The editors. */
     ui_keypad_t kp;       /**< the keypad                                     */
     int        kp_what;   /**< an EWP_KP_*                                    */
@@ -165,6 +170,9 @@ typedef struct {
     uint32_t   card_id;   /**< the request's number                           */
     esc_card_req_t card;  /**< the request                                    */
     int        w_step;    /**< an EWP_W_*                                     */
+    uint8_t    w_draft[ESC_LINK_PAGE_MAX]; /**< what the WRITE page lists: the
+                                                hold writes this, not the draft */
+    ewp_stage_t stage_seen; /**< the page's stage at the last feed            */
     bool       files_for_restore; /**< the list's choice restores             */
     bool       no_card_ok; /**< the operator goes without a card this session */
     char       file_name[ESC_CARD_NAME_MAX]; /**< the file chosen             */
@@ -190,6 +198,23 @@ extern ewp_state_t ewp_s;
  * @return The stage.
  */
 ewp_stage_t ewp_stage(void);
+
+/**
+ * @brief ABORT: a write waiting for the card is given up, else the page is cut.
+ */
+void ewp_abort(void);
+
+/**
+ * @brief Whether a request is with the card or waits to go.
+ * @return true then.
+ */
+bool ewp_card_busy(void);
+
+/**
+ * @brief The text for a write or a save with no backup to make.
+ * @return The text.
+ */
+const char *ewp_no_backup_text(void);
 
 /**
  * @brief A note under the rows.
@@ -364,10 +389,23 @@ void ewp_choice_add(const char *label, int value);
 void ewp_editors_close(void);
 
 /**
- * @brief The hold page of WRITE n VALUES: the changes, each second-look field in
- *        its warning line with its new value.
+ * @brief The hold page of WRITE n VALUES: takes the draft as the snapshot the hold
+ *        writes and lists its changes, second-look fields first, in the warning
+ *        colour with the word CHECK, EWP_WRITE_PER_PAGE to a page.
  */
 void ewp_page_write(void);
+
+/**
+ * @brief How many pages the WRITE list has.
+ * @return Their count, at least 1.
+ */
+int ewp_write_pages(void);
+
+/**
+ * @brief The WRITE list's NEXT or PREV.
+ * @param delta +1 or -1.
+ */
+void ewp_write_turn(int delta);
 
 /**
  * @brief A hold page's start.

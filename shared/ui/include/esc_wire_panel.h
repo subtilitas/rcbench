@@ -63,6 +63,7 @@ typedef enum {
     ESC_WIRE_STOPPED,     /**< a stop or a fault stands                       */
     ESC_WIRE_OTHER,       /**< another writer holds a pin                     */
     ESC_WIRE_NOT_BACK,    /**< the output did not take the pin back           */
+    ESC_WIRE_PIN_HELD,    /**< OPEN, no stop, no flow: ENTER again or PIN BACK */
 } esc_wire_stage_t;
 
 /** @brief The session's hooks, for the programmers' registry. */
@@ -214,6 +215,18 @@ gfx_rect_t esc_wire_panel_hold_rect(void);
 gfx_rect_t esc_wire_panel_cancel_rect(void);
 
 /**
+ * @brief The WRITE page's NEXT.
+ * @return The rectangle; empty with one page.
+ */
+gfx_rect_t esc_wire_panel_next_rect(void);
+
+/**
+ * @brief The WRITE page's PREV.
+ * @return The rectangle; empty with one page.
+ */
+gfx_rect_t esc_wire_panel_prev_rect(void);
+
+/**
  * @brief A choice in the list.
  * @param i The entry.
  * @return The rectangle.
@@ -239,6 +252,26 @@ int esc_wire_panel_page(void);
  * @return The text; NULL past the last.
  */
 const char *esc_wire_panel_page_line(int i);
+
+/**
+ * @brief Whether a hold page's line draws in the warning colour.
+ * @param i The line.
+ * @return true for a second-look field.
+ */
+bool esc_wire_panel_page_line_warns(int i);
+
+/**
+ * @brief The identity tab's name line, every character of the name.
+ * @return The text.
+ */
+const char *esc_wire_panel_name_line(void);
+
+/**
+ * @brief The identity tab's `music` line on ESCape32, display only.  A byte the
+ *        font has not shows as `?`.
+ * @return The text.
+ */
+const char *esc_wire_panel_music_line(void);
 
 /**
  * @brief The keypad.

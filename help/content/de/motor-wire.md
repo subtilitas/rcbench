@@ -28,7 +28,7 @@ Tippe auf eine Zahl für das Tastenfeld, oder auf eine Auswahl für ihre Liste. 
 
 ## Schreiben
 
-Die Seite listet die Änderungen, jedes heikle Feld zuerst, mit `PRÜFE` und seinem neuen Wert. Halte 2s. Das erste Schreiben einer Sitzung speichert erst das Backup. Ohne Karte fragt die Seite.
+Die Seite listet die Änderungen, jedes heikle Feld zuerst, mit `PRÜFE` und seinem neuen Wert. Eine lange Liste hat `WEITER` und `ZURÜCK`: das Halten kommt, wenn die letzte Seite gezeigt wurde. Halte 2s. Danach wirken nur `ABBRUCH` und `STOP`, bis das Schreiben endet. Das erste Schreiben einer Sitzung speichert erst das Backup, und eine gelöschte Seite ist kein Backup. Ohne Karte fragt die Seite.
 
 Ein Schreiben auf BLHeli_S oder Bluejay dauert etwa 3848ms. Lass den Strom an.
 
@@ -38,4 +38,4 @@ Ein Schreiben auf BLHeli_S oder Bluejay dauert etwa 3848ms. Lass den Strom an.
 
 ## Verlassen
 
-`ZURÜCK` öffnet die Seite zum Verlassen: halte 2s. ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung, und mit `BY HAND` trennst du seinen Strom.
+`ZURÜCK` öffnet die Seite zum Verlassen: halte 2s. Ein gelöschter AM32 bleibt gelöscht bis `AUS BACKUP HERSTELLEN`; der Pin geht zurück und die Versorgung aus. ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung, und mit `BY HAND` trennst du seinen Strom.

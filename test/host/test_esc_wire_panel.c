@@ -388,7 +388,8 @@ TEST_CASE(back_on_a_session_under_way_stays_and_says_why)
     CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_ENTERING);
     esc_wire_pages.back();
     CHECK(esc_wire_pages.is_open());
-    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_BACK_HELD));
+    /* BACK names the button that ends it. */
+    CHECK(strstr(esc_wire_panel_message(), TR(EW_ABORT)) != NULL);
 }
 
 /**

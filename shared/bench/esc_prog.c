@@ -270,6 +270,19 @@ static void watch_flags(esc_prog_t *p)
     }
 }
 
+/**
+ * @brief Whether a message is no error: nothing a lost link can leave standing.
+ * @param m The message.
+ * @return true then.
+ */
+static bool msg_is_good_word(esc_prog_msg_t m)
+{
+    return m == ESC_PROG_MSG_NONE || m == ESC_PROG_MSG_READ_DONE
+           || m == ESC_PROG_MSG_WRITE_DONE || m == ESC_PROG_MSG_RESTORE_DONE
+           || m == ESC_PROG_MSG_LEFT || m == ESC_PROG_MSG_CLEARED
+           || m == ESC_PROG_MSG_LOADED || m == ESC_PROG_MSG_HAND_WAIT;
+}
+
 void esc_prog_feed(esc_prog_t *p, const esc_prog_feed_t *f)
 {
     if (p == NULL || f == NULL) {
@@ -308,6 +321,16 @@ void esc_prog_feed(esc_prog_t *p, const esc_prog_feed_t *f)
         }
     }
     watch_flags(p);
+    /* The link's state stands in for a good word while it is gone, and goes when it
+     * is back.  An error that said what ended a flow stays. */
+    if ((f->rd.phase == ESC_LINK_DOWN || f->rd.phase == ESC_LINK_NO_PAGE)
+        && msg_is_good_word(p->msg)) {
+        (void)esc_prog_say(p, f->rd.phase == ESC_LINK_DOWN ? ESC_PROG_MSG_NO_LINK
+                                                           : ESC_PROG_MSG_NO_PAGE, 0u);
+    } else if (f->rd.phase == ESC_LINK_READY
+               && (p->msg == ESC_PROG_MSG_NO_LINK || p->msg == ESC_PROG_MSG_NO_PAGE)) {
+        (void)esc_prog_say(p, ESC_PROG_MSG_NONE, 0u);
+    }
     esc_prog_backup_follow(p);
 }
 
@@ -362,6 +385,25 @@ esc_prog_msg_t esc_prog_powered(esc_prog_t *p)
     }
     p->flow = ESC_PROG_FLOW_CONNECT;
     (void)esc_prog_issue(p, ESC_PROG_CMD_POWERED);
+    return ESC_PROG_MSG_NONE;
+}
+
+esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p)
+{
+    if (p == NULL) {
+        return ESC_PROG_MSG_BUSY;
+    }
+    esc_prog_msg_t m = common_gate(p);
+
+    if (m == ESC_PROG_MSG_NONE && p->f.rd.state != (uint8_t)LINK_ESC_OPEN) {
+        m = ESC_PROG_MSG_NOT_IN_MODE;
+    }
+    if (m != ESC_PROG_MSG_NONE) {
+        return esc_prog_say(p, m, 0u);
+    }
+    p->flow = ESC_PROG_FLOW_CONNECT;
+    (void)esc_prog_say(p, ESC_PROG_MSG_NONE, 0u);
+    esc_prog_issue(p, ESC_PROG_CMD_ENTER)->power = p->conn.power;
     return ESC_PROG_MSG_NONE;
 }
 
@@ -432,8 +474,10 @@ esc_prog_msg_t esc_prog_leave(esc_prog_t *p)
     }
     p->flow = ESC_PROG_FLOW_LEAVE;
     p->backup_state = (uint8_t)ESC_PROG_BACKUP_NONE;
+    /* An erased AM32 refuses a LEAVE: the pin goes back and the supply goes off. */
     (void)esc_prog_issue(p, p->f.rd.state == (uint8_t)LINK_ESC_READY
-                       ? ESC_PROG_CMD_LEAVE : ESC_PROG_CMD_CLOSE);
+                                && (p->f.rd.flags & LINK_EW_F_ERASED) == 0u
+                            ? ESC_PROG_CMD_LEAVE : ESC_PROG_CMD_CLOSE);
     return ESC_PROG_MSG_NONE;
 }
 

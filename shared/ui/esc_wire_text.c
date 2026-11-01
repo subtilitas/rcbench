@@ -41,7 +41,7 @@ static ui_text_id_t refusal(uint16_t ref)
     case LINK_ESC_REF_NO_PIN:
         return TX_EW_REF_NO_PIN;
     case LINK_ESC_REF_RANGE:
-        return TX_EW_MSG_RANGE;
+        return TX_EW_REF_RANGE;
     case LINK_ESC_REF_NO_SUPPLY:
         return TX_EW_REF_NO_SUPPLY;
     case LINK_ESC_REF_STALE:
@@ -159,7 +159,8 @@ const char *ewp_message_text(void)
     case ESC_PROG_MSG_HAND_WAIT:
         return TR(EW_HAND_NOW);
     case ESC_PROG_MSG_READ_DONE:
-        return TR(EW_MSG_READ_DONE);
+        return (ewp_s.prog.f.rd.flags & LINK_EW_F_ERASED) != 0u ? TR(EW_ERASED_NO_BACKUP)
+                                                                : TR(EW_MSG_READ_DONE);
     case ESC_PROG_MSG_WRITE_DONE:
         return TR(EW_MSG_WRITE_DONE);
     case ESC_PROG_MSG_RESTORE_DONE:
@@ -193,8 +194,9 @@ bool ewp_message_warns(void)
     uint16_t d = 0u;
 
     switch (esc_prog_message(&ewp_s.prog, &d)) {
-    case ESC_PROG_MSG_NONE:
     case ESC_PROG_MSG_READ_DONE:
+        return (ewp_s.prog.f.rd.flags & LINK_EW_F_ERASED) != 0u;
+    case ESC_PROG_MSG_NONE:
     case ESC_PROG_MSG_WRITE_DONE:
     case ESC_PROG_MSG_RESTORE_DONE:
     case ESC_PROG_MSG_LEFT:

@@ -533,10 +533,50 @@ text_view_result_t tv_edit_button(int hit)
 /* -------------------------------------------------------------- the save */
 
 /**
- * @brief An ESC settings file's checksum line takes the word `edited`: a person's
- *        file says so in its last line (ew_file.h), and a file cut at any byte has
- *        neither.  Lines behind it stay, as they were blank.
- * @return true when the text is an ESC file that held one
+ * @brief Whether a line's first word, in any case, is @p word.
+ * @param b    the line
+ * @param len  its bytes
+ * @param word the word, lower case
+ * @return true then
+ */
+static bool line_word_is(const char *b, size_t len, const char *word)
+{
+    size_t at = 0u;
+    size_t w = 0u;
+
+    while (at < len && (b[at] == ' ' || b[at] == '\t')) {
+        ++at;
+    }
+    for (; word[w] != '\0'; ++w, ++at) {
+        if (at >= len || (b[at] | 0x20) != word[w]) {
+            return false;
+        }
+    }
+    return at == len || b[at] == ' ' || b[at] == '\t' || b[at] == '=' || b[at] == ':'
+           || b[at] == '\r';
+}
+
+/**
+ * @brief Whether a line holds nothing but blanks.
+ * @param b   the line
+ * @param len its bytes
+ * @return true then
+ */
+static bool line_blank(const char *b, size_t len)
+{
+    for (size_t i = 0u; i < len; ++i) {
+        if (b[i] != ' ' && b[i] != '\t' && b[i] != '\r') {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief An ESC settings file's checksum line goes and `edited` becomes its last
+ *        line that is not blank (ew_file.h): lines a person added behind the checksum
+ *        stay ahead of it.  A file cut at any byte has neither word and stays as it is.
+ * @return true when the text is an ESC file that held either
  */
 static bool esc_edited(void)
 {
@@ -548,34 +588,67 @@ static bool esc_edited(void)
     if (head == NULL || len < hn || memcmp(head, k_esc_head, hn) != 0) {
         return false;
     }
-    bool done = false;
+    const size_t cur = text_buf_cursor(&tv_tb);
+    size_t last = 0u;
+    size_t marks = 0u;
+    bool last_edited = false;
 
-    for (size_t i = text_buf_lines(&tv_tb); i-- > 1u && !done;) {
+    for (size_t i = 1u; i < text_buf_lines(&tv_tb); ++i) {
         const char *b = text_buf_line(&tv_tb, i, &len);
 
-        if (b == NULL || len < 9u || memcmp(b, "checksum ", 9u) != 0) {
+        if (b == NULL || line_blank(b, len)) {
             continue;
         }
-        const size_t cur = text_buf_cursor(&tv_tb);
-        const size_t from = text_buf_line_start(&tv_tb, i);
-        const size_t end = text_buf_len(&tv_tb) - len;
+        const bool sum = line_word_is(b, len, "checksum");
+        const bool ed = line_word_is(b, len, k_word);
 
-        text_buf_set_cursor(&tv_tb, from);
+        marks += sum || ed ? 1u : 0u;
+        last = i;
+        last_edited = ed;
+    }
+    if (marks == 0u) {
+        return false;
+    }
+    if (marks == 1u && last_edited) {
+        return true;
+    }
+    /* Every word out, from the bottom, so the lines above keep their numbers. */
+    for (size_t i = last + 1u; i-- > 1u;) {
+        const char *b = text_buf_line(&tv_tb, i, &len);
+
+        if (b == NULL || (!line_word_is(b, len, "checksum")
+                          && !line_word_is(b, len, k_word))) {
+            continue;
+        }
+        const size_t end = text_buf_len(&tv_tb) - len;
         bool more = true;
 
+        text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, i));
         while (more && text_buf_len(&tv_tb) > end) {
             more = text_buf_delete_after(&tv_tb);
         }
-        for (size_t k = 0u; k + 1u < sizeof(k_word); ++k) {
-            (void)text_buf_insert(&tv_tb, (uint32_t)k_word[k]);
+        /* The line's own end, so no empty line stays where it was. */
+        (void)text_buf_delete_after(&tv_tb);
+    }
+    /* Behind the last line that is left and is not blank. */
+    size_t at = text_buf_lines(&tv_tb);
+
+    while (at-- > 1u) {
+        const char *b = text_buf_line(&tv_tb, at, &len);
+
+        if (b != NULL && !line_blank(b, len)) {
+            break;
         }
-        text_buf_set_cursor(&tv_tb, cur < from ? cur : from);
-        done = true;
     }
-    if (done) {
-        tv_clamp_top();
+    (void)text_buf_line(&tv_tb, at, &len);
+    text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, at) + len);
+    (void)text_buf_insert_eol(&tv_tb);
+    for (size_t k = 0u; k + 1u < sizeof(k_word); ++k) {
+        (void)text_buf_insert(&tv_tb, (uint32_t)k_word[k]);
     }
-    return done;
+    text_buf_set_cursor(&tv_tb, cur < text_buf_len(&tv_tb) ? cur : text_buf_len(&tv_tb));
+    tv_clamp_top();
+    return true;
 }
 
 /**

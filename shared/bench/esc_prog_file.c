@@ -75,6 +75,48 @@ static bool capture_now(const esc_prog_t *p, ew_file_t *out)
                : ew_file_capture(out, &c, &id, im->page);
 }
 
+/**
+ * @brief Whether the read copy is an erased page: no backup comes of it.
+ * @param p the model
+ * @return true for the page's ERASED flag, or a page of 0xFF only
+ */
+static bool page_erased(const esc_prog_t *p)
+{
+    const esc_link_image_t *im = &p->f.image;
+
+    if ((p->f.rd.flags & LINK_EW_F_ERASED) != 0u) {
+        return true;
+    }
+    for (uint16_t i = 0u; i < im->len; ++i) {
+        if (im->page[i] != 0xFFu) {
+            return false;
+        }
+    }
+    return im->len != 0u;
+}
+
+esc_prog_no_backup_t esc_prog_no_backup(const esc_prog_t *p)
+{
+    /* Big, and one caller on one task. */
+    static ew_file_t s_try;
+
+    if (p == NULL || p->f.image.gen == 0u
+        || (p->f.rd.flags & LINK_EW_F_HAVE_READ) == 0u) {
+        return ESC_PROG_NO_BACKUP_NOT_READ;
+    }
+    if (page_erased(p)) {
+        return ESC_PROG_NO_BACKUP_ERASED;
+    }
+    if (p->f.rd.fw == (uint8_t)EW_FW_E32) {
+        for (const char *m = p->f.image.music; *m != '\0'; ++m) {
+            if ((unsigned char)*m < 0x20u || (unsigned char)*m > 0x7Eu) {
+                return ESC_PROG_NO_BACKUP_MUSIC;
+            }
+        }
+    }
+    return capture_now(p, &s_try) ? ESC_PROG_NO_BACKUP_HAS : ESC_PROG_NO_BACKUP_FORMAT;
+}
+
 void esc_prog_backup_follow(esc_prog_t *p)
 {
     if (p == NULL) {
@@ -97,7 +139,9 @@ void esc_prog_backup_follow(esc_prog_t *p)
         || im->reads != p->f.rd.reads || im->read_crc != p->f.rd.read_crc) {
         return;
     }
-    if (capture_now(p, &p->file)) {
+    /* The session's backup is its first read that is not erased: after a RESTORE,
+     * the read that follows it. */
+    if (!page_erased(p) && capture_now(p, &p->file)) {
         p->backup_state = (uint8_t)ESC_PROG_BACKUP_OWED;
         p->backup_gen = im->gen;
     }

@@ -420,6 +420,11 @@ SCREENS = {
     "motor-wire-e32-5": ("motor-wire-e32-5.png", "motor", "dark"),
     "motor-wire-e32-6": ("motor-wire-e32-6.png", "motor", "dark"),
     "motor-wire-e32-leave": ("motor-wire-e32-leave.png", "motor", "dark"),
+    "motor-wire-held": ("motor-wire-held.png", "motor", "dark"),
+    "motor-wire-am-long": ("motor-wire-am-long.png", "motor", "dark"),
+    "motor-wire-am-last": ("motor-wire-am-last.png", "motor", "dark"),
+    "motor-wire-am-card": ("motor-wire-am-card.png", "motor", "dark"),
+    "motor-wire-erased-leave": ("motor-wire-erased-leave.png", "motor", "dark"),
     # ESC STICK, opened from that row, full width under the output strip.
     "motor-stick": ("motor-stick.png", "motor", "dark"),
     "motor-stick-items": ("motor-stick-items.png", "motor", "dark"),

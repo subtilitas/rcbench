@@ -45,6 +45,8 @@ static size_t g_record_len;
 static int    g_card_requests;
 static esc_card_req_t  g_req;
 static esc_card_done_t g_done;
+/** @brief The card's task is slow: a request stays where it is. */
+static bool   g_card_wait;
 
 static bool io_mounted(void *ctx)
 {
@@ -124,6 +126,9 @@ static void card_serve(void)
 {
     if (esc_wire_panel_card_look()) {
         /* A tap looks; the rig's card is there or not. */
+    }
+    if (g_card_wait) {
+        return;
     }
     if (!esc_wire_panel_card_take(&g_req)) {
         return;
@@ -295,6 +300,7 @@ static void session_up(void (*esc_up)(void))
     g_card_files = 0;
     g_card_in = true;
     g_card_refuses = false;
+    g_card_wait = false;
     g_record[0] = '\0';
     g_record_len = 0u;
     g_card_requests = 0;

@@ -245,9 +245,10 @@ ROW_RE = re.compile(r"^([\w-]+)\s+([\d,]+)\s")
 # code and data, and with them the sets every line maps to.  18 builds of one
 # tree with other paddings and link orders gave battery-sim 3167 to 3353
 # fills, frame 9466 to 9810, servo 2236 to 2693 and settings-list-chrome 36320
-# to 37282.  The doc table is therefore checked to a tolerance: 3% of a mode,
-# and never less than 500 fills, under which none of those 18 builds differ
-# from another.  A mode under about 700 fills is not held by this check.
+# to 37282: spreads of 186, 344, 457 and 962 fills.  The doc table is therefore
+# checked to a tolerance: the larger of 3% of a mode and 500 fills, which each of
+# those spreads stays under, at its own mode's size.  A mode under about 700 fills
+# is not held by this check.
 DOC_TOLERANCE = 0.03
 DOC_FLOOR = 500
 
