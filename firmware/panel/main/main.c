@@ -152,6 +152,7 @@ void publish_throttle_ramp(void)
 #include "ui_text.h"
 #include "ui_theme.h"
 
+#include "panel_console.h"
 #include "panel.h"
 #include "panel_main.h"
 #include "panel_trial.h"
@@ -950,6 +951,7 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     knob_task_start();
+    panel_console_start();
 
     /* What internal RAM holds with every task of the panel running and the
      * radio off. */

@@ -672,6 +672,12 @@ jobs:
           name: iomcu
           path: firmware/panel/iomcu-image
 
+      - name: Fetch the IOmcu's console image
+        uses: actions/download-artifact@v7
+        with:
+          name: iomcu-console
+          path: firmware/panel/iomcu-console
+
       - name: Fetch the rbmod carrier's IOmcu image
         uses: actions/download-artifact@v7
         with:
@@ -801,6 +807,26 @@ jobs:
             exit 1
           fi
 
+      # A debug panel: the IOmcu's bench console over the link, the console
+      # image carried.  The default build holds none of it.
+      - name: Build the panel's console build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32p4
+          path: 'firmware/panel'
+          command: idf.py -B build-console -D RCBENCH_PANEL_CONSOLE=ON
+                   -D RCBENCH_IOMCU_BIN=iomcu-console/rcbench-iomcu.bin build
+
+      - name: Every task's stack holds its deepest call chain in the console build
+        run: python3 tools/stack_check.py firmware/panel/build-console
+
+      - name: The console relay is in the console build only
+        run: |
+          python3 tools/check_panel_console.py on firmware/panel/build-console/rcbench-panel.elf
+          python3 tools/check_panel_console.py off firmware/panel/build/rcbench-panel.elf
+          python3 tools/check_panel_console.py off firmware/panel/build-noinject/rcbench-panel.elf
+
       # And the default image holds the frame lines' code, the build
       # without RCBENCH_PERF_LOG none of it (tools/check_perf_log.py).
       - name: The frame lines are in the default build only
@@ -927,7 +953,7 @@ jobs:
           arm-none-eabi-nm firmware/iomcu/build-console/rcbench-iomcu.elf \
             | grep -q page_console_key
           if arm-none-eabi-nm firmware/iomcu/build/rcbench-iomcu.elf \
-              | grep -iE 'page_console|console_hw|ewline'; then
+              | grep -iE 'page_console|console_hw|console_tunnel|ewline'; then
             echo "::error::the default image holds console code"
             exit 1
           fi
@@ -957,6 +983,12 @@ jobs:
             firmware/iomcu/build/rcbench-iomcu-pt.uf2
             firmware/iomcu/build/rcbench-iomcu.bin
             firmware/iomcu/build/rcbench-iomcu.elf
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: iomcu-console
+          path: firmware/iomcu/build-console/rcbench-iomcu.bin
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v7

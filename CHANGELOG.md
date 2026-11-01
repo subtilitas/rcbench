@@ -8,6 +8,7 @@ history is in git.
 
 ### Added
 
+- Debug builds: the IOmcu's bench console over CAN. A panel built with `RCBENCH_PANEL_CONSOLE` relays its serial ports to an IOmcu built with `IOMCU_CONSOLE`, through the CONSOLE page (0xE0), at most one exchange a control pass: 6,000 bytes/s of output at a 5ms pass, calculated. Every console command runs on the IOmcu, `ewline` included. Both options are off in every released image, and CI reads the images for it. Such a panel carries the console image, and UPDATES offers it over CAN. The console build holds the IOmcu's lines from its start, the reset cause first, for whoever comes.
 - Panel: MOTOR & ESC > PROGRAM's row `AM32, Bluejay, BLHeli_S, ESCape32`, `SIGNAL WIRE` at its right, dimmed until the IOmcu reports `LINK_CAP_PROGRAM`: [ESC signal wire](docs/EscWire.md). CONNECT, identity, tabs of fields, a draft, WRITE with the warning that names each hazardous field, the backup and the record on the card, a file loaded, RESTORE FROM BACKUP on an erased AM32, LEAVE. Voltage and limit are SUPPLY's until typed.
 - SUPPLY: an ESC session's hold counts on every board. On the carrier SUPPLY refuses set points and ON under it (`SUP_HELD_REFUSED_ESC`); KST and Hitec sessions there do not lock it.
 - Panel's editor: an ESC settings file changed there has `edited` as its last line that is not blank, behind any lines added to it, and no checksum line.

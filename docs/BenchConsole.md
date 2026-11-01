@@ -2,7 +2,7 @@
 
 <sub>**English** · [Deutsch](BenchConsole-de.md)</sub>
 
-The bench console is a bench tool. It is not in any released image. An IOmcu
+The bench console is a bench tool, for debug builds only. It is not in any released image. An IOmcu
 built with the option `IOMCU_CONSOLE` reads command lines on its USB
 (Universal Serial Bus) serial port and reads and writes the link pages of
 [The link](Link.md) from them. A station on that port drives the IOmcu's
@@ -42,8 +42,8 @@ with it, checks the stacks of both cores, and fails when the default image
 holds a console symbol. `IOMCU_CONSOLE` and `SENSE_TRACE` both read the USB
 console; CMake refuses a build with both.
 
-Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 17,784
-bytes larger than the default image and holds 9,216 bytes more RAM
+Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 16,468
+bytes larger than the default image and holds 9,456 bytes more RAM
 (random-access memory): 2,048 of them the output buffer, 960 the USB
 transmit buffer of 1,024 bytes in place of the SDK's 64, 3,488 the signal
 wire's pin driver and 1,536 its test's reply. Core 0's deepest
@@ -69,7 +69,7 @@ Every reply is one line or more, each starting with one word:
 | `hitec` | a hitec command and its report |
 
 The output goes out in whole lines through a buffer of 2,048 bytes, as fast
-as the USB host takes it. What does not fit is dropped, and a line
+as the USB host takes it, or a panel over the link. What does not fit is dropped, and a line
 `err output full, N bytes dropped` follows.
 
 ## Raw pages
@@ -325,6 +325,60 @@ esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 w
 
 `state`, `result`, `ref`, `flags` and `line` are the registers of
 [its page](LinkEsc.md#registers); `ses` is the session's last result.
+
+## Over the link, with no USB on the IOmcu
+
+Debug builds only. No released image of either end holds any of this.
+
+A panel built with `RCBENCH_PANEL_CONSOLE` relays its serial ports, UART0 and USB-Serial-JTAG, to an IOmcu built with `IOMCU_CONSOLE`, over the link's CONSOLE page (0xE0). Every command of this page runs on the IOmcu as it does on USB, `ewline` and other commands that drive lines included, and refuses what it refuses there. USB keeps working when it is plugged in.
+
+```bash
+export PICO_SDK_PATH=/path/to/pico-sdk
+cmake -S firmware/iomcu -B firmware/iomcu/build-console -DIOMCU_CONSOLE=ON
+cmake --build firmware/iomcu/build-console
+cp firmware/iomcu/build-console/rcbench-iomcu.bin firmware/panel/iomcu-console.bin
+idf.py -C firmware/panel -B firmware/panel/build-console \
+    -D RCBENCH_PANEL_CONSOLE=ON -D RCBENCH_IOMCU_BIN=iomcu-console.bin build
+```
+
+The panel carries that image. An IOmcu running another build answers the build check as different, so UPDATES offers the image, with the version number the same: `Same version number, but a different build.` After the update the check finds the same build and offers nothing. A panel that carries a released image offers that one back to a console IOmcu in the same way. An rbmod carrier needs its own console image, built with `-DIOMCU_BOARD=rbmod`, in `RCBENCH_IOMCU_RBMOD_BIN`. A panel built with the option and no image offers nothing.
+
+| Line | Means |
+| --- | --- |
+| `console: link up t_ms=<ms>` | the link came up, in the panel's time from its start |
+| `console: link down t_ms=<ms>` | the link went |
+| `console: the IOmcu has no console. Take the update UPDATES offers, or flash a build with IOMCU_CONSOLE=ON` | the page answered `BAD_PAGE`; said once, and the panel looks again every 5000ms |
+| `console: the IOmcu's output restarted at <n>, expected <m>` | the output's place moved: the IOmcu started again |
+| `err no link: line dropped` | a line with the link down |
+| `err line lost: the link went down inside it` | the link went while the line was going over |
+| `err line lost: the IOmcu restarted inside it` | the IOmcu started again while the line was going over |
+| `err no answer: line lost` | a chunk of the line had no answer |
+| `err the IOmcu has no console` | a line, and no page to send it to |
+| `err line longer than 160 characters` | the line is refused whole |
+
+The panel finds the page by reading it. The page has no capability bit and no protocol minor: an IOmcu without it answers `BAD_PAGE`, as for any page it does not have.
+
+### Rates
+
+The relay makes at most one exchange a control pass, 5ms when nothing else holds the pass, after the panel's own polling, and none while an IOmcu update holds the link. These figures are calculated from the frames and not measured.
+
+| Traffic | Frames | Rate |
+| --- | --- | --- |
+| A look at rest | 2 every 50ms | 40 frames/s |
+| A window of output, 60 bytes in 30 registers | 9, a request and 8 replies of 4 registers | one pass |
+| Its acknowledgement | 2 | one pass |
+| Output, sustained | 11 for each 60 bytes, 2 passes | 6,000 bytes/s, 1,100 frames/s |
+| Input, 6 bytes a chunk | 2 for each chunk, one pass | 1,200 bytes/s, 135ms for a line of 160 characters |
+
+At 1Mbit/s a frame of 8 bytes takes about 150us, so sustained output takes about 17% of the bus. The 2,048-byte buffer empties in about 340ms. Output above 6,000 bytes/s for longer than that buffer lasts loses whole lines; the next line says `err output full, N bytes dropped` as it does on USB. Output is also held back when the panel's own buffer of 4,096 bytes has under 188 bytes free, as when a serial host stops reading.
+
+A window stays at the IOmcu until it is acknowledged, so a lost reply costs a second read and no byte. An unanswered exchange holds the control pass for up to 1000ms, as any exchange of the panel does, with the heartbeat kept going.
+
+### What it does not change
+
+The commands reach the pages through `link_dev_apply()`. A request from the console is not link traffic: it does not hold the silence failsafe off. The frames of the CONSOLE page are requests of the panel, like its polls, and stop when the panel stops. The panel's own modules keep writing: the supply link, `hitec_link`, `kst_link`, `esc_link` and the 50ms write of ARM and THROTTLE can overwrite what a console `w` wrote to the same registers. A console write of ARM reaches the page, and the panel's next 50ms write overwrites it with the panel's own arming state.
+
+With the IOmcu's start, its lines wait in the buffer for a USB host or a panel, as far as the 2,048 bytes hold them. `rcbench-iomcu: reset ...` is the first of them, with the cause of the start, and repeats every 3s. A line from the panel runs whole, before or after anything a USB host is typing. While a USB host and a panel are both there, the output leaves at the slower one's pace; a USB host that has the port open and stops reading holds it back too.
 
 ## Limits
 

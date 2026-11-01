@@ -1059,6 +1059,13 @@ void can_report(uint32_t now);
  * line every 3s.
  */
 void reset_start(void);
+#if IOMCU_CONSOLE
+/**
+ * @brief reset_start()'s line through the console's output, once it exists: a
+ *        panel or a USB host that comes later reads it first.
+ */
+void reset_say(void);
+#endif
 
 /* ------------------------------------------------------ the inline helpers */
 

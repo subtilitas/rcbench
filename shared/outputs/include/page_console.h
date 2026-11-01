@@ -5,7 +5,8 @@
  *
  * A bench tool, not part of a released image: the IOmcu builds it only
  * with the build option IOMCU_CONSOLE (firmware/iomcu/CMakeLists.txt) and
- * reads its lines from the USB (Universal Serial Bus) serial port.
+ * reads its lines from the USB (Universal Serial Bus) serial port, and over
+ * the link's CONSOLE page (console_tunnel.h).
  *
  * Every request goes through link_dev_apply(): the page table, the range
  * checks, the handlers and their refusals are the link's.  Whatever a page

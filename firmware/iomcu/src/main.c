@@ -46,6 +46,7 @@
 #endif
 #if IOMCU_CONSOLE
 #include "console_hw.h"
+#include "link_pages_console.h"
 #endif
 
 /**
@@ -163,6 +164,10 @@ static const link_page_t k_pages[] = {
       update_hw_ctl_write },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
       update_hw_data_write },
+#if IOMCU_CONSOLE
+    /* The console's bytes over the link; debug builds only. */
+    { LINK_PAGE_CONSOLE, LINK_CN_COUNT, console_hw_page_read, console_hw_page_write },
+#endif
 };
 
 /* ---------------------------------------------------------------- the loop */
@@ -606,6 +611,8 @@ int main(void)
     /* The bench console on the same pages, through link_dev_apply(): it
      * does not feed the link's silence watchdog. */
     console_hw_init(&s_dev);
+    /* The first line a panel or a USB host reads, however late it comes. */
+    reset_say();
 #endif
 
     heartbeat_init();

@@ -138,6 +138,9 @@ PANEL_DIR = ROOT / "firmware" / "panel"
 # The FreeRTOS calls that create a task with a stack from the heap; the
 # entry, the name and the stack size are their first three arguments.
 TASK_CREATE = ("xTaskCreatePinnedToCore", "xTaskCreate")
+# Entries of a task only a build option compiles (RCBENCH_PANEL_CONSOLE): a
+# build without the option has none, and one with it is held as any other.
+OPTION_TASKS = {"console_task"}
 SCREEN_H = ROOT / "shared" / "ui" / "include" / "ui_screen.h"
 UI_DIR = ROOT / "shared" / "ui"
 ELF_NAME = "rcbench-panel.elf"
@@ -792,6 +795,8 @@ def main() -> int:
     measured, pointer_calls = {}, 0
     for entry, name, stack, src in tasks:
         addrs = by_name.get(entry, [])
+        if not addrs and entry in OPTION_TASKS:
+            continue
         if len(addrs) != 1:
             fails.append(f"{name}: entry {entry} is {len(addrs)} functions "
                          f"in the ELF, not 1")
