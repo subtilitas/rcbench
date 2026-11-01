@@ -30,6 +30,9 @@ extern "C" {
 /** @brief The most bytes a transaction receives: 256 data bytes, 2 CRC bytes
  *         and the answer. */
 #define EW_RX_MAX 259u
+/** @brief The most bytes a transaction at 38400baud receives: a `show` is at
+ *         most about 980B, and the margin keeps a longer reply whole. */
+#define EW_RX_TEXT_MAX 1536u
 /** @brief The most idle bit times inside a transaction's bytes: 4 x 52us stays
  *         under the 260us an ESC (electronic speed controller) allows between
  *         two bytes. */
@@ -60,7 +63,8 @@ typedef struct {
     uint8_t        pause_bits; /**< idle bit times after @c n_head bytes     */
     uint16_t       n_tx;       /**< bytes to send, 1 to EW_TX_MAX            */
     uint16_t       n_head;     /**< bytes before the pause, 0 for no pause   */
-    uint16_t       max_rx;     /**< bytes to receive, 0 to EW_RX_MAX         */
+    uint16_t       max_rx;     /**< bytes to receive, 0 to EW_RX_MAX; to
+                                     EW_RX_TEXT_MAX at 38400baud             */
     uint32_t       first_us;   /**< the wait for the first start bit         */
     uint32_t       gap_us;     /**< the wait for each later start bit        */
     const uint8_t *tx;         /**< the bytes, valid until the capture       */

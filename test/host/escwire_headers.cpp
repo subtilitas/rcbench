@@ -9,6 +9,7 @@
 #include "ew_guard.h"
 #include "ew_id.h"
 #include "ew_map.h"
+#include "ew_pio.h"
 #include "ew_session.h"
 #include "ew_wire.h"
 
@@ -23,6 +24,7 @@ int main()
     (void)ew_crc16(nullptr, 0);
     (void)ew_map_table(EW_FW_S, &count);
     (void)ew_xfer_valid(nullptr);
+    (void)ew_pio_clock(0u, 0u, nullptr);
     (void)ew_session_step(nullptr);
     uint8_t answer[EW_A_ANSWER_LEN] = {};
     ew_contact_t contact;

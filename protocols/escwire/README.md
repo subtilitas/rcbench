@@ -5,8 +5,8 @@ its signal wire, for ESCs with BLHeli_S, Bluejay and AM32 firmware. The core
 holds the transaction, the frames of the binary bootloader protocol (protocol
 A), the guard every outgoing frame passes, identification, the field maps and
 the session. A driver with 5 functions (`ew_driver_t`) connects the core to a
-pin. The folder holds no pin driver yet, and nothing in this repository calls
-the module yet.
+pin; `rp2350/ew_line.c` is that driver on one RP2350 pin. Nothing in a released
+image calls the module yet.
 
 This module was written from a behavioural specification, without access to
 the firmware sources. The specification states what an ESC and a host exchange
@@ -14,7 +14,8 @@ on the wire; its values are not measured on hardware.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `ew_wire.c`, `ew_a.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_session.c`, 6 headers under `include/` | C11 standard headers |
+| Core | `ew_wire.c`, `ew_pio.c`, `ew_a.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_session.c`, 7 headers under `include/` | C11 standard headers |
+| Pin driver | `rp2350/ew_line.pio`, `rp2350/ew_line.c`, `rp2350/ew_line.h` | pico-sdk 2.3.0 |
 
 ## Constraints
 
@@ -179,6 +180,61 @@ the rest between exchanges.
 A driver that does not end a transaction 5ms after its longest time
 (`ew_xfer_span_us()`) is aborted, with `EW_SES_ERR_DRIVER`.
 
+## Pin driver
+
+`rp2350/ew_line.c` takes one PIO (programmable input/output) state machine, a
+program of 25 words and 2 DMA (direct memory access) channels at
+`ew_line_open()`; a refused open claims nothing and leaves the pin alone. No
+interrupt is used. The object is 3,488B.
+
+| Rate | Bit time | Divider at 150MHz | Tick of a wait |
+|---|---|---|---|
+| protocol A | 52us | 487 + 128/256 | 6.5us |
+| text line | 26.04us, 38400baud | 244 + 36/256 | 3.26us |
+
+The bit time is exact at 150MHz. An open is refused when a divider is below 4 or
+a bit time more than 0.05% off.
+
+| Moment | Pad |
+|---|---|
+| open, `EW_LINE_PARK`, an abort, a stop | input, pull-down, input buffer off |
+| `EW_LINE_HIGH`, before the first bit | push-pull high, 2mA |
+| the bytes | push-pull, both levels, 2mA; no gap between bytes |
+| 1 bit time after the last stop bit's edge | released: a reply and the rest between exchanges, input, pull-up |
+| `EW_LINE_LOW` | push-pull low, 2mA, 300ms in a leave |
+| close | input, pull-down, the drive and slew as found |
+
+The input buffer is off when parked, since erratum RP2350-E9 can hold an A2
+chip's pad near 2V against its pull-down. A chip that restarts leaves the pad at
+its reset state. Nothing in the driver makes a throttle signal.
+
+Reception:
+
+- A low has to be low still half a bit on to count as a start bit. A low of a
+  quarter bit is no byte.
+- Bits are sampled mid-bit. Computed: a sender up to 4% off, with no gap between
+  bytes, keeps every sample inside its bit for any number of bytes.
+- A low stop bit marks the capture (`bad_stop`), and the receiver waits for the
+  idle level again, so a line held low is one byte. A line low at the release is
+  no byte.
+- The receiver starts at the release: a transaction does not receive its own
+  bytes. A device repeating them after the release is received; `ew_a` refuses
+  that answer.
+- The first wait runs from the release, a later wait from the end of a stop bit.
+  Each lasts up to 2 ticks more than asked.
+
+A transaction ends at `max_rx`, at a wait's end, or, with the capture marked
+aborted, 1ms past `ew_xfer_span_us()`.
+
+Each call returns without waiting for the wire. Longest time at 150MHz, computed
+and not measured: `ew_line_start()` 100us, `ew_line_poll()` 100us at the end of a
+capture of 1536B and 2us otherwise, `ew_line_abort()` and `ew_line_level()` 5us,
+`ew_line_open()` and `ew_line_close()` 50us. The console test prints measured
+values.
+
+The bench console's `ewline <gpio> tx|abort|rx` runs the driver for a logic
+analyser ([The bench console](../../docs/BenchConsole.md#the-signal-wires-pin-driver)).
+
 ## Not measured
 
 No frame of this code has been sent to an ESC, and every time and value in
@@ -205,7 +261,9 @@ with their authors. The full notice is in the repository's
 
 `test/host/test_ew_a.c`, `test_ew_id.c`, `test_ew_map.c`, `test_ew_guard.c`,
 `test_ew_session.c` and `test_ew_session_write.c` run the core; the last two
-against the simulated ESC of `test/host/ew_sim.h`. That simulation is written
+against the simulated ESC of `test/host/ew_sim.h`. `test_ew_pio.c` assembles
+`rp2350/ew_line.pio` and runs it in a model of the state machine; the IOmcu build
+fails when pioasm's words differ from `test/host/fixtures/ew_line_words.txt`. That simulation is written
 from the same specification and shares its misreadings until a real ESC answers.
 
 ```sh

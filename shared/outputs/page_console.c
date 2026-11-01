@@ -1223,12 +1223,20 @@ static void run_line(page_console_t *c)
         cmd_write(c, tok, n);
     } else if (strcmp(tok[0], "hitec") == 0) {
         cmd_hitec(c, tok, n);
-    } else {
+    } else if (c->ext == NULL || !c->ext(c->ext_ctx, tok, n)) {
         say(c, "err unknown command: %s; help lists them", tok[0]);
     }
 }
 
 /* --- the console ----------------------------------------------------------- */
+
+void page_console_set_ext(page_console_t *c, page_console_ext_fn fn, void *ctx)
+{
+    if (c != NULL) {
+        c->ext = fn;
+        c->ext_ctx = ctx;
+    }
+}
 
 void page_console_init(page_console_t *c, const link_dev_t *dev)
 {

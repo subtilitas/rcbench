@@ -47,10 +47,11 @@ Standard-Image ein Symbol der Konsole enthält. `IOMCU_CONSOLE` und
 `SENSE_TRACE` lesen beide die USB-Konsole; CMake weist einen Build mit
 beiden ab.
 
-Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 10.860
-Byte größer als das Standard-Image und belegt 4.124 Byte mehr RAM
+Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 17.880
+Byte größer als das Standard-Image und belegt 9.520 Byte mehr RAM
 (Random-Access Memory): 2.048 davon der Ausgabepuffer, 960 der USB-Sendepuffer
-von 1.024 Byte statt der 64 des SDK. Die tiefste
+von 1.024 Byte statt der 64 des SDK, 3.488 der Pin-Treiber der Signalleitung
+und 1.536 die Antwort seines Tests. Die tiefste
 Aufrufkette von Kern 0 ist die des Standard-Images: die Konsole hält ihren
 Arbeitsspeicher in ihrem eigenen Zustand, nicht auf dem Stack.
 
@@ -280,6 +281,36 @@ seiner nächsten Änderung dieser Zeile und bei jedem Link-Aufbau.
 Ein rohes `w` der HITEC-Page bekommt keinen Bericht und keinen Schlüssel;
 das [Beispiel](LinkHitec-de.md#eine-transaktion-von-hand) schreibt eine
 Transaktion so.
+
+## Der Pin-Treiber der Signalleitung
+
+`ewline <gpio> tx|abort|rx` lässt den Pin-Treiber der Signalleitung eines ESC
+(Electronic Speed Controller) (`protocols/escwire/rp2350/ew_line.h`) auf einem
+freien Pin laufen, für einen Logic Analyser ohne angeschlossenen ESC. Das ist
+keine Page und hat keinen Schlüssel: es sendet feste Bytes, keines davon ein
+Throttle-Signal, ein Erase oder ein Program. Es weist einen Pin ab, den Outputs,
+Ports, Supply, Sensorbus oder Tone-Capture halten, einen Pin, der treibt, und
+jeden Pin, solange die Bank ARMED ist. Ein ARM während eines Tests schließt die
+Leitung sofort und antwortet `ewline armed`.
+
+| Test | Auf dem Pin, der Reihe nach |
+|---|---|
+| `tx` | geparkt 20ms; high 50ms; der First Contact (17B bei 52us je Bit) 3-mal, jeder gefolgt von seinen 100ms Wartezeit; Pull-up 20ms; 12B mit 4 Idle-Bitzeiten nach dem sechsten; Pull-up 20ms; `info` und LF bei 38400baud und 200ms Wartezeit; Pull-up 20ms; 0x55 bei 52us je Bit in einen Pull-down; geparkt 20ms; 0x55 bei 38400baud in einen Pull-down; geparkt 20ms; low 300ms; geparkt 20ms |
+| `abort` | high 5ms; der First Contact, 3ms nach seinem Start abgeschnitten; geparkt 20ms; high 5ms; 0x55 in einen Pull-down; geparkt 20ms |
+| `rx` | high 5ms; 3-mal 0x55 und eine Antwort von 9B, über die Overrides des Pins auf das Pad getrieben: bei 52us je Bit, mit einem Low-Stoppbit am dritten Byte, bei 38400baud; jeweils gefolgt von 5ms |
+
+0x55 in einen Pull-down zeigt das Loslassen: die steigende Flanke des Stoppbits,
+dann fällt das Pad nach 1 Bitzeit, wenn es loslässt. Der `rx`-Test
+blockiert die Hauptschleife für seine 9B, 4,7ms bei 52us je Bit.
+
+```
+ewline open gpio=13 bit_a=52000ns bit_text=26042ns
+ewline capture n=9 bad_stop=0 aborted=0 overflow=0 match=1
+ewline done gpio=13 start_max=38us poll_max=4us level_max=2us abort=0us
+```
+
+Die letzte Zeile nennt den längsten Aufruf jeder Art in Mikrosekunden. Die Zahlen
+oben zeigen das Format und sind nicht gemessen.
 
 ## Grenzen
 

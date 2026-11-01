@@ -247,6 +247,7 @@ TRACKED = [
     "protocols/hitec/hitec_session.c",
     "protocols/hitec/hitec_live.c",
     "protocols/escwire/ew_wire.c",
+    "protocols/escwire/ew_pio.c",
     "protocols/escwire/ew_a.c",
     "protocols/escwire/ew_guard.c",
     "protocols/escwire/ew_id.c",

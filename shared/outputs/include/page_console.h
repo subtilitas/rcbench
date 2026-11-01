@@ -97,8 +97,20 @@ extern "C" {
  * @brief The console state: the command line being read, the output buffer,
  *        the staged HITEC registers and the work space of the requests.
  */
+/**
+ * @brief A build's own console command: a line none of the commands here took.
+ * @param ctx the context given to page_console_set_ext()
+ * @param tok the line's tokens
+ * @param n   how many, 1 or more
+ * @return true when the line was its own; false gives `err unknown command`
+ */
+typedef bool (*page_console_ext_fn)(void *ctx, char **tok, unsigned n);
+
+/** @brief One console: its line, its output and its work space. */
 typedef struct {
     const link_dev_t *dev;
+    page_console_ext_fn ext; /**< a build's own commands, or NULL */
+    void    *ext_ctx;        /**< and its context */
     char     line[PAGE_CONSOLE_LINE_MAX + 1u];
     uint16_t len;
     uint8_t  overlong;   /**< the line ran past PAGE_CONSOLE_LINE_MAX */
@@ -124,6 +136,14 @@ typedef struct {
  * @param dev The link device whose pages the console reads and writes.
  */
 void page_console_init(page_console_t *c, const link_dev_t *dev);
+
+/**
+ * @brief Hand lines no command here takes to @p fn.
+ * @param c   the console
+ * @param fn  the handler, NULL for none
+ * @param ctx its context
+ */
+void page_console_set_ext(page_console_t *c, page_console_ext_fn fn, void *ctx);
 
 /**
  * @brief One character in.

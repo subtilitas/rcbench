@@ -42,10 +42,11 @@ with it, checks the stacks of both cores, and fails when the default image
 holds a console symbol. `IOMCU_CONSOLE` and `SENSE_TRACE` both read the USB
 console; CMake refuses a build with both.
 
-Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 10,860
-bytes larger than the default image and holds 4,124 bytes more RAM
+Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 17,880
+bytes larger than the default image and holds 9,520 bytes more RAM
 (random-access memory): 2,048 of them the output buffer, 960 the USB
-transmit buffer of 1,024 bytes in place of the SDK's 64. Core 0's deepest
+transmit buffer of 1,024 bytes in place of the SDK's 64, 3,488 the signal
+wire's pin driver and 1,536 its test's reply. Core 0's deepest
 call chain is the default image's: the console keeps its work space in its
 own state, not on the stack.
 
@@ -262,6 +263,35 @@ of that row and at every link-up.
 A raw `w` of the HITEC page gets no report and no key; the
 [worked example](LinkHitec.md#a-transaction-by-hand) writes one transaction
 that way.
+
+## The signal wire's pin driver
+
+`ewline <gpio> tx|abort|rx` runs the pin driver of the ESC (electronic speed
+controller) signal wire (`protocols/escwire/rp2350/ew_line.h`) on a free pin,
+for a logic analyser with no ESC attached. It is not a page and has no key: it
+sends fixed bytes, none of them a throttle signal, an erase or a program. It
+refuses a pin the outputs, ports, supply, sensor bus or tone capture hold, a pin
+that drives, and any pin while the bank is ARMED. An ARM during a test closes
+the line at once and answers `ewline armed`.
+
+| Test | On the pin, in order |
+|---|---|
+| `tx` | parked 20ms; high 50ms; the first contact (17B at 52us a bit) 3 times, each followed by its 100ms wait; pull-up 20ms; 12B with 4 idle bit times after the sixth; pull-up 20ms; `info` and LF at 38400baud and a 200ms wait; pull-up 20ms; 0x55 at 52us a bit into a pull-down; parked 20ms; 0x55 at 38400baud into a pull-down; parked 20ms; low 300ms; parked 20ms |
+| `abort` | high 5ms; the first contact, cut 3ms after its start; parked 20ms; high 5ms; 0x55 into a pull-down; parked 20ms |
+| `rx` | high 5ms; 3 times 0x55 and a 9B answer driven on the pad by the pin's overrides: at 52us a bit, with a low stop bit on the third byte, at 38400baud; each followed by 5ms |
+
+0x55 into a pull-down shows the release: the stop bit's rising edge, then the
+pad falls 1 bit time later, when it stops driving. The `rx` test blocks the main
+loop for its 9B, 4.7ms at 52us a bit.
+
+```
+ewline open gpio=13 bit_a=52000ns bit_text=26042ns
+ewline capture n=9 bad_stop=0 aborted=0 overflow=0 match=1
+ewline done gpio=13 start_max=38us poll_max=4us level_max=2us abort=0us
+```
+
+The last line gives the longest call of each kind in microseconds. The figures
+above show the format and are not measured.
 
 ## Limits
 
