@@ -65,6 +65,21 @@ bool safety_gate_arm_now(bool gate_arm, uint16_t quiet_mask,
     return gate_arm && quiet_mask == 0u && !update_holds;
 }
 
+bool safety_gate_hold_refuses_arm(bool held, uint8_t off, uint8_t n,
+                                  const uint16_t *in)
+{
+    return held && in != NULL && off == (uint8_t)LINK_CT_ARM && n != 0u
+           && in[0] != 0u;
+}
+
+void safety_gate_hold_ended(uint16_t *control)
+{
+    if (control != NULL) {
+        control[LINK_CT_ARM]      = 0u;
+        control[LINK_CT_THROTTLE] = 0u;
+    }
+}
+
 uint8_t safety_gate_control_write(uint16_t *control, uint8_t off, uint8_t n,
                                   const uint16_t *in,
                                   const heartbeat_mon_t *beat,

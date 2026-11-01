@@ -38,6 +38,8 @@ void hitec_hw_give(void *ctx)
     (void)ctx;
     hitec_line_close(&s_hitec_line);
     ports_apply();
+    /* No ARM carried past the hold: the bank waits for a new ask. */
+    safety_gate_hold_ended(s_state.control);
 }
 
 void hitec_hw_abort(void *ctx)
@@ -65,6 +67,10 @@ uint8_t hitec_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
     (void)ctx;
     const uint8_t nack = hitec_port_write(&s_hitec, off, n, in, s_now_ms);
 
+    /* An ARM taken just before this hold began goes with it, as on KST. */
+    if (ports_quiet() != 0u) {
+        safety_gate_hold_ended(s_state.control);
+    }
     /* A command that takes the port is the KST page's to refuse from this
      * frame on, and the SUPPLY page is held from the frame of the OPEN to
      * the frame of the CLOSE.  A step the command started is a write a

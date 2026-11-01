@@ -183,9 +183,11 @@ und ausgeschalteter Versorgung
 ([Sicherheit, Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
 
 Der IOmcu schaltet keine Ausgangsbank auf ARMED, solange ein
-Programmierport nicht in PWM steht: das Register ARM wird angenommen, und
-die Bank bleibt SAFE, bis der Port wieder in PWM steht. ENTER wird mit
-BUSY abgewiesen, solange die Bank ARMED ist (beides seit 4.15).
+Programmierport nicht in PWM steht: ein Schreiben von ARM ungleich 0 wird mit
+NOT_ARMED abgewiesen, eine 0 wird angenommen, und bei der Rückkehr nach PWM sind
+die Register ARM und THROTTLE 0, also bleibt die Bank SAFE bis zur nächsten
+Anforderung. ENTER wird mit
+BUSY abgewiesen, solange die Bank ARMED ist (seit 4.15).
 
 Wo die Versorgung endet, wenn etwas ausfällt:
 

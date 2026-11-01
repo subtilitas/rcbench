@@ -43,6 +43,8 @@ void kst_hw_give(void *ctx)
     (void)ctx;
     kst_line_close(&s_kst_line);
     ports_apply();
+    /* No ARM carried past the hold: the bank waits for a new ask. */
+    safety_gate_hold_ended(s_state.control);
 }
 
 void kst_hw_supply(void *ctx, supply_port_view_t *out)
@@ -84,6 +86,11 @@ uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
     (void)ctx;
     const uint8_t nack = kst_port_write(&s_kst, off, n, in, s_now_ms);
 
+    /* An ARM taken just before this hold began goes with it: a return to PWM
+     * before the port had its pin passes no give. */
+    if (ports_quiet() != 0u) {
+        safety_gate_hold_ended(s_state.control);
+    }
     /* A command that takes the port out of PWM holds the SUPPLY page from
      * this frame on: a SUPPLY write queued behind it is judged held.  And
      * the HITEC page refuses the port from this frame on.  Whether it

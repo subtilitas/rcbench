@@ -418,6 +418,78 @@ TEST_CASE(the_pass_arms_only_on_the_gate_with_no_port_out_and_no_update)
     CHECK(!safety_gate_arm_now(true, 0u, true));
 }
 
+/*
+ * An ARM written while a port is held: refused, so the page stays as it was and
+ * the pass the port returns does not arm.
+ */
+TEST_CASE(a_hold_refuses_a_nonzero_arm_and_nothing_else)
+{
+    const uint16_t arm[3] = { 1u, 500u, 14u };
+    const uint16_t off_[2] = { 0u, 500u };
+    const uint16_t thr[1] = { 500u };
+
+    CHECK(safety_gate_hold_refuses_arm(true, LINK_CT_ARM, 3u, arm));
+    CHECK(safety_gate_hold_refuses_arm(true, LINK_CT_ARM, 1u, arm));
+    /* A disarm is taken, and any frame that does not carry ARM. */
+    CHECK(!safety_gate_hold_refuses_arm(true, LINK_CT_ARM, 2u, off_));
+    CHECK(!safety_gate_hold_refuses_arm(true, LINK_CT_THROTTLE, 1u, thr));
+    CHECK(!safety_gate_hold_refuses_arm(true, LINK_CT_ARM, 0u, arm));
+    CHECK(!safety_gate_hold_refuses_arm(true, LINK_CT_ARM, 1u, NULL));
+    /* With no hold it is the page's to judge. */
+    CHECK(!safety_gate_hold_refuses_arm(false, LINK_CT_ARM, 3u, arm));
+}
+
+TEST_CASE(the_end_of_a_hold_leaves_no_arm_and_no_throttle)
+{
+    uint16_t control[LINK_CT_COUNT];
+
+    for (unsigned i = 0u; i < LINK_CT_COUNT; ++i) {
+        control[i] = (uint16_t)(0x100u + i);
+    }
+    safety_gate_hold_ended(control);
+    CHECK_EQ(control[LINK_CT_ARM], 0u);
+    CHECK_EQ(control[LINK_CT_THROTTLE], 0u);
+    /* The rest of the page stays. */
+    for (unsigned i = 0u; i < LINK_CT_COUNT; ++i) {
+        if (i != LINK_CT_ARM && i != LINK_CT_THROTTLE) {
+            CHECK_EQ(control[i], 0x100u + i);
+        }
+    }
+    safety_gate_hold_ended(NULL);
+}
+
+/* The finding, whole: the pass the port returns has no ARM to act on. */
+TEST_CASE(a_port_returning_to_pwm_does_not_arm_on_an_old_ask)
+{
+    const uint16_t arm[1] = { 1u };
+
+    gate_init(0);
+    (void)gate_run(1, 200);
+    (void)gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC);
+
+    /* The ask inside the hold is refused and stores nothing. */
+    CHECK(safety_gate_hold_refuses_arm(true, LINK_CT_ARM, 1u, arm));
+    safety_gate_t g = gate_run(200, 260);
+    CHECK(!g.arm);
+    CHECK_EQ(g_control[LINK_CT_ARM], 0u);
+
+    /* One taken just before the hold began holds the gate's arm, the hold keeps
+     * the bank down, and the end of the hold drops it. */
+    CHECK_EQ(gate_write(LINK_CT_ARM, 1u), 0u);
+    g = gate_run(260, 320);
+    CHECK(g.arm);
+    CHECK(!safety_gate_arm_now(g.arm, 0x0001u, false));
+    safety_gate_hold_ended(g_control);
+    g = gate_run(320, 380);
+    CHECK(!g.arm);
+    CHECK(!safety_gate_arm_now(g.arm, 0u, false));
+
+    /* A new ask after it arms. */
+    CHECK_EQ(gate_write(LINK_CT_ARM, 1u), 0u);
+    g = gate_run(380, 440);
+    CHECK(safety_gate_arm_now(g.arm, 0u, false));
+}
+
 /* --------------------------------------------------------- the two ends */
 
 #define D_CH_THROTTLE LINK_OUT_CHANNELS   /* the IOmcu's own throttle */
@@ -1671,6 +1743,9 @@ TEST_CASE(a_gate_that_may_not_arm_reports_no_roles)
 
 int main(void)
 {
+    RUN(a_hold_refuses_a_nonzero_arm_and_nothing_else);
+    RUN(the_end_of_a_hold_leaves_no_arm_and_no_throttle);
+    RUN(a_port_returning_to_pwm_does_not_arm_on_an_old_ask);
     RUN(a_start_is_latched_and_reports_no_fault);
     RUN(clear_releases_the_latch_and_the_arm_is_taken);
     RUN(a_distrusted_heartbeat_latches_until_clear);

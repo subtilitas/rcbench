@@ -45,6 +45,11 @@ history is in git.
 
 ### Fixed
 
+- IOmcu: a non-zero ARM written while a programming port is out of PWM, on KST
+  or Hitec, is refused with NOT_ARMED. The ARM and THROTTLE registers are 0 when
+  the hold begins and when the port is given back. A stored ARM armed the bank in
+  the pass the port returned to PWM, with no new ask; only the panel's press
+  guards stood in the way, and a panel just restarted over a held port had none.
 - `protocols/escwire`: 520us between a data announcement and its data, on every
   firmware. A gap of 104us loses the data on AM32 and no answer comes, since
   AM32 ends a message only on more than 234us of idle line. A leave frame is
