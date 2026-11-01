@@ -180,7 +180,7 @@ static struct {
                                                     hands over             */
     wifi_kept_t  kept;          /**< the value SUB_KEPT is about          */
     int          hit;           /**< the control under the press, HIT_*   */
-    uint8_t      press_id;
+    uint8_t      press_id;      /**< its touch id                         */
     bool         have_press;
     ui_hold_t    hold;
     int          hold_hit;      /**< the held control: HIT_INSTALL or
