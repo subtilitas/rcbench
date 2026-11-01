@@ -17,6 +17,8 @@ static char s_texts[FILES][64];
 static int  s_n;
 static bool s_in;
 static bool s_denied;
+static bool s_full;
+static int32_t s_size_is;
 static esc_card_req_t  s_req;
 static esc_card_done_t s_done;
 
@@ -48,6 +50,9 @@ static int find(const char *n)
 static int32_t t_size(void *c, const char *n)
 {
     (void)c;
+    if (s_size_is != 0 && find(n) >= 0) {
+        return s_size_is;
+    }
     return find(n) < 0 ? -1 : (int32_t)strlen(s_texts[find(n)]);
 }
 
@@ -69,6 +74,9 @@ static servo_store_io_result_t t_create(void *c, const char *n, const char *d, s
     if (s_denied) {
         return SERVO_STORE_IO_DENIED;
     }
+    if (s_full) {
+        return SERVO_STORE_IO_FULL;
+    }
     snprintf(s_names[s_n], sizeof(s_names[0]), "%s", n);
     snprintf(s_texts[s_n], sizeof(s_texts[0]), "%.*s", (int)l, d);
     ++s_n;
@@ -83,6 +91,8 @@ static void fresh(void)
     s_n = 0;
     s_in = true;
     s_denied = false;
+    s_full = false;
+    s_size_is = 0;
     memset(&s_req, 0, sizeof(s_req));
 }
 
@@ -178,6 +188,40 @@ TEST_CASE(a_load_gives_the_text)
     CHECK_EQ(s_done.result, ESC_CARD_DONE_READ);
 }
 
+TEST_CASE(each_refusal_of_the_card_has_its_answer)
+{
+    /* A full card. */
+    fresh();
+    s_full = true;
+    s_req.op = ESC_CARD_SAVE;
+    s_req.len = 1u;
+    esc_card_run(&k_io, &s_req, &s_done);
+    CHECK_EQ(s_done.result, ESC_CARD_DONE_FULL);
+    fresh();
+    /* A name that is no file's. */
+    s_req.op = ESC_CARD_LOAD;
+    s_req.name[0] = '\0';
+    esc_card_run(&k_io, &s_req, &s_done);
+    CHECK_EQ(s_done.result, ESC_CARD_DONE_MISSING);
+    /* A file larger than any settings file. */
+    fresh();
+    snprintf(s_names[0], sizeof(s_names[0]), "ESCW001.TXT");
+    s_texts[0][0] = 'x';
+    s_texts[0][1] = '\0';
+    s_n = 1;
+    s_size_is = (int32_t)EW_FILE_MAX + 1;
+    s_req.op = ESC_CARD_LOAD;
+    snprintf(s_req.name, sizeof(s_req.name), "ESCW001");
+    esc_card_run(&k_io, &s_req, &s_done);
+    CHECK_EQ(s_done.result, ESC_CARD_DONE_LARGE);
+    /* A list with no card. */
+    fresh();
+    s_in = false;
+    s_req.op = ESC_CARD_LIST;
+    esc_card_run(&k_io, &s_req, &s_done);
+    CHECK_EQ(s_done.result, ESC_CARD_DONE_NO_CARD);
+}
+
 int main(void)
 {
     RUN(a_save_takes_the_next_number);
@@ -185,5 +229,6 @@ int main(void)
     RUN(a_list_gives_a_page_and_the_total);
     RUN(a_list_finds_a_late_page);
     RUN(a_load_gives_the_text);
+    RUN(each_refusal_of_the_card_has_its_answer);
     return test_summary("esc_card");
 }
