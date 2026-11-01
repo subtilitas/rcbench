@@ -9,22 +9,36 @@
 
 #include "esc_wire_int.h"
 
-/** @brief What a press is on. */
-enum {
-    P_NONE = 0,
-    P_TAB,
-    P_BACK,
-    P_ROW,
-    P_CONNECT_ROW,
-    P_ACT,
-    P_HOLD,
-    P_CANCEL,
-    P_CHOICE,
-    P_CHOICE_CANCEL,
-    P_KEYPAD,
-    P_NEXT,
-    P_PREV,
-};
+/**
+ * @brief Where a press shows.
+ * @param what What it is on.
+ * @param i    Its row.
+ * @return The button.
+ */
+static gfx_rect_t press_rect(int what, int i)
+{
+    switch (what) {
+    case EWP_P_BACK:
+        return esc_wire_panel_back_rect();
+    case EWP_P_ROW:
+    case EWP_P_CONNECT_ROW:
+        return ewp_value_rect(i);
+    case EWP_P_ACT:
+        return ewp_action_rect(i);
+    case EWP_P_HOLD:
+        return esc_wire_panel_hold_rect();
+    case EWP_P_CANCEL:
+        return esc_wire_panel_cancel_rect();
+    case EWP_P_NEXT:
+        return esc_wire_panel_next_rect();
+    case EWP_P_PREV:
+        return esc_wire_panel_prev_rect();
+    case EWP_P_CHOICE:
+        return ewp_choice_rect(i);
+    default:
+        return ewp_choice_cancel_rect();
+    }
+}
 
 /**
  * @brief The press taken.  A button is the operator's next action, so what the screen
@@ -35,20 +49,27 @@ enum {
  */
 static void take(const touch_event_t *evt, int what, int i)
 {
-    if (what != P_KEYPAD) {
+    if (what != EWP_P_KEYPAD) {
         ewp_words_clear();
     }
     ewp_s.have = true;
     ewp_s.id = evt->point.id;
     ewp_s.pressed = what;
     ewp_s.which = i;
+    /* Only the button changes, in the pressed colour: the rest of the page stands. */
+    if (what == EWP_P_TAB || what == EWP_P_KEYPAD) {
+        ++ewp_s.rev;
+    } else {
+        ewp_s.touched = press_rect(what, i);
+        ++ewp_s.hold_rev;
+    }
 }
 
 /** @brief The press ended. */
 static void let_go(void)
 {
     ewp_s.have = false;
-    ewp_s.pressed = P_NONE;
+    ewp_s.pressed = EWP_P_NONE;
 }
 
 /**
@@ -196,7 +217,7 @@ static void down_rows(const touch_event_t *evt)
                 continue;
             }
             if (gfx_rect_contains(ewp_value_rect(i), x, y)) {
-                take(evt, P_CONNECT_ROW, i);
+                take(evt, EWP_P_CONNECT_ROW, i);
                 return;
             }
         }
@@ -207,7 +228,7 @@ static void down_rows(const touch_event_t *evt)
     }
     for (int i = 0; i < ewp_s.tabs.count; ++i) {
         if (gfx_rect_contains(ewp_s.tabs.rect[i], x, y)) {
-            take(evt, P_TAB, -1);
+            take(evt, EWP_P_TAB, -1);
             (void)ui_tabs_event(&ewp_s.tabs, evt);
             return;
         }
@@ -217,7 +238,7 @@ static void down_rows(const touch_event_t *evt)
 
         if (ewp_row(ewp_s.tabs.selected, i, &r) && ewp_row_live(&r)
             && gfx_rect_contains(ewp_value_rect(i), x, y)) {
-            take(evt, P_ROW, i);
+            take(evt, EWP_P_ROW, i);
             return;
         }
     }
@@ -255,46 +276,46 @@ static void down(const touch_event_t *evt)
     const int y = evt->point.y;
 
     if (ewp_s.kp.open) {
-        take(evt, P_KEYPAD, -1);
+        take(evt, EWP_P_KEYPAD, -1);
         (void)ui_keypad_event(&ewp_s.kp, evt, NULL);
         return;
     }
     if (ewp_s.ch_what != EWP_CH_NONE) {
         for (int i = 0; i < ewp_s.ch_count; ++i) {
             if (gfx_rect_contains(ewp_choice_rect(i), x, y)) {
-                take(evt, P_CHOICE, i);
+                take(evt, EWP_P_CHOICE, i);
                 return;
             }
         }
         if (gfx_rect_contains(ewp_choice_cancel_rect(), x, y)) {
-            take(evt, P_CHOICE_CANCEL, -1);
+            take(evt, EWP_P_CHOICE_CANCEL, -1);
         }
         return;
     }
     if (esc_wire_panel_hold_rect().w != 0
         && gfx_rect_contains(esc_wire_panel_hold_rect(), x, y)) {
-        take(evt, P_HOLD, -1);
+        take(evt, EWP_P_HOLD, -1);
         ewp_s.hold_down = true;
         ui_hold_begin(&ewp_s.hold, hold_hint());
         return;
     }
     if (ewp_s.page != EWP_PAGE_NONE) {
         if (gfx_rect_contains(esc_wire_panel_cancel_rect(), x, y)) {
-            take(evt, P_CANCEL, -1);
+            take(evt, EWP_P_CANCEL, -1);
         } else if (gfx_rect_contains(esc_wire_panel_next_rect(), x, y)) {
-            take(evt, P_NEXT, -1);
+            take(evt, EWP_P_NEXT, -1);
         } else if (gfx_rect_contains(esc_wire_panel_prev_rect(), x, y)) {
-            take(evt, P_PREV, -1);
+            take(evt, EWP_P_PREV, -1);
         }
         return;
     }
     if (gfx_rect_contains(esc_wire_panel_back_rect(), x, y)) {
-        take(evt, P_BACK, -1);
+        take(evt, EWP_P_BACK, -1);
         return;
     }
     for (int i = 0; i < EWP_ACTIONS; ++i) {
         if (action_shown(i) && gfx_rect_contains(ewp_action_rect(i), x, y)) {
-            take(evt, P_ACT, i);
+            take(evt, EWP_P_ACT, i);
             return;
         }
     }
@@ -315,48 +336,48 @@ static void release(const touch_event_t *evt)
 
     let_go();
     switch (was) {
-    case P_BACK:
+    case EWP_P_BACK:
         if (gfx_rect_contains(esc_wire_panel_back_rect(), x, y)) {
             ewp_back();
         }
         break;
-    case P_ROW:
+    case EWP_P_ROW:
         if (gfx_rect_contains(ewp_value_rect(i), x, y)
             && ewp_row(ewp_s.tabs.selected, i, &r) && ewp_row_live(&r)) {
             ewp_edit_open(&r);
         }
         break;
-    case P_CONNECT_ROW:
+    case EWP_P_CONNECT_ROW:
         if (gfx_rect_contains(ewp_value_rect(i), x, y)) {
             ewp_connect_row(i);
         }
         break;
-    case P_ACT:
+    case EWP_P_ACT:
         if (gfx_rect_contains(ewp_action_rect(i), x, y)) {
             action(i);
         }
         break;
-    case P_CANCEL:
+    case EWP_P_CANCEL:
         if (gfx_rect_contains(esc_wire_panel_cancel_rect(), x, y)) {
             ewp_s.page = EWP_PAGE_NONE;
         }
         break;
-    case P_NEXT:
+    case EWP_P_NEXT:
         if (gfx_rect_contains(esc_wire_panel_next_rect(), x, y)) {
             ewp_write_turn(1);
         }
         break;
-    case P_PREV:
+    case EWP_P_PREV:
         if (gfx_rect_contains(esc_wire_panel_prev_rect(), x, y)) {
             ewp_write_turn(-1);
         }
         break;
-    case P_CHOICE:
+    case EWP_P_CHOICE:
         if (gfx_rect_contains(ewp_choice_rect(i), x, y)) {
             ewp_choice_done(i);
         }
         break;
-    case P_CHOICE_CANCEL:
+    case EWP_P_CHOICE_CANCEL:
         if (gfx_rect_contains(ewp_choice_cancel_rect(), x, y)) {
             ewp_editors_close();
         }
@@ -375,7 +396,7 @@ static void rest(const touch_event_t *evt)
     const bool up = evt->type == TOUCH_EVENT_UP;
 
     switch (ewp_s.pressed) {
-    case P_KEYPAD: {
+    case EWP_P_KEYPAD: {
         float v = 0.0f;
         const ui_keypad_result_t r = ui_keypad_event(&ewp_s.kp, evt, &v);
 
@@ -389,14 +410,14 @@ static void rest(const touch_event_t *evt)
         }
         return;
     }
-    case P_TAB:
+    case EWP_P_TAB:
         (void)ui_tabs_event(&ewp_s.tabs, evt);
         if (up) {
             ewp_s.note[0] = '\0';
             let_go();
         }
         return;
-    case P_HOLD:
+    case EWP_P_HOLD:
         if (!up) {
             /* A finger that leaves the button abandons the hold. */
             if (!gfx_rect_contains(esc_wire_panel_hold_rect(), evt->point.x,
@@ -404,6 +425,7 @@ static void rest(const touch_event_t *evt)
                 && ui_hold_leave(&ewp_s.hold)) {
                 ewp_s.hold_down = false;
                 let_go();
+                ++ewp_s.rev;
             }
             return;
         }
@@ -432,12 +454,16 @@ void ewp_event(const touch_event_t *evt)
         && ewp_s.page == EWP_PAGE_NONE && abort_shows()
         && gfx_rect_contains(ewp_action_rect(0), evt->point.x, evt->point.y)) {
         ewp_abort();
+        ++ewp_s.rev;
     } else if (ewp_s.have && evt->point.id == ewp_s.id && evt->type != TOUCH_EVENT_DOWN) {
         rest(evt);
+        /* A move changes nothing shown; what a release does can change anything. */
+        if (evt->type == TOUCH_EVENT_UP) {
+            ++ewp_s.rev;
+        }
     } else if (evt->type == TOUCH_EVENT_DOWN && !ewp_s.have) {
         down(evt);
     }
-    ++ewp_s.rev;
 }
 
 void ewp_tick(float dt_s)

@@ -23,11 +23,14 @@
  *
  * The access code: WA_SECRET_LEN characters shown on the panel, made fresh
  * at every start, which the page asks for before it lists a file or takes an
- * upload.  A switch on the screen turns it off; it is on by default.
+ * upload.  A switch on the screen turns it off; it is on by default.  A kept
+ * WEB CODE of 8 to 63 characters takes its place and stays valid until changed,
+ * and a kept HOTSPOT PASSWORD takes the random password's (wa_kept_use()).
  *
- * What is kept: the home network's name and password and the code switch
- * (wa_conf_t), in a store the caller passes (NVS, non-volatile storage, on
- * the panel).  Nothing else about Wi-Fi is kept.
+ * What is kept: the home network's name and password, the code switch, HOTSPOT
+ * PASSWORD and WEB CODE (wa_conf_t), in a store the caller passes (NVS,
+ * non-volatile storage, on the panel), in plain form.  Nothing else about Wi-Fi
+ * is kept.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework):
  * the platform reports what its radio did and asks what it should do.

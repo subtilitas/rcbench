@@ -225,7 +225,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 412 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 413 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
@@ -438,7 +438,7 @@ an abort mid-transaction, the timeout at 999us and 1000us, also across the
 wrap, the bus clear's 9 clocks and STOP, a part it frees and one that
 holds on, SCL stretched, and the trial after it. `i2c_txq_headers_cxx`
 calls the core from C++11. The RP2350 driver has not run on a chip.
-`test_esc_card`, `test_esc_wire_panel`, `test_esc_wire_rows`, `test_esc_wire_write`, `test_esc_wire_stages`, `test_esc_wire_screens`, `test_esc_wire_walk`, `test_esc_link` and `test_esc_link_run` run the panel's half of the pages against the
+`test_esc_card`, `test_esc_wire_panel`, `test_esc_wire_rows`, `test_esc_wire_write`, `test_esc_wire_stages`, `test_esc_wire_screens`, `test_esc_wire_walk`, `test_esc_wire_press`, `test_esc_link` and `test_esc_link_run` run the panel's half of the pages against the
 IOmcu's on the simulated ESC, `test_esc_prog` the model on both: the CLOSE after a panel
 restart, NOT_BACK, STOP, the read copy, a write, a restore, the session's backup.
 `test_esc_port`, `test_esc_port_data` and `test_esc_port_stop` run the ESC_WIRE and
@@ -637,8 +637,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 788 committed screenshots to the current
-render, 394 in English and the same 394 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 820 committed screenshots to the current
+render, 410 in English and the same 410 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed). `image_slot.py`
 holds the panel image to the smaller of its two update slots.
@@ -682,7 +682,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_tabs.c` | 97 | 89 | 91.8% |
 | `shared/ui/ui_workbench.c` | 65 | 65 | 100.0% |
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
-| `shared/ui/prog_registry.c` | 423 | 420 | 99.3% |
+| `shared/ui/prog_registry.c` | 423 | 422 | 99.8% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 616 | 607 | 98.5% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
@@ -690,7 +690,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/overview_screen.c` | 147 | 142 | 96.6% |
 | `shared/ui/motor_screen.c` | 263 | 256 | 97.3% |
 | `shared/ui/motor_events.c` | 177 | 173 | 97.7% |
-| `shared/ui/motor_draw.c` | 359 | 347 | 96.7% |
+| `shared/ui/motor_draw.c` | 367 | 355 | 96.7% |
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
 | `shared/ui/motor_program_page.c` | 174 | 169 | 97.1% |
@@ -724,7 +724,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/kst_panel_touch.c` | 221 | 218 | 98.6% |
 | `shared/ui/kst_panel_run.c` | 152 | 142 | 93.4% |
 | `shared/ui/kst_panel_draw.c` | 535 | 528 | 98.7% |
-| `shared/ui/esc_wire_panel.c` | 496 | 473 | 95.4% |
+| `shared/ui/esc_wire_panel.c` | 500 | 477 | 95.4% |
 | `shared/ui/hitec_panel.c` | 238 | 238 | 100.0% |
 | `shared/ui/hitec_panel_text.c` | 455 | 451 | 99.1% |
 | `shared/ui/hitec_panel_edit.c` | 360 | 360 | 100.0% |
@@ -735,7 +735,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/analyser_screen.c` | 257 | 256 | 99.6% |
 | `shared/ui/balance_screen.c` | 382 | 382 | 100.0% |
 | `shared/ui/battery_screen.c` | 222 | 217 | 97.8% |
-| `shared/ui/esc_stick_pages.c` | 111 | 104 | 93.7% |
+| `shared/ui/esc_stick_pages.c` | 111 | 106 | 95.5% |
 | `shared/ui/esc_stick_panel.c` | 490 | 474 | 96.7% |
 | `shared/ui/esc_stick_list.c` | 246 | 231 | 93.9% |
 | `shared/ui/esc_stick_touch.c` | 359 | 357 | 99.4% |
@@ -874,8 +874,8 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/esc_prog_file.c` | 165 | 150 | 90.9% |
 | `shared/bench/esc_card.c` | 82 | 75 | 91.5% |
 | `shared/ui/esc_wire_edit.c` | 369 | 356 | 96.5% |
-| `shared/ui/esc_wire_touch.c` | 315 | 296 | 94.0% |
-| `shared/ui/esc_wire_draw.c` | 432 | 421 | 97.5% |
+| `shared/ui/esc_wire_touch.c` | 342 | 323 | 94.4% |
+| `shared/ui/esc_wire_draw.c` | 438 | 435 | 99.3% |
 | `shared/ui/esc_wire_text.c` | 233 | 229 | 98.3% |
 | `shared/ui/esc_wire_help.c` | 19 | 19 | 100.0% |
 | `shared/bench/hitec_link.c` | 529 | 529 | 100.0% |
@@ -981,7 +981,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **76080** | **74635** | **98.1%** |
+| **total** | **76125** | **74692** | **98.1%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -1018,7 +1018,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The clock on the board | the NTP request and its console line are not measured on the board. The RTC timer counts the 32.768kHz crystal Y3; its drift is at most about 30ppm, measured over 65min. On the internal RC oscillator, the fallback, the drift is not a fixed figure: 584ppm over 2h04min in one run, under 15ppm over 1h51min in another. The boot line naming the crystal is not measured, nor the start-up time the crystal adds (about 183ms from ESP-IDF's counts); how long an answer takes is not measured beyond one bench log, 7.2s after the address. A cell in the board's RTC battery holder BAT1 keeps no time: the ESP32-P4 keeps its RTC timer on VBAT only from deep sleep, which the panel never enters |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The scan-out reads PSRAM by DMA (direct memory access) with no bounce buffer, and the DSI host's interrupt runs during the write (`CONFIG_LCD_DSI_ISR_CACHE_SAFE`), so the picture is expected to stay; not measured | a photo of the home screen after a settings save and after a board drawing's keep, with the console's lines beside it |
 | Stick programming's beep timing | the engine, ESC STICK on MOTOR & ESC > PROGRAM and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 394 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 410 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 | Comment gaps of the existing tree | the comment rule ([CONTRIBUTING.md](CONTRIBUTING.md#comments)) holds new files, changed lines and the `@file` block of a changed file. The other gaps are listed: the Doxygen warnings in `tools/doc_check_baseline.txt`, the Python docstring codes per file in `ruff.toml`. A C file without a `@file` block is one line there, `file has no @file block`; Doxygen reports nothing inside such a file, so its other gaps are not listed until the block is added | documentation of the listed files |
 
 ## Constraints

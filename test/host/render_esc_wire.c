@@ -226,7 +226,11 @@ static void card_answer(uint8_t result)
     feed();
 }
 
-void render_esc_wire_view(const char *view)
+/**
+ * @brief The view's page, fed and tapped there.
+ * @param view The view.
+ */
+static void view_up(const char *view)
 {
     const esc_wire_target_t targets[2] = { { 0u, 0u },
                                            { LINK_EW_TARGET_PORT | 1u, 14u } };
@@ -413,4 +417,109 @@ void render_esc_wire_view(const char *view)
         }
     }
     ui_router_tick(0.02f);
+}
+
+/** @brief What a view's press is on. */
+typedef enum {
+    PRESS_HOLD,    /**< the page's hold, half filled */
+    PRESS_ACTION0, /**< the action row's first       */
+    PRESS_ACTION1, /**< the action row's second      */
+    PRESS_BACK,    /**< BACK                         */
+    PRESS_ROW0,    /**< the first row's value        */
+    PRESS_CANCEL,  /**< CANCEL of a hold page        */
+    PRESS_NEXT,    /**< NEXT                         */
+    PRESS_PREV,    /**< PREV                         */
+    PRESS_CHOICE0, /**< a list's first entry         */
+    PRESS_CH_CANCEL, /**< a list's CANCEL            */
+} press_on_t;
+
+/** @brief The views of a finger left on a control, and the page each is on. */
+static const struct {
+    const char *view;
+    const char *page;
+    press_on_t  on;
+} k_press[] = {
+    { "motor-wire-fill-connect", "motor-wire-connect", PRESS_HOLD },
+    { "motor-wire-fill-again", "motor-wire-held", PRESS_HOLD },
+    { "motor-wire-fill-write", "motor-wire-am-write", PRESS_HOLD },
+    { "motor-wire-fill-no-backup", "motor-wire-no-backup", PRESS_HOLD },
+    { "motor-wire-fill-leave", "motor-wire-am-leave", PRESS_HOLD },
+    { "motor-wire-fill-release", "motor-wire-release", PRESS_HOLD },
+    { "motor-wire-fill-restore", "motor-wire-restore", PRESS_HOLD },
+    { "motor-wire-press-read", "motor-wire-am", PRESS_ACTION0 },
+    { "motor-wire-press-hand", "motor-wire-handwait", PRESS_ACTION1 },
+    { "motor-wire-press-back", "motor-wire-am", PRESS_BACK },
+    { "motor-wire-press-row", "motor-wire-am-motor", PRESS_ROW0 },
+    { "motor-wire-press-cancel", "motor-wire-am-leave", PRESS_CANCEL },
+    { "motor-wire-press-next", "motor-wire-am-long", PRESS_NEXT },
+    { "motor-wire-press-prev", "motor-wire-am-last", PRESS_PREV },
+    { "motor-wire-press-choice", "motor-wire-am-choice", PRESS_CHOICE0 },
+    { "motor-wire-press-list-cancel", "motor-wire-am-choice", PRESS_CH_CANCEL },
+};
+
+/**
+ * @brief A finger left on a control.
+ * @param on The control; a hold is held 1s of its 2s.
+ */
+static void press_on(press_on_t on)
+{
+    gfx_rect_t r;
+
+    switch (on) {
+    case PRESS_HOLD:
+        r = esc_wire_panel_hold_rect();
+        break;
+    case PRESS_ACTION0:
+        r = esc_wire_panel_action_rect(0);
+        break;
+    case PRESS_ACTION1:
+        r = esc_wire_panel_action_rect(1);
+        break;
+    case PRESS_BACK:
+        r = esc_wire_panel_back_rect();
+        break;
+    case PRESS_ROW0:
+        r = esc_wire_panel_value_rect(0);
+        break;
+    case PRESS_CANCEL:
+        r = esc_wire_panel_cancel_rect();
+        break;
+    case PRESS_NEXT:
+        r = esc_wire_panel_next_rect();
+        break;
+    case PRESS_PREV:
+        r = esc_wire_panel_prev_rect();
+        break;
+    case PRESS_CHOICE0:
+        r = esc_wire_panel_choice_rect(0);
+        break;
+    default:
+        r = esc_wire_panel_cancel_rect();
+        break;
+    }
+    if (r.w <= 0 || r.h <= 0) {
+        fprintf(stderr, "render_esc_wire: a press names no control\n");
+        exit(1);
+    }
+    const touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                              .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                         .y = (int16_t)(r.y + r.h / 2 + UI_BAND_H),
+                                         .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; on == PRESS_HOLD && i < 50; ++i) {
+        ui_router_tick(0.02f);
+    }
+}
+
+void render_esc_wire_view(const char *view)
+{
+    for (size_t i = 0u; i < sizeof(k_press) / sizeof(k_press[0]); ++i) {
+        if (strcmp(view, k_press[i].view) == 0) {
+            view_up(k_press[i].page);
+            press_on(k_press[i].on);
+            return;
+        }
+    }
+    view_up(view);
 }

@@ -76,6 +76,7 @@ battery                          0       0 KiB
 balance                          0       0 KiB
 motor-stick                  1,713     214 KiB
 motor-wire                       0       0 KiB
+motor-wire-hold                251      31 KiB
 balance-sim                  3,253     407 KiB
 settings-sim                 3,304     413 KiB
 battery-sim                  3,146     393 KiB
@@ -114,6 +115,7 @@ est. ms and est. fps: not measured
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `supply` | the supply screen with its output on, a sample landing every frame |
+| `motor-wire-hold` | the ESC signal wire session on LEAVE's page, a finger on its 2s hold |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
 | `settings-list` | SETUP with PANEL's list open, chrome cached |
 | `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
@@ -229,7 +231,7 @@ a change that makes the model draw more, not a frame that misses the panel:
 
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
-| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
+| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `motor-wire-hold`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
 | `overview-guide` | 1,000 | guide marks that draw more than their badges and brackets |
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
@@ -338,6 +340,7 @@ fill and a write-back for every line. The time of one clear, set as
 | `balance` | BALANCE | not measured | not measured | not measured | not measured | not measured |
 | `motor-stick` | ESC STICK open on MOTOR & ESC > PROGRAM | not measured | not measured | not measured | not measured | not measured |
 | `motor-wire` | the ESC signal wire session at rest on a read ESC, MOTOR & ESC > PROGRAM | not measured | not measured | not measured | not measured | not measured |
+| `motor-wire-hold` | a finger on the 2s hold of the ESC signal wire session's LEAVE page | not measured | not measured | not measured | not measured | not measured |
 | `picker` | OUTPUTS, board view | not measured | not measured | not measured | not measured | not measured |
 | `wifi` | WI-FI with ACCESS POINT on | not measured | not measured | not measured | not measured | not measured |
 | `wifi-keys` | WI-FI > CHOOSE HOME NETWORK, the password keyboard, a key typed every second | not measured | not measured | not measured | not measured | not measured |
@@ -388,7 +391,7 @@ its stack less 1024 bytes.
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
-| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,624 | 3,248 |
+| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,864 | 3,008 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
@@ -418,7 +421,7 @@ bytes leaves 1,792 above the 1,024-byte margin.
 `wifi_ctl`'s deepest chain is the start of the network stack in `worker()`:
 `esp_netif_init()` into lwIP's `netif_add()` and `netif_set_addr()`, the
 TCP code under it down to `ip6_frag()` and `pbuf_alloc()`, and the heap
-allocation and log call below those. It leaves 3,248 bytes above the margin.
+allocation and log call below those. It leaves 3,008 bytes above the margin.
 
 Measured on the ESP32-P4 build with ESP-IDF v6.1 at -O2. Of the margin,
 560 bytes are spent outside the frames:

@@ -38,6 +38,7 @@
  *             ESC STICK session under the output strip, on its makers
  *   motor-wire  the ESC signal-wire session at rest on a read ESC: the outputs read
  *             again and the session fed every frame, nothing shown changing
+ *   motor-wire-hold  the same on LEAVE's page, a finger on its 2s hold
  *   <screen>-chrome  the same, repainted in full every frame
  *   <screen>-sim     the same with the SIMULATION watermark
  *
@@ -198,6 +199,28 @@ static void wire_open(void)
 }
 
 /**
+ * @brief BACK's LEAVE page, a finger on its hold: every tick moves the fill.
+ */
+static void wire_hold(void)
+{
+    const gfx_rect_t back = esc_wire_panel_back_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1,
+                                   .x = (int16_t)(back.x + back.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + back.y + back.h / 2) } };
+
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    const gfx_rect_t h = esc_wire_panel_hold_rect();
+
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(h.x + h.w / 2);
+    e.point.y = (int16_t)(UI_BAND_H + h.y + h.h / 2);
+    ui_router_event(&e);
+}
+
+/**
  * @brief Draw @p frames frames of @p mode, the bench proper.
  *
  * @param frames Frames to draw.
@@ -273,6 +296,7 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
         { "motor-stick", SCREEN_MOTOR },
+        { "motor-wire-hold", SCREEN_MOTOR },
         { "motor-wire", SCREEN_MOTOR },
         /* The picker with the IOmcu's drawing of the RP2350-CAN: an
          * outline, 102 shapes and 40 pad rings on a full repaint. */
@@ -354,6 +378,9 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
 
     if (wire) {
         wire_open();
+    }
+    if (strcmp(mode, "motor-wire-hold") == 0) {
+        wire_hold();
     }
 
     if (strncmp(mode, "settings-list", 13) == 0) {

@@ -309,7 +309,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 505 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 521 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,

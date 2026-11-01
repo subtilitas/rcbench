@@ -79,6 +79,7 @@ battery                          0       0 KiB
 balance                          0       0 KiB
 motor-stick                  1,713     214 KiB
 motor-wire                       0       0 KiB
+motor-wire-hold                251      31 KiB
 balance-sim                  3,253     407 KiB
 settings-sim                 3,304     413 KiB
 battery-sim                  3,146     393 KiB
@@ -117,6 +118,7 @@ est. ms and est. fps: not measured
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
 | `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame |
+| `motor-wire-hold` | die Sitzung der ESC-Signalleitung auf der Seite VERLASSEN, ein Finger auf ihrem Hold von 2s |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht; `settings` sind die Kacheln von SETUP, `motor-stick` ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN |
 | `settings-list` | SETUP mit offener Liste PANEL, Chrome gecacht |
 | `wifi-keys` | WI-FI mit offener WLAN-Tastatur, in jedem Frame eine Taste getippt |
@@ -247,7 +249,7 @@ lässt, nicht einen Frame, der das Panel verpasst:
 
 | Modi | Obergrenze (Fills) | Fängt |
 | --- | ---: | --- |
-| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
+| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `motor-wire-hold`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
 | `overview-guide` | 1 000 | Marken der Hilfe, die mehr als ihre Abzeichen und Winkel zeichnen |
 | `servo` | 2 800 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
@@ -363,6 +365,7 @@ ein Fill und ein Write-Back je Line. Die Zeit eines Löschens, gesetzt als
 | `balance` | BALANCE | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `motor-stick` | ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `motor-wire` | die Sitzung der ESC-Signalleitung in Ruhe an einem gelesenen ESC, MOTOR & ESC > PROGRAMMIEREN | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
+| `motor-wire-hold` | ein Finger auf dem Hold von 2s auf der Seite VERLASSEN der ESC-Signalleitung | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `picker` | OUTPUTS, Platinenansicht | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `wifi` | WI-FI mit eingeschaltetem WLAN-HOTSPOT | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `wifi-keys` | WI-FI > HEIMNETZ WÄHLEN, die Passwort-Tastatur, jede Sekunde eine Taste getippt | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
@@ -416,7 +419,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
-| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 624 | 3 248 |
+| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 864 | 3 008 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
@@ -447,7 +450,7 @@ Bytes lässt 1 792 über der Marge von 1 024 Bytes.
 Die tiefste Kette von `wifi_ctl` ist der Start des Netzwerk-Stacks in
 `worker()`: `esp_netif_init()` in `netif_add()` und `netif_set_addr()` von
 lwIP, der TCP-Code darunter bis `ip6_frag()` und `pbuf_alloc()`, und die
-Heap-Anforderung und der Log-Aufruf darunter. Sie lässt 3 248 Bytes über der
+Heap-Anforderung und der Log-Aufruf darunter. Sie lässt 3 008 Bytes über der
 Marge.
 
 Gemessen auf dem ESP32-P4-Build mit ESP-IDF v6.1 bei -O2. Von der Marge

@@ -150,7 +150,7 @@ typedef struct {
     void       (*render)(gfx_canvas_t *c);
     /** Changes whenever a render would show something else. */
     uint32_t   (*revision)(void);
-    /** Changes while a hold fills; hold_rect() is where. */
+    /** @brief Changes while a hold fills or a button's press shows; hold_rect() is where. */
     uint32_t   (*hold_revision)(void);
     gfx_rect_t (*hold_rect)(void);
     /** The host screen is left: presses and editors go, the port stays. */

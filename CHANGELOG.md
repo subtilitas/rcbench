@@ -83,6 +83,8 @@ history is in git.
 
 ### Fixed
 
+- ESC signal wire: a hold's fill reaches the screen. MOTOR & ESC's session path did not read the page set's hold revision, so no hold showed a fill. It now redraws the hold's button alone in each framebuffer, 251 cache-line fills a frame (`motor-wire-hold`).
+- ESC signal wire: the action row, BACK, value rows, NEXT, PREV, CANCEL and list entries show the pressed state from press to release, and a press redraws that button alone. A move redraws nothing.
 - ESC signal wire: PIN HELD shows `A stop or a fault ended this session` only for a stop or a fault; after a SUPPLY OFF with neither, the `SUPPLY_OFF` refusal's line is the only one.
 - ESC signal wire: ESCape32's 3 sound and light fields (`volume`, `beacon`, `led`) were on a seventh tab the tab strip of 6 could not select. They sit on `INPUT, SOUND` with input and telemetry, 11 rows. Every tab of every firmware is selectable.
 - ESC signal wire: a press on the place of a hidden button, or between two tabs, clears no line.

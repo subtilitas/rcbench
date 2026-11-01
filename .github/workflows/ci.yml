@@ -275,6 +275,7 @@ jobs:
       - name: Every screen still idles on a cached frame
         run: python3 tools/frame_cost.py overview analyser logs settings
              settings-list battery balance picker wifi motor-wire
+             motor-wire-hold
              --max-lines 1000
              && python3 tools/frame_cost.py motor-stick --max-lines 2000
 
