@@ -586,7 +586,7 @@ const char *const wa_web_hl_js[] = {
     NULL,
 };
 
-/** @brief write.js, 11500 bytes. */
+/** @brief write.js, 11501 bytes. */
 const char *const wa_web_write_js[] = {
     "var RcbWr = (function () {\n"
     "'use strict';\n"
@@ -1040,7 +1040,7 @@ const char *const wa_web_write_js[] = {
     "});\n"
     "ui.codeIn = c.el('input');\n"
     "ui.codeIn.name = 'code';\n"
-    "ui.codeIn.maxLength = 8;\n"
+    "ui.codeIn.maxLength = 63;\n"
     "ui.codeIn.autocomplete = 'off';\n"
     "ui.codeGo = c.el('button', 'btn', TX.codego);\n"
     "ui.codeGo.type = 'submit';\n"
@@ -1081,7 +1081,7 @@ const char *const wa_web_write_js[] = {
     NULL,
 };
 
-/** @brief edit.js, 14913 bytes. */
+/** @brief edit.js, 14914 bytes. */
 const char *const wa_web_edit_js[] = {
     "var RcbEd = (function () {\n"
     "'use strict';\n"
@@ -1654,7 +1654,7 @@ const char *const wa_web_edit_js[] = {
     "x.qtext = c.el('p');\n"
     "card.appendChild(x.qtext);\n"
     "x.codeIn = c.el('input');\n"
-    "x.codeIn.maxLength = 8;\n"
+    "x.codeIn.maxLength = 63;\n"
     "x.codeIn.autocomplete = 'off';\n"
     "x.codeIn.hidden = true;\n"
     "x.codeIn.addEventListener('keydown', function (ev) {\n"

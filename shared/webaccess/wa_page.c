@@ -117,7 +117,7 @@ void wa_page_code(wa_out_t *o, const wa_page_info_t *pi, bool wrong)
         wa_out_str(o, "</b></p>");
     }
     wa_out_str(o, "<form method=\"post\" action=\"" WA_URL_CODE "\">"
-                  "<input name=\"code\" maxlength=\"8\" size=\"10\" "
+                  "<input name=\"code\" maxlength=\"63\" size=\"24\" "
                   "autocomplete=\"off\" autocapitalize=\"none\" "
                   "spellcheck=\"false\" autofocus> <button>");
     wa_out_str(o, pt(pi->de, P_OK));

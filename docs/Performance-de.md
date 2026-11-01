@@ -419,7 +419,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
-| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 624 | 3 248 |
+| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 864 | 3 008 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
@@ -450,7 +450,7 @@ Bytes lässt 1 792 über der Marge von 1 024 Bytes.
 Die tiefste Kette von `wifi_ctl` ist der Start des Netzwerk-Stacks in
 `worker()`: `esp_netif_init()` in `netif_add()` und `netif_set_addr()` von
 lwIP, der TCP-Code darunter bis `ip6_frag()` und `pbuf_alloc()`, und die
-Heap-Anforderung und der Log-Aufruf darunter. Sie lässt 3 248 Bytes über der
+Heap-Anforderung und der Log-Aufruf darunter. Sie lässt 3 008 Bytes über der
 Marge.
 
 Gemessen auf dem ESP32-P4-Build mit ESP-IDF v6.1 bei -O2. Von der Marge

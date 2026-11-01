@@ -15,6 +15,7 @@
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "wifi_kept.h"
 
 /** @brief The area below the band: 1024 x 540px. */
 #define W UI_PANEL_W
@@ -40,7 +41,7 @@
 #define FOOT    (UI_ALERT_Y - UI_BAND_H - 4)
 
 /*
- * With the radio off: five buttons of 460 x 60px (69.0 x 9.0mm) 8px apart on
+ * With the radio off: seven buttons of 460 x 60px (69.0 x 9.0mm) 8px apart on
  * the left, from body y 16; the card on the right, 16px beside them, to 8px
  * from the right edge and down to FOOT.
  * The card's lines are 49 cells of WF_FONT_LABEL, 24px apart.
@@ -113,11 +114,12 @@
 _Static_assert(BH >= UI_TAP_MIN && SC_H >= UI_TAP_MIN
                && SC_BH >= UI_TAP_MIN && Q_BH >= UI_TAP_MIN,
                "a WI-FI control under UI_TAP_MIN");
-_Static_assert(BY + 4 * BPITCH + BH <= OFF_Y && OFF_Y + BH <= FOOT,
+_Static_assert(BY + 6 * BPITCH + BH <= FOOT && OFF_Y + BH <= FOOT,
                "the buttons reach the alert band");
 /* The most the running view holds: four rows, then the lines OPEN_ALL,
- * PLAIN or CHANNEL, IDLE, WRITES and, 8px on, RECEIVING. */
-_Static_assert(ROW_Y + 4 * ROW_P + 4 + 4 * LINE_P + 8 + LINE_P <= OFF_Y,
+ * PLAIN or CHANNEL, IDLE, WRITES, a long code's own line and, 8px on,
+ * RECEIVING. */
+_Static_assert(ROW_Y + 4 * ROW_P + 4 + 5 * LINE_P + 8 + LINE_P <= OFF_Y,
                "the running view's lines reach WI-FI OFF");
 _Static_assert(BX + BW + 16 <= WR_X, "the writes' button meets WI-FI OFF");
 _Static_assert(SC_Y + (SC_ROWS - 1) * SC_P + SC_H + 4 + 8 <= SC_BY,
@@ -139,6 +141,8 @@ typedef enum {
     SUB_SCAN,
     SUB_KEY_SSID,
     SUB_KEY_PASS,
+    SUB_KEPT,          /* HOTSPOT PASSWORD or WEB CODE's view */
+    SUB_KEY_KEPT,      /* the keyboard of that view */
 } sub_t;
 
 enum {
@@ -156,6 +160,11 @@ enum {
     HIT_SCAN_CANCEL,
     HIT_WRITES,        /* HOLD 2s: ALLOW BROWSER WRITES */
     HIT_WRITES_OFF,    /* BROWSER WRITES OFF */
+    HIT_KEPT_PASS,     /* HOTSPOT PASSWORD */
+    HIT_KEPT_CODE,     /* WEB CODE */
+    HIT_KEPT_TYPE,     /* TYPE A VALUE */
+    HIT_KEPT_RANDOM,   /* BACK TO RANDOM */
+    HIT_KEPT_CLOSE,    /* CLOSE */
     HIT_ROW,           /* HIT_ROW + i for row i */
 };
 
@@ -167,10 +176,13 @@ static struct {
     char         pick[WIFI_SSID_MAX + 1];
     char         save_ssid[WIFI_SSID_MAX + 1];
     char         save_pass[WIFI_PASS_MAX + 1];
-    int          hit;
-    uint8_t      press_id;
-    bool         have_press;
-    ui_hold_t    hold;
+    char         save_kept[WIFI_PASS_MAX + 1]; /**< what wifi_screen_kept()
+                                                    hands over             */
+    wifi_kept_t  kept;          /**< the value SUB_KEPT is about          */
+    int          hit;           /**< the control under the press, HIT_*   */
+    uint8_t      press_id;      /**< its touch id                         */
+    bool         have_press;    /**< a press is held                      */
+    ui_hold_t    hold;          /**< the 2s hold of hold_hit              */
     int          hold_hit;      /**< the held control: HIT_INSTALL or
                                      HIT_WRITES                          */
     bool         installing;    /**< INSTALL went: leaving keeps the image */
@@ -297,11 +309,26 @@ void wifi_screen_net(char ssid[WIFI_SSID_MAX + 1], char pass[WIFI_PASS_MAX + 1])
     memcpy(pass, s.save_pass, sizeof(s.save_pass));
 }
 
+void wifi_screen_kept(char out[WIFI_PASS_MAX + 1])
+{
+    memcpy(out, s.save_kept, sizeof(s.save_kept));
+    memset(s.save_kept, 0, sizeof(s.save_kept));
+}
+
+/**
+ * @brief The value the kept view is about, as the application handed it in.
+ * @return It, "" for RANDOM
+ */
+static const char *kept_value(void)
+{
+    return (s.kept == WIFI_KEPT_PASS) ? s.v.kept_pass : s.v.kept_code;
+}
+
 /* ------------------------------------------------------------ geometry */
 
 /**
  * @brief Button @p row of the radio-off view.
- * @param row 0 ACCESS POINT to 4 ACCESS CODE.
+ * @param row 0 ACCESS POINT to 6 WEB CODE.
  * @return Its rectangle, body coordinates.
  */
 static gfx_rect_t btn(int row)
@@ -363,7 +390,10 @@ static bool in(gfx_rect_t r, int x, int y) { return gfx_rect_contains(r, x, y); 
 
 /* ------------------------------------------------------------ the views */
 
-typedef enum { VIEW_MAIN, VIEW_RUNNING, VIEW_SCAN, VIEW_QUESTION } view_t;
+/** @brief What the body shows. */
+typedef enum {
+    VIEW_MAIN, VIEW_RUNNING, VIEW_SCAN, VIEW_QUESTION, VIEW_KEPT
+} view_t;
 
 static view_t view_of(void)
 {
@@ -372,6 +402,9 @@ static view_t view_of(void)
     }
     if (s.sub == SUB_SCAN) {
         return VIEW_SCAN;
+    }
+    if (s.sub == SUB_KEPT) {
+        return VIEW_KEPT;
     }
     return radio_on() ? VIEW_RUNNING : VIEW_MAIN;
 }
@@ -403,6 +436,14 @@ static int hit_at(int x, int y)
             }
         }
         return in(scan_cancel_rect(), x, y) ? HIT_SCAN_CANCEL : HIT_NONE;
+    case VIEW_KEPT:
+        if (in(rescan_rect(), x, y)) {
+            return HIT_KEPT_TYPE;
+        }
+        if (kept_value()[0] != '\0' && in(hidden_rect(), x, y)) {
+            return HIT_KEPT_RANDOM;
+        }
+        return in(scan_cancel_rect(), x, y) ? HIT_KEPT_CLOSE : HIT_NONE;
     case VIEW_RUNNING:
         if (writes_button() && in(writes_rect(), x, y)) {
             return s.v.writes_open ? HIT_WRITES_OFF : HIT_WRITES;
@@ -429,6 +470,12 @@ static int hit_at(int x, int y)
         if (in(btn(4), x, y)) {
             return HIT_CODE;
         }
+        if (in(btn(5), x, y)) {
+            return HIT_KEPT_PASS;
+        }
+        if (in(btn(6), x, y)) {
+            return HIT_KEPT_CODE;
+        }
         return HIT_NONE;
     }
     }
@@ -442,6 +489,11 @@ static gfx_rect_t hit_rect(int hit)
     case HIT_CHOOSE:      return btn(2);
     case HIT_FORGET:      return btn(3);
     case HIT_CODE:        return btn(4);
+    case HIT_KEPT_PASS:   return btn(5);
+    case HIT_KEPT_CODE:   return btn(6);
+    case HIT_KEPT_TYPE:   return rescan_rect();
+    case HIT_KEPT_RANDOM: return hidden_rect();
+    case HIT_KEPT_CLOSE:  return scan_cancel_rect();
     case HIT_OFF:         return off_rect();
     case HIT_Q_CANCEL:    return q_cancel_rect();
     case HIT_INSTALL:     return install_rect();
@@ -454,6 +506,16 @@ static gfx_rect_t hit_rect(int hit)
         return (hit >= HIT_ROW) ? row_rect(hit - HIT_ROW)
                                 : gfx_rect_make(0, 0, 0, 0);
     }
+}
+
+/**
+ * @brief What the kept view asks of the application.
+ * @return WIFI_REQ_KEPT_PASS or WIFI_REQ_KEPT_CODE
+ */
+static unsigned kept_req(void)
+{
+    return (s.kept == WIFI_KEPT_PASS) ? WIFI_REQ_KEPT_PASS
+                                      : WIFI_REQ_KEPT_CODE;
 }
 
 static void act(int hit)
@@ -480,7 +542,24 @@ static void act(int hit)
         ui_textkey_open_wifi(&s.tk, KEY_AREA, TR(WF_KEY_SSID), "", false);
         break;
     case HIT_SCAN_CANCEL:
+    case HIT_KEPT_CLOSE:
         s.sub = SUB_MAIN;
+        break;
+    case HIT_KEPT_PASS:
+    case HIT_KEPT_CODE:
+        s.kept = (hit == HIT_KEPT_PASS) ? WIFI_KEPT_PASS : WIFI_KEPT_CODE;
+        s.sub = SUB_KEPT;
+        break;
+    case HIT_KEPT_TYPE:
+        s.sub = SUB_KEY_KEPT;
+        ui_textkey_open_wifi(&s.tk, KEY_AREA,
+                             (s.kept == WIFI_KEPT_PASS) ? TR(WF_KEY_KEPT_PASS)
+                                                        : TR(WF_KEY_KEPT_CODE),
+                             "", true);
+        break;
+    case HIT_KEPT_RANDOM:
+        memset(s.save_kept, 0, sizeof(s.save_kept));
+        s.req |= kept_req();
         break;
     default:
         if (hit >= HIT_ROW && hit - HIT_ROW < s.v.scan_n) {
@@ -501,7 +580,15 @@ static void key_event(const touch_event_t *evt)
     char out[WIFI_PASS_MAX + 1];
     const ui_textkey_result_t r = ui_textkey_event(&s.tk, evt, out,
                                                    sizeof(out));
-    if (r == UI_TEXTKEY_CANCELLED) {
+    if (s.sub == SUB_KEY_KEPT) {
+        if (r == UI_TEXTKEY_OK) {
+            snprintf(s.save_kept, sizeof(s.save_kept), "%s", out);
+            s.req |= kept_req();
+        }
+        if (r != UI_TEXTKEY_NONE) {
+            s.sub = SUB_KEPT;
+        }
+    } else if (r == UI_TEXTKEY_CANCELLED) {
         s.sub = SUB_SCAN;
     } else if (r == UI_TEXTKEY_OK && s.sub == SUB_KEY_SSID) {
         /* The keyboard holds a name to 32 bytes; the copy holds it too. */
@@ -520,7 +607,18 @@ static void key_event(const touch_event_t *evt)
         s.req |= WIFI_REQ_SAVE_NET;
         s.sub = SUB_MAIN;
     }
+    memset(out, 0, sizeof(out));
     touched();
+}
+
+/**
+ * @brief Whether a keyboard is the level showing, a question apart.
+ * @return true for any of the three
+ */
+static bool keys_up(void)
+{
+    return s.sub == SUB_KEY_SSID || s.sub == SUB_KEY_PASS
+           || s.sub == SUB_KEY_KEPT;
 }
 
 /**
@@ -533,7 +631,7 @@ static void event(const touch_event_t *evt)
     if (evt == NULL) {
         return;
     }
-    if (s.sub == SUB_KEY_SSID || s.sub == SUB_KEY_PASS) {
+    if (keys_up()) {
         if (!staged()) {
             key_event(evt);
             return;
@@ -652,10 +750,13 @@ static bool back(void)
         touched();
         return true;
     }
-    if (s.sub == SUB_KEY_SSID || s.sub == SUB_KEY_PASS) {
+    if (s.sub == SUB_KEY_KEPT) {
+        ui_textkey_close(&s.tk);
+        s.sub = SUB_KEPT;
+    } else if (keys_up()) {
         ui_textkey_close(&s.tk);
         s.sub = SUB_SCAN;
-    } else if (s.sub == SUB_SCAN) {
+    } else if (s.sub == SUB_SCAN || s.sub == SUB_KEPT) {
         s.sub = SUB_MAIN;
     } else {
         return false;
@@ -786,14 +887,20 @@ static void button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
 static void draw_main(gfx_canvas_t *c)
 {
     const bool free_ = (s.v.block == WIFI_WHY_NONE);
-    const char *labels[5] = { TR(WF_AP), TR(WF_JOIN), TR(WF_CHOOSE),
-                              TR(WF_FORGET),
-                              s.v.code_on ? TR(WF_CODE_ON) : TR(WF_CODE_OFF) };
+    const char *labels[7] = {
+        TR(WF_AP), TR(WF_JOIN), TR(WF_CHOOSE), TR(WF_FORGET),
+        s.v.code_on ? TR(WF_CODE_ON) : TR(WF_CODE_OFF),
+        (s.v.kept_pass[0] != '\0') ? TR(WF_KEPT_PASS_SET)
+                                   : TR(WF_KEPT_PASS_RANDOM),
+        (s.v.kept_code[0] != '\0') ? TR(WF_KEPT_CODE_SET)
+                                   : TR(WF_KEPT_CODE_RANDOM),
+    };
     const bool here = (s.v.block != WIFI_WHY_UNAVAILABLE);
-    const bool on[5] = { free_, free_ && s.v.have_net, free_,
-                         here && s.v.have_net, here };
-    const int hits[5] = { HIT_AP, HIT_JOIN, HIT_CHOOSE, HIT_FORGET, HIT_CODE };
-    for (int i = 0; i < 5; ++i) {
+    const bool on[7] = { free_, free_ && s.v.have_net, free_,
+                         here && s.v.have_net, here, here, here };
+    const int hits[7] = { HIT_AP, HIT_JOIN, HIT_CHOOSE, HIT_FORGET, HIT_CODE,
+                          HIT_KEPT_PASS, HIT_KEPT_CODE };
+    for (int i = 0; i < 7; ++i) {
         button(c, btn(i), labels[i], (i == 0) ? UI_ACCENT : UI_PANEL_HI,
                hits[i], on[i]);
     }
@@ -852,7 +959,12 @@ static void row(gfx_canvas_t *c, int i, const char *label, const char *value)
 {
     const int y = ROW_Y + i * ROW_P;
     text_in(c, LBL_X, y, LBL_W, ROW_P, label, WF_FONT_LABEL, UI_TEXT_DIM);
-    text_in(c, VAL_X, y, VAL_W, ROW_P, value, WF_FONT_HEAD, UI_TEXT);
+    /* 37 characters take the column in WF_FONT_HEAD, a kept value's 63 in
+     * WF_FONT_LABEL. */
+    text_in(c, VAL_X, y, VAL_W, ROW_P, value,
+            (gfx_text_width(WF_FONT_HEAD, value, 1) <= VAL_W) ? WF_FONT_HEAD
+                                                              : WF_FONT_LABEL,
+            UI_TEXT);
 }
 
 /**
@@ -911,6 +1023,11 @@ static int writes_line(gfx_canvas_t *c, int y)
         snprintf(v, sizeof(v), "%s", TR(WF_WR_HOLD));
     } else if (s.v.writes == WIFI_WRITES_CODE && !s.v.code_on) {
         snprintf(v, sizeof(v), TR(WF_WR_CODE), s.v.code);
+        if (gfx_text_width(WF_FONT_BODY, v, 1) > W - 2 * LBL_X) {
+            /* A kept code too long for the sentence has its own line. */
+            y = line_at(c, y, TR(WF_WR_CODE_LONG), col);
+            snprintf(v, sizeof(v), "%s", s.v.code);
+        }
     } else {
         wifi_screen_writes_text(v, sizeof(v), (unsigned)s.v.written);
     }
@@ -1113,6 +1230,21 @@ static void draw_question(gfx_canvas_t *c)
 }
 
 /**
+ * @brief The buttons of the kept view; its card is wifi_kept.c's.
+ * @param c Canvas.
+ */
+static void draw_kept(gfx_canvas_t *c)
+{
+    wifi_kept_draw(c, gfx_rect_make(Q_X, Q_Y, Q_W, SC_BY - 8 - Q_Y), s.kept,
+                   &s.v);
+    button(c, rescan_rect(), TR(WF_KEPT_TYPE), UI_ACCENT, HIT_KEPT_TYPE, true);
+    button(c, hidden_rect(), TR(WF_KEPT_TO_RANDOM), UI_PANEL_HI,
+           HIT_KEPT_RANDOM, kept_value()[0] != '\0');
+    button(c, scan_cancel_rect(), TR(FM_CLOSE), UI_PANEL_HI, HIT_KEPT_CLOSE,
+           true);
+}
+
+/**
  * @brief The view showing.
  * @param c            Canvas.
  * @param buffer_index The framebuffer, whose cache it follows.
@@ -1120,8 +1252,7 @@ static void draw_question(gfx_canvas_t *c)
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
-    const bool keys = (s.sub == SUB_KEY_SSID || s.sub == SUB_KEY_PASS)
-                      && !staged();
+    const bool keys = keys_up() && !staged();
     if ((s.drawn_mask & bit) != 0u) {
         return;            /* every event and every change clears the mask */
     }
@@ -1141,6 +1272,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         case VIEW_QUESTION: draw_question(c); break;
         case VIEW_SCAN:     draw_scan(c);     break;
         case VIEW_RUNNING:  draw_running(c);  break;
+        case VIEW_KEPT:     draw_kept(c);     break;
         case VIEW_MAIN:
         default:            draw_main(c);     break;
         }
@@ -1158,8 +1290,36 @@ static void render(gfx_canvas_t *c, int buffer_index)
  */
 static bool covered(void) { return s.sub != SUB_MAIN || staged(); }
 
+/**
+ * @brief ui_screen_t's no_shot: a kept value on the glass, its keyboard, or
+ *        the rows of a running radio with one kept.  A picture on the card can
+ *        be read from the browser.
+ * @return true while a screenshot is refused
+ */
+static bool no_shot(void)
+{
+    if (staged()) {
+        return false;      /* the question hides what is under it */
+    }
+    if (s.sub == SUB_KEY_KEPT) {
+        return true;
+    }
+    switch (view_of()) {
+    case VIEW_KEPT:
+        return kept_value()[0] != '\0';
+    case VIEW_RUNNING:
+        return s.v.kept_pass[0] != '\0' || s.v.kept_code[0] != '\0';
+    case VIEW_MAIN:
+    case VIEW_SCAN:
+    case VIEW_QUESTION:
+    default:
+        return false;
+    }
+}
+
 static const ui_screen_t k_screen = {
     .covered = covered,
+    .no_shot = no_shot,
     .title  = "WI-FI",
     .reset  = reset,
     .enter  = enter,

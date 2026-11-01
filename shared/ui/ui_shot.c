@@ -135,6 +135,10 @@ void ui_shot_capture(const gfx_canvas_t *c, bool opens_now)
         || c->width != UI_PANEL_W || c->height != UI_PANEL_H) {
         return;
     }
+    if (ui_router_shot_refused()) {
+        ui_router_set_notice(TR(SHOT_KEPT));
+        return;
+    }
     /* A save that a bench change or CANCEL stopped reads the picture until
      * its answer comes: at most one row later. */
     if (s.job == UI_SHOT_JOB_SAVE || s.state == ST_OPEN

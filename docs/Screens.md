@@ -220,6 +220,7 @@ guide and the help say where it is.
 | No memory | the band says `Screenshot not taken: 1,305,600B of PSRAM are not free.`, and nothing else changes |
 | A hold while one waits | replaces it in the same memory: `New screenshot taken. It replaces the waiting one.` |
 | A hold while a stopped save ends | no picture: `Screenshot not taken: the last one is still being written.`, for at most one row of the PNG |
+| A kept value on the glass | no picture: `Screenshot not taken: this screen shows a kept password or code.` WI-FI refuses it while it shows a [HOTSPOT PASSWORD or WEB CODE](#hotspot-password-and-web-code) that is kept, on that value's view, on its keyboard and on the rows of a running radio with either one kept. A picture on the card can be read from the browser. A RANDOM password and code are taken, since they end with the session |
 | Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. The IOmcu update's question and the release reminder: they cannot say whether a box covers them, and the popup would open after they have gone. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
 
 The picture is taken in that frame, on the render task, whatever the bench
@@ -3308,7 +3309,7 @@ alert covers no control. Rows, buttons and keys are 48px or taller.
 
 | View | Layout |
 | --- | --- |
-| Radio off | from body y 16, five buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
+| Radio off | from body y 16, seven buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
 | Radio on | from body y 16, rows of 56px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424, and with Browser writes HOLD the writes' button the same size beside it from body x 548 |
 | Network list | two columns of eight rows of 492 x 48px, 52px apart: the name in 12 x 24 (32 characters are 384px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56px each |
 | Question about an image | a card of 1008 x 484px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2s TO INSTALL 460 x 72px |
@@ -3347,7 +3348,7 @@ or a computer needs:
 | Band and channel | 2.4GHz, channel 6 (`WIFI_ACCESS_AP_CHANNEL`) |
 | Security | WPA2 (Wi-Fi Protected Access 2) personal |
 | Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, `rcbench-3F7A` |
-| Password | 8 characters, made new at every start, from `abcdefghjkmnpqrstuvwxyz23456789` (no 0, 1, i, l or o) |
+| Password | RANDOM: 8 characters, made new at every start, from `abcdefghjkmnpqrstuvwxyz23456789` (no 0, 1, i, l or o). Kept: the 8 to 63 characters of [HOTSPOT PASSWORD](#hotspot-password-and-web-code) |
 | Clients | 1 at a time |
 | IP address | `http://192.168.4.1/` |
 | Range | not measured |
@@ -3356,6 +3357,44 @@ or a computer needs:
 2. On the phone or the computer, join the network the screen names, with
    the password it shows.
 3. Open `http://192.168.4.1/` and enter the access code the screen shows.
+
+### HOTSPOT PASSWORD and WEB CODE
+
+![HOTSPOT PASSWORD kept, WEB CODE random](img/wifi-kept-buttons.png)
+![The view of a value that is random](img/wifi-kept-pass.png)
+![The view of a kept value](img/wifi-kept-pass-set.png)
+![The access code's view](img/wifi-kept-code.png)
+
+HOTSPOT PASSWORD sets the password of the network ACCESS POINT starts. WEB
+CODE sets the access code the browser page asks for. Each is RANDOM, the
+default, or a value the operator typed, kept across restarts. The two buttons
+stand on the radio-off view and read `HOTSPOT PASSWORD: RANDOM` or
+`HOTSPOT PASSWORD: KEPT`, `WEB CODE: RANDOM` or `WEB CODE: KEPT`. They take a
+tap in every bench state, as nothing on them reaches the radio.
+
+| Part | Figure |
+| --- | --- |
+| Value | 8 to 63 characters, 0x20 to 0x7E: letters, digits, space and marks. WPA2 personal's passphrase takes the same range |
+| TYPE A VALUE | the Wi-Fi keyboard: its three layers type only that range, and it takes no 64th character |
+| 7 characters or fewer | OK is refused, with `Enter at least 8 characters.` in the keyboard's title row |
+| BACK TO RANDOM | one tap, no typing, grey while the value is RANDOM |
+| When it takes effect | at the next start of the radio. The screen says so: `A change takes effect at the next start of the radio.` |
+| Shown | on its own view, and with the radio up on the rows, in plain form as a random password is. The keyboard masks it until SHOW |
+| Rows with a long value | 20 x 36 for up to 37 characters, 10 x 20 for up to 63. The view uses 20 x 36 for up to 48 characters, 12 x 24 for up to 63 |
+| Kept in | NVS, namespace `wifi`, keys `ap_pass` and `web_code`. No key is RANDOM: a store a build without these keys wrote loads with its network and its switch unchanged. A stored value the rule refuses loads as RANDOM |
+| FORGET HOME NETWORK | keeps both values |
+| Recovery | each view shows its value on the panel, and BACK TO RANDOM needs no browser, in every bench state |
+
+A change takes effect at the next start because the controls exist only with
+the radio off. No session is open then, so a session opened with the old code
+cannot outlast the change: the next start compares every cookie and every
+entry with the new code alone.
+
+A kept value is never written to a log, the console or a file, and no answer
+of the page or the file API carries it. `tools/check_wifi_secrets.py` fails
+the CI run on a log call that names one and on a use outside the sources that
+hold one. The panel has no export or backup of NVS. The screenshot refusal above
+covers the one way a picture of a value could reach the card.
 
 ### Home network
 
@@ -3439,7 +3478,10 @@ to 0. Each drop goes to the serial log as one line with its reason number
 (ESP-IDF's `wifi_err_reason_t`).
 
 FORGET HOME NETWORK erases the name and the password from NVS and sets the
-access code back to on.
+access code back to on. It keeps HOTSPOT PASSWORD and WEB CODE: its name says
+network, and its button is grey with no network kept, so it could not be the
+way back for them. BACK TO RANDOM is ([HOTSPOT PASSWORD and WEB
+CODE](#hotspot-password-and-web-code)).
 
 A change of what is kept (a network, FORGET, the access code switch) takes
 effect at once and reaches NVS on the next frame that may write flash. A
@@ -3450,9 +3492,9 @@ the restart.
 
 Current limitations:
 
-- NVS is not encrypted. The home network's password is kept in plain form in
-  the panel's flash, where anyone who reads the flash over USB (Universal
-  Serial Bus) reads it.
+- NVS is not encrypted. The home network's password, a kept HOTSPOT PASSWORD
+  and a kept WEB CODE are kept in plain form in the panel's flash, where anyone
+  who reads the flash over USB (Universal Serial Bus) reads them.
 - The page is plain HTTP (hypertext transfer protocol). On a home network
   the access code and every file cross the network unencrypted. The screen
   says so while joined.
@@ -3477,10 +3519,23 @@ Current limitations:
 
 ### The access code
 
-The page asks for an 8-character code before it lists a file or takes an
-upload. The screen shows it, and it is made new at every start of the radio,
-so a code from an earlier session opens nothing. The browser keeps it for the
-session. 16 wrong codes switch the radio off.
+The page asks for a code before it lists a file or takes an upload. The screen
+shows it. The browser keeps it for the session. 16 wrong codes switch the radio
+off, for a kept code as well.
+
+With WEB CODE at RANDOM, the default, the code has 8 characters and is made new
+at every start of the radio, so a code from an earlier session opens nothing.
+
+With WEB CODE kept, that does not hold. The code has 8 to 63 characters and
+stays valid until it is changed: a browser that kept it, and anyone who saw it,
+opens the page at any later session. A change ends it at the next start of the
+radio. On a home network it crosses the network unencrypted over plain HTTP at
+every request, in the cookie, as a random code does, and a value read there
+stays valid until changed where a random one ends with the session. 16 wrong
+codes end one radio session; the count starts again at the next.
+
+The cookie carries the code percent-encoded (`wa_code_cookie()`): 189 bytes at
+most, where a code of 63 characters needs every one encoded.
 
 ACCESS CODE switches it, for both ways in. It is on by default, after
 FORGET HOME NETWORK and on a panel with nothing kept. The switch is kept in
@@ -3495,7 +3550,7 @@ off (`shared/webaccess/wa_guard.h`):
 | --- | --- |
 | The `Host` header names the panel: `rcbench-3F7A.local`, `rcbench-3F7A` or the address the browser connected to (`192.168.4.1` as an access point), in any letter case, with no port or port 80. An IPv6 address is refused. | 421 Misdirected Request |
 | A page, file, ZIP or file API request carries no body. | 400 Bad Request |
-| A code entry has at most 95 bytes of body, a file API PUT at most 1,048,576 and a file API form at most 1,024. | 413 Content Too Large |
+| A code entry has at most 200 bytes of body, a file API PUT at most 1,048,576 and a file API form at most 1,024. | 413 Content Too Large |
 | A code entry, an upload and every write of the file API carry an `Origin` header of `http://` and a name above; without an `Origin`, a `Referer` that starts so. Neither header, `Origin: null` and any other site are refused. | 403 Forbidden |
 | An upload and every write of the file API carry the header `X-Rcbench-Upload: 1`, which the page's own script sends. | 403 Forbidden |
 

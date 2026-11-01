@@ -19,6 +19,8 @@ WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Se
 | CHOOSE HOME NETWORK | scans and lists the networks in reach |
 | FORGET HOME NETWORK | erases the kept network and sets the access code back to on; grey while none is kept |
 | ACCESS CODE: ON, OFF | whether the browser page asks for the access code |
+| HOTSPOT PASSWORD: RANDOM, KEPT | opens the [hotspot password](#hotspot-password-and-web-code) |
+| WEB CODE: RANDOM, KEPT | opens the [web code](#hotspot-password-and-web-code) |
 
 ## When the radio may not start
 
@@ -51,7 +53,7 @@ ACCESS POINT starts the panel's own network. The screen shows what a phone or a 
 | Band and channel | 2.4GHz, channel 6 |
 | Security | WPA2 (Wi-Fi Protected Access 2) personal |
 | Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, for example `rcbench-3F7A` |
-| Password | 8 characters, new at every start, without 0, 1, i, l and o |
+| Password | RANDOM: 8 characters, new at every start, without 0, 1, i, l and o. Kept: the 8 to 63 characters of HOTSPOT PASSWORD |
 | Clients | 1 at a time |
 | IP address | `http://192.168.4.1/` |
 | Range | not measured |
@@ -59,6 +61,24 @@ ACCESS POINT starts the panel's own network. The screen shows what a phone or a 
 1. On the phone or computer, join the network the screen names, with the password it shows.
 2. Open `http://192.168.4.1/`.
 3. Enter the access code the screen shows.
+
+## HOTSPOT PASSWORD and WEB CODE
+
+![HOTSPOT PASSWORD kept, WEB CODE random](view:wifi-kept-buttons)
+![The view of a random value](view:wifi-kept-pass)
+![The view of a kept value](view:wifi-kept-pass-set)
+![The access code's view](view:wifi-kept-code)
+
+HOTSPOT PASSWORD is the password of the network ACCESS POINT starts. WEB CODE is the access code the browser page asks for. Each is RANDOM, new at every start of the radio, or a value you type, kept across restarts.
+
+- TYPE A VALUE opens the keyboard: 8 to 63 characters, letters, digits, space and marks.
+- BACK TO RANDOM takes one tap and no typing. It is grey while the value is RANDOM.
+- A change takes effect at the next start of the radio.
+- Each view shows its value, so a kept value can be read and reset on the panel without a browser. FORGET HOME NETWORK keeps both.
+- The panel takes no screenshot while it shows a kept value.
+
+![The keyboard of a kept value](view:wifi-key-kept)
+![Fewer than 8 characters](view:wifi-key-kept-short)
 
 ## Choosing a home network
 
@@ -109,7 +129,7 @@ A failed join offers ACCESS POINT. WI-FI OFF switches the radio off.
 
 ## The access code
 
-The browser page asks for an 8-character code before it lists a file, changes the card or takes an upload. The screen shows the code, and it is new at every start of the radio. 16 wrong codes switch the radio off. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the panel.
+The browser page asks for a code before it lists a file, changes the card or takes an upload. The screen shows the code. With WEB CODE at RANDOM it has 8 characters and is new at every start of the radio, so a code from an earlier session opens nothing. With WEB CODE kept that does not hold: the code stays valid until you change it, for a browser that kept it and for anyone who saw it. Over plain HTTP on a home network it crosses the network unencrypted. 16 wrong codes switch the radio off, for a kept code as well. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the panel.
 
 ## Browser writes
 
@@ -157,7 +177,7 @@ The same version from another build is offered as a reinstall. The build that ru
 
 ## Current limitations
 
-- NVS is not encrypted. The home network's password is kept in plain form in the panel's flash.
+- NVS is not encrypted. The home network's password, a kept HOTSPOT PASSWORD and a kept WEB CODE are kept in plain form in the panel's flash.
 - The page is plain HTTP (hypertext transfer protocol). On a home network the access code and every file cross the network unencrypted. The screen says so while joined.
 - A device that reads that traffic can send a write of its own while writes are allowed.
 - The browser's editor saves a file with mixed line ends with LF ends.

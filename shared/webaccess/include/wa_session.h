@@ -23,11 +23,14 @@
  *
  * The access code: WA_SECRET_LEN characters shown on the panel, made fresh
  * at every start, which the page asks for before it lists a file or takes an
- * upload.  A switch on the screen turns it off; it is on by default.
+ * upload.  A switch on the screen turns it off; it is on by default.  A kept
+ * WEB CODE of 8 to 63 characters takes its place and stays valid until changed,
+ * and a kept HOTSPOT PASSWORD takes the random password's (wa_kept_use()).
  *
- * What is kept: the home network's name and password and the code switch
- * (wa_conf_t), in a store the caller passes (NVS, non-volatile storage, on
- * the panel).  Nothing else about Wi-Fi is kept.
+ * What is kept: the home network's name and password, the code switch, HOTSPOT
+ * PASSWORD and WEB CODE (wa_conf_t), in a store the caller passes (NVS,
+ * non-volatile storage, on the panel), in plain form.  Nothing else about Wi-Fi
+ * is kept.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework):
  * the platform reports what its radio did and asks what it should do.
@@ -123,6 +126,8 @@ typedef struct {
     char ssid[WA_SSID_MAX + 1u];      /**< its name, terminated         */
     char pass[WA_PASS_MAX + 1u];      /**< its passphrase, terminated   */
     bool code_on;                     /**< the page asks for the code   */
+    char ap_pass[WA_PASS_MAX + 1u];   /**< HOTSPOT PASSWORD; "" RANDOM  */
+    char web_code[WA_PASS_MAX + 1u];  /**< WEB CODE; "" RANDOM          */
 } wa_conf_t;
 
 /** @brief Why wa_conf_set_net() refused a home network. */
@@ -160,6 +165,45 @@ void wa_conf_defaults(wa_conf_t *c);
 wa_conf_err_t wa_conf_set_net(wa_conf_t *c, const char *ssid, size_t ssid_len,
                               const char *pass, size_t pass_len);
 
+/** @brief The two values the operator can keep. */
+typedef enum {
+    WA_KEPT_PASS = 0,  /**< HOTSPOT PASSWORD: the access point's        */
+    WA_KEPT_CODE,      /**< WEB CODE: the page's access code            */
+} wa_kept_t;
+
+/**
+ * @brief Whether a kept value may stand: @p len characters, WA_PASS_MIN to
+ *        WA_PASS_MAX, each printable ASCII (American Standard Code for
+ *        Information Interchange), the range of a WPA2 (Wi-Fi Protected
+ *        Access 2) personal passphrase.
+ * @param value The value, not terminated.
+ * @param len   Its characters.
+ * @return WA_CONF_OK, WA_CONF_PASS_SHORT, WA_CONF_PASS_LONG or
+ *         WA_CONF_PASS_CHAR.
+ */
+wa_conf_err_t wa_kept_check(const char *value, size_t len);
+
+/**
+ * @brief Keep @p value as @p which, or go back to RANDOM.  The session under
+ *        way keeps its own; the next wa_kept_use() takes this one.  A value
+ *        refused leaves what stands.
+ * @param c     The settings.
+ * @param which Which of the two.
+ * @param value The value, not terminated; NULL with @p len 0 is RANDOM.
+ * @param len   Its characters; 0 is RANDOM.
+ * @return WA_CONF_OK, or what wa_kept_check() says.
+ */
+wa_conf_err_t wa_conf_set_kept(wa_conf_t *c, wa_kept_t which,
+                               const char *value, size_t len);
+
+/**
+ * @brief FORGET HOME NETWORK in memory: the network goes and the code switch
+ *        is back on, as wa_conf_defaults(); the two kept values stay, and
+ *        each goes back to RANDOM by its own button.
+ * @param c The settings.
+ */
+void wa_conf_forget_net(wa_conf_t *c);
+
 /** @brief The store a wa_conf_t is kept in. */
 typedef struct {
     /** Fill @p out; false when nothing is kept. */
@@ -174,7 +218,8 @@ typedef struct {
 /**
  * @brief What the store holds, or the defaults when it holds nothing.
  *
- * A kept network that wa_conf_set_net() would refuse is dropped; the
+ * A kept value wa_kept_check() would refuse, and one the store does not have,
+ * is RANDOM.  A kept network that wa_conf_set_net() would refuse is dropped; the
  * switch stays.
  *
  * @param s   The store.
@@ -242,6 +287,15 @@ void wa_pending_change(wa_pending_t *p);
  * @param p The writes owed.
  */
 void wa_pending_forget(wa_pending_t *p);
+
+/**
+ * @brief FORGET of @p c, in memory and owed to the store: wa_conf_forget_net()
+ *        and an erase; with a kept value a save instead, which removes the
+ *        network's keys and at no moment leaves the value out of the store.
+ * @param c The settings.
+ * @param p The writes owed.
+ */
+void wa_forget(wa_conf_t *c, wa_pending_t *p);
 
 /**
  * @brief Whether a write is owed and due now.
@@ -409,8 +463,8 @@ typedef struct {
     bool          linger;     /**< switched off while joined, and the
                                    radio may stay up for the platform's
                                    last request (wa_lingers())            */
-    char          pass[WA_SECRET_LEN + 1u];   /**< the access point's    */
-    char          code[WA_SECRET_LEN + 1u];   /**< the page's access code */
+    char          pass[WA_PASS_MAX + 1u];     /**< the access point's    */
+    char          code[WA_PASS_MAX + 1u];     /**< the page's access code */
 } wa_t;
 
 /**
@@ -694,7 +748,8 @@ typedef enum {
 /**
  * @brief Check @p given against this session's code.
  *
- * A code from an earlier session is wrong.  The WA_GUESS_MAX-th wrong one
+ * A RANDOM code from an earlier session is wrong; a kept one stays right until
+ * it is changed.  The WA_GUESS_MAX-th wrong one
  * switches the session off.
  *
  * @param w       The session.
@@ -704,6 +759,15 @@ typedef enum {
  * @return The check's answer; WA_CODE_CLOSED when no page is served.
  */
 wa_code_t wa_code_check(wa_t *w, const char *given, bool code_on);
+
+/**
+ * @brief This session's password and code from what is kept, in place of the
+ *        ones wa_start() made: the caller's next step after a wa_start() that
+ *        started, under the same lock.  RANDOM leaves wa_start()'s.
+ * @param w The session.
+ * @param c The settings; NULL leaves both.
+ */
+void wa_kept_use(wa_t *w, const wa_conf_t *c);
 
 #ifdef __cplusplus
 }
