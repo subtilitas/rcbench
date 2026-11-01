@@ -53,7 +53,8 @@ typedef enum {
     EW_REF_AM_LENGTH,      /**< AM32: not exactly 192 bytes                 */
     EW_REF_CHANGED_BYTE,   /**< a byte no editable field names has changed  */
     EW_REF_VALUE,          /**< an editable field holds no value of its own */
-    EW_REF_RESTORE,        /**< a restore other than AM32 on an erased page */
+    EW_REF_RESTORE,        /**< a restore other than a named AM32 on an erased
+                                page */
     EW_REF_LINE,           /**< a line of the text interface that is refused */
 } ew_refuse_t;
 

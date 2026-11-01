@@ -482,6 +482,7 @@ TEST_CASE(a_restore_is_am32_on_an_erased_page)
     arm();
     id.erased = true;
     id.writable = false;
+    memcpy(id.name, "BOARD", 6u);
     memset(g_orig, 0xFF, sizeof(g_orig));
     CHECK_EQ(ew_guard_approve_restore(NULL, &id, g_orig, g_draft, 192u), EW_REF_ARG);
     CHECK_EQ(ew_guard_approve_restore(&g, NULL, g_orig, g_draft, 192u), EW_REF_ARG);
@@ -499,6 +500,13 @@ TEST_CASE(a_restore_is_am32_on_an_erased_page)
     CHECK_EQ(ew_guard_approve_restore(&g, &id, g_orig, g_draft, 192u),
              EW_REF_AM_REVISION);
     g_draft[1] = 4u;
+    /* An ESC with no name: nothing says the backup is its own. */
+    id.name[0] = '\0';
+    g.approved = NULL;
+    CHECK_EQ(ew_guard_approve_restore(&g, &id, g_orig, g_draft, 192u),
+             EW_REF_RESTORE);
+    CHECK(g.approved == NULL);
+    id.name[0] = 'B';
     /* A build for CAN boards takes no write at all. */
     id.can_build = true;
     CHECK_EQ(ew_guard_approve_restore(&g, &id, g_orig, g_draft, 192u),

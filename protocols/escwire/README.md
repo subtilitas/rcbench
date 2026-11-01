@@ -75,7 +75,8 @@ follows says what they did. A read goes with a new address on every try.
 - An AM32 whose byte 0 reads 0xFF reports its settings erased
   (`id.erased`). Only `ew_session_restore()` writes to it: a backup of 192B
   with the same pin code, flash code, bootloader protocol and name, onto a page
-  that reads 0xFF throughout. A restore left half written takes the same backup
+  that reads 0xFF throughout. An AM32 with no name takes no backup: the guard
+  refuses it with `EW_REF_RESTORE`. A restore left half written takes the same backup
   again, after a read, and no other.
 - An AM32 of bootloader protocol 3 with the firmware start 0x4000 in its
   device-info record, a build for CAN (Controller Area Network) boards, is

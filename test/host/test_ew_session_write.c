@@ -728,6 +728,24 @@ static void erased_am(void)
     sim_power_cycle(&esc);
 }
 
+TEST_CASE(an_erased_am32_with_no_name_takes_no_backup)
+{
+    ew_backup_id_t from;
+
+    erased_am();
+    memset(esc.am_name, 0xFF, sizeof(esc.am_name));
+    CHECK_EQ(sim_enter(&s, &esc), EW_SES_OK);
+    CHECK(s.id.erased);
+    CHECK_STR_EQ(s.id.name, "");
+    ew_session_backup_id(&s, &from);
+    const int at = esc.starts;
+
+    CHECK_EQ(ew_session_restore(&s, &from, g_before, 192u), EW_SES_ERR_REFUSED);
+    CHECK_EQ(s.refuse, EW_REF_RESTORE);
+    CHECK_EQ(esc.starts, at);
+    CHECK_EQ(esc.am[0], 0xFFu);
+}
+
 TEST_CASE(an_erased_am32_takes_only_its_backup)
 {
     ew_backup_id_t from;
@@ -1018,6 +1036,7 @@ int main(void)
     RUN(an_esc_lost_inside_a_write);
     RUN(a_stop_in_a_write);
     RUN(an_abort_at_every_transaction);
+    RUN(an_erased_am32_with_no_name_takes_no_backup);
     RUN(a_power_loss_at_every_transaction);
     RUN(an_erased_am32_takes_only_its_backup);
     RUN(a_restore_refused_or_failing);
