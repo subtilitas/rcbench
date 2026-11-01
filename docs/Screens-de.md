@@ -1128,9 +1128,9 @@ ESC von jeder Ebene beendet einen Stick-Lauf, schaltet den Netzteilausgang
 aus, den der Lauf eingeschaltet hat, schaltet den Prüfstand auf SAFE und
 schließt ESC STICK. Zurück auf MOTOR & ESC zeigt PROGRAMMIEREN seine Liste.
 
-Die Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und
-VESC-Firmware sind ein Modell in der Firmware (`shared/ui/prog_models.c`). Kein Transport trägt ihre Protokolle,
-und keine Liste von PROGRAMMIEREN hat eine Zeile für sie. Der Prüfstand
+Die Zeile `AM32, Bluejay, BLHeli_S, ESCape32`, rechts `SIGNALLEITUNG`, öffnet die Sitzung auf der Signalleitung: [ESC-Signalleitung](EscWire-de.md). Sie ist abgeblendet, bis der IOmcu `LINK_CAP_PROGRAM` meldet.
+
+Der Prüfstand
 erkennt ESCs mit BLHeli_32-Firmware, steuert sie an und sendet die DShot
 Special Commands, kann ihre Parameter aber nicht lesen:
 [Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md).

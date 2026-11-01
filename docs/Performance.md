@@ -131,8 +131,11 @@ ubuntu-26.04 runner of CI (continuous integration), and a machine with other
 versions measures other figures. A change anywhere in the measured sources
 moves the addresses of code and data, and with them the count of modes it does
 not touch: a change of texts and Hitec code moved 24 of the 37 modes by up to
-22 fills. `frame_cost.py --check-doc` therefore checks the table to a
-tolerance of 2%, and never less than 100 fills. It fails, too, when the line
+22 fills. Fills depend on code layout: 18 builds of one tree, with other paddings and link
+orders, gave battery-sim 3167 to 3353 fills, frame 9466 to 9810, servo 2236 to 2693
+and settings-list-chrome 36320 to 37282. `frame_cost.py --check-doc` therefore checks
+the table to a tolerance of 3%, and never less than 500 fills. No two of the 18 builds
+differ by more than that. Rows under about 700 fills are not held by this check. It fails, too, when the line
 that names the panel's rate and the bandwidth differs from the tool's profile.
 
 ## Rules

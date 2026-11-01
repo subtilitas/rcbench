@@ -18,9 +18,10 @@
 #include "touch_feed.h"
 
 #include "esc_stick_panel.h"
+#include "esc_wire_panel.h"
+#include "link_pages.h"
 #include "gfx.h"
 #include "motor_screen.h"
-#include "prog_models.h"
 #include "prog_registry.h"
 #include "settings.h"
 #include "splash_screen.h"
@@ -183,22 +184,21 @@ TEST_CASE(program_lists_the_stick_menu_and_no_modelled_protocol)
         }
         ++motor;
         CHECK_EQ(rows[i].task, (int)UI_WB_PROGRAM);
+        if (rows[i].page_set == &esc_wire_pages) {
+            /* Dimmed until the IOmcu reports the capability. */
+            CHECK_EQ(rows[i].needs_capability, (unsigned)LINK_CAP_PROGRAM);
+            CHECK_EQ(prog_reg_state(rows, n, i, 0u), (int)PROG_ROW_NO_CAP);
+            CHECK_EQ(prog_reg_state(rows, n, i, LINK_CAP_PROGRAM),
+                     (int)PROG_ROW_LIVE);
+            CHECK(rows[i].full_width);
+            continue;
+        }
         CHECK(rows[i].page_set == &esc_stick_pages);
         CHECK(rows[i].full_width);
         CHECK_EQ(rows[i].group, (int)TX_PL_GRP_STICK);
         CHECK_EQ(prog_reg_state(rows, n, i, 0u), (int)PROG_ROW_LIVE);
-        size_t mn = 0;
-        const prog_model_t *m = prog_models(&mn);
-        for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
-            ui_text_set_language((ui_lang_t)lang);
-            for (size_t k = 0; k < mn; ++k) {
-                CHECK(strstr(ui_tr(rows[i].name), prog_model_name(&m[k]))
-                      == NULL);
-            }
-        }
-        ui_text_set_language(UI_LANG_EN);
     }
-    CHECK_EQ(motor, 1);
+    CHECK_EQ(motor, 2);
     CHECK_STR_EQ(TR(PL_GRP_STICK), "STICK MENU");
     CHECK_STR_EQ(TR(PL_STICK), "ESCs by throttle stick");
     ui_text_set_language(UI_LANG_DE);
@@ -516,6 +516,34 @@ TEST_CASE(leaving_with_a_session_open_disarms_and_closes_it)
 }
 
 /*
+ * The signal-wire session holds or would take a pin of its own: the strip names
+ * that one, and not the throttle's protocol.
+ */
+TEST_CASE(the_wire_session_strip_names_its_own_pin)
+{
+    const esc_wire_target_t pin = { LINK_EW_TARGET_PORT | 1u, 14u };
+    ui_bench_status_t st = *ui_router_status();
+    char line[96];
+    bool warn = true;
+
+    fresh();
+    st.capabilities |= LINK_CAP_PROGRAM;
+    ui_router_set_status(&st);
+    esc_wire_panel_set_targets(&pin, 1u, true);
+    feed_tap(FEED_LONE, ROW_X, ROW_Y + 56);
+    frames(2);
+    CHECK(motor_screen()->covered());
+    strip(line, sizeof(line), false, &warn);
+    CHECK(!warn);
+    CHECK(strstr(line, "PORT 2 GPIO 14") != NULL);
+    CHECK(strstr(line, "DSHOT300") == NULL);
+    esc_wire_panel_set_targets(NULL, 0u, true);
+    strip(line, sizeof(line), false, &warn);
+    CHECK(warn);
+    CHECK(strstr(line, "DSHOT300") == NULL);
+}
+
+/*
  * PROGRAM's list on an armed bench, the throttle at 40%: a second finger
  * opens ESC STICK while the first holds DISARM.  The press on DISARM has
  * asked for SAFE, and the opening asks again while the bench has not
@@ -577,6 +605,7 @@ int main(void)
     RUN(the_strip_repaints_on_the_supply_and_the_bench);
     RUN(the_home_tag_climbs_the_session_then_leaves);
     RUN(leaving_with_a_session_open_disarms_and_closes_it);
+    RUN(the_wire_session_strip_names_its_own_pin);
     RUN(opening_a_session_on_an_armed_bench_disarms_it);
     RUN(a_second_finger_on_the_list_does_not_take_the_row);
     free(fb);

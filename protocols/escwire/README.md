@@ -6,8 +6,8 @@ The core holds the transaction, the frames of the binary bootloader protocol
 (protocol A), the lines of the text interface, the guard every outgoing frame
 and line passes, identification, the field maps, the session and the settings
 file. A driver with 5 functions (`ew_driver_t`) connects the core to a pin;
-`rp2350/ew_line.c` is that driver on one RP2350 pin. Nothing in a released image
-calls the module yet.
+`rp2350/ew_line.c` is that driver on one RP2350 pin. The IOmcu's `ESC_WIRE` page
+calls it; MOTOR & ESC > PROGRAM's signal-wire row reaches it.
 
 This module was written from a behavioural specification, without access to
 the firmware sources. The specification states what an ESC and a host exchange

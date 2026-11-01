@@ -10,13 +10,6 @@
 
 #include "esc_prog_int.h"
 
-/** @brief The highest voltage SUPPLY takes, mV. */
-#define SUPPLY_MAX_MV 20000u
-/** @brief The lowest limit SUPPLY takes, mA. */
-#define SUPPLY_MIN_MA 50u
-/** @brief The highest limit SUPPLY takes, mA. */
-#define SUPPLY_MAX_MA 3000u
-
 void esc_prog_gate_init(esc_prog_gate_t *g)
 {
     atomic_store(&g->pass, 0u);
@@ -339,8 +332,8 @@ esc_prog_msg_t esc_prog_connect(esc_prog_t *p, const esc_prog_connect_t *c)
         m = ESC_PROG_MSG_HELD;
     }
     if (m == ESC_PROG_MSG_NONE && c->power.power == (uint8_t)LINK_ESC_SWITCHED
-        && (c->power.mv < LINK_ESC_SUPPLY_MIN_MV || c->power.mv > SUPPLY_MAX_MV
-            || c->power.ma < SUPPLY_MIN_MA || c->power.ma > SUPPLY_MAX_MA)) {
+        && (c->power.mv < LINK_ESC_SUPPLY_MIN_MV || c->power.mv > ESC_PROG_MAX_MV
+            || c->power.ma < ESC_PROG_MIN_MA || c->power.ma > ESC_PROG_MAX_MA)) {
         m = ESC_PROG_MSG_RANGE;
     }
     if (m != ESC_PROG_MSG_NONE) {
@@ -492,6 +485,11 @@ esc_prog_msg_t esc_prog_message(const esc_prog_t *p, uint16_t *detail)
         *detail = p->detail;
     }
     return p->msg;
+}
+
+bool esc_prog_busy(const esc_prog_t *p)
+{
+    return p != NULL && (p->flow != ESC_PROG_FLOW_NONE || p->wait_id != 0u);
 }
 
 bool esc_prog_cmd_allowed(uint8_t kind, bool stopped)

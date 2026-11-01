@@ -46,6 +46,7 @@ Network) at 1Mbit/s.
 | [DShot and the output drivers](DShot.md) | DShot frames, telemetry and the output drivers |
 | [The OpenYGE protocol](OpenYGE.md) | ESC telemetry and parameter protocol specification |
 | [ESC programming profiles](EscProfiles.md) | The profiles for ESC programming |
+| [ESC signal wire](EscWire.md) | Reading and writing an ESC's settings over its signal wire: AM32, Bluejay, BLHeli_S, ESCape32 |
 | [Performance](Performance.md) | Rendering budget in cache-line fills |
 | [Interface language](Language.md) | The interface language and its texts |
 

@@ -37,6 +37,7 @@
 #include "render_files.h"
 #include "render_help.h"
 #include "render_shot.h"
+#include "render_esc_wire.h"
 #include "render_hitec.h"
 #include "sense_link.h"
 #include "settings.h"
@@ -2660,6 +2661,17 @@ static void pose_motor_tools(ui_screen_id_t id, const char *view)
         ui_router_goto(SCREEN_MOTOR);
         tap(MO_TAB_PROGRAM_X, UI_BAND_H + MO_TAB_Y);
     }
+    if (id == SCREEN_MOTOR && strncmp(view, "motor-wire", 10) == 0) {
+        /* The ESC signal-wire session, opened from PROGRAM's second row. */
+        s_caps |= LINK_CAP_PROGRAM;
+        ui_bench_status_t wire = k_status;
+
+        wire.capabilities = s_caps;
+        ui_router_set_status(&wire);
+        ui_router_goto(SCREEN_MOTOR);
+        tap(MO_TAB_PROGRAM_X, UI_BAND_H + MO_TAB_Y);
+        render_esc_wire_view(view);
+    }
     if (id == SCREEN_MOTOR && strncmp(view, "motor-stick", 11) == 0) {
         /*
          * ESC STICK, opened from PROGRAM's STICK MENU row and walked by
@@ -4067,6 +4079,7 @@ int main(int argc, char **argv)
      * output strip names it. */
     const bool mo_prog = id == SCREEN_MOTOR
                          && (strncmp(view, "motor-program", 13) == 0
+                             || strncmp(view, "motor-wire", 10) == 0
                              || strncmp(view, "motor-stick", 11) == 0);
     pose_motor_supply(id, view, mo_prog);
     pose_motor_tools(id, view);

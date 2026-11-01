@@ -135,8 +135,11 @@ der CI (Continuous Integration), und eine Maschine mit anderen Versionen misst
 andere Zahlen. Eine Änderung irgendwo in den gemessenen Quellen verschiebt die
 Adressen von Code und Daten und damit die Zahl auch von Modi, die sie nicht
 berührt: Eine Änderung an Texten und am Hitec-Code verschob 24 der 37 Modi um
-bis zu 22 Fills. `frame_cost.py --check-doc` prüft die Tabelle deshalb mit
-einer Toleranz von 2%, mindestens 100 Fills. Es schlägt auch fehl, wenn die
+bis zu 22 Fills. Fills hängen vom Code-Layout ab: 18 Builds eines Baums, mit anderen Paddings und
+Link-Reihenfolgen, ergaben battery-sim 3167 bis 3353 Fills, frame 9466 bis 9810, servo
+2236 bis 2693 und settings-list-chrome 36320 bis 37282. `frame_cost.py --check-doc`
+prüft die Tabelle deshalb mit einer Toleranz von 3%, mindestens 500 Fills. Keine zwei
+der 18 Builds liegen weiter auseinander. Zeilen unter etwa 700 Fills hält diese Prüfung nicht. Es schlägt auch fehl, wenn die
 Zeile, die die Rate des Panels und die Bandbreite nennt, vom Profil des
 Werkzeugs abweicht.
 

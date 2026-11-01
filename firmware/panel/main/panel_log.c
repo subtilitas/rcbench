@@ -993,6 +993,7 @@ void log_task(void *arg)
         kst_card_serve();
         hitec_record_write();
         hitec_card_serve();
+        esc_card_serve();
         /* One pass done: a step a new build's trial waits for. */
         atomic_store(&s_trial_logger_ran, true);
     }

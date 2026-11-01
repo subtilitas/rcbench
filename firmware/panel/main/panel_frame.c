@@ -23,6 +23,7 @@
 #include "busfault_screen.h"
 #include "display.h"
 #include "esc_stick_panel.h"
+#include "esc_wire_panel.h"
 #include "flash_gate.h"
 #include "knob.h"
 #include "motor_screen.h"
@@ -473,6 +474,7 @@ void panel_frame_loop(void)
                 : 0u;
         }
         esc_stick_panel_set_throttle(got_read, got_throttle);
+        esc_wire_panel_read_binding(got.slots, got.cfg, got_read);
         /* A pick in either list writes nothing and so reads nothing back:
          * the picker follows the outputs screen's selection, and whether
          * the binding is one a read confirmed, every frame. */

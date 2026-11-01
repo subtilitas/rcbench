@@ -27,6 +27,8 @@
 /** @brief The first line of a KST file, up to its format number
  *         (kst_file.h). */
 static const char k_kst_head[] = "KST servo configuration, format ";
+/** @brief The first line of an ESC settings file (ew_file.h). */
+static const char k_esc_head[] = "ESC settings backup, format ";
 
 /** @brief DISCARD on the host's question: TEXT_VIEW_LEAVE is to be taken. */
 static bool s_leave;
@@ -34,6 +36,8 @@ static bool s_leave;
 static bool s_reload;
 /** @brief The save under way took a KST file's checksum line out. */
 static bool s_kst_cut;
+/** @brief The save under way put `edited` in an ESC file's checksum line. */
+static bool s_esc_edited;
 
 /* ------------------------------------------------------------- the rules */
 
@@ -249,6 +253,7 @@ static bool discard(void)
     tv_clamp_top();
     tv.note = TV_NOTE_NONE;
     s_kst_cut = false;              /* the checksum line is back */
+    s_esc_edited = false;
     ++tv.rev;
     return true;
 }
@@ -482,6 +487,7 @@ void tv_edit_tap(int x, int y)
 }
 
 static bool kst_cut(void);
+static bool esc_edited(void);
 static bool nul_ahead(void);
 
 text_view_result_t tv_edit_button(int hit)
@@ -500,6 +506,7 @@ text_view_result_t tv_edit_button(int hit)
             return TEXT_VIEW_NONE;
         }
         s_kst_cut = kst_cut() || s_kst_cut;   /* a refused SAVE cut it */
+        s_esc_edited = esc_edited() || s_esc_edited;
         if (nul_ahead()) {
             tv_say(TX_ED_NUL_AHEAD);
             ++tv.rev;
@@ -524,6 +531,52 @@ text_view_result_t tv_edit_button(int hit)
 }
 
 /* -------------------------------------------------------------- the save */
+
+/**
+ * @brief An ESC settings file's checksum line takes the word `edited`: a person's
+ *        file says so in its last line (ew_file.h), and a file cut at any byte has
+ *        neither.  Lines behind it stay, as they were blank.
+ * @return true when the text is an ESC file that held one
+ */
+static bool esc_edited(void)
+{
+    static const char k_word[] = "edited";
+    size_t len = 0u;
+    const char *head = text_buf_line(&tv_tb, 0u, &len);
+    const size_t hn = sizeof(k_esc_head) - 1u;
+
+    if (head == NULL || len < hn || memcmp(head, k_esc_head, hn) != 0) {
+        return false;
+    }
+    bool done = false;
+
+    for (size_t i = text_buf_lines(&tv_tb); i-- > 1u && !done;) {
+        const char *b = text_buf_line(&tv_tb, i, &len);
+
+        if (b == NULL || len < 9u || memcmp(b, "checksum ", 9u) != 0) {
+            continue;
+        }
+        const size_t cur = text_buf_cursor(&tv_tb);
+        const size_t from = text_buf_line_start(&tv_tb, i);
+        const size_t end = text_buf_len(&tv_tb) - len;
+
+        text_buf_set_cursor(&tv_tb, from);
+        bool more = true;
+
+        while (more && text_buf_len(&tv_tb) > end) {
+            more = text_buf_delete_after(&tv_tb);
+        }
+        for (size_t k = 0u; k + 1u < sizeof(k_word); ++k) {
+            (void)text_buf_insert(&tv_tb, (uint32_t)k_word[k]);
+        }
+        text_buf_set_cursor(&tv_tb, cur < from ? cur : from);
+        done = true;
+    }
+    if (done) {
+        tv_clamp_top();
+    }
+    return done;
+}
 
 /**
  * @brief Whether line @p line is a checksum line, by the programmer's own
@@ -665,9 +718,11 @@ text_view_result_t text_view_saved(fm_err_t err, bool stopped,
         tv.size = text_buf_size(&tv_tb);    /* the header: as saved */
         keep_original();
         tv_say(s_kst_cut ? TX_ED_SAVED_KST
+               : s_esc_edited ? TX_ED_SAVED_EW
                : restart ? TX_ED_SAVED_ESC
                          : TX_ED_SAVED);
         s_kst_cut = false;          /* a failed save keeps it for the next */
+        s_esc_edited = false;
         /* A question asked while it saved has no changes left to lose:
          * what it held goes on. */
         const text_view_ask_t ask = tv.ask;

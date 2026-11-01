@@ -107,8 +107,8 @@ panel, which follows it to the bench's SAFE state.
 
 ## The panel's half
 
-`shared/bench/esc_link.c` asks and follows; it is on every panel, with no screen yet,
-so nothing is shown but the alert below.
+`shared/bench/esc_link.c` asks and follows; it is on every panel. [ESC signal wire](EscWire.md)
+describes the screen; the alert below shows on every screen.
 
 | Event | What the panel does |
 |---|---|
@@ -136,8 +136,8 @@ The SUPPLY page's half (`shared/bench/supply_link.c`) under a hold:
 
 - **A link that came back keeps the hold.** Condition: the link went silent for over
   200ms with no panel restart. The page stays `OPEN` and `STOPPED` with the quiet bit
-  set, so the bank cannot arm. This fails safe. With no screen, the bench console's
-  `esc close` is the way out, or an IOmcu or panel restart.
+  set, so the bank cannot arm. This fails safe. The way out is the screen's CLOSE, the bench
+  console's `esc close`, or an IOmcu or panel restart.
 - **A pin held by the bench console goes with a panel restart.** Condition: `esc open`
   on the console, then a panel restart. The panel cannot tell it from its own hold.
 - **An error in a write costs the page's repair in the same session.** Condition: a
@@ -234,7 +234,7 @@ same but `READS` and `READ_CRC`.
 | any | 4.33 or older | both pages `BAD_PAGE`; `LINK_CAP_PROGRAM` is not reported |
 | 4.33 or older | 4.34 | it never touches the pages; nothing is held |
 
-The panel does not use the pages yet: no screen drives them in this image.
+The panel's [ESC signal wire](EscWire.md) screen drives both pages.
 
 ## What is not measured
 

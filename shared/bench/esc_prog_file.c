@@ -8,8 +8,10 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
 #include <string.h>
 
+#include "esc_card.h"
 #include "esc_prog.h"
 #include "esc_prog_int.h"
 #include "ew_id.h"
@@ -55,6 +57,25 @@ static void contact_of(const esc_prog_t *p, ew_contact_t *out)
     out->signature = rd->signature;
 }
 
+/**
+ * @brief The ESC as the read copy holds it, as a file.
+ * @param p   the model
+ * @param out takes it
+ * @return false when the read copy gives none
+ */
+static bool capture_now(const esc_prog_t *p, ew_file_t *out)
+{
+    const esc_link_image_t *im = &p->f.image;
+    ew_ident_t id;
+    ew_contact_t c;
+
+    ident_of(p, &id);
+    contact_of(p, &c);
+    return id.fw == (uint8_t)EW_FW_E32
+               ? ew_file_capture_text(out, &id, im->page, im->music)
+               : ew_file_capture(out, &c, &id, im->page);
+}
+
 void esc_prog_backup_follow(esc_prog_t *p)
 {
     if (p == NULL) {
@@ -77,18 +98,7 @@ void esc_prog_backup_follow(esc_prog_t *p)
         || im->reads != p->f.rd.reads || im->read_crc != p->f.rd.read_crc) {
         return;
     }
-    ew_ident_t id;
-    ew_contact_t c;
-    bool ok;
-
-    ident_of(p, &id);
-    contact_of(p, &c);
-    if (id.fw == (uint8_t)EW_FW_E32) {
-        ok = ew_file_capture_text(&p->file, &id, im->page, im->music);
-    } else {
-        ok = ew_file_capture(&p->file, &c, &id, im->page);
-    }
-    if (ok) {
+    if (capture_now(p, &p->file)) {
         p->backup_state = (uint8_t)ESC_PROG_BACKUP_OWED;
         p->backup_gen = im->gen;
     }
@@ -106,6 +116,79 @@ size_t esc_prog_backup_text(const esc_prog_t *p, char *out, size_t size)
         return 0u;
     }
     return ew_file_format(&p->file, out, size);
+}
+
+/**
+ * @brief The changed fields of a draft as lines of the record.
+ * @param p     the model
+ * @param draft the draft
+ * @param out   takes the lines
+ * @param size  bytes at @p out
+ * @return bytes written
+ */
+static size_t record_changes(const esc_prog_t *p, const uint8_t *draft, char *out,
+                             size_t size)
+{
+    const uint8_t *page = p->f.image.page;
+    char from[32];
+    char to[32];
+    size_t at = 0u;
+
+    if (p->f.rd.fw == (uint8_t)EW_FW_E32) {
+        for (size_t i = 0u; i < EW_E32_KEYS; ++i) {
+            const int16_t was = ew_e32_get(page, i);
+            const int16_t now = ew_e32_get(draft, i);
+
+            if (was != now && at < size) {
+                (void)ew_key_text(&ew_map_e32[i], was, from, sizeof(from));
+                (void)ew_key_text(&ew_map_e32[i], now, to, sizeof(to));
+                at += (size_t)snprintf(out + at, size - at, "%s: %s -> %s\n",
+                                       ew_map_e32[i].key, from, to);
+            }
+        }
+    } else {
+        const ew_field_t *f;
+
+        for (size_t i = 0u; (f = ew_map_nth(p->f.rd.fw, p->f.rd.layout, i)) != NULL;
+             ++i) {
+            if (page[f->off] != draft[f->off] && at < size) {
+                (void)ew_field_text(f, page[f->off], from, sizeof(from));
+                (void)ew_field_text(f, draft[f->off], to, sizeof(to));
+                at += (size_t)snprintf(out + at, size - at, "%s: %s -> %s\n",
+                                       f->name, from, to);
+            }
+        }
+    }
+    return at < size ? at : size;
+}
+
+size_t esc_prog_record_text(const esc_prog_t *p, const uint8_t *draft, char *out,
+                            size_t size)
+{
+    /* Big, and one caller on one task. */
+    static ew_file_t s_before;
+
+    if (p == NULL || draft == NULL || out == NULL || p->f.image.gen == 0u
+        || !capture_now(p, &s_before)) {
+        return 0u;
+    }
+    int n = snprintf(out, size, "%s\ntarget=%04X gpio=%u\n", ESC_CARD_RECORD_HEAD,
+                     (unsigned)p->f.rd.target, (unsigned)p->f.rd.gpio);
+
+    if (n < 0 || (size_t)n >= size) {
+        return 0u;
+    }
+    size_t at = (size_t)n;
+
+    at += record_changes(p, draft, out + at, size - at);
+    if (size - at < sizeof("before\n")) {
+        return 0u;
+    }
+    memcpy(out + at, "before\n", sizeof("before\n") - 1u);
+    at += sizeof("before\n") - 1u;
+    const size_t file = ew_file_format(&s_before, out + at, size - at);
+
+    return file != 0u ? at + file : 0u;
 }
 
 void esc_prog_backup_settled(esc_prog_t *p)

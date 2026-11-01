@@ -11,6 +11,7 @@
 
 #include <math.h>
 
+#include "esc_wire_panel.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_hero.h"
@@ -151,7 +152,8 @@ void sup_take(const touch_event_t *evt, int code)
  */
 static void held_refused(void)
 {
-    ui_router_set_alert(TR(SUP_HELD_REFUSED));
+    ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
+                                                     : TR(SUP_HELD_REFUSED));
 }
 
 /**

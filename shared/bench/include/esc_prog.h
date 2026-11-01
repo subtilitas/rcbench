@@ -50,6 +50,13 @@ extern "C" {
 /** @brief A command not carried out this long after it went is given up, ms. */
 #define ESC_PROG_CMD_WAIT_MS 2000u
 
+/** @brief The highest voltage SUPPLY takes, mV. */
+#define ESC_PROG_MAX_MV 20000u
+/** @brief The lowest limit SUPPLY takes, mA. */
+#define ESC_PROG_MIN_MA 50u
+/** @brief The highest limit SUPPLY takes, mA. */
+#define ESC_PROG_MAX_MA 3000u
+
 /** @brief What a command asks the link. */
 typedef enum {
     ESC_PROG_CMD_NONE = 0,
@@ -288,6 +295,13 @@ esc_prog_msg_t esc_prog_message(const esc_prog_t *p, uint16_t *detail);
 bool esc_prog_holds_port(const esc_prog_t *p);
 
 /**
+ * @brief Whether a flow runs or a command is out.
+ * @param p The model.
+ * @return true then.
+ */
+bool esc_prog_busy(const esc_prog_t *p);
+
+/**
  * @brief Whether a command may go with a stop latched at the panel: CLOSE and
  *        LEAVE give the pin back, and ABORT cuts; nothing else starts under a
  *        stop.
@@ -345,6 +359,19 @@ size_t esc_prog_backup_text(const esc_prog_t *p, char *out, size_t size);
  * @param p The model.
  */
 void esc_prog_backup_settled(esc_prog_t *p);
+
+/**
+ * @brief The record of a write for the card, ESCW.TXT: a first line, the target
+ *        and its GPIO, one line `NAME: old -> new` per field the draft changes,
+ *        `before`, then the ESC as read in the text of ew_file.h.
+ * @param p     The model.
+ * @param draft The draft, of the read copy's length.
+ * @param out   Takes the text, without a terminator.
+ * @param size  Bytes at @p out; ESC_CARD_TEXT_MAX always fits.
+ * @return Bytes written; 0 with no read copy, or for a @p size too small.
+ */
+size_t esc_prog_record_text(const esc_prog_t *p, const uint8_t *draft, char *out,
+                            size_t size);
 
 /**
  * @brief A file against the ESC: what a load changes.

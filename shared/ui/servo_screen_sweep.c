@@ -11,6 +11,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "prog_registry.h"
 #include "servo_screen.h"
 
 #include <math.h>
@@ -635,6 +636,8 @@ void svs_tick_body(float dt_s)
      * answer comes to wait for. */
     if (s.gate.arm_asked && !s.gate.armed && prog_holds()) {
         ui_value_drop_arm(&s.gate);
+        /* The drop says why: the refusal may not reach this screen. */
+        ui_router_set_alert(prog_reg_hold_alert());
     }
     if (prog_holds() != s.kst_held) {
         s.kst_held = prog_holds();
@@ -719,8 +722,12 @@ void svs_tick_body(float dt_s)
         ++s.dial_rev;
     }
     if (s.arm_down && svs_arm_locked() && ui_hold_leave(&s.arm)) {
-        /* The port was found held under a hold of ARM: no arm is sent. */
+        /* The port was found held under a hold of ARM: no arm is sent, and the
+         * alert says why. */
         s.arm_down = false;
+        if (prog_holds()) {
+            ui_router_set_alert(prog_reg_hold_alert());
+        }
         ++s.arm_rev;
     }
     if (s.arm_down && !s.gate.armed) {

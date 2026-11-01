@@ -32,6 +32,7 @@
 #include "coproc_update_screen.h"
 #include "endpoints_link.h"
 #include "files_screen.h"
+#include "esc_card.h"
 #include "esc_link.h"
 #include "esc_prog.h"
 #include "hitec_link.h"
@@ -1261,6 +1262,18 @@ void kst_ui_service(void);
 void hitec_ui_service(void);
 /** @brief The ESC programmer in the render loop: fed, and its commands queued. */
 void esc_wire_ui_service(void);
+/** @brief The ESC programmer's card request, filled by the render loop. */
+extern esc_card_req_t  s_esc_card_req;
+/** @brief The mount it was taken under. */
+extern unsigned        s_esc_card_mount;
+/** @brief The answer, filled by the log task. */
+extern esc_card_done_t s_esc_card_done;
+/** @brief Requests handed over. */
+extern atomic_uint     s_esc_card_sent;
+/** @brief Requests answered. */
+extern atomic_uint     s_esc_card_answered;
+/** @brief Runs the request handed over, on the log task. */
+void esc_card_serve(void);
 extern unsigned s_tq_lost;
 bool supply_live_or_coming(void);
 /** @brief supply_live_or_coming(), or the programming ports' own supply

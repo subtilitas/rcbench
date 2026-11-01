@@ -208,6 +208,13 @@ uint8_t prog_reg_port(const prog_reg_row_t *r);
  */
 bool prog_reg_servo_holds(void);
 
+/**
+ * @brief The alert a programmer's hold gives an ARM: it names the holder.
+ * @return The ESC programmer's text while the ESC_WIRE page holds a pin, else the
+ *         servo programmer's.
+ */
+const char *prog_reg_hold_alert(void);
+
 /* ------------------------------------------------------------ the checks */
 
 typedef enum {

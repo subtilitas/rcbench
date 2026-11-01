@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "esc_wire_panel.h"
 #include "bench_state.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -93,7 +94,7 @@ static const char *mode_line(void)
         return "";
     }
     if (s.port_held) {
-        return TR(SUP_LINE_PORT);
+        return esc_wire_panel_holds_port() ? TR(SUP_LINE_PORT_ESC) : TR(SUP_LINE_PORT);
     }
     if (!s.sup.output && s.sup.trip == SUPPLY_TRIP_CURRENT) {
         return TR(SUP_LINE_TRIP_I);

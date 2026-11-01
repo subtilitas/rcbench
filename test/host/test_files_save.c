@@ -23,6 +23,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "ew_file.h"
 #include "kst_file.h"
 #include "kst_sim.h"
 
@@ -519,6 +520,68 @@ TEST_CASE(save_refuses_a_nul_in_the_first_4kb_and_revert_keeps_the_text)
     CHECK(card_holds("USER/LOGS/NUL.TXT", text, sizeof(text)));
 }
 
+/*
+ * An ESC settings file as the programmer writes it: a change puts `edited` in place
+ * of the checksum line, so the programmer reads its field lines.  Unedited, it keeps
+ * its checksum.
+ */
+TEST_CASE(an_esc_file_edited_says_edited_and_reads_as_edited)
+{
+    static char text[EW_FILE_MAX];
+    static uint8_t page[EW_MAP_LEN_AM];
+    static ew_file_t f;
+    ew_contact_t c;
+    ew_ident_t id;
+
+    memset(&c, 0, sizeof(c));
+    memset(&id, 0, sizeof(id));
+    memset(page, 1, sizeof(page));
+    page[1] = 4u;
+    c.cpu = EW_CPU_ARM;
+    c.pin_code = 0x26u;
+    c.flash_code = 0x1Fu;
+    c.protocol = 2u;
+    id.fw = EW_FW_AM;
+    id.layout = 4u;
+    id.writable = true;
+    id.len = EW_MAP_LEN_AM;
+    snprintf(id.name, sizeof(id.name), "BOARD");
+    NEED(ew_file_capture(&f, &c, &id, page));
+    const size_t len = ew_file_format(&f, text, sizeof(text));
+
+    NEED(len > 0u);
+    NEED(ew_file_parse(text, len, &f, NULL) == EW_FILE_OK);
+    NEED(f.kind == EW_FILE_VERIFIED);
+    open_file("BENCH/ESCW/CONF", "ESCW001.TXT", text, len);
+    edit();
+    ed_key(UI_TK_DONE);
+    save();
+    CHECK_STR_EQ(note(), ui_tr(TX_ED_NO_CHANGES));
+    CHECK(card_holds("BENCH/ESCW/CONF/ESCW001.TXT", text, len));
+    foot(FS_SPOT_TV_KEYS_CX);
+    tap(FS_SPOT_TV_TEXT_X + 90 * 10, FS_SPOT_TV_TEXT_Y + 5);
+    ed_type("\n# bench edit");
+    ed_key(UI_TK_DONE);
+    save();
+    CHECK(!text_view_dirty());
+    CHECK_STR_EQ(note(), ui_tr(TX_ED_SAVED_EW));
+    const fk_node_t *n = fk_get(&g_h.card, "BENCH/ESCW/CONF/ESCW001.TXT");
+
+    NEED(n != NULL);
+    char *saved = calloc(n->size + 1u, 1u);
+
+    REQUIRE_ALLOC(saved);
+    memcpy(saved, n->data, n->size);
+    CHECK(strstr(saved, "checksum") == NULL);
+    CHECK(strstr(saved, "\nedited\n") != NULL);
+    CHECK_EQ(n->size, len - 17u + 6u + 13u);
+    unsigned bad = 0u;
+
+    CHECK_EQ(ew_file_parse(saved, n->size, &f, &bad), EW_FILE_OK);
+    CHECK_EQ(f.kind, EW_FILE_EDITED);
+    free(saved);
+}
+
 /**
  * @brief A KST file as kst_file_format() writes it, its checksum line
  *        swapped for @p sum (and a line end), into @p out.
@@ -591,6 +654,7 @@ int main(void)
     RUN(a_card_pulled_part_way_or_at_the_rename_keeps_the_text);
     RUN(the_text_holds_still_while_it_is_saved);
     RUN(a_kst_file_edited_loses_its_checksum_and_loads_as_edited);
+    RUN(an_esc_file_edited_says_edited_and_reads_as_edited);
     RUN(an_esc_profile_says_it_is_read_at_the_next_start);
     RUN(a_new_left_by_a_cut_save_refuses_the_next_one);
     RUN(an_open_asked_during_a_save_waits_for_it);

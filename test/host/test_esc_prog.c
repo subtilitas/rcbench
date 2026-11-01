@@ -5,9 +5,9 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "esc_wire_panel.h"
 #include "esc_link_rig.h"
 #include "esc_prog.h"
-#include "esc_wire_panel.h"
 #include "ew_file.h"
 #include "ew_id.h"
 #include "shot_gate.h"

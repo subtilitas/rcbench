@@ -831,8 +831,8 @@ TEST_CASE(program_offers_search_over_nine_rows_and_narrows_the_list)
     prog_registry_use(NULL, 0);
     size_t n = 0;
     (void)prog_registry(&n);
-    CHECK_EQ(n, 3u);        /* the shipped table: KST, Hitec and the stick
-                             * menu */
+    CHECK_EQ(n, 4u);        /* the shipped table: KST, Hitec, the stick menu
+                             * and the ESC signal wire */
 }
 
 /* ------------------------------------------------- finger-sized controls */

@@ -1038,9 +1038,9 @@ a stick run, switches off the supply output the run switched on, switches the
 bench to SAFE and closes ESC STICK. Back on MOTOR & ESC, PROGRAM shows its
 list.
 
-The parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware
-are a model in the firmware (`shared/ui/prog_models.c`). No transport carries their protocols, and no
-PROGRAM list has a row for them. The bench identifies and drives ESCs with
+The row `AM32, Bluejay, BLHeli_S, ESCape32`, `SIGNAL WIRE` at its right, opens the signal-wire session: [ESC signal wire](EscWire.md). It is dimmed until the IOmcu reports `LINK_CAP_PROGRAM`.
+
+The bench identifies and drives ESCs with
 BLHeli_32 firmware and sends the DShot special commands, but cannot read
 their parameters: [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
 

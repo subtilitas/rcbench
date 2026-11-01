@@ -9,6 +9,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "prog_registry.h"
+#include "esc_wire_panel.h"
 #include "servo_screen.h"
 
 #include <math.h>
@@ -347,7 +349,8 @@ void svs_event_body(const touch_event_t *evt)
             /* A programming port holds the supply: off is taken, on is
              * not. */
             if (!supply_screen_output_on() && supply_screen_port_held()) {
-                ui_router_set_alert(TR(SUP_HELD_REFUSED));
+                ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
+                                                                   : TR(SUP_HELD_REFUSED));
                 return;
             }
             /* Off, with a set point past a standard servo's rating: the HV
@@ -377,7 +380,8 @@ void svs_event_body(const touch_event_t *evt)
                 /* No set point moves under a programming port, and the
                  * band says why. */
                 if (supply_screen_port_held()) {
-                    ui_router_set_alert(TR(SUP_HELD_REFUSED));
+                    ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
+                                                                   : TR(SUP_HELD_REFUSED));
                     return;
                 }
                 /* The run owns the set points while it runs. */
@@ -467,7 +471,7 @@ void svs_event_body(const touch_event_t *evt)
                 /* Programming and an armed bench are exclusive: the
                  * press arms nothing and says why in the alert band. */
                 if (prog_holds()) {
-                    ui_router_set_alert(TR(ALERT_ARM_PROG));
+                    ui_router_set_alert(prog_reg_hold_alert());
                 }
                 return;
             }

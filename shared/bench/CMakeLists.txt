@@ -28,6 +28,7 @@ set(SRCS
     esc_link.c
     esc_prog.c
     esc_prog_file.c
+    esc_card.c
     hitec_rx_link.c
     hitec_link.c
     hitec_prog.c

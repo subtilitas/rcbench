@@ -2390,6 +2390,9 @@ UI_TEXT(ED_SAVED, 0,
 UI_TEXT(ED_SAVED_KST, 0,
     "Saved without the checksum line: the servo programmer reads it as edited.",
     "Ohne Prüfsummenzeile gespeichert: der Servo-Programmierer liest sie als bearbeitet.")
+UI_TEXT(ED_SAVED_EW, 100,
+    "Saved with `edited` as its last line: the ESC programmer reads its field lines.",
+    "Mit `edited` als letzter Zeile gespeichert: der ESC-Programmierer liest die Feldzeilen.")
 UI_TEXT(ED_SAVED_ESC, 0,
     "Saved. The panel reads it at its next start.",
     "Gespeichert. Das Panel liest die Datei beim nächsten Start.")
@@ -2434,90 +2437,885 @@ UI_TEXT(ED_OVERWRITE, 0,
     "OVERWRITE",
     "ÜBERSCHREIBEN")
 
-/* --------------------------------------------- the modelled protocols */
-/* The parameter tables of prog_models.c, which no list shows: no transport
- * on the IOmcu carries these protocols. */
-UI_TEXT(PG_GROUP_MOTOR, 10,
+/* ------------------------------------------------- the ESC signal wire */
+UI_TEXT(ALERT_ARM_ESC, 94,
+    "Cannot switch to ARMED: a pin is in use by the ESC programmer.",
+    "ARMED gesperrt: Die ESC-Programmierung belegt einen Pin.")
+UI_TEXT(SP_ESC_HELD, 146,
+    "ESC programmer is using a pin. LEAVE it on PROGRAM first.",
+    "ESC-Programmierung belegt einen Pin. Zuerst auf PROGRAMMIEREN verlassen.")
+UI_TEXT(SUP_HELD_REFUSED_ESC, 94,
+    "ESC programming holds the supply: set points and ON are locked.",
+    "ESC-Programmierung belegt das Netzteil: Sollwerte und EIN gesperrt.")
+UI_TEXT(SUP_LINE_PORT_ESC, 30,
+    "ESC programmer.",
+    "ESC-Programmierung.")
+UI_TEXT(PL_ESC_WIRE, 0,
+    "AM32, Bluejay, BLHeli_S, ESCape32",
+    "AM32, Bluejay, BLHeli_S, ESCape32")
+UI_TEXT(PL_GRP_WIRE, 40,
+    "SIGNAL WIRE",
+    "SIGNALLEITUNG")
+UI_TEXT(PL_WIRE_TRANSPORT, 40,
+    "SIGNAL WIRE",
+    "SIGNALLEITUNG")
+UI_TEXT(EW_BACK, 0,
+    "BACK",
+    "ZURÜCK")
+UI_TEXT(EW_CANCEL, 0,
+    "CANCEL",
+    "ABBRECHEN")
+UI_TEXT(EW_ABORT, 0,
+    "ABORT",
+    "ABBRUCH")
+UI_TEXT(EW_READ, 0,
+    "READ AGAIN",
+    "NEU LESEN")
+UI_TEXT(EW_FILES, 0,
+    "FILES",
+    "DATEIEN")
+UI_TEXT(EW_WRITE_N, 0,
+    "WRITE %u VALUES",
+    "%u WERTE SCHREIBEN")
+UI_TEXT(EW_CLEAR, 0,
+    "CLEAR STOP",
+    "STOP LÖSCHEN")
+UI_TEXT(EW_CLOSE_PIN, 0,
+    "PIN BACK",
+    "PIN ZURÜCK")
+UI_TEXT(EW_CLOSE_AGAIN, 24,
+    "TRY PIN AGAIN",
+    "PIN NOCHMALS")
+UI_TEXT(EW_RELEASE_BTN, 0,
+    "RELEASE PIN",
+    "PIN FREIGEBEN")
+UI_TEXT(EW_RESTORE_BTN, 0,
+    "RESTORE FROM BACKUP",
+    "AUS BACKUP HERSTELLEN")
+UI_TEXT(EW_HAND_DONE, 100,
+    "POWER IS ON",
+    "STROM IST AN")
+UI_TEXT(EW_TYPE_NUMBER, 0,
+    "TYPE A NUMBER",
+    "ZAHL EINGEBEN")
+UI_TEXT(EW_CONNECT_TITLE, 0,
+    "ESC SIGNAL WIRE",
+    "ESC-SIGNALLEITUNG")
+UI_TEXT(EW_ROW_TARGET, 0,
+    "TARGET",
+    "ZIEL")
+UI_TEXT(EW_ROW_POWER, 0,
+    "POWER",
+    "STROM")
+UI_TEXT(EW_ROW_VOLT, 0,
+    "VOLTAGE",
+    "SPANNUNG")
+UI_TEXT(EW_ROW_AMP, 0,
+    "LIMIT",
+    "LIMIT")
+UI_TEXT(EW_ROW_HOLD, 0,
+    "ENTRY HOLD",
+    "ENTRY HOLD")
+UI_TEXT(EW_ROW_OFF, 0,
+    "OFF TIME",
+    "AUS-ZEIT")
+UI_TEXT(EW_POWER_SWITCHED, 0,
+    "SWITCHED",
+    "SWITCHED")
+UI_TEXT(EW_POWER_HAND, 0,
+    "BY HAND",
+    "BY HAND")
+UI_TEXT(EW_POWER_NONE, 0,
+    "NOT SWITCHED",
+    "NICHT GESCHALTET")
+UI_TEXT(EW_TARGET_SLOT, 0,
+    "SLOT %u GPIO %u",
+    "SLOT %u GPIO %u")
+UI_TEXT(EW_TARGET_PORT, 0,
+    "PORT %u GPIO %u",
+    "PORT %u GPIO %u")
+UI_TEXT(EW_NO_PIN, 0,
+    "NO PIN",
+    "KEIN PIN")
+UI_TEXT(EW_NOT_READ_YET, 23,
+    "NOT READ",
+    "NICHT GELESEN")
+UI_TEXT(EW_NO_TARGET, 100,
+    "No throttle slot or DShot port to program.",
+    "Kein Gas-Slot und kein DShot-Port zum Programmieren.")
+UI_TEXT(EW_WARN_PROP, 0,
+    "Propeller off.",
+    "Propeller ab.")
+UI_TEXT(EW_WARN_BEC, 0,
+    "Signal and ground only: the ESC's centre wire disconnected. A BEC would feed the bench's rail.",
+    "Nur Signal und Masse: die Mittelader des ESC getrennt. Ein BEC speist sonst die Schiene des Bench.")
+UI_TEXT(EW_WARN_SERVOS, 0,
+    "Servos unplugged.",
+    "Servos abgesteckt.")
+UI_TEXT(EW_WARN_SIMONK, 0,
+    "SimonK is not supported.",
+    "SimonK wird nicht unterstützt.")
+UI_TEXT(EW_HOLD_CONNECT_BTN, 0,
+    "HOLD 2s TO CONNECT",
+    "2s HALTEN: VERBINDEN")
+UI_TEXT(EW_HOLD_CONNECT, 94,
+    "Hold 2s to connect.",
+    "Halte 2s, um zu verbinden.")
+UI_TEXT(EW_HOLD_WRITE, 0,
+    "HOLD 2s TO WRITE",
+    "2s HALTEN: SCHREIBEN")
+UI_TEXT(EW_HOLD_NO_BACKUP, 42,
+    "HOLD 2s: NO BACKUP",
+    "2s HALTEN: OHNE BACKUP")
+UI_TEXT(EW_HOLD_LEAVE, 0,
+    "HOLD 2s TO LEAVE",
+    "2s HALTEN: VERLASSEN")
+UI_TEXT(EW_HOLD_RELEASE, 42,
+    "HOLD 2s TO RELEASE",
+    "2s HALTEN: FREIGEBEN")
+UI_TEXT(EW_HOLD_RESTORE, 42,
+    "HOLD 2s TO RESTORE",
+    "2s HALTEN: HERSTELLEN")
+UI_TEXT(EW_PAGE_WRITE, 0,
+    "WRITE TO THE ESC",
+    "IN DEN ESC SCHREIBEN")
+UI_TEXT(EW_PAGE_NO_BACKUP, 56,
+    "NO BACKUP ON THE CARD",
+    "KEIN BACKUP AUF DER KARTE")
+UI_TEXT(EW_PAGE_LEAVE, 0,
+    "LEAVE THE ESC",
+    "ESC VERLASSEN")
+UI_TEXT(EW_PAGE_RELEASE, 56,
+    "RELEASE THE PIN",
+    "PIN FREIGEBEN")
+UI_TEXT(EW_WRITE_WARN_LINE, 100,
+    "CHECK %s: %s -> %s",
+    "PRÜFE %s: %s -> %s")
+UI_TEXT(EW_WRITE_MORE, 100,
+    "and %u more values.",
+    "und %u weitere Werte.")
+UI_TEXT(EW_WRITE_NOTE, 100,
+    "Keep the power on. A cut in the write can leave the page erased.",
+    "Strom anlassen. Ein Schnitt im Schreiben kann die Seite gelöscht lassen.")
+UI_TEXT(EW_NO_BACKUP_1, 100,
+    "The first write of a session saves the ESC's values to the card first.",
+    "Das erste Schreiben einer Sitzung speichert erst die Werte des ESC auf die Karte.")
+UI_TEXT(EW_NO_BACKUP_2, 100,
+    "Without them nothing on the bench can put the old values back.",
+    "Ohne sie kann nichts am Bench die alten Werte zurückschreiben.")
+UI_TEXT(EW_RESTORE_1, 100,
+    "File %s.",
+    "Datei %s.")
+UI_TEXT(EW_RESTORE_2, 100,
+    "The ESC's settings read erased. The file goes back whole, tune included.",
+    "Die Einstellungen des ESC lesen sich gelöscht. Die Datei geht ganz zurück, Tune eingeschlossen.")
+UI_TEXT(EW_RESTORE_3, 100,
+    "Only a file of this ESC is taken: pin code, flash code, protocol and name.",
+    "Nur eine Datei dieses ESC gilt: Pin-Code, Flash-Code, Protokoll und Name.")
+UI_TEXT(EW_LEAVE_1, 100,
+    "The ESC leaves its bootloader. The line goes low, then the supply goes off.",
+    "Der ESC verlässt seinen Bootloader. Die Leitung geht auf low, dann die Versorgung aus.")
+UI_TEXT(EW_LEAVE_2, 100,
+    "The pin goes back to its output.",
+    "Der Pin geht an seinen Ausgang zurück.")
+UI_TEXT(EW_LEAVE_DRAFT, 100,
+    "Edits not written are lost.",
+    "Nicht geschriebene Änderungen gehen verloren.")
+UI_TEXT(EW_LEAVE_E32, 100,
+    "ESCape32 has no LEAVE: a power cycle ends its session.",
+    "ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung.")
+UI_TEXT(EW_LEAVE_E32_SWITCHED, 100,
+    "The line parks and the supply goes off.",
+    "Die Leitung parkt, die Versorgung geht aus.")
+UI_TEXT(EW_LEAVE_E32_HAND, 100,
+    "The line parks. Disconnect the ESC's power now.",
+    "Die Leitung parkt. Trenne jetzt den Strom des ESC.")
+UI_TEXT(EW_E32_LEAVE_NOTE, 100,
+    "ESCape32 has no LEAVE: a power cycle ends its session.",
+    "ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung.")
+UI_TEXT(EW_RELEASE_1, 100,
+    "Another writer holds this pin: the bench console, or a session before a restart.",
+    "Ein anderer Schreiber hält diesen Pin: die Bench-Konsole oder eine Sitzung vor einem Neustart.")
+UI_TEXT(EW_RELEASE_2, 100,
+    "The pin goes back to its output, and that session ends.",
+    "Der Pin geht an seinen Ausgang zurück, und diese Sitzung endet.")
+UI_TEXT(EW_BACK_HELD, 100,
+    "The session holds the pin: ABORT, or end the stop first.",
+    "Die Sitzung hält den Pin: erst ABBRUCH, oder den Stop beenden.")
+UI_TEXT(EW_STOPPED_TITLE, 0,
+    "STOPPED",
+    "STOPPED")
+UI_TEXT(EW_OTHER_TITLE, 0,
+    "PIN HELD BY ANOTHER WRITER",
+    "PIN VON ANDEREM SCHREIBER GEHALTEN")
+UI_TEXT(EW_NOT_BACK_TITLE, 56,
+    "PIN DID NOT COME BACK",
+    "PIN KAM NICHT ZURÜCK")
+UI_TEXT(EW_TIME_IN_STATE, 100,
+    "%u.%us in this state",
+    "%u.%us in diesem Zustand")
+UI_TEXT(EW_ENTRY_HOLD_IS, 100,
+    "ENTRY HOLD %lu.%lus after the supply reads on.",
+    "ENTRY HOLD %lu.%lus, nachdem die Versorgung an liest.")
+UI_TEXT(EW_HAND_NOW, 100,
+    "Connect the ESC's power now, then tap POWER IS ON.",
+    "Schließe jetzt den Strom des ESC an, dann tippe STROM IST AN.")
+UI_TEXT(EW_HAND_LIMIT, 100,
+    "The line stays high at most 60s.",
+    "Die Leitung bleibt höchstens 60s high.")
+UI_TEXT(EW_WRITING, 100,
+    "Writing. Keep the power on.",
+    "Schreibt. Strom anlassen.")
+UI_TEXT(EW_LINE_PARK, 0,
+    "PARKED",
+    "GEPARKT")
+UI_TEXT(EW_LINE_NONE, 40,
+    "NO PIN HELD",
+    "KEIN PIN GEHALTEN")
+UI_TEXT(EW_ST_FREE, 40,
+    "PIN FREE",
+    "PIN FREI")
+UI_TEXT(EW_ST_STOPPING, 40,
+    "TAKING THE PIN",
+    "PIN WIRD ÜBERNOMMEN")
+UI_TEXT(EW_ST_OPEN, 40,
+    "PIN HELD",
+    "PIN GEHALTEN")
+UI_TEXT(EW_ST_POWER_OFF, 40,
+    "SUPPLY OFF",
+    "VERSORGUNG AUS")
+UI_TEXT(EW_ST_LEAD, 40,
+    "LINE HIGH",
+    "LEITUNG HIGH")
+UI_TEXT(EW_ST_HAND, 40,
+    "WAITING FOR POWER",
+    "WARTET AUF STROM")
+UI_TEXT(EW_ST_RUN, 40,
+    "RUNNING",
+    "LÄUFT")
+UI_TEXT(EW_ST_READY, 40,
+    "ESC ANSWERED",
+    "ESC HAT GEANTWORTET")
+UI_TEXT(EW_ST_POWER_ON, 40,
+    "SUPPLY ON",
+    "VERSORGUNG AN")
+UI_TEXT(EW_TAB_ID, 12,
+    "IDENTITY",
+    "IDENTITÄT")
+UI_TEXT(EW_TAB_HEX, 12,
+    "BYTES",
+    "BYTES")
+UI_TEXT(EW_TAB_MOTOR, 12,
     "MOTOR",
     "MOTOR")
-UI_TEXT(PG_GROUP_STARTUP, 10,
-    "STARTUP",
-    "ANLAUF")
-UI_TEXT(PG_GROUP_PROTECTION, 10,
+UI_TEXT(EW_TAB_OTHER, 12,
+    "INPUT, SOUND",
+    "GAS, TON")
+UI_TEXT(EW_TAB_BRAKE, 12,
+    "BRAKE, SINE",
+    "BREMSE, SINE")
+UI_TEXT(EW_TAB_INPUT, 12,
+    "INPUT",
+    "EINGANG")
+UI_TEXT(EW_TAB_PROTECT, 12,
     "PROTECTION",
     "SCHUTZ")
-UI_TEXT(PG_GROUP_SOUND, 10,
+UI_TEXT(EW_TAB_DUTY, 12,
+    "DUTY",
+    "DUTY")
+UI_TEXT(EW_TAB_THROTTLE, 12,
+    "THROTTLE",
+    "GAS")
+UI_TEXT(EW_TAB_SOUND, 12,
     "SOUND",
     "TON")
-UI_TEXT(PG_GROUP_REPORTING, 10,
-    "REPORTING",
-    "MELDUNG")
-UI_TEXT(PG_HELP_DIRECTION, 192,
-    "Sets the direction of rotation and whether reverse is allowed.",
-    "Legt die Drehrichtung fest und ob Rückwärtslauf erlaubt ist.")
-UI_TEXT(PG_HELP_TIMING_STEPS, 192,
-    "Sets how early the ESC commutates. Higher timing suits high-kV motors.",
-    "Legt fest, wie früh der ESC kommutiert. Höheres Timing passt zu Motoren mit hohem kV.")
-UI_TEXT(PG_HELP_PWM, 192,
-    "Higher: quieter, but warmer. Lower: more efficient, but audible.",
-    "Höher: leiser, aber wärmer. Niedriger: effizienter, aber hörbar.")
-UI_TEXT(PG_HELP_STARTUP, 192,
-    "Sets the starting power before the ESC can detect the rotor position.",
-    "Legt die Anlaufleistung fest, bevor der ESC die Rotorposition erkennt.")
-UI_TEXT(PG_HELP_DEMAG, 192,
-    "Reduces power if the magnetic field decays too slowly. Helps prevent stalls under load.",
-    "Senkt die Leistung, wenn das Magnetfeld zu langsam abklingt. Hilft gegen Blockieren unter Last.")
-UI_TEXT(PG_HELP_BRAKE, 192,
-    "Holds the motor still at zero throttle instead of letting it spin freely.",
-    "Hält den Motor bei null Gas fest, statt ihn frei auslaufen zu lassen.")
-UI_TEXT(PG_HELP_LVC, 192,
-    "Cell voltage at which power is reduced to protect the battery.",
-    "Zellspannung, ab der die Leistung zum Schutz des Akkus gesenkt wird.")
-UI_TEXT(PG_HELP_BEEP, 192,
-    "Sets the volume of startup tones and the signal-loss beep.",
-    "Legt die Lautstärke der Starttöne und des Warntons bei Signalverlust fest.")
-UI_TEXT(PG_HELP_TIMING_DEG, 192,
-    "Timing in degrees ahead of the rotor. More: higher speed and heat. Less: cooler.",
-    "Timing in Grad vor dem Rotor. Mehr: höhere Drehzahl und Wärme. Weniger: kühler.")
-UI_TEXT(PG_HELP_SINE, 192,
-    "Uses a sine wave at low speed, until the ESC can detect the rotor position.",
-    "Nutzt beim Anlauf eine Sinuswelle, bis der ESC die Rotorposition erkennen kann.")
-UI_TEXT(PG_HELP_COMPLEMENTARY, 192,
-    "Drives both sides of the bridge. Runs cooler, but needs correct timing.",
-    "Steuert beide Brückenhälften an. Läuft kühler, braucht aber passendes Timing.")
-UI_TEXT(PG_HELP_TELEMETRY, 192,
-    "Sends voltage, current and speed back over the signal wire.",
-    "Sendet Spannung, Strom und Drehzahl über die Signalleitung zurück.")
-UI_TEXT(PG_HELP_MOTOR_TYPE, 192,
-    "Selects six-step commutation or field-oriented control.",
-    "Wählt Sechsschritt-Kommutierung oder feldorientierte Regelung.")
-UI_TEXT(PG_HELP_CURRENT, 192,
-    "Limits the current through the motor, regardless of the requested power.",
-    "Begrenzt den Motorstrom unabhängig von der angeforderten Leistung.")
-UI_TEXT(PG_HELP_REGEN, 192,
-    "Feeds braking energy back into the battery instead of the motor.",
-    "Leitet Bremsenergie zurück in den Akku statt in den Motor.")
-UI_TEXT(PG_TRANSPORT_ONEWIRE, 60,
-    "one-wire bootloader, 19200 baud",
-    "Eindraht-Bootloader, 19200 Baud")
-UI_TEXT(PG_TRANSPORT_CLI, 60,
-    "text commands over the signal wire",
-    "Textbefehle über die Signalleitung")
-UI_TEXT(PG_TRANSPORT_PACKETS, 60,
-    "framed data packets, 115200 baud",
-    "Datenpakete mit Rahmen, 115200 Baud")
-UI_TEXT(PG_DEVICE_BLHELI, 80,
-    "BLHeli_S 16.7  on  EFM8BB21",
-    "BLHeli_S 16.7  auf  EFM8BB21")
-UI_TEXT(PG_DEVICE_AM32, 80,
-    "AM32 2.15  on  STM32G071",
-    "AM32 2.15  auf  STM32G071")
-UI_TEXT(PG_DEVICE_ESCAPE32, 80,
-    "ESCape32 v9  on  AT32F421",
-    "ESCape32 v9  auf  AT32F421")
-UI_TEXT(PG_DEVICE_VESC, 80,
-    "VESC 6.05  on  STM32F405",
-    "VESC 6.05  auf  STM32F405")
+UI_TEXT(EW_ID_FIRMWARE, 0,
+    "FIRMWARE %s",
+    "FIRMWARE %s")
+UI_TEXT(EW_ID_LAYOUT, 0,
+    "LAYOUT %u",
+    "LAYOUT %u")
+UI_TEXT(EW_ID_REVISION, 0,
+    "REVISION %u",
+    "REVISION %u")
+UI_TEXT(EW_ID_VERSION, 0,
+    "VERSION %u.%u",
+    "VERSION %u.%u")
+UI_TEXT(EW_ID_SIGNATURE, 0,
+    "SIGNATURE %04X",
+    "SIGNATUR %04X")
+UI_TEXT(EW_ID_BOOTLOADER, 0,
+    "BOOTLOADER %u",
+    "BOOTLOADER %u")
+UI_TEXT(EW_ID_TAG, 0,
+    "BOARD %.*s",
+    "BOARD %.*s")
+UI_TEXT(EW_ID_MCU, 0,
+    "MCU %.*s",
+    "MCU %.*s")
+UI_TEXT(EW_WRITABLE, 0,
+    "WRITABLE",
+    "SCHREIBBAR")
+UI_TEXT(EW_READ_ONLY, 0,
+    "READ ONLY",
+    "NUR LESEN")
+UI_TEXT(EW_WHY_LAYOUT, 100,
+    "LAYOUT %u NOT WRITTEN HERE",
+    "LAYOUT %u WIRD HIER NICHT GESCHRIEBEN")
+UI_TEXT(EW_WHY_RESET, 100,
+    "Settings area was reset. Tags lost.",
+    "Einstellungsbereich wurde zurückgesetzt. Tags verloren.")
+UI_TEXT(EW_WHY_MARKER_T, 100,
+    "The settings marker is wrong.",
+    "Die Einstellungsmarke stimmt nicht.")
+UI_TEXT(EW_WHY_REVISION, 100,
+    "REVISION %u NOT WRITTEN HERE",
+    "REVISION %u WIRD HIER NICHT GESCHRIEBEN")
+UI_TEXT(EW_WHY_CAN, 100,
+    "Built for CAN boards.",
+    "Für CAN-Boards gebaut.")
+UI_TEXT(EW_WHY_KEYS, 100,
+    "`show` lacks a key, or has others.",
+    "`show` fehlt ein Key, oder es hat andere.")
+UI_TEXT(EW_WHY_CODE, 100,
+    "NOT TAKEN, CODE %u",
+    "NICHT ANGENOMMEN, CODE %u")
+UI_TEXT(EW_NO_CHANGE, 100,
+    "Nothing to write: no value changed.",
+    "Nichts zu schreiben: kein Wert geändert.")
+UI_TEXT(EW_NOT_READ, 100,
+    "The ESC was not read.",
+    "Der ESC wurde nicht gelesen.")
+UI_TEXT(EW_RECORD_FAILED, 100,
+    "The record of the write could not be made: nothing written.",
+    "Der Eintrag des Schreibens ließ sich nicht erstellen: nichts geschrieben.")
+UI_TEXT(EW_BACKUP_SAVED, 100,
+    "Backup saved as %s.",
+    "Backup gespeichert als %s.")
+UI_TEXT(EW_FILE_SAVE, 49,
+    "SAVE THE SESSION'S BACKUP",
+    "BACKUP DER SITZUNG SPEICHERN")
+UI_TEXT(EW_FILES_NEXT, 49,
+    "NEXT FILES",
+    "WEITERE DATEIEN")
+UI_TEXT(EW_CARD_NONE, 100,
+    "No card.",
+    "Keine Karte.")
+UI_TEXT(EW_CARD_FULL, 100,
+    "The card is full, or ESCW001 to ESCW999 are taken.",
+    "Die Karte ist voll, oder ESCW001 bis ESCW999 sind belegt.")
+UI_TEXT(EW_CARD_DENIED, 100,
+    "The card takes no file.",
+    "Die Karte nimmt keine Datei an.")
+UI_TEXT(EW_CARD_WRITE, 100,
+    "The write to the card failed.",
+    "Das Schreiben auf die Karte schlug fehl.")
+UI_TEXT(EW_CARD_READ, 100,
+    "The read of the card failed.",
+    "Das Lesen der Karte schlug fehl.")
+UI_TEXT(EW_CARD_MISSING, 100,
+    "The file is gone.",
+    "Die Datei ist weg.")
+UI_TEXT(EW_CARD_LARGE, 100,
+    "The file is over 5280B: not an ESC file.",
+    "Die Datei hat über 5280B: keine ESC-Datei.")
+UI_TEXT(EW_MSG_ARMED, 100,
+    "The bench is ARMED: DISARM first.",
+    "Der Bench ist ARMED: erst DISARM.")
+UI_TEXT(EW_MSG_STOPPED, 100,
+    "STOP stands: release it first.",
+    "STOP steht: erst lösen.")
+UI_TEXT(EW_MSG_NO_LINK, 100,
+    "No IOmcu answers.",
+    "Kein IOmcu antwortet.")
+UI_TEXT(EW_MSG_NO_PAGE, 100,
+    "This IOmcu has no ESC_WIRE page: update it.",
+    "Dieser IOmcu hat keine ESC_WIRE-Seite: aktualisiere ihn.")
+UI_TEXT(EW_MSG_BUSY, 100,
+    "Another operation runs.",
+    "Eine andere Operation läuft.")
+UI_TEXT(EW_MSG_HELD, 100,
+    "A pin is held already.",
+    "Ein Pin ist schon gehalten.")
+UI_TEXT(EW_MSG_RANGE, 100,
+    "Set the voltage and the limit: 3.00V at the lowest.",
+    "Setze Spannung und Limit: mindestens 3.00V.")
+UI_TEXT(EW_MSG_READ_ONLY, 100,
+    "This page is not written.",
+    "Diese Seite wird nicht geschrieben.")
+UI_TEXT(EW_MSG_ERASED, 100,
+    "Settings erased: only RESTORE FROM BACKUP is offered.",
+    "Einstellungen gelöscht: nur AUS BACKUP HERSTELLEN wird angeboten.")
+UI_TEXT(EW_MSG_STALE, 100,
+    "The read copy changed: read again.",
+    "Die gelesene Kopie änderte sich: neu lesen.")
+UI_TEXT(EW_MSG_BACKUP_FIRST, 100,
+    "The backup comes first.",
+    "Das Backup kommt zuerst.")
+UI_TEXT(EW_MSG_NO_LINE, 100,
+    "The IOmcu has no resources for the line.",
+    "Der IOmcu hat keine Ressourcen für die Leitung.")
+UI_TEXT(EW_MSG_SUPPLY, 100,
+    "The supply failed: all outputs off.",
+    "Die Versorgung fiel aus: alle Ausgänge aus.")
+UI_TEXT(EW_MSG_TIMEOUT, 100,
+    "No power in 60s: line parked.",
+    "Kein Strom in 60s: Leitung geparkt.")
+UI_TEXT(EW_MSG_CUT, 100,
+    "A stop ended it.",
+    "Ein Stop hat es beendet.")
+UI_TEXT(EW_MSG_NOT_BACK, 100,
+    "The output did not take the pin back. ARM stays refused.",
+    "Der Ausgang nahm den Pin nicht zurück. ARM bleibt abgelehnt.")
+UI_TEXT(EW_MSG_NO_ANSWER, 100,
+    "The IOmcu did not answer.",
+    "Der IOmcu antwortete nicht.")
+UI_TEXT(EW_MSG_RESTARTED, 100,
+    "The IOmcu started again, or another writer came between.",
+    "Der IOmcu startete neu, oder ein anderer Schreiber kam dazwischen.")
+UI_TEXT(EW_MSG_NACK, 100,
+    "The IOmcu refused a frame.",
+    "Der IOmcu lehnte einen Frame ab.")
+UI_TEXT(EW_MSG_DROPPED, 100,
+    "A stop came before the command went.",
+    "Ein Stop kam, bevor der Befehl ging.")
+UI_TEXT(EW_MSG_READ_DONE, 100,
+    "Read.",
+    "Gelesen.")
+UI_TEXT(EW_MSG_WRITE_DONE, 100,
+    "Written and read back.",
+    "Geschrieben und zurückgelesen.")
+UI_TEXT(EW_MSG_RESTORE_DONE, 100,
+    "Restored and read back.",
+    "Hergestellt und zurückgelesen.")
+UI_TEXT(EW_MSG_LEFT, 100,
+    "The ESC is left, the pin is back.",
+    "ESC verlassen, Pin zurück.")
+UI_TEXT(EW_MSG_CLEARED, 100,
+    "Stop cleared.",
+    "Stop gelöscht.")
+UI_TEXT(EW_MSG_FILE_REFUSED, 100,
+    "The file is refused: code %u.",
+    "Die Datei wird abgelehnt: Code %u.")
+UI_TEXT(EW_MSG_RESTORE_REFUSED, 100,
+    "The restore is refused: code %u.",
+    "Die Herstellung wird abgelehnt: Code %u.")
+UI_TEXT(EW_MSG_LOADED, 100,
+    "%u values from the file in the draft: WRITE sends them.",
+    "%u Werte aus der Datei im Entwurf: SCHREIBEN sendet sie.")
+UI_TEXT(EW_LOAD_FIRMWARE, 100,
+    "A file of another firmware.",
+    "Eine Datei einer anderen Firmware.")
+UI_TEXT(EW_LOAD_LAYOUT, 100,
+    "A file of another layout or revision.",
+    "Eine Datei eines anderen Layouts oder einer anderen Revision.")
+UI_TEXT(EW_LOAD_VALUE, 100,
+    "A value in the file is no value of its field.",
+    "Ein Wert in der Datei ist kein Wert seines Felds.")
+UI_TEXT(EW_REF_BUSY, 100,
+    "The page holds a pin, or another operation runs.",
+    "Die Seite hält einen Pin, oder eine andere Operation läuft.")
+UI_TEXT(EW_REF_TARGET, 100,
+    "No such slot or port.",
+    "Kein solcher Slot oder Port.")
+UI_TEXT(EW_REF_HELD, 100,
+    "KST, HITEC or a firmware update has the bench.",
+    "KST, HITEC oder ein Firmware-Update hat den Bench.")
+UI_TEXT(EW_REF_UNSAFE, 100,
+    "Heartbeat not trusted, or the link is silent.",
+    "Heartbeat nicht vertraut, oder die Verbindung schweigt.")
+UI_TEXT(EW_REF_NOT_OPEN, 100,
+    "No ESC has answered.",
+    "Kein ESC hat geantwortet.")
+UI_TEXT(EW_REF_STOPPED, 100,
+    "A stop or a fault stands: CLEAR STOP first.",
+    "Ein Stop oder Fehler steht: erst STOP LÖSCHEN.")
+UI_TEXT(EW_REF_NO_PIN, 100,
+    "No throttle slot or DShot port there.",
+    "Kein Gas-Slot oder DShot-Port dort.")
+UI_TEXT(EW_REF_NO_SUPPLY, 100,
+    "SWITCHED: no PD mini answers.",
+    "SWITCHED: kein PD mini antwortet.")
+UI_TEXT(EW_REF_WRITING, 100,
+    "A write runs: wait for its end.",
+    "Ein Schreiben läuft: warte auf sein Ende.")
+UI_TEXT(EW_REF_OTHER, 100,
+    "The IOmcu refused.",
+    "Der IOmcu lehnte ab.")
+UI_TEXT(EW_SES_SILENT, 100,
+    "No answer. Check the wiring, the power and ENTRY HOLD.",
+    "Keine Antwort. Prüfe Verkabelung, Strom und ENTRY HOLD.")
+UI_TEXT(EW_SES_CONTACT, 100,
+    "An answer that is no first contact. Check the wiring.",
+    "Eine Antwort, die kein First Contact ist. Prüfe die Verkabelung.")
+UI_TEXT(EW_SES_NOT_KNOWN, 100,
+    "An ESC this bench does not take.",
+    "Ein ESC, den dieser Bench nicht nimmt.")
+UI_TEXT(EW_SES_READ, 100,
+    "The read failed. Nothing was erased.",
+    "Das Lesen schlug fehl. Nichts wurde gelöscht.")
+UI_TEXT(EW_SES_CHANGED, 100,
+    "The page is not what was read. Nothing was erased.",
+    "Die Seite ist nicht, was gelesen wurde. Nichts wurde gelöscht.")
+UI_TEXT(EW_SES_WRITE_FAILED, 100,
+    "The write did not take. The page is as read.",
+    "Das Schreiben griff nicht. Die Seite ist wie gelesen.")
+UI_TEXT(EW_SES_TORN, 100,
+    "TORN: the page is neither as read nor as intended. All outputs off.",
+    "TORN: die Seite ist weder wie gelesen noch wie gewollt. Alle Ausgänge aus.")
+UI_TEXT(EW_SES_LOST, 100,
+    "LOST: the ESC stopped answering in a write. All outputs off.",
+    "LOST: der ESC antwortete im Schreiben nicht mehr. Alle Ausgänge aus.")
+UI_TEXT(EW_SES_CLIPPED, 100,
+    "The ESC stored another value: no `save` went.",
+    "Der ESC speicherte einen anderen Wert: kein `save` ging.")
+UI_TEXT(EW_SES_ESC_ERROR, 100,
+    "The ESC answered ERROR.",
+    "Der ESC antwortete ERROR.")
+UI_TEXT(EW_SES_REFUSED, 100,
+    "The guard refused a frame: nothing went.",
+    "Der Guard lehnte einen Frame ab: nichts ging.")
+UI_TEXT(EW_SES_DIRTY, 100,
+    "A page is half written: only its write goes.",
+    "Eine Seite ist halb geschrieben: nur ihr Schreiben geht.")
+UI_TEXT(EW_SES_BACKUP, 100,
+    "A backup of another ESC.",
+    "Ein Backup eines anderen ESC.")
+UI_TEXT(EW_SES_OTHER, 100,
+    "The session ended with an error.",
+    "Die Sitzung endete mit einem Fehler.")
+/* A row's help line, from the firmware's settings as the specification gives them. */
+UI_TEXT(EW_HS_09, 100,
+    "Startup power, 0.031 to 1.50.",
+    "Startleistung, 0.031 bis 1.50.")
+UI_TEXT(EW_HS_0B, 100,
+    "Motor direction: normal, reversed, bidirectional, or both reversed.",
+    "Motorrichtung: normal, umgekehrt, bidirektional, oder beides umgekehrt.")
+UI_TEXT(EW_HS_0F, 100,
+    "Throttle-stick programming on or off.",
+    "Programmierung per Gasknüppel an oder aus.")
+UI_TEXT(EW_HS_15, 100,
+    "Commutation timing, low to high.",
+    "Kommutierungs-Timing, low bis high.")
+UI_TEXT(EW_HS_19, 100,
+    "Minimum throttle: shown, its range is unknown.",
+    "Minimalgas: nur Anzeige, der Bereich ist unbekannt.")
+UI_TEXT(EW_HS_1A, 100,
+    "Maximum throttle: shown, its range is unknown.",
+    "Maximalgas: nur Anzeige, der Bereich ist unbekannt.")
+UI_TEXT(EW_HS_1B, 100,
+    "Beep strength.",
+    "Beep-Stärke.")
+UI_TEXT(EW_HS_1C, 100,
+    "Beacon strength.",
+    "Beacon-Stärke.")
+UI_TEXT(EW_HS_1D, 100,
+    "Beacon delay, 1min to infinite.",
+    "Beacon-Verzögerung, 1min bis unendlich.")
+UI_TEXT(EW_HS_1F, 100,
+    "Demagnetisation compensation: off, low or high.",
+    "Demagnetisierungs-Kompensation: aus, low oder high.")
+UI_TEXT(EW_HS_21, 100,
+    "Centre throttle in bidirectional mode: shown, its range is unknown.",
+    "Mittelgas im bidirektionalen Modus: nur Anzeige, der Bereich ist unbekannt.")
+UI_TEXT(EW_HS_23, 100,
+    "Temperature protection. Off removes the protection.",
+    "Temperaturschutz. Aus nimmt den Schutz weg.")
+UI_TEXT(EW_HS_24, 100,
+    "Low-speed power protection. Off removes the protection.",
+    "Leistungsschutz bei niedriger Drehzahl. Aus nimmt den Schutz weg.")
+UI_TEXT(EW_HS_27, 100,
+    "Brake on stop.",
+    "Bremse beim Stopp.")
+UI_TEXT(EW_HS_28, 100,
+    "LED control, the raw byte: two bits per LED, the LED count is unknown.",
+    "LED-Steuerung, das rohe Byte: zwei Bits pro LED, die LED-Zahl ist unbekannt.")
+UI_TEXT(EW_HB_04, 100,
+    "Minimum startup power, 0 to 255: throttle 1000 to 1125.",
+    "Minimale Startleistung, 0 bis 255: Gas 1000 bis 1125.")
+UI_TEXT(EW_HB_05, 100,
+    "Startup sound: short beep or melody.",
+    "Startton: kurzer Beep oder Melodie.")
+UI_TEXT(EW_HB_06, 100,
+    "Dithering, up to layout 207.",
+    "Dithering, bis Layout 207.")
+UI_TEXT(EW_HB_07, 100,
+    "Maximum startup power, 0 to 255.",
+    "Maximale Startleistung, 0 bis 255.")
+UI_TEXT(EW_HB_09, 100,
+    "Low-speed power slope: 0 off, 1 to 13.",
+    "Leistungsverlauf bei niedriger Drehzahl: 0 aus, 1 bis 13.")
+UI_TEXT(EW_HB_0A, 100,
+    "PWM frequency indicator: chosen when the firmware is built, do not change.",
+    "PWM-Frequenz-Anzeige: beim Bauen der Firmware gewählt, nicht ändern.")
+UI_TEXT(EW_HB_10, 100,
+    "Braking strength, 0 to 100%.",
+    "Bremsstärke, 0 bis 100%.")
+UI_TEXT(EW_HB_29, 100,
+    "Power rating: 1S battery, or 2S and above.",
+    "Power Rating: 1S-Akku, oder 2S und mehr.")
+UI_TEXT(EW_HB_2A, 100,
+    "Safety arm: shown, the value read is kept.",
+    "Safety Arm: nur Anzeige, der gelesene Wert bleibt.")
+UI_TEXT(EW_HA_05, 100,
+    "Maximum power ramp: below 10 slow mode, 10 to 255 in 0.1%/ms.",
+    "Maximale Leistungsrampe: unter 10 langsamer Modus, 10 bis 255 in 0.1%/ms.")
+UI_TEXT(EW_HA_06, 100,
+    "Minimum duty, 1 to 50 used; other values mean 0.",
+    "Minimaler Duty, 1 bis 50 genutzt; andere Werte bedeuten 0.")
+UI_TEXT(EW_HA_07, 100,
+    "Stick calibration disabled.",
+    "Stick-Kalibrierung abgeschaltet.")
+UI_TEXT(EW_HA_08, 100,
+    "Absolute voltage cutoff, in steps of 0.5V.",
+    "Absolute Spannungsabschaltung, in Schritten von 0.5V.")
+UI_TEXT(EW_HA_09, 100,
+    "Current loop gain P, 0 to 255.",
+    "Stromregler-Verstärkung P, 0 bis 255.")
+UI_TEXT(EW_HA_0A, 100,
+    "Current loop gain I, 0 to 255.",
+    "Stromregler-Verstärkung I, 0 bis 255.")
+UI_TEXT(EW_HA_0B, 100,
+    "Current loop gain D, 0 to 255.",
+    "Stromregler-Verstärkung D, 0 bis 255.")
+UI_TEXT(EW_HA_0C, 100,
+    "Active brake power, 1 to 5%.",
+    "Aktive Bremsleistung, 1 bis 5%.")
+UI_TEXT(EW_HA_0D, 100,
+    "Brake behaviour at zero throttle, 0 to 9. Revision 4 only.",
+    "Bremsverhalten bei Nullgas, 0 bis 9. Nur Revision 4.")
+UI_TEXT(EW_HA_11, 100,
+    "Direction reversed.",
+    "Richtung umgekehrt.")
+UI_TEXT(EW_HA_12, 100,
+    "Bidirectional mode.",
+    "Bidirektionaler Modus.")
+UI_TEXT(EW_HA_13, 100,
+    "Sine-wave startup; forced off when complementary PWM is off.",
+    "Sinus-Anlauf; aus, wenn Complementary PWM aus ist.")
+UI_TEXT(EW_HA_14, 100,
+    "Complementary PWM.",
+    "Complementary PWM.")
+UI_TEXT(EW_HA_15, 100,
+    "Variable PWM: fixed, range from the commutation interval, or automatic.",
+    "Variable PWM: fest, Bereich aus dem Kommutierungs-Intervall, oder automatisch.")
+UI_TEXT(EW_HA_16, 100,
+    "Stuck-rotor protection.",
+    "Schutz bei blockiertem Rotor.")
+UI_TEXT(EW_HA_17, 100,
+    "Timing advance, 0 to 30deg in steps of 0.9375deg.",
+    "Timing-Vorlauf, 0 bis 30deg in Schritten von 0.9375deg.")
+UI_TEXT(EW_HA_18, 100,
+    "PWM frequency in kHz: 8 to 144 used.",
+    "PWM-Frequenz in kHz: 8 bis 144 genutzt.")
+UI_TEXT(EW_HA_19, 100,
+    "Startup power, 50 to 150 used.",
+    "Startleistung, 50 bis 150 genutzt.")
+UI_TEXT(EW_HA_1A, 100,
+    "Motor KV.",
+    "Motor-KV.")
+UI_TEXT(EW_HA_1B, 100,
+    "Motor pole count: 0 disables the low-speed limits.",
+    "Motor-Polzahl: 0 schaltet die Grenzen bei niedriger Drehzahl ab.")
+UI_TEXT(EW_HA_1C, 100,
+    "Brake on stop.",
+    "Bremse beim Stopp.")
+UI_TEXT(EW_HA_1D, 100,
+    "Stall protection.",
+    "Stall-Schutz.")
+UI_TEXT(EW_HA_1E, 100,
+    "Beep volume, 0 to 11.",
+    "Beep-Lautstärke, 0 bis 11.")
+UI_TEXT(EW_HA_1F, 100,
+    "Telemetry at an interval.",
+    "Telemetrie im Intervall.")
+UI_TEXT(EW_HA_20, 100,
+    "Servo input low threshold.",
+    "Unterer Schwellwert des Servo-Eingangs.")
+UI_TEXT(EW_HA_21, 100,
+    "Servo input high threshold.",
+    "Oberer Schwellwert des Servo-Eingangs.")
+UI_TEXT(EW_HA_22, 100,
+    "Servo input neutral.",
+    "Neutralpunkt des Servo-Eingangs.")
+UI_TEXT(EW_HA_23, 100,
+    "Servo input dead band, 0 to 100.",
+    "Totband des Servo-Eingangs, 0 bis 100.")
+UI_TEXT(EW_HA_24, 100,
+    "Low-voltage cutoff on or off.",
+    "Unterspannungs-Abschaltung an oder aus.")
+UI_TEXT(EW_HA_25, 100,
+    "Low-voltage cutoff per cell, 2.50V to 3.50V.",
+    "Unterspannungs-Abschaltung pro Zelle, 2.50V bis 3.50V.")
+UI_TEXT(EW_HA_26, 100,
+    "Car-style reverse.",
+    "Rückwärtsfahrt wie beim Auto.")
+UI_TEXT(EW_HA_27, 100,
+    "Hall sensors in use; forced off on boards without hall inputs.",
+    "Hall-Sensoren in Gebrauch; aus auf Boards ohne Hall-Eingänge.")
+UI_TEXT(EW_HA_28, 100,
+    "Sine mode changeover throttle, 5 to 25%.",
+    "Gas beim Wechsel aus dem Sinus-Modus, 5 bis 25%.")
+UI_TEXT(EW_HA_29, 100,
+    "Drag brake strength, 1 to 10.",
+    "Stärke der Schleppbremse, 1 bis 10.")
+UI_TEXT(EW_HA_2A, 100,
+    "Driving brake strength, 1 to 9.",
+    "Stärke der Fahrbremse, 1 bis 9.")
+UI_TEXT(EW_HA_2B, 100,
+    "Temperature limit, 70C to 140C, or off.",
+    "Temperaturgrenze, 70C bis 140C, oder aus.")
+UI_TEXT(EW_HA_2C, 100,
+    "Current limit, 1 to 100: its unit is unknown. Off removes it.",
+    "Stromgrenze, 1 bis 100: die Einheit ist unbekannt. Aus nimmt sie weg.")
+UI_TEXT(EW_HA_2D, 100,
+    "Sine mode power, 1 to 10.",
+    "Leistung im Sinus-Modus, 1 bis 10.")
+UI_TEXT(EW_HA_2E, 100,
+    "Input type: auto, DShot, servo, serial, or DShot with an arming command.",
+    "Eingangstyp: Auto, DShot, Servo, Seriell, oder DShot mit Arming-Befehl.")
+UI_TEXT(EW_HA_2F, 100,
+    "Automatic advance.",
+    "Automatischer Vorlauf.")
+UI_TEXT(EW_HE_ARM, 100,
+    "Wait for zero throttle at start.",
+    "Beim Start auf Nullgas warten.")
+UI_TEXT(EW_HE_DAMP, 100,
+    "Complementary PWM.",
+    "Complementary PWM.")
+UI_TEXT(EW_HE_REVDIR, 100,
+    "Reverse direction.",
+    "Richtung umkehren.")
+UI_TEXT(EW_HE_BRUSHED, 100,
+    "Brushed motor mode: reconfigures the output stage.",
+    "Modus für Bürstenmotor: stellt die Endstufe um.")
+UI_TEXT(EW_HE_TIMING, 100,
+    "Timing, 1 to 31 in steps of 0.9375deg.",
+    "Timing, 1 bis 31 in Schritten von 0.9375deg.")
+UI_TEXT(EW_HE_SINE_RANGE, 100,
+    "Sine range, 5 to 25%, or off.",
+    "Sinus-Bereich, 5 bis 25%, oder aus.")
+UI_TEXT(EW_HE_SINE_POWER, 100,
+    "Sine power, 1 to 15%.",
+    "Sinus-Leistung, 1 bis 15%.")
+UI_TEXT(EW_HE_FREQ_MIN, 100,
+    "Lowest PWM frequency, 16kHz to 48kHz.",
+    "Niedrigste PWM-Frequenz, 16kHz bis 48kHz.")
+UI_TEXT(EW_HE_FREQ_MAX, 100,
+    "Highest PWM frequency, 16kHz to 96kHz, not below freq_min.",
+    "Höchste PWM-Frequenz, 16kHz bis 96kHz, nicht unter freq_min.")
+UI_TEXT(EW_HE_DUTY_MIN, 100,
+    "Lowest duty, 1 to 100%.",
+    "Niedrigster Duty, 1 bis 100%.")
+UI_TEXT(EW_HE_DUTY_MAX, 100,
+    "Highest duty, 1 to 100%, not below duty_min.",
+    "Höchster Duty, 1 bis 100%, nicht unter duty_min.")
+UI_TEXT(EW_HE_DUTY_SPUP, 100,
+    "Spin-up duty, 1 to 100%.",
+    "Duty beim Hochlauf, 1 bis 100%.")
+UI_TEXT(EW_HE_DUTY_RAMP, 100,
+    "Duty ramp, 0 to 100 thousand electrical rpm.",
+    "Duty-Rampe, 0 bis 100 tausend elektrische rpm.")
+UI_TEXT(EW_HE_DUTY_RATE, 100,
+    "Duty rate, in 0.1%/ms.",
+    "Duty-Rate, in 0.1%/ms.")
+UI_TEXT(EW_HE_DUTY_DRAG, 100,
+    "Drag duty, 0 to 100%.",
+    "Schlepp-Duty, 0 bis 100%.")
+UI_TEXT(EW_HE_DUTY_LOCK, 100,
+    "Duty lock: off, soft or hard.",
+    "Duty-Lock: aus, soft oder hard.")
+UI_TEXT(EW_HE_BEC, 100,
+    "BEC voltage, 5.5V to 12V; a target's range may be narrower.",
+    "BEC-Spannung, 5.5V bis 12V; das Target kann weniger können.")
+UI_TEXT(EW_HE_THROT_MODE, 100,
+    "Throttle mode: forward; with reverse; with brake and reverse; with brake.",
+    "Gas-Modus: vorwärts; mit rückwärts; mit Bremse und rückwärts; mit Bremse.")
+UI_TEXT(EW_HE_THROT_REV, 100,
+    "Maximum reverse, in four steps to 25%.",
+    "Maximal rückwärts, in vier Stufen bis 25%.")
+UI_TEXT(EW_HE_THROT_BRK, 100,
+    "Brake, 0 to 100%.",
+    "Bremse, 0 bis 100%.")
+UI_TEXT(EW_HE_THROT_SET, 100,
+    "Preset throttle, 0 to 100%.",
+    "Festes Gas, 0 bis 100%.")
+UI_TEXT(EW_HE_THROT_ZTC, 100,
+    "Coast at zero throttle.",
+    "Ausrollen bei Nullgas.")
+UI_TEXT(EW_HE_THROT_CAL, 100,
+    "Automatic calibration.",
+    "Automatische Kalibrierung.")
+UI_TEXT(EW_HE_THROT_MIN, 100,
+    "Throttle minimum, 900us to 1900us in steps of 10us.",
+    "Gas-Minimum, 900us bis 1900us in Schritten von 10us.")
+UI_TEXT(EW_HE_THROT_MID, 100,
+    "Throttle middle, 1000us to 2000us in steps of 10us.",
+    "Gas-Mitte, 1000us bis 2000us in Schritten von 10us.")
+UI_TEXT(EW_HE_THROT_MAX, 100,
+    "Throttle maximum, 1100us to 2100us in steps of 10us.",
+    "Gas-Maximum, 1100us bis 2100us in Schritten von 10us.")
+UI_TEXT(EW_HE_ANALOG_MIN, 100,
+    "Analog input minimum, 0mV to 3200mV in steps of 10mV.",
+    "Analog-Minimum, 0mV bis 3200mV in Schritten von 10mV.")
+UI_TEXT(EW_HE_ANALOG_MAX, 100,
+    "Analog input maximum, 200mV to 3400mV in steps of 10mV.",
+    "Analog-Maximum, 200mV bis 3400mV in Schritten von 10mV.")
+UI_TEXT(EW_HE_INPUT_MODE, 100,
+    "Input: servo, analog, serial, iBUS, SBUS, CRSF, EXBUS or HoTT.",
+    "Eingang: Servo, Analog, Seriell, iBUS, SBUS, CRSF, EXBUS oder HoTT.")
+UI_TEXT(EW_HE_INPUT_CH1, 100,
+    "Channel number 1, 0 to 32.",
+    "Kanalnummer 1, 0 bis 32.")
+UI_TEXT(EW_HE_INPUT_CH2, 100,
+    "Channel number 2, 0 to 32.",
+    "Kanalnummer 2, 0 bis 32.")
+UI_TEXT(EW_HE_TELEM_MODE, 100,
+    "Telemetry: KISS, KISS auto, iBUS, S.Port, CRSF, MSB or HoTT.",
+    "Telemetrie: KISS, KISS auto, iBUS, S.Port, CRSF, MSB oder HoTT.")
+UI_TEXT(EW_HE_TELEM_PHID, 100,
+    "Physical id, 0 to 28.",
+    "Physische ID, 0 bis 28.")
+UI_TEXT(EW_HE_TELEM_POLES, 100,
+    "Motor poles, 2 to 100.",
+    "Motorpole, 2 bis 100.")
+UI_TEXT(EW_HE_TELEM_VOLT, 100,
+    "Voltage sensor calibration, -80 to 160.",
+    "Kalibrierung des Spannungssensors, -80 bis 160.")
+UI_TEXT(EW_HE_TELEM_CURR, 100,
+    "Current sensor calibration, -100 to 200.",
+    "Kalibrierung des Stromsensors, -100 bis 200.")
+UI_TEXT(EW_HE_PROT_STALL, 100,
+    "Stall protection in electrical rpm, steps of 10. Off removes it.",
+    "Stall-Schutz in elektrischen rpm, Schritte von 10. Aus nimmt ihn weg.")
+UI_TEXT(EW_HE_PROT_TEMP, 100,
+    "Temperature protection, 5C steps to 140C. Off removes it.",
+    "Temperaturschutz, 5C-Schritte bis 140C. Aus nimmt ihn weg.")
+UI_TEXT(EW_HE_PROT_SENS, 100,
+    "Temperature sensor: ESC, motor or both.",
+    "Temperatursensor: ESC, Motor oder beide.")
+UI_TEXT(EW_HE_PROT_VOLT, 100,
+    "Low-voltage protection per cell, 2.8V to 3.8V. Off removes it.",
+    "Unterspannungsschutz pro Zelle, 2.8V bis 3.8V. Aus nimmt ihn weg.")
+UI_TEXT(EW_HE_PROT_CELLS, 100,
+    "Cell count, 1 to 24, or automatic.",
+    "Zellenzahl, 1 bis 24, oder automatisch.")
+UI_TEXT(EW_HE_PROT_CURR, 100,
+    "Current protection, 1A to 999A. Off removes it.",
+    "Stromschutz, 1A bis 999A. Aus nimmt ihn weg.")
+UI_TEXT(EW_HE_PROT_PARK, 100,
+    "Parking speed level, 0 to 4.",
+    "Parkstufe, 0 bis 4.")
+UI_TEXT(EW_HE_VOLUME, 100,
+    "Sound volume, 0 to 100%.",
+    "Lautstärke, 0 bis 100%.")
+UI_TEXT(EW_HE_BEACON, 100,
+    "Beacon volume, 0 to 100%.",
+    "Beacon-Lautstärke, 0 bis 100%.")
+UI_TEXT(EW_HE_LED, 100,
+    "LED bit mask, limited to the LEDs the target has.",
+    "LED-Bitmaske, begrenzt auf die LEDs des Targets.")
+/* A count of a page of rows: ESC STICK's list. */
 UI_TEXT(PG_RANGE_OF, 0,
     "%d-%d of %d",
     "%d-%d von %d")
