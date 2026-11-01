@@ -67,12 +67,7 @@ static bool esc_hw_give(void *ctx)
         ports_apply();
         back = (outputs_hw_ports_bound() & (1u << index)) != 0u;
     } else {
-        uint16_t rate[OUT_MAX_SLOTS];
-
-        outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
-        back = outputs_hw_return_slot(&s_outputs, rate, index);
-        sense_page_bound(&s_sense, bound_slots());
-        ports_apply();
+        back = hw_return_slot(index);
     }
     return back;
 }

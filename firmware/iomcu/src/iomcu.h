@@ -794,6 +794,14 @@ void ports_apply(void);
  */
 void hw_apply_only(uint8_t may_bind);
 /**
+ * @brief One slot left out of an apply bound again, at the rate it runs at; no
+ * DShot port is let go for it (outputs_hw_return_slot()).
+ *
+ * @param slot The slot.
+ * @return True when it is bound.
+ */
+bool hw_return_slot(uint8_t slot);
+/**
  * @brief Makes the silicon agree with the bank, binding every slot.
  */
 void hw_apply(void);

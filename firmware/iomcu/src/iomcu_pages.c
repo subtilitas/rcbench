@@ -243,6 +243,16 @@ void hw_apply_only(uint8_t may_bind)
     ports_apply();
 }
 
+bool hw_return_slot(uint8_t slot)
+{
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
+    const bool back = outputs_hw_return_slot(&s_outputs, rate, slot);
+    sense_page_bound(&s_sense, bound_slots());
+    ports_apply();
+    return back;
+}
+
 void hw_apply(void)
 {
     hw_apply_only(0xFFu);
