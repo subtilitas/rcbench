@@ -4,16 +4,10 @@ Reading and writing the settings of an ESC (electronic speed controller) over
 its signal wire, for ESCs with BLHeli_S, Bluejay, AM32 and ESCape32 firmware.
 The core holds the transaction, the frames of the binary bootloader protocol
 (protocol A), the lines of the text interface, the guard every outgoing frame
-<<<<<<< HEAD
 and line passes, identification, the field maps, the session and the settings
-file. A driver with 5 functions (`ew_driver_t`) connects the core to a
-pin. The folder holds no pin driver yet, and nothing in this repository calls
-the module yet.
-=======
-and line passes, identification, the field maps and the session. A driver with
-5 functions (`ew_driver_t`) connects the core to a pin; `rp2350/ew_line.c` is
-that driver on one RP2350 pin. Nothing in a released image calls the module yet.
->>>>>>> origin/main
+file. A driver with 5 functions (`ew_driver_t`) connects the core to a pin;
+`rp2350/ew_line.c` is that driver on one RP2350 pin. Nothing in a released image
+calls the module yet.
 
 This module was written from a behavioural specification, without access to
 the firmware sources. The specification states what an ESC and a host exchange
@@ -21,12 +15,8 @@ on the wire; its values are not measured on hardware.
 
 | Part | Files | Depends on |
 |---|---|---|
-<<<<<<< HEAD
-| Core | `ew_wire.c`, `ew_a.c`, `ew_text.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_map_e32.c`, `ew_session.c`, `ew_session_text.c`, `ew_file.c`, `ew_file_read.c`, `ew_file_load.c`, 8 headers under `include/`, `ew_session_int.h`, `ew_file_int.h` | C11 standard headers |
-=======
-| Core | `ew_wire.c`, `ew_pio.c`, `ew_a.c`, `ew_text.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_map_e32.c`, `ew_session.c`, `ew_session_text.c`, 8 headers under `include/`, `ew_session_int.h` | C11 standard headers |
+| Core | `ew_wire.c`, `ew_pio.c`, `ew_a.c`, `ew_text.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_map_e32.c`, `ew_session.c`, `ew_session_text.c`, `ew_file.c`, `ew_file_read.c`, `ew_file_load.c`, 9 headers under `include/`, `ew_session_int.h`, `ew_file_int.h` | C11 standard headers |
 | Pin driver | `rp2350/ew_line.pio`, `rp2350/ew_line.c`, `rp2350/ew_line.h` | pico-sdk 2.3.0 |
->>>>>>> origin/main
 
 ## Constraints
 
@@ -488,20 +478,14 @@ with their authors. The full notice is in the repository's
 ## Tests
 
 `test/host/test_ew_a.c`, `test_ew_id.c`, `test_ew_map.c`, `test_ew_guard.c`,
-<<<<<<< HEAD
 `test_ew_text.c`, `test_ew_session.c`, `test_ew_session_write.c`,
 `test_ew_session_text.c`, `test_ew_file.c` and `test_ew_file_load.c` run the
 core; the session and file suites against the simulated
-ESC of `test/host/ew_sim.h` and `ew_sim_text.h`. That simulation is written
-=======
-`test_ew_text.c`, `test_ew_session.c`, `test_ew_session_write.c` and
-`test_ew_session_text.c` run the core; the session suites against the simulated
 ESC of `test/host/ew_sim.h` and `ew_sim_text.h`. `test_ew_pio.c` assembles
 `rp2350/ew_line.pio` and runs it in a model of the state machine; the IOmcu build
 fails when pioasm's words differ from `test/host/fixtures/ew_line_words.txt`.
 `test_ew_line.c` runs the driver on a fake of the pico-sdk calls it makes: the pad
 at each moment, every error path, the resources. That simulation is written
->>>>>>> origin/main
 from the same specification and shares its misreadings until a real ESC answers.
 
 ```sh
