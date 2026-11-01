@@ -546,6 +546,66 @@ TEST_CASE(no_backup_is_taken_before_this_sessions_read)
     CHECK_EQ(esc_prog_backup_state(&m), ESC_PROG_BACKUP_NONE);
 }
 
+/* LEAVE and ENTER again on the held pin (the bench console): a settled backup is of
+ * the ESC before it, and no write rests on it. */
+TEST_CASE(a_new_session_on_a_held_pin_settles_its_own_backup)
+{
+    static esc_prog_feed_t f;
+    static esc_prog_t m;
+    static uint8_t d[EW_MAP_LEN_AM];
+
+    esc_prog_init(&m);
+    memset(&f, 0, sizeof(f));
+    f.rd.phase = ESC_LINK_READY;
+    f.rd.known = true;
+    f.rd.held = true;
+    f.rd.fw = EW_FW_AM;
+    f.rd.layout = 4u;
+    f.rd.cpu = EW_CPU_ARM;
+    f.rd.len = EW_MAP_LEN_AM;
+    f.rd.pin_code = 0x26u;
+    f.rd.flash_code = 0x1Fu;
+    f.rd.protocol = 3u;
+    f.rd.state = LINK_ESC_READY;
+    f.rd.flags = LINK_EW_F_HAVE_READ | LINK_EW_F_WRITABLE;
+    f.rd.reads = 1u;
+    f.rd.read_crc = 0x1111u;
+    f.image.gen = 1u;
+    f.image.reads = 1u;
+    f.image.read_crc = 0x1111u;
+    f.image.len = EW_MAP_LEN_AM;
+    f.image.page[0] = 0x01u;
+    f.image.page[1] = 4u;
+    f.image.page[2] = 12u;
+    esc_prog_feed(&m, &f);
+    CHECK_EQ(esc_prog_backup_state(&m), ESC_PROG_BACKUP_OWED);
+    esc_prog_backup_settled(&m);
+    CHECK_EQ(esc_prog_backup_state(&m), ESC_PROG_BACKUP_SETTLED);
+    /* A READ or WRITE running keeps it: HAVE_READ stands through them. */
+    f.rd.state = LINK_ESC_RUN;
+    esc_prog_feed(&m, &f);
+    CHECK_EQ(esc_prog_backup_state(&m), ESC_PROG_BACKUP_SETTLED);
+    /* ENTER's hold clears HAVE_READ, the pin held. */
+    f.rd.state = LINK_ESC_RUN;
+    f.rd.flags = 0u;
+    f.image.gen = 0u;
+    esc_prog_feed(&m, &f);
+    CHECK_EQ(esc_prog_backup_state(&m), ESC_PROG_BACKUP_NONE);
+    /* Another ESC read: its backup is owed before a write. */
+    f.rd.state = LINK_ESC_READY;
+    f.rd.flags = LINK_EW_F_HAVE_READ | LINK_EW_F_WRITABLE;
+    f.rd.read_crc = 0x2222u;
+    f.image.gen = 1u;
+    f.image.read_crc = 0x2222u;
+    f.image.page[2] = 13u;
+    esc_prog_feed(&m, &f);
+    CHECK_EQ(esc_prog_backup_state(&m), ESC_PROG_BACKUP_OWED);
+    CHECK_EQ(m.file.page[2], 13u);
+    memcpy(d, f.image.page, sizeof(d));
+    d[0x20] ^= 1u;
+    CHECK_EQ(esc_prog_write(&m, d, EW_MAP_LEN_AM), ESC_PROG_MSG_BACKUP_FIRST);
+}
+
 /* A second CONNECT holds the first session's backup for nothing: the session's own
  * read gives it, on an ESC of other bytes. */
 TEST_CASE(a_second_session_has_its_own_backup)
@@ -644,6 +704,7 @@ int main(void)
     RUN(a_command_the_task_never_took_is_given_up);
     RUN(the_word_of_arm_and_the_runs);
     RUN(no_backup_is_taken_before_this_sessions_read);
+    RUN(a_new_session_on_a_held_pin_settles_its_own_backup);
     RUN(a_second_session_has_its_own_backup);
     RUN(a_stop_between_the_steps_starts_no_entry);
     RUN(the_screenshot_waits_for_the_page);

@@ -118,11 +118,12 @@ ist also nur der Alert unten zu sehen.
 | Register 0 bis 20 | alle 5ms in einer Anfrage, 100ms bei gehaltenem Pin, 500ms sonst |
 | Erstes Lesen nach einem Panel-Neustart, ein Pin gehalten | CLOSE; erneut alle 1000ms, solange die Page `WRITING` antwortet oder in `NOT_BACK` bleibt. Keine Anfrage, bis die Page frei ist. |
 | Link zurück, kein Neustart | nichts wird geschlossen |
-| Die STOP-Taste oder jeder Stop des Panels | die Operation `STOP`, sobald die Page bekannt ist und einen Pin hält. Ein `BAD_VALUE`, eine SEQ eines anderen Schreibers: lesen und erneut, höchstens 6 Mal. |
+| Die STOP-Taste oder jeder Stop des Panels | die Operation `STOP`, sobald die Page bekannt ist und einen Pin hält; ein Stop in einer Link-Lücke geht danach. Ein `BAD_VALUE`, eine SEQ eines anderen Schreibers: lesen und erneut, höchstens 6 Mal. |
 | `FAULT` steigt, oder der Zustand erreicht `NOT_BACK` | ein Fehler: alle Ausgänge aus (`prog_faults_follow()`). Ein `FAULT`, der beim ersten Lesen nach Link-Aufbau schon steht, zählt nicht. |
 | Der Zustand erreicht `NOT_BACK` | ein Alert, der Slot oder Port nennt |
 | Ein Pin gehalten, von wem auch immer | ARM auf MOTOR und SERVO, die TARGET-Zeile des Motors, ESC STICK, der Limit-Lauf und der Screenshot warten; ein angefragtes, abgelehntes ARM entfällt auf MOTOR und SERVO |
 | Ein Stop eingerastet | kein Befehl außer CLOSE, LEAVE und ABORT geht (`esc_prog_cmd_allowed()`) |
+| 10 Lesezugriffe der Page in Folge fehlgeschlagen, in einer Anfrage | die Anfrage endet. Mit einem Halten im letzten Lesen: ein Fehler, und `STOP` |
 | Eine Lesekopie mit neuem `READS` oder `READ_CRC` | in Blöcken geholt und gegen `READ_CRC` geprüft, 3 Versuche |
 
 Die Hälfte der SUPPLY-Page (`shared/bench/supply_link.c`) unter einem Halten:
@@ -131,6 +132,7 @@ Die Hälfte der SUPPLY-Page (`shared/bench/supply_link.c`) unter einem Halten:
 |---|---|
 | Sein erster Schreibzugriff nach einem Start | keiner vor einem Lesen. Ein dort gefundenes Halten wird übernommen; kein eigenes OFF geht darüber. Das OFF des Bedieners und der Cut eines Fehlers bleiben. |
 | Seine Verdrahtung, die Page antwortet `BUSY` | keine Ablehnung: die Verdrahtung der Page gilt, und sie wird erneut geschrieben, wenn ein Lesen das Ende des Haltens zeigt |
+| Ein Halten zu Ende, seine Verdrahtung nicht geschrieben | OFF, Lesen, Verdrahtung, wie bei jedem Start; kein ON gilt als verloren |
 | Eine abgelehnte Verdrahtung, nicht `BUSY`, bei einem ON, das ein Port hält | sofort `ON_REFUSED`: ein Fehler, alle Ausgänge aus |
 
 ## Aktuelle Einschränkungen

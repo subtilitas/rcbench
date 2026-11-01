@@ -45,7 +45,9 @@
  * adopts the page: no OFF of its own goes over it, since the page would refuse
  * the port's next ON until the port lets go.  A wiring answered
  * LINK_NACK_BUSY, under an ESC_WIRE hold, is no refusal: the page's wiring stays
- * in force, and it is written again once a read shows the hold over.
+ * in force, and it is written again once a read shows the hold over.  A hold that
+ * ends with this end's wiring not written is followed by an OFF, then the wiring:
+ * an output left on would bar it.
  *
  * Pure C, no link of its own: the caller makes each exchange and reports
  * how it went.  Control task only.

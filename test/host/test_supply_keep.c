@@ -387,6 +387,79 @@ TEST_CASE(a_panel_started_under_a_hold_writes_no_off_of_its_own)
     CHECK_EQ(reg(LINK_SP_SET_MV), 7400u);
 }
 
+/*
+ * A hold adopted at the panel's first read, this end's wiring not written, and the
+ * hold ends.  ESC_WIRE's CLOSE has switched the output off (esc_port.c, cut_line());
+ * KST's LEAVE and Hitec's CLOSE leave it on (kst_port.c, hitec_port.c, close_port()).
+ * Either way: OFF, read, wiring, as at any start, with no ON lost and no silent
+ * supply after it.
+ */
+TEST_CASE(a_hold_over_with_the_wiring_not_written_ends_in_the_off)
+{
+    for (int leaves_on = 0; leaves_on < 2; ++leaves_on) {
+        bool on = true;
+        uint16_t mv = 0u;
+        uint16_t ma = 0u;
+
+        fresh();
+        supply_link_wire(&sl, &k_wired);
+        pump(true);
+        /* The hold, its ON, and a page that has wiring of its own to keep. */
+        supply_page_hold(&pg, true);
+        CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+        supply_link_init(&sl);
+        supply_link_wire(&sl, &k_wired);
+        far_step_and_read(true);
+        CHECK(sl.port_held);
+        CHECK(sl.commanded);
+        CHECK(!sl.wired);
+        CHECK(sl.on);
+        CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+        CHECK(on);
+        /* The hold ends. */
+        if (leaves_on == 0) {
+            CHECK(supply_page_port_set(&pg, false, 0u, 0u, true));
+        }
+        supply_page_hold(&pg, false);
+        far_step_and_read(true);
+        CHECK(!sl.on);
+        CHECK(sl.off_owed);
+        CHECK(supply_link_adopted(&sl, &on, &mv, &ma));
+        CHECK(!on);
+        pump(true);
+        pump(true);
+        CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+        CHECK(sl.wired);
+        CHECK(supply_link_settled(&sl));
+        CHECK_EQ(supply_link_events(&sl), 0u);
+        /* And an operator's ON works. */
+        supply_link_command(&sl, true, 7400u, 1000u);
+        pump(true);
+        CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    }
+}
+
+/* With this end's wiring in force the output stays: the port left it to the panel. */
+TEST_CASE(a_hold_over_with_the_wiring_written_leaves_the_on)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    pump(true);
+    supply_page_hold(&pg, true);
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    pump(true);
+    CHECK(sl.on);
+    const unsigned before = writes;
+
+    supply_page_hold(&pg, false);
+    pump(true);
+    pump(true);
+    CHECK_EQ(writes, before);
+    CHECK(sl.on);
+    CHECK(!sl.off_owed);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+}
+
 /* A refused wiring, not BUSY, under a port's ON: refused at once, and off. */
 TEST_CASE(a_refused_wiring_under_a_ports_on_is_refused_at_once)
 {
@@ -416,5 +489,7 @@ int main(void)
     RUN(a_busy_wiring_is_written_again_when_the_hold_is_over);
     RUN(a_panel_started_under_a_hold_writes_no_off_of_its_own);
     RUN(a_refused_wiring_under_a_ports_on_is_refused_at_once);
+    RUN(a_hold_over_with_the_wiring_not_written_ends_in_the_off);
+    RUN(a_hold_over_with_the_wiring_written_leaves_the_on);
     return test_summary("supply_keep");
 }

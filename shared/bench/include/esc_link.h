@@ -26,7 +26,12 @@
  * esc_link_stop() and esc_link_abort() go ahead of everything: a request whose
  * command has not gone is dropped, and the operation goes as soon as the page is
  * known and holds a pin.  A BAD_VALUE, a SEQ another writer moved, is followed by
- * a read and the operation again, ESC_LINK_URGENT_TRIES times at most.
+ * a read and the operation again, ESC_LINK_URGENT_TRIES times at most.  It is
+ * dropped on a free page only after a read answered since the ask.  It stays over
+ * a lost link.
+ *
+ * ESC_LINK_STATUS_FAILS failed reads of the page end a request.  With a hold in
+ * the last read that is an error, and the STOP goes.
  *
  * **After a panel restart** the page may hold a pin nobody here knows of: the
  * first read that shows one is followed by CLOSE, again every
@@ -274,6 +279,8 @@ typedef struct {
     /* STOP or ABORT. */
     uint8_t  urgent;     /**< the op owed, 0 for none                         */
     uint8_t  urgent_tries; /**< tries of it                                   */
+    uint8_t  urgent_read; /**< a read of the page was answered since the ask */
+    uint32_t stops_seen; /**< the stop count esc_link_stop_follow() has served */
     uint16_t last_seq;   /**< the SEQ of the last command sent                */
 
     /* The read copy on its way. */
@@ -414,6 +421,14 @@ esc_link_start_t esc_link_close(esc_link_t *l, uint32_t id);
  * @param l The module.
  */
 void esc_link_stop(esc_link_t *l);
+
+/**
+ * @brief The panel's stop count: a new one is esc_link_stop().  Taken only while
+ *        the IOmcu has the page, so a stop in a gap of the link reaches it after.
+ * @param l     The module.
+ * @param stops The stops counted so far.
+ */
+void esc_link_stop_follow(esc_link_t *l, uint32_t stops);
 
 /**
  * @brief The ABORT operation: cut at once, also in a write.

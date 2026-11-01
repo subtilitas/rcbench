@@ -14,6 +14,10 @@ history is in git.
   and an alert that names the slot or port. The STOP key is the page's STOP. `FAULT`
   and `NOT_BACK` count as errors, so all outputs go off. A held pin counts for ARM,
   the motor's TARGET row, ESC STICK and the limit run.
+  10 failed reads of the page over a hold are an error and a STOP. A STOP is sent
+  until a read answered since the ask shows a free page, and one pressed with the link
+  down goes when it is back. A hold that ends with this end's wiring not written gets
+  the OFF of any start, then the wiring.
 - Link 4.34: the pages `ESC_WIRE` (0x3A) and `ESC_DATA` (0x3B) read and write an
   ESC's settings over its signal wire, on the pin of a throttle slot or a DShot
   programming port, and the IOmcu reports `LINK_CAP_PROGRAM`. The output gets back

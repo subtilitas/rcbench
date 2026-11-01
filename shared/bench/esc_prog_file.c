@@ -62,7 +62,10 @@ void esc_prog_backup_follow(esc_prog_t *p)
     }
     const esc_link_image_t *im = &p->f.image;
 
-    if (!p->f.rd.held) {
+    /* HAVE_READ clears only at the page's ENTER (ew_session_hold()), never in a READ
+     * or a WRITE, so this is a new session on a pin still held. */
+    if (!p->f.rd.held || (p->f.rd.known
+                          && (p->f.rd.flags & LINK_EW_F_HAVE_READ) == 0u)) {
         p->backup_state = (uint8_t)ESC_PROG_BACKUP_NONE;
         return;
     }

@@ -46,8 +46,6 @@ static uint8_t            s_esc_answer;
 static uint32_t           s_esc_outcomes;
 /** @brief The last outcome handed out. */
 static esc_link_outcome_t s_esc_outcome;
-/** @brief The stops a STOP was sent for: arming_stop_count()'s count. */
-static uint32_t           s_esc_stops;
 
 /**
  * @brief Carry out one command.  No pin is taken on an armed bench: an OPEN is
@@ -144,12 +142,7 @@ __attribute__((noinline)) void esc_commands(void)
         }
         esc_command(&cmd);
     }
-    const uint32_t stops = arming_stop_count(&s_arm);
-
-    if (stops != s_esc_stops) {
-        s_esc_stops = stops;
-        esc_link_stop(&s_esc_link);
-    }
+    esc_link_stop_follow(&s_esc_link, arming_stop_count(&s_arm));
 }
 
 /**

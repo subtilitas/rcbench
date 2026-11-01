@@ -115,11 +115,12 @@ so nothing is shown but the alert below.
 | Registers 0 to 20 | every 5ms in a request, 100ms while a pin is held, 500ms while free |
 | First read after a panel restart, a pin held | CLOSE; again every 1000ms while the page answers `WRITING` or stays `NOT_BACK`. No request is taken until the page is free. |
 | A link that came back, no restart | nothing is closed |
-| The STOP key, or any stop the panel latches | the `STOP` operation, as soon as the page is known and holds a pin. A `BAD_VALUE`, a SEQ another writer moved: read, and again, 6 times at most. |
+| The STOP key, or any stop the panel latches | the `STOP` operation, as soon as the page is known and holds a pin; a stop in a gap of the link goes after it. A `BAD_VALUE`, a SEQ another writer moved: read, and again, 6 times at most. |
 | `FAULT` rises, or the state reaches `NOT_BACK` | an error: all outputs off (`prog_faults_follow()`). A `FAULT` standing on the first read after a link came up is not counted. |
 | The state reaches `NOT_BACK` | an alert naming the slot or port |
 | A pin held, any writer's | ARM on MOTOR and SERVO, the motor's TARGET row, ESC STICK, the limit run and the screenshot wait; an ARM asked and refused is dropped on MOTOR and SERVO |
 | A stop latched | no command but CLOSE, LEAVE and ABORT goes (`esc_prog_cmd_allowed()`) |
+| 10 reads of the page failed in a row, in a request | the request ends. With a hold in the last read: an error, and `STOP` |
 | A read copy with a new `READS` or `READ_CRC` | fetched in blocks and checked against `READ_CRC`, 3 tries |
 
 The SUPPLY page's half (`shared/bench/supply_link.c`) under a hold:
@@ -128,6 +129,7 @@ The SUPPLY page's half (`shared/bench/supply_link.c`) under a hold:
 |---|---|
 | Its first write after a start | none before a read. A hold found there is adopted; no OFF of its own goes over it. The operator's OFF and an error's cut stay. |
 | Its wiring, with the page answering `BUSY` | no refusal: the page's wiring counts as in force, and it is written again when a read shows the hold over |
+| A hold over, its wiring not written | OFF, read, wiring, as at any start; no ON counts as lost |
 | A wiring refused, not `BUSY`, with an ON a port holds | `ON_REFUSED` at once: an error, all outputs off |
 
 ## Current limitations

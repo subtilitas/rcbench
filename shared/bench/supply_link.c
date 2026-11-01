@@ -450,6 +450,15 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
         s->page_ma = 0xFFFFu;
     }
 
+    /* A hold over, this end's wiring not written: adopted at the first read, or
+     * answered BUSY.  An output left on would bar the wiring, and with no wiring
+     * no reading comes: the OFF, as at any other start.  No ON is lost by it. */
+    if (port && !s->port_held && !s->wired && !s->wire_wait && !s->refused) {
+        s->on = false;
+        s->off_owed = true;
+        s->adopted = true;
+    }
+
     if ((f & LINK_SP_STUCK) != 0u && (was & LINK_SP_STUCK) == 0u) {
         s->events |= SUPPLY_LINK_EV_STUCK;
     }

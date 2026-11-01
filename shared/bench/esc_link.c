@@ -411,6 +411,16 @@ static void ask_urgent(esc_link_t *l, link_esc_op_t op)
         l->urgent = (uint8_t)op;
     }
     l->urgent_tries = 0u;
+    l->urgent_read = 0u;
+    l->poll_now = 1u;
+}
+
+void esc_link_stop_follow(esc_link_t *l, uint32_t stops)
+{
+    if (l != NULL && l->up && l->has_page && stops != l->stops_seen) {
+        l->stops_seen = stops;
+        esc_link_stop(l);
+    }
 }
 
 void esc_link_stop(esc_link_t *l)
@@ -653,14 +663,17 @@ bool esc_link_next(esc_link_t *l, uint32_t now_ms, esc_link_xfer_t *x)
     }
     /* What a stop asks first. */
     if (l->urgent != 0u) {
-        /* A request under way may have taken a pin the last read did not show. */
-        if (l->status[LINK_EW_STATE] == (uint16_t)LINK_ESC_FREE && !l->active) {
-            l->urgent = 0u;
-        } else {
+        /* A request under way may have taken a pin the last read did not show;
+         * and a free page counts only from a read answered since the ask. */
+        if (l->status[LINK_EW_STATE] != (uint16_t)LINK_ESC_FREE || l->active) {
             command_frame(l, l->urgent, x);
             l->pending = X_URGENT;
             return true;
         }
+        if (!l->urgent_read) {
+            return status_read(l, x);
+        }
+        l->urgent = 0u;
     }
     /* The pin nobody here knows of, after a panel restart. */
     if (l->close_owed && !l->active
@@ -711,16 +724,24 @@ void esc_link_done(esc_link_t *l, int result, const uint16_t *regs)
     case X_STATUS:
         if (result == ESC_LINK_ACK && regs != NULL) {
             l->status_fails = 0u;
+            l->urgent_read = 1u;
             absorb(l, regs);
             if (l->active && (l->verdict || l->doubt || l->taken)) {
                 judge(l);
             }
         } else if (l->active && ++l->status_fails >= ESC_LINK_STATUS_FAILS) {
-            /* Other pages may still answer, so no link loss ends this. */
+            /* Other pages may still answer, so no link loss ends this.  Over a
+             * hold it is an error: no session runs on unwatched. */
+            const bool held = l->status[LINK_EW_STATE] != (uint16_t)LINK_ESC_FREE;
+
             l->status_fails = 0u;
-            finish(l, result == ESC_LINK_NO_ANSWER ? ESC_LINK_OUT_NO_ANSWER
-                                                   : ESC_LINK_OUT_NACK,
-                   result == ESC_LINK_NO_ANSWER ? 0u : (uint8_t)result);
+            finish(l, held || result == ESC_LINK_NO_ANSWER
+                          ? ESC_LINK_OUT_NO_ANSWER : ESC_LINK_OUT_NACK,
+                   held || result == ESC_LINK_NO_ANSWER ? 0u : (uint8_t)result);
+            if (held) {
+                ++l->faults;
+                esc_link_stop(l);
+            }
         }
         break;
     case X_FRAME:
@@ -838,7 +859,8 @@ void esc_link_lost(esc_link_t *l)
     l->poll_now = 0u;
     l->pending = X_NONE;
     l->ours = 0u;
-    l->urgent = 0u;
+    /* A stop owed stays: the first read after the link came up decides it. */
+    l->urgent_read = 0u;
     l->fetching = 0u;
     l->fetch_given_up = 0u;
     l->close_timed = 0u;
@@ -854,6 +876,9 @@ void esc_link_came_up(esc_link_t *l, uint16_t minor)
     l->up = 1u;
     l->minor = minor;
     l->has_page = minor >= ESC_LINK_MINOR ? 1u : 0u;
+    if (!l->has_page) {
+        l->urgent = 0u;
+    }
     l->known = 0u;
     l->polled = 0u;
     l->poll_now = 0u;

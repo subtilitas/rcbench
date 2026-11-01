@@ -424,38 +424,210 @@ TEST_CASE(a_stop_with_a_command_unanswered)
     CHECK(esc_port_state(&g_p) != LINK_ESC_OPEN || flag(LINK_EW_F_STOPPED));
 }
 
-/* Reads of the page that fail, other pages answering: a request has an end. */
-TEST_CASE(failed_reads_of_the_page_end_a_request)
+/* @p n reads of the page answered with @p result, 5ms apart. */
+static void reads_fail(unsigned n, int result)
+{
+    esc_link_xfer_t x;
+
+    for (unsigned i = 0u; i < n; ++i) {
+        esc.now += 5000u;
+        CHECK(esc_link_next(&g_l, esc.now / 1000u, &x));
+        CHECK(!x.write);
+        esc_link_done(&g_l, result, NULL);
+    }
+}
+
+/* Reads of the page that fail, other pages answering, a session held: an error, and
+ * the STOP.  It does not run on to READY with the supply on. */
+TEST_CASE(failed_reads_over_a_hold_are_an_error_and_a_stop)
 {
     esc_link_outcome_t o;
-    esc_link_xfer_t x;
 
     up_am_rig();
     link_up();
     link_ready(2u);
     CHECK_EQ(esc_link_read(&g_l, 5u), ESC_LINK_START_OK);
     link_run(5u);
-    for (unsigned i = 0u; i < ESC_LINK_STATUS_FAILS; ++i) {
-        CHECK(!esc_link_outcome(&g_l, &o));
-        esc.now += 5000u;
-        CHECK(esc_link_next(&g_l, esc.now / 1000u, &x));
-        CHECK(!x.write);
-        esc_link_done(&g_l, LINK_NACK_BUSY, NULL);
+    CHECK_EQ(esc_link_faults(&g_l), 0u);
+    reads_fail(ESC_LINK_STATUS_FAILS - 1u, LINK_NACK_BUSY);
+    CHECK(!esc_link_outcome(&g_l, &o));
+    reads_fail(1u, LINK_NACK_BUSY);
+    CHECK(esc_link_outcome(&g_l, &o));
+    CHECK_EQ(o.kind, ESC_LINK_OUT_NO_ANSWER);
+    CHECK_EQ(o.nack, 0u);
+    CHECK_EQ(esc_link_faults(&g_l), 1u);
+    /* A second request waits for the STOP. */
+    CHECK_EQ(esc_link_read(&g_l, 6u), ESC_LINK_START_BUSY);
+    link_run(10u);
+    CHECK_EQ(reg(LINK_EW_OP), LINK_ESC_OP_STOP);
+    CHECK(flag(LINK_EW_F_STOPPED));
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_OPEN);
+    CHECK(!g.v.asked_on);
+}
+
+/* A write gets no exception, and the page takes the STOP at its read-back. */
+TEST_CASE(failed_reads_over_a_write_are_an_error_and_a_stop)
+{
+    esc_link_outcome_t o;
+    static uint8_t pg[ESC_LINK_PAGE_MAX];
+    const esc_link_image_t *im = esc_link_image(&g_l);
+
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    CHECK_EQ(esc_link_read(&g_l, 5u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 20000u));
+    link_run(100u);
+    memcpy(pg, im->page, im->len);
+    pg[0x18] = 48u;
+    const int cmds = g_commands;
+
+    CHECK_EQ(esc_link_write(&g_l, pg, im->len, im->reads, im->read_crc, 6u),
+             ESC_LINK_START_OK);
+    for (int i = 0; i < 400 && g_commands == cmds; ++i) {
+        (void)esc_link_service(&g_l, esc.now / 1000u, link_xchg, NULL);
     }
+    CHECK_EQ(g_commands, cmds + 1);
+    link_run(5u);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_RUN);
+    g_drop = 1000000;
+    bool got = false;
+
+    for (int ms = 0; ms < 5000 && !got; ms += 5) {
+        link_run(5u);
+        got = esc_link_outcome(&g_l, &o);
+    }
+    CHECK(got);
+    CHECK_EQ(o.kind, ESC_LINK_OUT_NO_ANSWER);
+    CHECK_EQ(o.op, LINK_ESC_OP_WRITE);
+    CHECK_EQ(esc_link_faults(&g_l), 1u);
+    g_drop = 0;
+    link_run(10000u);
+    CHECK_EQ(reg(LINK_EW_OP), LINK_ESC_OP_STOP);
+    CHECK(flag(LINK_EW_F_STOPPED));
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_OPEN);
+}
+
+/* With no hold in the last read: the request ends, and no error is said. */
+TEST_CASE(failed_reads_on_a_free_page_end_the_request)
+{
+    esc_link_outcome_t o;
+    esc_link_xfer_t x;
+
+    up_am_rig();
+    link_up();
+    /* A CLEAR on a free page, its answer in: the reads fail. */
+    CHECK_EQ(esc_link_clear(&g_l, 4u), ESC_LINK_START_OK);
+    CHECK(esc_link_next(&g_l, esc.now / 1000u, &x));
+    esc_link_done(&g_l, ESC_LINK_ACK, NULL);
+    reads_fail(ESC_LINK_STATUS_FAILS, LINK_NACK_BUSY);
     CHECK(esc_link_outcome(&g_l, &o));
     CHECK_EQ(o.kind, ESC_LINK_OUT_NACK);
     CHECK_EQ(o.nack, LINK_NACK_BUSY);
-    /* And unanswered reads the same, the count starting over after a good one. */
+    CHECK_EQ(esc_link_faults(&g_l), 0u);
+    link_run(500u);
+    /* One read short of the limit, then a good one: the page answers the request. */
+    CHECK_EQ(esc_link_clear(&g_l, 5u), ESC_LINK_START_OK);
+    CHECK(esc_link_next(&g_l, esc.now / 1000u, &x));
+    esc_link_done(&g_l, link_xchg(NULL, &x, NULL), NULL);
+    reads_fail(ESC_LINK_STATUS_FAILS - 1u, ESC_LINK_NO_ANSWER);
+    CHECK(!esc_link_outcome(&g_l, &o));
     link_run(100u);
-    CHECK_EQ(esc_link_read(&g_l, 6u), ESC_LINK_START_OK);
-    link_run(5u);
-    for (unsigned i = 0u; i < ESC_LINK_STATUS_FAILS; ++i) {
-        esc.now += 5000u;
-        CHECK(esc_link_next(&g_l, esc.now / 1000u, &x));
-        esc_link_done(&g_l, ESC_LINK_NO_ANSWER, NULL);
+    CHECK(esc_link_outcome(&g_l, &o));
+    CHECK_EQ(o.kind, ESC_LINK_OUT_REFUSED);
+    CHECK_EQ(g_l.status_fails, 0u);
+}
+
+/* OPEN taken with its answer lost, then reads that fail, and a stop: FREE in the old
+ * read does not decide it.  The page's stop latch stands. */
+TEST_CASE(a_stop_is_decided_by_a_read_since_the_ask)
+{
+    esc_link_outcome_t o;
+    esc_link_xfer_t x;
+
+    up_am_rig();
+    link_up();
+    CHECK_EQ(esc_link_open(&g_l, 2u, 1u), ESC_LINK_START_OK);
+    g_drop_cmd = 3;
+    for (int i = 0; i < 40 && g_drop_cmd > 0; ++i) {
+        (void)esc_link_service(&g_l, esc.now / 1000u, link_xchg, NULL);
     }
+    CHECK_EQ(g_drop_cmd, 0);
+    CHECK(esc_link_next(&g_l, esc.now / 1000u, &x));
+    CHECK(!x.write);
+    esc_link_done(&g_l, ESC_LINK_NO_ANSWER, NULL);
+    reads_fail(ESC_LINK_STATUS_FAILS - 1u, ESC_LINK_NO_ANSWER);
     CHECK(esc_link_outcome(&g_l, &o));
     CHECK_EQ(o.kind, ESC_LINK_OUT_NO_ANSWER);
+    /* The last read said FREE: no error; the page runs its OPEN. */
+    CHECK_EQ(esc_link_faults(&g_l), 0u);
+    run_ms(200u);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_OPEN);
+    /* The stop, with reads still failing: asked, kept. */
+    esc_link_stop(&g_l);
+    reads_fail(4u, ESC_LINK_NO_ANSWER);
+    CHECK_EQ(g_l.urgent, LINK_ESC_OP_STOP);
+    CHECK(!flag(LINK_EW_F_STOPPED));
+    /* The first read answered decides. */
+    link_run(10u);
+    CHECK_EQ(reg(LINK_EW_OP), LINK_ESC_OP_STOP);
+    CHECK(flag(LINK_EW_F_STOPPED));
+    CHECK_EQ(g_l.urgent, 0u);
+    /* On a page that is free indeed it goes unsent. */
+    up_am_rig();
+    link_up();
+    const int cmds = g_commands;
+
+    esc_link_stop(&g_l);
+    reads_fail(2u, ESC_LINK_NO_ANSWER);
+    CHECK_EQ(g_l.urgent, LINK_ESC_OP_STOP);
+    link_run(5u);
+    CHECK_EQ(g_l.urgent, 0u);
+    CHECK_EQ(g_commands, cmds);
+}
+
+/* A stop in a gap of the link, under the IOmcu's 200ms: it reaches the page after. */
+TEST_CASE(a_stop_in_a_gap_of_the_link_reaches_the_page)
+{
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    esc_link_stop_follow(&g_l, 0u);
+    run_ms(1u);
+    CHECK_EQ(g_l.urgent, 0u);
+    esc_link_lost(&g_l);
+    esc_link_stop_follow(&g_l, 1u);
+    CHECK_EQ(g_l.urgent, 0u);
+    CHECK_EQ(g_l.stops_seen, 0u);
+    run_ms(100u);
+    CHECK(!flag(LINK_EW_F_STOPPED));
+    esc_link_came_up(&g_l, ESC_LINK_MINOR);
+    esc_link_stop_follow(&g_l, 1u);
+    CHECK_EQ(g_l.stops_seen, 1u);
+    link_run(10u);
+    CHECK_EQ(reg(LINK_EW_OP), LINK_ESC_OP_STOP);
+    CHECK(flag(LINK_EW_F_STOPPED));
+    /* Once. */
+    const int cmds = g_commands;
+
+    esc_link_stop_follow(&g_l, 1u);
+    link_run(200u);
+    CHECK_EQ(g_commands, cmds);
+    /* One owed as the link went stays: the first read after decides. */
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    esc_link_stop(&g_l);
+    esc_link_lost(&g_l);
+    esc_link_came_up(&g_l, ESC_LINK_MINOR);
+    link_run(10u);
+    CHECK_EQ(reg(LINK_EW_OP), LINK_ESC_OP_STOP);
+    /* To an IOmcu with no page it does not stand. */
+    esc_link_stop(&g_l);
+    esc_link_lost(&g_l);
+    esc_link_came_up(&g_l, ESC_LINK_MINOR - 1u);
+    CHECK_EQ(g_l.urgent, 0u);
+    esc_link_stop_follow(NULL, 1u);
 }
 
 /* NOT_BACK from any CLOSE, no restart: the text says CLOSE tries again. */
@@ -527,7 +699,11 @@ int main(void)
     RUN(a_refusal_is_said_as_the_page_says_it);
     RUN(errors_count_on_their_edge);
     RUN(a_stop_with_a_command_unanswered);
-    RUN(failed_reads_of_the_page_end_a_request);
+    RUN(failed_reads_over_a_hold_are_an_error_and_a_stop);
+    RUN(failed_reads_over_a_write_are_an_error_and_a_stop);
+    RUN(failed_reads_on_a_free_page_end_the_request);
+    RUN(a_stop_is_decided_by_a_read_since_the_ask);
+    RUN(a_stop_in_a_gap_of_the_link_reaches_the_page);
     RUN(not_back_tries_again_without_a_restart);
     RUN(the_read_copy_goes_with_its_session);
     return test_summary("esc_link");
