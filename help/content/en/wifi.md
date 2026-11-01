@@ -129,7 +129,7 @@ A failed join offers ACCESS POINT. WI-FI OFF switches the radio off.
 
 ## The access code
 
-The browser page asks for a code before it lists a file, changes the card or takes an upload. The screen shows the code. With WEB CODE at RANDOM it has 8 characters and is new at every start of the radio, so a code from an earlier session opens nothing. With WEB CODE kept that does not hold: the code stays valid until you change it, for a browser that kept it and for anyone who saw it. Over plain HTTP on a home network it crosses the network unencrypted. 16 wrong codes switch the radio off, for a kept code as well. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the panel.
+The browser page asks for a code before it lists a file, changes the card or takes an upload. The screen shows the code. With WEB CODE at RANDOM it has 8 characters and is new at every start of the radio, so a code from an earlier session opens nothing. With WEB CODE kept that does not hold: the code stays valid until you change it, for a browser that kept it and for anyone who saw it. Over plain HTTP on a home network it crosses the network unencrypted. 16 wrong codes switch the radio off, for a kept code as well. A wrong code in the entry counts every time. A wrong code in a browser's cookie counts once, so a tab left open from an earlier code does not use up the 16. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2s hold on the panel.
 
 ## Browser writes
 
