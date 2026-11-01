@@ -72,6 +72,11 @@ typedef struct {
     uint8_t  held[256];
     bool     have_data;
     bool     swallowed;    /* AM32: data ran into the announcement's message */
+    /* What AM32 does after answering 0xC2 to a cut block is not stated: a test
+     * chooses.  Set, it says nothing more until a power cycle. */
+    bool     mute_after_cut;
+    bool     mute_next;    /* mute_after_cut's turn has come */
+    int      collisions;   /* a 0xC2 lay under the host's own data */
     bool     leave_sent;   /* a leave frame went */
     uint32_t leave_end;    /* its last stop bit's end */
     int      leave_unsettled; /* the line went low too soon after it */
@@ -316,6 +321,10 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
     if (faulted && saved == F_DEAD) {
         e->dead = true;
     }
+    if (e->mute_next) {
+        e->mute_next = false;
+        e->dead = true;
+    }
     const uint32_t bit_us = 52u;
     const uint32_t send_us = ((uint32_t)x->n_tx * 10u + x->pause_bits) * bit_us;
 
@@ -330,10 +339,17 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
             e->dead = true;
         } else if (e->swallowed) {
             /* AM32 still waits for data: a message that ends short of them
-             * is a cut block. */
+             * is a cut block, answered 0xC2.  Behind an announcement that
+             * answer runs from about 0.3ms to 0.87ms into the host's pause and
+             * data, so the host, sending, cannot read it. */
             e->swallowed = false;
             e->announced = 0u;
-            sim_say1(e, EW_A_REF_CRC);
+            e->mute_next = e->mute_after_cut;
+            if (x->n_head != 0u) {
+                e->collisions++;
+            } else {
+                sim_say1(e, EW_A_REF_CRC);
+            }
         } else if (x->n_head != 0u && e->kind == SIM_AM
                    && (uint32_t)x->pause_bits * bit_us <= SIM_AM_IDLE_US) {
             /* The data run into the announcement's message and are lost; the
@@ -532,6 +548,7 @@ static void sim_power_cycle(sim_t *e)
     e->announced = 0u;
     e->have_data = false;
     e->swallowed = false;
+    e->mute_next = false;
     e->fail = F_NONE;
     if (e->kind == SIM_EFM8) {
         uint8_t *p = e->flash + e->base;

@@ -198,7 +198,11 @@ this file comes from the specification or is a host's choice:
   raise an open-drain answer at 52us a bit;
 - the state of the power stage in the bootloaders; the effect of a missing
   motor on entry;
-- the 520us between an announcement and its data, and the 234us it clears.
+- the 520us between an announcement and its data, and the 234us it clears;
+- what an AM32 does after it answered 0xC2 to a cut data block: the specification
+  does not state it. Such an answer behind an announcement lies under the host's
+  own data and is not read, so the session sees no answer on that try. The tests
+  hold the session for an ESC that says nothing more and for one that listens on.
 
 ## Trademarks
 
