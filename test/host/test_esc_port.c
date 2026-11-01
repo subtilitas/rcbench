@@ -21,6 +21,10 @@ TEST_CASE(init_needs_every_hook)
     CHECK(!esc_port_init(&g_p, &hw));
     hw = (esc_port_hw_t){ .ports = 1u };
     CHECK(!esc_port_init(&g_p, &hw));
+    rig_up();
+    hw = g_p.hw;
+    hw.others_off = NULL;
+    CHECK(!esc_port_init(&g_p, &hw));
     CHECK_EQ(esc_port_state(NULL), LINK_ESC_FREE);
     CHECK_EQ(esc_port_quiet_mask(NULL), 0u);
     CHECK_EQ(esc_port_pin_mask(NULL), 0u);
@@ -80,6 +84,14 @@ TEST_CASE(a_slot_goes_to_the_line_and_comes_back)
     CHECK_EQ(reg(LINK_EW_TARGET), 0u);
     /* The supply was never touched by a session with no ENTER. */
     CHECK_EQ(g.ons + g.offs, 0);
+    CHECK_EQ(result(), LINK_ESC_RESULT_DONE);
+    /* An output that does not take its pin back says so; the page is free. */
+    open_target(2u);
+    g.give_refused = true;
+    CHECK_EQ(cmd(LINK_ESC_OP_CLOSE), 0u);
+    CHECK_EQ(result(), LINK_ESC_RESULT_NOT_BACK);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_FREE);
+    CHECK_EQ(reg(LINK_EW_TARGET), 0u);
 }
 
 TEST_CASE(a_port_goes_to_the_line_and_comes_back)
@@ -350,6 +362,66 @@ TEST_CASE(a_switched_entry_in_its_order)
     CHECK(flag(LINK_EW_F_WRITABLE));
 }
 
+TEST_CASE(the_hold_counts_from_the_supply_reading_on)
+{
+    up_am_rig();
+    open_target(2u);
+    ST_REG(LINK_EW_W_OFF_MS) = 0u;
+    ST_REG(LINK_EW_W_HOLD_LO) = 500u;
+    (void)stage();
+    g.on_lag_ms = 800u;
+    (void)cmd(LINK_ESC_OP_ENTER);
+    run_while(LINK_ESC_POWER_OFF, 5000u);
+    run_while(LINK_ESC_LEAD, 200u);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_POWER_ON);
+    CHECK_EQ(line_word(), LINK_ESC_LINE_HIGH);
+    const uint32_t ask = g.on_at;
+
+    while (esc.starts == 0 && esc.now - ask < 5000000u) {
+        pass();
+    }
+    /* 800ms to read on, 500ms held after that. */
+    CHECK(esc.first_tx_at - ask >= 1299000u);
+    CHECK(esc.first_tx_at - ask <= 1302000u);
+    /* Read off from then on is a loss at once. */
+    g.on_lag_ms = 0u;
+    g.never_on = true;
+    g.v.off = true;
+    pass();
+    CHECK(flag(LINK_EW_F_FAULT));
+    CHECK_EQ(result(), LINK_ESC_RESULT_SUPPLY);
+    /* Never reads on: 3000ms, and no frame. */
+    up_am_rig();
+    open_target(2u);
+    ST_REG(LINK_EW_W_OFF_MS) = 0u;
+    (void)stage();
+    g.never_on = true;
+    (void)cmd(LINK_ESC_OP_ENTER);
+    run_while(LINK_ESC_POWER_OFF, 5000u);
+    run_while(LINK_ESC_LEAD, 200u);
+    const uint32_t t0 = g.on_at;
+
+    run_while(LINK_ESC_POWER_ON, 5000u);
+    CHECK(esc.now - t0 >= (ESC_PORT_READ_ON_MAX_MS - 1u) * 1000u);
+    CHECK(esc.now - t0 <= (ESC_PORT_READ_ON_MAX_MS + 1u) * 1000u);
+    CHECK_EQ(result(), LINK_ESC_RESULT_SUPPLY);
+    CHECK_EQ(esc.starts, 0);
+    CHECK_EQ(esc.line, EW_LINE_PARK);
+    CHECK(!g.v.asked_on);
+    /* The panel's OFF while it waits. */
+    up_am_rig();
+    open_target(2u);
+    ST_REG(LINK_EW_W_OFF_MS) = 0u;
+    (void)stage();
+    g.never_on = true;
+    (void)cmd(LINK_ESC_OP_ENTER);
+    run_while(LINK_ESC_POWER_OFF, 5000u);
+    run_while(LINK_ESC_LEAD, 200u);
+    g.v.asked_on = false;
+    pass();
+    CHECK_EQ(result(), LINK_ESC_RESULT_SUPPLY);
+}
+
 TEST_CASE(a_supply_that_will_not_read_off_or_refuses_on)
 {
     up_am_rig();
@@ -489,6 +561,7 @@ int main(void)
     RUN(a_frame_or_window_the_page_does_not_take);
     RUN(every_refusal_of_an_enter);
     RUN(a_switched_entry_in_its_order);
+    RUN(the_hold_counts_from_the_supply_reading_on);
     RUN(a_supply_that_will_not_read_off_or_refuses_on);
     RUN(by_hand_waits_for_done_and_for_no_longer);
     RUN(a_leave_with_the_supply_after_it);

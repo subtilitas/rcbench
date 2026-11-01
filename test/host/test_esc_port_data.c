@@ -46,8 +46,16 @@ TEST_CASE(a_read_and_a_write_of_am32)
     CHECK_EQ(esc_port_state(&g_p), LINK_ESC_READY);
     CHECK_EQ(esc.am[0x18], 48u);
     CHECK_EQ(esc.programs, 1);
-    /* A draft equal to the page: no frame. */
+    /* The write's read-back is the read copy: its name moved, and a draft of the
+     * page before it is stale. */
+    CHECK_EQ(reg(LINK_EW_READS), 2u);
+    CHECK_EQ(reg(LINK_EW_READ_CRC), link_crc(LINK_CRC_INIT, esc.am, EW_MAP_LEN_AM));
+    (void)stage();
+    CHECK_EQ(cmd_full(LINK_ESC_OP_WRITE, LINK_ESC_WRITE_KEY, false), 0u);
+    CHECK_EQ(refusal(), LINK_ESC_REF_STALE);
+    /* A draft equal to the page: no frame, and the name stays. */
     read_now();
+    const uint16_t reads = reg(LINK_EW_READS);
     const int starts = esc.starts;
 
     memcpy(g_page, esc.am, EW_MAP_LEN_AM);
@@ -55,6 +63,7 @@ TEST_CASE(a_read_and_a_write_of_am32)
     CHECK_EQ(result(), LINK_ESC_RESULT_DONE);
     CHECK_EQ(esc_port_state(&g_p), LINK_ESC_READY);
     CHECK_EQ(esc.starts, starts);
+    CHECK_EQ(reg(LINK_EW_READS), reads);
 }
 
 TEST_CASE(a_write_refused_before_any_frame)
@@ -167,11 +176,15 @@ TEST_CASE(the_supply_holds_for_a_write_and_its_tail)
     const uint32_t t0 = esc.now;
 
     CHECK(esc_port_writing(&g_p));
+    (void)cmd(LINK_ESC_OP_LEAVE);
+    CHECK_EQ(refusal(), LINK_ESC_REF_WRITING);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_READY);
     while (esc_port_writing(&g_p) && esc.now - t0 < 1000000u) {
         pass();
     }
     CHECK(esc.now - t0 >= (ESC_PORT_WRITE_TAIL_MS - 1u) * 1000u);
     CHECK(esc.now - t0 <= (ESC_PORT_WRITE_TAIL_MS + 1u) * 1000u);
+    /* LEAVE waits for the same tail; here it has run out. */
     CHECK_EQ(cmd_full(LINK_ESC_OP_CLOSE, LINK_ESC_WRITE_KEY, false), 0u);
     CHECK_EQ(refusal(), LINK_ESC_REF_NONE);
     CHECK_EQ(esc_port_state(&g_p), LINK_ESC_FREE);

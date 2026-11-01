@@ -43,6 +43,7 @@ static int      g_binds, g_releases;
 static uint8_t  g_bind_pin, g_release_pin;
 static uint16_t g_bind_kbit;
 static bool     g_bind_bidir;
+static bool     g_bind_refused;
 
 bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
 {
@@ -50,7 +51,7 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
     g_bind_pin = pin;
     g_bind_kbit = rate_kbit;
     g_bind_bidir = bidirectional;
-    return true;
+    return !g_bind_refused;
 }
 
 void out_dshot_release(uint8_t pin)
@@ -302,13 +303,27 @@ TEST_CASE(a_held_slot_is_let_go_alone_and_comes_back_the_same)
     outputs_hw_apply_only(&g_bank, rate, 0xFEu);
     CHECK_EQ(g_releases + g_binds, 0);
     /* Back: its pin, its rate, its kind; slot 1 stays. */
-    outputs_hw_apply_only(&g_bank, rate, 0xFFu);
+    CHECK(outputs_hw_return_slot(&g_bank, rate, 0u));
     CHECK(outputs_hw_bound(0u));
     CHECK_EQ(g_binds, 1);
     CHECK_EQ(g_releases, 0);
     CHECK_EQ(g_bind_pin, 2u);
     CHECK_EQ(g_bind_kbit, 600u);
     CHECK(g_bind_bidir);
+    /* Bound already: nothing to do.  A bad argument, a bind that fails. */
+    g_binds = 0;
+    CHECK(outputs_hw_return_slot(&g_bank, rate, 0u));
+    CHECK_EQ(g_binds, 0);
+    CHECK(!outputs_hw_return_slot(NULL, rate, 0u));
+    CHECK(!outputs_hw_return_slot(&g_bank, NULL, 0u));
+    CHECK(!outputs_hw_return_slot(&g_bank, rate, OUT_MAX_SLOTS));
+    outputs_hw_apply_only(&g_bank, rate, 0xFEu);
+    g_bind_refused = true;
+    CHECK(!outputs_hw_return_slot(&g_bank, rate, 0u));
+    g_bind_refused = false;
+    CHECK(!outputs_hw_bound(0u));
+    /* An empty slot stays unbound. */
+    CHECK(!outputs_hw_return_slot(&g_bank, rate, 5u));
 }
 
 int main(void)

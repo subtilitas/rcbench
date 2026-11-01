@@ -10,7 +10,7 @@
  * | Event | Line | Supply | After |
  * |---|---|---|---|
  * | ARM asked, free | the output's | as it is | OPEN refused while asked |
- * | ARM asked, held | as it was | as it was | the bank stays SAFE (bit in the quiet mask) |
+ * | ARM asked, held | as it was | as it was | refused (safety_gate_hold_refuses_arm()); the quiet mask holds the bank down as well |
  * | STOP, no write | PARK at once | OFF | held, STOPPED |
  * | STOP in a write | as the write needs, to its read-back, then PARK | panel's OFF waits, then OFF | held, STOPPED |
  * | ABORT | PARK at once, also in a write | OFF | held |
@@ -22,7 +22,7 @@
  * guard refusal, a supply that fails, a BY HAND wait that runs out.  The session
  * itself keeps an ESC in its mode after EW_SES_ERR_TORN and EW_SES_ERR_LOST, so
  * that a repair can follow; the port does not: all_off() aborts the session,
- * which parks the line, and switches the supply off.  A repair is a new ENTER and
+ * which parks the line, and switches the PD mini and PROG_SUPPLY off.  A repair is a new ENTER and
  * a new read.  What the power loss costs a half-written page, by the
  * specification: family S and Bluejay lose 48 tag bytes and read read-only, AM32
  * stays erased until RESTORE (docs/LinkEsc.md, Current limitations).
@@ -51,6 +51,8 @@ extern "C" {
 #define ESC_PORT_READ_OFF_MIN_MS 250u
 /** @brief The supply has this long to read off, ms. */
 #define ESC_PORT_READ_OFF_MAX_MS 3000u
+/** @brief The supply has this long to read on, ms. */
+#define ESC_PORT_READ_ON_MAX_MS 3000u
 /** @brief The line is driven high this long before ON, ms. */
 #define ESC_PORT_LEAD_MS 50u
 /** @brief BY HAND: the line is driven high at most this long, ms. */
@@ -72,12 +74,15 @@ typedef struct {
     /** Take the pin from its output and open the wire on it, parked.  False
      *  when the line gets no resources; give() returns the pin. */
     bool (*take)(void *ctx, uint8_t pin);
-    /** Close the line and give the pin back as its output had it. */
-    void (*give)(void *ctx);
+    /** Close the line and give the pin back as its output had it, moving nothing
+     *  else.  False when its output did not take it back. */
+    bool (*give)(void *ctx);
     /** What the supply says now; the build's PD mini. */
     void (*supply)(void *ctx, supply_port_view_t *out);
     /** Ask the supply on at @p mv and @p ma, or off.  False when not taken. */
     bool (*supply_set)(void *ctx, bool on, uint16_t mv, uint16_t ma);
+    /** An error: every other supply of the bench off (PROG_SUPPLY). */
+    void (*others_off)(void *ctx);
     ew_driver_t driver; /**< the wire driver; now_us() works while closed   */
 } esc_port_hw_t;
 
@@ -116,7 +121,6 @@ typedef struct {
     bool     by_hand;                /**< ENTER's power                     */
     bool     switched;               /**< this session asked the supply on  */
     bool     off_seen;               /**< POWER_OFF: the supply read off    */
-    bool     read_on;                /**< the supply read on since its ON   */
     bool     was_writing;            /**< the session wrote at the last step */
     bool     tail;                   /**< ESC_PORT_WRITE_TAIL_MS runs       */
 } esc_port_t;

@@ -109,6 +109,7 @@ typedef enum {
     LINK_ESC_HAND_WAIT,   /**< ENTER BY HAND: the line high, waits for DONE  */
     LINK_ESC_RUN,         /**< an operation of the session runs              */
     LINK_ESC_READY,       /**< the ESC answered; nothing runs                */
+    LINK_ESC_POWER_ON,    /**< ENTER: ON asked, waits for it to read on      */
     LINK_ESC_STATE_COUNT  /**< states                                        */
 } link_esc_state_t;
 
@@ -142,6 +143,8 @@ typedef enum {
     LINK_ESC_RESULT_TIMEOUT,  /**< BY HAND: no DONE in time                  */
     LINK_ESC_RESULT_CUT,      /**< ABORT, STOP or a stop ended it            */
     LINK_ESC_RESULT_SESSION,  /**< the session ended on LINK_EW_SES          */
+    LINK_ESC_RESULT_NOT_BACK, /**< CLOSE: the output did not take the pin back;
+                                   the page is free, the output unbound      */
 } link_esc_result_t;
 
 /** @brief Why a command started nothing. */
@@ -161,7 +164,7 @@ typedef enum {
     LINK_ESC_REF_NO_SUPPLY, /**< SWITCHED: no PD mini answers                */
     LINK_ESC_REF_STALE,     /**< the draft was not made from this read copy  */
     LINK_ESC_REF_DRAFT,     /**< the draft does not have the CRC             */
-    LINK_ESC_REF_WRITING,   /**< CLOSE while a write runs                    */
+    LINK_ESC_REF_WRITING,   /**< CLOSE or LEAVE while a write runs or its tail */
     LINK_ESC_REF_SESSION,   /**< the session refused: LINK_EW_SES            */
 } link_esc_ref_t;
 

@@ -147,21 +147,24 @@ static void go(esc_port_t *p, link_esc_state_t state)
 /**
  * @brief Back to free: the line closed, the pin its output's.
  * @param p the port
+ * @return false when its output did not take the pin back
  */
-static void go_free(esc_port_t *p)
+static bool go_free(esc_port_t *p)
 {
     const bool had_pin = p->has_pin;
+    bool back = true;
 
     go(p, LINK_ESC_FREE);
     p->has_pin = false;
     p->stopped = false;
     p->fault = false;
     p->tail = false;
-    p->target = 0u;
     p->line = (uint8_t)LINK_ESC_LINE_PARK;
     if (had_pin) {
-        p->hw.give(p->hw.ctx);
+        back = p->hw.give(p->hw.ctx);
     }
+    p->target = 0u;
+    return back;
 }
 
 /**
@@ -184,6 +187,7 @@ static void all_off(esc_port_t *p, link_esc_result_t result)
 {
     ew_session_abort(&p->ses);
     supply_off(p);
+    p->hw.others_off(p->hw.ctx);
     p->fault = true;
     p->stopped = true;
     p->tail = false;
@@ -198,7 +202,7 @@ static void all_off(esc_port_t *p, link_esc_result_t result)
 static void cut(esc_port_t *p)
 {
     if (p->state == (uint8_t)LINK_ESC_STOPPING) {
-        go_free(p);
+        (void)go_free(p);
         p->result = (uint8_t)LINK_ESC_RESULT_CUT;
     } else if (in_session(p)) {
         ew_session_abort(&p->ses);
@@ -258,9 +262,16 @@ static void op_end(esc_port_t *p, ew_ses_t r)
         return;
     }
     p->result = (uint8_t)LINK_ESC_RESULT_DONE;
-    if (p->op == (uint8_t)LINK_ESC_OP_READ) {
+    /* A write's read-back is the read copy now: a draft of the page before it is
+     * stale.  A draft equal to the page changes nothing and keeps its name. */
+    const uint16_t crc = bytes_crc(p->ses.orig, p->ses.id.len);
+
+    if (p->op == (uint8_t)LINK_ESC_OP_READ
+        || ((p->op == (uint8_t)LINK_ESC_OP_WRITE
+             || p->op == (uint8_t)LINK_ESC_OP_RESTORE)
+            && crc != p->read_crc)) {
         p->reads++;
-        p->read_crc = bytes_crc(p->ses.orig, p->ses.id.len);
+        p->read_crc = crc;
     }
     if (p->stopped) {
         /* The write a stop waited for: its result stands, the stop now acts. */
@@ -500,6 +511,9 @@ static link_esc_ref_t cmd_ready(esc_port_t *p, link_esc_op_t op,
     if (!p->safe) {
         return LINK_ESC_REF_UNSAFE;
     }
+    if (op == LINK_ESC_OP_LEAVE && esc_port_writing(p)) {
+        return LINK_ESC_REF_WRITING;
+    }
     if (keyed) {
         const link_esc_ref_t bad = draft_ok(p, in, op == LINK_ESC_OP_WRITE);
 
@@ -549,9 +563,9 @@ static link_esc_ref_t dispatch(esc_port_t *p, link_esc_op_t op,
             return LINK_ESC_REF_WRITING;
         }
         cut(p);
-        go_free(p);
         p->op = (uint8_t)op;
-        p->result = (uint8_t)LINK_ESC_RESULT_DONE;
+        p->result = (uint8_t)(go_free(p) ? LINK_ESC_RESULT_DONE
+                                         : LINK_ESC_RESULT_NOT_BACK);
         return LINK_ESC_REF_NONE;
     case LINK_ESC_OP_ABORT:
         p->op = (uint8_t)op;
@@ -855,11 +869,12 @@ static void step_power_off(esc_port_t *p)
 
 /**
  * @brief Whether the supply this session switched on is gone: asked off, a PD
- *        mini that stopped answering, or read off after it read on.
+ *        mini that stopped answering, or read off; the hold starts only once it
+ *        read on.
  * @param p the port
  * @return true then
  */
-static bool supply_gone(esc_port_t *p)
+static bool supply_gone(const esc_port_t *p)
 {
     supply_port_view_t v;
 
@@ -869,10 +884,24 @@ static bool supply_gone(esc_port_t *p)
     if (!supply_view(p, &v) || !v.asked_on) {
         return true;
     }
-    if (!v.off) {
-        p->read_on = true;
+    return v.off;
+}
+
+/**
+ * @brief ON was asked: the hold starts when the PD mini reads on, since it is
+ *        counted from the ESC's power.
+ * @param p the port
+ */
+static void step_power_on(esc_port_t *p)
+{
+    supply_port_view_t v;
+
+    if (!supply_view(p, &v) || !v.asked_on
+        || (!v.on && p->now_ms - p->t0_ms >= ESC_PORT_READ_ON_MAX_MS)) {
+        all_off(p, LINK_ESC_RESULT_SUPPLY);
+    } else if (v.on) {
+        (void)started(p, ew_session_enter(&p->ses, p->hold_ms));
     }
-    return v.off && p->read_on;
 }
 
 /**
@@ -889,8 +918,8 @@ static void step_lead(esc_port_t *p)
         return;
     }
     p->switched = true;
-    p->read_on = false;
-    (void)started(p, ew_session_enter(&p->ses, p->hold_ms));
+    go(p, LINK_ESC_POWER_ON);
+    step_power_on(p);
 }
 
 void esc_port_step(esc_port_t *p, bool safe, bool stop, uint32_t now_ms)
@@ -916,7 +945,7 @@ void esc_port_step(esc_port_t *p, bool safe, bool stop, uint32_t now_ms)
         if (now_ms - p->t0_ms >= ESC_PORT_STOP_MS) {
             p->has_pin = true;
             if (!p->hw.take(p->hw.ctx, p->pin)) {
-                go_free(p);
+                (void)go_free(p);
                 p->result = (uint8_t)LINK_ESC_RESULT_NO_LINE;
             } else {
                 p->line = (uint8_t)LINK_ESC_LINE_PARK;
@@ -930,6 +959,9 @@ void esc_port_step(esc_port_t *p, bool safe, bool stop, uint32_t now_ms)
         break;
     case LINK_ESC_LEAD:
         step_lead(p);
+        break;
+    case LINK_ESC_POWER_ON:
+        step_power_on(p);
         break;
     case LINK_ESC_HAND_WAIT:
         if (now_ms - p->t0_ms >= ESC_PORT_HAND_MS) {
@@ -973,6 +1005,7 @@ bool esc_port_init(esc_port_t *p, const esc_port_hw_t *hw)
     if (hw == NULL || hw->ports == 0u || hw->ports > LINK_PG_PORTS_MAX
         || hw->pin == NULL || hw->take == NULL || hw->give == NULL
         || hw->supply == NULL || hw->supply_set == NULL
+        || hw->others_off == NULL
         || hw->driver.start == NULL || hw->driver.poll == NULL
         || hw->driver.abort == NULL || hw->driver.line == NULL
         || hw->driver.now_us == NULL) {

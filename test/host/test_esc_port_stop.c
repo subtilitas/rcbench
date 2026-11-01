@@ -21,6 +21,7 @@ static void changed_page(unsigned off, uint8_t value)
 static void to_state(link_esc_state_t st)
 {
     up_am_rig();
+    g.on_lag_ms = st == LINK_ESC_POWER_ON ? 1000u : 0u;
     open_target(2u);
     ST_REG(LINK_EW_W_OFF_MS) = 300u;
     ST_REG(LINK_EW_W_HOLD_LO) = 500u;
@@ -34,8 +35,8 @@ static void to_state(link_esc_state_t st)
 }
 
 static const link_esc_state_t k_session[] = {
-    LINK_ESC_POWER_OFF, LINK_ESC_LEAD, LINK_ESC_HAND_WAIT, LINK_ESC_RUN,
-    LINK_ESC_READY,
+    LINK_ESC_POWER_OFF, LINK_ESC_LEAD, LINK_ESC_POWER_ON, LINK_ESC_HAND_WAIT,
+    LINK_ESC_RUN, LINK_ESC_READY,
 };
 
 TEST_CASE(a_stop_in_each_state_parks_and_switches_off_at_once)
@@ -323,6 +324,8 @@ TEST_CASE(a_supply_gone_under_the_session)
             } else if (how == 1) {
                 g.v.online = false;
             } else {
+                g.never_on = true;
+                g.v.on = false;
                 g.v.off = true;
             }
             pass();
@@ -331,17 +334,6 @@ TEST_CASE(a_supply_gone_under_the_session)
             CHECK_EQ(result(), LINK_ESC_RESULT_SUPPLY);
         }
     }
-    /* Read off before it ever read on is no loss: the PD mini's report lags. */
-    up_am_rig();
-    open_target(2u);
-    ST_REG(LINK_EW_W_OFF_MS) = 0u;
-    (void)stage();
-    (void)cmd(LINK_ESC_OP_ENTER);
-    run_while(LINK_ESC_POWER_OFF, 5000u);
-    run_while(LINK_ESC_LEAD, 200u);
-    g.v.off = true;
-    run_ms(10u);
-    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_RUN);
 }
 
 TEST_CASE(a_restart_finds_everything_free)

@@ -147,6 +147,31 @@ uint8_t safety_gate_control_write(uint16_t *control, uint8_t off, uint8_t n,
                                   link_dev_t *dev);
 
 /**
+ * @brief Whether a frame of CONTROL is refused because the ESC_WIRE page holds a
+ *        pin: one with a non-zero ARM.  A held bank does not arm, and an ARM
+ *        stored meanwhile would arm it the moment the page lets go.  A disarm is
+ *        always taken.  Refused before the page's rules run, so nothing of the
+ *        frame is stored and no latch moves; the caller answers
+ *        LINK_NACK_NOT_ARMED.
+ *
+ * @param held true while the page holds a pin
+ * @param off  the frame's first register
+ * @param n    its registers
+ * @param in   their values
+ * @return true when it is refused
+ */
+bool safety_gate_hold_refuses_arm(bool held, uint8_t off, uint8_t n,
+                                  const uint16_t *in);
+
+/**
+ * @brief The ESC_WIRE page gave the pin back: ARM and THROTTLE are 0, so the
+ *        output does not render on an ESC with no new ARM.
+ *
+ * @param control the CONTROL page's registers, may be NULL
+ */
+void safety_gate_hold_ended(uint16_t *control);
+
+/**
  * @brief The STATUS page's state register and the two fault bits this decision
  *        owns (LINK_FAULT_LINK_SILENT, LINK_FAULT_HEARTBEAT).
  *

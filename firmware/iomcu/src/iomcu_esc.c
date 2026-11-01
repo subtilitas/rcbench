@@ -7,9 +7,6 @@
  */
 #include "iomcu.h"
 
-/** @brief The slots bound when the pin left: exactly these are bound again. */
-static uint8_t s_esc_bound;
-
 /**
  * @brief The pin of a throttle slot or a DShot port the IOmcu holds now.
  * @param ctx     Unused.
@@ -40,22 +37,44 @@ static uint8_t esc_hw_pin(void *ctx, bool is_port, uint8_t index)
 static bool esc_hw_take(void *ctx, uint8_t pin)
 {
     (void)ctx;
-    s_esc_bound = bound_slots();
     reserve_held();
-    hw_apply_only(s_esc_bound);
+    hw_apply_only(bound_slots());
     return ew_line_open(&s_esc_line, pin) == EW_LINE_OK;
 }
 
 /**
- * @brief And back: the slots as bound at the take, and the PROG page's ports.
+ * @brief And back: only this pin moves.  ARM and the throttle are 0 first, so
+ *        nothing renders on it before a new ask.
  * @param ctx Unused.
+ * @return True when its output holds the pin again.
  */
-static void esc_hw_give(void *ctx)
+static bool esc_hw_give(void *ctx)
 {
     (void)ctx;
+    const uint16_t target = s_esc.target;
+    const uint8_t index = (uint8_t)(target & 0xFFu);
+    bool back;
+
     ew_line_close(&s_esc_line);
+    safety_gate_hold_ended(s_state.control);
+    (void)outputs_set(&s_outputs, CH_THROTTLE, 0u, s_now_ms);
+    (void)outputs_set_role_channels(&s_outputs, OUT_ROLE_THROTTLE,
+                                    (uint8_t)(PROG_PORT_CHANNEL0
+                                              + LINK_PG_PORTS_MAX),
+                                    0u, s_now_ms);
     reserve_held();
-    hw_apply_only(s_esc_bound);
+    if ((target & LINK_EW_TARGET_PORT) != 0u) {
+        ports_apply();
+        back = (outputs_hw_ports_bound() & (1u << index)) != 0u;
+    } else {
+        uint16_t rate[OUT_MAX_SLOTS];
+
+        outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
+        back = outputs_hw_return_slot(&s_outputs, rate, index);
+        sense_page_bound(&s_sense, bound_slots());
+        ports_apply();
+    }
+    return back;
 }
 
 /**
@@ -88,6 +107,18 @@ static bool esc_hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
                                 safety_gate_supply_ok(&s_beat, &s_dev));
 }
 
+/**
+ * @brief An error: the other supply goes off with the PD mini.  An OFF is always
+ *        taken.
+ * @param ctx Unused.
+ */
+static void esc_hw_others_off(void *ctx)
+{
+    (void)ctx;
+    (void)prog_supply_port_set(&s_psup, false,
+                               safety_gate_supply_ok(&s_beat, &s_dev));
+}
+
 void esc_init(void)
 {
     ew_line_init(&s_esc_line);
@@ -99,6 +130,7 @@ void esc_init(void)
         .give       = esc_hw_give,
         .supply     = esc_hw_supply,
         .supply_set = esc_hw_supply_set,
+        .others_off = esc_hw_others_off,
         .driver     = ew_line_driver(&s_esc_line),
     };
 

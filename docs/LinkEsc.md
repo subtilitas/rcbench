@@ -33,10 +33,10 @@ pins stay bound and at their idle.
 
 | Step | What happens |
 |---|---|
-| OPEN | Refused while armed or asked to arm, while KST, HITEC or a firmware update has the bench, or with the heartbeat not trusted or the link silent. From this frame on the bank does not arm, SUPPLY is held, PROG, OUTPUTS, CHAN_CFG and BIND are refused with `BUSY`, and KST and HITEC refuse every port. |
+| OPEN | Refused while armed or asked to arm, while KST, HITEC or a firmware update has the bench, or with the heartbeat not trusted or the link silent. From this frame on the bank does not arm, CONTROL refuses a non-zero ARM, SUPPLY and PROG_SUPPLY are held, PROG, OUTPUTS, CHAN_CFG and BIND are refused with `BUSY`, and KST and HITEC refuse every port. |
 | `STOPPING`, 50ms | The output renders nothing. An ABORT, a stop or a lost link here frees the pin with nothing touched. |
 | `OPEN` | The output lets the pin go, the pin is reserved, and the line opens parked. No state machine, program space or 2 DMA (direct memory access) channels: `NO_LINE`, the pin goes back, the page is free. |
-| CLOSE | Refused with `WRITING` while a write runs. The line closes and the pin goes back as its output had it: the same slots bound as at the take, the same PROG registers. A slot or port was not written, so its rate, driver and role are what they were. |
+| CLOSE | Refused with `WRITING` while a write runs and for 150ms after its last frame. The line closes and the pin goes back as its output had it; no other slot or port moves. A slot or port was not written, so its rate, driver and role are what they were. An output that does not take the pin back ends `NOT_BACK`, unbound, with the page free. |
 
 ## Entry
 
@@ -47,27 +47,30 @@ and the time off.
 |---|---|---|
 | `POWER_OFF`: 250ms at least, read off within 3000ms, then the time off (0 to 10000ms) | parked | off |
 | `LEAD`, 50ms | driven high | off |
-| `RUN`: the hold (500 to 120000ms), then first contact or `info` | driven high, then the wire | on, at 3000 to 20000mV and 50 to 3000mA, at least 700mV under the input |
+| `POWER_ON`: until the PD mini reads on, 3000ms at most | driven high | asked on, at 3000 to 20000mV and 50 to 3000mA, at least 700mV under the input |
+| `RUN`: the hold (500 to 120000ms), counted from it reading on, then first contact or `info` | driven high, then the wire | on |
 
 | `BY HAND`, on the ESC's own supply | Line | Supply |
 |---|---|---|
 | `HAND_WAIT`, up to 60000ms | driven high, into an ESC with no power if it is connected; the current is not measured | not touched |
 | DONE, then `RUN` as above | | not touched |
 
-An ESC session uses the PD mini on every board, also where PROG_SUPPLY exists, and
-never PROG_SUPPLY. `READY` follows an ESC that answered.
+An ESC session feeds the ESC from the PD mini on every board, also where PROG_SUPPLY
+exists. It never switches PROG_SUPPLY on: from OPEN to the give a panel's ON of it is
+refused with `BAD_VALUE`, and an error switches it off with the PD mini. `READY` follows
+an ESC that answered.
 
 ## What each event does
 
 | Event | Line | Supply | After |
 |---|---|---|---|
 | ARM asked, page free | the output's | as it is | a later OPEN is refused while it stands |
-| ARM asked, page held | no change | no change | the bank stays SAFE: the page's bit in the quiet mask holds `safety_gate_arm_now()` down; a slot's is bit 4 |
+| ARM asked, page held | no change | no change | a non-zero ARM is refused with `NOT_ARMED` from OPEN to the give, and the page's bit in the quiet mask (a slot's is bit 4) holds `safety_gate_arm_now()` down as well. The give sets ARM and THROTTLE to 0: the next ARM is a new ask, and STATUS reads IDLE until it comes |
 | STOP (a stop edge or the STOP operation), no write | parked at once | off | held, `STOPPED` |
-| STOP, in a write | as the write needs, to its read-back, then parked | the panel's OFF waits, 10000ms at most, then off | held, `STOPPED`; the result says what the write did |
+| STOP, in a write | as the write needs, to its read-back, then parked | the panel's OFF waits, 10000ms at most, then off at the read-back's end, with no 150ms tail: by the specification the page is in flash at its `0x30` and at a `save`'s `OK` | held, `STOPPED`; the result says what the write did |
 | ABORT | parked at once, also in a write | off | held |
 | Heartbeat lost or link silent 200ms | parked at once, also in a write | off at once | held, `STOPPED` |
-| Error | parked at once | off | held, `FAULT` and `STOPPED` |
+| Error | parked at once | PD mini and PROG_SUPPLY off | held, `FAULT` and `STOPPED` |
 | IOmcu restart | the chip's reset state | off at boot | free; the slot binds from flash |
 | The supply off, silent, or read off after it read on, in `RUN` or `READY` | parked at once | off | held, `FAULT`, result `SUPPLY` |
 
@@ -78,6 +81,8 @@ Parked is an input with its pull-down and its buffer off. No state above sends a
 throttle signal: while the page holds the pin the output has released it, an apply
 leaves that slot unbound (`esc_port_may_bind()`), and the module has no function
 that makes a pulse pattern.
+
+A disarm is no stop: with ARM refused from OPEN on nothing is armed for it to end. The panel's STOP is the STOP operation; a failsafe edge is a stop by itself.
 
 **What counts as an error.** Any operation of the session that ends other than
 `EW_SES_OK`, among them `EW_SES_ERR_SILENT`, `NOT_KNOWN`, `READ`, `CHANGED`,
@@ -97,11 +102,15 @@ only RESTORE writes it. Not measured on an ESC. On `BY HAND` the bench cannot cu
 supply: its line is parked and a person disconnects it.
 
 **Who switches the rest.** The bank is SAFE for as long as the page is held, so the
-page's line and the supply are all the IOmcu has on. `LINK_EW_F_FAULT` tells the
+page's line, the PD mini and PROG_SUPPLY are all the IOmcu has on. `LINK_EW_F_FAULT` tells the
 panel, which follows it to the bench's SAFE state.
 
 ## Current limitations
 
+- **The only ways out of the hold are CLOSE and an IOmcu restart.** Condition: a panel
+  that restarts while the page is held. The page stays `OPEN` and `STOPPED` with the
+  quiet bit set, so the bank cannot arm, and nothing on the page says why. This fails
+  safe. A panel's half sends CLOSE at link-up after any restart; none exists yet.
 - **An error in a write costs the page's repair in the same session.** Condition: a
   write that ends `TORN` or `LOST`. The supply goes off at once, so the ESC loses its
   power with the page half written. By the specification, not measured: a family S or
@@ -127,7 +136,7 @@ panel, which follows it to the bench's SAFE state.
 
 | Reg | Name | Value |
 |---|---|---|
-| 0 | `STATE` | 0 `FREE`, 1 `STOPPING`, 2 `OPEN`, 3 `POWER_OFF`, 4 `LEAD`, 5 `HAND_WAIT`, 6 `RUN`, 7 `READY` |
+| 0 | `STATE` | 0 `FREE`, 1 `STOPPING`, 2 `OPEN`, 3 `POWER_OFF`, 4 `LEAD`, 5 `HAND_WAIT`, 6 `RUN`, 7 `READY`, 8 `POWER_ON` |
 | 1 | `SEQ` | the last SEQ taken |
 | 2 | `OP` | the last operation |
 | 3 | `RESULT` | low byte the result, high byte the last command's refusal |
@@ -169,7 +178,7 @@ acknowledged, and what became of it is on the page: `RESULT`'s high byte says wh
 started nothing, or 0. Refusals: 1 `BUSY`, 2 `TARGET`, 3 `HELD`, 4 `ARMED`, 5
 `UNSAFE`, 6 `NOT_OPEN`, 7 `NO_KEY`, 8 `STAGED`, 9 `STOPPED`, 10 `NO_PIN`, 11 `RANGE`,
 12 `NO_SUPPLY`, 13 `STALE`, 14 `DRAFT`, 15 `WRITING`, 16 `SESSION`. Results: 1
-running, 2 done, 3 `NO_LINE`, 4 `SUPPLY`, 5 `TIMEOUT`, 6 `CUT`, 7 `SESSION`.
+running, 2 done, 3 `NO_LINE`, 4 `SUPPLY`, 5 `TIMEOUT`, 6 `CUT`, 7 `SESSION`, 8 `NOT_BACK`.
 
 `ESC_DATA` is 32 registers, 64B, low byte first, of the block `BLOCK` names:
 
@@ -186,7 +195,7 @@ running, 2 done, 3 `NO_LINE`, 4 `SUPPLY`, 5 `TIMEOUT`, 6 `CUT`, 7 `SESSION`.
 An ESCape32 page is its 46 values as 16-bit integers in map order.
 
 WRITE needs the key, the CRC, the draft's CRC and the `READS` and `READ_CRC` of the
-read it was made from (else `STALE`), and the session's own rules. RESTORE needs the
+read it was made from (else `STALE`), and the session's own rules. A write that changed the page moves `READS` and `READ_CRC`, also under a stop: a draft of the page before it is stale. RESTORE needs the
 same but `READS` and `READ_CRC`.
 
 ## Older and newer

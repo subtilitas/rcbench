@@ -15,6 +15,8 @@
 #include "ew_sim.h"
 #include "greatest.h"
 #include "link_crc.h"
+#include "prog_supply.h"
+#include "safety_gate.h"
 
 static sim_t esc;
 static esc_port_t g_p;
@@ -35,6 +37,12 @@ static struct {
     uint8_t  line_at_give;
     bool     line_open;
     int      takes_with_line;
+    int      others_off;
+    bool     give_refused;
+    uint32_t on_lag_ms;        /* ON reads on this long after the ask */
+    bool     never_on;
+    uint16_t control[LINK_CT_COUNT]; /* as esc_hw_give() clears it */
+    prog_supply_t psup;              /* as esc_hw_others_off() switches it */
 } g;
 
 static uint8_t hw_pin(void *ctx, bool is_port, uint8_t index)
@@ -52,17 +60,23 @@ static bool hw_take(void *ctx, uint8_t pin)
     return g.take_ok;
 }
 
-static void hw_give(void *ctx)
+static bool hw_give(void *ctx)
 {
     (void)ctx;
     g.gives++;
     g.line_at_give = esc.line;
     g.line_open = false;
+    safety_gate_hold_ended(g.control);
+    return !g.give_refused;
 }
 
 static void hw_supply(void *ctx, supply_port_view_t *out)
 {
     (void)ctx;
+    if (g.v.asked_on && !g.never_on && esc.now - g.on_at >= g.on_lag_ms * 1000u) {
+        g.v.off = false;
+        g.v.on = true;
+    }
     *out = g.v;
 }
 
@@ -79,8 +93,6 @@ static bool hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
         g.line_at_on = esc.line;
         g.on_at = esc.now;
         g.v.asked_on = true;
-        g.v.off = false;
-        g.v.on = true;
     } else {
         g.offs++;
         g.off_at = esc.now;
@@ -93,6 +105,13 @@ static bool hw_supply_set(void *ctx, bool on, uint16_t mv, uint16_t ma)
         g.v.off = !g.stuck_on;
     }
     return true;
+}
+
+static void hw_others_off(void *ctx)
+{
+    (void)ctx;
+    g.others_off++;
+    (void)prog_supply_port_set(&g.psup, false, true);
 }
 
 /* ------------------------------------------------------------ the bench */
@@ -109,6 +128,7 @@ static void rig_up(void)
     const esc_port_hw_t hw = {
         .ctx = NULL, .ports = 4u, .pin = hw_pin, .take = hw_take, .give = hw_give,
         .supply = hw_supply, .supply_set = hw_supply_set,
+        .others_off = hw_others_off,
         .driver = sim_driver(&esc),
     };
 
@@ -238,6 +258,7 @@ static void enter_now(void)
     (void)cmd(LINK_ESC_OP_ENTER);
     run_while(LINK_ESC_POWER_OFF, 15000u);
     run_while(LINK_ESC_LEAD, 200u);
+    run_while(LINK_ESC_POWER_ON, 5000u);
     run_while(LINK_ESC_RUN, 20000u);
 }
 

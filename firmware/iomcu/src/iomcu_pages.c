@@ -575,6 +575,11 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
     if (update_hw_refuses_arm(off, n, in)) {
         return LINK_NACK_NOT_ARMED;
     }
+    /* Nor while the ESC_WIRE page holds a pin: stored, it would arm the bank at
+     * the CLOSE, onto an ESC out of its bootloader, with no new ask. */
+    if (safety_gate_hold_refuses_arm(esc_port_supply_hold(&s_esc), off, n, in)) {
+        return LINK_NACK_NOT_ARMED;
+    }
     /*
      * The page's rules are link_control_write()'s and whether the bench may
      * arm is safety_gate_control_write()'s, both host-tested: every

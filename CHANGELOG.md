@@ -11,9 +11,11 @@ history is in git.
 - Link 4.34: the pages `ESC_WIRE` (0x3A) and `ESC_DATA` (0x3B) read and write an
   ESC's settings over its signal wire, on the pin of a throttle slot or a DShot
   programming port, and the IOmcu reports `LINK_CAP_PROGRAM`. The output gets back
-  what it had. While a page holds a pin the bank does not arm, SUPPLY is held, and
-  PROG, OUTPUTS, CHAN_CFG, BIND, KST and HITEC refuse. An error, TORN and LOST
-  included, parks the line and switches the PD mini off. RAM 7344B: 3856B for the
+  what it had. While a page holds a pin the bank does not arm, CONTROL refuses a
+  non-zero ARM, SUPPLY and PROG_SUPPLY are held, and PROG, OUTPUTS, CHAN_CFG, BIND,
+  KST and HITEC refuse. The give sets ARM and
+  THROTTLE to 0. An error, TORN and LOST included, parks the line and switches the
+  PD mini and PROG_SUPPLY off. RAM 7344B: 3856B for the
   page and 3488B for the line. No screen uses the pages yet. No frame has been to an
   ESC. A bidirectional DShot pin resting high on SAFE stays as it is, a current
   limitation ([The ESC settings pages](docs/LinkEsc.md#current-limitations)).

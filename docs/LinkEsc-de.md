@@ -34,10 +34,10 @@ andere Throttle-Pins bleiben gebunden und im Leerlauf.
 
 | Schritt | Was geschieht |
 |---|---|
-| OPEN | Abgelehnt, solange ARMED oder ARM angefragt ist, solange KST, HITEC oder ein Firmware-Update die Bench hat, oder ohne vertrauten Heartbeat oder bei stillem Link. Ab diesem Frame armt die Bank nicht, SUPPLY ist gehalten, PROG, OUTPUTS, CHAN_CFG und BIND werden mit `BUSY` abgelehnt, und KST und HITEC lehnen jeden Port ab. |
+| OPEN | Abgelehnt, solange ARMED oder ARM angefragt ist, solange KST, HITEC oder ein Firmware-Update die Bench hat, oder ohne vertrauten Heartbeat oder bei stillem Link. Ab diesem Frame armt die Bank nicht, CONTROL lehnt ein ARM ungleich 0 ab, SUPPLY und PROG_SUPPLY sind gehalten, PROG, OUTPUTS, CHAN_CFG und BIND werden mit `BUSY` abgelehnt, und KST und HITEC lehnen jeden Port ab. |
 | `STOPPING`, 50ms | Der Ausgang gibt nichts aus. ABORT, ein Stopp oder ein verlorener Link geben hier den Pin frei, ohne etwas anzufassen. |
 | `OPEN` | Der Ausgang lässt den Pin los, der Pin ist reserviert, die Leitung öffnet geparkt. Keine State Machine, kein Programmspeicher oder keine 2 DMA-Kanäle (direct memory access): `NO_LINE`, der Pin geht zurück, die Page ist frei. |
-| CLOSE | Mit `WRITING` abgelehnt, solange ein Schreiben läuft. Die Leitung schließt, der Pin geht zurück, wie sein Ausgang ihn hatte: dieselben Slots gebunden wie bei der Übernahme, dieselben PROG-Register. Slot und Port wurden nicht beschrieben, Rate, Treiber und Rolle sind unverändert. |
+| CLOSE | Mit `WRITING` abgelehnt, solange ein Schreiben läuft und 150ms nach seinem letzten Frame. Die Leitung schließt, der Pin geht zurück, wie sein Ausgang ihn hatte; kein anderer Slot oder Port wechselt. Slot und Port wurden nicht beschrieben, Rate, Treiber und Rolle sind unverändert. Ein Ausgang, der den Pin nicht zurücknimmt, endet mit `NOT_BACK`, ungebunden, und die Page ist frei. |
 
 ## Eintritt
 
@@ -48,27 +48,30 @@ Auszeit.
 |---|---|---|
 | `POWER_OFF`: mindestens 250ms, innerhalb von 3000ms als aus gelesen, dann die Auszeit (0 bis 10000ms) | geparkt | aus |
 | `LEAD`, 50ms | high getrieben | aus |
-| `RUN`: der Hold (500 bis 120000ms), dann First Contact oder `info` | high getrieben, dann der Draht | ein, mit 3000 bis 20000mV und 50 bis 3000mA, mindestens 700mV unter dem Eingang |
+| `POWER_ON`: bis der PD mini als ein liest, höchstens 3000ms | high getrieben | ein angefragt, mit 3000 bis 20000mV und 50 bis 3000mA, mindestens 700mV unter dem Eingang |
+| `RUN`: der Hold (500 bis 120000ms), gezählt ab dem Lesen als ein, dann First Contact oder `info` | high getrieben, dann der Draht | ein |
 
 | `BY HAND`, an der eigenen Versorgung des ESC | Leitung | Versorgung |
 |---|---|---|
 | `HAND_WAIT`, bis zu 60000ms | high getrieben, in einen ESC ohne Versorgung, falls verbunden; der Strom ist nicht gemessen | nicht angefasst |
 | DONE, dann `RUN` wie oben | | nicht angefasst |
 
-Eine ESC-Session nutzt auf jedem Board den PD mini, auch wo es PROG_SUPPLY gibt, und
-nie PROG_SUPPLY. `READY` folgt, wenn ein ESC geantwortet hat.
+Eine ESC-Session versorgt den ESC auf jedem Board aus dem PD mini, auch wo es PROG_SUPPLY
+gibt. Sie schaltet PROG_SUPPLY nie ein: von OPEN bis zur Rückgabe wird ein ON des Panels
+dort mit `BAD_VALUE` abgelehnt, und ein Fehler schaltet es mit dem PD mini aus. `READY`
+folgt, wenn ein ESC geantwortet hat.
 
 ## Was jedes Ereignis tut
 
 | Ereignis | Leitung | Versorgung | Danach |
 |---|---|---|---|
 | ARM angefragt, Page frei | die des Ausgangs | wie sie ist | ein späteres OPEN wird abgelehnt, solange es steht |
-| ARM angefragt, Page gehalten | keine Änderung | keine Änderung | die Bank bleibt SAFE: das Bit der Page in der Quiet-Maske hält `safety_gate_arm_now()` unten; das eines Slots ist Bit 4 |
+| ARM angefragt, Page gehalten | keine Änderung | keine Änderung | ein ARM ungleich 0 wird von OPEN bis zur Rückgabe mit `NOT_ARMED` abgelehnt, und das Bit der Page in der Quiet-Maske (das eines Slots ist Bit 4) hält `safety_gate_arm_now()` zusätzlich unten. Die Rückgabe setzt ARM und THROTTLE auf 0: das nächste ARM ist eine neue Anfrage, und STATUS liest bis dahin IDLE |
 | STOP (eine Stopp-Flanke oder die Operation STOP), kein Schreiben | sofort geparkt | aus | gehalten, `STOPPED` |
-| STOP, in einem Schreiben | wie das Schreiben es braucht, bis zum Rücklesen, dann geparkt | das OFF des Panels wartet, höchstens 10000ms, dann aus | gehalten, `STOPPED`; das Ergebnis sagt, was das Schreiben getan hat |
+| STOP, in einem Schreiben | wie das Schreiben es braucht, bis zum Rücklesen, dann geparkt | das OFF des Panels wartet, höchstens 10000ms, dann aus am Ende des Rücklesens, ohne die 150ms: nach der Spezifikation ist die Page mit ihrem `0x30` und dem `OK` eines `save` im Flash | gehalten, `STOPPED`; das Ergebnis sagt, was das Schreiben getan hat |
 | ABORT | sofort geparkt, auch in einem Schreiben | aus | gehalten |
 | Heartbeat verloren oder Link 200ms still | sofort geparkt, auch in einem Schreiben | sofort aus | gehalten, `STOPPED` |
-| Fehler | sofort geparkt | aus | gehalten, `FAULT` und `STOPPED` |
+| Fehler | sofort geparkt | PD mini und PROG_SUPPLY aus | gehalten, `FAULT` und `STOPPED` |
 | IOmcu-Neustart | der Reset-Zustand des Chips | aus beim Booten | frei; der Slot bindet aus dem Flash |
 | Die Versorgung aus, still oder nach dem Ein als aus gelesen, in `RUN` oder `READY` | sofort geparkt | aus | gehalten, `FAULT`, Ergebnis `SUPPLY` |
 
@@ -80,6 +83,8 @@ Geparkt ist ein Eingang mit Pull-down und abgeschaltetem Puffer. Kein Zustand ob
 sendet ein Throttle-Signal: solange die Page den Pin hält, hat der Ausgang ihn
 losgelassen, ein Apply lässt diesen Slot ungebunden (`esc_port_may_bind()`), und das
 Modul hat keine Funktion, die ein Pulsmuster erzeugt.
+
+Ein DISARM ist kein Stopp: da ARM ab OPEN abgelehnt wird, ist nichts geARMt, das es beenden könnte. Das STOP des Panels ist die Operation STOP; eine Failsafe-Flanke ist von selbst ein Stopp.
 
 **Was als Fehler zählt.** Jede Operation der Session, die anders als `EW_SES_OK`
 endet, darunter `EW_SES_ERR_SILENT`, `NOT_KNOWN`, `READ`, `CHANGED`, `CLIPPED`, `TORN`
@@ -100,11 +105,16 @@ ESC gemessen. Bei `BY HAND` kann die Bench die eigene Versorgung des ESC nicht t
 seine Leitung ist geparkt, und ein Mensch trennt ihn.
 
 **Wer den Rest schaltet.** Die Bank ist SAFE, solange die Page gehalten ist; die
-Leitung der Page und die Versorgung sind alles, was der IOmcu an hat.
+Leitung der Page, der PD mini und PROG_SUPPLY sind alles, was der IOmcu an hat.
 `LINK_EW_F_FAULT` sagt es dem Panel, das dem in den SAFE-Zustand der Bench folgt.
 
 ## Aktuelle Einschränkungen
 
+- **Aus dem Halten führen nur CLOSE und ein IOmcu-Neustart.** Bedingung: ein Panel, das
+  neu startet, während die Page gehalten ist. Die Page bleibt `OPEN` und `STOPPED` mit
+  gesetztem Quiet-Bit, die Bank kann also nicht armen, und nichts auf der Page sagt warum.
+  Das ist die sichere Seite. Die Panel-Hälfte sendet nach jedem Neustart beim Link-Aufbau
+  CLOSE; sie gibt es noch nicht.
 - **Ein Fehler in einem Schreiben kostet die Reparatur in derselben Session.**
   Bedingung: ein Schreiben, das mit `TORN` oder `LOST` endet. Die Versorgung geht sofort
   aus, der ESC verliert also seine Versorgung mit halb geschriebener Page. Nach der
@@ -133,7 +143,7 @@ Leitung der Page und die Versorgung sind alles, was der IOmcu an hat.
 
 | Reg | Name | Wert |
 |---|---|---|
-| 0 | `STATE` | 0 `FREE`, 1 `STOPPING`, 2 `OPEN`, 3 `POWER_OFF`, 4 `LEAD`, 5 `HAND_WAIT`, 6 `RUN`, 7 `READY` |
+| 0 | `STATE` | 0 `FREE`, 1 `STOPPING`, 2 `OPEN`, 3 `POWER_OFF`, 4 `LEAD`, 5 `HAND_WAIT`, 6 `RUN`, 7 `READY`, 8 `POWER_ON` |
 | 1 | `SEQ` | die zuletzt genommene SEQ |
 | 2 | `OP` | die letzte Operation |
 | 3 | `RESULT` | Low-Byte das Ergebnis, High-Byte die Ablehnung des letzten Befehls |
@@ -176,7 +186,7 @@ Befehl wird bestätigt, und was daraus wurde, steht auf der Page: das High-Byte 
 `HELD`, 4 `ARMED`, 5 `UNSAFE`, 6 `NOT_OPEN`, 7 `NO_KEY`, 8 `STAGED`, 9 `STOPPED`, 10
 `NO_PIN`, 11 `RANGE`, 12 `NO_SUPPLY`, 13 `STALE`, 14 `DRAFT`, 15 `WRITING`, 16
 `SESSION`. Ergebnisse: 1 läuft, 2 fertig, 3 `NO_LINE`, 4 `SUPPLY`, 5 `TIMEOUT`, 6
-`CUT`, 7 `SESSION`.
+`CUT`, 7 `SESSION`, 8 `NOT_BACK`.
 
 `ESC_DATA` sind 32 Register, 64B, Low-Byte zuerst, des Blocks, den `BLOCK` nennt:
 
@@ -193,7 +203,7 @@ Befehl wird bestätigt, und was daraus wurde, steht auf der Page: das High-Byte 
 Eine ESCape32-Page sind ihre 46 Werte als 16-Bit-Integer in der Reihenfolge der Map.
 
 WRITE braucht den Key, die CRC, die CRC des Entwurfs und `READS` und `READ_CRC` des
-Lesens, aus dem er stammt (sonst `STALE`), und die Regeln der Session. RESTORE braucht
+Lesens, aus dem er stammt (sonst `STALE`), und die Regeln der Session. Ein Schreiben, das die Page geändert hat, bewegt `READS` und `READ_CRC`, auch unter einem Stopp: ein Entwurf der Page davor ist veraltet. RESTORE braucht
 dasselbe außer `READS` und `READ_CRC`.
 
 ## Älter und neuer

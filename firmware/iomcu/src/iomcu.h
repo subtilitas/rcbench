@@ -1143,6 +1143,8 @@ static inline void ports_exclusive(void)
 {
     const uint8_t esc = esc_port_supply_hold(&s_esc) ? 0xFFu : 0u;
 
+    prog_port_freeze(&s_prog, esc != 0u);
+
     kst_port_other_mask(&s_kst, (uint8_t)(hitec_port_quiet_mask(&s_hitec) | esc));
     hitec_port_other_mask(&s_hitec, (uint8_t)(kst_port_quiet_mask(&s_kst) | esc));
     esc_port_other(&s_esc, (uint8_t)(kst_port_quiet_mask(&s_kst)
@@ -1184,7 +1186,7 @@ static inline bool ports_writing(void)
  *        supply, the SUPPLY page on any other.  The other one is told no
  *        port holds it: on the rbmod carrier the PD mini feeds the servo
  *        rails and no programming port.  An ESC session holds the SUPPLY page
- *        on every board.
+ *        on every board, and PROG_SUPPLY where it is fitted.
  */
 static inline void ports_tell_supply(void)
 {
@@ -1194,7 +1196,8 @@ static inline void ports_tell_supply(void)
     supply_page_hold(&s_supply, (!own && hold) || esc_port_supply_hold(&s_esc));
     supply_page_port_writes(&s_supply,
                             (!own && writing) || esc_port_writing(&s_esc));
-    prog_supply_hold(&s_psup, own && hold);
+    /* Under an ESC session its ON is refused, on the rule of a port's hold. */
+    prog_supply_hold(&s_psup, (own && hold) || esc_port_supply_hold(&s_esc));
     prog_supply_port_writes(&s_psup, own && writing);
 }
 
