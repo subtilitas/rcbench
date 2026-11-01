@@ -8,6 +8,8 @@
  * flag as last read and a session with a port; whether a session keeps the
  * panel's ON and set points off it (supply_link_session_blocks()), on a
  * board whose ports run from the PD mini and on one with their own supply.
+ * A panel restarted inside an ESC_WIRE hold: its wiring is taken, and the next
+ * session's ON is not refused or switched off.
  * Against the IOmcu's half of the page.
  *
  * SPDX-License-Identifier: MIT
