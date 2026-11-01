@@ -51,8 +51,9 @@
  * - A field line is `<name> = <value>`.  The name is the map's, without case
  *   and without spaces.  The value is the text this format writes for that
  *   value, without case and without spaces, its unit optional, or `raw <n>`
- *   for the byte.  Where several bytes read as one text the lowest is taken,
- *   and a line that reads as the ESC's value changes nothing.
+ *   for the byte itself.  Where several bytes read as one text the lowest is
+ *   taken, and a line of such a text that reads as the ESC's value changes
+ *   nothing.
  * - `#` starts a comment that runs to the end of the line.  Empty lines,
  *   spaces and tabs around a name and a value, LF and CR LF in one file are
  *   taken.  A trailing `[...]` is ignored.
@@ -151,6 +152,7 @@ typedef struct {
     uint16_t len;        /**< bytes of @c page                                 */
     char     name[EW_ID_NAME_MAX + 1u]; /**< ARM: the name, "" for none        */
     uint8_t  has[EW_PAGE_MAX / 8u];     /**< edited: bit n, a line for byte n  */
+    uint8_t  raw[EW_PAGE_MAX / 8u];     /**< edited: bit n, that line's `raw`  */
     uint8_t  page[EW_PAGE_MAX];         /**< the page, or the named fields     */
 } ew_file_t;
 

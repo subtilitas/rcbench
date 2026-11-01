@@ -139,6 +139,14 @@ TEST_CASE(a_line_that_reads_as_the_esc_changes_nothing)
     CHECK_EQ(ew_file_load(&g_r, &s.id, s.orig, &g_load), EW_LOAD_OK);
     CHECK_EQ(g_load.changed, 0u);
     CHECK_EQ(g_load.target[0x10], 4u);
+    /* A line of `raw` names its byte, whatever it reads as. */
+    n = snprintf(file, sizeof(file),
+                 ED_HEAD "Firmware: Bluejay\nLayout: 208\nBRAKING = raw 3\n"
+                 "edited\n");
+    CHECK_EQ(ew_file_parse(file, (size_t)n, &g_r, NULL), EW_FILE_OK);
+    CHECK_EQ(ew_file_load(&g_r, &s.id, s.orig, &g_load), EW_LOAD_OK);
+    CHECK_EQ(g_load.changed, 1u);
+    CHECK_EQ(g_load.target[0x10], 3u);
     /* A verified file gives the byte, whatever it reads as. */
     g_f.page[0x10] = 3u;
     g_r = g_f;

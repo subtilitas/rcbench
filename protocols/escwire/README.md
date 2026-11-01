@@ -14,7 +14,7 @@ on the wire; its values are not measured on hardware.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `ew_wire.c`, `ew_a.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_session.c`, `ew_file.c`, 7 headers under `include/` | C11 standard headers |
+| Core | `ew_wire.c`, `ew_a.c`, `ew_guard.c`, `ew_id.c`, `ew_map.c`, `ew_map_s.c`, `ew_map_bj.c`, `ew_map_am.c`, `ew_session.c`, `ew_file.c`, `ew_file_read.c`, `ew_file_load.c`, 7 headers under `include/` and `ew_file_int.h` | C11 standard headers |
 
 ## Constraints
 
@@ -159,9 +159,9 @@ link is lost. Power lost between an erase and a program leaves the page empty.
 
 ## The settings file
 
-`ew_file.h` writes a page as text, reads a text back and holds it against an
-ESC. It has no file access and no heap: the caller holds a buffer of
-`EW_FILE_MAX` (5280B), and `ew_file_t` takes 330B.
+`ew_file.h` writes a page as text (`ew_file.c`), reads a text back (`ew_file_read.c`) and holds it against an
+ESC (`ew_file_load.c`). It has no file access and no heap: the caller holds a buffer of
+`EW_FILE_MAX` (5280B), and `ew_file_t` takes 362B.
 
 ```text
 ESC settings backup, format 1
@@ -201,8 +201,8 @@ To change a file by hand, change its field lines and put `edited` in place of
 the checksum line. A changed line under a kept checksum line is
 `EW_FILE_ERR_CHECKSUM`. A file cut at any byte has neither last line and loads
 nothing. A value is the text the file shows, its unit optional, or `raw <n>` for
-the byte. Where several bytes read as one text, the lowest is taken, and a line
-that reads as the ESC's value changes nothing.
+the byte itself. Where several bytes read as one text, the lowest is taken, and
+a line of such a text that reads as the ESC's value changes nothing.
 
 `ew_file_load()` builds the draft for `ew_session_write()`.
 
