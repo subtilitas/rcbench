@@ -84,6 +84,8 @@ uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
     (void)ctx;
     const uint8_t nack = kst_port_write(&s_kst, off, n, in, s_now_ms);
 
+    /* No ARM or THROTTLE across either edge of a hold, in this frame. */
+    ports_hold_follow();
     /* A command that takes the port out of PWM holds the SUPPLY page from
      * this frame on: a SUPPLY write queued behind it is judged held.  And
      * the HITEC page refuses the port from this frame on.  Whether it

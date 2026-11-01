@@ -123,6 +123,43 @@ bool safety_gate_arm_now(bool gate_arm, uint16_t quiet_mask,
                          bool update_holds);
 
 /**
+ * @brief Whether a frame of CONTROL is refused because a programming port is out
+ *        of PWM: one with a non-zero ARM.  A held bank does not arm, and an ARM
+ *        stored meanwhile would arm it the moment the port returns to PWM, with
+ *        no new ask.  A disarm is always taken.  Refused before the page's rules
+ *        run, so nothing of the frame is stored and no latch moves; the caller
+ *        answers LINK_NACK_NOT_ARMED.
+ *
+ * @param held true while a hold stands
+ * @param off  the frame's first register
+ * @param n    its registers
+ * @param in   their values
+ * @return true when it is refused
+ */
+bool safety_gate_hold_refuses_arm(bool held, uint8_t off, uint8_t n,
+                                  const uint16_t *in);
+
+/**
+ * @brief The page after a hold: no ARM and no THROTTLE left in it, so the bank
+ *        stays SAFE until a new ask.
+ *
+ * @param control CONTROL page, LINK_CT_COUNT registers; may be NULL
+ */
+void safety_gate_hold_ended(uint16_t *control);
+
+/**
+ * @brief Call after anything that can start or end a hold: the page is cleared
+ *        on each edge (safety_gate_hold_ended()) and left alone otherwise, so
+ *        an armed bank's page stays, and no way out of a hold, with or without
+ *        a pin given back, keeps an ARM or a THROTTLE.
+ *
+ * @param control CONTROL page, LINK_CT_COUNT registers; may be NULL
+ * @param was     the hold at the last call; updated; may be NULL
+ * @param held    true while a hold stands now
+ */
+void safety_gate_hold_follow(uint16_t *control, bool *was, bool held);
+
+/**
  * @brief A write to the CONTROL page: link_control_write() with this end's
  *        answer to whether the bench may arm, and the CLEAR acted on.
  *

@@ -564,6 +564,11 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
     if (update_hw_refuses_arm(off, n, in)) {
         return LINK_NACK_NOT_ARMED;
     }
+    /* Nor while a programming port is out of PWM: stored, it would arm the bank
+     * in the pass the port returns, with no new ask. */
+    if (safety_gate_hold_refuses_arm(ports_quiet() != 0u, off, n, in)) {
+        return LINK_NACK_NOT_ARMED;
+    }
     /*
      * The page's rules are link_control_write()'s and whether the bench may
      * arm is safety_gate_control_write()'s, both host-tested: every
