@@ -280,6 +280,7 @@ typedef struct {
     cur_t   *c;    /**< the position                            */
     uint32_t crc;  /**< the register over the lines so far      */
     bool     crlf; /**< the file's line end                     */
+    size_t   max;  /**< the longest line taken next             */
     text_line_t   l;    /**< the line just taken                     */
 } ver_t;
 
@@ -294,7 +295,7 @@ static ew_file_err_t ver_line(ver_t *v)
     if (!v->l.open && v->l.cr != v->crlf) {
         return EW_FILE_ERR_LINE_END;
     }
-    if (v->l.n > EW_FILE_LINE_MAX) {
+    if (v->l.n > v->max) {
         return EW_FILE_ERR_MALFORMED;
     }
     for (size_t i = 0; i < v->l.n; ++i) {
@@ -467,6 +468,18 @@ static ew_file_err_t ver_identity(ver_t *v, ew_file_t *f, unsigned *version)
     if (err != EW_FILE_OK) {
         return err;
     }
+    if (n == 4u && memcmp(s, "TEXT", 4u) == 0) {
+        f->cpu = (uint8_t)EW_CPU_TEXT;
+        err = ver_key(v, KEY_TARGET, &s, &n);
+        if (err != EW_FILE_OK) {
+            return err;
+        }
+        if (n > EW_ID_NAME_MAX) {
+            return EW_FILE_ERR_NAME_LONG;
+        }
+        memcpy(f->name, s, n);
+        return EW_FILE_OK;
+    }
     if (n == 4u && memcmp(s, "EFM8", 4u) == 0) {
         uint32_t sig = 0u;
 
@@ -519,6 +532,65 @@ static ew_file_err_t ver_count(ver_t *v, ew_file_t *f)
 }
 
 /**
+ * @brief ESCape32's key lines and its `music`.
+ * @param v the read
+ * @param f takes them
+ * @return EW_FILE_OK, or why they are refused
+ */
+static ew_file_err_t ver_keys(ver_t *v, ew_file_t *f)
+{
+    const char *s = NULL;
+    size_t n = 0u;
+    ew_file_err_t err;
+
+    for (size_t i = 0; i < EW_E32_KEYS; ++i) {
+        int16_t value = EW_KEY_NONE;
+
+        err = ver_key(v, ew_map_e32[i].key, &s, &n);
+        if (err != EW_FILE_OK) {
+            return err;
+        }
+        if (!(n == STR_LEN(KEY_NO_VALUE) && memcmp(s, KEY_NO_VALUE, n) == 0)
+            && !ew_text_num((const uint8_t *)s, n, &value)) {
+            return EW_FILE_ERR_MALFORMED;
+        }
+        ew_e32_put(f->page, i, value);
+    }
+    v->max = EW_FILE_MUSIC_LINE_MAX;
+    err = ver_key(v, KEY_MUSIC, &s, &n);
+    if (err == EW_FILE_OK) {
+        memcpy(f->music, s, n);
+        f->len = EW_MAP_LEN_E32;
+    }
+    return err;
+}
+
+/**
+ * @brief The field lines, the count and the block.
+ * @param v the read
+ * @param f takes the page
+ * @return EW_FILE_OK, or why they are refused
+ */
+static ew_file_err_t ver_bytes(ver_t *v, ew_file_t *f)
+{
+    ew_file_err_t err = ver_count(v, f);
+
+    if (err != EW_FILE_OK) {
+        return err;
+    }
+    for (size_t row = 0; row < block_rows(f->len); ++row) {
+        err = ver_line(v);
+        if (err != EW_FILE_OK) {
+            return err;
+        }
+        if (!block_row(v->l.s, v->l.n, row, f->len, f->page)) {
+            return EW_FILE_ERR_MALFORMED;
+        }
+    }
+    return EW_FILE_OK;
+}
+
+/**
  * @brief A text whose last line is a checksum line: the whole file, as
  *        ew_file_format() writes it.
  * @param c the position, behind the header
@@ -542,24 +614,17 @@ static ew_file_err_t read_verified(cur_t *c, ew_file_t *f)
     v.c = c;
     v.crc = CRC_START;
     v.crlf = v.l.cr;
+    v.max = EW_FILE_LINE_MAX;
     err = ver_line(&v);
     if (err == EW_FILE_OK) {
         err = ver_identity(&v, f, &version);
     }
     if (err == EW_FILE_OK) {
-        err = ver_count(&v, f);
+        err = f->cpu == (uint8_t)EW_CPU_TEXT ? ver_keys(&v, f)
+                                             : ver_bytes(&v, f);
     }
     if (err != EW_FILE_OK) {
         return err;
-    }
-    for (size_t row = 0; row < block_rows(f->len); ++row) {
-        err = ver_line(&v);
-        if (err != EW_FILE_OK) {
-            return err;
-        }
-        if (!block_row(v.l.s, v.l.n, row, f->len, f->page)) {
-            return EW_FILE_ERR_MALFORMED;
-        }
     }
     (void)next_line(c, &v.l);
     if (!v.l.open && v.l.cr != v.crlf) {
@@ -676,49 +741,36 @@ typedef struct {
 } edit_t;
 
 /**
- * @brief A line with a colon: one of the identity lines.
- * @param e the read
- * @param k the key
+ * @brief A line of ESCape32: a key, or `music`, which is read and not used.
+ * @param e  the read
+ * @param k  the key
  * @param kn its bytes
  * @param s  the value
  * @param n  its bytes
  * @return EW_FILE_OK, or why it is refused
  */
-static ew_file_err_t edit_identity(edit_t *e, const char *k, size_t kn,
-                                   const char *s, size_t n)
+static ew_file_err_t edit_key(edit_t *e, const char *k, size_t kn,
+                              const char *s, size_t n)
 {
-    static const char *const k_unused[] = {
-        KEY_CPU, KEY_PIN, KEY_FLASH, KEY_PROTOCOL, KEY_VERSION, KEY_NAME,
-        KEY_SIGNATURE,
-    };
-    unsigned d = 0u;
-
-    if (loose_eq(k, kn, KEY_FIRMWARE)) {
-        if (e->has_fw) {
-            return EW_FILE_ERR_DUPLICATE;
-        }
-        e->has_fw = true;
-        if (!fw_from_word(s, n, &e->f->fw) || e->f->fw == (uint8_t)EW_FW_NONE) {
-            return EW_FILE_ERR_FIRMWARE;
-        }
-        e->f->len = ew_map_len(e->f->fw);
+    if (loose_eq(k, kn, KEY_MUSIC)) {
         return EW_FILE_OK;
     }
-    if (loose_eq(k, kn, KEY_LAYOUT)) {
-        if (e->has_layout) {
+    for (size_t i = 0; i < EW_E32_KEYS; ++i) {
+        int16_t value = 0;
+
+        if (!loose_eq(k, kn, ew_map_e32[i].key)) {
+            continue;
+        }
+        if ((e->f->has[i / 8u] & (1u << (i % 8u))) != 0u) {
             return EW_FILE_ERR_DUPLICATE;
         }
-        e->has_layout = true;
-        if (!whole_dec(s, n, 255u, &d)) {
+        if (!ew_text_num((const uint8_t *)s, n, &value)) {
             return EW_FILE_ERR_VALUE;
         }
-        e->f->layout = (uint8_t)d;
+        ew_e32_put(e->f->page, i, value);
+        e->f->has[i / 8u] |= (uint8_t)(1u << (i % 8u));
+        e->f->named++;
         return EW_FILE_OK;
-    }
-    for (size_t i = 0; i < sizeof(k_unused) / sizeof(k_unused[0]); ++i) {
-        if (loose_eq(k, kn, k_unused[i])) {
-            return EW_FILE_OK;
-        }
     }
     return EW_FILE_ERR_FIELD;
 }
@@ -739,6 +791,9 @@ static ew_file_err_t edit_field(edit_t *e, const char *k, size_t kn,
 
     if (!e->has_fw || !e->has_layout) {
         return EW_FILE_ERR_NO_TARGET;
+    }
+    if (f->fw == (uint8_t)EW_FW_E32) {
+        return edit_key(e, k, kn, s, n);
     }
     if (n > 0u && s[n - 1u] == ']') {
         while (n > 0u && s[n - 1u] != '[') {
@@ -771,6 +826,56 @@ static ew_file_err_t edit_field(edit_t *e, const char *k, size_t kn,
         f->named++;
         return EW_FILE_OK;
     }
+}
+
+/**
+ * @brief A line with a colon: one of the identity lines.
+ * @param e the read
+ * @param k the key
+ * @param kn its bytes
+ * @param s  the value
+ * @param n  its bytes
+ * @return EW_FILE_OK, or why it is refused
+ */
+static ew_file_err_t edit_identity(edit_t *e, const char *k, size_t kn,
+                                   const char *s, size_t n)
+{
+    static const char *const k_unused[] = {
+        KEY_CPU, KEY_PIN, KEY_FLASH, KEY_PROTOCOL, KEY_VERSION, KEY_NAME,
+        KEY_SIGNATURE, KEY_TARGET,
+    };
+    unsigned d = 0u;
+
+    if (loose_eq(k, kn, KEY_FIRMWARE)) {
+        if (e->has_fw) {
+            return EW_FILE_ERR_DUPLICATE;
+        }
+        e->has_fw = true;
+        if (!fw_from_word(s, n, &e->f->fw) || e->f->fw == (uint8_t)EW_FW_NONE) {
+            return EW_FILE_ERR_FIRMWARE;
+        }
+        e->f->len = ew_map_len(e->f->fw);
+        return EW_FILE_OK;
+    }
+    if (loose_eq(k, kn, KEY_LAYOUT)) {
+        if (e->has_layout) {
+            return EW_FILE_ERR_DUPLICATE;
+        }
+        e->has_layout = true;
+        if (!whole_dec(s, n, 255u, &d)) {
+            return EW_FILE_ERR_VALUE;
+        }
+        e->f->layout = (uint8_t)d;
+        return EW_FILE_OK;
+    }
+    for (size_t i = 0; i < sizeof(k_unused) / sizeof(k_unused[0]); ++i) {
+        if (loose_eq(k, kn, k_unused[i])) {
+            return EW_FILE_OK;
+        }
+    }
+    return e->has_fw && e->f->fw == (uint8_t)EW_FW_E32
+               ? edit_field(e, k, kn, s, n)
+               : EW_FILE_ERR_FIELD;
 }
 
 /**

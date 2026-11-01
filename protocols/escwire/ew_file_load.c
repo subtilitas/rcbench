@@ -36,6 +36,33 @@ static bool edited_same(const ew_file_t *f, const ew_field_t *fd, size_t off,
     return strcmp(a, b) == 0;
 }
 
+/**
+ * @brief ESCape32's keys into the target.  `music` is not among them.
+ * @param f   the file
+ * @param esc the keys as read
+ * @param out takes the result
+ */
+static void load_keys(const ew_file_t *f, const uint8_t *esc,
+                      ew_file_load_t *out)
+{
+    out->fields = EW_E32_KEYS;
+    for (size_t i = 0; i < EW_E32_KEYS; ++i) {
+        const int16_t v = ew_e32_get(f->page, i);
+        const bool gives = f->kind == (uint8_t)EW_FILE_VERIFIED
+                               ? v != EW_KEY_NONE
+                               : (f->has[i / 8u] & (1u << (i % 8u))) != 0u;
+
+        if (!gives) {
+            continue;
+        }
+        out->named++;
+        if (v != ew_e32_get(esc, i)) {
+            ew_e32_put(out->target, i, v);
+            out->changed++;
+        }
+    }
+}
+
 ew_load_t ew_file_load(const ew_file_t *f, const ew_ident_t *id,
                        const uint8_t *esc, ew_file_load_t *out)
 {
@@ -58,7 +85,7 @@ ew_load_t ew_file_load(const ew_file_t *f, const ew_ident_t *id,
     if (!id->writable) {
         return EW_LOAD_READ_ONLY;
     }
-    for (size_t i = 0; i < id->len; ++i) {
+    for (size_t i = 0; f->fw != (uint8_t)EW_FW_E32 && i < id->len; ++i) {
         const ew_field_t *fd = ew_map_find(f->fw, f->layout, (uint8_t)i);
         const bool editable = fd != NULL && fd->access == (uint8_t)EW_ACC_EDIT;
         const bool gives = f->kind == (uint8_t)EW_FILE_VERIFIED
@@ -82,6 +109,9 @@ ew_load_t ew_file_load(const ew_file_t *f, const ew_ident_t *id,
         } else {
             out->skipped++;
         }
+    }
+    if (f->fw == (uint8_t)EW_FW_E32) {
+        load_keys(f, esc, out);
     }
     uint16_t off = 0u;
 
