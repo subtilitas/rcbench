@@ -8,8 +8,6 @@ This code was written from a behavioural specification, without access to the fi
 
 ## Current limitations
 
-- No frame has reached a real ESC. Every result here comes from a simulated ESC in the host tests and from bench runs with no ESC on the line.
-- Bluejay and ESCape32 are not run on hardware.
 - A bidirectional DShot pin rests high on SAFE, which is a bootloader's entry condition. What the next ARM does after that is not measured.
 - All outputs go off after `TORN` or `LOST`. On BLHeli_S and Bluejay the page then loses its 48 tag bytes and reads read-only. An AM32 stays erased until RESTORE FROM BACKUP.
 - 10 failed reads of the page, 50ms at the poll rate, stop a session. A write gets no exception: it ends as `NO_ANSWER`, with a fault and a STOP.
@@ -35,8 +33,8 @@ The strip names what the session drives: `TARGET SLOT 1 GPIO 0`, then the supply
 |---|---|---|
 | TARGET | throttle slots and DShot ports | the first |
 | POWER | SWITCHED, BY HAND | SWITCHED |
-| VOLTAGE | 3.00V to SUPPLY's limit | SUPPLY's set point |
-| LIMIT | 0.05A to SUPPLY's limit | SUPPLY's set point |
+| VOLTAGE | 3.00V, or SUPPLY's lower limit if higher, to SUPPLY's upper limit for this board and setting | SUPPLY's set point |
+| LIMIT | 0.05A, or SUPPLY's lower limit if higher, to SUPPLY's upper limit for this board and setting | SUPPLY's set point |
 | ENTRY HOLD | 0.5s to 120s | 3.0s |
 | OFF TIME | 0s to 10s | 1.0s |
 
@@ -154,15 +152,23 @@ ESCape32 has no LEAVE: a power cycle ends its session. SWITCHED parks the line a
 
 STOP in the band stops the session. A write runs to its read-back first. ABORT on the page acts on the press and cuts at once, also in a write. A stop, a supply lost or a link lost closes an open editor or hold page, and the screen says what happened.
 
-After a stop or a fault the page offers CLEAR STOP and PIN BACK. CLEAR STOP ends the stop and keeps the pin held.
+After a stop or a fault the page offers CLEAR STOP and PIN BACK. CLEAR STOP ends the stop and keeps the pin held. With the panel's own STOP standing, only PIN BACK shows, with `The bench's STOP stands: PIN BACK first.`: releasing that STOP takes ARM, and ARM is refused under the hold.
 
-A pin held in `OPEN` with no stop and nothing running has a page of its own: after ABORT, after CLEAR STOP, and after a refused ENTER, whose reason shows on it, such as no PD mini or a voltage too close to the source. It shows POWER, VOLTAGE, LIMIT, ENTRY HOLD and OFF TIME, read-only, and offers ENTER AGAIN, a red 2s hold, and PIN BACK. ENTER AGAIN sends those values: the session's current ones, which follow SUPPLY until typed, not those of the last CONNECT. BY HAND shows no voltage and no limit. A value that moves under the hold ends the hold. After ABORT the line says ABORT ended it. BACK names the button that ends the stage.
+After a stop or a fault the panel's SUPPLY OFF stands on the SUPPLY page until the hold ends, so the supply does not come on again under this hold. The page held after it offers only PIN BACK, with `A stop or a fault ended this session: PIN BACK, then CONNECT.` An ENTER that meets this state is refused with `SUPPLY_OFF` before anything moves.
 
-A pin another writer holds, the bench console or a session before a panel restart, offers RELEASE PIN with a 2s hold. ARM is refused while a pin is held, and the alert names the ESC programmer.
+A pin held in `OPEN` with no stop and nothing running has a page of its own: after ABORT, after CLEAR STOP, and after a refused ENTER, whose reason shows on it, such as no PD mini or a voltage too close to the source. It shows POWER, VOLTAGE, LIMIT, ENTRY HOLD and OFF TIME, read-only, and offers ENTER AGAIN, a red 2s hold, and PIN BACK; after a stop or a fault, CLEAR STOP included, it offers PIN BACK only. ENTER AGAIN sends those values: the session's current ones, which follow SUPPLY until typed, not those of the last CONNECT. BY HAND shows no voltage and no limit. A value that moves under the hold ends the hold. After ABORT the line says ABORT ended it. BACK names the button that ends the stage.
+
+A line on the page stays on the stage where it happened and on the page its end leads to. The next press on a control clears it. Arriving on CONNECT with the pin free and no flow clears every line but `LEFT`, the link's state and an error that says what ended the flow, which clears at the next press. A link that falls closes a keypad, a choice and a hold page on any stage, and its line replaces `ABORT ended it`.
+
+A pin another writer holds, the bench console or a session before a panel restart, offers RELEASE PIN with a 2s hold. The page names the pin: its GPIO and its slot or port. ARM is refused while a pin is held, and the alert names the ESC programmer.
 
 ![Stopped](img/motor-wire-stopped.png)
 
+![Stopped by the panel's STOP](img/motor-wire-stopped-band.png)
+
 ![Pin held](img/motor-wire-held.png)
+
+![Pin held after a stop](img/motor-wire-held-stop.png)
 
 ![Pin held, BY HAND](img/motor-wire-held-hand.png)
 

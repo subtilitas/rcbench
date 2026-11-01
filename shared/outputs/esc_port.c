@@ -407,6 +407,10 @@ static link_esc_ref_t enter_values(const esc_port_t *p,
     if (!v->online) {
         return LINK_ESC_REF_NO_SUPPLY;
     }
+    /* It would read off, wait and then be refused ON: say so now, as what it is. */
+    if (v->latched) {
+        return LINK_ESC_REF_SUPPLY_OFF;
+    }
     if (mv < LINK_ESC_SUPPLY_MIN_MV || mv > PDMINI_V_MAX_MV
         || ma < PDMINI_I_MIN_MA || ma > PDMINI_I_MAX_MA
         || (v->vin_mv != 0u && (uint32_t)mv + PDMINI_CAP_MV > v->vin_mv)) {

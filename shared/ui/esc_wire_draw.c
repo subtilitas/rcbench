@@ -102,7 +102,7 @@ gfx_rect_t esc_wire_panel_hold_rect(void)
 
     if (ewp_s.kp.open || ewp_s.ch_what != EWP_CH_NONE
         || (ewp_s.page == EWP_PAGE_NONE && st != ESC_WIRE_CONNECT
-            && st != ESC_WIRE_PIN_HELD)
+            && (st != ESC_WIRE_PIN_HELD || ewp_s.no_again))
         || (ewp_s.page == EWP_PAGE_WRITE && !ewp_s.w_seen_last)) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
@@ -725,7 +725,11 @@ static void draw_held(gfx_canvas_t *c, ewp_stage_t st)
     line_at(c, x, y + 50, s_text, UI_C_TEXT);
     message_line(c);
     if (st == ESC_WIRE_STOPPED) {
-        action_btn(c, 0, TR(EW_CLEAR), false, true);
+        if (ewp_s.prog.f.stopped) {
+            line_at(c, x, y + 50 + EWP_LINE_H + 8, TR(EW_STOP_PIN_BACK), UI_C_WARN);
+        } else {
+            action_btn(c, 0, TR(EW_CLEAR), false, true);
+        }
         action_btn(c, 1, TR(EW_CLOSE_PIN), false, true);
     } else if (st == ESC_WIRE_OTHER) {
         action_btn(c, 0, TR(EW_RELEASE_BTN), false, true);
@@ -746,13 +750,26 @@ static void draw_pin_held(gfx_canvas_t *c)
     const int y = ewp_row_rect(0).y;
 
     back_btn(c);
-    draw_values(c, false);
-    (void)gfx_text(c, x, y, TR(EW_HELD_TITLE), &gfx_font_16x28, ui_theme_color(UI_C_WARN), 1);
-    ewp_line_text(s_text, sizeof(s_text));
-    line_at(c, x, y + 40, s_text, UI_C_TEXT);
-    line_at(c, x, y + 40 + EWP_LINE_H, TR(EW_HELD_1), UI_C_TEXT_DIM);
+    /* The values are what ENTER AGAIN would send: with none to send, none show. */
+    if (ewp_s.no_again) {
+        const int x0 = ewp_s.area.x + 40;
+        const int y0 = ewp_s.area.y + 90;
+
+        (void)gfx_text(c, x0, y0, TR(EW_HELD_TITLE), &gfx_font_16x28,
+                       ui_theme_color(UI_C_WARN), 1);
+        ewp_line_text(s_text, sizeof(s_text));
+        line_at(c, x0, y0 + 50, s_text, UI_C_TEXT);
+        line_at(c, x0, y0 + 50 + EWP_LINE_H, TR(EW_HELD_AFTER_STOP), UI_C_WARN);
+    } else {
+        draw_values(c, false);
+        (void)gfx_text(c, x, y, TR(EW_HELD_TITLE), &gfx_font_16x28,
+                       ui_theme_color(UI_C_WARN), 1);
+        ewp_line_text(s_text, sizeof(s_text));
+        line_at(c, x, y + 40, s_text, UI_C_TEXT);
+        line_at(c, x, y + 40 + EWP_LINE_H, TR(EW_HELD_1), UI_C_TEXT_DIM);
+        hold_btn(c, TR(EW_HOLD_ENTER_BTN));
+    }
     message_line(c);
-    hold_btn(c, TR(EW_HOLD_ENTER_BTN));
     action_btn(c, 2, TR(EW_CLOSE_PIN), false, true);
 }
 

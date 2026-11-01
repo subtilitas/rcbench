@@ -754,8 +754,14 @@ TEST_CASE(a_held_supply_takes_off_from_the_panel_only)
      * OFF it cannot switch the supply on again until it lets go (4.31). */
     CHECK(!supply_page_port_set(&pg, true, 5000u, 1000u, true));
     CHECK_EQ(reg(LINK_SP_OUTPUT), 0u);
+    supply_port_view_t seen;
+
+    supply_page_port_view(&pg, &seen);
+    CHECK(seen.latched);
     supply_page_hold(&pg, false);
     supply_page_hold(&pg, true);
+    supply_page_port_view(&pg, &seen);
+    CHECK(!seen.latched);
     CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
     /* The bit survives a step with and without a driver. */
     pdmini_t drv;

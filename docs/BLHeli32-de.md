@@ -29,4 +29,4 @@ abgelehnt. Der Punkt ist abgeschlossen.
 
 ## Alternative
 
-Ein auf AM32-Firmware geflashter ESC kann die [Sitzung auf der Signalleitung](EscWire-de.md) nutzen. Sie lief nicht an einem echten ESC: kein Frame hat einen erreicht.
+Ein auf AM32-Firmware geflashter ESC kann die [Sitzung auf der Signalleitung](EscWire-de.md) nutzen.

@@ -8,7 +8,7 @@ order: 13
 
 The session reads and writes the settings of an ESC (electronic speed controller) with AM32, Bluejay, BLHeli_S or ESCape32 over its signal wire. Open it on MOTOR & ESC > PROGRAM. The row is dimmed until the IOmcu reports the capability.
 
-No frame has reached a real ESC. SimonK is not supported.
+SimonK is not supported.
 
 ## Before CONNECT
 
@@ -38,4 +38,4 @@ A write on BLHeli_S or Bluejay takes about 3848ms. Keep the power on.
 
 ## Leave
 
-`BACK` opens the leave page: hold 2s. An erased AM32 stays erased until `RESTORE FROM BACKUP`; the pin goes back and the supply goes off. ESCape32 has no LEAVE: a power cycle ends its session, and with `BY HAND` you disconnect its power.
+After a stop or a fault the page held offers `PIN BACK` only: `CONNECT` comes after it. `BACK` opens the leave page: hold 2s. An erased AM32 stays erased until `RESTORE FROM BACKUP`; the pin goes back and the supply goes off. ESCape32 has no LEAVE: a power cycle ends its session, and with `BY HAND` you disconnect its power.

@@ -168,6 +168,8 @@ typedef enum {
     LINK_ESC_REF_DRAFT,     /**< the draft does not have the CRC             */
     LINK_ESC_REF_WRITING,   /**< CLOSE or LEAVE while a write runs or its tail */
     LINK_ESC_REF_SESSION,   /**< the session refused: LINK_EW_SES            */
+    LINK_ESC_REF_SUPPLY_OFF, /**< SWITCHED: the panel's OFF stands on the SUPPLY
+                                  page until the hold ends                    */
 } link_esc_ref_t;
 
 /** @brief How the ESC gets its power. */

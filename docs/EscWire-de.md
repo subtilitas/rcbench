@@ -8,8 +8,6 @@ Dieser Code entstand aus einer Verhaltensspezifikation, ohne Zugriff auf die Fir
 
 ## Aktuelle Einschränkungen
 
-- Kein Frame hat einen echten ESC erreicht. Jedes Ergebnis hier stammt von einem simulierten ESC in den Host-Tests und von Bench-Läufen ohne ESC an der Leitung.
-- Bluejay und ESCape32 liefen nicht auf Hardware.
 - Ein bidirektionaler DShot-Pin ruht bei SAFE auf high, die Eintrittsbedingung eines Bootloaders. Was das nächste ARM danach tut, ist nicht gemessen.
 - Nach `TORN` oder `LOST` gehen alle Ausgänge aus. Auf BLHeli_S und Bluejay verliert die Seite dann ihre 48 Tag-Bytes und liest sich nur noch. Ein AM32 bleibt gelöscht bis AUS BACKUP HERSTELLEN.
 - 10 fehlgeschlagene Lesungen der Page, 50ms beim Poll-Takt, stoppen eine Sitzung. Ein Schreiben bekommt keine Ausnahme: es endet als `NO_ANSWER`, mit Fehler und STOP.
@@ -35,8 +33,8 @@ Der Streifen nennt, was die Sitzung treibt: `ZIEL SLOT 1 GPIO 0`, dann das Netzt
 |---|---|---|
 | ZIEL | Gas-Slots und DShot-Ports | der erste |
 | STROM | SWITCHED, BY HAND | SWITCHED |
-| SPANNUNG | 3.00V bis zur Grenze von SUPPLY | Sollwert von SUPPLY |
-| LIMIT | 0.05A bis zur Grenze von SUPPLY | Sollwert von SUPPLY |
+| SPANNUNG | 3.00V, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für dieses Board und diese Einstellung | Sollwert von SUPPLY |
+| LIMIT | 0.05A, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für dieses Board und diese Einstellung | Sollwert von SUPPLY |
 | ENTRY HOLD | 0.5s bis 120s | 3.0s |
 | AUS-ZEIT | 0s bis 10s | 1.0s |
 
@@ -154,15 +152,23 @@ ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung. SWITCHED parkt die
 
 STOP im Band stoppt die Sitzung. Ein Schreiben läuft erst bis zum Zurücklesen. ABBRUCH auf der Seite wirkt beim Drücken und schneidet sofort, auch im Schreiben. Ein Stop, eine verlorene Versorgung oder ein verlorener Link schließen einen offenen Editor oder eine Hold-Seite, und der Screen sagt, was geschah.
 
-Nach einem Stop oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK. STOP LÖSCHEN beendet den Stop und hält den Pin weiter.
+Nach einem Stop oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK. STOP LÖSCHEN beendet den Stop und hält den Pin weiter. Steht der STOP des Panels, zeigt sie nur PIN ZURÜCK, mit `Der STOP des Bench steht: erst PIN ZURÜCK.`: diesen STOP zu lösen braucht ARM, und ARM wird unter dem Halten abgelehnt.
 
-Ein gehaltener Pin ohne Stop und ohne laufenden Vorgang hat eine eigene Seite: nach ABBRUCH, nach STOP LÖSCHEN und nach einem abgelehnten ENTER, dessen Grund dort steht, etwa kein PD mini oder eine Spannung zu nah an der Quelle. Sie zeigt STROM, SPANNUNG, LIMIT, ENTRY HOLD und AUS-ZEIT nur zum Lesen und bietet NEU STARTEN, einen roten Hold von 2s, und PIN ZURÜCK. NEU STARTEN sendet diese Werte: die aktuellen der Sitzung, die dem Netzteil folgen, bis eine Zahl getippt ist, nicht die des letzten VERBINDEN. BY HAND zeigt keine Spannung und kein Limit. Ein Wert, der sich unter dem Hold ändert, beendet den Hold. Nach ABBRUCH sagt die Zeile, dass ABBRUCH es beendet hat. ZURÜCK nennt den Knopf, der die Stufe beendet.
+Nach einem Stop oder Fehler steht das SUPPLY OFF des Panels auf der SUPPLY-Page, bis das Halten endet, das Netzteil kommt unter diesem Halten also nicht wieder an. Die Seite danach bietet nur PIN ZURÜCK, mit `Ein Stop oder Fehler beendete die Sitzung: PIN ZURÜCK, dann VERBINDEN.` Ein ENTER in diesem Zustand wird mit `SUPPLY_OFF` abgelehnt, bevor sich etwas bewegt.
 
-Ein Pin, den ein anderer Schreiber hält, die Bench-Konsole oder eine Sitzung vor einem Panel-Neustart, bietet PIN FREIGEBEN mit einem Hold von 2s. ARM wird abgelehnt, solange ein Pin gehalten ist, und der Alarm nennt die ESC-Programmierung.
+Ein gehaltener Pin ohne Stop und ohne laufenden Vorgang hat eine eigene Seite: nach ABBRUCH, nach STOP LÖSCHEN und nach einem abgelehnten ENTER, dessen Grund dort steht, etwa kein PD mini oder eine Spannung zu nah an der Quelle. Sie zeigt STROM, SPANNUNG, LIMIT, ENTRY HOLD und AUS-ZEIT nur zum Lesen und bietet NEU STARTEN, einen roten Hold von 2s, und PIN ZURÜCK; nach einem Stop oder Fehler, auch nach STOP LÖSCHEN, bietet sie nur PIN ZURÜCK. NEU STARTEN sendet diese Werte: die aktuellen der Sitzung, die dem Netzteil folgen, bis eine Zahl getippt ist, nicht die des letzten VERBINDEN. BY HAND zeigt keine Spannung und kein Limit. Ein Wert, der sich unter dem Hold ändert, beendet den Hold. Nach ABBRUCH sagt die Zeile, dass ABBRUCH es beendet hat. ZURÜCK nennt den Knopf, der die Stufe beendet.
+
+Eine Zeile der Seite bleibt auf der Stufe, auf der sie entstand, und auf der Seite, zu der ihr Ende führt. Der nächste Druck auf ein Bedienelement löscht sie. Die Ankunft auf VERBINDEN mit freiem Pin und ohne Ablauf löscht jede Zeile außer `LEFT`, dem Zustand des Links und einem Fehler, der sagt, was den Ablauf beendet hat; der geht beim nächsten Druck. Ein fallender Link schließt Keypad, Auswahl und Hold-Seite auf jeder Stufe, und seine Zeile ersetzt die zu ABBRUCH.
+
+Ein Pin, den ein anderer Schreiber hält, die Bench-Konsole oder eine Sitzung vor einem Panel-Neustart, bietet PIN FREIGEBEN mit einem Hold von 2s. Die Seite nennt den Pin: seinen GPIO und seinen Slot oder Port. ARM wird abgelehnt, solange ein Pin gehalten ist, und der Alarm nennt die ESC-Programmierung.
 
 ![Gestoppt](img/de/motor-wire-stopped.png)
 
+![Gestoppt durch den STOP des Panels](img/de/motor-wire-stopped-band.png)
+
 ![Pin gehalten](img/de/motor-wire-held.png)
+
+![Pin gehalten nach einem Stop](img/de/motor-wire-held-stop.png)
 
 ![Pin gehalten, BY HAND](img/de/motor-wire-held-hand.png)
 

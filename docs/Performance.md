@@ -75,6 +75,7 @@ settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
 motor-stick                  1,713     214 KiB
+motor-wire                       0       0 KiB
 balance-sim                  3,253     407 KiB
 settings-sim                 3,304     413 KiB
 battery-sim                  3,146     393 KiB
@@ -85,6 +86,7 @@ settings-list-chrome        37,162    4645 KiB
 battery-chrome              58,117    7265 KiB
 balance-chrome              63,426    7928 KiB
 motor-stick-chrome          41,955    5244 KiB
+motor-wire-chrome           40,230    5029 KiB
 picker                           0       0 KiB
 picker-chrome               41,559    5195 KiB
 wifi                             0       0 KiB
@@ -112,7 +114,7 @@ est. ms and est. fps: not measured
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `supply` | the supply screen with its output on, a sample landing every frame |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
 | `settings-list` | SETUP with PANEL's list open, chrome cached |
 | `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
@@ -227,14 +229,14 @@ a change that makes the model draw more, not a frame that misses the panel:
 
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
-| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
+| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
 | `overview-guide` | 1,000 | guide marks that draw more than their badges and brackets |
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
 | `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,720 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
-| the ten `-chrome` modes | 72,000 | a growing full repaint |
+| the eleven `-chrome` modes | 72,000 | a growing full repaint |
 | `wifi-keys` | 42,000 | a key of the Wi-Fi keyboard that repaints more than the screen |
 
 `tools/check_docs.py` holds this table to the `--max-lines` arguments in
@@ -335,6 +337,7 @@ fill and a write-back for every line. The time of one clear, set as
 | `battery` | BATTERY | not measured | not measured | not measured | not measured | not measured |
 | `balance` | BALANCE | not measured | not measured | not measured | not measured | not measured |
 | `motor-stick` | ESC STICK open on MOTOR & ESC > PROGRAM | not measured | not measured | not measured | not measured | not measured |
+| `motor-wire` | the ESC signal wire session at rest on a read ESC, MOTOR & ESC > PROGRAM | not measured | not measured | not measured | not measured | not measured |
 | `picker` | OUTPUTS, board view | not measured | not measured | not measured | not measured | not measured |
 | `wifi` | WI-FI with ACCESS POINT on | not measured | not measured | not measured | not measured | not measured |
 | `wifi-keys` | WI-FI > CHOOSE HOME NETWORK, the password keyboard, a key typed every second | not measured | not measured | not measured | not measured | not measured |

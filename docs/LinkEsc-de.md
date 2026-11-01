@@ -17,9 +17,6 @@ Es gibt keine rohe Transaktion. Der IOmcu hält die gelesene Kopie und beurteilt
 Frame ([der Guard](../protocols/escwire/README.md)). Ein Panel nennt eine Operation
 und übergibt einen Entwurf.
 
-Nichts davon war an einem ESC. Zur Station ohne ESC siehe
-[Was nicht gemessen ist](#was-nicht-gemessen-ist).
-
 ## Welcher Pin
 
 | Ziel | Genommen, wenn |
@@ -214,7 +211,7 @@ Befehl wird bestätigt, und was daraus wurde, steht auf der Page: das High-Byte 
 `RESULT` sagt, warum er nichts begann, oder 0. Ablehnungen: 1 `BUSY`, 2 `TARGET`, 3
 `HELD`, 4 `ARMED`, 5 `UNSAFE`, 6 `NOT_OPEN`, 7 `NO_KEY`, 8 `STAGED`, 9 `STOPPED`, 10
 `NO_PIN`, 11 `RANGE`, 12 `NO_SUPPLY`, 13 `STALE`, 14 `DRAFT`, 15 `WRITING`, 16
-`SESSION`. Ergebnisse: 1 läuft, 2 fertig, 3 `NO_LINE`, 4 `SUPPLY`, 5 `TIMEOUT`, 6
+`SESSION`, 17 `SUPPLY_OFF`. Ergebnisse: 1 läuft, 2 fertig, 3 `NO_LINE`, 4 `SUPPLY`, 5 `TIMEOUT`, 6
 `CUT`, 7 `SESSION`, 8 `NOT_BACK`.
 
 `ESC_DATA` sind 32 Register, 64B, Low-Byte zuerst, des Blocks, den `BLOCK` nennt:
@@ -246,7 +243,7 @@ Der Screen [ESC-Signalleitung](EscWire-de.md) des Panels treibt beide Pages.
 
 ## Was nicht gemessen ist
 
-Kein Frame dieser Page war an einem ESC. An der Bench-Konsole treibt `esc` sie
+An der Bench-Konsole treibt `esc` sie
 ([Die Bench-Konsole](BenchConsole-de.md#die-esc-einstellungs-page)). Ihre Zeiten kommen
 aus der Spezifikation oder sind die Wahl dieses Moduls
 ([`protocols/escwire`](../protocols/escwire/README.md)): Eintritts-Hold, Auszeit, 50ms

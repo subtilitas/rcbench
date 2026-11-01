@@ -36,6 +36,8 @@
  *             balance, motor-stick or picker; settings is SETUP's tiles,
  *             settings-list PANEL's list, motor-stick MOTOR & ESC's
  *             ESC STICK session under the output strip, on its makers
+ *   motor-wire  the ESC signal-wire session at rest on a read ESC: the outputs read
+ *             again and the session fed every frame, nothing shown changing
  *   <screen>-chrome  the same, repainted in full every frame
  *   <screen>-sim     the same with the SIMULATION watermark
  *
@@ -62,6 +64,9 @@
 #include "overview_screen.h"
 #include "picker_screen.h"
 #include "settings_screen.h"
+#include "esc_wire_panel.h"
+#include "ew_map.h"
+#include "link_pages.h"
 #include "servo_screen.h"
 #include "splash_screen.h"
 #include "supply.h"
@@ -106,6 +111,91 @@ static const ui_bench_status_t k_status = {
 /* The mode, copied out of argv: argv's strings sit above the stack, at an
  * address that moves with the environment's length. */
 static char g_mode[MODE_MAX];
+
+/** @brief The session's feed in the motor-wire modes. */
+static esc_prog_feed_t s_wire;
+
+/**
+ * @brief One frame's feed of the session at rest: time moves, the outputs are read
+ *        again from a stack holding other bytes, and nothing the page shows changes.
+ * @param i The frame.
+ */
+static void wire_frame(int i)
+{
+    esc_wire_target_t t[2];
+
+    memset(t, (i & 1) != 0 ? 0xAA : 0x55, sizeof(t));
+    t[0].target = 0u;
+    t[0].gpio = 0u;
+    t[1].target = LINK_EW_TARGET_PORT | 1u;
+    t[1].gpio = 14u;
+    esc_wire_panel_set_targets(t, 2u, true);
+    s_wire.now_ms = 1000u + (uint32_t)i * 16u;
+    s_wire.rd.t_ms = (uint16_t)(400u + (unsigned)i * 16u);
+    esc_wire_panel_feed(&s_wire);
+}
+
+/**
+ * @brief MOTOR & ESC > PROGRAM's second row, a read ESC on the session's first tab.
+ */
+static void wire_open(void)
+{
+    ui_bench_status_t st = k_status;
+
+    st.capabilities = (uint16_t)(st.capabilities | LINK_CAP_PROGRAM);
+    ui_router_set_status(&st);
+    supply_screen_put(7.4f, 1.0f);
+    memset(&s_wire, 0, sizeof(s_wire));
+    s_wire.rd.phase = ESC_LINK_READY;
+    s_wire.rd.minor = LINK_MINOR_ESC_WIRE;
+    s_wire.rd.known = true;
+    s_wire.rd.gpio = 0xFFu;
+    wire_frame(0);
+    static const int16_t at[2][2] = { { 181, 18 }, { 279, 83 + 56 } };
+
+    for (int k = 0; k < 2; ++k) {
+        const int16_t x = at[k][0];
+        const int16_t y = (int16_t)(UI_BAND_H + at[k][1]);
+        const touch_event_t tap[] = {
+            { .type = TOUCH_EVENT_DOWN, .point = { .id = 1, .x = x, .y = y } },
+            { .type = TOUCH_EVENT_UP,   .point = { .id = 1, .x = x, .y = y } },
+        };
+        ui_router_event(&tap[0]);
+        ui_router_event(&tap[1]);
+    }
+    const uint16_t len = ew_map_len(EW_FW_AM);
+    const ew_field_t *f;
+
+    s_wire.rd.state = LINK_ESC_READY;
+    s_wire.rd.held = true;
+    s_wire.rd.ours = true;
+    s_wire.rd.gpio = 0u;
+    s_wire.rd.line = LINK_ESC_LINE_UP;
+    s_wire.rd.fw = EW_FW_AM;
+    s_wire.rd.layout = 3u;
+    s_wire.rd.len = len;
+    s_wire.rd.reads = 1u;
+    s_wire.rd.read_crc = 0x1234u;
+    s_wire.rd.cpu = EW_CPU_ARM;
+    s_wire.rd.flags = LINK_EW_F_HAVE_READ | LINK_EW_F_IN_MODE;
+    s_wire.image.gen = 1u;
+    s_wire.image.reads = 1u;
+    s_wire.image.read_crc = 0x1234u;
+    s_wire.image.len = len;
+    memset(s_wire.image.page, 0xFF, sizeof(s_wire.image.page));
+    for (size_t i = 0u; (f = ew_map_nth(EW_FW_AM, 3u, i)) != NULL; ++i) {
+        s_wire.image.page[f->off] = f->lo;
+    }
+    s_wire.image.page[0] = 1u;
+    s_wire.image.page[1] = 3u;
+    wire_frame(1);
+    wire_frame(2);
+    if (esc_wire_panel_stage() != ESC_WIRE_SESSION) {
+        fprintf(stderr, "bench_frame: the session is on stage %d\n",
+                (int)esc_wire_panel_stage());
+        exit(1);
+    }
+}
 
 /**
  * @brief Draw @p frames frames of @p mode, the bench proper.
@@ -183,6 +273,7 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
         { "motor-stick", SCREEN_MOTOR },
+        { "motor-wire", SCREEN_MOTOR },
         /* The picker with the IOmcu's drawing of the RP2350-CAN: an
          * outline, 102 shapes and 40 pad rings on a full repaint. */
         { "picker",     SCREEN_OUTPUTS },
@@ -257,6 +348,12 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
             ui_router_event(&tap[0]);
             ui_router_event(&tap[1]);
         }
+    }
+
+    const bool wire = strncmp(mode, "motor-wire", 10) == 0;
+
+    if (wire) {
+        wire_open();
     }
 
     if (strncmp(mode, "settings-list", 13) == 0) {
@@ -374,6 +471,9 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         if (plain) {
             if (plain_chrome) {
                 ui_router_invalidate();
+            }
+            if (wire) {
+                wire_frame(i);
             }
             ui_router_tick(0.026f);
             ui_router_render(&c, i & 1);

@@ -185,6 +185,8 @@ typedef struct {
     esc_prog_cmd_t out;      /**< it                                          */
     esc_prog_connect_t conn; /**< CONNECT's values                            */
     uint16_t flags_seen;     /**< LINK_EW_F_FAULT and _STOPPED at the last feed */
+    uint16_t limit_mv;       /**< SUPPLY's upper voltage, mV; 0 for none      */
+    uint16_t limit_ma;       /**< SUPPLY's upper limit, mA; 0 for none        */
     uint8_t  aborted;        /**< ABORT went: the outcome it cuts is its own  */
     esc_prog_msg_t msg;      /**< the last message                            */
     uint16_t detail;         /**< its code                                    */
@@ -371,6 +373,28 @@ size_t esc_prog_backup_text(const esc_prog_t *p, char *out, size_t size);
  * @param p The model.
  */
 void esc_prog_backup_settled(esc_prog_t *p);
+
+/**
+ * @brief SUPPLY's upper limits for this board and setting: a connect above them goes
+ *        nowhere.
+ * @param p      The model.
+ * @param max_mv The voltage, mV; 0 for only the module's.
+ * @param max_ma The limit, mA; 0 for only the module's.
+ */
+void esc_prog_limits(esc_prog_t *p, uint16_t max_mv, uint16_t max_ma);
+
+/**
+ * @brief The operator's next action: the word goes.
+ * @param p The model.
+ */
+void esc_prog_word_clear(esc_prog_t *p);
+
+/**
+ * @brief Arriving with the pin free and no flow: everything goes but LEFT, the link's
+ *        state and an error that says what ended the flow, which go at the next action.
+ * @param p The model.
+ */
+void esc_prog_word_on_free(esc_prog_t *p);
 
 /** @brief Why the session has no backup to make. */
 typedef enum {

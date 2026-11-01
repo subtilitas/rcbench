@@ -30,8 +30,8 @@ history is in git.
   take back keeps the hold until a CLOSE succeeds or the IOmcu restarts. ARM and THROTTLE
   are 0 when the hold begins and at its end. SUPPLY's wiring in force is taken during the hold; a change answers BUSY. An error, TORN and LOST included, parks the line and switches the
   PD mini and PROG_SUPPLY off; a STOP or an ABORT does as well. RAM 7344B: 3856B for the
-  page and 3488B for the line. No screen uses the pages yet. No frame has been to an
-  ESC. A bidirectional DShot pin resting high on SAFE stays as it is, a current
+  page and 3488B for the line. No screen uses the pages yet. A bidirectional
+  DShot pin resting high on SAFE stays as it is, a current
   limitation ([The ESC settings pages](docs/LinkEsc.md#current-limitations)).
 - Bench console: `esc` runs the page's operations.
 - `protocols/escwire/`: the core for reading and writing ESC settings over the
@@ -81,6 +81,14 @@ history is in git.
   hold.
 
 ### Fixed
+
+- ESC signal wire: with the panel's STOP standing, STOPPED offers PIN BACK only, with `The bench's STOP stands: PIN BACK first.` A page's stop keeps CLEAR STOP.
+- ESC signal wire: after a stop or a fault PIN HELD offers PIN BACK only, with a line that names CONNECT after it. The SUPPLY page reports its latched OFF, and an ENTER under it is refused with `LINK_ESC_REF_SUPPLY_OFF` (17) in place of ending as `SUPPLY` after 1.3s.
+- ESC signal wire: VOLTAGE's and LIMIT's keypads end at SUPPLY's limits for this board and setting, and a connect above them is refused with the range message.
+- ESC signal wire: a falling link closes a keypad, a choice and a hold page on any stage, and `ABORT ended it` gives way to the link's state.
+- ESC signal wire: a line stays on its stage and the page its end leads to; the next press clears it. Arriving on CONNECT with the pin free clears all but `LEFT`, the link's state and an error that ended the flow.
+- ESC signal wire: RELEASE, RESTORE and NO BACKUP each have their own hold hint, and RELEASE's page names the pin. German `STOPPED` title reads `GESTOPPT`.
+- ESC signal wire: a steady session page moves no revision when the outputs read again: the targets compare by field, not with their padding byte. `motor-wire` draws 0 cache-line fills a frame, 19,271 with the padding moving.
 
 - `docs/BLHeli32.md` no longer says AM32 is fully supported.
 - IOmcu: a non-zero ARM written while a programming port is out of PWM, on KST

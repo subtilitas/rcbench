@@ -34,6 +34,7 @@ enum {
  */
 static void take(const touch_event_t *evt, int what, int i)
 {
+    ewp_words_clear();
     ewp_s.have = true;
     ewp_s.id = evt->point.id;
     ewp_s.pressed = what;
@@ -104,7 +105,9 @@ static void action(int i)
         }
         break;
     case ESC_WIRE_STOPPED:
-        if (i == 0) {
+        /* CLEAR STOP is for a page's stop: the panel's own stands until it is released,
+         * which needs ARM, refused under this hold. */
+        if (i == 0 && !m->f.stopped) {
             (void)esc_prog_clear(m);
         } else if (i == 1) {
             (void)esc_prog_close(m);
@@ -112,8 +115,14 @@ static void action(int i)
         break;
     case ESC_WIRE_OTHER:
         if (i == 0) {
+            char pin[EWP_LINE];
+            char line[EWP_LINE + 16];
+
             ewp_page_open(EWP_PAGE_RELEASE);
             ewp_page_add(TR(EW_RELEASE_1));
+            (void)esc_wire_panel_target_text(pin, sizeof(pin));
+            snprintf(line, sizeof(line), TR(EW_RELEASE_PIN), pin);
+            ewp_page_add(line);
             ewp_page_add(TR(EW_RELEASE_2));
         }
         break;
@@ -198,6 +207,28 @@ static void down_rows(const touch_event_t *evt)
 }
 
 /**
+ * @brief What a hold says it does.
+ * @return Its hint.
+ */
+static ui_text_id_t hold_hint(void)
+{
+    switch (ewp_s.page) {
+    case EWP_PAGE_WRITE:
+        return TX_HOLD_HINT_WRITE;
+    case EWP_PAGE_LEAVE:
+        return TX_HOLD_HINT_LEAVE;
+    case EWP_PAGE_RELEASE:
+        return TX_EW_HINT_RELEASE;
+    case EWP_PAGE_RESTORE:
+        return TX_EW_HINT_RESTORE;
+    case EWP_PAGE_NO_BACKUP:
+        return TX_EW_HINT_NO_BACKUP;
+    default:
+        return ewp_stage() == ESC_WIRE_PIN_HELD ? TX_EW_HOLD_ENTER : TX_EW_HOLD_CONNECT;
+    }
+}
+
+/**
  * @brief A DOWN: what is under it takes the press.
  * @param evt The event.
  */
@@ -227,11 +258,7 @@ static void down(const touch_event_t *evt)
         && gfx_rect_contains(esc_wire_panel_hold_rect(), x, y)) {
         take(evt, P_HOLD, -1);
         ewp_s.hold_down = true;
-        ui_hold_begin(&ewp_s.hold,
-                      ewp_s.page == EWP_PAGE_LEAVE ? TX_HOLD_HINT_LEAVE
-                      : ewp_s.page != EWP_PAGE_NONE ? TX_HOLD_HINT_WRITE
-                      : ewp_stage() == ESC_WIRE_PIN_HELD ? TX_EW_HOLD_ENTER
-                                                         : TX_EW_HOLD_CONNECT);
+        ui_hold_begin(&ewp_s.hold, hold_hint());
         return;
     }
     if (ewp_s.page != EWP_PAGE_NONE) {
