@@ -34,15 +34,23 @@
 /** @brief Room for a value's text. */
 #define VALUE_MAX 32u
 
-/** @brief The keys of the identity lines. */
+/** @brief The key of the firmware line. */
 #define KEY_FIRMWARE  "Firmware"
+/** @brief The key of the layout line. */
 #define KEY_LAYOUT    "Layout"
+/** @brief The key of the processor line. */
 #define KEY_CPU       "Processor"
+/** @brief The key of the pin code line. */
 #define KEY_PIN       "Pin code"
+/** @brief The key of the flash code line. */
 #define KEY_FLASH     "Flash code"
+/** @brief The key of the bootloader protocol line. */
 #define KEY_PROTOCOL  "Bootloader protocol"
+/** @brief The key of the bootloader version line. */
 #define KEY_VERSION   "Bootloader version"
+/** @brief The key of the name line. */
 #define KEY_NAME      "Name"
+/** @brief The key of the signature line. */
 #define KEY_SIGNATURE "Signature"
 
 /** @brief The start of the CRC-32 register. */

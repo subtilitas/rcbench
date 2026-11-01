@@ -428,7 +428,7 @@ static bool fake_mounted(void *ctx)
 
 static bool fake_walk(void *ctx, servo_store_visit_fn visit, void *visit_ctx)
 {
-    const char *const *names = ctx;
+    const char *const *names = (const char *const *)ctx;
 
     for (size_t i = 0u; names[i] != NULL; ++i) {
         visit(names[i], false, visit_ctx);

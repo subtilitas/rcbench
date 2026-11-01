@@ -27,7 +27,7 @@ typedef struct {
     size_t      n;    /**< its bytes                           */
     bool        cr;   /**< it ends with CR LF                  */
     bool        open; /**< the text ends in it, with no line end */
-} line_t;
+} text_line_t;
 
 /**
  * @brief The next line.  At the end of the text a line of no bytes.
@@ -35,7 +35,7 @@ typedef struct {
  * @param l takes the line
  * @return false at the end of the text
  */
-static bool next_line(cur_t *c, line_t *l)
+static bool next_line(cur_t *c, text_line_t *l)
 {
     const size_t left = c->len - c->pos;
     const char *start = c->text + c->pos;
@@ -126,7 +126,7 @@ static void trim(const char **s, size_t *n)
  * @param l the line
  * @return true when it does
  */
-static bool blank_line(const line_t *l)
+static bool blank_line(const text_line_t *l)
 {
     const char *s = l->s;
     size_t n = l->n;
@@ -140,7 +140,7 @@ static bool blank_line(const line_t *l)
  * @param l the line
  * @return true when it is
  */
-static bool checksum_word(const line_t *l)
+static bool checksum_word(const text_line_t *l)
 {
     const char *s = l->s;
     size_t n = l->n;
@@ -255,7 +255,7 @@ static size_t block_rows(size_t len)
 static ew_file_err_t read_head(cur_t *c)
 {
     const size_t have = c->len < STR_LEN(HEADER) ? c->len : STR_LEN(HEADER);
-    line_t l;
+    text_line_t l;
     unsigned version = 0u;
 
     if (memcmp(c->text, HEADER, have) != 0) {
@@ -280,7 +280,7 @@ typedef struct {
     cur_t   *c;    /**< the position                            */
     uint32_t crc;  /**< the register over the lines so far      */
     bool     crlf; /**< the file's line end                     */
-    line_t   l;    /**< the line just taken                     */
+    text_line_t   l;    /**< the line just taken                     */
 } ver_t;
 
 /**
@@ -827,7 +827,7 @@ static ew_file_err_t edit_line(edit_t *e, const char *s, size_t n)
 static ew_file_err_t read_edited(cur_t *c, ew_file_t *f, const char *last)
 {
     edit_t e;
-    line_t l;
+    text_line_t l;
     uint8_t scratch[EW_PAGE_MAX];
 
     memset(&e, 0, sizeof(e));
@@ -896,8 +896,8 @@ ew_file_err_t ew_file_parse(const char *text, size_t len, ew_file_t *out,
     if (err == EW_FILE_OK) {
         /* The last line that is not blank says what the text is. */
         cur_t scan = c;
-        line_t l;
-        line_t last = { NULL, 0u, false, false };
+        text_line_t l;
+        text_line_t last = { NULL, 0u, false, false };
         unsigned last_at = 0u;
         bool any_checksum = false;
 

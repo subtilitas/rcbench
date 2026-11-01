@@ -14,12 +14,6 @@ static const char k_hex[] = "0123456789ABCDEF";
 
 /* --- checksum ------------------------------------------------------------- */
 
-/**
- * @brief Add one byte to the CRC-32 register, 4 bits a step.
- * @param crc  the register
- * @param byte the byte
- * @return the register
- */
 uint32_t ew_fi_crc_add(uint32_t crc, uint8_t byte)
 {
     static const uint32_t k_table[16] = {
@@ -48,11 +42,6 @@ uint32_t ew_file_crc32(const void *data, size_t n)
 
 /* --- what a file says of itself ------------------------------------------- */
 
-/**
- * @brief The word a file uses for a firmware.
- * @param fw an ew_fw_t
- * @return the word; "none" for EW_FW_NONE
- */
 const char *ew_fi_fw_word(uint8_t fw)
 {
     switch (fw) {
@@ -107,11 +96,6 @@ static bool name_fits(const char *name)
     return true;
 }
 
-/**
- * @brief Whether the lines of a file agree with its page and each other.
- * @param f the file, its bytes read
- * @return true when they do
- */
 bool ew_fi_agrees(const ew_file_t *f)
 {
     if (f->layout != page_layout(f->fw, f->page)) {
@@ -168,11 +152,6 @@ static void put_char(ew_fi_buf_t *b, char c)
     b->n++;
 }
 
-/**
- * @brief Add a string.
- * @param b the text
- * @param s the string
- */
 void ew_fi_put_str(ew_fi_buf_t *b, const char *s)
 {
     while (*s != '\0') {
@@ -196,12 +175,6 @@ static void put_dec(ew_fi_buf_t *b, unsigned v)
     put_char(b, (char)('0' + v % 10u));
 }
 
-/**
- * @brief Add the low digits of a value in upper-case hexadecimal.
- * @param b      the text
- * @param v      the value
- * @param digits how many
- */
 void ew_fi_put_hex(ew_fi_buf_t *b, uint32_t v, unsigned digits)
 {
     while (digits > 0u) {
