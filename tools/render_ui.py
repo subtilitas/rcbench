@@ -410,7 +410,8 @@ SCREENS = {
     "motor-wire-s": ("motor-wire-s.png", "motor", "dark"),
     "motor-wire-bj": ("motor-wire-bj.png", "motor", "dark"),
     "motor-wire-readonly": ("motor-wire-readonly.png", "motor", "dark"),
-    "motor-wire-readonly-rows": ("motor-wire-readonly-rows.png", "motor", "dark"),
+    "motor-wire-readonly-rows": (
+        "motor-wire-readonly-rows.png", "motor", "dark"),
     "motor-wire-hex": ("motor-wire-hex.png", "motor", "dark"),
     "motor-wire-e32": ("motor-wire-e32.png", "motor", "dark"),
     "motor-wire-e32-1": ("motor-wire-e32-1.png", "motor", "dark"),
@@ -424,7 +425,8 @@ SCREENS = {
     "motor-wire-am-long": ("motor-wire-am-long.png", "motor", "dark"),
     "motor-wire-am-last": ("motor-wire-am-last.png", "motor", "dark"),
     "motor-wire-am-card": ("motor-wire-am-card.png", "motor", "dark"),
-    "motor-wire-erased-leave": ("motor-wire-erased-leave.png", "motor", "dark"),
+    "motor-wire-erased-leave": (
+        "motor-wire-erased-leave.png", "motor", "dark"),
     # ESC STICK, opened from that row, full width under the output strip.
     "motor-stick": ("motor-stick.png", "motor", "dark"),
     "motor-stick-items": ("motor-stick-items.png", "motor", "dark"),
