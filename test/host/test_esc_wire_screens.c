@@ -550,10 +550,11 @@ TEST_CASE(the_page_set_tells_its_host_what_it_holds)
     CHECK(ewp_s.armed);
     esc_wire_pages.armed(false);
     esc_wire_pages.entry();
-    const uint32_t rev = esc_wire_pages.revision();
+    const uint32_t rev = ewp_s.rev;
 
     connected();
-    CHECK(esc_wire_pages.revision() != rev);
+    CHECK(ewp_s.rev != rev);
+    CHECK_EQ(esc_wire_pages.revision(), ewp_s.rev + ewp_s.kp.revision);
     CHECK_EQ(esc_wire_pages.pin(), 5u);
     CHECK(esc_wire_pages.holds_port());
     /* Left with a pin held, it stays open; a press and an editor go. */
