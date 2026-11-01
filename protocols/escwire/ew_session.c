@@ -628,10 +628,9 @@ static void xfer_done(ew_session_t *s, const ew_capture_t *c)
         return;
     case A_LEAVE:
         s->in_mode = false;
-        s->d.line(s->d.ctx, EW_LINE_LOW);
         s->t0 = s->d.now_us(s->d.ctx);
-        s->wait_us = EW_LEAVE_LOW_MS * 1000u;
-        s->phase = PH_LOW;
+        s->wait_us = EW_SES_LEAVE_IDLE_US;
+        s->phase = PH_LEAVE_IDLE;
         return;
     case A_READ_ID:
         n = s->contact.cpu == (uint8_t)EW_CPU_EFM8 ? EW_MAP_LEN_S
@@ -699,6 +698,14 @@ ew_ses_t ew_session_step(ew_session_t *s)
         }
         break;
     }
+    case PH_LEAVE_IDLE:
+        if (ew_due(now, s->t0, s->wait_us)) {
+            s->d.line(s->d.ctx, EW_LINE_LOW);
+            s->t0 = now;
+            s->wait_us = EW_LEAVE_LOW_MS * 1000u;
+            s->phase = PH_LOW;
+        }
+        break;
     case PH_LOW:
         if (!ew_due(now, s->t0, s->wait_us)) {
             return EW_SES_BUSY;

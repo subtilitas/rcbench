@@ -16,6 +16,7 @@ enum {
     PH_HELD,      /**< the line high, waiting for ew_session_enter() */
     PH_HOLD,      /**< a hold before a first contact or `info` runs  */
     PH_XFER,      /**< a transaction runs                            */
+    PH_LEAVE_IDLE, /**< the line idle after a leave frame            */
     PH_LOW,       /**< the line low after a leave                    */
 };
 

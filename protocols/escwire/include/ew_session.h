@@ -55,8 +55,13 @@ extern "C" {
 #define EW_SES_TRIES 3u
 /** @brief Times the whole write procedure runs at most. */
 #define EW_SES_ATTEMPTS 3u
-/** @brief Idle bit times between an announcement and its data. */
-#define EW_SES_PAUSE_BITS 2u
+/** @brief Idle bit times between an announcement and its data: 520us, for every
+ *         firmware.  AM32 ends a message on more than 234us of idle line and
+ *         loses data that come sooner, with no answer; an EFM8 takes any gap. */
+#define EW_SES_PAUSE_BITS 10u
+/** @brief The line stays idle this long after a leave frame, us: AM32 acts on a
+ *         message only after its idle line. */
+#define EW_SES_LEAVE_IDLE_US 500u
 /** @brief The hold between a silent first contact and `info`, ms: over the 2s
  *         an ESC with the text interface needs after a reset. */
 #define EW_SES_TEXT_HOLD_MS 2500u

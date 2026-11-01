@@ -29,6 +29,11 @@ history is in git.
 
 ### Fixed
 
+- `protocols/escwire`: 520us between a data announcement and its data, on every
+  firmware. A gap of 104us loses the data on AM32 and no answer comes, since
+  AM32 ends a message only on more than 234us of idle line. A leave frame is
+  followed by 500us of idle line before the line goes low.
+
 - Screenshot: the IOmcu update's question and the release reminder take no
   hold. They cannot say whether a box covers them, so a hold there copied a
   picture and the popup would have opened after the screen had gone.

@@ -275,8 +275,8 @@ TEST_CASE(a_transaction_at_and_past_each_limit)
     CHECK(ew_xfer_valid(&x));
     x.rx = rx;
     CHECK(!ew_xfer_valid(&x));
-    /* The pause stays under the 260us an ESC allows between two bytes. */
-    CHECK(EW_PAUSE_BITS_MAX * EW_BIT_A_NS < 260000u);
+    /* The largest pause reaches the 500us that serve every firmware. */
+    CHECK(EW_PAUSE_BITS_MAX * EW_BIT_A_NS >= 500000u);
 }
 
 TEST_CASE(the_longest_time_of_a_transaction)

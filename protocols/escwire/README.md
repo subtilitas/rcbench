@@ -46,11 +46,18 @@ in reflected form, initial value 0, no final XOR, low byte first.
 | first contact | 17 bytes, no frame | 9 bytes starting `471` | 100ms, 3 |
 | address | `FF 00 high low` | `30` | 4ms, 3 |
 | read | `03` and the count, 0 for 256 | the bytes, CRC, `30` | 80ms for the first byte, 2ms between bytes, 3 |
-| announce and data | `FE 00 high low`, 2 idle bit times (104us), the data and their CRC | `30` | 80ms, 3 |
+| announce and data | `FE 00 high low`, 10 idle bit times (520us), the data and their CRC | `30` | 80ms, 3 |
 | program | `01 01` | `30` | 500ms, 1 |
 | erase | `02 01` | `30` | 3000ms, 1 |
 | leave | `00 01` (EFM8), `00 00` (AM32) | none | |
 | keep alive | `FD 00` | `C1` | the guard allows it; a session sends none, since no bootloader leaves on idle |
+
+Every firmware gets the same 520us between an announcement and its data. AM32
+ends a message on more than 234us of idle line, so data less than that behind
+their announcement are lost and no answer comes; an EFM8 takes any gap. The
+bytes of one message go with no gap. AM32 answers about 0.3ms to 0.35ms after a
+host's last byte. For the same reason a leave frame is followed by 500us of idle
+line before the line goes low.
 
 An erase and a program are not repeated on a failed answer: the read that
 follows says what they did. A read goes with a new address on every try.
@@ -255,7 +262,7 @@ typedef struct {
 
 `start()` sends the bytes and releases the pad within one state machine cycle of
 the last stop bit. `ew_session_hold()` drives the line high, the end of a leave
-drives it low for 300ms and parks it, and a stop, an abort or a driver that fails
+leaves it idle for 500us, drives it low for 300ms and parks it, and a stop, an abort or a driver that fails
 parks it: an input with its pull-down. `EW_LINE_UP` is an input with its pull-up,
 the rest between exchanges.
 
@@ -274,8 +281,11 @@ this file comes from the specification or is a host's choice:
   raise an open-drain answer at 52us a bit;
 - the state of the power stage in the bootloaders; the effect of a missing
   motor on entry;
-- the 104us between an announcement and its data, which the specification does
-  not bound;
+- the 520us between an announcement and its data, and the 234us it clears;
+- what an AM32 does after it answered 0xC2 to a cut data block: the specification
+  does not state it. Such an answer behind an announcement lies under the host's
+  own data and is not read, so the session sees no answer on that try. The tests
+  hold the session for an ESC that says nothing more and for one that listens on;
 - on the text interface: the reply latency, the time a `save` takes, the pull on
   the signal pin, whether the startup music overlaps the entry, a parameter page
   of another revision.
