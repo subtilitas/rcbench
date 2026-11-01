@@ -279,7 +279,7 @@ and answers `ewline armed`.
 
 | Test | On the pin, in order |
 |---|---|
-| `tx` | parked 20ms; high 50ms; the first contact (17B at 52us a bit) 3 times, each followed by its 100ms wait; pull-up 20ms; 12B with 4 idle bit times after the sixth; pull-up 20ms; `info` and LF at 38400baud and a 200ms wait; pull-up 20ms; 0x55 at 52us a bit into a pull-down; pull-up 20ms; 0x55 at 38400baud into a pull-down; parked 20ms; low 300ms; parked 20ms |
+| `tx` | parked 20ms; high 50ms; the first contact (17B at 52us a bit) 3 times, each followed by its 100ms wait; pull-up 20ms; 12B with 10 idle bit times, 520us, after the sixth; pull-up 20ms; `info` and LF at 38400baud and a 200ms wait; pull-up 20ms; 0x55 at 52us a bit into a pull-down; pull-up 20ms; 0x55 at 38400baud into a pull-down; parked 20ms; low 300ms; parked 20ms |
 | `abort` | high 5ms; the first contact, cut 3ms after its start; parked 20ms; high 5ms; 0x55 into a pull-down; parked 20ms |
 | `rx` | high 5ms; 3 times 0x55 and a 9B answer driven on the pad by the pin's overrides: at 52us a bit, with a low stop bit on the third byte and 2 idle bit times after it, at 38400baud; each followed by 5ms |
 

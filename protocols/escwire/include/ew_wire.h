@@ -33,10 +33,10 @@ extern "C" {
 /** @brief The most bytes a transaction at 38400baud receives: a `show` is at
  *         most about 980B, and the margin keeps a longer reply whole. */
 #define EW_RX_TEXT_MAX 1536u
-/** @brief The most idle bit times inside a transaction's bytes: 4 x 52us stays
- *         under the 260us an ESC (electronic speed controller) allows between
- *         two bytes. */
-#define EW_PAUSE_BITS_MAX 4u
+/** @brief The most idle bit times between an announcement and its data: 10 x
+ *         52us reach the 500us that serve every firmware.  Bytes of one message
+ *         go with no gap: on AM32 more than 234us of idle line ends a message. */
+#define EW_PAUSE_BITS_MAX 10u
 /** @brief The longest wait for a first byte, us. */
 #define EW_FIRST_US_MAX 4000000u
 /** @brief The longest wait between two received bytes, us. */
