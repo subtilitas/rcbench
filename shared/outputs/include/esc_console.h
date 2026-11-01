@@ -4,6 +4,7 @@
  *        operations, in the same frames a panel sends.  A build option only
  *        (IOMCU_CONSOLE), for a station with no panel screen for it.
  *
+ * @verbatim
  *   esc                         a line: state, op, result, refusal, flags, line,
  *                               GPIO, session result, firmware, layout, why
  *   esc open slot|port <n>      OPEN
@@ -11,6 +12,7 @@
  *                               ENTER; default 7400mV, 1000mA, 3000ms, 3000ms,
  *                               SWITCHED; `hand` is BY HAND
  *   esc done|read|leave|stop|abort|clear|close
+ * @endverbatim
  *
  * No command writes a page: a write comes from a panel, with its draft.  As with
  * every page, the page needs a heartbeat and a link that is not silent, so a

@@ -102,6 +102,14 @@ panel, which follows it to the bench's SAFE state.
 
 ## Current limitations
 
+- **An error in a write costs the page's repair in the same session.** Condition: a
+  write that ends `TORN` or `LOST`. The supply goes off at once, so the ESC loses its
+  power with the page half written. By the specification, not measured: a family S or
+  Bluejay ESC rewrites its defaults and loses its 48 tag bytes (0x40 to 0x6F read
+  0xFF), and the page reads read-only here from then on; the tags do not come back
+  through this page. An AM32 stays erased (byte 0 reads 0xFF) in its bootloader until
+  RESTORE writes a backup. On `BY HAND` the ESC keeps its own supply until a person
+  disconnects it.
 - **A bidirectional DShot pin rests high on SAFE.** Condition: a slot or port bound
   as bidirectional DShot, with the bank SAFE and the ESC powered. The pin rests on
   its pull-up (`out_dshot_stop()`), and a line high after signal loss is the entry

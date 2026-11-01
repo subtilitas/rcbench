@@ -28,7 +28,7 @@ _Static_assert((int)LINK_ESC_LINE_PARK == (int)EW_LINE_PARK
                && (int)LINK_ESC_LINE_LOW == (int)EW_LINE_LOW,
                "the line's words");
 
-/* A staged register by its write offset. */
+/** @brief A staged register by its write offset. */
 #define ST(p, reg) ((p)->staged[(reg) - LINK_EW_W_TARGET])
 
 /* --- the wire, as the page tells it ------------------------------------- */

@@ -23,8 +23,9 @@
  * itself keeps an ESC in its mode after EW_SES_ERR_TORN and EW_SES_ERR_LOST, so
  * that a repair can follow; the port does not: all_off() aborts the session,
  * which parks the line, and switches the supply off.  A repair is a new ENTER and
- * a new read.  A write that is left half done on power loss is what follows; see
- * docs/LinkEsc.md.
+ * a new read.  What the power loss costs a half-written page, by the
+ * specification: family S and Bluejay lose 48 tag bytes and read read-only, AM32
+ * stays erased until RESTORE (docs/LinkEsc.md, Current limitations).
  *
  * SPDX-License-Identifier: MIT
  */

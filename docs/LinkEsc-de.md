@@ -105,6 +105,15 @@ Leitung der Page und die Versorgung sind alles, was der IOmcu an hat.
 
 ## Aktuelle Einschränkungen
 
+- **Ein Fehler in einem Schreiben kostet die Reparatur in derselben Session.**
+  Bedingung: ein Schreiben, das mit `TORN` oder `LOST` endet. Die Versorgung geht sofort
+  aus, der ESC verliert also seine Versorgung mit halb geschriebener Page. Nach der
+  Spezifikation, nicht gemessen: ein ESC der Familie S oder Bluejay schreibt seine
+  Defaults neu und verliert seine 48 Tag-Bytes (0x40 bis 0x6F lesen 0xFF), und die Page
+  ist hier von da an nur lesbar; die Tags kommen über diese Page nicht zurück. Ein AM32
+  bleibt gelöscht (Byte 0 liest 0xFF) in seinem Bootloader, bis RESTORE ein Backup
+  schreibt. Bei `BY HAND` behält der ESC seine eigene Versorgung, bis ein Mensch ihn
+  trennt.
 - **Ein Pin mit bidirektionalem DShot ruht auf SAFE high.** Bedingung: ein Slot oder
   Port, gebunden als bidirektionales DShot, die Bank SAFE und der ESC versorgt. Der
   Pin ruht auf seinem Pull-up (`out_dshot_stop()`), und eine Leitung, die nach

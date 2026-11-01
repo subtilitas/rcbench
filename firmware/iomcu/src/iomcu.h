@@ -192,7 +192,7 @@ extern hitec_line_t  s_hitec_line;
  * driver a throttle slot's or DShot port's pin is handed to.
  */
 extern esc_port_t    s_esc;
-extern ew_pin_line_t s_esc_line;
+extern ew_pin_line_t s_esc_line; /**< the wire driver of s_esc */
 extern link_dev_t    s_dev;
 
 /**

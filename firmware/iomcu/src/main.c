@@ -90,7 +90,7 @@ kst_line_t      s_kst_line;
 hitec_port_t    s_hitec;
 hitec_line_t    s_hitec_line;
 esc_port_t      s_esc;
-ew_pin_line_t   s_esc_line;
+ew_pin_line_t   s_esc_line; /**< the wire driver of s_esc */
 link_dev_t      s_dev;
 outputs_t       s_outputs;
 heartbeat_mon_t s_beat;

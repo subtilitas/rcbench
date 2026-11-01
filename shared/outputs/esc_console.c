@@ -13,11 +13,14 @@
 #include "link_pages.h"
 #include "page_console.h"
 
-/** @brief The operations with no argument. */
-static const struct {
+/** @brief An operation with no argument. */
+typedef struct {
     const char *word; /**< as typed      */
     uint8_t op;       /**< a link_esc_op_t */
-} k_plain[] = {
+} plain_op_t;
+
+/** @brief The operations with no argument. */
+static const plain_op_t k_plain[] = {
     { "done", LINK_ESC_OP_DONE },   { "read", LINK_ESC_OP_READ },
     { "leave", LINK_ESC_OP_LEAVE }, { "stop", LINK_ESC_OP_STOP },
     { "abort", LINK_ESC_OP_ABORT }, { "clear", LINK_ESC_OP_CLEAR },
