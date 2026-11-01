@@ -15,6 +15,7 @@
  * - an_image_arriving_closes_the_keyboard_and_keeps_what_stands
  * - with_the_radio_up_there_is_no_way_to_change_a_value
  * - a_screenshot_is_refused_while_a_kept_value_shows
+ * - the_view_says_what_stands_and_what_went_wrong
  * - a_value_of_63_characters_stays_in_the_body_in_both_languages
  *
  * SPDX-License-Identifier: MIT
@@ -406,6 +407,39 @@ TEST_CASE(a_screenshot_is_refused_while_a_kept_value_shows)
     CHECK(!scr()->no_shot());
 }
 
+TEST_CASE(the_view_says_what_stands_and_what_went_wrong)
+{
+    fresh();
+    tap_btn(6);
+    const uint32_t random_view = band_hash(0, WF_SCAN_BY);
+    tap_close();
+    /* A short value in the large face, a long one in the body's. */
+    strcpy(v.kept_code, "12345678");
+    show();
+    tap_btn(6);
+    const uint32_t short_view = band_hash(0, WF_SCAN_BY);
+    CHECK(short_view != random_view);
+    strcpy(v.kept_code, k_63);
+    show();
+    const uint32_t long_view = band_hash(0, WF_SCAN_BY);
+    CHECK(long_view != short_view);
+    /* ACCESS CODE off says so on WEB CODE's view and not on the other's. */
+    v.code_on = false;
+    show();
+    const uint32_t off_view = band_hash(0, WF_SCAN_BY);
+    CHECK(off_view != long_view);
+    tap_close();
+    tap_btn(5);
+    const uint32_t pass_view = band_hash(0, WF_SCAN_BY);
+    v.code_on = true;
+    show();
+    CHECK_EQ(band_hash(0, WF_SCAN_BY), pass_view);
+    /* A write that failed says so. */
+    v.save_failed = true;
+    show();
+    CHECK(band_hash(0, WF_SCAN_BY) != pass_view);
+}
+
 TEST_CASE(a_value_of_63_characters_stays_in_the_body_in_both_languages)
 {
     CHECK_EQ(strlen(k_63), 63u);
@@ -461,6 +495,7 @@ int main(void)
     RUN(an_image_arriving_closes_the_keyboard_and_keeps_what_stands);
     RUN(with_the_radio_up_there_is_no_way_to_change_a_value);
     RUN(a_screenshot_is_refused_while_a_kept_value_shows);
+    RUN(the_view_says_what_stands_and_what_went_wrong);
     RUN(a_value_of_63_characters_stays_in_the_body_in_both_languages);
     return test_summary("wifi_kept");
 }
