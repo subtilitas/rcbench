@@ -161,6 +161,9 @@ void ewp_abort(void)
 
 void ewp_words_clear(void)
 {
+    if (ewp_s.prog.msg != ESC_PROG_MSG_NONE || ewp_s.note[0] != '\0') {
+        ++ewp_s.rev;
+    }
     esc_prog_word_clear(&ewp_s.prog);
     ewp_s.msg_seen = ESC_PROG_MSG_NONE;
     ewp_s.detail_seen = 0u;
@@ -848,12 +851,21 @@ static uint32_t esc_wire_ps_revision(void)
 }
 
 /**
- * @brief Changes while a hold fills.
+ * @brief Changes while a hold fills, and when a button is pressed or let go.
  * @return The count.
  */
 static uint32_t esc_wire_ps_hold_revision(void)
 {
     return ewp_s.hold_rev;
+}
+
+/**
+ * @brief Where hold_revision shows.
+ * @return The hold's button, or the button a press is on or last was.
+ */
+static gfx_rect_t esc_wire_ps_hold_rect(void)
+{
+    return ewp_s.touched;
 }
 
 /** @brief The host is left: presses and editors go, a held pin stays. */
@@ -892,7 +904,7 @@ const prog_page_set_t esc_wire_pages = {
     .render        = ewp_render,
     .revision      = esc_wire_ps_revision,
     .hold_revision = esc_wire_ps_hold_revision,
-    .hold_rect     = esc_wire_panel_hold_rect,
+    .hold_rect     = esc_wire_ps_hold_rect,
     .leave         = esc_wire_ps_leave,
     .cancel        = ewp_cancel,
     .pin           = esc_wire_ps_pin,

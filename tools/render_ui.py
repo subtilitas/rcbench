@@ -424,6 +424,29 @@ SCREENS = {
     "motor-wire-e32-4": ("motor-wire-e32-4.png", "motor", "dark"),
     "motor-wire-e32-5": ("motor-wire-e32-5.png", "motor", "dark"),
     "motor-wire-e32-leave": ("motor-wire-e32-leave.png", "motor", "dark"),
+    "motor-wire-fill-connect": (
+        "motor-wire-fill-connect.png", "motor", "dark"),
+    "motor-wire-fill-again": ("motor-wire-fill-again.png", "motor", "dark"),
+    "motor-wire-fill-write": ("motor-wire-fill-write.png", "motor", "dark"),
+    "motor-wire-fill-no-backup": (
+        "motor-wire-fill-no-backup.png", "motor", "dark"),
+    "motor-wire-fill-leave": ("motor-wire-fill-leave.png", "motor", "dark"),
+    "motor-wire-fill-release": (
+        "motor-wire-fill-release.png", "motor", "dark"),
+    "motor-wire-fill-restore": (
+        "motor-wire-fill-restore.png", "motor", "dark"),
+    "motor-wire-press-read": ("motor-wire-press-read.png", "motor", "dark"),
+    "motor-wire-press-hand": ("motor-wire-press-hand.png", "motor", "dark"),
+    "motor-wire-press-back": ("motor-wire-press-back.png", "motor", "dark"),
+    "motor-wire-press-row": ("motor-wire-press-row.png", "motor", "dark"),
+    "motor-wire-press-cancel": (
+        "motor-wire-press-cancel.png", "motor", "dark"),
+    "motor-wire-press-next": ("motor-wire-press-next.png", "motor", "dark"),
+    "motor-wire-press-prev": ("motor-wire-press-prev.png", "motor", "dark"),
+    "motor-wire-press-choice": (
+        "motor-wire-press-choice.png", "motor", "dark"),
+    "motor-wire-press-list-cancel": (
+        "motor-wire-press-list-cancel.png", "motor", "dark"),
     "motor-wire-held": ("motor-wire-held.png", "motor", "dark"),
     "motor-wire-held-stop": ("motor-wire-held-stop.png", "motor", "dark"),
     "motor-wire-stopped-band": ("motor-wire-stopped-band.png", "motor",
