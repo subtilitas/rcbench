@@ -785,9 +785,6 @@ TEST_CASE(an_edited_file_names_what_it_is_for)
              EW_FILE_ERR_VALUE);
     CHECK_EQ(edited_text(ED_HEAD "Firmware: AM32\nLayout: 256\nedited\n"),
              EW_FILE_ERR_VALUE);
-    /* ESCape32 has no file. */
-    CHECK_EQ(edited_text(ED_HEAD "Firmware: ESCape32\nLayout: 17\nedited\n"),
-             EW_FILE_ERR_FIRMWARE);
     /* A layout with no table has no fields to name. */
     CHECK_EQ(edited_text(ED_HEAD "Firmware: AM32\nLayout: 2\nMIN DUTY = 1\n"
                                  "edited\n"), EW_FILE_ERR_FIELD);

@@ -118,6 +118,30 @@ static void wire_publish(supply_page_t *p)
 }
 
 /**
+ * @brief Whether a write of ENABLE to BAUD changes nothing: the wiring in force,
+ *        none waiting.  A panel writes it at its start, whatever holds the page.
+ *
+ * @param p   The page state.
+ * @param off The frame's first register, below LINK_SP_OUTPUT.
+ * @param n   Its registers.
+ * @param in  Their values.
+ * @return true when the frame's wiring registers hold the page's values.
+ */
+static bool wiring_as_held(const supply_page_t *p, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    if (p->wire != (uint8_t)SUPPLY_WIRE_IDLE) {
+        return false;
+    }
+    for (unsigned i = 0u; i < n && off + i < (unsigned)LINK_SP_OUTPUT; ++i) {
+        if (in[i] != p->regs[off + i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * @brief The panel's OFF of a page a programming port holds: it stands until
  *        the port lets go, and an output on waits for a write that runs.
  *
@@ -171,7 +195,8 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
         p->reset_owed = true;
         return 0u;
     }
-    if (p->wire_frozen && off < (uint8_t)LINK_SP_OUTPUT) {
+    if (p->wire_frozen && off < (uint8_t)LINK_SP_OUTPUT
+        && !wiring_as_held(p, off, n, in)) {
         return LINK_NACK_BUSY;
     }
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_SP_FLAGS) {

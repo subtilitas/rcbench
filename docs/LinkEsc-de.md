@@ -115,6 +115,18 @@ Leitung der Page, der PD mini und PROG_SUPPLY sind alles, was der IOmcu an hat.
   gesetztem Quiet-Bit, die Bank kann also nicht armen, und nichts auf der Page sagt warum.
   Das ist die sichere Seite. Die Panel-Hälfte sendet nach jedem Neustart beim Link-Aufbau
   CLOSE; sie gibt es noch nicht.
+- **Ein Panel, das im Halten neu startet, kostet die Sitzung die Versorgung.** Bedingung:
+  ein Panel-Neustart bei gehaltener Page, mit einem PD mini. Der erste Schreibzugriff des
+  Panels ist ein OFF. Die Page nimmt es an und lehnt das ON eines Ports ab, bis der Port
+  loslässt. Ein späteres ENTER auf `SWITCHED` endet daher bis zu einem CLOSE mit Ergebnis
+  `SUPPLY` (4) und `FAULT`. Die Panel-Hälfte sendet beim Link-Aufbau CLOSE und kein eigenes
+  OFF, solange die Page die Versorgung hält; sie gibt es noch nicht.
+- **Ein Panel mit anderen gespeicherten PD-mini-Pins als die Page beendet spätere
+  Sitzungen.** Bedingung: ein solches Panel schreibt seine Verdrahtung im Halten; `BUSY`
+  antwortet, und das Panel behält das als Ablehnung dieser Pins, bis sich die Einstellungen
+  ändern oder das Panel bei freiem Port neu startet. Übernimmt es dann das ON eines Ports,
+  schreibt es OUTPUT 0, 140ms bis 200ms nach dem ON, und die Sitzung endet mit Ergebnis
+  `SUPPLY`. Eine Verdrahtung gleich der der Page wird angenommen und löst das nicht aus.
 - **Ein Fehler in einem Schreiben kostet die Reparatur in derselben Session.**
   Bedingung: ein Schreiben, das mit `TORN` oder `LOST` endet. Die Versorgung geht sofort
   aus, der ESC verliert also seine Versorgung mit halb geschriebener Page. Nach der

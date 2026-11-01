@@ -407,6 +407,35 @@ static pdmini_t answered_driver(void)
 
 /* Held for its read: acknowledged, the wiring in force read back, bit 8
  * set at once; the read asked at the next step; taken on off. */
+/* A panel restarted in a hold writes the wiring it has saved: a refusal of the
+ * same pins would stand on its side until new ones. */
+TEST_CASE(a_frozen_wiring_takes_a_write_that_changes_nothing)
+{
+    fresh();
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    supply_page_wire_freeze(&pg, true);
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), 0u);
+    CHECK(supply_page_enabled(&pg));
+    /* Each register counts. */
+    CHECK_EQ(wire(0u, 8u, 9u, 1u), LINK_NACK_BUSY);
+    CHECK_EQ(wire(1u, 7u, 9u, 1u), LINK_NACK_BUSY);
+    CHECK_EQ(wire(1u, 8u, 7u, 1u), LINK_NACK_BUSY);
+    CHECK_EQ(wire(1u, 8u, 9u, 2u), LINK_NACK_BUSY);
+    /* A frame on into OUTPUT: the wiring as held, the command by its own rules. */
+    const uint16_t r[2] = { 1u, 0u };
+
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_BAUD, 2u, r, &o, true), 0u);
+    CHECK_EQ(reg(LINK_SP_BAUD), 1u);
+    /* A change waiting for its read is not the wiring in force. */
+    supply_page_wire_freeze(&pg, false);
+    pdmini_t drv = answered_driver();
+
+    supply_page_follow(&pg, &drv);
+    CHECK_EQ(wire(1u, 10u, 11u, 1u), 0u);
+    supply_page_wire_freeze(&pg, true);
+    CHECK_EQ(wire(1u, 8u, 9u, 1u), LINK_NACK_BUSY);
+}
+
 TEST_CASE(a_wiring_change_waits_for_a_read_of_an_answered_module)
 {
     fresh();
@@ -883,6 +912,7 @@ int main(void)
     RUN(a_held_supply_takes_off_from_the_panel_only);
     RUN(an_off_waits_for_the_end_of_a_frame);
     RUN(a_frozen_wiring_takes_no_write);
+    RUN(a_frozen_wiring_takes_a_write_that_changes_nothing);
     RUN(an_off_waits_no_longer_than_its_bound);
     RUN(a_lost_heartbeat_waits_for_the_end_of_a_frame);
     return test_summary("supply_page");

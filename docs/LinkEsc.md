@@ -33,7 +33,7 @@ pins stay bound and at their idle.
 
 | Step | What happens |
 |---|---|
-| OPEN | Refused while armed or asked to arm, while KST, HITEC or a firmware update has the bench, or with the heartbeat not trusted or the link silent. From this frame on the bank does not arm, CONTROL refuses a non-zero ARM, SUPPLY and PROG_SUPPLY are held, PROG, OUTPUTS, CHAN_CFG, BIND, TONE's set-up and SUPPLY's wiring (ENABLE to BAUD) are refused with `BUSY`, and KST and HITEC refuse every port. Refused as well (`HELD`) with a PD mini wiring saved and not yet attached. |
+| OPEN | Refused while armed or asked to arm, while KST, HITEC or a firmware update has the bench, or with the heartbeat not trusted or the link silent. From this frame on the bank does not arm, CONTROL refuses a non-zero ARM, SUPPLY and PROG_SUPPLY are held, PROG, OUTPUTS, CHAN_CFG, BIND, TONE's set-up and a change of SUPPLY's wiring (ENABLE to BAUD) are refused with `BUSY`, and KST and HITEC refuse every port. Refused as well (`HELD`) with a PD mini wiring saved and not yet attached. |
 | `STOPPING`, 50ms | The output renders nothing. An ABORT, a stop or a lost link here frees the pin with nothing touched. |
 | `OPEN` | The output lets the pin go, the pin is reserved, and the line opens parked. No state machine, program space or 2 DMA (direct memory access) channels: `NO_LINE`, the pin goes back, the page is free. |
 | CLOSE | Refused with `WRITING` while a write runs and for 150ms after its last frame. The line closes and the pin goes back as its output had it; no other slot or port moves. A slot or port was not written, so its rate, driver and role are what they were. An output that does not take the pin back ends `NOT_BACK`: the page stays held in state 9 with its quiet bit set, so ARM stays refused and the bank cannot arm with no signal on that pin. A CLOSE tries again; an IOmcu restart clears it. |
@@ -111,6 +111,17 @@ panel, which follows it to the bench's SAFE state.
   that restarts while the page is held. The page stays `OPEN` and `STOPPED` with the
   quiet bit set, so the bank cannot arm, and nothing on the page says why. This fails
   safe. A panel's half sends CLOSE at link-up after any restart; none exists yet.
+- **A panel that restarts in a hold costs the session its supply.** Condition: a panel
+  restart while the page is held, with a PD mini. The panel's first write is an OFF. The
+  page takes it and refuses a port's ON until the port lets go, so a later ENTER on
+  `SWITCHED` ends with result `SUPPLY` (4), `FAULT`, until a CLOSE. The panel's half sends
+  CLOSE at link-up and no OFF of its own while the page holds the supply; none exists yet.
+- **A panel that saved other PD mini pins than the page holds ends later sessions.**
+  Condition: such a panel writes its wiring during a hold; `BUSY` answers, and the panel
+  keeps that as a refusal of those pins until the settings change or the panel restarts
+  with the port free. With a port's ON then adopted it writes OUTPUT 0, 140ms to 200ms
+  after the ON, and the session ends with result `SUPPLY`. Wiring equal to the page's is
+  taken and does not trigger it.
 - **An error in a write costs the page's repair in the same session.** Condition: a
   write that ends `TORN` or `LOST`. The supply goes off at once, so the ESC loses its
   power with the page half written. By the specification, not measured: a family S or

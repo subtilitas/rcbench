@@ -243,11 +243,48 @@ TEST_CASE(a_session_blocks_the_pd_mini_only_where_the_ports_use_it)
     CHECK(!supply_link_session_blocks(false, true));
 }
 
+/*
+ * A panel restarted inside an ESC_WIRE hold: its OFF stands to the port's let-go,
+ * and the wiring it writes at its start is taken, so the next session's ON is the
+ * port's and no OFF of the panel's follows it.
+ */
+TEST_CASE(a_panel_restarted_in_a_hold_leaves_the_next_session_alone)
+{
+    fresh();
+    supply_link_wire(&sl, &k_wired);
+    pump(true);
+    supply_page_wire_freeze(&pg, true);
+    supply_page_hold(&pg, true);
+    far_step_and_read(true);
+    supply_link_init(&sl);
+    supply_link_wire(&sl, &k_wired);
+    pump(true);
+    pump(true);
+    CHECK_EQ(supply_link_events(&sl), 0u);
+    CHECK(!supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    /* CLOSE, then OPEN and ENTER. */
+    supply_page_wire_freeze(&pg, false);
+    supply_page_hold(&pg, false);
+    pump(true);
+    supply_page_wire_freeze(&pg, true);
+    supply_page_hold(&pg, true);
+    CHECK(supply_page_port_set(&pg, true, 5000u, 1000u, true));
+    const unsigned before = writes;
+
+    pump(true);
+    pump(true);
+    pump(true);
+    CHECK_EQ(writes, before);
+    CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
+    CHECK_EQ(supply_link_events(&sl), 0u);
+}
+
 int main(void)
 {
     RUN(an_on_left_to_a_port_is_not_cut_until_it_lets_go);
     RUN(a_keep_needs_a_held_page_and_no_cut);
     RUN(a_port_holds_the_pd_mini_as_the_page_and_the_session_say);
     RUN(a_session_blocks_the_pd_mini_only_where_the_ports_use_it);
+    RUN(a_panel_restarted_in_a_hold_leaves_the_next_session_alone);
     return test_summary("supply_keep");
 }

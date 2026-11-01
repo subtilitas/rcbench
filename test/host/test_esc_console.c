@@ -105,7 +105,8 @@ TEST_CASE(what_it_does_not_take)
         "esc open", "esc open slot", "esc open tank 1", "esc open slot x",
         "esc open slot 256", "esc enter mv=", "esc enter mv=x",
         "esc enter mv=70000", "esc enter ma=70000", "esc enter off=70000",
-        "esc enter wrong=1", "esc write", "esc read 1",
+        "esc enter wrong=1", "esc enter", "esc enter mv=5000",
+        "esc enter ma=500", "esc enter hold=500", "esc write", "esc read 1",
     };
 
     for (size_t i = 0u; i < sizeof(k_bad) / sizeof(k_bad[0]); ++i) {

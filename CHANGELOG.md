@@ -15,7 +15,7 @@ history is in git.
   non-zero ARM, SUPPLY and PROG_SUPPLY are held, and PROG, OUTPUTS, CHAN_CFG, BIND,
   TONE's set-up, SUPPLY's wiring, KST and HITEC refuse. A pin its output does not
   take back keeps the hold until a CLOSE succeeds or the IOmcu restarts. ARM and THROTTLE
-  are 0 when the hold begins and at its end. An error, TORN and LOST included, parks the line and switches the
+  are 0 when the hold begins and at its end. SUPPLY's wiring in force is taken during the hold; a change answers BUSY. An error, TORN and LOST included, parks the line and switches the
   PD mini and PROG_SUPPLY off; a STOP or an ABORT does as well. RAM 7344B: 3856B for the
   page and 3488B for the line. No screen uses the pages yet. No frame has been to an
   ESC. A bidirectional DShot pin resting high on SAFE stays as it is, a current
@@ -34,6 +34,8 @@ history is in git.
   A verified file of an AM32 restores an ESC whose 192B read 0xFF when its pin
   code, flash code, bootloader protocol and name are the ESC's. Files go to
   `BENCH/ESCW/CONF`, `ESCW001.TXT` to `ESCW999.TXT`. No screen uses it.
+  ESCape32's file holds its 46 keys as `key: value` lines and `music`, up to 255
+  characters. A load takes the keys and never writes `music`.
 - `protocols/escwire/`: ESCape32's text interface at 38400baud. It holds the
   lines `info`, `show`, `set` and `save`, their replies, the 46 numeric keys of
   revision 17 as data, and the session's branch: after 3 silent first contacts a

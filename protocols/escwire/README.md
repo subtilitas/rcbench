@@ -254,7 +254,7 @@ link is lost. Power lost between an erase and a program leaves the page empty.
 
 `ew_file.h` writes a page as text (`ew_file.c`), reads a text back (`ew_file_read.c`) and holds it against an
 ESC (`ew_file_load.c`). It has no file access and no heap: the caller holds a buffer of
-`EW_FILE_MAX` (5280B), and `ew_file_t` takes 362B.
+`EW_FILE_MAX` (5280B), and `ew_file_t` takes 618B.
 
 ```text
 ESC settings backup, format 1
@@ -334,9 +334,29 @@ On the card a file goes through `shared/logfile/servo_store.h` with the stem
 `EW_FILE_STEM`: `BENCH/ESCW/CONF/ESCW001.TXT` to `ESCW999.TXT`, a base name of
 at most 32 characters, `ESCW.TXT` being the record of a write.
 
-ESCape32 has no file: the format names BLHeli_S, Bluejay and AM32. A capture of
-an ESCape32 page returns false, a file naming it is `EW_FILE_ERR_FIRMWARE`, and
-a file of another firmware into it is `EW_LOAD_FIRMWARE`.
+ESCape32's file comes from `ew_file_capture_text()`. It has `Processor: TEXT` and
+`Target: <name>`, and in place of the field lines and the bytes one line per key
+of `ew_map_e32` in its order, then `music`:
+
+```text
+Firmware: ESCape32
+Layout: 17
+Processor: TEXT
+Target: BOARD_F051
+arm: 1
+timing: 16
+music: dfa#
+checksum 1A2B3C4D
+```
+
+A value is a decimal number as the wire spells it, or `none` for a key a read did
+not bring. The `music` line holds up to 262 characters
+(`EW_FILE_MUSIC_LINE_MAX`). A load takes the keys, also from an edited file as
+`<key>: <value>` or `<key> = <value>`, each through the key's values and floor;
+in an edited file `none` counts as no line.
+`music` stays in the file: no load writes it, and an edited file's `music` line
+is read and not used. A backup of another revision is written and not loaded.
+ESCape32 has no restore.
 
 ## Driver interface
 
@@ -479,7 +499,8 @@ with their authors. The full notice is in the repository's
 
 `test/host/test_ew_a.c`, `test_ew_id.c`, `test_ew_map.c`, `test_ew_guard.c`,
 `test_ew_text.c`, `test_ew_session.c`, `test_ew_session_write.c`,
-`test_ew_session_text.c`, `test_ew_file.c` and `test_ew_file_load.c` run the
+`test_ew_session_text.c`, `test_ew_file.c`, `test_ew_file_load.c` and
+`test_ew_file_e32.c` run the
 core; the session and file suites against the simulated
 ESC of `test/host/ew_sim.h` and `ew_sim_text.h`. `test_ew_pio.c` assembles
 `rp2350/ew_line.pio` and runs it in a model of the state machine; the IOmcu build

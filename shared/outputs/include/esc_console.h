@@ -8,9 +8,10 @@
  *   esc                         a line: state, op, result, refusal, flags, line,
  *                               GPIO, session result, firmware, layout, why
  *   esc open slot|port <n>      OPEN
- *   esc enter [mv=<mV>] [ma=<mA>] [hold=<ms>] [off=<ms>] [hand]
- *                               ENTER; default 7400mV, 1000mA, 3000ms, 3000ms,
- *                               SWITCHED; `hand` is BY HAND
+ *   esc enter mv=<mV> ma=<mA> [hold=<ms>] [off=<ms>]
+ *                               ENTER, SWITCHED; no default voltage or current;
+ *                               hold and off default to 3000ms
+ *   esc enter hand [hold=<ms>]  ENTER, BY HAND; no supply is switched
  *   esc done|read|leave|stop|abort|clear|close
  * @endverbatim
  *

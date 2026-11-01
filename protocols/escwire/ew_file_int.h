@@ -52,6 +52,12 @@
 #define KEY_NAME      "Name"
 /** @brief The key of the signature line. */
 #define KEY_SIGNATURE "Signature"
+/** @brief The key of the target line. */
+#define KEY_TARGET    "Target"
+/** @brief The key of ESCape32's text value. */
+#define KEY_MUSIC     "music"
+/** @brief A key a read did not bring. */
+#define KEY_NO_VALUE  "none"
 
 /** @brief The start of the CRC-32 register. */
 #define CRC_START 0xFFFFFFFFu

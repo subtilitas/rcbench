@@ -113,6 +113,16 @@ static void cmd_open(const esc_console_io_t *io, char **tok, unsigned n)
 }
 
 /**
+ * @brief The usage line of `esc enter`.
+ * @param io the output
+ */
+static void say_enter_usage(const esc_console_io_t *io)
+{
+    io->say("err usage: esc enter mv=<mV> ma=<mA> [hold=<ms>] [off=<ms>], "
+            "or esc enter hand [hold=<ms>]\n");
+}
+
+/**
  * @brief `esc enter`.
  * @param io  the page and the output
  * @param tok the tokens
@@ -122,10 +132,11 @@ static void cmd_enter(const esc_console_io_t *io, char **tok, unsigned n)
 {
     uint16_t st[LINK_EW_W_STAGED];
     uint32_t hold = 3000u;
+    bool has_mv = false;
+    bool has_ma = false;
+    bool hand = false;
 
     memset(st, 0, sizeof(st));
-    st[LINK_EW_W_MV - LINK_EW_W_TARGET] = 7400u;
-    st[LINK_EW_W_MA - LINK_EW_W_TARGET] = 1000u;
     st[LINK_EW_W_OFF_MS - LINK_EW_W_TARGET] = 3000u;
     for (unsigned i = 2u; i < n; ++i) {
         uint32_t v = 0u;
@@ -135,19 +146,26 @@ static void cmd_enter(const esc_console_io_t *io, char **tok, unsigned n)
 
         if (strcmp(tok[i], "hand") == 0) {
             st[LINK_EW_W_POWER - LINK_EW_W_TARGET] = LINK_ESC_BY_HAND;
+            hand = true;
         } else if (has && v <= 0xFFFFu && strncmp(tok[i], "mv=", 3u) == 0) {
             st[LINK_EW_W_MV - LINK_EW_W_TARGET] = (uint16_t)v;
+            has_mv = true;
         } else if (has && v <= 0xFFFFu && strncmp(tok[i], "ma=", 3u) == 0) {
             st[LINK_EW_W_MA - LINK_EW_W_TARGET] = (uint16_t)v;
+            has_ma = true;
         } else if (has && v <= 0xFFFFu && strncmp(tok[i], "off=", 4u) == 0) {
             st[LINK_EW_W_OFF_MS - LINK_EW_W_TARGET] = (uint16_t)v;
         } else if (has && strncmp(tok[i], "hold=", 5u) == 0) {
             hold = v;
         } else {
-            io->say("err usage: esc enter [mv=<mV>] [ma=<mA>] [hold=<ms>] "
-                    "[off=<ms>] [hand]\n");
+            say_enter_usage(io);
             return;
         }
+    }
+    /* No voltage but the one asked for: BY HAND switches none on. */
+    if (!hand && (!has_mv || !has_ma)) {
+        say_enter_usage(io);
+        return;
     }
     st[LINK_EW_W_HOLD_LO - LINK_EW_W_TARGET] = (uint16_t)(hold & 0xFFFFu);
     st[LINK_EW_W_HOLD_HI - LINK_EW_W_TARGET] = (uint16_t)(hold >> 16);

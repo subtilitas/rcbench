@@ -331,11 +331,12 @@ ESC. Es ist in keinem veröffentlichten Image.
 esc
 esc open slot <n>
 esc open port <n>
-esc enter [mv=<mV>] [ma=<mA>] [hold=<ms>] [off=<ms>] [hand]
+esc enter mv=<mV> ma=<mA> [hold=<ms>] [off=<ms>]
+esc enter hand [hold=<ms>]
 esc done|read|leave|stop|abort|clear|close
 ```
 
-`esc enter` nimmt ohne Angaben 7400mV, 1000mA, 3000ms und 3000ms, SWITCHED. Jeder Befehl
+SWITCHED braucht `mv` und `ma`, ohne Vorgabewert; `hold` und `off` sind ohne Angabe 3000ms. Jeder Befehl
 antwortet mit einer Zeile:
 
 ```

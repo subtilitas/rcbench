@@ -369,8 +369,10 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
                           uint16_t ma, bool beat_alive);
 
 /**
- * @brief Refuse a write of ENABLE to BAUD with LINK_NACK_BUSY: the ESC_WIRE page
- *        holds a pin, and an attach could take the PIO room its output needs back.
+ * @brief Refuse a write of ENABLE to BAUD that changes them with LINK_NACK_BUSY:
+ *        the ESC_WIRE page holds a pin, and an attach could take the PIO room its
+ *        output needs back.  The wiring in force is taken, with none waiting: a
+ *        panel that restarts in a hold writes it, and takes a refusal as its pins'.
  *
  * @param p      The page state, or NULL.
  * @param frozen True while the page holds a pin.

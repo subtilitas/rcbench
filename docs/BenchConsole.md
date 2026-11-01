@@ -311,11 +311,12 @@ image.
 esc
 esc open slot <n>
 esc open port <n>
-esc enter [mv=<mV>] [ma=<mA>] [hold=<ms>] [off=<ms>] [hand]
+esc enter mv=<mV> ma=<mA> [hold=<ms>] [off=<ms>]
+esc enter hand [hold=<ms>]
 esc done|read|leave|stop|abort|clear|close
 ```
 
-`esc enter` defaults to 7400mV, 1000mA, 3000ms and 3000ms, SWITCHED. Each command
+SWITCHED takes `mv` and `ma` with no default; `hold` and `off` default to 3000ms. Each command
 answers one line:
 
 ```
