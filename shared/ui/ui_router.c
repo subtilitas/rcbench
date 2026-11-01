@@ -310,6 +310,12 @@ void ui_router_invalidate(void)
     layout_screen_invalidate();
 }
 
+bool ui_router_shot_refused(void)
+{
+    const ui_screen_t *scr = screen_for(s.current);
+    return scr != NULL && scr->no_shot != NULL && scr->no_shot();
+}
+
 bool ui_router_shot_gap(gfx_rect_t *out)
 {
     /* A screen that cannot say whether a box covers it gets no hold: the

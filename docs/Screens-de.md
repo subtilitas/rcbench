@@ -239,6 +239,7 @@ und die Web-Hilfe sagen, wo sie ist.
 | Kein Speicher | das Band sagt `Kein Screenshot: 1 305 600B PSRAM sind nicht frei.`, sonst ändert sich nichts |
 | Halten, während eines wartet | ersetzt es im selben Speicher: `Neuer Screenshot aufgenommen. Er ersetzt den wartenden.` |
 | Halten, während ein gestopptes Sichern endet | kein Bild: `Kein Screenshot: Der letzte wird noch geschrieben.`, höchstens eine PNG-Zeile lang |
+| Ein fester Wert auf dem Glas | kein Bild: `Kein Screenshot: Dieser Bildschirm zeigt ein festes Passwort oder einen festen Code.` WI-FI lehnt ab, solange es ein festes [HOTSPOT-PASSWORT oder einen festen WEB-CODE](#hotspot-passwort-und-web-code) zeigt: in der Ansicht dieses Werts, auf seiner Tastatur und in den Zeilen eines laufenden Funks mit einem der beiden fest. Ein Bild auf der Karte ist vom Browser lesbar. Ein ZUFALL-Passwort und ein ZUFALL-Code werden aufgenommen, denn sie enden mit der Sitzung |
 | Bildschirme ohne dieses Halten | SPLASH, der Bus-Fehler-Bildschirm, PANEL UPDATE und der Fortschritt des IOmcu-Updates: Sie haben kein Band. Die Frage des IOmcu-Updates und die Release-Erinnerung: Sie können nicht sagen, ob ein Kasten sie verdeckt, und das Popup würde sich erst öffnen, nachdem sie weg sind. MOTOR & ESC, der längste Titel, hat mit ARMED MOTOR und einem langen FAULT-Chip keine Lücke |
 
 Das Bild entsteht in diesem Frame auf der Render-Task, was auch immer der
@@ -3657,7 +3658,7 @@ sind 48px hoch oder höher.
 
 | Ansicht | Aufbau |
 | --- | --- |
-| Funk aus | ab Körper-y 16 fünf Tasten von 460 x 60px (69,0 x 9,0mm), 8px Abstand, links; rechts eine Karte von 524px mit Zeilen von 49 Zeichen in 10 x 20, 24px Abstand |
+| Funk aus | ab Körper-y 16 sieben Tasten von 460 x 60px (69,0 x 9,0mm), 8px Abstand, links; rechts eine Karte von 524px mit Zeilen von 49 Zeichen in 10 x 20, 24px Abstand |
 | Funk an | ab Körper-y 16 Zeilen von 56px: die Bezeichnung in 10 x 20 auf 240px, der Wert in 20 x 36 auf 740px, wo ein Netzwerkname von 32 Zeichen 640px braucht; die Zeilen darunter in 12 x 24, 28px Abstand; WLAN AUS 460 x 60px ab Körper-y 424, und mit Schreiben per Browser HALTEN die Taste des Schreibens gleich groß daneben ab Körper-x 548 |
 | Netzwerkliste | zwei Spalten mit je acht Zeilen von 492 x 48px, 52px Abstand: der Name in 12 x 24 (32 Zeichen sind 384px), das Signal in 10 x 20; NEU SUCHEN, VERSTECKTES NETZWERK und ABBRECHEN je 328 x 56px |
 | Frage zu einem Image | eine Karte von 1008 x 484px: Titel und Versionen in 20 x 36, die Sätze in 12 x 24, umbrochen bei 80 Zeichen; ABBRECHEN und 2s HALTEN ZUM INSTALLIEREN 460 x 72px |
@@ -3696,7 +3697,7 @@ ein Telefon oder ein Rechner braucht:
 | Band und Kanal | 2.4GHz, Kanal 6 (`WIFI_ACCESS_AP_CHANNEL`) |
 | Sicherheit | WPA2 (Wi-Fi Protected Access 2) Personal |
 | Netzname | `rcbench-` und 4 Hex-Ziffern der MAC-Adresse (Media Access Control) des Panels, `rcbench-3F7A` |
-| Passwort | 8 Zeichen, bei jedem Start neu, aus `abcdefghjkmnpqrstuvwxyz23456789` (kein 0, 1, i, l oder o) |
+| Passwort | ZUFALL: 8 Zeichen, bei jedem Start neu, aus `abcdefghjkmnpqrstuvwxyz23456789` (kein 0, 1, i, l oder o). Fest: die 8 bis 63 Zeichen von [HOTSPOT-PASSWORT](#hotspot-passwort-und-web-code) |
 | Clients | 1 gleichzeitig |
 | IP-Adresse | `http://192.168.4.1/` |
 | Reichweite | nicht gemessen |
@@ -3706,6 +3707,47 @@ ein Telefon oder ein Rechner braucht:
    dem Passwort, das er zeigt.
 3. `http://192.168.4.1/` öffnen und den Zugangscode eingeben, den der
    Bildschirm zeigt.
+
+### HOTSPOT-PASSWORT und WEB-CODE
+
+![HOTSPOT-PASSWORT fest, WEB-CODE Zufall](img/de/wifi-kept-buttons.png)
+![Die Ansicht eines Werts auf Zufall](img/de/wifi-kept-pass.png)
+![Die Ansicht eines festen Werts](img/de/wifi-kept-pass-set.png)
+![Die Ansicht des Zugangscodes](img/de/wifi-kept-code.png)
+
+HOTSPOT-PASSWORT setzt das Passwort des Netzes, das WLAN-HOTSPOT startet.
+WEB-CODE setzt den Zugangscode, nach dem die Browser-Seite fragt. Jeder ist
+ZUFALL, die Vorgabe, oder ein vom Bediener eingegebener Wert, der Neustarts
+überdauert. Die zwei Tasten stehen in der Ansicht mit Funk aus und lesen
+`HOTSPOT-PASSWORT: ZUFALL` oder `HOTSPOT-PASSWORT: FEST`, `WEB-CODE: ZUFALL` oder
+`WEB-CODE: FEST`. Sie nehmen ein Tippen in jedem Zustand des Prüfstands an, denn
+nichts an ihnen erreicht den Funk.
+
+| Teil | Wert |
+| --- | --- |
+| Wert | 8 bis 63 Zeichen, 0x20 bis 0x7E: Buchstaben, Ziffern, Leerzeichen und Satzzeichen. Die Passphrase von WPA2 Personal nimmt denselben Bereich |
+| WERT EINGEBEN | die WLAN-Tastatur: Ihre drei Ebenen tippen nur diesen Bereich, und ein 64. Zeichen nimmt sie nicht an |
+| 7 Zeichen oder weniger | OK wird abgelehnt, mit `Gib mindestens 8 Zeichen ein.` in der Titelzeile der Tastatur |
+| ZURÜCK AUF ZUFALL | ein Tippen, keine Eingabe, grau, solange der Wert ZUFALL ist |
+| Wann es gilt | beim nächsten Start des Funks. Der Bildschirm sagt es: `Eine Änderung gilt ab dem nächsten Start des Funks.` |
+| Anzeige | in seiner eigenen Ansicht und bei laufendem Funk in den Zeilen, im Klartext wie ein Zufallspasswort. Die Tastatur maskiert ihn bis ANZEIGEN |
+| Zeilen mit langem Wert | 20 x 36 für bis zu 37 Zeichen, 10 x 20 für bis zu 63. Die Ansicht nutzt 20 x 36 für bis zu 48 Zeichen, 12 x 24 für bis zu 63 |
+| Gespeichert in | NVS, Namensraum `wifi`, Schlüssel `ap_pass` und `web_code`. Kein Schlüssel ist ZUFALL: Ein Speicher, den ein Build ohne diese Schlüssel schrieb, lädt mit seinem Netz und seinem Schalter unverändert. Ein gespeicherter Wert, den die Regel ablehnt, lädt als ZUFALL |
+| HEIMNETZ LÖSCHEN | behält beide Werte |
+| Wiederherstellung | jede Ansicht zeigt ihren Wert am Panel, und ZURÜCK AUF ZUFALL braucht keinen Browser, in jedem Zustand des Prüfstands |
+
+Eine Änderung gilt beim nächsten Start, weil es die Bedienelemente nur bei
+ausgeschaltetem Funk gibt. Dann ist keine Sitzung offen, also kann eine mit dem
+alten Code geöffnete Sitzung die Änderung nicht überdauern: Der nächste Start
+vergleicht jedes Cookie und jede Eingabe nur noch mit dem neuen Code.
+
+Ein fester Wert steht nie in einem Log, auf der Konsole oder in einer Datei, und
+keine Antwort der Seite oder der Datei-API enthält ihn.
+`tools/check_wifi_secrets.py` lässt den CI-Lauf bei einem Log-Aufruf scheitern,
+der einen nennt, und bei einer Verwendung außerhalb der Quellen, die einen
+halten. Das Panel hat keinen Export und kein Backup des NVS. Die
+Screenshot-Ablehnung oben deckt den einen Weg ab, auf dem ein Bild eines Werts
+auf die Karte käme.
 
 ### Heimnetz
 
@@ -3808,9 +3850,10 @@ ihn.
 
 Aktuelle Einschränkungen:
 
-- Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes liegt im
-  Klartext im Flash des Panels, wo es jeder liest, der den Flash über USB
-  (Universal Serial Bus) ausliest.
+- Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes, ein festes
+  HOTSPOT-PASSWORT und ein fester WEB-CODE liegen im Klartext im Flash des
+  Panels, wo sie jeder liest, der den Flash über USB (Universal Serial Bus)
+  ausliest.
 - Die Seite ist einfaches HTTP (Hypertext Transfer Protocol). Im Heimnetz
   gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der
   Bildschirm sagt es, solange das Panel verbunden ist.
@@ -3836,11 +3879,24 @@ Aktuelle Einschränkungen:
 
 ### Der Zugangscode
 
-Die Seite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei listet
-oder einen Upload annimmt. Der Bildschirm zeigt ihn, und er entsteht bei
-jedem Start des Funks neu; ein Code aus einer früheren Sitzung öffnet
-nichts. Der Browser behält ihn für die Sitzung. 16 falsche Codes schalten
-den Funk aus.
+Die Seite fragt nach einem Code, bevor sie eine Datei listet oder einen Upload
+annimmt. Der Bildschirm zeigt ihn. Der Browser behält ihn für die Sitzung. 16
+falsche Codes schalten den Funk aus, auch bei einem festen Code.
+
+Mit WEB-CODE auf ZUFALL, der Vorgabe, hat der Code 8 Zeichen und entsteht bei
+jedem Start des Funks neu; ein Code aus einer früheren Sitzung öffnet nichts.
+
+Mit einem festen WEB-CODE gilt das nicht. Der Code hat 8 bis 63 Zeichen und
+bleibt gültig, bis er geändert wird: Ein Browser, der ihn behielt, und jeder, der
+ihn sah, öffnet die Seite in jeder späteren Sitzung. Eine Änderung beendet ihn
+beim nächsten Start des Funks. In einem Heimnetz geht er bei jeder Anfrage über
+einfaches HTTP unverschlüsselt durchs Netz, im Cookie, wie ein Zufallscode, und
+ein dort mitgelesener Wert bleibt gültig, bis er geändert wird, wo ein Zufallscode
+mit der Sitzung endet. 16 falsche Codes beenden eine Funk-Sitzung; die Zählung
+beginnt bei der nächsten neu.
+
+Das Cookie trägt den Code prozentkodiert (`wa_code_cookie()`): höchstens 189
+Bytes, wenn bei einem Code von 63 Zeichen jedes kodiert werden muss.
 
 ZUGANGSCODE schaltet ihn, für beide Wege. Er ist voreingestellt ein, nach
 HEIMNETZ LÖSCHEN und auf einem Panel ohne gespeicherte Werte. Der Schalter
@@ -3856,7 +3912,7 @@ Jede Anfrage wird vor dem Zugangscode geprüft, mit Code ein und aus
 | --- | --- |
 | Der `Host`-Header nennt das Panel: `rcbench-3F7A.local`, `rcbench-3F7A` oder die Adresse, mit der sich der Browser verbunden hat (`192.168.4.1` als Access Point), in beliebiger Groß- und Kleinschreibung, ohne Port oder mit Port 80. Eine IPv6-Adresse wird abgelehnt. | 421 Misdirected Request |
 | Eine Anfrage nach der Seite, einer Datei, dem ZIP oder der Datei-API hat keinen Body. | 400 Bad Request |
-| Eine Code-Eingabe hat höchstens 95 Bytes Body, ein PUT der Datei-API höchstens 1.048.576 und ein Formular der Datei-API höchstens 1.024. | 413 Content Too Large |
+| Eine Code-Eingabe hat höchstens 200 Bytes Body, ein PUT der Datei-API höchstens 1.048.576 und ein Formular der Datei-API höchstens 1.024. | 413 Content Too Large |
 | Code-Eingabe, Upload und jeder Schreibzugriff der Datei-API tragen einen `Origin`-Header aus `http://` und einem der Namen oben; ohne `Origin` einen `Referer`, der so beginnt. Keiner der beiden, `Origin: null` und jede andere Seite werden abgelehnt. | 403 Forbidden |
 | Ein Upload und jeder Schreibzugriff der Datei-API tragen den Header `X-Rcbench-Upload: 1`, den das Skript der Seite selbst sendet. | 403 Forbidden |
 

@@ -640,6 +640,12 @@ SCREENS = {
     "wifi-blocked": ("wifi-blocked.png", "wifi", "dark"),
     # The access point up and an upload arriving; joining; joined.
     "wifi-ap": ("wifi-ap.png", "wifi", "dark"),
+    "wifi-kept-buttons": ("wifi-kept-buttons.png", "wifi", "dark"),
+    "wifi-kept-pass": ("wifi-kept-pass.png", "wifi", "dark"),
+    "wifi-kept-pass-set": ("wifi-kept-pass-set.png", "wifi", "dark"),
+    "wifi-kept-code": ("wifi-kept-code.png", "wifi", "dark"),
+    "wifi-key-kept": ("wifi-key-kept.png", "wifi", "dark"),
+    "wifi-key-kept-short": ("wifi-key-kept-short.png", "wifi", "dark"),
     "wifi-joining": ("wifi-joining.png", "wifi", "dark"),
     "wifi-joined": ("wifi-joined.png", "wifi", "dark"),
     # Browser writes HOLD on the access point: before the hold, and after
@@ -775,6 +781,12 @@ FIT_ONLY = {
     "band-clock":       (None, "overview", "dark"),
     "band-link-refused-max": (None, "overview", "dark"),
     "wifi-unavailable": (None, "wifi", "dark"),
+    "wifi-ap-kept":     (None, "wifi", "dark"),
+    "wifi-kept-both":   (None, "wifi", "dark"),
+    "wifi-key-kept-code": (None, "wifi", "dark"),
+    "wifi-kept-code-long": (None, "wifi", "dark"),
+    "wifi-kept-code-off": (None, "wifi", "dark"),
+    "wifi-writes-code-long": (None, "wifi", "dark"),
     "wifi-save-failed": (None, "wifi", "dark"),
     "wifi-coproc":      (None, "wifi", "dark"),
     # Browser writes ACCESS CODE with the code switch off, and OFF.

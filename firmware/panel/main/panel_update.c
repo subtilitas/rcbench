@@ -761,6 +761,13 @@ void wifi_service(bool armed, uint32_t stops_now)
     if ((req & WIFI_REQ_CODE_OFF) != 0u) {
         wifi_access_set_code(false);
     }
+    if ((req & (WIFI_REQ_KEPT_PASS | WIFI_REQ_KEPT_CODE)) != 0u) {
+        char value[WIFI_PASS_MAX + 1];
+        wifi_screen_kept(value);
+        (void)wifi_access_set_kept((req & WIFI_REQ_KEPT_PASS) != 0u
+                                       ? WA_KEPT_PASS : WA_KEPT_CODE, value);
+        memset(value, 0, sizeof(value));
+    }
     if ((req & (WIFI_REQ_AP | WIFI_REQ_JOIN)) != 0u) {
         /* The file API's rules keep the log folders in force; they change
          * only on SETUP, never while WI-FI is open. */
@@ -821,6 +828,8 @@ void wifi_service(bool armed, uint32_t stops_now)
     snprintf(v->name, sizeof(v->name), "%s", a->name);
     snprintf(v->pass, sizeof(v->pass), "%s", a->w.pass);
     snprintf(v->code, sizeof(v->code), "%s", a->w.code);
+    snprintf(v->kept_pass, sizeof(v->kept_pass), "%s", a->conf.ap_pass);
+    snprintf(v->kept_code, sizeof(v->kept_code), "%s", a->conf.web_code);
     memcpy(v->ip, &a->w.ip, sizeof(v->ip));
     v->channel = a->channel;
     v->idle_left_s = a->idle_left_ms / 1000u;

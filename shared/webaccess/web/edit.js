@@ -717,7 +717,7 @@ var RcbEd = (function () {
       x.qtext = c.el('p');
       card.appendChild(x.qtext);
       x.codeIn = c.el('input');
-      x.codeIn.maxLength = 8;
+      x.codeIn.maxLength = 63;
       x.codeIn.autocomplete = 'off';
       x.codeIn.hidden = true;
       x.codeIn.addEventListener('keydown', function (ev) {

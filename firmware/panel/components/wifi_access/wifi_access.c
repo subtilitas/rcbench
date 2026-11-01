@@ -63,6 +63,8 @@
 static const char *TAG = "wifi";
 
 #define NVS_NS        "wifi"
+#define NVS_AP_PASS   "ap_pass"   /**< HOTSPOT PASSWORD; no key: RANDOM */
+#define NVS_WEB_CODE  "web_code"  /**< WEB CODE; no key: RANDOM */
 /** @brief Stack of the wifi_ctl task, in bytes, from internal RAM. The
  *  deepest call chain, the radio stop down to snprintf(), is 3744 bytes;
  *  6912 leaves 2144 above tools/stack_check.py's 1024-byte margin. */
@@ -231,8 +233,32 @@ static bool nvs_conf_load(void *ctx, wa_conf_t *out)
     } else {
         out->ssid[0] = out->pass[0] = '\0';
     }
+    /* A key not there, as on a panel from a build without them, is RANDOM. */
+    size_t al = sizeof(out->ap_pass), cl = sizeof(out->web_code);
+    if (nvs_get_str(h, NVS_AP_PASS, out->ap_pass, &al) != ESP_OK) {
+        out->ap_pass[0] = '\0';
+    }
+    if (nvs_get_str(h, NVS_WEB_CODE, out->web_code, &cl) != ESP_OK) {
+        out->web_code[0] = '\0';
+    }
     nvs_close(h);
     return true;
+}
+
+/**
+ * @brief A kept value into the store, its key gone for RANDOM.
+ * @param h     The open store.
+ * @param key   Its key.
+ * @param value The value, "" for RANDOM.
+ * @return true when written
+ */
+static bool nvs_kept_save(nvs_handle_t h, const char *key, const char *value)
+{
+    if (value[0] != '\0') {
+        return nvs_set_str(h, key, value) == ESP_OK;
+    }
+    const esp_err_t e = nvs_erase_key(h, key);
+    return e == ESP_OK || e == ESP_ERR_NVS_NOT_FOUND;
 }
 
 static bool nvs_conf_save(void *ctx, const wa_conf_t *c)
@@ -252,6 +278,8 @@ static bool nvs_conf_save(void *ctx, const wa_conf_t *c)
         ok = ok && (a == ESP_OK || a == ESP_ERR_NVS_NOT_FOUND)
              && (b == ESP_OK || b == ESP_ERR_NVS_NOT_FOUND);
     }
+    ok = nvs_kept_save(h, NVS_AP_PASS, c->ap_pass) && ok;
+    ok = nvs_kept_save(h, NVS_WEB_CODE, c->web_code) && ok;
     ok = ok && nvs_commit(h) == ESP_OK;
     nvs_close(h);
     return ok;
@@ -430,10 +458,11 @@ static bool req_guard(httpd_req_t *r, wa_req_kind_t kind, esp_err_t *e)
  */
 static wa_code_t req_code(httpd_req_t *r, bool force)
 {
-    char given[WA_SECRET_LEN + 2u];
+    char given[WA_PASS_MAX + 2u];
     given[0] = '\0';
     const char *hdr = wifi_req_hdr(r, "Cookie", b->cookie, sizeof(b->cookie));
-    if (hdr != NULL && !wa_cookie_get(hdr, WA_COOKIE, given, sizeof(given))) {
+    if (hdr != NULL
+        && !wa_code_of_cookie(hdr, WA_COOKIE, given, sizeof(given))) {
         given[0] = '\0';
     }
     lock();
@@ -585,17 +614,20 @@ static esp_err_t h_code(httpd_req_t *r)
         n += (size_t)got;
     }
     body[n] = '\0';
-    char given[WA_SECRET_LEN + 2u];
+    char given[WA_PASS_MAX + 2u];
     if (!wa_form_get(body, n, "code", given, sizeof(given))) {
         given[0] = '\0';
     }
     lock();
     const wa_code_t c = (e == ESP_OK) ? wa_code_check(&s.w, given, true)
                                       : WA_CODE_CLOSED;
-    char cookie[64];
-    snprintf(cookie, sizeof(cookie),
-             WA_COOKIE "=%s; Path=/; HttpOnly; SameSite=Strict", s.w.code);
+    char value[WA_CODE_COOKIE_MAX + 1u];
+    (void)wa_code_cookie(s.w.code, value, sizeof(value));
     unlock();
+    char cookie[sizeof(WA_COOKIE "=; Path=/; HttpOnly; SameSite=Strict")
+                + WA_CODE_COOKIE_MAX];
+    snprintf(cookie, sizeof(cookie),
+             WA_COOKIE "=%s; Path=/; HttpOnly; SameSite=Strict", value);
     if (e != ESP_OK) {
         req_end();
         return ESP_FAIL;
@@ -1861,6 +1893,7 @@ wa_off_t wifi_access_start(wa_mode_t mode, wa_off_t gate)
     }
     const wa_off_t r = wa_start(&s.w, mode, gate, ms(), rand32, NULL);
     if (r == WA_OFF_NONE) {
+        wa_kept_use(&s.w, &s.conf);
         atomic_store(&s.asked, true);
         ++s.gen;
         if (mode == WA_MODE_SCAN) {
@@ -1956,9 +1989,20 @@ bool wifi_access_save_net(const char *ssid, const char *pass)
 void wifi_access_forget(void)
 {
     lock();
-    wa_conf_defaults(&s.conf);
-    wa_pending_forget(&s.pend);
+    wa_forget(&s.conf, &s.pend);
     unlock();
+}
+
+bool wifi_access_set_kept(wa_kept_t which, const char *value)
+{
+    lock();
+    const bool ok = wa_conf_set_kept(&s.conf, which, value, strlen(value))
+                    == WA_CONF_OK;
+    if (ok) {
+        wa_pending_change(&s.pend);
+    }
+    unlock();
+    return ok;
 }
 
 void wifi_access_set_code(bool on)

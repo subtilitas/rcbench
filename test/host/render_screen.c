@@ -2064,6 +2064,10 @@ static void wifi_type(const char *text)
 
 /* The views of WI-FI, reached as an operator reaches them: the
  * application's view handed in, the controls tapped. */
+/** @brief A kept value of 63 characters, for the longest rows and lines. */
+#define WIFI_KEPT_63 \
+    "abc DEF;%+=,1234567890123456789012345678901234567890123456789xy"
+
 static void pose_wifi(const char *view)
 {
     wifi_view_t v;
@@ -2091,6 +2095,15 @@ static void pose_wifi(const char *view)
         v.block = WIFI_WHY_RUN;
         v.off = WIFI_WHY_JOIN;
         v.join = WIFI_JOIN_NO_ADDRESS;
+    } else if (strcmp(view, "wifi-ap-kept") == 0) {
+        /* The longest values, on the rows of a running radio. */
+        v.radio = WIFI_RADIO_AP;
+        strcpy(v.pass, WIFI_KEPT_63);
+        strcpy(v.code, WIFI_KEPT_63);
+        strcpy(v.kept_pass, WIFI_KEPT_63);
+        strcpy(v.kept_code, WIFI_KEPT_63);
+        v.channel = 6;
+        v.idle_left_s = 574;
     } else if (strcmp(view, "wifi-ap") == 0) {
         v.radio = WIFI_RADIO_AP;
         strcpy(v.pass, "k7mqx3ha");
@@ -2118,6 +2131,11 @@ static void pose_wifi(const char *view)
         } else if (strcmp(view, "wifi-writes-code") == 0) {
             v.writes = WIFI_WRITES_CODE;
             v.code_on = false;
+        } else if (strcmp(view, "wifi-writes-code-long") == 0) {
+            v.writes = WIFI_WRITES_CODE;
+            v.code_on = false;
+            strcpy(v.code, WIFI_KEPT_63);
+            strcpy(v.kept_code, WIFI_KEPT_63);
         } else if (strcmp(view, "wifi-writes-off") == 0) {
             v.writes = WIFI_WRITES_OFF;
         }
@@ -2158,6 +2176,48 @@ static void pose_wifi(const char *view)
         }
     }
     wifi_screen_set(&v);
+
+    /* HOTSPOT PASSWORD's and WEB CODE's views and their keyboard. */
+    if (strncmp(view, "wifi-kept", 9) == 0) {
+        const bool code = strncmp(view, "wifi-kept-code", 14) == 0;
+        if (strcmp(view, "wifi-kept-buttons") == 0
+            || strcmp(view, "wifi-kept-both") == 0) {
+            strcpy(v.kept_pass, "cedarQ42x");
+            if (strcmp(view, "wifi-kept-both") == 0) {
+                strcpy(v.kept_code, "cedarQ42x");
+            }
+            wifi_screen_set(&v);
+            return;
+        }
+        if (strcmp(view, "wifi-kept-pass-set") == 0) {
+            strcpy(v.kept_pass, "cedarQ42x");
+        } else if (strcmp(view, "wifi-kept-code-long") == 0) {
+            strcpy(v.kept_code, WIFI_KEPT_63);
+        } else if (strcmp(view, "wifi-kept-code-off") == 0) {
+            v.code_on = false;
+            v.save_failed = true;
+        }
+        wifi_screen_set(&v);
+        tap(WF_BTN_CX(code ? 6 : 5), UI_BAND_H + WF_BTN_CY(code ? 6 : 5));
+        return;
+    }
+    if (strncmp(view, "wifi-key-kept", 13) == 0) {
+        const int btn = (strcmp(view, "wifi-key-kept-code") == 0) ? 6 : 5;
+        tap(WF_BTN_CX(btn), UI_BAND_H + WF_BTN_CY(btn));
+        tap(WF_RESCAN_CX, UI_BAND_H + WF_SCAN_CY);          /* TYPE A VALUE */
+        wifi_type("cedar");
+        wifi_key(UI_TK_SHIFT);
+        wifi_type("q");
+        wifi_key(UI_TK_SHIFT);
+        wifi_type("4");
+        if (strcmp(view, "wifi-key-kept-short") == 0) {
+            wifi_key(UI_TK_OK);                             /* 7: refused */
+            wifi_expect("cedarQ4", true);
+        } else {
+            wifi_expect("cedarQ4", false);
+        }
+        return;
+    }
 
     const bool keys = strncmp(view, "wifi-key", 8) == 0;
     if (strcmp(view, "wifi-scan") == 0 || strcmp(view, "wifi-scanning") == 0

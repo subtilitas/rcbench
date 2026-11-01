@@ -127,6 +127,16 @@ bool wifi_access_save_net(const char *ssid, const char *pass);
 void wifi_access_forget(void);
 void wifi_access_set_code(bool on);
 
+/**
+ * @brief Keep @p value as HOTSPOT PASSWORD or WEB CODE, or "" for RANDOM.
+ *        Radio sessions from the next start take it; the store is written on
+ *        a frame that may write flash, as for the rest of what is kept.
+ * @param which Which of the two.
+ * @param value The value, terminated.
+ * @return false when wa_kept_check() refuses it: what stood stands.
+ */
+bool wifi_access_set_kept(wa_kept_t which, const char *value);
+
 /** Drop a received or staged image.  Nothing while one is taken. */
 void wifi_access_discard(void);
 

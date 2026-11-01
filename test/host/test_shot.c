@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "shot_rig.h"
+#include "wifi_screen.h"
 #include "coproc_update_screen.h"
 #include "ui_help.h"
 
@@ -498,6 +499,40 @@ TEST_CASE(the_picture_is_the_frame_with_the_band_and_without_the_notice)
     CHECK(memcmp(img, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
 }
 
+TEST_CASE(a_kept_value_on_the_glass_is_never_copied)
+{
+    wifi_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.code_on = true;
+    v.radio = WIFI_RADIO_AP;
+    strcpy(v.pass, "kept value");
+    strcpy(v.kept_pass, "kept value");
+    start();
+    ui_router_goto(SCREEN_WIFI);
+    wifi_screen_set(&v);
+    CHECK(ui_router_shot_refused());
+    const int copies = g_copies;
+    touch(gap_x(), 30, TOUCH_EVENT_DOWN, 1);
+    wait_ms(1000);
+    frame();
+    /* No frame copied, no image held, and the band says why. */
+    CHECK_EQ(g_copies, copies);
+    CHECK(!ui_shot_held());
+    CHECK(ui_shot_image() == NULL);
+    REQUIRE(ui_router_alert() != NULL);
+    CHECK(ui_router_alert_is_notice());
+    CHECK_STR_EQ(ui_router_alert(), TR(SHOT_KEPT));
+    touch(gap_x(), 30, TOUCH_EVENT_UP, 1);
+    ui_router_tick(0.016f);
+    /* A RANDOM password on the same rows is taken, as it is without a kept
+     * one. */
+    v.kept_pass[0] = '\0';
+    wifi_screen_set(&v);
+    CHECK(!ui_router_shot_refused());
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(!ui_router_shot_refused());
+}
+
 TEST_CASE(no_memory_says_so_in_the_band_and_goes_on)
 {
     start();
@@ -586,6 +621,7 @@ int main(void)
     RUN(no_screen_sees_the_hold_and_it_works_over_a_keypad);
     RUN(a_screens_press_is_its_own_as_before);
     RUN(the_picture_is_the_frame_with_the_band_and_without_the_notice);
+    RUN(a_kept_value_on_the_glass_is_never_copied);
     RUN(no_memory_says_so_in_the_band_and_goes_on);
     RUN(a_second_hold_replaces_the_waiting_picture_in_the_same_memory);
     RUN(the_preview_is_the_mean_of_four_by_four);

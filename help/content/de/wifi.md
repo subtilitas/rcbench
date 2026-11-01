@@ -19,6 +19,8 @@ WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der
 | HEIMNETZ WÄHLEN | sucht und listet die Netze in Reichweite |
 | HEIMNETZ LÖSCHEN | löscht das gespeicherte Netz und schaltet den Zugangscode wieder ein; grau, solange keins gespeichert ist |
 | ZUGANGSCODE: EIN, AUS | ob die Browserseite nach dem Zugangscode fragt |
+| HOTSPOT-PASSWORT: ZUFALL, FEST | öffnet das [Hotspot-Passwort](#hotspot-passwort-und-web-code) |
+| WEB-CODE: ZUFALL, FEST | öffnet den [Web-Code](#hotspot-passwort-und-web-code) |
 
 ## Wenn das Funkmodul nicht starten darf
 
@@ -51,7 +53,7 @@ WLAN-HOTSPOT startet das eigene Netz des Panels. Der Bildschirm zeigt, was ein T
 | Band und Kanal | 2,4GHz, Kanal 6 |
 | Sicherheit | WPA2 (Wi-Fi Protected Access 2) Personal |
 | Netzname | `rcbench-` und 4 Hex-Ziffern der MAC-Adresse (Media Access Control) des Panels, zum Beispiel `rcbench-3F7A` |
-| Passwort | 8 Zeichen, bei jedem Start neu, ohne 0, 1, i, l und o |
+| Passwort | ZUFALL: 8 Zeichen, bei jedem Start neu, ohne 0, 1, i, l und o. Fest: die 8 bis 63 Zeichen von HOTSPOT-PASSWORT |
 | Geräte | 1 zur selben Zeit |
 | IP-Adresse | `http://192.168.4.1/` |
 | Reichweite | nicht gemessen |
@@ -59,6 +61,24 @@ WLAN-HOTSPOT startet das eigene Netz des Panels. Der Bildschirm zeigt, was ein T
 1. Am Telefon oder Computer das Netz verbinden, das der Bildschirm nennt, mit dem Passwort, das er zeigt.
 2. `http://192.168.4.1/` öffnen.
 3. Den Zugangscode eingeben, den der Bildschirm zeigt.
+
+## HOTSPOT-PASSWORT und WEB-CODE
+
+![HOTSPOT-PASSWORT fest, WEB-CODE Zufall](view:wifi-kept-buttons)
+![Die Ansicht eines Zufallswerts](view:wifi-kept-pass)
+![Die Ansicht eines festen Werts](view:wifi-kept-pass-set)
+![Die Ansicht des Zugangscodes](view:wifi-kept-code)
+
+HOTSPOT-PASSWORT ist das Passwort des Netzes, das WLAN-HOTSPOT startet. WEB-CODE ist der Zugangscode, nach dem die Browserseite fragt. Jeder ist ZUFALL, bei jedem Start des Funks neu, oder ein Wert, den du eingibst und der Neustarts überdauert.
+
+- WERT EINGEBEN öffnet die Tastatur: 8 bis 63 Zeichen, Buchstaben, Ziffern, Leerzeichen und Satzzeichen.
+- ZURÜCK AUF ZUFALL braucht ein Tippen und keine Eingabe. Die Taste ist grau, solange der Wert ZUFALL ist.
+- Eine Änderung gilt ab dem nächsten Start des Funks.
+- Jede Ansicht zeigt ihren Wert, also lässt sich ein fester Wert am Panel ohne Browser lesen und zurücksetzen. HEIMNETZ LÖSCHEN behält beide.
+- Das Panel nimmt keinen Screenshot auf, solange es einen festen Wert zeigt.
+
+![Die Tastatur eines festen Werts](view:wifi-key-kept)
+![Weniger als 8 Zeichen](view:wifi-key-kept-short)
 
 ## Ein Heimnetz wählen
 
@@ -109,7 +129,7 @@ Ein gescheitertes Verbinden bietet WLAN-HOTSPOT an. WLAN AUS schaltet das Funkmo
 
 ## Der Zugangscode
 
-Die Browserseite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei listet, die Karte ändert oder einen Upload annimmt. Der Bildschirm zeigt den Code; er ist bei jedem Start des Funkmoduls neu. 16 falsche Codes schalten das Funkmodul ab. ZUGANGSCODE schaltet den Code für beide Wege ab; der Bildschirm zeigt dann `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload installiert trotzdem erst nach dem Halten von 2s am Panel.
+Die Browserseite fragt nach einem Code, bevor sie eine Datei listet, die Karte ändert oder einen Upload annimmt. Der Bildschirm zeigt den Code. Mit WEB-CODE auf ZUFALL hat er 8 Zeichen und ist bei jedem Start des Funkmoduls neu, sodass ein Code aus einer früheren Sitzung nichts öffnet. Mit einem festen WEB-CODE gilt das nicht: Der Code bleibt gültig, bis du ihn änderst, für einen Browser, der ihn behielt, und für jeden, der ihn sah. Über einfaches HTTP im Heimnetz geht er unverschlüsselt durchs Netz. 16 falsche Codes schalten das Funkmodul ab, auch bei einem festen Code. ZUGANGSCODE schaltet den Code für beide Wege ab; der Bildschirm zeigt dann `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload installiert trotzdem erst nach dem Halten von 2s am Panel.
 
 ## Schreiben per Browser
 
@@ -157,7 +177,7 @@ Dieselbe Version aus einem anderen Build wird als Neuinstallation angeboten. Der
 
 ## Aktuelle Einschränkungen
 
-- Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes liegt im Klartext im Flash des Panels.
+- Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes, ein festes HOTSPOT-PASSWORT und ein fester WEB-CODE liegen im Klartext im Flash des Panels.
 - Die Seite ist reines HTTP (Hypertext Transfer Protocol). In einem Heimnetz gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der Bildschirm sagt das, solange er verbunden ist.
 - Ein Gerät, das diesen Verkehr mitliest, kann einen eigenen Schreibzugriff senden, solange Schreiben erlaubt ist.
 - Der Editor des Browsers speichert eine Datei mit gemischten Zeilenenden mit LF.

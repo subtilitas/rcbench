@@ -100,6 +100,61 @@ wa_conf_err_t wa_conf_set_net(wa_conf_t *c, const char *ssid, size_t ssid_len,
     return WA_CONF_OK;
 }
 
+wa_conf_err_t wa_kept_check(const char *value, size_t len)
+{
+    if (value == NULL || len < WA_PASS_MIN) {
+        return WA_CONF_PASS_SHORT;
+    }
+    if (len > WA_PASS_MAX) {
+        return WA_CONF_PASS_LONG;
+    }
+    for (size_t i = 0u; i < len; ++i) {
+        if (value[i] < 0x20 || value[i] > 0x7E) {
+            return WA_CONF_PASS_CHAR;
+        }
+    }
+    return WA_CONF_OK;
+}
+
+wa_conf_err_t wa_conf_set_kept(wa_conf_t *c, wa_kept_t which,
+                               const char *value, size_t len)
+{
+    char *field = (which == WA_KEPT_PASS) ? c->ap_pass : c->web_code;
+    if (len != 0u) {
+        const wa_conf_err_t e = wa_kept_check(value, len);
+        if (e != WA_CONF_OK) {
+            return e;
+        }
+    }
+    memset(field, 0, WA_PASS_MAX + 1u);
+    if (len != 0u) {
+        memcpy(field, value, len);
+    }
+    return WA_CONF_OK;
+}
+
+void wa_conf_forget_net(wa_conf_t *c)
+{
+    wa_conf_t kept;
+    wa_conf_defaults(&kept);
+    memcpy(kept.ap_pass, c->ap_pass, sizeof(kept.ap_pass));
+    memcpy(kept.web_code, c->web_code, sizeof(kept.web_code));
+    *c = kept;
+}
+
+/**
+ * @brief A value from the store into @p c, held to the rule of one typed in;
+ *        anything else leaves RANDOM.
+ * @param c     The settings.
+ * @param which Which of the two.
+ * @param got   The field the store filled, WA_PASS_MAX + 1 bytes.
+ */
+static void load_kept(wa_conf_t *c, wa_kept_t which, char *got)
+{
+    got[WA_PASS_MAX] = '\0';
+    (void)wa_conf_set_kept(c, which, got, strlen(got));
+}
+
 void wa_conf_load(const wa_store_t *s, wa_conf_t *out)
 {
     wa_conf_t got;
@@ -109,6 +164,8 @@ void wa_conf_load(const wa_store_t *s, wa_conf_t *out)
         return;
     }
     out->code_on = got.code_on;
+    load_kept(out, WA_KEPT_PASS, got.ap_pass);
+    load_kept(out, WA_KEPT_CODE, got.web_code);
     if (got.have_net) {
         /* Terminated within its field, then held to the same rule as a
          * network typed in. */
@@ -160,6 +217,15 @@ void wa_pending_forget(wa_pending_t *p)
     p->erase = true;
     p->save = false;
     pending_touched(p);
+}
+
+void wa_forget(wa_conf_t *c, wa_pending_t *p)
+{
+    wa_conf_forget_net(c);
+    wa_pending_forget(p);
+    if (c->ap_pass[0] != '\0' || c->web_code[0] != '\0') {
+        wa_pending_change(p);     /* the erase takes the store's whole */
+    }
 }
 
 bool wa_pending_due(const wa_pending_t *p, bool may_write, uint32_t now_ms)
@@ -622,20 +688,17 @@ wa_code_t wa_code_check(wa_t *w, const char *given, bool code_on)
     if (given == NULL || given[0] == '\0') {
         return WA_CODE_MISSING;
     }
-    /* Every character compared, whatever the first difference: the time
-     * an answer takes says nothing about how much of a guess was right. */
+    /* All of the field compared, whatever the first difference and whatever
+     * the lengths: the time an answer takes says nothing about how much of a
+     * guess was right or how long the code is.  The field is zero behind the
+     * code, so a guess that ended compares its zeros with those, and a guess
+     * of the field's whole length meets the terminator there and differs. */
     unsigned diff = 0u;
-    size_t i = 0u;
-    for (; i < WA_SECRET_LEN; ++i) {
-        const char g = given[i];
+    bool ended = false;
+    for (size_t i = 0u; i < sizeof(w->code); ++i) {
+        const char g = ended ? '\0' : given[i];
+        ended = ended || (g == '\0');
         diff |= (unsigned)(uint8_t)(g ^ w->code[i]);
-        if (g == '\0') {
-            diff |= 0x100u;
-            break;
-        }
-    }
-    if (i == WA_SECRET_LEN && given[WA_SECRET_LEN] != '\0') {
-        diff |= 0x200u;
     }
     if (diff == 0u) {
         return WA_CODE_OK;
@@ -644,4 +707,17 @@ wa_code_t wa_code_check(wa_t *w, const char *given, bool code_on)
         wa_close(w, WA_OFF_GUESSES);
     }
     return WA_CODE_WRONG;
+}
+
+void wa_kept_use(wa_t *w, const wa_conf_t *c)
+{
+    if (c == NULL) {
+        return;
+    }
+    if (c->ap_pass[0] != '\0') {
+        memcpy(w->pass, c->ap_pass, sizeof(w->pass));
+    }
+    if (c->web_code[0] != '\0') {
+        memcpy(w->code, c->web_code, sizeof(w->code));
+    }
 }
