@@ -173,6 +173,7 @@ TRACKED = [
     "shared/ui/board_drawing.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
+    "shared/ui/wifi_kept.c",
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",

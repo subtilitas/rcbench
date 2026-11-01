@@ -141,6 +141,12 @@ typedef struct {
      * that are screens of their own, stay NULL.
      */
     bool (*covered)(void);
+    /**
+     * @brief Whether a screenshot of what the screen draws now is refused:
+     * it shows a value kept in the store, and a picture on the card can be
+     * read from the browser.  NULL: never.
+     */
+    bool (*no_shot)(void);
 } ui_screen_t;
 
 /*
@@ -253,6 +259,12 @@ bool ui_screen_not_covered(void);
  * @return false where there is no band, no covered() or no room
  */
 bool ui_router_shot_gap(gfx_rect_t *out);
+
+/**
+ * @brief Whether the screen on top refuses a screenshot now (its no_shot).
+ * @return true when no picture may be taken of it
+ */
+bool ui_router_shot_refused(void);
 
 /**
  * @brief Whether the bench is idle (shot_gate.h), once a frame.  False, the

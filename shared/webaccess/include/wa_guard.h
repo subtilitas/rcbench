@@ -52,9 +52,10 @@ extern "C" {
 #define WA_UPLOAD_HDR     "X-Rcbench-Upload"
 /** @brief The value the page's script gives WA_UPLOAD_HDR. */
 #define WA_UPLOAD_VAL     "1"
-/** @brief Bytes of the code form's body at most: "code=" and 8 characters,
- *         each up to 3 bytes percent-encoded, with room to spare. */
-#define WA_CODE_BODY_MAX  95u
+/** @brief Bytes of the code form's body at most: "code=" and a kept code's
+ *         63 characters, each up to 3 bytes percent-encoded, with room to
+ *         spare. */
+#define WA_CODE_BODY_MAX  200u
 /** @brief Bytes of a PUT of the file API at most: the viewer's 1MiB
  *         (TEXT_BUF_FILE_MAX), which test_wa_guard holds it to. */
 #define WA_PUT_BODY_MAX   1048576u

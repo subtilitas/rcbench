@@ -128,6 +128,32 @@ bool wa_form_get(const char *body, size_t n, const char *key, char *out,
 bool wa_cookie_get(const char *header, const char *name, char *out,
                    size_t cap);
 
+/** @brief Bytes of the longest code as a cookie's value, terminator apart:
+ *         63 characters of 3 bytes each. */
+#define WA_CODE_COOKIE_MAX 189u
+
+/**
+ * @brief An access code as a cookie's value: letters, digits and "-" as they
+ *        are, every other byte as %XX, since a kept code may hold a space, a
+ *        ";" or a quote.  A RANDOM code is its own cookie value.
+ * @param code The code.
+ * @param out  Takes the value.
+ * @param cap  Bytes of @p out.
+ * @return false, @p out empty, when it does not fit.
+ */
+bool wa_code_cookie(const char *code, char *out, size_t cap);
+
+/**
+ * @brief The access code a Cookie header carries, wa_code_cookie() undone.
+ * @param header The header's value.
+ * @param name   The cookie's name.
+ * @param out    Takes the code; empty when false.
+ * @param cap    Bytes of @p out.
+ * @return false for no such cookie, one too long for @p out, and a broken %XX.
+ */
+bool wa_code_of_cookie(const char *header, const char *name, char *out,
+                       size_t cap);
+
 /**
  * The Content-Disposition value for a download of @p name, the last part of
  * a path: attachment, an ASCII (American Standard Code for Information

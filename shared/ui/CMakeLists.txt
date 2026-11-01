@@ -106,6 +106,7 @@ set(SRCS
     board_drawing.c
     busfault_screen.c
     wifi_screen.c
+    wifi_kept.c
     update_screen.c
     coproc_update_screen.c
     upd_screen.c

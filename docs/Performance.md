@@ -391,7 +391,7 @@ its stack less 1024 bytes.
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
-| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,624 | 3,248 |
+| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,864 | 3,008 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
@@ -421,7 +421,7 @@ bytes leaves 1,792 above the 1,024-byte margin.
 `wifi_ctl`'s deepest chain is the start of the network stack in `worker()`:
 `esp_netif_init()` into lwIP's `netif_add()` and `netif_set_addr()`, the
 TCP code under it down to `ip6_frag()` and `pbuf_alloc()`, and the heap
-allocation and log call below those. It leaves 3,248 bytes above the margin.
+allocation and log call below those. It leaves 3,008 bytes above the margin.
 
 Measured on the ESP32-P4 build with ESP-IDF v6.1 at -O2. Of the margin,
 560 bytes are spent outside the frames:

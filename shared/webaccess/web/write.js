@@ -559,7 +559,7 @@ var RcbWr = (function () {
       });
       ui.codeIn = c.el('input');
       ui.codeIn.name = 'code';
-      ui.codeIn.maxLength = 8;
+      ui.codeIn.maxLength = 63;
       ui.codeIn.autocomplete = 'off';
       ui.codeGo = c.el('button', 'btn', TX.codego);
       ui.codeGo.type = 'submit';

@@ -5042,6 +5042,9 @@ UI_TEXT(SHOT_BUSY, 94,
     "Screenshot not taken: the last one is still being written.",
     "Kein Screenshot: Der letzte wird noch geschrieben.")
 
+UI_TEXT(SHOT_KEPT, 94,
+    "Screenshot not taken: this screen shows a kept password or code.",
+    "Kein Screenshot: Dieser Bildschirm zeigt ein festes Passwort oder einen festen Code.")
 UI_TEXT(SHOT_NO_MEMORY, 94,
     "Screenshot not taken: 1,305,600B of PSRAM are not free.",
     "Kein Screenshot: 1 305 600B PSRAM sind nicht frei.")
@@ -6739,6 +6742,62 @@ UI_TEXT(WF_WR_OPEN, 0,
 UI_TEXT(WF_WR_OPEN_ONE, 0,
     "The browser may write to the card: 1 write so far.",
     "Der Browser darf auf die Karte schreiben: bisher 1 Schreibvorgang.")
+UI_TEXT(WF_WR_CODE_LONG, 0,
+    "Browser writes need this access code:",
+    "Schreiben per Browser braucht diesen Zugangscode:")
+/* The two values the operator can keep, a view each under the radio-off
+ * view's buttons. */
+UI_TEXT(WF_KEPT_PASS_RANDOM, 0,
+    "HOTSPOT PASSWORD: RANDOM",
+    "HOTSPOT-PASSWORT: ZUFALL")
+UI_TEXT(WF_KEPT_PASS_SET, 0,
+    "HOTSPOT PASSWORD: KEPT",
+    "HOTSPOT-PASSWORT: FEST")
+UI_TEXT(WF_KEPT_CODE_RANDOM, 0,
+    "WEB CODE: RANDOM",
+    "WEB-CODE: ZUFALL")
+UI_TEXT(WF_KEPT_CODE_SET, 0,
+    "WEB CODE: KEPT",
+    "WEB-CODE: FEST")
+UI_TEXT(WF_KEPT_PASS_TITLE, 0,
+    "HOTSPOT PASSWORD",
+    "HOTSPOT-PASSWORT")
+UI_TEXT(WF_KEPT_CODE_TITLE, 0,
+    "WEB CODE",
+    "WEB-CODE")
+UI_TEXT(WF_KEPT_PASS_WHAT, 0,
+    "The password of the network ACCESS POINT starts.",
+    "Das Passwort des Netzes, das WLAN-HOTSPOT startet.")
+UI_TEXT(WF_KEPT_CODE_WHAT, 0,
+    "The access code the browser page asks for.",
+    "Der Zugangscode, nach dem die Browser-Seite fragt.")
+UI_TEXT(WF_KEPT_IS_RANDOM, 0,
+    "RANDOM: made new at every start of the radio.",
+    "ZUFALL: bei jedem Start des Funks neu erzeugt.")
+UI_TEXT(WF_KEPT_IS_SET, 0,
+    "Kept, valid until changed:",
+    "Fest, gültig bis zur Änderung:")
+UI_TEXT(WF_KEPT_RULE, 0,
+    "8 to 63 characters: letters, digits, space and marks.",
+    "8 bis 63 Zeichen: Buchstaben, Ziffern, Leerzeichen und Satzzeichen.")
+UI_TEXT(WF_KEPT_NEXT, 0,
+    "A change takes effect at the next start of the radio.",
+    "Eine Änderung gilt ab dem nächsten Start des Funks.")
+UI_TEXT(WF_KEPT_CODE_OFF, 0,
+    "ACCESS CODE is off: the page asks for no code.",
+    "ZUGANGSCODE ist aus: Die Seite fragt nach keinem Code.")
+UI_TEXT(WF_KEPT_TYPE, 0,
+    "TYPE A VALUE",
+    "WERT EINGEBEN")
+UI_TEXT(WF_KEPT_TO_RANDOM, 0,
+    "BACK TO RANDOM",
+    "ZURÜCK AUF ZUFALL")
+UI_TEXT(WF_KEY_KEPT_PASS, 0,
+    "Hotspot password, 8 to 63 characters",
+    "Hotspot-Passwort, 8 bis 63 Zeichen")
+UI_TEXT(WF_KEY_KEPT_CODE, 0,
+    "Web code, 8 to 63 characters",
+    "Web-Code, 8 bis 63 Zeichen")
 UI_TEXT(WF_WR_CODE, 0,
     "Browser writes need the access code %s.",
     "Schreiben per Browser braucht den Zugangscode %s.")
