@@ -4634,7 +4634,6 @@ shared/ui/upd_screen.c: warning: Member yield (variable) of struct [struct].s_re
 shared/ui/wifi_screen.c: warning: Member act(int hit) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member back(void) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member drop_hold_if_gone(void) (function) of file wifi_screen.c is not documented.
-shared/ui/wifi_screen.c: warning: Member have_press (variable) of struct [struct].s is not documented.
 shared/ui/wifi_screen.c: warning: Member hit_at(int x, int y) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member hit_rect(int hit) (function) of file wifi_screen.c is not documented.
 shared/ui/wifi_screen.c: warning: Member hold (variable) of struct [struct].s is not documented.
