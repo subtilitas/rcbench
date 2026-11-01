@@ -223,7 +223,7 @@ TEST_CASE(a_load_refuses_another_esc)
     CHECK(memcmp(g_load.target, s.orig, 255u) == 0);
     up_s();
     CHECK_EQ(ew_file_load(&am4, &s.id, s.orig, &g_load), EW_LOAD_FIRMWARE);
-    /* Into an ESCape32. */
+    /* Into an ESCape32, whose file has its own lines. */
     id = s.id;
     id.fw = EW_FW_E32;
     id.layout = 17u;

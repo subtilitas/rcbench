@@ -21,6 +21,8 @@ history is in git.
   A verified file of an AM32 restores an ESC whose 192B read 0xFF when its pin
   code, flash code, bootloader protocol and name are the ESC's. Files go to
   `BENCH/ESCW/CONF`, `ESCW001.TXT` to `ESCW999.TXT`. No screen uses it.
+  ESCape32's file holds its 46 keys as `key: value` lines and `music`, up to 255
+  characters. A load takes the keys and never writes `music`.
 - `protocols/escwire/`: ESCape32's text interface at 38400baud. It holds the
   lines `info`, `show`, `set` and `save`, their replies, the 46 numeric keys of
   revision 17 as data, and the session's branch: after 3 silent first contacts a

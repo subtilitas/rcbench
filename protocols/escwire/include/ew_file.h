@@ -19,15 +19,21 @@
  *     Bootloader version: 12            ARM: byte 2 of the page
  *     Name: EXAMPLE_F421                ARM: at most 29 characters, maybe none
  *     Signature: E8B2                   EFM8 in place of the 5 lines above
+ *     Target: BOARD_F051                ESCape32 in place of the same lines
  *     POWER RAMP = 5                    one line per field of the layout; a
  *     REVISION = 4 [not loaded]         field no load takes says so
  *     bytes 192                         the page, whole, as read
  *     00: 01 04 ...                     16 bytes a line, the offset in front
  *     checksum 1A2B3C4D                 8 upper-case hexadecimal digits
  *
+ * ESCape32's file has `Processor: TEXT` and `Target`, and in place of the field
+ * lines and the bytes one line `<key>: <value>` per key of ew_map_e32 in its
+ * order, a decimal number as the wire spells it or `none` for a key a read did
+ * not bring, then `music: <text>`.  The revision is the layout.
+ *
  * The characters are ASCII (American Standard Code for Information
- * Interchange) 0x20 to 0x7E, a line holds at most EW_FILE_LINE_MAX of them and
- * every line ends with LF (line feed, 0x0A).
+ * Interchange) 0x20 to 0x7E, a line holds at most EW_FILE_LINE_MAX of them,
+ * `music` EW_FILE_MUSIC_LINE_MAX, and every line ends with LF (line feed, 0x0A).
  *
  * The checksum is CRC-32 (cyclic redundancy check, polynomial 0x04C11DB7
  * reflected, start 0xFFFFFFFF, final inversion: the one of IEEE 802.3) over
@@ -64,6 +70,10 @@
  * - A name the map does not have, a name given twice and a text that is no
  *   value of the field refuse the file, with the line.
  *
+ * In an edited file of ESCape32 a key's line is `<key>: <value>` or
+ * `<key> = <value>`, the value a decimal number; `none` counts as no line, and
+ * `music` is read and not used.
+ *
  * Both kinds take the 3 bytes EF BB BF (the byte order mark of UTF-8, 8-bit
  * Unicode Transformation Format) in front of the header.
  *
@@ -95,6 +105,9 @@ extern "C" {
 /** @brief Characters in a line of a verified file at most, the line end not
  *         counted.  A line of an edited file may be longer. */
 #define EW_FILE_LINE_MAX 64u
+
+/** @brief Characters in the `music` line of a verified file at most. */
+#define EW_FILE_MUSIC_LINE_MAX (7u + EW_E32_MUSIC_MAX)
 
 /** @brief Lines ew_file_format() writes at most. */
 #define EW_FILE_LINES_MAX 80u
@@ -152,10 +165,14 @@ typedef struct {
     uint8_t  named;      /**< edited: the lines that give a value              */
     uint16_t signature;  /**< EFM8: bytes 4 and 5                              */
     uint16_t len;        /**< bytes of @c page                                 */
-    char     name[EW_ID_NAME_MAX + 1u]; /**< ARM: the name, "" for none        */
-    uint8_t  has[EW_PAGE_MAX / 8u];     /**< edited: bit n, a line for byte n  */
+    char     name[EW_ID_NAME_MAX + 1u]; /**< ARM: the name; ESCape32: target   */
+    char     music[EW_E32_MUSIC_MAX + 1u]; /**< ESCape32: `music`; verified only,
+                                                and no load writes it          */
+    uint8_t  has[EW_PAGE_MAX / 8u];     /**< edited: bit n, a line for byte n;
+                                             ESCape32: for key n               */
     uint8_t  raw[EW_PAGE_MAX / 8u];     /**< edited: bit n, that line's `raw`  */
-    uint8_t  page[EW_PAGE_MAX];         /**< the page, or the named fields     */
+    uint8_t  page[EW_PAGE_MAX];         /**< the page, or the named fields;
+                                             ESCape32: as ew_e32_get() reads it */
 } ew_file_t;
 
 /** @brief What ew_file_load() found.  The numbers are stable. */
@@ -167,7 +184,8 @@ typedef enum {
     EW_LOAD_ERASED = 4,    /**< AM32 settings erased: only a restore writes   */
     EW_LOAD_READ_ONLY = 5, /**< a page that is not written                    */
     EW_LOAD_VALUE = 6,     /**< an editable field would take no value of its
-                                own: @c bad_off is its byte                   */
+                                own: @c bad_off is its byte; on ESCape32 the
+                                low byte of its key                           */
 } ew_load_t;
 
 /** @brief What loading a file into an ESC does. */
@@ -216,11 +234,24 @@ uint32_t ew_file_crc32(const void *data, size_t n);
  * @param id   what identification found
  * @param page the page, @c id->len bytes
  * @return false for a NULL, a length out of range, an ESC no processor was
- *         found for, or an identity that does not fit the page; @p f is then
- *         unchanged
+ *         found for, ESCape32 (ew_file_capture_text()), or an identity that does
+ *         not fit the page; @p f is then unchanged
  */
 bool ew_file_capture(ew_file_t *f, const ew_contact_t *c, const ew_ident_t *id,
                      const uint8_t *page);
+
+/**
+ * @brief Take ESCape32's keys as read, and its `music`, into a file.  A revision
+ *        that is not written is taken as well: the file states what it held.
+ * @param f     takes the file
+ * @param id    what identification found, of ESCape32
+ * @param page  the keys, EW_MAP_LEN_E32 bytes
+ * @param music the value of `music`, EW_E32_MUSIC_MAX characters at most
+ * @return false for a NULL, another firmware or length, or a target or music
+ *         the format cannot hold; @p f is then unchanged
+ */
+bool ew_file_capture_text(ew_file_t *f, const ew_ident_t *id,
+                          const uint8_t *page, const char *music);
 
 /**
  * @brief Write the text of a captured file.
@@ -246,7 +277,7 @@ ew_file_err_t ew_file_parse(const char *text, size_t len, ew_file_t *out,
 
 /**
  * @brief Hold a file against the ESC on the wire.  Editable fields are taken
- *        and every other byte stays the ESC's.  Only the same firmware and the
+ *        and every other byte stays the ESC's, ESCape32's `music` too.  Only the same firmware and the
  *        same layout load, and only into a page that is written.
  * @param f   the file
  * @param id  what identification found
