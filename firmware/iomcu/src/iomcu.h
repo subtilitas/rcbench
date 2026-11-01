@@ -145,6 +145,10 @@ extern uint64_t      s_edge_us;
  * sensor bus take their pins.
  */
 extern uint64_t      s_base_reserved;
+#if IOMCU_CONSOLE
+/** @brief The pin the console's test of a driver holds (ewline_console.c). */
+extern uint64_t      s_console_pins;
+#endif
 /**
  * @brief The PROG page: the programming ports, outputs of their own kind
  * with their own pins (shared/outputs/prog_port.h).
@@ -1151,6 +1155,9 @@ static inline uint8_t ports_pulsing(void)
 static inline void reserve_held(void)
 {
     outputs_reserve_pins(&s_outputs, s_base_reserved
+#if IOMCU_CONSOLE
+                                     | s_console_pins
+#endif
                                      | supply_page_pins(&s_supply)
                                      | sense_page_held(&s_sense)
                                      | tone_page_pins(&s_tone)

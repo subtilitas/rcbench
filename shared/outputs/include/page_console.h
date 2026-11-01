@@ -94,13 +94,24 @@ extern "C" {
 #define PAGE_CONSOLE_OUT_MAX 2048u
 
 /**
+ * @brief A build's own console command: a line none of the commands here took.
+ * @param ctx the context given to page_console_set_ext()
+ * @param tok the line's tokens
+ * @param n   how many, 1 or more
+ * @return true when the line was its own; false gives `err unknown command`
+ */
+typedef bool (*page_console_ext_fn)(void *ctx, char **tok, unsigned n);
+
+/**
  * @brief The console state: the command line being read, the output buffer,
  *        the staged HITEC registers and the work space of the requests.
  */
 typedef struct {
     const link_dev_t *dev;
-    char     line[PAGE_CONSOLE_LINE_MAX + 1u];
-    uint16_t len;
+    page_console_ext_fn ext; /**< a build's own commands, or NULL */
+    void    *ext_ctx;        /**< and its context */
+    char     line[PAGE_CONSOLE_LINE_MAX + 1u]; /**< the line so far */
+    uint16_t len;        /**< its characters */
     uint8_t  overlong;   /**< the line ran past PAGE_CONSOLE_LINE_MAX */
     char     out[PAGE_CONSOLE_OUT_MAX];  /**< the output ring */
     uint16_t head;       /**< the next byte to take */
@@ -124,6 +135,23 @@ typedef struct {
  * @param dev The link device whose pages the console reads and writes.
  */
 void page_console_init(page_console_t *c, const link_dev_t *dev);
+
+/**
+ * @brief A number as the console reads one: decimal or 0x hexadecimal, digits
+ *        only, up to 32 bits.
+ * @param s   the text, may be NULL
+ * @param out takes the value, may be changed on a refusal
+ * @return false for anything else: no digit, a sign, a letter after the digits
+ */
+bool page_console_number(const char *s, uint32_t *out);
+
+/**
+ * @brief Hand lines no command here takes to @p fn.
+ * @param c   the console
+ * @param fn  the handler, NULL for none
+ * @param ctx its context
+ */
+void page_console_set_ext(page_console_t *c, page_console_ext_fn fn, void *ctx);
 
 /**
  * @brief One character in.
