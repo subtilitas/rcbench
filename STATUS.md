@@ -40,7 +40,7 @@ results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.33. [Reference](docs/Link.md).
+4.34. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
 not draw. The task runs every 5ms; the line edges every 20ms
@@ -192,7 +192,7 @@ rcbench/
 | `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
-| `escwire` | | yes | yes |
+| `escwire` | yes | yes | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -226,7 +226,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 396 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 401 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
@@ -439,6 +439,17 @@ an abort mid-transaction, the timeout at 999us and 1000us, also across the
 wrap, the bus clear's 9 clocks and STOP, a part it frees and one that
 holds on, SCL stretched, and the trial after it. `i2c_txq_headers_cxx`
 calls the core from C++11. The RP2350 driver has not run on a chip.
+`test_esc_port`, `test_esc_port_data` and `test_esc_port_stop` run the ESC_WIRE and
+ESC_DATA pages (`shared/outputs/esc_port.c`) on the simulated ESC of
+`test/host/ew_sim.h`, with the pin's and the supply's hooks faked
+(`test/host/esc_port_rig.h`): every refusal of OPEN and ENTER at its limit, a slot's
+and a port's way to the line and back, the supply's order and times, BY HAND, reads,
+writes, RESTORE and the text line by the blocks, the read copy's name and the draft's
+CRC on a write, and for a stop, an abort, a lost link and each session error, TORN
+and LOST included, the line parked and the supply off. `test_esc_port_gate` runs the page with the safety gate and PROG_SUPPLY: no ARM stored in the hold arms the bank at the CLOSE, and an error switches PROG_SUPPLY off. `test_esc_console` runs the
+console's `esc` command on the page. `test_outputs_hw` and `test_outputs_hw_ports`
+hold that a held slot or DShot port is let go alone and comes back the same.
+
 `test_hitec_port` and `test_hitec_port_stop` run the HITEC page
 (`shared/outputs/hitec_port.c`) against a model of the wire driver with a
 classic and a D series servo on it and a PD mini (both over
@@ -851,8 +862,10 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/logfile/servo_store.c` | 235 | 235 | 100.0% |
 | `shared/outputs/kst_port.c` | 665 | 664 | 99.8% |
 | `shared/outputs/hitec_port.c` | 525 | 524 | 99.8% |
+| `shared/outputs/esc_port.c` | 582 | 582 | 100.0% |
+| `shared/outputs/esc_console.c` | 92 | 92 | 100.0% |
 | `shared/outputs/page_console.c` | 585 | 561 | 95.9% |
-| `shared/outputs/prog_port.c` | 405 | 405 | 100.0% |
+| `shared/outputs/prog_port.c` | 416 | 416 | 100.0% |
 | `shared/bench/kst_link.c` | 450 | 448 | 99.6% |
 | `shared/bench/hitec_link.c` | 529 | 529 | 100.0% |
 | `shared/bench/hitec_prog.c` | 671 | 671 | 100.0% |
@@ -890,7 +903,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/board_fix.c` | 96 | 96 | 100.0% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 236 | 234 | 99.2% |
-| `shared/outputs/supply_page.c` | 336 | 333 | 99.1% |
+| `shared/outputs/supply_page.c` | 350 | 347 | 99.1% |
 | `shared/outputs/prog_supply.c` | 131 | 131 | 100.0% |
 | `shared/outputs/out_store_map.c` | 74 | 74 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
@@ -901,7 +914,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/sense_page.c` | 514 | 514 | 100.0% |
 | `shared/outputs/sense_map.c` | 197 | 196 | 99.5% |
 | `shared/outputs/sense_limit.c` | 36 | 36 | 100.0% |
-| `shared/outputs/tone_page.c` | 251 | 251 | 100.0% |
+| `shared/outputs/tone_page.c` | 257 | 257 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/supply.c` | 170 | 168 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
@@ -957,7 +970,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **72239** | **70931** | **98.2%** |
+| **total** | **72944** | **71636** | **98.2%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -983,7 +996,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | Touch ownership on the panel | the router gives each contact one owner from its press to its release, and a contact that leaves the screen body by the status band is released at its last point in the body; tested on the host through the tracker. That release, and the one the tracker makes for a contact more than 120px from its previous report, is marked (`TOUCH_FLAG_NO_TAP`) and activates no control except OUTPUT OFF and START TEST while a servo test runs. STOP and DISARM act on the press; a press the router keeps from the screen (band, STOP, home tag, chip, alert band) releases the screen's contacts the same way, so a dial or slider drag ends at it and the dial's filter commands nothing after it (`test_nav_stop`). A press on a control that stops what the bench drives (DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN) reaches the screen under the alert band and with a chip's help box open, and closes either; ARM and OUTPUT ON there start no hold (`test_safe_press`). SETUP's keys, PROGRAMMER's controls and LOGS's buttons and rows act on a tap: a release by the contact that pressed, inside the control, no more than 8px from the press in x and in y; a swipe matrix of 3528 swipes down SETUP's key columns changes no setting (`test_settings_gesture`). The track id the GT911 gives a lone finger on successive touches is not measured: the host cases assume the same id each time, which is the condition under which a latched drag takes a later contact for its own. Not measured either: the GT911's report interval on the panel, and how often it leaves a moving contact out of a report | a log of the id of 20 successive lone touches, then the sequences of the ownership cases in `test/host/test_nav_contact.c` and `test/host/test_nav_drag.c` replayed by a touch injector under a camera; on a SETUP list, swipes down the `-` column at three speeds with every value read before and after, a tap and a 1s hold |
 | The automatic servo test's threshold | 0.13.0 ran on the bench with the PD mini, from a tester, on three servos: the MS24 (moving 0.16 to 0.18A) passed; the MG90S (holding 0.001A, moving 0.04 to 0.077A) and the 1102HB (holding 0.015 to 0.029A, peaking at 0.039 to 0.044A) moved but read FAIL, every move late, because movement was a reading 0.10A from the level before the command. The threshold is per step, max(0.020A, 3 x the idle noise), and a move with no movement is unseen, not late. Replays of the MG90S's and the 1102HB's CSVs in the host suite (`test/host/fixtures/`) give PASS, 41 and 41 moves timed at 771 to 989ms, and NOT MEASURABLE, 21 of 46 moves timed (those to the low end) and none late. A move has 3000ms plus the meter's lag to arrive: 3300ms on the PD mini. With SETTLING TIME at 500ms the IDLE readings can still carry the move to the centre, which raises the threshold (0.026A on the 1102HB at 5.00V). The PD mini's travel times are an upper bound; the command's delay from the panel to the pin is inside every one and is not measured | a bench run on this build with the MG90S and the 1102HB, and a faster current sensor (INA219, INA3221 or INA228, planned) for travel times that TRAVEL TIME can check |
 | The PD mini | the driver, the IOmcu's SUPPLY page and PIO UART, and the panel's half of the page are tested on the host against a modelled module. The protocol is the vendor's sheet and the bench station's notes (#223); its timings are the vendor's Python driver's, not measured. Not measured either: whether a live module goes to ERR when its input sags under the set point, which the switch-off on 2 low input reads assumes; and whether its button or AUTO OUT switch it on while the UART is attached, which the state read before a wiring change assumes | a bench run against the module: identify, set points read back, ON and OFF, a heartbeat stop, a pulled cable, the input lowered under a live set point in 0.5V steps |
-| IOmcu core 0's stack | `stack_check.py --iomcu` measures 1468 bytes for the deepest chain and 528 for one interrupt on the 4096-byte stack, 1844 bytes above the 256-byte margin. The figures are those of the image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc` holds them. The depth is a lower bound: 173 calls through a register are not followed. The stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image built with another option set is measured only when CI builds it | a high-water mark read on a board; a decision on stack guards |
+| IOmcu core 0's stack | `stack_check.py --iomcu` measures 1468 bytes for the deepest chain and 528 for one interrupt on the 4096-byte stack, 1844 bytes above the 256-byte margin. The figures are those of the image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc` holds them. The depth is a lower bound: 250 calls through a register are not followed. The stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image built with another option set is measured only when CI builds it | a high-water mark read on a board; a decision on stack guards |
 | The panel on the board: frame times, stacks, internal RAM | the model of a frame's PSRAM traffic, the task table and the console lines that measure each on a sample are in [Performance](docs/Performance.md). The lines come with the build option `RCBENCH_PERF_LOG`, ON by default, at most one line a frame: a rate line every 300 frames (5.0s at 60.4fps), a window line on the frame after it, and the stack scan every 6th rate line on a frame with the bench SAFE and the supply's output off. Measured on a station run: SERVO > LIVE ARMED at 60.4fps at rest and 39 to 45fps sweeping in NORMAL, 30.2fps sweeping at 180°, VSYNC 60.38Hz. Not measured on the 7-inch ESP32-P4 board: the effective PSRAM bandwidth (`PROBE_CLEAR_US` in `tools/frame_cost.py`), the window line's DRAW, WAIT and TURN per screen, the stack scan's time, each task's high-water mark, and the internal RAM free at start-up and in each Wi-Fi mode. The bench frame (`frame`, `sim`, `supply`) has no CI ceiling until the bandwidth is measured | a sample's console over every screen of the table of the board and every Wi-Fi mode |
 | OpenYGE wire facts | seven items want a capture: rpm scale, CRC (cyclic redundancy check) seed, frame length, legacy header, turnaround, parameter indices, `status2` | an ESC and a logic analyser; [list](docs/OpenYGE.md#8-what-to-measure-before-trusting-this-page) |
 | The bench in a browser | serving the interface to a browser on another machine is open; a browser on the panel is not planned. The panel runs Wi-Fi through the board's ESP32-C6 and an HTTP (Hypertext Transfer Protocol) server for the card's files and the firmware upload ([Screens: Wi-Fi](docs/Screens.md#wi-fi)); no page shows the bench's numbers or takes a control. The server's task runs on core 0 beside the UI (user interface) loop; the internal RAM free at run time and the frame time during a page's request are not measured ([Performance](docs/Performance.md#internal-ram)). The safety line is a heartbeat, and a remote client cannot hold one: a browser that stops answering is indistinguishable from one whose user is idle | a read-only client (numbers, plots and logs out; ARM, throttle and STOP stay at the panel), and before any code, a written answer to how a remote session proves it is still present |

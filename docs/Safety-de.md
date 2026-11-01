@@ -383,6 +383,8 @@ Ausfalls des IOmcu von 15s in BOOTSEL an, und ein Power-on-Reset trennt das
 USB des IOmcu für 14,5 bis 15s. Wie lange ein echter Reset den PD mini vor
 dem OFF des Starts anlässt, ist nicht gemessen.
 
+[Die Pages für ESC-Einstellungen](LinkEsc-de.md#was-jedes-ereignis-tut) nennen Leitung und Versorgung für jedes von ARMED, STOP, verlorenem Link, Fehler und Neustart, und [die Einschränkung](LinkEsc-de.md#aktuelle-einschränkungen) eines Pins mit bidirektionalem DShot, der auf SAFE high ruht.
+
 ## Vorausgesetzte externe Schaltung: das Monoflop
 
 Die Sicherheitsleitung ist GPIO28 (General-Purpose Input/Output) des Panels,

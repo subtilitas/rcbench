@@ -105,6 +105,7 @@ typedef struct {
     bool     writing;     /**< the port writes to the servo's memory   */
     bool     off_held;    /**< the panel's OFF waits for the write     */
     bool     sticky;      /**< the panel's OFF stands: no port ON      */
+    bool     wire_frozen; /**< supply_page_wire_freeze()               */
     uint32_t held_t0;     /**< when the held OFF was written           */
 } supply_page_t;
 
@@ -366,6 +367,17 @@ void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out);
  */
 bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
                           uint16_t ma, bool beat_alive);
+
+/**
+ * @brief Refuse a write of ENABLE to BAUD that changes them with LINK_NACK_BUSY:
+ *        the ESC_WIRE page holds a pin, and an attach could take the PIO room its
+ *        output needs back.  The wiring in force is taken, with none waiting: a
+ *        panel that restarts in a hold writes it, and takes a refusal as its pins'.
+ *
+ * @param p      The page state, or NULL.
+ * @param frozen True while the page holds a pin.
+ */
+void supply_page_wire_freeze(supply_page_t *p, bool frozen);
 
 /**
  * @brief Whether a programming port holds the command registers (FLAGS bit 11,

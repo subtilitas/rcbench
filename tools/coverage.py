@@ -262,6 +262,8 @@ TRACKED = [
     "shared/logfile/servo_store.c",
     "shared/outputs/kst_port.c",
     "shared/outputs/hitec_port.c",
+    "shared/outputs/esc_port.c",
+    "shared/outputs/esc_console.c",
     "shared/outputs/page_console.c",
     "shared/outputs/prog_port.c",
     "shared/bench/kst_link.c",

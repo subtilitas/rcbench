@@ -320,6 +320,25 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
     }
 }
 
+bool outputs_hw_return_slot(const outputs_t *o, const uint16_t *rate_hz,
+                            uint8_t slot)
+{
+    if (o == NULL || rate_hz == NULL || slot >= OUT_MAX_SLOTS) {
+        return false;
+    }
+    if (s_state[slot].bound) {
+        return true;
+    }
+    s_shadow[slot] = o->slot[slot];
+    s_shadow[slot].rate_hz = rate_hz[slot];
+    s_state[slot].pwm_have = false;
+    s_state[slot].bound = s_shadow[slot].driver != OUT_DRIVER_NONE
+                          && bind(&s_shadow[slot]);
+    s_state[slot].next_us = time_us_32();
+    dshot_edt_bind(&s_state[slot].edt, now_ms());
+    return s_state[slot].bound;
+}
+
 /* ------------------------------------------------------------ rendering */
 
 /**

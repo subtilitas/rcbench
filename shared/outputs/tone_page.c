@@ -193,6 +193,13 @@ static void forget_status(tone_page_t *p)
     p->seen_glitches = 0u;
 }
 
+void tone_page_freeze(tone_page_t *p, bool frozen)
+{
+    if (p != NULL) {
+        p->frozen = frozen;
+    }
+}
+
 uint8_t tone_page_write(tone_page_t *p, uint8_t off, uint8_t n,
                         const uint16_t *in, const outputs_t *o,
                         uint64_t taken)
@@ -213,6 +220,9 @@ uint8_t tone_page_write(tone_page_t *p, uint8_t off, uint8_t n,
     /* The set-up is registers 0 to 7; the rest is read only. */
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_TN_FLAGS) {
         return LINK_NACK_READ_ONLY;
+    }
+    if (p->frozen) {
+        return LINK_NACK_BUSY;
     }
     uint16_t next[LINK_TN_FLAGS];
     memset(next, 0, sizeof(next));

@@ -127,6 +127,21 @@ TEST_CASE(a_page_starts_with_the_tap_off_on_gp22)
     tone_page_defaults(NULL);
 }
 
+TEST_CASE(a_frozen_page_takes_no_set_up)
+{
+    fresh();
+    const uint16_t sel = 1u;
+
+    tone_page_freeze(&pg, true);
+    CHECK_EQ(on(22u), LINK_NACK_BUSY);
+    CHECK_EQ(reg(LINK_TN_ENABLE), 0u);
+    /* The event selector takes no room. */
+    CHECK_EQ(tone_page_write(&pg, LINK_TN_EVT_SEL, 1u, &sel, &o, 0u), 0u);
+    tone_page_freeze(&pg, false);
+    CHECK_EQ(on(22u), 0u);
+    tone_page_freeze(NULL, true);
+}
+
 TEST_CASE(a_set_up_is_taken_whole_and_read_back)
 {
     fresh();
@@ -786,6 +801,7 @@ TEST_CASE(the_order_for_core_1_carries_the_page)
 int main(void)
 {
     RUN(a_page_starts_with_the_tap_off_on_gp22);
+    RUN(a_frozen_page_takes_no_set_up);
     RUN(a_set_up_is_taken_whole_and_read_back);
     RUN(every_value_is_held_to_its_range_at_both_ends);
     RUN(a_gap_shorter_than_the_lowest_tones_period_is_refused);

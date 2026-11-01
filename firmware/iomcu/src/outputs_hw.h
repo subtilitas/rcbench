@@ -65,6 +65,19 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
                            uint8_t may_bind);
 
 /**
+ * @brief Bind one slot left out of an apply, as the bank has it, and move nothing
+ *        else: outputs_hw_apply_only() lets every DShot port go for a slot on PIO,
+ *        and here the line that had the pin has just given back what it took.
+ *
+ * @param o        The bank.
+ * @param rate_hz  OUT_MAX_SLOTS entries, from outputs_slot_rates().
+ * @param slot     The slot.
+ * @return True when it is bound; false for a bad argument or a bind that failed.
+ */
+bool outputs_hw_return_slot(const outputs_t *o, const uint16_t *rate_hz,
+                            uint8_t slot);
+
+/**
  * @brief Render the bank onto the pins.
  *
  * Call every pass.

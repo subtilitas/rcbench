@@ -235,11 +235,22 @@ void hw_apply_only(uint8_t may_bind)
     (void)target_sync();
     uint16_t rate[OUT_MAX_SLOTS];
     outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
-    outputs_hw_apply_only(&s_outputs, rate, may_bind);
+    /* A slot the ESC_WIRE page holds stays unbound, whoever asks. */
+    outputs_hw_apply_only(&s_outputs, rate, esc_port_may_bind(&s_esc, may_bind));
     /* And the SERVO_SENSE page told which slots render frames, so a
      * capture never arms on one the silicon left unbound. */
     sense_page_bound(&s_sense, bound_slots());
     ports_apply();
+}
+
+bool hw_return_slot(uint8_t slot)
+{
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
+    const bool back = outputs_hw_return_slot(&s_outputs, rate, slot);
+    sense_page_bound(&s_sense, bound_slots());
+    ports_apply();
+    return back;
 }
 
 void hw_apply(void)
@@ -312,6 +323,11 @@ uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     uint16_t next[LINK_CC_COUNT];
+
+    /* The output the ESC_WIRE page holds gets back what it had. */
+    if (esc_port_supply_hold(&s_esc)) {
+        return LINK_NACK_BUSY;
+    }
     memcpy(next, s->chan_cfg, sizeof(next));
     const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
     if (nack != 0u) {
@@ -543,6 +559,11 @@ uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     uint16_t next[LINK_OS_COUNT];
+
+    /* The output the ESC_WIRE page holds gets back what it had. */
+    if (esc_port_supply_hold(&s_esc)) {
+        return LINK_NACK_BUSY;
+    }
     memcpy(next, s->slots, sizeof(next));
     const uint8_t nack = outputs_slots_write(next, off, n, in);
     if (nack != 0u) {

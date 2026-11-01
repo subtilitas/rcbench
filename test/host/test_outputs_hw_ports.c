@@ -326,6 +326,50 @@ TEST_CASE(a_dshot_port_is_bound_at_its_bit_rate_and_moved_by_it)
     CHECK_EQ(outputs_hw_ports_bound(), 1u);
 }
 
+/* ESC_WIRE holds a DShot port: ports_bind() names no pin for it, and it comes
+ * back at its rate with the other port not touched. */
+TEST_CASE(a_held_dshot_port_is_let_go_alone_and_comes_back_the_same)
+{
+    outputs_hw_init();
+    dshot_port(14u, 300u);
+    counts_zero();
+    dshot_port(PROG_PORT_NO_PIN, 300u);
+    CHECK_EQ(g_dshot_releases, 1);
+    CHECK_EQ(g_last_pin, 14u);
+    CHECK_EQ(g_dshot_binds + g_pwm_binds + g_pwm_releases, 0);
+    CHECK_EQ(outputs_hw_ports_bound(), 1u);
+    counts_zero();
+    dshot_port(14u, 300u);
+    CHECK_EQ(g_dshot_binds, 1);
+    CHECK_EQ(g_dshot_kbit, 300u);
+    CHECK(!g_dshot_bidir);
+    CHECK_EQ(g_dshot_releases + g_pwm_binds + g_pwm_releases, 0);
+    CHECK_EQ(outputs_hw_ports_bound(), 3u);
+}
+
+/* A slot returned from ESC_WIRE lets no DShot port go; an apply would. */
+TEST_CASE(a_returned_slot_leaves_a_dshot_port_alone)
+{
+    outputs_t o;
+    uint16_t rate[OUT_MAX_SLOTS];
+    const out_slot_t s = { OUT_DRIVER_DSHOT, 0u, 1u, 2u, 300u };
+
+    outputs_hw_init();
+    outputs_init(&o, 0u);
+    CHECK(outputs_configure(&o, 0u, &s));
+    memset(rate, 0, sizeof(rate));
+    rate[0] = 300u;
+    outputs_hw_apply(&o, rate);
+    dshot_port(14u, 300u);
+    outputs_hw_apply_only(&o, rate, 0xFEu);
+    counts_zero();
+    CHECK(outputs_hw_return_slot(&o, rate, 0u));
+    CHECK_EQ(g_dshot_binds, 1);
+    CHECK_EQ(g_last_pin, 2u);
+    CHECK_EQ(g_dshot_releases, 0);
+    CHECK_EQ(outputs_hw_ports_bound(), 3u);
+}
+
 TEST_CASE(a_dshot_port_no_state_machine_is_left_for_is_not_held)
 {
     outputs_hw_init();
@@ -582,6 +626,8 @@ int main(void)
     RUN(a_dshot_port_ignores_the_tester_drive_bit);
     RUN(a_dshot_port_rearmed_sends_the_arming_frames_throttle_first);
     RUN(a_dshot_port_period_survives_the_clock_wrap);
+    RUN(a_held_dshot_port_is_let_go_alone_and_comes_back_the_same);
+    RUN(a_returned_slot_leaves_a_dshot_port_alone);
     RUN(a_dshot_slot_bound_anew_goes_before_a_dshot_port);
     return test_summary("outputs_hw_ports");
 }

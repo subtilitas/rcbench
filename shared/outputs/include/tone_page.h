@@ -52,6 +52,7 @@ typedef struct {
     uint16_t   gen;        /**< moves with every change of the set-up     */
     uint16_t   cap_gen;    /**< moves each time the capture starts again  */
     bool       refused;    /**< enabled, and the pin could not be taken   */
+    bool       frozen;     /**< tone_page_freeze()                        */
     bool       no_capture; /**< no capture runs this boot: core 1 did not
                                 start (tone_page_no_capture())            */
     /* What core 1 last said, under set-up gen. */
@@ -216,6 +217,15 @@ void tone_page_recapture(tone_page_t *p, uint32_t shift_ms);
  * @return true when enabled, false when not, or when @p p is NULL.
  */
 bool tone_page_enabled(const tone_page_t *p);
+
+/**
+ * @brief Refuse a write of the set-up with LINK_NACK_BUSY: the ESC_WIRE page holds
+ *        a pin, and a capture could take the PIO room its output needs back.
+ *
+ * @param p      The page state, or NULL.
+ * @param frozen True while the page holds a pin.
+ */
+void tone_page_freeze(tone_page_t *p, bool frozen);
 
 /**
  * @brief The configured pin, from register LINK_TN_PIN.

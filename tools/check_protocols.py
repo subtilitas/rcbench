@@ -395,6 +395,17 @@ ASSERTED = {
             "== 250u",
         ),
     },
+    "escwire": {
+        "shared/outputs/esc_port.c": (
+            "LINK_ED_BLOCK_BYTES * 4u == EW_PAGE_MAX",
+            "LINK_ED_BLOCK_BYTES * 4u == EW_E32_MUSIC_MAX + 1u",
+            "EW_ID_NAME_MAX + 1u <= LINK_ED_BLOCK_BYTES - 4u",
+            "(int)LINK_ESC_LINE_PARK == (int)EW_LINE_PARK "
+            "&& (int)LINK_ESC_LINE_HIGH == (int)EW_LINE_HIGH "
+            "&& (int)LINK_ESC_LINE_UP == (int)EW_LINE_UP "
+            "&& (int)LINK_ESC_LINE_LOW == (int)EW_LINE_LOW",
+        ),
+    },
     "hitec": {
         "shared/bench/hitec_link.c": (
             "(int)HITEC_DEC_LISTEN == (int)LINK_HITEC_DEC_LISTEN "

@@ -530,6 +530,27 @@ TEST_CASE(a_wire_session_gets_no_pin_on_a_dshot_port)
     CHECK_EQ(prog_port_wire_pin(&pg, 0u, 0x7u), 13u);   /* SERVO PWM */
     CHECK_EQ(prog_port_wire_pin(&pg, 1u, 0x7u), 14u);   /* NONE */
     CHECK_EQ(prog_port_wire_pin(&pg, 2u, 0x7u), PROG_PORT_NO_PIN);
+    /* Frozen, no register takes a write, and the registers stay. */
+    {
+        const uint16_t before = prog_port_pin(&pg, 0u);
+
+        prog_port_freeze(&pg, true);
+        CHECK_EQ(put(PIN(0u) + LINK_PG_SLEW, 3u), LINK_NACK_BUSY);
+        CHECK_EQ(put(PIN(0u) + LINK_PG_MIN_US, 1100u), LINK_NACK_BUSY);
+        CHECK_EQ(put(LINK_PG_TARGET, 1u), LINK_NACK_BUSY);
+        CHECK_EQ(put(PIN(0u), 16u), LINK_NACK_BUSY);
+        CHECK_EQ(prog_port_pin(&pg, 0u), before);
+        prog_port_freeze(&pg, false);
+        CHECK_EQ(put(PIN(0u) + LINK_PG_SLEW, 0u), 0u);
+        prog_port_freeze(NULL, true);
+    }
+    /* The ESC's page has the opposite rule. */
+    CHECK_EQ(prog_port_esc_pin(&pg, 2u, 0x7u), 15u);
+    CHECK_EQ(prog_port_esc_pin(&pg, 0u, 0x7u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, 1u, 0x7u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, 2u, 0x3u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, LINK_PG_PORTS_MAX, 0xFFu), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(NULL, 2u, 0x7u), PROG_PORT_NO_PIN);
     /* Not held, past the ports, no page: none. */
     CHECK_EQ(prog_port_wire_pin(&pg, 0u, 0x6u), PROG_PORT_NO_PIN);
     CHECK_EQ(prog_port_wire_pin(&pg, 3u, 0xFu), PROG_PORT_NO_PIN);

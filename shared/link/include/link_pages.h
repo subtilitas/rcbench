@@ -67,6 +67,8 @@ typedef enum {
                                        and the windows over them        */
     LINK_PAGE_SENSE_WIN_A = 0x37, /**< channels 0 to 5's last window, read-only */
     LINK_PAGE_SENSE_WIN_B = 0x38, /**< channels 6 to 11's, read-only         */
+    LINK_PAGE_ESC_WIRE  = 0x3A, /**< an ESC's settings over its signal wire  */
+    LINK_PAGE_ESC_DATA  = 0x3B, /**< its page, as blocks                     */
     LINK_PAGE_PROG_SUPPLY = 0x39, /**< the programming ports' own supply, on
                                        a board that switches one        */
     /* Frozen: the same numbers, layout and meaning under every major. */
@@ -166,7 +168,7 @@ typedef enum {
 #define LINK_PROTOCOL_MAJOR 4u
 /** @brief The minor this build speaks: 33, SENSE_MAP's WATCH values of a
  *         board's soldered INA3221. */
-#define LINK_PROTOCOL_MINOR 33u
+#define LINK_PROTOCOL_MINOR 34u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -665,6 +667,7 @@ enum {
 
 /* The current monitors' pages (protocol 4.7 to 4.27). */
 #include "link_pages_sense.h"
+#include "link_pages_esc.h"
 
 /* --- the TONE page (protocol 4.8): the beeps of an ESC (electronic speed
  *     controller), heard on one motor phase.  One GPIO reads the phase
@@ -906,7 +909,7 @@ typedef enum {
     LINK_CAP_RECEIVER    = 1u << 5, /**< a receiver bus decoded in PIO     */
     LINK_CAP_VIBRATION   = 1u << 6, /**< accelerometer and an index pulse  */
     LINK_CAP_CELLS       = 1u << 7, /**< a cell monitor on the balance lead*/
-    LINK_CAP_PROGRAM     = 1u << 8, /**< one-wire and text-CLI programming */
+    LINK_CAP_PROGRAM     = 1u << 8, /**< ESC_WIRE, ESC_DATA (4.34)         */
 } link_cap_t;
 
 /* ------------------------------------------------------------------ status */

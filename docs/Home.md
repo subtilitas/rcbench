@@ -40,6 +40,7 @@ Network) at 1Mbit/s.
 | [The link](Link.md) | CAN wiring, failure behaviour, the page protocol |
 | [The programming port for KST and Chaservo servos](LinkKST.md) | The wire protocol of the programming port for KST and Chaservo servos |
 | [The programming port for Hitec servos](LinkHitec.md) | The wire protocol of the programming port for Hitec servos |
+| [The ESC settings pages](LinkEsc.md) | The pages that read and write an ESC's settings over its signal wire |
 | [The INA3221 map and windows](LinkSensors.md) | The INA3221 current monitors' map and sample windows |
 | [The bench console](BenchConsole.md) | The IOmcu's command console on its USB serial port, a bench tool |
 | [DShot and the output drivers](DShot.md) | DShot frames, telemetry and the output drivers |

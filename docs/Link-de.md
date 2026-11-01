@@ -74,7 +74,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.33. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.34. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -182,7 +182,11 @@ SENSE_MAP die WATCH-Werte der eigenen Schienen eines Boards, 0x30
 Servoschiene A, 0x31 Servoschiene B und 0x32 die 5V der Programmierports,
 und hält auf dem rbmod-Carrier seinen INA3221 auf 0x40 mit seinen drei
 Kanälen darauf; ein älterer IOmcu lehnt eine Map mit ihnen mit BAD_VALUE ab
-([Carrier, Der Strommonitor](Carrier-de.md#der-strommonitor)).
+([Carrier, Der Strommonitor](Carrier-de.md#der-strommonitor)). Ab
+4.34 lesen und schreiben ESC_WIRE (0x3A) und ESC_DATA (0x3B) die Einstellungen
+eines ESC über seinen Signaldraht, und der IOmcu meldet `LINK_CAP_PROGRAM`; ein
+älterer IOmcu lehnt beide mit BAD_PAGE ab ([Die Pages für
+ESC-Einstellungen](LinkEsc-de.md)).
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -1036,6 +1040,8 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x37 | SENSE_WIN_A | lesen | das letzte 50-ms-Fenster der Kanäle 0 bis 5 (seit 4.25): die Fensternummer, Flags, und 5 Register je Kanal: mittlerer und höchster Strom (mA, mit Vorzeichen), mittlere und niedrigste Busspannung (mV), Flags. Jedes Schreiben wird mit READ_ONLY abgewiesen. Nichts wird gehalten |
 | 0x38 | SENSE_WIN_B | lesen | das der Kanäle 6 bis 11, wie SENSE_WIN_A (seit 4.25) |
 | 0x39 | PROG_SUPPLY | lesen, schreiben | die eigene Versorgung der Programmierports auf einem Board, das sie mit einem Pin des IOmcu schaltet: GPIO 21 des rbmod-Carriers, der Enable seines 5V-Abwärtswandlers M7 (seit 4.32). Register 0: Ausgang, 1 ein, 0 aus. Ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgelehnt, und mit BAD_VALUE auf einem Board ohne den Schalter und solange ein Programmierport die Versorgung hält. Ein OFF wird immer genommen; während ein Port in den Speicher des Servos schreibt, wartet es auf das Ende des Schreibens, höchstens 10.000ms nach dem OFF, und das eigene ON des Ports wird danach abgelehnt, bis der Port loslässt. Der Ausgang geht aus, wenn der Heartbeat endet oder der Link verstummt, und ein OFF wartet auf das Ende eines Frames, den ein Port auf der Leitung hat, höchstens 12ms. Register 1 bis 3, nur lesen: Flags (Bit 0 das Board hat den Schalter, Bit 1 der Pin schaltet die Versorgung ein, Bit 2 ein Programmierport hält sie, Bit 3 das OFF des Panels wartet auf das Schreiben eines Ports), der schaltende GPIO (255 ohne) und die Spannung in mV (5000 auf dem Carrier, 0 ohne). Register 4, Panel: eine 1, allein geschrieben, sagt, dass das Panel die Page kennt; ohne lebenden Heartbeat mit NOT_ARMED abgelehnt, mit BAD_VALUE für jeden anderen Wert; es liest sich 0 ab jedem Start und ab jedem Verlust des Heartbeats. Ein Programmierport schaltet die Versorgung nur ein, solange es 1 liest, also bekommen die Ports eines Panels vor 4.32 sie nie; das Panel schreibt es, sobald ein Lesen 0 findet. Nicht gespeichert: bei jedem Start aus. Auf dem Carrier schalten die Ports für KST und Hitec diese Versorgung statt des PD mini |
+| 0x3A | `ESC_WIRE` | lesen, schreiben | die Einstellungen eines ESC über seinen Signaldraht auf dem Pin eines Throttle-Slots oder DShot-Ports (seit 4.34): Zustand, Leitung, Ergebnis, Operationen ([Die Pages für ESC-Einstellungen](LinkEsc-de.md)) |
+| 0x3B | `ESC_DATA` | lesen, schreiben | der Block von Page, Entwurf, Name oder Textwerten, den `ESC_WIRE` nennt, 64B (seit 4.34) |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
 | 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
 

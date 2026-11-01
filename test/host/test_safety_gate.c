@@ -415,6 +415,8 @@ TEST_CASE(the_pass_arms_only_on_the_gate_with_no_port_out_and_no_update)
     CHECK(safety_gate_arm_now(true, 0u, false));
     CHECK(!safety_gate_arm_now(false, 0u, false));
     CHECK(!safety_gate_arm_now(true, 1u, false));
+    /* An output slot the ESC_WIRE page holds (ESC_PORT_QUIET_SLOT). */
+    CHECK(!safety_gate_arm_now(true, 0x10u, false));
     CHECK(!safety_gate_arm_now(true, 0u, true));
 }
 

@@ -105,6 +105,7 @@ typedef struct {
     uint16_t hz;        /**< the SERVO page's rate, 0 for none
                              (prog_port_rate()); 0 after a TARGET
                              change (prog_port_write())            */
+    bool     frozen;    /**< prog_port_freeze(): no register is written */
 } prog_port_t;
 
 /** @brief @p count ports, 0 to LINK_PG_PORTS_MAX, none with a pin, all at
@@ -338,6 +339,24 @@ uint16_t prog_port_kbit(const prog_port_t *p, uint8_t port);
  *         that holds no pin.
  */
 uint8_t prog_port_pin(const prog_port_t *p, uint8_t port);
+
+/**
+ * @brief Refuse every write of the page with LINK_NACK_BUSY: the ESC_WIRE page
+ *        holds a pin, and a port it gives back has what it had.
+ * @param p      The port model, or NULL.
+ * @param frozen True while the page holds a pin.
+ */
+void prog_port_freeze(prog_port_t *p, bool frozen);
+
+/**
+ * @brief The pin the ESC_WIRE page may take: the opposite rule of
+ *        prog_port_wire_pin(), a DShot port's pin, where an ESC is on the lead.
+ * @param p     The port model, or NULL.
+ * @param port  Port index, 0 to LINK_PG_PORTS_MAX - 1.
+ * @param bound Bit n for port n: the port's pin is held by the IOmcu.
+ * @return The pin, or PROG_PORT_NO_PIN.
+ */
+uint8_t prog_port_esc_pin(const prog_port_t *p, uint8_t port, uint8_t bound);
 
 /** @brief The pin a wire page (KST, HITEC) may take for a session on port
  *  @p port: the port's pin while the IOmcu holds it (@p bound, bit n, as
