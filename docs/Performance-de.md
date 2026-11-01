@@ -78,6 +78,7 @@ settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
 motor-stick                  1,713     214 KiB
+motor-wire                       0       0 KiB
 balance-sim                  3,253     407 KiB
 settings-sim                 3,304     413 KiB
 battery-sim                  3,146     393 KiB
@@ -88,6 +89,7 @@ settings-list-chrome        37,162    4645 KiB
 battery-chrome              58,117    7265 KiB
 balance-chrome              63,426    7928 KiB
 motor-stick-chrome          41,955    5244 KiB
+motor-wire-chrome           40,230    5029 KiB
 picker                           0       0 KiB
 picker-chrome               41,559    5195 KiB
 wifi                             0       0 KiB
@@ -115,7 +117,7 @@ est. ms and est. fps: not measured
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
 | `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `picker`, `wifi` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht; `settings` sind die Kacheln von SETUP, `motor-stick` ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht; `settings` sind die Kacheln von SETUP, `motor-stick` ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN |
 | `settings-list` | SETUP mit offener Liste PANEL, Chrome gecacht |
 | `wifi-keys` | WI-FI mit offener WLAN-Tastatur, in jedem Frame eine Taste getippt |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
@@ -245,14 +247,14 @@ lässt, nicht einen Frame, der das Panel verpasst:
 
 | Modi | Obergrenze (Fills) | Fängt |
 | --- | ---: | --- |
-| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
+| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
 | `overview-guide` | 1 000 | Marken der Hilfe, die mehr als ihre Abzeichen und Winkel zeichnen |
 | `servo` | 2 800 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 720 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
-| die zehn `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
+| die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
 | `wifi-keys` | 42 000 | eine Taste der WLAN-Tastatur, die mehr als den Bildschirm neu zeichnet |
 
 `tools/check_docs.py` hält diese Tabelle an den `--max-lines`-Argumenten in
@@ -360,6 +362,7 @@ ein Fill und ein Write-Back je Line. Die Zeit eines Löschens, gesetzt als
 | `battery` | BATTERY | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `balance` | BALANCE | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `motor-stick` | ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
+| `motor-wire` | die Sitzung der ESC-Signalleitung in Ruhe an einem gelesenen ESC, MOTOR & ESC > PROGRAMMIEREN | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `picker` | OUTPUTS, Platinenansicht | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `wifi` | WI-FI mit eingeschaltetem WLAN-HOTSPOT | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `wifi-keys` | WI-FI > HEIMNETZ WÄHLEN, die Passwort-Tastatur, jede Sekunde eine Taste getippt | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |

@@ -44,6 +44,8 @@ static ui_text_id_t refusal(uint16_t ref)
         return TX_EW_REF_RANGE;
     case LINK_ESC_REF_NO_SUPPLY:
         return TX_EW_REF_NO_SUPPLY;
+    case LINK_ESC_REF_SUPPLY_OFF:
+        return TX_EW_REF_SUPPLY_OFF;
     case LINK_ESC_REF_STALE:
         return TX_EW_MSG_STALE;
     case LINK_ESC_REF_WRITING:

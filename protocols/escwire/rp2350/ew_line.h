@@ -63,8 +63,6 @@
  * answer and rests on the pull-up, for the session to judge.  The next start
  * takes the pad from any of these.
  *
- * Not measured: no byte of this driver has been to an ESC.
- *
  * SPDX-License-Identifier: MIT
  */
 #ifndef EW_LINE_H

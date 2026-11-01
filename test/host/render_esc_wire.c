@@ -255,6 +255,15 @@ void render_esc_wire_view(const char *view)
         s_f.rd.flags = LINK_EW_F_STOPPED | LINK_EW_F_FAULT;
         s_f.rd.result = LINK_ESC_RESULT_SESSION;
         feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);
+    } else if (strcmp(view, "motor-wire-stopped-band") == 0) {
+        s_f.rd.flags = LINK_EW_F_STOPPED;
+        s_f.stopped = true;
+        feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);
+    } else if (strcmp(view, "motor-wire-held-stop") == 0) {
+        s_f.rd.flags = LINK_EW_F_STOPPED;
+        feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);
+        s_f.rd.flags = 0u;
+        feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);
     } else if (strcmp(view, "motor-wire-held") == 0) {
         s_f.rd.flags = 0u;
         feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);

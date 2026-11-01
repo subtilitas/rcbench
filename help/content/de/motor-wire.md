@@ -8,7 +8,7 @@ order: 13
 
 Die Sitzung liest und schreibt die Einstellungen eines ESC (Electronic Speed Controller) mit AM32, Bluejay, BLHeli_S oder ESCape32 über seine Signalleitung. Öffne sie auf MOTOR & ESC > PROGRAMMIEREN. Die Zeile ist abgeblendet, bis der IOmcu die Fähigkeit meldet.
 
-Kein Frame hat einen echten ESC erreicht. SimonK wird nicht unterstützt.
+SimonK wird nicht unterstützt.
 
 ## Vor dem Verbinden
 
@@ -38,4 +38,4 @@ Ein Schreiben auf BLHeli_S oder Bluejay dauert etwa 3848ms. Lass den Strom an.
 
 ## Verlassen
 
-`ZURÜCK` öffnet die Seite zum Verlassen: halte 2s. Ein gelöschter AM32 bleibt gelöscht bis `AUS BACKUP HERSTELLEN`; der Pin geht zurück und die Versorgung aus. ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung, und mit `BY HAND` trennst du seinen Strom.
+Nach einem Stop oder Fehler bietet die gehaltene Seite nur `PIN ZURÜCK`: `VERBINDEN` kommt danach. `ZURÜCK` öffnet die Seite zum Verlassen: halte 2s. Ein gelöschter AM32 bleibt gelöscht bis `AUS BACKUP HERSTELLEN`; der Pin geht zurück und die Versorgung aus. ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung, und mit `BY HAND` trennst du seinen Strom.

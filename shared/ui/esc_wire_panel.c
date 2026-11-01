@@ -159,6 +159,14 @@ void ewp_abort(void)
     esc_prog_abort(&ewp_s.prog);
 }
 
+void ewp_words_clear(void)
+{
+    esc_prog_word_clear(&ewp_s.prog);
+    ewp_s.msg_seen = ESC_PROG_MSG_NONE;
+    ewp_s.detail_seen = 0u;
+    ewp_s.note[0] = '\0';
+}
+
 bool ewp_card_busy(void)
 {
     return ewp_s.card_want || ewp_s.card_out;
@@ -486,7 +494,9 @@ void ewp_hold_apply(void)
     switch (page) {
     case EWP_PAGE_NONE:
         if (ewp_stage() == ESC_WIRE_PIN_HELD) {
-            enter_again_now();
+            if (!ewp_s.no_again) {
+                enter_again_now();
+            }
         } else if (ewp_stage() == ESC_WIRE_CONNECT) {
             connect_now();
         }
@@ -544,7 +554,7 @@ static uint32_t signature(void)
         (uint32_t)st, rd->known, rd->state, rd->flags, rd->line, rd->gpio, rd->fw,
         rd->layout, rd->why, rd->result, rd->ses, rd->target, m->f.image.gen,
         (uint32_t)m->msg, m->detail, m->backup_state, ticks, m->f.stopped,
-        m->f.armed, ewp_s.mv, ewp_s.ma, ewp_s.target_count,
+        m->f.armed, ewp_s.mv, ewp_s.ma, ewp_s.target_count, ewp_s.no_again,
     };
     uint32_t h = 2166136261u;
 
@@ -565,6 +575,10 @@ void esc_wire_panel_feed(const esc_prog_feed_t *f)
 {
     esc_prog_t *m = &ewp_s.prog;
 
+    const supply_caps_t caps = supply_screen_caps();
+
+    esc_prog_limits(m, (uint16_t)(caps.v_max * 1000.0f + 0.5f),
+                    (uint16_t)(caps.i_max * 1000.0f + 0.5f));
     esc_prog_feed(m, f);
     /* What the model says newer than the note is what shows. */
     if (m->msg != ewp_s.msg_seen || m->detail != ewp_s.detail_seen) {
@@ -594,10 +608,15 @@ void esc_wire_panel_feed(const esc_prog_feed_t *f)
         ewp_s.ma = ma;
     }
     ewp_tabs_follow();
-    /* A stop, a supply or a link gone: what was open answers to a stage that is over. */
+    /* A stop, a supply or a link gone: what was open answers to a stage that is over.
+     * A link that falls does so on any stage. */
     const ewp_stage_t now = page_stage();
+    const bool link_up = m->f.rd.phase != ESC_LINK_DOWN
+                         && m->f.rd.phase != ESC_LINK_NO_PAGE;
 
-    if (now != ewp_s.stage_seen) {
+    if (now != ewp_s.stage_seen || (ewp_s.link_seen && !link_up)) {
+        const bool arrived = now != ewp_s.stage_seen;
+
         ewp_s.stage_seen = now;
         ewp_cancel();
         ewp_editors_close();
@@ -605,6 +624,25 @@ void esc_wire_panel_feed(const esc_prog_feed_t *f)
         if (ewp_s.w_step != EWP_W_NONE) {
             write_give_up();
         }
+        /* On CONNECT with the pin free: nothing of the last session stands, but
+         * what ended it. */
+        if (arrived && now == ESC_WIRE_CONNECT && m->f.rd.known && !m->f.rd.held
+            && !esc_prog_busy(m)) {
+            esc_prog_word_on_free(m);
+            ewp_s.msg_seen = m->msg;
+            ewp_s.detail_seen = m->detail;
+            ewp_s.note[0] = '\0';
+        }
+    }
+    ewp_s.link_seen = link_up;
+    /* ENTER AGAIN stays for what leaves the supply free to come on.  A stop or a fault
+     * has the panel's OFF latched on the SUPPLY page until the hold ends. */
+    if (m->f.rd.known && !m->f.rd.held) {
+        ewp_s.no_again = false;
+    } else if ((m->f.rd.flags & (LINK_EW_F_STOPPED | LINK_EW_F_FAULT)) != 0u || m->f.stopped
+               || (m->msg == ESC_PROG_MSG_REFUSED
+                   && m->detail == (uint16_t)LINK_ESC_REF_SUPPLY_OFF)) {
+        ewp_s.no_again = true;
     }
     const uint32_t sig = signature();
 
@@ -633,9 +671,14 @@ void esc_wire_panel_set_targets(const esc_wire_target_t *t, unsigned n, bool kno
 {
     const unsigned count = n < ESC_WIRE_TARGETS ? n : ESC_WIRE_TARGETS;
 
-    if (count != ewp_s.target_count || known != ewp_s.targets_known
-        || (count != 0u && t != NULL
-            && memcmp(t, ewp_s.targets, count * sizeof(*t)) != 0)) {
+    bool same = count == ewp_s.target_count && known == ewp_s.targets_known;
+
+    /* By field: the struct's padding is not part of what the page shows. */
+    for (unsigned i = 0u; same && t != NULL && i < count; ++i) {
+        same = t[i].target == ewp_s.targets[i].target
+               && t[i].gpio == ewp_s.targets[i].gpio;
+    }
+    if (!same) {
         if (t != NULL && count != 0u) {
             memcpy(ewp_s.targets, t, count * sizeof(*t));
         }

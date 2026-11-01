@@ -28,4 +28,4 @@ item is closed.
 
 ## Alternative
 
-An ESC reflashed to AM32 firmware can use the [signal-wire session](EscWire.md). It has not run on a real ESC: no frame has reached one.
+An ESC reflashed to AM32 firmware can use the [signal-wire session](EscWire.md).

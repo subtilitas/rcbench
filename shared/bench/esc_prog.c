@@ -293,7 +293,8 @@ static bool msg_is_good_word(esc_prog_msg_t m)
 {
     return m == ESC_PROG_MSG_NONE || m == ESC_PROG_MSG_READ_DONE
            || m == ESC_PROG_MSG_LEFT || m == ESC_PROG_MSG_CLEARED
-           || m == ESC_PROG_MSG_LOADED || m == ESC_PROG_MSG_HAND_WAIT;
+           || m == ESC_PROG_MSG_LOADED || m == ESC_PROG_MSG_HAND_WAIT
+           || m == ESC_PROG_MSG_ABORTED;
 }
 
 void esc_prog_feed(esc_prog_t *p, const esc_prog_feed_t *f)
@@ -358,15 +359,19 @@ bool esc_prog_next_cmd(esc_prog_t *p, esc_prog_cmd_t *out)
 }
 
 /**
- * @brief Whether a SWITCHED power's voltage or limit is out of range.
+ * @brief Whether a SWITCHED power's voltage or limit is out of range, the module's or
+ *        SUPPLY's for this board and setting.
+ * @param p The model.
  * @param w The power.
  * @return true then.
  */
-static bool supply_out_of_range(const esc_link_power_t *w)
+static bool supply_out_of_range(const esc_prog_t *p, const esc_link_power_t *w)
 {
     return w->power == (uint8_t)LINK_ESC_SWITCHED
            && (w->mv < LINK_ESC_SUPPLY_MIN_MV || w->mv > ESC_PROG_MAX_MV
-               || w->ma < ESC_PROG_MIN_MA || w->ma > ESC_PROG_MAX_MA);
+               || w->ma < ESC_PROG_MIN_MA || w->ma > ESC_PROG_MAX_MA
+               || (p->limit_mv != 0u && w->mv > p->limit_mv)
+               || (p->limit_ma != 0u && w->ma > p->limit_ma));
 }
 
 esc_prog_msg_t esc_prog_connect(esc_prog_t *p, const esc_prog_connect_t *c)
@@ -379,7 +384,7 @@ esc_prog_msg_t esc_prog_connect(esc_prog_t *p, const esc_prog_connect_t *c)
     if (m == ESC_PROG_MSG_NONE && p->f.rd.held) {
         m = ESC_PROG_MSG_HELD;
     }
-    if (m == ESC_PROG_MSG_NONE && supply_out_of_range(&c->power)) {
+    if (m == ESC_PROG_MSG_NONE && supply_out_of_range(p, &c->power)) {
         m = ESC_PROG_MSG_RANGE;
     }
     if (m != ESC_PROG_MSG_NONE) {
@@ -421,7 +426,7 @@ esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p, const esc_prog_connect_t *c)
     if (m == ESC_PROG_MSG_NONE && p->f.rd.state != (uint8_t)LINK_ESC_OPEN) {
         m = ESC_PROG_MSG_NOT_IN_MODE;
     }
-    if (m == ESC_PROG_MSG_NONE && supply_out_of_range(&c->power)) {
+    if (m == ESC_PROG_MSG_NONE && supply_out_of_range(p, &c->power)) {
         m = ESC_PROG_MSG_RANGE;
     }
     if (m != ESC_PROG_MSG_NONE) {
@@ -545,6 +550,48 @@ void esc_prog_abort(esc_prog_t *p)
         p->wait_id = 0u;
         p->aborted = 1u;
         (void)esc_prog_say(p, ESC_PROG_MSG_ABORTED, 0u);
+    }
+}
+
+void esc_prog_limits(esc_prog_t *p, uint16_t max_mv, uint16_t max_ma)
+{
+    if (p != NULL) {
+        p->limit_mv = max_mv;
+        p->limit_ma = max_ma;
+    }
+}
+
+void esc_prog_word_clear(esc_prog_t *p)
+{
+    if (p != NULL) {
+        (void)esc_prog_say(p, ESC_PROG_MSG_NONE, 0u);
+    }
+}
+
+void esc_prog_word_on_free(esc_prog_t *p)
+{
+    if (p == NULL) {
+        return;
+    }
+    switch (p->msg) {
+    case ESC_PROG_MSG_LEFT:
+    case ESC_PROG_MSG_NO_LINK:
+    case ESC_PROG_MSG_NO_PAGE:
+    case ESC_PROG_MSG_REFUSED:
+    case ESC_PROG_MSG_NO_LINE:
+    case ESC_PROG_MSG_SUPPLY:
+    case ESC_PROG_MSG_TIMEOUT:
+    case ESC_PROG_MSG_CUT:
+    case ESC_PROG_MSG_SESSION:
+    case ESC_PROG_MSG_NOT_BACK:
+    case ESC_PROG_MSG_NO_ANSWER:
+    case ESC_PROG_MSG_RESTARTED:
+    case ESC_PROG_MSG_NACK:
+    case ESC_PROG_MSG_DROPPED:
+        break;
+    default:
+        (void)esc_prog_say(p, ESC_PROG_MSG_NONE, 0u);
+        break;
     }
 }
 

@@ -2612,6 +2612,24 @@ UI_TEXT(EW_HELD_TITLE, 56,
 UI_TEXT(EW_MSG_ABORTED, 100,
     "ABORT ended it: the pin stays held.",
     "ABBRUCH hat es beendet: der Pin bleibt gehalten.")
+UI_TEXT(EW_HELD_AFTER_STOP, 100,
+    "A stop or a fault ended this session: PIN BACK, then CONNECT.",
+    "Ein Stop oder Fehler beendete die Sitzung: PIN ZURÜCK, dann VERBINDEN.")
+UI_TEXT(EW_STOP_PIN_BACK, 100,
+    "The bench's STOP stands: PIN BACK first.",
+    "Der STOP des Bench steht: erst PIN ZURÜCK.")
+UI_TEXT(EW_HINT_RELEASE, 94,
+    "Hold 2s to release the pin.",
+    "Halte 2s, um den Pin freizugeben.")
+UI_TEXT(EW_HINT_RESTORE, 94,
+    "Hold 2s to restore from the file.",
+    "Halte 2s, um aus der Datei herzustellen.")
+UI_TEXT(EW_HINT_NO_BACKUP, 94,
+    "Hold 2s to write without a backup.",
+    "Halte 2s, um ohne Backup zu schreiben.")
+UI_TEXT(EW_RELEASE_PIN, 100,
+    "This pin: %s.",
+    "Dieser Pin: %s.")
 UI_TEXT(EW_HELD_1, 49,
     "The pin is held. No ESC session runs.",
     "Der Pin ist gehalten. Keine ESC-Sitzung läuft.")
@@ -2701,7 +2719,7 @@ UI_TEXT(EW_RELEASE_2, 100,
     "Der Pin geht an seinen Ausgang zurück, und diese Sitzung endet.")
 UI_TEXT(EW_STOPPED_TITLE, 0,
     "STOPPED",
-    "STOPPED")
+    "GESTOPPT")
 UI_TEXT(EW_OTHER_TITLE, 0,
     "PIN HELD BY ANOTHER WRITER",
     "PIN VON ANDEREM SCHREIBER GEHALTEN")
@@ -2895,8 +2913,8 @@ UI_TEXT(EW_MSG_HELD, 100,
     "A pin is held already.",
     "Ein Pin ist schon gehalten.")
 UI_TEXT(EW_MSG_RANGE, 100,
-    "Set the voltage and the limit: 3.00V at the lowest.",
-    "Setze Spannung und Limit: mindestens 3.00V.")
+    "Set the voltage and the limit within SUPPLY's range: 3.00V at the lowest.",
+    "Setze Spannung und Limit im Bereich des Netzteils: mindestens 3.00V.")
 UI_TEXT(EW_MSG_READ_ONLY, 100,
     "This page is not written.",
     "Diese Seite wird nicht geschrieben.")
@@ -2993,6 +3011,9 @@ UI_TEXT(EW_REF_NO_PIN, 100,
 UI_TEXT(EW_REF_RANGE, 100,
     "Refused: a value out of range, or the voltage too close to the source.",
     "Abgelehnt: ein Wert außerhalb, oder die Spannung zu nah an der Quelle.")
+UI_TEXT(EW_REF_SUPPLY_OFF, 100,
+    "The bench switched the supply off under this hold: PIN BACK, then CONNECT.",
+    "Der Bench schaltete das Netzteil unter diesem Halten aus: PIN ZURÜCK, dann VERBINDEN.")
 UI_TEXT(EW_REF_NO_SUPPLY, 100,
     "SWITCHED: no PD mini answers.",
     "SWITCHED: kein PD mini antwortet.")

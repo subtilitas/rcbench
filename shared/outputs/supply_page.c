@@ -595,6 +595,7 @@ void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out)
                && p->regs[LINK_SP_SET_MV_RB] != 0u
                && p->regs[LINK_SP_SET_MV_RB] <= p->regs[LINK_SP_SET_MV];
     out->off = !reads_on && (f & LINK_SP_LIVE) == 0u;
+    out->latched = p->sticky;
 }
 
 bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,

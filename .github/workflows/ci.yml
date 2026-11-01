@@ -271,7 +271,8 @@ jobs:
       # ESC STICK's steady frame is 1,560 and is held apart at 2,000.
       - name: Every screen still idles on a cached frame
         run: python3 tools/frame_cost.py overview analyser logs settings
-             settings-list battery balance picker wifi --max-lines 1000
+             settings-list battery balance picker wifi motor-wire
+             --max-lines 1000
              && python3 tools/frame_cost.py motor-stick --max-lines 2000
 
       # The servo card draws its arm and grip from coverage; 2,800 catches
@@ -300,6 +301,7 @@ jobs:
         run: python3 tools/frame_cost.py analyser-chrome balance-chrome
              battery-chrome motor-stick-chrome logs-chrome settings-chrome
              settings-list-chrome picker-chrome supply-chrome wifi-chrome
+             motor-wire-chrome
              --max-lines 72000
 
       # A key typed on the Wi-Fi keyboard repaints the whole WI-FI

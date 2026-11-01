@@ -321,6 +321,11 @@ TEST_CASE(every_refusal_of_an_enter)
     CHECK_EQ(refusal(), LINK_ESC_REF_NO_SUPPLY);
     CHECK(!flag(LINK_EW_F_RAIL));
     g.v.online = true;
+    /* The panel's OFF stands on the SUPPLY page: no entry that ends as SUPPLY. */
+    g.v.latched = true;
+    CHECK_EQ(cmd(LINK_ESC_OP_ENTER), 0u);
+    CHECK_EQ(refusal(), LINK_ESC_REF_SUPPLY_OFF);
+    g.v.latched = false;
     CHECK(flag(LINK_EW_F_RAIL));
     CHECK_EQ(cmd_full(LINK_ESC_OP_ENTER, 0u, true), 0u);
     CHECK_EQ(refusal(), LINK_ESC_REF_STAGED);

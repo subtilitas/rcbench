@@ -539,18 +539,24 @@ void ewp_connect_row(int row)
         ewp_choice_add(TR(EW_POWER_SWITCHED), LINK_ESC_SWITCHED);
         ewp_choice_add(TR(EW_POWER_HAND), LINK_ESC_BY_HAND);
         break;
-    case 2:
+    case 2: {
+        const supply_caps_t lim = supply_screen_caps();
+        const float lo = (float)LINK_ESC_SUPPLY_MIN_MV / 1000.0f;
+
         ewp_s.kp_what = EWP_KP_VOLT;
         ui_keypad_open(&ewp_s.kp, area, TR(EW_ROW_VOLT), "V", (float)ewp_s.mv / 1000.0f,
-                       (float)LINK_ESC_SUPPLY_MIN_MV / 1000.0f,
-                       supply_screen_limits().v_max, 2);
+                       lim.v_min > lo ? lim.v_min : lo, lim.v_max, 2);
         break;
-    case 3:
+    }
+    case 3: {
+        const supply_caps_t lim = supply_screen_caps();
+        const float lo = (float)ESC_PROG_MIN_MA / 1000.0f;
+
         ewp_s.kp_what = EWP_KP_AMP;
         ui_keypad_open(&ewp_s.kp, area, TR(EW_ROW_AMP), "A", (float)ewp_s.ma / 1000.0f,
-                       (float)ESC_PROG_MIN_MA / 1000.0f,
-                       supply_screen_limits().i_max, 2);
+                       lim.i_min > lo ? lim.i_min : lo, lim.i_max, 2);
         break;
+    }
     case 4:
         ewp_s.kp_what = EWP_KP_HOLD;
         ui_keypad_open(&ewp_s.kp, area, TR(EW_ROW_HOLD), "s",

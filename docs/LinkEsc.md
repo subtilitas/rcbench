@@ -16,9 +16,6 @@ There is no raw transaction. The IOmcu holds the read copy and judges every fram
 ([the guard](../protocols/escwire/README.md)). A panel names an operation and hands
 over a draft.
 
-Nothing here has been to an ESC. On the station with no ESC, see
-[What is not measured](#what-is-not-measured).
-
 ## Which pin
 
 | Target | Taken when |
@@ -206,7 +203,7 @@ last taken, sent again, is acknowledged and does nothing. A command that is take
 acknowledged, and what became of it is on the page: `RESULT`'s high byte says why it
 started nothing, or 0. Refusals: 1 `BUSY`, 2 `TARGET`, 3 `HELD`, 4 `ARMED`, 5
 `UNSAFE`, 6 `NOT_OPEN`, 7 `NO_KEY`, 8 `STAGED`, 9 `STOPPED`, 10 `NO_PIN`, 11 `RANGE`,
-12 `NO_SUPPLY`, 13 `STALE`, 14 `DRAFT`, 15 `WRITING`, 16 `SESSION`. Results: 1
+12 `NO_SUPPLY`, 13 `STALE`, 14 `DRAFT`, 15 `WRITING`, 16 `SESSION`, 17 `SUPPLY_OFF`. Results: 1
 running, 2 done, 3 `NO_LINE`, 4 `SUPPLY`, 5 `TIMEOUT`, 6 `CUT`, 7 `SESSION`, 8 `NOT_BACK`.
 
 `ESC_DATA` is 32 registers, 64B, low byte first, of the block `BLOCK` names:
@@ -238,7 +235,7 @@ The panel's [ESC signal wire](EscWire.md) screen drives both pages.
 
 ## What is not measured
 
-No frame of this page has been to an ESC. On the bench console, `esc` drives it
+On the bench console, `esc` drives it
 ([The bench console](BenchConsole.md#the-esc-settings-page)). Its times come from the
 specification or are this module's choice ([`protocols/escwire`](../protocols/escwire/README.md)):
 the entry hold, the time off, 50ms before ON and 60000ms `BY HAND` are chosen. The

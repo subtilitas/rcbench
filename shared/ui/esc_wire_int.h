@@ -173,6 +173,9 @@ typedef struct {
     uint8_t    w_draft[ESC_LINK_PAGE_MAX]; /**< what the WRITE page lists: the
                                                 hold writes this, not the draft */
     ewp_stage_t stage_seen; /**< the page's stage at the last feed            */
+    bool       link_seen; /**< the link was up at the last feed               */
+    bool       no_again;  /**< this hold saw a stop or a fault, or the supply's
+                               latch: PIN BACK is the way on                  */
     bool       files_for_restore; /**< the list's choice restores             */
     bool       no_card_ok; /**< the operator goes without a card this session */
     char       file_name[ESC_CARD_NAME_MAX]; /**< the file chosen             */
@@ -210,6 +213,11 @@ void ewp_connect_values(esc_prog_connect_t *c);
  * @brief ABORT: a write waiting for the card is given up, else the page is cut.
  */
 void ewp_abort(void);
+
+/**
+ * @brief The operator acts: what the screen said goes.
+ */
+void ewp_words_clear(void);
 
 /**
  * @brief Whether a request is with the card or waits to go.
