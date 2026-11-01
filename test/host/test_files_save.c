@@ -324,6 +324,7 @@ TEST_CASE(a_kst_file_edited_loses_its_checksum_and_loads_as_edited)
 TEST_CASE(an_esc_file_with_lines_behind_its_checksum_ends_in_edited)
 {
     static char text[EW_FILE_MAX + 64u];
+    static char saved[EW_FILE_MAX + 128u];
     static uint8_t page[EW_MAP_LEN_AM];
     static ew_file_t f;
     ew_contact_t c;
@@ -360,10 +361,9 @@ TEST_CASE(an_esc_file_with_lines_behind_its_checksum_ends_in_edited)
     const fk_node_t *n = fk_get(&g_h.card, "BENCH/ESCW/CONF/ESCW002.TXT");
 
     NEED(n != NULL);
-    char *saved = calloc(n->size + 1u, 1u);
-
-    REQUIRE_ALLOC(saved);
+    NEED(n->size < sizeof(saved));
     memcpy(saved, n->data, n->size);
+    saved[n->size] = '\0';
     CHECK(strstr(saved, "checksum") == NULL);
     /* The comment stays, ahead of the word. */
     CHECK(strstr(saved, "# mine\n") != NULL);
@@ -387,13 +387,11 @@ TEST_CASE(an_esc_file_with_lines_behind_its_checksum_ends_in_edited)
     CHECK_STR_EQ(note(), ui_tr(TX_ED_SAVED_EW));
     n = fk_get(&g_h.card, "BENCH/ESCW/CONF/ESCW003.TXT");
     NEED(n != NULL);
-    free(saved);
-    saved = calloc(n->size + 1u, 1u);
-    REQUIRE_ALLOC(saved);
+    NEED(n->size < sizeof(saved));
     memcpy(saved, n->data, n->size);
+    saved[n->size] = '\0';
     CHECK(strstr(saved, "# later\n") < strstr(saved, "edited"));
     CHECK_EQ(ew_file_parse(saved, n->size, &f, NULL), EW_FILE_OK);
-    free(saved);
 }
 
 TEST_CASE(an_esc_profile_says_it_is_read_at_the_next_start)
