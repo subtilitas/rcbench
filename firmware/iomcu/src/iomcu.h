@@ -193,7 +193,7 @@ extern hitec_line_t  s_hitec_line;
  */
 extern esc_port_t    s_esc;
 extern ew_pin_line_t s_esc_line; /**< the wire driver of s_esc */
-extern link_dev_t    s_dev;
+extern link_dev_t    s_dev; /**< the link's device end */
 
 /**
  * @brief Every output, behind one set of rules.

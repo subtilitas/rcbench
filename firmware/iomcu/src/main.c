@@ -91,7 +91,7 @@ hitec_port_t    s_hitec;
 hitec_line_t    s_hitec_line;
 esc_port_t      s_esc;
 ew_pin_line_t   s_esc_line; /**< the wire driver of s_esc */
-link_dev_t      s_dev;
+link_dev_t      s_dev; /**< the link's device end */
 outputs_t       s_outputs;
 heartbeat_mon_t s_beat;
 uint32_t        s_frames;
