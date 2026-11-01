@@ -47,8 +47,8 @@ Standard-Image ein Symbol der Konsole enthält. `IOMCU_CONSOLE` und
 `SENSE_TRACE` lesen beide die USB-Konsole; CMake weist einen Build mit
 beiden ab.
 
-Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 16.468
-Byte größer als das Standard-Image und belegt 9.456 Byte mehr RAM
+Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 17.444
+Byte größer als das Standard-Image und belegt 9.664 Byte mehr RAM
 (Random-Access Memory): 2.048 davon der Ausgabepuffer, 960 der USB-Sendepuffer
 von 1.024 Byte statt der 64 des SDK, 3.488 der Pin-Treiber der Signalleitung
 und 1.536 die Antwort seines Tests. Die tiefste
