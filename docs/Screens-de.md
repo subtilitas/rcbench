@@ -3883,6 +3883,27 @@ Die Seite fragt nach einem Code, bevor sie eine Datei listet oder einen Upload
 annimmt. Der Bildschirm zeigt ihn. Der Browser behält ihn für die Sitzung. 16
 falsche Codes schalten den Funk aus, auch bei einem festen Code.
 
+| Ein falscher Code | Zählt zu den 16 |
+| --- | --- |
+| In der Eingabe (`POST /code`) | jedes Mal, auch derselbe Wert noch einmal |
+| Im Cookie, ein für diese Sitzung neuer Wert | einmal |
+| Im Cookie, einer der letzten 4 Werte | nein. Die Anfrage bekommt das Formular oder die 403, und sonst ändert sich nichts |
+
+Ein Tab, der seit vor einer Änderung des Codes offen ist, oder die mehreren
+Anfragen einer Seite können den Funk also nicht ausschalten: 100 Anfragen mit
+einem alten Cookie zählen 1. Eine Wiederholung verrät beim Raten nichts Neues,
+und 16 verschiedene Werte schalten den Funk weiterhin aus. Der Speicher hält 4
+Hashes von 8 Bytes, SHA-256 mit 16 zufälligen Bytes als Schlüssel
+(`WA_STALE_KEPT`, `WA_STALE_KEY`), nie einen Wert. Ein geratener Wert lässt sich
+nicht so wählen, dass er einen Hash trifft, denn der Schlüssel entsteht bei jedem
+Start des Funks neu. Dieser Start leert den Speicher und die Zählung. Ein
+richtiger Code in Cookie oder Eingabe wird über das ganze Feld in konstanter Zeit
+verglichen, was auch immer der Speicher hält.
+
+Aktuelle Einschränkung: Mehr als 4 verschiedene alte Cookies zugleich, etwa von 5
+Browsern mit je einem eigenen, verdrängen einander, und jedes zählt wieder, wenn
+es zurückkommt.
+
 Mit WEB-CODE auf ZUFALL, der Vorgabe, hat der Code 8 Zeichen und entsteht bei
 jedem Start des Funks neu; ein Code aus einer früheren Sitzung öffnet nichts.
 

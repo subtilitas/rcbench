@@ -90,6 +90,14 @@ extern "C" {
 #define WA_SCAN_TRIES   3u
 /** Wrong access codes before the radio goes off. */
 #define WA_GUESS_MAX    16u
+/** @brief Wrong cookie values a session remembers, each counted once: the
+ *         oldest goes first.  A fifth value at a time counts again when it
+ *         comes back. */
+#define WA_STALE_KEPT   4u
+/** @brief Bytes of a remembered value's hash, SHA-256 truncated. */
+#define WA_STALE_HASH   8u
+/** @brief Bytes of the session's random key for those hashes. */
+#define WA_STALE_KEY    16u
 /** @} */
 
 /* ------------------------------------------------------------- names */
@@ -465,6 +473,13 @@ typedef struct {
                                    last request (wa_lingers())            */
     char          pass[WA_PASS_MAX + 1u];     /**< the access point's    */
     char          code[WA_PASS_MAX + 1u];     /**< the page's access code */
+    uint8_t       stale_key[WA_STALE_KEY];    /**< made at every start, so no
+                                                   guess can be built to meet
+                                                   a remembered hash       */
+    uint8_t       stale[WA_STALE_KEPT][WA_STALE_HASH]; /**< wrong cookies'
+                                                            hashes, no value */
+    uint8_t       stale_n;    /**< hashes in stale                        */
+    uint8_t       stale_next; /**< the one the next new value replaces    */
 } wa_t;
 
 /**
@@ -759,6 +774,25 @@ typedef enum {
  * @return The check's answer; WA_CODE_CLOSED when no page is served.
  */
 wa_code_t wa_code_check(wa_t *w, const char *given, bool code_on);
+
+/**
+ * @brief wa_code_check() for a code sent in a cookie: the same answer, and the
+ *        same wrong value counts once.
+ *
+ * A browser repeats its cookie at every request without anyone typing, so a
+ * tab left open from before a change of the code must not use up the
+ * WA_GUESS_MAX.  A repeat tells a guesser nothing new.  A value not among the
+ * last WA_STALE_KEPT counts as a wrong code.  The hashes are keyed with a key
+ * made at every start, so a guess cannot be chosen to meet one and go
+ * uncounted.  Only a hash of a wrong value is kept, never the value.
+ *
+ * @param w       The session.
+ * @param given   The cookie's code, NULL or terminated.
+ * @param code_on The code switch; false passes every request while the
+ *                page is served.
+ * @return The check's answer; WA_CODE_WRONG for a repeat as well.
+ */
+wa_code_t wa_code_check_cookie(wa_t *w, const char *given, bool code_on);
 
 /**
  * @brief This session's password and code from what is kept, in place of the

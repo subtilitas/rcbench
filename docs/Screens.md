@@ -3523,6 +3523,25 @@ The page asks for a code before it lists a file or takes an upload. The screen
 shows it. The browser keeps it for the session. 16 wrong codes switch the radio
 off, for a kept code as well.
 
+| A wrong code | Counts toward the 16 |
+| --- | --- |
+| In the entry (`POST /code`) | every time, also the same value again |
+| In the cookie, a value new to this session | once |
+| In the cookie, one of the last 4 values | no. The request gets the form or the 403 and nothing else changes |
+
+So a tab left open from before a change of the code, or a page's several
+requests, cannot switch the radio off: 100 requests with one old cookie count 1.
+A repeat tells a guesser nothing new, and 16 different values still switch the
+radio off. The memory holds 4 hashes of 8 bytes, SHA-256 keyed with 16 random
+bytes (`WA_STALE_KEPT`, `WA_STALE_KEY`), never a value. A guess cannot be chosen
+to meet a hash, as the key is made new at every start of the radio. That start
+empties the memory and the count. A correct code in the cookie or the entry is
+compared over the whole field in constant time, whatever the memory holds.
+
+Current limitation: more than 4 different old cookies at once, as from 5
+browsers each with its own, push each other out, and each one counts again when
+it comes back.
+
 With WEB CODE at RANDOM, the default, the code has 8 characters and is made new
 at every start of the radio, so a code from an earlier session opens nothing.
 
