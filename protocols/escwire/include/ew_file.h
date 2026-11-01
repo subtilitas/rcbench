@@ -71,7 +71,8 @@
  *   value of the field refuse the file, with the line.
  *
  * In an edited file of ESCape32 a key's line is `<key>: <value>` or
- * `<key> = <value>`, the value a decimal number; `music` is read and not used.
+ * `<key> = <value>`, the value a decimal number; `none` counts as no line, and
+ * `music` is read and not used.
  *
  * Both kinds take the 3 bytes EF BB BF (the byte order mark of UTF-8, 8-bit
  * Unicode Transformation Format) in front of the header.

@@ -257,7 +257,27 @@ TEST_CASE(an_edited_file)
     CHECK_EQ(edited("nokey: 1\n"), EW_FILE_ERR_FIELD);
     CHECK_EQ(edited("nokey = 1\n"), EW_FILE_ERR_FIELD);
     CHECK_EQ(edited("arm: x\n"), EW_FILE_ERR_VALUE);
-    CHECK_EQ(edited("arm: none\n"), EW_FILE_ERR_VALUE);
+    /* `none` is no line: a verified file edited as ew_file.h says still reads. */
+    CHECK_EQ(edited("arm: none\n"), EW_FILE_OK);
+    CHECK_EQ(g_r.named, 0u);
+    CHECK_EQ(edited("arm: none\narm: 0\n"), EW_FILE_OK);
+    CHECK_EQ(g_r.named, 1u);
+    CHECK_EQ(ew_e32_get(g_r.page, slot_of("arm")), 0);
+    read_e32(BANNER);
+    ew_e32_put(s.orig, slot_of("led"), EW_KEY_NONE);
+    text_of_session();
+    {
+        char *at = strstr(g_text, "checksum ");
+
+        strcpy(at, "edited\n");
+    }
+    CHECK_EQ(parse_len(strlen(g_text)), EW_FILE_OK);
+    CHECK_EQ(g_r.named, 45u);
+    read_e32(BANNER);
+    CHECK_EQ(ew_file_load(&g_r, &s.id, s.orig, &g_load), EW_LOAD_OK);
+    CHECK_EQ(g_load.named, 45u);
+    CHECK_EQ(g_load.changed, 0u);
+    CHECK(memcmp(g_load.target, s.orig, EW_MAP_LEN_E32) == 0);
     CHECK_EQ(edited("arm: \n"), EW_FILE_ERR_VALUE);
     /* A key before the file says whose it is. */
     {

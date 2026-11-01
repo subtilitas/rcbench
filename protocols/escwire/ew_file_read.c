@@ -761,6 +761,9 @@ static ew_file_err_t edit_key(edit_t *e, const char *k, size_t kn,
         if (!loose_eq(k, kn, ew_map_e32[i].key)) {
             continue;
         }
+        if (loose_eq(s, n, KEY_NO_VALUE)) {
+            return EW_FILE_OK;
+        }
         if ((e->f->has[i / 8u] & (1u << (i % 8u))) != 0u) {
             return EW_FILE_ERR_DUPLICATE;
         }

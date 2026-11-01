@@ -352,7 +352,8 @@ checksum 1A2B3C4D
 A value is a decimal number as the wire spells it, or `none` for a key a read did
 not bring. The `music` line holds up to 262 characters
 (`EW_FILE_MUSIC_LINE_MAX`). A load takes the keys, also from an edited file as
-`<key>: <value>` or `<key> = <value>`, each through the key's values and floor.
+`<key>: <value>` or `<key> = <value>`, each through the key's values and floor;
+in an edited file `none` counts as no line.
 `music` stays in the file: no load writes it, and an edited file's `music` line
 is read and not used. A backup of another revision is written and not loaded.
 ESCape32 has no restore.
