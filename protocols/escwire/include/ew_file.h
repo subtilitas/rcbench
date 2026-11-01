@@ -33,7 +33,8 @@
  * reflected, start 0xFFFFFFFF, final inversion: the one of IEEE 802.3) over
  * every line before the checksum line, each with its line end counted as one
  * LF.  LF or CR LF (carriage return, 0x0D, then LF) on every line keeps a file
- * valid.  Both kinds in one file refuse it.
+ * valid.  Both kinds in one file refuse it; blank lines behind the checksum
+ * line pass with either.
  *
  * The last line that is not blank says what the text is.
  *
@@ -47,10 +48,11 @@
  * In an edited file:
  *
  * - `Firmware` and `Layout` are required and come before the fields.  The
- *   other identity lines are read and not used.
+ *   other identity lines are read and not used, any number of times.
  * - A field line is `<name> = <value>`.  The name is the map's, without case
  *   and without spaces.  The value is the text this format writes for that
- *   value, without case and without spaces, its unit optional, or `raw <n>`
+ *   value, without case and without spaces, its unit optional, also the unit
+ *   of a label when the number starts one label only, or `raw <n>`
  *   for the byte itself.  Where several bytes read as one text the lowest is
  *   taken, and a line of such a text that reads as the ESC's value changes
  *   nothing.
@@ -108,8 +110,8 @@ typedef enum {
     EW_FILE_ERR_ARG = 1,        /**< a NULL argument                            */
     EW_FILE_ERR_OVERSIZED = 2,  /**< more than EW_FILE_MAX bytes                */
     EW_FILE_ERR_NOT_ESC = 3,    /**< line 1 is not the header                   */
-    EW_FILE_ERR_VERSION = 4,    /**< the version is not a number from 1 up      */
-    EW_FILE_ERR_NEWER = 5,      /**< a version above EW_FILE_FORMAT             */
+    EW_FILE_ERR_VERSION = 4,    /**< the version is not a number from 1 to 999  */
+    EW_FILE_ERR_NEWER = 5,      /**< a version above EW_FILE_FORMAT, up to 999  */
     EW_FILE_ERR_TRUNCATED = 6,  /**< no `checksum` and no `edited` last line,
                                      or the bytes of an edited file are cut     */
     EW_FILE_ERR_LINE_END = 7,   /**< verified: LF and CR LF in one file         */
@@ -196,6 +198,7 @@ typedef enum {
     EW_RESTORE_FLASH_CODE = 8,  /**< another flash code                       */
     EW_RESTORE_PROTOCOL = 9,    /**< another bootloader protocol              */
     EW_RESTORE_NAME = 10,       /**< another name                             */
+    EW_RESTORE_NO_NAME = 11,    /**< a file with no name: nothing to compare  */
 } ew_restore_t;
 
 /**

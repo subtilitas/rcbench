@@ -370,6 +370,11 @@ TEST_CASE(what_stands_behind_the_checksum)
     g_text[g_len] = '\0';
     strcat(g_text, "more\nchecksum 00000000\n");
     CHECK_EQ(parse(), EW_FILE_ERR_TRAILING);
+    /* A blank line with the other line end. */
+    up_am(4u, 2u);
+    g_text[g_len] = '\0';
+    strcat(g_text, "\r\n");
+    CHECK_EQ(parse(), EW_FILE_OK);
     /* A checksum and a line that is neither behind it. */
     up_am(4u, 2u);
     g_text[g_len] = '\0';
@@ -656,6 +661,9 @@ TEST_CASE(an_edited_file_gives_its_lines)
     CHECK_EQ(g_r.page[0x2C], 0u);
     CHECK_EQ(g_r.page[0x2B], 100u);
     CHECK_EQ(g_r.page[0x08], 11u);
+    /* The identity lines no load uses may come twice; those it uses may not. */
+    CHECK_EQ(edited_body("Name: a\nName: b\nProcessor: ARM\nProcessor: ARM\n",
+                         &line), EW_FILE_OK);
     /* The unit may go. */
     CHECK_EQ(edited_body("PWM FREQUENCY = 30\n", &line), EW_FILE_OK);
     CHECK_EQ(g_r.page[0x18], 30u);
@@ -680,7 +688,8 @@ TEST_CASE(an_edited_file_refuses_a_line)
     CHECK_EQ(edited_body("MIN DUTY = \n", &line), EW_FILE_ERR_VALUE);
     /* A value one past the top of a label list has no text but raw. */
     CHECK_EQ(edited_body("VARIABLE PWM = NONE\n", &line), EW_FILE_ERR_VALUE);
-    CHECK_EQ(edited_body("PWM FREQUENCY = 23\n", &line), EW_FILE_ERR_VALUE);
+    CHECK_EQ(edited_body("PWM FREQUENCY = 7\n", &line), EW_FILE_ERR_VALUE);
+    CHECK_EQ(edited_body("PWM FREQUENCY = 145\n", &line), EW_FILE_ERR_VALUE);
     CHECK_EQ(edited_body("PWM FREQUENCY = 24.5kHz\n", &line),
              EW_FILE_ERR_VALUE);
     CHECK_EQ(edited_body("MIN DUTY = 1]\n", &line), EW_FILE_ERR_VALUE);
@@ -704,6 +713,38 @@ TEST_CASE(an_edited_file_refuses_a_line)
 static ew_file_err_t edited_text(const char *text)
 {
     return ew_file_parse(text, strlen(text), &g_r, NULL);
+}
+
+static ew_file_err_t s33_line(const char *body)
+{
+    char file[128];
+    const int n = snprintf(file, sizeof(file), ED_HEAD "Firmware: BLHeli_S\n"
+                           "Layout: 33\n%s\nedited\n", body);
+
+    return ew_file_parse(file, (size_t)n, &g_r, NULL);
+}
+
+TEST_CASE(a_plain_number_reads_as_the_one_label_it_starts)
+{
+    CHECK_EQ(s33_line("TEMPERATURE = 80"), EW_FILE_OK);
+    CHECK_EQ(g_r.page[0x23], 1u);
+    CHECK_EQ(s33_line("TEMPERATURE = 140"), EW_FILE_OK);
+    CHECK_EQ(g_r.page[0x23], 7u);
+    CHECK_EQ(s33_line("BEACON DELAY = 1"), EW_FILE_OK);
+    CHECK_EQ(g_r.page[0x1D], 1u);
+    CHECK_EQ(s33_line("BEACON DELAY = 10"), EW_FILE_OK);
+    CHECK_EQ(g_r.page[0x1D], 4u);
+    /* Part of a number is no number. */
+    CHECK_EQ(s33_line("TEMPERATURE = 8"), EW_FILE_ERR_VALUE);
+    CHECK_EQ(s33_line("BEACON DELAY = 3"), EW_FILE_ERR_VALUE);
+    CHECK_EQ(s33_line("STARTUP POWER = 0.5"), EW_FILE_ERR_VALUE);
+    /* A word is no number, and a label with no number takes none. */
+    CHECK_EQ(s33_line("TIMING = MED"), EW_FILE_ERR_VALUE);
+    CHECK_EQ(s33_line("TIMING = 3"), EW_FILE_ERR_VALUE);
+    CHECK_EQ(s33_line("TEMPERATURE = 80x"), EW_FILE_ERR_VALUE);
+    /* The exact text comes first. */
+    CHECK_EQ(s33_line("STARTUP POWER = 0.50"), EW_FILE_OK);
+    CHECK_EQ(g_r.page[0x09], 9u);
 }
 
 TEST_CASE(an_edited_file_names_what_it_is_for)
@@ -866,6 +907,7 @@ int main(void)
     RUN(the_name_at_its_limit);
     RUN(an_edited_file_gives_its_lines);
     RUN(an_edited_file_refuses_a_line);
+    RUN(a_plain_number_reads_as_the_one_label_it_starts);
     RUN(an_edited_file_names_what_it_is_for);
     RUN(the_block_of_an_edited_file_gives_no_value);
     RUN(every_value_of_every_field_reads_back_from_its_text);

@@ -131,6 +131,9 @@ ew_restore_t ew_file_restore_check(const ew_file_t *f, const ew_ident_t *id,
     if (f->protocol != here->protocol) {
         return EW_RESTORE_PROTOCOL;
     }
+    if (f->name[0] == '\0') {
+        return EW_RESTORE_NO_NAME;
+    }
     if (strncmp(f->name, here->name, sizeof(f->name)) != 0) {
         return EW_RESTORE_NAME;
     }

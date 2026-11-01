@@ -200,8 +200,9 @@ The last line that is not blank says what the text is:
 To change a file by hand, change its field lines and put `edited` in place of
 the checksum line. A changed line under a kept checksum line is
 `EW_FILE_ERR_CHECKSUM`. A file cut at any byte has neither last line and loads
-nothing. A value is the text the file shows, its unit optional, or `raw <n>` for
-the byte itself. Where several bytes read as one text, the lowest is taken, and
+nothing. A value is the text the file shows, its unit optional, also the unit of
+a label when the number starts one label only (`TEMPERATURE = 80` reads `80C`),
+or `raw <n>` for the byte itself. Where several bytes read as one text, the lowest is taken, and
 a line of such a text that reads as the ESC's value changes nothing.
 
 `ew_file_load()` builds the draft for `ew_session_write()`.
@@ -228,6 +229,7 @@ one write to an AM32 whose settings read erased:
 | same pin code | `EW_RESTORE_PIN_CODE` |
 | same flash code | `EW_RESTORE_FLASH_CODE` |
 | same bootloader protocol | `EW_RESTORE_PROTOCOL` |
+| the file has a name: an AM32 with no name restores nothing here | `EW_RESTORE_NO_NAME` |
 | same name, up to 29 characters | `EW_RESTORE_NAME` |
 
 The bootloader version, byte 2 of a page, reads 0xFF on an erased ESC, so the

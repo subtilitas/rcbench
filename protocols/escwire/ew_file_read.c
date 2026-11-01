@@ -587,8 +587,39 @@ static ew_file_err_t read_verified(cur_t *c, ew_file_t *f)
 /* --- reading: an edited file ---------------------------------------------- */
 
 /**
- * @brief The raw value a text gives: `raw <n>`, or the lowest byte that reads
- *        as the text.
+ * @brief A plain number as the one label of a field that starts with it, so
+ *        that 80 reads 80C and 10 reads 10min.
+ * @param fd the field
+ * @param s  the text
+ * @param n  its bytes
+ * @param v  takes the value
+ * @return false for no number, no such label or more than one
+ */
+static bool value_from_number(const ew_field_t *fd, const char *s, size_t n,
+                              uint8_t *v)
+{
+    unsigned found = 0u;
+
+    for (size_t i = 0; i < n; ++i) {
+        if (s[i] < '0' || s[i] > '9') {
+            return false;
+        }
+    }
+    for (unsigned raw = fd->lo; fd->labels != NULL && raw <= fd->hi; ++raw) {
+        const char *label = fd->labels[raw - fd->lo];
+
+        if (strncmp(label, s, n) == 0 && label[n] != '\0'
+            && (label[n] < '0' || label[n] > '9') && label[n] != '.') {
+            *v = (uint8_t)raw;
+            found++;
+        }
+    }
+    return found == 1u;
+}
+
+/**
+ * @brief The raw value a text gives: `raw <n>`, the lowest byte that reads as
+ *        the text, or the label a plain number starts.
  * @param fd the field
  * @param s  the text
  * @param n  its bytes
@@ -631,7 +662,7 @@ static bool value_from_text(const ew_field_t *fd, const char *s, size_t n,
             return true;
         }
     }
-    return false;
+    return n > 0u && value_from_number(fd, s, n, v);
 }
 
 /** @brief The state of one edited read. */

@@ -168,6 +168,36 @@ TEST_CASE(a_load_of_a_verified_file_with_a_value_the_field_lacks)
     CHECK(memcmp(g_load.target, s.orig, 192u) == 0);
 }
 
+TEST_CASE(a_backup_with_a_used_frequency_loads)
+{
+    /* 8 to 144kHz are used, above what a configurator offers. */
+    static const uint8_t k_used[] = { 8u, 96u, 144u };
+
+    for (size_t i = 0u; i < sizeof(k_used); ++i) {
+        up_am(4u, 2u);
+        g_f.page[0x18] = k_used[i];
+        g_len = ew_file_format(&g_f, g_text, sizeof(g_text));
+        CHECK_EQ(parse_len(g_len), EW_FILE_OK);
+        CHECK_EQ(ew_file_load(&g_r, &s.id, s.orig, &g_load), EW_LOAD_OK);
+        CHECK_EQ(g_load.target[0x18], k_used[i]);
+        CHECK_EQ(ew_session_write(&s, g_load.target, g_load.len), EW_SES_BUSY);
+        CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+        CHECK_EQ(esc.am[0x18], k_used[i]);
+    }
+    /* One past either end still names its field. */
+    up_am(4u, 2u);
+    g_f.page[0x18] = 145u;
+    g_len = ew_file_format(&g_f, g_text, sizeof(g_text));
+    CHECK_EQ(parse_len(g_len), EW_FILE_OK);
+    CHECK_EQ(ew_file_load(&g_r, &s.id, s.orig, &g_load), EW_LOAD_VALUE);
+    CHECK_EQ(g_load.bad_off, 0x18u);
+    g_f.page[0x18] = 7u;
+    g_len = ew_file_format(&g_f, g_text, sizeof(g_text));
+    CHECK_EQ(parse_len(g_len), EW_FILE_OK);
+    CHECK_EQ(ew_file_load(&g_r, &s.id, s.orig, &g_load), EW_LOAD_VALUE);
+    CHECK_EQ(g_load.bad_off, 0x18u);
+}
+
 TEST_CASE(a_load_refuses_another_esc)
 {
     static ew_file_t am4;
@@ -365,9 +395,19 @@ TEST_CASE(a_restore_refuses_every_other_file)
     f.name[9] = '2';
     CHECK_EQ(ew_file_restore_check(&f, &id, &here, s.orig, &from),
              EW_RESTORE_NAME);
+    /* An ESC with no name, or a file with none: nothing to compare. */
     f.name[0] = '\0';
     CHECK_EQ(ew_file_restore_check(&f, &id, &here, s.orig, &from),
-             EW_RESTORE_NAME);
+             EW_RESTORE_NO_NAME);
+    {
+        ew_backup_id_t nameless = here;
+
+        nameless.name[0] = '\0';
+        CHECK_EQ(ew_file_restore_check(&f, &id, &nameless, s.orig, &from),
+                 EW_RESTORE_NO_NAME);
+        CHECK_EQ(ew_file_restore_check(&good, &id, &nameless, s.orig, &from),
+                 EW_RESTORE_NAME);
+    }
     /* Refusals leave the identity alone. */
     CHECK_EQ(from.pin_code, 0x5Au);
     /* What this file takes, the session takes; revision 3 too. */
@@ -443,6 +483,7 @@ int main(void)
     RUN(a_load_of_an_edited_file_keeps_what_it_does_not_name);
     RUN(a_line_that_reads_as_the_esc_changes_nothing);
     RUN(a_load_of_a_verified_file_with_a_value_the_field_lacks);
+    RUN(a_backup_with_a_used_frequency_loads);
     RUN(a_load_refuses_another_esc);
     RUN(a_file_restores_its_own_erased_esc);
     RUN(a_restore_refuses_every_other_file);
