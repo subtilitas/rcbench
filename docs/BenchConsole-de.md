@@ -47,7 +47,7 @@ Standard-Image ein Symbol der Konsole enthält. `IOMCU_CONSOLE` und
 `SENSE_TRACE` lesen beide die USB-Konsole; CMake weist einen Build mit
 beiden ab.
 
-Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 17.712
+Gebaut mit ARM GNU 14.2 und pico-sdk 2.3.0 ist das Konsolen-Image 17.728
 Byte größer als das Standard-Image und belegt 9.216 Byte mehr RAM
 (Random-Access Memory): 2.048 davon der Ausgabepuffer, 960 der USB-Sendepuffer
 von 1.024 Byte statt der 64 des SDK, 3.488 der Pin-Treiber der Signalleitung
@@ -309,11 +309,16 @@ blockiert die Hauptschleife für seine 9B, 4,7ms bei 52us je Bit.
 ```
 ewline open gpio=13 bit_a=52000ns bit_text=26042ns
 ewline capture n=9 bad_stop=0 aborted=0 overflow=0 match=1
-ewline done gpio=13 start_max=38us poll_max=4us level_max=2us abort=0us
+ewline done gpio=13 start_max=216us poll_max=96us level_max=30us abort=53us
 ```
 
-Die letzte Zeile nennt den längsten Aufruf jeder Art in Mikrosekunden. Die Zahlen
-oben zeigen das Format und sind nicht gemessen.
+Die letzte Zeile nennt den längsten Aufruf jeder Art in Mikrosekunden, hier den
+längsten auf der Station bei Commit aeea917d
+([was zu sehen war](../protocols/escwire/README.md#on-a-chip-no-esc-attached)). Eine
+Last auf der Leitung, etwa die Signalleitung eines Servos, liest am Pull-up allein
+low, und vor dem ersten Startbit jedes Frames zeigt sich ein High-Puls von 6,5us,
+3,26us bei 38400baud. Ein Test auf so einer Leitung kann mit `n=`-Werten enden,
+die nicht passen.
 
 ## Grenzen
 

@@ -234,11 +234,42 @@ Reception:
 A transaction ends at `max_rx`, at a wait's end, or, with the capture marked
 aborted and the pad parked at once, 1ms past `ew_xfer_span_us()`.
 
-Each call returns without waiting for the wire. Longest time at 150MHz, as an
-estimate, neither computed nor measured: `ew_line_start()` 100us,
-`ew_line_poll()` 100us at the end of a capture of 1536B and 2us otherwise, `ew_line_abort()` and `ew_line_level()` 5us,
-`ew_line_open()` and `ew_line_close()` 50us. The console test prints measured
-values.
+Each call returns without waiting for the wire. Longest time at 150MHz, from the
+console test: `ew_line_start()` 216us, `ew_line_poll()` 96us, `ew_line_level()`
+30us, `ew_line_abort()` 53us. Not measured: `ew_line_open()`, `ew_line_close()`, a
+stream of 264B, a capture of 1536B.
+
+The pad is driven high for 2 state machine cycles before a frame's first start
+bit: 6.5us at 52us a bit, 3.26us at 38400baud. It shows as a high pulse only on a
+line that rests low. A pad at rest up, or driven high, does not dip before a
+frame.
+
+A line that falls when the sender lets go, because a load holds it down, reads as
+one more byte 0x00 with a low stop bit, if the transaction still expects bytes.
+The capture marks it and `ew_a` refuses the answer. There is no guard against
+this: it is a wiring fault, and the refusal is the outcome wanted. A transaction
+that ends at its count does not see it.
+
+### On a chip, no ESC attached
+
+Station, GP13 and GP14, 150MHz. Analyser on commit aeea917d, console only on
+a27d3e3f. Waveforms of later commits are not taken: `pad_park()`'s order, the
+absence of the dip before a mark and the `rx` test's start are host-tested only.
+
+| Check | Seen |
+|---|---|
+| bit time, 52us | 51.997us, -0.006%; edges within 0.03us of the grid |
+| bit time, 38400baud | 26.040us, -0.007% |
+| bytes, sigrok's UART decoder | right, but for the 0x55 marks on aeea917d (dip below) |
+| abort | 21 to 53us for the call; 13 of 13 no edge 20.6 to 23ms after |
+| ARMED | refused, 0 edges in 4s |
+| 16-bit read of the FIFO word | `n=9 bad_stop=3 match=1` 12 of 12 on GP13, a27d3e3f |
+| on aeea917d, on GP14: cut in a low bit | a high pulse of 1.35 to 3.70us, once 9.15us, 11 of 12, with the pull-up still on at the release; the order is changed, the likely cause is not separately tested |
+| on aeea917d, on GP14: before a 0x55 mark | a low of 27.75us, 25.10us at 38400baud, from the pull-down set ahead of the frame; changed |
+
+GP13 carried a KST servo's signal wire, unpowered: on the pull-up alone it read
+low. A line loaded this way does not reach idle high on the pad's pull-up. Volts
+not measured. A session on such a line gets no answer to its first contact.
 
 The bench console's `ewline <gpio> tx|abort|rx` runs the driver for a logic
 analyser ([The bench console](../../docs/BenchConsole.md#the-signal-wires-pin-driver)).

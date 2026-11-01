@@ -42,7 +42,7 @@ with it, checks the stacks of both cores, and fails when the default image
 holds a console symbol. `IOMCU_CONSOLE` and `SENSE_TRACE` both read the USB
 console; CMake refuses a build with both.
 
-Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 17,712
+Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 17,728
 bytes larger than the default image and holds 9,216 bytes more RAM
 (random-access memory): 2,048 of them the output buffer, 960 the USB
 transmit buffer of 1,024 bytes in place of the SDK's 64, 3,488 the signal
@@ -290,11 +290,15 @@ loop for its 9B, 4.7ms at 52us a bit.
 ```
 ewline open gpio=13 bit_a=52000ns bit_text=26042ns
 ewline capture n=9 bad_stop=0 aborted=0 overflow=0 match=1
-ewline done gpio=13 start_max=38us poll_max=4us level_max=2us abort=0us
+ewline done gpio=13 start_max=216us poll_max=96us level_max=30us abort=53us
 ```
 
-The last line gives the longest call of each kind in microseconds. The figures
-above show the format and are not measured.
+The last line gives the longest call of each kind in microseconds, here the
+longest seen on the station at commit aeea917d
+([what was seen](../protocols/escwire/README.md#on-a-chip-no-esc-attached)). A
+load on the line, such as a servo's signal wire, reads low on the pull-up alone,
+and a high pulse of 6.5us, 3.26us at 38400baud, shows before each frame's first
+start bit. A test on such a line can end in `n=` values that do not match.
 
 ## Limits
 

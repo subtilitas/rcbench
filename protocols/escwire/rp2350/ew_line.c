@@ -53,13 +53,15 @@ static void pad_drive(const ew_pin_line_t *l, uint level)
 }
 
 /**
- * @brief The input with its pull-down and its buffer off: EW_LINE_PARK.
+ * @brief The input with its pull-down and its buffer off: EW_LINE_PARK.  The
+ *        pull first: a pad released with its pull-up still on rises, for a few
+ *        us out of a low bit.
  * @param l the line
  */
 static void pad_park(const ew_pin_line_t *l)
 {
-    pad_release(l);
     gpio_set_pulls(l->pin, false, true);
+    pad_release(l);
     gpio_set_input_enabled(l->pin, false);
 }
 
@@ -247,10 +249,10 @@ void ew_line_close(ew_pin_line_t *line)
     const PIO pio = line_pio(line);
 
     /* The pad first: nothing the machine does while it is taken down reaches
-     * the wire. */
+     * the wire.  The pull before the release, so the pad does not rise. */
+    gpio_set_pulls(line->pin, false, true);
     gpio_init(line->pin);
     gpio_set_dir(line->pin, GPIO_IN);
-    gpio_set_pulls(line->pin, false, true);
     gpio_set_drive_strength(line->pin,
                             (enum gpio_drive_strength)line->was_drive);
     gpio_set_slew_rate(line->pin, (enum gpio_slew_rate)line->was_slew);
@@ -315,6 +317,9 @@ bool ew_line_start(void *ctx, const ew_xfer_t *x)
     pio_sm_set_clkdiv_int_frac8(pio, l->sm, clock->div256 >> 8,
                                 (uint8_t)(clock->div256 & 0xFFu));
     if (l->rest_down != 0u && x->max_rx == 0u) {
+        /* Driven high first: a pull-down on a released pad dips the line for
+         * the rest of this call, before the frame. */
+        pad_drive(l, 1u);
         gpio_set_pulls(l->pin, false, true);
         gpio_set_input_enabled(l->pin, false);
     } else {

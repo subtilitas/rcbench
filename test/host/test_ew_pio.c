@@ -646,6 +646,35 @@ TEST_CASE(a_low_too_short_for_a_start_bit_is_no_byte)
     CHECK_EQ(m.rx[0] >> 7 & 0xFFu, 0x30u);
 }
 
+TEST_CASE(a_line_that_falls_after_the_answer_makes_a_false_byte)
+{
+    static const uint8_t ask[] = { 0x03 };
+    ew_xfer_t x = xfer_of(EW_RATE_A, ask, 1u, 2u, 80000u, 2000u);
+    ew_capture_t c;
+
+    /* A load holds the line low once the sender lets go: a low with a low stop
+     * bit, which the capture marks and the core refuses. */
+    ext_clear(true);
+    ext_byte(100000.0, 52000.0, 0x30, true);
+    ext_edge(100000.0 + 520000.0 + 26000.0, false);
+    CHECK(load(&x));
+    model_run(&m, 3000u);
+    capture(&c);
+    CHECK_EQ(c.n, 2u);
+    CHECK_EQ(c.bad_stop, 2u);
+    CHECK_EQ(rx_bytes[1], 0x00u);
+    CHECK_EQ(ew_a_one(&c, rx_bytes), EW_ANS_FRAMING);
+
+    /* A transaction that asks for just the answer has ended before it. */
+    x = xfer_of(EW_RATE_A, ask, 1u, 1u, 80000u, 2000u);
+    CHECK(load(&x));
+    model_run(&m, 3000u);
+    capture(&c);
+    CHECK_EQ(c.n, 1u);
+    CHECK_EQ(c.bad_stop, 0u);
+    CHECK_EQ(ew_a_one(&c, rx_bytes), EW_ANS_OK);
+}
+
 TEST_CASE(own_bytes_are_not_received)
 {
     static const uint8_t frame[] = { 0xFF, 0x00, 0x1A, 0x00, 0x3B, 0x74 };
@@ -886,6 +915,7 @@ int main(void)
     RUN(a_line_held_low_is_one_byte);
     RUN(a_line_low_at_the_release_is_no_byte);
     RUN(a_low_too_short_for_a_start_bit_is_no_byte);
+    RUN(a_line_that_falls_after_the_answer_makes_a_false_byte);
     RUN(own_bytes_are_not_received);
     RUN(an_echo_after_the_release_is_received_and_refused);
     RUN(an_abort_in_a_byte_releases_and_the_next_transaction_is_clean);

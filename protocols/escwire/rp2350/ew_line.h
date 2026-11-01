@@ -39,17 +39,19 @@
  * can sit at 2.2V until then.  The pull-up is not affected.
  *
  * The pad's pull-up is 50 to 80kOhm.  Whether it raises an open-drain reply at
- * 52us a bit on a real board is not measured.
+ * 52us a bit on a real board is not measured.  A line a load holds down does not
+ * reach idle high on it: a first contact on such a line fails.
  *
- * Time of a call at 150MHz.  These are estimates: neither computed nor measured.
- * The console test prints the measured worst cases.
+ * The frame's start: the pad is driven high for 2 state machine cycles before
+ * its first start bit, 6.5us at 52us a bit, 3.26us at 38400baud (`set pindirs,
+ * 1`, `pull ifempty`, `out pins`).  It shows as a high pulse only on a line that
+ * rests low; a pad at EW_LINE_UP or EW_LINE_HIGH does not dip before a frame.
  *
- * | Call | Longest |
- * |---|---|
- * | ew_line_start() | 100us: the stream of 264B, then the channels' registers |
- * | ew_line_poll() | 100us at the end of a capture of 1536B, else 2us |
- * | ew_line_abort(), ew_line_level() | 5us, the channel's abort included |
- * | ew_line_open(), ew_line_close() | 50us: claims, a program of 25 words |
+ * Time of a call at 150MHz, the longest the console test printed on the station
+ * (commit aeea917d, 13 aborts): ew_line_start() 216us, with the stream of a 17B
+ * frame; ew_line_poll() 96us; ew_line_level() 30us; ew_line_abort() 53us; when
+ * in that call the pad lets go is not measured.  Not measured either:
+ * ew_line_open(), ew_line_close(), a stream of 264B, a capture of 1536B.
  *
  * None of them waits for the wire.  The FIFO wait in a poll or a stop is
  * EW_LINE_RX_SETTLE_SPINS reads of a register at most.
@@ -164,9 +166,9 @@ bool ew_line_busy(const ew_pin_line_t *line);
 uint32_t ew_line_bit_ns(const ew_pin_line_t *line, uint8_t rate);
 
 /**
- * @brief For the analyser check: a transaction that receives nothing releases
- *        into a pull-down with the input buffer off, so the release shows as a
- *        falling edge.  Off after an open.
+ * @brief For the analyser check: a transaction that receives nothing is driven
+ *        high at its start and releases into a pull-down with the input buffer
+ *        off, so the release shows as a falling edge.  Off after an open.
  * @param line the line
  * @param on   true for the pull-down
  */

@@ -359,6 +359,9 @@ static bool step_begin(const step_t *st)
         finish("refused");
         return false;
     }
+    /* After the start, which takes up to 216us: the frame's time counts from
+     * here. */
+    s_t0_us = time_us_32();
     return true;
 }
 
@@ -406,9 +409,9 @@ void ewline_console_pass(void)
         const frame_t *f = &k_frames[st->frame];
         const uint32_t bit_ns = ew_line_bit_ns(&s_line, f->rate);
 
-        /* The ask's 10 bit times and its release, then the answer. */
+        /* The ask's 10 bit times, its lead and its release, then the answer. */
         if (st->kind == STEP_FEED && !s_fed) {
-            if (elapsed < 11u * bit_ns / 1000u) {
+            if (elapsed < 12u * bit_ns / 1000u) {
                 return;
             }
             s_fed = true;

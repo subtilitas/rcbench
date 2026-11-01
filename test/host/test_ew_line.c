@@ -40,6 +40,8 @@ static struct {
     /* the order of what happens */
     unsigned pad_writes;
     bool latch_at_drive; /* the latch when the pad last went driven */
+    unsigned rises;      /* driven pad released onto its pull-up */
+    unsigned dips;       /* undriven pad put on its pull-down */
     /* the machine */
     pio_hw_t hw;
     bool enabled;
@@ -129,11 +131,23 @@ void dma_channel_configure(uint ch, const dma_channel_config *c,
     }
 }
 
-void gpio_init(uint pin) { (void)pin; g.pio_func = false; g.input = true; }
+void gpio_init(uint pin)
+{
+    (void)pin;
+    if (g.out && g.pull_up) {
+        g.rises++;
+    }
+    g.out = false;
+    g.pio_func = false;
+    g.input = true;
+}
 void gpio_set_dir(uint pin, bool out) { (void)pin; (void)out; }
 void gpio_set_pulls(uint pin, bool up, bool down)
 {
     (void)pin;
+    if (down && !g.pull_down && !g.out) {
+        g.dips++;
+    }
     g.pull_up = up;
     g.pull_down = down;
     g.pad_writes++;
@@ -177,6 +191,9 @@ void pio_sm_exec(PIO pio, uint sm, uint instr)
     } else if (((instr >> 4) & 0xFu) == (uint)pio_pins) {
         g.latch = (instr & 1u) != 0u;
     } else {
+        if (g.out && (instr & 1u) == 0u && g.pull_up) {
+            g.rises++;
+        }
         g.out = (instr & 1u) != 0u;
         if (g.out) {
             g.latch_at_drive = g.latch;
@@ -697,6 +714,57 @@ TEST_CASE(an_abort_parks_at_once_with_no_capture)
     check_parked();
 }
 
+TEST_CASE(no_error_path_lets_a_driven_pad_rise)
+{
+    ew_capture_t c;
+
+    /* A cut in a low bit: the pull-down is on before the pad lets go. */
+    running(4u);
+    ew_line_abort(&line);
+    CHECK_EQ(g.rises, 0u);
+    running(4u);
+    ew_line_level(&line, EW_LINE_PARK);
+    CHECK_EQ(g.rises, 0u);
+    running(4u);
+    g.now_us = line.t_start_us + line.run.span_us + EW_PIO_GRACE_US + 1u;
+    CHECK(ew_line_poll(&line, &c));
+    CHECK_EQ(g.rises, 0u);
+    running(4u);
+    ew_line_close(&line);
+    CHECK_EQ(g.rises, 0u);
+    /* The leave's low to parked. */
+    fresh();
+    CHECK_EQ(ew_line_open(&line, PIN), EW_LINE_OK);
+    ew_line_level(&line, EW_LINE_LOW);
+    ew_line_level(&line, EW_LINE_PARK);
+    CHECK_EQ(g.rises, 0u);
+    check_parked();
+}
+
+TEST_CASE(a_start_from_the_rest_does_not_dip)
+{
+    ew_xfer_t x = xfer(1u);
+
+    fresh();
+    CHECK_EQ(ew_line_open(&line, PIN), EW_LINE_OK);
+    ew_line_level(&line, EW_LINE_UP);
+    g.dips = 0u;
+    CHECK(ew_line_start(&line, &x));
+    CHECK_EQ(g.dips, 0u);
+    ew_line_level(&line, EW_LINE_UP);
+    /* Into a pull-down: driven high first, so the line does not fall before
+     * the frame. */
+    g.pc = OFFSET;
+    g.dips = 0u;
+    x = xfer(0u);
+    ew_line_rest_down(&line, true);
+    CHECK(ew_line_start(&line, &x));
+    CHECK_EQ(g.dips, 0u);
+    CHECK(g.out);
+    CHECK(g.latch);
+    CHECK(g.pull_down);
+}
+
 TEST_CASE(a_level_over_a_running_transaction_cuts_it)
 {
     ew_capture_t c;
@@ -762,6 +830,8 @@ int main(void)
     RUN(a_cut_past_its_time_parks_before_it_waits_for_the_channel);
     RUN(a_capture_with_lost_bytes_parks);
     RUN(an_abort_parks_at_once_with_no_capture);
+    RUN(no_error_path_lets_a_driven_pad_rise);
+    RUN(a_start_from_the_rest_does_not_dip);
     RUN(a_level_over_a_running_transaction_cuts_it);
     RUN(the_rest_into_a_pull_down_only_with_no_receive);
     RUN(the_driver_table);
