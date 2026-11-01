@@ -64,6 +64,24 @@ static int changed(gfx_rect_t r, bool inside)
 }
 
 /**
+ * @brief The page's revision, through the page set.
+ * @return The count.
+ */
+static uint32_t page_rev(void)
+{
+    return prog_ps_revision(&esc_wire_pages);
+}
+
+/**
+ * @brief The press's and the hold's revision, through the page set.
+ * @return The count.
+ */
+static uint32_t press_rev(void)
+{
+    return prog_ps_hold_revision(&esc_wire_pages);
+}
+
+/**
  * @brief A finger's event at the middle of a control.
  * @param type  The event.
  * @param r     The control.
@@ -88,21 +106,21 @@ static void button_shows_its_press(gfx_rect_t r)
     CHECK(r.w > 0);
     ewp_words_clear();
     keep();
-    const uint32_t rev = esc_wire_pages.revision();
-    const uint32_t hold = esc_wire_pages.hold_revision();
+    const uint32_t rev = page_rev();
+    const uint32_t hold = press_rev();
 
     touch(TOUCH_EVENT_DOWN, r, 0u);
-    CHECK_EQ(esc_wire_pages.revision(), rev);
-    CHECK(esc_wire_pages.hold_revision() != hold);
+    CHECK_EQ(page_rev(), rev);
+    CHECK(press_rev() != hold);
     CHECK(esc_wire_pages.hold_rect().x == r.x && esc_wire_pages.hold_rect().y == r.y);
     draw();
     CHECK(changed(r, true) > 0);
     CHECK_EQ(changed(r, false), 0);
     /* A move changes nothing shown. */
     touch(TOUCH_EVENT_MOVE, r, 0u);
-    CHECK_EQ(esc_wire_pages.revision(), rev);
+    CHECK_EQ(page_rev(), rev);
     touch(TOUCH_EVENT_UP, r, TOUCH_FLAG_NO_TAP);
-    CHECK(esc_wire_pages.revision() != rev);
+    CHECK(page_rev() != rev);
     draw();
     CHECK_EQ(changed(r, true), 0);
     CHECK_EQ(changed(r, false), 0);
@@ -118,15 +136,15 @@ static void hold_fills(void)
     CHECK(r.w > 0);
     ewp_words_clear();
     keep();
-    const uint32_t rev = esc_wire_pages.revision();
+    const uint32_t rev = page_rev();
 
     touch(TOUCH_EVENT_DOWN, r, 0u);
-    const uint32_t hold = esc_wire_pages.hold_revision();
+    const uint32_t hold = press_rev();
 
     CHECK(esc_wire_pages.hold_rect().x == r.x && esc_wire_pages.hold_rect().w == r.w);
     esc_wire_pages.tick(1.0f);
-    CHECK_EQ(esc_wire_pages.revision(), rev);
-    CHECK(esc_wire_pages.hold_revision() != hold);
+    CHECK_EQ(page_rev(), rev);
+    CHECK(press_rev() != hold);
     draw();
     CHECK(changed(r, true) > 0);
     CHECK_EQ(changed(r, false), 0);

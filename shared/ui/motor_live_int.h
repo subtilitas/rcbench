@@ -201,8 +201,8 @@ typedef struct {
     /** @brief Whether PROGRAM's session was shown in each frame buffer */
     bool          drawn_sess_shown[2];
     uint32_t      drawn_sess[2];        /**< the session's revision in each frame buffer */
-    /** @brief The output strip's text signature in each frame buffer */
     uint32_t      drawn_sess_hold[2];   /**< the session's hold revision in each */
+    /** @brief The output strip's text signature in each frame buffer */
     uint32_t      drawn_ostrip[2];
     /* Whether each channel's peak is a measurement: a valid live reading
      * has arrived since the run started.  Kept apart from the live flags,

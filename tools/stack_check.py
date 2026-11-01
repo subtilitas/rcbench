@@ -262,7 +262,7 @@ PROG_CALLS = {
                               "esc_wire_ps_hold_revision"),
     "prog_ps_hold_rect": ("kst_panel_apply_rect", "hitec_panel_apply_rect",
                           "esc_stick_ps_hold_rect",
-                          "esc_wire_panel_hold_rect"),
+                          "esc_wire_ps_hold_rect"),
     "prog_ps_leave": ("kst_panel_leave", "hitec_panel_leave",
                       "esc_stick_ps_leave",
                       "esc_wire_ps_leave"),

@@ -570,7 +570,7 @@ TEST_CASE(the_wire_sessions_hold_and_press_reach_both_framebuffers)
     esc_wire_panel_set_targets(&pin, 1u, true);
     feed_tap(FEED_LONE, ROW_X, ROW_Y + 56);
     gfx_canvas_t *const canv[2] = { &cv, &second };
-    gfx_color_t *const buf[2] = { fb, other };
+    const gfx_color_t *const buf[2] = { fb, other };
     const gfx_rect_t rects[2] = { esc_wire_panel_hold_rect(),
                                   esc_wire_panel_back_rect() };
 
