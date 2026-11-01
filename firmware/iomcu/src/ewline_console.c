@@ -107,7 +107,7 @@ static const step_t k_tx[] = {
     LEVEL(EW_LINE_UP, 20u),
     SEND(F_ANNOUNCE), LEVEL(EW_LINE_UP, 20u),
     SEND(F_INFO), LEVEL(EW_LINE_UP, 20u),
-    SEND(F_MARK_A), LEVEL(EW_LINE_PARK, 20u),
+    SEND(F_MARK_A), LEVEL(EW_LINE_UP, 20u),
     SEND(F_MARK_TEXT), LEVEL(EW_LINE_PARK, 20u),
     LEVEL(EW_LINE_LOW, 300u), LEVEL(EW_LINE_PARK, 20u),
     { STEP_END, 0u, 0u, 0u, 0u },

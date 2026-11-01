@@ -295,7 +295,7 @@ Leitung sofort und antwortet `ewline armed`.
 
 | Test | Auf dem Pin, der Reihe nach |
 |---|---|
-| `tx` | geparkt 20ms; high 50ms; der First Contact (17B bei 52us je Bit) 3-mal, jeder gefolgt von seinen 100ms Wartezeit; Pull-up 20ms; 12B mit 4 Idle-Bitzeiten nach dem sechsten; Pull-up 20ms; `info` und LF bei 38400baud und 200ms Wartezeit; Pull-up 20ms; 0x55 bei 52us je Bit in einen Pull-down; geparkt 20ms; 0x55 bei 38400baud in einen Pull-down; geparkt 20ms; low 300ms; geparkt 20ms |
+| `tx` | geparkt 20ms; high 50ms; der First Contact (17B bei 52us je Bit) 3-mal, jeder gefolgt von seinen 100ms Wartezeit; Pull-up 20ms; 12B mit 4 Idle-Bitzeiten nach dem sechsten; Pull-up 20ms; `info` und LF bei 38400baud und 200ms Wartezeit; Pull-up 20ms; 0x55 bei 52us je Bit in einen Pull-down; Pull-up 20ms; 0x55 bei 38400baud in einen Pull-down; geparkt 20ms; low 300ms; geparkt 20ms |
 | `abort` | high 5ms; der First Contact, 3ms nach seinem Start abgeschnitten; geparkt 20ms; high 5ms; 0x55 in einen Pull-down; geparkt 20ms |
 | `rx` | high 5ms; 3-mal 0x55 und eine Antwort von 9B, über die Overrides des Pins auf das Pad getrieben: bei 52us je Bit, mit einem Low-Stoppbit am dritten Byte, bei 38400baud; jeweils gefolgt von 5ms |
 
