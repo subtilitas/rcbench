@@ -230,9 +230,15 @@ TEST_CASE(the_check_of_a_draft)
     CHECK_EQ(ew_image_check(EW_FW_AM, 4u, a, b, sizeof(a), &off), EW_IMG_OK);
     b[0x18] = 48u;
     CHECK_EQ(ew_image_check(EW_FW_AM, 4u, a, b, sizeof(a), &off), EW_IMG_OK);
-    b[0x18] = 49u;
+    b[0x18] = 144u;
+    CHECK_EQ(ew_image_check(EW_FW_AM, 4u, a, b, 192u, &off), EW_IMG_OK);
+    b[0x18] = 8u;
+    CHECK_EQ(ew_image_check(EW_FW_AM, 4u, a, b, 192u, &off), EW_IMG_OK);
+    b[0x18] = 145u;
     CHECK_EQ(ew_image_check(EW_FW_AM, 4u, a, b, sizeof(a), &off), EW_IMG_VALUE);
     CHECK_EQ(off, 0x18u);
+    b[0x18] = 7u;
+    CHECK_EQ(ew_image_check(EW_FW_AM, 4u, a, b, sizeof(a), &off), EW_IMG_VALUE);
     b[0x18] = 1u;
     b[0x30] = 0u;
     CHECK_EQ(ew_image_check(EW_FW_AM, 4u, a, b, sizeof(a), &off),

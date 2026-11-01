@@ -23,6 +23,11 @@
 #define HITEC_TXT "HITEC.TXT"
 /** @brief The Hitec record's name while it is written, HITEC.NEW. */
 #define HITEC_NEW "HITEC" FM_NEW_SUFFIX
+/** @brief The signal wire programmer's record, ESCW.TXT (EW_FILE_STEM of
+ *         ew_file.h, which this layer does not include). */
+#define ESCW_TXT "ESCW.TXT"
+/** @brief That record's name while it is written, ESCW.NEW. */
+#define ESCW_NEW "ESCW" FM_NEW_SUFFIX
 
 /**
  * @brief The bench's deepest folders: each of them and every folder above
@@ -30,7 +35,7 @@
  */
 static const char *const k_bench_dirs[] = {
     CARD_AUTO_LOGS, CARD_USER_LOGS, CARD_ESC_CONF, CARD_KST_CONF,
-    CARD_HITEC_CONF,
+    CARD_HITEC_CONF, CARD_ESCW_CONF,
 };
 
 /** @brief The fault log's three names (fault_log.h). */
@@ -224,6 +229,10 @@ fm_place_t fm_place_of(const fm_bench_t *bench, const char *dir,
     }
     if (fm_same_path(dir, CARD_HITEC_CONF)
         && (same_folded(name, HITEC_TXT) || same_folded(name, HITEC_NEW))) {
+        return FM_PLACE_LOCKED;
+    }
+    if (fm_same_path(dir, CARD_ESCW_CONF)
+        && (same_folded(name, ESCW_TXT) || same_folded(name, ESCW_NEW))) {
         return FM_PLACE_LOCKED;
     }
     for (size_t i = 0u; i < sizeof(k_fault) / sizeof(k_fault[0]); ++i) {

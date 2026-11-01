@@ -20,6 +20,7 @@
 #include "fm_fake.h"
 #include "fm_select.h"
 #include "fm_tree.h"
+#include "ew_file.h"
 #include "hitec_card.h"
 
 /* ------------------------------------------------------------ the rigs */
@@ -395,7 +396,8 @@ TEST_CASE(every_bench_folder_is_fixed_and_others_free)
 {
     static const char *const fixed[] = {
         CARD_BENCH, CARD_AUTO_LOGS, "BENCH/ESC", CARD_ESC_CONF, "BENCH/KST",
-        CARD_KST_CONF, "BENCH/HITEC", CARD_HITEC_CONF, CARD_USER,
+        CARD_KST_CONF, "BENCH/HITEC", CARD_HITEC_CONF, "BENCH/ESCW",
+        CARD_ESCW_CONF, CARD_USER,
         CARD_USER_LOGS,
     };
     for (size_t i = 0u; i < sizeof(fixed) / sizeof(fixed[0]); ++i) {
@@ -463,6 +465,15 @@ TEST_CASE(the_journal_is_locked_and_the_fault_log_is_its_own)
     CHECK_EQ(fm_place_of(NULL, CARD_HITEC_CONF, "HITEC1.TXT", false),
              FM_PLACE_FREE);
     CHECK_EQ(fm_place_of(NULL, CARD_KST_CONF, "HITEC.TXT", false),
+             FM_PLACE_FREE);
+    /* The signal wire programmer's record, by EW_FILE_STEM's name. */
+    CHECK_EQ(fm_place_of(NULL, CARD_ESCW_CONF, EW_FILE_STEM ".TXT", false),
+             FM_PLACE_LOCKED);
+    CHECK_EQ(fm_place_of(NULL, "bench/escw/conf", "escw.new", false),
+             FM_PLACE_LOCKED);
+    CHECK_EQ(fm_place_of(NULL, CARD_ESCW_CONF, "ESCW001.TXT", false),
+             FM_PLACE_FREE);
+    CHECK_EQ(fm_place_of(NULL, CARD_KST_CONF, "ESCW.TXT", false),
              FM_PLACE_FREE);
     CHECK_EQ(fm_place_of(NULL, CARD_BENCH, "RCBENCH.LOG", false),
              FM_PLACE_FAULT);

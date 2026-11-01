@@ -12,6 +12,8 @@
  *     KST/CONF/                KST and Chaservo servo files
  *     HITEC/CONF/              Hitec servo files and the record of a
  *                              write, HITEC.TXT
+ *     ESCW/CONF/               ESC settings files read over the signal wire
+ *                              and the record of a write, ESCW.TXT
  *     RCBENCH.LOG              the fault log, at most 1MiB
  *     RCBENCH.OLD              the fault log before the last 1MiB
  *   /USER/
@@ -93,6 +95,12 @@ extern "C" {
 #define CARD_HITEC_CONF  "BENCH/HITEC/CONF"
 
 /**
+ * @brief ESC settings files read over the signal wire, their backups and the
+ *        write record (EW_FILE_STEM).
+ */
+#define CARD_ESCW_CONF   "BENCH/ESCW/CONF"
+
+/**
  * @brief The fault log: a line every 5s while the link to the IOmcu is down.
  */
 #define CARD_FAULT_LOG   "BENCH/RCBENCH.LOG"
@@ -171,7 +179,7 @@ typedef enum {
     CARD_FOLDER_RESERVED,  /**< a device name: CON, PRN, AUX, NUL, COM1 to
                                 COM9, LPT1 to LPT9                         */
     CARD_FOLDER_BENCH,     /**< the bench's own: BENCH/ESC, BENCH/KST,
-                                BENCH/HITEC and below                      */
+                                BENCH/HITEC, BENCH/ESCW and below                     */
 } card_folder_t;
 
 /**

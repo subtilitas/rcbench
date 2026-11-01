@@ -170,7 +170,7 @@ OK keeps the keyboard open, and the folder as it was, for a folder the card cann
 | over 2 folders | `A/B/C`; `A/B` is taken | `2 folders deep at most` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a Windows device name: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| `BENCH/ESC`, `BENCH/KST` or `BENCH/HITEC`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Folder of the bench's own files` |
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` or `BENCH/ESCW`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Folder of the bench's own files` |
 
 ## SENSORS
 
