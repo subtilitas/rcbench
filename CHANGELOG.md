@@ -12,8 +12,8 @@ history is in git.
   signal wire, for BLHeli_S layout 33, Bluejay layout 208 and AM32 settings
   revisions 3 and 4; older layouts are shown read-only. It holds protocol A at
   52us a bit, a guard every outgoing frame passes, identification, field maps
-  and a non-blocking session with read-back. It has no pin driver, link page or
-  screen. Written from a behavioural specification, without access to the
+  and a non-blocking session with read-back. It has no link page or screen.
+  Written from a behavioural specification, without access to the
   firmware sources.
 - `protocols/escwire/`: ESCape32's text interface at 38400baud. It holds the
   lines `info`, `show`, `set` and `save`, their replies, the 46 numeric keys of
