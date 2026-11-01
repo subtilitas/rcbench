@@ -50,10 +50,13 @@ typedef struct {
     uint32_t gap_us;      /**< the wait for each later byte              */
 } frame_t;
 
-/** @brief Waits of the frames, us: protocol A's and the text line's. */
+/** @brief Protocol A's wait for a first byte, us. */
 #define WAIT_FIRST_A_US 100000u
+/** @brief Protocol A's wait between bytes, us. */
 #define WAIT_GAP_A_US 2000u
+/** @brief The text line's wait for a first byte, us. */
 #define WAIT_FIRST_TEXT_US 200000u
+/** @brief The text line's wait between bytes, us. */
 #define WAIT_GAP_TEXT_US 20000u
 
 /** @brief 10 levels a byte in one pattern: every bit an edge. */
@@ -76,6 +79,7 @@ static const uint8_t k_answer[] = {
 
 /** @brief The frames, by the index a step names. */
 enum { F_CONTACT, F_ANNOUNCE, F_INFO, F_MARK_A, F_MARK_TEXT, F_ASK_A, F_ASK_TEXT };
+/** @brief The frames, by those indexes. */
 static const frame_t k_frames[] = {
     [F_CONTACT] = { k_contact, sizeof(k_contact), 0u, sizeof(k_answer),
                     EW_RATE_A, 0u, 0u, WAIT_FIRST_A_US, WAIT_GAP_A_US },
@@ -91,7 +95,9 @@ static const frame_t k_frames[] = {
                      WAIT_FIRST_TEXT_US, WAIT_GAP_TEXT_US },
 };
 
+/** @brief A step: the pad at @p l for @p t ms. */
 #define LEVEL(l, t) { STEP_LEVEL, (uint8_t)(l), 0u, 0u, (t) }
+/** @brief A step: the frame @p f and its capture. */
 #define SEND(f) { STEP_SEND, 0u, (f), 0u, 0u }
 
 /** @brief The transmit test: every pad state and both rates. */
@@ -123,17 +129,17 @@ static const step_t k_rx[] = {
     { STEP_END, 0u, 0u, 0u, 0u },
 };
 
-static ew_pin_line_t s_line;
-static const step_t *s_step;
-static uint32_t s_t0_us;
-static bool s_in_step;
-static bool s_fed;
-static ew_xfer_t s_x;
-static uint8_t s_rx[EW_RX_TEXT_MAX];
-static uint32_t s_start_max;
-static uint32_t s_poll_max;
-static uint32_t s_level_max;
-static uint32_t s_abort_us;
+static ew_pin_line_t s_line;        /**< the line under test */
+static const step_t *s_step;        /**< the step, NULL with no test running */
+static uint32_t s_t0_us;            /**< the step's start */
+static bool s_in_step;              /**< the step has begun */
+static bool s_fed;                  /**< the step's answer has been driven */
+static ew_xfer_t s_x;               /**< the running transaction */
+static uint8_t s_rx[EW_RX_TEXT_MAX];    /**< what it received */
+static uint32_t s_start_max;        /**< the longest start(), us */
+static uint32_t s_poll_max;         /**< the longest poll(), us */
+static uint32_t s_level_max;        /**< the longest line(), us */
+static uint32_t s_abort_us;         /**< the abort(), us */
 
 /**
  * @brief Note the longest call of a kind.

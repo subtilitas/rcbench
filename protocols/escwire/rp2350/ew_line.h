@@ -92,22 +92,22 @@ typedef enum {
  * The caller keeps the object; the fields are the driver's.
  */
 typedef struct {
-    ew_pio_clock_t clock[EW_RATES];
-    ew_pio_run_t   run;
-    void    *pio;
-    uint32_t sm;
-    uint32_t offset;
-    uint32_t t_start_us;
-    int8_t   dma_tx;
-    int8_t   dma_rx;
-    uint8_t  pin;
-    uint8_t  open;
-    uint8_t  busy;
+    ew_pio_clock_t clock[EW_RATES]; /**< the divider of each rate */
+    ew_pio_run_t   run; /**< the running transaction */
+    void    *pio; /**< the PIO block */
+    uint32_t sm; /**< the state machine */
+    uint32_t offset; /**< where the program loaded */
+    uint32_t t_start_us; /**< the clock at the start */
+    int8_t   dma_tx; /**< the channel of the stream */
+    int8_t   dma_rx; /**< the channel of the replies */
+    uint8_t  pin; /**< the GPIO */
+    uint8_t  open; /**< 1 from open to close */
+    uint8_t  busy; /**< 1 while a transaction runs */
     uint8_t  was_drive;  /**< the drive strength before the open */
     uint8_t  was_slew;   /**< the slew rate before the open */
     uint8_t  rest_down;  /**< see ew_line_rest_down() */
-    uint32_t tx[EW_PIO_TX_WORDS];
-    uint16_t rx[EW_PIO_RX_WORDS];
+    uint32_t tx[EW_PIO_TX_WORDS]; /**< the stream */
+    uint16_t rx[EW_PIO_RX_WORDS]; /**< the replies, a FIFO word's upper half each */
 } ew_pin_line_t;
 
 /**
