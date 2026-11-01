@@ -58,6 +58,19 @@ static void up_am(void)
     ready();
 }
 
+/**
+ * @brief Step until transaction @p n of a write runs.
+ * @param at The sim's transaction count when the write began.
+ * @param n  The transaction to reach, from 0.
+ */
+static void run_to(int at, int n)
+{
+    for (int i = 0; i < 100000 && esc.starts <= at + n; ++i) {
+        esc.now += 500u;
+        (void)ew_session_step(&s);
+    }
+}
+
 TEST_CASE(a_write_of_family_s)
 {
     up_s();
@@ -140,6 +153,7 @@ TEST_CASE(a_write_of_am32_has_no_erase)
 
 TEST_CASE(a_pause_between_announcement_and_data)
 {
+    CHECK(EW_SES_PAUSE_BITS * EW_BIT_A_NS >= 500000u);
     up_am();
     g_draft[0x18] = 48u;
     CHECK_EQ(ew_session_write(&s, g_draft, 192u), EW_SES_BUSY);
@@ -153,8 +167,129 @@ TEST_CASE(a_pause_between_announcement_and_data)
     CHECK_EQ(s.x.n_head, 6u);
     CHECK_EQ(s.x.pause_bits, EW_SES_PAUSE_BITS);
     CHECK_EQ(s.x.n_tx, 6u + 192u + 2u);
-    CHECK(s.x.pause_bits * EW_BIT_A_NS < 260000u);
+    CHECK(ew_xfer_valid(&s.x));
     CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    /* The same gap on an EFM8. */
+    up_s();
+    g_draft[0x15] = 5u;
+    const int at2 = esc.starts;
+
+    CHECK_EQ(ew_session_write(&s, g_draft, 0x70u), EW_SES_BUSY);
+    for (int i = 0; i < 100000 && esc.starts < at2 + 6; ++i) {
+        esc.now += 500u;
+        (void)ew_session_step(&s);
+    }
+    CHECK_EQ(s.x.pause_bits, EW_SES_PAUSE_BITS);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+}
+
+/* An announcement and its data, @p bits idle bit times between them, straight
+ * to the ESC.  The answer's byte, or -1 for none. */
+static int send_with_gap(uint8_t bits)
+{
+    static uint8_t tx[EW_TX_MAX];
+    static uint8_t rx[4] = { 0u };
+    const uint16_t len = s.id.len;
+    const size_t head = ew_a_announce(tx, len);
+    const size_t body = ew_a_data(tx + head, s.orig, len);
+    const ew_xfer_t x = { .rate = EW_RATE_A, .pause_bits = bits,
+                          .n_tx = (uint16_t)(head + body),
+                          .n_head = (uint16_t)head, .max_rx = 1u,
+                          .first_us = EW_A_BUFFER_US, .gap_us = EW_A_GAP_US,
+                          .tx = tx, .rx = rx };
+    ew_capture_t c;
+
+    CHECK(sim_start(&esc, &x));
+    for (int i = 0; i < 100000 && !sim_poll(&esc, &c); ++i) {
+        esc.now += 100u;
+    }
+    return c.n == 0u ? -1 : rx[0];
+}
+
+TEST_CASE(the_gap_each_firmware_takes)
+{
+    /* AM32: 208us is too short and no answer comes; 260us is over its 234us. */
+    static const struct { uint8_t bits; int answer; } k_am[] = {
+        { 1u, -1 }, { 2u, -1 }, { 4u, -1 }, { 5u, EW_A_ACK }, { 10u, EW_A_ACK },
+    };
+
+    for (size_t i = 0; i < sizeof(k_am) / sizeof(k_am[0]); ++i) {
+        up_am();
+        CHECK_EQ(send_with_gap(k_am[i].bits), k_am[i].answer);
+    }
+    /* Back to back as well. */
+    up_am();
+    CHECK_EQ(send_with_gap(0u), -1);
+    /* After a short gap the ESC waits.  The host's next announcement is a cut
+     * block: its 0xC2 lies under the host's own data and is not read. */
+    CHECK_EQ(esc.collisions, 0);
+    CHECK_EQ(send_with_gap(10u), -1);
+    CHECK_EQ(esc.collisions, 1);
+    /* A next message with no data behind it reads the 0xC2. */
+    {
+        uint8_t f[EW_A_LONG_FRAME];
+        uint8_t rx[1] = { 0u };
+        ew_capture_t c;
+        const size_t n = ew_a_address(f, 0x0020u);
+        const ew_xfer_t x = { .rate = EW_RATE_A, .n_tx = (uint16_t)n,
+                              .max_rx = 1u, .first_us = EW_A_ADDRESS_US,
+                              .gap_us = EW_A_GAP_US, .tx = f, .rx = rx };
+
+        up_am();
+        CHECK_EQ(send_with_gap(2u), -1);
+        CHECK(sim_start(&esc, &x));
+        for (int i = 0; i < 100000 && !sim_poll(&esc, &c); ++i) {
+            esc.now += 100u;
+        }
+        CHECK_EQ(c.n, 1u);
+        CHECK_EQ(rx[0], EW_A_REF_CRC);
+        CHECK_EQ(esc.collisions, 0);
+    }
+    /* An EFM8 takes any of them. */
+    static const uint8_t k_efm8[] = { 0u, 2u, 10u };
+
+    for (size_t i = 0; i < sizeof(k_efm8); ++i) {
+        up_s();
+        CHECK_EQ(send_with_gap(k_efm8[i]), EW_A_ACK);
+    }
+}
+
+TEST_CASE(a_buffer_whose_refusal_lies_under_the_data)
+{
+    /* An ESC that still waits for data at the session's buffer: the 0xC2 is
+     * not read, so the session sees silence on that try.  What the ESC does
+     * after that 0xC2 is not known, so both ways are held. */
+
+    /* It says nothing more: no program went, and the page counts as read. */
+    up_am();
+    g_draft[0x18] = 48u;
+    esc.mute_after_cut = true;
+    int at = esc.starts;
+
+    CHECK_EQ(ew_session_write(&s, g_draft, 192u), EW_SES_BUSY);
+    run_to(at, 2);
+    esc.swallowed = true;
+    esc.announced = 192u;
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_ERR_READ);
+    CHECK_EQ(esc.collisions, 1);
+    CHECK_EQ(esc.programs, 0);
+    CHECK_EQ(s.last_ans, EW_ANS_SILENT);
+    CHECK(!s.dirty);
+    CHECK(s.guard.approved == NULL);
+    CHECK(memcmp(esc.am, g_before, 192u) == 0);
+
+    /* It listens on: the next try of the buffer goes through. */
+    up_am();
+    g_draft[0x18] = 48u;
+    at = esc.starts;
+    CHECK_EQ(ew_session_write(&s, g_draft, 192u), EW_SES_BUSY);
+    run_to(at, 2);
+    esc.swallowed = true;
+    esc.announced = 192u;
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    CHECK_EQ(esc.collisions, 1);
+    CHECK_EQ(esc.am[0x18], 48u);
+    CHECK_EQ(s.attempts, 1u);
 }
 
 TEST_CASE(a_draft_with_no_change_sends_nothing)
@@ -751,15 +886,6 @@ TEST_CASE(a_restore_left_half_done_takes_its_backup_again)
     CHECK(!s.id.erased);
 }
 
-/* Step until transaction @p n of the write runs. */
-static void run_to(int at, int n)
-{
-    for (int i = 0; i < 100000 && esc.starts <= at + n; ++i) {
-        esc.now += 500u;
-        (void)ew_session_step(&s);
-    }
-}
-
 TEST_CASE(a_frame_the_guard_refuses_inside_a_write)
 {
     static uint8_t other[EW_PAGE_MAX];
@@ -879,6 +1005,8 @@ int main(void)
     RUN(a_write_of_bluejay_keeps_its_melody);
     RUN(a_write_of_am32_has_no_erase);
     RUN(a_pause_between_announcement_and_data);
+    RUN(the_gap_each_firmware_takes);
+    RUN(a_buffer_whose_refusal_lies_under_the_data);
     RUN(a_draft_with_no_change_sends_nothing);
     RUN(every_refusal_of_a_write);
     RUN(a_page_that_changed_since_the_read);
