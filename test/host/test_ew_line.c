@@ -39,7 +39,7 @@ static struct {
     enum gpio_slew_rate slew;
     /* the order of what happens */
     unsigned pad_writes;
-    bool high_glitch;    /* driven with the latch at a level not yet asked */
+    bool latch_at_drive; /* the latch when the pad last went driven */
     /* the machine */
     pio_hw_t hw;
     bool enabled;
@@ -70,7 +70,6 @@ static struct {
     bool out_at_settle;
     bool down_at_settle;
     bool input_at_settle;
-    bool rx_has_words;
 } g;
 
 const pio_program_t ew_line_program = { -1 };
@@ -179,6 +178,9 @@ void pio_sm_exec(PIO pio, uint sm, uint instr)
         g.latch = (instr & 1u) != 0u;
     } else {
         g.out = (instr & 1u) != 0u;
+        if (g.out) {
+            g.latch_at_drive = g.latch;
+        }
     }
     g.pad_writes++;
 }
@@ -460,13 +462,17 @@ TEST_CASE(each_level_on_the_pad)
 {
     fresh();
     CHECK_EQ(ew_line_open(&line, PIN), EW_LINE_OK);
+    ew_line_level(&line, EW_LINE_LOW);
+    CHECK(!g.latch_at_drive);              /* driven at its own level at once */
     ew_line_level(&line, EW_LINE_HIGH);
     CHECK(g.out);
     CHECK(g.latch);
+    CHECK(g.latch_at_drive);
     CHECK(g.input);
     ew_line_level(&line, EW_LINE_LOW);
     CHECK(g.out);
     CHECK(!g.latch);
+    CHECK(!g.latch_at_drive);
     CHECK(g.pull_down);
     CHECK(!g.input);
     ew_line_level(&line, EW_LINE_UP);

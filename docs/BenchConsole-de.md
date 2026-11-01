@@ -291,7 +291,8 @@ keine Page und hat keinen Schlüssel: es sendet feste Bytes, keines davon ein
 Throttle-Signal, ein Erase oder ein Program. Es weist einen Pin ab, den Outputs,
 Ports, Supply, Sensorbus oder Tone-Capture halten, einen Pin, der treibt, und
 jeden Pin, solange die Bank ARMED ist. Ein Programming Port, der den Pin nennt,
-hält ihn; dessen PIN geht darum vorher auf 0xFFFF. Während eines Tests ist der Pin
+hält ihn; dessen PIN geht darum vorher auf 0xFFFF: `w 0x33 4 0xFFFF` für Port 0,
+`w 0x33 4 13` gibt GPIO 13 zurück. Während eines Tests ist der Pin
 reserviert: die Pages weisen ihn ab. Ein ARM während eines Tests schließt die
 Leitung sofort und antwortet `ewline armed`.
 

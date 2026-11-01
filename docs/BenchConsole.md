@@ -272,7 +272,8 @@ for a logic analyser with no ESC attached. It is not a page and has no key: it
 sends fixed bytes, none of them a throttle signal, an erase or a program. It
 refuses a pin the outputs, ports, supply, sensor bus or tone capture hold, a pin
 that drives, and any pin while the bank is ARMED. A programming port that names
-the pin holds it, so that port's PIN goes to 0xFFFF first. During a test the pin
+the pin holds it, so that port's PIN goes to 0xFFFF first: `w 0x33 4 0xFFFF` for
+port 0, `w 0x33 4 13` to give GPIO 13 back. During a test the pin
 is reserved: the pages refuse it. An ARM during a test closes the line at once
 and answers `ewline armed`.
 

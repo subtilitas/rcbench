@@ -923,7 +923,7 @@ jobs:
           arm-none-eabi-nm firmware/iomcu/build-console/rcbench-iomcu.elf \
             | grep -q page_console_key
           if arm-none-eabi-nm firmware/iomcu/build/rcbench-iomcu.elf \
-              | grep -iE 'page_console|console_hw'; then
+              | grep -iE 'page_console|console_hw|ewline'; then
             echo "::error::the default image holds console code"
             exit 1
           fi
