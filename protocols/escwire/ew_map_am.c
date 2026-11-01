@@ -63,7 +63,7 @@ const ew_field_t ew_map_am[] = {
       .access = EW_ACC_EDIT, .lo = 0u, .hi = 2u, .from = 3u, .to = 4u },
     SWITCH("STUCK ROTOR", 0x16u, EW_FF_WARN),
     SCALED("TIMING", 0x17u, 10u, 42u, 9375, -93750, 4u, "deg", 0u),
-    NUMBER("PWM FREQUENCY", 0x18u, 24u, 48u, "kHz", 0u),
+    NUMBER("PWM FREQUENCY", 0x18u, 8u, 144u, "kHz", 0u),
     NUMBER("STARTUP POWER", 0x19u, 50u, 150u, "", 0u),
     SCALED("MOTOR KV", 0x1Au, 0u, 255u, 40, 20, 0u, "", 0u),
     NUMBER("MOTOR POLES", 0x1Bu, 0u, 255u, "", 0u),

@@ -3198,8 +3198,8 @@ und unter dem Namen die Art und ein Zustandswort:
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein Ordner, den der Prüfstand führt: die beiden Log-Ordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` und die Ordner auf dem Weg dorthin, darunter `BENCH` und `USER`. Kein UMBENENNEN oder VERSCHIEBEN, das seinen Inhalt von dort wegnähme, wo der Prüfstand ihn liest. NEU legt einen an und LÖSCHEN nimmt einen leeren: Jeder Schreiber des Prüfstands legt seinen Ordner vor dem Schreiben wieder an, und ein fehlender Ordner liest sich wie auf einer neuen Karte |
-| GESPERRT | die Vermerke der Servoprogrammierungen, `BENCH/KST/CONF/KST.TXT` und `BENCH/HITEC/CONF/HITEC.TXT`, und ihre `KST.NEW` und `HITEC.NEW`, solange sie geschrieben werden. Nur INFO |
+| FEST | ein Ordner, den der Prüfstand führt: die beiden Log-Ordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` und die Ordner auf dem Weg dorthin, darunter `BENCH` und `USER`. Kein UMBENENNEN oder VERSCHIEBEN, das seinen Inhalt von dort wegnähme, wo der Prüfstand ihn liest. NEU legt einen an und LÖSCHEN nimmt einen leeren: Jeder Schreiber des Prüfstands legt seinen Ordner vor dem Schreiben wieder an, und ein fehlender Ordner liest sich wie auf einer neuen Karte |
+| GESPERRT | die Vermerke der Programmierungen, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` und `BENCH/ESCW/CONF/ESCW.TXT`, und ihre `KST.NEW`, `HITEC.NEW` und `ESCW.NEW`, solange sie geschrieben werden. Nur INFO |
 | WIRD GESCHRIEBEN | eine Datei, die der Logger offen hat. Nur INFO |
 
 Das Fehlerprotokoll nimmt KOPIEREN und LÖSCHEN nur bei bestehender
@@ -5347,7 +5347,7 @@ geltenden Ordner unverändert, und die Zeile rechts vom Titel sagt, warum:
 | mehr als 2 Ordner | `A/B/C` (`A/B` wird genommen) | `Höchstens 2 Ordner tief` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Ordner der Prüfstand-Dateien` |
+| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Ordner der Prüfstand-Dateien` |
 
 Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
 Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17

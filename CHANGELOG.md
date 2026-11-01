@@ -27,6 +27,12 @@ history is in git.
   and a non-blocking session with read-back. It has no link page or screen.
   Written from a behavioural specification, without access to the
   firmware sources.
+- `protocols/escwire/ew_file.c`: an ESC's settings as a text file of at most
+  5280B, with the page as read, whole, and a CRC-32 (32-bit cyclic redundancy
+  check). A load takes editable fields only, into the same firmware and layout.
+  A verified file of an AM32 restores an ESC whose 192B read 0xFF when its pin
+  code, flash code, bootloader protocol and name are the ESC's. Files go to
+  `BENCH/ESCW/CONF`, `ESCW001.TXT` to `ESCW999.TXT`. No screen uses it.
 - `protocols/escwire/`: ESCape32's text interface at 38400baud. It holds the
   lines `info`, `show`, `set` and `save`, their replies, the 46 numeric keys of
   revision 17 as data, and the session's branch: after 3 silent first contacts a

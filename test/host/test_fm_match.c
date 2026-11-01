@@ -602,6 +602,7 @@ TEST_CASE(what_new_can_make_delete_can_remove_every_fixed_folder)
         { "", "BENCH" }, { "BENCH", "LOGS" }, { "BENCH", "ESC" },
         { "BENCH/ESC", "CONF" }, { "BENCH", "KST" }, { "BENCH/KST", "CONF" },
         { "BENCH", "HITEC" }, { "BENCH/HITEC", "CONF" },
+        { "BENCH", "ESCW" }, { "BENCH/ESCW", "CONF" },
         { "", "USER" }, { "USER", "LOGS" },
     };
     const size_t n = sizeof(k_rows) / sizeof(k_rows[0]);
