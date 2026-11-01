@@ -55,16 +55,12 @@ const char *ew_fi_fw_word(uint8_t fw)
 
 /**
  * @brief The processor a firmware runs on.
- * @param fw a firmware that is not EW_FW_NONE
+ * @param fw a firmware that is neither EW_FW_NONE nor EW_FW_E32
  * @return its processor
  */
 static uint8_t fw_cpu(uint8_t fw)
 {
-    switch (fw) {
-    case EW_FW_AM:  return (uint8_t)EW_CPU_ARM;
-    case EW_FW_E32: return (uint8_t)EW_CPU_TEXT;
-    default:        return (uint8_t)EW_CPU_EFM8;
-    }
+    return fw == (uint8_t)EW_FW_AM ? (uint8_t)EW_CPU_ARM : (uint8_t)EW_CPU_EFM8;
 }
 
 /**
