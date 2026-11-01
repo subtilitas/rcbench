@@ -106,7 +106,7 @@ TEST_CASE(a_write_goes_with_its_blocks_and_its_key)
     const uint16_t stale_crc = im->read_crc;
 
     link_run(100u);
-    CHECK(im->reads != stale_reads);
+    CHECK_EQ(im->reads, reg(LINK_EW_READS));
     CHECK_EQ(im->page[0x18], 48u);
     /* A draft of the copy before it is refused by the page. */
     g_page[0x18] = 24u;

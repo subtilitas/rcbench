@@ -26,10 +26,11 @@ static int link_xchg(void *ctx, const esc_link_xfer_t *x, uint16_t *regs)
         --g_drop;
         return ESC_LINK_NO_ANSWER;
     }
-    uint8_t nack = 0u;
     const uint32_t now = esc.now / 1000u;
 
     if (x->write) {
+        uint8_t nack;
+
         if (x->page == LINK_PAGE_ESC_WIRE) {
             nack = esc_port_write(&g_p, x->off, x->n, x->regs, now);
             if (x->off == 0u) {

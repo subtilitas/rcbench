@@ -331,8 +331,6 @@ TEST_CASE(a_write_needs_a_read_a_change_and_the_backup)
 
 TEST_CASE(a_page_that_is_not_written_says_so)
 {
-    static uint8_t draft[ESC_LINK_PAGE_MAX];
-
     /* An AM32 of a revision that is not written. */
     sim_init_am(&esc, 5u, 2u);
     rig_up();
@@ -340,6 +338,8 @@ TEST_CASE(a_page_that_is_not_written_says_so)
     CHECK_EQ(esc_prog_connect(&g_m, &k_conn), ESC_PROG_MSG_NONE);
     model_run(30000u);
     if (esc_port_state(&g_p) == LINK_ESC_READY) {
+        static uint8_t draft[ESC_LINK_PAGE_MAX];
+
         memcpy(draft, g_f.image.page, g_f.image.len);
         draft[0x18] ^= 1u;
         CHECK_EQ(esc_prog_write(&g_m, draft, g_f.image.len),
@@ -353,7 +353,6 @@ TEST_CASE(a_file_loads_into_a_draft_or_says_why_not)
     uint16_t detail = 0u;
     uint16_t len = 0u;
     unsigned line = 0u;
-    static uint8_t draft[ESC_LINK_PAGE_MAX];
 
     up_am_rig();
     model_up();
@@ -399,7 +398,6 @@ TEST_CASE(a_file_loads_into_a_draft_or_says_why_not)
     CHECK_EQ(esc_prog_backup_text(NULL, g_text, 1u), 0u);
     esc_prog_backup_follow(NULL);
     esc_prog_backup_settled(NULL);
-    (void)draft;
 }
 
 TEST_CASE(an_erased_am32_takes_only_a_restore)

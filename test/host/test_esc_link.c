@@ -138,13 +138,13 @@ TEST_CASE(a_port_that_does_not_come_back_names_the_port)
     uint16_t target = 0u;
 
     up_am_rig();
-    open_target(LINK_EW_TARGET_PORT | 0u);
+    open_target(LINK_EW_TARGET_PORT);
     g.give_refused = true;
     esc_link_init(&g_l);
     esc_link_came_up(&g_l, ESC_LINK_MINOR);
     link_run(20u);
     CHECK(esc_link_not_back(&g_l, &target));
-    CHECK_EQ(target, LINK_EW_TARGET_PORT | 0u);
+    CHECK_EQ(target, LINK_EW_TARGET_PORT);
 }
 
 TEST_CASE(a_link_that_came_back_closes_nothing)
