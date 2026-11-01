@@ -176,6 +176,7 @@ typedef struct {
     bool       link_seen; /**< the link was up at the last feed               */
     bool       no_again;  /**< this hold saw a stop or a fault, or the supply's
                                latch: PIN BACK is the way on                  */
+    bool       held_stop; /**< of those, a stop or a fault                    */
     bool       files_for_restore; /**< the list's choice restores             */
     bool       no_card_ok; /**< the operator goes without a card this session */
     char       file_name[ESC_CARD_NAME_MAX]; /**< the file chosen             */
@@ -469,6 +470,12 @@ const char *ewp_fw_name(uint8_t fw);
  * @param size Bytes at @p out.
  */
 void ewp_line_text(char *out, size_t size);
+
+/**
+ * @brief PIN HELD's line on what ended the session.
+ * @return The line; NULL for none, with the refusal's own line the only word.
+ */
+const char *ewp_held_line(void);
 
 /**
  * @brief The page's state in words.

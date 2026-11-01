@@ -27,14 +27,17 @@ enum {
 };
 
 /**
- * @brief The press taken.
+ * @brief The press taken.  A button is the operator's next action, so what the screen
+ *        said goes; a press inside an open keypad is not on one yet.
  * @param evt  The event.
  * @param what What it is on.
  * @param i    Its row.
  */
 static void take(const touch_event_t *evt, int what, int i)
 {
-    ewp_words_clear();
+    if (what != P_KEYPAD) {
+        ewp_words_clear();
+    }
     ewp_s.have = true;
     ewp_s.id = evt->point.id;
     ewp_s.pressed = what;
@@ -141,24 +144,36 @@ static void action(int i)
     }
 }
 
+/** @brief The places on the action row. */
+#define EWP_ACTIONS 3
+
 /**
- * @brief How many actions a stage has.
- * @return Their count.
+ * @brief Whether the action row's button @p i is on the screen, as the stage draws it.
+ * @param i The button.
+ * @return true for one shown.
  */
-static int action_count(void)
+static bool action_shown(int i)
 {
+    const esc_prog_t *m = &ewp_s.prog;
+
     switch (ewp_stage()) {
     case ESC_WIRE_HAND:
+        return i == 0 || i == 1;
     case ESC_WIRE_STOPPED:
-        return 2;
+        return i == 1 || (i == 0 && !m->f.stopped);
     case ESC_WIRE_SESSION:
+        if ((m->f.rd.flags & LINK_EW_F_ERASED) != 0u) {
+            return i == 0;
+        }
+        return i == 0 || i == 1
+               || (i == 2 && (m->f.rd.flags & LINK_EW_F_WRITABLE) != 0u);
     case ESC_WIRE_PIN_HELD:
-        return 3;
+        return i == 2;
     case ESC_WIRE_OTHER:
     case ESC_WIRE_NOT_BACK:
-        return 1;
+        return i == 0;
     default:
-        return 0;
+        return false;
     }
 }
 
@@ -190,10 +205,12 @@ static void down_rows(const touch_event_t *evt)
     if (st != ESC_WIRE_SESSION) {
         return;
     }
-    if (gfx_rect_contains(ewp_tabs_rect(), x, y)) {
-        take(evt, P_TAB, -1);
-        (void)ui_tabs_event(&ewp_s.tabs, evt);
-        return;
+    for (int i = 0; i < ewp_s.tab_count; ++i) {
+        if (gfx_rect_contains(ewp_s.tabs.rect[i], x, y)) {
+            take(evt, P_TAB, -1);
+            (void)ui_tabs_event(&ewp_s.tabs, evt);
+            return;
+        }
     }
     for (int i = 0; i < EWP_ROWS * EWP_COLS; ++i) {
         ewp_row_t r;
@@ -275,8 +292,8 @@ static void down(const touch_event_t *evt)
         take(evt, P_BACK, -1);
         return;
     }
-    for (int i = 0; i < action_count(); ++i) {
-        if (gfx_rect_contains(ewp_action_rect(i), x, y)) {
+    for (int i = 0; i < EWP_ACTIONS; ++i) {
+        if (action_shown(i) && gfx_rect_contains(ewp_action_rect(i), x, y)) {
             take(evt, P_ACT, i);
             return;
         }
