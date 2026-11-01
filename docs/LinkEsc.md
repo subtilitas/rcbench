@@ -156,7 +156,7 @@ panel, which follows it to the bench's SAFE state.
 | 14 | `BLOCK` | not staged; 0 to 19 |
 
 Registers 0 to 3 are one frame. A SEQ other than `SEQ` + 1 is `BAD_VALUE`; the frame
-just taken, sent again, is acknowledged and does nothing. A command that is taken is
+last taken, sent again, is acknowledged and does nothing. A command that is taken is
 acknowledged, and what became of it is on the page: `RESULT`'s high byte says why it
 started nothing, or 0. Refusals: 1 `BUSY`, 2 `TARGET`, 3 `HELD`, 4 `ARMED`, 5
 `UNSAFE`, 6 `NOT_OPEN`, 7 `NO_KEY`, 8 `STAGED`, 9 `STOPPED`, 10 `NO_PIN`, 11 `RANGE`,

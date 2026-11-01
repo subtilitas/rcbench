@@ -19,8 +19,7 @@ _Static_assert(LINK_ESC_OP_COUNT <= 16, "the op's field");
 _Static_assert(LINK_ED_BLOCK_BYTES * 4u == EW_PAGE_MAX, "4 blocks a page");
 _Static_assert(LINK_ED_BLOCK_BYTES * 4u == EW_E32_MUSIC_MAX + 1u, "4 of music");
 _Static_assert(EW_ID_NAME_MAX + 1u <= LINK_ED_BLOCK_BYTES - 4u, "name fits");
-_Static_assert(sizeof(ew_text_info_t) == 106u
-               && sizeof(ew_text_info_t) <= LINK_ED_BLOCK_BYTES * 2u,
+_Static_assert(sizeof(ew_text_info_t) == 106u && LINK_ED_BLOCK_BYTES * 2u >= 106u,
                "the layout docs/LinkEsc.md gives for LINK_ED_INFO");
 _Static_assert(ESC_PORT_QUIET_SLOT >= (1u << LINK_PG_PORTS_MAX), "the slot's bit");
 _Static_assert((int)LINK_ESC_LINE_PARK == (int)EW_LINE_PARK
@@ -99,6 +98,7 @@ static void wire_line(void *ctx, ew_line_t level)
  * @param ctx the port
  * @return the wire driver's clock
  */
+/* cppcheck-suppress constParameterPointer ; ew_driver_t's type */
 static uint32_t wire_now(void *ctx)
 {
     const esc_port_t *p = (const esc_port_t *)ctx;
@@ -995,9 +995,10 @@ uint8_t esc_port_quiet_mask(const esc_port_t *p)
     if (p == NULL || p->state == (uint8_t)LINK_ESC_FREE) {
         return 0u;
     }
-    return (p->target & LINK_EW_TARGET_PORT) != 0u
-               ? (uint8_t)(1u << (p->target & 0x0Fu))
-               : (uint8_t)ESC_PORT_QUIET_SLOT;
+    if ((p->target & LINK_EW_TARGET_PORT) != 0u) {
+        return (uint8_t)(1u << (p->target & 0x0Fu));
+    }
+    return (uint8_t)ESC_PORT_QUIET_SLOT;
 }
 
 uint8_t esc_port_pin_mask(const esc_port_t *p)

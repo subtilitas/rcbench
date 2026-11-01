@@ -181,7 +181,7 @@ TEST_CASE(the_supply_holds_for_a_write_and_its_tail)
 
 TEST_CASE(the_blocks_of_the_data_page)
 {
-    uint16_t v[LINK_ED_COUNT];
+    uint16_t v[LINK_ED_COUNT] = { 0u };
     uint8_t b[LINK_ED_BLOCK_BYTES];
 
     up_am_rig();
@@ -280,7 +280,7 @@ TEST_CASE(the_line_register_follows_the_capture)
 {
     static const uint8_t k_faults[] = { F_ABORTED, F_OVERFLOW };
     static const uint8_t k_tx[2] = { 0xFDu, 0x00u };
-    uint8_t rx[1];
+    static uint8_t rx[1] = { 0u };
     ew_capture_t c;
     const ew_xfer_t x = { .rate = EW_RATE_A, .n_tx = 2u, .max_rx = 1u,
                           .first_us = 1000u, .gap_us = 1000u, .tx = k_tx, .rx = rx };

@@ -85,7 +85,7 @@ TEST_CASE(a_slot_goes_to_the_line_and_comes_back)
 TEST_CASE(a_port_goes_to_the_line_and_comes_back)
 {
     up_am_rig();
-    open_target(LINK_EW_TARGET_PORT | 0u);
+    open_target(LINK_EW_TARGET_PORT);
     CHECK_EQ(esc_port_state(&g_p), LINK_ESC_OPEN);
     CHECK_EQ(g.last_pin, 13u);
     CHECK_EQ(esc_port_quiet_mask(&g_p), 1u);
