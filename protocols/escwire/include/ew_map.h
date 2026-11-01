@@ -39,7 +39,7 @@ typedef enum {
 #define EW_E32_KEYS 46u
 /** @brief Bytes of an ESCape32 page: this module's picture of its keys, each a
  *         16-bit integer, low byte first, in the order of ew_map_e32. */
-#define EW_MAP_LEN_E32 (EW_E32_KEYS * 2u)
+#define EW_MAP_LEN_E32 92u
 /** @brief The ESCape32 revision this module writes. */
 #define EW_E32_REVISION 17u
 /** @brief The most characters of ESCape32's `music` value. */

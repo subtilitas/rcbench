@@ -80,9 +80,9 @@ static void sim_text_show_lines(sim_t *e)
     }
 }
 
-static void sim_text_set(sim_t *e, char *args)
+static void sim_text_set(sim_t *e, const char *args)
 {
-    char *blank = strchr(args, ' ');
+    const char *blank = strchr(args, ' ');
     size_t slot = 0u;
 
     if (blank == NULL) {
@@ -113,7 +113,7 @@ static void sim_text_set(sim_t *e, char *args)
 }
 
 /* One line as the ESC reads it, its LF taken off. */
-static void sim_text_command(sim_t *e, char *s, uint8_t fault)
+static void sim_text_command(sim_t *e, const char *s, uint8_t fault)
 {
     if (strcmp(s, "reset") == 0 || strncmp(s, "throt", 5u) == 0
         || strcmp(s, "play") == 0 || strcmp(s, "beep") == 0) {

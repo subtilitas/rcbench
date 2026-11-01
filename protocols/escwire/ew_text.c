@@ -19,6 +19,23 @@
 /** @brief Every bit of that record. */
 #define ALL_KEYS ((MUSIC_BIT << 1) - 1ull)
 
+/**
+ * @brief Characters into a line, which holds no NUL.
+ * @param out takes them
+ * @param s   the characters
+ * @return their count
+ */
+static size_t put_chars(uint8_t *out, const char *s)
+{
+    size_t i = 0u;
+
+    while (s[i] != '\0') {
+        out[i] = (uint8_t)s[i];
+        i++;
+    }
+    return i;
+}
+
 size_t ew_text_word(uint8_t *out, size_t size, const char *word)
 {
     const size_t n = strlen(word);
@@ -26,7 +43,7 @@ size_t ew_text_word(uint8_t *out, size_t size, const char *word)
     if (n + 1u > size) {
         return 0u;
     }
-    memcpy(out, word, n);
+    (void)put_chars(out, word);
     out[n] = '\n';
     return n + 1u;
 }
@@ -50,8 +67,8 @@ size_t ew_text_set(uint8_t *out, size_t size, const char *key, int16_t v)
     if (total > size) {
         return 0u;
     }
-    memcpy(out, "set ", 4u);
-    memcpy(out + 4, key, key_n);
+    (void)put_chars(out, "set ");
+    (void)put_chars(out + 4, key);
     out[4u + key_n] = ' ';
     for (size_t i = 0; i < digits; ++i) {
         out[4u + key_n + 1u + i] = (uint8_t)num[digits - 1u - i];
