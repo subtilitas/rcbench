@@ -426,12 +426,19 @@ static bool fake_mounted(void *ctx)
     return true;
 }
 
+/* The names a walk gives, and the walks so far. */
+typedef struct {
+    const char *const *names;
+    int walks;
+} fake_dir_t;
+
 static bool fake_walk(void *ctx, servo_store_visit_fn visit, void *visit_ctx)
 {
-    const char *const *names = (const char *const *)ctx;
+    fake_dir_t *dir = ctx;
 
-    for (size_t i = 0u; names[i] != NULL; ++i) {
-        visit(names[i], false, visit_ctx);
+    dir->walks++;
+    for (size_t i = 0u; dir->names[i] != NULL; ++i) {
+        visit(dir->names[i], false, visit_ctx);
     }
     return true;
 }
@@ -443,10 +450,11 @@ TEST_CASE(the_names_on_the_card)
     const char *names[] = { "ESCW001.TXT", "escw041.txt", "ESCW.TXT",
                             "ESCW1000.TXT", "KST002.TXT", NULL };
     const char *full[] = { "ESCW999.TXT", NULL };
+    fake_dir_t dir = { names, 0 };
     servo_store_io_t io;
 
     memset(&io, 0, sizeof(io));
-    io.ctx = (void *)names;
+    io.ctx = &dir;
     io.stem = EW_FILE_STEM;
     io.mounted = fake_mounted;
     io.walk = fake_walk;
@@ -455,9 +463,10 @@ TEST_CASE(the_names_on_the_card)
     CHECK_EQ(servo_store_preset(&io, base, sizeof(base)), SERVO_STORE_OK);
     CHECK_STR_EQ(base, "ESCW042");
     /* 999 taken: the lowest free one. */
-    io.ctx = (void *)full;
+    dir.names = full;
     CHECK_EQ(servo_store_preset(&io, base, sizeof(base)), SERVO_STORE_OK);
     CHECK_STR_EQ(base, "ESCW001");
+    CHECK_EQ(dir.walks, 2);
     /* The record is no file of a save. */
     CHECK_EQ(servo_store_name_check(EW_FILE_STEM, "ESCW"),
              SERVO_STORE_NAME_RESERVED);
