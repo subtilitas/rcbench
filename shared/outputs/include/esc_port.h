@@ -69,20 +69,20 @@ extern "C" {
 typedef struct {
     void *ctx;        /**< the first argument of each hook                  */
     uint8_t ports;    /**< programming ports the build has                  */
-    /** The pin of a throttle slot or a DShot port the IOmcu holds now, else
+    /** @brief The pin of a throttle slot or a DShot port the IOmcu holds now, else
      *  ESC_PORT_NO_PIN.  @p is_port false: @p index is a slot. */
     uint8_t (*pin)(void *ctx, bool is_port, uint8_t index);
-    /** Take the pin from its output and open the wire on it, parked.  False
+    /** @brief Take the pin from its output and open the wire on it, parked.  False
      *  when the line gets no resources; give() returns the pin. */
     bool (*take)(void *ctx, uint8_t pin);
-    /** Close the line and give the pin back as its output had it, moving nothing
+    /** @brief Close the line and give the pin back as its output had it, moving nothing
      *  else.  False when its output did not take it back. */
     bool (*give)(void *ctx);
-    /** What the supply says now; the build's PD mini. */
+    /** @brief What the supply says now; the build's PD mini. */
     void (*supply)(void *ctx, supply_port_view_t *out);
-    /** Ask the supply on at @p mv and @p ma, or off.  False when not taken. */
+    /** @brief Ask the supply on at @p mv and @p ma, or off.  False when not taken. */
     bool (*supply_set)(void *ctx, bool on, uint16_t mv, uint16_t ma);
-    /** An error or a stop: every other supply of the bench off (PROG_SUPPLY). */
+    /** @brief An error or a stop: every other supply of the bench off (PROG_SUPPLY). */
     void (*others_off)(void *ctx);
     ew_driver_t driver; /**< the wire driver; now_us() works while closed   */
 } esc_port_hw_t;

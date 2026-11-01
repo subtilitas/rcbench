@@ -32,11 +32,11 @@ extern "C" {
 
 /** @brief The way to the page and to the console's output. */
 typedef struct {
-    /** Read ESC_WIRE. */
+    /** @brief Read ESC_WIRE. */
     void (*read)(uint8_t off, uint8_t n, uint16_t *out);
-    /** Write ESC_WIRE; 0 or a link_nack_t. */
+    /** @brief Write ESC_WIRE; 0 or a link_nack_t. */
     uint8_t (*write)(uint8_t off, uint8_t n, const uint16_t *in);
-    /** One line out, printf style. */
+    /** @brief One line out, printf style. */
     void (*say)(const char *fmt, ...);
 } esc_console_io_t;
 
