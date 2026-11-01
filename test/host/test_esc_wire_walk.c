@@ -170,7 +170,6 @@ TEST_CASE(a_connect_above_supplys_limit_goes_nowhere)
     memset(&c, 0, sizeof(c));
     c.target = 2u;
     c.power.power = LINK_ESC_SWITCHED;
-    c.power.mv = top_mv;
     c.power.ma = top_ma;
     c.power.off_ms = ESC_WIRE_OFF_DEFAULT_MS;
     c.power.hold_ms = 1000u;
