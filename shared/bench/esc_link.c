@@ -404,7 +404,6 @@ static void ask_urgent(esc_link_t *l, link_esc_op_t op)
         /* Gone with no answer yet: not sent again.  A read says whether the
          * page took it, and the STOP or ABORT goes to what that shows. */
         l->doubt = 1u;
-        l->poll_now = 1u;
     }
     /* ABORT is the stronger one: a STOP owed does not hold it back. */
     if (l->urgent != (uint8_t)LINK_ESC_OP_ABORT) {
