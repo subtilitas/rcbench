@@ -42,6 +42,7 @@
 
 #include "esc_link.h"
 #include "ew_file.h"
+#include "ew_map.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +50,13 @@ extern "C" {
 
 /** @brief A command not carried out this long after it went is given up, ms. */
 #define ESC_PROG_CMD_WAIT_MS 2000u
+
+/** @brief The highest voltage SUPPLY takes, mV. */
+#define ESC_PROG_MAX_MV 20000u
+/** @brief The lowest limit SUPPLY takes, mA. */
+#define ESC_PROG_MIN_MA 50u
+/** @brief The highest limit SUPPLY takes, mA. */
+#define ESC_PROG_MAX_MA 3000u
 
 /** @brief What a command asks the link. */
 typedef enum {
@@ -138,6 +146,7 @@ typedef enum {
     ESC_PROG_MSG_RESTARTED,     /**< the IOmcu started again, or another writer */
     ESC_PROG_MSG_NACK,          /**< a frame refused: detail, a link_nack_t   */
     ESC_PROG_MSG_DROPPED,       /**< a stop came before the command went      */
+    ESC_PROG_MSG_ABORTED,       /**< ABORT ended it; the pin stays held       */
     ESC_PROG_MSG_HAND_WAIT,     /**< BY HAND: connect the ESC's power         */
     ESC_PROG_MSG_READ_DONE,     /**< the page is read                         */
     ESC_PROG_MSG_WRITE_DONE,    /**< written and read back                    */
@@ -176,6 +185,7 @@ typedef struct {
     esc_prog_cmd_t out;      /**< it                                          */
     esc_prog_connect_t conn; /**< CONNECT's values                            */
     uint16_t flags_seen;     /**< LINK_EW_F_FAULT and _STOPPED at the last feed */
+    uint8_t  aborted;        /**< ABORT went: the outcome it cuts is its own  */
     esc_prog_msg_t msg;      /**< the last message                            */
     uint16_t detail;         /**< its code                                    */
     uint8_t  backup_state;   /**< an esc_prog_backup_t                        */
@@ -236,6 +246,15 @@ esc_prog_msg_t esc_prog_powered(esc_prog_t *p);
 esc_prog_msg_t esc_prog_read(esc_prog_t *p);
 
 /**
+ * @brief ENTER again on a pin held in OPEN.  The power is the caller's, what its page
+ *        shows: the model keeps none of its own for this.
+ * @param p The model.
+ * @param c The values; its target is not used, as the pin stays held.
+ * @return ESC_PROG_MSG_NONE when it goes, else why not.
+ */
+esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p, const esc_prog_connect_t *c);
+
+/**
  * @brief WRITE a draft of the read copy.
  * @param p     The model.
  * @param draft The draft.
@@ -286,6 +305,13 @@ esc_prog_msg_t esc_prog_message(const esc_prog_t *p, uint16_t *detail);
  * @return true then.
  */
 bool esc_prog_holds_port(const esc_prog_t *p);
+
+/**
+ * @brief Whether a flow runs or a command is out.
+ * @param p The model.
+ * @return true then.
+ */
+bool esc_prog_busy(const esc_prog_t *p);
 
 /**
  * @brief Whether a command may go with a stop latched at the panel: CLOSE and
@@ -345,6 +371,41 @@ size_t esc_prog_backup_text(const esc_prog_t *p, char *out, size_t size);
  * @param p The model.
  */
 void esc_prog_backup_settled(esc_prog_t *p);
+
+/** @brief Why the session has no backup to make. */
+typedef enum {
+    ESC_PROG_NO_BACKUP_HAS = 0,   /**< one can be made                        */
+    ESC_PROG_NO_BACKUP_NOT_READ,  /**< no read copy                           */
+    ESC_PROG_NO_BACKUP_ERASED,    /**< an erased page is no backup            */
+    ESC_PROG_NO_BACKUP_MUSIC,     /**< `music` holds a byte the format has not */
+    ESC_PROG_NO_BACKUP_FORMAT,    /**< the read copy gives no file            */
+} esc_prog_no_backup_t;
+
+/**
+ * @brief Why no backup can be made of the read copy.
+ * @param p The model.
+ * @return ESC_PROG_NO_BACKUP_HAS, or why not.
+ */
+esc_prog_no_backup_t esc_prog_no_backup(const esc_prog_t *p);
+
+/** @brief The first line of the record of a write. */
+#define ESC_PROG_RECORD_HEAD "RCBENCH ESCW RECORD 1"
+/** @brief Bytes of the record of a write: a line per ESCape32 key changed in front
+ *         of a whole file. */
+#define ESC_PROG_RECORD_MAX (EW_FILE_MAX + (size_t)EW_E32_KEYS * 72u + 64u)
+
+/**
+ * @brief The record of a write for the card, ESCW.TXT: a first line, the target
+ *        and its GPIO, one line `NAME: old -> new` per field the draft changes,
+ *        `before`, then the ESC as read in the text of ew_file.h.
+ * @param p     The model.
+ * @param draft The draft, of the read copy's length.
+ * @param out   Takes the text, without a terminator.
+ * @param size  Bytes at @p out; ESC_PROG_RECORD_MAX always fits.
+ * @return Bytes written; 0 with no read copy, or for a @p size too small.
+ */
+size_t esc_prog_record_text(const esc_prog_t *p, const uint8_t *draft, char *out,
+                            size_t size);
 
 /**
  * @brief A file against the ESC: what a load changes.

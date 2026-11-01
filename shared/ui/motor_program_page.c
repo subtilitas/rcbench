@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "esc_wire_panel.h"
 #include "motor_screen.h"
 #include "prog_registry.h"
 #include "supply_screen.h"
@@ -273,6 +274,25 @@ static void supply_text(char *out, size_t size)
              ma / 1000u, ma % 1000u / 10u);
 }
 
+/**
+ * @brief The strip's output: the signal-wire session names the pin it holds or would
+ *        take, every other the throttle's.
+ * @param out   Takes the text.
+ * @param size  Bytes at @p out.
+ * @param proto The throttle's protocol.
+ * @param pins  The pins bound as throttle.
+ * @param known Whether the binding is read.
+ * @return true when the text is a warning.
+ */
+static bool strip_target(char *out, size_t size, uint8_t proto, uint64_t pins,
+                         bool known)
+{
+    if (mpp_shown() == &esc_wire_pages) {
+        return esc_wire_panel_target_text(out, size);
+    }
+    return motor_throttle_target(out, size, proto, pins, known, STRIP_TARGET_CELLS);
+}
+
 size_t motor_output_strip(char *out, size_t size, uint8_t proto,
                           uint64_t pins, bool known, bool armed, bool *warn)
 {
@@ -280,8 +300,7 @@ size_t motor_output_strip(char *out, size_t size, uint8_t proto,
         return 0u;
     }
     char target[48];
-    const bool w = motor_throttle_target(target, sizeof(target), proto, pins,
-                                         known, STRIP_TARGET_CELLS);
+    const bool w = strip_target(target, sizeof(target), proto, pins, known);
     if (warn != NULL) {
         *warn = w;
     }
@@ -321,8 +340,7 @@ void mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins,
 {
     gfx_fill_rect(c, 0, 0, W, PROG_FULL_Y, ui_theme_color(UI_C_BG));
     char target[48];
-    const bool warn = motor_throttle_target(target, sizeof(target), proto,
-                                            pins, known, STRIP_TARGET_CELLS);
+    const bool warn = strip_target(target, sizeof(target), proto, pins, known);
     char sup[40];
     supply_text(sup, sizeof(sup));
     const int y = PROG_FULL_STRIP_Y;

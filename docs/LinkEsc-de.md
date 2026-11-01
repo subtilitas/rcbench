@@ -110,8 +110,8 @@ Leitung der Page, der PD mini und PROG_SUPPLY sind alles, was der IOmcu an hat.
 
 ## Die Hälfte des Panels
 
-`shared/bench/esc_link.c` fragt und folgt; es läuft auf jedem Panel, noch ohne Screen, es
-ist also nur der Alert unten zu sehen.
+`shared/bench/esc_link.c` fragt und folgt; es läuft auf jedem Panel.
+[ESC-Signalleitung](EscWire-de.md) beschreibt den Screen; der Alert unten erscheint auf jedem Screen.
 
 | Ereignis | Was das Panel tut |
 |---|---|
@@ -139,8 +139,8 @@ Die Hälfte der SUPPLY-Page (`shared/bench/supply_link.c`) unter einem Halten:
 
 - **Ein zurückgekehrter Link behält das Halten.** Bedingung: der Link war über 200ms still,
   ohne Panel-Neustart. Die Page bleibt `OPEN` und `STOPPED` mit gesetztem Quiet-Bit, die Bank
-  kann also nicht armen. Das ist die sichere Seite. Ohne Screen führen `esc close` auf der
-  Bench-Konsole oder ein IOmcu- oder Panel-Neustart heraus.
+  kann also nicht armen. Das ist die sichere Seite. Heraus führen CLOSE auf dem Screen, `esc close`
+  auf der Bench-Konsole oder ein IOmcu- oder Panel-Neustart.
 - **Ein von der Bench-Konsole gehaltener Pin geht mit einem Panel-Neustart.** Bedingung:
   `esc open` auf der Konsole, dann ein Panel-Neustart. Das Panel unterscheidet ihn nicht vom
   eigenen.
@@ -242,7 +242,7 @@ dasselbe außer `READS` und `READ_CRC`.
 | jedes | 4.33 oder älter | beide Pages `BAD_PAGE`; `LINK_CAP_PROGRAM` wird nicht gemeldet |
 | 4.33 oder älter | 4.34 | es fasst die Pages nie an; nichts ist gehalten |
 
-Das Panel nutzt die Pages noch nicht: kein Screen treibt sie in diesem Image.
+Der Screen [ESC-Signalleitung](EscWire-de.md) des Panels treibt beide Pages.
 
 ## Was nicht gemessen ist
 

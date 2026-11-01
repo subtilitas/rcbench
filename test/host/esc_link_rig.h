@@ -17,6 +17,8 @@ static int g_drop_cmd;      /* commands the page takes and does not answer */
 static int g_exchanges;
 static int g_commands;
 static uint8_t g_corrupt;   /* read-copy blocks come back with a wrong byte */
+static uint16_t g_len_over;  /* LINK_EW_LEN reads this, not 0 */
+static uint32_t g_blocks;    /* bit n: block n of the read copy was read */
 
 static int link_xchg(void *ctx, const esc_link_xfer_t *x, uint16_t *regs)
 {
@@ -47,8 +49,12 @@ static int link_xchg(void *ctx, const esc_link_xfer_t *x, uint16_t *regs)
     }
     if (x->page == LINK_PAGE_ESC_WIRE) {
         esc_port_read(&g_p, x->off, x->n, regs);
+        if (g_len_over != 0u && x->off + x->n > LINK_EW_LEN) {
+            regs[LINK_EW_LEN - x->off] = g_len_over;
+        }
     } else {
         esc_port_data_read(&g_p, x->off, x->n, regs);
+        g_blocks |= 1ul << (reg(LINK_EW_BLOCK) & 31u);
         if (g_corrupt != 0u && reg(LINK_EW_BLOCK) < LINK_ED_DRAFT) {
             regs[0] ^= 0x0101u;
         }
@@ -84,6 +90,8 @@ static void link_up(void)
     esc_link_came_up(&g_l, ESC_LINK_MINOR);
     g_drop = 0;
     g_drop_cmd = 0;
+    g_len_over = 0u;
+    g_blocks = 0u;
     g_exchanges = 0;
     g_commands = 0;
     g_corrupt = 0u;

@@ -40,6 +40,7 @@
  */
 
 #include "esc_stick_panel.h"
+#include "esc_wire_panel.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -289,7 +290,8 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
     /* A run arms the bench, and programming a servo and an armed bench
      * are exclusive. */
     if (prog_reg_servo_holds()) {
-        snprintf(st->note, sizeof(st->note), "%s", TR(SP_KST_HELD));
+        snprintf(st->note, sizeof(st->note), "%s",
+                 esc_wire_panel_holds_port() ? TR(SP_ESC_HELD) : TR(SP_KST_HELD));
         return false;
     }
     const char *why = NULL;

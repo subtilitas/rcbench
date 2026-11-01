@@ -70,8 +70,10 @@
  * the card's task reads.  A KST file (first line "KST servo
  * configuration, format ...") that holds a checksum line loses that line
  * on a SAVE of a changed text, so the servo programmer reads it as EDITED
- * (kst_file.h); the note says so.  An ESC profile the panel reads at its
- * start says that it is read at the next start.
+ * (kst_file.h); the note says so.  An ESC settings file (first line "ESC settings
+ * backup, format ...") with a checksum line gets `edited` in its place, so the ESC
+ * programmer reads its field lines (ew_file.h); the note says so.  An ESC profile the
+ * panel reads at its start says that it is read at the next start.
  *
  * REVERT, and leaving the editor with the home tag while the text differs
  * from the card, ask first: UNSAVED CHANGES, STAY or DISCARD.  DISCARD
@@ -401,7 +403,7 @@ bool text_view_back(void);
 void text_view_ask_open(void);
 
 /**
- * @brief Start a save: a KST file's checksum line goes (see the top), the
+ * @brief Start a save: a KST file's checksum line goes, an ESC file's says edited (see the top), the
  *        text is held unchanged until text_view_saved(), and the note says
  *        that it is saved.
  * @return the bytes the file takes, its BOM included

@@ -855,7 +855,7 @@ TEST_CASE(a_wire_hold_locks_arm_and_drops_the_ask)
     while (servo_screen_take(&c)) { }
     ui_router_set_alert(NULL);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
-    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_PROG));
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
     ticks(2.5f);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
     while (servo_screen_take(&c)) {
@@ -874,12 +874,28 @@ TEST_CASE(a_wire_hold_locks_arm_and_drops_the_ask)
     }
     CHECK(armed);
     CHECK(servo_screen_arm_asked());
+    ui_router_set_alert(NULL);
     f.rd.held = true;
     esc_wire_panel_feed(&f);
     ticks(0.1f);
+    /* The drop says why, whatever the IOmcu's refusal does. */
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
     f.rd.held = false;
     esc_wire_panel_feed(&f);
     ticks(0.1f);
+    CHECK(!servo_screen_arm_asked());
+    /* The hold comes while ARM is held, before the 2s: no ask, and an alert. */
+    while (servo_screen_take(&c)) { }
+    ui_router_set_alert(NULL);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+    ticks(1.0f);
+    CHECK(ui_router_alert() == NULL || ui_router_alert()[0] == '\0');
+    f.rd.held = true;
+    esc_wire_panel_feed(&f);
+    ticks(1.5f);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
+    CHECK(!servo_screen_take(&c) || c.kind != SERVO_CMD_ARM);
     CHECK(!servo_screen_arm_asked());
     while (servo_screen_take(&c)) { }
     memset(&f, 0, sizeof(f));

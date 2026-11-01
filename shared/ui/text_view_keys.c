@@ -27,6 +27,8 @@
 /** @brief The first line of a KST file, up to its format number
  *         (kst_file.h). */
 static const char k_kst_head[] = "KST servo configuration, format ";
+/** @brief The first line of an ESC settings file (ew_file.h). */
+static const char k_esc_head[] = "ESC settings backup, format ";
 
 /** @brief DISCARD on the host's question: TEXT_VIEW_LEAVE is to be taken. */
 static bool s_leave;
@@ -34,6 +36,8 @@ static bool s_leave;
 static bool s_reload;
 /** @brief The save under way took a KST file's checksum line out. */
 static bool s_kst_cut;
+/** @brief The save under way put `edited` in an ESC file's checksum line. */
+static bool s_esc_edited;
 
 /* ------------------------------------------------------------- the rules */
 
@@ -249,6 +253,7 @@ static bool discard(void)
     tv_clamp_top();
     tv.note = TV_NOTE_NONE;
     s_kst_cut = false;              /* the checksum line is back */
+    s_esc_edited = false;
     ++tv.rev;
     return true;
 }
@@ -482,6 +487,7 @@ void tv_edit_tap(int x, int y)
 }
 
 static bool kst_cut(void);
+static bool esc_edited(void);
 static bool nul_ahead(void);
 
 text_view_result_t tv_edit_button(int hit)
@@ -500,6 +506,7 @@ text_view_result_t tv_edit_button(int hit)
             return TEXT_VIEW_NONE;
         }
         s_kst_cut = kst_cut() || s_kst_cut;   /* a refused SAVE cut it */
+        s_esc_edited = esc_edited() || s_esc_edited;
         if (nul_ahead()) {
             tv_say(TX_ED_NUL_AHEAD);
             ++tv.rev;
@@ -524,6 +531,125 @@ text_view_result_t tv_edit_button(int hit)
 }
 
 /* -------------------------------------------------------------- the save */
+
+/**
+ * @brief Whether a line's first word, in any case, is @p word.
+ * @param b    the line
+ * @param len  its bytes
+ * @param word the word, lower case
+ * @return true then
+ */
+static bool line_word_is(const char *b, size_t len, const char *word)
+{
+    size_t at = 0u;
+    size_t w = 0u;
+
+    while (at < len && (b[at] == ' ' || b[at] == '\t')) {
+        ++at;
+    }
+    for (; word[w] != '\0'; ++w, ++at) {
+        if (at >= len || (b[at] | 0x20) != word[w]) {
+            return false;
+        }
+    }
+    return at == len || b[at] == ' ' || b[at] == '\t' || b[at] == '=' || b[at] == ':'
+           || b[at] == '\r';
+}
+
+/**
+ * @brief Whether a line holds nothing but blanks.
+ * @param b   the line
+ * @param len its bytes
+ * @return true then
+ */
+static bool line_blank(const char *b, size_t len)
+{
+    for (size_t i = 0u; i < len; ++i) {
+        if (b[i] != ' ' && b[i] != '\t' && b[i] != '\r') {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief An ESC settings file's checksum line goes and `edited` becomes its last
+ *        line that is not blank (ew_file.h): lines a person added behind the checksum
+ *        stay ahead of it.  A file cut at any byte has neither word and stays as it is.
+ * @return true when the text is an ESC file that held either
+ */
+static bool esc_edited(void)
+{
+    static const char k_word[] = "edited";
+    size_t len = 0u;
+    const char *head = text_buf_line(&tv_tb, 0u, &len);
+    const size_t hn = sizeof(k_esc_head) - 1u;
+
+    if (head == NULL || len < hn || memcmp(head, k_esc_head, hn) != 0) {
+        return false;
+    }
+    const size_t cur = text_buf_cursor(&tv_tb);
+    size_t last = 0u;
+    size_t marks = 0u;
+    bool last_edited = false;
+
+    for (size_t i = 1u; i < text_buf_lines(&tv_tb); ++i) {
+        const char *b = text_buf_line(&tv_tb, i, &len);
+
+        if (b == NULL || line_blank(b, len)) {
+            continue;
+        }
+        const bool sum = line_word_is(b, len, "checksum");
+        const bool ed = line_word_is(b, len, k_word);
+
+        marks += sum || ed ? 1u : 0u;
+        last = i;
+        last_edited = ed;
+    }
+    if (marks == 0u) {
+        return false;
+    }
+    if (marks == 1u && last_edited) {
+        return true;
+    }
+    /* Every word out, from the bottom, so the lines above keep their numbers. */
+    for (size_t i = last + 1u; i-- > 1u;) {
+        const char *b = text_buf_line(&tv_tb, i, &len);
+
+        if (b == NULL || (!line_word_is(b, len, "checksum")
+                          && !line_word_is(b, len, k_word))) {
+            continue;
+        }
+        const size_t end = text_buf_len(&tv_tb) - len;
+        bool more = true;
+
+        text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, i));
+        while (more && text_buf_len(&tv_tb) > end) {
+            more = text_buf_delete_after(&tv_tb);
+        }
+        /* The line's own end, so no empty line stays where it was. */
+        (void)text_buf_delete_after(&tv_tb);
+    }
+    /* Behind the last line that is left and is not blank. */
+    size_t at = text_buf_lines(&tv_tb);
+
+    while (at-- > 1u) {
+        const char *b = text_buf_line(&tv_tb, at, &len);
+
+        if (b != NULL && !line_blank(b, len)) {
+            break;
+        }
+    }
+    (void)text_buf_line(&tv_tb, at, &len);
+    text_buf_set_cursor(&tv_tb, text_buf_line_start(&tv_tb, at) + len);
+    (void)text_buf_insert_eol(&tv_tb);
+    for (size_t k = 0u; k + 1u < sizeof(k_word); ++k) {
+        (void)text_buf_insert(&tv_tb, (uint32_t)k_word[k]);
+    }
+    text_buf_set_cursor(&tv_tb, cur < text_buf_len(&tv_tb) ? cur : text_buf_len(&tv_tb));
+    tv_clamp_top();
+    return true;
+}
 
 /**
  * @brief Whether line @p line is a checksum line, by the programmer's own
@@ -665,9 +791,11 @@ text_view_result_t text_view_saved(fm_err_t err, bool stopped,
         tv.size = text_buf_size(&tv_tb);    /* the header: as saved */
         keep_original();
         tv_say(s_kst_cut ? TX_ED_SAVED_KST
+               : s_esc_edited ? TX_ED_SAVED_EW
                : restart ? TX_ED_SAVED_ESC
                          : TX_ED_SAVED);
         s_kst_cut = false;          /* a failed save keeps it for the next */
+        s_esc_edited = false;
         /* A question asked while it saved has no changes left to lose:
          * what it held goes on. */
         const text_view_ask_t ask = tv.ask;

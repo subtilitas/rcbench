@@ -94,11 +94,21 @@ def test_fills_within_the_tolerance_pass_and_past_it_fail():
     The tolerance absorbs a change of layout elsewhere in the sources, not a
     run that differs: test_a_mode_measures_the_same_twice_* holds that.
     """
-    near = fc.table([("frame", 10150), ("overview", 990)], 64, 60.38, None)
+    near = fc.table([("frame", 10450), ("overview", 1350)], 64, 60.38, None)
     assert fc.block_problems("P.md", block(near), block(GOOD)) == []
-    far = fc.table([("frame", 10300), ("overview", 900)], 64, 60.38, None)
+    far = fc.table([("frame", 10600), ("overview", 900)], 64, 60.38, None)
     assert fc.block_problems("P.md", block(far), block(GOOD)) == [
-        "P.md says frame costs 10,300 fills; it costs 10,000"]
+        "P.md says frame costs 10,600 fills; it costs 10,000"]
+
+
+def test_a_large_row_is_held_to_its_percentage():
+    """Above about 16,700 fills, 3% is the wider of the two tolerances."""
+    good = fc.table([("frame", 100000), ("overview", 1000)], 64, 60.38, None)
+    near = fc.table([("frame", 102900), ("overview", 1000)], 64, 60.38, None)
+    assert fc.block_problems("P.md", block(near), block(good)) == []
+    far = fc.table([("frame", 103100), ("overview", 1000)], 64, 60.38, None)
+    assert fc.block_problems("P.md", block(far), block(good)) == [
+        "P.md says frame costs 103,100 fills; it costs 100,000"]
 
 
 def test_a_missing_mode_fails():

@@ -15,6 +15,7 @@
 #include "greatest.h"
 #include "shot_facts_rig.h"
 
+#include "esc_wire_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "outputs_screen.h"
@@ -831,8 +832,8 @@ TEST_CASE(program_offers_search_over_nine_rows_and_narrows_the_list)
     prog_registry_use(NULL, 0);
     size_t n = 0;
     (void)prog_registry(&n);
-    CHECK_EQ(n, 3u);        /* the shipped table: KST, Hitec and the stick
-                             * menu */
+    CHECK_EQ(n, 4u);        /* the shipped table: KST, Hitec, the stick menu
+                             * and the ESC signal wire */
 }
 
 /* ------------------------------------------------- finger-sized controls */
@@ -1040,6 +1041,35 @@ TEST_CASE(a_runs_stops_are_a_finger_tall_and_clear_of_the_alert_band)
     CHECK(!servo_screen_testing());
 }
 
+/* ARM with a signal-wire session holding a pin: no ask, and the alert names it. */
+TEST_CASE(arm_under_a_wire_session_says_the_esc_programmer_holds_it)
+{
+    esc_prog_feed_t f;
+    servo_cmd_t c;
+
+    fresh();
+    memset(&f, 0, sizeof(f));
+    f.rd.known = true;
+    f.rd.held = true;
+    f.rd.state = LINK_ESC_READY;
+    esc_wire_panel_feed(&f);
+    ui_router_set_alert(NULL);
+    arm_press();
+    hold_for(2.5f);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
+    arm_release();
+    bool asked = false;
+
+    while (servo_screen_take(&c)) {
+        asked = asked || c.kind == SERVO_CMD_ARM;
+    }
+    CHECK(!asked);
+    f.rd.held = false;
+    f.rd.state = 0u;
+    esc_wire_panel_feed(&f);
+    ui_router_set_alert(NULL);
+}
+
 int main(void)
 {
     RUN(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing);
@@ -1063,5 +1093,6 @@ int main(void)
     RUN(the_output_page_names_the_tester_port_read_only);
     RUN(the_as5600_lives_on_sensors);
     RUN(the_knob_moves_the_horn_on_live_alone);
+    RUN(arm_under_a_wire_session_says_the_esc_programmer_holds_it);
     return test_summary("servo_workbench");
 }

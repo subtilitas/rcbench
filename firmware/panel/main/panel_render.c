@@ -668,4 +668,21 @@ void esc_wire_ui_service(void)
             break;
         }
     }
+    if (esc_wire_panel_card_look()) {
+        (void)storage_check();
+    }
+    /* The files: the log task has the card.  No card call is made here. */
+    static bool card_out;
+
+    if (card_out
+        && atomic_load(&s_esc_card_answered) == atomic_load(&s_esc_card_sent)) {
+        card_out = false;
+        esc_wire_panel_card_done(&s_esc_card_done);
+    }
+    if (!card_out && esc_wire_panel_card_take(&s_esc_card_req)) {
+        /* Before the count, which hands the request over. */
+        s_esc_card_mount = storage_mount_count();
+        atomic_fetch_add(&s_esc_card_sent, 1u);
+        card_out = true;
+    }
 }

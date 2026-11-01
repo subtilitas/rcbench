@@ -630,6 +630,85 @@ TEST_CASE(a_stop_in_a_gap_of_the_link_reaches_the_page)
     esc_link_stop_follow(NULL, 1u);
 }
 
+/* The copy holds the page's blocks and no block from the draft on: the page's last
+ * block lands at its own bytes.  The limit of 4 blocks holds against any length the
+ * page reports. */
+TEST_CASE(the_copy_takes_the_page_blocks_and_stops_before_the_draft)
+{
+    esc_link_outcome_t o;
+
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    g_blocks = 0u;
+    CHECK_EQ(esc_link_read(&g_l, 5u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 20000u));
+    link_run(200u);
+    const esc_link_image_t *im = esc_link_image(&g_l);
+
+    CHECK(im->gen != 0u);
+    CHECK_EQ(im->len, EW_MAP_LEN_AM);
+    CHECK_EQ(memcmp(im->page, esc.am, EW_MAP_LEN_AM), 0);
+    CHECK((g_blocks & (1ul << LINK_ED_DRAFT)) == 0u);
+    /* The name went to the name, not over the page's last bytes. */
+    CHECK_STR_EQ(im->name, "BOARD_F421");
+
+    /* A length no page has. */
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    g_len_over = (uint16_t)(5u * LINK_ED_BLOCK_BYTES);
+    g_blocks = 0u;
+    CHECK_EQ(esc_link_read(&g_l, 6u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 20000u));
+    link_run(200u);
+    CHECK((g_blocks & (1ul << LINK_ED_DRAFT)) == 0u);
+    CHECK((g_blocks & (1ul << (LINK_ED_READ + 3u))) != 0u);
+}
+
+/* `ours` goes with a free page: a hold another writer takes after it is not this
+ * panel's. */
+TEST_CASE(a_free_read_ends_ours)
+{
+    esc_link_readout_t rd;
+
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    esc_link_readout(&g_l, &rd);
+    CHECK(rd.ours);
+    /* The console frees the pin, and takes it again. */
+    (void)cmd(LINK_ESC_OP_CLOSE);
+    link_run(500u);
+    esc_link_readout(&g_l, &rd);
+    CHECK(!rd.held);
+    CHECK(!rd.ours);
+    open_target(2u);
+    link_run(100u);
+    esc_link_readout(&g_l, &rd);
+    CHECK(rd.held);
+    CHECK(!rd.ours);
+}
+
+/* Why a page is not written reaches the readout. */
+TEST_CASE(the_readout_says_why_a_page_is_not_written)
+{
+    esc_link_readout_t rd;
+    esc_link_outcome_t o;
+
+    sim_init_am(&esc, 3u, 2u);
+    esc.am[1] = 5u;     /* a revision above any written here */
+    rig_up();
+    link_up();
+    link_ready(2u);
+    CHECK_EQ(esc_link_read(&g_l, 5u), ESC_LINK_START_OK);
+    (void)link_wait(&o, 20000u);
+    link_run(100u);
+    esc_link_readout(&g_l, &rd);
+    CHECK_EQ(rd.why, EW_WHY_NEW_REVISION);
+    CHECK((rd.flags & LINK_EW_F_WRITABLE) == 0u);
+}
+
 /* NOT_BACK from any CLOSE, no restart: the text says CLOSE tries again. */
 TEST_CASE(not_back_tries_again_without_a_restart)
 {
@@ -699,6 +778,9 @@ int main(void)
     RUN(a_refusal_is_said_as_the_page_says_it);
     RUN(errors_count_on_their_edge);
     RUN(a_stop_with_a_command_unanswered);
+    RUN(the_copy_takes_the_page_blocks_and_stops_before_the_draft);
+    RUN(a_free_read_ends_ours);
+    RUN(the_readout_says_why_a_page_is_not_written);
     RUN(failed_reads_over_a_hold_are_an_error_and_a_stop);
     RUN(failed_reads_over_a_write_are_an_error_and_a_stop);
     RUN(failed_reads_on_a_free_page_end_the_request);

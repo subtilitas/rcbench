@@ -499,6 +499,25 @@ TEST_CASE(a_port_holds_the_screen_only_where_the_ports_use_the_pd_mini)
     }
 }
 
+/* The SUPPLY page's word on a carrier is an ESC session's: it locks there too. */
+TEST_CASE(an_esc_sessions_word_holds_the_screen_on_every_board)
+{
+    supply_cmd_t c;
+
+    for (int k = 0; k < 2; ++k) {
+        fresh();
+        supply_screen_set_ports_own(k != 0);
+        supply_screen_set_page_held(true);
+        CHECK(supply_screen_port_held());
+        tap(V_UP_X, V_ROW_Y);
+        CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+        hold_on();
+        CHECK(!supply_screen_poll_cmd(&c) || !c.on);
+        supply_screen_set_page_held(false);
+        supply_screen_set_ports_own(false);
+    }
+}
+
 /* What was under way when the port left PWM ends with nothing asked. */
 TEST_CASE(a_port_that_takes_the_supply_ends_what_was_under_way)
 {
@@ -754,6 +773,7 @@ int main(void)
     RUN(a_trip_shows_on_the_mode_card);
     RUN(a_supply_held_by_a_port_takes_off_and_no_other_press);
     RUN(a_port_holds_the_screen_only_where_the_ports_use_the_pd_mini);
+    RUN(an_esc_sessions_word_holds_the_screen_on_every_board);
     RUN(a_port_that_takes_the_supply_ends_what_was_under_way);
     RUN(caps_reach_the_set_points_when_the_port_lets_go);
     RUN(the_operators_set_points_come_back_when_the_port_is_done);

@@ -334,7 +334,7 @@ void service_arming(bool link_up)
                                     .port_taken = s_prog_taken };
         if (arming_handshake_step(&s_arm, ARMING_HS_HANDED, &facts, now_ms())
             == ARMING_HS_PROG) {
-            control_alert(TR(ALERT_ARM_PROG));
+            control_alert(esc_taken() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG));
             break;
         }
         /*
@@ -681,7 +681,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
         if (arms && s_prog_taken) {
             /* Programming a servo and an armed bench are exclusive,
              * whichever screen asks. */
-            control_alert(TR(ALERT_ARM_PROG));
+            control_alert(esc_taken() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG));
             continue;
         }
         if (arms) {

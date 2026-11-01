@@ -501,14 +501,30 @@ TEST_CASE(a_hold_drops_an_arm_already_posted)
     memset(&f, 0, sizeof(f));
     f.rd.known = true;
     f.rd.held = true;
+    ui_router_set_alert(NULL);
     esc_wire_panel_feed(&f);
     tick_for(2);
+    /* The drop says why, and names the holder. */
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
     f.rd.held = false;
     esc_wire_panel_feed(&f);
     tick_for(2);
     CHECK(!motor_screen_target_locked());
     /* Nothing is posted by it. */
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    /* A hold that comes under a press of ARM ends it, and says why. */
+    ui_router_set_alert(NULL);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(3);
+    f.rd.held = true;
+    esc_wire_panel_feed(&f);
+    tick_for(HOLD_TICKS);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    f.rd.held = false;
+    esc_wire_panel_feed(&f);
+    tick_for(2);
 }
 
 TEST_CASE(a_cancel_keeps_a_disarm_already_posted)

@@ -8,8 +8,11 @@ history is in git.
 
 ### Added
 
+- Panel: MOTOR & ESC > PROGRAM's row `AM32, Bluejay, BLHeli_S, ESCape32`, `SIGNAL WIRE` at its right, dimmed until the IOmcu reports `LINK_CAP_PROGRAM`: [ESC signal wire](docs/EscWire.md). CONNECT, identity, tabs of fields, a draft, WRITE with the warning that names each hazardous field, the backup and the record on the card, a file loaded, RESTORE FROM BACKUP on an erased AM32, LEAVE. Voltage and limit are SUPPLY's until typed.
+- SUPPLY: an ESC session's hold counts on every board. On the carrier SUPPLY refuses set points and ON under it (`SUP_HELD_REFUSED_ESC`); KST and Hitec sessions there do not lock it.
+- Panel's editor: an ESC settings file changed there has `edited` as its last line that is not blank, behind any lines added to it, and no checksum line.
 - Panel: the half of the `ESC_WIRE` and `ESC_DATA` pages (`esc_link`, `esc_prog`,
-  `esc_prog_file`), with no screen yet. A panel restart closes what the page holds at
+  `esc_prog_file`). A panel restart closes what the page holds at
   the first read, and again every 1000ms; a pin that does not come back is an error
   and an alert that names the slot or port. The STOP key is the page's STOP. `FAULT`
   and `NOT_BACK` count as errors, so all outputs go off. A held pin counts for ARM,
@@ -70,6 +73,8 @@ history is in git.
 
 ### Changed
 
+- An ARM refused by a programmer's hold names its holder: the alert, the supply's line and ESC STICK's note say ESC programmer under an `ESC_WIRE` hold. An ARM dropped by a hold, and a hold of ARM ended by one, give the alert.
+- `frame_cost.py --check-doc`: tolerance 3%, at least 500 fills. Rows under about 700 fills are not held by it.
 - SUPPLY link: after a start the panel reads the page before it writes. A port's hold
   found there is adopted, and no OFF of the panel's goes over it; the operator's OFF and
   an error's cut stay. A wiring answered `BUSY` is no refusal and goes again after the
@@ -77,6 +82,7 @@ history is in git.
 
 ### Fixed
 
+- `docs/BLHeli32.md` no longer says AM32 is fully supported.
 - IOmcu: a non-zero ARM written while a programming port is out of PWM, on KST
   or Hitec, is refused with NOT_ARMED. The ARM and THROTTLE registers are 0 when
   the hold begins and at every way out of it, with a pin given back or not. A stored ARM armed the bank in
@@ -93,6 +99,10 @@ history is in git.
 - Screenshot: a save that the bench stopped by leaving idle shows `The bench
   was busy. Nothing saved. Tap SAVE again.` when the popup opens again. A
   failure answered while the popup is shut shows its own text the same way.
+
+### Removed
+
+- `shared/ui/prog_models.c` and its parameter tables and texts.
 
 ## 0.23.4 - 2026-10-31
 

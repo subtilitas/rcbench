@@ -47,6 +47,7 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 | [DShot und die Output-Treiber](DShot-de.md) | DShot-Frames, Telemetrie und die Output-Treiber |
 | [Das OpenYGE-Protokoll](OpenYGE-de.md) | Spezifikation des ESC-Telemetrie- und Parameterprotokolls |
 | [ESC-Programmierprofile](EscProfiles-de.md) | Die Profile für die ESC-Programmierung |
+| [ESC-Signalleitung](EscWire-de.md) | Einstellungen eines ESC über die Signalleitung lesen und schreiben: AM32, Bluejay, BLHeli_S, ESCape32 |
 | [Performance](Performance-de.md) | Zeichenbudget in Cache-Line-Fills |
 | [Sprache der Oberfläche](Language-de.md) | Die Sprache der Oberfläche und ihre Texte |
 

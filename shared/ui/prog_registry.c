@@ -24,7 +24,7 @@
 #include "ui_widgets.h"
 
 /*
- * The rows.  Three live rows:
+ * The rows.  Four live rows:
  *   - SERVO: the programmer for KST and Chaservo servos on the port the
  *     SERVO screen's tester drives (GPIO 13 for port 1 on a board that has
  *     stored no other pin).  Its port is a channel of the servo PWM bank
@@ -39,9 +39,13 @@
  *     (no throttle pin, the binding not read, the supply the panel's
  *     model).  Full width: the stick panel is laid out for 776px.
  *
- * The modelled ESC and servo protocols of prog_models.h have no transport
- * on the IOmcu and get no row.  The next maker is one more row here and
- * its page_set.
+ *   - MOTOR & ESC: the ESC signal wire, AM32, Bluejay, BLHeli_S and ESCape32
+ *     on a throttle slot or a DShot port (esc_wire_panel.h).  It holds no
+ *     programming port of this list: the IOmcu's ESC_WIRE page has the pin.
+ *     It needs LINK_CAP_PROGRAM.  Full width.
+ *
+ * A row per firmware adds nothing: identification reads which one it is.  The
+ * next maker is one more row here and its page_set.
  */
 static const prog_reg_row_t k_rows[] = {
     { PROG_DEV_SERVO, UI_WB_PROGRAM, TX_PL_KST, TX_PL_GRP_PROG_PORT,
@@ -52,6 +56,9 @@ static const prog_reg_row_t k_rows[] = {
       &hitec_panel_pages, false },
     { PROG_DEV_MOTOR, UI_WB_PROGRAM, TX_PL_STICK, TX_PL_GRP_STICK,
       TX_MO_SET_THROTTLE, PROG_REG_NO_PORT, 0u, &esc_stick_pages, true },
+    { PROG_DEV_MOTOR, UI_WB_PROGRAM, TX_PL_ESC_WIRE, TX_PL_GRP_WIRE,
+      TX_PL_WIRE_TRANSPORT, PROG_REG_NO_PORT, LINK_CAP_PROGRAM, &esc_wire_pages,
+      true },
 };
 
 /* The table the lists are built from: k_rows, or one a test hands in. */
@@ -84,6 +91,11 @@ bool prog_reg_servo_holds(void)
 {
     return kst_panel_holds_port() || hitec_panel_holds_port()
            || esc_wire_panel_holds_port();
+}
+
+const char *prog_reg_hold_alert(void)
+{
+    return esc_wire_panel_holds_port() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG);
 }
 
 const prog_reg_row_t *prog_registry(size_t *count)

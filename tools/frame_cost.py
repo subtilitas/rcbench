@@ -242,12 +242,15 @@ def misses(exe: pathlib.Path, frames: int, mode: str, ll: str) -> int:
 ROW_RE = re.compile(r"^([\w-]+)\s+([\d,]+)\s")
 # The same tree gives the same fills on every run (test_frame_cost.py holds
 # it), but a change anywhere in the measured sources moves the addresses of
-# code and data, and with them the sets every line maps to.  Merging a
-# change of texts and Hitec code moved 24 of 37 modes by up to 22 fills,
-# servo-grip by 7 of 642 (1.1%).  The doc table is therefore checked to a
-# tolerance: 2% of a mode, and never less than 100 fills.
-DOC_TOLERANCE = 0.02
-DOC_FLOOR = 100
+# code and data, and with them the sets every line maps to.  18 builds of one
+# tree with other paddings and link orders gave battery-sim 3167 to 3353
+# fills, frame 9466 to 9810, servo 2236 to 2693 and settings-list-chrome 36320
+# to 37282: spreads of 186, 344, 457 and 962 fills.  The doc table is therefore
+# checked to a tolerance: the larger of 3% of a mode and 500 fills, which each
+# of those spreads stays under, at its own mode's size.  A mode under about 700
+# fills is not held by this check.
+DOC_TOLERANCE = 0.03
+DOC_FLOOR = 500
 
 
 def doc_rows(block: str) -> dict[str, int]:

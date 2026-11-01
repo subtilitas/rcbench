@@ -184,17 +184,16 @@ unbeantwortet bleiben. Ab 4.31 ändert das Halten nichts: das Panel schreibt
 das OFF in jedem Fall, und der IOmcu hält es für ein laufendes Schreiben
 zurück.
 
-Die 5V der Programmierports auf dem Carrier haben keine solche Ausnahme.
-Ihre Page, PROG_SUPPLY, gibt es ab 4.32, und jeder IOmcu, der sie bedient,
-hält das OFF für ein Schreiben zurück; ihr eigenes Port-Bit
-(`LINK_PS_PORT`) geht nicht in die Regel ein. Auf dem Carrier bleibt das
-Bit der Page SUPPLY gelöscht, weil die Ports an den 5V hängen und nicht am
-PD mini (`ports_tell_supply()`). Eine Sitzung hält dort auch die bedienende
-Person nicht vom PD mini fern: SUPPLY und die Zeile SOLL des
-SERVO-Bildschirms nehmen AUSGANG EIN und Sollwerte während einer Sitzung
-an (`supply_link_session_blocks()`), und der IOmcu nimmt sie. Auf jeder
-anderen Platine hält eine Sitzung mit einem Port beides vom PD mini fern,
-und nur AUSGANG AUS funktioniert.
+Die 5V der Programmierports auf dem Carrier haben keine solche Ausnahme. Ihre Page, PROG_SUPPLY, gibt es ab
+4.32, und jeder IOmcu, der sie bedient, hält das OFF für ein Schreiben zurück; ihr eigenes Port-Bit
+(`LINK_PS_PORT`) geht nicht in die Regel ein. Auf dem Carrier lässt eine KST- oder Hitec-Sitzung das Bit der
+Page SUPPLY gelöscht, weil die Ports an den 5V hängen und nicht am PD mini (`ports_tell_supply()`). Eine
+solche Sitzung hält dort auch die bedienende Person nicht vom PD mini fern: SUPPLY und die Zeile SOLL des
+SERVO-Bildschirms nehmen AUSGANG EIN und Sollwerte während ihrer an (`supply_link_session_blocks()`), und der
+IOmcu nimmt sie. Eine ESC-Sitzung setzt das Bit auf jeder Platine, auch auf dem Carrier, weil SWITCHED den ESC
+aus dem PD mini versorgt. SUPPLY lehnt dann Sollwerte und EIN ab und sagt, dass die ESC-Programmierung sie
+hält (`SUP_HELD_REFUSED_ESC`). Auf jeder anderen Platine hält eine Sitzung mit einem Port beides vom PD mini
+fern, und nur AUSGANG AUS funktioniert.
 
 Ein Port hält nur den Ausgang des PD mini. Auf dem Modell des Panels liegt
 kein Port, und ein Fehler schaltet es aus. Ein Netzteil, das nicht

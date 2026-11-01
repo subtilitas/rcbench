@@ -57,6 +57,11 @@ set(SRCS
     kst_panel_run.c
     kst_panel_draw.c
     esc_wire_panel.c
+    esc_wire_edit.c
+    esc_wire_touch.c
+    esc_wire_draw.c
+    esc_wire_text.c
+    esc_wire_help.c
     hitec_panel.c
     hitec_panel_text.c
     hitec_panel_edit.c
@@ -73,7 +78,6 @@ set(SRCS
     esc_stick_touch.c
     esc_stick_draw.c
     esc_stick_draw_run.c
-    prog_models.c
     log_viewer_screen.c
     log_viewer_load.c
     log_viewer_draw.c
