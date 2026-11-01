@@ -290,8 +290,9 @@ While `STOPPED` is set, SEND, LISTEN, LEVEL and POWER are refused with
 not silent; CLOSE and a new OPEN clear it too. While the heartbeat is not
 trusted or the link is silent, every pass counts as a stop, and every
 command but ABORT and CLOSE is refused with `UNSAFE`. The bank does not
-switch to ARMED while the page holds a port, and OPEN is refused while it
-is ARMED.
+switch to ARMED while the page holds a port: a non-zero write of ARM is refused
+with NOT_ARMED, a zero is taken, and when the page lets the port go, by any path, the ARM
+and THROTTLE registers are 0. OPEN is refused while the bank is ARMED.
 
 ## Registers
 
