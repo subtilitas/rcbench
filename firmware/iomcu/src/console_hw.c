@@ -13,6 +13,7 @@
 #include "pico/stdlib.h"
 #include "tusb.h"
 
+#include "ewline_console.h"
 #include "page_console.h"
 
 /**
@@ -30,6 +31,7 @@ static char s_out[PAGE_CONSOLE_OUT_LINE * 2u];
 void console_hw_init(const link_dev_t *dev)
 {
     page_console_init(&s_console, dev);
+    page_console_set_ext(&s_console, ewline_console_line, NULL);
 }
 
 void console_hw_pass(void)
@@ -42,6 +44,7 @@ void console_hw_pass(void)
         page_console_key(&s_console, c);
     }
     page_console_poll(&s_console);
+    ewline_console_pass();
     /* Room as the transmit buffer has it now: a write of no more than that
      * returns without waiting for the host.  The room filled, a line cut
      * where it ends, so a line of any length leaves whatever

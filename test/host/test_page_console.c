@@ -872,9 +872,66 @@ TEST_CASE(the_console_does_not_hold_the_failsafe_off)
     CHECK(g_dev.failsafe);
 }
 
+static unsigned g_ext_calls;
+static unsigned g_ext_tokens;
+
+/* A build's own command: `mine`, and nothing else. */
+static bool ext_mine(void *ctx, char **tok, unsigned n)
+{
+    (void)ctx;
+    g_ext_calls++;
+    g_ext_tokens = n;
+    return strcmp(tok[0], "mine") == 0;
+}
+
+TEST_CASE(a_build_takes_the_lines_no_command_takes)
+{
+    fresh();
+    /* No handler: refused. */
+    CHECK(has(type("mine 1 2"), "err unknown command: mine"));
+    page_console_set_ext(&g_con, ext_mine, NULL);
+    g_ext_calls = 0u;
+    CHECK(!has(type("mine 1 2"), "err unknown"));
+    CHECK_EQ(g_ext_calls, 1u);
+    CHECK_EQ(g_ext_tokens, 3u);
+    /* A line it does not take is refused as before. */
+    CHECK(has(type("frob"), "err unknown command: frob"));
+    CHECK_EQ(g_ext_calls, 2u);
+    /* A command of the console's own never reaches it. */
+    (void)type("pages");
+    CHECK_EQ(g_ext_calls, 2u);
+    page_console_set_ext(&g_con, NULL, NULL);
+    CHECK(has(type("mine"), "err unknown command: mine"));
+    page_console_set_ext(NULL, ext_mine, NULL);
+}
+
+TEST_CASE(a_number_is_digits_and_nothing_else)
+{
+    uint32_t v = 0u;
+
+    CHECK(page_console_number("13", &v));
+    CHECK_EQ(v, 13u);
+    CHECK(page_console_number("0x0D", &v));
+    CHECK_EQ(v, 13u);
+    CHECK(page_console_number("0", &v));
+    CHECK_EQ(v, 0u);
+    CHECK(page_console_number("4294967295", &v));
+    CHECK(!page_console_number("4294967296", &v));
+    CHECK(!page_console_number("13junk", &v));
+    CHECK(!page_console_number("junk", &v));
+    CHECK(!page_console_number("-1", &v));
+    CHECK(!page_console_number("+1", &v));
+    CHECK(!page_console_number("", &v));
+    CHECK(!page_console_number("0x", &v));
+    CHECK(!page_console_number(NULL, &v));
+    CHECK(!page_console_number("1", NULL));
+}
+
 int main(void)
 {
     RUN(pages_lists_every_page);
+    RUN(a_build_takes_the_lines_no_command_takes);
+    RUN(a_number_is_digits_and_nothing_else);
     RUN(a_read_answers_data_and_a_refusal_is_a_nack);
     RUN(a_write_echoes_what_was_stored);
     RUN(a_line_is_edited_and_an_overlong_one_refused);

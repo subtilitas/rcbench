@@ -53,6 +53,11 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
 # The Hitec wire's core and pin driver, which the HITEC page runs
 # (src/iomcu_hitec.c); its PIO program is assembled and checked below.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/hitec"   hitec)
+# The signal wire of an ESC and its pin driver.  Linked and not called yet in
+# the default image, and --gc-sections drops them; the console build's test
+# (src/ewline_console.c) calls the driver.  Its PIO program is assembled and
+# checked below.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/escwire" escwire)
 # The I2C transaction queue and its driver on the I2C blocks.  Linked and
 # not called yet: the sensor bus still runs on src/sense_i2c.c, and
 # --gc-sections drops the queue from the image.
@@ -150,7 +155,7 @@ if(IOMCU_CONSOLE AND SENSE_TRACE)
                         "console: build one of them")
 endif()
 if(IOMCU_CONSOLE)
-    target_sources(rcbench-iomcu PRIVATE src/console_hw.c)
+    target_sources(rcbench-iomcu PRIVATE src/console_hw.c src/ewline_console.c)
     # The USB serial transmit buffer: 1024 bytes in place of the SDK's 64
     # at full speed, 960 bytes more RAM, so one pass hands over up to the
     # 400 bytes console_hw.c takes at a time.  The console does not depend
@@ -199,6 +204,17 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
     VERBATIM)
 
+# The signal wire's line program, the same way (test/host/test_ew_pio.c,
+# fixtures/ew_line_words.txt).
+add_custom_command(TARGET rcbench-iomcu PRE_LINK
+    COMMAND ${CMAKE_COMMAND}
+            -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/escwire/rp2350/ew_line.pio.h
+            -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/ew_line_words.txt
+            -DNAME=ew_line
+            -DTEST=test_ew_pio
+            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+    VERBATIM)
+
 # The IOmcu's own sources are held to the same warnings as the host
 # build, scoped to this target so the SDK's headers are not judged by them.
 # -Wconversion is off here: the SDK's register macros trip it, and the shared
@@ -232,6 +248,7 @@ target_link_libraries(rcbench-iomcu
     rcbench_kst_rp2350
     rcbench_hitec
     rcbench_hitec_rp2350
+    rcbench_escwire_rp2350
     rcbench_i2c_txq
     rcbench_i2c_txq_rp2350
     rcbench_bench

@@ -98,7 +98,9 @@ static bool name_fits(const char *name)
 
 bool ew_fi_agrees(const ew_file_t *f)
 {
-    if (f->layout != page_layout(f->fw, f->page)) {
+    if ((f->cpu != (uint8_t)EW_CPU_EFM8 && f->cpu != (uint8_t)EW_CPU_ARM)
+        || f->fw == (uint8_t)EW_FW_E32
+        || f->layout != page_layout(f->fw, f->page)) {
         return false;
     }
     return f->fw == (uint8_t)EW_FW_NONE || f->cpu == fw_cpu(f->fw);

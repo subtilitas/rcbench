@@ -85,7 +85,8 @@ typedef struct {
  * - start() takes the pad from whatever line() left it at, sends the bytes,
  *   releases the pad within one state machine cycle
  *   of the last stop bit and receives; false when it cannot start.  The pad
- *   rests as EW_LINE_UP afterwards.
+ *   rests as EW_LINE_UP afterwards, as EW_LINE_PARK after a capture marked
+ *   aborted or overflow.
  * - poll() returns false while the transaction runs and fills the capture
  *   once at its end.
  * - abort() cuts a running transaction at once; no capture follows.

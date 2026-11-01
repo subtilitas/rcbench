@@ -197,6 +197,19 @@ TEST_CASE(a_capture_refuses_what_does_not_fit)
 
         CHECK(!ew_file_capture(&g_f, &c, &k_e32, page));
     }
+    /* The same at layout 0, and no firmware on the text interface. */
+    {
+        static const ew_contact_t k_efm8 = { .cpu = EW_CPU_EFM8 };
+        static const ew_contact_t k_text = { .cpu = EW_CPU_TEXT };
+        static const ew_ident_t k_e32_0 = { .fw = EW_FW_E32, .layout = 0u,
+                                            .len = EW_MAP_LEN_E32 };
+        static const ew_ident_t k_none = { .fw = EW_FW_NONE, .len = 0x70u };
+
+        CHECK(!ew_file_capture(&g_f, &k_efm8, &k_e32_0, page));
+        CHECK(!ew_file_capture(&g_f, &c, &k_e32_0, page));
+        CHECK(!ew_file_capture(&g_f, &k_text, &k_none, page));
+        CHECK(!ew_file_capture(&g_f, &k_text, &k_e32_0, page));
+    }
     /* A name the format cannot hold. */
     memset(id.name, 'x', EW_ID_NAME_MAX);
     id.name[EW_ID_NAME_MAX] = '\0';
