@@ -239,6 +239,15 @@ TEST_CASE(a_transaction_at_and_past_each_limit)
     CHECK(ew_xfer_valid(&x));
     x.max_rx = EW_RX_MAX + 1u;
     CHECK(!ew_xfer_valid(&x));
+    /* The text rate has its own limit. */
+    x.rate = EW_RATE_TEXT;
+    CHECK(ew_xfer_valid(&x));
+    x.max_rx = EW_RX_TEXT_MAX;
+    CHECK(ew_xfer_valid(&x));
+    x.max_rx = EW_RX_TEXT_MAX + 1u;
+    CHECK(!ew_xfer_valid(&x));
+    x.rate = EW_RATE_A;
+    x.max_rx = EW_RX_MAX;
     x = good_xfer(tx, rx);
     x.rx = NULL;
     CHECK(!ew_xfer_valid(&x));

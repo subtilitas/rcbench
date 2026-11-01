@@ -15,13 +15,20 @@ history is in git.
   and a non-blocking session with read-back. It has no pin driver, link page or
   screen. Written from a behavioural specification, without access to the
   firmware sources.
+- `protocols/escwire/`: ESCape32's text interface at 38400baud. It holds the
+  lines `info`, `show`, `set` and `save`, their replies, the 46 numeric keys of
+  revision 17 as data, and the session's branch: after 3 silent first contacts a
+  2500ms hold with the line high, then `info`; `set` per changed key, `save` and
+  a read-back. A clipped `set` ends with no `save`. Other revisions are shown
+  read-only. A reply takes up to 1536B of a new buffer in the session.
 - `protocols/escwire/rp2350/`: the pin driver of the signal wire, one PIO
   (programmable input/output) state machine of 25 words and 2 DMA (direct memory
   access) channels behind `ew_driver_t`. 16 cycles a bit, 52us and 38400baud,
   8N1, idle high; the pad is released 1 bit time after the last stop bit's edge
   and receives with its pull-up. An abort or a capture marked aborted or
-  overflow leaves the pad an input with its pull-down. The IOmcu links it and the released image holds none of it: nothing
-  calls it there. No byte has been to an ESC.
+  overflow leaves the pad an input with its pull-down. The IOmcu links it and
+  the released image holds none of it: nothing calls it there. No byte has been
+  to an ESC.
 - Bench console: `ewline <gpio> tx|abort|rx`, in the `IOMCU_CONSOLE` build, runs
   the pin driver on a free pin for a logic analyser. Fixed bytes, SAFE only.
 - Screenshot: a 1000ms hold on the empty part of the band, on any screen with

@@ -42,7 +42,7 @@ rcbench/
     phase_tap/            ESC tone detector · edge ring reader · PIO capture
     kst/                  programming of KST and Chaservo servos: frames, registers, limits, write plans, session · rp2350: kst_line.pio · kst_line
     hitec/                Hitec servo wire, both families: frames, transactions, reply decoders · rp2350: hitec_line.pio · hitec_line
-    escwire/              ESC settings over the signal wire: protocol A, the guard, identification, field maps, session · rp2350: ew_line.pio · ew_line
+    escwire/              ESC settings over the signal wire: protocol A, the text interface, the guard, identification, field maps, session · rp2350: ew_line.pio · ew_line · rp2350: ew_line.pio · ew_line
     i2c_txq/              I2C transaction queue: earliest deadline, timeouts, line check, bus clear · rp2350: i2c_txq_block on an I2C block, no PIO program
   firmware/
     panel/                ESP-IDF project (ESP32-P4)

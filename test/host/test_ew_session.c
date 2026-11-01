@@ -168,10 +168,16 @@ TEST_CASE(the_first_contact_on_its_third_try_and_none)
     const uint32_t t0 = esc.now;
 
     CHECK_EQ(sim_run(&s, &esc), EW_SES_ERR_SILENT);
-    /* 3 windows of 100ms after the hold, 17 bytes each. */
-    CHECK(esc.now - t0 >= 3000000u + 3u * (100000u + 170u * 52u));
-    CHECK(esc.now - t0 <= 3000000u + 3u * (100000u + 170u * 52u) + 5000u);
-    CHECK_EQ(esc.starts, 3);
+    /* 3 windows of 100ms after the hold, 17 bytes each, then the hold for
+     * the text interface and 3 windows of `info`, 5 characters each. */
+    const uint32_t spent = 3000000u + 3u * (100000u + 170u * 52u)
+                           + EW_SES_TEXT_HOLD_MS * 1000u
+                           + 3u * (EW_TEXT_FIRST_US + 50u * 26u);
+
+    CHECK(esc.now - t0 >= spent);
+    CHECK(esc.now - t0 <= spent + 5000u);
+    CHECK_EQ(esc.starts, 6);
+    CHECK(sim_sent_line(&esc, 3, "info\n"));
     CHECK(!s.in_mode);
 
     /* Bytes that are no answer. */

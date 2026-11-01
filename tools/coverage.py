@@ -253,6 +253,8 @@ TRACKED = [
     "protocols/escwire/ew_id.c",
     "protocols/escwire/ew_map.c",
     "protocols/escwire/ew_session.c",
+    "protocols/escwire/ew_session_text.c",
+    "protocols/escwire/ew_text.c",
     "protocols/i2c_txq/i2c_txq.c",
     "shared/logfile/servo_store.c",
     "shared/outputs/kst_port.c",
@@ -374,6 +376,7 @@ DATA_ONLY = {
     "protocols/escwire/ew_map_s.c",
     "protocols/escwire/ew_map_bj.c",
     "protocols/escwire/ew_map_am.c",
+    "protocols/escwire/ew_map_e32.c",
     # Glyph bitmaps written by tools/gen_font.py.
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",
