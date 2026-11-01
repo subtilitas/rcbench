@@ -149,6 +149,8 @@ uint8_t esc_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
     ports_exclusive();
     const uint8_t nack = esc_port_write(&s_esc, off, n, in, s_now_ms);
 
+    /* No ARM or THROTTLE across either edge of a hold, in this frame. */
+    ports_hold_follow();
     /* From this frame on KST and HITEC refuse, the SUPPLY page is held, and the
      * port's pulses end. */
     ports_exclusive();

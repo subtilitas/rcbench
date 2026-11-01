@@ -3,7 +3,7 @@
  * during the hold is refused and none arms the bank at the CLOSE, a new ARM after
  * it works, and an error switches PROG_SUPPLY off, whose ON the hold refuses.  The
  * calls are the ones firmware/iomcu/src makes: control_write(), esc_hw_give(),
- * esc_hw_others_off(), ports_tell_supply().
+ * esc_hw_others_off(), ports_tell_supply(), ports_hold_follow().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -29,8 +29,8 @@ static safety_gate_t gate_ms(uint32_t ms)
 /* control_write() as far as ARM goes. */
 static uint8_t control(uint16_t arm)
 {
-    if (safety_gate_hold_refuses_arm(esc_port_supply_hold(&g_p), LINK_CT_ARM, 1u,
-                                     &arm)) {
+    if (safety_gate_hold_refuses_arm(esc_port_quiet_mask(&g_p) != 0u, LINK_CT_ARM,
+                                     1u, &arm)) {
         return LINK_NACK_NOT_ARMED;
     }
     return safety_gate_control_write(g.control, LINK_CT_ARM, 1u, &arm, &g_beat,
@@ -258,6 +258,31 @@ TEST_CASE(an_error_switches_prog_supply_off_and_the_hold_refuses_its_on)
     CHECK_EQ(prog_supply_write(&g.psup, LINK_PS_OUTPUT, 1u, &on, true), 0u);
 }
 
+/* What ports_hold_follow() does with this page's mask: no ARM or THROTTLE at the
+ * hold's start, what a frame stores in the hold stays to its end, and none past it. */
+TEST_CASE(the_page_is_cleared_on_both_edges_of_the_hold)
+{
+    bool was = false;
+
+    bench_up();
+    g.control[LINK_CT_THROTTLE] = 500u;
+    safety_gate_hold_follow(g.control, &was, esc_port_quiet_mask(&g_p) != 0u);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 500u);
+    open_target(2u);
+    safety_gate_hold_follow(g.control, &was, esc_port_quiet_mask(&g_p) != 0u);
+    CHECK(was);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 0u);
+    g.control[LINK_CT_THROTTLE] = 500u;
+    safety_gate_hold_follow(g.control, &was, esc_port_quiet_mask(&g_p) != 0u);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 500u);
+    CHECK_EQ(cmd(LINK_ESC_OP_CLOSE), 0u);
+    /* After the give's own clear, so that this edge is what is measured. */
+    g.control[LINK_CT_THROTTLE] = 500u;
+    safety_gate_hold_follow(g.control, &was, esc_port_quiet_mask(&g_p) != 0u);
+    CHECK(!was);
+    CHECK_EQ(g.control[LINK_CT_THROTTLE], 0u);
+}
+
 int main(void)
 {
     RUN(an_arm_during_the_hold_is_refused_and_stores_nothing);
@@ -266,5 +291,6 @@ int main(void)
     RUN(an_error_switches_prog_supply_off_and_the_hold_refuses_its_on);
     RUN(a_stop_or_abort_switches_prog_supply_off_a_close_does_not);
     RUN(no_arm_with_no_signal_after_a_pin_that_did_not_come_back);
+    RUN(the_page_is_cleared_on_both_edges_of_the_hold);
     return test_summary("esc_port_gate");
 }

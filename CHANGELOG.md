@@ -14,8 +14,8 @@ history is in git.
   what it had. While a page holds a pin the bank does not arm, CONTROL refuses a
   non-zero ARM, SUPPLY and PROG_SUPPLY are held, and PROG, OUTPUTS, CHAN_CFG, BIND,
   TONE's set-up, SUPPLY's wiring, KST and HITEC refuse. A pin its output does not
-  take back keeps the hold until a CLOSE succeeds or the IOmcu restarts. The give sets ARM and
-  THROTTLE to 0. An error, TORN and LOST included, parks the line and switches the
+  take back keeps the hold until a CLOSE succeeds or the IOmcu restarts. ARM and THROTTLE
+  are 0 when the hold begins and at its end. An error, TORN and LOST included, parks the line and switches the
   PD mini and PROG_SUPPLY off; a STOP or an ABORT does as well. RAM 7344B: 3856B for the
   page and 3488B for the line. No screen uses the pages yet. No frame has been to an
   ESC. A bidirectional DShot pin resting high on SAFE stays as it is, a current
@@ -58,6 +58,11 @@ history is in git.
 
 ### Fixed
 
+- IOmcu: a non-zero ARM written while a programming port is out of PWM, on KST
+  or Hitec, is refused with NOT_ARMED. The ARM and THROTTLE registers are 0 when
+  the hold begins and at every way out of it, with a pin given back or not. A stored ARM armed the bank in
+  the pass the port returned to PWM, with no new ask; only the panel's press
+  guards stood in the way, and a panel just restarted over a held port had none.
 - `protocols/escwire`: 520us between a data announcement and its data, on every
   firmware. A gap of 104us loses the data on AM32 and no answer comes, since
   AM32 ends a message only on more than 234us of idle line. A leave frame is
