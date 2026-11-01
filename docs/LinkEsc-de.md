@@ -34,10 +34,10 @@ andere Throttle-Pins bleiben gebunden und im Leerlauf.
 
 | Schritt | Was geschieht |
 |---|---|
-| OPEN | Abgelehnt, solange ARMED oder ARM angefragt ist, solange KST, HITEC oder ein Firmware-Update die Bench hat, oder ohne vertrauten Heartbeat oder bei stillem Link. Ab diesem Frame armt die Bank nicht, CONTROL lehnt ein ARM ungleich 0 ab, SUPPLY und PROG_SUPPLY sind gehalten, PROG, OUTPUTS, CHAN_CFG und BIND werden mit `BUSY` abgelehnt, und KST und HITEC lehnen jeden Port ab. |
+| OPEN | Abgelehnt, solange ARMED oder ARM angefragt ist, solange KST, HITEC oder ein Firmware-Update die Bench hat, oder ohne vertrauten Heartbeat oder bei stillem Link. Ab diesem Frame armt die Bank nicht, CONTROL lehnt ein ARM ungleich 0 ab, SUPPLY und PROG_SUPPLY sind gehalten, PROG, OUTPUTS, CHAN_CFG, BIND, das Set-up von TONE und die Verdrahtung von SUPPLY (ENABLE bis BAUD) werden mit `BUSY` abgelehnt, und KST und HITEC lehnen jeden Port ab. Ebenfalls abgelehnt (`HELD`) mit einer gespeicherten, noch nicht angebundenen PD-mini-Verdrahtung. |
 | `STOPPING`, 50ms | Der Ausgang gibt nichts aus. ABORT, ein Stopp oder ein verlorener Link geben hier den Pin frei, ohne etwas anzufassen. |
 | `OPEN` | Der Ausgang lässt den Pin los, der Pin ist reserviert, die Leitung öffnet geparkt. Keine State Machine, kein Programmspeicher oder keine 2 DMA-Kanäle (direct memory access): `NO_LINE`, der Pin geht zurück, die Page ist frei. |
-| CLOSE | Mit `WRITING` abgelehnt, solange ein Schreiben läuft und 150ms nach seinem letzten Frame. Die Leitung schließt, der Pin geht zurück, wie sein Ausgang ihn hatte; kein anderer Slot oder Port wechselt. Slot und Port wurden nicht beschrieben, Rate, Treiber und Rolle sind unverändert. Ein Ausgang, der den Pin nicht zurücknimmt, endet mit `NOT_BACK`, ungebunden, und die Page ist frei. |
+| CLOSE | Mit `WRITING` abgelehnt, solange ein Schreiben läuft und 150ms nach seinem letzten Frame. Die Leitung schließt, der Pin geht zurück, wie sein Ausgang ihn hatte; kein anderer Slot oder Port wechselt. Slot und Port wurden nicht beschrieben, Rate, Treiber und Rolle sind unverändert. Ein Ausgang, der den Pin nicht zurücknimmt, endet mit `NOT_BACK`: die Page bleibt in Zustand 9 gehalten, mit gesetztem Quiet-Bit, ARM bleibt also abgelehnt, und die Bank kann ohne Signal auf diesem Pin nicht armen. Ein CLOSE versucht es erneut; ein IOmcu-Neustart löst es. |
 
 ## Eintritt
 
@@ -58,7 +58,7 @@ Auszeit.
 
 Eine ESC-Session versorgt den ESC auf jedem Board aus dem PD mini, auch wo es PROG_SUPPLY
 gibt. Sie schaltet PROG_SUPPLY nie ein: von OPEN bis zur Rückgabe wird ein ON des Panels
-dort mit `BAD_VALUE` abgelehnt, und ein Fehler schaltet es mit dem PD mini aus. `READY`
+dort mit `BAD_VALUE` abgelehnt, und ein Fehler, STOP oder ABORT schaltet es mit dem PD mini aus. Ein CLOSE ohne diese lässt es, wie das Panel es hat. `READY`
 folgt, wenn ein ESC geantwortet hat.
 
 ## Was jedes Ereignis tut
@@ -67,9 +67,9 @@ folgt, wenn ein ESC geantwortet hat.
 |---|---|---|---|
 | ARM angefragt, Page frei | die des Ausgangs | wie sie ist | ein späteres OPEN wird abgelehnt, solange es steht |
 | ARM angefragt, Page gehalten | keine Änderung | keine Änderung | ein ARM ungleich 0 wird von OPEN bis zur Rückgabe mit `NOT_ARMED` abgelehnt, und das Bit der Page in der Quiet-Maske (das eines Slots ist Bit 4) hält `safety_gate_arm_now()` zusätzlich unten. Die Rückgabe setzt ARM und THROTTLE auf 0: das nächste ARM ist eine neue Anfrage, und STATUS liest bis dahin IDLE |
-| STOP (eine Stopp-Flanke oder die Operation STOP), kein Schreiben | sofort geparkt | aus | gehalten, `STOPPED` |
-| STOP, in einem Schreiben | wie das Schreiben es braucht, bis zum Rücklesen, dann geparkt | das OFF des Panels wartet, höchstens 10000ms, dann aus am Ende des Rücklesens, ohne die 150ms: nach der Spezifikation ist die Page mit ihrem `0x30` und dem `OK` eines `save` im Flash | gehalten, `STOPPED`; das Ergebnis sagt, was das Schreiben getan hat |
-| ABORT | sofort geparkt, auch in einem Schreiben | aus | gehalten |
+| STOP (eine Stopp-Flanke oder die Operation STOP), kein Schreiben | sofort geparkt | PD mini und PROG_SUPPLY aus | gehalten, `STOPPED` |
+| STOP, in einem Schreiben | wie das Schreiben es braucht, bis zum Rücklesen, dann geparkt | PROG_SUPPLY sofort aus; beim PD mini wartet das OFF des Panels, höchstens 10000ms, dann aus am Ende des Rücklesens, ohne die 150ms: nach der Spezifikation ist die Page mit ihrem `0x30` und dem `OK` eines `save` im Flash | gehalten, `STOPPED`; das Ergebnis sagt, was das Schreiben getan hat |
+| ABORT | sofort geparkt, auch in einem Schreiben | PD mini und PROG_SUPPLY aus | gehalten |
 | Heartbeat verloren oder Link 200ms still | sofort geparkt, auch in einem Schreiben | sofort aus | gehalten, `STOPPED` |
 | Fehler | sofort geparkt | PD mini und PROG_SUPPLY aus | gehalten, `FAULT` und `STOPPED` |
 | IOmcu-Neustart | der Reset-Zustand des Chips | aus beim Booten | frei; der Slot bindet aus dem Flash |
@@ -143,7 +143,7 @@ Leitung der Page, der PD mini und PROG_SUPPLY sind alles, was der IOmcu an hat.
 
 | Reg | Name | Wert |
 |---|---|---|
-| 0 | `STATE` | 0 `FREE`, 1 `STOPPING`, 2 `OPEN`, 3 `POWER_OFF`, 4 `LEAD`, 5 `HAND_WAIT`, 6 `RUN`, 7 `READY`, 8 `POWER_ON` |
+| 0 | `STATE` | 0 `FREE`, 1 `STOPPING`, 2 `OPEN`, 3 `POWER_OFF`, 4 `LEAD`, 5 `HAND_WAIT`, 6 `RUN`, 7 `READY`, 8 `POWER_ON`, 9 `NOT_BACK` |
 | 1 | `SEQ` | die zuletzt genommene SEQ |
 | 2 | `OP` | die letzte Operation |
 | 3 | `RESULT` | Low-Byte das Ergebnis, High-Byte die Ablehnung des letzten Befehls |

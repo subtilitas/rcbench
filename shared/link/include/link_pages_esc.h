@@ -110,6 +110,8 @@ typedef enum {
     LINK_ESC_RUN,         /**< an operation of the session runs              */
     LINK_ESC_READY,       /**< the ESC answered; nothing runs                */
     LINK_ESC_POWER_ON,    /**< ENTER: ON asked, waits for it to read on      */
+    LINK_ESC_NOT_BACK,    /**< the output did not take the pin back: held, so
+                               no ARM; CLOSE tries again                     */
     LINK_ESC_STATE_COUNT  /**< states                                        */
 } link_esc_state_t;
 
@@ -144,7 +146,7 @@ typedef enum {
     LINK_ESC_RESULT_CUT,      /**< ABORT, STOP or a stop ended it            */
     LINK_ESC_RESULT_SESSION,  /**< the session ended on LINK_EW_SES          */
     LINK_ESC_RESULT_NOT_BACK, /**< CLOSE: the output did not take the pin back;
-                                   the page is free, the output unbound      */
+                                   LINK_ESC_NOT_BACK                         */
 } link_esc_result_t;
 
 /** @brief Why a command started nothing. */

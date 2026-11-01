@@ -11,11 +11,12 @@
  * |---|---|---|---|
  * | ARM asked, free | the output's | as it is | OPEN refused while asked |
  * | ARM asked, held | as it was | as it was | refused (safety_gate_hold_refuses_arm()); the quiet mask holds the bank down as well |
- * | STOP, no write | PARK at once | OFF | held, STOPPED |
+ * | STOP, no write | PARK at once | OFF, PROG_SUPPLY off | held, STOPPED |
  * | STOP in a write | as the write needs, to its read-back, then PARK | panel's OFF waits, then OFF | held, STOPPED |
- * | ABORT | PARK at once, also in a write | OFF | held |
+ * | ABORT | PARK at once, also in a write | OFF, PROG_SUPPLY off | held |
  * | link or heartbeat lost | PARK at once, also in a write | OFF at once | held, STOPPED |
- * | error | PARK at once | OFF | held, FAULT |
+ * | error | PARK at once | OFF, PROG_SUPPLY off | held, FAULT |
+ * | CLOSE, its output refuses the pin | closed | as it is | held, LINK_ESC_NOT_BACK: no ARM; CLOSE tries again |
  * | restart of the IOmcu | the chip's reset state | off at boot | FREE |
  *
  * An error is any operation of the session that ends other than EW_SES_OK, a
@@ -81,7 +82,7 @@ typedef struct {
     void (*supply)(void *ctx, supply_port_view_t *out);
     /** Ask the supply on at @p mv and @p ma, or off.  False when not taken. */
     bool (*supply_set)(void *ctx, bool on, uint16_t mv, uint16_t ma);
-    /** An error: every other supply of the bench off (PROG_SUPPLY). */
+    /** An error or a stop: every other supply of the bench off (PROG_SUPPLY). */
     void (*others_off)(void *ctx);
     ew_driver_t driver; /**< the wire driver; now_us() works while closed   */
 } esc_port_hw_t;

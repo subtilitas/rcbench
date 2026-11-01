@@ -14,7 +14,6 @@ firmware/iomcu/src/iomcu.h: warning: Member control[LINK_CT_COUNT] (variable) of
 firmware/iomcu/src/iomcu.h: warning: Member identity[LINK_ID_COUNT] (variable) of struct iomcu_state_t is not documented.
 firmware/iomcu/src/iomcu.h: warning: Member s_can_echoes (variable) of file iomcu.h is not documented.
 firmware/iomcu/src/iomcu.h: warning: Member s_can_overflows (variable) of file iomcu.h is not documented.
-firmware/iomcu/src/iomcu.h: warning: Member s_dev (variable) of file iomcu.h is not documented.
 firmware/iomcu/src/iomcu.h: warning: Member s_edge_gen (variable) of file iomcu.h is not documented.
 firmware/iomcu/src/iomcu.h: warning: Member s_edge_us (variable) of file iomcu.h is not documented.
 firmware/iomcu/src/iomcu.h: warning: Member s_hitec_line (variable) of file iomcu.h is not documented.
@@ -34,7 +33,6 @@ firmware/iomcu/src/iomcu_can.c: warning: Member s_can_overflows (variable) of fi
 firmware/iomcu/src/iomcu_sense.c: warning: Member supply_probe(void) (function) of file iomcu_sense.c is not documented.
 firmware/iomcu/src/iomcu_tone.c: warning: Member s_tone_busy (variable) of file iomcu_tone.c is not documented.
 firmware/iomcu/src/iomcu_tone.c: warning: Member s_tone_was_us (variable) of file iomcu_tone.c is not documented.
-firmware/iomcu/src/main.c: warning: Member s_dev (variable) of file main.c is not documented.
 firmware/iomcu/src/main.c: warning: Member s_edge_gen (variable) of file main.c is not documented.
 firmware/iomcu/src/main.c: warning: Member s_edge_us (variable) of file main.c is not documented.
 firmware/iomcu/src/main.c: warning: Member s_hitec_line (variable) of file main.c is not documented.

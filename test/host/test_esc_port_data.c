@@ -199,7 +199,8 @@ TEST_CASE(the_blocks_of_the_data_page)
 
     up_am_rig();
     /* Read-only ones, past the page, and a NULL. */
-    for (uint16_t k = 0u; k < LINK_ED_BLOCKS; ++k) {
+    for (unsigned i = 0u; i < (unsigned)LINK_ED_BLOCKS; ++i) {
+        const uint16_t k = (uint16_t)i;
         const bool can = (k >= LINK_ED_DRAFT && k < LINK_ED_PAGE)
                          || k == LINK_ED_BACKUP;
 

@@ -33,10 +33,10 @@ pins stay bound and at their idle.
 
 | Step | What happens |
 |---|---|
-| OPEN | Refused while armed or asked to arm, while KST, HITEC or a firmware update has the bench, or with the heartbeat not trusted or the link silent. From this frame on the bank does not arm, CONTROL refuses a non-zero ARM, SUPPLY and PROG_SUPPLY are held, PROG, OUTPUTS, CHAN_CFG and BIND are refused with `BUSY`, and KST and HITEC refuse every port. |
+| OPEN | Refused while armed or asked to arm, while KST, HITEC or a firmware update has the bench, or with the heartbeat not trusted or the link silent. From this frame on the bank does not arm, CONTROL refuses a non-zero ARM, SUPPLY and PROG_SUPPLY are held, PROG, OUTPUTS, CHAN_CFG, BIND, TONE's set-up and SUPPLY's wiring (ENABLE to BAUD) are refused with `BUSY`, and KST and HITEC refuse every port. Refused as well (`HELD`) with a PD mini wiring saved and not yet attached. |
 | `STOPPING`, 50ms | The output renders nothing. An ABORT, a stop or a lost link here frees the pin with nothing touched. |
 | `OPEN` | The output lets the pin go, the pin is reserved, and the line opens parked. No state machine, program space or 2 DMA (direct memory access) channels: `NO_LINE`, the pin goes back, the page is free. |
-| CLOSE | Refused with `WRITING` while a write runs and for 150ms after its last frame. The line closes and the pin goes back as its output had it; no other slot or port moves. A slot or port was not written, so its rate, driver and role are what they were. An output that does not take the pin back ends `NOT_BACK`, unbound, with the page free. |
+| CLOSE | Refused with `WRITING` while a write runs and for 150ms after its last frame. The line closes and the pin goes back as its output had it; no other slot or port moves. A slot or port was not written, so its rate, driver and role are what they were. An output that does not take the pin back ends `NOT_BACK`: the page stays held in state 9 with its quiet bit set, so ARM stays refused and the bank cannot arm with no signal on that pin. A CLOSE tries again; an IOmcu restart clears it. |
 
 ## Entry
 
@@ -57,7 +57,7 @@ and the time off.
 
 An ESC session feeds the ESC from the PD mini on every board, also where PROG_SUPPLY
 exists. It never switches PROG_SUPPLY on: from OPEN to the give a panel's ON of it is
-refused with `BAD_VALUE`, and an error switches it off with the PD mini. `READY` follows
+refused with `BAD_VALUE`, and an error, a STOP or an ABORT switches it off with the PD mini. A CLOSE with neither leaves it as the panel has it. `READY` follows
 an ESC that answered.
 
 ## What each event does
@@ -66,9 +66,9 @@ an ESC that answered.
 |---|---|---|---|
 | ARM asked, page free | the output's | as it is | a later OPEN is refused while it stands |
 | ARM asked, page held | no change | no change | a non-zero ARM is refused with `NOT_ARMED` from OPEN to the give, and the page's bit in the quiet mask (a slot's is bit 4) holds `safety_gate_arm_now()` down as well. The give sets ARM and THROTTLE to 0: the next ARM is a new ask, and STATUS reads IDLE until it comes |
-| STOP (a stop edge or the STOP operation), no write | parked at once | off | held, `STOPPED` |
-| STOP, in a write | as the write needs, to its read-back, then parked | the panel's OFF waits, 10000ms at most, then off at the read-back's end, with no 150ms tail: by the specification the page is in flash at its `0x30` and at a `save`'s `OK` | held, `STOPPED`; the result says what the write did |
-| ABORT | parked at once, also in a write | off | held |
+| STOP (a stop edge or the STOP operation), no write | parked at once | PD mini and PROG_SUPPLY off | held, `STOPPED` |
+| STOP, in a write | as the write needs, to its read-back, then parked | PROG_SUPPLY off at once; for the PD mini the panel's OFF waits, 10000ms at most, then off at the read-back's end, with no 150ms tail: by the specification the page is in flash at its `0x30` and at a `save`'s `OK` | held, `STOPPED`; the result says what the write did |
+| ABORT | parked at once, also in a write | PD mini and PROG_SUPPLY off | held |
 | Heartbeat lost or link silent 200ms | parked at once, also in a write | off at once | held, `STOPPED` |
 | Error | parked at once | PD mini and PROG_SUPPLY off | held, `FAULT` and `STOPPED` |
 | IOmcu restart | the chip's reset state | off at boot | free; the slot binds from flash |
@@ -136,7 +136,7 @@ panel, which follows it to the bench's SAFE state.
 
 | Reg | Name | Value |
 |---|---|---|
-| 0 | `STATE` | 0 `FREE`, 1 `STOPPING`, 2 `OPEN`, 3 `POWER_OFF`, 4 `LEAD`, 5 `HAND_WAIT`, 6 `RUN`, 7 `READY`, 8 `POWER_ON` |
+| 0 | `STATE` | 0 `FREE`, 1 `STOPPING`, 2 `OPEN`, 3 `POWER_OFF`, 4 `LEAD`, 5 `HAND_WAIT`, 6 `RUN`, 7 `READY`, 8 `POWER_ON`, 9 `NOT_BACK` |
 | 1 | `SEQ` | the last SEQ taken |
 | 2 | `OP` | the last operation |
 | 3 | `RESULT` | low byte the result, high byte the last command's refusal |

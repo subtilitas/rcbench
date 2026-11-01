@@ -1151,13 +1151,18 @@ static inline void ports_exclusive(void)
 {
     const uint8_t esc = esc_port_supply_hold(&s_esc) ? 0xFFu : 0u;
 
+    /* What the held output needs back: no write takes its PIO room. */
     prog_port_freeze(&s_prog, esc != 0u);
+    tone_page_freeze(&s_tone, esc != 0u);
+    supply_page_wire_freeze(&s_supply, esc != 0u);
 
     kst_port_other_mask(&s_kst, (uint8_t)(hitec_port_quiet_mask(&s_hitec) | esc));
     hitec_port_other_mask(&s_hitec, (uint8_t)(kst_port_quiet_mask(&s_kst) | esc));
     esc_port_other(&s_esc, (uint8_t)(kst_port_quiet_mask(&s_kst)
                                      | hitec_port_quiet_mask(&s_hitec)
-                                     | (update_hw_holds_arm() ? 0x80u : 0u)));
+                                     | (update_hw_holds_arm() ? 0x80u : 0u)
+                                     | (s_supply_attach && !s_pd_open ? 0x40u
+                                                                      : 0u)));
 }
 
 /**

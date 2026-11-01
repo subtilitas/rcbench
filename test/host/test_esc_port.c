@@ -85,13 +85,63 @@ TEST_CASE(a_slot_goes_to_the_line_and_comes_back)
     /* The supply was never touched by a session with no ENTER. */
     CHECK_EQ(g.ons + g.offs, 0);
     CHECK_EQ(result(), LINK_ESC_RESULT_DONE);
-    /* An output that does not take its pin back says so; the page is free. */
+}
+
+TEST_CASE(an_output_that_does_not_take_its_pin_back_keeps_the_hold)
+{
+    up_am_rig();
     open_target(2u);
     g.give_refused = true;
     CHECK_EQ(cmd(LINK_ESC_OP_CLOSE), 0u);
+    CHECK_EQ(refusal(), LINK_ESC_REF_NONE);
     CHECK_EQ(result(), LINK_ESC_RESULT_NOT_BACK);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_NOT_BACK);
+    CHECK_EQ(g.gives, 1);
+    /* The bank stays down, the target stays named, the rest of the page refuses;
+     * the line is closed and any apply may bind it. */
+    CHECK_EQ(esc_port_quiet_mask(&g_p), ESC_PORT_QUIET_SLOT);
+    CHECK(esc_port_supply_hold(&g_p));
+    CHECK_EQ(reg(LINK_EW_TARGET), 2u);
+    CHECK(flag(LINK_EW_F_STOPPED));
+    CHECK_EQ(esc_port_may_bind(&g_p, 0xFFu), 0xFFu);
+    CHECK_EQ(esc_port_pins(&g_p), 0u);
+    (void)cmd(LINK_ESC_OP_ENTER);
+    CHECK_EQ(refusal(), LINK_ESC_REF_BUSY);
+    (void)cmd(LINK_ESC_OP_OPEN);
+    CHECK_EQ(refusal(), LINK_ESC_REF_BUSY);
+    (void)cmd(LINK_ESC_OP_CLEAR);
+    CHECK_EQ(refusal(), LINK_ESC_REF_BUSY);
+    /* A stop, an abort, a lost link change nothing. */
+    pass_as(true, true);
+    (void)cmd(LINK_ESC_OP_ABORT);
+    pass_as(false, false);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_NOT_BACK);
+    pass();
+    /* CLOSE tries again and keeps it until the output takes the pin. */
+    const uint16_t f[LINK_EW_W_CMD_FRAME] = {
+        LINK_ESC_OP_CLOSE, (uint16_t)(reg(LINK_EW_SEQ) + 1u), 0u, 0u };
+
+    CHECK_EQ(esc_port_write(&g_p, 0u, LINK_EW_W_CMD_FRAME, f, 0u), 0u);
+    CHECK_EQ(g.gives, 2);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_NOT_BACK);
+    g.give_refused = false;
+    CHECK_EQ(cmd_full(LINK_ESC_OP_CLOSE, LINK_ESC_WRITE_KEY, false), 0u);
+    CHECK_EQ(g.gives, 3);
     CHECK_EQ(esc_port_state(&g_p), LINK_ESC_FREE);
+    CHECK_EQ(result(), LINK_ESC_RESULT_DONE);
+    CHECK_EQ(esc_port_quiet_mask(&g_p), 0u);
     CHECK_EQ(reg(LINK_EW_TARGET), 0u);
+    /* A line with no resources whose output then refuses the pin: the same. */
+    g.take_ok = false;
+    g.give_refused = true;
+    open_target(2u);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_NOT_BACK);
+    CHECK_EQ(result(), LINK_ESC_RESULT_NOT_BACK);
+    /* An IOmcu restart clears it. */
+    const esc_port_hw_t hw = g_p.hw;
+
+    CHECK(esc_port_init(&g_p, &hw));
+    CHECK_EQ(esc_port_quiet_mask(&g_p), 0u);
 }
 
 TEST_CASE(a_port_goes_to_the_line_and_comes_back)
@@ -555,6 +605,7 @@ int main(void)
 {
     RUN(init_needs_every_hook);
     RUN(a_slot_goes_to_the_line_and_comes_back);
+    RUN(an_output_that_does_not_take_its_pin_back_keeps_the_hold);
     RUN(a_port_goes_to_the_line_and_comes_back);
     RUN(a_line_with_no_resources_leaves_the_output_free);
     RUN(every_refusal_of_an_open);

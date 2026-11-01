@@ -134,6 +134,97 @@ TEST_CASE(a_new_arm_after_the_close_works)
     CHECK_EQ(refusal(), LINK_ESC_REF_ARMED);
 }
 
+/* PROG_SUPPLY on as the panel left it, the page held and in @p st. */
+static void psup_on_held(link_esc_state_t st)
+{
+    const uint16_t on = 1u;
+    const uint16_t panel = 1u;
+
+    up_am_rig();
+    prog_supply_init(&g.psup, 21u, PROG_SUPPLY_CARRIER_MV);
+    (void)prog_supply_write(&g.psup, LINK_PS_PANEL, 1u, &panel, true);
+    (void)prog_supply_write(&g.psup, LINK_PS_OUTPUT, 1u, &on, true);
+    open_target(2u);
+    if (st == LINK_ESC_READY) {
+        ST_REG(LINK_EW_W_HOLD_LO) = 500u;
+        ST_REG(LINK_EW_W_OFF_MS) = 0u;
+        (void)stage();
+        enter_now();
+    }
+    CHECK_EQ(esc_port_state(&g_p), st);
+    CHECK(prog_supply_step(&g.psup, true));
+}
+
+TEST_CASE(a_stop_or_abort_switches_prog_supply_off_a_close_does_not)
+{
+    /* A stop, in READY and on OPEN. */
+    psup_on_held(LINK_ESC_READY);
+    pass_as(true, true);
+    CHECK(!prog_supply_step(&g.psup, true));
+    CHECK(!flag(LINK_EW_F_FAULT));
+    psup_on_held(LINK_ESC_OPEN);
+    pass_as(true, true);
+    CHECK(!prog_supply_step(&g.psup, true));
+    /* The STOP operation and ABORT. */
+    psup_on_held(LINK_ESC_READY);
+    (void)cmd(LINK_ESC_OP_STOP);
+    CHECK(!prog_supply_step(&g.psup, true));
+    psup_on_held(LINK_ESC_READY);
+    (void)cmd(LINK_ESC_OP_ABORT);
+    CHECK(!prog_supply_step(&g.psup, true));
+    /* A stop in a write: it goes at once, the PD mini after the write. */
+    sim_init_efm8(&esc, 0xB2u, false);
+    rig_up();
+    prog_supply_init(&g.psup, 21u, PROG_SUPPLY_CARRIER_MV);
+    const uint16_t on = 1u;
+    const uint16_t panel = 1u;
+
+    (void)prog_supply_write(&g.psup, LINK_PS_PANEL, 1u, &panel, true);
+    (void)prog_supply_write(&g.psup, LINK_PS_OUTPUT, 1u, &on, true);
+    ready_on(2u);
+    read_now();
+    static uint8_t page[EW_PAGE_MAX];
+
+    memcpy(page, g_p.ses.orig, sizeof(page));
+    page[0x15] = 2u;
+    (void)write_page(page);
+    while (esc.erases == 0) {
+        pass();
+    }
+    pass_as(true, true);
+    CHECK(!prog_supply_step(&g.psup, true));
+    CHECK(g.v.asked_on);
+    /* CLOSE with no error leaves it as the panel has it; so does a free page. */
+    psup_on_held(LINK_ESC_OPEN);
+    (void)cmd(LINK_ESC_OP_CLOSE);
+    CHECK_EQ(g.others_off, 0);
+    CHECK(prog_supply_step(&g.psup, true));
+    pass_as(true, true);
+    (void)cmd(LINK_ESC_OP_ABORT);
+    CHECK_EQ(g.others_off, 0);
+}
+
+TEST_CASE(no_arm_with_no_signal_after_a_pin_that_did_not_come_back)
+{
+    bench_up();
+    open_target(2u);
+    g.give_refused = true;
+    CHECK_EQ(cmd(LINK_ESC_OP_CLOSE), 0u);
+    CHECK_EQ(result(), LINK_ESC_RESULT_NOT_BACK);
+    /* ARM refused, the gate held down. */
+    CHECK_EQ(control(1u), LINK_NACK_NOT_ARMED);
+    CHECK_EQ(status(), LINK_STATE_IDLE);
+    CHECK(!safety_gate_arm_now(true, esc_port_quiet_mask(&g_p), false));
+    /* The output takes it at the next CLOSE: a new ARM works. */
+    g.give_refused = false;
+    CHECK_EQ(cmd_full(LINK_ESC_OP_CLOSE, LINK_ESC_WRITE_KEY, false), 0u);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_FREE);
+    CHECK_EQ(control(1u), 0u);
+    const safety_gate_t r = gate_ms(1u);
+
+    CHECK(safety_gate_arm_now(r.arm, esc_port_quiet_mask(&g_p), false));
+}
+
 TEST_CASE(an_error_switches_prog_supply_off_and_the_hold_refuses_its_on)
 {
     const uint16_t on = 1u;
@@ -150,17 +241,10 @@ TEST_CASE(an_error_switches_prog_supply_off_and_the_hold_refuses_its_on)
     prog_supply_hold(&g.psup, esc_port_supply_hold(&g_p));
     CHECK_EQ(prog_supply_write(&g.psup, LINK_PS_OUTPUT, 1u, &on, true),
              LINK_NACK_BAD_VALUE);
-    /* A stop is no error: it stays as the panel has it. */
+    /* An error: all off. */
     ST_REG(LINK_EW_W_HOLD_LO) = 500u;
     ST_REG(LINK_EW_W_OFF_MS) = 0u;
     (void)stage();
-    enter_now();
-    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_READY);
-    pass_as(true, true);
-    CHECK_EQ(g.others_off, 0);
-    CHECK(prog_supply_step(&g.psup, true));
-    /* An error: all off. */
-    (void)cmd(LINK_ESC_OP_CLEAR);
     sim_script(&esc, F_DEAD, 0, 1, 0u);
     enter_now();
     run_while(LINK_ESC_RUN, 20000u);
@@ -180,5 +264,7 @@ int main(void)
     RUN(nothing_stored_arms_the_bank_at_the_close);
     RUN(a_new_arm_after_the_close_works);
     RUN(an_error_switches_prog_supply_off_and_the_hold_refuses_its_on);
+    RUN(a_stop_or_abort_switches_prog_supply_off_a_close_does_not);
+    RUN(no_arm_with_no_signal_after_a_pin_that_did_not_come_back);
     return test_summary("esc_port_gate");
 }

@@ -145,26 +145,30 @@ static void go(esc_port_t *p, link_esc_state_t state)
 }
 
 /**
- * @brief Back to free: the line closed, the pin its output's.
+ * @brief Back to free: the line closed, the pin its output's.  An output that does
+ *        not take the pin back keeps the page held, LINK_ESC_NOT_BACK: the bank may
+ *        not arm with no signal on that pin, and a CLOSE tries again.
  * @param p the port
  * @return false when its output did not take the pin back
  */
 static bool go_free(esc_port_t *p)
 {
-    const bool had_pin = p->has_pin;
-    bool back = true;
+    const bool had_pin = p->has_pin || p->state == (uint8_t)LINK_ESC_NOT_BACK;
 
-    go(p, LINK_ESC_FREE);
     p->has_pin = false;
+    p->line = (uint8_t)LINK_ESC_LINE_PARK;
+    p->tail = false;
+    if (had_pin && !p->hw.give(p->hw.ctx)) {
+        p->stopped = true;
+        p->result = (uint8_t)LINK_ESC_RESULT_NOT_BACK;
+        go(p, LINK_ESC_NOT_BACK);
+        return false;
+    }
+    go(p, LINK_ESC_FREE);
     p->stopped = false;
     p->fault = false;
-    p->tail = false;
-    p->line = (uint8_t)LINK_ESC_LINE_PARK;
-    if (had_pin) {
-        back = p->hw.give(p->hw.ctx);
-    }
     p->target = 0u;
-    return back;
+    return true;
 }
 
 /**
@@ -174,7 +178,8 @@ static bool go_free(esc_port_t *p)
  */
 static bool in_session(const esc_port_t *p)
 {
-    return p->state > (uint8_t)LINK_ESC_OPEN;
+    return p->state > (uint8_t)LINK_ESC_OPEN
+           && p->state != (uint8_t)LINK_ESC_NOT_BACK;
 }
 
 /**
@@ -196,14 +201,15 @@ static void all_off(esc_port_t *p, link_esc_result_t result)
 }
 
 /**
- * @brief Cut at once, also in a write.
+ * @brief The line and the PD mini at once, also in a write.
  * @param p the port
  */
-static void cut(esc_port_t *p)
+static void cut_line(esc_port_t *p)
 {
     if (p->state == (uint8_t)LINK_ESC_STOPPING) {
-        (void)go_free(p);
-        p->result = (uint8_t)LINK_ESC_RESULT_CUT;
+        if (go_free(p)) {
+            p->result = (uint8_t)LINK_ESC_RESULT_CUT;
+        }
     } else if (in_session(p)) {
         ew_session_abort(&p->ses);
         supply_off(p);
@@ -211,6 +217,18 @@ static void cut(esc_port_t *p)
         p->result = (uint8_t)LINK_ESC_RESULT_CUT;
         go(p, LINK_ESC_OPEN);
     }
+}
+
+/**
+ * @brief Cut at once, and PROG_SUPPLY off with it.
+ * @param p the port
+ */
+static void cut(esc_port_t *p)
+{
+    if (p->state != (uint8_t)LINK_ESC_FREE) {
+        p->hw.others_off(p->hw.ctx);
+    }
+    cut_line(p);
 }
 
 /**
@@ -229,6 +247,8 @@ static void on_stop(esc_port_t *p)
     }
     p->stopped = true;
     if (p->state == (uint8_t)LINK_ESC_RUN && ew_session_writing(&p->ses)) {
+        /* PROG_SUPPLY feeds no ESC: it goes now, the PD mini after the write. */
+        p->hw.others_off(p->hw.ctx);
         ew_session_stop(&p->ses);
         return;
     }
@@ -562,10 +582,11 @@ static link_esc_ref_t dispatch(esc_port_t *p, link_esc_op_t op,
         if (esc_port_writing(p)) {
             return LINK_ESC_REF_WRITING;
         }
-        cut(p);
+        cut_line(p);
         p->op = (uint8_t)op;
-        p->result = (uint8_t)(go_free(p) ? LINK_ESC_RESULT_DONE
-                                         : LINK_ESC_RESULT_NOT_BACK);
+        if (go_free(p)) {
+            p->result = (uint8_t)LINK_ESC_RESULT_DONE;
+        }
         return LINK_ESC_REF_NONE;
     case LINK_ESC_OP_ABORT:
         p->op = (uint8_t)op;
@@ -945,8 +966,9 @@ void esc_port_step(esc_port_t *p, bool safe, bool stop, uint32_t now_ms)
         if (now_ms - p->t0_ms >= ESC_PORT_STOP_MS) {
             p->has_pin = true;
             if (!p->hw.take(p->hw.ctx, p->pin)) {
-                (void)go_free(p);
-                p->result = (uint8_t)LINK_ESC_RESULT_NO_LINE;
+                if (go_free(p)) {
+                    p->result = (uint8_t)LINK_ESC_RESULT_NO_LINE;
+                }
             } else {
                 p->line = (uint8_t)LINK_ESC_LINE_PARK;
                 p->result = (uint8_t)LINK_ESC_RESULT_DONE;

@@ -171,6 +171,9 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
         p->reset_owed = true;
         return 0u;
     }
+    if (p->wire_frozen && off < (uint8_t)LINK_SP_OUTPUT) {
+        return LINK_NACK_BUSY;
+    }
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_SP_FLAGS) {
         return LINK_NACK_READ_ONLY;
     }
@@ -301,6 +304,13 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
         p->commanded = true;
     }
     return 0u;
+}
+
+void supply_page_wire_freeze(supply_page_t *p, bool frozen)
+{
+    if (p != NULL) {
+        p->wire_frozen = frozen;
+    }
 }
 
 uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
