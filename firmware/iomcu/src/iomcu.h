@@ -145,6 +145,8 @@ extern uint64_t      s_edge_us;
  * sensor bus take their pins.
  */
 extern uint64_t      s_base_reserved;
+/** @brief A programming port was out of PWM at the last ports_hold_follow(). */
+extern bool          s_ports_held;
 #if IOMCU_CONSOLE
 /** @brief The pin the console's test of a driver holds (ewline_console.c). */
 extern uint64_t      s_console_pins;
@@ -1064,6 +1066,15 @@ static inline uint8_t ports_quiet(void)
 {
     return (uint8_t)(kst_port_quiet_mask(&s_kst)
                      | hitec_port_quiet_mask(&s_hitec));
+}
+
+/**
+ * @brief The CONTROL page across a hold's edges: call right after whatever can
+ *        move a port, a page write or a step, so no ARM written next is lost.
+ */
+static inline void ports_hold_follow(void)
+{
+    safety_gate_hold_follow(s_state.control, &s_ports_held, ports_quiet() != 0u);
 }
 
 /**

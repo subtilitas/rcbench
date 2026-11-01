@@ -84,6 +84,7 @@ bool            s_edge_set;
 uint16_t        s_edge_gen;
 uint64_t        s_edge_us;
 uint64_t        s_base_reserved;
+bool            s_ports_held;
 prog_port_t     s_prog;
 kst_port_t      s_kst;
 kst_line_t      s_kst_line;
@@ -758,6 +759,7 @@ int main(void)
         /* The HITEC port the same way: a stop cuts its transaction and
          * keeps the port with the pin released. */
         hitec_port_step(&s_hitec, port_safe, port_stop, now);
+        ports_hold_follow();
         s_kst_armed = arm_now;
         ports_exclusive();
         outputs_hw_ports_drive(ports_pulsing());

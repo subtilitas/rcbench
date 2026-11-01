@@ -184,7 +184,7 @@ und ausgeschalteter Versorgung
 
 Der IOmcu schaltet keine Ausgangsbank auf ARMED, solange ein
 Programmierport nicht in PWM steht: ein Schreiben von ARM ungleich 0 wird mit
-NOT_ARMED abgewiesen, eine 0 wird angenommen, und bei der Rückkehr nach PWM sind
+NOT_ARMED abgewiesen, eine 0 wird angenommen, und bei jeder Rückkehr nach PWM sind
 die Register ARM und THROTTLE 0, also bleibt die Bank SAFE bis zur nächsten
 Anforderung. ENTER wird mit
 BUSY abgewiesen, solange die Bank ARMED ist (seit 4.15).

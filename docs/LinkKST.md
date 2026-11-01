@@ -163,7 +163,7 @@ with result 32 (`SUPPLY`) and the supply off
 
 The IOmcu does not switch the bank to ARMED while a programming port is out of
 PWM: a non-zero write of ARM is refused with NOT_ARMED, a zero is taken, and at
-the return to PWM the ARM and THROTTLE registers are 0, so the bank stays SAFE
+the return to PWM, by any path, the ARM and THROTTLE registers are 0, so the bank stays SAFE
 until a new ask. ENTER is refused with BUSY while the bank is ARMED (since 4.15).
 
 Where the supply ends when something fails:

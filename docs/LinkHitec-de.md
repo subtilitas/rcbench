@@ -311,7 +311,7 @@ Solange dem Heartbeat nicht vertraut wird oder der Link still ist, zählt
 jeder Durchlauf als Stopp, und jedes Kommando außer ABORT und CLOSE wird mit
 `UNSAFE` abgewiesen. Die Bank schaltet nicht auf ARMED, solange die Page
 einen Port hält: ein Schreiben von ARM ungleich 0 wird mit NOT_ARMED abgewiesen,
-eine 0 wird angenommen, und bei der Rückgabe des Ports sind die Register ARM und
+eine 0 wird angenommen, und bei jeder Rückgabe des Ports sind die Register ARM und
 THROTTLE 0. OPEN wird abgewiesen, solange die Bank ARMED ist.
 
 ## Register

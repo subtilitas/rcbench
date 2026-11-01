@@ -458,6 +458,64 @@ TEST_CASE(the_end_of_a_hold_leaves_no_arm_and_no_throttle)
     safety_gate_hold_ended(NULL);
 }
 
+TEST_CASE(a_hold_clears_the_page_on_each_edge_and_only_there)
+{
+    uint16_t control[LINK_CT_COUNT] = { 0 };
+    bool was = false;
+
+    /* No hold: an armed bank's page is left alone, pass after pass. */
+    control[LINK_CT_ARM] = 1u;
+    control[LINK_CT_THROTTLE] = 700u;
+    safety_gate_hold_follow(control, &was, false);
+    safety_gate_hold_follow(control, &was, false);
+    CHECK(!was);
+    CHECK_EQ(control[LINK_CT_ARM], 1u);
+    CHECK_EQ(control[LINK_CT_THROTTLE], 700u);
+
+    /* It begins: gone. */
+    safety_gate_hold_follow(control, &was, true);
+    CHECK(was);
+    CHECK_EQ(control[LINK_CT_ARM], 0u);
+    CHECK_EQ(control[LINK_CT_THROTTLE], 0u);
+
+    /* A throttle-only write inside it stays for the hold... */
+    control[LINK_CT_THROTTLE] = 500u;
+    safety_gate_hold_follow(control, &was, true);
+    CHECK_EQ(control[LINK_CT_THROTTLE], 500u);
+
+    /* ...and it ends: gone, with no give needed. */
+    safety_gate_hold_follow(control, &was, false);
+    CHECK(!was);
+    CHECK_EQ(control[LINK_CT_THROTTLE], 0u);
+
+    /* An ask after the end stays. */
+    control[LINK_CT_ARM] = 1u;
+    safety_gate_hold_follow(control, &was, false);
+    CHECK_EQ(control[LINK_CT_ARM], 1u);
+
+    safety_gate_hold_follow(NULL, &was, true);
+    safety_gate_hold_follow(control, NULL, true);
+    CHECK_EQ(control[LINK_CT_ARM], 1u);
+}
+
+/* ENTER, a throttle-only write, ABORT in STOPPING, before the port had a pin:
+ * no give, and a later ARM-only write finds no old throttle. */
+TEST_CASE(a_throttle_written_in_a_hold_does_not_outlive_it)
+{
+    bool was = false;
+
+    gate_init(0);
+    (void)gate_run(1, 200);
+    (void)gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC);
+    safety_gate_hold_follow(g_control, &was, true);
+    CHECK_EQ(gate_write(LINK_CT_THROTTLE, 7000u), 0u);
+    CHECK_EQ(g_control[LINK_CT_THROTTLE], 7000u);
+    safety_gate_hold_follow(g_control, &was, false);
+    CHECK_EQ(gate_write(LINK_CT_ARM, 1u), 0u);
+    CHECK_EQ(g_control[LINK_CT_THROTTLE], 0u);
+    CHECK(gate_run(200, 260).arm);
+}
+
 /* The finding, whole: the pass the port returns has no ARM to act on. */
 TEST_CASE(a_port_returning_to_pwm_does_not_arm_on_an_old_ask)
 {
@@ -479,7 +537,11 @@ TEST_CASE(a_port_returning_to_pwm_does_not_arm_on_an_old_ask)
     g = gate_run(260, 320);
     CHECK(g.arm);
     CHECK(!safety_gate_arm_now(g.arm, 0x0001u, false));
-    safety_gate_hold_ended(g_control);
+    {
+        bool was = true;
+
+        safety_gate_hold_follow(g_control, &was, false);
+    }
     g = gate_run(320, 380);
     CHECK(!g.arm);
     CHECK(!safety_gate_arm_now(g.arm, 0u, false));
@@ -1745,6 +1807,8 @@ int main(void)
 {
     RUN(a_hold_refuses_a_nonzero_arm_and_nothing_else);
     RUN(the_end_of_a_hold_leaves_no_arm_and_no_throttle);
+    RUN(a_hold_clears_the_page_on_each_edge_and_only_there);
+    RUN(a_throttle_written_in_a_hold_does_not_outlive_it);
     RUN(a_port_returning_to_pwm_does_not_arm_on_an_old_ask);
     RUN(a_start_is_latched_and_reports_no_fault);
     RUN(clear_releases_the_latch_and_the_arm_is_taken);

@@ -148,6 +148,18 @@ bool safety_gate_hold_refuses_arm(bool held, uint8_t off, uint8_t n,
 void safety_gate_hold_ended(uint16_t *control);
 
 /**
+ * @brief Call after anything that can start or end a hold: the page is cleared
+ *        on each edge (safety_gate_hold_ended()) and left alone otherwise, so
+ *        an armed bank's page stays, and no way out of a hold, with or without
+ *        a pin given back, keeps an ARM or a THROTTLE.
+ *
+ * @param control CONTROL page, LINK_CT_COUNT registers; may be NULL
+ * @param was     the hold at the last call; updated; may be NULL
+ * @param held    true while a hold stands now
+ */
+void safety_gate_hold_follow(uint16_t *control, bool *was, bool held);
+
+/**
  * @brief A write to the CONTROL page: link_control_write() with this end's
  *        answer to whether the bench may arm, and the CLEAR acted on.
  *

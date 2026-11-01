@@ -80,6 +80,17 @@ void safety_gate_hold_ended(uint16_t *control)
     }
 }
 
+void safety_gate_hold_follow(uint16_t *control, bool *was, bool held)
+{
+    if (control == NULL || was == NULL) {
+        return;
+    }
+    if (*was != held) {
+        safety_gate_hold_ended(control);
+    }
+    *was = held;
+}
+
 uint8_t safety_gate_control_write(uint16_t *control, uint8_t off, uint8_t n,
                                   const uint16_t *in,
                                   const heartbeat_mon_t *beat,
