@@ -7,7 +7,8 @@
  * bootloader area, or an AM32 part that erases its page itself on a program,
  * forgets its address with every read and sets byte 2 of a written page.  The
  * wire side is an ew_driver_t on a clock the test advances; a fault script
- * bends single transactions.  It counts what a host must never do: a
+ * bends single transactions.  On AM32 a gap ends a message: data less than
+ * 234us behind their announcement are lost and no answer comes.  It counts what a host must never do: a
  * transaction outside its limits, a line() during a transaction, a first byte
  * while the pad is parked, a frame before the hold ended.
  *
@@ -25,6 +26,10 @@
 #define SIM_LOG_MAX 96u
 #define SIM_FLASH 0x10000u
 #define SIM_AM_PAGE 1024u
+/* AM32: idle line after a last stop bit that ends a message, us. */
+#define SIM_AM_IDLE_US 234u
+/* AM32: that idle, then one bit time, rounded up: an answer's start, us. */
+#define SIM_AM_ANSWER_US 350u
 
 typedef enum { SIM_EFM8 = 0, SIM_AM } sim_kind_t;
 
@@ -66,6 +71,10 @@ typedef struct {
     uint16_t announced;
     uint8_t  held[256];
     bool     have_data;
+    bool     swallowed;    /* AM32: data ran into the announcement's message */
+    bool     leave_sent;   /* a leave frame went */
+    uint32_t leave_end;    /* its last stop bit's end */
+    int      leave_unsettled; /* the line went low too soon after it */
     /* The wire. */
     uint32_t now;
     bool     running, stuck, overflow, aborted;
@@ -103,6 +112,11 @@ static void sim_line(void *ctx, ew_line_t level)
     }
     if (e->n_line_log < 16) {
         e->line_log[e->n_line_log++] = (uint8_t)level;
+    }
+    /* AM32 takes a message as ended only after more than 234us of idle line. */
+    if (level == EW_LINE_LOW && e->leave_sent
+        && e->now - e->leave_end <= SIM_AM_IDLE_US) {
+        e->leave_unsettled++;
     }
 }
 
@@ -314,6 +328,18 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
         if (faulted && saved == F_ERASE_DEAD && x->tx[0] == EW_A_CMD_PROGRAM) {
             memset(e->am, 0xFF, sizeof(e->am));
             e->dead = true;
+        } else if (e->swallowed) {
+            /* AM32 still waits for data: a message that ends short of them
+             * is a cut block. */
+            e->swallowed = false;
+            e->announced = 0u;
+            sim_say1(e, EW_A_REF_CRC);
+        } else if (x->n_head != 0u && e->kind == SIM_AM
+                   && (uint32_t)x->pause_bits * bit_us <= SIM_AM_IDLE_US) {
+            /* The data run into the announcement's message and are lost; the
+             * ESC waits for data the host has already sent. */
+            sim_frame(e, x->tx, x->n_head);
+            e->swallowed = true;
         } else if (x->n_head != 0u) {
             sim_frame(e, x->tx, x->n_head);
             sim_frame(e, x->tx + x->n_head, (size_t)(x->n_tx - x->n_head));
@@ -366,12 +392,22 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
     if (x->max_rx != 0u && e->n_rx > x->max_rx) {
         e->n_rx = x->max_rx;
     }
+    if (x->tx[0] == EW_A_CMD_LEAVE && x->n_tx == EW_A_SHORT_FRAME
+        && e->kind == SIM_AM) {
+        e->leave_sent = true;
+        e->leave_end = e->now + send_us;
+    }
+    /* An EFM8 answers after 2 bit times, 12 bit times a byte; AM32 after its
+     * end of message, 10 bit times a byte. */
+    const uint32_t answer_us = e->kind == SIM_AM
+                                   ? SIM_AM_ANSWER_US + (uint32_t)e->n_rx * 520u
+                                   : 104u + (uint32_t)e->n_rx * 624u;
+
     e->running = true;
     e->done_at = e->now + send_us
                  + (x->max_rx == 0u
                         ? 0u
-                        : (e->n_rx != 0u ? 104u + (uint32_t)e->n_rx * 624u
-                                         : x->first_us + 1u));
+                        : (e->n_rx != 0u ? answer_us : x->first_us + 1u));
     return true;
 }
 
@@ -495,6 +531,7 @@ static void sim_power_cycle(sim_t *e)
     e->addr_set = false;
     e->announced = 0u;
     e->have_data = false;
+    e->swallowed = false;
     e->fail = F_NONE;
     if (e->kind == SIM_EFM8) {
         uint8_t *p = e->flash + e->base;
