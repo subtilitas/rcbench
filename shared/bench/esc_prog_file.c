@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "esc_card.h"
 #include "esc_prog.h"
 #include "esc_prog_int.h"
 #include "ew_id.h"
@@ -172,7 +171,7 @@ size_t esc_prog_record_text(const esc_prog_t *p, const uint8_t *draft, char *out
         || !capture_now(p, &s_before)) {
         return 0u;
     }
-    int n = snprintf(out, size, "%s\ntarget=%04X gpio=%u\n", ESC_CARD_RECORD_HEAD,
+    int n = snprintf(out, size, "%s\ntarget=%04X gpio=%u\n", ESC_PROG_RECORD_HEAD,
                      (unsigned)p->f.rd.target, (unsigned)p->f.rd.gpio);
 
     if (n < 0 || (size_t)n >= size) {

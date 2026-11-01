@@ -581,7 +581,7 @@ bool esc_wire_panel_target_text(char *out, size_t size)
  * @brief Start over: closed, nothing held, laid out in @p area.
  * @param area The area.
  */
-static void ps_init(gfx_rect_t area)
+static void esc_wire_ps_init(gfx_rect_t area)
 {
     memset(&ewp_s, 0, sizeof(ewp_s));
     ewp_s.area = area;
@@ -594,13 +594,13 @@ static void ps_init(gfx_rect_t area)
 }
 
 /** @brief The host screen was entered. */
-static void ps_entry(void)
+static void esc_wire_ps_entry(void)
 {
     ++ewp_s.rev;
 }
 
 /** @brief The row was tapped. */
-static void ps_open(void)
+static void esc_wire_ps_open(void)
 {
     ewp_s.open = true;
     ewp_s.note[0] = '\0';
@@ -611,13 +611,13 @@ static void ps_open(void)
  * @brief Whether the session shows.
  * @return true while open or while a pin is held: a session is not left behind.
  */
-static bool ps_is_open(void)
+static bool esc_wire_ps_is_open(void)
 {
     return ewp_s.open;
 }
 
 /** @brief Home tag or BACK: see ewp_back(). */
-static void ps_back(void)
+static void esc_wire_ps_back(void)
 {
     ewp_back();
 }
@@ -626,7 +626,7 @@ static void ps_back(void)
  * @brief Whether the session holds a pin.
  * @return true then.
  */
-static bool ps_holds(void)
+static bool esc_wire_ps_holds(void)
 {
     return esc_wire_panel_holds_port();
 }
@@ -635,7 +635,7 @@ static bool ps_holds(void)
  * @brief The bench's arm.
  * @param armed Armed, or asked to arm.
  */
-static void ps_armed(bool armed)
+static void esc_wire_ps_armed(bool armed)
 {
     ewp_s.armed = armed;
 }
@@ -644,7 +644,7 @@ static void ps_armed(bool armed)
  * @brief A hold's time.
  * @param dt_s Seconds since the last.
  */
-static void ps_tick(float dt_s)
+static void esc_wire_ps_tick(float dt_s)
 {
     ewp_tick(dt_s);
 }
@@ -654,7 +654,7 @@ static void ps_tick(float dt_s)
  * @param id The finger.
  * @return true then.
  */
-static bool ps_has_press(uint8_t id)
+static bool esc_wire_ps_has_press(uint8_t id)
 {
     return ewp_s.have && ewp_s.id == id;
 }
@@ -663,7 +663,7 @@ static bool ps_has_press(uint8_t id)
  * @brief Changes when a render would show something else.
  * @return The count.
  */
-static uint32_t ps_revision(void)
+static uint32_t esc_wire_ps_revision(void)
 {
     return ewp_s.rev + ewp_s.kp.revision;
 }
@@ -672,13 +672,13 @@ static uint32_t ps_revision(void)
  * @brief Changes while a hold fills.
  * @return The count.
  */
-static uint32_t ps_hold_revision(void)
+static uint32_t esc_wire_ps_hold_revision(void)
 {
     return ewp_s.hold_rev;
 }
 
 /** @brief The host is left: presses and editors go, a held pin stays. */
-static void ps_leave(void)
+static void esc_wire_ps_leave(void)
 {
     ewp_cancel();
     ewp_editors_close();
@@ -691,7 +691,7 @@ static void ps_leave(void)
  * @brief The GPIO the session's port drives.
  * @return It, or PROG_REG_NO_PIN.
  */
-static uint8_t ps_pin(void)
+static uint8_t esc_wire_ps_pin(void)
 {
     const esc_link_readout_t *rd = &ewp_s.prog.f.rd;
 
@@ -700,23 +700,23 @@ static uint8_t ps_pin(void)
 }
 
 const prog_page_set_t esc_wire_pages = {
-    .init          = ps_init,
-    .entry         = ps_entry,
-    .open          = ps_open,
-    .is_open       = ps_is_open,
-    .back          = ps_back,
-    .holds_port    = ps_holds,
-    .armed         = ps_armed,
-    .tick          = ps_tick,
-    .has_press     = ps_has_press,
+    .init          = esc_wire_ps_init,
+    .entry         = esc_wire_ps_entry,
+    .open          = esc_wire_ps_open,
+    .is_open       = esc_wire_ps_is_open,
+    .back          = esc_wire_ps_back,
+    .holds_port    = esc_wire_ps_holds,
+    .armed         = esc_wire_ps_armed,
+    .tick          = esc_wire_ps_tick,
+    .has_press     = esc_wire_ps_has_press,
     .event         = ewp_event,
     .render        = ewp_render,
-    .revision      = ps_revision,
-    .hold_revision = ps_hold_revision,
+    .revision      = esc_wire_ps_revision,
+    .hold_revision = esc_wire_ps_hold_revision,
     .hold_rect     = esc_wire_panel_hold_rect,
-    .leave         = ps_leave,
+    .leave         = esc_wire_ps_leave,
     .cancel        = ewp_cancel,
-    .pin           = ps_pin,
+    .pin           = esc_wire_ps_pin,
     .safe_at       = ewp_safe_at,
 };
 

@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "esc_prog.h"
 #include "ew_file.h"
 #include "servo_store.h"
 
@@ -31,11 +32,8 @@ extern "C" {
 #define ESC_CARD_FILES 12u
 /** @brief Characters of a base name, with the terminator. */
 #define ESC_CARD_NAME_MAX (SERVO_STORE_BASE_MAX + 1)
-/** @brief The first line of the record of a write. */
-#define ESC_CARD_RECORD_HEAD "RCBENCH ESCW RECORD 1"
-/** @brief Bytes of the record of a write: a line per ESCape32 key changed in front
- *         of a whole file. */
-#define ESC_CARD_TEXT_MAX (EW_FILE_MAX + (size_t)EW_E32_KEYS * 72u + 64u)
+/** @brief Bytes a request or an answer holds: the largest is the record of a write. */
+#define ESC_CARD_TEXT_MAX ESC_PROG_RECORD_MAX
 
 /** @brief What a request asks. */
 typedef enum {

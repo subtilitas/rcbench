@@ -42,6 +42,7 @@
 
 #include "esc_link.h"
 #include "ew_file.h"
+#include "ew_map.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -360,6 +361,12 @@ size_t esc_prog_backup_text(const esc_prog_t *p, char *out, size_t size);
  */
 void esc_prog_backup_settled(esc_prog_t *p);
 
+/** @brief The first line of the record of a write. */
+#define ESC_PROG_RECORD_HEAD "RCBENCH ESCW RECORD 1"
+/** @brief Bytes of the record of a write: a line per ESCape32 key changed in front
+ *         of a whole file. */
+#define ESC_PROG_RECORD_MAX (EW_FILE_MAX + (size_t)EW_E32_KEYS * 72u + 64u)
+
 /**
  * @brief The record of a write for the card, ESCW.TXT: a first line, the target
  *        and its GPIO, one line `NAME: old -> new` per field the draft changes,
@@ -367,7 +374,7 @@ void esc_prog_backup_settled(esc_prog_t *p);
  * @param p     The model.
  * @param draft The draft, of the read copy's length.
  * @param out   Takes the text, without a terminator.
- * @param size  Bytes at @p out; ESC_CARD_TEXT_MAX always fits.
+ * @param size  Bytes at @p out; ESC_PROG_RECORD_MAX always fits.
  * @return Bytes written; 0 with no read copy, or for a @p size too small.
  */
 size_t esc_prog_record_text(const esc_prog_t *p, const uint8_t *draft, char *out,
