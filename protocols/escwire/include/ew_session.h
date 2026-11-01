@@ -123,8 +123,11 @@ typedef struct {
     bool         stop_wanted; /**< a stop waits for the write's end          */
     bool         stopped;     /**< a stop parked the line                    */
     bool         restoring;   /**< the operation writes a backup             */
-    bool         save_open;   /**< text: a `save` went and no answer came    */
-    bool         saved;       /**< text: this write's `save` was answered OK */
+    bool         save_open;   /**< text: a `save` went, and no read-back has
+                                   proven the flash since                    */
+    bool         save_prior;  /**< text: @c save_open before the last `save` */
+    bool         save_ok;     /**< text: this procedure's `save` answered OK */
+    bool         contact_heard; /**< a first contact's try was not silent    */
     ew_ses_t     result;      /**< the last operation's result               */
     uint16_t     bad_off;     /**< the byte the guard refused; text: the low
                                    byte of the key a write ended on          */
@@ -160,8 +163,8 @@ ew_ses_t ew_session_hold(ew_session_t *s);
 
 /**
  * @brief The supply came on: hold the line @p hold_ms longer, then first
- *        contact and identification.  A first contact with no answer holds the
- *        line high EW_SES_TEXT_HOLD_MS more and asks `info` at 38400baud.  Ends
+ *        contact and identification.  When all 3 tries are silent the line
+ *        stays high EW_SES_TEXT_HOLD_MS more and `info` goes at 38400baud.  Ends
  *        EW_SES_OK, or EW_SES_ERR_NOT_KNOWN with the line still up, or
  *        EW_SES_ERR_SILENT or EW_SES_ERR_CONTACT.
  * @param s       the session, after ew_session_hold()
@@ -216,7 +219,7 @@ void ew_session_backup_id(const ew_session_t *s, ew_backup_id_t *out);
  *        park it.  Refused while a page is half written and on erased settings.
  *        The text interface has no command to leave: the line parks at once,
  *        the call returns EW_SES_OK and the caller cuts the supply; refused
- *        only while a `save` has no answer.
+ *        only while a `save` is not proven by a read-back.
  * @param s the session
  * @return EW_SES_BUSY when it started, else the refusal
  */

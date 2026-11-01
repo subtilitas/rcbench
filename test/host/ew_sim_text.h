@@ -131,7 +131,22 @@ static void sim_text_command(sim_t *e, char *s, uint8_t fault)
     } else if (strncmp(s, "set ", 4u) == 0) {
         sim_text_set(e, s + 4);
     } else if (strcmp(s, "save") == 0) {
+        const char plan = e->save_plan != NULL && *e->save_plan != '\0'
+                              ? *e->save_plan++ : 'O';
+
+        if (plan == 'E') {
+            sim_text_say(e, "ERROR\n");
+            return;
+        }
+        if (plan == 'U') {
+            sim_text_say(e, "timing: 20\nOK\n");
+            return;
+        }
         memcpy(e->saved, e->ram, sizeof(e->saved));
+        if (plan == 'L') {
+            e->saves++;
+            return;
+        }
         e->saves++;
         if (fault == F_CORRUPT) {
             e->ram[e->fail_byte]++;

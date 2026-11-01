@@ -51,6 +51,7 @@ typedef enum {
     F_TEXT_CUT,     /* text: the last 3 bytes of the reply are lost */
     F_TEXT_BYTE,    /* text: the reply's first byte is 0x01 */
     F_TEXT_FLOOD,   /* text: a reply with no end, longer than any buffer */
+    F_TEXT_HEARD,   /* text: the ESC acts, its reply is swap_reply */
 } sim_fault_t;
 
 typedef struct {
@@ -106,6 +107,9 @@ typedef struct {
     const char *mute_word;   /* a line starting so gets no reply */
     bool     mute_heard;     /* and the ESC acts on it */
     int      drift_slot;     /* a key each `save` moves in RAM, -1 for none */
+    const char *swap_reply;  /* see F_TEXT_HEARD */
+    const char *save_plan;   /* per `save`: O as usual, L its reply lost, E ERROR,
+                                U nothing done and a line before its OK */
 } sim_t;
 
 #include "ew_sim_text.h"
@@ -376,6 +380,10 @@ static bool sim_start(void *ctx, const ew_xfer_t *x)
             break;
         case F_STUCK:
             e->stuck = true;
+            break;
+        case F_TEXT_HEARD:
+            e->n_rx = 0u;
+            sim_text_say(e, e->swap_reply);
             break;
         case F_TEXT_CUT:
             e->n_rx = e->n_rx >= 3u ? (uint16_t)(e->n_rx - 3u) : 0u;

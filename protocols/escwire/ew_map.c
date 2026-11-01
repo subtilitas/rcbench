@@ -283,6 +283,12 @@ ew_img_t ew_image_check(uint8_t fw, uint8_t layout, const uint8_t *orig,
                         const uint8_t *draft, size_t n, uint16_t *off)
 {
     if (fw == (uint8_t)EW_FW_E32) {
+        if (n != EW_MAP_LEN_E32) {
+            if (off != NULL) {
+                *off = (uint16_t)(n < EW_MAP_LEN_E32 ? n : EW_MAP_LEN_E32);
+            }
+            return EW_IMG_NOT_EDITABLE;
+        }
         return e32_check(orig, draft, off);
     }
     for (size_t i = 0; i < n; ++i) {

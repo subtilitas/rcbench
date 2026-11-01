@@ -158,8 +158,9 @@ typedef enum {
 /**
  * @brief Compare a draft with the page read: only editable fields may differ,
  *        and only to one of their values.  On ESCape32 @p off is the low byte
- *        of the key, and a key changed with its floor changed may not be below
- *        it.
+ *        of the key, a key changed with its floor changed may not be below it,
+ *        and a length other than EW_MAP_LEN_E32 is EW_IMG_NOT_EDITABLE, with
+ *        @p off the shorter of the two.
  * @param fw     the firmware
  * @param layout the page's layout or revision
  * @param orig   the page as read

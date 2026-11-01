@@ -3,9 +3,9 @@
  * @brief The session's branch for the text interface; see ew_session.h.
  *
  * `set` changes the ESC's RAM and only `save` its flash, so a failure before a
- * `save` leaves the flash as read.  `show` reads RAM: the read-back after a
- * `save` says what the ESC holds in RAM, and the `OK` of the `save` says the
- * flash holds it.
+ * `save` leaves the flash as read.  `show` reads RAM: only a `save` answered
+ * with `OK` alone, with a `show` after it equal to the target, closes a write.
+ * Until then @c save_open stands, and RAM equal to either page proves nothing.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -34,9 +34,11 @@ static void send_line(ew_session_t *s, size_t n, uint32_t first)
         /* From here on the ESC's RAM may not be the page read. */
         s->dirty = true;
         s->reread = false;
+        s->save_ok = false;
     }
     if (is_save) {
         s->writing = true;
+        s->save_prior = s->save_open;
         s->save_open = true;
     }
     s->x = (ew_xfer_t){
@@ -143,8 +145,7 @@ static void show_done(ew_session_t *s, size_t body)
     uint8_t page[EW_MAP_LEN_E32];
     const bool reading = s->op == OP_READ;
     const bool known = ew_map_writable(EW_FW_E32, s->id.layout);
-    const bool whole = ew_text_show(s->rx_text, body, page,
-                                    reading ? s->music : NULL);
+    const bool whole = ew_text_show(s->rx_text, body, page, NULL);
 
     if (!whole && known && (!reading || s->tries + 1u < EW_SES_TRIES)) {
         s->last_ans = (uint8_t)EW_ANS_LENGTH;
@@ -153,6 +154,7 @@ static void show_done(ew_session_t *s, size_t body)
     }
     memcpy(s->page, page, sizeof(page));
     if (reading) {
+        (void)ew_text_show(s->rx_text, body, page, s->music);
         if (!s->dirty) {
             memcpy(s->orig, page, sizeof(page));
         }
@@ -218,13 +220,13 @@ void ew_ses_text_done(ew_session_t *s, uint8_t a, const ew_capture_t *c)
     if (a == A_TEXT_SET) {
         set_done(s, ans, body);
     } else if (a == A_TEXT_SAVE) {
-        if (ans == EW_ANS_OK) {
-            s->save_open = false;
-            s->saved = true;
+        if (ans == EW_ANS_OK && body == 0u) {
+            s->save_ok = true;
             s->tries = 0u;
             s->pc++;
-        } else if (ans == EW_ANS_TEXT_ERROR) {
-            s->save_open = false;
+        } else if (ans == EW_ANS_TEXT_ERROR && body == 0u) {
+            /* This one wrote nothing; an earlier one may have. */
+            s->save_open = s->save_prior;
             ended_by_esc(s, EW_E32_KEYS, EW_SES_ERR_ESC_ERROR);
         } else {
             ew_ses_try_failed(s, a);

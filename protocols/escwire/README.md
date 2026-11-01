@@ -97,10 +97,11 @@ ESCape32 has no bootloader frames: a command line on the signal wire, 38400baud,
 A reply with no last line, a low stop bit, or a byte other than a printable
 character or LF is a failed try. These times are a host's choice.
 
-**Entry.** A first contact with no answer on 3 tries is followed by 2500ms with
-the line driven high (`EW_SES_TEXT_HOLD_MS`), then `info`. The first contact is
-a framing error to this ESC and resets it; it opens its command line after 2s
-with the line high. An answer to the first contact sends no line. Worst case
+**Entry.** 3 silent tries of the first contact are followed by 2500ms with the
+line driven high (`EW_SES_TEXT_HOLD_MS`), then `info`. The first contact is a
+framing error to this ESC and resets it; it opens its command line after 2s with
+the line high. Any byte on any of the 3 tries sends no line:
+`EW_SES_ERR_CONTACT`. Worst case
 without an answer: the hold, 300ms, 2500ms and 600ms.
 
 **The page.** `ew_map_e32` holds 46 numeric keys in the order of the wire's key
@@ -122,22 +123,26 @@ spelled them.
 4. `save`, then `show`, compared with the draft.
 
 A failed `set` is repeated 3 times, then a `show`, then the procedure from step 3,
-3 times at most. A `save` with no answer is not repeated on its own: a `show`
-follows, then the procedure.
+3 times at most. A `save` with no answer, or with any line before its `OK`, is
+not repeated on its own: a `show` follows, then the procedure. Only a `save`
+answered `OK` alone, followed by a `show` equal to the draft, ends a write with
+`EW_SES_OK`. `save_open` stands from the first `save` until then, and RAM equal
+to the draft or to the page read does not clear it. An `ERROR` to a `save` clears
+it only when no earlier `save` left it standing.
 
 | Result | Flash | RAM | What goes next |
 |---|---|---|---|
 | `EW_SES_OK` | the draft | the draft | anything |
 | `EW_SES_ERR_READ`, `EW_SES_ERR_CHANGED` | as read | as read | anything |
-| `EW_SES_ERR_CLIPPED` (`clipped`, `bad_off`): the ESC stored another value, no `save` follows | as read | some keys set | a read, then the draft or the page read; or a leave |
-| `EW_SES_ERR_ESC_ERROR` (`bad_off` for a `set`): a `set` or `save` answered `ERROR` | as read | some keys set | as above |
+| `EW_SES_ERR_CLIPPED` (`clipped`, `bad_off`): the ESC stored another value, no `save` follows | as read, unless `save_open` | some keys set | a read, then the draft or the page read; a leave unless `save_open` |
+| `EW_SES_ERR_ESC_ERROR` (`bad_off` for a `set`): a `set` or `save` answered `ERROR` | as read, unless `save_open` | some keys set | as above |
 | `EW_SES_ERR_WRITE_FAILED` | as read | as read, or not known with `dirty` | as above |
-| `EW_SES_ERR_TORN` | not known with `save_open` | neither page | the draft or the page read; no leave with `save_open` |
-| `EW_SES_ERR_LOST` | the draft with `saved`, else not known | not known | a read, or a power cycle |
+| `EW_SES_ERR_TORN` | as read, unless `save_open` | any | a read, then the draft or the page read; no leave with `save_open` |
+| `EW_SES_ERR_LOST` | not known with `save_open`, else as read | not known | a read, or a power cycle; no leave with `save_open` |
 
-`show` reads RAM, so the read-back does not prove the flash. The `OK` of a `save`
-says the flash holds the values; nothing here reads the flash after a power
-cycle. `ew_session_writing()` is true from the `save` on, and `ew_session_stop()`
+`show` reads RAM, so a read-back alone does not prove the flash. The `OK` of a
+`save` says the flash holds the values; nothing here reads the flash after a
+power cycle. `ew_session_writing()` is true from the `save` on, and `ew_session_stop()`
 before a `save` cuts at once, as the flash is untouched.
 
 A `show` that lacks a key, repeats one or holds another is a failed try. On a
@@ -148,7 +153,7 @@ read-only (`EW_WHY_TEXT_REVISION`), and its `show` is taken on the first try.
 
 **Leaving.** The interface has no command to leave. `ew_session_leave()` sends
 nothing, parks the line at once and returns `EW_SES_OK`; the caller switches the
-supply off. It is refused while a `save` has no answer. On an ESC on its own
+supply off. It is refused while `save_open` stands. On an ESC on its own
 supply a person disconnects it.
 
 ## Use

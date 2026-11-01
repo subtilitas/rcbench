@@ -6,8 +6,9 @@
  * Under test: the entry through a silent first contact, its hold, a reply of
  * another firmware; revisions read-only; a read with faults on each try, a
  * `show` lacking a key or holding others; the specification's exchange byte for
- * byte; a clip, an `ERROR`, a `save` silent or refused, a read-back that
- * differs; a failure and an abort at every transaction of a write; a stop before
+ * byte; a clip, an `ERROR`, a `set` applied and answered badly, a `save` silent,
+ * refused or answered with more than its `OK`, a read-back that differs, RAM
+ * equal to a page while the flash is not proven; a failure and an abort at every transaction of a write; a stop before
  * and during a `save`; a driver that fails; the guard stopping a line; a leave;
  * a run across the clock's wrap.  The ESC's count of forbidden commands stays 0.
  *
@@ -513,6 +514,154 @@ TEST_CASE(a_set_on_its_third_try_and_none)
     CHECK_EQ(ew_session_leave(&s), EW_SES_OK);
 }
 
+TEST_CASE(a_set_heard_with_its_replies_lost_still_gets_its_save)
+{
+    /* RAM reaches the draft with no reply: only a `save` puts it in flash. */
+    read_up(BANNER);
+    edit("timing", 20);
+    const int at = esc.starts;
+
+    sim_script(&esc, F_HEARD_SILENT, 2, 3, 0u);
+    CHECK_EQ(write_draft(), EW_SES_OK);
+    CHECK_EQ(esc.saves, 1);
+    CHECK_EQ(esc.saved[slot_of("timing")], 20);
+    /* info, show, 3 of set, show, save, show. */
+    CHECK_EQ(esc.starts, at + 8);
+    CHECK(sim_sent_line(&esc, at + 6, "save\n"));
+    CHECK(!s.dirty);
+}
+
+TEST_CASE(a_set_applied_and_answered_badly)
+{
+    /* Each reply wrong in its own way, the ESC acting on all 3. */
+    static const char *const k_replies[] = {
+        "xx\nOK\n", "timing: 20\n", "led: 20\nOK\n", "timing: x\nOK\n",
+        "timing: 20\ndamp: 1\nOK\n", "OK\n",
+    };
+
+    for (size_t i = 0; i < sizeof(k_replies) / sizeof(k_replies[0]); ++i) {
+        read_up(BANNER);
+        edit("timing", 20);
+        const int at = esc.starts;
+
+        esc.swap_reply = k_replies[i];
+        sim_script(&esc, F_TEXT_HEARD, 2, 3, 0u);
+        CHECK_EQ(write_draft(), EW_SES_OK);
+        CHECK_EQ(esc.sets, 3);
+        CHECK_EQ(esc.saves, 1);
+        CHECK_EQ(esc.saved[slot_of("timing")], 20);
+        /* info, show, 3 of set, show, save, show. */
+        CHECK_EQ(esc.starts, at + 8);
+    }
+}
+
+TEST_CASE(a_save_answered_with_more_than_its_ok)
+{
+    /* A line before the OK: not this `save`'s reply, and the flash not moved. */
+    read_up(BANNER);
+    edit("timing", 20);
+    const int at = esc.starts;
+
+    esc.save_plan = "U";
+    CHECK_EQ(write_draft(), EW_SES_OK);
+    CHECK_EQ(esc.saves, 1);
+    CHECK_EQ(esc.saved[slot_of("timing")], 20);
+    /* info, show, set, save, show, save, show. */
+    CHECK_EQ(esc.starts, at + 7);
+    CHECK(sim_sent_line(&esc, at + 5, "save\n"));
+    /* On every `save`: never taken as written. */
+    read_up(BANNER);
+    edit("timing", 20);
+    esc.save_plan = "UUU";
+    CHECK_EQ(write_draft(), EW_SES_ERR_TORN);
+    CHECK_EQ(esc.saves, 0);
+    CHECK(s.save_open);
+}
+
+TEST_CASE(ram_as_read_after_a_save_proves_nothing_about_the_flash)
+{
+    /* Each `save` stores 15, then RAM drifts back to the 16 read. */
+    read_up(BANNER);
+    edit("timing", 15);
+    esc.drift_slot = (int)slot_of("timing");
+    CHECK_EQ(write_draft(), EW_SES_ERR_TORN);
+    CHECK_EQ(esc.saved[slot_of("timing")], 15);
+    CHECK_EQ(esc.ram[slot_of("timing")], 16);
+    CHECK(s.dirty);
+    CHECK(s.save_open);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_ERR_DIRTY);
+    /* The page read goes through a `save`, and that repairs the flash. */
+    esc.drift_slot = -1;
+    uint8_t back[EW_MAP_LEN_E32];
+
+    memcpy(back, s.orig, sizeof(back));
+    const int saves = esc.saves;
+
+    CHECK_EQ(ew_session_write(&s, back, sizeof(back)), EW_SES_BUSY);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    CHECK_EQ(esc.saves, saves + 1);
+    CHECK_EQ(esc.saved[slot_of("timing")], 16);
+    CHECK(!s.dirty);
+    CHECK(!s.save_open);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_OK);
+}
+
+TEST_CASE(an_error_keeps_what_an_earlier_save_left_open)
+{
+    /* The first `save` reply lost, the second answered ERROR. */
+    read_up(BANNER);
+    edit("timing", 20);
+    esc.save_plan = "LE";
+    CHECK_EQ(write_draft(), EW_SES_ERR_ESC_ERROR);
+    CHECK_EQ(esc.saves, 1);
+    CHECK(s.save_open);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_ERR_DIRTY);
+    /* A later write's ERROR keeps it too: only a proof clears it. */
+    (void)ew_session_read(&s);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    esc.save_plan = "E";
+    CHECK_EQ(write_draft(), EW_SES_ERR_ESC_ERROR);
+    CHECK(s.save_open);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_ERR_DIRTY);
+    (void)ew_session_read(&s);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    CHECK_EQ(write_draft(), EW_SES_OK);
+    CHECK(!s.save_open);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_OK);
+}
+
+TEST_CASE(any_answer_to_a_contact_sends_no_line)
+{
+    /* Bytes on the first try and silence on the other two. */
+    up(BANNER);
+    sim_script(&esc, F_BYTE, 0, 1, 0x55u);
+    CHECK_EQ(sim_enter(&s, &esc), EW_SES_ERR_CONTACT);
+    CHECK_EQ(esc.starts, 3);
+    /* On the second. */
+    up(BANNER);
+    sim_script(&esc, F_BYTE, 1, 1, 0x55u);
+    CHECK_EQ(sim_enter(&s, &esc), EW_SES_ERR_CONTACT);
+    CHECK_EQ(esc.starts, 3);
+}
+
+TEST_CASE(a_rejected_show_leaves_the_music)
+{
+    read_up(BANNER);
+    CHECK_STR_EQ(s.music, "dfa#");
+    /* A new tune in a reply that lacks a key, then silence. */
+    (void)snprintf(esc.music, sizeof(esc.music), "abc");
+    esc.show_drop = 7;
+    sim_script(&esc, F_SILENT, 1, 2, 0u);
+    CHECK_EQ(ew_session_read(&s), EW_SES_BUSY);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_ERR_READ);
+    CHECK_STR_EQ(s.music, "dfa#");
+    /* The reply taken on the third try brings its tune along. */
+    CHECK_EQ(ew_session_read(&s), EW_SES_BUSY);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
+    CHECK(!s.id.writable);
+    CHECK_STR_EQ(s.music, "abc");
+}
+
 TEST_CASE(a_set_heard_with_its_reply_lost_for_good)
 {
     /* RAM holds the new value and the ESC goes silent: the flash is as read. */
@@ -590,14 +739,14 @@ TEST_CASE(a_save_and_then_silence)
     CHECK_EQ(write_draft(), EW_SES_ERR_LOST);
     CHECK(s.save_open);
     CHECK_EQ(ew_session_leave(&s), EW_SES_ERR_DIRTY);
-    /* Its OK came and the read-back did not: the flash holds it. */
+    /* Its OK came and the read-back did not: not proven, so no leave. */
     read_up(BANNER);
     edit("timing", 20);
     sim_script(&esc, F_DEAD, 4, 1, 0u);
     CHECK_EQ(write_draft(), EW_SES_ERR_LOST);
-    CHECK(!s.save_open);
+    CHECK(s.save_open);
     CHECK_EQ(esc.saved[slot_of("timing")], 20);
-    CHECK_EQ(ew_session_leave(&s), EW_SES_OK);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_ERR_DIRTY);
 }
 
 TEST_CASE(a_read_back_that_differs)
@@ -838,6 +987,13 @@ int main(void)
     RUN(a_leave_after_a_clip_keeps_the_flash);
     RUN(an_error_to_a_set_or_a_save);
     RUN(a_set_on_its_third_try_and_none);
+    RUN(a_set_heard_with_its_replies_lost_still_gets_its_save);
+    RUN(a_set_applied_and_answered_badly);
+    RUN(a_save_answered_with_more_than_its_ok);
+    RUN(ram_as_read_after_a_save_proves_nothing_about_the_flash);
+    RUN(an_error_keeps_what_an_earlier_save_left_open);
+    RUN(any_answer_to_a_contact_sends_no_line);
+    RUN(a_rejected_show_leaves_the_music);
     RUN(a_set_heard_with_its_reply_lost_for_good);
     RUN(a_set_answered_for_another_key);
     RUN(a_save_with_no_answer);

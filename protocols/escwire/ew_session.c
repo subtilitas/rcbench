@@ -318,6 +318,7 @@ static const uint8_t *write_list(const ew_session_t *s)
 static void restart_write(ew_session_t *s)
 {
     s->attempts++;
+    s->save_ok = false;
     s->seq = write_list(s);
     s->pc = WRITE_FROM;
     s->tries = 0u;
@@ -331,12 +332,16 @@ static void restart_write(ew_session_t *s)
 static bool check_after(ew_session_t *s)
 {
     s->reread = s->dirty;
-    /* A `save` with no answer: RAM says nothing about the flash. */
-    if (same_page(s, s->page, s->target) && !s->save_open) {
+    /* On the text interface only a `save` answered `OK`, with RAM the target
+     * after it, proves the flash: RAM alone says nothing about it. */
+    const bool proven = s->id.fw != (uint8_t)EW_FW_E32 || s->save_ok;
+
+    if (same_page(s, s->page, s->target) && proven) {
         memcpy(s->orig, s->page, s->id.len);
         memcpy(s->target, s->page, s->id.len);
         s->dirty = false;
         s->reread = false;
+        s->save_open = false;
         s->have_read = true;
         if (s->restoring) {
             s->id.erased = false;
@@ -500,9 +505,10 @@ static void step_failed(ew_session_t *s)
     const bool silent = (ew_ans_t)s->last_ans == EW_ANS_SILENT;
     const bool text = s->id.fw == (uint8_t)EW_FW_E32;
 
-    if (s->op == OP_ENTER && s->seq == k_contact_seq && silent) {
+    if (s->op == OP_ENTER && s->seq == k_contact_seq && !s->contact_heard) {
         /* A first contact is a framing error on the text interface and resets
-         * that ESC: it opens again after a hold with the line high. */
+         * that ESC: it opens again after a hold with the line high.  All 3 were
+         * silent: an ESC that said anything gets no line. */
         s->seq = k_id_text;
         s->pc = 0u;
         s->tries = 0u;
@@ -513,7 +519,8 @@ static void step_failed(ew_session_t *s)
         return;
     }
     if (s->op == OP_ENTER && (s->seq == k_contact_seq || s->seq == k_id_text)) {
-        ew_ses_finish(s, silent ? EW_SES_ERR_SILENT : EW_SES_ERR_CONTACT);
+        ew_ses_finish(s, silent && !s->contact_heard ? EW_SES_ERR_SILENT
+                                                     : EW_SES_ERR_CONTACT);
         return;
     }
     if (in_proc) {
@@ -524,7 +531,7 @@ static void step_failed(ew_session_t *s)
     }
     if (s->op == OP_WRITE && s->dirty) {
         /* Before a `save` the flash is as read, whatever RAM holds. */
-        const bool flash_kept = text && !s->save_open && !s->saved;
+        const bool flash_kept = text && !s->save_open;
 
         if (flash_kept) {
             ew_guard_done(&s->guard);
@@ -609,6 +616,7 @@ static void xfer_done(ew_session_t *s, const ew_capture_t *c)
     case A_CONTACT:
         ans = ew_a_contact_reply(c, s->rx);
         s->last_ans = (uint8_t)ans;
+        s->contact_heard = s->contact_heard || ans != EW_ANS_SILENT;
         if (ans == EW_ANS_OK) {
             contact_done(s);
         } else {
@@ -814,7 +822,7 @@ ew_ses_t ew_session_write(ew_session_t *s, const uint8_t *draft, size_t n)
         return EW_SES_ERR_REFUSED;
     }
     s->attempts = 1u;
-    s->saved = false;
+    s->save_ok = false;
     if (s->dirty) {
         return resume_write(s);
     }
@@ -895,7 +903,7 @@ ew_ses_t ew_session_leave(ew_session_t *s)
     }
     if (s->id.fw == (uint8_t)EW_FW_E32) {
         /* No command leaves: the caller switches the supply off.  Only a `save`
-         * with no answer leaves the flash in doubt. */
+         * not yet proven leaves the flash in doubt. */
         if (s->save_open) {
             return EW_SES_ERR_DIRTY;
         }

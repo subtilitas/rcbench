@@ -625,6 +625,15 @@ TEST_CASE(a_draft_of_keys)
     ew_e32_put(draft, freq_min, 31);
     CHECK_EQ(ew_image_check(EW_FW_E32, 17u, orig, draft, 92u, &off), EW_IMG_VALUE);
     CHECK_EQ(off, freq_max * 2u);
+    /* A length other than the page's: no read past either buffer. */
+    CHECK_EQ(ew_image_check(EW_FW_E32, 17u, orig, orig, 91u, &off),
+             EW_IMG_NOT_EDITABLE);
+    CHECK_EQ(off, 91u);
+    CHECK_EQ(ew_image_check(EW_FW_E32, 17u, orig, orig, 93u, &off),
+             EW_IMG_NOT_EDITABLE);
+    CHECK_EQ(off, 92u);
+    CHECK_EQ(ew_image_check(EW_FW_E32, 17u, orig, orig, 0u, NULL),
+             EW_IMG_NOT_EDITABLE);
     /* Both already that way and neither changed: not this write's. */
     ew_e32_put(orig, freq_min, 40);
     ew_e32_put(draft, freq_min, 40);
