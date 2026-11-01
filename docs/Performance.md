@@ -76,6 +76,7 @@ battery                          0       0 KiB
 balance                          0       0 KiB
 motor-stick                  1,713     214 KiB
 motor-wire                       0       0 KiB
+motor-wire-hold                251      31 KiB
 balance-sim                  3,253     407 KiB
 settings-sim                 3,304     413 KiB
 battery-sim                  3,146     393 KiB
@@ -114,6 +115,7 @@ est. ms and est. fps: not measured
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `supply` | the supply screen with its output on, a sample landing every frame |
+| `motor-wire-hold` | the ESC signal wire session on LEAVE's page, a finger on its 2s hold |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
 | `settings-list` | SETUP with PANEL's list open, chrome cached |
 | `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
@@ -229,7 +231,7 @@ a change that makes the model draw more, not a frame that misses the panel:
 
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
-| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
+| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `motor-wire-hold`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
 | `overview-guide` | 1,000 | guide marks that draw more than their badges and brackets |
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
@@ -338,6 +340,7 @@ fill and a write-back for every line. The time of one clear, set as
 | `balance` | BALANCE | not measured | not measured | not measured | not measured | not measured |
 | `motor-stick` | ESC STICK open on MOTOR & ESC > PROGRAM | not measured | not measured | not measured | not measured | not measured |
 | `motor-wire` | the ESC signal wire session at rest on a read ESC, MOTOR & ESC > PROGRAM | not measured | not measured | not measured | not measured | not measured |
+| `motor-wire-hold` | a finger on the 2s hold of the ESC signal wire session's LEAVE page | not measured | not measured | not measured | not measured | not measured |
 | `picker` | OUTPUTS, board view | not measured | not measured | not measured | not measured | not measured |
 | `wifi` | WI-FI with ACCESS POINT on | not measured | not measured | not measured | not measured | not measured |
 | `wifi-keys` | WI-FI > CHOOSE HOME NETWORK, the password keyboard, a key typed every second | not measured | not measured | not measured | not measured | not measured |

@@ -106,6 +106,23 @@ enum {
 #define EWP_PAGE_LINES 14
 /** @brief Cells of a line at most, with the terminator. */
 #define EWP_LINE 101
+/** @brief What a press is on. */
+enum {
+    EWP_P_NONE = 0,
+    EWP_P_TAB,
+    EWP_P_BACK,
+    EWP_P_ROW,
+    EWP_P_CONNECT_ROW,
+    EWP_P_ACT,
+    EWP_P_HOLD,
+    EWP_P_CANCEL,
+    EWP_P_CHOICE,
+    EWP_P_CHOICE_CANCEL,
+    EWP_P_KEYPAD,
+    EWP_P_NEXT,
+    EWP_P_PREV,
+};
+
 /** @brief Tabs at most: what the tab strip can select. */
 #define EWP_TABS UI_TABS_MAX
 /** @brief Changes on a page of the WRITE list. */
@@ -148,6 +165,7 @@ typedef struct {
     int        which;     /**< its row                                        */
     ui_hold_t  hold;      /**< the 2s hold                                    */
     bool       hold_down; /**< a press fills it                               */
+    gfx_rect_t touched;   /**< the button a press last showed on, for hold_rev */
     /* The hold page. */
     int        page;      /**< an EWP_PAGE_*                                  */
     int        page_lines; /**< its lines                                     */

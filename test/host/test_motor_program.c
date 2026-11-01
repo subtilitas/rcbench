@@ -543,6 +543,76 @@ TEST_CASE(the_wire_session_strip_names_its_own_pin)
     CHECK(strstr(line, "DSHOT300") == NULL);
 }
 
+/*
+ * A hold on the signal-wire session and a press of its BACK, in both framebuffers:
+ * each buffer shows the button's change, no other pixel of the session moves.
+ */
+TEST_CASE(the_wire_sessions_hold_and_press_reach_both_framebuffers)
+{
+    const esc_wire_target_t pin = { LINK_EW_TARGET_PORT | 1u, 14u };
+    ui_bench_status_t st = *ui_router_status();
+    static gfx_color_t *other;
+    static gfx_color_t *kept[2];
+    gfx_canvas_t second;
+
+    if (other == NULL) {
+        other = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(other);
+        for (int b = 0; b < 2; ++b) {
+            kept[b] = calloc((size_t)W * H, sizeof(gfx_color_t));
+            REQUIRE_ALLOC(kept[b]);
+        }
+    }
+    gfx_canvas_init(&second, other, W, H, W);
+    fresh();
+    st.capabilities |= LINK_CAP_PROGRAM;
+    ui_router_set_status(&st);
+    esc_wire_panel_set_targets(&pin, 1u, true);
+    feed_tap(FEED_LONE, ROW_X, ROW_Y + 56);
+    gfx_canvas_t *const canv[2] = { &cv, &second };
+    const gfx_color_t *const buf[2] = { fb, other };
+    const gfx_rect_t rects[2] = { esc_wire_panel_hold_rect(),
+                                  esc_wire_panel_back_rect() };
+
+    CHECK(rects[0].w > 0);
+    CHECK(rects[1].w > 0);
+    for (int what = 0; what < 2; ++what) {
+        const gfx_rect_t r = rects[what];
+
+        for (int warm = 0; warm < 4; ++warm) {
+            ui_router_tick(0.026f);
+            ui_router_render(canv[warm & 1], warm & 1);
+        }
+        for (int b = 0; b < 2; ++b) {
+            memcpy(kept[b], buf[b], (size_t)W * H * sizeof(gfx_color_t));
+        }
+        finger(FEED_LONE, (int16_t)(r.x + r.w / 2), P(r.y + r.h / 2));
+        ui_router_tick(0.5f);
+        for (int b = 0; b < 2; ++b) {
+            ui_router_render(canv[b], b);
+            int in = 0;
+            int out = 0;
+
+            for (int y = P(0); y < H; ++y) {
+                for (int x = 0; x < W; ++x) {
+                    if (buf[b][(size_t)y * W + x] != kept[b][(size_t)y * W + x]) {
+                        if (gfx_rect_contains(r, x, y - P(0))) {
+                            ++in;
+                        } else {
+                            ++out;
+                        }
+                    }
+                }
+            }
+            CHECK(in > 0);
+            CHECK_EQ(out, 0);
+        }
+        if (what == 0) {
+            lift(FEED_LONE);
+        }
+    }
+}
+
 /* ARM with a signal-wire session holding a pin: no ask, and the alert names it. */
 TEST_CASE(arm_under_a_wire_session_says_the_esc_programmer_holds_it)
 {
@@ -635,6 +705,7 @@ int main(void)
     RUN(the_wire_session_strip_names_its_own_pin);
     RUN(arm_under_a_wire_session_says_the_esc_programmer_holds_it);
     RUN(opening_a_session_on_an_armed_bench_disarms_it);
+    RUN(the_wire_sessions_hold_and_press_reach_both_framebuffers);
     RUN(a_second_finger_on_the_list_does_not_take_the_row);
     free(fb);
     return test_summary("motor_program");

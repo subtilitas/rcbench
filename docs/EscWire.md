@@ -25,6 +25,42 @@ This code was written from a behavioural specification, without access to the fi
 
 A page with no field names shows its bytes, 16 to a line. A firmware or layout that cannot be written has no WRITE button.
 
+## Press and hold
+
+A button shows the pressed colour from press to release. A press on a button repaints that button only. A hold fills from its dark colour to red in 2s, in both framebuffers; ABORT acts on the press.
+
+![Hold on CONNECT at 1s of 2s](img/motor-wire-fill-connect.png)
+
+![Hold on ENTER AGAIN at 1s of 2s](img/motor-wire-fill-again.png)
+
+![Hold on WRITE at 1s of 2s](img/motor-wire-fill-write.png)
+
+![Hold on write without a backup at 1s of 2s](img/motor-wire-fill-no-backup.png)
+
+![Hold on LEAVE at 1s of 2s](img/motor-wire-fill-leave.png)
+
+![Hold on RELEASE at 1s of 2s](img/motor-wire-fill-release.png)
+
+![Hold on RESTORE at 1s of 2s](img/motor-wire-fill-restore.png)
+
+![READ AGAIN pressed](img/motor-wire-press-read.png)
+
+![POWER IS ON pressed](img/motor-wire-press-hand.png)
+
+![BACK pressed](img/motor-wire-press-back.png)
+
+![a row pressed](img/motor-wire-press-row.png)
+
+![CANCEL pressed](img/motor-wire-press-cancel.png)
+
+![NEXT pressed](img/motor-wire-press-next.png)
+
+![PREV pressed](img/motor-wire-press-prev.png)
+
+![a list entry pressed](img/motor-wire-press-choice.png)
+
+![a list's CANCEL pressed](img/motor-wire-press-list-cancel.png)
+
 ## Connect
 
 The strip names what the session drives: `TARGET SLOT 1 GPIO 0`, then the supply and SAFE or ARMED. No pin shows in the warning colour.

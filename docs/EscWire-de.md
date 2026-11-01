@@ -25,6 +25,42 @@ Dieser Code entstand aus einer Verhaltensspezifikation, ohne Zugriff auf die Fir
 
 Eine Seite ohne Feldnamen zeigt ihre Bytes, 16 je Zeile. Eine Firmware oder ein Layout, das nicht geschrieben wird, hat keine Taste zum Schreiben.
 
+## Drücken und Halten
+
+Ein Knopf zeigt die gedrückte Farbe vom Druck bis zum Loslassen. Ein Druck zeichnet nur diesen Knopf neu. Ein Hold füllt sich in 2s von seiner dunklen Farbe zu Rot, in beiden Framebuffern; ABBRUCH wirkt beim Druck.
+
+![Hold auf VERBINDEN bei 1s von 2s](img/de/motor-wire-fill-connect.png)
+
+![Hold auf NEU STARTEN bei 1s von 2s](img/de/motor-wire-fill-again.png)
+
+![Hold auf SCHREIBEN bei 1s von 2s](img/de/motor-wire-fill-write.png)
+
+![Hold auf ohne Backup schreiben bei 1s von 2s](img/de/motor-wire-fill-no-backup.png)
+
+![Hold auf VERLASSEN bei 1s von 2s](img/de/motor-wire-fill-leave.png)
+
+![Hold auf FREIGEBEN bei 1s von 2s](img/de/motor-wire-fill-release.png)
+
+![Hold auf HERSTELLEN bei 1s von 2s](img/de/motor-wire-fill-restore.png)
+
+![NEU LESEN gedrückt](img/de/motor-wire-press-read.png)
+
+![STROM IST AN gedrückt](img/de/motor-wire-press-hand.png)
+
+![ZURÜCK gedrückt](img/de/motor-wire-press-back.png)
+
+![eine Zeile gedrückt](img/de/motor-wire-press-row.png)
+
+![ABBRECHEN gedrückt](img/de/motor-wire-press-cancel.png)
+
+![WEITER gedrückt](img/de/motor-wire-press-next.png)
+
+![ZURÜCK der langen Liste gedrückt](img/de/motor-wire-press-prev.png)
+
+![ein Listeneintrag gedrückt](img/de/motor-wire-press-choice.png)
+
+![ABBRECHEN einer Liste gedrückt](img/de/motor-wire-press-list-cancel.png)
+
 ## Verbinden
 
 Der Streifen nennt, was die Sitzung treibt: `ZIEL SLOT 1 GPIO 0`, dann das Netzteil und SAFE oder ARMED. Kein Pin steht in der Warnfarbe.

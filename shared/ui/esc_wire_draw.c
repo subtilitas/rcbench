@@ -251,6 +251,17 @@ static void line_at(gfx_canvas_t *c, int x, int y, const char *s, ui_color_id_t 
 }
 
 /**
+ * @brief Whether a press is on a button now.
+ * @param what What it is on.
+ * @param i    Its row; -1 for a button of no row.
+ * @return true from the press to its release.
+ */
+static bool pressed(int what, int i)
+{
+    return ewp_s.have && ewp_s.pressed == what && (i < 0 || ewp_s.which == i);
+}
+
+/**
  * @brief A button of the action row.
  * @param c      The canvas.
  * @param i      Its place.
@@ -263,7 +274,7 @@ static void action_btn(gfx_canvas_t *c, int i, const char *label, bool danger, b
     ui_button_font(c, ewp_action_rect(i), label,
                    danger ? ui_theme_color(UI_C_DANGER)
                           : ui_theme_color(UI_C_PANEL_HI),
-                   false, on, EWP_FONT);
+                   pressed(EWP_P_ACT, i), on, EWP_FONT);
 }
 
 const char *ewp_held_line(void)
@@ -291,7 +302,7 @@ static void message_line(gfx_canvas_t *c)
 static void back_btn(gfx_canvas_t *c)
 {
     ui_button_font(c, esc_wire_panel_back_rect(), TR(EW_BACK),
-                   ui_theme_color(UI_C_PANEL_HI), false, true, EWP_FONT);
+                   ui_theme_color(UI_C_PANEL_HI), pressed(EWP_P_BACK, -1), true, EWP_FONT);
 }
 
 /**
@@ -311,7 +322,8 @@ static void row_draw(gfx_canvas_t *c, int i, const char *name, const char *value
 
     line_at(c, r.x, r.y + (r.h - 20) / 2, name,
             mark ? UI_C_WARN : live ? UI_C_TEXT : UI_C_TEXT_FAINT);
-    ui_button_font(c, v, value, ui_theme_color(UI_C_PANEL), false, live, EWP_FONT);
+    ui_button_font(c, v, value, ui_theme_color(UI_C_PANEL),
+                   pressed(EWP_P_ROW, i) || pressed(EWP_P_CONNECT_ROW, i), live, EWP_FONT);
 }
 
 /**
@@ -682,13 +694,14 @@ static void draw_page(gfx_canvas_t *c)
     }
     if (pages > 1) {
         ui_button_font(c, esc_wire_panel_prev_rect(), TR(EW_WRITE_PREV),
-                       ui_theme_color(UI_C_PANEL_HI), false, ewp_s.w_page > 0, EWP_FONT);
+                       ui_theme_color(UI_C_PANEL_HI), pressed(EWP_P_PREV, -1),
+                       ewp_s.w_page > 0, EWP_FONT);
         ui_button_font(c, esc_wire_panel_next_rect(), TR(EW_WRITE_NEXT),
-                       ui_theme_color(UI_C_PANEL_HI), false, ewp_s.w_page < pages - 1,
-                       EWP_FONT);
+                       ui_theme_color(UI_C_PANEL_HI), pressed(EWP_P_NEXT, -1),
+                       ewp_s.w_page < pages - 1, EWP_FONT);
     }
     ui_button_font(c, esc_wire_panel_cancel_rect(), TR(EW_CANCEL),
-                   ui_theme_color(UI_C_PANEL_HI), false, true, EWP_FONT);
+                   ui_theme_color(UI_C_PANEL_HI), pressed(EWP_P_CANCEL, -1), true, EWP_FONT);
 }
 
 /**
@@ -703,10 +716,11 @@ static void draw_choice(gfx_canvas_t *c)
     }
     for (int i = 0; i < ewp_s.ch_count; ++i) {
         ui_button_font(c, ewp_choice_rect(i), ewp_s.ch_labels[i],
-                       ui_theme_color(UI_C_PANEL), false, true, EWP_FONT);
+                       ui_theme_color(UI_C_PANEL), pressed(EWP_P_CHOICE, i), true, EWP_FONT);
     }
     ui_button_font(c, ewp_choice_cancel_rect(), TR(EW_CANCEL),
-                   ui_theme_color(UI_C_PANEL_HI), false, true, EWP_FONT);
+                   ui_theme_color(UI_C_PANEL_HI), pressed(EWP_P_CHOICE_CANCEL, -1), true,
+                   EWP_FONT);
 }
 
 /**
