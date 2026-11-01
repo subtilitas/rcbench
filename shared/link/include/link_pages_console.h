@@ -11,7 +11,8 @@
  * Read, any window from register 0:
  *
  *   0 LINK_CN_OUT_SEQ  where the window's first byte stands in the output, a
- *                      16-bit count of bytes from the IOmcu's start
+ *                      16-bit count of bytes from a random number at the
+ *                      IOmcu's start
  *   1 LINK_CN_OUT_LEN  bytes in the window, 0 to LINK_CN_DATA_BYTES, with
  *                      LINK_CN_OUT_MORE when more wait behind them
  *   2 LINK_CN_DATA     the bytes, low byte of a register first

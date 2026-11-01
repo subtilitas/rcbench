@@ -398,7 +398,7 @@ Ein Fenster bleibt am IOmcu, bis es bestätigt ist, also kostet eine verlorene A
 
 Die Befehle erreichen die Pages über `link_dev_apply()`. Eine Anfrage der Konsole ist kein Link-Verkehr: sie hält den Stille-Failsafe nicht auf. Die Frames der CONSOLE-Page sind Anfragen des Panels, wie seine Polls, und enden, wenn das Panel endet. Die eigenen Module des Panels schreiben weiter: der Supply-Link, `hitec_link`, `kst_link`, `esc_link` und das Schreiben von ARM und THROTTLE alle 50ms können überschreiben, was ein `w` der Konsole in dieselben Register schrieb. Ein Schreiben von ARM aus der Konsole erreicht die Page, und das nächste Schreiben des Panels nach 50ms überschreibt es mit dessen eigenem Arming-Zustand.
 
-Beim Start des IOmcu warten seine Zeilen im Puffer auf einen USB-Host oder ein Panel, soweit die 2.048 Byte sie halten. `rcbench-iomcu: reset ...` ist die erste davon, mit der Ursache des Starts, und wiederholt sich alle 3s. Eine Zeile vom Panel läuft ganz, vor oder nach dem, was ein USB-Host gerade tippt. Sind USB-Host und Panel beide da, geht die Ausgabe im Tempo des langsameren; ein USB-Host, der den Port offen hat und nicht mehr liest, hält sie ebenfalls auf.
+Beim Start des IOmcu warten seine Zeilen im Puffer auf einen USB-Host oder ein Panel, soweit die 2.048 Byte sie halten. `rcbench-iomcu: reset ...` ist die erste davon, mit der Ursache des Starts, und wiederholt sich alle 3s. Eine Zeile vom Panel läuft ganz und lässt, was ein USB-Host bisher getippt hat, wie es war. Sind USB-Host und Panel beide da, geht die Ausgabe im Tempo des langsameren; ein USB-Host, der den Port offen hat und nicht mehr liest, hält sie ebenfalls auf.
 
 ## Grenzen
 

@@ -10,11 +10,12 @@
 
 #include "link_msg.h"
 
-void console_tunnel_init(console_tunnel_t *t, page_console_t *console)
+void console_tunnel_init(console_tunnel_t *t, page_console_t *console, uint16_t seq)
 {
     if (t != NULL) {
         memset(t, 0, sizeof(*t));
         t->console = console;
+        t->seq = seq;
     }
 }
 
@@ -100,11 +101,21 @@ void console_tunnel_pass(console_tunnel_t *t, uint32_t now_ms)
         t->read_ms = now_ms;
     }
     if (t->line_ready) {
-        /* The whole line at once, so a USB host's typing lands before or after it. */
+        /* A line of its own: what a USB host has typed so far stands aside. */
+        page_console_t *c = t->console;
+        const uint16_t usb_len = c->len;
+        const uint8_t usb_overlong = c->overlong;
+
+        memcpy(t->usb_line, c->line, usb_len);
+        c->len = 0u;
+        c->overlong = 0u;
         for (unsigned k = 0u; k < t->line_len; ++k) {
-            page_console_key(t->console, (unsigned char)t->line[k]);
+            page_console_key(c, (unsigned char)t->line[k]);
         }
-        page_console_key(t->console, '\n');
+        page_console_key(c, '\n');
+        memcpy(c->line, t->usb_line, usb_len);
+        c->len = usb_len;
+        c->overlong = usb_overlong;
         t->line_ready = false;
     }
 }

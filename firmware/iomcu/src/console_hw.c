@@ -8,6 +8,7 @@
 
 #include <stdarg.h>
 
+#include "pico/rand.h"
 #include "pico/stdio.h"
 #include "pico/stdio_usb.h"
 #include "pico/stdlib.h"
@@ -35,7 +36,7 @@ void console_hw_init(const link_dev_t *dev)
 {
     page_console_init(&s_console, dev);
     page_console_set_ext(&s_console, ewline_console_line, NULL);
-    console_tunnel_init(&s_tunnel, &s_console);
+    console_tunnel_init(&s_tunnel, &s_console, (uint16_t)get_rand_32());
 }
 
 void console_hw_pass(void)

@@ -41,14 +41,18 @@ typedef struct {
     bool     read_seen;                        /**< a read since the last pass */
     bool     seen_once;                        /**< a read has ever come */
     uint32_t read_ms;                          /**< the last pass that saw one */
+    char     usb_line[PAGE_CONSOLE_LINE_MAX + 1u]; /**< a USB host's unfinished line,
+                                                        kept while this line runs */
 } console_tunnel_t;
 
 /**
  * @brief A tunnel on a console.
  * @param t       the tunnel; zeroed first
  * @param console the console
+ * @param seq     the output's first place: a random number, so a panel told a
+ *                place after a restart does not take it for a window it has
  */
-void console_tunnel_init(console_tunnel_t *t, page_console_t *console);
+void console_tunnel_init(console_tunnel_t *t, page_console_t *console, uint16_t seq);
 
 /**
  * @brief The page's read.

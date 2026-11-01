@@ -378,7 +378,7 @@ A window stays at the IOmcu until it is acknowledged, so a lost reply costs a se
 
 The commands reach the pages through `link_dev_apply()`. A request from the console is not link traffic: it does not hold the silence failsafe off. The frames of the CONSOLE page are requests of the panel, like its polls, and stop when the panel stops. The panel's own modules keep writing: the supply link, `hitec_link`, `kst_link`, `esc_link` and the 50ms write of ARM and THROTTLE can overwrite what a console `w` wrote to the same registers. A console write of ARM reaches the page, and the panel's next 50ms write overwrites it with the panel's own arming state.
 
-With the IOmcu's start, its lines wait in the buffer for a USB host or a panel, as far as the 2,048 bytes hold them. `rcbench-iomcu: reset ...` is the first of them, with the cause of the start, and repeats every 3s. A line from the panel runs whole, before or after anything a USB host is typing. While a USB host and a panel are both there, the output leaves at the slower one's pace; a USB host that has the port open and stops reading holds it back too.
+With the IOmcu's start, its lines wait in the buffer for a USB host or a panel, as far as the 2,048 bytes hold them. `rcbench-iomcu: reset ...` is the first of them, with the cause of the start, and repeats every 3s. A line from the panel runs whole and leaves what a USB host has typed so far as it was. While a USB host and a panel are both there, the output leaves at the slower one's pace; a USB host that has the port open and stops reading holds it back too.
 
 ## Limits
 

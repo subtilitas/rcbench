@@ -73,7 +73,7 @@ static void up(bool has_page)
     link_dev_init(&g_dev, has_page ? k_with : k_without, has_page ? 2u : 1u, NULL, g_now);
     link_host_init(&g_host, g_now);
     page_console_init(&g_console, &g_dev);
-    console_tunnel_init(&g_tunnel, &g_console);
+    console_tunnel_init(&g_tunnel, &g_console, 0u);
     console_relay_init(&g_relay);
 }
 
@@ -359,7 +359,7 @@ TEST_CASE(an_iomcu_restart_inside_a_line_loses_that_line_and_says_so)
     /* Some of its chunks go, then the IOmcu starts again. */
     run(3, true);
     page_console_init(&g_console, &g_dev);
-    console_tunnel_init(&g_tunnel, &g_console);
+    console_tunnel_init(&g_tunnel, &g_console, 0x5A5Au);
     run(40, true);
     read_out();
     CHECK(strstr(g_all, "err line lost: the IOmcu restarted inside it\n") != NULL);
@@ -379,12 +379,56 @@ TEST_CASE(an_iomcu_restart_says_where_the_output_stands_and_its_first_lines_come
     read_out();
     g_all_len = 0u;
     page_console_init(&g_console, &g_dev);
-    console_tunnel_init(&g_tunnel, &g_console);
+    console_tunnel_init(&g_tunnel, &g_console, 0x5A5Au);
     page_console_say(&g_console, "%s", "rcbench-iomcu: reset watchdog");
     run(60, true);
     read_out();
-    CHECK(strstr(g_all, "console: the IOmcu's output restarted at 0") != NULL);
+    CHECK(strstr(g_all, "console: the IOmcu's output restarted at 23130") != NULL);
     CHECK(strstr(g_all, "rcbench-iomcu: reset watchdog\n") != NULL);
+}
+
+TEST_CASE(a_restart_with_an_acknowledgement_owed_loses_no_window)
+{
+    linked(true);
+    run(10, true);
+    read_out();
+    g_all_len = 0u;
+    page_console_say(&g_console, "%s", "the window before the restart, sixty bytes of it and more");
+    for (int i = 0; i < 50 && !g_relay.ack_owed; ++i) {
+        run(1, true);
+    }
+    CHECK(g_relay.ack_owed);
+    /* Its place plus its bytes is what the panel expects next: a restart at the
+     * same place would pass for the same window, so the start is another. */
+    page_console_init(&g_console, &g_dev);
+    console_tunnel_init(&g_tunnel, &g_console, 0x1357u);
+    page_console_say(&g_console, "%s", "rcbench-iomcu: reset after the restart, with its own text");
+    run(80, true);
+    read_out();
+    CHECK(strstr(g_all, "rcbench-iomcu: reset after the restart, with its own text\n") != NULL);
+}
+
+TEST_CASE(a_line_from_the_panel_leaves_a_usb_hosts_unfinished_line)
+{
+    linked(true);
+    run(10, true);
+    read_out();
+    g_all_len = 0u;
+    page_console_key(&g_console, 'h');
+    page_console_key(&g_console, 'e');
+    type("r 1 1");
+    run(40, true);
+    read_out();
+    CHECK(strstr(g_all, "data page=0x01 off=1 n=1: 0x1234\n") != NULL);
+    CHECK(strstr(g_all, "unknown") == NULL);
+    /* The host finishes it. */
+    g_all_len = 0u;
+    page_console_key(&g_console, 'l');
+    page_console_key(&g_console, 'p');
+    page_console_key(&g_console, '\n');
+    run(100, true);
+    read_out();
+    CHECK(strstr(g_all, "help | pages") != NULL);
 }
 
 TEST_CASE(a_panel_restart_inside_a_line_leaves_nothing_of_it)
@@ -486,7 +530,7 @@ TEST_CASE(an_update_to_a_console_image_finds_the_page_at_the_next_look)
     CHECK_EQ(g_relay.state, CONSOLE_RELAY_NO_PAGE);
     link_dev_init(&g_dev, k_with, 2u, NULL, g_now);
     page_console_init(&g_console, &g_dev);
-    console_tunnel_init(&g_tunnel, &g_console);
+    console_tunnel_init(&g_tunnel, &g_console, 0x5A5Au);
     run(1100, true);
     CHECK_EQ(g_relay.state, CONSOLE_RELAY_UP);
 }
@@ -560,6 +604,8 @@ int main(void)
     RUN(a_lost_ack_does_not_print_a_window_twice);
     RUN(an_iomcu_restart_inside_a_line_loses_that_line_and_says_so);
     RUN(an_iomcu_restart_says_where_the_output_stands_and_its_first_lines_come);
+    RUN(a_restart_with_an_acknowledgement_owed_loses_no_window);
+    RUN(a_line_from_the_panel_leaves_a_usb_hosts_unfinished_line);
     RUN(a_panel_restart_inside_a_line_leaves_nothing_of_it);
     RUN(link_down_and_up_are_lines_with_their_times_and_a_line_with_no_link_goes);
     RUN(a_link_that_falls_inside_a_line_says_the_line_is_lost);
