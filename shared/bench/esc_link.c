@@ -575,21 +575,22 @@ static void fetch_took(esc_link_t *l, const uint16_t *regs)
 {
     esc_link_image_t *im = &l->image;
     const uint16_t block = fetch_block(l, l->fetch_at);
-    uint8_t *to = NULL;
+    uint8_t b[LINK_ED_BLOCK_BYTES];
 
-    if (block < (uint16_t)LINK_ED_DRAFT) {
-        to = &im->page[(size_t)block * LINK_ED_BLOCK_BYTES];
-    } else if (block == (uint16_t)LINK_ED_NAME) {
-        to = (uint8_t *)im->name;
-    } else if (block < (uint16_t)LINK_ED_MUSIC) {
-        to = &im->info[(size_t)(block - LINK_ED_INFO) * LINK_ED_BLOCK_BYTES];
-    } else {
-        to = (uint8_t *)&im->music[(size_t)(block - LINK_ED_MUSIC)
-                                   * LINK_ED_BLOCK_BYTES];
-    }
     for (unsigned i = 0u; i < LINK_ED_COUNT; ++i) {
-        to[(size_t)i * 2u] = (uint8_t)(regs[i] & 0xFFu);
-        to[(size_t)i * 2u + 1u] = (uint8_t)(regs[i] >> 8);
+        b[(size_t)i * 2u] = (uint8_t)(regs[i] & 0xFFu);
+        b[(size_t)i * 2u + 1u] = (uint8_t)(regs[i] >> 8);
+    }
+    if (block < (uint16_t)LINK_ED_DRAFT) {
+        memcpy(&im->page[(size_t)block * LINK_ED_BLOCK_BYTES], b, sizeof(b));
+    } else if (block == (uint16_t)LINK_ED_NAME) {
+        memcpy(im->name, b, sizeof(b));
+    } else if (block < (uint16_t)LINK_ED_MUSIC) {
+        memcpy(&im->info[(size_t)(block - LINK_ED_INFO) * LINK_ED_BLOCK_BYTES], b,
+               sizeof(b));
+    } else {
+        memcpy(&im->music[(size_t)(block - LINK_ED_MUSIC) * LINK_ED_BLOCK_BYTES], b,
+               sizeof(b));
     }
     ++l->fetch_at;
     l->block_set = 0u;
