@@ -200,11 +200,11 @@ void prog_registry_set_ports(uint8_t tester_port, uint8_t held);
 uint8_t prog_reg_port(const prog_reg_row_t *r);
 
 /**
- * @brief Whether a servo programmer holds a port: the KST programmer's
- *        session, or the Hitec programmer's, whose word counts a port the
- *        HITEC page names held by another session too.  ARM, the motor's
- *        TARGET row and a run that arms the bench wait for neither.
- * @return true while either holds one
+ * @brief Whether a programmer holds a pin: the KST programmer's session, the
+ *        Hitec programmer's, whose word counts a port the HITEC page names held
+ *        by another session too, or the ESC_WIRE page, any writer's.  ARM, the
+ *        motor's TARGET row and a run that arms the bench wait for none.
+ * @return true while one holds one
  */
 bool prog_reg_servo_holds(void);
 

@@ -26,6 +26,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "esc_wire_panel.h"
 #include "kst_panel_screen_rig.h"
 #include "ui_board.h"
 
@@ -832,6 +833,59 @@ TEST_CASE(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The ESC_WIRE page holds a pin: no page set of this screen, and ARM waits for it
+ * all the same.  An ARM asked as it took one is dropped: no answer comes. */
+TEST_CASE(a_wire_hold_locks_arm_and_drops_the_ask)
+{
+    static esc_prog_feed_t f;
+    static esc_prog_gate_t gate;
+    servo_cmd_t c;
+    bool armed = false;
+
+    fresh_screen();
+    link_up();
+    esc_prog_gate_init(&gate);
+    esc_wire_panel_gate(&gate);
+    memset(&f, 0, sizeof(f));
+    f.rd.phase = ESC_LINK_READY;
+    f.rd.known = true;
+    f.rd.held = true;
+    esc_wire_panel_feed(&f);
+    ticks(0.1f);
+    while (servo_screen_take(&c)) { }
+    ui_router_set_alert(NULL);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_PROG));
+    ticks(2.5f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
+    while (servo_screen_take(&c)) {
+        armed = armed || c.kind == SERVO_CMD_ARM;
+    }
+    CHECK(!armed);
+    /* Free: asked, then a hold, then free again. */
+    f.rd.held = false;
+    esc_wire_panel_feed(&f);
+    ticks(0.1f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 2);
+    ticks(2.5f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 2);
+    while (servo_screen_take(&c)) {
+        armed = armed || c.kind == SERVO_CMD_ARM;
+    }
+    CHECK(armed);
+    CHECK(servo_screen_arm_asked());
+    f.rd.held = true;
+    esc_wire_panel_feed(&f);
+    ticks(0.1f);
+    f.rd.held = false;
+    esc_wire_panel_feed(&f);
+    ticks(0.1f);
+    CHECK(!servo_screen_arm_asked());
+    while (servo_screen_take(&c)) { }
+    memset(&f, 0, sizeof(f));
+    esc_wire_panel_feed(&f);
+}
+
 TEST_CASE(a_port_found_held_ends_a_hold_of_arm)
 {
     servo_cmd_t c;
@@ -952,6 +1006,7 @@ int main(void)
     RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);
     RUN(leaving_servo_switches_its_supply_off_once_the_port_lets_go);
     RUN(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm);
+    RUN(a_wire_hold_locks_arm_and_drops_the_ask);
     RUN(a_port_found_held_ends_a_hold_of_arm);
     RUN(an_unknown_coordinate_is_no_row);
     RUN(a_label_under_the_wrong_row_name_fails);

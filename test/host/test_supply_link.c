@@ -102,15 +102,16 @@ TEST_CASE(an_off_then_the_wiring_then_the_command)
     uint8_t off = 0u;
     uint8_t n = 0u;
     uint16_t regs[LINK_SP_FLAGS];
+    /* Who holds the page first, for a panel that has just started. */
+    CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_NONE);
+    far_step_and_read(true);
     /* Nothing on the page known: an OFF before the ON asked for. */
     CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_OFF);
     CHECK_EQ(off, LINK_SP_OUTPUT);
     CHECK_EQ(n, 1u);
     CHECK_EQ(regs[0], 0u);
     supply_link_written(&sl, SUPPLY_LINK_ACK);
-    /* The wiring waits for a read that shows the output off. */
-    CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_NONE);
-    far_step_and_read(true);
+    /* The read before it showed the output off and nothing live: the wiring. */
     CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_WIRING);
     CHECK_EQ(off, LINK_SP_ENABLE);
     CHECK_EQ(n, 4u);
@@ -674,6 +675,7 @@ TEST_CASE(unanswered_writes_and_a_lost_link)
     uint8_t off = 0u;
     uint8_t n = 0u;
     uint16_t regs[LINK_SP_FLAGS];
+    far_step_and_read(true);
     CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_OFF);
     supply_link_written(&sl, SUPPLY_LINK_NO_ANSWER);
     CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_OFF);
@@ -686,6 +688,7 @@ TEST_CASE(unanswered_writes_and_a_lost_link)
     CHECK_EQ(reg(LINK_SP_OUTPUT), 1u);
     supply_link_lost(&sl);
     CHECK(!sl.on);
+    far_step_and_read(true);
     CHECK_EQ(supply_link_next(&sl, &off, &n, regs), SUPPLY_LINK_W_OFF);
 
     /* Set points over the page's bounds are brought to them. */

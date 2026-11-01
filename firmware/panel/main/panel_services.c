@@ -108,13 +108,14 @@ __attribute__((noinline)) void kst_port_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken();
+    s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken() || esc_taken();
 }
 
 uint32_t prog_faults(void)
 {
     return kst_link_faults(&s_kst_link)
-           + hitec_prog_gate_faults(&s_hitec_gate);
+           + hitec_prog_gate_faults(&s_hitec_gate)
+           + esc_link_faults(&s_esc_link);
 }
 
 /* The PROG page is not written and the tester commands no port while the
@@ -124,7 +125,8 @@ static __attribute__((noinline)) void prog_hold_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    prog_link_hold(&s_prog_link, kst_prog_port_taken(&rd) || hitec_taken());
+    prog_link_hold(&s_prog_link,
+                   kst_prog_port_taken(&rd) || hitec_taken() || esc_taken());
 }
 
 /* The part names as the alerts print them. */

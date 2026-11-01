@@ -18,6 +18,7 @@
 #include "bench_state.h"
 #include "bind_link.h"
 #include "heartbeat.h"
+#include "esc_link.h"
 #include "hitec_link.h"
 #include "kst_link.h"
 #include "link_host.h"
@@ -112,6 +113,7 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     tone_link_init(&s_tone_link);
     kst_link_init(&s_kst_link);
     hitec_link_init(&s_hitec_link);
+    esc_link_init(&s_esc_link);
     prog_link_init(&s_prog_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();

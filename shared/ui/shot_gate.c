@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "esc_stick_panel.h"
+#include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "kst_panel.h"
 #include "servo_screen.h"
@@ -31,9 +32,11 @@ void shot_facts_read(const shot_bench_t *b, shot_facts_t *out)
     out->supply_off = !b->supply_on && !b->supply_sample && !b->supply_coming;
     out->prog5v_off = !b->prog5v_on && !b->prog5v_coming;
     out->port_free = !b->hitec_holds && !supply_screen_port_held()
-                     && !kst_panel_holds_port() && !hitec_panel_holds_port();
+                     && !kst_panel_holds_port() && !hitec_panel_holds_port()
+                     && esc_wire_panel_idle();
     out->no_session = !kst_panel_is_open() && !hitec_panel_is_open()
-                      && esc_stick_panel_stage() == 0;
+                      && esc_stick_panel_stage() == 0
+                      && esc_wire_panel_idle();
     out->no_program_io = !b->card_job_out;
     out->no_motion = !servo_screen_sweeping() && !servo_screen_paused();
     out->no_test = !b->testing && !servo_screen_testing()

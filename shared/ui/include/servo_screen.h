@@ -430,6 +430,12 @@ int servo_screen_run_settings(void);
 bool servo_screen_target_locked(void);
 
 /**
+ * @brief Whether an ARM was posted and not answered.
+ * @return true then
+ */
+bool servo_screen_arm_asked(void);
+
+/**
  * Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no
  * press: servo_screen_target_locked(), or the bench ARMED for the motor.
  */

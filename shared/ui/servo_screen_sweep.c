@@ -631,6 +631,11 @@ void svs_tick_body(float dt_s)
     if (!servo_limrun_running(&s.lim) && !s.lim_leaving) {
         prog_follow_hold();
     }
+    /* An ARM asked as a programmer took a pin: the IOmcu refuses it, and no
+     * answer comes to wait for. */
+    if (s.gate.arm_asked && !s.gate.armed && prog_holds()) {
+        ui_value_drop_arm(&s.gate);
+    }
     if (prog_holds() != s.kst_held) {
         s.kst_held = prog_holds();
         ++s.arm_rev;

@@ -56,6 +56,7 @@ set(SRCS
     kst_panel_touch.c
     kst_panel_run.c
     kst_panel_draw.c
+    esc_wire_panel.c
     hitec_panel.c
     hitec_panel_text.c
     hitec_panel_edit.c

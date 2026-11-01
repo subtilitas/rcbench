@@ -298,6 +298,13 @@ void mo_tick(float dt_s)
         ++s.arm_rev;
         ++s.ctrl_rev;
     }
+    /* An ARM asked as a programmer took a pin: the IOmcu refuses it, and no
+     * answer comes to wait for. */
+    if (s.gate.arm_asked && !s.gate.armed && prog_reg_servo_holds()) {
+        ui_value_drop_arm(&s.gate);
+        ++s.arm_rev;
+        ++s.ctrl_rev;
+    }
     if (s.pressed == 1 && mo_arm_locked()) {
         /* The port was taken under a hold of ARM: the hold ends. */
         s.pressed = 0;

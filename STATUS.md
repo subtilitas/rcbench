@@ -226,7 +226,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 401 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
+The host suite is 404 binaries, one line per case: `test_gfx`, `test_gfx_faces`, `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`, `test_layout`, `test_touch_map`, `test_overlays`,
 `test_touch_merge`, `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`,
 `test_nav`, `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`, `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`, `test_help_pages`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`, `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`, `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_supply_screen_tasks`, `test_supply_pdmini`, `test_supply_screen_home`, `test_supply_screen_draw`, `test_supply_layout`, `test_prog5v_box`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`,
@@ -439,6 +439,9 @@ an abort mid-transaction, the timeout at 999us and 1000us, also across the
 wrap, the bus clear's 9 clocks and STOP, a part it frees and one that
 holds on, SCL stretched, and the trial after it. `i2c_txq_headers_cxx`
 calls the core from C++11. The RP2350 driver has not run on a chip.
+`test_esc_link` and `test_esc_link_run` run the panel's half of the pages against the
+IOmcu's on the simulated ESC, `test_esc_prog` the model on both: the CLOSE after a panel
+restart, NOT_BACK, STOP, the read copy, a write, a restore, the session's backup.
 `test_esc_port`, `test_esc_port_data` and `test_esc_port_stop` run the ESC_WIRE and
 ESC_DATA pages (`shared/outputs/esc_port.c`) on the simulated ESC of
 `test/host/ew_sim.h`, with the pin's and the supply's hooks faked
@@ -680,14 +683,14 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_tabs.c` | 97 | 89 | 91.8% |
 | `shared/ui/ui_workbench.c` | 65 | 65 | 100.0% |
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
-| `shared/ui/prog_registry.c` | 420 | 417 | 99.3% |
+| `shared/ui/prog_registry.c` | 421 | 418 | 99.3% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 616 | 607 | 98.5% |
 | `shared/ui/ui_alert_slot.c` | 33 | 33 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 147 | 142 | 96.6% |
 | `shared/ui/motor_screen.c` | 263 | 256 | 97.3% |
-| `shared/ui/motor_events.c` | 170 | 166 | 97.7% |
+| `shared/ui/motor_events.c` | 174 | 170 | 97.7% |
 | `shared/ui/motor_draw.c` | 359 | 347 | 96.7% |
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 189 | 179 | 94.7% |
@@ -701,12 +704,12 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_setting_keypad.c` | 118 | 115 | 97.5% |
 | `shared/ui/ui_textkey.c` | 523 | 509 | 97.3% |
 | `shared/ui/ui_shot.c` | 242 | 242 | 100.0% |
-| `shared/ui/shot_gate.c` | 56 | 56 | 100.0% |
+| `shared/ui/shot_gate.c` | 58 | 58 | 100.0% |
 | `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 373 | 364 | 97.6% |
-| `shared/ui/servo_screen_sweep.c` | 482 | 479 | 99.4% |
+| `shared/ui/servo_screen_sweep.c` | 484 | 481 | 99.4% |
 | `shared/ui/servo_screen_link.c` | 386 | 382 | 99.0% |
 | `shared/ui/servo_screen_touch.c` | 310 | 296 | 95.5% |
 | `shared/ui/servo_screen_draw.c` | 541 | 528 | 97.6% |
@@ -714,7 +717,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_settings_draw.c` | 390 | 383 | 98.2% |
 | `shared/ui/servo_test_panel.c` | 435 | 423 | 97.2% |
 | `shared/ui/servo_limit_panel.c` | 417 | 375 | 89.9% |
-| `shared/ui/servo_workbench.c` | 362 | 360 | 99.5% |
+| `shared/ui/servo_workbench.c` | 364 | 362 | 99.5% |
 | `shared/ui/kst_panel.c` | 337 | 333 | 98.8% |
 | `shared/ui/kst_panel_text.c` | 168 | 168 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 277 | 274 | 98.9% |
@@ -722,6 +725,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/kst_panel_touch.c` | 221 | 218 | 98.6% |
 | `shared/ui/kst_panel_run.c` | 152 | 142 | 93.4% |
 | `shared/ui/kst_panel_draw.c` | 535 | 528 | 98.7% |
+| `shared/ui/esc_wire_panel.c` | 13 | 13 | 100.0% |
 | `shared/ui/hitec_panel.c` | 238 | 238 | 100.0% |
 | `shared/ui/hitec_panel_text.c` | 455 | 451 | 99.1% |
 | `shared/ui/hitec_panel_edit.c` | 360 | 360 | 100.0% |
@@ -867,6 +871,9 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/page_console.c` | 585 | 561 | 95.9% |
 | `shared/outputs/prog_port.c` | 416 | 416 | 100.0% |
 | `shared/bench/kst_link.c` | 450 | 448 | 99.6% |
+| `shared/bench/esc_link.c` | 545 | 528 | 96.9% |
+| `shared/bench/esc_prog.c` | 311 | 290 | 93.2% |
+| `shared/bench/esc_prog_file.c` | 108 | 105 | 97.2% |
 | `shared/bench/hitec_link.c` | 529 | 529 | 100.0% |
 | `shared/bench/hitec_prog.c` | 671 | 671 | 100.0% |
 | `shared/bench/hitec_prog_write.c` | 558 | 557 | 99.8% |
@@ -920,7 +927,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
 | `protocols/pdmini/pdmini_jobs.c` | 255 | 253 | 99.2% |
-| `shared/bench/supply_link.c` | 360 | 350 | 97.2% |
+| `shared/bench/supply_link.c` | 382 | 372 | 97.4% |
 | `shared/bench/prog_supply_link.c` | 96 | 96 | 100.0% |
 | `shared/bench/sense_link.c` | 605 | 591 | 97.7% |
 | `shared/bench/sense_link_view.c` | 268 | 264 | 98.5% |
@@ -970,7 +977,7 @@ pico-sdk tags the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **72944** | **71636** | **98.2%** |
+| **total** | **73954** | **72605** | **98.2%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

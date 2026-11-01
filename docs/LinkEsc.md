@@ -105,23 +105,41 @@ supply: its line is parked and a person disconnects it.
 page's line, the PD mini and PROG_SUPPLY are all the IOmcu has on. `LINK_EW_F_FAULT` tells the
 panel, which follows it to the bench's SAFE state.
 
+## The panel's half
+
+`shared/bench/esc_link.c` asks and follows; it is on every panel, with no screen yet,
+so nothing is shown but the alert below.
+
+| Event | What the panel does |
+|---|---|
+| Registers 0 to 20 | every 5ms in a request, 100ms while a pin is held, 500ms while free |
+| First read after a panel restart, a pin held | CLOSE; again every 1000ms while the page answers `WRITING` or stays `NOT_BACK`. No request is taken until the page is free. |
+| A link that came back, no restart | nothing is closed |
+| The STOP key, or any stop the panel latches | the `STOP` operation, as soon as the page is known and holds a pin; a stop in a gap of the link goes after it. A `BAD_VALUE`, a SEQ another writer moved: read, and again, 6 times at most. |
+| `FAULT` rises, or the state reaches `NOT_BACK` | an error: all outputs off (`prog_faults_follow()`). A `FAULT` standing on the first read after a link came up is not counted. |
+| The state reaches `NOT_BACK` | an alert naming the slot or port |
+| A pin held, any writer's | ARM on MOTOR and SERVO, the motor's TARGET row, ESC STICK, the limit run and the screenshot wait; an ARM asked and refused is dropped on MOTOR and SERVO |
+| A stop latched | no command but CLOSE, LEAVE and ABORT goes (`esc_prog_cmd_allowed()`) |
+| 10 reads of the page failed in a row, in a request | the request ends. With a hold in the last read: an error, and `STOP` |
+| A read copy with a new `READS` or `READ_CRC` | fetched in blocks and checked against `READ_CRC`, 3 tries |
+
+The SUPPLY page's half (`shared/bench/supply_link.c`) under a hold:
+
+| Event | What the panel does |
+|---|---|
+| Its first write after a start | none before a read. A hold found there is adopted; no OFF of its own goes over it. The operator's OFF and an error's cut stay. |
+| Its wiring, with the page answering `BUSY` | no refusal: the page's wiring counts as in force, and it is written again when a read shows the hold over |
+| A hold over, its wiring not written | OFF, read, wiring, as at any start; no ON counts as lost |
+| A wiring refused, not `BUSY`, with an ON a port holds | `ON_REFUSED` at once: an error, all outputs off |
+
 ## Current limitations
 
-- **The only ways out of the hold are CLOSE and an IOmcu restart.** Condition: a panel
-  that restarts while the page is held. The page stays `OPEN` and `STOPPED` with the
-  quiet bit set, so the bank cannot arm, and nothing on the page says why. This fails
-  safe. A panel's half sends CLOSE at link-up after any restart; none exists yet.
-- **A panel that restarts in a hold costs the session its supply.** Condition: a panel
-  restart while the page is held, with a PD mini. The panel's first write is an OFF. The
-  page takes it and refuses a port's ON until the port lets go, so a later ENTER on
-  `SWITCHED` ends with result `SUPPLY` (4), `FAULT`, until a CLOSE. The panel's half sends
-  CLOSE at link-up and no OFF of its own while the page holds the supply; none exists yet.
-- **A panel that saved other PD mini pins than the page holds ends later sessions.**
-  Condition: such a panel writes its wiring during a hold; `BUSY` answers, and the panel
-  keeps that as a refusal of those pins until the settings change or the panel restarts
-  with the port free. With a port's ON then adopted it writes OUTPUT 0, 140ms to 200ms
-  after the ON, and the session ends with result `SUPPLY`. Wiring equal to the page's is
-  taken and does not trigger it.
+- **A link that came back keeps the hold.** Condition: the link went silent for over
+  200ms with no panel restart. The page stays `OPEN` and `STOPPED` with the quiet bit
+  set, so the bank cannot arm. This fails safe. With no screen, the bench console's
+  `esc close` is the way out, or an IOmcu or panel restart.
+- **A pin held by the bench console goes with a panel restart.** Condition: `esc open`
+  on the console, then a panel restart. The panel cannot tell it from its own hold.
 - **An error in a write costs the page's repair in the same session.** Condition: a
   write that ends `TORN` or `LOST`. The supply goes off at once, so the ESC loses its
   power with the page half written. By the specification, not measured: a family S or

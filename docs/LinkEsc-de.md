@@ -108,25 +108,42 @@ seine Leitung ist geparkt, und ein Mensch trennt ihn.
 Leitung der Page, der PD mini und PROG_SUPPLY sind alles, was der IOmcu an hat.
 `LINK_EW_F_FAULT` sagt es dem Panel, das dem in den SAFE-Zustand der Bench folgt.
 
+## Die Hälfte des Panels
+
+`shared/bench/esc_link.c` fragt und folgt; es läuft auf jedem Panel, noch ohne Screen, es
+ist also nur der Alert unten zu sehen.
+
+| Ereignis | Was das Panel tut |
+|---|---|
+| Register 0 bis 20 | alle 5ms in einer Anfrage, 100ms bei gehaltenem Pin, 500ms sonst |
+| Erstes Lesen nach einem Panel-Neustart, ein Pin gehalten | CLOSE; erneut alle 1000ms, solange die Page `WRITING` antwortet oder in `NOT_BACK` bleibt. Keine Anfrage, bis die Page frei ist. |
+| Link zurück, kein Neustart | nichts wird geschlossen |
+| Die STOP-Taste oder jeder Stop des Panels | die Operation `STOP`, sobald die Page bekannt ist und einen Pin hält; ein Stop in einer Link-Lücke geht danach. Ein `BAD_VALUE`, eine SEQ eines anderen Schreibers: lesen und erneut, höchstens 6 Mal. |
+| `FAULT` steigt, oder der Zustand erreicht `NOT_BACK` | ein Fehler: alle Ausgänge aus (`prog_faults_follow()`). Ein `FAULT`, der beim ersten Lesen nach Link-Aufbau schon steht, zählt nicht. |
+| Der Zustand erreicht `NOT_BACK` | ein Alert, der Slot oder Port nennt |
+| Ein Pin gehalten, von wem auch immer | ARM auf MOTOR und SERVO, die TARGET-Zeile des Motors, ESC STICK, der Limit-Lauf und der Screenshot warten; ein angefragtes, abgelehntes ARM entfällt auf MOTOR und SERVO |
+| Ein Stop eingerastet | kein Befehl außer CLOSE, LEAVE und ABORT geht (`esc_prog_cmd_allowed()`) |
+| 10 Lesezugriffe der Page in Folge fehlgeschlagen, in einer Anfrage | die Anfrage endet. Mit einem Halten im letzten Lesen: ein Fehler, und `STOP` |
+| Eine Lesekopie mit neuem `READS` oder `READ_CRC` | in Blöcken geholt und gegen `READ_CRC` geprüft, 3 Versuche |
+
+Die Hälfte der SUPPLY-Page (`shared/bench/supply_link.c`) unter einem Halten:
+
+| Ereignis | Was das Panel tut |
+|---|---|
+| Sein erster Schreibzugriff nach einem Start | keiner vor einem Lesen. Ein dort gefundenes Halten wird übernommen; kein eigenes OFF geht darüber. Das OFF des Bedieners und der Cut eines Fehlers bleiben. |
+| Seine Verdrahtung, die Page antwortet `BUSY` | keine Ablehnung: die Verdrahtung der Page gilt, und sie wird erneut geschrieben, wenn ein Lesen das Ende des Haltens zeigt |
+| Ein Halten zu Ende, seine Verdrahtung nicht geschrieben | OFF, Lesen, Verdrahtung, wie bei jedem Start; kein ON gilt als verloren |
+| Eine abgelehnte Verdrahtung, nicht `BUSY`, bei einem ON, das ein Port hält | sofort `ON_REFUSED`: ein Fehler, alle Ausgänge aus |
+
 ## Aktuelle Einschränkungen
 
-- **Aus dem Halten führen nur CLOSE und ein IOmcu-Neustart.** Bedingung: ein Panel, das
-  neu startet, während die Page gehalten ist. Die Page bleibt `OPEN` und `STOPPED` mit
-  gesetztem Quiet-Bit, die Bank kann also nicht armen, und nichts auf der Page sagt warum.
-  Das ist die sichere Seite. Die Panel-Hälfte sendet nach jedem Neustart beim Link-Aufbau
-  CLOSE; sie gibt es noch nicht.
-- **Ein Panel, das im Halten neu startet, kostet die Sitzung die Versorgung.** Bedingung:
-  ein Panel-Neustart bei gehaltener Page, mit einem PD mini. Der erste Schreibzugriff des
-  Panels ist ein OFF. Die Page nimmt es an und lehnt das ON eines Ports ab, bis der Port
-  loslässt. Ein späteres ENTER auf `SWITCHED` endet daher bis zu einem CLOSE mit Ergebnis
-  `SUPPLY` (4) und `FAULT`. Die Panel-Hälfte sendet beim Link-Aufbau CLOSE und kein eigenes
-  OFF, solange die Page die Versorgung hält; sie gibt es noch nicht.
-- **Ein Panel mit anderen gespeicherten PD-mini-Pins als die Page beendet spätere
-  Sitzungen.** Bedingung: ein solches Panel schreibt seine Verdrahtung im Halten; `BUSY`
-  antwortet, und das Panel behält das als Ablehnung dieser Pins, bis sich die Einstellungen
-  ändern oder das Panel bei freiem Port neu startet. Übernimmt es dann das ON eines Ports,
-  schreibt es OUTPUT 0, 140ms bis 200ms nach dem ON, und die Sitzung endet mit Ergebnis
-  `SUPPLY`. Eine Verdrahtung gleich der der Page wird angenommen und löst das nicht aus.
+- **Ein zurückgekehrter Link behält das Halten.** Bedingung: der Link war über 200ms still,
+  ohne Panel-Neustart. Die Page bleibt `OPEN` und `STOPPED` mit gesetztem Quiet-Bit, die Bank
+  kann also nicht armen. Das ist die sichere Seite. Ohne Screen führen `esc close` auf der
+  Bench-Konsole oder ein IOmcu- oder Panel-Neustart heraus.
+- **Ein von der Bench-Konsole gehaltener Pin geht mit einem Panel-Neustart.** Bedingung:
+  `esc open` auf der Konsole, dann ein Panel-Neustart. Das Panel unterscheidet ihn nicht vom
+  eigenen.
 - **Ein Fehler in einem Schreiben kostet die Reparatur in derselben Session.**
   Bedingung: ein Schreiben, das mit `TORN` oder `LOST` endet. Die Versorgung geht sofort
   aus, der ESC verliert also seine Versorgung mit halb geschriebener Page. Nach der

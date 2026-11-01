@@ -149,7 +149,10 @@ static void link_up_off(supply_link_t *s)
 
     supply_link_init(s);
     supply_link_wire(s, &w);
-    /* The OFF owed at the start, then the wiring, then the set points. */
+    /* Who holds the page; then the OFF owed at the start, the wiring and the
+     * set points. */
+    memset(regs, 0, sizeof(regs));
+    supply_link_read(s, regs, 0u);
     for (int k = 0; k < 3; ++k) {
         if (supply_link_next(s, &off, &n, out) == SUPPLY_LINK_W_NONE) {
             break;

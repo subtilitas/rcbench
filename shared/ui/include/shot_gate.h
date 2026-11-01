@@ -32,7 +32,7 @@ typedef struct {
     bool supply_off;     /**< the supply is off and no ON is on its way   */
     bool prog5v_off;     /**< the ports' 5V is off and no ON on its way   */
     bool port_free;      /**< no programmer and no page holds a port      */
-    bool no_session;     /**< no KST, Hitec or ESC STICK session is open  */
+    bool no_session;     /**< no KST, Hitec, ESC STICK or wire session    */
     bool no_program_io;  /**< no programmer's card job or record is out   */
     bool no_motion;      /**< no sweep, pause or commanded motion         */
     bool no_test;        /**< no automatic test or limit run              */

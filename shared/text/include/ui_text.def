@@ -3820,6 +3820,12 @@ UI_TEXT(ALERT_PULSE_ORDER, 94,
 UI_TEXT(ALERT_PULSE_REFUSED, 94,
     "The IOmcu rejected the pulse range.",
     "Der IOmcu hat den Pulsbereich abgelehnt.")
+UI_TEXT(ALERT_ESC_NOT_BACK_SLOT, 94,
+    "ESC wire: slot %u did not take its pin back. ARM stays refused; CLOSE tries again.",
+    "ESC-Leitung: Slot %u nahm seinen Pin nicht zurück. ARM bleibt gesperrt; CLOSE läuft erneut.")
+UI_TEXT(ALERT_ESC_NOT_BACK_PORT, 94,
+    "ESC wire: port %u did not take its pin back. ARM stays refused; CLOSE tries again.",
+    "ESC-Leitung: Port %u nahm seinen Pin nicht zurück. ARM bleibt gesperrt; CLOSE läuft erneut.")
 UI_TEXT(ALERT_PDMINI_OLD, 94,
     "IOmcu firmware too old to reset the PD mini.",
     "IOmcu-Firmware zu alt, um den PD mini zurückzusetzen.")
