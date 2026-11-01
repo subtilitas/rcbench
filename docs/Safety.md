@@ -170,11 +170,14 @@ runs.
 The carrier's programming-port 5V has no such exemption. Its page,
 PROG_SUPPLY, exists from 4.32, and every IOmcu that serves it holds the
 OFF for a write; its own port bit (`LINK_PS_PORT`) does not enter the rule.
-On the carrier the SUPPLY page's bit stays clear, since the ports run from
-the 5V and not from the PD mini (`ports_tell_supply()`). A session there
-does not keep the operator off the PD mini either: SUPPLY and the SERVO
-screen's SET row take OUTPUT ON and set points through a session
-(`supply_link_session_blocks()`), and the IOmcu takes them. On any other
+On the carrier a KST or Hitec session leaves the SUPPLY page's bit clear,
+since the ports run from the 5V and not from the PD mini
+(`ports_tell_supply()`). Such a session does not keep the operator off the
+PD mini either: SUPPLY and the SERVO screen's SET row take OUTPUT ON and set
+points through it (`supply_link_session_blocks()`), and the IOmcu takes them.
+An ESC session sets the bit on every board, the carrier too, since SWITCHED
+powers the ESC from the PD mini. SUPPLY then refuses set points and ON
+and says the ESC programmer holds them (`SUP_HELD_REFUSED_ESC`). On any other
 board a session with a port keeps both off the PD mini, and only OUTPUT
 OFF works.
 

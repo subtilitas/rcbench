@@ -2592,8 +2592,8 @@ UI_TEXT(EW_WRITE_WARN_LINE, 100,
     "CHECK %s: %s -> %s",
     "PRÜFE %s: %s -> %s")
 UI_TEXT(EW_WRITE_GIVEN_UP, 100,
-    "Write given up: nothing written.",
-    "Schreiben aufgegeben: nichts geschrieben.")
+    "Write given up: the ESC is unchanged.",
+    "Schreiben aufgegeben: der ESC ist unverändert.")
 UI_TEXT(EW_CARD_BUSY, 100,
     "The card is busy: WRITE waits for its answer.",
     "Die Karte arbeitet: SCHREIBEN wartet auf ihre Antwort.")
@@ -2609,7 +2609,10 @@ UI_TEXT(EW_BACK_FIRST, 100,
 UI_TEXT(EW_HELD_TITLE, 56,
     "PIN HELD",
     "PIN GEHALTEN")
-UI_TEXT(EW_HELD_1, 96,
+UI_TEXT(EW_MSG_ABORTED, 100,
+    "ABORT ended it: the pin stays held.",
+    "ABBRUCH hat es beendet: der Pin bleibt gehalten.")
+UI_TEXT(EW_HELD_1, 49,
     "The pin is held. No ESC session runs.",
     "Der Pin ist gehalten. Keine ESC-Sitzung läuft.")
 UI_TEXT(EW_HOLD_ENTER_BTN, 0,
@@ -2652,8 +2655,8 @@ UI_TEXT(EW_ID_MUSIC, 0,
     "MUSIC %s",
     "MUSIC %s")
 UI_TEXT(EW_WRITE_NOTE, 100,
-    "Keep the power on. A cut in the write can leave the page erased.",
-    "Strom anlassen. Ein Schnitt im Schreiben kann die Seite gelöscht lassen.")
+    "Keep the power on. An interruption while writing can leave the page erased.",
+    "Strom anlassen. Eine Unterbrechung beim Schreiben kann die Seite gelöscht zurücklassen.")
 UI_TEXT(EW_NO_BACKUP_1, 100,
     "The first write of a session saves the ESC's values to the card first.",
     "Das erste Schreiben einer Sitzung speichert erst die Werte des ESC auf die Karte.")

@@ -146,6 +146,7 @@ typedef enum {
     ESC_PROG_MSG_RESTARTED,     /**< the IOmcu started again, or another writer */
     ESC_PROG_MSG_NACK,          /**< a frame refused: detail, a link_nack_t   */
     ESC_PROG_MSG_DROPPED,       /**< a stop came before the command went      */
+    ESC_PROG_MSG_ABORTED,       /**< ABORT ended it; the pin stays held       */
     ESC_PROG_MSG_HAND_WAIT,     /**< BY HAND: connect the ESC's power         */
     ESC_PROG_MSG_READ_DONE,     /**< the page is read                         */
     ESC_PROG_MSG_WRITE_DONE,    /**< written and read back                    */
@@ -184,6 +185,7 @@ typedef struct {
     esc_prog_cmd_t out;      /**< it                                          */
     esc_prog_connect_t conn; /**< CONNECT's values                            */
     uint16_t flags_seen;     /**< LINK_EW_F_FAULT and _STOPPED at the last feed */
+    uint8_t  aborted;        /**< ABORT went: the outcome it cuts is its own  */
     esc_prog_msg_t msg;      /**< the last message                            */
     uint16_t detail;         /**< its code                                    */
     uint8_t  backup_state;   /**< an esc_prog_backup_t                        */
@@ -244,11 +246,13 @@ esc_prog_msg_t esc_prog_powered(esc_prog_t *p);
 esc_prog_msg_t esc_prog_read(esc_prog_t *p);
 
 /**
- * @brief ENTER again on a pin held in OPEN, with the power of the last connect.
+ * @brief ENTER again on a pin held in OPEN.  The power is the caller's, what its page
+ *        shows: the model keeps none of its own for this.
  * @param p The model.
+ * @param c The values; its target is not used, as the pin stays held.
  * @return ESC_PROG_MSG_NONE when it goes, else why not.
  */
-esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p);
+esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p, const esc_prog_connect_t *c);
 
 /**
  * @brief WRITE a draft of the read copy.

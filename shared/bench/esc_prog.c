@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "esc_prog_int.h"
+#include "ew_session.h"
 
 void esc_prog_gate_init(esc_prog_gate_t *g)
 {
@@ -57,6 +58,7 @@ esc_prog_cmd_t *esc_prog_issue(esc_prog_t *p, esc_prog_cmd_kind_t kind)
     p->wait_id = c->id;
     p->wait_ms = p->f.now_ms;
     p->out_new = 1u;
+    p->aborted = 0u;
     if (p->gate != NULL) {
         atomic_store(&p->gate->pass, c->id);
     }
@@ -244,6 +246,16 @@ static void take_outcome(esc_prog_t *p, const esc_link_outcome_t *o)
     default:
         break;
     }
+    /* What an ABORT cut is that ABORT's: a stop's word would name the wrong hand. */
+    if (p->aborted != 0u) {
+        p->aborted = 0u;
+        if (p->msg == ESC_PROG_MSG_CUT || p->msg == ESC_PROG_MSG_DROPPED
+            || (p->msg == ESC_PROG_MSG_SESSION
+                && (p->detail == (uint16_t)EW_SES_ERR_ABORTED
+                    || p->detail == (uint16_t)EW_SES_ERR_STOPPED))) {
+            (void)esc_prog_say(p, ESC_PROG_MSG_ABORTED, 0u);
+        }
+    }
     if (well) {
         ended_well(p, o);
     } else {
@@ -271,14 +283,15 @@ static void watch_flags(esc_prog_t *p)
 }
 
 /**
- * @brief Whether a message is no error: nothing a lost link can leave standing.
+ * @brief Whether a message gives way to the link's state.  WRITE_DONE and RESTORE_DONE
+ *        do not: they are the only word of a finished write, and an error says what
+ *        ended a flow.
  * @param m The message.
  * @return true then.
  */
 static bool msg_is_good_word(esc_prog_msg_t m)
 {
     return m == ESC_PROG_MSG_NONE || m == ESC_PROG_MSG_READ_DONE
-           || m == ESC_PROG_MSG_WRITE_DONE || m == ESC_PROG_MSG_RESTORE_DONE
            || m == ESC_PROG_MSG_LEFT || m == ESC_PROG_MSG_CLEARED
            || m == ESC_PROG_MSG_LOADED || m == ESC_PROG_MSG_HAND_WAIT;
 }
@@ -344,6 +357,18 @@ bool esc_prog_next_cmd(esc_prog_t *p, esc_prog_cmd_t *out)
     return true;
 }
 
+/**
+ * @brief Whether a SWITCHED power's voltage or limit is out of range.
+ * @param w The power.
+ * @return true then.
+ */
+static bool supply_out_of_range(const esc_link_power_t *w)
+{
+    return w->power == (uint8_t)LINK_ESC_SWITCHED
+           && (w->mv < LINK_ESC_SUPPLY_MIN_MV || w->mv > ESC_PROG_MAX_MV
+               || w->ma < ESC_PROG_MIN_MA || w->ma > ESC_PROG_MAX_MA);
+}
+
 esc_prog_msg_t esc_prog_connect(esc_prog_t *p, const esc_prog_connect_t *c)
 {
     if (p == NULL || c == NULL) {
@@ -354,9 +379,7 @@ esc_prog_msg_t esc_prog_connect(esc_prog_t *p, const esc_prog_connect_t *c)
     if (m == ESC_PROG_MSG_NONE && p->f.rd.held) {
         m = ESC_PROG_MSG_HELD;
     }
-    if (m == ESC_PROG_MSG_NONE && c->power.power == (uint8_t)LINK_ESC_SWITCHED
-        && (c->power.mv < LINK_ESC_SUPPLY_MIN_MV || c->power.mv > ESC_PROG_MAX_MV
-            || c->power.ma < ESC_PROG_MIN_MA || c->power.ma > ESC_PROG_MAX_MA)) {
+    if (m == ESC_PROG_MSG_NONE && supply_out_of_range(&c->power)) {
         m = ESC_PROG_MSG_RANGE;
     }
     if (m != ESC_PROG_MSG_NONE) {
@@ -388,9 +411,9 @@ esc_prog_msg_t esc_prog_powered(esc_prog_t *p)
     return ESC_PROG_MSG_NONE;
 }
 
-esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p)
+esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p, const esc_prog_connect_t *c)
 {
-    if (p == NULL) {
+    if (p == NULL || c == NULL) {
         return ESC_PROG_MSG_BUSY;
     }
     esc_prog_msg_t m = common_gate(p);
@@ -398,12 +421,15 @@ esc_prog_msg_t esc_prog_enter_again(esc_prog_t *p)
     if (m == ESC_PROG_MSG_NONE && p->f.rd.state != (uint8_t)LINK_ESC_OPEN) {
         m = ESC_PROG_MSG_NOT_IN_MODE;
     }
+    if (m == ESC_PROG_MSG_NONE && supply_out_of_range(&c->power)) {
+        m = ESC_PROG_MSG_RANGE;
+    }
     if (m != ESC_PROG_MSG_NONE) {
         return esc_prog_say(p, m, 0u);
     }
     p->flow = ESC_PROG_FLOW_CONNECT;
     (void)esc_prog_say(p, ESC_PROG_MSG_NONE, 0u);
-    esc_prog_issue(p, ESC_PROG_CMD_ENTER)->power = p->conn.power;
+    esc_prog_issue(p, ESC_PROG_CMD_ENTER)->power = c->power;
     return ESC_PROG_MSG_NONE;
 }
 
@@ -517,6 +543,8 @@ void esc_prog_abort(esc_prog_t *p)
         p->flow = ESC_PROG_FLOW_NONE;
         (void)esc_prog_issue(p, ESC_PROG_CMD_ABORT);
         p->wait_id = 0u;
+        p->aborted = 1u;
+        (void)esc_prog_say(p, ESC_PROG_MSG_ABORTED, 0u);
     }
 }
 

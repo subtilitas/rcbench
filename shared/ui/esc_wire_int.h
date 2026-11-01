@@ -200,6 +200,13 @@ extern ewp_state_t ewp_s;
 ewp_stage_t ewp_stage(void);
 
 /**
+ * @brief The session's values, as CONNECT and ENTER AGAIN send them and as their pages
+ *        show them: the one place both read.  BY HAND has no voltage and no limit.
+ * @param c Takes them; its target with no target to take is 0.
+ */
+void ewp_connect_values(esc_prog_connect_t *c);
+
+/**
  * @brief ABORT: a write waiting for the card is given up, else the page is cut.
  */
 void ewp_abort(void);

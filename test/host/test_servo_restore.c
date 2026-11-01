@@ -590,6 +590,8 @@ TEST_CASE(ports_turning_to_their_own_supply_ask_nothing)
         port_leaves(kst != 0);
         CHECK(supply_screen_port_held());
         supply_screen_set_ports_own(true);
+        /* The IOmcu's next read: on such a board the word is an ESC session's alone. */
+        supply_screen_set_page_held(false);
         CHECK(!supply_screen_port_held());
         frame_tick();
         CHECK(!servo_screen_asks_restore());

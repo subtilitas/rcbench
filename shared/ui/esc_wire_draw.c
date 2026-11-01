@@ -331,37 +331,94 @@ static void hold_btn(gfx_canvas_t *c, const char *label)
 /* ------------------------------------------------------------------- pages */
 
 /**
+ * @brief A value of the connect rows as the page says it, from what CONNECT and ENTER
+ *        AGAIN send.
+ * @param row  Its row: 1 POWER, 2 voltage, 3 limit, 4 ENTRY HOLD, 5 OFF TIME.
+ * @param out  Takes the text.
+ * @param size Bytes at @p out.
+ */
+static void value_text(int row, char *out, size_t size)
+{
+    esc_prog_connect_t v;
+
+    ewp_connect_values(&v);
+    const bool hand = v.power.power == (uint8_t)LINK_ESC_BY_HAND;
+
+    switch (row) {
+    case 1:
+        snprintf(out, size, "%s", hand ? TR(EW_POWER_HAND) : TR(EW_POWER_SWITCHED));
+        break;
+    case 2:
+        if (hand) {
+            snprintf(out, size, "%s", TR(EW_POWER_NONE));
+        } else {
+            snprintf(out, size, "%u.%02uV", (unsigned)v.power.mv / 1000u,
+                     (unsigned)v.power.mv % 1000u / 10u);
+        }
+        break;
+    case 3:
+        if (hand) {
+            snprintf(out, size, "%s", TR(EW_POWER_NONE));
+        } else {
+            snprintf(out, size, "%u.%02uA", (unsigned)v.power.ma / 1000u,
+                     (unsigned)v.power.ma % 1000u / 10u);
+        }
+        break;
+    case 4:
+        snprintf(out, size, "%lu.%lus", (unsigned long)v.power.hold_ms / 1000ul,
+                 (unsigned long)v.power.hold_ms % 1000ul / 100ul);
+        break;
+    default:
+        snprintf(out, size, "%u.%us", (unsigned)v.power.off_ms / 1000u,
+                 (unsigned)v.power.off_ms % 1000u / 100u);
+        break;
+    }
+}
+
+const char *esc_wire_panel_value_text(int row)
+{
+    static char s_text[EWP_LINE];
+
+    value_text(row, s_text, sizeof(s_text));
+    return s_text;
+}
+
+/**
+ * @brief The rows of the session's values, in the left column.
+ * @param c        The canvas.
+ * @param editable They take a tap: else read-only, dimmed.
+ */
+static void draw_values(gfx_canvas_t *c, bool editable)
+{
+    static const ui_text_id_t k_name[] = { TX_EW_ROW_POWER, TX_EW_ROW_VOLT, TX_EW_ROW_AMP,
+                                           TX_EW_ROW_HOLD, TX_EW_ROW_OFF };
+    static char s_text[EWP_LINE];
+    const bool hand = ewp_s.power == (uint8_t)LINK_ESC_BY_HAND;
+    const bool none = esc_wire_panel_target_text(s_text, sizeof(s_text));
+
+    row_draw(c, 0, TR(EW_ROW_TARGET), s_text, editable && ewp_s.target_count != 0u, none);
+    for (int row = 1; row <= 5; ++row) {
+        const bool live = editable && (!hand || row == 1 || row == 4);
+
+        value_text(row, s_text, sizeof(s_text));
+        row_draw(c, row, ui_tr(k_name[row - 1]), s_text, live, false);
+    }
+}
+
+/**
  * @brief The connect page: the values on the left, the warnings on the right, a red
  *        hold under them.
  * @param c The canvas.
  */
 static void draw_connect(gfx_canvas_t *c)
 {
-    static char s_text[EWP_LINE];
-    const bool hand = ewp_s.power == (uint8_t)LINK_ESC_BY_HAND;
     const int x = ewp_s.area.x + 10 + CONNECT_W + 10;
     int y = ewp_row_rect(0).y;
 
     line_at(c, ewp_s.area.x + 10, ewp_s.area.y + EWP_TAB_DY + 14,
             TR(EW_CONNECT_TITLE), UI_C_TEXT);
     back_btn(c);
-    const bool none = esc_wire_panel_target_text(s_text, sizeof(s_text));
-
-    row_draw(c, 0, TR(EW_ROW_TARGET), s_text, ewp_s.target_count != 0u, none);
-    row_draw(c, 1, TR(EW_ROW_POWER), hand ? TR(EW_POWER_HAND) : TR(EW_POWER_SWITCHED),
-             true, false);
-    snprintf(s_text, sizeof(s_text), "%u.%02uV", (unsigned)ewp_s.mv / 1000u,
-             (unsigned)ewp_s.mv % 1000u / 10u);
-    row_draw(c, 2, TR(EW_ROW_VOLT), hand ? TR(EW_POWER_NONE) : s_text, !hand, false);
-    snprintf(s_text, sizeof(s_text), "%u.%02uA", (unsigned)ewp_s.ma / 1000u,
-             (unsigned)ewp_s.ma % 1000u / 10u);
-    row_draw(c, 3, TR(EW_ROW_AMP), hand ? TR(EW_POWER_NONE) : s_text, !hand, false);
-    snprintf(s_text, sizeof(s_text), "%lu.%lus", (unsigned long)ewp_s.hold_ms / 1000ul,
-             (unsigned long)ewp_s.hold_ms % 1000ul / 100ul);
-    row_draw(c, 4, TR(EW_ROW_HOLD), s_text, true, false);
-    snprintf(s_text, sizeof(s_text), "%u.%us", (unsigned)ewp_s.off_ms / 1000u,
-             (unsigned)ewp_s.off_ms % 1000u / 100u);
-    row_draw(c, 5, TR(EW_ROW_OFF), s_text, !hand, false);
+    draw_values(c, true);
     /* Warnings, in the right column.  The connect page's rows take the left. */
     static const ui_text_id_t k_warn[] = { TX_EW_WARN_PROP, TX_EW_WARN_BEC,
                                            TX_EW_WARN_SERVOS, TX_EW_WARN_SIMONK };
@@ -662,17 +719,12 @@ static void draw_held(gfx_canvas_t *c, ewp_stage_t st)
     back_btn(c);
     (void)gfx_text(c, x, y,
                    st == ESC_WIRE_STOPPED ? TR(EW_STOPPED_TITLE)
-                   : st == ESC_WIRE_PIN_HELD ? TR(EW_HELD_TITLE)
                    : st == ESC_WIRE_OTHER ? TR(EW_OTHER_TITLE) : TR(EW_NOT_BACK_TITLE),
                    &gfx_font_16x28, ui_theme_color(UI_C_WARN), 1);
     ewp_line_text(s_text, sizeof(s_text));
     line_at(c, x, y + 50, s_text, UI_C_TEXT);
     message_line(c);
-    if (st == ESC_WIRE_PIN_HELD) {
-        line_at(c, x, y + 50 + EWP_LINE_H + 8, TR(EW_HELD_1), UI_C_TEXT_DIM);
-        hold_btn(c, TR(EW_HOLD_ENTER_BTN));
-        action_btn(c, 2, TR(EW_CLOSE_PIN), false, true);
-    } else if (st == ESC_WIRE_STOPPED) {
+    if (st == ESC_WIRE_STOPPED) {
         action_btn(c, 0, TR(EW_CLEAR), false, true);
         action_btn(c, 1, TR(EW_CLOSE_PIN), false, true);
     } else if (st == ESC_WIRE_OTHER) {
@@ -680,6 +732,28 @@ static void draw_held(gfx_canvas_t *c, ewp_stage_t st)
     } else {
         action_btn(c, 0, TR(EW_CLOSE_AGAIN), false, true);
     }
+}
+
+/**
+ * @brief A pin held with nothing going on: what ENTER AGAIN would send, read-only, the
+ *        hold under it and PIN BACK.
+ * @param c The canvas.
+ */
+static void draw_pin_held(gfx_canvas_t *c)
+{
+    static char s_text[EWP_LINE];
+    const int x = ewp_s.area.x + 10 + CONNECT_W + 10;
+    const int y = ewp_row_rect(0).y;
+
+    back_btn(c);
+    draw_values(c, false);
+    (void)gfx_text(c, x, y, TR(EW_HELD_TITLE), &gfx_font_16x28, ui_theme_color(UI_C_WARN), 1);
+    ewp_line_text(s_text, sizeof(s_text));
+    line_at(c, x, y + 40, s_text, UI_C_TEXT);
+    line_at(c, x, y + 40 + EWP_LINE_H, TR(EW_HELD_1), UI_C_TEXT_DIM);
+    message_line(c);
+    hold_btn(c, TR(EW_HOLD_ENTER_BTN));
+    action_btn(c, 2, TR(EW_CLOSE_PIN), false, true);
 }
 
 void ewp_render(gfx_canvas_t *c)
@@ -705,6 +779,8 @@ void ewp_render(gfx_canvas_t *c)
     } else if (st == ESC_WIRE_ENTERING || st == ESC_WIRE_HAND
                || st == ESC_WIRE_RUNNING) {
         draw_progress(c);
+    } else if (st == ESC_WIRE_PIN_HELD) {
+        draw_pin_held(c);
     } else {
         draw_held(c, st);
     }

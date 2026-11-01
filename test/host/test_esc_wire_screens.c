@@ -272,6 +272,19 @@ TEST_CASE(the_pages_of_a_held_pin_draw_their_ways_out)
     draw();
     CHECK(has(esc_wire_panel_hold_rect(), UI_C_DANGER));
     CHECK(has(esc_wire_panel_action_rect(2), UI_C_TEXT));
+    /* Its values above the hold, read-only: their names dim, and a tap opens nothing. */
+    for (int row = 1; row <= 5; ++row) {
+        CHECK(has(ewp_row_rect(row), UI_C_TEXT_FAINT));
+        const gfx_rect_t v = ewp_value_rect(row);
+        const touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                                  .point = { .id = 1, .x = (int16_t)(v.x + 5),
+                                             .y = (int16_t)(v.y + 5), .strength = 40 } };
+
+        esc_wire_pages.event(&e);
+        CHECK(!esc_wire_pages.has_press(1u));
+    }
+    CHECK(!esc_wire_panel_keypad()->open);
+    CHECK_EQ(ewp_s.ch_what, EWP_CH_NONE);
 }
 
 /** @brief Every message says something, in the language set; an error warns. */

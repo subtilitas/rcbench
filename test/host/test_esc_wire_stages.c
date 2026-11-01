@@ -293,6 +293,225 @@ TEST_CASE(the_identity_tab_shows_all_of_the_name)
     CHECK_STR_EQ(esc_wire_panel_name_line(), "BOARD ABCDEFGHIJKLMNOPQRSTUVWXYZ012");
 }
 
+/** @brief ENTRY HOLD 5s, CONNECT, then ABORT 10ms in: the pin held, nothing on. */
+static void up_to_pin_held(void)
+{
+    ew_tap(esc_wire_panel_value_rect(4));
+    kp_type("5");
+    ew_hold(2.2f);
+    bench_run(10u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_ENTERING);
+    press(esc_wire_panel_action_rect(0), 1u);
+    bench_run(500u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_PIN_HELD);
+}
+
+TEST_CASE(enter_again_sends_what_the_page_shows_not_the_last_connect)
+{
+    session_up(up_am_rig);
+    supply_screen_put(12.0f, 1.0f);
+    bench_run(20u);
+    up_to_pin_held();
+    CHECK_STR_EQ(esc_wire_panel_value_text(2), "12.00V");
+    CHECK(!g.v.asked_on);
+    /* SUPPLY moves: the page follows it, and the hold sends the page. */
+    supply_screen_put(5.0f, 0.5f);
+    bench_run(20u);
+    CHECK_STR_EQ(esc_wire_panel_value_text(1), TR(EW_POWER_SWITCHED));
+    CHECK_STR_EQ(esc_wire_panel_value_text(2), "5.00V");
+    CHECK_STR_EQ(esc_wire_panel_value_text(3), "0.50A");
+    CHECK_STR_EQ(esc_wire_panel_value_text(4), "5.0s");
+    CHECK_STR_EQ(esc_wire_panel_value_text(5), "1.0s");
+    g.on_mv = 0u;
+    g.on_ma = 0u;
+    ew_hold(2.2f);
+    bench_run(3000u);
+    CHECK(g.v.asked_on);
+    CHECK_EQ(g.on_mv, 5000u);
+    CHECK_EQ(g.on_ma, 500u);
+}
+
+TEST_CASE(the_model_sends_only_the_power_it_is_handed)
+{
+    session_up(up_am_rig);
+    up_to_pin_held();
+    esc_prog_connect_t c;
+
+    /* A voltage out of range goes nowhere, whatever the last connect held. */
+    ewp_connect_values(&c);
+    c.power.mv = 0u;
+    CHECK_EQ(esc_prog_enter_again(esc_wire_panel_model(), &c), ESC_PROG_MSG_RANGE);
+    CHECK_EQ(esc_prog_enter_again(esc_wire_panel_model(), NULL), ESC_PROG_MSG_BUSY);
+    bench_run(200u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_PIN_HELD);
+    CHECK(!g.v.asked_on);
+    /* In another state it does not go. */
+    ewp_connect_values(&c);
+    g_hand = true;
+    g_f.rd.state = LINK_ESC_READY;
+    esc_wire_panel_feed(&g_f);
+    CHECK_EQ(esc_prog_enter_again(esc_wire_panel_model(), &c), ESC_PROG_MSG_NOT_IN_MODE);
+    g_hand = false;
+}
+
+TEST_CASE(a_value_that_moves_under_the_hold_ends_the_hold)
+{
+    session_up(up_am_rig);
+    up_to_pin_held();
+    press(esc_wire_panel_hold_rect(), 1u);
+    bench_run(1000u);
+    CHECK(ewp_s.hold_down);
+    supply_screen_put(5.0f, 0.5f);
+    bench_run(2000u);
+    CHECK(!ewp_s.hold_down);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_PIN_HELD);
+    CHECK(!g.v.asked_on);
+}
+
+TEST_CASE(pin_held_shows_by_hand_and_no_voltage_or_limit)
+{
+    session_up(up_am_rig);
+    ewp_s.power = LINK_ESC_BY_HAND;
+    CHECK_STR_EQ(esc_wire_panel_value_text(1), TR(EW_POWER_HAND));
+    CHECK_STR_EQ(esc_wire_panel_value_text(2), TR(EW_POWER_NONE));
+    CHECK_STR_EQ(esc_wire_panel_value_text(3), TR(EW_POWER_NONE));
+    esc_prog_connect_t c;
+
+    ewp_connect_values(&c);
+    CHECK_EQ(c.power.mv, 0u);
+    CHECK_EQ(c.power.ma, 0u);
+}
+
+TEST_CASE(enter_again_by_hand_returns_to_hand_with_the_supply_off)
+{
+    session_up(up_am_rig);
+    ewp_s.power = LINK_ESC_BY_HAND;
+    ew_hold(2.2f);
+    bench_run(100u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_HAND);
+    press(esc_wire_panel_action_rect(0), 1u);
+    bench_run(500u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_PIN_HELD);
+    /* The abort's word, not the wait's. */
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_MSG_ABORTED));
+    /* No outcome came for that ABORT: the next command ends its claim on one. */
+    CHECK_EQ(esc_wire_panel_model()->aborted, 1u);
+    ew_hold(2.2f);
+    CHECK_EQ(esc_wire_panel_model()->aborted, 0u);
+    bench_run(100u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_HAND);
+    CHECK(!g.v.asked_on);
+    /* A stop later is a stop: the old ABORT does not name it. */
+    esc_link_stop(&g_l);
+    bench_run(500u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_STOPPED);
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_MSG_CUT));
+}
+
+TEST_CASE(an_abort_is_named_as_an_abort_and_a_stop_as_a_stop)
+{
+    session_up(up_am_rig);
+    up_to_pin_held();
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_MSG_ABORTED));
+    /* ENTER AGAIN takes the word away. */
+    ew_hold(2.2f);
+    CHECK(strcmp(esc_wire_panel_message(), TR(EW_MSG_ABORTED)) != 0);
+    /* The band's STOP. */
+    bench_run(50u);
+    esc_link_stop(&g_l);
+    bench_run(500u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_STOPPED);
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_MSG_CUT));
+}
+
+TEST_CASE(the_link_state_replaces_a_good_word_and_a_written_word_stays)
+{
+    session_up(up_am_rig);
+    esc_prog_t *m = esc_wire_panel_model();
+
+    g_hand = true;
+    memset(&g_f, 0, sizeof(g_f));
+    g_f.rd.phase = ESC_LINK_NO_PAGE;
+    static const esc_prog_msg_t k_gives[] = { ESC_PROG_MSG_NONE, ESC_PROG_MSG_READ_DONE,
+                                              ESC_PROG_MSG_CLEARED, ESC_PROG_MSG_LOADED,
+                                              ESC_PROG_MSG_LEFT, ESC_PROG_MSG_HAND_WAIT };
+
+    for (size_t i = 0u; i < sizeof(k_gives) / sizeof(k_gives[0]); ++i) {
+        m->msg = k_gives[i];
+        esc_wire_panel_feed(&g_f);
+        CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_MSG_NO_PAGE));
+    }
+    /* Back: the link's word goes. */
+    g_f.rd.phase = ESC_LINK_READY;
+    esc_wire_panel_feed(&g_f);
+    CHECK_STR_EQ(esc_wire_panel_message(), "");
+    static const esc_prog_msg_t k_stays[] = { ESC_PROG_MSG_WRITE_DONE,
+                                              ESC_PROG_MSG_RESTORE_DONE,
+                                              ESC_PROG_MSG_NO_ANSWER };
+
+    g_f.rd.phase = ESC_LINK_DOWN;
+    for (size_t i = 0u; i < sizeof(k_stays) / sizeof(k_stays[0]); ++i) {
+        m->msg = k_stays[i];
+        esc_wire_panel_feed(&g_f);
+        CHECK_EQ(esc_prog_message(m, NULL), k_stays[i]);
+    }
+    m->msg = ESC_PROG_MSG_NONE;
+    esc_wire_panel_feed(&g_f);
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_MSG_NO_LINK));
+}
+
+TEST_CASE(a_failing_save_after_a_give_up_keeps_the_note_and_the_esc)
+{
+    static esc_card_req_t r;
+
+    session_up(up_am_rig);
+    connected();
+    ew_tap(esc_wire_panel_tab_rect(1));
+    ew_tap(esc_wire_panel_value_rect(2));
+    ew_tap(esc_wire_panel_choice_rect(0));
+    ew_tap(esc_wire_panel_action_rect(2));
+    g_card_wait = true;
+    ew_hold(2.2f);
+    bench_run(10u);
+    CHECK(esc_wire_panel_card_take(&r));
+    press(esc_wire_panel_action_rect(0), 1u);
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_WRITE_GIVEN_UP));
+    g_card_wait = false;
+    memset(&g_done, 0, sizeof(g_done));
+    g_done.op = r.op;
+    g_done.id = r.id;
+    g_done.result = ESC_CARD_DONE_FULL;
+    esc_wire_panel_card_done(&g_done);
+    bench_run(20u);
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_WRITE_GIVEN_UP));
+    CHECK_EQ(esc.am[0x11], 1u);
+    CHECK(strstr(TR(EW_WRITE_GIVEN_UP), "unchanged") != NULL);
+}
+
+TEST_CASE(an_esc_session_holds_supply_on_a_carrier_and_a_servo_port_does_not)
+{
+    session_up(up_am_rig);
+    supply_screen_set_ports_own(true);
+    supply_screen_set_page_held(false);
+    CHECK(!supply_screen_port_held());
+    /* The page's word on a carrier is an ESC session's. */
+    supply_screen_set_page_held(true);
+    CHECK(supply_screen_port_held());
+    supply_screen_set_page_held(false);
+    /* KST and Hitec there stay off it. */
+    supply_screen_set_port_held(true);
+    CHECK(!supply_screen_port_held());
+    supply_screen_set_port_held(false);
+    supply_screen_set_hitec_held(true);
+    CHECK(!supply_screen_port_held());
+    supply_screen_set_hitec_held(false);
+    supply_screen_set_ports_own(false);
+    /* On any other board the three hold it. */
+    supply_screen_set_page_held(true);
+    CHECK(supply_screen_port_held());
+    supply_screen_set_page_held(false);
+}
+
 int main(void)
 {
     RUN(abort_in_an_entry_ends_on_the_pin_held_page_with_its_ways_out);
@@ -310,5 +529,14 @@ int main(void)
     RUN(a_cut_press_on_a_choice_selects_nothing);
     RUN(abort_goes_with_a_second_finger_while_the_first_holds);
     RUN(the_identity_tab_shows_all_of_the_name);
+    RUN(enter_again_sends_what_the_page_shows_not_the_last_connect);
+    RUN(the_model_sends_only_the_power_it_is_handed);
+    RUN(a_value_that_moves_under_the_hold_ends_the_hold);
+    RUN(pin_held_shows_by_hand_and_no_voltage_or_limit);
+    RUN(enter_again_by_hand_returns_to_hand_with_the_supply_off);
+    RUN(an_abort_is_named_as_an_abort_and_a_stop_as_a_stop);
+    RUN(the_link_state_replaces_a_good_word_and_a_written_word_stays);
+    RUN(a_failing_save_after_a_give_up_keeps_the_note_and_the_esc);
+    RUN(an_esc_session_holds_supply_on_a_carrier_and_a_servo_port_does_not);
     return test_summary("esc_wire_stages");
 }

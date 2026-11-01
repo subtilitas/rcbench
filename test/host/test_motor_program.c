@@ -543,6 +543,33 @@ TEST_CASE(the_wire_session_strip_names_its_own_pin)
     CHECK(strstr(line, "DSHOT300") == NULL);
 }
 
+/* ARM with a signal-wire session holding a pin: no ask, and the alert names it. */
+TEST_CASE(arm_under_a_wire_session_says_the_esc_programmer_holds_it)
+{
+    esc_prog_feed_t f;
+
+    fresh();
+    feed_tap(FEED_LONE, TAB_X(0), TAB_Y);
+    frames(2);
+    memset(&f, 0, sizeof(f));
+    f.rd.known = true;
+    f.rd.held = true;
+    f.rd.state = LINK_ESC_READY;
+    esc_wire_panel_feed(&f);
+    ui_router_set_alert(NULL);
+    finger(FEED_LONE, ARM_X, ARM_Y);
+    frames(3);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
+    lift(FEED_LONE);
+    frames(2);
+    CHECK(took().kind != MOTOR_CMD_ARM);
+    f.rd.held = false;
+    f.rd.state = 0u;
+    esc_wire_panel_feed(&f);
+    ui_router_set_alert(NULL);
+    frames(2);
+}
+
 /*
  * PROGRAM's list on an armed bench, the throttle at 40%: a second finger
  * opens ESC STICK while the first holds DISARM.  The press on DISARM has
@@ -606,6 +633,7 @@ int main(void)
     RUN(the_home_tag_climbs_the_session_then_leaves);
     RUN(leaving_with_a_session_open_disarms_and_closes_it);
     RUN(the_wire_session_strip_names_its_own_pin);
+    RUN(arm_under_a_wire_session_says_the_esc_programmer_holds_it);
     RUN(opening_a_session_on_an_armed_bench_disarms_it);
     RUN(a_second_finger_on_the_list_does_not_take_the_row);
     free(fb);

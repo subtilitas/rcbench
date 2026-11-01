@@ -196,6 +196,36 @@ static void hold_down_2s(void)
     ui_router_tick(0.02f);
 }
 
+/**
+ * @brief The card's task answers the request out: 2 files for a list, a line for a load.
+ * @param result An esc_card_result_t.
+ */
+static void card_answer(uint8_t result)
+{
+    static esc_card_req_t s_req;
+    static esc_card_done_t s_done;
+
+    if (!esc_wire_panel_card_take(&s_req)) {
+        fprintf(stderr, "render_esc_wire: no request for the card\n");
+        exit(1);
+    }
+    memset(&s_done, 0, sizeof(s_done));
+    s_done.op = s_req.op;
+    s_done.id = s_req.id;
+    s_done.result = result;
+    if (s_req.op == (uint8_t)ESC_CARD_LIST) {
+        s_done.count = 2u;
+        s_done.total = 2u;
+        snprintf(s_done.names[0], sizeof(s_done.names[0]), "ESCW002");
+        snprintf(s_done.names[1], sizeof(s_done.names[1]), "ESCW001");
+    } else if (s_req.op == (uint8_t)ESC_CARD_LOAD) {
+        s_done.len = 2u;
+        snprintf(s_done.text, sizeof(s_done.text), "x\n");
+    }
+    esc_wire_panel_card_done(&s_done);
+    feed();
+}
+
 void render_esc_wire_view(const char *view)
 {
     const esc_wire_target_t targets[2] = { { 0u, 0u },
@@ -230,6 +260,23 @@ void render_esc_wire_view(const char *view)
         feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);
         esc_wire_panel_model()->msg = ESC_PROG_MSG_REFUSED;
         esc_wire_panel_model()->detail = LINK_ESC_REF_NO_SUPPLY;
+    } else if (strcmp(view, "motor-wire-held-hand") == 0) {
+        tap(esc_wire_panel_value_rect(1));
+        tap(esc_wire_panel_choice_rect(1));
+        s_f.rd.flags = 0u;
+        feed_state(LINK_ESC_OPEN, LINK_ESC_LINE_PARK, 100u);
+        esc_wire_panel_model()->msg = ESC_PROG_MSG_ABORTED;
+    } else if (strcmp(view, "motor-wire-not-back") == 0) {
+        s_f.rd.result = LINK_ESC_RESULT_NOT_BACK;
+        feed_state(LINK_ESC_NOT_BACK, LINK_ESC_LINE_PARK, 100u);
+        esc_wire_panel_model()->msg = ESC_PROG_MSG_NOT_BACK;
+    } else if (strcmp(view, "motor-wire-release") == 0) {
+        s_f.rd.state = LINK_ESC_OPEN;
+        s_f.rd.held = true;
+        s_f.rd.ours = false;
+        s_f.rd.gpio = 13u;
+        feed();
+        tap(esc_wire_panel_action_rect(0));
     } else if (strcmp(view, "motor-wire-other") == 0) {
         s_f.rd.state = LINK_ESC_OPEN;
         s_f.rd.held = true;
@@ -301,6 +348,24 @@ void render_esc_wire_view(const char *view)
     } else if (strcmp(view, "motor-wire-erased") == 0) {
         feed_read(EW_FW_AM, 0u, LINK_EW_F_ERASED, EW_WHY_ERASED);
         esc_wire_panel_model()->msg = ESC_PROG_MSG_READ_DONE;
+    } else if (strcmp(view, "motor-wire-no-backup") == 0) {
+        feed_read(EW_FW_AM, 4u, LINK_EW_F_WRITABLE, 0u);
+        tap(esc_wire_panel_tab_rect(4));
+        tap(esc_wire_panel_value_rect(3));
+        tap(esc_wire_panel_choice_rect(0));
+        open_write();
+        hold_down_2s();
+        card_answer(ESC_CARD_DONE_NO_CARD);
+    } else if (strcmp(view, "motor-wire-files") == 0) {
+        feed_read(EW_FW_AM, 4u, LINK_EW_F_WRITABLE, 0u);
+        tap(esc_wire_panel_action_rect(1));
+        card_answer(ESC_CARD_DONE_OK);
+    } else if (strcmp(view, "motor-wire-restore") == 0) {
+        feed_read(EW_FW_AM, 0u, LINK_EW_F_ERASED, EW_WHY_ERASED);
+        tap(esc_wire_panel_action_rect(0));
+        card_answer(ESC_CARD_DONE_OK);
+        tap(esc_wire_panel_choice_rect(0));
+        card_answer(ESC_CARD_DONE_OK);
     } else if (strcmp(view, "motor-wire-erased-leave") == 0) {
         feed_read(EW_FW_AM, 0u, LINK_EW_F_ERASED, EW_WHY_ERASED);
         tap(esc_wire_panel_back_rect());

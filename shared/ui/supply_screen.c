@@ -734,13 +734,14 @@ static void port_held_apply(bool held)
 
 /**
  * @brief The hold as the programmers' words, the SUPPLY page's and the board
- *        make it: any of the three words, on a board whose ports run from
- *        the PD mini.
+ *        make it.  The programmers' two count on a board whose ports run from the
+ *        PD mini.  The page's counts on every board: on the carrier the IOmcu sets it
+ *        for an ESC session only, and that session holds the PD mini there too.
  * @return true while a port holds this screen.
  */
 static bool port_held_now(void)
 {
-    return !s.ports_own && (s.held_kst || s.held_hitec || s.held_page);
+    return s.held_page || (!s.ports_own && (s.held_kst || s.held_hitec));
 }
 
 /**

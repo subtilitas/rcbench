@@ -9,6 +9,7 @@ history is in git.
 ### Added
 
 - Panel: MOTOR & ESC > PROGRAM's row `AM32, Bluejay, BLHeli_S, ESCape32`, `SIGNAL WIRE` at its right, dimmed until the IOmcu reports `LINK_CAP_PROGRAM`: [ESC signal wire](docs/EscWire.md). CONNECT, identity, tabs of fields, a draft, WRITE with the warning that names each hazardous field, the backup and the record on the card, a file loaded, RESTORE FROM BACKUP on an erased AM32, LEAVE. Voltage and limit are SUPPLY's until typed.
+- SUPPLY: an ESC session's hold counts on every board. On the carrier SUPPLY refuses set points and ON under it (`SUP_HELD_REFUSED_ESC`); KST and Hitec sessions there do not lock it.
 - Panel's editor: an ESC settings file changed there has `edited` as its last line that is not blank, behind any lines added to it, and no checksum line.
 - Panel: the half of the `ESC_WIRE` and `ESC_DATA` pages (`esc_link`, `esc_prog`,
   `esc_prog_file`). A panel restart closes what the page holds at

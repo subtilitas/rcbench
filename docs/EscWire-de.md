@@ -13,7 +13,7 @@ Dieser Code entstand aus einer Verhaltensspezifikation, ohne Zugriff auf die Fir
 - Ein bidirektionaler DShot-Pin ruht bei SAFE auf high, die Eintrittsbedingung eines Bootloaders. Was das nächste ARM danach tut, ist nicht gemessen.
 - Nach `TORN` oder `LOST` gehen alle Ausgänge aus. Auf BLHeli_S und Bluejay verliert die Seite dann ihre 48 Tag-Bytes und liest sich nur noch. Ein AM32 bleibt gelöscht bis AUS BACKUP HERSTELLEN.
 - 10 fehlgeschlagene Lesungen der Page, 50ms beim Poll-Takt, stoppen eine Sitzung. Ein Schreiben bekommt keine Ausnahme: es endet als `NO_ANSWER`, mit Fehler und STOP.
-- Der Eintrag `ESCW.TXT` entsteht vor dem Schreiben. Er sagt nicht, wie das Schreiben endete.
+- Der Eintrag `ESCW.TXT` entsteht vor dem Schreiben. Bei einem aufgegebenen Schreiben bleibt ein schon geschriebener Eintrag auf der Karte. Er sagt nicht, wie das Schreiben endete.
 - SimonK wird nicht unterstützt: dieser Bench hat keinen Code dafür, und kein Screen bietet es an. Ein ESC mit SimonK gibt `Keine Antwort`.
 
 ## Was es nimmt
@@ -104,7 +104,7 @@ IDENTITÄT nennt Firmware, Version, Layout oder Revision, Signatur oder Name, un
 
 n WERTE SCHREIBEN öffnet eine Seite mit den Änderungen. Jedes heikle Feld bleibt editierbar: die Seite nennt es zuerst mit `PRÜFE`, in der Warnfarbe, und seinem neuen Wert. Eine Seite listet 12 Änderungen. ZURÜCK und WEITER blättern, und der rote Hold von 2s erscheint, wenn die letzte Seite gezeigt wurde. ESCape32 hat bis zu 46 Änderungen, 4 Seiten.
 
-Was die Seite listet, schreibt der Hold: die Seite hält eine eigene Kopie des Entwurfs. Vom Hold bis zum Ergebnis des Schreibens nimmt die Sitzung nur ABBRUCH und STOP. ABBRUCH, während die Karte arbeitet, gibt das Schreiben auf, nichts wird geschrieben. SCHREIBEN wartet, solange eine Datei von der Karte unterwegs ist. Eine Datei, die bei offener Seite kommt, wird nicht geladen, und die Seite sagt es.
+Was die Seite listet, schreibt der Hold: die Seite hält eine eigene Kopie des Entwurfs. Vom Hold bis zum Ergebnis des Schreibens nimmt die Sitzung nur ABBRUCH und STOP. ABBRUCH, während die Karte arbeitet, gibt das Schreiben auf, der ESC bleibt unverändert. SCHREIBEN wartet, solange eine Datei von der Karte unterwegs ist. Eine Datei, die bei offener Seite kommt, wird nicht geladen, und die Seite sagt es.
 
 1. Das erste Schreiben einer Sitzung speichert das Backup der Sitzung nach `BENCH/ESCW/CONF/ESCW001.TXT` bis `ESCW999.TXT`. Ohne Karte, oder bei einer Karte, die es ablehnt, fragt die Seite; ein zweiter Hold von 2s geht ohne.
 2. Der Eintrag `BENCH/ESCW/CONF/ESCW.TXT` nimmt die geänderten Felder und den ESC wie gelesen auf. Eine Karte, die ihn ablehnt, stellt dieselbe Frage.
@@ -120,6 +120,10 @@ Eine gelöschte Seite ist kein Backup. Das Backup der Sitzung ist ihr erstes Les
 
 ![Die Karte nimmt das Backup](img/de/motor-wire-am-card.png)
 
+![Kein Backup auf der Karte](img/de/motor-wire-no-backup.png)
+
+![Dateien auf der Karte](img/de/motor-wire-files.png)
+
 ![Schreibt](img/de/motor-wire-am-running.png)
 
 DATEIEN listet die Dateien auf der Karte, die neueste zuerst, und speichert das Backup der Sitzung von Hand. Eine Datei geht in den Entwurf, auf dieselbe Firmware und dasselbe Layout, nur editierbare Felder. Eine im Editor des Panels geänderte Datei hat `edited` als letzte Zeile statt der Prüfsumme, und der Programmierer liest ihre Feldzeilen.
@@ -129,6 +133,8 @@ DATEIEN listet die Dateien auf der Karte, die neueste zuerst, und speichert das 
 Ein AM32, dessen Einstellungen sich als 0xFF lesen, bietet AUS BACKUP HERSTELLEN und sonst nichts und speichert kein Backup. Eine Datei gilt nur, wenn ihre CRC-32 stimmt und Pin-Code, Flash-Code, Bootloader-Protokoll und Name denen des ESC gleichen. Das Herstellen ist ein roter Hold von 2s.
 
 ![Gelöschter AM32](img/de/motor-wire-erased.png)
+
+![Aus einem Backup herstellen](img/de/motor-wire-restore.png)
 
 ## Verlassen
 
@@ -150,12 +156,18 @@ STOP im Band stoppt die Sitzung. Ein Schreiben läuft erst bis zum Zurücklesen.
 
 Nach einem Stop oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK. STOP LÖSCHEN beendet den Stop und hält den Pin weiter.
 
-Ein gehaltener Pin ohne Stop und ohne laufenden Vorgang hat eine eigene Seite: nach ABBRUCH, nach STOP LÖSCHEN und nach einem abgelehnten ENTER, dessen Grund dort steht, etwa kein PD mini oder eine Spannung zu nah an der Quelle. Sie bietet NEU STARTEN, einen roten Hold von 2s mit den Werten des letzten VERBINDEN, und PIN ZURÜCK. ZURÜCK nennt den Knopf, der die Stufe beendet.
+Ein gehaltener Pin ohne Stop und ohne laufenden Vorgang hat eine eigene Seite: nach ABBRUCH, nach STOP LÖSCHEN und nach einem abgelehnten ENTER, dessen Grund dort steht, etwa kein PD mini oder eine Spannung zu nah an der Quelle. Sie zeigt STROM, SPANNUNG, LIMIT, ENTRY HOLD und AUS-ZEIT nur zum Lesen und bietet NEU STARTEN, einen roten Hold von 2s, und PIN ZURÜCK. NEU STARTEN sendet diese Werte: die aktuellen der Sitzung, die dem Netzteil folgen, bis eine Zahl getippt ist, nicht die des letzten VERBINDEN. BY HAND zeigt keine Spannung und kein Limit. Ein Wert, der sich unter dem Hold ändert, beendet den Hold. Nach ABBRUCH sagt die Zeile, dass ABBRUCH es beendet hat. ZURÜCK nennt den Knopf, der die Stufe beendet.
 
 Ein Pin, den ein anderer Schreiber hält, die Bench-Konsole oder eine Sitzung vor einem Panel-Neustart, bietet PIN FREIGEBEN mit einem Hold von 2s. ARM wird abgelehnt, solange ein Pin gehalten ist, und der Alarm nennt die ESC-Programmierung.
 
 ![Gestoppt](img/de/motor-wire-stopped.png)
 
 ![Pin gehalten](img/de/motor-wire-held.png)
+
+![Pin gehalten, BY HAND](img/de/motor-wire-held-hand.png)
+
+![Pin kam nicht zurück](img/de/motor-wire-not-back.png)
+
+![Einen Pin eines anderen Schreibers freigeben](img/de/motor-wire-release.png)
 
 ![Anderer Schreiber](img/de/motor-wire-other.png)

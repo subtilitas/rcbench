@@ -254,6 +254,14 @@ int esc_wire_panel_page(void);
 const char *esc_wire_panel_page_line(int i);
 
 /**
+ * @brief A value of the connect and pin-held pages as they show it, from the values
+ *        CONNECT and ENTER AGAIN send.
+ * @param row 1 POWER, 2 voltage, 3 limit, 4 ENTRY HOLD, 5 OFF TIME.
+ * @return The text.
+ */
+const char *esc_wire_panel_value_text(int row);
+
+/**
  * @brief Whether a hold page's line draws in the warning colour.
  * @param i The line.
  * @return true for a second-look field.

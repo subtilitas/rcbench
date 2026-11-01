@@ -156,6 +156,8 @@ const char *ewp_message_text(void)
         return TR(EW_MSG_NACK);
     case ESC_PROG_MSG_DROPPED:
         return TR(EW_MSG_DROPPED);
+    case ESC_PROG_MSG_ABORTED:
+        return TR(EW_MSG_ABORTED);
     case ESC_PROG_MSG_HAND_WAIT:
         return TR(EW_HAND_NOW);
     case ESC_PROG_MSG_READ_DONE:

@@ -13,7 +13,7 @@ This code was written from a behavioural specification, without access to the fi
 - A bidirectional DShot pin rests high on SAFE, which is a bootloader's entry condition. What the next ARM does after that is not measured.
 - All outputs go off after `TORN` or `LOST`. On BLHeli_S and Bluejay the page then loses its 48 tag bytes and reads read-only. An AM32 stays erased until RESTORE FROM BACKUP.
 - 10 failed reads of the page, 50ms at the poll rate, stop a session. A write gets no exception: it ends as `NO_ANSWER`, with a fault and a STOP.
-- The record `ESCW.TXT` is written before a write. It does not say how the write ended.
+- The record `ESCW.TXT` is written before a write. A record stays on the card for a write given up after the record went. It does not say how the write ended.
 - SimonK is not supported: this bench has no wire code for it, and no screen offers it. An ESC with SimonK gives `No answer`.
 
 ## What it takes
@@ -104,7 +104,7 @@ IDENTITY names the firmware, the version, the layout or revision, the signature 
 
 WRITE n VALUES opens a page that lists the changes. Each hazardous field stays editable: the page names it with `CHECK`, first, in the warning colour, with its new value. A page lists 12 changes. PREV and NEXT turn the list, and the red 2s hold is offered once the last page has been shown. ESCape32 has up to 46 changes, 4 pages.
 
-What the page lists is what the hold writes: the page keeps its own copy of the draft. From the hold to the write's outcome the session takes ABORT and STOP only. ABORT while the card works gives the write up, and nothing is written. WRITE waits while a file is on its way from the card. A file that comes while a page is open is not loaded, and the page says so.
+What the page lists is what the hold writes: the page keeps its own copy of the draft. From the hold to the write's outcome the session takes ABORT and STOP only. ABORT while the card works gives the write up, and the ESC is unchanged. WRITE waits while a file is on its way from the card. A file that comes while a page is open is not loaded, and the page says so.
 
 1. The first write of a session saves the session's backup to `BENCH/ESCW/CONF/ESCW001.TXT` to `ESCW999.TXT`. With no card, or a card that refuses it, the page asks; a second 2s hold goes without one.
 2. The record `BENCH/ESCW/CONF/ESCW.TXT` takes the changed fields and the ESC as read. A card that refuses it asks the same question.
@@ -120,6 +120,10 @@ An erased page is no backup. The session's backup is its first read that is not 
 
 ![The card takes the backup](img/motor-wire-am-card.png)
 
+![No backup on the card](img/motor-wire-no-backup.png)
+
+![Files on the card](img/motor-wire-files.png)
+
 ![Writing](img/motor-wire-am-running.png)
 
 FILES lists the files on the card, newest first, and saves the session's backup by hand. A file goes into the draft, to the same firmware and layout, editable fields only. A file changed in the panel's editor has `edited` as its last line in place of the checksum, and the programmer reads its field lines.
@@ -129,6 +133,8 @@ FILES lists the files on the card, newest first, and saves the session's backup 
 An AM32 whose settings read 0xFF offers RESTORE FROM BACKUP and nothing else, and saves no backup. A file is taken only when its CRC-32 holds and its pin code, flash code, bootloader protocol and name equal the ESC's. The restore is a red 2s hold.
 
 ![Erased AM32](img/motor-wire-erased.png)
+
+![Restore from a backup](img/motor-wire-restore.png)
 
 ## Leave
 
@@ -150,12 +156,18 @@ STOP in the band stops the session. A write runs to its read-back first. ABORT o
 
 After a stop or a fault the page offers CLEAR STOP and PIN BACK. CLEAR STOP ends the stop and keeps the pin held.
 
-A pin held in `OPEN` with no stop and nothing running has a page of its own: after ABORT, after CLEAR STOP, and after a refused ENTER, whose reason shows on it, such as no PD mini or a voltage too close to the source. It offers ENTER AGAIN, a red 2s hold with the values of the last CONNECT, and PIN BACK. BACK names the button that ends the stage.
+A pin held in `OPEN` with no stop and nothing running has a page of its own: after ABORT, after CLEAR STOP, and after a refused ENTER, whose reason shows on it, such as no PD mini or a voltage too close to the source. It shows POWER, VOLTAGE, LIMIT, ENTRY HOLD and OFF TIME, read-only, and offers ENTER AGAIN, a red 2s hold, and PIN BACK. ENTER AGAIN sends those values: the session's current ones, which follow SUPPLY until typed, not those of the last CONNECT. BY HAND shows no voltage and no limit. A value that moves under the hold ends the hold. After ABORT the line says ABORT ended it. BACK names the button that ends the stage.
 
 A pin another writer holds, the bench console or a session before a panel restart, offers RELEASE PIN with a 2s hold. ARM is refused while a pin is held, and the alert names the ESC programmer.
 
 ![Stopped](img/motor-wire-stopped.png)
 
 ![Pin held](img/motor-wire-held.png)
+
+![Pin held, BY HAND](img/motor-wire-held-hand.png)
+
+![Pin did not come back](img/motor-wire-not-back.png)
+
+![Release a pin another writer holds](img/motor-wire-release.png)
 
 ![Another writer](img/motor-wire-other.png)

@@ -429,6 +429,21 @@ void ewp_file_chosen(int value)
 
 /* ---------------------------------------------------------------- the hold */
 
+void ewp_connect_values(esc_prog_connect_t *c)
+{
+    const bool hand = ewp_s.power == (uint8_t)LINK_ESC_BY_HAND;
+
+    memset(c, 0, sizeof(*c));
+    if (ewp_s.target_at < ewp_s.target_count) {
+        c->target = ewp_s.targets[ewp_s.target_at].target;
+    }
+    c->power.power = ewp_s.power;
+    c->power.mv = hand ? 0u : ewp_s.mv;
+    c->power.ma = hand ? 0u : ewp_s.ma;
+    c->power.hold_ms = ewp_s.hold_ms;
+    c->power.off_ms = ewp_s.off_ms;
+}
+
 /**
  * @brief CONNECT: the target, the power and the values on the page.
  */
@@ -436,21 +451,29 @@ static void connect_now(void)
 {
     esc_prog_connect_t c;
 
-    memset(&c, 0, sizeof(c));
     if (ewp_s.target_at >= ewp_s.target_count) {
         ewp_note(TR(EW_NO_TARGET), true);
         return;
     }
-    c.target = ewp_s.targets[ewp_s.target_at].target;
-    c.power.power = ewp_s.power;
-    c.power.mv = ewp_s.mv;
-    c.power.ma = ewp_s.ma;
-    c.power.hold_ms = ewp_s.hold_ms;
-    c.power.off_ms = ewp_s.off_ms;
+    ewp_connect_values(&c);
     ewp_s.note[0] = '\0';
     ewp_s.no_card_ok = false;
     write_give_up();
     (void)esc_prog_connect(&ewp_s.prog, &c);
+}
+
+/**
+ * @brief ENTER AGAIN: the values on the page, the pin it holds.
+ */
+static void enter_again_now(void)
+{
+    esc_prog_connect_t c;
+
+    ewp_connect_values(&c);
+    ewp_s.note[0] = '\0';
+    ewp_s.no_card_ok = false;
+    write_give_up();
+    (void)esc_prog_enter_again(&ewp_s.prog, &c);
 }
 
 void ewp_hold_apply(void)
@@ -463,7 +486,7 @@ void ewp_hold_apply(void)
     switch (page) {
     case EWP_PAGE_NONE:
         if (ewp_stage() == ESC_WIRE_PIN_HELD) {
-            (void)esc_prog_enter_again(m);
+            enter_again_now();
         } else if (ewp_stage() == ESC_WIRE_CONNECT) {
             connect_now();
         }
@@ -559,8 +582,16 @@ void esc_wire_panel_feed(const esc_prog_feed_t *f)
     }
     if (!ewp_s.supply_typed) {
         /* SUPPLY's values, never a default of this session's. */
-        ewp_s.mv = (uint16_t)(supply_screen_set_v() * 1000.0f + 0.5f);
-        ewp_s.ma = (uint16_t)(supply_screen_set_i() * 1000.0f + 0.5f);
+        const uint16_t mv = (uint16_t)(supply_screen_set_v() * 1000.0f + 0.5f);
+        const uint16_t ma = (uint16_t)(supply_screen_set_i() * 1000.0f + 0.5f);
+
+        /* A hold confirms what the page shows: a value that moves under it ends it. */
+        if ((mv != ewp_s.mv || ma != ewp_s.ma) && ewp_s.hold_down
+            && ewp_s.page == EWP_PAGE_NONE) {
+            ewp_cancel();
+        }
+        ewp_s.mv = mv;
+        ewp_s.ma = ma;
     }
     ewp_tabs_follow();
     /* A stop, a supply or a link gone: what was open answers to a stage that is over. */
