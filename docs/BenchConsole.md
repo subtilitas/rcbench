@@ -355,6 +355,7 @@ The panel carries that image. An IOmcu running another build answers the build c
 | `err no answer: line lost` | a chunk of the line had no answer |
 | `err the IOmcu has no console` | a line, and no page to send it to |
 | `err line longer than 160 characters` | the line is refused whole |
+| `err line dropped: 8 lines wait` | a line while 8 wait for the link |
 
 The panel finds the page by reading it. The page has no capability bit and no protocol minor: an IOmcu without it answers `BAD_PAGE`, as for any page it does not have.
 

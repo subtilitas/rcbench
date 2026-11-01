@@ -101,6 +101,7 @@ void console_relay_init(console_relay_t *r)
         atomic_init(&r->out_in, 0u);
         atomic_init(&r->out_out, 0u);
         atomic_init(&r->overlongs, 0u);
+        atomic_init(&r->overflows, 0u);
         r->state = CONSOLE_RELAY_DOWN;
     }
 }
@@ -112,6 +113,12 @@ void console_relay_link(console_relay_t *r, bool up, uint32_t now_ms)
     if (over != r->overlongs_said) {
         r->overlongs_said = over;
         say(r, "err line longer than %u characters\n", CONSOLE_RELAY_LINE_MAX);
+    }
+    const unsigned full = atomic_load(&r->overflows);
+
+    if (full != r->overflows_said) {
+        r->overflows_said = full;
+        say(r, "err line dropped: %u lines wait\n", CONSOLE_RELAY_LINES);
     }
     if (up != r->link_up) {
         r->link_up = up;
@@ -252,9 +259,7 @@ static void read_answered(console_relay_t *r, uint8_t op, const uint16_t *regs)
     const uint16_t len = regs[LINK_CN_OUT_LEN] & LINK_CN_OUT_LEN_MASK;
     const bool more = (regs[LINK_CN_OUT_LEN] & LINK_CN_OUT_MORE) != 0u;
 
-    if (r->state != CONSOLE_RELAY_UP) {
-        r->state = CONSOLE_RELAY_UP;
-    }
+    r->state = CONSOLE_RELAY_UP;
     if (len > LINK_CN_DATA_BYTES) {
         return;
     }
@@ -360,13 +365,16 @@ void console_relay_key(console_relay_t *r, int ch)
             atomic_fetch_add(&r->overlongs, 1u);
             return;
         }
-        if (r->typed != 0u
-            && in - atomic_load(&r->lines_out) < CONSOLE_RELAY_LINES) {
-            console_relay_line_t *l = &r->lines[in % CONSOLE_RELAY_LINES];
+        if (r->typed != 0u) {
+            if (in - atomic_load(&r->lines_out) < CONSOLE_RELAY_LINES) {
+                console_relay_line_t *l = &r->lines[in % CONSOLE_RELAY_LINES];
 
-            memcpy(l->text, r->typing, r->typed);
-            l->len = r->typed;
-            atomic_store(&r->lines_in, in + 1u);
+                memcpy(l->text, r->typing, r->typed);
+                l->len = r->typed;
+                atomic_store(&r->lines_in, in + 1u);
+            } else {
+                atomic_fetch_add(&r->overflows, 1u);
+            }
         }
         r->typed = 0u;
         return;

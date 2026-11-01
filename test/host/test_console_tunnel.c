@@ -123,10 +123,9 @@ static bool wire(const link_msg_t *req, link_msg_t *reply)
 /** @brief The IOmcu's output as console_hw_pass() moves it, with no USB host. */
 static void iomcu_pass(void)
 {
-    static char buf[PAGE_CONSOLE_OUT_LINE * 2u];
-
     console_tunnel_pass(&g_tunnel, g_now);
     if (console_tunnel_active(&g_tunnel, g_now)) {
+        static char buf[PAGE_CONSOLE_OUT_LINE * 2u];
         const size_t room = console_tunnel_room(&g_tunnel);
         const size_t n = page_console_take_part(&g_console, buf, room);
 
@@ -284,6 +283,28 @@ TEST_CASE(a_line_too_long_says_so_and_sends_nothing)
     read_out();
     CHECK(strstr(g_all, "err line longer than 160 characters\n") != NULL);
     CHECK(!g_tunnel.line_open);
+}
+
+TEST_CASE(a_line_with_the_queue_full_says_so)
+{
+    linked(true);
+    run(10, true);
+    read_out();
+    g_all_len = 0u;
+    for (int i = 0; i < 9; ++i) {
+        type("r 1 1");
+    }
+    run(1, true);
+    read_out();
+    CHECK(strstr(g_all, "err line dropped: 8 lines wait\n") != NULL);
+    run(100, true);
+    read_out();
+    int runs = 0;
+
+    for (const char *p = g_all; (p = strstr(p, "data page=0x01")) != NULL; ++p) {
+        ++runs;
+    }
+    CHECK_EQ(runs, 8);
 }
 
 TEST_CASE(an_overflow_shows_the_count_the_iomcu_dropped)
@@ -599,6 +620,7 @@ int main(void)
     RUN(a_long_output_arrives_whole_and_in_order);
     RUN(a_long_line_comes_in_chunks_and_runs_at_its_end);
     RUN(a_line_too_long_says_so_and_sends_nothing);
+    RUN(a_line_with_the_queue_full_says_so);
     RUN(an_overflow_shows_the_count_the_iomcu_dropped);
     RUN(a_lost_reply_frame_costs_a_second_read_and_no_byte);
     RUN(a_lost_ack_does_not_print_a_window_twice);

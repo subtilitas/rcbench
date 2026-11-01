@@ -375,6 +375,7 @@ Das Panel trägt dieses Image. Ein IOmcu mit einem anderen Build meldet bei der 
 | `err no answer: line lost` | ein Stück der Zeile blieb ohne Antwort |
 | `err the IOmcu has no console` | eine Zeile, und keine Page dafür |
 | `err line longer than 160 characters` | die Zeile wird ganz abgelehnt |
+| `err line dropped: 8 lines wait` | eine Zeile, während 8 auf den Link warten |
 
 Das Panel findet die Page, indem es sie liest. Die Page hat kein Capability-Bit und keine Protokoll-Minor: ein IOmcu ohne sie antwortet `BAD_PAGE`, wie für jede Page, die es nicht hat.
 
@@ -390,7 +391,7 @@ Das Relay macht höchstens einen Austausch je Control-Durchlauf, 5ms, wenn nicht
 | Ausgabe, dauerhaft | 11 je 60 Byte, 2 Durchläufe | 6.000 Byte/s, 1.100 Frames/s |
 | Eingabe, 6 Byte je Stück | 2 je Stück, ein Durchlauf | 1.200 Byte/s, 135ms für eine Zeile mit 160 Zeichen |
 
-Bei 1Mbit/s dauert ein Frame mit 8 Byte etwa 150us, dauerhafte Ausgabe belegt also etwa 17% des Busses. Der Puffer von 2.048 Byte leert sich in etwa 340ms. Ausgabe über 6.000 Byte/s, länger als dieser Puffer reicht, verliert ganze Zeilen; die nächste Zeile sagt `err output full, N bytes dropped` wie an USB. Ausgabe wird auch zurückgehalten, wenn der eigene Puffer des Panels von 4.096 Byte unter 188 Byte frei hat, etwa wenn ein serieller Host nicht mehr liest.
+Bei 1Mbit/s dauert ein Frame mit 8 Byte etwa 150us, dauerhafte Ausgabe belegt also etwa 17% des Busses. Der Puffer von 2.048 Byte leert sich in etwa 340ms. Ausgabe über 6.000 Byte/s, länger als dieser Puffer reicht, verliert ganze Zeilen; die nächste Zeile sagt `err output full, N bytes dropped` wie an USB. Ausgabe wird auch zurückgehalten, wenn der eigene Puffer des Panels von 4.096 Byte unter 188 Byte frei hat, etwa wenn ein serieller Host das Lesen einstellt.
 
 Ein Fenster bleibt am IOmcu, bis es bestätigt ist, also kostet eine verlorene Antwort einen zweiten Lesevorgang und kein Byte. Ein unbeantworteter Austausch hält den Control-Durchlauf bis zu 1000ms, wie jeder Austausch des Panels, und der Heartbeat läuft weiter.
 
@@ -398,7 +399,7 @@ Ein Fenster bleibt am IOmcu, bis es bestätigt ist, also kostet eine verlorene A
 
 Die Befehle erreichen die Pages über `link_dev_apply()`. Eine Anfrage der Konsole ist kein Link-Verkehr: sie hält den Stille-Failsafe nicht auf. Die Frames der CONSOLE-Page sind Anfragen des Panels, wie seine Polls, und enden, wenn das Panel endet. Die eigenen Module des Panels schreiben weiter: der Supply-Link, `hitec_link`, `kst_link`, `esc_link` und das Schreiben von ARM und THROTTLE alle 50ms können überschreiben, was ein `w` der Konsole in dieselben Register schrieb. Ein Schreiben von ARM aus der Konsole erreicht die Page, und das nächste Schreiben des Panels nach 50ms überschreibt es mit dessen eigenem Arming-Zustand.
 
-Beim Start des IOmcu warten seine Zeilen im Puffer auf einen USB-Host oder ein Panel, soweit die 2.048 Byte sie halten. `rcbench-iomcu: reset ...` ist die erste davon, mit der Ursache des Starts, und wiederholt sich alle 3s. Eine Zeile vom Panel läuft ganz und lässt, was ein USB-Host bisher getippt hat, wie es war. Sind USB-Host und Panel beide da, geht die Ausgabe im Tempo des langsameren; ein USB-Host, der den Port offen hat und nicht mehr liest, hält sie ebenfalls auf.
+Beim Start des IOmcu warten seine Zeilen im Puffer auf einen USB-Host oder ein Panel, soweit die 2.048 Byte sie halten. `rcbench-iomcu: reset ...` ist die erste davon, mit der Ursache des Starts, und wiederholt sich alle 3s. Eine Zeile vom Panel läuft ganz und lässt die unfertige Zeile eines USB-Hosts, wie sie war. Sind USB-Host und Panel beide da, geht die Ausgabe im Tempo des langsameren; ein USB-Host, der den Port offen hat und das Lesen einstellt, hält sie ebenfalls auf.
 
 ## Grenzen
 

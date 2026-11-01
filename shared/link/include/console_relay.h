@@ -80,6 +80,7 @@ typedef struct {
     uint8_t  typed;          /**< its characters */
     bool     overlong;       /**< it ran past CONSOLE_RELAY_LINE_MAX */
     atomic_uint overlongs;   /**< lines too long, counting on */
+    atomic_uint overflows;   /**< lines with the queue full, counting on */
     /* The control task writes these and the console's task reads them. */
     char     out[CONSOLE_RELAY_OUT_MAX]; /**< the output ring */
     atomic_uint out_in;      /**< bytes put, counting on */
@@ -99,6 +100,7 @@ typedef struct {
     uint8_t  op;             /**< the exchange asked for */
     uint8_t  op_n;           /**< a read's registers, a chunk's bytes */
     unsigned overlongs_said; /**< of overlongs, those said */
+    unsigned overflows_said; /**< of overflows, those said */
 } console_relay_t;
 
 /**

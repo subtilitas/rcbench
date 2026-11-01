@@ -933,6 +933,8 @@ void app_main(void)
      * On the core the renderer does not use, and above it in priority: the
      * bench's timing must not depend on how long a frame takes.
      */
+    /* Before the control task: the relay they share starts initialised. */
+    panel_console_start();
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(control_task, "control", 6144,
                                             NULL, 10, NULL, 1) == pdPASS
                     ? ESP_OK : ESP_ERR_NO_MEM);
@@ -951,7 +953,6 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     knob_task_start();
-    panel_console_start();
 
     /* What internal RAM holds with every task of the panel running and the
      * radio off. */
