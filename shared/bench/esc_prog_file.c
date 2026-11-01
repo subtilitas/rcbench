@@ -32,8 +32,10 @@ static void ident_of(const esc_prog_t *p, ew_ident_t *out)
     out->erased = (rd->flags & LINK_EW_F_ERASED) != 0u;
     out->can_build = (rd->flags & LINK_EW_F_CAN) != 0u;
     out->len = rd->len;
-    memcpy(out->name, p->f.image.name,
-           strnlen(p->f.image.name, sizeof(out->name) - 1u));
+    for (size_t i = 0u; i + 1u < sizeof(out->name) && p->f.image.name[i] != '\0';
+         ++i) {
+        out->name[i] = p->f.image.name[i];
+    }
 }
 
 /**
