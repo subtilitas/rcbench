@@ -409,6 +409,10 @@ SCREENS = {
     "motor-wire-erased": ("motor-wire-erased.png", "motor", "dark"),
     "motor-wire-s": ("motor-wire-s.png", "motor", "dark"),
     "motor-wire-bj": ("motor-wire-bj.png", "motor", "dark"),
+    "motor-wire-s-id": ("motor-wire-s-id.png", "motor", "dark"),
+    "motor-wire-s-2": ("motor-wire-s-2.png", "motor", "dark"),
+    "motor-wire-bj-id": ("motor-wire-bj-id.png", "motor", "dark"),
+    "motor-wire-bj-2": ("motor-wire-bj-2.png", "motor", "dark"),
     "motor-wire-readonly": ("motor-wire-readonly.png", "motor", "dark"),
     "motor-wire-readonly-rows": (
         "motor-wire-readonly-rows.png", "motor", "dark"),
@@ -419,7 +423,6 @@ SCREENS = {
     "motor-wire-e32-3": ("motor-wire-e32-3.png", "motor", "dark"),
     "motor-wire-e32-4": ("motor-wire-e32-4.png", "motor", "dark"),
     "motor-wire-e32-5": ("motor-wire-e32-5.png", "motor", "dark"),
-    "motor-wire-e32-6": ("motor-wire-e32-6.png", "motor", "dark"),
     "motor-wire-e32-leave": ("motor-wire-e32-leave.png", "motor", "dark"),
     "motor-wire-held": ("motor-wire-held.png", "motor", "dark"),
     "motor-wire-held-stop": ("motor-wire-held-stop.png", "motor", "dark"),

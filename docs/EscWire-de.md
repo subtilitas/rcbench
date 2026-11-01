@@ -78,6 +78,14 @@ IDENTITÄT nennt Firmware, Version, Layout oder Revision, Signatur oder Name, un
 
 ![Bluejay](img/de/motor-wire-bj.png)
 
+![BLHeli_S Identität](img/de/motor-wire-s-id.png)
+
+![BLHeli_S Eingang und Ton](img/de/motor-wire-s-2.png)
+
+![Bluejay Identität](img/de/motor-wire-bj-id.png)
+
+![Bluejay Eingang und Ton](img/de/motor-wire-bj-2.png)
+
 ![ESCape32 Identität](img/de/motor-wire-e32.png)
 
 ![ESCape32 Motor](img/de/motor-wire-e32-1.png)
@@ -86,11 +94,9 @@ IDENTITÄT nennt Firmware, Version, Layout oder Revision, Signatur oder Name, un
 
 ![ESCape32 Gas](img/de/motor-wire-e32-3.png)
 
-![ESCape32 Eingang](img/de/motor-wire-e32-4.png)
+![ESCape32 Eingang und Ton](img/de/motor-wire-e32-4.png)
 
 ![ESCape32 Schutz](img/de/motor-wire-e32-5.png)
-
-![ESCape32 Ton](img/de/motor-wire-e32-6.png)
 
 ![Nur lesen, Identität](img/de/motor-wire-readonly.png)
 

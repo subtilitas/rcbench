@@ -90,7 +90,7 @@ TEST_CASE(every_escape32_key_is_in_one_tab)
 
     memset(seen, 0, sizeof(seen));
     read_as(EW_FW_E32, 17u);
-    CHECK_EQ(ewp_s.tab_count, 7);
+    CHECK_EQ(ewp_s.tab_count, 6);
     for (int tab = 1; tab < ewp_s.tab_count; ++tab) {
         ewp_row_t r;
         int i = 0;
@@ -105,6 +105,71 @@ TEST_CASE(every_escape32_key_is_in_one_tab)
     for (size_t i = 0u; i < EW_E32_KEYS; ++i) {
         CHECK_EQ(seen[i], 1);
     }
+}
+
+/**
+ * @brief A press and a release at the middle of @p r.
+ * @param r The control.
+ */
+static void tap(gfx_rect_t r)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(r.y + r.h / 2), .strength = 40 } };
+
+    esc_wire_pages.event(&e);
+    e.type = TOUCH_EVENT_UP;
+    esc_wire_pages.event(&e);
+}
+
+/**
+ * @brief Each tab selected by a press, and its last row opened by one.
+ * @param fw     The firmware.
+ * @param layout The layout.
+ */
+static void every_tab_reached(uint8_t fw, uint8_t layout)
+{
+    read_as(fw, layout);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_SESSION);
+    CHECK_EQ(ewp_s.tabs.count, ewp_s.tab_count);
+    for (int tab = ewp_s.tab_count - 1; tab >= 0; --tab) {
+        tap(esc_wire_panel_tab_rect(tab));
+        CHECK_EQ(ewp_s.tabs.selected, tab);
+        ewp_row_t r;
+        int last = -1;
+
+        while (ewp_row(tab, last + 1, &r)) {
+            ++last;
+        }
+        if (tab == 0) {
+            CHECK_EQ(last, -1);
+            continue;
+        }
+        CHECK(last >= 0);
+        CHECK(ewp_row(tab, last, &r));
+        CHECK(esc_wire_panel_value_rect(last).w > 0);
+        CHECK(esc_wire_panel_value_rect(last).y + esc_wire_panel_value_rect(last).h
+              <= esc_wire_panel_action_rect(0).y);
+        tap(esc_wire_panel_value_rect(last));
+        if (ewp_row_live(&r)) {
+            CHECK(esc_wire_panel_keypad()->open || ewp_s.ch_what != EWP_CH_NONE);
+            esc_wire_pages.back();
+        }
+        CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_NONE);
+    }
+}
+
+TEST_CASE(every_tab_of_every_firmware_selects_and_opens_its_last_row)
+{
+    every_tab_reached(EW_FW_S, 33u);
+    every_tab_reached(EW_FW_S, 32u);
+    every_tab_reached(EW_FW_BJ, 208u);
+    every_tab_reached(EW_FW_BJ, 33u);
+    every_tab_reached(EW_FW_BJ, 200u);
+    every_tab_reached(EW_FW_BJ, 204u);
+    every_tab_reached(EW_FW_AM, 3u);
+    every_tab_reached(EW_FW_AM, 4u);
+    every_tab_reached(EW_FW_E32, 17u);
 }
 
 TEST_CASE(a_layout_with_no_field_names_shows_bytes)
@@ -158,6 +223,7 @@ int main(void)
 {
     RUN(every_field_of_a_written_layout_is_in_one_tab);
     RUN(every_escape32_key_is_in_one_tab);
+    RUN(every_tab_of_every_firmware_selects_and_opens_its_last_row);
     RUN(a_layout_with_no_field_names_shows_bytes);
     RUN(the_warning_page_has_room_for_every_second_look_field);
     RUN(the_controls_stay_above_the_alert_band);

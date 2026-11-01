@@ -205,7 +205,7 @@ static void down_rows(const touch_event_t *evt)
     if (st != ESC_WIRE_SESSION) {
         return;
     }
-    for (int i = 0; i < ewp_s.tab_count; ++i) {
+    for (int i = 0; i < ewp_s.tabs.count; ++i) {
         if (gfx_rect_contains(ewp_s.tabs.rect[i], x, y)) {
             take(evt, P_TAB, -1);
             (void)ui_tabs_event(&ewp_s.tabs, evt);

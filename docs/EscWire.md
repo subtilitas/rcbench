@@ -78,6 +78,14 @@ IDENTITY names the firmware, the version, the layout or revision, the signature 
 
 ![Bluejay](img/motor-wire-bj.png)
 
+![BLHeli_S identity](img/motor-wire-s-id.png)
+
+![BLHeli_S input and sound](img/motor-wire-s-2.png)
+
+![Bluejay identity](img/motor-wire-bj-id.png)
+
+![Bluejay input and sound](img/motor-wire-bj-2.png)
+
 ![ESCape32 identity](img/motor-wire-e32.png)
 
 ![ESCape32 motor](img/motor-wire-e32-1.png)
@@ -86,11 +94,9 @@ IDENTITY names the firmware, the version, the layout or revision, the signature 
 
 ![ESCape32 throttle](img/motor-wire-e32-3.png)
 
-![ESCape32 input](img/motor-wire-e32-4.png)
+![ESCape32 input and sound](img/motor-wire-e32-4.png)
 
 ![ESCape32 protection](img/motor-wire-e32-5.png)
-
-![ESCape32 sound](img/motor-wire-e32-6.png)
 
 ![Read-only identity](img/motor-wire-readonly.png)
 

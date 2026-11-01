@@ -106,8 +106,8 @@ enum {
 #define EWP_PAGE_LINES 14
 /** @brief Cells of a line at most, with the terminator. */
 #define EWP_LINE 101
-/** @brief Tabs at most. */
-#define EWP_TABS 7
+/** @brief Tabs at most: what the tab strip can select. */
+#define EWP_TABS UI_TABS_MAX
 /** @brief Changes on a page of the WRITE list. */
 #define EWP_WRITE_PER_PAGE 12
 /** @brief A value above any of a choice's own: enter a number on the keypad. */

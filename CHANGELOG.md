@@ -83,6 +83,7 @@ history is in git.
 ### Fixed
 
 - ESC signal wire: PIN HELD shows `A stop or a fault ended this session` only for a stop or a fault; after a SUPPLY OFF with neither, the `SUPPLY_OFF` refusal's line is the only one.
+- ESC signal wire: ESCape32's 3 sound and light fields (`volume`, `beacon`, `led`) were on a seventh tab the tab strip of 6 could not select. They sit on `INPUT, SOUND` with input and telemetry, 11 rows. Every tab of every firmware is selectable.
 - ESC signal wire: a press on the place of a hidden button, or between two tabs, clears no line.
 - ESC signal wire: with the panel's STOP standing, STOPPED offers PIN BACK only, with `The bench's STOP stands: PIN BACK first.` A page's stop keeps CLEAR STOP.
 - ESC signal wire: after a stop or a fault PIN HELD offers PIN BACK only, with a line that names CONNECT after it. The SUPPLY page reports its latched OFF, and an ENTER under it is refused with `LINK_ESC_REF_SUPPLY_OFF` (17) in place of ending as `SUPPLY` after 1.3s.
