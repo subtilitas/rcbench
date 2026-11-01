@@ -7,6 +7,8 @@
 
 #include "wa_session.h"
 
+#include "fw_sha256.h"
+
 #include <string.h>
 
 /* ------------------------------------------------------------- names */
@@ -417,6 +419,10 @@ wa_off_t wa_start(wa_t *w, wa_mode_t mode, wa_off_t gate, uint32_t now_ms,
     w->last_ms  = now_ms;
     wa_secret_make(w->pass, rand, ctx);
     wa_secret_make(w->code, rand, ctx);
+    for (size_t i = 0u; i + 4u <= sizeof(w->stale_key); i += 4u) {
+        const uint32_t word = (rand != NULL) ? rand(ctx) : 0u;
+        memcpy(&w->stale_key[i], &word, sizeof(word));
+    }
     switch (mode) {
     case WA_MODE_JOIN:
     case WA_MODE_FETCH: enter(w, WA_ST_JOINING, now_ms);  break;
@@ -690,7 +696,14 @@ uint32_t wa_idle_left(const wa_t *w, uint32_t now_ms)
     return (gone >= WA_IDLE_MS) ? 0u : WA_IDLE_MS - gone;
 }
 
-wa_code_t wa_code_check(wa_t *w, const char *given, bool code_on)
+/**
+ * @brief The answer to @p given, with nothing counted.
+ * @param w       The session.
+ * @param given   The code sent, NULL or terminated.
+ * @param code_on The code switch.
+ * @return The check's answer.
+ */
+static wa_code_t code_answer(const wa_t *w, const char *given, bool code_on)
 {
     if (!wa_serving(w)) {
         return WA_CODE_CLOSED;
@@ -713,13 +726,63 @@ wa_code_t wa_code_check(wa_t *w, const char *given, bool code_on)
         ended = ended || (g == '\0');
         diff |= (unsigned)(uint8_t)(g ^ w->code[i]);
     }
-    if (diff == 0u) {
-        return WA_CODE_OK;
-    }
+    return (diff == 0u) ? WA_CODE_OK : WA_CODE_WRONG;
+}
+
+/**
+ * @brief One more wrong code; the WA_GUESS_MAX-th closes the session.
+ * @param w The session.
+ */
+static void count_wrong(wa_t *w)
+{
     if (++w->guesses >= WA_GUESS_MAX) {
         wa_close(w, WA_OFF_GUESSES);
     }
-    return WA_CODE_WRONG;
+}
+
+/**
+ * @brief Whether this wrong cookie value came before; a new one is remembered.
+ * @param w     The session.
+ * @param given The value, terminated.
+ * @return true for a value among the last WA_STALE_KEPT
+ */
+static bool stale_seen(wa_t *w, const char *given)
+{
+    fw_sha256_t h;
+    uint8_t digest[FW_SHA256_BYTES];
+    fw_sha256_init(&h);
+    fw_sha256_add(&h, w->stale_key, sizeof(w->stale_key));
+    fw_sha256_add(&h, given, strlen(given));
+    fw_sha256_done(&h, digest);
+    for (size_t i = 0u; i < w->stale_n; ++i) {
+        if (memcmp(w->stale[i], digest, WA_STALE_HASH) == 0) {
+            return true;
+        }
+    }
+    memcpy(w->stale[w->stale_next], digest, WA_STALE_HASH);
+    w->stale_next = (uint8_t)((w->stale_next + 1u) % WA_STALE_KEPT);
+    if (w->stale_n < WA_STALE_KEPT) {
+        ++w->stale_n;
+    }
+    return false;
+}
+
+wa_code_t wa_code_check(wa_t *w, const char *given, bool code_on)
+{
+    const wa_code_t c = code_answer(w, given, code_on);
+    if (c == WA_CODE_WRONG) {
+        count_wrong(w);
+    }
+    return c;
+}
+
+wa_code_t wa_code_check_cookie(wa_t *w, const char *given, bool code_on)
+{
+    const wa_code_t c = code_answer(w, given, code_on);
+    if (c == WA_CODE_WRONG && !stale_seen(w, given)) {
+        count_wrong(w);
+    }
+    return c;
 }
 
 void wa_kept_use(wa_t *w, const wa_conf_t *c)

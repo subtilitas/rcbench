@@ -447,7 +447,8 @@ static bool req_guard(httpd_req_t *r, wa_req_kind_t kind, esp_err_t *e)
 }
 
 /**
- * @brief The access code check, the cookie's.  Counted like a typed one.
+ * @brief The access code check, the cookie's.  A wrong value counts like a
+ *        typed one, once: wa_code_check_cookie().
  *
  * The Cookie header is read whole, up to the server's header limit
  * (CONFIG_HTTPD_MAX_REQ_HDR_LEN): at 192.168.4.1 it carries the cookies of
@@ -466,7 +467,8 @@ static wa_code_t req_code(httpd_req_t *r, bool force)
         given[0] = '\0';
     }
     lock();
-    const wa_code_t c = wa_code_check(&s.w, given, s.conf.code_on || force);
+    const wa_code_t c = wa_code_check_cookie(&s.w, given,
+                                             s.conf.code_on || force);
     unlock();
     return c;
 }
