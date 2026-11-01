@@ -312,8 +312,15 @@ TEST_CASE(a_leave_of_each_firmware_and_its_low_time)
 
     CHECK_EQ(ew_session_leave(&s), EW_SES_BUSY);
     CHECK(sim_sent(&esc, at, "00 01 C1 C0"));
-    /* The frame's 40 bits, then low: not parked before EW_LEAVE_LOW_MS. */
+    /* The frame's 40 bits, the idle line, then low: not parked before
+     * EW_LEAVE_LOW_MS. */
     esc.now += 40u * 52u + 1u;
+    CHECK_EQ(ew_session_step(&s), EW_SES_BUSY);
+    CHECK_EQ(esc.line, EW_LINE_UP);
+    esc.now += EW_SES_LEAVE_IDLE_US;
+    CHECK_EQ(ew_session_step(&s), EW_SES_BUSY);
+    CHECK_EQ(esc.line, EW_LINE_UP);
+    esc.now++;
     CHECK_EQ(ew_session_step(&s), EW_SES_BUSY);
     CHECK_EQ(esc.line, EW_LINE_LOW);
     CHECK(!s.in_mode);
@@ -328,8 +335,23 @@ TEST_CASE(a_leave_of_each_firmware_and_its_low_time)
     up_am(4u, 2u);
     CHECK_EQ(sim_enter(&s, &esc), EW_SES_OK);
     CHECK_EQ(ew_session_leave(&s), EW_SES_BUSY);
-    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
     CHECK(sim_sent(&esc, esc.starts - 1, "00 00 00 00"));
+    /* AM32 acts on a message after its idle line, not on a line gone low:
+     * step by step, the frame's 40 bits, then the idle time to its limit. */
+    esc.now += 40u * 52u + 1u;
+    CHECK_EQ(ew_session_step(&s), EW_SES_BUSY);
+    CHECK_EQ(esc.line, EW_LINE_UP);
+    esc.now += EW_SES_LEAVE_IDLE_US - 1u;
+    CHECK_EQ(ew_session_step(&s), EW_SES_BUSY);
+    CHECK_EQ(esc.line, EW_LINE_UP);
+    esc.now += 1u;
+    CHECK_EQ(ew_session_step(&s), EW_SES_BUSY);
+    CHECK_EQ(esc.line, EW_LINE_UP);
+    esc.now += 1u;
+    CHECK_EQ(ew_session_step(&s), EW_SES_BUSY);
+    CHECK_EQ(esc.line, EW_LINE_LOW);
+    CHECK_EQ(esc.leave_unsettled, 0);
+    CHECK_EQ(sim_run(&s, &esc), EW_SES_OK);
     CHECK_EQ(esc.line, EW_LINE_PARK);
 }
 
@@ -433,11 +455,40 @@ TEST_CASE(a_stop_or_abort_in_each_phase)
     esc.now += 1000000u;
     CHECK_EQ(ew_session_step(&s), EW_SES_ERR_ABORTED);
     CHECK_EQ(esc.starts, at);
+    /* A leave's idle line: abort, and no low follows. */
+    up_am(4u, 2u);
+    CHECK_EQ(sim_enter(&s, &esc), EW_SES_OK);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_BUSY);
+    esc.now += 40u * 52u + 1u;
+    (void)ew_session_step(&s);
+    CHECK_EQ(esc.line, EW_LINE_UP);
+    ew_session_abort(&s);
+    CHECK_EQ(s.result, EW_SES_ERR_ABORTED);
+    CHECK_EQ(esc.line, EW_LINE_PARK);
+    CHECK_EQ(esc.aborts, 0);
+    esc.now += 1000000u;
+    CHECK_EQ(ew_session_step(&s), EW_SES_ERR_ABORTED);
+    CHECK_EQ(esc.line, EW_LINE_PARK);
+    /* The same with a stop. */
+    up_am(4u, 2u);
+    CHECK_EQ(sim_enter(&s, &esc), EW_SES_OK);
+    CHECK_EQ(ew_session_leave(&s), EW_SES_BUSY);
+    esc.now += 40u * 52u + 1u;
+    (void)ew_session_step(&s);
+    ew_session_stop(&s);
+    CHECK_EQ(s.result, EW_SES_ERR_STOPPED);
+    CHECK(s.stopped);
+    CHECK_EQ(esc.line, EW_LINE_PARK);
+    esc.now += 1000000u;
+    CHECK_EQ(ew_session_step(&s), EW_SES_ERR_STOPPED);
+    CHECK_EQ(esc.line, EW_LINE_PARK);
     /* A leave's low time. */
     up_s();
     CHECK_EQ(sim_enter(&s, &esc), EW_SES_OK);
     CHECK_EQ(ew_session_leave(&s), EW_SES_BUSY);
     esc.now += 40u * 52u + 1u;
+    (void)ew_session_step(&s);
+    esc.now += EW_SES_LEAVE_IDLE_US + 1u;
     (void)ew_session_step(&s);
     CHECK_EQ(esc.line, EW_LINE_LOW);
     ew_session_abort(&s);
