@@ -528,6 +528,8 @@ TEST_CASE(every_two_line_string_of_the_column_breaks_into_two)
         { TX_OUT_NOT_WRITTEN, 300, true, 2 },
         { TX_OUT_NO_LINK, 300, true, 2 },
         { TX_OUT_PORT_HELD, 300, false, 3 },
+        { TX_OUT_PORT_HELD_ESC, 300, false, 3 },
+        { TX_OUT_PORT_HELD_HITEC, 300, false, 3 },
         { TX_OUT_PORT_LOCKED, 300, false, 3 },
         { TX_OUT_PORT_PWM_NEEDS, 300, false, 3 },
         { TX_OUT_PORT_NOT_READ, 300, false, 3 },

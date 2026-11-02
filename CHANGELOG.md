@@ -84,6 +84,7 @@ history is in git.
 
 ### Fixed
 
+- OUTPUTS: the line under a port's rows names an ESC or Hitec session's hold. It read `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` at SAFE with no test.
 - OUTPUTS: a FUNCTION or pin ask no longer waits for ever after a panel or IOmcu start. The sweep's state, not known since the link came up, was settled only by a TARGET change or a position. A port on a DShot function, or no port wanted by the SERVO screen, gives neither. The ask now settles it. The amber line names what holds an ask: SAFE, a servo test or sweep, the servo, Hitec or ESC programmer, or a read of the ports.
 - Debug builds: the relay's own lines no longer land inside an IOmcu line; a gap of 1500ms or more in the control passes, as during an IOmcu update, says `console: no pass from t_ms=<a> to t_ms=<b>`.
 - Wi-Fi: the same wrong code in a browser's cookie counts once toward the 16 wrong codes, for a RANDOM and a kept code. A tab open from before a change of the code no longer switches the radio off. The panel remembers the last 4 wrong cookie values as keyed hashes, emptied at every start of the radio. A different value and every `POST /code` count as before.

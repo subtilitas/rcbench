@@ -117,7 +117,7 @@ The FAULT box names each bit, its code and what it means:
 
 | Code | Bit | Set by this release |
 | --- | --- | --- |
-| 01 | LINK_SILENT | the IOmcu heard no request for 200ms; stays until the next arm |
+| 01 | LINK_SILENT | the IOmcu heard no request for 200ms; stays until the next arm or the IOmcu's next start |
 | 02 | OVERCURRENT | never |
 | 04 | OVERTEMP | never |
 | 08 | STALL | never |
@@ -5703,9 +5703,11 @@ The amber line under the rows names the first reason that holds:
 
 | Line | When |
 | --- | --- |
-| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | a programming session holds a port |
+| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | a KST or Chaservo session holds a port |
 | the ask's line | the last ask for this port waits, was refused or lost |
 | `PORTS NOT READ YET` | the page not read since the link came up: FUNCTION takes no tap |
+| `LOCKED: THE ESC PROGRAMMER HOLDS A PIN` | an ESC signal-wire session holds a pin |
+| `LOCKED: THE HITEC PROGRAMMER HOLDS A PORT` | a Hitec session holds a port |
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | ARMED, or a test or a sweep runs |
 | `SERVO TESTER DRIVES PROG PORT n` | the tester drives another port, port n |
 | `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot: the tester takes it as no target |

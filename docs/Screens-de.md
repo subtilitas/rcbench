@@ -129,7 +129,7 @@ Der Kasten von FEHLER nennt jedes Bit, seinen Code und seine Bedeutung:
 
 | Code | Bit | Von diesem Release gesetzt |
 | --- | --- | --- |
-| 01 | LINK_SILENT | der IOmcu hat 200ms keine Anfrage gehört; bleibt bis zum nächsten ARM |
+| 01 | LINK_SILENT | der IOmcu hat 200ms keine Anfrage gehört; bleibt bis zum nächsten ARM oder Start des IOmcu |
 | 02 | OVERCURRENT | nie |
 | 04 | OVERTEMP | nie |
 | 08 | STALL | nie |
@@ -6256,9 +6256,11 @@ Die gelbe Zeile unter den Zeilen nennt den ersten Grund, der zutrifft:
 
 | Zeile | Wann |
 | --- | --- |
-| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | eine Programmiersitzung hält einen Port |
+| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | eine KST- oder Chaservo-Sitzung hält einen Port |
 | die Zeile der Bitte | die letzte Bitte für diesen Port wartet, wurde abgelehnt oder ging verloren |
 | `PORTS NOCH NICHT GELESEN` | die Seite seit dem Linkaufbau nicht gelesen: FUNKTION nimmt kein Tippen an |
+| `GESPERRT: DER ESC-PROGRAMMIERER HÄLT EINEN PIN` | eine Sitzung über die ESC-Signalleitung hält einen Pin |
+| `GESPERRT: DER HITEC-PROGRAMMIERER HÄLT EINEN PORT` | eine Hitec-Sitzung hält einen Port |
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | ARMED, oder ein Test oder Sweep läuft |
 | `SERVO-TESTER STEUERT PROG-PORT n` | der Tester steuert einen anderen Port, Port n |
 | `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE oder DShot: der Tester nimmt ihn nicht als Ziel |

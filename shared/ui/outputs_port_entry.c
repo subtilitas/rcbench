@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "esc_wire_panel.h"
+#include "hitec_panel.h"
 #include "link_pages.h"
 #include "port_view.h"
 #include "servo_screen.h"
@@ -325,6 +327,10 @@ bool outputs_screen_port_reason(char *buf, size_t cap)
         snprintf(buf, cap, "%s", TR(OUT_PORT_NOT_READ));
     } else if (soldered()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_SOLDERED));
+    } else if (esc_wire_panel_holds_port()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_ESC));
+    } else if (hitec_panel_holds_port()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_HITEC));
     } else if (servo_screen_tester_target_locked()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_LOCKED));
     } else if (target() > 0

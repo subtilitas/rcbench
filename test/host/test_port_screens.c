@@ -27,6 +27,8 @@
  */
 #include <string.h>
 
+#include "esc_wire_panel.h"
+#include "hitec_panel.h"
 #include "greatest.h"
 #include "guard_canvas.h"
 
@@ -341,6 +343,35 @@ TEST_CASE(function_is_locked_where_the_iomcu_would_refuse_it)
     fn_pick(1u);
     CHECK_EQ(g_ask.n, 0);
     settings_set(SET_SERVO_TARGET, 0.0f);
+    /* An ESC session's pin: the line names it, and FUNCTION stays locked. */
+    {
+        esc_prog_feed_t f;
+
+        memset(&f, 0, sizeof(f));
+        f.rd.known = true;
+        f.rd.held = true;
+        esc_wire_panel_feed(&f);
+        CHECK_STR_EQ(out_reason(), TR(OUT_PORT_HELD_ESC));
+        fn_pick(1u);
+        CHECK_EQ(g_ask.n, 0);
+        f.rd.held = false;
+        esc_wire_panel_feed(&f);
+    }
+    /* A Hitec session's port. */
+    {
+        hitec_prog_feed_t f;
+
+        memset(&f, 0, sizeof(f));
+        f.rd.phase = HITEC_LINK_READY;
+        f.rd.known = true;
+        f.rd.held = true;
+        hitec_panel_feed(&f);
+        CHECK_STR_EQ(out_reason(), TR(OUT_PORT_HELD_HITEC));
+        fn_pick(1u);
+        CHECK_EQ(g_ask.n, 0);
+        f.rd.held = false;
+        hitec_panel_feed(&f);
+    }
     /* ARMED. */
     servo_screen_set_bench_armed(true);
     CHECK_STR_EQ(out_reason(), TR(OUT_PORT_LOCKED));
