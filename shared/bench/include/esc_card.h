@@ -5,7 +5,10 @@
  *        load of the files in CARD_ESCW_CONF, and the requests that carry them.
  *
  * A file holds the text of ew_file.h under ESCW001 to ESCW999 (servo_store.h,
- * stem EW_FILE_STEM).  The record of a write is ESCW.TXT in the same folder, and
+ * stem EW_FILE_STEM), with the firmware as a tag where it is known:
+ * ESCW001-AM32, ESCW002-BLHELI_S, ESCW003-BLUEJAY, ESCW004-ESCAPE32.  One number
+ * runs through the folder, tagged or not, so a number is never taken twice and
+ * the newest file lists first.  The record of a write is ESCW.TXT in the same folder, and
  * the task that has the card replaces it whole (panel.h): esc_card_run() does not
  * touch it.
  *
@@ -32,6 +35,8 @@ extern "C" {
 #define ESC_CARD_FILES 12u
 /** @brief Characters of a base name, with the terminator. */
 #define ESC_CARD_NAME_MAX (SERVO_STORE_BASE_MAX + 1)
+/** @brief Characters of a firmware tag, with the terminator: ESCAPE32. */
+#define ESC_CARD_TAG_MAX 9u
 /** @brief Bytes a request or an answer holds: the largest is the record of a write. */
 #define ESC_CARD_TEXT_MAX ESC_PROG_RECORD_MAX
 
@@ -42,6 +47,7 @@ typedef enum {
     ESC_CARD_LIST,   /**< the names from @c first on                          */
     ESC_CARD_LOAD,   /**< the text of the file @c name                        */
     ESC_CARD_RECORD, /**< @c text replaces ESCW.TXT                           */
+    ESC_CARD_DELETE, /**< the file @c name goes                               */
 } esc_card_op_t;
 
 /** @brief How a request ended. */
@@ -54,6 +60,7 @@ typedef enum {
     ESC_CARD_DONE_READ,    /**< a read failed                                 */
     ESC_CARD_DONE_MISSING, /**< no file has that name                         */
     ESC_CARD_DONE_LARGE,   /**< the file is over EW_FILE_MAX bytes            */
+    ESC_CARD_DONE_DELETE,  /**< a delete failed; the file is as it was        */
 } esc_card_result_t;
 
 /** @brief A request. */
@@ -62,7 +69,8 @@ typedef struct {
     uint16_t first;  /**< LIST: the first file wanted, from 0                 */
     uint32_t id;     /**< comes back in the answer                            */
     size_t   len;    /**< SAVE, RECORD: bytes of @c text                      */
-    char     name[ESC_CARD_NAME_MAX]; /**< LOAD: the base name                */
+    char     name[ESC_CARD_NAME_MAX]; /**< LOAD, DELETE: the base name        */
+    char     tag[ESC_CARD_TAG_MAX]; /**< SAVE: the firmware's tag, "" none    */
     char     text[ESC_CARD_TEXT_MAX]; /**< SAVE, RECORD                       */
 } esc_card_req_t;
 
@@ -80,7 +88,14 @@ typedef struct {
 } esc_card_done_t;
 
 /**
- * @brief Carry out a SAVE, a LIST or a LOAD on the card behind @p io.
+ * @brief The tag of a firmware in a backup's name.
+ * @param fw An ew_fw_t.
+ * @return "AM32", "BLHELI_S", "BLUEJAY", "ESCAPE32", or "" for none.
+ */
+const char *esc_card_fw_tag(uint8_t fw);
+
+/**
+ * @brief Carry out a SAVE, a LIST, a LOAD or a DELETE on the card behind @p io.
  * @param io   The store.
  * @param req  The request.
  * @param done Receives the answer; every request gets one.

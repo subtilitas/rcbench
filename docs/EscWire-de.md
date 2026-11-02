@@ -74,7 +74,7 @@ Der Streifen nennt, was die Sitzung treibt: `ZIEL SLOT 1 GPIO 0`, dann das Netzt
 | ENTRY HOLD | 0.5s bis 120s | 3.0s |
 | AUS-ZEIT | 0s bis 10s | 1.0s |
 
-Die Sitzung hat keine Vorgabespannung. SPANNUNG und LIMIT folgen SUPPLY, bis ein Tipp auf die Zahl eine andere eingibt. SWITCHED nutzt den PD mini. BY HAND legt die Leitung auf high und wartet höchstens 60s auf `STROM IST AN`.
+Die Sitzung hat keine Vorgabespannung. SPANNUNG und LIMIT folgen SUPPLY, bis ein Tipp auf die Zahl eine andere eingibt. STROM behält die letzte Wahl über einen Neustart des Panels, in den Einstellungen des Panels (NVS-Schlüssel `escw_by_hand`); ein Panel ohne gespeicherten Wert beginnt mit SWITCHED. SWITCHED nutzt den PD mini. BY HAND legt die Leitung auf high und wartet höchstens 60s auf `STROM IST AN`.
 
 Nimm den Propeller ab. Schließe nur Signal und Masse an: ein BEC (Battery Eliminator Circuit) auf der Mittelader des ESC speist sonst die Schiene des Bench. Stecke Servos ab. VERBINDEN ist ein roter Hold von 2s.
 
@@ -146,7 +146,7 @@ n WERTE SCHREIBEN öffnet eine Seite mit den Änderungen. Jedes heikle Feld blei
 
 Was die Seite listet, schreibt der Hold: die Seite hält eine eigene Kopie des Entwurfs. Vom Hold bis zum Ergebnis des Schreibens nimmt die Sitzung nur ABBRUCH und STOP. ABBRUCH, während die Karte arbeitet, gibt das Schreiben auf, der ESC bleibt unverändert. SCHREIBEN wartet, solange eine Datei von der Karte unterwegs ist. Eine Datei, die bei offener Seite kommt, wird nicht geladen, und die Seite sagt es.
 
-1. Das erste Schreiben einer Sitzung speichert das Backup der Sitzung nach `BENCH/ESCW/CONF/ESCW001.TXT` bis `ESCW999.TXT`. Ohne Karte, oder bei einer Karte, die es ablehnt, fragt die Seite; ein zweiter Hold von 2s geht ohne.
+1. Das erste Schreiben einer Sitzung speichert das Backup der Sitzung nach `BENCH/ESCW/CONF`, als `ESCW001-AM32.TXT` bis `ESCW999-AM32.TXT` (siehe [Namen der Backups](#namen-der-backups)). Ohne Karte, oder bei einer Karte, die es ablehnt, fragt die Seite; ein zweiter Hold von 2s geht ohne.
 2. Der Eintrag `BENCH/ESCW/CONF/ESCW.TXT` nimmt die geänderten Felder und den ESC wie gelesen auf. Eine Karte, die ihn ablehnt, stellt dieselbe Frage.
 3. Die Page liest neu, schreibt, liest zurück und nennt das Ergebnis in Worten. Ein Schreiben auf BLHeli_S oder Bluejay dauert etwa 3848ms.
 
@@ -166,7 +166,15 @@ Eine gelöschte Seite ist kein Backup. Das Backup der Sitzung ist ihr erstes Les
 
 ![Schreibt](img/de/motor-wire-am-running.png)
 
-DATEIEN listet die Dateien auf der Karte, die neueste zuerst, und speichert das Backup der Sitzung von Hand. Eine Datei geht in den Entwurf, auf dieselbe Firmware und dasselbe Layout, nur editierbare Felder. Eine im Editor des Panels geänderte Datei hat `edited` als letzte Zeile statt der Prüfsumme, und der Programmierer liest ihre Feldzeilen.
+DATEIEN listet die Dateien auf der Karte, die neueste zuerst, 11 je Seite unter BACKUP DER SITZUNG SPEICHERN und DATEI LÖSCHEN, und speichert das Backup der Sitzung von Hand. Eine Datei geht in den Entwurf, auf dieselbe Firmware und dasselbe Layout, nur editierbare Felder. Eine im Editor des Panels geänderte Datei hat `edited` als letzte Zeile statt der Prüfsumme, und der Programmierer liest ihre Feldzeilen.
+
+### Namen der Backups
+
+Der Name eines Backups ist `ESCW`, eine Nummer von 001 bis 999 und die Firmware: `ESCW001-AM32.TXT`, `ESCW002-BLHELI_S.TXT`, `ESCW003-BLUEJAY.TXT`, `ESCW004-ESCAPE32.TXT`. Ein von Hand gespeichertes Backup bekommt denselben Namen. Die Nummer ist eins über der höchsten im Ordner, mit oder ohne Firmware, so wird keine Nummer zweimal vergeben und die neueste Datei steht zuerst. Ist die Nummer 999 belegt, nimmt die Sitzung die niedrigste freie Nummer; sind alle 999 belegt, sagt das Speichern, dass die Karte voll ist. Dateien mit Namen wie `ESCW001.TXT` und unter anderen Namen hineinkopierte Dateien werden genauso gelistet und geladen. `ESCW.TXT` ist der Eintrag, nie ein Backup.
+
+### Eine Datei löschen
+
+DATEI LÖSCHEN macht aus der Liste eine, aus der ein Tipp löscht. Ein Tipp öffnet DATEI LÖSCHEN, ein rotes 2s-Halten, das die Datei nennt. Nach dem Löschen liest die Liste die Karte neu. Ein Backup, das diese Sitzung seit VERBINDEN gespeichert hat, wird in der Sitzung nicht gelöscht: die Zeile sagt es, und LOGS > DATEIEN löscht es. Ein Löschen, das fehlschlägt, sagt es, und die Datei bleibt, wie sie war.
 
 ## Gelöschter AM32
 

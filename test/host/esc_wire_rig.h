@@ -40,6 +40,8 @@ static char   g_texts[CARD_FILES][EW_FILE_MAX + 1u];
 static int    g_card_files;
 static bool   g_card_in;
 static bool   g_card_refuses;
+/** @brief A remove fails with this; SERVO_STORE_IO_OK removes. */
+static servo_store_io_result_t g_card_remove_says;
 static char   g_record[ESC_CARD_TEXT_MAX + 1u];
 static size_t g_record_len;
 static int    g_card_requests;
@@ -116,9 +118,26 @@ static servo_store_io_result_t io_create(void *ctx, const char *name, const char
     return SERVO_STORE_IO_OK;
 }
 
+static servo_store_io_result_t io_remove(void *ctx, const char *name)
+{
+    const int i = find_file(name);
+
+    (void)ctx;
+    if (i < 0 || g_card_remove_says != SERVO_STORE_IO_OK) {
+        return i < 0 ? SERVO_STORE_IO_ERROR : g_card_remove_says;
+    }
+    for (int k = i; k + 1 < g_card_files; ++k) {
+        memcpy(g_names[k], g_names[k + 1], sizeof(g_names[0]));
+        memcpy(g_texts[k], g_texts[k + 1], sizeof(g_texts[0]));
+    }
+    --g_card_files;
+    return SERVO_STORE_IO_OK;
+}
+
 static const servo_store_io_t k_ew_io = {
     .ctx = NULL, .stem = EW_FILE_STEM, .mounted = io_mounted, .walk = io_walk,
-    .size = io_size, .read = io_read, .create = io_create,
+    .size = io_size, .read = io_read, .create = io_create, .tagged = true,
+    .remove = io_remove,
 };
 
 /** @brief The log task's side, at once. */
@@ -300,6 +319,7 @@ static void session_up(void (*esc_up)(void))
     g_card_files = 0;
     g_card_in = true;
     g_card_refuses = false;
+    g_card_remove_says = SERVO_STORE_IO_OK;
     g_card_wait = false;
     g_record[0] = '\0';
     g_record_len = 0u;

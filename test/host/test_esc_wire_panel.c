@@ -205,7 +205,7 @@ TEST_CASE(a_write_saves_the_backup_writes_the_record_then_goes)
     wait_idle();
     /* One backup of the ESC before the write, then the record. */
     CHECK_EQ(g_card_files, 1);
-    CHECK_STR_EQ(g_names[0], "ESCW001.TXT");
+    CHECK_STR_EQ(g_names[0], "ESCW001-AM32.TXT");
     CHECK(strncmp(g_texts[0], "ESC settings backup, format ", 28u) == 0);
     CHECK(strstr(g_record, "RCBENCH ESCW RECORD 1\n") == g_record);
     CHECK(strstr(g_record, "REVERSED: ON -> OFF\n") != NULL);
@@ -290,8 +290,9 @@ TEST_CASE(a_file_loaded_goes_into_the_draft_and_writes_nothing)
     ew_tap(esc_wire_panel_action_rect(1));
     bench_run(10u);
     CHECK_STR_EQ(esc_wire_panel_choice_label(0), TR(EW_FILE_SAVE));
-    CHECK_STR_EQ(esc_wire_panel_choice_label(1), "ESCW005");
-    ew_tap(esc_wire_panel_choice_rect(1));
+    CHECK_STR_EQ(esc_wire_panel_choice_label(1), TR(EW_FILE_DELETE));
+    CHECK_STR_EQ(esc_wire_panel_choice_label(2), "ESCW005");
+    ew_tap(esc_wire_panel_choice_rect(2));
     bench_run(10u);
     CHECK_EQ(ewp_s.draft[0x05], 123u);
     CHECK_EQ(ewp_changed_count(), 1);
@@ -494,6 +495,160 @@ TEST_CASE(a_steady_session_moves_no_revision)
     CHECK_EQ(esc_wire_pages.revision(), r);
 }
 
+/** @brief Two files on the card, one old-named, one tagged; FILES open. */
+static void two_files_listed(void)
+{
+    snprintf(g_names[0], sizeof(g_names[0]), "ESCW001.TXT");
+    snprintf(g_texts[0], sizeof(g_texts[0]), "x\n");
+    snprintf(g_names[1], sizeof(g_names[1]), "ESCW002-AM32.TXT");
+    snprintf(g_texts[1], sizeof(g_texts[1]), "x\n");
+    g_card_files = 2;
+    ew_tap(esc_wire_panel_action_rect(1));
+    bench_run(10u);
+    CHECK_STR_EQ(esc_wire_panel_choice_label(1), TR(EW_FILE_DELETE));
+    ew_tap(esc_wire_panel_choice_rect(1));
+    bench_run(10u);
+    /* The list that deletes: the names alone, newest first. */
+    CHECK_EQ(ewp_s.ch_what, EWP_CH_FILES);
+    CHECK_STR_EQ(esc_wire_panel_choice_label(0), "ESCW002-AM32");
+    CHECK_STR_EQ(esc_wire_panel_choice_label(1), "ESCW001");
+    CHECK(esc_wire_panel_choice_label(2) == NULL);
+}
+
+TEST_CASE(a_file_is_deleted_on_a_hold_and_the_list_reads_again)
+{
+    char line[EWP_LINE];
+
+    session_up(up_am_rig);
+    connected();
+    two_files_listed();
+    ew_tap(esc_wire_panel_choice_rect(1));
+    bench_run(10u);
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_DELETE);
+    /* Not before the hold. */
+    ew_hold(1.0f);
+    CHECK_EQ(g_card_files, 2);
+    ew_hold(2.2f);
+    bench_run(20u);
+    CHECK_EQ(g_card_files, 1);
+    CHECK_STR_EQ(g_names[0], "ESCW002-AM32.TXT");
+    snprintf(line, sizeof(line), TR(EW_DELETED), "ESCW001");
+    CHECK_STR_EQ(esc_wire_panel_message(), line);
+    /* Read again: SAVE, DELETE and the one file left. */
+    CHECK_EQ(ewp_s.ch_what, EWP_CH_FILES);
+    CHECK_STR_EQ(esc_wire_panel_choice_label(0), TR(EW_FILE_SAVE));
+    CHECK_STR_EQ(esc_wire_panel_choice_label(2), "ESCW002-AM32");
+    CHECK(esc_wire_panel_choice_label(3) == NULL);
+}
+
+TEST_CASE(a_failed_delete_says_so_and_the_file_stays)
+{
+    char line[EWP_LINE];
+
+    session_up(up_am_rig);
+    connected();
+    two_files_listed();
+    g_card_remove_says = SERVO_STORE_IO_ERROR;
+    ew_tap(esc_wire_panel_choice_rect(0));
+    bench_run(10u);
+    ew_hold(2.2f);
+    bench_run(20u);
+    CHECK_EQ(g_card_files, 2);
+    snprintf(line, sizeof(line), TR(EW_DELETE_FAILED), "ESCW002-AM32", TR(EW_CARD_DELETE));
+    CHECK_STR_EQ(esc_wire_panel_message(), line);
+}
+
+TEST_CASE(this_sessions_backup_is_not_deleted_inside_the_session)
+{
+    char line[EWP_LINE];
+
+    session_up(up_am_rig);
+    connected();
+    /* SAVE by hand: ESCW001-AM32. */
+    ew_tap(esc_wire_panel_action_rect(1));
+    bench_run(10u);
+    ew_tap(esc_wire_panel_choice_rect(0));
+    bench_run(10u);
+    CHECK_EQ(g_card_files, 1);
+    CHECK_STR_EQ(g_names[0], "ESCW001-AM32.TXT");
+    ew_tap(esc_wire_panel_action_rect(1));
+    bench_run(10u);
+    ew_tap(esc_wire_panel_choice_rect(1));
+    bench_run(10u);
+    ew_tap(esc_wire_panel_choice_rect(0));
+    bench_run(10u);
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_NONE);
+    CHECK_EQ(g_card_files, 1);
+    snprintf(line, sizeof(line), TR(EW_DELETE_OWN), "ESCW001-AM32");
+    CHECK_STR_EQ(esc_wire_panel_message(), line);
+}
+
+/* A store in memory: what a save wrote, a restart loads. */
+static float s_kept[SETTING_COUNT];
+static bool  s_have_kept;
+
+static bool kept_load(float *values, int count)
+{
+    if (!s_have_kept) {
+        return false;
+    }
+    memcpy(values, s_kept, (size_t)count * sizeof(float));
+    return true;
+}
+
+static bool kept_save(const float *values, int count)
+{
+    memcpy(s_kept, values, (size_t)count * sizeof(float));
+    s_have_kept = true;
+    return true;
+}
+
+static const settings_store_t k_kept = { kept_load, kept_save, NULL, NULL };
+
+/** @brief A panel restart: the settings loaded, the session made and opened. */
+static void panel_restart(void)
+{
+    settings_init();
+    esc_wire_pages.init(k_ew_area);
+    esc_wire_pages.open();
+}
+
+TEST_CASE(power_keeps_its_last_choice_over_a_restart)
+{
+    s_have_kept = false;
+    settings_set_store(&k_kept);
+    session_up(up_am_rig);
+    /* Nothing stored: SWITCHED. */
+    CHECK_EQ(ewp_s.power, (uint8_t)LINK_ESC_SWITCHED);
+    CHECK(!settings_get_bool(SET_ESCW_BY_HAND));
+    ewp_s.ch_what = EWP_CH_POWER;
+    ewp_s.ch_count = 0;
+    ewp_choice_add(TR(EW_POWER_SWITCHED), LINK_ESC_SWITCHED);
+    ewp_choice_add(TR(EW_POWER_HAND), LINK_ESC_BY_HAND);
+    ewp_choice_done(1);
+    CHECK_EQ(ewp_s.power, (uint8_t)LINK_ESC_BY_HAND);
+    CHECK(settings_get_bool(SET_ESCW_BY_HAND));
+    CHECK(settings_save_asked());
+    CHECK(settings_save());
+    panel_restart();
+    CHECK_EQ(ewp_s.power, (uint8_t)LINK_ESC_BY_HAND);
+    /* Back to SWITCHED, kept the same way. */
+    ewp_s.ch_what = EWP_CH_POWER;
+    ewp_s.ch_count = 0;
+    ewp_choice_add(TR(EW_POWER_SWITCHED), LINK_ESC_SWITCHED);
+    ewp_choice_add(TR(EW_POWER_HAND), LINK_ESC_BY_HAND);
+    ewp_choice_done(0);
+    CHECK(settings_save());
+    panel_restart();
+    CHECK_EQ(ewp_s.power, (uint8_t)LINK_ESC_SWITCHED);
+    /* A store that holds nothing: SWITCHED. */
+    s_have_kept = false;
+    panel_restart();
+    CHECK_EQ(ewp_s.power, (uint8_t)LINK_ESC_SWITCHED);
+    settings_set_store(NULL);
+    settings_init();
+}
+
 int main(void)
 {
     RUN(connect_shows_what_it_will_drive_and_takes_a_hold);
@@ -516,5 +671,9 @@ int main(void)
     RUN(a_protection_key_warns_only_on_its_way_to_off);
     RUN(a_screen_says_nothing_that_implies_simonk_works);
     RUN(a_steady_session_moves_no_revision);
+    RUN(a_file_is_deleted_on_a_hold_and_the_list_reads_again);
+    RUN(a_failed_delete_says_so_and_the_file_stays);
+    RUN(this_sessions_backup_is_not_deleted_inside_the_session);
+    RUN(power_keeps_its_last_choice_over_a_restart);
     return test_summary("esc_wire_panel");
 }

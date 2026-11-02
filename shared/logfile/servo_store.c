@@ -236,18 +236,22 @@ static size_t base_len(const char *name)
 }
 
 /**
- * @brief The number in "<stem>nnn.TXT", in any case; 0 for any other name.
+ * @brief The number in "<stem>nnn.TXT", in any case, and with @p tagged in
+ *        "<stem>nnn-<tag>.TXT"; 0 for any other name.
  *
- * @param stem  The stem.
- * @param name  The file name.
+ * @param stem    The stem.
+ * @param tagged  A tag after the digits counts.
+ * @param name    The file name.
  * @return The number 1 to 999, or 0.
  */
-static int preset_number(const char *stem, const char *name)
+static int preset_number(const char *stem, bool tagged, const char *name)
 {
     const size_t s = stem_len(stem);
+    const size_t b = base_len(name);
     int number = 0;
 
-    if (s == 0u || base_len(name) != s + 3u || !stem_at(name, stem, s)) {
+    if (s == 0u || !stem_at(name, stem, s)
+        || (b != s + 3u && !(tagged && b > s + 4u && name[s + 3u] == '-'))) {
         return 0;
     }
     for (size_t i = s; i < s + 3u; ++i) {
@@ -262,6 +266,7 @@ static int preset_number(const char *stem, const char *name)
 /** @brief A walk that marks the proposed numbers taken. */
 typedef struct {
     const char *stem;              /**< the stem               */
+    bool tagged;                   /**< a tag counts           */
     uint8_t taken[NUMBER_BYTES];   /**< bit n: number n taken  */
 } mark_t;
 
@@ -275,7 +280,7 @@ typedef struct {
 static void mark_number(const char *name, bool is_dir, void *visit_ctx)
 {
     mark_t *m = visit_ctx;
-    const int number = preset_number(m->stem, name);
+    const int number = preset_number(m->stem, m->tagged, name);
 
     (void)is_dir;
     m->taken[number / 8] |= (uint8_t)(1u << (number % 8));
@@ -283,7 +288,13 @@ static void mark_number(const char *name, bool is_dir, void *visit_ctx)
 
 int servo_store_number(const char *stem, const char *file)
 {
-    return file != NULL ? preset_number(stem, file) : 0;
+    return file != NULL ? preset_number(stem, false, file) : 0;
+}
+
+int servo_store_number_of(const servo_store_io_t *io, const char *file)
+{
+    return (io != NULL && file != NULL) ? preset_number(io->stem, io->tagged, file)
+                                        : 0;
 }
 
 servo_store_t servo_store_preset(const servo_store_io_t *io, char *base,
@@ -304,6 +315,7 @@ servo_store_t servo_store_preset(const servo_store_io_t *io, char *base,
     }
     memset(&m, 0, sizeof(m));
     m.stem = io->stem;
+    m.tagged = io->tagged;
     if (!io->walk(io->ctx, mark_number, &m)) {
         return SERVO_STORE_LIST_ERROR;
     }
@@ -424,16 +436,17 @@ static bool before_presets(const char *stem, const char *name)
  *        proposed names in one run where "<stem>000.TXT" would stand, the
  *        highest number first.
  *
- * @param stem  The stem.
- * @param a     The first file name.
- * @param b     The second file name.
+ * @param stem    The stem.
+ * @param tagged  A tag after the digits counts.
+ * @param a       The first file name.
+ * @param b       The second file name.
  * @return Negative, zero or positive as @p a sorts before, with or after
  *         @p b.
  */
-static int list_cmp(const char *stem, const char *a, const char *b)
+static int list_cmp(const char *stem, bool tagged, const char *a, const char *b)
 {
-    const int na = preset_number(stem, a);
-    const int nb = preset_number(stem, b);
+    const int na = preset_number(stem, tagged, a);
+    const int nb = preset_number(stem, tagged, b);
 
     if (na != 0 && nb != 0 && na != nb) {
         return na > nb ? -1 : 1;
@@ -450,6 +463,7 @@ static int list_cmp(const char *stem, const char *a, const char *b)
 /** @brief State of one list: the sorted entries kept so far. */
 typedef struct {
     const char *stem;              /**< the stem                         */
+    bool tagged;                   /**< a tag counts                     */
     servo_store_entry_t *entries;  /**< the list being built             */
     const char *after;             /**< NULL: from the first file on     */
     size_t cap;                    /**< capacity of entries              */
@@ -481,12 +495,14 @@ static void list_name(const char *name, bool is_dir, void *visit_ctx)
         return;
     }
     list->total++;
-    if (list->after != NULL && list_cmp(list->stem, name, list->after) <= 0) {
+    if (list->after != NULL
+        && list_cmp(list->stem, list->tagged, name, list->after) <= 0) {
         return;
     }
     at = list->count;
     while (at > 0u
-           && list_cmp(list->stem, name, list->entries[at - 1u].name) < 0) {
+           && list_cmp(list->stem, list->tagged, name,
+                       list->entries[at - 1u].name) < 0) {
         at--;
     }
     if (at == list->cap) {
@@ -519,6 +535,7 @@ servo_store_t servo_store_list_after(const servo_store_io_t *io,
     }
     memset(&list, 0, sizeof(list));
     list.stem = io->stem;
+    list.tagged = io->tagged;
     list.entries = entries;
     list.after = after;
     list.cap = cap;
@@ -562,4 +579,28 @@ servo_store_t servo_store_load(const servo_store_io_t *io, const char *name,
     }
     *len = (size_t)size;
     return SERVO_STORE_OK;
+}
+
+servo_store_t servo_store_remove(const servo_store_io_t *io, const char *name)
+{
+    if (io == NULL || name == NULL || io->remove == NULL) {
+        return SERVO_STORE_ARG;
+    }
+    if (check(io->stem, name, base_len(name)) != SERVO_STORE_NAME_OK) {
+        return SERVO_STORE_BAD_NAME;
+    }
+    if (!io->mounted(io->ctx)) {
+        return SERVO_STORE_NO_CARD;
+    }
+    if (io->size(io->ctx, name) < 0) {
+        return SERVO_STORE_NOT_FOUND;
+    }
+    switch (io->remove(io->ctx, name)) {
+    case SERVO_STORE_IO_OK:
+        return SERVO_STORE_OK;
+    case SERVO_STORE_IO_DENIED:
+        return SERVO_STORE_DENIED;
+    default:
+        return SERVO_STORE_WRITE_ERROR;
+    }
 }

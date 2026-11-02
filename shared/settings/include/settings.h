@@ -180,6 +180,7 @@ typedef enum {
     SET_SERVO_TARGET,
     SET_SERVO_PORT_PWM,
     SET_HITEC_SERIES,
+    SET_ESCW_BY_HAND,
     /* --- stick programming ---------------------------------------------- */
     SET_STICK_V,
     SET_STICK_I,

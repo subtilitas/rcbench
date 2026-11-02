@@ -119,6 +119,7 @@ static servo_store_io_result_t card_create(void *ctx, const char *name,
 
 static const servo_store_io_t g_io = {
     NULL, STEM, card_mounted, card_walk, card_size, card_read, card_create,
+    false, NULL,
 };
 
 static void card_reset(void)

@@ -248,6 +248,26 @@ static servo_store_io_result_t io_create(void *ctx, const char *name,
     return r;
 }
 
+/**
+ * @brief servo_store_io_t.remove.
+ *
+ * @param ctx  Unused.
+ * @param name The file.
+ * @return SERVO_STORE_IO_OK, SERVO_STORE_IO_DENIED for a card that takes no
+ *         change, else SERVO_STORE_IO_ERROR.
+ */
+static servo_store_io_result_t io_remove(void *ctx, const char *name)
+{
+    char path[PATH_MAX_LEN];
+
+    (void)ctx;
+    path_of(name, path, sizeof(path));
+    if (unlink(path) == 0) {
+        return SERVO_STORE_IO_OK;
+    }
+    return denied(errno) ? SERVO_STORE_IO_DENIED : SERVO_STORE_IO_ERROR;
+}
+
 /** @brief The card for esc_card_run(). */
 static const servo_store_io_t k_io = {
     .ctx = NULL,
@@ -257,6 +277,8 @@ static const servo_store_io_t k_io = {
     .size = io_size,
     .read = io_read,
     .create = io_create,
+    .tagged = true,
+    .remove = io_remove,
 };
 
 /**

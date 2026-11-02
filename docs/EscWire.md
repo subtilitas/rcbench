@@ -74,7 +74,7 @@ The strip names what the session drives: `TARGET SLOT 1 GPIO 0`, then the supply
 | ENTRY HOLD | 0.5s to 120s | 3.0s |
 | OFF TIME | 0s to 10s | 1.0s |
 
-The session has no default voltage. VOLTAGE and LIMIT follow SUPPLY until a tap on the number types another. SWITCHED uses the PD mini. BY HAND drives the line high and waits at most 60s for `POWER IS ON`.
+The session has no default voltage. VOLTAGE and LIMIT follow SUPPLY until a tap on the number types another. POWER keeps the last choice over a panel restart, in the panel's settings (NVS key `escw_by_hand`); a panel with none stored starts on SWITCHED. SWITCHED uses the PD mini. BY HAND drives the line high and waits at most 60s for `POWER IS ON`.
 
 Take the propeller off. Connect signal and ground only: a BEC (battery eliminator circuit) on the ESC's centre wire would feed the bench's rail. Unplug servos. CONNECT is a red 2s hold.
 
@@ -146,7 +146,7 @@ WRITE n VALUES opens a page that lists the changes. Each hazardous field stays e
 
 What the page lists is what the hold writes: the page keeps its own copy of the draft. From the hold to the write's outcome the session takes ABORT and STOP only. ABORT while the card works gives the write up, and the ESC is unchanged. WRITE waits while a file is on its way from the card. A file that comes while a page is open is not loaded, and the page says so.
 
-1. The first write of a session saves the session's backup to `BENCH/ESCW/CONF/ESCW001.TXT` to `ESCW999.TXT`. With no card, or a card that refuses it, the page asks; a second 2s hold goes without one.
+1. The first write of a session saves the session's backup to `BENCH/ESCW/CONF`, as `ESCW001-AM32.TXT` to `ESCW999-AM32.TXT` (see [Backup names](#backup-names)). With no card, or a card that refuses it, the page asks; a second 2s hold goes without one.
 2. The record `BENCH/ESCW/CONF/ESCW.TXT` takes the changed fields and the ESC as read. A card that refuses it asks the same question.
 3. The page re-reads, writes, reads back and says the result in words. A BLHeli_S or Bluejay write takes about 3848ms.
 
@@ -166,7 +166,15 @@ An erased page is no backup. The session's backup is its first read that is not 
 
 ![Writing](img/motor-wire-am-running.png)
 
-FILES lists the files on the card, newest first, and saves the session's backup by hand. A file goes into the draft, to the same firmware and layout, editable fields only. A file changed in the panel's editor has `edited` as its last line in place of the checksum, and the programmer reads its field lines.
+FILES lists the files on the card, newest first, 11 to a page under SAVE THE SESSION'S BACKUP and DELETE A FILE, and saves the session's backup by hand. A file goes into the draft, to the same firmware and layout, editable fields only. A file changed in the panel's editor has `edited` as its last line in place of the checksum, and the programmer reads its field lines.
+
+### Backup names
+
+A backup's name is `ESCW`, a number from 001 to 999 and the firmware: `ESCW001-AM32.TXT`, `ESCW002-BLHELI_S.TXT`, `ESCW003-BLUEJAY.TXT`, `ESCW004-ESCAPE32.TXT`. A backup saved by hand takes the same name. The number is one above the highest in the folder, with or without a firmware, so no number is taken twice and the newest file lists first. With number 999 taken the lowest free number is used; with all 999 taken the save says the card is full. Files named `ESCW001.TXT`, and files copied in under other names, list and load the same way. `ESCW.TXT` is the record, never a backup.
+
+### Deleting a file
+
+DELETE A FILE turns the list into one a tap deletes from. A tap opens DELETE A FILE, a red 2s hold, which names the file. After the delete the list reads the card again. A backup this session saved since CONNECT is not deleted inside the session: the line says so, and LOGS > FILES deletes it. A delete that fails says so, and the file stays as it was.
 
 ## Erased AM32
 

@@ -365,6 +365,15 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "hitec_series", "",
         SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(hitec_series) },
     /*
+     * The ESC signal-wire session's STROM: SWITCHED (0) or BY HAND (1), as the
+     * operator last chose it on the connect page.  Kept with the programmers'
+     * choices, as the Hitec series is: SERVO's screen lists its rows by name,
+     * so no screen shows it as a row and no DEFAULTS resets it.
+     */
+    [SET_ESCW_BY_HAND] = {
+        "escw_by_hand", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    /*
      * Stick programming's.  The supply it powers the ESC (electronic speed
      * controller) from, and how it hears the beeps.  No ESC has been
      * recorded, so every time below is a default standing in for a
