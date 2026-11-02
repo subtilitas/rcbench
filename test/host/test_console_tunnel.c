@@ -514,6 +514,7 @@ TEST_CASE(a_gap_in_the_passes_is_said_with_its_times)
     g_all_len = 0u;
     g_all[0] = '\0';
     const uint32_t from = g_now;
+    const uint32_t to = from + 90005u;
 
     g_now += 90000u;
     run(1, true);
@@ -522,7 +523,7 @@ TEST_CASE(a_gap_in_the_passes_is_said_with_its_times)
 
     snprintf(want, sizeof(want),
              "console: no pass from t_ms=%lu to t_ms=%lu: the link was not followed\n",
-             (unsigned long)from, (unsigned long)(from + 90005u));
+             (unsigned long)from, (unsigned long)to);
     CHECK(strstr(g_all, want) != NULL);
     /* Said once, and one exchange's own 1000ms says nothing. */
     g_all_len = 0u;
