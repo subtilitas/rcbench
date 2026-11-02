@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The ports' mailbox; see port_mail.h.
+ *
  * The programming ports between the control task and the UI task.  See
  * port_mail.h.
  *

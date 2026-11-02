@@ -94,7 +94,11 @@ bool port_view_ask(uint8_t port, prog_link_ask_kind_t kind, uint16_t value);
  *  older ask is ignored. */
 void port_view_set_ask_state(uint8_t seq, prog_link_ask_state_t st);
 
-/** What the last ask waits on, for its line. */
+/**
+ * @brief What the last ask waits on, for its line.
+ *
+ * @param wait A prog_link_wait_t.
+ */
 void port_view_set_ask_wait(prog_link_wait_t wait);
 
 /** The last ask: where it stands, and its port and kind (may be NULL). */
@@ -104,10 +108,15 @@ prog_link_ask_state_t port_view_ask_state(uint8_t *port, uint8_t *kind);
 uint8_t port_view_ask_seq(void);
 
 /**
- * The line a screen shows for port @p port's last ask: what it waits on,
+ * @brief The line a screen shows for port @p port's last ask: what it waits on,
  * refused, or the link lost before the write.  False and
  * an empty string when the last ask was for another port, is done, or
  * there was none.  The amber line under the port's rows.
+ *
+ * @param port The port.
+ * @param buf  Takes the line.
+ * @param cap  Its size.
+ * @return true when there is a line.
  */
 bool port_view_ask_line(uint8_t port, char *buf, size_t cap);
 

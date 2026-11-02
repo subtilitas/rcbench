@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The ports' mailbox between the control task and the UI.
+ *
  * The programming ports between the panel's control task and its UI
  * task: the PROG page as the screens draw it (port_view.h), and the
  * operator's asks for a port's PIN or FUNC on the way back

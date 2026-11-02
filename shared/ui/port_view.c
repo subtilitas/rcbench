@@ -1,4 +1,7 @@
-/*
+/**
+ * @file
+ * @brief The UI's view of the programming ports; see port_view.h.
+ *
  * The programming ports as the screens see them.  See port_view.h.
  *
  * SPDX-License-Identifier: MIT
