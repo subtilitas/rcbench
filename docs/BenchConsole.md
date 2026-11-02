@@ -349,6 +349,7 @@ The panel carries that image. An IOmcu running another build answers the build c
 | `console: link down t_ms=<ms>` | the link went |
 | `console: the IOmcu has no console. Take the update UPDATES offers, or flash a build with IOMCU_CONSOLE=ON` | the page answered `BAD_PAGE`; said once, and the panel looks again every 5000ms |
 | `console: the IOmcu's output restarted at <n>, expected <m>` | the output's place moved: the IOmcu started again |
+| `console: no pass from t_ms=<a> to t_ms=<b>: the link was not followed` | no control pass reached the relay for 1500ms or more, as during an IOmcu update: a link down or up between the two times has no line |
 | `err no link: line dropped` | a line with the link down |
 | `err line lost: the link went down inside it` | the link went while the line was going over |
 | `err line lost: the IOmcu restarted inside it` | the IOmcu started again while the line was going over |
@@ -357,11 +358,13 @@ The panel carries that image. An IOmcu running another build answers the build c
 | `err line longer than 160 characters` | the line is refused whole |
 | `err line dropped: 8 lines wait` | a line while 8 wait for the link |
 
+The relay's own lines never land inside an IOmcu line. A window ends anywhere, so the panel keeps a line of the IOmcu until its LF, up to 256 bytes, and the relay's line goes first. A longer line goes on cut, and a relay line after that cut starts a new line. A line not ended when the IOmcu starts again goes out with an LF of its own, ahead of the `restarted` line.
+
 The panel finds the page by reading it. The page has no capability bit and no protocol minor: an IOmcu without it answers `BAD_PAGE`, as for any page it does not have.
 
 ### Rates
 
-The relay makes at most one exchange a control pass, 5ms when nothing else holds the pass, after the panel's own polling, and none while an IOmcu update holds the link. These figures are calculated from the frames and not measured.
+The relay makes at most one exchange a control pass, 5ms when nothing else holds the pass, after the panel's own polling, and none while an IOmcu update holds the link. The table is calculated from the frames, at a pass of exactly 5ms.
 
 | Traffic | Frames | Rate |
 | --- | --- | --- |
@@ -371,7 +374,9 @@ The relay makes at most one exchange a control pass, 5ms when nothing else holds
 | Output, sustained | 11 for each 60 bytes, 2 passes | 6,000 bytes/s, 1,100 frames/s |
 | Input, 6 bytes a chunk | 2 for each chunk, one pass | 1,200 bytes/s, 135ms for a line of 160 characters |
 
-At 1Mbit/s a frame of 8 bytes takes about 150us, so sustained output takes about 17% of the bus. The 2,048-byte buffer empties in about 340ms. Output above 6,000 bytes/s for longer than that buffer lasts loses whole lines; the next line says `err output full, N bytes dropped` as it does on USB. Output is also held back when the panel's own buffer of 4,096 bytes has under 188 bytes free, as when a serial host stops reading.
+Measured at the station: 2,856 to 3,510 bytes/s of output, with `help` sent at 6/s to 30/s. That is 17ms to 21ms for each 60-byte window against 10ms calculated. The control task's delay of 5ms comes after the pass's work (`vTaskDelay`), so a pass is 5ms plus its own exchanges: the panel's polls and the window's own 9 frames. The share of each is not measured. A window and its acknowledgement take 2 passes, and after the last window of a burst the next look comes up to 50ms later.
+
+At 1Mbit/s a frame of 8 bytes takes about 150us, so sustained output at the calculated rate takes about 17% of the bus. At the measured rate the 2,048-byte buffer empties in about 580ms to 720ms. Output faster than the measured rate for longer than that buffer lasts loses whole lines, the IOmcu's own 3s lines included; the next line says `err output full, N bytes dropped` as it does on USB. Output is also held back when the panel's own buffer of 4,096 bytes has under 444 bytes free, as when a serial host stops reading.
 
 A window stays at the IOmcu until it is acknowledged, so a lost reply costs a second read and no byte. An unanswered exchange holds the control pass for up to 1000ms, as any exchange of the panel does, with the heartbeat kept going.
 

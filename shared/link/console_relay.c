@@ -67,8 +67,42 @@ static void say(console_relay_t *r, const char *fmt, ...)
     va_start(ap, fmt);
     const int n = vsnprintf(line, sizeof(line), fmt, ap);
     va_end(ap);
-    if (n > 0 && (size_t)n < sizeof(line) && (size_t)n <= out_room(r)) {
+    if (n > 0 && (size_t)n + 1u < sizeof(line) && (size_t)n + 1u <= out_room(r)) {
+        if (r->out_cut) {
+            /* The rest of a line cut for length follows this one. */
+            out_put(r, "\n", 1u);
+            r->out_cut = false;
+        }
         out_put(r, line, (size_t)n);
+    }
+}
+
+/**
+ * @brief A byte of the IOmcu's output: a line reaches the ring whole.
+ * @param r the relay
+ * @param b the byte
+ */
+static void line_byte(console_relay_t *r, char b)
+{
+    r->partial[r->partial_len++] = b;
+    if (b == '\n' || r->partial_len == CONSOLE_RELAY_PARTIAL_MAX) {
+        out_put(r, r->partial, r->partial_len);
+        r->out_cut = b != '\n';
+        r->partial_len = 0u;
+    }
+}
+
+/**
+ * @brief The line not ended goes as it stands: the output it belongs to is gone.
+ * @param r the relay
+ */
+static void line_end_here(console_relay_t *r)
+{
+    if (r->partial_len != 0u) {
+        out_put(r, r->partial, r->partial_len);
+        out_put(r, "\n", 1u);
+        r->partial_len = 0u;
+        r->out_cut = false;
     }
 }
 
@@ -108,6 +142,14 @@ void console_relay_init(console_relay_t *r)
 
 void console_relay_link(console_relay_t *r, bool up, uint32_t now_ms)
 {
+    if (r->pass_known && (uint32_t)(now_ms - r->pass_ms) >= CONSOLE_RELAY_GAP_MS) {
+        say(r, "console: no pass from t_ms=%lu to t_ms=%lu: the link was not "
+               "followed\n",
+            (unsigned long)r->pass_ms, (unsigned long)now_ms);
+    }
+    r->pass_known = true;
+    r->pass_ms = now_ms;
+
     const unsigned over = atomic_load(&r->overlongs);
 
     if (over != r->overlongs_said) {
@@ -203,9 +245,10 @@ bool console_relay_next(console_relay_t *r, uint32_t now_ms, console_relay_op_t 
         next_chunk(r, op);
         return true;
     }
-    /* Room for the window, or the IOmcu's ring holds it and counts what it drops. */
+    /* Room for the window and the line it may end, and for one line of the
+     * relay's own, or the IOmcu's ring holds it and counts what it drops. */
     if (r->state == CONSOLE_RELAY_UP && r->more
-        && out_room(r) >= LINK_CN_DATA_BYTES + 128u) {
+        && out_room(r) >= LINK_CN_DATA_BYTES + CONSOLE_RELAY_PARTIAL_MAX + 128u) {
         memset(op, 0, sizeof(*op));
         op->off = 0u;
         op->n = r->want != 0u ? WINDOW_REGS(r->want) : (uint8_t)LINK_CN_COUNT;
@@ -239,6 +282,7 @@ static bool place_output(console_relay_t *r, uint16_t seq, uint16_t len)
         if (len != 0u && (uint16_t)(seq + len) == r->next_seq) {
             return false;
         }
+        line_end_here(r);
         say(r, "console: the IOmcu's output restarted at %u, expected %u\n",
             (unsigned)seq, (unsigned)r->next_seq);
     }
@@ -275,9 +319,7 @@ static void read_answered(console_relay_t *r, uint8_t op, const uint16_t *regs)
     if (len != 0u) {
         if (fresh) {
             for (unsigned k = 0u; k < len; ++k) {
-                const char b = (char)(regs[LINK_CN_DATA + k / 2u] >> (8u * (k & 1u)));
-
-                out_put(r, &b, 1u);
+                line_byte(r, (char)(regs[LINK_CN_DATA + k / 2u] >> (8u * (k & 1u))));
             }
             r->next_seq = (uint16_t)(seq + len);
         }

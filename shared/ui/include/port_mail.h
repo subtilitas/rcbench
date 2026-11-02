@@ -45,6 +45,7 @@ typedef struct {
     atomic_uint gen;        /**< odd while the two words above change     */
     atomic_uint ask;        /**< the UI's last ask, 0 for none            */
     atomic_uint ask_state;  /**< its number << 8 | prog_link_ask_state_t  */
+    atomic_uint ask_wait;   /**< what it waits on: a prog_link_wait_t     */
     uint8_t     taken;      /**< control task: last number handed on      */
     unsigned    epoch;      /**< control task: one up at each loss        */
     unsigned    ui_epoch;   /**< UI task: the epoch of the view drawn     */
@@ -53,7 +54,7 @@ typedef struct {
 /** Nothing known and no ask. */
 #define PORT_MAIL_META_UNKNOWN 0x00FF7777u
 #define PORT_MAIL_INIT { 0xFFFFFFFFu, PORT_MAIL_META_UNKNOWN, 0u, 0u, 0u, \
-                         0u, 0u, 0u }
+                         0u, 0u, 0u, 0u }
 
 /**
  * Control task, after each service of the PROG page: hand on a new ask

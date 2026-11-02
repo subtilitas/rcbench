@@ -343,6 +343,163 @@ TEST_CASE(a_lost_reply_frame_costs_a_second_read_and_no_byte)
     CHECK(strstr(first + 1, "one two three") == NULL);
 }
 
+/*
+ * `help` with one reply lost at each exchange in turn, whole or from its 4th
+ * frame on: nothing of it goes, and no line twice, also at its last window and
+ * its last acknowledgement.
+ */
+TEST_CASE(a_lost_reply_at_any_exchange_loses_nothing_of_the_tail)
+{
+    static char whole[8192];
+
+    linked(true);
+    run(20, true);
+    read_out();
+    g_all_len = 0u;
+    g_all[0] = '\0';
+    type("help");
+    const int start = g_exchanges;
+
+    run(800, true);
+    read_out();
+    const int made = g_exchanges - start;
+
+    CHECK(g_all_len > 200u && g_all_len < sizeof(whole));
+    memcpy(whole, g_all, g_all_len + 1u);
+
+    for (int at = 0; at < made; ++at) {
+        for (int frame = 0; frame <= 3; frame += 3) {
+            linked(true);
+            run(20, true);
+            read_out();
+            g_all_len = 0u;
+            g_all[0] = '\0';
+            type("help");
+            const int base = g_exchanges;
+
+            for (int i = 0; i < 800; ++i) {
+                if (g_exchanges - base == at) {
+                    g_drop_reply_at = frame;
+                }
+                run(1, true);
+                if (g_exchanges - base > at) {
+                    g_drop_reply_at = -1;
+                }
+            }
+            g_drop_reply_at = -1;
+            read_out();
+            /* The lost chunk of the typed line itself says so; the rest is whole. */
+            if (strstr(g_all, "err no answer: line lost") == NULL) {
+                CHECK_STR_EQ(g_all, whole);
+            }
+        }
+    }
+}
+
+/*
+ * The station's line: a window ends inside an IOmcu line, the link goes, and the
+ * relay's line comes first, whole, and the IOmcu's line whole after it.
+ */
+TEST_CASE(a_relay_line_does_not_land_inside_an_iomcu_line)
+{
+    static const char k_long[] =
+        "rcbench-iomcu: sense window 1859 CH1 0 mA 0 mV ch_fl 0 mA 0 mV ch_fr 0 mA 0 mV end";
+
+    linked(true);
+    run(20, true);
+    read_out();
+    g_all_len = 0u;
+    g_all[0] = '\0';
+    page_console_say(&g_console, "%s", k_long);
+    /* Pass by pass until the first window is here and the second not. */
+    for (int i = 0; i < 100 && g_relay.partial_len == 0u; ++i) {
+        run(1, true);
+    }
+    CHECK(g_relay.partial_len != 0u);
+    read_out();
+    CHECK_EQ(g_all_len, 0u);
+    run(1, false);
+    const uint32_t down = g_now;
+
+    read_out();
+    char want[128];
+
+    snprintf(want, sizeof(want), "console: link down t_ms=%lu\n", (unsigned long)down);
+    CHECK_STR_EQ(g_all, want);
+    run(80, true);
+    read_out();
+    snprintf(want, sizeof(want), "%s\n", k_long);
+    CHECK(strstr(g_all, want) != NULL);
+}
+
+/* A line longer than the relay holds starts a new line for the relay's own. */
+TEST_CASE(a_relay_line_after_a_line_cut_for_length_starts_a_new_line)
+{
+    linked(true);
+    run(20, true);
+    read_out();
+    /* 30 bytes short of the limit, and a line whose first window passes it. */
+    memset(g_relay.partial, 'x', CONSOLE_RELAY_PARTIAL_MAX);
+    g_relay.partial_len = CONSOLE_RELAY_PARTIAL_MAX - 30u;
+    g_all_len = 0u;
+    g_all[0] = '\0';
+    page_console_say(&g_console, "%s",
+                     "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+    for (int i = 0; i < 100 && !g_relay.out_cut; ++i) {
+        run(1, true);
+    }
+    CHECK(g_relay.out_cut);
+    run(1, false);
+    read_out();
+    CHECK(strstr(g_all, "\nconsole: link down") != NULL);
+    CHECK(!g_relay.out_cut);
+}
+
+/* The restart: the line not ended goes as it stands, ahead of the word. */
+TEST_CASE(an_iomcu_restart_ends_a_line_not_ended_ahead_of_its_word)
+{
+    linked(true);
+    run(20, true);
+    read_out();
+    memcpy(g_relay.partial, "half", 4u);
+    g_relay.partial_len = 4u;
+    g_all_len = 0u;
+    g_all[0] = '\0';
+    console_tunnel_init(&g_tunnel, &g_console, (uint16_t)(g_tunnel.seq + 777u));
+    run(40, true);
+    read_out();
+    CHECK(strstr(g_all, "half\nconsole: the IOmcu's output restarted") != NULL);
+    CHECK_EQ(g_relay.partial_len, 0u);
+}
+
+/* The station's update: passes held, the link down and up inside the gap. */
+TEST_CASE(a_gap_in_the_passes_is_said_with_its_times)
+{
+    linked(true);
+    run(20, true);
+    read_out();
+    g_all_len = 0u;
+    g_all[0] = '\0';
+    const uint32_t from = g_now;
+
+    g_now += 90000u;
+    run(1, true);
+    read_out();
+    char want[96];
+
+    snprintf(want, sizeof(want),
+             "console: no pass from t_ms=%lu to t_ms=%lu: the link was not followed\n",
+             (unsigned long)from, (unsigned long)(from + 90005u));
+    CHECK(strstr(g_all, want) != NULL);
+    /* Said once, and one exchange's own 1000ms says nothing. */
+    g_all_len = 0u;
+    g_all[0] = '\0';
+    g_now += CONSOLE_RELAY_GAP_MS - 10u;
+    run(10, true);
+    read_out();
+    CHECK(strstr(g_all, "no pass") == NULL);
+}
+
 TEST_CASE(a_lost_ack_does_not_print_a_window_twice)
 {
     linked(true);
@@ -623,6 +780,11 @@ int main(void)
     RUN(a_line_with_the_queue_full_says_so);
     RUN(an_overflow_shows_the_count_the_iomcu_dropped);
     RUN(a_lost_reply_frame_costs_a_second_read_and_no_byte);
+    RUN(a_lost_reply_at_any_exchange_loses_nothing_of_the_tail);
+    RUN(a_relay_line_does_not_land_inside_an_iomcu_line);
+    RUN(a_relay_line_after_a_line_cut_for_length_starts_a_new_line);
+    RUN(an_iomcu_restart_ends_a_line_not_ended_ahead_of_its_word);
+    RUN(a_gap_in_the_passes_is_said_with_its_times);
     RUN(a_lost_ack_does_not_print_a_window_twice);
     RUN(an_iomcu_restart_inside_a_line_loses_that_line_and_says_so);
     RUN(an_iomcu_restart_says_where_the_output_stands_and_its_first_lines_come);

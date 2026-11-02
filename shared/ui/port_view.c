@@ -22,6 +22,7 @@ static uint32_t         g_rev;
 static port_view_ask_fn g_ask;
 static uint8_t          g_seq;
 static uint8_t          g_ask_state = (uint8_t)PROG_LINK_ASK_IDLE;
+static uint8_t          g_ask_wait  = (uint8_t)PROG_LINK_WAIT_NONE;
 static uint8_t          g_ask_port;
 static uint8_t          g_ask_kind;
 
@@ -105,6 +106,7 @@ bool port_view_ask(uint8_t port, prog_link_ask_kind_t kind, uint16_t value)
     }
     g_seq       = seq;
     g_ask_state = (uint8_t)PROG_LINK_ASK_WAITING;
+    g_ask_wait  = (uint8_t)PROG_LINK_WAIT_NONE;
     g_ask_port  = port;
     g_ask_kind  = (uint8_t)kind;
     ++g_rev;
@@ -119,6 +121,34 @@ void port_view_set_ask_state(uint8_t seq, prog_link_ask_state_t st)
     }
     g_ask_state = (uint8_t)st;
     ++g_rev;
+}
+
+void port_view_set_ask_wait(prog_link_wait_t wait)
+{
+    if ((uint8_t)wait != g_ask_wait) {
+        g_ask_wait = (uint8_t)wait;
+        ++g_rev;
+    }
+}
+
+/**
+ * @brief The line of an ask waiting: what holds it, or the rules of a wait not
+ *        yet judged, for at most a pass of the control task.
+ *
+ * @return The text.
+ */
+static const char *wait_line(void)
+{
+    switch ((prog_link_wait_t)g_ask_wait) {
+    case PROG_LINK_WAIT_READ:  return TR(OUT_PORT_WAIT_READ);
+    case PROG_LINK_WAIT_KST:   return TR(OUT_PORT_WAIT_KST);
+    case PROG_LINK_WAIT_HITEC: return TR(OUT_PORT_WAIT_HITEC);
+    case PROG_LINK_WAIT_ESC:   return TR(OUT_PORT_WAIT_ESC);
+    case PROG_LINK_WAIT_SAFE:  return TR(OUT_PORT_WAIT_SAFE);
+    case PROG_LINK_WAIT_TEST:  return TR(OUT_PORT_WAIT_TEST);
+    case PROG_LINK_WAIT_NONE:
+    default:                   return TR(OUT_PORT_ASK_WAIT);
+    }
 }
 
 prog_link_ask_state_t port_view_ask_state(uint8_t *port, uint8_t *kind)
@@ -145,7 +175,7 @@ bool port_view_ask_line(uint8_t port, char *buf, size_t cap)
     }
     const char *line = NULL;
     switch ((prog_link_ask_state_t)g_ask_state) {
-    case PROG_LINK_ASK_WAITING: line = TR(OUT_PORT_ASK_WAIT);    break;
+    case PROG_LINK_ASK_WAITING: line = wait_line();              break;
     case PROG_LINK_ASK_REFUSED: line = TR(OUT_PORT_ASK_REFUSED); break;
     case PROG_LINK_ASK_LOST:    line = TR(OUT_PORT_ASK_LOST);    break;
     case PROG_LINK_ASK_IDLE:

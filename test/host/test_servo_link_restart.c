@@ -38,6 +38,9 @@ static struct {
     unsigned target_writes;  /* TARGET writes acknowledged               */
     unsigned pin_writes;     /* PIN writes of port 0 acknowledged        */
     unsigned pulses;         /* passes on which port 0 rendered a pulse  */
+    uint16_t func0;          /* port 0's FUNC                            */
+    unsigned func_writes;    /* FUNC writes of port 0 acknowledged       */
+    unsigned sweep_stops;    /* SERVO page sweep stops acknowledged      */
 } far;
 
 static uint32_t s_now;
@@ -82,7 +85,14 @@ static bool port_exchange(void *ctx, link_host_t *h, const link_msg_t *req,
             far.cmd = req->regs[0];
         } else if (req->offset == LINK_PG_REG(0u, LINK_PG_PIN)) {
             ++far.pin_writes;
+        } else if (req->offset == LINK_PG_FUNC(0u)) {
+            far.func0 = req->regs[0];
+            ++far.func_writes;
         }
+    }
+    if (req->page == LINK_PAGE_SERVO && req->offset == LINK_SV_SWEEP
+        && req->count == 1u && req->regs[0] == 0u) {
+        ++far.sweep_stops;
     }
     link_msg_t part;
     memset(&part, 0, sizeof(part));
@@ -157,6 +167,8 @@ static const servo_link_ctx_t k_ctx = {
 
 /** @brief The standard outputs' surfaces in the binding the panel reads. */
 static uint8_t s_channels;
+/** @brief The port the SERVO screen wants, 1 + n; 0 the standard outputs. */
+static uint8_t s_want = 1u;
 
 /**
  * @brief The panel reads the page from the model: port 0 on GPIO 13, SERVO
@@ -167,13 +179,15 @@ static void read_far(void)
     uint16_t page[LINK_PG_REGS];
     memset(page, 0, sizeof(page));
     page[LINK_PG_COUNT]  = 4u;
-    page[LINK_PG_FLAGS]  = LINK_PG_F_BOUND(0u);
+    page[LINK_PG_FLAGS]  = far.func0 == (uint16_t)LINK_PG_FN_SERVO_PWM
+                               ? LINK_PG_F_BOUND(0u)
+                               : LINK_PG_F_DSHOT(0u);
     page[LINK_PG_PWM]    = far.pwm;
     page[LINK_PG_TARGET] = far.target;
     for (unsigned n = 0; n < LINK_PG_PORTS_MAX; ++n) {
         page[LINK_PG_REG(n, LINK_PG_PIN)] =
             (n == 0u) ? (uint16_t)13u : (uint16_t)LINK_PG_PIN_NONE;
-        page[LINK_PG_FUNC(n)] = (uint16_t)((n == 0u) ? 0u : 1u);
+        page[LINK_PG_FUNC(n)] = (n == 0u) ? far.func0 : (uint16_t)1u;
     }
     prog_link_read(&prog, far.quiet ? NULL : page, s_now);
 }
@@ -185,7 +199,7 @@ static void read_far(void)
  */
 static void pass(void)
 {
-    prog_link_want(&prog, 1u, true);
+    prog_link_want(&prog, s_want, s_want != 0u);
     if (prog_link_read_due(&prog, s_now)) {
         read_far();
     }
@@ -260,6 +274,7 @@ static void at_port_with_position(uint8_t channels)
 {
     memset(&far, 0, sizeof(far));
     memset(&panel, 0, sizeof(panel));
+    s_want = 1u;
     s_now = 1000u;
     link_host_init(&host, s_now);
     prog_link_init(&prog);
@@ -473,6 +488,122 @@ TEST_CASE(a_restart_the_panel_does_not_see_gives_the_port_back_at_the_next_read)
     CHECK_EQ(far.pulses, 0u);
 }
 
+/**
+ * @brief A panel or an IOmcu just started, no position written since, port 0
+ *        on @p func and the screen wanting @p want.
+ *
+ * @param func The port's function.
+ * @param want The port the screen wants.
+ */
+static void started_with(link_pg_func_t func, uint8_t want)
+{
+    memset(&far, 0, sizeof(far));
+    memset(&panel, 0, sizeof(panel));
+    far.func0 = (uint16_t)func;
+    s_want = want;
+    s_now = 1000u;
+    link_host_init(&host, s_now);
+    prog_link_init(&prog);
+    servo_link_init(&k_ctx);
+    link_up(0x00u);
+    run_ms(100u);
+}
+
+/*
+ * The port left on DSHOT300 over a start: it is not bound, so the screen's
+ * want gives no TARGET change, and the screen's taps send nothing.  Only the
+ * ask has anything to write, and the sweep's state is settled for it.
+ */
+TEST_CASE(a_port_left_on_dshot_takes_its_ask_after_a_start)
+{
+    started_with(LINK_PG_FN_DSHOT300, 1u);
+    CHECK_EQ(far.sweep_stops, 0u);
+    CHECK(prog_link_ask(&prog, 0u, PROG_LINK_ASK_FUNC, LINK_PG_FN_SERVO_PWM));
+    run_ms(100u);
+    CHECK_EQ(far.func_writes, 1u);
+    CHECK_EQ(far.func0, (uint16_t)LINK_PG_FN_SERVO_PWM);
+    CHECK_EQ(far.sweep_stops, 1u);
+    CHECK_EQ(prog_link_ask_state(&prog, NULL, NULL, NULL), PROG_LINK_ASK_DONE);
+    CHECK_EQ(prog_link_ask_wait(&prog), PROG_LINK_WAIT_NONE);
+    /* The page read again, the port bound: it is the target. */
+    run_ms(PROG_LINK_POLL_MS + 20u);
+    CHECK_EQ(far.target, 1u);
+}
+
+/* The same with the SERVO screen wanting nothing, on any function. */
+TEST_CASE(an_ask_with_no_target_wanted_is_taken_after_a_start)
+{
+    started_with(LINK_PG_FN_SERVO_PWM, 0u);
+    CHECK(prog_link_ask(&prog, 0u, PROG_LINK_ASK_FUNC, LINK_PG_FN_DSHOT300));
+    run_ms(100u);
+    CHECK_EQ(far.func0, (uint16_t)LINK_PG_FN_DSHOT300);
+    CHECK_EQ(prog_link_ask_state(&prog, NULL, NULL, NULL), PROG_LINK_ASK_DONE);
+}
+
+/* An IOmcu restart with the ask waiting ends it as lost, and the next one lands. */
+TEST_CASE(an_ask_after_an_iomcu_restart_is_taken)
+{
+    started_with(LINK_PG_FN_DSHOT300, 1u);
+    link_down();
+    far_restart();
+    link_up(0x00u);
+    run_ms(100u);
+    CHECK(prog_link_ask(&prog, 0u, PROG_LINK_ASK_FUNC, LINK_PG_FN_SERVO_PWM));
+    run_ms(100u);
+    CHECK_EQ(far.func0, (uint16_t)LINK_PG_FN_SERVO_PWM);
+}
+
+/*
+ * Whatever holds an ask is named, and each hold has its end: no state leaves an
+ * ask waiting with no holder.
+ */
+TEST_CASE(an_ask_held_names_what_holds_it_and_lands_when_it_ends)
+{
+    started_with(LINK_PG_FN_DSHOT300, 1u);
+    CHECK(prog_link_ask(&prog, 0u, PROG_LINK_ASK_FUNC, LINK_PG_FN_NONE));
+
+    panel.armed = true;
+    run_ms(50u);
+    CHECK_EQ(prog_link_ask_wait(&prog), PROG_LINK_WAIT_SAFE);
+    panel.armed = false;
+
+    static const prog_link_wait_t k_holders[] = {
+        PROG_LINK_WAIT_KST, PROG_LINK_WAIT_HITEC, PROG_LINK_WAIT_ESC,
+    };
+    for (size_t k = 0u; k < sizeof(k_holders) / sizeof(k_holders[0]); ++k) {
+        prog_link_hold_by(&prog, k_holders[k]);
+        run_ms(50u);
+        CHECK_EQ(prog_link_ask_wait(&prog), k_holders[k]);
+        CHECK_EQ(far.func_writes, 0u);
+    }
+    prog_link_hold_by(&prog, PROG_LINK_WAIT_NONE);
+
+    prog_link_stale(&prog);
+    CHECK_EQ(prog_link_ask_wait(&prog), PROG_LINK_WAIT_READ);
+
+    run_ms(100u);
+    CHECK_EQ(far.func0, (uint16_t)LINK_PG_FN_NONE);
+    CHECK_EQ(prog_link_ask_state(&prog, NULL, NULL, NULL), PROG_LINK_ASK_DONE);
+}
+
+/* A position held waits as a test does; the screen letting go ends it. */
+TEST_CASE(an_ask_on_another_port_waits_for_a_position_held)
+{
+    at_port_with_position(0x00u);
+    run_ms(50u);
+    CHECK(prog_link_ask(&prog, 1u, PROG_LINK_ASK_FUNC, LINK_PG_FN_NONE));
+    run_ms(100u);
+    CHECK_EQ(prog_link_ask_wait(&prog), PROG_LINK_WAIT_TEST);
+    CHECK_EQ(prog_link_ask_state(&prog, NULL, NULL, NULL),
+             PROG_LINK_ASK_WAITING);
+    servo_cmd_t c;
+    memset(&c, 0, sizeof(c));
+    c.kind = SERVO_CMD_NONE;
+    servo_link_apply(c, true, panel.stops);
+    run_ms(100u);
+    CHECK_EQ(prog_link_ask_state(&prog, NULL, NULL, NULL), PROG_LINK_ASK_DONE);
+}
+
 /*
  * A programming session that took the port: the IOmcu lets the TARGET go
  * while the port's pin is not the PWM generator's.  Given back, the port
@@ -550,6 +681,11 @@ int main(void)
     RUN(a_silent_far_end_after_a_restart_holds_the_target_back);
     RUN(a_restart_the_panel_does_not_see_gives_the_port_back_at_the_next_read);
     RUN(a_session_that_took_the_target_gives_the_port_back);
+    RUN(a_port_left_on_dshot_takes_its_ask_after_a_start);
+    RUN(an_ask_with_no_target_wanted_is_taken_after_a_start);
+    RUN(an_ask_after_an_iomcu_restart_is_taken);
+    RUN(an_ask_held_names_what_holds_it_and_lands_when_it_ends);
+    RUN(an_ask_on_another_port_waits_for_a_position_held);
     RUN(a_restart_during_a_running_test_gives_the_port_back);
     return test_summary("servo_link_restart");
 }

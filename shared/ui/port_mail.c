@@ -85,6 +85,7 @@ static void take_ask(port_mail_t *m, prog_link_t *pl)
     if (st != PROG_LINK_ASK_IDLE && !settled(m, seq)) {
         state_store(m, seq, st);
     }
+    atomic_store(&m->ask_wait, (unsigned)prog_link_ask_wait(pl));
 }
 
 void port_mail_publish(port_mail_t *m, prog_link_t *pl)
@@ -192,4 +193,5 @@ void port_mail_to_view(port_mail_t *m)
     const unsigned st = atomic_load(&m->ask_state);
     port_view_set_ask_state((uint8_t)(st >> 8),
                             (prog_link_ask_state_t)(st & 0xFFu));
+    port_view_set_ask_wait((prog_link_wait_t)atomic_load(&m->ask_wait));
 }

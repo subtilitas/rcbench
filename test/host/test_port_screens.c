@@ -247,6 +247,24 @@ TEST_CASE(an_ask_is_numbered_past_0_and_its_word_says_how_it_stands)
     CHECK_EQ(kind, (uint8_t)PROG_LINK_ASK_PIN);
     CHECK(port_view_ask_line(1u, line, sizeof(line)));
     CHECK_STR_EQ(line, TR(OUT_PORT_ASK_WAIT));
+    /* Once the control task has judged it, the line names what holds it. */
+    static const struct {
+        prog_link_wait_t wait;
+        ui_text_id_t     text;
+    } k_waits[] = {
+        { PROG_LINK_WAIT_READ,  TX_OUT_PORT_WAIT_READ },
+        { PROG_LINK_WAIT_KST,   TX_OUT_PORT_WAIT_KST },
+        { PROG_LINK_WAIT_HITEC, TX_OUT_PORT_WAIT_HITEC },
+        { PROG_LINK_WAIT_ESC,   TX_OUT_PORT_WAIT_ESC },
+        { PROG_LINK_WAIT_SAFE,  TX_OUT_PORT_WAIT_SAFE },
+        { PROG_LINK_WAIT_TEST,  TX_OUT_PORT_WAIT_TEST },
+    };
+    for (size_t k = 0u; k < sizeof(k_waits) / sizeof(k_waits[0]); ++k) {
+        port_view_set_ask_wait(k_waits[k].wait);
+        CHECK(port_view_ask_line(1u, line, sizeof(line)));
+        CHECK_STR_EQ(line, ui_tr(k_waits[k].text));
+    }
+    port_view_set_ask_wait(PROG_LINK_WAIT_NONE);
     CHECK(!port_view_ask_line(0u, line, sizeof(line)));
     CHECK_STR_EQ(line, "");
     /* A word on an older ask, or IDLE, is no word on this one. */
