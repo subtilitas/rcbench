@@ -770,7 +770,8 @@ TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
 
 /* The rbmod carrier's port, fed from the PROG 5V box: the box stands for
  * the PD mini.  A PD mini on the servo rails with its output off refuses
- * nothing there, and SEARCH+PROG writes through the box's power cycles.
+ * nothing there, switched on and off during the run ends nothing, and
+ * SEARCH+PROG writes through the box's power cycles.
  * With the box off the run does not start. */
 TEST_CASE(on_the_carrier_the_prog_5v_stands_for_the_pd_mini)
 {
@@ -785,8 +786,15 @@ TEST_CASE(on_the_carrier_the_prog_5v_stands_for_the_pd_mini)
         lr_start();
         CHECK_EQ(servo_screen_limit_running(), box_on != 0);
         if (box_on) {
+            /* The rails' PD mini switched on and off through the run is
+             * no change of the port's supply. */
+            for (int i = 0; i < 600 && servo_screen_limit_running(); ++i) {
+                lr_ms(200u);
+                lr_pd_reading((i & 1) == 0);
+            }
             lr_run_out();
             CHECK(strstr(lr.report, "search only") == NULL);
+            CHECK(strstr(lr.report, "ABORTED") == NULL);
             CHECK(g_rig.sim.n_writes > 0u);
         } else {
             CHECK_EQ(lr.disarms, 0u);

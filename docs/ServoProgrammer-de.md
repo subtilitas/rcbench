@@ -205,7 +205,8 @@ einen Neustart erhalten.
 - Für den Endlagenlauf steht das Feld PROG 5V für den PD mini: SEARCH+PROG
   und SERVO PULSES werden mit dem Feld EIN angeboten, und die
   Power-Cycles der Session schalten GPIO 21. Ein PD mini an den
-  Servoschienen zählt nicht, ob ein oder aus.
+  Servoschienen wird weder gefragt noch beobachtet: ihn während des Laufs
+  ein- oder auszuschalten beendet nichts.
 
 ## Der Port
 

@@ -60,13 +60,10 @@ static bool lim_pd_answers(void)
     return s.have_sup && s.sup.online && !supply_screen_model();
 }
 
-/**
- * @brief The run drives the rbmod carrier's programming port: fed from the
- *        fixed 5V on the PROG 5V box, which the programmer switches for its
- *        power cycles, whatever a PD mini on the servo rails does.
- * @return true on the carrier with a port as the drive's target
- */
-static bool lim_fixed_supply(void)
+/* The rbmod carrier's port: the fixed 5V on the PROG 5V box, which the
+ * programmer switches for its power cycles, whatever a PD mini on the
+ * servo rails does. */
+bool lim_fixed_supply(void)
 {
     return prog_choice_carrier() && s.drive_target >= 1u
            && s.drive_target <= LINK_PG_PORTS_MAX;
@@ -464,10 +461,10 @@ void lim_begin(void)
     if (c.read) {
         kst_panel_run_begin();
     }
-    {
+    if (!lim_fixed_supply()) {
         /* The supply as the run starts: with none read yet, one that does
          * not answer, so a PD mini that comes with its output on ends the
-         * run. */
+         * run.  Not on the carrier's port, whose supply is the PROG 5V. */
         servo_test_reading_t r;
         memset(&r, 0, sizeof(r));
         if (s.have_sup) {

@@ -514,6 +514,7 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
         return LINK_NACK_BAD_VALUE;
     }
     prog_port_yield_t yielded;
+    const uint16_t servo_hz = servo_page_hz(&s_servo);
     prog_port_yield(&s_prog, yield, &yielded);
     uint16_t prev[LINK_OS_COUNT];
     memcpy(prev, s->slots, sizeof(prev));
@@ -554,7 +555,13 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
          * slot bound then needs back. */
         memcpy(s->slots, prev, sizeof(prev));
         outputs_slots_apply(&s_outputs, s->slots);
-        prog_port_unyield(&s_prog, &yielded);
+        if (yield != 0u) {
+            /* The ports as they were, the SERVO page's target on the port
+             * again and its rate, which the change of target took. */
+            prog_port_unyield(&s_prog, &yielded);
+            (void)target_sync();
+            servo_page_restore_hz(&s_servo, servo_hz);
+        }
         hw_apply_only(bound_before);
         return LINK_NACK_BAD_VALUE;
     }

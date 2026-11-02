@@ -181,8 +181,8 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
   `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
 - For the limit run the PROG 5V box stands for the PD mini: SEARCH+PROG
   and SERVO PULSES are offered with the box ON, and the session's power
-  cycles switch GPIO 21. A PD mini on the servo rails, on or off, does not
-  count.
+  cycles switch GPIO 21. A PD mini on the servo rails is neither asked nor
+  watched: switching it on or off during the run ends nothing.
 
 ## The port
 
