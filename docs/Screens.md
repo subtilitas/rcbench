@@ -6152,10 +6152,12 @@ frame of about 130us and two frames of buffer in the controller. The figure is o
 measurement: 1 sample, taken on the bring-up module, with the flash part not
 yet identified. The erase and the page program have not been timed apart from
 each other. The window is to be argued again against the flash part's
-datasheet maximum once the part is known. A request lost
-in that window costs the panel 1000ms of waiting, which is past the
-IOmcu's 200ms silence failsafe, so one lost frame ends as `FAULT 01`
-(`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.
+datasheet maximum once the part is known. The panel sends one request
+frame per exchange and waits for its answer before it sends the next, so at
+most one request frame waits in the controller's two buffers. A window delays
+that request by up to its length, about 19ms against the panel's 1000ms wait,
+and loses none. The window still holds every answer and every output step for
+its length, so it is kept short.
 
 So the sector is not erased per save. Two sectors hold sixteen records each; a
 save writes the next record, and a sector is erased only once every record in

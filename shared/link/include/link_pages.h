@@ -166,9 +166,8 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 33, SENSE_MAP's WATCH values of a
- *         board's soldered INA3221. */
-#define LINK_PROTOCOL_MINOR 34u
+/** @brief The minor this build speaks: 35, LINK_OP_READ_HELD. */
+#define LINK_PROTOCOL_MINOR 35u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -363,6 +362,17 @@ typedef enum {
  * An older minor refuses a map with those values with LINK_NACK_BAD_VALUE.
  */
 #define LINK_MINOR_SENSE_RAILS 33u
+
+/**
+ * @brief The first minor that answers LINK_OP_READ_HELD.
+ *
+ * A read of LINK_READ_REGS_MAX registers keeps the registers after them, and
+ * a READ_HELD reads those: a page wider than one 4-frame reply is two
+ * exchanges and one state (link_read_split()).  An older IOmcu does not know
+ * the op and leaves the frame unanswered, so the panel reads a wide page in
+ * one exchange from it.
+ */
+#define LINK_MINOR_READ_HELD 35u
 
 /* ----------------------------------------------------------------- outputs */
 

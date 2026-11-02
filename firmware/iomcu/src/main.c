@@ -166,7 +166,7 @@ static const link_page_t k_pages[] = {
       update_hw_data_write },
 #if IOMCU_CONSOLE
     /* The console's bytes over the link; debug builds only. */
-    { LINK_PAGE_CONSOLE, LINK_CN_COUNT, console_hw_page_read, console_hw_page_write },
+    { LINK_PAGE_CONSOLE, LINK_CN_PAGE_REGS, console_hw_page_read, console_hw_page_write },
 #endif
 };
 
@@ -862,12 +862,13 @@ int main(void)
          *
          * Writing flash stops this core with interrupts off -- an erase and a
          * program together measured 19,178us on the bring-up module -- and
-         * what that costs is CAN frames: the controller holds two, about
-         * 130us each, and this loop collects none of them while the window is
-         * open.  A frame lost there can be the CONTROL write that disarms, and this
-         * loop steps no output while the window is open either, so the save
-         * waits for a disarm: out_store_tick() is gated on outputs_driving(),
-         * which is the bank's armed flag.
+         * what that costs is time.  The panel sends one request frame per
+         * exchange and waits for its answer before the next, so at most one
+         * frame waits in the controller's two buffers: the window delays that
+         * request by up to 19ms, against the panel's 1000ms wait, and loses
+         * none.  This loop answers nothing and steps no output while the window
+         * is open, so the save waits for a disarm: out_store_tick() is gated on
+         * outputs_driving(), which is the bank's armed flag.
          *
          * The heartbeat is not what bounds the window.  The line edges every
          * HEARTBEAT_PERIOD_MS (20ms) and is sampled by this loop, so an edge
@@ -897,11 +898,9 @@ int main(void)
                 (void)supply_rewire();
             }
             /*
-             * Printed because it is the number that decides whether a save
-             * costs a frame: this core answers nothing while it writes, the
-             * controller holds two frames of about 130us each, and a request
-             * lost there costs the panel 1000ms of waiting, which is past
-             * this end's 200ms silence failsafe.
+             * Printed because it is the number that bounds what a save
+             * costs: this core answers nothing and steps no output while it
+             * writes, and the panel's one request frame waits that long.
              */
             IOMCU_SAY("rcbench-iomcu: outputs saved, record %u, "
                       "program window %lu us\n",
@@ -979,7 +978,7 @@ int main(void)
         s_now_ms = now;
 
         /* Straight after the report: printing to a USB host can take
-         * milliseconds, and the part holds two frames. */
+         * milliseconds, and the panel's request waits for this. */
         can_service(now);
     }
 }

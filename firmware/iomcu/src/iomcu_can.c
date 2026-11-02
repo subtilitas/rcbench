@@ -67,6 +67,8 @@ void heartbeat_init(void)
 bool     s_can_up;
 uint32_t s_can_echoes;
 uint32_t s_can_overflows;
+/** @brief Reply frames dropped after 1000 spins on a full transmit buffer. */
+uint32_t s_can_tx_dropped;
 
 /**
  * @brief When a frame was last taken out of the controller.
@@ -147,7 +149,13 @@ void can_service(uint32_t now)
              * spins, because a bus that has stopped accepting must not stall
              * the failsafe.
              */
-            for (int spin = 0; spin < 1000 && !xl2515_send(&frames[i]); ++spin) {
+            int spin = 0;
+            while (!xl2515_send(&frames[i])) {
+                if (++spin >= 1000) {
+                    /* Counted: the panel then waits out its exchange. */
+                    ++s_can_tx_dropped;
+                    break;
+                }
                 tight_loop_contents();
             }
         }

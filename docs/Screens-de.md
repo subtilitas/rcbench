@@ -6748,10 +6748,13 @@ und programmiert hat, mit 19.178us gemessen, gegen einen CAN-Frame von etwa
 Messung: 1 Probe, auf dem Inbetriebnahme-Modul genommen, das Flash-Bauteil ist
 noch nicht bestimmt. Löschen und Page Program sind nicht getrennt voneinander
 gemessen. Das Fenster wird gegen das Maximum im Datenblatt neu begründet,
-sobald das Bauteil bekannt ist. Ein in diesem Fenster verlorener Request
-kostet das Panel 1000ms Wartezeit, was über dem 200-ms-Failsafe des
-IOmcu liegt; ein einziger verlorener Frame endet also als `FEHLER 01`
-(`LINK_FAULT_LINK_SILENT`) an einem Kabel, an dem nichts fehlt.
+sobald das Bauteil bekannt ist. Das Panel schickt je Austausch einen
+Request-Frame und wartet auf dessen Antwort, bevor es den nächsten schickt;
+in den zwei Puffern des Controllers wartet also höchstens ein Request-Frame.
+Ein Fenster verzögert diesen Request um höchstens seine Länge, etwa 19ms gegen
+die 1000ms Wartezeit des Panels, und verliert keinen. Das Fenster hält für
+seine Länge trotzdem jede Antwort und jeden Ausgabeschritt an, deshalb bleibt
+es kurz.
 
 Der Sektor wird deshalb nicht je Speichervorgang gelöscht. Zwei Sektoren
 halten je sechzehn Records; ein Speichervorgang schreibt den nächsten Record,

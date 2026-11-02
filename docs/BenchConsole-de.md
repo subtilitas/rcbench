@@ -390,14 +390,16 @@ Das Relay macht höchstens einen Austausch je Control-Durchlauf, 5ms, wenn nicht
 | Verkehr | Frames | Rate |
 | --- | --- | --- |
 | Ein Blick in Ruhe | 2 alle 50ms | 40 Frames/s |
-| Ein Fenster Ausgabe, 60 Byte in 30 Registern | 9, eine Anfrage und 8 Antworten mit 4 Registern | ein Durchlauf |
+| Ein Fenster Ausgabe, 28 Byte in 14 Registern | 5, eine Anfrage und 4 Antworten mit 4 Registern | ein Durchlauf |
 | Seine Bestätigung | 2 | ein Durchlauf |
-| Ausgabe, dauerhaft | 11 je 60 Byte, 2 Durchläufe | 6.000 Byte/s, 1.100 Frames/s |
+| Ausgabe, dauerhaft | 7 je 28 Byte, 2 Durchläufe | 2.800 Byte/s, 700 Frames/s |
 | Eingabe, 6 Byte je Stück | 2 je Stück, ein Durchlauf | 1.200 Byte/s, 135ms für eine Zeile mit 160 Zeichen |
 
-Gemessen an der Station: 2.856 bis 3.510 Byte/s Ausgabe, mit `help` bei 6/s bis 30/s. Das sind 17ms bis 21ms je Fenster von 60 Byte gegen 10ms berechnet. Die Wartezeit der Steuerung von 5ms kommt nach der Arbeit des Durchlaufs (`vTaskDelay`), ein Durchlauf ist also 5ms plus seine eigenen Austausche: die Polls des Panels und die 9 Frames des Fensters. Der Anteil jedes Teils ist nicht gemessen. Ein Fenster und seine Bestätigung brauchen 2 Durchläufe, und nach dem letzten Fenster einer Folge kommt der nächste Blick bis zu 50ms später.
+Ein Fenster ist ein Lesen von 16 Registern, das Meiste, was ein Lesen abfragt: 4 Antwortframes passen in den TWAI-Empfangs-FIFO des Panels ([Der Link](Link-de.md)). Die Page bleibt 32 Register breit, und die Register hinter dem Fenster lesen sich als 0; ein Panel, das für Fenster von 60 Byte gebaut ist, liest sie also weiter. Dieses Panel nimmt von einem IOmcu-Konsolen-Build vor Protokoll 4.35 ein Fenster von bis zu 60 Byte und liest es als 32 Register in einem Austausch.
 
-Bei 1Mbit/s dauert ein Frame mit 8 Byte etwa 150us, dauerhafte Ausgabe bei der berechneten Rate belegt also etwa 17% des Busses. Bei der gemessenen Rate leert sich der Puffer von 2.048 Byte in etwa 580ms bis 720ms. Ausgabe schneller als die gemessene Rate, länger als dieser Puffer reicht, verliert ganze Zeilen, auch die 3s-Zeilen des IOmcu; die nächste Zeile sagt `err output full, N bytes dropped` wie an USB. Ausgabe wird auch zurückgehalten, wenn der eigene Puffer des Panels von 4.096 Byte unter 444 Byte frei hat, etwa wenn ein serieller Host das Lesen einstellt.
+Gemessen an der Station mit einem Fenster von 60 Byte, das dieser Build nicht hat: 2.856 bis 3.510 Byte/s Ausgabe, mit `help` bei 6/s bis 30/s, 17ms bis 21ms je Fenster gegen 10ms berechnet. Die Wartezeit der Steuerung von 5ms kommt nach der Arbeit des Durchlaufs (`vTaskDelay`), ein Durchlauf ist also 5ms plus seine eigenen Austausche: die Polls des Panels und die Frames des Fensters. Der Anteil jedes Teils ist nicht gemessen. Bei denselben 17ms bis 21ms je Fenster ergibt ein Fenster von 28 Byte etwa 1.330 bis 1.650 Byte/s; nicht gemessen. Ein Fenster und seine Bestätigung brauchen 2 Durchläufe, und nach dem letzten Fenster einer Folge kommt der nächste Blick bis zu 50ms später.
+
+Bei 1Mbit/s dauert ein Frame mit 8 Byte etwa 150us, dauerhafte Ausgabe bei der berechneten Rate belegt also etwa 11% des Busses. Bei 1.330 bis 1.650 Byte/s leert sich der Puffer von 2.048 Byte in etwa 1,2s bis 1,5s. Ausgabe schneller als das, länger als dieser Puffer reicht, verliert ganze Zeilen, auch die 3s-Zeilen des IOmcu; die nächste Zeile sagt `err output full, N bytes dropped` wie an USB. Ausgabe wird auch zurückgehalten, wenn der eigene Puffer des Panels von 4.096 Byte unter 412 Byte frei hat, etwa wenn ein serieller Host das Lesen einstellt.
 
 Ein Fenster bleibt am IOmcu, bis es bestätigt ist, also kostet eine verlorene Antwort einen zweiten Lesevorgang und kein Byte. Ein unbeantworteter Austausch hält den Control-Durchlauf bis zu 1000ms, wie jeder Austausch des Panels, und der Heartbeat läuft weiter.
 

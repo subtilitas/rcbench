@@ -24,12 +24,14 @@ an eine Page, die die Page Map nicht benutzt.
 Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des IOmcu,
 alle 3s wiederholt:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
 
 `requests served` zählt die Link-Page-Anfragen, die das Panel geschickt und
 dieses Ende beantwortet hat; `self-test echoes` zählt Testframes und steht
-auf 0, solange der CAN-Selbsttest des Panels nicht läuft. Zusammen sagen die
-beiden, welches Ende aufgehört hat:
+auf 0, solange der CAN-Selbsttest des Panels nicht läuft. `tx_drop` zählt
+Antwortframes, die dieses Ende nach 1000 Versuchen an einem vollen Sendepuffer
+aufgegeben hat; das Panel wartet dann seinen Austausch ab. Zusammen sagen die
+ersten beiden, welches Ende aufgehört hat:
 
 | Requests | Panel zeigt | Lesart |
 | --- | --- | --- |

@@ -163,11 +163,11 @@ bind_read_t bind_link_read(link_host_t *h, const link_port_t *port,
     }
     link_msg_t orr, ccr;
     if (h == NULL || port == NULL
-        || !link_read_window(h, port, LINK_PAGE_OUTPUTS, 0u, LINK_OS_COUNT,
-                             &orr)
+        || !link_read_split(h, port, LINK_PAGE_OUTPUTS, 0u, LINK_OS_COUNT,
+                            &orr)
         || orr.op != LINK_OP_DATA
-        || !link_read_window(h, port, LINK_PAGE_CHAN_CFG, 0u, LINK_CC_COUNT,
-                             &ccr)
+        || !link_read_split(h, port, LINK_PAGE_CHAN_CFG, 0u, LINK_CC_COUNT,
+                            &ccr)
         || ccr.op != LINK_OP_DATA) {
         return bind_link_classify(out, board, NULL, NULL);
     }

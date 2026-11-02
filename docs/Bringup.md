@@ -22,11 +22,13 @@ read per loop and answers only frames addressed to a page the map does not use.
 Boot output on the IOmcu's USB (Universal Serial Bus) console, repeated
 every 3s:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
 
 `requests served` counts link page requests the panel sent and this end
 answered; `self-test echoes` counts probe frames and is 0 unless the panel's
-CAN self-test is running. The two together say which end has stopped:
+CAN self-test is running. `tx_drop` counts reply frames this end gave up
+after 1000 tries at a full transmit buffer; the panel then waits out its
+exchange. The first two together say which end has stopped:
 
 | Requests | Panel says | Reading |
 | --- | --- | --- |

@@ -61,11 +61,15 @@ Der Report, der bei liegendem Link alle 5s ausgegeben wird, trägt die Zähler:
 
 ```
 LINK ...
-  bus    tx errors 0 rx errors 0 bus errors 0
+  bus    tx errors 0 rx errors 0 bus errors 0 rx overrun 0 rx missed 0
 ```
 
 Ein Transmit Error Counter, der auf 256 zuläuft, heißt, dass niemand die
-Frames mit einem ACK (Acknowledge) bestätigt. Die Zeile endet auf `-- BUS
+Frames mit einem ACK (Acknowledge) bestätigt. `rx overrun` zählt Frames, für
+die der Empfangs-FIFO des TWAI-Controllers keinen Platz hatte, und `rx missed`
+Frames, für die die Warteschlange des Treibers mit 16 Plätzen keinen Platz
+hatte, beide seit dem Start des Treibers: Frames, die ohne Fehler auf dem Bus
+verloren gehen. Die Zeile endet auf `-- BUS
 OFF`, wenn das Panel bereits aufgehört hat zu senden. Steht dort statt der
 Zähler `the controller is not running`, ist der CAN-Controller gar nicht erst
 gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
@@ -74,7 +78,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.34. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.35. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -186,7 +190,10 @@ Kanälen darauf; ein älterer IOmcu lehnt eine Map mit ihnen mit BAD_VALUE ab
 4.34 lesen und schreiben ESC_WIRE (0x3A) und ESC_DATA (0x3B) die Einstellungen
 eines ESC über seinen Signaldraht, und der IOmcu meldet `LINK_CAP_PROGRAM`; ein
 älterer IOmcu lehnt beide mit BAD_PAGE ab ([Die Pages für
-ESC-Einstellungen](LinkEsc-de.md)).
+ESC-Einstellungen](LinkEsc-de.md)). Ab 4.35 beantwortet der IOmcu die Op
+READ_HELD, den zweiten Teil eines Lesens von mehr als 16 Registern ([Lesen von
+höchstens 16 Registern](#lesen-von-höchstens-16-registern)); das Panel sendet
+sie keinem älteren IOmcu, der einen Frame mit einer unbekannten Op verwirft.
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -432,8 +439,7 @@ XL2515 hält 2 empfangene Frames, und der IOmcu liest ihn aus seiner
 Hauptschleife; mit einem Anfrage-Frame gleichzeitig unterwegs verzögert ein
 verspäteter Durchlauf einen Frame und verliert keinen an einen vollen Puffer.
 Dasselbe Schreiben als 8 Frames direkt hintereinander verliert 6 davon an
-einen Durchlauf von 20ms (`test_bind_link`). Eine Antwort kommt weiterhin
-als Frames direkt hintereinander: der TWAI-Treiber des Panels puffert 16.
+einen Durchlauf von 20ms (`test_bind_link`).
 
 Die Kosten einer Änderung, und woran sie gemessen werden:
 
@@ -471,6 +477,42 @@ abgebaut, und die geltende Bindung bleibt unverändert.
 Folge durch ein Modell des 2-Frame-Puffers mit einem tauben Fenster von
 20ms, geöffnet alle 125µs, ein verlorener Frame an jeder der 18 Stellen,
 die Timeouts über den Überlauf bei 2^32ms.
+
+### Lesen von höchstens 16 Registern
+
+Eine Antwort kommt als Frames direkt hintereinander, und der TWAI-Controller
+des Panels hält sie in seinem Empfangs-FIFO nur, bis sein Interrupt sie in die
+Warteschlange des Treibers mit 16 Plätzen bringt. Der Interrupt läuft auf Kern 0
+auf Level 1 und nicht aus dem IRAM; ein kritischer Abschnitt, ein Flash-Schreiben
+mit abgeschaltetem Cache oder der Interrupt einer höher priorisierten Aufgabe
+auf diesem Kern hält ihn an. Deshalb fragt ein Lesen höchstens 16 Register ab,
+4 Frames (`LINK_READ_REGS_MAX`, `link_read_split()` in
+`shared/link/link_port.c`). Der FIFO wird mit 64 Byte angenommen, der Größe
+beim Controller der ESP32-Familie: 4 Frames zu 13 Byte lassen 12 Byte frei, ein
+5. Frame passte nicht. ESP-IDF v6.1 nennt die FIFO-Größe des ESP32-P4 nicht;
+seine Registerdatei hat einen 7-Bit-Nachrichtenzähler und keine Größe.
+
+Ein breiteres Lesen sind zwei Austausche. Der erste ist ein READ von 16
+Registern. Der IOmcu liest dieses Fenster und bis zu 16 Register danach in
+einem Aufruf der Page, beantwortet die 16 und behält den Rest. Der zweite ist
+ein READ_HELD (Op 6) des Rests, aus dieser Kopie beantwortet. So sind beide
+Teile die Page, wie sie beim ersten Austausch stand, wie oft sich die Page
+auch ändert, und eine Page, die sich mit jedem Messwert ändert, liest sich
+ganz. Die Kopie bedient ein READ_HELD für dieselbe Page und denselben Offset.
+Das nächste READ von 16 Registern auf irgendeiner Page ersetzt sie. Ein
+READ_HELD, für das nichts behalten ist, bekommt ein NACK `BUSY`, eines für
+mehr Register als behalten ein NACK `BAD_RANGE`. Auf ein abgelehntes READ_HELD
+antwortet das Panel mit einem breiten Lesen, das ebenfalls ein Zustand ist.
+Ein IOmcu vor 4.35 bekommt immer das eine breite Lesen, und seine Antwort von
+bis zu 9 Frames kann den FIFO überlaufen lassen.
+
+| Lesen | Register | Austausche | Frames, Anfragen und Antworten | Als ein Lesen: Austausche, Frames |
+| --- | ---: | ---: | ---: | ---: |
+| PROG, alle 500ms | 28 | 2 | 9 | 1, 8 |
+| ESC_WIRE-Status, alle 500ms frei und 100ms gehalten | 21 | 2 | 8 | 1, 7 |
+| SUPPLY, ab 4.4 | 18 | 2 | 7 | 1, 6 |
+| SERVO_WIN | 28 | 2 | 9 | 1, 8 |
+| Ein Lesen von 32: SENSE_WIN_A, SENSE_WIN_B, KST, HITEC, SENSE_MAP, ESC_DATA, CATALOGUE, PADS, CHAN_CFG, OUTPUTS, ART_DATA | 32 | 2 | 10 | 1, 9 |
 
 ### Der Fenster-Ring
 
@@ -956,13 +998,13 @@ das Fenster jedes Kanals, und der Flash-Record über zwei Pages.
 
 ### Identifier
 
-Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read ist deshalb
-ein Frame ohne Nutzdaten.
+Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read oder ein
+READ_HELD ist deshalb ein Frame ohne Nutzdaten.
 
 | Bits | Feld | Breite | Werte |
 | --- | --- | ---: | --- |
 | 28..26 | Priorität | 3 | 0 control (die Pages CONTROL, LIMITS, FAILSAFE und SUPPLY, ihre Quittungen eingeschlossen), 1 normal (darunter SENSE, SERVO_SENSE und TONE), 2 bulk (reserviert); niedriger gewinnt die Arbitrierung |
-| 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (Acknowledge), 5 NACK (Negative Acknowledge) |
+| 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (Acknowledge), 5 NACK (Negative Acknowledge), 6 READ_HELD (ab 4.35) |
 | 21..14 | page | 8 | Page Map unten |
 | 13..6 | offset | 8 | erstes Register in diesem Frame |
 | 5..0 | count | 6 | Register in diesem Frame, 0..32 |
@@ -990,7 +1032,7 @@ Ein NACK trägt seinen Grund in Register 0:
 | 3 | READ_ONLY |
 | 4 | BAD_VALUE |
 | 5 | NOT_ARMED |
-| 6 | BUSY: die Page nimmt den Wert, und etwas anderes hält vorerst, was er nennt; derselbe Write wird angenommen, sobald es frei ist. Nur TONE, seit 4.17 ([Ein belegter Pin am Phasenabgriff](#ein-belegter-pin-am-phasenabgriff)) |
+| 6 | BUSY: die Page nimmt den Wert, und etwas anderes hält vorerst, was er nennt; derselbe Write wird angenommen, sobald es frei ist. Nur TONE, seit 4.17 ([Ein belegter Pin am Phasenabgriff](#ein-belegter-pin-am-phasenabgriff)). Ab 4.35 auch ein READ_HELD, für dessen Page und Offset nichts behalten ist |
 
 Ein Write gilt ganz oder gar nicht. Jedes Register eines Frames wird geprüft,
 bevor eines davon gespeichert wird; ein NACK lässt die Page also genau so, wie

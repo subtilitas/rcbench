@@ -14,7 +14,9 @@
  *                      16-bit count of bytes from a random number at the
  *                      IOmcu's start
  *   1 LINK_CN_OUT_LEN  bytes in the window, 0 to LINK_CN_DATA_BYTES, with
- *                      LINK_CN_OUT_MORE when more wait behind them
+ *                      LINK_CN_OUT_MORE when more wait behind them.  An IOmcu
+ *                      console build older than protocol 4.35 holds up to
+ *                      LINK_CN_DATA_BYTES_MAX, and a panel takes those too.
  *   2 LINK_CN_DATA     the bytes, low byte of a register first
  *
  * The window stays until it is acknowledged, so a reply lost on the wire costs
@@ -46,7 +48,10 @@ enum {
     LINK_CN_OUT_SEQ = 0, /**< the window's place in the output */
     LINK_CN_OUT_LEN = 1, /**< its bytes, and LINK_CN_OUT_MORE  */
     LINK_CN_DATA    = 2, /**< the bytes                        */
-    LINK_CN_COUNT   = 32,
+    LINK_CN_COUNT   = 16, /**< a window's read: LINK_READ_REGS_MAX, 4 frames */
+    /** @brief The page's registers: an older panel reads up to 32, and the
+     *         registers past the window read 0. */
+    LINK_CN_PAGE_REGS = 32,
 };
 
 /** @brief The registers of a write. */
@@ -55,8 +60,11 @@ enum {
     LINK_CN_W_IN  = 1, /**< a chunk of a line           */
 };
 
-/** @brief Bytes in a window: 30 registers. */
-#define LINK_CN_DATA_BYTES 60u
+/** @brief Bytes in a window: 14 registers. */
+#define LINK_CN_DATA_BYTES 28u
+/** @brief Bytes in a window of an IOmcu console build older than protocol
+ *         4.35: 30 registers, which a panel reads as 32. */
+#define LINK_CN_DATA_BYTES_MAX 60u
 /** @brief In LINK_CN_OUT_LEN: more bytes wait behind the window. */
 #define LINK_CN_OUT_MORE 0x8000u
 /** @brief LINK_CN_OUT_LEN's count. */

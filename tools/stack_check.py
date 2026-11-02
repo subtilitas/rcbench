@@ -188,6 +188,8 @@ PORT_CALLS = {
     "link_write_acked": ("port_exchange", "cu_port_exchange", "port_now",
                          "port_between"),
     "link_read_window": ("port_exchange", "cu_port_exchange", "port_now"),
+    "link_read_split": ("port_exchange", "cu_port_exchange", "port_now",
+                        "port_between"),
 }
 
 # The art_flash_t callbacks shared/artwork calls: the panel's one flash, in

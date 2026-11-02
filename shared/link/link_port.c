@@ -90,3 +90,48 @@ bool link_read_window(link_host_t *h, const link_port_t *port, uint8_t page,
     }
     return port->exchange(port->ctx, h, &req, reply);
 }
+
+bool link_read_split(link_host_t *h, const link_port_t *port, uint8_t page,
+                     uint8_t offset, uint8_t count, link_msg_t *reply)
+{
+    if (count <= LINK_READ_REGS_MAX || (h != NULL && !h->held_reads)) {
+        return link_read_window(h, port, page, offset, count, reply);
+    }
+    if (!usable(h, port, reply) || count > LINK_MAX_REGS) {
+        return false;
+    }
+    if (!link_read_window(h, port, page, offset, (uint8_t)LINK_READ_REGS_MAX,
+                          reply)) {
+        return false;
+    }
+    if (reply->op != LINK_OP_DATA || reply->count < LINK_READ_REGS_MAX) {
+        /* A refusal of the first part: as it came. */
+        return true;
+    }
+    if (port->between != NULL) {
+        port->between(port->ctx);
+    }
+    /* The second part: the registers the far end kept at the first. */
+    const uint8_t rest = (uint8_t)(count - LINK_READ_REGS_MAX);
+    link_msg_t req, second;
+    if (!link_host_read_held(h, page, (uint8_t)(offset + LINK_READ_REGS_MAX),
+                             rest, port->now_ms(port->ctx), &req)
+        || !port->exchange(port->ctx, h, &req, &second)) {
+        return false;
+    }
+    if (second.op != LINK_OP_DATA || second.count < rest) {
+        /*
+         * Nothing kept for this part: another read of LINK_READ_REGS_MAX
+         * registers took the far end's copy, or the far end started again.
+         * One wide read is one state as well; its reply is the old size.
+         */
+        if (port->between != NULL) {
+            port->between(port->ctx);
+        }
+        return link_read_window(h, port, page, offset, count, reply);
+    }
+    reply->count = count;
+    memcpy(&reply->regs[LINK_READ_REGS_MAX], second.regs,
+           (size_t)rest * sizeof(second.regs[0]));
+    return true;
+}

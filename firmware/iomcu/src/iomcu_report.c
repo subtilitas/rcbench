@@ -231,9 +231,11 @@ void can_report(uint32_t now)
      * the panel says NO LINK means the answers are not getting back.
      */
     IOMCU_SAY("rcbench-iomcu: CAN up, %u bit/s, %lu requests served, "
-              "%lu self-test echoes, tx_err %u rx_err %u eflg 0x%02X\n",
+              "%lu self-test echoes, tx_err %u rx_err %u eflg 0x%02X "
+              "tx_drop %lu\n",
               (unsigned)IOMCU_CAN_BITRATE, (unsigned long)s_frames,
-              (unsigned long)s_can_echoes, tec, rec, eflg);
+              (unsigned long)s_can_echoes, tec, rec, eflg,
+              (unsigned long)s_can_tx_dropped);
     /*
      * Said in words: an overflow is the one thing that explains a frame
      * going missing while the bus reports no error.  The part has two

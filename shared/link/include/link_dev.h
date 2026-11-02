@@ -84,6 +84,19 @@ typedef struct {
      */
     bool     arm_latched;
     uint32_t requests;
+
+    /**
+     * @brief The rest of the last read of LINK_READ_REGS_MAX registers, for
+     *        one LINK_OP_READ_HELD.
+     *
+     * link_dev_dispatch() reads it in the same page call as the registers it
+     * answers, so the two parts of a split read are one state of the page.
+     * Replaced by the next such read; spent by the READ_HELD that takes it.
+     */
+    uint16_t held[LINK_MAX_REGS - LINK_READ_REGS_MAX];
+    uint8_t  held_page;   /**< the page `held` is of                      */
+    uint8_t  held_offset; /**< the register held[0] is                    */
+    uint8_t  held_count;  /**< registers in `held`; 0 when nothing is kept */
 } link_dev_t;
 
 /**
@@ -105,6 +118,13 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
  * (negative acknowledge) says.
  *
  * No transport is visible from here.
+ *
+ * A read of exactly LINK_READ_REGS_MAX registers on a page with registers
+ * after them reads up to LINK_READ_REGS_MAX more in the same page call and
+ * keeps them for one LINK_OP_READ_HELD of that page at that offset.  A
+ * READ_HELD for anything else is refused with LINK_NACK_BUSY; one wider than
+ * what is kept with LINK_NACK_BAD_RANGE.  Only requests from the link reach
+ * this; link_dev_apply() keeps nothing and refuses READ_HELD.
  *
  * False only on a null argument.  Every request produces exactly one reply,
  * refusals included: silence means an IOmcu that is not there, and must
