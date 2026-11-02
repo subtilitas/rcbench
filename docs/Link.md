@@ -69,7 +69,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.34. The
+IOmcu transmits only in answer to a request. Protocol version 4.35. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -173,7 +173,11 @@ an older IOmcu refuses a map with them with BAD_VALUE
 ([Carrier, The current monitor](Carrier.md#the-current-monitor)). From
 4.34 ESC_WIRE (0x3A) and ESC_DATA (0x3B) read and write an ESC's settings over
 its signal wire, and the IOmcu reports `LINK_CAP_PROGRAM`; an older IOmcu refuses
-both with BAD_PAGE ([The ESC settings pages](LinkEsc.md)). The
+both with BAD_PAGE ([The ESC settings pages](LinkEsc.md)). From
+4.35 the IOmcu answers the READ_HELD op, the second part of a read wider than
+16 registers ([Reads of at most 16 registers](#reads-of-at-most-16-registers));
+the panel sends it to no older IOmcu, which drops a frame of an op it does
+not know. The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -401,29 +405,6 @@ request frame on its way at a time, a pass that is late delays a frame and
 does not lose one to a full buffer. The same write as 8 frames back to back
 loses 6 of them to one 20ms pass (`test_bind_link`).
 
-A reply arrives as back-to-back frames, and the panel's TWAI controller keeps
-them in its receive FIFO only until its interrupt moves them to the driver's
-queue of 16. The interrupt runs on core 0 at level 1 and not from IRAM, so a
-critical section, a cache-off flash write or a higher-priority task's interrupt
-on that core holds it. So a read asks for at most 16 registers, 4 frames
-(`LINK_READ_REGS_MAX`, `link_read_split()` in `shared/link/link_port.c`). The
-FIFO is taken as 64 bytes, the size the ESP32 family's controller has: 4
-frames of 13 bytes leave 12 bytes, and a 5th frame would not fit. ESP-IDF v6.1
-does not state the ESP32-P4's FIFO size; its register file has a 7-bit message
-counter and no size. A wider read is three exchanges: the first 16 registers,
-the rest, and the first 16 again. When the two reads of the first part are
-equal, the copy is the page as it stood at the read of the rest. When they
-differ, the three go again, up to 3 times, and then the answer is a NACK of
-`BUSY`, never a torn copy. A change in the first part that is undone between its
-two reads is not seen.
-
-| Read | Registers | Exchanges | Frames, requests and replies | As one read: exchanges, frames |
-| --- | ---: | ---: | ---: | ---: |
-| PROG, every 500ms | 28 | 3 | 14 | 1, 8 |
-| ESC_WIRE status, every 500ms free and 100ms held | 21 | 3 | 13 | 1, 7 |
-| SERVO_WIN | 28 | 3 | 14 | 1, 8 |
-| A read of 32: SENSE_WIN_A, SENSE_WIN_B, KST, HITEC, SENSE_MAP, ESC_DATA | 32 | 3 | 15 | 1, 9 |
-
 The cost of one edit, and what it is held against:
 
 | | 0.14.0 | This build, 4.10 IOmcu |
@@ -458,6 +439,39 @@ with the link taken down and the binding in force unchanged.
 sequence through a model of the 2-frame buffer with a 20ms deaf window
 opened at every 125µs, a frame lost at each of the 18 positions, the
 timeouts across the 2^32ms wrap.
+
+### Reads of at most 16 registers
+
+A reply arrives as back-to-back frames, and the panel's TWAI controller keeps
+them in its receive FIFO only until its interrupt moves them to the driver's
+queue of 16. The interrupt runs on core 0 at level 1 and not from IRAM, so a
+critical section, a cache-off flash write or a higher-priority task's interrupt
+on that core holds it. So a read asks for at most 16 registers, 4 frames
+(`LINK_READ_REGS_MAX`, `link_read_split()` in `shared/link/link_port.c`). The
+FIFO is taken as 64 bytes, the size the ESP32 family's controller has: 4
+frames of 13 bytes leave 12 bytes, and a 5th frame would not fit. ESP-IDF v6.1
+does not state the ESP32-P4's FIFO size; its register file has a 7-bit message
+counter and no size.
+
+A wider read is two exchanges. The first is a READ of 16 registers. The IOmcu
+reads that window and up to 16 registers after it in one page call, answers the
+16 and keeps the rest. The second is a READ_HELD (op 6) of the rest, answered
+from that copy. So the two parts are the page as it stood at the first
+exchange, however often the page changes, and a page that changes at every
+sample reads whole. The copy serves one READ_HELD for the same page and offset.
+The next READ of 16 registers on any page replaces it. A READ_HELD with nothing
+kept for it gets a NACK of BUSY, and one for more registers than are kept a
+NACK of BAD_RANGE. The panel answers a refused READ_HELD with one wide read,
+which is one state as well. An IOmcu older than 4.35 gets the one wide read
+every time, and its reply of up to 9 frames can overrun the FIFO.
+
+| Read | Registers | Exchanges | Frames, requests and replies | As one read: exchanges, frames |
+| --- | ---: | ---: | ---: | ---: |
+| PROG, every 500ms | 28 | 2 | 9 | 1, 8 |
+| ESC_WIRE status, every 500ms free and 100ms held | 21 | 2 | 8 | 1, 7 |
+| SUPPLY, from 4.4 | 18 | 2 | 7 | 1, 6 |
+| SERVO_WIN | 28 | 2 | 9 | 1, 8 |
+| A read of 32: SENSE_WIN_A, SENSE_WIN_B, KST, HITEC, SENSE_MAP, ESC_DATA, CATALOGUE, PADS, CHAN_CFG, OUTPUTS, ART_DATA | 32 | 2 | 10 | 1, 9 |
 
 ### The window ring
 
@@ -897,13 +911,13 @@ window, and the flash record over two pages.
 
 ### Identifier
 
-A 29-bit extended identifier carries the whole address, so a read is a frame
-with no payload.
+A 29-bit extended identifier carries the whole address, so a read or a
+READ_HELD is a frame with no payload.
 
 | Bits | Field | Width | Values |
 | --- | --- | ---: | --- |
 | 28..26 | priority | 3 | 0 control (CONTROL, LIMITS, FAILSAFE and SUPPLY pages, their acknowledgements included), 1 normal (SENSE, SERVO_SENSE and TONE among them), 2 bulk (reserved); lower wins arbitration |
-| 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (acknowledge), 5 NACK (negative acknowledge) |
+| 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (acknowledge), 5 NACK (negative acknowledge), 6 READ_HELD (from 4.35) |
 | 21..14 | page | 8 | page map below |
 | 13..6 | offset | 8 | first register in this frame |
 | 5..0 | count | 6 | registers in this frame, 0..32 |
@@ -930,7 +944,7 @@ A NACK carries its reason in register 0:
 | 3 | READ_ONLY |
 | 4 | BAD_VALUE |
 | 5 | NOT_ARMED |
-| 6 | BUSY: the value is one the page takes, and something else holds what it names; the same write is taken once that is freed. TONE only, since 4.17 ([A busy pin on the phase tap](#a-busy-pin-on-the-phase-tap)) |
+| 6 | BUSY: the value is one the page takes, and something else holds what it names; the same write is taken once that is freed. TONE only, since 4.17 ([A busy pin on the phase tap](#a-busy-pin-on-the-phase-tap)). From 4.35 also a READ_HELD with nothing kept for its page and offset |
 
 A write is all or nothing. Every register of a frame is checked before any of
 them is stored, so a NACK leaves the page exactly as it was: none of the up to

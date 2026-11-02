@@ -15,7 +15,7 @@
  * @brief Test whether an op is one the protocol defines.
  *
  * @param op The op to test.
- * @return true for READ, WRITE, DATA, ACK and NACK.
+ * @return true for READ, WRITE, DATA, ACK, NACK and READ_HELD.
  */
 static bool op_is_known(uint8_t op)
 {
@@ -25,6 +25,7 @@ static bool op_is_known(uint8_t op)
     case LINK_OP_DATA:
     case LINK_OP_ACK:
     case LINK_OP_NACK:
+    case LINK_OP_READ_HELD:
         return true;
     default:
         return false;
@@ -32,17 +33,17 @@ static bool op_is_known(uint8_t op)
 }
 
 /**
- * @brief A READ says how many registers it wants and carries none of them;
- * every other op carries the registers it is about.
+ * @brief A READ or READ_HELD says how many registers it wants and carries
+ * none of them; every other op carries the registers it is about.
  *
  * A property of the protocol, not of the transport.
  *
  * @param op The op to test.
- * @return false for READ, true for the other ops.
+ * @return false for READ and READ_HELD, true for the other ops.
  */
 static bool op_carries_payload(uint8_t op)
 {
-    return op != (uint8_t)LINK_OP_READ;
+    return op != (uint8_t)LINK_OP_READ && op != (uint8_t)LINK_OP_READ_HELD;
 }
 
 link_can_prio_t link_can_priority(uint8_t page, uint8_t op)

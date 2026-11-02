@@ -110,7 +110,7 @@ uint16_t link_uph_permille(const link_uph_t *u)
 static x_t read_regs(link_host_t *h, const link_port_t *port, uint8_t page,
                      uint8_t offset, uint8_t count, link_msg_t *reply)
 {
-    if (!link_read_window(h, port, page, offset, count, reply)) {
+    if (!link_read_split(h, port, page, offset, count, reply)) {
         return X_NONE;
     }
     return (reply->op == LINK_OP_DATA) ? X_OK : X_NACK;

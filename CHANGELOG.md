@@ -88,7 +88,7 @@ history is in git.
 
 ### Fixed
 
-- Link: a read asks for at most 16 registers, 4 reply frames, which the panel's TWAI receive FIFO holds while its interrupt is held on core 0. A wider read (PROG 28, ESC_WIRE status 21, the windows and pages of 28 and 32) is the first 16 registers, the rest, and the first 16 again; equal first parts give one state of the page, and a page that does not hold still in 3 tries answers `BUSY`. The bench console's window is 28 bytes.
+- Link: a read asks for at most 16 registers, 4 reply frames, which the panel's TWAI receive FIFO holds while its interrupt is held on core 0. A wider read (PROG 28, ESC_WIRE status 21, SUPPLY 18, the windows and pages of 28 and 32) is a read of 16 and a READ_HELD (op 6, protocol 4.35) of the rest, which the IOmcu reads in the same page call, so the two parts are one state of the page. An IOmcu older than 4.35 is read in one exchange. The bench console's window is 28 bytes.
 - Link report: the panel's bus line and card row carry the TWAI driver's `rx overrun` and `rx missed`; the IOmcu's 3s CAN line carries `tx_drop`, reply frames given up at a full transmit buffer.
 - OUTPUTS: the line under a port's rows names an ESC or Hitec session's hold. It read `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` at SAFE with no test.
 - OUTPUTS: a FUNCTION or pin ask no longer waits for ever after a panel or IOmcu start. The sweep's state, not known since the link came up, was settled only by a TARGET change or a position. A port on a DShot function, or no port wanted by the SERVO screen, gives neither. The ask now settles it. The amber line names what holds an ask: SAFE, a servo test or sweep, the servo, Hitec or ESC programmer, or a read of the ports.

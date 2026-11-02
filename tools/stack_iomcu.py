@@ -46,12 +46,13 @@ IRQ_INSTALLERS = ("irq_set_exclusive_handler", "irq_add_shared_handler")
 # the link_page_t table firmware/iomcu/src/main.c passes to link_dev_init();
 # a write handler binds outputs and is the deepest thing a request reaches.
 # The last number is how many calls through the table the caller's source
-# makes: two of read and one of write in shared/link/link_dev.c.  A caller
+# makes: three of read and one of write in shared/link/link_dev.c, the
+# third in read_and_keep(), which the compiler takes into the caller.  A caller
 # here that makes no indirect call or more than that many, or a table that
 # is not rows of that size holding function addresses, fails the check: a
 # further call through a pointer is not one the table stands for.
 POINTER_TABLES = {
-    "link_dev_dispatch": ("k_pages", 12, (4, 8), 3),
+    "link_dev_dispatch": ("k_pages", 12, (4, 8), 4),
 }
 
 # Calls in the image that the firmware's arguments never take:

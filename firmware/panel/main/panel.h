@@ -626,43 +626,59 @@ extern bool     s_link_quiet;
 /* Put a built request on the wire and wait for its answer. */
 bool exchange(link_host_t *host, const link_msg_t *req, link_msg_t *reply);
 
-static inline bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
-                             link_msg_t *reply)
-{
-    link_msg_t req;
-    if (!link_host_read(host, page, 0, count, now_ms(), &req)) {
-        return false;
-    }
-    return exchange(host, &req, reply);
-}
 
-/* A window of a page from @p offset; the reply's registers start there. */
-/* exchange() and the clock, as shared/link asks for them. */
+/**
+ * @brief The clock, as shared/link asks for it.
+ * @param ctx Unused.
+ * @return now_ms().
+ */
 uint32_t port_now(void *ctx);
+/**
+ * @brief Between two exchanges of one sequence: the control pump, at most
+ *        every 5ms while it is live.
+ * @param ctx Unused.
+ */
 void     port_between(void *ctx);
+/** @brief exchange(), port_now() and port_between(), as shared/link asks for
+ *         them. */
 extern const link_port_t k_port;
 
 /**
  * @brief Read @p count registers of @p page from @p offset over the link.
  *
- * A read asks for at most LINK_READ_REGS_MAX (16) registers an exchange
- * (link_read_split()): a reply of 4 frames fits the TWAI controller's receive
- * FIFO, so an interrupt held while it arrives delays it and cannot overrun
- * the FIFO.  A wider read is two parts and the first part again, so it is one
- * state of the page, or a NACK of LINK_NACK_BUSY.
+ * Through link_read_split(): a read asks for at most LINK_READ_REGS_MAX (16)
+ * registers an exchange from an IOmcu of 4.35 or later, so a reply of 4
+ * frames fits the TWAI controller's receive FIFO and an interrupt held while
+ * it arrives delays it and cannot overrun the FIFO.  A wider read is two
+ * exchanges and one state of the page (LINK_OP_READ_HELD).
  *
  * @param host   The link host state.
  * @param page   Page to read.
  * @param offset First register.
  * @param count  Registers, at most LINK_MAX_REGS (32).
  * @param reply  Out: the answer, data or a refusal.
- * @return False when a part got no answer or @p count exceeds LINK_MAX_REGS;
- *         true otherwise.
+ * @return False when an exchange got no answer or @p count exceeds
+ *         LINK_MAX_REGS; true otherwise.
  */
 static inline bool read_regs(link_host_t *host, uint8_t page, uint8_t offset,
                              uint8_t count, link_msg_t *reply)
 {
     return link_read_split(host, &k_port, page, offset, count, reply);
+}
+
+/**
+ * @brief Read the first @p count registers of @p page, as read_regs().
+ *
+ * @param host  The link host state.
+ * @param page  Page to read.
+ * @param count Registers, at most LINK_MAX_REGS (32).
+ * @param reply Out: the answer, data or a refusal.
+ * @return False when an exchange got no answer; true otherwise.
+ */
+static inline bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
+                             link_msg_t *reply)
+{
+    return read_regs(host, page, 0u, count, reply);
 }
 
 /*

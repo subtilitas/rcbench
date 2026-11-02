@@ -90,40 +90,26 @@ bool link_write_acked(link_host_t *h, const link_port_t *port, uint8_t page,
                       link_msg_t *reply);
 
 /**
- * @brief The most registers one read asks for: 4 frames of reply, 52 of the 64
- *        bytes of receive FIFO the panel's TWAI controller is taken to have.
- *
- * The reply's frames arrive back to back, and the controller keeps them only
- * until its interrupt empties them into the driver's queue.  4 frames fit with
- * the FIFO's 12 bytes to spare, so no hold of the interrupt shorter than the
- * exchange's timeout loses one; a 5th frame does not fit.
- */
-#define LINK_READ_REGS_MAX 16u
-
-/** @brief Tries of a split read whose first part moved between its two reads. */
-#define LINK_READ_TRIES 3u
-
-/**
  * @brief Read @p count registers as one state, in reads of at most
  *        LINK_READ_REGS_MAX registers.
  *
  * Up to LINK_READ_REGS_MAX registers are one exchange, as link_read_window().
- * A wider read is the first LINK_READ_REGS_MAX registers, the rest, and the
- * first part once more.  When the two reads of the first part are equal, the
- * page's first part did not move while the rest was read, and the two parts are
- * the page as it stood at the read of the rest.  When they differ, the three
- * reads go again, up to LINK_READ_TRIES times; after that the answer is a NACK
- * of LINK_NACK_BUSY, a page that would not hold still, and no torn copy.  A
- * change in the first part that is undone between its two reads is not seen.
+ * So is a wider read when `h->held_reads` is false: an IOmcu older than 4.35
+ * keeps nothing for a second part.  Otherwise a wider read is two exchanges:
+ * the first LINK_READ_REGS_MAX registers, then a LINK_OP_READ_HELD for the
+ * rest.  The IOmcu read both parts in one call at the first exchange, so the
+ * two are one state of the page whatever changed between the exchanges.  A
+ * refusal of the second part (nothing kept for it) falls back to one wide
+ * read, which is consistent as well.
  *
- * `between` runs between the exchanges, as for a write.
+ * `between` runs between the two exchanges, as for a write.
  *
  * @param h The host state.
  * @param port The transport and clock.
  * @param page Page number to read.
  * @param offset First register within the page.
  * @param count Number of registers, 1 to LINK_MAX_REGS.
- * @param reply Receives the data, the first refusal, or LINK_NACK_BUSY.
+ * @param reply Receives the data or the refusal of the first part.
  * @return true when every exchange was answered, else false.
  */
 bool link_read_split(link_host_t *h, const link_port_t *port, uint8_t page,

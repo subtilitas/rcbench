@@ -30,7 +30,29 @@ typedef enum {
     LINK_OP_DATA  = 0x03, /**< IOmcu answers a read                    */
     LINK_OP_ACK   = 0x04, /**< IOmcu accepted a write                  */
     LINK_OP_NACK  = 0x05, /**< IOmcu refused it; regs[0] says why      */
+    /**
+     * @brief Host asks for COUNT registers from PAGE:OFFS as the IOmcu kept
+     *        them at the read of LINK_READ_REGS_MAX registers before.
+     *
+     * The second part of a split read, from 4.35 (LINK_MINOR_READ_HELD).
+     * Answered with DATA, or with a NACK of LINK_NACK_BUSY when nothing is
+     * kept for PAGE:OFFS.  An older IOmcu drops the frame unanswered, so a
+     * panel sends it only to a far end of 4.35 or later.
+     */
+    LINK_OP_READ_HELD = 0x06,
 } link_op_t;
+
+/**
+ * @brief The most registers one read asks for in a split read: a reply of 4
+ *        frames.
+ *
+ * docs/Link.md gives the reason: 4 frames of 13 bytes fit the 64-byte receive
+ * FIFO (first in, first out buffer) the panel's TWAI controller is taken to
+ * have.  An IOmcu of 4.35 or later answers a read of exactly this many
+ * registers and keeps the up to LINK_READ_REGS_MAX registers after them, read
+ * in the same call, for one LINK_OP_READ_HELD.
+ */
+#define LINK_READ_REGS_MAX 16u
 
 /** @brief Reasons a NACK (negative acknowledge) carries. */
 typedef enum {

@@ -420,6 +420,8 @@ static void link_came_up(const link_msg_t *reply)
     /* A binding is prepared and committed whole from 4.10
      * (bind_link_write()), and written page by page before it. */
     s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
+    /* From 4.35 a page wider than 16 registers is read in two exchanges. */
+    s_host.held_reads = s_far_minor >= LINK_MINOR_READ_HELD;
     /* A refusal count is the IOmcu's that sent it: the band shows
      * none until this one's status page is read. */
     s_bring.have_refused = false;
