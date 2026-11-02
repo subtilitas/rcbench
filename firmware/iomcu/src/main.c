@@ -166,7 +166,7 @@ static const link_page_t k_pages[] = {
       update_hw_data_write },
 #if IOMCU_CONSOLE
     /* The console's bytes over the link; debug builds only. */
-    { LINK_PAGE_CONSOLE, LINK_CN_COUNT, console_hw_page_read, console_hw_page_write },
+    { LINK_PAGE_CONSOLE, LINK_CN_PAGE_REGS, console_hw_page_read, console_hw_page_write },
 #endif
 };
 

@@ -395,7 +395,7 @@ Das Relay macht höchstens einen Austausch je Control-Durchlauf, 5ms, wenn nicht
 | Ausgabe, dauerhaft | 7 je 28 Byte, 2 Durchläufe | 2.800 Byte/s, 700 Frames/s |
 | Eingabe, 6 Byte je Stück | 2 je Stück, ein Durchlauf | 1.200 Byte/s, 135ms für eine Zeile mit 160 Zeichen |
 
-Ein Fenster ist ein Lesen von 16 Registern, das Meiste, was ein Lesen abfragt: 4 Antwortframes passen in den TWAI-Empfangs-FIFO des Panels ([Der Link](Link-de.md)).
+Ein Fenster ist ein Lesen von 16 Registern, das Meiste, was ein Lesen abfragt: 4 Antwortframes passen in den TWAI-Empfangs-FIFO des Panels ([Der Link](Link-de.md)). Die Page bleibt 32 Register breit, und die Register hinter dem Fenster lesen sich als 0; ein Panel, das für Fenster von 60 Byte gebaut ist, liest sie also weiter. Dieses Panel nimmt von einem IOmcu-Konsolen-Build vor Protokoll 4.35 ein Fenster von bis zu 60 Byte und liest es als 32 Register in einem Austausch.
 
 Gemessen an der Station mit einem Fenster von 60 Byte, das dieser Build nicht hat: 2.856 bis 3.510 Byte/s Ausgabe, mit `help` bei 6/s bis 30/s, 17ms bis 21ms je Fenster gegen 10ms berechnet. Die Wartezeit der Steuerung von 5ms kommt nach der Arbeit des Durchlaufs (`vTaskDelay`), ein Durchlauf ist also 5ms plus seine eigenen Austausche: die Polls des Panels und die Frames des Fensters. Der Anteil jedes Teils ist nicht gemessen. Bei denselben 17ms bis 21ms je Fenster ergibt ein Fenster von 28 Byte etwa 1.330 bis 1.650 Byte/s; nicht gemessen. Ein Fenster und seine Bestätigung brauchen 2 Durchläufe, und nach dem letzten Fenster einer Folge kommt der nächste Blick bis zu 50ms später.
 

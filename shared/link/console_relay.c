@@ -263,7 +263,9 @@ bool console_relay_next(console_relay_t *r, uint32_t now_ms, console_relay_op_t 
     /* Room for the window and the line it may end, and for one line of the
      * relay's own, or the IOmcu's ring holds it and counts what it drops. */
     if (r->state == CONSOLE_RELAY_UP && r->more
-        && out_room(r) >= LINK_CN_DATA_BYTES + CONSOLE_RELAY_PARTIAL_MAX + 128u) {
+        && out_room(r) >= (r->want > LINK_CN_DATA_BYTES ? r->want
+                                                       : LINK_CN_DATA_BYTES)
+                              + CONSOLE_RELAY_PARTIAL_MAX + 128u) {
         memset(op, 0, sizeof(*op));
         op->off = 0u;
         op->n = r->want != 0u ? WINDOW_REGS(r->want) : (uint8_t)LINK_CN_COUNT;
@@ -319,7 +321,8 @@ static void read_answered(console_relay_t *r, uint8_t op, const uint16_t *regs)
     const bool more = (regs[LINK_CN_OUT_LEN] & LINK_CN_OUT_MORE) != 0u;
 
     r->state = CONSOLE_RELAY_UP;
-    if (len > LINK_CN_DATA_BYTES) {
+    /* An older IOmcu console build fills windows of up to 60 bytes. */
+    if (len > LINK_CN_DATA_BYTES_MAX) {
         return;
     }
     if (op == OP_POLL || WINDOW_REGS(len) > r->op_n) {

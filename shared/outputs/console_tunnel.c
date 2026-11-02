@@ -31,10 +31,13 @@ void console_tunnel_read(console_tunnel_t *t, uint8_t off, uint8_t n, uint16_t *
             out[k] = t->seq;
         } else if (reg == LINK_CN_OUT_LEN) {
             out[k] = (uint16_t)(t->win_len | more);
-        } else {
+        } else if ((reg - LINK_CN_DATA) * 2u + 1u < LINK_CN_DATA_BYTES) {
             const unsigned at = (reg - LINK_CN_DATA) * 2u;
 
             out[k] = (uint16_t)(t->win[at] | ((uint16_t)t->win[at + 1u] << 8));
+        } else {
+            /* Past the window: the page is LINK_CN_PAGE_REGS wide. */
+            out[k] = 0u;
         }
     }
 }

@@ -55,7 +55,7 @@ static void st_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 
 static const link_page_t k_with[] = {
     { LINK_PAGE_STATUS, 4u, st_read, NULL },
-    { LINK_PAGE_CONSOLE, LINK_CN_COUNT, cn_read, cn_write },
+    { LINK_PAGE_CONSOLE, LINK_CN_PAGE_REGS, cn_read, cn_write },
 };
 static const link_page_t k_without[] = {
     { LINK_PAGE_STATUS, 4u, st_read, NULL },
@@ -804,6 +804,89 @@ TEST_CASE(a_line_before_the_last_has_run_is_refused_busy_and_sent_again)
     CHECK(strstr(g_all, "off=2 n=1: 0x0000\n") != NULL);
 }
 
+/** @brief An older IOmcu console build's window: 60 bytes, then nothing. */
+static uint16_t g_old_seq;
+static uint8_t  g_old_len;
+
+/** @brief The older build's page read: a window of 60 bytes until taken. */
+static void old_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    for (unsigned k = 0u; k < n; ++k) {
+        const unsigned reg = (unsigned)off + k;
+
+        if (reg == LINK_CN_OUT_SEQ) {
+            out[k] = g_old_seq;
+        } else if (reg == LINK_CN_OUT_LEN) {
+            out[k] = g_old_len;
+        } else {
+            const unsigned at = (reg - LINK_CN_DATA) * 2u;
+            /* a to z twice, a to f, then "z\n": 60 bytes and a line end. */
+            const char lo = at == 58u ? 'z' : (char)('a' + at % 26u);
+            const char hi = at + 1u == 59u ? '\n' : (char)('a' + (at + 1u) % 26u);
+
+            out[k] = (uint16_t)((uint8_t)lo | ((uint16_t)(uint8_t)hi << 8));
+        }
+    }
+}
+
+/** @brief The older build's page write: the acknowledgement takes the window. */
+static uint8_t old_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
+{
+    (void)ctx;
+    if (off == LINK_CN_W_ACK && n >= 1u
+        && in[0] == (uint16_t)(g_old_seq + g_old_len)) {
+        g_old_seq = in[0];
+        g_old_len = 0u;
+    }
+    return 0u;
+}
+
+static const link_page_t k_old[] = {
+    { LINK_PAGE_STATUS, 4u, st_read, NULL },
+    { LINK_PAGE_CONSOLE, LINK_MAX_REGS, old_read, old_write },
+};
+
+/* A panel of this build takes an older IOmcu console build's window of 60
+ * bytes, read whole as 32 registers, and acknowledges it. */
+TEST_CASE(a_window_of_60_bytes_from_an_older_iomcu_arrives_whole)
+{
+    up(true);
+    link_dev_init(&g_dev, k_old, 2u, NULL, g_now);
+    g_old_seq = 100u;
+    g_old_len = (uint8_t)LINK_CN_DATA_BYTES_MAX;
+    g_all_len = 0u;
+    g_all[0] = '\0';
+    run(40, true);
+    read_out();
+    CHECK(strstr(g_all, "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefz\n")
+          != NULL);
+    CHECK_EQ(g_old_len, 0u);
+    CHECK_EQ(g_old_seq, 160u);
+}
+
+/* An older panel reads 32 registers: this build's page answers them, the
+ * window in the first 16 and 0 past it. */
+TEST_CASE(an_older_panels_read_of_32_registers_is_answered)
+{
+    linked(true);
+    page_console_say(&g_console, "%s", "a line of more than twenty-eight bytes");
+    iomcu_pass();
+    link_msg_t q, a;
+
+    memset(&q, 0, sizeof(q));
+    q.op = LINK_OP_READ;
+    q.page = LINK_PAGE_CONSOLE;
+    q.count = LINK_MAX_REGS;
+    CHECK(link_dev_dispatch(&g_dev, &q, &a, g_now));
+    CHECK_EQ(a.op, LINK_OP_DATA);
+    CHECK_EQ(a.count, LINK_MAX_REGS);
+    CHECK_EQ(a.regs[LINK_CN_OUT_LEN] & LINK_CN_OUT_LEN_MASK, LINK_CN_DATA_BYTES);
+    for (unsigned r = LINK_CN_COUNT; r < LINK_MAX_REGS; ++r) {
+        CHECK_EQ(a.regs[r], 0u);
+    }
+}
+
 int main(void)
 {
     RUN(a_line_goes_over_the_page_and_its_output_comes_back);
@@ -832,5 +915,7 @@ int main(void)
     RUN(an_update_to_a_console_image_finds_the_page_at_the_next_look);
     RUN(the_tunnel_refuses_what_is_no_frame_of_it);
     RUN(a_line_before_the_last_has_run_is_refused_busy_and_sent_again);
+    RUN(a_window_of_60_bytes_from_an_older_iomcu_arrives_whole);
+    RUN(an_older_panels_read_of_32_registers_is_answered);
     return test_summary("console_tunnel");
 }

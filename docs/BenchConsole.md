@@ -375,7 +375,7 @@ The relay makes at most one exchange a control pass, 5ms when nothing else holds
 | Output, sustained | 7 for each 28 bytes, 2 passes | 2,800 bytes/s, 700 frames/s |
 | Input, 6 bytes a chunk | 2 for each chunk, one pass | 1,200 bytes/s, 135ms for a line of 160 characters |
 
-A window is one read of 16 registers, the most a read asks for: 4 reply frames fit the panel's TWAI receive FIFO ([The link](Link.md)).
+A window is one read of 16 registers, the most a read asks for: 4 reply frames fit the panel's TWAI receive FIFO ([The link](Link.md)). The page stays 32 registers wide, and the registers past the window read 0, so a panel built for 60-byte windows still reads it. This panel takes a window of up to 60 bytes from an IOmcu console build older than protocol 4.35 and reads it as 32 registers in one exchange.
 
 Measured at the station with a window of 60 bytes, which this build does not have: 2,856 to 3,510 bytes/s of output, with `help` sent at 6/s to 30/s, 17ms to 21ms a window against 10ms calculated. The control task's delay of 5ms comes after the pass's work (`vTaskDelay`), so a pass is 5ms plus its own exchanges: the panel's polls and the window's own frames. The share of each is not measured. At the same 17ms to 21ms a window, a 28-byte window gives about 1,330 to 1,650 bytes/s; not measured. A window and its acknowledgement take 2 passes, and after the last window of a burst the next look comes up to 50ms later.
 
