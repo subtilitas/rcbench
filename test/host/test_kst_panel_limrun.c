@@ -10,7 +10,10 @@
 
 #include "shot_facts_rig.h"
 #include "kst_panel_rig.h"
+#include "prog5v_box.h"
+#include "prog_choice.h"
 #include "settings_sensors.h"
+#include "ui_board.h"
 /* kst_prog_say(): the test plants a message the programmer said earlier. */
 #include "../../shared/bench/kst_prog_int.h"
 
@@ -765,6 +768,36 @@ TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The rbmod carrier's port, fed from the PROG 5V box: the box stands for
+ * the PD mini.  A PD mini on the servo rails with its output off refuses
+ * nothing there, and SEARCH+PROG writes through the box's power cycles.
+ * With the box off the run does not start. */
+TEST_CASE(on_the_carrier_the_prog_5v_stands_for_the_pd_mini)
+{
+    for (int box_on = 0; box_on < 2; ++box_on) {
+        lr_fresh(false);
+        g_rig.fixed = true;
+        ui_board_set(OUTBIND_BOARD_RBMOD);
+        prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+        prog5v_box_publish(box_on ? 3u : 2u, 21u, PROG5V_HELD_NONE);
+        lr_pd_reading(false);                /* the rails' PD mini, off */
+        lr_ms(200u);
+        lr_start();
+        CHECK_EQ(servo_screen_limit_running(), box_on != 0);
+        if (box_on) {
+            lr_run_out();
+            CHECK(strstr(lr.report, "search only") == NULL);
+            CHECK(g_rig.sim.n_writes > 0u);
+        } else {
+            CHECK_EQ(lr.disarms, 0u);
+        }
+        g_rig.fixed = false;
+        prog5v_box_reset();
+        prog_choice_reset();
+        ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+    }
+}
+
 /* The bench's own PWM output as the target: SERVO PULSES is not on the
  * page and a tap where it stands on the programming port changes nothing;
  * the run searches out to PULSE MIN and PULSE MAX with no session. */
@@ -1025,6 +1058,7 @@ int main(void)
     RUN(a_run_on_the_programming_port_needs_4_8_v_on_the_rail);
     RUN(a_run_on_the_programming_port_needs_the_pd_mini_on);
     RUN(without_a_pd_mini_a_limit_run_writes_nothing);
+    RUN(on_the_carrier_the_prog_5v_stands_for_the_pd_mini);
     RUN(a_pd_mini_heard_first_in_a_session_gets_no_connect);
     RUN(servo_pulses_is_not_offered_for_a_pwm_pin);
     RUN(a_limit_run_ended_in_a_session_offers_restore);

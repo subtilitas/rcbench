@@ -100,7 +100,7 @@ bool prog_choice_refusal(uint8_t port, char *buf, size_t cap)
 
 bool prog_choice_locked(void)
 {
-    return servo_screen_tester_target_locked();
+    return servo_screen_tester_target_locked() || servo_screen_arm_asked();
 }
 
 bool prog_choice_lock_line(char *buf, size_t cap)
@@ -149,17 +149,10 @@ void prog_choice_entry(uint8_t port, char *buf, size_t cap)
 
 uint8_t prog_choice_want_target(void)
 {
-    if (!prog_choice_carrier()) {
-        return (uint8_t)settings_get_int(SET_SERVO_TARGET);
-    }
-    const uint8_t port = prog_choice_port();
-    if (!prog_choice_offered() || port == 0u
-        || port_view_func((uint8_t)(port - 1u))
-               != (uint8_t)LINK_PG_FN_SERVO_PWM
-        || prog_choice_refusal(port, NULL, 0u)) {
+    if (prog_choice_carrier() && !prog_choice_offered()) {
         return 0u;
     }
-    return port;
+    return prog_choice_port();
 }
 
 bool prog_choice_needs_5v(void)
@@ -174,7 +167,8 @@ bool prog_choice_want_pwm(void)
     if (!prog_choice_carrier()) {
         return pwm;
     }
-    return pwm && prog_choice_want_target() != 0u && !prog_choice_needs_5v();
+    return pwm && prog_choice_want_target() != 0u && !prog_choice_needs_5v()
+           && !prog_choice_refusal(prog_choice_port(), NULL, 0u);
 }
 
 /**

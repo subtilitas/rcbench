@@ -27,6 +27,7 @@
 #include "settings_screen.h"
 #include "sensors_rows.h"
 #include "settings_sensors.h"
+#include "ui_board.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -297,11 +298,16 @@ void outputs_port_open(void)
 const uint8_t *outputs_pwm_pins(const uint8_t *pins)
 {
     static uint8_t pwm[LINK_PG_PORTS_MAX];
+    /* On a board with soldered pins the binding of the servo outputs comes
+     * first: a SERVO PWM port on its slice goes back to NONE (the IOmcu's
+     * prog_port_yield()), so no port holds a slice against it. */
+    const bool yields = ui_board_roles() != NULL;
     for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
         /* A function not known counts as SERVO PWM: the stricter rule.
          * NONE and DShot pins are under no PWM rule. */
-        pwm[n] = (pins != NULL && port_view_pwm(n)) ? pins[n]
-                                                    : OUTBIND_NO_GPIO;
+        pwm[n] = (pins != NULL && !yields && port_view_pwm(n))
+                     ? pins[n]
+                     : OUTBIND_NO_GPIO;
     }
     return pwm;
 }

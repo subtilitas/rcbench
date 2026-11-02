@@ -1373,7 +1373,11 @@ On board 2 the IOmcu holds every role to its pin:
   of a DShot rate are refused with BAD_VALUE; a 4.35 or older carrier
   refuses SERVO PWM as well. SERVO PWM on port 3 (GPIO 0) is refused while
   PWM04 (GPIO 1, slice 0) carries a PWM slot, as on any board, and a PWM
-  slot bound on that slice lets the port go first.
+  slot bound on that slice lets the port go first. An OUTPUTS write or a
+  BIND commit that puts a PWM slot on a SERVO PWM port's slice is taken:
+  the port goes back to FUNC NONE, its PWM bit to 0, and TARGET to 0 where
+  it names the port. A port a KST or HITEC session holds does not go back,
+  and such a write is refused with BAD_VALUE.
 - SUPPLY TX and RX are GPIO 7 and GPIO 6, SENSE SDA and SCL GPIO 16 and
   GPIO 17, TONE's pin GPIO 22. A write of another pin is refused with
   BAD_VALUE. The other registers of the pages take their own rules.

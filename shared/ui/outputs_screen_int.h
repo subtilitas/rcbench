@@ -242,6 +242,8 @@ void outputs_port_forget_open(void);
 /* The ports' pins that hold a PWM slice, for the slice and compare
  * rules: @p pins (LINK_PG_PORTS_MAX of them) with a NONE port's pin taken
  * out, as the IOmcu's prog_port_slots_check() does.  A NONE port's pin
- * stays taken as a pin.  One static copy, UI task only. */
+ * stays taken as a pin.  None on a board with soldered pins, whose ports
+ * give way to the binding (prog_port_yield()).  One static copy, UI task
+ * only. */
 const uint8_t *outputs_pwm_pins(const uint8_t *pins);
 const uint8_t *outputs_port_pins(void);

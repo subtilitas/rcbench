@@ -56,8 +56,9 @@ und laufen mit einer Framerate. PWM04 (GPIO 1) teilt Slice 0 mit PROGP04
 (GPIO 0), und PROGP02 (GPIO 14) teilt Slice 7 mit PROGP03 (GPIO 15). Ab
 Protokoll 4.36 treibt der Servotester den Puls des gewählten
 Programmierports ([Der Programmierport](#der-programmierport)). Die
-Bindung von PWM01 bis PWM04 geht vor: solange PWM04 einen PWM-Ausgang
-trägt, bekommt PROGP04 keinen Puls. Nur der gewählte Port läuft als
+Bindung von PWM01 bis PWM04 geht vor: ein auf PWM04 gebundener
+PWM-Ausgang setzt PROGP04 auf FUNC NONE zurück, und solange PWM04 einen
+PWM-Ausgang trägt, bekommt PROGP04 keinen Puls. Nur der gewählte Port läuft als
 SERVO PWM, PROGP02 und PROGP03 pulsen also nie zusammen.
 
 ## Der Programmierport

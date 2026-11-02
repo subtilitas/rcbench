@@ -477,8 +477,15 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
         return outputs_slots_armed_check(s->slots, next, true);
     }
     /* Nor a slot on a programming port's pin, or a PWM slot beside one in
-     * the silicon: a port is no standard servo port and lends no pin. */
-    if (prog_port_slots_check(&s_prog, next) != 0u) {
+     * the silicon: a port is no standard servo port and lends no pin.  On
+     * a board with soldered pins the servo outputs come first: a SERVO PWM
+     * port on a PWM slot's slice goes back to NONE (prog_port_yield())
+     * once the page is taken. */
+    const uint8_t yield = (outbind_roles(IOMCU_BOARD_ID) != NULL)
+                              ? (uint8_t)(prog_port_slots_yield(&s_prog, next)
+                                          & ~ports_wire())
+                              : 0u;
+    if (prog_port_slots_check_yield(&s_prog, next, yield) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     /* Nor one on a pin the supply holds: the bank would leave it unbound,
@@ -506,6 +513,8 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
                                   servo_page_slots_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
+    prog_port_yield_t yielded;
+    prog_port_yield(&s_prog, yield, &yielded);
     uint16_t prev[LINK_OS_COUNT];
     memcpy(prev, s->slots, sizeof(prev));
     const uint8_t bound_before = bound_slots();
@@ -545,6 +554,7 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
          * slot bound then needs back. */
         memcpy(s->slots, prev, sizeof(prev));
         outputs_slots_apply(&s_outputs, s->slots);
+        prog_port_unyield(&s_prog, &yielded);
         hw_apply_only(bound_before);
         return LINK_NACK_BAD_VALUE;
     }

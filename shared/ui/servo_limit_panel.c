@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "kst_panel.h"
+#include "prog5v_box.h"
 #include "prog_choice.h"
 #include "prog_registry.h"
 #include "kst_port.h"
@@ -57,6 +58,27 @@ int servo_screen_limit_phase(void)
 static bool lim_pd_answers(void)
 {
     return s.have_sup && s.sup.online && !supply_screen_model();
+}
+
+/**
+ * @brief The run drives the rbmod carrier's programming port: fed from the
+ *        fixed 5V on the PROG 5V box, which the programmer switches for its
+ *        power cycles, whatever a PD mini on the servo rails does.
+ * @return true on the carrier with a port as the drive's target
+ */
+static bool lim_fixed_supply(void)
+{
+    return prog_choice_carrier() && s.drive_target >= 1u
+           && s.drive_target <= LINK_PG_PORTS_MAX;
+}
+
+/**
+ * @brief A PD mini that feeds the servo the run reads.
+ * @return true when a PD mini answers and the port is not the carrier's
+ */
+static bool lim_pd_feeds(void)
+{
+    return lim_pd_answers() && !lim_fixed_supply();
 }
 
 /* Why the INA3221 is not the meter a run may start on, or NULL.  The limit
@@ -130,7 +152,8 @@ const char *lim_blocked(void)
 
 /* Why the programming is not offered, or NULL: only a servo on the
  * programming port, with the port in PWM, and a PD mini on and set where a
- * session can run, or without one a servo rail read at 4.8V or more. */
+ * session can run, or without one a servo rail read at 4.8V or more.  On
+ * the rbmod carrier's port the PROG 5V box on stands for the PD mini. */
 const char *lim_prog_why(void)
 {
     if (s.drive_target == 0u || s.drive_target == SERVO_SCREEN_TARGET_UNKNOWN
@@ -141,13 +164,17 @@ const char *lim_prog_why(void)
         && (prog_reg_servo_holds() || !kst_panel_run_ready())) {
         return TR(SV_LIM_PROG_BUSY);
     }
+    /* The carrier's port: its supply is the PROG 5V box's. */
+    if (lim_fixed_supply() && !prog5v_box_on()) {
+        return ui_servo_str(SERVO_STR_START_PROG_5V);
+    }
     /* A PD mini that answers with its output off, on a rail fed from
      * elsewhere: the read session's ENTER would switch it on beside that
      * supply, and the run ends on an output switched on. */
-    if (!servo_limrun_running(&s.lim) && lim_pd_answers() && !s.sup.output) {
+    if (!servo_limrun_running(&s.lim) && lim_pd_feeds() && !s.sup.output) {
         return TR(SV_LIM_PROG_PD_OFF);
     }
-    if (lim_pd_answers()
+    if (lim_pd_feeds()
         && supply_screen_set_v() * 1000.0f
                < (float)KST_PORT_SUPPLY_MIN_MV - 0.5f) {
         return TR(SV_LIM_PROG_LOW);
@@ -156,7 +183,7 @@ const char *lim_prog_why(void)
      * rail as the INA3221's last window read it holds the same 4.8V the
      * IOmcu asks of a PD mini, which it cannot check here.  At the
      * start only: the rail is the run's to watch after it. */
-    if (!servo_limrun_running(&s.lim) && !lim_pd_answers()
+    if (!servo_limrun_running(&s.lim) && !lim_pd_feeds()
         && (!s.win.voltage || s.win.mean_mv < KST_PORT_SUPPLY_MIN_MV)) {
         return TR(SV_LIM_PROG_RAIL);
     }
@@ -167,17 +194,19 @@ const char *lim_prog_why(void)
  * @brief Why the run writes nothing to the servo.
  *
  * A KST or Chaservo servo takes a written value only from its next
- * power-up (docs/ServoProgrammer.md, "The power cycle"): with a PD mini
- * every session's CONNECT and the LEAVE after a write switch it off and
- * on; on a rail fed from elsewhere nothing does, and the check after the
- * write would search the servo as it was.  Asked before a start only.
+ * power-up (docs/ServoProgrammer.md, "The power cycle"): with a PD mini,
+ * or on the rbmod carrier's port with the PROG 5V box on, every session's
+ * CONNECT and the LEAVE after a write switch it off and on; on a rail fed
+ * from elsewhere nothing does, and the check after the write would search
+ * the servo as it was.  Asked before a start only.
  *
  * @return SV_LIM_PROG_NO_PD's line on the programming port without a PD
- *         mini, else NULL
+ *         mini or the carrier's fixed 5V, else NULL
  */
 const char *lim_write_why(void)
 {
-    if (lim_reads() && !servo_limrun_running(&s.lim) && !lim_pd_answers()) {
+    if (lim_reads() && !servo_limrun_running(&s.lim) && !lim_pd_feeds()
+        && !(lim_fixed_supply() && prog5v_box_on())) {
         return TR(SV_LIM_PROG_NO_PD);
     }
     return NULL;
@@ -239,7 +268,7 @@ static bool lim_apply(const servo_limrun_do_t *d)
         ++s.arm_rev;
     }
     kst_prog_msg_id_t m = KST_PROG_MSG_NONE;
-    if (d->connect && lim_pd_answers()
+    if (d->connect && lim_pd_feeds()
         && (!s.sup.output || !s.lim.sup_online)) {
         /* A PD mini the run did not start with, or one whose output is
          * off: the session would switch it on beside the rail's feed.
@@ -247,7 +276,7 @@ static bool lim_apply(const servo_limrun_do_t *d)
         servo_limrun_supply_refused(&s.lim, s.sup.output, test_now());
         again = true;
     } else if (d->connect) {
-        const bool pd = lim_pd_answers();
+        const bool pd = lim_pd_feeds();
         m = kst_panel_run_connect(
             pd, (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
             (uint16_t)lroundf(supply_screen_set_i() * 1000.0f));

@@ -180,7 +180,8 @@ einen Neustart erhalten.
 - Das Panel bittet den IOmcu um FUNC SERVO PWM auf dem gewählten Port und
   NONE auf den anderen drei. Das TARGET des IOmcu, der Port der Liste
   PROGRAMMIEREN und die Endlagensuche von KST folgen, sobald der Port
-  SERVO PWM liest.
+  SERVO PWM liest. Bis dahin sendet der Tester keinen Befehl: an Stelle
+  des Ports erreicht nichts die Servoausgänge.
 - Die Zeile PORT nennt den Port, `PROGP02 GPIO 14  5V FEST` in der Zeile
   von KST und `PROG-PORT 2 GPIO 14  D-SERIE` in der Zeile von Hitec, oder
   `KEIN PROG-PORT GESETZT`.
@@ -201,6 +202,10 @@ einen Neustart erhalten.
   `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, solange es aus ist. Die
   Spannungsstufen eines Servotests erreichen den Port nicht: ein Test auf
   ihm sagt `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN`.
+- Für den Endlagenlauf steht das Feld PROG 5V für den PD mini: SEARCH+PROG
+  und SERVO PULSES werden mit dem Feld EIN angeboten, und die
+  Power-Cycles der Session schalten GPIO 21. Ein PD mini an den
+  Servoschienen zählt nicht, ob ein oder aus.
 
 ## Der Port
 

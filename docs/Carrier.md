@@ -56,8 +56,9 @@ slice and run at one frame rate. PWM04 (GPIO 1) shares slice 0 with
 PROGP04 (GPIO 0), and PROGP02 (GPIO 14) shares slice 7 with PROGP03
 (GPIO 15). From protocol 4.36 the servo tester drives the chosen
 programming port's pulse ([The programming port](#the-programming-port)).
-The binding of PWM01 to PWM04 comes first: while PWM04 carries a PWM
-output, PROGP04 takes no pulse. Only the chosen port runs as SERVO PWM, so
+The binding of PWM01 to PWM04 comes first: a PWM output bound on PWM04
+sets PROGP04 back to FUNC NONE, and while PWM04 carries a PWM output,
+PROGP04 takes no pulse. Only the chosen port runs as SERVO PWM, so
 PROGP02 and PROGP03 never pulse together.
 
 ## The programming port

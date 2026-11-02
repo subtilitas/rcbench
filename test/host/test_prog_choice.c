@@ -11,6 +11,10 @@
  * - progp04_beside_a_bound_pwm04_is_refused_by_name
  * - no_pulse_without_the_prog_5v
  *
+ * A chosen port that is not ready stays the destination: prog_link takes no
+ * command for the servo outputs in its place.  The lock under an ARM asked
+ * is test_kst_panel_screen's.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -18,6 +22,7 @@
 
 #include "prog5v_box.h"
 #include "prog_choice.h"
+#include "prog_link.h"
 #include "ui_board.h"
 
 #define RBMOD ((uint16_t)OUTBIND_BOARD_RBMOD)
@@ -136,6 +141,29 @@ static void done(void)
     prog_choice_reset();
 }
 
+/* Whether a command reaches the servo outputs while the tester wants
+ * @p target on the carrier and every port is parked at FUNC NONE: the
+ * prog_link the panel runs, at 4.36. */
+static bool command_taken(uint8_t target)
+{
+    uint16_t page[LINK_PG_REGS];
+    memset(page, 0, sizeof(page));
+    page[LINK_PG_COUNT] = 4u;
+    for (unsigned n = 0; n < 4u; ++n) {
+        page[LINK_PG_REG(n, LINK_PG_PIN)] = k_pins[n];
+        page[LINK_PG_FUNC(n)] = (uint16_t)LINK_PG_FN_NONE;
+        page[LINK_PG_FLAGS] |= LINK_PG_F_PARKED(n);
+    }
+    prog_link_t pl;
+    prog_link_init(&pl);
+    prog_link_came_up(&pl, LINK_MINOR_CARRIER_PWM);
+    prog_link_read(&pl, page, 0u);
+    prog_link_want(&pl, target, prog_choice_want_pwm());
+    CHECK_EQ(prog_link_wanted(&pl), 0u);
+    CHECK_EQ(prog_link_drive(&pl).target, target);
+    return prog_link_command(&pl, false);
+}
+
 /* ----------------------------------------------------------------- cases */
 
 TEST_CASE(each_of_the_four_ports_is_chosen_and_kept_over_a_restart)
@@ -246,8 +274,11 @@ TEST_CASE(the_funcs_follow_the_choice_one_ask_at_a_time)
     carrier(LINK_MINOR_CARRIER_PWM);
     view(on1);
     CHECK(prog_choice_pick(3u));
-    /* The TARGET waits for the port's SERVO PWM. */
-    CHECK_EQ(prog_choice_want_target(), 0u);
+    /* The port stays the destination while its SERVO PWM is asked for: the
+     * IOmcu's TARGET waits (the port is parked, not bound) and the tester
+     * takes no command but a release, so nothing reaches the outputs. */
+    CHECK_EQ(prog_choice_want_target(), 3u);
+    CHECK(!command_taken(prog_choice_want_target()));
     /* PROGP01 back to NONE first, so no two ports hold a slice. */
     prog_choice_tick();
     CHECK_EQ(g_asks, 1);
@@ -317,7 +348,12 @@ TEST_CASE(progp04_beside_a_bound_pwm04_is_refused_by_name)
         CHECK(!prog_choice_refusal(port, NULL, 0u));
     }
     CHECK(!prog_choice_pick(4u));
-    CHECK_EQ(prog_choice_want_target(), 0u);
+    /* PROGP04 stays the destination, without a pulse: no command reaches
+     * the outputs in its place. */
+    CHECK_EQ(prog_choice_want_target(), 4u);
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+    CHECK(!prog_choice_want_pwm());
+    CHECK(!command_taken(prog_choice_want_target()));
     prog_choice_tick();
     CHECK_EQ(g_asks, 1);
     CHECK_EQ(g_ask_port, 3u);
@@ -350,6 +386,14 @@ TEST_CASE(no_pulse_without_the_prog_5v)
     /* PORT PWM OFF is OFF whatever the 5V. */
     settings_set(SET_SERVO_PORT_PWM, 0.0f);
     CHECK(!prog_choice_want_pwm());
+    /* PROGP02's entry names the box with PORT PWM OFF too: the tap on ON
+     * is refused there and the line says why. */
+    prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
+    tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
+    tap(OU_POP_X(1), OU_POP_ROW_Y(1));       /* PROG PORT 2 */
+    CHECK_EQ(outputs_screen_port_shown(), 1);
+    CHECK_STR_EQ(reason(), TR(PC_NEED_5V));
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
     /* OUTPUTS as the target: no 5V is needed. */
     CHECK(prog_choice_pick(0u));
     prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);

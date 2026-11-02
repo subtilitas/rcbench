@@ -340,8 +340,7 @@ static void carrier_reason(char *buf, size_t cap)
     } else if (prog_choice_lock_line(buf, cap)
                || prog_choice_refusal(port, buf, cap)) {
         /* The lock's line, or the output on the port's slice by name. */
-    } else if (target() == port && settings_get_bool(SET_SERVO_PORT_PWM)
-               && prog_choice_needs_5v()) {
+    } else if (target() == port && prog_choice_needs_5v()) {
         snprintf(buf, cap, "%s", TR(PC_NEED_5V));
     } else if (target() > 0 && target() != port) {
         snprintf(buf, cap, TR(OUT_PORT_TESTER_ON), (unsigned)target());
@@ -402,7 +401,7 @@ static uint32_t signature(void)
     }
     return 1u | ((uint32_t)(target() & 7) << 1)
            | (settings_get_bool(SET_SERVO_PORT_PWM) ? 16u : 0u)
-           | (servo_screen_tester_target_locked() ? 32u : 0u)
+           | (prog_choice_locked() ? 32u : 0u)
            | (servo_screen_port_pwm_locked() ? 64u : 0u)
            | (held() ? 128u : 0u)
            | (fn_locked() ? 256u : 0u)

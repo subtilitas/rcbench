@@ -11,9 +11,9 @@
  * On the carrier a port's FUNC is NONE or SERVO PWM (board_fix.h).  The
  * chosen port needs SERVO PWM for the tester's pulse; every other port goes
  * back to NONE, so no unchosen port holds a PWM slice.  prog_choice_tick()
- * asks for those FUNCs one at a time through port_view_ask(), and
- * prog_choice_want_target() keeps the IOmcu's TARGET at 0 until the chosen
- * port reads SERVO PWM.
+ * asks for those FUNCs one at a time through port_view_ask().  Until the
+ * chosen port reads SERVO PWM the IOmcu's TARGET stays 0 and the tester
+ * takes no command (prog_link_no_drive()).
  *
  * The carrier's limits, by name:
  *   - PROGP04 (GPIO 0) shares PWM slice 0 with PWM04 (GPIO 1).  While PWM04
@@ -82,7 +82,7 @@ bool prog_choice_refusal(uint8_t port, char *buf, size_t cap);
 /**
  * @brief Whether the choice is locked: the SERVO TARGET rules (ARMED or
  *        asked to arm, a test, a sweep or a limit run, a session holding a
- *        port).
+ *        port), an ARM asked for included (servo_screen_arm_asked()).
  * @return true while locked
  */
 bool prog_choice_locked(void);
@@ -113,8 +113,11 @@ void prog_choice_entry(uint8_t port, char *buf, size_t cap);
 /**
  * @brief What prog_link writes to TARGET.
  *
- * SET_SERVO_TARGET on a board whose pins are chosen.  On the carrier the
- * chosen port once it reads SERVO PWM and is not refused, otherwise 0.
+ * SET_SERVO_TARGET; on a carrier whose IOmcu is older than 4.36, 0.  The
+ * chosen port stays the destination while its FUNC is asked for or it is
+ * refused: prog_link_wanted() keeps the IOmcu's TARGET at 0 until the port
+ * reads SERVO PWM, and prog_link_no_drive() holds every command but a
+ * release meanwhile, so nothing reaches the servo outputs in its place.
  *
  * @return 0 to 4
  */
@@ -124,7 +127,7 @@ uint8_t prog_choice_want_target(void);
  * @brief What prog_link writes to the target's PWM bit.
  *
  * SET_SERVO_PORT_PWM on a board whose pins are chosen; on the carrier only
- * with a target and the PROG 5V box reading ON.
+ * with a target that is not refused and the PROG 5V box reading ON.
  *
  * @return true for the pulse
  */

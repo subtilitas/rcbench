@@ -6419,7 +6419,8 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
 - PROGP04 (GPIO 0) teilt PWM-Slice 0 mit PWM04 (GPIO 1). Solange PWM04
   einen PWM-Ausgang trägt, wird PROGP04 nicht angeboten, und die Zeile
   lautet `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)`. Die Bindung von
-  PWM01 bis PWM04 ändert sich für einen Programmierport nie.
+  PWM01 bis PWM04 ändert sich für einen Programmierport nie: ein
+  PWM-Protokoll auf PWM04 setzt PROGP04 auf FUNC NONE zurück.
 - Die Ports laufen an den festen 5V von M7 auf GPIO 21. PORT-PWM EIN wird
   nur genommen, solange das Feld PROG 5V EIN zeigt; sonst lautet die Zeile
   `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, und es geht kein Puls

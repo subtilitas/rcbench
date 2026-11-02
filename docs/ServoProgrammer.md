@@ -159,7 +159,9 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
 
 - The panel asks the IOmcu for FUNC SERVO PWM on the chosen port and NONE
   on the other three. The IOmcu's TARGET, the PROGRAM list's port and
-  the KST limit search follow once the port reads SERVO PWM.
+  the KST limit search follow once the port reads SERVO PWM. Until then
+  the tester sends no command: nothing reaches the servo outputs in the
+  port's place.
 - The PORT row reads the port, `PROGP02 GPIO 14  5V FIXED` on the KST
   row and `PROG PORT 2 GPIO 14  D SERIES` on the Hitec row, or
   `NO PROG PORT SET`.
@@ -177,6 +179,10 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
   `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` while it is off. A servo
   test's voltage steps do not reach the port: a test on it says
   `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
+- For the limit run the PROG 5V box stands for the PD mini: SEARCH+PROG
+  and SERVO PULSES are offered with the box ON, and the session's power
+  cycles switch GPIO 21. A PD mini on the servo rails, on or off, does not
+  count.
 
 ## The port
 

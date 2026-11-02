@@ -5856,7 +5856,8 @@ on the IOmcu's link (board 2).
 - PROGP04 (GPIO 0) shares PWM slice 0 with PWM04 (GPIO 1). While PWM04
   carries a PWM output, PROGP04 is not offered, and the line reads
   `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)`. The binding of PWM01
-  to PWM04 is never changed for a programming port.
+  to PWM04 is never changed for a programming port: a PWM protocol given
+  to PWM04 sets PROGP04 back to FUNC NONE.
 - The ports run from M7's fixed 5V on GPIO 21. PORT PWM ON is taken only
   while the PROG 5V box reads ON; otherwise the line reads
   `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, and no pulse goes out.
