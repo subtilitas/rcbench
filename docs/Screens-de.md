@@ -6237,9 +6237,14 @@ Bindung der Ausgänge, sie gehören also zur Platine, nicht zum Panel. Ein
 Tippen auf FUNKTION und ein Tippen auf eine Taste der Platinenansicht sind Bitten: das
 Panel schreibt sie bei einem Prüfstand in Ruhe (SAFE, kein Test, kein
 Sweep, keine Sitzung des Servo-Programmierers) und sagt in der gelben
-Zeile, wie die Bitte steht: `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER
-SERVO-PROGRAMMIERER`, `DER IOMCU HAT ES ABGELEHNT` oder `VERBINDUNG VOR DEM
-SCHREIBEN VERLOREN`. Ein Port, der das Ziel des Testers ist, wird für das
+Zeile, wie die Bitte steht: `DER IOMCU HAT ES ABGELEHNT`, `VERBINDUNG VOR DEM
+SCHREIBEN VERLOREN` oder was sie aufhält: `WARTET AUF SAFE`, `WARTET: EIN
+SERVOTEST ODER SWEEP LÄUFT`, `WARTET: DER SERVO-PROGRAMMIERER HÄLT EINEN PORT`,
+`WARTET: DER HITEC-PROGRAMMIERER HÄLT EINEN PORT`, `WARTET: DER
+ESC-PROGRAMMIERER HÄLT EINEN PIN` oder `WARTET: DIE PORTS WERDEN ZUERST
+GELESEN`. `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER SERVO-PROGRAMMIERER` steht
+höchstens einen Durchlauf der Steuerung, bis das Panel die Bitte beurteilt hat.
+Ein Port, der das Ziel des Testers ist, wird für das
 Schreiben losgelassen (sein Puls aus, das Ziel die Ausgänge) und danach
 wieder genommen.
 

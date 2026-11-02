@@ -84,6 +84,8 @@ history is in git.
 
 ### Fixed
 
+- OUTPUTS: a FUNCTION or pin ask no longer waits for ever after a panel or IOmcu start. The sweep's state, not known since the link came up, was settled only by a TARGET change or a position. A port on a DShot function, or no port wanted by the SERVO screen, gives neither. The ask now settles it. The amber line names what holds an ask: SAFE, a servo test or sweep, the servo, Hitec or ESC programmer, or a read of the ports.
+- Debug builds: the relay's own lines no longer land inside an IOmcu line; a gap of 1500ms or more in the control passes, as during an IOmcu update, says `console: no pass from t_ms=<a> to t_ms=<b>`.
 - Wi-Fi: the same wrong code in a browser's cookie counts once toward the 16 wrong codes, for a RANDOM and a kept code. A tab open from before a change of the code no longer switches the radio off. The panel remembers the last 4 wrong cookie values as keyed hashes, emptied at every start of the radio. A different value and every `POST /code` count as before.
 - ESC signal wire: a hold's fill reaches the screen. MOTOR & ESC's session path did not read the page set's hold revision, so no hold showed a fill. It now redraws the hold's button alone in each framebuffer, 251 cache-line fills a frame (`motor-wire-hold`).
 - ESC signal wire: the action row, BACK, value rows, NEXT, PREV, CANCEL and list entries show the pressed state from press to release, and a press redraws that button alone. A move redraws nothing.

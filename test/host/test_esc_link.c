@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "esc_link_rig.h"
+#include "esc_prog.h"
 
 TEST_CASE(an_older_iomcu_is_sent_nothing)
 {
@@ -66,6 +67,34 @@ TEST_CASE(a_start_on_a_free_page_sends_no_command)
 
     link_run(1000u);
     CHECK_EQ(g_exchanges - held, 10);
+}
+
+/*
+ * Nothing of a session stands after the link: not known, not held, on the
+ * readout the ports' hold reads, until a read says what the page holds.
+ */
+TEST_CASE(a_hold_ends_with_the_link_and_a_free_page_read_is_no_hold)
+{
+    esc_link_readout_t r;
+
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    esc_link_readout(&g_l, &r);
+    CHECK(esc_prog_port_taken(&r));
+    esc_link_lost(&g_l);
+    esc_link_readout(&g_l, &r);
+    CHECK(!r.known);
+    CHECK(!esc_prog_port_taken(&r));
+    esc_link_came_up(&g_l, ESC_LINK_MINOR);
+    esc_link_readout(&g_l, &r);
+    CHECK(!esc_prog_port_taken(&r));
+    /* An IOmcu that started again: a free page. */
+    up_am_rig();
+    link_up();
+    esc_link_readout(&g_l, &r);
+    CHECK(r.known);
+    CHECK(!esc_prog_port_taken(&r));
 }
 
 TEST_CASE(a_restart_closes_what_the_first_read_finds)
@@ -764,6 +793,7 @@ int main(void)
 {
     RUN(an_older_iomcu_is_sent_nothing);
     RUN(a_start_on_a_free_page_sends_no_command);
+    RUN(a_hold_ends_with_the_link_and_a_free_page_read_is_no_hold);
     RUN(a_restart_closes_what_the_first_read_finds);
     RUN(a_restart_with_a_pin_that_does_not_come_back);
     RUN(a_port_that_does_not_come_back_names_the_port);

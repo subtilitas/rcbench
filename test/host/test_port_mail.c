@@ -22,6 +22,7 @@
 #include "port_mail.h"
 #include "port_view.h"
 #include "prog_link.h"
+#include "ui_text.h"
 
 static port_mail_t g_m = PORT_MAIL_INIT;
 static prog_link_t g_p;
@@ -345,6 +346,17 @@ TEST_CASE(a_reused_number_does_not_take_its_old_outcome)
     port_mail_publish(&g_m, &g_p);
     port_mail_to_view(&g_m);
     CHECK_EQ(port_view_ask_state(NULL, NULL), PROG_LINK_ASK_WAITING);
+    /* What holds it reaches the view. */
+    prog_link_hold_by(&g_p, PROG_LINK_WAIT_ESC);
+    port_mail_publish(&g_m, &g_p);
+    port_mail_to_view(&g_m);
+    {
+        char line[64];
+
+        CHECK(port_view_ask_line(2u, line, sizeof(line)));
+        CHECK_STR_EQ(line, ui_tr(TX_OUT_PORT_WAIT_ESC));
+    }
+    prog_link_hold_by(&g_p, PROG_LINK_WAIT_NONE);
     /* And its own outcome. */
     CHECK(write_one());
     port_mail_publish(&g_m, &g_p);

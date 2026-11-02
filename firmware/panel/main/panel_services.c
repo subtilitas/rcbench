@@ -125,8 +125,11 @@ static __attribute__((noinline)) void prog_hold_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    prog_link_hold(&s_prog_link,
-                   kst_prog_port_taken(&rd) || hitec_taken() || esc_taken());
+    prog_link_hold_by(&s_prog_link,
+                      kst_prog_port_taken(&rd) ? PROG_LINK_WAIT_KST
+                      : hitec_taken()          ? PROG_LINK_WAIT_HITEC
+                      : esc_taken()            ? PROG_LINK_WAIT_ESC
+                                               : PROG_LINK_WAIT_NONE);
 }
 
 /* The part names as the alerts print them. */

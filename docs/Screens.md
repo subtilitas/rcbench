@@ -5686,8 +5686,12 @@ IOmcu keeps each port's pin and function in its flash with the outputs'
 binding, so they belong to the board, not to the panel. A FUNCTION tap and
 a key tapped in the board view are asks: the panel writes them on a bench at
 rest (SAFE, no test, no sweep, no servo programmer session) and says how
-the ask stands in the amber line, `WAITS FOR SAFE, NO TEST, SWEEP OR SERVO
-PROGRAMMER`, `THE IOMCU REFUSED IT` or `LINK LOST BEFORE THE WRITE`. A port
+the ask stands in the amber line: `THE IOMCU REFUSED IT`, `LINK LOST BEFORE
+THE WRITE`, or what holds it: `WAITS FOR SAFE`, `WAITS: A SERVO TEST OR SWEEP
+RUNS`, `WAITS: THE SERVO PROGRAMMER HOLDS A PORT`, `WAITS: THE HITEC PROGRAMMER
+HOLDS A PORT`, `WAITS: THE ESC PROGRAMMER HOLDS A PIN` or `WAITS: THE PORTS ARE
+READ FIRST`. `WAITS FOR SAFE, NO TEST, SWEEP OR SERVO PROGRAMMER` stands for at
+most a control pass, until the panel has judged the ask. A port
 that is the tester's target is let go for the write (its pulse off, the
 target the outputs) and taken back after it.
 

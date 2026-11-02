@@ -102,6 +102,17 @@ typedef enum {
     PROG_LINK_ASK_LOST,        /**< the link went down before the write  */
 } prog_link_ask_state_t;
 
+/** @brief What an ask waiting on the bench waits on. */
+typedef enum {
+    PROG_LINK_WAIT_NONE = 0, /**< nothing: written at the next pass          */
+    PROG_LINK_WAIT_READ,     /**< the page is not read yet                   */
+    PROG_LINK_WAIT_KST,      /**< the KST or Chaservo programmer has a port  */
+    PROG_LINK_WAIT_HITEC,    /**< the Hitec programmer has a port            */
+    PROG_LINK_WAIT_ESC,      /**< the ESC programmer has a pin               */
+    PROG_LINK_WAIT_SAFE,     /**< the bench is ARMED                         */
+    PROG_LINK_WAIT_TEST,     /**< a position, a sweep or a hold is out       */
+} prog_link_wait_t;
+
 /**
  * @brief The panel's side of the programming ports' page.
  */
@@ -119,7 +130,10 @@ typedef struct {
     uint16_t regs[LINK_PG_REGS];        /**< the page's registers as last read */
     uint8_t  want_target;          /**< 0, or 1 + n for port n             */
     bool     want_pwm;                  /**< whether the wanted target is a PWM port */
-    bool     held;                 /**< the programmer has a port          */
+    bool     held;                 /**< a programmer has a port            */
+    uint8_t  holder;               /**< which: a prog_link_wait_t          */
+    uint8_t  rest_wait;            /**< why the bench is not at rest: a
+                                        prog_link_wait_t                   */
     bool     func;                 /**< from 4.26: FUNC and 28 registers  */
     bool     dshot;                /**< from 4.28: FUNC takes DShot       */
     uint8_t  ask_state;            /**< a prog_link_ask_state_t            */
@@ -189,6 +203,39 @@ void prog_link_want(prog_link_t *p, uint8_t target, bool pwm);
  * @param held true while the servo programmer has a port.
  */
 void prog_link_hold(prog_link_t *p, bool held);
+/**
+ * @brief prog_link_hold() that says who holds: an ask waiting names it.
+ *
+ * @param p      The link state.
+ * @param holder PROG_LINK_WAIT_KST, _HITEC or _ESC, or PROG_LINK_WAIT_NONE for
+ *               no hold.
+ */
+void prog_link_hold_by(prog_link_t *p, prog_link_wait_t holder);
+/**
+ * @brief Why the bench is not at rest for a write of this page, as the caller
+ *        of prog_link_next() judged @p quiet.
+ *
+ * @param p   The link state.
+ * @param why PROG_LINK_WAIT_SAFE, _TEST, or PROG_LINK_WAIT_NONE at rest.
+ */
+void prog_link_rest_note(prog_link_t *p, prog_link_wait_t why);
+/**
+ * @brief Whether an ask waits and nothing here stops it being written: the page
+ *        is known, read since the last ask and not held.  The bench's own rest
+ *        is the caller's to reach, a sweep's state not known included.
+ *
+ * @param p The link state.
+ * @return true then.
+ */
+bool prog_link_ask_open(const prog_link_t *p);
+/**
+ * @brief What an ask waits on.  PROG_LINK_WAIT_NONE when no ask waits, or when
+ *        one is written at the next pass.
+ *
+ * @param p The link state.
+ * @return A prog_link_wait_t.
+ */
+prog_link_wait_t prog_link_ask_wait(const prog_link_t *p);
 /**
  * @brief Whether the servo programmer holds a port.
  *

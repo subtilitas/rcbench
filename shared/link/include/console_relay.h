@@ -14,6 +14,10 @@
  * The two sides share one queue in each direction, each with one writer and one
  * reader.
  *
+ * The output ring holds whole lines.  The IOmcu's output comes in windows that
+ * end anywhere, so a line not ended stays on the control side until its LF, and
+ * the relay's own lines go ahead of it.
+ *
  * Pure logic with no hardware.
  *
  * SPDX-License-Identifier: MIT
@@ -38,6 +42,11 @@ extern "C" {
 #define CONSOLE_RELAY_LINES 8u
 /** @brief Output waiting for the serial port, bytes. */
 #define CONSOLE_RELAY_OUT_MAX 4096u
+/** @brief An IOmcu line held until its LF, bytes; longer ones go on cut. */
+#define CONSOLE_RELAY_PARTIAL_MAX 256u
+/** @brief Passes further apart than this, ms, are said: an update holds them,
+ *         and a single unanswered exchange takes at most 1000ms. */
+#define CONSOLE_RELAY_GAP_MS 1500u
 /** @brief The look at the page with nothing known to wait, ms. */
 #define CONSOLE_RELAY_POLL_MS 50u
 /** @brief The look at a page that was not there, ms. */
@@ -91,6 +100,12 @@ typedef struct {
     bool     have_next;      /**< next_seq is known */
     uint16_t next_seq;       /**< the output's next byte */
     uint8_t  sent;           /**< bytes of the line at the queue's head sent */
+    char     partial[CONSOLE_RELAY_PARTIAL_MAX]; /**< an IOmcu line, not ended */
+    uint16_t partial_len;    /**< its bytes */
+    bool     out_cut;        /**< the ring ends inside a line cut for length */
+    unsigned out_lost;       /**< bytes with no room in the ring, not yet said */
+    bool     pass_known;     /**< pass_ms is known */
+    uint32_t pass_ms;        /**< the last console_relay_link() */
     uint32_t polled_ms;      /**< the last poll */
     bool     polled_once;    /**< a poll has been made */
     bool     more;           /**< output waits: read a window */
@@ -111,7 +126,9 @@ void console_relay_init(console_relay_t *r);
 
 /**
  * @brief Control task, once a pass: the link's state.  An edge says a line with
- *        the time, and a fall ends what was on its way.
+ *        the time, and a fall ends what was on its way.  Passes
+ *        CONSOLE_RELAY_GAP_MS or more apart say a line with both times: the link
+ *        was not followed between them.
  * @param r      the relay
  * @param up     the link is up
  * @param now_ms the time

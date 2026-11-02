@@ -369,6 +369,7 @@ Das Panel trägt dieses Image. Ein IOmcu mit einem anderen Build meldet bei der 
 | `console: link down t_ms=<ms>` | der Link ging |
 | `console: the IOmcu has no console. Take the update UPDATES offers, or flash a build with IOMCU_CONSOLE=ON` | die Page antwortete `BAD_PAGE`; einmal gesagt, und das Panel schaut alle 5000ms wieder |
 | `console: the IOmcu's output restarted at <n>, expected <m>` | die Stelle der Ausgabe sprang: das IOmcu startete neu |
+| `console: no pass from t_ms=<a> to t_ms=<b>: the link was not followed` | 1500ms oder länger erreichte kein Control-Durchlauf das Relay, etwa während eines IOmcu-Updates: ein Link-Ausfall oder -Aufbau zwischen beiden Zeiten hat keine Zeile |
 | `err no link: line dropped` | eine Zeile bei getrenntem Link |
 | `err line lost: the link went down inside it` | der Link ging, während die Zeile unterwegs war |
 | `err line lost: the IOmcu restarted inside it` | das IOmcu startete neu, während die Zeile unterwegs war |
@@ -376,12 +377,15 @@ Das Panel trägt dieses Image. Ein IOmcu mit einem anderen Build meldet bei der 
 | `err the IOmcu has no console` | eine Zeile, und keine Page dafür |
 | `err line longer than 160 characters` | die Zeile wird ganz abgelehnt |
 | `err line dropped: 8 lines wait` | eine Zeile, während 8 auf den Link warten |
+| `err panel buffer full, <n> bytes dropped` | der eigene Puffer des Panels von 4.096 Byte hatte keinen Platz, etwa wenn ein serieller Host das Lesen einstellt und das IOmcu neu startet |
+
+Die eigenen Zeilen des Relays landen nie in einer IOmcu-Zeile. Ein Fenster endet an beliebiger Stelle, also behält das Panel eine Zeile des IOmcu bis zu ihrem LF, bis zu 256 Byte, und die Zeile des Relays geht zuerst. Eine längere Zeile geht geschnitten weiter, und eine Relay-Zeile nach diesem Schnitt beginnt eine neue Zeile. Eine Zeile, die beim Neustart des IOmcu nicht beendet ist, geht mit einem eigenen LF hinaus, vor der Zeile `restarted`.
 
 Das Panel findet die Page, indem es sie liest. Die Page hat kein Capability-Bit und keine Protokoll-Minor: ein IOmcu ohne sie antwortet `BAD_PAGE`, wie für jede Page, die es nicht hat.
 
 ### Raten
 
-Das Relay macht höchstens einen Austausch je Control-Durchlauf, 5ms, wenn nichts sonst den Durchlauf hält, nach dem eigenen Polling des Panels, und keinen, solange ein IOmcu-Update den Link hält. Diese Zahlen sind aus den Frames berechnet und nicht gemessen.
+Das Relay macht höchstens einen Austausch je Control-Durchlauf, 5ms, wenn nichts sonst den Durchlauf hält, nach dem eigenen Polling des Panels, und keinen, solange ein IOmcu-Update den Link hält. Die Tabelle ist aus den Frames berechnet, bei einem Durchlauf von genau 5ms.
 
 | Verkehr | Frames | Rate |
 | --- | --- | --- |
@@ -391,7 +395,9 @@ Das Relay macht höchstens einen Austausch je Control-Durchlauf, 5ms, wenn nicht
 | Ausgabe, dauerhaft | 11 je 60 Byte, 2 Durchläufe | 6.000 Byte/s, 1.100 Frames/s |
 | Eingabe, 6 Byte je Stück | 2 je Stück, ein Durchlauf | 1.200 Byte/s, 135ms für eine Zeile mit 160 Zeichen |
 
-Bei 1Mbit/s dauert ein Frame mit 8 Byte etwa 150us, dauerhafte Ausgabe belegt also etwa 17% des Busses. Der Puffer von 2.048 Byte leert sich in etwa 340ms. Ausgabe über 6.000 Byte/s, länger als dieser Puffer reicht, verliert ganze Zeilen; die nächste Zeile sagt `err output full, N bytes dropped` wie an USB. Ausgabe wird auch zurückgehalten, wenn der eigene Puffer des Panels von 4.096 Byte unter 188 Byte frei hat, etwa wenn ein serieller Host das Lesen einstellt.
+Gemessen an der Station: 2.856 bis 3.510 Byte/s Ausgabe, mit `help` bei 6/s bis 30/s. Das sind 17ms bis 21ms je Fenster von 60 Byte gegen 10ms berechnet. Die Wartezeit der Steuerung von 5ms kommt nach der Arbeit des Durchlaufs (`vTaskDelay`), ein Durchlauf ist also 5ms plus seine eigenen Austausche: die Polls des Panels und die 9 Frames des Fensters. Der Anteil jedes Teils ist nicht gemessen. Ein Fenster und seine Bestätigung brauchen 2 Durchläufe, und nach dem letzten Fenster einer Folge kommt der nächste Blick bis zu 50ms später.
+
+Bei 1Mbit/s dauert ein Frame mit 8 Byte etwa 150us, dauerhafte Ausgabe bei der berechneten Rate belegt also etwa 17% des Busses. Bei der gemessenen Rate leert sich der Puffer von 2.048 Byte in etwa 580ms bis 720ms. Ausgabe schneller als die gemessene Rate, länger als dieser Puffer reicht, verliert ganze Zeilen, auch die 3s-Zeilen des IOmcu; die nächste Zeile sagt `err output full, N bytes dropped` wie an USB. Ausgabe wird auch zurückgehalten, wenn der eigene Puffer des Panels von 4.096 Byte unter 444 Byte frei hat, etwa wenn ein serieller Host das Lesen einstellt.
 
 Ein Fenster bleibt am IOmcu, bis es bestätigt ist, also kostet eine verlorene Antwort einen zweiten Lesevorgang und kein Byte. Ein unbeantworteter Austausch hält den Control-Durchlauf bis zu 1000ms, wie jeder Austausch des Panels, und der Heartbeat läuft weiter.
 

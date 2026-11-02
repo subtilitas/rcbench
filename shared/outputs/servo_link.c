@@ -1447,9 +1447,12 @@ void servo_link_prog_service(void)
      * disarmed bench with a stop, when a target change waits on it: an
      * IOmcu that restarted, or one whose TARGET a programming session
      * took back, gets the tester's port again in SAFE and not only with
-     * the first command after the next ARM. */
+     * the first command after the next ARM.  An ask waits on it as well: a
+     * port not bound, as on a DShot function, gives no target change and no
+     * position from the screen, and the ask is then all that writes. */
+    const bool ask_open = prog_link_ask_open(s_ctx->prog);
     if (s_servo_sweep_unknown && !sl_armed() && !s_servo_sweeping
-        && !s_servo_holding && prog_link_pending(s_ctx->prog)) {
+        && !s_servo_holding && (prog_link_pending(s_ctx->prog) || ask_open)) {
         link_msg_t reply = { 0 };
         const uint16_t stop = 0u;
         if (write_regs(LINK_PAGE_SERVO, LINK_SV_SWEEP, 1u, &stop, &reply)
@@ -1459,11 +1462,18 @@ void servo_link_prog_service(void)
     }
     const bool rest = !sl_armed() && !s_servo_sweeping
                       && !s_servo_holding && !s_servo_sweep_unknown;
-    if (rest && prog_link_pending(s_ctx->prog)) {
+    /* A position nobody holds any more is let go for an ask too.  One a
+     * screen holds stays: the ask waits and says so. */
+    if (rest && (prog_link_pending(s_ctx->prog)
+                 || (ask_open && s_servo_held.kind == SERVO_CMD_NONE))) {
         servo_link_let_go();
     }
     const bool quiet = rest && !s_servo_release_owed && s_servo_written == 0u
                        && s_servo_held.kind == SERVO_CMD_NONE;
+    prog_link_rest_note(s_ctx->prog,
+                        quiet ? PROG_LINK_WAIT_NONE
+                              : sl_armed() ? PROG_LINK_WAIT_SAFE
+                                           : PROG_LINK_WAIT_TEST);
     prog_link_write_t w;
     if (prog_link_next(s_ctx->prog, quiet, &w)) {
         link_msg_t reply = { 0 };
