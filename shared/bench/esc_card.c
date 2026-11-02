@@ -6,6 +6,7 @@
  */
 #include "esc_card.h"
 
+#include <stdio.h>
 #include <string.h>
 
 _Static_assert(SERVO_STORE_PRESET_MAX <= ESC_CARD_NAME_MAX,
@@ -46,8 +47,24 @@ static uint8_t store_result(servo_store_t r, bool save)
     }
 }
 
+const char *esc_card_fw_tag(uint8_t fw)
+{
+    switch (fw) {
+    case EW_FW_AM:
+        return "AM32";
+    case EW_FW_S:
+        return "BLHELI_S";
+    case EW_FW_BJ:
+        return "BLUEJAY";
+    case EW_FW_E32:
+        return "ESCAPE32";
+    default:
+        return "";
+    }
+}
+
 /**
- * @brief The save: @c text to a new file under the proposed name.
+ * @brief The save: @c text to a new file under the proposed name, with the tag.
  * @param io   The store.
  * @param req  The request.
  * @param done The answer.
@@ -57,6 +74,12 @@ static void save(const servo_store_io_t *io, const esc_card_req_t *req,
 {
     servo_store_t r = servo_store_preset(io, done->name, sizeof(done->name));
 
+    if (r == SERVO_STORE_OK && req->tag[0] != '\0') {
+        const size_t n = strlen(done->name);
+
+        (void)snprintf(done->name + n, sizeof(done->name) - n, "-%.*s",
+                       (int)(ESC_CARD_TAG_MAX - 1u), req->tag);
+    }
     if (r == SERVO_STORE_OK) {
         r = servo_store_save(io, done->name, req->text, req->len, NULL);
     }
@@ -142,6 +165,51 @@ static void load(const servo_store_io_t *io, const esc_card_req_t *req,
     }
 }
 
+/**
+ * @brief The delete: the file @c name goes, or the answer says why not.
+ * @param io   The store.
+ * @param req  The request.
+ * @param done The answer.
+ */
+static void delete_file(const servo_store_io_t *io, const esc_card_req_t *req,
+                        esc_card_done_t *done)
+{
+    char file[SERVO_STORE_NAME_MAX];
+    char base[ESC_CARD_NAME_MAX];
+
+    memcpy(base, req->name, sizeof(base));
+    base[sizeof(base) - 1u] = '\0';
+    memcpy(done->name, base, sizeof(done->name));
+    if (!servo_store_file_name(io->stem, base, file, sizeof(file))) {
+        done->result = ESC_CARD_DONE_MISSING;
+        return;
+    }
+    const servo_store_t r = servo_store_remove(io, file);
+
+    done->result = r == SERVO_STORE_OK            ? ESC_CARD_DONE_OK
+                   : r == SERVO_STORE_NO_CARD     ? ESC_CARD_DONE_NO_CARD
+                   : r == SERVO_STORE_NOT_FOUND   ? ESC_CARD_DONE_MISSING
+                   : r == SERVO_STORE_DENIED      ? ESC_CARD_DONE_DENIED
+                   : r == SERVO_STORE_LIST_ERROR  ? ESC_CARD_DONE_READ
+                                                  : ESC_CARD_DONE_DELETE;
+}
+
+bool esc_card_volume_check(const esc_card_req_t *req, unsigned mount,
+                           esc_card_done_t *done)
+{
+    if (req->op != (uint8_t)ESC_CARD_DELETE || req->mount == mount) {
+        return true;
+    }
+    memset(done, 0, sizeof(*done));
+    done->op = req->op;
+    done->id = req->id;
+    done->mount = mount;
+    done->result = ESC_CARD_DONE_CHANGED;
+    memcpy(done->name, req->name, sizeof(done->name));
+    done->name[sizeof(done->name) - 1u] = '\0';
+    return false;
+}
+
 void esc_card_run(const servo_store_io_t *io, const esc_card_req_t *req,
                   esc_card_done_t *done)
 {
@@ -161,6 +229,9 @@ void esc_card_run(const servo_store_io_t *io, const esc_card_req_t *req,
         break;
     case ESC_CARD_LOAD:
         load(io, req, done);
+        break;
+    case ESC_CARD_DELETE:
+        delete_file(io, req, done);
         break;
     default:
         done->result = ESC_CARD_DONE_READ;

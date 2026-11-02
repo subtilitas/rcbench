@@ -216,7 +216,7 @@ static void card_answer(uint8_t result)
     if (s_req.op == (uint8_t)ESC_CARD_LIST) {
         s_done.count = 2u;
         s_done.total = 2u;
-        snprintf(s_done.names[0], sizeof(s_done.names[0]), "ESCW002");
+        snprintf(s_done.names[0], sizeof(s_done.names[0]), "ESCW002-AM32");
         snprintf(s_done.names[1], sizeof(s_done.names[1]), "ESCW001");
     } else if (s_req.op == (uint8_t)ESC_CARD_LOAD) {
         s_done.len = 2u;

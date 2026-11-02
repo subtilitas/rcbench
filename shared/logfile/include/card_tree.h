@@ -12,8 +12,9 @@
  *     KST/CONF/                KST and Chaservo servo files
  *     HITEC/CONF/              Hitec servo files and the record of a
  *                              write, HITEC.TXT
- *     ESCW/CONF/               ESC settings files read over the signal wire
- *                              and the record of a write, ESCW.TXT
+ *     ESCW/CONF/               ESC settings files read over the signal wire,
+ *                              such as ESCW001-AM32, and the record of a
+ *                              write, ESCW.TXT
  *     RCBENCH.LOG              the fault log, at most 1MiB
  *     RCBENCH.OLD              the fault log before the last 1MiB
  *   /USER/

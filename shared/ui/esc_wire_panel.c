@@ -20,6 +20,7 @@
 #include "outputs.h"
 #include "outputs_pages.h"
 #include "port_view.h"
+#include "settings.h"
 #include "supply_screen.h"
 #include "ui_theme.h"
 
@@ -219,6 +220,8 @@ static bool backup_ask(void)
     if (ewp_s.card.len == 0u) {
         return false;
     }
+    snprintf(ewp_s.card.tag, sizeof(ewp_s.card.tag), "%s",
+             esc_card_fw_tag(ewp_s.prog.f.rd.fw));
     ewp_card_ask(ESC_CARD_SAVE);
     return true;
 }
@@ -243,6 +246,10 @@ static const char *card_words(uint8_t r)
         return TR(EW_CARD_MISSING);
     case ESC_CARD_DONE_LARGE:
         return TR(EW_CARD_LARGE);
+    case ESC_CARD_DONE_DELETE:
+        return TR(EW_CARD_DELETE);
+    case ESC_CARD_DONE_CHANGED:
+        return TR(EW_CARD_CHANGED);
     default:
         return TR(EW_CARD_READ);
     }
@@ -259,6 +266,33 @@ static void ask_no_backup(const char *why)
     ewp_page_add(why);
     ewp_page_add(TR(EW_NO_BACKUP_1));
     ewp_page_add(TR(EW_NO_BACKUP_2));
+}
+
+/**
+ * @brief A backup this session saved: no delete inside the session takes it.
+ * @param name Its base name.
+ */
+static void own_add(const char *name)
+{
+    if (ewp_file_own(name)) {
+        return;
+    }
+    if (ewp_s.own_count == EWP_OWN_MAX) {
+        memmove(ewp_s.own[0], ewp_s.own[1], sizeof(ewp_s.own[0]) * (EWP_OWN_MAX - 1u));
+        --ewp_s.own_count;
+    }
+    snprintf(ewp_s.own[ewp_s.own_count], sizeof(ewp_s.own[0]), "%s", name);
+    ++ewp_s.own_count;
+}
+
+bool ewp_file_own(const char *name)
+{
+    for (unsigned i = 0u; i < ewp_s.own_count; ++i) {
+        if (strcmp(ewp_s.own[i], name) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -325,18 +359,56 @@ static void listed(const esc_card_done_t *d)
         ewp_note(TR(EW_CARD_LATE), true);
         return;
     }
+    if (d->count == 0u && ewp_s.files_first != 0u && d->total != 0u) {
+        /* The page's files went, a delete's last: the first page. */
+        ewp_s.files_first = 0u;
+        ewp_files_open(ewp_s.files_for_restore);
+        return;
+    }
     ewp_s.files_total = d->total;
+    ewp_s.files_mount = d->mount;
+    ewp_s.files_count = (uint8_t)(d->count < EWP_FILES_PAGE ? d->count : EWP_FILES_PAGE);
+    for (unsigned i = 0u; i < ewp_s.files_count; ++i) {
+        memcpy(ewp_s.names[i], d->names[i], sizeof(ewp_s.names[i]));
+    }
+    ewp_files_show();
+}
+
+void ewp_files_show(void)
+{
     ewp_editors_close();
     ewp_s.ch_what = EWP_CH_FILES;
-    if (!ewp_s.files_for_restore) {
+    if (!ewp_s.files_for_restore && !ewp_s.files_delete) {
         ewp_choice_add(TR(EW_FILE_SAVE), -1);
+        if (ewp_s.files_count != 0u) {
+            ewp_choice_add(TR(EW_FILE_DELETE), EWP_CHOICE_DELETE);
+        }
     }
-    for (unsigned i = 0u; i < d->count; ++i) {
-        memcpy(ewp_s.names[i], d->names[i], sizeof(ewp_s.names[i]));
+    for (unsigned i = 0u; i < ewp_s.files_count; ++i) {
         ewp_choice_add(ewp_s.names[i], (int)i);
     }
-    if ((unsigned)ewp_s.files_first + d->count < d->total) {
+    if ((unsigned)ewp_s.files_first + ewp_s.files_count < ewp_s.files_total) {
         ewp_choice_add(TR(EW_FILES_NEXT), EWP_CHOICE_NEXT);
+    }
+}
+
+/**
+ * @brief A DELETE answered: the list read again, or why the file stays.
+ * @param d The answer.
+ */
+static void deleted(const esc_card_done_t *d)
+{
+    char line[EWP_LINE];
+
+    if (d->result != ESC_CARD_DONE_OK) {
+        snprintf(line, sizeof(line), TR(EW_DELETE_FAILED), d->name, card_words(d->result));
+        ewp_note(line, true);
+        return;
+    }
+    snprintf(line, sizeof(line), TR(EW_DELETED), d->name);
+    ewp_note(line, false);
+    if (!under_page()) {
+        ewp_files_open(false);
     }
 }
 
@@ -388,6 +460,12 @@ void esc_wire_panel_card_done(const esc_card_done_t *d)
         return;
     }
     ewp_s.card_out = false;
+    /* A backup this session saved is its own, also when a later request took
+     * the answer's place: ABORT, or a list asked meanwhile. */
+    if (d->op == (uint8_t)ESC_CARD_SAVE && d->result == ESC_CARD_DONE_OK
+        && d->id > ewp_s.own_from) {
+        own_add(d->name);
+    }
     if (d->id == ewp_s.card_id) {
         switch (d->op) {
         case ESC_CARD_SAVE:
@@ -401,6 +479,9 @@ void esc_wire_panel_card_done(const esc_card_done_t *d)
             break;
         case ESC_CARD_LOAD:
             loaded(d);
+            break;
+        case ESC_CARD_DELETE:
+            deleted(d);
             break;
         default:
             break;
@@ -416,23 +497,52 @@ void esc_wire_panel_card_done(const esc_card_done_t *d)
 void ewp_files_open(bool restore)
 {
     ewp_s.files_for_restore = restore;
+    ewp_s.files_delete = false;
     ewp_s.card.first = ewp_s.files_first;
     ewp_card_ask(ESC_CARD_LIST);
+}
+
+/**
+ * @brief A file chosen to delete: its hold, or why this session keeps it.
+ */
+static void delete_ask(void)
+{
+    char line[EWP_LINE];
+
+    ewp_s.files_delete = false;
+    if (ewp_file_own(ewp_s.file_name)) {
+        snprintf(line, sizeof(line), TR(EW_DELETE_OWN), ewp_s.file_name);
+        ewp_note(line, true);
+        return;
+    }
+    ewp_page_open(EWP_PAGE_DELETE);
+    snprintf(line, sizeof(line), TR(EW_DELETE_1), ewp_s.file_name);
+    ewp_page_add(line);
+    ewp_page_add(TR(EW_DELETE_2));
 }
 
 void ewp_file_chosen(int value)
 {
     if (value == EWP_CHOICE_NEXT) {
-        const unsigned next = (unsigned)ewp_s.files_first + ESC_CARD_FILES;
+        const unsigned next = (unsigned)ewp_s.files_first + EWP_FILES_PAGE;
+        const bool del = ewp_s.files_delete;
 
         ewp_s.files_first = next < ewp_s.files_total ? (uint16_t)next : 0u;
         ewp_files_open(ewp_s.files_for_restore);
+        ewp_s.files_delete = del;
+    } else if (value == EWP_CHOICE_DELETE) {
+        ewp_s.files_delete = true;
+        ewp_files_show();
     } else if (value < 0) {
         if (!backup_ask()) {
             ewp_note(ewp_no_backup_text(), true);
         }
-    } else if (value < (int)ESC_CARD_FILES) {
+    } else if (value < (int)ewp_s.files_count) {
         snprintf(ewp_s.file_name, sizeof(ewp_s.file_name), "%s", ewp_s.names[value]);
+        if (ewp_s.files_delete) {
+            delete_ask();
+            return;
+        }
         snprintf(ewp_s.card.name, sizeof(ewp_s.card.name), "%s", ewp_s.file_name);
         ewp_card_ask(ESC_CARD_LOAD);
     }
@@ -469,6 +579,8 @@ static void connect_now(void)
     ewp_connect_values(&c);
     ewp_s.note[0] = '\0';
     ewp_s.no_card_ok = false;
+    ewp_s.own_count = 0u;
+    ewp_s.own_from = ewp_s.card_id;
     write_give_up();
     (void)esc_prog_connect(&ewp_s.prog, &c);
 }
@@ -531,6 +643,11 @@ void ewp_hold_apply(void)
         break;
     case EWP_PAGE_RESTORE:
         (void)esc_prog_file_restore(m, ewp_s.file_text, ewp_s.file_len);
+        break;
+    case EWP_PAGE_DELETE:
+        snprintf(ewp_s.card.name, sizeof(ewp_s.card.name), "%s", ewp_s.file_name);
+        ewp_s.card.mount = ewp_s.files_mount;
+        ewp_card_ask(ESC_CARD_DELETE);
         break;
     default:
         break;
@@ -784,6 +901,9 @@ static void esc_wire_ps_entry(void)
 /** @brief The row was tapped. */
 static void esc_wire_ps_open(void)
 {
+    /* SWITCHED or BY HAND as the operator last chose it, over a restart. */
+    ewp_s.power = settings_get_bool(SET_ESCW_BY_HAND) ? (uint8_t)LINK_ESC_BY_HAND
+                                                      : (uint8_t)LINK_ESC_SWITCHED;
     ewp_s.open = true;
     ewp_s.note[0] = '\0';
     ++ewp_s.rev;

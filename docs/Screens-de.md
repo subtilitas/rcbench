@@ -3207,6 +3207,12 @@ Das Fehlerprotokoll nimmt KOPIEREN und LÖSCHEN nur bei bestehender
 Verbindung zur IOmcu an: Ohne Verbindung schreibt das Panel alle 5s
 hinein.
 
+Die Backups der ESC-Signaldraht-Sitzung in `BENCH/ESCW/CONF` heißen
+`ESCWnnn-<Firmware>.TXT`, etwa `ESCW001-AM32.TXT`
+([Namen der Backups](EscWire-de.md#namen-der-backups)). DATEIEN löscht jedes
+davon; die eigene DATEIEN-Liste der Sitzung löscht alle außer einem Backup,
+das die Sitzung gespeichert hat.
+
 Die Fußzeile, Körper-y 440 bis 492, trägt links AKTUALISIEREN,
 140 x 52px, wie auf [Logs](#logs), dann KOPIEREN, VERSCHIEBEN,
 UMBENENNEN, LÖSCHEN, NEU, INFO und ÖFFNEN, 118 x 52px, ÖFFNEN am rechten

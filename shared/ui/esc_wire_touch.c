@@ -261,6 +261,8 @@ static ui_text_id_t hold_hint(void)
         return TX_EW_HINT_RESTORE;
     case EWP_PAGE_NO_BACKUP:
         return TX_EW_HINT_NO_BACKUP;
+    case EWP_PAGE_DELETE:
+        return TX_EW_HINT_DELETE;
     default:
         return ewp_stage() == ESC_WIRE_PIN_HELD ? TX_EW_HOLD_ENTER : TX_EW_HOLD_CONNECT;
     }

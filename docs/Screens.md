@@ -2910,6 +2910,11 @@ right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
 The fault log takes COPY and DELETE only while the IOmcu link is up: with
 the link down the panel writes to it every 5s.
 
+The ESC signal-wire session's backups in `BENCH/ESCW/CONF` are named
+`ESCWnnn-<firmware>.TXT`, such as `ESCW001-AM32.TXT`
+([Backup names](EscWire.md#backup-names)). FILES deletes any of them; the
+session's own FILES list deletes all but a backup the session saved.
+
 The footer, body y 440 to 492, holds RESCAN, 140 x 52px, at the left, as
 on [Logs](#logs), then COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN,
 118 x 52px, OPEN at the right margin; the buttons stand 6px apart, and the

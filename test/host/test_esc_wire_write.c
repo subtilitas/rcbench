@@ -198,7 +198,7 @@ TEST_CASE(a_load_in_flight_blocks_write)
     ew_tap(esc_wire_panel_action_rect(1));
     bench_run(10u);
     g_card_wait = true;
-    ew_tap(esc_wire_panel_choice_rect(1));
+    ew_tap(esc_wire_panel_choice_rect(2));
     ew_tap(esc_wire_panel_action_rect(2));
     CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_NONE);
     CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_CARD_BUSY));
@@ -222,7 +222,7 @@ TEST_CASE(a_load_answer_under_an_open_page_is_dropped_with_a_message)
     ew_tap(esc_wire_panel_action_rect(1));
     bench_run(10u);
     g_card_wait = true;
-    ew_tap(esc_wire_panel_choice_rect(1));
+    ew_tap(esc_wire_panel_choice_rect(2));
     CHECK(esc_wire_panel_card_take(&r));
     g_card_wait = false;
     ewp_s.card_out = false;

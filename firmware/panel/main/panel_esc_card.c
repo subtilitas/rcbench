@@ -248,6 +248,26 @@ static servo_store_io_result_t io_create(void *ctx, const char *name,
     return r;
 }
 
+/**
+ * @brief servo_store_io_t.remove.
+ *
+ * @param ctx  Unused.
+ * @param name The file.
+ * @return SERVO_STORE_IO_OK, SERVO_STORE_IO_DENIED for a card that takes no
+ *         change, else SERVO_STORE_IO_ERROR.
+ */
+static servo_store_io_result_t io_remove(void *ctx, const char *name)
+{
+    char path[PATH_MAX_LEN];
+
+    (void)ctx;
+    path_of(name, path, sizeof(path));
+    if (unlink(path) == 0) {
+        return SERVO_STORE_IO_OK;
+    }
+    return denied(errno) ? SERVO_STORE_IO_DENIED : SERVO_STORE_IO_ERROR;
+}
+
 /** @brief The card for esc_card_run(). */
 static const servo_store_io_t k_io = {
     .ctx = NULL,
@@ -257,6 +277,8 @@ static const servo_store_io_t k_io = {
     .size = io_size,
     .read = io_read,
     .create = io_create,
+    .tagged = true,
+    .remove = io_remove,
 };
 
 /**
@@ -315,9 +337,11 @@ void esc_card_serve(void)
     s_held = storage_hold_mount(s_esc_card_mount);
     if (s_esc_card_req.op == (uint8_t)ESC_CARD_RECORD) {
         record_write();
-    } else {
+    } else if (esc_card_volume_check(&s_esc_card_req, s_esc_card_mount,
+                                     &s_esc_card_done)) {
         esc_card_run(&k_io, &s_esc_card_req, &s_esc_card_done);
     }
+    s_esc_card_done.mount = s_esc_card_mount;
     if (s_held) {
         storage_release();
         s_held = false;

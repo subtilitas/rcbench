@@ -16,6 +16,7 @@
 
 #include "esc_wire_int.h"
 #include "link_pages.h"
+#include "settings.h"
 #include "supply_screen.h"
 #include "ui_text.h"
 
@@ -442,6 +443,8 @@ void ewp_choice_done(int i)
         break;
     case EWP_CH_POWER:
         ewp_s.power = (uint8_t)v;
+        settings_set(SET_ESCW_BY_HAND, v == (int)LINK_ESC_BY_HAND ? 1.0f : 0.0f);
+        settings_request_save();
         break;
     case EWP_CH_FIELD:
         row_set(v);

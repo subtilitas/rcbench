@@ -72,6 +72,7 @@ enum {
     EWP_PAGE_LEAVE,      /**< LEAVE                                           */
     EWP_PAGE_RELEASE,    /**< a pin another writer holds                      */
     EWP_PAGE_RESTORE,    /**< RESTORE FROM BACKUP                             */
+    EWP_PAGE_DELETE,     /**< a file of the card goes                         */
 };
 
 /** @brief What the choice list chooses. */
@@ -131,6 +132,12 @@ enum {
 #define EWP_CHOICE_NUMBER 0x7FFF
 /** @brief A choice's value that goes to the next page of files. */
 #define EWP_CHOICE_NEXT 0x7FFE
+/** @brief A choice's value that turns the list of files to the one a tap deletes from. */
+#define EWP_CHOICE_DELETE 0x7FFD
+/** @brief Files a page of the list shows: SAVE, DELETE and NEXT fill the rest. */
+#define EWP_FILES_PAGE (ESC_CARD_FILES - 1u)
+/** @brief Files of this session's own the list keeps from a delete. */
+#define EWP_OWN_MAX 4u
 
 /** @brief The state. */
 typedef struct {
@@ -196,6 +203,13 @@ typedef struct {
                                latch: PIN BACK is the way on                  */
     bool       held_stop; /**< of those, a stop or a fault                    */
     bool       files_for_restore; /**< the list's choice restores             */
+    bool       files_delete; /**< the list's choice deletes                   */
+    uint8_t    files_count; /**< names of the page held                       */
+    unsigned   files_mount; /**< the volume the list was read from            */
+    uint32_t   own_from;  /**< requests up to this one are of earlier sessions */
+    uint8_t    own_count; /**< entries of @c own                              */
+    char       own[EWP_OWN_MAX][ESC_CARD_NAME_MAX]; /**< the backups this session
+                                                        saved, newest last    */
     bool       no_card_ok; /**< the operator goes without a card this session */
     char       file_name[ESC_CARD_NAME_MAX]; /**< the file chosen             */
     uint16_t   files_first; /**< the list's first file                        */
@@ -278,6 +292,19 @@ void ewp_files_open(bool restore);
  * @brief The next step of the write the hold started, after the backup.
  */
 void ewp_write_go(void);
+
+/**
+ * @brief The list of files as held: SAVE and DELETE, the page's names, NEXT.  The
+ *        list that deletes shows the names and NEXT.
+ */
+void ewp_files_show(void);
+
+/**
+ * @brief Whether this session saved the file: no delete inside it takes the file.
+ * @param name The base name.
+ * @return true then.
+ */
+bool ewp_file_own(const char *name);
 
 /**
  * @brief A file chosen in the list.

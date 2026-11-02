@@ -494,7 +494,7 @@ TEST_CASE(a_list_answer_under_a_page_stays_out_and_the_list_has_pages)
 {
     session_up(up_am_rig);
     connected();
-    /* 13 files: one page and a NEXT. */
+    /* 13 files: a page of 11 under SAVE and DELETE, and a NEXT. */
     for (int i = 0; i < 13; ++i) {
         snprintf(g_names[i], sizeof(g_names[i]), "ESCW%03d.TXT", i + 1);
         snprintf(g_texts[i], sizeof(g_texts[i]), "x\n");
@@ -507,7 +507,7 @@ TEST_CASE(a_list_answer_under_a_page_stays_out_and_the_list_has_pages)
     CHECK_STR_EQ(esc_wire_panel_choice_label(13), TR(EW_FILES_NEXT));
     ew_tap(esc_wire_panel_choice_rect(13));
     bench_run(10u);
-    CHECK_EQ(ewp_s.files_first, ESC_CARD_FILES);
+    CHECK_EQ(ewp_s.files_first, EWP_FILES_PAGE);
     CHECK_EQ(ewp_s.ch_what, EWP_CH_FILES);
     ew_tap(ewp_choice_cancel_rect());
     /* A list asked, and a page opened before it answers. */
@@ -548,7 +548,7 @@ TEST_CASE(a_file_that_is_refused_says_why_and_leaves_the_draft)
 
     ew_tap(esc_wire_panel_action_rect(1));
     bench_run(10u);
-    ew_tap(esc_wire_panel_choice_rect(1));
+    ew_tap(esc_wire_panel_choice_rect(2));
     bench_run(10u);
     CHECK_EQ(ewp_s.draft[0x11], was);
     CHECK_EQ(esc_prog_message(esc_wire_panel_model(), NULL), ESC_PROG_MSG_FILE_REFUSED);

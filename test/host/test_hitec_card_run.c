@@ -123,6 +123,7 @@ static servo_store_io_result_t io_create(void *ctx, const char *name,
 
 static const servo_store_io_t k_io = {
     NULL, HITEC_CARD_STEM, io_mounted, io_walk, io_size, io_read, io_create,
+    false, NULL,
 };
 
 static void reset(void)
