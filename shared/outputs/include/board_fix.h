@@ -13,9 +13,10 @@
  *                      (roles.out); a slot with LINK_DRIVER_NONE is not
  *                      judged.
  *   PROG               each port's PIN is its own programming pin
- *                      (roles.prog); FUNC is NONE: a programming port
- *                      carries the KST and HITEC wire protocols and no
- *                      signal protocol.
+ *                      (roles.prog); FUNC is NONE or SERVO PWM (protocol
+ *                      4.36): a programming port carries the KST and HITEC
+ *                      wire protocols and the tester's servo pulse, and no
+ *                      DShot.  It starts on NONE (board_fix_store()).
  *   SENSE              SDA and SCL are roles.sda and roles.scl.
  *   TONE               PIN is roles.tap.
  *   SUPPLY             TX and RX are roles.pd_tx and roles.pd_rx.
@@ -105,8 +106,8 @@ bool board_fix_map_ok(const outbind_roles_t *r, const uint16_t *map);
  * @param in    The values, @p n of them.
  * @return      true when @p r is NULL, or every pin register in the write
  *              holds its role's pin and every PROG FUNC register holds
- *              LINK_PG_FN_NONE; false otherwise, and for @p in NULL with @p
- *              r set and @p n not 0.
+ *              LINK_PG_FN_NONE or LINK_PG_FN_SERVO_PWM; false otherwise,
+ *              and for @p in NULL with @p r set and @p n not 0.
  */
 bool board_fix_write_ok(const outbind_roles_t *r, uint8_t page, uint8_t off,
                         uint8_t n, const uint16_t *in);

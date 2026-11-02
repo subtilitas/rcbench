@@ -37,6 +37,7 @@
 #include "panel_trial.h"
 #include "pdmini.h"
 #include "picker_screen.h"
+#include "prog_choice.h"
 #include "sensors_rows.h"
 #include "servo_link.h"
 #include "servo_screen.h"
@@ -272,10 +273,14 @@ void panel_frame_loop(void)
             /* What the tester drives and whether the port renders its
              * pulse, to the control task; the port's pin, to both views of
              * the binding, from one read. */
+            /* On the rbmod carrier the chosen port once its FUNC reads
+             * SERVO PWM, and its pulse only with the PROG 5V on
+             * (prog_choice.h); the settings as they are elsewhere. */
+            prog_choice_set_far_minor(s_far_minor);
+            prog_choice_tick();
             atomic_store(&s_prog_want_target,
-                         (unsigned)settings_get_int(SET_SERVO_TARGET));
-            atomic_store(&s_prog_want_pwm,
-                         settings_get_bool(SET_SERVO_PORT_PWM));
+                         (unsigned)prog_choice_want_target());
+            atomic_store(&s_prog_want_pwm, prog_choice_want_pwm());
             prog_ports_to_screens();
             motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
                                            atomic_load(&s_throttle_pins_known));

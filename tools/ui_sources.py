@@ -208,6 +208,7 @@ SOURCES = [
     "shared/ui/settings_draw.c",
     "shared/ui/settings_rows.c",
     "shared/ui/prog5v_box.c",
+    "shared/ui/prog_choice.c",
     "shared/ui/sensors_pane.c",
     "shared/ui/sensors_rows.c",
     "shared/settings/settings.c",

@@ -69,7 +69,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.35. The
+IOmcu transmits only in answer to a request. Protocol version 4.36. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -177,7 +177,9 @@ both with BAD_PAGE ([The ESC settings pages](LinkEsc.md)). From
 4.35 the IOmcu answers the READ_HELD op, the second part of a read wider than
 16 registers ([Reads of at most 16 registers](#reads-of-at-most-16-registers));
 the panel sends it to no older IOmcu, which drops a frame of an op it does
-not know. The
+not know. From 4.36 the rbmod carrier takes FUNC SERVO PWM on its
+programming ports; an older carrier refuses it with BAD_VALUE, and the
+panel offers no choice of port to it. The
 IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -1364,10 +1366,14 @@ On board 2 the IOmcu holds every role to its pin:
   (GPIO 2, 4, 5 or 1). A page with a driven slot on any other pin is refused
   with BAD_VALUE. A slot with driver NONE is not judged.
 - PROG: each port's PIN is its own pin (port 0 GPIO 13, port 1 GPIO 14,
-  port 2 GPIO 15, port 3 GPIO 0), and FUNC is NONE. A programming port
-  carries the KST and HITEC wire protocols and no signal protocol. A PIN
-  write of another pin, `LINK_PG_PIN_NONE` included, and a FUNC write of
-  any other function are refused with BAD_VALUE.
+  port 2 GPIO 15, port 3 GPIO 0). FUNC is NONE from every start; from 4.36
+  it takes NONE or SERVO PWM, the servo tester's pulse
+  ([Carrier: The programming port](Carrier.md#the-programming-port)). A
+  PIN write of another pin, `LINK_PG_PIN_NONE` included, and a FUNC write
+  of a DShot rate are refused with BAD_VALUE; a 4.35 or older carrier
+  refuses SERVO PWM as well. SERVO PWM on port 3 (GPIO 0) is refused while
+  PWM04 (GPIO 1, slice 0) carries a PWM slot, as on any board, and a PWM
+  slot bound on that slice lets the port go first.
 - SUPPLY TX and RX are GPIO 7 and GPIO 6, SENSE SDA and SCL GPIO 16 and
   GPIO 17, TONE's pin GPIO 22. A write of another pin is refused with
   BAD_VALUE. The other registers of the pages take their own rules.

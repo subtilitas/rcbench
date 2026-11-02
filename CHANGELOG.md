@@ -8,6 +8,8 @@ history is in git.
 
 ### Added
 
+- rbmod carrier: the programming port is chosen on the panel and kept over a restart. A tap on the KST or Hitec programmer's PORT row before CONNECT opens PROGP01 to PROGP04 with their GPIO, and the carrier's PROG PORT entries on OUTPUTS offer SERVO TESTER and PORT PWM. The choice is SERVO TESTER (`srv_target`), so the servo tester, the KST limit search and LEFT/RIGHT drive the chosen port. It is locked under the SERVO TARGET rules, with the reason under the rows. PROGP04 is refused by name while PWM04, on PWM slice 0, carries a PWM output. The pulse goes out only while PROG 5V reads ON; PORT PWM ON, a servo test and a limit run say `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` otherwise, and a servo test on the port says `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
+- Link 4.36: the rbmod carrier's programming ports take FUNC SERVO PWM besides NONE; DShot stays refused, and every start begins on NONE. A PWM slot bound on a port's slice lets the port go first, so the binding of PWM01 to PWM04 keeps its rate.
 - ESC signal wire: POWER keeps SWITCHED or BY HAND over a panel restart, in the panel's settings (`escw_by_hand`); with nothing stored it is SWITCHED.
 - ESC signal wire: a backup's name carries the firmware, `ESCW001-AM32.TXT`, `ESCW002-BLHELI_S.TXT`, `ESCW003-BLUEJAY.TXT`, `ESCW004-ESCAPE32.TXT`, for a backup before a write and one saved by hand. One number runs through the folder; `ESCWnnn.TXT` and other names list and load as they did.
 - ESC signal wire: DELETE A FILE in the session's FILES list deletes a file on a red 2s hold, and the list reads the card again. A backup the session saved is not deleted inside the session.

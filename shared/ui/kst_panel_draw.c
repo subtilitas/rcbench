@@ -20,6 +20,7 @@
 #include "kst_session.h"
 #include "link_pages.h"
 #include "ui_board.h"
+#include "prog_choice.h"
 #include "ui_card_text.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -213,7 +214,9 @@ static void state_line(char *out, size_t n)
         snprintf(out, n, "%s", TR(KP_STATE_SYNC));
         break;
     case KST_PROG_PWM:
-        if (!kpn_on_port()) {
+        if (prog_choice_offered() && prog_choice_lock_line(out, n)) {
+            /* The carrier's PORT row is locked: why. */
+        } else if (!kpn_on_port()) {
             snprintf(out, n, "%s", TR(KP_NEED_TARGET));
         } else if (ui_board_prog_5v_pin() >= 0) {
             snprintf(out, n, TR(KP_STATE_PWM_5V), (unsigned)kpn_port_no() + 1u,
@@ -298,7 +301,7 @@ static const char *state_second(second_t *level)
         return TR(KP_NO_PAGE_2);
     }
     if (st == KST_PROG_PWM && !kpn_on_port()) {
-        return TR(KP_NEED_TARGET_2);
+        return ui_tr((ui_text_id_t)prog_choice_text(TX_KP_NEED_TARGET_2));
     }
     if (st == KST_PROG_PWM && !kpn_flag(LINK_KS_F_RAIL)) {
         /* The servo enters from a power-up the operator makes. */
@@ -915,10 +918,12 @@ static void draw_choice(gfx_canvas_t *c)
     gfx_text(c, k.area.x + 10, k.area.y + 14, k.ch.title, KP_FONT,
              ui_theme_color(UI_C_TEXT), 1);
     for (int i = 0; i < k.ch.count; ++i) {
-        const bool current = k.ch.kind == C_STRETCH
+        const bool current = (k.ch.kind == C_STRETCH
             && k.ch.values[i]
                == (int)kst_field_get(kst_prog_draft(&k.prog),
-                                     (kst_field_id_t)r->what);
+                                     (kst_field_id_t)r->what))
+            || (k.ch.kind == C_PORT
+                && k.ch.values[i] == (int)prog_choice_port());
 
         kp_button(c, kst_panel_choice_rect(i), k.ch.labels[i],
                   current ? ui_theme_color(UI_C_ACCENT)

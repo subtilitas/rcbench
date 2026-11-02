@@ -166,6 +166,42 @@ PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 
 ![Die Standardausgänge sind das Ziel](img/de/servo-kst-target.png)
 
+
+### Der Port auf dem rbmod-Carrier
+
+Auf dem [rbmod-Carrier](Carrier-de.md#der-programmierport) mit einem IOmcu
+ab Protokoll 4.36 wählt die Zeile PORT auch den Port. Vor **VERBINDEN**
+öffnet ein Tipp auf die Beschriftung der Zeile **PROGRAMMIERPORT** mit
+`PROGP01  GPIO 13`, `PROGP02  GPIO 14`, `PROGP03  GPIO 15` und
+`PROGP04  GPIO 0`. Der gewählte Eintrag setzt SERVO-TESTER, dieselbe
+Einstellung wie die Einträge PROG PORT von **OUTPUTS**, und bleibt über
+einen Neustart erhalten.
+
+- Das Panel bittet den IOmcu um FUNC SERVO PWM auf dem gewählten Port und
+  NONE auf den anderen drei. Das TARGET des IOmcu, der Port der Liste
+  PROGRAMMIEREN und die Endlagensuche von KST folgen, sobald der Port
+  SERVO PWM liest.
+- Die Zeile PORT nennt den Port, `PROGP02 GPIO 14  5V FEST` in der Zeile
+  von KST und `PROG-PORT 2 GPIO 14  D-SERIE` in der Zeile von Hitec, oder
+  `KEIN PROG-PORT GESETZT`.
+- **VERBINDEN** ohne Port sagt
+  `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.`
+  und `PORT-Zeile antippen und einen Programmierport wählen.`; mit einem
+  IOmcu vor 4.36 lautet die zweite Zeile
+  `IOmcu auf Protokoll 4.36 oder neuer aktualisieren, um einen Port zu wählen.`
+- Die Liste öffnet nicht, solange ARMED oder ARMED angefordert ist,
+  während eines Tests, eines Sweeps oder eines Endlagenlaufs, oder solange
+  ein Programmer einen Port hält. Die Zustandszeile sagt dann warum:
+  `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT`.
+- Solange PWM04 einen PWM-Ausgang trägt, lautet der Eintrag PROGP04
+  `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)` und wird nicht genommen.
+- Die Ports laufen an den festen 5V von M7 auf GPIO 21. Der Puls des
+  Testers geht nur hinaus, solange das Feld PROG 5V EIN zeigt; ein
+  Endlagenlauf und ein Servotest sagen
+  `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, solange es aus ist. Die
+  Spannungsstufen eines Servotests erreichen den Port nicht: ein Test auf
+  ihm sagt `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN`.
+
 ## Der Port
 
 | Zustand | Zeile auf dem Reiter SERVO | Der Port führt |

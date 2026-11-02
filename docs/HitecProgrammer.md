@@ -44,6 +44,10 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
   PORT 3 or PORT 4, and
   the port names a pin. With OUTPUTS the PORT row reads `NO PROG PORT SET`
   and CONNECT says `Use the programming port to program a servo.`
+  On the rbmod carrier with an IOmcu of protocol 4.36 or later the PORT
+  row chooses the port: a tap on its label opens PROGP01 to PROGP04, and
+  CONNECT without a port says `Tap the PORT row and choose a programming
+  port.` ([Servo programmer: The port on the rbmod carrier](ServoProgrammer.md#the-port-on-the-rbmod-carrier)).
 - The bench is SAFE. CONNECT is refused on an ARMED bench, on one asked to
   arm and with a finger on ARM: `Tap DISARM first. The port cannot be taken
   over while ARMED.` A latched STOP refuses it too:
@@ -67,7 +71,7 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 
 | Row | What it does |
 | --- | --- |
-| PORT | Two lines: the port and its GPIO with the series, `PROG PORT 1 GPIO 13  D SERIES`, then the receive mode and the supply CONNECT sets, `RX PRECHARGE  5.0V 1000mA` (`SUPPLY AS IT IS` for a D series servo with no PD mini). The button reads CONNECT, ABORT while the port moves into programming or a read runs, WAIT, LEAVE while the port is held, and RELEASE PORT while another session holds it |
+| PORT | Two lines: the port and its GPIO with the series, `PROG PORT 1 GPIO 13  D SERIES`, on the rbmod carrier a tap on them before CONNECT opens the list of the programming ports, then the receive mode and the supply CONNECT sets, `RX PRECHARGE  5.0V 1000mA` (`SUPPLY AS IT IS` for a D series servo with no PD mini). The button reads CONNECT, ABORT while the port moves into programming or a read runs, WAIT, LEAVE while the port is held, and RELEASE PORT while another session holds it |
 | SERIES | D SERIES or CLASSIC, chosen before CONNECT; kept with the SERVO settings (SET_HITEC_SERIES). While the port is held the PORT row names the series and FILES takes this place |
 | FILES | While the port is held: the servo files on the card, a save and a load ([Servo files](#servo-files)) |
 | SERVO | The model read, `D485HW` or `HS-5645MG`; READ ALL reads the series' set again |

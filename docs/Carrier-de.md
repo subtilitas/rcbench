@@ -53,8 +53,45 @@ Die Reihenfolge der Positionen folgt dem Layout.
 
 PWM02 (GPIO 4) und PWM03 (GPIO 5) sind ein PWM-Slice (Pulsweitenmodulation)
 und laufen mit einer Framerate. PWM04 (GPIO 1) teilt Slice 0 mit PROGP04
-(GPIO 0). Ein Programmierport trägt auf dem Carrier kein PWM-Signal, der
-geteilte Slice schränkt also nichts ein.
+(GPIO 0), und PROGP02 (GPIO 14) teilt Slice 7 mit PROGP03 (GPIO 15). Ab
+Protokoll 4.36 treibt der Servotester den Puls des gewählten
+Programmierports ([Der Programmierport](#der-programmierport)). Die
+Bindung von PWM01 bis PWM04 geht vor: solange PWM04 einen PWM-Ausgang
+trägt, bekommt PROGP04 keinen Puls. Nur der gewählte Port läuft als
+SERVO PWM, PROGP02 und PROGP03 pulsen also nie zusammen.
+
+## Der Programmierport
+
+Die Programmer für KST und Hitec und der Servotester teilen einen
+Programmierport, der am Panel gewählt und über einen Neustart behalten
+wird. Er ist die Einstellung SERVO-TESTER (SET_SERVO_TARGET): 1 bis 4 für
+PROGP01 bis PROGP04, 0 für die Servoausgänge. Gewählt wird er an zwei
+Stellen:
+
+- in der Zeile PORT der Programmer, vor VERBINDEN: ein Tipp auf die
+  Beschriftung der Zeile öffnet PROGP01 bis PROGP04 mit ihrem GPIO
+  ([Servo-Programmer: Der Port auf dem rbmod-Carrier](ServoProgrammer-de.md#der-port-auf-dem-rbmod-carrier));
+- in einem Eintrag PROG PORT auf SETUP > OUTPUTS, SERVO-TESTER PORT n
+  ([Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).
+
+| Regel | Wert |
+| --- | --- |
+| Protokoll des IOmcu | 4.36 oder neuer; ein älterer Carrier hält jede FUNC auf NONE, und das Panel bietet keine Wahl an |
+| FUNC des gewählten Ports | SERVO PWM, vom Panel erbeten; die anderen drei NONE |
+| FUNC, die der IOmcu nimmt | NONE oder SERVO PWM; DShot wird mit BAD_VALUE abgelehnt |
+| FUNC beim Start des IOmcu | NONE auf jedem Port; das Panel bittet erneut um SERVO PWM |
+| Gesperrt | ARMED oder ARMED angefordert, ein Test, ein Sweep oder ein Endlagenlauf, ein Programmer, der einen Port hält |
+| PROGP04 | nicht angeboten, solange PWM04 einen PWM-Ausgang trägt: `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)` |
+| Puls | nur solange das Feld PROG 5V EIN zeigt; PORT-PWM EIN, ein Servotest und ein Endlagenlauf werden mit `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN` abgelehnt |
+| Versorgung | die festen 5V von M7 an GPIO 21; die Spannungsstufen eines Servotests erreichen die Servoschienen, nicht den Port, ein Test dort wird also mit `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN` abgelehnt |
+| Strom | INA3221 0x40 CH3 misst alle vier Ports zusammen |
+
+Ein Puls auf einem Programmierport läuft nur, solange die Bank ARMED ist.
+Jeder Fehler, ein STOP und ein stiller Link schalten die Bank ab, und der
+nächste Frame des Ports ist 0 (`test_outputs_hw_ports`). Jeder Fehler, ein
+verlorener Heartbeat und ein stiller Link schalten außerdem GPIO 21 aus.
+Ein PROG 5V AUS von Hand beendet den Puls ebenso: das Panel fordert den
+Puls nur an, solange das Feld EIN zeigt.
 
 ## Versorgung
 
@@ -201,9 +238,10 @@ fest:
 - SETUP > OUTPUTS zeigt PWM01 bis PWM04 als die vier Zellen des Rasters.
   Ein Flächen- und ein Gasprotokoll auf PWM02 und PWM03 zusammen werden
   mit Namen abgelehnt. Die Einträge PROG PORT nennen PROGP01 bis PROGP04
-  und ihren GPIO, bieten keinen Pin und keine Funktion an und zeigen
-  keinen Tester
-  ([Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).
+  und ihren GPIO, bieten keinen Pin und keine Funktion an und bieten ab
+  Protokoll 4.36 SERVO-TESTER und PORT-PWM an
+  ([Der Programmierport](#der-programmierport);
+  [Bildschirme: Auf dem rbmod-Carrier](Screens-de.md#auf-dem-rbmod-carrier)).
 - SETUP > SENSORS zeigt Sensor SDA und SCL sowie Tap pin auf den Pins des
   Carriers, ohne Tasten und ohne Keypad, der Eintrag SENSORBUS lautet
   `GPIO 16 / 17 VERLÖTET`, und 0x40 ist bestückt mit seinen drei Kanälen auf

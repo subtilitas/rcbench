@@ -16,8 +16,11 @@
  *              entry asks the IOmcu for it (port_view_ask()).
  *   WATCHED BY the INA3221 channel that watches the port, from the sensor
  *              map (outputs_screen_set_port_watch()), or none.
- *   SERVO TESTER  OUTPUTS | PORT n: SET_SERVO_TARGET, 0 or n.
- *   PORT PWM   ON | OFF: SET_SERVO_PORT_PWM, the target port's pulse.
+ *   SERVO TESTER  OUTPUTS | PORT n: SET_SERVO_TARGET, 0 or n.  On the
+ *              rbmod carrier through prog_choice_pick(), which also sets
+ *              the port's FUNC (prog_choice.h).
+ *   PORT PWM   ON | OFF: SET_SERVO_PORT_PWM, the target port's pulse.  On
+ *              the carrier ON waits for the PROG 5V box to read ON.
  *
  * and one amber line that says why a row takes no press, or how the last
  * ask for this port stands.  The pin and the function are the IOmcu's,
@@ -37,6 +40,7 @@
 #include "hitec_panel.h"
 #include "link_pages.h"
 #include "port_view.h"
+#include "prog_choice.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "ui_board.h"
@@ -250,11 +254,19 @@ static int target(void) { return settings_get_int(SET_SERVO_TARGET); }
 
 /**
  * @brief A board that solders its pins (the rbmod carrier): each port is on
- *        its own pin and carries the programmers only, so PIN and FUNCTION
- *        are shown and not offered, and the tester's rows are not drawn.
+ *        its own pin, so PIN and FUNCTION are shown and not offered.  The
+ *        tester's rows are drawn from protocol 4.36 (carrier_tester()).
  * @return true on a board with soldered roles
  */
 static bool soldered(void) { return ui_board_roles() != NULL; }
+
+/**
+ * @brief The carrier with an IOmcu of 4.36 or later: the tester's rows are
+ *        drawn, and a port is chosen through prog_choice_pick(), which
+ *        asks the port's FUNC itself.
+ * @return true when the carrier offers the choice
+ */
+static bool carrier_tester(void) { return soldered() && prog_choice_offered(); }
 
 static bool known(void) { return port_view_has((uint8_t)p.port); }
 
@@ -287,6 +299,10 @@ static bool fn_locked(void)
  * SERVO PWM port. */
 static bool tester_locked(void)
 {
+    if (carrier_tester()) {
+        return prog_choice_locked()
+               || prog_choice_refusal((uint8_t)(p.port + 1), NULL, 0u);
+    }
     return servo_screen_tester_target_locked()
            || (!fn_pwm() && target() != p.port + 1);
 }
@@ -307,6 +323,33 @@ static void sync_tabs(void)
     p.pwm.selected = settings_get_bool(SET_SERVO_PORT_PWM) ? 0 : 1;
 }
 
+/**
+ * @brief The carrier's line under the tester's rows: who holds the port, the
+ *        lock, a slice an output holds, the PROG 5V the pulse waits for, the
+ *        port the tester drives, or why PORT PWM is locked.
+ * @param buf takes the line, empty for none
+ * @param cap its size
+ */
+static void carrier_reason(char *buf, size_t cap)
+{
+    const uint8_t port = (uint8_t)(p.port + 1);
+    if (esc_wire_panel_holds_port()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_ESC));
+    } else if (hitec_panel_holds_port()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_HITEC));
+    } else if (prog_choice_lock_line(buf, cap)
+               || prog_choice_refusal(port, buf, cap)) {
+        /* The lock's line, or the output on the port's slice by name. */
+    } else if (target() == port && settings_get_bool(SET_SERVO_PORT_PWM)
+               && prog_choice_needs_5v()) {
+        snprintf(buf, cap, "%s", TR(PC_NEED_5V));
+    } else if (target() > 0 && target() != port) {
+        snprintf(buf, cap, TR(OUT_PORT_TESTER_ON), (unsigned)target());
+    } else if (pwm_locked()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_PWM_NEEDS));
+    }
+}
+
 bool outputs_screen_port_reason(char *buf, size_t cap)
 {
     if (buf == NULL || cap == 0u) {
@@ -325,8 +368,10 @@ bool outputs_screen_port_reason(char *buf, size_t cap)
     }
     if (!known()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_NOT_READ));
-    } else if (soldered()) {
+    } else if (soldered() && !carrier_tester()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_SOLDERED));
+    } else if (carrier_tester()) {
+        carrier_reason(buf, cap);
     } else if (esc_wire_panel_holds_port()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_ESC));
     } else if (hitec_panel_holds_port()) {
@@ -361,7 +406,9 @@ static uint32_t signature(void)
            | (servo_screen_port_pwm_locked() ? 64u : 0u)
            | (held() ? 128u : 0u)
            | (fn_locked() ? 256u : 0u)
-           | (soldered() ? 512u : 0u);
+           | (soldered() ? 512u : 0u)
+           | (carrier_tester() ? 1024u : 0u)
+           | (prog_choice_needs_5v() ? 2048u : 0u);
 }
 
 void outputs_port_tick(void)
@@ -496,21 +543,31 @@ bool outputs_port_event(const touch_event_t *evt)
     if (fn_event(evt)) {
         return true;
     }
-    if (soldered()) {
-        return false;            /* no tester rows on a soldered board */
+    if (soldered() && !carrier_tester()) {
+        return false;            /* no tester rows before 4.36 */
     }
     bool took;
     int i = seg_event(&p.tester, evt, tester_locked(), &took);
     if (took) {
         if (i >= 0 && i != p.tester.selected) {
-            settings_set(SET_SERVO_TARGET,
-                         (i == 0) ? 0.0f : (float)(p.port + 1));
-            settings_request_save();
+            if (carrier_tester()) {
+                /* The FUNC follows the choice (prog_choice_tick()). */
+                (void)prog_choice_pick((i == 0) ? 0u : (uint8_t)(p.port + 1));
+            } else {
+                settings_set(SET_SERVO_TARGET,
+                             (i == 0) ? 0.0f : (float)(p.port + 1));
+                settings_request_save();
+            }
         }
         return true;
     }
     i = seg_event(&p.pwm, evt, pwm_locked(), &took);
     if (took) {
+        /* On the carrier the pulse needs the ports' 5V: ON waits for the
+         * PROG 5V box, and the line under the rows says so. */
+        if (i == 0 && carrier_tester() && prog_choice_needs_5v()) {
+            return true;
+        }
         if (i >= 0 && i != p.pwm.selected) {
             settings_set(SET_SERVO_PORT_PWM, (i == 0) ? 1.0f : 0.0f);
             settings_request_save();
@@ -571,8 +628,10 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
     gfx_text(c, COL_X, FN_Y, TR(OUT_PORT_FUNCTION), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     const uint8_t fn = port_view_func((uint8_t)p.port);
-    const char *fn_name = soldered() ? TR(OUT_PORT_FN_PROG)
-                          : known()  ? port_view_fn_name(fn) : "?";
+    const char *fn_name =
+        (soldered() && fn != (uint8_t)LINK_PG_FN_SERVO_PWM)
+            ? TR(OUT_PORT_FN_PROG)
+            : known() ? port_view_fn_name(fn) : "?";
     if (fn_locked()) {
         ui_choice_face_locked(c, fn_face(), fn_name);
     } else {
@@ -591,7 +650,7 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
     gfx_text(c, COL_X, WATCH_Y + ((wf == OU_FONT_LABEL) ? 0 : 2), buf, wf,
              UI_TEXT_DIM, 1);
 
-    if (!soldered()) {
+    if (!soldered() || carrier_tester()) {
         gfx_text(c, COL_X, TESTER_Y, TR(OUT_PORT_TESTER), OU_FONT_LABEL,
                  UI_TEXT_FAINT, 1);
         ui_tabs_render_locked(&p.tester, c, tester_locked());

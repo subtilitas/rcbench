@@ -18,6 +18,7 @@
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "link_pages.h"
+#include "prog_choice.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_board.h"
@@ -490,13 +491,48 @@ void kpn_act(const row_t *r)
     }
 }
 
+const row_t *kpn_port_pick_row(void)
+{
+    if (!prog_choice_offered() || kst_prog_state(&k.prog) != KST_PROG_PWM) {
+        return NULL;
+    }
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        const row_t *r = &kpn_rows[i];
+
+        if (r->kind == K_ACT && r->what == A_PORT
+            && r->page == k.tabs.selected) {
+            return r;
+        }
+    }
+    return NULL;
+}
+
+void kpn_port_list(void)
+{
+    char label[KST_PANEL_LINE];
+
+    if (prog_choice_locked()) {
+        return;                 /* the state line says why */
+    }
+    choice_open(C_PORT, TR(PC_TITLE));
+    for (uint8_t port = 1u; port <= LINK_PG_PORTS_MAX; ++port) {
+        /* A port an output's slice holds says so in its entry. */
+        if (!prog_choice_refusal(port, label, sizeof(label))) {
+            prog_choice_entry(port, label, sizeof(label));
+        }
+        choice_add(label, (int)port);
+    }
+}
+
 void kpn_choice_done(int value)
 {
     kst_prog_t *p = &k.prog;
     const int kind = k.ch.kind;
 
     k.ch.open = false;
-    if (kind == C_STRETCH) {
+    if (kind == C_PORT) {
+        (void)prog_choice_pick((uint8_t)value);
+    } else if (kind == C_STRETCH) {
         const row_t *r = &kpn_rows[k.kp_row];
 
         edited(r, kst_prog_edit(p, (kst_field_id_t)r->what, (uint16_t)value));

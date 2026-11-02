@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "prog_choice.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -184,7 +185,11 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     if (other) {
         snprintf(l2, size, "%s", TR(SV_IN_FORCE_NOT_SET));
     } else if (target != 0u && !pwm) {
-        snprintf(l2, size, "%s", TR(SV_IN_FORCE_PWM_OFF));
+        /* On the carrier PORT PWM ON waits for the ports' 5V. */
+        snprintf(l2, size, "%s",
+                 settings_get_bool(SET_SERVO_PORT_PWM) && prog_choice_needs_5v()
+                     ? TR(PC_NEED_5V)
+                     : TR(SV_IN_FORCE_PWM_OFF));
         warn = true;
     } else {
         snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));

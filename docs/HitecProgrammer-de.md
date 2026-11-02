@@ -47,6 +47,11 @@ läuft, beschreibt
   PORT 3 oder PORT 4, und der Port nennt einen Pin. Mit OUTPUTS lautet die Zeile PORT
   `KEIN PROG-PORT GESETZT`, und VERBINDEN sagt `Zum Programmieren muss das
   Servo am Programmierport angeschlossen sein.`
+  Auf dem rbmod-Carrier mit einem IOmcu ab Protokoll 4.36 wählt die Zeile
+  PORT den Port: ein Tipp auf ihre Beschriftung öffnet PROGP01 bis
+  PROGP04, und VERBINDEN ohne Port sagt `PORT-Zeile antippen und einen
+  Programmierport wählen.` ([Servo-Programmer: Der Port auf dem
+  rbmod-Carrier](ServoProgrammer-de.md#der-port-auf-dem-rbmod-carrier)).
 - Der Prüfstand ist SAFE. VERBINDEN wird abgelehnt bei ARMED, bei einem
   angeforderten Schalten auf ARMED und mit einem Finger auf ARM: `Zuerst
   DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Ein
@@ -74,7 +79,7 @@ läuft, beschreibt
 
 | Zeile | Was sie tut |
 | --- | --- |
-| PORT | Zwei Zeilen: der Port und sein GPIO mit der Serie, `PROG-PORT 1 GPIO 13  D-SERIE`, dann die Empfangsart und die Versorgung, die VERBINDEN einstellt, `RX PRECHARGE  5.0V 1000mA` (`VERSORGUNG UNVERÄNDERT` für ein Servo der D-Serie ohne PD mini). Die Taste lautet VERBINDEN, ABBRECHEN, solange der Port in den Programmiermodus geht oder ein Lesen läuft, WARTEN, VERLASSEN, solange der Port gehalten ist, und PORT FREIGEBEN, solange eine andere Sitzung ihn hält |
+| PORT | Zwei Zeilen: der Port und sein GPIO mit der Serie, `PROG-PORT 1 GPIO 13  D-SERIE`, auf dem rbmod-Carrier öffnet ein Tipp darauf vor VERBINDEN die Liste der Programmierports, dann die Empfangsart und die Versorgung, die VERBINDEN einstellt, `RX PRECHARGE  5.0V 1000mA` (`VERSORGUNG UNVERÄNDERT` für ein Servo der D-Serie ohne PD mini). Die Taste lautet VERBINDEN, ABBRECHEN, solange der Port in den Programmiermodus geht oder ein Lesen läuft, WARTEN, VERLASSEN, solange der Port gehalten ist, und PORT FREIGEBEN, solange eine andere Sitzung ihn hält |
 | SERIE | D-SERIE oder KLASSISCH, vor VERBINDEN gewählt; bei den Einstellungen von SERVO gehalten (SET_HITEC_SERIES). Solange der Port gehalten ist, nennt die Zeile PORT die Serie, und DATEIEN steht an dieser Stelle |
 | DATEIEN | Solange der Port gehalten ist: die Servodateien auf der Karte, Speichern und Laden ([Servodateien](#servodateien)) |
 | SERVO | Das gelesene Modell, `D485HW` oder `HS-5645MG`; ALLES AUSLESEN liest die Werte der Serie erneut |

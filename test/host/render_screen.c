@@ -78,6 +78,7 @@
 #include "motor_spots.h"
 #include "ui_band.h"
 #include "prog5v_box.h"
+#include "prog_choice.h"
 #include "ui_board.h"
 #include "ui_cats.h"
 #include "ui_keypad.h"
@@ -3295,7 +3296,7 @@ static void pose_analyser_views(ui_screen_id_t id, const char *view)
  *        pins held, before the screen is posed.  outputs-rbmod: SERVO PWM
  *        on PWM01 and PWM02, DSHOT300 on PWM04, MOTOR PWM picked and PWM03
  *        tapped, refused for slice 2.  outputs-rbmod-port: PROG PORT 1 on
- *        GP13.  setup-rbmod: the hub with LAYOUT as its last tile.
+ *        GPIO 13, the tester's port, PORT PWM waiting for the PROG 5V.  setup-rbmod: the hub with LAYOUT as its last tile.
  *        supply-pdmini-rbmod: PD MINI with the PD mini's pins soldered.
  *        layout-rbmod: LAYOUT with the same binding.  supply-rbmod:
  *        SUPPLY with the PROG PORTS 5V line and the PROG 5V box.
@@ -3352,6 +3353,13 @@ static bool pose_carrier_views(ui_screen_id_t id, const char *view)
     outputs_screen_set_prog_ports(4u, pins);
     outputs_screen_set_result(OUTPUTS_OK);
     if (strcmp(view, "outputs-rbmod-port") == 0) {
+        /* An IOmcu of 4.36: the tester on PROGP01, SERVO PWM there, PORT
+         * PWM ON waiting for the PROG 5V. */
+        prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        settings_set(SET_SERVO_PORT_PWM, 1.0f);
+        v.func[0] = (uint8_t)LINK_PG_FN_SERVO_PWM;
+        port_view_set(&v);
         outputs_screen_open_on_port(0u);
         ui_router_goto(SCREEN_OUTPUTS);
         return true;

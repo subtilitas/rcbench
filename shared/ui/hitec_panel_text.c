@@ -17,6 +17,7 @@
 #include "hitec_reg.h"
 #include "link_pages.h"
 #include "ui_board.h"
+#include "prog_choice.h"
 #include "ui_text.h"
 
 /* Last: its layout macros and hp, the state, which no header included
@@ -443,7 +444,9 @@ static void pwm_line(char *out, size_t n)
     const unsigned port = (unsigned)hitec_prog_port(p) + 1u;
     const unsigned mv = hitec_prog_mv(p);
 
-    if (!hitec_prog_on_port(p)) {
+    if (prog_choice_offered() && prog_choice_lock_line(out, n)) {
+        /* The carrier's PORT row is locked: why. */
+    } else if (!hitec_prog_on_port(p)) {
         snprintf(out, n, "%s", TR(KP_NEED_TARGET));
     } else if (ui_board_prog_5v_pin() >= 0) {
         snprintf(out, n, TR(KP_STATE_PWM_5V), port,
@@ -872,7 +875,8 @@ int hitec_panel_message_lines(const hitec_prog_msg_t *m,
     for (int i = 0; i < 2; ++i) {
         if (k_lines[m->id][i] >= 0) {
             snprintf(out[n++], HITEC_PANEL_LINE, "%s",
-                     ui_tr((ui_text_id_t)k_lines[m->id][i]));
+                     ui_tr((ui_text_id_t)prog_choice_text(
+                         k_lines[m->id][i])));
         }
     }
     return n;

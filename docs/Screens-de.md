@@ -6401,16 +6401,37 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
 
 - Jeder Eintrag PROG PORT nennt seinen Pin, `PROGP01 AUF GPIO 13`. PIN
   nimmt keinen Tipp und öffnet keine Pin-Auswahl.
-- FUNKTION zeigt `PROGRAMMIEREN` und nimmt keinen Tipp. Ein
-  Programmierport trägt die Programmer von KST und Hitec und kein
-  Signalprotokoll; FUNC bleibt NONE.
-- SERVO-TESTER und PORT-PWM werden nicht gezeichnet.
-- Die Zeile unter den Zeilen lautet
-  `NUR KST- UND HITEC-PROGRAMMER. SIGNALE: PWM01 BIS PWM04`.
+- FUNKTION nimmt keinen Tipp. Sie zeigt `PROGRAMMIEREN` für FUNC NONE und
+  `SERVO PWM` auf dem Port, den der Servotester treibt.
+- Mit einem IOmcu ab Protokoll 4.36 werden SERVO-TESTER und PORT-PWM wie
+  auf dem Modul gezeichnet. SERVO-TESTER PORT n macht den Port zum Port
+  des Testers und der Programmer, dieselbe Wahl wie die Zeile PORT der
+  Programmer
+  ([Servo-Programmer: Der Port auf dem rbmod-Carrier](ServoProgrammer-de.md#der-port-auf-dem-rbmod-carrier)).
+  Das Panel bittet den IOmcu dann um FUNC SERVO PWM auf diesem Port und
+  FUNC NONE auf den anderen drei. Das TARGET des IOmcu folgt, sobald der
+  Port SERVO PWM liest.
+- Die Wahl ist unter den Regeln von SERVO ZIEL gesperrt: ARMED oder ARMED
+  angefordert, ein Test, ein Sweep oder ein Endlagenlauf, ein Programmer,
+  der einen Port hält. Die Zeile unter den Zeilen sagt warum:
+  `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` oder
+  `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT`.
+- PROGP04 (GPIO 0) teilt PWM-Slice 0 mit PWM04 (GPIO 1). Solange PWM04
+  einen PWM-Ausgang trägt, wird PROGP04 nicht angeboten, und die Zeile
+  lautet `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)`. Die Bindung von
+  PWM01 bis PWM04 ändert sich für einen Programmierport nie.
+- Die Ports laufen an den festen 5V von M7 auf GPIO 21. PORT-PWM EIN wird
+  nur genommen, solange das Feld PROG 5V EIN zeigt; sonst lautet die Zeile
+  `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, und es geht kein Puls
+  hinaus. Der Puls endet, wenn PROG 5V ausgeht.
+- Mit einem IOmcu vor 4.36 werden SERVO-TESTER und PORT-PWM nicht
+  gezeichnet, und die Zeile lautet
+  `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.
 - Die Zeile ÜBERWACHT VON nennt den Kanal des INA3221 des Carriers auf den
   5V der Ports, `ÜBERWACHT VON INA3221 PROG 5V`, solange kein Kanal den
   Port selbst misst
-  ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)).
+  ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)). CH3 misst
+  alle vier Ports zusammen.
 
 ### Die Übersicht: OFF
 

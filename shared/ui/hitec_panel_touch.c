@@ -100,6 +100,11 @@ static void down(const touch_event_t *evt)
             return;
         }
     }
+    /* On the carrier the PORT row's label opens the ports' list. */
+    const hpn_row_t *pr = hpn_port_pick_row();
+    if (pr != NULL && gfx_rect_contains(hpn_row_rect(pr), x, y)) {
+        take(evt, P_PORT, -1);
+    }
 }
 
 void hitec_panel_close(void)
@@ -206,6 +211,14 @@ static void rest(const touch_event_t *evt)
             hpn_act(&hpn_rows[which]);
         }
         break;
+    case P_PORT: {
+        const hpn_row_t *pr = hpn_port_pick_row();
+
+        if (pr != NULL && gfx_rect_contains(hpn_row_rect(pr), x, y)) {
+            hpn_port_list();
+        }
+        break;
+    }
     case P_CHOICE:
         if (hp.ch.open && which < hp.ch.count
             && gfx_rect_contains(hitec_panel_choice_rect(which), x, y)) {

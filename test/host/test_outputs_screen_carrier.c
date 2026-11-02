@@ -150,8 +150,8 @@ TEST_CASE(a_prog_port_entry_names_its_pin_and_offers_nothing)
     tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
     tap(OU_POP_X(1), OU_POP_ROW_Y(2));       /* PROG PORT 3 */
     CHECK_EQ(outputs_screen_port_shown(), 2);
-    CHECK_STR_EQ(reason(),
-                 "KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04");
+    /* An IOmcu older than 4.36 holds FUNC at NONE: no tester rows. */
+    CHECK_STR_EQ(reason(), "PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36");
     /* PIN takes no tap: the screen stays. */
     tap(COL_X + 40, OU_PIN_Y);
     CHECK_EQ(outputs_screen_port_shown(), 2);
@@ -159,8 +159,7 @@ TEST_CASE(a_prog_port_entry_names_its_pin_and_offers_nothing)
 
     /* Back on the module the entry is the module's again. */
     ui_board_set(OUTBIND_BOARD_PICO_HEADER);
-    CHECK(strcmp(reason(),
-                 "KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04")
+    CHECK(strcmp(reason(), "PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36")
           != 0);
     port_view_unknown(&v);
     port_view_set(&v);

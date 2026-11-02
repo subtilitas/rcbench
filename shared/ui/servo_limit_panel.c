@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "kst_panel.h"
+#include "prog_choice.h"
 #include "prog_registry.h"
 #include "kst_port.h"
 #include "log_name.h"
@@ -97,6 +98,11 @@ const char *lim_blocked(void)
     const char *meter = lim_meter_why();
     if (meter != NULL) {
         return meter;
+    }
+    /* The rbmod carrier's programming port: its pulse needs the PROG 5V,
+     * which is also the rail the run reads. */
+    if (prog_choice_needs_5v()) {
+        return ui_servo_str(SERVO_STR_START_PROG_5V);
     }
     /* A powered rail: the window's voltage read, and at least
      * SERVO_LIMRUN_RAIL_MIN_MV. */
