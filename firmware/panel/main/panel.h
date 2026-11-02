@@ -637,20 +637,23 @@ static inline bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
 }
 
 /* A window of a page from @p offset; the reply's registers start there. */
-static inline bool read_regs(link_host_t *host, uint8_t page, uint8_t offset,
-                             uint8_t count, link_msg_t *reply)
-{
-    link_msg_t req;
-    if (!link_host_read(host, page, offset, count, now_ms(), &req)) {
-        return false;
-    }
-    return exchange(host, &req, reply);
-}
-
 /* exchange() and the clock, as shared/link asks for them. */
 uint32_t port_now(void *ctx);
 void     port_between(void *ctx);
 extern const link_port_t k_port;
+
+/*
+ * A read asks for at most LINK_READ_REGS_MAX (16) registers an exchange
+ * (link_read_split()): a reply of 4 frames fits the TWAI controller's receive
+ * FIFO, so an interrupt held while it arrives delays it and cannot overrun
+ * the FIFO.  A wider read is two parts and the first part again, so it is one
+ * state of the page, or a NACK of LINK_NACK_BUSY.
+ */
+static inline bool read_regs(link_host_t *host, uint8_t page, uint8_t offset,
+                             uint8_t count, link_msg_t *reply)
+{
+    return link_read_split(host, &k_port, page, offset, count, reply);
+}
 
 /*
  * A write of any width goes out one frame per exchange, each acknowledged

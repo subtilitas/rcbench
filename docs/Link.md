@@ -56,11 +56,13 @@ The report printed every 5s while the link is down carries the counters:
 
 ```
 LINK ...
-  bus    tx errors 0 rx errors 0 bus errors 0
+  bus    tx errors 0 rx errors 0 bus errors 0 rx overrun 0 rx missed 0
 ```
 
-A transmit error counter climbing towards 256 says nobody is acknowledging. The
-line ends in `-- BUS OFF` when the panel has already stopped transmitting. It
+A transmit error counter climbing towards 256 says nobody is acknowledging.
+`rx overrun` counts frames the TWAI controller's receive FIFO had no room
+for, and `rx missed` frames the driver's queue of 16 had no room for, both
+since the driver started: frames lost with no error on the bus. The line ends in `-- BUS OFF` when the panel has already stopped transmitting. It
 reads `the controller is not running` instead of the counters when TWAI never
 started, which is a different diagnosis from a bus with no errors.
 
@@ -397,8 +399,30 @@ of up to 4 registers per exchange, each acknowledged before the next is sent
 received frames and the IOmcu reads it from its main loop; with one
 request frame on its way at a time, a pass that is late delays a frame and
 does not lose one to a full buffer. The same write as 8 frames back to back
-loses 6 of them to one 20ms pass (`test_bind_link`). A reply still arrives
-as back-to-back frames: the panel's TWAI driver queues 16.
+loses 6 of them to one 20ms pass (`test_bind_link`).
+
+A reply arrives as back-to-back frames, and the panel's TWAI controller keeps
+them in its receive FIFO only until its interrupt moves them to the driver's
+queue of 16. The interrupt runs on core 0 at level 1 and not from IRAM, so a
+critical section, a cache-off flash write or a higher-priority task's interrupt
+on that core holds it. So a read asks for at most 16 registers, 4 frames
+(`LINK_READ_REGS_MAX`, `link_read_split()` in `shared/link/link_port.c`). The
+FIFO is taken as 64 bytes, the size the ESP32 family's controller has: 4
+frames of 13 bytes leave 12 bytes, and a 5th frame would not fit. ESP-IDF v6.1
+does not state the ESP32-P4's FIFO size; its register file has a 7-bit message
+counter and no size. A wider read is three exchanges: the first 16 registers,
+the rest, and the first 16 again. When the two reads of the first part are
+equal, the copy is the page as it stood at the read of the rest. When they
+differ, the three go again, up to 3 times, and then the answer is a NACK of
+`BUSY`, never a torn copy. A change in the first part that is undone between its
+two reads is not seen.
+
+| Read | Registers | Exchanges | Frames, requests and replies | As one read: exchanges, frames |
+| --- | ---: | ---: | ---: | ---: |
+| PROG, every 500ms | 28 | 3 | 14 | 1, 8 |
+| ESC_WIRE status, every 500ms free and 100ms held | 21 | 3 | 13 | 1, 7 |
+| SERVO_WIN | 28 | 3 | 14 | 1, 8 |
+| A read of 32: SENSE_WIN_A, SENSE_WIN_B, KST, HITEC, SENSE_MAP, ESC_DATA | 32 | 3 | 15 | 1, 9 |
 
 The cost of one edit, and what it is held against:
 

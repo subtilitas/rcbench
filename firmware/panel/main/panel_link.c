@@ -510,7 +510,11 @@ static void debug_log(const char *line)
         return;
     }
     char note[LOG_NOTE_MAX];
-    snprintf(note, sizeof(note), "%s", line);
+    /* Cut at the note's size: only counters near 4,294,967,295 reach it. */
+    const size_t n = strnlen(line, sizeof(note) - 1u);
+
+    memcpy(note, line, n);
+    note[n] = '\0';
     (void)xQueueSend(s_note_q, note, 0);
 }
 
@@ -644,13 +648,15 @@ void link_report(void)
      * transmitting.  The recovery runs on the poll gate; the report's bus
      * line is how it is seen from a console.
      */
-    uint32_t tec = 0, rec = 0, bus = 0;
+    uint32_t tec = 0, rec = 0, bus = 0, ovr = 0, miss = 0;
     bool off = false;
-    char n1[12], n2[12], n3[12];
-    const bool have_bus = can_twai_errors(&tec, &rec, &bus, &off);
+    char n1[12], n2[12], n3[12], n4[12], n5[12];
+    const bool have_bus = can_twai_errors(&tec, &rec, &bus, &off)
+                          && can_twai_rx_lost(&ovr, &miss);
     s_rep.bus = (link_report_bus_t){ .have = have_bus, .off = off,
                                      .tx_errors = tec, .rx_errors = rec,
-                                     .bus_errors = bus };
+                                     .bus_errors = bus, .rx_overrun = ovr,
+                                     .rx_missed = miss };
     if (s_console_q == NULL || xQueueSend(s_console_q, &s_rep, 0) != pdTRUE) {
         console_report_print(&s_rep);
     }
@@ -665,10 +671,11 @@ void link_report(void)
     /* Read once, like every other reader of it: the control task can clear
      * it between the test and the subtraction. */
     const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
-    char row[208];
+    char row[256];
     snprintf(row, sizeof(row),
              "t=%lus link=down for %lus  bus=%s tx_err=%s rx_err=%s "
-             "bus_err=%s rejoins=%lu/%lu  polls=%lu replies=%lu timeouts=%lu",
+             "bus_err=%s rx_ovr=%s rx_miss=%s rejoins=%lu/%lu  polls=%lu "
+             "replies=%lu timeouts=%lu",
              (unsigned long)(now_ms() / 1000u),
              (unsigned long)(lost_ms == 0u
                                  ? 0u
@@ -677,6 +684,8 @@ void link_report(void)
              have_bus ? u32(n1, sizeof(n1), tec) : "?",
              have_bus ? u32(n2, sizeof(n2), rec) : "?",
              have_bus ? u32(n3, sizeof(n3), bus) : "?",
+             have_bus ? u32(n4, sizeof(n4), ovr) : "?",
+             have_bus ? u32(n5, sizeof(n5), miss) : "?",
              (unsigned long)s_recoveries, (unsigned long)s_recoveries_total,
              (unsigned long)s_bring.polls, (unsigned long)s_bring.replies,
              (unsigned long)s_bring.timeouts);

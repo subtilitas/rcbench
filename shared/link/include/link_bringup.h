@@ -223,6 +223,8 @@ typedef struct {
     uint32_t tx_errors;   /**< transmit error counter                    */
     uint32_t rx_errors;   /**< receive error counter                     */
     uint32_t bus_errors;  /**< bus errors since the driver started       */
+    uint32_t rx_overrun;  /**< frames the receive FIFO had no room for    */
+    uint32_t rx_missed;   /**< frames the driver's queue had no room for  */
 } link_report_bus_t;
 
 /**

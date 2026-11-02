@@ -370,14 +370,16 @@ The relay makes at most one exchange a control pass, 5ms when nothing else holds
 | Traffic | Frames | Rate |
 | --- | --- | --- |
 | A look at rest | 2 every 50ms | 40 frames/s |
-| A window of output, 60 bytes in 30 registers | 9, a request and 8 replies of 4 registers | one pass |
+| A window of output, 28 bytes in 14 registers | 5, a request and 4 replies of 4 registers | one pass |
 | Its acknowledgement | 2 | one pass |
-| Output, sustained | 11 for each 60 bytes, 2 passes | 6,000 bytes/s, 1,100 frames/s |
+| Output, sustained | 7 for each 28 bytes, 2 passes | 2,800 bytes/s, 700 frames/s |
 | Input, 6 bytes a chunk | 2 for each chunk, one pass | 1,200 bytes/s, 135ms for a line of 160 characters |
 
-Measured at the station: 2,856 to 3,510 bytes/s of output, with `help` sent at 6/s to 30/s. That is 17ms to 21ms for each 60-byte window against 10ms calculated. The control task's delay of 5ms comes after the pass's work (`vTaskDelay`), so a pass is 5ms plus its own exchanges: the panel's polls and the window's own 9 frames. The share of each is not measured. A window and its acknowledgement take 2 passes, and after the last window of a burst the next look comes up to 50ms later.
+A window is one read of 16 registers, the most a read asks for: 4 reply frames fit the panel's TWAI receive FIFO ([The link](Link.md)).
 
-At 1Mbit/s a frame of 8 bytes takes about 150us, so sustained output at the calculated rate takes about 17% of the bus. At the measured rate the 2,048-byte buffer empties in about 580ms to 720ms. Output faster than the measured rate for longer than that buffer lasts loses whole lines, the IOmcu's own 3s lines included; the next line says `err output full, N bytes dropped` as it does on USB. Output is also held back when the panel's own buffer of 4,096 bytes has under 444 bytes free, as when a serial host stops reading.
+Measured at the station with a window of 60 bytes, which this build does not have: 2,856 to 3,510 bytes/s of output, with `help` sent at 6/s to 30/s, 17ms to 21ms a window against 10ms calculated. The control task's delay of 5ms comes after the pass's work (`vTaskDelay`), so a pass is 5ms plus its own exchanges: the panel's polls and the window's own frames. The share of each is not measured. At the same 17ms to 21ms a window, a 28-byte window gives about 1,330 to 1,650 bytes/s; not measured. A window and its acknowledgement take 2 passes, and after the last window of a burst the next look comes up to 50ms later.
+
+At 1Mbit/s a frame of 8 bytes takes about 150us, so sustained output at the calculated rate takes about 11% of the bus. At 1,330 to 1,650 bytes/s the 2,048-byte buffer empties in about 1.2s to 1.5s. Output faster than that for longer than that buffer lasts loses whole lines, the IOmcu's own 3s lines included; the next line says `err output full, N bytes dropped` as it does on USB. Output is also held back when the panel's own buffer of 4,096 bytes has under 412 bytes free, as when a serial host stops reading.
 
 A window stays at the IOmcu until it is acknowledged, so a lost reply costs a second read and no byte. An unanswered exchange holds the control pass for up to 1000ms, as any exchange of the panel does, with the heartbeat kept going.
 

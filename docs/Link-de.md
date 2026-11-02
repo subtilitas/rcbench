@@ -61,11 +61,15 @@ Der Report, der bei liegendem Link alle 5s ausgegeben wird, trägt die Zähler:
 
 ```
 LINK ...
-  bus    tx errors 0 rx errors 0 bus errors 0
+  bus    tx errors 0 rx errors 0 bus errors 0 rx overrun 0 rx missed 0
 ```
 
 Ein Transmit Error Counter, der auf 256 zuläuft, heißt, dass niemand die
-Frames mit einem ACK (Acknowledge) bestätigt. Die Zeile endet auf `-- BUS
+Frames mit einem ACK (Acknowledge) bestätigt. `rx overrun` zählt Frames, für
+die der Empfangs-FIFO des TWAI-Controllers keinen Platz hatte, und `rx missed`
+Frames, für die die Warteschlange des Treibers mit 16 Plätzen keinen Platz
+hatte, beide seit dem Start des Treibers: Frames, die ohne Fehler auf dem Bus
+verloren gehen. Die Zeile endet auf `-- BUS
 OFF`, wenn das Panel bereits aufgehört hat zu senden. Steht dort statt der
 Zähler `the controller is not running`, ist der CAN-Controller gar nicht erst
 gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
@@ -432,8 +436,32 @@ XL2515 hält 2 empfangene Frames, und der IOmcu liest ihn aus seiner
 Hauptschleife; mit einem Anfrage-Frame gleichzeitig unterwegs verzögert ein
 verspäteter Durchlauf einen Frame und verliert keinen an einen vollen Puffer.
 Dasselbe Schreiben als 8 Frames direkt hintereinander verliert 6 davon an
-einen Durchlauf von 20ms (`test_bind_link`). Eine Antwort kommt weiterhin
-als Frames direkt hintereinander: der TWAI-Treiber des Panels puffert 16.
+einen Durchlauf von 20ms (`test_bind_link`).
+
+Eine Antwort kommt als Frames direkt hintereinander, und der TWAI-Controller
+des Panels hält sie in seinem Empfangs-FIFO nur, bis sein Interrupt sie in die
+Warteschlange des Treibers mit 16 Plätzen bringt. Der Interrupt läuft auf Kern 0
+auf Level 1 und nicht aus dem IRAM; ein kritischer Abschnitt, ein Flash-Schreiben
+mit abgeschaltetem Cache oder der Interrupt einer höher priorisierten Aufgabe
+auf diesem Kern hält ihn an. Deshalb fragt ein Lesen höchstens 16 Register ab,
+4 Frames (`LINK_READ_REGS_MAX`, `link_read_split()` in
+`shared/link/link_port.c`). Der FIFO wird mit 64 Byte angenommen, der Größe
+beim Controller der ESP32-Familie: 4 Frames zu 13 Byte lassen 12 Byte frei, ein
+5. Frame passte nicht. ESP-IDF v6.1 nennt die FIFO-Größe des ESP32-P4 nicht;
+seine Registerdatei hat einen 7-Bit-Nachrichtenzähler und keine Größe. Ein
+breiteres Lesen sind drei Austausche: die ersten 16 Register, der Rest und die
+ersten 16 noch einmal. Sind die beiden Lesungen des ersten Teils gleich, ist
+die Kopie die Page, wie sie beim Lesen des Rests stand. Unterscheiden sie sich,
+gehen die drei erneut, bis zu 3-mal, danach ist die Antwort ein NACK `BUSY`,
+nie eine zerrissene Kopie. Eine Änderung im ersten Teil, die zwischen seinen
+beiden Lesungen rückgängig gemacht wird, bleibt ungesehen.
+
+| Lesen | Register | Austausche | Frames, Anfragen und Antworten | Als ein Lesen: Austausche, Frames |
+| --- | ---: | ---: | ---: | ---: |
+| PROG, alle 500ms | 28 | 3 | 14 | 1, 8 |
+| ESC_WIRE-Status, alle 500ms frei und 100ms gehalten | 21 | 3 | 13 | 1, 7 |
+| SERVO_WIN | 28 | 3 | 14 | 1, 8 |
+| Ein Lesen von 32: SENSE_WIN_A, SENSE_WIN_B, KST, HITEC, SENSE_MAP, ESC_DATA | 32 | 3 | 15 | 1, 9 |
 
 Die Kosten einer Änderung, und woran sie gemessen werden:
 

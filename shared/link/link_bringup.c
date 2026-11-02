@@ -303,9 +303,11 @@ static int format_line(const link_report_in_t *r, report_line_t k,
         if (r->bus.have) {
             return snprintf(out, size,
                             "  bus    tx errors %" PRIu32 " rx errors %" PRIu32
-                            " bus errors %" PRIu32 "%s",
+                            " bus errors %" PRIu32 " rx overrun %" PRIu32
+                            " rx missed %" PRIu32 "%s",
                             r->bus.tx_errors, r->bus.rx_errors,
-                            r->bus.bus_errors, r->bus.off ? " -- BUS OFF" : "");
+                            r->bus.bus_errors, r->bus.rx_overrun,
+                            r->bus.rx_missed, r->bus.off ? " -- BUS OFF" : "");
         }
         /* Zeros would read as a healthy bus: a controller that never
          * started is another diagnosis than one with no errors. */

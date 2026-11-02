@@ -270,6 +270,8 @@ extern bool s_beat_level;
 extern bool     s_can_up;
 extern uint32_t s_can_echoes;
 extern uint32_t s_can_overflows;
+/** @brief Reply frames dropped after 1000 spins on a full transmit buffer. */
+extern uint32_t s_can_tx_dropped;
 
 /**
  * @brief When a frame was last taken out of the controller; see iomcu_can.c.

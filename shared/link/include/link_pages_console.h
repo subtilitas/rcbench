@@ -46,7 +46,7 @@ enum {
     LINK_CN_OUT_SEQ = 0, /**< the window's place in the output */
     LINK_CN_OUT_LEN = 1, /**< its bytes, and LINK_CN_OUT_MORE  */
     LINK_CN_DATA    = 2, /**< the bytes                        */
-    LINK_CN_COUNT   = 32,
+    LINK_CN_COUNT   = 16, /**< LINK_READ_REGS_MAX: one read, 4 frames */
 };
 
 /** @brief The registers of a write. */
@@ -55,8 +55,8 @@ enum {
     LINK_CN_W_IN  = 1, /**< a chunk of a line           */
 };
 
-/** @brief Bytes in a window: 30 registers. */
-#define LINK_CN_DATA_BYTES 60u
+/** @brief Bytes in a window: 14 registers. */
+#define LINK_CN_DATA_BYTES 28u
 /** @brief In LINK_CN_OUT_LEN: more bytes wait behind the window. */
 #define LINK_CN_OUT_MORE 0x8000u
 /** @brief LINK_CN_OUT_LEN's count. */

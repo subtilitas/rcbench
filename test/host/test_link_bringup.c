@@ -716,6 +716,8 @@ TEST_CASE(a_healthy_report_prints_the_lines_the_console_printed)
     r.win_s = 60u;
     r.bus.have = true;
     r.bus.bus_errors = 2u;
+    r.bus.rx_overrun = 3u;
+    r.bus.rx_missed = 1u;
     char t[LINK_REPORT_LINES + 1][LINK_REPORT_LINE];
     bool w[LINK_REPORT_LINES + 1];
     CHECK_EQ(report_lines(&r, t, w), 6u);
@@ -727,7 +729,10 @@ TEST_CASE(a_healthy_report_prints_the_lines_the_console_printed)
                        "nack 0 crc 0 resync 0");
     CHECK_STR_EQ(t[3], "  iomcu  frames 100 crc 0 resync 0 refused 0");
     CHECK_STR_EQ(t[4], "  round trip min 400 avg 450 max 500 us");
-    CHECK_STR_EQ(t[5], "  bus    tx errors 0 rx errors 0 bus errors 2");
+    /* Frames the receive FIFO or the driver's queue had no room for: lost with
+     * no error on the bus. */
+    CHECK_STR_EQ(t[5], "  bus    tx errors 0 rx errors 0 bus errors 2 "
+                       "rx overrun 3 rx missed 1");
     for (unsigned i = 0; i < 6u; ++i) {
         CHECK(!w[i]);
     }
@@ -768,7 +773,7 @@ TEST_CASE(a_silent_link_warns_and_names_what_never_answered)
     char line[LINK_REPORT_LINE];
     CHECK(link_report_line(&r, 5u, line, sizeof(line), NULL) > 0u);
     CHECK_STR_EQ(line, "  bus    tx errors 256 rx errors 0 bus errors 0 "
-                       "-- BUS OFF");
+                       "rx overrun 0 rx missed 0 -- BUS OFF");
 }
 
 /* Every counter at 4,294,967,295 in every shape a report takes: no more
