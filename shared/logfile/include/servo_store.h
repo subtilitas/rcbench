@@ -288,7 +288,8 @@ servo_store_t servo_store_list_after(const servo_store_io_t *io,
  * @param io    The card functions; @c io->remove set.
  * @param name  The file name.
  * @return SERVO_STORE_OK; SERVO_STORE_ARG with no remove function;
- *         SERVO_STORE_BAD_NAME; SERVO_STORE_NO_CARD; SERVO_STORE_NOT_FOUND;
+ *         SERVO_STORE_BAD_NAME; SERVO_STORE_NO_CARD; SERVO_STORE_LIST_ERROR;
+ *         SERVO_STORE_NOT_FOUND for no file of that name, a folder included;
  *         SERVO_STORE_DENIED; SERVO_STORE_WRITE_ERROR for any other failure.
  */
 servo_store_t servo_store_remove(const servo_store_io_t *io, const char *name);

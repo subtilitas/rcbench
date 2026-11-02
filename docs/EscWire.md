@@ -174,7 +174,7 @@ A backup's name is `ESCW`, a number from 001 to 999 and the firmware: `ESCW001-A
 
 ### Deleting a file
 
-DELETE A FILE turns the list into one a tap deletes from. A tap opens DELETE A FILE, a red 2s hold, which names the file. After the delete the list reads the card again. A backup this session saved since CONNECT is not deleted inside the session: the line says so, and LOGS > FILES deletes it. A delete that fails says so, and the file stays as it was.
+DELETE A FILE turns the list into one a tap deletes from. A tap opens DELETE A FILE, a red 2s hold, which names the file. After the delete the list reads the card again. A backup this session saved since CONNECT is not deleted inside the session: the line says so, and LOGS > FILES deletes it. A delete that fails says so, and the file stays as it was. A delete runs only on the card the list was read from: with another card in since, it deletes nothing and says so.
 
 ## Erased AM32
 

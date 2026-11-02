@@ -364,6 +364,20 @@ static void find_name(const char *name, bool is_dir, void *visit_ctx)
     }
 }
 
+/**
+ * @brief Set found when a file, no directory, has the searched name.
+ *
+ * @param name       The entry name.
+ * @param is_dir     Whether the entry is a directory.
+ * @param visit_ctx  The find_t state.
+ */
+static void find_file(const char *name, bool is_dir, void *visit_ctx)
+{
+    if (!is_dir) {
+        find_name(name, false, visit_ctx);
+    }
+}
+
 servo_store_t servo_store_save(const servo_store_io_t *io, const char *base,
                                const char *text, size_t len,
                                servo_store_name_t *why)
@@ -592,7 +606,13 @@ servo_store_t servo_store_remove(const servo_store_io_t *io, const char *name)
     if (!io->mounted(io->ctx)) {
         return SERVO_STORE_NO_CARD;
     }
-    if (io->size(io->ctx, name) < 0) {
+    /* By the walk, not the size: a file of any size, never a folder. */
+    find_t find = {name, false};
+
+    if (!io->walk(io->ctx, find_file, &find)) {
+        return SERVO_STORE_LIST_ERROR;
+    }
+    if (!find.found) {
         return SERVO_STORE_NOT_FOUND;
     }
     switch (io->remove(io->ctx, name)) {

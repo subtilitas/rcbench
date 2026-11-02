@@ -337,9 +337,11 @@ void esc_card_serve(void)
     s_held = storage_hold_mount(s_esc_card_mount);
     if (s_esc_card_req.op == (uint8_t)ESC_CARD_RECORD) {
         record_write();
-    } else {
+    } else if (esc_card_volume_check(&s_esc_card_req, s_esc_card_mount,
+                                     &s_esc_card_done)) {
         esc_card_run(&k_io, &s_esc_card_req, &s_esc_card_done);
     }
+    s_esc_card_done.mount = s_esc_card_mount;
     if (s_held) {
         storage_release();
         s_held = false;

@@ -61,6 +61,7 @@ typedef enum {
     ESC_CARD_DONE_MISSING, /**< no file has that name                         */
     ESC_CARD_DONE_LARGE,   /**< the file is over EW_FILE_MAX bytes            */
     ESC_CARD_DONE_DELETE,  /**< a delete failed; the file is as it was        */
+    ESC_CARD_DONE_CHANGED, /**< DELETE: another card than the list's is in    */
 } esc_card_result_t;
 
 /** @brief A request. */
@@ -71,6 +72,7 @@ typedef struct {
     size_t   len;    /**< SAVE, RECORD: bytes of @c text                      */
     char     name[ESC_CARD_NAME_MAX]; /**< LOAD, DELETE: the base name        */
     char     tag[ESC_CARD_TAG_MAX]; /**< SAVE: the firmware's tag, "" none    */
+    unsigned mount;  /**< DELETE: the volume its list was read from           */
     char     text[ESC_CARD_TEXT_MAX]; /**< SAVE, RECORD                       */
 } esc_card_req_t;
 
@@ -81,6 +83,7 @@ typedef struct {
     uint8_t  count;  /**< LIST: the names                                     */
     uint16_t total;  /**< LIST: the files on the card, 65535 for more         */
     uint32_t id;     /**< the request's                                       */
+    unsigned mount;  /**< the volume the request ran on                       */
     size_t   len;    /**< LOAD: bytes of @c text                              */
     char     name[ESC_CARD_NAME_MAX]; /**< SAVE: the name it took             */
     char     names[ESC_CARD_FILES][ESC_CARD_NAME_MAX]; /**< LIST              */
@@ -93,6 +96,18 @@ typedef struct {
  * @return "AM32", "BLHELI_S", "BLUEJAY", "ESCAPE32", or "" for none.
  */
 const char *esc_card_fw_tag(uint8_t fw);
+
+/**
+ * @brief Whether a request runs on the volume @p mount: a DELETE runs only on the
+ *        volume its list came from, so a card put in since loses no file of the
+ *        same name.  A request that does not run gets its answer here.
+ * @param req   The request.
+ * @param mount The volume the request was taken under.
+ * @param done  Receives the answer of a request that does not run.
+ * @return true when the request runs.
+ */
+bool esc_card_volume_check(const esc_card_req_t *req, unsigned mount,
+                           esc_card_done_t *done);
 
 /**
  * @brief Carry out a SAVE, a LIST, a LOAD or a DELETE on the card behind @p io.

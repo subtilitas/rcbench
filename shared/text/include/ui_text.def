@@ -2945,6 +2945,9 @@ UI_TEXT(EW_CARD_MISSING, 100,
 UI_TEXT(EW_CARD_DELETE, 100,
     "The card refused the delete.",
     "Die Karte lehnte das Löschen ab.")
+UI_TEXT(EW_CARD_CHANGED, 100,
+    "Another card is in since the list was read.",
+    "Seit dem Lesen der Liste steckt eine andere Karte.")
 UI_TEXT(EW_CARD_LARGE, 100,
     "The file is over 5280B: not an ESC file.",
     "Die Datei hat über 5280B: keine ESC-Datei.")

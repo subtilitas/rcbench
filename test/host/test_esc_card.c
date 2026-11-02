@@ -363,12 +363,38 @@ TEST_CASE(a_delete_removes_one_file_or_says_why_not)
     esc_card_run(&k_io, &s_req, &s_done);
     CHECK_EQ(s_done.result, ESC_CARD_DONE_MISSING);
     CHECK_EQ(s_n, 2);
+    /* A size the card cannot say is no reason to call the file gone. */
+    s_size_is = -1;
+    put("ESCW003.TXT");
+    snprintf(s_req.name, sizeof(s_req.name), "ESCW003");
+    esc_card_run(&k_io, &s_req, &s_done);
+    CHECK_EQ(s_done.result, ESC_CARD_DONE_OK);
+    CHECK_EQ(s_n, 2);
+    s_size_is = 0;
     /* No card. */
     s_in = false;
     snprintf(s_req.name, sizeof(s_req.name), "ESCW002-AM32");
     esc_card_run(&k_io, &s_req, &s_done);
     CHECK_EQ(s_done.result, ESC_CARD_DONE_NO_CARD);
     CHECK_EQ(s_n, 2);
+}
+
+TEST_CASE(a_delete_runs_only_on_the_volume_of_its_list)
+{
+    fresh();
+    s_req.op = ESC_CARD_DELETE;
+    s_req.id = 4u;
+    s_req.mount = 3u;
+    snprintf(s_req.name, sizeof(s_req.name), "ESCW001");
+    CHECK(esc_card_volume_check(&s_req, 3u, &s_done));
+    CHECK(!esc_card_volume_check(&s_req, 4u, &s_done));
+    CHECK_EQ(s_done.result, ESC_CARD_DONE_CHANGED);
+    CHECK_EQ(s_done.id, 4u);
+    CHECK_EQ(s_done.mount, 4u);
+    CHECK_STR_EQ(s_done.name, "ESCW001");
+    /* Any other request runs on whatever volume is in. */
+    s_req.op = ESC_CARD_LOAD;
+    CHECK(esc_card_volume_check(&s_req, 4u, &s_done));
 }
 
 TEST_CASE(a_store_without_a_remove_removes_nothing)
@@ -401,6 +427,7 @@ int main(void)
     RUN(a_mixed_folder_never_takes_a_number_twice_and_lists_newest_first);
     RUN(at_999_files_the_lowest_free_number_and_then_full);
     RUN(a_delete_removes_one_file_or_says_why_not);
+    RUN(a_delete_runs_only_on_the_volume_of_its_list);
     RUN(a_store_without_a_remove_removes_nothing);
     return test_summary("esc_card");
 }

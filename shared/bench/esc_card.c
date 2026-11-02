@@ -190,7 +190,24 @@ static void delete_file(const servo_store_io_t *io, const esc_card_req_t *req,
                    : r == SERVO_STORE_NO_CARD     ? ESC_CARD_DONE_NO_CARD
                    : r == SERVO_STORE_NOT_FOUND   ? ESC_CARD_DONE_MISSING
                    : r == SERVO_STORE_DENIED      ? ESC_CARD_DONE_DENIED
+                   : r == SERVO_STORE_LIST_ERROR  ? ESC_CARD_DONE_READ
                                                   : ESC_CARD_DONE_DELETE;
+}
+
+bool esc_card_volume_check(const esc_card_req_t *req, unsigned mount,
+                           esc_card_done_t *done)
+{
+    if (req->op != (uint8_t)ESC_CARD_DELETE || req->mount == mount) {
+        return true;
+    }
+    memset(done, 0, sizeof(*done));
+    done->op = req->op;
+    done->id = req->id;
+    done->mount = mount;
+    done->result = ESC_CARD_DONE_CHANGED;
+    memcpy(done->name, req->name, sizeof(done->name));
+    done->name[sizeof(done->name) - 1u] = '\0';
+    return false;
 }
 
 void esc_card_run(const servo_store_io_t *io, const esc_card_req_t *req,

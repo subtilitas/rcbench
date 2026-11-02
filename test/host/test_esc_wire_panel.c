@@ -583,6 +583,51 @@ TEST_CASE(this_sessions_backup_is_not_deleted_inside_the_session)
     CHECK_STR_EQ(esc_wire_panel_message(), line);
 }
 
+/* Another card put in after the list: the hold deletes nothing on it. */
+TEST_CASE(a_delete_on_another_card_than_the_lists_deletes_nothing)
+{
+    char line[EWP_LINE];
+
+    session_up(up_am_rig);
+    connected();
+    two_files_listed();
+    ew_tap(esc_wire_panel_choice_rect(1));
+    bench_run(10u);
+    g_card_mount = 2u;
+    ew_hold(2.2f);
+    bench_run(20u);
+    CHECK_EQ(g_card_files, 2);
+    snprintf(line, sizeof(line), TR(EW_DELETE_FAILED), "ESCW001", TR(EW_CARD_CHANGED));
+    CHECK_STR_EQ(esc_wire_panel_message(), line);
+}
+
+/* A save whose answer comes after a newer request is still the session's own. */
+TEST_CASE(a_save_answered_late_is_still_the_sessions_own)
+{
+    static esc_card_req_t r;
+    static esc_card_done_t d;
+
+    session_up(up_am_rig);
+    connected();
+    ew_tap(esc_wire_panel_action_rect(1));
+    bench_run(10u);
+    g_card_wait = true;
+    ew_tap(esc_wire_panel_choice_rect(0));
+    CHECK(esc_wire_panel_card_take(&r));
+    CHECK_EQ(r.op, (uint8_t)ESC_CARD_SAVE);
+    /* FILES asked again before the save answers. */
+    ewp_files_open(false);
+    esc_card_run(&k_ew_io, &r, &d);
+    CHECK_EQ(d.result, ESC_CARD_DONE_OK);
+    esc_wire_panel_card_done(&d);
+    CHECK(ewp_file_own("ESCW001-AM32"));
+    /* A new CONNECT: a late answer of the session before is no one's own. */
+    ewp_s.own_count = 0u;
+    ewp_s.own_from = r.id;
+    esc_wire_panel_card_done(&d);
+    CHECK(!ewp_file_own("ESCW001-AM32"));
+}
+
 /* A store in memory: what a save wrote, a restart loads. */
 static float s_kept[SETTING_COUNT];
 static bool  s_have_kept;
@@ -674,6 +719,8 @@ int main(void)
     RUN(a_file_is_deleted_on_a_hold_and_the_list_reads_again);
     RUN(a_failed_delete_says_so_and_the_file_stays);
     RUN(this_sessions_backup_is_not_deleted_inside_the_session);
+    RUN(a_delete_on_another_card_than_the_lists_deletes_nothing);
+    RUN(a_save_answered_late_is_still_the_sessions_own);
     RUN(power_keeps_its_last_choice_over_a_restart);
     return test_summary("esc_wire_panel");
 }

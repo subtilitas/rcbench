@@ -174,7 +174,7 @@ Der Name eines Backups ist `ESCW`, eine Nummer von 001 bis 999 und die Firmware:
 
 ### Eine Datei löschen
 
-DATEI LÖSCHEN macht aus der Liste eine, aus der ein Tipp löscht. Ein Tipp öffnet DATEI LÖSCHEN, ein rotes 2s-Halten, das die Datei nennt. Nach dem Löschen liest die Liste die Karte neu. Ein Backup, das diese Sitzung seit VERBINDEN gespeichert hat, wird in der Sitzung nicht gelöscht: die Zeile sagt es, und LOGS > DATEIEN löscht es. Ein Löschen, das fehlschlägt, sagt es, und die Datei bleibt, wie sie war.
+DATEI LÖSCHEN macht aus der Liste eine, aus der ein Tipp löscht. Ein Tipp öffnet DATEI LÖSCHEN, ein rotes 2s-Halten, das die Datei nennt. Nach dem Löschen liest die Liste die Karte neu. Ein Backup, das diese Sitzung seit VERBINDEN gespeichert hat, wird in der Sitzung nicht gelöscht: die Zeile sagt es, und LOGS > DATEIEN löscht es. Ein Löschen, das fehlschlägt, sagt es, und die Datei bleibt, wie sie war. Ein Löschen läuft nur auf der Karte, von der die Liste gelesen wurde: steckt seither eine andere Karte, löscht es nichts und sagt es.
 
 ## Gelöschter AM32
 

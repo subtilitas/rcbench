@@ -248,6 +248,8 @@ static const char *card_words(uint8_t r)
         return TR(EW_CARD_LARGE);
     case ESC_CARD_DONE_DELETE:
         return TR(EW_CARD_DELETE);
+    case ESC_CARD_DONE_CHANGED:
+        return TR(EW_CARD_CHANGED);
     default:
         return TR(EW_CARD_READ);
     }
@@ -272,6 +274,9 @@ static void ask_no_backup(const char *why)
  */
 static void own_add(const char *name)
 {
+    if (ewp_file_own(name)) {
+        return;
+    }
     if (ewp_s.own_count == EWP_OWN_MAX) {
         memmove(ewp_s.own[0], ewp_s.own[1], sizeof(ewp_s.own[0]) * (EWP_OWN_MAX - 1u));
         --ewp_s.own_count;
@@ -300,7 +305,6 @@ static void saved(const esc_card_done_t *d)
         char line[EWP_LINE];
 
         esc_prog_backup_settled(&ewp_s.prog);
-        own_add(d->name);
         snprintf(line, sizeof(line), TR(EW_BACKUP_SAVED), d->name);
         ewp_note(line, false);
         if (ewp_s.w_step == EWP_W_BACKUP) {
@@ -362,6 +366,7 @@ static void listed(const esc_card_done_t *d)
         return;
     }
     ewp_s.files_total = d->total;
+    ewp_s.files_mount = d->mount;
     ewp_s.files_count = (uint8_t)(d->count < EWP_FILES_PAGE ? d->count : EWP_FILES_PAGE);
     for (unsigned i = 0u; i < ewp_s.files_count; ++i) {
         memcpy(ewp_s.names[i], d->names[i], sizeof(ewp_s.names[i]));
@@ -455,6 +460,12 @@ void esc_wire_panel_card_done(const esc_card_done_t *d)
         return;
     }
     ewp_s.card_out = false;
+    /* A backup this session saved is its own, also when a later request took
+     * the answer's place: ABORT, or a list asked meanwhile. */
+    if (d->op == (uint8_t)ESC_CARD_SAVE && d->result == ESC_CARD_DONE_OK
+        && d->id > ewp_s.own_from) {
+        own_add(d->name);
+    }
     if (d->id == ewp_s.card_id) {
         switch (d->op) {
         case ESC_CARD_SAVE:
@@ -569,6 +580,7 @@ static void connect_now(void)
     ewp_s.note[0] = '\0';
     ewp_s.no_card_ok = false;
     ewp_s.own_count = 0u;
+    ewp_s.own_from = ewp_s.card_id;
     write_give_up();
     (void)esc_prog_connect(&ewp_s.prog, &c);
 }
@@ -634,6 +646,7 @@ void ewp_hold_apply(void)
         break;
     case EWP_PAGE_DELETE:
         snprintf(ewp_s.card.name, sizeof(ewp_s.card.name), "%s", ewp_s.file_name);
+        ewp_s.card.mount = ewp_s.files_mount;
         ewp_card_ask(ESC_CARD_DELETE);
         break;
     default:

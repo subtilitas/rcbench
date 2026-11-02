@@ -205,6 +205,8 @@ typedef struct {
     bool       files_for_restore; /**< the list's choice restores             */
     bool       files_delete; /**< the list's choice deletes                   */
     uint8_t    files_count; /**< names of the page held                       */
+    unsigned   files_mount; /**< the volume the list was read from            */
+    uint32_t   own_from;  /**< requests up to this one are of earlier sessions */
     uint8_t    own_count; /**< entries of @c own                              */
     char       own[EWP_OWN_MAX][ESC_CARD_NAME_MAX]; /**< the backups this session
                                                         saved, newest last    */

@@ -42,6 +42,8 @@ static bool   g_card_in;
 static bool   g_card_refuses;
 /** @brief A remove fails with this; SERVO_STORE_IO_OK removes. */
 static servo_store_io_result_t g_card_remove_says;
+/** @brief The volume a request is taken under, as storage_mount_count(). */
+static unsigned g_card_mount;
 static char   g_record[ESC_CARD_TEXT_MAX + 1u];
 static size_t g_record_len;
 static int    g_card_requests;
@@ -164,9 +166,10 @@ static void card_serve(void)
             g_record[g_req.len] = '\0';
             g_record_len = g_req.len;
         }
-    } else {
+    } else if (esc_card_volume_check(&g_req, g_card_mount, &g_done)) {
         esc_card_run(&k_ew_io, &g_req, &g_done);
     }
+    g_done.mount = g_card_mount;
     esc_wire_panel_card_done(&g_done);
 }
 
@@ -320,6 +323,7 @@ static void session_up(void (*esc_up)(void))
     g_card_in = true;
     g_card_refuses = false;
     g_card_remove_says = SERVO_STORE_IO_OK;
+    g_card_mount = 1u;
     g_card_wait = false;
     g_record[0] = '\0';
     g_record_len = 0u;
