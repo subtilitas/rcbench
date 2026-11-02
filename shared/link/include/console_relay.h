@@ -103,6 +103,7 @@ typedef struct {
     char     partial[CONSOLE_RELAY_PARTIAL_MAX]; /**< an IOmcu line, not ended */
     uint16_t partial_len;    /**< its bytes */
     bool     out_cut;        /**< the ring ends inside a line cut for length */
+    unsigned out_lost;       /**< bytes with no room in the ring, not yet said */
     bool     pass_known;     /**< pass_ms is known */
     uint32_t pass_ms;        /**< the last console_relay_link() */
     uint32_t polled_ms;      /**< the last poll */

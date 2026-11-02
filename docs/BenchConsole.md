@@ -357,6 +357,7 @@ The panel carries that image. An IOmcu running another build answers the build c
 | `err the IOmcu has no console` | a line, and no page to send it to |
 | `err line longer than 160 characters` | the line is refused whole |
 | `err line dropped: 8 lines wait` | a line while 8 wait for the link |
+| `err panel buffer full, <n> bytes dropped` | the panel's own 4,096-byte buffer had no room, as when a serial host stops reading and the IOmcu starts again |
 
 The relay's own lines never land inside an IOmcu line. A window ends anywhere, so the panel keeps a line of the IOmcu until its LF, up to 256 bytes, and the relay's line goes first. A longer line goes on cut, and a relay line after that cut starts a new line. A line not ended when the IOmcu starts again goes out with an LF of its own, ahead of the `restarted` line.
 

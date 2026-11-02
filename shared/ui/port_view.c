@@ -13,6 +13,7 @@
 
 #include "ui_text.h"
 
+/** @brief The view the screens draw. */
 static port_view_t      g_view = {
     .count = PORT_VIEW_UNKNOWN,
     .pin   = { PORT_VIEW_NO_PIN, PORT_VIEW_NO_PIN, PORT_VIEW_NO_PIN,
@@ -21,12 +22,19 @@ static port_view_t      g_view = {
                PORT_VIEW_FN_UNKNOWN, PORT_VIEW_FN_UNKNOWN },
 };
 _Static_assert(LINK_PG_PORTS_MAX == 4u, "g_view's initialiser");
+/** @brief Counts the changes of what the screens draw. */
 static uint32_t         g_rev;
+/** @brief Where an ask goes. */
 static port_view_ask_fn g_ask;
+/** @brief The last ask's number. */
 static uint8_t          g_seq;
+/** @brief Where it stands: a prog_link_ask_state_t. */
 static uint8_t          g_ask_state = (uint8_t)PROG_LINK_ASK_IDLE;
+/** @brief What it waits on: a prog_link_wait_t. */
 static uint8_t          g_ask_wait  = (uint8_t)PROG_LINK_WAIT_NONE;
+/** @brief Its port. */
 static uint8_t          g_ask_port;
+/** @brief Its kind: a prog_link_ask_kind_t. */
 static uint8_t          g_ask_kind;
 
 void port_view_unknown(port_view_t *v)

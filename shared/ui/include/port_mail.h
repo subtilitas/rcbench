@@ -56,30 +56,48 @@ typedef struct {
 
 /** Nothing known and no ask. */
 #define PORT_MAIL_META_UNKNOWN 0x00FF7777u
+/** @brief The mail with nothing known and no ask. */
 #define PORT_MAIL_INIT { 0xFFFFFFFFu, PORT_MAIL_META_UNKNOWN, 0u, 0u, 0u, \
                          0u, 0u, 0u, 0u }
 
 /**
- * Control task, after each service of the PROG page: hand on a new ask
+ * @brief Control task, after each service of the PROG page: hand on a new ask
  * from the UI (or mark it LOST when made in an older epoch, REFUSED when
  * prog_link_ask() refuses it), say how the ask handed on stands, and
  * publish the page as @p pl holds it.
+ *
+ * @param m  The mail.
+ * @param pl The page's state.
  */
 void port_mail_publish(port_mail_t *m, prog_link_t *pl);
 
-/** Control task, on the link-loss edge: a new epoch, nothing known, and
- *  the last ask LOST unless it is already settled. */
+/**
+ * @brief Control task, on the link-loss edge: a new epoch, nothing known, and
+ * the last ask LOST unless it is already settled.
+ *
+ * @param m The mail.
+ */
 void port_mail_lost(port_mail_t *m);
 
 /**
- * UI task, port_view's ask hook: post ask @p seq (1 to 255) for port
- * @p port in the epoch of the view last taken.  False for number 0,
- * which stands for no ask.
+ * @brief UI task, port_view's ask hook: post ask @p seq (1 to 255) for port
+ * @p port in the epoch of the view last taken.
+ *
+ * @param m     The mail.
+ * @param seq   The ask's number.
+ * @param port  The port.
+ * @param kind  What it asks.
+ * @param value The new value.
+ * @return false for number 0, which stands for no ask.
  */
 bool port_mail_post(port_mail_t *m, uint8_t seq, uint8_t port,
                     prog_link_ask_kind_t kind, uint16_t value);
 
-/** UI task, once a frame: the view and the ask's state to port_view. */
+/**
+ * @brief UI task, once a frame: the view and the ask's state to port_view.
+ *
+ * @param m The mail.
+ */
 void port_mail_to_view(port_mail_t *m);
 
 #ifdef __cplusplus

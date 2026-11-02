@@ -472,6 +472,39 @@ TEST_CASE(an_iomcu_restart_ends_a_line_not_ended_ahead_of_its_word)
     CHECK_EQ(g_relay.partial_len, 0u);
 }
 
+/* A serial host that stopped reading: a restart's flush overwrites nothing. */
+TEST_CASE(a_full_ring_is_not_overwritten_by_a_line_not_ended)
+{
+    static char line[256];
+
+    linked(true);
+    run(20, true);
+    read_out();
+    g_all_len = 0u;
+    g_all[0] = '\0';
+    memcpy(g_relay.partial, "half", 4u);
+    g_relay.partial_len = 4u;
+    /* 2 bytes free, whole lines up to there. */
+    const unsigned from = atomic_load(&g_relay.out_out);
+
+    memset(g_relay.out, 'k', CONSOLE_RELAY_OUT_MAX);
+    for (unsigned k = 99u; k < CONSOLE_RELAY_OUT_MAX - 2u; k += 100u) {
+        g_relay.out[(from + k) % CONSOLE_RELAY_OUT_MAX] = '\n';
+    }
+    g_relay.out[(from + CONSOLE_RELAY_OUT_MAX - 3u) % CONSOLE_RELAY_OUT_MAX] = '\n';
+    atomic_store(&g_relay.out_in, from + CONSOLE_RELAY_OUT_MAX - 2u);
+    console_tunnel_init(&g_tunnel, &g_console, (uint16_t)(g_tunnel.seq + 777u));
+    run(20, true);
+    CHECK_EQ(g_relay.partial_len, 0u);
+    CHECK_EQ(atomic_load(&g_relay.out_in), from + CONSOLE_RELAY_OUT_MAX - 2u);
+    CHECK(console_relay_take(&g_relay, line, sizeof(line)) == 100u);
+    CHECK_EQ(line[0], 'k');
+    read_out();
+    run(1, true);
+    read_out();
+    CHECK(strstr(g_all, "err panel buffer full, ") != NULL);
+}
+
 /* The station's update: passes held, the link down and up inside the gap. */
 TEST_CASE(a_gap_in_the_passes_is_said_with_its_times)
 {
@@ -784,6 +817,7 @@ int main(void)
     RUN(a_relay_line_does_not_land_inside_an_iomcu_line);
     RUN(a_relay_line_after_a_line_cut_for_length_starts_a_new_line);
     RUN(an_iomcu_restart_ends_a_line_not_ended_ahead_of_its_word);
+    RUN(a_full_ring_is_not_overwritten_by_a_line_not_ended);
     RUN(a_gap_in_the_passes_is_said_with_its_times);
     RUN(a_lost_ack_does_not_print_a_window_twice);
     RUN(an_iomcu_restart_inside_a_line_loses_that_line_and_says_so);

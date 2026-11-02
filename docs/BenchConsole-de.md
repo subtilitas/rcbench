@@ -377,6 +377,7 @@ Das Panel trägt dieses Image. Ein IOmcu mit einem anderen Build meldet bei der 
 | `err the IOmcu has no console` | eine Zeile, und keine Page dafür |
 | `err line longer than 160 characters` | die Zeile wird ganz abgelehnt |
 | `err line dropped: 8 lines wait` | eine Zeile, während 8 auf den Link warten |
+| `err panel buffer full, <n> bytes dropped` | der eigene Puffer des Panels von 4.096 Byte hatte keinen Platz, etwa wenn ein serieller Host das Lesen einstellt und das IOmcu neu startet |
 
 Die eigenen Zeilen des Relays landen nie in einer IOmcu-Zeile. Ein Fenster endet an beliebiger Stelle, also behält das Panel eine Zeile des IOmcu bis zu ihrem LF, bis zu 256 Byte, und die Zeile des Relays geht zuerst. Eine längere Zeile geht geschnitten weiter, und eine Relay-Zeile nach diesem Schnitt beginnt eine neue Zeile. Eine Zeile, die beim Neustart des IOmcu nicht beendet ist, geht mit einem eigenen LF hinaus, vor der Zeile `restarted`.
 

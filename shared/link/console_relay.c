@@ -34,6 +34,11 @@ static void out_put(console_relay_t *r, const char *s, size_t n)
 {
     unsigned at = atomic_load(&r->out_in);
 
+    /* What the serial port has not taken is never overwritten. */
+    if (n > CONSOLE_RELAY_OUT_MAX - (size_t)(at - atomic_load(&r->out_out))) {
+        r->out_lost += (unsigned)n;
+        return;
+    }
     for (size_t i = 0u; i < n; ++i) {
         r->out[at % CONSOLE_RELAY_OUT_MAX] = s[i];
         ++at;
@@ -99,10 +104,14 @@ static void line_byte(console_relay_t *r, char b)
 static void line_end_here(console_relay_t *r)
 {
     if (r->partial_len != 0u) {
-        out_put(r, r->partial, r->partial_len);
-        out_put(r, "\n", 1u);
+        if ((size_t)r->partial_len + 1u <= out_room(r)) {
+            out_put(r, r->partial, r->partial_len);
+            out_put(r, "\n", 1u);
+            r->out_cut = false;
+        } else {
+            r->out_lost += r->partial_len;
+        }
         r->partial_len = 0u;
-        r->out_cut = false;
     }
 }
 
@@ -149,6 +158,12 @@ void console_relay_link(console_relay_t *r, bool up, uint32_t now_ms)
     }
     r->pass_known = true;
     r->pass_ms = now_ms;
+    if (r->out_lost != 0u && out_room(r) >= 128u) {
+        const unsigned lost = r->out_lost;
+
+        r->out_lost = 0u;
+        say(r, "err panel buffer full, %u bytes dropped\n", lost);
+    }
 
     const unsigned over = atomic_load(&r->overlongs);
 

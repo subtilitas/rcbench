@@ -56,7 +56,17 @@ void port_view_unknown(port_view_t *v);
 /** The view as the control task last read it; a change bumps
  *  port_view_revision(). */
 void port_view_set(const port_view_t *v);
+/**
+ * @brief The view as last set.
+ *
+ * @return The view.
+ */
 const port_view_t *port_view_get(void);
+/**
+ * @brief Counts the changes of the view.
+ *
+ * @return The count.
+ */
 uint32_t port_view_revision(void);
 
 /** Whether port @p port is one the IOmcu has, as last read. */
@@ -80,6 +90,11 @@ const char *port_view_fn_name(uint8_t fn);
 /** Where an ask goes: true when the control task took it. */
 typedef bool (*port_view_ask_fn)(uint8_t seq, uint8_t port,
                                  prog_link_ask_kind_t kind, uint16_t value);
+/**
+ * @brief Sets where an ask goes.
+ *
+ * @param fn The hook.
+ */
 void port_view_set_ask(port_view_ask_fn fn);
 
 /**

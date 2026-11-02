@@ -3229,14 +3229,12 @@ shared/ui/include/picker_screen.h: warning: return type of member picker_screen_
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_reason is not documented
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_row is not documented
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_set_drawing is not documented
-shared/ui/include/port_mail.h: file has no @file block
 shared/ui/include/port_mail.h: warning: Compound port_mail_t is not documented.
 shared/ui/include/port_view.h: warning: Compound port_view_t is not documented.
 shared/ui/include/port_view.h: warning: Member port_view_get(void) (function) of file port_view.h is not documented.
 shared/ui/include/port_view.h: warning: Member port_view_revision(void) (function) of file port_view.h is not documented.
 shared/ui/include/port_view.h: warning: Member port_view_set_ask(port_view_ask_fn fn) (function) of file port_view.h is not documented.
 shared/ui/include/port_view.h: warning: parameters of member port_view_ask are not documented
-shared/ui/include/port_view.h: warning: parameters of member port_view_ask_line are not documented
 shared/ui/include/port_view.h: warning: parameters of member port_view_ask_state are not documented
 shared/ui/include/port_view.h: warning: parameters of member port_view_dshot are not documented
 shared/ui/include/port_view.h: warning: parameters of member port_view_fn_name are not documented
@@ -3247,7 +3245,6 @@ shared/ui/include/port_view.h: warning: parameters of member port_view_set are n
 shared/ui/include/port_view.h: warning: parameters of member port_view_set_ask_state are not documented
 shared/ui/include/port_view.h: warning: parameters of member port_view_unknown are not documented
 shared/ui/include/port_view.h: warning: return type of member port_view_ask is not documented
-shared/ui/include/port_view.h: warning: return type of member port_view_ask_line is not documented
 shared/ui/include/port_view.h: warning: return type of member port_view_ask_seq is not documented
 shared/ui/include/port_view.h: warning: return type of member port_view_ask_state is not documented
 shared/ui/include/port_view.h: warning: return type of member port_view_dshot is not documented
@@ -3986,8 +3983,6 @@ shared/ui/picker_port.h: warning: return type of member picker_port_own_pin is n
 shared/ui/picker_port.h: warning: return type of member picker_port_reason is not documented
 shared/ui/picker_port.h: warning: return type of member picker_port_row is not documented
 shared/ui/picker_port.h: warning: return type of member picker_port_tap is not documented
-shared/ui/port_mail.c: file has no @file block
-shared/ui/port_view.c: file has no @file block
 shared/ui/prog_registry.c: warning: Member entry_h(const prog_list_t *l, int k) (function) of file prog_registry.c is not documented.
 shared/ui/prog_registry.c: warning: Member filled(ui_text_id_t id) (function) of file prog_registry.c is not documented.
 shared/ui/prog_registry.c: warning: Member hit(const prog_view_t *v, const prog_list_t *l, int x, int y) (function) of file prog_registry.c is not documented.

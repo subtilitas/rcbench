@@ -18,16 +18,23 @@
  * (NIB_FN_UNKNOWN: not known), bit 3 refused; bits 16 to 23 the count,
  * 0xFF not known; bit 24 the IOmcu takes FUNC; bits 25 to 27 the link
  * epoch; bit 28 it takes the DShot functions. */
+/** @brief meta: where the link epoch starts. */
 #define META_EPOCH_SHIFT 25u
+/** @brief meta: the IOmcu takes the DShot functions. */
 #define META_DSHOT       (1u << 28)
+/** @brief A port's nibble: its function. */
 #define NIB_FN_MASK      0x7u
+/** @brief A port's nibble: the function is not known. */
 #define NIB_FN_UNKNOWN   0x7u
+/** @brief A port's nibble: its pin is refused. */
 #define NIB_REFUSED      0x8u
 /* ask: bits 24 to 31 the number, 21 to 23 the epoch, bit 20 FUNC, bits 16
  * to 17 the port, bits 0 to 15 the value. */
+/** @brief ask: where the link epoch starts. */
 #define ASK_EPOCH_SHIFT  21u
+/** @brief The bits of an epoch in a word. */
 #define EPOCH_MASK       0x7u
-/* Tries at an untorn pair before the last view stays. */
+/** @brief Tries at an untorn pair before the last view stays. */
 #define VIEW_TRIES       8
 
 _Static_assert(LINK_PG_PORTS_MAX == 4u,
@@ -35,6 +42,13 @@ _Static_assert(LINK_PG_PORTS_MAX == 4u,
 _Static_assert(LINK_PG_FN_COUNT <= NIB_FN_UNKNOWN,
                "a port's function and the not-known mark fit in 3 bits");
 
+/**
+ * @brief The view's two words, under the generation count.
+ *
+ * @param m    The mail.
+ * @param pins The word of pins.
+ * @param meta The word of functions, count and epoch.
+ */
 static void view_store(port_mail_t *m, unsigned pins, unsigned meta)
 {
     atomic_fetch_add(&m->gen, 1u);
@@ -43,13 +57,26 @@ static void view_store(port_mail_t *m, unsigned pins, unsigned meta)
     atomic_fetch_add(&m->gen, 1u);
 }
 
+/**
+ * @brief The word on an ask.
+ *
+ * @param m   The mail.
+ * @param seq The ask's number.
+ * @param st  Where it stands.
+ */
 static void state_store(port_mail_t *m, uint8_t seq, prog_link_ask_state_t st)
 {
     atomic_store(&m->ask_state, ((unsigned)seq << 8) | (unsigned)st);
 }
 
-/* Whether the word on ask @p seq is final: a dropped or refused ask keeps
- * its word, whatever prog_link holds from an older one. */
+/**
+ * @brief Whether the word on ask @p seq is final: a dropped or refused ask keeps
+ * its word, whatever prog_link holds from an older one.
+ *
+ * @param m   The mail.
+ * @param seq The ask's number.
+ * @return true when final.
+ */
 static bool settled(const port_mail_t *m, uint8_t seq)
 {
     const unsigned now = atomic_load(&m->ask_state);
@@ -57,6 +84,12 @@ static bool settled(const port_mail_t *m, uint8_t seq)
            && (now & 0xFFu) != (unsigned)PROG_LINK_ASK_WAITING;
 }
 
+/**
+ * @brief A new ask handed on, and where the last one stands.
+ *
+ * @param m  The mail.
+ * @param pl The page's state.
+ */
 static void take_ask(port_mail_t *m, prog_link_t *pl)
 {
     const unsigned ask = atomic_load(&m->ask);
