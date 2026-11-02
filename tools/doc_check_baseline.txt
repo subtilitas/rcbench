@@ -3231,9 +3231,6 @@ shared/ui/include/picker_screen.h: warning: return type of member picker_screen_
 shared/ui/include/picker_screen.h: warning: return type of member picker_screen_set_drawing is not documented
 shared/ui/include/port_mail.h: warning: Compound port_mail_t is not documented.
 shared/ui/include/port_view.h: warning: Compound port_view_t is not documented.
-shared/ui/include/port_view.h: warning: Member port_view_get(void) (function) of file port_view.h is not documented.
-shared/ui/include/port_view.h: warning: Member port_view_revision(void) (function) of file port_view.h is not documented.
-shared/ui/include/port_view.h: warning: Member port_view_set_ask(port_view_ask_fn fn) (function) of file port_view.h is not documented.
 shared/ui/include/port_view.h: warning: parameters of member port_view_ask are not documented
 shared/ui/include/port_view.h: warning: parameters of member port_view_ask_state are not documented
 shared/ui/include/port_view.h: warning: parameters of member port_view_dshot are not documented
