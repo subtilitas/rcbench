@@ -80,10 +80,14 @@ bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
                      bool *bus_off);
 
 /**
- * Frames received and lost since the driver started, for the report: those the
- * controller's receive FIFO had no room for (overrun), and those the driver's
- * queue had no room for (missed).  Either pointer may be NULL.  False, with the
- * outputs untouched, as can_twai_errors().
+ * @brief Receive frames lost since the driver started, for the report.
+ *
+ * @param overrun Out: frames the controller's receive FIFO had no room for.
+ *                May be NULL.
+ * @param missed  Out: frames the driver's receive queue had no room for.
+ *                May be NULL.
+ * @return False, with the outputs untouched, when the controller is not
+ *         running or its status would not read; true otherwise.
  */
 bool can_twai_rx_lost(uint32_t *overrun, uint32_t *missed);
 

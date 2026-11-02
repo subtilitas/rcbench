@@ -646,7 +646,6 @@ firmware/panel/main/panel.h: warning: Member publish_supply_levels(void) (functi
 firmware/panel/main/panel.h: warning: Member publish_throttle_ramp(void) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member read_bench(link_host_t *host, bench_state_t *out) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member read_outputs_binding(void) (function) of file panel.h is not documented.
-firmware/panel/main/panel.h: warning: Member read_regs(link_host_t *host, uint8_t page, uint8_t offset, uint8_t count, link_msg_t *reply) (function) of file panel.h is not documented.
 firmware/panel/main/panel.h: warning: Member route (variable) of struct knob_turn_t is not documented.
 firmware/panel/main/panel.h: warning: Member run_seconds (variable) of struct panel_snap_t is not documented.
 firmware/panel/main/panel.h: warning: Member running (variable) of struct cu_snap_t is not documented.

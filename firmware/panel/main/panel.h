@@ -642,12 +642,22 @@ uint32_t port_now(void *ctx);
 void     port_between(void *ctx);
 extern const link_port_t k_port;
 
-/*
+/**
+ * @brief Read @p count registers of @p page from @p offset over the link.
+ *
  * A read asks for at most LINK_READ_REGS_MAX (16) registers an exchange
  * (link_read_split()): a reply of 4 frames fits the TWAI controller's receive
  * FIFO, so an interrupt held while it arrives delays it and cannot overrun
  * the FIFO.  A wider read is two parts and the first part again, so it is one
  * state of the page, or a NACK of LINK_NACK_BUSY.
+ *
+ * @param host   The link host state.
+ * @param page   Page to read.
+ * @param offset First register.
+ * @param count  Registers, at most LINK_MAX_REGS (32).
+ * @param reply  Out: the answer, data or a refusal.
+ * @return False when a part got no answer or @p count exceeds LINK_MAX_REGS;
+ *         true otherwise.
  */
 static inline bool read_regs(link_host_t *host, uint8_t page, uint8_t offset,
                              uint8_t count, link_msg_t *reply)
