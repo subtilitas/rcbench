@@ -63,6 +63,27 @@ static bool value_reads(int c, int r, const char *text)
     return same_in(fb, want_fb, v.x, v.y, v.w, v.h);
 }
 
+/**
+ * @brief Buffer 0 drawn, and whether line @p i of the walk's note reads
+ *        @p text in the faint colour: 6px under the third row, 21px apart,
+ *        from x 18.
+ * @param i    The line, 0 or 1.
+ * @param text The line expected.
+ * @return true when the line's pixels match, 600px wide.
+ */
+static bool note_reads(int i, const char *text)
+{
+    scr->render(&cv, 0);
+    want_fresh();
+    const int y = 112 + 3 * 71 + 6 + 21 * i;
+    const int h = gfx_font_10x20.height;
+    gfx_fill_rect(&want_cv, UI_MARGIN + 10, (int16_t)y, 600, (int16_t)h,
+                  ui_theme_color(UI_C_PANEL));
+    gfx_text(&want_cv, UI_MARGIN + 10, y, text, &gfx_font_10x20,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    return same_in(fb, want_fb, UI_MARGIN + 10, y, 600, h);
+}
+
 /** @brief The AUTOMATIC TEST's BROWN-OUT row: the middle column's last. */
 static void tap_brownout_row(void) { tap(LROW_X(1), LROW_Y(4)); }
 
@@ -212,6 +233,29 @@ TEST_CASE(the_pages_rows_switch_and_take_their_ranges)
     CHECK_NEAR(settings_get(SET_SERVO_BO_FLOOR), 3.0f, 1e-4f);
 }
 
+/* The note under the rows names the walk the supply in force allows: the
+ * model's lowest set point, 3.3V, ends the default walk there, 10
+ * voltages; caps of 4.0 to 8.4V with LOWEST VOLTAGE 2.0V in 0.5V steps
+ * walk 5.0V down to 4.0V, 3 voltages. */
+TEST_CASE(the_note_names_the_walk_on_the_supply_in_force)
+{
+    fresh();
+    open_run_settings(0);
+    tap_brownout_row();
+    CHECK(note_reads(0, "From 5.00V down in 0.20V steps to 3.30V"));
+    CHECK(note_reads(1, "10 voltages; it stops at the first without "
+                        "movement"));
+    const supply_caps_t caps = { 4.0f, 8.4f, 0.02f, 0.5f, 3.0f, 0.05f };
+    supply_screen_set_caps(&caps);
+    tap(LROW_X(0), LROW_Y(1));                     /* LOWEST VOLTAGE */
+    keys("2");
+    tap(LROW_X(0), LROW_Y(2));                     /* STEP */
+    keys("0.5");
+    CHECK(note_reads(0, "From 5.00V down in 0.50V steps to 4.00V"));
+    CHECK(note_reads(1, "3 voltages; it stops at the first without "
+                        "movement"));
+}
+
 /* LOWEST VOLTAGE and STEP are kept over a restart, and a stored value
  * outside the ranges comes back held to them; a store that holds neither
  * gives the defaults, 3.0V and 0.2V. */
@@ -280,6 +324,7 @@ int main(void)
     RUN(the_brownout_row_opens_its_page_and_close_climbs_back);
     RUN(the_brownout_row_reads_on_with_floor_and_step_or_off);
     RUN(the_pages_rows_switch_and_take_their_ranges);
+    RUN(the_note_names_the_walk_on_the_supply_in_force);
     RUN(floor_and_step_are_kept_over_a_restart);
     RUN(a_run_from_the_screen_walks_the_settings);
     return test_summary("servo_brownout_page");
