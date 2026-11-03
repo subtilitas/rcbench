@@ -197,16 +197,20 @@ const char *lim_prog_why(void)
  * from elsewhere nothing does, and the check after the write would search
  * the servo as it was.  Asked before a start only.
  *
- * @return SV_LIM_PROG_NO_PD's line on the programming port without a PD
- *         mini or the carrier's fixed 5V, else NULL
+ * @return on the carrier's port with the PROG 5V box off, the line that
+ *         asks it on; SV_LIM_PROG_NO_PD's line on the programming port
+ *         without a PD mini; else NULL
  */
 const char *lim_write_why(void)
 {
-    if (lim_reads() && !servo_limrun_running(&s.lim) && !lim_pd_feeds()
-        && !(lim_fixed_supply() && prog5v_box_on())) {
-        return TR(SV_LIM_PROG_NO_PD);
+    if (!lim_reads() || servo_limrun_running(&s.lim) || lim_pd_feeds()) {
+        return NULL;
     }
-    return NULL;
+    /* The carrier's port has no PD mini to name: the box is its switch. */
+    if (lim_fixed_supply()) {
+        return prog5v_box_on() ? NULL : ui_servo_str(SERVO_STR_START_PROG_5V);
+    }
+    return TR(SV_LIM_PROG_NO_PD);
 }
 
 /**
