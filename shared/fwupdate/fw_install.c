@@ -1,5 +1,6 @@
-/*
- * Writing a new panel application. See fw_install.h.
+/**
+ * @file
+ * @brief Writing a new panel application. See fw_install.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -30,6 +31,21 @@ bool fw_coproc_may_start(bool radio_down, bool installing)
     return radio_down && !installing;
 }
 
+const fw_coproc_image_t *fw_coproc_image(const fw_coproc_image_t *tab,
+                                         size_t n, uint16_t board)
+{
+    if (tab == NULL || board == 0u) {
+        return NULL;
+    }
+    for (size_t i = 0; i < n; ++i) {
+        if (tab[i].board == board && tab[i].image != NULL
+            && tab[i].len != 0u) {
+            return &tab[i];
+        }
+    }
+    return NULL;
+}
+
 fw_err_t fw_install_begin(fw_install_t *in, const fw_flash_t *f,
                           const uint8_t *img, uint32_t bytes, uint32_t slot,
                           const fw_image_info_t *running)
@@ -57,6 +73,13 @@ fw_err_t fw_install_begin(fw_install_t *in, const fw_flash_t *f,
     return FW_OK;
 }
 
+/**
+ * @brief Ends an install that went wrong: the slot's write abandoned and
+ *        the error FW_ERR_FLASH.
+ *
+ * @param in  The install.
+ * @return    FW_INSTALL_FAILED.
+ */
 static fw_install_status_t fail(fw_install_t *in)
 {
     if (in->opened && in->f->abort != NULL) {

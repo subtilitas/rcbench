@@ -6,6 +6,7 @@
 #include "settings_rig.h"
 
 #include "outputs_screen.h"
+#include "picker_screen.h"
 #include "outputs_spots.h"
 #include "settings_sensors.h"
 
@@ -326,6 +327,7 @@ TEST_CASE(leaving_with_one_change_warns_and_names_it)
     warn_up();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
+    CHECK(settings_screen()->covered());
     CHECK_EQ(warn_lines(), 1);
     CHECK_STR_EQ(warn_line(0), "Capacity: 5000mAh -> 5200mAh");
     CHECK_STR_EQ(warn_line(1), "");
@@ -546,7 +548,7 @@ TEST_CASE(stay_keeps_the_list_and_its_scroll)
 {
     for (int how = 0; how < 2; ++how) {
         fresh_hub();
-        open_category(SET_CAT_IFACE);
+        open_category(SET_CAT_APP);
         finger(FEED_LONE, XL, LIST_Y + 300);
         glide(FEED_LONE, XL, LIST_Y + 200, 10);
         lift(FEED_LONE);
@@ -566,7 +568,7 @@ TEST_CASE(stay_keeps_the_list_and_its_scroll)
         CHECK_EQ(settings_screen_scroll(NULL), scrolled);
         CHECK_EQ(settings_get_int(SET_PACK_CELLS), 4);
         CHECK(settings_dirty());
-        open_category(SET_CAT_IFACE);
+        open_category(SET_CAT_APP);
         CHECK_EQ(settings_screen_scroll(NULL), scrolled);
     }
 }
@@ -580,7 +582,7 @@ TEST_CASE(the_warning_covers_the_tiles)
     tap(tile_x(0), tile_y(0));
     CHECK(settings_screen_warning());
     CHECK_EQ(settings_screen_category(), -1);
-    tap(tile_x(SET_CAT_SETUP_COUNT), tile_y(SET_CAT_SETUP_COUNT));
+    tap(tile_x(OUTPUTS_TILE), tile_y(OUTPUTS_TILE));
                                          /* OUTPUTS's tile */
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK(settings_screen_warning());
@@ -713,9 +715,6 @@ static void count_apply(const outbind_t *b)
     ++s_out_applied;
 }
 
-/* The OUTPUTS tile's slot: after the categories. */
-#define OUTPUTS_TILE SET_CAT_SETUP_COUNT
-
 /*
  * The OUTPUTS tile opens the overview, and nothing about it is a setting:
  * opening it and a tap on a pin write no binding, and neither they nor a
@@ -726,6 +725,7 @@ TEST_CASE(the_outputs_overview_leaves_nothing_unsaved)
 {
     fresh_hub();
     outputs_screen_set_apply(count_apply);
+    picker_screen_set_apply(count_apply);
     s_out_applied = 0;
     outbind_t b;
     outbind_init(&b);
@@ -738,15 +738,20 @@ TEST_CASE(the_outputs_overview_leaves_nothing_unsaved)
     CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
     CHECK_EQ((int)outputs_screen_binding()->proto, 0);
     CHECK(!settings_dirty());
-    /* GP4, column 0 row 4 of the grid: no protocol, no write.  The same
-     * tap with SERVO PWM picked ticks it, so the tap is on the pin. */
-    const int gp4_x = OU_CELL_X(4) + 60;
-    const int gp4_y = UI_BAND_H + OU_CELL_Y(4) + 26;
+    /* GP4's key on the board: no protocol, no write.  The same tap with
+     * SERVO PWM picked ticks it, so the tap is on the pin. */
+    CHECK(outputs_view_is_board());
+    gfx_rect_t gp4;
+    CHECK(picker_screen_button_rect(
+        outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 4), &gp4));
+    const int gp4_x = gp4.x + gp4.w / 2;
+    const int gp4_y = UI_BAND_H + gp4.y + gp4.h / 2;
     tap(gp4_x, gp4_y);
     CHECK_EQ(s_out_applied, 0);
     CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
     ui_router_render(&s_c, 0);
     outputs_screen_select(1u);
+    picker_screen_follow(1u, true);
     tap(gp4_x, gp4_y);
     CHECK_EQ(s_out_applied, 1);
     tap(gp4_x, gp4_y);
@@ -775,6 +780,7 @@ TEST_CASE(the_outputs_overview_leaves_nothing_unsaved)
     CHECK_EQ(warn_lines(), 1);
     CHECK_EQ(s_out_applied, 2);
     outputs_screen_set_apply(NULL);
+    picker_screen_set_apply(NULL);
 }
 
 int main(void)

@@ -381,6 +381,22 @@ kst_ses_t kst_session_release_pairing(kst_session_t *s);
 const kst_plan_t *kst_session_plan(const kst_session_t *s);
 
 /**
+ * @brief The running plan writes to the servo now: from the gap before a
+ *        write frame, the write's own and a roll-back's, to the end of its
+ *        two read-backs, and the full read after a read-back that did not
+ *        match.
+ *
+ * The planning, the full read before the first write, the full read after
+ * the last write or after a roll-back, and every other operation write
+ * nothing.
+ *
+ * @param s  Session, or NULL.
+ * @return true while a write's frame or its read-backs run; false for a
+ *         NULL session.
+ */
+bool kst_session_writing(const kst_session_t *s);
+
+/**
  * @brief Run a plan the caller built.
  *
  * The plan is copied.  @p plan must not be the session's own copy or overlap

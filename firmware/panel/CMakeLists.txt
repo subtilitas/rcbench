@@ -11,7 +11,7 @@ set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../shared")
 # The protocol modules are named one by one.  Only a module's core is compiled
 # here; its rp2350/ folder belongs to a pico-sdk build.  openyge is listed
 # for its planned use; no component requires it and the panel does not link it.
-foreach(module dshot hitec kst openyge pdmini phase_tap ppm sbus)
+foreach(module dshot escwire hitec kst openyge pdmini phase_tap ppm sbus)
     list(APPEND EXTRA_COMPONENT_DIRS
          "${CMAKE_CURRENT_LIST_DIR}/../../protocols/${module}")
 endforeach()
@@ -45,6 +45,18 @@ option(RCBENCH_TOUCH_INJECTOR "Read a touch injector at I2C 0x14" ON)
 #   idf.py -D RCBENCH_PERF_LOG=OFF build
 # builds a panel that prints none of them and holds none of their code.
 option(RCBENCH_PERF_LOG "Log the frame times, stacks and heap on the console" ON)
+
+# The IOmcu's bench console on this panel's serial port, over the CONSOLE
+# page (main/panel_console.h, docs/BenchConsole.md).  A debug tool, off in
+# every released image; tools/check_panel_console.py reads an image for it.
+# RCBENCH_IOMCU_BIN names the IOmcu image built with IOMCU_CONSOLE=ON, so
+# UPDATES offers it over CAN.
+#   idf.py -D RCBENCH_PANEL_CONSOLE=ON -D RCBENCH_IOMCU_BIN=<console image> build
+option(RCBENCH_PANEL_CONSOLE "The IOmcu's bench console over the link" OFF)
+if(RCBENCH_PANEL_CONSOLE AND NOT RCBENCH_IOMCU_BIN)
+    message(WARNING "RCBENCH_PANEL_CONSOLE without RCBENCH_IOMCU_BIN: this panel "
+                    "offers an IOmcu no console image")
+endif()
 
 # The DSI (Display Serial Interface) host's colour bars for 3s at start-up,
 # for a first look at a board (components/display).

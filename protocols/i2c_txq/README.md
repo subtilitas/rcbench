@@ -322,9 +322,8 @@ The host suite runs the core over a modelled bus
 IOmcu's sensor bus on it over the same model (`test_sense_txq`,
 `test_sense_txq_svc`, `test_sense_i2c`).
 
-Not measured: the driver has not run on a chip. The time the `IC_TAR`
-change takes, the gap the block leaves between a STOP and the next START,
-the interrupt latency, the order of `STOP_DET` and `TX_ABRT` after an
+The time the `IC_TAR` change takes, the gap the block leaves between a
+STOP and the next START, the interrupt latency, the order of `STOP_DET` and `TX_ABRT` after an
 abort, and the CPU time a transaction costs are not measured.
 
 ## Use in another pico-sdk project

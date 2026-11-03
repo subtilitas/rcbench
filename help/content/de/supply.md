@@ -21,9 +21,9 @@ Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte und die Karte 
 
 ## Das Netzteilmodell
 
-![SUPPLY mit abgeschaltetem PD mini: SIMULIERTES NETZTEIL](view:supply)
+![SUPPLY mit abgeschaltetem PD mini: SIMULIERT](view:supply)
 
-Ist der PD mini unter SETUP, INTERFACES abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERTES NETZTEIL`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6Ω mit einem Stromstoß von 1,4A für 0,6s alle 3s, hinter einem Quellwiderstand von 0,05Ω. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
+Ist der PD mini im [Tab PD MINI](#tab-pd-mini) abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERT: IN PD MINI EINSCHALTEN`, eine Taste, die den Tab öffnet, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6Ω mit einem Stromstoß von 1,4A für 0,6s alle 3s, hinter einem Quellwiderstand von 0,05Ω. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
 
 ## Der PD mini
 
@@ -74,7 +74,7 @@ Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die
 
 ## AUSGANG EIN und AUS
 
-AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. AUSGANG AUS ist ein Tipp. Der Ausgang schaltet ab und bleibt bis zum nächsten Halten aus bei:
+AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. Ein Loslassen vor 2s schaltet nichts und zeigt `Halte 2s, um den Ausgang einzuschalten.` im Alert-Band. AUSGANG AUS ist ein Tipp. Der Ausgang schaltet ab und bleibt bis zum nächsten Halten aus bei:
 
 - STOP, auf jedem Bildschirm;
 - Verlassen von SUPPLY, für einen Ausgang, den SUPPLY eingeschaltet hat;
@@ -84,7 +84,17 @@ AUSGANG EIN ist ein Halten von 2s, mit dem Übergang, den ARM verwendet. AUSGANG
 - einem Modul, das seinen Ausgang selbst abschaltet;
 - einer Änderung an Pins, Baudrate oder Einschalt-Einstellung des PD mini.
 
-Das Band nennt den Grund. Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Nach jedem Neustart ist der Ausgang aus, unabhängig von den Startwerten.
+Das Band nennt den Grund. Ein Loslassen vor 2s sendet nichts und zeigt nichts, wie bei ARM.
+
+Der IOmcu lehnt ein EIN ab, solange sein Failsafe ausgelöst ist: Das Band zeigt FEHLER 01 (der Link war 200ms still, was ein Neustart des IOmcu verursachen kann) oder FEHLER 10 (der Heartbeat hat aufgehört). Das Halten endet dann mit `Netzteil ließ sich nicht einschalten: IOmcu-Failsafe ausgelöst. ARM halten, dann DISARM.` Nur das CLEAR, das ein ARM schreibt, hebt den Failsafe auf: ARM auf SERVO oder MOTOR & ESC halten, DISARM, dann AUSGANG EIN erneut halten.
+
+Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Nach jedem Neustart ist der Ausgang aus, unabhängig von den Startwerten.
+
+## Auf dem rbmod-Carrier
+
+![SUPPLY auf dem Carrier](view:supply-rbmod)
+
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) speist der PD mini die Servoschienen, und die Programmierports haben eine eigene 5V-Versorgung, geschaltet über GPIO 21. Die Zeile unter AUSGANG nennt sie: `PROG-PORTS 5V, GPIO 21: EIN`, `AUS` oder `UNBEKANNT`, solange der IOmcu nicht antwortet. Die Programmer für KST und Hitec schalten sie für eine Sitzung. Der PD mini bleibt während einer Sitzung bei der bedienenden Person: AUSGANG EIN und die Sollwerte funktionieren wie ohne sie. Auf LIVE schaltet das Feld PROG 5V rechts von GRAFIK und TABELLE sie von Hand: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED; ein Loslassen vor 2s zeigt `Halte 2s, um die 5V der Programmierports einzuschalten.`. Das Feld nennt den Pin, `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster des INA3221 an ihnen (0x40 CH3), `5.02V  0.120A`. Solange ein Programmer einen Port hält, zeigt das Feld `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Das Verlassen von SUPPLY schaltet 5V ab, die sein Feld eingeschaltet hat, außer ein Port hält sie. Jeder Fehler schaltet sie aus, ein Schreiben in den Speicher eines Servos endet zuerst, höchstens 10000ms.
 
 ## OPTIONEN
 
@@ -112,6 +122,31 @@ Die Optionen werden im NVS (nichtflüchtiger Speicher) gehalten. Sie werden im n
 
 Mit dem PD mini als Netzteil bieten die OPTIONEN zusätzlich PD MINI ZURÜCKSETZEN. Es schaltet den Ausgang ab und startet das Modul neu, für ein Modul, das ERR zeigt. Ob ein Neustart jedes ERR löscht, ist nicht gemessen.
 
+## Tab PD MINI
+
+![Der Tab PD MINI](view:supply-pdmini)
+
+OPTIONEN hat zwei Tabs, GRENZEN und PD MINI. PD MINI verdrahtet das Modul.
+
+| Option | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| PD mini | EIN, AUS | AUS | das programmierbare Netzteil auf SUPPLY und SERVO; AUS rechnet das Netzteilmodell des Panels |
+| PD mini TX | -1 bis 47 | -1 | der GPIO des IOmcu zum DM des Moduls |
+| PD mini RX | -1 bis 47 | -1 | der GPIO des IOmcu vom DP des Moduls |
+| PD mini Baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | die UART-Rate (Universal Asynchronous Receiver-Transmitter) des Moduls; AUTO probiert jede der 7 Raten, eine pro Sekunde |
+
+Eine Änderung gilt sofort und wird gespeichert wie eine Änderung auf GRENZEN. Es gibt kein SPEICHERN. Die Rücksetzung auf GRENZEN lässt diese Zeilen.
+
+Eine Änderung der Verdrahtung schaltet einen eingeschalteten Ausgang ab, deshalb nimmt keine Zeile einen Druck, solange der Ausgang an oder ein ON unterwegs ist, ein Programmierport das Netzteil hält oder der Prüfstand ARMED ist: Hilfezeile und Band sagen, was davon. Ein auf einem Pin offenes Tastenfeld schließt, sobald eins davon beginnt, und was es hält, wird nicht übernommen.
+
+Die Tasten `-` und `+` von PD mini TX und PD mini RX springen über den GPIO, den die andere Zeile hält: mit RX auf GPIO 18 geht TX von GPIO 19 auf GPIO 17. Am Ende des Bereichs tut die Taste dann nichts: mit RX auf GPIO 47 bleibt TX auf GPIO 46. Das Tastenfeld lehnt den GPIO der anderen Zeile ab und zeigt statt des Bereichs `Diesen GPIO hält der andere PD-mini-Pin`. Eine gespeicherte Einstellung mit beiden Zeilen auf einem GPIO wird so geladen; der PD mini bleibt aus, die Kopfzeile sagt `PD MINI OHNE PINS`, und beide Zeilen sagen `TX und RX auf einem Pin. PD mini bleibt aus.`, bis eine verstellt wird. Der IOmcu weist einen Pin ab, der reserviert, an einen Ausgang gebunden, vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist: RX auf GPIO 17 wird abgewiesen, solange Sensor-SCL GPIO 17 ist. Die Meldung verlässt das Band, sobald der Pin auf einen zurückgestellt ist, den der IOmcu nimmt.
+
+![GPIO 9 von RX für PD mini TX abgelehnt](view:supply-pdmini-why)
+
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) zeigt PD mini TX GPIO 7 und PD mini RX GPIO 6. Diese Zeilen haben keine Tasten und öffnen kein Tastenfeld, und ihre Hilfezeile lautet `Auf dem Board verlötet. Keine Einstellung.`. Die für sie gespeicherten Werte bleiben, wie sie sind, und gelten wieder an einem von Hand verdrahteten Modul.
+
+![PD mini TX und RX verlötet](view:supply-pdmini-rbmod)
+
 ## Das Log eines Laufs
 
 Ein Lauf ist ein Einschalten des Ausgangs. Die Grafik leert sich, wenn der Ausgang einschaltet, und hält den Lauf, wenn er ausgeht. Die mAh und Wh in der Titelzeile von STEUERUNG zählen den Lauf. SPITZENWERTE ZURÜCKSETZEN startet die niedrigsten und höchsten Werte neu ab dem aktuellen Messwert.
@@ -120,5 +155,4 @@ Jeder Lauf wird in eine eigene `SUPPLnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (
 
 ## Verwandte Seiten
 
-- [Anschlüsse](setup-interfaces.md): PD mini, PD mini TX, PD mini RX und PD mini Baud.
 - [Servo](servo.md): dieselben Sollwerte und derselbe Ausgangsschalter auf dem Bildschirm SERVO.

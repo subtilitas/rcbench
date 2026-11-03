@@ -79,7 +79,7 @@ ARM switches the whole bank of throttle outputs to ARMED, not only the pins name
 
 ![A run while ARMED, with no IOmcu: SIM and the SIMULATION watermark](view:motor)
 
-1. Hold ARM for 2s. The fill fades from green to red; the bench switches to ARMED when the fade completes. Letting go earlier switches nothing.
+1. Hold ARM for 2s. The fill fades from green to red; the bench switches to ARMED when the fade completes. Letting go earlier switches nothing and shows `Hold 2s to switch to ARMED.` in the alert band.
 2. Drag the throttle. It moves by how far the finger travels, not to where it lands. `-1` and `+1` step one percentage point.
 3. Tap DISARM, or press STOP, to end the run. Both stop the output at once, with no ramp, and return the throttle to 0%.
 
@@ -96,7 +96,7 @@ While ARMED the panel tag reads `LIVE TELEMETRY` and the plot's right edge reads
 
 Leaving the screen, TARGET, a lost link or a touch controller that stops answering also switches to SAFE and returns the throttle to 0%.
 
-While no IOmcu answers, the band shows SIM and SIMULATION is drawn across the screen: every value is the panel's model.
+While no IOmcu answers, the band shows SIM and SIMULATION is drawn across the screen: every value is the panel's model. SETUP, PANEL, Demo mode ON hides the SIMULATION watermark; SIM stays.
 
 ## A held run
 
@@ -118,7 +118,7 @@ On LIVE the telemetry card carries PLOT and TABLE under its title, and beside th
 
 TABLE lists voltage, current, power and rpm, each with its peak. A channel nothing answered for reads `--`.
 
-- With the INA228 enabled on SETUP, INTERFACES and answering, voltage, current and power are the INA228's: the means of the IOmcu's last 50ms window, read at 20Hz. The heading names `INA228`.
+- With the INA228 enabled on SETUP, SENSORS and answering, voltage, current and power are the INA228's: the means of the IOmcu's last 50ms window, read at 20Hz. The heading names `INA228`.
 - `CLIPPED` follows the heading while a current read the end of the part's range: current and power are then bounds, not values.
 - `ESC SAYS` lists the ESC's own telemetry voltage and current, and `diff` is the ESC's figure less the INA228's.
 - Without the INA228 the channels are the ESC's telemetry, and `ESC SAYS` is not shown.
@@ -138,4 +138,4 @@ One switch to ARMED writes one file, `MOTORnnn.CSV`, in `BENCH/LOGS` on the pane
 - [ESC STICK](motor-stick.md): programming an ESC through its throttle-stick menu.
 - [Outputs](outputs.md): which pins the throttle drives.
 - [Setup](setup.md): the rotary knob.
-- [Interfaces](setup-interfaces.md): the INA228.
+- [Sensors](setup-sensors.md): the INA228.

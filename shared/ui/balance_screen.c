@@ -923,7 +923,14 @@ static void cancel(void)
     ++s.rev;
 }
 
+/**
+ * @brief ui_screen_t's covered: the keypad.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.kp.open; }
+
 static const ui_screen_t k_screen = {
+    .covered = covered,
     .title  = "BALANCE",
     .reset  = reset,
     .enter  = NULL,

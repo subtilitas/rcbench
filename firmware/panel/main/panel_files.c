@@ -26,6 +26,12 @@
  * logger's open files (log_open_marks()).  A job reads it before each
  * chunk, so an ARM stops a copy at its next 16KiB.
  *
+ * One card job at a time, FILES' or the Wi-Fi page's: cardjob holds the
+ * card's job lock (panel_files_lock()) for each request it runs, and the
+ * page's server takes it for each write (wifi_access_set_card_lock()), so
+ * a browser's save never runs between a FILES job's steps or the other way
+ * round.  The page waits for it at most 2000ms and answers PANEL_BUSY.
+ *
  * Each copy logs its bytes, its time and its rate, and the stack cardjob
  * left unused: the card's rate on this board is not measured.
  *
@@ -45,6 +51,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 
 #include "files_screen.h"
@@ -54,7 +61,11 @@
 #include "log_take.h"
 #include "panel.h"
 #include "storage.h"
+#include "text_view.h"
 #include "ui_screen.h"
+#include "ui_theme.h"
+#include "wa_app.h"
+#include "wifi_access.h"
 
 /** @brief The log tag of the panel's lines. */
 static const char *TAG = "rcbench";
@@ -480,6 +491,9 @@ static uint64_t s_prog_done;
 static uint64_t s_prog_total;
 /** @brief cardjob, NULL until the first request starts it. */
 static TaskHandle_t s_task;
+/** @brief The card's job lock: cardjob's while it runs a request, the
+ *         page server's while it runs a write.  Made at start-up. */
+static SemaphoreHandle_t s_job_lock;
 /** @brief cardjob's copy buffer, FM_CHUNK bytes of internal DMA RAM. */
 static uint8_t *s_chunk;
 /** @brief The logger's open files as cardjob last read them. */
@@ -490,6 +504,26 @@ static char s_job_run_dir[CARD_DIR_MAX];
 static char s_job_test_dir[CARD_DIR_MAX];
 
 /**
+ * @brief The bench now: the control task's snapshot and the logger's open
+ *        files, into a task's own marks.
+ * @param out       takes the bench
+ * @param marks     takes the open files; outlives the bench's use
+ * @param run_dir   takes their run's folder, CARD_DIR_MAX bytes
+ * @param test_dir  takes their test's folder, CARD_DIR_MAX bytes
+ */
+static void bench_into(fm_bench_t *out, log_marks_t *marks, char *run_dir,
+                       char *test_dir)
+{
+    snap_lock();
+    out->armed = s_snap.armed || s_snap.arm_wanted;
+    out->link_up = s_snap.link_up;
+    snap_unlock();
+    out->fault_busy = log_fault_busy();
+    log_open_marks(marks, run_dir, test_dir);
+    out->marks = marks;
+}
+
+/**
  * @brief The runner's bench(): the control task's snapshot and the
  *        logger's open files, now.
  * @param out  takes the bench
@@ -498,13 +532,58 @@ static char s_job_test_dir[CARD_DIR_MAX];
 static void job_bench(fm_bench_t *out, void *ctx)
 {
     (void)ctx;
-    snap_lock();
-    out->armed = s_snap.armed || s_snap.arm_wanted;
-    out->link_up = s_snap.link_up;
-    snap_unlock();
-    out->fault_busy = log_fault_busy();
-    log_open_marks(&s_job_marks, s_job_run_dir, s_job_test_dir);
-    out->marks = &s_job_marks;
+    bench_into(out, &s_job_marks, s_job_run_dir, s_job_test_dir);
+}
+
+/** @brief The logger's open files as the page's server last read them. */
+static log_marks_t s_web_marks;
+/** @brief The folder of s_web_marks' run. */
+static char s_web_run_dir[CARD_DIR_MAX];
+/** @brief The folder of s_web_marks' test. */
+static char s_web_test_dir[CARD_DIR_MAX];
+
+void panel_files_web_bench(fm_bench_t *out, void *ctx)
+{
+    (void)ctx;
+    bench_into(out, &s_web_marks, s_web_run_dir, s_web_test_dir);
+}
+
+const fm_io_t *panel_files_card(void)
+{
+    return &k_io;
+}
+
+bool panel_files_lock_init(void)
+{
+    if (s_job_lock == NULL) {
+        s_job_lock = xSemaphoreCreateMutex();
+    }
+    return s_job_lock != NULL;
+}
+
+bool panel_files_lock(uint32_t wait_ms)
+{
+    return s_job_lock != NULL
+           && xSemaphoreTake(s_job_lock, pdMS_TO_TICKS(wait_ms)) == pdTRUE;
+}
+
+void panel_files_unlock(bool wrote)
+{
+    if (wrote) {
+        /* A file the page made may be a log at a higher number. */
+        log_series_forget_all();
+    }
+    (void)xSemaphoreGive(s_job_lock);
+}
+
+void panel_files_web_hl(void)
+{
+    static wa_hl_t hl;
+    hl.words = text_view_words();
+    hl.spans = TEXT_VIEW_SPANS;
+    (void)text_view_class_rgb(UI_THEME_DARK, hl.dark, WA_HL_RGB);
+    (void)text_view_class_rgb(UI_THEME_LIGHT, hl.light, WA_HL_RGB);
+    wifi_access_set_hl(&hl);
 }
 
 /**
@@ -584,9 +663,11 @@ static void files_task(void *arg)
             continue;
         }
         fm_req_t *req = s_req;
+        (void)xSemaphoreTake(s_job_lock, portMAX_DELAY);
         const int64_t t0 = esp_timer_get_time();
         (void)fm_req_run(req, &run);
         log_copy(req, esp_timer_get_time() - t0);
+        (void)xSemaphoreGive(s_job_lock);
         if (req->kind == FM_REQ_JOB) {
             /* A job may have put a log at a higher number into a log
              * folder, done or stopped part way. */
@@ -604,6 +685,10 @@ static bool start_task(void)
 {
     if (s_task != NULL) {
         return true;
+    }
+    if (!panel_files_lock_init()) {
+        ESP_LOGW(TAG, "files: no RAM for the card's job lock");
+        return false;
     }
     const size_t before = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
     if (s_chunk == NULL) {

@@ -22,7 +22,7 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche und Download brauchen:
 
-- ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.`, und NACH UPDATES SUCHEN ist grau;
+- ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` über der Taste `NETZWERK SPEICHERN: WI-FI ÖFFNEN`, die WI-FI öffnet und über das Home-Tag zurückführt, und NACH UPDATES SUCHEN ist grau;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf. Sonst ist die Taste grau, und die Karte sagt `Für WLAN muss SAFE aktiv und das Netzteil aus sein.`;
 - kein laufendes Update des IOmcu und keine Panel-Installation im Gang.
 
@@ -123,6 +123,7 @@ Das Halten braucht, was die Frage braucht: einen IOmcu mit einem anderen Build, 
 | `Build des IOmcu wird geprüft.` | der SHA-256-Vergleich läuft |
 | `Build-Prüfung fehlgeschlagen. Sie läuft bei der nächsten Verbindung erneut.` | der Vergleich endete ohne Antwort |
 | `Kein Update über CAN. Firmware einmal über USB installieren.` | der IOmcu hat keine Update-Pages oder keine Partitionstabelle |
+| `Kein IOmcu-Image für dieses Board in diesem Panel-Build.` | der IOmcu meldet ein Board, für das dieser Panel-Build kein Image trägt; kein Update wird angeboten |
 | `Der IOmcu nutzt den Build dieses Panels.` | es gibt nichts zu senden |
 | `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an |
 | `Wartet, bis das WLAN des Panels aus ist.` | eine Suche, ein Download oder [WLAN](wifi.md) hat den Funk an |

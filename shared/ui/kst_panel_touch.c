@@ -55,7 +55,7 @@ static void down(const touch_event_t *evt)
         if (gfx_rect_contains(kst_panel_apply_rect(), x, y)) {
             take(evt, P_APPLY, -1);
             k.warn.down = true;
-            ui_hold_begin(&k.warn.hold);
+            ui_hold_begin(&k.warn.hold, k.warn.hint);
         } else if (gfx_rect_contains(kst_panel_cancel_rect(), x, y)) {
             take(evt, P_CANCEL, -1);
         }
@@ -112,6 +112,12 @@ static void down(const touch_event_t *evt)
             take(evt, P_ROW, i);
             return;
         }
+    }
+    /* On the carrier the PORT row's label opens the ports' list. */
+    const row_t *pr = kpn_port_pick_row();
+    if (pr != NULL && gfx_rect_contains(kpn_row_rect(pr), x, y)) {
+        take(evt, P_PORT, -1);
+        return;
     }
     if (kpn_notes_paged_at(x, y)) {
         take(evt, P_NOTES, -1);
@@ -221,7 +227,7 @@ static void rest(const touch_event_t *evt)
             }
             return;
         }
-        (void)ui_hold_end(&k.warn.hold);
+        (void)ui_hold_end(&k.warn.hold, evt, kst_panel_apply_rect());
         k.warn.down = false;
         let_go();
         return;
@@ -256,6 +262,14 @@ static void rest(const touch_event_t *evt)
             }
         }
         break;
+    case P_PORT: {
+        const row_t *pr = kpn_port_pick_row();
+
+        if (pr != NULL && gfx_rect_contains(kpn_row_rect(pr), x, y)) {
+            kpn_port_list();
+        }
+        break;
+    }
     case P_CHOICE:
         if (k.ch.open && which < k.ch.count
             && gfx_rect_contains(kst_panel_choice_rect(which), x, y)) {
@@ -292,9 +306,17 @@ bool kst_panel_has_press(uint8_t id)
 
 /* The supply's own controls follow the port: while one is out of PWM the
  * IOmcu takes an OFF and nothing else (supply_page.h), and SUPPLY and
- * the SERVO screen's SET row offer no more than that. */
+ * the SERVO screen's SET row offer no more than that.  A LEAVE is told
+ * before the word it ends: only its release offers the operator's set
+ * points back. */
 void kpn_supply_sync(void)
 {
+    const uint32_t leaves = kst_prog_leaves(&k.prog);
+
+    if (leaves != k.leaves_seen) {
+        k.leaves_seen = leaves;
+        supply_screen_kst_leave_done();
+    }
     supply_screen_set_port_held(kst_prog_holds_port(&k.prog));
 }
 

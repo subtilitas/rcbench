@@ -5,9 +5,11 @@
  *        the supply the screen shows.
  *
  * The IOmcu drives the PD mini; the panel asks.  Two things are
- * written: the wiring (ENABLE to BAUD, from SETUP INTERFACES) and the
+ * written: the wiring (ENABLE to BAUD, from SUPPLY's PD MINI tab) and the
  * command (OUTPUT to SET_MA, from the SUPPLY screen).  The order is fixed:
  *
+ *   0. a read, before anything but a cut: it shows whether a port holds the
+ *      page, and then nothing of the panel's own goes over it;
  *   1. an OFF, alone in OUTPUT, before anything else owed, and first of
  *      all while what the page holds is not known;
  *   2. the wiring, only with OUTPUT 0 on the page and FLAGS bit 6 clear,
@@ -38,6 +40,14 @@
  * read: with the bit set the page's values are adopted as above and the
  * output stays on, without it the ON is refused as ever.  Nothing is
  * written between the refusal and that read except an OFF asked for.
+ *
+ * A panel that has just started and finds a port's hold on its first read
+ * adopts the page: no OFF of its own goes over it, since the page would refuse
+ * the port's next ON until the port lets go.  A wiring answered
+ * LINK_NACK_BUSY, under an ESC_WIRE hold, is no refusal: the page's wiring stays
+ * in force, and it is written again once a read shows the hold over.  A hold that
+ * ends with this end's wiring not written is followed by an OFF, then the wiring:
+ * an output left on would bar it.
  *
  * Pure C, no link of its own: the caller makes each exchange and reports
  * how it went.  Control task only.
@@ -81,7 +91,7 @@ extern "C" {
 /** @brief The baud setting that asks the IOmcu to find the rate (4.4). */
 #define SUPPLY_LINK_BAUD_AUTO 7u
 
-/** @brief Where the PD mini is wired, as SETUP INTERFACES has it. */
+/** @brief Where the PD mini is wired, as SUPPLY's PD MINI tab has it. */
 typedef struct {
     bool    en;
     int8_t  tx, rx;   /**< IOmcu GPIO; -1 not set          */
@@ -134,6 +144,8 @@ typedef struct {
     bool     wire_wait;      /* page.wiring acknowledged, not yet read held */
     supply_wiring_t page;
     bool     refused;        /* `want` was refused; not written again   */
+    bool     wire_busy;      /**< a port's hold answered BUSY: written again
+                                  once a read shows the hold over        */
     bool     commanded;      /* the page holds page_on, page_mv, page_ma */
     bool     page_on;
     uint16_t page_mv, page_ma;
@@ -164,8 +176,13 @@ typedef struct {
     bool     port_held;      /* the last read had LINK_SP_PORT set      */
     bool     judge;          /* set points refused on an output that is
                                 on: the next read says by whom           */
+    bool     off_owed;       /**< an OFF asked by supply_link_cut(), not
+                                  yet answered */
     bool     adopted;        /* on, mv, ma were taken from the page and
                                 not yet handed out                      */
+    bool     kept;           /**< the page's command left to the port
+                                  that holds it (supply_link_keep()),
+                                  until a read shows the port gone      */
 } supply_link_t;
 
 /**
@@ -201,6 +218,38 @@ void supply_link_wire(supply_link_t *s, const supply_wiring_t *w);
  * @param ma The set point current, in mA.
  */
 void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma);
+
+/**
+ * @brief An OFF written to the page whatever this end thinks it holds: the
+ *        output asked off, and OUTPUT 0 written alone before anything else,
+ *        once, even with the page read off.
+ *
+ * For an error while a programming port holds the supply (error_stop.h): a
+ * port in a power cycle has the output off and is about to switch it on,
+ * and an IOmcu of link 4.31 refuses that ON after an OFF of the panel's.
+ * Written again while it goes unanswered; dropped with the link.
+ *
+ * @param s The link state; nothing is done for NULL.
+ */
+void supply_link_cut(supply_link_t *s);
+
+/**
+ * @brief An error that leaves the supply to the programming port that holds
+ *        it (error_sites_page_keeps()): this end asks what the page held at
+ *        the last read, so no OFF of the panel's is written over the
+ *        port's command, and an ON the settings' refused wiring would
+ *        refuse is not refused again while the port holds the page.
+ *
+ * Handed out as the port's command (supply_link_adopted()).  For an IOmcu
+ * older than link 4.31, which cuts a write to the servo's memory at the
+ * panel's OFF.
+ *
+ * @param s The link state; nothing is done for NULL.
+ * @return true when the last read showed a port holding the page and the
+ *         page's command was known, with no OFF owed by supply_link_cut();
+ *         false otherwise, and nothing changed.
+ */
+bool supply_link_keep(supply_link_t *s);
 
 /**
  * @brief Restart the PD mini (protocol 4.4): written once the page's output is
@@ -336,12 +385,75 @@ bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
                          uint16_t *ma);
 
 /**
+ * @brief Whether the last read shows the supply free of every programming
+ *        port and its output off: LINK_SP_PORT clear, OUTPUT 0, and the
+ *        module neither read on nor possibly on (LINK_SP_ON, LINK_SP_LIVE).
+ *
+ * The moment a port's set points can give way to the caller's own without
+ * reaching an output that is on (supply_screen_port_done()).
+ *
+ * @param s The link state.
+ * @return true when it does; false for NULL and before the first read.
+ */
+bool supply_link_port_free_off(const supply_link_t *s);
+
+/**
  * @brief The events since the last call, SUPPLY_LINK_EV_*, and cleared.
  *
  * @param s The link state.
  * @return The events since the last call, as SUPPLY_LINK_EV_* bits.
  */
 uint16_t supply_link_events(supply_link_t *s);
+
+/** @brief The events that are errors of the supply (error_stop.h): every one
+ *         but a refused wiring, which answers the operator's edit, and the
+ *         rate AUTO found. */
+#define SUPPLY_LINK_EV_ERRORS                                              \
+    (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST                    \
+     | SUPPLY_LINK_EV_STUCK | SUPPLY_LINK_EV_SET_STUCK                     \
+     | SUPPLY_LINK_EV_TRIPPED | SUPPLY_LINK_EV_SAGGED)
+
+/**
+ * @brief Whether @p ev holds an error of the supply: an ON refused or let go,
+ *        an output that would not switch, set points that would not take,
+ *        the module's own protection, a sagging input.
+ *
+ * The panel switches the output off and the bench to SAFE for one
+ * (error_stop.h).
+ *
+ * @param ev SUPPLY_LINK_EV_* bits, as supply_link_events() returned them.
+ * @return true when one of SUPPLY_LINK_EV_ERRORS is set.
+ */
+bool supply_link_ev_error(uint16_t ev);
+
+/** @brief What the operator is told of an ON that ended or never began. */
+typedef enum {
+    SUPPLY_LINK_SAY_NONE = 0,  /**< nothing of that kind happened         */
+    SUPPLY_LINK_SAY_TRIPPED,   /**< the module switched its output off    */
+    SUPPLY_LINK_SAY_LOST,      /**< the IOmcu let an ON go                */
+    SUPPLY_LINK_SAY_REFUSED,   /**< an ON refused                         */
+    /** @brief An ON refused while the IOmcu reports its failsafe:
+     *         LINK_FAULT_LINK_SILENT or LINK_FAULT_HEARTBEAT.  It takes no
+     *         ON until a CLEAR, which only an ARM writes. */
+    SUPPLY_LINK_SAY_FAILSAFE,
+} supply_link_say_t;
+
+/**
+ * @brief Which of the ON's endings @p ev holds, the module's own trip first,
+ *        then an ON let go, then an ON refused, named for the failsafe when
+ *        @p faults holds it.
+ *
+ * The IOmcu takes an ON only with the heartbeat trusted and the link out
+ * of failsafe (safety_gate_supply_ok()); the STATUS page reports those two
+ * as LINK_FAULT_HEARTBEAT and LINK_FAULT_LINK_SILENT.
+ *
+ * @param ev     SUPPLY_LINK_EV_* bits, as supply_link_events() returned
+ *               them.
+ * @param faults The STATUS page's fault bitmap at its last read.
+ * @return       SUPPLY_LINK_SAY_NONE when @p ev holds none of
+ *               SUPPLY_LINK_EV_TRIPPED, _ON_LOST and _ON_REFUSED.
+ */
+supply_link_say_t supply_link_on_ended(uint16_t ev, uint16_t faults);
 
 /**
  * @brief The input and the set point in mV that SUPPLY_LINK_EV_SAGGED was read
@@ -412,6 +524,48 @@ bool supply_link_held_pins(const supply_link_t *s, int *tx, int *rx);
  * @return true while held.
  */
 bool supply_link_port_held(const supply_link_t *s);
+
+/**
+ * @brief Whether a programming port holds the PD mini's output for the
+ *        panel's error rule (error_bench_t.port_holds, error_sites.h): the
+ *        PD mini in use, the last read of the page with LINK_SP_PORT set,
+ *        and a programmer's session with a port.
+ *
+ * Both words count, and the hold ends at the first that says it ended.  A
+ * session with a port whose supply the page does not hold -- the rbmod
+ * carrier's ports, which run from PROG_SUPPLY, or a Hitec session between
+ * two POWERs on an IOmcu older than 4.29 -- does not count.  Nor does the
+ * page's flag once the session has ended: a port that lets go before the
+ * next read of the page.  The page's flag is as last read: a port that
+ * takes the supply counts from the next read, SUPPLY_LINK_READ_MS (100ms)
+ * apart while the PD mini is in use.  An unanswered read keeps the last
+ * answer; a lost link clears it.
+ *
+ * @param s       The link state.
+ * @param pdmini  The PD mini is the supply, not the panel's model.
+ * @param session A KST or Hitec programmer has a port, as the panel last
+ *                read its page.
+ * @return true while held; false for NULL, for the model, without a
+ *         session, and before the first read since the link came up.
+ */
+bool supply_link_port_holds(const supply_link_t *s, bool pdmini,
+                            bool session);
+
+/**
+ * @brief Whether a programmer's session keeps the panel's own OUTPUT ON
+ *        and set points off the PD mini: a session with a port, on a board
+ *        whose programming ports run from the PD mini.
+ *
+ * On a board that switches the ports' own supply (PROG_SUPPLY, the rbmod
+ * carrier) the ports never take the PD mini, the IOmcu never holds the
+ * SUPPLY page for them, and the operator keeps the PD mini.
+ *
+ * @param session   A KST or Hitec programmer has a port.
+ * @param ports_own The ports' own supply is the programmers' supply
+ *                  (prog_supply_link_owns()).
+ * @return true when the panel takes no ON and writes no set point.
+ */
+bool supply_link_session_blocks(bool session, bool ports_own);
 
 #ifdef __cplusplus
 }

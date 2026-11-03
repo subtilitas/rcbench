@@ -37,14 +37,28 @@ const char *wifi_req_hdr(httpd_req_t *r, const char *key, char *out,
                          size_t cap);
 
 /**
+ * @brief wa_guard() over @p r, not answered: the Host, the body's size, a
+ *        write's Origin or Referer and the upload's header.  A refusal is
+ *        logged.  The caller answers it with the connection closed
+ *        (wifi_req_close()), as wifi_req_guard() does; the file API answers
+ *        in JSON (wifi_files.c).
+ *
+ * @param r     the request
+ * @param kind  what it is
+ * @param name  the panel's name, "rcbench-1A2B"
+ * @param bufs  the header buffers
+ * @return WA_GUARD_OK, or the first check that refuses it
+ */
+wa_guard_t wifi_req_check(httpd_req_t *r, wa_req_kind_t kind,
+                          const char *name, wifi_req_bufs_t *bufs);
+
+/**
  * @brief wa_guard() over @p r: the Host, the body's size, a write's Origin
  *        or Referer and the upload's header.
  *
  * The panel's address is the IPv4 address the connection came in on: the
  * access point's in AP, the station's in JOIN.  A refusal is answered
- * here, with no body and the connection closed, so a body not read is
- * never read: httpd_req_delete() would read one to its end, a receive
- * timeout at a time.
+ * here, with no body and the connection closed (wifi_req_close()).
  *
  * @param r     the request
  * @param kind  what it is
@@ -55,5 +69,21 @@ const char *wifi_req_hdr(httpd_req_t *r, const char *key, char *out,
  */
 bool wifi_req_guard(httpd_req_t *r, wa_req_kind_t kind, const char *name,
                     wifi_req_bufs_t *bufs, esp_err_t *e);
+
+/**
+ * @brief End a request answered with "Connection: close" and its body not
+ *        read: close the sending side, read and drop the body within
+ *        wa_linger()'s limits, and leave the connection closing.  Without
+ *        it the close of a socket with unread bytes resets the connection,
+ *        and the client loses the answer.  Left to the server,
+ *        httpd_req_delete() would read the body to its end, a receive
+ *        timeout at a time.
+ *
+ * @param r  the request, its answer sent
+ * @return the handler's return: ESP_OK, with the server's log quiet; ESP_FAIL
+ *         only for a body still arriving at the limit or the radio going
+ *         off, which leaves the rest unread and the connection reset
+ */
+esp_err_t wifi_req_close(httpd_req_t *r);
 
 #endif /* RCBENCH_WIFI_REQ_H */

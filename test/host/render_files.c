@@ -27,6 +27,7 @@
 #include "kst_file.h"
 #include "kst_sim.h"
 #include "servo_test.h"
+#include "settings.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -63,20 +64,46 @@ static void foot(int b)
 }
 
 /**
+ * @brief A drag of pane @p i's list up by @p rows rows.
+ * @param i     the pane
+ * @param rows  the rows
+ */
+static void drag_up(int i, int rows)
+{
+    const int x = FS_SPOT_ROW_CX(i);
+    const int y0 = UI_BAND_H + FS_SPOT_ROW_CY(FS_SPOT_ROWS - 1);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x, .y = (int16_t)y0,
+                                   .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_MOVE;
+    e.point.y = (int16_t)(y0 - rows * 48 - 10);
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+/**
  * @brief Select @p name on pane @p i: a tap makes the pane the active one
- *        and selects the row.  Exits when the row is not on screen, so a
- *        view cannot come to show the row beside the one it names.
+ *        and selects the row, dragged on screen first.  Exits when the page
+ *        does not hold the row, so a view cannot come to show the row beside
+ *        the one it names.
  */
 static void pick(int i, const char *name)
 {
     const fm_tree_t *t = files_screen_pane(i);
-    for (int r = 0; r < t->held && r < FS_SPOT_ROWS; ++r) {
+    for (int r = 0; r < t->held; ++r) {
         if (strcmp(t->page[r].name, name) == 0) {
+            const int past = r - (files_screen_scroll(i) + FS_SPOT_ROWS - 1);
+            if (past > 0) {
+                drag_up(i, past);
+            }
+            const int on = r - files_screen_scroll(i);
             if (t->selected != r || files_screen_active() != i) {
-                ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(r));
+                ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(on));
             }
             if (t->selected != r) {
-                ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(r));
+                ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(on));
             }
             if (t->selected == r) {
                 return;
@@ -91,7 +118,8 @@ static void pick(int i, const char *name)
 static void enter_dir(int i, const char *name)
 {
     pick(i, name);
-    ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(files_screen_pane(i)->selected));
+    ftap(FS_SPOT_ROW_CX(i), FS_SPOT_ROW_CY(files_screen_pane(i)->selected
+                                           - files_screen_scroll(i)));
 }
 
 /** @brief Key @p key of the name keyboard, on FILES' keyboard area. */
@@ -327,7 +355,9 @@ void render_files_prepare(const char *view)
     fh_init(&s_fh);
     const bool nocard = is(view, "files-nocard");
     if (!nocard) {
-        card(strncmp(view, "files-view", 10) == 0 || is(view, "logs-report"));
+        card(strncmp(view, "files-view", 10) == 0
+             || strncmp(view, "files-edit", 10) == 0
+             || is(view, "logs-report"));
     } else {
         fk_pull(&s_fh.card);
         s_fh.state = CARD_STATE_NONE;
@@ -350,7 +380,7 @@ void render_files_prepare(const char *view)
     if (is(view, "files-hidden")) {
         fk_file(&s_fh.card, "OLD/.DS_Store", NULL, 6148u);
     }
-    s_fh.armed = is(view, "files-armed");
+    s_fh.armed = render_files_armed(view);
     s_fh.volume = nocard ? NULL : "RCBENCH";
     if (is(view, "files-logging")) {
         s_fh.marks.test = 5u;       /* USER/LOGS/ATEST005.CSV is open */
@@ -373,7 +403,7 @@ void render_files_prepare(const char *view)
 
 bool render_files_armed(const char *view)
 {
-    return is(view, "files-armed");
+    return is(view, "files-armed") || is(view, "files-edit-armed");
 }
 
 void render_files_settle(void)
@@ -411,11 +441,181 @@ static void pose_viewer(const char *view)
     }
 }
 
+/** @brief A key of the editor's keyboard, on its area under 8 rows. */
+static void ed_key(int k)
+{
+    ui_textkey_t kb;
+    memset(&kb, 0, sizeof(kb));
+    ui_textkey_open_editor(&kb, gfx_rect_make(FS_SPOT_TV_KB_X,
+                                              FS_SPOT_TV_KB_Y,
+                                              FS_SPOT_TV_KB_W,
+                                              FS_SPOT_TV_KB_H));
+    const gfx_rect_t r = ui_textkey_key_rect(&kb, k);
+    ftap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/**
+ * @brief Type @p text on the editor's keyboard: every printable ASCII
+ *        character, spaces and line feeds, the layers switched as needed
+ *        and left on the small letters.
+ * @param text  the characters
+ */
+static void ed_type(const char *text)
+{
+    ui_textkey_layer_t layer = UI_TK_LOWER;
+    ui_textkey_layer_t want = UI_TK_LOWER;
+    for (const char *p = text; *p != '\0'; ++p) {
+        if (*p == ' ' || *p == '\n') {
+            ed_key(*p == ' ' ? UI_TK_SPACE : UI_TK_ENTER);
+            continue;
+        }
+        const int at = ui_textkey_editor_key(*p, &want);
+        if (at < 0) {
+            fprintf(stderr, "render_files: no key %c\n", *p);
+            exit(2);
+        }
+        for (int k = ui_textkey_editor_step(layer, want, &layer); k >= 0;
+             k = ui_textkey_editor_step(layer, want, &layer)) {
+            ed_key(k);
+        }
+        ed_key(at);
+    }
+    for (int k = ui_textkey_editor_step(layer, UI_TK_LOWER, &layer); k >= 0;
+         k = ui_textkey_editor_step(layer, UI_TK_LOWER, &layer)) {
+        ed_key(k);
+    }
+}
+
+/**
+ * @brief Open @p name of @p dir in the viewer as OPEN does, and EDIT.
+ * @param dir   the folder
+ * @param name  the file
+ */
+static void edit_file(const char *dir, const char *name)
+{
+    char path[160];
+    snprintf(path, sizeof(path), "%s/%s", dir, name);
+    const fk_node_t *n = fk_get(&s_fh.card, path);
+    (void)files_screen_open_text(dir, name, s_fh.card.mount,
+                                 (n != NULL) ? n->size : 0u, false);
+    settle();
+    ftap(FS_SPOT_TV_EDIT_CX, FS_SPOT_TV_FOOT_CY);
+}
+
+/** @brief A tap on the editor's footer button whose middle is @p cx. */
+static void ed_foot(int cx)
+{
+    ftap(cx, FS_SPOT_TV_FOOT_CY);
+}
+
+/**
+ * @brief Tap FILES into a view of the text editor.
+ * @param view  the view's name, "files-edit..."
+ */
+static void pose_editor(const char *view)
+{
+    const bool de = ui_text_language() == UI_LANG_DE;
+    if (is(view, "files-edit-kst")) {
+        edit_file("BENCH/KST/CONF", "MG90S.TXT");
+        ftap(FS_SPOT_TV_TEXT_X + 90 * 10, FS_SPOT_TV_TEXT_Y + 5);
+        ed_type(de ? "\n# Ersatzservo, Ruder links" : "\n# spare servo, left aileron");
+        ed_key(UI_TK_DONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+        return;
+    }
+    if (is(view, "files-edit-esc")) {
+        edit_file("BENCH/ESC/CONF", "YGE-135.JSON");
+        ed_type(" ");
+        ed_key(UI_TK_DONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+        return;
+    }
+    if (is(view, "files-edit-nul")) {
+        /* A NUL at 4,096: the first byte deleted brings it into the 4kB
+         * an open tests, and SAVE refuses. */
+        static char nul[4100];
+        for (size_t i = 0; i < 4096u; ++i) {
+            nul[i] = (i % 40u == 39u) ? '\n' : 'x';
+        }
+        memcpy(nul + 4096, "\0yz\n", 4u);
+        put("USER/LOGS/NUL.TXT", nul, sizeof(nul));
+        edit_file("USER/LOGS", "NUL.TXT");
+        ed_key(UI_TK_RIGHT);
+        ed_key(UI_TK_DEL);
+        ed_key(UI_TK_DONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+        return;
+    }
+    if (is(view, "files-edit-full") || is(view, "files-edit-lines")) {
+        static char big[1048576];
+        const bool full = is(view, "files-edit-full");
+        const size_t n = full ? sizeof(big) : 65536u;
+        for (size_t i = 0; i < n; ++i) {
+            big[i] = (!full || i % 64u == 63u) ? '\n' : 'a';
+        }
+        put("USER/LOGS/BIG.TXT", big, n);
+        edit_file("USER/LOGS", "BIG.TXT");
+        ed_type(full ? "q" : "\n");
+        return;
+    }
+    /* files-edit-see25 and files-edit-see50: Keyboard see-through at
+     * 25% and 50%, the keyboard open. */
+    const bool see = strncmp(view, "files-edit-see", 14) == 0;
+    if (see) {
+        settings_set(SET_KB_SEE, is(view, "files-edit-see25") ? 1.0f : 2.0f);
+    }
+    edit_file("USER/LOGS", "ATEST005.TXT");
+    /* After the result line: a line of the operator's own. */
+    ftap(FS_SPOT_TV_TEXT_X + 90 * 10, FS_SPOT_TV_TEXT_Y + FS_SPOT_TV_PITCH + 5);
+    ed_type(de ? "\nNotiz: Horn vor dem Lauf neu montiert."
+               : "\nNote: horn refitted before the run.");
+    if (is(view, "files-edit") || see) {
+        return;                         /* the keyboard open */
+    }
+    if (is(view, "files-edit-marks")) {
+        ed_key(UI_TK_LAYER);            /* the digits and the first marks */
+        return;
+    }
+    ed_key(UI_TK_DONE);
+    if (is(view, "files-edit-unsaved")) {
+        (void)files_screen()->back();   /* the home tag: the question */
+    } else if (is(view, "files-edit-revert")) {
+        ed_foot(FS_SPOT_TV_REVERT_CX);
+    } else if (is(view, "files-edit-open")) {
+        (void)files_screen_open_text("", "NOTES.TXT", s_fh.card.mount, 512u,
+                                     false);
+    } else if (is(view, "files-edit-saving")) {
+        s_fh.defer = true;
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    } else if (is(view, "files-edit-card")) {
+        fk_fail(&s_fh.card, FK_WRITE, 1, FM_ERR_CARD_GONE);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    } else if (is(view, "files-edit-saved")) {
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    } else if (is(view, "files-edit-changed")) {
+        /* The Wi-Fi page wrote the report since the editor read it: SAVE
+         * finds it changed and asks STAY, READ AGAIN or OVERWRITE. */
+        const fm_io_t io = fk_io(&s_fh.card);
+        (void)io.unlink(io.ctx, "USER/LOGS/ATEST005.TXT");
+        put("USER/LOGS/ATEST005.TXT", "web\n", 4u);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    } else if (is(view, "files-edit-nochange")) {
+        ed_foot(FS_SPOT_TV_REVERT_CX);
+        ftap(FS_SPOT_TV_DISCARD_CX, FS_SPOT_TV_Q_CY);
+        ed_foot(FS_SPOT_TV_SAVE_CX);
+    }
+    /* files-edit-armed: the text unsaved, SAVE shut by the gate. */
+}
+
 void render_files_pose(const char *view)
 {
     settle();
     if (strncmp(view, "files-view", 10) == 0) {
         pose_viewer(view);
+        return;
+    }
+    if (strncmp(view, "files-edit", 10) == 0) {
+        pose_editor(view);
         return;
     }
     if (is(view, "files-reading") || is(view, "files-nocard")

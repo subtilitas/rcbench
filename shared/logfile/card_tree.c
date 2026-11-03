@@ -48,6 +48,7 @@ static const char *const k_bench_conf[] = {
     CARD_ESC_CONF,
     CARD_KST_CONF,
     CARD_HITEC_CONF,
+    CARD_ESCW_CONF,
 };
 
 /**
@@ -91,7 +92,7 @@ static bool is_device(const char *name, size_t len)
  * @brief Whether @p path is a bench area folder or one below it.
  *
  * @param path  The upper-case path, folders separated by "/".
- * @return true for BENCH/ESC, BENCH/KST, BENCH/HITEC and below.
+ * @return true for BENCH/ESC, BENCH/KST, BENCH/HITEC, BENCH/ESCW and below.
  */
 static bool is_bench(const char *path)
 {

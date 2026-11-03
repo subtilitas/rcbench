@@ -108,15 +108,18 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 /** @brief What a press is on. */
 enum {
     P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
-    P_APPLY, P_CANCEL, P_TEXTKEY
+    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT
 };
 
+/** @brief A line of Hitec D receive's list that sets nothing. */
+#define HP_RX_LINE (-1)
+
 /** @brief What a list was opened for. */
-enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE, C_FILES };
+enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE, C_FILES, C_RX, C_PORT };
 /** @brief The entries of MORE: the supply's in PWM, the session's while
  *         held. */
 enum { MORE_VOLTAGE = 0, MORE_CURRENT, MORE_DISCARD, MORE_REPAIR,
-       MORE_FACTORY };
+       MORE_FACTORY, MORE_FIXED, MORE_RX };
 /** @brief The entries of RESTORE. */
 enum { RS_RESTORE = 0, RS_FORGET, RS_BACKUP };
 /** @brief FILES' entries besides the files, numbered from 0. */
@@ -161,6 +164,7 @@ typedef struct {
         bool      danger;       /**< the edge in the danger colour        */
         char      title[64];    /**< the title                            */
         char      apply[64];    /**< the hold button's label              */
+        int hint;      /**< the band's hint for a short release  */
         char      lines[HP_PAGE_LINES][HITEC_PANEL_LINE]; /**< the lines */
         uint8_t   level[HP_PAGE_LINES]; /**< each line's hitec_prog_level_t */
         int       vfirst;       /**< the first line of the changed values */
@@ -184,6 +188,8 @@ typedef struct {
     int      row;               /**< the row or entry it is on            */
 
     hitec_prog_state_t state_seen; /**< the state as last drawn           */
+    uint32_t leaves_seen;          /**< hitec_prog_leaves() as last told
+                                        to the supply screen              */
     uint32_t sig;               /**< signature of the last draw           */
     uint32_t rev;               /**< counts the picture's changes         */
     uint32_t hold_rev;          /**< counts a hold's steps                */
@@ -340,6 +346,19 @@ bool hpn_row_edited(const hpn_row_t *r);
 
 /* hitec_panel_edit.c */
 
+/**
+ * @brief Whether a tap on the PORT row's label opens the list of the
+ *        carrier's programming ports: a carrier of 4.36 or later
+ *        (prog_choice_offered()), the PORT row shown, and the tester
+ *        holding the port.
+ * @return the PORT row, or NULL
+ */
+const hpn_row_t *hpn_port_pick_row(void);
+
+/** @brief Opens the list PROGP01 to PROGP04 (C_PORT); nothing while the
+ *         choice is locked. */
+void hpn_port_list(void);
+
 /** @brief Every editor shut: the keypad, the keyboard, the list and the
  *         page. */
 void hpn_close_editors(void);
@@ -421,9 +440,10 @@ int hpn_page_part(int from);
  * @param danger the edge in the danger colour
  * @param title  its title
  * @param apply  the hold button's label
+ * @param hint   the hint the band shows when the hold lifts early
  */
 void hpn_page_open(int kind, bool danger, const char *title,
-                   const char *apply);
+                   const char *apply, int hint);
 /**
  * @brief The editor of a value row: its list or its keypad.
  * @param r the row
@@ -506,5 +526,7 @@ void hpn_page_rules(uint16_t rules);
 /* hitec_panel_touch.c */
 
 /** @brief The supply's own controls follow the port: held, SUPPLY and the
- *         SERVO screen's SET row take an OFF and nothing else. */
+ *         SERVO screen's SET row take an OFF and nothing else.  A LEAVE
+ *         ended since the last call is told first
+ *         (supply_screen_hitec_leave_done()). */
 void hpn_supply_sync(void);

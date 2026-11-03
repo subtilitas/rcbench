@@ -84,7 +84,7 @@ Der INA3221 wird 1000ms, nachdem seine Bedingungen erfüllt sind, zum Messgerät
 
 ![Das Netzteilmodell des Panels als Messgerät, mit der Marke SIMULIERT](view:servo-model)
 
-Solange der PD mini unter SETUP, INTERFACES abgeschaltet ist, ist das Netzteil das Modell des Panels, und eine Marke SIMULIERT steht auf der Grafik. Seine Messwerte sind simuliert, nicht gemessen.
+Solange der PD mini im Tab PD MINI auf SUPPLY abgeschaltet ist, ist das Netzteil das Modell des Panels, und eine Marke SIMULIERT steht auf der Grafik. Seine Messwerte sind simuliert, nicht gemessen.
 
 Ein Messwert, der nicht angekommen ist, steht als `---` in STROM auf LIVE, als `--` auf der Messzeile und als Lücke in der Grafik.
 
@@ -95,6 +95,11 @@ Die Zeile SOLL trägt die beiden Sollwerte der Seite SUPPLY und ihren Ausgangssc
 - Ein Tipp auf einen Sollwert öffnet das Tastenfeld über der linken Karte.
 - AUSGANG EIN ist ein Halten von 2s, AUSGANG AUS ein Tipp.
 - Das Verlassen von SERVO schaltet einen Ausgang ab, den SERVO eingeschaltet hat.
+- Nach einem VERLASSEN eines Programmierers, das den Ausgang eingeschaltet lässt, fragt SERVO, ob die Sollwerte von vor der Sitzung darauf zurückgehen ([Servo-Programmierer](servo-programmer.md)). Kein anderes Ende des Haltens eines Ports fragt: PORT FREIGEBEN, ein STOP, ein Fehler, ein verlorener Link oder ein Neustart lässt die Sollwerte der Sitzung bis zum nächsten AUS.
+
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) steht das Feld PROG 5V unter PD MINI anstelle der Grafik. Es schaltet die eigenen 5V der Programmierports, GPIO 21: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei ARMED. Seine zweite Zeile ist das letzte Fenster des INA3221 an den 5V (0x40 CH3), `5.02V  0.120A`, oder `BELEGT VON PROG-PORT n`, solange ein Programmer einen Port hält; die Taste nimmt dann keinen Druck an. Das Verlassen von SERVO schaltet 5V ab, die das Feld hier eingeschaltet hat, außer ein Port hält sie. SUPPLY zeigt dasselbe Feld.
+
+![SERVO auf dem Carrier](view:servo-rbmod)
 
 ![NUR HV-SERVOS](view:servo-hv)
 
@@ -138,7 +143,7 @@ Der Endlagenlauf sucht, wo das eingebaute Servo an jedem Ende seines Wegs anläu
 1. OPTIONEN auf der Karte antippen, dann ENDLAGENLAUF und NUR SUCHE oder SUCHEN + PROGRAMMIEREN wählen.
 2. Mit ZIEL auf PROG-PORT SERVOPULSE antippen und BEHALTEN oder 1000-2000 wählen. Es beginnt bei BEHALTEN.
 3. Das Home-Tag antippen, zurück zu den Karten.
-4. ENDLAGENLAUF STARTEN 2s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts.
+4. ENDLAGENLAUF STARTEN 2s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts und zeigt `Halte 2s, um den Endlagenlauf zu starten.` im Alert-Band.
 5. TEST bleibt zu sehen. Der Kasten auf der linken Karte von LIVE zeigt die Phase, die Seite und den Puls sowie den Ausgang, den er treibt.
 
 Die Zeile unter der Taste nennt die ganze Zeit Ausgang und Messgerät: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2` oder `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Die Zeile ZIEL bleibt ebenfalls sichtbar.
@@ -255,4 +260,5 @@ Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS`, geschrieben unabhäng
 
 - [Servo-Optionen](servo-settings.md): Typ, Frame Rate, Pulse, der Sweep, die Optionen jedes Laufs und das Ziel.
 - [Servo-Programmierer](servo-programmer.md): die Zeile auf PROGRAMMIEREN für KST- und Chaservo-Servos.
-- [Netzteil](supply.md) und [Anschlüsse](setup-interfaces.md): der PD mini, der INA3221 und der AS5600.
+- [Netzteil](supply.md): der PD mini.
+- [Sensoren](setup-sensors.md): der INA3221 und der AS5600.

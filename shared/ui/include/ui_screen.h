@@ -39,13 +39,12 @@ typedef enum {
     SCREEN_BATTERY,
     SCREEN_BALANCE,
     SCREEN_OUTPUTS,
-    SCREEN_PICKER,
     SCREEN_SUPPLY,
     /* Start-up only, and not reachable from the menu: the bus self-test
      * failed and the panel says so before anything else. */
     SCREEN_BUSFAULT,
-    /* WI-FI, from LOGS and from SETUP: the panel's Wi-Fi for card
-     * downloads and firmware uploads. */
+    /* WI-FI, from SETUP's tile and the buttons of LOGS and UPDATES: the
+     * panel's Wi-Fi for card downloads and firmware uploads. */
     SCREEN_WIFI,
     /* While the panel writes its own firmware, and not reachable from the
      * menu: nothing on the bench runs, so it carries no band either. */
@@ -59,11 +58,16 @@ typedef enum {
     /* Not reachable from the menu: the panel opens it on OVERVIEW when the
      * start-up check found a newer release. */
     SCREEN_UPD_REMIND,
-    /* FILES, from SETUP and from LOGS: the card's folders and files in two
-     * panes. */
+    /* FILES, a tab of the LOGS tile's strip (logs_strip.h): the card's
+     * folders and files in two panes. */
     SCREEN_FILES,
+    /* LAYOUT, from SETUP on a board with soldered pins: its
+     * connectors and the role of each position. */
+    SCREEN_LAYOUT,
     SCREEN_COUNT
 } ui_screen_id_t;
+
+struct ui_help_page;
 
 typedef struct {
     const char *title;   /**< shown in the band                            */
@@ -117,6 +121,32 @@ typedef struct {
      * screen has no such control.
      */
     bool (*safe_at)(int x, int y);
+    /**
+     * @brief The pages of the screen's guide for what it shows now: a tab, a
+     * level, the bench's state (ui_help.h).  0 while a level the guide
+     * does not explain is up -- a keypad, a keyboard, a question -- and
+     * then the band shows no "?".  NULL: the screen has no guide.
+     */
+    int (*help_count)(void);
+    /**
+     * @brief Page @p i of the guide, from 0, into @p out.  False past the
+     *        last.  NULL when help_count is.
+     */
+    bool (*help_page)(int i, struct ui_help_page *out);
+    /**
+     * @brief Whether a level that covers the screen is up: a keypad, a
+     * keyboard, a list, a box or a question.  The screenshot's popup waits
+     * until it is gone (ui_shot.h).  NULL: the screen cannot say, and a
+     * popup never opens over it: a screen with no band, and the questions
+     * that are screens of their own, stay NULL.
+     */
+    bool (*covered)(void);
+    /**
+     * @brief Whether a screenshot of what the screen draws now is refused:
+     * it shows a value kept in the store, and a picture on the card can be
+     * read from the browser.  NULL: never.
+     */
+    bool (*no_shot)(void);
 } ui_screen_t;
 
 /*
@@ -149,10 +179,11 @@ ui_screen_id_t ui_router_current(void);
  * @brief Where the home tag of screen @p id leads when it leaves the
  *        screen.  A
  * screen with several openers returns to the one that last opened it:
- * WI-FI and FILES to LOGS or SETUP, OUTPUTS to MOTOR & ESC, SERVO or SETUP.
+ * OUTPUTS to MOTOR & ESC, SERVO or SETUP, and to SETUP until one opened it;
+ * WI-FI to LOGS or UPDATES, and to SETUP from its tile.
  * A screen a tile of SETUP opens returns to SETUP, and every other to the
- * menu.  WI-FI, FILES or OUTPUTS not yet opened from an opener returns to
- * SETUP.
+ * menu: LOGS and FILES, the tabs of one tile's strip, return to the menu
+ * whichever tab opened them.
  * @param id  the screen
  * @return the screen the home tag leads to
  */
@@ -207,6 +238,41 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index);
 
 /** Repaint every screen's cached chrome into every framebuffer. */
 void ui_router_invalidate(void);
+
+/**
+ * @brief ui_screen_t's covered for a screen with no level over it.
+ * @return false
+ */
+bool ui_screen_not_covered(void);
+
+/**
+ * @brief The empty part of the band, this moment: from 8px right of the home
+ *        tag to 8px left of the leftmost chip or "?", the band's whole height,
+ *        worked out from the rectangles the band draws.  A hold of 1000ms
+ *        there takes a screenshot (ui_shot.h): it ends on a slide out of it,
+ *        on a chip that appears under it, on any other contact and on a lost
+ *        event; its release does nothing.  No screen sees the contact.  A
+ *        screen with no band, or with no covered() to say whether a box is up
+ *        on it (the IOmcu update's question, the release reminder), has no
+ *        such hold.
+ * @param out  takes it in panel coordinates; may be NULL
+ * @return false where there is no band, no covered() or no room
+ */
+bool ui_router_shot_gap(gfx_rect_t *out);
+
+/**
+ * @brief Whether the screen on top refuses a screenshot now (its no_shot).
+ * @return true when no picture may be taken of it
+ */
+bool ui_router_shot_refused(void);
+
+/**
+ * @brief Whether the bench is idle (shot_gate.h), once a frame.  False, the
+ *        start's state, shuts an open popup at once and keeps a waiting
+ *        picture waiting.
+ * @param idle  shot_gate_idle() of the frame's facts
+ */
+void ui_router_shot_set_idle(bool idle);
 
 /* ------------------------------------------------------------ bench state */
 
@@ -304,11 +370,46 @@ bool ui_router_help_rect(gfx_rect_t *out);
  * @brief Whether a knob turn reaches the screen.
  *
  * An open help bubble takes the turn as it takes a DOWN: the bubble closes
- * and the turn moves nothing.  The next turn reaches the screen.
+ * and the turn moves nothing.  The next turn reaches the screen.  An open
+ * guide takes every turn and stays open.
  *
  * @return true when the screen may act on the turn.
  */
 bool ui_router_take_knob(void);
+
+/**
+ * @brief Whether the screen guide is open.
+ *
+ * A tap on the band's "?" opens it on the screen on top, at its first page
+ * (ui_help.h).  It closes on CLOSE, on "?", on a DOWN anywhere but the
+ * dock, on a change of screen and when the screen's pages change.  A DOWN
+ * on STOP closes it and presses STOP; a DOWN on a chip closes it and
+ * presses the chip; a DOWN on a control the screen's safe_at names closes
+ * it and is the screen's.  While it is open a knob turn moves nothing.
+ *
+ * @return true while it is open.
+ */
+bool ui_router_guide_open(void);
+
+/**
+ * @brief The page the open guide shows, from 0; -1 while it is closed.
+ * @return The page.
+ */
+int ui_router_guide_page(void);
+
+/**
+ * @brief The page the open guide shows, into @p out.
+ * @param out The page, filled.
+ * @return False while the guide is closed.
+ */
+bool ui_router_guide_now(struct ui_help_page *out);
+
+/**
+ * @brief Whether the band shows the "?" chip: the screen on top carries the
+ *        band and has guide pages for the bench state.
+ * @return true when it shows.
+ */
+bool ui_router_guide_shown(void);
 
 /** True while a STOP button is drawn; false on the splash, which has none. */
 bool ui_router_stop_live(void);
@@ -333,6 +434,9 @@ bool ui_router_take_stop(void);
 /** How long an alert shows before it clears itself, in seconds. */
 #define UI_ALERT_SHOW_S 30.0f
 
+/** @brief How long a notice shows before it clears itself, in seconds. */
+#define UI_NOTICE_SHOW_S 4.0f
+
 /**
  * @brief Show @p text in a 34px band across the bottom of every screen, or
  *        NULL to clear it.
@@ -349,6 +453,27 @@ bool ui_router_take_stop(void);
  * @param text the alert, or NULL to clear it
  */
 void ui_router_set_alert(const char *text);
+
+/**
+ * @brief Show @p text in the alert band as a notice: amber (UI_C_WARN) with
+ *        dark text, for what is not a fault, such as the hint of a hold
+ *        button released early.
+ *
+ * A notice clears after UI_NOTICE_SHOW_S or at a tap on the band. An alert
+ * takes priority: a notice is not shown while ui_router_set_alert() or
+ * ui_router_hold_alert() has one up, and an alert set while a notice shows
+ * replaces it. A notice replaces another notice. A DOWN on STOP, a fault
+ * bit that comes up in ui_router_set_status() and a switch from ARMED to
+ * SAFE clear a notice at once.
+ * @param text The notice; NULL does nothing.
+ */
+void ui_router_set_notice(const char *text);
+
+/**
+ * @brief Whether the passing alert is a notice, ui_router_set_notice().
+ * @return True while a notice shows; false for an alert and for none.
+ */
+bool ui_router_alert_is_notice(void);
 
 /**
  * The number of the alert ui_router_set_alert() shows now, 0 while none

@@ -141,6 +141,11 @@ TEST_CASE(a_value_edited_by_its_list_is_marked_and_counted)
     /* MORE now offers DISCARD EDITS, which takes it back. */
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
     tap(val(HITEC_PANEL_SERVO, 2, 0));
+    /* And no Hitec D receive: the IOmcu takes it at its next OPEN. */
+    for (int e = 0; hitec_panel_choice_label(e) != NULL; ++e) {
+        CHECK(strstr(hitec_panel_choice_label(e),
+                     ui_setting_label(SET_HITEC_RX)) == NULL);
+    }
     pick(TR(KP_DISCARD));
     CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 4, 1),
                  "WRITE 0 VALUES");
@@ -447,6 +452,14 @@ TEST_CASE(the_overlay_hands_the_record_to_the_card_and_says_each_phase)
     tap(val(HITEC_PANEL_SERVO, 4, 1));
     CHECK(page_has(TR(HP_WRITE_RECORD)));
     hold(2.1f);
+    /* The second read first, said as such, with ABORT on the PORT row. */
+    CHECK_EQ(pstate(), HITEC_PROG_READING);
+    CHECK(hitec_prog_rereading(model()));
+    show();
+    CHECK(strncmp(hitec_panel_note(0), "Second read before the write: ",
+                  30) == 0);
+    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0), TR(KP_ABORT));
+    reread();
     CHECK_EQ(pstate(), HITEC_PROG_RECORDING);
     CHECK(note_has(TR(HP_ST_RECORD)));
     len = hitec_panel_file_take(text, sizeof(text));

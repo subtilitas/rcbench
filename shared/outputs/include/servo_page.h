@@ -164,6 +164,17 @@ void servo_page_ports(servo_page_t *p, uint16_t channels, uint16_t sliced);
 uint16_t servo_page_hz(const servo_page_t *p);
 
 /**
+ * @brief Put back a frame rate a refused change took: register 0 is @p hz,
+ *        unchecked, and nothing else changes.  For a binding the IOmcu undoes
+ *        after a change of target returned the rate to 0
+ *        (servo_page_target()); @p hz is what servo_page_hz() read before.
+ *
+ * @param p  The page state; NULL is ignored.
+ * @param hz The rate, Hz.
+ */
+void servo_page_restore_hz(servo_page_t *p, uint16_t hz);
+
+/**
  * @brief The rate the slots take, for outputs_slot_rates() and the OUTPUTS and
  *        CHAN_CFG checks: the register with the standard servo ports as target,
  *        0 with a programming port.

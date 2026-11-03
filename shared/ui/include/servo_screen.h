@@ -430,6 +430,12 @@ int servo_screen_run_settings(void);
 bool servo_screen_target_locked(void);
 
 /**
+ * @brief Whether an ARM was posted and not answered.
+ * @return true then
+ */
+bool servo_screen_arm_asked(void);
+
+/**
  * Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no
  * press: servo_screen_target_locked(), or the bench ARMED for the motor.
  */
@@ -448,6 +454,25 @@ void servo_screen_sweep_refused(void);
 
 /** Whether a sweep is running, for the application and tests. */
 bool servo_screen_sweeping(void);
+
+/**
+ * @brief Whether OUTPUT ON of the SET row is being held, from an output that
+ *        is off, or a question about the supply stands: the HV warning
+ *        before an ON (ASK_ON) or a set point, a test's HV steps, or the
+ *        restore of the operator's set points (servo_screen_asks_restore()).
+ *        An ON either sends lands at the set points it was opened on.
+ * @return true while the hold runs or the question stands
+ */
+bool servo_screen_output_held(void);
+
+/**
+ * @brief Whether SERVO asks to restore the operator's set points onto the
+ *        live output a programming port left on
+ *        (supply_screen_restore_offer()), as the question or, after YES to
+ *        a voltage above 6.0V, as the HV warning.
+ * @return true while it asks
+ */
+bool servo_screen_asks_restore(void);
 
 /** Whether a sweep is paused: PAUSE tapped, the hold in force, nothing
  *  else commanded since.  For tests. */

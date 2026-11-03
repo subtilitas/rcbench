@@ -363,9 +363,9 @@ TEST_CASE(an_empty_slot_and_a_slot_never_tried_read_as_no_card)
     CHECK_STR_EQ(storage_status(), "");
     CHECK_EQ(storage_init(), ESP_ERR_NOT_FOUND);
     CHECK_EQ(storage_card_state(), CARD_STATE_NONE);
-    /* No card: nothing to look at twice.  The slot is started before the
-     * mount and by it, and the mount's failure stops it once. */
-    CHECK_EQ(g_dev_adds, 2u);
+    /* No card: nothing to look at twice.  The mount starts the slot once,
+     * and its failure stops it once. */
+    CHECK_EQ(g_dev_adds, 1u);
     CHECK_EQ(g_dev_removes, 1u);
     CHECK(probe_left_nothing());
 }
@@ -388,9 +388,9 @@ TEST_CASE(a_card_with_no_fat_volume_is_said_so)
     CHECK(strstr(last_line()->text, "format it FAT32 or exFAT") != NULL);
     CHECK(strstr(last_line()->text, "FatFs 13") != NULL);
     CHECK(strstr(last_line()->text, "FAT32") != NULL);
-    /* The second look ran once, on a slot set up for it, and let go: 2
-     * starts and 1 stop for the mount, 1 of each for the look. */
-    CHECK_EQ(g_dev_adds, 3u);
+    /* The second look ran once, on a slot set up for it, and let go: 1
+     * start and 1 stop for the mount, 1 of each for the look. */
+    CHECK_EQ(g_dev_adds, 2u);
     CHECK_EQ(g_dev_removes, 2u);
     CHECK(g_slot_in_probe);
     CHECK(probe_left_nothing());
@@ -406,7 +406,7 @@ TEST_CASE(a_card_with_no_fat_volume_tried_again_says_it_each_time)
         CHECK_EQ(storage_init(), ESP_FAIL);
         CHECK_EQ(storage_card_state(), CARD_STATE_NO_FAT);
         CHECK_EQ(lines_at(ESP_LOG_WARN), k);
-        CHECK_EQ(g_dev_adds, 3u * k);
+        CHECK_EQ(g_dev_adds, 2u * k);
         CHECK(probe_left_nothing());
     }
     CHECK_EQ(g_pwr_news, 1u);
@@ -433,7 +433,7 @@ TEST_CASE(a_card_with_no_fat_volume_replaced_by_a_fat_one_mounts)
     CHECK_EQ(storage_card_state(), CARD_STATE_MOUNTED);
     CHECK_STR_EQ(storage_status(), "");
     CHECK_STR_EQ(name_now(), "UNITEST");
-    CHECK_EQ(g_dev_adds, 7u);       /* 3 with the look, then 2 per try */
+    CHECK_EQ(g_dev_adds, 4u);       /* 2 with the look, then 1 per try */
     CHECK_EQ(g_host_slots, 2);      /* slot 0 and the C6's slot 1 */
     CHECK_EQ(g_pwr_news, 1u);
     /* Unmounted: nothing known of the slot. */
@@ -462,7 +462,7 @@ TEST_CASE(a_card_that_does_not_start_is_unreadable_without_a_second_look)
     CHECK_EQ(storage_init(), ESP_ERR_INVALID_CRC);
     CHECK_EQ(storage_card_state(), CARD_STATE_UNREADABLE);
     CHECK_STR_EQ(storage_status(), "ESP_ERR_INVALID_CRC");
-    CHECK_EQ(g_dev_adds, 2u);       /* the mount's, and none for a look */
+    CHECK_EQ(g_dev_adds, 1u);       /* the mount's, and none for a look */
     CHECK_EQ(lines_at(ESP_LOG_WARN), 1u);
     CHECK_EQ(lines_at(ESP_LOG_ERROR), 0u);
     CHECK(probe_left_nothing());
@@ -475,15 +475,15 @@ TEST_CASE(a_second_look_that_cannot_ask_fatfs_leaves_it_unreadable)
     g_card = true;
     g_card_fs = FR_NO_FILESYSTEM;
     g_dev_fail = ESP_ERR_NO_MEM;
-    g_dev_fail_after = 2u;      /* storage.c's start and the mount's work */
+    g_dev_fail_after = 1u;      /* the mount's start works */
     CHECK_EQ(storage_init(), ESP_FAIL);
     CHECK_EQ(storage_card_state(), CARD_STATE_UNREADABLE);
     CHECK_STR_EQ(storage_status(), "ESP_FAIL");
     CHECK(strstr(last_line()->text, "card check: ESP_ERR_NO_MEM") != NULL);
     CHECK(probe_left_nothing());
-    /* A slot that did not come up is not let go: the host is shared.  The
-     * one stop is the mount's. */
-    CHECK_EQ(g_dev_adds, 3u);
+    /* A slot that did not come up is not let go.  The one stop is the
+     * mount's. */
+    CHECK_EQ(g_dev_adds, 2u);
     CHECK_EQ(g_dev_removes, 1u);
 
     /* The card pulled between the mount and the look. */
@@ -529,7 +529,23 @@ TEST_CASE(the_second_look_decides_what_the_card_is)
     CHECK_EQ(storage_card_state(), CARD_STATE_NO_FAT);
 }
 
-TEST_CASE(a_slot_that_does_not_start_is_not_mounted_and_not_let_go)
+TEST_CASE(a_mount_starts_slot_0_once_on_the_host_the_c6_holds)
+{
+    /* A slot 0 started before the mount would make the mount's own start
+     * answer ESP_ERR_INVALID_STATE, and no card would ever mount. */
+    slot_empty();
+    g_card = true;
+    CHECK_EQ(storage_init(), ESP_OK);
+    CHECK(storage_mounted());
+    CHECK_EQ(g_dev_adds, 1u);
+    CHECK_EQ(g_dev_removes, 0u);
+    CHECK_EQ(g_host_slots, 2);      /* slot 0 and the C6's slot 1 */
+    storage_deinit();
+    CHECK_EQ(g_host_slots, 1);
+    CHECK_EQ(g_host_stops, 0u);
+}
+
+TEST_CASE(a_slot_that_does_not_start_leaves_the_c6_link_up)
 {
     slot_empty();
     g_card = true;
@@ -539,12 +555,14 @@ TEST_CASE(a_slot_that_does_not_start_is_not_mounted_and_not_let_go)
     CHECK_EQ(storage_card_state(), CARD_STATE_UNREADABLE);
     CHECK_STR_EQ(storage_status(), "ESP_ERR_INVALID_STATE");
     CHECK_EQ(lines_at(ESP_LOG_WARN), 1u);
-    CHECK(strstr(last_line()->text, "SD slot did not start") != NULL);
-    /* ESP-IDF's mount is not asked: its stop of a slot that never started
-     * would count the C6's slot 1 down and stop the host. */
-    CHECK_EQ(g_mount_slot, -1);
+    CHECK(strstr(last_line()->text, "mount failed") != NULL);
+    CHECK_EQ(g_mount_slot, 0);
+    /* The mount's stop of a slot that never started has no handle to stop:
+     * the count stays at the C6's slot 1 and the controller stays up. */
     CHECK_EQ(g_dev_adds, 1u);
-    CHECK_EQ(g_dev_removes, 0u);
+    CHECK_EQ(g_dev_removes, 1u);
+    CHECK_EQ(g_host_slots, 1);
+    CHECK_EQ(g_host_stops, 0u);
     CHECK(probe_left_nothing());
     /* The next try starts it and mounts. */
     CHECK_EQ(storage_init(), ESP_OK);
@@ -553,22 +571,6 @@ TEST_CASE(a_slot_that_does_not_start_is_not_mounted_and_not_let_go)
     storage_deinit();
     CHECK_EQ(g_host_slots, 1);
     CHECK_EQ(g_host_stops, 0u);
-}
-
-TEST_CASE(a_mount_whose_own_slot_start_fails_leaves_the_host_up)
-{
-    slot_empty();
-    g_card = true;
-    g_dev_fail = ESP_ERR_INVALID_STATE;
-    g_dev_fail_after = 1u;                  /* storage.c's start works */
-    CHECK_EQ(storage_init(), ESP_ERR_INVALID_STATE);
-    CHECK_EQ(storage_card_state(), CARD_STATE_UNREADABLE);
-    CHECK_EQ(g_mount_slot, 0);
-    /* The mount stops slot 0, which storage.c started: the count goes from
-     * 2 to 1 and the C6's slot 1 runs on. */
-    CHECK_EQ(g_dev_adds, 2u);
-    CHECK_EQ(g_dev_removes, 1u);
-    CHECK(probe_left_nothing());
 }
 
 TEST_CASE(a_supply_fault_is_unreadable_and_said)
@@ -629,8 +631,8 @@ int main(void)
     RUN(a_card_that_does_not_start_is_unreadable_without_a_second_look);
     RUN(a_second_look_that_cannot_ask_fatfs_leaves_it_unreadable);
     RUN(the_second_look_decides_what_the_card_is);
-    RUN(a_slot_that_does_not_start_is_not_mounted_and_not_let_go);
-    RUN(a_mount_whose_own_slot_start_fails_leaves_the_host_up);
+    RUN(a_mount_starts_slot_0_once_on_the_host_the_c6_holds);
+    RUN(a_slot_that_does_not_start_leaves_the_c6_link_up);
     RUN(a_supply_fault_is_unreadable_and_said);
     RUN(the_status_stays_inside_its_field);
     RUN(an_exfat_card_mounts_and_its_line_names_the_format);

@@ -90,6 +90,32 @@ bool link_write_acked(link_host_t *h, const link_port_t *port, uint8_t page,
                       link_msg_t *reply);
 
 /**
+ * @brief Read @p count registers as one state, in reads of at most
+ *        LINK_READ_REGS_MAX registers.
+ *
+ * Up to LINK_READ_REGS_MAX registers are one exchange, as link_read_window().
+ * So is a wider read when `h->held_reads` is false: an IOmcu older than 4.35
+ * keeps nothing for a second part.  Otherwise a wider read is two exchanges:
+ * the first LINK_READ_REGS_MAX registers, then a LINK_OP_READ_HELD for the
+ * rest.  The IOmcu read both parts in one call at the first exchange, so the
+ * two are one state of the page whatever changed between the exchanges.  A
+ * refusal of the second part (nothing kept for it) falls back to one wide
+ * read, which is consistent as well.
+ *
+ * `between` runs between the two exchanges, as for a write.
+ *
+ * @param h The host state.
+ * @param port The transport and clock.
+ * @param page Page number to read.
+ * @param offset First register within the page.
+ * @param count Number of registers, 1 to LINK_MAX_REGS.
+ * @param reply Receives the data or the refusal of the first part.
+ * @return true when every exchange was answered, else false.
+ */
+bool link_read_split(link_host_t *h, const link_port_t *port, uint8_t page,
+                     uint8_t offset, uint8_t count, link_msg_t *reply);
+
+/**
  * @brief Read @p count registers of @p page from @p offset in one exchange.
  *
  * True when it was answered; @p reply is the data or the refusal.

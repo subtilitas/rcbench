@@ -6,7 +6,7 @@ order: 53
 
 # Files
 
-FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten. Er kopiert, verschiebt, benennt um und löscht Dateien, legt Ordner und leere Textdateien an und zeigt eine Datei als Text. Er öffnet über DATEIEN unten auf [LOGS](logs.md) und über die Kachel FILES auf [SETUP](setup.md). Das Home-Tag schließt zuerst eine Box oder die Tastatur und führt dann zu dem Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
+FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten. Er kopiert, verschiebt, benennt um und löscht Dateien, legt Ordner und leere Textdateien an zeigt eine Datei als Text und bearbeitet sie. Er ist ein Tab des Streifens der Kachel [LOGS](logs.md). Das Home-Tag schließt zuerst eine Box oder die Tastatur und führt dann zu dem Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
 
 ## Die zwei Spalten
 
@@ -22,7 +22,7 @@ Jede Zeile zeigt den Namen, die Größe (`512B`, `14kB`, `7.0MB`; 1kB sind 1.024
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein Ordner, den der Prüfstand führt, etwa `BENCH`, `USER` und die Log-Ordner: kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN |
+| FEST | ein Ordner, den der Prüfstand führt, etwa `BENCH`, `USER` und die Log-Ordner: kein UMBENENNEN oder VERSCHIEBEN; LÖSCHEN nur leer, und der Prüfstand legt ihn beim nächsten Schreiben dort wieder an |
 | GESPERRT | der Vermerk der Servoprogrammierung, `BENCH/KST/CONF/KST.TXT`: nur INFO |
 | WIRD GESCHRIEBEN | eine Datei, die der Logger offen hat: nur INFO |
 
@@ -68,6 +68,26 @@ Der Betrachter zeigt eine Datei als Text, nur lesend. Das Home-Tag schließt ihn
 
 ![Derselbe Bericht mit KLEIN](view:files-view-small)
 ![Eine Servodatei des KST-Programmierers](view:files-view-kst)
+
+## Der Texteditor
+
+![Eine Zeile in einen Bericht getippt](view:files-edit)
+
+BEARBEITEN im Textbetrachter öffnet den Editor und seine Tastatur. Der Text ändert sich im Speicher des Panels; SPEICHERN schreibt ihn auf die Karte.
+
+- Über der Tastatur stehen 8 Zeilen des Texts, 10 mit KLEIN. Die Tastatur hat keine Ziffernreihe: `ABC` gibt Großbuchstaben, `123` die Ziffern und die häufigen Zeichen, `#+=` auf dieser Seite die übrigen Zeichen; `abc` führt zurück. DEL nimmt das Zeichen vor dem Cursor. ENTER beginnt eine neue Zeile mit dem Zeilenende der Datei. `<-` und `->` bewegen den Cursor; ein Tipp auf den Text setzt ihn dorthin. FERTIG schließt die Tastatur, TASTATUR öffnet sie wieder.
+- Die Kopfzeile zeigt GEÄNDERT, sobald der Text von der Karte abweicht, und die Zeile des Cursors.
+- SPEICHERN schreibt den Text als `<Name>.NEW`, löscht die alte Datei und gibt der neuen ihren Namen. SPEICHERN ist gesperrt, solange der Prüfstand ARMED ist oder ein Lauf aufgezeichnet wird; der Text bleibt. Ein Wechsel auf ARMED während des Speicherns hält es an, und die alte Datei bleibt.
+- Eine KST-Datei des Servo-Programmierers verliert ihre Prüfsummenzeile, wenn sie geändert gespeichert wird, in jeder Form, die der Programmierer als eine liest (`checksum`, `CHECKSUM=`, `Checksum:`): der Programmierer liest sie dann als Datei, die ein Mensch bearbeitet hat.
+- SPEICHERN lehnt einen Text mit einem NUL-Byte in den ersten 4kB ab, da FILES die Datei sonst nicht wieder öffnet: `Nicht gespeichert: ein NUL-Byte in den ersten 4kB. FILES öffnet die Datei nicht wieder.`
+- Ein ESC-Profil in `BENCH/ESC/CONF` liest das Panel beim nächsten Start.
+- SPEICHERN schreibt nur über die Datei, wie der Editor sie geöffnet hat. Eine Datei, die sich seitdem auf der Karte geändert hat, durch den Editor der WLAN-Seite oder einen Upload, wird nicht geschrieben: Die Notiz sagt `<Name> wurde seit dem Lesen auf der Karte geändert.`, und die Frage bietet BLEIBEN, das den Text behält, NEU LESEN, das ihn verwirft und die Datei von der Karte liest, und ÜBERSCHREIBEN, 2s gehalten, das den Text über die Datei speichert, die das abgelehnte SPEICHERN fand. Eine weitere Änderung in dieser Zeit wird ebenso abgelehnt. Eine fehlende Datei lässt sich nicht überschreiben: ÜBERSCHREIBEN ist gedimmt.
+- VERWERFEN setzt den Text auf die Datei auf der Karte zurück. Es fragt zuerst, wie das Home-Tag bei ungespeichertem Text: BLEIBEN behält den Text, VERWERFEN lässt die Änderungen fallen.
+- Der Text hält bis zu 1MiB und 65.536 Zeilenenden. Die Tastatur tippt ASCII; einzelne Tasten lassen sich nicht rückgängig machen.
+- SETUP → PANEL → Tastatur durchsichtig auf 25% oder 50% lässt den übrigen Text durch die Tastatur scheinen; der Cursor bleibt auf den 8 Zeilen darüber.
+
+![Eine KST-Datei mit einem Kommentar gespeichert](view:files-edit-kst)
+![Die Frage vor ungespeicherten Änderungen](view:files-edit-unsaved)
 
 ## ARMED und Aufzeichnung
 

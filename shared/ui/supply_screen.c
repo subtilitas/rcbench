@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <stdatomic.h>
+
 #include "supply_screen.h"
 
 #include <math.h>
@@ -40,6 +42,9 @@ const ui_plot_series_t sup_series[S_COUNT] = {
 
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
                                               TX_MO_TAB_TABLE };
+/** @brief SETTINGS' page tabs. */
+static const ui_text_id_t k_ov_labels[SUP_OV_COUNT] = { TX_SUP_TAB_LIMITS,
+                                                         TX_SUP_TAB_PDMINI };
 /* The screen's state; supply_screen_int.h names it s. */
 sup_state_t sup_s;
 
@@ -55,6 +60,7 @@ static void forget_drawn(void)
         s.drawn_ov[b]    = UINT32_MAX;
         s.drawn_kp[b]    = UINT32_MAX;
         s.drawn_strip[b] = UINT32_MAX;
+        s.drawn_p5[b]    = UINT32_MAX;
         s.drawn_title[b] = 0xFFu;
         s.drawn_save[b]  = 0xFFu;
     }
@@ -168,6 +174,17 @@ bool sup_on_live(void)
     return ui_wb_strip_task(&s.wb) == UI_WB_LIVE;
 }
 
+bool sup_on_pdmini(void)
+{
+    return !sup_on_live() && s.ov_tabs.selected == SUP_OV_PDMINI;
+}
+
+bool sup_p5_shown(void)
+{
+    return sup_on_live() && !s.kp.open && !s.confirm_open
+           && prog5v_box_shown();
+}
+
 gfx_rect_t sup_overlay_area(void)
 {
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
@@ -277,6 +294,8 @@ static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     forget_drawn();
+    prog5v_box_init(&s.p5, (gfx_rect_t){ P5_X, P5_Y, P5_W, PROG5V_BOX_H },
+                    PROG5V_BY_SUPPLY);
     const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
     s.caps = caps;
     /* Nothing limited and no trip until the settings are read, which is
@@ -308,6 +327,10 @@ static void reset(void)
                                   ASK_BTN_W, ASK_BTN_H };
     s.discard_btn = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 40 - ASK_BTN_W),
                                   ASK_BTN_Y, ASK_BTN_W, ASK_BTN_H };
+    ui_tabs_init_text(&s.ov_tabs, k_ov_labels, SUP_OV_COUNT,
+                      (gfx_rect_t){ (int16_t)(OV_X + INNER),
+                                    (int16_t)(OV_Y + OV_TAB_DY),
+                                    (int16_t)(OV_W - 2 * INNER), OV_TAB_H });
     s.pressed = P_NONE;
     s.kp.pressed = -1;
     sup_bind_colours();
@@ -344,8 +367,12 @@ void sup_post_off(void)
 {
     s.pending.off = true;
     s.pending.on  = false;
+    ++s.off_asks;
     s.on_asked    = false;
     s.off_owed    = false;
+    /* Nor is it the live output a port left: no set points are offered
+     * back onto it (supply_screen_restore_offer()). */
+    s.offer       = false;
     /* The OFF is asked: an output still reported on is nobody's to switch
      * off again on a leave. */
     s.owner       = SUPPLY_BY_NONE;
@@ -476,6 +503,20 @@ void supply_screen_set_pins(int tx, int rx)
     }
 }
 
+/** @brief The ports' own supply as the control task last published it:
+ *         state << 8 | pin. */
+static atomic_uint s_prog_5v;
+
+void supply_screen_set_prog_5v(uint8_t state, uint8_t pin)
+{
+    atomic_store(&s_prog_5v, ((unsigned)state << 8) | pin);
+}
+
+uint32_t sup_prog_5v(void)
+{
+    return (uint32_t)atomic_load(&s_prog_5v);
+}
+
 void supply_screen_set_model(bool model)
 {
     if (s.model != model) {
@@ -595,6 +636,37 @@ const ui_keypad_t *supply_screen_keypad(void) { return &s.kp; }
 bool supply_screen_typed_asks(void) { return sup_confirm_needed(FROM_KEYPAD); }
 
 /**
+ * @brief The operator's set points as the caps take them now.
+ * @param v takes the voltage, V
+ * @param i takes the current limit, A
+ */
+static void own_snapped(float *v, float *i)
+{
+    *v = supply_snap(s.own_v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
+    *i = supply_snap(s.own_i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+}
+
+/**
+ * @brief Whether the operator's set points can be offered back now: the
+ *        port's stand unchanged on an output reported on, no port holds
+ *        the supply, no OFF is on its way or owed, and the operator's
+ *        differ from the port's.
+ * @return true when they can
+ */
+static bool offer_fits(void)
+{
+    float v;
+    float i;
+
+    if (!s.lent || s.port_held || !s.on || s.pending.off || s.off_owed
+        || s.cv != s.lent_v || s.ci != s.lent_i) {
+        return false;
+    }
+    own_snapped(&v, &i);
+    return v != s.cv || i != s.ci;
+}
+
+/**
  * @brief The supply's lock as the two programmers' words make it: held while
  *        either holds a port.
  * @param held whether a programming port holds the supply
@@ -634,6 +706,7 @@ static void port_held_apply(bool held)
             s.kp_target = KP_NONE;
         }
         s.confirm_open = false;
+        s.offer = false;
         ui_slider_set(&s.v_slider, s.cv);
         ui_slider_set(&s.i_slider, s.ci);
         sup_owner_settle();
@@ -644,34 +717,152 @@ static void port_held_apply(bool held)
     }
     /* Let go, the set points come under the caps again. */
     apply_caps();
+    /* And a LEAVE that let go of an output it left on, at the port's set
+     * points: the operator's are offered back onto it, once.  Any other
+     * end of the hold offers nothing. */
+    if (!held) {
+        s.offer       = s.leave_end && offer_fits();
+        s.leave_end   = false;
+        s.offer_stops = s.stops;
+        s.offer_offs  = s.off_count;
+    }
     ++s.set_rev;
     ++s.out_rev;
     ++s.ctrl_rev;
     supply_invalidate();
 }
 
+/**
+ * @brief The hold as the programmers' words, the SUPPLY page's and the board
+ *        make it.  The programmers' two count on a board whose ports run from the
+ *        PD mini.  The page's counts on every board: on the carrier the IOmcu sets it
+ *        for an ESC session only, and that session holds the PD mini there too.
+ * @return true while a port holds this screen.
+ */
+static bool port_held_now(void)
+{
+    return s.held_page || (!s.ports_own && (s.held_kst || s.held_hitec));
+}
+
+/**
+ * @brief One programmer's word on the hold.  A word that lets go says
+ *        whether its LEAVE ended it (sup_state_t::leave_end).
+ * @param held the programmer's word as this screen has it
+ * @param left whether its LEAVE ended since the word last changed
+ * @param now the word now
+ */
+static void port_word(bool *held, bool *left, bool now)
+{
+    if (*held && !now) {
+        s.leave_end = *left;
+    }
+    /* A LEAVE counts for the end of the hold it ends: a hold that begins
+     * or ends drops it either way. */
+    if (*held != now) {
+        *left = false;
+    }
+    *held = now;
+}
+
 void supply_screen_set_port_held(bool held)
 {
-    s.held_kst = held;
-    port_held_apply(s.held_kst || s.held_hitec);
+    port_word(&s.held_kst, &s.left_kst, held);
+    port_held_apply(port_held_now());
 }
 
 void supply_screen_set_hitec_held(bool held)
 {
-    s.held_hitec = held;
-    port_held_apply(s.held_kst || s.held_hitec);
+    port_word(&s.held_hitec, &s.left_hitec, held);
+    port_held_apply(port_held_now());
+}
+
+void supply_screen_set_page_held(bool held)
+{
+    /* No programmer's word: its end, which may come after the
+     * programmer's, keeps what the programmer's end said. */
+    s.held_page = held;
+    port_held_apply(port_held_now());
+}
+
+void supply_screen_set_ports_own(bool own)
+{
+    /* The ports on their own supply let go of this screen with the words
+     * still held: no LEAVE ends that. */
+    if (own != s.ports_own) {
+        s.leave_end = false;
+    }
+    s.ports_own = own;
+    port_held_apply(port_held_now());
+}
+
+void supply_screen_kst_leave_done(void)
+{
+    s.left_kst = true;
+}
+
+void supply_screen_hitec_leave_done(void)
+{
+    s.left_hitec = true;
 }
 
 bool supply_screen_port_held(void) { return s.port_held; }
 
 void supply_screen_adopt(float v, float i)
 {
+    /* The operator's: the set points before the first port's, or after a
+     * change made since the last port's were taken. */
+    if (!s.lent || s.cv != s.lent_v || s.ci != s.lent_i) {
+        s.own_v = s.cv;
+        s.own_i = s.ci;
+        s.lent  = true;
+    }
     s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
     s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    s.lent_v = s.cv;
+    s.lent_i = s.ci;
     ui_slider_set(&s.v_slider, s.cv);
     ui_slider_set(&s.i_slider, s.ci);
     ++s.set_rev;
 }
+
+void supply_screen_port_done(bool free_off)
+{
+    /* Not under OUTPUT ON's hold either: an ON lands at the set points the
+     * hold began on. */
+    if (!s.lent || !free_off || s.port_held || s.on || s.on_asked
+        || supply_screen_output_held()) {
+        return;
+    }
+    s.lent = false;
+    s.offer = false;
+    /* Changed since the port's were taken: the change stands. */
+    if (s.cv != s.lent_v || s.ci != s.lent_i) {
+        return;
+    }
+    own_snapped(&s.cv, &s.ci);
+    ui_slider_set(&s.v_slider, s.cv);
+    ui_slider_set(&s.i_slider, s.ci);
+    ++s.set_rev;
+}
+
+bool supply_screen_restore_offer(float *v, float *i)
+{
+    /* Only for the run the port left on: an OFF or a stop since ends it,
+     * and so does a change of a set point. */
+    if (s.offer && (s.stops != s.offer_stops || s.off_count != s.offer_offs
+                    || !offer_fits())) {
+        s.offer = false;
+    }
+    if (!s.offer) {
+        return false;
+    }
+    if (v != NULL && i != NULL) {
+        own_snapped(v, i);
+    }
+    return true;
+}
+
+void supply_screen_restore_taken(void) { s.offer = false; }
 
 void supply_screen_put(float v, float i)
 {
@@ -692,6 +883,8 @@ bool supply_screen_output_on(void) { return s.on; }
 bool supply_screen_output_live(void) { return s.on || s.on_asked; }
 
 uint32_t supply_screen_off_count(void) { return s.off_count; }
+
+uint32_t supply_screen_off_asks(void) { return s.off_asks; }
 
 void supply_screen_ask_on(supply_by_t by) { sup_post_on(by); }
 
@@ -777,6 +970,14 @@ void supply_screen_cancel_on(void)
     if (s.hold.down || s.hold.held_s > 0.0f) {
         changed = true;
     }
+    /* PROG 5V ON's hold: the stop cuts the ports' 5V as well. */
+    if (s.pressed == P_PROG5V || s.p5.hold.held_s > 0.0f) {
+        prog5v_box_cancel(&s.p5);
+        if (s.pressed == P_PROG5V) {
+            sup_let_go();
+        }
+        changed = true;
+    }
     if (changed) {
         ui_hold_reset(&s.hold);
         ++s.out_rev;
@@ -797,6 +998,9 @@ void supply_screen_cancel_on(void)
 static void leave(void)
 {
     supply_screen_left(SUPPLY_BY_SUPPLY);
+    /* And the ports' 5V switched on here; a hold on PROG 5V ON drops. */
+    prog5v_box_cancel(&s.p5);
+    prog5v_box_left(PROG5V_BY_SUPPLY);
     /* A press on OUTPUT OFF when the screen is left -- a second finger on
      * HOME, which the band handles without asking this screen -- is the OFF
      * the operator was making, and it is sent, as cancel() sends one. */
@@ -807,6 +1011,7 @@ static void leave(void)
     ui_slider_release(&s.i_slider);
     ui_hold_reset(&s.hold);
     ui_tabs_cancel(&s.tabs);
+    ui_tabs_cancel(&s.ov_tabs);
     ui_wb_strip_cancel(&s.wb);
     ++s.strip_rev;
     ui_keypad_close(&s.kp);
@@ -866,7 +1071,14 @@ static bool back(void)
     return true;
 }
 
+/**
+ * @brief ui_screen_t's covered: the question or a keypad.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.confirm_open || s.kp.open; }
+
 static const ui_screen_t k_screen = {
+    .covered = covered,
     .title  = "SUPPLY",
     .reset  = reset,
     .enter  = enter,

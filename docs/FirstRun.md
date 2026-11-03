@@ -68,17 +68,23 @@ not read ([below](#the-sd-card-of-0210-and-older)).
 | Asset | Holds | For |
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | the IOmcu's USB load: `rcbench-iomcu-install.uf2` |
+| `rcbench-iomcu-rbmod-vX.Y.Z.zip` | the same five files, named `rcbench-iomcu-rbmod-*` | the IOmcu on the rbmod carrier ([Link: Boards with soldered pins](Link.md#boards-with-soldered-pins)): `rcbench-iomcu-rbmod-install.uf2` |
 | `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf`, `NOTICE`, `LICENSE` | the panel's USB flash |
-| `rcbench-panel-p4-vX.Y.Z.bin` | the panel's application alone, with the IOmcu image it offers over CAN | an update over Wi-Fi; not for USB |
-| `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the three files above | the check in step 1 |
+| `rcbench-panel-p4-vX.Y.Z.bin` | the panel's application alone, with the two IOmcu images it offers over CAN | an update over Wi-Fi; not for USB |
+| `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the four files above | the check in step 1 |
 
 Tools: the RP2350's `RP2350` drive or `picotool` for the IOmcu,
-`esptool.py` for the panel (`pip install esptool`; ESP-IDF carries it).
+`esptool.py` for the panel (`pip install esptool`; ESP-IDF v6.1 carries
+esptool 5.6.0). The `flash_args` file spells its options as esptool 5 does
+(`--flash-mode`); esptool 4.x, which ESP-IDF v5.5 carries, rejects that
+spelling, so `@flash_args` needs esptool 5 or later.
 `/dev/ttyACM0` below is `COMx` on Windows.
 
 1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
-   of the three files.
-2. **IOmcu.** Unpack `rcbench-iomcu-vX.Y.Z.zip`. Hold BOOTSEL while
+   of the four files.
+2. **IOmcu.** Unpack `rcbench-iomcu-vX.Y.Z.zip`, or on the rbmod carrier
+   `rcbench-iomcu-rbmod-vX.Y.Z.zip` and its `rcbench-iomcu-rbmod-*` files in
+   place of the names below. Hold BOOTSEL while
    the IOmcu's USB socket is connected, so the module shows its drive
    `RP2350`. Copy `rcbench-iomcu-install.uf2` onto the drive, or:
 
@@ -283,7 +289,8 @@ The panel installs later releases over Wi-Fi from the release asset
 ## 2. The link, before anything else
 
 The panel runs the CAN echo self-test itself, at every start-up, for 1200ms
-inside the splash. It answers one question: do frames cross the bus intact? It
+inside the splash. It starts at the IOmcu's first answer, after up to 5000ms
+of waiting. It answers one question: do frames cross the bus intact? It
 uses no page protocol, so if it passes and the link still does not work, the
 fault is above the wire.
 
@@ -302,6 +309,7 @@ USB-Serial-JTAG (the ESP32-P4's built-in USB serial and debug bridge) as
 the secondary console; which of the board's two USB-C sockets reaches which
 is not traced:
 
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0
 
@@ -378,7 +386,7 @@ when all three match:
 An IOmcu flashed with another drawing reports another hash, and the
 panel fetches the drawing again. An IOmcu on protocol 4.19 or older
 serves no drawing; the panel logs `hardware 1 serves no board drawing
-(protocol 4.19); PICK A PIN draws its shape` and draws the board from its
+(protocol 4.19); OUTPUTS draws its shape` and draws the board from its
 outline.
 
 ---
@@ -423,7 +431,7 @@ first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
 the screen goes on looking configured while the lead produces no pulse.
 
 On the panel: **Setup → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
-**Setup → PICK A PIN**, choose `SERVO PWM` in its list and tap one key on the
+**Setup → OUTPUTS**, choose `SERVO PWM` in its list and tap one key on the
 board drawing — grounds are marked `G`, rails carry their voltage.
 
 **Scope the pin before connecting the servo.**
@@ -484,7 +492,7 @@ are open and the address floats between 0x40 and 0x41), two
 a servo, and the ESC and motor or a resistive load on a current-limited
 supply.
 
-**Set it up on the panel.** SETUP → INTERFACES: `INA228` ON; SETUP →
+**Set it up on the panel.** SETUP → SENSORS: `INA228` ON; SETUP →
 SENSORS: `0x40 fitted` ON. The other sensor settings default to the modules
 above: INA228 at 0x45 with 200 µΩ, the INA3221 at 0x40 with 0.1Ω on each
 channel and CH1 watching OUT 1, SDA on GPIO 16 and SCL on GPIO 17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
@@ -874,7 +882,7 @@ answer whether an arrival is the horn's.
 
 **Part B: with the AS5600.** The same moves with the encoder on the shaft.
 
-1. SETUP → INTERFACES: `AS5600` ON, with the bank SAFE. On the SERVO
+1. SETUP → SENSORS: `AS5600` ON, with the bank SAFE. On the SERVO
    screen's SETTINGS > DUT, with the servo at its neutral, tap ENC CENTRE.
 2. Repeat part A's steps 5 to 7.
 3. Keep each log together with its test's `ATESTnnn.CSV` from the SD card's

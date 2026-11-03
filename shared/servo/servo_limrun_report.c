@@ -499,6 +499,19 @@ servo_str_t servo_limrun_verdict_str(servo_limrun_verdict_t v)
     }
 }
 
+bool servo_limrun_why_error(servo_limrun_why_t why,
+                            servo_test_abort_t test_why)
+{
+    switch (why) {
+    case SERVO_LIMRUN_WHY_TEST:       return servo_test_abort_error(test_why);
+    case SERVO_LIMRUN_WHY_HARD:
+    case SERVO_LIMRUN_WHY_CLIPPED:
+    case SERVO_LIMRUN_WHY_STALL:
+    case SERVO_LIMRUN_WHY_NO_VOLTAGE: return true;
+    default:                          return false;
+    }
+}
+
 servo_str_t servo_limrun_why_str(const servo_limrun_t *r)
 {
     if (r == NULL) {

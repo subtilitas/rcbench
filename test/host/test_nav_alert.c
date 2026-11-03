@@ -173,7 +173,7 @@ TEST_CASE(a_slot_alert_taken_back_before_a_frame_never_shows)
     ui_alert_slot_t slot = {0};
     ui_alert_band_t band = {0};
     const uint32_t n = ui_alert_slot_post(&slot,
-        "PD mini pins rejected. Check SETUP > INTERFACES.");
+        "PD mini pins rejected. Check SUPPLY, tab PD MINI.");
     ui_alert_slot_withdraw(&slot, n);
     CHECK(!slot.pending);
     CHECK(!slot_frame(&slot, &band));
@@ -245,7 +245,7 @@ TEST_CASE(an_alert_is_withdrawn_only_while_it_still_shows)
     to_overview();
     CHECK_EQ(ui_router_alert_number(), 0u);
     CHECK(!ui_router_withdraw_alert(0u));
-    ui_router_set_alert("PD mini pins rejected. Check SETUP > INTERFACES.");
+    ui_router_set_alert("PD mini pins rejected. Check SUPPLY, tab PD MINI.");
     const uint32_t first = ui_router_alert_number();
     CHECK(first != 0u);
     CHECK(ui_router_withdraw_alert(first));
@@ -254,7 +254,7 @@ TEST_CASE(an_alert_is_withdrawn_only_while_it_still_shows)
     CHECK(!ui_router_withdraw_alert(first));        /* once */
 
     /* The same text set again is a new alert with a new number. */
-    ui_router_set_alert("PD mini pins rejected. Check SETUP > INTERFACES.");
+    ui_router_set_alert("PD mini pins rejected. Check SUPPLY, tab PD MINI.");
     const uint32_t second = ui_router_alert_number();
     CHECK(second != first);
     CHECK(!ui_router_withdraw_alert(first));

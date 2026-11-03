@@ -121,6 +121,33 @@ class _Step:
         return self.add(f"AXIS2_PLACEMENT_3D('',{self.point(p)},"
                         f"{self.direction(axis)},{self.direction(ref)})")
 
+    def vertex(self, p):
+        return self.add(f"VERTEX_POINT('',{self.point(p)})")
+
+    def edge(self, a, b, pa, pb):
+        d = [pb[k] - pa[k] for k in range(3)]
+        m = math.sqrt(sum(c * c for c in d))
+        vec = self.add(f"VECTOR('',{self.direction([c / m for c in d])},"
+                       f"{_r(m)})")
+        line = self.add(f"LINE('',{self.point(pa)},{vec})")
+        return self.add(f"EDGE_CURVE('',{a},{b},{line},.T.)")
+
+    def oriented(self, e, fwd):
+        sense = ".T." if fwd else ".F."
+        return self.add(f"ORIENTED_EDGE('',*,*,{e},{sense})")
+
+    def face(self, bounds, origin, normal, ref):
+        """A planar ADVANCED_FACE; ``bounds`` are oriented-edge lists."""
+        refs = []
+        for k, oes in enumerate(bounds):
+            loop = self.add("EDGE_LOOP('',(" + ",".join(oes) + "))")
+            kind = "FACE_OUTER_BOUND" if k == 0 else "FACE_BOUND"
+            refs.append(self.add(f"{kind}('',{loop},.T.)"))
+        plane = self.add("PLANE('',{})".format(
+            self.placement(origin, normal, ref)))
+        return self.add("ADVANCED_FACE('',(" + ",".join(refs)
+                        + f"),{plane},.T.)")
+
 
 def _area(pts):
     return sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
@@ -235,6 +262,53 @@ def _prism(st, outer, holes, z0, z1):
             (*rings[0][0], z), axis, (1.0, 0.0, 0.0))))
         faces.insert(0, st.add("ADVANCED_FACE('',(" + ",".join(bounds)
                                + f"),{plane},.T.)"))
+    shell = st.add("CLOSED_SHELL('',(" + ",".join(faces) + "))")
+    return st.add(f"MANIFOLD_SOLID_BREP('',{shell})")
+
+
+def _unit(v):
+    m = math.sqrt(sum(c * c for c in v))
+    return [c / m for c in v]
+
+
+def _cross(a, b):
+    return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0]]
+
+
+def _revolve(st, profile, n):
+    """A profile turned about z as a closed shell of planar faces.
+
+    Ring k of the profile is an n-gon at height z_k. Between two rings
+    each side face joins two parallel chords, so it is a planar
+    trapezoid. The first and last rings are closed by flat caps.
+    """
+    rings = [[(r * math.cos(2 * math.pi * j / n),
+               r * math.sin(2 * math.pi * j / n), z) for j in range(n)]
+             for r, z in profile]
+    v = [[st.vertex(p) for p in ring] for ring in rings]
+    m = len(rings)
+    er = [[st.edge(v[k][j], v[k][(j + 1) % n], rings[k][j],
+                   rings[k][(j + 1) % n]) for j in range(n)]
+          for k in range(m)]
+    em = [[st.edge(v[k][j], v[k + 1][j], rings[k][j], rings[k + 1][j])
+           for j in range(n)] for k in range(m - 1)]
+    faces = [st.face([[st.oriented(e, False) for e in reversed(er[0])]],
+                     rings[0][0], (0.0, 0.0, -1.0), (1.0, 0.0, 0.0)),
+             st.face([[st.oriented(e, True) for e in er[-1]]],
+                     rings[-1][0], (0.0, 0.0, 1.0), (1.0, 0.0, 0.0))]
+    for k in range(m - 1):
+        for j in range(n):
+            jj = (j + 1) % n
+            a, b = rings[k][j], rings[k][jj]
+            c = rings[k + 1][j]
+            t = _unit([b[i] - a[i] for i in range(3)])
+            u = [c[i] - a[i] for i in range(3)]
+            normal = _unit(_cross(t, u))
+            faces.append(st.face(
+                [[st.oriented(er[k][j], True), st.oriented(em[k][jj], True),
+                  st.oriented(er[k + 1][j], False),
+                  st.oriented(em[k][j], False)]], a, normal, t))
     shell = st.add("CLOSED_SHELL('',(" + ",".join(faces) + "))")
     return st.add(f"MANIFOLD_SOLID_BREP('',{shell})")
 
@@ -362,7 +436,27 @@ def step(fp, model):
     Returns:
         The file's text.
     """
-    name = fp["name"]
+    return write(fp["name"], [("prism",) + s for s in solids(fp, model)],
+                 "module model")
+
+
+def write(name, items, what="model"):
+    """The STEP text of one product made of several solids.
+
+    Args:
+        name: The product name.
+        items: Solids, each ("prism", outer, holes, z0, z1, rgb): a
+            polygon with polygon holes extruded from z0 to z1; or
+            ("revolve", profile, n, rgb): the (r, z) profile turned about
+            the z axis, the circle an n-gon. Points in mm.
+        what: Text after the name in FILE_DESCRIPTION.
+
+    Returns:
+        The file's text.
+
+    Raises:
+        ValueError: For an unknown solid kind.
+    """
     st = _Step()
     app = st.add("APPLICATION_CONTEXT('automotive design')")
     st.add("APPLICATION_PROTOCOL_DEFINITION('international standard',"
@@ -385,19 +479,26 @@ def step(fp, model):
                  f"GLOBAL_UNIT_ASSIGNED_CONTEXT(({mm},{rad},{sr})) "
                  "REPRESENTATION_CONTEXT('Context #1','3D Context with "
                  "UNIT and UNCERTAINTY') )")
-    items = [st.placement((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0))]
+    reps = [st.placement((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0))]
     styled = []
-    for outer, holes, z0, z1, rgb in solids(fp, model):
-        brep = _prism(st, outer, holes, z0, z1)
-        items.append(brep)
+    for item in items:
+        if item[0] == "prism":
+            _kind, outer, holes, z0, z1, rgb = item
+            brep = _prism(st, outer, holes, z0, z1)
+        elif item[0] == "revolve":
+            _kind, profile, n, rgb = item
+            brep = _revolve(st, profile, n)
+        else:
+            raise ValueError(f"unknown solid {item[0]}")
+        reps.append(brep)
         _style(st, brep, rgb, styled)
     rep = st.add(f"ADVANCED_BREP_SHAPE_REPRESENTATION({_q(name)},("
-                 + ",".join(items) + f"),{ctx})")
+                 + ",".join(reps) + f"),{ctx})")
     st.add(f"SHAPE_DEFINITION_REPRESENTATION({pds},{rep})")
     st.add("MECHANICAL_DESIGN_GEOMETRIC_PRESENTATION_REPRESENTATION('',("
            + ",".join(styled) + f"),{ctx})")
     head = ("ISO-10303-21;\nHEADER;\n"
-            f"FILE_DESCRIPTION(({_q(name + ' module model')}),'2;1');\n"
+            f"FILE_DESCRIPTION(({_q(name + ' ' + what)}),'2;1');\n"
             f"FILE_NAME({_q(name + '.step')},'2026-01-01T00:00:00',(''),"
             "(''),'rcbench step_gen.py','rcbench step_gen.py','');\n"
             "FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));\n"

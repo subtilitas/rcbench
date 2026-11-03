@@ -41,6 +41,7 @@ void supply_link_lost(supply_link_t *s)
     s->wired     = false;
     s->wire_wait = false;
     s->refused   = false;
+    s->wire_busy = false;
     s->commanded = false;
     s->pending   = SUPPLY_LINK_W_NONE;
     s->read_any  = false;
@@ -50,6 +51,8 @@ void supply_link_lost(supply_link_t *s)
     s->port_held  = false;
     s->judge      = false;
     s->adopted    = false;
+    s->off_owed   = false;
+    s->kept       = false;
     /* The caller sees the supply stop answering and switches its own ON
      * off with the operator told; this end only stops asking for it. */
     s->on = false;
@@ -113,6 +116,33 @@ void supply_link_command(supply_link_t *s, bool on, uint16_t mv, uint16_t ma)
             : (ma < PAGE_MIN_MA) ? (uint16_t)PAGE_MIN_MA : ma;
 }
 
+void supply_link_cut(supply_link_t *s)
+{
+    if (s != NULL) {
+        s->on       = false;
+        s->off_owed = true;
+    }
+}
+
+bool supply_link_keep(supply_link_t *s)
+{
+    if (s == NULL || !s->port_held || !s->read_any || !s->commanded
+        || s->off_owed) {
+        return false;
+    }
+    /* The page's command as the last read showed it, as a port's command
+     * is adopted: nothing is owed against it. */
+    s->page_on = s->regs[LINK_SP_OUTPUT] != 0u;
+    s->page_mv = s->regs[LINK_SP_SET_MV];
+    s->page_ma = s->regs[LINK_SP_SET_MA];
+    s->on      = s->page_on;
+    s->mv      = s->page_mv;
+    s->ma      = s->page_ma;
+    s->kept    = true;
+    s->adopted = true;
+    return true;
+}
+
 void supply_link_reset(supply_link_t *s)
 {
     if (s != NULL) {
@@ -128,9 +158,14 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
     }
     s->pending = SUPPLY_LINK_W_NONE;
 
+    /* Who holds the page first: a read shows a port's hold, and a panel that
+     * has just started writes no OFF of its own over it.  A cut goes anyway. */
+    if (!s->read_any && !s->off_owed) {
+        return SUPPLY_LINK_W_NONE;
+    }
     /* An OFF first, alone, whatever else is owed -- and while what the
      * page holds is not known, whatever is asked. */
-    if (!s->commanded || (!s->on && s->page_on)) {
+    if (!s->commanded || (!s->on && s->page_on) || s->off_owed) {
         s->out[LINK_SP_OUTPUT] = 0u;
         *off = (uint8_t)LINK_SP_OUTPUT;
         *n   = 1u;
@@ -153,7 +188,8 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
          * it, or waits on the module for it.  Nothing goes before. */
         return SUPPLY_LINK_W_NONE;
     }
-    if (!s->refused && (!s->wired || !same_wiring(&s->page, &w))) {
+    if (!s->refused && !s->wire_busy
+        && (!s->wired || !same_wiring(&s->page, &w))) {
         const bool page_off = s->commanded && !s->page_on && s->read_any
                               && s->regs[LINK_SP_OUTPUT] == 0u
                               && (s->regs[LINK_SP_FLAGS] & LINK_SP_LIVE) == 0u;
@@ -185,7 +221,8 @@ supply_link_write_t supply_link_next(supply_link_t *s, uint8_t *off,
      * one whose wiring was refused, though the page still holds the old:
      * the settings name other pins, and that may be another supply. */
     if (s->on && (s->refused || !s->wired || !s->page.en)) {
-        if (s->refused || (s->wired && !s->page.en)) {
+        /* Not an ON left to the port that holds the page: the port's. */
+        if (!s->kept && (s->refused || (s->wired && !s->page.en))) {
             s->on = false;
             s->events |= SUPPLY_LINK_EV_ON_REFUSED;
         }
@@ -220,6 +257,8 @@ void supply_link_written(supply_link_t *s, int result)
     }
     switch (w) {
     case SUPPLY_LINK_W_OFF:
+        /* Answered: an OFF the page refused is not asked again. */
+        s->off_owed = false;
         if (result == SUPPLY_LINK_ACK) {
             if (!s->commanded) {
                 /* What set points the page holds is not known yet. */
@@ -240,6 +279,10 @@ void supply_link_written(supply_link_t *s, int result)
             s->page.tx   = (int8_t)s->out[LINK_SP_TX_PIN];
             s->page.rx   = (int8_t)s->out[LINK_SP_RX_PIN];
             s->page.baud = (uint8_t)s->out[LINK_SP_BAUD];
+        } else if (result == LINK_NACK_BUSY) {
+            /* A port's hold keeps the wiring for now: no word on these
+             * pins.  Written again when a read shows the hold over. */
+            s->wire_busy = true;
         } else {
             s->refused = true;
             s->events |= SUPPLY_LINK_EV_WIRING_REFUSED;
@@ -280,7 +323,8 @@ bool supply_link_settled(const supply_link_t *s)
         return false;
     }
     const supply_wiring_t w = as_written(&s->want);
-    return s->commanded && s->page_on == s->on && s->page_mv == s->mv
+    return s->commanded && !s->off_owed && s->page_on == s->on
+           && s->page_mv == s->mv
            && s->page_ma == s->ma
            && (s->refused || (s->wired && same_wiring(&s->page, &w)));
 }
@@ -355,6 +399,20 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
     const bool port = (f & LINK_SP_PORT) != 0u || s->port_held;
     const bool judge = s->judge;
     s->port_held = (f & LINK_SP_PORT) != 0u;
+    s->kept = s->kept && s->port_held;
+    s->wire_busy = s->wire_busy && s->port_held;
+    /* A port's hold found by a panel that commanded nothing yet: what the page
+     * holds is the port's, and nothing is owed against it. */
+    if (s->port_held && !s->commanded && !s->off_owed) {
+        s->commanded = true;
+        s->page_on = regs[LINK_SP_OUTPUT] != 0u;
+        s->page_mv = regs[LINK_SP_SET_MV];
+        s->page_ma = regs[LINK_SP_SET_MA];
+        s->on = s->page_on;
+        s->mv = s->page_mv;
+        s->ma = s->page_ma;
+        s->adopted = true;
+    }
     s->judge = false;
     if (judge && !port) {
         /* Refused, and by no port: the ON is over, as ever. */
@@ -390,6 +448,15 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
         /* The set points not as written: written again. */
         s->page_mv = 0xFFFFu;
         s->page_ma = 0xFFFFu;
+    }
+
+    /* A hold over, this end's wiring not written: adopted at the first read, or
+     * answered BUSY.  An output left on would bar the wiring, and with no wiring
+     * no reading comes: the OFF, as at any other start.  No ON is lost by it. */
+    if (port && !s->port_held && !s->wired && !s->wire_wait && !s->refused) {
+        s->on = false;
+        s->off_owed = true;
+        s->adopted = true;
     }
 
     if ((f & LINK_SP_STUCK) != 0u && (was & LINK_SP_STUCK) == 0u) {
@@ -431,8 +498,13 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     const bool fresh = s->read_any
                        && (uint32_t)(now_ms - s->read_ms) < SUPPLY_LINK_STALE_MS;
     const uint16_t f = s->regs[LINK_SP_FLAGS];
-    st->online = fresh && s->wired && s->page.en
-                 && (f & LINK_SP_ONLINE) != 0u;
+    /* Under a port's hold, before this end's wiring is the page's, the page's
+     * own is in force.  A wiring refused is an error of its own. */
+    const bool wired = (s->wired && s->page.en)
+                       || (s->port_held && !s->refused
+                           && s->regs[LINK_SP_ENABLE] != 0u);
+
+    st->online = fresh && wired && (f & LINK_SP_ONLINE) != 0u;
     if (!st->online) {
         st->mode = SUPPLY_MODE_OFF;
         st->ok   = 0u;
@@ -479,6 +551,16 @@ bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
     return true;
 }
 
+bool supply_link_port_free_off(const supply_link_t *s)
+{
+    if (s == NULL || !s->read_any) {
+        return false;
+    }
+    const uint16_t f = s->regs[LINK_SP_FLAGS];
+    return (f & (LINK_SP_PORT | LINK_SP_ON | LINK_SP_LIVE)) == 0u
+           && s->regs[LINK_SP_OUTPUT] == 0u;
+}
+
 uint16_t supply_link_events(supply_link_t *s)
 {
     if (s == NULL) {
@@ -487,6 +569,28 @@ uint16_t supply_link_events(supply_link_t *s)
     const uint16_t e = s->events;
     s->events = 0u;
     return e;
+}
+
+bool supply_link_ev_error(uint16_t ev)
+{
+    return (ev & (uint16_t)SUPPLY_LINK_EV_ERRORS) != 0u;
+}
+
+supply_link_say_t supply_link_on_ended(uint16_t ev, uint16_t faults)
+{
+    if ((ev & (uint16_t)SUPPLY_LINK_EV_TRIPPED) != 0u) {
+        return SUPPLY_LINK_SAY_TRIPPED;
+    }
+    if ((ev & (uint16_t)SUPPLY_LINK_EV_ON_LOST) != 0u) {
+        return SUPPLY_LINK_SAY_LOST;
+    }
+    if ((ev & (uint16_t)SUPPLY_LINK_EV_ON_REFUSED) == 0u) {
+        return SUPPLY_LINK_SAY_NONE;
+    }
+    const uint16_t failsafe = (uint16_t)(LINK_FAULT_LINK_SILENT
+                                         | LINK_FAULT_HEARTBEAT);
+    return ((faults & failsafe) != 0u) ? SUPPLY_LINK_SAY_FAILSAFE
+                                       : SUPPLY_LINK_SAY_REFUSED;
 }
 
 void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
@@ -528,4 +632,15 @@ bool supply_link_held_pins(const supply_link_t *s, int *tx, int *rx)
 bool supply_link_port_held(const supply_link_t *s)
 {
     return s != NULL && s->port_held;
+}
+
+bool supply_link_port_holds(const supply_link_t *s, bool pdmini,
+                            bool session)
+{
+    return pdmini && session && supply_link_port_held(s);
+}
+
+bool supply_link_session_blocks(bool session, bool ports_own)
+{
+    return session && !ports_own;
 }

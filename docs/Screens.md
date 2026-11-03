@@ -7,7 +7,8 @@ operated.
 
 ## The status band
 
-The top band is shared by every screen. From the right: STOP, the run clock
+The top band is shared by every screen. From the right: STOP, "?" on a
+screen with a guide ([The screen guide](#the-screen-guide)), the run clock
 (while ARMED or after a run), the arm chip, a FAULT code when one is reported,
 the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
 panel drives the IOmcu's outputs, and SIM while no IOmcu answers
@@ -56,15 +57,19 @@ A touch belongs to what it came down on until it lifts. The band is the top
   while the first finger drags. After the home tag, the finger still on the
   glass moves nothing on the screen the tag leads to.
 
-STOP is 168 x 48px at the right end of the band, from x 850. The chips
-stand from STOP to the left, 8px from it and 6px apart. Each chip is 44px
-tall, with its label in the 10 x 20px face, 28px in from the chip's left
-edge. The widest row, a run clock of 10 hours, ARMED MOTOR, a FAULT code,
-BENCH and LINK in German, starts at x 276.
+STOP is 168 x 48px at the right end of the band, from x 850. "?" is
+40 x 44px, 8px left of STOP, x 802 to 842; its place stays free on a screen
+without a guide, so the other chips do not move between screens. The chips
+stand from "?" to the left, 4px apart. Each chip is 44px tall, with its
+label in the 10 x 20px face, 22px in from the chip's left edge. A tap finds
+a chip across the band's height and 2px either side of it. The widest row,
+a run clock of 10 hours, ARMED MOTOR, a FAULT code, BENCH and LINK in
+German, is 528px wide and starts at x 270.
 
 The home tag is 44px tall at x 8, y 8, its name in the 20 x 36px face. The
 home tags end at x 268 (MOTOR & ESC) and at x 248 or less on the other
-screens, so no chip row reaches under a home tag.
+screens, so no chip row reaches under a home tag; in the widest case 2px
+stay between the tag and LINK.
 
 ### Chip help
 
@@ -90,6 +95,8 @@ STOP, and none reaches the alert band.
 - Any other tap closes it and does nothing else: on the box's own chip, on
   the band beside the chips, on the home tag or on the screen. A tile, a
   button or the alert band under the finger is not pressed.
+- A 1000ms hold on the band's empty part takes a [screenshot](#screenshot):
+  the box stays for the picture and closes after it.
 - STOP is the exception: a press on STOP closes the box and stops at once,
   as with no box.
 - So is a control that stops what the bench drives: DISARM, OUTPUT OFF, a
@@ -110,7 +117,7 @@ The FAULT box names each bit, its code and what it means:
 
 | Code | Bit | Set by this release |
 | --- | --- | --- |
-| 01 | LINK_SILENT | the IOmcu heard no request for 200ms; stays until the next arm |
+| 01 | LINK_SILENT | the IOmcu heard no request for 200ms; stays until the next arm or the IOmcu's next start |
 | 02 | OVERCURRENT | never |
 | 04 | OVERTEMP | never |
 | 08 | STALL | never |
@@ -131,6 +138,194 @@ says to flash both boards from one release.
 
 ![The ARMED MOTOR box](img/band-armed.png)
 
+## The screen guide
+
+"?" in the band opens the guide of the screen on top: numbered marks on
+its controls and a dock that says what each one does. The menu has a
+guide; the other screens show no "?" yet. Keypads, keyboards and
+questions show no "?" either.
+
+![The menu's guide at page 1](img/help-overview.png)
+
+| Part | Figure |
+| --- | --- |
+| Dock | 480 x 488px, 8px from the panel's left or right edge, y 64 to 552; the page says which side |
+| Live half | the other 528px of the body; the screen draws there and keeps running |
+| Header | the page's title and "page / pages" |
+| Item | its number in a 28px badge, the control's name in the accent colour, then what it does in the 10 x 20px face, 41 characters a row, 3 rows at most |
+| Items a page | 5 at most |
+| Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
+| PREV and NEXT | 124 x 48px, 8px apart, in the band from x 8 to 264, y 6 to 54, in the home tag's place, the same on every page |
+| CLOSE | 140 x 48px, centred at the dock's bottom, y 496 to 544 |
+| Marks | a 28px badge with the item's number 4px inside the control's top-left corner, or 4px left of a control less than 56px tall or wide; 2px brackets at the control's corners, 3px outside it |
+
+A control in the band has its badge under the band, below the control's
+left end. The dock ends 4px above the alert band, so an alert covers none
+of it.
+
+PREV and NEXT stay in one place while the dock changes sides, so a second
+tap at the spot of the first turns the next page. The band is the one
+place no page marks: on the menu the tiles fill the body, and each tile is
+marked on one of the pages. The home tag they cover does nothing while the
+guide is open, and the band's chips start at x 270 at the least, so the
+two buttons cover no chip, "?" or STOP. The home tag comes back when the
+guide closes.
+
+- A tap on "?" opens page 1. A press that slides off "?" opens nothing.
+- PREV and NEXT turn the pages and act on a release on the same button.
+  PREV on the first page and NEXT on the last are dimmed and do nothing.
+- CLOSE closes the guide, and so does a press on "?".
+- A press on the dock or on a badge does nothing.
+- Any other press closes the guide and does nothing else: on the live half,
+  on the band beside the chips, on the alert band.
+- A 1000ms hold on the band's empty part takes a [screenshot](#screenshot):
+  the guide stays for the picture and closes after it.
+- A press on STOP closes the guide and stops at once. A press on a chip
+  closes the guide and opens the chip's box on its release.
+- A press on DISARM, OUTPUT OFF, ABORT, STOP TEST or STOP RUN closes the
+  guide and acts, as with no guide.
+- Opening the guide releases what the screen holds: a drag ends where it
+  is, a hold on ARM is abandoned.
+- A knob turn moves nothing while the guide is open, and the guide stays
+  open.
+- Leaving the screen closes the guide, and so does a change of the
+  screen's pages. A link lost or back and the switch between SAFE and ARMED
+  leave it open; the names on its page follow the state.
+- While ARMED the guide offers only the pages whose dock covers no control
+  that stops an output and no TARGET row; page 1 then says so in one line.
+  The menu's pages all show while ARMED.
+
+The menu's guide has four pages: the left two columns of tiles with the
+dock on the right, the right two with the dock on the left, STOP, the
+arm chip, "?" and the SIMULATED mark with the dock on the left, and the
+band's empty part, for the screenshot's hold, with the dock on the right.
+
+## Screenshot
+
+A 1000ms hold on the empty part of the band takes a screenshot of what the
+panel shows, band included. Nothing on the panel marks the place; the menu's
+guide and the help say where it is.
+
+![The screenshot's popup](img/shot-popup.png)
+
+| Part | Figure |
+| --- | --- |
+| Where | the band's whole height, from 8px right of the home tag to 8px left of the leftmost chip, worked out from the rectangles the band draws. The narrowest gap, over every screen with the band in English and German, is 176px SAFE with no FAULT chip and 106px ARMED MOTOR |
+| The hold | 1000ms of frames, a late frame counting 100ms at most, as for a hold button. Nothing at 999ms |
+| What ends it | a slide out of the gap, a chip that appears under the contact, any event of another contact, a lost touch event, a change of screen. Its release does nothing |
+| Over a chip's box or the guide | they stay up for the picture and close when the hold ends, with a picture or without one. A release before 1000ms closes them and takes nothing. A second contact ends the hold and meets them by their own rules: its press closes them |
+| What it is not | a press on a chip, the home tag, "?" or STOP. No screen sees the contact |
+| Response at 1000ms | the band's notice, no fill while held: `Screenshot taken.`, or `Screenshot taken. It opens when the bench is idle.` |
+| Memory | 1,305,600B of PSRAM (pseudo-static RAM), the picture's 1,228,800B and the preview's 76,800B, from the capture to CANCEL or a save that worked. A restart loses it |
+| No memory | the band says `Screenshot not taken: 1,305,600B of PSRAM are not free.`, and nothing else changes |
+| A hold while one waits | replaces it in the same memory: `New screenshot taken. It replaces the waiting one.` |
+| A hold while a stopped save ends | no picture: `Screenshot not taken: the last one is still being written.`, for at most one row of the PNG |
+| A kept value on the glass | no picture: `Screenshot not taken: this screen shows a kept password or code.` WI-FI refuses it while it shows a [HOTSPOT PASSWORD or WEB CODE](#hotspot-password-and-web-code) that is kept, on that value's view, on its keyboard and on the rows of a running radio with either one kept. A picture on the card can be read from the browser. A RANDOM password and code are taken, since they end with the session |
+| Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. The IOmcu update's question and the release reminder: they cannot say whether a box covers them, and the popup would open after they have gone. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
+
+The picture is taken in that frame, on the render task, whatever the bench
+does. It reads no output and writes none; STOP, DISARM and the rest stay live.
+It is the frame as the operator sees it, also over a box, a list or a keypad,
+and with Screen rotation 180°, since the frame is drawn upright and turned on
+its way to the panel. The notice comes a frame later and is not in it.
+
+### The popup
+
+The popup opens when the bench is idle, on a screen with the band, with
+nothing else up on it, and with no contact on the glass. The press that
+disarmed or acknowledged cannot land on it: it takes only a new press.
+
+| Part | Figure |
+| --- | --- |
+| Preview | 256 x 150px, each pixel the mean of 4 x 4, top left of the body |
+| Folder and name | `screenshots/` and the name with `.PNG`, under the preview |
+| Keyboard | the file-name keyboard, x 280 to the panel's edge. OK reads SAVE, `SICHERN` in German |
+| Band | STOP and the chips stay live. The home tag and the knob do nothing, and "?" does not show |
+
+The popup closes the moment one of these turns false, and the picture waits
+again with the name as typed. Only CANCEL or a save that worked ends it.
+
+| The bench is idle when | Read from |
+| --- | --- |
+| the link answers, or the bench is simulated | the snapshot's `link_up`, the model's flag |
+| SAFE, no arm waits | the snapshot's `armed`, `arm_wanted` |
+| no STOP request waits | `s_stop_request` |
+| the supply is off, no ON on its way | the snapshot's `supply.output`, the newest sample's output, `supply_live_or_coming()` |
+| PROG 5V is off, no ON on its way | `prog5v_box_on()`, `supplies_live_or_coming()` |
+| no port is held | `supply_screen_port_held()`, `kst_panel_holds_port()`, `hitec_panel_holds_port()`, the HITEC page's holds in `s_drive` |
+| no programming session is open | `kst_panel_is_open()`, `hitec_panel_is_open()`, `esc_stick_panel_stage()` |
+| no programmer's card job is out | the KST and Hitec file and card counters |
+| no sweep or pause | `servo_screen_sweeping()`, `servo_screen_paused()` |
+| no automatic test or limit run | `servo_screen_testing()`, `servo_screen_limit_running()`, `s_servo_testing` |
+| no ESC STICK run | `esc_stick_panel_profile()` |
+| no update, install or download | the snapshot's `cu.active`, `s_cu_busy`, `s_fw_installing`, the download's flag and fetch |
+| no FAULT bit is up | the snapshot's `faults` |
+| no fault log write is out | `log_fault_busy()` |
+| no log run, test file or capture is open | `panel_run_open()` |
+
+Outputs are driven only while ARMED, so SAFE covers a pulse on a pin. A FAULT
+bit left up holds the popup back until it is cleared. A screen's keypad,
+keyboard, list, box or question holds it back too.
+
+### Saving
+
+SAVE writes `screenshots/<name>.PNG`, making the folder when it is missing. The
+folder is no FIXED folder: nothing of the bench reads it, and FILES and the
+Wi-Fi page rename and delete it as any other. A FILES pane that shows the folder
+lists the new file when it is next read.
+
+| Part | Figure |
+| --- | --- |
+| Format | PNG (Portable Network Graphics), 1024 x 600, 8-bit RGB, each RGB565 value with its top bits repeated in the low bits |
+| Default name | `SHOT` and 4 digits, one above the highest such name in the folder; `SHOT9999` at most |
+| Name | up to 55 bytes in front of `.PNG`, the rules of FILES' names (`fm_name.h`) |
+| A taken name | refused: `This name is taken. Type another one.` Nothing is overwritten |
+| Size | 38,388 to 77,840B on the card, 8 files; the OUTPUTS screen with the board drawing gave the largest |
+| Time | 5.3 to 6.3s alone; 0.40 to 1.00s with a Wi-Fi page write waiting for the card's lock. The cause of the difference is not traced. The console logs each save's time and each copy's |
+| Memory while saving | 36,928B of PSRAM for the encoder, 16,384B of internal RAM for the card's buffer and 7,168B of internal RAM for the task's stack, freed at its end |
+| Task | `shot`, priority 0 on core 0, below the render loop. The control task and the heartbeat take no part |
+| Stack of `shot` | lowest 5,116B unused of 7,168B |
+| Runs on a panel | 30 shots in a row: no error, no restart. No FLIP TIMEOUT and no watchdog line. `FM_ERR_BUSY` was not produced in 3 runs with a save and a Wi-Fi page write overlapping: both sides wait and complete |
+| Second contact on a panel | 6 of 6 checks passed: a second contact during a hold takes no picture and its press acts; a contact already down takes no hold; STOP during a hold acts; a hold over the guide with a second contact takes none; the popup waits for all contacts to lift and presses no key; 5 contacts down at once on a list leave no stuck press |
+| Not run on a panel | no card in the slot, pixel equality of the PNG with a rendered frame, a glass contact together with an injector contact |
+
+A file is written as `<name>.PNG.NEW`, then renamed, so a save stopped or a
+card pulled leaves no file of the name. A power cut leaves the `.NEW`; the next
+save of that name deletes it.
+
+![A save under way](img/shot-saving.png)
+
+![A card that was full](img/shot-full.png)
+
+| While it saves or after | The popup says |
+| --- | --- |
+| during | `Saving 42%` and a bar. Only CANCEL takes a press |
+| a save that worked | closes; the band: `Saved: screenshots/SHOT0007.PNG` |
+| no card, a card gone | `No card. Put one in and SAVE again.` |
+| a full card | `The card is full. Free some room and SAVE again.` |
+| write-protected | `The card is write-protected.` |
+| a write failed | `The write failed. The picture is kept: SAVE again.` |
+| no memory for the encoder or the buffer | `No memory to write the PNG. Nothing was written.` |
+| another card job holds the card past 2000ms | `The card is busy. SAVE again in a moment.` |
+| the bench stopped being idle during the save | on the next opening: `The bench was busy. Nothing saved. Tap SAVE again.` |
+
+Each failure stays on the popup with the picture kept. The card job lock is
+FILES' and the Wi-Fi page's: one job at a time, and the page's writes wait up
+to 2000ms for a save and then answer `PANEL_BUSY`. CANCEL during a save stops it
+at its next row, and the picture goes when it has stopped. A bench that stops
+being idle does the same and keeps the picture. The line of that stop, or of a
+failure answered while the popup is shut, shows when the popup opens again. A
+new picture or CANCEL clears it.
+
+The copy is 1,228,800B on the render task in one frame. It is not split across
+frames: the frame buffers change every frame, so a copy over several would mix
+frames. It takes 0.1ms on the build machine and 25.8 to 31.6ms on the panel,
+median 28.3ms over 54 copies; the console logs each. At least 1 panel frame
+was missed in the run. The frame rate on a sweep is 30 to 37fps, and the 5s
+figure is unchanged around a hold. The time of the single frame that holds
+the copy is not measured. The control task, on the other core, does not wait
+for it, and the frame watch allows 1000ms.
+
 ## The alert band
 
 A fault the screen itself does not show appears in a red band, 44px high,
@@ -140,7 +335,8 @@ bottom 44px of the screen while it shows; ARM and every control that stops
 the bench end above it.
 
 - It clears 30s after the frame it arrived in. A new alert, even with the
-  same text, starts the 30s again.
+  same text, starts the 30s again. A notice, the [hint of a hold
+  button](#hold-buttons), shows in amber for 4s and gives way to an alert.
 - A tap on the band clears it earlier: press and lift on the band, marked
   with an `x` at its right end. The screen beneath receives neither that tap
   nor a second finger's on the band; only the first finger's lift clears.
@@ -158,6 +354,50 @@ the bench end above it.
 - "Touchscreen not responding. ARMED is blocked.", shown at start, stays
   until restart and has no `x`: no touch is there to tap with. A later alert
   shows over it; once that one clears, it shows again.
+
+## Hold buttons
+
+A hold button acts after 2s of contact (`UI_HOLD_S`). A release before 2s
+sends nothing and shows the button's hint in the alert band as a notice: the
+band in amber (`UI_C_WARN`) with dark text instead of the danger colour, 4s
+long, cleared earlier by a tap on the band. A short tap is not a fault, so
+the hint is not an alert. An alert takes priority: the hint does not show
+while an alert is up, and an alert that arrives while the hint shows replaces
+it. The hint is one line of 97 characters at most.
+
+- The hint shows only for a release the finger made on the button. It does
+  not show when the finger left the button first (the hold is abandoned),
+  when the touch was lost or the release is not a tap (`TOUCH_FLAG_NO_TAP`),
+  for a second finger's contact, or on a screen without the status band.
+- A release at 2s or later follows a hold that has acted and shows no hint.
+- A press on STOP clears the hint in the same frame, and so do a fault bit
+  that comes up on the FAULT chip and a switch from ARMED to SAFE, an
+  error's included. An alert stays through both.
+- HOLD 2s TO ACKNOWLEDGE on the bus-fault screen carries no hint: that screen
+  has no band.
+
+| Button | Hint |
+| --- | --- |
+| ARM on MOTOR & ESC and SERVO | `Hold 2s to switch to ARMED.` |
+| OUTPUT ON on SUPPLY and in SERVO's supply box | `Hold 2s to switch the output on.` |
+| PROG 5V ON in the PROG 5V box on SERVO and SUPPLY, rbmod carrier | `Hold 2s to switch the programming ports' 5V on.` |
+| APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
+| START TEST | `Hold 2s to start the test.` |
+| START LIMIT RUN | `Hold 2s to start the limit run.` |
+| HOLD 2s TO ENABLE | `Hold 2s to enable.` |
+| HOLD 2s TO WRITE | `Hold 2s to write.` |
+| HOLD 2s TO RESTORE | `Hold 2s to restore.` |
+| HOLD 2s TO CONTINUE | `Hold 2s to continue.` |
+| HOLD 2s TO LEAVE | `Hold 2s to leave.` |
+| HOLD 2s TO LOAD | `Hold 2s to load.` |
+| HOLD 2s TO RELEASE | `Hold 2s to release the port.` |
+| HOLD 2s TO REPAIR | `Hold 2s to repair.` |
+| HOLD 2s TO RUN on a stick run's warning | `Hold 2s to run.` |
+| HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
+| HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
+| HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
+| HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
+| OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 
 ## Menu marks
 
@@ -179,15 +419,15 @@ Each tile carries a line under its name, 2 rows of at most 22 characters,
 | MOTOR & ESC | drive, V/A, rpm |
 | SERVO | travel, current, program |
 | SUPPLY | set and log V/A |
-| LOGS | runs and files |
+| LOGS | runs, files |
 | RECEIVER | S.BUS, PPM, frames |
 | BATTERY | cells, iR, mAh |
 | BALANCE | vibration, phase |
-| SETUP | pins, sensors, panel |
+| SETUP | panel, pins, card, Wi-Fi |
 
 A tile marked SIMULATED opens a screen whose source the bench does not
 report: the IOmcu reports no capability for it, or its sensor is not
-enabled on SETUP under INTERFACES. A screen without its hardware opens and runs
+enabled on SETUP under SENSORS. A screen without its hardware opens and runs
 from the model. The mark does not classify each value on a screen. RECEIVER
 and BATTERY carry the mark and show no values. SERVO without the mark shows the
 panel's supply model as its rail meter when neither a PD mini nor an INA3221 is
@@ -195,9 +435,9 @@ enabled. Each screen names the source of its readings itself.
 
 | Tile | Without the mark when |
 | --- | --- |
-| MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
+| MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, SENSORS |
 | SERVO | the IOmcu drives servo PWM outputs |
-| SUPPLY | the PD mini is enabled on SETUP, INTERFACES, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
+| SUPPLY | the PD mini is enabled on SUPPLY's PD MINI tab, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | always: they hold no measurement |
 
@@ -247,14 +487,17 @@ the faces and the spacing inside are theirs.
   word in 20 x 36; the German password's in 16 x 28, as `LEERZEICHEN`
   has two keys of 192px. SERVO's name keyboards, keys of 55 x 72px, draw
   their words in 12 x 24; the ESC STICK search keyboard, keys of
-  59 x 57px, in 16 x 28.
+  59 x 57px, in 16 x 28. The text editor's keyboard has no title row, no
+  field and no digit row: 4 rows of keys of 93 x 56px, every word in
+  20 x 36, `123` one more word key
+  ([The text editor](#the-text-editor)).
 - **Choice list.** A face or a row 56px tall or taller draws its text in
   the 20 x 36 face, 12px in, with an 11px chevron 28px from the face's
   right edge. A shorter one draws in 16 x 28, 10px in, with a 7px chevron
   22px from the edge. A text that does not fit before the chevron in
   20 x 36 draws in 16 x 28: `DSHOT600 BIDIR` on a face of 292px. Each face
-  and row picks its own, so the rows of one list can differ. OUTPUTS and
-  PICK A PIN draw theirs under 56px.
+  and row picks its own, so the rows of one list can differ. OUTPUTS draws
+  its faces under 56px.
 - **Tabs.** A row of tabs 32px tall or taller draws its labels in the
   10 x 20 face when every label fits its tab with 6px each side in the
   language shown; another row draws them in 8 x 16. LOGS' ROOT, USER and
@@ -515,6 +758,12 @@ from bidirectional DShot today, and its own sensors when a measurement front
 end is fitted. A quantity nothing measures is drawn as an empty field rather
 than as a modelled number.
 
+SETUP > PANEL > Demo mode, OFF by default, hides the SIMULATION watermark and
+nothing else: the band still shows SIM, the tiles still show SIMULATED and
+every other statement that values are simulated stays. The change shows on the
+next frame. With an IOmcu answering no watermark is drawn, so the setting
+changes nothing on a real bench.
+
 ### TABLE, and what the ESC says
 
 ![The TABLE pane with an INA228 as the source](img/motor-table.png)
@@ -522,7 +771,7 @@ than as a modelled number.
 TABLE lists the four channels, each with its extreme. A channel nothing
 answered for reads `--`.
 
-With the INA228 enabled on SETUP under INTERFACES and answering (BENCH flag
+With the INA228 enabled on SETUP under SENSORS and answering (BENCH flag
 bit 5), voltage, current and power are the INA228's: the means of the
 IOmcu's last 50ms window, read at 20Hz, with the run's peaks from its
 500Hz samples. The heading names the source, `INA228`, and adds `CLIPPED`
@@ -604,7 +853,7 @@ columns before `source`:
 - A cell is empty while its meter has not delivered that reading.
 - A row takes a figure only from a source that is the row's `source`:
   - all five meter cells are empty on a `measured` row while the supply is
-    the panel's model (PD mini disabled on SETUP under INTERFACES);
+    the panel's model (PD mini disabled on SUPPLY's PD MINI tab);
   - they are empty on a `model` row while the PD mini's last reading is
     still shown after the link went down;
   - a `model` row has no INA3221 figure and no `angle`, which read through
@@ -790,9 +1039,9 @@ a stick run, switches off the supply output the run switched on, switches the
 bench to SAFE and closes ESC STICK. Back on MOTOR & ESC, PROGRAM shows its
 list.
 
-The parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware
-are a model in the firmware (`shared/ui/prog_models.c`). No transport carries their protocols, and no
-PROGRAM list has a row for them. The bench identifies and drives ESCs with
+The row `AM32, Bluejay, BLHeli_S, ESCape32`, `SIGNAL WIRE` at its right, opens the signal-wire session: [ESC signal wire](EscWire.md). It is dimmed until the IOmcu reports `LINK_CAP_PROGRAM`.
+
+The bench identifies and drives ESCs with
 BLHeli_32 firmware and sends the DShot special commands, but cannot read
 their parameters: [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
 
@@ -985,7 +1234,8 @@ LIVE's card holds the horn's angle in the bench's numerals top left, with
 `ARM FIRST` under it while the bench is SAFE, the dial (radius 150px)
 with the servo, and along its foot the three readings, a third of the card
 each: COMMANDED in microseconds, MEASURED in degrees and CURRENT in amps,
-the label and unit over numerals 44px tall. Numerals wider than their
+the label and unit over numerals 44px tall, ending 4px above the alert band.
+The dial's +90 and -90 labels stand left of their ticks. Numerals wider than their
 198px column (a current held at `-1000000.00`) are drawn in a
 smaller face, so they stay inside it. The readings are on LIVE only; on
 the other tasks the line over the plot carries the current.
@@ -1118,12 +1368,12 @@ typed in the settings reaches the row at once.
 | --- | --- | --- |
 | an INA3221 channel | `INA`, its part's address and channel: `INA 0x41 CH2` | the channel's last 50ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
 | the PD mini | `PD MINI` | the supply's last sample. One point per sample |
-| the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
+| the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SUPPLY's PD MINI tab enables the PD mini, which does not answer without the link |
 
 ![The INA3221 as the meter](img/servo-ina.png)
 
 The name stays `PD MINI` in both languages. While the PD mini is disabled on
-SETUP under INTERFACES, the supply is the panel's model of it, as on SUPPLY:
+SUPPLY's PD MINI tab, the supply is the panel's model of it, as on SUPPLY:
 then a SIMULATED pill (SIMULIERT in German), 26px high and 30px plus the word
 wide but at least 110px (120px for SIMULATED and SIMULIERT), sits
 on the plot's top-left corner under the name, because the line beside the
@@ -1136,8 +1386,27 @@ channel is CH1 of the one part SENSE reads.
 
 ![The panel's model as the supply](img/servo-model.png)
 
+On the [rbmod carrier](Carrier.md#power) the PROG 5V box takes the plot's
+place under the line, 48px tall: the programming ports' own 5V. Its first
+line names the pin and the state, `PROG PORTS 5V, GPIO 21: OFF`; its second
+the last 50ms window of the INA3221 channel watching the 5V (0x40 CH3),
+`5.02V  0.120A`, or `--V  --A` without one. PROG 5V ON on its right is a 2s
+hold and PROG 5V OFF a tap, as OUTPUT ON and OFF are, with the bench SAFE
+or ARMED. While a programming port holds the 5V the second line reads
+`HELD BY PROG PORT n`, the button is dimmed, and a press on it shows
+`PROG ports 5V: held by a programming port, or not read.` The box stays
+under the KST and Hitec programmers. Leaving SERVO switches off a 5V
+SERVO's box switched on, unless a port holds it. With the model as the
+supply the SIMULATED pill sits under the box. SUPPLY shows the same box
+([Supply](#supply)); the rules are in
+[Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box).
+
+![SERVO on the carrier](img/servo-rbmod.png)
+
+![The KST programmer holding the 5V](img/servo-kst-rbmod.png)
+
 Which meter it is is decided once per poll
-([the current monitors](#interfaces-the-current-monitors)): the INA3221
+([the current monitors](#sensors-the-current-monitors)): the INA3221
 1000ms after its conditions hold, the PD mini from the first poll in which
 one fails.
 
@@ -1177,7 +1446,7 @@ supply is the PD mini, the PD mini's readings otherwise, and the model's
 with the supply modelled ([The meter](Servo.md#the-meter)).
 
 MEASURED is the horn's angle from the centre count while AS5600 is on in
-SETUP, INTERFACES, the sensor answers and it detects its magnet: `+38.0deg`,
+SETUP, SENSORS, the sensor answers and it detects its magnet: `+38.0deg`,
 tenths of a degree, -180.0 to +179.9, read 20 times a second. It is `---`
 while the sensor does not answer and while it reports no magnet (STATUS MD
 clear): its count is no angle then. A magnet reported too weak or too strong
@@ -1207,6 +1476,14 @@ the change on both.
   6.0V changes without it. A voltage set on SUPPLY does not open it.
 
   ![The HV warning](img/servo-hv.png)
+
+- After a KST or Hitec LEAVE that leaves the output on at the session's set
+  points, SERVO asks under OUTPUT IS ON whether the set points from before
+  the session go back onto it: `Restore your supply set points 5.50V 2.00A
+  on the live output?`, with YES and NO. YES takes the path of a typed set
+  point, HV SERVOS ONLY included; NO keeps the session's until the next
+  OFF ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
+  No other end of a port's hold asks.
 
 - OUTPUT ON is a two-second hold, OUTPUT OFF a tap, as on SUPPLY. STOP ends
   a hold under way. With a voltage set point above 6.0V, wherever it was
@@ -1327,9 +1604,9 @@ clears at SPEED 63%, and for a triangle at 40%.
 through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
-files. The card, 600 x 200px, holds the run's name, a summary line
+files. The card, 600 x 188px, holds the run's name, a summary line
 (`4.8 6.0V BROWN-OUT, 60s EACH`, or `..., 20 MOVEMENTS EACH`), START
-TEST (300 x 56px) with the card's SETTINGS (160 x 48px) beside it, the
+TEST (300 x 48px) with the card's SETTINGS (160 x 48px) beside it, the
 state line, the last result with its files
 (`LAST: PASS ATEST004.CSV + .TXT`) and the STALL AT note. START TEST needs
 the bench in ARMED and a supply that answers; the state line says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
@@ -1400,7 +1677,7 @@ INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`
 (`CURRENT INA3221` while no channel watches the target), the next line says why
 it cannot start or what it does, then the last result and its report.
 These four lines are in the 10 x 20 face, 20px apart, the first 2px under
-START LIMIT RUN, so the fourth ends 2px inside the 200px card.
+START LIMIT RUN, so the fourth ends 2px inside the 188px card.
 TEST stays shown as the run starts. Its box on LIVE's left card shows the
 values written of 8, the phase with the side and the pulse, and the output
 it drives, with STOP RUN; after the run, the verdict, the values or the
@@ -1466,8 +1743,9 @@ drives out of PWM (pulse-width modulation) and reads and writes the
 servo's settings on its signal wire. PROG PORT 1 is GPIO 13 on pad 17 by
 default. It connects only with SERVO TESTER on SETUP > OUTPUTS set to a
 port, PORT 1, PORT 2, PORT 3 or PORT 4; with OUTPUTS it shows `Use the programming port to
-program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP >
-OUTPUTS.`, and CONNECT is locked. While it holds the port it stays open: CLOSE and the
+program a servo.` and `Tap TARGET and set SERVO TESTER to PORT 1 to PORT 4.`,
+and CONNECT is locked. TARGET then opens OUTPUTS on PROG PORT 1's entry, which
+holds SERVO TESTER, and the home tag there comes back to the programmer. While it holds the port it stays open: CLOSE and the
 home tag open LEAVE PROGRAMMING, and while the port moves into or out of
 programming they do nothing. Leaving SERVO leaves the port as it is; back
 on SERVO the programmer is open again on PROGRAM. ARM is drawn disabled; a
@@ -1478,7 +1756,9 @@ tester sends no pulse to the port. In PWM with a PD mini answering, the
 programmer's PORT row names the voltage and the current limit CONNECT sets,
 `PORT  5.0V  1000mA`. The set points and OUTPUT ON of
 the SET row and of the SUPPLY screen are dimmed and take no press for as
-long; OUTPUT OFF works.
+long; OUTPUT OFF works. On the rbmod carrier, whose programming ports run
+from their own 5V, they stay live
+([Carrier, Power](Carrier.md#power)).
 It leaves programming without a cycle of the servo's supply. Whether a KST
 servo follows PWM while in programming mode is not measured.
 
@@ -1588,7 +1868,7 @@ two columns of five, 48px tall and 56px apart; the warnings read in
 | LIMIT RUN > SETTINGS | SERVO PULSES | KEEP or 1000-2000, a tap switches; shown with TARGET on PROG PORT only. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
 | SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
 | SETTINGS > DUT | REPORT | a text report beside each test's log |
-| SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+| SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 centre |
 
 TRIM's keypad is the one signed keypad: its `+/-` key, between the point
 and OK, puts a minus sign in front of the entry or takes it away, before or
@@ -1600,16 +1880,28 @@ stay where they are.
 
 ![TRIM's keypad, -25us typed](img/servo-trim-keypad.png)
 
-AS5600, the output encoder, is switched on and off on SETUP > INTERFACES
-alone ([the output encoder](#interfaces-the-output-encoder)); DUT's note
-says so. It adds the horn's angle to the MEASURED row and to a run's CSV
+AS5600, the output encoder, is switched on and off on SETUP > SENSORS
+alone ([the output encoder](#sensors-the-output-encoder)). DUT's button
+`AS5600 ON OR OFF: OPEN SENSORS`, 600 x 48px, opens SENSORS on the AS5600
+entry. It adds the horn's angle to the MEASURED row and to a run's CSV
 and report ([Servo](Servo.md#the-output-encoder)).
 
 SUPPLY's caps, the voltage and current the set points and a run's steps stay
-inside, show read-only under TEST's cards and on DUT, with their home and
-the caps in force: `Caps 21.00V 5.00A: SUPPLY > SETTINGS` (German
-`Grenzen 21.00V 5.00A: SUPPLY > OPTIONEN`). They are set on SUPPLY >
-SETTINGS.
+inside, show under TEST's cards and on DUT on a button of 600 x 48px:
+`CAPS 21.00V 5.00A: OPEN SUPPLY` (German
+`GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`). They are set on SUPPLY > SETTINGS,
+LIMITS, which the button opens.
+
+Both buttons open another screen as TARGET does: the home tag there comes back
+to the task and the page they were tapped on. Leaving SERVO switches the bench
+to SAFE, ends a sweep or a test and switches off a supply SERVO switched on, so
+they are grey and take no press under TARGET's lock: ARMED, a sweep, a run, or
+a programmer holding the port. From SENSORS the home tag passes through
+[the leave warning](#keeping-the-values) with a value unsaved.
+
+OUTPUT's first note reads what SERVO TESTER is set to, OUTPUTS, PORT 1, PORT 2,
+PORT 3 or PORT 4, and that it is set on OUTPUTS:
+`SERVO TESTER: PORT 1. Set it on OUTPUTS.` It takes no tap.
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
@@ -1765,11 +2057,11 @@ Power Delivery) trigger controlled over a UART (universal asynchronous
 receiver-transmitter). The IOmcu drives it on a PIO (programmable
 input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100ms. With
-the PD mini enabled on SETUP under INTERFACES, the header names the module
+the PD mini enabled on SUPPLY's PD MINI tab, the header names the module
 and the IOmcu's UART pins that carry it, `PD MINI TX GPIO 12 RX GPIO 13`,
 from the PD mini TX and PD mini RX settings. With either pin not set, or
 both on one GPIO, the header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
-says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
+says `SIMULATED: SWITCH ON IN PD MINI` and the menu tile is marked SIMULATED.
 
 SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
 (German `LIVE`, `OPTIONEN`), each 150 x 40px, and a page under it. The
@@ -1779,7 +2071,7 @@ is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
 | Task | The left column, 620px |
 | --- | --- |
 | LIVE | the plot or the table over the set points |
-| SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |
+| SETTINGS | the tabs LIMITS, the 9 supply settings under OUTPUT CAPS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)), and PD MINI, the module's wiring ([The PD MINI tab](#the-pd-mini-tab)) |
 
 The header is the row right of the strip: the module and its pins, ONLINE
 or NOT ANSWERING, in 10 x 20, and at the right end the range the set points
@@ -1954,10 +2246,22 @@ OUTPUT ON and OFF, RESET PEAKS and the readings stay live on SETTINGS and
 under the keypad and the question. One finger at a time: while one holds a control, a
 second finger does nothing anywhere on the screen.
 
+On the [rbmod carrier](Carrier.md#power) a line under OUTPUT names the
+programming ports' own 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or
+`NOT READ` after an unanswered read, in the accent colour while on. The KST
+and Hitec programmers switch it. On LIVE the PROG 5V box in the output
+card's head, right of PLOT and TABLE, switches it by hand and shows its
+INA3221 reading, as on [SERVO](#servo); the line under OUTPUT stays on
+every task. Leaving SUPPLY switches off a 5V SUPPLY's box switched on,
+unless a port holds it. A board without the switch shows neither.
+
+![SUPPLY on the carrier](img/supply-rbmod.png)
+
 ### Supply settings
 
 SETTINGS, the strip's second tab, shows the supply's settings in the left
-column: the caps and the start values on the left, the trips and the
+column, under the tabs LIMITS and PD MINI, 40px tall: on LIMITS the caps and
+the start values on the left, the trips and the
 confirmations on the right, each a 48px row with its value in a 120 x
 48px box, and the save line at the foot. Each is kept in the panel's NVS (non-volatile storage) and survives
 a restart. A value opens the keypad over the page; a switch flips on the
@@ -2034,7 +2338,7 @@ burst takes it into CC. Its readings are not measured and nothing on the bench
 is powered.
 
 The PD mini's wiring (PD mini, PD mini TX, PD mini RX and PD mini baud) is
-on SETUP under INTERFACES. TX and RX are IOmcu GPIO numbers: TX goes to
+on SETTINGS' PD MINI tab ([The PD MINI tab](#the-pd-mini-tab)). TX and RX are IOmcu GPIO numbers: TX goes to
 the module's DM, RX comes from its DP. Their `-` and `+` keys step over the
 GPIO the other row holds, and at the end of the range do nothing: with RX on
 GPIO 47, TX stops at GPIO 46. The keypad refuses the other row's GPIO and shows
@@ -2043,8 +2347,8 @@ stored: the panel writes the page disabled, the PD mini stays off, and both
 rows say `TX and RX on one pin. The PD mini stays off.` until one is
 stepped. The PD mini switch turns the module off. The IOmcu refuses a pin that is
 reserved, bound to an output, held by the sensor bus or the phase tap, or
-the other pin, and the band says `PD mini pins rejected. Check SETUP >
-INTERFACES.`: RX on GPIO 17 is refused while Sensor SDA is GPIO 16, as Sensor SCL
+the other pin, and the band says `PD mini pins rejected. Check SUPPLY, tab
+PD MINI.`: RX on GPIO 17 is refused while Sensor SDA is GPIO 16, as Sensor SCL
 is then GPIO 17. The alert leaves the band once a read shows the page holding
 the wiring asked: at once when the pin is stepped back to the one the page
 still holds. Once the module has
@@ -2054,7 +2358,7 @@ module can switch itself on between two state reads, by its button
 or its AUTO OUT setting, and new pins would leave it no OFF path. A read
 that shows the output on, or fails, refuses the change, and the band says
 `PD mini wiring rejected. Its output may still be on.`. A refused change is not
-written again until the wiring changes in SETUP; this alert too leaves the
+written again until the wiring changes; this alert too leaves the
 band once a read shows the page holding the wiring asked. PD mini baud is the module's
 own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
@@ -2062,7 +2366,56 @@ IOmcu find it: it tries each of the 7 rates, one a second. The
 SUPPLY header shows the rate in use after ONLINE, e.g. `ONLINE 38400`, with
 AUTO and with a fixed rate alike.
 
-![RX's GPIO 9 refused for PD mini TX](img/setup-pdmini-why.png)
+![RX's GPIO 9 refused for PD mini TX](img/supply-pdmini-why.png)
+
+#### The PD MINI tab
+
+PD MINI holds the wiring, four rows at a 56px pitch: each its label and help
+line, its value in a 120 x 48px box, and - and + keys of 56 x 48px.
+
+| Row | Values | Default | A press |
+| --- | --- | --- | --- |
+| PD mini | ON, OFF | OFF | a tap on the value flips it |
+| PD mini TX | GPIO -1 to 47 | -1 | - and + step, the value opens the keypad |
+| PD mini RX | GPIO -1 to 47 | -1 | - and + step, the value opens the keypad |
+| PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | < and > and the value step round the 8 values |
+
+A change applies at once and is saved by the rule above, as a change on LIMITS.
+There is no SAVE and no leave warning. The stored keys are `pdm_en`, `pdm_tx`,
+`pdm_rx` and `pdm_baud`. RESET PD MINI restarts the module and writes none of the
+four.
+
+Any change of the wiring switches a live output off, so a row changes nothing
+in these states:
+
+| State | A press on a row | The row's help line and the band |
+| --- | --- | --- |
+| the output on, or an ON on its way, from any screen, on the PD mini or the model | changes nothing | `Output on: switch it off first` |
+| a programming port holds the supply | changes nothing | `A programming port holds the supply` |
+| the bench ARMED | changes nothing; `settings_set()` and a reset leave the rows too | `Set on a SAFE bench only` |
+
+A keypad open on a pin closes when one of these states begins, and what it holds
+is not taken. A press under way ends the same way, and its release changes
+nothing. With the output off and SAFE, enable, a pin or the baud reaches the
+IOmcu's SUPPLY page as [Supply](#supply) says, with the module's own off state
+checked first. A change that still reaches a live output, a refused save's
+DISCARD on SETUP's leave warning, switches it off and says
+`PD mini wiring changed. Output off.`. RESET PD MINI stays on LIMITS.
+
+![The PD MINI tab](img/supply-pdmini.png)
+
+On the [rbmod carrier](Carrier.md) PD mini TX reads 7 and PD mini RX 6. They
+have no keys, open no keypad and read
+`Soldered on this board. Not a setting here.` as their help line. The stored
+values stay and are in force again on a module wired by hand. PD mini and PD mini
+baud take presses under the same three states.
+
+![The PD MINI tab on the carrier](img/supply-pdmini-rbmod.png)
+
+While the panel runs its model, the header's source reads
+`SIMULATED: SWITCH ON IN PD MINI`, a button: a tap opens this tab, from LIVE,
+from LIMITS and over a keypad, which closes. A question about a live output is
+answered first.
 
 ## Receiver
 
@@ -2125,13 +2478,21 @@ Browse the card, open a file, check what the import detected, then plot:
 ![A SERVO run as it opens: pulse, angle, current and voltage](img/logs-servo-plot.png)
 
 The home tag climbs one level, as BACK does: the plot to the import view,
-the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL. WI-FI, in the bottom row beside
-RESCAN, opens [Wi-Fi](#wi-fi), and FILES beside it opens [Files](#files).
+the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
-The file list takes the body in three parts. The header row, body y 4 to
-52, holds ROOT, USER and BENCH (110 x 40px each), the folder and the
+The LOGS tile holds two screens under one strip, LOGS | FILES, two tabs of
+499 x 40px across the top of the body, y 5 to 45. The labels are the screens'
+titles, in every language. A tap on a tab opens that screen, and the home tag of
+each goes to the menu, whichever tab opened it. The strip shows on a screen's
+first level only: LOGS' file list and FILES' panes. Over a file's import or
+plot, a question, a box, a keyboard, the text viewer or the editor it does not
+show and takes no tap, and the home tag climbs first.
+
+The file list takes the body in four parts. The strip is on top, FILES on it
+opening [Files](#files). The header row, body
+y 52 to 100, holds ROOT, USER and BENCH (110 x 40px each), the folder and the
 card's name, and PREV and NEXT (140 x 48px) while the folder holds more
-than one page. The list under it is 1008px wide and shows 7 rows of 44px
+than one page. The list under it is 1008px wide and shows 6 rows of 44px
 at a pitch of 48px: each row takes a tap anywhere in its 48px. A row
 shows the file's name, its date and, right-aligned, its size, in the
 10 x 20 face. The name takes up to 60 characters; a longer one shows its
@@ -2141,10 +2502,12 @@ first 58 and `..`. The date is the modification time the card holds, as
 clock's ([PANEL: Time zone and the clock](#panel-time-zone-and-the-clock)),
 or with no stamp leaves the column empty. The size stands in a box of
 100px at the row's end. The file's kind and length are not shown. The footer, body y 440 to 492, holds RESCAN
-(140 x 52px), WI-FI and FILES (100 x 52px) at the left and DELETE and
-OPEN (140 x 52px) at the right, and ends 4px above the alert band. A
-message about a file stands between FILES and DELETE on up to two lines of
-28 characters.
+(140 x 52px) and WI-FI (100 x 52px) at the left and DELETE and
+OPEN (140 x 52px) at the right, and ends 4px above the alert band. WI-FI opens
+[Wi-Fi](#wi-fi) in any state of the list and its home tag comes back here; over
+the DELETE question and a file's views it is not there. A
+message about a file stands between WI-FI and DELETE on up to two lines of
+37 characters.
 
 The import view shows DETECTED (400px wide) beside the column list (600px,
 7 rows at a pitch of 48px), with four buttons of 246 x 52px under them.
@@ -2267,7 +2630,7 @@ shows the folder, `BENCH/LOGS`, and nothing on ROOT. The card's name,
 `UNITEST`, ends the row, right-aligned: at the right edge of the list, and
 left of PREV when PREV and NEXT show. An empty folder says why and what goes there:
 `No .csv files in BENCH/LOGS.` and the names it takes, or with its switch OFF
-`AUTO LOGS OFF in SETUP > SD CARD.`. Under the DELETE question the tabs are
+`AUTO LOGS OFF on SD CARD.`. Under the DELETE question the tabs are
 hidden. A file opened from one tab stays that tab's file: its import view
 and plot read it from that folder whichever tab is chosen since.
 
@@ -2308,7 +2671,7 @@ screen against the rows on the page, and it scrolls within the page. A tap on
 the track brings the thumb's middle to the finger; a finger on the thumb drags
 it.
 
-LOGS reads the card each time it opens, from the menu or back from WI-FI:
+LOGS reads the card each time it opens, from the menu or by its tab:
 the first page of the tab's folder, its newest run selected, so a run
 recorded while LOGS was closed is on the list without RESCAN. When the panel
 has written a file since LOGS was last open, LOGS opens on that file's tab;
@@ -2408,7 +2771,9 @@ Nine messages say what a card did to a run. Each appears on the band:
 | `The last write to the card failed. Recording incomplete.` | the close failed, so the rows since the last commit are not in the file |
 
 The first five mean there is no file to look for. The last four mean there is
-one and it stops early.
+one and it stops early. A failed write and a failed close of a run are an
+error: the bench goes to SAFE and the supply off
+([Safety, Errors](Safety.md#errors)).
 
 A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open
@@ -2491,10 +2856,10 @@ holds.
 FILES shows the SD (Secure Digital) card in two panes and copies, moves,
 renames and deletes its files, makes folders and empty text files, and
 shows a file as text in its [text viewer](#the-text-viewer). It
-opens from FILES in the bottom row of [Logs](#logs) and from the FILES tile
-of [Setup](#setup). The home tag closes a box or the keyboard
-first, then leads back to the screen that opened FILES. FILES drives no
-output.
+is a tab of the [LOGS](#logs) tile's strip. The home tag closes a box or the
+keyboard first, then leads to the menu. FILES drives no output. A tab leaves
+the panes at once; a copy under way shows its box and takes no tab, so CANCEL
+or the home tag answers first.
 
 ![FILES](img/files.png)
 
@@ -2506,7 +2871,7 @@ its selected entry to the other pane's folder. A tap on a row selects it
 and makes its pane the active one; a second tap on the selected row is
 OPEN.
 
-A pane's header row, body y 4 to 52, holds the folder's path on a button
+A pane's header row, body y 52 to 100, under the strip, holds the folder's path on a button
 312px wide that goes up one folder; the root shows the card's volume
 label, or `SD CARD`, and goes nowhere. PREV and NEXT, 88 x 48px, stand at
 the pane's right end while the folder holds more than 48 entries:
@@ -2519,7 +2884,7 @@ panel does not list are counted after it, `+ 1 NOT LISTED`: names that start
 with a full stop (`.DS_Store`, `._RCBENCH.LOG`) and names over 63 bytes. A
 folder that holds only such entries is not empty, and DELETE refuses it.
 
-The list shows 6 rows at a pitch of 48px, drawn 44px tall; a drag on the
+The list shows 5 rows at a pitch of 48px, drawn 44px tall; a drag on the
 list or on the 56px scroll bar moves it. Folders come first, then files,
 each group in name order. A row shows an icon, the name, the size
 right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
@@ -2538,17 +2903,24 @@ right-aligned (`512B`, `14kB`, `7.0MB`, `8.00GB`; binary units, 1kB is
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder the bench keeps: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` and the folders on the way to them, `BENCH` and `USER` among them. No RENAME, MOVE or DELETE |
-| LOCKED | the servo programmers' records, `BENCH/KST/CONF/KST.TXT` and `BENCH/HITEC/CONF/HITEC.TXT`, and their `KST.NEW` and `HITEC.NEW` while they are written. INFO only |
+| FIXED | a folder the bench keeps: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` and the folders on the way to them, `BENCH` and `USER` among them. No RENAME or MOVE, which would take what it holds away from where the bench reads it. NEW makes one and DELETE takes one that is empty: every writer of the bench makes its folder again before it writes, and a missing folder reads as on a new card |
+| LOCKED | the programmers' records, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` and `BENCH/ESCW/CONF/ESCW.TXT`, and their `KST.NEW`, `HITEC.NEW` and `ESCW.NEW` while they are written. INFO only |
 | WRITING | a file the logger has open. INFO only |
 
 The fault log takes COPY and DELETE only while the IOmcu link is up: with
 the link down the panel writes to it every 5s.
 
+The ESC signal-wire session's backups in `BENCH/ESCW/CONF` are named
+`ESCWnnn-<firmware>.TXT`, such as `ESCW001-AM32.TXT`
+([Backup names](EscWire.md#backup-names)). FILES deletes any of them; the
+session's own FILES list deletes all but a backup the session saved.
+
 The footer, body y 440 to 492, holds RESCAN, 140 x 52px, at the left, as
 on [Logs](#logs), then COPY, MOVE, RENAME, DELETE, NEW, INFO and OPEN,
 118 x 52px, OPEN at the right margin; the buttons stand 6px apart, and the
-footer ends 4px above the alert band. A button that would be refused is
+footer ends 4px above the alert band. Each label is in the 10 x 20 face
+with at least 4px either side; the German AKTUALISIEREN is 130px wide and
+VERSCHIEBEN 110px. A button that would be refused is
 drawn dimmed; a tap on it says why in the message line, two lines of the
 12 x 24 face over the footer.
 
@@ -2579,7 +2951,8 @@ folder the entry is in, or a folder into itself, are refused:
 The text viewer shows a file of the card as text, read-only. OPEN on a
 file in FILES opens it, and OPEN on a report in [Logs](#logs). The home
 tag closes it: onto the panes when FILES opened it, back to LOGS when LOGS
-did. Leaving FILES closes it too. It opens a file of up to 1MiB
+did. Leaving FILES closes it too, unless the [editor](#the-text-editor)
+holds unsaved text. It opens a file of up to 1MiB
 (1,048,576 bytes) and up to 65,536 line ends; the card task reads it
 whole, in chunks of 16KiB, while the screen shows `Reading the card.`
 
@@ -2589,7 +2962,8 @@ front cut to `..` past 44 cells), its size, READ-ONLY, and at the right
 at the file's end starts no line of its own.
 
 The text stands in a panel of 1008 x 372px from body y 60: 18 rows of 92
-cells of the 10 x 20 face, 20px apart. SMALL, at the footer's left,
+cells of the 10 x 20 face, 20px apart. EDIT, the footer's second button,
+opens the [editor](#the-text-editor). SMALL, at the footer's left,
 switches to the 8 x 16 face: 22 rows of 115 cells, 16px apart, for a
 report's step table; it then reads NORMAL. The choice holds for every file
 until the panel restarts.
@@ -2646,14 +3020,170 @@ The viewer holds the file in one buffer of 1MiB and its line index of
 256KiB, both in PSRAM (pseudo-static random-access memory). The time a
 read of 1MiB takes on the panel's card is not measured.
 
+### The text editor
+
+![A line typed into a report, the keyboard open](img/files-edit.png)
+
+EDIT in the viewer switches it to the editor and opens the keyboard. The
+editor changes the text in the panel's memory; SAVE writes it to the
+card. The panel then holds 8 rows of the text (10 with SMALL) in a panel
+of 1008 x 170px from body y 60, and the keyboard from body y 236 to the
+alert band: 4 rows of 10 keys, 93 x 56px each, 6px apart, with no digit
+row; the letters start at the top row. Four layers share the 3 character
+rows: lower case, capitals (`ABC`), and two pages of marks. `123`, left of
+DEL, shows the first page: the digits 0 to 9 on the top row and the 17
+marks `- / : ; ( ) = # " _ . , ? ! ' [ ]`. On that page `#+=`, left of Z,
+shows the second page with the other 15: `$ % & * + < > @ \ ^` and
+`` ` { | } ~ ``. `abc` goes back to the letters from either page. A digit
+is 2 taps: `123`, then the digit. DEL takes the character before the
+cursor. The bottom row
+is ENTER (2 keys wide), SPACE (4), `<-` and `->` (1 each) and DONE (2).
+A key acts on the release of the contact that pressed it, over the same
+key; a second contact is ignored while one is down. The keyboard types
+ASCII (0x20 to 0x7E); the letters Ä Ö Ü ä ö ü ß are drawn but not typed.
+
+The cursor is a bar 2px wide in the accent colour before the cell it
+types into. A tap on the text puts it on the nearest cell of the tapped
+row; past a line's end it stands at that end, under the last line at the
+text's end. `<-` and `->` move it one character, a line end of CR LF
+counting as one. After every key the text moves the least that keeps the
+cursor's row on the screen. The header shows EDITING while the text is as
+on the card, MODIFIED in the warning colour once it differs, and
+`LINE 3 OF 59` for the cursor's line.
+
+ENTER types the file's own line end: CR LF in a file whose first line
+ends with CR LF, LF otherwise and in an empty file. The editor holds the
+limits of the viewer: a key that would make the text larger than 1MiB
+types nothing and the header says `Text full: 1MB at most.`; ENTER at
+65,536 line ends types nothing and says `Text full: 65536 lines at most.`
+
+DONE, or the home tag, closes the keyboard; the footer then holds SAVE,
+REVERT and KEYBOARD at the left, PAGE UP and PAGE DOWN at the right, and a
+note of 3 rows of the 8 x 16 face between them. KEYBOARD opens the
+keyboard again.
+
+SETUP → PANEL → Keyboard see-through lets the text show through the
+editor's keyboard: OFF (the default), 25% or 50%. Above OFF the panel of
+the text reaches to body y 432 under the keyboard, as in the viewer, and
+rows 9 to 18 (11 to 22 with SMALL) show through it. Each pixel of a key
+and of the gaps between keys is then 25% or 50% the text behind and the
+rest the key's or the panel's colour; the labels, each key's top hairline
+and the keyboard's outline stay opaque. The 8 rows over the keyboard are
+still the ones the cursor is kept on, a tap places it on and PAGE UP and
+PAGE DOWN move. The setting reaches only the editor's keyboard: the name,
+folder, search and Wi-Fi keyboards carry their own text field and draw
+opaque. Steps above 50% are not offered: the keys' edges then fade into
+the text behind them.
+
+![A KST file saved with a comment: its checksum line is gone](img/files-edit-kst.png)
+
+SAVE writes the text as `<name>.NEW` in the file's folder, in chunks of
+16KiB on the card task, deletes `<name>` and gives the new file its name;
+the note then says `<name> saved.`, and the header shows the size
+written. From the tap on SAVE until the save
+ends the text does not change: a key types nothing, REVERT and the home
+tag wait, and the question of an open over the text shows DISCARD grey.
+A save that writes the text closes that question and opens the other
+file; a save that fails leaves the question with DISCARD live. SAVE is
+grey while the text is as on the card, and a tap on it then says
+`No changes to save.` SAVE is shut while the bench is ARMED, while a run
+is being logged and while the logger writes the file: the note says
+`Bench ARMED. The card is read-only.` or the reason in its own words, and
+the text stays as typed. A switch to ARMED or a run that starts during a
+save stops it before its next chunk; its `.NEW` is removed, the file on
+the card stays as it was, and the note says
+`Stopped: the bench switched to ARMED.` or
+`Stopped: a run is being logged.` A card taken out during a save leaves
+the text unsaved with `Not saved: the card was taken out or swapped.`;
+taken out between the delete and the rename, the card holds the whole
+text as `<name>.NEW` and no `<name>`, and RENAME in FILES gives it its
+name back.
+
+SAVE writes only over the file the editor opened. The editor keeps the
+CRC-32 (cyclic redundancy check) of the file as it read it, and of the
+text each save wrote, the ETag of the Wi-Fi page's [file
+API](#the-file-api). SAVE first reads the file on the card and sums it, in
+the same job before the `.NEW` is opened: a save of 1MiB reads 1MiB first,
+in a time not measured. A file changed or removed since, by the Wi-Fi
+page's editor or an upload ([Browser writes](#browser-writes)), is not
+written. The note says `<name> changed on the card since it was read.`,
+and the question UNSAVED CHANGES says
+`<name> changed on the card since it was read. READ AGAIN drops these changes.`
+over STAY, READ AGAIN and OVERWRITE, 208 x 56px each. STAY keeps the text;
+a second SAVE is refused the same way. READ AGAIN drops the text and reads
+the file from the card into the viewer. OVERWRITE takes a 2s hold; a
+release before 2s writes nothing and shows `Hold 2s to overwrite.` on the
+alert band, and a press that slides off, the home tag and ARMED end the
+hold without a write. The completed hold saves the text over the file as
+the refused SAVE read it: its sum replaces the editor's for this one SAVE,
+and the same job compares it before the `.NEW` is opened. A file changed
+after that refusal, also during the hold, is refused in turn and the
+question shows again, with the sum of the file that SAVE found. A file removed
+has no sum: OVERWRITE is dimmed, takes no hold, and nothing makes the file
+again. A write that fails leaves the file as it was and the text unsaved,
+and the next SAVE is refused until a hold completes. A question that was already open when the save ended,
+the one of an open over the text, stays as it was.
+
+A file opens only without a NUL byte in its first 4kB. SAVE holds the
+text to the same test: an edit that brings a NUL from further in into the
+first 4kB is not saved, the note says
+`Not saved: a NUL byte in the first 4kB. FILES would not open the file again.`,
+and the text stays as typed. REVERT puts back such a file as loaded,
+without a second test. A file over the editor's 1MiB or 65,536 line ends
+leaves the text as it is, with the note of a key refused at that limit;
+a file FILES opened is within both.
+
+A KST file, one whose first line is `KST servo configuration, format`
+and a number, holds a checksum line when the servo programmer wrote it.
+SAVE of a changed KST file takes out every line the programmer's reader
+takes for a checksum line: its first word, after spaces and tabs, is
+`checksum` in any case, ended by a space, a tab, `=`, `:` or the line's
+end. The note says
+`Saved without the checksum line: the servo programmer reads it as
+edited.` The programmer then reads it as a file a person edited: from its
+value lines, with no checksum to match ([Programmer](#programmer)). A KST
+file saved unchanged
+keeps its checksum. A file in `BENCH/ESC/CONF` ending in `.json` is read
+when the panel starts; the note after its save says
+`Saved. The panel reads it at its next start.`
+
+![The question over unsaved changes](img/files-edit-unsaved.png)
+
+REVERT, and the home tag with the keyboard closed while the text is
+unsaved, ask first: UNSAVED CHANGES over STAY and DISCARD, 300 x 56px
+each. STAY, or the home tag over the question, keeps the text. DISCARD
+after REVERT puts the text back to the file as loaded or last saved, the
+editor still on; DISCARD after the home tag does the same and shows the
+viewer, and the next home tag leaves it as the viewer's does, to the
+panes or back to LOGS. With the text as on the card the home tag shows
+the viewer without a question. An OPEN from LOGS or from FILES while the
+text is unsaved shows the question too; DISCARD then opens the other
+file, STAY keeps the text and drops the open.
+
+STOP stops the bench and leaves the editor and its text as they are;
+SAVE is then shut while the bench is ARMED. A route that leaves FILES
+without the home tag keeps an editor with unsaved text, and FILES shows
+it again on the way back in. There is no undo of single keys: DISCARD
+puts back the whole file. The editor keeps the file as loaded in a second
+buffer of 1MiB in PSRAM for DISCARD. The servo programmer's journal
+`BENCH/KST/CONF/KST.TXT` does not open, and the fault log
+`BENCH/RCBENCH.LOG` opens with EDIT grey; a tap on it says why. The
+typing rate the panel keeps up with is not measured.
+
 ### RESCAN
 
 RESCAN looks at the slot, then reads each pane's folder again, one pane
-after the other, at the page the pane shows: from that page's first entry,
-as PREV and NEXT name their pages. Each pane keeps its place:
+after the other, at the page the pane shows. The first page is read from
+the folder's first entry, so an entry new on the card that ranks before
+every row, such as an `ATEST001.CSV` beside `SERVO` logs, comes onto it.
+A later page is read from its own first entry, as PREV and NEXT name their
+pages; an entry new before it is on a page before it. The way back into
+FILES reads both panes the same way. Each pane keeps its place:
 
-- the entry on the pane's top row stays on top; when it has gone from the
-  card, the entry at its place in the order is on top;
+- a list that shows its folder's first entry on top shows the folder's
+  first entry on top again, the new one included;
+- otherwise the entry on the pane's top row stays on top; when it has gone
+  from the card, the entry at its place in the order is on top;
 - the selected entry stays selected while it is on the page read. When it
   has gone from the card, or stands on another page, nothing is
   selected, as after a DELETE: MOVE and RENAME act on the selection without
@@ -2695,8 +3225,11 @@ stops before its next chunk of 16KiB and says
 ![The DELETE question](img/files-delete.png)
 
 The DELETE question is a box of 700 x 280px with CANCEL and DELETE of
-300 x 56px. It names the entry and its size; for a run's CSV with a report
-of the same number it names the report that goes with it.
+300 x 56px. It names the entry and its size; for a run's CSV it names the
+report of the same number that goes with it when the pane's page lists
+that report. A report that would stand on the next or the previous page
+of a folder of more than 48 entries is named too: the page cannot tell,
+and DELETE takes the report along whenever the card holds it.
 
 ![A copy under way](img/files-copy.png)
 
@@ -2758,10 +3291,11 @@ its rate on the console,
 ![WI-FI, no home network kept](img/wifi.png)
 
 WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the
-card to download, and a panel firmware image to upload. It opens from the
-WI-FI tile on [SETUP](#setup) and from WI-FI in the bottom row of
-[LOGS](#logs). Its home tag returns to the screen that opened it, SETUP or
-LOGS; so does CLOSE on PANEL UPDATE after an upload's install failed. Over
+card to download, and to change as [Browser writes](#browser-writes)
+allows, and a panel firmware image to upload. It opens from its tile on
+[SETUP](#setup), from the WI-FI button of [LOGS](#logs) and from the button of
+[UPDATES](#updates). Its home tag returns to the one that opened it; so does
+CLOSE on PANEL UPDATE after an upload's install failed. Over
 the network list or a keyboard the home tag climbs one level first, as
 CANCEL does: from a keyboard to the list, keeping nothing typed, and from the
 list to the buttons. Over the question about an uploaded image the home tag
@@ -2771,16 +3305,17 @@ there leaves the screen. The
 radio runs only while
 this screen is open, and for the release check and the download of
 [Updates](#updates). It is off at every start of the panel, and it goes off
-when the screen is left, before an install writes the flash, and after
-10min without a request.
+when the screen is left, before an install writes the flash, and after 10min
+without a request. Leaving with a browser connected or an upload under way ends
+them the same way. Opening the screen starts no radio.
 
 Every view of WI-FI ends 4px above the alert band, at body y 492, so an
 alert covers no control. Rows, buttons and keys are 48px or taller.
 
 | View | Layout |
 | --- | --- |
-| Radio off | five buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
-| Radio on | rows of 56px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424 |
+| Radio off | from body y 16, seven buttons of 460 x 60px (69.0 x 9.0mm), 8px apart, on the left; on the right a card of 524px with lines of 49 characters in 10 x 20, 24px apart |
+| Radio on | from body y 16, rows of 56px: the label in 10 x 20 in 240px, the value in 20 x 36 in 740px, where a network name of 32 characters takes 640px; the lines under the rows in 12 x 24, 28px apart; WI-FI OFF 460 x 60px from body y 424, and with Browser writes HOLD the writes' button the same size beside it from body x 548 |
 | Network list | two columns of eight rows of 492 x 48px, 52px apart: the name in 12 x 24 (32 characters are 384px), the signal in 10 x 20; SCAN AGAIN, HIDDEN NETWORK and CANCEL 328 x 56px each |
 | Question about an image | a card of 1008 x 484px: the title and the versions in 20 x 36, the sentences in 12 x 24, wrapped at 80 characters; CANCEL and HOLD 2s TO INSTALL 460 x 72px |
 | Keyboard | 1008 x 484px, keys of 93 x 71px ([Keyboard](#keypad-keyboard-and-the-shared-controls)) |
@@ -2818,15 +3353,53 @@ or a computer needs:
 | Band and channel | 2.4GHz, channel 6 (`WIFI_ACCESS_AP_CHANNEL`) |
 | Security | WPA2 (Wi-Fi Protected Access 2) personal |
 | Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, `rcbench-3F7A` |
-| Password | 8 characters, made new at every start, from `abcdefghjkmnpqrstuvwxyz23456789` (no 0, 1, i, l or o) |
+| Password | RANDOM: 8 characters, made new at every start, from `abcdefghjkmnpqrstuvwxyz23456789` (no 0, 1, i, l or o). Kept: the 8 to 63 characters of [HOTSPOT PASSWORD](#hotspot-password-and-web-code) |
 | Clients | 1 at a time |
 | IP address | `http://192.168.4.1/` |
 | Range | not measured |
 
-1. SETUP → WI-FI → ACCESS POINT, or LOGS → WI-FI → ACCESS POINT.
+1. LOGS → WI-FI → ACCESS POINT.
 2. On the phone or the computer, join the network the screen names, with
    the password it shows.
 3. Open `http://192.168.4.1/` and enter the access code the screen shows.
+
+### HOTSPOT PASSWORD and WEB CODE
+
+![HOTSPOT PASSWORD kept, WEB CODE random](img/wifi-kept-buttons.png)
+![The view of a value that is random](img/wifi-kept-pass.png)
+![The view of a kept value](img/wifi-kept-pass-set.png)
+![The access code's view](img/wifi-kept-code.png)
+
+HOTSPOT PASSWORD sets the password of the network ACCESS POINT starts. WEB
+CODE sets the access code the browser page asks for. Each is RANDOM, the
+default, or a value the operator typed, kept across restarts. The two buttons
+stand on the radio-off view and read `HOTSPOT PASSWORD: RANDOM` or
+`HOTSPOT PASSWORD: KEPT`, `WEB CODE: RANDOM` or `WEB CODE: KEPT`. They take a
+tap in every bench state, as nothing on them reaches the radio.
+
+| Part | Figure |
+| --- | --- |
+| Value | 8 to 63 characters, 0x20 to 0x7E: letters, digits, space and marks. WPA2 personal's passphrase takes the same range |
+| TYPE A VALUE | the Wi-Fi keyboard: its three layers type only that range, and it takes no 64th character |
+| 7 characters or fewer | OK is refused, with `Enter at least 8 characters.` in the keyboard's title row |
+| BACK TO RANDOM | one tap, no typing, grey while the value is RANDOM |
+| When it takes effect | at the next start of the radio. The screen says so: `A change takes effect at the next start of the radio.` |
+| Shown | on its own view, and with the radio up on the rows, in plain form as a random password is. The keyboard masks it until SHOW |
+| Rows with a long value | 20 x 36 for up to 37 characters, 10 x 20 for up to 63. The view uses 20 x 36 for up to 48 characters, 12 x 24 for up to 63 |
+| Kept in | NVS, namespace `wifi`, keys `ap_pass` and `web_code`. No key is RANDOM: a store a build without these keys wrote loads with its network and its switch unchanged. A stored value the rule refuses loads as RANDOM |
+| FORGET HOME NETWORK | keeps both values |
+| Recovery | each view shows its value on the panel, and BACK TO RANDOM needs no browser, in every bench state |
+
+A change takes effect at the next start because the controls exist only with
+the radio off. No session is open then, so a session opened with the old code
+cannot outlast the change: the next start compares every cookie and every
+entry with the new code alone.
+
+A kept value is never written to a log, the console or a file, and no answer
+of the page or the file API carries it. `tools/check_wifi_secrets.py` fails
+the CI run on a log call that names one and on a use outside the sources that
+hold one. The panel has no export or backup of NVS. The screenshot refusal above
+covers the one way a picture of a value could reach the card.
 
 ### Home network
 
@@ -2910,7 +3483,10 @@ to 0. Each drop goes to the serial log as one line with its reason number
 (ESP-IDF's `wifi_err_reason_t`).
 
 FORGET HOME NETWORK erases the name and the password from NVS and sets the
-access code back to on.
+access code back to on. It keeps HOTSPOT PASSWORD and WEB CODE: its name says
+network, and its button is grey with no network kept, so it could not be the
+way back for them. BACK TO RANDOM is ([HOTSPOT PASSWORD and WEB
+CODE](#hotspot-password-and-web-code)).
 
 A change of what is kept (a network, FORGET, the access code switch) takes
 effect at once and reaches NVS on the next frame that may write flash. A
@@ -2921,9 +3497,9 @@ the restart.
 
 Current limitations:
 
-- NVS is not encrypted. The home network's password is kept in plain form in
-  the panel's flash, where anyone who reads the flash over USB (Universal
-  Serial Bus) reads it.
+- NVS is not encrypted. The home network's password, a kept HOTSPOT PASSWORD
+  and a kept WEB CODE are kept in plain form in the panel's flash, where anyone
+  who reads the flash over USB (Universal Serial Bus) reads them.
 - The page is plain HTTP (hypertext transfer protocol). On a home network
   the access code and every file cross the network unencrypted. The screen
   says so while joined.
@@ -2933,18 +3509,57 @@ Current limitations:
   and the panel can replace the image on its way. The IOmcu image a
   panel image carries comes with it and is offered to the IOmcu at the
   next link-up.
+- A device that reads the traffic on a home network can send a write of
+  its own while writes are allowed: the access code and the headers cross
+  in plain form.
+- The browser's editor saves a file with mixed line ends with LF ends;
+  FILES' editor on the panel keeps them.
 - The panel joins only while this screen is open. A panel that stays joined
   whenever the bench is SAFE is not built.
 - The page is slow to arrive. On a home network the page, 18.9kB with its
   card listing, took 4.54s, about 4.2kB/s, against a download's
-  688-757kB/s. The cause is not measured.
+  688-757kB/s. The cause is not measured. The page with the file manager
+  is 64,045 bytes in English on an empty card and has no card listing;
+  its time is not measured.
 
 ### The access code
 
-The page asks for an 8-character code before it lists a file or takes an
-upload. The screen shows it, and it is made new at every start of the radio,
-so a code from an earlier session opens nothing. The browser keeps it for the
-session. 16 wrong codes switch the radio off.
+The page asks for a code before it lists a file or takes an upload. The screen
+shows it. The browser keeps it for the session. 16 wrong codes switch the radio
+off, for a kept code as well.
+
+| A wrong code | Counts toward the 16 |
+| --- | --- |
+| In the entry (`POST /code`) | every time, also the same value again |
+| In the cookie, a value new to this session | once |
+| In the cookie, one of the last 4 values | no. The request gets the form or the 403 and nothing else changes |
+
+So a tab left open from before a change of the code, or a page's several
+requests, cannot switch the radio off: 100 requests with one old cookie count 1.
+A repeat tells a guesser nothing new, and 16 different values still switch the
+radio off. The memory holds 4 hashes of 8 bytes, SHA-256 keyed with 16 random
+bytes (`WA_STALE_KEPT`, `WA_STALE_KEY`), never a value. A guess cannot be chosen
+to meet a hash, as the key is made new at every start of the radio. That start
+empties the memory and the count. A correct code in the cookie or the entry is
+compared over the whole field in constant time, whatever the memory holds.
+
+Current limitation: more than 4 different old cookies at once, as from 5
+browsers each with its own, push each other out, and each one counts again when
+it comes back.
+
+With WEB CODE at RANDOM, the default, the code has 8 characters and is made new
+at every start of the radio, so a code from an earlier session opens nothing.
+
+With WEB CODE kept, that does not hold. The code has 8 to 63 characters and
+stays valid until it is changed: a browser that kept it, and anyone who saw it,
+opens the page at any later session. A change ends it at the next start of the
+radio. On a home network it crosses the network unencrypted over plain HTTP at
+every request, in the cookie, as a random code does, and a value read there
+stays valid until changed where a random one ends with the session. 16 wrong
+codes end one radio session; the count starts again at the next.
+
+The cookie carries the code percent-encoded (`wa_code_cookie()`): 189 bytes at
+most, where a code of 63 characters needs every one encoded.
 
 ACCESS CODE switches it, for both ways in. It is on by default, after
 FORGET HOME NETWORK and on a panel with nothing kept. The switch is kept in
@@ -2958,17 +3573,88 @@ off (`shared/webaccess/wa_guard.h`):
 | Check | Refused with |
 | --- | --- |
 | The `Host` header names the panel: `rcbench-3F7A.local`, `rcbench-3F7A` or the address the browser connected to (`192.168.4.1` as an access point), in any letter case, with no port or port 80. An IPv6 address is refused. | 421 Misdirected Request |
-| A page, file or ZIP request carries no body. | 400 Bad Request |
-| A code entry has at most 95 bytes of body. | 413 Content Too Large |
-| A code entry and an upload carry an `Origin` header of `http://` and a name above; without an `Origin`, a `Referer` that starts so. Neither header, `Origin: null` and any other site are refused. | 403 Forbidden |
-| An upload carries the header `X-Rcbench-Upload: 1`, which the page's own script sends. | 403 Forbidden |
+| A page, file, ZIP or file API request carries no body. | 400 Bad Request |
+| A code entry has at most 200 bytes of body, a file API PUT at most 1,048,576 and a file API form at most 1,024. | 413 Content Too Large |
+| A code entry, an upload and every write of the file API carry an `Origin` header of `http://` and a name above; without an `Origin`, a `Referer` that starts so. Neither header, `Origin: null` and any other site are refused. | 403 Forbidden |
+| An upload and every write of the file API carry the header `X-Rcbench-Upload: 1`, which the page's own script sends. | 403 Forbidden |
 
 So another web page open in the same browser cannot reach the card under
 a DNS (domain name system) name of its own, cannot send codes that count
-toward the 16, and cannot send an image. A browser sends a header of its
+toward the 16, and cannot send an image or change the card. A browser
+sends a header of its
 own on a request to another site only after asking that site, and the
 panel answers no such question with a yes. A refused request is answered
-before its body is read, and the connection closes with the answer.
+before its body is read, and the connection closes with the answer. What
+the client still sends is read and dropped, until the body has ended, the
+client closes, 2s pass without a byte or 10s have passed, so the client
+reads the answer before the connection goes: a close with unread bytes
+would reset the connection and lose it. A body still arriving after 10s
+ends in that reset; 1MiB in 10s is 105kB/s. The
+file API answers the 421, the 413, the 403 and the 400 in JSON as its
+other refusals, with `HOST`, `TOO_LARGE`, `FORM_TOO_LARGE`, `ORIGIN` and
+`BODY` ([the file API](#the-file-api)); the page, `/card/` and the ZIP file
+answer them with no body.
+
+### Browser writes
+
+![Browser writes HOLD, before the hold](img/wifi-writes-hold.png)
+![After the hold, three writes made](img/wifi-writes-allowed.png)
+
+SETUP > SD CARD > Browser writes sets what a browser needs to change the
+card through the page: UPLOAD, NEW FOLDER, NEW TEXT FILE, RENAME, MOVE,
+DELETE and the editor's SAVE ([the page](#the-page)). It is kept with the other settings.
+
+| Value | A write needs |
+| --- | --- |
+| OPEN (default) | nothing beyond reaching the page: the access code while ACCESS CODE is on |
+| ACCESS CODE | this session's access code, with ACCESS CODE off as well: reads then need no code, writes do, and the page asks for the code at the first write |
+| HOLD | a 2s hold on HOLD 2s: ALLOW BROWSER WRITES, once a radio session |
+| OFF | no write is taken |
+
+While the page is served, a line under the rows says which holds:
+`The browser may write to the card: 3 writes so far.`,
+`Browser writes need the access code r4tcw9pe.` (ACCESS CODE with
+ACCESS CODE off), `The browser may not write to the card until the hold.`
+or `Browser writes are off: SD CARD.` The count is of the writes
+the panel made for the page this radio session.
+
+With HOLD, HOLD 2s: ALLOW BROWSER WRITES stands beside WI-FI OFF,
+460 x 60px from body x 548. A release before 2s allows nothing and shows
+`Hold 2s to allow browser writes.` on the alert band. After the hold the
+button is BROWSER WRITES OFF, a tap. Writes stay allowed until the radio
+goes off (WI-FI OFF, the screen left, 10min without a request, ARM, STOP,
+the supply output, a log run, 16 wrong codes) or BROWSER WRITES OFF is
+tapped; the next radio session starts without them.
+
+Every write passes, in this order
+(`firmware/panel/components/wifi_access/wifi_write.c`):
+
+1. the guard of the table above: the page's `Origin`, the script's
+   header, at most 1,048,576 bytes of a file or 1,024 of a form;
+2. the access code while ACCESS CODE is on, then the setting;
+3. for a PUT, under the card's job lock, what it can be refused for before
+   its body: FILES' rules, `If-Match` against the file on the card and
+   `If-None-Match`. Nothing is written. A replace reads the old file here
+   and again in step 6;
+4. the body, received whole into PSRAM before any card call, in 4,096B
+   pieces; the radio going off, a closed connection or 30s without a byte
+   end the request with nothing written;
+5. the card's job lock, which FILES on the panel holds while it runs a
+   job: the write waits for it 2000ms at most, then is answered
+   `PANEL_BUSY` with `Retry-After: 2`; the page sends it again after 2s,
+   3 times at most;
+6. FILES' rules and write gate, as for FILES itself: SAFE, no run logged,
+   the bench's folders, the servo programmers' records, the logger's
+   files, the names the panel's keyboard types. A PUT's `If-Match` and
+   `If-None-Match` are compared again here, directly before the write, so a
+   file changed while the body arrived is refused. The gate is asked again
+   before every 16KiB, so a switch to ARMED stops a write at its next
+   chunk and removes its `.NEW`.
+
+A refusal before step 4 closes the connection with the answer: the body
+reaches no buffer of the panel's, the bytes still arriving are dropped as
+above. While the bench is ARMED, the supply output is on or a run is
+logged, the radio is off and the page cannot be reached at all.
 
 ### The page
 
@@ -2995,14 +3681,148 @@ each flash erase (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 `firmware/panel/sdkconfig.defaults`). What the display shows during the
 erases is not measured.
 
-**Files on the card.** Every file, folder by folder, with its name, its size
-in bytes and its modification time as the card has it, in the zone of
-SETUP > PANEL's Time zone. A stamp in 1980, an unset clock's, leaves the
-time cell empty. Each name downloads
-that file. The page reads the card only: nothing on it is deleted, renamed or
-written. A name over 255 characters, a path over 384 bytes and a folder
-deeper than 16 are left out, and the page says how many. With no card, or a
-card that cannot be read, the page says so and the upload still works.
+**Files on the card.** The card in two panes, as [FILES](#files) shows
+it, read through [the file API](#the-file-api). It changes the card only
+as [Browser writes](#browser-writes) allows. Each pane is one folder,
+up to 48 entries a page, folders first, then names with case folded. The
+left pane opens on the card's root, the right one on the User log folder
+(`USER/LOGS` by default). The browser keeps both places for its tab while
+the same card is in the slot; another card starts both again there.
+
+- A pane's top row is its folder's path on a button that goes up one
+  folder; the root shows the card's volume label, or `SD CARD`. PREV and
+  NEXT stand beside it while the folder holds more than 48 entries.
+- The heading counts the entries as FILES does, `6 ENTRIES` or
+  `ENTRIES 49 TO 96 OF 120`, and the entries not listed after it.
+- A row shows the name, the size (`512B`, `14kB`, `7.0MB`; 1kB is 1,024
+  bytes), the kind word and the state word of FILES (`WRITING`, `LOCKED`,
+  `FIXED`).
+- A click or a tap selects a row and makes its pane the active one, drawn
+  with the accent border. A second tap, a double click or Enter is OPEN.
+- RESCAN, INFO, DOWNLOAD and OPEN, at the window's foot, act on the
+  active pane's selected entry. A button that would be refused is drawn dimmed, and a tap on it
+  says why under the buttons.
+
+| Button | What it does |
+|---|---|
+| RESCAN | asks the panel's state again, then reads each pane again at the page it shows, as FILES' [RESCAN](#rescan) does; a card swapped since starts both panes again in the root and the User log folder |
+| INFO | the entry's name, folder, kind, size or entries, time and rule, as FILES' INFO box; the time is the stamp the card holds in the zone of SETUP > PANEL's Time zone, `not known` for a stamp in 1980 |
+| DOWNLOAD | the selected file through `/card/<path>`; dimmed on a folder |
+| OPEN | enters a folder, or shows a file in the viewer over the page. Dimmed on a file over 1,048,576 bytes, on a file the logger writes and on the servo programmers' records, which DOWNLOAD still sends |
+
+A second row holds the writes. Each waits for the panel's answer, and
+both panes are read again after one that went through.
+
+| Button | What it does |
+|---|---|
+| UPLOAD | sends one file of up to 1,048,576 bytes into the active pane's folder, with a progress bar; a larger file is refused before a byte is sent. A name that is taken asks `UP.TXT exists in this folder. Replace it?` with REPLACE and CANCEL. Before the question the page asks `/api/info` for the ETag of the file there, and REPLACE sends `If-Match` with it: a change on the panel or from another browser while the question is open is refused with `Changed on the card since it was read. Read it again.` A file there over 1,048,576 bytes has no ETag and is replaced without the compare. The file has to be text as the viewer takes it: no NUL byte in its first 4,096 bytes and 65,536 line ends at most |
+| NEW FOLDER | a folder of the name typed, in the active pane's folder |
+| NEW TEXT FILE | an empty file of the name typed there; a taken name is refused |
+| RENAME | the selected entry under the name typed, in its folder; a change of case alone is a rename |
+| MOVE | the selected entry into the other pane's folder under its name; a folder only when it is empty |
+| DELETE | asks `DELETE FROM CARD` with the name, `This deletes the file from the card.` or `This deletes the empty folder from the card.`, the report a run log takes along, and `This cannot be undone.`; a folder only when it is empty |
+
+A name typed or uploaded follows the panel's keyboard without the German
+letters: 1 to 59 bytes of ASCII (American Standard Code for Information
+Interchange); letters, digits, space and marks but `" * / : < > ? \ |`;
+no full stop or space at either end. An entry whose path holds a
+character outside ASCII, the German letters included, is renamed, moved
+and deleted on FILES only. A write button is
+dimmed while the panel takes no write (the setting, the hold, ARMED, a
+run), with nothing selected, RENAME and MOVE on a folder of the bench, on the
+servo programmers' records and on a file the logger writes; a tap on it says
+why. With Browser writes ACCESS CODE and ACCESS CODE off, the first write
+asks for the code in a box. SEND CODE sends it to `/code` without leaving the
+page, and the write that asked goes out again. An answer that arrives after
+the box's CANCEL sends nothing; a wrong code asks again.
+
+The viewer shows the file read-only over the page: its path, its size,
+READ-ONLY, `LINE 23 OF 57` for the line at the top, `MIXED LINE ENDS` for
+a file with more than one kind, and CLOSE (or Escape). Its lines are
+coloured as the panel's [text viewer](#the-text-viewer) colours them, with
+the same rules, the same verdict words in English and German, and the
+panel's palettes: the light one, or the dark one when the browser asks for
+a dark scheme. A label (`Result:`, `name =`) is TEXT_DIM: #46586c in the
+light palette, #84acca in the dark one, as the panel draws it in each
+theme. The whole page follows the same scheme: its background, text,
+lines, panes, boxes and the viewer's header take the panel's theme
+colours, PANEL, TEXT, TEXT_DIM, EDGE and ACCENT, light or dark. A line is not wrapped; the text scrolls sideways. A tab
+reaches the next multiple of 8 cells. A control character and a byte that
+starts no UTF-8 sequence show as `?`. A file the file API refuses shows its
+refusal's text. The page draws the lines on screen and 200 lines above and
+below them.
+
+EDIT in the viewer's header opens the file in the browser's editor
+(`shared/webaccess/web/edit.js`): a text box over the same coloured
+lines, in the same font of 13px with lines 20px apart, so the browser's
+own caret, selection, undo, copy and paste and a phone's keyboard work on
+it. The lines in view and 200 above and below are split and coloured
+again one frame after each change and each scroll. The header then shows
+EDITING, or MODIFIED in the warning colour while the text differs from the
+file, `LINE 3 OF 59` for the top line, SAVE and CLOSE; Ctrl+S is SAVE.
+EDIT is refused, and a tap says why, where a write button is: while the
+panel takes no write, on a file the logger writes, on the servo
+programmers' records and on the fault log.
+
+The editor keeps the file's bytes. Its line ends, LF, CR LF or CR, go back
+in on SAVE, and so does a BOM (byte order mark) at its start; a line typed
+ends as the file's lines end. A file with more than one kind of line end
+is saved with LF ends; EDIT says
+`Mixed line ends: SAVE writes every line end as LF.` A file that is not
+UTF-8, or that the text box would not give back byte for byte, does not
+open in the editor:
+`The browser cannot keep every byte of this file (not UTF-8). Edit it on the panel: FILES > EDIT.`
+SAVE holds the viewer's limits on the bytes as saved, the BOM and CR LF
+ends counted: over 1,048,576 bytes it sends nothing and says
+`Text full: 1MB at most.`, over 65,536 line ends
+`Text full: 65536 lines at most.`
+
+SAVE sends `PUT /api/file` with `If-Match` and the ETag of the file as the
+viewer read it, or as the last SAVE wrote it; the editor sends no write
+without it. The note then says `<name> saved.` A KST file, first line
+`KST servo configuration, format` and a number, loses every checksum line
+first, by the rule FILES' editor uses ([the text
+editor](#the-text-editor)), and the note says
+`Saved without the checksum line: the servo programmer reads it as edited.`
+An ESC profile the panel reads at its start says
+`Saved. The panel reads it at its next start.` A file changed on the card
+since it was read, by FILES' editor, an upload or another browser, is
+refused 412 `CHANGED`. The header then shows
+`Changed on the card since it was read. Read it again.`, and the box
+UNSAVED CHANGES asks
+`<name> changed on the card since it was read. READ AGAIN drops these changes.`
+with STAY, READ AGAIN and OVERWRITE. STAY keeps the text; READ AGAIN drops
+it, reads the file from the card again and shows it. OVERWRITE takes a
+press of 2s, with a fill across the button; Space or Enter held count as
+the press. A release before 2s sends nothing and shows
+`Hold 2s to overwrite.` in the box, and a press that leaves the button,
+Escape and a lost focus end it without a write. The completed press sends
+SAVE with `If-Match` and the ETag the 412 carried, the file as that refusal
+found it. A file changed after that refusal, also during the press, is
+answered 412 again and the box asks again with the ETag of that answer. A file
+removed gives a 412 without an ETag: OVERWRITE is dimmed, and nothing goes
+out. A write that fails leaves the file as it was and the text unsaved, and
+the next SAVE is refused 412. With Browser writes ACCESS CODE and
+no code given yet, SAVE asks for the code in the editor's box: SEND CODE
+sends it to `/code` without leaving the page, the panel's answer sets the
+cookie, and SAVE goes out again with the text as it stands; a wrong code
+says `Wrong code.` and asks again. An answer that arrives after the box's
+CANCEL, or after the editor closed, saves nothing. Any other refusal shows its text in the
+header, and the text stays. While a SAVE runs the text does not
+change, and CLOSE waits for it.
+
+CLOSE, or Escape, while the text differs from the file asks UNSAVED
+CHANGES: `Leave <name> without saving? The changes are lost.` with STAY
+and DISCARD. Leaving or reloading the page with changes asks through the
+browser's own question, whose words are the browser's. While the viewer
+shows, the panes and the buttons behind it take no click, focus or key,
+so no file opens over the editor's text.
+
+The page sends one request at a time. A request without an answer after 2s
+shows `Waiting for the panel: it answers one request at a time.`; a
+download through `/card/` holds the next request until it ends. A browser
+without JavaScript shows `The file list needs JavaScript.` and the ZIP
+link.
 
 **Download all as one ZIP file** sends the whole card as one ZIP file. The
 page gives the number of files, their bytes and the ZIP file's bytes before
@@ -3018,6 +3838,26 @@ do not fit in the free PSRAM gets 503 Service Unavailable.
 The download counts the entries, walks the card again to fix each one's
 size, and then passes each entry twice: once for its data, and once at the
 end for the ZIP file's directory.
+
+Each file is read in pieces of 16KiB (`WA_ZIP_READ_BYTES`), each at an
+offset of the file that is a multiple of 16KiB, into a buffer of 16KiB of
+PSRAM aligned to the cache line: a piece is one card transfer straight into
+the buffer, whatever the headers before the file shift the archive by. The
+buffer is taken for the download and given back at its end. FatFs finds a
+file in its folder by reading the folder from its first entry, so a folder
+of n files costs about n x n / 2 entries read for their opens; the time for
+a folder of 999 files is not measured. The panel logs each download's end,
+and for a failure its cause and the entry it was at:
+
+```text
+I (…) wifi: zip: sent, <n> of <n> B in <t> ms
+W (…) wifi: zip: card read failed at USER/LOGS/LOG00030.BFL, <n> of <n> B in <t> ms
+```
+
+The causes are the archive's, `card read failed` and `no card`, or the
+send's, `receiver gone`, `nothing taken for 30 s` and `radio going off`. A
+read or an open the card refuses logs `card: read of <n>B failed, errno <e>`
+or `card: open of <path> failed, errno <e>` before it.
 
 - A file that grows by appending, as a log does, is sent as it was when the
   download started: its first bytes, up to the size it had then.
@@ -3041,6 +3881,95 @@ second takes S / R seconds: at 700kB/s, a 50MB card takes about 71s. The page an
 during a download waits for its end. A card pulled during a download ends
 the download short, and so does a browser that takes nothing for 30s; the
 browser reports it as failed, and the panel runs on.
+
+### The file API
+
+The page's server also answers four reads for a script: a page of a
+folder, the facts of one entry, a text file whole, and the panel's state
+(`shared/webaccess/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`);
+and four writes (`shared/webaccess/wa_api_write.c`,
+`firmware/panel/components/wifi_access/wifi_write.c`).
+The page's file manager reads the card through them, through the same
+pages, rules and file load as FILES. Each takes the guard of the table
+above and the access code as a download does; a request without a code
+gets 403 and `CODE`.
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/status` | JSON (JavaScript Object Notation): the panel's name, version and language, `"writes"` `open` or `closed` with the first reason a write is refused at the time of the request and its text (`WRITES_OFF`; `ARMED` or `LOGGING` while the write gate is shut; `WRITES_HOLD`; empty while open) and `"mode"`, the setting (`OPEN`, `CODE`, `HOLD`, `OFF`; with `CODE` each write's code decides), the card's mount number, name, size and free bytes, the limits: 48 entries a page, 1,048,576 bytes and 65,536 line ends a file, and the User log folder SETUP > SD CARD names (`USER/LOGS` by default) |
+| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: up to 48 entries of folder `P`, folders first, then names with case folded, as FILES lists them. Each entry has its name, whether it is a folder, its bytes, its kind (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), its place (`FREE`, `FIXED`, `LOCKED`, `FAULT`) and whether the logger writes it. Then the mount number, the entries ahead of the page, the folder's total, the entries not listed, and whether a page stands before and after. `G` is `first` (the default), `last`, `next`, `prev` or `same`; the last three name the page by the entry `N` at its edge, `D` 1 for a folder. |
+| `GET /api/info?path=P&dir=D&mount=M&etag=1` | JSON: the size and the time FAT stamped of `P`, -1 for none, and that time as INFO shows it, `2027-01-01 00:00` in the zone of SETUP > PANEL's Time zone, empty for a stamp in 1980 or none; for a folder (`D` 1) its entries, their bytes and the entries not listed. With `etag=1` a file also has `"etag"`, the CRC-32 `/api/file` gives as its ETag, of any bytes: the panel reads the card for it and the file does not cross the network. `""` for a file over 1,048,576 bytes, which is not read |
+| `GET /api/file?path=P&mount=M` | the bytes of text file `P` as the card holds them, BOM (byte order mark) included, with `ETag` (their CRC-32, cyclic redundancy check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` or `mixed`), `X-Rcbench-Lines` (the lines as FILES' viewer counts them: a line end at the file's end starts no line, so `a\nb\n` and `a\nb` have 2 and an empty file 0) and `X-Rcbench-Bom` (1 or 0) |
+
+A path is relative to the card's root and percent-encoded with `/` as the
+separator: `%2F` is refused, `+` is a plus. It holds at most 120 bytes and
+16 folders, as on FILES. With `mount=M`, an INFO or a file read from
+another card than the one listed is refused with `CARD_GONE`.
+
+The writes run FILES' jobs, under the steps of
+[Browser writes](#browser-writes). A form is a body of at most 1,024
+bytes, read as a query string.
+
+| Request | What it does |
+| --- | --- |
+| `PUT /api/file?path=P&mount=M` | saves the body, at most 1,048,576 bytes, as text file `P` through `P.NEW`, as FILES' editor saves. With `If-Match: "<ETag>"` only while the file's CRC-32 is that ETag, else 412 `CHANGED`; with `If-None-Match: *` only where no entry has the name, else 409 `EXISTS`; with neither it makes or replaces the file. Both are compared before the body is read and again directly before the write. The body follows the viewer's limits: 415 `NOT_TEXT`, 422 `TOO_MANY_LINES`. Answers 201 for a file made and 200 for one replaced, with `ETag` and `{"path":"P","created":true,"etag":"...","note":""}`; `note` is `ESC_NEXT_START` for an ESC (electronic speed controller) profile, which the next start reads |
+| `POST /api/mkdir` with `path=P&mount=M` | makes folder `P`; 201 |
+| `POST /api/rename` with `from=P&to=Q&dir=D&mount=M` | `Q` in `P`'s folder renames the entry; `Q` of the same name in another folder moves it there, a folder only when it is empty; any other `Q` is 400 `REQUEST`; 200 |
+| `POST /api/delete` with `path=P&dir=D&mount=M` | deletes `P`, a run's report along with it, a folder only when it is empty; 200 |
+
+A new name follows the panel's keyboard: 1 to 59 bytes, none of
+`" * / : < > ? \ |`, no full stop or space at either end. `If-Match` takes
+one ETag as `/api/file` gives it; a weak one (`W/`) or a
+list is 400 `REQUEST`. Every path of a write names each entry one way
+only: a name with a space at the start, a space or a full stop at the
+end, `\`, `:`, a control byte, `~` followed by a digit (an 8.3 short
+name such as `LOG000~1.BFL`) or any character outside ASCII is 400
+`NAME`, since FatFs would read it as another entry: it folds the case of
+all of Unicode, so `ſ` (U+017F) is `S` to it. ASCII case is not refused:
+the rules compare names with it folded, as FatFs does.
+
+A refusal is an HTTP status and `{"error":"WORD","text":"..."}`, the text
+in the panel's language:
+
+| Word | Status | When |
+| --- | --- | --- |
+| `NAME` | 400 | a path the card or FILES does not take |
+| `REQUEST` | 400 | a parameter outside the ones above, or no path for INFO or a file |
+| `ARG` | 400 | a folder asked as a file |
+| `BODY` | 400 | a read that carries a body (the guard above) |
+| `CODE` | 403 | no access code, or a wrong one, which counts toward the 16 |
+| `ORIGIN` | 403 | a write without the page's `Origin` or the script's header (the guard above) |
+| `WRITES_OFF`, `WRITES_HOLD`, `WRITES_CODE` | 403 | a write [Browser writes](#browser-writes) does not allow: OFF, HOLD before the hold, ACCESS CODE without this session's code |
+| `FIXED` | 403 | a folder of the bench or the fault log, for RENAME and MOVE |
+| `DENIED` | 403 | a write-protected card |
+| `LOCKED` | 403 | the servo programmers' records, `KST.TXT` and `HITEC.TXT`: download them instead |
+| `NOT_FOUND` | 404 | no such entry, or one of another kind |
+| `EXISTS`, `NOT_EMPTY`, `SAME` | 409 | a name taken; a folder that holds entries; a move into the same folder or into itself |
+| `ARMED`, `LOGGING` | 409 | the bench switched to ARMED, or a run is logged: the card is read-only |
+| `CHANGED` | 412 | a PUT with `If-Match` whose file's CRC-32 is not the ETag, or whose file is gone. The JSON adds `"etag":"xxxxxxxx"`, the CRC-32 of the file it found; none for a file that is gone |
+| `TOO_BIG` | 413 | a file over 1,048,576 bytes, refused before a byte is read |
+| `TOO_LARGE` | 413 | a PUT's body over 1,048,576 bytes (the guard above) |
+| `FORM_TOO_LARGE` | 413 | a POST's form over 1,024 bytes (the guard above) |
+| `NOT_TEXT` | 415 | a NUL byte in the first 4,096 bytes |
+| `HOST` | 421 | a `Host` that is not the panel (the guard above) |
+| `TOO_MANY_LINES` | 422 | more than 65,536 line ends |
+| `BUSY` | 423 | a file the logger writes |
+| `IO` | 500 | the card failed a read or a write |
+| `NO_CARD`, `CARD_GONE`, `MEMORY`, `CANCELLED` | 503 | no card; the card taken out or swapped; no PSRAM for the request; the radio going off |
+| `PANEL_BUSY` | 503 | FILES on the panel held the card for 2000ms; with `Retry-After: 2` |
+| `FULL` | 507 | the card or the folder is full |
+
+The API's memory is PSRAM, taken at its first request and given back when
+the radio goes off: about 22kB for a request, and 1MiB for a file's bytes
+and 256KiB for its line index at the first file. Each list, INFO and file
+request logs its answer, its bytes, its time and the stack the server's
+task left unused, as `api: <request> <answer>, <n>B in <t>ms; httpd stack
+<n>B unused`; each write adds the internal RAM left free, as `api: put OK,
+1048576B in <t>ms; httpd stack <n>B unused, internal RAM <n>B free`. A
+write's body is in the same 1MiB of PSRAM; its form and headers use the
+page's 4,096B buffer.
+The server's stack is 8,192 bytes; a card read or write on it is not
+measured on a panel.
 
 ### Installing: PANEL UPDATE
 
@@ -3083,9 +4012,8 @@ the panel restarts.
 
 The splash shows the new version, and the band says
 `Panel firmware 0.22.1 installed.`. A write that fails changes nothing that
-starts: the running build stays, and CLOSE goes back to the screen that
-opened WI-FI, SETUP or LOGS, or after a download from GitHub to where the
-download started.
+starts: the running build stays, and CLOSE goes back to the menu, or after a
+download from GitHub to where the download started.
 
 ![The write failed](img/panel-update-failed.png)
 
@@ -3122,10 +4050,32 @@ same. When keeping a good start fails (otadata not written), the band says
 `Panel firmware 0.22.1 was not kept. The next restart restores the previous version.`; the build
 runs until then.
 
+Before the restart, the install keeps the version it wrote in NVS
+(non-volatile storage): one 40-byte entry, namespace `fw_ota`, key
+`restart_note`, with a magic word and an FNV-1a (Fowler-Noll-Vo) hash. A
+restart, a panic and a power cut keep it. The next start reads it; with the
+written slot marked invalid by the bootloader, that start is the build
+before, and the band says the `failed to start` line. The entry is erased after every
+start but a trial that goes back, so the line shows once. An entry of
+another size, magic or hash reads as no note. The first start after an
+install from 0.23.2 or older finds no entry, as a panel that never
+installed does: those builds keep the note in LP (low-power) RAM, and a
+trial of this build that goes back is reported by that build from there.
+The console states each start's check in one line:
+
+    I (…) fw_ota: start check: note 0.24.1, last invalid slot ota_0, result ROLLED_BACK
+    I (…) fw_ota: start check: note none, last invalid slot none, result NORMAL
+
+The note is the version or `none`, or `unreadable` for an entry that reads
+as none; the slot is the bootloader's last invalid one or `none`; the result
+is `NORMAL`, `UPDATED`, `ROLLED_BACK`, `UNCONFIRMED` or `GOING_BACK`, the
+last said before a trial that goes back restarts.
+
 Current limitations:
 
-- A power cut during the trial start loses that line; the panel still goes
-  back to the build before.
+- An install whose NVS write fails says so on the console
+  (`restart note not kept`), and a start of its build that goes back shows
+  no line on the band.
 - A trial start that stops before the screen loop runs, in a card mount
   that does not return for example, is not kept and not reset either: the
   task watchdog reports and does not restart (CONFIG_ESP_TASK_WDT_PANIC is
@@ -3145,18 +4095,20 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 ![Setup](img/setup.png)
 
-- Four categories: PANEL, INTERFACES, SD CARD and SENSORS, the bench-wide
-  settings. Each tile names the number of settings its list shows. A tap
-  opens the category's list.
+- Three categories: PANEL, SENSORS and SD CARD, the bench-wide
+  settings. A tile names the number of settings its list shows; SENSORS'
+  says what it holds, `CURRENT, ANGLE, PHASE TAP`. A tap opens the category's
+  list.
   The settings of the pack, the motor and the throttle output are on
   MOTOR & ESC > SETTINGS
   ([MOTOR & ESC settings](#motor--esc-settings)).
-- Five screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-  ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)), UPDATES
-  ([Updates](#updates)) and FILES ([Files](#files)). The band of each
-  names it as its tile does, and the band of this page reads SETUP.
-- No slot is free. A tenth entry has no slot: the page holds 9, and the
-  build fails at the tenth.
+- Three screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
+  ([Wi-Fi](#wi-fi)) and UPDATES ([Updates](#updates)). The band of each names it
+  as its tile does, and the band of this page reads SETUP. [Files](#files) is a
+  tab of the [LOGS](#logs) tile.
+- LAYOUT ([Layout](#layout)) as the last tile on a board with soldered pins,
+  the [rbmod carrier](Carrier.md). 3 slots are free on any other board and 2
+  on that one. The page holds 9, and the build fails at a tenth entry.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
   category shows here too:
@@ -3185,7 +4137,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES, FILES | the tiles; WI-FI and FILES opened from LOGS go back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Pick a pin](#pick-a-pin), [Wi-Fi](#wi-fi)) |
+| OUTPUTS, WI-FI, UPDATES | the tiles; OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there, WI-FI opened from the button of LOGS or UPDATES likewise. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Wi-Fi](#wi-fi)) |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -3194,7 +4146,11 @@ PANEL's Language switches the whole interface between English and
 German on the next frame, with no restart. What follows it, what stays
 English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
-default and is described under [Logs](#logs).
+default and is described under [Logs](#logs). Keyboard see-through sets how
+much of the text shows through the text editor's keyboard: OFF, 25% or 50%,
+OFF by default; described under [The text editor](#the-text-editor). Demo mode
+hides the SIMULATION watermark and leaves the band's SIM chip
+([The status band](#the-status-band)).
 
 Eight settings are stored and shown, and no part of the firmware reads them:
 Units and Dim after under PANEL; Cells, Capacity and
@@ -3388,7 +4344,7 @@ ESP32-P4's system time ([Building](Building.md#the-panels-clock)).
 - Current limitation: a first DNS server that does not answer delays every
   name lookup after a join by about 7s, the NTP request's and the release
   check's alike. lwIP tries a server at 0s, 1s, 2s and 4s and asks the
-  next at 7s; ESP-IDF v5.5.5 offers neither figure in its configuration.
+  next at 7s; ESP-IDF v6.1 offers neither figure in its configuration.
 - An answer sets the clock and writes one console line: the server, the
   time set in UTC and how far it moved the clock, for example
   `ntp: pool.ntp.org set 2026-10-24 14:03:12 UTC, offset +1792739352.345s from the old clock`.
@@ -3474,32 +4430,83 @@ across a third of its travel from -travel to +travel.
 - The knob is not measured on hardware: its direction, its noise and its
   behaviour with no magnet over it.
 
-### INTERFACES: the current monitors
+### SENSORS: the split pane
 
-INTERFACES lists its 23 settings in five sections. A heading above the first
-row of each names it: I2C BUS (the INA228, Sensor SDA and SCL, and the
-AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical tacho), SUPPLY
-(the PD mini) and PROG PORT (Hitec D receive). A heading is a row of its
-own, 64px high at the list's 70px pitch, in the accent colour over a rule,
-with no keys and no value: a tap or a drag on it changes nothing, and a drag
-scrolls the list. The list is 28 rows long.
+SENSORS holds every device the IOmcu reads, in a split pane: a left list of 8
+entries, and right of it the selected entry's rows.
 
-![INTERFACES, the current monitors](img/setup-interfaces.png)
+![SENSORS, two parts fitted](img/setup-sensors.png)
+
+The left list runs from body y 8 to 436: 8 entries of 220 x 50px at a 54px
+pitch, top to bottom SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600 and
+PHASE TAP. An entry shows its name in the 12 x 24px face and its state under
+it in the 8 x 16px face. The selected entry has the lit fill and the accent
+edge; the first entry is selected at start-up. The list on its right is 754px
+wide from x 240: the keys, the value field, the keypad and the scroll bar stand
+where they stand on any list, and a row's name and help have 438px, 43 cells
+of the 10 x 20px face.
+
+| Entry | State while on | Rows |
+| --- | --- | --- |
+| SENSOR BUS | `GPIO 16 / 17`, `NO PINS SET`, `NOT ACCEPTED BY THE IOMCU`, on the carrier `GPIO 16 / 17 SOLDERED` | 2, always |
+| INA228 | a state of the table below, or `SAME ADDRESS AS INA3221` | 4 |
+| INA3221 0x40 to 0x43 | a state of the table in [SENSORS: the INA3221 parts](#sensors-the-ina3221-parts) | 10 |
+| AS5600 | `ON`, `NOT ACCEPTED BY THE IOMCU` | 2 |
+| PHASE TAP | `ON`, `NOT ACCEPTED BY THE IOMCU` | 7 |
+
+- An entry with an enable row shows that row alone and reads `OFF` while it is
+  off. ON adds the entry's other rows under it.
+- A press arms an entry and its release selects it, within 8px of the press,
+  on the entry. A contact that slides further selects nothing and scrolls
+  nothing. Nothing presses under the keypad.
+- Each entry keeps its scroll, through another entry, the tiles and another
+  category, inside the range its rows have when it opens.
+- A change of entry keeps what is unsaved: SAVE and the leave warning count
+  every entry's changes.
+- RESET names the entry, `RESET INA228`, and resets all that entry's rows,
+  the hidden rows included. It stays where RESET CATEGORY stands. A flick that
+  lands on it arms nothing.
+- The strip's first column names the category, as on any list.
+
+Vibration and Optical tacho have keys in this category and no entry: no
+firmware reads them. A stored value stays stored and has no effect.
+
+The knob does nothing on SETUP: the panel routes a turn to MOTOR & ESC and
+SERVO only.
+
+### SENSORS: the current monitors
 
 The IOmcu reads I2C (Inter-Integrated Circuit) current monitors on one bus
 on two of its pins: a TI INA228 in the ESC's power path, set up here, and up
-to four TI INA3221, set up on SENSORS ([SENSORS: the INA3221
-parts](#sensors-the-ina3221-parts)). The INA228's rows and the bus's pins
-are at the top of INTERFACES:
+to four TI INA3221 ([SENSORS: the INA3221 parts](#sensors-the-ina3221-parts)).
+The rows of the SENSOR BUS and INA228 entries:
+
+![SENSORS on the INA228](img/setup-sensors-ina228.png)
+
+The INA228 entry's state comes from what SENSE holds and reads
+(`sense_map_link_i228()`), in the words of the [parts' table](#sensors-the-ina3221-parts):
+`ONLINE`, `LOOKING FOR THE PART`, `NOT ANSWERING`, `ANOTHER ID ANSWERS`,
+`NOT WRITTEN YET`, `NOT READ YET`, `NOT ACCEPTED BY THE IOMCU` for a refused
+frame, refused pins or an IOmcu without the SENSE page, and `NO BUS PINS`.
+`SAME ADDRESS AS INA3221` says a fitted part has its address: neither is read.
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
 | INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
-| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50 µΩ, does not reach it |
+| INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. Up to 40.96mV across the shunt it takes ±40.96mV, 78.125nV a step; up to 163.84mV ±163.84mV, 312.5nV a step; past that the IOmcu refuses the pair. 300A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000A full scale stays, and 300A on the smallest shunt, 50 µΩ, does not reach it |
 | Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | IOmcu GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
 | Sensor SCL | SDA + 1, or −1 | 17 | the GPIO after Sensor SDA, and −1 with it. The row shows the value and has no keys |
+
+The two rows replace their help with the value that works with the other row:
+`Up to 300.0A on 200uΩ (163.84mV)` on INA228 max current, `Up to 800uΩ at 204.8A
+(163.84mV)` on INA228 shunt. Shunt in µΩ times maximum in A is at most 163840.
+Any shunt takes a maximum of at least 8.1A, at 20000 µΩ; up to 546 µΩ takes the
+whole 300.0A. 201 µΩ at 204.8A is 41.16mV and takes the wider range; lowering
+the maximum to 203.7A brings it back to the narrower one. A pair past 163.84mV
+is marked on both rows and said on the band: `INA228 shunt x maximum is over
+163.84mV: on 1000uΩ up to 163.8A. Check SENSORS.`.
 
 SDA and SCL are one I2C block's pair: SDA's GPIO number mod 4 is 0 or 2, and
 SCL is the GPIO after it. Sensor SDA takes only the pins of such a pair that
@@ -3572,12 +4579,12 @@ both said. In order:
 | Message | When |
 | --- | --- |
 | `IOmcu has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the IOmcu speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
-| `Sensor SDA or SCL not set. Check SETUP > INTERFACES.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
-| `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.` | the INA228 on the address of a fitted INA3221; neither is read |
-| `Sensor pins GPIO 16/GPIO 17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
-| `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84mV, or the range it gives passes 2000A; the INA228 stays off |
-| `INA3221 settings rejected. Check SETUP > SENSORS.` | the IOmcu refused the INA3221 set-up: the SENSE_MAP map, or on an IOmcu older than 4.25 the one-part frame; the IOmcu keeps what it held |
-| `INA3221 0x41 has every channel off. Check SETUP > SENSORS.` | a fitted part has all three shunts at OFF; no map is written until one is on again, and the line leaves the band then |
+| `Sensor SDA or SCL not set. Check SENSORS.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
+| `INA228 and INA3221 both use 0x40. Check SENSORS.` | the INA228 on the address of a fitted INA3221; neither is read |
+| `Sensor pins GPIO 16/GPIO 17 rejected. Check SENSORS.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30s or until tapped, once per edit |
+| `INA228 shunt or maximum current rejected. Check SENSORS.` | the shunt's voltage at the max current passes 163.84mV, or the range it gives passes 2000A; the INA228 stays off |
+| `INA3221 settings rejected. Check SENSORS.` | the IOmcu refused the INA3221 set-up: the SENSE_MAP map, or on an IOmcu older than 4.25 the one-part frame; the IOmcu keeps what it held |
+| `INA3221 0x41 has every channel off. Check SENSORS.` | a fitted part has all three shunts at OFF; no map is written until one is on again, and the line leaves the band then |
 | `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA or SCL held low and clocks the bus free. A line that reads low with nothing holding it (pins with no part and no pull-up wired to them) is not this: it rises within 50µs on the IOmcu's own pad pull-up (32 to 86kΩ), and the monitors read as not answering |
 | `INA228 is not responding at 0x45.` | enabled, and not answering 2.5s after its set-up was taken, or having stopped answering after it did. `A device responds at 0x44.` is added when the IOmcu's address scan found something where the part could be |
 | `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
@@ -3607,7 +4614,10 @@ bus) stays for its 30s or until tapped.
 
 #### A row the IOmcu does not hold
 
-![INTERFACES, pins the IOmcu has not taken](img/setup-unheld.png)
+![SENSORS, pins the IOmcu has not taken](img/setup-unheld.png)
+
+The mark on Sensor SDA, on AS5600 and on the phase tap's rows also turns the
+entry's state to `NOT ACCEPTED BY THE IOMCU`.
 
 A row whose value is not the one the IOmcu's page holds is marked: its
 edge and its value are drawn in the warning colour, and its help line reads
@@ -3633,27 +4643,29 @@ as described above.
 
 ### SENSORS: the INA3221 parts
 
-SENSORS sets up to four TI INA3221 three-channel current monitors on the
-sensor bus, at 0x40 to 0x43, and says per channel what it measures. The
-INA228 and the bus's pins stay on INTERFACES.
+An entry each sets up to four TI INA3221 three-channel current monitors on the
+sensor bus, at 0x40 to 0x43, and says per channel what it measures.
 
-![SENSORS, two parts fitted](img/setup-sensors.png)
+On the [rbmod carrier](Carrier.md#the-current-monitor) the board solders an
+INA3221 at 0x40: 0x40 FITTED reads ON, and its three WATCHES rows read
+SERVO RAIL B, SERVO RAIL A and PROG PORTS 5V. These rows have no keys and
+the help line `Soldered on this board. Not a setting here.`. No step
+reaches the three rail options on another row or another bench.
 
-The list starts with the heading INA3221 PARTS over four rows:
+An entry's first row:
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | 0x40 fitted to 0x43 fitted | ON, OFF | OFF | an INA3221 at this address. The DAOKAI module takes 0x40 with its A0 solder bridge closed to GND. As shipped all four A0 bridges are open and the address floats between 0x40 and 0x41 |
 
-Each fitted part follows under a heading of its own, `INA3221 0x40` to
-`INA3221 0x43`, with nine rows, three a channel. A part that is not fitted
-has no heading and no rows.
+A fitted part has nine rows more, three a channel. A part that is not fitted
+has no others.
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | 0x40 CH1 watches | NONE, OUT 1 to OUT 8, PORT 1 to 4, SUPPLY | OUT 1 for 0x40 CH1, NONE for every other channel | what the channel's shunt is in: an output channel, a programming port, or the supply rail |
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0mΩ, 0.1mΩ steps | 100.0 | OFF: the channel is not read. The DAOKAI's R100 reads to 1.64A |
-| 0x40 CH1 limit | OFF, 10 to 32767mA, 10mA steps on the arrows | OFF | a 50ms window whose highest current passes it is said on the band. An alert only: nothing stops, switches to SAFE or drives anything. OFF: no limit |
+| 0x40 CH1 limit | OFF, 10 to 32767mA, 10mA steps on the arrows | OFF | a 50ms window whose highest current passes it is said on the band, and the bench switches to SAFE with the supply output off ([Safety, Errors](Safety.md#errors)). OFF: no limit |
 
 A tap on a shunt's value opens the keypad ([Keys and the list](#keys-and-the-list)).
 44.4mΩ from the 100.0 default is five keys, `4`, `4`, `.`, `4` and OK,
@@ -3666,7 +4678,7 @@ A LIMIT row takes 0 (OFF) or 10 to 32767mA; 1 to 9 is refused with
 
 ![3mΩ refused, the reason in place of the range](img/setup-sensors-why.png)
 
-The heading of a part shows on its right what the part is doing:
+The entry of a part says under its name what the part is doing:
 
 | State | When |
 | --- | --- |
@@ -3679,20 +4691,20 @@ The heading of a part shows on its right what the part is doing:
 | `NOT ACCEPTED BY THE IOMCU` | the IOmcu refused the map; it keeps the one it held |
 | `EVERY CHANNEL OFF` | all three shunts of the part are OFF: no map is written |
 | `INA228 ON THIS ADDRESS` | the INA228 is on at the part's address: the part is left out of the map and the INA228 off |
-| `IOMCU OLDER THAN 0.22.0: NOT READ` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
-| `SENSOR SDA OR SCL UNSET` | INTERFACES has no pin for the sensor bus's SDA or SCL: no part is enabled |
+| `NOT READ, IOMCU < 0.22.0` | an IOmcu older than protocol 4.25 reads one part only, and not this one |
+| `NO BUS PINS` | SENSOR BUS has no pin for SDA or SCL: no part is enabled |
 
 The rows of a part refused, with every channel off, on the INA228's
 address, without a sensor bus or not read by an older IOmcu are marked as a row the IOmcu does
 not hold: edge and value in the warning colour, and a line in place of the
-help. On an IOmcu older than 4.25 that line reads `IOmcu older than 0.22.0: one INA3221, CH1 at 1kHz.`:
+help. On an IOmcu older than 4.25 that line reads `IOmcu before 0.22.0: one part, CH1 at 1kHz.`:
 
 ![SENSORS on an IOmcu older than 4.25](img/setup-sensors-old.png)
 
 A LIMIT row is marked the same way while the IOmcu does not hold its
 limit: from the edit to the write taken, after a refused write or a
 refused page with `Not accepted by the IOmcu.`, and on an IOmcu older than 4.27, for every
-limit that is not OFF, with `IOmcu older than 0.22.0: no limit is judged.`:
+limit that is not OFF, with `IOmcu before 0.22.0: no limit is judged.`:
 
 ![A limit on an IOmcu older than 4.27](img/setup-sensors-limit.png)
 
@@ -3715,10 +4727,28 @@ channel said last: with all 12 over, each is said within 12 alerts, 60s.
 | --- | --- |
 | `INA3221 0x41 CH2 (PORT 1) over its 0.80A limit.` | a window of the channel passed its limit since the last read; the target in brackets is what the channel watches, none for NONE; the limit is the one the window was judged by |
 | `An INA3221 channel passed its limit; which one was lost on the link.` | OVER_COUNT moved with no OVER bit: the reply that carried the bits did not arrive. A reply that does not arrive takes the link down, so this is said after the read at the next link-up. A count of 0 there is an IOmcu that started again and is not said |
-| `INA3221 limits rejected. Check SETUP > SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes. Also an IOmcu that names protocol 4.27 or later and answers the page with BAD_PAGE: the panel sends the page nothing more until the next link-up |
+| `INA3221 limits rejected. Check SENSORS.` | the IOmcu refused the write; it keeps the limits it held, and the panel does not write again until a limit changes. Also an IOmcu that names protocol 4.27 or later and answers the page with BAD_PAGE: the panel sends the page nothing more until the next link-up |
 
 OVER bits the IOmcu holds from before the link came up, also those of an
 IOmcu that started again, are said by channel at the first read.
+
+A read of OVER with a bit set is a trip: the bench switches to SAFE and
+every output goes off ([Safety](Safety.md#errors)).
+The panel also writes one INFO line a channel to the console, tag
+`rcbench`, in English:
+
+```
+I (123456) rcbench: INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: highest window read 0.153A
+```
+
+The reading is the highest current of the channel's windows the panel read
+on SENSE_WIN_A or SENSE_WIN_B since the poll that read OVER before, the figure
+the IOmcu judges by, to 0.001A. The limit is the one the trip was judged
+by, also when a new limit is written in the same poll. A window that closed after the panel's
+last read of its page is not in it, so the figure can be under the limit.
+`no window read` stands in its place where the panel read none. A channel
+that stays over writes its line at every read of OVER, every 200ms, while
+the band says it once every 30s.
 
 The panel writes the map to the IOmcu's SENSE_MAP page (protocol 4.25) in
 one write of 26 registers: the parts fitted, the channel read at 1kHz,
@@ -3727,7 +4757,7 @@ page first at every link-up, writes 500ms after the last edit and only
 while the bench is SAFE, and writes nothing the page holds. A refused map is
 not written again until it changes. While a part is fitted the panel reads
 the parts' IDs and states every 500ms. A part that stops answering, or
-that answers as something else, is said on the band once, as on INTERFACES;
+that answers as something else, is said on the band once, as the INA228;
 the part SENSE reports on (below) is said by SENSE's own reads.
 
 The channel read at 1kHz, whose windows the servo test and the SERVO
@@ -3761,7 +4791,7 @@ The old settings
 stay stored, unchanged, so a panel taken back to 0.21 finds its set-up. The
 next SAVE writes every SENSORS key.
 
-### INTERFACES: the output encoder
+### SENSORS: the output encoder
 
 An ams OSRAM AS5600 magnetic angle sensor on the servo's output shaft, on the
 sensor bus beside the monitors, at its fixed address 0x36 (protocol 4.9):
@@ -3787,7 +4817,7 @@ once and one at a time like the monitors':
 
 A magnet message is said once while the sensor's STATUS bits MD, ML and MH
 stay as they were said, also across the set-ups an edit of another row of
-INTERFACES writes. It is said again when one of the bits changes (a weak
+a SENSORS row writes. It is said again when one of the bits changes (a weak
 magnet that goes missing, a missing one that comes back weak, a weak one
 that reads strong), when the field read right in between, when the sensor
 was said not to answer, after the sensor was switched off, and after a
@@ -3796,16 +4826,15 @@ clears and returns when it is set again. The sensor's
 DIR pin sets the direction its count rises in; the panel takes the count to
 rise with the servo's pulse width.
 
-### INTERFACES: the phase tap
+### SENSORS: the phase tap
 
-![INTERFACES, the phase tap](img/setup-tap.png)
+![SENSORS, the phase tap](img/setup-tap.png)
 
 The phase tap hears an ESC's beeps on one motor phase. One IOmcu
 GPIO reads the phase through a series resistor and a zener clamp; the
 IOmcu times the pin's edges and reports each beep's length and pitch.
 The wiring is not in the build guide. The tap is an input: it drives
-nothing, and the IOmcu takes a change ARMED or not. Its rows follow
-the bus's pins:
+nothing, and the IOmcu takes a change ARMED or not. Its rows:
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
@@ -3857,9 +4886,9 @@ current monitors:
 | Message | When |
 | --- | --- |
 | `IOmcu has no TONE page. Phase tap not read.` | the tap is enabled and the IOmcu speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
-| `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
-| `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the IOmcu refused the second frame; not written again until a value changes |
-| `Phase tap pin GPIO 22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
+| `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SENSORS.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP SENSORS or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
+| `Phase tap split, gap or periods rejected. Check SENSORS.` | the IOmcu refused the second frame; not written again until a value changes |
+| `Phase tap pin GPIO 22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP SENSORS or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GPIO 22, 400 to 6500Hz rejected. Check SENSORS.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 The three alerts about the set-up (the first frame rejected, the second
@@ -3873,43 +4902,6 @@ pin taken, or once the tap is switched off and the page holds it off. Tap gap
 at least one period of the lowest tone, 2.5ms at 400Hz
 (`tone_init()`, `protocols/phase_tap/tone.c`).
 
-### INTERFACES: the programming port
-
-The last row of INTERFACES, under PROG PORT, says how the IOmcu receives
-the answer of a Hitec D series servo on its programming port, GPIO 13 by
-default ([Receive mode](LinkHitec.md#receive-mode)):
-
-| Setting | Values | Default | |
-| --- | --- | --- | --- |
-| Hitec D receive | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: a 2.2kΩ resistor from the signal wire to the servo supply lifts the line, and the IOmcu reads it released. PRECHARGE: no resistor; the IOmcu drives the pad high for 100.0ns every 1086.7ns and samples it 113.3ns after it lets go |
-
-It is kept in NVS like the other rows; a missing or unreadable stored value
-is PULL-UP. The panel writes it to the HITEC page at every link-up and
-after every change, armed or not; the IOmcu takes it at its next OPEN of a
-D series line. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore
-it. The setting reaches the lines the Hitec programmer on SERVO opens
-([Servo programmer for Hitec servos](HitecProgrammer.md)) and those the
-bench console opens ([The bench console](BenchConsole.md)).
-
-Unmarked, the help line follows the value: `PULL-UP needs 2.2kΩ on the
-signal wire` at PULL-UP, `PRECHARGE: no pull-up on the signal wire` at
-PRECHARGE.
-
-The row is marked as the rows of
-[A row the IOmcu does not hold](#a-row-the-iomcu-does-not-hold) are, with its
-own help line:
-
-| The help line reads | While |
-| --- | --- |
-| `Not accepted by the IOmcu.` | the value is not acknowledged yet, or the IOmcu refused it |
-| `IOmcu older than 0.22.0: receives with PULL-UP.` | PRECHARGE is set and the IOmcu speaks protocol 4.23: it has no register for the mode |
-| `IOmcu older than 0.21.1: no Hitec line.` | PRECHARGE is set and the IOmcu speaks protocol 4.22 or older: it has no HITEC page |
-
-No mark shows while no IOmcu answers, and none for PULL-UP on an older
-IOmcu.
-
-![INTERFACES, Hitec D receive at PRECHARGE on an IOmcu older than 4.24](img/setup-prog.png)
-
 ### SD CARD: which logs are written, and where
 
 ![SD CARD](img/setup-card.png)
@@ -3918,6 +4910,7 @@ IOmcu.
 | --- | --- | --- | --- |
 | Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in Auto log folder: a log of each ARMED and supply run |
 | User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, and `LIMITnnn.TXT`, in User log folder: the AUTOMATIC TEST and the LIMIT RUN |
+| Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | nothing itself: what a browser needs to change the card through WI-FI's page ([Browser writes](#browser-writes)) |
 | Auto log folder | a folder, see below | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder, see below | `USER/LOGS` | where User logs writes |
 
@@ -3950,7 +4943,7 @@ in force unchanged, and the line right of the title says why:
 | more than 2 folders | `A/B/C` (`A/B` is taken) | `2 folders deep at most` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a device name of Windows: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Folder of the bench's own files` |
+| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Folder of the bench's own files` |
 
 Every folder name the panel takes is a FAT (File Allocation Table) 8.3 short
 name, the same on every computer. The longest folder is 17 characters,
@@ -4051,7 +5044,7 @@ the danger colour after a refused save.
 The warning holds only the home tag:
 
 - Nothing unsaved, or a save asked (`WHEN IDLE`): no warning, the menu opens.
-- OUTPUTS, PICK A PIN, WI-FI, UPDATES and FILES open from a tile and
+- OUTPUTS, WI-FI and UPDATES open from a tile and
   return to SETUP: no warning on the way out or back.
 - The home tag over the warning is STAY.
 - STOP stops the bench and leaves the warning as it is.
@@ -4147,7 +5140,7 @@ pin carries anything else.
 A panel built with the IOmcu's image carries it and offers it when the
 IOmcu runs another build. The check runs at every link-up and compares
 SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
-build raises the alert `IOmcu runs a different build. Update it under SETUP > UPDATES.`, and the question opens on the menu while the bench is SAFE, the
+build raises the alert `IOmcu runs a different build. Update it on UPDATES.`, and the question opens on the menu while the bench is SAFE, the
 supply's output is off, the panel's Wi-Fi radio is wholly off and no install
 of a panel image is under way. A START given while either holds is spent,
 and the question opens again once both have ended.
@@ -4160,10 +5153,16 @@ START on the right; their middles are at panel x 305 and 719, y 376.
 
 The question names the version the IOmcu runs and the version this
 panel carries. CANCEL is a tap: the question closes, and the panel does not
-ask again for that IOmcu version until it restarts. Leaving the
-question another way declines the same way. SETUP > UPDATES still starts
-the update after a decline ([The IOmcu](#the-iomcu)). START
-takes the 2s hold, the ARM gesture and the same fade.
+ask again for that IOmcu version until it restarts. The home tag declines
+the same way. SETUP > UPDATES still starts the update after a decline
+([The IOmcu](#the-iomcu)). START takes the 2s hold, the ARM gesture and the
+same fade.
+
+A screen the panel forces over the question declines nothing: the fault
+screen after 4000ms without the link, and PANEL UPDATE's download. The offer
+stands, as one nobody has answered yet, and the next link-up's check offers
+again. The question then opens on the menu under the same conditions as
+the first time. A press on START that the forced screen ended starts nothing.
 
 An older image is offered too. The question then says `The firmware on this panel is older.` in the warning colour, and START takes the same hold.
 
@@ -4242,8 +5241,11 @@ The card names the running version and the kept home network. Both the
 check and the download need:
 
 - a home network kept on WI-FI ([Home network](#home-network)).
-  Without one, the card says `No home network saved.` and
-  `Save a network under SETUP > WI-FI.`, and CHECK FOR UPDATES is grey;
+  Without one, the card says `No home network saved.` over the button
+  `SAVE A NETWORK: OPEN WI-FI`, and CHECK FOR UPDATES is grey. The button
+  opens WI-FI, whose home tag comes back here; the radio goes off on the way,
+  as by any way off WI-FI. A check that ended for want of a network says
+  `Save a network on WI-FI.` on PANEL UPDATE;
 - the bench SAFE, the supply output off and no log run open. Otherwise the
   key is grey and the card says `Wi-Fi requires SAFE, the supply output off,` and
   `and no open recording session.`;
@@ -4433,6 +5435,7 @@ grey, and the line names the first reason that holds, in this order:
 | `Checking the IOmcu's build.` | The SHA-256 comparison runs. |
 | `Build check failed. It runs again at the next link-up.` | The comparison ended without an answer. |
 | `No update over CAN. Install firmware once via USB.` | The IOmcu has no update pages or no partition table. |
+| `No IOmcu image for this board in this panel build.` | The IOmcu reports a board (IDENTITY register 5) this panel build carries no image for. No update is offered: another board's image would put its pin map on this one. |
 | `IOmcu runs the build this panel carries.` | The digests are equal: there is nothing to send. |
 | `The update requires SAFE and the supply output off.` | ARMED, an arm waiting, or the supply output on or switching on. |
 | `Waiting for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on, or it is still switching off. |
@@ -4553,17 +5556,10 @@ it opens on what that workbench drives:
 
 ![Outputs](img/outputs.png)
 
-The left column is 300px wide: the PROTOCOL label, the protocol list's
-face (300 x 64px), the count and the reason under it in 10 x 20, and
-LAST WRITE at the column's foot with the result in 20 x 36. The pins take a
-grid of 4 columns of 7 cells, 167 x 64px each (25.1 x 9.6mm), 8px apart
-across and 6px apart down, from x 324. A cell holds a 24px tick box, the
-pin name in 16 x 28 (`GPIO 28`, 112px) and, under them, what holds the pin or its pad in
-8 x 16, 18 characters at most. The grid's last row ends at body y 492,
-4px above the alert band. The open protocol list holds the 8 protocols in
-a column of 48px rows (7.2mm) from the face's top and the PROG PORT
-entries in a second column of the same rows beside it; with 4 entries the
-list is 600 x 392px and ends at body y 436.
+One screen with two views of one binding. A board with a drawing or a shape
+gets [the board view](#the-board-view): the board is the pin control. A board
+with neither, and the [rbmod carrier](#on-the-rbmod-carrier), get
+[the grid view](#the-grid-view).
 
 A set of pins per protocol, not eight independent slots: a bench is wired a
 protocol at a time — four servo leads, then one ESC (electronic speed
@@ -4605,12 +5601,12 @@ rapidly in that state. Set the Idle pulse at or below the transmitter's
 shortest pulse and the Full pulse at or above its longest: for a transmitter
 that sends 985 to 2012us, 980us and 2020us.
 
-When the protocol can take no more pins, the reason is under it in amber:
+When the protocol can take no more pins, the reason is under the count in amber:
 `NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM TAKES 8
 PINS`. A board drawn entirely in grey with nothing beside it reads as a
 fault, and PPM greys the whole board whenever anything else is bound.
 
-![PPM with servo pins already bound](img/outputs-full.png)
+![Eight of eight slots in use](img/outputs-full.png)
 
 The protocol is a list rather than a stepper, because there are eight of them
 and stepping past seven to reach the eighth is not choosing:
@@ -4632,7 +5628,7 @@ A stored binding that holds that pin keeps it: the port then has no pin, and
 the programmer's CONNECT ends with the line for a port without a pin
 ([the port](ServoProgrammer.md#the-port)).
 
-A pin SETUP > INTERFACES holds is shown the same way, red and struck
+A pin SETUP > SENSORS or SUPPLY's PD MINI tab holds is shown the same way, red and struck
 through, with what holds it under its name, and cannot be ticked:
 
 | Under the name | Pins | While |
@@ -4673,14 +5669,16 @@ output of its own kind, no slot and no protocol
 
 | Row | What it shows and does |
 | --- | --- |
-| PIN | a button: `PIN GPIO 13`, `SET A PIN` for a port without one, `PIN GPIO 14 REFUSED` for a pin the IOmcu does not hold, `NO PIN KNOWN` before the first read. A tap opens [PICK A PIN](#pick-a-pin) on this port |
+| PIN | `PIN GPIO 13` and its pad, `SET A PIN` in amber for a port without one, `PIN GPIO 14 REFUSED` for a pin the IOmcu does not hold, `NO PIN KNOWN` before the first read. The keys of [the board view](#the-board-view) set it; the row takes no tap |
 | FUNCTION | a choice face with what the pin carries while no programming session holds it. A tap opens the list over the rows under it: SERVO PWM, NONE, and on an IOmcu of protocol 4.28 or later DSHOT150, DSHOT300 and DSHOT600. A tap on an entry asks the IOmcu for it and shuts the list; a press beside the list shuts it and reaches nothing under it. The face is drawn sunk and dim, and takes no tap, while the row is locked |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`: the lowest channel with a shunt on a fitted part; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS \| PORT n: the tester's target ([the target](ServoProgrammer.md#the-target)) |
 | PORT PWM | ON \| OFF: the pulse of the port that is the tester's target |
 
-The pins on the right are drawn as the overview names them, the port's
-own pin lit; no pin takes a tick there.
+In the board view the rows stand in the column left of the board and the
+keys set the port's pin. In the grid view the rows stand under the list, the
+cells are drawn as the overview names them with the port's own pin lit, and
+no cell takes a tick: a board with no drawing has no way to pick a port's pin.
 
 | Function | The pin | Pin rule |
 | --- | --- | --- |
@@ -4691,10 +5689,14 @@ own pin lit; no pin takes a tick there.
 Port 1 starts as SERVO PWM on GPIO 13, ports 2 to 4 as NONE with no pin. The
 IOmcu keeps each port's pin and function in its flash with the outputs'
 binding, so they belong to the board, not to the panel. A FUNCTION tap and
-a pin tapped in PICK A PIN are asks: the panel writes them on a bench at
+a key tapped in the board view are asks: the panel writes them on a bench at
 rest (SAFE, no test, no sweep, no servo programmer session) and says how
-the ask stands in the amber line, `WAITS FOR SAFE, NO TEST, SWEEP OR SERVO
-PROGRAMMER`, `THE IOMCU REFUSED IT` or `LINK LOST BEFORE THE WRITE`. A port
+the ask stands in the amber line: `THE IOMCU REFUSED IT`, `LINK LOST BEFORE
+THE WRITE`, or what holds it: `WAITS FOR SAFE`, `WAITS: A SERVO TEST OR SWEEP
+RUNS`, `WAITS: THE SERVO PROGRAMMER HOLDS A PORT`, `WAITS: THE HITEC PROGRAMMER
+HOLDS A PORT`, `WAITS: THE ESC PROGRAMMER HOLDS A PIN` or `WAITS: THE PORTS ARE
+READ FIRST`. `WAITS FOR SAFE, NO TEST, SWEEP OR SERVO PROGRAMMER` stands for at
+most a control pass, until the panel has judged the ask. A port
 that is the tester's target is let go for the write (its pulse off, the
 target the outputs) and taken back after it.
 
@@ -4706,9 +5708,11 @@ The amber line under the rows names the first reason that holds:
 
 | Line | When |
 | --- | --- |
-| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | a programming session holds a port |
+| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | a KST or Chaservo session holds a port |
 | the ask's line | the last ask for this port waits, was refused or lost |
 | `PORTS NOT READ YET` | the page not read since the link came up: FUNCTION takes no tap |
+| `LOCKED: THE ESC PROGRAMMER HOLDS A PIN` | an ESC signal-wire session holds a pin |
+| `LOCKED: THE HITEC PROGRAMMER HOLDS A PORT` | a Hitec session holds a port |
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | ARMED, or a test or a sweep runs |
 | `SERVO TESTER DRIVES PROG PORT n` | the tester drives another port, port n |
 | `THE SERVO TESTER NEEDS FUNCTION SERVO PWM` | the port is NONE or DShot: the tester takes it as no target |
@@ -4778,27 +5782,92 @@ the pins ticked for the protocol being left stay bound, and the pins of the
 one arrived at come back as they were. A selector that retargeted the current
 pins would make binding a second protocol mean unbinding the first. On entry
 the list shows OFF, the overview. A protocol picked stays selected across
-read-backs of the same board. The list on PICK A PIN selects the same
-protocol.
+read-backs of the same board. Both views show one selection.
 
 `DSHOT600 BIDIR` and `DSHOT300 BIDIR` are the longest entries, 14 characters:
 
 ![The longest protocol name in the list](img/outputs-bidir.png)
+
+### The grid view
+
+OUTPUTS on a board with neither a drawing nor a shape, and on the rbmod
+carrier: a guessed picture would point at the wrong pad as confidently as the
+right one.
+
+![The grid on a board with no shape](img/outputs-grid.png)
+
+The left column is 300px wide: the PROTOCOL label, the protocol list's
+face (300 x 64px), the count and the reason under it in 10 x 20, and
+LAST WRITE at the column's foot with the result in 20 x 36. The pins take a
+grid of 4 columns of 7 cells, 167 x 64px each (25.1 x 9.6mm), 8px apart
+across and 6px apart down, from x 324. A cell holds a 24px tick box, the
+pin name in 16 x 28 (`GPIO 28`, 112px) and, under them, what holds the pin or its pad in
+8 x 16, 18 characters at most. The grid's last row ends at body y 492,
+4px above the alert band. The open protocol list holds the 8 protocols in
+a column of 48px rows (7.2mm) from the face's top and the PROG PORT
+entries in a second column of the same rows beside it; with 4 entries the
+list is 600 x 392px and ends at body y 436. No cat is drawn on it.
 
 A pin another protocol holds is drawn greyed, with that protocol's name under
 it where a free pin shows its pad number. That is a choice, undone by going to
 that protocol and unticking it there — unlike a reserved pin, which is drawn
 red and struck through because it is the wiring rather than a choice.
 
-Four servo leads and an ESC, with DSHOT300 the protocol being edited. GPIO 5 is
-ticked; GPIO 0, GPIO 1, GPIO 2 and GPIO 4 say SERVO PWM and cannot be ticked here; GPIO 3 and
-GPIO 8 to GPIO 12 are red because the IOmcu reserves them:
-
-![Outputs with pins held by another protocol](img/outputs-held.png)
-
 So a cell is in one of four states, and each says what to do about it: ticked
 in this protocol, held by another and named, reserved and struck through, or
 free and showing its pad number.
+
+### On the rbmod carrier
+
+The [rbmod carrier](Carrier.md) solders every lead to its pin, and no pin
+is chosen on the panel. The panel takes the board from IDENTITY register 5
+on the IOmcu's link (board 2).
+
+![OUTPUTS on the carrier](img/outputs-rbmod.png)
+
+- The grid has four cells: PWM01 to PWM04 on GPIO 2, 4, 5 and 1, the
+  name on top and the GPIO under it. A tap gives the selected protocol to
+  the output. Slot n drives PWM0(n+1); PWM01 is channel 0.
+- A protocol takes at most the 4 outputs: `SERVO PWM TAKES 4 PINS`.
+- PWM02 and PWM03 are PWM slice 2 and share one frame rate. A surface
+  protocol and a throttle protocol on the two together are refused. The
+  cell reads `SLICE OF PWM02`, and a tap on it
+  `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on a PIO
+  (programmable input/output) state machine and is offered beside either.
+- The line under the protocol counts against 4: `0 OF 4 PINS`.
+
+![A PROG PORT entry on the carrier](img/outputs-rbmod-port.png)
+
+- Each PROG PORT entry names its pin, `PROGP01 ON GPIO 13`. PIN takes no
+  tap and opens no picker.
+- FUNCTION takes no tap. It reads `PROGRAMMING` for FUNC NONE and
+  `SERVO PWM` on the port the servo tester drives.
+- With an IOmcu of protocol 4.36 or later, SERVO TESTER and PORT PWM are
+  drawn as on the module. SERVO TESTER PORT n makes the port the tester's
+  and the programmers' port, the same choice as the programmers' PORT row
+  ([Servo programmer: The port on the rbmod carrier](ServoProgrammer.md#the-port-on-the-rbmod-carrier)).
+  The panel then asks the IOmcu for FUNC SERVO PWM on that port and FUNC
+  NONE on the other three. The IOmcu's TARGET follows once the port reads
+  SERVO PWM.
+- The choice is locked under the SERVO TARGET rules: ARMED or asked to
+  arm, a test, a sweep or a limit run, a programmer holding a port. The
+  line under the rows says why: `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS`
+  or `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT`.
+- PROGP04 (GPIO 0) shares PWM slice 0 with PWM04 (GPIO 1). While PWM04
+  carries a PWM output, PROGP04 is not offered, and the line reads
+  `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)`. The binding of PWM01
+  to PWM04 is never changed for a programming port: a PWM protocol given
+  to PWM04 sets PROGP04 back to FUNC NONE.
+- The ports run from M7's fixed 5V on GPIO 21. PORT PWM ON is taken only
+  while the PROG 5V box reads ON; otherwise the line reads
+  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, and no pulse goes out.
+  The pulse stops when PROG 5V goes off.
+- With an IOmcu older than 4.36, SERVO TESTER and PORT PWM are not drawn,
+  and the line reads `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
+- WATCHED BY names the carrier's INA3221 channel on the ports' 5V,
+  `WATCHED BY INA3221 PROG 5V`, while no channel watches the port itself
+  ([Carrier: The current monitor](Carrier.md#the-current-monitor)). CH3
+  reads all four ports together.
 
 ### The overview: OFF
 
@@ -4818,8 +5887,7 @@ repaints, a link that goes down and comes back, and leaving the screen. A
 change of board selects OFF, whatever was selected: an IOmcu that
 answers for the first time during the visit, or one swapped for another
 board. A protocol picked before is not carried to the board that answers,
-so the next tap writes nothing. A press on a pin draws no pressed face.
-PICK A PIN opens with OFF selected too.
+so the next tap writes nothing. A press on a key draws no pressed face.
 
 One write is reachable with OFF selected. With pages that describe no
 binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
@@ -4827,15 +5895,9 @@ binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
 hold is the way out of those pages
 ([A binding that is not confirmed](#a-binding-that-is-not-confirmed)).
 
-GPIO 0 bound as DSHOT600 BIDIR, GPIO 1 as MOTOR PWM, GPIO 2 and GPIO 13 as SERVO PWM,
-with OFF selected. A slot holds GPIO 13 on this bench, so the programming port
-has no pin:
+With OFF selected IN USE lists every bound pin under its protocol:
 
 ![OFF shows the protocol of every bound pin](img/outputs-off.png)
-
-With SERVO PWM picked on the same bench, GPIO 2 and GPIO 13 are ticked and show
-`PAD 4` and `PAD 17`: a pin ticked in the selected protocol shows its pad
-number, because the protocol is the one named in the list.
 
 ### A binding that is not confirmed
 
@@ -4845,12 +5907,12 @@ results:
 | Read | The screen |
 | --- | --- |
 | both pages read and they describe a binding, one with no pin bound included | shows it and takes edits |
-| a page did not read: no answer within 1000ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
+| a page did not read: no answer within 1000ms, a refusal, or the link is down | keeps the last binding read, every key grey with `NOT READ`; in the grid view dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
 | both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `NO VALID ASSIGNMENT IN THE PAGES` and the key `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS` |
 | the IOmcu is a board this build has no pin map for | shows no pins |
 
-In the second and third state a tap on a pin does nothing here and on PICK
-A PIN, and no write is sent. A tick made just before the read failed is
+In the second and third state a tap on a key or a cell does nothing, and no
+write is sent. A tick made just before the read failed is
 taken back: the pins shown are the ones last read, not the ones last
 tapped. The list still opens, and a pick still changes which protocol's pins
 show their pad. The panel reads again at every link-up and every 500ms while
@@ -4860,7 +5922,8 @@ binding ends the state.
 ![The last binding read, after a read that failed](img/outputs-unread.png)
 
 Pages no binding describes do not become readable by reading them again.
-`HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`, held, writes a binding with no pin; the
+`HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`, held, writes a binding with no pin: a
+168 x 80px key on the foot under IN USE, whose table ends 8px above it; the
 read-back then shows nothing bound and edits are taken again. It is the one
 write the screen sends in this state. A finger that leaves the key, a lift
 before 2s, and leaving the screen abandon the hold.
@@ -4872,16 +5935,12 @@ lost a frame part way. An IOmcu speaking 4.10 written by this panel is
 not; it shows this state only for pages another host or an older panel left
 in its flash.
 
-### Pick a pin
+### The board view
 
-Behind the PICK A PIN tile on SETUP, and its home tag leads back there.
-Over the open protocol list the home tag closes the list, choosing
-nothing, and the screen stays.
-The same binding the
-Outputs screen holds. The list answers "which GPIO is bound"; this answers
-"where do I put the lead".
+OUTPUTS on a board with a drawing or a shape. The list answers "which GPIO is
+bound"; the board answers "where do I put the lead".
 
-![The pin picker](img/picker.png)
+![The board view](img/outputs.png)
 
 The keys are not the pads. At any size that fits a 1024 x 600 panel a pad is
 under 40 pixels across, which is smaller than a fingertip, so the pads are
@@ -4895,12 +5954,25 @@ protocol list's face (280 x 56px), the count and the reason are top left;
 the PINS table is under them, 171px wide, rows of 36px with the pin name
 in 16 x 28; IN USE is on the right, 168px wide. Both tables stand 8px
 clear of the outermost key a 600px board can have, a pad on its very edge
-included. The protocol list opens as on Outputs: the protocols in a column
+included. The protocol list opens over the board: the protocols in a column
 of 48px rows, the PROG PORT entries in a second column beside it.
+
+LAST WRITE stands right of the list's face, 140 x 56px from x 296: the label in
+8 x 16, the result in the largest of 12 x 24, 10 x 20 and 8 x 16 that holds it.
+On a board with a key there it stands at the foot of the IN USE column. It is
+not shown on a PROG PORT entry, which writes no binding.
+
+With a PROG PORT entry picked its rows take the column under the list's face:
+FUNCTION's label and its 196 x 48px face, PIN in 12 x 24 with the pad under
+it, WATCHED BY on up to 3 lines, SERVO TESTER and PORT PWM as segment rows 171
+x 48px, and the amber line, 4 lines of 10 x 20 or 5 of 8 x 16. The FUNCTION
+list opens under its face, 280px wide, over the column and the board.
 
 Each visit draws one of 8 cat drawings, picked at random, bottom left or
 bottom right where no row, key or list comes within 4px of it; it takes no
-taps.
+taps. The entry's column covers the left spot, and a cat there moves to the
+right spot when an entry is picked. A cat yields to a long IN USE table and to
+`HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`. The grid view draws none.
 
 Current limitation: the head stays where it is whatever the board. On a
 board whose shape page puts a pin in the top-left corner of its outline,
@@ -4909,7 +5981,8 @@ list's face (x 8 to 288), the count and the reason (to x 358). Such a key
 is drawn over them, and a press on its part over the face opens the
 protocol list instead of taking the pin. The RP2350-CAN's pads in that
 corner are rails and ground, so none of its keys lies there
-(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`).
+(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`). A key
+over FUNCTION's face takes the press there.
 
 A key's colour says what a tap on it does:
 
@@ -4924,21 +5997,19 @@ Neighbouring keys differ in height and in colour, like the keys of a
 keyboard. A reserved pin has no key because a key under a pin that cannot be
 chosen says it could be.
 
-Top left is the protocol list, the same control as on the Outputs screen. It
-names the selected protocol. A tap opens it over the board; a pick selects
-the protocol a tap on a key joins, on this screen and on the Outputs screen,
-and writes nothing. A tap outside the open list closes it and picks nothing.
-Every visit opens with OFF selected, on this screen and on the Outputs
-screen from SETUP: no key binds or unbinds a pin until a protocol is picked, and the
-line under the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. OFF stays
+Top left is the protocol list. It names the selected protocol. A tap opens it
+over the board; a pick selects the protocol a tap on a key joins, and writes
+nothing. A tap outside the open list closes it and picks nothing. A visit from
+SETUP opens with OFF selected: no key binds or unbinds a pin until a protocol
+is picked, and the line under the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. OFF stays
 selected across read-backs until a protocol is picked, and a change of
 board selects OFF, whatever was selected.
 
-![The protocol list on the picker](img/picker-protocol.png)
+![The protocol list over the board](img/outputs-protocol.png)
 
 Under the list is `N OF 8 SLOTS IN USE`, counted over every protocol: the
 protocols share the 8 slots of the OUTPUTS page. Under that, in amber, is
-the reason no key can be added, in the words of the Outputs screen:
+the reason no key can be added:
 
 | Line | When |
 | --- | --- |
@@ -4947,10 +6018,11 @@ the reason no key can be added, in the words of the Outputs screen:
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
 | `CHOOSE A PROTOCOL, THEN TAP PINS` | OFF is selected |
 | `NOT READ` | the binding is not confirmed |
+| `NO VALID ASSIGNMENT IN THE PAGES` | the pages describe no binding |
 
 Without the line a board drawn all grey reads as a fault.
 
-![Eight of eight slots in use](img/picker-full.png)
+![Eight of eight slots in use](img/outputs-full.png)
 
 Down the left, under PINS, are the selected protocol's pins in channel
 order, each with the pad number printed on the board in the PAD column. Down
@@ -4968,9 +6040,8 @@ one `PROG PORT` name, and the slice rule below is checked against each.
 A protocol whose stored binding holds that pin keeps it, the IOmcu gives
 the port no pin then, and the key is that protocol's like any other.
 
-The list ends in the PROG PORT entries, as on the Outputs screen, and the
-two screens show one selection: OUTPUTS' PIN button opens this screen on
-its port. With a port picked the keys set that port's pin:
+The list ends in the PROG PORT entries. With a port picked the keys set that
+port's pin:
 
 | Key | A tap |
 | --- | --- |
@@ -4979,30 +6050,28 @@ its port. With a port picked the keys set that port's pin:
 | grey, under another port's name (`PROG PORT 2`), a protocol's or an interface's | changes nothing |
 | grey, `SLICE OF GPIO 4` or `PWM CH OF GPIO 12`, on a SERVO PWM port | changes nothing; the line says `GPIO 5: SHARES PWM SLICE WITH OUTPUT GPIO 4` or `GPIO 28: SAME PWM CHANNEL AS GPIO 12` |
 
-The count line names the port's function, `FUNCTION: SERVO PWM`, and PINS
-holds the port's one pin with its pad. A NONE port takes any free key. An
-ask waits for a bench at rest and says so in the amber line, as on the
-Outputs screen. Before the ports are read every key is grey and the line
+A NONE port takes any free key. An ask waits for a bench at rest and says so
+in the amber line. Before the ports are read every key is grey and the line
 reads `PORTS NOT READ YET`.
 
-![PROG PORT 3 picked](img/picker-port.png)
+![PROG PORT 3 picked](img/outputs-port3.png)
 
 Under SERVO PWM and MOTOR PWM a key the IOmcu refuses on a PWM slice
-is grey too, as on the Outputs screen: GPIO 28 while the port holds GPIO 13, and
+is grey too: GPIO 28 while the port holds GPIO 13, and
 the partner of a pin bound as PWM, GPIO 16 beside GPIO 0. A tap on it changes
-nothing and puts the Outputs screen's line under the count:
+nothing and puts the reason under the count:
 `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13`, `GPIO 16: SAME PWM CHANNEL AS GPIO 0`.
 
-![GPIO 13 held by the programming port](img/picker-prog.png)
+![GPIO 13 held by the programming port](img/outputs-prog.png)
 
-A pin SETUP > INTERFACES holds is grey the same way while no protocol holds
+A pin SETUP > SENSORS or SUPPLY's PD MINI tab holds is grey the same way while no protocol holds
 it, a tap on it changes nothing, and IN USE lists it after the programming
 port, under `SENSOR BUS`, `PD MINI` or `PHASE TAP` in red, without a
 channel. Which pins those are, and when, is in the table under
 [Outputs](#outputs). A row stepped on SETUP, or the IOmcu taking or
 refusing a part, redraws the keys and the table on the next frame.
 
-![The interfaces' pins held and named under IN USE](img/picker-iface.png)
+![The interfaces' pins held and named under IN USE](img/outputs-iface.png)
 
 IN USE lists every pin it holds. A protocol's name takes a 20px line and a
 pin a 28px line. When those run past the foot of the table, every pin line
@@ -5014,20 +6083,20 @@ every interface on beside that binding, the table lists 27 lines, the ports
 and the interfaces first, in the smaller lines. A table that still runs past
 the foot holds the lines that fit and ends in `+N`, N the lines left out.
 
-![The tallest IN USE table](img/picker-off.png)
+![The tallest IN USE table](img/outputs-off.png)
 
-A tap on a key writes the binding through the same sequence as a tick on the
-Outputs screen, with the same results. While the binding is not confirmed — a
-read failed, or the pages describe no binding — every key is grey, `NOT
-READ` stands under the count, and a tap on a key changes nothing and writes
+A tap on a key writes the binding at once and LAST WRITE says what became of
+it. While the binding is not confirmed — a
+read failed, or the pages describe no binding — every key is grey, the reason
+stands under the count, and a tap on a key changes nothing and writes
 nothing. The protocol list still selects.
 
 Where the pads are comes from the board, not from the panel: the [shape
 page](Link.md#page-map) carries the outline, the pitch and the corner pad 1
 sits at. A board that does not say is not drawn at all — a picture from a
 guessed shape points at the wrong pad as confidently as the right one, and
-this screen's whole job is finding a pad on the board in front of you. Its
-pins are still on the Outputs screen.
+the board view's whole job is finding a pad on the board in front of you.
+OUTPUTS draws the grid view then.
 
 The board's drawing comes from the board as well. The IOmcu carries a
 drawing of itself, the one the configurator draws: the outline, the parts as
@@ -5037,7 +6106,7 @@ grid, so the board on screen is laid out like the board in your hands.
 Without a drawing, the outline and every pad are drawn from the shape and
 the keys are in the same places:
 
-![The picker without a drawing](img/picker-drawn.png)
+![The board without a drawing](img/outputs-shape.png)
 
 The panel shows a drawing only when it describes the board the panel binds:
 the outline and every pad position match the shape, every pin pad carries
@@ -5102,10 +6171,12 @@ frame of about 130us and two frames of buffer in the controller. The figure is o
 measurement: 1 sample, taken on the bring-up module, with the flash part not
 yet identified. The erase and the page program have not been timed apart from
 each other. The window is to be argued again against the flash part's
-datasheet maximum once the part is known. A request lost
-in that window costs the panel 1000ms of waiting, which is past the
-IOmcu's 200ms silence failsafe, so one lost frame ends as `FAULT 01`
-(`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.
+datasheet maximum once the part is known. The panel sends one request
+frame per exchange and waits for its answer before it sends the next, so at
+most one request frame waits in the controller's two buffers. A window delays
+that request by up to its length, about 19ms against the panel's 1000ms wait,
+and loses none. The window still holds every answer and every output step for
+its length, so it is kept short.
 
 So the sector is not erased per save. Two sectors hold sixteen records each; a
 save writes the next record, and a sector is erased only once every record in
@@ -5131,6 +6202,30 @@ Pages the screen cannot describe — one pin in two slots, a rate no entry
 offers, a pin that is not on the header — are shown as such and not as
 nothing configured: see [A binding that is not
 confirmed](#a-binding-that-is-not-confirmed).
+
+### Layout
+
+LAYOUT is behind a tile of its own on SETUP while the IOmcu reports a
+board with soldered pins, the [rbmod carrier](Carrier.md). The tile reads
+`CONNECTORS AND PINS` there. The home tag leads back to SETUP. The screen
+drives nothing and takes no tap.
+
+![LAYOUT on the carrier](img/layout-rbmod.png)
+
+| Column | Rows | Each row |
+| --- | --- | --- |
+| J1, `PROGRAMMING PORTS` | positions 1 to 4: PROGP04, PROGP01, PROGP02, PROGP03 | the position, the role, its GPIO and the net on its +, VCC_PROGPORT; on the right `PROGRAMMING` |
+| J2, `SERVO OUTPUTS` | positions 1 to 4: PWM03, PWM02, PWM01, PWM04 | the same, with VCC_SERVOPORT_B on positions 1 and 2 and VCC_SERVOPORT_A on 3 and 4; on the right the protocol bound on the output, `OFF` for none, `NOT READ` until the binding of this board is read |
+| `OTHER CONNECTORS` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NOT DRIVEN`), J6 PD MINI, J9 TAP, PROG 5V EN on no connector | the name, what it carries, its GPIO |
+
+The line under the columns reads
+`A REV 1 BOARD NEEDS TWO CHANGES BY HAND. THE HELP PAGE LISTS THEM.`
+([Carrier: Rev 1 rework](Carrier.md#rev-1-rework)).
+
+A protocol bound or let go on OUTPUTS, and a change of board, repaint the
+screen. On a board whose pins are chosen it reads
+`THIS BOARD HAS NO SOLDERED PINS.` and
+`ITS PINS ARE CHOSEN ON OUTPUTS.`.
 
 ## Balancing
 

@@ -5,10 +5,9 @@
  * languages, and every screen's title.
  *
  * Cases:
- * - the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files
+ * - the_setup_tiles_open_the_outputs_and_updates
  * - the_band_titles_match_the_tiles
- * - wifi_returns_to_the_screen_that_opened_it
- * - wifi_keeps_its_opener_over_stop_link_loss_and_home
+ * - wifi_returns_to_setup_over_stop_and_link_loss
  * - the_home_tag_climbs_one_level_from_every_screen
  * - the_home_tag_climbs_the_stick_session_one_level_at_a_time
  * - the_home_grid_is_four_by_two_by_kind
@@ -51,29 +50,28 @@ static void tap_home(void)
 /*
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
- * can reach.  The table's order, row by row: PANEL, INTERFACES and SD
- * CARD; SENSORS, OUTPUTS and PICK A PIN; WI-FI, UPDATES and FILES, which
- * fill the grid.  ESC / BENCH is no tile: its rows are MOTOR & ESC >
- * SETTINGS'.
+ * can reach.  The table's order, row by row: PANEL, SENSORS and OUTPUTS;
+ * SD CARD, WI-FI and UPDATES, with room for the carrier's LAYOUT.
+ * ESC / BENCH is no tile: its rows are MOTOR & ESC > SETTINGS'.  FILES is no
+ * tile either: it is a tab of LOGS' strip.
  */
-TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files)
+TEST_CASE(the_setup_tiles_open_the_outputs_and_updates)
 {
     static const struct {
+        int            tile;
         ui_screen_id_t id;
         const char    *title;
     } k_tools[] = {
-        { SCREEN_OUTPUTS, "OUTPUTS" }, { SCREEN_PICKER, "PICK A PIN" },
-        { SCREEN_WIFI, "WI-FI" },      { SCREEN_UPDATES, "UPDATES" },
-        { SCREEN_FILES, "FILES" },
+        { 2, SCREEN_OUTPUTS, "OUTPUTS" }, { 4, SCREEN_WIFI, "WI-FI" },
+        { 5, SCREEN_UPDATES, "UPDATES" },
     };
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
     CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + n);
-    CHECK_EQ(SET_CAT_SETUP_COUNT, 4);   /* PANEL, INTERFACES, SD CARD,
-                                           SENSORS */
+    CHECK_EQ(SET_CAT_SETUP_COUNT, 3);   /* PANEL, SD CARD, SENSORS */
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         ui_router_goto(SCREEN_SETUP);
-        tap_tile(cat);
+        tap_tile(settings_hub_cat_tile((setting_cat_t)cat));
         CHECK_EQ(ui_router_current(), SCREEN_SETUP);
         CHECK_EQ(settings_screen_category(), cat);
         ui_router_goto(SCREEN_OVERVIEW);
@@ -81,7 +79,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files)
     for (int i = 0; i < n; ++i) {
         ui_router_goto(SCREEN_SETUP);
         CHECK_EQ(settings_screen_category(), -1);
-        tap_tile(SET_CAT_SETUP_COUNT + i);
+        tap_tile(k_tools[i].tile);
         CHECK_EQ(ui_router_current(), k_tools[i].id);
         CHECK_STR_EQ(ui_router_title(k_tools[i].id), k_tools[i].title);
         CHECK(settings_screen_opens(k_tools[i].id));
@@ -93,7 +91,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files)
 
     /* A tile's edge rows are the tile's; the margin between two is not. */
     gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
-    CHECK(settings_hub_slot(SET_CAT_SETUP_COUNT, &r));
+    CHECK(settings_hub_slot(k_tools[0].tile, &r));
     ui_router_goto(SCREEN_SETUP);
     tap(r.x + 1, UI_BAND_H + r.y + r.h - 1);
     CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
@@ -140,123 +138,13 @@ TEST_CASE(the_band_titles_match_the_tiles)
     }
 }
 
-/* LOGS' WI-FI button, mirrored from log_viewer_int.h (BR_WIFI): x 156
- * to 255, 52px tall, its foot 4px above the alert band. */
-#define LOGS_WIFI_X 206
-
-#define LOGS_WIFI_Y (UI_BAND_H + UI_BODY_H - UI_ALERT_H - 4 - 21)
-
-static void wifi_from_logs(void)
-{
-    ui_router_goto(SCREEN_OVERVIEW);
-    ui_router_goto(SCREEN_LOGS);
-    tap(LOGS_WIFI_X, LOGS_WIFI_Y);
-    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-}
-
+/** @brief WI-FI on top from its SETUP tile, the 5th. */
 static void wifi_from_setup(void)
 {
     ui_router_goto(SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_SETUP);
-    tap_tile(SET_CAT_SETUP_COUNT + 2);
+    tap_tile(4);
     CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-}
-
-/*
- * WI-FI has two openers, LOGS' WI-FI button and SETUP's tile, and its home
- * tag returns to the one that opened it: one level, never the menu.  So
- * does PANEL UPDATE's way back after an upload (ui_router_parent()).
- */
-TEST_CASE(wifi_returns_to_the_screen_that_opened_it)
-{
-    fresh();
-    to_overview();
-    /* Not yet opened: SETUP, the tile's screen. */
-    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
-
-    wifi_from_logs();
-    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_LOGS);
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
-
-    wifi_from_setup();
-    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
-    CHECK_EQ(settings_screen_category(), -1);
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
-
-    /* Alternating, each opener wins in turn. */
-    for (int k = 0; k < 4; ++k) {
-        if ((k & 1) == 0) {
-            wifi_from_logs();
-        } else {
-            wifi_from_setup();
-        }
-        tap_home();
-        CHECK_EQ(ui_router_current(),
-                 (k & 1) == 0 ? SCREEN_LOGS : SCREEN_SETUP);
-    }
-
-    /* A screen WI-FI leads to and back from keeps the opener: PANEL
-     * UPDATE, the panel's own update, after an upload. */
-    wifi_from_logs();
-    ui_router_goto(SCREEN_UPDATE);
-    ui_router_goto(ui_router_parent(SCREEN_WIFI));
-    CHECK_EQ(ui_router_current(), SCREEN_LOGS);
-    wifi_from_setup();
-    ui_router_goto(SCREEN_UPDATE);
-    ui_router_goto(SCREEN_WIFI);
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
-
-    /* A new start forgets the opener. */
-    wifi_from_logs();
-    fresh();
-    CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
-}
-
-/*
- * WI-FI opened from SETUP's tile returns to SETUP after any history of the
- * screens that share the opener field: FILES and OUTPUTS entered from
- * either of their openers in between, and WI-FI visited from LOGS first.
- */
-TEST_CASE(wifi_from_the_setup_tile_returns_to_setup_after_any_history)
-{
-    for (int h = 0; h < 4; ++h) {
-        fresh();
-        to_overview();
-        switch (h) {
-        case 0:
-            wifi_from_logs();
-            tap_home();
-            break;
-        case 1:
-            ui_router_goto(SCREEN_LOGS);
-            ui_router_goto(SCREEN_FILES);
-            tap_home();
-            break;
-        case 2:
-            ui_router_goto(SCREEN_SETUP);
-            ui_router_goto(SCREEN_OUTPUTS);
-            tap_home();
-            break;
-        default:
-            ui_router_goto(SCREEN_MOTOR);
-            ui_router_goto(SCREEN_OUTPUTS);
-            ui_router_goto(SCREEN_OVERVIEW);
-            break;
-        }
-        ui_router_goto(SCREEN_OVERVIEW);
-        wifi_from_setup();
-        CHECK_EQ(ui_router_parent(SCREEN_WIFI), SCREEN_SETUP);
-        tap_home();
-        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
-        CHECK_EQ(settings_screen_category(), -1);
-    }
 }
 
 /* The status band's STOP, mirrored from ui_band.c. */
@@ -267,71 +155,38 @@ static void tap_stop(void)
 }
 
 /*
- * The opener holds through what can happen on WI-FI in between: a STOP, a
- * link that goes and comes back, and a trip home and back by the other
- * opener.  STOP never navigates.
+ * WI-FI's home tag goes to SETUP through what can happen on WI-FI in
+ * between: a STOP and a link that goes and comes back.
+ * STOP never navigates.
  */
-TEST_CASE(wifi_keeps_its_opener_over_stop_link_loss_and_home)
+TEST_CASE(wifi_returns_to_setup_over_stop_and_link_loss)
 {
-    for (int from = 0; from < 2; ++from) {
-        const ui_screen_id_t opener = from ? SCREEN_SETUP : SCREEN_LOGS;
-        const ui_screen_id_t other  = from ? SCREEN_LOGS : SCREEN_SETUP;
-        fresh();
-        to_overview();
+    fresh();
+    to_overview();
 
-        /* STOP on WI-FI. */
-        from ? wifi_from_setup() : wifi_from_logs();
-        tap_stop();
-        CHECK(ui_router_take_stop());
-        CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-        tap_home();
-        CHECK_EQ(ui_router_current(), opener);
+    wifi_from_setup();
+    tap_stop();
+    CHECK(ui_router_take_stop());
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 
-        /* The link lost and back while WI-FI shows. */
-        from ? wifi_from_setup() : wifi_from_logs();
-        ui_bench_status_t st;
-        memset(&st, 0, sizeof(st));
-        st.link_up = true;
-        ui_router_set_status(&st);
-        st.link_up = false;
-        st.faults  = 0x01u;
-        ui_router_set_status(&st);
-        CHECK_EQ(ui_router_current(), SCREEN_WIFI);
-        tap_home();
-        CHECK_EQ(ui_router_current(), opener);
-        st.link_up = true;
-        st.faults  = 0u;
-        ui_router_set_status(&st);
-
-        /* The link-lost screen the application opens elsewhere, its
-         * acknowledgement to the menu, and WI-FI again. */
-        from ? wifi_from_setup() : wifi_from_logs();
-        tap_home();
-        ui_router_goto(SCREEN_BUSFAULT);
-        ui_router_goto(SCREEN_OVERVIEW);
-        from ? wifi_from_setup() : wifi_from_logs();
-        tap_home();
-        CHECK_EQ(ui_router_current(), opener);
-
-        /* Home in between, and the other opener: the newer one wins, and
-         * the first again after it. */
-        from ? wifi_from_setup() : wifi_from_logs();
-        tap_home();
-        tap_home();
-        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
-        from ? wifi_from_logs() : wifi_from_setup();
-        tap_home();
-        CHECK_EQ(ui_router_current(), other);
-        from ? wifi_from_setup() : wifi_from_logs();
-        tap_home();
-        CHECK_EQ(ui_router_current(), opener);
-    }
+    wifi_from_setup();
+    ui_bench_status_t st;
+    memset(&st, 0, sizeof(st));
+    st.link_up = true;
+    ui_router_set_status(&st);
+    st.link_up = false;
+    st.faults  = 0x01u;
+    ui_router_set_status(&st);
+    CHECK_EQ(ui_router_current(), SCREEN_WIFI);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 }
 
 /*
  * The home tag climbs one level from the first level of every screen that
- * has one: a screen a SETUP tile opens to SETUP, WI-FI to its opener, the
- * rest to the menu.  None skips to the menu past a level.
+ * has one: a screen a SETUP tile opens to SETUP, the rest to the menu.  None skips to the menu past a level.
  */
 TEST_CASE(the_home_tag_climbs_one_level_from_every_screen)
 {
@@ -342,16 +197,12 @@ TEST_CASE(the_home_tag_climbs_one_level_from_every_screen)
         }
         fresh();
         to_overview();
-        if (id == SCREEN_WIFI) {
-            wifi_from_logs();
-        } else {
-            ui_router_goto(settings_screen_opens((ui_screen_id_t)id)
-                               ? SCREEN_SETUP : SCREEN_OVERVIEW);
-            ui_router_goto((ui_screen_id_t)id);
-        }
-        const ui_screen_id_t want = (id == SCREEN_WIFI) ? SCREEN_LOGS
-            : settings_screen_opens((ui_screen_id_t)id) ? SCREEN_SETUP
-            : SCREEN_OVERVIEW;
+        ui_router_goto(settings_screen_opens((ui_screen_id_t)id)
+                           ? SCREEN_SETUP : SCREEN_OVERVIEW);
+        ui_router_goto((ui_screen_id_t)id);
+        const ui_screen_id_t want =
+            settings_screen_opens((ui_screen_id_t)id) ? SCREEN_SETUP
+                                                      : SCREEN_OVERVIEW;
         CHECK_EQ(ui_router_parent((ui_screen_id_t)id), want);
         tap_home();
         if (ui_router_current() != want) {
@@ -533,7 +384,7 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
     ui_router_goto(SCREEN_SETUP);
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         const uint32_t n0 = ui_router_navigations();
-        tap_tile(cat);
+        tap_tile(settings_hub_cat_tile((setting_cat_t)cat));
         CHECK_EQ(ui_router_current(), SCREEN_SETUP);
         CHECK_EQ(settings_screen_category(), cat);
         CHECK_EQ(ui_router_navigations(), n0);
@@ -548,8 +399,8 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
     /* SETUP opens on its tiles again, whichever list was open when it
      * was left. */
     ui_router_goto(SCREEN_SETUP);
-    tap_tile(SET_CAT_IFACE);
-    CHECK_EQ(settings_screen_category(), SET_CAT_IFACE);
+    tap_tile(settings_hub_cat_tile(SET_CAT_APP));
+    CHECK_EQ(settings_screen_category(), SET_CAT_APP);
     ui_router_goto(SCREEN_MOTOR);
     ui_router_goto(SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), -1);
@@ -642,7 +493,7 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
 }
 
 /*
- * SUPPLY, WI-FI, OUTPUTS and PICK A PIN through the router's home tag:
+ * SUPPLY, WI-FI and OUTPUTS in both views through the router's home tag:
  * over what the screen opened the tag closes it, one level a tap, and the
  * screen stays; with nothing open it goes to the screen's parent, for
  * OUTPUTS the workbench whose TARGET row opened it.  SUPPLY's SETTINGS is
@@ -665,7 +516,7 @@ TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
         { SCREEN_OUTPUTS, SCREEN_MOTOR,    open_outputs_list,    1 },
         { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list,    1 },
         { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list_on_port, 1 },
-        { SCREEN_PICKER,  SCREEN_SETUP,    open_picker_list,     1 },
+        { SCREEN_OUTPUTS, SCREEN_SETUP,    open_picker_list,     1 },
     };
     for (size_t k = 0; k < sizeof(k_cases) / sizeof(k_cases[0]); ++k) {
         fresh();
@@ -855,14 +706,14 @@ TEST_CASE(the_home_tiles_carry_the_planned_names_and_lines)
     static const char *const k_line[UI_LANG_COUNT][8] = {
         [UI_LANG_EN] = {
             "drive, V/A, rpm", "travel, current, program", "set and log V/A",
-            "runs and files", "S.BUS, PPM, frames", "cells, iR, mAh",
-            "vibration, phase", "pins, sensors, panel",
+            "runs, files", "S.BUS, PPM, frames", "cells, iR, mAh",
+            "vibration, phase", "panel, pins, card, Wi-Fi",
         },
         [UI_LANG_DE] = {
             "Antrieb, V/A, Drehzahl", "Weg, Strom, Programm",
-            "V/A einstellen, aufzeichnen", "Läufe und Dateien",
+            "V/A einstellen, aufzeichnen", "Läufe, Dateien",
             "S.BUS, PPM, Frames", "Zellen, iR, mAh", "Vibration, Phase",
-            "Pins, Sensoren, Panel",
+            "Panel, Pins, Karte, WLAN",
         },
     };
     fresh();
@@ -887,7 +738,7 @@ TEST_CASE(the_setup_hub_names_its_first_category_panel_in_both_languages)
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         CHECK_STR_EQ(ui_setting_category(SET_CAT_APP), "PANEL");
-        CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "INTERFACES");
+        CHECK_STR_EQ(ui_setting_category(SET_CAT_PDMINI), "PD MINI");
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -986,7 +837,7 @@ TEST_CASE(a_tile_line_breaks_at_a_space_inside_its_padding)
         { "V/A einstellen, aufzeichnen", true },
         { "travel, current, program", true },
         { "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD", false },
-        { "runs and files", false },
+        { "runs, files", false },
     };
     for (size_t i = 0; i < sizeof(k_case) / sizeof(k_case[0]); ++i) {
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -1046,11 +897,9 @@ TEST_CASE(every_menu_mark_and_label_ends_above_the_alert_band)
 
 int main(void)
 {
-    RUN(the_setup_tiles_open_the_outputs_the_picker_wifi_updates_and_files);
+    RUN(the_setup_tiles_open_the_outputs_and_updates);
     RUN(the_band_titles_match_the_tiles);
-    RUN(wifi_returns_to_the_screen_that_opened_it);
-    RUN(wifi_from_the_setup_tile_returns_to_setup_after_any_history);
-    RUN(wifi_keeps_its_opener_over_stop_link_loss_and_home);
+        RUN(wifi_returns_to_setup_over_stop_and_link_loss);
     RUN(the_home_tag_climbs_one_level_from_every_screen);
     RUN(the_home_tag_climbs_the_stick_session_one_level_at_a_time);
     RUN(the_home_grid_is_four_by_two_by_kind);

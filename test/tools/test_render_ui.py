@@ -60,3 +60,22 @@ def test_every_known_overflow_names_a_view_the_tool_draws():
     for view, text, why in ui.KNOWN_OVERFLOWS:
         assert view in ui.SCREENS
         assert text and why
+
+
+def text(x, w, clip_x, clip_w, s="SUPPLY"):
+    """A traced string at @p x, @p w px wide, in a clip from @p clip_x."""
+    return ("T", ui.Rect(x, 100, w, 20), ui.Rect(clip_x, 60, clip_w, 540),
+            None, s)
+
+
+def test_a_string_wholly_outside_its_clip_is_not_drawn():
+    # A tile's name on the half the screen guide's dock takes.
+    assert ui.fit_problems([text(577, 120, 0, 528)]) == []
+    assert ui.fit_problems([text(21, 220, 496, 528)]) == []
+
+
+def test_a_string_cut_by_its_clip_still_fails():
+    found = ui.fit_problems([text(500, 60, 0, 528)])
+    assert len(found) == 1 and "is cut at the edge" in found[0][1]
+    found = ui.fit_problems([text(470, 60, 496, 528)])
+    assert len(found) == 1 and "is cut at the edge" in found[0][1]

@@ -79,4 +79,16 @@ can_twai_health_t can_twai_health(void);
 bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
                      bool *bus_off);
 
+/**
+ * @brief Receive frames lost since the driver started, for the report.
+ *
+ * @param overrun Out: frames the controller's receive FIFO had no room for.
+ *                May be NULL.
+ * @param missed  Out: frames the driver's receive queue had no room for.
+ *                May be NULL.
+ * @return False, with the outputs untouched, when the controller is not
+ *         running or its status would not read; true otherwise.
+ */
+bool can_twai_rx_lost(uint32_t *overrun, uint32_t *missed);
+
 #endif /* RCBENCH_CAN_TWAI_H */

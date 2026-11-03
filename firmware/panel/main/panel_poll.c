@@ -35,6 +35,7 @@
 #include "supply_link.h"
 #include "telemetry_sim.h"
 #include "tone_link.h"
+#include "ui_board.h"
 #include "ui_text.h"
 
 static const char *TAG = "rcbench";
@@ -44,7 +45,7 @@ static uint16_t s_dev_faults;
 
 /*
  * What the sensor bus, the PD mini and the phase tap hold on the IOmcu's
- * pins by their pages' last reads, for OUTPUTS and PICK A PIN: a refused
+ * pins by their pages' last reads, for both views of OUTPUTS: a refused
  * part or relocation leaves the pins the page keeps.  With the link down
  * none is known, and the screens follow the settings.  An IOmcu without
  * the SUPPLY page holds no PD mini pin.
@@ -125,6 +126,7 @@ static bool poll_bench(bench_state_t *bench)
                               || endpoints_held(&s_endpoints)));
         /* And the supply's page, a write only when one is owed. */
         supply_link_service();
+        prog_supply_service();
         /* And the current monitors': a set-up only with ARM written 0 and
          * acknowledged and the bank disarmed here, as the page refuses one
          * while the bank drives.  SENSE_MAP first: SENSE's mirror
@@ -136,6 +138,7 @@ static bool poll_bench(bench_state_t *bench)
          * SERVO_WIN, so the pages hold the ring's newest window or a newer
          * one, and a row of the ring finds its window on them. */
         sense_win_service();
+        prog5v_publish_reading();
         /* And the channels' limits, armed or not: an alert only. */
         sense_limit_service();
         /* And the phase tap's: an input, taken armed or not. */
@@ -412,10 +415,13 @@ static void link_came_up(const link_msg_t *reply)
      * read of it can reach a value from an earlier IOmcu.
      */
     s_board = reply->regs[LINK_ID_HARDWARE];
+    ui_board_set(s_board);
 
     /* A binding is prepared and committed whole from 4.10
      * (bind_link_write()), and written page by page before it. */
     s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
+    /* From 4.35 a page wider than 16 registers is read in two exchanges. */
+    s_host.held_reads = s_far_minor >= LINK_MINOR_READ_HELD;
     /* A refusal count is the IOmcu's that sent it: the band shows
      * none until this one's status page is read. */
     s_bring.have_refused = false;
@@ -434,6 +440,10 @@ static void link_came_up(const link_msg_t *reply)
     /* 4.4 finds the module's rate itself, and has BAUD_FOUND. */
     s_supply_auto = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 4u;
     supply_link_lost(&s_supply_link);
+    /* The programming ports' own supply (4.32): the IOmcu starts it off. */
+    prog_supply_link_init(&s_psup_link, reply->regs[LINK_ID_PROTOCOL_MINOR]
+                                            >= LINK_MINOR_PROG_SUPPLY);
+    prog_supply_publish();
     if (!s_supply_page && pdmini_wiring().en) {
         control_alert(TR(ALERT_NO_SUPPLY_PAGE));
     }
@@ -470,6 +480,9 @@ static void link_came_up(const link_msg_t *reply)
     /* And the Hitec programmer's (4.23): its port, held or not, is read
      * before a request goes. */
     hitec_link_came_up(&s_hitec_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    /* And the ESC programmer's (4.34): a pin held over a panel restart is
+     * closed at its first read. */
+    esc_link_came_up(&s_esc_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     /* And the programming ports' (4.13): not known until it is read. */
     prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     prog_drive_publish();
@@ -536,6 +549,15 @@ static void link_came_up(const link_msg_t *reply)
 
     /* And whether it runs the image this panel carries. */
     cu_link_up(reply);
+}
+
+/**
+ * @brief The IOmcu's STATUS fault bitmap at its last read.
+ * @return LINK_FAULT_* bits; 0 before the first read
+ */
+uint16_t far_end_faults(void)
+{
+    return s_dev_faults;
 }
 
 /*
@@ -659,6 +681,9 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
              * switches an ON off as a supply not answering. */
             s_supply_page = false;
             supply_link_lost(&s_supply_link);
+            /* The IOmcu switches the ports' own supply off on its own. */
+            prog_supply_link_init(&s_psup_link, false);
+            prog_supply_publish();
             atomic_store(&s_supply_vin_mv, 0u);
             atomic_store(&s_supply_baud, 0u);
             /* And the monitors' pages: nothing on them is known until the
@@ -673,6 +698,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
              * says what that means for the servo. */
             kst_link_lost(&s_kst_link);
             hitec_link_lost(&s_hitec_link);
+            esc_link_lost(&s_esc_link);
             /* And no port is the target or names a pin, and the SERVO
              * screen's TARGET row says no link. */
             prog_link_lost(&s_prog_link);
@@ -684,8 +710,6 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
             hitec_rx_link_lost(&s_hitec_rx_link);
-            atomic_store(&s_hitec_rx_mark,
-                         (unsigned)hitec_rx_link_mark(&s_hitec_rx_link));
             iface_pins_publish(false);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
             bench->servo_new = false;
@@ -936,6 +960,7 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.servo_win_lost = sense_link_win_lost(&s_sense_link);
     kst_publish(&s_snap.kst);
     hitec_publish(&s_snap.hitec);
+    esc_publish(&s_snap.esc);
     snap_unlock();
 
     /* One queue entry per sample, so none of the plot's time base is lost to

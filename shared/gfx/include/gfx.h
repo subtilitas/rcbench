@@ -159,6 +159,21 @@ void gfx_pixel(gfx_canvas_t *c, int x, int y, gfx_color_t color);
 gfx_color_t gfx_pixel_get(const gfx_canvas_t *c, int x, int y);
 
 void gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t color);
+/**
+ * @brief Blend @p color over a rectangle: each pixel becomes @p alpha / 255
+ *        of the colour and the rest of what it was, in 33 steps (alpha 0
+ *        to 3 leaves it, 252 to 255 is the colour).  Reads every pixel it
+ *        writes; drawn twice it blends twice.
+ * @param c     Canvas.
+ * @param x     Left edge.
+ * @param y     Top edge.
+ * @param w     Width.
+ * @param h     Height.
+ * @param color The colour.
+ * @param alpha Its weight, 0 to 255.
+ */
+void gfx_fill_rect_blend(gfx_canvas_t *c, int x, int y, int w, int h,
+                         gfx_color_t color, uint8_t alpha);
 void gfx_draw_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t color);
 void gfx_hline(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
 void gfx_vline(gfx_canvas_t *c, int x, int y, int h, gfx_color_t color);

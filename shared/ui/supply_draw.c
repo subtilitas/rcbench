@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "esc_wire_panel.h"
 #include "bench_state.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -93,7 +94,7 @@ static const char *mode_line(void)
         return "";
     }
     if (s.port_held) {
-        return TR(SUP_LINE_PORT);
+        return esc_wire_panel_holds_port() ? TR(SUP_LINE_PORT_ESC) : TR(SUP_LINE_PORT);
     }
     if (!s.sup.output && s.sup.trip == SUPPLY_TRIP_CURRENT) {
         return TR(SUP_LINE_TRIP_I);
@@ -125,13 +126,23 @@ void supply_screen_header_text(char *out, size_t size)
              s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING), rate);
 }
 
+gfx_rect_t sup_model_line_rect(void)
+{
+    return (gfx_rect_t){ INFO_X, SU_STRIP_Y,
+                         (int16_t)(gfx_text_width(SU_FONT_LABEL, TR(SUP_MODEL), 1)
+                                   + 2 * INNER),
+                         SU_STRIP_H };
+}
+
 /**
  * @brief The row right of the strip: where the numbers come from, in the
  *        label face, and at its right end the range the set points may
  *        take, in the fine face.  The longest,
  *        `PD MINI TX GPIO 12 RX GPIO 13   ANTWORTET NICHT`, is 47 cells of
  *        the label face (470px) and `10.0-21.0V  0.50-5.00A` 22 of the
- *        fine face (176px): 646px of the 680px the row holds.
+ *        fine face (176px): 646px of the 680px the row holds.  On the model
+ *        the source is a button that opens the PD MINI tab, SIMULATED's 33
+ *        cells and 20px, and ONLINE after it: 350 + 90 + 176 = 616px.
  * @param c the canvas
  */
 static void draw_header(gfx_canvas_t *c)
@@ -139,11 +150,20 @@ static void draw_header(gfx_canvas_t *c)
     const int x0 = INFO_X;
     const int x1 = W - PAD;
     gfx_fill_rect(c, x0, 0, W - x0, OV_Y - 1, ui_theme_color(UI_C_BG));
-    char line[80];
-    supply_screen_header_text(line, sizeof(line));
-    gfx_text(c, x0, INFO_Y, line, SU_FONT_LABEL,
-             s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
-                          : ui_theme_color(UI_C_WARN), 1);
+    const gfx_color_t col = s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
+                                         : ui_theme_color(UI_C_WARN);
+    if (s.model) {
+        const gfx_rect_t b = sup_model_line_rect();
+        ui_button_font(c, b, TR(SUP_MODEL), ui_theme_color(UI_C_PANEL_SUNK),
+                       s.pressed == P_MODEL_LINE, true, SU_FONT_LABEL);
+        gfx_text(c, b.x + b.w + INNER, INFO_Y,
+                 s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING),
+                 SU_FONT_LABEL, col, 1);
+    } else {
+        char line[80];
+        supply_screen_header_text(line, sizeof(line));
+        gfx_text(c, x0, INFO_Y, line, SU_FONT_LABEL, col, 1);
+    }
     char range[64];
     snprintf(range, sizeof(range), "%.1f-%.1fV  %.2f-%.2fA",
              (double)s.eff.v_min, (double)s.eff.v_max,
@@ -488,10 +508,10 @@ static void row_value_text(int i, char *buf, size_t n)
 }
 
 /**
- * @brief SETTINGS' page in the left column under the strip: the caps and
- *        the start values on the left with RESET PD MINI under them, the
- *        trips, their help and the confirmations on the right, and the
- *        save line at the foot.
+ * @brief SETTINGS' page in the left column under the strip: LIMITS | PD MINI
+ *        at its top and the save line at its foot.  LIMITS: the caps and the
+ *        start values on the left with RESET PD MINI under them, the trips,
+ *        their help and the confirmations on the right.
  * @param c the canvas
  */
 static void draw_settings(gfx_canvas_t *c)
@@ -499,6 +519,19 @@ static void draw_settings(gfx_canvas_t *c)
     const gfx_rect_t a = sup_overlay_area();
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
+    ui_tabs_render(&s.ov_tabs, c);
+    const uint8_t st = save_state();
+    static const ui_text_id_t k_save[] = {
+        TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
+        TX_SUP_SETUP_NOT_SAVED,
+    };
+    gfx_text(c, OV_COL0_X, OV_SAVE_Y, ui_tr(k_save[st]), SU_FONT_LABEL,
+             (st == 2u) ? ui_theme_color(UI_C_WARN)
+                        : ui_theme_color(UI_C_TEXT_DIM), 1);
+    if (sup_on_pdmini()) {
+        sup_pd_draw(c);
+        return;
+    }
     if (!s.model) {
         /* A module in ERR -- a set point over its input -- comes back only
          * with a restart. */
@@ -539,14 +572,6 @@ static void draw_settings(gfx_canvas_t *c)
                  ui_tr(help[i]), SU_FONT_FINE,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
-    const uint8_t st = save_state();
-    static const ui_text_id_t k_save[] = {
-        TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
-        TX_SUP_SETUP_NOT_SAVED,
-    };
-    gfx_text(c, lx, OV_SAVE_Y, ui_tr(k_save[st]), SU_FONT_LABEL,
-             (st == 2u) ? ui_theme_color(UI_C_WARN)
-                        : ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
 /**
@@ -624,6 +649,31 @@ static uint8_t output_tag(void)
 }
 
 /**
+ * @brief The programming ports' own supply under OUTPUT, on a board that
+ *        switches one: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or `NOT READ`;
+ *        nothing on any other board.
+ * @param c the canvas
+ */
+static void draw_prog_5v(gfx_canvas_t *c)
+{
+    gfx_fill_rect(c, RC_X, PROG5V_Y, RC_W, LINE_H,
+                  ui_theme_color(UI_C_PANEL));
+    const unsigned st = (unsigned)(s.prog_5v >> 8);
+    if (st == 0u) {
+        return;
+    }
+    const char *what = (st == 3u) ? TR(SUP_PROG5V_ON)
+                       : (st == 2u) ? TR(SUP_PROG5V_OFF)
+                                    : TR(SUP_PROG5V_UNKNOWN);
+    char line[48];
+    snprintf(line, sizeof(line), TR(SUP_PROG5V_LINE),
+             (unsigned)(s.prog_5v & 0xFFu), what);
+    gfx_text(c, RC_X, PROG5V_Y, line, SU_FONT_LABEL,
+             (st == 3u) ? ui_theme_color(UI_C_ACCENT)
+                        : ui_theme_color(UI_C_TEXT_FAINT), 1);
+}
+
+/**
  * @brief A frame: the chrome once per framebuffer, then each part on its
  *        own counter.
  * @param c the canvas
@@ -638,6 +688,12 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
     /* The left column shows LIVE's plot and set points unless the keypad
      * or the question covers it, or SETTINGS' page has it. */
     const bool covered = s.kp.open || s.confirm_open || !sup_on_live();
+    /* The ports' own supply moved: CONTROL repaints. */
+    const uint32_t p5 = sup_prog_5v();
+    if (p5 != s.prog_5v) {
+        s.prog_5v = p5;
+        ++s.ctrl_rev;
+    }
     const uint8_t tag = output_tag();
     char tag_buf[48];
     if ((s.drawn_mask & bit) == 0) {
@@ -677,6 +733,12 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
             ui_tabs_render(&s.tabs, c);
         }
         draw_header(c);
+    }
+    /* The PROG 5V box in the output card's head, on its own revision. */
+    if (sup_p5_shown()
+        && (s.drawn_p5[buf] != s.p5.rev || ctrl_moved || data_moved)) {
+        s.drawn_p5[buf] = s.p5.rev;
+        prog5v_box_render(&s.p5, c);
     }
 
     if (s.kp.open) {
@@ -752,6 +814,7 @@ void sup_render(gfx_canvas_t *c, int buffer_index)
         ui_button_font(c, s.reset_rect, TR(MO_RESET_PEAKS),
                        ui_theme_color(UI_C_PANEL_SUNK), s.pressed == P_RESET,
                        true, SU_FONT_LABEL);
+        draw_prog_5v(c);
     }
     if (ctrl_moved || out_moved) {
         draw_out_button(c);

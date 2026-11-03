@@ -4,15 +4,14 @@
  *        at a card that does not mount.
  *
  * The SDMMC host is shared with the ESP32-C6's SDIO link on slot 1
- * (wifi_radio.c).  Each slot's start and card start set the host's clock
- * divider, which both slots share, and send the clock update commands
- * outside ESP-IDF's request mutex (sdmmc_host_set_card_clk(), sdmmc_host.c
- * 301-351).  So a mount here can make a C6 transfer under way fail, and
- * esp_hosted's start of slot 1 (at the first Wi-Fi start, and at each C6
- * reset it makes) can make a card read or write under way fail.  Neither
- * is measured.  test_storage holds the slot count against
- * test/host/storage_stub/storage_fake.c, which counts slots as ESP-IDF
- * does; the shared clock divider is not modelled there.
+ * (wifi_radio.c).  ESP-IDF v6.1's SDMMC driver takes the controller's mutex
+ * for each command and sets the clock of the command's slot inside it
+ * (sd_trans_sdmmc.c, sd_host_slot_sdmmc_do_transaction()); starting a slot
+ * only registers it.  Whether a mount here costs a C6 transfer time, or
+ * esp_hosted's start of slot 1 costs a card transfer time, is not measured.
+ * test_storage holds the slot registrations against
+ * test/host/storage_stub/storage_fake.c, which registers slots as ESP-IDF
+ * v6.1 does; the controller's mutex and clock are not modelled there.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -212,10 +211,9 @@ static const char *volume_format(void)
 static int probe_fatfs(const sdmmc_host_t *host,
                        const sdmmc_slot_config_t *slot, esp_err_t *why)
 {
-    /* No slot deinit after a slot that did not start: the SDMMC host is
-     * shared with the C6's SDIO link on slot 1, ESP-IDF counts a slot only
-     * once it has started, and a deinit here would count slot 1 down and
-     * stop the whole host. */
+    /* No slot deinit after a slot that did not start: it has no handle to
+     * stop.  The mount stopped slot 0 before this look, so the slot starts
+     * again here. */
     esp_err_t err = (*host->init)();
     if (err == ESP_OK) {
         err = sdmmc_host_init_slot(host->slot, slot);
@@ -342,29 +340,15 @@ static esp_err_t mount_locked(void)
 
     /*
      * The SDMMC host is shared with the C6's SDIO link on slot 1, which
-     * esp_hosted starts before app_main().  ESP-IDF v5.5.5 counts a slot
-     * only once it has started (sdmmc_host_init_slot(), sdmmc_host.c
-     * 837-840), and the mount deinits slot 0 on every failure after the
-     * host's init (vfs_fat_sdmmc.c 310-312): after a slot 0 that did not
-     * start, that deinit would count slot 1 down to 0 and stop the host
-     * under esp_hosted.  So slot 0 is started here first, and a slot that
-     * does not start ends the attempt with no deinit, as in probe_fatfs().
-     * With both slots started the count is at its ceiling of 2, so the
-     * mount's own start of slot 0 does not count again, and its deinit
-     * counts back to 1.
-     */
-    err = (*host.init)();
-    if (err == ESP_OK) {
-        err = sdmmc_host_init_slot(host.slot, &slot);
-    }
-    if (err != ESP_OK) {
-        set_state(CARD_STATE_UNREADABLE);
-        snprintf(s.status, sizeof(s.status), "%s", esp_err_to_name(err));
-        ESP_LOGW(TAG, "SD slot did not start: %s", esp_err_to_name(err));
-        return err;
-    }
-
-    /*
+     * esp_hosted starts before app_main().  The mount starts slot 0 itself
+     * on the host that is up (sdmmc_host_init() returns the existing
+     * controller), and stops slot 0 on every failure after that.  A slot
+     * that did not start has no handle to stop, so the stop leaves the C6's
+     * slot 1 as it is; a stop of slot 0 that started removes slot 0 alone,
+     * and the controller stays while slot 1 is registered.  A slot 0
+     * started here beforehand would make the mount's own start fail with
+     * ESP_ERR_INVALID_STATE.
+     *
      * ESP-IDF's mount logs every failure of its own at E level, "no card"
      * among them ("sdmmc_card_init failed (0x107)").  An empty slot is not
      * a fault: its tag is quiet for the call, and the outcome is logged

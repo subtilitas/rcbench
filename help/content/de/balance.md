@@ -53,5 +53,5 @@ Ohne Indexpuls braucht das Wuchten vier Läufe: eine Referenz, dann je eine Test
 
 ## Verwandte Seiten
 
-- [Anschlüsse](setup-interfaces.md): die Einstellungen Vibration und Optischer Tacho, in diesem Release gespeichert und nicht gelesen.
+- [Sensoren](setup-sensors.md): die Schlüssel Vibration und Optischer Tacho, in diesem Release gespeichert und nicht gelesen; keine Zeile zeigt sie.
 - [Wuchten](https://github.com/subtilitas/rcbench/blob/main/docs/Balance-de.md): Sensorwahl und Platzierung im Detail.

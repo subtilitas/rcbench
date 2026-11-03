@@ -139,11 +139,14 @@ TEST_CASE(every_row_fits_between_its_edge_and_its_keys_in_both_languages)
                 const setting_id_t id = ids[i];
                 const setting_def_t *d = settings_def(id);
                 const char *name = ui_setting_label(id);
-                if (gfx_text_width(F_NAME, name, 1) > TEXT_W) {
+                /* SENSORS' rows stand right of its left list. */
+                const int text_w = (cat == SET_CAT_SENSORS)
+                                       ? TEXT_W - (240 - 10) : TEXT_W;
+                if (gfx_text_width(F_NAME, name, 1) > text_w) {
                     T_FAIL("lang %d: name \"%s\" past the keys", lang, name);
                 }
                 const char *help = settings_screen_help(id);
-                if (gfx_text_width(F_LABEL, help, 1) > TEXT_W) {
+                if (gfx_text_width(F_LABEL, help, 1) > text_w) {
                     T_FAIL("lang %d: help \"%s\" past the keys", lang, help);
                 }
                 const bool word = d->type == SET_TYPE_ENUM
@@ -196,39 +199,38 @@ static bool bar_drawn(void)
 TEST_CASE(the_shortest_list_fits_and_draws_no_scroll_bar)
 {
     fresh_hub();
-    for (int a = 0; a < 4; ++a) {
-        settings_set(SET_INA_FIT(a), 0.0f);
-    }
     open_category(SET_CAT_SENSORS);
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 5);
+    tap(entry_x(SENS_ENTRY_INA228), entry_y(SENS_ENTRY_INA228));
+    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 1);
     int max = -1;
     CHECK_EQ(settings_screen_scroll(&max), 0);
     CHECK_EQ(max, 0);
     CHECK(!bar_drawn());
-    gesture_screen(SET_CAT_SENSORS);
+    snap();
     swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + 8, 9);
     CHECK_EQ(settings_screen_scroll(NULL), 0);
     CHECK_EQ(changed(), 0);
 }
 
 /*
- * The longest list, SENSORS with all four INA3221 fitted, scrolls to its
- * last row: that row ends at the pane's foot, its "+" key whole and a tap
- * on it steps the row's setting.  The bar is drawn.
+ * The longest list, an INA3221 part's pane or PANEL's, scrolls to its last
+ * row: that row ends at the pane's foot, its "+" key whole and a tap on it
+ * steps the row's setting.  The bar is drawn.
  */
 TEST_CASE(the_longest_list_scrolls_to_its_last_row)
 {
     fresh_hub();
-    for (int a = 0; a < 4; ++a) {
-        settings_set(SET_INA_FIT(a), 1.0f);
-    }
-    int longest = 0;
+    settings_set(SET_INA_FIT(0), 1.0f);
+    sensors_pane_select(SENS_ENTRY_INA3221_0);
+    int longest = 0, cat_longest = 0;
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         const int n = settings_screen_rows((setting_cat_t)cat);
-        longest = (n > longest) ? n : longest;
+        if (n > longest) {
+            longest = n;
+            cat_longest = cat;
+        }
     }
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), longest);
-    open_category(SET_CAT_SENSORS);
+    open_category((setting_cat_t)cat_longest);
     int max = 0;
     (void)settings_screen_scroll(&max);
     CHECK_EQ(max, longest * ROW_PITCH - (ROW_PITCH - ROW_H) - LIST_H);

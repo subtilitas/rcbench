@@ -12,6 +12,8 @@
 #include <string.h>
 
 #include "iomcu.h"
+#include "board_fix.h"
+#include "iomcu_pins.h"
 
 #include "sense_limit.h"
 #include "sense_map.h"
@@ -233,11 +235,22 @@ void hw_apply_only(uint8_t may_bind)
     (void)target_sync();
     uint16_t rate[OUT_MAX_SLOTS];
     outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
-    outputs_hw_apply_only(&s_outputs, rate, may_bind);
+    /* A slot the ESC_WIRE page holds stays unbound, whoever asks. */
+    outputs_hw_apply_only(&s_outputs, rate, esc_port_may_bind(&s_esc, may_bind));
     /* And the SERVO_SENSE page told which slots render frames, so a
      * capture never arms on one the silicon left unbound. */
     sense_page_bound(&s_sense, bound_slots());
     ports_apply();
+}
+
+bool hw_return_slot(uint8_t slot)
+{
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
+    const bool back = outputs_hw_return_slot(&s_outputs, rate, slot);
+    sense_page_bound(&s_sense, bound_slots());
+    ports_apply();
+    return back;
 }
 
 void hw_apply(void)
@@ -310,6 +323,11 @@ uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     uint16_t next[LINK_CC_COUNT];
+
+    /* The output the ESC_WIRE page holds gets back what it had. */
+    if (esc_port_supply_hold(&s_esc)) {
+        return LINK_NACK_BUSY;
+    }
     memcpy(next, s->chan_cfg, sizeof(next));
     const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
     if (nack != 0u) {
@@ -350,6 +368,11 @@ uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
 {
     const iomcu_state_t *s = (const iomcu_state_t *)ctx;
+    /* On a board with soldered pins each port keeps its pin and FUNC NONE. */
+    if (!board_fix_write_ok(outbind_roles(IOMCU_BOARD_ID), LINK_PAGE_PROG,
+                            off, n, in)) {
+        return LINK_NACK_BAD_VALUE;
+    }
     sense_sync();
     const prog_port_t was = s_prog;
     uint16_t kept_was[PROG_PORT_KEPT_COUNT + 1u];
@@ -443,14 +466,26 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
     /* The reservation as of core 1's last tick: a bus that moved gives its
      * old pins back once core 1 has let them go. */
     sense_sync();
+    /* On a board with soldered pins a driven slot sits on a servo output,
+     * armed or not. */
+    if (!board_fix_slots_ok(outbind_roles(IOMCU_BOARD_ID), next)) {
+        return LINK_NACK_BAD_VALUE;
+    }
     /* No slot changes under an armed bank, and the binding in force,
      * written again, is taken without binding anything anew. */
     if (bank_armed(s)) {
         return outputs_slots_armed_check(s->slots, next, true);
     }
     /* Nor a slot on a programming port's pin, or a PWM slot beside one in
-     * the silicon: a port is no standard servo port and lends no pin. */
-    if (prog_port_slots_check(&s_prog, next) != 0u) {
+     * the silicon: a port is no standard servo port and lends no pin.  On
+     * a board with soldered pins the servo outputs come first: a SERVO PWM
+     * port on a PWM slot's slice goes back to NONE (prog_port_yield())
+     * once the page is taken. */
+    const uint8_t yield = (outbind_roles(IOMCU_BOARD_ID) != NULL)
+                              ? (uint8_t)(prog_port_slots_yield(&s_prog, next)
+                                          & ~ports_wire())
+                              : 0u;
+    if (prog_port_slots_check_yield(&s_prog, next, yield) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     /* Nor one on a pin the supply holds: the bank would leave it unbound,
@@ -478,6 +513,9 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
                                   servo_page_slots_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
+    prog_port_yield_t yielded;
+    const uint16_t servo_hz = servo_page_hz(&s_servo);
+    prog_port_yield(&s_prog, yield, &yielded);
     uint16_t prev[LINK_OS_COUNT];
     memcpy(prev, s->slots, sizeof(prev));
     const uint8_t bound_before = bound_slots();
@@ -517,6 +555,13 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
          * slot bound then needs back. */
         memcpy(s->slots, prev, sizeof(prev));
         outputs_slots_apply(&s_outputs, s->slots);
+        if (yield != 0u) {
+            /* The ports as they were, the SERVO page's target on the port
+             * again and its rate, which the change of target took. */
+            prog_port_unyield(&s_prog, &yielded);
+            (void)target_sync();
+            servo_page_restore_hz(&s_servo, servo_hz);
+        }
         hw_apply_only(bound_before);
         return LINK_NACK_BAD_VALUE;
     }
@@ -531,6 +576,11 @@ uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     uint16_t next[LINK_OS_COUNT];
+
+    /* The output the ESC_WIRE page holds gets back what it had. */
+    if (esc_port_supply_hold(&s_esc)) {
+        return LINK_NACK_BUSY;
+    }
     memcpy(next, s->slots, sizeof(next));
     const uint8_t nack = outputs_slots_write(next, off, n, in);
     if (nack != 0u) {
@@ -550,6 +600,11 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      * frame is stored; a disarm is always taken.
      */
     if (update_hw_refuses_arm(off, n, in)) {
+        return LINK_NACK_NOT_ARMED;
+    }
+    /* Nor while a programming port is out of PWM: stored, it would arm the bank
+     * in the pass the port returns, with no new ask. */
+    if (safety_gate_hold_refuses_arm(ports_quiet() != 0u, off, n, in)) {
         return LINK_NACK_NOT_ARMED;
     }
     /*

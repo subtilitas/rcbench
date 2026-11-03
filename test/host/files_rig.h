@@ -167,26 +167,49 @@ static inline void tap_row(int i, int r)
 }
 
 /**
- * @brief Select @p name in pane @p i by a tap on its row, which is on
- *        screen in the cases' folders; the pane is the active one then.
+ * @brief Bring row @p r of pane @p i on screen by a drag on the list.
+ * @param i  the pane
+ * @param r  the row on the page
+ */
+static inline void row_in_sight(int i, int r)
+{
+    int off = r - (files_screen_scroll(i) + FS_SPOT_ROWS - 1);
+    if (off <= 0) {
+        off = r - files_screen_scroll(i);
+        if (off >= 0) {
+            return;
+        }
+    }
+    const int y0 = FS_SPOT_ROW_CY(2);
+    const int y1 = y0 - off * 48 - ((off > 0) ? 10 : -10);
+    send(TOUCH_EVENT_DOWN, FS_SPOT_ROW_CX(i), y0);
+    send(TOUCH_EVENT_MOVE, FS_SPOT_ROW_CX(i), y1);
+    send(TOUCH_EVENT_UP, FS_SPOT_ROW_CX(i), y1);
+}
+
+/**
+ * @brief Select @p name in pane @p i by a tap on its row, scrolled on screen
+ *        first; the pane is the active one then.
  * @return true when the row was there
  */
 static inline bool pick(int i, const char *name)
 {
     const int r = row_of(i, name);
-    if (r < 0 || r >= FS_SPOT_ROWS) {
+    if (r < 0) {
         return false;
     }
     if (files_screen_pane(i)->selected == r && files_screen_active() == i) {
         return true;
     }
+    row_in_sight(i, r);
+    const int on = r - files_screen_scroll(i);
     if (files_screen_active() != i) {
-        tap_row(i, r);          /* the pane active, the row selected */
+        tap_row(i, on);         /* the pane active, the row selected */
         if (files_screen_pane(i)->selected == r) {
             return true;
         }
     }
-    tap_row(i, r);
+    tap_row(i, on);
     return files_screen_pane(i)->selected == r;
 }
 
@@ -196,7 +219,7 @@ static inline bool open_dir(int i, const char *name)
     if (!pick(i, name)) {
         return false;
     }
-    tap_row(i, row_of(i, name));
+    tap_row(i, row_of(i, name) - files_screen_scroll(i));
     return true;
 }
 

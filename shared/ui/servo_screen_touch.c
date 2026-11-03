@@ -9,6 +9,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "prog_registry.h"
+#include "esc_wire_panel.h"
 #include "servo_screen.h"
 
 #include <math.h>
@@ -328,11 +330,27 @@ void svs_event_body(const touch_event_t *evt)
             }
             return;
         }
+        if (prog5v_box_shown()
+            && gfx_rect_contains(prog5v_box_button(&s.p5), px, py)) {
+            /* One contact owns PROG 5V, as OUTPUT; a port holding the
+             * supply locks it, and the band says why. */
+            if (!s.p5_down) {
+                if (prog5v_box_press(&s.p5)) {
+                    s.p5_down = true;
+                    s.p5_id   = evt->point.id;
+                    ++s.power_rev;
+                } else if (!prog5v_box_live()) {
+                    ui_router_set_alert(TR(P5_LOCKED));
+                }
+            }
+            return;
+        }
         if (gfx_rect_contains(s.out_btn, px, py)) {
             /* A programming port holds the supply: off is taken, on is
              * not. */
             if (!supply_screen_output_on() && supply_screen_port_held()) {
-                ui_router_set_alert(TR(SUP_HELD_REFUSED));
+                ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
+                                                                   : TR(SUP_HELD_REFUSED));
                 return;
             }
             /* Off, with a set point past a standard servo's rating: the HV
@@ -351,7 +369,7 @@ void svs_event_body(const touch_event_t *evt)
                 s.out_id       = evt->point.id;
                 s.out_press_on = supply_screen_output_on();
                 if (!s.out_press_on) {
-                    ui_hold_begin(&s.out_hold);
+                    ui_hold_begin(&s.out_hold, TX_HOLD_HINT_OUTPUT_ON);
                 }
                 ++s.sup_rev;
             }
@@ -362,7 +380,8 @@ void svs_event_body(const touch_event_t *evt)
                 /* No set point moves under a programming port, and the
                  * band says why. */
                 if (supply_screen_port_held()) {
-                    ui_router_set_alert(TR(SUP_HELD_REFUSED));
+                    ui_router_set_alert(esc_wire_panel_holds_port() ? TR(SUP_HELD_REFUSED_ESC)
+                                                                   : TR(SUP_HELD_REFUSED));
                     return;
                 }
                 /* The run owns the set points while it runs. */
@@ -452,7 +471,7 @@ void svs_event_body(const touch_event_t *evt)
                 /* Programming and an armed bench are exclusive: the
                  * press arms nothing and says why in the alert band. */
                 if (prog_holds()) {
-                    ui_router_set_alert(TR(ALERT_ARM_PROG));
+                    ui_router_set_alert(prog_reg_hold_alert());
                 }
                 return;
             }
@@ -465,8 +484,24 @@ void svs_event_body(const touch_event_t *evt)
             }
             s.arm_down = true;
             s.arm_id   = evt->point.id;
-            ui_hold_begin(&s.arm);
+            ui_hold_begin(&s.arm, TX_HOLD_HINT_ARM);
             ++s.arm_rev;
+        }
+    }
+
+    if (s.p5_down && evt->point.id == s.p5_id) {
+        if (evt->type == TOUCH_EVENT_MOVE) {
+            if (prog5v_box_drag(&s.p5, px, py)) {
+                s.p5_down = false;
+                ++s.power_rev;
+            }
+            return;
+        }
+        if (evt->type == TOUCH_EVENT_UP) {
+            prog5v_box_release(&s.p5, evt);
+            s.p5_down = false;
+            ++s.power_rev;
+            return;
         }
     }
 
@@ -484,7 +519,7 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         if (evt->type == TOUCH_EVENT_UP) {
-            const bool fired = ui_hold_end(&s.out_hold);
+            const bool fired = ui_hold_end(&s.out_hold, evt, s.out_btn);
             s.out_down = false;
             ++s.sup_rev;
             /* Off is a tap; on is a hold that has already asked by the time
@@ -513,7 +548,7 @@ void svs_event_body(const touch_event_t *evt)
         if (evt->type == TOUCH_EVENT_UP) {
             /* Arming is a hold that has already sent its command by the
              * time the finger lifts; disarming acted on its press. */
-            (void)ui_hold_end(&s.arm);
+            (void)ui_hold_end(&s.arm, evt, s.arm_btn);
             s.arm_down = false;
             ++s.arm_rev;
             return;

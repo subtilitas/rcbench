@@ -123,6 +123,18 @@ void supply_screen_set_baud(uint32_t baud);
 void supply_screen_set_pins(int tx, int rx);
 
 /**
+ * @brief The programming ports' own supply, on a board that switches one
+ *        (link 4.32, PROG_SUPPLY; the rbmod carrier's GPIO 21): CONTROL
+ *        shows it under OUTPUT as `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
+ *        `NOT READ`.  The KST and Hitec programmers switch it; SUPPLY
+ *        offers no key for it.  Any task: held atomically.
+ *
+ * @param state prog_supply_state_t: 0 (none) shows no line
+ * @param pin   the switching GPIO
+ */
+void supply_screen_set_prog_5v(uint8_t state, uint8_t pin);
+
+/**
  * @brief The left text of the header strip: the supply and its pins, the
  *        answer and the rate ("PD MINI TX GPIO 12 RX GPIO 13   ONLINE
  *        38400"), 47 characters at most.
@@ -130,6 +142,26 @@ void supply_screen_set_pins(int tx, int rx);
  * @param size  bytes at @p out
  */
 void supply_screen_header_text(char *out, size_t size);
+
+/**
+ * @brief SETTINGS' PD MINI tab, as a tap on the SIMULATED line opens it: the
+ *        PD mini's enable, TX, RX and baud.  Nothing else changes, and nothing
+ *        is sent.
+ */
+void supply_screen_open_pdmini(void);
+
+/**
+ * @brief SETTINGS' LIMITS tab, as SERVO's caps button opens it: where the caps
+ *        are set.  Called after the router's entry, which opens LIVE.  Nothing
+ *        else changes, and nothing is sent.
+ */
+void supply_screen_open_limits(void);
+
+/**
+ * @brief SETTINGS' tab selected.
+ * @return 0 for LIMITS, 1 for PD MINI
+ */
+int supply_screen_settings_tab(void);
 
 /** The set points as the screen holds them, snapped to the caps. */
 float supply_screen_set_v(void);
@@ -190,10 +222,40 @@ void supply_screen_set_port_held(bool held);
  * @brief The Hitec programmer's word on the same hold: the supply is held
  *        while either programmer says so.  supply_screen_set_port_held() is
  *        the KST programmer's.
- * @param held whether the Hitec programmer, or the SUPPLY page's own
- *        LINK_SP_PORT, says a programming port holds the supply
+ * @param held whether the Hitec programmer says a programming port holds
+ *        the supply
  */
 void supply_screen_set_hitec_held(bool held);
+/**
+ * @brief The SUPPLY page's own word on the same hold (LINK_SP_PORT): held
+ *        while a port of either programmer holds the SUPPLY page.  It may
+ *        let go after the programmer's word; the release then arms the
+ *        restore offer as the programmer's end did.
+ * @param held whether the SUPPLY page says a programming port holds it
+ */
+void supply_screen_set_page_held(bool held);
+/**
+ * @brief Whether the programming ports run from their own supply (the
+ *        PROG_SUPPLY page, the rbmod carrier's 5V) and not from the PD
+ *        mini.  The programmers' words then hold nothing here: the IOmcu
+ *        never holds the SUPPLY page for a port on such a board, and the
+ *        PD mini stays the operator's through a session.
+ * @param own whether the ports' own supply is the programmers' supply
+ *        (prog_supply_link_owns())
+ */
+void supply_screen_set_ports_own(bool own);
+/**
+ * @brief The KST programmer's LEAVE has ended with the port back in PWM
+ *        (kst_prog_leaves() counted up).  The release of the hold on this
+ *        screen arms the restore offer (supply_screen_restore_offer()) when
+ *        the last programmer's word to let go before it was let go after
+ *        that programmer's LEAVE; any other release arms nothing.
+ */
+void supply_screen_kst_leave_done(void);
+/**
+ * @brief The same for the Hitec programmer's LEAVE (hitec_prog_leaves()).
+ */
+void supply_screen_hitec_leave_done(void);
 /**
  * @brief Whether a programming port holds the supply
  *        (supply_screen_set_port_held()).
@@ -201,9 +263,65 @@ void supply_screen_set_hitec_held(bool held);
  */
 bool supply_screen_port_held(void);
 
-/** The set points a programming port gave the supply, onto the screen:
- *  supply_screen_put() for the one caller that reports and does not ask. */
+/**
+ * @brief The set points a programming port gave the supply, onto the screen:
+ *        supply_screen_put() for the one caller that reports and does not
+ *        ask.  The set points it replaces are kept as the operator's for
+ *        supply_screen_port_done(), unless they are the last port's
+ *        unchanged.
+ * @param v the port's voltage set point, V
+ * @param i the port's current limit, A
+ */
 void supply_screen_adopt(float v, float i);
+
+/**
+ * @brief The operator's set points back once the port is done with the
+ *        supply: when @p free_off, no programming port holds the screen,
+ *        the screen has no output on or asked, and OUTPUT ON is not being
+ *        held (supply_screen_output_held()).  They come back only where
+ *        the set points are still the port's; a change since, by the
+ *        operator, a cap or another screen, stands.  Either way the
+ *        operator's are then forgotten.  A live output is given them only
+ *        through SERVO's question (supply_screen_restore_offer()): after a
+ *        LEAVE that leaves the output on, and an answer NO, they wait for
+ *        its OFF.
+ * @param free_off the last read of the supply showed no programming port
+ *        holding it and its output asked off and read off
+ *        (supply_link_port_free_off()), and no other screen holds its
+ *        OUTPUT ON (servo_screen_output_held())
+ */
+void supply_screen_port_done(bool free_off);
+
+/**
+ * @brief The operator's set points offered back onto a live output: a KST
+ *        or Hitec LEAVE ended the hold of a programming port on the supply
+ *        (supply_screen_kst_leave_done(), supply_screen_hitec_leave_done())
+ *        with the output reported on at the port's set points, no OFF on
+ *        its way or owed, and the operator's
+ *        from before the port (supply_screen_adopt()) differ from them
+ *        under the caps.  The offer stands while no port holds the supply
+ *        again, the set points stay the port's and the output stays on: an
+ *        OFF reported, a stop (supply_screen_cancel_on()) or an OFF asked
+ *        ends it for good.  Any other end of the hold offers nothing:
+ *        RELEASE PORT, a STOP, an error, a lost link, a restart of the
+ *        panel or the IOmcu, a port the IOmcu gives back without a LEAVE,
+ *        and the ports turning to their own supply
+ *        (supply_screen_set_ports_own()).  SERVO asks the operator with it
+ *        and ends it with supply_screen_restore_taken().
+ * @param v takes the operator's voltage set point under the caps, V;
+ *        nothing is written with @p v or @p i NULL
+ * @param i takes the operator's current limit under the caps, A
+ * @return true while the offer stands
+ */
+bool supply_screen_restore_offer(float *v, float *i);
+
+/**
+ * @brief The offer of supply_screen_restore_offer() has been asked: it
+ *        ends, whatever the answer.  While the port's set points stand,
+ *        the operator's still come back at the output's next OFF
+ *        (supply_screen_port_done()).
+ */
+void supply_screen_restore_taken(void);
 
 /**
  * @brief Whether the output is on as this screen believes it: what the
@@ -221,6 +339,15 @@ bool supply_screen_output_live(void);
  *  about a live output records it and stands only while it is unchanged:
  *  an OFF and a new ON between two frames end the run it was about. */
 uint32_t supply_screen_off_count(void);
+
+/**
+ * @brief How many OFFs this screen has posted, from any screen, counted
+ *        from the moment each is asked and not when the supply reports it.
+ *        SERVO's restore question records it and stands only while it is
+ *        unchanged: an OFF asked ends it before the output reads off.
+ * @return The count, modulo 2^32.
+ */
+uint32_t supply_screen_off_asks(void);
 
 /** OUTPUT ON's hold completed elsewhere, as it does here: an ON is posted
  *  unless an OFF already is, and the output is @p by's from then on. */

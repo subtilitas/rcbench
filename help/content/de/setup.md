@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kategorien: PANEL, INTERFACES, SD CARD und SENSORS. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
+SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in drei Kategorien: PANEL, SENSORS und SD CARD. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
 
 ## Die Kacheln
 
@@ -14,17 +14,15 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in vier Kate
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| PANEL | `11 EINSTELLUNGEN` | die Liste von PANEL |
-| INTERFACES | `23 EINSTELLUNGEN` | die Liste von INTERFACES |
-| SD CARD | `4 EINSTELLUNGEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin |
-| SENSORS | `4 EINSTELLUNGEN`, und 9 mehr je bestücktem Baustein | [Sensoren](setup-sensors.md): die Strommonitore INA3221, ihre Shunts und was jeder Kanal misst |
-| OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
-| PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
-| WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |
+| PANEL | `THEMA, SPRACHE, DREHKNOPF` | die Liste von PANEL |
+| SENSORS | `STROM, WINKEL, PHASENABGRIFF` | [Sensoren](setup-sensors.md): der Sensorbus, die Strommonitore INA228 und INA3221, der AS5600 und der Phasenabgriff, eine linke Liste von 8 neben den Zeilen des gewählten |
+| OUTPUTS | `PROTOKOLLE, PINS, PLATINE` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, auf einer Zeichnung der Platine |
+| SD CARD | `LOGS, BROWSER-SCHREIBEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin, und was ein Browser zum Schreiben braucht |
+| WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): das Funkmodul des Panels, für die Dateien der Karte und ein Firmware-Image im Browser |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
-| FILES | `ORDNER UND DATEIEN` | [Files](files.md): die Ordner und Dateien der Karte in zwei Spalten, zum Kopieren, Verschieben, Umbenennen und Löschen |
+| LAYOUT | `STECKER UND PINS` | [Layout](layout.md), nur auf dem rbmod-Carrier, dessen Pins verlötet sind |
 
-Kein Platz bleibt frei. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
+3 Plätze sind frei, und LAYOUT des Carriers nimmt einen. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
 
 ![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
 
@@ -34,13 +32,13 @@ Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
 |---|---|
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES, FILES | den Kacheln; WI-FI und FILES, aus LOGS geöffnet, führen zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst |
+| OUTPUTS, WI-FI, UPDATES | den Kacheln; OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück, WI-FI, von der Taste auf LOGS oder UPDATES geöffnet, ebenso. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst |
 
 ## Einen Wert ändern
 
-![INTERFACES, alles gespeichert](view:setup-interfaces)
+![Die Kacheln, alles gespeichert](view:setup)
 
-Die Liste ist 984px breit und zeigt 6 Zeilen zu 64px. Darunter trägt eine Leiste, 48px hoch, den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
+Die Liste ist 984px breit (754px auf SENSORS) und zeigt 6 Zeilen zu 64px. Darunter trägt eine Leiste, 48px hoch, den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
 
 Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Eine Zahl hat die Tasten `-` und `+`; ein Schalter oder eine Auswahl hat `<` und `>`.
 
@@ -50,7 +48,7 @@ Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Ei
 - **Tastenfeld**: Ein Tippen auf den Wert einer Zahl, zwischen ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste. Es nennt die Einstellung, ihren Bereich und ihre Einheit und nimmt so viele Stellen nach dem Punkt, wie der Schritt hat. OK setzt den Wert wie ein Schritt auf den näheren Schritt: 73% Helligkeit sind 75%. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es offen und nennt dort stattdessen den Grund in der Warnfarbe: `0 oder 5.0 bis 1000.0mΩ` für einen Shunt zwischen 0 und 5,0mΩ, `0 oder 10 bis 32767mA` für eine Stromgrenze zwischen 0 und 10mA, `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für Sensor-SDA, den der Bus nicht haben kann, `Diesen GPIO hält der andere PD-mini-Pin` für den GPIO des anderen PD-mini-Pins. Die nächste Taste bringt den Bereich zurück. ABBRECHEN und das Home-Tag ändern nichts. -1, ein nicht gesetzter Pin, wird mit `-` gesetzt: Das Tastenfeld eines Pins hat keine Taste `+/-`.
 - Ein Finger zur selben Zeit: Ein zweiter Finger tut nichts, solange einer drückt oder scrollt.
 
-Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der offenen Kategorie auf seine Vorgabe zurück.
+Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der offenen Kategorie auf seine Vorgabe zurück; auf SENSORS tut `INA228 ZURÜCKSETZEN` das allein für den gewählten Eintrag.
 
 | Taste | Was sie tut |
 |---|---|
@@ -96,7 +94,7 @@ Das Home-Tag auf den Kacheln führt zum Menü. Solange die Speichertaste `SPEICH
 
 Eine Änderung unter [MOTOR & ESC, OPTIONEN](motor-settings.md) fordert selbst das Schreiben an, und dieses Schreiben behält auch die ungespeicherten Werte von SETUP.
 
-Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angefordert ist (`BEI STILLSTAND`) und auf dem Weg zu OUTPUTS, PICK A PIN, WI-FI, UPDATES und FILES. STOP stoppt den Prüfstand und lässt die Warnung offen. Ein Bildschirm, den das Panel selbst öffnet, etwa der Busfehler-Bildschirm nach einem Verbindungsverlust, schließt die Warnung; die Werte gelten weiter und bleiben ungespeichert.
+Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angefordert ist (`BEI STILLSTAND`) und auf dem Weg zu OUTPUTS, WI-FI und UPDATES. STOP stoppt den Prüfstand und lässt die Warnung offen. Ein Bildschirm, den das Panel selbst öffnet, etwa der Busfehler-Bildschirm nach einem Verbindungsverlust, schließt die Warnung; die Werte gelten weiter und bleiben ungespeichert.
 
 ## PANEL
 
@@ -115,6 +113,8 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
 | Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 an einem eigenen Bus, IO30 und IO31 des Headers P3 (I2C: Inter-Integrated Circuit), dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
 | Knopf-Skala | 90 bis 720deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
+| Tastatur durchsichtig | AUS, 25%, 50% | AUS | wie viel des Texts durch die Tastatur des Texteditors auf [Files](files.md#der-texteditor) scheint; andere Tastaturen bleiben deckend |
+| Demo-Modus | EIN, AUS | AUS | blendet das Wasserzeichen SIMULATION ab dem nächsten Bild aus; das Band zeigt weiter SIM, und die Kacheln zeigen weiter SIMULIERT. Das Panel zeichnet das Wasserzeichen nur, solange kein IOmcu antwortet, die Einstellung ändert also nichts an einem Prüfstand mit IOmcu |
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
 
@@ -146,6 +146,7 @@ Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Nichts
 |---|---|---|---|
 | Auto-Logs | EIN, AUS | EIN | ein Log je ARMED- und Netzteil-Lauf in Ordner Auto-Logs: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
 | User-Logs | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in Ordner User-Logs |
+| Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | was die Browserseite von WI-FI braucht, um die Karte zu ändern: [WLAN](wifi.md#schreiben-per-browser) |
 | Ordner Auto-Logs | ein Ordner | `BENCH/LOGS` | wohin Auto-Logs schreibt |
 | Ordner User-Logs | ein Ordner | `USER/LOGS` | wohin User-Logs schreibt |
 
@@ -169,20 +170,16 @@ Für einen Ordner, den die Karte nicht nehmen kann, lässt OK die Tastatur offen
 | über 2 Ordner | `A/B/C`; `A/B` wird genommen | `Höchstens 2 Ordner tief` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| `BENCH/ESC`, `BENCH/KST` oder `BENCH/HITEC`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Ordner der Prüfstand-Dateien` |
-
-## INTERFACES
-
-INTERFACES hält den Strommonitor INA228, die Pins des Sensorbusses, den Winkelsensor, den Phasenabgriff, den Vibrationssensor, den optischen Tacho, den PD mini und den Hitec-Empfang. Die Liste hat fünf Überschriften: I2C-BUS, PHASENABGRIFF, BALANCE SENSORS, SUPPLY und PROG-PORT. [Anschlüsse](setup-interfaces.md) beschreibt sie.
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` oder `BENCH/ESCW`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Ordner der Prüfstand-Dateien` |
 
 ## SENSORS
 
-SENSORS hält bis zu vier Strommonitore INA3221: welche bestückt sind, den Shunt jedes Kanals und was jeder Kanal misst. [Sensoren](setup-sensors.md) beschreibt sie.
+SENSORS hält jedes Gerät, das der IOmcu liest, je einen Eintrag in einer Liste links: den Sensorbus, den INA228, die vier INA3221, den AS5600 und den Phasenabgriff. [Sensoren](setup-sensors.md) beschreibt sie.
 
 ## Verwandte Seiten
 
-- [Anschlüsse](setup-interfaces.md)
+- [Netzteil](supply.md): die Verdrahtung des PD mini, im Tab PD MINI.
 - [Sensoren](setup-sensors.md)
-- [Ausgänge](outputs.md) und [Pin-Auswahl](picker.md)
+- [Ausgänge](outputs.md)
 - [Updates](updates.md)
 - [Netzteil](supply.md), [Servo-Optionen](servo-settings.md) und [Motor-Optionen](motor-settings.md): die Einstellungen, die auf ihren eigenen Bildschirmen stehen.

@@ -1,8 +1,7 @@
 /**
  * @file panel_sense.c
  * @brief The current monitors' set-up on its way to the IOmcu: SETUP
- *        INTERFACES' INA228, bus and encoder rows and SETUP > SENSORS'
- *        INA3221 parts, published by the settings observer on app_main and
+ *        SENSORS' INA228, bus, encoder and INA3221 rows, published by the settings observer on app_main and
  *        taken by the control task; and the SENSE_MAP page's service there
  *        (sense_map_link.h), with what it tells the operator.
  *
@@ -100,6 +99,9 @@ sense_map_link_t s_sense_map;
 /* The parts' states for SETUP > SENSORS, sense_map_link_status()'s word.
  * Control task writes, app_main reads. */
 atomic_uint s_sense_parts;
+/** @brief The INA228's state for SETUP > SENSORS, sense_map_link_i228()'s
+ *         word.  Control task writes, app_main reads. */
+atomic_uint s_sense_i228;
 
 /* The map alert posted and not yet seen taken: its number in the alert
  * slot (0 none) and its event and part.  Control task only. */
@@ -239,10 +241,12 @@ void sense_map_lost(void)
 {
     sense_map_link_lost(&s_sense_map);
     sense_win_link_lost(&s_sense_win);
+    prog5v_box_reading(false, 0u, 0);
     publish_held();
     sense_link_set_map(&s_sense_link, false);
     sense_link_set_map_held(&s_sense_link, false);
     atomic_store(&s_sense_parts, 0u);
+    atomic_store(&s_sense_i228, 0u);
 }
 
 /*
@@ -296,6 +300,13 @@ void sense_map_service(bool idle)
     atomic_store(&s_sense_parts,
                  (unsigned)sense_map_link_status(&s_sense_map, &s_sense_link,
                                                  mirror, now_ms()));
+    atomic_store(&s_sense_i228,
+                 (unsigned)sense_map_link_i228(&s_sense_link, now_ms()));
+}
+
+uint16_t sense_win_take_peaks(int16_t *out)
+{
+    return sense_win_link_take_peaks(&s_sense_win, out);
 }
 
 /*
@@ -325,6 +336,24 @@ void sense_win_service(void)
             return;
         }
     }
+}
+
+void prog5v_publish_reading(void)
+{
+    if (sense_map_link_in_force(&s_sense_map)) {
+        const unsigned en = s_sense_map.held[LINK_SM_ENABLE];
+        for (unsigned c = 0u; c < LINK_SM_CHANNELS; ++c) {
+            uint16_t mv = 0u;
+            int16_t  ma = 0;
+            if ((en & (1u << (c / 3u))) != 0u
+                && s_sense_map.held[LINK_SM_WATCH(c)] == LINK_SM_WATCH_PROG_5V
+                && sense_win_link_last(&s_sense_win, c, &mv, &ma)) {
+                prog5v_box_reading(true, mv, ma);
+                return;
+            }
+        }
+    }
+    prog5v_box_reading(false, 0u, 0);
 }
 
 void sense_win_attach(bench_state_t *b, bool ring)

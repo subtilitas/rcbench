@@ -16,6 +16,7 @@ set(SRCS
     perf_watch.c
     supply.c
     supply_link.c
+    prog_supply_link.c
     sense_link.c
     sense_link_view.c
     sense_map_link.c
@@ -24,6 +25,9 @@ set(SRCS
     servo_source.c
     tone_link.c
     endpoints_link.c
+    esc_link.c
+    esc_prog.c
+    esc_prog_file.c
     hitec_rx_link.c
     hitec_link.c
     hitec_prog.c
@@ -39,21 +43,21 @@ set(SRCS
     panel_i2c.c
 )
 
-# kst_card.c and hitec_card_run.c stand between the programmers and the
+# kst_card.c, hitec_card_run.c and esc_card.c stand between the programmers and the
 # card layer in shared/logfile.  It is built where that layer is: on the panel and on the
 # host, which adds shared/logfile before this directory.  The IOmcu has
 # no card and builds this directory without it.
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} kst_card.c hitec_card_run.c
+    idf_component_register(SRCS ${SRCS} kst_card.c hitec_card_run.c esc_card.c
                            INCLUDE_DIRS include
-                           REQUIRES link kst hitec dshot logfile)
+                           REQUIRES link kst hitec escwire dshot logfile)
 else()
     add_library(rcbench_bench STATIC ${SRCS})
     target_include_directories(rcbench_bench PUBLIC include)
     target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst
-                          rcbench_hitec rcbench_dshot m)
+                          rcbench_hitec rcbench_escwire rcbench_dshot m)
     if(TARGET rcbench_logfile)
-        target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c)
+        target_sources(rcbench_bench PRIVATE kst_card.c hitec_card_run.c esc_card.c)
         target_link_libraries(rcbench_bench PUBLIC rcbench_logfile)
     endif()
 endif()

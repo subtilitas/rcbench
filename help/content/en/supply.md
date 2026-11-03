@@ -21,9 +21,9 @@ The right column is the same on both tasks: the readings, and the CONTROL card w
 
 ## The supply model
 
-![SUPPLY with the PD mini disabled: SIMULATED SUPPLY](view:supply)
+![SUPPLY with the PD mini disabled: SIMULATED](view:supply)
 
-With the PD mini disabled on SETUP, INTERFACES, the panel runs a model of a supply. The header reads `SIMULATED SUPPLY` and the menu tile is marked SIMULATED. The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a 0.05Ω source resistance. Its readings are not measured, and nothing on the bench is powered.
+With the PD mini disabled on the [PD MINI tab](#pd-mini-tab), the panel runs a model of a supply. The header reads `SIMULATED: SWITCH ON IN PD MINI`, a button that opens the tab, and the menu tile is marked SIMULATED. The model is a 6Ω load with a 1.4A burst for 0.6s every 3s, behind a 0.05Ω source resistance. Its readings are not measured, and nothing on the bench is powered.
 
 ## The PD mini
 
@@ -74,7 +74,7 @@ While the output is on, a new set point opens a question that names the change. 
 
 ## OUTPUT ON and OFF
 
-OUTPUT ON is a 2s hold, with the fade ARM uses. OUTPUT OFF is a tap. The output switches off, and stays off until the next hold, on:
+OUTPUT ON is a 2s hold, with the fade ARM uses. A release before 2s switches nothing and shows `Hold 2s to switch the output on.` in the alert band. OUTPUT OFF is a tap. The output switches off, and stays off until the next hold, on:
 
 - STOP, on any screen;
 - leaving SUPPLY, for an output SUPPLY switched on;
@@ -84,7 +84,17 @@ OUTPUT ON is a 2s hold, with the fade ARM uses. OUTPUT OFF is a tap. The output 
 - the module switching its output off itself;
 - a change to the PD mini's pins, baud rate or enable setting.
 
-The band names the reason. An output another screen switched on stays as it is when SUPPLY is left. The output is off after every restart, whatever the start values.
+The band names the reason. A release before 2s sends nothing and shows nothing, as on ARM.
+
+The IOmcu refuses an ON while its failsafe is latched: the band shows FAULT 01 (the link was silent for 200ms, which an IOmcu restart can cause) or FAULT 10 (the heartbeat stopped). The hold then ends with `Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then DISARM.` Only the CLEAR an ARM writes lifts the failsafe: hold ARM on SERVO or MOTOR & ESC, DISARM, then hold OUTPUT ON again.
+
+An output another screen switched on stays as it is when SUPPLY is left. The output is off after every restart, whatever the start values.
+
+## On the rbmod carrier
+
+![SUPPLY on the carrier](view:supply-rbmod)
+
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the PD mini feeds the servo rails, and the programming ports have a 5V supply of their own, switched by GPIO 21. The line under OUTPUT names it: `PROG PORTS 5V, GPIO 21: ON`, `OFF`, or `NOT READ` while the IOmcu does not answer. The KST and Hitec programmers switch it for a session. The PD mini stays the operator's through a session: OUTPUT ON and the set points work as without one. On LIVE the PROG 5V box right of PLOT and TABLE switches it by hand: PROG 5V ON is a 2s hold, PROG 5V OFF a tap, with the bench SAFE or ARMED; a release before 2s shows `Hold 2s to switch the programming ports' 5V on.`. The box names the pin, `PROG PORTS 5V, GPIO 21: OFF`, and shows the INA3221's last window of it (0x40 CH3), `5.02V  0.120A`. While a programmer holds a port the box reads `HELD BY PROG PORT n` and takes no press. Leaving SUPPLY switches off a 5V its box switched on, unless a port holds it. Every error switches it off, a write to a servo's memory first ends, 10000ms at most.
 
 ## SETTINGS
 
@@ -112,6 +122,31 @@ The settings are kept in NVS (non-volatile storage). They are written on the nex
 
 With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It switches the output off and restarts the module, for a module that shows ERR. Whether a restart clears every ERR is not measured.
 
+## PD MINI tab
+
+![The PD MINI tab](view:supply-pdmini)
+
+SETTINGS has two tabs, LIMITS and PD MINI. PD MINI wires the module.
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| PD mini | ON, OFF | OFF | the programmable supply on SUPPLY and SERVO; OFF runs the panel's supply model |
+| PD mini TX | -1 to 47 | -1 | the IOmcu GPIO to the module's DM |
+| PD mini RX | -1 to 47 | -1 | the IOmcu GPIO from the module's DP |
+| PD mini baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | the module's UART (universal asynchronous receiver-transmitter) rate; AUTO tries each of the 7 rates, one a second |
+
+A change applies at once and is saved as a change on LIMITS is. There is no SAVE. The reset on LIMITS leaves these rows.
+
+A change to the wiring switches a live output off, so no row takes a press while the output is on or an ON is on its way, while a programming port holds the supply, or while the bench is ARMED: the help line and the band say which. A keypad open on a pin closes when one of these begins, and what it holds is not taken.
+
+The `-` and `+` keys of PD mini TX and PD mini RX step over the GPIO the other row holds: with RX on GPIO 18, TX steps from GPIO 19 to GPIO 17. At either end of the range the key then does nothing: with RX on GPIO 47, TX stops at GPIO 46. The keypad refuses the other row's GPIO and shows `The other PD mini pin holds this GPIO` in place of the range. A set-up stored with both rows on one GPIO loads as stored; the PD mini stays off, the header says `PD MINI NO PINS`, and both rows say `TX and RX on one pin. The PD mini stays off.` until one of them is stepped. The IOmcu refuses a pin that is reserved, bound to an output, held by the sensor bus or the phase tap, or the other pin: RX on GPIO 17 is refused while Sensor SCL is GPIO 17. The message leaves the band once the pin is set back to one the IOmcu takes.
+
+![RX's GPIO 9 refused for PD mini TX](view:supply-pdmini-why)
+
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) PD mini TX reads GPIO 7 and PD mini RX GPIO 6. These rows have no keys and open no keypad, and their help line reads `Soldered on this board. Not a setting here.`. The values stored for them stay as they are and are in force again on a module wired by hand.
+
+![PD mini TX and RX soldered](view:supply-pdmini-rbmod)
+
 ## The log of a run
 
 A run is one switch-on of the output. The plot clears when the output comes on and holds the run after it goes off. The mAh and Wh on the CONTROL card's title line count the run. RESET PEAKS starts the lowest and highest values again from the current reading.
@@ -120,5 +155,4 @@ Each run is written to its own `SUPPLnnn.CSV` in `BENCH/LOGS` on the SD (Secure 
 
 ## Related pages
 
-- [Interfaces](setup-interfaces.md): PD mini, PD mini TX, PD mini RX and PD mini baud.
 - [Servo](servo.md): the same set points and output switch on the SERVO screen.

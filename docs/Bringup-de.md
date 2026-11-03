@@ -24,12 +24,14 @@ an eine Page, die die Page Map nicht benutzt.
 Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des IOmcu,
 alle 3s wiederholt:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
 
 `requests served` zählt die Link-Page-Anfragen, die das Panel geschickt und
 dieses Ende beantwortet hat; `self-test echoes` zählt Testframes und steht
-auf 0, solange der CAN-Selbsttest des Panels nicht läuft. Zusammen sagen die
-beiden, welches Ende aufgehört hat:
+auf 0, solange der CAN-Selbsttest des Panels nicht läuft. `tx_drop` zählt
+Antwortframes, die dieses Ende nach 1000 Versuchen an einem vollen Sendepuffer
+aufgegeben hat; das Panel wartet dann seinen Austausch ab. Zusammen sagen die
+ersten beiden, welches Ende aufgehört hat:
 
 | Requests | Panel zeigt | Lesart |
 | --- | --- | --- |
@@ -44,9 +46,16 @@ nicht am CAN-Bus.
 
 ### Panel
 
-Der Test läuft bei jedem Start. Er dauert 1200ms, innerhalb des Splash und
-vor dem Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert
-und nicht als eine Identity, die nie geantwortet hat.
+Der Test läuft bei jedem Start, innerhalb des Splash und vor dem
+Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert und
+nicht als eine Identity, die nie geantwortet hat.
+
+Zuerst fragt das Panel den IOmcu bis zu 5000ms lang nach seinem Status und
+startet den Test bei der ersten Antwort. Der IOmcu öffnet CAN nach seinem
+Supply-Boot-off. Der dauert bis zu 3500ms, wenn der PD mini im selben Moment
+Strom bekommt wie der IOmcu. Ohne Antwort in 5000ms läuft der Test trotzdem
+und meldet den stummen Bus. Der Test selbst dauert 1200ms. `bus_err` zählt
+nur die Busfehler des Tests, nicht die der Wartezeit.
 
 Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` bringt das Panel auf den
 [Bus-Fehler-Bildschirm](#der-bus-fehler-bildschirm) statt ins Menü. Es muss
@@ -61,6 +70,7 @@ Input/Output 22), seine Empfangsleitung an GPIO21; keiner der beiden trägt
 sonst etwas. Der Takt des Controllers ist der 40-MHz-Quarz. Ausgegeben wird:
 
     I (…) can: 1000000 bit/s: brp 2, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
     I (…) rcbench:   round trip min 334 max 1356 us
@@ -136,7 +146,14 @@ Bus scheitert.
 Nach der Inbetriebnahme pollt das Panel jede Sekunde die Identity-Page des
 IOmcu, bis er antwortet, dann die Bench-Page mit 20Hz und die
 Status-Page alle 500ms. Alle 5s, solange der Link ausgefallen ist, und einmal
-pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
+pro Minute, solange er läuft, gibt das Panel eine Diagnose aus. Die
+Control-Task, die den Heartbeat schlägt, nimmt die Zähler und übergibt sie der
+Logger-Task, die die Zeilen formatiert und ausgibt: Bis zu 7 Zeilen brauchen
+auf der Konsole 50ms und mehr, und die Grenze des Heartbeats ist 150ms. Eine
+Warteschlange fasst 2 Berichte; ist der Logger von der Karte aufgehalten und
+die Warteschlange voll, gibt die Control-Task den Bericht selbst aus, und keine
+Zeile geht verloren. Die Heartbeat-Lücke mit dem Bericht außerhalb der
+Control-Task ist nicht gemessen.
 
     I (…) rcbench: LINK answers arrive too late
     W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
@@ -171,7 +188,7 @@ ist übergelaufen), und das Fenster nimmt seinen neuen Wert. `crc` und
 `nack` in der Panel-Zeile zählt Anfragen, die der IOmcu mit einem NACK
 (Negative Acknowledge) beantwortet hat. Ein NACK ist eine Antwort: der Link
 arbeitet, und die Page behielt, was sie hielt ([Frames](Link-de.md#frames)).
-Eine Einstellung aus SETUP INTERFACES, die eine Page ablehnt, zählt je
+Eine Einstellung aus SETUP, die eine Page ablehnt, zählt je
 einmal: ein Schreiben je abgelehntem Wert, das erst wieder geschrieben wird,
 wenn sich der Wert ändert. Wer auf SETUP durch Zeilen schaltet, zählt also
 ein NACK für jeden Wert, den der IOmcu ablehnt (Abgriff-Pause 2ms mit

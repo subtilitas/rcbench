@@ -19,9 +19,9 @@ diese Fills, und die lassen sich auf dem Host exakt messen.
 Die Zeit eines Frames ist sein PSRAM-Traffic und seine Instruktionen, und
 welches von beiden einen Frame auf diesem Board begrenzt, ist nicht gemessen.
 Der eine Bildschirm mit Zahlen von beiden Seiten deutet auf die
-Instruktionen: SERVO > LIVE während eines Sweeps hat 2 171 Fills in der
-Tabelle, 271KiB Traffic, und die Konsole las DRAW 13,8 bis 16,5ms ([Auf dem
-Board](#auf-dem-board)); als reiner Traffic wären das 16 bis 20MB/s. Die
+Instruktionen: SERVO > LIVE während eines Sweeps hat 2 431 Fills in der
+Tabelle, 304KiB Traffic, und die Konsole las DRAW 13,8 bis 16,5ms ([Auf dem
+Board](#auf-dem-board)); als reiner Traffic wären das 19 bis 23MB/s. Die
 Fills halten die Seite des Traffics; `test_frame_work` hält die Seite der
 Instruktionen in Pixelbesuchen ([Regeln](#regeln)).
 
@@ -33,13 +33,16 @@ nicht die Kopie. Die Zeit der Kopie ist TURN auf der Konsole; sie ist Teil
 von WAIT und kommt zu jedem Frame hinzu, der sich ändert.
 
 `tools/frame_cost.py` baut die echten Bildschirme für den Host und lässt sie
-unter cachegrind mit den beiden Caches des ESP32-P4 laufen: den L1 als erste
-Stufe von cachegrind, den L2 als letzte, bemessen nach
-`firmware/panel/sdkconfig.defaults`. Es meldet die Differenz zwischen einem
-und elf gerenderten Frames, sodass Prozessstart und das erste Füllen jedes
-Buffers herausfallen. Das Modell schickt jeden Datenzugriff durch beide
-Caches, auch die des Stacks, und bildet kein Laden von Instruktionen nach: der
-Host führt x86-Code aus.
+unter cachegrind mit den Caches des ESP32-P4 laufen: den L1-Daten- und den
+L1-Instruktionscache als erste Stufe von cachegrind, den L2 als letzte,
+bemessen nach `firmware/panel/sdkconfig.defaults`. Es meldet die Differenz
+zwischen einem und elf gerenderten Frames, sodass Prozessstart und das erste
+Füllen jedes Buffers herausfallen. Das Modell schickt jeden Datenzugriff durch
+den L1-Datencache und den L2, auch die des Stacks. Das Laden von Instruktionen
+läuft durch den L1-Instruktionscache (16KB, 4-fach, 64-Byte-Zeilen), und seine
+Misses füllen den L2 neben den Daten. Geladen wird der x86-Code des Hosts,
+dessen Größe und Anordnung sich vom RISC-V-Code unterscheiden; wie weit das
+die Fills verschiebt, ist nicht gemessen.
 
 Was ein Fill an Zeit kostet, ist die effektive Bandbreite der Schreibzugriffe
 der CPU in den PSRAM, während die DPI liest. Sie ist nicht gemessen; die
@@ -55,42 +58,46 @@ panel 60.4 Hz, 64-byte lines; effective bandwidth not measured
 
 mode                   lines/frame     traffic
 ----------------------------------------------
-frame                        9,340    1168 KiB
+frame                        9,597    1200 KiB
 frame-idle                       0       0 KiB
-held                         4,878     610 KiB
-sim                         13,013    1627 KiB
-throttle                    11,189    1399 KiB
-chrome                      51,593    6449 KiB
+held                         5,221     653 KiB
+sim                         13,295    1662 KiB
+throttle                    11,404    1426 KiB
+chrome                      51,887    6486 KiB
 overview                         0       0 KiB
-servo                        2,178     272 KiB
-servo-grip                     532      66 KiB
-servo-current                3,097     387 KiB
-supply                       9,563    1195 KiB
-supply-chrome               47,440    5930 KiB
+overview-guide                 350      44 KiB
+servo                        2,216     277 KiB
+servo-grip                     521      65 KiB
+servo-current                3,189     399 KiB
+supply                       9,871    1234 KiB
+supply-chrome               48,048    6006 KiB
 analyser                         0       0 KiB
 logs                             0       0 KiB
 settings                         0       0 KiB
 settings-list                    0       0 KiB
 battery                          0       0 KiB
 balance                          0       0 KiB
-motor-stick                  1,536     192 KiB
-balance-sim                  3,058     382 KiB
-settings-sim                 2,979     372 KiB
-battery-sim                  3,015     377 KiB
-analyser-chrome             61,000    7625 KiB
-logs-chrome                 26,203    3275 KiB
-settings-chrome             37,873    4734 KiB
-settings-list-chrome        36,955    4619 KiB
-battery-chrome              58,026    7253 KiB
-balance-chrome              63,372    7922 KiB
-motor-stick-chrome          41,852    5232 KiB
+motor-stick                  1,713     214 KiB
+motor-wire                       0       0 KiB
+motor-wire-hold                251      31 KiB
+balance-sim                  3,253     407 KiB
+settings-sim                 3,304     413 KiB
+battery-sim                  3,146     393 KiB
+analyser-chrome             61,108    7638 KiB
+logs-chrome                 27,356    3420 KiB
+settings-chrome             31,866    3983 KiB
+settings-list-chrome        37,162    4645 KiB
+battery-chrome              58,117    7265 KiB
+balance-chrome              63,426    7928 KiB
+motor-stick-chrome          41,955    5244 KiB
+motor-wire-chrome           40,230    5029 KiB
 picker                           0       0 KiB
-picker-chrome               41,276    5160 KiB
+picker-chrome               41,559    5195 KiB
 wifi                             0       0 KiB
-wifi-chrome                 22,129    2766 KiB
-wifi-keys                   36,882    4610 KiB
+wifi-chrome                 22,447    2806 KiB
+wifi-keys                   36,970    4621 KiB
 clear                       19,206    2401 KiB
-vlines                      10,202    1275 KiB
+vlines                      10,204    1276 KiB
 hlines                         180      22 KiB
 
 est. ms and est. fps: not measured
@@ -106,11 +113,13 @@ est. ms and est. fps: not measured
 | `throttle` | der Motorprüfstand mit einem Finger am Gas, der Drag-Fall |
 | `chrome` | der Motorprüfstand ohne Cache, vollständig neu gezeichnet |
 | `overview` | das Menü, Chrome gecacht |
+| `overview-guide` | das Menü mit offener Bildschirmhilfe auf Seite 1: das Dock gecacht, Abzeichen und Eckwinkel von 4 Kacheln in jedem Frame gezeichnet |
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
 | `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `picker`, `wifi` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht; `settings` sind die Kacheln von SETUP, `motor-stick` ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN |
+| `motor-wire-hold` | die Sitzung der ESC-Signalleitung auf der Seite VERLASSEN, ein Finger auf ihrem Hold von 2s |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | ein ruhiger Frame dieses Bildschirms, Chrome gecacht; `settings` sind die Kacheln von SETUP, `motor-stick` ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN |
 | `settings-list` | SETUP mit offener Liste PANEL, Chrome gecacht |
 | `wifi-keys` | WI-FI mit offener WLAN-Tastatur, in jedem Frame eine Taste getippt |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
@@ -119,23 +128,36 @@ est. ms and est. fps: not measured
 | `vlines` | siebzehn senkrechte Linien über die volle Höhe |
 | `hlines` | dieselbe Pixelzahl als waagerechte Linien |
 
-Die absoluten Zahlen verschieben sich zwischen Maschinen um einige Fills, weil
-argv und die Umgebungsvariablen denselben Cache belegen wie der Framebuffer.
-`frame_cost.py --check-doc` prüft die Tabelle deshalb mit einer Toleranz von
-2%, mindestens 100 Fills. Es schlägt auch fehl, wenn die Zeile, die die Rate
-des Panels und die Bandbreite nennt, vom Profil des Werkzeugs abweicht.
+Die Zahl wiederholt sich bei jedem Lauf desselben Stands exakt: Das Werkzeug
+gibt cachegrind die Geometrie aller drei Caches vor, sodass keiner von der CPU
+des Hosts übernommen wird, und der Bench zeichnet von einem Stack mit fester
+Lage innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
+nicht verschieben. `test_frame_cost.py` misst fünf Modi zweimal und schlägt
+bei einem Fill Unterschied fehl. Compiler, C-Bibliothek und valgrind prägen
+die Zahl weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners
+der CI (Continuous Integration), und eine Maschine mit anderen Versionen misst
+andere Zahlen. Eine Änderung irgendwo in den gemessenen Quellen verschiebt die
+Adressen von Code und Daten und damit die Zahl auch von Modi, die sie nicht
+berührt: Eine Änderung an Texten und am Hitec-Code verschob 24 der 37 Modi um
+bis zu 22 Fills. Fills hängen vom Code-Layout ab: 18 Builds eines Baums, mit anderen Paddings und
+Link-Reihenfolgen, ergaben battery-sim 3167 bis 3353 Fills, frame 9466 bis 9810, servo
+2236 bis 2693 und settings-list-chrome 36320 bis 37282. `frame_cost.py --check-doc`
+prüft die Tabelle deshalb mit einer Toleranz von 3%, mindestens 500 Fills. Keine zwei
+der 18 Builds liegen weiter auseinander. Zeilen unter etwa 700 Fills hält diese Prüfung nicht. Es schlägt auch fehl, wenn die
+Zeile, die die Rate des Panels und die Bandbreite nennt, vom Profil des
+Werkzeugs abweicht.
 
 ## Regeln
 
 **Zeilenweise zeichnen.** Siebzehn senkrechte Linien über die volle Höhe
-kosten 10 202 Fills; dieselbe Pixelzahl als waagerechte Linien kostet 180,
+kosten 10 204 Fills; dieselbe Pixelzahl als waagerechte Linien kostet 171,
 weil jede Line vom vorigen Pixel noch geladen ist. Die Oberfläche ist in
 waagerechte Bänder gegliedert, und eine senkrechte Trennlinie ist eine
 bewusste Ausgabe.
 
 **Das Chrome cachen.** Alles neu zu zeichnen kostet 22 000 bis 64 000 Fills,
 die `-chrome`-Modi, ein gecachter ruhiger Frame desselben Bildschirms keinen:
-60 990 Fills für das vollständige Neuzeichnen von RECEIVER gegen 0 für seinen
+60 992 Fills für das vollständige Neuzeichnen von RECEIVER gegen 0 für seinen
 ruhigen Frame. Jeder Bildschirm führt je Framebuffer eine
 Bitmaske dessen, was er schon gezeichnet hat; dafür ist das Argument
 `buffer_index` von `render()` da. Das Panel wechselt zwischen zwei Buffern;
@@ -154,7 +176,7 @@ danach nur noch: bei 800 x 480px mit 144 721 Instruktionen je Frame statt
 8 412 078. Die Zahl bei 1024 x 600px ist nicht gemessen.
 
 **Eine Zahl von Fills ist keine Zahl von Zyklen.** Die Tabelle oben misst
-Cache-Line-Fills, und das Watermark kostet davon nur 3 668, `sim` gegen
+Cache-Line-Fills, und das Watermark kostet davon nur 3 685, `sim` gegen
 `frame`: seine Zeit ist Arithmetik je Pixel, kein Traffic, und die Tabelle
 kann sie nicht zeigen. Wo die gemessene Frame-Zeit eines Modus
 über dem liegt, was seine Fills vorhersagen, erst Instruktionen zählen, dann der
@@ -219,21 +241,22 @@ Ruhe bei 300 000.
 
 ## Obergrenzen
 
-CI (Continuous Integration) hält jeden Modus unten an eine Obergrenze von
+CI hält jeden Modus unten an eine Obergrenze von
 Fills je Frame. Eine Obergrenze liegt 13 bis 29% über der größten Zahl ihrer
-Modi in der Tabelle oben, und ein Modus unter 600 Fills wird bei 1 000
+Modi in der Tabelle oben, und ein Modus unter 700 Fills wird bei 1 000
 gehalten. Eine Obergrenze fängt eine Änderung, die das Modell mehr zeichnen
 lässt, nicht einen Frame, der das Panel verpasst:
 
 | Modi | Obergrenze (Fills) | Fängt |
 | --- | ---: | --- |
-| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
-| `servo` | 2 700 | ein Wachsen der Arm- und Griffzeichnung |
+| `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `motor-wire-hold`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
+| `overview-guide` | 1 000 | Marken der Hilfe, die mehr als ihre Abzeichen und Winkel zeichnen |
+| `servo` | 2 800 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
-| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 551 Fills in der Tabelle oben |
+| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 720 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
-| die zehn `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
+| die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
 | `wifi-keys` | 42 000 | eine Taste der WLAN-Tastatur, die mehr als den Bildschirm neu zeichnet |
 
 `tools/check_docs.py` hält diese Tabelle an den `--max-lines`-Argumenten in
@@ -341,7 +364,9 @@ ein Fill und ein Write-Back je Line. Die Zeit eines Löschens, gesetzt als
 | `battery` | BATTERY | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `balance` | BALANCE | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `motor-stick` | ESC STICK offen auf MOTOR & ESC > PROGRAMMIEREN | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
-| `picker` | PICK A PIN | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
+| `motor-wire` | die Sitzung der ESC-Signalleitung in Ruhe an einem gelesenen ESC, MOTOR & ESC > PROGRAMMIEREN | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
+| `motor-wire-hold` | ein Finger auf dem Hold von 2s auf der Seite VERLASSEN der ESC-Signalleitung | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
+| `picker` | OUTPUTS, Platinenansicht | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `wifi` | WI-FI mit eingeschaltetem WLAN-HOTSPOT | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 | `wifi-keys` | WI-FI > HEIMNETZ WÄHLEN, die Passwort-Tastatur, jede Sekunde eine Taste getippt | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen | nicht gemessen |
 
@@ -389,15 +414,16 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 648 | 1 520 |
-| `control` | `control_task` | 6 144 | 4 720 | 400 |
-| `runlog` | `log_task` | 6 656 | 4 528 | 1 104 |
-| `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 056 | 992 |
-| `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 296 | 1 776 |
-| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 3 744 | 2 144 |
-| `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 344 | 1 728 |
-| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 3 040 | 4 128 |
-| `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 3 504 | 2 128 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 288 | 2 864 |
+| `control` | `control_task` | 6 144 | 3 376 | 1 728 |
+| `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
+| `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
+| `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
+| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 912 | 2 960 |
+| `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
+| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
+| `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
+| `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 416 | 3 712 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
 mit 8 192 Bytes, der TCP/IP-Stack (Transmission Control Protocol, Internet
@@ -413,20 +439,21 @@ Handshakes ist nicht gemessen.
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
 Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
 `servo_store_preset()`, `io_walk()`, `storage_walk()`), das erneute Einbinden einer Karte, die aufgehört
-hat zu antworten (`storage_read_end()`, `mount_locked()`), und das
-`snprintf()` darunter. Das Werkzeug folgt jedem Aufruf, den das Einbinden
-machen kann, darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie
-erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
-ein (`storage_check()`). Die Kette braucht 4 528 Bytes; der Stack von 6 656
-Bytes lässt 1 104 über der Marge von 1 024 Bytes.
+hat zu antworten (`storage_read_end()`, `mount_locked()`), `f_mkfs()` unter dem Einbinden
+und den Zeitstempel, den es schreibt (`get_fattime()`, `localtime_r()`, die
+Zeitzonen-Auswertung `_tzset_unlocked()` von picolibc und das `sscanf()`
+darunter). Das Werkzeug folgt jedem Aufruf, den das Einbinden machen kann,
+darunter `f_mkfs()`, das ein Einbinden ohne Formatieren nie erreicht. Der Start eines Laufs bindet die Karte ebenfalls auf diesem Task
+ein (`storage_check()`). Die Kette braucht 3 824 Bytes; der Stack von 6 656
+Bytes lässt 1 792 über der Marge von 1 024 Bytes.
 
-Die tiefste Kette von `wifi_ctl` ist das Abschalten des Funks:
-`radio_down()`, die letzte Abfrage des NTP-Clients (Network Time Protocol,
-`wifi_ntp_poll()`) und die Zeitzeile, die er ausgibt (`wall_ntp_line()`,
-`wall_utc_text()`), deren `snprintf()` die Gleitkomma-Umwandlung von newlib
-erreicht. Sie lässt 2 144 Bytes über der Marge.
+Die tiefste Kette von `wifi_ctl` ist der Start des Netzwerk-Stacks in
+`worker()`: `esp_netif_init()` in `netif_add()` und `netif_set_addr()` von
+lwIP, der TCP-Code darunter bis `ip6_frag()` und `pbuf_alloc()`, und die
+Heap-Anforderung und der Log-Aufruf darunter. Sie lässt 2 960 Bytes über der
+Marge.
 
-Gemessen auf dem ESP32-P4-Build mit ESP-IDF v5.5.5 bei -O2. Von der Marge
+Gemessen auf dem ESP32-P4-Build mit ESP-IDF v6.1 bei -O2. Von der Marge
 gehen 560 Bytes außerhalb der Frames auf:
 
 - 128 für die Register, die ein Interrupt auf dem Stack der Task sichert,
@@ -454,7 +481,7 @@ oben ist deshalb eine Untergrenze:
   Servodateien geschrieben werden, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  219
+  296
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -518,6 +545,7 @@ gestellt, zeigt sie, was das Werkzeug nicht verfolgt.
 | `mdns` | 4 096 | nicht gemessen |
 | `wifi_get` | 8 192 | nicht gemessen |
 | `cardjob` | 6 656 | nicht gemessen |
+| `shot` | 7 168 | nicht gemessen |
 
 Die Tasks von ESP-IDF und esp_hosted stehen nicht in der Tabelle: ihre Namen
 und Zahlen kommen aus der Konsole eines Musters, und keine ist aufgezeichnet.
@@ -538,20 +566,20 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 484 | 528 | 1 828 |
-| Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
+| Kern 0 | `main` | 4 096 | 1 492 | 528 | 1 820 |
+| Kern 1 | `core1_main` | 4 096 | 644 | 528 | 2 668 |
 
-Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
-CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
+Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 14.2.1
+(Paket `gcc-arm-none-eabi` 15:14.2.rel1 von Ubuntu 26.04, derselbe Compiler
+wie ARM GNU 14.2.Rel1). CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
 Zeile von Kern 0 oder die Zahl der Aufrufe über ein Register weiter unten
 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
-gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
-Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
-Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
-für Kern 0 1 508 Bytes ergibt.
+gehalten: ihre Kette ändert sich mit dem Compiler (arm-none-eabi-gcc 13.2.1
+ergibt 640 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des
+Runners. Die unten genannten Frames stammen aus demselben Build.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (264 Bytes), `can_service` (344),
+im pico-sdk scheitert: `main` (256 Bytes), `can_service` (344),
 `link_dev_dispatch`, `slots_write`, `slots_take`, `ports_apply`,
 `slots_rerate`, `outputs_hw_apply_only`, `out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
 Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
@@ -588,8 +616,8 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 161 solche Aufrufe sind von `main` aus erreichbar, im Image,
-  das CI baut (arm-none-eabi-gcc 13.2.1; ARM GNU 14.2 ergibt 165);
+  Links liest: 250 solche Aufrufe sind von `main` aus erreichbar, im Image,
+  das CI baut (arm-none-eabi-gcc 14.2.1);
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
   die beiden Suchmuster der Firmware sind 3 und 5 Zeichen lang. Das Werkzeug
@@ -619,7 +647,7 @@ angezeigte Seite auf, und `mo_render()` von MOTOR & ESC ruft den Weg der
 Sitzung und den seines Körpers als zwei Funktionen auf, sodass die Seiten
 einer Sitzung nicht auf dem Frame des Körpers liegen. Eine Zeile, die zur
 Anzeige kopiert wird, wird ohne `snprintf()` kopiert, das die
-Gleitkommawandlung von newlib erreicht. Die Frame-Größen auf dem ESP32-P4
+Gleitkommawandlung von picolibc erreicht. Die Frame-Größen auf dem ESP32-P4
 sind nicht gemessen.
 
 ## Interner RAM
@@ -691,8 +719,27 @@ I (…) rcbench: files: cardjob started; internal RAM <n>B free before, <n>B aft
 ```
 
 Ohne den RAM lautet die Zeile `W (…) rcbench: files: no internal RAM for
-cardjob`, und FILES meldet `Nicht genug Speicher.` Die
-Zahlen auf einem Panel sind nicht gemessen.
+cardjob`, und FILES meldet `Nicht genug Speicher.` Die Aufgabe bleibt bis
+zum Neustart des Panels, also ist die Zahl von `wifi: radio up` nach der
+ersten Anfrage von FILES bei jedem Funkstart niedriger. Auf einem Panel
+fiel sie am 2026-10-29 um 23.456 Bytes, von 318.195 auf 294.739, zwischen
+zwei Funkstarts, zwischen denen FILES und die Datei-API der Wi-Fi-Seite
+benutzt wurden: Stack, Puffer und der Task-Kontrollblock von 108 Bytes
+machen 23.148 Bytes davon aus, die übrigen 308 Bytes sind nicht
+zugeordnet. Die Datei-API belegt keinen internen RAM
+([Screens, Die Datei-API](Screens-de.md#die-datei-api)). Ihre
+Schreibzugriffe nehmen den Body in dasselbe PSRAM und teilen die Sperre
+des Karten-Tasks von FILES, einen FreeRTOS-Mutex, beim Start vom Heap
+genommen; seine Bytes sind nicht gemessen. Jeder Schreibzugriff schreibt
+den danach freien internen RAM und den ungenutzten Stack des Server-Tasks
+ins Log:
+
+```text
+I (…) wifi: api: put OK, 1048576B in <t>ms; httpd stack <n>B unused, internal RAM <n>B free
+```
+
+Der Stack des Servers nach einem Schreibzugriff von 1MiB ist auf einem
+Panel nicht gemessen.
 
 `firmware/panel/main/psram_bss.lf` legt die nullinitialisierten Daten (.bss)
 von 30 Objekten in den PSRAM (Pseudo-Static Random-Access Memory): den
@@ -700,7 +747,8 @@ Zustand der Bildschirme und der Helfer für Karte, Seite, Einstellungen und
 Ausgänge. Das Fragment nennt jedes Objekt und die Regeln, die es erfüllt.
 `tools/psram_bss.py` liest die Linker-Map des Builds und lässt CI
 fehlschlagen, wenn ein genanntes Objekt .bss im internen RAM behält.
-Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5, aus `idf.py size`:
+Statische Zahlen des P4-Builds mit ESP-IDF v5.5.5 mit 30 Objekten im
+Fragment, aus `idf.py size`; auf v6.1 nicht wiederholt:
 
 | Posten | Mit dem Fragment | Ohne es |
 | --- | ---: | ---: |
@@ -745,7 +793,7 @@ den ESP-IDF vorgibt, sind das 18 750 bis 56 250B/s. Ohne Power Save
 braucht das Funkteil mehr Strom, solange es läuft; wie viel mehr am Panel,
 ist nicht gemessen.
 
-Der Stückpuffer der Seite, 4 096 Bytes, liegt im PSRAM. ESP-IDF v5.5.5
+Der Stückpuffer der Seite, 4 096 Bytes, liegt im PSRAM. ESP-IDF v6.1
 liest ein Stück per DMA (Direct Memory Access) hinein, wenn der Puffer auf
 eine Cache-Line ausgerichtet ist, sonst über einen eigenen Puffer; welchen
 der beiden Wege der Puffer der Seite nimmt, ist nicht gemessen. Bei der
@@ -811,7 +859,7 @@ Linux, `iw`:
 ## Das Dateisystem der SD-Karte
 
 Das Panel liest FAT12, FAT16, FAT32 und exFAT (extended File Allocation
-Table) über FatFs, die Dateisystem-Bibliothek in ESP-IDF. ESP-IDF v5.5 baut
+Table) über FatFs, die Dateisystem-Bibliothek in ESP-IDF. ESP-IDF v6.1 baut
 FatFs ohne exFAT, und keine Kconfig-Option schaltet es ein. Der Panel-Build
 nimmt eine Kopie der Komponente `fatfs` von ESP-IDF mit `FF_FS_EXFAT` auf 1
 (`firmware/panel/fatfs_exfat.cmake`), und `storage_list.c` hält einen Build
@@ -819,8 +867,8 @@ an, dessen FatFs kein exFAT hat. Lange Dateinamen bleiben, wie
 `sdkconfig.defaults` sie setzt: an, 255 Zeichen, der Arbeitspuffer auf dem
 Heap.
 
-Was exFAT kostet, gelesen aus dem P4-Build mit ESP-IDF v5.5.5 gegen
-denselben Stand, gebaut ohne das Einbinden von `fatfs_exfat.cmake` und ohne
+Was exFAT kostet, gelesen aus dem P4-Build mit ESP-IDF v5.5.5, auf v6.1
+nicht wiederholt, gegen denselben Stand, gebaut ohne das Einbinden von `fatfs_exfat.cmake` und ohne
 diesen Halt, beide ohne `RCBENCH_IOMCU_BIN`:
 
 | Posten | Ohne exFAT | Mit exFAT | Wo |

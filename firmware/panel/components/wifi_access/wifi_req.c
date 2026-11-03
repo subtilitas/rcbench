@@ -11,8 +11,10 @@
 #include <string.h>
 
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "lwip/sockets.h"
 #include "sdkconfig.h"
+#include "wifi_access_int.h"
 
 /** @brief The log tag, the component's. */
 static const char *TAG = "wifi";
@@ -66,8 +68,8 @@ static void req_self(httpd_req_t *r, const char *name, wa_self_t *me)
 #endif
 }
 
-bool wifi_req_guard(httpd_req_t *r, wa_req_kind_t kind, const char *name,
-                    wifi_req_bufs_t *bufs, esp_err_t *e)
+wa_guard_t wifi_req_check(httpd_req_t *r, wa_req_kind_t kind,
+                          const char *name, wifi_req_bufs_t *bufs)
 {
     wa_self_t me;
     req_self(r, name, &me);
@@ -79,18 +81,94 @@ bool wifi_req_guard(httpd_req_t *r, wa_req_kind_t kind, const char *name,
         q.referer = wifi_req_hdr(r, "Referer", bufs->referer,
                                  sizeof(bufs->referer));
     }
-    if (kind == WA_REQ_UPLOAD) {
+    if (kind != WA_REQ_READ && kind != WA_REQ_CODE) {
         q.upload = wifi_req_hdr(r, WA_UPLOAD_HDR, bufs->upload,
                                 sizeof(bufs->upload));
     }
     const wa_guard_t g = wa_guard(kind, &q, &me);
+    if (g != WA_GUARD_OK) {
+        ESP_LOGW(TAG, "request refused: %s", wa_guard_status(g));
+    }
+    return g;
+}
+
+bool wifi_req_guard(httpd_req_t *r, wa_req_kind_t kind, const char *name,
+                    wifi_req_bufs_t *bufs, esp_err_t *e)
+{
+    const wa_guard_t g = wifi_req_check(r, kind, name, bufs);
     if (g == WA_GUARD_OK) {
         return true;
     }
-    ESP_LOGW(TAG, "request refused: %s", wa_guard_status(g));
     httpd_resp_set_status(r, wa_guard_status(g));
     httpd_resp_set_hdr(r, "Connection", "close");
     (void)httpd_resp_sendstr(r, "");
-    *e = ESP_FAIL;
+    *e = wifi_req_close(r);
     return false;
+}
+
+/**
+ * @brief wa_source_t's get(): the request's next bytes.
+ * @param ctx  the request
+ * @param p    takes them
+ * @param n    how many at most
+ * @return as wa_source_t says
+ */
+static int32_t close_get(void *ctx, uint8_t *p, uint32_t n)
+{
+    const int k = httpd_req_recv(ctx, (char *)p, n);
+    if (k == HTTPD_SOCK_ERR_TIMEOUT) {
+        return WA_GET_IDLE;
+    }
+    return (k < 0) ? WA_GET_FAILED : (int32_t)k;
+}
+
+/**
+ * @brief wa_source_t's stop(): the radio goes off.
+ * @param ctx  unused
+ * @return true once it does
+ */
+static bool close_stop(void *ctx)
+{
+    (void)ctx;
+    return atomic_load(wifi_page_abort());
+}
+
+/**
+ * @brief wa_source_t's now_ms().
+ * @param ctx  unused
+ * @return milliseconds since the start
+ */
+static uint32_t close_now(void *ctx)
+{
+    (void)ctx;
+    return (uint32_t)(esp_timer_get_time() / 1000);
+}
+
+esp_err_t wifi_req_close(httpd_req_t *r)
+{
+    const int fd = httpd_req_to_sockfd(r);
+    (void)shutdown(fd, SHUT_WR);
+    /* One slice a read, so the radio going off is seen; the socket does not
+     * serve another request. */
+    const struct timeval tv = { .tv_sec = 0,
+                                .tv_usec = (suseconds_t)(WA_SEND_SLICE_MS * 1000u) };
+    (void)setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    const wa_source_t src = { close_get, close_stop, close_now, r };
+    size_t cap = 0u;
+    uint8_t *buf = wifi_page_io(&cap);
+    const wa_linger_t end = wa_linger(&src, r->content_len, buf,
+                                      (uint32_t)cap);
+    if (end != WA_LINGER_DONE) {
+        ESP_LOGI(TAG, "refused request's body: %s", wa_linger_name(end));
+    }
+    if (end == WA_LINGER_LATE || end == WA_LINGER_STOPPED) {
+        return ESP_FAIL;
+    }
+    /* A body read to its end leaves the session up for the server; one cut
+     * short ends it in httpd_req_delete(), whose next read fails or passes
+     * its slice. */
+    if (end == WA_LINGER_DONE) {
+        (void)httpd_sess_trigger_close(r->handle, fd);
+    }
+    return ESP_OK;
 }

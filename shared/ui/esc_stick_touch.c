@@ -56,7 +56,7 @@ static void sp_track(const touch_event_t *evt)
         }
         return;
     }
-    (void)ui_hold_end(&t->hold);
+    (void)ui_hold_end(&t->hold, evt, t->hold_btn);
     t->warn_down = false;
     ++pg.rev;
 }
@@ -371,7 +371,7 @@ bool esc_stick_panel_down(const touch_event_t *evt)
         if (!sp_hold_blocked() && hit_down(t->hold_btn, px, py)) {
             t->warn_down = true;
             t->warn_id = evt->point.id;
-            ui_hold_begin(&t->hold);
+            ui_hold_begin(&t->hold, TX_HOLD_HINT_RUN);
             ++pg.rev;
         } else if (hit(t->cancel_btn, px, py)) {
             t->warn = false;

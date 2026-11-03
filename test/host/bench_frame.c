@@ -36,14 +36,25 @@
  *             balance, motor-stick or picker; settings is SETUP's tiles,
  *             settings-list PANEL's list, motor-stick MOTOR & ESC's
  *             ESC STICK session under the output strip, on its makers
+ *   motor-wire  the ESC signal-wire session at rest on a read ESC: the outputs read
+ *             again and the session fed every frame, nothing shown changing
+ *   motor-wire-hold  the same on LEAVE's page, a finger on its 2s hold
  *   <screen>-chrome  the same, repainted in full every frame
  *   <screen>-sim     the same with the SIMULATION watermark
  *
  * Any other mode name runs as `frame`; no error is raised for a typo.
  *
+ * The count depends on the addresses the frame touches, and the stack's
+ * depends on what the kernel and valgrind place above it: argv, the
+ * environment, the path of the executable and of the working directory.
+ * main() therefore moves the stack to one fixed phase within STACK_SPAN
+ * and copies the mode out of argv before anything is drawn, so the count
+ * is the same from any directory and with any environment.
+ *
  * SPDX-License-Identifier: MIT
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -54,11 +65,15 @@
 #include "overview_screen.h"
 #include "picker_screen.h"
 #include "settings_screen.h"
+#include "esc_wire_panel.h"
+#include "ew_map.h"
+#include "link_pages.h"
 #include "servo_screen.h"
 #include "splash_screen.h"
 #include "supply.h"
 #include "supply_screen.h"
 #include "telemetry_sim.h"
+#include "ui_band.h"
 #include "ui_screen.h"
 #include "motor_screen.h"
 #include "ui_theme.h"
@@ -83,15 +98,137 @@ static const ui_bench_status_t k_status = {
 };
 
 /*
- * argv is (frames, mode).  frame_cost.py measures the difference between a
- * 1-frame run and an 11-frame run, so process start-up, the first paint into
- * each buffer and the cachegrind harness cancel out.  The frame count is
- * therefore honoured exactly.
+ * A multiple of the way size of every cache frame_cost.py models: 32KiB
+ * for the L1 data cache (64KiB, 2 ways), 16KiB for the L2 (128KiB, 8 ways),
+ * 4KiB for the L1 instruction cache (16KiB, 4 ways).  Two stacks at the
+ * same offset within it map every line to the same set of each cache.
  */
-int main(int argc, char **argv)
+#define STACK_SPAN  (64u * 1024u)
+/* The offset within STACK_SPAN the frames are drawn at. */
+#define STACK_PHASE (32u * 1024u)
+/* The longest mode name; a longer one runs as `frame`. */
+#define MODE_MAX    32u
+
+/* The mode, copied out of argv: argv's strings sit above the stack, at an
+ * address that moves with the environment's length. */
+static char g_mode[MODE_MAX];
+
+/** @brief The session's feed in the motor-wire modes. */
+static esc_prog_feed_t s_wire;
+
+/**
+ * @brief One frame's feed of the session at rest: time moves, the outputs are read
+ *        again from a stack holding other bytes, and nothing the page shows changes.
+ * @param i The frame.
+ */
+static void wire_frame(int i)
 {
-    const int   frames = (argc > 1) ? atoi(argv[1]) : 1;
-    const char *mode   = (argc > 2) ? argv[2] : "frame";
+    esc_wire_target_t t[2];
+
+    memset(t, (i & 1) != 0 ? 0xAA : 0x55, sizeof(t));
+    t[0].target = 0u;
+    t[0].gpio = 0u;
+    t[1].target = LINK_EW_TARGET_PORT | 1u;
+    t[1].gpio = 14u;
+    esc_wire_panel_set_targets(t, 2u, true);
+    s_wire.now_ms = 1000u + (uint32_t)i * 16u;
+    s_wire.rd.t_ms = (uint16_t)(400u + (unsigned)i * 16u);
+    esc_wire_panel_feed(&s_wire);
+}
+
+/**
+ * @brief MOTOR & ESC > PROGRAM's second row, a read ESC on the session's first tab.
+ */
+static void wire_open(void)
+{
+    ui_bench_status_t st = k_status;
+
+    st.capabilities = (uint16_t)(st.capabilities | LINK_CAP_PROGRAM);
+    ui_router_set_status(&st);
+    supply_screen_put(7.4f, 1.0f);
+    memset(&s_wire, 0, sizeof(s_wire));
+    s_wire.rd.phase = ESC_LINK_READY;
+    s_wire.rd.minor = LINK_MINOR_ESC_WIRE;
+    s_wire.rd.known = true;
+    s_wire.rd.gpio = 0xFFu;
+    wire_frame(0);
+    static const int16_t at[2][2] = { { 181, 18 }, { 279, 83 + 56 } };
+
+    for (int k = 0; k < 2; ++k) {
+        const int16_t x = at[k][0];
+        const int16_t y = (int16_t)(UI_BAND_H + at[k][1]);
+        const touch_event_t tap[] = {
+            { .type = TOUCH_EVENT_DOWN, .point = { .id = 1, .x = x, .y = y } },
+            { .type = TOUCH_EVENT_UP,   .point = { .id = 1, .x = x, .y = y } },
+        };
+        ui_router_event(&tap[0]);
+        ui_router_event(&tap[1]);
+    }
+    const uint16_t len = ew_map_len(EW_FW_AM);
+    const ew_field_t *f;
+
+    s_wire.rd.state = LINK_ESC_READY;
+    s_wire.rd.held = true;
+    s_wire.rd.ours = true;
+    s_wire.rd.gpio = 0u;
+    s_wire.rd.line = LINK_ESC_LINE_UP;
+    s_wire.rd.fw = EW_FW_AM;
+    s_wire.rd.layout = 3u;
+    s_wire.rd.len = len;
+    s_wire.rd.reads = 1u;
+    s_wire.rd.read_crc = 0x1234u;
+    s_wire.rd.cpu = EW_CPU_ARM;
+    s_wire.rd.flags = LINK_EW_F_HAVE_READ | LINK_EW_F_IN_MODE;
+    s_wire.image.gen = 1u;
+    s_wire.image.reads = 1u;
+    s_wire.image.read_crc = 0x1234u;
+    s_wire.image.len = len;
+    memset(s_wire.image.page, 0xFF, sizeof(s_wire.image.page));
+    for (size_t i = 0u; (f = ew_map_nth(EW_FW_AM, 3u, i)) != NULL; ++i) {
+        s_wire.image.page[f->off] = f->lo;
+    }
+    s_wire.image.page[0] = 1u;
+    s_wire.image.page[1] = 3u;
+    wire_frame(1);
+    wire_frame(2);
+    if (esc_wire_panel_stage() != ESC_WIRE_SESSION) {
+        fprintf(stderr, "bench_frame: the session is on stage %d\n",
+                (int)esc_wire_panel_stage());
+        exit(1);
+    }
+}
+
+/**
+ * @brief BACK's LEAVE page, a finger on its hold: every tick moves the fill.
+ */
+static void wire_hold(void)
+{
+    const gfx_rect_t back = esc_wire_panel_back_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1,
+                                   .x = (int16_t)(back.x + back.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + back.y + back.h / 2) } };
+
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    const gfx_rect_t h = esc_wire_panel_hold_rect();
+
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.x = (int16_t)(h.x + h.w / 2);
+    e.point.y = (int16_t)(UI_BAND_H + h.y + h.h / 2);
+    ui_router_event(&e);
+}
+
+/**
+ * @brief Draw @p frames frames of @p mode, the bench proper.
+ *
+ * @param frames Frames to draw.
+ * @param mode   The mode, one of the names in the header comment.
+ * @return 0.
+ */
+static __attribute__((noinline)) int bench(int frames, const char *mode)
+{
 
     gfx_canvas_t c;
     gfx_canvas_init(&c, fb, W, H, W);
@@ -137,7 +274,10 @@ int main(int argc, char **argv)
     const bool servo = (strncmp(mode, "servo", 5) == 0);
     const bool supply = (strncmp(mode, "supply", 6) == 0);
     ui_screen_id_t start = SCREEN_MOTOR;
-    if (strcmp(mode, "overview") == 0) {
+    /* "overview-guide": the menu with its guide open at page 1, the dock
+     * drawn and the marks over the live half every frame. */
+    const bool guide = (strcmp(mode, "overview-guide") == 0);
+    if (strcmp(mode, "overview") == 0 || guide) {
         start = SCREEN_OVERVIEW;
     } else if (supply) {
         start = SCREEN_SUPPLY;
@@ -156,9 +296,11 @@ int main(int argc, char **argv)
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
         { "motor-stick", SCREEN_MOTOR },
+        { "motor-wire-hold", SCREEN_MOTOR },
+        { "motor-wire", SCREEN_MOTOR },
         /* The picker with the IOmcu's drawing of the RP2350-CAN: an
          * outline, 102 shapes and 40 pad rings on a full repaint. */
-        { "picker",     SCREEN_PICKER },
+        { "picker",     SCREEN_OUTPUTS },
         /* WI-FI with the access point up; "wifi-keys" is the same
          * screen with the Wi-Fi keyboard open, a key typed every frame. */
         { "wifi-keys",  SCREEN_WIFI },
@@ -190,16 +332,29 @@ int main(int argc, char **argv)
             break;
         }
     }
-    if (start == SCREEN_PICKER) {
+    if (start == SCREEN_OUTPUTS) {
         outbind_t b;
         outbind_init(&b);
         outbind_set_board(&b, (uint16_t)OUTBIND_BOARD_PICO_HEADER);
         outbind_set_proto(&b, 1u);                 /* SERVO PWM */
+        outputs_screen_set_binding(&b);
         picker_screen_set_binding(&b);
         (void)picker_screen_set_drawing(board_drawing_rp2350_can,
                                         board_drawing_rp2350_can_bytes, NULL);
     }
     ui_router_goto(start);
+
+    if (guide) {
+        /* A tap on the band's "?". */
+        const gfx_rect_t q = ui_band_guide_rect();
+        touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                            .point = { .id = 1,
+                                       .x = (int16_t)(q.x + q.w / 2),
+                                       .y = (int16_t)(q.y + q.h / 2) } };
+        ui_router_event(&e);
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+    }
 
     if (strncmp(mode, "motor-stick", 11) == 0) {
         /* PROGRAM, the strip's second tab at x 181, and its STICK MENU row
@@ -217,6 +372,15 @@ int main(int argc, char **argv)
             ui_router_event(&tap[0]);
             ui_router_event(&tap[1]);
         }
+    }
+
+    const bool wire = strncmp(mode, "motor-wire", 10) == 0;
+
+    if (wire) {
+        wire_open();
+    }
+    if (strcmp(mode, "motor-wire-hold") == 0) {
+        wire_hold();
     }
 
     if (strncmp(mode, "settings-list", 13) == 0) {
@@ -335,6 +499,9 @@ int main(int argc, char **argv)
             if (plain_chrome) {
                 ui_router_invalidate();
             }
+            if (wire) {
+                wire_frame(i);
+            }
             ui_router_tick(0.026f);
             ui_router_render(&c, i & 1);
             continue;
@@ -392,4 +559,36 @@ int main(int argc, char **argv)
         ui_router_render(&c, i & 1);
     }
     return 0;
+}
+
+/**
+ * @brief Draw from a stack at a fixed phase within STACK_SPAN.
+ *
+ * argv is (frames, mode).  frame_cost.py measures the difference between a
+ * 1-frame run and an 11-frame run, so process start-up, the first paint into
+ * each buffer and the cachegrind harness cancel out.  The frame count is
+ * therefore honoured exactly, and frame_cost.py writes it in three digits,
+ * so both runs start from stacks laid out alike.  The gap the array leaves
+ * is never touched.
+ *
+ * @param argc The argument count.
+ * @param argv The program, the frame count and the mode.
+ * @return 0.
+ */
+int main(int argc, char **argv)
+{
+    const int frames = (argc > 1) ? atoi(argv[1]) : 1;
+    const char *arg = (argc > 2) ? argv[2] : "frame";
+    if (strlen(arg) < MODE_MAX) {
+        strcpy(g_mode, arg);
+    } else {
+        strcpy(g_mode, "frame");
+    }
+    char here;
+    const uintptr_t sp = (uintptr_t)&here;
+    /* The stack grows down: drop it by its distance above the phase. */
+    const size_t drop = (size_t)((sp - STACK_PHASE) & (STACK_SPAN - 1u));
+    char gap[drop + 1u];
+    __asm__ volatile("" : : "r"(gap) : "memory");
+    return bench(frames, g_mode);
 }

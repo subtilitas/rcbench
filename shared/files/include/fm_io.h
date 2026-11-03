@@ -68,6 +68,8 @@ typedef enum {
     FM_ERR_ARMED,       /**< the bench is ARMED: the card is read-only   */
     FM_ERR_LOGGING,     /**< a run is being logged: the card is read-only */
     FM_ERR_CANCELLED,   /**< stopped by CANCEL                           */
+    FM_ERR_CHANGED,     /**< the file differs from the copy a save was
+                             asked to replace (fm_job_match())           */
     FM_ERR_COUNT
 } fm_err_t;
 

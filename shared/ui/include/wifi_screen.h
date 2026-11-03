@@ -4,12 +4,25 @@
  * on the card to download, and a panel firmware image to upload -- and the
  * screen that writes an uploaded image (PANEL UPDATE).
  *
- * The screen opens from LOGS and runs the radio only while it is open.  It
+ * The screen opens from SETUP's WI-FI tile, LOGS' WI-FI button and UPDATES'
+ * button, its home tag returns to the one that opened it, and it runs the
+ * radio only while it is open.  It
  * offers the panel's own access point always, and the home network when one
  * is kept: chosen from a scan, or typed for a hidden one, the password typed
  * on the Wi-Fi keyboard (ui_textkey_open_wifi()).  It shows what a browser
  * needs -- network, password, address, name, access code -- and why the
  * radio went off when it did.
+ *
+ * HOTSPOT PASSWORD and WEB CODE, two buttons of the radio-off view, each open
+ * a view of their own: the value kept and shown as it is, or RANDOM, TYPE A
+ * VALUE on the Wi-Fi keyboard (8 to 63 printable characters) and BACK TO
+ * RANDOM.  The buttons stand only with the radio off, so a change takes effect
+ * at the next start of the radio, which the view says.
+ *
+ * While the page is served a line says what a browser needs to write to
+ * the card (SETUP > SD CARD > Browser writes) and how many writes it made
+ * this radio session.  With the setting HOLD, a 2s hold here (UI_HOLD_S)
+ * allows writes until the radio goes off or BROWSER WRITES OFF is tapped.
  *
  * An uploaded image waits on the panel as a question naming both versions.
  * The browser cannot start the write: INSTALL is a 2s hold here (UI_HOLD_S),
@@ -113,6 +126,20 @@ typedef enum {
     WIFI_GATE_COPROC,       /**< the IOmcu's update runs           */
 } wifi_gate_t;
 
+/** @brief What a browser write needs, SETUP's Browser writes (wa_writes_t). */
+typedef enum {
+    WIFI_WRITES_OPEN = 0,   /**< nothing beyond reaching the page        */
+    WIFI_WRITES_CODE,       /**< the access code, its switch off too     */
+    WIFI_WRITES_HOLD,       /**< the 2s hold on this screen              */
+    WIFI_WRITES_OFF,        /**< no write                                */
+} wifi_writes_t;
+
+/** @brief The two values the operator can keep (wa_kept_t). */
+typedef enum {
+    WIFI_KEPT_PASS = 0,     /**< HOTSPOT PASSWORD                        */
+    WIFI_KEPT_CODE,         /**< WEB CODE                                */
+} wifi_kept_t;
+
 typedef struct {
     /* The radio's gate: why it may not start now, or WIFI_WHY_NONE. */
     wifi_why_t   block;
@@ -121,6 +148,9 @@ typedef struct {
     bool         have_net;
     char         net[WIFI_SSID_MAX + 1];
     bool         code_on;
+    char         kept_pass[WIFI_PASS_MAX + 1]; /**< HOTSPOT PASSWORD; ""
+                                                    is RANDOM              */
+    char         kept_code[WIFI_PASS_MAX + 1]; /**< WEB CODE; "" is RANDOM */
     bool         save_failed;  /**< the last write of the above failed    */
 
     /* The radio. */
@@ -128,8 +158,8 @@ typedef struct {
     wifi_why_t   off;          /**< why it last went off                 */
     wifi_join_t  join;         /**< with WIFI_WHY_JOIN                    */
     char         name[16];     /**< "rcbench-1A2B"                        */
-    char         pass[12];     /**< the access point's                    */
-    char         code[12];     /**< the page's access code                */
+    char         pass[WIFI_PASS_MAX + 1];  /**< the access point's        */
+    char         code[WIFI_PASS_MAX + 1];  /**< the page's access code    */
     uint8_t      ip[4];
     uint8_t      channel;
     uint32_t     idle_left_s;  /**< until the radio goes off unused       */
@@ -148,6 +178,11 @@ typedef struct {
     wifi_gate_t  gate;
     char         new_ver[WIFI_VER_MAX + 1];
     char         run_ver[WIFI_VER_MAX + 1];
+
+    /* Browser writes to the card, this radio session. */
+    wifi_writes_t writes;      /**< what a write needs                    */
+    bool          writes_open; /**< WIFI_WRITES_HOLD: the hold allowed it */
+    uint32_t      written;     /**< writes the page made                  */
 } wifi_view_t;
 
 /** What the screen asks for: bits of wifi_screen_take(). */
@@ -161,6 +196,10 @@ typedef struct {
 #define WIFI_REQ_CODE_OFF  0x080u   /**< the page asks for no access code  */
 #define WIFI_REQ_DISCARD   0x100u   /**< drop the staged image           */
 #define WIFI_REQ_INSTALL   0x200u   /**< the 2s hold completed           */
+#define WIFI_REQ_WRITES_ON 0x400u   /**< the 2s hold allowed browser writes */
+#define WIFI_REQ_WRITES_OFF 0x800u  /**< BROWSER WRITES OFF was tapped    */
+#define WIFI_REQ_KEPT_PASS 0x1000u  /**< wifi_screen_kept() is HOTSPOT PASSWORD */
+#define WIFI_REQ_KEPT_CODE 0x2000u  /**< wifi_screen_kept() is WEB CODE   */
 
 /** Hand the screen what to show. */
 void wifi_screen_set(const wifi_view_t *v);
@@ -181,6 +220,13 @@ unsigned wifi_screen_take(void);
 /** The network WIFI_REQ_SAVE_NET keeps: its name and its password. */
 void wifi_screen_net(char ssid[WIFI_SSID_MAX + 1], char pass[WIFI_PASS_MAX + 1]);
 
+/**
+ * @brief The value WIFI_REQ_KEPT_PASS or WIFI_REQ_KEPT_CODE keeps, "" for
+ *        RANDOM; the screen's copy is wiped.
+ * @param out Takes it.
+ */
+void wifi_screen_kept(char out[WIFI_PASS_MAX + 1]);
+
 /** Repaint on the next frame. */
 void wifi_screen_invalidate(void);
 
@@ -197,6 +243,15 @@ gfx_rect_t wifi_screen_key_area(void);
  * @return The keyboard.
  */
 const ui_textkey_t *wifi_screen_textkey(void);
+
+/**
+ * @brief The line under the rows while a browser may write: the writes so
+ *        far, in the singular for one.
+ * @param out      takes the line
+ * @param n        bytes of @p out
+ * @param written  the writes this radio session
+ */
+void wifi_screen_writes_text(char *out, size_t n, unsigned written);
 
 /**
  * @brief The WI-FI screen, for the router.

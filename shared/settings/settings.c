@@ -107,6 +107,16 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_KNOB_SCALE] = {
         "knob_scale", "deg",
         SET_CAT_APP, SET_TYPE_INT, 90, 720, 10, 270, NULL, 0 },
+    /* How much of the text shows through the text editor's keyboard,
+     * ui_textkey_see_pct() of the option: OFF, 25%, 50%. */
+    [SET_KB_SEE] = {
+        "kb_see", "",
+        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(kb_see) },
+    /* Hides the SIMULATION watermark (ui_watermark()); the band's SIM chip
+     * and every other statement that values are simulated stay. */
+    [SET_DEMO_MODE] = {
+        "demo_mode", "",
+        SET_CAT_APP, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
 
     /*
      * The current monitors, on the IOmcu's I2C (Inter-Integrated
@@ -115,24 +125,24 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      * and a range of 1.0 to 300.0A, an INA3221 shunt of 5mOhm to 1Ohm.
      * The defaults are the modules the bench is built with: the MATEK
      * I2C-INA-BM's INA228 at 0x45 on 200 uOhm, ranged for 204.8A, and the
-     * bus on GP16 and GP17; the INA3221 parts are SENSORS'
-     * (settings_sensors.c).  The bus clock is not a setting: the
+     * bus on GP16 and GP17; the INA3221 parts are in
+     * settings_sensors.c.  The bus clock is not a setting: the
      * page takes 400kHz and nothing else.  The address keys are new ones:
      * the INA228's old key held an index into four addresses, which read
      * as one of sixteen would name another address.
      */
     [SET_INA228_EN] = {
         "ina228_en", "",
-        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_INA228_ADDR] = {
         "ina228_adr", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 5, ENUM_OPTS(ina228_addr) },
+        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 5, ENUM_OPTS(ina228_addr) },
     [SET_INA228_UOHM] = {
         "ina228_uohm", "uΩ",
-        SET_CAT_IFACE, SET_TYPE_INT, 50, 20000, 1, 200, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, 50, 20000, 1, 200, NULL, 0 },
     [SET_INA228_MAX_A] = {
         "ina228_max_a", "A",
-        SET_CAT_IFACE, SET_TYPE_FLOAT, 1.0f, 300.0f, 0.1f, 204.8f, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_FLOAT, 1.0f, 300.0f, 0.1f, 204.8f, NULL, 0 },
     /*
      * The bus's pins: IOmcu GPIO, one I2C block's SDA and SCL.
      * Sensor SDA takes the values settings_sense_sda_valid() does and no
@@ -143,10 +153,10 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      */
     [SET_SENSE_SDA] = {
         "sns_sda", "GPIO",
-        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },
     [SET_SENSE_SCL] = {
         "sns_scl", "GPIO",
-        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 17, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 17, NULL, 0 },
     /*
      * The output encoder (protocol 4.9): an AS5600 magnetic angle sensor on
      * the horn shaft of the servo under test, at 0x36 on the sensor bus
@@ -156,10 +166,10 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      */
     [SET_ENC_EN] = {
         "enc_en", "",
-        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_ENC_CENTRE] = {
         "enc_centre", "",
-        SET_CAT_IFACE, SET_TYPE_INT, 0, 4095, 1, 0, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, 0, 4095, 1, 0, NULL, 0 },
     /*
      * The phase tap, written to the IOmcu's TONE page (protocol
      * 4.8): one GPIO that reads an ESC's beeps off one motor phase.  The
@@ -170,34 +180,34 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      */
     [SET_TONE_EN] = {
         "tone_en", "",
-        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_TONE_PIN] = {
         "tone_pin", "GPIO",
-        SET_CAT_IFACE, SET_TYPE_INT, 0, 47, 1, 22, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, 0, 47, 1, 22, NULL, 0 },
     [SET_TONE_F_MIN] = {
         "tone_fmin", "Hz",
-        SET_CAT_IFACE, SET_TYPE_INT, 50, 2000, 10, 400, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, 50, 2000, 10, 400, NULL, 0 },
     [SET_TONE_F_MAX] = {
         "tone_fmax", "Hz",
-        SET_CAT_IFACE, SET_TYPE_INT, 100, 6900, 50, 6500, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, 100, 6900, 50, 6500, NULL, 0 },
     [SET_TONE_SPLIT] = {
         "tone_split", "%",
-        SET_CAT_IFACE, SET_TYPE_INT, 0, 50, 1, 8, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, 0, 50, 1, 8, NULL, 0 },
     [SET_TONE_GAP] = {
         "tone_gap", "ms",
-        SET_CAT_IFACE, SET_TYPE_INT, 1, 100, 1, 3, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, 1, 100, 1, 3, NULL, 0 },
     [SET_TONE_PERIODS] = {
         "tone_periods", "",
-        SET_CAT_IFACE, SET_TYPE_INT, 1, 64, 1, 3, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, 1, 64, 1, 3, NULL, 0 },
     [SET_VIBE_EN] = {
         "vibe_en", "",
-        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_OPTICAL_EN] = {
         "optical_en", "",
-        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_OPTICAL_PIN] = {
         "optical_pin", "GPIO",
-        SET_CAT_IFACE, SET_TYPE_INT, -1, 48, 1, -1, NULL, 0 },
+        SET_CAT_SENSORS, SET_TYPE_INT, -1, 48, 1, -1, NULL, 0 },
     /*
      * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3V.
      * IOmcu GPIO, written to its SUPPLY page by the panel; the pins
@@ -205,26 +215,27 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
      */
     [SET_PDMINI_EN] = {
         "pdm_en", "",
-        SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+        SET_CAT_PDMINI, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_PDMINI_TX] = {
         "pdm_tx", "GPIO",
-        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
+        SET_CAT_PDMINI, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
     [SET_PDMINI_RX] = {
         "pdm_rx", "GPIO",
-        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
+        SET_CAT_PDMINI, SET_TYPE_INT, -1, 47, 1, -1, NULL, 0 },
     [SET_PDMINI_BAUD] = {
         "pdm_baud", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 7, ENUM_OPTS(pdmini_baud) },
+        SET_CAT_PDMINI, SET_TYPE_ENUM, 0, 0, 1, 7, ENUM_OPTS(pdmini_baud) },
     /*
      * How the IOmcu receives a Hitec D series answer on its programming
      * port (the HITEC page's register 23, link_hitec_rx_t): PULL-UP, the
      * line released with a 2.2kOhm pull-up on the signal wire, or
      * PRECHARGE, with none.  The IOmcu takes it at its next OPEN of a
-     * D series line; classic servos need neither.
+     * D series line; classic servos need neither.  Set on the Hitec tab's
+     * MORE list, beside the series.
      */
     [SET_HITEC_RX] = {
         "hitec_rx", "",
-        SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(hitec_rx) },
+        SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(hitec_rx) },
 
     /*
      * The supply's.  The ranges are a USB-PD PPS (Programmable Power Supply)
@@ -354,6 +365,15 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "hitec_series", "",
         SET_CAT_SERVO, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(hitec_series) },
     /*
+     * The ESC signal-wire session's STROM: SWITCHED (0) or BY HAND (1), as the
+     * operator last chose it on the connect page.  Kept with the programmers'
+     * choices, as the Hitec series is: SERVO's screen lists its rows by name,
+     * so no screen shows it as a row and no DEFAULTS resets it.
+     */
+    [SET_ESCW_BY_HAND] = {
+        "escw_by_hand", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    /*
      * Stick programming's.  The supply it powers the ESC (electronic speed
      * controller) from, and how it hears the beeps.  No ESC has been
      * recorded, so every time below is a default standing in for a
@@ -435,6 +455,16 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_LOG_USER] = {
         "log_user", "",
         SET_CAT_CARD, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    /*
+     * What a browser on the Wi-Fi page needs to write to the card
+     * (wa_writes_t, wa_api.h): OPEN nothing beyond reaching the page, the
+     * default; ACCESS CODE this session's access code, with the code
+     * switch off too; HOLD a 2s hold on WI-FI once a radio session; OFF no
+     * write.  The page's guards against other sites hold in every case.
+     */
+    [SET_WEB_WRITES] = {
+        "web_writes", "",
+        SET_CAT_CARD, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(web_writes) },
 };
 
 /** @brief The categories' names in English, from ui_text.def. */
@@ -574,7 +604,8 @@ void settings_set_armed(settings_armed_fn fn)
 /** @brief Whether @p id changes on a SAFE bench only (settings.h). */
 bool settings_safe_only(setting_id_t id)
 {
-    return id == SET_SCREEN_ROT;
+    return id == SET_SCREEN_ROT || id == SET_PDMINI_EN || id == SET_PDMINI_TX
+           || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD;
 }
 
 bool settings_held(setting_id_t id)
@@ -633,8 +664,8 @@ bool settings_tap_pin_valid(int gpio)
 
 bool settings_pdmini_same_pin(void)
 {
-    const int tx = (int)lrintf(s.values[SET_PDMINI_TX]);
-    return tx >= 0 && tx == (int)lrintf(s.values[SET_PDMINI_RX]);
+    const int tx = settings_get_int(SET_PDMINI_TX);
+    return tx >= 0 && tx == settings_get_int(SET_PDMINI_RX);
 }
 
 /* Whether the pin row @p id takes @p pin as a step: Sensor SDA a pin the
@@ -673,7 +704,7 @@ static float coerce(const setting_def_t *d, float v)
     case SET_TYPE_BOOL:
         return (v != 0.0f) ? 1.0f : 0.0f;
     case SET_TYPE_ENUM: {
-        int n = d->option_count ? d->option_count : 1;
+        int n = settings_sensors_offered(d);
         int i = (int)lrintf(v);
         /* Out of range means a corrupt or stale stored word, not "cycle
          * round": wrapping turns it into a different option that looks
@@ -735,6 +766,24 @@ static bool text_to(int i, const char *text)
     return true;
 }
 
+/**
+ * @brief Setting @p i back to its default, unless it is held; its observer
+ *        hears a change.
+ * @param i The setting.
+ * @return Whether the value moved.
+ */
+static bool reset_row(int i)
+{
+    if (settings_held((setting_id_t)i)) {
+        return false;
+    }
+    const float before = s.values[i];
+    s.values[i] = DEF(i).def;
+    const bool moved = s.values[i] != before;
+    notify_changed(i, before);
+    return moved;
+}
+
 void settings_reset(setting_cat_t cat)
 {
     /*
@@ -745,16 +794,26 @@ void settings_reset(setting_cat_t cat)
      */
     bool moved = false;
     for (int i = 0; i < SETTING_COUNT; ++i) {
-        if (DEF(i).cat == cat && !settings_held((setting_id_t)i)) {
-            float before = s.values[i];
-            s.values[i] = DEF(i).def;
-            moved = moved || (s.values[i] != before);
-            notify_changed(i, before);
+        if (DEF(i).cat == cat) {
+            moved = reset_row(i) || moved;
         }
     }
     for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
         if (k_text_defs[i].cat == cat && text_to(i, k_text_defs[i].def)) {
             moved = true;
+        }
+    }
+    if (moved) {
+        mark_dirty();
+    }
+}
+
+void settings_reset_rows(const setting_id_t *ids, int n)
+{
+    bool moved = false;
+    for (int k = 0; ids != NULL && k < n; ++k) {
+        if (ids[k] >= 0 && ids[k] < SETTING_COUNT) {
+            moved = reset_row((int)ids[k]) || moved;
         }
     }
     if (moved) {
@@ -853,9 +912,43 @@ void settings_init(void)
     }
 }
 
+/** @brief The pins a board solders, over the settings that name them:
+ *         s_fix_on[id] says whether s_fix[id] stands for the value. */
+static bool  s_fix_on[SETTING_COUNT];
+static float s_fix[SETTING_COUNT];  /**< The fixed values. */
+
+bool settings_fix(setting_id_t id, int value)
+{
+    if (id < 0 || id >= SETTING_COUNT) {
+        return false;
+    }
+    const float was = settings_get(id);
+    s_fix_on[id] = true;
+    s_fix[id] = (float)value;
+    return settings_get(id) != was;
+}
+
+bool settings_unfix(setting_id_t id)
+{
+    if (id < 0 || id >= SETTING_COUNT || !s_fix_on[id]) {
+        return false;
+    }
+    const float was = settings_get(id);
+    s_fix_on[id] = false;
+    return settings_get(id) != was;
+}
+
+bool settings_fixed(setting_id_t id)
+{
+    return id >= 0 && id < SETTING_COUNT && s_fix_on[id];
+}
+
 float settings_get(setting_id_t id)
 {
-    return (id >= 0 && id < SETTING_COUNT) ? s.values[id] : 0.0f;
+    if (id < 0 || id >= SETTING_COUNT) {
+        return 0.0f;
+    }
+    return s_fix_on[id] ? s_fix[id] : s.values[id];
 }
 
 int settings_get_int(setting_id_t id)
@@ -907,7 +1000,7 @@ void settings_adjust(setting_id_t id, int steps)
         return;
     }
     if (d->type == SET_TYPE_ENUM && !settings_cycles(id)) {
-        const int last = (d->option_count ? d->option_count : 1) - 1;
+        const int last = settings_sensors_offered(d) - 1;
         const int cur  = (int)lrintf(s.values[id]);
         /* In 64 bits: a step count near INT_MAX does not overflow. */
         int64_t next = (int64_t)cur + (int64_t)steps;
@@ -922,8 +1015,7 @@ void settings_adjust(setting_id_t id, int steps)
     }
     if (d->type == SET_TYPE_BOOL || d->type == SET_TYPE_ENUM) {
         /* Cycling is the only sensible interpretation of "+1" on a list. */
-        int n = (d->type == SET_TYPE_BOOL) ? 2
-                                           : (d->option_count ? d->option_count : 1);
+        int n = (d->type == SET_TYPE_BOOL) ? 2 : settings_sensors_offered(d);
         int cur = (int)lrintf(s.values[id]);
         int next = ((cur + steps) % n + n) % n;
         settings_set(id, (float)next);

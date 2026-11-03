@@ -144,9 +144,46 @@ A port without a pin cannot be the target: a slot of OUTPUTS that holds
 GPIO 13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
-With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer shows `Use the programming port to program a servo.` and `Set SERVO TESTER to PORT 1 to PORT 4 on SETUP > OUTPUTS.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
+With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer shows `Use the programming port to program a servo.` and `Tap TARGET and set SERVO TESTER to PORT 1 to PORT 4.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
+
+### The port on the rbmod carrier
+
+On the [rbmod carrier](Carrier.md#the-programming-port) with an IOmcu of
+protocol 4.36 or later, the PORT row chooses the port as well. Before
+**CONNECT**, a tap on the row's label opens **PROGRAMMING PORT** with
+`PROGP01  GPIO 13`, `PROGP02  GPIO 14`, `PROGP03  GPIO 15` and
+`PROGP04  GPIO 0`. The entry chosen sets SERVO TESTER, the same setting
+as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
+
+- The panel asks the IOmcu for FUNC SERVO PWM on the chosen port and NONE
+  on the other three. The IOmcu's TARGET, the PROGRAM list's port and
+  the KST limit search follow once the port reads SERVO PWM. Until then
+  the tester sends no command: nothing reaches the servo outputs in the
+  port's place.
+- The PORT row reads the port, `PROGP02 GPIO 14  5V FIXED` on the KST
+  row and `PROG PORT 2 GPIO 14  D SERIES` on the Hitec row, or
+  `NO PROG PORT SET`.
+- **CONNECT** without a port says `Use the programming port to program a
+  servo.` and `Tap the PORT row and choose a programming port.`; with an
+  IOmcu older than 4.36 the second line is
+  `Update the IOmcu to protocol 4.36 or later to choose a port.`
+- The list does not open while ARMED or asked to arm, during a test, a
+  sweep or a limit run, or while a programmer holds a port. The state line
+  then says why: `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS`.
+- While PWM04 carries a PWM output, the PROGP04 entry reads
+  `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)` and is not taken.
+- The ports run from M7's fixed 5V on GPIO 21. The tester's pulse goes out
+  only while the PROG 5V box reads ON; a limit run and a servo test say
+  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` while it is off. A servo
+  test's voltage steps do not reach the port: a test on it says
+  `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
+- For the limit run the PROG 5V box stands for the PD mini: SEARCH+PROG
+  and SERVO PULSES are offered with the box ON, and the session's power
+  cycles switch GPIO 21. A PD mini on the servo rails is neither asked nor
+  watched: switching it on or off during the run ends nothing. A run that
+  aborts switches PROG 5V off, not the PD mini.
 
 ## The port
 
@@ -197,7 +234,7 @@ the overlay is open again on PROGRAM at the next entry.
 | `The supply cannot provide this voltage or current limit.` | the voltage is above 8.4V, the current limit outside 50 to 3000mA, or the voltage the session runs at less than 0.7V under the input voltage of the PD mini; the supply is not changed |
 | `Supply below 4.8V. Programming requires at least 4.8V.` | the programming voltage, or the voltage of an output that is on, is under 4.8V; the supply is not changed. With an output that is on and set under 4.8V the panel sends nothing to the IOmcu |
 | `The supply did not switch within 3000ms. Check the supply.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
-| `The IOmcu has not yet accepted the link. Try again.` | the IOmcu does not trust the heartbeat, or the link was silent |
+| `The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to clear it.` | the IOmcu does not trust the heartbeat (the band shows FAULT 10), or the link was silent for 200ms and the failsafe latched (FAULT 01). Only the CLEAR an ARM writes lifts it; an IOmcu restart can leave FAULT 01 latched |
 
 ![A port without a pin](img/servo-kst-nopin.png)
 
@@ -296,7 +333,8 @@ session starts 1000ms after the PD mini reads on. For an output that is
 on, the session runs at the lower of the two voltages and the lower of the
 two current limits: a voltage above the programming voltage is lowered to
 it, a current limit above CURRENT LIMIT is lowered to it, and neither is
-raised. Leaving programming does not restore a value **CONNECT** lowered.
+raised. Leaving programming does not restore a value **CONNECT** lowered
+by itself: SERVO asks first (below).
 
 The port programs at 4.8V or more. The supply voltage a servo needs to
 store a register is not measured. An
@@ -313,6 +351,52 @@ right card show the same: the set points, the sliders, the steps and
 `Servo programmer.`. The limits of the SUPPLY screen's settings stay
 editable; a limit lowered under a set point reaches the set point when the
 port is back in PWM.
+
+The port's set points stay on the SUPPLY screen and the SET row after the
+port is back in PWM for as long as the output it left on stays on. The set
+points from before the session come back at the first read of the supply
+that shows no port holding it and the output off: at once where the session
+ends with the output off, at the next OFF after a LEAVE that leaves it on.
+None comes back on its own while OUTPUT ON is being held or a question or
+the HV warning stands on SERVO. A set point changed after the port let go,
+by a tap, a lowered limit or a servo test, stands, and the earlier ones are
+dropped.
+
+A LEAVE that leaves the output on at the port's set points, with the set
+points from before the session different, makes SERVO ask once the port is
+in PWM: `Restore your supply set points 5.50V 2.00A on the live output?`,
+under OUTPUT IS ON, with the change of each set point that differs.
+
+- **YES** gives the live output both set points from before the session.
+  A voltage that rises from 6.0V or below to above it opens HV SERVOS ONLY
+  first, as a typed one does; **HOLD 2s TO APPLY** gives both, CANCEL keeps
+  the port's.
+- **NO** keeps the port's set points; the ones from before the session come
+  back at the next OFF, as above.
+
+The question is asked once per LEAVE and not: while a programming port
+holds the supply; under SERVO's keypad, list, warning or another question,
+or OUTPUT ON's hold, which it waits for; after the output went off, an
+error switched it off or a STOP came between the LEAVE and the question;
+inside a limit run, whose read session leaves through the same LEAVE; when
+a set point changed since; or when the set points from before the session,
+held to the SUPPLY limits, equal the port's. Only a LEAVE asks. Every
+other end of a port's hold on the supply asks nothing: RELEASE PORT, a STOP, an error, a lost link, a restart of the panel
+or the IOmcu, a port the IOmcu gives back without a LEAVE, and ports that
+turn to their own supply (the rbmod carrier's PROG_SUPPLY) while a session
+holds the PD mini. With the output on, the session's set points then stay
+until the next OFF. The SUPPLY page's own word that a port holds it
+(`LINK_SP_PORT`) may let go a read after the programmer's; the question
+then comes at its release, and only after a LEAVE.
+A port that takes the supply,
+an OFF asked (OUTPUT OFF included) or an output that goes off while it
+stands closes it, before the output reads off. It stands on SERVO
+only: a LEAVE seen while another screen is shown is asked about when SERVO
+is shown again and the output is still on, and leaving SERVO drops the
+question as NO. The
+[Hitec programmer](HitecProgrammer.md#leave) asks the same.
+
+![The question after LEAVE](img/servo-hitec-restore-ask.png)
 
 An OFF that arrives while a frame is on the wire, from **OUTPUT OFF**,
 **STOP** or a lost heartbeat, reads off at once and reaches the PD mini
@@ -379,6 +463,13 @@ needs, the name of the
 session's backup file and the last message. A message in the warning colour is a refusal or a result
 that needs a second look; one in the danger colour says the servo's content
 is in doubt.
+
+A session that goes, by a lost link, an IOmcu that starts again or the port
+back in PWM, takes the lines about what it held with it: `All 32 registers
+read.`, `KST004 loaded.`, a file compared with the servo, an edit's refusal and
+what an edit or a load waits for. What happened stays: a write and its check, a
+file saved, a file refused, how an operation ended and every line in the danger
+colour.
 
 ### A servo of unknown layout
 
@@ -885,6 +976,13 @@ same warning lines an edit past those limits shows; with more warnings than
 lines the last line counts the rest. **HOLD 2s TO LOAD** takes the
 values into the draft. **CANCEL** leaves the draft as it was.
 
+The soft limits compare with the servo as the session found it, not as last
+written, and ENABLE WRITE TO SERVO plays no part. A servo found at Left Angle
+100 and written to 97 takes a file at 98 with no page: 98 is under what the
+session found. The next session finds 97, and the same file is a raise and
+opens the page. The page says nothing of a file's check value: a file edited
+by hand says so on its own line, with or without the page.
+
 ![The warnings of a file](img/servo-kst-file-soft.png)
 
 ### What a file does not restore
@@ -1226,6 +1324,7 @@ BEFORE PWM** above 0 the message after it reads
 | **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. A PD mini's output is switched off, and the port is in PWM again 1000ms after it reads off |
 | **ABORT** | the same, without the latch |
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
+| An error of the bench ([Safety, Errors](Safety.md#errors)), or an operation that ends in a fault of the servo or the wire: no servo, a failed read, a servo that changed, a write that failed, was rolled back or torn, a verify that differs, a driver fault | a write under way ends first, with its read-backs: the IOmcu keeps the supply on until then and 150ms after, 10000ms at most; the full read after it is cut. Then the PD mini's output goes off; the port finds it off, keeps it off 1000ms and is in PWM again: `The port ended the session: power off or restart.` An IOmcu older than link 4.31 keeps the supply on ([A programming port's supply](Safety.md#a-programming-ports-supply)) |
 | The IOmcu starts again | its session and backup are gone; `IOmcu restarted. Tap CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
 | The port reads PWM with a servo read, the switch on, a write done or a read asked for, and no command of the programmer put it there | the servo's values, the backup and the switch are gone on the panel; `The port ended the session: power off or restart.` and `Switch the servo supply off and on, then tap CONNECT.` An operation that ended in the same reading keeps its own line |
 | The panel's control task takes no command for 2s | nothing is sent; `No result from the IOmcu. Tap READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
@@ -1440,7 +1539,27 @@ and without a wait.
 cancelled list, a save of the type set, the lines after a write and on
 LEAVE's page with and without a PD mini. `test_kst_panel_limrun` runs the
 limit run with the servo behind the PD mini's output, and without a PD
-mini, where it writes nothing. `test_kst_file` runs format 1 and format 2
+mini, where it writes nothing, and a run whose read session's LEAVE asks
+nothing about the set points. `test_servo_restore` runs SERVO's question
+after a LEAVE that leaves the output on: after KST and Hitec, YES, NO, YES
+above 6.0V through HV SERVOS ONLY, a port that holds the supply, SERVO's
+keypad and question and OUTPUT ON's hold before it, an OFF, an error's
+OFF, OUTPUT OFF and a STOP, OUTPUT OFF while it or the HV warning stands,
+set points that do not differ, one moved, a
+lowered cap, and the question as drawn in both languages: OUTPUT IS ON in
+its frame, YES and NO each pressed; no question on a board whose ports run
+from their own supply, where a session does not hold the SUPPLY screen;
+and no question at an end of the hold without a LEAVE, at a LEAVE of one
+programmer under the other's hold, or when the ports turn to their own
+supply under a session; and the question once at the release of the
+SUPPLY page's word after a LEAVE, and not after another end. `test_kst_panel_leave` and `test_hitec_panel` run
+the same end to end: a LEAVE offers the set points back; a STOP, a lost
+link, a restart of the IOmcu and RELEASE PORT offer nothing; a KST LEAVE
+asks at the release of the SUPPLY page's word that the Hitec overlay
+passes on.
+`test_kst_prog_cycle` and `test_hitec_prog_safe` count the LEAVEs that
+end in PWM (`kst_prog_leaves()`, `hitec_prog_leaves()`) and none of the
+other ends. `test_kst_file` runs format 1 and format 2
 files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card

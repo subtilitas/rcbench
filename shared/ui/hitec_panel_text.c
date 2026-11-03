@@ -16,6 +16,8 @@
 
 #include "hitec_reg.h"
 #include "link_pages.h"
+#include "ui_board.h"
+#include "prog_choice.h"
 #include "ui_text.h"
 
 /* Last: its layout macros and hp, the state, which no header included
@@ -373,7 +375,11 @@ static void supply_text(char *out, size_t n)
     const unsigned mv = held ? p->mv_open : hitec_prog_mv(p);
     const unsigned ma = held ? p->ma_open : hitec_prog_ma(p);
 
-    if (hitec_prog_series(p) == (uint8_t)HITEC_D && !hitec_prog_rail(p)) {
+    if (ui_board_prog_5v_pin() >= 0) {
+        /* The carrier's buck: 5V whatever is set. */
+        snprintf(out, n, "%s", TR(HP_SUPPLY_5V_FIXED));
+    } else if (hitec_prog_series(p) == (uint8_t)HITEC_D
+               && !hitec_prog_rail(p)) {
         snprintf(out, n, "%s", TR(HP_SUPPLY_AS_IS));
     } else {
         snprintf(out, n, "%u.%uV %umA", mv / 1000u, mv % 1000u / 100u, ma);
@@ -438,8 +444,13 @@ static void pwm_line(char *out, size_t n)
     const unsigned port = (unsigned)hitec_prog_port(p) + 1u;
     const unsigned mv = hitec_prog_mv(p);
 
-    if (!hitec_prog_on_port(p)) {
+    if (prog_choice_offered() && prog_choice_lock_line(out, n)) {
+        /* The carrier's PORT row is locked: why. */
+    } else if (!hitec_prog_on_port(p)) {
         snprintf(out, n, "%s", TR(KP_NEED_TARGET));
+    } else if (ui_board_prog_5v_pin() >= 0) {
+        snprintf(out, n, TR(KP_STATE_PWM_5V), port,
+                 (unsigned)ui_board_prog_5v_pin());
     } else if (hitec_prog_series(p) == (uint8_t)HITEC_CLASSIC
                || hitec_prog_rail(p)) {
         snprintf(out, n, TR(KP_STATE_PWM), port, mv / 1000u,
@@ -539,8 +550,10 @@ void hpn_state_line(char *out, size_t n)
             snprintf(out, n, TR(HP_BAD_ANSWER), hitec_prog_retry_code(p));
         } else {
             (void)hitec_prog_progress(p, &done, &total);
-            snprintf(out, n, TR(HP_ST_READ), done < total ? done + 1u : done,
-                     total);
+            snprintf(out, n,
+                     hitec_prog_rereading(p) ? TR(HP_ST_REREAD)
+                                             : TR(HP_ST_READ),
+                     done < total ? done + 1u : done, total);
         }
         break;
     case HITEC_PROG_CLEARING:
@@ -646,8 +659,11 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_BACKUP_RESTORED] = { TX_KP_M_RESTORED, -1 },
     [HITEC_PROG_MSG_FACTORY_DONE]  = { TX_HP_FACTORY_DONE, -1 },
     [HITEC_PROG_MSG_LOADED_RAW]    = { -1, -1 },
+    [HITEC_PROG_MSG_OTHER_SERVO]   = { TX_HP_OTHER_SERVO,
+                                       TX_HP_OTHER_SERVO_2 },
+    [HITEC_PROG_MSG_READS_DIFFER]  = { -1, -1 },
 };
-_Static_assert(HITEC_PROG_MSG_LOADED_RAW + 1 == HITEC_PROG_MSG_COUNT,
+_Static_assert(HITEC_PROG_MSG_READS_DIFFER + 1 == HITEC_PROG_MSG_COUNT,
                "k_lines has a row for every message");
 
 /**
@@ -815,6 +831,10 @@ static int formatted(const hitec_prog_msg_t *m,
         snprintf(out[0], HITEC_PANEL_LINE, TR(HP_READ_FAIL),
                  (unsigned)(m->arg & 0xFFu));
         return 1;
+    case HITEC_PROG_MSG_READS_DIFFER:
+        snprintf(out[0], HITEC_PANEL_LINE, TR(HP_READS_DIFFER),
+                 (unsigned)(m->arg & 0xFFu));
+        return 1;
     case HITEC_PROG_MSG_RELEASED:
         snprintf(out[0], HITEC_PANEL_LINE, TR(HP_RELEASED),
                  (unsigned)m->arg + 1u);
@@ -855,7 +875,8 @@ int hitec_panel_message_lines(const hitec_prog_msg_t *m,
     for (int i = 0; i < 2; ++i) {
         if (k_lines[m->id][i] >= 0) {
             snprintf(out[n++], HITEC_PANEL_LINE, "%s",
-                     ui_tr((ui_text_id_t)k_lines[m->id][i]));
+                     ui_tr((ui_text_id_t)prog_choice_text(
+                         k_lines[m->id][i])));
         }
     }
     return n;

@@ -71,20 +71,28 @@ size_t out_store_cfg_size(uint16_t version)
     }
 }
 
-bool out_store_cfg_read(uint16_t version, const void *cfg, out_store_t *out)
+void out_store_cfg_defaults(out_store_t *out)
 {
-    const size_t size = out_store_cfg_size(version);
-    if (size == 0u || cfg == NULL || out == NULL) {
-        return false;
+    if (out == NULL) {
+        return;
     }
     memset(out, 0, sizeof(*out));
-    /* What an older record does not carry, as its page starts. */
     supply_page_t supply;
     supply_page_init(&supply);
     memcpy(out->supply, &supply.regs[LINK_SP_ENABLE], sizeof(out->supply));
     sense_page_defaults(out->sense);
     tone_page_defaults(out->tone);
     prog_port_defaults(out->prog, PROG_PORT_DEFAULT_PIN);
+}
+
+bool out_store_cfg_read(uint16_t version, const void *cfg, out_store_t *out)
+{
+    const size_t size = out_store_cfg_size(version);
+    if (size == 0u || cfg == NULL || out == NULL) {
+        return false;
+    }
+    /* What an older record does not carry, as its page starts. */
+    out_store_cfg_defaults(out);
     /* And over it, everything the record does carry. */
     memcpy(out, cfg, size);
     return true;

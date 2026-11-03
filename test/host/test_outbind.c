@@ -1099,8 +1099,8 @@ TEST_CASE(every_board_in_the_table_is_answerable)
 TEST_CASE(nothing_can_be_chosen_on_a_board_that_is_soldered)
 {
     /*
-     * No board in this build is soldered yet, so the rule is held against a
-     * board built here rather than one in the table.  That is the whole
+     * A soldered board without roles is held against a board built here:
+     * the one in the table has roles (test_board_fix.c).  That is the whole
      * reason outbind_pin_selectable() takes the board: a rule nothing can
      * exercise is a rule nobody knows is broken.
      */
@@ -1131,8 +1131,8 @@ TEST_CASE(a_soldered_board_refuses_both_directions)
     /*
      * Refusing only additions would let an operator untick an output that is
      * physically wired, and the page written from that would take away a
-     * driver the board still has a connector for.  There is no soldered
-     * board yet, so the rule is held where it is decided.
+     * driver the board still has a connector for.  A soldered board
+     * without roles is built here; the carrier's are in test_board_fix.c.
      */
     outbind_board_t fixed = *outbind_board(BOARD);
     fixed.fixed = true;

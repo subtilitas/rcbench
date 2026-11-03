@@ -580,6 +580,59 @@ TEST_CASE(hitec_open_and_a_classic_command_report_the_reply)
     CHECK_STR_EQ(passes(5u), "");
 }
 
+/* `more` on a step: LINK_HT_W_CMD_MORE in its command, the page's latch
+ * and a write running until a step without it and its frame's tail;
+ * refused on the rest. */
+TEST_CASE(a_step_marked_more_carries_the_bit)
+{
+    static const char *const k_more[] = {
+        "hitec c 0 0x62 0x10 0x55 more",
+        "hitec send 0 lead=100 1 2 more",
+        "hitec listen 0 window=1000 rx=1 more",
+        "hitec level 0 0 1500 more",
+    };
+
+    fresh();
+    (void)type("hitec open 0 c");
+    (void)passes(60u);
+    for (unsigned i = 0; i < sizeof(k_more) / sizeof(k_more[0]); ++i) {
+        CHECK(has(type(k_more[i]), "started"));
+        CHECK_EQ(g_port.last_cmd[LINK_HT_W_CMD] & LINK_HT_W_CMD_MORE,
+                 LINK_HT_W_CMD_MORE);
+        CHECK(has(passes(3u), "flags=RAIL,CAPTURE,"));
+        CHECK(g_port.more != 0u);
+        CHECK(hitec_port_writing(&g_port));
+    }
+    /* The last step: none, and nothing runs once its frame's tail has
+     * gone. */
+    CHECK(has(type("hitec c 0 0x62 0x1C 0xAA"), "started"));
+    CHECK_EQ(g_port.last_cmd[LINK_HT_W_CMD] & LINK_HT_W_CMD_MORE, 0u);
+    CHECK_EQ(g_port.more, 0u);
+    (void)passes(3u);
+    CHECK(hitec_port_writing(&g_port));
+    (void)passes(HITEC_PORT_WRITE_TAIL_MS);
+    CHECK(!hitec_port_writing(&g_port));
+    /* The mark is the line's: the next line goes without it. */
+    CHECK(has(type("hitec c 0 0x61 0x12 0"), "started"));
+    CHECK_EQ(g_port.last_cmd[LINK_HT_W_CMD] & LINK_HT_W_CMD_MORE, 0u);
+    (void)passes(3u);
+    /* A D series write and a power. */
+    CHECK(has(type("hitec close 0"), "state=FREE"));
+    (void)type("hitec open 0 d");
+    (void)passes(60u);
+    CHECK(has(type("hitec d 0 write 0 0x30 0x0123 more"), "started"));
+    CHECK(g_port.more != 0u);
+    (void)passes(3u);
+    CHECK(has(type("hitec power 0 mv=5000 ma=800 off=100 window=1000 rx=1 "
+                   "more"), "started"));
+    CHECK(g_port.more != 0u);
+    CHECK(has(passes(200u), "flags=RAIL,CAPTURE,MORE"));
+    /* Not a step: the word is no argument there. */
+    CHECK(has(type("hitec open 0 c more"), "err usage: hitec open"));
+    CHECK(has(type("hitec d 0 read 0 0x32 more x"), "err usage: hitec d"));
+    CHECK(has(type("help"), "more, last on send"));
+}
+
 TEST_CASE(hitec_commands_stage_name_the_crc_and_carry_the_key)
 {
     fresh();
@@ -819,9 +872,66 @@ TEST_CASE(the_console_does_not_hold_the_failsafe_off)
     CHECK(g_dev.failsafe);
 }
 
+static unsigned g_ext_calls;
+static unsigned g_ext_tokens;
+
+/* A build's own command: `mine`, and nothing else. */
+static bool ext_mine(void *ctx, char **tok, unsigned n)
+{
+    (void)ctx;
+    g_ext_calls++;
+    g_ext_tokens = n;
+    return strcmp(tok[0], "mine") == 0;
+}
+
+TEST_CASE(a_build_takes_the_lines_no_command_takes)
+{
+    fresh();
+    /* No handler: refused. */
+    CHECK(has(type("mine 1 2"), "err unknown command: mine"));
+    page_console_set_ext(&g_con, ext_mine, NULL);
+    g_ext_calls = 0u;
+    CHECK(!has(type("mine 1 2"), "err unknown"));
+    CHECK_EQ(g_ext_calls, 1u);
+    CHECK_EQ(g_ext_tokens, 3u);
+    /* A line it does not take is refused as before. */
+    CHECK(has(type("frob"), "err unknown command: frob"));
+    CHECK_EQ(g_ext_calls, 2u);
+    /* A command of the console's own never reaches it. */
+    (void)type("pages");
+    CHECK_EQ(g_ext_calls, 2u);
+    page_console_set_ext(&g_con, NULL, NULL);
+    CHECK(has(type("mine"), "err unknown command: mine"));
+    page_console_set_ext(NULL, ext_mine, NULL);
+}
+
+TEST_CASE(a_number_is_digits_and_nothing_else)
+{
+    uint32_t v = 0u;
+
+    CHECK(page_console_number("13", &v));
+    CHECK_EQ(v, 13u);
+    CHECK(page_console_number("0x0D", &v));
+    CHECK_EQ(v, 13u);
+    CHECK(page_console_number("0", &v));
+    CHECK_EQ(v, 0u);
+    CHECK(page_console_number("4294967295", &v));
+    CHECK(!page_console_number("4294967296", &v));
+    CHECK(!page_console_number("13junk", &v));
+    CHECK(!page_console_number("junk", &v));
+    CHECK(!page_console_number("-1", &v));
+    CHECK(!page_console_number("+1", &v));
+    CHECK(!page_console_number("", &v));
+    CHECK(!page_console_number("0x", &v));
+    CHECK(!page_console_number(NULL, &v));
+    CHECK(!page_console_number("1", NULL));
+}
+
 int main(void)
 {
     RUN(pages_lists_every_page);
+    RUN(a_build_takes_the_lines_no_command_takes);
+    RUN(a_number_is_digits_and_nothing_else);
     RUN(a_read_answers_data_and_a_refusal_is_a_nack);
     RUN(a_write_echoes_what_was_stored);
     RUN(a_line_is_edited_and_an_overlong_one_refused);
@@ -838,6 +948,7 @@ int main(void)
     RUN(hitec_open_writes_the_receive_mode_of_a_d_series_line);
     RUN(a_close_of_a_watched_transaction_reports_once);
     RUN(the_raw_example_of_the_docs_runs);
+    RUN(a_step_marked_more_carries_the_bit);
     RUN(the_console_does_not_hold_the_failsafe_off);
     return test_summary("page_console");
 }

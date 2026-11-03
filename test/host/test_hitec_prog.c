@@ -104,14 +104,29 @@ TEST_CASE(a_classic_connect_cycles_the_supply_enters_and_reads_100_cells)
     }
 }
 
+/* The read line of a real connect, and a link that goes silent. */
+TEST_CASE(the_read_line_goes_with_a_silent_link)
+{
+    rig();
+    servo_d485();
+    connected();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_READ);
+    link_silent();
+    prun(400u);
+    CHECK_EQ(pstate(), HITEC_PROG_DOWN);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_NONE);
+}
+
 TEST_CASE(read_all_reads_the_set_again_and_says_what_it_found)
 {
     unsigned done = 0, total = 0;
 
     rig();
     servo_d485();
-    connected();
+    /* ID 7 from the start: a change between two reads with no write is
+     * another servo (test_hitec_prog_chain). */
     g_drv.dreg[0x32] = 7u;
+    connected();
     CHECK_EQ(hitec_prog_read(model()), HITEC_PROG_MSG_NONE);
     CHECK_EQ(pstate(), HITEC_PROG_READING);
     prun(30u);
@@ -669,6 +684,7 @@ TEST_CASE(a_model_the_register_model_does_not_name_is_written_too)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     CHECK_EQ(hitec_prog_write(model()), HITEC_PROG_MSG_NONE);
+    reread();
     until(HITEC_PROG_HELD);
     CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
     CHECK_EQ(g_drv.dreg[0x54], 10u);
@@ -679,6 +695,7 @@ int main(void)
     RUN(a_d_series_connect_enters_reads_all_and_names_the_d485hw);
     RUN(a_d_series_servo_without_a_pd_mini_runs_on_the_supply_as_it_is);
     RUN(a_classic_connect_cycles_the_supply_enters_and_reads_100_cells);
+    RUN(the_read_line_goes_with_a_silent_link);
     RUN(read_all_reads_the_set_again_and_says_what_it_found);
     RUN(leave_restarts_a_d_series_servo_and_gives_the_port_back);
     RUN(leave_cycles_a_classic_servos_supply_and_gives_the_port_back);

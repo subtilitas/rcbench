@@ -121,14 +121,14 @@ TEST_CASE(reads_pass_every_state_and_writes_only_safe_and_quiet)
 TEST_CASE(each_place_allows_what_it_allows)
 {
     fresh();
-    /* A fixed folder: entered, never renamed, moved or deleted. */
+    /* A fixed folder: entered, never renamed or moved; DELETE is asked of
+     * the card, which takes an empty one alone. */
     CHECK_EQ(fm_allowed(&g_bench, FM_OP_OPEN, "", "BENCH", true), FM_OK);
     CHECK_EQ(fm_allowed(&g_bench, FM_OP_RENAME, "", "BENCH", true),
              FM_ERR_FIXED);
     CHECK_EQ(fm_allowed(&g_bench, FM_OP_MOVE, "", "USER", true),
              FM_ERR_FIXED);
-    CHECK_EQ(fm_allowed(&g_bench, FM_OP_DELETE, "USER", "LOGS", true),
-             FM_ERR_FIXED);
+    CHECK_EQ(fm_allowed(&g_bench, FM_OP_DELETE, "USER", "LOGS", true), FM_OK);
     CHECK_EQ(fm_allowed(&g_bench, FM_OP_NEW, "USER", "LOGS", true), FM_OK);
     /* The journal: INFO only. */
     for (int op = 0; op < FM_OP_COUNT; ++op) {
@@ -756,9 +756,21 @@ TEST_CASE(delete_takes_a_run_report_along_and_no_full_folder)
     CHECK_EQ(fm_job_delete(&g_job, &g_bench, 1u, "", "OLD2", true), FM_OK);
     (void)run_out();
     CHECK_EQ(g_job.err, FM_ERR_NOT_EMPTY);
-    /* Refusals: fixed, busy, the wrong kind, a name gone. */
-    CHECK_EQ(fm_job_delete(&g_job, &g_bench, 1u, "", "BENCH", true),
-             FM_ERR_FIXED);
+    /* A fixed folder that holds something stays; an empty one goes, and the
+     * name is free for the bench's next write. */
+    fk_file(&g_card, "BENCH/KST/CONF/A.TXT", NULL, 1u);
+    CHECK_EQ(fm_job_delete(&g_job, &g_bench, 1u, "BENCH/KST", "CONF", true),
+             FM_OK);
+    (void)run_out();
+    CHECK_EQ(g_job.err, FM_ERR_NOT_EMPTY);
+    CHECK(fk_get(&g_card, "BENCH/KST/CONF/A.TXT") != NULL);
+    fk_dir(&g_card, "BENCH/ESC/CONF");
+    CHECK_EQ(fm_job_delete(&g_job, &g_bench, 1u, "BENCH/ESC", "CONF", true),
+             FM_OK);
+    (void)run_out();
+    CHECK_EQ(g_job.err, FM_OK);
+    CHECK(fk_get(&g_card, "BENCH/ESC/CONF") == NULL);
+    /* Refusals: busy, the wrong kind, a name gone. */
     const log_marks_t marks = { .run_dir = CARD_AUTO_LOGS, .run = 0u,
                                 .test_dir = CARD_USER_LOGS, .txt = 9u };
     fm_bench_t quiet = g_bench;

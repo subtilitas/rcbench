@@ -7,8 +7,10 @@
 
 #include "sensors_rows.h"
 
+#include <math.h>
 #include <stdio.h>
 
+#include "link_pages.h"
 #include "outputs_screen.h"
 #include "sense_limit_link.h"
 #include "settings_screen.h"
@@ -26,6 +28,22 @@ void sensors_rows_set_status(uint16_t word)
         s_status = word;
         settings_screen_invalidate();
     }
+}
+
+/** @brief The INA228's state as the control task last said; see s_status. */
+static sens_part_t s_i228;
+
+void sensors_rows_set_i228(sens_part_t st)
+{
+    if (st != s_i228) {
+        s_i228 = st;
+        settings_screen_invalidate();
+    }
+}
+
+sens_part_t sensors_rows_i228(void)
+{
+    return s_i228;
 }
 
 /** @brief The limits' marks as the control task last said: bits 0 to 11
@@ -69,20 +87,6 @@ static bool fitted(int a)
     return a >= 0 && a < SET_INA_PARTS && settings_get_bool(SET_INA_FIT(a));
 }
 
-bool sensors_rows_listed(setting_id_t id)
-{
-    if (!settings_sensors_row(id) || id <= SET_INA_FIT_LAST) {
-        return true;
-    }
-    return fitted(settings_sensors_part(id));
-}
-
-int sensors_rows_heading(setting_id_t id)
-{
-    const int a = settings_sensors_part(id);
-    return (a >= 0 && id == SET_INA_W(3 * a) && fitted(a)) ? a : -1;
-}
-
 const char *sensors_rows_title(int a, char *buf, size_t n)
 {
     if (buf == NULL || n == 0u) {
@@ -93,7 +97,7 @@ const char *sensors_rows_title(int a, char *buf, size_t n)
     return buf;
 }
 
-const char *sensors_rows_state(int a)
+const char *sensors_rows_word(sens_part_t st)
 {
     static const ui_text_id_t k_words[SENS_PART_COUNT] = {
         [SENS_PART_UNKNOWN]   = TX_SENS_ST_UNKNOWN,
@@ -108,14 +112,23 @@ const char *sensors_rows_state(int a)
         [SENS_PART_OLD]       = TX_SENS_ST_OLD,
         [SENS_PART_NO_BUS]    = TX_SENS_ST_NO_BUS,
     };
-    const sens_part_t st = sensors_rows_status(a);
     return ui_tr(((unsigned)st < (unsigned)SENS_PART_COUNT)
                      ? k_words[st] : TX_SENS_ST_UNKNOWN);
 }
 
+const char *sensors_rows_state(int a)
+{
+    return sensors_rows_word(sensors_rows_status(a));
+}
+
 gfx_color_t sensors_rows_state_color(int a)
 {
-    switch (sensors_rows_status(a)) {
+    return sensors_rows_word_color(sensors_rows_status(a));
+}
+
+gfx_color_t sensors_rows_word_color(sens_part_t st)
+{
+    switch (st) {
     case SENS_PART_ONLINE:
         return UI_OK;
     case SENS_PART_UNKNOWN:
@@ -162,6 +175,58 @@ const char *sensors_rows_why(setting_id_t id)
     return TR(SET_UNHELD);
 }
 
+/**
+ * @brief Whether a row is one of the INA228's shunt and maximum rows.
+ * @param id the row's setting
+ * @return true for INA228 shunt and INA228 max current
+ */
+static bool i228_pair_row(setting_id_t id)
+{
+    return id == SET_INA228_UOHM || id == SET_INA228_MAX_A;
+}
+
+const char *sensors_rows_i228_alert(char *buf, size_t n, unsigned uohm,
+                                    unsigned da)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    if (uohm * da <= LINK_SN_I228_DA_UOHM_MAX) {
+        snprintf(buf, n, "%s", TR(ALERT_SENSE_I228_SETUP));
+    } else {
+        const unsigned top = link_sn_i228_max_da(uohm);
+        snprintf(buf, n, TR(ALERT_SENSE_I228_RANGE), uohm, top / 10u, top % 10u);
+    }
+    return buf;
+}
+
+const char *sensors_rows_i228_line(setting_id_t id)
+{
+    /* One line a frame: the row being drawn. */
+    static char s_line[48];
+    if (!i228_pair_row(id)) {
+        return "";
+    }
+    const unsigned uohm = (unsigned)settings_get_int(SET_INA228_UOHM);
+    const unsigned da = (unsigned)lrintf(settings_get(SET_INA228_MAX_A) * 10.0f);
+    if (id == SET_INA228_MAX_A) {
+        const unsigned top = link_sn_i228_max_da(uohm);
+        snprintf(s_line, sizeof(s_line), TR(SET_I228_MAX_LINE), top / 10u,
+                 top % 10u, uohm);
+    } else {
+        snprintf(s_line, sizeof(s_line), TR(SET_I228_SHUNT_LINE),
+                 link_sn_i228_max_uohm(da), da / 10u, da % 10u);
+    }
+    return s_line;
+}
+
+bool sensors_rows_i228_over(void)
+{
+    const unsigned uohm = (unsigned)settings_get_int(SET_INA228_UOHM);
+    const unsigned da = (unsigned)lrintf(settings_get(SET_INA228_MAX_A) * 10.0f);
+    return uohm * da > LINK_SN_I228_DA_UOHM_MAX;
+}
+
 const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
                                unsigned ch, uint16_t ma, int watch)
 {
@@ -197,13 +262,83 @@ const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
     return buf;
 }
 
+/**
+ * @brief @p ma as amperes to 0.001A, with its sign: "0.153A", "-0.005A".
+ * @param buf where it goes.
+ * @param n   the size of @p buf, bytes.
+ * @param ma  the current, mA.
+ * @return @p buf.
+ */
+static const char *amps(char *buf, size_t n, long ma)
+{
+    const unsigned long m = (ma < 0) ? (unsigned long)(-ma)
+                                     : (unsigned long)ma;
+    snprintf(buf, n, "%s%lu.%03luA", (ma < 0) ? "-" : "", m / 1000ul,
+             m % 1000ul);
+    return buf;
+}
+
+const char *sensors_rows_trip_line(char *buf, size_t n, unsigned ch,
+                                   int watch, bool have, int16_t peak_ma,
+                                   uint16_t limit_ma)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    if (ch >= (unsigned)SET_INA_CHANNELS) {
+        return buf;
+    }
+    /* The settings' own option names: the console is English. */
+    const setting_def_t *d = settings_def(SET_INA_W(ch));
+    char target[24] = "";
+    if (watch > SENS_W_NONE && watch < SENS_W_COUNT && d != NULL
+        && d->options != NULL && watch < d->option_count) {
+        snprintf(target, sizeof(target), " (%s)", d->options[watch]);
+    }
+    char peak[40] = "no window read";
+    if (have) {
+        char a[16];
+        snprintf(peak, sizeof(peak), "highest window read %s",
+                 amps(a, sizeof(a), peak_ma));
+    }
+    char limit[16];
+    snprintf(buf, n, "INA3221 0x%02X CH%u%s over its limit of %s: %s",
+             (unsigned)(LINK_SN_I3221_ADDR_MIN + ch / 3u), ch % 3u + 1u,
+             target, amps(limit, sizeof(limit), limit_ma), peak);
+    return buf;
+}
+
+/**
+ * @brief The short name of a board's rail a channel watches, in the
+ *        language showing.
+ * @param code a SENSE_MAP WATCH value.
+ * @return "RAIL A", "RAIL B" or "PROG 5V" for LINK_SM_WATCH_RAIL_A to
+ *         LINK_SM_WATCH_PROG_5V; NULL for any other value.
+ */
+static const char *rail_name(uint16_t code)
+{
+    switch (code) {
+    case LINK_SM_WATCH_RAIL_A:  return TR(SENS_RAIL_A);
+    case LINK_SM_WATCH_RAIL_B:  return TR(SENS_RAIL_B);
+    case LINK_SM_WATCH_PROG_5V: return TR(SENS_PROG_5V);
+    default:                    return NULL;
+    }
+}
+
 const char *sensors_rows_channel(int c, char *buf, size_t n)
 {
     if (buf == NULL || n == 0u) {
         return "";
     }
     buf[0] = '\0';
-    if (c >= 0 && c < SET_INA_CHANNELS) {
+    const char *rail = (c >= 0 && c < SET_INA_CHANNELS)
+        ? rail_name(settings_sensors_watch_code(settings_get_int(SET_INA_W(c))))
+        : NULL;
+    if (rail != NULL) {
+        /* A board's rail, by its name: the board fixes the channel. */
+        snprintf(buf, n, "%s", rail);
+    } else if (c >= 0 && c < SET_INA_CHANNELS) {
         snprintf(buf, n, "0x%02X CH%u",
                  (unsigned)(LINK_SN_I3221_ADDR_MIN + (unsigned)c / 3u),
                  (unsigned)c % 3u + 1u);
@@ -216,7 +351,7 @@ const char *sensors_rows_meter(char *buf, size_t n)
     if (buf == NULL || n == 0u) {
         return "";
     }
-    char ch[12];
+    char ch[16];
     (void)sensors_rows_channel((int)settings_sensors_fast(), ch, sizeof(ch));
     snprintf(buf, n, (ch[0] != '\0') ? "INA3221 %s" : "INA3221", ch);
     return buf;
@@ -227,7 +362,7 @@ const char *sensors_rows_short(char *buf, size_t n)
     if (buf == NULL || n == 0u) {
         return "";
     }
-    char ch[12];
+    char ch[16];
     (void)sensors_rows_channel((int)settings_sensors_fast(), ch, sizeof(ch));
     snprintf(buf, n, (ch[0] != '\0') ? "INA %s" : "INA3221", ch);
     return buf;
@@ -245,18 +380,34 @@ int sensors_rows_watcher(uint16_t code)
     return -1;
 }
 
+const char *sensors_rows_port_watch(unsigned port, char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    buf[0] = '\0';
+    if (port >= LINK_PG_PORTS_MAX) {
+        return buf;
+    }
+    int c = sensors_rows_watcher((uint16_t)LINK_SM_WATCH_PORT(port));
+    if (c < 0) {
+        /* The ports' own 5V, on a board that solders its INA3221 there,
+         * feeds every port. */
+        c = sensors_rows_watcher((uint16_t)LINK_SM_WATCH_PROG_5V);
+    }
+    if (c >= 0) {
+        char name[16];
+        snprintf(buf, n, "INA3221 %s",
+                 sensors_rows_channel(c, name, sizeof(name)));
+    }
+    return buf;
+}
+
 void sensors_rows_publish_watch(void)
 {
     for (unsigned port = 0u; port < LINK_PG_PORTS_MAX; ++port) {
-        const int c = sensors_rows_watcher(
-            (uint16_t)LINK_SM_WATCH_PORT(port));
-        char name[12];
         char label[24];
-        label[0] = '\0';
-        if (c >= 0) {
-            snprintf(label, sizeof(label), "INA3221 %s",
-                     sensors_rows_channel(c, name, sizeof(name)));
-        }
-        outputs_screen_set_port_watch((uint8_t)port, label);
+        outputs_screen_set_port_watch(
+            (uint8_t)port, sensors_rows_port_watch(port, label, sizeof(label)));
     }
 }

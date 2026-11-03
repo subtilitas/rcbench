@@ -28,6 +28,7 @@ enum {
 void hitec_prog_gate_init(hitec_prog_gate_t *g)
 {
     atomic_store(&g->pass, 0u);
+    atomic_store(&g->faults, 0u);
 }
 
 void hitec_prog_gate_offer(hitec_prog_gate_t *g, uint32_t id)
@@ -57,6 +58,26 @@ bool hitec_prog_gate_claim(hitec_prog_gate_t *g, uint32_t id)
 bool hitec_prog_gate_revoke(hitec_prog_gate_t *g, uint32_t id)
 {
     return gate_take(g, id);
+}
+
+uint32_t hitec_prog_gate_faults(const hitec_prog_gate_t *g)
+{
+    return g != NULL ? atomic_load(&g->faults) : 0u;
+}
+
+bool hitec_prog_ses_fault(unsigned r)
+{
+    switch (r) {
+    case HITEC_SES_ERR_NO_SERVO:
+    case HITEC_SES_ERR_ENTRY:
+    case HITEC_SES_ERR_READ:
+    case HITEC_SES_ERR_WRITE:
+    case HITEC_SES_ERR_VERIFY:
+    case HITEC_SES_ERR_STEP:
+        return true;
+    default:
+        return false;
+    }
 }
 
 /* -------------------------------------------------------------- messages */
@@ -243,12 +264,53 @@ void hitec_prog_gate_set(hitec_prog_t *p, hitec_prog_gate_t *g)
 }
 
 /**
+ * @brief Whether a message speaks of the servo or the draft as they stand:
+ *        the read, a loaded or compared file, an edit, what a write waits for.
+ *
+ * A session gone takes them with it.  What stays is what happened and stays
+ * true: a write and its check, a file saved or refused, how an operation
+ * ended, and every message of the danger level.
+ *
+ * @param id The message id.
+ * @return true when the message goes with the session.
+ */
+static bool of_the_session(unsigned id)
+{
+    switch (id) {
+    case HITEC_PROG_MSG_READ:
+    case HITEC_PROG_MSG_WRITE_OFF:
+    case HITEC_PROG_MSG_NOT_READ:
+    case HITEC_PROG_MSG_MUST_READ:
+    case HITEC_PROG_MSG_NO_CHANGES:
+    case HITEC_PROG_MSG_EDITS_PENDING:
+    case HITEC_PROG_MSG_EDIT_REFUSED:
+    case HITEC_PROG_MSG_REC_SAME:
+    case HITEC_PROG_MSG_REC_DONE:
+    case HITEC_PROG_MSG_RECORD_HELD:
+    case HITEC_PROG_MSG_SUM_OK:
+    case HITEC_PROG_MSG_LOAD_SAME:
+    case HITEC_PROG_MSG_LOAD_CHECK:
+    case HITEC_PROG_MSG_LOADED:
+    case HITEC_PROG_MSG_LOADED_RAW:
+    case HITEC_PROG_MSG_OTHER_SERVO:
+    case HITEC_PROG_MSG_READS_DIFFER:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/**
  * @brief The session ends: nothing of it is in mode any more.
  *
  * @param p The programmer.
  */
 static void session_gone(hitec_prog_t *p)
 {
+    if (of_the_session(p->msg.id)) {
+        p->msg.id = HITEC_PROG_MSG_NONE;
+        ++p->msg.seq;
+    }
     p->owned = false;
     p->op = OP_NONE;
     hpf_session(p);
@@ -360,6 +422,10 @@ static void read_done(hitec_prog_t *p)
 {
     const hitec_image_t *img = &p->ses.image;
     const bool had = p->have_servo;
+    /* A write of the session left unverified: its record, where one
+     * stands, links this read to the one before (hpf_read_done()). */
+    const bool owed = p->must_read;
+    bool changed;
 
     if (had) {
         /* What the read before found, for the write side: the draft holds
@@ -379,8 +445,8 @@ static void read_done(hitec_prog_t *p)
         (void)hpg_say2(p, HITEC_PROG_MSG_READ, 0u,
                    img->has_version != 0u ? img->version : 0u);
     }
-    hpw_read_done(p, had, had ? &p->wr_target : NULL);
-    hpf_read_done(p);
+    changed = hpw_read_done(p, had, &p->wr_target);
+    hpf_read_done(p, owed, changed);
 }
 
 void hpg_ses_say(hitec_prog_t *p, hitec_ses_t r)
@@ -426,6 +492,9 @@ static void ses_done(hitec_prog_t *p, hitec_ses_t r)
 {
     const uint8_t op = p->op;
 
+    if (hitec_prog_ses_fault((unsigned)r) && p->gate != NULL) {
+        atomic_fetch_add(&p->gate->faults, 1u);
+    }
     p->st = ST_IDLE;
     p->op = OP_NONE;
     switch (op) {
@@ -445,6 +514,9 @@ static void ses_done(hitec_prog_t *p, hitec_ses_t r)
         break;
     case OP_WRITE:
         hpw_write_done(p, r);
+        break;
+    case OP_CHECK:
+        hpw_check_done(p, r);
         break;
     default: /* OP_LEAVE */
         /* Back to PWM whatever the leave came to: a STOPPED port refuses
@@ -540,6 +612,9 @@ static void on_outcome(hitec_prog_t *p, const hitec_link_outcome_t *o)
             const bool release = p->st == ST_RELEASING;
 
             session_gone(p);
+            if (!release) {
+                ++p->leaves;
+            }
             (void)say(p, release ? HITEC_PROG_MSG_RELEASED
                                  : HITEC_PROG_MSG_LEFT, p->port);
         } else {
@@ -984,7 +1059,7 @@ hitec_prog_msg_id_t hitec_prog_leave(hitec_prog_t *p)
 hitec_prog_msg_id_t hitec_prog_clear(hitec_prog_t *p)
 {
     const hitec_prog_msg_id_t m = hpg_held_idle(p, false);
-    const bool supply_on = p->f.supply_read;
+    const bool supply_on = p->f.supply_read || p->f.fixed_on;
 
     if (m != HITEC_PROG_MSG_NONE) {
         return say(p, m, m == HITEC_PROG_MSG_HELD_OTHER ? p->f.rd.port_no
@@ -1125,6 +1200,11 @@ bool hitec_prog_holds_port(const hitec_prog_t *p)
            && p->f.rd.held;
 }
 
+uint32_t hitec_prog_leaves(const hitec_prog_t *p)
+{
+    return p->leaves;
+}
+
 bool hitec_prog_in_mode(const hitec_prog_t *p)
 {
     return p->owned && p->ses.in_mode != 0u;
@@ -1162,11 +1242,17 @@ uint8_t hitec_prog_layout(const hitec_prog_t *p)
 bool hitec_prog_progress(const hitec_prog_t *p, unsigned *done,
                          unsigned *total)
 {
-    const bool reading = p->st == ST_SES && p->op == OP_READ;
+    const bool reading = p->st == ST_SES
+                         && (p->op == OP_READ || p->op == OP_CHECK);
 
     *done = reading ? p->ses.done : 0u;
     *total = reading ? p->ses.total : 0u;
     return reading;
+}
+
+bool hitec_prog_rereading(const hitec_prog_t *p)
+{
+    return p->st == ST_SES && p->op == OP_CHECK;
 }
 
 unsigned hitec_prog_retry_code(const hitec_prog_t *p)

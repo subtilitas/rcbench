@@ -372,6 +372,20 @@ kst_file_verdict_t kst_file_load(const kst_file_t *file,
                                  kst_type_t servo_type,
                                  kst_file_load_t *out);
 
+/**
+ * @brief Whether a line is a checksum line, the test kst_file_parse() makes:
+ *        its first word, after spaces and tabs, is "checksum" in any case,
+ *        ended by a space, a tab, '=', ':' or the line's end.
+ *
+ * A file with such a line is read as VERIFIED or refused; a text editor
+ * that keeps a file EDITED takes out every line this test names.
+ *
+ * @param s  The line, without its line end; NULL only with @p n 0.
+ * @param n  Its bytes.
+ * @return true for a checksum line.
+ */
+bool kst_file_checksum_line(const char *s, size_t n);
+
 #ifdef __cplusplus
 }
 #endif

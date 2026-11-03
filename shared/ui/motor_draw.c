@@ -585,9 +585,21 @@ static void render_session(gfx_canvas_t *c, unsigned bit, int buf,
                          s.gate.armed);
     }
     const uint32_t rev = prog_ps_revision(ps);
+    const uint32_t hold = prog_ps_hold_revision(ps);
+
     if (s.drawn_sess[buf] != rev) {
         s.drawn_sess[buf] = rev;
+        s.drawn_sess_hold[buf] = hold;
         prog_ps_render(ps, c);
+    } else if (s.drawn_sess_hold[buf] != hold) {
+        /* A hold's fill or a button's press: of the session only that button. */
+        const gfx_rect_t old_clip = c->clip;
+
+        s.drawn_sess_hold[buf] = hold;
+        if (gfx_clip_set(c, prog_ps_hold_rect(ps))) {
+            prog_ps_render(ps, c);
+        }
+        c->clip = old_clip;
     }
 }
 

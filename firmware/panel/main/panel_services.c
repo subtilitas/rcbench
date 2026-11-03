@@ -25,6 +25,7 @@
 #include "prog_link.h"
 #include "sense_link.h"
 #include "sense_page.h"
+#include "sensors_rows.h"
 #include "servo_link.h"
 #include "servo_screen.h"
 #include "servo_source.h"
@@ -86,12 +87,15 @@ static uint32_t           s_kst_stops;    /* stops an abort was sent for */
 /**
  * @brief Whether a servo programmer, KST or Hitec, has a port or an
  *        operation under way: the bench takes no arm then (kst_prog.h,
- *        hitec_prog.h), and the supply's set points are the port's.
+ *        hitec_prog.h), and on a board whose ports run from the PD mini
+ *        the supply's set points are the port's.
  *
  * Control task only.  Read once a pass by kst_port_look(), before the arms
  * of the pass are served: no command of a programmer is taken between the
  * two.  A HITEC port another writer holds counts: the bench console's, or
- * one held over a panel restart, until RELEASE PORT closes it.
+ * one held over a panel restart, until RELEASE PORT closes it.  The error
+ * rule counts a port's hold on the PD mini while this and the SUPPLY
+ * page's LINK_SP_PORT both say so (supply_link_port_holds()).
  */
 bool s_prog_taken;
 
@@ -104,7 +108,14 @@ __attribute__((noinline)) void kst_port_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken();
+    s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken() || esc_taken();
+}
+
+uint32_t prog_faults(void)
+{
+    return kst_link_faults(&s_kst_link)
+           + hitec_prog_gate_faults(&s_hitec_gate)
+           + esc_link_faults(&s_esc_link);
 }
 
 /* The PROG page is not written and the tester commands no port while the
@@ -114,7 +125,11 @@ static __attribute__((noinline)) void prog_hold_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    prog_link_hold(&s_prog_link, kst_prog_port_taken(&rd) || hitec_taken());
+    prog_link_hold_by(&s_prog_link,
+                      kst_prog_port_taken(&rd) ? PROG_LINK_WAIT_KST
+                      : hitec_taken()          ? PROG_LINK_WAIT_HITEC
+                      : esc_taken()            ? PROG_LINK_WAIT_ESC
+                                               : PROG_LINK_WAIT_NONE);
 }
 
 /* The part names as the alerts print them. */
@@ -245,7 +260,13 @@ void sense_link_alerts(void)
         s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I3221_SETUP));
     }
     if ((ev & SENSE_LINK_EV_I228_REFUSED) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I228_SETUP));
+        s_sense_alert_gen = control_alert_numbered(
+            sensors_rows_i228_alert(line, sizeof(line),
+                                    s_sense_link.want[LINK_SN_I228_SHUNT_UOHM],
+                                    s_sense_link.want[LINK_SN_I228_MAX_DA]));
+    }
+    if ((ev & SENSE_LINK_EV_KEPT) != 0u) {
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_KEPT));
     }
     if ((ev & SENSE_LINK_EV_BUS_REFUSED) != 0u) {
         snprintf(line, sizeof(line), TR(ALERT_SENSE_PINS),
@@ -395,15 +416,15 @@ static void servo_source_alerts(void)
  * from the last SENSE read, the INA228's clipped flag, and its totals in
  * SENSE's finer steps while that read is younger than two polls.
  */
-/* The INTERFACES rows the IOmcu does not hold, for SETUP's marks:
+/* The SENSORS rows the IOmcu does not hold, for SETUP's marks:
  * sense_link_unheld() and tone_link_unheld() as of the last poll, and 0
  * with the link down.  Control task writes, app_main reads. */
 atomic_uint s_sense_unheld;
 atomic_uint s_tone_unheld;
 
 hitec_rx_link_t s_hitec_rx_link;
+/** @brief The mode SET_HITEC_RX asks, link_hitec_rx_t. */
 atomic_uint     s_hitec_rx_want;
-atomic_uint     s_hitec_rx_mark;
 
 /*
  * Hitec D receive to the HITEC page's register 23 (hitec_rx_link.h): one
@@ -428,8 +449,6 @@ void hitec_rx_service(void)
         }
         hitec_rx_link_done(&s_hitec_rx_link, result, now_ms());
     }
-    atomic_store(&s_hitec_rx_mark,
-                 (unsigned)hitec_rx_link_mark(&s_hitec_rx_link));
 }
 
 void sense_link_service(bool idle, bench_state_t *bench)
@@ -741,6 +760,8 @@ __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     kst_link_outcome_t o;
     if (kst_link_outcome(&s_kst_link, &o)) {
         s_kst_outcome = o;
+        /* A fault is counted by the module (kst_link_faults()): an error
+         * taken by prog_faults_follow() in the next pump. */
         ++s_kst_outcomes;
     }
     f->now_ms = now_ms();
@@ -765,8 +786,13 @@ __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
             f->port_pin_known |= (uint8_t)(1u << port);
         }
     }
-    /* The PD mini's output while it is the supply, answers and is on. */
-    f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
+    /* The PD mini's output while it is the supply, answers and is on.  On
+     * a board with the ports' own supply the PD mini feeds the servo rails
+     * only, and the ports' 5V has no reading: none. */
+    f->supply_read = s_supply_is_real && s_supply.online && s_supply.output
+                     && !atomic_load(&s_psup_owns);
+    f->fixed_on    = atomic_load(&s_psup_owns)
+                     && prog_supply_link_state(&s_psup_link) == PROG_SUPPLY_ON;
     f->out_mv      = 0u;
     f->out_ma      = 0u;
     f->set_mv      = 0u;

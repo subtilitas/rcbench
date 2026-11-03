@@ -61,11 +61,15 @@ Der Report, der bei liegendem Link alle 5s ausgegeben wird, trägt die Zähler:
 
 ```
 LINK ...
-  bus    tx errors 0 rx errors 0 bus errors 0
+  bus    tx errors 0 rx errors 0 bus errors 0 rx overrun 0 rx missed 0
 ```
 
 Ein Transmit Error Counter, der auf 256 zuläuft, heißt, dass niemand die
-Frames mit einem ACK (Acknowledge) bestätigt. Die Zeile endet auf `-- BUS
+Frames mit einem ACK (Acknowledge) bestätigt. `rx overrun` zählt Frames, für
+die der Empfangs-FIFO des TWAI-Controllers keinen Platz hatte, und `rx missed`
+Frames, für die die Warteschlange des Treibers mit 16 Plätzen keinen Platz
+hatte, beide seit dem Start des Treibers: Frames, die ohne Fehler auf dem Bus
+verloren gehen. Die Zeile endet auf `-- BUS
 OFF`, wenn das Panel bereits aufgehört hat zu senden. Steht dort statt der
 Zähler `the controller is not running`, ist der CAN-Controller gar nicht erst
 gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
@@ -74,7 +78,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.30. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.36. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -147,7 +151,8 @@ Ports, und der Build hat 4 Ports; das Panel liest 24 Register eines
 älteren IOmcu und bietet dessen Ports nur SERVO PWM an
 ([Die Programmierports](#die-programmierports)). Ab 4.27 hält
 SENSE_LIMIT (0x36) eine Stromgrenze je Kanal und markiert jeden Kanal, dessen
-Fenster sie überschritten hat, nur als Alarm; ein älterer IOmcu weist die
+Fenster sie überschritten hat, was das Panel als Fehler behandelt
+([Sicherheit, Fehler](Safety-de.md#fehler)); ein älterer IOmcu weist die
 Page mit BAD_PAGE ab, und das Panel dieses Builds schreibt keine Grenze.
 Ab 4.28 nimmt die FUNC eines Ports auch DSHOT150, DSHOT300 und DSHOT600,
 und die FLAGS-Bits 12 bis 15 sagen, dass das DShot eines Ports seinen Pin
@@ -164,6 +169,34 @@ Schreibregister 28, bevor PWM folgt. Ein älterer IOmcu weist das Bit mit
 BAD_VALUE ab; das Panel setzt es erst ab 4.30 und schickt einem älteren
 IOmcu den REBOOT ohne das Bit, dessen Zyklus in PWM endet
 ([Die Wartezeit nach einem Versorgungszyklus](LinkKST-de.md#die-wartezeit-nach-einem-versorgungszyklus)).
+Ab 4.31 hält SUPPLY ein OFF, das das Panel schreibt, während ein
+Programmierport es hält, vom PD mini zurück, solange der Port in den
+Speicher des Servos schreibt, höchstens 10.000ms nach dem OFF, und weist
+danach das eigene ON des Ports ab, bis der Port loslässt; HITEC nimmt Bit 4
+im Kommando eines Schritts, weitere Schritte dieses Schreibens folgen. Ein
+älterer IOmcu schaltet den PD mini beim OFF aus und weist das Bit mit
+BAD_VALUE ab. Das Panel schaltet eine Versorgung, die ein Port hält, bei
+einem Fehler erst ab 4.31 aus und setzt das Bit erst ab 4.31
+([Sicherheit, Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
+Ab 4.32 schaltet PROG_SUPPLY (0x39) die eigene Versorgung der
+Programmierports auf einem Board, das eine hat, GPIO 21 des
+rbmod-Carriers; ein älterer IOmcu lehnt die Page mit BAD_PAGE ab
+([Carrier, Versorgung](Carrier-de.md#versorgung)). Ab 4.33 nimmt
+SENSE_MAP die WATCH-Werte der eigenen Schienen eines Boards, 0x30
+Servoschiene A, 0x31 Servoschiene B und 0x32 die 5V der Programmierports,
+und hält auf dem rbmod-Carrier seinen INA3221 auf 0x40 mit seinen drei
+Kanälen darauf; ein älterer IOmcu lehnt eine Map mit ihnen mit BAD_VALUE ab
+([Carrier, Der Strommonitor](Carrier-de.md#der-strommonitor)). Ab
+4.34 lesen und schreiben ESC_WIRE (0x3A) und ESC_DATA (0x3B) die Einstellungen
+eines ESC über seinen Signaldraht, und der IOmcu meldet `LINK_CAP_PROGRAM`; ein
+älterer IOmcu lehnt beide mit BAD_PAGE ab ([Die Pages für
+ESC-Einstellungen](LinkEsc-de.md)). Ab 4.35 beantwortet der IOmcu die Op
+READ_HELD, den zweiten Teil eines Lesens von mehr als 16 Registern ([Lesen von
+höchstens 16 Registern](#lesen-von-höchstens-16-registern)); das Panel sendet
+sie keinem älteren IOmcu, der einen Frame mit einer unbekannten Op verwirft.
+Ab 4.36 nimmt der rbmod-Carrier FUNC SERVO PWM auf seinen Programmierports;
+ein älterer Carrier lehnt sie mit BAD_VALUE ab, und das Panel bietet ihm
+keine Wahl des Ports an.
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -191,7 +224,7 @@ Telemetrie des ESC zurückzukehren. Bei einer Messung der Bewegung ist der
 Pegel vor dem Befehl der Mittelwert von CH1 über die 50ms vor der Flanke;
 eine Messung, die scharfgeschaltet wird, während der INA3221 CH1 nicht
 liest, endet sofort als verloren und zählt in CAP_SEQ. Das Panel dieses Builds liest bei jedem Link-Aufbau die Register 0
-bis 11 von SENSE, schreibt die Einstellung aus SETUP INTERFACES Frame für
+bis 11 von SENSE, schreibt die Einstellung aus SETUP SENSORS Frame für
 Frame, wo sie abweicht (`shared/bench/sense_link.c`, `test_sense_link`), und
 liest die Identity-Page erneut, nachdem ein Schreiben angenommen ist. Auf
 SERVO_SENSE schreibt es keine Messung. SERVO_WIN (0x31) liest es an einem
@@ -202,7 +235,7 @@ auch immer ENABLE hält; ein IOmcu von 0.15.0 oder älter nimmt sie mit
 ENABLE 0 an und weist das danach freigegebene Bauteil ab. Das Format auf dem
 Draht und die Protokoll-Minor sind dieselben. Ein Panel von 0.15.0 oder
 älter, dessen zwei Pin-Einstellungen unabhängig sind, sieht die Abweisung bei
-der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GPIO 15/GPIO 17 abgelehnt. SETUP > INTERFACES prüfen.`, einmal je Änderung und je Link-Aufbau,
+der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GPIO 15/GPIO 17 abgelehnt. SENSORS prüfen.`, einmal je Änderung und je Link-Aufbau,
 und die Page behält die Pins, die sie hatte. Seine Pins auf −1 werden als
 ENABLE 0 mit 0 für den Pin geschrieben und angenommen. Eine
 Konfiguration im Flash des IOmcu, deren Pins kein Paar sind, wird
@@ -332,7 +365,7 @@ Das Panel (`shared/bench/tone_link.c`) meldet einen abgewiesenen ersten
 Frame einmal im Band. Einen mit BUSY abgewiesenen Frame bietet es alle 5s
 erneut an (`TONE_LINK_RETRY_MS`), je ein Write, und einen mit BAD_VALUE
 abgewiesenen schreibt es erst wieder, wenn sich die Konfiguration unter
-SETUP INTERFACES ändert oder der Link wieder hochkommt.
+SETUP SENSORS ändert oder der Link wieder hochkommt.
 
 | Panel | IOmcu | Ein abgewiesener erster Frame |
 | --- | --- | --- |
@@ -395,7 +428,7 @@ bleiben Eintrag für Eintrag beschreibbar und gelten mit jeder Bestätigung:
 so schreibt der SERVO-Bildschirm den Bereich eines Kanals und das Panel die
 Endpunkte des Throttle.
 
-| Panel | IOmcu | Eine auf OUTPUTS oder PICK A PIN geänderte Bindung |
+| Panel | IOmcu | Eine auf OUTPUTS geänderte Bindung |
 | --- | --- | --- |
 | 4.10 | 4.10 | vorbereitet und übernommen: SERVO `FRAME_HZ` = 0, 8 Frames an BIND_CFG, 8 an BIND_OUT, `COMMIT`, dann OUTPUTS und CHAN_CFG zurückgelesen. 20 Austausche |
 | 4.10 | 4.9 oder älter | das Panel liest die Minor beim Link-up und sendet nichts an die drei Pages. SERVO `FRAME_HZ` = 0 (ab 4.1), 8 Frames an CHAN_CFG, 8 an OUTPUTS, jeder ein eigener bestätigter Austausch und mit der Bestätigung in Kraft, dann beide Pages zurückgelesen. 19 Austausche. Ein mittendrin verlorener Frame lässt die Einträge davor in Kraft; das Panel zeigt die Pages dann, wie sie sich lesen, und schreibt nichts darüber außer einer Bindung ohne Pin |
@@ -409,8 +442,7 @@ XL2515 hält 2 empfangene Frames, und der IOmcu liest ihn aus seiner
 Hauptschleife; mit einem Anfrage-Frame gleichzeitig unterwegs verzögert ein
 verspäteter Durchlauf einen Frame und verliert keinen an einen vollen Puffer.
 Dasselbe Schreiben als 8 Frames direkt hintereinander verliert 6 davon an
-einen Durchlauf von 20ms (`test_bind_link`). Eine Antwort kommt weiterhin
-als Frames direkt hintereinander: der TWAI-Treiber des Panels puffert 16.
+einen Durchlauf von 20ms (`test_bind_link`).
 
 Die Kosten einer Änderung, und woran sie gemessen werden:
 
@@ -448,6 +480,42 @@ abgebaut, und die geltende Bindung bleibt unverändert.
 Folge durch ein Modell des 2-Frame-Puffers mit einem tauben Fenster von
 20ms, geöffnet alle 125µs, ein verlorener Frame an jeder der 18 Stellen,
 die Timeouts über den Überlauf bei 2^32ms.
+
+### Lesen von höchstens 16 Registern
+
+Eine Antwort kommt als Frames direkt hintereinander, und der TWAI-Controller
+des Panels hält sie in seinem Empfangs-FIFO nur, bis sein Interrupt sie in die
+Warteschlange des Treibers mit 16 Plätzen bringt. Der Interrupt läuft auf Kern 0
+auf Level 1 und nicht aus dem IRAM; ein kritischer Abschnitt, ein Flash-Schreiben
+mit abgeschaltetem Cache oder der Interrupt einer höher priorisierten Aufgabe
+auf diesem Kern hält ihn an. Deshalb fragt ein Lesen höchstens 16 Register ab,
+4 Frames (`LINK_READ_REGS_MAX`, `link_read_split()` in
+`shared/link/link_port.c`). Der FIFO wird mit 64 Byte angenommen, der Größe
+beim Controller der ESP32-Familie: 4 Frames zu 13 Byte lassen 12 Byte frei, ein
+5. Frame passte nicht. ESP-IDF v6.1 nennt die FIFO-Größe des ESP32-P4 nicht;
+seine Registerdatei hat einen 7-Bit-Nachrichtenzähler und keine Größe.
+
+Ein breiteres Lesen sind zwei Austausche. Der erste ist ein READ von 16
+Registern. Der IOmcu liest dieses Fenster und bis zu 16 Register danach in
+einem Aufruf der Page, beantwortet die 16 und behält den Rest. Der zweite ist
+ein READ_HELD (Op 6) des Rests, aus dieser Kopie beantwortet. So sind beide
+Teile die Page, wie sie beim ersten Austausch stand, wie oft sich die Page
+auch ändert, und eine Page, die sich mit jedem Messwert ändert, liest sich
+ganz. Die Kopie bedient ein READ_HELD für dieselbe Page und denselben Offset.
+Das nächste READ von 16 Registern auf irgendeiner Page ersetzt sie. Ein
+READ_HELD, für das nichts behalten ist, bekommt ein NACK `BUSY`, eines für
+mehr Register als behalten ein NACK `BAD_RANGE`. Auf ein abgelehntes READ_HELD
+antwortet das Panel mit einem breiten Lesen, das ebenfalls ein Zustand ist.
+Ein IOmcu vor 4.35 bekommt immer das eine breite Lesen, und seine Antwort von
+bis zu 9 Frames kann den FIFO überlaufen lassen.
+
+| Lesen | Register | Austausche | Frames, Anfragen und Antworten | Als ein Lesen: Austausche, Frames |
+| --- | ---: | ---: | ---: | ---: |
+| PROG, alle 500ms | 28 | 2 | 9 | 1, 8 |
+| ESC_WIRE-Status, alle 500ms frei und 100ms gehalten | 21 | 2 | 8 | 1, 7 |
+| SUPPLY, ab 4.4 | 18 | 2 | 7 | 1, 6 |
+| SERVO_WIN | 28 | 2 | 9 | 1, 8 |
+| Ein Lesen von 32: SENSE_WIN_A, SENSE_WIN_B, KST, HITEC, SENSE_MAP, ESC_DATA, CATALOGUE, PADS, CHAN_CFG, OUTPUTS, ART_DATA | 32 | 2 | 10 | 1, 9 |
 
 ### Der Fenster-Ring
 
@@ -837,13 +905,32 @@ Eine DShot-Funktion wird als 3 bis 5 gespeichert.
 | älter als 4.25 | liest keinen Datensatz der Version 8 und startet mit leerem Speicher | jeder Port steht auf seinem Standardpin und seiner Standardfunktion |
 
 Das Panel schreibt `PIN` und `FUNC` nur, wenn der Bediener darum bittet,
-auf dem Eintrag PROG-PORT von OUTPUTS oder in PICK A PIN
+auf dem Eintrag PROG-PORT von OUTPUTS
 ([Bildschirme](Screens-de.md#der-eintrag-prog-port)), nie aus einer
 gespeicherten Einstellung: die Ports gehören zur Platine, wie die Bindung
 der Ausgänge. Eine Bitte wartet auf einen Prüfstand in Ruhe. Ein Port, der
 das `TARGET` ist, wird zuerst losgelassen (sein `PWM`-Bit aus, `TARGET`
 0), und das Ziel, das der Bildschirm will, wird zurückgeschrieben, nachdem
 die Page erneut gelesen ist.
+
+`PWM` und `TARGET` werden nicht gespeichert. Ein IOmcu, der neu startet,
+liest in beiden 0: die Standard-Servoausgänge sind das Ziel, und kein
+Port pulst. Das Panel schreibt das Ziel, das der SERVO-Bildschirm will,
+auf einem Prüfstand in Ruhe zurück, sein `PWM`-Bit danach, innerhalb von
+500ms, nachdem der Link wieder steht oder das Lesen die Änderung zeigt.
+Eine Position, die vor dem Neustart an den Port ging, wird nicht erneut
+gesendet: die Freigabe, die für sie offen ist, geht an die
+Standard-Servoausgänge, die der IOmcu dann nennt, und ohne gebundene
+Surface dort gilt sie ohne Schreiben als bezahlt. Ein Prüfstand, der
+ARMED war, stoppt mit dem Linkverlust (STOP); der Port gibt keinen Puls
+aus, bis der Bediener wieder auf ARMED schaltet, und das Schalten auf ARMED
+zentriert zuerst das geltende Ziel. `test_servo_link_restart` fährt einen Neustart in
+SAFE und in ARMED, während einer Bitte, einen, den das Panel nicht als
+Linkverlust sieht, zwei hintereinander, einen während eines laufenden
+automatischen Servotests, dessen Freigabe ohne Antwort bleibt, einen
+Linkverlust ohne Neustart und eine Programmiersitzung, die das Ziel
+genommen hat.
+
 | Panel | IOmcu | PROG (0x33) |
 | --- | --- | --- |
 | 4.13 | 4.13 | bedient |
@@ -914,13 +1001,13 @@ das Fenster jedes Kanals, und der Flash-Record über zwei Pages.
 
 ### Identifier
 
-Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read ist deshalb
-ein Frame ohne Nutzdaten.
+Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read oder ein
+READ_HELD ist deshalb ein Frame ohne Nutzdaten.
 
 | Bits | Feld | Breite | Werte |
 | --- | --- | ---: | --- |
 | 28..26 | Priorität | 3 | 0 control (die Pages CONTROL, LIMITS, FAILSAFE und SUPPLY, ihre Quittungen eingeschlossen), 1 normal (darunter SENSE, SERVO_SENSE und TONE), 2 bulk (reserviert); niedriger gewinnt die Arbitrierung |
-| 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (Acknowledge), 5 NACK (Negative Acknowledge) |
+| 25..22 | op | 4 | 1 READ, 2 WRITE, 3 DATA, 4 ACK (Acknowledge), 5 NACK (Negative Acknowledge), 6 READ_HELD (ab 4.35) |
 | 21..14 | page | 8 | Page Map unten |
 | 13..6 | offset | 8 | erstes Register in diesem Frame |
 | 5..0 | count | 6 | Register in diesem Frame, 0..32 |
@@ -948,7 +1035,7 @@ Ein NACK trägt seinen Grund in Register 0:
 | 3 | READ_ONLY |
 | 4 | BAD_VALUE |
 | 5 | NOT_ARMED |
-| 6 | BUSY: die Page nimmt den Wert, und etwas anderes hält vorerst, was er nennt; derselbe Write wird angenommen, sobald es frei ist. Nur TONE, seit 4.17 ([Ein belegter Pin am Phasenabgriff](#ein-belegter-pin-am-phasenabgriff)) |
+| 6 | BUSY: die Page nimmt den Wert, und etwas anderes hält vorerst, was er nennt; derselbe Write wird angenommen, sobald es frei ist. Nur TONE, seit 4.17 ([Ein belegter Pin am Phasenabgriff](#ein-belegter-pin-am-phasenabgriff)). Ab 4.35 auch ein READ_HELD, für dessen Page und Offset nichts behalten ist |
 
 Ein Write gilt ganz oder gar nicht. Jedes Register eines Frames wird geprüft,
 bevor eines davon gespeichert wird; ein NACK lässt die Page also genau so, wie
@@ -958,7 +1045,7 @@ Failsafe ist eine solche Nebenwirkung.
 
 Ein NACK ist eine Antwort, kein Linkfehler. Das Panel zählt sie in seinem
 Link-Bericht (`nack`, [Inbetriebnahme](Bringup-de.md#link-bericht)): eine
-Einstellung aus SETUP INTERFACES, die eine Page ablehnt, ist ein NACK je
+Einstellung aus SETUP, die eine Page ablehnt, ist ein NACK je
 abgelehntem Wert, einmal geschrieben, bis sich der Wert ändert, und ein Pin,
 den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 
@@ -966,7 +1053,7 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 
 | Page | Name | Zugriff | Register |
 | ---: | --- | --- | --- |
-| 0x00 | IDENTITY | lesen | Protokoll major, Protokoll minor, Firmware major, minor, patch, Hardware-Revision, Capabilities-Bitmap |
+| 0x00 | IDENTITY | lesen | Protokoll major, Protokoll minor, Firmware major, minor, patch, Board (1 das von Hand verdrahtete RP2350-CAN, 2 der rbmod-Carrier; [Boards mit verlöteten Pins](#boards-mit-verlöteten-pins)), Capabilities-Bitmap |
 | 0x01 | STATUS | lesen | 10 Register (seit 4.21; davor 8): Zustand (0 idle, 1 armed, 2 failsafe), Fault-Bitmap, Uptime in ms (zwei Register), angenommene Anfragen (zwei Register), Empfangsfehlerzähler des XL2515, Sendefehlerzähler des XL2515, seit dem Einschalten abgelehnte CAN-Frames (zwei Register, niederwertige Hälfte zuerst; [Abgelehnte Frames](#abgelehnte-frames)) |
 | 0x10 | CONTROL | lesen, schreiben | ARM (0 schaltet auf SAFE; 1 schaltet jeden Ausgang auf ARMED; ab 4.18 schaltet 0x0002 die Throttle-Kanäle, 0x0004 die Surfaces und die SERVO-PWM-Programmierports, 0x0006 beide auf ARMED; ein DShot-Programmierport ist ein Throttle (seit 4.28); jeder andere Wert wird mit BAD_VALUE abgewiesen, [Ein Arm für eine Rolle](#ein-arm-für-eine-rolle)), THROTTLE (0..10000, Hundertstel Prozent, und kommandiert jeden Kanal, den CHAN_CFG als Throttle führt, und seit 4.28 jeden DShot-Programmierport), MOTOR_POLES, CLEAR (0x5AFE schreiben, um das Failsafe zu verlassen). Register 0 bis 2 sind der Frame, der auf ARMED schaltet |
 | 0x11 | LIMITS | | deklariert, nicht bedient |
@@ -982,7 +1069,7 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x27 | ART_DATA | lesen, schreiben | die Zeichnung selbst: Register 0 schreiben, um den Block zu nennen, dann die Page lesen. Register 0 liest den gerade bedienten Block zurück, Register 1 bis 31 tragen 62 Bytes davon. Ein Block rückt beim Lesen nicht vor, eine verlorene Antwort wird also erneut angefordert statt übersprungen |
 | 0x28 | PADS | lesen | die Pads, die keine Pins sind, je ein Register: die Pad-Nummer in 6 Bit, was es ist in 2 (0 kein Pad und die Liste endet, 1 Masse, 2 eine Versorgung, 3 keines von beiden) und die Spannung in 8 Bit zu Zehntelvolt. Null Volt bei einer Versorgung heißt, sie ist keine feste Spannung — das ist nicht dasselbe wie die 0V einer Masse. 32 Slots, in Pad-Reihenfolge |
 | 0x29 | SERVO | lesen, schreiben | Register 0: die Frame Rate in Hz des PWM-Ziels, das `TARGET` von PROG nennt, 40 bis 560, oder 0 für seine eigene Rate. Mit den Standard-Servoports als Ziel: jeder PWM-Ausgang, dessen erster Kanal die Rolle surface hat, 0 für die eigene Rate jedes Slots aus OUTPUTS; mit BAD_VALUE abgewiesen, und nichts ändert sich, wenn ein PWM-Slice damit zwei Raten hätte, und solange sie nicht 0 ist, ebenso ein Schreiben auf CHAN_CFG oder OUTPUTS, das das täte (seit 4.1). Mit einem Programmierport als Ziel: nur der Pin dieses Ports, 0 für 50Hz (seit 4.19, [Die Frame Rate des Ziels](#die-frame-rate-des-ziels)). Ebenso abgewiesen, wenn ein PWM-Ausgang oder ein pulsender Programmierport damit einen Endpunkt hätte, der länger als sein Frame ist (seit 4.16, [Ein Puls nicht länger als sein Frame](#ein-puls-nicht-länger-als-sein-frame)). Eine Änderung von `TARGET` setzt Register 0 auf 0 (seit 4.19). Register 1 bis 4, ein Frame: ein Sweep der Surfaces, Kurve (0 gestoppt, 1 Rechteck, 2 Sinus, 3 Dreieck), Geschwindigkeit in Tausendstel Zyklen je Sekunde (50 bis 5000), Amplitude in Befehlseinheiten zu jeder Seite der Mitte (0 bis 500), Haltezeit an jedem Ende in ms (0 bis 5000); ein Sweep startet oder ändert sich nur, wenn alle vier zusammen geschrieben werden, sonst mit BAD_VALUE abgewiesen, und bei einem Prüfstand in SAFE oder nur für Throttle in ARMED mit NOT_ARMED (seit 4.18); 0 in Register 1 allein hält ihn an, und 4 allein hält jede Surface dort, wo ihr Ausgang gerade ist, unter denselben Regeln für das Schalten auf SAFE und 500ms. Ein Sweep, der beim Beginn des Haltens läuft, behält seine Phase (seit 4.6): wie weit er in der Kurve war, und damit seinen Punkt, sein Verweilen und die erreichten Enden; einer, der seine Bewegungen gemacht hat, wird in der Mitte gehalten, auf der er endete. Ein Schreiben wird an der Page gemessen, wie der nächste Durchlauf des IOmcu sie in diesem Moment hinterließe: ein Sweep nach seiner letzten Bewegung, 500ms ohne Schreiben oder Schalten auf SAFE ist beendet, auch wenn das Schreiben vor dem Durchlauf bedient wird, der ihn beendet. 5 allein (RESUME, seit 4.6) setzt diesen Sweep ab der behaltenen Phase fort; die Surfaces werden sofort wieder entlang der Kurve angesteuert und fahren mit ihrer eigenen Rate von dort hin, wo sie gehalten wurden. RESUME wird mit BAD_VALUE abgewiesen, wenn keine Phase behalten ist (beim Beginn des Haltens lief kein Sweep, oder das Halten endete durch ein Schreiben von 0, eine darübergeschriebene Kurve, ein Schalten auf SAFE, 500ms ohne Schreiben oder einen Neustart), und wenn Register 2 bis 5 etwas anderes lesen, als der angehaltene Sweep fährt; mit NOT_ARMED bei einem Prüfstand in SAFE oder nur für Throttle in ARMED. Ein IOmcu mit 4.5 weist 5 mit BAD_VALUE ab. Register 5: wie viele Enden ein danach gestarteter Sweep erreicht, bevor er anhält, 0 für kein Ende. Register 6, nur lesen: die Enden, die der Sweep erreicht hat. Ein Sweep hält bei einem Schreiben von 0, beim Schalten auf SAFE und wenn er 500ms nicht geschrieben wurde an und lässt jede Surface dort, wo ihr Ausgang gerade ist; Wiederholen hält seine Kurve am Laufen, und ein Sweep, der seine Bewegungen gemacht hat, startet durch Wiederholen nicht neu (seit 4.2). Nichts wird gespeichert: Nach einem Neustart des IOmcu steht überall 0 |
-| 0x2A | SUPPLY | lesen, schreiben | ein WeAct PD Power Mini V1 Buck an einem PIO-UART (PIO: Programmable Input/Output) auf zwei Pins des IOmcu (seit 4.3). Register 0 bis 3, ein Frame: Freigabe, der GPIO, der sendet (zum DM des Moduls), und der, der empfängt (sein DP), und die UART-Baudrate-Einstellung des Moduls, 0 bis 6 für 9600, 19200, 38400, 57600, 115200, 230400 und 460800 Baud, oder 7 (seit 4.4), um sie zu finden: der UART versucht nach jedem WHO_AM_I ohne gültige Antwort die nächste Rate, beginnend bei 19200, bis ein Modul einmal geantwortet hat; mit BAD_VALUE abgewiesen bei einem Pin, der reserviert, an einen Ausgang gebunden oder der andere Pin ist, und bei jeder Änderung, solange der Ausgang an verlangt ist oder an sein kann (Bit 6 der Flags). Seit 4.5 wird eine Änderung, nachdem ein Modul geantwortet hat, quittiert und zurückgehalten: Register 0 bis 3 lesen die geltende Verdrahtung, und Flag-Bit 8 ist gesetzt, bis eine nach der Änderung gesendete Zustandslesung des Moduls antwortet, höchstens etwa 1,2s; zeigt sie den Ausgang aus, wird die Änderung übernommen, zeigt sie ihn an oder schlägt sie fehl, wird sie abgewiesen, und Bit 9 ist gesetzt bis zum nächsten Schreiben von Register 0 bis 3. Eine solche Änderung kommt allein, ohne Register 4 bis 6, und ein ON wird mit BAD_VALUE abgewiesen, solange eine zurückgehalten wird. Ein Host älter als 4.5, der die Verdrahtung währenddessen noch einmal schreibt, wird quittiert, und das Zurückhalten geht weiter. Die Pins gehören keinem Ausgang, solange sie gehalten werden. Register 4 bis 6, ein Frame: Ausgang (1 an) und die Sollwerte in mV und mA, bis 20000mV und 3000mA; ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgewiesen, ebenso solange eine eben geschriebene Verdrahtung noch nicht im Flash ist (gespeichert wird 400ms nach dem letzten Schreiben), und der Ausgang geht aus, wenn der Heartbeat ausbleibt. Register 7 bis 16, nur lesen: Flags (Bit 0 online, Bit 1 Ausgang an, Bits 3..2 Modus 0 normal, 1 Konstantstrom, 2 Überstrom, Bit 4 ein Ausgang, der nicht schalten wollte, Bit 5 Sollwerte, die nicht übernommen wurden, Bit 6 ein Ausgang, der an ist oder an sein kann (an gelesen, ein ON noch nicht bestätigt oder ein OFF, das einem Modul geschuldet ist, das aufgehört hat zu antworten), Bit 7 ein Ausgang, den das Modul selbst abgeschaltet hat, während ON verlangt war; aus gehalten, bis OUTPUT mit 0 geschrieben wird; seit 4.5 Bit 8 eine Verdrahtungsänderung, die auf eine Zustandslesung wartet, und Bit 9 eine, die diese Lesung abgewiesen hat, Bit 10 ein Ausgang, abgeschaltet, weil der Eingang des Moduls bei 2 Lesungen hintereinander unter dem Sollwert plus 500mV lag; aus gehalten, bis OUTPUT mit 0 geschrieben wird, seit 4.13 Bit 11 ein Programmierport hält die Register 4 bis 6: ein Schreiben, das kein OFF ist, wird mit BAD_VALUE abgewiesen (seit 4.15 jede Änderung eines Sollwerts; davor ein ON und ein Heben der Spannung), siehe [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)), mV und mA am Ausgang, die zurückgelesenen Sollwerte, Zustand und mV des Eingangs, genommene Messungen und fehlgeschlagene Transaktionen modulo 65536, und (seit 4.4) die Rate in Gebrauch, 0 bis 6, oder 7, solange AUTO keine gefunden hat. Register 17 (seit 4.4), allein als 1 geschrieben, bei verlangtem Ausgang aus und eingeschaltetem Netzteil, startet das Modul neu (SYSTEM_RESET), sobald es geantwortet hat und sein Ausgang aus gelesen wird; es liest 0. Die Verdrahtung wird im Flash des IOmcu gehalten und beim Start mit abgeschaltetem Ausgang gefahren, damit ein Modul, das an blieb, nach einem Neustart abgeschaltet wird; der Befehl wird nicht gespeichert |
+| 0x2A | SUPPLY | lesen, schreiben | ein WeAct PD Power Mini V1 Buck an einem PIO-UART (PIO: Programmable Input/Output) auf zwei Pins des IOmcu (seit 4.3). Register 0 bis 3, ein Frame: Freigabe, der GPIO, der sendet (zum DM des Moduls), und der, der empfängt (sein DP), und die UART-Baudrate-Einstellung des Moduls, 0 bis 6 für 9600, 19200, 38400, 57600, 115200, 230400 und 460800 Baud, oder 7 (seit 4.4), um sie zu finden: der UART versucht nach jedem WHO_AM_I ohne gültige Antwort die nächste Rate, beginnend bei 19200, bis ein Modul einmal geantwortet hat; mit BAD_VALUE abgewiesen bei einem Pin, der reserviert, an einen Ausgang gebunden oder der andere Pin ist, und bei jeder Änderung, solange der Ausgang an verlangt ist oder an sein kann (Bit 6 der Flags). Seit 4.5 wird eine Änderung, nachdem ein Modul geantwortet hat, quittiert und zurückgehalten: Register 0 bis 3 lesen die geltende Verdrahtung, und Flag-Bit 8 ist gesetzt, bis eine nach der Änderung gesendete Zustandslesung des Moduls antwortet, höchstens etwa 1,2s; zeigt sie den Ausgang aus, wird die Änderung übernommen, zeigt sie ihn an oder schlägt sie fehl, wird sie abgewiesen, und Bit 9 ist gesetzt bis zum nächsten Schreiben von Register 0 bis 3. Eine solche Änderung kommt allein, ohne Register 4 bis 6, und ein ON wird mit BAD_VALUE abgewiesen, solange eine zurückgehalten wird. Ein Host älter als 4.5, der die Verdrahtung währenddessen noch einmal schreibt, wird quittiert, und das Zurückhalten geht weiter. Die Pins gehören keinem Ausgang, solange sie gehalten werden. Register 4 bis 6, ein Frame: Ausgang (1 an) und die Sollwerte in mV und mA, bis 20000mV und 3000mA; ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgewiesen, ebenso solange eine eben geschriebene Verdrahtung noch nicht im Flash ist (gespeichert wird 400ms nach dem letzten Schreiben), und der Ausgang geht aus, wenn der Heartbeat ausbleibt. Register 7 bis 16, nur lesen: Flags (Bit 0 online, Bit 1 Ausgang an, Bits 3..2 Modus 0 normal, 1 Konstantstrom, 2 Überstrom, Bit 4 ein Ausgang, der nicht schalten wollte, Bit 5 Sollwerte, die nicht übernommen wurden, Bit 6 ein Ausgang, der an ist oder an sein kann (an gelesen, ein ON noch nicht bestätigt oder ein OFF, das einem Modul geschuldet ist, das aufgehört hat zu antworten), Bit 7 ein Ausgang, den das Modul selbst abgeschaltet hat, während ON verlangt war; aus gehalten, bis OUTPUT mit 0 geschrieben wird; seit 4.5 Bit 8 eine Verdrahtungsänderung, die auf eine Zustandslesung wartet, und Bit 9 eine, die diese Lesung abgewiesen hat, Bit 10 ein Ausgang, abgeschaltet, weil der Eingang des Moduls bei 2 Lesungen hintereinander unter dem Sollwert plus 500mV lag; aus gehalten, bis OUTPUT mit 0 geschrieben wird, seit 4.13 Bit 11 ein Programmierport hält die Register 4 bis 6: ein Schreiben, das kein OFF ist, wird mit BAD_VALUE abgewiesen (seit 4.15 jede Änderung eines Sollwerts; davor ein ON und ein Heben der Spannung), siehe [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md); seit 4.31 wartet ein OFF, das geschrieben wird, während Bit 11 gesetzt ist, auf das Schreiben des Ports in den Speicher des Servos, höchstens 10.000ms nach dem OFF, und das eigene ON des Ports wird danach abgewiesen, bis Bit 11 erlischt, siehe [Sicherheit, Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)), mV und mA am Ausgang, die zurückgelesenen Sollwerte, Zustand und mV des Eingangs, genommene Messungen und fehlgeschlagene Transaktionen modulo 65536, und (seit 4.4) die Rate in Gebrauch, 0 bis 6, oder 7, solange AUTO keine gefunden hat. Register 17 (seit 4.4), allein als 1 geschrieben, bei verlangtem Ausgang aus und eingeschaltetem Netzteil, startet das Modul neu (SYSTEM_RESET), sobald es geantwortet hat und sein Ausgang aus gelesen wird; es liest 0. Die Verdrahtung wird im Flash des IOmcu gehalten und beim Start mit abgeschaltetem Ausgang gefahren, damit ein Modul, das an blieb, nach einem Neustart abgeschaltet wird; der Befehl wird nicht gespeichert |
 | 0x2B | SENSE | lesen, schreiben | zwei I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem Bus auf zwei Pins des IOmcu, ein TI INA228 im Leistungspfad des ESC und ein TI INA3221 an der Servoversorgung (seit 4.7). Register 0 bis 3, ein Frame: Freigabe (Bit 0 INA228, Bit 1 INA3221, Bit 2 der Ausgangsencoder AS5600 seit 4.9), der SDA-GPIO, der SCL-GPIO und der Takt, 400kHz und kein anderer Wert: bei 100kHz dauert ein Lesezugriff 480 bis 750µs, und der 1-ms-Zeitplan des IOmcu passt nicht. Der Zeitplan liest INA3221 CH1 mit 1000Hz, CH2 und CH3 abwechselnd mit je 500Hz, die Busspannung jedes Kanals alle 24ms (41,7Hz), Strom und Spannung des INA228 mit je 500Hz, seine Chip-Temperatur, Mask/Enable des INA3221 und das zurückgelesene Konfigurationsregister jedes Bauteils (seit 4.11) mit je 25Hz und DIAG_ALRT, ENERGY und CHARGE des INA228 mit 50Hz. Beide Module tragen Pull-ups an SDA und SCL, und die liegen parallel: der DAOKAI-INA3221 hat 10kΩ nach VS (3,3V); Wert und Schiene der Pull-ups des MATEK-INA228 sind unbekannt. Der Gesamtwert muss über etwa 1kΩ bleiben: ein I2C-Ausgang zieht 3mA bei 0,4V, und (3,3V − 0,4V) / 3mA sind 967Ω. Unter 10kΩ verkürzt er die Anstiegszeit: die Grenze von 300ns bei 400kHz erlaubt mit 10kΩ allein 35pF Buskapazität, mit weniger mehr. Die GPIO-Nummer von SDA ist modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach, das Paar eines I2C-Blocks (standardmäßig GPIO 16 und GPIO 17). Register 4 bis 7, ein Frame: die Adresse des INA228, 0x40 bis 0x4F (Standard 0x45, die des MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41); sein Shunt in µΩ, 50 bis 20000 (Standard 200); der Strom, auf den sein Bereich eingestellt ist, in 0,1A, 10 bis 3000 (1,0 bis 300,0A, das Auslegungsmaximum des Prüfstands; Standard 2048). Das Maximum wählt nur ADCRANGE: 1, solange die Shuntspannung dabei höchstens 40,96mV beträgt, 0 bis 163,84mV, und darüber wird das Schreiben abgewiesen. CURRENT_LSB ist der Schritt des Shunt-ADC geteilt durch den Shunt (78,125 nV oder 312,5 nV durch R), damit begrenzen CURRENT und die Shuntspannung gemeinsam, und SHUNT_CAL ist in beiden Bereichen 4096. Ein Shunt, dessen Vollausschlag im gewählten Bereich 2000A übersteigt, wird ebenfalls abgewiesen; unter 81,92 µΩ gilt also nur ADCRANGE 1. Die Regel ist die des Treibers, `ina228_calibrate()`; Register 7 reserviert. Register 8 bis 11, ein Frame: die Adresse des INA3221, 0x40 bis 0x43 (Standard 0x40); sein Shunt in 0,1mΩ, 50 bis 10000 (5mΩ bis 1Ω, Standard 1000, die 0,1Ω, die bis 1,638A messen); die gelesenen Kanäle, Bits 0..2 für CH1 bis CH3, mindestens einer, solange er freigegeben ist (Standard CH1); Register 11 reserviert. Die reservierten Register lesen 0 und nehmen nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, SDA und SCL nicht das Paar eines Blocks, was auch immer ENABLE hält, bei freigegebenem Bauteil ein Pin, der reserviert, an einen Ausgang gebunden oder von SUPPLY gehalten ist, beide Bauteile auf einer Adresse, solange beide freigegeben sind, und jede Änderung bei einem Prüfstand in ARMED; ein Schreiben der geltenden Konfiguration wird angenommen. Ein Frame, der kein Paar ist, wird angenommen: ENABLE 0 mit SDA oder SCL 0, so schreibt ein Panel nicht gesetzte Pins. Die Pins gehören keinem Ausgang, solange eines der Bauteile freigegeben ist, und ein Schreiben auf OUTPUTS, das einen davon bindet, wird abgewiesen. Register 12 bis 25, nur lesen: Flags (Bit 0 INA228 online, Bit 1 seine letzte Identitätslesung war die eines INA228, Bit 2 an seiner Adresse antwortet etwas anderes, Bit 3 ein Strom lag im letzten 50-ms-Fenster oder seit dem Schalten des Laufs auf ARMED am Ende seines Bereichs, Strom und Leistung in BENCH oder ihre Spitzen sind dann Grenzen und keine Werte; Bits 4 bis 6 dieselben drei für den INA3221; Bit 8 der Bus ist auf seinen Pins offen, Bit 9 SDA oder SCL wird low gehalten und wird freigetaktet; Leitungen, die im Ruhezustand low sind und innerhalb von 50µs an den eigenen Pad-Pull-ups von 32 bis 86kΩ steigen, hält nichts (Pins ohne angeschlossenes Bauteil und ohne Pull-up), sie lassen Bit 9 frei, und die Bauteile antworten nicht), die Adressen, die beim letzten Scan geantwortet haben (Bit n für 0x40 + n), DEVICE_ID des INA228 und Die-ID des INA3221 wie gelesen, fehlgeschlagene Transaktionen modulo 65536, die Chiptemperatur des INA228 in 0,1°C (vorzeichenbehaftet) und DIAG_ALRT, seine Ladung in 0,01mAh (vorzeichenbehaftet, 32 Bit, Register 19 und 20, niederwertiges zuerst) und Energie in 0,01Wh (32 Bit, Register 21 und 22, niederwertiges zuerst) seit dem Schalten des Laufs auf ARMED, die Telemetriespannung (10mV) und der Telemetriestrom (10mA) des ESC selbst und ihre Gültigkeitsbits (Bit 0 Spannung, Bit 1 Strom). Register 26 bis 30, nur lesen, seit 4.9: Flags, RAW ANGLE, MAGNITUDE, Zähler und Ruhezeit in ms des Ausgangsencoders (siehe unten). Register 31, nur lesen, seit 4.11: `RESETS`, die zurückgesetzt gefundenen Strommonitore, der INA228 im Low-Byte und der INA3221 im High-Byte, je modulo 256 ([Der Fenster-Ring](#der-fenster-ring)); ein IOmcu mit 4.10 oder älter liest 0. Register 0 bis 11 werden im Flash des IOmcu gehalten |
 | 0x2C | SERVO_SENSE | lesen, schreiben | die Kanäle des INA3221 und eine Bewegung, gemessen auf dem Takt des IOmcu (seit 4.7). Register 0 bis 11, nur lesen, vier je Kanal ab CH1: mittlerer Strom (mA, vorzeichenbehaftet), höchster Strom (mA, vorzeichenbehaftet), mittlere Busspannung (mV) und niedrigste Busspannung (mV) über das letzte 50-ms-Fenster, die Spannung auf der Lastseite des Shunts. Register 12, nur lesen: die Fensternummer modulo 65536; ein Lesen beendet kein Fenster. Register 13, nur lesen: Bits 0..2 das Fenster eines Kanals enthält Messungen, Bits 4..6 eine davon lag am Ende des Bereichs (163,8mV über dem Shunt), womit mittlerer und höchster Strom dieses Kanals Untergrenzen sind, Bit 7 dasselbe für die Messung der Bewegung. Register 14 bis 17, ein Frame: eine Messung, Bit 7 gesetzt, der INA3221-Kanal in Bits 0..1, nur CH1 (2 und 3 werden abgewiesen; das Feld bleibt für einen Kanal, der später schnell genug gelesen wird), und in Bits 8..10 der Ausgangskanal (0 bis 7), dessen nächstes geändertes Kommando die Zeitmessung startet, oder mit gesetztem Bit 11 (seit 4.13) der Programmierport in diesen Bits ([Die Programmierports](#die-programmierports)); der Haltestrom, bei dem die Bewegung endet, in mA, vorzeichenbehaftet, -32768 bis 32767 (seit 4.11; davor 0 bis 32767, ein größerer Wert abgewiesen); die Schwelle für Bewegung und das Band für Ankunft, je 1 bis 32767mA. Ein Scharfschalten ist der ganze Frame und startet eine laufende Messung neu. 0 in Register 14 entschärft und wird nie abgewiesen; am Anfang des Frames geschrieben, werden die anderen drei nicht gespeichert. Mit BAD_VALUE abgewiesen: jedes andere Schreiben, das nicht der ganze Frame ist, andere Bits in Register 14, ein Wert außerhalb seines Bereichs, ein anderer Kanal als CH1 oder einer, den SENSE nicht liest, und ein Ausgangskanal, der keine Surface an einem PWM-Slot ist, den der IOmcu gebunden hat (ein Pin, dessen Compare-Register ein anderer Pin hält, ist es nicht); mit NOT_ARMED bei einem Prüfstand in SAFE oder nur für Throttle in ARMED (seit 4.18). Ein Prüfstand, der aufhört, die Surfaces zu treiben, beendet eine nicht fertige Messung. Register 18 bis 24, nur lesen: der Zustand (0 idle, 1 scharf, 2 wartet auf Bewegung, 3 bewegt sich, 4 angekommen, 5 an einem Endanschlag eingeschwungen, 6 zu spät: Bewegung und keine Ankunft innerhalb von 3000ms plus der Verzögerung des Strommessers, 7 unerkannt: keine Bewegung in dieser Zeit, 8 verloren: der INA3221 hat aufgehört zu antworten, oder binnen 3000ms nach dem Scharfschalten kam keine PWM-Flanke), fertige Messungen modulo 65536, die Zeit vom PWM-Frame mit dem neuen Puls bis zur Bewegung und bis zur Ankunft in 0,1ms, aufgelöst auf das Abtastintervall von CH1, 1ms, höchster und mittlerer gefilterter Strom der Bewegung (mA, vorzeichenbehaftet) und die Zahl der Messungen darin. Nichts wird gespeichert: Nach einem Neustart des IOmcu steht überall 0 |
 | 0x2D | TONE | lesen, schreiben | die Beeps eines ESC, gehört an einer Motorphase über einen Vorwiderstand und eine Z-Dioden-Klemme an einem GPIO des IOmcu, gestempelt von einer PIO-State-Machine mit 26,7ns (seit 4.8). Register 0 bis 3, ein Frame: Freigabe (Bit 0), der GPIO (Standard 22, Pad 29), der tiefste gehörte Ton in Hz (50 bis 2000, Standard 400) und der höchste (über dem tiefsten, bis 6900, Standard 6500). Register 4 bis 7, ein Frame: die Tonhöhenänderung in Prozent, die ohne Stille einen neuen Beep beginnt (0 trennt nur an Stille, höchstens 50, Standard 8), die Stille, die einen Beep beendet, in ms (1 bis 100 und mindestens die Periode des tiefsten Tons, Standard 3), die Tonperioden, die einen Beep ausmachen (1 bis 64, Standard 3), und Register 7 reserviert. Das reservierte Register liest 0 und nimmt nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, eine Kombination, die der Detektor ablehnt (eine Stille, die kürzer ist als die Periode des tiefsten Tons), und, solange der Tap freigegeben ist, ein GPIO hinter der Bank (63), von der Platine reserviert oder ein ADC-Pin (ADC: Analog-Digital-Wandler): GPIO 26 bis GPIO 29 des RP2350A und GPIO 40 bis GPIO 47 des RP2354B, die nicht fehlertolerant sind, sowie jeder GPIO an einem IOmcu, dessen Core 1 beim Booten nicht gestartet ist (bis zu einem Neustart läuft keine Erfassung). Mit BUSY abgewiesen (seit 4.17; davor BAD_VALUE), solange der Tap freigegeben ist: ein GPIO, der an einen Ausgang gebunden oder von SENSE, SUPPLY oder einem Programmierport gehalten ist, und eine Erfassung, die der IOmcu vorerst nicht starten kann (Core 1 in einem Durchlauf, oder keine PIO-State-Machine und kein DMA-Kanal übrig neben den Ausgängen und der Versorgung) ([Ein belegter Pin am Phasenabgriff](#ein-belegter-pin-am-phasenabgriff)). Der GPIO gehört keinem Ausgang, solange der Tap freigegeben ist, und ein Schreiben auf OUTPUTS, SENSE oder SUPPLY, das ihn nimmt, wird abgewiesen. Eine Änderung wird in ARMED wie in SAFE angenommen: der Tap ist ein Eingang und treibt nichts. Register 8 bis 12, nur lesen: Flags (Bit 0 die Erfassung läuft, Bit 1 der Tap ist freigegeben und sein Pin konnte nicht genommen werden, Bit 2 der Erfassungsring oder die FIFO der State Machine ist seit Beginn der Erfassung übergelaufen, Bit 3 eine Folge von Bursts läuft, Bit 4 das letzte Fenster enthielt einen Ton), die Fensternummer modulo 65536 (Fenster zu 8ms), der Ton des letzten Fensters in 0,1Hz (0 für keinen) und die Tonperioden darin, und die Nummer des neuesten Beeps. Der IOmcu hält die letzten 64 Beeps und nummeriert sie von 1 bis 65535, dann wieder ab 1; die neueste Nummer ist vor dem ersten Beep 0. Register 13, EVT_SEL, ist das einzige beschreibbare Register nach Register 7 und wird nicht gespeichert: die Nummer des Beeps, den die Register 14 bis 21 zeigen. Ein Lesen verbraucht keinen Beep, eine auf dem Link verlorene Antwort verliert also nichts. Register 14 bis 21, nur lesen: noch einmal EVT_SEL, solange dieser Beep unter den 64 ist, sonst 0, wobei Register 15 bis 21 0 lesen; der erste Anstieg des Beeps in ms seit Beginn der Erfassung (32 Bit, Register 15 und 16, niederwertiges zuerst); seine Länge bis zur letzten Flanke in 0,1ms; seine mittlere Tonhöhe in 0,1Hz; seine Bursts; der Träger, mit dem er zerhackt war, in 100-Hz-Schritten (0 nicht zerhackt); Flags (Bit 0 er begann bei einer Tonhöhenänderung ohne Stille davor, Bit 1 er endete bei einer). Register 22 und 23, nur lesen: verlorene Beeps und Lows unter 500ns, die der Detektor ignoriert hat, je modulo 65536. Der 8-µs-Hold-off der Erfassung entfernt jedes Low unter 8µs, bevor der Detektor es sieht; Register 23 liest deshalb am Tap 0. Die Erfassung beginnt, wenn der Tap freigegeben wird oder sein Pin wechselt, und leert dann die 64. Register 0 bis 6 werden im Flash des IOmcu gehalten, und der Tap startet beim Booten. Solange der Tap gesperrt ist, ist der Pin ein Eingang mit eingeschaltetem Pull-down (32 bis 86kΩ), und der bleibt an, solange der Tap läuft |
@@ -994,9 +1081,13 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 28 Register, vor 4.26 24. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte, dann die FUNC jedes Ports in 24 bis 27 (seit 4.26). [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew, Endpunkte und FUNC werden im Flash des IOmcu gehalten |
 | 0x34 | `HITEC` | lesen, schreiben | rohe Transaktionen der Hitec-Servoleitung auf einem Programmierport (seit 4.23). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Zahl der Transaktionen, Ergebnis und Abweisung, Anzahl und Flags des Mitschnitts, das Ergebnis des Dekoders, den dekodierten Wert, `VIEW`, die empfangenen Bytes in 8 Registern und in 16 Registern die Startzeiten der Bytes oder den Lauf. Ein Schreiben nimmt 24: das Kommando in den Registern 0 bis 3, ein Frame, die bereitgestellte Transaktion, Dekoder und Sollwerte eines POWER in 4 bis 21, `VIEW` in 22 und den Empfangsmodus einer Leitung der D-Serie in 23 (seit 4.24). [Der Programmierport für Servos von Hitec](LinkHitec-de.md) nennt die Regeln. Nichts wird gehalten |
 | 0x35 | SENSE_MAP | lesen, schreiben | bis zu 4 INA3221 an 0x40 bis 0x43 auf dem Bus von SENSE (seit 4.25). Register 0 die bestückten Bauteile, Bit a für 0x40 + a; 1 `FAST`, der Kanal, der jede 1ms gelesen wird (0 bis 11, 0xFF keiner); 2 bis 13 der Shunt jedes Kanals in 0,1mΩ (0 aus, 50 bis 10000); 14 bis 25 was jeder Kanal misst (0 nichts, 0x01 bis 0x08 ein Ausgangskanal, 0x10 bis 0x13 ein Programmierport, 0x20 die Versorgung); nur lesbar: 26 bis 29 die Die-ID jedes Bauteils, 30 Flags, 31 reserviert. Die Register 0 bis 25 hält der IOmcu im Flash. Solange die Map in Kraft ist, spiegeln Bit 1 von ENABLE und die Register 8 bis 10 von SENSE sie. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md) nennt die Regeln |
-| 0x36 | SENSE_LIMIT | lesen, schreiben | eine Stromgrenze je Kanal von SENSE_MAP (seit 4.27), nur ein Alarm. Register 0 bis 11 die Grenze jedes Kanals in mA (0 keine, 1 bis 32767), im Flash des IOmcu gehalten; nur lesbar: 12 `OVER`, Bit c ein Fenster von Kanal c über seiner Grenze seit dem letzten Lesen des Registers, das es löscht; 13 `OVER_COUNT`, Kanal-Fenster über der Grenze, modulo 65536; 14 und 15 reserviert. 16 Register. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md#sense_limit) nennt die Regeln |
+| 0x36 | SENSE_LIMIT | lesen, schreiben | eine Stromgrenze je Kanal von SENSE_MAP (seit 4.27); der IOmcu markiert eine überschrittene Grenze, das Panel behandelt sie als Fehler. Register 0 bis 11 die Grenze jedes Kanals in mA (0 keine, 1 bis 32767), im Flash des IOmcu gehalten; nur lesbar: 12 `OVER`, Bit c ein Fenster von Kanal c über seiner Grenze seit dem letzten Lesen des Registers, das es löscht; 13 `OVER_COUNT`, Kanal-Fenster über der Grenze, modulo 65536; 14 und 15 reserviert. 16 Register. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md#sense_limit) nennt die Regeln |
 | 0x37 | SENSE_WIN_A | lesen | das letzte 50-ms-Fenster der Kanäle 0 bis 5 (seit 4.25): die Fensternummer, Flags, und 5 Register je Kanal: mittlerer und höchster Strom (mA, mit Vorzeichen), mittlere und niedrigste Busspannung (mV), Flags. Jedes Schreiben wird mit READ_ONLY abgewiesen. Nichts wird gehalten |
 | 0x38 | SENSE_WIN_B | lesen | das der Kanäle 6 bis 11, wie SENSE_WIN_A (seit 4.25) |
+| 0x39 | PROG_SUPPLY | lesen, schreiben | die eigene Versorgung der Programmierports auf einem Board, das sie mit einem Pin des IOmcu schaltet: GPIO 21 des rbmod-Carriers, der Enable seines 5V-Abwärtswandlers M7 (seit 4.32). Register 0: Ausgang, 1 ein, 0 aus. Ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgelehnt, und mit BAD_VALUE auf einem Board ohne den Schalter und solange ein Programmierport die Versorgung hält. Ein OFF wird immer genommen; während ein Port in den Speicher des Servos schreibt, wartet es auf das Ende des Schreibens, höchstens 10.000ms nach dem OFF, und das eigene ON des Ports wird danach abgelehnt, bis der Port loslässt. Der Ausgang geht aus, wenn der Heartbeat endet oder der Link verstummt, und ein OFF wartet auf das Ende eines Frames, den ein Port auf der Leitung hat, höchstens 12ms. Register 1 bis 3, nur lesen: Flags (Bit 0 das Board hat den Schalter, Bit 1 der Pin schaltet die Versorgung ein, Bit 2 ein Programmierport hält sie, Bit 3 das OFF des Panels wartet auf das Schreiben eines Ports), der schaltende GPIO (255 ohne) und die Spannung in mV (5000 auf dem Carrier, 0 ohne). Register 4, Panel: eine 1, allein geschrieben, sagt, dass das Panel die Page kennt; ohne lebenden Heartbeat mit NOT_ARMED abgelehnt, mit BAD_VALUE für jeden anderen Wert; es liest sich 0 ab jedem Start und ab jedem Verlust des Heartbeats. Ein Programmierport schaltet die Versorgung nur ein, solange es 1 liest, also bekommen die Ports eines Panels vor 4.32 sie nie; das Panel schreibt es, sobald ein Lesen 0 findet. Nicht gespeichert: bei jedem Start aus. Auf dem Carrier schalten die Ports für KST und Hitec diese Versorgung statt des PD mini |
+| 0x3A | `ESC_WIRE` | lesen, schreiben | die Einstellungen eines ESC über seinen Signaldraht auf dem Pin eines Throttle-Slots oder DShot-Ports (seit 4.34): Zustand, Leitung, Ergebnis, Operationen ([Die Pages für ESC-Einstellungen](LinkEsc-de.md)) |
+| 0x3B | `ESC_DATA` | lesen, schreiben | der Block von Page, Entwurf, Name oder Textwerten, den `ESC_WIRE` nennt, 64B (seit 4.34) |
+| 0xE0 | `CONSOLE` | lesen, schreiben | nur in Debug-Konsolen-Builds (`IOMCU_CONSOLE`); kein veröffentlichtes Image hat sie: [Die Prüfstandskonsole](BenchConsole-de.md#über-den-link-ohne-usb-am-iomcu) |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
 | 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
 
@@ -1312,7 +1403,7 @@ geteilten Slice, der 0 und 50Hz nimmt und 40, 300 und 560Hz abweist, eine
 
 Ab 4.20 liefert der IOmcu auf ARTWORK (0x26) und ART_DATA (0x27) eine
 Zeichnung seiner eigenen Platine: den Umriss, die Bauteile als flache Formen
-und jedes Pad mit dem, was es ist. PICK A PIN zeichnet die Platine daraus
+und jedes Pad mit dem, was es ist. OUTPUTS zeichnet die Platine daraus
 maßstäblich. Eine neue Platine bringt ihre Zeichnung im eigenen
 IOmcu-Image mit; das Panel braucht dafür keine Änderung. Die Zeichnung
 des RP2350-CAN hat 1 560 Bytes in 26 Blöcken: 40 Pads und 102 Formen auf
@@ -1359,7 +1450,7 @@ führt es mit `--check` aus.
 | Panel | IOmcu | Verhalten |
 | --- | --- | --- |
 | 4.20 | 4.20 | wie oben |
-| 4.20 | 4.19 oder älter | das Panel liest ARTWORK nicht und zeichnet die Platine aus SHAPE. Das Log sagt `hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its shape` |
+| 4.20 | 4.19 oder älter | das Panel liest ARTWORK nicht und zeichnet die Platine aus SHAPE. Das Log sagt `hardware 1 serves no board drawing (protocol 4.19); OUTPUTS draws its shape` |
 | 4.19 oder älter | 4.20 | das Panel liest sieben ARTWORK-Register, findet Format 2 und holt nichts: `no photograph from hardware 1: it describes a photograph that cannot be one`. Ein früher behaltenes Foto erscheint weiter |
 
 `test_link_drawing`, `test_board_drawing`, `test_link_artxfer`,
@@ -1371,6 +1462,80 @@ jeder Transaktion eines Abrufs, eine behaltene Zeichnung unter derselben
 Board-ID mit anderem Hash und eine Platine, die der Build des Panels nicht
 kennt. `test/tools/test_gen_board_drawing.py` hält den Generator an dieselben
 Regeln.
+
+### Boards mit verlöteten Pins
+
+Register 5 von IDENTITY nennt das Board, für das ein IOmcu-Image gebaut ist.
+Das Image wird je Board gebaut (CMake `IOMCU_BOARD`), der Wert steht also
+fest im Image.
+
+| Wert | Board | Image | Pins |
+|---|---|---|---|
+| 1 | RP2350-CAN-Modul, von Hand verdrahtet | `rcbench-iomcu.*` | am Panel gewählt |
+| 2 | rbmod-Carrier: dasselbe Modul auf einer Trägerplatine | `rcbench-iomcu-rbmod.*` | verlötet; jede Rolle auf einem Pin |
+
+Die Pins und Stecker des rbmod-Carriers stehen in [Der rbmod-Carrier](Carrier-de.md)
+(`shared/outputs/out_board_rbmod.c`).
+
+Auf Board 2 hält der IOmcu jede Rolle auf ihrem Pin:
+
+- CATALOGUE listet die 26 Header-Pins des Moduls. Die Pins der Rollen sind
+  frei; jeder andere Pin ist reserviert und wird jeder Page verweigert.
+- OUTPUTS und BIND_OUT: ein Slot mit Treiber liegt auf PWM01 bis PWM04
+  (GPIO 2, 4, 5 oder 1). Eine Page mit einem Slot mit Treiber auf einem
+  anderen Pin wird mit BAD_VALUE abgelehnt. Ein Slot mit Treiber NONE wird
+  nicht geprüft.
+- PROG: der PIN jedes Ports ist sein eigener Pin (Port 0 GPIO 13, Port 1
+  GPIO 14, Port 2 GPIO 15, Port 3 GPIO 0). FUNC ist ab jedem Start NONE; ab
+  4.36 nimmt sie NONE oder SERVO PWM, den Puls des Servotesters
+  ([Carrier: Der Programmierport](Carrier-de.md#der-programmierport)). Ein
+  PIN-Schreiben eines anderen Pins, auch `LINK_PG_PIN_NONE`, und ein
+  FUNC-Schreiben einer DShot-Rate werden mit BAD_VALUE abgelehnt; ein
+  Carrier mit 4.35 oder älter lehnt auch SERVO PWM ab. SERVO PWM auf Port 3
+  (GPIO 0) wird abgelehnt, solange PWM04 (GPIO 1, Slice 0) einen PWM-Slot
+  trägt, wie auf jedem Board, und ein auf diesem Slice gebundener PWM-Slot
+  lässt den Port zuerst los. Ein OUTPUTS-Schreiben oder ein BIND-Commit,
+  das einen PWM-Slot auf den Slice eines SERVO-PWM-Ports legt, wird
+  genommen: der Port geht auf FUNC NONE, sein PWM-Bit auf 0 und TARGET auf
+  0, wenn es den Port nennt. Ein Port, den eine KST- oder HITEC-Session
+  hält, geht nicht zurück, und ein solches Schreiben wird mit BAD_VALUE
+  abgelehnt.
+- TX und RX von SUPPLY sind GPIO 7 und GPIO 6, SDA und SCL von SENSE GPIO 16
+  und GPIO 17, der Pin von TONE GPIO 22. Ein Schreiben eines anderen Pins
+  wird mit BAD_VALUE abgelehnt. Die übrigen Register der Pages folgen ihren
+  eigenen Regeln.
+- SENSE_MAP (seit 4.33): der INA3221 auf 0x40 ist bestückt, CH1 misst 0x31
+  (Servoschiene B), CH2 0x30 (Servoschiene A) und CH3 0x32 (die 5V der
+  Programmierports). Das Schreiben wird in die Map übernommen und als
+  Ganzes geprüft: eine Map ohne Bit 0 in `ENABLE` oder mit einem anderen
+  WATCH-Wert auf einem der drei Kanäle wird mit BAD_VALUE abgelehnt. Shunts,
+  `FAST` und die Bauteile auf 0x41 bis 0x43 folgen den Regeln der Page.
+- Beim Start beginnt jede Rolle auf ihrem Pin, was auch immer der Flash
+  behalten hat. Ein Datensatz, den das Image des Moduls geschrieben hat,
+  behält seine Enables, Bereiche, Raten und Endpunkte. Ein Slot mit Treiber
+  auf einem Pin, der kein Servoausgang ist, wird geleert, und jeder Port
+  beginnt als NONE. Die gespeicherte Map bekommt Bit 0 in `ENABLE` und die
+  drei WATCH-Werte und gilt; ein Bauteil, dessen drei Shunts 0 sind,
+  bekommt auf jedem 100.0mΩ (1000).
+
+GPIO 21 wird ab der ersten Anweisung von `main()` low getrieben; ab der
+Hauptschleife treibt ihn die Page PROG_SUPPLY (0x39, seit 4.32), aus, bis
+eine Sitzung für KST oder Hitec ihn einschaltet. EN von M7 hat einen
+Pull-down, die Versorgung der Programmierports ist also aus, solange der
+IOmcu GPIO 21 nicht treibt: im Reset, im BOOTSEL und ohne Versorgung. Auf
+dem Carrier schalten die Ports für KST und Hitec diese Versorgung statt
+des PD mini, und kein Port hält die Page SUPPLY.
+
+Ein Panel bietet jedem IOmcu das Image des Boards an, das er meldet. Das
+Release-Panel trägt beide Images; ein Board, für das es kein Image trägt,
+bekommt kein Angebot, und UPDATES zeigt `Kein IOmcu-Image für dieses Board
+in diesem Panel-Build.`.
+
+`test/host/test_board_fix.c` hält den Katalog des Carriers gegen seine
+Rollen, die Pins jeder Page am Pin der Rolle und an den Pins daneben, einen
+Datensatz des Moduls auf den Pins des Carriers, die Map des INA3221 geprüft
+und gespeichert und das je Board gewählte
+Image.
 
 ### Abgelehnte Frames
 
@@ -1570,14 +1735,16 @@ gelesen, mit HASH_RUNNING des IOmcu über dieselbe Zahl von Bytes.
 | Ergebnis | Panel |
 | --- | --- |
 | gleich | nichts |
-| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
+| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Update unter UPDATES.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
 | ein Image auf Probe | schreibt sofort BUY und meldet `Neue IOmcu-Firmware dauerhaft übernommen.` |
 | BAD_PAGE oder keine Slots | der Alarm `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` |
 
 Die Prüfung läuft auch bei einer abweichenden Protokoll-Major: die
 Identitätsregister und die Update-Pages antworten über Majors hinweg, und das
-Update bringt den IOmcu auf die Major des Panels. Ein CANCEL gilt für
-diese Version des IOmcu, bis das Panel neu startet. Ein älteres
+Update bringt den IOmcu auf die Major des Panels. Ein CANCEL oder der Home-Tag
+auf der Frage gilt für diese Version des IOmcu, bis das Panel neu startet. Eine
+Frage, die der Busfehler-Bildschirm nach einem verlorenen Link verdeckt hat, ist
+nicht beantwortet, und der nächste Link-Aufbau bietet erneut an. Ein älteres
 mitgebrachtes Image wird ebenfalls angeboten; die Frage sagt das dann.
 [Screens](Screens-de.md#iomcu-update) zeigt Frage und Fortschritt.
 

@@ -17,6 +17,7 @@
 
 #include "hitec_reg.h"
 #include "ui_tabs.h"
+#include "prog_choice.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_theme.h"
@@ -127,7 +128,8 @@ static void servo_notes(plan_t *p)
     if (st == HITEC_PROG_NO_PAGE) {
         note(p, TR(HP_NO_PAGE_2), faint);
     } else if (st == HITEC_PROG_PWM && !hitec_prog_on_port(pr)) {
-        note(p, TR(KP_NEED_TARGET_2), faint);
+        note(p, ui_tr((ui_text_id_t)prog_choice_text(TX_KP_NEED_TARGET_2)),
+             faint);
     } else if (st == HITEC_PROG_OTHER) {
         note(p, TR(HP_RELEASE_HINT), faint);
     }

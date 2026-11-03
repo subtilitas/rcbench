@@ -53,7 +53,7 @@ jobs:
   # the IOmcu reports rather than what the archive was called.
   version:
     name: The tag matches the images
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # ci_gate.py waits up to 5400s (90min) for CI; 100min leaves 10min
     # for the checkouts and the version check.
     timeout-minutes: 100
@@ -138,12 +138,13 @@ jobs:
           SHA: ${{ steps.pin.outputs.sha }}
         run: python3 gate/tools/ci_gate.py --repo "$REPO" --sha "$SHA"
 
-  # Carries the IOmcu image the iomcu job built from the same commit,
-  # and offers it over CAN to an IOmcu running another build.
+  # Carries the IOmcu images the iomcu job built from the same commit, the
+  # module's and the rbmod carrier's, and offers each IOmcu the image of
+  # the board it reports when it runs another build.
   panel:
     needs: [version, iomcu]
     name: Panel image
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -158,6 +159,11 @@ jobs:
           name: iomcu
           path: firmware/panel/iomcu-image
 
+      - uses: actions/download-artifact@v7
+        with:
+          name: iomcu-rbmod
+          path: firmware/panel/iomcu-rbmod
+
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
       # versions.  The step runs once the lock file is committed.
@@ -171,7 +177,7 @@ jobs:
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.5.5
+          esp_idf_version: v6.1
           target: esp32p4
           path: 'firmware/panel'
           # A single image flashable at 0x0, as well as the three parts.
@@ -182,6 +188,7 @@ jobs:
           # application .bin and the ZIP all come from this one build.
           command: >-
             idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin
+            -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin
             -D RCBENCH_PERF_LOG=OFF build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
@@ -189,6 +196,10 @@ jobs:
       # builds, so the image is read for what the option leaves out.
       - name: The image carries no frame, stack and heap lines
         run: python3 tools/check_perf_log.py off firmware/panel/build/rcbench-panel.elf
+
+      # The bench console over the link is a debug tool.
+      - name: The image carries no console relay
+        run: python3 tools/check_panel_console.py off firmware/panel/build/rcbench-panel.elf
 
       # The trial start's rollback test build aborts every trial start;
       # it is never a release.
@@ -228,7 +239,7 @@ jobs:
   iomcu:
     name: IOmcu image
     needs: [version]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -277,6 +288,16 @@ jobs:
           cmake -S firmware/iomcu -B firmware/iomcu/build -G Ninja
           cmake --build firmware/iomcu/build -j"$(nproc)"
 
+      # The rbmod carrier's image: the same sources for the carrier's
+      # soldered pins, in files named for the board.
+      - name: Build the rbmod carrier's image
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S firmware/iomcu -B firmware/iomcu/build-rbmod -G Ninja \
+            -DIOMCU_BOARD=rbmod
+          cmake --build firmware/iomcu/build-rbmod -j"$(nproc)"
+
       - uses: actions/upload-artifact@v7
         with:
           name: iomcu
@@ -288,6 +309,17 @@ jobs:
             firmware/iomcu/build/rcbench-iomcu.elf
           if-no-files-found: error
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: iomcu-rbmod
+          path: |
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-install.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-pt.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.elf
+          if-no-files-found: error
+
   # The configurator anchors its data to one release tag, and a tag alone
   # starts no Configurator workflow run.  This job runs the check of that
   # workflow on the commit of the run: a release tag newer than the data
@@ -296,7 +328,7 @@ jobs:
   # it, so it never holds a release back.
   configurator-data:
     name: Configurator data
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -325,7 +357,7 @@ jobs:
   publish:
     name: Package and publish
     needs: [version, panel, iomcu]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     # One publish at a time across every tag, so the latest mark is decided
     # against releases that do not change under it.  A run waits for the
@@ -372,6 +404,11 @@ jobs:
           # panel finds no entry and installs nothing.
           (cd artifacts/panel && zip -r "../../dist/rcbench-panel-p4-$TAG.zip" .)
           (cd artifacts/iomcu && zip -r "../../dist/rcbench-iomcu-$TAG.zip" .)
+          # The rbmod carrier's IOmcu image, in an archive of its own: an
+          # image holds one board's pin map, and the module's archive keeps
+          # its name.
+          (cd artifacts/iomcu-rbmod \
+             && zip -r "../../dist/rcbench-iomcu-rbmod-$TAG.zip" .)
           # And the panel's application on its own: the file the panel's
           # Wi-Fi page takes for an update (WI-FI).
           # The panel archive carries the licence and the notice of the

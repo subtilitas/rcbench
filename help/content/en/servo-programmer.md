@@ -53,7 +53,15 @@ MORE, while the tester has the port, sets what CONNECT applies:
 ![A PD mini answers](view:servo-kst-supply)
 ![The supply in programming mode](view:servo-kst-supplied)
 
-While the port is out of PWM, the supply's set points belong to the port: the SET row and the SUPPLY screen take no change and no ON. OUTPUT OFF and STOP work. Without a PD mini the voltage and current limit are stored and not applied.
+While the port is out of PWM, the supply's set points belong to the port: the SET row and the SUPPLY screen take no change and no ON. OUTPUT OFF and STOP work. Without a PD mini the voltage and current limit are stored and not applied. Back in PWM, the set points from before the session return once the output is off, at the next OFF when the session left it on; a set point changed in the meantime stays.
+
+![The question after LEAVE](view:servo-hitec-restore-ask)
+
+A LEAVE that leaves the output on at the session's set points, with the set points from before the session different, makes SERVO ask once the port is in PWM: `Restore your supply set points 5.50V 2.00A on the live output?` YES gives the live output both of them; a voltage that rises from 6.0V or below to above it opens HV SERVOS ONLY first. NO keeps the session's until the next OFF. The question comes once per LEAVE, waits for SERVO's keypads, lists, warnings, questions and OUTPUT ON's hold, and does not come while a port holds the supply, after an OFF, an error or a STOP, inside a limit run, or when a set point changed since. Only a LEAVE asks: RELEASE PORT, a STOP, an error, a lost link, a restart of the panel or the IOmcu, a port the IOmcu gives back without a LEAVE, and ports that turn to their own supply under a session end the hold without the question, and the session's set points stay until the next OFF. The Hitec programmer asks the same.
+
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the programming ports run from a 5V of their own, switched by GPIO 21, not from the PD mini; MORE reads `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21`. The session switches the 5V where the table below switches the PD mini's output. The PROG 5V box under PD MINI then reads `HELD BY PROG PORT n` and takes no press. With no session the box switches the 5V by hand: PROG 5V ON is a 2s hold, PROG 5V OFF a tap.
+
+![The KST programmer holding the 5V](view:servo-kst-rbmod)
 
 ## The power cycle
 
@@ -190,6 +198,12 @@ A write counts as interrupted when the link goes, a board restarts, ABORT or a s
 ![LEAVE after a write with a PD mini](view:servo-kst-leave-cycle)
 
 LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM and the servo may move. After a write with a PD mini the page says the output goes off for 1s and on first; without a PD mini it says the values act after the supply is switched off and on. With nothing written the supply stays as it is. HOLD 2s TO LEAVE takes it after 2s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
+
+## Hitec D receive
+
+MORE lists Hitec D receive while the tester has the port. PULL-UP (the default) needs a 2.2kΩ resistor from the signal wire to the servo supply. PRECHARGE needs none: the IOmcu drives the pad high for 100ns every 1.09us and samples it 113ns later. The IOmcu takes the value at its next OPEN of a D series line, so a session offers no change: LEAVE, set it, CONNECT. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore it. An IOmcu of 0.21.1 or 0.21.2 (protocol 4.23) receives with PULL-UP; with PRECHARGE set the list then reads `IOmcu older than 0.22.0: receives with PULL-UP.` An IOmcu older than 0.21.1 has no Hitec line; with PRECHARGE set the list reads `IOmcu older than 0.21.1: no Hitec line.`
+
+![Hitec D receive's list](view:servo-hitec-rx)
 
 ## Related pages
 

@@ -8,8 +8,12 @@
  */
 #include <math.h>
 
+#include "shot_facts_rig.h"
 #include "kst_panel_rig.h"
+#include "prog5v_box.h"
+#include "prog_choice.h"
 #include "settings_sensors.h"
+#include "ui_board.h"
 /* kst_prog_say(): the test plants a message the programmer said earlier. */
 #include "../../shared/bench/kst_prog_int.h"
 
@@ -54,6 +58,10 @@ static struct {
     unsigned opens_txt, ends;
     char report[8192];
     size_t len;
+    /* The panel's adoption of the port's set points (supply_link_adopted()),
+     * 5.0V 1.0A, each time the port takes the supply, the output on; and
+     * whether SERVO ever asked to restore the operator's. */
+    bool adopt, adopted, asked;
 } lr;
 
 static void lr_drain(void)
@@ -152,7 +160,15 @@ static void lr_ms(uint32_t ms)
                                            && !kst_panel_holds_port());
             }
             lr_commands();
+            if (lr.adopt) {
+                supply_screen_set_output(g_rig.sup_on);
+                if (supply_screen_port_held() && !lr.adopted) {
+                    supply_screen_adopt(5.0f, 1.0f);
+                }
+                lr.adopted = supply_screen_port_held();
+            }
             scr->tick(0.02f);
+            lr.asked = lr.asked || servo_screen_asks_restore();
             servo_screen_service();
             lr_drain();
         }
@@ -304,6 +320,7 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         lr_fresh(rev != 0);
         lr_start();
         CHECK(servo_screen_limit_running());
+        CHECK(!shot_facts_now().no_test);
         lr_run_out();
         CHECK(!servo_screen_limit_running());
         CHECK(strstr(lr.report, "RCBENCH SERVO LIMIT REPORT\n") == lr.report);
@@ -387,6 +404,44 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
                                 &d));
         CHECK_EQ(d, 21000);
     }
+}
+
+/* The read session's LEAVE inside a run leaves the output on at the
+ * port's 5.0V 1.0A, the operator's 6.0V standing before the run: SERVO
+ * asks nothing, during the run or after it.  A LEAVE after the run, from
+ * PROGRAM, asks. */
+TEST_CASE(a_limit_runs_read_session_asks_no_restore)
+{
+    lr_fresh(false);
+    supply_screen_put(6.0f, 1.5f);
+    g_rig.sup_mv = 6000u;
+    lr.adopt = true;
+    lr_start();
+    CHECK(servo_screen_limit_running());
+    lr_run_out();
+    CHECK(!servo_screen_limit_running());
+    CHECK(strstr(lr.report, "PASS") != NULL);
+    CHECK(g_rig.sup_on);
+    CHECK(!lr.asked);
+    lr_ms(1000u);
+    CHECK(!lr.asked);
+    /* SAFE, PROGRAM, CONNECT and LEAVE: the session's LEAVE asks. */
+    lr.armed = false;
+    lr_ms(40u);
+    program_open();
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK(kst_panel_holds_port());
+    lr_ms(40u);
+    tap(val(PG_SERVO, 0, 0));
+    for (int k = 0; k < 4 && kst_panel_editor() == 3; ++k) {
+        hold(2.1f);
+    }
+    for (int i = 0; i < 100 && !lr.asked; ++i) {
+        lr_ms(100u);
+    }
+    CHECK(lr.asked);
 }
 
 /* SERVO PULSES at KEEP: the bench's PULSE MIN and MAX, 1000 and 2000us,
@@ -713,6 +768,69 @@ TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The rbmod carrier's port, fed from the PROG 5V box: the box stands for
+ * the PD mini.  A PD mini on the servo rails with its output off refuses
+ * nothing there, switched on and off during the run ends nothing, and
+ * SEARCH+PROG writes through the box's power cycles.  An abort asks the
+ * PROG 5V off and leaves the PD mini alone.
+ * With the box off the run does not start. */
+TEST_CASE(on_the_carrier_the_prog_5v_stands_for_the_pd_mini)
+{
+    for (int box_on = 0; box_on < 2; ++box_on) {
+        lr_fresh(false);
+        g_rig.fixed = true;
+        ui_board_set(OUTBIND_BOARD_RBMOD);
+        prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+        prog5v_box_publish(box_on ? 3u : 2u, 21u, PROG5V_HELD_NONE);
+        lr_pd_reading(false);                /* the rails' PD mini, off */
+        lr_ms(200u);
+        lr_start();
+        CHECK_EQ(servo_screen_limit_running(), box_on != 0);
+        if (box_on) {
+            /* The rails' PD mini switched on and off through the run is
+             * no change of the port's supply. */
+            for (int i = 0; i < 600 && servo_screen_limit_running(); ++i) {
+                lr_ms(200u);
+                lr_pd_reading((i & 1) == 0);
+            }
+            lr_run_out();
+            CHECK(strstr(lr.report, "search only") == NULL);
+            CHECK(strstr(lr.report, "ABORTED") == NULL);
+            CHECK(g_rig.sim.n_writes > 0u);
+        } else {
+            CHECK_EQ(lr.disarms, 0u);
+        }
+        g_rig.fixed = false;
+        prog5v_box_reset();
+        prog_choice_reset();
+        ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+    }
+    /* An abort asks the PROG 5V off, and not the rails' PD mini. */
+    lr_fresh(false);
+    g_rig.fixed = true;
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    lr_pd_reading(true);
+    lr_ms(200u);
+    lr_start();
+    CHECK(servo_screen_limit_running());
+    (void)prog5v_box_poll_cmd(NULL);
+    servo_screen_set_link(false);
+    lr_ms(200u);
+    CHECK(!servo_screen_limit_running());
+    prog5v_cmd_t p5;
+    CHECK(prog5v_box_poll_cmd(&p5));
+    CHECK(p5.off && !p5.on);
+    CHECK_EQ(p5.by, PROG5V_BY_SERVO);
+    CHECK(!supply_screen_off_pending());
+    servo_screen_set_link(true);
+    g_rig.fixed = false;
+    prog5v_box_reset();
+    prog_choice_reset();
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+}
+
 /* The bench's own PWM output as the target: SERVO PULSES is not on the
  * page and a tap where it stands on the programming port changes nothing;
  * the run searches out to PULSE MIN and PULSE MAX with no session. */
@@ -964,6 +1082,7 @@ TEST_CASE(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe)
 int main(void)
 {
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);
+    RUN(a_limit_runs_read_session_asks_no_restore);
     RUN(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max);
     RUN(a_limit_run_on_a_servo_that_does_not_answer_names_the_missing_kst_servo);
     RUN(a_limit_run_whose_first_connect_fails_otherwise_names_the_session);
@@ -972,6 +1091,7 @@ int main(void)
     RUN(a_run_on_the_programming_port_needs_4_8_v_on_the_rail);
     RUN(a_run_on_the_programming_port_needs_the_pd_mini_on);
     RUN(without_a_pd_mini_a_limit_run_writes_nothing);
+    RUN(on_the_carrier_the_prog_5v_stands_for_the_pd_mini);
     RUN(a_pd_mini_heard_first_in_a_session_gets_no_connect);
     RUN(servo_pulses_is_not_offered_for_a_pwm_pin);
     RUN(a_limit_run_ended_in_a_session_offers_restore);

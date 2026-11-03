@@ -5,13 +5,50 @@
  * port and its GPIO in every state; CLOSE while the port is held opening
  * LEAVE, and a hold of 2s leaving; a port another session holds offering
  * RELEASE PORT; a classic servo with no PD mini refused with its reason;
- * the supply's lock while a port is held; every control a tap target above
+ * the supply's lock while a port is held; the restore question after a
+ * LEAVE and after no other end of the hold; every control a tap target above
  * the alert band, every label and value inside its field and every note
- * above the band, in English and German, for both series.
+ * above the band, in English and German, for both series.  On the rbmod
+ * carrier at 4.36 the PORT row's label opens PROGP01 to PROGP04, the entry
+ * taken is SERVO TESTER, and the list stays shut while the bench is ARMED.
  *
  * SPDX-License-Identifier: MIT
  */
+#include "shot_facts_rig.h"
 #include "hitec_panel_rig.h"
+
+#include "prog_choice.h"
+#include "servo_screen.h"
+#include "ui_board.h"
+
+/* The PORT row's label, left of its CONNECT button. */
+static void tap_port_label(void)
+{
+    const gfx_rect_t v = val(HITEC_PANEL_SERVO, 0, 0);
+    ev(AREA.x + 12, cy(v), TOUCH_EVENT_DOWN);
+    ev(AREA.x + 12, cy(v), TOUCH_EVENT_UP);
+    show();
+}
+
+TEST_CASE(on_the_carrier_the_port_row_chooses_the_port)
+{
+    open_en();
+    ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
+    prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    show();
+    servo_screen_set_bench_armed(true);
+    tap_port_label();
+    CHECK_EQ(hitec_panel_editor(), 0);
+    servo_screen_set_bench_armed(false);
+    tap_port_label();
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK_STR_EQ(hitec_panel_choice_label(2), "PROGP03  GPIO 15");
+    tap(hitec_panel_choice_rect(2));
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 3);
+    prog_choice_reset();
+    ui_board_set((uint16_t)OUTBIND_BOARD_UNKNOWN);
+}
 
 /* --------------------------------------------------------------- series */
 
@@ -90,6 +127,83 @@ static void tabs_not_read(void)
         CHECK(v != NULL && strcmp(v, "--") == 0);
     }
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+}
+
+/* Hitec D receive on MORE, in PWM, beside the series: the list names both
+ * modes, the one set lit; a tap sets it and asks a save; the IOmcu's word is
+ * owed through the settings as before. */
+TEST_CASE(hitec_d_receive_is_set_on_more_in_pwm)
+{
+    open_en();
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK(strstr(hitec_panel_choice_label(2), "PULL-UP") != NULL);
+    CHECK(strstr(hitec_panel_choice_label(2), ui_setting_label(SET_HITEC_RX))
+          != NULL);
+    tap(hitec_panel_choice_rect(2));
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK_STR_EQ(hitec_panel_choice_label(0), ui_setting_help(SET_HITEC_RX));
+    CHECK_STR_EQ(hitec_panel_choice_label(1), TR(SET_HITEC_RX_PRE));
+    CHECK(hitec_panel_choice_label(2) == NULL);
+    CHECK(!settings_save_asked());
+    tap(hitec_panel_choice_rect(1));
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
+    CHECK(settings_save_asked());
+    /* MORE names what is set; CANCEL keeps it. */
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    CHECK(strstr(hitec_panel_choice_label(2), "PRECHARGE") != NULL);
+    tap(hitec_panel_choice_rect(2));
+    tap(hitec_panel_choice_cancel_rect());
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
+}
+
+/* A session offers no change: a list left open closes as a session starts, and
+ * what a tap there lands on is no mode.  MORE in a session lists no such row
+ * (test_hitec_panel_write.c). */
+TEST_CASE(a_session_closes_hitec_d_receives_list)
+{
+    open_en();
+    servo_d485();
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    tap(hitec_panel_choice_rect(2));
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK_EQ(hitec_prog_connect(model()), HITEC_PROG_MSG_NONE);
+    prun(5000u);
+    CHECK(hitec_prog_state(model()) != HITEC_PROG_PWM);
+    CHECK_EQ(hitec_panel_editor(), 0);
+    tap(hitec_panel_choice_rect(1));
+    CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
+}
+
+/* What the IOmcu does not hold shows under the modes as a line that sets
+ * nothing: each mark its words, EN and DE, none while held. */
+TEST_CASE(hitec_d_receive_says_what_the_iomcu_does_not_hold)
+{
+    static const struct { uint8_t mark; ui_text_id_t why; } k[] = {
+        { HITEC_RX_LINK_OLD, TX_SET_HITEC_RX_OLD },
+        { HITEC_RX_LINK_NO_LINE, TX_SET_HITEC_RX_NO_LINE },
+        { HITEC_RX_LINK_PENDING, TX_SET_UNHELD },
+        { HITEC_RX_LINK_REFUSED, TX_SET_UNHELD },
+    };
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+            open_at(SUPPLY_ON, (ui_lang_t)lang);
+            settings_set(SET_HITEC_RX, 1.0f);
+            g_rx_mark = k[i].mark;
+            prun(20u);
+            tap(val(HITEC_PANEL_SERVO, 2, 0));
+            tap(hitec_panel_choice_rect(2));
+            CHECK_STR_EQ(hitec_panel_choice_label(2), ui_tr(k[i].why));
+            tap(hitec_panel_choice_rect(2));        /* a line to read */
+            CHECK_EQ(hitec_panel_editor(), 0);
+            CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
+            g_rx_mark = (uint8_t)HITEC_RX_LINK_HELD;
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 TEST_CASE(a_change_of_series_drops_what_the_other_series_read)
@@ -256,6 +370,7 @@ TEST_CASE(close_while_held_opens_leave_and_a_2s_hold_leaves)
     tap_connect();
     tap(hitec_panel_close_rect());
     CHECK(hitec_panel_is_open());
+    CHECK(!shot_facts_now().no_session);
     CHECK_EQ(hitec_panel_editor(), 3);
     CHECK_EQ(strcmp(hitec_panel_page_line(0), TR(KP_LEAVE_TITLE)), 0);
     CHECK_EQ(strcmp(hitec_panel_page_line(2), TR(HP_LEAVE_D)), 0);
@@ -333,6 +448,105 @@ TEST_CASE(the_supply_is_locked_while_a_port_is_held)
     (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
     until(HITEC_PROG_OTHER);
     CHECK(supply_screen_port_held());
+}
+
+/**
+ * @brief A D series session on the PD mini: the operator's 5.5V 1.5A on
+ *        SUPPLY, CONNECT, and the port's 5.0V 1.0A on the live output, as
+ *        panel_render.c hands them over (supply_screen_adopt()).
+ */
+static void session_on_the_pd_mini(void)
+{
+    open_en();
+    supply_screen_put(5.5f, 1.5f);
+    servo_d485();
+    tap_connect();
+    CHECK(supply_screen_port_held());
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(true);
+}
+
+/* The SERVO screen's restore question follows a LEAVE only: a LEAVE offers
+ * the operator's set points back onto the live output.  RELEASE PORT of a
+ * port another session holds, also the one a lost link leaves behind, ends
+ * the hold with no LEAVE and offers nothing, even with the output still
+ * read on. */
+TEST_CASE(only_a_leave_offers_the_operators_set_points_back)
+{
+    float v = 0.0f;
+    float i = 0.0f;
+
+    session_on_the_pd_mini();
+    tap(hitec_panel_close_rect());
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    prun(50u);
+    CHECK(!supply_screen_port_held());
+    CHECK(supply_screen_restore_offer(&v, &i));
+    CHECK(fabsf(v - 5.5f) < 0.001f && fabsf(i - 1.5f) < 0.001f);
+
+    /* RELEASE PORT. */
+    open_en();
+    supply_screen_put(5.5f, 1.5f);
+    (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    until(HITEC_PROG_OTHER);
+    show();
+    CHECK(supply_screen_port_held());
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    prun(50u);
+    CHECK(!supply_screen_port_held());
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+
+    /* The link goes under the session and comes back: the IOmcu still
+     * holds the port, for no session of this panel, and RELEASE PORT gives
+     * it back. */
+    session_on_the_pd_mini();
+    link_silent();
+    prun(500u);
+    link_back();
+    until(HITEC_PROG_OTHER);
+    show();
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    hold(2.1f);
+    until(HITEC_PROG_PWM);
+    prun(50u);
+    CHECK(!supply_screen_port_held());
+    CHECK(!supply_screen_restore_offer(NULL, NULL));
+}
+
+/* A KST session on the PD mini holds the SUPPLY page too, and the Hitec
+ * overlay passes the page's word on (LINK_SP_PORT) with no Hitec session.
+ * The KST LEAVE's word lets go first; the release at the page's word a
+ * read later offers the set points back.  Without the LEAVE it offers
+ * nothing. */
+TEST_CASE(the_supply_pages_word_after_a_kst_leave_asks)
+{
+    for (int leave = 0; leave < 2; ++leave) {
+        hitec_prog_feed_t f;
+
+        open_en();
+        memset(&f, 0, sizeof(f));
+        f.supply_held = true;
+        hitec_panel_feed(&f);
+        supply_screen_put(5.5f, 1.5f);
+        supply_screen_set_port_held(true);
+        supply_screen_adopt(5.0f, 1.0f);
+        supply_screen_set_output(true);
+        if (leave != 0) {
+            supply_screen_kst_leave_done();
+        }
+        supply_screen_set_port_held(false);
+        CHECK(supply_screen_port_held());
+        f.supply_held = false;
+        hitec_panel_feed(&f);
+        CHECK(!supply_screen_port_held());
+        CHECK_EQ(supply_screen_restore_offer(NULL, NULL), leave != 0);
+    }
 }
 
 /* ----------------------------------------------------------- the layout */
@@ -481,10 +695,27 @@ TEST_CASE(every_message_fits_its_line_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The screenshot's gate reads the programmer's own word, with SUPPLY's gone. */
+TEST_CASE(the_screenshot_gate_reads_the_hold_of_the_port)
+{
+    open_en();
+    (void)open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN);
+    until(HITEC_PROG_OTHER);
+    CHECK(hitec_panel_holds_port());
+    supply_screen()->reset();
+    CHECK(!supply_screen_port_held());
+    CHECK(!shot_facts_now().port_free);
+}
+
 int main(void)
 {
+    RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
+    RUN(on_the_carrier_the_port_row_chooses_the_port);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
+    RUN(hitec_d_receive_is_set_on_more_in_pwm);
+    RUN(a_session_closes_hitec_d_receives_list);
+    RUN(hitec_d_receive_says_what_the_iomcu_does_not_hold);
     RUN(a_change_of_series_drops_what_the_other_series_read);
     RUN(connect_reads_the_d485hw_and_the_tabs_show_its_values);
     RUN(before_a_read_the_value_tabs_say_so);
@@ -494,6 +725,8 @@ int main(void)
     RUN(a_classic_leave_page_says_the_supply_cycles);
     RUN(a_port_another_session_holds_offers_release_port);
     RUN(the_supply_is_locked_while_a_port_is_held);
+    RUN(only_a_leave_offers_the_operators_set_points_back);
+    RUN(the_supply_pages_word_after_a_kst_leave_asks);
     RUN(every_control_label_value_and_note_fits_in_both_languages);
     RUN(every_message_fits_its_line_in_both_languages);
     free(fb);

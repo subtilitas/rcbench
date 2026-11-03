@@ -2,7 +2,7 @@
  * @file test_fm_tree.c
  * @brief A pane of the file manager over a card in memory (fm_fake.h):
  *        folders of 0, 1, 47, 48, 49 and 999 entries, paging by key to
- *        every edge and back, the pane's order, names of 63 and 64
+ *        every edge and back, a pane started at a key it does not hold, the pane's order, names of 63 and 64
  *        characters, the places and kinds of every path card_tree.h names
  *        and of the two log folders, a busy name, entering and leaving at
  *        the root, and a card gone part way through a walk.  And the page
@@ -20,6 +20,7 @@
 #include "fm_fake.h"
 #include "fm_select.h"
 #include "fm_tree.h"
+#include "ew_file.h"
 #include "hitec_card.h"
 
 /* ------------------------------------------------------------ the rigs */
@@ -209,6 +210,65 @@ TEST_CASE(entries_999_page_forward_and_back_to_every_edge)
     CHECK_EQ(g_card.holds, 0);
 }
 
+TEST_CASE(a_pane_started_at_a_key_reads_after_before_and_from_it)
+{
+    fresh("D");
+    char path[FK_PATH];
+    for (int i = 0; i < 100; ++i) {
+        snprintf(path, sizeof(path), "D/F%03d.TXT", i);
+        fk_file(&g_card, path, NULL, 1u);
+    }
+    fk_dir(&g_card, "D/SUB");
+    fm_entry_t key;
+    memset(&key, 0, sizeof(key));
+    /* F047.TXT is the 49th row: SUB, then F000 to F047. */
+    snprintf(key.name, sizeof(key.name), "F047.TXT");
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_STR_EQ(g_tree.dir, "D");
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_EQ(g_tree.held, FM_PAGE_MAX);
+    CHECK_STR_EQ(g_tree.page[0].name, "F048.TXT");
+    CHECK_EQ(g_tree.ahead, 49);
+    CHECK(page_in_order());
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_PREV), FM_OK);
+    CHECK_EQ(g_tree.held, FM_PAGE_MAX);
+    CHECK_STR_EQ(g_tree.page[0].name, "SUB");
+    CHECK_STR_EQ(g_tree.page[FM_PAGE_MAX - 1].name, "F046.TXT");
+    CHECK_EQ(g_tree.ahead, 0);
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_SAME), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "F047.TXT");
+    /* A key not on the card names its place: "F0475" ranks after F047. */
+    snprintf(key.name, sizeof(key.name), "f0475");
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_SAME), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "F048.TXT");
+    /* The key's kind places it: a folder "A" ranks ahead of the folder
+     * SUB, a file "A" behind every folder and ahead of every file. */
+    snprintf(key.name, sizeof(key.name), "A");
+    key.is_dir = true;
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "SUB");
+    key.is_dir = false;
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "F000.TXT");
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_PREV), FM_OK);
+    CHECK_EQ(g_tree.held, 1);
+    CHECK_STR_EQ(g_tree.page[0].name, "SUB");
+    /* No key is fm_tree_init(); a key of 64 bytes is cut to the row's 63. */
+    fm_tree_at(&g_tree, "D", NULL);
+    CHECK_EQ(g_tree.held, 0);
+    CHECK_EQ(g_tree.selected, -1);
+    memset(key.name, 'A', sizeof(key.name));
+    fm_tree_at(&g_tree, "D", &key);
+    CHECK_EQ(strlen(g_tree.page[0].name), FM_LIST_NAME_MAX);
+    fm_tree_at(NULL, "D", &key);
+}
+
 TEST_CASE(a_page_whose_files_went_shows_the_last_page)
 {
     fresh("D");
@@ -226,6 +286,34 @@ TEST_CASE(a_page_whose_files_went_shows_the_last_page)
     CHECK_EQ(g_tree.total, 48);
     CHECK_EQ(g_tree.held, 48);
     CHECK_EQ(g_tree.ahead, 0);
+}
+
+/*
+ * SAME on the first page reads from the folder's first entry: an entry new
+ * on the card that ranks before the first row comes onto the page.  On a
+ * later page SAME reads from the page's first entry, and such an entry
+ * counts among the ones ahead.
+ */
+TEST_CASE(same_on_the_first_page_takes_a_new_first_entry)
+{
+    fresh("D");
+    fill("D", 60);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_STR_EQ(g_tree.page[0].name, "F000.TXT");
+    fk_file(&g_card, "D/A.TXT", NULL, 1u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_SAME), FM_OK);
+    CHECK_EQ(g_tree.total, 61);
+    CHECK_EQ(g_tree.ahead, 0);
+    CHECK_EQ(g_tree.held, 48);
+    CHECK_STR_EQ(g_tree.page[0].name, "A.TXT");
+    CHECK_STR_EQ(g_tree.page[47].name, "F322.TXT");
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_EQ(g_tree.ahead, 48);
+    CHECK_STR_EQ(g_tree.page[0].name, "F329.TXT");
+    fk_file(&g_card, "D/B.TXT", NULL, 1u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_SAME), FM_OK);
+    CHECK_EQ(g_tree.ahead, 49);
+    CHECK_STR_EQ(g_tree.page[0].name, "F329.TXT");
 }
 
 /* --------------------------------------------------------- the order */
@@ -308,7 +396,8 @@ TEST_CASE(every_bench_folder_is_fixed_and_others_free)
 {
     static const char *const fixed[] = {
         CARD_BENCH, CARD_AUTO_LOGS, "BENCH/ESC", CARD_ESC_CONF, "BENCH/KST",
-        CARD_KST_CONF, "BENCH/HITEC", CARD_HITEC_CONF, CARD_USER,
+        CARD_KST_CONF, "BENCH/HITEC", CARD_HITEC_CONF, "BENCH/ESCW",
+        CARD_ESCW_CONF, CARD_USER,
         CARD_USER_LOGS,
     };
     for (size_t i = 0u; i < sizeof(fixed) / sizeof(fixed[0]); ++i) {
@@ -376,6 +465,15 @@ TEST_CASE(the_journal_is_locked_and_the_fault_log_is_its_own)
     CHECK_EQ(fm_place_of(NULL, CARD_HITEC_CONF, "HITEC1.TXT", false),
              FM_PLACE_FREE);
     CHECK_EQ(fm_place_of(NULL, CARD_KST_CONF, "HITEC.TXT", false),
+             FM_PLACE_FREE);
+    /* The signal wire programmer's record, by EW_FILE_STEM's name. */
+    CHECK_EQ(fm_place_of(NULL, CARD_ESCW_CONF, EW_FILE_STEM ".TXT", false),
+             FM_PLACE_LOCKED);
+    CHECK_EQ(fm_place_of(NULL, "bench/escw/conf", "escw.new", false),
+             FM_PLACE_LOCKED);
+    CHECK_EQ(fm_place_of(NULL, CARD_ESCW_CONF, "ESCW001.TXT", false),
+             FM_PLACE_FREE);
+    CHECK_EQ(fm_place_of(NULL, CARD_KST_CONF, "ESCW.TXT", false),
              FM_PLACE_FREE);
     CHECK_EQ(fm_place_of(NULL, CARD_BENCH, "RCBENCH.LOG", false),
              FM_PLACE_FAULT);
@@ -618,6 +716,67 @@ TEST_CASE(no_card_is_no_page_and_null_is_refused)
     fm_tree_init(NULL, "");
 }
 
+/*
+ * What a page tells of a file: on it, not there, or on another page.  100
+ * files F000.TXT to F693.TXT, every 7th number: page 1 runs F000 to F329,
+ * page 2 F336 to F665, and the last page, the last 48, F364 to F693.
+ */
+TEST_CASE(a_page_tells_a_file_there_not_there_or_on_another_page)
+{
+    fresh("D");
+    fill("D", 100);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F007.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "f007.txt"), FM_HAS_YES);
+    /* Inside the page's span and not on it. */
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F009.TXT"), FM_HAS_NO);
+    /* The last row, and one past it with a page after. */
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F329.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F330.TXT"), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F336.TXT"), FM_HAS_UNKNOWN);
+    /* Page 2: before its first row with a page ahead. */
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_NEXT), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F335.TXT"), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F336.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F337.TXT"), FM_HAS_NO);
+    /* The last page: nothing after it. */
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_LAST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F693.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F999.TXT"), FM_HAS_NO);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F364.TXT"), FM_HAS_YES);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F363.TXT"), FM_HAS_UNKNOWN);
+    /* A folder of the name is no file. */
+    fresh("E");
+    fk_dir(&g_card, "E");
+    fk_dir(&g_card, "E/ATEST001.TXT");
+    fk_file(&g_card, "E/ATEST001.CSV", NULL, 10u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "ATEST001.TXT"), FM_HAS_NO);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "ATEST001.CSV"), FM_HAS_YES);
+    /* An empty folder holds nothing. */
+    fresh("EMPTY");
+    fk_dir(&g_card, "EMPTY");
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F000.TXT"), FM_HAS_NO);
+    /* No card, no name, no pane. */
+    fk_pull(&g_card);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_ERR_NO_CARD);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "F000.TXT"), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(&g_tree, ""), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(&g_tree, NULL), FM_HAS_UNKNOWN);
+    CHECK_EQ(fm_tree_has_file(NULL, "F000.TXT"), FM_HAS_UNKNOWN);
+    /* A page whose row count is out of its bounds tells nothing. */
+    fresh("E");
+    fk_dir(&g_card, "E");
+    fk_file(&g_card, "E/A.TXT", NULL, 1u);
+    CHECK_EQ(fm_tree_page(&g_tree, &g_io, NULL, FM_GO_FIRST), FM_OK);
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_YES);
+    g_tree.held = FM_PAGE_MAX + 1;
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_UNKNOWN);
+    g_tree.held = -1;
+    CHECK_EQ(fm_tree_has_file(&g_tree, "A.TXT"), FM_HAS_UNKNOWN);
+}
+
 /* --------------------------------------------------- the page keeping */
 
 /**
@@ -688,7 +847,9 @@ int main(void)
     RUN(one_entry_is_one_row);
     RUN(entries_47_48_and_49_fill_one_page_and_spill_the_49th);
     RUN(entries_999_page_forward_and_back_to_every_edge);
+    RUN(a_pane_started_at_a_key_reads_after_before_and_from_it);
     RUN(a_page_whose_files_went_shows_the_last_page);
+    RUN(same_on_the_first_page_takes_a_new_first_entry);
     RUN(folders_come_first_and_names_fold_their_case);
     RUN(names_of_63_characters_are_listed_and_of_64_counted);
     RUN(dot_entries_are_no_rows);
@@ -705,6 +866,7 @@ int main(void)
     RUN(a_card_gone_during_a_walk_is_walked_again_once);
     RUN(a_card_that_fails_or_goes_at_both_walks_is_no_page);
     RUN(no_card_is_no_page_and_null_is_refused);
+    RUN(a_page_tells_a_file_there_not_there_or_on_another_page);
     RUN(the_page_keeping_takes_any_entry_size_and_null_edges);
     fk_free(&g_card);
     return test_summary("fm_tree");

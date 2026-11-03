@@ -33,7 +33,7 @@ enum {
 };
 
 /** @brief The session operations. */
-enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_LEAVE, OP_WRITE };
+enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_LEAVE, OP_WRITE, OP_CHECK };
 
 /* --- hitec_prog.c --------------------------------------------------------- */
 
@@ -97,9 +97,11 @@ void hpw_off(hitec_prog_t *p);
  *
  * @param p    The programmer.
  * @param had  A servo was read before.
- * @param was  What that read found; NULL with none.
+ * @param was  What that read found; read only with @p had.
+ * @return true when an address a write compares differs from @p was, or
+ *         no servo was read before.
  */
-void hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was);
+bool hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was);
 
 /**
  * @brief A write operation ended with @p r.
@@ -126,8 +128,9 @@ void hpw_tick(hitec_prog_t *p);
 bool hpw_abort(hitec_prog_t *p);
 
 /**
- * @brief Start a write of @p kind to @p target: the gate, the plan, the
- *        backup file, the record, the steps.
+ * @brief Start a write of @p kind to @p target: the gate, the second read
+ *        (hpw_check_done()), the plan, the backup file, the record, the
+ *        steps.
  *
  * @param p      The programmer.
  * @param kind   hitec_prog_wr_t.
@@ -136,6 +139,17 @@ bool hpw_abort(hitec_prog_t *p);
  */
 hitec_prog_msg_id_t hpw_start(hitec_prog_t *p, uint8_t kind,
                               const hitec_image_t *target);
+
+/**
+ * @brief The second read before a write's plan ended with @p r: on
+ *        HITEC_SES_OK and every address equal to the first read, the plan,
+ *        the backup file, the record and the steps; otherwise the image is
+ *        the first read again and the write ends with nothing planned.
+ *
+ * @param p The programmer.
+ * @param r The read's result.
+ */
+void hpw_check_done(hitec_prog_t *p, hitec_ses_t r);
 
 /**
  * @brief The write whose backup file is saved, or needs none, goes on: its
@@ -172,12 +186,19 @@ void hpw_unconfirm(hitec_prog_t *p);
 void hpf_session(hitec_prog_t *p);
 
 /**
- * @brief A full read ended well: the first of the session, or the first of
- *        another servo, is the session's backup.
+ * @brief A full read ended well, its record compared: the first of the
+ *        session, or the first of another servo, is the session's backup.
  *
- * @param p The programmer.
+ * A D series read is of the servo before it by the session's chain only:
+ * with a write unverified, the record's verdict SAME, DONE or MIX; with
+ * none, or its record discarded, @p changed false.  Another servo's read
+ * says HITEC_PROG_MSG_OTHER_SERVO where no record stands to say more.
+ *
+ * @param p       The programmer.
+ * @param owed    A write of the session was unverified before this read.
+ * @param changed hpw_read_done()'s answer for this read.
  */
-void hpf_read_done(hitec_prog_t *p);
+void hpf_read_done(hitec_prog_t *p, bool owed, bool changed);
 
 /**
  * @brief Whether @p img differs from the servo read in an address a plan

@@ -105,6 +105,7 @@ typedef struct {
     uint16_t hz;        /**< the SERVO page's rate, 0 for none
                              (prog_port_rate()); 0 after a TARGET
                              change (prog_port_write())            */
+    bool     frozen;    /**< prog_port_freeze(): no register is written */
 } prog_port_t;
 
 /** @brief @p count ports, 0 to LINK_PG_PORTS_MAX, none with a pin, all at
@@ -339,6 +340,24 @@ uint16_t prog_port_kbit(const prog_port_t *p, uint8_t port);
  */
 uint8_t prog_port_pin(const prog_port_t *p, uint8_t port);
 
+/**
+ * @brief Refuse every write of the page with LINK_NACK_BUSY: the ESC_WIRE page
+ *        holds a pin, and a port it gives back has what it had.
+ * @param p      The port model, or NULL.
+ * @param frozen True while the page holds a pin.
+ */
+void prog_port_freeze(prog_port_t *p, bool frozen);
+
+/**
+ * @brief The pin the ESC_WIRE page may take: the opposite rule of
+ *        prog_port_wire_pin(), a DShot port's pin, where an ESC is on the lead.
+ * @param p     The port model, or NULL.
+ * @param port  Port index, 0 to LINK_PG_PORTS_MAX - 1.
+ * @param bound Bit n for port n: the port's pin is held by the IOmcu.
+ * @return The pin, or PROG_PORT_NO_PIN.
+ */
+uint8_t prog_port_esc_pin(const prog_port_t *p, uint8_t port, uint8_t bound);
+
 /** @brief The pin a wire page (KST, HITEC) may take for a session on port
  *  @p port: the port's pin while the IOmcu holds it (@p bound, bit n, as
  *  outputs_hw_ports_bound() says), PROG_PORT_NO_PIN otherwise and for a
@@ -437,6 +456,58 @@ uint8_t prog_port_channel(uint8_t port);
  *         or a refused slot (see above). 0 for a NULL p.
  */
 uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots);
+
+/**
+ * @brief As prog_port_slots_check(), with the ports in @p yield judged as
+ *        FUNC NONE: what the page holds once prog_port_yield() has run.
+ *
+ * @param p     The port model, or NULL.
+ * @param slots The OUTPUTS slot registers.
+ * @param yield Bit n for port n.
+ * @return 0, or LINK_NACK_BAD_VALUE as prog_port_slots_check().
+ */
+uint8_t prog_port_slots_check_yield(const prog_port_t *p,
+                                    const uint16_t *slots, uint8_t yield);
+
+/**
+ * @brief The SERVO PWM ports a PWM slot of @p slots shares a slice with, on
+ *        another pin: the ports that give way on a board with soldered pins
+ *        (prog_port_yield()), where the binding of the servo outputs comes
+ *        first.
+ *
+ * @param p     The port model, or NULL.
+ * @param slots The OUTPUTS slot registers, as prog_port_slots_check().
+ * @return Bit n for port n; 0 for a NULL argument.
+ */
+uint8_t prog_port_slots_yield(const prog_port_t *p, const uint16_t *slots);
+
+/** @brief What prog_port_yield() changed, for prog_port_unyield(). */
+typedef struct {
+    uint8_t  ports;  /**< the ports that gave way, bit n for port n */
+    uint16_t pwm;    /**< LINK_PG_PWM before                        */
+    uint16_t target; /**< LINK_PG_TARGET before                     */
+    uint16_t hz;     /**< the rate before                           */
+} prog_port_yield_t;
+
+/**
+ * @brief Ports @p ports back to FUNC NONE, their pulse off, and the TARGET 0
+ *        when it names one of them: what a binding of the rbmod carrier's
+ *        outputs does to a SERVO PWM port on its slice.
+ *
+ * @param p     The port model; NULL is ignored.
+ * @param ports Bit n for port n, each a SERVO PWM port.
+ * @param was   Takes what changed, for prog_port_unyield(); may be NULL.
+ */
+void prog_port_yield(prog_port_t *p, uint8_t ports, prog_port_yield_t *was);
+
+/**
+ * @brief Undo prog_port_yield(): the ports SERVO PWM again, the pulse bits,
+ *        TARGET and rate as before.  For a binding the silicon refused.
+ *
+ * @param p   The port model; NULL is ignored.
+ * @param was What prog_port_yield() recorded; NULL is ignored.
+ */
+void prog_port_unyield(prog_port_t *p, const prog_port_yield_t *was);
 
 /**
  * @brief Unbinds every slot of @p slots whose channel range reaches a port's

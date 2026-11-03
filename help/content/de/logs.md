@@ -12,7 +12,7 @@ LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die C
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-LOGS oder USER-LOGS unter [SETUP > SD CARD](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SETUP > SD CARD.` oder `USER-LOGS AUS unter SETUP > SD CARD.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
+Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-LOGS oder USER-LOGS unter [SETUP > SD CARD](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-LOGS AUS unter SD CARD.` oder `USER-LOGS AUS unter SD CARD.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
 
 ## Eine Karte, die sich nicht einbinden lässt
 
@@ -34,12 +34,14 @@ Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die
 
 LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und nach einem Start auf BENCH, bis eine geschrieben ist. Ist seit dem letzten Besuch nichts geschrieben worden, bleibt der Tab, wie er verlassen wurde. Ein Tipp auf einen Tab liest seinen Ordner ab der ersten Seite.
 
+Der Streifen oben, LOGS | FILES, hält die zwei Bildschirme der Kachel: Ein Tipp auf einen Tab öffnet [Files](files.md), und das Home-Tag jedes der beiden führt zum Menü. Er steht auf der Dateiliste, nicht über einer Datei, einer Frage oder einer Box.
+
+WI-FI in der Fußzeile öffnet [WLAN](wifi.md), um ein Log im Browser von der Karte zu holen, und sein Home-Tag führt hierher zurück. Über der Rückfrage zu LÖSCHEN oder einer Datei steht es nicht. Bei ARMED öffnet es ebenso, und die Tasten von WLAN lehnen ab.
+
 | Taste | Was sie tut |
 |---|---|
 | AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
 | VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
-| WLAN | öffnet [WLAN](wifi.md) |
-| DATEIEN | öffnet [Files](files.md) |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
 | ÖFFNEN | öffnet die gewählte CSV-Datei in der Importansicht, einen Bericht im Textbetrachter; grau, solange nichts gewählt ist |
 

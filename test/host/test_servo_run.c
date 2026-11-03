@@ -262,7 +262,7 @@ TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
 }
 
 /* ENC CENTRE on SETTINGS' DUT page, row 2: the AS5600 is switched on
- * SETUP > INTERFACES, its one home, and the DUT page holds no AS5600 row. */
+ * SETUP > SENSORS, its one home, and the DUT page holds no AS5600 row. */
 TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
 {
     fresh();
@@ -271,7 +271,7 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
     /* Where AS5600 was, nothing: the encoder stays off. */
     tap(ROW_L_X, ROW_Y(3));
     CHECK(!settings_get_bool(SET_ENC_EN));
-    settings_set(SET_ENC_EN, 1.0f);            /* SETUP > INTERFACES */
+    settings_set(SET_ENC_EN, 1.0f);            /* SETUP > SENSORS */
 
     /* No reading yet: the tap sets nothing. */
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
@@ -305,7 +305,7 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
     fresh();
     open_settings();
     tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
-    settings_set(SET_ENC_EN, 1.0f);            /* SETUP > INTERFACES */
+    settings_set(SET_ENC_EN, 1.0f);            /* SETUP > SENSORS */
     settings_set(SET_ENC_CENTRE, 1000.0f);
     const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false };
     servo_screen_encoder(&e);

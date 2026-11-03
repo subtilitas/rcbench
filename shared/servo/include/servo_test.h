@@ -982,6 +982,21 @@ servo_str_t servo_test_phase_str(servo_test_phase_t ph);
  */
 servo_str_t servo_test_abort_str(servo_test_abort_t why);
 /**
+ * @brief Whether a run ended for @p why ended on an error of the bench: the
+ *        supply or the meter failed, or a limit tripped.
+ *
+ * An error switches the bench to SAFE (docs/Safety.md, "Errors").  STOP, a
+ * disarm, a lost link and leaving the screen are SAFE already; the operator
+ * taking the servo, a settings change, touch events lost and the operator's
+ * OUTPUT OFF are no error, and the bench stays ARMED at the rest.
+ *
+ * @param why Abort reason to judge.
+ * @return true for SERVO_TEST_AB_SUPPLY_LOST, _TRIPPED, _STALE, _NOT_ON,
+ *         _SET_NOT_TAKEN, _CAP, _STALL, _CC and every INA3221 reason; false
+ *         for the others and for a value out of range.
+ */
+bool servo_test_abort_error(servo_test_abort_t why);
+/**
  * @brief Table entry for a verdict.
  *
  * @param v Verdict to name.

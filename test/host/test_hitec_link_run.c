@@ -7,7 +7,9 @@
  * of the full set, the leave; the classic entry with the servo's two `+`
  * and the version, a read of one cell, the leave; a classic servo that
  * does not answer; an abort, a stop and a lost link in the middle of a
- * read.  The rig is hitec_link_rig.h.
+ * read; a D series write whose write and save carry LINK_HT_W_CMD_MORE to
+ * an IOmcu of 4.31, and none of its steps to one of 4.30.  The rig is
+ * hitec_link_rig.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,6 +26,9 @@ typedef enum {
 static unsigned g_steps;
 static unsigned g_at_step;
 static at_t g_at;
+/* The command word of each step the session was fed, in order. */
+static uint16_t g_cmd_log[64];
+static unsigned g_cmd_n;
 
 /* What a case does at its step, once the step is on its way. */
 static void at_step(hitec_session_t *s)
@@ -59,6 +64,9 @@ static hitec_ses_t drive(hitec_session_t *s, unsigned max_ms)
 
         if (out && hitec_link_outcome(&g_l, &o)) {
             out = false;
+            if (g_cmd_n < sizeof(g_cmd_log) / sizeof(g_cmd_log[0])) {
+                g_cmd_log[g_cmd_n++] = g_last_cmd[LINK_HT_W_CMD];
+            }
             (void)hitec_session_feed(s, g_ms, &o.ses);
         }
         if (!out) {
@@ -91,6 +99,7 @@ static void session(hitec_session_t *s, uint8_t series)
     g_steps = 0;
     g_at_step = 0;
     g_at = AT_NOTHING;
+    g_cmd_n = 0;
 }
 
 /* A D series servo, a D485HW: model 34485, ID 0. */
@@ -275,6 +284,47 @@ TEST_CASE(a_lost_link_in_the_middle_of_a_read_ends_it_err_link)
     CHECK(!readout().ours);
 }
 
+/* The D series write of a speed: the write, the save and the reboot, then
+ * the read-back of 21 registers.  To a 4.31 IOmcu the first two carry the
+ * bit and the page's latch follows; a 4.30 one gets none. */
+TEST_CASE(a_writes_steps_carry_the_more_bit_to_an_iomcu_of_4_31_only)
+{
+    for (unsigned old = 0; old < 2u; ++old) {
+        hitec_session_t s;
+        hitec_image_t to;
+
+        bench_at(0u, SUPPLY_ON, 1u);
+        hitec_link_came_up(&g_l, old != 0u ? LINK_MINOR_PORT_CUT - 1u
+                                           : LINK_MINOR_PORT_CUT);
+        until_phase(HITEC_LINK_READY);
+        CHECK_EQ(open_as(CH, HITEC_D, HITEC_DRIVE_OPEN_DRAIN).kind,
+                 HITEC_LINK_OUT_DONE);
+        CHECK(hitec_session_init(&s, HITEC_D, HITEC_SES_CLOCK_MS));
+        d485hw();
+        CHECK_EQ(hitec_session_enter(&s, false, 0u), HITEC_SES_BUSY);
+        CHECK_EQ(drive(&s, 5000u), HITEC_SES_OK);
+        CHECK_EQ(hitec_session_read_all(&s), HITEC_SES_BUSY);
+        CHECK_EQ(drive(&s, 5000u), HITEC_SES_OK);
+        to = s.image;
+        CHECK_EQ(hitec_param_set(&to, HITEC_LAYOUT_D, HITEC_P_D_SPEED, 30),
+                 HITEC_SET_OK);
+        g_cmd_n = 0;
+        CHECK_EQ(hitec_session_write(&s, &to), HITEC_SES_BUSY);
+        CHECK_EQ(s.plan.n, 3u);
+        CHECK_EQ(drive(&s, 10000u), HITEC_SES_OK);
+        CHECK_EQ(g_cmd_n, 3u + 21u);
+        for (unsigned i = 0; i < g_cmd_n; ++i) {
+            CHECK_EQ((g_cmd_log[i] & LINK_HT_W_CMD_MORE) != 0u,
+                     old == 0u && i < 2u);
+            CHECK_EQ(g_cmd_log[i] & (uint16_t)~LINK_HT_W_CMD_MORE,
+                     LINK_HT_W_CMD_OF(LINK_HITEC_OP_SEND, CH));
+        }
+        CHECK(!hitec_port_writing(&g_port));
+        CHECK_EQ(g_drv.d_saves, 1u);
+        CHECK_EQ(g_drv.d_reboots, 1u);
+    }
+}
+
 int main(void)
 {
     RUN(a_d_series_session_enters_reads_and_leaves_through_the_link);
@@ -283,5 +333,6 @@ int main(void)
     RUN(an_abort_in_the_middle_of_a_read_ends_it_aborted);
     RUN(a_stop_in_the_middle_of_a_read_ends_it_cut_until_clear);
     RUN(a_lost_link_in_the_middle_of_a_read_ends_it_err_link);
+    RUN(a_writes_steps_carry_the_more_bit_to_an_iomcu_of_4_31_only);
     return test_summary("hitec_link_run");
 }

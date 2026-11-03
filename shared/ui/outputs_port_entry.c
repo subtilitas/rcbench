@@ -1,20 +1,26 @@
 /**
  * @file outputs_port_entry.c
- * @brief The OUTPUTS screen's PROG PORT entry: the left column under the
- *        list when a programming port is picked.  See outputs_screen.h.
+ * @brief The OUTPUTS screen's PROG PORT entry: the left column when a
+ *        programming port is picked, beside the board or the grid.  See
+ *        outputs_screen.h.
  *
  * Every port's entry has the same rows:
  *
- *   PIN        a button with the port's pin; a tap opens PICK A PIN on
- *              PROG PORT n, where a tap on a pin asks the IOmcu for it.
+ *   PIN        the port's pin and its pad.  In the board view a tap on a
+ *              key asks the IOmcu for that pin (picker_port.c); the grid
+ *              view, of a board with no drawing or one that solders its
+ *              pins, only names it.
  *   FUNCTION   a choice face with the port's FUNC (protocol 4.26); a tap
  *              opens the list over the rows under it: SERVO PWM, NONE,
  *              and from 4.28 DSHOT150, DSHOT300, DSHOT600.  A tap on an
  *              entry asks the IOmcu for it (port_view_ask()).
  *   WATCHED BY the INA3221 channel that watches the port, from the sensor
  *              map (outputs_screen_set_port_watch()), or none.
- *   SERVO TESTER  OUTPUTS | PORT n: SET_SERVO_TARGET, 0 or n.
- *   PORT PWM   ON | OFF: SET_SERVO_PORT_PWM, the target port's pulse.
+ *   SERVO TESTER  OUTPUTS | PORT n: SET_SERVO_TARGET, 0 or n.  On the
+ *              rbmod carrier through prog_choice_pick(), which also sets
+ *              the port's FUNC (prog_choice.h).
+ *   PORT PWM   ON | OFF: SET_SERVO_PORT_PWM, the target port's pulse.  On
+ *              the carrier ON waits for the PROG 5V box to read ON.
  *
  * and one amber line that says why a row takes no press, or how the last
  * ask for this port stands.  The pin and the function are the IOmcu's,
@@ -30,11 +36,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "esc_wire_panel.h"
+#include "hitec_panel.h"
 #include "link_pages.h"
-#include "picker_screen.h"
 #include "port_view.h"
+#include "prog_choice.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "ui_board.h"
 #include "ui_screen.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -82,8 +91,7 @@ static struct {
     ui_tabs_t tester;       /**< SERVO TESTER: OUTPUTS | PORT n           */
     ui_tabs_t pwm;          /**< PORT PWM: ON | OFF                       */
     char      tester_port[16];   /**< PORT n, the tester's second tab */
-    bool      pin_down;     /**< the PIN button is pressed                */
-    int       pin_id;       /**< the touch id of that press               */
+    bool      board;        /**< laid out for the board view              */
     uint32_t  sig;          /**< what the column last showed              */
     uint32_t  view_rev;     /**< port_view_revision() last drawn          */
     uint32_t  rev;          /**< bumped by every change it draws          */
@@ -114,7 +122,9 @@ void outputs_screen_set_port_watch(uint8_t port, const char *label)
 
 static gfx_rect_t seg_row(int label_y)
 {
-    return gfx_rect_make(COL_X + 3, label_y + SEG_DY, COL_W - 6, SEG_H);
+    return p.board ? gfx_rect_make(OB_COL_X, label_y + SEG_DY, OB_COL_W, SEG_H)
+                   : gfx_rect_make(COL_X + 3, label_y + SEG_DY, COL_W - 6,
+                                   SEG_H);
 }
 
 static gfx_rect_t pin_rect(void)
@@ -122,7 +132,15 @@ static gfx_rect_t pin_rect(void)
     return gfx_rect_make(COL_X, PIN_Y, COL_W, PIN_H);
 }
 
-static gfx_rect_t fn_face(void) { return seg_row(FN_Y); }
+/**
+ * @brief FUNCTION's face in the view in force.
+ * @return its rectangle
+ */
+static gfx_rect_t fn_face(void)
+{
+    return p.board ? gfx_rect_make(OB_FN_X, OB_FN_Y, OB_FN_W, UI_TAP_MIN)
+                   : seg_row(FN_Y);
+}
 
 /* The functions the list offers: SERVO PWM and NONE, and the DShot rates
  * from an IOmcu of 4.28. */
@@ -135,8 +153,8 @@ static int fn_rows(void)
 static gfx_rect_t fn_list(void)
 {
     const gfx_rect_t f = fn_face();
-    return gfx_rect_make(COL_X, f.y + f.h + 4, COL_W,
-                         fn_rows() * FN_ROW_H + 8);
+    return gfx_rect_make(p.board ? OB_COL_X : COL_X, f.y + f.h + 4,
+                         p.board ? OB_LIST_W : COL_W, fn_rows() * FN_ROW_H + 8);
 }
 
 static gfx_rect_t fn_row(int i)
@@ -154,21 +172,40 @@ static void fn_close(void)
     p.fn_hit  = -1;
 }
 
-void outputs_port_reset(void)
+/** @brief Lays the two segment rows out for the view in force. */
+static void lay_out_tabs(void)
 {
     static const ui_text_id_t pwm[] = { TX_ON, TX_OFF };
-    p.port = -1;
-    p.pin_down = false;
-    fn_close();
-    ui_tabs_init_text(&p.pwm, pwm, 2, seg_row(PWM_Y));
+    ui_tabs_init_text(&p.pwm, pwm, 2,
+                      seg_row(p.board ? OB_PWM_Y : PWM_Y));
     static const ui_text_id_t tester[] = { TX_OUT_TESTER_OUTPUTS,
                                            TX_OUT_TESTER_OUTPUTS };
-    ui_tabs_init_text(&p.tester, tester, 2, seg_row(TESTER_Y));
+    ui_tabs_init_text(&p.tester, tester, 2,
+                      seg_row(p.board ? OB_TESTER_Y : TESTER_Y));
     /* The second tab is PORT n, formatted for the entry shown. */
     p.tester_port[0] = '\0';
     p.tester.text[1]  = -1;
     p.tester.label[1] = p.tester_port;
+}
+
+/** @brief The entry's state laid out for the grid and dropped: none shown. */
+void outputs_port_reset(void)
+{
+    p.port = -1;
+    p.board = false;
+    fn_close();
+    lay_out_tabs();
     outputs_port_touched();
+}
+
+void outputs_port_set_view(bool board)
+{
+    if (board != p.board) {
+        p.board = board;
+        fn_close();
+        lay_out_tabs();
+        outputs_port_touched();
+    }
 }
 
 void outputs_port_cancel(void)
@@ -176,7 +213,6 @@ void outputs_port_cancel(void)
     fn_close();
     ui_tabs_cancel(&p.tester);
     ui_tabs_cancel(&p.pwm);
-    p.pin_down = false;
     outputs_port_touched();
 }
 
@@ -216,6 +252,22 @@ void outputs_port_name(uint8_t port, char *buf, size_t cap)
 
 static int target(void) { return settings_get_int(SET_SERVO_TARGET); }
 
+/**
+ * @brief A board that solders its pins (the rbmod carrier): each port is on
+ *        its own pin, so PIN and FUNCTION are shown and not offered.  The
+ *        tester's rows are drawn from protocol 4.36 (carrier_tester()).
+ * @return true on a board with soldered roles
+ */
+static bool soldered(void) { return ui_board_roles() != NULL; }
+
+/**
+ * @brief The carrier with an IOmcu of 4.36 or later: the tester's rows are
+ *        drawn, and a port is chosen through prog_choice_pick(), which
+ *        asks the port's FUNC itself.
+ * @return true when the carrier offers the choice
+ */
+static bool carrier_tester(void) { return soldered() && prog_choice_offered(); }
+
 static bool known(void) { return port_view_has((uint8_t)p.port); }
 
 static bool held(void)
@@ -238,7 +290,7 @@ static bool fn_pwm(void)
  * or sweep runs, nor while the tester drives this port. */
 static bool fn_locked(void)
 {
-    return !known() || !port_view_get()->has_func || held()
+    return soldered() || !known() || !port_view_get()->has_func || held()
            || servo_screen_tester_target_locked()
            || target() == p.port + 1;
 }
@@ -247,6 +299,10 @@ static bool fn_locked(void)
  * SERVO PWM port. */
 static bool tester_locked(void)
 {
+    if (carrier_tester()) {
+        return prog_choice_locked()
+               || prog_choice_refusal((uint8_t)(p.port + 1), NULL, 0u);
+    }
     return servo_screen_tester_target_locked()
            || (!fn_pwm() && target() != p.port + 1);
 }
@@ -267,6 +323,32 @@ static void sync_tabs(void)
     p.pwm.selected = settings_get_bool(SET_SERVO_PORT_PWM) ? 0 : 1;
 }
 
+/**
+ * @brief The carrier's line under the tester's rows: who holds the port, the
+ *        lock, a slice an output holds, the PROG 5V the pulse waits for, the
+ *        port the tester drives, or why PORT PWM is locked.
+ * @param buf takes the line, empty for none
+ * @param cap its size
+ */
+static void carrier_reason(char *buf, size_t cap)
+{
+    const uint8_t port = (uint8_t)(p.port + 1);
+    if (esc_wire_panel_holds_port()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_ESC));
+    } else if (hitec_panel_holds_port()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_HITEC));
+    } else if (prog_choice_lock_line(buf, cap)
+               || prog_choice_refusal(port, buf, cap)) {
+        /* The lock's line, or the output on the port's slice by name. */
+    } else if (target() == port && prog_choice_needs_5v()) {
+        snprintf(buf, cap, "%s", TR(PC_NEED_5V));
+    } else if (target() > 0 && target() != port) {
+        snprintf(buf, cap, TR(OUT_PORT_TESTER_ON), (unsigned)target());
+    } else if (pwm_locked()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_PWM_NEEDS));
+    }
+}
+
 bool outputs_screen_port_reason(char *buf, size_t cap)
 {
     if (buf == NULL || cap == 0u) {
@@ -285,6 +367,14 @@ bool outputs_screen_port_reason(char *buf, size_t cap)
     }
     if (!known()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_NOT_READ));
+    } else if (soldered() && !carrier_tester()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_SOLDERED));
+    } else if (carrier_tester()) {
+        carrier_reason(buf, cap);
+    } else if (esc_wire_panel_holds_port()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_ESC));
+    } else if (hitec_panel_holds_port()) {
+        snprintf(buf, cap, "%s", TR(OUT_PORT_HELD_HITEC));
     } else if (servo_screen_tester_target_locked()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_LOCKED));
     } else if (target() > 0
@@ -311,10 +401,13 @@ static uint32_t signature(void)
     }
     return 1u | ((uint32_t)(target() & 7) << 1)
            | (settings_get_bool(SET_SERVO_PORT_PWM) ? 16u : 0u)
-           | (servo_screen_tester_target_locked() ? 32u : 0u)
+           | (prog_choice_locked() ? 32u : 0u)
            | (servo_screen_port_pwm_locked() ? 64u : 0u)
            | (held() ? 128u : 0u)
-           | (fn_locked() ? 256u : 0u);
+           | (fn_locked() ? 256u : 0u)
+           | (soldered() ? 512u : 0u)
+           | (carrier_tester() ? 1024u : 0u)
+           | (prog_choice_needs_5v() ? 2048u : 0u);
 }
 
 void outputs_port_tick(void)
@@ -376,34 +469,6 @@ static int seg_event(ui_tabs_t *t, const touch_event_t *evt, bool locked,
     const int i = t->selected;
     t->selected = was;
     return tapped ? i : -1;
-}
-
-/* The PIN button: a tap opens PICK A PIN on this port. */
-static bool pin_event(const touch_event_t *evt)
-{
-    const gfx_rect_t r = pin_rect();
-    if (evt->type == TOUCH_EVENT_DOWN) {
-        if (!gfx_rect_contains(r, evt->point.x, evt->point.y)) {
-            return false;
-        }
-        p.pin_down = true;
-        p.pin_id = evt->point.id;
-        outputs_port_touched();
-        return true;
-    }
-    if (!p.pin_down || evt->point.id != p.pin_id) {
-        return false;
-    }
-    if (evt->type == TOUCH_EVENT_UP) {
-        p.pin_down = false;
-        outputs_port_touched();
-        if (touch_event_is_tap_up(evt)
-            && gfx_rect_contains(r, evt->point.x, evt->point.y)) {
-            picker_screen_open_on_port((uint8_t)p.port);
-            ui_router_goto(SCREEN_PICKER);
-        }
-    }
-    return true;
 }
 
 /*
@@ -477,21 +542,31 @@ bool outputs_port_event(const touch_event_t *evt)
     if (fn_event(evt)) {
         return true;
     }
-    if (pin_event(evt)) {
-        return true;
+    if (soldered() && !carrier_tester()) {
+        return false;            /* no tester rows before 4.36 */
     }
     bool took;
     int i = seg_event(&p.tester, evt, tester_locked(), &took);
     if (took) {
         if (i >= 0 && i != p.tester.selected) {
-            settings_set(SET_SERVO_TARGET,
-                         (i == 0) ? 0.0f : (float)(p.port + 1));
-            settings_request_save();
+            if (carrier_tester()) {
+                /* The FUNC follows the choice (prog_choice_tick()). */
+                (void)prog_choice_pick((i == 0) ? 0u : (uint8_t)(p.port + 1));
+            } else {
+                settings_set(SET_SERVO_TARGET,
+                             (i == 0) ? 0.0f : (float)(p.port + 1));
+                settings_request_save();
+            }
         }
         return true;
     }
     i = seg_event(&p.pwm, evt, pwm_locked(), &took);
     if (took) {
+        /* On the carrier the pulse needs the ports' 5V: ON waits for the
+         * PROG 5V box, and the line under the rows says so. */
+        if (i == 0 && carrier_tester() && prog_choice_needs_5v()) {
+            return true;
+        }
         if (i >= 0 && i != p.pwm.selected) {
             settings_set(SET_SERVO_PORT_PWM, (i == 0) ? 1.0f : 0.0f);
             settings_request_save();
@@ -511,9 +586,17 @@ static void pin_label(char *buf, size_t cap)
     if (!known()) {
         snprintf(buf, cap, "%s", TR(OUT_PORT_NO_PIN));
     } else if (v->pin[port] == PORT_VIEW_NO_PIN) {
-        snprintf(buf, cap, "%s", TR(OUT_PORT_PIN_SET));
+        /* Only the board's keys set one. */
+        snprintf(buf, cap, "%s",
+                 p.board ? TR(OUT_PORT_PIN_SET) : TR(OUT_PORT_NO_PIN));
     } else if ((v->refused & (1u << port)) != 0u) {
         snprintf(buf, cap, TR(OUT_PORT_PIN_REFUSED), (unsigned)v->pin[port]);
+    } else if (soldered()) {
+        char role[8];
+        (void)outputs_role_name(ui_board(), (uint8_t)v->pin[port], role,
+                                sizeof(role));
+        snprintf(buf, cap, TR(OUT_PORT_PIN_ROLE), role,
+                 (unsigned)v->pin[port]);
     } else {
         snprintf(buf, cap, TR(OUT_PORT_PIN), (unsigned)v->pin[port]);
     }
@@ -538,13 +621,16 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
     sync_tabs();
 
     pin_label(buf, sizeof(buf));
-    ui_button_font(c, pin_rect(), buf, UI_PANEL_HI, p.pin_down, true,
+    ui_button_font(c, pin_rect(), buf, UI_PANEL_HI, false, false,
                    OU_FONT_LABEL);
 
     gfx_text(c, COL_X, FN_Y, TR(OUT_PORT_FUNCTION), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     const uint8_t fn = port_view_func((uint8_t)p.port);
-    const char *fn_name = known() ? port_view_fn_name(fn) : "?";
+    const char *fn_name =
+        (soldered() && fn != (uint8_t)LINK_PG_FN_SERVO_PWM)
+            ? TR(OUT_PORT_FN_PROG)
+            : known() ? port_view_fn_name(fn) : "?";
     if (fn_locked()) {
         ui_choice_face_locked(c, fn_face(), fn_name);
     } else {
@@ -563,12 +649,14 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
     gfx_text(c, COL_X, WATCH_Y + ((wf == OU_FONT_LABEL) ? 0 : 2), buf, wf,
              UI_TEXT_DIM, 1);
 
-    gfx_text(c, COL_X, TESTER_Y, TR(OUT_PORT_TESTER), OU_FONT_LABEL,
-             UI_TEXT_FAINT, 1);
-    ui_tabs_render_locked(&p.tester, c, tester_locked());
-    gfx_text(c, COL_X, PWM_Y, TR(OUT_PORT_PWM), OU_FONT_LABEL,
-             UI_TEXT_FAINT, 1);
-    ui_tabs_render_locked(&p.pwm, c, pwm_locked());
+    if (!soldered() || carrier_tester()) {
+        gfx_text(c, COL_X, TESTER_Y, TR(OUT_PORT_TESTER), OU_FONT_LABEL,
+                 UI_TEXT_FAINT, 1);
+        ui_tabs_render_locked(&p.tester, c, tester_locked());
+        gfx_text(c, COL_X, PWM_Y, TR(OUT_PORT_PWM), OU_FONT_LABEL,
+                 UI_TEXT_FAINT, 1);
+        ui_tabs_render_locked(&p.pwm, c, pwm_locked());
+    }
     if (outputs_screen_port_reason(buf, sizeof(buf))) {
         /* Three lines where it needs them: "GESPERRT: DER
          * SERVO-PROGRAMMIERER BELEGT DEN PORT" breaks into three of 30
@@ -577,12 +665,122 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
                            OU_LINE, buf, 3, OU_FONT_LABEL, UI_WARN, false);
     }
     /* Last: the open list lies over the rows under the face. */
-    if (p.fn_open && !fn_locked()) {
-        ui_choice_list(c, fn_list());
-        for (int i = 0; i < fn_rows(); ++i) {
-            ui_choice_row(c, fn_row(i), port_view_fn_name((uint8_t)i),
-                          (uint8_t)i == fn, p.fn_hit == 1 + i);
+    outputs_port_draw_list(c);
+}
+
+void outputs_port_draw_list(gfx_canvas_t *c)
+{
+    if (c == NULL || p.port < 0 || !p.fn_open || fn_locked()) {
+        return;
+    }
+    const uint8_t fn = port_view_func((uint8_t)p.port);
+    ui_choice_list(c, fn_list());
+    for (int i = 0; i < fn_rows(); ++i) {
+        ui_choice_row(c, fn_row(i), port_view_fn_name((uint8_t)i),
+                      (uint8_t)i == fn, p.fn_hit == 1 + i);
+    }
+}
+
+/**
+ * @brief The cells of the longest word in @p text.
+ * @param text the text
+ * @return its length in cells
+ */
+static int longest_word(const char *text)
+{
+    int most = 0;
+    for (const char *at = text; *at != '\0';) {
+        const char *end = strchr(at, ' ');
+        const size_t len = (end != NULL) ? (size_t)(end - at) : strlen(at);
+        char word[64];
+        snprintf(word, sizeof(word), "%.*s", (int)len, at);
+        const int cells = (int)gfx_text_cells(word);
+        most = (cells > most) ? cells : most;
+        at += len;
+        while (*at == ' ') {
+            ++at;
         }
+    }
+    return most;
+}
+
+/**
+ * @brief The amber line under the rows: up to four lines of the label face,
+ *        or five of 8 x 16 where a word is wider than the column in the
+ *        label face or four lines do not hold it.
+ * @param c canvas drawn on
+ * @param why the line
+ */
+static void draw_why(gfx_canvas_t *c, const char *why)
+{
+    const gfx_rect_t box = gfx_rect_make(OB_COL_X, OB_WHY_Y, OB_COL_W, 20);
+    const bool label = longest_word(why) <= OB_COL_W / OU_CELL
+                       && outputs_wrap(NULL, box, OU_LINE, why, 9,
+                                       OU_FONT_LABEL, UI_WARN, false) <= 4;
+    if (label) {
+        (void)outputs_wrap(c, box, OU_LINE, why, 4, OU_FONT_LABEL, UI_WARN,
+                           false);
+    } else {
+        (void)outputs_wrap(c, box, OB_WHY_FINE, why, 5, OU_FONT_FINE, UI_WARN,
+                           false);
+    }
+}
+
+void outputs_port_draw_board(gfx_canvas_t *c, const char *why)
+{
+    if (c == NULL || p.port < 0) {
+        return;
+    }
+    char buf[96];
+    sync_tabs();
+
+    gfx_text(c, OB_COL_X, OB_FN_Y + (UI_TAP_MIN - 20) / 2,
+             TR(OUT_PORT_FUNCTION), OU_FONT_LABEL, UI_TEXT_FAINT, 1);
+    const uint8_t fn = port_view_func((uint8_t)p.port);
+    const char *fn_name = known() ? port_view_fn_name(fn) : "?";
+    if (fn_locked()) {
+        ui_choice_face_locked(c, fn_face(), fn_name);
+    } else {
+        ui_choice_face(c, fn_face(), fn_name, p.fn_hit == 0, p.fn_open);
+    }
+
+    /* The pin this entry drives, and where it is on the board; amber while
+     * it drives none. */
+    const port_view_t *v = port_view_get();
+    const bool holds_pin = known() && v->pin[p.port] != PORT_VIEW_NO_PIN
+                           && (v->refused & (1u << p.port)) == 0u;
+    pin_label(buf, sizeof(buf));
+    const int pin_lines = outputs_wrap(
+        c, gfx_rect_make(OB_COL_X, OB_PIN_Y, OB_COL_W, 24), OB_PIN_PITCH, buf,
+        2, UI_FONT_BODY, holds_pin ? UI_ACCENT : UI_WARN, false);
+    const uint16_t board = outputs_screen_binding()->board;
+    const uint8_t gpio = v->pin[p.port];
+    const uint8_t index = outbind_index_of(board, gpio);
+    if (pin_lines == 1 && known() && gpio != PORT_VIEW_NO_PIN
+        && index < outbind_pin_count(board)) {
+        snprintf(buf, sizeof(buf), "%s %u", TR(PK_PAD),
+                 (unsigned)outbind_pins(board)[index].pad);
+        gfx_text(c, OB_COL_X, OB_PIN_Y + OB_PIN_PITCH, buf, OU_FONT_LABEL,
+                 UI_TEXT_FAINT, 1);
+    }
+
+    if (g_watch[p.port][0] != '\0') {
+        snprintf(buf, sizeof(buf), TR(OUT_PORT_WATCHED), g_watch[p.port]);
+    } else {
+        snprintf(buf, sizeof(buf), "%s", TR(OUT_PORT_WATCH_NONE));
+    }
+    (void)outputs_wrap(c, gfx_rect_make(OB_COL_X, OB_WATCH_Y, OB_COL_W, 20),
+                       OU_LINE, buf, 3, OU_FONT_LABEL, UI_TEXT_DIM, false);
+
+    gfx_text(c, OB_COL_X, OB_TESTER_Y, TR(OUT_PORT_TESTER), OU_FONT_LABEL,
+             UI_TEXT_FAINT, 1);
+    ui_tabs_render_locked(&p.tester, c, tester_locked());
+    gfx_text(c, OB_COL_X, OB_PWM_Y, TR(OUT_PORT_PWM), OU_FONT_LABEL,
+             UI_TEXT_FAINT, 1);
+    ui_tabs_render_locked(&p.pwm, c, pwm_locked());
+
+    if (why != NULL && why[0] != '\0') {
+        draw_why(c, why);
     }
 }
 

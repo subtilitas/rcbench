@@ -60,6 +60,16 @@ typedef struct {
      */
     uint16_t acc[LINK_MAX_REGS];
     uint32_t acc_seen;   /**< bit per register within the request's window */
+
+    /**
+     * @brief The far end keeps a read's rest for LINK_OP_READ_HELD (4.35,
+     *        LINK_MINOR_READ_HELD).
+     *
+     * Set by the caller from the far end's IDENTITY; false after
+     * link_host_init(), and link_read_split() then reads a wide window in one
+     * exchange.
+     */
+    bool     held_reads;
 } link_host_t;
 
 /**
@@ -86,6 +96,23 @@ void link_host_init(link_host_t *h, uint32_t now_ms);
  */
 bool link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
                     uint8_t count, uint32_t now_ms, link_msg_t *out);
+/**
+ * @brief Build a LINK_OP_READ_HELD request: the registers the far end kept
+ *        from the read of LINK_READ_REGS_MAX registers before.
+ *
+ * As link_host_read(); DATA answers it the same way.
+ *
+ * @param h The panel's link state.
+ * @param page Page number to read.
+ * @param offset First register kept: the first part's offset plus
+ *               LINK_READ_REGS_MAX.
+ * @param count Number of registers, 1 to LINK_READ_REGS_MAX.
+ * @param now_ms The current time, in ms; starts the request's timeout.
+ * @param out Receives the request to send.
+ * @return true when the request was built, else false.
+ */
+bool link_host_read_held(link_host_t *h, uint8_t page, uint8_t offset,
+                         uint8_t count, uint32_t now_ms, link_msg_t *out);
 /**
  * @brief Build a write request.
  *

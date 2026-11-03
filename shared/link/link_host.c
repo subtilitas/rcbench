@@ -45,7 +45,7 @@ void link_host_init(link_host_t *h, uint32_t now_ms)
  * @brief Build a request and mark it outstanding.
  *
  * @param h The panel's link state.
- * @param op LINK_OP_READ or LINK_OP_WRITE.
+ * @param op LINK_OP_READ, LINK_OP_READ_HELD or LINK_OP_WRITE.
  * @param page Page number.
  * @param offset First register within the page.
  * @param count Number of registers, 1 to LINK_MAX_REGS.
@@ -92,6 +92,12 @@ bool link_host_read(link_host_t *h, uint8_t page, uint8_t offset,
                     uint8_t count, uint32_t now_ms, link_msg_t *out)
 {
     return start(h, LINK_OP_READ, page, offset, count, NULL, now_ms, out);
+}
+
+bool link_host_read_held(link_host_t *h, uint8_t page, uint8_t offset,
+                         uint8_t count, uint32_t now_ms, link_msg_t *out)
+{
+    return start(h, LINK_OP_READ_HELD, page, offset, count, NULL, now_ms, out);
 }
 
 bool link_host_write(link_host_t *h, uint8_t page, uint8_t offset,
@@ -148,7 +154,8 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
     /* A NACK answers the request it refuses and names the fragment it
      * refuses; DATA and ACK have to fall inside the window that was asked
      * for. */
-    const bool answers_read  = (h->op == LINK_OP_READ
+    const bool answers_read  = ((h->op == LINK_OP_READ
+                                 || h->op == LINK_OP_READ_HELD)
                                 && part->op == LINK_OP_DATA);
     const bool answers_write = (h->op == LINK_OP_WRITE
                                 && part->op == LINK_OP_ACK);

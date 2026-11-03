@@ -22,11 +22,13 @@ read per loop and answers only frames addressed to a page the map does not use.
 Boot output on the IOmcu's USB (Universal Serial Bus) console, repeated
 every 3s:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
 
 `requests served` counts link page requests the panel sent and this end
 answered; `self-test echoes` counts probe frames and is 0 unless the panel's
-CAN self-test is running. The two together say which end has stopped:
+CAN self-test is running. `tx_drop` counts reply frames this end gave up
+after 1000 tries at a full transmit buffer; the panel then waits out its
+exchange. The first two together say which end has stopped:
 
 | Requests | Panel says | Reading |
 | --- | --- | --- |
@@ -40,9 +42,16 @@ GPIO 12), not on the CAN bus.
 
 ### Panel
 
-The test runs at every start-up. It takes 1200ms, inside the splash and
-before the identity poll: a broken bus is then diagnosed as a broken bus
-rather than as an identity that never answered.
+The test runs at every start-up, inside the splash and before the identity
+poll: a broken bus is then diagnosed as a broken bus rather than as an
+identity that never answered.
+
+First the panel asks the IOmcu for its status, for up to 5000ms, and starts
+the test at the first answer. The IOmcu opens CAN after its supply boot-off,
+which takes up to 3500ms when the PD mini gets power at the same moment as
+the IOmcu. Without an answer in 5000ms the test runs anyway and reports the
+silent bus. The test itself takes 1200ms. `bus_err` counts the bus errors of
+the test only, not those of the wait.
 
 A verdict that is not `every probe came back intact` puts the panel on the
 [bus-fault screen](#the-bus-fault-screen) instead of the menu. Nothing has to
@@ -57,6 +66,7 @@ GPIO21; neither carries anything else. The controller's clock is
 the 40MHz crystal. It prints:
 
     I (…) can: 1000000 bit/s: brp 2, tseg1 14, tseg2 5, sjw 4, sample point 75.0%
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0  (transmit queue full 0 times)
     I (…) rcbench:   round trip min 334 max 1356 us
@@ -128,7 +138,13 @@ bits and long runs of one level are what a marginal bus fails on.
 After bring-up the panel polls the IOmcu's identity page every second
 until it answers, then polls the bench page at 20Hz and the status page every
 500ms. Every 5s while the link is down, and once a minute while it is up, the
-panel prints a diagnosis:
+panel prints a diagnosis. The control task, which beats the heartbeat,
+takes the counters and hands them to the logger task, which formats and
+prints the lines: up to 7 lines take 50ms and more on the console, and the
+heartbeat's limit is 150ms. A queue of 2 reports holds them; with the
+logger held by the card and the queue full, the control task prints the
+report itself, and no line is dropped. The heartbeat gap with the report
+off the control task is not measured.
 
     I (…) rcbench: LINK answers arrive too late
     W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
@@ -161,7 +177,7 @@ not counts, and appear in the `last` line as read: see below.
 `nack` in the panel line counts requests the IOmcu answered with a NACK
 (negative acknowledge). A NACK is an answer: the link works, and the page
 kept what it held ([Frames](Link.md#frames)). A set-up from SETUP
-INTERFACES that a page refuses is one each: one write per refused value,
+that a page refuses is one each: one write per refused value,
 not written again until the value changes, so stepping through rows on SETUP
 counts one NACK for each value the IOmcu refuses (Tap gap 2ms with Tap
 lowest tone at 400Hz, or PD mini RX on the sensor bus's SCL) and none for

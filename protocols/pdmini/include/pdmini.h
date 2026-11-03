@@ -300,6 +300,8 @@ typedef struct {
     bool     identified;
     bool     answered;       /**< identified once since pdmini_init()      */
     bool     restored;       /**< wiring from before a restart: maybe on   */
+    bool     hurry;          /**< WHO_AM_I again as soon as one has failed:
+                                  pdmini_hurry()                          */
     uint8_t  who_misses;     /**< WHO_AM_I answered by not a byte, so far  */
     uint16_t who_failed;     /* WHO_AM_I without a valid answer: a count
                                 to compare for a change, wrapping from
@@ -417,6 +419,21 @@ void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
  * @param d  Driver state.
  */
 void pdmini_restored(pdmini_t *d);
+
+/**
+ * @brief WHO_AM_I again as soon as the last one has failed, rather than
+ *        PDMINI_IDENTIFY_MS after it, while @p on.
+ *
+ * For a caller that has to reach a module that may be on as soon as it can:
+ * a start-up after a reset, with the module's rate still to be found.  Each
+ * WHO_AM_I that nothing answers then takes PDMINI_ATTACH_MS +
+ * PDMINI_REPLY_MS + PDMINI_GAP_MS, 415ms, so seven rates are tried in
+ * 2.9s rather than 7s.  It changes nothing once the module is identified.
+ *
+ * @param d  Driver state.
+ * @param on true to hurry, false for the PDMINI_IDENTIFY_MS period.
+ */
+void pdmini_hurry(pdmini_t *d, bool on);
 
 /**
  * @brief Restart the module with SYSTEM_RESET: sent once it has answered, its

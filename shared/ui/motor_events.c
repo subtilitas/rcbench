@@ -226,12 +226,12 @@ void mo_event(const touch_event_t *evt)
                 if (mo_no_motor_pin()) {
                     ui_router_set_alert(TR(ALERT_ARM_NO_PIN));
                 } else {
-                    ui_router_set_alert(TR(ALERT_ARM_PROG));
+                    ui_router_set_alert(prog_reg_hold_alert());
                 }
                 return;
             }
             s.have_press = true; s.press_id = evt->point.id; s.pressed = 1;
-            ui_hold_begin(&s.arm);
+            ui_hold_begin(&s.arm, TX_HOLD_HINT_ARM);
             ++s.arm_rev;
             ++s.ctrl_rev;
         } else if (gfx_rect_contains(s.reset_rect, x, y)) {
@@ -270,7 +270,7 @@ void mo_event(const touch_event_t *evt)
             /* Arming is a hold that has already sent its command by the
              * time the finger lifts; a release that armed nothing sends
              * nothing.  DISARM acted on its press. */
-            (void)ui_hold_end(&s.arm);
+            (void)ui_hold_end(&s.arm, evt, s.arm_rect);
             ++s.arm_rev;
         }
         if (was == 2 && touch_event_is_tap_up(evt)
@@ -298,10 +298,22 @@ void mo_tick(float dt_s)
         ++s.arm_rev;
         ++s.ctrl_rev;
     }
+    /* An ARM asked as a programmer took a pin: the IOmcu refuses it, and no
+     * answer comes to wait for. */
+    if (s.gate.arm_asked && !s.gate.armed && prog_reg_servo_holds()) {
+        ui_value_drop_arm(&s.gate);
+        /* The drop says why: the refusal may not reach this screen. */
+        ui_router_set_alert(prog_reg_hold_alert());
+        ++s.arm_rev;
+        ++s.ctrl_rev;
+    }
     if (s.pressed == 1 && mo_arm_locked()) {
-        /* The port was taken under a hold of ARM: the hold ends. */
+        /* The port was taken under a hold of ARM: the hold ends, and says why. */
         s.pressed = 0;
         ui_hold_reset(&s.arm);
+        if (prog_reg_servo_holds()) {
+            ui_router_set_alert(prog_reg_hold_alert());
+        }
         ++s.arm_rev;
         ++s.ctrl_rev;
     }

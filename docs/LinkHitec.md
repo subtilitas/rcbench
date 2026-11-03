@@ -12,7 +12,10 @@ servos the page works with.
 The Hitec page (`HITEC`, 0x34) is new in 4.23; write register 23, the
 receive mode of a D series line, is new in 4.24. From 4.29 a held port
 holds the SUPPLY page from OPEN to CLOSE
-([The supply while a port is held](#the-supply-while-a-port-is-held)).
+([The supply while a port is held](#the-supply-while-a-port-is-held)). From
+4.31 a writer marks the steps of a write that more steps follow, and SUPPLY
+holds the panel's OFF back until the write ends
+([An OFF during a write](#an-off-during-a-write)).
 The page runs raw transactions of
 the Hitec servo wire of [`protocols/hitec`](../protocols/hitec/README.md) on
 one port of [PROG](Link.md#the-programming-ports): classic (HS-5xxx,
@@ -107,6 +110,48 @@ An IOmcu of 4.23 to 4.28 holds SUPPLY only from the OFF of a POWER to the
 end of its LISTEN, and takes the panel's set points between two POWERs.
 The panel reads bit 11 from either.
 
+### An OFF during a write
+
+From 4.31 a write to the servo's memory runs on this page while a SEND
+whose frame writes runs (BUSY) and for 150ms after it ends
+(`HITEC_PORT_WRITE_TAIL_MS`), or while the last command taken started its
+step with bit 4 of `CMD` (`MORE`): more steps of this write follow. A frame
+writes when it is a classic WRITE_EEPROM (0x62) or WRITE_RAM (0x64), or a
+D series write request (0x96, 7 bytes), the save and the restart
+included; the page tells it from the frame's bytes, with or without the
+bit. A read, a MOVE, a LISTEN, a LEVEL and a POWER write nothing. The
+writer sets the bit on every step of a write but the last: SEND, LISTEN,
+LEVEL or POWER. `STATE` bit 8 shows the bit standing. Every other command
+taken clears it, a refused one included, and so do a stop and CLOSE.
+
+How long a servo needs its supply after a frame that writes is not
+measured. The 150ms are above the longest gap a vendor programmer leaves
+after a writing frame before its next frame: 121 to 128ms on the HPP-21
+Plus between two classic settings, 100ms on the HFP-30 from the D series
+save to the restart.
+
+An OFF the panel writes to SUPPLY while a write runs reads 0 at once and
+reaches the PD mini when the write ends: 150ms after the last writing
+frame's transaction ends, or 10,000ms after the OFF at the latest
+(`SUPPLY_PAGE_WRITE_WAIT_MS`). Until then the port sees its supply on and
+the steps go on. With no write running the OFF reaches the PD mini in the
+next pass. A lost heartbeat or a silent link is not held. From the panel's
+OFF to CLOSE, a POWER switches the supply off as ever and its ON is
+refused: `RESULT` 3 (`SUPPLY`), and the servo stays without power
+(`hitec_port_writing()`, `supply_page.h`).
+
+| Write | Steps with bit 4 | Last step |
+| --- | --- | --- |
+| classic | every cell and balance (0x1C) but the last; every try of a step but the third of the last | the third try of the last balance, or the try that took |
+| D series | the writes and the save | the reboot |
+
+A classic step whose answer comes on its first or second try carries the
+bit, so the bit stands after the last balance until the next command: the
+first read of the read-back, 2ms later, clears it. A write that ends in a
+fault after a step with the bit leaves it standing until the next command
+of this page or the 10,000ms bound. A 4.30 IOmcu refuses a command with
+bit 4 with BAD_VALUE; the panel sets it from 4.31 only.
+
 ## Receive mode
 
 Write register 23 (`RX_MODE`) says how a D series line receives the
@@ -158,7 +203,7 @@ On a PRECHARGE line:
 open line receives by PRECHARGE. An IOmcu speaking 4.23 refuses a write
 that reaches register 23 with READ_ONLY and receives with the pull-up; the
 panel then marks the setting on SETUP
-([INTERFACES: the programming port](Screens.md#interfaces-the-programming-port)).
+([Hitec D receive](HitecProgrammer.md#hitec-d-receive)).
 What is measured and what is not:
 [`protocols/hitec`](../protocols/hitec/README.md#receive-by-precharge-and-sample).
 
@@ -201,9 +246,15 @@ POWER needs a PD mini that answers ([SUPPLY](Link.md)). It:
 
 1. asks the supply off;
 2. waits until it reads off, 3000ms at most, else result 3 (`SUPPLY`);
-3. keeps it off for the staged 0 to 10,000ms;
+   the PD mini's driver reads the state 250ms after an OFF, so the wait
+   is 250ms or more;
+3. keeps it off for the staged 0 to 10,000ms from that read;
 4. asks it on at the staged voltage and current limit;
 5. starts the staged LISTEN in the same pass.
+
+The output is off for the staged time, the 250ms before the read, and the
+driver's reads before the ON: about 760ms for the classic 500ms, 762ms
+measured on one module. The module's own switching time is not measured.
 
 The voltage is 4800 to 6000mV until a session knows the servo model. The
 current limit is 50 to 3000mA. The voltage plus 700mV has to be under the
@@ -239,8 +290,9 @@ While `STOPPED` is set, SEND, LISTEN, LEVEL and POWER are refused with
 not silent; CLOSE and a new OPEN clear it too. While the heartbeat is not
 trusted or the link is silent, every pass counts as a stop, and every
 command but ABORT and CLOSE is refused with `UNSAFE`. The bank does not
-switch to ARMED while the page holds a port, and OPEN is refused while it
-is ARMED.
+switch to ARMED while the page holds a port: a non-zero write of ARM is refused
+with NOT_ARMED, a zero is taken, and when the page lets the port go, by any path, the ARM
+and THROTTLE registers are 0. OPEN is refused while the bank is ARMED.
 
 ## Registers
 
@@ -248,7 +300,7 @@ A read gives these registers:
 
 | Register | Name | Reads |
 | ---: | --- | --- |
-| 0 | `STATE` | bits 0 to 2 the state: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 a PD mini answers. Bit 5 the page holds a capture. Bit 6 the last transaction put a byte on the wire. Bit 7 `RX_MODE` is PRECHARGE (4.24). Bits 12 to 15 the port |
+| 0 | `STATE` | bits 0 to 2 the state: 0 FREE, 1 STOPPING, 2 OPEN, 3 BUSY, 4 POWER_OFF. Bit 3 `STOPPED`. Bit 4 a PD mini answers. Bit 5 the page holds a capture. Bit 6 the last transaction put a byte on the wire. Bit 7 `RX_MODE` is PRECHARGE (4.24). Bit 8 `MORE`: the last command taken started its step with `CMD` bit 4 (4.31). Bits 12 to 15 the port |
 | 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
 | 2 | `OP` | bits 12 to 15 the last operation started, bits 0 to 11 the transactions started since OPEN, held at 4095 |
 | 3 | `RESULT` | low byte the result of that operation: 0 none, 1 running, 2 done, 3 `SUPPLY`, 4 `START`, 5 `NO_LINE`, 6 `CUT`. High byte why the last command taken started nothing, 0 when it started |
@@ -277,7 +329,7 @@ A write sees other registers:
 
 | Register | Name | Takes |
 | ---: | --- | --- |
-| 0 | `CMD` | bits 0 to 3 the operation: 1 OPEN, 2 CLOSE, 3 SEND, 4 LISTEN, 5 LEVEL, 6 ABORT, 7 POWER, 8 CLEAR. Bits 8 to 11 the port. Every other bit 0 |
+| 0 | `CMD` | bits 0 to 3 the operation: 1 OPEN, 2 CLOSE, 3 SEND, 4 LISTEN, 5 LEVEL, 6 ABORT, 7 POWER, 8 CLEAR. Bit 4 `MORE` on SEND, LISTEN, LEVEL and POWER: more steps of this write follow (4.31). Bits 8 to 11 the port. Every other bit 0 |
 | 1 | `SEQ` | the page's `SEQ` plus 1, modulo 65536 |
 | 2 | `KEY` | 0x48A5 for an operation that puts a byte on the wire, else 0 |
 | 3 | `CRC` | the check over registers 4 to 21, for every operation but ABORT, CLOSE and CLEAR |
@@ -307,8 +359,9 @@ is refused with READ_ONLY, a `VIEW` above 2 or an `RX_MODE` above 1 with
 BAD_VALUE, and the window changes nothing.
 
 A frame with a `SEQ` other than the page's plus 1, an operation 0 or above
-8, a bit set outside the operation and the port, or a `KEY` that is neither
-0 nor 0x48A5 is refused with BAD_VALUE and changes nothing. The frame just
+8, a bit set outside the operation, bit 4 and the port, bit 4 on OPEN,
+CLOSE, ABORT or CLEAR, or a `KEY` that is neither 0 nor 0x48A5 is refused
+with BAD_VALUE and changes nothing. The frame just
 taken, sent again, is acknowledged and does nothing. Every other frame is
 acknowledged; what became of it is in `RESULT`.
 
@@ -375,8 +428,10 @@ A request goes out in this order:
    registers. `VIEW` (22) is always 2.
 2. The command, registers 0 to 3: `SEQ` one above the page's, the check of
    registers 4 to 21, and the key with every SEND and with a LISTEN or POWER
-   that answers. A command without an answer goes again unchanged, 3 tries;
-   the page takes it once.
+   that answers. Bit 4 goes with a step the session marks `more`, to an
+   IOmcu of 4.31 or later only
+   ([An OFF during a write](#an-off-during-a-write)). A command without an
+   answer goes again unchanged, 3 tries; the page takes it once.
 3. Registers 0 to 15: the command started the operation, or `RESULT`'s
    high byte says why not. Then every 5ms until the port is out of
    STOPPING, BUSY and POWER_OFF. The last read holds the capture.

@@ -124,9 +124,40 @@ void prog_link_want(prog_link_t *p, uint8_t target, bool pwm)
 
 void prog_link_hold(prog_link_t *p, bool held)
 {
+    prog_link_hold_by(p, held ? PROG_LINK_WAIT_KST : PROG_LINK_WAIT_NONE);
+}
+
+void prog_link_hold_by(prog_link_t *p, prog_link_wait_t holder)
+{
     if (p != NULL) {
-        p->held = held;
+        p->held = holder != PROG_LINK_WAIT_NONE;
+        p->holder = (uint8_t)holder;
     }
+}
+
+void prog_link_rest_note(prog_link_t *p, prog_link_wait_t why)
+{
+    if (p != NULL) {
+        p->rest_wait = (uint8_t)why;
+    }
+}
+
+bool prog_link_ask_open(const prog_link_t *p)
+{
+    return p != NULL && p->page && p->known && !p->held && !p->reread
+           && p->ask_state == (uint8_t)PROG_LINK_ASK_WAITING;
+}
+
+prog_link_wait_t prog_link_ask_wait(const prog_link_t *p)
+{
+    if (p == NULL || p->ask_state != (uint8_t)PROG_LINK_ASK_WAITING) {
+        return PROG_LINK_WAIT_NONE;
+    }
+    if (!p->page || !p->known || p->reread) {
+        return PROG_LINK_WAIT_READ;
+    }
+    return p->held ? (prog_link_wait_t)p->holder
+                   : (prog_link_wait_t)p->rest_wait;
 }
 
 bool prog_link_held(const prog_link_t *p)

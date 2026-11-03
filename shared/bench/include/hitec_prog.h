@@ -57,6 +57,17 @@
  *     and while a record of an earlier write stands.
  *   - REPAIR writes the classic balance 0x1C alone when the cells 0x00 to
  *     0x1C of the servo read do not sum to 0.
+ *   - Every write reads the addresses its plan depends on a second time
+ *     before its plan runs (hitec_prog_rereading()): classic cells 0x00 to
+ *     0x23, and the factory block 0x30 to 0x53 for FACTORY DEFAULT; D
+ *     series the registers a plan writes (hitec_writable()).  A classic
+ *     reply carries no checksum, a D series reply its sum.  Where the
+ *     second read differs from the first in one address, the write is
+ *     refused (HITEC_PROG_MSG_READS_DIFFER): the image stays the first
+ *     read, and nothing is planned, recorded or sent.  A write tried again compares
+ *     a new second read with the same first one; READ ALL takes a new
+ *     first read.  An ABORT, a stop or a failed read during the second
+ *     read ends the write the same way, with its own message.
  *   - The record (hitec_card.h): before the first step of a write the
  *     servo's values, the target and the port are recorded, with a card
  *     in its file as well, and the write waits for the card.  A write that
@@ -71,7 +82,12 @@
  *   - The session's backup: the first full read after CONNECT, kept in RAM
  *     until LEAVE, the next CONNECT or a lost session.  A read whose model,
  *     name, date or serial differs from it is another servo: that read
- *     becomes the session's backup.
+ *     becomes the session's backup (HITEC_PROG_MSG_OTHER_SERVO).  A D
+ *     series read is of the servo read before it only by the chain of the
+ *     session: with a write unverified, its record's verdict SAME, DONE
+ *     or MIX; otherwise every writable register as that read found it.
+ *     Two D series servos of one model with equal writable registers are
+ *     not told apart.
  *   - The backup file: before the first write of a session that sends a
  *     step (WRITE n VALUES, REPAIR, a RESTORE, FACTORY DEFAULT) the session's
  *     backup is saved to a new file, HITEC001 to HITEC999 (hitec_card.h),
@@ -294,6 +310,13 @@ typedef enum {
                                        stored values outside the editable
                                        parameters; arg the values that
                                        differ, reg those stored values     */
+    HITEC_PROG_MSG_OTHER_SERVO,   /**< a read of the session is not of the
+                                       servo before it: it is the session's
+                                       backup now                          */
+    HITEC_PROG_MSG_READS_DIFFER,  /**< a write refused: the second read
+                                       before its plan differs from the
+                                       read the plan is made from; arg the
+                                       first address that differs          */
     HITEC_PROG_MSG_COUNT
 } hitec_prog_msg_id_t;
 
@@ -347,6 +370,7 @@ typedef struct {
  */
 typedef struct {
     _Atomic uint32_t pass;    /**< the id of the command offered; 0 none */
+    _Atomic uint32_t faults;  /**< session faults counted, modulo 2^32   */
 } hitec_prog_gate_t;
 
 /**
@@ -379,6 +403,29 @@ bool hitec_prog_gate_claim(hitec_prog_gate_t *g, uint32_t id);
  * @return true when the command is not carried out and never is.
  */
 bool hitec_prog_gate_revoke(hitec_prog_gate_t *g, uint32_t id);
+/**
+ * @brief The session's operations that ended in a fault
+ *        (hitec_prog_ses_fault()), counted by the model, modulo 2^32.
+ *
+ * @param g The gate.
+ * @return The count; 0 for NULL.
+ */
+uint32_t hitec_prog_gate_faults(const hitec_prog_gate_t *g);
+
+/**
+ * @brief Whether a session result is a fault of the servo or the wire, which
+ *        the panel takes as an error (error_stop.h).
+ *
+ * A fault: HITEC_SES_ERR_NO_SERVO, _ENTRY, _READ, _WRITE, _VERIFY and
+ * _STEP.  Not one: success, a refusal of the session (_BUSY, _ARG,
+ * _NOT_IN_MODE, _PLAN), a step that a stop, a close or the panel cut or
+ * that did not run (_CUT, _LINK: a stop and a lost link cut the session
+ * themselves), and an ABORT (_ABORTED).
+ *
+ * @param r A hitec_ses_t.
+ * @return true for a fault.
+ */
+bool hitec_prog_ses_fault(unsigned r);
 
 /** @brief What the task that owns the link module publishes, every frame. */
 typedef struct {
@@ -404,6 +451,9 @@ typedef struct {
                                    PD mini, on                            */
     uint16_t out_mv;          /**< its output, mV                         */
     uint16_t out_ma;          /**< the current it gives, mA               */
+    bool     fixed_on;        /**< the ports' own fixed supply (the rbmod
+                                   carrier's 5V, GPIO 21) reads on; no
+                                   reading of its voltage or current      */
     bool     supply_held;     /**< the SUPPLY page says a programming port
                                    holds it (LINK_SP_PORT)                */
     bool     card;            /**< a card is mounted: a write's record
@@ -475,6 +525,8 @@ typedef struct {
     uint8_t  st;              /**< the request phase, private             */
     uint8_t  op;              /**< the session operation, private         */
     bool     owned;           /**< this model opened the held port        */
+    uint32_t leaves;          /**< LEAVEs ended in PWM; see
+                                   hitec_prog_leaves()                    */
     bool     lost;            /**< a lost link took the session: the page's
                                    port is said when it comes back        */
     bool     armed;           /**< hitec_prog_bench_armed()               */
@@ -504,6 +556,8 @@ typedef struct {
     /* --- the write side, hitec_prog_write.c --------------------------- */
     hitec_image_t draft;      /**< the servo read with the edits          */
     hitec_image_t wr_target;  /**< what the running write is to leave     */
+    hitec_image_t rr_first;   /**< the read the write's plan is made from,
+                                   kept while the second read runs        */
     bool     write_on;        /**< ENABLE WRITE TO SERVO                  */
     bool     must_read;       /**< a write failed: READ ALL comes first   */
     bool     wrote;           /**< a write of this CONNECT went out       */
@@ -793,6 +847,19 @@ bool hitec_prog_on_port(const hitec_prog_t *p);
 bool hitec_prog_holds_port(const hitec_prog_t *p);
 
 /**
+ * @brief The count of LEAVEs that ended with the port back in PWM
+ *        (HITEC_PROG_MSG_LEFT).
+ *
+ * RELEASE PORT, a lost link, a restart of the IOmcu and a port the IOmcu
+ * gives back without a LEAVE count none.  The SERVO screen's restore
+ * question follows a LEAVE only (supply_screen_hitec_leave_done()).
+ *
+ * @param p The programmer.
+ * @return The count since hitec_prog_init(); it wraps at 2^32.
+ */
+uint32_t hitec_prog_leaves(const hitec_prog_t *p);
+
+/**
  * @brief The link task's view: the page holds a port, or a request runs.
  *
  * @param rd The module's readout.
@@ -850,7 +917,8 @@ const hitec_model_t *hitec_prog_model(const hitec_prog_t *p);
 uint8_t hitec_prog_layout(const hitec_prog_t *p);
 
 /**
- * @brief The progress of the running read.
+ * @brief The progress of the running read: READ ALL's, or the second read
+ *        before a write's plan.
  *
  * @param p     The programmer.
  * @param done  Receives the addresses read.
@@ -859,6 +927,15 @@ uint8_t hitec_prog_layout(const hitec_prog_t *p);
  */
 bool hitec_prog_progress(const hitec_prog_t *p, unsigned *done,
                          unsigned *total);
+
+/**
+ * @brief Whether the running read is the second read before a write's plan
+ *        (hitec_prog_state() says HITEC_PROG_READING for it).
+ *
+ * @param p The programmer.
+ * @return true while it runs.
+ */
+bool hitec_prog_rereading(const hitec_prog_t *p);
 
 /**
  * @brief The decoder's code of the last failed try of the running

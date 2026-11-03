@@ -545,6 +545,51 @@ sens_part_t sense_map_link_part(const sense_map_link_t *s,
                ? SENS_PART_SILENT : SENS_PART_SEARCHING;
 }
 
+sens_part_t sense_map_link_i228(const sense_link_t *sl, uint32_t now_ms)
+{
+    if (sl == NULL || !sl->want_set || !sl->want_i228) {
+        return SENS_PART_UNKNOWN;
+    }
+    if (sl->want_sda < 0 || sl->want_scl < 0) {
+        return SENS_PART_NO_BUS;
+    }
+    if ((sl->want[LINK_SN_ENABLE] & LINK_SN_EN_I228) == 0u) {
+        return SENS_PART_SAME_ADDR;    /* sense_link_want() left both out */
+    }
+    if (!sl->up) {
+        return SENS_PART_UNKNOWN;
+    }
+    if (!sl->page || sl->refused_i228 || sl->refused_bus) {
+        return SENS_PART_REFUSED;
+    }
+    if (!sl->known) {
+        return SENS_PART_UNKNOWN;
+    }
+    /* A frame not written yet first: the flags are the old frame's. */
+    const uint16_t rows = (uint16_t)(SENSE_LINK_ROW_I228
+                                     | SENSE_LINK_ROW_I228_ADDR
+                                     | SENSE_LINK_ROW_I228_SHUNT
+                                     | SENSE_LINK_ROW_I228_MAX
+                                     | SENSE_LINK_ROW_PINS);
+    if ((sense_link_unheld(sl) & rows) != 0u) {
+        return SENS_PART_PENDING;
+    }
+    if (!sl->have_status) {
+        return SENS_PART_SEARCHING;
+    }
+    const uint16_t f = sense_link_flags(sl);
+    if ((f & LINK_SN_I228_ONLINE) != 0u) {
+        return SENS_PART_ONLINE;
+    }
+    if ((f & LINK_SN_I228_ID_WRONG) != 0u) {
+        return SENS_PART_WRONG;
+    }
+    return (sl->online_seen[SENSE_LINK_INA228]
+            || sl->silent_told[SENSE_LINK_INA228]
+            || (uint32_t)(now_ms - sl->setup_ms) >= SENSE_LINK_GRACE_MS)
+               ? SENS_PART_SILENT : SENS_PART_SEARCHING;
+}
+
 uint16_t sense_map_link_status(const sense_map_link_t *s,
                                const sense_link_t *sl, unsigned mirror,
                                uint32_t now_ms)

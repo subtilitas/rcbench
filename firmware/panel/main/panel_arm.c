@@ -18,6 +18,7 @@
 #include "bench_state.h"
 #include "bind_link.h"
 #include "heartbeat.h"
+#include "esc_link.h"
 #include "hitec_link.h"
 #include "kst_link.h"
 #include "link_host.h"
@@ -112,6 +113,7 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     tone_link_init(&s_tone_link);
     kst_link_init(&s_kst_link);
     hitec_link_init(&s_hitec_link);
+    esc_link_init(&s_esc_link);
     prog_link_init(&s_prog_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();
@@ -332,7 +334,7 @@ void service_arming(bool link_up)
                                     .port_taken = s_prog_taken };
         if (arming_handshake_step(&s_arm, ARMING_HS_HANDED, &facts, now_ms())
             == ARMING_HS_PROG) {
-            control_alert(TR(ALERT_ARM_PROG));
+            control_alert(esc_taken() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG));
             break;
         }
         /*
@@ -629,6 +631,10 @@ void drain_commands(bool link_up, bench_state_t *bench)
             apply_supply_cmd(&pc);
             continue;
         }
+        if (pc.kind == PANEL_CMD_PROG5V) {
+            apply_prog5v_cmd(&pc);
+            continue;
+        }
 
         /*
          * Nothing asked for before a stop drives anything after it.
@@ -675,7 +681,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
         if (arms && s_prog_taken) {
             /* Programming a servo and an armed bench are exclusive,
              * whichever screen asks. */
-            control_alert(TR(ALERT_ARM_PROG));
+            control_alert(esc_taken() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG));
             continue;
         }
         if (arms) {

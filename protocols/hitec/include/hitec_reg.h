@@ -81,10 +81,14 @@ extern "C" {
 #define HITEC_D_REG_FACTORY 0x6Eu  /**< 0x0F0F restores the factory values */
 #define HITEC_D_REG_SAVE    0x70u  /**< 0xFFFF stores the registers */
 #define HITEC_D_REG_REBOOT  0x46u  /**< 1 restarts the servo */
+#define HITEC_D_REG_POSITION 0x0Cu /**< the horn's position, read only */
+#define HITEC_D_REG_TARGET  0x1Eu  /**< the target the horn moves to */
 #define HITEC_D_FACTORY_KEY 0x0F0Fu  /**< the value of a factory reset */
 #define HITEC_D_SAVE_KEY    0xFFFFu  /**< the value of a save */
 /** @brief Highest D series position; 8192 is the centre. */
 #define HITEC_D_POS_MAX     16383u
+/** @brief Highest D series target (0x1E); 3000 is the neutral. */
+#define HITEC_D_TARGET_MAX  6000u
 
 /**
  * @brief The registers or cells of one servo, as read.

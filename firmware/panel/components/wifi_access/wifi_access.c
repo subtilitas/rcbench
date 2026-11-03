@@ -20,6 +20,7 @@
 
 #include "wifi_access.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -54,12 +55,16 @@
 #include "wifi_sock.h"
 #include "wa_text.h"
 #include "wa_walk.h"
-#include "wa_zip.h"
 #include "wall_clock.h"
+#include "wifi_access_int.h"
+#include "wifi_files.h"
+#include "wifi_zip.h"
 
 static const char *TAG = "wifi";
 
 #define NVS_NS        "wifi"
+#define NVS_AP_PASS   "ap_pass"   /**< HOTSPOT PASSWORD; no key: RANDOM */
+#define NVS_WEB_CODE  "web_code"  /**< WEB CODE; no key: RANDOM */
 /** @brief Stack of the wifi_ctl task, in bytes, from internal RAM. The
  *  deepest call chain, the radio stop down to snprintf(), is 3744 bytes;
  *  6912 leaves 2144 above tools/stack_check.py's 1024-byte margin. */
@@ -228,8 +233,32 @@ static bool nvs_conf_load(void *ctx, wa_conf_t *out)
     } else {
         out->ssid[0] = out->pass[0] = '\0';
     }
+    /* A key not there, as on a panel from a build without them, is RANDOM. */
+    size_t al = sizeof(out->ap_pass), cl = sizeof(out->web_code);
+    if (nvs_get_str(h, NVS_AP_PASS, out->ap_pass, &al) != ESP_OK) {
+        out->ap_pass[0] = '\0';
+    }
+    if (nvs_get_str(h, NVS_WEB_CODE, out->web_code, &cl) != ESP_OK) {
+        out->web_code[0] = '\0';
+    }
     nvs_close(h);
     return true;
+}
+
+/**
+ * @brief A kept value into the store, its key gone for RANDOM.
+ * @param h     The open store.
+ * @param key   Its key.
+ * @param value The value, "" for RANDOM.
+ * @return true when written
+ */
+static bool nvs_kept_save(nvs_handle_t h, const char *key, const char *value)
+{
+    if (value[0] != '\0') {
+        return nvs_set_str(h, key, value) == ESP_OK;
+    }
+    const esp_err_t e = nvs_erase_key(h, key);
+    return e == ESP_OK || e == ESP_ERR_NVS_NOT_FOUND;
 }
 
 static bool nvs_conf_save(void *ctx, const wa_conf_t *c)
@@ -249,6 +278,8 @@ static bool nvs_conf_save(void *ctx, const wa_conf_t *c)
         ok = ok && (a == ESP_OK || a == ESP_ERR_NVS_NOT_FOUND)
              && (b == ESP_OK || b == ESP_ERR_NVS_NOT_FOUND);
     }
+    ok = nvs_kept_save(h, NVS_AP_PASS, c->ap_pass) && ok;
+    ok = nvs_kept_save(h, NVS_WEB_CODE, c->web_code) && ok;
     ok = ok && nvs_commit(h) == ESP_OK;
     nvs_close(h);
     return ok;
@@ -327,6 +358,13 @@ static void card_closedir(void *ctx, void *dir)
     storage_dir_close(dir);
 }
 
+/**
+ * @brief wa_fs_t.open(): a file of the card, read-only, under a hold.  A
+ *        failure is logged with its errno.
+ * @param ctx   unused
+ * @param path  the path from the card's root
+ * @return the file, or NULL
+ */
 static void *card_open(void *ctx, const char *path)
 {
     (void)ctx;
@@ -336,16 +374,30 @@ static void *card_open(void *ctx, const char *path)
     }
     const int fd = open(full, O_RDONLY);
     if (fd < 0) {
+        ESP_LOGW(TAG, "card: open of %s failed, errno %d", path, errno);
         storage_release();
         return NULL;
     }
     return (void *)(intptr_t)(fd + 1);
 }
 
+/**
+ * @brief wa_fs_t.read(): the next bytes of a file.  A failure is logged
+ *        with its errno.
+ * @param ctx   unused
+ * @param file  the file
+ * @param dst   where they go
+ * @param len   how many at most
+ * @return the bytes read, 0 at the file's end, -1 on a failure
+ */
 static int32_t card_read(void *ctx, void *file, uint8_t *dst, uint32_t len)
 {
     (void)ctx;
     const ssize_t n = read((int)(intptr_t)file - 1, dst, len);
+    if (n < 0) {
+        ESP_LOGW(TAG, "card: read of %luB failed, errno %d",
+                 (unsigned long)len, errno);
+    }
     return (n < 0) ? -1 : (int32_t)n;
 }
 
@@ -394,22 +446,29 @@ static bool req_guard(httpd_req_t *r, wa_req_kind_t kind, esp_err_t *e)
     return wifi_req_guard(r, kind, s.name, &b->req, e);
 }
 
-/*
- * The access code check, the cookie's.  Counted like a typed one.  The
- * Cookie header is read whole, up to the server's header limit
+/**
+ * @brief The access code check, the cookie's.  A wrong value counts like a
+ *        typed one, once: wa_code_check_cookie().
+ *
+ * The Cookie header is read whole, up to the server's header limit
  * (CONFIG_HTTPD_MAX_REQ_HDR_LEN): at 192.168.4.1 it carries the cookies of
  * every gadget at that address, the panel's among them.
+ * @param r      the request
+ * @param force  check the code also while ACCESS CODE is off
+ * @return the check's verdict
  */
-static wa_code_t req_code(httpd_req_t *r)
+static wa_code_t req_code(httpd_req_t *r, bool force)
 {
-    char given[WA_SECRET_LEN + 2u];
+    char given[WA_PASS_MAX + 2u];
     given[0] = '\0';
     const char *hdr = wifi_req_hdr(r, "Cookie", b->cookie, sizeof(b->cookie));
-    if (hdr != NULL && !wa_cookie_get(hdr, WA_COOKIE, given, sizeof(given))) {
+    if (hdr != NULL
+        && !wa_code_of_cookie(hdr, WA_COOKIE, given, sizeof(given))) {
         given[0] = '\0';
     }
     lock();
-    const wa_code_t c = wa_code_check(&s.w, given, s.conf.code_on);
+    const wa_code_t c = wa_code_check_cookie(&s.w, given,
+                                             s.conf.code_on || force);
     unlock();
     return c;
 }
@@ -420,6 +479,74 @@ static void page_info(wa_page_info_t *pi)
     pi->version = s.running.version_text;
     pi->slot = s.slot;
     pi->de = atomic_load(&s.de);
+    pi->hl = wifi_files_hl();
+}
+
+/* ------------------------------------------- lent to the file API */
+
+/**
+ * @brief Answers @p status with no body.
+ * @param r       the request
+ * @param status  the status line
+ * @return what the send returned
+ */
+static esp_err_t refused(httpd_req_t *r, const char *status)
+{
+    httpd_resp_set_status(r, status);
+    return httpd_resp_sendstr(r, "");
+}
+
+/**
+ * @brief Answers 503: the page's server is closing.
+ * @param r  the request
+ * @return what the send returned
+ */
+static esp_err_t closed(httpd_req_t *r)
+{
+    return refused(r, "503 Service Unavailable");
+}
+
+wifi_page_go_t wifi_page_begin(httpd_req_t *r, wa_req_kind_t kind,
+                               esp_err_t *e, wa_guard_t *guard)
+{
+    *guard = wifi_req_check(r, kind, s.name, &b->req);
+    if (*guard != WA_GUARD_OK) {
+        return WIFI_PAGE_REFUSED;
+    }
+    if (!req_begin()) {
+        *e = closed(r);
+        return WIFI_PAGE_DONE;
+    }
+    return (req_code(r, false) == WA_CODE_OK) ? WIFI_PAGE_ANSWER
+                                              : WIFI_PAGE_NO_CODE;
+}
+
+wa_code_t wifi_page_code(httpd_req_t *r) { return req_code(r, true); }
+
+void wifi_page_end(void) { req_end(); }
+
+const atomic_bool *wifi_page_abort(void) { return &s.abort; }
+
+wa_out_t *wifi_page_out(void) { return &b->out; }
+
+void wifi_page_info(wa_page_info_t *pi) { page_info(pi); }
+
+const wa_fs_t *wifi_page_card(void) { return &k_card; }
+
+uint8_t *wifi_page_io(size_t *cap)
+{
+    *cap = sizeof(b->io);
+    return b->io;
+}
+
+const char *wifi_page_name(void) { return s.name; }
+
+void wifi_page_traffic(void)
+{
+    lock();
+    wa_request_begin(&s.w, ms());
+    wa_request_end(&s.w, ms());
+    unlock();
 }
 
 static bool sink_chunk(void *ctx, const void *data, size_t n)
@@ -448,12 +575,6 @@ static esp_err_t send_page(httpd_req_t *r, bool code_form, bool wrong)
     return httpd_resp_send_chunk(r, NULL, 0);
 }
 
-static esp_err_t closed(httpd_req_t *r)
-{
-    httpd_resp_set_status(r, "503 Service Unavailable");
-    return httpd_resp_sendstr(r, "");
-}
-
 static esp_err_t h_root(httpd_req_t *r)
 {
     esp_err_t g = ESP_OK;
@@ -463,7 +584,7 @@ static esp_err_t h_root(httpd_req_t *r)
     if (!req_begin()) {
         return closed(r);
     }
-    const wa_code_t c = req_code(r);
+    const wa_code_t c = req_code(r, false);
     esp_err_t e;
     if (c == WA_CODE_CLOSED) {
         e = closed(r);
@@ -495,17 +616,20 @@ static esp_err_t h_code(httpd_req_t *r)
         n += (size_t)got;
     }
     body[n] = '\0';
-    char given[WA_SECRET_LEN + 2u];
+    char given[WA_PASS_MAX + 2u];
     if (!wa_form_get(body, n, "code", given, sizeof(given))) {
         given[0] = '\0';
     }
     lock();
     const wa_code_t c = (e == ESP_OK) ? wa_code_check(&s.w, given, true)
                                       : WA_CODE_CLOSED;
-    char cookie[64];
-    snprintf(cookie, sizeof(cookie),
-             WA_COOKIE "=%s; Path=/; HttpOnly; SameSite=Strict", s.w.code);
+    char value[WA_CODE_COOKIE_MAX + 1u];
+    (void)wa_code_cookie(s.w.code, value, sizeof(value));
     unlock();
+    char cookie[sizeof(WA_COOKIE "=; Path=/; HttpOnly; SameSite=Strict")
+                + WA_CODE_COOKIE_MAX];
+    snprintf(cookie, sizeof(cookie),
+             WA_COOKIE "=%s; Path=/; HttpOnly; SameSite=Strict", value);
     if (e != ESP_OK) {
         req_end();
         return ESP_FAIL;
@@ -522,12 +646,6 @@ static esp_err_t h_code(httpd_req_t *r)
     }
     req_end();
     return e;
-}
-
-static esp_err_t refused(httpd_req_t *r, const char *status)
-{
-    httpd_resp_set_status(r, status);
-    return httpd_resp_sendstr(r, "");
 }
 
 static bool upload_text(void *ctx, const void *data, size_t n)
@@ -574,7 +692,7 @@ static esp_err_t h_update(httpd_req_t *r)
     if (!req_begin()) {
         return closed(r);
     }
-    if (req_code(r) != WA_CODE_OK) {
+    if (req_code(r, false) != WA_CODE_OK) {
         req_end();
         return refused(r, "403 Forbidden");
     }
@@ -678,16 +796,15 @@ static esp_err_t h_update(httpd_req_t *r)
     return answer_upload(r, e, &info, same, false);
 }
 
-/* Raw bytes, at most IO_CHUNK, of a response of known length (wifi_sock.h). */
-static wa_send_res_t raw_send(httpd_req_t *r, const void *data, size_t n)
+wa_send_res_t wifi_page_raw_send(httpd_req_t *r, const void *data, size_t n)
 {
     wifi_sock_t c = { httpd_req_to_sockfd(r), &s.abort };
     const wa_sink_t k = wifi_sock_sink(&c);
     return wa_sink_all(&k, data, (uint32_t)n);
 }
 
-static wa_send_res_t raw_head(httpd_req_t *r, uint64_t length,
-                              const char *name)
+wa_send_res_t wifi_page_raw_head(httpd_req_t *r, uint64_t length,
+                                const char *name)
 {
     char *disp = b->disp;
     if (wa_disposition(disp, sizeof(b->disp), name) == 0u) {
@@ -701,7 +818,7 @@ static wa_send_res_t raw_head(httpd_req_t *r, uint64_t length,
                            "Cache-Control: no-store\r\n\r\n",
                            (unsigned long long)length, disp);
     return (n > 0 && (size_t)n < sizeof(b->head))
-           ? raw_send(r, b->head, (size_t)n) : WA_SEND_GONE;
+           ? wifi_page_raw_send(r, b->head, (size_t)n) : WA_SEND_GONE;
 }
 
 static esp_err_t h_file(httpd_req_t *r)
@@ -713,7 +830,7 @@ static esp_err_t h_file(httpd_req_t *r)
     if (!req_begin()) {
         return closed(r);
     }
-    if (req_code(r) != WA_CODE_OK) {
+    if (req_code(r, false) != WA_CODE_OK) {
         req_end();
         return refused(r, "403 Forbidden");
     }
@@ -747,7 +864,7 @@ static esp_err_t h_file(httpd_req_t *r)
         return refused(r, "404 Not Found");
     }
     const uint32_t t0 = ms();
-    wa_send_res_t res = raw_head(r, st.size, wa_basename(path));
+    wa_send_res_t res = wifi_page_raw_head(r, st.size, wa_basename(path));
     if (res == WA_SEND_DONE) {
         wifi_sock_t c = { httpd_req_to_sockfd(r), &s.abort };
         const wa_sink_t k = wifi_sock_sink(&c);
@@ -767,85 +884,6 @@ static esp_err_t h_file(httpd_req_t *r)
                                  : wifi_sock_drop(httpd_req_to_sockfd(r));
 }
 
-/**
- * @brief GET /card.zip: the whole card as one ZIP archive, its length
- *        announced before the first byte.
- * @param r the request
- * @return ESP_OK when the archive went out whole.  A failure part way sends
- *         the bytes wa_zip_next() made up to it, then resets the connection
- *         (ESP_FAIL): the browser has fewer bytes than announced and reports
- *         the download failed.
- */
-static esp_err_t h_zip(httpd_req_t *r)
-{
-    esp_err_t g = ESP_OK;
-    if (!req_guard(r, WA_REQ_READ, &g)) {
-        return g;
-    }
-    if (!req_begin()) {
-        return closed(r);
-    }
-    if (req_code(r) != WA_CODE_OK) {
-        req_end();
-        return refused(r, "403 Forbidden");
-    }
-    wa_zip_t *z = heap_caps_malloc(sizeof(*z), MALLOC_CAP_SPIRAM);
-    wa_zip_plan_t plan;
-    wa_zip_slot_t *slot = NULL;
-    esp_err_t res = ESP_FAIL;
-    /* One volume from the plan's sizes to the last file: held across the
-     * whole archive, as h_file() holds one file. */
-    const bool held = storage_hold();
-    if (z == NULL || !held || wa_zip_plan(&k_card, &plan) != WA_ZIP_OK) {
-        res = refused(r, (z == NULL) ? "503 Service Unavailable"
-                                     : "404 Not Found");
-    } else {
-        /* A slot an entry counted, and WA_ZIP_SPARE more for files added
-         * before wa_zip_begin() walks the card again. */
-        const uint64_t slots = plan.entries + WA_ZIP_SPARE;
-        slot = (slots <= SIZE_MAX / sizeof(*slot))
-               ? heap_caps_malloc((size_t)slots * sizeof(*slot),
-                                  MALLOC_CAP_SPIRAM)
-               : NULL;
-        const wa_zip_err_t be = (slot == NULL)
-                                ? WA_ZIP_MEMORY
-                                : wa_zip_begin(z, &k_card, slot, slots);
-        if (be != WA_ZIP_OK) {
-            res = refused(r, (be == WA_ZIP_NO_CARD) ? "404 Not Found"
-                                                    : "503 Service Unavailable");
-        } else {
-            char zname[WA_NAME_MAX + 8u];
-            snprintf(zname, sizeof(zname), "%s.zip", s.name);
-            bool ok = raw_head(r, z->plan.bytes, zname) == WA_SEND_DONE;
-            while (ok) {
-                const int32_t got = wa_zip_next(z, b->io, sizeof(b->io));
-                if (got == 0) {
-                    break;
-                }
-                ok = (got > 0)
-                     && raw_send(r, b->io, (size_t)got) == WA_SEND_DONE;
-                if (ok) {
-                    lock();               /* a long download is traffic */
-                    wa_request_begin(&s.w, ms());
-                    wa_request_end(&s.w, ms());
-                    unlock();
-                }
-            }
-            if (!ok) {
-                wa_zip_end_early(z);
-            }
-            res = ok ? ESP_OK : wifi_sock_drop(httpd_req_to_sockfd(r));
-        }
-    }
-    heap_caps_free(slot);
-    heap_caps_free(z);
-    if (held) {
-        storage_release();
-    }
-    req_end();
-    return res;
-}
-
 static esp_err_t httpd_up(void)
 {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
@@ -855,7 +893,7 @@ static esp_err_t httpd_up(void)
     cfg.max_open_sockets = 4;
     cfg.lru_purge_enable = true;
     cfg.uri_match_fn = httpd_uri_match_wildcard;
-    cfg.max_uri_handlers = 6;
+    cfg.max_uri_handlers = 6 + WIFI_FILES_URIS;
     cfg.recv_wait_timeout = HTTPD_WAIT_S;
     cfg.send_wait_timeout = HTTPD_WAIT_S;
     esp_err_t e = httpd_start(&s.httpd, &cfg);
@@ -867,12 +905,13 @@ static esp_err_t httpd_up(void)
         { .uri = "/",               .method = HTTP_GET,  .handler = h_root },
         { .uri = WA_URL_CODE,       .method = HTTP_POST, .handler = h_code },
         { .uri = WA_URL_UPDATE,     .method = HTTP_POST, .handler = h_update },
-        { .uri = WA_URL_ZIP,        .method = HTTP_GET,  .handler = h_zip },
+        { .uri = WA_URL_ZIP,        .method = HTTP_GET,  .handler = wifi_zip_get },
         { .uri = WA_URL_FILE "*",   .method = HTTP_GET,  .handler = h_file },
     };
     for (size_t i = 0; i < sizeof(uris) / sizeof(uris[0]); ++i) {
         (void)httpd_register_uri_handler(s.httpd, &uris[i]);
     }
+    wifi_files_register(s.httpd);
     return ESP_OK;
 }
 
@@ -1584,6 +1623,8 @@ static void radio_down(void)
         (void)httpd_stop(s.httpd);
         s.httpd = NULL;
     }
+    /* No request runs now: the file API's PSRAM goes. */
+    wifi_files_free();
     /* Before the interface goes: SNTP sends through it. */
     wifi_ntp_stop();
     if (s.radio_up) {
@@ -1854,6 +1895,7 @@ wa_off_t wifi_access_start(wa_mode_t mode, wa_off_t gate)
     }
     const wa_off_t r = wa_start(&s.w, mode, gate, ms(), rand32, NULL);
     if (r == WA_OFF_NONE) {
+        wa_kept_use(&s.w, &s.conf);
         atomic_store(&s.asked, true);
         ++s.gen;
         if (mode == WA_MODE_SCAN) {
@@ -1949,9 +1991,20 @@ bool wifi_access_save_net(const char *ssid, const char *pass)
 void wifi_access_forget(void)
 {
     lock();
-    wa_conf_defaults(&s.conf);
-    wa_pending_forget(&s.pend);
+    wa_forget(&s.conf, &s.pend);
     unlock();
+}
+
+bool wifi_access_set_kept(wa_kept_t which, const char *value)
+{
+    lock();
+    const bool ok = wa_conf_set_kept(&s.conf, which, value, strlen(value))
+                    == WA_CONF_OK;
+    if (ok) {
+        wa_pending_change(&s.pend);
+    }
+    unlock();
+    return ok;
 }
 
 void wifi_access_set_code(bool on)

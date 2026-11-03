@@ -135,6 +135,10 @@ uint8_t bind_write(void *ctx, uint8_t off, uint8_t n,
     if (off != (uint8_t)LINK_BD_COMMIT || n != 1u) {
         return LINK_NACK_BAD_RANGE;
     }
+    /* The output the ESC_WIRE page holds gets back what it had. */
+    if (esc_port_supply_hold(&s_esc)) {
+        return LINK_NACK_BUSY;
+    }
     return out_stage_commit(&s_stage, in[0], s->chan_cfg, &k_stage_ops, s);
 }
 

@@ -11,11 +11,8 @@
  */
 #include "kst_panel.h"
 
-#include <math.h>
-
 #include "kst_port.h"
 #include "kst_reg.h"
-#include "supply_screen.h"
 
 /* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
  * names the state, which no header included after it may meet. */
@@ -54,13 +51,7 @@ kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
          * nothing of it. */
         kst_prog_supply_set(p, mv, ma);
     }
-    {
-        const supply_caps_t caps = supply_screen_caps();
-
-        kst_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
-                             (uint16_t)lroundf(caps.i_max * 1000.0f));
-    }
-    kst_prog_supply_floor(p, (uint16_t)KST_PORT_SUPPLY_MIN_MV);
+    kpn_supply_limits(p);
     k.run.said = kst_prog_message(p)->seq;
     m = kst_prog_connect(p, kpn_port_no());
     k.run.op = m == KST_PROG_MSG_NONE ? RUN_OP_CONNECT : RUN_OP_NONE;

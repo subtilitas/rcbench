@@ -66,6 +66,7 @@ add_subdirectory("${PROTOCOLS}/pdmini"   pdmini)
 add_subdirectory("${PROTOCOLS}/phase_tap" phase_tap)
 add_subdirectory("${PROTOCOLS}/kst"      kst)
 add_subdirectory("${PROTOCOLS}/hitec"    hitec)
+add_subdirectory("${PROTOCOLS}/escwire"  escwire)
 add_subdirectory("${PROTOCOLS}/i2c_txq"  i2c_txq)
 add_subdirectory("${SHARED}/esc"      esc)
 add_subdirectory("${SHARED}/sense"    sense)
@@ -106,6 +107,7 @@ set(UNDER_TEST
     rcbench_sense
     rcbench_kst
     rcbench_hitec
+    rcbench_escwire
     rcbench_i2c_txq
     rcbench_fwupdate
     rcbench_webaccess
@@ -131,7 +133,7 @@ set(FAKES "")
 set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
-foreach(suite gfx gfx_faces gfx_subpixel gfx_clip gfx_damage gfx_turn gfx_sprite layout touch_map overlays nav nav_tiles nav_alert nav_mark nav_contact nav_drag nav_stop nav_bubble widgets workbench prog_registry keypad keypad_sign keypad_rows_setup keypad_rows_stick keypad_rows_motor keypad_rows_supply keypad_rows_servo keypad_rows_kst pinlist bench supply supply_screen supply_screen_tasks supply_screen_home supply_screen_draw supply_layout pdmini motor motor_draw motor_throttle motor_arm motor_workbench motor_program motor_layout value_state logview logview_report logview_plot logview_rank logview_pages logview_tabs logview_delete logview_touch logview_layout logview_row log_name log_take card_tree fm_tree fm_ops fm_recheck fault_log logwriter servo_runlog servo_runlog_cols servo_log_figures log_cadence perf_watch log_cols settings settings_screen settings_gesture settings_pins_hub settings_leave settings_folders settings_sensors settings_keypad settings_rows setting_keypad_eq log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outputs_hw outputs_hw_ports outstore heartbeat arming safety_gate flash_gate reset_cause touch_loss frame_watch servo_arm safe_press servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_report_width servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page sense_page supply_link sense_link sense_link_view sense_map_link sense_win_link sense_limit_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen outputs_screen_draw outputs_screen_off outputs_screen_port outputs_layout picker_screen picker_screen_hold picker_screen_table picker_layout picker_cat port_screens board_drawing busfault_screen text servo servo_knob servo_drag servo_repaint frame_work servo_dial_sweep servo_letgo servo_curve servo_supply servo_run servo_target servo_rail servo_meter servo_settings servo_trim_keypad servo_test_panel servo_limit_panel servo_workbench analyser prog_models esc_stick_panel esc_stick_panel_phases esc_stick_panel_list esc_stick_panel_steps esc_stick_panel_makers esc_stick_panel_hold esc_stick_panel_touch esc_stick_panel_home esc_stick_panel_keypad esc_stick_layout balance battery instruments_layout esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_parts sense_map sense_limit sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link endpoints_link hitec_rx_link knob panel_i2c bind_link servo_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port prog_port_fn kst_file kst_card prog_link prog_link_ask port_mail kst_prog kst_prog_card kst_prog_cycle kst_cycle_wait kst_panel kst_panel_leave kst_panel_edit kst_panel_write kst_panel_texts kst_panel_writepage kst_panel_screen kst_panel_notes kst_panel_files kst_panel_nocard kst_panel_limrun kst_panel_ports kst_panel_layout kst_panel_type hitec_wire hitec_pio hitec_pre hitec_reg hitec_reg_plan hitec_session hitec_session_write hitec_port hitec_port_stop hitec_port_hold hitec_port_rx hitec_link hitec_link_loss hitec_link_run hitec_prog hitec_prog_safe hitec_prog_codes hitec_prog_write hitec_prog_file hitec_prog_backup hitec_card hitec_card_run servo_store hitec_panel hitec_panel_states hitec_panel_write hitec_panel_file page_console wifi_screen wifi_layout fw_image fw_install fw_trial fw_upload fw_release fw_release_scan wa_session wa_scan wa_fetch wa_fetch_channel wa_fetch_task upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_page_de wa_mdns wa_guard link_sha256 link_update coproc_update_screen upd_coproc upd_layout touch_merge touch_merge_multi inj_line_id inj_emu inj_multi servo_limrun servo_limrun_abort servo_limrun_report sense_i2c storage storage_swap text_buf text_hl text_hl_limrun i2c_txq i2c_txq_calls i2c_txq_wire sense_txq sense_txq_svc fm_name fm_req files_screen files_ops files_open files_view files_layout wall_clock)
+foreach(suite gfx gfx_faces gfx_subpixel gfx_clip gfx_damage gfx_turn gfx_sprite layout touch_map overlays nav nav_tiles menu_openers nav_alert nav_mark nav_contact nav_drag nav_stop nav_bubble help_router help_pages widgets hold_hint workbench prog_registry keypad keypad_sign keypad_rows_setup keypad_rows_stick keypad_rows_motor keypad_rows_supply keypad_rows_servo keypad_rows_kst pinlist bench supply supply_screen supply_screen_tasks supply_pdmini supply_screen_home supply_screen_draw supply_layout pdmini motor motor_draw motor_throttle motor_arm motor_workbench motor_program motor_layout value_state logview logview_report logview_plot logview_rank logview_pages logview_tabs logview_delete logview_touch logview_layout logview_row log_name log_take card_tree fm_tree fm_ops fm_recheck fm_match fault_log logwriter servo_runlog servo_runlog_cols servo_log_figures log_cadence perf_watch log_cols settings settings_screen settings_gesture settings_pins_hub settings_carrier sensors_carrier sensors_pane settings_leave settings_folders settings_sensors settings_keypad settings_rows setting_keypad_eq log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_read_split link_artxfer link_drawing art_store art_fetch outputs outputs_hw outputs_hw_ports outstore heartbeat arming safety_gate flash_gate reset_cause touch_loss frame_watch error_stop error_sites servo_arm safe_press servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_report_width servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page supply_hold prog_supply prog_supply_link prog5v_box prog5v_servo prog5v_supply supply_boot sense_page sense_i228_setup supply_link supply_keep sense_link sense_link_view sense_map_link sense_win_link sense_limit_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind board_fix outputs_screen outputs_screen_draw outputs_screen_off outputs_screen_port outputs_screen_carrier prog_choice layout_screen outputs_layout outputs_view picker_screen picker_screen_hold picker_screen_table picker_layout picker_cat port_screens board_drawing busfault_screen text servo servo_knob servo_drag servo_repaint frame_work servo_dial_sweep servo_letgo servo_curve servo_supply servo_restore servo_run servo_target servo_rail servo_meter servo_settings servo_trim_keypad servo_test_panel servo_error_safe servo_limit_panel servo_workbench analyser esc_stick_panel esc_stick_panel_phases esc_stick_panel_list esc_stick_panel_steps esc_stick_panel_makers esc_stick_panel_hold esc_stick_panel_touch esc_stick_panel_home esc_stick_panel_keypad esc_stick_layout balance battery instruments_layout esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_parts sense_map sense_limit sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link endpoints_link hitec_rx_link knob panel_i2c bind_link servo_link servo_link_restart fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_port_cut kst_link prog_port prog_port_fn kst_file kst_card prog_link prog_link_ask port_mail kst_prog kst_prog_card kst_prog_cycle kst_prog_gone kst_cycle_wait kst_panel kst_panel_leave kst_panel_edit kst_panel_write kst_panel_texts kst_panel_writepage kst_panel_screen kst_panel_notes kst_panel_files kst_panel_nocard kst_panel_limrun kst_panel_ports kst_panel_layout kst_panel_type hitec_wire hitec_pio hitec_pre hitec_reg hitec_reg_plan hitec_session hitec_session_write hitec_session_move hitec_live hitec_port esc_port esc_port_stop esc_port_data esc_port_gate esc_console console_tunnel esc_link esc_link_run esc_prog esc_card esc_wire_panel esc_wire_rows esc_wire_write esc_wire_stages esc_wire_screens esc_wire_walk esc_wire_press hitec_port_stop hitec_port_hold hitec_port_cut hitec_port_rx hitec_link hitec_link_loss hitec_link_run hitec_prog hitec_prog_safe hitec_prog_codes hitec_prog_write hitec_prog_file hitec_prog_backup hitec_prog_chain hitec_prog_reread hitec_card hitec_card_run ew_a ew_pio ew_line ew_id ew_map ew_guard ew_session ew_session_write ew_file ew_file_load ew_text ew_session_text servo_store hitec_panel hitec_panel_states hitec_panel_write hitec_panel_file page_console wifi_screen wifi_kept wifi_layout fw_image fw_install fw_trial fw_upload fw_release fw_release_scan wa_session wa_scan wa_fetch wa_fetch_channel wa_fetch_task upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_page_de wa_hl wa_edit wa_mdns wa_guard wa_kept wa_cookie wa_api wa_api_file wa_api_write link_sha256 link_update coproc_update_screen upd_coproc upd_layout touch_merge touch_merge_multi inj_line_id inj_emu inj_multi servo_limrun servo_limrun_abort servo_limrun_error servo_limrun_report sense_i2c storage storage_swap text_buf text_hl text_hl_limrun i2c_txq i2c_txq_calls i2c_txq_wire sense_txq sense_txq_svc fm_name fm_req files_screen files_ops files_open files_view files_edit files_save files_changed files_layout files_rescan logs_strip textkey_editor textkey_see wall_clock png_enc shot_file shot shot_popup ew_file_e32)
     add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -154,7 +156,7 @@ endforeach()
 # drawing an IOmcu serves.
 set(BOARD_DRAWING
     "${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/src/board_drawing_rp2350_can.c")
-foreach(suite board_drawing picker_screen picker_screen_hold picker_screen_table
+foreach(suite board_drawing outputs_view picker_screen picker_screen_hold picker_screen_table
               picker_layout picker_cat port_screens)
     target_sources(test_${suite} PRIVATE "${BOARD_DRAWING}")
 endforeach()
@@ -163,15 +165,18 @@ foreach(suite i2c_txq i2c_txq_calls i2c_txq_wire sense_txq sense_txq_svc)
     target_sources(test_${suite} PRIVATE
                    "${CMAKE_CURRENT_SOURCE_DIR}/i2c_txq_model.c")
 endforeach()
-# The file manager's suites run its core over a card in memory.
-foreach(suite fm_tree fm_ops fm_recheck fm_req)
+# The file manager's suites, and the Wi-Fi page's file API's, run the
+# core over a card in memory.
+foreach(suite fm_tree fm_ops fm_recheck fm_match fm_req wa_api wa_api_file
+              wa_api_write shot_file)
     target_sources(test_${suite} PRIVATE
                    "${CMAKE_CURRENT_SOURCE_DIR}/fm_fake.c")
 endforeach()
 # FILES' suites run the screen over that card behind a card task on the
 # test's own thread (files_host_io.c), and reach its layout through
 # files_int.h.
-foreach(suite files_screen files_ops files_open files_layout files_view)
+foreach(suite files_screen files_ops files_open files_layout files_view
+              files_edit files_save files_changed files_rescan logs_strip)
     target_sources(test_${suite} PRIVATE
                    "${CMAKE_CURRENT_SOURCE_DIR}/fm_fake.c"
                    "${CMAKE_CURRENT_SOURCE_DIR}/files_host_io.c")
@@ -182,6 +187,16 @@ endforeach()
 # through their screen-private headers.
 target_include_directories(test_port_screens PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
+# test_outputs_view holds the board view's layout through the same header.
+target_include_directories(test_outputs_view PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
+# The session's suites read its state through its private seam, esc_wire_int.h.
+foreach(suite esc_wire_panel esc_wire_rows esc_wire_write esc_wire_stages esc_wire_screens
+        esc_wire_walk esc_wire_press)
+    target_include_directories(test_${suite} PRIVATE
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui)
+endforeach()
+
 # test_esc_stick_layout holds ESC STICK's controls through the session's
 # private seam, esc_stick_panel_int.h.
 target_include_directories(test_esc_stick_layout PRIVATE
@@ -234,7 +249,7 @@ target_include_directories(test_fm_name PRIVATE
 # test_settings_pins_hub holds Sensor SDA's values to the page as the
 # firmware starts it.  settings_rig.h includes the header, so every
 # settings suite finds it.
-foreach(suite settings settings_screen settings_gesture settings_pins_hub settings_keypad
+foreach(suite settings settings_screen settings_gesture settings_pins_hub settings_carrier sensors_carrier sensors_pane settings_keypad
               keypad_rows_setup
               settings_leave settings_folders settings_sensors settings_rows
               wall_clock)
@@ -268,6 +283,17 @@ target_compile_definitions(test_kst_pio PRIVATE
 target_compile_definitions(test_hitec_pio PRIVATE
     "HITEC_LINE_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/hitec/rp2350/hitec_line.pio\""
     "HITEC_LINE_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/hitec_line_words.txt\"")
+# The signal wire's PIO program, the same way.
+target_compile_definitions(test_ew_pio PRIVATE
+    "EW_LINE_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/escwire/rp2350/ew_line.pio\""
+    "EW_LINE_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/ew_line_words.txt\"")
+
+# The signal wire's RP2350 driver, on a fake of the pico-sdk calls it makes.
+target_sources(test_ew_line PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/escwire/rp2350/ew_line.c")
+target_include_directories(test_ew_line PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/fake_pico"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/escwire/rp2350")
 
 # The ZIP archives test_wa_zip writes, opened by Python's zipfile and by
 # unzip(1): an archive the panel sends has to open in programs other than
@@ -276,11 +302,36 @@ target_compile_definitions(test_wa_zip PRIVATE
     "ZIP_OUT_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/wa_zip\"")
 set_tests_properties(wa_zip PROPERTIES FIXTURES_SETUP wa_zip_archives)
 
+# The pictures test_png_enc writes, decoded by Python's zlib: a screenshot
+# has to open in programs other than the code that wrote it.
+add_test(NAME png_enc_dump
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/png_enc")
+add_test(NAME png_enc_write
+    COMMAND test_png_enc "${CMAKE_CURRENT_BINARY_DIR}/png_enc")
+set_tests_properties(png_enc_dump PROPERTIES FIXTURES_SETUP png_enc_dir)
+set_tests_properties(png_enc_write PROPERTIES
+    FIXTURES_SETUP png_enc_files FIXTURES_REQUIRED png_enc_dir)
+
 # The pages test_wa_page writes, their script handed to node: a text that
 # breaks the script leaves the Upload button without its handler.
 target_compile_definitions(test_wa_page PRIVATE
     "PAGE_OUT_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/wa_page\"")
 set_tests_properties(wa_page PROPERTIES FIXTURES_SETUP wa_page_files)
+
+# The page with the panel's highlighter and the lines test_wa_hl classes
+# with text_hl_line(), handed to node with the page's own hl.js: the
+# highlighter is written twice, in C and in JavaScript.
+target_compile_definitions(test_wa_hl PRIVATE
+    "HL_OUT_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/wa_hl\""
+    "PROFILE_DIR=\"${SHARED}/esc/profiles\"")
+set_tests_properties(wa_hl PROPERTIES FIXTURES_SETUP wa_hl_files)
+
+# The page with the editor and the fixtures test_wa_edit writes from the
+# panel's text buffer and the KST file reader, handed to node with the
+# page's own edit.js.
+target_compile_definitions(test_wa_edit PRIVATE
+    "EDIT_OUT_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/wa_edit\"")
+set_tests_properties(wa_edit PROPERTIES FIXTURES_SETUP wa_edit_files)
 
 # The headers of protocols/kst as C++: a driver may be written in it.  The
 # program includes all 7, calls one function of each module and links against
@@ -305,6 +356,13 @@ if(CMAKE_CXX_COMPILER)
     set_target_properties(hitec_headers_cxx PROPERTIES
         CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
     add_test(NAME hitec_headers_cxx COMMAND hitec_headers_cxx)
+    # The headers of protocols/escwire, the same way.
+    add_executable(escwire_headers_cxx escwire_headers.cpp)
+    target_link_libraries(escwire_headers_cxx PRIVATE rcbench_escwire)
+    target_compile_options(escwire_headers_cxx PRIVATE -Wall -Wextra -Werror)
+    set_target_properties(escwire_headers_cxx PROPERTIES
+        CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
+    add_test(NAME escwire_headers_cxx COMMAND escwire_headers_cxx)
     # The header of protocols/i2c_txq, the same way.
     add_executable(i2c_txq_headers_cxx i2c_txq_headers.cpp)
     target_link_libraries(i2c_txq_headers_cxx PRIVATE rcbench_i2c_txq)
@@ -346,6 +404,13 @@ add_test(NAME sense_trace_tool
             --work "${CMAKE_CURRENT_BINARY_DIR}/sense_trace_tool")
 endif()
 
+add_test(NAME png_enc_check
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_png_enc.py"
+            "${CMAKE_CURRENT_BINARY_DIR}/png_enc")
+set_tests_properties(png_enc_check PROPERTIES
+    FIXTURES_REQUIRED png_enc_files)
+
 add_test(NAME wa_zip_check
     COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/check_wa_zip.py"
@@ -362,6 +427,35 @@ add_test(NAME wa_page_script
             "${CMAKE_CURRENT_BINARY_DIR}/wa_page")
 set_tests_properties(wa_page_script PROPERTIES
     FIXTURES_REQUIRED wa_page_files SKIP_RETURN_CODE 77)
+
+# node classes every fixture line with the page's hl.js and holds the spans
+# to text_hl_line()'s; skipped (77) without node, as wa_page_script.
+add_test(NAME wa_hl_script
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_wa_hl.py"
+            "${CMAKE_CURRENT_BINARY_DIR}/wa_hl")
+set_tests_properties(wa_hl_script PROPERTIES
+    FIXTURES_REQUIRED wa_hl_files SKIP_RETURN_CODE 77)
+
+# node runs the page's edit.js on those fixtures and on its own cases of
+# the save: If-Match, the 412, the limits and the unsaved question;
+# skipped (77) without node.
+add_test(NAME wa_edit_script
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_wa_edit.py"
+            "${CMAKE_CURRENT_BINARY_DIR}/wa_edit")
+set_tests_properties(wa_edit_script PROPERTIES
+    FIXTURES_REQUIRED wa_edit_files SKIP_RETURN_CODE 77)
+
+# node runs the page's write.js and edit.js over a document and a panel of
+# its own: the code question's bound write, its late answer, REPLACE's ETag
+# from /api/info; skipped (77) without node.
+add_test(NAME wa_write_script
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_wa_write.py"
+            "${CMAKE_CURRENT_BINARY_DIR}/wa_edit")
+set_tests_properties(wa_write_script PROPERTIES
+    FIXTURES_REQUIRED wa_edit_files SKIP_RETURN_CODE 77)
 
 # The profile generator against the card reader: fuzz_parity.py changes the
 # profiles of record, reads each result with tools/gen_esc_profiles.py and,

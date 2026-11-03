@@ -43,6 +43,10 @@ static bool ends_with(const char *s, const char *tail)
 TEST_CASE(the_protocol_list_opens_and_a_choice_closes_it)
 {
     fresh();
+    CHECK(!outputs_screen()->covered());
+    tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
+    CHECK(outputs_screen()->covered());
+    tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);
     choose_named("SERVO PWM");
     CHECK_EQ(outputs_screen_binding()->proto, 1);
     /* A pick is not a change of the binding: the seam is not called. */
@@ -305,7 +309,7 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
 }
 
 /*
- * What SETUP > INTERFACES holds is taken: the sensor bus on Sensor SDA and
+ * What SENSORS and PD MINI hold is taken: the sensor bus on Sensor SDA and
  * the SCL after it while the INA228, the INA3221 or the AS5600 is on, the
  * PD mini's TX and RX while it is on, the tap pin while the phase tap is
  * on.  The cell names the function and takes no tick; the pins follow the

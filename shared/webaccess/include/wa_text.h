@@ -1,5 +1,6 @@
-/*
- * The text the Wi-Fi page reads and writes: a card path out of a URL
+/**
+ * @file
+ * @brief The text the Wi-Fi page reads and writes: a card path out of a URL
  * (uniform resource locator), names into HTML (hypertext markup language)
  * and back into URLs, a form field, a cookie, and a download's file name.
  *
@@ -91,6 +92,19 @@ void wa_out_html(wa_out_t *o, const char *s);
  * from 0x80 up pass unchanged.
  */
 void wa_out_js(wa_out_t *o, const char *s);
+/**
+ * @brief @p s as the inside of a JSON (JavaScript Object Notation) string,
+ *        the quotes not written.
+ *
+ * Backslash and " get a backslash before them; each control character
+ * 0x00-0x1F and 0x7F is written as \\u00HH.  A string that is UTF-8 passes
+ * its other bytes unchanged.  In a string that is not, every byte from 0x80
+ * up is written as \\ufffd, so the answer stays JSON a browser parses.
+ *
+ * @param o  the output
+ * @param s  the text; NULL writes nothing
+ */
+void wa_out_json(wa_out_t *o, const char *s);
 /** @p path with every byte but A-Z a-z 0-9 - . _ ~ and / percent-encoded. */
 void wa_out_url(wa_out_t *o, const char *path);
 void wa_out_u64(wa_out_t *o, uint64_t v);
@@ -113,6 +127,32 @@ bool wa_form_get(const char *body, size_t n, const char *key, char *out,
  */
 bool wa_cookie_get(const char *header, const char *name, char *out,
                    size_t cap);
+
+/** @brief Bytes of the longest code as a cookie's value, terminator apart:
+ *         63 characters of 3 bytes each. */
+#define WA_CODE_COOKIE_MAX 189u
+
+/**
+ * @brief An access code as a cookie's value: letters, digits and "-" as they
+ *        are, every other byte as %XX, since a kept code may hold a space, a
+ *        ";" or a quote.  A RANDOM code is its own cookie value.
+ * @param code The code.
+ * @param out  Takes the value.
+ * @param cap  Bytes of @p out.
+ * @return false, @p out empty, when it does not fit.
+ */
+bool wa_code_cookie(const char *code, char *out, size_t cap);
+
+/**
+ * @brief The access code a Cookie header carries, wa_code_cookie() undone.
+ * @param header The header's value.
+ * @param name   The cookie's name.
+ * @param out    Takes the code; empty when false.
+ * @param cap    Bytes of @p out.
+ * @return false for no such cookie, one too long for @p out, and a broken %XX.
+ */
+bool wa_code_of_cookie(const char *header, const char *name, char *out,
+                       size_t cap);
 
 /**
  * The Content-Disposition value for a download of @p name, the last part of

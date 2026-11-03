@@ -533,6 +533,8 @@ static void reset(void)
     s.surfaces      = true;
     s.link_up       = true;     /* until the panel says otherwise */
     s.source        = SERVO_SOURCE_MODEL;   /* likewise */
+    prog5v_box_init(&s.p5, (gfx_rect_t){ RC_X, P5_Y, RC_W, PROG5V_BOX_H },
+                    PROG5V_BY_SERVO);
     s.cur_key       = CUR_KEY_NONE;
     s.shown_cmd     = (float)OUT_SPAN / 2.0f;
     /* STANDARD PWM at 50Hz: what every restart starts at, whatever the
@@ -669,6 +671,12 @@ static void leave(void)
     ui_hold_reset(&s.out_hold);
     s.out_down = false;
     ++s.sup_rev;
+    /* The ports' 5V this screen switched on goes with it, as SUPPLY's
+     * output goes with SUPPLY; a hold on PROG 5V ON is dropped. */
+    prog5v_box_cancel(&s.p5);
+    s.p5_down = false;
+    prog5v_box_left(PROG5V_BY_SERVO);
+    ++s.power_rev;
     /* The sweep and everything kept about it: a reopened screen draws no
      * curve, drain or acknowledgement of this one. */
     stop_sweep();
@@ -751,6 +759,11 @@ static void cancel(void)
     ui_hold_reset(&s.out_hold);
     s.out_down = false;
     ++s.sup_rev;
+    /* PROG 5V ON's hold the same; a lost release of PROG 5V OFF asks
+     * nothing: the box's OFF is a tap that lifts on it. */
+    prog5v_box_cancel(&s.p5);
+    s.p5_down = false;
+    ++s.power_rev;
     /*
      * And the dial.  A drag left latched owns its track id, and the GT911
      * reuses ids: a later contact that began somewhere else would satisfy
@@ -799,7 +812,14 @@ static bool back(void)
     return wb_back();
 }
 
+/**
+ * @brief ui_screen_t's covered: a panel or a programming page.
+ * @return true while one is up
+ */
+static bool covered(void) { return svs_covered(); }
+
 static const ui_screen_t k_screen = {
+    .covered = covered,
     .title  = "SERVO",
     .reset  = reset,
     .enter  = enter,

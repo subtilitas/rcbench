@@ -17,16 +17,17 @@
  * core executes from it, so a write runs with interrupts off and this end
  * answers nothing for its length.  On the bring-up module an erase and
  * program together measured 19,178us: a CAN (Controller Area Network) frame
- * at 1Mbit/s is about 130us and the XL2515 holds two of them, so a request
- * arriving in that window is lost with nothing wrong on the wire.  That
- * measurement is the two operations inside one window; neither half of it was
- * timed on its own.  It is 1 sample on the bring-up module, with the flash
- * part not yet identified; the window is to be argued again against the
- * part's datasheet maximum once the part is known.  A lost request costs
- * the panel LINK_HOST_TIMEOUT_MS (1000ms) of waiting, and 1000ms of silence latches this end's
- * LINK_DEV_SILENCE_MS (200ms) failsafe.  One lost frame is enough for that,
- * which is what makes the length of these windows a safety number rather than
- * a performance one.
+ * at 1Mbit/s is about 130us and the XL2515 holds two of them.  The panel sends
+ * one request frame per exchange and waits for its answer before the next, so
+ * at most one frame waits there: a request arriving in the window is delayed
+ * by up to its length, against the panel's LINK_HOST_TIMEOUT_MS (1000ms) wait,
+ * and not lost.  That measurement is the two operations inside one window;
+ * neither half of it was timed on its own.  It is 1 sample on the bring-up
+ * module, with the flash part not yet identified; the window is to be argued
+ * again against the part's datasheet maximum once the part is known.  For its
+ * length this end steps no output and answers nothing, and a window that grew
+ * past LINK_DEV_SILENCE_MS (200ms) would latch this end's failsafe: the length
+ * of these windows stays a safety number rather than a performance one.
  *
  * What this store does about it:
  *
@@ -186,8 +187,8 @@ bool out_store_is_off(void);
  * written faults.  Core 1 runs the sensor bus with interrupts on and
  * answers the lock-out at once, outside the I2C block's FIFO load (at
  * most 13 register writes, i2c_txq_block.h) and the spin-lock copies of
- * the sensor and tone hand-overs; a transaction under way ends on the wire while core 1 is
- * parked (sense_i2c.h).  How fast it stops is not measured; 10ms is room.
+ * the sensor and tone hand-overs; a transaction under way ends on the
+ * wire while core 1 is parked (sense_i2c.h).  How fast it stops is not measured; 10ms is room.
  * The wait for it is spent before the window opens and is not counted in
  * it.
  */

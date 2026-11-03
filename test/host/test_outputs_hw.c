@@ -38,15 +38,27 @@ uint64_t pico_stub_us;
 static bool          g_reply_queued;
 static dshot_telem_t g_reply;
 
+/* What the ESC_WIRE takeover case counts. */
+static int      g_binds, g_releases;
+static uint8_t  g_bind_pin, g_release_pin;
+static uint16_t g_bind_kbit;
+static bool     g_bind_bidir;
+static bool     g_bind_refused;
+
 bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
 {
-    (void)pin;
-    (void)rate_kbit;
-    (void)bidirectional;
-    return true;
+    g_binds++;
+    g_bind_pin = pin;
+    g_bind_kbit = rate_kbit;
+    g_bind_bidir = bidirectional;
+    return !g_bind_refused;
 }
 
-void out_dshot_release(uint8_t pin) { (void)pin; }
+void out_dshot_release(uint8_t pin)
+{
+    g_releases++;
+    g_release_pin = pin;
+}
 
 void out_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
 {
@@ -255,8 +267,68 @@ TEST_CASE(readings_on_either_side_of_the_wrap_keep_their_own_ages)
     CHECK_EQ(age, 20u);
 }
 
+/*
+ * A slot the ESC_WIRE page holds: left out of the mask it is let go and no other
+ * slot moves; put back it binds with what it had.  Armed in between, nothing is
+ * rendered on it.
+ */
+TEST_CASE(a_held_slot_is_let_go_alone_and_comes_back_the_same)
+{
+    uint16_t rate[OUT_MAX_SLOTS];
+    const out_slot_t a = { OUT_DRIVER_DSHOT_BIDIR, 0u, 1u, 2u, 600u };
+    const out_slot_t b = { OUT_DRIVER_DSHOT, 1u, 1u, 3u, 300u };
+
+    at_ms(1000u);
+    outputs_init(&g_bank, 1000u);
+    CHECK(outputs_configure(&g_bank, 0u, &a));
+    CHECK(outputs_configure(&g_bank, 1u, &b));
+    memset(rate, 0, sizeof(rate));
+    rate[0] = 600u;
+    rate[1] = 300u;
+    outputs_hw_init();
+    outputs_hw_apply(&g_bank, rate);
+    CHECK(outputs_hw_bound(0u));
+    CHECK(outputs_hw_bound(1u));
+    g_binds = 0;
+    g_releases = 0;
+    /* Slot 0 out. */
+    outputs_hw_apply_only(&g_bank, rate, 0xFEu);
+    CHECK(!outputs_hw_bound(0u));
+    CHECK(outputs_hw_bound(1u));
+    CHECK_EQ(g_releases, 1);
+    CHECK_EQ(g_release_pin, 2u);
+    CHECK_EQ(g_binds, 0);
+    /* Again, as any apply in a session asks: nothing moves. */
+    g_releases = 0;
+    outputs_hw_apply_only(&g_bank, rate, 0xFEu);
+    CHECK_EQ(g_releases + g_binds, 0);
+    /* Back: its pin, its rate, its kind; slot 1 stays. */
+    CHECK(outputs_hw_return_slot(&g_bank, rate, 0u));
+    CHECK(outputs_hw_bound(0u));
+    CHECK_EQ(g_binds, 1);
+    CHECK_EQ(g_releases, 0);
+    CHECK_EQ(g_bind_pin, 2u);
+    CHECK_EQ(g_bind_kbit, 600u);
+    CHECK(g_bind_bidir);
+    /* Bound already: nothing to do.  A bad argument, a bind that fails. */
+    g_binds = 0;
+    CHECK(outputs_hw_return_slot(&g_bank, rate, 0u));
+    CHECK_EQ(g_binds, 0);
+    CHECK(!outputs_hw_return_slot(NULL, rate, 0u));
+    CHECK(!outputs_hw_return_slot(&g_bank, NULL, 0u));
+    CHECK(!outputs_hw_return_slot(&g_bank, rate, OUT_MAX_SLOTS));
+    outputs_hw_apply_only(&g_bank, rate, 0xFEu);
+    g_bind_refused = true;
+    CHECK(!outputs_hw_return_slot(&g_bank, rate, 0u));
+    g_bind_refused = false;
+    CHECK(!outputs_hw_bound(0u));
+    /* An empty slot stays unbound. */
+    CHECK(!outputs_hw_return_slot(&g_bank, rate, 5u));
+}
+
 int main(void)
 {
+    RUN(a_held_slot_is_let_go_alone_and_comes_back_the_same);
     RUN(a_speed_readings_age_holds_across_the_millisecond_wrap);
     RUN(a_temperature_readings_age_holds_across_the_millisecond_wrap);
     RUN(readings_on_either_side_of_the_wrap_keep_their_own_ages);

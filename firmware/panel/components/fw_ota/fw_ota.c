@@ -11,11 +11,11 @@
 #include <string.h>
 
 #include "esp_app_desc.h"
-#include "esp_attr.h"
 #include "esp_log.h"
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
 #include "esp_system.h"
+#include "nvs.h"
 
 /** @brief The console tag. */
 static const char *TAG = "fw_ota";
@@ -148,40 +148,130 @@ const fw_flash_t *fw_ota_flash(void) { return &k_flash; }
 
 /* ------------------------------------------------------- the first start */
 
-/** @brief A note that holds a version: "RCUP". */
-#define NOTE_MAGIC 0x52435550u
+/*
+ * The restart note lives in NVS (non-volatile storage), namespace
+ * NOTE_NS, key NOTE_KEY: a blob of FW_NOTE_BYTES that a restart, a panic
+ * and a power cut keep, at no address the build's layout decides.
+ * settings_nvs_store() brings NVS up in bring_up() before the start check
+ * runs; without it the note is not written and reads as none.
+ */
 
-/** @brief The note fw_ota_note_restart() leaves for the next start. */
-typedef struct {
-    uint32_t magic;
-    char     version[FW_TEXT_MAX];
-    uint32_t check;
-} restart_note_t;
-
-/** @brief Kept across esp_restart() and a panic; a power cut clears it. */
-static RTC_NOINIT_ATTR restart_note_t s_note;
+/** @brief The note's NVS namespace. */
+#define NOTE_NS  "fw_ota"
+/** @brief The note's NVS key. */
+#define NOTE_KEY "restart_note"
 
 /**
- * @brief FNV-1a (Fowler-Noll-Vo) over the note's version text.
- * @param n The note.
- * @return The hash.
+ * @brief Read the note's blob.
+ * @param ctx Unused.
+ * @param buf Where it goes.
+ * @param cap Bytes at @p buf.
+ * @return Its bytes; 0 when there is none or NVS will not open.
  */
-static uint32_t note_check(const restart_note_t *n)
+static uint32_t note_load(void *ctx, uint8_t *buf, uint32_t cap)
 {
-    uint32_t h = 2166136261u;
-    const uint8_t *p = (const uint8_t *)n->version;
-    for (size_t i = 0; i < sizeof(n->version); ++i) {
-        h = (h ^ p[i]) * 16777619u;
+    (void)ctx;
+    nvs_handle_t h;
+    if (nvs_open(NOTE_NS, NVS_READONLY, &h) != ESP_OK) {
+        return 0u;   /* no namespace yet: nothing was ever noted */
     }
-    return h;
+    size_t len = 0u;
+    esp_err_t e = nvs_get_blob(h, NOTE_KEY, NULL, &len);
+    if (e == ESP_OK && len > 0u && len <= cap) {
+        e = nvs_get_blob(h, NOTE_KEY, buf, &len);
+    }
+    nvs_close(h);
+    if (e == ESP_ERR_NVS_NOT_FOUND) {
+        return 0u;
+    }
+    if (e != ESP_OK) {
+        /* There is an entry it cannot read: one that reads as no note. */
+        ESP_LOGW(TAG, "restart note unreadable: %s", esp_err_to_name(e));
+        return UINT32_MAX;
+    }
+    return (uint32_t)len;
 }
+
+/**
+ * @brief Write the note's blob and commit it.
+ * @param ctx Unused.
+ * @param buf The entry.
+ * @param len Bytes at @p buf.
+ * @return False when NVS refused.
+ */
+static bool note_save(void *ctx, const uint8_t *buf, uint32_t len)
+{
+    (void)ctx;
+    nvs_handle_t h;
+    esp_err_t e = nvs_open(NOTE_NS, NVS_READWRITE, &h);
+    if (e == ESP_OK) {
+        e = nvs_set_blob(h, NOTE_KEY, buf, len);
+        if (e == ESP_OK) {
+            e = nvs_commit(h);
+        }
+        nvs_close(h);
+    }
+    if (e != ESP_OK) {
+        ESP_LOGW(TAG, "restart note not kept: %s; a start that goes back "
+                      "is not reported", esp_err_to_name(e));
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Erase the note's blob and commit.
+ * @param ctx Unused.
+ * @return False when NVS refused.
+ */
+static bool note_erase(void *ctx)
+{
+    (void)ctx;
+    nvs_handle_t h;
+    esp_err_t e = nvs_open(NOTE_NS, NVS_READWRITE, &h);
+    if (e == ESP_OK) {
+        e = nvs_erase_key(h, NOTE_KEY);
+        if (e == ESP_OK || e == ESP_ERR_NVS_NOT_FOUND) {
+            e = nvs_commit(h);
+        }
+        nvs_close(h);
+    }
+    if (e != ESP_OK) {
+        ESP_LOGW(TAG, "restart note not erased: %s; the next start may "
+                      "report it again", esp_err_to_name(e));
+        return false;
+    }
+    return true;
+}
+
+/** @brief The store fw_note_write() and fw_boot_settle() use. */
+static const fw_note_ops_t k_note = {
+    note_load, note_save, note_erase, NULL,
+};
 
 void fw_ota_note_restart(const char *version)
 {
-    memset(&s_note, 0, sizeof(s_note));
-    snprintf(s_note.version, sizeof(s_note.version), "%s", version);
-    s_note.check = note_check(&s_note);
-    s_note.magic = NOTE_MAGIC;
+    (void)fw_note_write(&k_note, version);
+}
+
+/** @brief This start's note, filled by fw_boot_settle() before any
+ *         call of k_boot. */
+static fw_note_seen_t s_seen;
+
+/** @brief The slot the bootloader marked invalid, for the console line. */
+static const char *s_invalid_label = "none";
+
+/**
+ * @brief The one console line of the start check.
+ * @param result What the check found, by name.
+ */
+static void say(const char *result)
+{
+    const char *note = (s_seen.state == FW_NOTE_FOUND)     ? s_seen.version
+                       : (s_seen.state == FW_NOTE_FOREIGN) ? "unreadable"
+                                                           : "none";
+    ESP_LOGI(TAG, "start check: note %s, last invalid slot %s, result %s",
+             note, s_invalid_label, result);
 }
 
 /**
@@ -205,6 +295,7 @@ static bool boot_pending(void *ctx)
 static void boot_mark_invalid(void *ctx)
 {
     (void)ctx;
+    say("GOING_BACK");
     ESP_LOGE(TAG, "display or touch did not come up: back to the build "
                   "before this one");
     const esp_err_t e = esp_ota_mark_app_invalid_rollback_and_reboot();
@@ -261,23 +352,35 @@ static const fw_boot_ops_t k_boot = {
     boot_last_invalid, NULL,
 };
 
+/**
+ * @brief The console name of a result.
+ * @param r The result.
+ * @return Its name.
+ */
+static const char *boot_name(fw_boot_t r)
+{
+    switch (r) {
+    case FW_BOOT_UPDATED:     return "UPDATED";
+    case FW_BOOT_ROLLED_BACK: return "ROLLED_BACK";
+    case FW_BOOT_UNCONFIRMED: return "UNCONFIRMED";
+    case FW_BOOT_NORMAL:
+    default:                  return "NORMAL";
+    }
+}
+
 fw_boot_t fw_ota_boot_check(bool ui_up, char *other, uint32_t other_cap)
 {
     if (other_cap > 0u) {
         other[0] = '\0';
     }
-    const bool noted = (s_note.magic == NOTE_MAGIC
-                        && s_note.check == note_check(&s_note));
-    char noted_ver[FW_TEXT_MAX];
-    snprintf(noted_ver, sizeof(noted_ver), "%s", noted ? s_note.version : "");
-    /*
-     * The note stays through the decision: a trial that goes back restarts
-     * inside it, and the build before reads the note to say so.
-     */
-    const fw_boot_t r = fw_boot_decide(&k_boot, ui_up, noted);
-    s_note.magic = 0u;
+    const esp_partition_t *bad = esp_ota_get_last_invalid_partition();
+    s_invalid_label = (bad != NULL) ? bad->label : "none";
+    /* A trial that goes back says its line in boot_mark_invalid() and
+     * restarts there or in boot_restart(): it does not return here. */
+    const fw_boot_t r = fw_boot_settle(&k_boot, &k_note, ui_up, &s_seen);
+    say(boot_name(r));
     if (r == FW_BOOT_ROLLED_BACK && other_cap > 0u) {
-        snprintf(other, other_cap, "%s", noted_ver);
+        snprintf(other, other_cap, "%s", s_seen.version);
     }
     return r;
 }

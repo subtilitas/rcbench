@@ -68,6 +68,8 @@ static bool     g_stopped;              /* STOP latched                  */
 static bool     g_armed;                /* the outputs armed             */
 static uint8_t  g_target;               /* 0 standard, 1 + n port n      */
 static bool     g_pin_known;            /* port CH names PIN             */
+static bool     g_fixed;                /* the supply is the ports' own
+                                           fixed 5V: on or off, no reading */
 static uint8_t  g_rx_mark;              /* hitec_rx_link_mark_t          */
 static bool     g_link;                 /* the link is up                */
 static unsigned g_frame_ms = 16u;       /* the render loop's frame       */
@@ -362,6 +364,12 @@ static inline void publish(hitec_prog_feed_t *f)
         f->out_mv = g_hw.v.set_mv;
         f->out_ma = 41u;
     }
+    if (g_fixed) {
+        f->fixed_on = f->supply_read;
+        f->supply_read = false;
+        f->out_mv = 0u;
+        f->out_ma = 0u;
+    }
     /* From 4.29 a held port holds the SUPPLY page too (LINK_SP_PORT). */
     f->supply_held = g_hw.has_supply
                      && hitec_port_state(&g_port) != LINK_HITEC_FREE;
@@ -447,6 +455,24 @@ static inline hitec_prog_state_t pstate(void)
     return hitec_prog_state(model());
 }
 
+/* The second read a write runs before its plan, run to its end; 60s is the
+ * bound.  The card takes nothing meanwhile: the write stands where its
+ * call left it before the second read, waiting for the card's record or
+ * backup file, and the next frame hands that over. */
+static inline void reread(void)
+{
+    const bool slow = g_card_slow;
+    const bool files_slow = g_files_slow;
+
+    g_card_slow = true;
+    g_files_slow = true;
+    for (unsigned i = 0; i < 60000u && hitec_prog_rereading(model()); ++i) {
+        pms();
+    }
+    g_card_slow = slow;
+    g_files_slow = files_slow;
+}
+
 /* Run until the model is in @p s; 60s is the bound. */
 static inline void until(hitec_prog_state_t s)
 {
@@ -503,6 +529,7 @@ static inline void rig_from(uint32_t t0, supply_kind_t supply, bool panel)
 {
     bench_at(t0, supply, 1u);
     g_panel = panel;
+    g_fixed = false;
     hitec_prog_gate_init(&g_gate);
     if (panel) {
         hitec_panel_gate(&g_gate);

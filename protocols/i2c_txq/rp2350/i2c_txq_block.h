@@ -44,9 +44,8 @@
  *
  * The system clock must not change while a bus is open.
  *
- * Not measured: this driver has not run on a chip.  The time the TAR
- * change takes, the gap the block leaves between a STOP and the next
- * START and the interrupt latency are not measured.
+ * The time the TAR change takes, the gap the block leaves between a STOP
+ * and the next START and the interrupt latency are not measured.
  *
  * SPDX-License-Identifier: MIT
  */

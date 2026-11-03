@@ -476,7 +476,7 @@ TEST_CASE(a_supply_sample_repaints_only_the_power_plot_and_the_current_row)
             }
             const bool rc = x >= SV_RC_X && x < SV_RC_X + SV_RC_W;
             const bool in = rc && y >= 70 && y < 166;
-            const bool row = x >= 416 && x < 610 && y >= 476 && y < 520;
+            const bool row = x >= 416 && x < 610 && y >= 448 && y < 492;
             if (in) { ++inside; } else if (row) { ++in_row; } else { ++outside; }
         }
     }
@@ -616,7 +616,7 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
  * its first line at OV_NOTE_Y + 2 * 21 (408), its second 21px below,
  * each 20px high, from 10px into the page to 600px further. */
 #define NOTE_X    (UI_MARGIN + 10)
-#define NOTE_L1_Y 408
+#define NOTE_L1_Y 429
 #define NOTE_L2_Y (NOTE_L1_Y + 21)
 #define NOTE_R    (UI_MARGIN + 610)
 

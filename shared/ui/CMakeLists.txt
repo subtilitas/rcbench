@@ -18,8 +18,13 @@ set(SRCS
     ui_keypad.c
     ui_setting_keypad.c
     ui_textkey.c
+    ui_shot.c
+    shot_gate.c
+    shot_hold.c
     ui_pinlist.c
+    ui_board.c
     ui_router.c
+    ui_help.c
     ui_alert_slot.c
     ui_text.c
     splash_screen.c
@@ -33,6 +38,7 @@ set(SRCS
     supply_screen.c
     supply_events.c
     supply_draw.c
+    supply_pdmini.c
     servo_screen.c
     servo_screen_sweep.c
     servo_screen_link.c
@@ -50,6 +56,12 @@ set(SRCS
     kst_panel_touch.c
     kst_panel_run.c
     kst_panel_draw.c
+    esc_wire_panel.c
+    esc_wire_edit.c
+    esc_wire_touch.c
+    esc_wire_draw.c
+    esc_wire_text.c
+    esc_wire_help.c
     hitec_panel.c
     hitec_panel_text.c
     hitec_panel_edit.c
@@ -66,17 +78,21 @@ set(SRCS
     esc_stick_touch.c
     esc_stick_draw.c
     esc_stick_draw_run.c
-    prog_models.c
     log_viewer_screen.c
     log_viewer_load.c
     log_viewer_draw.c
     log_viewer_events.c
+    logs_strip.c
     log_select.c
     settings_screen.c
     settings_draw.c
     settings_rows.c
+    prog5v_box.c
+    prog_choice.c
+    sensors_pane.c
     sensors_rows.c
     outputs_screen.c
+    outputs_view.c
     outputs_port.c
     outputs_port_entry.c
     port_view.c
@@ -91,15 +107,18 @@ set(SRCS
     board_drawing.c
     busfault_screen.c
     wifi_screen.c
+    wifi_kept.c
     update_screen.c
     coproc_update_screen.c
     upd_screen.c
     files_screen.c
+    layout_screen.c
     files_draw.c
     files_events.c
     files_text.c
     text_view.c
     text_view_draw.c
+    text_view_keys.c
 )
 
 if(ESP_PLATFORM)

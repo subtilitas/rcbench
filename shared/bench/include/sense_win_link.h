@@ -65,6 +65,10 @@ typedef struct {
     bool     have_prev[2];    /**< prev holds the read of the window before */
     uint16_t regs[2][LINK_SX_COUNT];    /**< per page, the registers of the read */
     uint16_t prev[2][LINK_SX_COUNT];    /**< per page, the registers of the window before */
+    /** @brief Per channel, the highest current of its windows read since
+     *         sense_win_link_take_peaks(), mA, signed. */
+    int16_t  peak_ma[LINK_SM_CHANNELS];
+    uint16_t peaks;           /**< bit c: peak_ma[c] holds a window       */
 } sense_win_link_t;
 
 /**
@@ -144,6 +148,38 @@ void sense_win_link_done(sense_win_link_t *s, int result,
  */
 bool sense_win_link_window(const sense_win_link_t *s, uint16_t window,
                            bench_chw_t *out);
+
+/**
+ * @brief Channel @p c's last window as its page was last read: its mean bus
+ *        voltage and mean current, whatever the window's number.  For a
+ *        reading shown live (the PROG 5V box's 0x40 CH3).
+ *
+ * @param s  The link state.
+ * @param c  The channel, 0 to 11.
+ * @param mv Receives the mean bus voltage, mV; NULL is ignored.
+ * @param ma Receives the mean current, mA, signed; NULL is ignored.
+ * @return true when the page's last read holds a closed window with both
+ *         current and voltage samples of @p c; false otherwise, for no
+ *         link, no page, @p c past 11 and @p s NULL.
+ */
+bool sense_win_link_last(const sense_win_link_t *s, unsigned c, uint16_t *mv,
+                         int16_t *ma);
+
+/**
+ * @brief Each channel's highest current of the windows read since the last
+ *        call, and cleared: the figure the IOmcu judges a limit by
+ *        (SENSE_LIMIT), for the console line of a limit passed.
+ *
+ * A window counts when its page was read with a closed window and the
+ * channel's entry holds current samples.  A window that closed after the
+ * page's last read is not in it.  A lost link clears every channel.
+ *
+ * @param s   The link state; NULL gives 0.
+ * @param out Receives LINK_SM_CHANNELS (12) figures, mA, signed; channels
+ *            without a window 0.  NULL clears them unread.
+ * @return Bit c set when channel c has a window in @p out.
+ */
+uint16_t sense_win_link_take_peaks(sense_win_link_t *s, int16_t *out);
 
 /**
  * @brief FAST's channel @p fast (0 to 11) of @p out from the window ring's

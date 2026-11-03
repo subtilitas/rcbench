@@ -19,7 +19,7 @@ ist es das 7-Zoll-ESP32-S3-Displayboard von Waveshare
 - 0.23.0 ist das erste Release für das ESP32-P4-Panel, ein Testing-Release.
   Seine Bedienoberfläche ist für 1024 x 600 neu aufgeteilt; sie ist nicht
   das hochskalierte 800-x-480-Layout.
-- Das ESP32-P4-Board braucht die Chip-Revision 3.2 (ESP-IDF v5.5.5).
+- Das ESP32-P4-Board braucht die Chip-Revision 3.2 (ESP-IDF v6.1).
 - Beide Panels nutzen denselben IOmcu, dasselbe IO-Board und denselben CAN-Link.
 - Auf dem ESP32-P4-Board ist der Heartbeat IO28 und der Drehknopf IO30
   (SDA) und IO31 (SCL), alle auf der 12-poligen Stiftleiste P3.
@@ -76,14 +76,14 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom IOmcu gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV-Datei (Comma-Separated Values) und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; die Endlagensuche, der Abgleich und der Programmierer sind auf dem Host gegen ein Servomodell getestet |
 | Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der IOmcu steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell |
 | Receiver | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / KEIN SIGNAL | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
-| Motor & ESC > Programmieren | [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle; Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware | Aufgabe gebaut. Profile eingebaut und aus `/BENCH/ESC/CONF/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon aus ESC STICK aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels. Die Parametertabellen sind Daten: kein Protokoll auf einer Leitung, keine Zeile in einer Liste von PROGRAMMIEREN |
+| Motor & ESC > Programmieren | [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle; [die ESC-Signalleitung](docs/EscWire-de.md): AM32, Bluejay, BLHeli_S und ESCape32, aus einer Verhaltensspezifikation geschrieben, ohne Zugriff auf die Firmware-Quellen. SimonK wird nicht unterstützt | Aufgabe gebaut. Profile eingebaut und aus `/BENCH/ESC/CONF/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon aus ESC STICK aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels. Die Parametertabellen sind Daten: kein Protokoll auf einer Leitung, keine Zeile in einer Liste von PROGRAMMIEREN |
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Beschleunigungssensor und Indexsensor sind nicht bestückt, es wird also nichts gemessen |
 | Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; aus einem Modell gezeichnet |
 | Logs | CSV von der Karte durchsehen, importieren und plotten; Läufe werden in ARMED oder bei eingeschaltetem Netzteil-Ausgang nach `BENCH/LOGS` aufgezeichnet, Tests nach `USER/LOGS` (die vorgegebenen Ordner), beides abschaltbar und einstellbar unter SETUP > SD-KARTE | gebaut |
 | Files | die SD-Karte (Secure Digital) in zwei Panes: Dateien kopieren, verschieben, umbenennen und löschen, Ordner und leere Textdateien anlegen, Dateiinformation; schreibt nur, solange der Prüfstand auf SAFE steht und keine Logdatei offen ist, und verweigert die eigenen Ordner des Prüfstands und die Dateien, die der Logger schreibt | Bildschirm gebaut und auf dem Host getestet; öffnet aus Logs und aus Setup |
 | WLAN | das Funkmodul des Panels, nur an, solange der Bildschirm offen ist und für Update-Prüfungen: ein eigener Access Point (WPA2 (Wi-Fi Protected Access 2), 2,4GHz Kanal 6, 1 Client) oder ein gemerktes Heimnetz (WPA2 oder WPA3 personal); eine Browser-Seite lädt jede Datei der Karte oder die ganze Karte als eine ZIP-Datei herunter und lädt ein Panel-Firmware-Image hoch, das ein 2s-Hold am Panel installiert | gebaut und auf dem Host getestet; ein Download von 16MiB lief in einem Heimnetz mit 688-757kB/s; Reichweite nicht gemessen |
 | Updates | fragt GitHub nach dem neuesten Panel-Release (STABLE oder TESTING), erinnert einmal je Start, lädt es über HTTPS herunter und installiert es auf einen 2s-Hold; installiert das IOmcu-Image, das das Panel trägt, auf einen 2s-Hold auf dem IOmcu | gebaut und auf dem Host getestet; die Dauer einer Prüfung und eines Downloads in einem echten Netz ist nicht gemessen |
-| Outputs | die an Pins des IOmcu gebundenen Protokolle und die Pins, die jedes treibt, hinter der Kachel OUTPUTS; PICK A PIN zeichnet die IOmcu-Platine maßstäblich und zeigt, wohin die Leitung eines Pins gehört | gebaut und auf dem Host getestet |
+| Outputs | die an Pins des IOmcu gebundenen Protokolle und die Pins, die jedes treibt, hinter der Kachel OUTPUTS, auf der maßstäblich gezeichneten IOmcu-Platine, die zeigt, wohin die Leitung eines Pins gehört | gebaut und auf dem Host getestet |
 | Setup | Einstellungen im dunklen und im hellen Theme, gespeichert im NVS (Non-Volatile Storage) | gebaut |
 | Setup > Panel | `Zeitzone` (10 Zonen, standardmäßig BERLIN) bestimmt die Zone, in der Dateidaten geschrieben und gezeigt werden. Die Uhr startet bei jedem Einschalten ungestellt und wird bei jedem Beitritt zum Heimnetz einmal binnen 30000ms per SNTP (Simple Network Time Protocol) von `pool.ntp.org` gestellt. `Bilddrehung` dreht Bild und Touch um 180° | gebaut und auf dem Host getestet; die Platine hat keinen RTC-Chip (Real-Time Clock); ein gedrehtes Bild auf SERVO LIVE im Sweep brauchte 3,8 bis 4,8ms (TURN) bei 30,2fps, ungedreht 39 bis 45fps; 180° im Stillstand ist nicht gemessen |
 
@@ -98,7 +98,7 @@ ctest --test-dir test/host/build --output-on-failure
 ```
 
 Die Panel-Firmware braucht ESP-IDF (Espressif Internet-of-Things Development
-Framework) v5.5.5 oder neuer auf der Linie v5.5, die IOmcu-Firmware pico-sdk 2.0 oder neuer
+Framework) v6.1, die IOmcu-Firmware pico-sdk 2.0 oder neuer
 (SDK, Software Development Kit).
 [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de) beschreibt
 Toolchains, Befehle und die CI-Gates (Continuous Integration).
@@ -132,7 +132,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **98,1%**, 62 732 von 63 970 Zeilen in 272 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **98,1%**, 75 798 von 77 258 Zeilen in 322 Dateien. CI schlägt unter 94% gesamt oder unter 85% in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

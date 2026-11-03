@@ -23,6 +23,11 @@
 #define HITEC_TXT "HITEC.TXT"
 /** @brief The Hitec record's name while it is written, HITEC.NEW. */
 #define HITEC_NEW "HITEC" FM_NEW_SUFFIX
+/** @brief The signal wire programmer's record, ESCW.TXT (EW_FILE_STEM of
+ *         ew_file.h, which this layer does not include). */
+#define ESCW_TXT "ESCW.TXT"
+/** @brief That record's name while it is written, ESCW.NEW. */
+#define ESCW_NEW "ESCW" FM_NEW_SUFFIX
 
 /**
  * @brief The bench's deepest folders: each of them and every folder above
@@ -30,7 +35,7 @@
  */
 static const char *const k_bench_dirs[] = {
     CARD_AUTO_LOGS, CARD_USER_LOGS, CARD_ESC_CONF, CARD_KST_CONF,
-    CARD_HITEC_CONF,
+    CARD_HITEC_CONF, CARD_ESCW_CONF,
 };
 
 /** @brief The fault log's three names (fault_log.h). */
@@ -40,7 +45,7 @@ static const char *const k_fault[] = {
 
 /**
  * @brief Byte @p i of @p s with case folded as FatFs compares long names:
- *        ff_wtoupper() (ffunicode.c, ESP-IDF v5.5.5) maps a to z onto A to
+ *        ff_wtoupper() (ffunicode.c, ESP-IDF v6.1) maps a to z onto A to
  *        Z, and its Latin-1 blocks U+00E0 to U+00F6 and U+00F8 to U+00FE
  *        (shift -32) map ä ö ü onto Ä Ö Ü.  ß (U+00DF) is in neither
  *        block and stays ß.  The UTF-8 forms of the three pairs differ in
@@ -226,6 +231,10 @@ fm_place_t fm_place_of(const fm_bench_t *bench, const char *dir,
         && (same_folded(name, HITEC_TXT) || same_folded(name, HITEC_NEW))) {
         return FM_PLACE_LOCKED;
     }
+    if (fm_same_path(dir, CARD_ESCW_CONF)
+        && (same_folded(name, ESCW_TXT) || same_folded(name, ESCW_NEW))) {
+        return FM_PLACE_LOCKED;
+    }
     for (size_t i = 0u; i < sizeof(k_fault) / sizeof(k_fault[0]); ++i) {
         if (fm_same_path(path, k_fault[i])) {
             return FM_PLACE_FAULT;
@@ -307,7 +316,12 @@ fm_err_t fm_allowed(const fm_bench_t *bench, fm_op_t op, const char *dir,
     }
     switch (fm_place_of(bench, dir, name, is_dir)) {
     case FM_PLACE_FIXED:
-        if (op == FM_OP_MOVE || op == FM_OP_RENAME || op == FM_OP_DELETE) {
+        /* RENAME and MOVE would take what the folder holds away from where
+         * the bench reads it.  DELETE takes an empty folder alone (FM_ERR_
+         * NOT_EMPTY otherwise), as NEW makes one: every writer makes its
+         * folder again (card_make_dirs()), and the readers take a missing
+         * folder as a card without it. */
+        if (op == FM_OP_MOVE || op == FM_OP_RENAME) {
             return FM_ERR_FIXED;
         }
         break;

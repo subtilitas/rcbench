@@ -547,6 +547,19 @@ TEST_CASE(an_ssid_of_32_characters_shows_whole)
     CHECK(right_ink(16, 16 + 56, val, W, bg) >= val + 31 * 20);
     CHECK(right_ink(16, 16 + 56, val, W, bg) < val + 740);
 
+    /* The radio-on rows, 56px from body y 16: the fourth, the access code's
+     * 20 x 36 value centred at y 212, keeps its ink from y 194 to 230. */
+    fresh();
+    v.radio = WIFI_RADIO_JOINED;
+    v.have_net = true;
+    strcpy(v.net, "Workshop 2.4");
+    v.code_on = false;
+    v.ip[0] = 192;
+    show();
+    render();
+    CHECK_EQ(right_ink(184, 194, val, W, bg), -1);
+    CHECK(right_ink(218, 224, val, W, bg) >= val);
+
     fresh();
     ui_text_set_language(UI_LANG_DE);
     v.radio = WIFI_RADIO_JOINING;

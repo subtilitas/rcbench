@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACES, SD CARD and SENSORS. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
+SETUP holds the panel's bench-wide settings in three categories: PANEL, SENSORS and SD CARD. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
 
 ## The tiles
 
@@ -14,17 +14,15 @@ SETUP holds the panel's bench-wide settings in four categories: PANEL, INTERFACE
 
 | Tile | Second line | What it opens |
 |---|---|---|
-| PANEL | `11 SETTINGS` | the list of PANEL |
-| INTERFACES | `23 SETTINGS` | the list of INTERFACES |
-| SD CARD | `4 SETTINGS` | the list of SD CARD: which logs the panel writes, and where |
-| SENSORS | `4 SETTINGS`, and 9 more for each part fitted | [Sensors](setup-sensors.md): the INA3221 current monitors, their shunts and what each channel measures |
-| OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
-| PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
-| WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
+| PANEL | `THEME, LANGUAGE, KNOB` | the list of PANEL |
+| SENSORS | `CURRENT, ANGLE, PHASE TAP` | [Sensors](setup-sensors.md): the sensor bus, the INA228 and INA3221 current monitors, the AS5600 and the phase tap, a left list of 8 beside the selected one's rows |
+| OUTPUTS | `PROTOCOLS, PINS, BOARD` | [Outputs](outputs.md): the role of each IOmcu pin, on a drawing of the board |
+| SD CARD | `LOGS, BROWSER WRITES` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
+| WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the panel's radio, for the card's files and a firmware image in a browser |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
-| FILES | `FOLDERS AND FILES` | [Files](files.md): the card's folders and files in two panes, to copy, move, rename and delete |
+| LAYOUT | `CONNECTORS AND PINS` | [Layout](layout.md), on the rbmod carrier only, whose pins are soldered |
 
-No slot stays free. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+3 slots are free, and the carrier's LAYOUT takes one. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
@@ -34,13 +32,13 @@ The home tag at the top left climbs one level at a time:
 |---|---|
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES, FILES | the tiles; WI-FI and FILES opened from LOGS go back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first |
+| OUTPUTS, WI-FI, UPDATES | the tiles; OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there, WI-FI opened from the button of LOGS or UPDATES likewise. A list or a keyboard open on one of them closes first |
 
 ## Changing a value
 
-![INTERFACES, everything saved](view:setup-interfaces)
+![The hub, everything saved](view:setup)
 
-The list is 984px wide and shows 6 rows of 64px. Under it a strip, 48px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4px above the band an alert shows across the bottom, so an alert covers no key, row or button.
+The list is 984px wide (754px on SENSORS) and shows 6 rows of 64px. Under it a strip, 48px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4px above the band an alert shows across the bottom, so an alert covers no key, row or button.
 
 A row shows the setting, a help line and its value with its unit. A number has `-` and `+` keys; a switch or a choice has `<` and `>`.
 
@@ -50,7 +48,7 @@ A row shows the setting, a help line and its value with its unit. A number has `
 - **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73% brightness is 75%. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit between 0 and 10mA, `Pins the bus takes: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `The other PD mini pin holds this GPIO` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
 - One finger at a time: a second finger does nothing while one presses or scrolls.
 
-A changed value is in force at once. RESET CATEGORY sets every value of the open category back to its default.
+A changed value is in force at once. RESET CATEGORY sets every value of the open category back to its default; on SENSORS `RESET INA228` does it for the selected entry alone.
 
 | Button | What it does |
 |---|---|
@@ -96,7 +94,7 @@ The home tag on the tiles leads to the menu. While the save button reads `SAVE` 
 
 A change on [MOTOR & ESC, SETTINGS](motor-settings.md) asks for a write itself, and that write keeps SETUP's unsaved values too.
 
-No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or on the way to OUTPUTS, PICK A PIN, WI-FI, UPDATES and FILES. STOP stops the bench and leaves the warning open. A screen the panel opens by itself, such as the bus-fault screen after a link loss, closes the warning and leaves the values in force and unsaved.
+No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or on the way to OUTPUTS, WI-FI and UPDATES. STOP stops the bench and leaves the warning open. A screen the panel opens by itself, such as the bus-fault screen after a link loss, closes the warning and leaves the values in force and unsaved.
 
 ## PANEL
 
@@ -115,6 +113,8 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
 | Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on a bus of its own, IO30 and IO31 of header P3 (I2C: Inter-Integrated Circuit), turns the throttle on MOTOR & ESC or the horn on SERVO |
 | Knob scale | 90 to 720deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
+| Keyboard see-through | OFF, 25%, 50% | OFF | how much of the text shows through the text editor's keyboard on [Files](files.md#the-text-editor); other keyboards stay opaque |
+| Demo mode | ON, OFF | OFF | hides the SIMULATION watermark from the next frame; the band still says SIM and the tiles still say SIMULATED. The panel draws the watermark only while no IOmcu answers, so the setting changes nothing on a bench with an IOmcu |
 
 The backlight is on while the panel runs. No setting switches it.
 
@@ -146,6 +146,7 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of
 |---|---|---|---|
 | Auto logs | ON, OFF | ON | a log of each ARMED and supply run in Auto log folder: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
 | User logs | ON, OFF | ON | the AUTOMATIC TEST's `ATESTnnn.CSV` and report and the LIMIT RUN's `LIMITnnn.TXT` in User log folder |
+| Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | what WI-FI's browser page needs to change the card: [Wi-Fi](wifi.md#browser-writes) |
 | Auto log folder | a folder | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder | `USER/LOGS` | where User logs writes |
 
@@ -169,20 +170,16 @@ OK keeps the keyboard open, and the folder as it was, for a folder the card cann
 | over 2 folders | `A/B/C`; `A/B` is taken | `2 folders deep at most` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a Windows device name: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| `BENCH/ESC`, `BENCH/KST` or `BENCH/HITEC`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Folder of the bench's own files` |
-
-## INTERFACES
-
-INTERFACES holds the INA228 current monitor, the sensor bus's pins, the output encoder, the phase tap, the vibration sensor, the optical tacho, the PD mini and the Hitec receive mode. The list has five headings: I2C BUS, PHASE TAP, BALANCE SENSORS, SUPPLY and PROG PORT. [Interfaces](setup-interfaces.md) describes them.
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` or `BENCH/ESCW`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Folder of the bench's own files` |
 
 ## SENSORS
 
-SENSORS holds up to four INA3221 current monitors: which are fitted, each channel's shunt and what each channel measures. [Sensors](setup-sensors.md) describes them.
+SENSORS holds every device the IOmcu reads, an entry each in a list on the left: the sensor bus, the INA228, the four INA3221, the AS5600 and the phase tap. [Sensors](setup-sensors.md) describes them.
 
 ## Related pages
 
-- [Interfaces](setup-interfaces.md)
+- [Supply](supply.md): the PD mini's wiring, on the PD MINI tab.
 - [Sensors](setup-sensors.md)
-- [Outputs](outputs.md) and [Pin picker](picker.md)
+- [Outputs](outputs.md)
 - [Updates](updates.md)
 - [Supply](supply.md), [Servo settings](servo-settings.md) and [Motor settings](motor-settings.md): the settings kept on their own screens.

@@ -373,7 +373,9 @@ hitec_link_start_t hitec_link_clear(hitec_link_t *l, uint8_t port,
  *        time and its LISTEN.
  *
  * The step's decoder and its argument go to the page.  The key goes with
- * every SEND and with a LISTEN or POWER that answers.  The set points and
+ * every SEND and with a LISTEN or POWER that answers.  A step marked more
+ * (hitec_ses_step_t) carries LINK_HT_W_CMD_MORE to an IOmcu of
+ * LINK_MINOR_PORT_CUT (4.31) or later, and goes without it to an older one.  The set points and
  * the off time are not checked here: the page refuses them with
  * LINK_HITEC_REF_SUPPLY_RANGE.
  *

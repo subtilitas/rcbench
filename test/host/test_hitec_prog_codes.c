@@ -460,6 +460,67 @@ TEST_CASE(a_link_back_after_a_loss_says_the_session_ended)
     CHECK_EQ(hitec_prog_state(&m), HITEC_PROG_PWM);
 }
 
+/* A session the link or the page takes: a line about what it held goes at once,
+ * in both phases, and the panel redraws on the sequence number. */
+TEST_CASE(a_session_lost_takes_the_lines_of_what_it_held)
+{
+    static const hitec_prog_msg_id_t k_goes[] = {
+        HITEC_PROG_MSG_READ, HITEC_PROG_MSG_WRITE_OFF, HITEC_PROG_MSG_NOT_READ,
+        HITEC_PROG_MSG_MUST_READ, HITEC_PROG_MSG_NO_CHANGES,
+        HITEC_PROG_MSG_EDITS_PENDING, HITEC_PROG_MSG_EDIT_REFUSED,
+        HITEC_PROG_MSG_REC_SAME, HITEC_PROG_MSG_REC_DONE,
+        HITEC_PROG_MSG_RECORD_HELD, HITEC_PROG_MSG_SUM_OK,
+        HITEC_PROG_MSG_LOAD_SAME, HITEC_PROG_MSG_LOAD_CHECK,
+        HITEC_PROG_MSG_LOADED, HITEC_PROG_MSG_LOADED_RAW,
+        HITEC_PROG_MSG_OTHER_SERVO, HITEC_PROG_MSG_READS_DIFFER,
+    };
+    static const hitec_link_phase_t k_phase[] = { HITEC_LINK_DOWN,
+                                                  HITEC_LINK_NO_PAGE };
+    for (size_t i = 0u; i < sizeof(k_goes) / sizeof(k_goes[0]); ++i) {
+        for (size_t k = 0u; k < 2u; ++k) {
+            held_stopped();
+            m.msg.id = (uint8_t)k_goes[i];
+            const uint32_t seq = m.msg.seq;
+            f.rd.phase = k_phase[k];
+            f.now_ms += 10u;
+            hitec_prog_feed(&m, &f);
+            CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_NONE);
+            CHECK(hitec_prog_message(&m)->seq != seq);
+        }
+    }
+}
+
+/* What happened stays true: a write, a saved file, a refused file, a danger
+ * line.  The link back then says what the page holds. */
+TEST_CASE(a_session_lost_leaves_what_happened)
+{
+    static const hitec_prog_msg_id_t k_stays[] = {
+        HITEC_PROG_MSG_WRITTEN, HITEC_PROG_MSG_RESTORED, HITEC_PROG_MSG_SAVED,
+        HITEC_PROG_MSG_LOAD_LAYOUT, HITEC_PROG_MSG_STOPPED,
+        HITEC_PROG_MSG_WRITE_CUT, HITEC_PROG_MSG_VERIFY_FAIL,
+        HITEC_PROG_MSG_REC_MIX,
+    };
+    for (size_t i = 0u; i < sizeof(k_stays) / sizeof(k_stays[0]); ++i) {
+        held_stopped();
+        m.msg.id = (uint8_t)k_stays[i];
+        f.rd.phase = HITEC_LINK_DOWN;
+        f.now_ms += 10u;
+        hitec_prog_feed(&m, &f);
+        CHECK_EQ(hitec_prog_message(&m)->id, k_stays[i]);
+    }
+    held_stopped();
+    m.msg.id = HITEC_PROG_MSG_READ;
+    f.rd.phase = HITEC_LINK_DOWN;
+    f.now_ms += 10u;
+    hitec_prog_feed(&m, &f);
+    f.rd.phase = HITEC_LINK_READY;
+    f.rd.held = false;
+    f.rd.ours = false;
+    f.now_ms += 10u;
+    hitec_prog_feed(&m, &f);
+    CHECK_EQ(hitec_prog_message(&m)->id, HITEC_PROG_MSG_SESSION_ENDED);
+}
+
 TEST_CASE(read_all_on_a_stopped_port_is_refused_and_clear_given_up_stays)
 {
     hitec_prog_cmd_t c;
@@ -669,6 +730,8 @@ int main(void)
     RUN(an_abort_ends_a_step_not_handed_out_and_an_open_on_its_way);
     RUN(a_release_the_page_refuses_says_why_and_keeps_the_port_held);
     RUN(a_link_back_after_a_loss_says_the_session_ended);
+    RUN(a_session_lost_takes_the_lines_of_what_it_held);
+    RUN(a_session_lost_leaves_what_happened);
     RUN(read_all_on_a_stopped_port_is_refused_and_clear_given_up_stays);
     RUN(a_command_unanswered_past_its_limit_is_given_up_or_kept);
     RUN(connect_takes_the_last_port_and_pin_and_refuses_one_past);

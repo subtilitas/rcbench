@@ -24,6 +24,8 @@
 #include "fm_rules.h"
 #include "fm_tree.h"
 #include "gfx.h"
+#include "logs_strip.h"
+#include "text_view.h"
 #include "touch_types.h"
 #include "ui_layout.h"
 #include "ui_text.h"
@@ -56,10 +58,11 @@
 /**
  * @brief The two panes, 500px wide at x 8 and x 516, 8px apart.
  *
- * A pane's header row, body y 4 to 52, holds UP: a button with the
+ * The LOGS tile's strip (logs_strip.h) stands above them while the panes are
+ * the level on top.  A pane's header row, body y 52 to 100, holds UP: a button with the
  * folder's path that goes up one folder, 312px wide; and while the folder
  * holds more than one page, PREV and NEXT, 88 x 48px, at the pane's right
- * end.  The list's panel from y 60 holds FS_ROWS rows at a pitch of
+ * end.  The list's panel from y 108 holds FS_ROWS rows at a pitch of
  * FS_ROW_H (48px, UI_TAP_MIN) under its 30px heading, the rows drawn
  * 44px tall, and the scroll bar, FS_BAR_W (56px) wide, at its right edge.
  */
@@ -67,7 +70,7 @@
 #define FS_PANE_GAP 8                                /**< Between them. */
 /** @brief Pane @p i's left edge: 8 or 516. */
 #define FS_PANE_X(i) (FS_L + (i) * (FS_PANE_W + FS_PANE_GAP))
-#define FS_HDR_Y    4                                /**< The header row. */
+#define FS_HDR_Y    52                               /**< The header row. */
 #define FS_HDR_H    UI_TAP_MIN                       /**< Its height. */
 #define FS_PG_W     88          /**< PREV's and NEXT's width. */
 #define FS_UP_W     312         /**< UP's width. */
@@ -79,10 +82,10 @@
 /** @brief Pane @p i's NEXT. */
 #define FS_NEXT(i)  gfx_rect_make(FS_PANE_X(i) + FS_PANE_W - FS_PG_W, \
                                   FS_HDR_Y, FS_PG_W, FS_HDR_H)
-#define FS_LIST_Y   60          /**< The list's panel's top. */
+#define FS_LIST_Y   108         /**< The list's panel's top. */
 #define FS_HEAD_H   30          /**< Its heading. */
 #define FS_ROW_H    48          /**< A row's pitch, UI_TAP_MIN. */
-#define FS_ROWS     6           /**< The rows a pane shows at once. */
+#define FS_ROWS     5           /**< The rows a pane shows at once. */
 /** @brief Pane @p i's list panel: its heading and its rows. */
 #define FS_LIST(i)  gfx_rect_make(FS_PANE_X(i), FS_LIST_Y, FS_PANE_W, \
                                   FS_HEAD_H + FS_ROWS * FS_ROW_H + 4)
@@ -119,7 +122,9 @@
 #define FOOT_W       118        /**< A button's width but RESCAN's. */
 #define FOOT_W_FIRST 140        /**< RESCAN's width, the first button. */
 #define FOOT_GAP     6          /**< Between two buttons. */
-#define FOOT_PAD     6          /**< Room kept at each side of a label. */
+/** @brief Room kept at each side of a label, px: the German AKTUALISIEREN
+ *         (130px) and VERSCHIEBEN (110px) keep the 10 x 20 face. */
+#define FOOT_PAD     4
 #define FOOT_N       8          /**< The buttons. */
 /** @brief Footer button @p i's left edge: x 8 for the first, then 146px
  *         on and 124px a button after it. */
@@ -251,8 +256,10 @@ _Static_assert(FS_MSG_Y + 2 * FS_MSG_LH + 4 <= FOOT_Y,
                "the message line's two lines end 4px above the footer");
 _Static_assert(FS_ICON + 8 + 28 * 10 + 8 + FS_SIZE_W + 8 <= FS_ROW_W,
                "a row holds its icon, 28 cells of name and the size");
-_Static_assert((FS_ROWS * FS_ROW_H - 4) * FS_ROWS / FM_PAGE_MAX >= 32,
-               "the scroll bar's thumb is 32px or more on a full page");
+_Static_assert((FS_ROWS * FS_ROW_H - 4) >= 4 * FS_BAR_MIN,
+               "the scroll bar's thumb of FS_BAR_MIN has a track to travel");
+_Static_assert(LOGS_STRIP_FOOT + 4 <= FS_HDR_Y,
+               "the header row starts below the tile's strip");
 _Static_assert(FS_NEW_Y + FS_NEW_H + 8 <= FOOT_Y,
                "NEW's choice ends 8px above the footer");
 _Static_assert(FS_NEW_ROW_H >= UI_TAP_MIN, "a choice row is a finger tall");
@@ -310,6 +317,10 @@ typedef struct {
     /* The DELETE question: the entry it names, copied, and its pane. */
     fm_entry_t doomed;        /**< the entry                             */
     int doomed_pane;          /**< its pane                              */
+    /** @brief The run's report the question names: the one DELETE takes
+     *         along, when the pane's page shows it or cannot tell
+     *         (fm_tree_has_file()); "" for none. */
+    char doomed_report[FM_NAME_BUF];
 
     /* INFO: the entry, its folder, and what the card answered. */
     fm_entry_t info_entry;    /**< the entry                             */
@@ -322,6 +333,20 @@ typedef struct {
     bool tv_live;             /**< the read under way is the viewer's    */
     bool tv_from_logs;        /**< LOGS opened it: the home tag returns  */
     unsigned tv_mount;        /**< the mount it was listed from          */
+    bool tv_save;             /**< the editor's save waits to go out     */
+    bool tv_saving;           /**< the job under way is that save        */
+    uint32_t tv_sum;          /**< CRC-32 of the file as read or last
+                                   saved: what SAVE finds on the card    */
+    uint32_t tv_found;        /**< CRC-32 of the file a refused save found:
+                                   what OVERWRITE finds on the card      */
+    bool tv_over;             /**< the save waiting to go out is OVERWRITE */
+    /* An open held by the editor's question (files_screen_open_text()). */
+    bool tv_pend;             /**< one is held                           */
+    bool tv_pend_logs;        /**< LOGS asked for it                     */
+    unsigned tv_pend_mount;   /**< its mount                             */
+    uint64_t tv_pend_size;    /**< its bytes                             */
+    char tv_pend_dir[FM_PATH_SIZE];  /**< its folder                     */
+    char tv_pend_name[FM_NAME_BUF];  /**< its name                       */
 
     /* The keyboard for a name, and what it is typed for. */
     ui_textkey_t tk;          /**< the keyboard                          */
@@ -530,6 +555,42 @@ void fs_text_fail(fm_err_t err);
 /** @brief Close the viewer: a read under way is asked to stop and its
  *         answer dropped, one waiting is dropped; the panes show. */
 void fs_text_close(void);
+
+/** @brief The answer of the editor's save: the editor takes it. */
+void fs_text_saved(void);
+
+/**
+ * @brief What the viewer's event asks of FILES: a draw, the editor's
+ *        save, or the open its question held.
+ * @param r  text_view_event()'s answer
+ */
+void fs_text_result(text_view_result_t r);
+
+/**
+ * @brief The viewer's and the editor's rules for the file shown, from the
+ *        bench as FILES read it last: EDIT and SAVE (fm_allowed()).
+ */
+void fs_text_rules(void);
+
+/**
+ * @brief Time passed for the editor's OVERWRITE hold, while the viewer
+ *        shows; a hold that completes sends its save.
+ * @param dt_s  seconds since the last tick
+ */
+void fs_text_tick(float dt_s);
+
+/**
+ * @brief The home tag over the viewer.
+ * @return true when the editor took it as a level of its own
+ */
+bool fs_text_back(void);
+
+/**
+ * @brief FILES is left: the viewer closes, unless the editor holds text no
+ *        SAVE wrote or a save runs; that editor stays for the way back in.
+ * @return true when the editor stays
+ */
+bool fs_text_stays(void);
 
 /* --- files_draw.c ------------------------------------------------------- */
 

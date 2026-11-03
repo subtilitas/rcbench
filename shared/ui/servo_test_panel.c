@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "log_name.h"
+#include "prog_choice.h"
 #include "rcbench_version.h"
 #include "sensors_rows.h"
 #include "servo_limrun.h"
@@ -230,7 +231,11 @@ static void test_apply(const servo_test_do_t *d)
     if (d->off) {
         supply_screen_ask_off();
     }
-    if (d->release) {
+    if (d->disarm && value_live()) {
+        /* An error ended the run: the bench to SAFE, as DISARM does it.
+         * The disarm lets go of the output, so no release goes before it. */
+        svs_ask_disarm();
+    } else if (d->release) {
         /* The value goes to the rest only where the pin follows: a run a
          * disarm ended leaves it where the run last drove it. */
         release();
@@ -304,6 +309,12 @@ int test_blocked(void)
     }
     if (servo_limrun_running(&s.lim)) {
         return SERVO_STR_START_LIMIT_RUNS;
+    }
+    /* The rbmod carrier's programming port: its pulse needs the PROG 5V,
+     * and the steps' voltages reach the servo rails, not the port. */
+    if (prog_choice_carrier() && prog_choice_port() != 0u) {
+        return prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
+                                      : SERVO_STR_START_PROG_STEPS;
     }
     if (!servo_test_drained(&s.test)
         || !servo_limrun_drained(&s.lim) || s.logger_busy) {

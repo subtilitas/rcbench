@@ -12,7 +12,7 @@ LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separat
 
 ![LOGS with no card in the slot](view:logs-nocard)
 
-With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF in SETUP > SD CARD.` or `USER LOGS OFF in SETUP > SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
+With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
 
 ## A card that does not mount
 
@@ -34,12 +34,14 @@ The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and name
 
 LOGS opens on the tab of the file the panel wrote last, and on BENCH after a start until one is written. Back on LOGS with nothing written since, the tab stays as it was left. A tap on a tab reads its folder from the first page.
 
+The strip on top, LOGS | FILES, holds the tile's two screens: a tap on a tab opens [Files](files.md), and the home tag of each leads to the menu. It shows on the file list; over a file, a question or a box it does not.
+
+WI-FI in the footer opens [Wi-Fi](wifi.md), to get a log off the card in a browser, and its home tag comes back here. Over the DELETE question or a file it is not there. ARMED it opens as well, and Wi-Fi's own buttons refuse.
+
 | Button | What it does |
 |---|---|
 | RESCAN | reads the page on screen again and selects its newest run |
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
-| WI-FI | opens [Wi-Fi](wifi.md) |
-| FILES | opens [Files](files.md) |
 | DELETE | asks, then removes the selected file; grey with nothing selected |
 | OPEN | opens the selected CSV file in the import view, a report in the text viewer; grey with nothing selected |
 

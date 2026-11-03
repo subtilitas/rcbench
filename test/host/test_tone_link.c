@@ -684,7 +684,7 @@ TEST_CASE(an_older_pages_other_refusal_is_not_offered_again)
 }
 
 /*
- * The pin the page holds, for OUTPUTS and PICK A PIN: not known before a
+ * The pin the page holds, for both views of OUTPUTS: not known before a
  * read; none with the tap off; the pin once it is on; the old pin while a
  * move onto a busy pin is refused; none while the status says the pin
  * refused, or from an IOmcu with no TONE page; not known once the link is

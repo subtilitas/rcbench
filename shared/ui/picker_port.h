@@ -1,7 +1,8 @@
-/*
- * PICK A PIN on a programming port: what PROG PORT n in the protocol list
- * makes of the buttons.  picker_screen.c holds the screen; this holds the
- * rules for a port's pin, as the panel can judge them before the IOmcu
+/**
+ * @file
+ * @brief The board view of OUTPUTS on a programming port: what PROG PORT n in
+ * the protocol list makes of the buttons.  picker_screen.c holds the screen;
+ * this holds the rules for a port's pin, as the panel can judge them before the IOmcu
  * does (prog_port.h), and the asks a tap makes.
  *
  * SPDX-License-Identifier: MIT
@@ -16,13 +17,20 @@
 #include "picker_screen.h"
 
 /**
- * Catalogue entry @p index as a button with port @p port picked: TICKED
+ * @brief Catalogue entry @p index as a button with port @p port picked: TICKED
  * for the pin the port names; HELD for another port's pin, a protocol's,
- * one SETUP > INTERFACES holds, and for a SERVO PWM port one on the PWM
+ * one SENSORS or SUPPLY's PD MINI holds, and for a SERVO PWM port one on the PWM
  * slice of a bound PWM output or on the compare register of another
  * SERVO PWM port; LOCKED while @p locked or the ports are not read; FREE
  * otherwise.  A reserved pin is the caller's.  @p holder as
  * picker_screen_pin() fills it.
+ * @param b The binding.
+ * @param index The catalogue entry.
+ * @param port The port picked.
+ * @param locked Whether the port's pin takes no change now.
+ * @param holder Takes who holds the pin.
+ * @param cap The size of @p holder in bytes.
+ * @return The button's state.
  */
 picker_pin_t picker_port_pin(const outbind_t *b, uint8_t index, uint8_t port,
                              bool locked, char *holder, size_t cap);
@@ -52,5 +60,3 @@ bool picker_port_row(const outbind_t *b, uint8_t k, picker_row_t *out);
  *  none picked): listed under PINS, not IN USE. */
 bool picker_port_own_pin(const outbind_t *b, uint8_t index, int port);
 
-/** The count line's text with port @p port picked: its function. */
-void picker_port_count(uint8_t port, char *buf, size_t cap);

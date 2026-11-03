@@ -54,6 +54,10 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
 # The Hitec wire's core and pin driver, which the HITEC page runs
 # (src/iomcu_hitec.c); its PIO program is assembled and checked below.
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/hitec"   hitec)
+# The signal wire of an ESC and its pin driver, which the ESC_WIRE page runs
+# (src/iomcu_esc.c); the console build's test (src/ewline_console.c) calls the
+# driver as well.  Its PIO program is assembled and checked below.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/escwire" escwire)
 # The I2C transaction queue and its driver on the I2C blocks: the sensor
 # bus runs on them (src/sense_i2c.c).
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/i2c_txq" i2c_txq)
@@ -65,7 +69,9 @@ add_executable(rcbench-iomcu
     src/iomcu_pages.c
     src/iomcu_kst.c
     src/iomcu_hitec.c
+    src/iomcu_esc.c
     src/iomcu_sense.c
+    src/iomcu_psup.c
     src/iomcu_tone.c
     src/iomcu_bind.c
     src/iomcu_can.c
@@ -84,6 +90,24 @@ add_executable(rcbench-iomcu
     src/board_drawing_rp2350_can.c
 )
 target_include_directories(rcbench-iomcu PRIVATE include src)
+
+# Which board the image is for (include/iomcu_pins.h): rp2350_can, the
+# module wired by hand, or rbmod, the carrier whose pins are soldered
+# (shared/outputs/out_board_rbmod.c).  The board names the files: the
+# module's image is rcbench-iomcu.*, a carrier's rcbench-iomcu-<board>.*,
+# so the two never share a file name.
+set(IOMCU_BOARD "rp2350_can" CACHE STRING "Board the image is for: rp2350_can or rbmod")
+set_property(CACHE IOMCU_BOARD PROPERTY STRINGS rp2350_can rbmod)
+if(IOMCU_BOARD STREQUAL "rp2350_can")
+    set(iomcu_out rcbench-iomcu)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=0)
+elseif(IOMCU_BOARD STREQUAL "rbmod")
+    set(iomcu_out rcbench-iomcu-rbmod)
+    target_compile_definitions(rcbench-iomcu PRIVATE IOMCU_BOARD_RBMOD=1)
+else()
+    message(FATAL_ERROR "IOMCU_BOARD=${IOMCU_BOARD}: rp2350_can or rbmod")
+endif()
+set_target_properties(rcbench-iomcu PROPERTIES OUTPUT_NAME ${iomcu_out})
 
 # Core 0's stack: 4096 bytes, all of the SCRATCH_Y region at 0x20081000.  The
 # SDK's default is 2048, and the deepest chain from main() with panic() and
@@ -131,7 +155,8 @@ if(IOMCU_CONSOLE AND SENSE_TRACE)
                         "console: build one of them")
 endif()
 if(IOMCU_CONSOLE)
-    target_sources(rcbench-iomcu PRIVATE src/console_hw.c)
+    target_sources(rcbench-iomcu PRIVATE src/console_hw.c src/ewline_console.c)
+    target_link_libraries(rcbench-iomcu pico_rand)
     # The USB serial transmit buffer: 1024 bytes in place of the SDK's 64
     # at full speed, 960 bytes more RAM, so one pass hands over up to the
     # 400 bytes console_hw.c takes at a time.  The console does not depend
@@ -180,6 +205,17 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
     VERBATIM)
 
+# The signal wire's line program, the same way (test/host/test_ew_pio.c,
+# fixtures/ew_line_words.txt).
+add_custom_command(TARGET rcbench-iomcu PRE_LINK
+    COMMAND ${CMAKE_COMMAND}
+            -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/escwire/rp2350/ew_line.pio.h
+            -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/ew_line_words.txt
+            -DNAME=ew_line
+            -DTEST=test_ew_pio
+            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+    VERBATIM)
+
 # The IOmcu's own sources are held to the same warnings as the host
 # build, scoped to this target so the SDK's headers are not judged by them.
 # -Wconversion is off here: the SDK's register macros trip it, and the shared
@@ -213,6 +249,7 @@ target_link_libraries(rcbench-iomcu
     rcbench_kst_rp2350
     rcbench_hitec
     rcbench_hitec_rp2350
+    rcbench_escwire_rp2350
     rcbench_i2c_txq
     rcbench_i2c_txq_rp2350
     rcbench_bench
@@ -288,7 +325,7 @@ pico_add_extra_outputs(rcbench-iomcu)
 # board file names (sixteen megabytes): 2036KiB = 2084864 bytes.
 add_custom_command(TARGET rcbench-iomcu POST_BUILD
     COMMAND ${CMAKE_COMMAND}
-            -DIMAGE=$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu.bin
+            -DIMAGE=$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}.bin
             -DLIMIT=${iomcu_slot_bytes}
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/image_fits.cmake"
     VERBATIM)
@@ -300,12 +337,12 @@ add_custom_command(TARGET rcbench-iomcu POST_BUILD
 add_custom_command(TARGET rcbench-iomcu POST_BUILD
     COMMAND picotool partition create --quiet
             "${CMAKE_CURRENT_LIST_DIR}/partitions.json"
-            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-pt.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}-pt.uf2"
     COMMAND picotool uf2 combine --quiet
-            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-pt.uf2"
-            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu.uf2"
-            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-install.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}-pt.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/${iomcu_out}-install.uf2"
             --partition 0
-    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/rcbench-iomcu-pt.uf2"
-               "${CMAKE_CURRENT_BINARY_DIR}/rcbench-iomcu-install.uf2"
+    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/${iomcu_out}-pt.uf2"
+               "${CMAKE_CURRENT_BINARY_DIR}/${iomcu_out}-install.uf2"
     VERBATIM)

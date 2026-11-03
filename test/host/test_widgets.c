@@ -977,7 +977,7 @@ TEST_CASE(a_hold_fires_once_and_only_when_it_is_held)
     /* Time passing without a press is not a hold. */
     CHECK(!ui_hold_tick(&h, UI_HOLD_S * 2.0f));
 
-    ui_hold_begin(&h);
+    ui_hold_begin(&h, TX_HOLD_HINT_ARM);
     CHECK(!hold_advance(&h, UI_HOLD_S / 2.0f));
     CHECK(hold_advance(&h, UI_HOLD_S / 2.0f));
     /* It does not fire again under the same press. */
@@ -986,22 +986,22 @@ TEST_CASE(a_hold_fires_once_and_only_when_it_is_held)
     CHECK_EQ((int)(h.held_s * 100.0f), (int)(UI_HOLD_S * 100.0f));
 
     /* The release consumes the firing: it is not also a press. */
-    CHECK(ui_hold_end(&h));
-    CHECK(!ui_hold_end(&h));
+    CHECK(ui_hold_end(&h, NULL, gfx_rect_make(0, 0, 1, 1)));
+    CHECK(!ui_hold_end(&h, NULL, gfx_rect_make(0, 0, 1, 1)));
 }
 
 TEST_CASE(a_finger_that_leaves_the_control_ends_the_hold)
 {
     ui_hold_t h;
     ui_hold_reset(&h);
-    ui_hold_begin(&h);
+    ui_hold_begin(&h, TX_HOLD_HINT_ARM);
     CHECK(!hold_advance(&h, UI_HOLD_S / 2.0f));
     CHECK(ui_hold_leave(&h));
     CHECK(!ui_hold_tick(&h, UI_HOLD_S * 2.0f));   /* and it does not resume */
 
     /* Once it has fired, the press is waiting for its release instead. */
     ui_hold_reset(&h);
-    ui_hold_begin(&h);
+    ui_hold_begin(&h, TX_HOLD_HINT_ARM);
     CHECK(hold_advance(&h, UI_HOLD_S));
     CHECK(!ui_hold_leave(&h));
 }
@@ -1016,7 +1016,7 @@ TEST_CASE(one_late_frame_cannot_complete_a_hold)
 {
     ui_hold_t h;
     ui_hold_reset(&h);
-    ui_hold_begin(&h);
+    ui_hold_begin(&h, TX_HOLD_HINT_ARM);
 
     /* A 2.5s frame, which is longer than the hold itself. */
     CHECK(!ui_hold_tick(&h, 2.5f));
@@ -1036,7 +1036,7 @@ TEST_CASE(one_late_frame_cannot_complete_a_hold)
 
     /* A frame of no time, and a frame of negative time, credit nothing. */
     ui_hold_reset(&h);
-    ui_hold_begin(&h);
+    ui_hold_begin(&h, TX_HOLD_HINT_ARM);
     CHECK(!ui_hold_tick(&h, 0.0f));
     CHECK(!ui_hold_tick(&h, -5.0f));
     CHECK_EQ((int)(h.held_s * 1000.0f), 0);
@@ -1046,7 +1046,7 @@ TEST_CASE(a_state_that_goes_away_under_a_press_ends_the_gesture)
 {
     ui_hold_t h;
     ui_hold_reset(&h);
-    ui_hold_begin(&h);
+    ui_hold_begin(&h, TX_HOLD_HINT_ARM);
     CHECK(hold_advance(&h, UI_HOLD_S));
     ui_hold_reached(&h);
     CHECK_EQ(h.flash_ms, UI_HOLD_FLASH_MS);
@@ -1148,11 +1148,11 @@ TEST_CASE(every_phase_of_the_flash_is_drawn)
 TEST_CASE(the_hold_refuses_a_null_rather_than_following_it)
 {
     ui_hold_reset(NULL);
-    ui_hold_begin(NULL);
+    ui_hold_begin(NULL, TX_HOLD_HINT_ARM);
     ui_hold_reached(NULL);
     ui_hold_flash_step(NULL, 1.0f);
     CHECK(!ui_hold_leave(NULL));
-    CHECK(!ui_hold_end(NULL));
+    CHECK(!ui_hold_end(NULL, NULL, gfx_rect_make(0, 0, 1, 1)));
     CHECK(!ui_hold_tick(NULL, UI_HOLD_S));
     CHECK(!ui_hold_left(NULL));
 }

@@ -122,8 +122,8 @@ typedef void (*servo_store_visit_fn)(const char *name, bool is_dir,
 /**
  * @brief The card, and the programmer's stem.
  *
- * Every name is a name inside the programmer's folder.  All 5 functions are
- * set.
+ * Every name is a name inside the programmer's folder.  The 5 functions from
+ * mounted to create are set; remove may be NULL.
  */
 typedef struct {
     void *ctx;                  /**< passed to every function               */
@@ -149,6 +149,18 @@ typedef struct {
      */
     servo_store_io_result_t (*create)(void *ctx, const char *name,
                                       const char *data, size_t len);
+    /**
+     * @brief Whether a proposed name may carry a tag: "<stem>nnn-<tag>.TXT",
+     *        a hyphen and 1 or more characters after the 3 digits, counts as
+     *        number nnn for the next proposal and for the list's order, as
+     *        "<stem>nnn.TXT" does.
+     */
+    bool tagged;
+    /**
+     * @brief Remove the file; NULL for a programmer that removes none.
+     *        SERVO_STORE_IO_EXISTS is not reported.
+     */
+    servo_store_io_result_t (*remove)(void *ctx, const char *name);
 } servo_store_io_t;
 
 /** @brief One row of a list. */
@@ -191,11 +203,21 @@ bool servo_store_file_name(const char *stem, const char *base, char *out,
 int servo_store_number(const char *stem, const char *file);
 
 /**
+ * @brief The number of a proposed name as @p io counts it: with a tag too when
+ *        @c io->tagged.
+ *
+ * @param io    The card functions.
+ * @param file  The file name, with the extension.
+ * @return The number, 1 to 999; 0 for any other name.
+ */
+int servo_store_number_of(const servo_store_io_t *io, const char *file);
+
+/**
  * @brief Propose a base name: the stem and 3 digits, one above the highest
  *        number the directory holds.
  *
  * A gap below the highest number is not filled, so a higher number is a
- * later file.  With number 999 taken the lowest free number is proposed.
+ * later file.  With @c io->tagged a tagged name counts for its number.  With number 999 taken the lowest free number is proposed.
  * Files and directories count, in any case; a file with another name counts
  * for nothing.
  *
@@ -257,6 +279,20 @@ servo_store_t servo_store_list_after(const servo_store_io_t *io,
                                      servo_store_entry_t *entries, size_t cap,
                                      size_t *count, size_t *total,
                                      size_t *skipped);
+
+/**
+ * @brief Remove the file @p name, a name as servo_store_list_after() gives it.
+ *
+ * The name check holds, so the record, the stem alone, is never removed.
+ *
+ * @param io    The card functions; @c io->remove set.
+ * @param name  The file name.
+ * @return SERVO_STORE_OK; SERVO_STORE_ARG with no remove function;
+ *         SERVO_STORE_BAD_NAME; SERVO_STORE_NO_CARD; SERVO_STORE_LIST_ERROR;
+ *         SERVO_STORE_NOT_FOUND for no file of that name, a folder included;
+ *         SERVO_STORE_DENIED; SERVO_STORE_WRITE_ERROR for any other failure.
+ */
+servo_store_t servo_store_remove(const servo_store_io_t *io, const char *name);
 
 /**
  * @brief Read the file @p name, a name as servo_store_list_after() gives it,

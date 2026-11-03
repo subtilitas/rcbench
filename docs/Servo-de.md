@@ -327,7 +327,11 @@ und ein Netzteil, das aufhört zu antworten, auslöst, ausschaltet oder
 dessen Sollwerte sich ändern: die Gründe des automatischen Tests, in
 [Was einen Lauf beendet](#was-einen-lauf-beendet). SAFE und ARM des Laufs
 selbst beenden nichts. Jeder Grund beendet den Lauf als ABGEBROCHEN, mit
-ausgeschaltetem Ausgang und freigegebenem Servo. Ein Lauf, der endet,
+ausgeschaltetem Ausgang und freigegebenem Servo. Ein Fehler während einer
+Suche, einer Probe oder der Prüfung schaltet den Prüfstand zudem auf SAFE:
+ein Wert an der Grenze von 3,0A, ein abgeschnittener Wert, 1,0A für 400ms,
+ein Fenster ohne Spannung der Schiene und die Fehler des automatischen Tests
+([Sicherheit, Fehler](Safety-de.md#fehler)). Ein Lauf, der endet,
 während er auf ARMED wartet, fordert zudem SAFE an: ein ARM, das er
 anforderte und das der Prüfstand noch nicht übernommen hat, schaltet den
 Prüfstand nach dem Ende nicht auf ARMED. Ein Start des Panels löscht den
@@ -395,7 +399,7 @@ sind:
 RCBENCH SERVO-ENDLAGEN-BERICHT
 Ergebnis:        BESTANDEN
 Prüfling:        SERVO
-Firmware:        rcbench 0.23.1
+Firmware:        rcbench 0.23.4
 Modus:           Suche, dann LEFT ANGLE und RIGHT ANGLE programmiert
 Ausgang:         PROG-PORT 1 GPIO 13, 50Hz
 Pulsbereich:     Mitte 1500us, 1000-2000us
@@ -497,7 +501,7 @@ ausgelegt ist; und die Spannung, unter der es sich nicht bewegt
 (Brown-out). Nichts am Prüfstand misst das Horn, solange der Ausgangsencoder
 (siehe unten) nicht an ist, also wird jedes Ergebnis am Strom des Netzteils
 abgelesen, das das Servo versorgt: am PD mini (WeAct PD
-Power Mini V1), wenn SETUP INTERFACES ihn freigibt, sonst am Netzteilmodell
+Power Mini V1), wenn der Tab PD MINI auf SUPPLY ihn freigibt, sonst am Netzteilmodell
 des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
 sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
 Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen den
@@ -798,7 +802,7 @@ bis 0,342A.
 ### Der Ausgangsencoder
 
 Ein magnetischer Winkelsensor AS5600 auf der Ausgangswelle des Servos, in
-SETUP, INTERFACES unter AS5600 eingestellt (Standard AUS) und vom IOmcu
+SETUP, SENSORS unter AS5600 eingestellt (Standard AUS) und vom IOmcu
 gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
@@ -911,9 +915,15 @@ Sensor keinen Magneten meldet.
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
-schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
-Prüfstand bleibt ARMED, außer das Ende war DISARM, STOP oder das
-Verlassen der Seite, die auf SAFE schalten. Ein Schritt, den der Lauf gepostet und
+schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Ein
+Fehler schaltet den Prüfstand statt der Freigabe auf SAFE: ein Netzteil, das
+nicht antwortet oder abgeschaltet hat, kein neuer Messwert, ein Ausgang, der
+nicht anging, ein nicht bestätigter Sollwert, eine Stufe über der Grenze,
+BLOCKIERT AB, Konstantstrom und jeder Grund des INA3221
+([Sicherheit, Fehler](Safety-de.md#fehler)). Auf SAFE schalten auch DISARM,
+STOP und das Verlassen der Seite. ARMED mit dem Servo in der Ruhelage bleibt
+der Prüfstand bei den Enden des Bedieners: ein Finger an den Bedienelementen,
+eine Änderung der Einstellungen, AUSGANG AUS und verlorene Touch-Ereignisse. Ein Schritt, den der Lauf gepostet und
 das Panel noch nicht gesendet hat, wenn der Prüfstand auf SAFE schaltet oder
 stoppt, wird nicht gesendet. Nach einem Lauf, den DISARM, STOP oder das
 Verlassen der Seite beendet hat, bleiben Horn und SOLL-PULSBREITE auf der
@@ -1214,8 +1224,8 @@ erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 ## Voraussetzungen
 
 Die Strommessung an der Servoschiene. Die Endlagensuche liest den
-INA3221-Kanal, der das Ziel des Testers überwacht, verdrahtet in SETUP
-INTERFACES und bestückt in SETUP > SENSORS, und sonst nichts. Der
+INA3221-Kanal, der das Ziel des Testers überwacht, verdrahtet und
+bestückt in SETUP > SENSORS, und sonst nichts. Der
 Abgleich braucht einen Sensor über das Paar der Ausgänge, der nicht bestückt
 ist. Der automatische Test liest den INA3221 oder den PD mini, oder läuft am
 Netzteilmodell des Panels. Das Programmieren von LEFT ANGLE und RIGHT ANGLE

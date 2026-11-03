@@ -115,17 +115,17 @@ extern const int16_t kpn_rule[KST_RULE_COUNT];
 
 enum {
     P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
-    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES
+    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT
 };
 
-enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE };
+enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE, C_PORT };
 #define FILES_SAVE (-1)                 /**< list entry value: the entry that saves a new file */
 /**
  * @brief List entry value: the entry that pages on to the files behind these
  */
 #define FILES_NEXT (-2)
 enum { MORE_VERIFY = 0, MORE_DISCARD, MORE_RELEASE, MORE_VOLTAGE,
-       MORE_CURRENT, MORE_WAIT };
+       MORE_CURRENT, MORE_WAIT, MORE_FIXED };
 /** @brief List value of a restore's source list that forgets the restore. */
 #define RESTORE_FORGET ((int)KST_PROG_FROM_COUNT)
 
@@ -203,6 +203,7 @@ typedef struct {
         int       count;                /**< lines used */
         char      title[64];            /**< the page's title */
         char      apply[64];            /**< the label of the hold button */
+        int hint;              /**< the band's hint for a short release */
         char      lines[WARN_LINES][KST_PANEL_LINE];  /**< the page's lines */
         uint8_t   level[WARN_LINES];    /**< each line's level */
         bool      no_file;              /**< the page says: no card, no file */
@@ -217,6 +218,7 @@ typedef struct {
     float   held_s;                     /**< seconds a plus or minus key has been held */
 
     kst_prog_state_t state_seen;        /**< the programmer's state as last drawn */
+    uint32_t leaves_seen;               /**< kst_prog_leaves() as last told to the supply screen */
     uint32_t sig;                       /**< signature of the last draw */
     /** @brief Revision, counted up when the overlay's picture changes */
     uint32_t rev;
@@ -493,6 +495,15 @@ void kpn_warn_apply(void);
 /** @brief Every editor shut: the keypad, the keyboard, the list and the
  *         page; a soft limit's edit is cancelled. */
 void kpn_close_editors(void);
+
+/**
+ * @brief The limits a CONNECT is held to: the SUPPLY screen's caps as they
+ *        are now and the 4.8V floor, or none on a board whose ports run
+ *        from their own fixed supply (the rbmod carrier's 5V), which the
+ *        PD mini's caps do not bound.
+ * @param p the programmer
+ */
+void kpn_supply_limits(kst_prog_t *p);
 /** @brief A file's name typed: the save, or the keyboard again for a name
  *         the card's side does not take.
  * @param name the name typed
@@ -545,10 +556,24 @@ void kpn_choice_done(int value);
  */
 bool kpn_row_live(const row_t *r);
 
+/**
+ * @brief Whether a tap on the PORT row's label opens the list of the
+ *        carrier's programming ports: a carrier of 4.36 or later
+ *        (prog_choice_offered()), the SERVO tab shown, and the tester
+ *        holding the port.
+ * @return the PORT row, or NULL
+ */
+const row_t *kpn_port_pick_row(void);
+
+/** @brief Opens the list PROGP01 to PROGP04 (C_PORT); nothing while the
+ *         choice is locked. */
+void kpn_port_list(void);
+
 /* kst_panel_touch.c */
 
 /** @brief The supply's own controls follow the port: while one is out of
- *         PWM they offer an OFF and nothing else. */
+ *         PWM they offer an OFF and nothing else.  A LEAVE ended since the
+ *         last call is told first (supply_screen_kst_leave_done()). */
 void kpn_supply_sync(void);
 
 /* kst_panel_draw.c */

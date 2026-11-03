@@ -1,7 +1,8 @@
 /**
  * @file text_view.h
- * @brief The text viewer: a file of the SD (Secure Digital) card shown as
- *        text, read-only, with the bench's words in colour.
+ * @brief The text viewer and editor: a file of the SD (Secure Digital)
+ *        card shown as text with the bench's words in colour, and changed
+ *        and saved on EDIT.
  *
  * FILES hosts the viewer (files_screen.h FILES_VIEW_TEXT).  OPEN on a file
  * in FILES, and OPEN on a report in LOGS, open it: the opener names the
@@ -26,8 +27,9 @@
  *          of TEXT_VIEW_CELLS_SMALL cells; a line wider than a row wraps
  *          onto the next, marked ".." at the left; the scroll bar, 56px
  *          wide, at the right
- *   y 440  the footer, 52px: SMALL (NORMAL while SMALL is on) at the
- *          left, PAGE UP and PAGE DOWN at the right, a warning between
+ *   y 440  the footer, 52px: SMALL (NORMAL while SMALL is on) and EDIT
+ *          at the left, PAGE UP and PAGE DOWN at the right, a warning
+ *          between
  *   y 496  the router's alert band
  *
  * A drag on the text scrolls it a row per row pitch; a drag on the scroll
@@ -40,8 +42,54 @@
  * kind from its name (text_hl_kind_of()), the verdict words from the
  * report writers' text IDs in every language (text_view_words()).
  *
- * The editor (F6 of the file manager's plan) adds an EDIT button, the
- * keyboard's editor mode and SAVE on this view; none of it is here.
+ * The editor.  EDIT switches the view to the editor and opens the
+ * keyboard's editor mode (ui_textkey_open_editor()), 4 rows of keys with
+ * no digit row, under a text of 8 rows (10 with SMALL); a cursor shows
+ * where a key types.  SETUP > PANEL's Keyboard see-through (SET_KB_SEE)
+ * lets the text show through the keyboard: OFF, 25% or 50%.  While it is
+ * above OFF the panel is drawn to its full height under the keyboard and
+ * the rows below the 8 (10) show through the keys; the 8 (10) over the
+ * keyboard are still the rows the cursor is kept on, a tap reaches and a
+ * page moves.  A tap on the text
+ * puts the cursor on the nearest cell; "<-" and "->" move it a unit.  DONE
+ * closes the keyboard, and the footer then holds SAVE, REVERT, KEYBOARD,
+ * PAGE UP and PAGE DOWN, with a note between.  A key that would take the
+ * text past TEXT_BUF_FILE_MAX bytes or TEXT_BUF_ENDS_MAX line ends types
+ * nothing and says so.  EDIT is refused where FILES' rules refuse an edit
+ * (fm_allowed() FM_OP_EDIT: the servo programmer's journal, the fault log,
+ * a file the logger writes); the host names the refusal with
+ * text_view_set_rules().
+ *
+ * SAVE hands the text to the host (TEXT_VIEW_SAVE), which writes it
+ * through "<name>.NEW" (fm_job_save()) and answers text_view_saved().  It
+ * is locked while the host's rules refuse a save: the bench ARMED, a run
+ * being logged, the file being written; the note says why.  From SAVE's
+ * tap until the answer the text does not change on any path: no key types,
+ * REVERT is shut, DISCARD on a question is shut, and the gap of the text
+ * buffer stays behind the text (text_buf_settle()) so a draw moves no byte
+ * the card's task reads.  A KST file (first line "KST servo
+ * configuration, format ...") that holds a checksum line loses that line
+ * on a SAVE of a changed text, so the servo programmer reads it as EDITED
+ * (kst_file.h); the note says so.  An ESC settings file (first line "ESC settings
+ * backup, format ...") with a checksum line gets `edited` in its place, so the ESC
+ * programmer reads its field lines (ew_file.h); the note says so.  An ESC profile the
+ * panel reads at its start says that it is read at the next start.
+ *
+ * REVERT, and leaving the editor with the home tag while the text differs
+ * from the card, ask first: UNSAVED CHANGES, STAY or DISCARD.  DISCARD
+ * puts the text back to the file as it was loaded or last saved, from a
+ * copy of TEXT_BUF_FILE_MAX bytes kept while the editor is open.  There is
+ * no undo of single keys.
+ *
+ * SAVE writes only over the file the editor opened: the host hands the
+ * save the CRC-32 (cyclic redundancy check) of the file as it was read or
+ * last saved, the Wi-Fi page's ETag, and the save compares it with the
+ * file on the card first (fm_ops.h fm_job_match()).  A file changed or
+ * removed since, by the Wi-Fi page's editor or an upload, fails the save
+ * with FM_ERR_CHANGED and nothing written: the note says so, and the
+ * question UNSAVED CHANGES offers STAY, which keeps the text, and READ
+ * AGAIN, which drops it and reads the file from the card
+ * (TEXT_VIEW_RELOAD).
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -73,6 +121,12 @@ extern "C" {
 #define TEXT_VIEW_CELLS_NORMAL 92
 /** @brief Cells of a row in the 8 x 16 face: 920px. */
 #define TEXT_VIEW_CELLS_SMALL 115
+/** @brief Spans a drawn line is classed into; a line with more has its
+ *         last span reach to its end as TEXT (text_hl_line()). */
+#define TEXT_VIEW_SPANS 128u
+/** @brief Colours text_view_class_rgb() gives: one per class, then the
+ *         text's background. */
+#define TEXT_VIEW_RGB (TEXT_HL_CLASSES + 1u)
 
 /** @brief Where the viewer stands. */
 typedef enum {
@@ -82,11 +136,31 @@ typedef enum {
     TEXT_VIEW_FAILED       /**< the file did not open: text_view_why()   */
 } text_view_state_t;
 
-/** @brief What a tap on the footer asks for (text_view_event()). */
+/** @brief What an event asks of the host (text_view_event()). */
 typedef enum {
     TEXT_VIEW_NONE = 0,    /**< nothing the host acts on                  */
-    TEXT_VIEW_CHANGED      /**< the view changed: draw it again           */
+    TEXT_VIEW_CHANGED,     /**< the view changed: draw it again           */
+    TEXT_VIEW_SAVE,        /**< SAVE: write the text (text_view_save_len()) */
+    TEXT_VIEW_LEAVE,       /**< DISCARD on a question the host asked
+                                (text_view_ask_open()): go on with what
+                                it held                                  */
+    TEXT_VIEW_RELOAD,      /**< READ AGAIN on the CHANGED question: read
+                                the file from the card again; the
+                                editor's text is dropped                 */
+    TEXT_VIEW_OVERWRITE    /**< OVERWRITE held 2s on the CHANGED question:
+                                write the text over the file as the
+                                refused save found it; a further change
+                                is refused again                         */
 } text_view_result_t;
+
+/** @brief The question over the editor. */
+typedef enum {
+    TEXT_VIEW_ASK_NONE = 0,  /**< no question                             */
+    TEXT_VIEW_ASK_BACK,      /**< the home tag leaves the editor           */
+    TEXT_VIEW_ASK_REVERT,    /**< REVERT                                   */
+    TEXT_VIEW_ASK_OPEN,      /**< the host opens another file              */
+    TEXT_VIEW_ASK_CHANGED    /**< SAVE found the file changed on the card  */
+} text_view_ask_t;
 
 /** @brief Close the viewer and put the face back to NORMAL: the start. */
 void text_view_reset(void);
@@ -165,8 +239,10 @@ bool text_view_small(void);
 void text_view_set_small(bool small);
 
 /**
- * @brief Rows on screen in the face in use.
- * @return TEXT_VIEW_ROWS_NORMAL or TEXT_VIEW_ROWS_SMALL
+ * @brief Rows on screen in the face in use, over the keyboard while it is
+ *        open.
+ * @return TEXT_VIEW_ROWS_NORMAL or TEXT_VIEW_ROWS_SMALL; 8 or 10 while the
+ *         keyboard is open
  */
 int text_view_rows(void);
 
@@ -236,6 +312,17 @@ int text_view_cell_class(int k, int cell);
 const text_hl_words_t *text_view_words(void);
 
 /**
+ * @brief The colours the viewer draws in, from a palette as defined: each
+ *        class's role (TEXT_HL_CLASS_ROWS), then the background of the
+ *        text, for a page drawn elsewhere (the Wi-Fi page).
+ * @param theme  the palette, a ui_theme_id_t
+ * @param out    takes 0xRRGGBB per class, then the background
+ * @param n      entries at @p out; TEXT_VIEW_RGB for all
+ * @return the entries written, at most @p n
+ */
+size_t text_view_class_rgb(int theme, uint32_t *out, size_t n);
+
+/**
  * @brief Draw the viewer over the whole body.
  * @param c  the body's canvas
  */
@@ -250,6 +337,146 @@ text_view_result_t text_view_event(const touch_event_t *e);
 
 /** @brief Drop a press under way: the touch stream lost an event. */
 void text_view_cancel_press(void);
+
+/* ------------------------------------------------------------ the editor */
+
+/**
+ * @brief The host's rules for this file as the bench stands now.
+ * @param edit  FM_OK when EDIT may open the editor, else why not
+ * @param save  FM_OK when SAVE may write, else why not
+ * @return true when they differ from the ones set last: draw again
+ */
+bool text_view_set_rules(fm_err_t edit, fm_err_t save);
+
+/**
+ * @brief Switch the shown text to the editor, its keyboard open, as EDIT
+ *        does.
+ * @return true when it switched; false with no text shown or an edit the
+ *         rules refuse
+ */
+bool text_view_edit(void);
+
+/**
+ * @brief Whether the editor is on.
+ * @return true while editing
+ */
+bool text_view_editing(void);
+
+/**
+ * @brief Whether the keyboard is open.
+ * @return true while it shows
+ */
+bool text_view_keyboard(void);
+
+/**
+ * @brief Whether the text differs from the file as loaded or last saved.
+ * @return true with changes no SAVE wrote
+ */
+bool text_view_dirty(void);
+
+/**
+ * @brief The cursor, a byte offset in the text, its BOM not counted.
+ * @param line  takes its line, from 0; may be NULL
+ * @return the offset
+ */
+size_t text_view_cursor(size_t *line);
+
+/**
+ * @brief The question that shows.
+ * @return TEXT_VIEW_ASK_NONE without one
+ */
+text_view_ask_t text_view_ask(void);
+
+/**
+ * @brief The home tag: the keyboard closes; a question closes as STAY; the
+ *        editor leaves for the viewer, after the question while the text
+ *        is dirty.
+ * @return true when it took the tap; false in the viewer, which the host
+ *         closes
+ */
+bool text_view_back(void);
+
+/**
+ * @brief The host is to open another file over a dirty editor: the
+ *        question shows, and DISCARD answers TEXT_VIEW_LEAVE.
+ */
+void text_view_ask_open(void);
+
+/**
+ * @brief Start a save: a KST file's checksum line goes, an ESC file's says edited (see the top), the
+ *        text is held unchanged until text_view_saved(), and the note says
+ *        that it is saved.
+ * @return the bytes the file takes, its BOM included
+ */
+size_t text_view_save_len(void);
+
+/**
+ * @brief The text's bytes for the save (fm_fill_fn).
+ * @param ctx  unused
+ * @param at   the offset of the first byte wanted
+ * @param dst  takes the bytes
+ * @param cap  room at @p dst
+ * @return the bytes written, 0 past the end
+ */
+size_t text_view_fill(void *ctx, uint64_t at, uint8_t *dst, size_t cap);
+
+/**
+ * @brief The save is answered.  A question that showed while it ran (its
+ *        DISCARD shut meanwhile) closes after a save that wrote the text:
+ *        the host's held open goes on, the home tag's leaves the editor.
+ *        After a failed save it stays, DISCARD live again.  A save that
+ *        found the file changed on the card (FM_ERR_CHANGED) asks STAY or
+ *        READ AGAIN when no other question shows.
+ * @param err      FM_OK when the file is on the card; else why not, the
+ *                 text still dirty
+ * @param stopped  the gate stopped it part way (FM_JOB_STOPPED)
+ * @param restart  the file is read at the panel's next start
+ * @return TEXT_VIEW_LEAVE when the host's held open goes on, else
+ *         TEXT_VIEW_NONE
+ */
+text_view_result_t text_view_saved(fm_err_t err, bool stopped, bool restart);
+
+/**
+ * @brief Whether the CHANGED question offers OVERWRITE: the host has the
+ *        sum of the file a refused save found.  A file that is gone has
+ *        none, and OVERWRITE shows dimmed.  Called before text_view_saved().
+ * @param can  the host holds that sum
+ */
+void text_view_offer_overwrite(bool can);
+
+/**
+ * @brief Time passed for OVERWRITE's hold.  A release before 2s writes
+ *        nothing and shows HOLD_HINT_OVERWRITE on the alert band.  A hold
+ *        whose question closed, or whose SAVE the rules shut, ends here.
+ * @param dt_s  seconds since the last tick
+ * @return TEXT_VIEW_OVERWRITE on the tick the hold completes, the save's
+ *         checks passed and the text held still as for SAVE;
+ *         TEXT_VIEW_CHANGED while the hold's fill moves; else TEXT_VIEW_NONE
+ */
+text_view_result_t text_view_tick(float dt_s);
+
+/**
+ * @brief The bytes the header shows: the file as listed while it is read,
+ *        as read once it shows, and as written after each SAVE that wrote
+ *        it, its BOM included.
+ * @return the bytes
+ */
+uint64_t text_view_size(void);
+
+/**
+ * @brief Whether a save runs or waits to: the text does not change.
+ * @return true from SAVE's tap, or text_view_save_len(), to
+ *         text_view_saved()
+ */
+bool text_view_saving(void);
+
+/**
+ * @brief The note in the footer as it is drawn, "" for none.
+ * @param out  takes it
+ * @param n    bytes at @p out
+ * @return @p out
+ */
+const char *text_view_note(char *out, size_t n);
 
 #ifdef __cplusplus
 }

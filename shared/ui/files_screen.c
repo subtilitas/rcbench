@@ -158,6 +158,7 @@ void fs_err_text(fm_err_t err, const char *name, char *out, size_t n)
     case FM_ERR_ARMED:      snprintf(out, n, "%s", TR(FM_GATE_ARMED)); break;
     case FM_ERR_LOGGING:    snprintf(out, n, "%s", TR(FM_GATE_LOGGING)); break;
     case FM_ERR_CANCELLED:  snprintf(out, n, "%s", TR(FM_E_CANCELLED)); break;
+    case FM_ERR_CHANGED:    snprintf(out, n, TR(FM_E_CHANGED), nm); break;
     case FM_ERR_ARG:        snprintf(out, n, TR(FM_E_ARG), nm); break;
     case FM_ERR_TOO_BIG:    snprintf(out, n, "%s", TR(ED_TOO_LARGE)); break;
     case FM_ERR_IO:
@@ -278,6 +279,7 @@ static int place_of(const fm_tree_t *t, const fm_entry_t *e)
  *         kept by fm_tree_page(), by name. */
 typedef struct {
     bool have;           /**< the pane held rows                        */
+    bool start;          /**< the list showed the folder's first entry  */
     fm_entry_t top;      /**< the entry of the top row on screen        */
 } place_t;
 
@@ -295,6 +297,7 @@ static void place_note(int i, place_t *p)
     }
     const int top = (s.scroll[i] < t->held) ? s.scroll[i] : t->held - 1;
     p->have = true;
+    p->start = (top <= 0 && t->ahead == 0);
     p->top = t->page[(top > 0) ? top : 0];
 }
 
@@ -303,8 +306,10 @@ static void place_note(int i, place_t *p)
  *        that was the top row on screen stays the top row, and the
  *        selection stays on its entry (fm_tree_page() keeps it by name).
  *
- * A top row gone from the card leaves the entry now at its place on top.
- * A selected entry gone from the card, or moved off the page, leaves
+ * A list that showed the folder's first entry on top shows the folder's
+ * first entry again, so an entry new on the card that ranks first is in
+ * sight.  A top row gone from the card leaves the entry now at its place
+ * on top.  A selected entry gone from the card, or moved off the page, leaves
  * nothing selected, as after a DELETE: MOVE and RENAME act on the
  * selection without a question, so no other entry takes it.  The scroll
  * is held to the rows after (fs_clamp_scroll()).
@@ -314,7 +319,7 @@ static void place_note(int i, place_t *p)
  */
 static void place_keep(int i, const place_t *p)
 {
-    if (p->have) {
+    if (p->have && !p->start) {
         s.scroll[i] = place_of(&s.pane[i], &p->top);
     }
 }
@@ -435,6 +440,10 @@ static void take_answer(void)
     case FM_REQ_JOB:
         if (s.req.job.kind == FM_JOB_LOAD) {
             fs_text_take();
+        } else if (s.req.job.kind == FM_JOB_SAVE) {
+            fs_text_saved();
+            want(0, NEED_PAGE, FM_GO_SAME);   /* the file's size changed */
+            want(1, NEED_PAGE, FM_GO_SAME);
         } else {
             take_job();
         }
@@ -727,6 +736,30 @@ static void open_in_logs(const fm_entry_t *e)
     ui_router_goto(SCREEN_LOGS);
 }
 
+/**
+ * @brief The report the DELETE question names for entry @p e of pane
+ *        @p here, into s.doomed_report: a run log's report when the page
+ *        shows it, or when it would stand on another page and the page
+ *        cannot tell; "" for a report the page shows not there, and for
+ *        anything but a run log.  DELETE takes the report along whenever
+ *        the card holds it (fm_job_delete()), so a question that cannot
+ *        tell names it.
+ * @param here  the pane
+ * @param e     the entry
+ */
+static void doomed_report(const fm_tree_t *here, const fm_entry_t *e)
+{
+    s.doomed_report[0] = '\0';
+    if (e->is_dir) {
+        return;
+    }
+    char report[FM_NAME_BUF];
+    log_name_report_of(report, sizeof(report), e->name);
+    if (report[0] != '\0' && fm_tree_has_file(here, report) != FM_HAS_NO) {
+        snprintf(s.doomed_report, sizeof(s.doomed_report), "%s", report);
+    }
+}
+
 void fs_foot(fs_foot_t b)
 {
     fs_read_bench();
@@ -793,6 +826,7 @@ void fs_foot(fs_foot_t b)
     case FS_DELETE:
         s.doomed = *e;
         s.doomed_pane = s.active;
+        doomed_report(here, e);
         fs_quiet();
         s.view = FILES_VIEW_DELETE;
         break;
@@ -1065,13 +1099,16 @@ static void enter(void)
 
 /**
  * @brief On the way out: the keyboard and the boxes close; a job under way
- *        goes on, and its box shows again on the way back in.
+ *        goes on, and its box shows again on the way back in, as does an
+ *        editor with text no SAVE wrote.
  */
 static void leave(void)
 {
     fs_cancel_press();
     ui_textkey_close(&s.tk);
-    fs_text_close();
+    if (fs_text_stays()) {
+        return;
+    }
     if (s.view != FILES_VIEW_JOB || !s.busy) {
         s.view = FILES_VIEW_PANES;
     }
@@ -1089,6 +1126,8 @@ static void tick(float dt_s)
     if ((fm_gate(FM_OP_COPY, &s.bench) != FM_OK) != gate) {
         files_screen_invalidate();
     }
+    fs_text_rules();
+    fs_text_tick(dt_s);
     if (s.busy) {
         const float before = s.busy_s;
         s.busy_s += (dt_s > 0.0f) ? dt_s : 0.0f;
@@ -1140,11 +1179,16 @@ static bool back(void)
         }
         break;
     case FILES_VIEW_TEXT:
-        if (s.tv_from_logs) {
-            fs_text_close();
-            return false;           /* back to LOGS, which opened it */
+        if (fs_text_back()) {
+            break;                  /* a level of the editor */
         }
         fs_text_close();
+        if (s.tv_from_logs) {
+            /* Back to LOGS, which opened it: FILES' own way out is the
+             * menu.  The router has released the contacts. */
+            ui_router_goto(SCREEN_LOGS);
+            return true;
+        }
         break;
     case FILES_VIEW_PANES:
     default:
@@ -1154,8 +1198,15 @@ static bool back(void)
     return true;
 }
 
+/**
+ * @brief ui_screen_t's covered: anything over the two panes.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.view != FILES_VIEW_PANES; }
+
 /** @brief The screen's table for the router. */
 static const ui_screen_t s_screen = {
+    .covered = covered,
     .title = "FILES",
     .reset = reset,
     .enter = enter,

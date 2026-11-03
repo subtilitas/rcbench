@@ -53,6 +53,23 @@
  * pulled part way fails the job with FM_ERR_CARD_GONE; a ".NEW" written so
  * far stays on that card.
  *
+ * A SAVE can be told what it replaces (fm_job_match()).  FM_MATCH_SUM
+ * reads the file there before its ".NEW" is opened, a chunk a step, and
+ * sums its bytes: a file that is gone, or whose sum is not the one given,
+ * fails the job with FM_ERR_CHANGED and nothing written.  FM_MATCH_ABSENT
+ * fails it with FM_ERR_EXISTS when the name is taken.  The check and the
+ * write run in one job, so between them only a writer outside the file
+ * manager's job (fm_req.h) can change the file.  A LOAD and a SAVE can sum
+ * the bytes they read or write as they pass (fm_job_sum()): FILES' editor
+ * keeps the sum of the file it opened and of the text it saved last, and
+ * hands it to the next SAVE as FM_MATCH_SUM, so a write of the file from
+ * the Wi-Fi page in between fails that SAVE with FM_ERR_CHANGED.
+ *
+ * A SAVE can stop after its checks (fm_job_check_only()): the rules, the
+ * target, the match and a ".NEW" left there are asked, nothing is opened
+ * for writing, and the job ends FM_JOB_DONE.  The Wi-Fi page asks so before
+ * it takes a body, and the SAVE of that body asks everything again.
+ *
  * DELETE of a run's log takes its report with it, as LOGS' DELETE does:
  * ATEST042.CSV takes ATEST042.TXT (log_name_report_of()).  A report that
  * cannot be deleted fails the job with the card's answer, the log gone
@@ -107,6 +124,25 @@ typedef enum {
 } fm_job_state_t;
 
 /**
+ * @brief What a SAVE checks of the file it replaces (fm_job_match()).
+ */
+typedef enum {
+    FM_MATCH_ANY = 0,   /**< nothing: a file there is replaced          */
+    FM_MATCH_SUM,       /**< the file is there and sums to a given value */
+    FM_MATCH_ABSENT     /**< no entry has the name                      */
+} fm_match_t;
+
+/**
+ * @brief A running sum over bytes, CRC-32 (cyclic redundancy check) on the
+ *        panel: the sum of @p n more bytes after @p sum, 0 at the start.
+ * @param sum   the sum so far; 0 before the first byte
+ * @param data  the bytes
+ * @param n     how many
+ * @return the sum with them
+ */
+typedef uint32_t (*fm_sum_fn)(uint32_t sum, const void *data, size_t n);
+
+/**
  * @brief The bytes a save writes, asked for one chunk at a time.
  * @param ctx  the caller's context
  * @param at   the offset of the first byte wanted
@@ -145,6 +181,17 @@ typedef struct {
     void *fill_ctx;          /**< passed to @p fill                     */
     uint8_t *buf;            /**< a load's room                         */
     size_t cap;              /**< bytes @p buf takes                    */
+    fm_match_t match;        /**< SAVE: what it checks of the old file  */
+    fm_sum_fn sum;           /**< FM_MATCH_SUM: the sum                 */
+    uint32_t want;           /**< FM_MATCH_SUM: the old file's sum      */
+    uint32_t got;            /**< FM_MATCH_SUM: the sum read so far     */
+    bool found;              /**< FM_MATCH_SUM: refused with got the sum
+                                  of the whole file there                */
+    bool check_only;         /**< fm_job_check_only(): ends after the
+                                  checks, nothing written                */
+    fm_sum_fn data_fn;       /**< fm_job_sum(): the sum, or NULL        */
+    uint32_t data_sum;       /**< fm_job_sum(): the sum of the bytes
+                                  loaded or saved so far                 */
 } fm_job_t;
 
 /**
@@ -255,6 +302,53 @@ fm_err_t fm_job_save(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
                      fm_fill_fn fill, void *fill_ctx);
 
 /**
+ * @brief What the SAVE fm_job_save() started checks of the file it
+ *        replaces, before it writes (the file's comment).
+ * @param job    a SAVE that fm_job_save() started and no step has run
+ * @param match  the check
+ * @param sum    FM_MATCH_SUM: the sum; NULL otherwise
+ * @param want   FM_MATCH_SUM: the sum the file has to have
+ * @return FM_OK; FM_ERR_ARG for another job, one that runs already or
+ *         was refused, or FM_MATCH_SUM without @p sum, the job unchanged
+ */
+fm_err_t fm_job_match(fm_job_t *job, fm_match_t match, fm_sum_fn sum,
+                      uint32_t want);
+
+/**
+ * @brief End the SAVE fm_job_save() started after its checks: it answers as
+ *        it would up to the first byte of its ".NEW", which it never opens.
+ * @param job  a SAVE that fm_job_save() started and no step has run
+ * @return FM_OK; FM_ERR_ARG for another job, one that runs already or was
+ *         refused, the job unchanged
+ */
+fm_err_t fm_job_check_only(fm_job_t *job);
+
+/**
+ * @brief The sum of the file a SAVE refused with FM_ERR_CHANGED read there:
+ *        what a SAVE that replaces that file as it stands now hands
+ *        fm_job_match(), so one more change is refused in its turn.
+ * @param job  the job
+ * @param sum  takes the sum
+ * @return true when the job read the whole file and its sum was not the
+ *         one wanted; false for a file that is gone, and for any other job
+ *         or answer, @p sum unchanged
+ */
+bool fm_job_found(const fm_job_t *job, uint32_t *sum);
+
+/**
+ * @brief Sum the bytes a LOAD reads or a SAVE writes as they pass, into
+ *        the job's data_sum: once the job is FM_JOB_DONE it is the sum of
+ *        the file as the card holds it, which a later SAVE of the same
+ *        file hands fm_job_match().
+ * @param job  a LOAD or a SAVE that its fm_job_*() call started and no
+ *             step has run
+ * @param sum  the sum
+ * @return FM_OK; FM_ERR_ARG for another job, one that runs already or was
+ *         refused, or no @p sum, the job unchanged
+ */
+fm_err_t fm_job_sum(fm_job_t *job, fm_sum_fn sum);
+
+/**
  * @brief Read file @p name of folder @p dir into @p buf.  A read: the gate
  *        does not stop it.
  * @param job    the job
@@ -269,6 +363,23 @@ fm_err_t fm_job_save(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
 fm_err_t fm_job_load(fm_job_t *job, const fm_bench_t *bench, unsigned mount,
                      const char *dir, const char *name, uint8_t *buf,
                      size_t cap);
+
+/**
+ * @brief Read file @p name of folder @p dir for its sum alone, a chunk a
+ *        step: as fm_job_load() with no room for the bytes.  At
+ *        FM_JOB_DONE the job's data_sum is the sum of the file.
+ * @param job    the job
+ * @param bench  the rules; may be NULL
+ * @param mount  the mount the file was listed from
+ * @param dir    the file's folder
+ * @param name   the file's name
+ * @param cap    bytes it reads at most; a larger file is FM_ERR_TOO_BIG
+ * @param sum    the sum
+ * @return FM_OK, or the refusal
+ */
+fm_err_t fm_job_sum_file(fm_job_t *job, const fm_bench_t *bench,
+                         unsigned mount, const char *dir, const char *name,
+                         size_t cap, fm_sum_fn sum);
 
 /**
  * @brief Run the job's next step.

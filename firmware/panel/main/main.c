@@ -60,6 +60,7 @@
 #include "bind_link.h"
 #include "kst_link.h"
 #include "prog_link.h"
+#include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "kst_panel.h"
 #include "kst_card.h"
@@ -151,6 +152,7 @@ void publish_throttle_ramp(void)
 #include "ui_text.h"
 #include "ui_theme.h"
 
+#include "panel_console.h"
 #include "panel.h"
 #include "panel_main.h"
 #include "panel_trial.h"
@@ -273,6 +275,8 @@ QueueHandle_t     s_kst_q;     /**< app_main -> control task */
 /** @brief The Hitec programmer's commands (hitec_prog_cmd_t) the queue
  *         holds, as KST_Q_LEN. */
 #define HITEC_Q_LEN 4
+/** @brief The ESC programmer's commands (esc_prog_cmd_t) the queue holds. */
+#define ESC_Q_LEN 4
 /*
  * One entry per bench sample, not a count of them.  A counter would lose the
  * samples a stalled renderer did not come back for, and the plot's time axis
@@ -391,6 +395,19 @@ atomic_uint s_supply_trip_ms;
  * supply_watch_service().
  */
 atomic_uint s_supply_ack;
+/** @brief The PROG 5V box's OFFs, counted as s_supply_offs counts the
+ *         supply's (panel.h). */
+atomic_uint s_prog5v_offs;
+/** @brief A PROG 5V OFF asked, as s_supply_off_request is (panel.h). */
+atomic_bool s_prog5v_off_request;
+/** @brief The PROG 5V ONs queued (panel.h). */
+atomic_uint s_psup_ons_sent;
+/** @brief The PROG 5V ONs the control task is done with (panel.h). */
+atomic_uint s_psup_ons_taken;
+/** @brief The PROG 5V ONs applied, numbered (panel.h). */
+atomic_uint s_psup_gen;
+/** @brief The newest PROG 5V ON a whole frame has seen on (panel.h). */
+atomic_uint s_psup_ack;
 /*
  * Whether the output is on, stored by the control task the moment it
  * switches, and the ONs the render side has queued against the ones the
@@ -403,7 +420,7 @@ atomic_bool s_supply_live;
 atomic_uint s_supply_ons_sent;
 atomic_uint s_supply_ons_taken;
 /*
- * Where the PD mini is wired, from SETUP INTERFACES, in one word so a write
+ * Where the PD mini is wired, from SUPPLY's PD MINI tab, in one word so a write
  * never pairs one edit's TX with another's RX: bit 24 enabled, bits 23..16
  * the TX GPIO and 15..8 the RX, each plus one with 0 for unset, bits 7..0
  * the baud setting.  Published as the pole count is; see publish_pdmini().
@@ -414,7 +431,7 @@ atomic_uint s_pdmini_wiring;
 atomic_uint s_pdmini_edits;
 /*
  * Whether the SUPPLY screen drives the PD mini rather than the panel's
- * model: SETUP INTERFACES enables it.  Stored by the control task, read by
+ * model: SUPPLY's PD MINI tab enables it.  Stored by the control task, read by
  * app_main for the screen's header, caps and the menu's badge.
  */
 atomic_bool s_supply_real;
@@ -831,14 +848,13 @@ void app_main(void)
      */
     outputs_screen_set_apply(outputs_apply);
     /*
-     * The picker is the same choice seen as the board, so it applies through
-     * the same seam, selects its protocol on the outputs screen, and takes
-     * the board's drawing the control task published.
+     * OUTPUTS' board view is the same choice seen as the board, so it applies
+     * through the same seam and takes the board's drawing the control task
+     * published.
      */
     picker_screen_set_apply(outputs_apply);
-    picker_screen_set_select(outputs_screen_select);
     picker_screen_set_drawing_source(drawing_for_picker);
-    /* PICK A PIN's cat is picked with the hardware random source. */
+    /* The cat on OUTPUTS' board view is picked with the hardware random source. */
     ui_cats_set_random(esp_random);
     /* A port's PIN or FUNC asked on either screen goes to the control
      * task, which writes it on a bench at rest. */
@@ -872,12 +888,16 @@ void app_main(void)
     s_hitec_q   = xQueueCreate(HITEC_Q_LEN, sizeof(hitec_prog_cmd_t));
     hitec_prog_gate_init(&s_hitec_gate);
     hitec_panel_gate(&s_hitec_gate);
+    s_esc_q     = xQueueCreate(ESC_Q_LEN, sizeof(esc_prog_cmd_t));
+    esc_prog_gate_init(&s_esc_gate);
+    esc_wire_panel_gate(&s_esc_gate);
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
     s_supply_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(supply_item_t));
     s_enc_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_test_enc_t));
     s_win_q     = xQueueCreate(SAMPLE_Q_LEN, sizeof(servo_win_item_t));
     s_log_q     = xQueueCreate(LOG_Q_LEN, sizeof(log_row_t));
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
+    s_console_q = xQueueCreate(CONSOLE_Q_LEN, sizeof(link_report_in_t));
     s_note_mx   = xSemaphoreCreateMutex();
     s_test_q    = xQueueCreate(TEST_Q_LEN, sizeof(test_line_t));
     s_snap_lock = xSemaphoreCreateMutex();
@@ -888,11 +908,12 @@ void app_main(void)
      * "--" until the control task has published one. */
     s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL && s_kst_q != NULL
-                     && s_hitec_q != NULL
+                     && s_hitec_q != NULL && s_esc_q != NULL
                      && s_sample_q != NULL && s_supply_q != NULL
                      && s_enc_q != NULL && s_win_q != NULL
                      && s_log_q != NULL && s_test_q != NULL
                      && s_note_q != NULL && s_note_mx != NULL
+                     && s_console_q != NULL
                      && s_snap_lock != NULL)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
@@ -912,6 +933,8 @@ void app_main(void)
      * On the core the renderer does not use, and above it in priority: the
      * bench's timing must not depend on how long a frame takes.
      */
+    /* Before the control task: the relay they share starts initialised. */
+    panel_console_start();
     ESP_ERROR_CHECK(xTaskCreatePinnedToCore(control_task, "control", 6144,
                                             NULL, 10, NULL, 1) == pdPASS
                     ? ESP_OK : ESP_ERR_NO_MEM);

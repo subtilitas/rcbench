@@ -37,14 +37,17 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 
 | Seite | Inhalt |
 | --- | --- |
+| [Der rbmod-Carrier](Carrier-de.md) | Pins, Stecker, Versorgung und Nacharbeit Rev 1 der Trägerplatine |
 | [Der Link](Link-de.md) | CAN-Verkabelung, Verhalten bei Ausfall, das Page-Protokoll |
 | [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) | Das Drahtprotokoll des Programmierports für Servos von KST und Chaservo |
 | [Der Programmierport für Servos von Hitec](LinkHitec-de.md) | Das Drahtprotokoll des Programmierports für Servos von Hitec |
+| [Die Pages für ESC-Einstellungen](LinkEsc-de.md) | Die Pages, die die Einstellungen eines ESC über seinen Signaldraht lesen und schreiben |
 | [Die INA3221-Map und ihre Fenster](LinkSensors-de.md) | Die Map der INA3221-Strommonitore und ihre Abtastfenster |
 | [Die Prüfstandskonsole](BenchConsole-de.md) | Die Befehlskonsole des IOmcu an seinem USB-Serial-Port, ein Werkzeug des Prüfstands |
 | [DShot und die Output-Treiber](DShot-de.md) | DShot-Frames, Telemetrie und die Output-Treiber |
 | [Das OpenYGE-Protokoll](OpenYGE-de.md) | Spezifikation des ESC-Telemetrie- und Parameterprotokolls |
 | [ESC-Programmierprofile](EscProfiles-de.md) | Die Profile für die ESC-Programmierung |
+| [ESC-Signalleitung](EscWire-de.md) | Einstellungen eines ESC über die Signalleitung lesen und schreiben: AM32, Bluejay, BLHeli_S, ESCape32 |
 | [Performance](Performance-de.md) | Zeichenbudget in Cache-Line-Fills |
 | [Sprache der Oberfläche](Language-de.md) | Die Sprache der Oberfläche und ihre Texte |
 

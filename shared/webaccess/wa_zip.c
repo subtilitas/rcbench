@@ -14,6 +14,7 @@
 
 #include <string.h>
 
+#include "fm_crc.h"
 #include "wall_clock.h"
 
 #define SIG_LOCAL    0x04034b50u
@@ -33,27 +34,9 @@ enum { PH_ENTRIES = 0, PH_CENTRAL, PH_END, PH_DONE, PH_FAILED };
 
 /* ------------------------------------------------------------- CRC */
 
-static uint32_t s_table[256];
-static bool     s_table_made;
-
 uint32_t wa_crc32(uint32_t crc, const void *data, size_t n)
 {
-    if (!s_table_made) {
-        for (uint32_t i = 0; i < 256u; ++i) {
-            uint32_t c = i;
-            for (int k = 0; k < 8; ++k) {
-                c = (c & 1u) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
-            }
-            s_table[i] = c;
-        }
-        s_table_made = true;
-    }
-    const uint8_t *p = data;
-    crc = ~crc;
-    while (n-- > 0u) {
-        crc = s_table[(crc ^ *p++) & 0xFFu] ^ (crc >> 8);
-    }
-    return ~crc;
+    return fm_crc32(crc, data, n);
 }
 
 /* ------------------------------------------------------------- time */
@@ -451,6 +434,30 @@ wa_zip_err_t wa_zip_begin(wa_zip_t *z, const wa_fs_t *fs, wa_zip_slot_t *slot,
     return WA_ZIP_OK;
 }
 
+void wa_zip_set_read(wa_zip_t *z, uint8_t *buf, uint32_t cap)
+{
+    z->rbuf = (buf != NULL && cap > 0u) ? buf : NULL;
+    z->rcap = (z->rbuf != NULL) ? cap : 0u;
+    z->roff = 0u;
+    z->rlen = 0u;
+}
+
+const char *wa_zip_err_name(wa_zip_err_t e)
+{
+    switch (e) {
+    case WA_ZIP_OK:
+        return "done";
+    case WA_ZIP_NO_CARD:
+        return "no card";
+    case WA_ZIP_READ:
+        return "card read failed";
+    case WA_ZIP_MEMORY:
+        return "no memory";
+    default:
+        return "?";
+    }
+}
+
 void wa_zip_end_early(wa_zip_t *z)
 {
     if (z->file != NULL) {
@@ -632,6 +639,35 @@ static int32_t fail_after(wa_zip_t *z, wa_zip_err_t e, uint32_t got)
     return (got > 0u) ? (int32_t)got : -1;
 }
 
+/**
+ * @brief The open file's next read into the read buffer: the buffer's size,
+ *        or what is left of the file, at an offset that is a multiple of
+ *        the buffer's size while every read before was whole.
+ * @param z     the archive, its read buffer empty
+ * @param room  bytes the announced length leaves after @p z->at
+ * @return false when the read fails, the file ends early or the bytes would
+ *         pass the announced length
+ */
+static bool read_piece(wa_zip_t *z, uint64_t room)
+{
+    uint32_t want = z->rcap;
+    if (want > z->left) {
+        want = (uint32_t)z->left;
+    }
+    if (want > room) {
+        return false;
+    }
+    const int32_t r = z->fs->read(z->fs->ctx, z->file, z->rbuf, want);
+    if (r <= 0 || (uint32_t)r > want) {
+        return false;
+    }
+    z->file_crc = wa_crc32(z->file_crc, z->rbuf, (size_t)r);
+    z->left -= (uint32_t)r;
+    z->roff = 0u;
+    z->rlen = (uint32_t)r;
+    return true;
+}
+
 int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap)
 {
     if (z->phase == PH_FAILED) {
@@ -657,6 +693,24 @@ int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap)
             continue;
         }
         if (z->in_file) {
+            if (z->roff < z->rlen) {
+                /* The read buffer's bytes not sent yet. */
+                uint32_t n = z->rlen - z->roff;
+                if (n > cap - got) {
+                    n = cap - got;
+                }
+                memcpy(buf + got, z->rbuf + z->roff, n);
+                z->roff += n;
+                got += n;
+                z->at += n;
+                continue;
+            }
+            if (z->left > 0u && z->rbuf != NULL) {
+                if (!read_piece(z, room)) {
+                    return fail_after(z, WA_ZIP_READ, got);
+                }
+                continue;
+            }
             if (z->left > 0u) {
                 uint32_t want = cap - got;
                 if (want > z->left) {

@@ -19,6 +19,9 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+/** @brief The board view is drawn, not this grid (outputs_view.c). */
+static bool s_board_view;
+
 /** @brief The screen's width: the panel's 1024px. */
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H    /**< The body under the band: 540px. */
@@ -135,7 +138,7 @@ static struct {
 
     outputs_apply_fn apply;
 
-    /* The pins SETUP > INTERFACES held at the last frame. */
+    /* The pins SENSORS and PD MINI held at the last frame. */
     uint64_t  iface[OUTPUTS_IFACE_COUNT];
 
     bool      chrome_valid[MAX_FBS];
@@ -162,7 +165,7 @@ static bool prog_taken(uint8_t index)
     return outputs_port_holds(outbind_pins(s.bind.board)[index].gpio);
 }
 
-/* What SETUP > INTERFACES holds pin @p index for, or OUTPUTS_IFACE_NONE:
+/* What SENSORS or PD MINI holds pin @p index for, or OUTPUTS_IFACE_NONE:
  * no protocol and no port holds it, and the IOmcu does not reserve it.  A
  * pin a protocol holds is that protocol's, as against a port: the IOmcu
  * refused the interface its pin then, and SETUP says so. */
@@ -200,6 +203,11 @@ void outputs_screen_invalidate(void)
 }
 
 const outbind_t *outputs_screen_binding(void) { return &s.bind; }
+
+uint32_t outputs_screen_revision(void)
+{
+    return s.gen + outputs_port_revision();
+}
 
 /* The hold on UNBIND ALL PINS, and the press that began it, are over. */
 static void drop_clear_hold(void)
@@ -383,8 +391,11 @@ static gfx_rect_t pop_row_rect(int i)
 
 static gfx_rect_t clear_rect(void)
 {
-    return gfx_rect_make(COL_X, CLR_Y, COL_W, CLR_H);
+    return s_board_view ? gfx_rect_make(OB_CLR_X, OB_CLR_Y, OB_CLR_W, OB_CLR_H)
+                        : gfx_rect_make(COL_X, CLR_Y, COL_W, CLR_H);
 }
+
+gfx_rect_t outputs_unbind_rect(void) { return clear_rect(); }
 
 /* UNBIND ALL PINS is drawn, and so takes a hold: a binding read that is
  * not one, and a protocol's column, not a PROG PORT entry's. */
@@ -393,9 +404,31 @@ static bool clear_offered(void)
     return s.read == BIND_READ_ODD && outputs_screen_port_shown() < 0;
 }
 
+bool outputs_unbind_offered(void) { return clear_offered(); }
+
+/**
+ * @brief The grid position of catalogue pin @p i: its index, or on a board
+ *        that solders its pins its servo output's place
+ *        (outbind_cell_index()).
+ * @param i catalogue index
+ * @return the grid position; @p i itself for a pin with no cell, which
+ *         no caller hands in (they walk the cells)
+ */
+static int cell_pos(int i)
+{
+    const uint8_t n = outbind_cell_count(s.bind.board);
+    for (uint8_t k = 0; k < n; ++k) {
+        if ((int)outbind_cell_index(s.bind.board, k) == i) {
+            return (int)k;
+        }
+    }
+    return i;
+}
+
 static gfx_rect_t cell_rect(int i)
 {
-    const int col = i / GRID_ROWS, row = i % GRID_ROWS;
+    const int pos = cell_pos(i);
+    const int col = pos / GRID_ROWS, row = pos % GRID_ROWS;
     return gfx_rect_make(GRID_X + col * (CELL_W + CELL_GAP),
                          GRID_Y + row * (CELL_H + ROW_GAP),
                          CELL_W, CELL_H);
@@ -410,8 +443,9 @@ static int cell_at(int x, int y)
 {
     /* Once, not per pin: the count is a board-table lookup and this runs on
      * every touch event. */
-    const int n = (int)outbind_pin_count(s.bind.board);
-    for (int i = 0; i < n; ++i) {
+    const int n = (int)outbind_cell_count(s.bind.board);
+    for (int k = 0; k < n; ++k) {
+        const int i = (int)outbind_cell_index(s.bind.board, (uint8_t)k);
         if (inside(cell_rect(i), x, y)) {
             return i;
         }
@@ -421,9 +455,23 @@ static int cell_at(int x, int y)
 
 /* ------------------------------------------------------------------- input */
 
+void outputs_screen_set_board_view(bool board)
+{
+    if (board != s_board_view) {
+        s_board_view = board;
+        drop_clear_hold();
+        s.open = false;
+        s.hit_kind = HIT_NONE;
+        outputs_port_set_view(board);
+        outputs_screen_invalidate();
+        touched();
+    }
+}
+
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
+    s_board_view = false;
     outbind_init(&s.bind);
     s.confirmed = s.bind;
     s.read = BIND_READ_OK;
@@ -507,7 +555,7 @@ static void event(const touch_event_t *evt)
     }
     const int x = evt->point.x, y = evt->point.y;
 
-    if (!s.open && outputs_port_event(evt)) {
+    if (!s.open && (outputs_port_event(evt) || outputs_unbind_event(evt))) {
         return;
     }
 
@@ -525,10 +573,6 @@ static void event(const touch_event_t *evt)
         if (inside(dd_rect(), x, y)) {
             s.hit_kind = HIT_DD; touched(); return;
         }
-        if (clear_offered() && inside(clear_rect(), x, y)) {
-            s.hit_kind = HIT_CLEAR; ui_hold_begin(&s.clear); touched();
-            return;
-        }
         /* A binding that is not confirmed takes no press on a pin, and
          * neither does OFF, which edits none: the reason is under the
          * protocol, and a cell that lit under the finger would say a tap
@@ -538,17 +582,6 @@ static void event(const touch_event_t *evt)
                           ? cell_at(x, y) : -1;
         if (c >= 0) {
             s.hit_kind = HIT_CELL; s.hit_index = c; touched();
-        }
-        return;
-    }
-
-    if (evt->type == TOUCH_EVENT_MOVE) {
-        /* A finger that slides off the key abandons the hold, as on every
-         * held control (ui_hold_leave()). */
-        if (s.hit_kind == HIT_CLEAR && !inside(clear_rect(), x, y)
-            && ui_hold_leave(&s.clear)) {
-            s.hit_kind = HIT_NONE;
-            touched();
         }
         return;
     }
@@ -589,13 +622,40 @@ static void event(const touch_event_t *evt)
             s.refused = -1;
             changed();
         }
-    } else if (kind == HIT_CLEAR) {
-        /* The hold acts when it completes, not on the release. */
-        (void)ui_hold_end(&s.clear);
-        touched();
     } else {
         touched();
     }
+}
+
+bool outputs_unbind_event(const touch_event_t *evt)
+{
+    const int x = evt->point.x, y = evt->point.y;
+    if (evt->type == TOUCH_EVENT_DOWN) {
+        if (!clear_offered() || !inside(clear_rect(), x, y)) {
+            return false;
+        }
+        s.hit_kind = HIT_CLEAR;
+        ui_hold_begin(&s.clear, TX_HOLD_HINT_UNBIND);
+        touched();
+        return true;
+    }
+    if (s.hit_kind != HIT_CLEAR) {
+        return false;
+    }
+    if (evt->type == TOUCH_EVENT_MOVE) {
+        /* A finger that slides off the key abandons the hold, as on every
+         * held control (ui_hold_leave()). */
+        if (!inside(clear_rect(), x, y) && ui_hold_leave(&s.clear)) {
+            s.hit_kind = HIT_NONE;
+            touched();
+        }
+    } else if (evt->type == TOUCH_EVENT_UP) {
+        s.hit_kind = HIT_NONE;
+        /* The hold acts when it completes, not on the release. */
+        (void)ui_hold_end(&s.clear, evt, clear_rect());
+        touched();
+    }
+    return true;
 }
 
 /* ------------------------------------------------------------------ render */
@@ -670,7 +730,7 @@ int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
     return lines;
 }
 
-static const char *result_text(void)
+const char *outputs_result_text(void)
 {
     switch (s.result) {
     case OUTPUTS_OK:      return TR(OUT_WRITTEN);
@@ -681,7 +741,7 @@ static const char *result_text(void)
     }
 }
 
-static gfx_color_t result_color(void)
+gfx_color_t outputs_result_color(void)
 {
     switch (s.result) {
     case OUTPUTS_OK:      return UI_OK;
@@ -690,6 +750,25 @@ static gfx_color_t result_color(void)
     case OUTPUTS_IDLE:
     default:              return UI_TEXT_FAINT;
     }
+}
+
+/**
+ * @brief The pins protocol @p p can hold on @p b's board: its own cap and
+ *        the page's slots, and no more than the grid has cells (four on a
+ *        board that solders its pins).
+ * @param b the binding, for its board
+ * @param p the protocol
+ * @return the most pins @p p takes here
+ */
+static uint8_t pins_cap(const outbind_t *b, const outbind_proto_t *p)
+{
+    uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
+                                                : (uint8_t)OUT_MAX_SLOTS;
+    const uint8_t cells = outbind_cell_count(b->board);
+    if (outbind_roles(b->board) != NULL && cells < cap) {
+        cap = cells;
+    }
+    return cap;
 }
 
 /* The binding can arrive from outside -- read off the wire, or restored --
@@ -752,8 +831,7 @@ bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap)
         return true;
     }
     const uint8_t n = outbind_chosen(b);
-    const uint8_t lim = (p->max_pins < OUT_MAX_SLOTS)
-                            ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
+    const uint8_t lim = pins_cap(b, p);
     const uint8_t used_ch = outbind_channels_used(b);
     const uint8_t used_sl = outbind_chosen_total(b);
     if (n >= lim) {
@@ -827,9 +905,44 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
         return OUTPUTS_CELL_HELD;
     }
     if (label != NULL) {
-        snprintf(label, cap, "PAD %u", (unsigned)pin->pad);
+        /* A soldered output is named by its role, so the line under it is
+         * its GPIO, the pin the lead is on. */
+        char role[8];
+        if (outputs_role_name(s.bind.board, pin->gpio, role, sizeof(role))) {
+            (void)ui_pin_name(label, cap, pin->gpio);
+        } else {
+            snprintf(label, cap, "PAD %u", (unsigned)pin->pad);
+        }
     }
     return (held != 0u) ? OUTPUTS_CELL_TICKED : OUTPUTS_CELL_FREE;
+}
+
+void outputs_unbind_draw(gfx_canvas_t *c)
+{
+    if (!clear_offered()) {
+        return;
+    }
+    /* Danger red as it is held, as the other held controls fade to the
+     * colour of what they are about to do. */
+    const gfx_rect_t k = clear_rect();
+    const gfx_color_t fill = ui_hold_fill(UI_PANEL, UI_DANGER, s.clear.held_s);
+    gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
+    gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, UI_DANGER);
+    /* Centred, 10px in from either end: on the grid in the label face, two
+     * lines at most; on the narrower board view's key in 8 x 16, four. */
+    const char *label = TR(OUT_HOLD_UNBIND);
+    const gfx_font_t *font = s_board_view ? OU_FONT_FINE : OU_FONT_LABEL;
+    const int pitch = s_board_view ? OB_WHY_FINE : OU_LINE;
+    const int most = s_board_view ? 4 : 2;
+    const int h = gfx_text_height(font, 1);
+    const gfx_rect_t in = gfx_rect_make(k.x + 10, k.y, k.w - 20, h);
+    const int lines = outputs_wrap(NULL, in, pitch, label, most, font, UI_TEXT,
+                                   true);
+    (void)outputs_wrap(c,
+                       gfx_rect_make(in.x, k.y + (k.h - h) / 2
+                                               - (lines - 1) * pitch / 2,
+                                     in.w, h),
+                       pitch, label, most, font, UI_TEXT, true);
 }
 
 static void draw_left(gfx_canvas_t *c)
@@ -849,8 +962,7 @@ static void draw_left(gfx_canvas_t *c)
     /* OFF takes no pin, so a count of its pins says nothing. */
     if (p->max_pins != 0u) {
         const uint8_t n = outbind_chosen(&s.bind);
-        const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS)
-                                ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
+        const uint8_t cap = pins_cap(&s.bind, p);
         snprintf(buf, sizeof(buf), TR(OUT_PINS_OF), (unsigned)n,
                  (unsigned)cap);
         gfx_text(c, COL_X, COUNT_Y, buf, OU_FONT_LABEL, UI_TEXT_DIM, 1);
@@ -867,40 +979,19 @@ static void draw_left(gfx_canvas_t *c)
                            OU_LINE, buf, 2, OU_FONT_LABEL, UI_WARN, false);
     }
 
-    if (s.read == BIND_READ_ODD) {
-        /* Danger red as it is held, as the other held controls fade to the
-         * colour of what they are about to do. */
-        const gfx_rect_t k = clear_rect();
-        const gfx_color_t fill = ui_hold_fill(UI_PANEL, UI_DANGER,
-                                              s.clear.held_s);
-        gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
-        gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0,
-                                 UI_DANGER);
-        /* One line in the middle, or two 22px apart about it, 10px in
-         * from either end. */
-        const char *label = TR(OUT_HOLD_UNBIND);
-        const gfx_rect_t in = gfx_rect_make(k.x + 10, k.y, k.w - 20, 20);
-        const int lines = outputs_wrap(NULL, in, OU_LINE, label, 2,
-                                       OU_FONT_LABEL, UI_TEXT, true);
-        (void)outputs_wrap(c,
-                           gfx_rect_make(in.x, k.y + (k.h - 20) / 2
-                                                   - (lines - 1)
-                                                         * (OU_LINE / 2),
-                                         in.w, 20),
-                           OU_LINE, label, 2, OU_FONT_LABEL, UI_TEXT, true);
-    }
+    outputs_unbind_draw(c);
 
     /* The result in the head face, on a second line where it is wider
      * than the column, its last line ending on the column's foot; LAST
      * WRITE right above its first. */
     const int lines = outputs_wrap(NULL, gfx_rect_make(COL_X, 0, COL_W, 36),
-                                   RESULT_PITCH, result_text(), 2,
-                                   OU_FONT_HEAD, result_color(), false);
+                                   RESULT_PITCH, outputs_result_text(), 2,
+                                   OU_FONT_HEAD, outputs_result_color(), false);
     const int ry = RESULT_Y + (2 - lines) * RESULT_PITCH;
     gfx_text(c, COL_X, ry - LAST_ABOVE, TR(OUT_LAST_WRITE), OU_FONT_LABEL,
              UI_TEXT_FAINT, 1);
     (void)outputs_wrap(c, gfx_rect_make(COL_X, ry, COL_W, 36), RESULT_PITCH,
-                       result_text(), 2, OU_FONT_HEAD, result_color(),
+                       outputs_result_text(), 2, OU_FONT_HEAD, outputs_result_color(),
                        false);
 }
 
@@ -961,7 +1052,9 @@ static void draw_cell(gfx_canvas_t *c, int i)
     }
 
     char name[UI_PIN_NAME_SIZE];
-    (void)ui_pin_name(name, sizeof(name), pin->gpio);
+    if (!outputs_role_name(s.bind.board, pin->gpio, name, sizeof(name))) {
+        (void)ui_pin_name(name, sizeof(name), pin->gpio);
+    }
     gfx_color_t ink = reserved ? UI_TEXT_FAINT
                                     : ((lit || can) ? UI_TEXT : UI_TEXT_DIM);
     gfx_text(c, bx + BOX + 10, r.y + 6, name, OU_FONT_PIN, ink, 1);
@@ -1026,9 +1119,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     gfx_fill_rect(c, 0, 0, c->width, c->height, UI_BG);
     draw_left(c);
-    const int cells = (int)outbind_pin_count(s.bind.board);
-    for (int i = 0; i < cells; ++i) {
-        draw_cell(c, i);
+    const int cells = (int)outbind_cell_count(s.bind.board);
+    for (int k = 0; k < cells; ++k) {
+        draw_cell(c, (int)outbind_cell_index(s.bind.board, (uint8_t)k));
     }
     if (s.open) {
         draw_popup(c);
@@ -1065,7 +1158,14 @@ static void cancel(void)
     outputs_screen_invalidate();
 }
 
+/**
+ * @brief ui_screen_t's covered: the protocol list or the FUNCTION list.
+ * @return true while one is up
+ */
+static bool covered(void) { return s.open || outputs_port_fn_open(); }
+
 static const ui_screen_t s_screen = {
+    .covered = covered,
     .title  = "OUTPUTS",
     .reset  = reset,
     .enter  = enter,

@@ -40,14 +40,14 @@ TEST_CASE(plus_and_minus_change_the_setting_under_them)
 
     /* The second row is a different setting, and only it moves. */
     int row1 = settings_get_int(ids[1]);
-    tap(PLUS_X + BTN_W / 2, row_y(1));
+    tap(MINUS_X + BTN_W / 2, row_y(1));
     CHECK(settings_get_int(ids[1]) != row1);
     CHECK_EQ(settings_get_int(ids[0]), before);
 }
 
 /*
  * The operator's own path: the key under a SETUP row that the IOmcu (the
- * RP2350 board) is sent, INA228 SHUNT on INTERFACES.
+ * RP2350 board) is sent, INA228 SHUNT on SENSORS.
  *
  * The model, the screen and the observer are one chain, and the panel hangs
  * the write to the IOmcu off the far end of it.  A break anywhere in that
@@ -58,7 +58,8 @@ TEST_CASE(plus_and_minus_change_the_setting_under_them)
  */
 TEST_CASE(a_setup_key_notifies_once_per_press)
 {
-    fresh_screen();
+    fresh_hub();
+    open_sensor(SET_INA228_UOHM);
     const int row = row_of(SET_INA228_UOHM);
     CHECK(row >= 0);
 
@@ -181,9 +182,10 @@ TEST_CASE(a_drag_scrolls_instead_of_pressing)
 
 TEST_CASE(holding_a_key_repeats_with_acceleration)
 {
-    fresh_screen();
+    fresh_hub();
+    open_sensor(SET_INA228_UOHM);
     setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    settings_in_category(SET_CAT_SENSORS, ids, 64);
 
     /* INA228 SHUNT: 50..20000 uOhm in steps of 1, which is why holding has
      * to work at all.  ids[] holds it at its row. */
@@ -233,11 +235,11 @@ TEST_CASE(reset_button_restores_the_open_category)
     settings_in_category(LIST_CAT, ids, 64);
 
     settings_set(ids[0], settings_def(ids[0])->max);
-    settings_set(SET_BRIGHTNESS, 50);
+    settings_set(SET_PACK_CELLS, 4);
 
     tap(RESET_X + 100, RESET_Y + RESET_H / 2);
     CHECK_EQ(settings_get_int(ids[0]), (long)settings_def(ids[0])->def);
-    CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 50);   /* other category kept */
+    CHECK_EQ(settings_get_int(SET_PACK_CELLS), 4);   /* other category kept */
 }
 
 TEST_CASE(leaving_the_screen_no_longer_saves_on_its_own)
@@ -396,10 +398,10 @@ TEST_CASE(a_cancelled_hit_presses_nothing)
     fresh_hub();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 
-    /* Press the tile of the outputs screen, the first after the
-     * categories', then the events stop arriving. */
-    const int dx = tile_x(SET_CAT_SETUP_COUNT);
-    const int dy = tile_y(SET_CAT_SETUP_COUNT);
+    /* Press the tile of the outputs screen, then the events stop
+     * arriving. */
+    const int dx = tile_x(OUTPUTS_TILE);
+    const int dy = tile_y(OUTPUTS_TILE);
     touch_event_t d = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1, .x = (int16_t)dx,
                                    .y = (int16_t)dy } };
@@ -574,7 +576,7 @@ TEST_CASE(a_refused_pending_write_repaints_the_button)
 }
 
 /* The output encoder: off at the start, a centre inside the sensor's 12
- * bits, in INTERFACES beside the sensor bus. */
+ * bits, in SENSORS beside the sensor bus. */
 TEST_CASE(the_encoder_settings_start_off_with_a_12_bit_centre)
 {
     settings_set_store(NULL);
@@ -583,11 +585,11 @@ TEST_CASE(the_encoder_settings_start_off_with_a_12_bit_centre)
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
     const setting_def_t *d = settings_def(SET_ENC_EN);
     CHECK_EQ(d->type, SET_TYPE_BOOL);
-    CHECK_EQ(d->cat, SET_CAT_IFACE);
+    CHECK_EQ(d->cat, SET_CAT_SENSORS);
     CHECK_STR_EQ(settings_label(SET_ENC_EN), "AS5600");
     d = settings_def(SET_ENC_CENTRE);
     CHECK_EQ(d->type, SET_TYPE_INT);
-    CHECK_EQ(d->cat, SET_CAT_IFACE);
+    CHECK_EQ(d->cat, SET_CAT_SENSORS);
     CHECK_EQ((int)d->min, 0);
     CHECK_EQ((int)d->max, 4095);
     settings_set(SET_ENC_CENTRE, 5000.0f);
@@ -709,9 +711,9 @@ TEST_CASE(setup_changes_no_held_setting)
         s_hold_on = false;
         const int y = row_y(row);
         /* Not held: the keys step it. */
-        feed_tap(FEED_LONE, XP, y);
+        feed_tap(FEED_LONE, XM, y);
         CHECK(settings_get(s_row_held) != s_before[s_row_held]);
-        feed_tap(FEED_LONE, XP, row_y(1 - row));
+        feed_tap(FEED_LONE, XM, row_y(1 - row));
         CHECK(settings_get(other) != s_before[other]);
         snap();
         s_hold_on = true;
@@ -762,137 +764,6 @@ TEST_CASE(setup_changes_no_held_setting)
         CHECK(settings_get(s_row_held) != s_before[s_row_held]);
         settings_set_hold(NULL);
     }
-}
-
-/* ------------------------------------------------------------ headings */
-
-/* INTERFACES carries five headings, each above the first row of its
- * section; SENSORS one over its FITTED rows and one a fitted part
- * (test_settings_sensors.c); no other list has one. */
-TEST_CASE(interfaces_has_five_headings_above_its_sections)
-{
-    fresh_hub();
-    setting_id_t ids[64];
-    const int n = settings_in_category(SET_CAT_IFACE, ids, 64);
-    CHECK_EQ(settings_screen_rows(SET_CAT_IFACE), n + 5);
-    static const setting_id_t first[5] = { SET_INA228_EN, SET_TONE_EN,
-                                           SET_VIBE_EN, SET_PDMINI_EN,
-                                           SET_HITEC_RX };
-    int prev = -1;
-    for (int h = 0; h < 5; ++h) {
-        const int row = settings_screen_row_of(SET_CAT_IFACE,
-                                               row_of(first[h]));
-        /* The heading stands on the row above, the section's first. */
-        CHECK(row > prev + 1);
-        CHECK_EQ(row, row_of(first[h]) + h + 1);
-        prev = row;
-    }
-    /* SENSORS with nothing fitted: its heading and four FITTED rows. */
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 1 + SET_INA_PARTS);
-    /* Hitec D receive is the last row, alone under PROG PORT. */
-    CHECK_EQ(row_of(SET_HITEC_RX), n - 1);
-    CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, 0), 1);
-    CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, n), -1);
-    for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
-        if (c != SET_CAT_IFACE && c != SET_CAT_SENSORS) {
-            CHECK_EQ(settings_screen_rows((setting_cat_t)c),
-                     settings_in_category((setting_cat_t)c, ids, 64)
-                         + settings_texts_in_category((setting_cat_t)c,
-                                                      NULL, 0));
-        }
-    }
-}
-
-/* Hitec D receive is marked while the IOmcu does not hold it, and not by
- * the sensor or tap marks; HELD clears it. */
-TEST_CASE(the_hitec_receive_row_is_marked_as_the_iomcu_holds_it)
-{
-    fresh_hub();
-    settings_screen_set_unheld(0xFFFFu, 0xFFu);
-    CHECK(!settings_screen_unheld(SET_HITEC_RX));
-    settings_screen_set_unheld(0u, 0u);
-    for (int m = HITEC_RX_LINK_PENDING; m <= HITEC_RX_LINK_NO_LINE; ++m) {
-        settings_screen_set_hitec_rx((uint8_t)m);
-        CHECK(settings_screen_unheld(SET_HITEC_RX));
-        CHECK(!settings_screen_unheld(SET_PDMINI_BAUD));
-    }
-    settings_screen_set_hitec_rx(HITEC_RX_LINK_HELD);
-    CHECK(!settings_screen_unheld(SET_HITEC_RX));
-    /* Default PULL-UP; a switch that wraps round. */
-    CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
-    CHECK_EQ(settings_def(SET_HITEC_RX)->option_count, 2);
-    CHECK(settings_cycles(SET_HITEC_RX));
-    settings_adjust(SET_HITEC_RX, 1);
-    CHECK_EQ(settings_get_int(SET_HITEC_RX), 1);
-    settings_adjust(SET_HITEC_RX, 1);
-    CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
-}
-
-/* Hitec D receive's help line follows the value, in both languages; a
- * mark's line goes before it. */
-TEST_CASE(the_hitec_receive_help_follows_the_value)
-{
-    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
-        fresh_hub();
-        ui_text_set_language((ui_lang_t)lang);
-        settings_screen_set_hitec_rx(HITEC_RX_LINK_HELD);
-        CHECK_EQ(settings_get_int(SET_HITEC_RX), 0);
-        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX),
-                  ui_setting_help(SET_HITEC_RX));
-        settings_adjust(SET_HITEC_RX, 1);
-        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX), TR(SET_HITEC_RX_PRE));
-        CHECK(strcmp(TR(SET_HITEC_RX_PRE), ui_setting_help(SET_HITEC_RX))
-              != 0);
-        /* The marks, at PRECHARGE as SETUP shows them. */
-        settings_screen_set_hitec_rx(HITEC_RX_LINK_OLD);
-        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX), TR(SET_HITEC_RX_OLD));
-        settings_screen_set_hitec_rx(HITEC_RX_LINK_NO_LINE);
-        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX),
-                  TR(SET_HITEC_RX_NO_LINE));
-        settings_screen_set_hitec_rx(HITEC_RX_LINK_PENDING);
-        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX), TR(SET_UNHELD));
-        settings_screen_set_hitec_rx(HITEC_RX_LINK_HELD);
-        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX), TR(SET_HITEC_RX_PRE));
-        /* Back to PULL-UP: the setting's help again; another row keeps
-         * its own. */
-        settings_adjust(SET_HITEC_RX, 1);
-        CHECK_STR_EQ(settings_screen_help(SET_HITEC_RX),
-                  ui_setting_help(SET_HITEC_RX));
-        CHECK_STR_EQ(settings_screen_help(SET_PDMINI_BAUD),
-                  ui_setting_help(SET_PDMINI_BAUD));
-    }
-    ui_text_set_language(UI_LANG_EN);
-}
-
-/* The heading shows its text in the accent colour in both languages, and
- * its row has no key. */
-TEST_CASE(a_heading_shows_its_text_and_has_no_keys)
-{
-    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
-        ui_text_set_language((ui_lang_t)lang);
-        fresh_screen();
-        gesture_screen(SET_CAT_IFACE);
-        ui_router_render(&s_c, 0);
-        int accent = 0;
-        for (int y = LIST_Y; y < LIST_Y + ROW_H; ++y) {
-            for (int x = 0; x < 300; ++x) {
-                accent += (gfx_pixel_get(&s_c, x, y) == UI_ACCENT) ? 1 : 0;
-            }
-        }
-        CHECK(accent > 40);
-        /* No key column pixel above the rule differs from the row's
-         * background. */
-        const gfx_color_t bg = gfx_pixel_get(&s_c, MINUS_X, LIST_Y + 2);
-        for (int y = LIST_Y + 2; y < LIST_Y + ROW_H - 4; ++y) {
-            CHECK(gfx_pixel_get(&s_c, MINUS_X + 4, y) == bg);
-            CHECK(gfx_pixel_get(&s_c, PLUS_X + BTN_W - 4, y) == bg);
-        }
-        feed_tap(FEED_LONE, XM, LIST_Y + ROW_H / 2);
-        feed_tap(FEED_LONE, XP, LIST_Y + ROW_H / 2);
-        feed_tap(FEED_LONE, XL, LIST_Y + ROW_H / 2);
-        CHECK_EQ(changed(), 0);
-    }
-    ui_text_set_language(UI_LANG_EN);
 }
 
 /* ------------------------------------------------- Screen rotation */
@@ -1021,12 +892,84 @@ TEST_CASE(screen_rotation_draws_the_same_frame_buffer)
     settings_set_store(NULL);
 }
 
+/*
+ * Demo mode stepped from the screen: the SIMULATION mark leaves both
+ * framebuffers on the next frames, with nothing of it left behind, and
+ * stepping back brings it back.  The framebuffers are never cleared, as the
+ * panel's are not.
+ */
+TEST_CASE(demo_mode_stepped_on_the_screen_takes_the_mark_off_both_buffers)
+{
+    enum { PX = UI_PANEL_W * UI_PANEL_H };
+    fresh_screen();
+    ui_bench_status_t st = *ui_router_status();
+    st.simulated = true;
+    ui_router_set_status(&st);
+
+    gfx_color_t *buf[2];
+    gfx_canvas_t cvs[2];
+    for (int i = 0; i < 2; ++i) {
+        buf[i] = calloc(PX, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(buf[i]);
+        gfx_canvas_init(&cvs[i], buf[i], UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+    }
+    gfx_color_t *fresh_on = calloc(PX, sizeof(gfx_color_t));
+    REQUIRE_ALLOC(fresh_on);
+    gfx_canvas_t fc;
+    gfx_canvas_init(&fc, fresh_on, UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+
+    ui_router_render(&cvs[0], 0);
+    ui_router_render(&cvs[1], 1);
+
+    /* The row is past the 6 that fit: scroll to the end of the list. */
+    for (int i = 0; i < 6; ++i) {
+        swipe(300, UI_BAND_H + 400, 300, UI_BAND_H + 100, 8);
+    }
+    const int row = row_of(SET_DEMO_MODE);
+    CHECK(row >= 0);
+    const int y = row_y(row) - settings_screen_scroll(NULL);
+    CHECK(y > UI_BAND_H && y < UI_PANEL_H);
+
+    tap(PLUS_X + BTN_W / 2, y);
+    CHECK(settings_get_bool(SET_DEMO_MODE));
+    ui_router_render(&cvs[0], 0);
+    ui_router_render(&cvs[1], 1);
+
+    /* The same screen on a bench that is not simulated, drawn from nothing. */
+    st.simulated = false;
+    ui_router_set_status(&st);
+    ui_router_render(&fc, 0);
+    st.simulated = true;
+    ui_router_set_status(&st);
+    long left0 = 0, left1 = 0;
+    for (int i = 0; i < PX; ++i) {
+        left0 += (buf[0][i] != fresh_on[i]);
+        left1 += (buf[1][i] != fresh_on[i]);
+    }
+    CHECK_EQ(left0, 0);
+    CHECK_EQ(left1, 0);
+
+    tap(MINUS_X + BTN_W / 2, y);
+    CHECK(!settings_get_bool(SET_DEMO_MODE));
+    ui_router_render(&cvs[0], 0);
+    ui_router_render(&cvs[1], 1);
+    long back = 0;
+    for (int i = 0; i < PX; ++i) {
+        back += (buf[0][i] != buf[1][i]);
+    }
+    CHECK_EQ(back, 0);
+    long off_mark = 0;
+    for (int i = 0; i < PX; ++i) {
+        off_mark += (buf[0][i] != fresh_on[i]);
+    }
+    CHECK(off_mark > 3000);
+    free(fresh_on);
+    free(buf[0]);
+    free(buf[1]);
+}
+
 int main(void)
 {
-    RUN(interfaces_has_five_headings_above_its_sections);
-    RUN(the_hitec_receive_row_is_marked_as_the_iomcu_holds_it);
-    RUN(the_hitec_receive_help_follows_the_value);
-    RUN(a_heading_shows_its_text_and_has_no_keys);
     RUN(a_held_setting_is_left_by_every_call_that_changes_one);
     RUN(setup_changes_no_held_setting);
     RUN(the_encoder_settings_start_off_with_a_12_bit_centre);
@@ -1034,6 +977,7 @@ int main(void)
     RUN(plus_and_minus_change_the_setting_under_them);
     RUN(a_setup_key_notifies_once_per_press);
     RUN(changing_the_theme_from_the_screen_takes_effect);
+    RUN(demo_mode_stepped_on_the_screen_takes_the_mark_off_both_buffers);
     RUN(a_theme_stepped_back_shows_saved_on_the_next_frame);
     RUN(a_drag_scrolls_instead_of_pressing);
     RUN(holding_a_key_repeats_with_acceleration);

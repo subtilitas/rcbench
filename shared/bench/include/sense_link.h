@@ -6,7 +6,7 @@
  *        operator.
  *
  * The IOmcu reads the two current monitors and the output encoder (an
- * AS5600 angle sensor); the panel sets them up from SETUP INTERFACES and
+ * AS5600 angle sensor); the panel sets them up from SETUP > SENSORS and
  * reads what they measured.  An IOmcu whose protocol minor is below
  * SENSE_LINK_MINOR has neither page, and nothing is sent to it: not a write
  * and not a read.  One below SENSE_LINK_ENC_MINOR has no encoder: ENABLE
@@ -22,8 +22,10 @@
  *   1. what the page holds is read first, SENSE 0 to 11, once per link-up,
  *      and nothing is written that it already holds;
  *   2. while a part's frame is to change and the page enables both parts,
- *      the bus frame with ENABLE 0 and the page's own pins, so no
- *      intermediate set-up has two enabled parts on one address;
+ *      the bus frame with both monitors off and the page's own pins, so no
+ *      intermediate set-up has two enabled parts on one address.  With
+ *      SENSE_MAP in force the INA228 alone goes off: ENABLE bit 1 is the
+ *      map's mirror, and the page refuses a write that changes it;
  *   3. the part frames that differ;
  *   4. the bus frame: the pins, and ENABLE without a part whose frame was
  *      refused, so no part runs on a shunt or an address it was not given.
@@ -192,7 +194,7 @@ typedef enum {
     SENSE_LINK_INA3221 = 1,
 } sense_link_part_t;
 
-/** @brief The set-up as SETUP INTERFACES has it. */
+/** @brief The set-up as SETUP > SENSORS has it. */
 typedef struct {
     bool     i228, i3221;     /**< enabled                              */
     bool     as5600;          /**< the output encoder, enabled          */
@@ -277,6 +279,13 @@ enum {
      *  switches it off, and after a link-up.
      */
     SENSE_LINK_EV_ENC_MAGNET    = 0x10000,
+    /**
+     * @brief The page refused to take the monitors off before a part's frame:
+     *        no pin and no value of the set-up asked was judged, and the bank
+     *        driving at the IOmcu is what refuses that frame.  Every frame
+     *        waits for the next edit.
+     */
+    SENSE_LINK_EV_KEPT          = 0x20000,
 };
 
 /**
@@ -287,7 +296,8 @@ enum {
                                         | SENSE_LINK_EV_SAME_ADDR       \
                                         | SENSE_LINK_EV_BUS_REFUSED     \
                                         | SENSE_LINK_EV_I228_REFUSED    \
-                                        | SENSE_LINK_EV_I3221_REFUSED))
+                                        | SENSE_LINK_EV_I3221_REFUSED   \
+                                        | SENSE_LINK_EV_KEPT))
 
 /** @brief The exchange sense_link_next() asks for. */
 typedef enum {
@@ -594,8 +604,9 @@ uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms);
  * known to hold the frame as asked: not refused, and written and taken.  A
  * refused value stepped back on SETUP ends it once the IOmcu takes the frame;
  * the rest and the write take SENSE_LINK_SETTLE_MS and a poll.  With no IOmcu
- * answering a refusal stands.  True for every other event: what a read raised
- * ends with the band's own time.
+ * answering a refusal stands.  SENSE_LINK_EV_KEPT until the next edit asks
+ * again.  True for every other event: what a read raised ends with the band's
+ * own time.
  *
  * The caller takes back an alert it showed for such an event once this
  * is false; sense_link_event() drops one waiting that is over.
@@ -628,7 +639,7 @@ void sense_link_event_back(sense_link_t *s, uint32_t ev);
  */
 bool sense_link_settled(const sense_link_t *s);
 
-/** @brief The rows of SETUP INTERFACES, for sense_link_unheld(). */
+/** @brief The rows of SETUP > SENSORS, for sense_link_unheld(). */
 enum {
     SENSE_LINK_ROW_I228        = 0x0001,  /**< INA228 on or off         */
     SENSE_LINK_ROW_I3221       = 0x0002,  /**< INA3221 on or off        */

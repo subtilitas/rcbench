@@ -90,6 +90,8 @@ TEST_CASE(stopping_the_bench_wins_arbitration_against_reading_it)
              LINK_CAN_PRIO_CONTROL);
     CHECK_EQ(link_can_priority(LINK_PAGE_SUPPLY, LINK_OP_WRITE),
              LINK_CAN_PRIO_CONTROL);    /* the supply's OFF is a stop too */
+    CHECK_EQ(link_can_priority(LINK_PAGE_PROG_SUPPLY, LINK_OP_WRITE),
+             LINK_CAN_PRIO_CONTROL);    /* and the ports' own supply's */
     CHECK_EQ(link_can_priority(LINK_PAGE_LIMITS, LINK_OP_WRITE),
              LINK_CAN_PRIO_CONTROL);
     CHECK_EQ(link_can_priority(LINK_PAGE_BENCH, LINK_OP_READ),

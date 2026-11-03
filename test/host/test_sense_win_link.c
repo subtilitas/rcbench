@@ -2,8 +2,9 @@
  * The panel's half of SENSE_WIN_A and SENSE_WIN_B (sense_win_link.h): the
  * pages read whole while a part they carry is enabled, every
  * SENSE_WIN_LINK_READ_MS and in turn; nothing sent to an IOmcu older than
- * 4.25 or after BAD_PAGE; and a window's channels handed out only from a
- * page whose last read holds that window.
+ * 4.25 or after BAD_PAGE; a window's channels handed out only from a
+ * page whose last read holds that window; and each channel's highest
+ * window current kept until taken.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -142,6 +143,43 @@ TEST_CASE(a_window_takes_the_channels_of_its_own_number)
     /* No answer keeps the last read. */
     CHECK(read_one(SENSE_WIN_LINK_READ_MS, NULL, NULL));
     CHECK(sense_win_link_window(&s, 41u, &w));
+}
+
+/* The last read of a channel, for a reading shown live: any window, both
+ * kinds of sample, a closed one; channel 2 is 0x40 CH3, channel 11 the
+ * last. */
+TEST_CASE(the_last_window_of_a_channel_is_its_pages_last_read)
+{
+    sense_win_link_init(&s);
+    uint16_t mv = 9u;
+    int16_t ma = 9;
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));   /* no link */
+    sense_win_link_came_up(&s, 25u);
+    sense_win_link_want(&s, 0x0Fu);
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));   /* nothing read */
+    uint16_t a[LINK_SX_COUNT];
+    uint16_t b[LINK_SX_COUNT];
+    page_regs(a, 40u, (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE), 80);
+    page_regs(b, 41u, LINK_SX_E_VOLTAGE, -20);
+    b[LINK_SX_E(5, LINK_SX_E_FLAGS)] =
+        (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE);
+    CHECK(read_one(0u, a, NULL));
+    CHECK(read_one(0u, b, NULL));
+    CHECK(sense_win_link_last(&s, 2u, &mv, &ma));
+    CHECK_EQ(mv, 5000u);
+    CHECK_EQ(ma, 82);
+    CHECK(sense_win_link_last(&s, 11u, &mv, &ma));
+    CHECK_EQ(ma, -15);
+    CHECK(!sense_win_link_last(&s, 6u, &mv, &ma));   /* voltage only */
+    CHECK(!sense_win_link_last(&s, 12u, &mv, &ma));
+    CHECK(sense_win_link_last(&s, 0u, NULL, NULL));
+    CHECK(!sense_win_link_last(NULL, 0u, &mv, &ma));
+    /* A page with no window closed under the set-up: none. */
+    a[LINK_SX_FLAGS] = 0x03u;
+    CHECK(read_one(SENSE_WIN_LINK_READ_MS, a, NULL));
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));
+    sense_win_link_lost(&s);
+    CHECK(!sense_win_link_last(&s, 11u, &mv, &ma));
 }
 
 /* A page no longer wanted, BAD_PAGE, and a lost link forget what was
@@ -346,15 +384,90 @@ TEST_CASE(every_poll_reads_the_pages_after_the_ring)
     CHECK_EQ(no_other, 0u);
 }
 
+/*
+ * The peaks a trip's console line takes: each channel's highest window
+ * current read since the last take, negative figures included; entries
+ * without current samples and pages without a closed window count for
+ * nothing; a take clears them; a lost link clears them.
+ */
+TEST_CASE(the_peaks_keep_the_highest_window_until_taken)
+{
+    sense_win_link_init(&s);
+    int16_t out[LINK_SM_CHANNELS];
+    CHECK_EQ(sense_win_link_take_peaks(&s, out), 0u);
+    CHECK_EQ(sense_win_link_take_peaks(NULL, out), 0u);
+    sense_win_link_came_up(&s, 25u);
+    sense_win_link_want(&s, 0x0Fu);
+    uint16_t r[LINK_SX_COUNT];
+    uint8_t page = 0u;
+
+    /* Page A, max 50 + 100 = 150mA a channel, then 30 + 100 = 130mA. */
+    page_regs(r, 1u, LINK_SX_E_CURRENT, 50);
+    CHECK(read_one(0u, r, &page));
+    CHECK_EQ(page, LINK_PAGE_SENSE_WIN_A);
+    page_regs(r, 2u, LINK_SX_E_CURRENT, 30);
+    r[LINK_SX_E(2, LINK_SX_E_MAX_MA)] = 32767u;      /* the top of int16 */
+    r[LINK_SX_E(3, LINK_SX_E_MAX_MA)] = (uint16_t)(int16_t)-5;
+    r[LINK_SX_E(4, LINK_SX_E_FLAGS)] = 0u;           /* no current samples */
+    /* page B comes first now: the one asked for longest ago */
+    uint16_t b[LINK_SX_COUNT];
+    page_regs(b, 1u, LINK_SX_E_CURRENT, -300);
+    b[LINK_SX_FLAGS] = 0u;                           /* no window closed */
+    CHECK(read_one(0u, b, &page));
+    CHECK_EQ(page, LINK_PAGE_SENSE_WIN_B);
+    CHECK(read_one(SENSE_WIN_LINK_READ_MS, r, &page));
+    CHECK_EQ(page, LINK_PAGE_SENSE_WIN_A);
+
+    CHECK_EQ(sense_win_link_take_peaks(&s, out), 0x003Fu);
+    CHECK_EQ(out[0], 150);
+    CHECK_EQ(out[2], 32767);
+    CHECK_EQ(out[3], 150);      /* -5 is under the 150 before it */
+    CHECK_EQ(out[4], 150);      /* the read without samples leaves it */
+    CHECK_EQ(out[6], 0);        /* page B had no window: none */
+    /* Taken: none left. */
+    CHECK_EQ(sense_win_link_take_peaks(&s, out), 0u);
+    CHECK_EQ(out[0], 0);
+
+    /* A negative window alone is its own peak. */
+    page_regs(b, 2u, LINK_SX_E_CURRENT, -300);       /* max -200mA */
+    CHECK(read_one(2u * SENSE_WIN_LINK_READ_MS, b, &page));
+    CHECK_EQ(page, LINK_PAGE_SENSE_WIN_B);
+    CHECK_EQ(sense_win_link_take_peaks(&s, NULL), 0x0FC0u);
+    CHECK_EQ(sense_win_link_take_peaks(&s, out), 0u);   /* NULL cleared */
+    page_regs(b, 3u, LINK_SX_E_CURRENT, -300);
+    CHECK(read_one(3u * SENSE_WIN_LINK_READ_MS, b, &page));
+    if (page == LINK_PAGE_SENSE_WIN_A) {
+        CHECK(read_one(3u * SENSE_WIN_LINK_READ_MS, b, &page));
+    }
+    CHECK_EQ(sense_win_link_take_peaks(&s, out) & 0x0FC0u, 0x0FC0u);
+    CHECK_EQ(out[11], -200);
+
+    /* A lost link clears them. */
+    page_regs(r, 4u, LINK_SX_E_CURRENT, 50);
+    CHECK(read_one(4u * SENSE_WIN_LINK_READ_MS, r, &page));
+    sense_win_link_lost(&s);
+    CHECK_EQ(sense_win_link_take_peaks(&s, out), 0u);
+
+    /* A page no longer wanted adds nothing. */
+    sense_win_link_came_up(&s, 25u);
+    sense_win_link_want(&s, 0x01u);
+    page_regs(r, 5u, LINK_SX_E_CURRENT, 50);
+    CHECK(read_one(5u * SENSE_WIN_LINK_READ_MS, r, &page));
+    CHECK_EQ(page, LINK_PAGE_SENSE_WIN_A);
+    CHECK_EQ(sense_win_link_take_peaks(&s, out), 0x003Fu);
+}
+
 int main(void)
 {
     RUN(nothing_goes_to_an_older_iomcu_or_with_no_part);
     RUN(the_pages_a_map_needs_are_read_in_turn);
     RUN(a_window_takes_the_channels_of_its_own_number);
+    RUN(the_last_window_of_a_channel_is_its_pages_last_read);
     RUN(a_page_gone_forgets_its_reads);
     RUN(the_read_before_answers_for_its_window);
     RUN(the_reads_keep_their_rate_across_the_clock_wrap);
     RUN(fast_comes_from_the_ring);
     RUN(every_poll_reads_the_pages_after_the_ring);
+    RUN(the_peaks_keep_the_highest_window_until_taken);
     return test_summary("sense_win_link");
 }

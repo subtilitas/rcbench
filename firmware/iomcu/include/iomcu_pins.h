@@ -11,8 +11,9 @@
  * cannot serve a pin below 16 and one above 31 at the same time, so the map
  * is partitioned by block before a schematic is drawn.
  *
- * Only the CAN controller and the safety line are assigned.  Every output pin
- * arrives from the panel over the OUTPUTS page instead, because which lead is
+ * Only the CAN controller and the safety line are assigned here.  On the
+ * module wired by hand every output pin arrives from the panel over the
+ * OUTPUTS page instead, because which lead is
  * on which pin is a property of the bench in front of the operator rather
  * than of the firmware.  What is fixed here is the other half of that: the
  * pins an output may never be given.
@@ -27,13 +28,20 @@
 /**
  * @brief Which board this image is built for.
  *
- * It is a build-time fact, not a runtime one: the pin map below is compiled
- * in, so an image knows what it is and says so on the identity page.  The
- * panel reads it and shows that board's pins and no other.  A second board
- * appends an entry to k_boards in shared/outputs/out_bind.c and builds with
- * its own copy of this header.
+ * It is a build-time fact, not a runtime one: the pin map is compiled in,
+ * so an image knows what it is and says so on the identity page.  The panel
+ * reads it and shows that board's pins and no other.  CMake's IOMCU_BOARD
+ * chooses it: rp2350_can (the default) builds the module wired by hand,
+ * rbmod the carrier, whose role pins are in shared/outputs/out_board_rbmod.c
+ * (IOMCU_BOARD_RBMOD=1).  Both boards hold the same module, so the CAN and
+ * heartbeat pins below are the same on both.  A further board appends an
+ * entry to k_boards in shared/outputs/out_bind.c and a value here.
  */
+#if defined(IOMCU_BOARD_RBMOD) && IOMCU_BOARD_RBMOD
+#define IOMCU_BOARD_ID  ((uint16_t)OUTBIND_BOARD_RBMOD)
+#else
 #define IOMCU_BOARD_ID  ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
+#endif
 
 /**
  * @brief The safety heartbeat from the panel's PANEL_HEARTBEAT_PIN, by a

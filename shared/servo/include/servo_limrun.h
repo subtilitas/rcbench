@@ -707,6 +707,21 @@ servo_str_t servo_limrun_verdict_str(servo_limrun_verdict_t v);
  */
 servo_str_t servo_limrun_why_str(const servo_limrun_t *r);
 /**
+ * @brief Whether a run that ended for @p why ended on an error of the bench:
+ *        the meter or the supply failed, or a current limit tripped.
+ *
+ * An error switches an ARMED bench to SAFE (docs/Safety.md, "Errors").  The
+ * programmer's reasons (CONNECT, a write, LEAVE) and what the servo was
+ * found to hold are a run's outcome, not an error of the bench.
+ *
+ * @param why      The run's reason.
+ * @param test_why For SERVO_LIMRUN_WHY_TEST, the test's reason.
+ * @return true for WHY_HARD, WHY_CLIPPED, WHY_STALL, WHY_NO_VOLTAGE and a
+ *         WHY_TEST that servo_test_abort_error() calls an error.
+ */
+bool servo_limrun_why_error(servo_limrun_why_t why,
+                            servo_test_abort_t test_why);
+/**
  * @brief Table entry for a phase of the limit run.
  *
  * @param ph Phase to name.

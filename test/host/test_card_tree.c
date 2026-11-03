@@ -164,6 +164,7 @@ TEST_CASE(the_bench_files_are_under_bench)
     CHECK_STR_EQ(CARD_ESC_CONF, "BENCH/ESC/CONF");
     CHECK_STR_EQ(CARD_KST_CONF, "BENCH/KST/CONF");
     CHECK_STR_EQ(CARD_HITEC_CONF, "BENCH/HITEC/CONF");
+    CHECK_STR_EQ(CARD_ESCW_CONF, "BENCH/ESCW/CONF");
     CHECK_STR_EQ(CARD_FAULT_LOG, "BENCH/RCBENCH.LOG");
     CHECK_STR_EQ(CARD_FAULT_OLD, "BENCH/RCBENCH.OLD");
     /* The write record's two paths fit the 64-byte buffers of
@@ -308,6 +309,7 @@ TEST_CASE(the_benchs_own_folders_are_refused)
     CHECK_EQ(check("BENCH/ESC", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("BENCH/KST", out), CARD_FOLDER_BENCH);
     CHECK_EQ(check("BENCH/HITEC", out), CARD_FOLDER_BENCH);
+    CHECK_EQ(check("BENCH/ESCW", out), CARD_FOLDER_BENCH);
     CHECK_STR_EQ(out, "UNTOUCHED");
     /* Below them is 3 deep, refused before the bench is asked. */
     CHECK_EQ(check("BENCH/KST/CONF", out), CARD_FOLDER_DEEP);
@@ -316,6 +318,7 @@ TEST_CASE(the_benchs_own_folders_are_refused)
     CHECK_STR_EQ(out, "BENCH/KSTX");
     CHECK_EQ(check("BENCH/ES", out), CARD_FOLDER_OK);
     CHECK_EQ(check("BENCH/HITECS", out), CARD_FOLDER_OK);
+    CHECK_EQ(check("BENCH/ESCWX", out), CARD_FOLDER_OK);
     CHECK_EQ(check("BENCHX/KST", out), CARD_FOLDER_OK);
     CHECK_EQ(check("KST", out), CARD_FOLDER_OK);
     CHECK_EQ(check("USER/KST", out), CARD_FOLDER_OK);

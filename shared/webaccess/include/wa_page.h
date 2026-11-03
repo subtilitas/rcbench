@@ -6,9 +6,10 @@
  *
  * Two parts.  Panel firmware: a file picker and an upload with progress,
  * then the panel's answer as text; the page never starts the write, the
- * operator does on the panel with a 2s hold.  Card files: every file on the
- * card, folder by folder, each a download, and one link for the whole card
- * as a ZIP file with its size given before the click.
+ * operator does on the panel with a 2s hold.  Card files: one link for the
+ * whole card as a ZIP file with its size given before the click, and the
+ * file manager (wa_app.h), which shows the card in two panes through the
+ * file API, each file a download and a text file viewed read-only.
  *
  * With the access code on, a browser without the code gets only the code
  * form.  Texts in English or German, as the panel's language setting.
@@ -25,6 +26,7 @@
 #include <stdint.h>
 
 #include "fw_image.h"
+#include "wa_app.h"
 #include "wa_text.h"
 #include "wa_walk.h"
 
@@ -45,12 +47,20 @@ typedef struct {
     const char *version;   /**< the panel firmware running            */
     uint32_t    slot;      /**< the largest image the panel takes     */
     bool        de;        /**< German texts                          */
+    const wa_hl_t *hl;     /**< the viewer's words and colours; NULL
+                                for none                              */
 } wa_page_info_t;
 
 /** The code form; @p wrong adds that the last code was wrong. */
 void wa_page_code(wa_out_t *o, const wa_page_info_t *pi, bool wrong);
 
-/** The whole page, with two walks of @p fs: one adding up, one listing. */
+/**
+ * @brief The whole page: the firmware upload, the ZIP link and the file
+ *        manager (wa_app.h).
+ * @param o   the output
+ * @param pi  the page's name, version, slot, language and highlighter
+ * @param fs  the card, walked once for the ZIP file's sizes
+ */
 void wa_page_main(wa_out_t *o, const wa_page_info_t *pi, const wa_fs_t *fs);
 
 /**

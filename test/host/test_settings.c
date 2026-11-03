@@ -421,6 +421,49 @@ TEST_CASE(a_stored_usable_releases_setting_loads_as_stable)
 }
 
 /*
+ * SD CARD > Browser writes: OPEN by default (owner 2026-10-23: no
+ * authentication for a browser write unless SETUP asks for one), the four
+ * options in wa_writes_t's order, kept by its index under "web_writes";
+ * an index out of range falls back to OPEN.
+ */
+TEST_CASE(browser_writes_is_open_by_default_and_kept_by_its_index)
+{
+    fresh_model();
+    char buf[32];
+    const setting_def_t *d = settings_def(SET_WEB_WRITES);
+    CHECK_STR_EQ(d->key, "web_writes");
+    CHECK_EQ(d->type, SET_TYPE_ENUM);
+    CHECK_EQ(d->cat, SET_CAT_CARD);
+    CHECK_EQ(d->option_count, 4);
+    CHECK_EQ(settings_get_int(SET_WEB_WRITES), 0);
+    CHECK_STR_EQ(settings_value_text(SET_WEB_WRITES, buf, sizeof(buf)),
+                 "OPEN");
+    static const char *const words[4] = { "OPEN", "ACCESS CODE", "HOLD",
+                                          "OFF" };
+    for (int stored = 0; stored < 4; ++stored) {
+        fresh_model();
+        settings_set_store(&s_mem_store);
+        settings_set(SET_WEB_WRITES, (float)stored);
+        settings_save();
+        CHECK_EQ(s_saved[SET_WEB_WRITES], (float)stored);
+        settings_set(SET_WEB_WRITES, 0.0f);
+        settings_init();
+        CHECK_EQ(settings_get_int(SET_WEB_WRITES), stored);
+        CHECK_STR_EQ(settings_value_text(SET_WEB_WRITES, buf, sizeof(buf)),
+                     words[stored]);
+        settings_set_store(NULL);
+    }
+    /* Past the last option: OPEN again. */
+    fresh_model();
+    settings_set_store(&s_mem_store);
+    settings_save();
+    s_saved[SET_WEB_WRITES] = 4.0f;
+    settings_init();
+    CHECK_EQ(settings_get_int(SET_WEB_WRITES), 0);
+    settings_set_store(NULL);
+}
+
+/*
  * A load tells the observer every setting, its defaults included: the
  * panel's copies for the control task -- the current monitors' set-up
  * among them -- are filled from that sweep, and a value left at its
@@ -792,9 +835,10 @@ TEST_CASE(the_card_switches_are_on_kept_and_on_after_an_update)
     CHECK_EQ(settings_def(SET_LOG_USER)->cat, SET_CAT_CARD);
     CHECK_STR_EQ(settings_category_name(SET_CAT_CARD), "SD CARD");
     setting_id_t ids[8];
-    CHECK_EQ(settings_in_category(SET_CAT_CARD, ids, 8), 2);
+    CHECK_EQ(settings_in_category(SET_CAT_CARD, ids, 8), 3);
     CHECK_EQ(ids[0], SET_LOG_AUTO);
     CHECK_EQ(ids[1], SET_LOG_USER);
+    CHECK_EQ(ids[2], SET_WEB_WRITES);
     CHECK(SET_CAT_CARD < SET_CAT_SETUP_COUNT);   /* a SETUP tile */
 
     /* The round trip, each value both ways. */
@@ -1102,6 +1146,7 @@ int main(void)
     RUN(value_text_renders_every_type);
     RUN(store_round_trips_and_coerces_stale_values);
     RUN(a_stored_usable_releases_setting_loads_as_stable);
+    RUN(browser_writes_is_open_by_default_and_kept_by_its_index);
     RUN(a_load_tells_the_observer_every_setting_at_its_default);
     RUN(the_phase_tap_settings_are_the_tone_pages);
     RUN(observer_fires_only_on_real_changes);

@@ -14,12 +14,14 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "shot_facts_rig.h"
 #include "touch_feed.h"
 
 #include "esc_stick_panel.h"
+#include "esc_wire_panel.h"
+#include "link_pages.h"
 #include "gfx.h"
 #include "motor_screen.h"
-#include "prog_models.h"
 #include "prog_registry.h"
 #include "settings.h"
 #include "splash_screen.h"
@@ -141,8 +143,11 @@ static void fresh(void)
 
 static void open_session(void)
 {
+    CHECK(!motor_screen()->covered());
     feed_tap(FEED_LONE, ROW_X, ROW_Y);
     frames(2);
+    CHECK(motor_screen()->covered());
+    CHECK(!shot_facts_now().no_session);
 }
 
 static void home_tag(void)
@@ -179,22 +184,21 @@ TEST_CASE(program_lists_the_stick_menu_and_no_modelled_protocol)
         }
         ++motor;
         CHECK_EQ(rows[i].task, (int)UI_WB_PROGRAM);
+        if (rows[i].page_set == &esc_wire_pages) {
+            /* Dimmed until the IOmcu reports the capability. */
+            CHECK_EQ(rows[i].needs_capability, (unsigned)LINK_CAP_PROGRAM);
+            CHECK_EQ(prog_reg_state(rows, n, i, 0u), (int)PROG_ROW_NO_CAP);
+            CHECK_EQ(prog_reg_state(rows, n, i, LINK_CAP_PROGRAM),
+                     (int)PROG_ROW_LIVE);
+            CHECK(rows[i].full_width);
+            continue;
+        }
         CHECK(rows[i].page_set == &esc_stick_pages);
         CHECK(rows[i].full_width);
         CHECK_EQ(rows[i].group, (int)TX_PL_GRP_STICK);
         CHECK_EQ(prog_reg_state(rows, n, i, 0u), (int)PROG_ROW_LIVE);
-        size_t mn = 0;
-        const prog_model_t *m = prog_models(&mn);
-        for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
-            ui_text_set_language((ui_lang_t)lang);
-            for (size_t k = 0; k < mn; ++k) {
-                CHECK(strstr(ui_tr(rows[i].name), prog_model_name(&m[k]))
-                      == NULL);
-            }
-        }
-        ui_text_set_language(UI_LANG_EN);
     }
-    CHECK_EQ(motor, 1);
+    CHECK_EQ(motor, 2);
     CHECK_STR_EQ(TR(PL_GRP_STICK), "STICK MENU");
     CHECK_STR_EQ(TR(PL_STICK), "ESCs by throttle stick");
     ui_text_set_language(UI_LANG_DE);
@@ -512,6 +516,131 @@ TEST_CASE(leaving_with_a_session_open_disarms_and_closes_it)
 }
 
 /*
+ * The signal-wire session holds or would take a pin of its own: the strip names
+ * that one, and not the throttle's protocol.
+ */
+TEST_CASE(the_wire_session_strip_names_its_own_pin)
+{
+    const esc_wire_target_t pin = { LINK_EW_TARGET_PORT | 1u, 14u };
+    ui_bench_status_t st = *ui_router_status();
+    char line[96];
+    bool warn = true;
+
+    fresh();
+    st.capabilities |= LINK_CAP_PROGRAM;
+    ui_router_set_status(&st);
+    esc_wire_panel_set_targets(&pin, 1u, true);
+    feed_tap(FEED_LONE, ROW_X, ROW_Y + 56);
+    frames(2);
+    CHECK(motor_screen()->covered());
+    strip(line, sizeof(line), false, &warn);
+    CHECK(!warn);
+    CHECK(strstr(line, "PORT 2 GPIO 14") != NULL);
+    CHECK(strstr(line, "DSHOT300") == NULL);
+    esc_wire_panel_set_targets(NULL, 0u, true);
+    strip(line, sizeof(line), false, &warn);
+    CHECK(warn);
+    CHECK(strstr(line, "DSHOT300") == NULL);
+}
+
+/*
+ * A hold on the signal-wire session and a press of its BACK, in both framebuffers:
+ * each buffer shows the button's change, no other pixel of the session moves.
+ */
+TEST_CASE(the_wire_sessions_hold_and_press_reach_both_framebuffers)
+{
+    const esc_wire_target_t pin = { LINK_EW_TARGET_PORT | 1u, 14u };
+    ui_bench_status_t st = *ui_router_status();
+    static gfx_color_t *other;
+    static gfx_color_t *kept[2];
+    gfx_canvas_t second;
+
+    if (other == NULL) {
+        other = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(other);
+        for (int b = 0; b < 2; ++b) {
+            kept[b] = calloc((size_t)W * H, sizeof(gfx_color_t));
+            REQUIRE_ALLOC(kept[b]);
+        }
+    }
+    gfx_canvas_init(&second, other, W, H, W);
+    fresh();
+    st.capabilities |= LINK_CAP_PROGRAM;
+    ui_router_set_status(&st);
+    esc_wire_panel_set_targets(&pin, 1u, true);
+    feed_tap(FEED_LONE, ROW_X, ROW_Y + 56);
+    gfx_canvas_t *const canv[2] = { &cv, &second };
+    const gfx_color_t *const buf[2] = { fb, other };
+    const gfx_rect_t rects[2] = { esc_wire_panel_hold_rect(),
+                                  esc_wire_panel_back_rect() };
+
+    CHECK(rects[0].w > 0);
+    CHECK(rects[1].w > 0);
+    for (int what = 0; what < 2; ++what) {
+        const gfx_rect_t r = rects[what];
+
+        for (int warm = 0; warm < 4; ++warm) {
+            ui_router_tick(0.026f);
+            ui_router_render(canv[warm & 1], warm & 1);
+        }
+        for (int b = 0; b < 2; ++b) {
+            memcpy(kept[b], buf[b], (size_t)W * H * sizeof(gfx_color_t));
+        }
+        finger(FEED_LONE, (int16_t)(r.x + r.w / 2), P(r.y + r.h / 2));
+        ui_router_tick(0.5f);
+        for (int b = 0; b < 2; ++b) {
+            ui_router_render(canv[b], b);
+            int in = 0;
+            int out = 0;
+
+            for (int y = P(0); y < H; ++y) {
+                for (int x = 0; x < W; ++x) {
+                    if (buf[b][(size_t)y * W + x] != kept[b][(size_t)y * W + x]) {
+                        if (gfx_rect_contains(r, x, y - P(0))) {
+                            ++in;
+                        } else {
+                            ++out;
+                        }
+                    }
+                }
+            }
+            CHECK(in > 0);
+            CHECK_EQ(out, 0);
+        }
+        if (what == 0) {
+            lift(FEED_LONE);
+        }
+    }
+}
+
+/* ARM with a signal-wire session holding a pin: no ask, and the alert names it. */
+TEST_CASE(arm_under_a_wire_session_says_the_esc_programmer_holds_it)
+{
+    esc_prog_feed_t f;
+
+    fresh();
+    feed_tap(FEED_LONE, TAB_X(0), TAB_Y);
+    frames(2);
+    memset(&f, 0, sizeof(f));
+    f.rd.known = true;
+    f.rd.held = true;
+    f.rd.state = LINK_ESC_READY;
+    esc_wire_panel_feed(&f);
+    ui_router_set_alert(NULL);
+    finger(FEED_LONE, ARM_X, ARM_Y);
+    frames(3);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
+    lift(FEED_LONE);
+    frames(2);
+    CHECK(took().kind != MOTOR_CMD_ARM);
+    f.rd.held = false;
+    f.rd.state = 0u;
+    esc_wire_panel_feed(&f);
+    ui_router_set_alert(NULL);
+    frames(2);
+}
+
+/*
  * PROGRAM's list on an armed bench, the throttle at 40%: a second finger
  * opens ESC STICK while the first holds DISARM.  The press on DISARM has
  * asked for SAFE, and the opening asks again while the bench has not
@@ -573,7 +702,10 @@ int main(void)
     RUN(the_strip_repaints_on_the_supply_and_the_bench);
     RUN(the_home_tag_climbs_the_session_then_leaves);
     RUN(leaving_with_a_session_open_disarms_and_closes_it);
+    RUN(the_wire_session_strip_names_its_own_pin);
+    RUN(arm_under_a_wire_session_says_the_esc_programmer_holds_it);
     RUN(opening_a_session_on_an_armed_bench_disarms_it);
+    RUN(the_wire_sessions_hold_and_press_reach_both_framebuffers);
     RUN(a_second_finger_on_the_list_does_not_take_the_row);
     free(fb);
     return test_summary("motor_program");

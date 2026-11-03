@@ -58,6 +58,9 @@ The module has two parts.
   100ms, which adds up to 100ms to the gap it sees. At rest the display
   read stands up to 2.5s at 390ms (1.8s at 280ms).
 - 3 failed state reads in a row take the module for gone.
+- WHO_AM_I goes again 1000ms after the last one while nothing answers;
+  with `pdmini_hurry()` on, as soon as the last one has failed, 415ms a
+  try.
 - A voltage set point is capped 700mV under the input the module reports,
   rounded down to 10mV, and is never under 1000mV.
 - A live output whose input reads under the set point plus 500mV on 2 reads
@@ -90,6 +93,7 @@ Core, `pdmini.h`:
 void pdmini_init(pdmini_t *d, const pdmini_io_t *io, uint32_t now_ms);
 void pdmini_want(pdmini_t *d, bool output, uint16_t set_mv, uint16_t set_ma);
 void pdmini_want_off(pdmini_t *d);
+void pdmini_hurry(pdmini_t *d, bool on);
 void pdmini_rx(pdmini_t *d, uint8_t byte, uint32_t now_ms);
 void pdmini_step(pdmini_t *d, uint32_t now_ms);
 const pdmini_status_t *pdmini_status(const pdmini_t *d);

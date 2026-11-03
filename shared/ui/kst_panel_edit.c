@@ -18,8 +18,10 @@
 #include "kst_port.h"
 #include "kst_reg.h"
 #include "link_pages.h"
+#include "prog_choice.h"
 #include "settings.h"
 #include "supply_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 #include "ui_textkey.h"
 #include "ui_widgets.h"
@@ -29,6 +31,20 @@
 #include "kst_panel_int.h"
 
 /* ------------------------------------------------------------------ editors */
+
+void kpn_supply_limits(kst_prog_t *p)
+{
+    if (ui_board_prog_5v_pin() >= 0) {
+        kst_prog_supply_caps(p, 0u, 0u);
+        kst_prog_supply_floor(p, 0u);
+        return;
+    }
+    const supply_caps_t caps = supply_screen_caps();
+
+    kst_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
+                         (uint16_t)lroundf(caps.i_max * 1000.0f));
+    kst_prog_supply_floor(p, (uint16_t)KST_PORT_SUPPLY_MIN_MV);
+}
 
 void kpn_close_editors(void)
 {
@@ -390,12 +406,7 @@ void kpn_act(const row_t *r)
     switch (r->what) {
     case A_PORT:
         if (st == KST_PROG_PWM) {
-            /* Against the SUPPLY screen's limits as they are now. */
-            const supply_caps_t caps = supply_screen_caps();
-
-            kst_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
-                                 (uint16_t)lroundf(caps.i_max * 1000.0f));
-            kst_prog_supply_floor(p, (uint16_t)KST_PORT_SUPPLY_MIN_MV);
+            kpn_supply_limits(p);
             (void)kst_prog_connect(p, kpn_port_no());
         } else if (st == KST_PROG_PROGRAMMING) {
             kpn_warn_leave();
@@ -427,13 +438,21 @@ void kpn_act(const row_t *r)
         if (st == KST_PROG_PWM) {
             char label[KST_PANEL_LINE];
             const unsigned mv = kst_prog_supply_mv(p);
+            const int fixed = ui_board_prog_5v_pin();
 
-            snprintf(label, sizeof(label), TR(KP_SUPPLY_V), mv / 1000u,
-                     mv % 1000u / 100u);
-            choice_add(label, MORE_VOLTAGE);
-            snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
-                     (unsigned)kst_prog_supply_ma(p));
-            choice_add(label, MORE_CURRENT);
+            if (fixed >= 0) {
+                /* The carrier's buck: 5V, nothing to set. */
+                snprintf(label, sizeof(label), TR(KP_SUPPLY_5V_FIXED),
+                         (unsigned)fixed);
+                choice_add(label, MORE_FIXED);
+            } else {
+                snprintf(label, sizeof(label), TR(KP_SUPPLY_V), mv / 1000u,
+                         mv % 1000u / 100u);
+                choice_add(label, MORE_VOLTAGE);
+                snprintf(label, sizeof(label), TR(KP_SUPPLY_A),
+                         (unsigned)kst_prog_supply_ma(p));
+                choice_add(label, MORE_CURRENT);
+            }
             snprintf(label, sizeof(label), TR(KP_PWM_WAIT),
                      (unsigned)kst_prog_wait_ms(p));
             choice_add(label, MORE_WAIT);
@@ -472,13 +491,48 @@ void kpn_act(const row_t *r)
     }
 }
 
+const row_t *kpn_port_pick_row(void)
+{
+    if (!prog_choice_offered() || kst_prog_state(&k.prog) != KST_PROG_PWM) {
+        return NULL;
+    }
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        const row_t *r = &kpn_rows[i];
+
+        if (r->kind == K_ACT && r->what == A_PORT
+            && r->page == k.tabs.selected) {
+            return r;
+        }
+    }
+    return NULL;
+}
+
+void kpn_port_list(void)
+{
+    char label[KST_PANEL_LINE];
+
+    if (prog_choice_locked()) {
+        return;                 /* the state line says why */
+    }
+    choice_open(C_PORT, TR(PC_TITLE));
+    for (uint8_t port = 1u; port <= LINK_PG_PORTS_MAX; ++port) {
+        /* A port an output's slice holds says so in its entry. */
+        if (!prog_choice_refusal(port, label, sizeof(label))) {
+            prog_choice_entry(port, label, sizeof(label));
+        }
+        choice_add(label, (int)port);
+    }
+}
+
 void kpn_choice_done(int value)
 {
     kst_prog_t *p = &k.prog;
     const int kind = k.ch.kind;
 
     k.ch.open = false;
-    if (kind == C_STRETCH) {
+    if (kind == C_PORT) {
+        (void)prog_choice_pick((uint8_t)value);
+    } else if (kind == C_STRETCH) {
         const row_t *r = &kpn_rows[k.kp_row];
 
         edited(r, kst_prog_edit(p, (kst_field_id_t)r->what, (uint16_t)value));
@@ -542,6 +596,8 @@ void kpn_choice_done(int value)
         (void)kst_prog_verify(p);
     } else if (value == MORE_DISCARD) {
         kst_prog_discard(p);
+    } else if (value == MORE_FIXED) {
+        /* The carrier's 5V: a line to read, nothing to set. */
     } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE) {
         kpn_warn_release();
     } else {

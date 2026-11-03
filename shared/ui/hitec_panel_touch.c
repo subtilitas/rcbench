@@ -54,7 +54,7 @@ static void down(const touch_event_t *evt)
         if (gfx_rect_contains(hitec_panel_apply_rect(), x, y)) {
             take(evt, P_APPLY, -1);
             hp.page.down = true;
-            ui_hold_begin(&hp.page.hold);
+            ui_hold_begin(&hp.page.hold, hp.page.hint);
         } else if (gfx_rect_contains(hitec_panel_cancel_rect(), x, y)) {
             take(evt, P_CANCEL, -1);
         }
@@ -99,6 +99,11 @@ static void down(const touch_event_t *evt)
             take(evt, P_ROW, i);
             return;
         }
+    }
+    /* On the carrier the PORT row's label opens the ports' list. */
+    const hpn_row_t *pr = hpn_port_pick_row();
+    if (pr != NULL && gfx_rect_contains(hpn_row_rect(pr), x, y)) {
+        take(evt, P_PORT, -1);
     }
 }
 
@@ -184,7 +189,7 @@ static void rest(const touch_event_t *evt)
             }
             return;
         }
-        (void)ui_hold_end(&hp.page.hold);
+        (void)ui_hold_end(&hp.page.hold, evt, hitec_panel_apply_rect());
         hp.page.down = false;
         let_go();
         return;
@@ -206,6 +211,14 @@ static void rest(const touch_event_t *evt)
             hpn_act(&hpn_rows[which]);
         }
         break;
+    case P_PORT: {
+        const hpn_row_t *pr = hpn_port_pick_row();
+
+        if (pr != NULL && gfx_rect_contains(hpn_row_rect(pr), x, y)) {
+            hpn_port_list();
+        }
+        break;
+    }
     case P_CHOICE:
         if (hp.ch.open && which < hp.ch.count
             && gfx_rect_contains(hitec_panel_choice_rect(which), x, y)) {
@@ -235,11 +248,19 @@ bool hitec_panel_has_press(uint8_t id)
 void hpn_supply_sync(void)
 {
     const hitec_prog_t *p = &hp.prog;
+    const uint32_t leaves = hitec_prog_leaves(p);
 
+    /* A LEAVE is told before the word it ends: only its release offers
+     * the operator's set points back. */
+    if (leaves != hp.leaves_seen) {
+        hp.leaves_seen = leaves;
+        supply_screen_hitec_leave_done();
+    }
+    supply_screen_set_hitec_held(hitec_prog_holds_port(p));
     /* The SUPPLY page's own word that a programming port holds it
-     * (LINK_SP_PORT) counts too: it comes before the HITEC page is read. */
-    supply_screen_set_hitec_held(hitec_prog_holds_port(p)
-                                 || (p->fed && p->f.supply_held));
+     * (LINK_SP_PORT) counts too: it comes before the HITEC page is read,
+     * and it says so of a KST port as well. */
+    supply_screen_set_page_held(p->fed && p->f.supply_held);
 }
 
 void hitec_panel_event(const touch_event_t *evt)

@@ -1,5 +1,7 @@
-/*
- * The theme: named colours, and the contrast and brightness applied to them.
+/**
+ * @file
+ * @brief The theme: named colours, and the contrast and brightness applied
+ *        to them.
  *
  * Screens ask for a colour by role (background, text, accent, danger), never
  * by value, so a palette change is one table.  Contrast and brightness are
@@ -11,12 +13,13 @@
 
 #include "ui_theme.h"
 
+/** @brief A colour in 8 bits a channel. */
 typedef struct {
     uint8_t r, g, b;
 } ui_rgb_t;
 
-/*
- * Base palettes in 8-bit RGB (red, green, blue), so brightness and contrast
+/**
+ * @brief Base palettes in 8-bit RGB (red, green, blue), so brightness and contrast
  * are applied before the 5/6/5 quantisation rather than after it.
  *
  * The light theme is not the dark one inverted.  Series colours are darker
@@ -81,13 +84,29 @@ static struct {
     int brightness;
     int contrast;
     bool built;
-} s = { UI_THEME_DARK, 100, 100, false };
+} s = { UI_THEME_DARK, 100, 100, false }; /**< the theme, brightness and
+                                               contrast set, and whether
+                                               the palette is built */
 
+/**
+ * @brief @p v held to @p lo to @p hi.
+ * @param v   the value
+ * @param lo  the lowest
+ * @param hi  the highest
+ * @return the value held
+ */
 static int clampi(int v, int lo, int hi)
 {
     return (v < lo) ? lo : (v > hi) ? hi : v;
 }
 
+/**
+ * @brief One channel with contrast and brightness applied.
+ * @param value       the channel, 0 to 255
+ * @param contrast    the contrast, %
+ * @param brightness  the brightness, %
+ * @return the channel, 0 to 255
+ */
 static uint8_t apply_one(uint8_t value, int contrast, int brightness)
 {
     /* Contrast pivots on mid-grey: above 100 pushes away from it, below 100
@@ -98,6 +117,7 @@ static uint8_t apply_one(uint8_t value, int contrast, int brightness)
     return (uint8_t)clampi(v, 0, 255);
 }
 
+/** @brief Build g_ui_palette from the theme, contrast and brightness set. */
 static void rebuild(void)
 {
     const ui_rgb_t *base = k_base[s.theme];
@@ -109,8 +129,10 @@ static void rebuild(void)
     s.built = true;
 }
 
-/* The palette has to exist before the first draw even if nobody called a
- * setter, so every accessor makes sure it has been built once. */
+/**
+ * @brief Build the palette once: it has to exist before the first draw
+ *        even if nobody called a setter, so every accessor makes sure.
+ */
 static void ensure(void)
 {
     if (!s.built) {
@@ -139,6 +161,15 @@ void ui_theme_set_contrast(int percent)
     rebuild();
 }
 
+uint32_t ui_theme_rgb24(ui_theme_id_t theme, ui_color_id_t id)
+{
+    if (theme < 0 || theme >= UI_THEME_COUNT || id < 0 || id >= UI_C_COUNT) {
+        return 0u;
+    }
+    const ui_rgb_t c = k_base[theme][id];
+    return ((uint32_t)c.r << 16) | ((uint32_t)c.g << 8) | (uint32_t)c.b;
+}
+
 ui_theme_id_t ui_theme_get(void)
 {
     ensure();
@@ -157,8 +188,10 @@ int ui_theme_contrast(void)
     return s.contrast;
 }
 
-/* Built at load time on the host and at startup on the device, so no draw can
- * ever read a zeroed palette. */
+/**
+ * @brief Built at load time on the host and at startup on the device, so
+ *        no draw can ever read a zeroed palette.
+ */
 __attribute__((constructor))
 static void ui_theme_ctor(void)
 {

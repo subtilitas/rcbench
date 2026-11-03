@@ -3,7 +3,7 @@
  * and with every editor, on the loopback of hitec_prog_rig.h: the state
  * line of each state, a retry and its code, a port without a pin; MORE
  * with the programming voltage and current on the keypad at their limits
- * and CANCEL; READ ALL, ABORT and CLEAR by their buttons; the home tag over
+ * and CANCEL, and on the rbmod carrier the 5V fixed in their place; READ ALL, ABORT and CLEAR by their buttons; the home tag over
  * an editor, without a port and over another session's port; a hold that
  * the finger leaves; values that show raw, a fail-safe position, LIMP and
  * an overload limit; a classic resolution and a classic servo whose name
@@ -16,6 +16,7 @@
  */
 #include "hitec_panel_rig.h"
 
+#include "ui_board.h"
 #include "ui_keypad.h"
 
 /* The state line: the SERVO tab's first note. */
@@ -218,8 +219,8 @@ TEST_CASE(read_all_and_abort_by_their_buttons)
 {
     open_en();
     servo_d485();
-    tap_connect();
     g_drv.dreg[0x32] = 3u;
+    tap_connect();
     tap(val(HITEC_PANEL_SERVO, 1, 1));            /* READ ALL */
     CHECK_EQ(pstate(), HITEC_PROG_READING);
     CHECK_EQ(strcmp(hitec_panel_value(HITEC_PANEL_SERVO, 0, 0),
@@ -248,6 +249,57 @@ TEST_CASE(a_port_without_a_pin_names_the_port_alone)
 }
 
 /* --------------------------------------------------------------- editors */
+
+/* On a board that switches the ports' own 5V (the rbmod carrier, GPIO
+ * 21): MORE names the 5V as fixed and offers no voltage or current, its
+ * line sets nothing, and the PORT row and the state line say 5V. */
+TEST_CASE(the_carrier_shows_the_ports_5v_as_fixed)
+{
+    char want[HITEC_PANEL_LINE];
+
+    open_en();
+    ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
+    show();
+    CHECK(strstr(hitec_panel_port_line(1), TR(HP_SUPPLY_5V_FIXED)) != NULL);
+    tap(val(HITEC_PANEL_SERVO, 2, 0));
+    CHECK_EQ(hitec_panel_editor(), 2);
+    snprintf(want, sizeof(want), TR(KP_SUPPLY_5V_FIXED), 21u);
+    CHECK_STR_EQ(hitec_panel_choice_label(0), want);
+    /* Hitec D receive under it, the list's end. */
+    CHECK(strstr(hitec_panel_choice_label(1), ui_setting_label(SET_HITEC_RX))
+          != NULL);
+    CHECK(hitec_panel_choice_label(2) == NULL
+          || hitec_panel_choice_label(2)[0] == '\0');
+    const unsigned mv = hitec_prog_mv(model());
+    tap(hitec_panel_choice_rect(0));
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(hitec_prog_mv(model()), mv);
+    ui_board_set((uint16_t)OUTBIND_BOARD_UNKNOWN);
+    show();
+    CHECK(strstr(hitec_panel_port_line(1), TR(HP_SUPPLY_5V_FIXED)) == NULL);
+}
+
+TEST_CASE(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits)
+{
+    /* The PD mini's limits at 3.3V or 0.5A bound the servo rails only: on
+     * the carrier CONNECT runs from the ports' own 5V. */
+    for (int which = 0; which < 2; ++which) {
+        open_en();
+        settings_set(SET_SUPPLY_V_MAX, which == 0 ? 3.3f : 21.0f);
+        settings_set(SET_SUPPLY_I_MAX, which == 0 ? 5.0f : 0.5f);
+        supply_screen_settings_loaded();
+        ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
+        servo_d485();
+        tap(val(HITEC_PANEL_SERVO, 0, 0));
+        CHECK(msg() != HITEC_PROG_MSG_SUPPLY_CAPS);
+        CHECK(pstate() != HITEC_PROG_PWM);
+        reach(HITEC_PROG_HELD);
+        ui_board_set((uint16_t)OUTBIND_BOARD_UNKNOWN);
+    }
+    settings_set(SET_SUPPLY_V_MAX, 21.0f);
+    settings_set(SET_SUPPLY_I_MAX, 5.0f);
+    supply_screen_settings_loaded();
+}
 
 TEST_CASE(more_sets_the_voltage_and_current_on_the_keypad)
 {
@@ -629,6 +681,8 @@ int main(void)
     RUN(read_all_and_abort_by_their_buttons);
     RUN(a_port_without_a_pin_names_the_port_alone);
     RUN(more_sets_the_voltage_and_current_on_the_keypad);
+    RUN(the_carrier_shows_the_ports_5v_as_fixed);
+    RUN(the_carriers_fixed_5v_is_not_held_to_the_supplys_limits);
     RUN(the_home_tag_closes_an_editor_then_the_overlay);
     RUN(a_hold_the_finger_leaves_does_nothing);
     RUN(fail_safe_overload_and_a_raw_value_show_as_read);

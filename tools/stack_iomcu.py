@@ -46,12 +46,13 @@ IRQ_INSTALLERS = ("irq_set_exclusive_handler", "irq_add_shared_handler")
 # the link_page_t table firmware/iomcu/src/main.c passes to link_dev_init();
 # a write handler binds outputs and is the deepest thing a request reaches.
 # The last number is how many calls through the table the caller's source
-# makes: two of read and one of write in shared/link/link_dev.c.  A caller
+# makes: three of read and one of write in shared/link/link_dev.c, the
+# third in read_and_keep(), which the compiler takes into the caller.  A caller
 # here that makes no indirect call or more than that many, or a table that
 # is not rows of that size holding function addresses, fails the check: a
 # further call through a pointer is not one the table stands for.
 POINTER_TABLES = {
-    "link_dev_dispatch": ("k_pages", 12, (4, 8), 3),
+    "link_dev_dispatch": ("k_pages", 12, (4, 8), 4),
 }
 
 # Calls in the image that the firmware's arguments never take:
@@ -345,11 +346,31 @@ def analyse_thumb(elf: Elf, addr: int, size: int, name: str, marks: list,
     return f
 
 
+def iomcu_elf(build: Path) -> Path:
+    """The IOmcu image's ELF in a build directory.
+
+    Args:
+        build: The IOmcu build directory.
+
+    Returns:
+        rcbench-iomcu.elf, the module's image, when the directory holds it;
+        else the one rcbench-iomcu-<board>.elf of a board variant
+        (IOMCU_BOARD); else the path of rcbench-iomcu.elf, which does not
+        exist.
+    """
+    path = build / IOMCU_ELF
+    if not path.exists():
+        variants = sorted(build.glob("rcbench-iomcu-*.elf"))
+        if len(variants) == 1:
+            return variants[0]
+    return path
+
+
 def iomcu_check(build: Path, verbose: bool) -> tuple:
     """(rows, fails, lines to print) for the IOmcu image: one row per
     core, (name, entry, stack, depth, interrupt, spare, calls and jumps
     through a register reachable from the entry)."""
-    path = build / IOMCU_ELF
+    path = iomcu_elf(build)
     if not path.exists():
         die(f"{path} not found; build the IOmcu first")
     sys.setrecursionlimit(20000)
@@ -567,7 +588,7 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
 # The IOmcu's table in each language and the name of core 0's row.
 # Core 0's row is held: stack, deepest chain, one interrupt, spare.  Core
 # 1's is not: its chain moves with the compiler, 640 bytes with
-# arm-none-eabi-gcc 13.2.1 and 644 with 14.2.
+# arm-none-eabi-gcc 13.2.1 and 644 with 14.2.1.
 IOMCU_PERFORMANCE = (
     (ROOT / "docs" / "Performance.md",
      "| Core | Entry | Stack (bytes) | Deepest chain (bytes) | "
@@ -597,7 +618,7 @@ IOMCU_PROSE = (
      r"deepest chain and (\d[\d,]*) for one interrupt on the (\d[\d,]*)"
      r"-byte stack, (\d[\d,]*) bytes above the 256-byte margin\. The "
      r"figures are those of the image CI builds with arm-none-eabi-gcc "
-     r"13\.2\.1, and `stack_check\.py --iomcu --check-doc` holds them\. "
+     r"14\.2\.1, and `stack_check\.py --iomcu --check-doc` holds them\. "
      r"The depth is a lower bound: (\d[\d,]*) calls through a register "
      r"are not followed\.",
      ("depth", "interrupt", "stack", "spare", "calls")),

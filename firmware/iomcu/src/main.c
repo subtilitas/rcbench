@@ -29,13 +29,13 @@
 
 #include "iomcu_pins.h"
 #include "bench_state.h"
+#include "board_fix.h"
 #include "dshot.h"
 #include "flash_gate.h"
 #include "out_bind.h"
 #include "rcbench_version.h"
 #include "out_stage.h"
 #include "outputs_pages.h"
-#include "pd_uart.h"
 #include "sense_limit.h"
 #include "sense_map.h"
 #include "tone_core1.h"
@@ -46,6 +46,7 @@
 #endif
 #if IOMCU_CONSOLE
 #include "console_hw.h"
+#include "link_pages_console.h"
 #endif
 
 /**
@@ -84,12 +85,15 @@ bool            s_edge_set;
 uint16_t        s_edge_gen;
 uint64_t        s_edge_us;
 uint64_t        s_base_reserved;
+bool            s_ports_held;
 prog_port_t     s_prog;
 kst_port_t      s_kst;
 kst_line_t      s_kst_line;
 hitec_port_t    s_hitec;
 hitec_line_t    s_hitec_line;
-link_dev_t      s_dev;
+esc_port_t      s_esc;
+ew_pin_line_t   s_esc_line; /**< the wire driver of s_esc */
+link_dev_t      s_dev; /**< the link's device end */
 outputs_t       s_outputs;
 heartbeat_mon_t s_beat;
 uint32_t        s_frames;
@@ -153,10 +157,17 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SENSE_LIMIT, LINK_SL_COUNT, sense_limit_rd, sense_limit_wr },
     { LINK_PAGE_SENSE_WIN_A, LINK_SX_COUNT, sense_win_a_read, NULL },
     { LINK_PAGE_SENSE_WIN_B, LINK_SX_COUNT, sense_win_b_read, NULL },
+    { LINK_PAGE_PROG_SUPPLY, LINK_PS_COUNT, psup_read,      psup_write },
+    { LINK_PAGE_ESC_WIRE,  LINK_EW_COUNT,  esc_read,       esc_write },
+    { LINK_PAGE_ESC_DATA,  LINK_ED_COUNT,  esc_data_read,  esc_data_write },
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
       update_hw_ctl_write },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
       update_hw_data_write },
+#if IOMCU_CONSOLE
+    /* The console's bytes over the link; debug builds only. */
+    { LINK_PAGE_CONSOLE, LINK_CN_PAGE_REGS, console_hw_page_read, console_hw_page_write },
+#endif
 };
 
 /* ---------------------------------------------------------------- the loop */
@@ -304,9 +315,27 @@ static void outputs_off(void)
 static bool flash_busy(void)
 {
     return flash_gate_busy(outputs_driving(&s_outputs),
-                           s_supply.regs[LINK_SP_OUTPUT] != 0u,
+                           s_supply.regs[LINK_SP_OUTPUT] != 0u
+                               || s_psup.drive,
                            s_pd_open && pdmini_may_be_on(&s_pd),
                            ports_quiet() != 0u);
+}
+
+/**
+ * @brief Drive the programming ports' 5V enable low, before anything else
+ *        runs; psup_pass() drives it from the main loop on.
+ *
+ * @param r  The board's roles, or NULL for a board without the switch: then
+ *           nothing is touched.
+ */
+static void prog_5v_off(const outbind_roles_t *r)
+{
+    if (r == NULL) {
+        return;
+    }
+    gpio_init(r->prog_5v_en);
+    gpio_put(r->prog_5v_en, false);
+    gpio_set_dir(r->prog_5v_en, GPIO_OUT);
 }
 
 /**
@@ -316,6 +345,13 @@ static bool flash_busy(void)
  */
 int main(void)
 {
+    /*
+     * The programming ports' 5V off before anything else, on a board that
+     * switches it (the rbmod carrier's GP21).  The PROG_SUPPLY page drives
+     * it from the main loop on, off until the panel or a port asks.
+     */
+    prog_5v_off(outbind_roles(IOMCU_BOARD_ID));
+    psup_init();
     stdio_init_all();
     /* Why this start happened, before anything else runs. */
     reset_start();
@@ -372,6 +408,22 @@ int main(void)
      */
     static out_store_t saved;            /* 288 bytes, off main()'s frame */
     const bool have_saved = out_store_load(&saved);
+    /*
+     * A board with soldered pins starts each role on its pin, whatever the
+     * flash kept: a record written by the image of another board keeps its
+     * enables, ranges and endpoints and none of its pins
+     * (board_fix_store()).  Its interfaces are restored from that even with
+     * nothing kept, so the PD mini, the sensor bus and the tap start on
+     * their pins, disabled.
+     */
+    const outbind_roles_t *roles = outbind_roles(IOMCU_BOARD_ID);
+    if (roles != NULL) {
+        if (!have_saved) {
+            out_store_cfg_defaults(&saved);
+        }
+        board_fix_store(roles, &saved);
+    }
+    const bool have_ifaces = have_saved || roles != NULL;
     if (have_saved) {
         memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
         /* A kept slew above LINK_CC_SLEW_MAX starts as that maximum, here
@@ -459,6 +511,7 @@ int main(void)
         .driver     = hitec_line_driver(&s_hitec_line),
     };
     (void)hitec_port_init(&s_hitec, &hitec_hw);
+    esc_init();
     hw_apply();
     /*
      * The PD mini's wiring, as last written, driven with the output off: a
@@ -468,7 +521,7 @@ int main(void)
      * and after the slots' hardware, so the UART takes what PIO the outputs
      * leave, as it does when written at run time, and never displaces one.
      */
-    if (have_saved
+    if (have_ifaces
         && supply_page_write(&s_supply, LINK_SP_ENABLE, LINK_SP_OUTPUT,
                              saved.supply, &s_outputs, false) == 0u) {
         if (!supply_rewire()) {
@@ -476,6 +529,9 @@ int main(void)
             (void)supply_rewire();
         }
     }
+    /* And switched off now, before the rest of the start (supply_boot_off()):
+     * a module this end left on has been on for as long as it was gone. */
+    supply_boot_off();
     /*
      * The sensor bus's set-up, through the page's own checks as well: after
      * the slots and the supply, so a pin either already holds is refused and
@@ -492,7 +548,7 @@ int main(void)
      * cannot reach that state with the tap running: it is refused, so the
      * order here and the one at run time agree.
      */
-    if (have_saved) {
+    if (have_ifaces) {
         /* The map, kept in force, after the SENSE frame it mirrors, and
          * only when that frame was taken: a map refused stays derived. */
         if (sense_page_write(&s_sense, LINK_SN_ENABLE,
@@ -519,13 +575,13 @@ int main(void)
      * record's (4.26), else port 0 SERVO PWM and the others NONE.
      */
     uint16_t prog_kept[PROG_PORT_KEPT_COUNT];
-    if (have_saved) {
+    if (have_ifaces) {
         memcpy(prog_kept, saved.prog, sizeof(prog_kept));
     } else {
         prog_port_defaults(prog_kept, PROG_PORT_DEFAULT_PIN);
     }
     prog_port_restore_fn(&s_prog, prog_kept,
-                         have_saved ? saved.prog_func : 0u, &s_outputs,
+                         have_ifaces ? saved.prog_func : 0u, &s_outputs,
                          supply_page_pins(&s_supply) | sense_page_held(&s_sense)
                              | tone_page_pins(&s_tone));
     reserve_held();
@@ -555,6 +611,8 @@ int main(void)
     /* The bench console on the same pages, through link_dev_apply(): it
      * does not feed the link's silence watchdog. */
     console_hw_init(&s_dev);
+    /* The first line a panel or a USB host reads, however late it comes. */
+    reset_say();
 #endif
 
     heartbeat_init();
@@ -701,6 +759,7 @@ int main(void)
                           now);
         kst_port_bench_armed(&s_kst, arm_now);
         hitec_port_bench_armed(&s_hitec, arm_now);
+        esc_port_bench_armed(&s_esc, arm_now);
         /*
          * The KST port: a failsafe edge and a disarm stop its session, and
          * no frame starts while the heartbeat or the link is not trusted.
@@ -713,12 +772,17 @@ int main(void)
         /* The HITEC port the same way: a stop cuts its transaction and
          * keeps the port with the pin released. */
         hitec_port_step(&s_hitec, port_safe, port_stop, now);
+        /* The ESC the same way, and an update that started stops it. */
+        esc_port_step(&s_esc, port_safe, port_stop || update_hw_holds_arm(),
+                      now);
+        ports_hold_follow();
         s_kst_armed = arm_now;
         ports_exclusive();
         outputs_hw_ports_drive(ports_pulsing());
         sense_page_ports(&s_sense, ports_pulsing());
-        /* And the SUPPLY page told that a port commands the module. */
-        supply_page_hold(&s_supply, ports_hold_supply());
+        /* And the SUPPLY page told that a port commands the module, and
+         * whether it writes. */
+        ports_tell_supply();
         /* The edge into driving starts a run on core 1: its peaks and the
          * INA228's totals.  One compare a pass, an order on the edge. */
         const bool driving_now = outputs_driving(&s_outputs);
@@ -748,39 +812,21 @@ int main(void)
             sense_order();
         }
         /* The supply: its bytes in, a step of its driver, and the output off
-         * whenever the panel's heartbeat is not there to switch it off. */
-        /* The page first, so a heartbeat lost this pass reaches the driver
-         * as an OFF before it steps and can send an ON already queued. */
-        /* An OFF of this pass waits for the end of a frame the
-         * programming port has on the wire. */
-        supply_page_port_frame(&s_supply,
-                               kst_port_frame_out(&s_kst)
-                                   || hitec_port_frame_out(&s_hitec, now),
-                               now);
-        supply_page_step(&s_supply, safety_gate_supply_ok(&s_beat, &s_dev),
-                         s_pd_open ? &s_pd : NULL);
-        /* A wiring change whose state read has just shown the module off:
-         * taken now, before the driver's next transaction, so the module
-         * has no time to come on between that read and the rewire. */
-        uint16_t wire_next[4];
-        if (supply_page_wire_ready(&s_supply, wire_next)) {
-            (void)supply_take(LINK_SP_ENABLE, 4u, wire_next, true);
-        }
-        if (s_pd_open) {
-            uint8_t b;
-            while (pd_uart_getc(&b)) {
-                pdmini_rx(&s_pd, b, now);
-            }
-            pdmini_step(&s_pd, now);
-            /* Under AUTO, the next rate after a WHO_AM_I nothing answered
-             * validly -- between transactions, with the pins at rest. */
-            const uint8_t rate = supply_page_rate(&s_supply, &s_pd);
-            if (rate != s_pd_rate
-                && (s_pd.phase == PD_IDLE || s_pd.phase == PD_GAP)) {
-                pd_uart_baud(supply_page_baud(rate));
-                s_pd_rate = rate;
-            }
-        }
+         * whenever the panel's heartbeat is not there to switch it off.  A
+         * port's write, as the ports' steps above left it, keeps the
+         * panel's OFF of a held supply back until it ends. */
+        /* On a board that switches the ports' own supply the ports' frame
+         * and write are that supply's business, and the PD mini feeds the
+         * servo rails only. */
+        const bool own_supply = prog_supply_fitted(&s_psup);
+        const bool frame_out = kst_port_frame_out(&s_kst)
+                               || hitec_port_frame_out(&s_hitec, now);
+        const bool supply_ok = safety_gate_supply_ok(&s_beat, &s_dev);
+        supply_pass(now, !own_supply && frame_out,
+                    (!own_supply && ports_writing()) || esc_port_writing(&s_esc),
+                    supply_ok);
+        psup_pass(now, own_supply && frame_out,
+                  own_supply && ports_writing(), supply_ok);
         outputs_step(&s_outputs, now);
         /* Straight after the step, so what reaches a pin is what the bank
          * has just decided rather than what it decided a pass ago. */
@@ -816,12 +862,13 @@ int main(void)
          *
          * Writing flash stops this core with interrupts off -- an erase and a
          * program together measured 19,178us on the bring-up module -- and
-         * what that costs is CAN frames: the controller holds two, about
-         * 130us each, and this loop collects none of them while the window is
-         * open.  A frame lost there can be the CONTROL write that disarms, and this
-         * loop steps no output while the window is open either, so the save
-         * waits for a disarm: out_store_tick() is gated on outputs_driving(),
-         * which is the bank's armed flag.
+         * what that costs is time.  The panel sends one request frame per
+         * exchange and waits for its answer before the next, so at most one
+         * frame waits in the controller's two buffers: the window delays that
+         * request by up to 19ms, against the panel's 1000ms wait, and loses
+         * none.  This loop answers nothing and steps no output while the window
+         * is open, so the save waits for a disarm: out_store_tick() is gated on
+         * outputs_driving(), which is the bank's armed flag.
          *
          * The heartbeat is not what bounds the window.  The line edges every
          * HEARTBEAT_PERIOD_MS (20ms) and is sampled by this loop, so an edge
@@ -851,11 +898,9 @@ int main(void)
                 (void)supply_rewire();
             }
             /*
-             * Printed because it is the number that decides whether a save
-             * costs a frame: this core answers nothing while it writes, the
-             * controller holds two frames of about 130us each, and a request
-             * lost there costs the panel 1000ms of waiting, which is past
-             * this end's 200ms silence failsafe.
+             * Printed because it is the number that bounds what a save
+             * costs: this core answers nothing and steps no output while it
+             * writes, and the panel's one request frame waits that long.
              */
             IOMCU_SAY("rcbench-iomcu: outputs saved, record %u, "
                       "program window %lu us\n",
@@ -933,7 +978,7 @@ int main(void)
         s_now_ms = now;
 
         /* Straight after the report: printing to a USB host can take
-         * milliseconds, and the part holds two frames. */
+         * milliseconds, and the panel's request waits for this. */
         can_service(now);
     }
 }

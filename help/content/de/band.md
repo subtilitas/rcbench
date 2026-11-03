@@ -10,7 +10,7 @@ Das Statusband sind die oberen 60px jedes Bildschirms außer dem Splash, dem Bus
 
 ## Was das Band zeigt
 
-Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann STOP am rechten Rand.
+Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann "?" auf einem Bildschirm mit Hilfe, dann STOP am rechten Rand.
 
 | Chip | Zeigt |
 |---|---|
@@ -73,16 +73,53 @@ Der Kasten von FEHLER reicht über das Panel, 1008px, mit einem Absatz je gesetz
 
 Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 
+## Screenshot
+
+Den leeren Teil des Bands 1s halten, zwischen Home-Tag und den Chips. Nichts auf dem Panel markiert die Stelle. Die Notiz im Band sagt nach 1s `Screenshot aufgenommen.`, das Loslassen tut nichts. Ein Druck auf einen Chip, das Home-Tag, "?" oder STOP ist kein Screenshot, ebenso wenig ein Gleiten aus der Lücke, ein zweiter Finger oder ein verlorener Touch.
+
+Das Bild ist, was das Panel zeigt, samt Band, auch über einer Box, einer Liste oder einem Tastenfeld. Es entsteht auch in ARMED sofort und berührt keinen Ausgang; STOP und DISARM bleiben aktiv. Ein Bild bleibt im Speicher: Ein weiteres Halten ersetzt es, ein Neustart verliert es. Splash, Bus-Fehler-Bildschirm, PANEL UPDATE und der Fortschritt eines IOmcu-Updates haben kein Band und kein Halten.
+
+![Das Popup des Screenshots](view:shot-popup)
+
+Das Popup öffnet sich, sobald der Prüfstand ruht und sonst nichts offen ist: SAFE, Netzteil und PROG 5V aus, kein Port gehalten, keine Programmier-Session, kein Sweep, Test oder Lauf, kein Update, kein FAULT, kein Log offen, der Link da oder der Prüfstand simuliert. Endet das, schließt sich das Popup und das Bild wartet wieder.
+
+- Die Tastatur ändert den Namen, standardmäßig `SHOT` und die nächste Nummer, bis 55 Bytes. `.PNG` bleibt.
+- `SICHERN` schreibt `screenshots/<Name>.PNG` auf die Karte und legt den Ordner an, wenn er fehlt. Ein vergebener Name wird abgelehnt; nichts wird überschrieben.
+- CANCEL verwirft das Bild. Ein Fehler, keine Karte oder eine volle Karte, bleibt auf dem Popup, das Bild bleibt erhalten.
+- Die Datei ist ein PNG von 1024 x 600px, für jeden Browser und PC. Sie zeigt sich in [FILES](files.md) und auf der Wi-Fi-Seite.
+
+## Die Bildschirmhilfe
+
+![Die Hilfe des Menüs auf Seite 1](view:help-overview)
+
+"?", 8px links von STOP, öffnet die Hilfe des Bildschirms, der oben ist. Das Menü hat eine; die anderen Bildschirme zeigen noch kein "?". Die Hilfe nummeriert bis zu 5 Bedienelemente des Bildschirms mit einem Abzeichen und Winkeln an den Ecken und listet sie in einem Dock von 480 x 488px auf einer Hälfte des Bildschirms: den Namen jedes Bedienelements, dann was es tut, in höchstens 3 Zeilen. Die andere Hälfte läuft weiter. Die letzte Zeile des Docks nennt die Adresse dieser Hilfe.
+
+- VORIGE und NÄCHSTE blättern. Sie stehen im Band an der Stelle des Home-Tags, auf jeder Seite an derselben Stelle; ein zweiter Tipp dorthin, wo der erste lag, blättert also weiter. SCHLIESSEN unten im Dock oder ein Tipp auf "?" schließt die Hilfe.
+- Ein Tipp an jede andere Stelle schließt sie und tut sonst nichts.
+- STOP wirkt durch die Hilfe: Ein Druck auf STOP schließt sie und stoppt sofort. DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken mit demselben Druck, wie ohne Hilfe.
+- Der Knopf bewegt nichts, solange die Hilfe offen ist.
+- In ARMED zeigt die Hilfe nur die Seiten, die kein Bedienelement verdecken, das einen Ausgang anhält, und keine ZIEL-Zeile.
+
 ## Das Alert-Band
 
 ![Ein Alert über den unteren Rand des Menüs](view:overview-alert)
 
 Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 44px hoch, über den unteren Rand des Bildschirms. Es verdeckt, was darunter liegt; ARM und die Bedienelemente, die den Prüfstand anhalten, enden darüber.
 
-- Es verschwindet 30s nach seinem Eintreffen. Ein neuer Alert startet die 30s neu.
+- Es verschwindet 30s nach seinem Eintreffen. Ein neuer Alert startet die 30s neu. Eine Meldung, der Hinweis eines [Halte-Buttons](#halte-buttons), steht 4s in Bernstein und weicht einem Alert.
 - Ein Tipp auf das Band, rechts mit einem `x` markiert, löscht es früher. Der Bildschirm darunter bekommt weder diesen Tipp noch einen zweiten Finger auf dem Band.
 - DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN enden über dem Band: Ein Druck darauf gehört dem Bedienelement, und der Alert bleibt. ARM und AUSGANG EIN unter dem Band werden nicht gedrückt.
 - "Touchscreen antwortet nicht. ARMED ist gesperrt.", beim Start gezeigt, bleibt bis zum Neustart und hat kein `x`.
+
+## Halte-Buttons
+
+Ein Halte-Button wirkt nach 2s Kontakt. ARM, AUSGANG EIN, START TEST, START LIMIT RUN, ÜBERNEHMEN und jeder Button mit der Beschriftung `2s HALTEN ZUM ...` sind Halte-Buttons. Ein Loslassen vor 2s sendet nichts und zeigt den Hinweis des Buttons 4s lang im Alert-Band, in Bernstein statt Rot, zum Beispiel `Halte 2s, um auf ARMED zu schalten.`
+
+- Der Hinweis erscheint nur bei einem Loslassen, das der Finger auf dem Button gemacht hat. Er erscheint nicht, wenn der Finger vorher vom Button gerutscht ist, wenn der Touch verloren ging, bei dem Kontakt eines zweiten Fingers und auf einem Bildschirm ohne Statusband.
+- Ein Loslassen bei 2s oder später hat gewirkt und zeigt keinen Hinweis.
+- Ein kurzes Tippen ist keine Störung, also ist der Hinweis eine Meldung und kein Alert: Ein Tipp auf das Band löscht ihn früher, ein stehender Alert behält das Band und kein Hinweis erscheint darüber, und ein Alert, der während des Hinweises kommt, ersetzt ihn.
+- STOP löscht den Hinweis sofort, ebenso ein neuer FEHLER-Code oder ein Wechsel von ARMED nach SAFE durch einen Fehler.
+- Die Hinweise, einer je Aktion, jeweils nach `Halte 2s, um`: `auf ARMED zu schalten.`, `den Ausgang einzuschalten.`, `zu übernehmen.`, `den Test zu starten.`, `den Endlagenlauf zu starten.`, `freizugeben.`, `zu schreiben.`, `zurückzuspielen.`, `fortzufahren.`, `zu verlassen.`, `zu laden.`, `den Port freizugeben.`, `zu reparieren.`, `zu starten.`, `zu installieren.`, `zu laden und zu installieren.`, `den IOmcu zu aktualisieren.` und `alle Pin-Zuordnungen zu löschen.`
 
 ## Berührungen nahe am Band
 

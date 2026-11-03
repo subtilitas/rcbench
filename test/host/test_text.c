@@ -410,10 +410,8 @@ TEST_CASE(translated_settings_fit_where_they_are_drawn)
         }
         /* A tile's line under its name, in 32 cells of the label face. */
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_OUTPUTS)) <= 32);
-        CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_PICKER)) <= 32);
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_WIFI)) <= 32);
         CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_UPDATES)) <= 32);
-        CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_FILES)) <= 32);
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -464,7 +462,7 @@ TEST_CASE(the_language_follows_the_setting)
     CHECK_EQ(ui_text_language(), UI_LANG_DE);
     CHECK_STR_EQ(TR(CANCEL), "ABBRECHEN");
     CHECK_STR_EQ(ui_setting_label(SET_PACK_CELLS), "Zellen");
-    CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE), "INTERFACES");
+    CHECK_STR_EQ(ui_setting_category(SET_CAT_PDMINI), "PD MINI");
     CHECK_STR_EQ(ui_servo_str(SERVO_STR_PASS), "BESTANDEN");
     settings_set(SET_LANGUAGE, 0.0f);
     settings_apply_ui();

@@ -80,6 +80,13 @@ void pdmini_restored(pdmini_t *d)
     }
 }
 
+void pdmini_hurry(pdmini_t *d, bool on)
+{
+    if (d != NULL) {
+        d->hurry = on;
+    }
+}
+
 void pdmini_reset(pdmini_t *d)
 {
     if (d != NULL) {

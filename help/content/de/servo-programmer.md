@@ -53,7 +53,15 @@ WEITERES stellt, solange der Tester den Port hat, was VERBINDEN anwendet:
 ![Ein PD mini antwortet](view:servo-kst-supply)
 ![Die Versorgung im Programmiermodus](view:servo-kst-supplied)
 
-Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Netzteils dem Port: Die Zeile SOLL und der Bildschirm SUPPLY nehmen keine Änderung und kein EIN an. AUSGANG AUS und STOP wirken. Ohne PD mini werden Spannung und Stromgrenze gespeichert und nicht angewendet.
+Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Netzteils dem Port: Die Zeile SOLL und der Bildschirm SUPPLY nehmen keine Änderung und kein EIN an. AUSGANG AUS und STOP wirken. Ohne PD mini werden Spannung und Stromgrenze gespeichert und nicht angewendet. Wieder in PWM kehren die Sollwerte von vor der Sitzung zurück, sobald der Ausgang aus ist, beim nächsten AUS, wenn die Sitzung ihn eingeschaltet gelassen hat; ein zwischendurch geänderter Sollwert bleibt.
+
+![Die Frage nach dem Verlassen](view:servo-hitec-restore-ask)
+
+Ein Verlassen, das den Ausgang bei den Sollwerten der Sitzung eingeschaltet lässt, während die Sollwerte von vor der Sitzung andere sind, lässt SERVO fragen, sobald der Port in PWM ist: `Deine Versorgungs-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang wiederherstellen?` JA gibt dem eingeschalteten Ausgang beide; eine Spannung, die von 6,0V oder darunter über 6,0V steigt, öffnet zuerst NUR HV-SERVOS. NEIN behält die der Sitzung bis zum nächsten AUS. Die Frage kommt einmal je Verlassen, wartet auf Tastenfelder, Listen, Warnungen und Fragen von SERVO und das Halten von AUSGANG EIN, und kommt nicht, solange ein Port das Netzteil hält, nach einem AUS, einem Fehler oder einem STOP, innerhalb eines Endlagenlaufs oder wenn sich seitdem ein Sollwert änderte. Nur ein Verlassen fragt: PORT FREIGEBEN, ein STOP, ein Fehler, ein verlorener Link, ein Neustart des Panels oder des IOmcu, ein Port, den der IOmcu ohne Verlassen zurückgibt, und Ports, die unter einer Sitzung auf ihre eigene Versorgung wechseln, beenden das Halten ohne die Frage, und die Sollwerte der Sitzung bleiben bis zum nächsten AUS. Der Hitec-Programmierer fragt ebenso.
+
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) laufen die Programmierports an eigenen 5V, geschaltet über GPIO 21, nicht am PD mini; WEITERES zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21`. Die Sitzung schaltet die 5V dort, wo die Tabelle unten den Ausgang des PD mini schaltet. Das Feld PROG 5V unter PD MINI zeigt dann `BELEGT VON PROG-PORT n` und nimmt keinen Druck an. Ohne Sitzung schaltet das Feld die 5V von Hand: PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp.
+
+![Der KST-Programmer hält die 5V](view:servo-kst-rbmod)
 
 ## Der Versorgungszyklus
 
@@ -190,6 +198,12 @@ Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu st
 ![VERLASSEN nach einem Schreiben mit PD mini](view:servo-kst-leave-cycle)
 
 VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, und das Servo kann fahren. Nach einem Schreiben mit PD mini sagt die Seite, dass der Ausgang zuerst 1s aus und wieder an geht; ohne PD mini sagt sie, dass die Werte nach Aus- und Einschalten der Versorgung wirken. Ohne Geschriebenes bleibt die Versorgung, wie sie ist. 2s HALTEN ZUM VERLASSEN übernimmt es nach 2s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
+
+## Hitec-D-Empfang
+
+WEITERES listet Hitec-D-Empfang, solange der Tester den Port hat. PULL-UP (die Vorgabe) braucht einen Widerstand von 2,2kΩ von der Signalleitung zur Servoversorgung. PRECHARGE braucht keinen: der IOmcu treibt das Pad alle 1,09us für 100ns auf High und tastet es 113ns später ab. Der IOmcu nimmt den Wert beim nächsten OPEN einer Leitung der D-Serie, deshalb gibt es in einer Sitzung keine Änderung: VERLASSEN, setzen, VERBINDEN. classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen ihn. Ein IOmcu mit 0.21.1 oder 0.21.2 (Protokoll 4.23) empfängt mit PULL-UP; mit PRECHARGE lautet die Liste dann `IOmcu älter als 0.22.0: empfängt mit PULL-UP.` Ein IOmcu älter als 0.21.1 hat keine Hitec-Leitung; mit PRECHARGE lautet die Liste `IOmcu älter als 0.21.1: keine Hitec-Leitung.`
+
+![Die Liste von Hitec-D-Empfang](view:servo-hitec-rx)
 
 ## Verwandte Seiten
 

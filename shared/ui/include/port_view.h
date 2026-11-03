@@ -1,10 +1,11 @@
-/*
- * The programming ports as the screens see them, and the operator's asks
+/**
+ * @file
+ * @brief The programming ports as the screens see them, and the operator's asks
  * that change one (protocol 4.26).
  *
  * The control task reads the IOmcu's PROG page (prog_link.h) and hands
  * the UI task what each port holds: its PIN register, whether the IOmcu
- * refused that pin, and its FUNC.  OUTPUTS and PICK A PIN draw from this
+ * refused that pin, and its FUNC.  both views of OUTPUTS draw from this
  * view.  A port's PIN and FUNC are the IOmcu's, kept in its flash; a
  * screen changes one only by asking (port_view_ask()), which the control
  * task carries to prog_link_ask() and writes on a bench at rest.  The
@@ -55,7 +56,17 @@ void port_view_unknown(port_view_t *v);
 /** The view as the control task last read it; a change bumps
  *  port_view_revision(). */
 void port_view_set(const port_view_t *v);
+/**
+ * @brief The view as last set.
+ *
+ * @return The view.
+ */
 const port_view_t *port_view_get(void);
+/**
+ * @brief Counts the changes of the view.
+ *
+ * @return The count.
+ */
 uint32_t port_view_revision(void);
 
 /** Whether port @p port is one the IOmcu has, as last read. */
@@ -79,6 +90,11 @@ const char *port_view_fn_name(uint8_t fn);
 /** Where an ask goes: true when the control task took it. */
 typedef bool (*port_view_ask_fn)(uint8_t seq, uint8_t port,
                                  prog_link_ask_kind_t kind, uint16_t value);
+/**
+ * @brief Sets where an ask goes.
+ *
+ * @param fn The hook.
+ */
 void port_view_set_ask(port_view_ask_fn fn);
 
 /**
@@ -93,6 +109,13 @@ bool port_view_ask(uint8_t port, prog_link_ask_kind_t kind, uint16_t value);
  *  older ask is ignored. */
 void port_view_set_ask_state(uint8_t seq, prog_link_ask_state_t st);
 
+/**
+ * @brief What the last ask waits on, for its line.
+ *
+ * @param wait A prog_link_wait_t.
+ */
+void port_view_set_ask_wait(prog_link_wait_t wait);
+
 /** The last ask: where it stands, and its port and kind (may be NULL). */
 prog_link_ask_state_t port_view_ask_state(uint8_t *port, uint8_t *kind);
 
@@ -100,10 +123,15 @@ prog_link_ask_state_t port_view_ask_state(uint8_t *port, uint8_t *kind);
 uint8_t port_view_ask_seq(void);
 
 /**
- * The line a screen shows for port @p port's last ask: waiting for a
- * bench at rest, refused, or the link lost before the write.  False and
+ * @brief The line a screen shows for port @p port's last ask: what it waits on,
+ * refused, or the link lost before the write.  False and
  * an empty string when the last ask was for another port, is done, or
  * there was none.  The amber line under the port's rows.
+ *
+ * @param port The port.
+ * @param buf  Takes the line.
+ * @param cap  Its size.
+ * @return true when there is a line.
  */
 bool port_view_ask_line(uint8_t port, char *buf, size_t cap);
 

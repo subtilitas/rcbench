@@ -5,7 +5,8 @@
  *
  * A bench tool, not part of a released image: the IOmcu builds it only
  * with the build option IOMCU_CONSOLE (firmware/iomcu/CMakeLists.txt) and
- * reads its lines from the USB (Universal Serial Bus) serial port.
+ * reads its lines from the USB (Universal Serial Bus) serial port, and over
+ * the link's CONSOLE page (console_tunnel.h).
  *
  * Every request goes through link_dev_apply(): the page table, the range
  * checks, the handlers and their refusals are the link's.  Whatever a page
@@ -41,6 +42,13 @@
  *   hitec c <port> <cmd> <p1> <p2>          a classic command and its reply
  *   hitec d <port> read <id> <addr>         a D series read and its answer
  *   hitec d <port> write <id> <addr> <value>
+ *
+ * `more` as the last token of send, listen, level, power, c or d sets
+ * LINK_HT_W_CMD_MORE in that command: more steps of this write follow.
+ * The writer puts it on every step of a write to the servo's memory but
+ * the last; while it stands the SUPPLY page holds the panel's OFF back
+ * from the servo's supply, 10000ms after the OFF at most
+ * (SUPPLY_PAGE_WRITE_WAIT_MS).
  *
  * <dec> is none, c:<cmd>, d:<addr> or l:<byte> (link_hitec_dec_t and its
  * argument).  The hitec commands stage the HITEC page's registers, name
@@ -87,13 +95,24 @@ extern "C" {
 #define PAGE_CONSOLE_OUT_MAX 2048u
 
 /**
+ * @brief A build's own console command: a line none of the commands here took.
+ * @param ctx the context given to page_console_set_ext()
+ * @param tok the line's tokens
+ * @param n   how many, 1 or more
+ * @return true when the line was its own; false gives `err unknown command`
+ */
+typedef bool (*page_console_ext_fn)(void *ctx, char **tok, unsigned n);
+
+/**
  * @brief The console state: the command line being read, the output buffer,
  *        the staged HITEC registers and the work space of the requests.
  */
 typedef struct {
     const link_dev_t *dev;
-    char     line[PAGE_CONSOLE_LINE_MAX + 1u];
-    uint16_t len;
+    page_console_ext_fn ext; /**< a build's own commands, or NULL */
+    void    *ext_ctx;        /**< and its context */
+    char     line[PAGE_CONSOLE_LINE_MAX + 1u]; /**< the line so far */
+    uint16_t len;        /**< its characters */
     uint8_t  overlong;   /**< the line ran past PAGE_CONSOLE_LINE_MAX */
     char     out[PAGE_CONSOLE_OUT_MAX];  /**< the output ring */
     uint16_t head;       /**< the next byte to take */
@@ -101,6 +120,7 @@ typedef struct {
     uint32_t dropped;                   /**< bytes dropped from the output ring */
     uint16_t staged[LINK_HT_W_STAGED];  /**< the registers staged for the HITEC page */
     uint8_t  watch;      /**< a HITEC operation runs: report its end */
+    uint8_t  more;       /**< the line's step carries LINK_HT_W_CMD_MORE */
     /* Work space, here rather than on the caller's stack. */
     char       fmt[PAGE_CONSOLE_OUT_LINE];
     link_msg_t req;
@@ -116,6 +136,23 @@ typedef struct {
  * @param dev The link device whose pages the console reads and writes.
  */
 void page_console_init(page_console_t *c, const link_dev_t *dev);
+
+/**
+ * @brief A number as the console reads one: decimal or 0x hexadecimal, digits
+ *        only, up to 32 bits.
+ * @param s   the text, may be NULL
+ * @param out takes the value, may be changed on a refusal
+ * @return false for anything else: no digit, a sign, a letter after the digits
+ */
+bool page_console_number(const char *s, uint32_t *out);
+
+/**
+ * @brief Hand lines no command here takes to @p fn.
+ * @param c   the console
+ * @param fn  the handler, NULL for none
+ * @param ctx its context
+ */
+void page_console_set_ext(page_console_t *c, page_console_ext_fn fn, void *ctx);
 
 /**
  * @brief One character in.

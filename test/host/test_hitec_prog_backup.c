@@ -66,6 +66,7 @@ static void d_ready(void)
 /* The write runs to its end: held, nothing running. */
 static void written(void)
 {
+    reread();
     for (unsigned i = 0; i < 60000u
                          && (pstate() == HITEC_PROG_BACKUP
                              || pstate() == HITEC_PROG_RECORDING

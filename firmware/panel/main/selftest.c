@@ -1,6 +1,7 @@
-/*
- * The CAN (Controller Area Network) bring-up self-test; selftest.h says what
- * it answers.
+/**
+ * @file selftest.c
+ * @brief The CAN (Controller Area Network) bring-up self-test; selftest.h
+ *        says what it answers.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,14 +19,30 @@
 #include "can_selftest.h"
 #include "can_twai.h"
 
+/** @brief How long the replies left over from the wait are read, ms. */
+#define SELFTEST_DRAIN_MS 100u
+
+/** @brief Log tag. */
 static const char *TAG = "rcbench";
 
+/**
+ * @brief Time since boot.
+ *
+ * @return Milliseconds, wrapping at 2^32.
+ */
 static uint32_t now_ms(void)
 {
     return (uint32_t)(esp_timer_get_time() / 1000);
 }
 
-/* Ask the far end what it can see.  False if it did not answer. */
+/**
+ * @brief Ask the far end what it can see.
+ *
+ * Sends up to 5 requests and waits 50ms for each answer.
+ *
+ * @param out  Receives the far end's status.
+ * @return     false if it did not answer.
+ */
 static bool can_ask_remote(can_remote_status_t *out)
 {
     for (int try = 0; try < 5; ++try) {
@@ -51,7 +68,53 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
      * the echo phase turns it into one.
      */
     can_remote_status_t before;
-    const bool have_before = can_ask_remote(&before);
+    bool have_before = false;
+    /*
+     * The far end first.  The IOmcu opens CAN after its supply boot-off,
+     * up to 3500ms after a cold start, and a run before that finds no node
+     * on the bus.  Its first answer ends the wait and is the baseline.
+     */
+    const uint32_t wait0 = now_ms();
+    for (;;) {
+        have_before = can_ask_remote(&before);
+        if (!can_selftest_wait_more(now_ms() - wait0, have_before)) {
+            break;
+        }
+        (void)can_twai_recover();
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+    if (have_before) {
+        ESP_LOGI(TAG, "CAN self-test: the IOmcu answered after %lums",
+                 (unsigned long)(now_ms() - wait0));
+    } else {
+        ESP_LOGW(TAG, "CAN self-test: no answer in %ums, testing anyway",
+                 (unsigned)CAN_SELFTEST_WAIT_MS);
+    }
+    /*
+     * The wait's requests still in the transmit queue go out once the IOmcu
+     * acknowledges, and their replies follow the first.  They are read
+     * here, the newest kept as the baseline, so the run and the reading
+     * after it find none left over.  SELFTEST_DRAIN_MS bounds it.
+     */
+    if (have_before) {
+        const uint32_t drain0 = now_ms();
+        link_can_frame_t in;
+        while ((uint32_t)(now_ms() - drain0) < SELFTEST_DRAIN_MS
+               && can_twai_recv(&in, 10)) {
+            can_remote_status_t later;
+            if (can_selftest_status_parse(&in, &later)) {
+                before = later;
+            }
+        }
+    }
+    /*
+     * The wait's unanswered frames are in the controller's counters.  The
+     * bus error count is taken as a difference over the run; the transmit
+     * error counter falls by one per acknowledged frame, so a count of 128
+     * left from the wait does not mean nobody is answering now.
+     */
+    uint32_t tec0 = 0, bus_err0 = 0;
+    (void)can_twai_errors(&tec0, NULL, &bus_err0, NULL);
 
     can_selftest_t st;
     can_selftest_init(&st, 50);
@@ -59,10 +122,11 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
     uint32_t queue_full = 0;
     bool said_unacked = false;
 
+    int64_t sent_us = 0;
     while (now_ms() < until) {
         link_can_frame_t probe;
         if (can_selftest_probe(&st, now_ms(), &probe)) {
-            const int64_t sent_us = esp_timer_get_time();
+            sent_us = esp_timer_get_time();
             if (!can_twai_send(&probe, 10)) {
                 /*
                  * Counted, not printed: a bus with nobody on it fills the
@@ -70,11 +134,20 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
                  */
                 ++queue_full;
             }
-            link_can_frame_t in;
-            if (can_twai_recv(&in, 20)) {
-                can_selftest_rx(&st, &in,
-                                (uint32_t)(esp_timer_get_time() - sent_us));
-            }
+        }
+        /*
+         * Every frame that has come in until the probe's echo, for 20ms a
+         * pass, and in passes that sent nothing as well.  One read a probe
+         * let a frame that is not the echo -- a reply left over, a late
+         * echo -- hold the echo in the queue until its probe timed out, and
+         * every later echo one probe behind it.
+         */
+        const uint32_t rx0 = now_ms();
+        link_can_frame_t in;
+        while (st.waiting && (uint32_t)(now_ms() - rx0) < 20u
+               && can_twai_recv(&in, 5)) {
+            can_selftest_rx(&st, &in,
+                            (uint32_t)(esp_timer_get_time() - sent_us));
         }
         can_selftest_tick(&st, now_ms());
 
@@ -90,7 +163,7 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
          * quiet direction is the right one for a message that sends the
          * operator to the wiring. */
         (void)can_twai_errors(&tec, NULL, NULL, NULL);
-        if (!said_unacked && tec >= 128u) {
+        if (!said_unacked && tec >= 128u && (tec0 < 128u || !have_before)) {
             said_unacked = true;
             ESP_LOGE(TAG, "nothing is acknowledging: transmit errors reached "
                           "%lu, so no other node is answering on this bus",
@@ -110,6 +183,7 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
     uint32_t tx_err = 0, rx_err = 0, bus_err = 0;
     bool bus_off = false;
     (void)can_twai_errors(&tx_err, &rx_err, &bus_err, &bus_off);
+    bus_err -= bus_err0;
     st.bus_errors = bus_err;
 
     can_remote_status_t remote;

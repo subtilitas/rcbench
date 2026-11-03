@@ -453,6 +453,12 @@ hitec_link_start_t hitec_link_step(hitec_link_t *l, uint8_t port,
           op == LINK_HITEC_OP_SEND || x->answer != 0u
               ? (uint16_t)LINK_HITEC_WRITE_KEY : 0u,
           true);
+    /* More steps of this write follow: an IOmcu of 4.31 holds the panel's
+     * OFF of the port's supply until they have run; an older one refuses
+     * the bit. */
+    if (st->more != 0u && l->minor >= LINK_MINOR_PORT_CUT) {
+        l->cmd_proto[LINK_HT_W_CMD] |= LINK_HT_W_CMD_MORE;
+    }
     return HITEC_LINK_START_OK;
 }
 

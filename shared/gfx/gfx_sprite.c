@@ -1,7 +1,8 @@
 /**
  * @file
  * @brief gfx_sprite_draw(): a run-length encoded image with 4-bit alpha,
- *        blended onto a canvas.  See include/gfx_sprite.h.
+ *        blended onto a canvas.  See include/gfx_sprite.h.  And
+ *        gfx_fill_rect_blend(), a colour blended over a rectangle (gfx.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -124,4 +125,42 @@ bool gfx_sprite_draw(gfx_canvas_t *c, int x, int y, const gfx_sprite_t *sp)
         }
     }
     return p == end;
+}
+
+/**
+ * @brief An RGB565 colour spread over 32 bits, green in bits 21 to 26, red
+ *        in 11 to 15 and blue in 0 to 4, so each field has 5 bits of room
+ *        above it for a product with a weight of 0 to 32.
+ * @param p The colour.
+ * @return The spread colour.
+ */
+static inline uint32_t spread565(gfx_color_t p)
+{
+    return ((uint32_t)p | ((uint32_t)p << 16)) & 0x07E0F81Fu;
+}
+
+void gfx_fill_rect_blend(gfx_canvas_t *c, int x, int y, int w, int h,
+                         gfx_color_t color, uint8_t alpha)
+{
+    if (!canvas_ok(c)) {
+        return;
+    }
+    TRACE_BOX(c, x, y, w, h);
+    gfx_rect_t r;
+    if (!gfx_rect_intersect(gfx_rect_make(x, y, w, h), c->clip, &r)) {
+        return;
+    }
+    GFX_VISIT((unsigned long)r.w * (unsigned long)r.h);
+    GFX_DAMAGE(c, r.x, r.y, r.w, r.h);
+    /* The weight in 33 steps, 0 to 32: 255 is 32, the colour itself. */
+    const uint32_t a = ((uint32_t)alpha + 4u) >> 3;
+    const uint32_t over = spread565(color) * a;
+    for (int row = 0; row < r.h; ++row) {
+        gfx_color_t *px = c->pixels + (ptrdiff_t)(r.y + row) * c->stride + r.x;
+        for (int i = 0; i < r.w; ++i) {
+            const uint32_t m = ((spread565(px[i]) * (32u - a) + over) >> 5)
+                               & 0x07E0F81Fu;
+            px[i] = (gfx_color_t)((m & 0xF81Fu) | ((m >> 16) & 0x07E0u));
+        }
+    }
 }

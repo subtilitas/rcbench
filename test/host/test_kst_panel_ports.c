@@ -7,13 +7,19 @@
  * Under test: PORT 3 of a 4-port build entered, programmed on port 2 with
  * its GP14 and left; the same port without a pin refused; the row's
  * detail and its PORT IN USE, and its own session holding the port
- * keeping it live.
+ * keeping it live.  On the rbmod carrier at 4.36: the PORT row's label
+ * opens PROGP01 to PROGP04, an entry taken sets SERVO TESTER, the row
+ * names the port at its fixed 5V, and the list stays shut while the bench
+ * is ARMED.
  *
  * SPDX-License-Identifier: MIT
  */
 #include "kst_panel_rig.h"
 
+#include "prog5v_box.h"
+#include "prog_choice.h"
 #include "prog_registry.h"
+#include "ui_board.h"
 
 static const char *status(int i)
 {
@@ -104,10 +110,54 @@ TEST_CASE(the_program_row_names_the_port_and_its_use)
     prog_registry_set_ports(PROG_REG_NO_PORT, 0u);
 }
 
+/* The PORT row's label, left of its CONNECT button. */
+static void tap_port_label(void)
+{
+    const gfx_rect_t v = val(PG_SERVO, 0, 0);
+    ev(AREA.x + 12, cy(v), TOUCH_EVENT_DOWN, 1);
+    ev(AREA.x + 12, cy(v), TOUCH_EVENT_UP, 1);
+    show();
+}
+
+TEST_CASE(on_the_carrier_the_port_row_chooses_the_port)
+{
+    on_port_3(14u);
+    g_rig.target = 0u;
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    settle();
+    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), TR(HP_PORT_NONE));
+    /* ARMED: the list does not open. */
+    servo_screen_set_bench_armed(true);
+    tap_port_label();
+    CHECK_EQ(kst_panel_editor(), 0);
+    servo_screen_set_bench_armed(false);
+    /* The list: PROGP01 to PROGP04, the entry taken is SERVO TESTER. */
+    tap_port_label();
+    CHECK_EQ(kst_panel_editor(), 2);
+    tap(kst_panel_choice_rect(1));
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 2);
+    /* Open again: PROGP02 is marked as chosen when drawn. */
+    tap_port_label();
+    CHECK_EQ(kst_panel_editor(), 2);
+    tap(kst_panel_choice_rect(3));
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 4);
+    /* The tester on PROGP02: the row names it at its fixed 5V. */
+    settings_set(SET_SERVO_TARGET, 2.0f);
+    g_rig.target = 2u;
+    g_rig.pin_of[1] = 14u;
+    settle();
+    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 0, 0), "PROGP02 GPIO 14  5V FIXED");
+    prog_choice_reset();
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+}
+
 int main(void)
 {
     RUN(a_session_runs_on_the_port_the_tester_drives);
     RUN(a_port_without_a_pin_is_refused);
     RUN(the_program_row_names_the_port_and_its_use);
+    RUN(on_the_carrier_the_port_row_chooses_the_port);
     return test_summary("kst_panel_ports");
 }

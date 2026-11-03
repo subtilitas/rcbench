@@ -23,6 +23,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "shot_facts_rig.h"
 #include "esc_stick_panel_rig.h"
 #include "ui_widgets.h"
 
@@ -312,6 +313,7 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
         /* The supply the run switched on is ESC STICK's. */
         CHECK_EQ(supply_screen_owner(), SUPPLY_BY_STICK);
         CHECK(esc_stick_panel_profile() != NULL);
+        CHECK(!shot_facts_now().no_stick_run);
         esc_stick_reason_t want = ESC_STICK_R_LEFT;
         if (k == 0) {
             scr->leave();

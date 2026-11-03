@@ -150,7 +150,7 @@ typedef struct {
     void       (*render)(gfx_canvas_t *c);
     /** Changes whenever a render would show something else. */
     uint32_t   (*revision)(void);
-    /** Changes while a hold fills; hold_rect() is where. */
+    /** @brief Changes while a hold fills or a button's press shows; hold_rect() is where. */
     uint32_t   (*hold_revision)(void);
     gfx_rect_t (*hold_rect)(void);
     /** The host screen is left: presses and editors go, the port stays. */
@@ -200,13 +200,20 @@ void prog_registry_set_ports(uint8_t tester_port, uint8_t held);
 uint8_t prog_reg_port(const prog_reg_row_t *r);
 
 /**
- * @brief Whether a servo programmer holds a port: the KST programmer's
- *        session, or the Hitec programmer's, whose word counts a port the
- *        HITEC page names held by another session too.  ARM, the motor's
- *        TARGET row and a run that arms the bench wait for neither.
- * @return true while either holds one
+ * @brief Whether a programmer holds a pin: the KST programmer's session, the
+ *        Hitec programmer's, whose word counts a port the HITEC page names held
+ *        by another session too, or the ESC_WIRE page, any writer's.  ARM, the
+ *        motor's TARGET row and a run that arms the bench wait for none.
+ * @return true while one holds one
  */
 bool prog_reg_servo_holds(void);
+
+/**
+ * @brief The alert a programmer's hold gives an ARM: it names the holder.
+ * @return The ESC programmer's text while the ESC_WIRE page holds a pin, else the
+ *         servo programmer's.
+ */
+const char *prog_reg_hold_alert(void);
 
 /* ------------------------------------------------------------ the checks */
 

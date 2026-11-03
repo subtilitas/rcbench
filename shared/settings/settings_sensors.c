@@ -116,8 +116,28 @@ int settings_sensors_part(setting_id_t id)
     return ((int)id - (int)SET_INA_CH_0) / SET_INA_CH_ROWS / 3;
 }
 
+int settings_sensors_offered(const setting_def_t *d)
+{
+    if (d == NULL) {
+        return 1;
+    }
+    if (d->options == settings_opts_watch) {
+        return SENS_W_OFFERED;
+    }
+    return d->option_count ? d->option_count : 1;
+}
+
 uint16_t settings_sensors_watch_code(int option)
 {
+    if (option == SENS_W_RAIL_A) {
+        return (uint16_t)LINK_SM_WATCH_RAIL_A;
+    }
+    if (option == SENS_W_RAIL_B) {
+        return (uint16_t)LINK_SM_WATCH_RAIL_B;
+    }
+    if (option == SENS_W_PROG_5V) {
+        return (uint16_t)LINK_SM_WATCH_PROG_5V;
+    }
     if (option >= SENS_W_OUT_1 && option < SENS_W_PORT_1) {
         return (uint16_t)LINK_SM_WATCH_OUT(option - SENS_W_OUT_1);
     }
@@ -231,12 +251,32 @@ uint16_t settings_sensors_meter_dmohm(void)
     return m.one_on ? m.one_dmohm : 0u;
 }
 
+/** @brief The rail the servo tester's outputs are on, LINK_SM_WATCH_NONE
+ *         for none (settings_sensors_set_tester_rail()). */
+static uint16_t s_tester_rail = (uint16_t)LINK_SM_WATCH_NONE;
+
+bool settings_sensors_set_tester_rail(uint16_t code)
+{
+    if (code != (uint16_t)LINK_SM_WATCH_RAIL_A
+        && code != (uint16_t)LINK_SM_WATCH_RAIL_B) {
+        code = (uint16_t)LINK_SM_WATCH_NONE;
+    }
+    const bool moved = code != s_tester_rail;
+    s_tester_rail = code;
+    return moved;
+}
+
 /* Whether WATCH value @p code is the servo tester's target @p target:
- * any output for OUTPUTS (0), programming port n for n. */
+ * any output or the tester's rail for OUTPUTS (0), programming port n or
+ * the ports' 5V for n. */
 static bool watches_target(uint16_t code, int target)
 {
     if (target >= 1 && target <= (int)LINK_SM_PARTS) {
-        return code == (uint16_t)LINK_SM_WATCH_PORT(target - 1);
+        return code == (uint16_t)LINK_SM_WATCH_PORT(target - 1)
+               || code == (uint16_t)LINK_SM_WATCH_PROG_5V;
+    }
+    if (code != (uint16_t)LINK_SM_WATCH_NONE && code == s_tester_rail) {
+        return true;
     }
     return code >= (uint16_t)LINK_SM_WATCH_OUT(0)
            && code <= (uint16_t)LINK_SM_WATCH_OUT(7);

@@ -54,6 +54,7 @@ static struct {
     uint32_t now, next;
     uint16_t cmd;
     bool     released;
+    unsigned disarms;          /* DISARMs posted                      */
     bool     stepped;          /* a position went out with no slew   */
     float    set_v_max;        /* the highest set point while it ran */
     unsigned opens, opens_txt, csv, txt, ends;
@@ -181,6 +182,7 @@ static inline void bench_frames(uint32_t ms)
                        || sc.kind == SERVO_CMD_DISARM) {
                 bench.cmd = 1500u;
                 bench.released = true;
+                bench.disarms += (sc.kind == SERVO_CMD_DISARM) ? 1u : 0u;
             }
         }
         if (servo_screen_testing() && supply_screen_set_v() > bench.set_v_max) {

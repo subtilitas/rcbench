@@ -1895,7 +1895,7 @@ TEST_CASE(an_older_coprocessor_left_mixed_is_not_overwritten_by_a_tap)
     CHECK_EQ(outbind_chosen_total(outputs_screen_binding()), 0);
 }
 
-/* ------------------------------------------------------------ PICK A PIN */
+/* ------------------------------------------------- OUTPUTS' board view */
 
 #define SCREEN_W UI_PANEL_W
 #define SCREEN_H UI_BODY_H
@@ -2047,8 +2047,8 @@ TEST_CASE(the_pin_picker_follows_a_pick_that_wrote_nothing)
 /*
  * Opening the Outputs screen lands on the overview and sends nothing: no
  * exchange on the bus, the IOmcu's pages as they were.  A tap on a
- * pin there, on the grid or on PICK A PIN following it, calls no apply.
- * Left with OFF, both screens stay on it; PICK A PIN opens on it as well,
+ * pin there, on the grid or on the board view following it, calls no apply.
+ * Left with OFF, both views stay on it; the board view opens on it as well,
  * after a protocol picked on the Outputs screen too, and its tap writes
  * only once a protocol is picked in its own list.
  */
@@ -2088,7 +2088,7 @@ TEST_CASE(opening_the_outputs_overview_sends_nothing)
     tap(picker_screen(), bx, by);
     CHECK_EQ(panel.applied, 0);
 
-    /* SERVO PWM picked on the Outputs screen, then PICK A PIN opened: the
+    /* SERVO PWM picked on the Outputs screen, then the board view opened: the
      * picker selects OFF through its hook, so the next frame's follow
      * brings OFF and not SERVO PWM. */
     outputs_screen()->enter();

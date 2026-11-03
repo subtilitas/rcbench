@@ -244,6 +244,32 @@ TEST_CASE(a_new_report_restarts_the_gesture)
     CHECK(!busfault_screen_take_ack());
 }
 
+TEST_CASE(a_press_left_behind_by_leaving_acknowledges_nothing_later)
+{
+    /* The start-up fault is acknowledged and the screen closes under the
+     * finger, so the release goes to the next screen.  The next fault --
+     * a lost link -- waits for a new hold. */
+    fresh();
+    down(ack_cx(), ack_cy());
+    hold(HOLD_TICKS);
+    CHECK(busfault_screen_take_ack());
+    /* What ui_router_goto() does on the way out. */
+    if (scr()->leave != NULL) {
+        scr()->leave();
+    }
+
+    const busfault_report_t r = { .verdict = CAN_SELFTEST_SILENT,
+                                  .sent = 24, .lost = 23 };
+    busfault_screen_set(&r);
+    hold(HOLD_TICKS);
+    CHECK(!busfault_screen_take_ack());
+
+    /* And a new hold still acknowledges it. */
+    down(ack_cx(), ack_cy());
+    hold(HOLD_TICKS);
+    CHECK(busfault_screen_take_ack());
+}
+
 TEST_CASE(the_report_is_kept_and_handed_back)
 {
     fresh();
@@ -444,6 +470,7 @@ int main(void)
     RUN(a_press_outside_the_button_is_not_a_hold);
     RUN(a_second_finger_does_not_end_the_first_ones_hold);
     RUN(a_new_report_restarts_the_gesture);
+    RUN(a_press_left_behind_by_leaving_acknowledges_nothing_later);
     RUN(the_report_is_kept_and_handed_back);
     RUN(every_verdict_renders);
     RUN(a_lost_link_renders_every_controller_state);

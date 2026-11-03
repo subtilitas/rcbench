@@ -81,9 +81,21 @@ void ui_theme_set_brightness(int percent);
  */
 void ui_theme_set_contrast(int percent);
 
+/** @brief The palette in force. @return the theme */
 ui_theme_id_t ui_theme_get(void);
+/** @brief The brightness in force. @return 20 to 100, % */
 int ui_theme_brightness(void);
+/** @brief The contrast in force. @return 60 to 140, % */
 int ui_theme_contrast(void);
+
+/**
+ * @brief A role's colour in a palette as defined, before brightness and
+ *        contrast: for a page drawn elsewhere, such as the Wi-Fi page.
+ * @param theme  the palette
+ * @param id     the role
+ * @return 0xRRGGBB; 0 for a theme or a role out of range
+ */
+uint32_t ui_theme_rgb24(ui_theme_id_t theme, ui_color_id_t id);
 
 /* ---------------------------------------------------------------- surfaces */
 

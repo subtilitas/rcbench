@@ -27,11 +27,11 @@
 #include "kst_panel_int.h"
 
 /**
- * @brief Opens the warning page of kind @p kind with its title and the label
- *        of its hold button.
+ * @brief Opens the warning page of kind @p kind with its title, the label
+ *        of its hold button and the hint a short release shows.
  */
 static void warn_open(int kind, bool danger, const char *title,
-                      const char *apply)
+                      const char *apply, int hint)
 {
     memset(&k.warn, 0, sizeof(k.warn));
     k.warn.open = true;
@@ -39,6 +39,7 @@ static void warn_open(int kind, bool danger, const char *title,
     k.warn.danger = danger;
     snprintf(k.warn.title, sizeof(k.warn.title), "%s", title);
     snprintf(k.warn.apply, sizeof(k.warn.apply), "%s", apply);
+    k.warn.hint = hint;
 }
 
 /**
@@ -225,7 +226,7 @@ void kpn_warn_soft(const row_t *r)
 {
     const kst_field_id_t id = (kst_field_id_t)r->what;
 
-    warn_open(W_SOFT, false, TR(KP_SOFT_TITLE), TR(SV_HOLD_TO_APPLY));
+    warn_open(W_SOFT, false, TR(KP_SOFT_TITLE),  TR(SV_HOLD_TO_APPLY), TX_HOLD_HINT_APPLY);
     /* From the servo's value, not from an edit before this one. */
     value_line(id, kst_prog_soft_image(&k.prog), 0u);
     warn_rules(kst_prog_soft_rules(&k.prog), WARN_RULES - 1,
@@ -234,7 +235,7 @@ void kpn_warn_soft(const row_t *r)
 
 void kpn_warn_enable(void)
 {
-    warn_open(W_ENABLE, true, TR(KP_ENABLE_TITLE), TR(KP_HOLD_ENABLE));
+    warn_open(W_ENABLE, true, TR(KP_ENABLE_TITLE),  TR(KP_HOLD_ENABLE), TX_HOLD_HINT_ENABLE);
     warn_text(KST_PROG_DANGER, TR(KP_ENABLE_1));
     warn_text(KST_PROG_INFO, TR(KP_ENABLE_2));
     warn_text(KST_PROG_INFO, TR(KP_ENABLE_3));
@@ -334,7 +335,7 @@ void kpn_warn_file(void)
     const kst_prog_t *p = &k.prog;
     const int kind = kind_text(kst_prog_load_kind(p));
 
-    warn_open(W_SOFT, false, TR(KP_FILE_TITLE), TR(KP_HOLD_LOAD));
+    warn_open(W_SOFT, false, TR(KP_FILE_TITLE),  TR(KP_HOLD_LOAD), TX_HOLD_HINT_LOAD);
     if (differing(kst_prog_soft_image(p)) == 1u) {
         snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE,
                  TR(KP_FILE_DIFF_ONE), kpn_shown(kst_prog_card_name(p)));
@@ -369,7 +370,7 @@ void kpn_warn_write(void)
         + kst_panel_text_rows(TR(KP_WRITE_2)) + card_rows();
 
     kpn_write_n(title, sizeof(title), kst_prog_changes(&k.prog));
-    warn_open(W_WRITE, true, title, TR(KP_HOLD_WRITE));
+    warn_open(W_WRITE, true, title,  TR(KP_HOLD_WRITE), TX_HOLD_HINT_WRITE);
     warn_values(to, WARN_LINES - fixed, kpn_warn_room() - fixed_rows);
     warn_horn(moves);
     if (!no_card()) {
@@ -388,7 +389,7 @@ ui_text_id_t kpn_from_text(unsigned from)
 
 void kpn_warn_restore(const kst_prog_restore_t *plan)
 {
-    warn_open(W_RESTORE, true, TR(KP_RESTORE_TITLE), TR(KP_HOLD_RESTORE));
+    warn_open(W_RESTORE, true, TR(KP_RESTORE_TITLE),  TR(KP_HOLD_RESTORE), TX_HOLD_HINT_RESTORE);
     k.warn.plan = *plan;
     warn_text(KST_PROG_INFO, ui_tr(kpn_from_text(plan->from)));
     if (plan->writes == 0xFFu) {
@@ -417,7 +418,7 @@ void kpn_warn_restore(const kst_prog_restore_t *plan)
  * warnings first, and the restore's page after the hold. */
 void kpn_warn_check(const kst_prog_restore_t *plan)
 {
-    warn_open(W_CHECK, false, TR(KP_CHECK_TITLE), TR(KP_HOLD_NEXT));
+    warn_open(W_CHECK, false, TR(KP_CHECK_TITLE),  TR(KP_HOLD_NEXT), TX_HOLD_HINT_CONTINUE);
     k.warn.plan = *plan;
     warn_text(KST_PROG_INFO, ui_tr(kpn_from_text(plan->from)));
     warn_text(KST_PROG_INFO, TR(KP_CHECK_1));
@@ -426,7 +427,7 @@ void kpn_warn_check(const kst_prog_restore_t *plan)
 
 void kpn_warn_release(void)
 {
-    warn_open(W_RELEASE, true, TR(KP_RELEASE_TITLE), TR(KP_HOLD_WRITE));
+    warn_open(W_RELEASE, true, TR(KP_RELEASE_TITLE),  TR(KP_HOLD_WRITE), TX_HOLD_HINT_WRITE);
     warn_text(KST_PROG_WARN, TR(KP_RELEASE_1));
     warn_text(KST_PROG_INFO, TR(KP_RELEASE_2));
     warn_text(KST_PROG_INFO, TR(KP_RELEASE_3));
@@ -438,7 +439,7 @@ void kpn_warn_release(void)
  * with a note of the cycle the values wait for without one. */
 void kpn_warn_leave(void)
 {
-    warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE));
+    warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE),  TR(KP_HOLD_LEAVE), TX_HOLD_HINT_LEAVE);
     if (kst_prog_in_doubt(&k.prog)) {
         warn_text(KST_PROG_DANGER, TR(KP_LEAVE_DOUBT_1));
         warn_text(KST_PROG_DANGER, TR(KP_LEAVE_DOUBT_2));
@@ -461,7 +462,7 @@ void kpn_warn_leave(void)
 /* A programming voltage above what a standard servo is rated for. */
 void kpn_warn_hv(uint16_t mv)
 {
-    warn_open(W_HV, true, TR(KP_PROG_VOLTAGE), TR(SV_HOLD_TO_APPLY));
+    warn_open(W_HV, true, TR(KP_PROG_VOLTAGE),  TR(SV_HOLD_TO_APPLY), TX_HOLD_HINT_APPLY);
     k.warn.mv = mv;
     snprintf(warn_line(KST_PROG_INFO), KST_PANEL_LINE, TR(KP_SUPPLY_V),
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));

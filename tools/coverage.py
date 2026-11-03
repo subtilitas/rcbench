@@ -12,9 +12,14 @@ measures the same build in CI (continuous integration).
     python3 tools/coverage.py            # update the table and the figures
     python3 tools/coverage.py --check    # fail if any of them is out of date
     python3 tools/coverage.py --json coverage.json
+    python3 tools/coverage.py --from-json coverage.json
 
 ``--check`` is what CI runs: drift fails the build rather than being
-committed by a bot.
+committed by a bot.  gcov counts the lines of a file by the rules of its
+GCC release, so a table written by one release fails ``--check`` under
+another.  The table is the one of CI's runner: ``--from-json`` renders it
+from the ``coverage`` artifact of a CI run, which holds the raw numbers
+(``--json``), without building or measuring anything.
 
 Every C file under shared/ and protocols/ has to be in the measurement,
 except a module's rp2350/ folder: a pin driver is compiled by the
@@ -68,6 +73,7 @@ TRACKED = [
     "shared/ui/ui_widgets.c",
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
+    "shared/ui/ui_help.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_plot.c",
     "shared/ui/ui_slider.c",
@@ -89,10 +95,17 @@ TRACKED = [
     "shared/ui/supply_screen.c",
     "shared/ui/supply_events.c",
     "shared/ui/supply_draw.c",
+    "shared/ui/supply_pdmini.c",
+    "shared/ui/prog5v_box.c",
+    "shared/ui/prog_choice.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_setting_keypad.c",
     "shared/ui/ui_textkey.c",
+    "shared/ui/ui_shot.c",
+    "shared/ui/shot_gate.c",
+    "shared/ui/shot_hold.c",
     "shared/ui/ui_pinlist.c",
+    "shared/ui/ui_board.c",
     "shared/ui/servo_screen.c",
     "shared/ui/servo_screen_sweep.c",
     "shared/ui/servo_screen_link.c",
@@ -110,6 +123,7 @@ TRACKED = [
     "shared/ui/kst_panel_touch.c",
     "shared/ui/kst_panel_run.c",
     "shared/ui/kst_panel_draw.c",
+    "shared/ui/esc_wire_panel.c",
     "shared/ui/hitec_panel.c",
     "shared/ui/hitec_panel_text.c",
     "shared/ui/hitec_panel_edit.c",
@@ -120,7 +134,6 @@ TRACKED = [
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
-    "shared/ui/prog_models.c",
     "shared/ui/esc_stick_pages.c",
     "shared/ui/esc_stick_panel.c",
     "shared/ui/esc_stick_list.c",
@@ -131,18 +144,23 @@ TRACKED = [
     "shared/ui/log_viewer_load.c",
     "shared/ui/log_viewer_draw.c",
     "shared/ui/log_viewer_events.c",
+    "shared/ui/logs_strip.c",
     "shared/ui/log_select.c",
     "shared/ui/files_screen.c",
+    "shared/ui/layout_screen.c",
     "shared/ui/files_draw.c",
     "shared/ui/files_events.c",
     "shared/ui/files_text.c",
     "shared/ui/text_view.c",
     "shared/ui/text_view_draw.c",
+    "shared/ui/text_view_keys.c",
     "shared/ui/settings_screen.c",
     "shared/ui/settings_draw.c",
     "shared/ui/settings_rows.c",
+    "shared/ui/sensors_pane.c",
     "shared/ui/sensors_rows.c",
     "shared/ui/outputs_screen.c",
+    "shared/ui/outputs_view.c",
     "shared/ui/outputs_port.c",
     "shared/ui/outputs_port_entry.c",
     "shared/ui/port_view.c",
@@ -156,6 +174,7 @@ TRACKED = [
     "shared/ui/board_drawing.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
+    "shared/ui/wifi_kept.c",
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
@@ -178,6 +197,9 @@ TRACKED = [
     "shared/files/fm_tree.c",
     "shared/files/fm_ops.c",
     "shared/files/fm_req.c",
+    "shared/files/fm_crc.c",
+    "shared/files/png_enc.c",
+    "shared/files/shot_file.c",
     "shared/safety/heartbeat.c",
     "shared/safety/arming.c",
     "shared/safety/safety_gate.c",
@@ -185,6 +207,8 @@ TRACKED = [
     "shared/safety/reset_cause.c",
     "shared/safety/touch_loss.c",
     "shared/safety/frame_watch.c",
+    "shared/safety/error_stop.c",
+    "shared/safety/error_sites.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",
     "shared/servo/servo_sweep.c",
@@ -223,13 +247,38 @@ TRACKED = [
     "protocols/hitec/hitec_pre.c",
     "protocols/hitec/hitec_reg.c",
     "protocols/hitec/hitec_session.c",
+    "protocols/hitec/hitec_live.c",
+    "protocols/escwire/ew_wire.c",
+    "protocols/escwire/ew_pio.c",
+    "protocols/escwire/ew_a.c",
+    "protocols/escwire/ew_guard.c",
+    "protocols/escwire/ew_id.c",
+    "protocols/escwire/ew_map.c",
+    "protocols/escwire/ew_session.c",
+    "protocols/escwire/ew_session_text.c",
+    "protocols/escwire/ew_text.c",
+    "protocols/escwire/ew_file.c",
+    "protocols/escwire/ew_file_read.c",
+    "protocols/escwire/ew_file_load.c",
     "protocols/i2c_txq/i2c_txq.c",
     "shared/logfile/servo_store.c",
     "shared/outputs/kst_port.c",
     "shared/outputs/hitec_port.c",
+    "shared/outputs/esc_port.c",
+    "shared/outputs/console_tunnel.c",
+    "shared/outputs/esc_console.c",
     "shared/outputs/page_console.c",
     "shared/outputs/prog_port.c",
     "shared/bench/kst_link.c",
+    "shared/bench/esc_link.c",
+    "shared/bench/esc_prog.c",
+    "shared/bench/esc_prog_file.c",
+    "shared/bench/esc_card.c",
+    "shared/ui/esc_wire_edit.c",
+    "shared/ui/esc_wire_touch.c",
+    "shared/ui/esc_wire_draw.c",
+    "shared/ui/esc_wire_text.c",
+    "shared/ui/esc_wire_help.c",
     "shared/bench/hitec_link.c",
     "shared/bench/hitec_prog.c",
     "shared/bench/hitec_prog_write.c",
@@ -252,6 +301,7 @@ TRACKED = [
     "shared/link/link_artxfer.c",
     "shared/link/link_drawing.c",
     "shared/link/link_control.c",
+    "shared/link/console_relay.c",
     "shared/link/link_port.c",
     "shared/link/link_sha256.c",
     "shared/link/link_update_image.c",
@@ -263,9 +313,11 @@ TRACKED = [
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_bind.c",
+    "shared/outputs/board_fix.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/servo_page.c",
     "shared/outputs/supply_page.c",
+    "shared/outputs/prog_supply.c",
     "shared/outputs/out_store_map.c",
     "shared/outputs/out_store_rec.c",
     "shared/outputs/out_stage.c",
@@ -282,6 +334,7 @@ TRACKED = [
     "protocols/pdmini/pdmini_codec.c",
     "protocols/pdmini/pdmini_jobs.c",
     "shared/bench/supply_link.c",
+    "shared/bench/prog_supply_link.c",
     "shared/bench/sense_link.c",
     "shared/bench/sense_link_view.c",
     "shared/bench/sense_map_link.c",
@@ -327,6 +380,9 @@ TRACKED = [
     "shared/webaccess/wa_page.c",
     "shared/webaccess/wa_mdns.c",
     "shared/webaccess/wa_guard.c",
+    "shared/webaccess/wa_api.c",
+    "shared/webaccess/wa_api_write.c",
+    "shared/webaccess/wa_app.c",
     "shared/clock/wall_clock.c",
 ]
 
@@ -336,6 +392,10 @@ TRACKED = [
 # -- see
 # completeness().
 DATA_ONLY = {
+    "protocols/escwire/ew_map_s.c",
+    "protocols/escwire/ew_map_bj.c",
+    "protocols/escwire/ew_map_am.c",
+    "protocols/escwire/ew_map_e32.c",
     # Glyph bitmaps written by tools/gen_font.py.
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",
@@ -348,6 +408,10 @@ DATA_ONLY = {
     "shared/ui/ui_cats_art.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
     "shared/esc/esc_profiles_gen.c",
+    # The rbmod carrier's pin catalogue and role table.
+    "shared/outputs/out_board_rbmod.c",
+    # The Wi-Fi page's file manager as C strings, by tools/gen_web_blob.py.
+    "shared/webaccess/wa_web_blob.c",
 }
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it
@@ -492,6 +556,23 @@ def measure() -> dict[str, dict[str, float]]:
     return results
 
 
+def tracked_mismatch(results: dict[str, dict[str, float]]) -> list[str]:
+    """Name the files the raw numbers and the TRACKED list disagree on.
+
+    Args:
+        results: The "files" object of a coverage JSON file.
+
+    Returns:
+        One message per file in one and not in the other; empty when the
+        numbers cover exactly TRACKED.
+    """
+    out = [f"{rel} is in TRACKED and not in the numbers"
+           for rel in TRACKED if rel not in results]
+    out += [f"{rel} is in the numbers and not in TRACKED"
+            for rel in results if rel not in TRACKED]
+    return out
+
+
 def render(results: dict[str, dict[str, float]]) -> tuple[str, float]:
     total_lines = sum(int(r["lines"]) for r in results.values())
     total_covered = sum(int(r["covered"]) for r in results.values())
@@ -565,19 +646,24 @@ def main() -> int:
                     help="also write the raw numbers here")
     ap.add_argument("--skip-build", action="store_true",
                     help="reuse an existing instrumented build")
+    ap.add_argument("--from-json", type=pathlib.Path,
+                    help="render the table from the raw numbers of --json "
+                         "(CI's coverage artifact) instead of measuring")
     args = ap.parse_args()
 
-    if not args.skip_build:
-        build_and_run()
-
-    notes, data = build_files(".gcno"), build_files(".gcda")
-    incomplete = completeness(
-        library_sources(), TRACKED, DATA_ONLY, set(notes), set(data),
-        {pathlib.Path(rel).name for rel in DATA_ONLY
-         if pathlib.Path(rel).name in notes
-         and holds_code(notes[pathlib.Path(rel).name])})
-
-    results = measure()
+    if args.from_json:
+        results = json.loads(args.from_json.read_text())["files"]
+        incomplete = tracked_mismatch(results)
+    else:
+        if not args.skip_build:
+            build_and_run()
+        notes, data = build_files(".gcno"), build_files(".gcda")
+        incomplete = completeness(
+            library_sources(), TRACKED, DATA_ONLY, set(notes), set(data),
+            {pathlib.Path(rel).name for rel in DATA_ONLY
+             if pathlib.Path(rel).name in notes
+             and holds_code(notes[pathlib.Path(rel).name])})
+        results = measure()
     body, total_pct = render(results)
 
     if args.json:

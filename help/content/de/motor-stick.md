@@ -15,7 +15,7 @@ Kein ESC wurde aufgezeichnet, und kein Profil ist geprüft. Jede Pieptonzeit ist
 1. Den Propeller abnehmen. Ein Lauf fährt den Throttle auf MAX und zurück, während der ESC versorgt ist. In seltenen Fällen kann ein Motor anlaufen und drehen.
 2. Den Motor am ESC lassen, fest montiert, oder an seiner Stelle einen Lastwiderstand über die Motorleitungen setzen. Die Pieptöne werden in beiden Fällen aus dem Strom gezählt.
 3. Die Signalleitung des ESC an einen Pin legen, der unter [Ausgänge](outputs.md) als Throttle gebunden ist: MOTOR PWM oder ein DShot-Eintrag.
-4. Die Versorgungsleitungen des ESC an den Netzteilausgang legen. Den PD mini unter [Anschlüsse](setup-interfaces.md#der-pd-mini) einschalten.
+4. Die Versorgungsleitungen des ESC an den Netzteilausgang legen. Den PD mini [im Tab PD MINI auf SUPPLY](supply.md#tab-pd-mini) einschalten.
 5. Den Netzteilausgang abschalten.
 
 START öffnet nichts, solange eines davon fehlt, und die Zeile neben START nennt den Grund, zum Beispiel `Kein Gas-Pin zugeordnet. Auf der Seite OUTPUTS zuordnen.` oder `Netzteil ist simuliert. START benötigt einen PD mini.`. START braucht einen Messwert des Netzteils, nicht älter als 1000ms, der den Ausgang aus mit höchstens 20mA für 200ms meldet.
@@ -75,7 +75,7 @@ Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt wird, mindesten
 
 ![Ein Lauf mit laufendem Phasenabgriff](view:motor-stick-tone)
 
-Ist der Phasenabgriff unter SETUP, INTERFACES eingeschaltet, fügt die Seite eine Anzeige hinzu, die nur liest: den Zustand des Abgriffs, die Tonhöhe seines letzten 8-ms-Fensters, die Zahl verlorener und nicht gelesener Pieptöne und die letzten 4 Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz. Der Lauf zählt seine Pieptöne weiter aus dem Strom des Netzteils.
+Ist der Phasenabgriff unter SETUP, SENSORS eingeschaltet, fügt die Seite eine Anzeige hinzu, die nur liest: den Zustand des Abgriffs, die Tonhöhe seines letzten 8-ms-Fensters, die Zahl verlorener und nicht gelesener Pieptöne und die letzten 4 Pieptöne mit Nummer, Länge in ms und Tonhöhe in Hz. Der Lauf zählt seine Pieptöne weiter aus dem Strom des Netzteils.
 
 | Zustand des Abgriffs | Bedeutung |
 |---|---|

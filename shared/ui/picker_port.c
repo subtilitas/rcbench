@@ -1,5 +1,6 @@
-/*
- * PICK A PIN on a programming port.  See picker_port.h.
+/**
+ * @file
+ * @brief OUTPUTS' board view on a programming port.  See picker_port.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -181,15 +182,6 @@ bool picker_port_reason(const outbind_t *b, uint8_t port, int refused,
     default:
         return false;
     }
-}
-
-void picker_port_count(uint8_t port, char *buf, size_t cap)
-{
-    if (buf == NULL || cap == 0u) {
-        return;
-    }
-    snprintf(buf, cap, TR(PK_PORT_FN),
-             port_view_fn_name(port_view_func(port)));
 }
 
 bool picker_port_row(const outbind_t *b, uint8_t k, picker_row_t *out)

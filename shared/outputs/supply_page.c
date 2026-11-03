@@ -118,6 +118,48 @@ static void wire_publish(supply_page_t *p)
 }
 
 /**
+ * @brief Whether a write of ENABLE to BAUD changes nothing: the wiring in force,
+ *        none waiting.  A panel writes it at its start, whatever holds the page.
+ *
+ * @param p   The page state.
+ * @param off The frame's first register, below LINK_SP_OUTPUT.
+ * @param n   Its registers.
+ * @param in  Their values.
+ * @return true when the frame's wiring registers hold the page's values.
+ */
+static bool wiring_as_held(const supply_page_t *p, uint8_t off, uint8_t n,
+                           const uint16_t *in)
+{
+    if (p->wire != (uint8_t)SUPPLY_WIRE_IDLE) {
+        return false;
+    }
+    for (unsigned i = 0u; i < n && off + i < (unsigned)LINK_SP_OUTPUT; ++i) {
+        if (in[i] != p->regs[off + i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief The panel's OFF of a page a programming port holds: it stands until
+ *        the port lets go, and an output on waits for a write that runs.
+ *
+ * Called while the write is judged, past every check that could refuse an
+ * OFF: a held page takes it.
+ *
+ * @param p The page state.
+ */
+static void held_off(supply_page_t *p)
+{
+    p->sticky = true;
+    if (p->writing && p->regs[LINK_SP_OUTPUT] != 0u && !p->off_held) {
+        p->off_held = true;
+        p->held_t0  = p->now_ms;
+    }
+}
+
+/**
  * @brief A write, judged whole; @p checked for the wiring a state read cleared,
  *        which does not wait again.
  *
@@ -152,6 +194,10 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
         }
         p->reset_owed = true;
         return 0u;
+    }
+    if (p->wire_frozen && off < (uint8_t)LINK_SP_OUTPUT
+        && !wiring_as_held(p, off, n, in)) {
+        return LINK_NACK_BUSY;
     }
     if ((unsigned)off + (unsigned)n > (unsigned)LINK_SP_FLAGS) {
         return LINK_NACK_READ_ONLY;
@@ -199,6 +245,7 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
             if (next[LINK_SP_OUTPUT] == 0u) {
                 next[LINK_SP_SET_MV] = p->regs[LINK_SP_SET_MV];
                 next[LINK_SP_SET_MA] = p->regs[LINK_SP_SET_MA];
+                held_off(p);
             } else if (p->regs[LINK_SP_OUTPUT] == 0u
                        || next[LINK_SP_SET_MV] != p->regs[LINK_SP_SET_MV]
                        || next[LINK_SP_SET_MA] != p->regs[LINK_SP_SET_MA]) {
@@ -282,6 +329,13 @@ static uint8_t page_write(supply_page_t *p, uint8_t off, uint8_t n,
         p->commanded = true;
     }
     return 0u;
+}
+
+void supply_page_wire_freeze(supply_page_t *p, bool frozen)
+{
+    if (p != NULL) {
+        p->wire_frozen = frozen;
+    }
 }
 
 uint8_t supply_page_write(supply_page_t *p, uint8_t off, uint8_t n,
@@ -435,6 +489,13 @@ void supply_page_read(const supply_page_t *p, uint8_t off, uint8_t n,
     }
 }
 
+bool supply_page_boot_owed(const supply_page_t *p, const pdmini_t *drv,
+                           uint32_t elapsed_ms)
+{
+    return supply_page_enabled(p) && drv != NULL && pdmini_may_be_on(drv)
+           && elapsed_ms < SUPPLY_PAGE_BOOT_OFF_MS;
+}
+
 void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
 {
     if (p == NULL) {
@@ -443,10 +504,19 @@ void supply_page_step(supply_page_t *p, bool beat_alive, pdmini_t *drv)
     if (!beat_alive) {
         p->regs[LINK_SP_OUTPUT] = 0u;
     }
+    /* The panel's OFF held for a port's write: until the write ends, the
+     * port lets go or the bound passes.  Nobody is left to watch a supply
+     * whose heartbeat is gone: no hold then. */
+    if (p->off_held
+        && (!beat_alive || !p->writing || !p->held
+            || (uint32_t)(p->now_ms - p->held_t0)
+                   >= SUPPLY_PAGE_WRITE_WAIT_MS)) {
+        p->off_held = false;
+    }
     /* An OFF that finds a programming port's frame on the wire waits for
      * the frame's end, SUPPLY_PAGE_OFF_WAIT_MS at most: whoever asked --
      * the panel, a stop, the heartbeat lost. */
-    const bool asked = p->regs[LINK_SP_OUTPUT] != 0u;
+    const bool asked = p->regs[LINK_SP_OUTPUT] != 0u || p->off_held;
     if (asked) {
         p->was_on   = true;
         p->off_wait = false;
@@ -516,7 +586,7 @@ void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out)
 
     out->online   = supply_page_enabled(p) && (f & LINK_SP_ONLINE) != 0u
                     && p->wire == (uint8_t)SUPPLY_WIRE_IDLE;
-    out->asked_on = p->regs[LINK_SP_OUTPUT] != 0u;
+    out->asked_on = p->regs[LINK_SP_OUTPUT] != 0u || p->off_held;
     out->set_mv   = p->regs[LINK_SP_SET_MV];
     out->set_ma   = p->regs[LINK_SP_SET_MA];
     out->vin_mv   = p->regs[LINK_SP_VIN_MV];
@@ -525,6 +595,7 @@ void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out)
                && p->regs[LINK_SP_SET_MV_RB] != 0u
                && p->regs[LINK_SP_SET_MV_RB] <= p->regs[LINK_SP_SET_MV];
     out->off = !reads_on && (f & LINK_SP_LIVE) == 0u;
+    out->latched = p->sticky;
 }
 
 bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
@@ -535,9 +606,10 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
     }
     if (!on) {
         p->regs[LINK_SP_OUTPUT] = 0u;
+        p->off_held = false;
         return true;
     }
-    if (!beat_alive || !supply_page_enabled(p)
+    if (p->sticky || !beat_alive || !supply_page_enabled(p)
         || p->wire != (uint8_t)SUPPLY_WIRE_IDLE
         || mv < PDMINI_V_MIN_MV || mv > PDMINI_V_MAX_MV
         || ma < PDMINI_I_MIN_MA || ma > PDMINI_I_MAX_MA) {
@@ -562,10 +634,27 @@ void supply_page_port_frame(supply_page_t *p, bool frame_out,
     }
 }
 
+void supply_page_port_writes(supply_page_t *p, bool writing)
+{
+    if (p != NULL) {
+        p->writing = writing;
+    }
+}
+
+bool supply_page_off_held(const supply_page_t *p)
+{
+    return p != NULL && p->off_held;
+}
+
 void supply_page_hold(supply_page_t *p, bool held)
 {
     if (p != NULL && p->held != held) {
         p->held = held;
+        if (!held) {
+            /* Let go: the panel commands again, and its OFF has reached the
+             * module at the step before or reaches it at the next. */
+            p->sticky = false;
+        }
         wire_publish(p);
     }
 }

@@ -1,6 +1,6 @@
 /**
  * @file test_picker_layout.c
- * @brief PICK A PIN at the 1024 x 600 sizes: the keys are 50 x 56px and the
+ * @brief OUTPUTS' board view at the 1024 x 600 sizes: the keys are 50 x 56px and the
  *        board with both tiers of them ends above the alert band; the PINS
  *        table holds a protocol's 8 pins there; nothing is drawn under the
  *        alert band in English or German, with no pin bound, at the
@@ -9,7 +9,7 @@
  *        margin; 4 PROG PORT entries take a second column of 48px rows;
  *        the built-in board's keys clear the head.
  *
- * PICK A PIN drives no output and has no stop control: its safe_at is
+ * OUTPUTS' board view drives no output and has no stop control: its safe_at is
  * NULL, so none lies under the alert band.
  *
  * Cases:

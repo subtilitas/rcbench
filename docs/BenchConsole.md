@@ -2,7 +2,7 @@
 
 <sub>**English** · [Deutsch](BenchConsole-de.md)</sub>
 
-The bench console is a bench tool. It is not in any released image. An IOmcu
+The bench console is a bench tool, for debug builds only. It is not in any released image. An IOmcu
 built with the option `IOMCU_CONSOLE` reads command lines on its USB
 (Universal Serial Bus) serial port and reads and writes the link pages of
 [The link](Link.md) from them. A station on that port drives the IOmcu's
@@ -42,10 +42,11 @@ with it, checks the stacks of both cores, and fails when the default image
 holds a console symbol. `IOMCU_CONSOLE` and `SENSE_TRACE` both read the USB
 console; CMake refuses a build with both.
 
-Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 10,860
-bytes larger than the default image and holds 4,124 bytes more RAM
+Built with ARM GNU 14.2 and pico-sdk 2.3.0, the console image is 17,444
+bytes larger than the default image and holds 9,664 bytes more RAM
 (random-access memory): 2,048 of them the output buffer, 960 the USB
-transmit buffer of 1,024 bytes in place of the SDK's 64. Core 0's deepest
+transmit buffer of 1,024 bytes in place of the SDK's 64, 3,488 the signal
+wire's pin driver and 1,536 its test's reply. Core 0's deepest
 call chain is the default image's: the console keeps its work space in its
 own state, not on the stack.
 
@@ -68,7 +69,7 @@ Every reply is one line or more, each starting with one word:
 | `hitec` | a hitec command and its report |
 
 The output goes out in whole lines through a buffer of 2,048 bytes, as fast
-as the USB host takes it. What does not fit is dropped, and a line
+as the USB host takes it, or a panel over the link. What does not fit is dropped, and a line
 `err output full, N bytes dropped` follows.
 
 ## Raw pages
@@ -154,7 +155,7 @@ register 23, the receive mode the next OPEN of a D series line takes.
 line's while a line is open, and kept after CLOSE. They differ after
 register 23 is written while a line is open: the open line keeps its mode
 until CLOSE. The panel writes register 23 at every link-up
-and at every edit of SETUP > INTERFACES > Hitec D receive, saved or not:
+and at every edit of Hitec D receive on the Hitec tab's MORE list:
 every value set on SETUP is in force at once.
 
 `lead_ns` runs from the lead's first edge to the release of the line: the
@@ -189,6 +190,22 @@ bytes and 1 released bit time.
 | `hitec d <port> write <id> <addr> <value>` | a D series write: 88us of lead asked, driven low for 89.0us, 7 bytes, nothing received |
 
 `<dec>` is `none`, `c:<cmd>`, `d:<addr>` or `l:<byte>`.
+
+`more` as the last word of `send`, `listen`, `level`, `power`, `c` or `d`
+sets bit 4 of the command (`MORE`, protocol 4.31): more steps of this write
+follow. Put it on every step of a write to the servo's memory but the last,
+for example a classic cell write before its balance, or a D series write
+and its save before the reboot. While it stands, `flags=MORE`, an OFF the
+panel writes to SUPPLY waits for the write's last step, 10,000ms after the
+OFF at most ([An OFF during a write](LinkHitec.md#an-off-during-a-write)).
+A step typed 10,000ms or more after the OFF goes to a servo whose supply
+is off. A SEND whose frame writes is held without `more` too, and for
+150ms after it; an OFF during a read or a LISTEN is not held.
+
+```text
+hitec c 0 0x62 0x10 0x55 more
+hitec c 0 0x62 0x1C 0xAA
+```
 
 An option of `send`, `listen` or `power` left out is 0: no gap, no
 window, no byte received, no decoder. `answer` is the exception: left out,
@@ -240,13 +257,137 @@ hitec line pin=13 line=0x11 rx=pre ...
 > hitec d 0 read 0 0x32
 ```
 
-`pre` and `pu` write the same register the panel writes from SETUP >
-INTERFACES > Hitec D receive. The panel writes it again at its next edit
+`pre` and `pu` write the same register the panel writes from SETUP Hitec D receive (the Hitec tab's MORE list). The panel writes it again at its next edit
 of that row and at every link-up.
 
 A raw `w` of the HITEC page gets no report and no key; the
 [worked example](LinkHitec.md#a-transaction-by-hand) writes one transaction
 that way.
+
+## The signal wire's pin driver
+
+`ewline <gpio> tx|abort|rx` runs the pin driver of the ESC (electronic speed
+controller) signal wire (`protocols/escwire/rp2350/ew_line.h`) on a free pin,
+for a logic analyser with no ESC attached. It is not a page and has no key: it
+sends fixed bytes, none of them a throttle signal, an erase or a program. It
+refuses a pin the outputs, ports, supply, sensor bus or tone capture hold, a pin
+that drives, and any pin while the bank is ARMED. A programming port that names
+the pin holds it, so that port's PIN goes to 0xFFFF first: `w 0x33 4 0xFFFF` for
+port 0, `w 0x33 4 13` to give GPIO 13 back. During a test the pin
+is reserved: the pages refuse it. An ARM during a test closes the line at once
+and answers `ewline armed`.
+
+| Test | On the pin, in order |
+|---|---|
+| `tx` | parked 20ms; high 50ms; the first contact (17B at 52us a bit) 3 times, each followed by its 100ms wait; pull-up 20ms; 12B with 10 idle bit times, 520us, after the sixth; pull-up 20ms; `info` and LF at 38400baud and a 200ms wait; pull-up 20ms; 0x55 at 52us a bit into a pull-down; pull-up 20ms; 0x55 at 38400baud into a pull-down; parked 20ms; low 300ms; parked 20ms |
+| `abort` | high 5ms; the first contact, cut 3ms after its start; parked 20ms; high 5ms; 0x55 into a pull-down; parked 20ms |
+| `rx` | high 5ms; 3 times 0x55 and a 9B answer driven on the pad by the pin's overrides: at 52us a bit, with a low stop bit on the third byte and 2 idle bit times after it, at 38400baud; each followed by 5ms |
+
+0x55 into a pull-down shows the release: the stop bit's rising edge, then the
+pad falls 1 bit time later, when it stops driving. The `rx` test blocks the main
+loop for its 9B, 4.7ms at 52us a bit.
+
+```
+ewline open gpio=13 bit_a=52000ns bit_text=26042ns
+ewline capture n=9 bad_stop=0 aborted=0 overflow=0 match=1
+ewline done gpio=13 start_max=216us poll_max=96us level_max=30us abort=53us
+```
+
+The last line gives the longest call of each kind in microseconds, here the
+longest seen on the station at commit aeea917d
+([what was seen](../protocols/escwire/README.md#on-a-chip-no-esc-attached)). A
+load on the line, such as a servo's signal wire, reads low on the pull-up alone,
+and a high pulse of 6.5us, 3.26us at 38400baud, shows before each frame's first
+start bit. A test on such a line can end in `n=` values that do not match.
+
+## The ESC settings page
+
+`esc` drives [the ESC_WIRE page](LinkEsc.md) in the frames a panel sends: the same
+checks, the same refusals. It needs a running panel beside the console, as every page
+that needs a heartbeat does. No command of it writes to an ESC. It is not in a released
+image.
+
+```
+esc
+esc open slot <n>
+esc open port <n>
+esc enter mv=<mV> ma=<mA> [hold=<ms>] [off=<ms>]
+esc enter hand [hold=<ms>]
+esc done|read|leave|stop|abort|clear|close
+```
+
+SWITCHED takes `mv` and `ma` with no default; `hold` and `off` default to 3000ms. Each command
+answers one line:
+
+```
+esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 why=0 t=52ms
+```
+
+`state`, `result`, `ref`, `flags` and `line` are the registers of
+[its page](LinkEsc.md#registers); `ses` is the session's last result.
+
+## Over the link, with no USB on the IOmcu
+
+Debug builds only. No released image of either end holds any of this.
+
+A panel built with `RCBENCH_PANEL_CONSOLE` relays its serial ports, UART0 and USB-Serial-JTAG, to an IOmcu built with `IOMCU_CONSOLE`, over the link's CONSOLE page (0xE0). Every command of this page runs on the IOmcu as it does on USB, `ewline` and other commands that drive lines included, and refuses what it refuses there. USB keeps working when it is plugged in.
+
+```bash
+export PICO_SDK_PATH=/path/to/pico-sdk
+cmake -S firmware/iomcu -B firmware/iomcu/build-console -DIOMCU_CONSOLE=ON
+cmake --build firmware/iomcu/build-console
+cp firmware/iomcu/build-console/rcbench-iomcu.bin firmware/panel/iomcu-console.bin
+idf.py -C firmware/panel -B firmware/panel/build-console \
+    -D RCBENCH_PANEL_CONSOLE=ON -D RCBENCH_IOMCU_BIN=iomcu-console.bin build
+```
+
+The panel carries that image. An IOmcu running another build answers the build check as different, so UPDATES offers the image, with the version number the same: `Same version number, but a different build.` After the update the check finds the same build and offers nothing. A panel that carries a released image offers that one back to a console IOmcu in the same way. An rbmod carrier needs its own console image, built with `-DIOMCU_BOARD=rbmod`, in `RCBENCH_IOMCU_RBMOD_BIN`. A panel built with the option and no image offers nothing.
+
+| Line | Means |
+| --- | --- |
+| `console: link up t_ms=<ms>` | the link came up, in the panel's time from its start |
+| `console: link down t_ms=<ms>` | the link went |
+| `console: the IOmcu has no console. Take the update UPDATES offers, or flash a build with IOMCU_CONSOLE=ON` | the page answered `BAD_PAGE`; said once, and the panel looks again every 5000ms |
+| `console: the IOmcu's output restarted at <n>, expected <m>` | the output's place moved: the IOmcu started again |
+| `console: no pass from t_ms=<a> to t_ms=<b>: the link was not followed` | no control pass reached the relay for 1500ms or more, as during an IOmcu update: a link down or up between the two times has no line |
+| `err no link: line dropped` | a line with the link down |
+| `err line lost: the link went down inside it` | the link went while the line was going over |
+| `err line lost: the IOmcu restarted inside it` | the IOmcu started again while the line was going over |
+| `err no answer: line lost` | a chunk of the line had no answer |
+| `err the IOmcu has no console` | a line, and no page to send it to |
+| `err line longer than 160 characters` | the line is refused whole |
+| `err line dropped: 8 lines wait` | a line while 8 wait for the link |
+| `err panel buffer full, <n> bytes dropped` | the panel's own 4,096-byte buffer had no room, as when a serial host stops reading and the IOmcu starts again |
+
+The relay's own lines never land inside an IOmcu line. A window ends anywhere, so the panel keeps a line of the IOmcu until its LF, up to 256 bytes, and the relay's line goes first. A longer line goes on cut, and a relay line after that cut starts a new line. A line not ended when the IOmcu starts again goes out with an LF of its own, ahead of the `restarted` line.
+
+The panel finds the page by reading it. The page has no capability bit and no protocol minor: an IOmcu without it answers `BAD_PAGE`, as for any page it does not have.
+
+### Rates
+
+The relay makes at most one exchange a control pass, 5ms when nothing else holds the pass, after the panel's own polling, and none while an IOmcu update holds the link. The table is calculated from the frames, at a pass of exactly 5ms.
+
+| Traffic | Frames | Rate |
+| --- | --- | --- |
+| A look at rest | 2 every 50ms | 40 frames/s |
+| A window of output, 28 bytes in 14 registers | 5, a request and 4 replies of 4 registers | one pass |
+| Its acknowledgement | 2 | one pass |
+| Output, sustained | 7 for each 28 bytes, 2 passes | 2,800 bytes/s, 700 frames/s |
+| Input, 6 bytes a chunk | 2 for each chunk, one pass | 1,200 bytes/s, 135ms for a line of 160 characters |
+
+A window is one read of 16 registers, the most a read asks for: 4 reply frames fit the panel's TWAI receive FIFO ([The link](Link.md)). The page stays 32 registers wide, and the registers past the window read 0, so a panel built for 60-byte windows still reads it. This panel takes a window of up to 60 bytes from an IOmcu console build older than protocol 4.35 and reads it as 32 registers in one exchange.
+
+Measured at the station with a window of 60 bytes, which this build does not have: 2,856 to 3,510 bytes/s of output, with `help` sent at 6/s to 30/s, 17ms to 21ms a window against 10ms calculated. The control task's delay of 5ms comes after the pass's work (`vTaskDelay`), so a pass is 5ms plus its own exchanges: the panel's polls and the window's own frames. The share of each is not measured. At the same 17ms to 21ms a window, a 28-byte window gives about 1,330 to 1,650 bytes/s; not measured. A window and its acknowledgement take 2 passes, and after the last window of a burst the next look comes up to 50ms later.
+
+At 1Mbit/s a frame of 8 bytes takes about 150us, so sustained output at the calculated rate takes about 11% of the bus. At 1,330 to 1,650 bytes/s the 2,048-byte buffer empties in about 1.2s to 1.5s. Output faster than that for longer than that buffer lasts loses whole lines, the IOmcu's own 3s lines included; the next line says `err output full, N bytes dropped` as it does on USB. Output is also held back when the panel's own buffer of 4,096 bytes has under 412 bytes free, as when a serial host stops reading.
+
+A window stays at the IOmcu until it is acknowledged, so a lost reply costs a second read and no byte. An unanswered exchange holds the control pass for up to 1000ms, as any exchange of the panel does, with the heartbeat kept going.
+
+### What it does not change
+
+The commands reach the pages through `link_dev_apply()`. A request from the console is not link traffic: it does not hold the silence failsafe off. The frames of the CONSOLE page are requests of the panel, like its polls, and stop when the panel stops. The panel's own modules keep writing: the supply link, `hitec_link`, `kst_link`, `esc_link` and the 50ms write of ARM and THROTTLE can overwrite what a console `w` wrote to the same registers. A console write of ARM reaches the page, and the panel's next 50ms write overwrites it with the panel's own arming state.
+
+With the IOmcu's start, its lines wait in the buffer for a USB host or a panel, as far as the 2,048 bytes hold them. `rcbench-iomcu: reset ...` is the first of them, with the cause of the start, and repeats every 3s. A line from the panel runs whole and leaves what a USB host has typed so far as it was. While a USB host and a panel are both there, the output leaves at the slower one's pace; a USB host that has the port open and stops reading holds it back too.
 
 ## Limits
 

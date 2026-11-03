@@ -15,6 +15,14 @@
  * on only with a live heartbeat from the panel and goes off when that
  * stops, so a panel that dies leaves no supply running.
  *
+ * A programming port that holds the page (supply_page_hold()) and writes
+ * to the servo's memory (supply_page_port_writes()) keeps its supply
+ * through an OFF the panel writes: OUTPUT reads 0 at once, the module and
+ * the port's view stay on until the write ends, SUPPLY_PAGE_WRITE_WAIT_MS
+ * after the OFF at the latest.  A heartbeat lost or a silent link is not
+ * held.  From the panel's OFF until the port lets go of the page, the
+ * port's own ON is refused (protocol 4.31, LINK_MINOR_PORT_CUT).
+ *
  * Host-tested; the IOmcu is wiring: it runs the PIO UART, feeds the
  * driver and calls supply_page_step() every pass.
  *
@@ -54,6 +62,21 @@ uint32_t supply_page_baud(uint16_t setting);
  *  after a frame to store a register is not measured. */
 #define SUPPLY_PAGE_OFF_WAIT_MS 12u
 
+/**
+ * @brief The longest the panel's OFF of a held supply waits for a programming
+ *        port's write to the servo's memory to end, counted from the OFF,
+ *        in ms.
+ *
+ * The longest writes the code allows, without a fault: a KST write of
+ * KST_PLAN_MAX_STEPS (33) steps, 258 read frames of 5.9ms and 33 write
+ * frames of 12.4ms, 1.93s on the wire after its planning; a classic Hitec
+ * write of HITEC_PLAN_MAX (56) steps, 2.9s with its read-back at 32ms a
+ * step on the panel's host loopback; a D series write of every register
+ * of the full read with its save and its 1000ms reboot wait, 3.5s.  None
+ * is measured on hardware.  A write that takes longer is cut at the bound.
+ */
+#define SUPPLY_PAGE_WRITE_WAIT_MS 10000u
+
 /** @brief Where a wiring change that waits for a state read is. */
 typedef enum {
     SUPPLY_WIRE_IDLE = 0,  /**< none waits                              */
@@ -79,19 +102,26 @@ typedef struct {
     bool     off_wait;    /**< an OFF waits for the frame's end        */
     uint32_t now_ms;      /**< the clock of supply_page_port_frame()   */
     uint32_t off_t0;      /**< when the waiting OFF was asked          */
+    bool     writing;     /**< the port writes to the servo's memory   */
+    bool     off_held;    /**< the panel's OFF waits for the write     */
+    bool     sticky;      /**< the panel's OFF stands: no port ON      */
+    bool     wire_frozen; /**< supply_page_wire_freeze()               */
+    uint32_t held_t0;     /**< when the held OFF was written           */
 } supply_page_t;
 
 /** @brief The supply as a programming port sees it (kst_port.h). */
 typedef struct {
     bool     online;    /**< wired, a PD mini answers, no wiring change
                              waits */
-    bool     asked_on;  /**< OUTPUT is 1 */
+    bool     asked_on;  /**< OUTPUT is 1, or the panel's OFF is held for
+                             the port's write */
     bool     on;        /**< asked on and read on, at a voltage no higher
                              than asked, with nothing stuck */
     bool     off;       /**< read off, and not maybe on */
     uint16_t set_mv;    /**< SET_MV and SET_MA as asked */
     uint16_t set_ma;                    /**< the current limit asked for, mA */
     uint16_t vin_mv;    /**< the PD mini's input, 0 while not read */
+    bool     latched;   /**< the panel's OFF stands until the hold ends */
 } supply_port_view_t;
 
 /**
@@ -267,6 +297,32 @@ uint8_t supply_page_rx(const supply_page_t *p);
 uint64_t supply_page_pins(const supply_page_t *p);
 
 /**
+ * @brief The longest the IOmcu's start-up waits for the PD mini to read off
+ *        before anything else starts, in ms.
+ *
+ * Seven rates under AUTO, each WHO_AM_I that nothing answers 415ms with
+ * pdmini_hurry(), are 2.9s; the module found at the last of them is read
+ * and switched off, and its OFF read back, about 0.35s later.  3500ms
+ * leaves 0.25s more.  A module that does not answer delays the link by this
+ * much at every start.
+ */
+#define SUPPLY_PAGE_BOOT_OFF_MS 3500u
+
+/**
+ * @brief Whether the start-up still waits for the PD mini: a module is wired,
+ *        its output may be on (pdmini_may_be_on()), and @p elapsed_ms is
+ *        under SUPPLY_PAGE_BOOT_OFF_MS.
+ *
+ * @param p          The page state.
+ * @param drv        The PD mini driver, or NULL while none is attached.
+ * @param elapsed_ms Milliseconds since the wait began.
+ * @return true while the start-up waits; false for a NULL @p p or @p drv,
+ *         a page not enabled, an output read off and the bound reached.
+ */
+bool supply_page_boot_owed(const supply_page_t *p, const pdmini_t *drv,
+                           uint32_t elapsed_ms);
+
+/**
  * @brief One pass: the output off without a heartbeat, what the driver is to
  *        do, and what it last said into the read-only registers.
  *
@@ -294,11 +350,13 @@ void supply_page_port_view(const supply_page_t *p, supply_port_view_t *out);
  * @brief A programming port's request, in place of a link write of OUTPUT to
  *        SET_MA.
  *
- * Off is always taken and leaves the set points.  On is refused (false, nothing
+ * Off is always taken and leaves the set points; it ends a held OFF of the
+ * panel's, which reaches the module with it.  On is refused (false, nothing
  * changed) without a live heartbeat, while the supply is not wired or a wiring
- * change waits, for set points outside the module's range, and for a voltage
- * above SET_MV while OUTPUT is 1: the voltage of an output that is on is not
- * raised here.
+ * change waits, for set points outside the module's range, for a voltage
+ * above SET_MV while OUTPUT is 1 (the voltage of an output that is on is not
+ * raised here), and from the panel's OFF of a held page until the port lets
+ * go of it (supply_page_hold()).
  *
  * @param p The page state.
  * @param on true for ON, false for OFF.
@@ -312,6 +370,17 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
                           uint16_t ma, bool beat_alive);
 
 /**
+ * @brief Refuse a write of ENABLE to BAUD that changes them with LINK_NACK_BUSY:
+ *        the ESC_WIRE page holds a pin, and an attach could take the PIO room its
+ *        output needs back.  The wiring in force is taken, with none waiting: a
+ *        panel that restarts in a hold writes it, and takes a refusal as its pins'.
+ *
+ * @param p      The page state, or NULL.
+ * @param frozen True while the page holds a pin.
+ */
+void supply_page_wire_freeze(supply_page_t *p, bool frozen);
+
+/**
  * @brief Whether a programming port holds the command registers (FLAGS bit 11,
  *        LINK_SP_PORT).
  *
@@ -319,7 +388,9 @@ bool supply_page_port_set(supply_page_t *p, bool on, uint16_t mv,
  * SET_MA as they are whatever the write names, and refuses every other write of
  * OUTPUT to SET_MA that changes one of the three with LINK_NACK_BAD_VALUE: the
  * panel can switch the supply off, and cannot switch it on or move a set point
- * under the servo.
+ * under the servo.  That OFF stands until the port lets go: the port's ON is
+ * refused (supply_page_port_set()), and while the port writes the OFF waits
+ * for the write (supply_page_port_writes()).  Letting go ends both.
  *
  * @param p The page state. Nothing is done when NULL.
  * @param held true while the programming port holds the registers.
@@ -341,6 +412,37 @@ void supply_page_hold(supply_page_t *p, bool held);
  */
 void supply_page_port_frame(supply_page_t *p, bool frame_out,
                             uint32_t now_ms);
+
+/**
+ * @brief Whether a programming port writes to the servo's memory now, once a
+ *        pass before supply_page_step() and after the ports' own steps, and
+ *        after each command of a port's page.
+ *
+ * Told after a command too, so a SUPPLY OFF taken in the same batch of
+ * frames as the command that starts a write is judged against that write.
+ *
+ * An OFF the panel writes while a port holds the page and this says true is
+ * held back from the module: OUTPUT reads 0, the driver and the port's view
+ * (supply_page_port_view()) stay on.  The held OFF reaches the module at the
+ * first step that finds no write running, no port holding the page, or
+ * SUPPLY_PAGE_WRITE_WAIT_MS gone since the OFF on the clock of
+ * supply_page_port_frame(), across its wrap at 2^32ms; and at once with a
+ * heartbeat lost or a silent link, or the port's own OFF.  The frame wait
+ * (SUPPLY_PAGE_OFF_WAIT_MS) follows it as for any OFF.
+ *
+ * @param p       The page state. Nothing is done when NULL.
+ * @param writing true while a port's write to the servo's memory runs
+ *                (kst_port_writing(), hitec_port_writing()).
+ */
+void supply_page_port_writes(supply_page_t *p, bool writing);
+
+/**
+ * @brief Whether the panel's OFF waits for a port's write now.
+ *
+ * @param p The page state.
+ * @return true while a held OFF has not reached the module; false for NULL.
+ */
+bool supply_page_off_held(const supply_page_t *p);
 
 #ifdef __cplusplus
 }

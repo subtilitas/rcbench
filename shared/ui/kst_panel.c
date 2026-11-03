@@ -22,7 +22,10 @@
 
 #include "kst_port.h"
 #include "kst_reg.h"
+#include "outputs_screen.h"
 #include "link_pages.h"
+#include "prog_choice.h"
+#include "ui_board.h"
 #include "settings.h"
 #include "ui_card_text.h"
 #include "ui_tabs.h"
@@ -147,12 +150,30 @@ bool kpn_programming(void)
 /* A row's label: its text, or for PORT what CONNECT asks of the supply. */
 const char *kpn_row_label(const row_t *r)
 {
+    if (r->kind == K_ACT && r->what == A_PORT && prog_choice_offered()) {
+        /* The carrier's port, chosen on this row, at its fixed 5V. */
+        static char port[40];
+        const outbind_roles_t *roles = ui_board_roles();
+
+        if (!kpn_on_port() || roles == NULL) {
+            return TR(HP_PORT_NONE);
+        }
+        char name[12];
+        const uint8_t gpio = roles->prog[kpn_port_no()];
+
+        (void)outputs_role_name(ui_board(), gpio, name, sizeof(name));
+        snprintf(port, sizeof(port), TR(PC_ROW), name, (unsigned)gpio);
+        return port;
+    }
     if (r->kind == K_ACT && r->what == A_PORT && kpn_on_port()
         && kpn_flag(LINK_KS_F_RAIL)) {
         /* What CONNECT asks of the supply, and what it holds after. */
         static char port[40];
         const unsigned mv = kst_prog_supply_mv(&k.prog);
 
+        if (ui_board_prog_5v_pin() >= 0) {
+            return TR(KP_PORT_5V_FIXED);
+        }
         snprintf(port, sizeof(port), TR(KP_PORT_SUPPLY), mv / 1000u,
                  mv % 1000u / 100u, (unsigned)kst_prog_supply_ma(&k.prog));
         return port;

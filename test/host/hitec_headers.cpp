@@ -5,6 +5,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "hitec_live.h"
 #include "hitec_pio.h"
 #include "hitec_pre.h"
 #include "hitec_reg.h"
@@ -27,6 +28,9 @@ int hitec_headers_link(void)
     hitec_plan_t plan;
     static hitec_session_t ses;
     hitec_ses_step_t st;
+    hitec_live_ends_t ends = { 3351u, 8192u, 13003u };
+    hitec_live_cmd_t cmd;
+    hitec_live_find_t find;
 
     hitec_c_frame(HITEC_C_FIRST, 0x00, 0x00, frame);
     hitec_d_read_xfer(0x00, 0x0C, &x);
@@ -45,6 +49,11 @@ int hitec_headers_link(void)
         && hitec_session_enter(&ses, false, 0) == HITEC_SES_BUSY) {
         (void)hitec_session_next(&ses, 0, &st);
         (void)hitec_session_abort(&ses);
+        (void)hitec_session_move(&ses, 3000u, true);
+    }
+    (void)hitec_live_d_command(&ends, 8192u, 3351u, &cmd);
+    if (hitec_live_find_start(&find, &ends, HITEC_FIND_LEFT, 1000u, 0u)) {
+        hitec_live_find_abort(&find);
     }
     return frame[3];
 }

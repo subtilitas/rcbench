@@ -12,6 +12,7 @@
  *                OUTPUTS, SERVO and PROG, and the glue that binds the outputs
  * iomcu_kst.c    the KST page and the port's hardware
  * iomcu_hitec.c  the HITEC page and the port's hardware
+ * iomcu_esc.c    the ESC_WIRE and ESC_DATA pages and the pin's way there and back
  * iomcu_sense.c  SUPPLY, SENSE, SERVO_SENSE, SERVO_WIN, SENSE_MAP,
  *                SENSE_WIN_A, SENSE_WIN_B and SENSE_LIMIT
  * iomcu_tone.c   the TONE page and the phase tap's capture
@@ -35,6 +36,9 @@
 #include "heartbeat.h"
 #include "hitec_line.h"
 #include "hitec_port.h"
+#include "esc_port.h"
+#include "update_hw.h"
+#include "ew_line.h"
 #include "iomcu_pins.h"
 #include "kst_line.h"
 #include "kst_port.h"
@@ -51,6 +55,7 @@
 #include "sense_page.h"
 #include "servo_page.h"
 #include "supply_page.h"
+#include "prog_supply.h"
 #include "tone_page.h"
 
 /* ------------------------------------------------------------- the pages */
@@ -77,7 +82,8 @@ extern iomcu_state_t s_state;
  * @brief What the output drivers make true, whatever is connected; see main().
  */
 #define IOMCU_CAPABILITIES \
-    ((uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE | LINK_CAP_ESC_TELEM))
+    ((uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE | LINK_CAP_ESC_TELEM \
+                | LINK_CAP_PROGRAM))
 /**
  * @brief The SERVO page: the PWM target's frame rate and the sweep.
  *
@@ -144,6 +150,12 @@ extern uint64_t      s_edge_us;
  * sensor bus take their pins.
  */
 extern uint64_t      s_base_reserved;
+/** @brief A programming port was out of PWM at the last ports_hold_follow(). */
+extern bool          s_ports_held;
+#if IOMCU_CONSOLE
+/** @brief The pin the console's test of a driver holds (ewline_console.c). */
+extern uint64_t      s_console_pins;
+#endif
 /**
  * @brief The PROG page: the programming ports, outputs of their own kind
  * with their own pins (shared/outputs/prog_port.h).
@@ -177,7 +189,13 @@ extern kst_line_t    s_kst_line;
  */
 extern hitec_port_t  s_hitec;
 extern hitec_line_t  s_hitec_line;
-extern link_dev_t    s_dev;
+/**
+ * @brief The ESC_WIRE and ESC_DATA pages (shared/outputs/esc_port.h) and the wire
+ * driver a throttle slot's or DShot port's pin is handed to.
+ */
+extern esc_port_t    s_esc;
+extern ew_pin_line_t s_esc_line; /**< the wire driver of s_esc */
+extern link_dev_t    s_dev; /**< the link's device end */
 
 /**
  * @brief Every output, behind one set of rules.
@@ -252,6 +270,8 @@ extern bool s_beat_level;
 extern bool     s_can_up;
 extern uint32_t s_can_echoes;
 extern uint32_t s_can_overflows;
+/** @brief Reply frames dropped after 1000 spins on a full transmit buffer. */
+extern uint32_t s_can_tx_dropped;
 
 /**
  * @brief When a frame was last taken out of the controller; see iomcu_can.c.
@@ -430,6 +450,46 @@ void kst_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t kst_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
+/* iomcu_esc.c */
+/**
+ * @brief Prepares the ESC_WIRE page and its line.
+ */
+void esc_init(void);
+/**
+ * @brief Reads ESC_WIRE.
+ * @param ctx The iomcu_state_t.
+ * @param off First register.
+ * @param n   Registers.
+ * @param out Receives them.
+ */
+void esc_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes ESC_WIRE.
+ * @param ctx The iomcu_state_t.
+ * @param off First register.
+ * @param n   Registers.
+ * @param in  Their values.
+ * @return 0, or a link_nack_t.
+ */
+uint8_t esc_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+/**
+ * @brief Reads ESC_DATA.
+ * @param ctx The iomcu_state_t.
+ * @param off First register.
+ * @param n   Registers.
+ * @param out Receives them.
+ */
+void esc_data_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+/**
+ * @brief Writes ESC_DATA.
+ * @param ctx The iomcu_state_t.
+ * @param off First register.
+ * @param n   Registers.
+ * @param in  Their values.
+ * @return 0, or a link_nack_t.
+ */
+uint8_t esc_data_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
 
 /* iomcu_hitec.c */
 /**
@@ -738,6 +798,14 @@ void ports_apply(void);
  */
 void hw_apply_only(uint8_t may_bind);
 /**
+ * @brief One slot left out of an apply bound again, at the rate it runs at; no
+ * DShot port is let go for it (outputs_hw_return_slot()).
+ *
+ * @param slot The slot.
+ * @return True when it is bound.
+ */
+bool hw_return_slot(uint8_t slot);
+/**
  * @brief Makes the silicon agree with the bank, binding every slot.
  */
 void hw_apply(void);
@@ -872,6 +940,73 @@ bool supply_rewire(void);
  */
 uint8_t supply_take(uint8_t off, uint8_t n, const uint16_t *in,
                     bool checked);
+/**
+ * @brief One pass of the supply: the SUPPLY page told of a programming
+ *        port's frame, a step of the page, a wiring change taken, the PD
+ *        mini's bytes in, a step of its driver, and AUTO's next rate.
+ *
+ * @param now        This pass's clock, ms.
+ * @param frame_out  A programming port has a frame on the wire: an OFF
+ *                   waits for its end, SUPPLY_PAGE_OFF_WAIT_MS at most.
+ * @param writing    A programming port writes to the servo's memory
+ *                   (kst_port_writing(), hitec_port_writing()): the panel's
+ *                   OFF of a held supply waits for the write's end,
+ *                   SUPPLY_PAGE_WRITE_WAIT_MS at most.
+ * @param supply_ok  The heartbeat is trusted and the link is up
+ *                   (safety_gate_supply_ok()); false asks the output off.
+ */
+void supply_pass(uint32_t now, bool frame_out, bool writing, bool supply_ok);
+
+/* --------------------------------------------------------- iomcu_psup.c */
+
+/**
+ * @brief The PROG_SUPPLY page: the programming ports' own supply on a board
+ *        that switches one (prog_supply.h), off at start.  Not kept.
+ */
+extern prog_supply_t s_psup;
+
+/** @brief The page set to the board's switch, or to none; off. */
+void psup_init(void);
+
+/**
+ * @brief Read PROG_SUPPLY registers.
+ * @param ctx unused
+ * @param off first register
+ * @param n   registers
+ * @param out the values
+ */
+void psup_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
+
+/**
+ * @brief Write PROG_SUPPLY: OUTPUT, judged against the heartbeat and a
+ *        port's hold (prog_supply_write()).
+ * @param ctx unused
+ * @param off first register
+ * @param n   registers
+ * @param in  the values
+ * @return 0 or the NACK reason
+ */
+uint8_t psup_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in);
+
+/**
+ * @brief Once a pass, after supply_pass(): the page stepped and the pin
+ *        driven as it says, on a board with the switch.
+ * @param now       this pass's clock, ms
+ * @param frame_out a programming port has a frame on the wire
+ * @param writing   a programming port writes to the servo's memory
+ * @param supply_ok the heartbeat is trusted and the link is up; false
+ *                  switches the supply off
+ */
+void psup_pass(uint32_t now, bool frame_out, bool writing, bool supply_ok);
+/**
+ * @brief The start-up's first act after the wiring is restored: the PD
+ *        mini read and switched off before the rest of the start runs.
+ *
+ * Passes of supply_pass() with the output asked off and pdmini_hurry() on,
+ * until the module reads off or SUPPLY_PAGE_BOOT_OFF_MS have passed
+ * (supply_page_boot_owed()).  Nothing when no module is wired.
+ */
+void supply_boot_off(void);
 
 /* iomcu_tone.c */
 /**
@@ -926,6 +1061,13 @@ void can_report(uint32_t now);
  * line every 3s.
  */
 void reset_start(void);
+#if IOMCU_CONSOLE
+/**
+ * @brief reset_start()'s line through the console's output, once it exists: a
+ *        panel or a USB host that comes later reads it first.
+ */
+void reset_say(void);
+#endif
 
 /* ------------------------------------------------------ the inline helpers */
 
@@ -983,15 +1125,26 @@ static inline bool heartbeat_edge(void)
 }
 
 /**
- * @brief The programming ports out of PWM: held by the KST page or the HITEC
- * page, in any state but PWM and free.
+ * @brief What holds the bank down: the programming ports out of PWM, held by the
+ * KST, HITEC or ESC_WIRE page, in any state but PWM and free; ESC_PORT_QUIET_SLOT
+ * for an output slot the ESC_WIRE page holds.
  *
- * @return One bit per programming port.
+ * @return One bit per programming port, and ESC_PORT_QUIET_SLOT.
  */
 static inline uint8_t ports_quiet(void)
 {
     return (uint8_t)(kst_port_quiet_mask(&s_kst)
-                     | hitec_port_quiet_mask(&s_hitec));
+                     | hitec_port_quiet_mask(&s_hitec)
+                     | esc_port_quiet_mask(&s_esc));
+}
+
+/**
+ * @brief The CONTROL page across a hold's edges: call right after whatever can
+ *        move a port, a page write or a step, so no ARM written next is lost.
+ */
+static inline void ports_hold_follow(void)
+{
+    safety_gate_hold_follow(s_state.control, &s_ports_held, ports_quiet() != 0u);
 }
 
 /**
@@ -1002,19 +1155,34 @@ static inline uint8_t ports_quiet(void)
 static inline uint8_t ports_wire(void)
 {
     return (uint8_t)(kst_port_pin_mask(&s_kst)
-                     | hitec_port_pin_mask(&s_hitec));
+                     | hitec_port_pin_mask(&s_hitec)
+                     | esc_port_pin_mask(&s_esc));
 }
 
 /**
- * @brief Each wire page told which ports the other holds: neither takes a
- * port the other has.
+ * @brief Each wire page told which ports the others hold: neither KST nor HITEC
+ * takes a port the other has.  An ESC session and a servo session share one PD
+ * mini, so ESC_WIRE and the two exclude each other on every port; a firmware
+ * update keeps ESC_WIRE out as well.
  *
  * Called after a write of either and once a pass.
  */
 static inline void ports_exclusive(void)
 {
-    kst_port_other_mask(&s_kst, hitec_port_quiet_mask(&s_hitec));
-    hitec_port_other_mask(&s_hitec, kst_port_quiet_mask(&s_kst));
+    const uint8_t esc = esc_port_supply_hold(&s_esc) ? 0xFFu : 0u;
+
+    /* What the held output needs back: no write takes its PIO room. */
+    prog_port_freeze(&s_prog, esc != 0u);
+    tone_page_freeze(&s_tone, esc != 0u);
+    supply_page_wire_freeze(&s_supply, esc != 0u);
+
+    kst_port_other_mask(&s_kst, (uint8_t)(hitec_port_quiet_mask(&s_hitec) | esc));
+    hitec_port_other_mask(&s_hitec, (uint8_t)(kst_port_quiet_mask(&s_kst) | esc));
+    esc_port_other(&s_esc, (uint8_t)(kst_port_quiet_mask(&s_kst)
+                                     | hitec_port_quiet_mask(&s_hitec)
+                                     | (update_hw_holds_arm() ? 0x80u : 0u)
+                                     | (s_supply_attach && !s_pd_open ? 0x40u
+                                                                      : 0u)));
 }
 
 /**
@@ -1027,6 +1195,43 @@ static inline bool ports_hold_supply(void)
 {
     return kst_port_state(&s_kst) != LINK_KST_PWM
            || hitec_port_supply_hold(&s_hitec);
+}
+
+/**
+ * @brief A wire page writes to a servo's memory now: the KST port's
+ * session sending a WRITE, RESTORE or RELEASE, or the HITEC port's step
+ * running or its MORE bit standing (protocol 4.31).
+ *
+ * Told to the SUPPLY page with ports_hold_supply() after a write of either
+ * page and once a pass, so a SUPPLY OFF in the same batch of frames as the
+ * command that starts a write is judged against that write.
+ *
+ * @return True while a write runs.
+ */
+static inline bool ports_writing(void)
+{
+    return kst_port_writing(&s_kst) || hitec_port_writing(&s_hitec);
+}
+
+/**
+ * @brief Tell the ports' supply that a port holds it and whether it writes:
+ *        the PROG_SUPPLY page on a board that switches the ports' own
+ *        supply, the SUPPLY page on any other.  The other one is told no
+ *        port holds it: on the rbmod carrier the PD mini feeds the servo
+ *        rails and no programming port.  An ESC session holds the SUPPLY page
+ *        on every board, and PROG_SUPPLY where it is fitted.
+ */
+static inline void ports_tell_supply(void)
+{
+    const bool own = prog_supply_fitted(&s_psup);
+    const bool hold = ports_hold_supply();
+    const bool writing = ports_writing();
+    supply_page_hold(&s_supply, (!own && hold) || esc_port_supply_hold(&s_esc));
+    supply_page_port_writes(&s_supply,
+                            (!own && writing) || esc_port_writing(&s_esc));
+    /* Under an ESC session its ON is refused, on the rule of a port's hold. */
+    prog_supply_hold(&s_psup, (own && hold) || esc_port_supply_hold(&s_esc));
+    prog_supply_port_writes(&s_psup, own && writing);
 }
 
 /**
@@ -1049,10 +1254,14 @@ static inline uint8_t ports_pulsing(void)
 static inline void reserve_held(void)
 {
     outputs_reserve_pins(&s_outputs, s_base_reserved
+#if IOMCU_CONSOLE
+                                     | s_console_pins
+#endif
                                      | supply_page_pins(&s_supply)
                                      | sense_page_held(&s_sense)
                                      | tone_page_pins(&s_tone)
-                                     | prog_port_pins(&s_prog));
+                                     | prog_port_pins(&s_prog)
+                                     | esc_port_pins(&s_esc));
 }
 
 /**

@@ -35,7 +35,7 @@ enum { MK_ROW = 0, MK_LINE, MK_PLOT, MK_MEASURED, MK_TAG, MK_SET, MK_SPEED,
        MK_LEFT, MK_COUNT };
 
 static const struct { int x, y; } k_mark[MK_COUNT] = {
-    { 516, 496 }, { 950, 80 }, { 950, 130 }, { 318, 496 }, { 700, 40 },
+    { 516, 468 }, { 950, 80 }, { 950, 130 }, { 318, 468 }, { 700, 40 },
     { 700, 198 }, { 700, 240 }, { 40, 300 },
 };
 

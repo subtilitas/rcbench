@@ -669,8 +669,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
 }
 
 /*
- * Touch events were lost between two frames, so this screen's record of what:
- * is on the glass cannot be trusted.  Drop the gesture rather than let a
+ * Touch events were lost between two frames, or the screen was left, so this
+ * screen's record of what is on the glass cannot be trusted.  A screen that
+ * is not showing gets no release: the finger that acknowledged a fault and
+ * lifted after the screen closed would otherwise still be pressed here, and
+ * the next fault's hold would fill and acknowledge with nobody touching.  Drop the gesture rather than let a
  * hold that completes on a timer finish on a contact that may have gone.
  * Nothing is commanded here: a gesture abandoned part way asks for nothing,
  * which is what letting go early already does.
@@ -689,7 +692,7 @@ static const ui_screen_t k_screen = {
     .title  = "CAN BUS FAULT",
     .reset  = reset,
     .enter  = NULL,
-    .leave  = NULL,
+    .leave  = cancel,
     .tick   = tick,
     .event  = event,
     .cancel = cancel,

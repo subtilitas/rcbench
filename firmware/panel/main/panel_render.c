@@ -14,6 +14,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "knob.h"
 #include "knob_task.h"
@@ -245,17 +246,23 @@ static void send_cmd(const panel_cmd_t *in)
         /* The supply's OFF, for the same reason as the disarm. */
         atomic_fetch_add(&s_supply_offs, 1u);
         atomic_store(&s_supply_off_request, true);
+    } else if (pc->kind == PANEL_CMD_PROG5V && pc->prog5v.off) {
+        /* The ports' 5V's OFF likewise; counted by the caller. */
+        atomic_store(&s_prog5v_off_request, true);
     }
 
     if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {
         return;
     }
     panel_cmd_t stale;
-    if (xQueueReceive(s_cmd_q, &stale, 0) == pdTRUE
-        && stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
+    if (xQueueReceive(s_cmd_q, &stale, 0) != pdTRUE) {
+        /* nothing taken out */
+    } else if (stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
         /* An ON the control task will never see is one it will never take
          * either; counted here, so nothing waits on it for ever. */
         atomic_fetch_add(&s_supply_ons_taken, 1u);
+    } else if (stale.kind == PANEL_CMD_PROG5V && stale.prog5v.on) {
+        atomic_fetch_add(&s_psup_ons_taken, 1u);
     }
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
@@ -282,6 +289,16 @@ bool supply_live_or_coming(void)
     const bool coming = atomic_load(&s_supply_ons_taken)
                         != atomic_load(&s_supply_ons_sent);
     return coming || atomic_load(&s_supply_live);
+}
+
+bool supplies_live_or_coming(void)
+{
+    /* The counters before the flag, as above: the control task publishes
+     * s_psup_live before it counts an ON taken. */
+    const bool psup_coming = atomic_load(&s_psup_ons_taken)
+                             != atomic_load(&s_psup_ons_sent);
+    return supply_live_or_coming() || psup_coming
+           || atomic_load(&s_psup_live);
 }
 
 /*
@@ -443,6 +460,9 @@ void flush_screen_commands(uint32_t stops_now)
                            .consumed_seq = consumed };
         send_cmd(&pc);
     }
+    /* On a board with the ports' own supply a programmer's port holds no
+     * PD mini control (supply_link_session_blocks()). */
+    supply_screen_set_ports_own(atomic_load(&s_psup_owns));
     /* A programming port's command on the supply, onto the screen before
      * the screen's set points are published; see s_supply_adopt_mv. */
     const unsigned adopt = atomic_load(&s_supply_adopt_gen);
@@ -450,6 +470,10 @@ void flush_screen_commands(uint32_t stops_now)
         supply_screen_adopt((float)atomic_load(&s_supply_adopt_mv) / 1000.0f,
                             (float)atomic_load(&s_supply_adopt_ma) / 1000.0f);
     }
+    /* And the operator's own back once the port is done and the output
+     * reads off, read after the count: as new as the command taken. */
+    supply_screen_port_done(atomic_load(&s_supply_free_off)
+                            && !servo_screen_output_held());
     /* The limits and the set points first, as levels; see
      * s_supply_set_mv. */
     publish_supply_levels();
@@ -463,6 +487,24 @@ void flush_screen_commands(uint32_t stops_now)
                            .stops = stops_now,
                            .supply_offs = atomic_load(&s_supply_offs),
                            .pdmini_edits = atomic_load(&s_pdmini_edits),
+                           .loss_gen = loss_gen,
+                           .consumed_seq = consumed };
+        send_cmd(&pc);
+    }
+    /* And the PROG 5V box's: its OFF counted first, so an ON still in the
+     * queue behind an earlier frame is not applied after it. */
+    prog5v_cmd_t p5;
+    if (prog5v_box_poll_cmd(&p5)) {
+        if (p5.off) {
+            atomic_fetch_add(&s_prog5v_offs, 1u);
+        }
+        if (p5.on) {
+            /* Counted before it is queued: the gates see it coming. */
+            atomic_fetch_add(&s_psup_ons_sent, 1u);
+        }
+        panel_cmd_t pc = { .kind = PANEL_CMD_PROG5V, .prog5v = p5,
+                           .stops = stops_now,
+                           .prog5v_offs = atomic_load(&s_prog5v_offs),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
@@ -609,4 +651,38 @@ void outputs_apply(const outbind_t *b)
     }
     panel_cmd_t pc = { .kind = PANEL_CMD_OUTPUTS, .bind = *b };
     send_cmd(&pc);
+}
+
+void esc_wire_ui_service(void)
+{
+    static esc_prog_feed_t feed;
+    static esc_prog_cmd_t cmd;
+
+    snap_lock();
+    feed = s_snap.esc;
+    snap_unlock();
+    esc_wire_panel_feed(&feed);
+    while (uxQueueSpacesAvailable(s_esc_q) > 0u
+           && esc_wire_panel_next_cmd(&cmd)) {
+        if (xQueueSend(s_esc_q, &cmd, 0) != pdTRUE) {
+            break;
+        }
+    }
+    if (esc_wire_panel_card_look()) {
+        (void)storage_check();
+    }
+    /* The files: the log task has the card.  No card call is made here. */
+    static bool card_out;
+
+    if (card_out
+        && atomic_load(&s_esc_card_answered) == atomic_load(&s_esc_card_sent)) {
+        card_out = false;
+        esc_wire_panel_card_done(&s_esc_card_done);
+    }
+    if (!card_out && esc_wire_panel_card_take(&s_esc_card_req)) {
+        /* Before the count, which hands the request over. */
+        s_esc_card_mount = storage_mount_count();
+        atomic_fetch_add(&s_esc_card_sent, 1u);
+        card_out = true;
+    }
 }

@@ -174,6 +174,7 @@ static void type_ok(setting_id_t id, const char *text)
 {
     open_row(row_of(id));
     CHECK(kp()->open);
+    CHECK(motor_screen()->covered());
     kpr_type(&k_settings, text);
     kkey(UI_KEY_OK);
 }

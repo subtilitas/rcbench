@@ -11,6 +11,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "prog_registry.h"
 #include "servo_screen.h"
 
 #include <math.h>
@@ -332,6 +333,16 @@ void svs_toggle_sweep(void)
 
 bool servo_screen_sweeping(void) { return s.sweeping; }
 
+bool servo_screen_output_held(void)
+{
+    return (s.out_down && !s.out_press_on) || s.ask.open;
+}
+
+bool servo_screen_asks_restore(void)
+{
+    return s.ask.open && s.ask.purpose == ASK_RESTORE;
+}
+
 bool servo_screen_paused(void) { return s.paused; }
 
 uint32_t servo_screen_curve_ms(void) { return s.clock_ms - s.sw.start_ms; }
@@ -621,6 +632,13 @@ void svs_tick_body(float dt_s)
     if (!servo_limrun_running(&s.lim) && !s.lim_leaving) {
         prog_follow_hold();
     }
+    /* An ARM asked as a programmer took a pin: the IOmcu refuses it, and no
+     * answer comes to wait for. */
+    if (s.gate.arm_asked && !s.gate.armed && prog_holds()) {
+        ui_value_drop_arm(&s.gate);
+        /* The drop says why: the refusal may not reach this screen. */
+        ui_router_set_alert(prog_reg_hold_alert());
+    }
     if (prog_holds() != s.kst_held) {
         s.kst_held = prog_holds();
         ++s.arm_rev;
@@ -704,8 +722,12 @@ void svs_tick_body(float dt_s)
         ++s.dial_rev;
     }
     if (s.arm_down && svs_arm_locked() && ui_hold_leave(&s.arm)) {
-        /* The port was found held under a hold of ARM: no arm is sent. */
+        /* The port was found held under a hold of ARM: no arm is sent, and the
+         * alert says why. */
         s.arm_down = false;
+        if (prog_holds()) {
+            ui_router_set_alert(prog_reg_hold_alert());
+        }
         ++s.arm_rev;
     }
     if (s.arm_down && !s.gate.armed) {
@@ -767,6 +789,9 @@ void svs_tick_body(float dt_s)
         close_alone();
         servo_invalidate();
     }
+    /* A programming port that let go of a live output: the operator's set
+     * points offered back onto it. */
+    ask_restore_follow();
     if (s.out_down && !s.out_press_on && !on) {
         ++s.sup_rev;
         if (ui_hold_tick(&s.out_hold, dt_s)) {
@@ -788,6 +813,18 @@ void svs_tick_body(float dt_s)
     if (s.out_hold.flash_ms > 0) {
         ui_hold_flash_step(&s.out_hold, dt_s);
         ++s.sup_rev;
+    }
+    /* The PROG 5V box: its hold, and what it shows moving.  A press the
+     * box has dropped (a port took the supply) is over here too. */
+    {
+        const uint32_t rev = s.p5.rev;
+        prog5v_box_tick(&s.p5, dt_s);
+        if (s.p5_down && !s.p5.pressed) {
+            s.p5_down = false;
+        }
+        if (s.p5.rev != rev) {
+            ++s.power_rev;
+        }
     }
     if (supply_screen_set_v() != s.sup_v || supply_screen_set_i() != s.sup_i) {
         s.sup_v = supply_screen_set_v();

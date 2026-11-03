@@ -7,8 +7,9 @@ einzelnen Bildschirme bedient werden.
 
 ## Das Statusband
 
-Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
-Laufzeituhr (in ARMED oder nach einem Lauf), der Arm-Chip, ein
+Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, "?" auf
+einem Bildschirm mit Hilfe ([Die Bildschirmhilfe](#die-bildschirmhilfe)),
+die Laufzeituhr (in ARMED oder nach einem Lauf), der Arm-Chip, ein
 FEHLER-Code, sobald einer gemeldet wird, der Modus und LINK oder KEINE VERBINDUNG.
 Der Modus ist BENCH, solange der Link steht und das Panel die Ausgänge des
 IOmcu ansteuert, und SIM, solange kein IOmcu antwortet und das
@@ -63,16 +64,19 @@ Band sind die oberen 60px des Panels.
   noch auf dem Glas liegt, auf dem Bildschirm, zu dem das Tag führt, nichts.
 
 STOP ist 168 x 48px groß und sitzt am rechten Ende des Bands, ab x 850.
-Die Chips stehen von STOP aus nach links, 8px davon entfernt und 6px
+"?" ist 40 x 44px groß, 8px links von STOP, x 802 bis 842; sein Platz bleibt
+auf einem Bildschirm ohne Hilfe frei, damit die anderen Chips zwischen den
+Bildschirmen nicht wandern. Die Chips stehen von "?" aus nach links, 4px
 auseinander. Jeder Chip ist 44px hoch, seine Beschriftung in der Schrift
-10 x 20px, 28px von der linken Kante des Chips. Die breiteste Reihe, eine
-Laufzeituhr von 10 Stunden, ARMED MOTOR, ein FEHLER-Code, BENCH und LINK auf
-Deutsch, beginnt bei x 276.
+10 x 20px, 22px von der linken Kante des Chips. Ein Tipp trifft einen Chip
+über die Höhe des Bands und 2px links und rechts davon. Die breiteste Reihe,
+eine Laufzeituhr von 10 Stunden, ARMED MOTOR, ein FEHLER-Code, BENCH und LINK
+auf Deutsch, ist 528px breit und beginnt bei x 270.
 
 Das Home-Tag ist 44px hoch, bei x 8, y 8, sein Name in der Schrift
 20 x 36px. Die Home-Tags enden bei x 268 (MOTOR & ESC) und auf den anderen
 Bildschirmen bei x 248 oder weniger, also reicht keine Chip-Reihe unter ein
-Home-Tag.
+Home-Tag; im breitesten Fall bleiben 2px zwischen Tag und LINK.
 
 ### Hilfe zu den Chips
 
@@ -100,6 +104,9 @@ Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
   Kastens, auf das Band neben den Chips, auf das Home-Tag oder auf den
   Bildschirm. Eine Kachel, eine Schaltfläche oder das Alert-Band unter dem
   Finger wird nicht gedrückt.
+- Ein Halten von 1000ms auf dem leeren Teil des Bands nimmt einen
+  [Screenshot](#screenshot) auf: Der Kasten bleibt für das Bild stehen und
+  schließt danach.
 - STOP ist die Ausnahme: Ein Druck auf STOP schließt den Kasten und stoppt
   sofort, wie ohne Kasten.
 - Ebenso ein Bedienelement, das anhält, was der Prüfstand treibt: DISARM,
@@ -122,7 +129,7 @@ Der Kasten von FEHLER nennt jedes Bit, seinen Code und seine Bedeutung:
 
 | Code | Bit | Von diesem Release gesetzt |
 | --- | --- | --- |
-| 01 | LINK_SILENT | der IOmcu hat 200ms keine Anfrage gehört; bleibt bis zum nächsten ARM |
+| 01 | LINK_SILENT | der IOmcu hat 200ms keine Anfrage gehört; bleibt bis zum nächsten ARM oder Start des IOmcu |
 | 02 | OVERCURRENT | nie |
 | 04 | OVERTEMP | nie |
 | 08 | STALL | nie |
@@ -143,6 +150,208 @@ kennt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 
 ![Der Kasten von ARMED MOTOR](img/de/band-armed.png)
 
+## Die Bildschirmhilfe
+
+"?" im Band öffnet die Hilfe des Bildschirms, der oben ist: nummerierte
+Marken an seinen Bedienelementen und ein Dock, das sagt, was jedes tut. Das
+Menü hat eine Hilfe; die anderen Bildschirme zeigen noch kein "?".
+Tastenfelder, Tastaturen und Fragen zeigen ebenfalls kein "?".
+
+![Die Hilfe des Menüs auf Seite 1](img/de/help-overview.png)
+
+| Teil | Maß |
+| --- | --- |
+| Dock | 480 x 488px, 8px vom linken oder rechten Rand des Panels, y 64 bis 552; die Seite bestimmt die Seite |
+| Lebende Hälfte | die anderen 528px des Bildschirms; der Bildschirm zeichnet dort und läuft weiter |
+| Kopf | der Titel der Seite und "Seite / Seiten" |
+| Eintrag | seine Nummer in einem Abzeichen von 28px, der Name des Bedienelements in der Akzentfarbe, dann was es tut, in der Schrift 10 x 20px, 41 Zeichen pro Zeile, höchstens 3 Zeilen |
+| Einträge pro Seite | höchstens 5 |
+| Web-Zeile | `Mehr: subtilitas.github.io/rcbench/help/de/`, auf Englisch die Adresse ohne `de/` |
+| VORIGE und NÄCHSTE | 124 x 48px, 8px auseinander, im Band von x 8 bis 264, y 6 bis 54, an der Stelle des Home-Tags, auf jeder Seite dieselbe |
+| SCHLIESSEN | 140 x 48px, mittig am unteren Rand des Docks, y 496 bis 544 |
+| Marken | ein Abzeichen von 28px mit der Nummer des Eintrags 4px innerhalb der oberen linken Ecke des Bedienelements, oder 4px links von einem Bedienelement unter 56px Höhe oder Breite; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
+
+Ein Bedienelement im Band hat sein Abzeichen unter dem Band, unter seinem
+linken Ende. Das Dock endet 4px über dem Alert-Band, ein Hinweis verdeckt
+also nichts davon.
+
+VORIGE und NÄCHSTE bleiben an einer Stelle, während das Dock die Seite
+wechselt; ein zweiter Tipp an die Stelle des ersten blättert also weiter.
+Das Band ist der einzige Ort, den keine Seite markiert: im Menü füllen die
+Kacheln den Bildschirm, und jede Kachel ist auf einer der Seiten markiert.
+Der Home-Tag, den sie verdecken, tut nichts, solange die Hilfe offen ist,
+und die Chips des Bands beginnen frühestens bei x 270; die zwei
+Schaltflächen verdecken also keinen Chip, kein "?" und kein STOP. Der
+Home-Tag kommt zurück, wenn die Hilfe schließt.
+
+- Ein Tipp auf "?" öffnet Seite 1. Ein Druck, der von "?" rutscht, öffnet
+  nichts.
+- VORIGE und NÄCHSTE blättern und wirken beim Loslassen auf derselben
+  Schaltfläche. VORIGE auf der ersten Seite und NÄCHSTE auf der letzten sind
+  abgeblendet und tun nichts.
+- SCHLIESSEN schließt die Hilfe, ebenso ein Druck auf "?".
+- Ein Druck auf das Dock oder auf ein Abzeichen tut nichts.
+- Jeder andere Druck schließt die Hilfe und tut sonst nichts: auf der
+  lebenden Hälfte, auf dem Band neben den Chips, auf dem Alert-Band.
+- Ein Halten von 1000ms auf dem leeren Teil des Bands nimmt einen
+  [Screenshot](#screenshot) auf: Die Hilfe bleibt für das Bild stehen und
+  schließt danach.
+- Ein Druck auf STOP schließt die Hilfe und stoppt sofort. Ein Druck auf
+  einen Chip schließt die Hilfe und öffnet beim Loslassen den Kasten des
+  Chips.
+- Ein Druck auf DISARM, AUSGANG AUS, ABBRECHEN, TEST BEENDEN oder LAUF
+  BEENDEN schließt die Hilfe und wirkt, wie ohne Hilfe.
+- Das Öffnen der Hilfe lässt los, was der Bildschirm hält: ein Ziehen endet,
+  wo es ist, ein Halten auf ARM wird abgebrochen.
+- Ein Dreh am Knopf bewegt nichts, solange die Hilfe offen ist, und die
+  Hilfe bleibt offen.
+- Das Verlassen des Bildschirms schließt die Hilfe, ebenso eine Änderung
+  der Seiten des Bildschirms. Ein verlorener oder zurückkehrender Link und
+  der Wechsel zwischen SAFE und ARMED lassen sie offen; die Namen auf ihrer
+  Seite folgen dem Zustand.
+- In ARMED bietet die Hilfe nur die Seiten an, deren Dock kein
+  Bedienelement verdeckt, das einen Ausgang anhält, und keine ZIEL-Zeile;
+  Seite 1 sagt das dann in einer Zeile. Die Seiten des Menüs zeigen alle
+  auch in ARMED.
+
+Die Hilfe des Menüs hat vier Seiten: die linken zwei Spalten der Kacheln mit
+dem Dock rechts, die rechten zwei mit dem Dock links, STOP, der
+Arm-Chip, "?" und die Marke SIMULIERT mit dem Dock links, und der leere Teil
+des Bands für das Halten zum Screenshot mit dem Dock rechts.
+
+## Screenshot
+
+Ein Halten von 1000ms auf dem leeren Teil des Bands nimmt auf, was das Panel
+zeigt, samt Band. Nichts auf dem Panel markiert die Stelle; die Hilfe des Menüs
+und die Web-Hilfe sagen, wo sie ist.
+
+![Das Popup des Screenshots](img/de/shot-popup.png)
+
+| Teil | Wert |
+| --- | --- |
+| Wo | die ganze Höhe des Bands, von 8px rechts des Home-Tags bis 8px links des Chips ganz links, aus den Rechtecken berechnet, die das Band zeichnet. Die schmalste Lücke über alle Bildschirme mit Band, Englisch und Deutsch: 176px in SAFE ohne FAULT-Chip, 106px in ARMED MOTOR |
+| Das Halten | 1000ms an Frames, ein später Frame zählt höchstens 100ms, wie bei einem Halte-Button. Bei 999ms nichts |
+| Was es beendet | ein Gleiten aus der Lücke, ein Chip, der unter dem Kontakt erscheint, jedes Ereignis eines anderen Kontakts, ein verlorenes Touch-Ereignis, ein Wechsel des Bildschirms. Das Loslassen tut nichts |
+| Über dem Kasten eines Chips oder der Hilfe | sie bleiben für das Bild stehen und schließen, wenn das Halten endet, mit Bild oder ohne. Ein Loslassen vor 1000ms schließt sie und nimmt nichts auf. Ein zweiter Kontakt beendet das Halten und trifft sie nach ihren eigenen Regeln: sein Druck schließt sie |
+| Was es nicht ist | ein Druck auf einen Chip, das Home-Tag, "?" oder STOP. Kein Bildschirm sieht den Kontakt |
+| Antwort bei 1000ms | die Notiz im Band, keine Füllung während des Haltens: `Screenshot aufgenommen.` oder `Screenshot aufgenommen. Er öffnet sich, sobald der Prüfstand ruht.` |
+| Speicher | 1 305 600B PSRAM (pseudo-statisches RAM), 1 228 800B fürs Bild und 76 800B für die Vorschau, von der Aufnahme bis CANCEL oder einem gelungenen Sichern. Ein Neustart verliert es |
+| Kein Speicher | das Band sagt `Kein Screenshot: 1 305 600B PSRAM sind nicht frei.`, sonst ändert sich nichts |
+| Halten, während eines wartet | ersetzt es im selben Speicher: `Neuer Screenshot aufgenommen. Er ersetzt den wartenden.` |
+| Halten, während ein gestopptes Sichern endet | kein Bild: `Kein Screenshot: Der letzte wird noch geschrieben.`, höchstens eine PNG-Zeile lang |
+| Ein fester Wert auf dem Glas | kein Bild: `Kein Screenshot: Dieser Bildschirm zeigt ein festes Passwort oder einen festen Code.` WI-FI lehnt ab, solange es ein festes [HOTSPOT-PASSWORT oder einen festen WEB-CODE](#hotspot-passwort-und-web-code) zeigt: in der Ansicht dieses Werts, auf seiner Tastatur und in den Zeilen eines laufenden Funks mit einem der beiden fest. Ein Bild auf der Karte ist vom Browser lesbar. Ein ZUFALL-Passwort und ein ZUFALL-Code werden aufgenommen, denn sie enden mit der Sitzung |
+| Bildschirme ohne dieses Halten | SPLASH, der Bus-Fehler-Bildschirm, PANEL UPDATE und der Fortschritt des IOmcu-Updates: Sie haben kein Band. Die Frage des IOmcu-Updates und die Release-Erinnerung: Sie können nicht sagen, ob ein Kasten sie verdeckt, und das Popup würde sich erst öffnen, nachdem sie weg sind. MOTOR & ESC, der längste Titel, hat mit ARMED MOTOR und einem langen FAULT-Chip keine Lücke |
+
+Das Bild entsteht in diesem Frame auf der Render-Task, was auch immer der
+Prüfstand tut. Es liest keinen Ausgang und schreibt keinen; STOP, DISARM und der
+Rest bleiben aktiv. Es ist der Frame, wie ihn der Bediener sieht, auch über einer
+Box, einer Liste oder einem Tastenfeld, und bei `Bilddrehung` 180°, denn der
+Frame wird aufrecht gezeichnet und auf dem Weg zum Panel gedreht. Die Notiz kommt
+einen Frame später und ist nicht im Bild.
+
+### Das Popup
+
+Das Popup öffnet sich, wenn der Prüfstand ruht, auf einem Bildschirm mit Band,
+wenn dort sonst nichts offen ist und kein Kontakt auf dem Glas liegt. Der Druck,
+der entschärft oder quittiert hat, landet nicht darauf: Es nimmt nur einen neuen
+Druck an.
+
+| Teil | Wert |
+| --- | --- |
+| Vorschau | 256 x 150px, jedes Pixel der Mittelwert von 4 x 4, oben links im Inhalt |
+| Ordner und Name | `screenshots/` und der Name mit `.PNG`, unter der Vorschau |
+| Tastatur | die Dateinamen-Tastatur, x 280 bis zum Panelrand. OK heißt `SICHERN` |
+| Band | STOP und die Chips bleiben aktiv. Home-Tag und Knopf tun nichts, "?" zeigt sich nicht |
+
+Das Popup schließt sich in dem Moment, in dem eine dieser Bedingungen falsch
+wird, und das Bild wartet wieder, mit dem Namen wie getippt. Nur CANCEL oder ein
+gelungenes Sichern beenden es.
+
+| Der Prüfstand ruht, wenn | Gelesen aus |
+| --- | --- |
+| der Link antwortet oder der Prüfstand simuliert ist | `link_up` des Snapshots, das Flag des Modells |
+| SAFE, kein Arm wartet | `armed`, `arm_wanted` des Snapshots |
+| keine STOP-Anforderung wartet | `s_stop_request` |
+| das Netzteil aus ist, kein ON unterwegs | `supply.output` des Snapshots, der Ausgang des neuesten Samples, `supply_live_or_coming()` |
+| PROG 5V aus ist, kein ON unterwegs | `prog5v_box_on()`, `supplies_live_or_coming()` |
+| kein Port gehalten wird | `supply_screen_port_held()`, `kst_panel_holds_port()`, `hitec_panel_holds_port()`, die Holds der HITEC-Seite in `s_drive` |
+| keine Programmier-Session offen ist | `kst_panel_is_open()`, `hitec_panel_is_open()`, `esc_stick_panel_stage()` |
+| kein Karten-Auftrag eines Programmers läuft | die Datei- und Karten-Zähler von KST und Hitec |
+| kein Sweep und keine Pause | `servo_screen_sweeping()`, `servo_screen_paused()` |
+| kein automatischer Test und kein Limit-Lauf | `servo_screen_testing()`, `servo_screen_limit_running()`, `s_servo_testing` |
+| kein ESC-STICK-Lauf | `esc_stick_panel_profile()` |
+| kein Update, keine Installation, kein Download | `cu.active` des Snapshots, `s_cu_busy`, `s_fw_installing`, Flag und Abruf des Downloads |
+| kein FAULT-Bit gesetzt ist | `faults` des Snapshots |
+| kein Fehler-Log geschrieben wird | `log_fault_busy()` |
+| kein Log-Lauf, keine Testdatei, keine Aufzeichnung offen ist | `panel_run_open()` |
+
+Ausgänge werden nur in ARMED getrieben, also deckt SAFE den Puls an einem Pin
+ab. Ein stehendes FAULT-Bit hält das Popup zurück, bis es gelöscht ist. Auch ein
+Tastenfeld, eine Tastatur, eine Liste, eine Box oder eine Frage eines Bildschirms
+halten es zurück.
+
+### Sichern
+
+SICHERN schreibt `screenshots/<Name>.PNG` und legt den Ordner an, wenn er fehlt.
+Der Ordner ist kein FIXED-Ordner: Nichts vom Prüfstand liest ihn, FILES und die
+Wi-Fi-Seite benennen ihn um und löschen ihn wie jeden anderen. Ein FILES-Fenster,
+das den Ordner zeigt, listet die neue Datei beim nächsten Lesen.
+
+| Teil | Wert |
+| --- | --- |
+| Format | PNG (Portable Network Graphics), 1024 x 600, 8 Bit RGB, jeder RGB565-Wert mit seinen oberen Bits in den unteren wiederholt |
+| Standardname | `SHOT` und 4 Ziffern, eins über dem höchsten solchen Namen im Ordner; höchstens `SHOT9999` |
+| Name | bis 55 Bytes vor `.PNG`, die Regeln der Namen von FILES (`fm_name.h`) |
+| Ein vergebener Name | abgelehnt: `Dieser Name ist vergeben. Bitte einen anderen eingeben.` Nichts wird überschrieben |
+| Größe | 38 388 bis 77 840B auf der Karte, 8 Dateien; der Bildschirm OUTPUTS mit der Platinenzeichnung gab die größte |
+| Zeit | 5,3 bis 6,3s allein; 0,40 bis 1,00s mit einem Schreibvorgang der Wi-Fi-Seite, der auf die Sperre der Karte wartet. Die Ursache des Unterschieds ist nicht untersucht. Die Konsole schreibt die Zeit jedes Sicherns und jeder Kopie |
+| Speicher beim Sichern | 36 928B PSRAM für den Encoder, 16 384B internes RAM für den Kartenpuffer und 7 168B internes RAM für den Stack der Task, am Ende frei |
+| Task | `shot`, Priorität 0 auf Kern 0, unter der Render-Schleife. Control-Task und Heartbeat sind nicht beteiligt |
+| Stack von `shot` | niedrigster Stand 5 116B unbenutzt von 7 168B |
+| Läufe auf einem Panel | 30 Screenshots hintereinander: kein Fehler, kein Neustart. Kein FLIP TIMEOUT und keine Watchdog-Zeile. `FM_ERR_BUSY` trat in 3 Läufen mit überlappendem Sichern und Schreibvorgang der Wi-Fi-Seite nicht auf: Beide Seiten warten und enden |
+| Zweiter Kontakt auf einem Panel | 6 von 6 Prüfungen bestanden: Ein zweiter Kontakt während des Haltens nimmt kein Bild auf, und sein Druck wirkt; ein schon liegender Kontakt beginnt kein Halten; STOP während eines Haltens wirkt; ein Halten über der Hilfe mit einem zweiten Kontakt nimmt keins auf; das Popup wartet, bis alle Kontakte abgehoben sind, und drückt keine Taste; 5 gleichzeitige Kontakte auf einer Liste hinterlassen keinen hängenden Druck |
+| Auf einem Panel nicht gelaufen | keine Karte im Schacht, Pixelgleichheit des PNG mit einem gerenderten Frame, ein Glaskontakt zusammen mit einem Injektor-Kontakt |
+
+Eine Datei wird als `<Name>.PNG.NEW` geschrieben und dann umbenannt: Ein
+abgebrochenes Sichern oder eine gezogene Karte hinterlässt keine Datei dieses
+Namens. Ein Stromausfall hinterlässt die `.NEW`; das nächste Sichern dieses
+Namens löscht sie.
+
+![Ein laufendes Sichern](img/de/shot-saving.png)
+
+![Eine volle Karte](img/de/shot-full.png)
+
+| Beim Sichern oder danach | Das Popup sagt |
+| --- | --- |
+| währenddessen | `Sichere 42%` und ein Balken. Nur CANCEL nimmt einen Druck an |
+| ein gelungenes Sichern | schließt sich; das Band: `Gesichert: screenshots/SHOT0007.PNG` |
+| keine Karte, Karte weg | `Keine Karte. Karte einsetzen und erneut SICHERN.` |
+| volle Karte | `Die Karte ist voll. Platz schaffen und erneut SICHERN.` |
+| schreibgeschützt | `Die Karte ist schreibgeschützt.` |
+| Schreiben fehlgeschlagen | `Schreiben fehlgeschlagen. Das Bild bleibt: erneut SICHERN.` |
+| kein Speicher für Encoder oder Puffer | `Kein Speicher für das PNG. Nichts wurde geschrieben.` |
+| ein anderer Karten-Auftrag länger als 2000ms | `Die Karte ist belegt. Gleich erneut SICHERN.` |
+| der Prüfstand hörte während des Sicherns auf zu ruhen | beim nächsten Öffnen: `Der Prüfstand war beschäftigt. Nichts gespeichert. Tippe erneut auf SICHERN.` |
+
+Jeder Fehler bleibt auf dem Popup, das Bild bleibt erhalten. Die Sperre der
+Karten-Aufträge ist die von FILES und der Wi-Fi-Seite: ein Auftrag zur Zeit;
+die Schreibvorgänge der Seite warten bis 2000ms auf ein Sichern und antworten dann
+`PANEL_BUSY`. CANCEL beim Sichern stoppt es an der nächsten Zeile, und das Bild geht,
+sobald es steht. Ein Prüfstand, der aufhört zu ruhen, tut dasselbe und behält
+das Bild. Die Zeile dieses Stopps oder eines Fehlers, der bei geschlossenem Popup
+eintrifft, erscheint, wenn sich das Popup wieder öffnet. Ein neues Bild oder
+CANCEL löscht sie.
+
+Die Kopie sind 1 228 800B auf der Render-Task in einem Frame. Sie ist nicht auf
+mehrere Frames verteilt: Die Bildpuffer ändern sich mit jedem Frame, eine Kopie
+über mehrere würde Frames mischen. Auf dem Build-Rechner dauert sie 0,1ms, auf
+dem Panel 25,8 bis 31,6ms, Median 28,3ms über 54 Kopien; die Konsole schreibt
+jede. Mindestens 1 Frame des Panels wurde im Lauf verpasst. Die Bildrate bei
+einem Sweep liegt bei 30 bis 37fps, und der 5s-Wert bleibt um ein Halten
+unverändert. Die Zeit des einzelnen Frames mit der Kopie ist nicht gemessen. Die
+Control-Task auf dem anderen Kern wartet nicht darauf, und die
+Frame-Überwachung erlaubt 1000ms.
+
 ## Das Alert-Band
 
 Eine Störung, die der Bildschirm selbst nicht zeigt, erscheint in einem roten
@@ -152,7 +361,8 @@ steht in der Schrift 10 x 20px, höchstens 97 Zeichen je Zeile auf bis zu
 ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
 
 - Es verschwindet 30s nach dem Frame, in dem es kam. Ein neuer Alert, auch
-  mit demselben Text, startet die 30s neu.
+  mit demselben Text, startet die 30s neu. Eine Meldung, der [Hinweis eines
+  Halte-Buttons](#halte-buttons), steht 4s in Bernstein und weicht einem Alert.
 - Ein Tippen auf das Band löscht es früher: auf dem Band drücken und
   loslassen, rechts mit einem `x` markiert. Der Bildschirm darunter bekommt
   weder dieses Tippen noch das eines zweiten Fingers auf dem Band; nur das
@@ -175,6 +385,53 @@ ARM und jedes Bedienelement, das den Prüfstand anhält, enden darüber.
   bleibt bis zum Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
   Ein späterer Alert erscheint darüber; ist er gelöscht, steht wieder dieser.
 
+## Halte-Buttons
+
+Ein Halte-Button wirkt nach 2s Kontakt (`UI_HOLD_S`). Ein Loslassen vor 2s
+sendet nichts und zeigt den Hinweis des Buttons im Alert-Band als Hinweis:
+das Band in Bernstein (`UI_C_WARN`) mit dunkler Schrift statt der Gefahrenfarbe,
+4s lang, durch einen Tipp auf das Band früher gelöscht. Ein kurzes Tippen ist
+keine Störung, also ist der Hinweis kein Alert. Ein Alert hat Vorrang: Solange
+einer steht, erscheint der Hinweis nicht, und ein Alert, der während des
+Hinweises kommt, ersetzt ihn. Der Hinweis ist eine Zeile von höchstens
+97 Zeichen.
+
+- Der Hinweis erscheint nur bei einem Loslassen, das der Finger auf dem Button
+  gemacht hat. Er erscheint nicht, wenn der Finger den Button vorher verlassen
+  hat (das Halten ist abgebrochen), wenn der Touch verloren ging oder das
+  Loslassen kein Tipp ist (`TOUCH_FLAG_NO_TAP`), bei dem Kontakt eines zweiten
+  Fingers und auf einem Bildschirm ohne Statusband.
+- Ein Loslassen bei 2s oder später folgt einem Halten, das gewirkt hat, und
+  zeigt keinen Hinweis.
+- Ein Druck auf STOP löscht den Hinweis im selben Frame, ebenso ein
+  Fehlerbit, das am FEHLER-Chip neu erscheint, und ein Wechsel von ARMED nach
+  SAFE, auch durch einen Fehler. Ein Alert bleibt bei beidem stehen.
+- 2s HALTEN ZUM BESTÄTIGEN auf dem Busfehler-Bildschirm trägt keinen Hinweis:
+  Dieser Bildschirm hat kein Band.
+
+| Button | Hinweis |
+| --- | --- |
+| ARM auf MOTOR & ESC und SERVO | `Halte 2s, um auf ARMED zu schalten.` |
+| AUSGANG EIN auf SUPPLY und im Versorgungskasten von SERVO | `Halte 2s, um den Ausgang einzuschalten.` |
+| PROG 5V EIN im Feld PROG 5V auf SERVO und SUPPLY, rbmod-Carrier | `Halte 2s, um die 5V der Programmierports einzuschalten.` |
+| ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
+| START TEST | `Halte 2s, um den Test zu starten.` |
+| ENDLAGENLAUF STARTEN | `Halte 2s, um den Endlagenlauf zu starten.` |
+| 2s HALTEN ZUM FREIGEBEN, außer auf PORT FREIGEBEN | `Halte 2s, um freizugeben.` |
+| 2s HALTEN ZUM SCHREIBEN | `Halte 2s, um zu schreiben.` |
+| 2s HALTEN ZUM ZURÜCKSPIELEN | `Halte 2s, um zurückzuspielen.` |
+| 2s HALTEN ZUM FORTFAHREN | `Halte 2s, um fortzufahren.` |
+| 2s HALTEN ZUM VERLASSEN | `Halte 2s, um zu verlassen.` |
+| 2s HALTEN ZUM LADEN | `Halte 2s, um zu laden.` |
+| 2s HALTEN ZUM FREIGEBEN auf PORT FREIGEBEN | `Halte 2s, um den Port freizugeben.` |
+| 2s HALTEN ZUM REPARIEREN | `Halte 2s, um zu reparieren.` |
+| 2s HALTEN ZUM STARTEN in der Warnung eines Stick-Laufs | `Halte 2s, um zu starten.` |
+| 2s HALTEN ZUM INSTALLIEREN auf Wi-Fi | `Halte 2s, um zu installieren.` |
+| 2s HALTEN ZUM LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
+| 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START in der Frage des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
+| 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
+| ÜBERSCHREIBEN auf der Frage des Editors von FILES | `Halte 2s, um zu überschreiben.` |
+
 ## Marken im Menü
 
 ![Das Funktionsmenü](img/de/overview.png)
@@ -196,15 +453,15 @@ Zeichen, 8px frei von den Seiten der Kachel:
 | MOTOR & ESC | Antrieb, V/A, Drehzahl |
 | SERVO | Weg, Strom, Programm |
 | SUPPLY | V/A einstellen, aufzeichnen |
-| LOGS | Läufe und Dateien |
+| LOGS | Läufe, Dateien |
 | RECEIVER | S.BUS, PPM, Frames |
 | BATTERY | Zellen, iR, mAh |
 | BALANCE | Vibration, Phase |
-| SETUP | Pins, Sensoren, Panel |
+| SETUP | Panel, Pins, Karte, WLAN |
 
 Eine Kachel mit der Marke SIMULIERT öffnet einen Bildschirm, dessen Quelle
 der Prüfstand nicht meldet: Der IOmcu meldet dafür keine Fähigkeit, oder
-sein Sensor ist in SETUP unter INTERFACES nicht aktiviert. Ein Bildschirm ohne
+sein Sensor ist in SETUP unter SENSORS nicht aktiviert. Ein Bildschirm ohne
 seine Hardware öffnet trotzdem und arbeitet aus dem Modell. Die Marke ordnet
 nicht jeden Wert auf einem Bildschirm ein. RECEIVER und BATTERY tragen die
 Marke und zeigen keine Werte. SERVO ohne Marke zeigt das Versorgungsmodell des
@@ -213,9 +470,9 @@ aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
 
 | Kachel | Ohne Marke, wenn |
 | --- | --- |
-| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, INTERFACES eingeschaltet ist |
+| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, SENSORS eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
-| SUPPLY | der PD mini unter SETUP, INTERFACES eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel sein eigenes Modell eines Netzteils |
+| SUPPLY | der PD mini im Tab PD MINI auf SUPPLY eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel sein eigenes Modell eines Netzteils |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | immer: sie enthalten keine Messung |
 
@@ -268,7 +525,10 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
   16 x 28, da `LEERZEICHEN` zwei Tasten von 192px hat. Die
   Namenstastaturen von SERVO, Tasten von 55 x 72px, zeigen ihre Wörter
   in 12 x 24, die Suchtastatur von ESC STICK, Tasten von 59 x 57px, in
-  16 x 28.
+  16 x 28. Die Tastatur des Texteditors hat keine Titelzeile, kein Feld
+  und keine Ziffernreihe: 4 Tastenreihen, Tasten von 93 x 56px, alle
+  Wörter in 20 x 36, `123` als weitere Worttaste
+  ([Der Texteditor](#der-texteditor)).
 - **Auswahlliste.** Ein Feld oder eine Zeile ab 56px Höhe zeigt den Text
   im Font 20 x 36, 12px eingerückt, mit einem 11px breiten Winkel 28px
   vor dem rechten Rand. Ein niedrigeres zeigt ihn in 16 x 28, 10px
@@ -276,7 +536,7 @@ ihre Zeile; die Fonts und Abstände darin sind ihre eigenen.
   der in 20 x 36 nicht vor den Winkel passt, steht in 16 x 28:
   `DSHOT600 BIDIR` auf einem Feld von 292px. Jedes Feld und jede Zeile
   wählt für sich, die Zeilen einer Liste können sich also unterscheiden.
-  OUTPUTS und PICK A PIN zeichnen ihre niedriger als 56px.
+  OUTPUTS zeichnet seine niedriger als 56px.
 - **Reiter.** Eine Reiterzeile ab 32px Höhe zeigt ihre Beschriftungen im
   Font 10 x 20, wenn jede in der gezeigten Sprache mit 6px Rand je Seite
   auf ihren Reiter passt; sonst in 8 x 16. ROOT, USER und BENCH auf LOGS und
@@ -561,6 +821,13 @@ seine eigenen Sensoren, sobald ein Messfrontend bestückt ist. Eine Größe, die
 nichts misst, wird als leeres Feld gezeichnet und nicht als modellierter
 Wert.
 
+SETUP > PANEL > Demo-Modus, standardmäßig AUS, blendet das Wasserzeichen
+SIMULATION aus und sonst nichts: Das Band zeigt weiter SIM, die Kacheln zeigen
+weiter SIMULIERT, und jede andere Angabe, dass Werte simuliert sind, bleibt.
+Die Änderung zeigt sich im nächsten Bild. Antwortet ein IOmcu, wird kein
+Wasserzeichen gezeichnet; die Einstellung ändert an einem echten Prüfstand
+also nichts.
+
 ### TABELLE, und was der ESC meldet
 
 ![Die TABELLE-Seite mit einem INA228 als Quelle](img/de/motor-table.png)
@@ -568,7 +835,7 @@ Wert.
 TABELLE listet die vier Kanäle, jeden mit seinem Extremwert. Ein Kanal, für
 den nichts geantwortet hat, liest `--`.
 
-Ist der INA228 unter SETUP, INTERFACES eingeschaltet und antwortet er
+Ist der INA228 unter SETUP, SENSORS eingeschaltet und antwortet er
 (BENCH-Flag Bit 5), sind Spannung, Strom und Leistung die des INA228: die
 Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz,
 mit den Spitzen des Laufs aus seinen 500-Hz-Abtastungen. Die Kopfzeile nennt
@@ -662,7 +929,7 @@ zeigt. Eine SERVO-Datei, nach einem ARM auf SERVO, hat zwei Spalten mehr vor
 - Eine Zeile nimmt einen Wert nur aus einer Quelle, die ihre `source` ist:
   - alle fünf Zellen des Messgeräts sind leer in einer `measured`-Zeile,
     solange das Netzteil das Modell des Panels ist (PD mini in SETUP
-    INTERFACES ausgeschaltet);
+    im Tab PD MINI auf SUPPLY ausgeschaltet);
   - sie sind leer in einer `model`-Zeile, solange nach dem Verlust des Links
     noch der letzte Messwert des PD mini gezeigt wird;
   - eine `model`-Zeile hat keinen Wert des INA3221 und kein `angle`, die über
@@ -862,9 +1129,9 @@ ESC von jeder Ebene beendet einen Stick-Lauf, schaltet den Netzteilausgang
 aus, den der Lauf eingeschaltet hat, schaltet den Prüfstand auf SAFE und
 schließt ESC STICK. Zurück auf MOTOR & ESC zeigt PROGRAMMIEREN seine Liste.
 
-Die Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und
-VESC-Firmware sind ein Modell in der Firmware (`shared/ui/prog_models.c`). Kein Transport trägt ihre Protokolle,
-und keine Liste von PROGRAMMIEREN hat eine Zeile für sie. Der Prüfstand
+Die Zeile `AM32, Bluejay, BLHeli_S, ESCape32`, rechts `SIGNALLEITUNG`, öffnet die Sitzung auf der Signalleitung: [ESC-Signalleitung](EscWire-de.md). Sie ist abgeblendet, bis der IOmcu `LINK_CAP_PROGRAM` meldet.
+
+Der Prüfstand
 erkennt ESCs mit BLHeli_32-Firmware, steuert sie an und sendet die DShot
 Special Commands, kann ihre Parameter aber nicht lesen:
 [Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md).
@@ -1069,7 +1336,8 @@ des Prüfstands, darunter `ZUERST ARM`, solange der Prüfstand in SAFE ist,
 das Zifferblatt (Radius 150px) mit dem Servo und an ihrem Fuß die drei
 Messwerte, je ein Drittel der Karte: SOLL-PULSBREITE in Mikrosekunden,
 GEMESSEN in Grad und STROM in Ampere, Name und Einheit über 44px hohen
-Ziffern. Ziffern, die breiter als ihre Spalte von 198px sind (ein auf
+Ziffern, die 4px über dem Alarmband enden. Die Marken +90 und -90 des
+Zifferblatts stehen links ihrer Striche. Ziffern, die breiter als ihre Spalte von 198px sind (ein auf
 `-1000000.00` begrenzter Strom), stehen in einer kleineren Schrift und
 bleiben so in ihr. Die Messwerte stehen nur auf LIVE; auf den anderen
 Aufgaben trägt die Zeile über dem Plot den Strom.
@@ -1225,12 +1493,12 @@ erscheint sofort in der Zeile.
 | --- | --- | --- |
 | ein INA3221-Kanal | `INA`, die Adresse seines Bausteins und der Kanal: `INA 0x41 CH2` | das letzte 50-ms-Fenster des Kanals: den mittleren Strom, die mittlere Busspannung auf der Lastseite des Shunts und ihr Produkt. Ein Punkt im Plot je Fenster, 20 in der Sekunde |
 | der PD mini | `PD MINI` | das letzte Sample des Netzteils. Ein Punkt je Sample |
-| das Modell, solange kein IOmcu antwortet | `PD MINI` | das letzte Sample des Netzteils: das des Netzteilmodells unter dem SIMULATION-Watermark, und keinen Messwert, wo SETUP INTERFACES den PD mini einschaltet, der ohne Link nicht antwortet |
+| das Modell, solange kein IOmcu antwortet | `PD MINI` | das letzte Sample des Netzteils: das des Netzteilmodells unter dem SIMULATION-Watermark, und keinen Messwert, wo der Tab PD MINI auf SUPPLY den PD mini einschaltet, der ohne Link nicht antwortet |
 
 ![Der INA3221 als Messgerät](img/de/servo-ina.png)
 
 Der Name bleibt in beiden Sprachen `PD MINI`. Solange der PD mini in SETUP
-unter INTERFACES abgeschaltet ist, ist das Netzteil das Modell des Panels,
+im Tab PD MINI auf SUPPLY abgeschaltet ist, ist das Netzteil das Modell des Panels,
 wie auf SUPPLY: dann sitzt eine Pille SIMULIERT (englisch SIMULATED), 26px
 hoch und 30px plus das Wort breit, mindestens 110px (120px für SIMULATED
 und SIMULIERT), auf der oberen linken Ecke des Plots unter dem Namen,
@@ -1244,8 +1512,28 @@ des Servotesters überwacht
 
 ![Das Modell des Panels als Netzteil](img/de/servo-model.png)
 
+Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nimmt das Feld PROG 5V
+den Platz der Grafik unter der Messzeile ein, 48px hoch: die eigenen 5V
+der Programmierports. Seine erste Zeile nennt Pin und Zustand,
+`PROG-PORTS 5V, GPIO 21: AUS`; seine zweite das letzte Fenster von 50ms des
+INA3221-Kanals, der die 5V misst (0x40 CH3), `5.02V  0.120A`, oder
+`--V  --A` ohne eines. PROG 5V EIN rechts ist ein Halten von 2s und
+PROG 5V AUS ein Tipp, wie AUSGANG EIN und AUS, bei SAFE und bei ARMED.
+Solange ein Programmierport die 5V hält, lautet die zweite Zeile
+`BELEGT VON PROG-PORT n`, die Taste ist gedimmt, und ein Druck darauf zeigt
+`PROG-Ports 5V: von einem Programmierport belegt oder nicht gelesen.` Das
+Feld bleibt unter den Programmern für KST und Hitec. Das Verlassen von
+SERVO schaltet 5V ab, die das Feld auf SERVO eingeschaltet hat, außer ein
+Port hält sie. Mit dem Modell als Netzteil steht die Pille SIMULIERT unter
+dem Feld. SUPPLY zeigt dasselbe Feld ([Netzteil](#netzteil)); die Regeln
+stehen in [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v).
+
+![SERVO auf dem Carrier](img/de/servo-rbmod.png)
+
+![Der KST-Programmer hält die 5V](img/de/servo-kst-rbmod.png)
+
 Welches Messgerät es ist, wird einmal je Poll entschieden
-([die Strommonitore](#interfaces-die-strommonitore)): der INA3221 1000ms,
+([die Strommonitore](#sensors-die-strommonitore)): der INA3221 1000ms,
 nachdem seine Bedingungen gelten, der PD mini ab dem ersten Poll, in dem
 eine nicht gilt.
 
@@ -1289,7 +1577,7 @@ mini, und die des Modells, wenn das Netzteil modelliert ist
 ([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)).
 
 GEMESSEN ist der Winkel des Horns ab dem Mittenwert, solange AS5600 in SETUP,
-INTERFACES eingeschaltet ist, der Sensor antwortet und seinen Magneten
+SENSORS eingeschaltet ist, der Sensor antwortet und seinen Magneten
 erkennt: `+38.0deg`, Zehntelgrad, -180.0 bis +179.9, 20-mal in der Sekunde
 gelesen. Antwortet der Sensor nicht oder meldet er keinen Magneten (STATUS MD
 nicht gesetzt), steht dort `---`: sein Zählerstand ist dann kein Winkel. Ein
@@ -1322,6 +1610,16 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   Spannung öffnet sie nicht.
 
   ![Die HV-Warnung](img/de/servo-hv.png)
+
+- Nach einem Verlassen von KST oder Hitec, das den Ausgang bei den
+  Sollwerten der Sitzung eingeschaltet lässt, fragt SERVO unter AUSGANG IST
+  EINGESCHALTET, ob die Sollwerte von vor der Sitzung darauf zurückgehen:
+  `Deine Versorgungs-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang
+  wiederherstellen?`, mit JA und NEIN. JA nimmt den Weg eines getippten
+  Sollwerts, NUR HV-SERVOS eingeschlossen; NEIN behält die der Sitzung bis
+  zum nächsten AUS
+  ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
+  Kein anderes Ende des Haltens eines Ports fragt.
 
 - AUSGANG EIN ist ein Halten über zwei Sekunden, AUSGANG AUS ein Tippen, wie auf
   SUPPLY. STOP beendet ein laufendes Halten. Liegt der Spannungssollwert über
@@ -1455,9 +1753,9 @@ ab TEMPO 63%, beim Dreieck ab 40%.
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es aufhört, sich zu bewegen. [Servoverfahren](Servo-de.md#automatischer-test)
-beschreibt das Verfahren und die Dateien. Die Karte, 600 x 200px, trägt
+beschreibt das Verfahren und die Dateien. Die Karte, 600 x 188px, trägt
 den Namen des Laufs, eine Zusammenfassung (`4.8 6.0V BROWN-OUT, JE
-60s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 56px) mit den
+60s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 48px) mit den
 OPTIONEN der Karte (160 x 48px) daneben, die Zustandszeile, das
 letzte Ergebnis mit seinen Dateien (`ZULETZT: BESTANDEN ATEST004.CSV +
 .TXT`) und den Hinweis zu BLOCKIERT AB. TEST STARTEN braucht einen Prüfstand
@@ -1541,7 +1839,7 @@ kein Kanal das Ziel überwacht), die nächste sagt, warum er nicht starten
 kann oder was er gerade tut, dann folgen das letzte Ergebnis und sein
 Bericht. Diese vier Zeilen stehen in der Schrift 10 x 20, 20px
 auseinander, die erste 2px unter ENDLAGENLAUF STARTEN, sodass die vierte
-2px innerhalb der 200px hohen Karte endet. TEST bleibt beim Start zu
+2px innerhalb der 188px hohen Karte endet. TEST bleibt beim Start zu
 sehen. Sein Feld auf der linken Karte von
 LIVE zeigt die geschriebenen Werte
 von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
@@ -1614,7 +1912,7 @@ Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport,
 den der Tester treibt, aus PWM (Pulsweitenmodulation) und liest und
 schreibt die Einstellungen des Servos über dessen Signalleitung. PROG-PORT 1
 ist im Auslieferzustand GPIO 13 an Pad 17. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
-einem Port steht, PORT 1, PORT 2, PORT 3 oder PORT 4; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
+einem Port steht, PORT 1, PORT 2, PORT 3 oder PORT 4; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `ZIEL antippen und SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und VERBINDEN ist gesperrt. ZIEL öffnet dann OUTPUTS auf dem Eintrag von PROG-PORT 1, der SERVO-TESTER hält, und das Home-Tag dort führt zum Programmierer zurück. Solange er den Port hält,
 bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
 VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
 tun sie nichts. Das Verlassen von SERVO lässt den Port, wie er ist; zurück
@@ -1626,7 +1924,9 @@ SOLL-PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
 mit einem antwortenden PD mini nennt die Zeile PORT des Programmierers die
 Spannung und die Stromgrenze, die VERBINDEN stellt, `PORT  5.0V  1000mA`.
 Die Sollwerte und AUSGANG EIN der Zeile SOLL und des SUPPLY-Bildschirms sind
-so lange gedimmt und nehmen keinen Druck; AUSGANG AUS funktioniert. Er verlässt das Programmieren, ohne die Versorgung
+so lange gedimmt und nehmen keinen Druck; AUSGANG AUS funktioniert. Auf dem
+rbmod-Carrier, dessen Programmierports an eigenen 5V hängen, bleiben sie
+aktiv ([Carrier, Versorgung](Carrier-de.md#versorgung)). Er verlässt das Programmieren, ohne die Versorgung
 des Servos aus- und einzuschalten. Ob ein KST-Servo im Programmiermodus PWM
 folgt, ist nicht gemessen.
 
@@ -1745,7 +2045,7 @@ enden.
 | ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur mit ZIEL auf PROG-PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | OPTIONEN > PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
-| OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, INTERFACES, AS5600-Mitte |
+| OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
 
 Das Tastenfeld der TRIMMUNG ist das eine Tastenfeld mit Vorzeichen: Seine
 Taste `+/-`, zwischen dem Punkt und OK, setzt ein Minuszeichen vor die
@@ -1758,16 +2058,28 @@ bleiben, wo sie sind.
 
 ![Das Tastenfeld der TRIMMUNG, -25us getippt](img/de/servo-trim-keypad.png)
 
-AS5600, der Ausgangsencoder, wird nur auf SETUP > INTERFACES ein- und
-ausgeschaltet ([der Ausgangsencoder](#interfaces-der-ausgangsencoder)); der
-Hinweis auf PRÜFLING sagt das. Er fügt den Winkel des Horns der Zeile
+AS5600, der Ausgangsencoder, wird nur auf SETUP > SENSORS ein- und
+ausgeschaltet ([der Ausgangsencoder](#sensors-der-ausgangsencoder)); der
+Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING, 600 x 48px, öffnet SENSORS auf dem Eintrag AS5600. Er fügt den Winkel des Horns der Zeile
 GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu
 ([Servo](Servo-de.md#der-ausgangsencoder)).
 
 Die Grenzen von SUPPLY, Spannung und Strom, in denen die Sollwerte und die
-Stufen eines Laufs bleiben, stehen nur lesbar unter den Karten auf TEST und
-auf PRÜFLING, mit ihrem Ort und den geltenden Werten: `Grenzen 21.00V 5.00
-A: SUPPLY > OPTIONEN`. Eingestellt werden sie auf SUPPLY > OPTIONEN.
+Stufen eines Laufs bleiben, stehen unter den Karten auf TEST und auf PRÜFLING
+auf einer Taste von 600 x 48px: `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`.
+Eingestellt werden sie auf SUPPLY > OPTIONEN, GRENZEN, was die Taste öffnet.
+
+Beide Tasten öffnen einen anderen Bildschirm wie ZIEL: Das Home-Tag dort führt
+zu der Aufgabe und der Seite zurück, auf denen sie getippt wurden. Das Verlassen
+von SERVO schaltet den Prüfstand auf SAFE, beendet einen Sweep oder einen Test
+und schaltet eine von SERVO eingeschaltete Versorgung aus. Darum sind sie grau
+und nehmen keinen Druck an, solange ZIEL gesperrt ist: ARMED, ein Sweep, ein
+Lauf oder ein Programmierer, der den Port hält. Von SENSORS aus geht das
+Home-Tag bei einem ungespeicherten Wert über die Warnung beim Verlassen.
+
+Der erste Hinweis auf AUSGANG nennt, worauf SERVO-TESTER steht, OUTPUTS, PORT 1,
+PORT 2, PORT 3 oder PORT 4, und wo er eingestellt wird:
+`SERVO-TESTER: PORT 1. Einstellbar unter OUTPUTS.` Er nimmt keinen Tipp an.
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
@@ -1934,11 +2246,11 @@ PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
 IOmcu steuert ihn über einen PIO-UART (PIO: Programmable
 Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 4.3). Das Panel schreibt die Page und liest sie alle 100ms. Ist der PD mini
-in SETUP unter INTERFACES eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des IOmcu, an denen
+im Tab PD MINI auf SUPPLY eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des IOmcu, an denen
 es hängt: `PD MINI TX GPIO 12 RX GPIO 13`, aus den Einstellungen PD mini TX und
 PD mini RX. Ist einer der beiden Pins nicht gesetzt oder liegen beide auf
 einem GPIO, steht `PD MINI OHNE PINS` in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
-Netzteils: die Kopfzeile sagt SIMULIERTES NETZTEIL, und die Kachel im Menü trägt
+Netzteils: die Kopfzeile sagt `SIMULIERT: IN PD MINI EINSCHALTEN`, und die Kachel im Menü trägt
 SIMULIERT.
 
 SUPPLY ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE und OPTIONEN,
@@ -1950,7 +2262,7 @@ sie war.
 | Aufgabe | Die linke Spalte, 620px |
 | --- | --- |
 | LIVE | der Plot oder die Tabelle über den Sollwerten |
-| OPTIONEN | die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
+| OPTIONEN | die Tabs GRENZEN und PD MINI ([Der Tab PD MINI](#der-tab-pd-mini)); auf GRENZEN die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
 
 Die Kopfzeile ist die Zeile rechts neben der Leiste: das Modul und seine
 Pins, ONLINE oder ANTWORTET NICHT in 10 x 20 und am rechten Ende der Bereich,
@@ -2145,6 +2457,19 @@ OPTIONEN und unter der Tastatur und der Frage bedienbar. Ein Finger zur Zeit: so
 Bedienelement hält, bewirkt ein zweiter Finger nirgends auf dem Bildschirm
 etwas.
 
+Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nennt eine Zeile unter
+AUSGANG die eigenen 5V der Programmierports: `PROG-PORTS 5V, GPIO 21: EIN`,
+`AUS` oder `UNBEKANNT` nach einem Lesen ohne Antwort, in der
+Akzentfarbe, solange sie an sind. Die Programmer für KST und Hitec schalten
+sie. Auf LIVE schaltet das Feld PROG 5V im Kopf der Ausgangskarte, rechts
+von GRAFIK und TABELLE, sie von Hand und zeigt ihren INA3221-Messwert, wie
+auf [SERVO](#servo); die Zeile unter AUSGANG bleibt auf jedem Reiter. Das
+Verlassen von SUPPLY schaltet 5V ab, die das Feld auf SUPPLY eingeschaltet
+hat, außer ein Port hält sie. Ein Board ohne den Schalter zeigt keins von
+beiden.
+
+![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
+
 ### Netzteil, Optionen
 
 OPTIONEN, der zweite Reiter der Leiste, zeigt die Einstellungen des
@@ -2237,19 +2562,18 @@ und 2,00A, bringt der Stoß es in CC. Seine Messwerte sind nicht gemessen,
 und am Prüfstand wird nichts versorgt.
 
 Die Verdrahtung des PD mini (PD mini, PD mini TX, PD mini RX und PD mini
-Baud) steht in SETUP unter INTERFACES. TX und RX sind GPIO-Nummern des
+Baud) steht in OPTIONEN im Tab PD MINI ([Der Tab PD MINI](#der-tab-pd-mini)). TX und RX sind GPIO-Nummern des
 IOmcu: TX geht zum DM des Moduls, RX kommt von seinem DP. Ihre Tasten `-`
 und `+` springen über den GPIO, den die andere Zeile hält, und tun am Ende
 des Bereichs nichts: mit RX auf GPIO 47 bleibt TX auf GPIO 46. Das Tastenfeld
 lehnt den GPIO der anderen Zeile ab und zeigt statt des Bereichs `Diesen
 GPIO hält der andere PD-mini-Pin`. Eine gespeicherte
 Einstellung mit beiden auf einem GPIO wird so geladen: das Panel schreibt die
-Page abgeschaltet, der PD mini bleibt aus, und beide Zeilen sagen `TX und RX
-auf einem Pin. Der PD mini bleibt aus.`, bis eine verstellt wird. Der
+Page abgeschaltet, der PD mini bleibt aus, und beide Zeilen sagen `TX und RX auf einem Pin. PD mini bleibt aus.`, bis eine verstellt wird. Der
 Schalter PD mini schaltet das Modul ab. Der
 IOmcu weist einen Pin ab, der reserviert, an einen Ausgang gebunden,
 vom Sensorbus oder vom Phasenabgriff gehalten oder der andere Pin ist, und
-das Band sagt `PD-mini-Pins abgelehnt. SETUP > INTERFACES prüfen.`: RX auf
+das Band sagt `PD-mini-Pins abgelehnt. SUPPLY, Tab PD MINI prüfen.`: RX auf
 GPIO 17 wird abgewiesen, solange Sensor-SDA GPIO 16 ist, denn Sensor-SCL ist dann
 GPIO 17. Der Alert verlässt das Band, sobald eine Lesung die Page mit der
 verlangten Verdrahtung zeigt: sofort, wenn der Pin auf den zurückgestellt
@@ -2262,7 +2586,7 @@ zum OFF. Zeigt die Lesung den Ausgang an oder schlägt sie fehl, wird die
 Änderung abgewiesen, und das Band sagt
 `PD-mini-Anschlüsse abgelehnt. Sein Ausgang kann noch eingeschaltet sein.`. Eine
 abgewiesene Änderung wird erst wieder geschrieben, wenn sich die Verdrahtung
-in SETUP ändert; auch dieser Alert verlässt das Band, sobald eine Lesung die
+ändert; auch dieser Alert verlässt das Band, sobald eine Lesung die
 Page mit der verlangten Verdrahtung zeigt. PD mini Baud ist die eigene UART-Baudrate-
 Einstellung des Moduls: 9600, 19200 (ab Werk), 38400, 57600, 115200, 230400
 oder 460800 Baud, oder AUTO. AUTO, die Vorgabe, lässt den IOmcu sie
@@ -2270,7 +2594,58 @@ finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von
 SUPPLY zeigt die Rate in Gebrauch hinter ONLINE, z. B. `ONLINE 38400`, bei
 AUTO wie bei einer festen Rate.
 
-![GPIO 9 von RX für PD mini TX abgelehnt](img/de/setup-pdmini-why.png)
+![GPIO 9 von RX für PD mini TX abgelehnt](img/de/supply-pdmini-why.png)
+
+#### Der Tab PD MINI
+
+OPTIONEN zeigt die Tabs GRENZEN und PD MINI, 40px hoch. PD MINI hält die
+Verdrahtung, vier Zeilen bei 56px Abstand: jede mit Name und Hilfezeile, ihrem
+Wert in einem Feld von 120 x 48px und Tasten - und + von 56 x 48px.
+
+| Zeile | Werte | Vorgabe | Ein Druck |
+| --- | --- | --- | --- |
+| PD mini | EIN, AUS | AUS | ein Tippen auf den Wert schaltet um |
+| PD mini TX | GPIO -1 bis 47 | -1 | - und + springen, der Wert öffnet das Keypad |
+| PD mini RX | GPIO -1 bis 47 | -1 | - und + springen, der Wert öffnet das Keypad |
+| PD mini Baud | 9600, 19200, 38400, 57600, 115200, 230400, 460800, AUTO | AUTO | < und > und der Wert gehen durch die 8 Werte |
+
+Eine Änderung gilt sofort und wird nach der Regel oben gespeichert, wie eine
+Änderung auf GRENZEN. Es gibt kein SPEICHERN und keine Warnung beim Verlassen. Die
+gespeicherten Schlüssel sind `pdm_en`, `pdm_tx`, `pdm_rx` und `pdm_baud`. PD MINI
+ZURÜCKSETZEN startet das Modul neu und schreibt keine der vier Zeilen.
+
+Jede Änderung der Verdrahtung schaltet einen eingeschalteten Ausgang ab, deshalb
+ändert eine Zeile in diesen Zuständen nichts:
+
+| Zustand | Ein Druck auf eine Zeile | Hilfezeile und Band |
+| --- | --- | --- |
+| Ausgang an oder ein ON unterwegs, von jedem Bildschirm, am PD mini oder am Modell | ändert nichts | `Ausgang an: zuerst ausschalten` |
+| ein Programmierport hält das Netzteil | ändert nichts | `Ein Programmierport hält die Versorgung` |
+| Prüfstand ARMED | ändert nichts; auch `settings_set()` und eine Rücksetzung lassen die Zeilen | `Nur bei SAFE einstellbar` |
+
+Ein auf einem Pin offenes Keypad schließt, sobald einer dieser Zustände beginnt,
+und was es hält, wird nicht übernommen. Ein laufender Druck endet ebenso, sein
+Loslassen ändert nichts. Mit Ausgang aus und SAFE erreicht die Änderung die
+SUPPLY-Page des IOmcu, wie unter [Netzteil](#netzteil) beschrieben. Eine Änderung,
+die doch einen eingeschalteten Ausgang erreicht, das VERWERFEN einer abgelehnten
+Speicherung in der Warnung beim Verlassen von SETUP, schaltet ihn ab und sagt
+`PD-mini-Anschlüsse geändert. Ausgang aus.`. PD MINI
+ZURÜCKSETZEN bleibt auf GRENZEN.
+
+![Der Tab PD MINI](img/de/supply-pdmini.png)
+
+Auf dem [rbmod-Carrier](Carrier-de.md) liest PD mini TX 7 und PD mini RX 6. Sie
+haben keine Tasten, öffnen kein Keypad und zeigen als Hilfezeile
+`Auf dem Board verlötet. Keine Einstellung.`. Die gespeicherten Werte bleiben
+und gelten wieder auf einem von Hand verdrahteten Modul. PD mini und PD mini Baud
+nehmen Drücke unter denselben drei Zuständen.
+
+![Der Tab PD MINI auf dem Carrier](img/de/supply-pdmini-rbmod.png)
+
+Rechnet das Panel sein Modell, lautet die Quelle in der Kopfzeile
+`SIMULIERT: IN PD MINI EINSCHALTEN`, eine Taste: ein Tippen öffnet diesen Tab, von
+LIVE, von GRENZEN und über einem Keypad, das schließt. Eine Rückfrage zu einem
+eingeschalteten Ausgang wird zuerst beantwortet.
 
 ## Receiver
 
@@ -2338,14 +2713,23 @@ plotten:
 
 Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
 von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der
-Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
-AKTUALISIEREN, öffnet [WLAN](#wlan), und DATEIEN daneben öffnet
-[Files](#files).
+Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
-Die Dateiliste teilt den Körper in drei Teile. Die Kopfzeile, Körper-y 4 bis
-52, trägt STAMM, USER und BENCH (je 110 x 40px), den Ordner und den Namen
+Die Kachel LOGS hält zwei Bildschirme unter einem Streifen, LOGS | FILES, zwei
+Tabs von 499 x 40px über die Breite des Körpers, y 5 bis 45. Die Beschriftungen
+sind die Titel der Bildschirme, in jeder Sprache. Ein Tipp auf einen Tab öffnet
+diesen Bildschirm, und das Home-Tag jedes der beiden führt zum Menü, gleich
+welcher Tab ihn geöffnet hat. Der Streifen steht nur auf der ersten Ebene eines
+Bildschirms: der Dateiliste von LOGS und den Spalten von FILES. Über Import oder
+Plot einer Datei, einer Frage, einer Box, einer Tastatur, dem Textbetrachter oder
+dem Editor steht er nicht und nimmt keinen Tipp an, und das Home-Tag führt
+zuerst eine Ebene zurück.
+
+Die Dateiliste teilt den Körper in vier Teile. Oben steht der Streifen; FILES
+darauf öffnet [Files](#files). Die Kopfzeile,
+Körper-y 52 bis 100, trägt STAMM, USER und BENCH (je 110 x 40px), den Ordner und den Namen
 der Karte und, solange der Ordner mehr als eine Seite hält, VORIGE und
-NÄCHSTE (140 x 48px). Die Liste darunter ist 1008px breit und zeigt 7
+NÄCHSTE (140 x 48px). Die Liste darunter ist 1008px breit und zeigt 6
 Zeilen von 44px im Abstand von 48px: Jede Zeile nimmt einen Tipp auf ihren
 ganzen 48px an. Eine Zeile zeigt den Namen der Datei, ihr Datum und
 rechtsbündig ihre Größe, in der Schrift 10 x 20. Der Name nimmt bis zu 60
@@ -2356,10 +2740,12 @@ Spalte von 160px. Eine Datei mit einem Zeitstempel in 1980, dem einer nicht
 gestellten Uhr ([PANEL: Zeitzone und Uhr](#panel-zeitzone-und-uhr)), oder
 ohne Zeitstempel lässt die Spalte leer. Die Größe steht in einem Feld von
 100px am Ende der Zeile. Art und Länge der Datei zeigt sie nicht. Die Fußzeile,
-Körper-y 440 bis 492, trägt links AKTUALISIEREN (140 x 52px), WLAN und
-DATEIEN (100 x 52px), rechts LÖSCHEN und ÖFFNEN (140 x 52px), und endet
-4px über dem Alarmband. Eine Meldung zu einer Datei steht zwischen DATEIEN
-und LÖSCHEN auf bis zu zwei Zeilen von 28 Zeichen.
+Körper-y 440 bis 492, trägt links AKTUALISIEREN (140 x 52px) und WI-FI (100 x 52px), rechts LÖSCHEN
+und ÖFFNEN (140 x 52px), und endet
+4px über dem Alarmband. WI-FI öffnet [WLAN](#wlan) in jedem Zustand der Liste,
+und sein Home-Tag führt hierher zurück; über der Rückfrage zu LÖSCHEN und den
+Ansichten einer Datei steht es nicht. Eine Meldung zu einer Datei steht zwischen
+WI-FI und LÖSCHEN auf bis zu zwei Zeilen von 37 Zeichen.
 
 Die Importansicht zeigt ERKANNT (400px breit) neben der Spaltenliste
 (600px, 7 Zeilen im Abstand von 48px), darunter vier Tasten von 246 x
@@ -2500,7 +2886,7 @@ am rechten Rand der Liste, und links von VORIGE, wenn VORIGE und NÄCHSTE
 sichtbar sind. Ein leerer Ordner
 sagt, warum, und was hineingehört: `Keine .csv-Dateien in BENCH/LOGS.` und
 die Namen, die er aufnimmt, oder mit seinem Schalter auf AUS
-`AUTO-LOGS AUS unter SETUP > SD CARD.`. Unter der Rückfrage zu LÖSCHEN sind
+`AUTO-LOGS AUS unter SD CARD.`. Unter der Rückfrage zu LÖSCHEN sind
 die Tabs ausgeblendet. Eine Datei, die von einem Tab aus geöffnet wurde,
 bleibt die Datei dieses Tabs: Ihre Importansicht und ihr Plot lesen sie aus
 diesem Ordner, gleich welcher Tab inzwischen gewählt ist.
@@ -2667,7 +3053,9 @@ erscheint im Band:
 | `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
 Bei den ersten fünf gibt es keine Datei zu suchen. Bei den letzten vier gibt
-es eine, und sie hört zu früh auf.
+es eine, und sie hört zu früh auf. Ein gescheitertes Schreiben und ein
+gescheitertes Schließen eines Laufs sind ein Fehler: der Prüfstand geht auf
+SAFE und das Netzteil aus ([Sicherheit, Fehler](Safety-de.md#fehler)).
 
 Ein Lauf, der gerade geschrieben wird, erscheint nicht in LOGS. Die Länge einer
 Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ein
@@ -2760,10 +3148,11 @@ trägt.
 FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten und kopiert,
 verschiebt, benennt um und löscht ihre Dateien; er legt Ordner und leere
 Textdateien an und zeigt eine Datei als Text im
-[Textbetrachter](#der-textbetrachter). Er öffnet über DATEIEN in der unteren Reihe von
-[Logs](#logs) und über die Kachel FILES auf [Setup](#setup). Das Home-Tag
-schließt zuerst eine Box oder die Tastatur und führt dann zu dem
-Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
+[Textbetrachter](#der-textbetrachter). Er ist ein Tab des Streifens der Kachel
+[LOGS](#logs). Das Home-Tag schließt zuerst eine Box oder die Tastatur und führt
+dann zum Menü. FILES steuert keinen Ausgang. Ein Tab verlässt die Spalten sofort;
+ein laufendes Kopieren zeigt seine Box und nimmt keinen Tab an, also antworten
+zuerst ABBRECHEN oder das Home-Tag.
 
 ![FILES](img/de/files.png)
 
@@ -2775,7 +3164,7 @@ KOPIEREN und VERSCHIEBEN bringen ihren gewählten Eintrag in den Ordner der
 anderen Spalte. Ein Tipp auf eine Zeile wählt sie und macht ihre Spalte
 zur aktiven; ein zweiter Tipp auf die gewählte Zeile ist ÖFFNEN.
 
-Die Kopfzeile einer Spalte, Körper-y 4 bis 52, trägt den Pfad des Ordners
+Die Kopfzeile einer Spalte, Körper-y 52 bis 100, unter dem Streifen, trägt den Pfad des Ordners
 auf einer 312px breiten Taste, die einen Ordner höher geht; im
 Stammverzeichnis zeigt sie den Volumennamen der Karte oder `SD CARD` und
 führt nirgendwohin. VORIGE und NÄCHSTE, 88 x 48px, stehen am rechten Ende
@@ -2790,7 +3179,7 @@ Einträge, die das Panel nicht listet, zählt sie dahinter,
 `._RCBENCH.LOG`), und Namen über 63 Bytes. Ein Ordner, der nur solche
 Einträge hält, ist nicht leer, und LÖSCHEN lehnt ihn ab.
 
-Die Liste zeigt 6 Zeilen im Abstand von 48px, 44px hoch gezeichnet; ein
+Die Liste zeigt 5 Zeilen im Abstand von 48px, 44px hoch gezeichnet; ein
 Ziehen auf der Liste oder auf dem 56px breiten Rollbalken bewegt sie.
 Zuerst kommen die Ordner, dann die Dateien, jede Gruppe nach Namen
 geordnet. Eine Zeile zeigt ein Symbol, den Namen, rechtsbündig die Größe
@@ -2810,19 +3199,27 @@ und unter dem Namen die Art und ein Zustandswort:
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein Ordner, den der Prüfstand führt: die beiden Log-Ordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF` und die Ordner auf dem Weg dorthin, darunter `BENCH` und `USER`. Kein UMBENENNEN, VERSCHIEBEN oder LÖSCHEN |
-| GESPERRT | die Vermerke der Servoprogrammierungen, `BENCH/KST/CONF/KST.TXT` und `BENCH/HITEC/CONF/HITEC.TXT`, und ihre `KST.NEW` und `HITEC.NEW`, solange sie geschrieben werden. Nur INFO |
+| FEST | ein Ordner, den der Prüfstand führt: die beiden Log-Ordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` und die Ordner auf dem Weg dorthin, darunter `BENCH` und `USER`. Kein UMBENENNEN oder VERSCHIEBEN, das seinen Inhalt von dort wegnähme, wo der Prüfstand ihn liest. NEU legt einen an und LÖSCHEN nimmt einen leeren: Jeder Schreiber des Prüfstands legt seinen Ordner vor dem Schreiben wieder an, und ein fehlender Ordner liest sich wie auf einer neuen Karte |
+| GESPERRT | die Vermerke der Programmierungen, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` und `BENCH/ESCW/CONF/ESCW.TXT`, und ihre `KST.NEW`, `HITEC.NEW` und `ESCW.NEW`, solange sie geschrieben werden. Nur INFO |
 | WIRD GESCHRIEBEN | eine Datei, die der Logger offen hat. Nur INFO |
 
 Das Fehlerprotokoll nimmt KOPIEREN und LÖSCHEN nur bei bestehender
 Verbindung zur IOmcu an: Ohne Verbindung schreibt das Panel alle 5s
 hinein.
 
+Die Backups der ESC-Signaldraht-Sitzung in `BENCH/ESCW/CONF` heißen
+`ESCWnnn-<Firmware>.TXT`, etwa `ESCW001-AM32.TXT`
+([Namen der Backups](EscWire-de.md#namen-der-backups)). DATEIEN löscht jedes
+davon; die eigene DATEIEN-Liste der Sitzung löscht alle außer einem Backup,
+das die Sitzung gespeichert hat.
+
 Die Fußzeile, Körper-y 440 bis 492, trägt links AKTUALISIEREN,
 140 x 52px, wie auf [Logs](#logs), dann KOPIEREN, VERSCHIEBEN,
 UMBENENNEN, LÖSCHEN, NEU, INFO und ÖFFNEN, 118 x 52px, ÖFFNEN am rechten
 Rand; die Tasten stehen 6px auseinander, und die Fußzeile endet 4px über
-dem Alarmband. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
+dem Alarmband. Jede Beschriftung steht in der Schrift 10 x 20 mit
+mindestens 4px Rand je Seite; AKTUALISIEREN ist 130px breit, VERSCHIEBEN
+110px. Eine Taste, die abgelehnt würde, ist gedimmt; ein Tipp
 darauf nennt den Grund in der Meldungszeile, zwei Zeilen in der Schrift
 12 x 24 über der Fußzeile.
 
@@ -2857,7 +3254,9 @@ Der Textbetrachter zeigt eine Datei der Karte als Text, nur lesend.
 ÖFFNEN auf einer Datei in FILES öffnet ihn, ebenso ÖFFNEN auf einem
 Bericht in [Logs](#logs). Das Home-Tag schließt ihn: zu den Spalten, wenn
 FILES ihn geöffnet hat, zurück zu LOGS, wenn LOGS ihn geöffnet hat. Das
-Verlassen von FILES schließt ihn auch. Er öffnet eine Datei von bis zu
+Verlassen von FILES schließt ihn auch, außer der
+[Editor](#der-texteditor) hält ungespeicherten Text. Er öffnet eine Datei
+von bis zu
 1MiB (1.048.576 Bytes) und bis zu 65.536 Zeilenenden; die Kartenaufgabe
 liest sie ganz, in Stücken von 16KiB, während der Bildschirm
 `Lese die Karte.` zeigt.
@@ -2869,8 +3268,9 @@ Zeilen der Datei. Ein Zeilenende am Ende der Datei beginnt keine eigene
 Zeile.
 
 Der Text steht in einem Feld von 1008 x 372px ab Körper-y 60: 18 Zeilen
-zu 92 Zeichen in der Schrift 10 x 20, 20px auseinander. KLEIN, links in
-der Fußzeile, schaltet auf die Schrift 8 x 16: 22 Zeilen zu 115 Zeichen,
+zu 92 Zeichen in der Schrift 10 x 20, 20px auseinander. BEARBEITEN, der
+zweite Knopf der Fußzeile, öffnet den [Editor](#der-texteditor). KLEIN,
+links in der Fußzeile, schaltet auf die Schrift 8 x 16: 22 Zeilen zu 115 Zeichen,
 16px auseinander, für die Stufentabelle eines Berichts; der Knopf heißt
 dann NORMAL. Die Wahl gilt für jede Datei, bis das Panel neu startet.
 
@@ -2933,16 +3333,192 @@ Zeilenindex von 256KiB, beide im PSRAM (Pseudo-Static Random-Access
 Memory). Wie lange das Lesen von 1MiB von der Karte des Panels dauert, ist
 nicht gemessen.
 
+### Der Texteditor
+
+![Eine Zeile in einen Bericht getippt, die Tastatur offen](img/de/files-edit.png)
+
+BEARBEITEN im Textbetrachter schaltet ihn auf den Editor und öffnet die
+Tastatur. Der Editor ändert den Text im Speicher des Panels; SPEICHERN
+schreibt ihn auf die Karte. Das Panel zeigt dann 8 Zeilen des Texts (10
+mit KLEIN) in einem Feld von 1008 x 170px ab Körper-y 60 und die Tastatur
+ab Körper-y 236 bis zum Alarmband: 4 Reihen zu 10 Tasten, je 93 x 56px,
+6px auseinander, ohne Ziffernreihe; die Buchstaben beginnen in der obersten
+Reihe. Vier Ebenen teilen sich die 3 Zeichenreihen: Kleinbuchstaben,
+Großbuchstaben (`ABC`) und zwei Seiten Zeichen. `123` links von DEL zeigt
+die erste Seite: die Ziffern 0 bis 9 in der obersten Reihe und die 17
+Zeichen `- / : ; ( ) = # " _ . , ? ! ' [ ]`. Auf dieser Seite zeigt `#+=`
+links von Z die zweite Seite mit den übrigen 15: `$ % & * + < > @ \ ^`
+und `` ` { | } ~ ``. `abc` führt von beiden Seiten zurück zu den
+Buchstaben. Eine Ziffer sind 2 Tipps: `123`, dann die Ziffer. DEL nimmt
+das Zeichen vor dem Cursor. Die unterste Reihe ist ENTER (2 Tasten breit),
+LEERZEICHEN (4), `<-` und `->` (je 1) und FERTIG (2). Eine Taste wirkt beim
+Loslassen des Kontakts, der sie gedrückt hat, über derselben Taste; ein
+zweiter Kontakt zählt nicht, solange einer liegt. Die Tastatur tippt ASCII
+(0x20 bis 0x7E); die Buchstaben Ä Ö Ü ä ö ü ß werden gezeichnet, aber nicht
+getippt.
+
+Der Cursor ist ein Balken von 2px in der Akzentfarbe vor dem Zeichen, in
+das er tippt. Ein Tipp auf den Text setzt ihn auf das nächste Zeichen der
+getippten Bildschirmzeile; hinter dem Ende einer Zeile steht er an diesem
+Ende, unter der letzten Zeile am Ende des Texts. `<-` und `->` bewegen ihn
+um ein Zeichen, ein Zeilenende CR LF zählt als eines. Nach jeder Taste
+rückt der Text so wenig wie nötig, damit die Zeile des Cursors zu sehen
+bleibt. Die Kopfzeile zeigt BEARBEITUNG, solange der Text der auf der
+Karte ist, GEÄNDERT in der Warnfarbe, sobald er abweicht, und
+`ZEILE 3 VON 59` für die Zeile des Cursors.
+
+ENTER tippt das Zeilenende der Datei: CR LF in einer Datei, deren erste
+Zeile mit CR LF endet, sonst LF, auch in einer leeren Datei. Der Editor
+hält die Grenzen des Betrachters: eine Taste, die den Text über 1MiB
+brächte, tippt nichts, und die Kopfzeile sagt `Text voll: höchstens 1MB.`;
+ENTER bei 65.536 Zeilenenden tippt nichts und sagt
+`Text voll: höchstens 65536 Zeilen.`
+
+FERTIG oder das Home-Tag schließt die Tastatur; die Fußzeile hält dann
+SPEICHERN, VERWERFEN und TASTATUR links, SEITE HOCH und SEITE RUNTER
+rechts und dazwischen eine Notiz von 3 Zeilen der Schrift 8 x 16. TASTATUR
+öffnet die Tastatur wieder.
+
+SETUP → PANEL → Tastatur durchsichtig lässt den Text durch die Tastatur des
+Editors scheinen: AUS (die Vorgabe), 25% oder 50%. Über AUS reicht das Feld
+des Texts unter der Tastatur bis Körper-y 432, wie im Textbetrachter, und
+die Zeilen 9 bis 18 (11 bis 22 mit KLEIN) scheinen durch sie hindurch.
+Jedes Pixel einer Taste und der Lücken zwischen den Tasten ist dann zu 25%
+oder 50% der Text dahinter und zum Rest die Farbe der Taste oder des
+Felds; die Beschriftungen, die obere Haarlinie jeder Taste und der Rahmen
+der Tastatur bleiben deckend. Die 8 Zeilen über der Tastatur bleiben die,
+auf denen der Cursor gehalten wird, auf die ein Tipp ihn setzt und die
+SEITE HOCH und SEITE RUNTER bewegen. Die Einstellung wirkt nur auf die
+Tastatur des Editors: die Tastaturen für Namen, Ordner, Suche und Wi-Fi
+haben ihr eigenes Textfeld und bleiben deckend. Stufen über 50% gibt es
+nicht: die Ränder der Tasten verschwinden dann im Text dahinter.
+
+![Eine KST-Datei mit einem Kommentar gespeichert: ihre Prüfsummenzeile ist weg](img/de/files-edit-kst.png)
+
+SPEICHERN schreibt den Text als `<Name>.NEW` in den Ordner der Datei, in
+Stücken von 16KiB auf der Kartenaufgabe, löscht `<Name>` und gibt der
+neuen Datei ihren Namen; die Notiz sagt dann `<Name> gespeichert.`, und
+der Kopf zeigt die geschriebene Größe. Vom
+Tipp auf SPEICHERN bis zum Ende des Speicherns ändert sich der Text nicht:
+eine Taste tippt nichts, VERWERFEN und das Home-Tag warten, und die Frage
+eines Öffnens über dem Text zeigt VERWERFEN grau. Ein Speichern, das den
+Text schreibt, schließt diese Frage und öffnet die andere Datei; ein
+fehlgeschlagenes lässt die Frage mit wirksamem VERWERFEN stehen. SPEICHERN ist grau, solange der
+Text der auf der Karte ist, und ein Tipp darauf sagt dann
+`Keine Änderungen zu speichern.` SPEICHERN ist gesperrt, solange der
+Prüfstand ARMED ist, ein Lauf aufgezeichnet wird oder der Logger die Datei
+schreibt: die Notiz sagt `Prüfstand ARMED. Die Karte ist nur lesbar.` oder
+den Grund in eigenen Worten, und der Text bleibt wie getippt. Ein Wechsel
+auf ARMED oder ein Lauf, der während des Speicherns beginnt, hält es vor
+dem nächsten Stück an; seine `.NEW` wird entfernt, die Datei auf der Karte
+bleibt wie sie war, und die Notiz sagt
+`Gestoppt: Der Prüfstand ist ARMED.` oder
+`Gestoppt: Ein Lauf wird aufgezeichnet.` Eine Karte, die während des
+Speicherns entnommen wird, lässt den Text ungespeichert mit
+`Nicht gespeichert: Die Karte wurde entnommen oder getauscht.`; zwischen
+dem Löschen und dem Umbenennen entnommen, hält die Karte den ganzen Text
+als `<Name>.NEW` und kein `<Name>`, und UMBENENNEN in FILES gibt ihr den
+Namen zurück.
+
+SPEICHERN schreibt nur über die Datei, die der Editor geöffnet hat. Der
+Editor behält die CRC-32 (Cyclic Redundancy Check) der Datei, wie er sie
+gelesen hat, und des Texts, den jedes Speichern schrieb: das ETag der
+[Datei-API](#die-datei-api) der WLAN-Seite. SPEICHERN liest zuerst die
+Datei auf der Karte und summiert sie, im selben Job, bevor die `.NEW`
+geöffnet wird: Ein Speichern von 1MiB liest zuerst 1MiB, in einer nicht
+gemessenen Zeit. Eine Datei, die seitdem geändert oder entfernt wurde,
+durch den Editor der WLAN-Seite oder einen Upload
+([Schreiben per Browser](#schreiben-per-browser)), wird nicht geschrieben.
+Die Notiz sagt `<Name> wurde seit dem Lesen auf der Karte geändert.`, und
+die Frage UNGESPEICHERTE ÄNDERUNGEN sagt
+`<Name> wurde seit dem Lesen auf der Karte geändert. NEU LESEN verwirft diese Änderungen.`
+über BLEIBEN, NEU LESEN und ÜBERSCHREIBEN, je 208 x 56px. BLEIBEN behält
+den Text; ein zweites SPEICHERN wird ebenso abgelehnt. NEU LESEN verwirft
+den Text und liest die Datei von der Karte in den Betrachter. ÜBERSCHREIBEN
+braucht 2s Halten; ein Loslassen vor 2s schreibt nichts und zeigt
+`Halte 2s, um zu überschreiben.` im Alarmband, und ein Finger, der von der
+Taste rutscht, der Home-Tag und ARMED beenden das Halten ohne Schreiben. Das
+vollendete Halten speichert den Text über die Datei, wie das abgelehnte
+SPEICHERN sie gelesen hat: Ihre Summe ersetzt die des Editors für dieses eine
+SPEICHERN, und derselbe Job vergleicht sie, bevor die `.NEW` geöffnet wird.
+Eine Datei, die sich nach dieser Ablehnung ändert, auch während des Haltens,
+wird ebenso abgelehnt, und die Frage erscheint erneut, mit der Summe der zuletzt
+gefundenen Datei. Eine entfernte Datei hat keine Summe: ÜBERSCHREIBEN ist
+gedimmt, nimmt kein Halten an, und nichts legt die Datei wieder an. Ein
+Schreiben, das fehlschlägt, lässt die Datei, wie sie war, und den Text
+ungespeichert, und das nächste SPEICHERN wird abgelehnt, bis ein Halten
+vollendet ist. Eine Frage, die schon offen war,
+als das Speichern endete, die eines Öffnens über dem Text, bleibt, wie sie
+war.
+
+Eine Datei öffnet sich nur ohne NUL-Byte in den ersten 4kB. SPEICHERN
+hält den Text an dieselbe Prüfung: eine Änderung, die ein NUL-Byte von
+weiter hinten in die ersten 4kB bringt, wird nicht gespeichert, die Notiz
+sagt
+`Nicht gespeichert: ein NUL-Byte in den ersten 4kB. FILES öffnet die Datei nicht wieder.`,
+und der Text bleibt wie getippt. VERWERFEN setzt eine solche Datei so
+zurück, wie sie geladen wurde, ohne zweite Prüfung. Eine Datei über
+1MiB oder 65.536 Zeilenenden des Editors lässt den Text, wie er ist, mit
+der Notiz einer Taste, die an dieser Grenze abgelehnt wird; eine Datei,
+die FILES geöffnet hat, liegt innerhalb beider.
+
+Eine KST-Datei, deren erste Zeile `KST servo configuration, format` und
+eine Zahl ist, hält eine Prüfsummenzeile, wenn der Servo-Programmierer
+sie geschrieben hat. SPEICHERN einer geänderten KST-Datei nimmt jede
+Zeile heraus, die der Leser des Programmierers als Prüfsummenzeile nimmt:
+ihr erstes Wort nach Leerzeichen und Tabs ist `checksum` in beliebiger
+Schreibung, gefolgt von einem Leerzeichen, einem Tab, `=`, `:` oder dem
+Zeilenende. Die Notiz sagt `Ohne Prüfsummenzeile gespeichert: der
+Servo-Programmierer liest sie als bearbeitet.` Der Programmierer liest sie
+dann als Datei, die ein Mensch bearbeitet hat: aus ihren Wertzeilen, ohne
+Prüfsumme ([Programmierer](#programmierer)). Eine unverändert gespeicherte
+KST-Datei behält ihre Prüfsumme. Eine Datei in `BENCH/ESC/CONF`, die auf
+`.json` endet, liest das Panel beim Start; die Notiz nach ihrem Speichern
+sagt `Gespeichert. Das Panel liest die Datei beim nächsten Start.`
+
+![Die Frage vor ungespeicherten Änderungen](img/de/files-edit-unsaved.png)
+
+VERWERFEN und das Home-Tag bei geschlossener Tastatur fragen bei
+ungespeichertem Text zuerst: UNGESPEICHERTE ÄNDERUNGEN über BLEIBEN und
+VERWERFEN, je 300 x 56px. BLEIBEN oder das Home-Tag über der Frage
+behält den Text. VERWERFEN nach dem Knopf VERWERFEN setzt den Text auf die
+Datei zurück, wie sie geladen oder zuletzt gespeichert wurde, der Editor
+bleibt an; VERWERFEN nach dem Home-Tag tut dasselbe und zeigt den
+Betrachter, und das nächste Home-Tag verlässt ihn wie beim Betrachter, zu
+den Spalten oder zurück zu LOGS. Ist der Text der auf der Karte, zeigt das
+Home-Tag den Betrachter ohne Frage. Ein ÖFFNEN aus LOGS oder aus FILES bei
+ungespeichertem Text zeigt die Frage ebenso; VERWERFEN öffnet dann die
+andere Datei, BLEIBEN behält den Text und lässt das Öffnen fallen.
+
+STOP hält den Prüfstand an und lässt den Editor und seinen Text, wie sie
+sind; SPEICHERN ist dann gesperrt, solange der Prüfstand ARMED ist. Ein
+Weg, der FILES ohne das Home-Tag verlässt, behält einen Editor mit
+ungespeichertem Text, und FILES zeigt ihn beim Zurückkommen wieder. Einzelne
+Tasten lassen sich nicht rückgängig machen: VERWERFEN setzt die ganze
+Datei zurück. Der Editor hält die Datei, wie sie geladen wurde, für
+VERWERFEN in einem zweiten Puffer von 1MiB im PSRAM. Das Journal des
+Servo-Programmierers `BENCH/KST/CONF/KST.TXT` öffnet sich nicht, und das
+Fehlerprotokoll `BENCH/RCBENCH.LOG` öffnet sich mit grauem BEARBEITEN; ein
+Tipp darauf sagt warum. Welche Tippgeschwindigkeit das Panel mithält, ist
+nicht gemessen.
+
 ### AKTUALISIEREN
 
 AKTUALISIEREN sieht in den Steckplatz und liest dann den Ordner jeder
 Spalte neu, eine Spalte nach der anderen, an der Seite, die die Spalte
-zeigt: ab dem ersten Eintrag dieser Seite, so wie VORIGE und NÄCHSTE ihre
-Seiten benennen. Jede Spalte behält ihre Stelle:
+zeigt. Die erste Seite wird ab dem ersten Eintrag des Ordners gelesen, so
+kommt ein neuer Eintrag auf der Karte, der vor allen Zeilen steht, etwa
+ein `ATEST001.CSV` neben `SERVO`-Logs, auf sie. Eine spätere Seite wird ab
+ihrem eigenen ersten Eintrag gelesen, so wie VORIGE und NÄCHSTE ihre Seiten
+benennen; ein neuer Eintrag davor steht auf einer Seite davor. Der Weg
+zurück nach FILES liest beide Spalten ebenso. Jede Spalte behält ihre
+Stelle:
 
-- der Eintrag in der obersten Zeile der Spalte bleibt oben; ist er von der Karte
-  verschwunden, steht der Eintrag oben, der an seiner Stelle
-  in der Reihenfolge steht;
+- eine Liste, die oben den ersten Eintrag ihres Ordners zeigt, zeigt oben
+  wieder den ersten Eintrag des Ordners, den neuen eingeschlossen;
+- sonst bleibt der Eintrag in der obersten Zeile der Spalte oben; ist er
+  von der Karte verschwunden, steht der Eintrag oben, der an seiner
+  Stelle in der Reihenfolge steht;
 - der gewählte Eintrag bleibt gewählt, solange er auf der gelesenen Seite
   steht. Ist er von der Karte verschwunden oder steht er auf einer
   anderen Seite, ist nichts gewählt, wie nach LÖSCHEN: VERSCHIEBEN und
@@ -2990,8 +3566,11 @@ meldet `Gestoppt: Der Prüfstand ist ARMED.` oder
 
 Die Rückfrage zu LÖSCHEN ist eine Box von 700 x 280px mit ABBRECHEN und
 LÖSCHEN von 300 x 56px. Sie nennt den Eintrag und seine Größe; bei der
-CSV-Datei eines Laufs mit einem Bericht derselben Nummer nennt sie den
-Bericht, der mitgelöscht wird.
+CSV-Datei eines Laufs nennt sie den Bericht derselben Nummer, der
+mitgelöscht wird, wenn die Seite des Bereichs diesen Bericht listet. Ein
+Bericht, der in einem Ordner mit mehr als 48 Einträgen auf der nächsten
+oder vorigen Seite stünde, wird ebenfalls genannt: Die Seite kann es nicht
+sagen, und LÖSCHEN nimmt den Bericht mit, wann immer die Karte ihn hat.
 
 ![Eine laufende Kopie](img/de/files-copy.png)
 
@@ -3059,10 +3638,12 @@ gemessen.
 ![WI-FI, kein Heimnetz gespeichert](img/de/wifi.png)
 
 WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei
-der Karte zum Herunterladen und ein Panel-Firmware-Image zum Hochladen. Der
-Bildschirm öffnet über die Kachel WI-FI auf [SETUP](#setup) und über WLAN in
-der unteren Reihe von [LOGS](#logs). Sein Home-Tag führt zu dem Bildschirm
-zurück, der ihn geöffnet hat, SETUP oder LOGS; ebenso SCHLIESSEN auf PANEL
+der Karte zum Herunterladen und zum Ändern, so weit
+[Schreiben per Browser](#schreiben-per-browser) es erlaubt, und ein
+Panel-Firmware-Image zum Hochladen. Der
+Bildschirm öffnet von seiner Kachel auf [SETUP](#setup), von der Taste WI-FI auf
+[LOGS](#logs) und von der Taste auf [UPDATES](#updates). Sein Home-Tag führt zu
+dem zurück, der ihn geöffnet hat; ebenso SCHLIESSEN auf PANEL
 UPDATE, nachdem die Installation eines Uploads scheiterte. Über der
 Netzwerkliste oder einer Tastatur führt das Home-Tag zuerst eine Ebene
 zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu
@@ -3073,8 +3654,9 @@ Bildschirm bleibt. Ein zweites Tippen, solange das Image noch da ist,
 verlässt den Bildschirm. Der Funk läuft nur, solange dieser Bildschirm offen ist,
 und für die Release-Suche und den Download unter [Updates](#updates). Er
 ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
-verlassen wird, bevor eine Installation den Flash schreibt und nach 10min
-ohne Anfrage.
+verlassen wird, bevor eine Installation den Flash schreibt und nach 10min ohne
+Anfrage. Das Verlassen bei verbundenem Browser oder laufendem Upload beendet
+beide ebenso. Das Öffnen des Bildschirms startet keinen Funk.
 
 Jede Ansicht von WI-FI endet 4px über dem Alarmband, bei Körper-y 492,
 damit ein Alarm keine Taste verdeckt. Zeilen, Tasten und Tastaturtasten
@@ -3082,8 +3664,8 @@ sind 48px hoch oder höher.
 
 | Ansicht | Aufbau |
 | --- | --- |
-| Funk aus | fünf Tasten von 460 x 60px (69,0 x 9,0mm), 8px Abstand, links; rechts eine Karte von 524px mit Zeilen von 49 Zeichen in 10 x 20, 24px Abstand |
-| Funk an | Zeilen von 56px: die Bezeichnung in 10 x 20 auf 240px, der Wert in 20 x 36 auf 740px, wo ein Netzwerkname von 32 Zeichen 640px braucht; die Zeilen darunter in 12 x 24, 28px Abstand; WLAN AUS 460 x 60px ab Körper-y 424 |
+| Funk aus | ab Körper-y 16 sieben Tasten von 460 x 60px (69,0 x 9,0mm), 8px Abstand, links; rechts eine Karte von 524px mit Zeilen von 49 Zeichen in 10 x 20, 24px Abstand |
+| Funk an | ab Körper-y 16 Zeilen von 56px: die Bezeichnung in 10 x 20 auf 240px, der Wert in 20 x 36 auf 740px, wo ein Netzwerkname von 32 Zeichen 640px braucht; die Zeilen darunter in 12 x 24, 28px Abstand; WLAN AUS 460 x 60px ab Körper-y 424, und mit Schreiben per Browser HALTEN die Taste des Schreibens gleich groß daneben ab Körper-x 548 |
 | Netzwerkliste | zwei Spalten mit je acht Zeilen von 492 x 48px, 52px Abstand: der Name in 12 x 24 (32 Zeichen sind 384px), das Signal in 10 x 20; NEU SUCHEN, VERSTECKTES NETZWERK und ABBRECHEN je 328 x 56px |
 | Frage zu einem Image | eine Karte von 1008 x 484px: Titel und Versionen in 20 x 36, die Sätze in 12 x 24, umbrochen bei 80 Zeichen; ABBRECHEN und 2s HALTEN ZUM INSTALLIEREN 460 x 72px |
 | Tastatur | 1008 x 484px, Tasten von 93 x 71px ([Tastatur](#tastenfeld-tastatur-und-die-gemeinsamen-bedienelemente)) |
@@ -3121,16 +3703,57 @@ ein Telefon oder ein Rechner braucht:
 | Band und Kanal | 2.4GHz, Kanal 6 (`WIFI_ACCESS_AP_CHANNEL`) |
 | Sicherheit | WPA2 (Wi-Fi Protected Access 2) Personal |
 | Netzname | `rcbench-` und 4 Hex-Ziffern der MAC-Adresse (Media Access Control) des Panels, `rcbench-3F7A` |
-| Passwort | 8 Zeichen, bei jedem Start neu, aus `abcdefghjkmnpqrstuvwxyz23456789` (kein 0, 1, i, l oder o) |
+| Passwort | ZUFALL: 8 Zeichen, bei jedem Start neu, aus `abcdefghjkmnpqrstuvwxyz23456789` (kein 0, 1, i, l oder o). Fest: die 8 bis 63 Zeichen von [HOTSPOT-PASSWORT](#hotspot-passwort-und-web-code) |
 | Clients | 1 gleichzeitig |
 | IP-Adresse | `http://192.168.4.1/` |
 | Reichweite | nicht gemessen |
 
-1. SETUP → WI-FI → WLAN-HOTSPOT, oder LOGS → WLAN → WLAN-HOTSPOT.
+1. LOGS → WI-FI → WLAN-HOTSPOT.
 2. Am Telefon oder Rechner dem Netz beitreten, das der Bildschirm nennt, mit
    dem Passwort, das er zeigt.
 3. `http://192.168.4.1/` öffnen und den Zugangscode eingeben, den der
    Bildschirm zeigt.
+
+### HOTSPOT-PASSWORT und WEB-CODE
+
+![HOTSPOT-PASSWORT fest, WEB-CODE Zufall](img/de/wifi-kept-buttons.png)
+![Die Ansicht eines Werts auf Zufall](img/de/wifi-kept-pass.png)
+![Die Ansicht eines festen Werts](img/de/wifi-kept-pass-set.png)
+![Die Ansicht des Zugangscodes](img/de/wifi-kept-code.png)
+
+HOTSPOT-PASSWORT setzt das Passwort des Netzes, das WLAN-HOTSPOT startet.
+WEB-CODE setzt den Zugangscode, nach dem die Browser-Seite fragt. Jeder ist
+ZUFALL, die Vorgabe, oder ein vom Bediener eingegebener Wert, der Neustarts
+überdauert. Die zwei Tasten stehen in der Ansicht mit Funk aus und lesen
+`HOTSPOT-PASSWORT: ZUFALL` oder `HOTSPOT-PASSWORT: FEST`, `WEB-CODE: ZUFALL` oder
+`WEB-CODE: FEST`. Sie nehmen ein Tippen in jedem Zustand des Prüfstands an, denn
+nichts an ihnen erreicht den Funk.
+
+| Teil | Wert |
+| --- | --- |
+| Wert | 8 bis 63 Zeichen, 0x20 bis 0x7E: Buchstaben, Ziffern, Leerzeichen und Satzzeichen. Die Passphrase von WPA2 Personal nimmt denselben Bereich |
+| WERT EINGEBEN | die WLAN-Tastatur: Ihre drei Ebenen tippen nur diesen Bereich, und ein 64. Zeichen nimmt sie nicht an |
+| 7 Zeichen oder weniger | OK wird abgelehnt, mit `Gib mindestens 8 Zeichen ein.` in der Titelzeile der Tastatur |
+| ZURÜCK AUF ZUFALL | ein Tippen, keine Eingabe, grau, solange der Wert ZUFALL ist |
+| Wann es gilt | beim nächsten Start des Funks. Der Bildschirm sagt es: `Eine Änderung gilt ab dem nächsten Start des Funks.` |
+| Anzeige | in seiner eigenen Ansicht und bei laufendem Funk in den Zeilen, im Klartext wie ein Zufallspasswort. Die Tastatur maskiert ihn bis ANZEIGEN |
+| Zeilen mit langem Wert | 20 x 36 für bis zu 37 Zeichen, 10 x 20 für bis zu 63. Die Ansicht nutzt 20 x 36 für bis zu 48 Zeichen, 12 x 24 für bis zu 63 |
+| Gespeichert in | NVS, Namensraum `wifi`, Schlüssel `ap_pass` und `web_code`. Kein Schlüssel ist ZUFALL: Ein Speicher, den ein Build ohne diese Schlüssel schrieb, lädt mit seinem Netz und seinem Schalter unverändert. Ein gespeicherter Wert, den die Regel ablehnt, lädt als ZUFALL |
+| HEIMNETZ LÖSCHEN | behält beide Werte |
+| Wiederherstellung | jede Ansicht zeigt ihren Wert am Panel, und ZURÜCK AUF ZUFALL braucht keinen Browser, in jedem Zustand des Prüfstands |
+
+Eine Änderung gilt beim nächsten Start, weil es die Bedienelemente nur bei
+ausgeschaltetem Funk gibt. Dann ist keine Sitzung offen, also kann eine mit dem
+alten Code geöffnete Sitzung die Änderung nicht überdauern: Der nächste Start
+vergleicht jedes Cookie und jede Eingabe nur noch mit dem neuen Code.
+
+Ein fester Wert steht nie in einem Log, auf der Konsole oder in einer Datei, und
+keine Antwort der Seite oder der Datei-API enthält ihn.
+`tools/check_wifi_secrets.py` lässt den CI-Lauf bei einem Log-Aufruf scheitern,
+der einen nennt, und bei einer Verwendung außerhalb der Quellen, die einen
+halten. Das Panel hat keinen Export und kein Backup des NVS. Die
+Screenshot-Ablehnung oben deckt den einen Weg ab, auf dem ein Bild eines Werts
+auf die Karte käme.
 
 ### Heimnetz
 
@@ -3233,9 +3856,10 @@ ihn.
 
 Aktuelle Einschränkungen:
 
-- Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes liegt im
-  Klartext im Flash des Panels, wo es jeder liest, der den Flash über USB
-  (Universal Serial Bus) ausliest.
+- Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes, ein festes
+  HOTSPOT-PASSWORT und ein fester WEB-CODE liegen im Klartext im Flash des
+  Panels, wo sie jeder liest, der den Flash über USB (Universal Serial Bus)
+  ausliest.
 - Die Seite ist einfaches HTTP (Hypertext Transfer Protocol). Im Heimnetz
   gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der
   Bildschirm sagt es, solange das Panel verbunden ist.
@@ -3245,20 +3869,61 @@ Aktuelle Einschränkungen:
   Gerät zwischen Browser und Panel das Image unterwegs austauschen. Das
   IOmcu-Image, das ein Panel-Image mitbringt, kommt mit und wird dem
   IOmcu beim nächsten Link-up angeboten.
+- Ein Gerät, das den Verkehr im Heimnetz mitliest, kann einen eigenen
+  Schreibzugriff senden, solange Schreiben erlaubt ist: Zugangscode und
+  Header gehen im Klartext.
+- Der Editor des Browsers speichert eine Datei mit gemischten
+  Zeilenenden mit LF; der Editor von FILES am Panel behält sie.
 - Das Panel ist nur verbunden, solange dieser Bildschirm offen ist. Ein
   Panel, das immer verbunden bleibt, solange der Prüfstand SAFE ist, ist
   nicht gebaut.
 - Die Seite kommt langsam an. In einem Heimnetz brauchte die Seite, 18,9kB
   mit ihrer Kartenliste, 4,54s, etwa 4,2kB/s, gegen 688-757kB/s eines
-  Downloads. Die Ursache ist nicht gemessen.
+  Downloads. Die Ursache ist nicht gemessen. Die Seite mit der
+  Dateiverwaltung hat 64.045 Bytes auf Englisch mit leerer Karte und keine
+  Kartenliste; ihre Zeit ist nicht gemessen.
 
 ### Der Zugangscode
 
-Die Seite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei listet
-oder einen Upload annimmt. Der Bildschirm zeigt ihn, und er entsteht bei
-jedem Start des Funks neu; ein Code aus einer früheren Sitzung öffnet
-nichts. Der Browser behält ihn für die Sitzung. 16 falsche Codes schalten
-den Funk aus.
+Die Seite fragt nach einem Code, bevor sie eine Datei listet oder einen Upload
+annimmt. Der Bildschirm zeigt ihn. Der Browser behält ihn für die Sitzung. 16
+falsche Codes schalten den Funk aus, auch bei einem festen Code.
+
+| Ein falscher Code | Zählt zu den 16 |
+| --- | --- |
+| In der Eingabe (`POST /code`) | jedes Mal, auch derselbe Wert noch einmal |
+| Im Cookie, ein für diese Sitzung neuer Wert | einmal |
+| Im Cookie, einer der letzten 4 Werte | nein. Die Anfrage bekommt das Formular oder die 403, und sonst ändert sich nichts |
+
+Ein Tab, der seit vor einer Änderung des Codes offen ist, oder die mehreren
+Anfragen einer Seite können den Funk also nicht ausschalten: 100 Anfragen mit
+einem alten Cookie zählen 1. Eine Wiederholung verrät beim Raten nichts Neues,
+und 16 verschiedene Werte schalten den Funk weiterhin aus. Der Speicher hält 4
+Hashes von 8 Bytes, SHA-256 mit 16 zufälligen Bytes als Schlüssel
+(`WA_STALE_KEPT`, `WA_STALE_KEY`), nie einen Wert. Ein geratener Wert lässt sich
+nicht so wählen, dass er einen Hash trifft, denn der Schlüssel entsteht bei jedem
+Start des Funks neu. Dieser Start leert den Speicher und die Zählung. Ein
+richtiger Code in Cookie oder Eingabe wird über das ganze Feld in konstanter Zeit
+verglichen, was auch immer der Speicher hält.
+
+Aktuelle Einschränkung: Mehr als 4 verschiedene alte Cookies zugleich, etwa von 5
+Browsern mit je einem eigenen, verdrängen einander, und jedes zählt wieder, wenn
+es zurückkommt.
+
+Mit WEB-CODE auf ZUFALL, der Vorgabe, hat der Code 8 Zeichen und entsteht bei
+jedem Start des Funks neu; ein Code aus einer früheren Sitzung öffnet nichts.
+
+Mit einem festen WEB-CODE gilt das nicht. Der Code hat 8 bis 63 Zeichen und
+bleibt gültig, bis er geändert wird: Ein Browser, der ihn behielt, und jeder, der
+ihn sah, öffnet die Seite in jeder späteren Sitzung. Eine Änderung beendet ihn
+beim nächsten Start des Funks. In einem Heimnetz geht er bei jeder Anfrage über
+einfaches HTTP unverschlüsselt durchs Netz, im Cookie, wie ein Zufallscode, und
+ein dort mitgelesener Wert bleibt gültig, bis er geändert wird, wo ein Zufallscode
+mit der Sitzung endet. 16 falsche Codes beenden eine Funk-Sitzung; die Zählung
+beginnt bei der nächsten neu.
+
+Das Cookie trägt den Code prozentkodiert (`wa_code_cookie()`): höchstens 189
+Bytes, wenn bei einem Code von 63 Zeichen jedes kodiert werden muss.
 
 ZUGANGSCODE schaltet ihn, für beide Wege. Er ist voreingestellt ein, nach
 HEIMNETZ LÖSCHEN und auf einem Panel ohne gespeicherte Werte. Der Schalter
@@ -3273,18 +3938,94 @@ Jede Anfrage wird vor dem Zugangscode geprüft, mit Code ein und aus
 | Prüfung | Abgelehnt mit |
 | --- | --- |
 | Der `Host`-Header nennt das Panel: `rcbench-3F7A.local`, `rcbench-3F7A` oder die Adresse, mit der sich der Browser verbunden hat (`192.168.4.1` als Access Point), in beliebiger Groß- und Kleinschreibung, ohne Port oder mit Port 80. Eine IPv6-Adresse wird abgelehnt. | 421 Misdirected Request |
-| Eine Anfrage nach der Seite, einer Datei oder dem ZIP hat keinen Body. | 400 Bad Request |
-| Eine Code-Eingabe hat höchstens 95 Bytes Body. | 413 Content Too Large |
-| Code-Eingabe und Upload tragen einen `Origin`-Header aus `http://` und einem der Namen oben; ohne `Origin` einen `Referer`, der so beginnt. Keiner der beiden, `Origin: null` und jede andere Seite werden abgelehnt. | 403 Forbidden |
-| Ein Upload trägt den Header `X-Rcbench-Upload: 1`, den das Skript der Seite selbst sendet. | 403 Forbidden |
+| Eine Anfrage nach der Seite, einer Datei, dem ZIP oder der Datei-API hat keinen Body. | 400 Bad Request |
+| Eine Code-Eingabe hat höchstens 200 Bytes Body, ein PUT der Datei-API höchstens 1.048.576 und ein Formular der Datei-API höchstens 1.024. | 413 Content Too Large |
+| Code-Eingabe, Upload und jeder Schreibzugriff der Datei-API tragen einen `Origin`-Header aus `http://` und einem der Namen oben; ohne `Origin` einen `Referer`, der so beginnt. Keiner der beiden, `Origin: null` und jede andere Seite werden abgelehnt. | 403 Forbidden |
+| Ein Upload und jeder Schreibzugriff der Datei-API tragen den Header `X-Rcbench-Upload: 1`, den das Skript der Seite selbst sendet. | 403 Forbidden |
 
 Eine andere Webseite im selben Browser erreicht die Karte damit nicht
 unter einem eigenen DNS-Namen (Domain Name System), sendet keine Codes, die
-zu den 16 zählen, und sendet kein Image. Ein Browser sendet einen eigenen
+zu den 16 zählen, sendet kein Image und ändert die Karte nicht. Ein Browser sendet einen eigenen
 Header an eine andere Seite erst, nachdem er diese Seite gefragt hat, und
 das Panel beantwortet keine solche Frage mit Ja. Eine abgelehnte Anfrage
 wird beantwortet, bevor ihr Body gelesen ist, und die Verbindung schließt
-mit der Antwort.
+mit der Antwort. Was der Client noch sendet, wird gelesen und verworfen, bis
+der Body zu Ende ist, der Client schließt, 2s lang kein Byte kommt oder 10s
+vergangen sind, damit der Client die Antwort liest, bevor die Verbindung
+geht: Ein Schließen mit ungelesenen Bytes setzte die Verbindung zurück und
+verlöre sie. Ein Body, der nach 10s noch ankommt, endet mit diesem
+Zurücksetzen; 1MiB in 10s sind 105kB/s. Die Datei-API beantwortet die 421,
+die 413, die 403 und die
+400 in JSON wie ihre anderen Ablehnungen, mit `HOST`, `TOO_LARGE`,
+`FORM_TOO_LARGE`, `ORIGIN` und `BODY` ([die Datei-API](#die-datei-api)); die
+Seite, `/card/` und die ZIP-Datei beantworten sie ohne Body.
+
+### Schreiben per Browser
+
+![Schreiben per Browser HALTEN, vor dem Halten](img/de/wifi-writes-hold.png)
+![Nach dem Halten, drei Schreibvorgänge](img/de/wifi-writes-allowed.png)
+
+SETUP > SD CARD > Schreiben per Browser legt fest, was ein Browser braucht,
+um die Karte über die Seite zu ändern: HOCHLADEN, NEUER ORDNER, NEUE
+TEXTDATEI, UMBENENNEN, VERSCHIEBEN, LÖSCHEN und SPEICHERN im Editor
+([die Seite](#die-seite)).
+Die Einstellung wird mit den anderen gespeichert.
+
+| Wert | Ein Schreibzugriff braucht |
+| --- | --- |
+| OFFEN (Vorgabe) | nur die Seite: den Zugangscode, solange ZUGANGSCODE an ist |
+| ZUGANGSCODE | den Zugangscode dieser Sitzung, auch mit ZUGANGSCODE aus: Lesen braucht dann keinen Code, Schreiben schon, und die Seite fragt beim ersten Schreiben nach ihm |
+| HALTEN | ein Halten von 2s auf 2s HALTEN: BROWSER DARF SCHREIBEN, einmal je Sitzung des Funkmoduls |
+| AUS | kein Schreibzugriff wird angenommen |
+
+Solange die Seite bedient wird, sagt eine Zeile unter den Zeilen, was gilt:
+`Der Browser darf auf die Karte schreiben: bisher 3 Schreibvorgänge.`,
+`Schreiben per Browser braucht den Zugangscode r4tcw9pe.` (ZUGANGSCODE mit
+ZUGANGSCODE aus), `Der Browser darf erst nach dem Halten auf die Karte
+schreiben.` oder `Schreiben per Browser ist aus: SD CARD.` Gezählt
+werden die Schreibvorgänge, die das Panel in dieser Sitzung des
+Funkmoduls für die Seite ausgeführt hat.
+
+Mit HALTEN steht 2s HALTEN: BROWSER DARF SCHREIBEN neben WLAN AUS,
+460 x 60px ab Körper-x 548. Loslassen vor 2s erlaubt nichts und zeigt
+`Halte 2s, um Schreiben per Browser zu erlauben.` im Warnband. Nach dem
+Halten heißt die Taste BROWSER-SCHREIBEN AUS, ein Tipp. Schreiben bleibt
+erlaubt, bis das Funkmodul abschaltet (WLAN AUS, der Bildschirm verlassen,
+10min ohne Anfrage, ARM, STOP, der Netzteilausgang, ein aufgezeichneter
+Lauf, 16 falsche Codes) oder BROWSER-SCHREIBEN AUS getippt wird; die
+nächste Sitzung beginnt ohne.
+
+Jeder Schreibzugriff durchläuft, in dieser Reihenfolge
+(`firmware/panel/components/wifi_access/wifi_write.c`):
+
+1. die Prüfungen der Tabelle oben: `Origin` der Seite, Header des Skripts,
+   höchstens 1.048.576 Bytes einer Datei oder 1.024 eines Formulars;
+2. den Zugangscode, solange ZUGANGSCODE an ist, dann die Einstellung;
+3. bei einem PUT, unter der Auftragssperre der Karte, was ihn schon vor seinem
+   Body ablehnen kann: die Regeln von FILES, `If-Match` gegen die Datei auf der
+   Karte und `If-None-Match`. Nichts wird geschrieben. Ein Ersetzen liest die
+   alte Datei hier und noch einmal in Schritt 6;
+4. den Body, ganz ins PSRAM empfangen, bevor die Karte gerufen wird, in
+   Stücken von 4.096B; geht der Funk aus, schließt die Verbindung oder
+   kommt 30s kein Byte, endet die Anfrage, ohne dass etwas geschrieben ist;
+5. die Auftragssperre der Karte, die FILES am Panel hält, solange es einen
+   Auftrag ausführt: Der Schreibzugriff wartet höchstens 2000ms auf sie und
+   bekommt dann `PANEL_BUSY` mit `Retry-After: 2`; die Seite sendet ihn nach
+   2s noch einmal, höchstens 3 Mal;
+6. die Regeln und die Schreibsperre von FILES, wie für FILES selbst: SAFE,
+   kein aufgezeichneter Lauf, die Ordner des Prüfstands, die Vermerke der
+   Servoprogrammierung, die Dateien des Loggers, die Namen, die die
+   Tastatur des Panels tippt. `If-Match` und `If-None-Match` eines PUT werden
+   hier, direkt vor dem Schreiben, noch einmal verglichen, also wird eine
+   Datei abgelehnt, die sich änderte, während der Body ankam. Die Sperre wird vor jeden 16KiB neu gefragt,
+   also hält ein Wechsel zu ARMED einen Schreibzugriff am nächsten Stück an
+   und entfernt sein `.NEW`.
+
+Eine Ablehnung vor Schritt 4 schließt die Verbindung mit der Antwort: Der
+Body erreicht keinen Puffer des Panels, die noch ankommenden Bytes werden wie
+oben verworfen. Solange der Prüfstand ARMED ist, der Netzteilausgang
+an ist oder ein Lauf aufgezeichnet wird, ist der Funk aus und die Seite gar
+nicht erreichbar.
 
 ### Die Seite
 
@@ -3312,14 +4053,167 @@ läuft während jedes Flash-Löschens (`CONFIG_LCD_DSI_ISR_CACHE_SAFE=y` in
 `firmware/panel/sdkconfig.defaults`). Was die Anzeige während des Löschens
 zeigt, ist nicht gemessen.
 
-**Dateien auf der Karte.** Jede Datei, Ordner für Ordner, mit Namen, Größe
-in Bytes und Änderungszeit, wie die Karte sie hat, in der Zone von SETUP >
-PANEL, `Zeitzone`. Ein Zeitstempel in 1980, der einer ungestellten Uhr, lässt
-die Zeitzelle leer. Jeder Name lädt seine Datei herunter. Die Seite liest die Karte nur: Nichts darauf wird gelöscht,
-umbenannt oder geschrieben. Ein Name über 255 Zeichen, ein Pfad über
-384 Bytes und ein Ordner tiefer als 16 fehlen, und die Seite sagt, wie
-viele. Ohne Karte oder mit einer Karte, die nicht lesbar ist, sagt die Seite
-es, und der Upload geht trotzdem.
+**Dateien auf der Karte.** Die Karte in zwei Spalten, wie [FILES](#files)
+sie zeigt, gelesen über [die Datei-API](#die-datei-api). Sie ändert die
+Karte nur, so weit [Schreiben per Browser](#schreiben-per-browser) es
+erlaubt. Jede
+Spalte ist ein Ordner, bis zu 48 Einträge je Seite, Ordner zuerst, dann
+Namen ohne Rücksicht auf Groß- und Kleinschreibung. Die linke Spalte öffnet
+im Stammverzeichnis der Karte, die rechte im Ordner User-Logs (vorgegeben
+`USER/LOGS`). Der Browser behält beide Orte für seinen Tab, solange dieselbe
+Karte im Slot steckt; eine andere Karte beginnt beide wieder dort.
+
+- Die oberste Zeile einer Spalte ist der Pfad ihres Ordners auf einer
+  Taste, die einen Ordner höher geht; das Stammverzeichnis zeigt den
+  Volumennamen der Karte oder `SD CARD`. VORIGE und NÄCHSTE stehen daneben,
+  solange der Ordner mehr als 48 Einträge hat.
+- Die Überschrift zählt die Einträge wie FILES, `6 EINTRÄGE` oder
+  `EINTRÄGE 49 BIS 96 VON 120`, und danach die nicht gelisteten.
+- Eine Zeile zeigt Namen, Größe (`512B`, `14kB`, `7.0MB`; 1kB sind 1.024
+  Bytes), das Wort der Art und das Zustandswort von FILES
+  (`WIRD GESCHRIEBEN`, `GESPERRT`, `FEST`).
+- Ein Klick oder ein Tipp wählt eine Zeile und macht ihre Spalte zur
+  aktiven, mit dem Akzentrahmen. Ein zweiter Tipp, ein Doppelklick oder
+  Enter ist ÖFFNEN.
+- AKTUALISIEREN, INFO, HERUNTERLADEN und ÖFFNEN, am Fuß des Fensters,
+  wirken auf den gewählten Eintrag der aktiven Spalte. Eine Taste, die abgelehnt würde, ist
+  gedimmt, und ein Tipp darauf sagt unter den Tasten, warum.
+
+| Taste | Was sie tut |
+|---|---|
+| AKTUALISIEREN | fragt den Zustand des Panels neu und liest dann jede Spalte auf der Seite neu, die sie zeigt, wie [AKTUALISIEREN](#aktualisieren) in FILES; eine seitdem getauschte Karte beginnt beide Spalten wieder im Stammverzeichnis und im Ordner User-Logs |
+| INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel des Eintrags wie der INFO-Kasten von FILES; die Zeit ist der Zeitstempel der Karte in der Zone von SETUP > PANEL, `Zeitzone`, `nicht bekannt` für einen Zeitstempel in 1980 |
+| HERUNTERLADEN | die gewählte Datei über `/card/<Pfad>`; auf einem Ordner gedimmt |
+| ÖFFNEN | geht in einen Ordner oder zeigt eine Datei im Betrachter über der Seite. Gedimmt auf einer Datei über 1.048.576 Bytes, einer Datei, die der Logger schreibt, und den Vermerken der Servoprogrammierung, die HERUNTERLADEN trotzdem sendet |
+
+Eine zweite Reihe hält die Schreibzugriffe. Jeder wartet auf die Antwort
+des Panels, und nach einem, der durchging, werden beide Spalten neu
+gelesen.
+
+| Taste | Was sie tut |
+|---|---|
+| HOCHLADEN | sendet eine Datei bis 1.048.576 Bytes in den Ordner der aktiven Spalte, mit Fortschrittsbalken; eine größere wird abgelehnt, bevor ein Byte gesendet ist. Ein vergebener Name fragt `UP.TXT gibt es in diesem Ordner schon. Ersetzen?` mit ERSETZEN und ABBRECHEN. Vor der Frage fragt die Seite `/api/info` nach dem ETag der Datei dort, und ERSETZEN sendet `If-Match` mit ihm: Eine Änderung am Panel oder aus einem anderen Browser, während die Frage offen ist, wird mit `Seit dem Lesen auf der Karte geändert. Neu lesen.` abgelehnt. Eine Datei dort über 1.048.576 Bytes hat kein ETag und wird ohne den Vergleich ersetzt. Die Datei muss Text sein, wie der Betrachter ihn nimmt: kein NUL-Byte in den ersten 4.096 Bytes und höchstens 65.536 Zeilenenden |
+| NEUER ORDNER | ein Ordner mit dem getippten Namen im Ordner der aktiven Spalte |
+| NEUE TEXTDATEI | eine leere Datei mit dem getippten Namen dort; ein vergebener Name wird abgelehnt |
+| UMBENENNEN | der gewählte Eintrag unter dem getippten Namen in seinem Ordner; nur eine andere Groß- und Kleinschreibung ist auch ein Umbenennen |
+| VERSCHIEBEN | der gewählte Eintrag in den Ordner der anderen Spalte, unter seinem Namen; ein Ordner nur, wenn er leer ist |
+| LÖSCHEN | fragt `VON DER KARTE LÖSCHEN` mit dem Namen, ob es die Datei oder den leeren Ordner löscht, den Bericht, den ein Lauf-Log mitnimmt, und dass es sich nicht rückgängig machen lässt; ein Ordner nur, wenn er leer ist |
+
+Ein getippter oder hochgeladener Name folgt der Tastatur des Panels ohne
+die deutschen Buchstaben: 1 bis 59 Bytes ASCII (American Standard Code
+for Information Interchange); Buchstaben, Ziffern, Leerzeichen und
+Zeichen außer `" * / : < > ? \ |`; kein Punkt und kein Leerzeichen an
+einem Ende. Ein Eintrag, dessen Pfad ein Zeichen außerhalb von ASCII
+enthält, die deutschen Buchstaben eingeschlossen, wird nur auf FILES
+umbenannt, verschoben und gelöscht. Eine Schreibtaste ist gedimmt, solange das Panel keinen
+Schreibzugriff annimmt (die Einstellung, das Halten, ARMED, ein Lauf),
+ohne Auswahl, UMBENENNEN und VERSCHIEBEN auf einem Ordner des Prüfstands, auf
+den Vermerken der Servoprogrammierung und auf einer Datei, die der Logger schreibt; ein Tipp
+darauf sagt, warum. Mit Schreiben per Browser ZUGANGSCODE und ZUGANGSCODE
+aus fragt der erste Schreibzugriff in einem Kasten nach dem Code. CODE
+SENDEN schickt ihn an `/code`, ohne die Seite zu verlassen, und der
+Schreibzugriff, der gefragt hat, geht noch einmal hinaus. Eine Antwort nach
+ABBRECHEN des Kastens sendet nichts; ein falscher Code fragt noch einmal.
+
+Der Betrachter zeigt die Datei nur lesend über der Seite: Pfad, Größe,
+NUR LESEN, `ZEILE 23 VON 57` für die oberste Zeile, `GEMISCHTE ZEILENENDEN`
+für eine Datei mit mehr als einer Art und SCHLIESSEN (oder Escape). Seine
+Zeilen sind gefärbt, wie der [Textbetrachter](#der-textbetrachter) des
+Panels sie färbt, mit denselben Regeln, denselben Urteilswörtern auf
+Englisch und Deutsch und den Paletten des Panels: der hellen, oder der
+dunklen, wenn der Browser ein dunkles Schema verlangt. Ein Label
+(`Result:`, `name =`) ist TEXT_DIM: #46586c in der hellen Palette,
+#84acca in der dunklen, wie das Panel es in jedem Theme zeichnet. Die
+ganze Seite folgt demselben Schema: Hintergrund, Text, Linien, Spalten,
+Boxen und der Kopf des Betrachters nehmen die Theme-Farben des Panels,
+PANEL, TEXT, TEXT_DIM, EDGE und ACCENT, hell oder dunkel. Eine Zeile wird
+nicht umbrochen; der Text rollt seitwärts. Ein Tab reicht bis zum nächsten
+Vielfachen von 8 Zellen. Ein Steuerzeichen und ein Byte, das keine
+UTF-8-Folge beginnt, erscheinen als `?`. Eine Datei, die die Datei-API
+ablehnt, zeigt den Text ihrer Ablehnung. Die Seite zeichnet die Zeilen auf
+dem Schirm und 200 Zeilen darüber und darunter.
+
+BEARBEITEN im Kopf des Betrachters öffnet die Datei im Editor des Browsers
+(`shared/webaccess/web/edit.js`): ein Textfeld über denselben farbigen
+Zeilen, in derselben Schrift von 13px mit 20px Zeilenabstand, sodass
+Cursor, Auswahl, Rückgängig, Kopieren und Einfügen des Browsers und die
+Tastatur eines Telefons darauf wirken. Die sichtbaren Zeilen und je 200
+darüber und darunter werden einen Frame nach jeder Änderung und jedem
+Scrollen neu geteilt und gefärbt. Der Kopf zeigt dann BEARBEITUNG, oder
+GEÄNDERT in der Warnfarbe, solange der Text von der Datei abweicht,
+`ZEILE 3 VON 59` für die oberste Zeile, SPEICHERN und SCHLIESSEN; Strg+S
+ist SPEICHERN. BEARBEITEN wird abgelehnt, und ein Tipp sagt warum, wo eine
+Schreibtaste es wird: solange das Panel keinen Schreibzugriff nimmt, bei
+einer Datei, die der Logger schreibt, bei den Vermerken der
+Servoprogrammierung und beim Fehlerlog.
+
+Der Editor behält die Bytes der Datei. Ihre Zeilenenden, LF, CR LF oder
+CR, setzt SPEICHERN wieder ein, und ebenso ein BOM (Byte Order Mark) an
+ihrem Anfang; eine getippte Zeile endet wie die Zeilen der Datei. Eine
+Datei mit mehr als einer Art Zeilenende wird mit LF gespeichert;
+BEARBEITEN sagt
+`Gemischte Zeilenenden: SPEICHERN schreibt jedes Zeilenende als LF.`
+Eine Datei, die kein UTF-8 ist oder die das Textfeld nicht Byte für Byte
+zurückgäbe, öffnet sich nicht im Editor:
+`Der Browser kann nicht jedes Byte dieser Datei erhalten (kein UTF-8). Am Panel bearbeiten: DATEIEN > BEARBEITEN.`
+SPEICHERN hält die Grenzen des Betrachters an den Bytes, wie sie
+gespeichert würden, BOM und CR LF mitgezählt: über 1.048.576 Bytes sendet
+es nichts und sagt `Text voll: höchstens 1MB.`, über 65.536 Zeilenenden
+`Text voll: höchstens 65536 Zeilen.`
+
+SPEICHERN sendet `PUT /api/file` mit `If-Match` und dem ETag der Datei,
+wie der Betrachter sie las oder das letzte SPEICHERN sie schrieb; ohne es
+sendet der Editor keinen Schreibzugriff. Die Notiz sagt dann
+`<Name> gespeichert.` Eine KST-Datei, erste Zeile
+`KST servo configuration, format` und eine Zahl, verliert zuerst jede
+Prüfsummenzeile, nach der Regel des Editors von FILES
+([der Texteditor](#der-texteditor)), und die Notiz sagt
+`Ohne Prüfsummenzeile gespeichert: der Servo-Programmierer liest sie als bearbeitet.`
+Ein ESC-Profil, das das Panel beim Start liest, sagt
+`Gespeichert. Das Panel liest die Datei beim nächsten Start.` Eine Datei,
+die seit dem Lesen auf der Karte geändert wurde, durch den Editor von
+FILES, einen Upload oder einen anderen Browser, wird mit 412 `CHANGED`
+abgelehnt. Der Kopf zeigt dann
+`Seit dem Lesen auf der Karte geändert. Neu lesen.`, und das Feld
+UNGESPEICHERTE ÄNDERUNGEN fragt
+`<Name> wurde seit dem Lesen auf der Karte geändert. NEU LESEN verwirft diese Änderungen.`
+mit BLEIBEN, NEU LESEN und ÜBERSCHREIBEN. BLEIBEN behält den Text; NEU LESEN
+verwirft ihn, liest die Datei neu von der Karte und zeigt sie. ÜBERSCHREIBEN
+braucht einen Druck von 2s, mit einer Füllung über die Taste; gehaltene
+Leertaste oder Eingabetaste zählen als Druck. Ein Loslassen vor 2s sendet
+nichts und zeigt `Halte 2s, um zu überschreiben.` im Feld, und ein Druck,
+der die Taste verlässt, Escape und ein verlorener Fokus beenden ihn ohne
+Schreiben. Der vollendete Druck sendet SPEICHERN mit `If-Match` und dem ETag,
+das die 412 trug: der Datei, wie diese Ablehnung sie fand. Eine Datei, die
+sich nach dieser Ablehnung ändert, auch während des Drucks, wird wieder mit
+412 beantwortet, und das Feld fragt erneut mit dem ETag dieser Antwort. Eine
+entfernte Datei gibt eine 412 ohne ETag: ÜBERSCHREIBEN ist gedimmt, und nichts
+geht hinaus. Ein Schreiben, das fehlschlägt, lässt die Datei, wie sie war, und
+den Text ungespeichert, und das nächste SPEICHERN wird mit 412 abgelehnt. Mit Schreiben per Browser
+ZUGANGSCODE und noch keinem Code fragt SPEICHERN im Feld des Editors nach
+dem Code: CODE SENDEN schickt ihn an `/code`, ohne die Seite zu verlassen,
+die Antwort des Panels setzt das Cookie, und SPEICHERN geht mit dem Text,
+wie er steht, noch einmal hinaus; ein falscher Code sagt
+`Falscher Code.` und fragt erneut. Eine Antwort, die nach ABBRECHEN im Feld
+oder nach dem Schließen des Editors kommt, speichert nichts. Jede andere Ablehnung zeigt ihren Text
+im Kopf, und der Text bleibt. Während SPEICHERN läuft,
+ändert sich der Text nicht, und SCHLIESSEN wartet darauf.
+
+SCHLIESSEN oder Escape, solange der Text von der Datei abweicht, fragt
+UNGESPEICHERTE ÄNDERUNGEN:
+`<Name> ohne Speichern verlassen? Die Änderungen gehen verloren.` mit
+BLEIBEN und VERWERFEN. Die Seite verlassen oder neu laden mit Änderungen
+fragt über die eigene Frage des Browsers, in dessen Worten. Solange der
+Betrachter zu sehen ist, nehmen die Spalten und Tasten dahinter keinen
+Klick, keinen Fokus und keine Taste an, sodass sich keine Datei über dem
+Text des Editors öffnet.
+
+Die Seite sendet eine Anfrage nach der anderen. Eine Anfrage ohne Antwort
+nach 2s zeigt
+`Warte auf das Panel: Es beantwortet eine Anfrage nach der anderen.`; ein
+Download über `/card/` hält die nächste Anfrage bis zu seinem Ende auf. Ein
+Browser ohne JavaScript zeigt `Die Dateiliste braucht JavaScript.` und den
+ZIP-Link.
 
 **Alles als eine ZIP-Datei herunterladen** sendet die ganze Karte als eine
 ZIP-Datei. Die Seite nennt vor dem Klick die Zahl der Dateien, ihre Bytes
@@ -3337,6 +4231,29 @@ Der Download zählt die Einträge, geht die Karte noch einmal durch, um die
 Größe jedes Eintrags festzulegen, und kommt dann zweimal an jedem Eintrag
 vorbei: einmal für seine Daten, einmal am Ende für das Verzeichnis der
 ZIP-Datei.
+
+Jede Datei wird in Stücken von 16KiB gelesen (`WA_ZIP_READ_BYTES`), jedes
+an einem Versatz der Datei, der ein Vielfaches von 16KiB ist, in einen
+Puffer von 16KiB PSRAM, ausgerichtet auf die Cache-Zeile: ein Stück ist
+eine Übertragung der Karte direkt in den Puffer, wie weit die Header vor
+der Datei das Archiv auch verschieben. Der Puffer wird für den Download
+belegt und an seinem Ende freigegeben. FatFs findet eine Datei in ihrem
+Ordner, indem es den Ordner ab seinem ersten Eintrag liest, also kosten
+die Öffnungen eines Ordners mit n Dateien etwa n x n / 2 gelesene
+Einträge; die Zeit für einen Ordner mit 999 Dateien ist nicht gemessen.
+Das Panel schreibt das Ende jedes Downloads ins Log, bei einem Fehler mit
+der Ursache und dem Eintrag, an dem er war:
+
+```text
+I (…) wifi: zip: sent, <n> of <n> B in <t> ms
+W (…) wifi: zip: card read failed at USER/LOGS/LOG00030.BFL, <n> of <n> B in <t> ms
+```
+
+Die Ursachen sind die des Archivs, `card read failed` und `no card`, oder
+die des Sendens, `receiver gone`, `nothing taken for 30 s` und `radio going
+off`. Ein Lesen oder Öffnen, das die Karte ablehnt, schreibt davor
+`card: read of <n>B failed, errno <e>` oder `card: open of <path> failed,
+errno <e>`.
 
 - Eine Datei, die durch Anhängen wächst wie ein Log, wird gesendet, wie sie
   beim Start des Downloads war: ihre ersten Bytes bis zur Größe, die sie da
@@ -3366,6 +4283,98 @@ auf dessen Ende. Eine Karte, die während eines Downloads gezogen wird,
 beendet den Download zu kurz, ebenso ein Browser, der 30s lang nichts
 annimmt; der Browser meldet ihn als fehlgeschlagen, und das Panel läuft
 weiter.
+
+### Die Datei-API
+
+Der Server der Seite beantwortet auch vier Lesezugriffe für ein Skript:
+eine Seite eines Ordners, die Angaben zu einem Eintrag, eine Textdatei
+ganz und den Zustand des Panels (`shared/webaccess/wa_api.h`,
+`firmware/panel/components/wifi_access/wifi_files.c`); und vier
+Schreibzugriffe (`shared/webaccess/wa_api_write.c`,
+`firmware/panel/components/wifi_access/wifi_write.c`). Die Dateiverwaltung
+der Seite liest die Karte über sie, über dieselben Seiten, Regeln und
+dasselbe Laden wie FILES. Jede läuft durch die Prüfungen der Tabelle oben und braucht
+den Zugangscode wie ein Download; eine Anfrage ohne Code bekommt 403 und
+`CODE`.
+
+| Anfrage | Antwort |
+| --- | --- |
+| `GET /api/status` | JSON (JavaScript Object Notation): Name, Version und Sprache des Panels, `"writes"` `open` oder `closed` mit dem ersten Grund, aus dem ein Schreibzugriff zum Zeitpunkt der Anfrage abgelehnt wird, und seinem Text (`WRITES_OFF`; `ARMED` oder `LOGGING`, solange die Schreibsperre greift; `WRITES_HOLD`; leer, wenn offen) und `"mode"`, die Einstellung (`OPEN`, `CODE`, `HOLD`, `OFF`; bei `CODE` entscheidet der Code jedes Schreibzugriffs), Mount-Nummer, Name, Größe und freie Bytes der Karte, die Grenzen: 48 Einträge je Seite, 1.048.576 Bytes und 65.536 Zeilenenden je Datei, und der Ordner User-Logs, den SETUP > SD CARD nennt (vorgegeben `USER/LOGS`) |
+| `GET /api/list?path=P&go=G&key=N&key_dir=D` | JSON: bis zu 48 Einträge des Ordners `P`, Ordner zuerst, dann Namen ohne Rücksicht auf Groß- und Kleinschreibung, wie FILES sie listet. Jeder Eintrag hat Namen, ob er ein Ordner ist, Bytes, Art (`FOLDER`, `RUN`, `REPORT`, `KST`, `PROFILE`, `FAULT`, `CSV`, `JSON`, `TEXT`, `OTHER`), Platz (`FREE`, `FIXED`, `LOCKED`, `FAULT`) und ob der Logger ihn schreibt. Dazu die Mount-Nummer, die Einträge vor der Seite, die Summe des Ordners, die nicht gelisteten Einträge und ob davor und danach eine Seite steht. `G` ist `first` (voreingestellt), `last`, `next`, `prev` oder `same`; die letzten drei nennen die Seite über den Eintrag `N` an ihrem Rand, `D` 1 für einen Ordner. |
+| `GET /api/info?path=P&dir=D&mount=M&etag=1` | JSON: Größe und FAT-Zeitstempel von `P`, -1 für keinen, und diese Zeit, wie INFO sie zeigt, `2027-01-01 00:00` in der Zone von SETUP > PANEL, `Zeitzone`, leer für einen Zeitstempel in 1980 oder keinen; für einen Ordner (`D` 1) seine Einträge, deren Bytes und die nicht gelisteten Einträge. Mit `etag=1` hat eine Datei auch `"etag"`, die CRC-32, die `/api/file` als ETag gibt, beliebiger Bytes: Das Panel liest dafür die Karte, und die Datei geht nicht über das Netz. `""` für eine Datei über 1.048.576 Bytes, die nicht gelesen wird |
+| `GET /api/file?path=P&mount=M` | die Bytes der Textdatei `P`, wie die Karte sie hält, BOM (Byte Order Mark) eingeschlossen, mit `ETag` (ihre CRC-32, Cyclic Redundancy Check), `X-Rcbench-Eol` (`lf`, `crlf`, `cr` oder `mixed`), `X-Rcbench-Lines` (die Zeilen, wie der Betrachter von FILES sie zählt: ein Zeilenende am Dateiende beginnt keine Zeile, also haben `a\nb\n` und `a\nb` 2 und eine leere Datei 0) und `X-Rcbench-Bom` (1 oder 0) |
+
+Ein Pfad gilt ab der Wurzel der Karte und ist prozentkodiert, mit `/` als
+Trenner: `%2F` wird abgelehnt, `+` ist ein Plus. Er hat höchstens 120 Bytes
+und 16 Ordner, wie auf FILES. Mit `mount=M` wird INFO oder eine Datei von
+einer anderen Karte als der gelisteten mit `CARD_GONE` abgelehnt.
+
+Die Schreibzugriffe führen Aufträge von FILES aus, nach den Schritten von
+[Schreiben per Browser](#schreiben-per-browser). Ein Formular ist ein Body
+von höchstens 1.024 Bytes, gelesen wie ein Query-String.
+
+| Anfrage | Was sie tut |
+| --- | --- |
+| `PUT /api/file?path=P&mount=M` | speichert den Body, höchstens 1.048.576 Bytes, als Textdatei `P` über `P.NEW`, wie der Editor von FILES speichert. Mit `If-Match: "<ETag>"` nur, solange die CRC-32 der Datei dieses ETag ist, sonst 412 `CHANGED`; mit `If-None-Match: *` nur, wo kein Eintrag den Namen hat, sonst 409 `EXISTS`; mit keinem von beiden legt es die Datei an oder ersetzt sie. Beide werden verglichen, bevor der Body gelesen ist, und noch einmal direkt vor dem Schreiben. Der Body folgt den Grenzen des Betrachters: 415 `NOT_TEXT`, 422 `TOO_MANY_LINES`. Antwortet 201 für eine angelegte und 200 für eine ersetzte Datei, mit `ETag` und `{"path":"P","created":true,"etag":"...","note":""}`; `note` ist `ESC_NEXT_START` für ein ESC-Profil (Electronic Speed Controller), das der nächste Start liest |
+| `POST /api/mkdir` mit `path=P&mount=M` | legt den Ordner `P` an; 201 |
+| `POST /api/rename` mit `from=P&to=Q&dir=D&mount=M` | `Q` im Ordner von `P` benennt den Eintrag um; `Q` mit demselben Namen in einem anderen Ordner verschiebt ihn dorthin, einen Ordner nur, wenn er leer ist; jedes andere `Q` ist 400 `REQUEST`; 200 |
+| `POST /api/delete` mit `path=P&dir=D&mount=M` | löscht `P`, den Bericht eines Laufs mit, einen Ordner nur, wenn er leer ist; 200 |
+
+Ein neuer Name folgt der Tastatur des Panels: 1 bis 59 Bytes, keines von
+`" * / : < > ? \ |`, kein Punkt und kein Leerzeichen an einem Ende.
+`If-Match` nimmt ein ETag, wie `/api/file` es liefert; ein schwaches
+(`W/`) oder eine Liste ist 400 `REQUEST`. Jeder Pfad eines
+Schreibzugriffs nennt jeden Eintrag nur auf eine Weise: ein Name mit
+Leerzeichen am Anfang, Leerzeichen oder Punkt am Ende, `\`, `:`, einem
+Steuerbyte, `~` vor einer Ziffer (ein 8.3-Kurzname wie
+`LOG000~1.BFL`) oder einem Zeichen außerhalb von ASCII ist 400 `NAME`,
+weil FatFs ihn als anderen Eintrag läse: Es faltet die Schreibung von
+ganz Unicode, `ſ` (U+017F) ist für FatFs `S`. Groß- und Kleinschreibung
+in ASCII wird nicht abgelehnt: Die Regeln vergleichen Namen ohne sie, wie
+FatFs.
+
+Eine Ablehnung ist ein HTTP-Status und `{"error":"WORT","text":"..."}`, der
+Text in der Sprache des Panels:
+
+| Wort | Status | Wann |
+| --- | --- | --- |
+| `NAME` | 400 | ein Pfad, den die Karte oder FILES nicht nimmt |
+| `REQUEST` | 400 | ein Parameter außer den obigen, oder kein Pfad für INFO oder eine Datei |
+| `ARG` | 400 | ein Ordner, als Datei angefragt |
+| `BODY` | 400 | eine Leseanfrage mit Body (die Prüfung oben) |
+| `CODE` | 403 | kein Zugangscode oder ein falscher, der zu den 16 zählt |
+| `ORIGIN` | 403 | ein Schreibzugriff ohne den `Origin` der Seite oder den Header des Skripts (die Prüfung oben) |
+| `WRITES_OFF`, `WRITES_HOLD`, `WRITES_CODE` | 403 | ein Schreibzugriff, den [Schreiben per Browser](#schreiben-per-browser) nicht erlaubt: AUS, HALTEN vor dem Halten, ZUGANGSCODE ohne den Code dieser Sitzung |
+| `FIXED` | 403 | ein Ordner des Prüfstands oder das Fehlerlog, bei UMBENENNEN und VERSCHIEBEN |
+| `DENIED` | 403 | eine schreibgeschützte Karte |
+| `LOCKED` | 403 | die Vermerke der Servoprogrammierung, `KST.TXT` und `HITEC.TXT`: stattdessen herunterladen |
+| `NOT_FOUND` | 404 | kein solcher Eintrag, oder einer anderer Art |
+| `EXISTS`, `NOT_EMPTY`, `SAME` | 409 | ein vergebener Name; ein Ordner mit Einträgen; ein Verschieben in denselben Ordner oder in sich selbst |
+| `ARMED`, `LOGGING` | 409 | der Prüfstand wechselte zu ARMED, oder ein Lauf wird aufgezeichnet: Die Karte ist nur lesbar |
+| `CHANGED` | 412 | ein PUT mit `If-Match`, dessen Datei eine andere CRC-32 als das ETag hat oder fehlt. Das JSON ergänzt `"etag":"xxxxxxxx"`, die CRC-32 der gefundenen Datei; keins für eine fehlende Datei |
+| `TOO_BIG` | 413 | eine Datei über 1.048.576 Bytes, abgelehnt, bevor ein Byte gelesen ist |
+| `TOO_LARGE` | 413 | der Body eines PUT über 1.048.576 Bytes (die Prüfung oben) |
+| `FORM_TOO_LARGE` | 413 | das Formular eines POST über 1.024 Bytes (die Prüfung oben) |
+| `NOT_TEXT` | 415 | ein NUL-Byte in den ersten 4.096 Bytes |
+| `HOST` | 421 | ein `Host`, der nicht das Panel ist (die Prüfung oben) |
+| `TOO_MANY_LINES` | 422 | mehr als 65.536 Zeilenenden |
+| `BUSY` | 423 | eine Datei, die der Logger schreibt |
+| `IO` | 500 | die Karte hat einen Lese- oder Schreibzugriff nicht ausgeführt |
+| `NO_CARD`, `CARD_GONE`, `MEMORY`, `CANCELLED` | 503 | keine Karte; Karte entnommen oder getauscht; kein PSRAM für die Anfrage; der Funk geht aus |
+| `PANEL_BUSY` | 503 | FILES am Panel hielt die Karte 2000ms lang; mit `Retry-After: 2` |
+| `FULL` | 507 | die Karte oder der Ordner ist voll |
+
+Der Speicher der API ist PSRAM, genommen bei ihrer ersten Anfrage und
+zurückgegeben, wenn der Funk ausgeht: etwa 22kB für eine Anfrage und bei
+der ersten Datei 1MiB für deren Bytes und 256KiB für ihren Zeilenindex.
+Jede Anfrage nach Liste, INFO und Datei schreibt ihre Antwort, ihre Bytes,
+ihre Zeit und den ungenutzten Stack des Server-Tasks ins Log, als
+`api: <request> <answer>, <n>B in <t>ms; httpd stack <n>B unused`; jeder
+Schreibzugriff fügt den freien internen RAM an, als `api: put OK, 1048576B
+in <t>ms; httpd stack <n>B unused, internal RAM <n>B free`. Der Body eines
+Schreibzugriffs liegt in demselben 1MiB PSRAM; Formular und Header nutzen
+den Puffer der Seite von 4.096B. Der Stack des Servers hat 8.192 Bytes;
+ein Lese- oder Schreibzugriff darauf ist auf einem Panel nicht gemessen.
 
 ### Installieren: PANEL UPDATE
 
@@ -3412,8 +4421,7 @@ startet neu.
 Der Splash zeigt die neue Version, und das Band sagt
 `Panel-Firmware 0.22.1 installiert.`. Ein Schreiben, das fehlschlägt, ändert
 nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
-zu dem Bildschirm, der WI-FI geöffnet hat, SETUP oder LOGS, nach einem
-Download von GitHub dorthin, wo der Download begann.
+zum Menü, nach einem Download von GitHub dorthin, wo der Download begann.
 
 ![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
 
@@ -3452,10 +4460,35 @@ fehl (otadata nicht geschrieben), sagt das Band
 `Panel-Firmware 0.22.1 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
 der Build läuft bis dahin.
 
+Vor dem Neustart hält die Installation die geschriebene Version im NVS
+(Non-Volatile Storage): ein Eintrag von 40 Byte, Namespace `fw_ota`, Key
+`restart_note`, mit einem Magic Word und einem FNV-1a-Hash (Fowler-Noll-Vo).
+Ein Neustart, ein Panic und ein Stromausfall behalten ihn. Der nächste Start
+liest ihn; hat der Bootloader den geschriebenen Slot als ungültig markiert,
+ist dieser Start der Build davor, und das Band zeigt die Zeile `ist nicht gestartet`. Der
+Eintrag wird nach jedem Start gelöscht außer nach einem Versuchsstart, der
+zurückgeht, also erscheint die Zeile einmal. Ein Eintrag anderer Größe,
+anderen Magic Words oder Hashs gilt als keine Notiz. Der erste Start nach
+einer Installation aus 0.23.2 oder älter findet keinen Eintrag, wie ein
+Panel, das nie installiert hat: Diese Builds halten die Notiz im LP-RAM
+(Low-Power), und einen Versuchsstart dieses Builds, der zurückgeht, meldet
+der alte Build von dort. Die Konsole nennt die Prüfung jedes Starts in
+einer Zeile:
+
+    I (…) fw_ota: start check: note 0.24.1, last invalid slot ota_0, result ROLLED_BACK
+    I (…) fw_ota: start check: note none, last invalid slot none, result NORMAL
+
+Die Notiz ist die Version oder `none`, oder `unreadable` für einen Eintrag,
+der als keine Notiz gilt; der Slot ist der letzte ungültige des Bootloaders
+oder `none`; das Ergebnis ist `NORMAL`, `UPDATED`, `ROLLED_BACK`,
+`UNCONFIRMED` oder `GOING_BACK`, Letzteres vor dem Neustart eines
+Versuchsstarts, der zurückgeht.
+
 Aktuelle Einschränkungen:
 
-- Ein Stromausfall während des Versuchsstarts verliert diese Zeile; das
-  Panel geht trotzdem zum Build davor zurück.
+- Eine Installation, deren NVS-Schreiben scheitert, meldet das auf der
+  Konsole (`restart note not kept`), und ein Start ihres Builds, der
+  zurückgeht, zeigt keine Zeile im Band.
 - Ein Versuchsstart, der vor der Bildschirmschleife stehen bleibt, etwa in
   einem Einhängen der Karte, das nicht zurückkehrt, bleibt nicht und wird
   auch nicht zurückgesetzt: Der Task-Watchdog meldet und startet nicht neu
@@ -3478,19 +4511,20 @@ Zeile in der Schrift 10 x 20px.
 
 ![Setup](img/de/setup.png)
 
-- Vier Kategorien: PANEL, INTERFACES, SD CARD und SENSORS, die
-  Einstellungen für den ganzen Prüfstand. Jede Kachel nennt die Zahl der
-  Einstellungen, die ihre Liste zeigt. Ein Tippen öffnet die Liste der
-  Kategorie. Die Einstellungen von Akku,
+- Drei Kategorien: PANEL, SENSORS und SD CARD, die
+  Einstellungen für den ganzen Prüfstand. Eine Kachel nennt die Zahl der
+  Einstellungen, die ihre Liste zeigt; die von SENSORS sagt, was sie hält,
+  `STROM, WINKEL, PHASENABGRIFF`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
-- Fünf eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-  ([Pin auswählen](#pin-auswählen)), WI-FI ([WLAN](#wlan)), UPDATES
-  ([Updates](#updates)) und FILES ([Files](#files)). Das Band jedes
-  Bildschirms nennt ihn wie seine Kachel, und das Band dieser Seite zeigt
-  SETUP.
-- Kein Platz ist frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
-  fasst 9, und der Build scheitert am zehnten.
+- Drei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan))
+  und UPDATES ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie
+  seine Kachel, und das Band dieser Seite zeigt SETUP. [Files](#files) ist ein
+  Tab der Kachel [LOGS](#logs).
+- LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 3 Plätze
+  frei, auf diesem 2. Die Seite hält 9, und der Build schlägt bei einem zehnten
+  Eintrag fehl.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
   einer beliebigen Kategorie zeigt sich auch hier:
@@ -3521,7 +4555,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES, FILES | den Kacheln; WI-FI und FILES, aus LOGS geöffnet, führen zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [Pin auswählen](#pin-auswählen), [WLAN](#wlan)) |
+| OUTPUTS, WI-FI, UPDATES | den Kacheln; OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück, WI-FI, von der Taste auf LOGS oder UPDATES geöffnet, ebenso. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [WLAN](#wlan)) |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -3531,7 +4565,11 @@ zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
 bleibt und warum: [Sprache der Oberfläche](Language-de.md). Ein Finger
 schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
 Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht unter
-[Logs](#logs) beschrieben.
+[Logs](#logs) beschrieben. Tastatur durchsichtig legt fest, wie viel des
+Texts durch die Tastatur des Texteditors scheint: AUS, 25% oder 50%,
+standardmäßig AUS; beschrieben unter [Der Texteditor](#der-texteditor).
+Demo-Modus blendet das Wasserzeichen SIMULATION aus und lässt den SIM-Chip des
+Bands stehen ([Das Statusband](#das-statusband)).
 
 Acht Einstellungen werden gespeichert und angezeigt, und kein Teil der
 Firmware liest sie: Einheiten und Dimmen nach unter PANEL;
@@ -3747,7 +4785,7 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
 - Aktuelle Einschränkung: Ein erster DNS-Server, der nicht antwortet,
   verzögert nach einer Verbindung jede Namensauflösung um etwa 7s, die der
   NTP-Anfrage wie die der Release-Prüfung. lwIP fragt einen Server bei 0s,
-  1s, 2s und 4s und den nächsten bei 7s; ESP-IDF v5.5.5 bietet keinen der
+  1s, 2s und 4s und den nächsten bei 7s; ESP-IDF v6.1 bietet keinen der
   beiden Werte in seiner Konfiguration an.
 - Eine Antwort stellt die Uhr und schreibt eine Konsolenzeile: den Server,
   die gesetzte Zeit in UTC und wie weit sie die Uhr bewegt hat, zum Beispiel
@@ -3841,34 +4879,89 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.
 
-### INTERFACES: die Strommonitore
+### SENSORS: die geteilte Ansicht
 
-INTERFACES listet seine 23 Einstellungen in fünf Abschnitten. Eine
-Überschrift über der ersten Zeile jedes Abschnitts benennt ihn: I2C-BUS (der
-INA228, Sensor SDA und SCL und der AS5600), PHASENABGRIFF,
-BALANCE SENSORS (Vibration und Optischer Tacho), SUPPLY (der PD mini) und
-PROG-PORT (Hitec-D-Empfang).
-Eine Überschrift ist eine eigene Zeile, 64px hoch bei 70px Zeilenabstand
-der Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert:
-ein Tippen darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die
-Liste ist 28 Zeilen lang.
+SENSORS hält jedes Gerät, das der IOmcu liest, in einer geteilten Ansicht: eine
+linke Liste mit 8 Einträgen und rechts daneben die Zeilen des gewählten
+Eintrags.
 
-![INTERFACES, die Strommonitore](img/de/setup-interfaces.png)
+![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
+
+Die linke Liste reicht von Body-y 8 bis 436: 8 Einträge von 220 x 50px im Abstand
+von 54px, von oben nach unten SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600
+und PHASENABGRIFF. Ein Eintrag zeigt seinen Namen im 12 x 24px-Font und darunter
+seinen Zustand im 8 x 16px-Font. Der gewählte Eintrag hat die helle Füllung und
+die Akzentkante; beim Start ist der erste Eintrag gewählt. Die Liste rechts ist
+754px breit ab x 240: Tasten, Wertfeld, Keypad und Scrollbalken stehen wie auf
+jeder Liste, und Name und Hilfe einer Zeile haben 438px, 43 Zellen des
+10 x 20px-Fonts.
+
+| Eintrag | Zustand im Betrieb | Zeilen |
+| --- | --- | --- |
+| SENSORBUS | `GPIO 16 / 17`, `KEINE PINS GESETZT`, `VOM IOMCU ABGELEHNT`, auf dem Carrier `GPIO 16 / 17 VERLÖTET` | 2, immer |
+| INA228 | ein Zustand der Tabelle unten, oder `ADRESSE WIE INA3221` | 4 |
+| INA3221 0x40 bis 0x43 | ein Zustand der Tabelle unter [SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine) | 10 |
+| AS5600 | `EIN`, `VOM IOMCU ABGELEHNT` | 2 |
+| PHASENABGRIFF | `EIN`, `VOM IOMCU ABGELEHNT` | 7 |
+
+- Ein Eintrag mit Einschaltzeile zeigt allein diese Zeile und liest `AUS`,
+  solange er aus ist. EIN ergänzt die übrigen Zeilen darunter.
+- Ein Druck spannt einen Eintrag, und sein Loslassen wählt ihn, innerhalb 8px
+  vom Druck, auf dem Eintrag. Ein Kontakt, der weiter rutscht, wählt nichts und
+  verschiebt nichts. Unter dem Keypad drückt nichts.
+- Jeder Eintrag behält seine Scrollposition, über einen anderen Eintrag, die
+  Kacheln und eine andere Kategorie hinweg, innerhalb des Bereichs, den seine
+  Zeilen beim Öffnen haben.
+- Ein Wechsel des Eintrags behält, was ungespeichert ist: SAVE und die Warnung
+  beim Verlassen zählen die Änderungen jedes Eintrags.
+- RESET nennt den Eintrag, `INA228 ZURÜCKSETZEN`, und setzt alle Zeilen dieses
+  Eintrags zurück, auch die verborgenen. Die Taste steht, wo KATEGORIE
+  ZURÜCKSETZEN steht. Ein Wischen, das auf ihr landet, spannt nichts.
+- Die erste Spalte des Streifens nennt die Kategorie, wie auf jeder Liste.
+
+Vibration und Optischer Tacho haben Schlüssel in dieser Kategorie und keinen
+Eintrag: keine Firmware liest sie. Ein gespeicherter Wert bleibt gespeichert und
+wirkt nicht.
+
+Der Drehknopf tut auf SETUP nichts: das Panel gibt eine Drehung nur an
+MOTOR & ESC und SERVO weiter.
+
+### SENSORS: die Strommonitore
 
 Der IOmcu liest I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem
 Bus auf zwei seiner Pins: einen TI INA228 im Strompfad des ESC, hier
-eingestellt, und bis zu vier TI INA3221, unter SENSORS eingestellt
-([SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine)). Die
-Zeilen des INA228 und die Pins des Busses stehen oben unter INTERFACES:
+eingestellt, und bis zu vier TI INA3221
+([SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine)). Die Zeilen
+der Einträge SENSORBUS und INA228:
+
+![SENSORS auf dem INA228](img/de/setup-sensors-ina228.png)
+
+Der Zustand des Eintrags INA228 stammt aus dem, was SENSE hält und liest
+(`sense_map_link_i228()`), in den Worten der
+[Tabelle der Bausteine](#sensors-die-ina3221-bausteine): `ONLINE`,
+`SUCHT DEN BAUSTEIN`, `ANTWORTET NICHT`, `ANDERE ID ANTWORTET`,
+`NOCH NICHT GESCHRIEBEN`, `NOCH NICHT GELESEN`, `VOM IOMCU ABGELEHNT` für einen
+abgelehnten Frame, abgelehnte Pins oder einen IOmcu ohne die Page SENSE, und
+`KEINE BUS-PINS`. `ADRESSE WIE INA3221` sagt, dass ein bestückter Baustein seine
+Adresse hat: keiner wird gelesen.
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | INA228 | EIN, AUS | AUS | der Monitor im Strompfad des ESC |
 | INA228 Adresse | 0x40 bis 0x4F | 0x45 | der MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41 |
 | INA228 Shunt | 50 bis 20000 µΩ, Schritte von 1 µΩ | 200 | der des MATEK |
-| INA228 Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der IOmcu ab. Seine Ablehnung eines Bereichs über 2000A Vollausschlag bleibt, und 300A am kleinsten Shunt, 50 µΩ, erreichen sie nicht |
+| INA228 Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich eingestellt wird: er wählt den ADC-Bereich (ADC: Analog-Digital-Wandler) und sonst nichts. 300A ist das Auslegungsmaximum des Prüfstands; mehr lehnt der IOmcu ab. Seine Ablehnung eines Bereichs über 2000A Vollausschlag bleibt, und 300A am kleinsten Shunt, 50 µΩ, erreichen sie nicht. Bis 40,96mV über dem Shunt nimmt er ±40,96mV, 78,125nV je Schritt; bis 163,84mV ±163,84mV, 312,5nV je Schritt; darüber lehnt der IOmcu das Paar ab |
 | Sensor-SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | GPIO des IOmcu (GPIO: General-Purpose Input/Output). `-` und `+` gehen von einem dieser Werte zum nächsten und halten bei −1 und bei 26. −1: die Pins sind nicht gesetzt, und auf der Page ist kein Bauteil eingeschaltet |
 | Sensor-SCL | SDA + 1 oder −1 | 17 | der GPIO nach Sensor-SDA, und −1 mit ihm. Die Zeile zeigt den Wert und hat keine Tasten |
+
+Die beiden Zeilen ersetzen ihre Hilfe durch den Wert, der zur anderen Zeile
+passt: `Bis 300.0A an 200uΩ (163.84mV)` bei INA228 Höchststrom, `Bis 800uΩ bei
+204.8A (163.84mV)` bei INA228 Shunt. Shunt in µΩ mal Höchststrom in A ist
+höchstens 163840. Jeder Shunt nimmt einen Höchststrom von mindestens 8,1A, bei
+20000 µΩ; bis 546 µΩ nimmt er die vollen 300,0A. 201 µΩ bei 204,8A sind 41,16mV
+und nehmen den weiteren Bereich; 203,7A bringen ihn in den engeren zurück. Ein
+Paar über 163,84mV ist auf beiden Zeilen markiert und steht im Band: `INA228
+Shunt x Höchststrom über 163.84mV: an 1000uΩ bis 163.8A. SENSORS prüfen.`.
 
 SDA und SCL sind das Paar eines I2C-Blocks: die GPIO-Nummer von SDA ist
 modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach. Sensor-SDA nimmt nur
@@ -3950,12 +5043,12 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.` | ein Monitor ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
-| `SDA oder SCL der Sensoren nicht festgelegt. SETUP > INTERFACES prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
-| `INA228 und INA3221 nutzen beide 0x40. SETUP > INTERFACES prüfen.` | der INA228 auf der Adresse eines bestückten INA3221; keiner wird gelesen |
-| `Sensor-Pins GPIO 16/GPIO 17 abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30s lang gezeigt oder bis zum Antippen, einmal je Änderung |
-| `INA228-Shunt oder Höchststrom abgelehnt. SETUP > INTERFACES prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84mV, oder der Messbereich, den er ergibt, übersteigt 2000A; der INA228 bleibt aus |
-| `INA3221-Einstellungen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat die Einstellung der INA3221 abgelehnt: die Zuordnung auf SENSE_MAP, bei einem IOmcu älter als 4.25 den Frame des einen Bausteins; der IOmcu behält, was er hielt |
-| `INA3221 0x41 hat alle Kanäle aus. SETUP > SENSORS prüfen.` | alle drei Shunts eines bestückten Bausteins stehen auf AUS; keine Zuordnung wird geschrieben, bis einer wieder an ist, und die Zeile verlässt dann das Band |
+| `SDA oder SCL der Sensoren nicht festgelegt. SENSORS prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
+| `INA228 und INA3221 nutzen beide 0x40. SENSORS prüfen.` | der INA228 auf der Adresse eines bestückten INA3221; keiner wird gelesen |
+| `Sensor-Pins GPIO 16/GPIO 17 abgelehnt. SENSORS prüfen.` | der IOmcu hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30s lang gezeigt oder bis zum Antippen, einmal je Änderung |
+| `INA228-Shunt oder Höchststrom abgelehnt. SENSORS prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84mV, oder der Messbereich, den er ergibt, übersteigt 2000A; der INA228 bleibt aus |
+| `INA3221-Einstellungen abgelehnt. SENSORS prüfen.` | der IOmcu hat die Einstellung der INA3221 abgelehnt: die Zuordnung auf SENSE_MAP, bei einem IOmcu älter als 4.25 den Frame des einen Bausteins; der IOmcu behält, was er hielt |
+| `INA3221 0x41 hat alle Kanäle aus. SENSORS prüfen.` | alle drei Shunts eines bestückten Bausteins stehen auf AUS; keine Zuordnung wird geschrieben, bis einer wieder an ist, und die Zeile verlässt dann das Band |
 | `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der IOmcu fand SDA oder SCL auf low gehalten und taktet den Bus frei. Eine Leitung, die low liest, ohne dass etwas sie hält (Pins ohne angeschlossenes Bauteil und ohne Pull-up), ist das nicht: sie steigt innerhalb von 50µs am eigenen Pad-Pull-up des IOmcu (32 bis 86kΩ), und die Monitore gelten als nicht antwortend |
 | `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `Ein Gerät antwortet unter 0x44.` wird angefügt, wenn der Adress-Scan des IOmcu dort etwas gefunden hat, wo das Bauteil sein könnte |
 | `0x40 meldet 1408h, kein INA3221. Gerät wird nicht verwendet.` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
@@ -3987,7 +5080,10 @@ zum Antippen.
 
 #### Eine Zeile, die der IOmcu nicht hält
 
-![INTERFACES, Pins, die der IOmcu nicht übernommen hat](img/de/setup-unheld.png)
+![SENSORS, Pins, die der IOmcu nicht übernommen hat](img/de/setup-unheld.png)
+
+Die Markierung auf Sensor SDA, auf AS5600 und auf den Zeilen des Phasenabgriffs
+stellt auch den Zustand des Eintrags auf `VOM IOMCU ABGELEHNT`.
 
 Eine Zeile, deren Wert nicht der ist, den die Page des IOmcu hält,
 ist markiert: ihr Rand und ihr Wert sind in der Warnfarbe gezeichnet, und
@@ -4015,27 +5111,30 @@ auf dem Band ist davon getrennt und bleibt wie oben beschrieben.
 
 ### SENSORS: die INA3221-Bausteine
 
-SENSORS stellt bis zu vier TI INA3221 ein, Dreikanal-Strommonitore am
-Sensorbus auf 0x40 bis 0x43, und sagt je Kanal, was er misst. Der INA228
-und die Pins des Busses bleiben unter INTERFACES.
+Je ein Eintrag stellt bis zu vier TI INA3221 ein, Dreikanal-Strommonitore am
+Sensorbus auf 0x40 bis 0x43, und sagt je Kanal, was er misst.
 
-![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
+Auf dem [rbmod-Carrier](Carrier-de.md#der-strommonitor) ist ein INA3221 auf
+0x40 verlötet: 0x40 BESTÜCKT zeigt EIN, und seine drei Zeilen MISST zeigen
+SCHIENE B, SCHIENE A und PROG PORTS 5V. Diese Zeilen haben keine Tasten und
+die Hilfezeile `Auf dem Board verlötet. Keine Einstellung.`. Kein
+Schritt erreicht die drei Schienen auf einer anderen Zeile oder einer
+anderen Bench.
 
-Die Liste beginnt mit der Überschrift INA3221-BAUSTEINE über vier Zeilen:
+Die erste Zeile eines Eintrags:
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | 0x40 bestückt bis 0x43 bestückt | EIN, AUS | AUS | ein INA3221 an dieser Adresse. Das DAOKAI-Modul nimmt 0x40 mit geschlossener A0-Lötbrücke nach GND. Ab Werk sind alle vier A0-Brücken offen, und die Adresse schwankt zwischen 0x40 und 0x41 |
 
-Jeder bestückte Baustein folgt unter einer eigenen Überschrift,
-`INA3221 0x40` bis `INA3221 0x43`, mit neun Zeilen, drei je Kanal. Ein
-Baustein, der nicht bestückt ist, hat keine Überschrift und keine Zeilen.
+Ein bestückter Baustein hat neun Zeilen mehr, drei je Kanal. Ein Baustein, der
+nicht bestückt ist, hat keine weiteren.
 
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, KEINE für jeden anderen Kanal | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
 | 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0mΩ, Schritte von 0,1mΩ | 100,0 | AUS: der Kanal wird nicht gelesen. Der R100 des DAOKAI misst bis 1,64A |
-| 0x40 CH1 Grenze | AUS, 10 bis 32767mA, Schritte von 10mA mit den Pfeilen | AUS | ein 50-ms-Fenster, dessen höchster Strom sie überschreitet, wird auf dem Band gesagt. Nur eine Meldung: nichts stoppt, schaltet auf SAFE oder treibt etwas. AUS: keine Grenze |
+| 0x40 CH1 Grenze | AUS, 10 bis 32767mA, Schritte von 10mA mit den Pfeilen | AUS | ein 50-ms-Fenster, dessen höchster Strom sie überschreitet, wird auf dem Band gesagt, und der Prüfstand schaltet auf SAFE mit dem Ausgang des Netzteils aus ([Sicherheit, Fehler](Safety-de.md#fehler)). AUS: keine Grenze |
 
 Ein Tipp auf den Wert eines Shunts öffnet das Tastenfeld
 ([Tasten und Liste](#tasten-und-liste)). 44,4mΩ vom Standardwert 100,0
@@ -4049,7 +5148,7 @@ Eine Zeile LIMIT nimmt 0 (AUS) oder 10 bis 32767mA; 1 bis 9 wird mit
 
 ![3mΩ abgelehnt, der Grund statt des Bereichs](img/de/setup-sensors-why.png)
 
-Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
+Der Eintrag eines Bausteins sagt unter seinem Namen, was der Baustein tut:
 
 | Zustand | Wann |
 | --- | --- |
@@ -4059,18 +5158,18 @@ Die Überschrift eines Bausteins zeigt rechts, was der Baustein tut:
 | `ANDERE ID ANTWORTET` | an der Adresse antwortet etwas mit einer anderen Identität |
 | `NOCH NICHT GESCHRIEBEN` | eine Änderung wartet: 500ms nach der letzten Änderung, und nur bei einem Prüfstand in SAFE |
 | `NOCH NICHT GELESEN` | kein IOmcu antwortet, oder seine Page ist seit dem Link-Aufbau nicht gelesen |
-| `VOM IOMCU NICHT ÜBERNOMMEN` | der IOmcu hat die Zuordnung abgelehnt; er behält die, die er hielt |
+| `VOM IOMCU ABGELEHNT` | der IOmcu hat die Zuordnung abgelehnt; er behält die, die er hielt |
 | `ALLE KANÄLE AUS` | alle drei Shunts des Bausteins stehen auf AUS: keine Zuordnung wird geschrieben |
 | `INA228 AUF DIESER ADRESSE` | der INA228 ist auf der Adresse des Bausteins eingeschaltet: der Baustein bleibt aus der Zuordnung und der INA228 aus |
-| `IOMCU ÄLTER ALS 0.22.0: NICHT GELESEN` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
-| `SENSOR-SDA ODER -SCL NICHT FESTGELEGT` | INTERFACES hat keinen Pin für SDA oder SCL des Sensorbusses: kein Baustein ist eingeschaltet |
+| `UNGELESEN, IOMCU < 0.22.0` | ein IOmcu älter als Protokoll 4.25 liest nur einen Baustein, und nicht diesen |
+| `KEINE BUS-PINS` | SENSORBUS hat keinen Pin für SDA oder SCL: kein Baustein ist eingeschaltet |
 
 Die Zeilen eines abgelehnten Bausteins, eines mit allen Kanälen aus, eines
 auf der Adresse des INA228, eines ohne Sensorbus oder eines, den ein
 älterer IOmcu nicht liest,
 sind markiert wie eine Zeile, die der IOmcu nicht hält: Rand und Wert in
 der Warnfarbe und eine Zeile statt der Hilfe. Bei einem IOmcu älter als
-4.25 lautet sie `IOmcu älter als 0.22.0: ein INA3221, CH1 mit 1kHz.`:
+4.25 lautet sie `IOmcu vor 0.22.0: ein Teil, CH1 mit 1kHz.`:
 
 ![SENSORS bei einem IOmcu älter als 4.25](img/de/setup-sensors-old.png)
 
@@ -4079,7 +5178,7 @@ hält: von der Änderung bis zum angenommenen Schreiben, nach einem
 abgelehnten Schreiben oder einer abgelehnten Page mit
 `Vom IOmcu nicht übernommen.` und bei einem IOmcu
 älter als 4.27 für jede Grenze, die nicht AUS ist, mit
-`IOmcu älter als 0.22.0: keine Grenze wird geprüft.`:
+`IOmcu vor 0.22.0: keine Grenze geprüft.`:
 
 ![Eine Grenze bei einem IOmcu älter als 4.27](img/de/setup-sensors-limit.png)
 
@@ -4105,10 +5204,31 @@ Meldungen gesagt, 60s.
 | --- | --- |
 | `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80A.` | ein Fenster des Kanals hat seit dem letzten Lesen seine Grenze überschritten; in Klammern, was der Kanal misst, nichts bei KEINE; die Grenze ist die, an der das Fenster geprüft wurde |
 | `Ein INA3221-Kanal hat seine Grenze überschritten; welcher, ging auf dem Link verloren.` | OVER_COUNT hat sich ohne OVER-Bit bewegt: die Antwort mit den Bits kam nicht an. Eine Antwort, die nicht ankommt, beendet den Link; das sagt also das Lesen beim nächsten Link-Aufbau. Ein Zähler von 0 dort ist ein neu gestarteter IOmcu und wird nicht gesagt |
-| `INA3221-Grenzen abgelehnt. SETUP > SENSORS prüfen.` | der IOmcu hat das Schreiben abgelehnt; er behält die Grenzen, die er hielt, und das Panel schreibt erst wieder, wenn sich eine Grenze ändert. Ebenso ein IOmcu, der Protokoll 4.27 oder neuer nennt und die Page mit BAD_PAGE beantwortet: das Panel schickt der Page bis zum nächsten Link-Aufbau nichts mehr |
+| `INA3221-Grenzen abgelehnt. SENSORS prüfen.` | der IOmcu hat das Schreiben abgelehnt; er behält die Grenzen, die er hielt, und das Panel schreibt erst wieder, wenn sich eine Grenze ändert. Ebenso ein IOmcu, der Protokoll 4.27 oder neuer nennt und die Page mit BAD_PAGE beantwortet: das Panel schickt der Page bis zum nächsten Link-Aufbau nichts mehr |
 
 OVER-Bits, die der IOmcu von vor dem Link-Aufbau hält, auch die eines
 neu gestarteten IOmcu, sagt das erste Lesen mit ihrem Kanal.
+
+Ein Lesen von OVER mit einem gesetzten Bit ist eine Auslösung: der
+Prüfstand schaltet auf SAFE, und jeder Ausgang geht aus
+([Sicherheit](Safety-de.md#fehler)). Das Panel schreibt
+außerdem eine INFO-Zeile je Kanal auf die Konsole, Tag `rcbench`, auf
+Englisch:
+
+```
+I (123456) rcbench: INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: highest window read 0.153A
+```
+
+Der Messwert ist der höchste Strom der Fenster des Kanals, die das Panel
+seit dem Poll mit dem vorigen Lesen von OVER auf SENSE_WIN_A oder SENSE_WIN_B gelesen
+hat, der Wert, an dem der IOmcu prüft, auf 0.001A. Die Grenze ist die, an
+der die Auslösung geprüft wurde, auch wenn im selben Poll eine neue Grenze
+geschrieben wird. Ein Fenster, das nach
+dem letzten Lesen seiner Page geschlossen hat, ist nicht darin; der Wert
+kann also unter der Grenze liegen. `no window read` steht an seiner Stelle,
+wo das Panel keines gelesen hat. Ein Kanal, der darüber bleibt, schreibt
+seine Zeile bei jedem Lesen von OVER, alle 200ms, während das Band ihn
+einmal alle 30s sagt.
 
 Das Panel schreibt die Zuordnung in die Page SENSE_MAP des IOmcu
 (Protokoll 4.25), in einem Schreiben von 26 Registern: die bestückten
@@ -4119,7 +5239,7 @@ Prüfstand in SAFE, und schreibt nichts, was die Page hält. Eine abgelehnte
 Zuordnung wird erst wieder geschrieben, wenn sie sich ändert. Solange ein
 Baustein bestückt ist, liest das Panel alle 500ms die IDs und Zustände der
 Bausteine. Ein Baustein, der aufhört zu antworten oder als etwas anderes
-antwortet, wird einmal auf dem Band gesagt, wie unter INTERFACES; den
+antwortet, wird einmal auf dem Band gesagt, wie beim INA228; den
 Baustein, über den SENSE berichtet (unten), sagen die Lesevorgänge von
 SENSE selbst.
 
@@ -4156,7 +5276,7 @@ unverändert gespeichert, damit ein Panel, das auf 0.21 zurückgeht, seine
 Einstellung findet. Das nächste SPEICHERN schreibt jeden Schlüssel von
 SENSORS.
 
-### INTERFACES: der Ausgangsencoder
+### SENSORS: der Ausgangsencoder
 
 Ein magnetischer Winkelsensor AS5600 von ams OSRAM auf der Ausgangswelle des
 Servos, am Sensorbus neben den Monitoren, an seiner festen Adresse 0x36
@@ -4183,7 +5303,7 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 
 Eine Magnetmeldung wird einmal gesagt, solange die STATUS-Bits MD, ML und MH
 des Sensors bleiben, wie sie gesagt wurden, auch über die Konfigurationen
-hinweg, die eine Änderung einer anderen Zeile von INTERFACES schreibt. Sie
+hinweg, die eine Änderung einer anderen Zeile von SENSORS schreibt. Sie
 wird noch einmal gesagt, wenn sich eines der Bits ändert (ein schwacher
 Magnet, der verschwindet, ein fehlender, der schwach zurückkommt, ein
 schwacher, der stark liest), wenn das Feld dazwischen stimmte, wenn der
@@ -4193,9 +5313,9 @@ Winkel hört auf, wenn MD erlischt, und kommt wieder, wenn es gesetzt ist. Der D
 des Sensors bestimmt die Richtung, in der sein Zählerstand steigt; das Panel
 nimmt an, dass er mit der Pulsbreite des Servos steigt.
 
-### INTERFACES: der Phasenabgriff
+### SENSORS: der Phasenabgriff
 
-![INTERFACES, der Phasenabgriff](img/de/setup-tap.png)
+![SENSORS, der Phasenabgriff](img/de/setup-tap.png)
 
 Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO
 des IOmcu liest die Phase über einen Vorwiderstand und eine
@@ -4249,9 +5369,9 @@ wie bei den Strommonitoren:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu hat keine TONE-Page. Phasenabgriff nicht ausgelesen.` | der Abgriff ist eingeschaltet und der IOmcu spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
-| `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
-| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > INTERFACES prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
-| `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP INTERFACES oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SETUP > INTERFACES prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
+| `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SENSORS prüfen.` | der IOmcu lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut geschrieben. Von einem IOmcu mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
+| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SENSORS prüfen.` | der IOmcu lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
+| `Pin GPIO 22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der IOmcu meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP SENSORS oder dem Link-Aufbau erneut angeboten; nur ein Neustart des IOmcu lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GPIO 22, 400 bis 6500Hz abgelehnt. SENSORS prüfen.` nur für eine andere Einstellung als die, die der IOmcu behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des IOmcu ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
 Die drei Alerts über die Einstellung (erster Frame abgelehnt, zweiter
@@ -4266,45 +5386,6 @@ Ton 400Hz wird gewollt abgelehnt: die Pause muss mindestens eine Periode
 des tiefsten Tons lang sein, 2,5ms bei 400Hz (`tone_init()`,
 `protocols/phase_tap/tone.c`).
 
-### INTERFACES: der Programmierport
-
-Die letzte Zeile von INTERFACES, unter PROG-PORT, sagt, wie der IOmcu die
-Antwort eines Hitec-Servos der D-Serie an seinem Programmierport empfängt,
-GPIO 13 als Voreinstellung ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)):
-
-| Einstellung | Werte | Voreinstellung | |
-| --- | --- | --- | --- |
-| Hitec-D-Empfang | PULL-UP, PRECHARGE | PULL-UP | PULL-UP: ein Widerstand von 2,2kΩ von der Signalleitung zur Servoversorgung hebt die Leitung, und der IOmcu liest sie losgelassen. PRECHARGE: kein Widerstand; der IOmcu treibt das Pad alle 1086,7ns für 100,0ns auf High und tastet es 113,3ns nach dem Loslassen ab |
-
-Sie wird wie die übrigen Zeilen im NVS gehalten; ein fehlender oder
-unlesbarer gespeicherter Wert ist PULL-UP. Das Panel schreibt sie bei jedem
-Link-Aufbau und nach jeder Änderung auf die HITEC-Page, ARMED oder nicht;
-der IOmcu nimmt sie beim nächsten OPEN einer Leitung der D-Serie.
-classic-Servos (HS-5xxx, HS-7xxx) brauchen keins davon und übergehen sie.
-Die Einstellung erreicht die Leitungen, die die Hitec-Programmierung auf
-SERVO öffnet ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)),
-und die, die die Prüfstandskonsole öffnet
-([Die Prüfstandskonsole](BenchConsole-de.md)).
-
-Unmarkiert folgt die Hilfezeile dem Wert: `PULL-UP braucht 2.2kΩ an der
-Signalleitung` bei PULL-UP, `PRECHARGE: kein Pull-up an der Signalleitung`
-bei PRECHARGE.
-
-Die Zeile wird markiert wie die Zeilen unter
-[Eine Zeile, die der IOmcu nicht hält](#eine-zeile-die-der-iomcu-nicht-hält),
-mit eigener Hilfezeile:
-
-| Die Hilfezeile lautet | Solange |
-| --- | --- |
-| `Vom IOmcu nicht übernommen.` | der Wert noch nicht bestätigt ist oder der IOmcu ihn abgewiesen hat |
-| `IOmcu älter als 0.22.0: empfängt mit PULL-UP.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.23 spricht: er hat kein Register für den Modus |
-| `IOmcu älter als 0.21.1: keine Hitec-Leitung.` | PRECHARGE eingestellt ist und der IOmcu Protokoll 4.22 oder älter spricht: er hat keine HITEC-Seite |
-
-Keine Markierung, solange kein IOmcu antwortet, und keine für PULL-UP an
-einem älteren IOmcu.
-
-![INTERFACES, Hitec-D-Empfang auf PRECHARGE an einem IOmcu älter als 4.24](img/de/setup-prog.png)
-
 ### SD CARD: welche Logs geschrieben werden, und wohin
 
 ![SD CARD](img/de/setup-card.png)
@@ -4313,6 +5394,7 @@ einem älteren IOmcu.
 | --- | --- | --- | --- |
 | Auto-Logs | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in Ordner Auto-Logs: ein Log je ARMED- und Netzteil-Lauf |
 | User-Logs | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT` und `LIMITnnn.TXT` in Ordner User-Logs: den AUTOMATISCHEN TEST und den ENDLAGENLAUF |
+| Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | selbst nichts: was ein Browser braucht, um die Karte über die Seite von WI-FI zu ändern ([Schreiben per Browser](#schreiben-per-browser)) |
 | Ordner Auto-Logs | ein Ordner, siehe unten | `BENCH/LOGS` | wohin Auto-Logs schreibt |
 | Ordner User-Logs | ein Ordner, siehe unten | `USER/LOGS` | wohin User-Logs schreibt |
 
@@ -4348,7 +5430,7 @@ geltenden Ordner unverändert, und die Zeile rechts vom Titel sagt, warum:
 | mehr als 2 Ordner | `A/B/C` (`A/B` wird genommen) | `Höchstens 2 Ordner tief` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Ordner der Prüfstand-Dateien` |
+| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Ordner der Prüfstand-Dateien` |
 
 Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
 Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17
@@ -4470,7 +5552,7 @@ Die Warnung hält nur das Home-Tag:
 
 - Nichts ungespeichert oder ein Speichern angefordert (`BEI STILLSTAND`):
   keine Warnung, das Menü öffnet.
-- OUTPUTS, PICK A PIN, WI-FI, UPDATES und FILES öffnen von einer Kachel
+- OUTPUTS, WI-FI und UPDATES öffnen von einer Kachel
   und kehren zu SETUP zurück: keine Warnung auf dem Hin- oder Rückweg.
 - Das Home-Tag über der Warnung ist BLEIBEN.
 - STOP stoppt den Prüfstand und lässt die Warnung, wie sie ist.
@@ -4576,7 +5658,7 @@ Ein Panel, das mit dem Image des IOmcu gebaut ist, bringt es mit und
 bietet es an, wenn der IOmcu einen anderen Build laufen hat. Die
 Prüfung läuft bei jedem Link-up und vergleicht SHA-256-Digests (Secure Hash
 Algorithm), nicht Versionsnummern. Ein anderer Build meldet den Alarm
-`IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`, und
+`IOmcu nutzt einen anderen Build. Update unter UPDATES.`, und
 die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
 Ausgang der Versorgung aus, der Funk des Panels ganz aus und
 keine Installation eines Panel-Images im Gang. Ein START, während eines
@@ -4592,10 +5674,17 @@ START rechts; ihre Mitten liegen auf dem Panel bei x 305 und 719, y 376.
 Die Frage nennt die Version, die der IOmcu laufen hat, und die Version,
 die dieses Panel mitbringt. CANCEL ist ein Tippen: die Frage schließt sich,
 und das Panel fragt für diese IOmcu-Version nicht noch einmal, bis es
-neu startet. Die Frage auf andere Weise zu verlassen lehnt ebenso ab.
+neu startet. Der Home-Tag lehnt ebenso ab.
 SETUP > UPDATES startet das Update auch nach einer Ablehnung
 ([Der IOmcu](#der-iomcu)). START braucht das 2-s-Halten, die
 ARM-Geste mit demselben Überblenden.
+
+Ein Bildschirm, den das Panel über die Frage legt, lehnt nichts ab: der
+Busfehler-Bildschirm nach 4000ms ohne Link und der Download von PANEL UPDATE.
+Das Angebot bleibt stehen wie eines, das noch niemand beantwortet hat, und die
+Prüfung des nächsten Link-Aufbaus bietet erneut an. Die Frage öffnet dann auf
+dem Menü unter denselben Bedingungen wie beim ersten Mal. Ein Druck auf START,
+den der Bildschirm beendet hat, startet nichts.
 
 Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe, und START braucht dasselbe
 Halten.
@@ -4678,8 +5767,11 @@ Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
 
 - ein auf WI-FI gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
-  Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` und
-  `Speichere ein Netzwerk unter SETUP > WI-FI.`, und NACH UPDATES SUCHEN ist grau;
+  Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` über der Taste
+  `NETZWERK SPEICHERN: WI-FI ÖFFNEN`, und NACH UPDATES SUCHEN ist grau. Die
+  Taste öffnet WI-FI, dessen Home-Tag hierher zurückführt; der Funk geht dabei
+  aus, wie auf jedem Weg von WI-FI weg. Eine Prüfung, die mangels
+  Netz endete, sagt auf PANEL UPDATE `Speichere ein Netzwerk unter WI-FI.`;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf.
   Sonst ist die Taste grau, und die Karte sagt
   `Für WLAN muss SAFE aktiv und das Netzteil aus sein.` und `Es darf kein Aufzeichnungslauf offen sein.`;
@@ -4877,6 +5969,7 @@ Reihenfolge:
 | `Build des IOmcu wird geprüft.` | Der SHA-256-Vergleich läuft. |
 | `Build-Prüfung fehlgeschlagen. Sie läuft bei der nächsten Verbindung erneut.` | Der Vergleich endete ohne Antwort. |
 | `Kein Update über CAN. Firmware einmal über USB installieren.` | Der IOmcu hat keine Update-Pages oder keine Partitionstabelle. |
+| `Kein IOmcu-Image für dieses Board in diesem Panel-Build.` | Der IOmcu meldet ein Board (IDENTITY-Register 5), für das dieser Panel-Build kein Image trägt. Kein Update wird angeboten: das Image eines anderen Boards brächte dessen Pinbelegung auf dieses. |
 | `Der IOmcu nutzt den Build dieses Panels.` | Die Digests sind gleich: es gibt nichts zu senden. |
 | `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an oder schaltet ein. |
 | `Wartet, bis das WLAN des Panels aus ist.` | Eine Suche, ein Download oder der Bildschirm WI-FI hat den Funk an, oder er schaltet noch ab. |
@@ -5003,18 +6096,11 @@ einer Zeile ZIEL aus öffnet er auf dem, was diese Werkbank treibt:
 
 ![Outputs](img/de/outputs.png)
 
-Die linke Spalte ist 300px breit: das Label PROTOKOLL, die Fläche der
-Protokoll-Liste (300 x 64px), darunter Anzahl und Grund in 10 x 20 und am
-Fuß der Spalte LETZTER SCHREIBVORGANG mit dem Ergebnis in 20 x 36. Die Pins
-liegen in einem Raster aus 4 Spalten zu 7 Zellen, je 167 x 64px
-(25,1 x 9,6mm), quer 8px und längs 6px auseinander, ab x 324. Eine Zelle
-hält ein Ankreuzfeld von 24px, den Pin-Namen in 16 x 28 (`GPIO 28`, 112px) und darunter, was
-den Pin hält, oder sein Pad in 8 x 16, höchstens 18 Zeichen. Die letzte
-Rasterzeile endet bei Körper-y 492, 4px über dem Alarmband. Die offene
-Protokoll-Liste hält die 8 Protokolle in einer Spalte mit Zeilen von 48px
-(7,2mm) ab der Oberkante der Fläche und die Einträge PROG-PORT in einer
-zweiten Spalte mit denselben Zeilen daneben; mit 4 Einträgen ist die Liste
-600 x 392px groß und endet bei Körper-y 436.
+Ein Bildschirm mit zwei Ansichten einer Bindung. Eine Platine mit Zeichnung
+oder Form bekommt [die Platinenansicht](#die-platinenansicht): Die Platine ist
+die Pin-Steuerung. Eine Platine ohne beides und der
+[rbmod-Carrier](#auf-dem-rbmod-carrier) bekommen
+[die Rasteransicht](#die-rasteransicht).
 
 Ein Pin-Satz je Protokoll, nicht acht unabhängige Slots: ein Prüfstand wird
 protokollweise verkabelt — vier Servokabel, dann ein ESC (Electronic Speed
@@ -5066,7 +6152,7 @@ darunter: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder
 wie ein Defekt, und PPM färbt die ganze Platine grau, sobald irgendetwas
 anderes gebunden ist.
 
-![PPM bei schon gebundenen Servo-Pins](img/de/outputs-full.png)
+![Acht von acht Slots belegt](img/de/outputs-full.png)
 
 Das Protokoll ist eine Liste und kein Stepper: es gibt acht davon, und sich
 an sieben vorbeizuschieben, um das achte zu erreichen, ist keine Auswahl.
@@ -5088,7 +6174,7 @@ Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
 dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
 einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
 
-Ein Pin, den SETUP > INTERFACES hält, wird ebenso gezeigt, rot und
+Ein Pin, den SETUP > SENSORS oder der Tab PD MINI auf SUPPLY hält, wird ebenso gezeigt, rot und
 durchgestrichen, mit dem, was ihn hält, unter seinem Namen, und lässt sich
 nicht anhaken:
 
@@ -5133,14 +6219,17 @@ Zeilen:
 
 | Zeile | Was sie zeigt und tut |
 | --- | --- |
-| PIN | eine Taste: `PIN GPIO 13`, `PIN WÄHLEN` für einen Port ohne Pin, `PIN GPIO 14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Ein Tippen öffnet [PICK A PIN](#pin-auswählen) auf diesem Port |
+| PIN | `PIN GPIO 13` und sein Pad, `PIN WÄHLEN` in Amber für einen Port ohne Pin, `PIN GPIO 14 ABGELEHNT` für einen Pin, den der IOmcu nicht hält, `KEIN PIN BEKANNT` vor dem ersten Lesen. Die Tasten der [Platinenansicht](#die-platinenansicht) setzen ihn; die Zeile nimmt keinen Tipp |
 | FUNKTION | ein Auswahlfeld mit dem, was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen öffnet die Liste über den Zeilen darunter: SERVO PWM, KEINE, und bei einem IOmcu ab Protokoll 4.28 DSHOT150, DSHOT300 und DSHOT600. Ein Tippen auf einen Eintrag erbittet ihn beim IOmcu und schließt die Liste; ein Druck neben die Liste schließt sie und erreicht nichts darunter. Das Feld ist vertieft und matt gezeichnet und nimmt kein Tippen an, solange die Zeile gesperrt ist |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSORS überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`: der niedrigste Kanal mit Shunt auf einem bestückten Baustein; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS \| PORT n: das Ziel des Testers ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
 | PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist |
 
-Die Pins rechts sind gezeichnet, wie die Übersicht sie benennt, den
-eigenen Pin des Ports hervorgehoben; kein Pin nimmt dort einen Haken an.
+In der Platinenansicht stehen die Zeilen in der Spalte links der Platine, und
+die Tasten setzen den Pin des Ports. In der Rasteransicht stehen die Zeilen
+unter der Liste, die Zellen sind benannt wie in der Übersicht, der eigene Pin
+des Ports hervorgehoben, und keine Zelle nimmt einen Haken: Eine Platine ohne
+Zeichnung kann den Pin eines Ports nicht wählen.
 
 | Funktion | Der Pin | Pin-Regel |
 | --- | --- | --- |
@@ -5151,12 +6240,17 @@ eigenen Pin des Ports hervorgehoben; kein Pin nimmt dort einen Haken an.
 Port 1 beginnt als SERVO PWM auf GPIO 13, die Ports 2 bis 4 als KEINE ohne
 Pin. Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash mit der
 Bindung der Ausgänge, sie gehören also zur Platine, nicht zum Panel. Ein
-Tippen auf FUNKTION und ein in PICK A PIN getippter Pin sind Bitten: das
+Tippen auf FUNKTION und ein Tippen auf eine Taste der Platinenansicht sind Bitten: das
 Panel schreibt sie bei einem Prüfstand in Ruhe (SAFE, kein Test, kein
 Sweep, keine Sitzung des Servo-Programmierers) und sagt in der gelben
-Zeile, wie die Bitte steht: `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER
-SERVO-PROGRAMMIERER`, `DER IOMCU HAT ES ABGELEHNT` oder `VERBINDUNG VOR DEM
-SCHREIBEN VERLOREN`. Ein Port, der das Ziel des Testers ist, wird für das
+Zeile, wie die Bitte steht: `DER IOMCU HAT ES ABGELEHNT`, `VERBINDUNG VOR DEM
+SCHREIBEN VERLOREN` oder was sie aufhält: `WARTET AUF SAFE`, `WARTET: EIN
+SERVOTEST ODER SWEEP LÄUFT`, `WARTET: DER SERVO-PROGRAMMIERER HÄLT EINEN PORT`,
+`WARTET: DER HITEC-PROGRAMMIERER HÄLT EINEN PORT`, `WARTET: DER
+ESC-PROGRAMMIERER HÄLT EINEN PIN` oder `WARTET: DIE PORTS WERDEN ZUERST
+GELESEN`. `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER SERVO-PROGRAMMIERER` steht
+höchstens einen Durchlauf der Steuerung, bis das Panel die Bitte beurteilt hat.
+Ein Port, der das Ziel des Testers ist, wird für das
 Schreiben losgelassen (sein Puls aus, das Ziel die Ausgänge) und danach
 wieder genommen.
 
@@ -5168,9 +6262,11 @@ Die gelbe Zeile unter den Zeilen nennt den ersten Grund, der zutrifft:
 
 | Zeile | Wann |
 | --- | --- |
-| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | eine Programmiersitzung hält einen Port |
+| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | eine KST- oder Chaservo-Sitzung hält einen Port |
 | die Zeile der Bitte | die letzte Bitte für diesen Port wartet, wurde abgelehnt oder ging verloren |
 | `PORTS NOCH NICHT GELESEN` | die Seite seit dem Linkaufbau nicht gelesen: FUNKTION nimmt kein Tippen an |
+| `GESPERRT: DER ESC-PROGRAMMIERER HÄLT EINEN PIN` | eine Sitzung über die ESC-Signalleitung hält einen Pin |
+| `GESPERRT: DER HITEC-PROGRAMMIERER HÄLT EINEN PORT` | eine Hitec-Sitzung hält einen Port |
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | ARMED, oder ein Test oder Sweep läuft |
 | `SERVO-TESTER STEUERT PROG-PORT n` | der Tester steuert einen anderen Port, Port n |
 | `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE oder DShot: der Tester nimmt ihn nicht als Ziel |
@@ -5244,11 +6340,32 @@ gebunden, und die Pins des erreichten kommen zurück, wie sie waren. Ein
 Selektor, der die aktuellen Pins umlenkte, hieße, dass ein zweites Protokoll
 zu binden das erste löst. Beim Betreten zeigt die Liste OFF, die Übersicht.
 Ein gewähltes Protokoll bleibt über das Zurücklesen derselben Platine
-gewählt. Die Liste auf PICK A PIN wählt dasselbe Protokoll.
+gewählt. Beide Ansichten zeigen eine Auswahl.
 
 `DSHOT600 BIDIR` und `DSHOT300 BIDIR` sind die längsten Einträge, 14 Zeichen:
 
 ![Der längste Protokollname in der Liste](img/de/outputs-bidir.png)
+
+### Die Rasteransicht
+
+OUTPUTS auf einer Platine ohne Zeichnung und ohne Form und auf dem
+rbmod-Carrier: Ein geratenes Bild zeigte ebenso überzeugt auf das falsche Pad
+wie auf das richtige.
+
+![Das Raster auf einer Platine ohne Form](img/de/outputs-grid.png)
+
+Die linke Spalte ist 300px breit: das Label PROTOKOLL, die Fläche der
+Protokoll-Liste (300 x 64px), darunter Anzahl und Grund in 10 x 20 und am
+Fuß der Spalte LETZTER SCHREIBVORGANG mit dem Ergebnis in 20 x 36. Die Pins
+liegen in einem Raster aus 4 Spalten zu 7 Zellen, je 167 x 64px
+(25,1 x 9,6mm), quer 8px und längs 6px auseinander, ab x 324. Eine Zelle
+hält ein Ankreuzfeld von 24px, den Pin-Namen in 16 x 28 (`GPIO 28`, 112px) und darunter, was
+den Pin hält, oder sein Pad in 8 x 16, höchstens 18 Zeichen. Die letzte
+Rasterzeile endet bei Körper-y 492, 4px über dem Alarmband. Die offene
+Protokoll-Liste hält die 8 Protokolle in einer Spalte mit Zeilen von 48px
+(7,2mm) ab der Oberkante der Fläche und die Einträge PROG-PORT in einer
+zweiten Spalte mit denselben Zeilen daneben; mit 4 Einträgen ist die Liste
+600 x 392px groß und endet bei Körper-y 436. Darauf wird keine Katze gezeichnet.
 
 Ein Pin, den ein anderes Protokoll hält, wird grau gezeichnet, mit dem Namen
 dieses Protokolls darunter, wo ein freier Pin seine Pad-Nummer zeigt. Das ist
@@ -5256,15 +6373,66 @@ eine Auswahl, rückgängig gemacht bei diesem Protokoll — anders als ein
 reservierter Pin, der rot und durchgestrichen ist, weil er die Verkabelung ist
 und keine Auswahl.
 
-Vier Servokabel und ein ESC, mit DSHOT300 als bearbeitetem Protokoll. GPIO 5 ist
-angehakt; GPIO 0, GPIO 1, GPIO 2 und GPIO 4 sagen SERVO PWM und lassen sich hier nicht
-anhaken; GPIO 3 und GPIO 8 bis GPIO 12 sind rot, weil der IOmcu sie reserviert:
-
-![Outputs mit Pins, die ein anderes Protokoll hält](img/de/outputs-held.png)
-
 Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
 ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
 reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
+
+### Auf dem rbmod-Carrier
+
+Der [rbmod-Carrier](Carrier-de.md) verlötet jede Leitung auf ihren Pin,
+und am Panel wird kein Pin gewählt. Das Panel liest das Board aus
+IDENTITY-Register 5 am Link des IOmcu (Board 2).
+
+![OUTPUTS auf dem Carrier](img/de/outputs-rbmod.png)
+
+- Das Raster hat vier Zellen: PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1,
+  oben der Name, darunter der GPIO. Ein Tipp gibt dem Ausgang das gewählte
+  Protokoll. Slot n treibt PWM0(n+1); PWM01 ist Kanal 0.
+- Ein Protokoll belegt höchstens die 4 Ausgänge: `SERVO PWM BELEGT 4 PINS`.
+- PWM02 und PWM03 sind PWM-Slice 2 und teilen eine Framerate. Ein
+  Flächenprotokoll und ein Gasprotokoll auf beiden zusammen werden
+  abgelehnt. Die Zelle zeigt `SLICE VON PWM02`, ein Tipp darauf
+  `PWM03 GPIO 5: GLEICHER PWM-SLICE WIE PWM02 GPIO 4`. DShot läuft auf
+  einer Zustandsmaschine des PIO (Programmable Input/Output) und wird
+  neben beiden angeboten.
+- Die Zeile unter dem Protokoll zählt gegen 4.
+
+![Ein Eintrag PROG PORT auf dem Carrier](img/de/outputs-rbmod-port.png)
+
+- Jeder Eintrag PROG PORT nennt seinen Pin, `PROGP01 AUF GPIO 13`. PIN
+  nimmt keinen Tipp und öffnet keine Pin-Auswahl.
+- FUNKTION nimmt keinen Tipp. Sie zeigt `PROGRAMMIEREN` für FUNC NONE und
+  `SERVO PWM` auf dem Port, den der Servotester treibt.
+- Mit einem IOmcu ab Protokoll 4.36 werden SERVO-TESTER und PORT-PWM wie
+  auf dem Modul gezeichnet. SERVO-TESTER PORT n macht den Port zum Port
+  des Testers und der Programmer, dieselbe Wahl wie die Zeile PORT der
+  Programmer
+  ([Servo-Programmer: Der Port auf dem rbmod-Carrier](ServoProgrammer-de.md#der-port-auf-dem-rbmod-carrier)).
+  Das Panel bittet den IOmcu dann um FUNC SERVO PWM auf diesem Port und
+  FUNC NONE auf den anderen drei. Das TARGET des IOmcu folgt, sobald der
+  Port SERVO PWM liest.
+- Die Wahl ist unter den Regeln von SERVO ZIEL gesperrt: ARMED oder ARMED
+  angefordert, ein Test, ein Sweep oder ein Endlagenlauf, ein Programmer,
+  der einen Port hält. Die Zeile unter den Zeilen sagt warum:
+  `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` oder
+  `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT`.
+- PROGP04 (GPIO 0) teilt PWM-Slice 0 mit PWM04 (GPIO 1). Solange PWM04
+  einen PWM-Ausgang trägt, wird PROGP04 nicht angeboten, und die Zeile
+  lautet `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)`. Die Bindung von
+  PWM01 bis PWM04 ändert sich für einen Programmierport nie: ein
+  PWM-Protokoll auf PWM04 setzt PROGP04 auf FUNC NONE zurück.
+- Die Ports laufen an den festen 5V von M7 auf GPIO 21. PORT-PWM EIN wird
+  nur genommen, solange das Feld PROG 5V EIN zeigt; sonst lautet die Zeile
+  `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, und es geht kein Puls
+  hinaus. Der Puls endet, wenn PROG 5V ausgeht.
+- Mit einem IOmcu vor 4.36 werden SERVO-TESTER und PORT-PWM nicht
+  gezeichnet, und die Zeile lautet
+  `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.
+- Die Zeile ÜBERWACHT VON nennt den Kanal des INA3221 des Carriers auf den
+  5V der Ports, `ÜBERWACHT VON INA3221 PROG 5V`, solange kein Kanal den
+  Port selbst misst
+  ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)). CH3 misst
+  alle vier Ports zusammen.
 
 ### Die Übersicht: OFF
 
@@ -5288,7 +6456,7 @@ was auch gewählt war: ein IOmcu, der während des Besuchs zum ersten
 Mal antwortet, oder einer, der gegen eine andere Platine getauscht wird. Ein
 zuvor gewähltes Protokoll geht nicht auf die Platine über, die antwortet;
 der nächste Tipp schreibt also nichts. Ein Druck auf einen Pin zeigt keine
-gedrückte Fläche. PICK A PIN öffnet ebenfalls mit OFF gewählt.
+gedrückte Fläche.
 
 Ein Schreibvorgang ist mit OFF gewählt erreichbar. Bei Pages, die keine
 Bindung beschreiben, lautet die Zeile `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES`,
@@ -5296,15 +6464,9 @@ und `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` gehalten schreibt eine Bindun
 ohne Pin. Dieses Halten ist der Weg aus diesen Pages
 ([Eine Bindung, die nicht bestätigt ist](#eine-bindung-die-nicht-bestätigt-ist)).
 
-GPIO 0 als DSHOT600 BIDIR gebunden, GPIO 1 als MOTOR PWM, GPIO 2 und GPIO 13 als SERVO
-PWM, mit OFF gewählt. Auf diesem Prüfstand hält ein Slot GPIO 13, der
-Programmierport hat also keinen Pin:
+Mit OFF gewählt listet BELEGT jeden gebundenen Pin unter seinem Protokoll:
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](img/de/outputs-off.png)
-
-Mit SERVO PWM gewählt sind auf demselben Prüfstand GPIO 2 und GPIO 13 angehakt und
-zeigen `PAD 4` und `PAD 17`: ein im gewählten Protokoll angehakter Pin zeigt
-seine Pad-Nummer, denn das Protokoll ist das in der Liste genannte.
 
 ### Eine Bindung, die nicht bestätigt ist
 
@@ -5314,12 +6476,12 @@ Lesen hat eines von vier Ergebnissen:
 | Gelesen | Der Bildschirm |
 | --- | --- |
 | beide Pages gelesen, und sie beschreiben eine Bindung, auch eine ohne gebundenen Pin | zeigt sie und nimmt Änderungen an |
-| eine Page wurde nicht gelesen: keine Antwort in 1000ms, eine Ablehnung, oder der Link ist unten | behält die zuletzt gelesene Bindung, abgedunkelt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.` |
+| eine Page wurde nicht gelesen: keine Antwort in 1000ms, eine Ablehnung, oder der Link ist unten | behält die zuletzt gelesene Bindung, jede Taste grau mit `NICHT AUSGELESEN`; in der Rasteransicht abgedunkelt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.` |
 | beide Pages gelesen, und keine Bindung beschreibt sie: ein Pin in zwei Slots, eine Rate oder ein Treiber, den kein Protokolleintrag hat, ein Pin außerhalb der Platine oder reserviert, Kanäle nicht in Slot-Reihenfolge | behält die zuletzt gelesene Bindung, abgedunkelt, mit `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und der Taste `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` |
 | der IOmcu ist eine Platine, für die dieser Build keine Pin-Tabelle hat | zeigt keine Pins |
 
-Im zweiten und dritten Zustand bewirkt ein Tippen auf einen Pin hier und auf
-PICK A PIN nichts, und es wird nichts geschrieben. Ein Haken, der kurz vor dem
+Im zweiten und dritten Zustand bewirkt ein Tippen auf eine Taste oder eine
+Zelle nichts, und es wird nichts geschrieben. Ein Haken, der kurz vor dem
 fehlgeschlagenen Lesen gesetzt wurde, wird zurückgenommen: gezeigt werden die
 zuletzt gelesenen Pins, nicht die zuletzt angetippten. Die Liste öffnet sich
 weiterhin, und eine Wahl ändert weiterhin, welches Protokolls Pins ihre
@@ -5331,7 +6493,8 @@ Lesen, das eine Bindung ergibt, beendet den Zustand.
 
 Pages, die keine Bindung beschreibt, werden durch erneutes Lesen nicht
 lesbar. `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN`, gehalten, schreibt eine Bindung ohne
-Pin; das Zurücklesen zeigt dann nichts gebunden, und Änderungen werden wieder
+Pin: eine Taste von 168 x 80px am Fuß unter BELEGT, deren Tabelle 8px darüber
+endet; das Zurücklesen zeigt dann nichts gebunden, und Änderungen werden wieder
 angenommen. Es ist der einzige Schreibvorgang, den der Bildschirm in diesem
 Zustand sendet. Ein Finger, der die Taste verlässt, ein Abheben vor 2s und
 das Verlassen des Bildschirms brechen das Halten ab.
@@ -5344,16 +6507,13 @@ mittendrin einen Frame verlor, in diesem Zustand bleiben. Ein IOmcu mit
 Pages, die ein anderer Host oder ein älteres Panel in seinem Flash
 hinterlassen hat.
 
-### Pin auswählen
+### Die Platinenansicht
 
-Hinter der Kachel PICK A PIN auf SETUP; das Home-Tag führt dorthin zurück.
-Über der offenen Protokollliste schließt das Home-Tag die Liste, ohne zu
-wählen, und der Bildschirm bleibt.
-Dieselbe Bindung,
-die der Outputs-Bildschirm hält. Die Liste beantwortet „welcher GPIO ist
-gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
+OUTPUTS auf einer Platine mit Zeichnung oder Form. Die Liste beantwortet
+„welcher GPIO ist gebunden“; die Platine beantwortet „wo stecke ich das Kabel
+an“.
 
-![Der Pin-Picker](img/de/picker.png)
+![Die Platinenansicht](img/de/outputs.png)
 
 Die Tasten sind nicht die Pads. In jeder Größe, die auf ein Panel mit 1024 x
 600 Pixeln passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
@@ -5369,12 +6529,28 @@ stehen oben links; die Tabelle PINS darunter, 171px breit, Zeilen von
 36px mit dem Pin-Namen in 16 x 28; BELEGT rechts, 168px breit. Beide
 Tabellen stehen 8px frei von der äußersten Taste, die eine 600px breite
 Platine haben kann, auch bei einem Pad direkt an ihrer Kante. Die
-Protokoll-Liste öffnet wie auf Outputs: die Protokolle in einer Spalte mit
+Protokoll-Liste öffnet über der Platine: die Protokolle in einer Spalte mit
 Zeilen von 48px, die Einträge PROG-PORT in einer zweiten Spalte daneben.
+
+LETZTER SCHREIBVORGANG steht rechts der Fläche der Liste, 140 x 56px ab x 296:
+das Label in 8 x 16, das Ergebnis in der größten Schrift von 12 x 24, 10 x 20
+und 8 x 16, die es fasst. Auf einer Platine mit einer Taste dort steht es am
+Fuß der Spalte BELEGT. Auf einem Eintrag PROG-PORT, der keine Bindung schreibt,
+wird es nicht gezeigt.
+
+Mit einem gewählten Eintrag PROG-PORT belegen seine Zeilen die Spalte unter der
+Fläche der Liste: das Label FUNKTION und seine Fläche von 196 x 48px, PIN in
+12 x 24 mit dem Pad darunter, ÜBERWACHT VON auf bis zu 3 Zeilen, SERVO-TESTER
+und PORT-PWM als Segmentzeilen von 171 x 48px und die gelbe Zeile, 4 Zeilen in
+10 x 20 oder 5 in 8 x 16. Die Liste FUNKTION öffnet unter ihrer Fläche, 280px
+breit, über der Spalte und der Platine.
 
 Jeder Besuch zeichnet eine von 8 Katzenzeichnungen, zufällig gewählt, unten
 links oder unten rechts, wo keine Zeile, Taste oder Liste näher als 4px
-kommt; sie nimmt kein Tippen an.
+kommt; sie nimmt kein Tippen an. Die Spalte des Eintrags deckt den linken Platz
+ab, und eine Katze dort wechselt nach rechts, wenn ein Eintrag gewählt wird.
+Eine Katze weicht einer langen Tabelle BELEGT und
+`2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN`. Die Rasteransicht zeichnet keine.
 
 Aktuelle Einschränkung: Der Kopf bleibt, wo er ist, welche Platine es auch
 ist. Auf einer Platine, deren Shape-Page einen Pin in die obere linke Ecke
@@ -5384,7 +6560,8 @@ den Grund (bis x 358). Eine solche Taste wird über sie gezeichnet, und ein
 Druck auf ihren Teil über der Fläche öffnet die Protokoll-Liste, statt den
 Pin zu nehmen. Die Pads des RP2350-CAN in dieser Ecke sind Schienen und
 Masse, also liegt keine seiner Tasten dort
-(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`).
+(`the_built_in_boards_keys_clear_the_head` in `test_picker_layout`). Eine Taste
+über der Fläche von FUNKTION nimmt dort den Druck.
 
 Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 
@@ -5399,24 +6576,21 @@ Benachbarte Tasten unterscheiden sich in Höhe und Farbe, wie die Tasten einer
 Klaviatur. Ein reservierter Pin hat keine Taste, denn eine Taste unter einem
 Pin, der nicht gewählt werden kann, sagt, er ließe sich wählen.
 
-Oben links steht die Protokollliste, dasselbe Bedienelement wie auf dem
-Outputs-Bildschirm. Sie nennt das gewählte Protokoll. Ein Tippen öffnet sie
-über der Platine; eine Wahl bestimmt das Protokoll, dem ein Tippen auf eine
-Taste zufällt, auf diesem Bildschirm und auf dem Outputs-Bildschirm, und
-schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
-nichts. Jeder Besuch öffnet mit OFF gewählt, auf diesem Bildschirm und auf
-dem Outputs-Bildschirm von SETUP aus: keine Taste bindet oder löst einen Pin, bis ein
-Protokoll gewählt ist, und die Zeile unter der Liste sagt
+Oben links steht die Protokollliste. Sie nennt das gewählte Protokoll. Ein
+Tippen öffnet sie über der Platine; eine Wahl bestimmt das Protokoll, dem ein
+Tippen auf eine Taste zufällt, und schreibt nichts. Ein Tippen neben die offene
+Liste schließt sie und wählt nichts. Ein Besuch von SETUP aus öffnet mit OFF
+gewählt: keine Taste bindet oder löst einen Pin, bis ein Protokoll gewählt ist,
+und die Zeile unter der Liste sagt
 `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. OFF bleibt über das Zurücklesen
 gewählt, bis ein Protokoll gewählt wird, und ein Wechsel der Platine wählt
 OFF, was auch gewählt war.
 
-![Die Protokollliste im Picker](img/de/picker-protocol.png)
+![Die Protokollliste über der Platine](img/de/outputs-protocol.png)
 
 Unter der Liste steht `N VON 8 PLÄTZEN BELEGT`, gezählt über alle Protokolle:
 die Protokolle teilen sich die 8 Slots der OUTPUTS-Page. Darunter steht in
-Bernstein der Grund, warum keine Taste hinzukommen kann, in den Worten des
-Outputs-Bildschirms:
+Bernstein der Grund, warum keine Taste hinzukommen kann:
 
 | Zeile | Wann |
 | --- | --- |
@@ -5425,10 +6599,11 @@ Outputs-Bildschirms:
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
 | `PROTOKOLL WÄHLEN, DANN PIN TIPPEN` | OFF ist gewählt |
 | `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt |
+| `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` | die Pages beschreiben keine Bindung |
 
 Ohne diese Zeile liest sich eine ganz grau gezeichnete Platine als Fehler.
 
-![Acht von acht Slots belegt](img/de/picker-full.png)
+![Acht von acht Slots belegt](img/de/outputs-full.png)
 
 Links unter PINS stehen die Pins des gewählten Protokolls in
 Kanalreihenfolge, jeder mit der auf der Platine aufgedruckten Padnummer in
@@ -5449,10 +6624,8 @@ Protokoll, dessen gespeicherte Bindung diesen Pin hält, behält ihn, der
 IOmcu gibt dem Port dann keinen Pin, und die Taste gehört diesem
 Protokoll wie jede andere.
 
-Die Liste endet mit den Einträgen PROG-PORT, wie auf dem
-Outputs-Bildschirm, und beide Bildschirme zeigen eine Auswahl: die Taste
-PIN von OUTPUTS öffnet diesen Bildschirm auf ihrem Port. Mit einem
-gewählten Port setzen die Tasten den Pin dieses Ports:
+Die Liste endet mit den Einträgen PROG-PORT. Mit einem gewählten Port setzen
+die Tasten den Pin dieses Ports:
 
 | Taste | Ein Tippen |
 | --- | --- |
@@ -5461,25 +6634,23 @@ gewählten Port setzen die Tasten den Pin dieses Ports:
 | grau, unter dem Namen eines anderen Ports (`PROG-PORT 2`), eines Protokolls oder einer Schnittstelle | ändert nichts |
 | grau, `SLICE VON GPIO 4` oder `KANAL VON GPIO 12`, auf einem SERVO-PWM-Port | ändert nichts; die Zeile sagt `GPIO 5: TEILT PWM-SLICE MIT OUTPUT GPIO 4` oder `GPIO 28: GLEICHER PWM-KANAL WIE GPIO 12` |
 
-Die Zählzeile nennt die Funktion des Ports, `FUNKTION: SERVO PWM`, und PINS
-hält den einen Pin des Ports mit seinem Pad. Ein Port mit KEINE nimmt
-jede freie Taste. Eine Bitte wartet auf einen Prüfstand in Ruhe und sagt
-das in der gelben Zeile, wie auf dem Outputs-Bildschirm. Bevor die Ports
+Ein Port mit KEINE nimmt jede freie Taste. Eine Bitte wartet auf einen Prüfstand
+in Ruhe und sagt das in der gelben Zeile. Bevor die Ports
 gelesen sind, ist jede Taste grau, und die Zeile lautet `PORTS NOCH NICHT
 GELESEN`.
 
-![PROG-PORT 3 gewählt](img/de/picker-port.png)
+![PROG-PORT 3 gewählt](img/de/outputs-port3.png)
 
 Unter SERVO PWM und MOTOR PWM ist auch eine Taste grau, die der IOmcu
-auf einem PWM-Slice ablehnt, wie auf dem Outputs-Bildschirm: GPIO 28, solange
+auf einem PWM-Slice ablehnt: GPIO 28, solange
 der Port GPIO 13 hält, und der Partner eines als PWM gebundenen Pins, GPIO 16
-neben GPIO 0. Ein Tippen darauf ändert nichts und setzt die Zeile des
-Outputs-Bildschirms unter die Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
+neben GPIO 0. Ein Tippen darauf ändert nichts und setzt den Grund unter die
+Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
 `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0`.
 
-![GPIO 13 beim Programmierport](img/de/picker-prog.png)
+![GPIO 13 beim Programmierport](img/de/outputs-prog.png)
 
-Ein Pin, den SETUP > INTERFACES hält, ist ebenso grau, solange kein
+Ein Pin, den SETUP > SENSORS oder der Tab PD MINI auf SUPPLY hält, ist ebenso grau, solange kein
 Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
 nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`
 in Rot, ohne Kanal. Welche Pins das sind und wann, steht in der Tabelle
@@ -5487,7 +6658,7 @@ unter [Outputs](#outputs). Eine in SETUP verstellte Zeile, oder ein Teil,
 das der IOmcu übernimmt oder ablehnt, zeichnet die Tasten und die Tabelle
 im nächsten Frame neu.
 
-![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](img/de/picker-iface.png)
+![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](img/de/outputs-iface.png)
 
 BELEGT führt jeden Pin, den es hält. Der Name eines Protokolls nimmt eine
 Zeile von 20px, ein Pin eine von 28px. Reichen diese über den Fuß der
@@ -5501,12 +6672,12 @@ und die Anschlüsse zuerst, in den kleineren Zeilen. Eine Tabelle, die dann
 noch über den Fuß reicht, hält die Zeilen, die passen, und endet in `+N`,
 N die ausgelassenen Zeilen.
 
-![Die höchste BELEGT-Tabelle](img/de/picker-off.png)
+![Die höchste BELEGT-Tabelle](img/de/outputs-off.png)
 
-Ein Tippen auf eine Taste schreibt die Bindung über dieselbe Folge wie ein
-Haken auf dem Outputs-Bildschirm, mit denselben Ergebnissen. Solange die
+Ein Tippen auf eine Taste schreibt die Bindung sofort, und LETZTER
+SCHREIBVORGANG sagt, was daraus wurde. Solange die
 Bindung nicht bestätigt ist — ein Lesen schlug fehl, oder die Pages
-beschreiben keine Bindung — ist jede Taste grau, `NICHT AUSGELESEN` steht unter
+beschreiben keine Bindung — ist jede Taste grau, der Grund steht unter
 der Zählung, und ein Tippen auf eine Taste ändert nichts und schreibt nichts.
 Die Protokollliste wählt weiterhin.
 
@@ -5515,8 +6686,8 @@ Wo die Pads liegen, kommt von der Platine und nicht vom Panel: die
 an der Pad 1 sitzt. Eine Platine, die das nicht sagt, wird gar nicht
 gezeichnet — ein Bild aus einer geratenen Form zeigt mit derselben
 Überzeugung auf den falschen wie auf den richtigen Pad, und die ganze Aufgabe
-dieses Bildschirms ist es, einen Pad auf der Platine vor dir zu finden. Ihre
-Pins stehen weiterhin auf dem Outputs-Bildschirm.
+der Platinenansicht ist es, einen Pad auf der Platine vor dir zu finden.
+OUTPUTS zeichnet dann die Rasteransicht.
 
 Auch die Zeichnung der Platine kommt von der Platine. Der IOmcu trägt
 eine Zeichnung von sich selbst, die, die der Konfigurator zeichnet: den
@@ -5527,7 +6698,7 @@ Bildschirm ist also angeordnet wie die Platine in deinen Händen. Ohne
 Zeichnung werden Umriss und jedes Pad aus der Form gezeichnet, und die
 Tasten liegen an denselben Stellen:
 
-![Der Picker ohne Zeichnung](img/de/picker-drawn.png)
+![Die Platine ohne Zeichnung](img/de/outputs-shape.png)
 
 Das Panel zeigt eine Zeichnung nur, wenn sie die Platine beschreibt, die das
 Panel bindet: Umriss und jede Pad-Position stimmen mit der Form überein, jedes
@@ -5599,10 +6770,13 @@ und programmiert hat, mit 19.178us gemessen, gegen einen CAN-Frame von etwa
 Messung: 1 Probe, auf dem Inbetriebnahme-Modul genommen, das Flash-Bauteil ist
 noch nicht bestimmt. Löschen und Page Program sind nicht getrennt voneinander
 gemessen. Das Fenster wird gegen das Maximum im Datenblatt neu begründet,
-sobald das Bauteil bekannt ist. Ein in diesem Fenster verlorener Request
-kostet das Panel 1000ms Wartezeit, was über dem 200-ms-Failsafe des
-IOmcu liegt; ein einziger verlorener Frame endet also als `FEHLER 01`
-(`LINK_FAULT_LINK_SILENT`) an einem Kabel, an dem nichts fehlt.
+sobald das Bauteil bekannt ist. Das Panel schickt je Austausch einen
+Request-Frame und wartet auf dessen Antwort, bevor es den nächsten schickt;
+in den zwei Puffern des Controllers wartet also höchstens ein Request-Frame.
+Ein Fenster verzögert diesen Request um höchstens seine Länge, etwa 19ms gegen
+die 1000ms Wartezeit des Panels, und verliert keinen. Das Fenster hält für
+seine Länge trotzdem jede Antwort und jeden Ausgabeschritt an, deshalb bleibt
+es kurz.
 
 Der Sektor wird deshalb nicht je Speichervorgang gelöscht. Zwei Sektoren
 halten je sechzehn Records; ein Speichervorgang schreibt den nächsten Record,
@@ -5627,6 +6801,31 @@ eine Rate, die kein Eintrag anbietet, ein Pin, der nicht auf dem Header liegt
 — werden als solche gezeigt und nicht als „nichts konfiguriert“: siehe [Eine
 Bindung, die nicht bestätigt
 ist](#eine-bindung-die-nicht-bestätigt-ist).
+
+### Layout
+
+LAYOUT liegt hinter einer eigenen Kachel auf SETUP, solange der IOmcu
+ein Board mit verlöteten Pins meldet, den
+[rbmod-Carrier](Carrier-de.md). Die Kachel zeigt dort
+`STECKER UND PINS`. Das Home-Tag führt zurück zu SETUP. Der Bildschirm
+treibt nichts und nimmt keinen Tipp.
+
+![LAYOUT auf dem Carrier](img/de/layout-rbmod.png)
+
+| Spalte | Zeilen | Jede Zeile |
+| --- | --- | --- |
+| J1, `PROGRAMMIERPORTS` | Positionen 1 bis 4: PROGP04, PROGP01, PROGP02, PROGP03 | die Position, die Rolle, ihr GPIO und das Netz an ihrem +, VCC_PROGPORT; rechts `PROGRAMMIEREN` |
+| J2, `SERVOAUSGÄNGE` | Positionen 1 bis 4: PWM03, PWM02, PWM01, PWM04 | dasselbe, mit VCC_SERVOPORT_B an den Positionen 1 und 2 und VCC_SERVOPORT_A an 3 und 4; rechts das auf dem Ausgang gebundene Protokoll, `OFF` für keines, `NICHT GELESEN`, bis die Bindung dieses Boards gelesen ist |
+| `WEITERE STECKER` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NICHT BETRIEBEN`), J6 PD MINI, J9 TAP, PROG 5V EN an keinem Stecker | der Name, was er trägt, sein GPIO |
+
+Die Zeile unter den Spalten lautet
+`EIN BOARD REV 1 BRAUCHT ZWEI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.`
+([Carrier: Nacharbeit Rev 1](Carrier-de.md#nacharbeit-rev-1)).
+
+Ein Protokoll, das unter OUTPUTS gebunden oder gelöst wird, und ein
+Wechsel des Boards zeichnen den Bildschirm neu. Auf einem Board mit
+gewählten Pins zeigt er `DIESES BOARD HAT KEINE VERLÖTETEN PINS.` und
+`SEINE PINS WERDEN UNTER OUTPUTS GEWÄHLT.`.
 
 ## Auswuchten
 

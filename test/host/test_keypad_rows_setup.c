@@ -1,6 +1,6 @@
 /**
  * @file test_keypad_rows_setup.c
- * @brief Every number row of SETUP's lists (PANEL, INTERFACES, SD CARD,
+ * @brief Every number row of SETUP's lists (PANEL, SD CARD,
  *        SENSORS) held to keypad_rows_rig.h's four rules: a tap on its
  *        value opens the keypad with the row's label, unit, range and its
  *        step's digits; a value past the range is refused and the row
@@ -22,7 +22,7 @@
 
 /** @brief SETUP's lists: the categories its tiles open. */
 static const setting_cat_t k_cats[] = {
-    SET_CAT_APP, SET_CAT_IFACE, SET_CAT_CARD, SET_CAT_SENSORS,
+    SET_CAT_APP, SET_CAT_CARD, SET_CAT_SENSORS,
 };
 #define CAT_COUNT ((int)(sizeof(k_cats) / sizeof(k_cats[0])))
 
@@ -58,6 +58,9 @@ static void scroll_by(int dy)
 static int show(setting_id_t id)
 {
     const setting_cat_t cat = settings_def(id)->cat;
+    if (cat == SET_CAT_SENSORS) {
+        open_sensor(id);
+    }
     setting_id_t ids[64];
     const int n = settings_in_category(cat, ids, 64);
     int row = -1;
@@ -142,6 +145,10 @@ TEST_CASE(every_number_row_on_setup_takes_ok_and_refuses_and_cancels)
             if (d->type != SET_TYPE_INT && d->type != SET_TYPE_FLOAT) {
                 continue;
             }
+            /* The optical tacho's pin: its key stays, no entry shows it. */
+            if (k_cats[c] == SET_CAT_SENSORS && sensors_pane_entry_of(id) < 0) {
+                continue;
+            }
             list_of(k_cats[c]);
             if (!ui_setting_keypad_offered(id)) {
                 /* Sensor SCL: derived from SDA, no keys and no keypad. */
@@ -158,8 +165,8 @@ TEST_CASE(every_number_row_on_setup_takes_ok_and_refuses_and_cancels)
             ++rows;
         }
     }
-    /* PANEL 4, INTERFACES 13, SENSORS 24: the audit's count. */
-    CHECK_EQ(rows, 41);
+    /* PANEL 4, SENSORS 34: every number row an entry shows. */
+    CHECK_EQ(rows, 38);
 }
 
 /*
@@ -178,6 +185,7 @@ TEST_CASE(a_value_the_steps_never_reach_is_refused_and_kept)
     kkey(UI_KEY_OK);
     CHECK(kp()->open);
     CHECK(kp()->refused);
+    CHECK(settings_screen()->covered());
     char why[64];
     CHECK_STR_EQ(kp()->reason, ui_setting_keypad_why(id, 3.0f, why,
                                                      sizeof(why)));

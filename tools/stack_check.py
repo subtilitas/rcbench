@@ -15,7 +15,8 @@ one build at ESP-IDF v5.5.5 the decoder finds every one of the 11,903
 direct calls objdump lists in the panel's functions, and the frame of
 every function but two equals its largest `addi sp, sp, -N`: one sizes a
 buffer at run time, and one opens a second frame after an early return,
-which the decoder counts on top of the first.
+which the decoder counts on top of the first.  The count is not repeated
+on ESP-IDF v6.1.
 
 Calls the tool follows:
 
@@ -50,7 +51,7 @@ A task with any of these has a depth that is a lower bound, and the result
 says so.  The margin is what covers them.
 
 The margin is 1024 bytes.  OUTSIDE_FRAMES of it every task spends outside
-its frames on the ESP32-P4 under ESP-IDF v5.5.5 (rvruntime-frames.h and
+its frames on the ESP32-P4 under ESP-IDF v6.1 (rvruntime-frames.h and
 port.c of the RISC-V port):
 
 - 128 for the registers an interrupt saves on the task's stack before it
@@ -130,13 +131,16 @@ from pathlib import Path
 
 from stack_elf import (ROOT, STT_FUNC, STT_OBJECT, Elf, Graph, call_args,
                        die, doc_rows)
-from stack_iomcu import IOMCU_DIR, IOMCU_ELF, check_iomcu_doc, iomcu_check
+from stack_iomcu import IOMCU_DIR, check_iomcu_doc, iomcu_check, iomcu_elf
 from stack_riscv import EM_RISCV, analyse_riscv
 
 PANEL_DIR = ROOT / "firmware" / "panel"
 # The FreeRTOS calls that create a task with a stack from the heap; the
 # entry, the name and the stack size are their first three arguments.
 TASK_CREATE = ("xTaskCreatePinnedToCore", "xTaskCreate")
+# Entries of a task only a build option compiles (RCBENCH_PANEL_CONSOLE): a
+# build without the option has none, and one with it is held as any other.
+OPTION_TASKS = {"console_task"}
 SCREEN_H = ROOT / "shared" / "ui" / "include" / "ui_screen.h"
 UI_DIR = ROOT / "shared" / "ui"
 ELF_NAME = "rcbench-panel.elf"
@@ -184,6 +188,8 @@ PORT_CALLS = {
     "link_write_acked": ("port_exchange", "cu_port_exchange", "port_now",
                          "port_between"),
     "link_read_window": ("port_exchange", "cu_port_exchange", "port_now"),
+    "link_read_split": ("port_exchange", "cu_port_exchange", "port_now",
+                        "port_between"),
 }
 
 # The art_flash_t callbacks shared/artwork calls: the panel's one flash, in
@@ -220,41 +226,59 @@ SERVO_CALLS = {
 # every page set in shared/ui.
 PROG_CALLS = {
     "prog_ps_init": ("kst_panel_init", "hitec_panel_init",
-                     "esc_stick_ps_init"),
+                     "esc_stick_ps_init",
+                     "esc_wire_ps_init"),
     "prog_ps_entry": ("kst_panel_screen_entry", "hitec_panel_screen_entry",
-                      "esc_stick_ps_entry"),
+                      "esc_stick_ps_entry",
+                      "esc_wire_ps_entry"),
     "prog_ps_open": ("kst_panel_open", "hitec_panel_open",
-                     "esc_stick_ps_open"),
+                     "esc_stick_ps_open",
+                     "esc_wire_ps_open"),
     "prog_ps_is_open": ("kst_panel_is_open", "hitec_panel_is_open",
-                        "esc_stick_ps_is_open"),
+                        "esc_stick_ps_is_open",
+                        "esc_wire_ps_is_open"),
     "prog_ps_back": ("kst_panel_back", "hitec_panel_back",
-                     "esc_stick_ps_back"),
+                     "esc_stick_ps_back",
+                     "esc_wire_ps_back"),
     "prog_ps_holds": ("kst_panel_holds_port", "hitec_panel_holds_port",
-                      "esc_stick_ps_holds"),
+                      "esc_stick_ps_holds",
+                      "esc_wire_ps_holds"),
     "prog_ps_armed": ("kst_panel_bench_armed", "hitec_panel_bench_armed",
-                      "esc_stick_ps_armed"),
+                      "esc_stick_ps_armed",
+                      "esc_wire_ps_armed"),
     "prog_ps_tick": ("kst_panel_tick", "hitec_panel_tick",
-                     "esc_stick_ps_tick"),
+                     "esc_stick_ps_tick",
+                     "esc_wire_ps_tick"),
     "prog_ps_has_press": ("kst_panel_has_press", "hitec_panel_has_press",
-                          "esc_stick_ps_has_press"),
+                          "esc_stick_ps_has_press",
+                          "esc_wire_ps_has_press"),
     "prog_ps_event": ("kst_panel_event", "hitec_panel_event",
-                      "esc_stick_ps_event"),
+                      "esc_stick_ps_event",
+                      "ewp_event"),
     "prog_ps_render": ("kst_panel_render", "hitec_panel_render",
-                       "esc_stick_ps_render"),
+                       "esc_stick_ps_render",
+                       "ewp_render"),
     "prog_ps_revision": ("kst_panel_revision", "hitec_panel_revision",
-                         "esc_stick_ps_revision"),
+                         "esc_stick_ps_revision",
+                         "esc_wire_ps_revision"),
     "prog_ps_hold_revision": ("kst_panel_hold_revision",
                               "hitec_panel_hold_revision",
-                              "esc_stick_ps_hold_revision"),
+                              "esc_stick_ps_hold_revision",
+                              "esc_wire_ps_hold_revision"),
     "prog_ps_hold_rect": ("kst_panel_apply_rect", "hitec_panel_apply_rect",
-                          "esc_stick_ps_hold_rect"),
+                          "esc_stick_ps_hold_rect",
+                          "esc_wire_ps_hold_rect"),
     "prog_ps_leave": ("kst_panel_leave", "hitec_panel_leave",
-                      "esc_stick_ps_leave"),
+                      "esc_stick_ps_leave",
+                      "esc_wire_ps_leave"),
     "prog_ps_cancel": ("kst_panel_cancel", "hitec_panel_cancel",
-                       "esc_stick_ps_cancel"),
-    "prog_ps_pin": ("kst_panel_pin", "hitec_panel_pin", "esc_stick_ps_pin"),
+                       "esc_stick_ps_cancel",
+                       "ewp_cancel"),
+    "prog_ps_pin": ("kst_panel_pin", "hitec_panel_pin", "esc_stick_ps_pin",
+                    "esc_wire_ps_pin"),
     "prog_ps_safe_at": ("kst_panel_safe_at", "hitec_panel_safe_at",
-                        "esc_stick_ps_safe_at"),
+                        "esc_stick_ps_safe_at",
+                        "ewp_safe_at"),
 }
 
 # The card callbacks of shared/logfile, on the runlog task: the files of a
@@ -304,12 +328,16 @@ SERVO_STORE_CALLS = {
                          "hitec_files.c:io_size", "hitec_files.c:io_read"),
 }
 
-# The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
-# check after an update, in components/fw_ota, which writes otadata on the
-# main task.  The same checks as PORT_CALLS.
+# The fw_boot_ops_t and fw_note_ops_t callbacks shared/fwupdate calls: the
+# panel's start check after an update, in components/fw_ota, which writes
+# otadata and erases the restart note in NVS on the main task, and the
+# install's write of that note.  The same checks as PORT_CALLS.
 BOOT_CALLS = {
     "fw_boot_decide": ("boot_pending", "boot_mark_invalid", "boot_mark_valid",
                        "boot_restart", "boot_last_invalid"),
+    "fw_note_read": ("note_load",),
+    "fw_note_write": ("note_save",),
+    "fw_boot_settle": ("note_erase",),
 }
 
 
@@ -647,7 +675,7 @@ def main() -> int:
         rows, fails, out = iomcu_check(build, args.verbose)
         if args.check_doc:
             fails += check_iomcu_doc(rows)
-        print(f"stack_check: {build / IOMCU_ELF}")
+        print(f"stack_check: {iomcu_elf(build)}")
         print("\n".join(out))
         for f in fails:
             print("FAIL " + f)
@@ -769,6 +797,8 @@ def main() -> int:
     measured, pointer_calls = {}, 0
     for entry, name, stack, src in tasks:
         addrs = by_name.get(entry, [])
+        if not addrs and entry in OPTION_TASKS:
+            continue
         if len(addrs) != 1:
             fails.append(f"{name}: entry {entry} is {len(addrs)} functions "
                          f"in the ELF, not 1")

@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "prog_choice.h"
 #include "servo_limrun.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -184,7 +185,11 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     if (other) {
         snprintf(l2, size, "%s", TR(SV_IN_FORCE_NOT_SET));
     } else if (target != 0u && !pwm) {
-        snprintf(l2, size, "%s", TR(SV_IN_FORCE_PWM_OFF));
+        /* On the carrier PORT PWM ON waits for the ports' 5V. */
+        snprintf(l2, size, "%s",
+                 settings_get_bool(SET_SERVO_PORT_PWM) && prog_choice_needs_5v()
+                     ? TR(PC_NEED_5V)
+                     : TR(SV_IN_FORCE_PWM_OFF));
         warn = true;
     } else {
         snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
@@ -253,6 +258,25 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
                              SV_FONT_LABEL);
     (void)wrap_text(c, x, y + NOTE_PITCH * n1, NOTE_PITCH, l2, NOTE_CELLS,
                     col, SV_FONT_LABEL);
+}
+
+/**
+ * @brief OUTPUT's read-only line: the port SERVO TESTER names, and that its
+ *        home is OUTPUTS.  It reads the setting, what the TARGET row reads
+ *        being what is driven.
+ * @param out takes the line
+ * @param n   the size of @p out, bytes
+ */
+static void tester_note(char *out, size_t n)
+{
+    const int port = settings_get_int(SET_SERVO_TARGET);
+    char what[16];
+    if (port == 0) {
+        snprintf(what, sizeof(what), "%s", TR(OUT_TESTER_OUTPUTS));
+    } else {
+        snprintf(what, sizeof(what), TR(OUT_TESTER_PORT), (unsigned)port);
+    }
+    snprintf(out, n, TR(SV_TESTER_HOME), what);
 }
 
 /**
@@ -328,20 +352,23 @@ void draw_rows_page(gfx_canvas_t *c)
                  (unsigned)max_rate_for(s.type, cmd_top()),
                  type()->heli ? "0.5ms" : "1ms");
         snprintf(l2, sizeof(l2), "%s", TR(SV_AT_START));
-        const char *const lines[] = { l1, l2 };
-        draw_note(c, nx, OV_NOTE_Y, lines, 2);
-        draw_rate_note(c, nx, OV_NOTE_Y + 2 * NOTE_PITCH);
+        char l3[96];
+        tester_note(l3, sizeof(l3));
+        const char *const lines[] = { l3, l1, l2 };
+        draw_note(c, nx, OV_NOTE_Y, lines, 3);
+        draw_rate_note(c, nx, OV_NOTE_Y + 3 * NOTE_PITCH);
     } else if (page == PG_AUTO) {
         draw_test_stall(c, nx, RL_NOTE_Y);
     } else if (page == PG_LIMRUN) {
         draw_lim_mode_note(c, nx, RL_ROW0 + 2 * RL_PITCH + 6);
     } else if (page == PG_DUT) {
-        const char *const lines[] = {
-            TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_1), TR(SV_ENC_NOTE_2),
-        };
-        const int y = OV_ROW0 + 3 * OV_PITCH + 6;
-        draw_note(c, nx, y, lines, 3);
-        draw_caps_line(c, nx, y + 4 * NOTE_PITCH);
+        const char *const lines[] = { TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_2) };
+        draw_note(c, nx, DUT_NOTE_Y, lines, 2);
+        ui_button_font(c, enc_open_rect(), TR(SV_ENC_NOTE_1),
+                       ui_theme_color(UI_C_PANEL_HI),
+                       s.ov_have && s.ov_pressed == OP_OPEN_ENC,
+                       !target_locked_for(SET_SERVO_TARGET), SV_FONT_LABEL);
+        draw_caps_button(c);
     }
     draw_save_line(c);
 }
@@ -507,7 +534,8 @@ static void draw_hv(gfx_canvas_t *c)
                                             : ui_theme_color(UI_C_TEXT_DIM),
                                     SV_FONT_BODY);
     }
-    if (s.ask.purpose == ASK_SET && supply_screen_output_on()) {
+    if ((s.ask.purpose == ASK_SET || s.ask.purpose == ASK_RESTORE)
+        && supply_screen_output_on()) {
         (void)wrap_text(c, a.x + 20, y + 8, WARN_PITCH, TR(SV_HV_LIVE),
                         WARN_CELLS, ui_theme_color(UI_C_WARN), SV_FONT_BODY);
     }
@@ -519,24 +547,15 @@ static void draw_hv(gfx_canvas_t *c)
 }
 
 /**
- * @brief SUPPLY's question before a set point changes a live output, with
- *        its words: the change reaches the load at once.  The HV warning
- *        where the voltage passes a standard servo's rating.
+ * @brief The set points the question changes, each as `was -> now` on a
+ *        line of its own; one that stays is not drawn.
  * @param c the canvas
+ * @param x the lines' left edge
+ * @param y the first line's top
+ * @return the top of the line after the last
  */
-static void draw_ask(gfx_canvas_t *c)
+static int draw_changes(gfx_canvas_t *c, int x, int y)
 {
-    const gfx_rect_t a = overlay_area();
-    if (s.ask.hv) {
-        draw_hv(c);
-        return;
-    }
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
-    gfx_text(c, a.x + 20, a.y + WARN_TITLE_DY, TR(SUP_OUTPUT_IS_ON),
-             SV_FONT_HEAD, ui_theme_color(UI_C_WARN), 1);
-    gfx_text(c, a.x + 20, a.y + WARN_WHAT_DY, TR(SUP_ASK_WHY),
-             SV_FONT_BODY, ui_theme_color(UI_C_TEXT_DIM), 1);
-    int y = a.y + WARN_LINE_DY + 10;
     const struct { const char *label; float was, now; const char *unit;
                    gfx_color_t col; } k[] = {
         { TR(SUP_VOLTAGE), supply_screen_set_v(), s.ask.v, "V",
@@ -548,14 +567,77 @@ static void draw_ask(gfx_canvas_t *c)
         if (k[i].was == k[i].now) {
             continue;
         }
-        gfx_text(c, a.x + 20, y + 8, k[i].label, SV_FONT_LABEL,
+        gfx_text(c, x, y + 8, k[i].label, SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         char line[48];
         snprintf(line, sizeof(line), "%.2f -> %.2f%s", (double)k[i].was,
                  (double)k[i].now, k[i].unit);
-        gfx_text(c, a.x + 200, y, line, SV_FONT_HEAD, k[i].col, 1);
+        gfx_text(c, x + 180, y, line, SV_FONT_HEAD, k[i].col, 1);
         y += 56;
     }
+    return y;
+}
+
+/**
+ * @brief The question after a programming port let go of a live output:
+ *        the operator's set points from before the session back onto it,
+ *        YES or NO.  The change rows say what YES does; the last line what
+ *        NO does.
+ * @param c the canvas
+ */
+static void draw_restore(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = overlay_area();
+    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
+    gfx_text(c, a.x + 20, a.y + WARN_TITLE_DY, TR(SUP_OUTPUT_IS_ON),
+             SV_FONT_HEAD, ui_theme_color(UI_C_WARN), 1);
+    char what[112];
+    snprintf(what, sizeof(what), TR(SV_RESTORE_ASK), (double)s.ask.v,
+             (double)s.ask.i);
+    int y = a.y + WARN_WHAT_DY;
+    y += WARN_PITCH * wrap_text(c, a.x + 20, y, WARN_PITCH, what, WARN_CELLS,
+                                ui_theme_color(UI_C_TEXT), SV_FONT_BODY);
+    y = draw_changes(c, a.x + 20, y + 16);
+    y += 8;
+    y += WARN_PITCH * wrap_text(c, a.x + 20, y, WARN_PITCH, TR(SUP_ASK_WHY),
+                                WARN_CELLS, ui_theme_color(UI_C_TEXT_DIM),
+                                SV_FONT_BODY);
+    (void)wrap_text(c, a.x + 20, y + 8, WARN_PITCH, TR(SV_RESTORE_NO),
+                    WARN_CELLS, ui_theme_color(UI_C_TEXT_DIM), SV_FONT_BODY);
+    ui_button_font(c, warn_apply_rect(), TR(SV_ASK_YES),
+                   ui_theme_color(UI_C_WARN),
+                   s.ov_have && s.ov_pressed == OP_ASK_APPLY, true,
+                   SV_FONT_LABEL);
+    ui_button_font(c, warn_cancel_rect(), TR(SV_ASK_NO),
+                   ui_theme_color(UI_C_PANEL_SUNK),
+                   s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true,
+                   SV_FONT_LABEL);
+}
+
+/**
+ * @brief SUPPLY's question before a set point changes a live output, with
+ *        its words: the change reaches the load at once.  The HV warning
+ *        where the voltage passes a standard servo's rating, and the
+ *        question after a programming port let go of a live output.
+ * @param c the canvas
+ */
+static void draw_ask(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = overlay_area();
+    if (s.ask.hv) {
+        draw_hv(c);
+        return;
+    }
+    if (s.ask.purpose == ASK_RESTORE) {
+        draw_restore(c);
+        return;
+    }
+    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
+    gfx_text(c, a.x + 20, a.y + WARN_TITLE_DY, TR(SUP_OUTPUT_IS_ON),
+             SV_FONT_HEAD, ui_theme_color(UI_C_WARN), 1);
+    gfx_text(c, a.x + 20, a.y + WARN_WHAT_DY, TR(SUP_ASK_WHY),
+             SV_FONT_BODY, ui_theme_color(UI_C_TEXT_DIM), 1);
+    (void)draw_changes(c, a.x + 20, a.y + WARN_LINE_DY + 10);
     ui_button_font(c, warn_apply_rect(), TR(SUP_APPLY),
                    ui_theme_color(UI_C_WARN),
                    s.ov_have && s.ov_pressed == OP_ASK_APPLY, true,

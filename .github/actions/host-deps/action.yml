@@ -1,0 +1,26 @@
+name: Host build dependencies
+description: >-
+  The compiler, build tools, fonts and Python packages the host suite and
+  the checks that render screens need.  Runs after the checkout.
+runs:
+  using: composite
+  steps:
+    - name: Install build dependencies
+      shell: bash
+      run: |
+        # The runner image carries package lists this build never installs
+        # from, and apt-get update fails the whole step when any one of them
+        # serves a stale index (for example "Hash Sum mismatch" on
+        # dl.google.com/linux/chrome-stable).  A toolchain install does not
+        # depend on a browser's mirror, so those lists are removed first.
+        #
+        # Matched by glob rather than by name: the image writes these as
+        # .list or as deb822 .sources depending on its version, and a name
+        # that misses leaves the failure exactly as it was.  -v so the log
+        # says what went, since a silent no-op here looks identical to a fix.
+        sudo rm -fv /etc/apt/sources.list.d/*google* \
+                    /etc/apt/sources.list.d/*microsoft* || true
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          cmake ninja-build gcc fonts-dejavu-core valgrind
+        python3 -m pip install pillow==12.3.0

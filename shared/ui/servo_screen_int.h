@@ -27,6 +27,7 @@
 
 #include "gfx.h"
 #include "kst_panel.h"
+#include "prog5v_box.h"
 #include "servo_limrun.h"
 #include "servo_screen.h"
 #include "servo_sweep.h"
@@ -121,6 +122,13 @@
 #define PWR_LAB_W_INA 134 /**< The same beside an INA3221 channel's name. */
 #define PWR_Y     (PWR_TXT_Y + 24) /**< The power plot's top, px. */
 #define PWR_H     70               /**< The power plot's height, px. */
+/** @brief The PROG 5V box in the plot's place on a board that switches
+ *         the ports' 5V (prog5v_box.h); the 20px under it hold the
+ *         MODELLED pill when the panel's model stands in for the PD mini. */
+#define P5_Y      (PWR_Y + 2)
+_Static_assert(P5_Y + PROG5V_BOX_H + 20 <= PWR_Y + PWR_H,
+               "the PROG 5V box and the pill fit the plot's place");
+_Static_assert(RC_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the card");
 /**
  * @brief The supply's set points, each a value the keypad opens on, and
  *        OUTPUT ON and OFF: the same set points and switch as SUPPLY's,
@@ -170,7 +178,9 @@ _Static_assert(ARM_Y + ARM_H <= RCARD_Y + RCARD_H,
 /** @brief Reading @p k's column (0 COMMANDED, 1 MEASURED, 2 CURRENT). */
 #define READ_X(k)  (PAD + 12 + (k) * READ_W)
 #define READ_NUM_H 44                    /**< A reading's numerals, px. */
-#define READ_NUM_Y (H - PAD - 12 - READ_NUM_H) /**< Their top, px. */
+/** @brief Their top, px: they end 4px above the alert band, which shows over
+ *         the card's foot. */
+#define READ_NUM_Y (UI_ALERT_Y - UI_BAND_H - 4 - READ_NUM_H)
 #define READ_LBL_Y (READ_NUM_Y - 26)     /**< The label and unit row. */
 #define SEG_X      (PAD + 16)            /**< The horn's angle, top left. */
 #define SEG_Y      (CARD_Y + 14)         /**< Its top, px. */
@@ -281,7 +291,7 @@ typedef struct {
 enum { OP_NONE = 0, OP_TAB, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
        OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
-       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE };
+       OP_LIM_START, OP_RUN_SET, OP_RUN_CLOSE, OP_OPEN_CAPS, OP_OPEN_ENC };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
@@ -289,9 +299,10 @@ enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
        KT_SETTING, KT_SUP_V, KT_SUP_I, KT_TRIM };
 
 /* What the question or the HV warning applies: a typed set point, the
- * supply's output switched on, or the automatic test started with steps
- * above 6.0V. */
-enum { ASK_SET = 0, ASK_ON, ASK_TEST };
+ * supply's output switched on, the automatic test started with steps
+ * above 6.0V, or the operator's set points back onto the live output a
+ * programming port left on (both set points). */
+enum { ASK_SET = 0, ASK_ON, ASK_TEST, ASK_RESTORE };
 
 #define CHOICE_MAX 10
 
@@ -482,6 +493,14 @@ typedef struct {
     float      sup_v, sup_i;  /**< the set points as last seen           */
     uint32_t   sup_rev;
     uint32_t   drawn_sup[2];
+    /** @brief The programming ports' own 5V on a board that switches it
+     *  (the rbmod carrier): the PROG 5V box in the power plot's place
+     *  (prog5v_box.h). */
+    prog5v_box_t p5;
+    /** @brief A contact is down on the box's button. */
+    bool         p5_down;
+    /** @brief That contact's id: one contact at a time. */
+    int          p5_id;
     /* A set point waiting for APPLY: typed while the output is live, or a
      * voltage raised past a standard servo's rating (hv), which takes the
      * two-second hold the profile warning takes.  OUTPUT ON with a set
@@ -493,6 +512,7 @@ typedef struct {
         int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
         uint32_t  off_count; /**< supply_screen_off_count() at asking  */
         uint32_t  stops;     /**< the screen's stop count at asking     */
+        uint32_t  off_asks;  /**< supply_screen_off_asks() at asking    */
         float     v, i;
         ui_hold_t hold;
         bool      down;
@@ -790,6 +810,9 @@ int wrap_text(gfx_canvas_t *c, int x, int y, int pitch, const char *text,
 float us_to_deg_f(float us);
 void post(servo_cmd_kind_t kind, uint16_t us);
 void release(void);
+/** @brief DISARM asked of an armed bench: the value leaves LIVE now.  Also
+ *         the automatic test's end on an error (servo_test_abort_error()). */
+void svs_ask_disarm(void);
 void stop_sweep(void);
 sweep_cfg_t sweep_cfg_now(void);
 
@@ -882,6 +905,14 @@ bool target_locked(const ov_row_t *r);
  * warning.  The question or the warning answered: what it was about. */
 void ask_hv_on(void);
 void ask_apply(void);
+/**
+ * @brief The question after a programming port let go of a live output at
+ *        its own set points (supply_screen_restore_offer()): asked once no
+ *        panel, press or OUTPUT ON hold stands, none inside a limit run,
+ *        and closed, the HV warning after YES included, when a port holds
+ *        the supply again or the output is no longer live.  Every frame.
+ */
+void ask_restore_follow(void);
 /* A press on a page or a panel: its DOWN, and its moves and its release. */
 void ov_down(const touch_event_t *evt);
 void ov_rest(const touch_event_t *evt);
@@ -949,6 +980,13 @@ const char *lim_prog_why(void);
  * @return the line that says so, or NULL where the run may write
  */
 const char *lim_write_why(void);
+/**
+ * @brief The run drives the rbmod carrier's programming port, fed from the
+ *        PROG 5V box: a PD mini on the servo rails is not its supply, and
+ *        the run neither asks nor watches it.
+ * @return true on the carrier with a port as the drive's target
+ */
+bool lim_fixed_supply(void);
 const char *lim_blocked(void);
 void lim_end_now(servo_test_abort_t why);
 /* START LIMIT RUN's hold completed; the run every frame; the ended run's

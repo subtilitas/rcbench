@@ -6,7 +6,7 @@ order: 53
 
 # Files
 
-FILES shows the SD (Secure Digital) card in two panes. It copies, moves, renames and deletes files, makes folders and empty text files, and shows a file as text. It opens from FILES at the bottom of [LOGS](logs.md) and from the FILES tile on [SETUP](setup.md). The home tag closes a box or the keyboard first, then leads back to the screen that opened FILES. FILES drives no output.
+FILES shows the SD (Secure Digital) card in two panes. It copies, moves, renames and deletes files, makes folders and empty text files, shows a file as text and edits it. It is a tab of the strip on the [LOGS](logs.md) tile. The home tag closes a box or the keyboard first, then leads to the menu. FILES drives no output.
 
 ## The two panes
 
@@ -22,7 +22,7 @@ Each row shows the name, the size (`512B`, `14kB`, `7.0MB`; 1kB is 1,024 bytes),
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder the bench keeps, such as `BENCH`, `USER` and the log folders: no RENAME, MOVE or DELETE |
+| FIXED | a folder the bench keeps, such as `BENCH`, `USER` and the log folders: no RENAME or MOVE; DELETE only when empty, and the bench makes it again when it next writes there |
 | LOCKED | the servo programmer's record, `BENCH/KST/CONF/KST.TXT`: INFO only |
 | WRITING | a file the logger has open: INFO only |
 
@@ -68,6 +68,26 @@ The viewer shows a file as text, read-only. The home tag closes it: back to the 
 
 ![The same report in SMALL](view:files-view-small)
 ![A servo file of the KST programmer](view:files-view-kst)
+
+## The text editor
+
+![A line typed into a report](view:files-edit)
+
+EDIT in the viewer opens the editor and its keyboard. The text changes in the panel's memory; SAVE writes it to the card.
+
+- 8 rows of the text show over the keyboard, 10 with SMALL. The keyboard has no digit row: `ABC` gives capitals, `123` gives the digits and the common marks, and `#+=` on that page the other marks; `abc` goes back. DEL takes the character before the cursor. ENTER starts a new line with the file's own line end. `<-` and `->` move the cursor; a tap on the text puts it there. DONE closes the keyboard, KEYBOARD opens it again.
+- The header shows MODIFIED once the text differs from the card, and the cursor's line.
+- SAVE writes the text as `<name>.NEW`, deletes the old file and gives the new one its name. SAVE is shut while the bench is ARMED or a run is logged; the text stays. A switch to ARMED during a save stops it, and the old file stays.
+- A KST file of the servo programmer loses its checksum line when it is saved changed, in every form the programmer reads as one (`checksum`, `CHECKSUM=`, `Checksum:`): the programmer then reads it as a file a person edited.
+- SAVE refuses a text with a NUL byte in its first 4kB, as FILES would not open the file again: `Not saved: a NUL byte in the first 4kB. FILES would not open the file again.`
+- An ESC profile in `BENCH/ESC/CONF` is read at the panel's next start.
+- SAVE writes only over the file as the editor opened it. A file changed on the card since, by the Wi-Fi page's editor or an upload, is not written: the note says `<name> changed on the card since it was read.`, and the question offers STAY, which keeps the text, READ AGAIN, which drops it and reads the file from the card, and OVERWRITE, held 2s, which saves the text over the file that the refused SAVE found. A further change during that time is refused the same way. A file that is gone cannot be overwritten: OVERWRITE is dimmed.
+- REVERT puts the text back to the file on the card. It asks first, as the home tag does while the text is unsaved: STAY keeps the text, DISCARD drops the changes.
+- The text holds up to 1MiB and 65,536 line ends. The keyboard types ASCII; there is no undo of single keys.
+- SETUP → PANEL → Keyboard see-through at 25% or 50% lets the rest of the text show through the keyboard; the cursor stays on the 8 rows over it.
+
+![A KST file saved with a comment](view:files-edit-kst)
+![The question over unsaved changes](view:files-edit-unsaved)
 
 ## ARMED and logging
 

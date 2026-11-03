@@ -157,6 +157,17 @@ bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
     return true;
 }
 
+bool can_twai_rx_lost(uint32_t *overrun, uint32_t *missed)
+{
+    twai_status_info_t st;
+    if (!s_running || twai_get_status_info(&st) != ESP_OK) {
+        return false;
+    }
+    if (overrun != NULL) { *overrun = st.rx_overrun_count; }
+    if (missed != NULL)  { *missed = st.rx_missed_count; }
+    return true;
+}
+
 /*
  * Bus-off is permanent until somebody asks for the bus back.
  *

@@ -337,6 +337,8 @@ def test_prog_calls_name_every_hook_of_every_page_set():
 
 LOGFILE = sc.ROOT / "shared" / "logfile"
 PANEL_MAIN = sc.PANEL_DIR / "main"
+# Fields of a struct a panel source may leave out: NULL, and never called.
+OPTIONAL = {"servo_store_io_t": {"remove"}}
 
 
 def io_given(path, struct):
@@ -361,7 +363,9 @@ def io_table_holds(table, header, struct, source, panel):
     called = set(re.findall(r"\bio->(\w+)\(", src))
     assert called <= fields
     given = io_given(PANEL_MAIN / panel, struct)
-    assert set(given) - {"ctx", "stem"} == fields
+    have = set(given) - {"ctx", "stem", "tagged"}
+    assert fields - OPTIONAL.get(struct, set()) <= have <= fields
+    called &= have
     qualified = set().union(*(set(v) for v in table.values()))
     # A callback written `file:name` names the panel source it is in.
     assert all(q.split(":")[0] == panel for q in qualified if ":" in q)

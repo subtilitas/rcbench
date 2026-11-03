@@ -8,6 +8,765 @@ history is in git.
 
 ### Added
 
+- rbmod carrier: the programming port is chosen on the panel and kept over a restart. A tap on the KST or Hitec programmer's PORT row before CONNECT opens PROGP01 to PROGP04 with their GPIO, and the carrier's PROG PORT entries on OUTPUTS offer SERVO TESTER and PORT PWM. The choice is SERVO TESTER (`srv_target`), so the servo tester, the KST limit search and LEFT/RIGHT drive the chosen port. It is locked under the SERVO TARGET rules, with the reason under the rows. PROGP04 is refused by name while PWM04, on PWM slice 0, carries a PWM output. The pulse goes out only while PROG 5V reads ON; PORT PWM ON, a servo test and a limit run say `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` otherwise, and a servo test on the port says `PROG PORTS RUN AT 5V FIXED: NO STEPS`. A chosen port that does not read SERVO PWM yet takes no tester command, so nothing goes to the servo outputs in its place. For the limit run the PROG 5V box stands for the PD mini: SEARCH+PROG and SERVO PULSES are offered with the box ON, the servo rails' PD mini is neither asked nor watched, and an aborted run switches PROG 5V off.
+- Link 4.36: the rbmod carrier's programming ports take FUNC SERVO PWM besides NONE; DShot stays refused, and every start begins on NONE. An OUTPUTS write or BIND commit that puts a PWM slot on a SERVO PWM port's slice sets that port back to NONE, its pulse off and TARGET 0 where it names it, so PWM04 takes a PWM protocol beside a chosen PROGP04; a port a KST or HITEC session holds refuses such a write. A PWM slot bound on a port's slice lets the port go first, so the binding of PWM01 to PWM04 keeps its rate.
+- ESC signal wire: POWER keeps SWITCHED or BY HAND over a panel restart, in the panel's settings (`escw_by_hand`); with nothing stored it is SWITCHED.
+- ESC signal wire: a backup's name carries the firmware, `ESCW001-AM32.TXT`, `ESCW002-BLHELI_S.TXT`, `ESCW003-BLUEJAY.TXT`, `ESCW004-ESCAPE32.TXT`, for a backup before a write and one saved by hand. One number runs through the folder; `ESCWnnn.TXT` and other names list and load as they did.
+- ESC signal wire: DELETE A FILE in the session's FILES list deletes a file on a red 2s hold, and the list reads the card again. A backup the session saved is not deleted inside the session.
+
+- Debug builds: the IOmcu's bench console over CAN. A panel built with `RCBENCH_PANEL_CONSOLE` relays its serial ports to an IOmcu built with `IOMCU_CONSOLE`, through the CONSOLE page (0xE0), at most one exchange a control pass: 6,000 bytes/s of output at a 5ms pass, calculated. Every console command runs on the IOmcu, `ewline` included. Both options are off in every released image, and CI reads the images for it. Such a panel carries the console image, and UPDATES offers it over CAN. The console build holds the IOmcu's lines from its start, the reset cause first, for whoever comes.
+- WI-FI: HOTSPOT PASSWORD and WEB CODE, each RANDOM (the default) or a value of 8 to 63 printable ASCII characters typed on the panel, kept in NVS (non-volatile storage) under `ap_pass` and `web_code`, in plain form. BACK TO RANDOM takes one tap. A change takes effect at the next start of the radio. FORGET HOME NETWORK keeps both. A kept code stays valid until changed; 16 wrong codes still switch the radio off. The page's code entry takes 63 characters, its body limit is 200 bytes, and the cookie carries the code percent-encoded. The panel takes no screenshot while it shows a kept value. `tools/check_wifi_secrets.py` fails CI on a log call that names a kept value.
+- Panel: MOTOR & ESC > PROGRAM's row `AM32, Bluejay, BLHeli_S, ESCape32`, `SIGNAL WIRE` at its right, dimmed until the IOmcu reports `LINK_CAP_PROGRAM`: [ESC signal wire](docs/EscWire.md). CONNECT, identity, tabs of fields, a draft, WRITE with the warning that names each hazardous field, the backup and the record on the card, a file loaded, RESTORE FROM BACKUP on an erased AM32, LEAVE. Voltage and limit are SUPPLY's until typed.
+- SUPPLY: an ESC session's hold counts on every board. On the carrier SUPPLY refuses set points and ON under it (`SUP_HELD_REFUSED_ESC`); KST and Hitec sessions there do not lock it.
+- Panel's editor: an ESC settings file changed there has `edited` as its last line that is not blank, behind any lines added to it, and no checksum line.
+- Panel: the half of the `ESC_WIRE` and `ESC_DATA` pages (`esc_link`, `esc_prog`,
+  `esc_prog_file`). A panel restart closes what the page holds at
+  the first read, and again every 1000ms; a pin that does not come back is an error
+  and an alert that names the slot or port. The STOP key is the page's STOP. `FAULT`
+  and `NOT_BACK` count as errors, so all outputs go off. A held pin counts for ARM,
+  the motor's TARGET row, ESC STICK and the limit run.
+  10 failed reads of the page over a hold are an error and a STOP. A STOP is sent
+  until a read answered since the ask shows a free page, and one pressed with the link
+  down goes when it is back. A hold that ends with this end's wiring not written gets
+  the OFF of any start, then the wiring.
+- Link 4.34: the pages `ESC_WIRE` (0x3A) and `ESC_DATA` (0x3B) read and write an
+  ESC's settings over its signal wire, on the pin of a throttle slot or a DShot
+  programming port, and the IOmcu reports `LINK_CAP_PROGRAM`. The output gets back
+  what it had. While a page holds a pin the bank does not arm, CONTROL refuses a
+  non-zero ARM, SUPPLY and PROG_SUPPLY are held, and PROG, OUTPUTS, CHAN_CFG, BIND,
+  TONE's set-up, SUPPLY's wiring, KST and HITEC refuse. A pin its output does not
+  take back keeps the hold until a CLOSE succeeds or the IOmcu restarts. ARM and THROTTLE
+  are 0 when the hold begins and at its end. SUPPLY's wiring in force is taken during the hold; a change answers BUSY. An error, TORN and LOST included, parks the line and switches the
+  PD mini and PROG_SUPPLY off; a STOP or an ABORT does as well. RAM 7344B: 3856B for the
+  page and 3488B for the line. No screen uses the pages yet. A bidirectional
+  DShot pin resting high on SAFE stays as it is, a current
+  limitation ([The ESC settings pages](docs/LinkEsc.md#current-limitations)).
+- Bench console: `esc` runs the page's operations.
+- `protocols/escwire/`: the core for reading and writing ESC settings over the
+  signal wire, for BLHeli_S layout 33, Bluejay layout 208 and AM32 settings
+  revisions 3 and 4; older layouts are shown read-only. It holds protocol A at
+  52us a bit, a guard every outgoing frame passes, identification, field maps
+  and a non-blocking session with read-back. It has no link page or screen.
+  Written from a behavioural specification, without access to the
+  firmware sources.
+- `protocols/escwire/ew_file.c`: an ESC's settings as a text file of at most
+  5280B, with the page as read, whole, and a CRC-32 (32-bit cyclic redundancy
+  check). A load takes editable fields only, into the same firmware and layout.
+  A verified file of an AM32 restores an ESC whose 192B read 0xFF when its pin
+  code, flash code, bootloader protocol and name are the ESC's. Files go to
+  `BENCH/ESCW/CONF`, `ESCW001.TXT` to `ESCW999.TXT`. No screen uses it.
+  ESCape32's file holds its 46 keys as `key: value` lines and `music`, up to 255
+  characters. A load takes the keys and never writes `music`.
+- `protocols/escwire/`: ESCape32's text interface at 38400baud. It holds the
+  lines `info`, `show`, `set` and `save`, their replies, the 46 numeric keys of
+  revision 17 as data, and the session's branch: after 3 silent first contacts a
+  2500ms hold with the line high, then `info`; `set` per changed key, `save` and
+  a read-back. A clipped `set` ends with no `save`. Other revisions are shown
+  read-only. A reply takes up to 1536B of a new buffer in the session.
+- `protocols/escwire/rp2350/`: the pin driver of the signal wire, one PIO
+  (programmable input/output) state machine of 25 words and 2 DMA (direct memory
+  access) channels behind `ew_driver_t`. 16 cycles a bit, 52us and 38400baud,
+  8N1, idle high; the pad is released 1 bit time after the last stop bit's edge
+  and receives with its pull-up. An abort or a capture marked aborted or
+  overflow leaves the pad an input with its pull-down. The IOmcu links it and
+  the released image holds none of it: nothing calls it there. No byte has been
+  to an ESC.
+- Bench console: `ewline <gpio> tx|abort|rx`, in the `IOMCU_CONSOLE` build, runs
+  the pin driver on a free pin for a logic analyser. Fixed bytes, SAFE only.
+- Screenshot: a 1000ms hold on the empty part of the band, on any screen with
+  the band, takes the frame at once, in any bench state. One picture is held in
+  1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes
+  `screenshots/<name>.PNG`, an 8-bit RGB PNG of 1024 x 600px, on the card. The
+  menu's guide has a fourth page for it.
+
+### Changed
+
+- The IOmcu's sensor bus runs on `protocols/i2c_txq`: core 1 hands each
+  transaction to the queue as a hard one, due now, and waits for its end
+  with interrupts on (`shared/sense/sense_txq.c`,
+  `firmware/iomcu/src/sense_i2c.c`). The schedule, the bus policy, the
+  400kHz clock, the 1000us limit, the 10us settle and 50us pull-up probe
+  before a start and the 9-clock bus clear stay. What changes:
+  - No transaction runs with core 1's interrupts off; the FIFO load is at
+    most 13 register writes with them off. The flash lock-out may land
+    during a transaction, which ends on the wire while core 1 is parked.
+  - A read is stamped with its end as the block's interrupt or core 1's
+    poll took it; taken more than 100us late, with its start plus its bus
+    time.
+  - A pointer read is one transaction loaded into the FIFO whole, not two
+    pico-sdk calls. The sequence on the wire stays: START, address,
+    pointer, repeated START, address, bytes, STOP. The gaps between bytes
+    are not measured.
+  - The block is reset after a timeout and by the bus clear, not after a
+    NACK or a lost arbitration.
+  - A NACK is told by the block's abort source, not by the lines after
+    it; a line held after a NACK is reported by the next transaction's
+    line check. A lost arbitration with a line still low 10us after the
+    end is SENSE_BUS_LOW without the pad pull-up probe.
+  - The bus clear runs with interrupts on, 24 half-clock steps of 5us,
+    115us from the first to the last without SCL held.
+  - Core 1 polls the queue once a tick; a wait for a transaction asks for
+    an abort after 5000us and gives up after 10000us when the driver never
+    reports one.
+  - The open is refused when the I2C block or its interrupt is taken.
+  `protocols/i2c_txq` does not start a soft transaction while its bus
+  time plus 20us (`I2C_TXQ_GUARD_US`) would run past a queued hard one's
+  release. Host-tested in `test_sense_txq`, `test_sense_txq_svc` (the service on
+  the queue against the direct wire: every snapshot equal over 4000 ticks
+  with faults) and `test_sense_i2c`.
+- An ARM refused by a programmer's hold names its holder: the alert, the supply's line and ESC STICK's note say ESC programmer under an `ESC_WIRE` hold. An ARM dropped by a hold, and a hold of ARM ended by one, give the alert.
+- `frame_cost.py --check-doc`: tolerance 3%, at least 500 fills. Rows under about 700 fills are not held by it.
+- SUPPLY link: after a start the panel reads the page before it writes. A port's hold
+  found there is adopted, and no OFF of the panel's goes over it; the operator's OFF and
+  an error's cut stay. A wiring answered `BUSY` is no refusal and goes again after the
+  hold.
+
+### Fixed
+
+- Link: a read asks for at most 16 registers, 4 reply frames, which the panel's TWAI receive FIFO holds while its interrupt is held on core 0. A wider read (PROG 28, ESC_WIRE status 21, SUPPLY 18, the windows and pages of 28 and 32) is a read of 16 and a READ_HELD (op 6, protocol 4.35) of the rest, which the IOmcu reads in the same page call, so the two parts are one state of the page. An IOmcu older than 4.35 is read in one exchange. The bench console's window is 28 bytes.
+- Link report: the panel's bus line and card row carry the TWAI driver's `rx overrun` and `rx missed`; the IOmcu's 3s CAN line carries `tx_drop`, reply frames given up at a full transmit buffer.
+- OUTPUTS: the line under a port's rows names an ESC or Hitec session's hold. It read `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` at SAFE with no test.
+- OUTPUTS: a FUNCTION or pin ask no longer waits for ever after a panel or IOmcu start. The sweep's state, not known since the link came up, was settled only by a TARGET change or a position. A port on a DShot function, or no port wanted by the SERVO screen, gives neither. The ask now settles it. The amber line names what holds an ask: SAFE, a servo test or sweep, the servo, Hitec or ESC programmer, or a read of the ports.
+- Debug builds: the relay's own lines no longer land inside an IOmcu line; a gap of 1500ms or more in the control passes, as during an IOmcu update, says `console: no pass from t_ms=<a> to t_ms=<b>`.
+- Wi-Fi: the same wrong code in a browser's cookie counts once toward the 16 wrong codes, for a RANDOM and a kept code. A tab open from before a change of the code no longer switches the radio off. The panel remembers the last 4 wrong cookie values as keyed hashes, emptied at every start of the radio. A different value and every `POST /code` count as before.
+- ESC signal wire: a hold's fill reaches the screen. MOTOR & ESC's session path did not read the page set's hold revision, so no hold showed a fill. It now redraws the hold's button alone in each framebuffer, 251 cache-line fills a frame (`motor-wire-hold`).
+- ESC signal wire: the action row, BACK, value rows, NEXT, PREV, CANCEL and list entries show the pressed state from press to release, and a press redraws that button alone. A move redraws nothing.
+- ESC signal wire: PIN HELD shows `A stop or a fault ended this session` only for a stop or a fault; after a SUPPLY OFF with neither, the `SUPPLY_OFF` refusal's line is the only one.
+- ESC signal wire: ESCape32's 3 sound and light fields (`volume`, `beacon`, `led`) were on a seventh tab the tab strip of 6 could not select. They sit on `INPUT, SOUND` with input and telemetry, 11 rows. Every tab of every firmware is selectable.
+- ESC signal wire: a press on the place of a hidden button, or between two tabs, clears no line.
+- ESC signal wire: with the panel's STOP standing, STOPPED offers PIN BACK only, with `The bench's STOP stands: PIN BACK first.` A page's stop keeps CLEAR STOP.
+- ESC signal wire: after a stop or a fault PIN HELD offers PIN BACK only, with a line that names CONNECT after it. The SUPPLY page reports its latched OFF, and an ENTER under it is refused with `LINK_ESC_REF_SUPPLY_OFF` (17) in place of ending as `SUPPLY` after 1.3s.
+- ESC signal wire: VOLTAGE's and LIMIT's keypads end at SUPPLY's limits for this board and setting, and a connect above them is refused with the range message.
+- ESC signal wire: a falling link closes a keypad, a choice and a hold page on any stage, and `ABORT ended it` gives way to the link's state.
+- ESC signal wire: a line stays on its stage and the page its end leads to; the next press clears it. Arriving on CONNECT with the pin free clears all but `LEFT`, the link's state and an error that ended the flow.
+- ESC signal wire: RELEASE, RESTORE and NO BACKUP each have their own hold hint, and RELEASE's page names the pin. German `STOPPED` title reads `GESTOPPT`.
+- ESC signal wire: a steady session page moves no revision when the outputs read again: the targets compare by field, not with their padding byte. `motor-wire` draws 0 cache-line fills a frame, 19,271 with the padding moving.
+
+- `docs/BLHeli32.md` no longer says AM32 is fully supported.
+- IOmcu: a non-zero ARM written while a programming port is out of PWM, on KST
+  or Hitec, is refused with NOT_ARMED. The ARM and THROTTLE registers are 0 when
+  the hold begins and at every way out of it, with a pin given back or not. A stored ARM armed the bank in
+  the pass the port returned to PWM, with no new ask; only the panel's press
+  guards stood in the way, and a panel just restarted over a held port had none.
+- `protocols/escwire`: 520us between a data announcement and its data, on every
+  firmware. A gap of 104us loses the data on AM32 and no answer comes, since
+  AM32 ends a message only on more than 234us of idle line. A leave frame is
+  followed by 500us of idle line before the line goes low.
+
+- Screenshot: the IOmcu update's question and the release reminder take no
+  hold. They cannot say whether a box covers them, so a hold there copied a
+  picture and the popup would have opened after the screen had gone.
+- Screenshot: a save that the bench stopped by leaving idle shows `The bench
+  was busy. Nothing saved. Tap SAVE again.` when the popup opens again. A
+  failure answered while the popup is shut shows its own text the same way.
+
+### Removed
+
+- `shared/ui/prog_models.c` and its parameter tables and texts.
+
+## 0.23.4 - 2026-10-31
+
+0.23.4 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.3 does; an ESP32-S3 panel stays on the 0.22 line and
+is not offered it. The link protocol is 4.33, as in 0.23.3. The assets are
+`rcbench-panel-p4-v0.23.4.zip`, `rcbench-panel-p4-v0.23.4.bin`,
+`rcbench-iomcu-v0.23.4.zip`, `rcbench-iomcu-rbmod-v0.23.4.zip` and
+`SHA256SUMS`.
+
+A bench on 0.23.3 gets 0.23.4 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers the IOmcu's update over CAN (Controller Area Network)
+when the IOmcu runs another build. A new bench loads both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
+
+The entries below cover the 15 pull requests merged since v0.23.3: #668 and
+#670 to #683.
+
+### Added
+
+- SETUP > PANEL > Demo mode (Demo-Modus), ON or OFF, OFF by default, stored as
+  `demo_mode`: ON hides the SIMULATION watermark from the next frame. The
+  band's SIM chip, the tiles' SIMULATED chips and every other statement that
+  values are simulated stay. A bench with an IOmcu draws no watermark either
+  way.
+- Openers replace texts that named a path, each returning by the home tag:
+  SERVO's caps line under TEST's cards and on DUT is a button to SUPPLY's
+  SETTINGS, LIMITS; DUT's AS5600 note is a button to SENSORS' AS5600 entry;
+  UPDATES' no-network line is a button to WI-FI. SERVO's two are grey under
+  TARGET's lock: ARMED, a sweep, a run, or a programmer holding the port.
+  TARGET in a programmer asking for a port opens PROG PORT 1's entry, which
+  holds SERVO TESTER.
+- SERVO > SETTINGS > OUTPUT names the port SERVO TESTER is set to and its home
+  OUTPUTS, read-only.
+- SETUP > SENSORS is a split pane: a left list of 8 entries (SENSOR BUS, INA228,
+  INA3221 0x40 to 0x43, AS5600, PHASE TAP) with each entry's state under its
+  name, and the selected entry's rows beside it. A sensor's rows appear when it
+  is enabled. Each entry keeps its scroll. RESET names the entry and resets its
+  rows alone. The INA228 entry reads ONLINE, NOT ANSWERING, ANOTHER ID ANSWERS
+  and NOT ACCEPTED BY THE IOMCU from what SENSE holds and reads.
+- WI-FI's page changes the card: UPLOAD (one text file up to 1MiB, with
+  a progress bar and a REPLACE question), NEW FOLDER, NEW TEXT FILE,
+  RENAME, MOVE and DELETE, through FILES' jobs, rules and write gate. The
+  file API takes `PUT /api/file` with `If-Match` (412 `CHANGED` when the
+  file's CRC-32 moved since it was read) or `If-None-Match: *`, and
+  `POST /api/mkdir`, `/api/rename` and `/api/delete`. A write waits up to
+  2000ms for FILES on the panel and is answered 503 `PANEL_BUSY` with
+  `Retry-After: 2` after that.
+- SETUP > SD CARD > Browser writes: OPEN (default), ACCESS CODE, HOLD or
+  OFF. HOLD shows `HOLD 2s: ALLOW BROWSER WRITES` on WI-FI; a line under
+  the rows names the mode and counts the writes.
+- WI-FI's page edits a text file: EDIT in the viewer opens a text box
+  over the coloured lines, and SAVE writes it back with `If-Match`, the
+  file's line ends (LF, CR LF or CR) and its BOM kept, within the
+  viewer's 1MiB and 65,536 line ends. A file changed on the card since it
+  was read is answered 412 `CHANGED`, and the editor asks STAY or READ
+  AGAIN. A KST file loses its checksum lines on SAVE, as on the panel; an
+  ESC profile says it is read at the next start. A file with mixed line
+  ends is saved with LF ends; a file that is not UTF-8 opens in the viewer
+  only. CLOSE and leaving the page ask first while the text has changes.
+  A SAVE that needs the access code asks for it in the editor and keeps
+  the text.
+
+### Changed
+
+- WI-FI has its own tile on SETUP's hub, in the second row after SD CARD: PANEL,
+  SENSORS, OUTPUTS / SD CARD, WI-FI, UPDATES; the carrier adds LAYOUT. 3 slots
+  stay free, 2 on the carrier. Its home tag returns to SETUP, or to what opened
+  it: LOGS' WI-FI button, in LOGS' footer, or UPDATES' button. PANEL UPDATE's
+  CLOSE after a failed upload's install goes there too.
+- The LOGS tile holds LOGS and FILES under one strip of two tabs of 499px, on
+  each screen's first level. The home tag of each leads to the menu. LOGS shows
+  6 file rows, FILES 5 a pane. WI-FI draws no strip: its buttons and card start
+  at body y 16, its radio-on rows are 56px from y 16. LOGS' footer holds
+  RESCAN and WI-FI; FILES has no WI-FI button.
+- FILES and the Wi-Fi page: a folder of the bench takes DELETE while it is
+  empty, so a folder NEW made can be removed. RENAME and MOVE stay refused.
+  The bench makes its folder again before it next writes there.
+- The Wi-Fi page's PUT compares `If-Match` and `If-None-Match` before its body
+  is read and again directly before the write.
+- UPLOAD's REPLACE asks `GET /api/info` with `etag=1` for the ETag; the file does
+  not cross the network, and a file that is not text is compared too.
+- A write on the Wi-Fi page that asks for the access code goes out again once
+  the code is taken, without a page load. An answer after CANCEL sends nothing.
+- SETUP's PANEL and SD CARD tiles name their content in place of a count. TEST's
+  run cards are 188px tall, 12px less, and their START holds 48px, 8px less.
+- UI texts name one tile at most: alerts read `Check SENSORS.`, and MOTOR &
+  ESC's say TARGET, which opens OUTPUTS in one tap. Kept paths are the supply
+  question's row, Hitec's checksum hint and the browser's texts.
+- SETUP's INTERFACES tile goes. The PD mini's enable, TX, RX and baud move to a
+  PD MINI tab on SUPPLY > SETTINGS, beside LIMITS: a change applies at once and
+  is saved when the bench is idle, and LIMITS' reset leaves them. They take no
+  press while the output is on or an ON is on its way, while a programming port
+  holds the supply, or while the bench is ARMED, so a mistaken pin cuts no live
+  supply. Hitec D receive moves to the Hitec tab's MORE list, offered only while
+  the tester has the port. Stored keys stay and a panel's values load unchanged.
+- SUPPLY's source line on the model reads `SIMULATED: SWITCH ON IN PD MINI`, a
+  button that opens the PD MINI tab.
+- OUTPUTS and PICK A PIN are one screen named OUTPUTS, with one SETUP tile. A
+  board with a drawing or a shape shows the board as the pin control, the PROG
+  PORT rows in the column beside it, LAST WRITE right of the protocol list and
+  UNBIND ALL PINS under IN USE. A board with neither, and the rbmod carrier,
+  show the pin grid. The carrier keeps its LAYOUT tile, the last one. The
+  cat stays on the board view: a cat the entry's column covers moves to the
+  other spot. TARGET rows open the screen on their entry.
+- The rows of the INA228, the sensor bus, the AS5600 and the phase tap move from
+  SETUP > INTERFACES to SENSORS; their stored keys stay and a panel's values load
+  unchanged. Vibration and
+  Optical tacho keep their keys and show no row: no firmware reads them.
+- SETUP's texts and alerts about those rows name SENSORS, and six help lines and
+  three state words are shorter to fit the pane.
+- A flick that lands on RESET or on the warning's DISCARD arms nothing.
+- FILES' editor saves only over the file as it opened it or last saved
+  it: SAVE compares the file's CRC-32, the Wi-Fi page's ETag, before it
+  writes, and a file the Wi-Fi page changed since is not overwritten. The
+  question UNSAVED CHANGES then offers STAY, READ AGAIN or OVERWRITE.
+- OVERWRITE, behind a 2s hold in both editors, saves over the file as the
+  refused SAVE found it. A further change, also during the hold, is
+  refused the same way, and a file that is gone offers no OVERWRITE. A 412
+  `CHANGED` of the file API carries `etag`, the ETag of the file it found.
+
+### Fixed
+
+- A request the Wi-Fi page refuses before its body answers with its status and
+  JSON and closes cleanly: the bytes still arriving are read and dropped, up
+  to 10s, and the client sees no reset connection.
+- A form over 1,024B is answered `FORM_TOO_LARGE`, with the form's limit in its
+  text, in place of the file's.
+- WI-FI's line says `1 write so far`, `bisher 1 Schreibvorgang`, for one write.
+- A shunt or maximum edited on SETUP > SENSORS with the INA3221 parts on SENSE_MAP
+  reaches the IOmcu. The panel takes the INA228 alone off for the frame. The
+  frame that took both monitors off changed the map's mirror bit, which the
+  page refuses, and every value but the one held read `Not accepted by the
+  IOmcu.`.
+- The band says why the INA228's shunt and maximum are refused:
+  `INA228 shunt x maximum is over 163.84mV: on 1000uΩ up to 163.8A. Check
+  SENSORS.`. A page that keeps its parts because the bank drives says
+  `IOmcu is ARMED and keeps the sensor set-up.`, not that the sensor pins are
+  rejected.
+- INA228 shunt and INA228 max current name, on the row, the highest value that
+  works with the other row: `Up to 300.0A on 200uΩ (163.84mV)`.
+- SERVO LIVE's three readings end 4px above the alert band, so a hold hint
+  leaves them whole. The readings moved up 28px, the dial's shaft up 14px, and
+  the dial's +90 and -90 labels moved left of their ticks.
+- A KST session that goes takes the lines about what it held with it: `All 32
+  registers read.`, `KST004 loaded.`, the edit and load lines. A past write, a
+  saved file, a refusal and a danger line stay. A Hitec session that goes does
+  the same, on a lost link and on an IOmcu without the page.
+
+- FILES' editor header shows the file's size as read when it opens and as
+  written after SAVE, not the size listed before the open.
+- The IOmcu's update question is declined by CANCEL and the home tag only. A
+  fault screen after a lost link, or a panel update's download, over the
+  question records no decline, and the next link-up's check offers again.
+  A CANCEL on a question whose offer a newer link-up has replaced declines
+  nothing, and the question shows the new offer.
+- A cold start of panel and IOmcu from one supply shows no CAN BUS FAULT for a
+  working link. The IOmcu opens CAN after its supply boot-off, up to 3500ms
+  when the PD mini starts at the same moment. The panel asks the IOmcu for its
+  status for up to 5000ms and starts the echo test, 1200ms, at the first
+  answer. `bus_err` on the bus-fault screen counts the test's bus errors only.
+- The CAN BUS FAULT screen's acknowledgement does not fill by itself. Leaving
+  the screen drops a press that is still held, so the next fault, such as a
+  pulled CAN cable, waits for a finger; a held press would acknowledge it
+  after 2s.
+- STOP clears a hold button's amber hint on the alert band in the frame of
+  the press, and so do a new FAULT code and a switch from ARMED to SAFE.
+  An alert is left as it is.
+- The screen guide's PREV and NEXT keep one place on every page: in the
+  band, in the home tag's place, from x 8 to 264. A second tap at the
+  spot of NEXT turns the next page instead of landing on a tile and
+  closing the guide. CLOSE stays in the dock, centred at its bottom.
+- An INA3221 channel over its limit writes one INFO line to the console
+  for each channel at each trip: the part, the channel, what it watches,
+  the limit and the highest window current read, for example
+  `INA3221 0x40 CH1 (PORT 1) over its limit of 0.010A: highest window read
+  0.153A`.
+
+## 0.23.3 - 2026-10-30
+
+0.23.3 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.2 does; an ESP32-S3 panel stays on the 0.22 line
+and is not offered it. The link protocol is 4.33 (0.23.2: 4.30). A panel of
+0.23.3 beside an IOmcu of 0.23.2 keeps a supply that a programming port
+holds through an error and sends no bit 4 with a Hitec write, since that
+IOmcu would cut a write to the servo's memory in the middle. On the rbmod
+carrier, an IOmcu image older than 4.33 refuses the INA3221 map, and
+SETUP > SENSORS reads `NOT ACCEPTED BY THE IOMCU` on 0x40 until the IOmcu
+runs the panel's image. The IOmcu build for the carrier is new; an IOmcu of
+0.23.2 has no PROG_SUPPLY page and refuses it with BAD_PAGE. An IOmcu of
+0.23.3 beside a panel of 0.23.2 holds that panel's OFF for a write to the
+servo's memory, 10000ms at most. It never switches the programming ports'
+own 5V on, since a panel before 4.32 does not write the page's register 4.
+
+A bench on 0.23.2 gets 0.23.3 over Wi-Fi: SETUP > UPDATES, RELEASES:
+TESTING, CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES:
+STABLE the check reads `releases/latest`, which names 0.22.1, and offers
+nothing. At link-up the panel offers the IOmcu's update over CAN
+(Controller Area Network) when the IOmcu runs another build. A new bench
+loads it over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, with
+`rcbench-panel-p4-v0.23.3.zip` and `rcbench-iomcu-install.uf2`; on the
+rbmod carrier the IOmcu loads from `rcbench-iomcu-rbmod-v0.23.3.zip` with
+its `rcbench-iomcu-rbmod-install.uf2`.
+
+The entries below cover the 30 pull requests merged since v0.23.2: #637
+and #639 to #667.
+
+### Added
+
+- SERVO asks after a KST or Hitec LEAVE that leaves the PD mini's output on
+  at the session's set points: `Restore your supply set points 5.50V 2.00A
+  on the live output?`, YES or NO. YES gives the live output the set points
+  from before CONNECT, through HV SERVOS ONLY and its 2s hold where the
+  voltage rises from 6.0V or below to above it. NO keeps the session's set
+  points; the operator's come back at the output's next OFF.
+  No question while a port holds the supply, under another of SERVO's
+  panels or questions or OUTPUT ON's hold, after an OFF, an error or a
+  STOP, inside a limit run, or when the set points moved since the LEAVE
+  ([Servo programmer, The supply](docs/ServoProgrammer.md#the-supply);
+  [Hitec programmer, LEAVE](docs/HitecProgrammer.md#leave)).
+- The Hitec programmer reads the addresses a write's plan depends on a
+  second time before its plan runs: classic cells 0x00 to 0x23 (36), with the
+  factory block 0x30 to 0x53 (72 in all) for FACTORY DEFAULT; the 12 D
+  series registers a plan writes. Every write is covered: WRITE n VALUES,
+  a loaded file's, REPAIR CHECKSUM, RESTORE and FACTORY DEFAULT. Two reads
+  that differ refuse the write, `Two reads differ at 0x17: read again with
+  READ ALL.`, with nothing planned, recorded, saved or sent. On the host
+  model the second read takes 1152ms classic, 2304ms for FACTORY DEFAULT
+  and 704ms D series at a frame of 16ms
+  ([Hitec programmer, The second read](docs/HitecProgrammer.md#the-second-read)).
+- The screen guide: "?" in the band, 8px left of STOP, opens numbered marks
+  on the screen's controls and a dock of 480 x 488px that says what each
+  one does, 3 rows each, with PREV, NEXT, CLOSE and the web help's address
+  ([Screens, The screen guide](docs/Screens.md#the-screen-guide)). The menu
+  has a guide of 3 pages; the other screens follow. STOP, DISARM and the
+  other controls that stop an output act through it; the knob moves
+  nothing while it is open; while ARMED it offers only pages that cover no
+  such control. `test_help_router` and `test_help_pages` hold it.
+- Hold buttons: a release before 2s shows the button's hint in the alert
+  band, for example `Hold 2s to switch to ARMED.`, and sends nothing. It
+  applies to ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and the other
+  buttons labelled `HOLD 2s TO ...`. The hint is a notice: amber, 4s, cleared
+  by a tap on the band, and never over an alert; an alert that arrives
+  replaces it. A slide-off, a lost touch, a release that is not a tap, a
+  second finger's contact and a screen without the status band show no hint ([Screens, Hold buttons](docs/Screens.md#hold-buttons)).
+- `protocols/hitec`: `hitec_session_move()` moves a Hitec servo inside its
+  programming session: D series 0x1E = target (0 to 6000), then a read of
+  0x0C; classic `66` (3600 to 8400, 0.25us), then `65`. It writes RAM only
+  and changes nothing in the image. `hitec_live.c` holds the D series
+  target-to-position mapping through the stored end points, the reach, a
+  pass's command (150 counts at most, inside the reach), the judges of a
+  pass (lag, current, AS5600) and FIND STOP. No screen calls them yet
+  ([hitec, Live loop](protocols/hitec/README.md#live-loop);
+  [Safety, A Hitec servo moved while SAFE](docs/Safety.md#a-hitec-servo-moved-while-safe)).
+- `hardware/mechanical/`: STEP models of the M16 emergency stop button, its
+  nut and its square anti-rotation shim as separate files, and an assembly
+  of the three for a 1.6mm panel, generated from `estop_m16.py` by
+  `gen_models.py` (`--check` in CI). Dimensions from the seller's drawing;
+  the parts it does not dimension are estimated and listed in the spec.
+  `step_gen.py` writes turned solids, `step_check.py` checks these models
+  too, and `step_render.py --step` renders any STEP file.
+- SETUP → PANEL → Keyboard see-through: OFF (default), 25% or 50% of the
+  text shows through the text editor's keyboard, the rows under it
+  included; labels stay opaque. Other keyboards stay opaque
+  ([Screens, The text editor](docs/Screens.md#the-text-editor)).
+- The rbmod carrier, a board that holds the RP2350-CAN module and solders
+  every lead to a fixed GPIO: an IOmcu image of its own,
+  `rcbench-iomcu-rbmod-vX.Y.Z.zip` in the release, built with
+  `-DIOMCU_BOARD=rbmod`. It reports board 2 on IDENTITY register 5. Each
+  role starts on its pin and the IOmcu refuses any other: PWM01 to PWM04 on
+  GPIO 2, 4, 5 and 1, PROGP01 to PROGP04 on GPIO 13, 14, 15 and 0 with
+  FUNC NONE, the sensor bus on GPIO 16 and GPIO 17, the PD mini on GPIO 7
+  and GPIO 6, the tap on GPIO 22
+  ([Link, Boards with soldered pins](docs/Link.md#boards-with-soldered-pins)).
+  GPIO 21, the enable of the programming ports' 5V, is driven low from the
+  start of `main()`.
+- Link 4.32, the PROG_SUPPLY page (0x39): the programming ports' own supply
+  on a board that switches one, the rbmod carrier's GPIO 21 and its 5V buck
+  M7. A port gets it only after the panel's write of register 4 (PANEL)
+  since the heartbeat last went, so a panel before 4.32 never powers it. The KST and Hitec programmers switch it for a session in place of the
+  PD mini. Every error writes its OFF, held
+  for a write to the servo's memory 10000ms at most; a lost heartbeat or a
+  silent link switches it off. SUPPLY shows `PROG PORTS 5V, GPIO 21: ON` or
+  `OFF` under OUTPUT, and the programmers' MORE list reads
+  `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` in place of the voltage and the
+  current; they take no reading of the PD mini there, so neither its set
+  point nor the SUPPLY screen's limits refuse a CONNECT, and the ports' 5V
+  read on is power-cycled at CONNECT and after a write. A firmware install, an IOmcu update, a flash write
+  and the Wi-Fi wait for the ports' 5V as for the PD mini's output, and
+  the render-loop watchdog watches while it is live
+  ([Safety, The carrier's programming-port 5V](docs/Safety.md#the-carriers-programming-port-5v)).
+- The PROG 5V box on SERVO's output card and SUPPLY's LIVE task, on a
+  board that switches the programming ports' own 5V (the rbmod carrier's
+  GPIO 21): `PROG PORTS 5V, GPIO 21: OFF`, the last 50ms window of the
+  INA3221 channel watching it (`5.02V  0.120A`), and PROG 5V ON (a 2s
+  hold) and PROG 5V OFF (a tap). An ON follows the PD mini's OUTPUT ON
+  rules: taken SAFE or ARMED, dropped after a STOP, an OFF or a touch loss
+  since the hold, refused while a programming port holds the 5V, written
+  once as PROG_SUPPLY OUTPUT 1, refused after an error, an OFF or a link
+  restart since its hold began, an OFF written after one without an answer;
+  an ON taken across lost touch events is an error. The install, update,
+  flash and Wi-Fi gates count an ON from the moment it is queued. While a port holds the 5V the box reads `HELD BY PROG PORT n` and
+  takes no press. Leaving the screen whose box switched it on switches it
+  off ([Carrier, The PROG 5V box](docs/Carrier.md#the-prog-5v-box)).
+- Link 4.33: SENSE_MAP takes the WATCH values of a board's own rails, 0x30
+  servo rail A, 0x31 servo rail B and 0x32 the programming ports' 5V. On
+  the rbmod carrier the INA3221 at 0x40 is fixed as the board solders it:
+  the IOmcu keeps it fitted with CH1 on rail B (PWM03, PWM02), CH2 on rail
+  A (PWM01, PWM04) and CH3 on the programming ports' 5V, refuses a map
+  that moves them with BAD_VALUE, and starts a kept map with them in
+  force. SETUP > SENSORS shows those rows without keys (`SERVO RAIL B`,
+  `SERVO RAIL A`, `PROG PORTS 5V`); shunts and limits stay settings, and
+  0x41 to 0x43 stay free. The channel read at 1kHz is the rail of the
+  lowest GPIO the servo tester drives, CH3 for a programming port. SERVO,
+  the limit run, the limit alert, WATCHED BY and the run log's columns
+  name the rail (`INA RAIL A`, `rail a`)
+  ([Carrier, The current monitor](docs/Carrier.md#the-current-monitor)).
+  The SENSE pages move from `link_pages.h` to `link_pages_sense.h`.
+- The panel follows the board the IOmcu reports. On the rbmod carrier
+  OUTPUTS shows PWM01 to PWM04 as its four cells and refuses a surface and
+  a throttle protocol on PWM02 and PWM03 together, by name
+  (`PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`); the PROG PORT entries
+  name their pin and offer no pin, no function and no tester; INTERFACES
+  shows Sensor SDA and SCL, Tap pin and PD mini TX and RX at the carrier's
+  pins with no keys
+  ([Screens, On the rbmod carrier](docs/Screens.md#on-the-rbmod-carrier)).
+  The PICK A PIN tile opens LAYOUT there: J1 and J2 in their position
+  order with each position's role, GPIO, net and the protocol bound on it,
+  and the other connectors ([Screens, Layout](docs/Screens.md#layout)).
+- The panel carries the IOmcu images of both boards and offers each IOmcu
+  the image of the board it reports. A board it carries no image for gets
+  no offer, and UPDATES reads
+  `No IOmcu image for this board in this panel build.`.
+- The Wi-Fi page's server answers a file API for a script, reads only:
+  `GET /api/status`, `/api/list` (a page of up to 48 entries of a folder,
+  by the entry at its edge), `/api/info` (an entry's size and time; a
+  folder's entries) and `/api/file` (a text file up to 1MiB and 65,536 line
+  ends, byte for byte, with an ETag of its CRC-32 and its line ends). The
+  card calls are FILES' own (`fm_req.h`), with its rules and refusals; a
+  refusal is an HTTP status, a reason word and a text in EN or DE
+  ([Screens, The file API](docs/Screens.md#the-file-api)).
+- The Wi-Fi page shows the card in two panes, as FILES does, through the
+  file API: the root and the User log folder, 48 entries a page with PREV
+  and NEXT, RESCAN, INFO, DOWNLOAD and OPEN on the selected entry, and a
+  read-only viewer whose lines are coloured by FILES' rules, words and
+  palettes. The page writes nothing on the card. Its script, written once
+  in `shared/webaccess/web/`, is carried as C strings generated by
+  `tools/gen_web_blob.py` (`--check` in CI); node holds its highlighter to
+  `text_hl_line()` on 25,761 fixture cases (`test_wa_hl`,
+  `check_wa_hl.py`) ([Screens, The page](docs/Screens.md#the-page)).
+
+### Changed
+
+- SERVO's question `Restore your supply set points 5.50V 2.00A on the
+  live output?` follows a KST or Hitec LEAVE that leaves the output on, and
+  no other end of a programming port's hold on the supply: RELEASE PORT, a
+  STOP, an error, a lost link, a restart of the panel or the IOmcu, a port
+  the IOmcu gives back without a LEAVE, and ports that turn to their own
+  supply under a session ask nothing, and the session's set points stay
+  until the next OFF. The programmers count the LEAVEs that end in PWM
+  (`kst_prog_leaves()`, `hitec_prog_leaves()`) and the overlays hand each
+  one to the SUPPLY screen before the release it ends. The SUPPLY page's
+  own word that a port holds it (`LINK_SP_PORT`) is a word of its own
+  there, not the Hitec programmer's: its release a read after a KST LEAVE
+  asks
+  ([Servo programmer, The supply](docs/ServoProgrammer.md#the-supply)).
+- The band keeps 40px left of STOP for "?" on every screen. The chips stand
+  4px apart (6px before), their labels 22px into the chip (28px before),
+  and a tap finds a chip 2px beside it (3px before), so the widest row, a
+  run clock of 10 hours, ARMED MOTOR, FEHLER 7F, BENCH and LINK in German,
+  starts at x 270, 2px right of MOTOR & ESC's home tag
+  ([Screens, The status band](docs/Screens.md#the-status-band)).
+- `render_ui.py --fit` skips a string wholly outside its clip, such as a
+  tile under the guide's dock.
+- The panel firmware builds on ESP-IDF v6.1 (v5.5.5 before): CI, the
+  release workflow, `dependencies.lock` (ESP-IDF 6.1.0, lock file version
+  3.0.0; the five managed components keep their versions) and
+  [Building](docs/Building.md). The SD card mount leaves the start of
+  SDMMC slot 0 to ESP-IDF's mount: v6.1 answers a second start of a started
+  slot with `ESP_ERR_INVALID_STATE`, which would keep every card from
+  mounting. The panel job is named `Panel (ESP-IDF v6.1, ESP32-P4)`, and
+  the branch ruleset requires that name. The task stack table in
+  [Performance](docs/Performance.md) follows the GCC 15.2 and picolibc
+  build. `flash_args` in a release archive is written for esptool 5
+  ([First run](docs/FirstRun.md)).
+- The Wi-Fi page no longer lists every file of the card, folder by folder;
+  the two panes read a folder a page at a time. The ZIP link and its sizes
+  stay. `/api/status` adds the User log folder (`user_logs`) and
+  `/api/info` the time as INFO shows it (`time`).
+- The text editor's keyboard has no digit row: 4 rows of keys of
+  93 x 56px (5 rows of 93 x 59px before), and the text over it shows 8 rows
+  (4 before), 10 with SMALL (5 before). `123`, left of DEL, shows the
+  digits and 17 marks; `#+=` on that page shows the other 15 marks.
+
+- An error switches every output off and the bench to SAFE
+  ([Safety, Errors](docs/Safety.md#errors)). The panel asks DISARM for an
+  ARMED bench, or one on its way to ARMED, when: the supply trips on CURRENT
+  TRIP or VOLTAGE TRIP, stops answering, gives no reading, is switched off by
+  the IOmcu or by the PD mini's own protection, sags, refuses an ON or does
+  not take an output or a set point, or an ON is undone for lost touch
+  events; an INA3221 channel passes its limit
+  (until now an alert only); a card write fails during a run. The supply's
+  output goes off with each; with an IOmcu older than link 4.31, not when a
+  programming port holds it. The
+  automatic servo test and the limit run switch the bench to SAFE when an
+  error ends them: the supply or the meter failing, STALL AT, constant
+  current, the 3.0A ceiling, 1.0A for 400ms.
+- Link protocol 4.31: a programming port's supply goes off on an error,
+  after a write to the servo's memory that runs
+  ([Safety, A programming port's supply](docs/Safety.md#a-programming-ports-supply)).
+  The panel writes the OFF on every error. The IOmcu's SUPPLY page holds an
+  OFF of a supply a port holds back from the PD mini while the port writes,
+  10000ms after the OFF at most: a KST WRITE, RESTORE or RELEASE from its
+  first write frame to the read-backs of its last and 150ms after, a
+  Hitec SEND whose
+  frame writes and 150ms after it, and the gap after a Hitec step whose
+  command carries the new HITEC bit 4 (`MORE`, more steps of this write
+  follow). The IOmcu tells a writing Hitec frame from its bytes; an OFF
+  during a read or a LISTEN is not held. The panel's Hitec programmer
+  sets the bit on every step of a write but the last; the bench console
+  sets it with `more`. After the panel's OFF the port's own ON is refused
+  until the port lets go: a KST power cycle ends with result 32, a Hitec
+  POWER's ON is refused. A lost heartbeat or a silent link still cuts at
+  once. Every OFF the panel writes is held for a write this way, the
+  operator's and the supply trips' included. A KST or Hitec operation that
+  ends in a fault of the servo or the wire (no servo, a failed read, a
+  write that failed, a read-back or verify that differs) is an error. A
+  panel of this version beside an IOmcu of 4.30 keeps a supply a port
+  holds through an error and sends no bit 4; an IOmcu of this version
+  beside an older panel holds that panel's OFF for a write the same way.
+- The IOmcu switches a PD mini left on off before the rest of its
+  start-up: right after the wiring is restored and before the sensor bus,
+  the store's erases, core 1 and the CAN controller. WHO_AM_I goes again as
+  soon as one fails, so under AUTO all seven rates are tried in 2.9s. The
+  wait ends when the module reads off, or after 3500ms, which delays the
+  link by as much when a wired module does not answer.
+- The panel's error sites apply the rule through
+  `shared/safety/error_sites.c`, and the KST link module counts its session
+  faults (`kst_link_faults()`). Host-tested in `test_error_sites`: every
+  site against a SAFE, an ARMED and an arming bench, an IOmcu of link 4.31,
+  of 4.30 and without the SUPPLY page, with and without a port holding the
+  supply; OUTPUT OFF and STOP TEST leave the bench ARMED. What the bench
+  does is unchanged.
+- With an IOmcu older than link 4.31, a programming port keeps the PD
+  mini's output through an error only while the SUPPLY page's FLAGS bit 11
+  (`LINK_SP_PORT`), as the panel last read it, and a KST or Hitec session
+  with a port both say it holds the supply (`supply_link_port_holds()`). A
+  session alone no longer counts: a Hitec session between two POWERs on an
+  IOmcu older than 4.29 gets the OFF. Nor does the bit alone once the
+  session has ended: a port that lets go counts until the first read of the
+  SUPPLY page or of its own page that shows it gone. From 4.31 nothing
+  changes: the panel writes the OFF either way
+  ([Safety, Errors](docs/Safety.md#errors)).
+- On a board whose programming ports have their own supply (the rbmod
+  carrier), a KST or Hitec session no longer keeps the operator off the PD
+  mini: SUPPLY and the SERVO screen's SET row take OUTPUT ON and set points
+  through a session (`supply_link_session_blocks()`,
+  `supply_screen_set_ports_own()`). Other boards keep the lock
+  ([Carrier, Power](docs/Carrier.md#power)).
+
+### Fixed
+
+- The file viewer of the Wi-Fi page draws its scroll bar in the page's
+  dim token on the viewer's background (`scrollbar-color`). In the
+  browser's dark scheme the bar was white on the dark text area.
+- `card.zip` reads each file in pieces of 16KiB at offsets that are
+  multiples of 16KiB, into a buffer of PSRAM aligned for the card's DMA
+  (direct memory access): one card transfer a piece. The headers before a
+  file shifted every read of 4,096 bytes off the file's sectors: two
+  card transfers a read, one of a single sector, into a destination that
+  the SD driver copies through a buffer of its own when it is not on a
+  cache line. Each download logs its end, and for a failure the cause and
+  the entry it was at ([Screens, The page](docs/Screens.md#the-page)).
+- The Wi-Fi page follows the browser's dark scheme as a whole: the page,
+  its panes, boxes and the viewer's header take the panel's dark theme
+  colours, where only the viewer's text area did. Every colour of the page
+  is a token of the panel's theme, light and dark
+  ([Screens, The page](docs/Screens.md#the-page)).
+- The file API's `X-Rcbench-Lines` counts the lines as FILES' viewer and the
+  page's `LINE n OF m` do: a line end at the file's end starts no line, so
+  a file of 58 lines that ends in LF gives 58, not 59; an empty file gives
+  0 ([Screens, The file API](docs/Screens.md#the-file-api)).
+- A read of the file API with a body, or with a `Host` that is not the
+  panel, gets `{"error":"BODY",...}` with 400 and `{"error":"HOST",...}`
+  with 421, as the API's other refusals carry JSON, where the answer had
+  no body.
+- An install whose build does not start showed no rolled-back banner: the
+  build before started again without `Panel firmware … failed to start.`
+  on the band. The restart note moves from LP (low-power) RAM, whose
+  retention ESP-IDF does not test on the ESP32-P4 and whose address follows
+  the build's layout, to one NVS (non-volatile storage) entry, which a
+  power cut keeps too. Each start states its check in one console line,
+  `start check: note …, last invalid slot …, result …`
+  ([Screens, Installing](docs/Screens.md#installing-panel-update)).
+- Errors with an IOmcu older than link 4.31: a programming port that holds
+  the PD mini keeps it through every error the panel finds but the panel's
+  own trips, as [Safety, Errors](docs/Safety.md#errors) says. A supply that
+  stops answering or gives no reading, an ON taken across lost touch
+  events, and an ON the SUPPLY page refuses while a port's ON is on it ask
+  DISARM and write no OFF over the port's supply. A reading fault the port
+  keeps is acted on and named once while it stands, and the output goes
+  off when the port lets go. The PD mini's own protection and a sagging
+  input are followed off whoever holds the supply. An IOmcu of 4.31 or
+  later gets the OFF on every error as before. The panel's model is
+  switched off on every error, a programming port taken or not.
+- A failed final commit or close of the run log, or of the automatic
+  test's CSV, is a card error of the run: the bench to SAFE and the supply
+  off, once a run, and not when a write of the run failed before. The
+  report written after the automatic test is not counted.
+- `tools/frame_cost.py` gives the same fills on every run: cachegrind gets
+  the ESP32-P4's L1 instruction cache (16KB, 4-way, 64-byte lines) instead
+  of the runner CPU's, the bench draws from a stack at a fixed offset
+  within 64KB, and the 1-frame and 11-frame runs pass argvs of one length.
+  The table holds CI's figures under the new model.
+- Safety: the claim that the IOmcu acts on overcurrent, over-temperature
+  and stall. Its fault bits for those are defined and set by nothing.
+- Hitec programmer: a D series servo swapped for another of the same
+  model inside a session kept the first servo's backup, so RESTORE of the
+  session's backup wrote the first servo's values into it and its first
+  write saved no backup file. A D series read is of the servo before it
+  only while every register a write sends holds the value of the read
+  before, or, after a write left unverified, while the record's verdict
+  explains the values. Otherwise the read is another servo's backup, with
+  `Other values than the last read: taken as another servo.` A servo with
+  the values of the last read is not told apart
+  ([Hitec programmer, The backup before the first write](docs/HitecProgrammer.md#the-backup-before-the-first-write)).
+- SUPPLY: an ON refused while the IOmcu reports its failsafe (FAULT 01,
+  the link silent for 200ms, or FAULT 10, the heartbeat) says
+  `Supply refused to switch on: IOmcu failsafe latched. Hold ARM, then
+  DISARM.` instead of `Supply refused to switch on. Output off.`
+- KST and Hitec CONNECT refused for the failsafe name it and the way out:
+  `The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to
+  clear it.` (KST, before `The IOmcu has not yet accepted the link. Try
+  again.`); the Hitec line says `Hold ARM, then DISARM, to clear it.`
+- Hitec: the German count of stored values outside the settings, loaded,
+  restored or written, fits one row of 60 characters at 255; the count no
+  longer stands alone on a second row.
+- FILES: AKTUALISIEREN and VERSCHIEBEN in the footer are drawn in the
+  10 x 20 face of the other buttons, with 4px either side (6px before).
+- FILES: the DELETE question names a run's report only when the pane's
+  page lists it, or when the report would stand on another page. German
+  `Ihr Bericht %s wird mitgelöscht.` (`Sein Bericht` before).
+- The panel's link report is printed by the logger task, not by the
+  control task that beats the heartbeat: once a minute the report stalled
+  that task for 46 to 56ms on the console. A queue of 2 reports carries the
+  counters; a full queue prints on the control task, so no line is lost.
+- The supply's set points after a KST or Hitec session: the port's (for
+  example 1.00A from a Hitec CONNECT) took the place of the operator's on
+  the SUPPLY screen and the SERVO screen's SET row for good. The operator's
+  come back at the first read of the supply that shows no port holding it
+  and the output off: at once when the session ends with the output off, at
+  the next OFF after a LEAVE that leaves it on. A set point changed after
+  the port let go stands ([Servo programmer, The
+  supply](docs/ServoProgrammer.md#the-supply)).
+- The Hitec classic LEAVE page and the Hitec docs gave the supply's off
+  time as 500ms. The 500ms count from the PD mini's read that shows the
+  output off, 250ms after the OFF; the output is off about 760ms, 762ms
+  measured on one module
+  ([Hitec programmer, LEAVE](docs/HitecProgrammer.md#leave)).
+
+## 0.23.2 - 2026-10-28
+
+0.23.2 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.1 does; an ESP32-S3 panel stays on the 0.22 line
+and is not offered it. The link protocol is 4.30 (0.23.1: 4.29). A panel of
+0.23.2 beside an IOmcu of 0.23.1 asks for the wait on a LEAVE after a
+write with a PD mini and WAIT BEFORE PWM above 0; that IOmcu refuses it,
+and the panel sends the REBOOT without the wait and says `This IOmcu
+firmware applies no WAIT BEFORE PWM after the cycle.` The servo then gets
+PWM 1000ms after the supply reads on (see Changed). An IOmcu of 0.23.2
+beside a panel of 0.23.1 receives no REBOOT with the wait and runs the
+cycle as 0.23.1 does.
+
+A bench on 0.23.1 gets 0.23.2 over Wi-Fi: SETUP > UPDATES, RELEASES:
+TESTING, CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES:
+STABLE the check reads `releases/latest`, which names 0.22.1, and offers
+nothing. At link-up the panel offers the IOmcu's update over CAN
+(Controller Area Network) when the IOmcu runs another build. A new bench
+loads it over USB (Universal Serial Bus) as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes, with
+`rcbench-panel-p4-v0.23.2.zip` and `rcbench-iomcu-install.uf2`.
+
+### Added
+
+- FILES' text editor: EDIT in the text viewer opens a keyboard of three
+  layers under 4 rows of the text (`shared/ui/text_view_keys.c`, the
+  keyboard's editor mode in `ui_textkey.c`). ENTER types the file's own
+  line end; a tap or `<-` and `->` move the cursor; the text holds 1MiB
+  and 65,536 line ends. SAVE writes `<name>.NEW`, deletes the file and
+  renames the new one, on the card task, shut while the bench is ARMED or a
+  run is logged, and refused on a NUL byte in the first 4kB; a changed KST
+  file loses every line the servo programmer reads as a checksum line
+  (`kst_file_checksum_line()`), so the programmer reads it as edited; an
+  ESC profile's save says it is read at the next start. REVERT and the home tag over unsaved text ask UNSAVED
+  CHANGES with STAY and DISCARD; an open from LOGS or FILES over unsaved
+  text asks first too. Leaving FILES by another route keeps the editor
+  and its text ([The text editor](docs/Screens.md#the-text-editor)).
 - FILES' text viewer (`shared/ui/text_view.c`): OPEN on any file but a
   CSV file of LOGS' folders shows it read-only, up to 1MiB and 65,536 line
   ends, read through `cardjob`. 18 rows of 92 cells, or with SMALL 22 rows
@@ -43,10 +802,10 @@ history is in git.
   closed bus. A callback may shut the queue at any point that runs one; no
   driver function is called after it, and a bus clear it would have
   followed does not start.
-  A soft transaction does not start while its bus time plus 20us
-  (`I2C_TXQ_GUARD_US`) would run past a queued hard one's release.
   Host-tested over a modelled bus (`test_i2c_txq`, `test_i2c_txq_calls`,
   `test_i2c_txq_wire`).
+  The IOmcu links it and calls nothing of it yet: the sensor bus runs on
+  `sense_i2c.c` as before.
 - `tools/check_protocols.py` takes an `rp2350/` folder without a `.pio`
   file when the module's README says "no PIO program".
 - `hardware/kicad/rcbench_modules.3dshapes/`: a STEP model of each of the 12
@@ -65,37 +824,6 @@ history is in git.
 
 ### Changed
 
-- The IOmcu's sensor bus runs on `protocols/i2c_txq`: core 1 hands each
-  transaction to the queue as a hard one, due now, and waits for its end
-  with interrupts on (`shared/sense/sense_txq.c`,
-  `firmware/iomcu/src/sense_i2c.c`). The schedule, the bus policy, the
-  400kHz clock, the 1000us limit, the 10us settle and 50us pull-up probe
-  before a start and the 9-clock bus clear stay. What changes:
-  - No transaction runs with core 1's interrupts off; the FIFO load is at
-    most 13 register writes with them off. The flash lock-out may land
-    during a transaction, which ends on the wire while core 1 is parked.
-  - A read is stamped with its end as the block's interrupt or core 1's
-    poll took it; taken more than 100us late, with its start plus its bus
-    time.
-  - A pointer read is one transaction loaded into the FIFO whole, not two
-    pico-sdk calls. The sequence on the wire stays: START, address,
-    pointer, repeated START, address, bytes, STOP. The gaps between bytes
-    are not measured.
-  - The block is reset after a timeout and by the bus clear, not after a
-    NACK or a lost arbitration.
-  - A NACK is told by the block's abort source, not by the lines after
-    it; a line held after a NACK is reported by the next transaction's
-    line check. A lost arbitration with a line still low 10us after the
-    end is SENSE_BUS_LOW without the pad pull-up probe.
-  - The bus clear runs with interrupts on, 24 half-clock steps of 5us,
-    115us from the first to the last without SCL held.
-  - Core 1 polls the queue once a tick; a wait for a transaction asks for
-    an abort after 5000us and gives up after 10000us when the driver never
-    reports one.
-  - The open is refused when the I2C block or its interrupt is taken.
-  Host-tested in `test_sense_txq`, `test_sense_txq_svc` (the service on
-  the queue against the direct wire: every snapshot equal over 4000 ticks
-  with faults) and `test_sense_i2c`.
 - Link protocol 4.30: LEAVE after a write with a PD mini applies WAIT
   BEFORE PWM after the supply cycle. The programmer's REBOOT carries bit 5
   of the KST page's command and the wait in register 28; the port holds the
@@ -112,7 +840,6 @@ history is in git.
   the proposed names `KST001` to `KST999`, the reserved name `KST` and every
   refusal stay as they were; `test_kst_store` is replaced by a KST case in
   `test_servo_store`.
-
 - LOGS' OPEN on a report opens it in FILES' text viewer instead of LOGS'
   own text view, which held 32KiB of a file; the home tag returns to LOGS
   with the report chosen again. LOGS' text view and `log_text.c` are
@@ -120,6 +847,19 @@ history is in git.
 
 ### Fixed
 
+- SERVO's TARGET comes back to the programming port within 500ms after the
+  IOmcu restarts or a programming session takes the target, with no
+  standard servo output bound as a surface. The release owed for a position
+  written to the port went to the standard outputs, found nothing to
+  centre and kept the debt, so the panel never wrote the port back as
+  `TARGET`: the row read NO SERVO PWM PIN and the servo test sent no pulse
+  (`write_servo()` in `shared/outputs/servo_link.c`, since 0.17.0).
+- FILES' RESCAN and the way back into FILES list an entry new on the card
+  that ranks before the first row of a pane's first page, such as a log
+  the logger wrote as `ATEST001.CSV` into a folder of `SERVO` logs
+  (`fm_tree_page()` reads `FM_GO_SAME` on the first page from the
+  folder's first entry). Such an entry stayed off the page until the
+  bench restarted. A list scrolled to its top stays at the top.
 - A turn of the panel's knob while a chip's help bubble is open closes the
   bubble and moves nothing, as a tap does (`ui_router_take_knob()`); before,
   the turn moved the throttle on MOTOR & ESC or the target on SERVO behind
@@ -127,6 +867,19 @@ history is in git.
 - The Hitec write switch's page says that an interrupted write leaves a
   wrong checksum and that the servo may ignore PWM and draw current up to
   the supply limit (`HP_ENABLE_3C`).
+- CI runs on Ubuntu 26.04 (`runs-on: ubuntu-26.04`) in every workflow. The
+  host suite is five parallel jobs, joined by the required job `Host suite,
+  coverage and the checks that hold prose to the tree`. `test_settings_sensors`
+  formats its keys into a 32-byte buffer (gcc 15 `-Werror=format-truncation`),
+  `test_picker_screen` initialises its button coordinates (clang-tidy 21
+  `clang-analyzer-core.UndefinedBinaryOperatorResult`), `unqueue()` of
+  `protocols/i2c_txq/` does not wrap the queue length below 0
+  (`clang-analyzer-security.ArrayBound`), the IOmcu stack figures
+  are those of arm-none-eabi-gcc 14.2.1, `tools/render_ui.py` and
+  `tools/frame_cost.py` compile with `-ffp-contract=off` so that a compiler
+  targeting x86-64-v3 draws the committed images, and the coverage table is the
+  one of gcc 15.2's gcov. `tools/coverage.py --from-json` writes the table from
+  the `coverage` artifact of a CI run.
 
 ## 0.23.1 - 2026-10-27
 

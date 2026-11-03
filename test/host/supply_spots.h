@@ -19,8 +19,9 @@
  *     apart; the CONTROL card from y 332: RESET PEAKS y 366 to 414 and
  *     OUTPUT ON / OFF y 424 to 484, both x 648 to 1004;
  *   - SETTINGS' page and the keypad over the left column, x 8 to 628,
- *     y 56 to 532; the page's values 120 x 48px at x 158 (left column)
- *     and 498 (right), rows 56px apart;
+ *     y 56 to 532; LIMITS | PD MINI at its top, y 62 to 102; LIMITS'
+ *     values 120 x 48px at x 158 (left column) and 498 (right), rows 52px
+ *     apart; PD MINI's rows from y 110, 56px apart;
  *   - the question's APPLY and CANCEL, 240 x 60px from y 296.
  *
  * SPDX-License-Identifier: MIT
@@ -73,19 +74,33 @@
     ((gfx_rect_t){ UI_MARGIN, 56, 620, UI_BODY_H - 56 - UI_MARGIN })
 #define SU_ROW_L_X        218           /**< SETTINGS' left values. */
 #define SU_ROW_R_X        558           /**< Its right values. */
-#define SU_ROW_PITCH      56            /**< From row to row, px. */
-#define SU_VMAX_Y         116           /**< VOLTAGE MAX. */
-#define SU_VSTART_Y       260           /**< START VOLTAGE. */
-#define SU_ISTART_Y       316           /**< START CURRENT. */
-#define SU_TRIPI_Y        116           /**< CURRENT TRIP. */
-#define SU_CONF_SL_Y      376           /**< SLIDER AND STEPS. */
-#define SU_CONF_KP_Y      432           /**< KEYPAD. */
+#define SU_ROW_PITCH      52            /**< From row to row, px. */
+#define SU_VMAX_Y         158           /**< VOLTAGE MAX. */
+#define SU_VSTART_Y       292           /**< START VOLTAGE. */
+#define SU_ISTART_Y       344           /**< START CURRENT. */
+#define SU_TRIPI_Y        158           /**< CURRENT TRIP. */
+#define SU_CONF_SL_Y      392           /**< SLIDER AND STEPS. */
+#define SU_CONF_KP_Y      444           /**< KEYPAD. */
 #define SU_MODRESET_X     148           /**< RESET PD MINI. */
-#define SU_MODRESET_Y     380
+#define SU_MODRESET_Y     404
+
+/** @brief SETTINGS' tabs, y 62 to 102: LIMITS and PD MINI. */
+#define SU_OV_TAB_Y       82
+#define SU_OV_LIMITS_X    168
+#define SU_OV_PDMINI_X    468
+/** @brief PD MINI's row @p i, its middle: enable, TX, RX, baud. */
+#define SU_PD_Y(i)        (134 + (i) * 56)
+#define SU_PD_MINUS_X     410           /**< A - key's middle: x 382 to 438. */
+#define SU_PD_VALUE_X     502           /**< A value's: x 442 to 562. */
+#define SU_PD_PLUS_X      594           /**< A + key's: x 566 to 622. */
+/** @brief The SIMULATED line's button, on the header's row: x 328 to 678 in
+ *         the wider of the two languages. */
+#define SU_MODEL_X        400
+#define SU_MODEL_Y        28
 
 #define SU_APPLY_X        168           /**< The question's APPLY. */
 #define SU_DISCARD_X      468           /**< Its CANCEL. */
-#define SU_ASK_Y          346           /**< Inside both, on no LIVE or
+#define SU_ASK_Y          318           /**< Inside both, on no LIVE or
                                              SETTINGS control. */
 
 /** @brief SETTINGS' save line, 4px above the alert band. */

@@ -97,6 +97,76 @@ static void refuse(link_msg_t *reply, const link_msg_t *req, link_nack_t why)
     reply->regs[0] = (uint16_t)why;
 }
 
+/**
+ * @brief Answer a read of LINK_READ_REGS_MAX registers and keep the registers
+ *        after them, read in the same page call.
+ *
+ * @param d The link state; `held` takes the rest.
+ * @param req A READ of LINK_READ_REGS_MAX registers.
+ * @param reply Receives the DATA.
+ * @return false when the page is unknown, the window does not fit it or no
+ *       register follows it: link_dev_apply() then answers as for any read.
+ */
+static bool read_and_keep(link_dev_t *d, const link_msg_t *req,
+                          link_msg_t *reply)
+{
+    const link_page_t *p = find_page(d, req->page);
+    const uint16_t end = (uint16_t)req->offset + LINK_READ_REGS_MAX;
+    if (p == NULL || end >= p->count) {
+        return false;
+    }
+    uint16_t n = (uint16_t)(p->count - req->offset);
+    if (n > LINK_MAX_REGS) {
+        n = LINK_MAX_REGS;
+    }
+    /* The whole window into the reply's registers, the rest moved out. */
+    memset(reply, 0, sizeof(*reply));
+    p->read(d->ctx, req->offset, (uint8_t)n, reply->regs);
+    reply->op     = LINK_OP_DATA;
+    reply->page   = req->page;
+    reply->offset = req->offset;
+    reply->count  = (uint8_t)LINK_READ_REGS_MAX;
+
+    d->held_page   = req->page;
+    d->held_offset = (uint8_t)end;
+    d->held_count  = (uint8_t)(n - LINK_READ_REGS_MAX);
+    memcpy(d->held, &reply->regs[LINK_READ_REGS_MAX],
+           (size_t)d->held_count * sizeof(d->held[0]));
+    memset(&reply->regs[LINK_READ_REGS_MAX], 0,
+           (size_t)d->held_count * sizeof(d->held[0]));
+    return true;
+}
+
+/**
+ * @brief Answer a LINK_OP_READ_HELD from what read_and_keep() kept, once.
+ *
+ * @param d The link state; `held` is spent by an answer with DATA.
+ * @param req The READ_HELD.
+ * @param reply Receives the DATA, or a NACK of LINK_NACK_BUSY when nothing is
+ *        kept for that page and offset, or of LINK_NACK_BAD_RANGE when the
+ *        count is 0 or more than is kept.
+ */
+static void serve_held(link_dev_t *d, const link_msg_t *req,
+                       link_msg_t *reply)
+{
+    if (d->held_count == 0u || req->page != d->held_page
+        || req->offset != d->held_offset) {
+        refuse(reply, req, LINK_NACK_BUSY);
+        return;
+    }
+    if (req->count == 0u || req->count > d->held_count) {
+        refuse(reply, req, LINK_NACK_BAD_RANGE);
+        return;
+    }
+    memset(reply, 0, sizeof(*reply));
+    reply->op     = LINK_OP_DATA;
+    reply->page   = req->page;
+    reply->offset = req->offset;
+    reply->count  = req->count;
+    memcpy(reply->regs, d->held, (size_t)req->count * sizeof(d->held[0]));
+    d->held_count = 0u;
+}
+
 bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
                        link_msg_t *reply, uint32_t now_ms)
 {
@@ -114,6 +184,14 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
     d->heard           = true;
     ++d->requests;
 
+    if (req->op == LINK_OP_READ_HELD) {
+        serve_held(d, req, reply);
+        return true;
+    }
+    if (req->op == LINK_OP_READ && req->count == LINK_READ_REGS_MAX
+        && read_and_keep(d, req, reply)) {
+        return true;
+    }
     return link_dev_apply(d, req, reply);
 }
 
@@ -170,7 +248,8 @@ bool link_dev_apply(const link_dev_t *d, const link_msg_t *req,
 
     /* DATA, ACK (acknowledge) and NACK (negative acknowledge) are the
      * IOmcu's own vocabulary; one arriving here means another node is
-     * transmitting on the IOmcu's behalf. */
+     * transmitting on the IOmcu's behalf.  READ_HELD needs what
+     * link_dev_dispatch() keeps, and nothing is kept for this path. */
     refuse(reply, req, LINK_NACK_BAD_VALUE);
     return true;
 }

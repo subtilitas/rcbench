@@ -65,11 +65,14 @@ uint8_t hitec_write(void *ctx, uint8_t off, uint8_t n, const uint16_t *in)
     (void)ctx;
     const uint8_t nack = hitec_port_write(&s_hitec, off, n, in, s_now_ms);
 
+    /* No ARM or THROTTLE across either edge of a hold, in this frame. */
+    ports_hold_follow();
     /* A command that takes the port is the KST page's to refuse from this
      * frame on, and the SUPPLY page is held from the frame of the OPEN to
-     * the frame of the CLOSE. */
+     * the frame of the CLOSE.  A step the command started is a write a
+     * SUPPLY OFF behind it in the same batch of frames is judged against. */
     ports_exclusive();
-    supply_page_hold(&s_supply, ports_hold_supply());
+    ports_tell_supply();
     /* And its pulses end in this frame, as a KST command's do. */
     outputs_hw_ports_drive(ports_pulsing());
     sense_page_ports(&s_sense, ports_pulsing());

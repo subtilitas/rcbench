@@ -117,6 +117,8 @@ typedef struct {
     bool     command;       /**< the servo to cmd_us, at once (no slew) */
     uint16_t cmd_us;                    /**< the pulse, µs */
     bool     release;       /**< the servo let go, to its centre        */
+    bool     disarm;        /**< the bench to SAFE: the run ended on an
+                                 error (servo_test_abort_error())       */
 } servo_test_do_t;
 
 /** @brief What the caller knows each step. */

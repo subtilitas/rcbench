@@ -5,23 +5,36 @@ if(RCBENCH_PERF_LOG)
     set(rcbench_perf_src "panel_perf.c")
 endif()
 
+# panel_console.c: the IOmcu's bench console over the link, with the option
+# RCBENCH_PANEL_CONSOLE only (firmware/panel/CMakeLists.txt, panel_console.h).
+set(rcbench_console_src "")
+if(RCBENCH_PANEL_CONSOLE)
+    set(rcbench_console_src "panel_console.c")
+endif()
+
 idf_component_register(
     SRCS "main.c" "panel_card.c" "panel_log.c" "panel_link.c" "panel_poll.c"
-         "panel_services.c" "panel_hitec.c" "panel_ports.c" "panel_sense.c" "panel_limit.c" "panel_supply.c" "panel_arm.c"
+         "panel_services.c" "panel_hitec.c" "panel_esc.c" "panel_esc_card.c" "panel_ports.c" "panel_sense.c" "panel_limit.c" "panel_supply.c" "panel_arm.c"
          "panel_render.c" "panel_art.c" "panel_update.c" "selftest.c"
          "knob_task.c" "kst_files.c" "hitec_record.c" "hitec_files.c" "panel_boot.c" "panel_settings.c"
-         "panel_control.c" "panel_frame.c" "panel_files.c" "panel_trial.c"
-         ${rcbench_perf_src}
+         "panel_control.c" "panel_frame.c" "panel_files.c" "panel_shot.c" "panel_trial.c"
+         ${rcbench_perf_src} ${rcbench_console_src}
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram files
              fwupdate webaccess fw_ota wifi_access clock
-             esp_driver_gpio esp_driver_uart esp_timer
+             esp_driver_gpio esp_driver_i2c esp_driver_tsens esp_driver_uart esp_timer
     LDFRAGMENTS "psram_bss.lf"
 )
 if(RCBENCH_PERF_LOG)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_PERF_LOG=1)
 else()
     target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_PERF_LOG=0)
+endif()
+
+if(RCBENCH_PANEL_CONSOLE)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_PANEL_CONSOLE=1)
+else()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_PANEL_CONSOLE=0)
 endif()
 
 # The trial start's rollback test build; see RCBENCH_TRIAL_CRASH in
@@ -44,4 +57,19 @@ if(RCBENCH_IOMCU_BIN)
     target_add_binary_data(${COMPONENT_LIB} "${rcbench_iomcu_bin}" BINARY
                            RENAME_TO rcbench_iomcu_bin)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_IOMCU_IMAGE=1)
+endif()
+# And the rbmod carrier's IOmcu image, offered to an IOmcu that reports the
+# carrier on its identity page (main/panel_update.c):
+#   idf.py -D RCBENCH_IOMCU_RBMOD_BIN=<path>/rcbench-iomcu-rbmod.bin build
+if(RCBENCH_IOMCU_RBMOD_BIN)
+    get_filename_component(rcbench_iomcu_rbmod_bin "${RCBENCH_IOMCU_RBMOD_BIN}"
+                           ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+    if(NOT EXISTS "${rcbench_iomcu_rbmod_bin}")
+        message(FATAL_ERROR
+                "RCBENCH_IOMCU_RBMOD_BIN: ${rcbench_iomcu_rbmod_bin} not found")
+    endif()
+    target_add_binary_data(${COMPONENT_LIB} "${rcbench_iomcu_rbmod_bin}" BINARY
+                           RENAME_TO rcbench_iomcu_rbmod_bin)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE
+                               RCBENCH_IOMCU_RBMOD_IMAGE=1)
 endif()

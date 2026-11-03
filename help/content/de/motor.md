@@ -79,7 +79,7 @@ ARM schaltet die ganze Gruppe der Throttle-Ausgänge auf ARMED, nicht nur die hi
 
 ![Ein Lauf bei ARMED ohne IOmcu: SIM und das Wasserzeichen SIMULATION](view:motor)
 
-1. ARM 2s halten. Die Füllung geht von Grün nach Rot über; der Prüfstand schaltet auf ARMED, wenn der Übergang vollständig ist. Früheres Loslassen schaltet nichts.
+1. ARM 2s halten. Die Füllung geht von Grün nach Rot über; der Prüfstand schaltet auf ARMED, wenn der Übergang vollständig ist. Früheres Loslassen schaltet nichts und zeigt `Halte 2s, um auf ARMED zu schalten.` im Alert-Band.
 2. Den Throttle ziehen. Er bewegt sich um den Weg des Fingers, nicht dorthin, wo der Finger aufsetzt. `-1` und `+1` ändern um einen Prozentpunkt.
 3. DISARM tippen oder STOP drücken, um den Lauf zu beenden. Beide stoppen den Ausgang sofort, ohne Rampe, und setzen den Throttle auf 0%.
 
@@ -96,7 +96,7 @@ Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der G
 
 Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der aufhört zu antworten, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0%.
 
-Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels.
+Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels. SETUP, PANEL, Demo-Modus EIN blendet das Wasserzeichen SIMULATION aus; SIM bleibt.
 
 ## Ein gehaltener Lauf
 
@@ -118,7 +118,7 @@ Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und dan
 
 TABELLE listet Spannung, Strom, Leistung und Drehzahl, jeweils mit ihrer Spitze. Ein Kanal, für den nichts geantwortet hat, zeigt `--`.
 
-- Ist der INA228 unter SETUP, INTERFACES eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz. Die Überschrift nennt `INA228`.
+- Ist der INA228 unter SETUP, SENSORS eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz. Die Überschrift nennt `INA228`.
 - `ÜBERSTEUERT` folgt der Überschrift, solange ein Strom das Ende des Messbereichs erreicht hat: Strom und Leistung sind dann Grenzen, keine Werte.
 - `ESC MELDET` listet Spannung und Strom aus der eigenen Telemetrie des ESC, und `Abw.` ist der Wert des ESC minus dem des INA228.
 - Ohne INA228 sind die Kanäle die Telemetrie des ESC, und `ESC MELDET` fehlt.
@@ -138,4 +138,4 @@ Jedes Schalten auf ARMED schreibt eine Datei, `MOTORnnn.CSV`, in `BENCH/LOGS` au
 - [ESC STICK](motor-stick.md): einen ESC über sein Gasknüppel-Menü programmieren.
 - [Ausgänge](outputs.md): welche Pins der Throttle treibt.
 - [Setup](setup.md): der Drehknopf.
-- [Anschlüsse](setup-interfaces.md): der INA228.
+- [Sensoren](setup-sensors.md): der INA228.

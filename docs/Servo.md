@@ -301,7 +301,11 @@ meter, and a supply that stops answering, trips, switches off or has its set
 points changed: the reasons of the automatic test, in
 [What ends a run](#what-ends-a-run). The run's own SAFE and ARM end
 nothing. Each ends the run as ABORTED with the output off and the servo
-released. A run that ends while it waits for ARMED also asks SAFE: an ARM
+released. An error during a search, a probe or the check switches the bench
+to SAFE as well: a sample at the 3.0A ceiling, a clipped sample, 1.0A for
+400ms, a window without the rail voltage and the errors of the automatic
+test ([Safety, Errors](Safety.md#errors)). A run that ends while it waits
+for ARMED also asks SAFE: an ARM
 it asked that the bench has not taken yet does not arm the bench after the
 end. A start of the panel clears the run without a report.
 
@@ -361,7 +365,7 @@ PULSE LOWER and PULSE UPPER are 1000.0µs and 2000.0µs:
 RCBENCH SERVO LIMIT REPORT
 Result:         PASS
 Device:         SERVO
-Firmware:       rcbench 0.23.1
+Firmware:       rcbench 0.23.4
 Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT 1 GPIO 13, 50Hz
 Pulse range:    centre 1500us, 1000-2000us
@@ -456,7 +460,7 @@ What a servo draws at rest, moving and holding an end, and how long it takes
 from end to end, at the supply voltages it is rated for; and the voltage
 below which it stops moving (brown-out). Nothing on the bench measures the
 horn unless the output encoder is on (see below), so every result is read from
-the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SETUP INTERFACES enables it,
+the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SUPPLY's PD MINI tab enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
 and its numbers are simulated. While the INA3221 is the servo rail's meter
 at START TEST and the supply is the PD mini, the run reads the INA3221
@@ -737,7 +741,7 @@ held it for 0.43s twice during healthy moves, at 0.004 to 0.342A.
 ### The output encoder
 
 An AS5600 magnetic angle sensor on the servo's output shaft, set up under
-SETUP, INTERFACES, AS5600 (default OFF) and read by the IOmcu
+SETUP, SENSORS, AS5600 (default OFF) and read by the IOmcu
 ([Link](Link.md), SENSE registers 26 to 31), adds the horn's angle to a run.
 The current's results are unchanged and the angle decides nothing: it is not
 part of the verdict and has no limit. Without AS5600 on, the run, its CSV and
@@ -844,8 +848,14 @@ link back. The same holds while the sensor reports no magnet.
 ### What ends a run
 
 Every ending switches the output off, releases the servo to its centre, and
-still writes the report, marked ABORTED with the reason. The bench stays ARMED
-unless the ending was a switch to SAFE, STOP or leaving the screen, which switch the bench to SAFE.
+still writes the report, marked ABORTED with the reason. An error switches the
+bench to SAFE in place of the release: the supply not answering or tripped,
+no new reading, an output that did not come on, a set point not read back, a
+step above the cap, STALL AT, constant current and every INA3221 reason
+([Safety, Errors](Safety.md#errors)). The bench also switches to SAFE for a
+switch to SAFE, STOP or leaving the screen. It stays ARMED, the servo at the
+rest, for the operator's endings: a finger on the controls, a settings
+change, OUTPUT OFF and lost touch events.
 A step the run has posted and the panel has not sent when the bench switches to SAFE
 or stops is not sent. After a run ended by a switch to SAFE, STOP or leaving the
 screen, the horn and COMMANDED stay at the position the run last drove;
@@ -984,7 +994,7 @@ TRAVEL TIME set to 800ms:
 RCBENCH SERVO TEST REPORT
 Result:         PASS
 Device:         MG90S
-Firmware:       rcbench 0.23.1
+Firmware:       rcbench 0.23.4
 Log:            the .CSV with this file's number, one row per supply reading
 Supply:         PD mini
 Current:        PD mini
@@ -1201,7 +1211,7 @@ runs at the new rate.
 ## Prerequisites
 
 Current sensing on the servo rail. The limit search reads the INA3221
-channel that watches the tester's target, wired in SETUP INTERFACES and
+channel that watches the tester's target, wired and
 fitted in SETUP > SENSORS, and nothing else. The synchroniser
 needs a sensor across the pair of outputs, which is not fitted. The
 automatic test reads the INA3221 or the PD mini, or runs on the panel's

@@ -43,11 +43,18 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
           "-Wno-sign-conversion"]
 
+# No fused multiply-add: a compiler whose default target has FMA (Ubuntu
+# 26.04's gcc builds for x86-64-v3) rounds a * b + c once instead of twice,
+# which moves a pixel at the edge of an arc or a plot line.  The committed
+# images are those of separate multiply and add.
+FP_FLAGS = ["-ffp-contract=off"]
+
 # The screens (ui_sources.py), the renderer, and what only its views
 # drive: the KST and the Hitec programmers' link modules, the IOmcu's
 # ports and the wire under them.
 SOURCES = [
     "test/host/render_screen.c",
+    "test/host/render_shot.c",
     *ui_sources.SOURCES,
     "shared/bench/kst_link.c",
     "shared/outputs/kst_port.c",
@@ -55,6 +62,9 @@ SOURCES = [
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_wire.c",
     "test/host/render_hitec.c",
+    "test/host/render_esc_wire.c",
+    # The screen guide's views: opened and turned by taps.
+    "test/host/render_help.c",
     "shared/bench/hitec_link.c",
     "shared/outputs/hitec_port.c",
     # The Hitec files' views run their requests on a folder in memory.
@@ -84,6 +94,14 @@ SCREENS = {
     "band-armed": ("band-armed.png", "overview", "dark"),
     # An alert across the bottom of the menu, with its x.
     "overview-alert": ("overview-alert.png", "overview", "dark"),
+    # The screen guide over the menu at page 1: the dock on the right, the
+    # left two columns of tiles marked.
+    "help-overview": ("help-overview.png", "overview", "dark"),
+    # The screenshot's popup over the menu, a save under way and a card that
+    # was full.
+    "shot-popup": ("shot-popup.png", "shot", "dark"),
+    "shot-saving": ("shot-saving.png", "shot", "dark"),
+    "shot-full": ("shot-full.png", "shot", "dark"),
     "motor":      ("motor.png",      "motor",      "dark"),
     "motor-held": ("motor-held.png", "motor-held", "dark"),
     # A linked bench before its first run, no pin bound as a motor.
@@ -167,6 +185,7 @@ SCREENS = {
     "servo-hitec": ("servo-hitec.png", "servo", "dark"),
     "servo-hitec-series": ("servo-hitec-series.png", "servo", "dark"),
     "servo-hitec-more": ("servo-hitec-more.png", "servo", "dark"),
+    "servo-hitec-rx": ("servo-hitec-rx.png", "servo", "dark"),
     "servo-hitec-reading": ("servo-hitec-reading.png", "servo", "dark"),
     "servo-hitec-read": ("servo-hitec-read.png", "servo", "dark"),
     "servo-hitec-motion": ("servo-hitec-motion.png", "servo", "dark"),
@@ -202,6 +221,12 @@ SCREENS = {
                                   "dark"),
     "servo-hitec-classic-sum": ("servo-hitec-classic-sum.png", "servo",
                                 "dark"),
+    "servo-hitec-classic-reread": ("servo-hitec-classic-reread.png",
+                                   "servo", "dark"),
+    "servo-hitec-restore-ask": ("servo-hitec-restore-ask.png", "servo",
+                                "dark"),
+    "servo-hitec-restore-hv": ("servo-hitec-restore-hv.png", "servo",
+                               "dark"),
     "servo-hitec-classic-repair": ("servo-hitec-classic-repair.png",
                                    "servo", "dark"),
     # The Hitec servo files on a card in memory: FILES' pages and an empty
@@ -248,6 +273,9 @@ SCREENS = {
     "servo-hitec-backup-file": ("servo-hitec-backup-file.png", "servo",
                                 "dark"),
     "servo-hitec-nofile": ("servo-hitec-nofile.png", "servo", "dark"),
+    # Another D485HW read in the session: its own backup, no file line.
+    "servo-hitec-other-servo": ("servo-hitec-other-servo.png", "servo",
+                                "dark"),
     "servo-hitec-restore-backup": ("servo-hitec-restore-backup.png",
                                    "servo", "dark"),
     "servo-hitec-restore-page": ("servo-hitec-restore-page.png", "servo",
@@ -359,6 +387,81 @@ SCREENS = {
     "analyser-failsafe": ("analyser-failsafe.png", "analyser", "dark"),
     # MOTOR & ESC > PROGRAM: the registry's list, its STICK MENU row.
     "motor-program": ("motor-program.png", "motor", "dark"),
+    "motor-wire-connect": ("motor-wire-connect.png", "motor", "dark"),
+    "motor-wire-notarget": ("motor-wire-notarget.png", "motor", "dark"),
+    "motor-wire-target": ("motor-wire-target.png", "motor", "dark"),
+    "motor-wire-hand": ("motor-wire-hand.png", "motor", "dark"),
+    "motor-wire-keypad": ("motor-wire-keypad.png", "motor", "dark"),
+    "motor-wire-entering": ("motor-wire-entering.png", "motor", "dark"),
+    "motor-wire-handwait": ("motor-wire-handwait.png", "motor", "dark"),
+    "motor-wire-stopped": ("motor-wire-stopped.png", "motor", "dark"),
+    "motor-wire-other": ("motor-wire-other.png", "motor", "dark"),
+    "motor-wire-am": ("motor-wire-am.png", "motor", "dark"),
+    "motor-wire-am-motor": ("motor-wire-am-motor.png", "motor", "dark"),
+    "motor-wire-am-brake": ("motor-wire-am-brake.png", "motor", "dark"),
+    "motor-wire-am-input": ("motor-wire-am-input.png", "motor", "dark"),
+    "motor-wire-am-protect": ("motor-wire-am-protect.png", "motor", "dark"),
+    "motor-wire-am-choice": ("motor-wire-am-choice.png", "motor", "dark"),
+    "motor-wire-am-number": ("motor-wire-am-number.png", "motor", "dark"),
+    "motor-wire-am-write": ("motor-wire-am-write.png", "motor", "dark"),
+    "motor-wire-am-leave": ("motor-wire-am-leave.png", "motor", "dark"),
+    "motor-wire-am-running": ("motor-wire-am-running.png", "motor", "dark"),
+    "motor-wire-erased": ("motor-wire-erased.png", "motor", "dark"),
+    "motor-wire-s": ("motor-wire-s.png", "motor", "dark"),
+    "motor-wire-bj": ("motor-wire-bj.png", "motor", "dark"),
+    "motor-wire-s-id": ("motor-wire-s-id.png", "motor", "dark"),
+    "motor-wire-s-2": ("motor-wire-s-2.png", "motor", "dark"),
+    "motor-wire-bj-id": ("motor-wire-bj-id.png", "motor", "dark"),
+    "motor-wire-bj-2": ("motor-wire-bj-2.png", "motor", "dark"),
+    "motor-wire-readonly": ("motor-wire-readonly.png", "motor", "dark"),
+    "motor-wire-readonly-rows": (
+        "motor-wire-readonly-rows.png", "motor", "dark"),
+    "motor-wire-hex": ("motor-wire-hex.png", "motor", "dark"),
+    "motor-wire-e32": ("motor-wire-e32.png", "motor", "dark"),
+    "motor-wire-e32-1": ("motor-wire-e32-1.png", "motor", "dark"),
+    "motor-wire-e32-2": ("motor-wire-e32-2.png", "motor", "dark"),
+    "motor-wire-e32-3": ("motor-wire-e32-3.png", "motor", "dark"),
+    "motor-wire-e32-4": ("motor-wire-e32-4.png", "motor", "dark"),
+    "motor-wire-e32-5": ("motor-wire-e32-5.png", "motor", "dark"),
+    "motor-wire-e32-leave": ("motor-wire-e32-leave.png", "motor", "dark"),
+    "motor-wire-fill-connect": (
+        "motor-wire-fill-connect.png", "motor", "dark"),
+    "motor-wire-fill-again": ("motor-wire-fill-again.png", "motor", "dark"),
+    "motor-wire-fill-write": ("motor-wire-fill-write.png", "motor", "dark"),
+    "motor-wire-fill-no-backup": (
+        "motor-wire-fill-no-backup.png", "motor", "dark"),
+    "motor-wire-fill-leave": ("motor-wire-fill-leave.png", "motor", "dark"),
+    "motor-wire-fill-release": (
+        "motor-wire-fill-release.png", "motor", "dark"),
+    "motor-wire-fill-restore": (
+        "motor-wire-fill-restore.png", "motor", "dark"),
+    "motor-wire-press-read": ("motor-wire-press-read.png", "motor", "dark"),
+    "motor-wire-press-hand": ("motor-wire-press-hand.png", "motor", "dark"),
+    "motor-wire-press-back": ("motor-wire-press-back.png", "motor", "dark"),
+    "motor-wire-press-row": ("motor-wire-press-row.png", "motor", "dark"),
+    "motor-wire-press-cancel": (
+        "motor-wire-press-cancel.png", "motor", "dark"),
+    "motor-wire-press-next": ("motor-wire-press-next.png", "motor", "dark"),
+    "motor-wire-press-prev": ("motor-wire-press-prev.png", "motor", "dark"),
+    "motor-wire-press-choice": (
+        "motor-wire-press-choice.png", "motor", "dark"),
+    "motor-wire-press-list-cancel": (
+        "motor-wire-press-list-cancel.png", "motor", "dark"),
+    "motor-wire-held": ("motor-wire-held.png", "motor", "dark"),
+    "motor-wire-held-stop": ("motor-wire-held-stop.png", "motor", "dark"),
+    "motor-wire-stopped-band": ("motor-wire-stopped-band.png", "motor",
+                                "dark"),
+    "motor-wire-held-hand": ("motor-wire-held-hand.png", "motor", "dark"),
+    "motor-wire-not-back": ("motor-wire-not-back.png", "motor", "dark"),
+    "motor-wire-release": ("motor-wire-release.png", "motor", "dark"),
+    "motor-wire-no-backup": ("motor-wire-no-backup.png", "motor", "dark"),
+    "motor-wire-files": ("motor-wire-files.png", "motor", "dark"),
+    "motor-wire-restore": ("motor-wire-restore.png", "motor", "dark"),
+    "motor-wire-am-long": ("motor-wire-am-long.png", "motor", "dark"),
+    "motor-wire-am-last": ("motor-wire-am-last.png", "motor", "dark"),
+    "motor-wire-am-card": ("motor-wire-am-card.png", "motor", "dark"),
+    "motor-wire-erased-leave": (
+        "motor-wire-erased-leave.png", "motor", "dark"),
     # ESC STICK, opened from that row, full width under the output strip.
     "motor-stick": ("motor-stick.png", "motor", "dark"),
     "motor-stick-items": ("motor-stick-items.png", "motor", "dark"),
@@ -419,7 +522,13 @@ SCREENS = {
     "files-view-small": ("files-view-small.png", "files", "dark"),
     "files-view-kst": ("files-view-kst.png", "files", "dark"),
     "files-view-json": ("files-view-json.png", "files", "dark"),
-    # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
+    # The text editor: a line typed into a report with the keyboard open;
+    # a KST file saved with a comment, its checksum line gone; the
+    # question the home tag asks over unsaved text.
+    "files-edit": ("files-edit.png", "files", "dark"),
+    "files-edit-kst": ("files-edit-kst.png", "files", "dark"),
+    "files-edit-unsaved": ("files-edit-unsaved.png", "files", "dark"),
+    # SETUP's tiles, clean and with a value unsaved; PANEL's list
     # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
     "setup-hub-dirty": ("setup-hub-dirty.png", "setup", "dark"),
@@ -436,13 +545,28 @@ SCREENS = {
     # FOLDER; the folder keyboard with a folder refused.
     "setup-card": ("setup-card.png", "setup", "dark"),
     "setup-folder": ("setup-folder.png", "setup", "dark"),
-    # INTERFACES with the INA228 enabled, at the top of the list.
-    "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
-    # SENSORS: 0x40 and 0x41 fitted, at the top with 0x40 online; and at
-    # 0x41's rows, marked as an IOmcu older than 4.25 leaves them.
+    # SUPPLY > SETTINGS' PD MINI tab: as wired, and on the carrier with TX and
+    # RX soldered.  Its keypad refusing the other pin's GPIO.
+    "supply-pdmini": ("supply-pdmini.png", "supply", "dark"),
+    "supply-pdmini-rbmod": ("supply-pdmini-rbmod.png", "supply", "dark"),
+    "supply-pdmini-why": ("supply-pdmini-why.png", "supply", "dark"),
+    # The rbmod carrier: the LAYOUT tile, and soldered pin rows.
+    "setup-rbmod": ("setup-rbmod.png", "setup", "dark"),
+    "layout-rbmod": ("layout-rbmod.png", "layout", "dark"),
+    "supply-rbmod": ("supply-rbmod.png", "supply", "dark"),
+    # The PROG 5V box on SERVO's output card, and on the KST programmer
+    # while a session holds the ports' 5V.
+    "servo-rbmod": ("servo-rbmod.png", "servo", "dark"),
+    "servo-kst-rbmod": ("servo-kst-rbmod.png", "servo", "dark"),
+    # SENSORS: 0x40 and 0x41 fitted, on 0x40 online; and on 0x41, marked as an
+    # IOmcu older than 4.25 leaves its rows.
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
     "setup-sensors-old": ("setup-sensors-old.png", "setup", "dark"),
     "setup-sensors-limit": ("setup-sensors-limit.png", "setup", "dark"),
+    # SENSORS on the rbmod carrier: 0x40 soldered, its rows on the rails.
+    "setup-sensors-rbmod": ("setup-sensors-rbmod.png", "setup", "dark"),
+    # SENSORS on the INA228, online with its 4 rows.
+    "setup-sensors-ina228": ("setup-sensors-ina228.png", "setup", "dark"),
     # The keypad of 0x40 CH1's shunt, 44.4mOhm typed.
     "setup-sensors-keypad": ("setup-sensors-keypad.png", "setup", "dark"),
     # Values inside the range the steps never reach, refused with the
@@ -453,64 +577,59 @@ SCREENS = {
     # The same keypad with 1 typed: the range in its header and the entry
     # name the pin word first, "GPIO -1 to 47" and "GPIO 1".
     "setup-sda-keypad": ("setup-sda-keypad.png", "setup", "dark"),
-    "setup-pdmini-why": ("setup-pdmini-why.png", "setup", "dark"),
-    # INTERFACES drawn on to the bus's pins, which the IOmcu has not taken:
-    # the mark on Sensor SDA and Sensor SCL.
+    # SENSOR BUS, its pins not taken by the IOmcu: the mark on Sensor SDA and
+    # Sensor SCL and the entry's state.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
-    # The same list past them, to the phase tap's rows, the tap enabled.
+    # PHASE TAP's rows, the tap enabled.
     "setup-tap": ("setup-tap.png", "setup", "dark"),
-    # The list's end: Hitec D receive at PRECHARGE under PROG PORT, marked
-    # as an IOmcu older than protocol 4.24 leaves it.
-    "setup-prog": ("setup-prog.png", "setup", "dark"),
     # The warning on leaving SETUP unsaved: one change, and twelve, of
     # which nine fit beside the count of the rest.
     "setup-leave": ("setup-leave.png", "setup", "dark"),
     "setup-leave-many": ("setup-leave-many.png", "setup", "dark"),
+    # OUTPUTS on a drawn board: SERVO PWM on three pins, DSHOT300 on one under
+    # IN USE, LAST WRITE and the cat.
     "outputs":    ("outputs.png",    "outputs",    "dark"),
+    # The board from its shape, without the IOmcu's drawing.
+    "outputs-shape": ("outputs-shape.png", "outputs", "dark"),
+    # The protocol list open over the board.
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
-    "outputs-held": ("outputs-held.png", "outputs", "dark"),
+    # Eight of eight slots: every free key grey, and the reason why.
     "outputs-full": ("outputs-full.png", "outputs", "dark"),
     # The longest protocol name, DSHOT600 BIDIR, in the closed list.
     "outputs-bidir": ("outputs-bidir.png", "outputs", "dark"),
-    # The overview every visit opens on, OFF: every bound pin names its
-    # protocol, the longest among them.
+    # OFF picked, GP13 the programming port's, 8 pins over 6 protocols: the
+    # tallest IN USE table, in its 20px rows.
     "outputs-off": ("outputs-off.png", "outputs", "dark"),
     # The binding last read, after a read that failed.
     "outputs-unread": ("outputs-unread.png", "outputs", "dark"),
     # The same after a read of pages no binding describes, with the key
     # that unbinds every pin.
     "outputs-odd": ("outputs-odd.png", "outputs", "dark"),
-    # GP13 is the programming port's.
+    # GP13 is the programming port's: held, and named under IN USE; GP28
+    # tapped, refused for its slice.
     "outputs-prog": ("outputs-prog.png", "outputs", "dark"),
     # The PROG PORT entry, as SERVO's TARGET row opens it with the port as
-    # the tester's target: GP13 lit, SERVO TESTER and PORT PWM.
+    # the tester's target: its rows beside the board and the cat.
     "outputs-port": ("outputs-port.png", "outputs", "dark"),
     # PROG PORT 2, function NONE on GP14, its FUNCTION ask waiting for a
     # bench at rest.
     "outputs-port2": ("outputs-port2.png", "outputs", "dark"),
-    # PROG PORT 2 on a 4.28 IOmcu, DSHOT300 on GP14: the FUNCTION list
-    # open over the column, five entries.
+    # PROG PORT 3, a SERVO PWM port without a pin: GP13 port 1's, GP14 port
+    # 2's, the slice of each PWM output held.
+    "outputs-port3": ("outputs-port3.png", "outputs", "dark"),
+    # PROG PORT 2 on a 4.28 IOmcu, DSHOT300 on GP14: the FUNCTION list open
+    # over the column, five entries.
     "outputs-port-dshot": ("outputs-port-dshot.png", "outputs", "dark"),
-    # The overview with SETUP > INTERFACES wired: GP16 and GP17 the sensor
-    # bus's, GP18 and GP19 the PD mini's, GP22 the phase tap's.
+    # The overview with SENSORS and PD MINI wired: GP16 and GP17 the sensor
+    # bus's, GP18 and GP19 the PD mini's, GP22 the phase tap's, held and named
+    # under IN USE after the programming port.
     "outputs-iface": ("outputs-iface.png", "outputs", "dark"),
-    "picker": ("picker.png", "picker", "dark"),
-    "picker-drawn": ("picker-drawn.png", "picker", "dark"),
-    # GP13 is the programming port's: held, and named under IN USE.
-    "picker-prog": ("picker-prog.png", "picker", "dark"),
-    # PROG PORT 3 picked, a SERVO PWM port without a pin: GP13 port 1's,
-    # GP14 port 2's, the slice of each PWM output held.
-    "picker-port": ("picker-port.png", "picker", "dark"),
-    # Eight of eight slots: every free key grey, and the reason why.
-    "picker-full": ("picker-full.png", "picker", "dark"),
-    # The protocol list open over the board.
-    "picker-protocol": ("picker-protocol.png", "picker", "dark"),
-    # OFF picked, GP13 the programming port's, 8 pins over 6 protocols:
-    # the tallest IN USE table, in its 20px rows.
-    "picker-off": ("picker-off.png", "picker", "dark"),
-    # The same interfaces on PICK A PIN: held, and named under IN USE after
-    # the programming port.
-    "picker-iface": ("picker-iface.png", "picker", "dark"),
+    # The grid view of a board with neither a shape nor a drawing.
+    "outputs-grid": ("outputs-grid.png", "outputs", "dark"),
+    # The rbmod carrier: the grid view, PWM01 to PWM04 and a refusal for
+    # slice 2, PROG PORT 1 on its soldered pin.
+    "outputs-rbmod": ("outputs-rbmod.png", "outputs", "dark"),
+    "outputs-rbmod-port": ("outputs-rbmod-port.png", "outputs", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),
     "supply": ("supply.png", "supply", "dark"),
     "supply-settings": ("supply-settings.png", "supply", "dark"),
@@ -544,8 +663,18 @@ SCREENS = {
     "wifi-blocked": ("wifi-blocked.png", "wifi", "dark"),
     # The access point up and an upload arriving; joining; joined.
     "wifi-ap": ("wifi-ap.png", "wifi", "dark"),
+    "wifi-kept-buttons": ("wifi-kept-buttons.png", "wifi", "dark"),
+    "wifi-kept-pass": ("wifi-kept-pass.png", "wifi", "dark"),
+    "wifi-kept-pass-set": ("wifi-kept-pass-set.png", "wifi", "dark"),
+    "wifi-kept-code": ("wifi-kept-code.png", "wifi", "dark"),
+    "wifi-key-kept": ("wifi-key-kept.png", "wifi", "dark"),
+    "wifi-key-kept-short": ("wifi-key-kept-short.png", "wifi", "dark"),
     "wifi-joining": ("wifi-joining.png", "wifi", "dark"),
     "wifi-joined": ("wifi-joined.png", "wifi", "dark"),
+    # Browser writes HOLD on the access point: before the hold, and after
+    # it with three writes made.
+    "wifi-writes-hold": ("wifi-writes-hold.png", "wifi", "dark"),
+    "wifi-writes-allowed": ("wifi-writes-allowed.png", "wifi", "dark"),
     # CHOOSE HOME NETWORK: the scan running, and its list.
     "wifi-scanning": ("wifi-scanning.png", "wifi", "dark"),
     "wifi-scan": ("wifi-scan.png", "wifi", "dark"),
@@ -595,7 +724,8 @@ def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
     exe = tmp / ("render_trace" if trace else "render_screen")
     # With the touch injector's texts, as the host suite builds: the
     # band-inject view draws INJECT's bubble and --fit measures it.
-    cmd = ["cc", "-O2", "-g", *STRICT, "-DRCBENCH_TOUCH_INJECTOR=1",
+    cmd = ["cc", "-O2", "-g", *STRICT, *FP_FLAGS,
+           "-DRCBENCH_TOUCH_INJECTOR=1",
            "-o", str(exe)]
     if trace:
         cmd += ["-DGFX_TEXT_TRACE"]
@@ -638,16 +768,26 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # The menu's guide at pages 2 and 3, and MOTOR & ESC's band with the
+    # widest row of chips: a clock of 10 hours, ARMED MOTOR, FAULT 7F,
+    # BENCH and LINK.
+    "help-overview-2": (None, "overview", "dark"),
+    "help-overview-3": (None, "overview", "dark"),
+    "help-band-worst": (None, "motor", "dark"),
+    # A tap on ARM and on OUTPUT ON, released before 2s: the button's hint
+    # in the alert band.
+    "hold-hint-arm":    (None, "motor", "dark"),
+    "hold-hint-output": (None, "supply", "dark"),
     # MOTOR & ESC > SETTINGS: a pulse typed less than 100us from the other
     # one, refused with its reason.
     "motor-settings-gap-idle": (None, "motor", "dark"),
     "motor-settings-gap-full": (None, "motor", "dark"),
     # Tap pin's keypad with GP23 typed: refused, with the pins it takes.
     "setup-tap-why": (None, "setup", "dark"),
-    # INTERFACES' last rows as setup-prog, the IOmcu older than 4.23, and
-    # PRECHARGE held, with its own help line.
-    "setup-prog-noline": (None, "setup", "dark"),
-    "setup-prog-pre": (None, "setup", "dark"),
+    # SUPPLY's PD MINI tab with the output on, the rows locked, and stored on
+    # one pin for both.
+    "supply-pdmini-on": (None, "supply", "dark"),
+    "supply-pdmini-same": (None, "supply", "dark"),
     "band-fault-all":   (None, "overview", "dark"),
     # SERVO > PROGRAM with a table of 12 rows: SEARCH, the page keys, two
     # group headings and a row dimmed with its reason.
@@ -664,8 +804,18 @@ FIT_ONLY = {
     "band-clock":       (None, "overview", "dark"),
     "band-link-refused-max": (None, "overview", "dark"),
     "wifi-unavailable": (None, "wifi", "dark"),
+    "wifi-ap-kept":     (None, "wifi", "dark"),
+    "wifi-kept-both":   (None, "wifi", "dark"),
+    "wifi-key-kept-code": (None, "wifi", "dark"),
+    "wifi-kept-code-long": (None, "wifi", "dark"),
+    "wifi-kept-code-off": (None, "wifi", "dark"),
+    "wifi-writes-code-long": (None, "wifi", "dark"),
     "wifi-save-failed": (None, "wifi", "dark"),
     "wifi-coproc":      (None, "wifi", "dark"),
+    # Browser writes ACCESS CODE with the code switch off, and OFF.
+    "wifi-writes-one":  (None, "wifi", "dark"),
+    "wifi-writes-code": (None, "wifi", "dark"),
+    "wifi-writes-off":  (None, "wifi", "dark"),
     "updates-joining":  (None, "updates", "dark"),
     "updates-unexpected": (None, "updates", "dark"),
     "updates-nonet":    (None, "updates", "dark"),
@@ -685,6 +835,8 @@ FIT_ONLY = {
     "updates-cu-checking": (None, "updates", "dark"),
     "updates-cu-failed":   (None, "updates", "dark"),
     "updates-cu-usb":      (None, "updates", "dark"),
+    "updates-cu-noboard":  (None, "updates", "dark"),
+    "layout-module":       (None, "layout", "dark"),
     "updates-cu-unsafe":   (None, "updates", "dark"),
     "updates-cu-radio":    (None, "updates", "dark"),
     "updates-cu-install":  (None, "updates", "dark"),
@@ -753,20 +905,47 @@ FIT_ONLY = {
     "files-view-mixed": (None, "files", "dark"),
     "files-view-empty": (None, "files", "dark"),
     "files-view-toolarge": (None, "files", "dark"),
+    # The editor's other states: REVERT's question and the one over an
+    # open, saving, saved, an ESC profile saved, SAVE on no change, SAVE
+    # shut while ARMED, the card pulled, a key refused at 1MiB and at
+    # 65,536 line ends, and SAVE refused on a NUL in the first 4kB.
+    "files-edit-revert": (None, "files", "dark"),
+    "files-edit-open": (None, "files", "dark"),
+    "files-edit-saving": (None, "files", "dark"),
+    "files-edit-saved": (None, "files", "dark"),
+    # SAVE over a file the Wi-Fi page wrote since it was read: STAY or
+    # READ AGAIN.
+    "files-edit-changed": (None, "files", "dark"),
+    "files-edit-esc": (None, "files", "dark"),
+    "files-edit-nochange": (None, "files", "dark"),
+    "files-edit-armed": (None, "files", "dark"),
+    "files-edit-card": (None, "files", "dark"),
+    "files-edit-full": (None, "files", "dark"),
+    "files-edit-lines": (None, "files", "dark"),
+    "files-edit-nul": (None, "files", "dark"),
+    # The editor's keyboard on its first page of marks (123), and with
+    # Keyboard see-through at 25% and 50%.
+    "files-edit-marks": (None, "files", "dark"),
+    "files-edit-see25": (None, "files", "dark"),
+    "files-edit-see50": (None, "files", "dark"),
 }
 
-# Every cat pose but the first, on PICK A PIN posed as "picker" is:
-# picker-cat-1 and on, in tools/gen_cats.py's POSES order.  The first is the
+# Every cat pose but the first, on OUTPUTS posed as "outputs" is:
+# outputs-cat-1 and on, in tools/gen_cats.py's POSES order.  The first is the
 # one every view draws where it fits.
-FIT_ONLY.update({f"picker-cat-{i}": (None, "picker", "dark")
+FIT_ONLY.update({f"outputs-cat-{i}": (None, "outputs", "dark")
                  for i in range(1, len(gen_cats.POSES))})
 
-# Views that open a drop-down, a chip's help bubble or the alert band over
-# the screen: the list, the bubble or the band covers the labels under it by
-# design, so a fill drawn over a string is not a finding there.
-OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "picker-protocol",
-                 "overview-alert",
-                 "setup-folder"} | {
+# Views that open a drop-down, a chip's help bubble, the alert band, the
+# text editor's question or its see-through keyboard over the screen: the
+# list, the bubble, the band, the box or the keys cover the labels under it
+# by design, so a fill drawn over a string is not a finding there.
+OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
+                 "overview-alert", "hold-hint-arm", "hold-hint-output",
+                 "setup-folder",
+                 "files-edit-unsaved", "files-edit-revert",
+                 "files-edit-open", "files-edit-changed", "files-edit-see25",
+                 "files-edit-see50"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
 # English overflows the layout has for a time: (view, string, finding), word
@@ -877,8 +1056,11 @@ def fit_problems(items, overlay=False):
         if it[0] != "T":
             continue
         _, t, clip, box, s = it
-        if t.y + t.h <= clip.y or t.y >= clip.b:
-            continue    # wholly above or below its clip: not drawn at all
+        if (t.y + t.h <= clip.y or t.y >= clip.b
+                or t.r <= clip.x or t.x >= clip.r):
+            # Wholly outside its clip, such as a screen's string on the
+            # half the screen guide's dock takes: not drawn at all.
+            continue
         if box is not None and t.w > box.w:
             problems.append((s, "is %d px wide in a %d px box"
                              % (t.w, box.w)))

@@ -15,7 +15,7 @@ No ESC has been recorded and no profile is verified. Every beep time is a defaul
 1. Take the propeller off. A run moves the throttle to MAX and back while the ESC is powered. In rare cases a motor may start and run.
 2. Leave the motor on the ESC, mounted solid, or fit a resistor load across the motor leads in its place. The beeps are counted from the current either way.
 3. Connect the ESC's signal lead to a pin bound as a throttle on [Outputs](outputs.md): MOTOR PWM or a DShot entry.
-4. Connect the ESC's power leads to the supply output. Enable the PD mini on [Interfaces](setup-interfaces.md#the-pd-mini).
+4. Connect the ESC's power leads to the supply output. Enable the PD mini on [SUPPLY's PD MINI tab](supply.md#pd-mini-tab).
 5. Switch the supply output off.
 
 RUN opens nothing while one of these is missing, and the line beside RUN names the reason, for example `No throttle pin assigned. Assign one on OUTPUTS.` or `Supply is simulated. RUN needs a PD mini.`. RUN needs a supply reading no older than 1000ms that reports the output off with at most 20mA for 200ms.
@@ -75,7 +75,7 @@ The stack light's green is lit while a beep is detected, for at least 150ms.
 
 ![A run with the phase tap running](view:motor-stick-tone)
 
-With the phase tap enabled on SETUP, INTERFACES, the page adds a read-only readout: the tap's state, the pitch of its last 8ms window, the counts of beeps lost and not read, and the last 4 beeps with number, length in ms and pitch in Hz. The run still counts its beeps from the supply current.
+With the phase tap enabled on SETUP, SENSORS, the page adds a read-only readout: the tap's state, the pitch of its last 8ms window, the counts of beeps lost and not read, and the last 4 beeps with number, length in ms and pitch in Hz. The run still counts its beeps from the supply current.
 
 | Tap state | Meaning |
 |---|---|

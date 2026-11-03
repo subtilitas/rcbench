@@ -1,5 +1,6 @@
-/*
- * The Wi-Fi page's text. See wa_text.h.
+/**
+ * @file
+ * @brief The Wi-Fi page's text. See wa_text.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -239,6 +240,30 @@ void wa_out_js(wa_out_t *o, const char *s)
     }
 }
 
+void wa_out_json(wa_out_t *o, const char *s)
+{
+    static const char k_hex[] = "0123456789abcdef";
+    if (s == NULL) {
+        return;
+    }
+    const bool utf8 = wa_utf8_units(s, strlen(s)) >= 0;
+    for (; *s != '\0'; ++s) {
+        const uint8_t b = (uint8_t)*s;
+        if (b == '\\' || b == '"') {
+            const char esc[2] = { '\\', *s };
+            wa_out_raw(o, esc, 2u);
+        } else if (b < 0x20u || b == 0x7Fu) {
+            const char esc[6] = { '\\', 'u', '0', '0', k_hex[b >> 4],
+                                  k_hex[b & 0x0Fu] };
+            wa_out_raw(o, esc, 6u);
+        } else if (b >= 0x80u && !utf8) {
+            wa_out_str(o, "\\ufffd");
+        } else {
+            wa_out_raw(o, s, 1u);
+        }
+    }
+}
+
 static bool unreserved(char c)
 {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
@@ -346,6 +371,68 @@ bool wa_cookie_get(const char *header, const char *name, char *out,
         p = end;
     }
     return false;
+}
+
+bool wa_code_cookie(const char *code, char *out, size_t cap)
+{
+    static const char k_hex[] = "0123456789ABCDEF";
+    if (code == NULL || out == NULL || cap == 0u) {
+        return false;
+    }
+    size_t n = 0u;
+    for (const char *p = code; *p != '\0'; ++p) {
+        const unsigned char ch = (unsigned char)*p;
+        const bool plain = (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z')
+                           || (ch >= 'A' && ch <= 'Z') || ch == '-';
+        const size_t need = plain ? 1u : 3u;
+        if (n + need + 1u > cap) {
+            out[0] = '\0';
+            return false;
+        }
+        if (plain) {
+            out[n++] = (char)ch;
+        } else {
+            out[n++] = '%';
+            out[n++] = k_hex[ch >> 4];
+            out[n++] = k_hex[ch & 0x0Fu];
+        }
+    }
+    out[n] = '\0';
+    return true;
+}
+
+bool wa_code_of_cookie(const char *header, const char *name, char *out,
+                       size_t cap)
+{
+    char raw[WA_CODE_COOKIE_MAX + 1u];
+    if (out == NULL || cap == 0u) {
+        return false;
+    }
+    out[0] = '\0';
+    if (!wa_cookie_get(header, name, raw, sizeof(raw))) {
+        return false;
+    }
+    size_t n = 0u;
+    for (size_t i = 0u; raw[i] != '\0'; ++i) {
+        char ch = raw[i];
+        if (ch == '%') {
+            /* The first test stops at a terminator: the second byte is read
+             * only behind a first that is a digit. */
+            if (hexval(raw[i + 1u]) < 0 || hexval(raw[i + 2u]) < 0) {
+                out[0] = '\0';
+                return false;
+            }
+            ch = (char)((hexval(raw[i + 1u]) << 4) | hexval(raw[i + 2u]));
+            i += 2u;
+        }
+        if (n + 2u > cap) {
+            out[0] = '\0';
+            return false;
+        }
+        out[n++] = ch;
+    }
+    out[n] = '\0';
+    return true;
 }
 
 const char *wa_basename(const char *path)

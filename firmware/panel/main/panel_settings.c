@@ -103,7 +103,7 @@ void publish_pdmini(void)
 }
 
 /**
- * @brief The phase tap's set-up, as SETUP INTERFACES left it, for the control
+ * @brief The phase tap's set-up, as SETUP > SENSORS left it, for the control
  *        task's TONE writes (tone_link.h).  Seven values do not fit an atomic
  *        word, so the copy is taken under a spinlock both ways, as the current
  *        monitors' is.  Written by the settings observer on app_main, read once a
@@ -129,7 +129,7 @@ void publish_tone(void)
 }
 
 /**
- * @brief Returns the phase tap's set-up as SETUP INTERFACES left it, copied
+ * @brief Returns the phase tap's set-up as SETUP > SENSORS left it, copied
  *        under the spinlock.
  * @return the set-up
  */
@@ -195,7 +195,7 @@ static void apply_rotation(void)
 
 void publish_time_zone(void)
 {
-    /* setenv() and tzset() take newlib's environment and zone locks; a
+    /* setenv() and tzset() take picolibc's environment and zone locks; a
      * localtime_r() on the card's task reads the zone under the same
      * zone lock, so it sees the old zone or the new one whole. */
     (void)setenv("TZ", wall_zone_posix(settings_get_int(SET_TIME_ZONE)), 1);

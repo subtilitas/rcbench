@@ -51,8 +51,10 @@ const fw_flash_t *fw_ota_flash(void);
 
 /**
  * @brief Before the restart into a written slot: what the next start
- *        reports when that build does not stay.  Kept in memory a
- *        software restart keeps and a power cut clears.
+ *        reports when that build does not stay.  Written to NVS
+ *        (non-volatile storage) and committed, so a restart, a panic and a
+ *        power cut keep it; a refused write is a console warning, and that
+ *        start then reports nothing.
  * @param version The written build's version.
  */
 void fw_ota_note_restart(const char *version);
@@ -73,7 +75,15 @@ bool fw_ota_trial_pending(void);
  * written), otherwise the panel restarts into the build before it and this
  * does not return (fw_boot_decide()).  After a start that went back:
  * FW_BOOT_ROLLED_BACK with the written build's version in @p other, when
- * fw_ota_note_restart() was called before it and no power cut came between.
+ * fw_ota_note_restart() was called before it.  The note is erased after
+ * every outcome but a trial that goes back (fw_boot_settle()).  An install
+ * from a build that kept the note in LP (low-power) RAM leaves no NVS
+ * note: that start reads none, as a panel that never installed does.
+ *
+ * Says one console line at INFO, before a trial that goes back restarts
+ * and otherwise before it returns:
+ * `start check: note <version|none|unreadable>, last invalid slot
+ * <label|none>, result <NORMAL|UPDATED|ROLLED_BACK|UNCONFIRMED|GOING_BACK>`.
  *
  * @param ui_up     Whether the start is kept (true) or goes back (false).
  * @param other     Where the written build's version goes; may be NULL

@@ -30,35 +30,23 @@ env:
   DOXYGEN_SHA256: >-
     14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90
 
-# Every job runs on Ubuntu 24.04, named, not ubuntu-latest: the figures and
+# Every job runs on Ubuntu 26.04, named, not ubuntu-latest: the figures and
 # images the checks compare (warnings, stack depths, screenshots) are those
-# of its compilers and libraries.  Ubuntu 26.04 fails them.
+# of its compilers and libraries.
+#
+# The host suite is five jobs that run in parallel, and the job named
+# "Host suite, coverage and the checks that hold prose to the tree" joins
+# them.  The branch ruleset requires that name, so it exists on every run
+# and fails when any of the five does not succeed.
 jobs:
-  host-tests:
-    name: Host suite, coverage and the checks that hold prose to the tree
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+  host-build:
+    name: Host suite, build and ctest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install build dependencies
-        run: |
-          # The runner image carries package lists this build never installs
-          # from, and apt-get update fails the whole step when any one of them
-          # serves a stale index (for example "Hash Sum mismatch" on
-          # dl.google.com/linux/chrome-stable).  A toolchain install does not
-          # depend on a browser's mirror, so those lists are removed first.
-          #
-          # Matched by glob rather than by name: the image writes these as
-          # .list or as deb822 .sources depending on its version, and a name
-          # that misses leaves the failure exactly as it was.  -v so the log
-          # says what went, since a silent no-op here looks identical to a fix.
-          sudo rm -fv /etc/apt/sources.list.d/*google* \
-                      /etc/apt/sources.list.d/*microsoft* || true
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build gcc fonts-dejavu-core valgrind
-          python3 -m pip install pillow==12.3.0
+      - uses: ./.github/actions/host-deps
 
       # test/host/check_wa_page.py hands the script of the browser page to
       # node and is skipped, not failed, when node is missing.  The runner
@@ -72,10 +60,19 @@ jobs:
           cmake --build test/host/build -j"$(nproc)"
           ctest --test-dir test/host/build --output-on-failure
 
+  host-sanitizers:
+    name: Host suite under sanitizers
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
+
       # The same suite under AddressSanitizer and UBSan
-      # (UndefinedBehaviorSanitizer), for the runtime faults the -Werror build
-      # above cannot see: a parser reading off the end of a frame, a signed
-      # shift overflowing, an unaligned access.  The parsers for CSV
+      # (UndefinedBehaviorSanitizer), for the runtime faults the -Werror
+      # build of host-build cannot see: a parser reading off the end of a
+      # frame, a signed shift overflowing, an unaligned access.  The parsers for CSV
       # (comma-separated values), CAN (Controller Area Network), OpenYGE and
       # S.BUS are fed malformed input by design.  A separate build directory
       # because the flags differ.
@@ -92,6 +89,15 @@ jobs:
             -DENABLE_SANITIZERS=ON
           cmake --build test/host/build-san -j"$(nproc)"
           ctest --test-dir test/host/build-san --output-on-failure
+
+  host-coverage:
+    name: Host suite coverage
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
 
       # Fails when the table in STATUS.md or the figure in README.md and
       # README-de.md does not match the measurement, rather than committing a
@@ -124,6 +130,22 @@ jobs:
           files: coverage.xml
           fail_ci_if_error: true
 
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage
+          path: coverage.json
+          if-no-files-found: warn
+
+  host-checks:
+    name: Checks that hold prose and generated files to the tree
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
+
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
 
@@ -144,10 +166,21 @@ jobs:
       - name: The checked-in KiCad library matches its specs
         run: python3 hardware/kicad/tools/gen_all.py --check
 
+      # The STEP models of the mechanical parts are generated from the specs
+      # in hardware/mechanical and checked in.
+      - name: The checked-in mechanical models match their specs
+        run: python3 hardware/mechanical/gen_models.py --check
+
       # The ESC programming profiles are JSON; the panel carries them as C
       # tables generated from that JSON and checked in.
       - name: The checked-in ESC profile tables match their JSON
         run: python3 tools/gen_esc_profiles.py --check
+
+      # The Wi-Fi page's file manager is written as JavaScript and CSS
+      # (cascading style sheets) under shared/webaccess/web; the panel
+      # carries them as C strings generated from those files and checked in.
+      - name: The checked-in file manager strings match their sources
+        run: python3 tools/gen_web_blob.py --check
 
       # Every file over 1,000 code lines (not blank, not comment-only) is
       # in tools/check_sizes.txt with the reason it stays whole, and no
@@ -164,6 +197,9 @@ jobs:
       # A number and its unit stand together, 40s and 6.00V, in the docs,
       # the interface's texts and reports, and the code's comments; the
       # exceptions are in tools/check_units_allow.txt with their reasons.
+      - name: A kept Wi-Fi value stays out of logs and other sources
+        run: python3 tools/check_wifi_secrets.py
+
       - name: Numbers carry their unit without a space
         run: python3 tools/check_units.py --check
 
@@ -203,56 +239,6 @@ jobs:
           python3 tools/wiki_links.py /tmp/wikicheck
           python3 tools/wiki_links.py --verify /tmp/wikicheck
 
-      # The regression guard is cache-line traffic per frame under the
-      # ESP32-P4's two caches, not wall-clock on a runner that shares nothing
-      # with the board; test_frame_work holds the pixel visits beside it.
-      # Each ceiling sits 13 to 29% above its modes in docs/Performance.md,
-      # or at 1,000 for a mode under 600 fills, and catches the model
-      # drawing more.  The bench frame (frame, sim, supply) has no ceiling:
-      # a frame per 20Hz sample needs the effective PSRAM bandwidth, which
-      # is not measured (PROBE_CLEAR_US).
-      #
-      # Every screen caches its chrome and its band, so a steady frame
-      # draws nothing; 1,000 catches one that has started repainting.
-      # ESC STICK's steady frame is 1,551 and is held apart at 2,000.
-      - name: Every screen still idles on a cached frame
-        run: python3 tools/frame_cost.py overview analyser logs settings
-             settings-list battery balance picker wifi --max-lines 1000
-             && python3 tools/frame_cost.py motor-stick --max-lines 2000
-
-      # The servo card draws its arm and grip from coverage; 2,700 catches
-      # that growing.  A breath repaints a clipped box and nothing else, and
-      # 1,000 catches one that repaints more.  A changed current repaints
-      # the CURRENT row's value, the line and the plot beside the grip, each
-      # clipped; 4,000 catches a changed digit that repaints the card.
-      - name: The servo card is drawn, and its grip is only breathed on
-        run: python3 tools/frame_cost.py servo --max-lines 2700
-             && python3 tools/frame_cost.py servo-grip --max-lines 1000
-             && python3 tools/frame_cost.py servo-current --max-lines 4000
-
-      - name: The SIMULATION watermark has not grown
-        run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
-             --max-lines 3600
-
-      # A theme change or a change of the SIMULATED flag invalidates every
-      # screen, which costs one full repaint.  72,000 catches that growing.
-      - name: A full repaint of every screen stays bounded
-        run: python3 tools/frame_cost.py analyser-chrome balance-chrome
-             battery-chrome motor-stick-chrome logs-chrome settings-chrome
-             settings-list-chrome picker-chrome supply-chrome wifi-chrome
-             --max-lines 72000
-
-      # A key typed on the Wi-Fi keyboard repaints the whole WI-FI
-      # screen, about 36,400 fills; 42,000 catches a key that repaints more.
-      - name: A key of the Wi-Fi keyboard costs one repaint
-        run: python3 tools/frame_cost.py wifi-keys --max-lines 42000
-
-      # The fills of every mode against the block in docs/Performance.md,
-      # the profile's line, and the table of the board against
-      # PROBE_CLEAR_US.
-      - name: The frame-cost tables in the docs are current
-        run: python3 tools/frame_cost.py --check-doc
-
       # The screens are rendered by the code the panel runs, so a golden image
       # checks what they look like; the unit tests cover what they decide.
       - name: The committed screenshots match the current render
@@ -265,16 +251,95 @@ jobs:
       - name: Every string fits where it is drawn
         run: python3 tools/render_ui.py --fit
 
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: coverage
-          path: coverage.json
-          if-no-files-found: warn
+  host-frames:
+    name: Frame cost of every screen
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/host-deps
+
+      # The regression guard is cache-line traffic per frame under the
+      # ESP32-P4's caches, not wall-clock on a runner that shares nothing
+      # with the board; test_frame_work holds the pixel visits beside it.
+      # Each ceiling sits 13 to 29% above its modes in docs/Performance.md,
+      # or at 1,000 for a mode under 700 fills, and catches the model
+      # drawing more.  The bench frame (frame, sim, supply) has no ceiling:
+      # a frame per 20Hz sample needs the effective PSRAM bandwidth, which
+      # is not measured (PROBE_CLEAR_US).
+      #
+      # Every screen caches its chrome and its band, so a steady frame
+      # draws nothing; 1,000 catches one that has started repainting.
+      # ESC STICK's steady frame is 1,560 and is held apart at 2,000.
+      - name: Every screen still idles on a cached frame
+        run: python3 tools/frame_cost.py overview analyser logs settings
+             settings-list battery balance picker wifi motor-wire
+             motor-wire-hold
+             --max-lines 1000
+             && python3 tools/frame_cost.py motor-stick --max-lines 2000
+
+      # The servo card draws its arm and grip from coverage; 2,800 catches
+      # that growing.  A breath repaints a clipped box and nothing else, and
+      # 1,000 catches one that repaints more.  A changed current repaints
+      # the CURRENT row's value, the line and the plot beside the grip, each
+      # clipped; 4,000 catches a changed digit that repaints the card.
+      - name: The servo card is drawn, and its grip is only breathed on
+        run: python3 tools/frame_cost.py servo --max-lines 2800
+             && python3 tools/frame_cost.py servo-grip --max-lines 1000
+             && python3 tools/frame_cost.py servo-current --max-lines 4000
+
+      # The screen guide caches its dock and draws its badges and corner
+      # brackets every frame, about 370 fills on the menu; 1,000 catches
+      # marks that draw more, such as a full outline (about 4,400).
+      - name: The screen guide's marks stay cheap
+        run: python3 tools/frame_cost.py overview-guide --max-lines 1000
+
+      - name: The SIMULATION watermark has not grown
+        run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
+             --max-lines 3600
+
+      # A theme change or a change of the SIMULATED flag invalidates every
+      # screen, which costs one full repaint.  72,000 catches that growing.
+      - name: A full repaint of every screen stays bounded
+        run: python3 tools/frame_cost.py analyser-chrome balance-chrome
+             battery-chrome motor-stick-chrome logs-chrome settings-chrome
+             settings-list-chrome picker-chrome supply-chrome wifi-chrome
+             motor-wire-chrome
+             --max-lines 72000
+
+      # A key typed on the Wi-Fi keyboard repaints the whole WI-FI
+      # screen, about 37,100 fills; 42,000 catches a key that repaints more.
+      - name: A key of the Wi-Fi keyboard costs one repaint
+        run: python3 tools/frame_cost.py wifi-keys --max-lines 42000
+
+      # The fills of every mode against the block in docs/Performance.md,
+      # the profile's line, and the table of the board against
+      # PROBE_CLEAR_US.
+      - name: The frame-cost tables in the docs are current
+        run: python3 tools/frame_cost.py --check-doc
+
+  host-tests:
+    name: Host suite, coverage and the checks that hold prose to the tree
+    needs: [host-build, host-sanitizers, host-coverage, host-checks, host-frames]
+    # Also when a job above failed or was cancelled: a skipped required check
+    # counts as passed, so this job runs and fails in its place.
+    if: ${{ always() }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Every host job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "a host job ended as $r"; exit 1; }
+          done
 
   analysis:
     name: Lint and static analysis
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -299,10 +364,11 @@ jobs:
       # The analyser and the bug-shaped checks over the pure-C core, the
       # protocol cores and the host tests.  A module's rp2350/ folder is not
       # in the host build; cppcheck reads it with the firmware.
-      # render_screen.c, render_files.c, render_hitec.c and bench_frame.c are
-      # built by tools/render_ui.py and tools/frame_cost.py, not by CMake, so
-      # they have no compile command here; render_ui.py builds the first
-      # three with -Werror, cppcheck reads all four.
+      # render_screen.c, render_files.c, render_hitec.c, render_esc_wire.c,
+      # render_help.c, render_shot.c and bench_frame.c are built by
+      # tools/render_ui.py and tools/frame_cost.py, not by CMake, so they have
+      # no compile command here; render_ui.py builds the first six with -Werror,
+      # cppcheck reads all seven.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
       # run; no result is kept between runs.
@@ -314,6 +380,9 @@ jobs:
                         -e 'test/host/render_screen.c' \
                         -e 'test/host/render_files.c' \
                         -e 'test/host/render_hitec.c' \
+                        -e 'test/host/render_esc_wire.c' \
+                        -e 'test/host/render_help.c' \
+                        -e 'test/host/render_shot.c' \
                         -e 'test/host/bench_frame.c' \
               | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 
@@ -329,13 +398,13 @@ jobs:
       # rules ask for a Google-style docstring; ruff.toml lists the files
       # excused some D codes, each with the codes on its line.
       - name: ruff
-        run: ruff check tools/ test/tools/ test/host/ hardware/kicad/
+        run: ruff check tools/ test/tools/ test/host/ hardware/kicad/ hardware/mechanical/
 
   # cppcheck runs in a job of its own beside clang-tidy, which checks every
   # file on every run: 4min to 9min (minutes) on the runners measured.
   cppcheck:
     name: cppcheck
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
       # cppcheck is built from the official source archive of this tag;
@@ -467,10 +536,14 @@ jobs:
 
   tools:
     name: Tool tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
+
+      # valgrind: test_frame_cost.py builds the bench and measures the
+      # servo card and the motor bench twice under cachegrind.
+      - uses: ./.github/actions/host-deps
 
       # The runner image carries git, cmake and a C compiler, which the
       # end-to-end cases of the mutation tool build a three-file project
@@ -503,9 +576,10 @@ jobs:
       - name: pytest
         run: python3 -m pytest test/tools -q
 
-      # The STEP models of the KiCad library are text gen_all.py writes;
-      # OpenCASCADE reads each back and checks its solids, colours and
-      # bounding box against the spec.
+      # The STEP models of the KiCad library and of hardware/mechanical are
+      # text the generators write; OpenCASCADE reads each back and checks
+      # its solids and colours, and a module's bounding box, against the
+      # spec.
       - name: The KiCad STEP models load in OpenCASCADE
         run: |
           python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
@@ -519,7 +593,7 @@ jobs:
   # ruff's D rules in the analysis job.
   doc-comments:
     name: Doxygen comments
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -558,7 +632,7 @@ jobs:
   mutation:
     name: Mutation check of the changed lines (advisory)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
@@ -581,11 +655,14 @@ jobs:
           if-no-files-found: warn
 
   panel:
-    name: Panel (ESP-IDF v5.5.5, ESP32-P4)
+    # The name is the status check the branch ruleset requires, and it
+    # stays "ESP-IDF v5.5.5" until the ruleset's required check is renamed
+    # to the same text as this name (tools/check_docs.py, PANEL_CHECK_NAME).
+    name: Panel (ESP-IDF v6.1, ESP32-P4)
     # The build carries the IOmcu image of this commit, as the release
     # does.
     needs: [iomcu]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -598,6 +675,18 @@ jobs:
           name: iomcu
           path: firmware/panel/iomcu-image
 
+      - name: Fetch the IOmcu's console image
+        uses: actions/download-artifact@v7
+        with:
+          name: iomcu-console
+          path: firmware/panel/iomcu-console
+
+      - name: Fetch the rbmod carrier's IOmcu image
+        uses: actions/download-artifact@v7
+        with:
+          name: iomcu-rbmod
+          path: firmware/panel/iomcu-rbmod
+
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
       # versions.  The step runs once the lock file is committed.
@@ -608,9 +697,10 @@ jobs:
           path: firmware/panel/managed_components
           key: managed-components-${{ hashFiles('firmware/panel/dependencies.lock') }}
 
-      # v5.5.5 is the floor: a Rev3.2 ESP32-P4 needs v5.5.5 or v6.0.1 and
-      # later, and v5.5.0 and v5.5.1 send a DLC 0 CAN frame as DLC 8, which
-      # can_twai.c refuses.
+      # v6.1 is the version the panel is built with.  A Rev3.2
+      # ESP32-P4 needs v5.5.5 or v6.0.1 and later.  storage.c follows
+      # v6.1's SDMMC slot handling, and v6.1's legacy TWAI driver passes
+      # a DLC 0 CAN frame through as DLC 0, which can_twai.c needs.
       # No cache step: the build runs inside the espressif/idf container, so
       # ~/.espressif on the runner is never written or read and a cache would
       # never hit.  The checkout holds no sdkconfig, so every build
@@ -618,14 +708,15 @@ jobs:
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.5.5
+          esp_idf_version: v6.1
           target: esp32p4
           path: 'firmware/panel'
           # A single image flashable at 0x0, as well as the three parts.
           # Flashing bootloader, partition table and app at three offsets is
           # three chances to get an offset wrong; the merged one has none.
           command: >-
-            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
+            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin
+            -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
       # A build that rewrites the lock file resolved a version the commit
@@ -658,10 +749,13 @@ jobs:
       - name: Every task's stack holds its deepest call chain
         run: python3 tools/stack_check.py firmware/panel/build --check-doc
 
-      # The symbol target_add_binary_data() names the embedded image by.
-      - name: The IOmcu image is carried
+      # The symbols target_add_binary_data() names the embedded images by:
+      # the module's and the rbmod carrier's.
+      - name: Both IOmcu images are carried
         run: |
           grep -aq _binary_rcbench_iomcu_bin_start \
+            firmware/panel/build/rcbench-panel.elf
+          grep -aq _binary_rcbench_iomcu_rbmod_bin_start \
             firmware/panel/build/rcbench-panel.elf
 
       # The default build reads a touch injector at 0x14 beside the glass
@@ -694,7 +788,7 @@ jobs:
       - name: The build without the injector and the frame lines compiles
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: v5.5.5
+          esp_idf_version: v6.1
           target: esp32p4
           path: 'firmware/panel'
           command: idf.py -B build-noinject -D RCBENCH_TOUCH_INJECTOR=OFF
@@ -715,6 +809,26 @@ jobs:
             echo "::error::the build without the injector holds its code"
             exit 1
           fi
+
+      # A debug panel: the IOmcu's bench console over the link, the console
+      # image carried.  The default build holds none of it.
+      - name: Build the panel's console build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32p4
+          path: 'firmware/panel'
+          command: idf.py -B build-console -D RCBENCH_PANEL_CONSOLE=ON
+                   -D RCBENCH_IOMCU_BIN=iomcu-console/rcbench-iomcu.bin build
+
+      - name: Every task's stack holds its deepest call chain in the console build
+        run: python3 tools/stack_check.py firmware/panel/build-console
+
+      - name: The console relay is in the console build only
+        run: |
+          python3 tools/check_panel_console.py on firmware/panel/build-console/rcbench-panel.elf
+          python3 tools/check_panel_console.py off firmware/panel/build/rcbench-panel.elf
+          python3 tools/check_panel_console.py off firmware/panel/build-noinject/rcbench-panel.elf
 
       # And the default image holds the frame lines' code, the build
       # without RCBENCH_PERF_LOG none of it (tools/check_perf_log.py).
@@ -741,7 +855,7 @@ jobs:
     # strategy, matrix, vars and inputs are), so the pin is spelled out here
     # and lives in env.PICO_SDK_TAG below.
     name: IOmcu (pico-sdk 2.3.0)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -842,11 +956,26 @@ jobs:
           arm-none-eabi-nm firmware/iomcu/build-console/rcbench-iomcu.elf \
             | grep -q page_console_key
           if arm-none-eabi-nm firmware/iomcu/build/rcbench-iomcu.elf \
-              | grep -iE 'page_console|console_hw'; then
+              | grep -iE 'page_console|console_hw|console_tunnel|ewline'; then
             echo "::error::the default image holds console code"
             exit 1
           fi
           python3 tools/stack_check.py --iomcu firmware/iomcu/build-console
+
+      # The rbmod carrier's image (IOMCU_BOARD=rbmod): the same sources with
+      # the carrier's board identity, so each role starts on its soldered
+      # pin.  Its files carry the board's name, and its two stacks are
+      # checked as the module's are.
+      - name: The rbmod carrier's image
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -S firmware/iomcu -B firmware/iomcu/build-rbmod -G Ninja \
+            -DIOMCU_BOARD=rbmod
+          cmake --build firmware/iomcu/build-rbmod -j"$(nproc)"
+          sha256sum firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.uf2 \
+                    firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-install.uf2
+          python3 tools/stack_check.py --iomcu firmware/iomcu/build-rbmod
 
       - uses: actions/upload-artifact@v7
         with:
@@ -859,11 +988,28 @@ jobs:
             firmware/iomcu/build/rcbench-iomcu.elf
           if-no-files-found: error
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: iomcu-console
+          path: firmware/iomcu/build-console/rcbench-iomcu.bin
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: iomcu-rbmod
+          path: |
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-install.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod-pt.uf2
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin
+            firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.elf
+          if-no-files-found: error
+
   touch-injector:
     # A test-bench tool (testbench/touch-injector), built so it keeps
     # building.  Its UF2 is not uploaded and no release carries it.
     name: Touch injector (pico-sdk 2.3.0)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6

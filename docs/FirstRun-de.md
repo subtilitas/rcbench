@@ -72,17 +72,23 @@ liest ([unten](#die-sd-karte-von-0210-und-älter)).
 | Asset | Enthält | Für |
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | das USB-Laden des IOmcu: `rcbench-iomcu-install.uf2` |
+| `rcbench-iomcu-rbmod-vX.Y.Z.zip` | dieselben fünf Dateien, benannt `rcbench-iomcu-rbmod-*` | den IOmcu auf dem rbmod-Carrier ([Link: Boards mit verlöteten Pins](Link-de.md#boards-mit-verlöteten-pins)): `rcbench-iomcu-rbmod-install.uf2` |
 | `rcbench-panel-p4-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf`, `NOTICE`, `LICENSE` | den USB-Flash des Panels |
-| `rcbench-panel-p4-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem IOmcu-Image, das es über CAN anbietet | ein Update über WLAN; nicht für USB |
-| `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der drei Dateien oben | die Prüfung in Schritt 1 |
+| `rcbench-panel-p4-vX.Y.Z.bin` | die Anwendung des Panels allein, mit den zwei IOmcu-Images, die es über CAN anbietet | ein Update über WLAN; nicht für USB |
+| `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der vier Dateien oben | die Prüfung in Schritt 1 |
 
 Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den IOmcu,
-`esptool.py` für das Panel (`pip install esptool`; ESP-IDF bringt es mit).
+`esptool.py` für das Panel (`pip install esptool`; ESP-IDF v6.1 bringt
+esptool 5.6.0 mit). Die Datei `flash_args` schreibt ihre Optionen wie
+esptool 5 (`--flash-mode`); esptool 4.x, das ESP-IDF v5.5 mitbringt, lehnt
+diese Schreibweise ab, sodass `@flash_args` esptool 5 oder neuer braucht.
 `/dev/ttyACM0` unten heißt unter Windows `COMx`.
 
-1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der drei
+1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der vier
    Dateien `OK` aus.
-2. **IOmcu.** `rcbench-iomcu-vX.Y.Z.zip` entpacken. BOOTSEL halten,
+2. **IOmcu.** `rcbench-iomcu-vX.Y.Z.zip` entpacken, oder auf dem
+   rbmod-Carrier `rcbench-iomcu-rbmod-vX.Y.Z.zip` und dessen
+   `rcbench-iomcu-rbmod-*`-Dateien statt der Namen unten. BOOTSEL halten,
    während die USB-Buchse des IOmcu angeschlossen wird, sodass das
    Modul sein Laufwerk `RP2350` zeigt. `rcbench-iomcu-install.uf2` auf das
    Laufwerk kopieren, oder:
@@ -143,7 +149,7 @@ sich beide Platinen vor und nach dem Update.
 1. Beide Platinen mit verdrahtetem Link einschalten. Beim Link-Aufbau
    vergleicht das Panel das laufende Image des IOmcu per SHA-256 mit dem
    Image, das es trägt, findet einen anderen Build, und das Band meldet
-   `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`.
+   `IOmcu nutzt einen anderen Build. Update unter UPDATES.`.
 2. Die Frage öffnet sich auf dem Menü, solange die Bench SAFE ist, der
    Ausgang der Versorgung aus und der Funk des Panels aus. Sie nennt die
    Version auf dem IOmcu und die Version im Panel. START 2s halten, oder
@@ -297,7 +303,8 @@ Das Panel installiert spätere Releases über WLAN aus dem Release-Asset
 ## 2. Der Link, vor allem anderen
 
 Das Panel führt den CAN-Echo-Selbsttest selbst aus, bei jedem Start, 1200ms
-lang innerhalb des Splash. Er beantwortet eine Frage: kommen Frames unversehrt
+lang innerhalb des Splash. Er beginnt bei der ersten Antwort des IOmcu, nach
+höchstens 5000ms Warten. Er beantwortet eine Frage: kommen Frames unversehrt
 über den Bus? Er benutzt kein Page-Protokoll; besteht er und der Link arbeitet
 trotzdem nicht, liegt der Fehler oberhalb des Drahts.
 
@@ -318,6 +325,7 @@ UART0, mit USB-Serial-JTAG (der eingebauten USB-Seriell- und Debug-Bridge
 des ESP32-P4) als Zweitkonsole; welche der zwei USB-C-Buchsen der Platine
 zu welcher führt, ist nicht verfolgt:
 
+    I (…) rcbench: CAN self-test: the IOmcu answered after 3ms
     I (…) rcbench: CAN self-test: every probe came back intact
     I (…) rcbench:   sent 2024 echoed 2024 corrupt 0 lost 0 stale 0
 
@@ -398,7 +406,7 @@ behaltene Kopie, wenn alle drei übereinstimmen:
 Ein IOmcu, der mit einer anderen Zeichnung geflasht wurde, meldet einen
 anderen Hash, und das Panel holt die Zeichnung neu. Ein IOmcu mit
 Protokoll 4.19 oder älter liefert keine Zeichnung; das Panel schreibt
-`hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its
+`hardware 1 serves no board drawing (protocol 4.19); OUTPUTS draws its
 shape` ins Log und zeichnet die Platine aus ihrem Umriss.
 
 ---
@@ -448,7 +456,7 @@ OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
 also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
 
 Am Panel: **Setup → OUTPUTS**, `SERVO PWM` wählen, einen Pin anhaken. Oder
-**Setup → PICK A PIN**, in dessen Liste `SERVO PWM` wählen und eine Taste auf
+**Setup → OUTPUTS**, in dessen Liste `SERVO PWM` wählen und eine Taste auf
 der Platinenzeichnung antippen — Massen sind mit `G` markiert,
 Versorgungen tragen ihre Spannung.
 
@@ -515,7 +523,7 @@ Widerstände 2,2kΩ, ein Multimeter, ein Oszilloskop oder Logikanalysator mit
 I2C-Dekodierung, ein Servo, und der ESC mit Motor oder eine ohmsche Last an
 einem Netzteil mit Strombegrenzung.
 
-**Am Panel einrichten.** SETUP → INTERFACES: `INA228` auf ON; SETUP →
+**Am Panel einrichten.** SETUP → SENSORS: `INA228` auf ON; SETUP →
 SENSORS: `0x40 bestückt` auf ON. Die übrigen Sensoreinstellungen passen in
 der Vorgabe zu den Modulen oben: INA228 auf 0x45 mit 200 µΩ, der INA3221 auf
 0x40 mit 0,1Ω je Kanal und CH1, der AUSGANG 1 misst, SDA an GPIO 16 und SCL an
@@ -943,7 +951,7 @@ des Arms ist, beantwortet er nicht.
 **Teil B: mit dem AS5600.** Dieselben Bewegungen mit dem Encoder auf der
 Welle.
 
-1. SETUP → INTERFACES: `AS5600` auf ON, bei einem Prüfstand in SAFE. Auf der Seite
+1. SETUP → SENSORS: `AS5600` auf ON, bei einem Prüfstand in SAFE. Auf der Seite
    PRÜFLING des Bildschirms SERVO, Servo in Neutralstellung, SENSOR-MITTE
    antippen.
 2. Die Schritte 5 bis 7 von Teil A wiederholen.

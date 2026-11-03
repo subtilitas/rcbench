@@ -35,25 +35,23 @@ const ui_screen_t *settings_screen(void);
 void settings_screen_invalidate(void);
 
 /**
- * The INTERFACES rows whose value the IOmcu does not hold:
- * @p sense_rows is sense_link_unheld()'s SENSE_LINK_ROW_* and @p tone_rows
- * tone_link_unheld()'s TONE_LINK_ROWS_*.  Such a row is drawn marked -- its
- * edge and its value in the warning colour, and "Not taken by the
- * IOmcu" in place of its help line -- until a call names it no
- * longer.  Sensor SDA and Sensor SCL are one mark: the pins are one frame.
+ * @brief Sets the SENSORS rows whose value the IOmcu does not hold.
+ *
+ * Such a row is drawn marked -- its edge and its value in the warning colour,
+ * and "Not taken by the IOmcu" in place of its help line -- until a call names
+ * it no longer.  Sensor SDA and Sensor SCL are one mark: the pins are one
+ * frame.
+ *
+ * @param sense_rows sense_link_unheld()'s SENSE_LINK_ROW_*.
+ * @param tone_rows  tone_link_unheld()'s TONE_LINK_ROWS_*.
  */
 void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows);
 
 /**
- * What the IOmcu holds of Hitec D receive (SET_HITEC_RX), a
- * hitec_rx_link_mark_t: HITEC_RX_LINK_HELD draws the row plain, the others
- * mark it as an unheld row; HITEC_RX_LINK_OLD says in its help line that
- * the IOmcu receives with PULL-UP.
+ * @brief Whether the row of @p id is marked by settings_screen_set_unheld().
+ * @param id The setting.
+ * @return true while it is.
  */
-void settings_screen_set_hitec_rx(uint8_t mark);
-
-/** Whether the row of @p id is marked by settings_screen_set_unheld() or
- *  settings_screen_set_hitec_rx(). */
 bool settings_screen_unheld(setting_id_t id);
 
 /**
@@ -88,6 +86,14 @@ gfx_rect_t settings_screen_list_rect(void);
 gfx_rect_t settings_screen_row_rect(int row);
 
 /**
+ * @brief Where entry @p entry of SENSORS' left list lies, in the screen's own
+ *        coordinates.
+ * @param entry The entry, sensors_pane.h's.
+ * @return The entry's rectangle.
+ */
+gfx_rect_t settings_screen_entry_rect(int entry);
+
+/**
  * @brief The parts of list row @p row a tap acts on, in the screen's own
  *        coordinates at the list's present scroll: the "-" key, the value
  *        between the keys and the "+" key, each over the row's height.
@@ -109,11 +115,15 @@ typedef enum {
 gfx_rect_t settings_screen_row_part(int row, settings_row_part_t part);
 
 /**
- * The list row that shows the @p index-th setting of @p cat (as
- * settings_in_category() orders them), or -1 past the last and for a
- * setting not listed (SENSORS' rows of a part not fitted).  A category
- * with section headings has a row for each, above its section, so the row
- * is the index plus the headings above it.
+ * @brief The list row that shows a setting of a category.
+ *
+ * A category with section headings has a row for each, above its section, so
+ * the row is the index plus the headings above it.
+ *
+ * @param cat   The category.
+ * @param index The setting's place, as settings_in_category() orders them.
+ * @return The row; -1 past the last and for a setting not listed (on SENSORS,
+ *         every row but the selected entry's).
  */
 int settings_screen_row_of(setting_cat_t cat, int index);
 
@@ -163,6 +173,33 @@ bool settings_hub_slot(int index, gfx_rect_t *out);
 
 /** The entries of the hub's tile table: its categories and its screens. */
 int settings_hub_tiles(void);
+/**
+ * @brief The screen hub tile @p i opens: the last opens LAYOUT on a board
+ *        whose pins are soldered (ui_board_roles()), which adds that tile.
+ * @param i The tile, 0 to settings_hub_tiles() - 1.
+ * @return The screen; SCREEN_SETUP for a category's tile, SCREEN_COUNT for
+ *         a tile out of range.
+ */
+ui_screen_id_t settings_hub_tile_screen(int i);
+
+/**
+ * @brief The hub tile that opens the list of category @p cat.
+ * @param cat The category.
+ * @return The tile, 0 to settings_hub_tiles() - 1; -1 for a category with no
+ *         tile.
+ */
+int settings_hub_cat_tile(setting_cat_t cat);
+
+/**
+ * @brief The list of @p cat, as a control on another screen opens it: called
+ *        after the router's entry, which shows the tiles.  The home tag then
+ *        leaves for the opener (ui_router_parent()) through the leave warning,
+ *        with no tiles in between.
+ * @param cat   The category.
+ * @param entry SENSORS' left list's entry to show; ignored for any other
+ *              category.
+ */
+void settings_screen_open_on(setting_cat_t cat, int entry);
 
 /**
  * Whether a tile of the hub opens screen @p id.  The home tag of such a

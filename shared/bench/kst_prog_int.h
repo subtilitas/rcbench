@@ -124,6 +124,20 @@ kst_prog_msg_id_t kst_prog_say_reg(kst_prog_t *p, unsigned id, unsigned arg,
  * @return The message id.
  */
 kst_prog_msg_id_t kst_prog_say(kst_prog_t *p, unsigned id, unsigned arg);
+
+/**
+ * @brief Whether a message speaks of the servo or the draft as they stand:
+ *        the read, a loaded or compared file, an edit, what an edit or a load
+ *        waits for.
+ *
+ * A session gone takes them with it.  What stays is what happened and stays
+ * true: a write and its check, a file saved or refused, how an operation
+ * ended, and every message of the danger level.
+ *
+ * @param id The message id.
+ * @return true when the message goes with the session.
+ */
+bool kst_prog_msg_of_session(unsigned id);
 /**
  * @brief Queues a command for the task that owns the link module.
  *

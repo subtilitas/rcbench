@@ -35,6 +35,14 @@ typedef struct {
     int             next;      /* the next entry of the same folder     */
 } fake_node_t;
 
+/* One read as the card got it, when a test keeps them (fake_fs_t.rlog). */
+typedef struct {
+    int             node;      /* the file's node                       */
+    uint64_t        pos;       /* the offset it was asked at            */
+    uint32_t        len;       /* the bytes asked                       */
+    const uint8_t  *dst;       /* where they were to go                 */
+} fake_read_t;
+
 typedef struct {
     fake_node_t *n;
     int          count;
@@ -45,6 +53,9 @@ typedef struct {
     int          files_open;
     long         readdirs;
     long         stop_after;   /* stopped() from this many reads; 0 never */
+    fake_read_t *rlog;         /* each read kept here, or NULL          */
+    int          rlog_n;
+    int          rlog_cap;
 } fake_fs_t;
 
 typedef struct {
@@ -230,6 +241,9 @@ static inline int32_t fake_read(void *ctx, void *file, uint8_t *dst,
     fake_fs_t *fs = ctx;
     fake_file_t *f = file;
     const fake_node_t *n = &fs->n[f->node];
+    if (fs->rlog != NULL && fs->rlog_n < fs->rlog_cap) {
+        fs->rlog[fs->rlog_n++] = (fake_read_t){ f->node, f->pos, len, dst };
+    }
     if (fs->pulled) {
         return -1;
     }

@@ -443,8 +443,7 @@ static bool blank_line(const line_t *l)
     return true;
 }
 
-/** @brief Whether the first word of a line is "checksum", in any case. */
-static bool is_checksum_line(const char *s, size_t n)
+bool kst_file_checksum_line(const char *s, size_t n)
 {
     size_t w = 0;
 
@@ -468,7 +467,7 @@ static bool has_checksum_line(const char *text, size_t len)
     line_t l;
 
     while (next_line(&c, &l)) {
-        if (is_checksum_line(l.s, l.n)) {
+        if (kst_file_checksum_line(l.s, l.n)) {
             return true;
         }
     }
@@ -690,7 +689,7 @@ static kst_file_err_t read_verified(cur_t *c, kst_file_t *f)
             state = S_TYPE;
             break;
         case S_FIELDS:
-            if (is_checksum_line(l.s, l.n)) {
+            if (kst_file_checksum_line(l.s, l.n)) {
                 return KST_FILE_ERR_MALFORMED;
             }
             if (l.n > STR_LEN(REGISTERS) &&

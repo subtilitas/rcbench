@@ -1,7 +1,7 @@
 /*
  * SERVO as a workbench: the strip's tasks and what each keeps, the home
- * tag's levels, the TARGET row's lock, the run cards' lines, the read-only
- * supply caps and the knob on each task.
+ * tag's levels, the TARGET row's lock, the run cards' lines, the caps
+ * button, OUTPUT's read-only tester line and the knob on each task.
  *
  * The screen and its fixtures are servo_rig.h, the bench
  * servo_bench_rig.h, the spots servo_spots.h.
@@ -13,10 +13,13 @@
 #include <string.h>
 
 #include "greatest.h"
+#include "shot_facts_rig.h"
 
+#include "esc_wire_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "outputs_screen.h"
+#include "prog5v_box.h"
 #include "prog_registry.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -27,6 +30,7 @@
 #include "ui_textkey.h"
 #include "ui_workbench.h"
 #include "ui_theme.h"
+#include "ui_board.h"
 
 #include "servo_bench_rig.h"
 #include "servo_rig.h"
@@ -157,8 +161,10 @@ TEST_CASE(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves)
     open_run_settings(0);
     tap(LROW_X(1), LROW_Y(1));
     CHECK(servo_screen_keypad()->open);
+    CHECK(servo_screen()->covered());
     CHECK(home_tag());
     CHECK(!servo_screen_keypad()->open);
+    CHECK(!servo_screen()->covered());
     CHECK_EQ(servo_screen_run_settings(), 1);
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), idle, 1e-6f);
     CHECK(home_tag());
@@ -457,9 +463,33 @@ TEST_CASE(the_run_cards_say_what_their_start_needs)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* On the rbmod carrier with a programming port chosen the AUTOMATIC TEST
+ * card says what its start needs: the PROG 5V on, and no voltage steps,
+ * which reach the servo rails and not the port. */
+TEST_CASE(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps)
+{
+    bench_fresh();
+    servo_screen_set_armed(true);
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    settings_set(SET_SERVO_TARGET, 2.0f);
+    prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
+    bench_frames(100u);
+    open_test();
+    CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_PROG_5V),
+                          UI_C_WARN));
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    bench_frames(100u);
+    CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_PROG_STEPS),
+                          UI_C_WARN));
+    prog5v_box_reset();
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+}
+
 /* ------------------------------------------------------- the read-only caps */
 
-/* Whether the caps line at (@p x, @p y) reads SUPPLY's caps in force. */
+/* Whether the caps button with its top at (@p x, @p y) reads SUPPLY's caps in
+ * force. */
 static bool caps_read(int x, int y)
 {
     const supply_caps_t caps = supply_screen_caps();
@@ -468,24 +498,25 @@ static bool caps_read(int x, int y)
              (double)caps.i_max);
     scr->render(&cv, 0);
     want_fresh();
-    const gfx_color_t bg = fb[(size_t)y * W + (size_t)(x - 2)];
-    gfx_fill_rect(&want_cv, (int16_t)(x - 4), (int16_t)y, 600, 20, bg);
-    gfx_text(&want_cv, x, y, line, &gfx_font_10x20,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-    return same_in(fb, want_fb, x - 4, y, 600, 20);
+    const gfx_rect_t r = gfx_rect_make(x, y, 600, UI_TAP_MIN);
+    const gfx_color_t bg = fb[(size_t)(y - 2) * W + (size_t)(x + 8)];
+    gfx_fill_rect(&want_cv, r.x - 2, r.y - 1, r.w + 4, r.h + 2, bg);
+    ui_button_font(&want_cv, r, line, ui_theme_color(UI_C_PANEL_HI), false,
+                   true, &gfx_font_10x20);
+    return same_in(fb, want_fb, r.x, r.y, r.w, r.h);
 }
 
-/* The caps line under TEST's cards and on SETTINGS > DUT reads SUPPLY's
- * caps in force, follows them when they change, names their home in both
- * languages, and a tap on it edits nothing. */
-TEST_CASE(the_supply_caps_show_read_only_with_their_home)
+/* The caps button under TEST's cards and on SETTINGS > DUT reads SUPPLY's
+ * caps in force and follows them when they change, in both languages.  What
+ * a tap on it does: test_menu_openers. */
+TEST_CASE(the_supply_caps_show_on_their_button)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         fresh();
         scr->enter();
         open_test();
-        CHECK(caps_read(UI_MARGIN + 10, 468));
+        CHECK(caps_read(UI_MARGIN + 10, 444));
         supply_caps_t caps = supply_screen_caps();
         CHECK_NEAR(caps.v_max, 21.0f, 1e-4f);
         settings_set(SET_SUPPLY_V_MAX, 12.0f);
@@ -494,28 +525,64 @@ TEST_CASE(the_supply_caps_show_read_only_with_their_home)
         servo_invalidate();
         caps = supply_screen_caps();
         CHECK_NEAR(caps.v_max, 12.0f, 1e-4f);
-        CHECK(caps_read(UI_MARGIN + 10, 468));
-        tap(60, 476);
-        CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 12.0f, 1e-4f);
-        CHECK(caps_read(UI_MARGIN + 10, 468));                      /* no keypad */
+        CHECK(caps_read(UI_MARGIN + 10, 444));
 
         open_settings();
         tap(TAB_X(PAGE_DUT), TAB_Y);
-        CHECK(caps_read(UI_MARGIN + 10, 354));
-        tap(60, 362);
-        CHECK(caps_read(UI_MARGIN + 10, 354));
-        CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 3.0f, 1e-4f);
+        CHECK(caps_read(UI_MARGIN + 10, 374));
     }
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* AS5600 has one home, SETUP > INTERFACES; DUT keeps ENC CENTRE, the
- * action on the servo. */
-TEST_CASE(the_as5600_lives_on_interfaces)
+/*
+ * OUTPUT's read-only line names the port SERVO TESTER is set to and its home,
+ * in both languages, and follows the setting.  A tap on it changes nothing:
+ * it is no second writable place.
+ */
+TEST_CASE(the_output_page_names_the_tester_port_read_only)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        static const float k_ports[] = { 0.0f, 1.0f, 4.0f };
+        for (int i = 0; i < 3; ++i) {
+            fresh();
+            scr->enter();
+            settings_set(SET_SERVO_TARGET, k_ports[i]);
+            open_settings();
+            char what[16], line[96];
+            if (k_ports[i] == 0.0f) {
+                snprintf(what, sizeof(what), "%s", TR(OUT_TESTER_OUTPUTS));
+            } else {
+                snprintf(what, sizeof(what), TR(OUT_TESTER_PORT),
+                         (unsigned)k_ports[i]);
+            }
+            snprintf(line, sizeof(line), TR(SV_TESTER_HOME), what);
+            CHECK(strstr(line, "OUTPUTS") != NULL);
+            const int x = UI_MARGIN + 10, y = 366;
+            scr->render(&cv, 0);
+            want_fresh();
+            const gfx_color_t bg = fb[(size_t)y * W + (size_t)(x - 2)];
+            gfx_fill_rect(&want_cv, (int16_t)(x - 4), (int16_t)y, 600, 20, bg);
+            gfx_text(&want_cv, x, y, line, &gfx_font_10x20,
+                     ui_theme_color(UI_C_TEXT_FAINT), 1);
+            CHECK(same_in(fb, want_fb, x - 4, y, 600, 20));
+            const uint32_t nav = ui_router_navigations();
+            tap(x + 40, y + 10);
+            CHECK_EQ(ui_router_navigations(), nav);
+            CHECK_NEAR(settings_get(SET_SERVO_TARGET), k_ports[i], 1e-4f);
+        }
+    }
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* AS5600 has one home, SETUP > SENSORS; DUT keeps ENC CENTRE, the action on
+ * the servo. */
+TEST_CASE(the_as5600_lives_on_sensors)
 {
     const setting_def_t *d = settings_def(SET_ENC_EN);
     CHECK(d != NULL);
-    CHECK(d != NULL && d->cat == SET_CAT_IFACE);
+    CHECK(d != NULL && d->cat == SET_CAT_SENSORS);
 }
 
 /* ------------------------------------------------------------------ the knob */
@@ -566,6 +633,8 @@ TEST_CASE(the_knob_moves_the_horn_on_live_alone)
     CHECK(!knob_moves());
     tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
     CHECK(kst_panel_is_open());
+    CHECK(servo_screen()->covered());
+    CHECK(!shot_facts_now().no_session);
     CHECK(!knob_moves());
     close_kst();
     CHECK(!kst_panel_is_open());
@@ -788,8 +857,8 @@ TEST_CASE(program_offers_search_over_nine_rows_and_narrows_the_list)
     prog_registry_use(NULL, 0);
     size_t n = 0;
     (void)prog_registry(&n);
-    CHECK_EQ(n, 3u);        /* the shipped table: KST, Hitec and the stick
-                             * menu */
+    CHECK_EQ(n, 4u);        /* the shipped table: KST, Hitec, the stick menu
+                             * and the ESC signal wire */
 }
 
 /* ------------------------------------------------- finger-sized controls */
@@ -921,6 +990,30 @@ static int ink_under_the_alert_band(void)
  * page's notes at their longest, a refused or unsupported rate, and the
  * save line at its longest, SETUP's changes not saved.
  */
+/*
+ * LIVE's three readings end above the alert band in both languages, and the
+ * band's own rows draw on the card's foot: "Hold 2s to switch to ARMED." leaves
+ * COMMANDED, MEASURED and CURRENT whole.
+ */
+TEST_CASE(lives_readings_end_above_the_alert_band)
+{
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        bench_fresh();
+        CHECK_EQ(ink_under_the_alert_band(), 0);
+        /* The numerals are there: ink in their row, 4px over the floor. */
+        int ink = 0;
+        const gfx_color_t fill = ui_theme_color(UI_C_PANEL);
+        for (int y = TEXT_FLOOR - 44; y < TEXT_FLOOR; ++y) {
+            for (int x = UI_MARGIN + 1; x < UI_MARGIN + 620 - 1; ++x) {
+                ink += fb[(size_t)y * W + x] != fill;
+            }
+        }
+        CHECK(ink > 100);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(no_text_lies_under_the_alert_band)
 {
     for (int lang = 0; lang < 2; ++lang) {
@@ -973,11 +1066,41 @@ TEST_CASE(a_runs_stops_are_a_finger_tall_and_clear_of_the_alert_band)
     CHECK(!servo_screen_testing());
 }
 
+/* ARM with a signal-wire session holding a pin: no ask, and the alert names it. */
+TEST_CASE(arm_under_a_wire_session_says_the_esc_programmer_holds_it)
+{
+    esc_prog_feed_t f;
+    servo_cmd_t c;
+
+    fresh();
+    memset(&f, 0, sizeof(f));
+    f.rd.known = true;
+    f.rd.held = true;
+    f.rd.state = LINK_ESC_READY;
+    esc_wire_panel_feed(&f);
+    ui_router_set_alert(NULL);
+    arm_press();
+    hold_for(2.5f);
+    CHECK_STR_EQ(ui_router_alert(), TR(ALERT_ARM_ESC));
+    arm_release();
+    bool asked = false;
+
+    while (servo_screen_take(&c)) {
+        asked = asked || c.kind == SERVO_CMD_ARM;
+    }
+    CHECK(!asked);
+    f.rd.held = false;
+    f.rd.state = 0u;
+    esc_wire_panel_feed(&f);
+    ui_router_set_alert(NULL);
+}
+
 int main(void)
 {
     RUN(a_tapped_row_is_a_finger_tall_and_its_gaps_take_nothing);
     RUN(a_runs_stops_are_a_finger_tall_and_clear_of_the_alert_band);
     RUN(a_second_tap_on_a_run_cards_settings_changes_no_setting);
+    RUN(lives_readings_end_above_the_alert_band);
     RUN(no_text_lies_under_the_alert_band);
     RUN(a_tile_opens_live_and_each_task_keeps_its_place);
     RUN(the_strip_reads_live_test_program_settings);
@@ -991,8 +1114,11 @@ int main(void)
     RUN(the_target_row_opens_outputs_on_what_the_tester_drives);
     RUN(the_target_row_opens_on_the_drive_not_the_setting);
     RUN(the_run_cards_say_what_their_start_needs);
-    RUN(the_supply_caps_show_read_only_with_their_home);
-    RUN(the_as5600_lives_on_interfaces);
+    RUN(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps);
+    RUN(the_supply_caps_show_on_their_button);
+    RUN(the_output_page_names_the_tester_port_read_only);
+    RUN(the_as5600_lives_on_sensors);
     RUN(the_knob_moves_the_horn_on_live_alone);
+    RUN(arm_under_a_wire_session_says_the_esc_programmer_holds_it);
     return test_summary("servo_workbench");
 }

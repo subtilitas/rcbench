@@ -23,6 +23,7 @@
 #include "busfault_screen.h"
 #include "display.h"
 #include "esc_stick_panel.h"
+#include "esc_wire_panel.h"
 #include "flash_gate.h"
 #include "knob.h"
 #include "motor_screen.h"
@@ -32,19 +33,23 @@
 #include "panel.h"
 #include "panel_main.h"
 #include "panel_perf.h"
+#include "panel_shot.h"
 #include "panel_trial.h"
 #include "pdmini.h"
 #include "picker_screen.h"
+#include "prog_choice.h"
 #include "sensors_rows.h"
 #include "servo_link.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "settings_sensors.h"
 #include "splash_screen.h"
 #include "supply_screen.h"
 #include "touch.h"
 #include "ui_band.h"
 #include "ui_screen.h"
+#include "ui_board.h"
 #include "ui_text.h"
 
 /**
@@ -77,6 +82,8 @@ void panel_frame_loop(void)
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
     uint32_t last_stops = 0;
+
+    panel_shot_init();
 
     for (;;) {
         /* A pass, for the control task's watchdog: a counter that stands
@@ -122,6 +129,13 @@ void panel_frame_loop(void)
         arm_wanted_now = s_snap.arm_wanted;
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
+        /* The ports' 5V as this frame begins, and the newest ON of it. */
+        const uint32_t psup_gen_now = atomic_load(&s_psup_gen);
+        const uint16_t faults_now = s_snap.faults;
+        const bool     simulated_now = bench_state_simulated(&s_snap.bench)
+                                       && !s_snap.cu.active;
+        const bool     cu_active_now = s_snap.cu.active;
+        const bool     psup_now     = prog5v_box_on();
         stops_now      = s_snap.stops;
         pressed_now    = s_snap.pressed;
         arm_gen_now    = s_snap.arm_gen;
@@ -172,6 +186,7 @@ void panel_frame_loop(void)
         /* And the servo programmer on SERVO. */
         kst_ui_service();
         hitec_ui_service();
+        esc_wire_ui_service();
 
         /* The slider follows the bench: a disarm returns the command to
          * zero, so the control the operator picks up next is at zero too. */
@@ -258,10 +273,14 @@ void panel_frame_loop(void)
             /* What the tester drives and whether the port renders its
              * pulse, to the control task; the port's pin, to both views of
              * the binding, from one read. */
+            /* On the rbmod carrier the chosen port once its FUNC reads
+             * SERVO PWM, and its pulse only with the PROG 5V on
+             * (prog_choice.h); the settings as they are elsewhere. */
+            prog_choice_set_far_minor(s_far_minor);
+            prog_choice_tick();
             atomic_store(&s_prog_want_target,
-                         (unsigned)settings_get_int(SET_SERVO_TARGET));
-            atomic_store(&s_prog_want_pwm,
-                         settings_get_bool(SET_SERVO_PORT_PWM));
+                         (unsigned)prog_choice_want_target());
+            atomic_store(&s_prog_want_pwm, prog_choice_want_pwm());
             prog_ports_to_screens();
             motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
                                            atomic_load(&s_throttle_pins_known));
@@ -269,16 +288,19 @@ void panel_frame_loop(void)
                 (uint8_t)atomic_load(&s_throttle_proto));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
+            /* On the carrier the INA3221 channel read at 1kHz is the rail
+             * of those pins: a new rail is a new map. */
+            if (settings_sensors_set_tester_rail(
+                    ui_board_tester_rail(atomic_load(&s_servo_pins)))) {
+                publish_sense();
+            }
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),
                 (uint8_t)atomic_load(&s_tone_unheld));
             sensors_rows_set_status((uint16_t)atomic_load(&s_sense_parts));
+            sensors_rows_set_i228((sens_part_t)atomic_load(&s_sense_i228));
             sensors_rows_set_limits((uint16_t)atomic_load(&s_sense_limits));
-            /* What the IOmcu holds of Hitec D receive, back to SETUP's
-             * row. */
-            settings_screen_set_hitec_rx(
-                (uint8_t)atomic_load(&s_hitec_rx_mark));
             if (servo_link_take_sweep_refused()) {
                 servo_screen_sweep_refused();
             }
@@ -393,6 +415,17 @@ void panel_frame_loop(void)
         atomic_store(&s_escsim_profile,
                      (uintptr_t)esc_stick_panel_profile());
 
+        /* Whether the screenshot's popup may stand, before this frame's
+         * touch: it closes on the frame the bench stops being idle. */
+        const panel_shot_in_t shot_in = {
+            .armed = armed_now, .arm_wanted = arm_wanted_now,
+            .supply_now = supply_now, .supply_seen = supply_seen,
+            .psup_now = psup_now, .link_up = link_now,
+            .simulated = simulated_now, .cu_active = cu_active_now,
+            .faults = faults_now,
+        };
+        panel_shot_frame(&shot_in);
+
         if (drain_touch(stops_now)) {
             frame_lost = true;
         }
@@ -446,6 +479,7 @@ void panel_frame_loop(void)
                 : 0u;
         }
         esc_stick_panel_set_throttle(got_read, got_throttle);
+        esc_wire_panel_read_binding(got.slots, got.cfg, got_read);
         /* A pick in either list writes nothing and so reads nothing back:
          * the picker follows the outputs screen's selection, and whether
          * the binding is one a read confirmed, every frame. */
@@ -577,11 +611,18 @@ void panel_frame_loop(void)
          * question, which comes first. */
         upd_remind_service(armed || arm_wanted_now,
                            armed || arm_wanted_now || supply_now
-                               || supply_live_or_coming(),
+                               || supplies_live_or_coming(),
                            &cu);
         cu_render_service(armed || arm_wanted_now || supply_now
-                              || supply_live_or_coming(),
+                              || supplies_live_or_coming(),
                           link_up, &cu);
+
+        /* The interface pins of a board that solders them (the rbmod
+         * carrier) follow the board the IOmcu reports, and each one that
+         * moves is written as an edit by hand would be. */
+        if (ui_board_apply_pins(settings_changed)) {
+            settings_screen_invalidate();
+        }
 
         /*
          * A link that was up and has been gone for LINK_LOST_SCREEN_MS says
@@ -598,6 +639,8 @@ void panel_frame_loop(void)
          * OFF stay on screen for as long as it is live.  Nor over WI-FI,
          * whose Wi-Fi does not need the link, nor over PANEL
          * UPDATE, which withholds the heartbeat on purpose while it writes.
+         * The IOmcu's question under it stays unanswered: the next link-up's
+         * check offers again.
          *
          * The timestamp is read once and tested twice.  The control task
          * clears it on the other core the moment the link answers, and a
@@ -646,7 +689,7 @@ void panel_frame_loop(void)
         wifi_service(arm_wanted_now || armed_now, stops_now);
         upd_service(arm_wanted_now || armed_now,
                     arm_wanted_now || armed_now || supply_now
-                        || supply_live_or_coming(),
+                        || supplies_live_or_coming(),
                     stops_now, &cu);
 
         /*
@@ -663,6 +706,10 @@ void panel_frame_loop(void)
         /* And the supply's ON the same way; see supply_watch_service(). */
         if (supply_now && !frame_lost) {
             atomic_store(&s_supply_ack, supply_gen_now);
+        }
+        /* And the PROG 5V box's ON; see prog_supply_watch_service(). */
+        if (psup_now && !frame_lost) {
+            atomic_store(&s_psup_ack, psup_gen_now);
         }
 
         /*
@@ -686,7 +733,7 @@ void panel_frame_loop(void)
          * -- the next frame is one.
          */
         const bool quiet =
-            flash_gate_open(arm_wanted_now, supply_live_or_coming());
+            flash_gate_open(arm_wanted_now, supplies_live_or_coming());
         (void)settings_save_tick(quiet && !s_artbusy
                                  && !atomic_load(&s_keeping));
         /* And the ramp, from the task that owns the values, for the control

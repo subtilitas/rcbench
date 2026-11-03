@@ -1,13 +1,8 @@
 /**
  * @file sensors_rows.h
- * @brief SETUP > SENSORS' list: which SENSORS rows show, the headings over
- *        them, and what each fitted part is doing.  The list is SETUP's own
- *        list renderer (settings_draw.c); this file decides its rows.
- *
- * The list: the heading INA3221 PARTS over 0x40 FITTED to 0x43 FITTED,
- * then per fitted part a heading "INA3221 0x4n" with the part's state on
- * its right, over its channels' WATCHES, SHUNT and LIMIT rows.  A part
- * not fitted has no heading and no rows.
+ * @brief What SETUP > SENSORS says of its INA228 and INA3221 entries
+ *        (sensors_pane.h): each part's state, the marks on its rows, and the
+ *        words other screens use for its channels.
  *
  * A row of a part the IOmcu does not read is marked as SETUP marks a value
  * the IOmcu does not hold: its edge and value in the warning colour and a
@@ -52,20 +47,44 @@ sens_part_t sensors_rows_status(int a);
  */
 void sensors_rows_set_limits(uint16_t word);
 
-/** Whether SETUP lists @p id: any id that is not a SENSORS row, a FITTED
- *  row, and the channel rows of a fitted part. */
-bool sensors_rows_listed(setting_id_t id);
+/**
+ * @brief Sets the INA228's state.  A change repaints SETUP.
+ * @param st sense_map_link_i228()'s word; SENS_PART_UNKNOWN at start.
+ */
+void sensors_rows_set_i228(sens_part_t st);
 
-/** The part whose heading stands above @p id, 0 to 3: @p id is the first
- *  row of a fitted part.  -1 otherwise. */
-int sensors_rows_heading(setting_id_t id);
+/**
+ * @brief The INA228's state as last set.
+ * @return The state.
+ */
+sens_part_t sensors_rows_i228(void);
 
-/** Part @p a's heading, "INA3221 0x4n", into @p buf. */
+/**
+ * @brief Part @p a's name, "INA3221 0x4n".
+ * @param a   The part, 0 to 3.
+ * @param buf Takes the name.
+ * @param n   The size of @p buf, bytes.
+ * @return @p buf; "" with no buffer.
+ */
 const char *sensors_rows_title(int a, char *buf, size_t n);
 
 /** Part @p a's state in words, and the colour it is drawn in. */
 const char *sensors_rows_state(int a);
 gfx_color_t sensors_rows_state_color(int a);
+
+/**
+ * @brief A state in words, in the language showing.
+ * @param st The state; one out of range reads as SENS_PART_UNKNOWN.
+ * @return The words, at most 25 cells.
+ */
+const char *sensors_rows_word(sens_part_t st);
+
+/**
+ * @brief The colour a state is drawn in.
+ * @param st The state.
+ * @return UI_OK online, dim while it is not known yet, else UI_WARN.
+ */
+gfx_color_t sensors_rows_word_color(sens_part_t st);
 
 /**
  * @brief Whether the row of @p id is marked.
@@ -78,6 +97,35 @@ bool sensors_rows_unheld(setting_id_t id);
 
 /** The line a marked row shows in place of its help. */
 const char *sensors_rows_why(setting_id_t id);
+
+/**
+ * @brief The band's line for an INA228 frame the IOmcu refused: the shunt and
+ *        maximum past 163.84mV, with the highest maximum for that shunt; any
+ *        other refusal in general words.
+ * @param buf  where the line goes.
+ * @param n    the size of @p buf, bytes.
+ * @param uohm the shunt asked, uOhm.
+ * @param da   the maximum asked, 0.1A.
+ * @return @p buf; "" for no buffer.
+ */
+const char *sensors_rows_i228_alert(char *buf, size_t n, unsigned uohm,
+                                    unsigned da);
+
+/**
+ * @brief The help line of INA228 shunt and INA228 max current: the highest
+ *        value that works with the other row's value as it stands, so the row
+ *        says what the IOmcu takes before anything is written.
+ * @param id the row's setting.
+ * @return the line, valid until the next call; "" for any other row.
+ */
+const char *sensors_rows_i228_line(setting_id_t id);
+
+/**
+ * @brief Whether the INA228's shunt and maximum as set are a pair the IOmcu
+ *        refuses: more than 163.84mV across the shunt.
+ * @return true when the IOmcu refuses them.
+ */
+bool sensors_rows_i228_over(void);
 
 /**
  * @brief Builds the band's line for a SENSE_LIMIT alert, in the panel's
@@ -94,8 +142,38 @@ const char *sensors_rows_why(setting_id_t id);
 const char *sensors_rows_alert(char *buf, size_t n, sense_limit_link_ev_t ev,
                                unsigned ch, uint16_t ma, int watch);
 
-/** Channel @p c (0 to 11) as the screens name it, "0x41 CH2", into @p buf;
- *  "" for no channel. */
+/**
+ * @brief Builds the console line of a channel over its limit, in English:
+ *        the part and channel, what it watches, the highest current of its
+ *        windows the panel read since the last SENSE_LIMIT read, and the
+ *        limit.  For example "INA3221 0x40 CH1 (PORT 1) over its limit of
+ *        0.010A: highest window read 0.153A".
+ * @param buf     where the line goes.
+ * @param n       the size of @p buf, bytes; 96 holds every line.
+ * @param ch      the channel, 0 to 11.
+ * @param watch   the channel's WATCHES option, said in brackets; none for
+ *                SENS_W_NONE.
+ * @param have    a window of @p ch was read: @p peak_ma holds it; else the
+ *                line says "no window read".
+ * @param peak_ma the highest current, mA, signed, shown in A to 0.001A.
+ * @param limit_ma the limit the page held, mA, shown in A to 0.001A.
+ * @return @p buf; "" for a channel past 11 or no buffer.
+ */
+const char *sensors_rows_trip_line(char *buf, size_t n, unsigned ch,
+                                   int watch, bool have, int16_t peak_ma,
+                                   uint16_t limit_ma);
+
+/**
+ * @brief Channel @p c as the screens name it.
+ *
+ * "0x41 CH2"; a channel that watches a board's rail by the rail's name,
+ * "RAIL B" (the rbmod carrier's INA3221), in the language showing.
+ *
+ * @param c   the channel, 0 to 11.
+ * @param buf where the name goes.
+ * @param n   the size of @p buf, bytes.
+ * @return @p buf; "" for no channel or no buffer.
+ */
 const char *sensors_rows_channel(int c, char *buf, size_t n);
 
 /** The same over SERVO's plot and on the TEST card: "INA 0x41 CH2", or
@@ -111,8 +189,22 @@ const char *sensors_rows_meter(char *buf, size_t n);
  *  page code @p code (LINK_SM_WATCH_*), 0 to 11; -1 for none. */
 int sensors_rows_watcher(uint16_t code);
 
-/** Each programming port's WATCHED BY line on OUTPUTS, from the settings
- *  as they stand (outputs_screen_set_port_watch()). */
+/**
+ * @brief Programming port @p port's WATCHED BY label: "INA3221 0x41 CH2"
+ *        for the channel watching PORT n, else "INA3221 PROG 5V" for the
+ *        one watching the ports' 5V (the rbmod carrier's CH3).
+ *
+ * @param port the port, 0 to 3.
+ * @param buf  where the label goes.
+ * @param n    the size of @p buf, bytes.
+ * @return @p buf; "" while no channel watches the port, for a port past 3
+ *         and for no buffer.
+ */
+const char *sensors_rows_port_watch(unsigned port, char *buf, size_t n);
+
+/** @brief Each programming port's WATCHED BY line on OUTPUTS, from the
+ *         settings as they stand (outputs_screen_set_port_watch(),
+ *         sensors_rows_port_watch()). */
 void sensors_rows_publish_watch(void);
 
 #ifdef __cplusplus

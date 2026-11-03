@@ -19,6 +19,7 @@
  * - a_supply_held_by_a_port_takes_off_and_no_other_press
  * - a_port_that_takes_the_supply_ends_what_was_under_way
  * - caps_reach_the_set_points_when_the_port_lets_go
+ * - the_operators_set_points_come_back_when_the_port_is_done
  * - a_held_supply_is_drawn_dimmed_and_says_who_holds_it
  * - the_pd_minis_rate_is_shown_after_online
  *
@@ -56,7 +57,9 @@ TEST_CASE(a_drag_moves_the_set_point_by_the_distance_dragged)
         ev(TRACK_X + 100 + k, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
     }
     ev(TRACK_X + 110, V_ROW_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_screen()->covered());
     tap(APPLY_X, ASK_Y);
+    CHECK(!supply_screen()->covered());
     const float at_100 = 3.3f + 100.0f * per_px;
     CHECK_NEAR(supply_screen_set_v(), at_100 + 10.0f * per_px, 0.03f);
 }
@@ -468,6 +471,53 @@ TEST_CASE(a_supply_held_by_a_port_takes_off_and_no_other_press)
     CHECK(c.on);
 }
 
+/* On a board whose programming ports have their own supply (the rbmod
+ * carrier), neither programmer's port holds the screen: the PD mini takes
+ * set points and OUTPUT ON through a session.  On any other board it is
+ * held.  The board's word arriving or going moves the hold at once. */
+TEST_CASE(a_port_holds_the_screen_only_where_the_ports_use_the_pd_mini)
+{
+    supply_cmd_t c;
+
+    for (int k = 0; k < 4; ++k) {
+        const bool own = (k & 1) != 0;
+
+        fresh();
+        supply_screen_set_ports_own(own);
+        if ((k & 2) != 0) {
+            supply_screen_set_hitec_held(true);
+        } else {
+            supply_screen_set_port_held(true);
+        }
+        CHECK_EQ(supply_screen_port_held(), !own);
+        tap(V_UP_X, V_ROW_Y);
+        CHECK_NEAR(supply_screen_set_v(), own ? 6.1f : 6.0f, 1e-4f);
+        hold_on();
+        CHECK_EQ(supply_screen_poll_cmd(&c) && c.on, own);
+        supply_screen_set_ports_own(!own);
+        CHECK_EQ(supply_screen_port_held(), own);
+    }
+}
+
+/* The SUPPLY page's word on a carrier is an ESC session's: it locks there too. */
+TEST_CASE(an_esc_sessions_word_holds_the_screen_on_every_board)
+{
+    supply_cmd_t c;
+
+    for (int k = 0; k < 2; ++k) {
+        fresh();
+        supply_screen_set_ports_own(k != 0);
+        supply_screen_set_page_held(true);
+        CHECK(supply_screen_port_held());
+        tap(V_UP_X, V_ROW_Y);
+        CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+        hold_on();
+        CHECK(!supply_screen_poll_cmd(&c) || !c.on);
+        supply_screen_set_page_held(false);
+        supply_screen_set_ports_own(false);
+    }
+}
+
 /* What was under way when the port left PWM ends with nothing asked. */
 TEST_CASE(a_port_that_takes_the_supply_ends_what_was_under_way)
 {
@@ -551,6 +601,109 @@ TEST_CASE(caps_reach_the_set_points_when_the_port_lets_go)
     CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
 }
 
+/* A port's set points stand in for the operator's while it holds the
+ * supply and while the output it left on stays on; the operator's come
+ * back once the port is done and the output reads off and OUTPUT ON is not
+ * being held, unless something changed the set points since.  A change
+ * between two sessions is the operator's from then on. */
+TEST_CASE(the_operators_set_points_come_back_when_the_port_is_done)
+{
+    const supply_caps_t narrow = { 3.3f, 5.0f, 0.02f, 0.5f, 1.5f, 0.05f };
+
+    fresh();
+    supply_screen_port_done(true);                  /* nothing lent */
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_adopt(4.8f, 1.0f);                /* the first keeps them */
+    supply_screen_port_done(true);                  /* held: the port's */
+    CHECK_NEAR(supply_screen_set_v(), 4.8f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    /* LEAVE leaves the output on: the port's stay on it. */
+    supply_screen_set_output(true);
+    supply_screen_set_port_held(false);
+    supply_screen_port_done(true);
+    supply_screen_port_done(false);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    /* Off on the screen, not yet read off on the page. */
+    supply_screen_set_output(false);
+    supply_screen_port_done(false);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    /* Given back once: what is set after it stays. */
+    tap(V_UP_X, V_ROW_Y);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+
+    /* An ON asked holds them back as an output on does. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_port_held(false);
+    hold_on();
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+
+    /* A change after the port let go stands, and nothing is kept. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_port_held(false);
+    tap(V_UP_X, V_ROW_Y);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 5.1f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.0f, 1e-4f);
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_port_held(false);
+    supply_screen_port_done(true);                  /* kept from here on */
+    CHECK_NEAR(supply_screen_set_v(), 5.1f, 1e-4f);
+
+    /* Changed while the output a session left on stays on, then a second
+     * session: the change is what comes back. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(true);
+    supply_screen_set_port_held(false);
+    supply_screen_put(5.5f, 1.5f);
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_output(false);
+    supply_screen_set_port_held(false);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 5.5f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.5f, 1e-4f);
+
+    /* OUTPUT ON being held: its ON lands at the set points it began on. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_port_held(false);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS / 2);
+    CHECK(supply_screen_output_held());
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_screen_output_held());
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+
+    /* Caps lowered meanwhile: the operator's come back under them. */
+    fresh();
+    supply_screen_set_port_held(true);
+    supply_screen_adopt(5.0f, 1.0f);
+    supply_screen_set_caps(&narrow);
+    supply_screen_set_port_held(false);
+    supply_screen_port_done(true);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 1.5f, 1e-4f);
+}
+
 /* The held controls are drawn as taking no press, OUTPUT OFF is not, and
  * the MODE card names the holder. */
 TEST_CASE(a_held_supply_is_drawn_dimmed_and_says_who_holds_it)
@@ -619,8 +772,11 @@ int main(void)
     RUN(a_drag_the_home_tag_releases_opens_no_question);
     RUN(a_trip_shows_on_the_mode_card);
     RUN(a_supply_held_by_a_port_takes_off_and_no_other_press);
+    RUN(a_port_holds_the_screen_only_where_the_ports_use_the_pd_mini);
+    RUN(an_esc_sessions_word_holds_the_screen_on_every_board);
     RUN(a_port_that_takes_the_supply_ends_what_was_under_way);
     RUN(caps_reach_the_set_points_when_the_port_lets_go);
+    RUN(the_operators_set_points_come_back_when_the_port_is_done);
     RUN(a_held_supply_is_drawn_dimmed_and_says_who_holds_it);
     RUN(the_pd_minis_rate_is_shown_after_online);
     free(fb);

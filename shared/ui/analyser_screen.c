@@ -666,6 +666,7 @@ static void cancel(void)
 /** @brief The screen, as the router takes it. */
 static const ui_screen_t k_screen = {
     .title  = "RECEIVER",
+    .covered = ui_screen_not_covered,
     .reset  = reset,
     .enter  = NULL,
     .leave  = NULL,

@@ -15,7 +15,7 @@ hardware.
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
 | IOmcu silence watchdog, 200ms | the link is dead in either direction | built and tested |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written |
-| Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED or the supply output is on | built; the decision is host-tested (`test_frame_watch`) |
+| Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED, the supply output is on or the carrier's programming-port 5V is live | built; the decision is host-tested (`test_frame_watch`) |
 
 A pressed STOP stops the heartbeat, switches the panel's own output model to SAFE
 and writes ARM = 0 to the control page. While the link is up the panel
@@ -33,7 +33,10 @@ the render loop's, and the outputs keep their last command.
 
 The render loop moves a counter once per pass. The control task reads it in
 every 5ms pass and inside every link exchange's wait. While the bench is
-ARMED, or while the supply output is on, a counter that has not moved for
+ARMED, while the supply output is on, or, on the rbmod carrier, while the
+programming ports' 5V counts as live for the gates
+([The carrier's programming-port 5V](#the-carriers-programming-port-5v)),
+a counter that has not moved for
 1000ms (`FRAME_WATCH_MS`, `shared/safety/include/frame_watch.h`) is a stop
 of the bench's own, through the path STOP takes:
 
@@ -87,6 +90,271 @@ Current limitations:
 - Leaving SERVO while a programming port holds the supply keeps the output
   on. A single card read of 1000ms or more on LOGS then stops the bench and
   ends the port's session.
+
+## Errors
+
+The rule: an error switches every output off and the bench to SAFE. An
+error is a fault that ends what the bench drives. The operator's own OFF,
+DISARM and edits are not errors.
+
+The outputs are the bank's servo PWM slots and DShot throttle channels, the
+four programming ports (servo PWM, DShot, the KST line, the Hitec line), the
+PD (Power Delivery) mini's output, and on the rbmod carrier the programming
+ports' own 5V on GPIO 21 ([The carrier's programming-port 5V](#the-carriers-programming-port-5v)). The phase tap on the TONE page is an
+input and drives nothing. The panel has no wire to any output: it acts
+through the link and the heartbeat, and the IOmcu acts on its own when
+either goes.
+
+| Fault | Servo PWM and DShot, on the bank and the ports | KST and Hitec sessions | PD mini output | Who acts |
+| --- | --- | --- | --- | --- |
+| Link silent 200ms, the IOmcu running | no pulse from the same pass | cut, line released | asked off in the same pass, an OFF held for a write included | the IOmcu (`safety_gate_step()`); the panel latches a stop when ARMED |
+| The IOmcu held in reset or BOOTSEL | pins are inputs | pins are inputs | stays as it was | nobody: [Hardware limits](#hardware-limits) |
+| The IOmcu restarted | latched SAFE until CLEAR and ARM | none open | read and switched off before the rest of the start-up | the IOmcu (`supply_boot_off()`) |
+| Heartbeat lost at the IOmcu | no pulse within 150ms | cut | asked off, an OFF held for a write included | the IOmcu |
+| The panel restarted, wedged or unplugged | no pulse within 150ms | cut | asked off | the IOmcu, by the heartbeat |
+| The panel's render loop stopped 1000ms | no pulse within 150ms more | cut | off | the panel's control task (`frame_watch.h`), then the IOmcu |
+| STOP | no pulse within 150ms | cut | off | the panel, then the IOmcu |
+| A run's meter or supply fails (`no INA3221 window for 0.2s` and the other errors in [Servo, What ends a run](Servo.md#what-ends-a-run)) | SAFE | none open: a run is ARMED | off | the SERVO screen |
+| A session cut by the link or the heartbeat | as in the rows above | transaction cut | off, after a frame on the wire, 12ms at most | the IOmcu |
+| A card write fails during a run, or the final commit or close of the run log or of the automatic test's CSV (comma-separated values) file after it, once a run | SAFE | the port's supply off, after a write that runs ([below](#a-programming-ports-supply)) | off; a port's after its write, 10000ms at most | the panel (`card_faults_follow()`), the IOmcu for the write |
+| The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, the IOmcu for the write |
+| An INA3221 channel over its limit | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, at the 200ms read of `OVER`, with one console line a channel ([Screens](Screens.md#sensors-the-ina3221-parts)); the IOmcu for the write |
+| A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
+| The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | the port's supply off, after a write that runs | off where it can be switched: the module's protection and a sagging input at once, a write included; the rest after a port's write, 10000ms at most | the IOmcu's driver for the output, the panel for SAFE |
+| A KST or Hitec operation ends in a fault of the servo or the wire (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), or the ESC_WIRE page reports `FAULT` or reaches `NOT_BACK` (`esc_link_faults()`) | SAFE already: a session runs on a SAFE bench | the port's supply off; the operation has ended | off | the panel (`prog_faults_follow()`) |
+
+SAFE means the panel asks DISARM. The request withholds the heartbeat while
+it stands, so the IOmcu fails safe within 150ms even when the panel's
+control task waits in an exchange. A bench that is SAFE already is not
+disarmed again: on a SAFE bench the withheld heartbeat would end a
+programming port's session for no output it drives. The rule is
+`error_stop()` in `shared/safety/error_stop.c`, under `test_error_stop`.
+The control task applies it where it finds an error through
+`shared/safety/error_sites.c`, under `test_error_sites`.
+
+The rows above are an IOmcu of link 4.31 or later. With an older IOmcu a
+programming port that holds the supply keeps it through an error the panel
+finds: the panel asks DISARM and sends no OFF, since that IOmcu would cut a
+write to the servo's memory in the middle (`error_sites_keeps()`). That
+covers every error above that the panel finds, among them a supply that
+stops answering or gives no reading, an ON taken across lost touch events,
+and an ON the SUPPLY page refuses while a port's ON is on it. Still off,
+whoever holds the supply:
+
+- the heartbeat or the link going: the IOmcu cuts it;
+- the panel's own supply trips, CURRENT TRIP and VOLTAGE TRIP: the panel
+  switches the output off first (`error_sites_cut()`);
+- the PD mini's own protection and a sagging input: the module or the
+  IOmcu has switched the output off already, and the panel follows
+  (`error_sites_page_keeps()`). An ON the page let go is followed off the
+  same way; the page lets an ON go only with no port holding it.
+
+A port holds the supply while two words say so: the SUPPLY page's FLAGS
+bit 11 (`LINK_SP_PORT`) as the panel last read it, and a KST or Hitec
+session with a port as the panel last read the KST or HITEC page
+(`supply_link_port_holds()`). The hold ends at the first of the two that
+says it ended. On an IOmcu older than 4.29 a Hitec session holds the supply
+from a POWER's OFF to the end of its listen, and an error between two
+POWERs switches it off. An IOmcu older than 4.13 has no such bit, and no
+port holds the supply there. The panel reads the SUPPLY page every 100ms
+while the PD mini is in use, the KST page every 50ms while its port is out
+of PWM, and the HITEC page every 100ms while it holds a port and every 5ms
+while a request runs. A port that takes the supply between two reads of
+the SUPPLY page gets the OFF of an error in that gap. A port that lets go
+counts until the first answered read of either page that shows it gone. An error between the IOmcu letting go and that read leaves the
+output on (current limitation, IOmcu older than 4.31 only); the gap grows
+while the reads go unanswered. From 4.31 the hold changes nothing: the
+panel writes the OFF either way, and the IOmcu holds it for a write that
+runs.
+
+The carrier's programming-port 5V has no such exemption. Its page,
+PROG_SUPPLY, exists from 4.32, and every IOmcu that serves it holds the
+OFF for a write; its own port bit (`LINK_PS_PORT`) does not enter the rule.
+On the carrier a KST or Hitec session leaves the SUPPLY page's bit clear,
+since the ports run from the 5V and not from the PD mini
+(`ports_tell_supply()`). Such a session does not keep the operator off the
+PD mini either: SUPPLY and the SERVO screen's SET row take OUTPUT ON and set
+points through it (`supply_link_session_blocks()`), and the IOmcu takes them.
+An ESC session sets the bit on every board, the carrier too, since SWITCHED
+powers the ESC from the PD mini. SUPPLY then refuses set points and ON
+and says the ESC programmer holds them (`SUP_HELD_REFUSED_ESC`). On any other
+board a session with a port keeps both off the PD mini, and only OUTPUT
+OFF works.
+
+A port holds the PD mini's output only. The panel's model has no port on
+it, and an error switches it off. A supply that stops answering or gives
+no reading with no port holding it is switched off, so that it does not
+come back on by itself when it answers again. With a port keeping it, the
+fault is acted on and named once while it stands, again when it turns
+into the other fault, and once more when the port lets go, which switches
+the output off. An ON the page refuses for a wiring the settings name and
+the page refused is the port's again while the port holds the page
+(`supply_link_keep()`); when the port lets go, the ON is refused and
+switched off.
+
+### A programming port's supply
+
+A KST or Hitec session holds the PD mini's output while it has a port, on
+a board without the programming ports' own 5V. On
+an error the panel writes the supply's OFF to the IOmcu whoever holds it,
+and whether it reads the output on or not (`supply_link_cut()`). The IOmcu
+decides whether a write to the servo's memory runs, from its own state
+(`supply_page.h`):
+
+- No write runs: the OFF reaches the PD mini in the IOmcu's next pass.
+- A write runs: OUTPUT reads 0 at once; the PD mini and the port's view of
+  it stay on until the write ends, and the OFF reaches the PD mini in the
+  pass after, 10000ms after the OFF at the latest
+  (`SUPPLY_PAGE_WRITE_WAIT_MS`). The port does not cut itself in the
+  middle of the write.
+- A KST write is a WRITE, a RESTORE or a RELEASE of the session, from the
+  gap before its first write frame to the end of the read-backs of its
+  last, and 150ms after (`KST_PORT_WRITE_TAIL_MS`, `kst_port_writing()`).
+  Its planning and the full reads before the first and after the last
+  write frame send no write and are cut at once. An ENTER, a READ_ALL, a
+  VERIFY, a power cycle and a LEAVE write nothing.
+- A Hitec write runs while a SEND whose frame writes runs and for 150ms
+  after it (`HITEC_PORT_WRITE_TAIL_MS`), or while the last command of the
+  HITEC page started its step with `MORE` (`CMD` bit 4,
+  `hitec_port_writing()`). The IOmcu tells a writing frame from its bytes:
+  a classic WRITE_EEPROM or WRITE_RAM, a D series write request, the save
+  and the restart included, with or without `MORE`. A read and a LISTEN
+  write nothing, and an OFF during them is not held. How long a servo
+  needs its supply after a writing frame is not measured; the 150ms are
+  above the longest gap a vendor programmer leaves after one, 128ms
+  ([An OFF during a write](LinkHitec.md#an-off-during-a-write)). The
+  panel's programmer marks every step of a write but the last (`hitec_ses_step_t.more`): a plan step before the
+  last, and a classic try that may be tried again. The bench console marks
+  a step with `more` ([The bench console](BenchConsole.md)).
+- The heartbeat lost or the link silent is not held: off at once, after a
+  frame on the wire, 12ms at most.
+
+From the panel's OFF until the port lets go of the supply, the IOmcu
+refuses the port's own ON: a KST power cycle in its off time ends in PWM
+with result 32 (`SUPPLY`) and the supply off; a Hitec POWER switches it
+off and its ON is refused (`RESULT` 3), and the port stays held without
+supply until CLOSE. A KST port that finds the output off after a write
+keeps it off 1000ms and returns to PWM.
+
+The longest writes the code allows end inside 10000ms, computed and not
+measured: a KST write of 33 steps is 1.93s on the wire after its planning;
+a classic Hitec write of 56 steps with its read-back of 36 cells is 2.9s
+and a D series write of 21 registers with its save, its 1000ms reboot wait
+and its read-back 3.5s, at 32ms a step on the panel's host loopback.
+The second read before a Hitec write's plan ([The second read](HitecProgrammer.md#the-second-read)) writes nothing and holds up no OFF.
+
+A port that lets go of the supply with the output on leaves its own set points on the output; the operator's come back only by YES to SERVO's question, which follows a LEAVE and no other end of the hold,
+(above 6.0V only through HV SERVOS ONLY and its 2s hold) or at the next OFF ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
+
+A session fault is an operation that ends in what the servo or the wire
+did. KST: no servo, a register without 3 equal reads, a servo that changed
+under the plan, a write that failed, was rolled back, was torn or changed
+another register, a verify that differs, a driver fault, a supply that did
+not switch. Hitec: no servo, a wrong entry answer, a failed read, a classic
+write without its answer, a read-back that differs, a step the decoder
+refused. Not a fault: a refusal, a plan that sends nothing, ABORT, and a
+step cut by a stop or a lost link, which end the session themselves.
+
+#### The carrier's programming-port 5V
+
+On the [rbmod carrier](Carrier.md#power) the programming ports run from
+the 5V buck M7, switched by GPIO 21 (link 4.32, the PROG_SUPPLY page). The
+PD mini feeds the servo rails only. The KST and Hitec programmers switch
+the 5V on and off for a session, and the PROG 5V box on SERVO and SUPPLY
+switches it by hand ([Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box)). The
+programmers take no reading of the PD mini on the carrier: its set point
+neither refuses a CONNECT under 4.8V nor sets the voltage of a power
+cycle, and the SUPPLY screen's limits bound the servo rails only, not a
+CONNECT. With the 5V read on, CONNECT and LEAVE after a write switch it
+off and on, as they do the PD mini's output; with it off, CONNECT powers
+the servo up. The page follows the SUPPLY page's rules for a port:
+
+- An error writes the page's OFF, whoever holds it and whatever the panel
+  reads of it (`error_sites.c`, `prog_supply_link_cut()`). A write to the
+  servo's memory keeps it on until the write ends, 10000ms at most; from
+  the OFF until the port lets go, the port's own ON is refused.
+- The heartbeat lost or the link silent switches it off at once, after a
+  frame on the wire, 12ms at most.
+- It is off at every start of the IOmcu, driven low from the first
+  statement of `main()`; the pull-down on M7's EN holds it off while the
+  IOmcu does not drive GPIO 21.
+- An ON from the panel is refused with NOT_ARMED without a live heartbeat
+  and with BAD_VALUE while a port holds the supply.
+- A port switches it on only after the panel has written the page's
+  register 4 (PANEL) since the heartbeat last went. A panel before link
+  4.32, which knows neither this supply nor its gates, never writes it, so
+  its programmers never get the 5V.
+- A firmware install, an IOmcu update, a write to the panel's flash and
+  the panel's Wi-Fi wait while the 5V is on, not read since the
+  link came up or since an unanswered read, held by a port, or while an
+  ON or OFF is owed, as they wait for the PD mini's output
+  (`prog_supply_link_live()`).
+
+SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
+or `NOT READ` when the last read went unanswered. The core is
+`shared/outputs/prog_supply.c` under `test_prog_supply`; the panel's end
+is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`, the
+box `shared/ui/prog5v_box.c` under `test_prog5v_box`.
+
+Current limitations:
+
+- An error during a write keeps the servo powered until the write ends,
+  10000ms at most. A write still running then, with retries, on a slow
+  link or typed step by step on the bench console, is cut in the middle.
+- Every OFF the panel writes is held for a write the same way: the
+  operator's OFF on SUPPLY and the panel's own trips (CURRENT TRIP,
+  VOLTAGE TRIP) as well as an error's. The PD mini's own protection and
+  the IOmcu's cut for a sagging input act at once, a write included.
+- A Hitec write that ends in a fault after a step with `MORE` keeps the
+  OFF held until the next command of the HITEC page or 10000ms.
+- A session fault ends the session with the supply. After a KST write that
+  failed, the session's own backup ends with it; the record made before
+  the write stands, and the read after CONNECT compares the servo with it
+  ([An interrupted write](ServoProgrammer.md#an-interrupted-write)).
+- The IOmcu's STATUS fault bits for overcurrent, over-temperature and stall
+  (`LINK_FAULT_OVERCURRENT`, `LINK_FAULT_OVERTEMP`, `LINK_FAULT_STALL`) are
+  defined and set by nothing.
+- The alerts name the error and do not say that the bench switched to SAFE;
+  the band shows SAFE.
+- With an IOmcu older than 4.31, a supply a port keeps through a supply
+  that stopped answering or gives no reading stays on until the port lets
+  go. The panel has no valid reading of it meanwhile, so CURRENT TRIP and
+  VOLTAGE TRIP do not act on it; the PD mini's own protection and the
+  IOmcu's cut for a sagging input do.
+
+### Hardware limits
+
+Firmware cannot cover a board that does not run:
+
+- The IOmcu held in reset or in BOOTSEL. Its pins are inputs, so the bank
+  and the ports send no pulse, but a servo or ESC (electronic speed
+  controller) input that floats can read a level. The PD mini has its UART
+  on the IOmcu alone and keeps its output as it was until the IOmcu runs
+  again. The monostable below does not cover it: the panel goes on
+  beating. A pull-down on each signal line covers the pulses; a second
+  monostable that the IOmcu's own main loop retriggers, gating the same
+  switches and a switch after the PD mini, would cover the rest. Neither is
+  specified.
+- The panel and the IOmcu both gone. Nothing switches the PD mini or the
+  power path. Covered by the monostable.
+- The PD mini not answering on its UART. The IOmcu sends OFF blind only to
+  a module that has answered with a known OFF argument. The monostable
+  does not cover it while both boards run. A load switch after the PD
+  mini's output, open unless an IOmcu pin holds it closed, would; it is not
+  specified.
+
+On the bring-up bench the PD mini's output stayed on through a 15s outage
+of the IOmcu in BOOTSEL, and a power-on reset drops the IOmcu's USB for
+14.5 to 15s. How long a real reset leaves the PD mini on before the start-up's OFF
+is not measured.
+
+## ESC settings over the signal wire
+
+[The ESC settings pages](LinkEsc.md#what-each-event-does) state the line and the supply
+for each of ARMED, STOP, a lost link, an error and a restart. While the page holds a pin
+the bank does not arm, and an error parks the line and switches the PD mini off. A
+bidirectional DShot pin rests high on SAFE, the entry condition of three ESC bootloaders
+([the limitation](LinkEsc.md#current-limitations)).
 
 ## Required external circuit: the monostable
 
@@ -208,6 +476,17 @@ In both the outputs stay off until an operator holds ARM. Host-tested in
 reset phases each and three models of the wire. How long
 the IOmcu takes from reset to its first answered frame is not measured.
 
+The PD mini's output is switched off first. Right after the wiring is
+restored, and before the sensor bus, the store's erases, core 1 and the CAN
+controller, the IOmcu reads the module and writes OFF to an output that
+reads on (`supply_boot_off()`). WHO_AM_I goes again as soon as one fails
+(`pdmini_hurry()`), 415ms a try, so under AUTO all seven rates are tried in
+2.9s. The wait ends when the module reads off or after 3500ms
+(`SUPPLY_PAGE_BOOT_OFF_MS`); a module that does not answer delays the link
+by that much at every start. Host-tested in `test_supply_boot`: a module
+left on at a set rate is off within 100ms of the wait's start, and at
+each AUTO rate within 3500ms.
+
 ### The first switch to ARMED after a stop
 
 The heartbeat is withheld while a stop is latched. A switch to ARMED clears the panel's
@@ -244,7 +523,7 @@ IOmcu connected the panel switches its own bank to ARMED after the 100ms.
 
 The frame that switches to ARMED carries ARM, THROTTLE and the pole count,
 and no CHAN_CFG. The throttle's Idle pulse and Full pulse reach the IOmcu on
-their own path: an edit, a binding written on OUTPUTS or PICK A PIN, a
+their own path: an edit, a binding written on OUTPUTS, a
 link-up edge or the panel's start owes the IOmcu the pair. An IOmcu restart
 or update comes back as a link-up edge. The panel pays the debt at a 50ms
 poll whose write of ARM = 0 was acknowledged, once 300ms
@@ -260,7 +539,7 @@ it, and the acknowledgement carries what it stored.
 | the read or the write is not answered | owed, sent again at the next poll | `Pulse range not yet sent to the IOmcu. Hold ARM again.` |
 | the read is refused | ended, `The IOmcu did not report its pulse range.` | `No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.` |
 | Idle pulse is less than 100us below Full pulse | ended, nothing sent, `Idle pulse must be 100us or more below Full pulse. Not sent.` | `Idle pulse is not 100us or more below Full pulse. Change one, then hold ARM again.` |
-| the write is refused | ended, `The IOmcu rejected the pulse range.` | `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.` |
+| the write is refused | ended, `The IOmcu rejected the pulse range.` | `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or TARGET.` |
 | the write is acknowledged and a throttle channel stored another pair | ended | `The IOmcu holds another pulse range. Change Idle pulse or Full pulse.` |
 
 The alert of a refused or an inverted pair leaves the band when a later
@@ -321,7 +600,7 @@ reads the state and shows the alert, is not in the coverage figure.
   counts the stops it is told of, and a question stands only under the count
   it was asked with, so an APPLY tapped in the same frame as STOP changes no
   set point, though the supply reports its output off a sample later.
-- The PD mini's wiring (SETUP INTERFACES) changes, once the module has
+- The PD mini's wiring (SUPPLY's PD MINI tab) changes, once the module has
   answered, only on a state read sent after the change that shows the output
   off. A module that switched itself on in the 500ms between two reads keeps
   its pins and so its OFF path; the IOmcu switches it off.
@@ -394,7 +673,7 @@ reads the state and shows the alert, is not in the coverage figure.
 - Every control that holds state between a press and its release cancels.
   MOTOR & ESC, SERVO and CAN BUS FAULT have a gesture that completes on a
   timer, so a lost release there switches to ARMED or acknowledges on its own; the
-  overview's tiles, the outputs and picker screens' cells, the settings
+  overview's tiles, the keys and cells of OUTPUTS, the settings
   screen's keys, the log viewer's buttons, rows and DELETE question and the
   tab rows of MOTOR & ESC, RECEIVER and BALANCE act on the release instead,
   and a press left latched owns a track id the controller reuses, so a later
@@ -408,9 +687,18 @@ reads the state and shows the alert, is not in the coverage figure.
   travels. The exception is a press on a control that stops what the bench
   drives (DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN),
   which the screen names to the router (`safe_at` in ui_screen.h): under the
-  alert band or with a chip's help box open it is the screen's, and the band
-  or the box closes. ARM is never named, so a press on ARM under either
-  starts no hold. A contact that was down when the screen changed or when touch
+  alert band, with a chip's help box open or with the screen guide open it
+  is the screen's, and the band, the box or the guide closes. ARM is never
+  named, so a press on ARM under any of them starts no hold.
+- The screen guide never changes SAFE or ARMED and sends no command. A
+  press on STOP with the guide open closes it and stops at the press, on
+  every page and with an alert showing. Opening the guide releases the
+  contacts the screen owns as a press on the band does, so a hold on ARM is
+  abandoned and a throttle drag ends. While the guide is open a knob turn
+  moves nothing (`ui_router_take_knob()`). While ARMED the guide offers only
+  pages whose dock covers no control the screen names in `safe_at` and no
+  rect it must keep in view, such as the TARGET row; `test_help_pages`
+  sweeps each such page's dock on an 8px grid. A contact that was down when the screen changed or when touch
   events were lost is nobody's until it lifts and comes down again. A contact
   the screen owns that reaches the status band is released for the screen at
   the last point the screen was handed, and is the router's from there: a
@@ -500,7 +788,8 @@ reads the state and shows the alert, is not in the coverage figure.
   under way ends at an ARM, a DISARM and a stop, and a finger resting on the
   control moves nothing until it lifts and presses again. A value the screen
   has posted and the application has not collected at a DISARM or a stop is
-  dropped.
+  dropped. The one exception is a Hitec servo inside its programming
+  session ([A Hitec servo moved while SAFE](#a-hitec-servo-moved-while-safe)).
 - Every switch to ARMED starts from the channel's rest, not from where the last run left
   the control.
   - MOTOR & ESC: the throttle slider, its `-1` and `+1` steps and the knob
@@ -571,8 +860,10 @@ reads the state and shows the alert, is not in the coverage figure.
   role or anything of a throttle channel. A surface's slew and pulse range are
   taken while ARMED: the SERVO screen writes them with every position. The panel
   writes a binding and the throttle's pulse range only while SAFE.
-- The IOmcu acts on overcurrent, over-temperature, stall timeout and a
-  lost link on its own authority and reports the fault at the next poll.
+- The IOmcu acts on a lost link, a lost heartbeat and the PD mini's
+  sagging input on its own authority and reports the fault at the next
+  poll. Its fault bits for overcurrent, over-temperature and stall are set
+  by nothing ([Errors](#errors)).
 - A switch to ARMED names the roles it drives ([Link, An arm for one
   role](Link.md#an-arm-for-one-role)). MOTOR & ESC's ARM and a stick
   run on its PROGRAM switch the throttle outputs to ARMED, ARM 0x0002. SERVO switches the surfaces and the
@@ -616,6 +907,60 @@ reads the state and shows the alert, is not in the coverage figure.
   ramped, by decision: the bank ramps a throttle upward only, so a ramp on
   the wire would slow the rise and nothing else. [STATUS.md, Not
   planned](https://github.com/subtilitas/rcbench/blob/main/STATUS.md#not-planned).
+
+### A Hitec servo moved while SAFE
+
+A Hitec servo may move while the bench is SAFE, inside a held programming
+session only. This is the one exception to the rule that an output value
+changes only while ARMED. The bench cannot switch to ARMED while the HITEC
+page holds a port ([LinkHitec, STOP](LinkHitec.md#stop-a-switch-to-safe-heartbeat-loss-and-link-loss)),
+and a Hitec servo takes its target over the programming wire, not as a
+pulse width.
+
+The rule:
+
+- A move needs an entered session (`hitec_session_move()`; refused with
+  `HITEC_SES_ERR_NOT_IN_MODE` otherwise). D series: a target of 0 to 6000
+  written to register 0x1E, then register 0x0C, the position, read back.
+  Classic: `66` with a target of 3600 to 8400 (900 to 2100us), then `65`.
+  A target outside the range is refused (`HITEC_SES_ERR_ARG`).
+- A move writes to the servo's RAM only: no EEPROM cell, no save
+  (0x70), no reboot. No step of a move carries `MORE`, so an OFF of the
+  supply during a move is not held for a write
+  ([A programming port's supply](#a-programming-ports-supply)). A value
+  reaches the servo's memory only through a write with its backup, record
+  and read-back.
+- The commanded position moves at most 150 counts (2.0deg) a pass and stays
+  inside the reach of the servo's stored end points: the positions of
+  targets 0 and 6000, 2606 to 13743 on a factory D485HW
+  (`hitec_live_d_command()`).
+- Each pass is judged (`hitec_live_judge()`). It binds when the position
+  read lies more than 150 counts from a command that stands still or moves
+  outward on 2 passes in a row, when the supply current stays at or above
+  80% of the session's current limit for 400ms (800mA of the default
+  1000mA), or when the AS5600 angle, while fitted, moved less than half of
+  a commanded change of 3deg or more. A bind moves the command back to the
+  last free position less 75 counts (1.0deg) toward the neutral.
+- The mapping takes a servo set to CW only (`hitec_live_d_ends()`).
+- Moves are switched on by a 2s hold, and only with a PD mini answering
+  with its output on: STOP switches the PD mini off, and with it the
+  servo. The PD mini's own current limit is the hard ceiling.
+
+Current limitations:
+
+- The panel has no control that switches moves on (MOVE SERVO on the
+  TRAVEL tab): nothing calls `hitec_session_move()`.
+- Every threshold of the judges is chosen, not measured with a horn
+  against a block. The stall current of a D485HW is not known.
+- Whether the servo follows the target line below 400 and above 5600 or
+  stops at its end points is not measured; the reach assumes the line
+  goes on.
+- Whether a D series servo holds its last target with no frames is not
+  measured. A switch to SAFE at the bench alone stops the port and leaves
+  the supply on ([LinkHitec, STOP](LinkHitec.md#stop-a-switch-to-safe-heartbeat-loss-and-link-loss)).
+- Whether a reboot discards a RAM write that was not saved is not
+  measured.
+- The mapping of a servo set to CCW is not measured.
 
 ## Heartbeat rather than enable level
 

@@ -281,8 +281,8 @@ SP_SHARED void sp_cut(char *buf, size_t n, int max_chars)
 /*
  * @p src into @p dst, as much as fits with its terminator.  The copy every
  * row and line makes, without snprintf(): whatever the format, a call to
- * snprintf() reaches newlib's float conversion, and the panel's call graph
- * puts 1952 bytes of stack below it (tools/stack_check.py -v).
+ * snprintf() reaches picolibc's float conversion, and the panel's call graph
+ * puts 1136 bytes of stack from snprintf() down (tools/stack_check.py -v).
  */
 SP_SHARED void sp_copy(char *dst, size_t n, const char *src)
 {

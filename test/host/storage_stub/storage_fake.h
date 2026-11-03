@@ -42,14 +42,13 @@ extern unsigned   g_dev_fail_after;         /* set-ups that work first */
 extern bool       g_drives_full;            /* ff_diskio_get_drive() */
 extern unsigned   g_dev_adds;               /* sdmmc_host_init_slot() */
 /* sdmmc_host_deinit_slot() calls: the host is shared with the radio's
- * slot, and each call counts it down, so a slot that never came up must
- * not be let go. */
+ * slot; a slot that never came up has no handle, and its stop changes
+ * nothing. */
 extern unsigned   g_dev_removes;
 extern int        g_dev_live;               /* slot 0 started, not let go */
-/* ESP-IDF's count of started slots; 1 after start-up: the C6's slot 1. */
+/* ESP-IDF's registered slots; 1 after start-up: the C6's slot 1. */
 extern int        g_host_slots;
-extern int        g_host_active;            /* the active slot, -1: none */
-extern unsigned   g_host_stops;             /* the count reached 0 */
+extern unsigned   g_host_stops;             /* the controller went */
 extern int        g_drive_live;             /* drives registered */
 extern int        g_fs_live;                /* volumes f_mount()ed */
 extern bool       g_slot_in_probe;          /* a slot set up at the look */

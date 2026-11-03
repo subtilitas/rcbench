@@ -70,6 +70,16 @@ static bool button_point(uint8_t gpio, int *bxp, int *byp)
     return button_point_on(BOARD, gpio, bxp, byp);
 }
 
+TEST_CASE(the_protocol_list_covers_the_screen_while_open)
+{
+    fresh();
+    CHECK(!picker_screen()->covered());
+    tap_rect(picker_screen_list_face());
+    CHECK(picker_screen()->covered());
+    tap_rect(picker_screen_list_row(proto_named("SERVO PWM")));
+    CHECK(!picker_screen()->covered());
+}
+
 TEST_CASE(a_button_binds_the_pad_it_is_wired_to)
 {
     /*
@@ -79,7 +89,7 @@ TEST_CASE(a_button_binds_the_pad_it_is_wired_to)
      */
     fresh();
     render();
-    int bx, by;
+    int bx = 0, by = 0;
     if (!button_point(4u, &bx, &by)) { T_FAIL("GP4 has no button"); }
     CHECK_EQ(s_applied, 1);
     CHECK_EQ(outbind_group_of(&s_last, idx(4u)), 1);
@@ -103,7 +113,7 @@ TEST_CASE(a_button_binds_the_pad_it_is_wired_to)
 TEST_CASE(a_cancelled_press_toggles_nothing)
 {
     fresh();
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(button_point(idx(4u), &bx, &by));
     const int was = s_applied;
 
@@ -131,7 +141,7 @@ TEST_CASE(every_button_binds_its_own_pin_and_no_other)
         if (bd->pins[i].reserved) { continue; }
         fresh();
         render();
-        int bx, by;
+        int bx = 0, by = 0;
         const uint8_t gp = bd->pins[i].gpio;
         if (!button_point(gp, &bx, &by)) {
             T_FAIL("GP%u has no button", gp);
@@ -155,7 +165,7 @@ TEST_CASE(a_reserved_pin_has_no_button_to_press)
      */
     fresh();
     render();
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(!button_point(3u, &bx, &by));
     CHECK_EQ(s_applied, 0);
 }
@@ -164,7 +174,7 @@ TEST_CASE(a_pin_another_protocol_holds_is_not_this_ones_to_take)
 {
     fresh();
     render();
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(button_point(4u, &bx, &by));       /* SERVO PWM takes GP4 */
     CHECK_EQ(s_applied, 1);
 
@@ -186,7 +196,7 @@ TEST_CASE(a_release_somewhere_else_acts_not_at_all)
 {
     fresh();
     render();
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(button_point(4u, &bx, &by));
     const int before = s_applied;
 
@@ -204,7 +214,7 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_binds_nothing)
 {
     fresh();
     render();
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(button_point(4u, &bx, &by));
     const int before = s_applied;
     feed_reset();
@@ -233,7 +243,7 @@ TEST_CASE(a_board_that_does_not_say_where_its_pads_are_is_not_drawn)
     CHECK(!picker_screen_can_draw());
     render();                                /* draws the message, not a board */
 
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(!button_point(4u, &bx, &by));
     CHECK_EQ(s_applied, 0);
 
@@ -253,7 +263,7 @@ TEST_CASE(the_coprocessors_drawing_is_used_when_it_agrees_with_the_board)
     CHECK(why != NULL && why[0] != '\0');
     CHECK(!picker_screen_has_drawing());
     render();
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(button_point(4u, &bx, &by));       /* still usable */
 
     /* The served drawing agrees with the catalogue and is drawn. */
@@ -325,7 +335,7 @@ TEST_CASE(a_drawing_that_disagrees_or_does_not_parse_is_not_shown)
     CHECK(!picker_screen_has_drawing());
     CHECK(picker_screen_can_draw());          /* from its shape */
     render();
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(button_point(4u, &bx, &by));
 
     /* Truncated by one byte. */
@@ -565,7 +575,7 @@ TEST_CASE(a_board_that_does_not_say_which_pads_are_ground_still_draws)
     CHECK(picker_screen_can_draw());
     render();
 
-    int bx, by;
+    int bx = 0, by = 0;
     CHECK(button_point_on(bare, 4u, &bx, &by));
     CHECK_EQ(s_applied, 1);
     CHECK_EQ(outbind_group_of(&s_last, outbind_index_of(bare, 4u)), 1);
@@ -585,7 +595,7 @@ TEST_CASE(the_marks_do_not_get_in_the_way_of_the_buttons)
         if (bd->pins[i].reserved) { continue; }
         fresh();
         render();
-        int bx, by;
+        int bx = 0, by = 0;
         const uint8_t gp = bd->pins[i].gpio;
         if (!button_point(gp, &bx, &by)) {
             T_FAIL("GP%u has no button with the marks drawn", gp);
@@ -661,7 +671,7 @@ TEST_CASE(an_unconfirmed_binding_takes_no_tap)
 {
     fresh();
     render();
-    int bx, by;
+    int bx = 0, by = 0;
     if (!button_point(4u, &bx, &by)) { T_FAIL("GP4 has no button"); }
     CHECK_EQ(s_applied, 1);
     CHECK(picker_screen_editable());
@@ -699,6 +709,7 @@ int main(void)
 {
     RUN(an_unconfirmed_binding_takes_no_tap);
     RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
+    RUN(the_protocol_list_covers_the_screen_while_open);
     RUN(a_button_binds_the_pad_it_is_wired_to);
     RUN(every_button_binds_its_own_pin_and_no_other);
     RUN(a_reserved_pin_has_no_button_to_press);

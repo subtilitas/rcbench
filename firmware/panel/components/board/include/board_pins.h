@@ -47,11 +47,11 @@ extern "C" {
  *
  * The panel refreshes at 60.38Hz, measured: the VSYNC figure of the
  * console's 300-frame line on the station, 2026-10-23.  52MHz is
- * requested; ESP-IDF v5.5.5 rounds 240MHz / 52MHz to a divider of 5,
+ * requested; ESP-IDF v6.1 rounds 240MHz / 52MHz to a divider of 5,
  * which delivers 48MHz.  The defines make a frame 1354 x 636 clocks
  * (1024 + 10 + 160 + 160 by 600 + 1 + 23 + 12); at 48MHz that alone
  * would give 55.74Hz.  mipi_dsi_hal_host_dpi_set_horizontal_timing()
- * (components/hal/mipi_dsi_hal.c) keeps the requested rate instead: it
+ * (components/esp_hal_lcd/mipi_dsi_hal.c) keeps the requested rate instead: it
  * times the DSI host's line from 1354 clocks at 52MHz and shortens the
  * bridge's front porch by 104 clocks, so the line is 1250 clocks at
  * 48MHz, 26.04us either way.  52MHz over 1354 x 636 is 60.38Hz, the

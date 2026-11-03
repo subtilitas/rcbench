@@ -14,6 +14,7 @@
 #include "hitec_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
+#include "esc_wire_panel.h"
 #include "prog_registry.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -117,8 +118,8 @@ static prog_reg_row_t row_of(ui_text_id_t name, ui_text_id_t group,
  * tester's programming port, over the left column: the KST and Chaservo
  * programmer, then the one for servos by Hitec.  MOTOR
  * & ESC's is one row too, ESC STICK under STICK MENU, full width, holding
- * no port and needing no capability.  The modelled protocols without a
- * transport (prog_models.h) are no row. */
+ * no port and needing no capability.  The ESC signal wire is
+ * the second, dimmed until the IOmcu reports LINK_CAP_PROGRAM. */
 TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
 {
     size_t n = 0;
@@ -164,10 +165,16 @@ TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
     CHECK_EQ(hitec->needs_capability, (uint16_t)LINK_CAP_SERVO_PWM);
     CHECK(hitec->page_set == &hitec_panel_pages);
     CHECK(!hitec->full_width);
-    /* MOTOR & ESC's list: ESC STICK alone. */
+    /* MOTOR & ESC's list: ESC STICK and the signal wire. */
     prog_list_build(&l, rows, n, PROG_DEV_MOTOR, UI_WB_PROGRAM, NULL);
-    CHECK_EQ(l.total, 1u);
-    CHECK_EQ(l.count, 1u);
+    CHECK_EQ(l.total, 2u);
+    CHECK_EQ(l.count, 2u);
+    const prog_reg_row_t *wire = &rows[l.e[1].row];
+
+    CHECK_EQ(wire->needs_capability, (uint16_t)LINK_CAP_PROGRAM);
+    CHECK_EQ(wire->port, PROG_REG_NO_PORT);
+    CHECK(wire->page_set == &esc_wire_pages);
+    CHECK(wire->full_width);
     CHECK(!l.search);
     CHECK(!l.headings);
     const prog_reg_row_t *stick = &rows[l.e[0].row];
@@ -277,8 +284,10 @@ TEST_CASE(a_devices_sessions_are_each_listed_once)
     CHECK(set[0] == &kst_panel_pages);
     CHECK(set[1] == &hitec_panel_pages);
     CHECK(!prog_reg_full_width(&hitec_panel_pages));
-    CHECK_EQ(prog_reg_sets(PROG_DEV_MOTOR, set), 1);
+    CHECK_EQ(prog_reg_sets(PROG_DEV_MOTOR, set), 2);
     CHECK(set[0] == &esc_stick_pages);
+    CHECK(set[1] == &esc_wire_pages);
+    CHECK(prog_reg_full_width(&esc_wire_pages));
     CHECK(prog_reg_full_width(&esc_stick_pages));
     CHECK(!prog_reg_full_width(&kst_panel_pages));
     CHECK(!prog_reg_full_width(NULL));

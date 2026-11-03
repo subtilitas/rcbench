@@ -304,8 +304,12 @@ OPTION_RE = re.compile(r'^UI_OPTION\("([^"]+)",', re.M)
 # numbers offered one by one: prose names the address it means.  The kept
 # INA3221 of 0.21 (old_addr, old_ch) is on no screen.  What a SENSORS
 # channel watches (watch) is the outputs' and ports' own names, which prose
-# names one at a time.
-NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch"}
+# names one at a time.  Keyboard see-through's OFF, 25% and 50% (kb_see)
+# are a word and two numbers prose uses for much else.  Browser writes'
+# OPEN, ACCESS CODE, HOLD and OFF (web_writes) are words every screen's
+# prose uses for its own buttons and states.
+NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch", "kb_see",
+             "web_writes"}
 
 
 def option_lists() -> dict[str, list[str]]:
@@ -398,11 +402,27 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "MOVE"),
     ("Servo-de.md", "MODEL"),
     ("Servo-de.md", "OFF"),
+    ("Servo-de.md", "HOLD"),
     ("EscProfiles-de.md", "none"),
     ("StickProgramming-de.md", "none"),
     ("LinkHitec-de.md", "RESULT"),
     ("LinkHitec-de.md", "SUPPLY"),
     ("LinkHitec-de.md", "RANGE"),
+    ("LinkHitec-de.md", "STOPPED"),
+    ("LinkEsc-de.md", "CLIPPED"),
+    ("LinkEsc-de.md", "FREE"),
+    ("LinkEsc-de.md", "OPEN"),
+    ("LinkEsc-de.md", "POWER"),
+    ("LinkEsc-de.md", "PROTOCOL"),
+    ("LinkEsc-de.md", "RANGE"),
+    ("LinkEsc-de.md", "READY"),
+    ("LinkEsc-de.md", "RESULT"),
+    ("LinkEsc-de.md", "RUN"),
+    ("LinkEsc-de.md", "STOPPED"),
+    ("LinkEsc-de.md", "SUPPLY"),
+    ("LinkEsc-de.md", "TARGET"),
+    ("LinkEsc-de.md", "TIMEOUT"),
+    ("LinkEsc-de.md", "WRITING"),
     ("LinkSensors-de.md", "WATCH"),
     ("BenchConsole-de.md", "none"),
     ("Bringup-de.md", "UNKNOWN"),
@@ -1358,6 +1378,13 @@ def check_pin_counts(problems: list[str]) -> None:
                         f"{chips.get('measurement')}")
 
 
+# The panel job's name in ci.yml, as the branch ruleset requires it.  A job
+# renamed in ci.yml alone leaves the required check unreported and blocks
+# every merge; the ruleset's required check and this constant change
+# together.
+PANEL_CHECK_NAME = "Panel (ESP-IDF v6.1, ESP32-P4)"
+
+
 def check_sdk_tags(problems: list[str]) -> None:
     """Hold the SDK tags of ci.yml, release.yml and the pages together.
 
@@ -1366,7 +1393,8 @@ def check_sdk_tags(problems: list[str]) -> None:
     tag is env.PICO_SDK_TAG of ci.yml; the ESP-IDF (Espressif
     Internet-of-Things Development Framework) tag is the
     `esp_idf_version` of the panel builds in ci.yml, which release.yml
-    repeats, and the version in the panel job's name.
+    repeats.  The panel job's name is the branch ruleset's required status
+    check and is held to PANEL_CHECK_NAME instead of to the tag.
 
     Args:
         problems: Receives one line per disagreement.
@@ -1422,10 +1450,11 @@ def check_sdk_tags(problems: list[str]) -> None:
         problems.append(f"SDK tags: release.yml builds ESP-IDF {release}; "
                         f"ci.yml builds {idf}")
     job = first("'Panel (ESP-IDF vX, ...)' job name in ci.yml",
-                r"name: Panel \(ESP-IDF (v[\d.]+)[,)]", ci)
-    if job and job != idf:
-        problems.append(f"SDK tags: the ci.yml panel job is named for "
-                        f"ESP-IDF {job}; it builds {idf}")
+                r"(?m)^    name: (Panel \(ESP-IDF v[\d.]+[,)][^\n]*)$", ci)
+    if job and job != PANEL_CHECK_NAME:
+        problems.append(f"SDK tags: the ci.yml panel job is named "
+                        f"'{job}'; the ruleset requires "
+                        f"'{PANEL_CHECK_NAME}'")
     for page, verb in (("Building.md", "builds"), ("Building-de.md", "baut")):
         text = read(REPO / "docs" / page)
         stated = re.findall(

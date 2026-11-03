@@ -198,14 +198,15 @@ static bool flag(const kst_prog_t *p, uint16_t f)
 
 /**
  * @brief Whether the servo's supply is the bench's to switch: a PD mini
- *        answers the port and the panel reads its output on.
+ *        answers the port and the panel reads its output on, or the
+ *        ports' own fixed supply serves the port and reads on.
  *
  * @param p The programmer state.
- * @return true when a PD mini answers with its output on.
+ * @return true when the port's supply is switchable and on.
  */
 static bool pd_on(const kst_prog_t *p)
 {
-    return flag(p, LINK_KS_F_RAIL) && p->f.supply_read;
+    return flag(p, LINK_KS_F_RAIL) && (p->f.supply_read || p->f.fixed_on);
 }
 
 /**
@@ -216,6 +217,9 @@ static bool pd_on(const kst_prog_t *p)
  */
 static void session_gone(kst_prog_t *p)
 {
+    if (kst_prog_msg_of_session(p->msg.id)) {
+        hush(p);
+    }
     p->have_servo = false;
     p->fp_ok = false;
     p->need_read = false;
@@ -1004,6 +1008,7 @@ static void done_ok(kst_prog_t *p, unsigned op)
                           && !flag(p, LINK_KS_F_RAIL);
 
         session_gone(p);
+        ++p->leaves;
         (void)kst_prog_say(p, owed ? KST_PROG_MSG_LEFT_NOTE
                                    : KST_PROG_MSG_LEFT, 0);
         break;
@@ -1011,6 +1016,7 @@ static void done_ok(kst_prog_t *p, unsigned op)
     case LINK_KST_OP_POWER_CYCLED:
         /* The exit where LEAVE is not taken: no wait was applied. */
         session_gone(p);
+        ++p->leaves;
         (void)kst_prog_say(p, p->leave_doubt ? KST_PROG_MSG_LEFT_DOUBT
                                        : KST_PROG_MSG_LEFT_NO_WAIT, 0);
         break;
@@ -1236,6 +1242,9 @@ static bool cycle_end(kst_prog_t *p, const kst_link_outcome_t *o)
         (void)kst_prog_say(p, p->f.stopped ? KST_PROG_MSG_STOPPED
                                            : KST_PROG_MSG_LEAVE_CUT, 0);
         return true;
+    }
+    if (!cut) {
+        ++p->leaves;
     }
     (void)kst_prog_say(p, !cut ? (p->cycle_old ? KST_PROG_MSG_LEFT_CYCLED_OLD
                                                : KST_PROG_MSG_LEFT_CYCLED)
@@ -1646,12 +1655,13 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         if (f->rd.port == LINK_KST_PWM) {
             if (p->have_servo || p->write_enabled || p->written
                 || p->need_read) {
-                /* No command of this model put the port there. */
-                session_gone(p);
-                if (p->msg.seq == said) {
-                    /* Unless this feed said how an operation ended. */
+                /* No command of this model put the port there.  Unless this
+                 * feed said how an operation ended, in a line that outlasts
+                 * the session. */
+                if (p->msg.seq == said || kst_prog_msg_of_session(p->msg.id)) {
                     (void)kst_prog_say(p, KST_PROG_MSG_SESSION_ENDED, 0);
                 }
+                session_gone(p);
             }
         } else {
             p->port = f->rd.port_no;
@@ -2171,6 +2181,11 @@ bool kst_prog_holds_port(const kst_prog_t *p)
     default:
         return p->fed && kst_prog_port_taken(&p->f.rd);
     }
+}
+
+uint32_t kst_prog_leaves(const kst_prog_t *p)
+{
+    return p->leaves;
 }
 
 void kst_prog_supply_set(kst_prog_t *p, uint16_t mv, uint16_t ma)

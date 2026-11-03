@@ -33,7 +33,6 @@ unsigned   g_dev_adds;
 unsigned   g_dev_removes;
 int        g_dev_live;
 int        g_host_slots;
-int        g_host_active;
 unsigned   g_host_stops;
 int        g_drive_live;
 int        g_fs_live;
@@ -171,9 +170,9 @@ esp_err_t esp_vfs_fat_sdmmc_mount(const char *base, const sdmmc_host_t *host,
     const sdmmc_slot_config_t *sc = (const sdmmc_slot_config_t *)slot;
     g_mount_width = sc->width;
     g_mount_slot = host->slot;
-    /* ESP-IDF v5.5.5's order (vfs_fat_sdmmc.c 266-312): the host, the slot,
-     * the card, FatFs; every failure after the host's init stops the slot
-     * through deinit_p, the one of a slot that did not start too. */
+    /* ESP-IDF v6.1's order (vfs_fat_sdmmc.c): the host, the slot, the card,
+     * FatFs; every failure after the host's init stops the slot through
+     * deinit_p, the one of a slot that did not start too. */
     esp_err_t err = (*host->init)();
     if (err != ESP_OK) {
         return err;
@@ -209,15 +208,18 @@ esp_err_t sdmmc_host_init(void)
 }
 
 /**
- * @brief Start a slot, counted as ESP-IDF v5.5.5 counts it.
+ * @brief Start a slot, registered as ESP-IDF v6.1 registers it.
  *
- * sdmmc_host.c 837-840: a slot that starts counts while the count is under
- * 2 and the slot is not the active one; a slot that fails to start does
- * not count.
+ * sdmmc_host.c (esp_driver_sdmmc/legacy/src) hands the start to
+ * sd_host_sdmmc_controller_add_slot(): a slot that is not registered gets
+ * registered, a slot that is registered already answers
+ * ESP_ERR_INVALID_STATE and nothing changes, a slot that fails to start is
+ * not registered.
  *
  * @param slot The slot.
  * @param cfg  Unused.
- * @return g_dev_fail once g_dev_fail_after starts have worked, else ESP_OK.
+ * @return g_dev_fail once g_dev_fail_after starts have worked, else
+ *         ESP_ERR_INVALID_STATE for slot 0 registered, else ESP_OK.
  */
 esp_err_t sdmmc_host_init_slot(int slot, const sdmmc_slot_config_t *cfg)
 {
@@ -230,10 +232,10 @@ esp_err_t sdmmc_host_init_slot(int slot, const sdmmc_slot_config_t *cfg)
         g_dev_fail = ESP_OK;
         return e;
     }
-    if (g_host_slots < 2 && g_host_active != slot) {
-        ++g_host_slots;
+    if (slot == 0 && g_dev_live > 0) {
+        return ESP_ERR_INVALID_STATE;
     }
-    g_host_active = slot;
+    ++g_host_slots;
     if (slot == 0) {
         g_dev_live = 1;
     }
@@ -241,21 +243,25 @@ esp_err_t sdmmc_host_init_slot(int slot, const sdmmc_slot_config_t *cfg)
 }
 
 /**
- * @brief Stop a slot, as ESP-IDF v5.5.5 does.
+ * @brief Stop a slot, as ESP-IDF v6.1 does.
  *
- * sdmmc_host.c 906-923: every call counts down, and the count reaching 0
- * stops the host, the C6's slot 1 with it (g_host_stops).
+ * sdmmc_host_deinit_slot() removes the slot's handle; a slot that never
+ * started has none, and the call answers ESP_ERR_INVALID_ARG with nothing
+ * changed.  A removed slot counts the registrations down, and the
+ * controller goes (g_host_stops) when none is left, the C6's slot 1 with it.
  *
  * @param slot The slot.
- * @return ESP_OK.
+ * @return ESP_OK, or ESP_ERR_INVALID_ARG for slot 0 that is not registered.
  */
 esp_err_t sdmmc_host_deinit_slot(int slot)
 {
     ++g_dev_removes;
+    if (slot == 0 && g_dev_live == 0) {
+        return ESP_ERR_INVALID_ARG;
+    }
     if (slot == 0) {
         g_dev_live = 0;
     }
-    g_host_active = -1;
     if (g_host_slots > 0) {
         --g_host_slots;
         if (g_host_slots == 0) {
@@ -519,7 +525,6 @@ void slot_empty(void)
     g_dev_removes = 0u;
     g_dev_live   = 0;
     g_host_slots = 1;                   /* the C6's slot 1, from start-up */
-    g_host_active = 1;
     g_host_stops = 0u;
     g_drive_live = 0;
     g_fs_live    = 0;

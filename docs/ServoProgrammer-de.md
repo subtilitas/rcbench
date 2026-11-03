@@ -160,11 +160,54 @@ was immer die Zeile sagt.
 Mit den Standardausgängen als Ziel, SERVO-TESTER auf OUTPUTS, zeigt der
 Programmierer
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
-`Unter SETUP > OUTPUTS den SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und jedes
+`ZIEL antippen und SERVO-TESTER auf PORT 1 bis PORT 4 stellen.`, und jedes
 Bedienelement außer **SCHLIESSEN** ist aus. Er verbindet auf PORT 1, PORT 2,
 PORT 3 oder PORT 4, dem Port, den SERVO-TESTER nennt, mit dessen Pin.
 
 ![Die Standardausgänge sind das Ziel](img/de/servo-kst-target.png)
+
+
+### Der Port auf dem rbmod-Carrier
+
+Auf dem [rbmod-Carrier](Carrier-de.md#der-programmierport) mit einem IOmcu
+ab Protokoll 4.36 wählt die Zeile PORT auch den Port. Vor **VERBINDEN**
+öffnet ein Tipp auf die Beschriftung der Zeile **PROGRAMMIERPORT** mit
+`PROGP01  GPIO 13`, `PROGP02  GPIO 14`, `PROGP03  GPIO 15` und
+`PROGP04  GPIO 0`. Der gewählte Eintrag setzt SERVO-TESTER, dieselbe
+Einstellung wie die Einträge PROG PORT von **OUTPUTS**, und bleibt über
+einen Neustart erhalten.
+
+- Das Panel bittet den IOmcu um FUNC SERVO PWM auf dem gewählten Port und
+  NONE auf den anderen drei. Das TARGET des IOmcu, der Port der Liste
+  PROGRAMMIEREN und die Endlagensuche von KST folgen, sobald der Port
+  SERVO PWM liest. Bis dahin sendet der Tester keinen Befehl: an Stelle
+  des Ports erreicht nichts die Servoausgänge.
+- Die Zeile PORT nennt den Port, `PROGP02 GPIO 14  5V FEST` in der Zeile
+  von KST und `PROG-PORT 2 GPIO 14  D-SERIE` in der Zeile von Hitec, oder
+  `KEIN PROG-PORT GESETZT`.
+- **VERBINDEN** ohne Port sagt
+  `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.`
+  und `PORT-Zeile antippen und einen Programmierport wählen.`; mit einem
+  IOmcu vor 4.36 lautet die zweite Zeile
+  `IOmcu auf Protokoll 4.36 oder neuer aktualisieren, um einen Port zu wählen.`
+- Die Liste öffnet nicht, solange ARMED oder ARMED angefordert ist,
+  während eines Tests, eines Sweeps oder eines Endlagenlaufs, oder solange
+  ein Programmer einen Port hält. Die Zustandszeile sagt dann warum:
+  `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT`.
+- Solange PWM04 einen PWM-Ausgang trägt, lautet der Eintrag PROGP04
+  `PROGP04 TEILT PWM-SLICE 0 MIT PWM04 (GPIO 1)` und wird nicht genommen.
+- Die Ports laufen an den festen 5V von M7 auf GPIO 21. Der Puls des
+  Testers geht nur hinaus, solange das Feld PROG 5V EIN zeigt; ein
+  Endlagenlauf und ein Servotest sagen
+  `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, solange es aus ist. Die
+  Spannungsstufen eines Servotests erreichen den Port nicht: ein Test auf
+  ihm sagt `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN`.
+- Für den Endlagenlauf steht das Feld PROG 5V für den PD mini: SEARCH+PROG
+  und SERVO PULSES werden mit dem Feld EIN angeboten, und die
+  Power-Cycles der Session schalten GPIO 21. Ein PD mini an den
+  Servoschienen wird weder gefragt noch beobachtet: ihn während des Laufs
+  ein- oder auszuschalten beendet nichts. Ein abgebrochener Lauf schaltet
+  PROG 5V aus, nicht den PD mini.
 
 ## Der Port
 
@@ -218,7 +261,7 @@ PROGRAMMIEREN wieder offen.
 | `Das Netzteil unterstützt diese Spannung oder Strombegrenzung nicht.` | die Spannung liegt über 8,4V, die Stromgrenze außerhalb 50 bis 3000mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7V unter der Eingangsspannung des PD mini; die Versorgung wird nicht geändert |
 | `Versorgung unter 4.8V. Programmieren benötigt mindestens 4.8V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8V gesetzt ist, sendet das Panel nichts an den IOmcu |
 | `Versorgung hat nicht innerhalb von 3000ms geschaltet. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
-| `IOmcu hat die Verbindung noch nicht freigegeben. Erneut versuchen.` | der IOmcu vertraut dem Heartbeat nicht, oder der Link war still |
+| `Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst. ARM halten, dann DISARM, um ihn aufzuheben.` | der IOmcu vertraut dem Heartbeat nicht (das Band zeigt FEHLER 10), oder der Link war 200ms still und der Failsafe hat ausgelöst (FEHLER 01). Nur das CLEAR, das ein ARM schreibt, hebt ihn auf; ein Neustart des IOmcu kann FEHLER 01 ausgelöst lassen |
 
 ![Ein Port ohne Pin](img/de/servo-kst-nopin.png)
 
@@ -326,8 +369,8 @@ Ausgang, der ein ist, läuft die Sitzung mit der niedrigeren der zwei
 Spannungen und der niedrigeren der zwei Stromgrenzen: eine Spannung über
 der Programmierspannung wird auf sie gesenkt, eine Stromgrenze über
 STROMBEGRENZUNG auf diese, und keine wird angehoben. Das Verlassen des
-Programmierens stellt einen Wert, den **VERBINDEN** gesenkt hat, nicht
-wieder her.
+Programmierens stellt einen Wert, den **VERBINDEN** gesenkt hat, nicht von
+selbst wieder her: SERVO fragt zuerst (unten).
 
 Der Port programmiert bei 4,8V oder mehr. Die Versorgungsspannung, die
 ein Servo zum Speichern eines Registers braucht, ist nicht gemessen. An einem Ausgang, der unter 4,8V ein
@@ -345,6 +388,59 @@ und die Karte MODUS des SUPPLY-Bildschirms zeigt `Servoprogrammierung.`. Die
 Grenzen in den Einstellungen des SUPPLY-Bildschirms bleiben editierbar;
 eine Grenze, die unter einen Sollwert gesenkt wird, erreicht den Sollwert,
 wenn der Port wieder in PWM ist.
+
+Die Sollwerte des Ports bleiben auf dem SUPPLY-Bildschirm und in der Zeile
+SOLL, nachdem der Port wieder in PWM ist, solange der Ausgang eingeschaltet
+bleibt, den er eingeschaltet hinterlassen hat. Die Sollwerte von vor der
+Sitzung kommen mit der ersten Lesung der Versorgung zurück, die keinen Port
+mehr als Halter und den Ausgang aus zeigt: sofort, wo die Sitzung mit
+ausgeschaltetem Ausgang endet, beim nächsten Ausschalten nach einem
+Verlassen, das ihn eingeschaltet lässt. Keiner kommt von selbst zurück,
+solange AUSGANG EIN gehalten wird oder eine Frage oder die HV-Warnung auf
+SERVO steht. Ein Sollwert, der nach dem Freigeben des Ports geändert wurde,
+durch Tippen, eine gesenkte Grenze oder einen Servotest, bleibt, und die
+früheren werden verworfen.
+
+Ein Verlassen, das den Ausgang bei den Sollwerten des Ports eingeschaltet
+lässt, während die Sollwerte von vor der Sitzung andere sind, lässt SERVO
+fragen, sobald der Port in PWM ist: `Deine Versorgungs-Sollwerte 5.50V
+2.00A am eingeschalteten Ausgang wiederherstellen?`, unter AUSGANG IST
+EINGESCHALTET, mit der Änderung jedes abweichenden Sollwerts.
+
+- **JA** gibt dem eingeschalteten Ausgang beide Sollwerte von vor der
+  Sitzung. Eine Spannung, die von 6,0V oder darunter über 6,0V steigt,
+  öffnet zuerst NUR HV-SERVOS, wie eine getippte; **2s HALTEN ZUM
+  ÜBERNEHMEN** gibt beide, ABBRECHEN behält die des Ports.
+- **NEIN** behält die Sollwerte des Ports; die von vor der Sitzung kommen
+  beim nächsten Ausschalten zurück, wie oben.
+
+Die Frage kommt einmal je Verlassen und nicht: solange ein Programmier-Port
+das Netzteil hält; unter Tastenfeld, Liste, Warnung oder einer anderen
+Frage von SERVO oder dem Halten von AUSGANG EIN, auf die sie wartet;
+nachdem der Ausgang zwischen dem Verlassen und der Frage ausging, ein
+Fehler ihn ausschaltete oder ein STOP kam; innerhalb eines Endlagenlaufs,
+dessen Lesesitzung durch dasselbe Verlassen geht; wenn sich seitdem ein
+Sollwert änderte; oder wenn die Sollwerte von vor der Sitzung, auf die
+SUPPLY-Grenzen gehalten, denen des Ports gleichen. Nur ein Verlassen
+fragt. Jedes andere Ende des Haltens eines Ports am Netzteil fragt nichts:
+PORT FREIGEBEN, ein STOP,
+ein Fehler, ein verlorener Link, ein Neustart des Panels oder des IOmcu,
+ein Port, den der IOmcu ohne Verlassen zurückgibt, und Ports, die auf ihre
+eigene Versorgung wechseln (PROG_SUPPLY des rbmod-Carriers), während eine
+Sitzung den PD mini hält. Bei eingeschaltetem Ausgang bleiben die Sollwerte
+der Sitzung dann bis zum nächsten Ausschalten. Die eigene Angabe der Page
+SUPPLY, dass ein Port sie hält (`LINK_SP_PORT`), kann einen Lesevorgang
+nach der des Programmierers enden; die Frage kommt dann bei ihrem Ende, und
+nur nach einem Verlassen. Ein Port, der das
+Netzteil nimmt, ein angefordertes Ausschalten (AUSGANG AUS eingeschlossen)
+oder ein Ausgang, der ausgeht, während sie steht, schließt sie, bevor der
+Ausgang aus liest. Sie steht nur auf SERVO: ein Verlassen, während eine andere Seite
+angezeigt wird, wird erfragt, sobald SERVO wieder angezeigt wird und der
+Ausgang noch eingeschaltet ist, und das Verlassen von SERVO verwirft die
+Frage wie NEIN. Der [Hitec-Programmierer](HitecProgrammer-de.md#verlassen)
+fragt ebenso.
+
+![Die Frage nach dem Verlassen](img/de/servo-hitec-restore-ask.png)
 
 Ein Ausschalten, das eintrifft, während ein Frame auf der Leitung ist, von
 **AUSGANG AUS**, **STOP** oder einem verlorenen Heartbeat, liest sofort aus
@@ -419,6 +515,14 @@ Backup-Datei der Sitzung und die letzte Meldung. Eine Meldung in der
 Warnfarbe ist eine Ablehnung oder ein Ergebnis, das einen zweiten Blick
 braucht; eine in der Gefahrenfarbe sagt, dass der Inhalt des Servos unklar
 ist.
+
+Eine Sitzung, die endet, durch einen verlorenen Link, einen IOmcu, der neu
+startet, oder den Port zurück in PWM, nimmt die Zeilen über das mit, was sie
+hielt: `Alle 32 Register ausgelesen.`, `KST004 geladen.`, eine mit dem Servo
+verglichene Datei, die Ablehnung einer Änderung und worauf eine Änderung oder
+ein Laden wartet. Was geschah, bleibt: ein Schreiben und seine Prüfung, eine
+gespeicherte Datei, eine abgelehnte Datei, wie ein Vorgang endete und jede Zeile
+in der Gefahrenfarbe.
 
 ### Ein Servo mit unbekanntem Layout
 
@@ -962,6 +1066,14 @@ letzte Zeile den Rest. **2s HALTEN ZUM
 LADEN** für 2s übernimmt die Werte in den Entwurf. **ABBRECHEN** lässt den
 Entwurf, wie er war.
 
+Die weichen Limits vergleichen mit dem Servo, wie die Sitzung es vorfand, nicht
+wie zuletzt geschrieben, und SCHREIBEN INS SERVO FREIGEBEN spielt keine Rolle.
+Ein Servo, gefunden mit Left Angle 100 und auf 97 geschrieben, nimmt eine Datei
+mit 98 ohne Seite: 98 liegt unter dem, was die Sitzung vorfand. Die nächste
+Sitzung findet 97, und dieselbe Datei ist eine Erhöhung und öffnet die Seite.
+Die Seite sagt nichts über den Prüfwert einer Datei: Eine von Hand bearbeitete
+Datei sagt das in ihrer eigenen Zeile, mit oder ohne Seite.
+
 ![Die Warnungen einer Datei](img/de/servo-kst-file-soft.png)
 
 ### Was eine Datei nicht zurückspielt
@@ -1345,6 +1457,7 @@ Bei 0ms ist es die Meldung eines IOmcu mit 4.30.
 | **STOP**, ein gehaltener Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12ms; der Schalter geht aus; `STOP: der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES AUSLESEN** vor allem anderen. Der Ausgang eines PD mini wird ausgeschaltet, und der Port ist 1000ms, nachdem er aus liest, wieder in PWM |
 | **ABBRECHEN** | dasselbe, ohne den gehaltenen Stopp |
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
+| Ein Fehler des Prüfstands ([Sicherheit, Fehler](Safety-de.md#fehler)) oder ein Vorgang, der in einer Störung des Servos oder der Leitung endet: kein Servo, ein gescheitertes Lesen, ein geändertes Servo, ein Schreiben, das scheiterte, zurückgerollt wurde oder zerrissen ist, eine Prüfung mit Abweichung, ein Fehler des Treibers | ein laufendes Schreiben endet zuerst mit seinen Rücklesungen: der IOmcu hält die Versorgung bis dahin und 150ms danach an, höchstens 10000ms; das volle Lesen danach wird abgebrochen. Dann geht der Ausgang des PD mini aus; der Port findet ihn aus, hält ihn 1000ms aus und ist wieder in PWM: `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` Ein IOmcu älter als Link 4.31 lässt die Versorgung an ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)) |
 | Der IOmcu startet neu | seine Sitzung und sein Backup sind weg; `IOmcu neu gestartet. VERBINDEN, dann ALLES AUSLESEN tippen.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
 | Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` und `Servoversorgung aus- und einschalten, dann VERBINDEN tippen.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
 | Die Control-Task des Panels nimmt 2s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom IOmcu. ALLES AUSLESEN tippen.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
@@ -1589,7 +1702,31 @@ Link-Ausfall und dem ausgeschalteten Ausgang darin, über den Überlauf bei
 Laden, eine abgebrochene Liste, ein Speichern des gesetzten Typs, die
 Zeilen nach einem Schreiben und auf der Seite von VERLASSEN mit und ohne
 PD mini. `test_kst_panel_limrun` fährt den Endlagenlauf mit dem Servo
-hinter dem Ausgang des PD mini und ohne PD mini, wo er nichts schreibt.
+hinter dem Ausgang des PD mini und ohne PD mini, wo er nichts schreibt,
+und einen Lauf, dessen Verlassen der Lesesitzung nichts zu den Sollwerten
+fragt. `test_servo_restore` fährt die Frage von SERVO nach einem
+Verlassen, das den Ausgang eingeschaltet lässt: nach KST und Hitec, JA,
+NEIN, JA über 6,0V über NUR HV-SERVOS, einen Port, der das Netzteil hält,
+Tastenfeld und Frage von SERVO und das Halten von AUSGANG EIN davor, ein
+Ausschalten, das Ausschalten eines Fehlers, AUSGANG AUS und einen STOP,
+AUSGANG AUS, während sie oder die HV-Warnung steht,
+Sollwerte, die nicht abweichen, einen geänderten Sollwert, eine
+gesenkte Grenze und die gezeichnete Frage in beiden Sprachen: AUSGANG IST
+EINGESCHALTET in ihrem Rahmen, JA und NEIN je gedrückt; keine Frage auf
+einer Platine, deren Ports aus ihrer eigenen Versorgung laufen und auf der
+eine Sitzung den SUPPLY-Bildschirm nicht hält; und keine Frage bei einem
+Ende des Haltens ohne Verlassen, bei einem Verlassen des einen
+Programmierers unter dem Halten des anderen oder wenn die Ports unter einer
+Sitzung auf ihre eigene Versorgung wechseln; und die Frage einmal beim Ende
+der Angabe der Page SUPPLY nach einem Verlassen und nicht nach einem
+anderen Ende. `test_kst_panel_leave` und
+`test_hitec_panel` fahren dasselbe durchgehend: ein Verlassen bietet die
+Sollwerte zurück an; ein STOP, ein verlorener Link, ein Neustart des IOmcu
+und PORT FREIGEBEN bieten nichts an; ein Verlassen von KST fragt beim Ende
+der Angabe der Page SUPPLY, die das Hitec-Overlay weitergibt. `test_kst_prog_cycle` und
+`test_hitec_prog_safe` zählen die Verlassen, die in PWM enden
+(`kst_prog_leaves()`, `hitec_prog_leaves()`), und keines der anderen
+Enden.
 `test_kst_file` fährt Dateien im Format 1 und 2: die Typzeile, ihr Fehlen,
 eine Zeile im Format 1 gegen 20k_sel.
 `test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,

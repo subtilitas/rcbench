@@ -76,6 +76,29 @@ servo_str_t servo_test_abort_str(servo_test_abort_t why)
     return (servo_str_t)(SERVO_STR_AB_NONE + (int)why);
 }
 
+bool servo_test_abort_error(servo_test_abort_t why)
+{
+    switch (why) {
+    case SERVO_TEST_AB_SUPPLY_LOST:
+    case SERVO_TEST_AB_TRIPPED:
+    case SERVO_TEST_AB_STALE:
+    case SERVO_TEST_AB_NOT_ON:
+    case SERVO_TEST_AB_SET_NOT_TAKEN:
+    case SERVO_TEST_AB_CAP:
+    case SERVO_TEST_AB_STALL:
+    case SERVO_TEST_AB_CC:
+    case SERVO_TEST_AB_WIN_STALE:
+    case SERVO_TEST_AB_INA_RESET:
+    case SERVO_TEST_AB_INA_SILENT:
+    case SERVO_TEST_AB_INA_NO_WINDOW:
+    case SERVO_TEST_AB_INA_SETUP:
+    case SERVO_TEST_AB_INA_METER:
+        return true;
+    default:
+        return false;
+    }
+}
+
 servo_str_t servo_test_verdict_str(servo_test_verdict_t v)
 {
     switch (v) {

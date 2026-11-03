@@ -128,6 +128,8 @@ typedef struct {
     uint16_t count;           /**< OVER_COUNT as last read              */
 
     uint16_t over;            /**< bits not told yet                    */
+    uint16_t trip;            /**< bits read since the last
+                                   sense_limit_link_take_trip()          */
     uint16_t ch_lim[LINK_SL_KEPT]; /**< the limit each bit was judged by */
     bool     lost;            /**< a channel passed; which was lost     */
     bool     ev_refused;      /**< the refusal is still to be told      */
@@ -211,6 +213,30 @@ void sense_limit_link_done(sense_limit_link_t *s, int result,
 sense_limit_link_ev_t sense_limit_link_event(sense_limit_link_t *s,
                                              uint32_t now_ms, unsigned *ch,
                                              uint16_t *ma);
+
+/**
+ * @brief The channels whose window passed its limit since the last call, as
+ *        OVER read them, and cleared: every bit at once, not held back by
+ *        the band's repeat times.
+ *
+ * What the panel stops the bench for (error_stop.h).  A link lost clears
+ * them: a read after the link-up says what passed since.
+ *
+ * @param s the service; NULL gives 0.
+ * @return OVER's bits read since the last call, bit c channel c.
+ */
+uint16_t sense_limit_link_take_trip(sense_limit_link_t *s);
+
+/**
+ * @brief The limit channel @p ch's last OVER bit was judged by: the limit
+ *        the page held when the read brought the bit, kept when a new
+ *        limit is written after it.  For the console line of a trip.
+ * @param s  the service.
+ * @param ch the channel, 0 to 11.
+ * @return the limit, mA; 0 before the channel's first bit, for @p ch out
+ *         of range and for a NULL @p s.
+ */
+uint16_t sense_limit_link_trip_ma(const sense_limit_link_t *s, unsigned ch);
 
 /**
  * @brief A channel's limit the page holds.

@@ -6,7 +6,7 @@ order: 100
 
 # IOmcu update
 
-A panel firmware image carries the IOmcu's image and offers it when the IOmcu runs another build. The check runs at every link-up over the CAN (Controller Area Network) bus and compares SHA-256 (Secure Hash Algorithm, 256 bits) digests, not version numbers. A different build raises the alert `IOmcu runs a different build. Update it under SETUP > UPDATES.`.
+A panel firmware image carries the IOmcu's image and offers it when the IOmcu runs another build. The check runs at every link-up over the CAN (Controller Area Network) bus and compares SHA-256 (Secure Hash Algorithm, 256 bits) digests, not version numbers. A different build raises the alert `IOmcu runs a different build. Update it on UPDATES.`.
 
 ## The question
 
@@ -19,7 +19,7 @@ The question opens from the [menu](overview.md), with UPDATE in the band, while 
 | HOLD 2s TO START | starts the update after a 2s hold, with the gesture and fade of ARM |
 | CANCEL | closes the question; the panel does not ask again for that version until it restarts, and [Updates](updates.md#the-iomcu) still starts the update |
 
-Leaving the question another way declines it as CANCEL does.
+The home tag declines it as CANCEL does. A screen the panel forces over the question declines nothing: the [fault screen](busfault.md) of a lost link, and a panel update's download. The next link-up offers again, and the question opens on the menu under the same conditions.
 
 ![An older image](view:coproc-update-older)
 

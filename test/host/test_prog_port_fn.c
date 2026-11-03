@@ -21,7 +21,8 @@
  * and the TARGET refused on it, its pin under the pin rules and no PWM
  * rule, FLAGS bit 12 + n, the masks and bit rates the IOmcu binds from,
  * nibbles 3 to 5 restored, and a 4.26 image reading such a nibble as its
- * default.
+ * default.  A SERVO PWM port giving way to a PWM slot on its slice (the
+ * rbmod carrier's binding first), and the undo.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -465,6 +466,62 @@ TEST_CASE(a_dshot_port_is_under_the_pin_rules_and_no_pwm_rule)
     CHECK_EQ(prog_port_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
 }
 
+/* The rbmod carrier's rule: a PWM slot on a SERVO PWM port's slice is
+ * refused, unless the port gives way (prog_port_yield()); the port's pin
+ * itself never; the yield and its undo. */
+TEST_CASE(a_servo_pwm_port_gives_way_to_a_pwm_slot_on_its_slice)
+{
+    fresh();
+    CHECK_EQ(put(PIN(0u), 0u), 0u);           /* slice 0 */
+    CHECK_EQ(put(PIN(1u), 14u), 0u);          /* NONE     */
+    hold_all();
+    CHECK_EQ(put(LINK_PG_PWM, 1u), 0u);
+    CHECK_EQ(put(LINK_PG_TARGET, 1u), 0u);
+    uint16_t slots[LINK_OS_COUNT];
+    memset(slots, 0, sizeof(slots));
+    slots[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_PWM;
+    slots[LINK_OS_PIN]    = 1u;                /* GP0's slice partner */
+    CHECK_EQ(prog_port_slots_check(&pg, slots), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(prog_port_slots_yield(&pg, slots), 1u);
+    CHECK_EQ(prog_port_slots_check_yield(&pg, slots, 1u), 0u);
+    CHECK_EQ(prog_port_slots_check_yield(&pg, slots, 2u),
+             LINK_NACK_BAD_VALUE);
+    /* The port's own pin is never the slot's, given way or not. */
+    slots[LINK_OS_PIN] = 0u;
+    CHECK_EQ(prog_port_slots_yield(&pg, slots), 0u);
+    CHECK_EQ(prog_port_slots_check_yield(&pg, slots, 1u),
+             LINK_NACK_BAD_VALUE);
+    /* A DShot slot and a NONE port's slice ask nothing of a port. */
+    slots[LINK_OS_PIN]    = 1u;
+    slots[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_DSHOT;
+    CHECK_EQ(prog_port_slots_yield(&pg, slots), 0u);
+    slots[LINK_OS_DRIVER] = (uint16_t)OUT_DRIVER_PWM;
+    slots[LINK_OS_PIN]    = 15u;              /* GP14's slice */
+    CHECK_EQ(prog_port_slots_yield(&pg, slots), 0u);
+    CHECK_EQ(prog_port_slots_yield(NULL, slots), 0u);
+    CHECK_EQ(prog_port_slots_yield(&pg, NULL), 0u);
+
+    /* The yield: NONE, no pulse, no TARGET; the undo: all as before. */
+    prog_port_yield_t was;
+    prog_port_yield(&pg, 1u, &was);
+    CHECK_EQ(prog_port_func(&pg, 0u), (uint8_t)LINK_PG_FN_NONE);
+    CHECK_EQ(reg(LINK_PG_PWM), 0u);
+    CHECK_EQ(reg(LINK_PG_TARGET), 0u);
+    CHECK_EQ(prog_port_func(&pg, 1u), (uint8_t)LINK_PG_FN_NONE);
+    prog_port_unyield(&pg, &was);
+    CHECK_EQ(prog_port_func(&pg, 0u), (uint8_t)LINK_PG_FN_SERVO_PWM);
+    CHECK_EQ(reg(LINK_PG_PWM), 1u);
+    CHECK_EQ(reg(LINK_PG_TARGET), 1u);
+    /* A port that is not the TARGET keeps it; NULL changes nothing. */
+    prog_port_yield(&pg, 2u, NULL);
+    CHECK_EQ(reg(LINK_PG_TARGET), 1u);
+    CHECK_EQ(reg(LINK_PG_PWM), 1u);
+    prog_port_yield(NULL, 1u, &was);
+    prog_port_unyield(NULL, &was);
+    prog_port_unyield(&pg, NULL);
+    CHECK_EQ(prog_port_func(&pg, 0u), (uint8_t)LINK_PG_FN_SERVO_PWM);
+}
+
 TEST_CASE(a_dshot_port_is_no_pulse_no_target_and_waits_for_rest)
 {
     fresh();
@@ -530,6 +587,27 @@ TEST_CASE(a_wire_session_gets_no_pin_on_a_dshot_port)
     CHECK_EQ(prog_port_wire_pin(&pg, 0u, 0x7u), 13u);   /* SERVO PWM */
     CHECK_EQ(prog_port_wire_pin(&pg, 1u, 0x7u), 14u);   /* NONE */
     CHECK_EQ(prog_port_wire_pin(&pg, 2u, 0x7u), PROG_PORT_NO_PIN);
+    /* Frozen, no register takes a write, and the registers stay. */
+    {
+        const uint16_t before = prog_port_pin(&pg, 0u);
+
+        prog_port_freeze(&pg, true);
+        CHECK_EQ(put(PIN(0u) + LINK_PG_SLEW, 3u), LINK_NACK_BUSY);
+        CHECK_EQ(put(PIN(0u) + LINK_PG_MIN_US, 1100u), LINK_NACK_BUSY);
+        CHECK_EQ(put(LINK_PG_TARGET, 1u), LINK_NACK_BUSY);
+        CHECK_EQ(put(PIN(0u), 16u), LINK_NACK_BUSY);
+        CHECK_EQ(prog_port_pin(&pg, 0u), before);
+        prog_port_freeze(&pg, false);
+        CHECK_EQ(put(PIN(0u) + LINK_PG_SLEW, 0u), 0u);
+        prog_port_freeze(NULL, true);
+    }
+    /* The ESC's page has the opposite rule. */
+    CHECK_EQ(prog_port_esc_pin(&pg, 2u, 0x7u), 15u);
+    CHECK_EQ(prog_port_esc_pin(&pg, 0u, 0x7u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, 1u, 0x7u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, 2u, 0x3u), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(&pg, LINK_PG_PORTS_MAX, 0xFFu), PROG_PORT_NO_PIN);
+    CHECK_EQ(prog_port_esc_pin(NULL, 2u, 0x7u), PROG_PORT_NO_PIN);
     /* Not held, past the ports, no page: none. */
     CHECK_EQ(prog_port_wire_pin(&pg, 0u, 0x6u), PROG_PORT_NO_PIN);
     CHECK_EQ(prog_port_wire_pin(&pg, 3u, 0xFu), PROG_PORT_NO_PIN);
@@ -595,6 +673,7 @@ int main(void)
     RUN(a_dshot_port_is_a_throttle_and_takes_no_command_of_its_own);
     RUN(a_dshot_port_is_under_the_pin_rules_and_no_pwm_rule);
     RUN(a_dshot_port_is_no_pulse_no_target_and_waits_for_rest);
+    RUN(a_servo_pwm_port_gives_way_to_a_pwm_slot_on_its_slice);
     RUN(the_kept_word_restores_dshot_and_an_older_image_its_default);
     RUN(a_wire_session_gets_no_pin_on_a_dshot_port);
     return test_summary("prog_port_fn");

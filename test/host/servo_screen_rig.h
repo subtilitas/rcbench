@@ -131,7 +131,7 @@ static inline int sweep_btn_pixels(gfx_color_t col)
 #define RAIL_X     SV_RC_X
 #define RAIL_W     SV_RC_W
 #define CUR_X      (UI_MARGIN + 12 + 2 * 198)
-#define CUR_Y      476
+#define CUR_Y      448
 #define CUR_W      194
 #define CUR_H      44
 #define LINE_Y     72

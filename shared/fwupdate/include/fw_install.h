@@ -31,6 +31,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #include "fw_image.h"
 
@@ -69,6 +70,32 @@ fw_gate_t fw_gate(bool armed, bool supply, bool run_open, bool drawing,
  * completes until the write has failed.
  */
 bool fw_coproc_may_start(bool radio_down, bool installing);
+
+/**
+ * @brief One IOmcu image a panel build carries, and the board it is for.
+ *
+ * An IOmcu image holds the pin map of one board (firmware/iomcu,
+ * IOMCU_BOARD), so a panel offers each IOmcu the image of the board it
+ * reports on its identity page and no other.
+ */
+typedef struct {
+    uint16_t       board;   /**< an outbind_board_id_t value              */
+    const uint8_t *image;   /**< the image, or NULL when not carried      */
+    uint32_t       len;     /**< its length in bytes, 0 when not carried  */
+} fw_coproc_image_t;
+
+/**
+ * @brief The image for @p board among the @p n of @p tab.
+ *
+ * @param tab    The images the build carries; NULL is no image.
+ * @param n      Entries in @p tab.
+ * @param board  The board the IOmcu reports (LINK_ID_HARDWARE).
+ * @return       The first entry for @p board with an image and a length
+ *               above 0, or NULL: for board 0 (unknown), for a board with
+ *               no entry, and for one whose entry carries no image.
+ */
+const fw_coproc_image_t *fw_coproc_image(const fw_coproc_image_t *tab,
+                                         size_t n, uint16_t board);
 
 /* ----------------------------------------------------------- the installer */
 

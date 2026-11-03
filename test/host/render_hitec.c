@@ -267,6 +267,18 @@ static bool write_view(const char *v)
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 0));
         return true;
     }
+    if (strcmp(v, "-classic-reread") == 0) {
+        /* The station's case: the second read of cell 0x17 answers 0x04
+         * where the first read 0x05. */
+        hedits();
+        (void)hitec_prog_write_enable(p, true);
+        htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        htap(write);
+        g_drv.eeprom[0x17] = (uint8_t)(g_drv.eeprom[0x17] - 1u);
+        hhold();
+        hwait(HITEC_PROG_HELD);
+        return true;
+    }
     if (strcmp(v, "-classic-repair") == 0) {
         (void)hitec_prog_write_enable(p, true);
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
@@ -488,6 +500,22 @@ static bool files_view(const char *v)
         }
         return true;
     }
+    if (strcmp(v, "-other-servo") == 0) {
+        /* The backup file HITEC001 saved by a write, then another D485HW
+         * on the port, dead band 4, and READ ALL. */
+        hwrite_page();
+        hhold();
+        hwait(HITEC_PROG_HELD);
+        servo_d485();
+        g_drv.dreg[0x4Eu] = 4u;
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 1));
+        for (unsigned i = 0; i < 60000u && pstate() == HITEC_PROG_READING;
+             ++i) {
+            pms();
+        }
+        hwait(HITEC_PROG_HELD);
+        return true;
+    }
     if (strcmp(v, "-nofile") == 0) {
         g_card = false;
         prun(20u);
@@ -580,6 +608,12 @@ void render_hitec_view(const char *view)
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
         return;
     }
+    if (strcmp(v, "-rx") == 0) {
+        /* MORE's third entry in PWM: Hitec D receive's list. */
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
+        htap(hitec_panel_choice_rect(2));
+        return;
+    }
     if (strcmp(v, "-other") == 0 || strcmp(v, "-release") == 0
         || strcmp(v, "-released") == 0) {
         /* The bench console's session on port 1, as the panel sees it. */
@@ -627,6 +661,12 @@ void render_hitec_view(const char *view)
         ui_router_tick(0.02f);
         return;
     }
+    if (strncmp(v, "-restore-", 9) == 0) {
+        /* The operator's set points before the session. */
+        settings_set(SET_SUPPLY_V_MAX, 8.4f);
+        supply_screen_limits_changed();
+        supply_screen_put(strcmp(v, "-restore-hv") == 0 ? 7.4f : 5.5f, 2.0f);
+    }
     hconnect();
     if (strcmp(v, "-read") == 0 || strcmp(v, "-classic") == 0
         || strcmp(v, "-classic-sum") == 0) {
@@ -649,6 +689,25 @@ void render_hitec_view(const char *view)
     }
     if (strcmp(v, "-leave") == 0 || strcmp(v, "-classic-leave") == 0) {
         htap(hitec_panel_close_rect());
+        return;
+    }
+    if (strcmp(v, "-restore-ask") == 0 || strcmp(v, "-restore-hv") == 0) {
+        /* The output on at the session's 5.0V 1.0A, the operator's set
+         * points 5.5V 2.0A (7.4V for the HV warning) from before CONNECT;
+         * LEAVE, and SERVO asks. */
+        supply_screen_set_output(true);
+        htap(hitec_panel_close_rect());
+        hhold();
+        hwait(HITEC_PROG_PWM);
+        ui_router_tick(0.02f);
+        if (!servo_screen_asks_restore()) {
+            fprintf(stderr, "render_hitec: no restore question\n");
+            exit(1);
+        }
+        if (strcmp(v, "-restore-hv") == 0) {
+            htap_at(UI_MARGIN + 140,
+                    UI_ALERT_Y - 4 - 56 + 28);
+        }
         return;
     }
     if (strcmp(v, "-motion") == 0) {

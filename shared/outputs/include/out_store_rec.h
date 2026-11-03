@@ -191,6 +191,17 @@ bool out_store_rec_check(const uint8_t *rec, size_t avail,
                          uint16_t *version, uint32_t *seq);
 
 /**
+ * @brief The configuration of a board that has stored nothing: no slot, the
+ *        chan_cfg page zero, and each interface as its page starts -- the
+ *        supply disabled at 19200 baud, both current monitors off at their
+ *        defaults, the phase tap off at its defaults, programming port 0 on
+ *        PROG_PORT_DEFAULT_PIN and the other ports without a pin.
+ *
+ * @param out Receives the configuration. NULL is ignored.
+ */
+void out_store_cfg_defaults(out_store_t *out);
+
+/**
  * @brief A record's configuration, as @p version wrote it at @p cfg
  *        (out_store_cfg_size() bytes), into @p out at the newest layout.
  *

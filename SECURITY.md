@@ -8,8 +8,8 @@ panel's Wi-Fi radio, and the radio runs only with the bench SAFE, the supply
 output off and no log run open.
 
 The first is the panel's Wi-Fi page: an HTTP (hypertext transfer protocol)
-server that lists and sends the card's files and takes a panel firmware
-image. It runs only while the WI-FI screen is open, and goes off
+server that lists and sends the card's files, changes them as SETUP >
+SD CARD > Browser writes allows, and takes a panel firmware image. It runs only while the WI-FI screen is open, and goes off
 after 10min without a request. It answers one request at a time; a
 download the receiver takes nothing of for 30s ends. It runs as a WPA2 (Wi-Fi Protected Access 2)
 access point for 1 client or joins a WPA2 or WPA3 home network. An
@@ -31,6 +31,20 @@ read with a body and a code entry over 95 bytes are refused before a byte
 of the body is read. With the code off, any device on the network can
 still use the page: the checks keep out other web pages in a browser, not
 other devices.
+
+The page's writes (`PUT /api/file`, `POST /api/mkdir`, `/api/rename`,
+`/api/delete`) take the same checks with an `Origin` and
+`X-Rcbench-Upload: 1` required, a body of at most 1,048,576 bytes for a
+file and 1,024 for a form, and then the setting Browser writes: OPEN (the
+default: a write needs what a read needs, so the access code while it is
+on), ACCESS CODE (the code also while it is off),
+HOLD (a 2s hold on the panel once a radio session) or OFF. With OPEN and
+the code off, any device on the network can make, replace, rename and
+delete files on the card. No setting lets a write touch the bench's
+folders, the servo programmers' records, the files the logger writes or a
+name FatFs would read as another entry (`fm_path_plain()`: no character
+outside ASCII, since FatFs folds the case of all of Unicode), and every write
+stops at the bench's switch to ARMED.
 
 The second is the panel's own requests to GitHub over HTTPS (HTTP over TLS,
 transport layer security), on the home network the panel keeps; the panel
@@ -92,7 +106,7 @@ Current limitations, the home network:
 
 - The panel's clock is set over SNTP (simple network time protocol) from
   `pool.ntp.org` once a join. lwIP's answer checks are off
-  (`SNTP_CHECK_RESPONSE` 0 in ESP-IDF v5.5.5): the source address and the
+  (`SNTP_CHECK_RESPONSE` 0 in ESP-IDF v6.1): the source address and the
   originate timestamp of an answer are not compared with the request. A
   device on the home network that answers first, or that answers the DNS
   lookup of the server's name, sets the clock to any time. The step is
@@ -144,6 +158,7 @@ Everything that parses input somebody else produced:
 | `shared/esc` | ESC (electronic speed controller) profile JSON (JavaScript Object Notation) from an SD card; files over 65536 bytes, nesting deeper than 16 levels, objects of more than 64 members and duplicate keys are refused |
 | `protocols/kst` | servo configuration text files (line length, field values, the CRC-32 (32-bit cyclic redundancy check) checksum line, type and limits against the connected servo) and servo replies (edge timestamps checked against timing windows; the wire has no parity, checksum or length field) |
 | `protocols/hitec` | servo replies on the signal wire: each byte's stop bit and start time, the accept window of the first byte, the spacing of the bytes, the classic `+` bytes, the D series header, length byte, address and sum; the register image read from a servo: every byte a decode or a plan uses known, each stored value checked against its encoding and shown raw when it fits none, the name cells cut at 0x00 or 16 bytes with bytes outside printable ASCII replaced, the serial cells taken as digits only |
+| `protocols/escwire` | ESC answers on the signal wire: stop bits, the count of bytes, the CRC (cyclic redundancy check) of a read, the answer byte; the first contact's answer and the settings page read as identification: signature, pin code, bootloader protocol, layout, markers, tags, name region; on the text interface the replies of `info`, `show`, `set` and `save`, up to 1536B (`ew_text.c`); settings text files from an SD card (at most 5280B, line length, CRC-32, field values, every line against the page). Outgoing frames and lines pass the guard (`ew_guard_frame()`, `ew_guard_text()`) |
 | `protocols/sbus`, and the receiver decoders that follow it | frames from a receiver |
 | `protocols/openyge` | ESC telemetry and parameter frames |
 | `protocols/dshot` | the ESC telemetry reply: 21 line bits, GCR (group-coded recording) decode, 4-bit checksum, extended telemetry frame types |
@@ -156,7 +171,7 @@ Everything that parses input somebody else produced:
 | `shared/files` | text files from the SD card as the viewer and the editor hold and colour them, and the names on the card: `text_buf_load_done()` takes at most 1,048,576 bytes and 65,536 line ends and refuses a file with a NUL in its first 4,096 bytes; a leading UTF-8 BOM (byte order mark) is taken off and written back; a byte that starts no well-formed UTF-8 sequence is one unit, as `shared/gfx` draws it; `text_hl_line()` takes a line of any bytes and starts and ends its spans at ASCII bytes only; `fm_path_join()` joins any name the card lists into a path of at most 120 bytes and 16 folders and refuses `.`, `..` and a `/` in a name. The panel links the module: FILES and its text viewer run on it |
 | `shared/outputs` | link page writes from the panel (offset, count and values for the OUTPUTS, CHAN_CFG, CHANNELS, SERVO, SERVO_SENSE, SUPPLY, SENSE, TONE, KST, HITEC, programming-port, BIND_CFG and BIND_OUT pages, and the BIND commit, which applies the staged pages only when its CRC-16 matches them; a HITEC command runs only when its CRC-16 matches the staged registers, and a SEND only with the write key), in a build with `IOMCU_CONSOLE` the bench console's command lines from the IOmcu's USB serial port (`page_console_key()`: lines of at most 160 characters, numbers checked against their register's range, every request through the link's page handlers), the output set-up read back from flash, and, on the panel, the OUTPUTS and CHAN_CFG pages and the board number from the IDENTITY page read back from the IOmcu; a binding is read from them only when every slot names a known driver, rate and header pin and the OUTPUTS page renders back unchanged; from CHAN_CFG only the role of each slot's first channel is read |
 | `shared/sense` | INA228, INA3221 and AS5600 register bytes (fixed length per register) and the SENSE set-up from the link |
-| `shared/ui` | SD card directory listings, CSV column names and cells, any file of the card up to 1MiB as text in the text viewer (`text_view.c` over `shared/files/text_buf.c` and `text_hl.c`: a NUL byte in the first 4KiB refuses the file, over 65,536 line ends refuse it, a byte that starts no UTF-8 sequence, a control character and a later NUL draw as one `?` cell each, a line is classed in at most 128 spans), and ESC profile names and manual text as drawn, cut and wrapped by character cells; touch coordinates turned into row and key indexes |
+| `shared/ui` | SD card directory listings, CSV column names and cells, any file of the card up to 1MiB as text in the text viewer (`text_view.c` over `shared/files/text_buf.c` and `text_hl.c`: a NUL byte in the first 4KiB refuses the file, over 65,536 line ends refuse it, a byte that starts no UTF-8 sequence, a control character and a later NUL draw as one `?` cell each, a line is classed in at most 128 spans; the editor writes a file only through a SAVE job to `<name>.NEW` while the bench is SAFE with no run logged, and takes a changed KST file's checksum line out, so a hand-edited file never passes the servo programmer as a servo's own image), and ESC profile names and manual text as drawn, cut and wrapped by character cells; touch coordinates turned into row and key indexes |
 | `shared/artwork` | board drawing blocks fetched over the link and drawing records read back from flash (payload checked against a 16-bit CRC and a 32-bit FNV-1a hash before use) |
 | `shared/safety` | CONTROL page writes from the link (offset, count and values), which arm and clear the output stage |
 | `shared/settings` | setting values and texts loaded from NVS at start-up. Each value is brought to its schema: a switch to 0 or 1, an option out of range and a Sensor SDA (serial data) pin the bus cannot use to the default, a number snapped to its step, where it has one, and clamped to its range. Sensor SCL (serial clock) is derived from Sensor SDA, not read. The text (the device-under-test name) is cut to 23 characters and terminated. Not checked here: the characters of the text (`shared/gfx` decodes them for drawing), and whether a stored value inside today's range is the one that was saved |

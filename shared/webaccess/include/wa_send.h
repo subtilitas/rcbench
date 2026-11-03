@@ -1,5 +1,6 @@
-/*
- * One file off the card, a piece at a time.
+/**
+ * @file
+ * @brief One file off the card, a piece at a time.
  *
  * The size is taken before the first byte goes, so the response can say how
  * long it is (Content-Length); the file then has to deliver exactly that.
@@ -37,18 +38,31 @@ typedef struct {
     bool           failed;
 } wa_send_t;
 
-/** Open @p path, announced as @p size bytes.  False when it cannot be. */
+/**
+ * @brief Open @p path, announced as @p size bytes.
+ * @param s     takes the transfer
+ * @param fs    the card
+ * @param path  the file
+ * @param size  the bytes announced
+ * @return false when it cannot be opened
+ */
 bool wa_send_begin(wa_send_t *s, const wa_fs_t *fs, const char *path,
                    uint64_t size);
 
 /**
- * The next piece into @p buf of @p cap bytes: how many, 0 when all @c size
- * bytes have gone, -1 on a failure (the file is closed either way at the
- * end).
+ * @brief The next piece into @p buf of @p cap bytes.
+ * @param s    the transfer
+ * @param buf  takes the piece
+ * @param cap  bytes of @p buf
+ * @return how many, 0 when all @c size bytes have gone, -1 on a failure (the
+ *         file is closed either way at the end)
  */
 int32_t wa_send_next(wa_send_t *s, uint8_t *buf, uint32_t cap);
 
-/** Close the file; for a transfer given up part way. */
+/**
+ * @brief Close the file; for a transfer given up part way.
+ * @param s  the transfer
+ */
 void wa_send_end(wa_send_t *s);
 
 /*
@@ -96,19 +110,98 @@ typedef enum {
     WA_SEND_READ_FAILED,  /**< the file: a read error, or not its size   */
 } wa_send_res_t;
 
-/** All @p n bytes of @p data into @p k. */
+/**
+ * @brief All @p n bytes of @p data into @p k.
+ * @param k     the connection
+ * @param data  the bytes
+ * @param n     how many
+ * @return how it ended
+ */
 wa_send_res_t wa_sink_all(const wa_sink_t *k, const void *data, uint32_t n);
 
 /**
- * The rest of the file begun with wa_send_begin() into @p k, a piece of at
- * most @p cap bytes of @p buf at a time.  The file is closed whatever the
- * outcome.
+ * @brief The rest of the file begun with wa_send_begin() into @p k, a piece
+ *        of at most @p cap bytes of @p buf at a time.  The file is closed
+ *        whatever the outcome.
+ * @param s    the transfer
+ * @param buf  room for a piece
+ * @param cap  bytes of @p buf
+ * @param k    the connection
+ * @return how it ended
  */
 wa_send_res_t wa_send_run(wa_send_t *s, uint8_t *buf, uint32_t cap,
                           const wa_sink_t *k);
 
-/** A short English name of @p r for the log. */
+/**
+ * @brief A short English name of @p r for the log.
+ * @param r  the outcome
+ * @return its name
+ */
 const char *wa_send_res_name(wa_send_res_t r);
+
+/*
+ * The body of a request refused before it was read.
+ *
+ * TCP (Transmission Control Protocol) answers a close with unread bytes
+ * with a reset, and a reset makes the receiver drop what it has not read
+ * yet, the refusal among it.  So the refusal goes out, the sending side
+ * closes, and what the client still sends is read and dropped until the
+ * body has ended, the client closes, no byte comes for WA_LINGER_QUIET_MS
+ * or WA_LINGER_TOTAL_MS have passed: a client that goes on sending holds
+ * the server, which answers one request at a time, for that long at most.
+ * 1MiB in WA_LINGER_TOTAL_MS is 105kB/s.
+ */
+
+/** @brief A body still arriving is dropped with the connection after this
+ *         long. */
+#define WA_LINGER_TOTAL_MS 10000u
+/** @brief A body ends unread after this long with no byte. */
+#define WA_LINGER_QUIET_MS 2000u
+
+/** @brief What get() answers for a slice of WA_SEND_SLICE_MS without a
+ *         byte. */
+#define WA_GET_IDLE (-1)
+/** @brief What get() answers for a connection that failed. */
+#define WA_GET_FAILED (-2)
+
+/** @brief The connection a refused request's body arrives on. */
+typedef struct {
+    /** @brief Up to @p n bytes, waiting one slice at most: the bytes, 0 when
+     *         the client closed, WA_GET_IDLE or WA_GET_FAILED. */
+    int32_t  (*get)(void *ctx, uint8_t *p, uint32_t n);
+    /** @brief True when the wait is to end now; NULL for never. */
+    bool     (*stop)(void *ctx);
+    /** @brief Milliseconds; wraps at 2^32. */
+    uint32_t (*now_ms)(void *ctx);
+    void     *ctx;     /**< @brief passed to each of them */
+} wa_source_t;
+
+/** @brief How the body of a refused request ended. */
+typedef enum {
+    WA_LINGER_DONE = 0, /**< read to its end                              */
+    WA_LINGER_GONE,     /**< the client closed, or the connection failed  */
+    WA_LINGER_QUIET,    /**< no byte for WA_LINGER_QUIET_MS               */
+    WA_LINGER_LATE,     /**< still arriving after WA_LINGER_TOTAL_MS      */
+    WA_LINGER_STOPPED,  /**< stop() said so                               */
+} wa_linger_t;
+
+/**
+ * @brief Read and drop the @p left bytes of a body not read.
+ * @param s     the connection
+ * @param left  the body's bytes, Content-Length
+ * @param buf   room for one read
+ * @param cap   bytes of @p buf, more than 0
+ * @return how it ended
+ */
+wa_linger_t wa_linger(const wa_source_t *s, uint64_t left, uint8_t *buf,
+                      uint32_t cap);
+
+/**
+ * @brief A short English name of @p r for the log.
+ * @param r  the outcome
+ * @return its name
+ */
+const char *wa_linger_name(wa_linger_t r);
 
 #ifdef __cplusplus
 }

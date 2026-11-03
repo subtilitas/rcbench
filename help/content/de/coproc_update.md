@@ -6,7 +6,7 @@ order: 100
 
 # IOmcu-Update
 
-Ein Firmware-Image des Panels trägt das Image des IOmcu und bietet es an, wenn der IOmcu einen anderen Build fährt. Die Prüfung läuft bei jedem Link-Aufbau über den CAN-Bus (Controller Area Network) und vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit), keine Versionsnummern. Ein anderer Build löst den Alert `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.` aus.
+Ein Firmware-Image des Panels trägt das Image des IOmcu und bietet es an, wenn der IOmcu einen anderen Build fährt. Die Prüfung läuft bei jedem Link-Aufbau über den CAN-Bus (Controller Area Network) und vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit), keine Versionsnummern. Ein anderer Build löst den Alert `IOmcu nutzt einen anderen Build. Update unter UPDATES.` aus.
 
 ## Die Frage
 
@@ -19,7 +19,7 @@ Die Frage öffnet aus dem [Menü](overview.md), mit UPDATE im Band, solange der 
 | 2s HALTEN ZUM STARTEN | startet das Update nach einem Halten von 2s, mit der Geste und dem Übergang von ARM |
 | ABBRECHEN | schließt die Frage; das Panel fragt für diese Version bis zu seinem Neustart nicht erneut, und [Updates](updates.md#der-iomcu) startet das Update weiterhin |
 
-Ein anderes Verlassen der Frage lehnt sie ab wie ABBRECHEN.
+Der Home-Tag lehnt sie ab wie ABBRECHEN. Ein Bildschirm, den das Panel über die Frage legt, lehnt nichts ab: der [Fehlerbildschirm](busfault.md) eines verlorenen Links und der Download eines Panel-Updates. Der nächste Link-Aufbau bietet erneut an, und die Frage öffnet auf dem Menü unter denselben Bedingungen.
 
 ![Ein älteres Image](view:coproc-update-older)
 

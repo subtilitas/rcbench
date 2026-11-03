@@ -114,6 +114,7 @@ enum {
     HIT_IGNORE,
     HIT_NEVER,
     HIT_COPROC,         /* HOLD 2s: UPDATE IOMCU */
+    HIT_NET,            /* no home network: opens WI-FI */
 };
 
 /* What both screens show, and what they ask for. */
@@ -551,8 +552,36 @@ static gfx_rect_t btn(int row)
 
 static bool testing_set(void) { return settings_get_int(SET_UPD_CHANNEL) == 1; }
 
+/**
+ * @brief The button that opens WI-FI shows: no home network, and Wi-Fi at
+ *        this start.
+ * @return Whether it is on the card.
+ */
+static bool net_shown(void)
+{
+    return !s_v.unavailable && !s_v.have_net;
+}
+
+/**
+ * @brief The button that opens WI-FI, on the card under its lines on the
+ *        running version and the home network.
+ * @return Its rectangle in the body.
+ */
+static gfx_rect_t net_rect(void)
+{
+    const int x = RX + RPAD, w = RW - 2 * RPAD;
+    char line[96];
+    snprintf(line, sizeof(line), TR(WF_Q_RUN), s_v.running);
+    int y = para(NULL, x, RY + RPAD, w, line, UI_TEXT) + 4;
+    y = para(NULL, x, y, w, TR(WF_HOME_NONE), UI_WARN);
+    return gfx_rect_make(x, y + 4, w, BH);
+}
+
 static int hit_at(int x, int y)
 {
+    if (net_shown() && !upd_busy(&s_v) && gfx_rect_contains(net_rect(), x, y)) {
+        return HIT_NET;
+    }
     if (gfx_rect_contains(btn(0), x, y)
         && (check_allowed() || cancel_allowed())) {
         return HIT_CHECK;
@@ -589,6 +618,10 @@ static void act(int hit)
         settings_set(SET_UPD_CHANNEL, testing_set() ? 0.0f : 1.0f);
         settings_request_save();
         break;
+    case HIT_NET:
+        /* WI-FI's home tag comes back here (ui_router_parent()). */
+        ui_router_goto(SCREEN_WIFI);
+        break;
     default:
         break;
     }
@@ -618,9 +651,9 @@ static void event(const touch_event_t *evt)
             s.have_press = true;
             s.press_id = evt->point.id;
             if (s.hit == HIT_DOWNLOAD) {
-                ui_hold_begin(&s.hold);
+                ui_hold_begin(&s.hold, TX_HOLD_HINT_DOWNLOAD);
             } else if (s.hit == HIT_COPROC) {
-                ui_hold_begin(&s.cu_hold);
+                ui_hold_begin(&s.cu_hold, TX_HOLD_HINT_IOMCU_UPDATE);
             }
         }
         touched();
@@ -650,11 +683,11 @@ static void event(const touch_event_t *evt)
     touched();
     if (hit == HIT_DOWNLOAD) {
         /* The hold acts when it completes; the release only ends it. */
-        (void)ui_hold_end(&s.hold);
+        (void)ui_hold_end(&s.hold, evt, btn(DL_ROW));
         return;
     }
     if (hit == HIT_COPROC) {
-        (void)ui_hold_end(&s.cu_hold);
+        (void)ui_hold_end(&s.cu_hold, evt, CU_BTN);
         return;
     }
     if (touch_event_is_tap_up(evt) && hit_at(x, y) == hit) {
@@ -723,6 +756,8 @@ void upd_cu_text(const upd_cu_view_t *v, const char **line,
     case CU_SEC_CHECKING: *line = TR(UPD_CU_CHECKING); *col = UI_TEXT; break;
     case CU_SEC_FAILED:   *line = TR(UPD_CU_FAILED);    break;
     case CU_SEC_USB:      *line = TR(UPD_CU_USB);       break;
+    case CU_SEC_NO_BOARD: *line = TR(UPD_CU_NO_BOARD); *col = UI_TEXT_DIM;
+                          break;
     case CU_SEC_SAME:     *line = TR(UPD_CU_SAME); *col = UI_TEXT_DIM; break;
     case CU_SEC_UNSAFE:   *line = TR(UPD_CU_UNSAFE);    break;
     case CU_SEC_RADIO:    *line = TR(UPD_CU_RADIO);     break;
@@ -832,7 +867,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, line, UI_TEXT_DIM) + 12;
     } else {
         y = para(c, x, y, w, TR(WF_HOME_NONE), UI_WARN);
-        y = para(c, x, y, w, TR(UPD_KEEP_NET), UI_TEXT_DIM) + 12;
+        button(c, net_rect(), TR(UPD_OPEN_WIFI), UI_PANEL_HI,
+               s.have_press && s.hit == HIT_NET, !upd_busy(&s_v));
+        y += 4 + BH + 12;
     }
 
     /* The job under way, or how the last one ended.  A check that ended
@@ -892,6 +929,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
 static const ui_screen_t k_screen = {
     .title  = "UPDATES",
+    .covered = ui_screen_not_covered,
     .reset  = reset,
     .enter  = enter,
     .leave  = leave,
@@ -940,7 +978,7 @@ static void r_event(const touch_event_t *evt)
             s_rem.have_press = true;
             s_rem.press_id = evt->point.id;
             if (s_rem.hit == HIT_DOWNLOAD) {
-                ui_hold_begin(&s_rem.hold);
+                ui_hold_begin(&s_rem.hold, TX_HOLD_HINT_DOWNLOAD);
             }
         }
         touched();
@@ -966,7 +1004,7 @@ static void r_event(const touch_event_t *evt)
     s_rem.have_press = false;
     touched();
     if (hit == HIT_DOWNLOAD) {
-        (void)ui_hold_end(&s_rem.hold);
+        (void)ui_hold_end(&s_rem.hold, evt, R_HOLD);
         return;
     }
     if (!touch_event_is_tap_up(evt) || r_hit_at(x, y) != hit) {

@@ -300,6 +300,9 @@ typedef struct {
 
     bool     outcome_new;
     kst_link_outcome_t outcome;
+    uint32_t faults;           /**< outcomes taken that are faults
+                                    (kst_link_outcome_fault()), modulo
+                                    2^32; kept across a lost link         */
 } kst_link_t;
 
 /**
@@ -442,11 +445,41 @@ kst_link_phase_t kst_link_phase(const kst_link_t *k);
 /**
  * @brief How the last operation went, once: false while there is nothing new.
  *
+ * An outcome taken that is a fault (kst_link_outcome_fault()) is counted
+ * (kst_link_faults()).
+ *
  * @param k   The link state.
  * @param out Receives the outcome.
  * @return true when a new outcome was written to out.
  */
 bool kst_link_outcome(kst_link_t *k, kst_link_outcome_t *out);
+
+/**
+ * @brief The outcomes kst_link_outcome() handed out that are faults
+ *        (kst_link_outcome_fault()), counted since kst_link_init(), modulo
+ *        2^32: the panel takes each as an error (error_sites_follow()).
+ *
+ * @param k The link state.
+ * @return The count; 0 for NULL.
+ */
+uint32_t kst_link_faults(const kst_link_t *k);
+
+/**
+ * @brief Whether an outcome is a fault of the servo or the wire, which the
+ *        panel takes as an error (error_stop.h).
+ *
+ * A fault: KST_LINK_OUT_DONE with KST_SES_ERR_NO_SERVO, _READ, _CHANGED,
+ * _WRITE_FAILED, _ROLLED_BACK, _TORN, _UNINTENDED, _VERIFY, _DRIVER or
+ * LINK_KST_RESULT_SUPPLY.  Not one: success, a refusal or a plan that sent
+ * nothing (_BUSY, _ARG, _NOT_IN_MODE, _NO_BACKUP, _FINGERPRINT, _LOCKED,
+ * _BAD_PLAN, _UNCONFIRMED, _NO_PLAN, LINK_KST_RESULT_NO_PATH and
+ * _TOO_COMPLEX), an ABORT (_ABORTED: the operator's, or a stop's, which
+ * cuts the session itself), and every other outcome kind.
+ *
+ * @param o The outcome.
+ * @return true for a fault; false for NULL.
+ */
+bool kst_link_outcome_fault(const kst_link_outcome_t *o);
 
 /**
  * @brief The screen's copy of the page.

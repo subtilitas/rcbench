@@ -28,12 +28,16 @@ extern "C" {
 typedef enum {
     SET_CAT_APP = 0,     /**< theme, brightness, rotation, language,
                               units, time zone, plot                   */
-    SET_CAT_IFACE,       /**< the sensors that plug into the bench    */
     SET_CAT_CARD,        /**< the SD card: which logs are written     */
-    SET_CAT_SENSORS,     /**< the INA3221 parts: fitted, shunts, what
-                              each channel watches (settings_sensors.h) */
+    SET_CAT_SENSORS,     /**< what the IOmcu reads: the sensor bus, the
+                              INA228, the INA3221 parts (settings_sensors.h),
+                              the AS5600, the phase tap; vibration and the
+                              optical tacho hold keys and show no row   */
     SET_CAT_ESC,         /**< pack, motor, telemetry, throttle output */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
+    SET_CAT_PDMINI,      /**< the PD mini's wiring, on SUPPLY's PD MINI
+                              tab: apart from the limits, so a reset of
+                              SET_CAT_SUPPLY leaves the wiring          */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
     SET_CAT_STICK,       /**< stick programming: supply and timing    */
     SET_CAT_UPDATE,      /**< the release reminder and the releases a
@@ -42,9 +46,10 @@ typedef enum {
 } setting_cat_t;
 
 /**
- * The categories SETUP opens from its tiles, which come first.  SET_CAT_ESC
- * is edited on MOTOR & ESC > SETTINGS, SET_CAT_SUPPLY, SET_CAT_SERVO and
- * SET_CAT_STICK on their own screens, beside what they set, and
+ * @brief The categories SETUP opens from its tiles, which come first.  SET_CAT_ESC
+ * is edited on MOTOR & ESC > SETTINGS, SET_CAT_SUPPLY, SET_CAT_PDMINI,
+ * SET_CAT_SERVO and SET_CAT_STICK on their own screens, beside what they
+ * set, and
  * SET_CAT_UPDATE on the UPDATES screen a SETUP tile opens.
  */
 #define SET_CAT_SETUP_COUNT SET_CAT_ESC
@@ -86,6 +91,8 @@ typedef enum {
     SET_PLOT_PAN,
     SET_KNOB_EN,
     SET_KNOB_SCALE,
+    SET_KB_SEE,
+    SET_DEMO_MODE,
     /* --- interfaces ---------------------------------------------------- */
     SET_INA228_EN,
     SET_INA228_ADDR,
@@ -173,6 +180,7 @@ typedef enum {
     SET_SERVO_TARGET,
     SET_SERVO_PORT_PWM,
     SET_HITEC_SERIES,
+    SET_ESCW_BY_HAND,
     /* --- stick programming ---------------------------------------------- */
     SET_STICK_V,
     SET_STICK_I,
@@ -194,6 +202,7 @@ typedef enum {
     /* --- the SD card ----------------------------------------------------- */
     SET_LOG_AUTO,
     SET_LOG_USER,
+    SET_WEB_WRITES,
 
     SETTING_COUNT
 } setting_id_t;
@@ -299,9 +308,12 @@ void settings_set_armed(settings_armed_fn fn);
  * @brief Whether @p id changes on a SAFE bench only: held while the
  *        source settings_set_armed() installed says ARMED, as the throttle
  *        endpoints on MOTOR & ESC > SETTINGS are locked while ARMED.
- *        Screen rotation, which moves every control under the finger.
+ *        Screen rotation, which moves every control under the finger, and
+ *        the PD mini's wiring, whose change switches off the supply an
+ *        ARMED servo may run from.
  * @param id The setting.
- * @return True for SET_SCREEN_ROT.
+ * @return True for SET_SCREEN_ROT, SET_PDMINI_EN, SET_PDMINI_TX, SET_PDMINI_RX
+ *         and SET_PDMINI_BAUD.
  */
 bool settings_safe_only(setting_id_t id);
 
@@ -311,6 +323,36 @@ const setting_def_t *settings_def(setting_id_t id);
  *  settings_adjust() leave it, and SETUP draws its row without keys.
  *  Sensor SCL, which is the GPIO after Sensor SDA. */
 bool settings_derived(setting_id_t id);
+
+/**
+ * @brief Hold @p id at @p value: a pin a board solders, which no setting
+ *        moves.
+ *
+ * settings_get() then answers @p value; the stored value stays as it is,
+ * is saved as it is and comes back with settings_unfix().  SETUP draws the
+ * row without keys (settings_fixed()).
+ *
+ * @param id     The setting.
+ * @param value  The value it reads as.
+ * @return true when the value settings_get() answers changed.
+ */
+bool settings_fix(setting_id_t id, int value);
+
+/**
+ * @brief Let @p id read its own value again.
+ *
+ * @param id  The setting.
+ * @return true when the value settings_get() answers changed.
+ */
+bool settings_unfix(setting_id_t id);
+
+/**
+ * @brief Whether @p id is held by settings_fix().
+ *
+ * @param id  The setting.
+ * @return true while it is.
+ */
+bool settings_fixed(setting_id_t id);
 /**
  * @brief A category's name in English, from ui_text.def.
  * @param cat The category.
@@ -401,6 +443,14 @@ bool settings_pdmini_same_pin(void);
 /** Restore one category, or all of them, to the schema defaults: its
  *  values and its strings (settings_text_category()). */
 void settings_reset(setting_cat_t cat);
+/**
+ * @brief Settings back to their defaults, as settings_reset() does for a
+ *        category: a held row stays, an observer hears each change, and only
+ *        an actual change is an edit.
+ * @param ids The settings; NULL resets none.
+ * @param n   How many.
+ */
+void settings_reset_rows(const setting_id_t *ids, int n);
 void settings_reset_all(void);
 
 /** Ids in a category, in schema order.  Returns how many there are. */

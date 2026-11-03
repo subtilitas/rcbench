@@ -72,7 +72,7 @@ python3 -m pytest test/tools          # the tools' own tests
 python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
 python3 tools/mutate.py               # what the suite misses in the changed lines
 
-# After a panel build on ESP-IDF v5.5.5 for the ESP32-P4: the image against
+# After a panel build on ESP-IDF v6.1 for the ESP32-P4: the image against
 # the smaller of its two update slots.
 python3 tools/image_slot.py firmware/panel/build
 # After an IOmcu build: the stacks of its two cores, and core 0's row
@@ -106,6 +106,16 @@ cppcheck also runs over `firmware/` and the pin drivers in
 classes and without the style class; the two commands are in
 `.github/workflows/ci.yml`. clang-tidy does not run over `firmware/` or a
 pin driver: it needs the ESP-IDF and pico-sdk headers.
+
+CI runs the commands above in parallel jobs on Ubuntu 26.04: the build and
+ctest, the sanitizer run, the coverage check, the checks that hold prose and
+generated files to the tree, and the frame-cost ceilings. The job named
+`Host suite, coverage and the checks that hold prose to the tree` ends last
+and fails when any of them does not succeed; the branch ruleset requires it.
+The coverage table and the README figures are gcov's counts for the gcc of
+that runner. A machine with another gcc writes a different table; write the
+committed one from the `coverage` artifact of a CI run:
+`python3 tools/coverage.py --from-json coverage.json`.
 
 A change fails if:
 

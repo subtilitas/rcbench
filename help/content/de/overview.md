@@ -19,11 +19,11 @@ Acht Kacheln zu je 243 x 255px, in 4 Spalten und 2 Reihen: die Werkbänke in der
 | MOTOR & ESC | Antrieb, V/A, Drehzahl | [Motor und ESC](motor.md) |
 | SERVO | Weg, Strom, Programm | [Servo](servo.md) |
 | SUPPLY | V/A einstellen, aufzeichnen | [Netzteil](supply.md) |
-| LOGS | Läufe und Dateien | [Logs](logs.md) |
+| LOGS | Läufe, Dateien | [Logs](logs.md) |
 | RECEIVER | S.BUS, PPM, Frames | [Receiver](analyser.md) |
 | BATTERY | Zellen, iR, mAh | [Akku](battery.md) |
 | BALANCE | Vibration, Phase | [Wuchten](balance.md) |
-| SETUP | Pins, Sensoren, Panel | [Setup](setup.md) |
+| SETUP | Panel, Pins, Karte, WLAN | [Setup](setup.md) |
 
 Das Programmieren hat keine Kachel: ESCs werden auf [PROGRAMMIEREN](motor.md#programmieren) von MOTOR & ESC programmiert, Servos auf PROGRAMMIEREN von SERVO.
 
@@ -37,9 +37,9 @@ Die Marke folgt den Fähigkeits-Bits, die der IOmcu beim Link-Aufbau meldet:
 
 | Kachel | Ohne Marke, wenn |
 |---|---|
-| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, INTERFACES eingeschaltet ist |
+| MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, SENSORS eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge (Pulsweitenmodulation) ansteuert |
-| SUPPLY | der PD mini unter SETUP, INTERFACES eingeschaltet ist |
+| SUPPLY | der PD mini unter SUPPLY, Tab PD MINI eingeschaltet ist |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | nie markiert: sie enthalten keine Messung |
 

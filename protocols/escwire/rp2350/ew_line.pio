@@ -1,0 +1,77 @@
+;
+; One transaction on the half-duplex signal wire of an ESC (electronic speed
+; controller): bit times out, the pad released one bit time after the last
+; stop bit's edge, bytes received until a wait runs out.  Both rates run it:
+; 52us a bit and 38400baud.
+;
+; The pad is the state machine's OUT, SET, IN and JMP pin.  The clock divider
+; makes one bit 16 cycles.  No autopull: the program pulls.  The input shift
+; register shifts right and pushes by itself at 9 bits.  The words come from
+; the transmit FIFO in the order ew_pio.h gives (protocols/escwire/include):
+; bit count, first wait, the bits, later wait.  Between transactions the
+; machine stalls on the first `pull`, and the driver sets the pad.
+;
+; Transmit.  The pad driven high first, then a bit time is `pull ifempty`,
+; `out pins` and `jmp y--`: 16 cycles.  The output drives both levels, so an
+; idle bit is a driven high.
+;
+; Release.  `pull` follows the last bit, and `set pindirs, 0` comes 16 cycles
+; after the last bit's `out pins`.  The later wait is already in the FIFO, so
+; the `pull` takes one cycle.
+;
+; Receive.  X counts ticks of 2 cycles down while the receiver waits.  From
+; the release it waits for the idle level, then for a low.  A low seen, it has
+; to be low still 8 cycles on, or the wait goes on.  The data bits are sampled
+; 23 to 135 cycles after the sample that saw the low, and the stop bit at 151.
+; The 9 bits go to the receive FIFO as one word: bits 23 to 30 the data, least
+; significant first, bit 31 the stop bit.
+;
+; After a high stop bit the receiver looks for the next low at once, 153 cycles
+; after the last one seen, so a sender 4% fast sending with no gaps keeps its
+; start bits ahead of the sample.  After a low stop bit it waits for the idle
+; level first: a line held low is one byte.  X reloads from the later wait,
+; held in the output shift register, inside each byte.
+;
+; test/host/test_ew_pio.c assembles this file, runs the words in a model of
+; the state machine and holds them to fixtures/ew_line_words.txt, which a
+; firmware build holds pioasm's output to.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program ew_line
+
+.wrap_target
+idle:
+    pull                    ; stalls here between transactions
+    out y, 32               ; bits to send, less one
+    pull
+    out x, 32               ; first wait, ticks
+    set pins, 1
+    set pindirs, 1          ; driven high before the first bit
+bit:
+    pull ifempty
+    out pins, 1 [13]
+    jmp y--, bit
+    pull                    ; later wait, ticks
+    set pindirs, 0          ; release
+wait_hi:
+    jmp pin, wait_lo
+    jmp x--, wait_hi
+    jmp idle                ; the wait is over
+stop_high:
+    in y, 1                 ; the stop bit, 1: Y is all ones after its loop
+wait_lo:
+    jmp pin, lo_next
+    set y, 7 [6]
+    jmp pin, lo_next        ; high again in mid start bit: no start bit
+    mov x, osr [13]
+rbit:
+    in pins, 1 [14]
+    jmp y--, rbit
+    jmp pin, stop_high
+    in null, 1              ; the stop bit, 0: the word is pushed
+    jmp wait_hi
+lo_next:
+    jmp x--, wait_lo
+.wrap

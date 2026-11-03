@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "sensors_pane.h"
 #include "settings.h"
 #include "settings_rows_int.h"
 #include "settings_screen.h"
@@ -87,8 +88,9 @@
  */
 #define SCROLL_W 12 /**< the scroll bar's width, px */
 #define SCROLL_X (SCREEN_W - HUB_M - SCROLL_W) /**< the scroll bar's left edge, px: 1002 */
-#define LIST_X HUB_M /**< the list's left edge, px */
-#define LIST_W (SCROLL_X - 8 - LIST_X) /**< the list's width, px: 984 */
+#define LIST_R (SCROLL_X - 8) /**< the list's right edge, px: 994 */
+#define LIST_X stg_list_x() /**< the list's left edge, px: 10, on SENSORS 240 */
+#define LIST_W (LIST_R - LIST_X) /**< the list's width, px: 984, on SENSORS 754 */
 #define LIST_Y 8 /**< the list's top, px */
 #define LIST_H (STRIP_Y - 8 - LIST_Y) /**< the list's height, px: 428 */
 #define ROW_H 64 /**< a row's height, px */
@@ -96,6 +98,19 @@
 #define ROW_PITCH (ROW_H + ROW_GAP) /**< a row's pitch, px: 70 */
 #define ROW_NAME_DY 3 /**< the name's top, px */
 #define ROW_HELP_DY 40 /**< the help line's top, px */
+
+/**
+ * @brief SENSORS' left list: 8 entries of 220 x 50px at a 54px pitch, down the
+ *        list's 428px.  The name in the body face at 3px, the state in the
+ *        8 x 16 face at 29px: 25 cells end short of the entry's edge.  The list
+ *        pane starts 10px right of it.
+ */
+#define ENTRY_W 220 /**< an entry's width, px */
+#define ENTRY_H 50 /**< an entry's height, px */
+#define ENTRY_PITCH 54 /**< an entry's pitch, px */
+#define ENTRY_NAME_DY 3 /**< the name's top, px */
+#define ENTRY_STATE_DY 29 /**< the state's top, px */
+#define PANE_X (HUB_M + ENTRY_W + HUB_M) /**< the pane's left edge, px: 240 */
 
 /**
  * @brief A row's "-" and "+" keys: 56 x 48px (8.4 x 7.2mm), the "+" 12px
@@ -106,7 +121,7 @@
 #define BTN_H UI_TAP_MIN /**< a key's height, px: 48 */
 _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
 #define VALUE_FIELD 150 /**< the value's field, px */
-#define PLUS_X (LIST_X + LIST_W - 12 - BTN_W) /**< the "+" key's left edge, px: 926 */
+#define PLUS_X (LIST_R - 12 - BTN_W) /**< the "+" key's left edge, px: 926 */
 #define MINUS_X (PLUS_X - 8 - VALUE_FIELD - 8 - BTN_W) /**< the "-" key's left edge, px: 704 */
 #define VALUE_R (PLUS_X - 8) /**< the value's and its unit's right edge, px */
 /** @brief The left edge of a number's value, px: the 166px between its
@@ -146,7 +161,7 @@ _Static_assert(BTN_H <= ROW_H, "a row's buttons fit in the row");
 
 enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
        HIT_SAVE, HIT_STAY, HIT_DISCARD, HIT_LEAVE_SAVE, HIT_TEXT,
-       HIT_VALUE };
+       HIT_VALUE, HIT_ENTRY };
 
 /**
  * @brief The warning that holds a way out: a card over the body down to
@@ -194,41 +209,41 @@ typedef struct {
 } hub_tile_t;
 
 /**
- * @brief Tile that opens category @p cat_ with icon @p icon_; its line counts
- *        the settings.
- */
-#define HUB_CATEGORY(cat_, icon_) \
-    { (icon_), (int8_t)(cat_), SCREEN_SETUP, TX_SET_COUNT }
-/**
  * @brief Tile that opens screen @p screen_ with icon @p icon_ and the line @p
  *        line_ under its name.
  */
 #define HUB_SCREEN(screen_, line_, icon_) \
     { (icon_), -1, (screen_), (line_) }
+/**
+ * @brief Tile that opens category @p cat_ with icon @p icon_ and the line
+ *        @p line_ under its name.
+ */
+#define HUB_CATEGORY_LINE(cat_, line_, icon_) \
+    { (icon_), (int8_t)(cat_), SCREEN_SETUP, (line_) }
 
 /** @brief The hub's tiles in grid order, row by row. */
 static const hub_tile_t k_tiles[] = {
-    HUB_CATEGORY(SET_CAT_APP,   ui_icon_sliders),
-    HUB_CATEGORY(SET_CAT_IFACE, ui_icon_chip),
-    HUB_CATEGORY(SET_CAT_CARD,  ui_icon_chart),
-    HUB_CATEGORY(SET_CAT_SENSORS, ui_icon_supply),
+    HUB_CATEGORY_LINE(SET_CAT_APP, TX_SET_HUB_PANEL, ui_icon_sliders),
+    HUB_CATEGORY_LINE(SET_CAT_SENSORS, TX_SET_HUB_SENSORS, ui_icon_supply),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
-    HUB_SCREEN(SCREEN_PICKER,  TX_SET_HUB_PICKER,  ui_icon_board),
-    HUB_SCREEN(SCREEN_WIFI,    TX_SET_HUB_WIFI,    ui_icon_wifi),
+    HUB_CATEGORY_LINE(SET_CAT_CARD, TX_SET_HUB_CARD, ui_icon_chart),
+    HUB_SCREEN(SCREEN_WIFI, TX_SET_HUB_WIFI, ui_icon_wifi),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
-    HUB_SCREEN(SCREEN_FILES,   TX_SET_HUB_FILES,   ui_icon_folder),
 };
 
-/** @brief Number of tiles, at most SETTINGS_HUB_SLOTS (9). */
+/** @brief Tiles of every board; a board that solders its pins adds LAYOUT. */
 #define TILE_COUNT ((int)(sizeof(k_tiles) / sizeof(k_tiles[0])))
 
-_Static_assert(TILE_COUNT <= SETTINGS_HUB_SLOTS,
+_Static_assert(TILE_COUNT + 1 <= SETTINGS_HUB_SLOTS,
                "a tenth SETUP tile needs the hub's second page");
 _Static_assert(SETTINGS_HUB_SLOTS == HUB_COLS * HUB_ROWS,
                "the hub's slots are its grid");
 _Static_assert(HUB_M + HUB_ROWS * (HUB_TH + HUB_M) <= STRIP_Y,
                "the grid ends above the strip");
 _Static_assert(LIST_Y + LIST_H <= STRIP_Y, "the list ends above the strip");
+_Static_assert(SENS_ENTRY_COUNT * ENTRY_PITCH - (ENTRY_PITCH - ENTRY_H) <= LIST_H,
+               "SENSORS' left list ends where the list ends");
+_Static_assert(ENTRY_H >= UI_TAP_MIN, "an entry is a tap target");
 _Static_assert(STRIP_Y + STRIP_H <= SCREEN_H - UI_ALERT_H,
                "the strip ends above the alert band");
 _Static_assert(WARN_WHY_Y + 2 * WARN_WHY_PITCH <= WARN_LINE_Y,
@@ -287,6 +302,9 @@ typedef struct {
     bool     list;
     setting_cat_t cat;                  /**< the category the list shows */
     int      scroll;                    /**< list scroll, px */
+    /** @brief The scroll each SENSORS entry had when last left, px */
+    int      entry_scroll[SENS_ENTRY_COUNT];
+    bool     opened;   /**< another screen opened the list: no tiles above it */
     int      scroll_max;                /**< largest scroll, px */
 
     /* One contact holds the screen from its DOWN to its UP; any other
@@ -356,6 +374,20 @@ extern stg_state_t stg_s;
  */
 gfx_rect_t stg_tile_rect(int i);
 /**
+ * @brief Hub tile @p i: past the table's tiles, LAYOUT's, which a board whose
+ *        pins are soldered shows last.
+ * @param i The tile, 0 to stg_tile_count() - 1.
+ * @return The tile.
+ */
+const hub_tile_t *stg_hub_tile(int i);
+
+/**
+ * @brief The tiles the hub shows: TILE_COUNT, and LAYOUT last on a board that
+ *        solders its pins.
+ * @return their number
+ */
+int stg_tile_count(void);
+/**
  * @brief Returns column @p col of the strip under the grid and the list.
  * @param col strip column, 0 to 2
  * @return the column's rectangle
@@ -409,8 +441,12 @@ void stg_clamp_scroll(void);
  */
 gfx_rect_t stg_row_rect(int index);
 /**
- * @brief Returns the entry of row @p index; a heading's carries heading or
- *        part >= 0, a string's text >= 0.
+ * @brief The list's left edge: right of the left list on SENSORS.
+ * @return The edge, px.
+ */
+int stg_list_x(void);
+/**
+ * @brief Returns the entry of row @p index; a string's carries text >= 0.
  * @param index row index
  * @return the entry
  */

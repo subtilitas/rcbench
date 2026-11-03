@@ -84,7 +84,7 @@ The INA3221 becomes the meter 1000ms after its conditions hold: a channel of a f
 
 ![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 
-While the PD mini is disabled on SETUP, INTERFACES, the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
+While the PD mini is disabled on SUPPLY's PD MINI tab, the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
 
 A reading that did not arrive is `---` in LIVE's CURRENT, `--` on the line and a gap in the plot.
 
@@ -95,6 +95,11 @@ The SET line holds the SUPPLY screen's two set points and its output switch. A c
 - A tap on a set point opens the keypad over the left card.
 - OUTPUT ON is a 2s hold, OUTPUT OFF a tap.
 - Leaving SERVO switches off an output SERVO switched on.
+- After a programmer's LEAVE that leaves the output on, SERVO asks whether the set points from before the session go back onto it ([Servo programmer](servo-programmer.md)). No other end of a port's hold asks: RELEASE PORT, a STOP, an error, a lost link or a restart leaves the session's set points until the next OFF.
+
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the PROG 5V box stands under PD MINI in place of the plot. It switches the programming ports' own 5V, GPIO 21: PROG 5V ON is a 2s hold, PROG 5V OFF a tap, with the bench SAFE or ARMED. Its second line is the INA3221's last window of the 5V (0x40 CH3), `5.02V  0.120A`, or `HELD BY PROG PORT n` while a programmer holds a port; the button then takes no press. Leaving SERVO switches off a 5V the box switched on here, unless a port holds it. SUPPLY shows the same box.
+
+![SERVO on the carrier](view:servo-rbmod)
 
 ![HV SERVOS ONLY](view:servo-hv)
 
@@ -138,7 +143,7 @@ The limit run finds where the installed servo binds at each end of its travel. I
 1. Tap SETTINGS on the card, then LIMIT RUN to choose SEARCH ONLY or SEARCH + PROGRAM.
 2. With TARGET on PROG PORT, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
 3. Tap the home tag to go back to the cards.
-4. Hold START LIMIT RUN for 2s while the bench is ARMED. A tap or a shorter hold starts nothing.
+4. Hold START LIMIT RUN for 2s while the bench is ARMED. A tap or a shorter hold starts nothing and shows `Hold 2s to start the limit run.` in the alert band.
 5. TEST stays shown. The box on LIVE's left card shows the phase, the side and the pulse, and the output it drives.
 
 The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT 1 GPIO 13, CURRENT INA3221 0x41 CH2` or `OUTPUT SERVO PWM GPIO 2, CURRENT INA3221 0x40 CH1`. The TARGET row stays in sight as well.
@@ -255,4 +260,5 @@ The report is a `LIMITnnn.TXT` of its own in `USER/LOGS`, written whatever REPOR
 
 - [Servo settings](servo-settings.md): type, frame rate, pulses, the sweep, each run's settings and the target.
 - [Servo programmer](servo-programmer.md): PROGRAM's row for KST and Chaservo servos.
-- [Supply](supply.md) and [Interfaces](setup-interfaces.md): the PD mini, the INA3221 and the AS5600.
+- [Supply](supply.md): the PD mini.
+- [Sensors](setup-sensors.md): the INA3221 and the AS5600.

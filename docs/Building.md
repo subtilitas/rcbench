@@ -42,6 +42,7 @@ rcbench/
     phase_tap/            ESC tone detector · edge ring reader · PIO capture
     kst/                  programming of KST and Chaservo servos: frames, registers, limits, write plans, session · rp2350: kst_line.pio · kst_line
     hitec/                Hitec servo wire, both families: frames, transactions, reply decoders · rp2350: hitec_line.pio · hitec_line
+    escwire/              ESC settings over the signal wire: protocol A, the text interface, the guard, identification, field maps, session · rp2350: ew_line.pio · ew_line · rp2350: ew_line.pio · ew_line
     i2c_txq/              I2C transaction queue: earliest deadline, timeouts, line check, bus clear · rp2350: i2c_txq_block on an I2C block, no PIO program
   firmware/
     panel/                ESP-IDF project (ESP32-P4)
@@ -86,12 +87,13 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
+| `escwire` | yes | yes | yes |
 
 ## Toolchains
 
 | | Version | Notes |
 | --- | --- | --- |
-| ESP-IDF | v5.5.5 or newer on the v5.5 line | the panel's ESP32-P4 is chip revision 3.2, which Espressif's advisory AR2026-004 pairs with v5.5.5 or later; the build sets `CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n` and minimum revision 3.1. Neither v5.5.0 nor v5.5.1 compiles: their TWAI (two-wire automotive interface) driver sends a CAN frame with DLC (data length code) 0 as DLC 8, and the IOmcu refuses every link read sent that way. CI (continuous integration) builds v5.5.5 |
+| ESP-IDF | v6.1 | the panel's ESP32-P4 is chip revision 3.2, which Espressif's advisory AR2026-004 pairs with v5.5.5, v6.0.1 or later; the build sets `CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n` and minimum revision 3.1. The panel's TWAI (two-wire automotive interface) code uses the legacy driver, which v6.1 deprecates with a `#warning`; `components/can_twai` compiles with `-Wno-cpp`. v6.1's legacy driver sends a CAN frame with DLC (data length code) 0 as DLC 0; v5.5.0 and v5.5.1 send it as DLC 8, and the IOmcu refuses every link read sent that way. The SD card code (`storage.c`) follows v6.1's SDMMC slot handling, and v5.5.5 is not built. CI (continuous integration) builds v6.1 |
 | pico-sdk | 2.0 or newer | RP2350 support; CI builds 2.3.0 |
 | ARM GNU toolchain | 14.2 | any `arm-none-eabi` release targeting Cortex-M33 |
 
@@ -253,29 +255,29 @@ What the panel does instead
 ### The RTC slow clock
 
 The RTC timer counts the 32.768kHz crystal Y3 on GPIO0 and GPIO1. No
-other function of the panel firmware uses those two pins. ESP-IDF v5.5.5
+other function of the panel firmware uses those two pins. ESP-IDF v6.1
 starts the crystal and falls back to the internal RC oscillator (136kHz
 nominal) when it does not start:
 
 1. The bootloader enables the crystal early, so it starts while the
    application loads (`components/bootloader_support/src/bootloader_clock_init.c`,
-   lines 91 to 95). On the ESP32-P4 the bootstrap cycles
+   lines 75 to 84). On the ESP32-P4 the bootstrap cycles
    (`CONFIG_ESP_SYSTEM_RTC_EXT_XTAL_BOOTSTRAP_CYCLES`) do nothing:
    `rtc_clk_32k_bootstrap()` only enables the crystal
-   (`components/esp_hw_support/port/esp32p4/rtc_clk.c`, lines 45 to 52).
+   (`components/esp_hw_support/port/esp32p4/rtc_clk.c`, lines 44 to 50).
 2. The application's start-up counts 3000 crystal cycles against the
    40MHz main crystal (`CONFIG_RTC_CLK_CAL_CYCLES=3000`), about 92ms. A
    count that times out, or one more than 0.05% off 32.768kHz, returns 0
-   (`components/esp_hw_support/port/esp32p4/rtc_time.c`, lines 175 to
-   190).
+   (`components/esp_hw_support/port/esp32p4/rtc_time.c`, lines 177 to
+   195).
 3. A count of 0 is tried again, 4 tries in all. After the fourth, ESP-IDF
    logs `clk: 32 kHz clock not found, switching to internal 150 kHz
    oscillator`, switches the crystal off and runs the RC
    (`components/esp_system/port/soc/esp32p4/clk.c`, `select_rtc_slow_clk()`,
-   lines 164 and 184 to 193). The panel starts on the RC. ESP-IDF's message
+   lines 127 and 143 to 152). The panel starts on the RC. ESP-IDF's message
    says 150kHz; the ESP32-P4's RC is 136kHz nominal.
 4. `CONFIG_RTC_CLK_CAL_CYCLES` stays above 0: at 0 the count is skipped
-   and the crystal is selected unchecked (`clk.c`, line 184).
+   and the crystal is selected unchecked (`clk.c`, line 143).
 
 At each start the console names the slow clock and its calibrated
 frequency (`log_clock_at_start()`, `firmware/panel/main/panel_settings.c`):
@@ -300,7 +302,7 @@ counts at once. Whether a crystal then passes within the 4 tries is not
 measured. A USB flash of the whole image writes the bootloader too.
 
 Current limitation: a crystal that stops after the start is not detected.
-ESP-IDF v5.5.5 offers no XTAL32K watchdog on the ESP32-P4. The system time
+ESP-IDF v6.1 offers no XTAL32K watchdog on the ESP32-P4. The system time
 runs on from the main crystal (esp_timer), and the RTC timer stands still;
 the next software restart sets the clock back by the time it stood.
 
@@ -322,9 +324,10 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 # look at a board
 idf.py -C firmware/panel -B firmware/panel/build-bars -D RCBENCH_DISPLAY_BARS=ON build
 
-# panel carrying the IOmcu image it offers over CAN; build the
-# IOmcu first
-idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin build
+# panel carrying the IOmcu images it offers over CAN, the module's and
+# the rbmod carrier's; build both IOmcu images first
+idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin \
+    -D RCBENCH_IOMCU_RBMOD_BIN=$PWD/firmware/iomcu/build-rbmod/rcbench-iomcu-rbmod.bin build
 
 # panel without the touch injector: every panel build, a release's too,
 # looks once at start-up for one at 0x14 beside the glass
@@ -348,6 +351,10 @@ esptool.py -p /dev/ttyACM0 write_flash 0x0 \
 export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
+
+# IOmcu for the rbmod carrier: files rcbench-iomcu-rbmod.*
+cmake -S firmware/iomcu -B firmware/iomcu/build-rbmod -DIOMCU_BOARD=rbmod
+cmake --build firmware/iomcu/build-rbmod
 
 # IOmcu, debug build that prints INA3221 CH1's 1ms samples
 cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
@@ -373,6 +380,16 @@ option `RCBENCH_IOMCU_BIN` takes its path, and the panel then offers it over
 CAN ([Link](Link.md#firmware-update-over-the-link)). A panel built without
 the option offers no IOmcu update.
 
+`IOMCU_BOARD` chooses the board the image is for: `rp2350_can` (default),
+the module wired by hand, or `rbmod`, the carrier whose pins are soldered
+([Link: Boards with soldered pins](Link.md#boards-with-soldered-pins)). The
+carrier's files are named `rcbench-iomcu-rbmod-install.uf2`,
+`rcbench-iomcu-rbmod.uf2`, `rcbench-iomcu-rbmod-pt.uf2`,
+`rcbench-iomcu-rbmod.bin` and `rcbench-iomcu-rbmod.elf`. The panel option
+`RCBENCH_IOMCU_RBMOD_BIN` takes the carrier's `.bin`. The panel offers each
+IOmcu the image of the board it reports, and none to a board it carries no
+image for.
+
 `PICO_BOARD` defaults to `pimoroni_pico_plus2_rp2350`. The module used for
 bring-up is a Waveshare RP2350-CAN (RP2350A, 4MB flash), which has no board
 file in the SDK (software development kit); the default builds and runs on it.
@@ -397,6 +414,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a string overflows where it is drawn, in either language, except the English overflows the tool lists as known ([Language](Language.md)) |
 | `tools/frame_cost.py` | measures L2 cache-line fills per frame under cachegrind with the ESP32-P4's L1 and L2 caches at 1024 x 600px; `--max-lines N` fails when a mode exceeds N, as CI runs it per group of modes; `--check-doc` holds the block in [Performance](Performance.md) to the measurement, to a tolerance of 2%, and the table of the board's probe row to `PROBE_CLEAR_US`; `--update-doc` writes the block |
 | `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; decodes the ESP32-P4's RISC-V code with `tools/stack_riscv.py` and stops on an ELF of another machine; CI runs it after both panel builds; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow; `--check-doc` holds the task table in [Performance](Performance.md#stacks) to the build; `--iomcu` reads the IOmcu image instead and fails when a core's deepest chain, one interrupt and 256 bytes exceed its stack; with `--check-doc` it holds core 0's row of the IOmcu table, the count of calls through a register reachable from `main` in both Performance pages and core 0's sentence in `STATUS.md`; the ELF reader and the call graph are in `tools/stack_elf.py`, the IOmcu's half in `tools/stack_iomcu.py` |
+| `tools/check_panel_console.py` | reads a panel ELF file for the console relay's symbols and its link line: `off ELF` fails when the image holds any of them, `on ELF` fails when it lacks one. CI and the release workflow hold every released build to `off` |
 | `tools/check_perf_log.py` | reads a panel ELF file for the start-up probe's text, the stack scan's text and the `scan_stacks` symbol: `off ELF` fails when the image holds any of them, `on ELF` fails when it lacks any; `ci.yml` runs both on its two panel builds and `release.yml` runs `off` on the release image, so a release build that omits `-D RCBENCH_PERF_LOG=OFF` fails |
 | `tools/image_slot.py` | reads the partition table of a panel build and fails when the image is larger than the smaller of the two OTA (over-the-air) application slots, when the table has fewer than two such slots, or when they differ in size; prints the room left; takes the build directory, default `firmware/panel/build` |
 | `tools/psram_bss.py` | reads the linker map of a panel build and fails when a line in the entries of a mapping in `firmware/panel/main/psram_bss.lf` is not `<object> (rcbench_extram_bss)`, when an object that the fragment maps to PSRAM (pseudo-static random-access memory) holds no .bss in `.ext_ram.bss` or keeps any .bss in internal RAM; prints the bytes moved; `--list N` also lists every object with more than N bytes of .bss in internal RAM; takes the build directory, default `firmware/panel/build` |
@@ -556,21 +574,22 @@ forgotten.
 
 The SD card on slot 0 and the C6 on slot 1 share one SDMMC controller:
 
-- ESP-IDF's SDMMC driver does not hold a slot's set-up against a transfer
-  on the other slot. Starting a slot and starting a card set the
-  controller's clock divider, which both slots share, and send its clock
-  update commands outside the driver's request mutex
-  (`sdmmc_host_set_card_clk()`, `sdmmc_host.c` 301-351). When the card is
-  mounted while a Wi-Fi session moves data to or from the C6, the transfer
-  under way can fail; esp_hosted then reports a failed link and Wi-Fi stays
-  off until the panel restarts. The other way round, esp_hosted's start of
-  slot 1 at the first Wi-Fi start, and at each C6 reset it makes, can make a
-  card read or write under way fail. Not measured.
-- ESP-IDF's mount stops slot 0 on every failure after the controller's
-  init (`vfs_fat_sdmmc.c` 310-312), and stops the whole controller when
-  that leaves no slot counted (`sdmmc_host.c` 906-923). `storage.c` starts
-  slot 0 itself before the mount and gives up with no stop when it does not
-  start, so the count never drops to 0 under the C6's link.
+- ESP-IDF v6.1's SDMMC driver takes the controller's mutex for each
+  command and sets the clock divider of the command's slot inside it
+  (`sd_host_slot_sdmmc_do_transaction()`,
+  `components/esp_driver_sdmmc/src/sd_trans_sdmmc.c`); registering a slot
+  sets no clock. A mount on slot 0 and the C6's traffic on slot 1 take
+  turns command by command. What a clock change between two commands costs
+  a transfer of the other slot is not measured.
+- ESP-IDF's mount registers slot 0 itself on the controller esp_hosted
+  created (`sdmmc_host_init()` returns the existing controller). On a
+  failure after that it removes slot 0, and the controller goes only when
+  no slot is registered
+  (`components/fatfs/vfs/vfs_fat_sdmmc.c`,
+  `components/esp_driver_sdmmc/legacy/src/sdmmc_host.c`). A slot 0 that did
+  not start has no handle, and its removal changes nothing. `storage.c`
+  leaves the start of slot 0 to the mount: a slot 0 started beforehand
+  makes the mount's own start fail with `ESP_ERR_INVALID_STATE`.
 
 ### Cores and memory
 
@@ -611,11 +630,38 @@ Other allocations of esp_hosted are not counted here. The console line
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.5.5 for the ESP32-P4 with the check of the image against its update slot, a check that the image carries the IOmcu image and holds the touch injector's symbols, the console's frame lines (`tools/check_perf_log.py`) and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` and `RCBENCH_PERF_LOG=OFF` that fails when it holds an injector symbol or a frame line; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; the Doxygen comment check of `tools/doc_check.py`, which in a pull request also fails on any warning in a C file the pull request adds or on a line it changes; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v6.1 for the ESP32-P4 with the check of the image against its update slot, a check that the image carries the IOmcu image and holds the touch injector's symbols, the console's frame lines (`tools/check_perf_log.py`) and exFAT, and a second build with `RCBENCH_TOUCH_INJECTOR=OFF` and `RCBENCH_PERF_LOG=OFF` that fails when it holds an injector symbol or a frame line; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol, and once more with `-DIOMCU_CONSOLE=ON`, with the same stack check, failing when the default image holds a console symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
 | `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, the panel's with `-D RCBENCH_PERF_LOG=OFF` and a check that it holds no frame line, packages them with checksums and creates a release, a pre-release for an odd minor number ([Releases](#releases)); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `pages.yml` | pull request and push to `main` touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh`; a push to `main` touching the C sources as well | type check, tests, data check, size budget and browser tests of the configurator; the web help build of `tools/help_site.py`; the C API reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the web help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no browser test |
+
+Every job runs on Ubuntu 26.04 (`runs-on: ubuntu-26.04`), not on
+`ubuntu-latest`. The host suite is five parallel jobs: `Host suite, build and
+ctest`, `Host suite under sanitizers`, `Host suite coverage`, `Checks that hold
+prose and generated files to the tree` and `Frame cost of every screen`. Each
+installs its packages through the composite action
+`.github/actions/host-deps`. The job `Host suite, coverage and the checks that
+hold prose to the tree` needs the five, runs also when one of them fails, and
+fails unless all five succeed; it is the name the branch ruleset requires.
+The compilers of that image are gcc 15.2 for the host build and
+arm-none-eabi-gcc 14.2.1 for the IOmcu.
+
+Four results depend on the image and are those of the runner.
+`tools/render_ui.py` and `tools/frame_cost.py` compile with
+`-ffp-contract=off`, because that gcc targets x86-64-v3, fuses a multiply and
+an add into one rounding, and moves single pixels of the arcs and plot lines.
+The coverage table in `STATUS.md` and the figure in the READMEs are gcov's
+line counts for gcc 15.2; another gcc counts some lines differently, so
+`tools/coverage.py --check` fails on a machine with another release. Write
+the table from the `coverage` artifact of a CI run with
+`python3 tools/coverage.py --from-json coverage.json`. The IOmcu stack
+figures of `docs/Performance.md` are those of arm-none-eabi-gcc 14.2.1,
+which ARM GNU 14.2.Rel1 also gives. The fills of the frame-cost table in the
+same file are cachegrind counts of a build on that image, run with a fixed
+environment (the length of the environment shifts the stack, and with it a
+count by up to 9%); a machine with another libc can differ, and
+`tools/frame_cost.py --check-doc` accepts 2% of a mode, 100 fills at least.
 
 clang-tidy does not run over `firmware/`: it compiles each file and needs
 the ESP-IDF and pico-sdk headers, which the analysis job does not have.
