@@ -266,17 +266,19 @@ typedef struct {
 extern const servo_type_t k_types[TYPE_COUNT];
 
 /* SETTINGS' pages, under its own tabs, and the two runs' settings, each
- * opened from its card's SETTINGS on TEST. */
+ * opened from its card's SETTINGS on TEST; the brown-out walk's, opened
+ * from the automatic test's BROWN-OUT row. */
 enum { PG_OUTPUT = 0, PG_SWEEP, PG_DUT, PG_COUNT,
-       PG_AUTO = PG_COUNT, PG_LIMRUN };
+       PG_AUTO = PG_COUNT, PG_LIMRUN, PG_BROWNOUT };
 
-/* Which run's settings TEST shows, one level down from its card. */
-enum { RL_NONE = 0, RL_AUTO, RL_LIMIT };
+/* Which run's settings TEST shows, one level down from its card, or the
+ * brown-out walk's, one further down from the automatic test's. */
+enum { RL_NONE = 0, RL_AUTO, RL_LIMIT, RL_BROWNOUT };
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
        R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_LIM_MODE,
-       R_LIM_PULSES };
+       R_LIM_PULSES, R_BROWNOUT };
 
 typedef struct {
     uint8_t      page;
@@ -891,7 +893,8 @@ gfx_rect_t warn_cancel_rect(void);
 /**
  * @brief The decimals a setting's value is typed and drawn with.
  * @param id the setting
- * @return 2 for a float stepping under 1, else 0
+ * @return the digits of its step (settings_decimals()): 2 for 0.05, 1
+ *         for 0.1, 0 for a whole step
  */
 int decimals_of(setting_id_t id);
 /**

@@ -1864,7 +1864,9 @@ two columns of five, 48px tall and 56px apart; the warnings read in
 | SETTINGS > SWEEP | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5Hz, 10 to 100% of the travel. The automatic test moves in steps between the ends RANGE gives |
 | AUTOMATIC TEST > SETTINGS | TEST LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
 | AUTOMATIC TEST > SETTINGS | DWELL TIME, SETTLING TIME | held at each end, by the test and by SWEEP; waited after a supply step before measuring |
-| AUTOMATIC TEST > SETTINGS | STEP 4.8 / 6.0 / 7.4 / 8.4V, BROWN-OUT | the supply steps, and the brown-out run from 5.0V down; 7.4 and 8.4V run only with HV SERVO on |
+| AUTOMATIC TEST > SETTINGS | STEP 4.8 / 6.0 / 7.4 / 8.4V | the supply steps; 7.4 and 8.4V run only with HV SERVO on |
+| AUTOMATIC TEST > SETTINGS | BROWN-OUT | reads `ON 3.0/0.2V` (LOWEST VOLTAGE and STEP) or `OFF`; a tap opens the brown-out walk's page, whose CLOSE and home tag come back |
+| AUTOMATIC TEST > BROWN-OUT | BROWN-OUT, LOWEST VOLTAGE, STEP | the walk from 5.0V down, on or off; its floor, 2.0 to 4.8V, 3.0V by default; its step, 0.1 to 1.0V, 0.2V by default. The note under them names the walk on the supply in force and how many voltages it asks for |
 | AUTOMATIC TEST > SETTINGS | HV SERVO | adds the 7.4 and 8.4V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
 | AUTOMATIC TEST > SETTINGS | STALL AT | above this current the servo counts as stalled |
 | AUTOMATIC TEST > SETTINGS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
@@ -2040,6 +2042,7 @@ a run's settings.
 ![TEST and its two run cards](img/servo-test.png)
 ![The automatic test's settings](img/servo-test-settings.png)
 ![The limit run's settings](img/servo-limits.png)
+![The brown-out walk's settings](img/servo-brownout.png)
 ![The name](img/servo-name.png)
 
 Current limitations:

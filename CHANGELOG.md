@@ -6,6 +6,18 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The AUTOMATIC TEST's brown-out walk takes two settings, on its own page:
+  BROWN-OUT on the automatic test's settings opens it, and the row reads
+  `ON 3.0/0.2V` or `OFF`. LOWEST VOLTAGE, 2.0 to 4.8V, is the walk's last
+  voltage; STEP, 0.1 to 1.0V, how far each voltage goes down. Both are kept
+  over a restart, and their defaults, 3.0V and 0.2V, are the walk of 0.23.6.
+  The walk starts at 5.0V, or the voltage cap if lower; a last step shorter
+  than STEP lands on LOWEST VOLTAGE, and a LOWEST VOLTAGE at or above the
+  start runs the start alone. A walk asks for up to 31 voltages. The
+  report's `Brown-out:` line names the step in force.
+
 ### Changed
 
 - An AS5600 output encoder in use from the start of an AUTOMATIC TEST or a

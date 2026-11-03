@@ -366,14 +366,15 @@ bool wb_back(void)
      * page under it stays.  In a session it is the session's back: an
      * editor closes, the session closes to PROGRAM's list, or a port in
      * programming asks for LEAVE and the session stays.  From a run's
-     * settings it climbs to TEST. */
+     * settings it climbs to TEST, from the brown-out walk's to the
+     * automatic test's. */
     const prog_page_set_t *ps = prog_shown_set();
     if (modal_open()) {
         close_panels();
     } else if (ps != NULL) {
         prog_ps_back(ps);
     } else if (wb_task() == UI_WB_TEST && s.run_list != RL_NONE) {
-        s.run_list = RL_NONE;
+        s.run_list = (s.run_list == RL_BROWNOUT) ? RL_AUTO : RL_NONE;
     } else {
         return false;
     }

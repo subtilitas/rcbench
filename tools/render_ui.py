@@ -141,6 +141,8 @@ SCREENS = {
     "servo-test":     ("servo-test.png",     "servo", "dark"),
     "servo-test-settings": ("servo-test-settings.png", "servo", "dark"),
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),
+    # The brown-out walk's page, from the AUTOMATIC TEST's BROWN-OUT row.
+    "servo-brownout": ("servo-brownout.png", "servo", "dark"),
     "servo-warning":  ("servo-warning.png",  "servo", "dark"),
     "servo-name":     ("servo-name.png",     "servo", "dark"),
     # The DUT page with the output encoder on, and its angle in the

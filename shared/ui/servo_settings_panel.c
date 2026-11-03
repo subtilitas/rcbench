@@ -41,7 +41,9 @@
  *        columns; the automatic test's in three of five rows: the steps,
  *        the pass/fail limits and the brown-out, the length and timing.
  *        The length rule tops the right column, under TEST's SETTINGS: a
- *        second tap there opens its list and changes nothing.
+ *        second tap there opens its list and changes nothing.  BROWN-OUT
+ *        opens the brown-out walk's page: on or off, LOWEST VOLTAGE and
+ *        STEP, one column.
  */
 const ov_row_t k_rows[] = {
     { PG_OUTPUT, R_TYPE,    SETTING_COUNT, TX_SV_ROW_TYPE,  0, 0, true  },
@@ -74,11 +76,15 @@ const ov_row_t k_rows[] = {
     { PG_AUTO, R_HV,      SETTING_COUNT,           TX_SV_ROW_HV,  0, 2, false },
     { PG_AUTO, R_SETTING, SET_SERVO_STEP_74,       TX_SV_ROW_STEP_74,  0, 3, false },
     { PG_AUTO, R_SETTING, SET_SERVO_STEP_84,       TX_SV_ROW_STEP_84,  0, 4, false },
-    { PG_AUTO, R_SETTING, SET_SERVO_BROWNOUT,      TX_SV_ROW_BROWNOUT,  1, 4, false },
+    { PG_AUTO, R_BROWNOUT, SETTING_COUNT,          TX_SV_ROW_BROWNOUT,  1, 4, false },
     { PG_AUTO, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 3, false },
 
     { PG_LIMRUN, R_LIM_MODE,   SETTING_COUNT, TX_SV_ROW_LIM_MODE,  0, 0, true  },
     { PG_LIMRUN, R_LIM_PULSES, SETTING_COUNT, TX_SV_ROW_LIM_PULSES,  0, 1, false },
+
+    { PG_BROWNOUT, R_SETTING, SET_SERVO_BROWNOUT, TX_SV_ROW_BROWNOUT,  0, 0, false },
+    { PG_BROWNOUT, R_SETTING, SET_SERVO_BO_FLOOR, TX_SV_ROW_BO_FLOOR,  0, 1, false },
+    { PG_BROWNOUT, R_SETTING, SET_SERVO_BO_STEP,  TX_SV_ROW_BO_STEP,  0, 2, false },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 /** @brief The rows k_rows holds. */
@@ -142,8 +148,7 @@ gfx_rect_t warn_cancel_rect(void)
 
 int decimals_of(setting_id_t id)
 {
-    const setting_def_t *d = settings_def(id);
-    return (d->type == SET_TYPE_FLOAT && d->step < 1.0f) ? 2 : 0;
+    return settings_decimals(id);   /* the step's digits: 0.05 two, 0.1 one */
 }
 
 /* The longest pulse the frame rate in force leaves room for. */
@@ -494,6 +499,12 @@ static void edit_row(int i)
         if (!servo_limrun_running(&s.lim) && lim_mode_why() == NULL) {
             s.lim_prog = !s.lim_prog;
         }
+        break;
+    case R_BROWNOUT:
+        /* The brown-out walk's page, one level under the automatic
+         * test's; its CLOSE climbs back there. */
+        s.run_list = RL_BROWNOUT;
+        servo_invalidate();
         break;
     case R_LIM_PULSES:
         /* For a run started after it, on the programming port only. */
@@ -906,10 +917,11 @@ void ov_rest(const touch_event_t *evt)
         break;
     case OP_RUN_CLOSE:
         /* A run's settings' CLOSE: up to TEST's cards, as the home tag
-         * climbs from here. */
+         * climbs from here; the brown-out walk's up to the automatic
+         * test's. */
         if (gfx_rect_contains(run_close_rect(), x, y)
             && wb_task() == UI_WB_TEST && s.run_list != RL_NONE) {
-            s.run_list = RL_NONE;
+            s.run_list = (s.run_list == RL_BROWNOUT) ? RL_AUTO : RL_NONE;
             servo_invalidate();
         }
         break;

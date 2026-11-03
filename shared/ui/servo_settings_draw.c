@@ -99,6 +99,16 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
                     return;
     case R_HV:      snprintf(buf, n, "%s", ui_on_off(s.test_hv)); return;
+    case R_BROWNOUT:
+        /* ON 3.0/0.2V: LOWEST VOLTAGE and STEP; OFF alone. */
+        if (settings_get_bool(SET_SERVO_BROWNOUT)) {
+            snprintf(buf, n, "%s %.1f/%.1fV", ui_on_off(true),
+                     (double)settings_get(SET_SERVO_BO_FLOOR),
+                     (double)settings_get(SET_SERVO_BO_STEP));
+        } else {
+            snprintf(buf, n, "%s", ui_on_off(false));
+        }
+        return;
     case R_LIM_MODE:
         snprintf(buf, n, "%s",
                  lim_programs() ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH));
@@ -145,6 +155,35 @@ static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
         gfx_text(c, x, y + i * NOTE_PITCH, lines[i], SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
+}
+
+/** @brief The brown-out walk's note, 6px under its three rows. */
+#define BO_NOTE_Y (RL_ROW0 + 3 * RL_PITCH + 6)
+_Static_assert(BO_NOTE_Y + 2 * NOTE_PITCH <= STOP_FLOOR,
+               "the brown-out walk's note ends above the alert band");
+
+/**
+ * @brief The brown-out walk a run started now would take with every
+ *        voltage moving: its start, step and floor on this supply, and how
+ *        many voltages; then where it stops.
+ * @param c the canvas
+ * @param x the lines' left edge, px
+ * @param y the first line's top, px
+ */
+static void draw_bo_note(gfx_canvas_t *c, int x, int y)
+{
+    const supply_caps_t caps = supply_screen_caps();
+    float start = 0.0f, floor_v = 0.0f, step = 0.0f;
+    servo_test_brownout_walk(settings_get(SET_SERVO_BO_FLOOR),
+                             settings_get(SET_SERVO_BO_STEP), caps.v_min,
+                             caps.v_max, &start, &floor_v, &step);
+    char l1[96], l2[96];
+    snprintf(l1, sizeof(l1), TR(SV_BO_NOTE_WALK), (double)start,
+             (double)step, (double)floor_v);
+    snprintf(l2, sizeof(l2), TR(SV_BO_NOTE_COUNT),
+             servo_test_brownout_count(start, floor_v, step));
+    const char *const lines[] = { l1, l2 };
+    draw_note(c, x, y, lines, 2);
 }
 
 bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
@@ -294,8 +333,10 @@ void draw_rows_page(gfx_canvas_t *c)
     if (page < PG_COUNT) {
         ui_tabs_render(&s.tabs, c);
     } else {
-        gfx_text(c, OV_X + 10, CARD_Y + RUN_PAGE_NAME_DY,
-                 (page == PG_AUTO) ? TR(SV_AUTO_TEST) : TR(SV_ROW_LIM_MODE),
+        const char *name = (page == PG_AUTO)       ? TR(SV_AUTO_TEST)
+                           : (page == PG_BROWNOUT) ? TR(SV_ROW_BROWNOUT)
+                                                   : TR(SV_ROW_LIM_MODE);
+        gfx_text(c, OV_X + 10, CARD_Y + RUN_PAGE_NAME_DY, name,
                  SV_FONT_LABEL, ui_theme_color(UI_C_ACCENT), 1);
         ui_button_font(c, run_close_rect(), TR(SUP_CLOSE),
                        ui_theme_color(UI_C_PANEL_HI),
@@ -361,6 +402,8 @@ void draw_rows_page(gfx_canvas_t *c)
         draw_test_stall(c, nx, RL_NOTE_Y);
     } else if (page == PG_LIMRUN) {
         draw_lim_mode_note(c, nx, RL_ROW0 + 2 * RL_PITCH + 6);
+    } else if (page == PG_BROWNOUT) {
+        draw_bo_note(c, nx, BO_NOTE_Y);
     } else if (page == PG_DUT) {
         const char *const lines[] = { TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_2) };
         draw_note(c, nx, DUT_NOTE_Y, lines, 2);

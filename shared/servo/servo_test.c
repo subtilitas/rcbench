@@ -685,12 +685,13 @@ static void end_step(servo_test_t *t, uint32_t now_ms)
     }
     /* Down a step while it still moves; done at the first that shows no
      * movement, or at the floor.  A floor off the step's grid -- a supply
-     * whose lowest set point is 3.3V -- is the last step itself. */
-    float next = s->set_v - SERVO_TEST_BROWNOUT_STEP_V;
-    if (next < t->floor_v - 0.001f && s->set_v > t->floor_v + 0.001f) {
-        next = t->floor_v;
-    }
-    if (!s->moved || next < t->floor_v - 0.001f) {
+     * whose lowest set point is 3.3V, LOWEST VOLTAGE 3.1V in 0.2V steps --
+     * is the last step itself.  The k-th voltage is counted from the start,
+     * so 30 steps of 0.1V add up no rounding. */
+    const unsigned k = (unsigned)t->step_count - (unsigned)t->cfg.step_count;
+    const float next = servo_test_brownout_v(t->bo_start_v, t->floor_v,
+                                             t->bo_step_v, k);
+    if (!s->moved || next < 0.0f) {
         finish(t, SERVO_TEST_AB_NONE, now_ms);
         return;
     }
@@ -781,10 +782,8 @@ servo_test_start_t servo_test_start(servo_test_t *t,
     t->ended    = false;
     t->start_ms = now_ms;
     t->v_max    = v_max;
-    t->floor_v  = (v_min > SERVO_TEST_BROWNOUT_FLOOR_V)
-                      ? v_min : SERVO_TEST_BROWNOUT_FLOOR_V;
-    t->bo_start_v = (v_max < SERVO_TEST_BROWNOUT_START_V)
-                        ? v_max : SERVO_TEST_BROWNOUT_START_V;
+    servo_test_brownout_walk(cfg->bo_floor_v, cfg->bo_step_v, v_min, v_max,
+                             &t->bo_start_v, &t->floor_v, &t->bo_step_v);
     /* The output already on is not switched on again, and is watched from
      * the start. */
     t->on_seen  = last->output;

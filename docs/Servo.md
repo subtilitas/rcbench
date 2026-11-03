@@ -562,12 +562,22 @@ longer SETTLING TIME avoids it.
 
 **Brown-out.** After the steps, with BROWN-OUT on: from 5.00V
 (`SERVO_TEST_BROWNOUT_START_V`), or the voltage cap in force if lower, down
-in 0.20V steps (`SERVO_TEST_BROWNOUT_STEP_V`) to 3.00V
-(`SERVO_TEST_BROWNOUT_FLOOR_V`), or the supply's lowest set point if higher.
-The cap in force is the lowest of VOLTAGE MAX, the supply's own maximum, and
-for the PD mini its input voltage less 0.7V. A floor off the
-0.20V grid is the last step: on the model, whose lowest set point is
-3.3V, the walk goes 5.0, 4.8 ... 3.4, 3.3V. Each voltage runs
+in steps of STEP to LOWEST VOLTAGE, the floor, or the supply's lowest set
+point if that is higher. STEP is 0.1 to 1.0V, 0.20V by default
+(`SERVO_TEST_BROWNOUT_STEP_V`); LOWEST VOLTAGE is 2.0 to 4.8V, 3.00V by
+default (`SERVO_TEST_BROWNOUT_FLOOR_V`). Both are set on the brown-out
+walk's page, which the BROWN-OUT row of the AUTOMATIC TEST's settings
+opens, and kept in NVS (non-volatile storage). The k-th voltage is the start
+less k steps, to 0.01V. The cap in force is the lowest of VOLTAGE MAX, the
+supply's own maximum, and for the PD mini its input voltage less 0.7V. A
+floor off the step's grid is the last step, shorter than STEP: LOWEST
+VOLTAGE 3.1V in 0.20V steps goes 5.0, 4.8 ... 3.2, 3.1V, and 4.8V in 1.0V
+steps goes 5.0, 4.8V. On the model, whose lowest set point is 3.3V, the
+default walk goes 5.0, 4.8 ... 3.4, 3.3V, and a LOWEST VOLTAGE under 3.3V
+ends there too. A LOWEST VOLTAGE at or above the start leaves one voltage,
+the start: under a cap of 4.5V, LOWEST VOLTAGE 4.8V walks 4.5V alone. The
+finest setting, 2.0V in 0.1V steps, asks for 31 voltages
+(`SERVO_TEST_BROWNOUT_MAX`). Each voltage runs
 SET, SETTLING TIME and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
 the high end and on to the low end, each held 600ms. A voltage shows **no
 movement** when no reading of either move lies more than that voltage's
@@ -596,8 +606,11 @@ threshold.
 | `SERVO_TEST_WIN_MS` | 50ms | one window of the INA3221 |
 | `SERVO_TEST_NEG_IDLE_A` | 0.020A | an idle current below minus this is reported as the shunt's direction |
 | `SERVO_TEST_BROWNOUT_START_V` | 5.00V | where the brown-out walk starts |
-| `SERVO_TEST_BROWNOUT_STEP_V` | 0.20V | each step down |
-| `SERVO_TEST_BROWNOUT_FLOOR_V` | 3.00V | the lowest voltage asked |
+| `SERVO_TEST_BROWNOUT_STEP_V` | 0.20V | STEP's default: each step down |
+| `SERVO_TEST_BROWNOUT_STEP_MIN_V`, `_MAX_V` | 0.10V, 1.00V | STEP's range |
+| `SERVO_TEST_BROWNOUT_FLOOR_V` | 3.00V | LOWEST VOLTAGE's default: the lowest voltage asked |
+| `SERVO_TEST_BROWNOUT_FLOOR_MIN_V`, `_MAX_V` | 2.00V, 4.80V | LOWEST VOLTAGE's range |
+| `SERVO_TEST_BROWNOUT_MAX` | 31 | the most voltages a walk holds: (5.0 - 2.0) / 0.1 + 1 |
 | `SERVO_TEST_BROWNOUT_MOVES` | 2 | moves at each brown-out voltage |
 
 ### Time resolution

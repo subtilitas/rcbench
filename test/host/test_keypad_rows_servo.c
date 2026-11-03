@@ -2,8 +2,9 @@
  * @file test_keypad_rows_servo.c
  * @brief SERVO's keypads held to keypad_rows_rig.h's four rules: the
  *        OUTPUT page's pulse widths, TRIM, TRAVEL and a CUSTOM frame rate,
- *        the SWEEP page's numbers, the AUTOMATIC TEST's numbers and the
- *        SET line's two set points.  A tap opens the keypad with the row's
+ *        the SWEEP page's numbers, the AUTOMATIC TEST's numbers, its
+ *        brown-out walk's LOWEST VOLTAGE and STEP, and the SET line's two
+ *        set points.  A tap opens the keypad with the row's
  *        title, unit, range and digits; a value past the range is refused
  *        and the row keeps its value; CANCEL keeps it; OK sets the value
  *        typed.
@@ -29,6 +30,7 @@ typedef enum {
     AT_RATE,        /**< OUTPUT's FRAME RATE > CUSTOM */
     AT_SWEEP,       /**< SETTINGS > SWEEP           */
     AT_AUTO,        /**< TEST > AUTOMATIC TEST's SETTINGS */
+    AT_BROWNOUT,    /**< ... > its BROWN-OUT row's page */
     AT_SET,         /**< LIVE's SET line            */
 } at_t;
 
@@ -61,6 +63,8 @@ static const where_t k_where[] = {
     { AT_AUTO,   LROW_X(1), LROW_Y(1) },   /* IDLE CURRENT  */
     { AT_AUTO,   LROW_X(1), LROW_Y(2) },   /* HOLD CURRENT  */
     { AT_AUTO,   LROW_X(1), LROW_Y(3) },   /* TRAVEL TIME   */
+    { AT_BROWNOUT, LROW_X(0), LROW_Y(1) }, /* LOWEST VOLTAGE */
+    { AT_BROWNOUT, LROW_X(0), LROW_Y(2) }, /* STEP          */
     { AT_SET,    SUP_V_X, SUP_ROW_Y },     /* the voltage   */
     { AT_SET,    SUP_I_X, SUP_ROW_Y },     /* the current   */
 };
@@ -72,7 +76,7 @@ static const setting_id_t k_ids[] = {
     SET_SERVO_TEST_HZ, SET_SERVO_TEST_RANGE, SET_SERVO_LEN_S,
     SET_SERVO_LEN_MOVES, SET_SERVO_DWELL_MS, SET_SERVO_SETTLE_MS,
     SET_SERVO_STALL_A, SET_SERVO_IDLE_MAX, SET_SERVO_HOLD_MAX,
-    SET_SERVO_TRAVEL_MAX_MS,
+    SET_SERVO_TRAVEL_MAX_MS, SET_SERVO_BO_FLOOR, SET_SERVO_BO_STEP,
 };
 #define FIRST_SETTING 6
 
@@ -115,6 +119,12 @@ static void open_row(int row)
             open_run_settings(0);
         }
         break;
+    case AT_BROWNOUT:
+        if (servo_screen_run_settings() != 3) {
+            open_run_settings(0);
+            tap(LROW_X(1), LROW_Y(4));     /* BROWN-OUT: its page */
+        }
+        break;
     case AT_SET:
         close_settings();
         break;
@@ -141,14 +151,15 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
         { "travel", TR(SV_ROW_TRAVEL), "deg", 10.0f, 90.0f, 0, 60.0f },
         { "rate", TR(SV_ROW_RATE), "Hz", 50.0f, 333.0f, 0, 60.0f },
         { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
-        { 0 },
+        { 0 }, { 0 }, { 0 },
         { "set V", TR(SUP_VOLTAGE), "V", 4.0f, 8.4f, 2, 5.5f },
         { "set I", TR(SUP_CURRENT_LIMIT), "A", 0.5f, 3.0f, 2, 1.25f },
     };
     static const ui_text_id_t k_labels[] = {
         TX_SV_ROW_SPEED, TX_SV_ROW_RANGE, TX_SV_ROW_LEN_S, TX_SV_ROW_MOVES,
         TX_SV_ROW_DWELL, TX_SV_ROW_SETTLE, TX_SV_ROW_STALL, TX_SV_ROW_IDLE,
-        TX_SV_ROW_HOLD, TX_SV_ROW_TRAVEL_TIME,
+        TX_SV_ROW_HOLD, TX_SV_ROW_TRAVEL_TIME, TX_SV_ROW_BO_FLOOR,
+        TX_SV_ROW_BO_STEP,
     };
     for (int r = 0; r < ROW_COUNT; ++r) {
         fresh();
@@ -204,7 +215,7 @@ TEST_CASE(every_servo_number_has_a_keypad_row)
         }
         CHECK_EQ(seen, 1);
     }
-    CHECK_EQ(numbers, 13);
+    CHECK_EQ(numbers, 15);
 }
 
 int main(void)
