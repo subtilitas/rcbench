@@ -169,9 +169,12 @@ wie es AUSGANG EIN des PD mini beurteilt:
 Der Regler von M7, am ehesten ein JoulWatt JW5068A (am Modul nicht
 bestätigt), schaltet seinen Ausgang bei Überspannung (über 6.0V für 20us)
 oder Unterspannung (unter 3.25V für 200us) ab und hält ihn aus. Er startet
-erst wieder, wenn EN umschaltet. Ein Servo an einem Programmierport, das
-schnell fährt, kann ihn abschalten. Die Page PROG_SUPPLY liest GPIO 21 dann
-weiter als ein.
+erst wieder, wenn EN umschaltet. Die bekannte Ursache auf dem Carrier ist
+die Abschaltung bei Überspannung: ein Servo an einem Programmierport, das
+bremst, speist Energie in die 5V zurück, die M7 nicht aufnehmen kann. Eine
+Z-Diode an der Schiene nimmt sie auf einer nachgearbeiteten Platine auf
+([Nacharbeit Rev 1](#nacharbeit-rev-1), Punkt 3). Die Page PROG_SUPPLY
+liest GPIO 21 dann weiter als ein.
 
 Das Panel beobachtet 0x40 CH3, solange sein eigenes ON steht: die Page
 liest die 5V ein oder hat das ON bestätigt, kein Programmierport hält sie,
@@ -307,11 +310,25 @@ fest:
 
 ## Nacharbeit Rev 1
 
-Jede Platine der Rev 1 braucht zwei Änderungen von Hand. Das Image des
-Carriers setzt beide voraus. Eine Platine der Rev 2 trägt die zwei
-Änderungen im Kupfer.
+Jede Platine der Rev 1 braucht drei Änderungen von Hand. Das Image des
+Carriers setzt die Punkte 1 und 2 voraus; auf Punkt 3 verlässt es sich
+nicht. Rev 2 trägt die Punkte 1 und 2 im Kupfer. Punkt 3 ist für Rev 2 eine
+offene Designfrage: ein Wandler, der nicht abschaltet, oder eine Klemmung
+im Kupfer.
 
 | # | Änderung | Grund | Die Firmware verlässt sich darauf |
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 Position 4, über R4) wechselt von GPIO 26 auf GPIO 15: die Leiterbahn wird unter dem Serienwiderstand R4 getrennt, und ein Fädeldraht läuft von R4 zu GPIO 15. | GPIO 26 ist ein ADC-Pin und nicht 5V-fest. Ein Pull-up von Hitec oder KST legt die Servoversorgung auf die Programmierleitung. | PROG PORT 3 ist auf jedem Carrier GPIO 15. GPIO 26 bleibt unbenutzt. |
 | 2 | Ein Pull-down von 2kΩ bis 5kΩ von EN an M7 (das Netz von GPIO 21) nach GND. | EN des Buck-Moduls liest offen als an. Ohne den Pull-down sind die 5V der Programmierports an, solange der IOmcu im Reset, im BOOTSEL oder ohne Versorgung ist. | Die Versorgung der Programmierports ist aus, solange GPIO 21 nicht high getrieben wird. |
+| 3 | Eine Z-Diode 5.6V vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene. | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6.0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
+
+Grenzen von Punkt 3:
+
+- Die Belastbarkeit der Z-Diode auf der getesteten Platine ist nicht
+  festgehalten.
+- Die Überspannungsschwelle von M7 liegt bei 115% bis 125% des Ausgangs,
+  5.75V bis 6.25V bei 5.00V. Eine Z-Diode 5.6V mit ±5% leitet bei 5.32V
+  bis 5.88V.
+- Über einige hundert mA Rückspeisung steigt die Klemmspannung über die
+  Schwelle, also kann ein größeres Servo M7 weiter abschalten (nicht
+  gemessen).

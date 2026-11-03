@@ -7,10 +7,11 @@
  * enabled by GPIO 21 through the PROG_SUPPLY page (prog_supply_link.h).
  * Its controller, most likely a JoulWatt JW5068A, latches its output off on
  * an over-voltage (over 6.0V for 20us) or an under-voltage (under 3.25V for
- * 200us), and starts again only when EN is toggled.  A servo on a
- * programming port that moves fast can latch it.  The page then still reads
- * the pin on; the INA3221 channel that watches the ports' 5V reads the
- * collapse.
+ * 200us), and starts again only when EN is toggled.  The known cause on
+ * the carrier is the over-voltage: a servo on a programming port that
+ * brakes feeds energy back into the 5V, which M7 cannot sink.  The page
+ * then still reads the pin on; the INA3221 channel that watches the ports'
+ * 5V reads the collapse.
  *
  * The watch counts the channel's 50ms windows, each once, by the number the
  * SENSE_WIN page carries.  Two new windows in a row with a mean bus voltage
