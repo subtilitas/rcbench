@@ -8455,6 +8455,12 @@ UI_SERVO_TEXT(SERVO_STR_AB_INA_SETUP,
 UI_SERVO_TEXT(SERVO_STR_AB_INA_METER,
     "INA3221 no longer the meter",
     "INA3221 misst nicht mehr")
+UI_SERVO_TEXT(SERVO_STR_AB_ENC_SILENT,
+    "AS5600 not answering",
+    "AS5600 antwortet nicht")
+UI_SERVO_TEXT(SERVO_STR_AB_ENC_GAPS,
+    "AS5600 dropped out twice in 10s",
+    "AS5600 2x in 10s ausgefallen")
 UI_SERVO_TEXT(SERVO_STR_START_OK,
     "",
     NULL)
@@ -8887,6 +8893,14 @@ UI_SERVO_TEXT(SERVO_STR_R_ENC_NO_MAGNET,
     "Kein Magnet: AS5600 meldete %lu-mal "
     "keinen. Dann kein Winkel im Protokoll, "
     "unberuhigte Bewegung nicht gezählt.")
+UI_SERVO_TEXT(SERVO_STR_R_ENC_GAPS,
+    "AS5600 gaps: %lu, the longest %lums. A "
+    "run goes on through one of up to %ums "
+    "each %us; no angle is judged in it.",
+    "AS5600-Lücken: %lu, die längste %lums. "
+    "Ein Lauf geht durch eine bis %ums alle "
+    "%us weiter; darin wird kein Winkel "
+    "bewertet.")
 UI_SERVO_TEXT(SERVO_STR_R_ENC_FIELD,
     "Field: %lu reading(s) with the magnet too "
     "weak, %lu too strong. The angle is used; "

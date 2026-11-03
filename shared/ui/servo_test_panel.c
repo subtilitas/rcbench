@@ -383,7 +383,14 @@ void test_begin(void)
     /* "No magnet" arrives once, when it begins: a run that starts in it is
      * told so, and its report gives the reason for its missing angles. */
     if (s.enc_no_magnet) {
-        const servo_test_enc_t none = { .valid = false, .no_magnet = true };
+        const servo_test_enc_t none = { .valid = false, .no_magnet = true,
+                                        .taken_ms = test_now() };
+        servo_test_encoder(&s.test, &none);
+    } else if (!s.enc_valid) {
+        /* Nor does "not answering": a run that starts in it starts in a
+         * gap of the encoder, which it rides through for SERVO_GAP_MAX_MS. */
+        const servo_test_enc_t none = { .valid = false,
+                                        .taken_ms = test_now() };
         servo_test_encoder(&s.test, &none);
     }
     stop_sweep();

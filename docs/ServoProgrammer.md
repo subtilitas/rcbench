@@ -1125,6 +1125,13 @@ programmer's part of the run, with the supply values it keeps, ends once
 that LEAVE is over. A LEAVE that fails leaves the port in programming mode,
 and the programmer opens on the left card.
 
+An AS5600 in use from the run's start that stops answering in a session
+ends the run as it does in a search: after more than 300ms, or at a second
+gap less than 10s after the start of the first, as an error
+([Servo, Protections](Servo.md#protections)). The port stays in programming
+mode as for any abort inside a session, and the bench, SAFE for the
+session, is not asked to SAFE again.
+
 ## More
 
 ![MORE](img/servo-kst-more.png)

@@ -18,6 +18,22 @@ history is in git.
   start runs the start alone. A walk asks for up to 31 voltages. The
   report's `Brown-out:` line names the step in force.
 
+### Changed
+
+- An AS5600 output encoder in use from the start of an AUTOMATIC TEST or a
+  LIMIT RUN that stops answering is a gap of the run. A gap of up to 300ms
+  (`SERVO_GAP_MAX_MS`) that starts 10s (`SERVO_GAP_EVERY_MS`) or more after
+  the start of the one before is ridden through: no angle is judged in it,
+  the report has `AS5600 gaps: N, the longest Mms.`, German `AS5600-Lücken`,
+  and the automatic test's CSV has the column `angle gap (ms)` with each
+  gap's length. A longer gap ends the run as an error, `AS5600 not
+  answering`, and so does a second one sooner, `AS5600 dropped out twice in
+  10s`: the output off, the bench to SAFE. The encoder went unnoticed:
+  pulled off for good, it ended nothing. The allowance is for measurement
+  readings, which motor and ESC runs at high current can interrupt on the
+  sensor bus; the INA3221's windows feed STALL AT's stop and the limit run's
+  current ceilings, and their loss still ends a run at once.
+
 ### Fixed
 
 - The AUTOMATIC TEST card on SERVO > TEST names why the last run was
@@ -29,9 +45,7 @@ history is in git.
 - `AS5600 is not responding at 0x36.` leaves the band with the first read
   that finds the encoder answering. An AS5600 plugged back in whose contacts
   drop it for a read raised the line as the part came back, and it stood for
-  its 30s over an encoder that answered. An AS5600 that stops answering
-  during an AUTOMATIC TEST, or answers again, does not end the run (host
-  test `a_run_goes_on_across_an_encoder_pulled_and_plugged_back_in`).
+  its 30s over an encoder that answered.
 
 ## 0.23.6 - 2026-11-03
 

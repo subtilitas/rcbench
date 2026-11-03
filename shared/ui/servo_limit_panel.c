@@ -482,6 +482,13 @@ void lim_begin(void)
         }
         servo_limrun_supply(&s.lim, &r, test_now());
     }
+    if (!s.enc_valid && !s.enc_no_magnet) {
+        /* An encoder not answering as the run starts: a gap from here,
+         * ridden through for SERVO_GAP_MAX_MS (servo_limrun_encoder()). */
+        const servo_test_enc_t none = { .valid = false,
+                                        .taken_ms = test_now() };
+        servo_limrun_encoder(&s.lim, &none);
+    }
     test_tell();
     stop_sweep();
     s.lim_seen   = true;

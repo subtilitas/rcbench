@@ -139,6 +139,21 @@
  * the report says how often it happened.  A reading with the field too weak
  * or too strong (ML, MH) is an angle and is used; the report counts them.
  *
+ * The part not answering.  A reading not valid without no_magnet is the
+ * part not answering, and the first one after from a part that answers --
+ * an angle, or no magnet -- ends that gap (servo_gap.h).  A gap of up to
+ * SERVO_GAP_MAX_MS that starts SERVO_GAP_EVERY_MS or more after the start of
+ * the one before is ridden through: its readings are none, so no angle is
+ * judged in it, a move open across it that had not settled is not counted,
+ * the CSV's angle gap column holds its length on the first row at or after
+ * its end, and the report counts the gaps and gives the longest.  A longer
+ * gap ends the run as SERVO_TEST_AB_ENC_SILENT, 1ms past SERVO_GAP_MAX_MS at
+ * the latest, and a second gap sooner than that ends it as
+ * SERVO_TEST_AB_ENC_GAPS; both are errors.  A run without cfg.enc_on has
+ * no gaps.  The encoder feeds no protection, which is what lets a run ride
+ * through: the meter's readings, which feed the stall stop, do not get the
+ * allowance.
+ *
  * A move that never left the tolerance is unmoved; one that moved and was
  * not still for SERVO_TEST_ENC_HOLD_MS before the next command is late.
  * Only counted moves are reported.  A deadband cannot be derived from
@@ -159,7 +174,8 @@
  * constant current for SERVO_TEST_CC_ABORT_MS.  A run on the INA3221 also
  * ends when no window arrives for SERVO_TEST_WIN_STALE_MS and when the
  * INA3221 stops being the servo rail's meter (servo_test_meter_now()): it
- * never goes on with another meter.  An aborted run is reported as ABORTED
+ * never goes on with another meter.  A run with the encoder in use ends on
+ * its gaps as above.  An aborted run is reported as ABORTED
  * with its reason and what it measured so far, and nothing fed to it after
  * its end changes either.
  *
@@ -188,6 +204,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "servo_gap.h"
 #include "servo_move.h"
 #include "servo_str.h"
 #include "servo_test_io.h"
@@ -487,6 +504,12 @@ typedef enum {
                                      set-up, or it is off in SETUP       */
     SERVO_TEST_AB_INA_METER,    /**< it stopped being the meter, the
                                      condition not known                 */
+    /* A run with the output encoder in use (servo_gap.h). */
+    SERVO_TEST_AB_ENC_SILENT,   /**< the AS5600 did not answer for longer
+                                     than SERVO_GAP_MAX_MS               */
+    SERVO_TEST_AB_ENC_GAPS,     /**< it stopped answering again less than
+                                     SERVO_GAP_EVERY_MS after the start of
+                                     the last time                       */
     SERVO_TEST_AB_COUNT
 } servo_test_abort_t;
 
@@ -619,6 +642,9 @@ typedef struct {
     uint32_t enc_travel_ms;
     uint32_t enc_travel_now_ms;     /**< the settle to log, 0 for none   */
     uint32_t enc_travel_at_ms;      /**< the reading that found it       */
+    servo_gap_t enc_gap;    /**< the part not answering (servo_gap.h)    */
+    uint32_t enc_gap_now_ms;        /**< a gap's length to log, 0 for none */
+    uint32_t enc_gap_at_ms;         /**< the reading that ended it       */
 
     /* The meter's readings: the supply's, or the INA3221's windows. */
     bool     have_reading;
@@ -761,7 +787,9 @@ void servo_test_meter_now(servo_test_t *t, const servo_test_meter_now_t *m,
  *        move under way; kept as the angle the CSV and the SERVO screen show.
  *
  * A reading that is not valid, or that carries gap, ends the angle's validity
- * before it.  Nothing is judged without cfg.enc_on.
+ * before it.  One not valid without no_magnet opens a gap of the part not
+ * answering at its taken_ms, and the next from a part that answers closes it
+ * (the file's header).  Nothing is judged without cfg.enc_on.
  *
  * @param t Run state.
  * @param e Encoder reading. NULL is ignored.
@@ -1110,8 +1138,8 @@ const char *servo_test_start_name(servo_test_start_t why);
  */
 const char *servo_test_csv_header(void);
 /**
- * @brief And with the encoder's two columns, angle_deg and travel_angle_ms,
- *        between the two groups.
+ * @brief And with the encoder's three columns, angle, travel angle and angle
+ *        gap, between the two groups.
  *
  * @return header row of the CSV with the encoder columns.
  */

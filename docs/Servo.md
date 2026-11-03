@@ -272,7 +272,8 @@ The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 | Current ceiling | 3.0A | abort, checked at every 1ms sample of a window |
 | The INA3221 at the end of its range | a clipped sample | abort |
 | Stall timeout | window means above 1.0A for 400ms | abort |
-| No window | 200ms, 4 windows of 50ms | abort; `SERVO_TEST_WIN_STALE_MS`, the automatic test's figure. A window without a current reading does not count as a window |
+| No window | 200ms, 4 windows of 50ms | abort; `SERVO_TEST_WIN_STALE_MS`, the automatic test's figure. A window without a current reading does not count as a window. The windows feed the three protections above, so a gap in them gets no allowance |
+| The AS5600, with AS5600 in use from the start | not answering for more than 300ms, or again less than 10s after the start of the time before | abort as an error, `AS5600 not answering` or `AS5600 dropped out twice in 10s`; a shorter, rarer gap is ridden through and no angle is taken in it, as in the automatic test ([The output encoder](#the-output-encoder)). The report has the line `AS5600 gaps: N, the longest Mms. ...` when N is more than 0 |
 | One search | 40s | abort: 1000µs of travel is 100 positions of 250ms, 25s |
 | One programmer step | 150s | abort: CONNECT with its read, a write or LEAVE |
 | The bench switching | 3s | abort when SAFE or ARMED is not in place 3s after the run asked |
@@ -304,7 +305,9 @@ nothing. Each ends the run as ABORTED with the output off and the servo
 released. An error during a search, a probe or the check switches the bench
 to SAFE as well: a sample at the 3.0A ceiling, a clipped sample, 1.0A for
 400ms, a window without the rail voltage and the errors of the automatic
-test ([Safety, Errors](Safety.md#errors)). A run that ends while it waits
+test, the two of the AS5600 among them ([Safety, Errors](Safety.md#errors)).
+In a session of the programmer the bench is SAFE already, and an AS5600 gap
+that ends the run there asks no SAFE. A run that ends while it waits
 for ARMED also asks SAFE: an ARM
 it asked that the bench has not taken yet does not arm the bench after the
 end. A start of the panel clears the run without a report.
@@ -846,9 +849,11 @@ angle and its error at each end, the mean and longest travel time, the moves
 counted, unmoved and late) and the commanded angles with the rules above.
 The current's table and its `Travel` column stay, so the two times sit side
 by side: on the PD mini the current's is an upper bound that lags the horn by
-about 0.3s, and the angle's is not. The CSV gains two columns, `angle (deg)`
-on every row whose angle reading is younger than 500ms, and `travel angle
-(ms)` on the first row taken at or after the reading that found the settle.
+about 0.3s, and the angle's is not. The CSV gains three columns, `angle (deg)`
+on every row whose angle reading is younger than 500ms, `travel angle
+(ms)` on the first row taken at or after the reading that found the settle,
+and `angle gap (ms)` on the first row taken at or after the reading that
+ended a gap of the part not answering.
 Each row takes the newest angle reading taken at or before the row, from the
 last 16 readings (about 640ms), so the order in which the panel handles
 readings and rows does not move an angle onto the wrong row. The report notes that the deadband is
@@ -858,15 +863,38 @@ live angle while AS5600 is on. A link that goes down clears the reading: the
 row shows dashes and ENC CENTRE sets nothing until a reading arrives with the
 link back. The same holds while the sensor reports no magnet.
 
-An AS5600 that stops answering during a run, pulled off or on a loose
-contact, does not end it, and neither does one that answers again. The run
-takes the readings it gets: while the part does not answer, the CSV's angle
-column is empty and a move open across the gap is left out as above; the
-angles count again from the next reading. The report has no line for the
-gap itself. The band says `AS5600 is not responding at 0x36.` when the part
-stops answering and takes the line back with the first read that finds it
-answering, so a part whose contacts drop it once more while it is plugged in
-leaves no "not responding" over an encoder that answers.
+An AS5600 in use from the start of a run that stops answering is a gap of
+the encoder. Motor and ESC runs at high current disturb the shared I2C bus,
+and a part plugged into the bus during a run makes another part on it drop
+out for a moment; the angle feeds no protection, so the run rides through
+such a gap (constants in `servo_gap.h`):
+
+| Gap | Run |
+| --- | --- |
+| up to 300ms (`SERVO_GAP_MAX_MS`), starting 10000ms (`SERVO_GAP_EVERY_MS`) or more after the start of the gap before | goes on: the CSV's angle column is empty in it, a move open across it that had not settled is left out as above, the angles count again from the next reading |
+| longer than 300ms | ends at the first pass past 300ms, or at the reading that ends a gap of 301ms: `AS5600 not answering` |
+| starting less than 10000ms after the start of the gap before, 9999ms included | ends at its start: `AS5600 dropped out twice in 10s` |
+
+Both endings are errors: the output off, the bench to SAFE. A gap starts at
+the poll of the control task that finds the part not answering (the SENSE
+read every 40ms) and ends at the first read from a part that answers, with
+an angle or reporting no magnet. A run that starts while the part does not
+answer starts in a gap. A reading with no magnet is no gap: the part
+answers. A queue to the screen that overflows (above) is no gap either: no
+reading of the part went missing at the IOmcu. The report has the line
+`AS5600 gaps: N, the longest Mms. ...` when N is more than 0, and the CSV's
+`angle gap (ms)` column the length of each gap that the run rode through.
+A run without AS5600 in use has no gaps. The band says `AS5600 is not
+responding at 0x36.` when the part stops answering and takes the line back
+with the first read that finds it answering, so a part whose contacts drop
+it once more while it is plugged in leaves no "not responding" over an
+encoder that answers.
+
+The allowance is for the angle only. A reading a protection depends on ends
+a run at its first loss: the INA3221's windows feed STALL AT's stop
+([What ends a run](#what-ends-a-run)), the supply's readings its trips. An
+INA3221 that stops answering while a gap of the AS5600 is open ends the run
+at once with the INA3221's reason.
 
 ### What ends a run
 
@@ -877,8 +905,8 @@ TEST card (`LAST: ABORTED - STOP`), which then names the reason in place of
 the files. An error switches the
 bench to SAFE in place of the release: the supply not answering or tripped,
 no new reading, an output that did not come on, a set point not read back, a
-step above the cap, STALL AT, constant current and every INA3221 reason
-([Safety, Errors](Safety.md#errors)). The bench also switches to SAFE for a
+step above the cap, STALL AT, constant current, every INA3221 reason and
+both AS5600 reasons ([Safety, Errors](Safety.md#errors)). The bench also switches to SAFE for a
 switch to SAFE, STOP or leaving the screen. It stays ARMED, the servo at the
 rest, for the operator's endings: a finger on the controls, a settings
 change, OUTPUT OFF and lost touch events.
@@ -919,9 +947,14 @@ left as they are.
 | `INA3221 window without current` | a run on the INA3221: the newest window holds no current samples, or its number has stood for 200ms |
 | `INA3221 set-up not held` | a run on the INA3221: the IOmcu stops holding the set-up, or SETUP has the INA3221 off |
 | `INA3221 no longer the meter` | a run on the INA3221: the meter changed and the panel did not name the condition |
+| `AS5600 not answering` | a run with AS5600 in use: the part has not answered for more than `SERVO_GAP_MAX_MS`, 300ms ([The output encoder](#the-output-encoder)) |
+| `AS5600 dropped out twice in 10s` | a run with AS5600 in use: the part stopped answering less than `SERVO_GAP_EVERY_MS`, 10000ms, after the start of the time before |
 
 The six reasons of a run on the INA3221 are the conditions under which the
-INA3221 is the rail's meter. The supply's reasons hold on either meter: its
+INA3221 is the rail's meter. Each ends the run at the first poll that finds
+it: the INA3221's windows feed STALL AT's stop, which a run always has (0.1A
+to 5.0A, no OFF), so a run on the INA3221 gets no allowance for a gap of
+its windows. The supply's reasons hold on either meter: its
 state is read in every run.
 
 A step is never asked above the cap: a run whose steps lie outside the
@@ -999,6 +1032,7 @@ writes:
 | `travel (ms)` | ms | on an arrival's row: that move's travel time |
 | `angle (deg)` | deg | with AS5600 on only: the horn's angle from the centre count, from the newest reading taken at or before the row; empty when that reading is older than 500ms or there is none |
 | `travel angle (ms)` | ms | with AS5600 on only: on the row after a move settled, its travel time from the angle |
+| `angle gap (ms)` | ms | with AS5600 on only: on the first row at or after the reading that ended a gap of the part not answering, the gap's length; empty otherwise |
 | `meter` | | `INA3221`, `PDMINI` or `MODEL`, on every row |
 | `window` | | on the INA3221: the window's number, modulo 65536; a step of more than 1 is windows that never reached the run |
 | `current max (A)` | A | on the INA3221: the window's highest 1ms sample |
@@ -1007,9 +1041,9 @@ writes:
 | `clipped` | | on the INA3221: samples in the window at an end of the range, held at 255 |
 
 The last six columns follow whatever is before them: columns 14 to 19
-without AS5600, 16 to 21 with it. On the PD mini and the model the five
-after `meter` are empty. A file written before these columns, 13 wide or 15
-with AS5600, reads in the log viewer as before: its parser takes the columns
+without AS5600, 17 to 22 with it. On the PD mini and the model the five
+after `meter` are empty. A file with fewer columns, 13 wide, or 15 or 21
+with AS5600, reads in the log viewer as well: its parser takes the columns
 from the header row.
 
 The report from the host suite's replay of an MG90S micro servo's run on

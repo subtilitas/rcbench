@@ -78,7 +78,8 @@ typedef struct {
     uint16_t raw;           /**< RAW ANGLE, 0 to 4095                   */
     uint16_t still_ms;      /**< the angle within the tolerance for this
                                  long at the reading                    */
-    uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
+    uint32_t taken_ms;      /**< when the panel had it, on the run's clock;
+                                 for one not valid, when it was found so */
     bool     gap;           /**< readings before this one were lost: the
                                  angle between is not known, as after a
                                  reading that is not valid             */
@@ -131,9 +132,9 @@ typedef struct {
 /* --------------------------------------------------- what it hands out */
 
 /** @brief The longest line a log row or a report line takes, terminator
- *         included: the CSV's header with the encoder's columns is 219
+ *         included: the CSV's header with the encoder's columns is 234
  *         characters. */
-#define SERVO_TEST_LINE_MAX 224u
+#define SERVO_TEST_LINE_MAX 240u
 
 typedef enum {
     SERVO_TEST_OUT_NONE = 0,

@@ -8,7 +8,6 @@
  * - the_dut_page_sets_the_encoders_centre_from_the_live_count
  * - a_link_that_goes_down_takes_the_encoders_angle_with_it
  * - a_run_with_the_encoder_on_writes_the_angle_columns
- * - a_run_goes_on_across_an_encoder_pulled_and_plugged_back_in
  * - an_aborted_run_names_its_reason_on_the_card
  * - a_run_started_without_a_magnet_says_so_in_its_report
  * - a_run_with_the_encoder_off_writes_the_old_columns
@@ -439,69 +438,6 @@ TEST_CASE(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_column
 
 
 /*
- * The output encoder pulled off a running AUTOMATIC TEST and plugged back
- * in, as the panel hands its readings over: the angle, then "none" once
- * when it stops answering, then on the way back in an angle, "none" once
- * more while the contacts settle, "no magnet" for one read and the angle
- * again.  The run reads the angles it gets and ends on its own, PASS; the
- * card says the result, not an abort.
- */
-TEST_CASE(a_run_goes_on_across_an_encoder_pulled_and_plugged_back_in)
-{
-    bench_fresh();
-    short_runs();
-    settings_set(SET_ENC_EN, 1.0f);
-    settings_set(SET_ENC_CENTRE, 3000.0f);
-    servo_screen_set_enc_held(true);
-    bench.enc = true;
-    hold_start(2.3f);
-    CHECK(servo_screen_testing());
-    bench_frames(3000u);
-
-    /* Pulled. */
-    bench.enc = false;
-    const servo_test_enc_t gone = { .valid = false };
-    servo_screen_encoder(&gone);
-    bench_frames(6000u);
-    CHECK(servo_screen_testing());
-
-    /* Plugged back in: one angle, dropped by the contacts, no magnet for
-     * a read, then the angles every 40ms. */
-    const servo_test_enc_t back = { .valid = true, .raw = 3000u,
-                                    .taken_ms = bench.now };
-    servo_screen_encoder(&back);
-    bench_frames(40u);
-    servo_screen_encoder(&gone);
-    bench_frames(40u);
-    const servo_test_enc_t dark = { .valid = false, .no_magnet = true,
-                                    .taken_ms = bench.now };
-    servo_screen_encoder(&dark);
-    bench_frames(40u);
-    bench.enc = true;
-    bench.enc_anchored = false;
-    bench.enc_next = bench.now;
-    bench_frames(2000u);
-    CHECK(servo_screen_testing());
-
-    for (int i = 0; i < 240 && servo_screen_testing(); ++i) {
-        bench_frames(500u);
-    }
-    CHECK(!servo_screen_testing());
-    bench_frames(1000u);
-    CHECK(strstr(bench.report, "Result:         PASS") != NULL);
-    CHECK(strstr(bench.report, "ENCODER (angles in degrees from the centre count")
-          != NULL);
-    CHECK(strstr(bench.report, "No magnet: the AS5600 reported none 1 time(s).")
-          != NULL);
-    servo_screen_test_files(21, true);
-    open_test();
-    char want[64];
-    snprintf(want, sizeof(want), TR(SV_CARD_LAST),
-             ui_servo_str(SERVO_STR_PASS), "ATEST021.CSV + .TXT");
-    CHECK(card_line_reads(0, 1, want, UI_C_TEXT_DIM));
-}
-
-/*
  * A run that ends early names why on the AUTOMATIC TEST card it was
  * started from, in the warning colour and in each language: a STOP, the
  * link going, the bench disarmed.  The band can show something else by
@@ -563,7 +499,6 @@ TEST_CASE(an_aborted_run_names_its_reason_on_the_card)
 int main(void)
 {
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
-    RUN(a_run_goes_on_across_an_encoder_pulled_and_plugged_back_in);
     RUN(an_aborted_run_names_its_reason_on_the_card);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);

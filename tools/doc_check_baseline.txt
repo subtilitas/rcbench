@@ -2656,7 +2656,6 @@ shared/servo/include/servo_test_io.h: warning: Member v (variable) of struct ser
 shared/servo/servo_limit.c: warning: Member BASELINE_STEPS (macro definition) of file servo_limit.c is not documented.
 shared/servo/servo_limrun_report.c: warning: Member LS(id) (macro definition) of file servo_limrun_report.c is not documented.
 shared/servo/servo_str.c: warning: Member CSV_BASE (macro definition) of file servo_str.c is not documented.
-shared/servo/servo_str.c: warning: Member CSV_ENC (macro definition) of file servo_str.c is not documented.
 shared/servo/servo_str.c: warning: Member CSV_METER (macro definition) of file servo_str.c is not documented.
 shared/servo/servo_str.c: warning: Member servo_test_start_str(servo_test_start_t why) (function) of file servo_str.c is not documented.
 shared/servo/servo_sweep.c: warning: Member cycle (variable) of struct cycle_t is not documented.

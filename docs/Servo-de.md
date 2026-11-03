@@ -296,7 +296,8 @@ Prüfstands angewendet.
 | Stromobergrenze | 3,0A | Abbruch, bei jedem 1-ms-Messwert eines Fensters geprüft |
 | Der INA3221 am Ende seines Bereichs | ein begrenzter Messwert | Abbruch |
 | Stall-Timeout | Fenstermittel über 1,0A für 400ms | Abbruch |
-| Kein Fenster | 200ms, 4 Fenster zu 50ms | Abbruch; `SERVO_TEST_WIN_STALE_MS`, der Wert des automatischen Tests. Ein Fenster ohne Strommesswert zählt nicht als Fenster |
+| Kein Fenster | 200ms, 4 Fenster zu 50ms | Abbruch; `SERVO_TEST_WIN_STALE_MS`, der Wert des automatischen Tests. Ein Fenster ohne Strommesswert zählt nicht als Fenster. Die Fenster speisen die drei Schutzmechanismen darüber, also bekommt eine Lücke in ihnen keine Zugabe |
+| Der AS5600, ab dem Start in Gebrauch | länger als 300ms keine Antwort, oder erneut weniger als 10s nach dem Beginn des Mals davor | Abbruch als Fehler, `AS5600 antwortet nicht` oder `AS5600 2x in 10s ausgefallen`; durch eine kürzere, seltenere Lücke fährt der Lauf, und darin wird kein Winkel genommen, wie im automatischen Test ([Der Ausgangsencoder](#der-ausgangsencoder)). Der Bericht hat die Zeile `AS5600-Lücken: N, die längste Mms. ...`, wenn N größer als 0 ist |
 | Eine Suche | 40s | Abbruch: 1000µs Weg sind 100 Stellungen zu 250ms, 25s |
 | Ein Schritt des Programmierers | 150s | Abbruch: VERBINDEN mit seinem Lesen, ein Schreiben oder VERLASSEN |
 | Das Umschalten des Prüfstands | 3s | Abbruch, wenn SAFE oder ARMED 3s nach der Anforderung nicht steht |
@@ -330,8 +331,10 @@ selbst beenden nichts. Jeder Grund beendet den Lauf als ABGEBROCHEN, mit
 ausgeschaltetem Ausgang und freigegebenem Servo. Ein Fehler während einer
 Suche, einer Probe oder der Prüfung schaltet den Prüfstand zudem auf SAFE:
 ein Wert an der Grenze von 3,0A, ein abgeschnittener Wert, 1,0A für 400ms,
-ein Fenster ohne Spannung der Schiene und die Fehler des automatischen Tests
-([Sicherheit, Fehler](Safety-de.md#fehler)). Ein Lauf, der endet,
+ein Fenster ohne Spannung der Schiene und die Fehler des automatischen Tests,
+darunter die beiden des AS5600 ([Sicherheit, Fehler](Safety-de.md#fehler)).
+In einer Sitzung des Programmierers ist der Prüfstand schon SAFE, und eine
+Lücke des AS5600, die den Lauf dort beendet, fordert kein SAFE an. Ein Lauf, der endet,
 während er auf ARMED wartet, fordert zudem SAFE an: ein ARM, das er
 anforderte und das der Prüfstand noch nicht übernommen hat, schaltet den
 Prüfstand nach dem Ende nicht auf ARMED. Ein Start des Panels löscht den
@@ -913,10 +916,12 @@ längste Stellzeit, die gezählten, unbewegten und späten Bewegungen) und die
 befohlenen Winkel mit den Regeln oben. Die Tabelle des Stroms und seine Spalte
 `Stell.` bleiben, die beiden Zeiten stehen also nebeneinander: am PD mini ist
 die aus dem Strom eine Obergrenze und hinkt dem Horn um etwa 0,3s nach, die aus dem Winkel
-nicht. Die CSV bekommt zwei Spalten, `angle (deg)` in jeder Zeile, deren
-Winkelmesswert jünger als 500ms ist, und `travel angle (ms)` in der ersten
+nicht. Die CSV bekommt drei Spalten, `angle (deg)` in jeder Zeile, deren
+Winkelmesswert jünger als 500ms ist, `travel angle (ms)` in der ersten
 Zeile, die zur Zeit des Messwerts, der die Beruhigung fand, oder danach
-genommen wurde. Jede Zeile nimmt den neuesten Winkelmesswert, der zur Zeit der
+genommen wurde, und `angle gap (ms)` in der ersten Zeile zur Zeit des
+Messwerts, der eine Lücke des nicht antwortenden Bausteins beendete, oder
+danach. Jede Zeile nimmt den neuesten Winkelmesswert, der zur Zeit der
 Zeile oder davor genommen wurde, aus den letzten 16 Messwerten (etwa 640ms);
 die Reihenfolge, in der das Panel Messwerte und Zeilen abarbeitet, schiebt
 also keinen Winkel in die falsche Zeile. Der Bericht vermerkt, dass das Totband nicht
@@ -927,17 +932,41 @@ der Messwert gelöscht: die Zeile zeigt Striche, und SENSOR-MITTE setzt nichts,
 bis mit dem Link wieder ein Messwert eintrifft. Dasselbe gilt, solange der
 Sensor keinen Magneten meldet.
 
-Ein AS5600, der während eines Laufs verstummt, abgezogen oder an einem
-Wackelkontakt, beendet ihn nicht, und einer, der wieder antwortet,
-ebenso wenig. Der Lauf nimmt die Messwerte, die er bekommt: solange der
-Baustein nicht antwortet, bleibt die Winkelspalte der CSV leer, und eine
-Bewegung, die über die Lücke offen ist, fällt wie oben heraus; ab dem
-nächsten Messwert zählen die Winkel wieder. Für die Lücke selbst hat der
-Bericht keine Zeile. Das Band sagt `AS5600 antwortet nicht unter 0x36.`,
+Ein AS5600, ab dem Start eines Laufs in Gebrauch, das verstummt, ist eine
+Lücke des Encoders. Motor- und ESC-Läufe mit hohem Strom stören den
+gemeinsamen I2C-Bus, und ein Baustein, der während eines Laufs an den Bus
+gesteckt wird, lässt einen anderen daran kurz ausfallen; der Winkel speist
+keinen Schutz, also fährt der Lauf durch eine solche Lücke (Konstanten in
+`servo_gap.h`):
+
+| Lücke | Lauf |
+| --- | --- |
+| bis 300ms (`SERVO_GAP_MAX_MS`), Beginn 10000ms (`SERVO_GAP_EVERY_MS`) oder mehr nach dem Beginn der Lücke davor | geht weiter: die Winkelspalte der CSV ist darin leer, eine Bewegung, die über die Lücke offen und nicht beruhigt war, fällt wie oben heraus, ab dem nächsten Messwert zählen die Winkel wieder |
+| länger als 300ms | endet im ersten Durchlauf nach 300ms, oder mit dem Messwert, der eine Lücke von 301ms beendet: `AS5600 antwortet nicht` |
+| Beginn weniger als 10000ms nach dem Beginn der Lücke davor, 9999ms eingeschlossen | endet mit ihrem Beginn: `AS5600 2x in 10s ausgefallen` |
+
+Beide Enden sind Fehler: Ausgang aus, Prüfstand auf SAFE. Eine Lücke beginnt
+mit der Abfrage der Steuer-Task, die den Baustein nicht antwortend findet
+(das SENSE-Lesen alle 40ms), und endet mit dem ersten Lesen eines
+antwortenden Bausteins, mit Winkel oder mit "kein Magnet". Ein Lauf, der
+startet, während der Baustein nicht antwortet, startet in einer Lücke. Ein
+Messwert ohne Magnet ist keine Lücke: der Baustein antwortet. Eine
+übergelaufene Warteschlange zum Bildschirm (oben) ist auch keine: am IOmcu
+fehlte kein Lesen des Bausteins. Der Bericht hat die Zeile `AS5600-Lücken:
+N, die längste Mms. ...`, wenn N größer als 0 ist, und die Spalte
+`angle gap (ms)` der CSV die Länge jeder Lücke, durch die der Lauf fuhr. Ein
+Lauf ohne AS5600 in Gebrauch hat keine Lücken. Das Band sagt `AS5600 antwortet nicht unter 0x36.`,
 wenn der Baustein verstummt, und nimmt die Zeile mit dem ersten
 Lesen zurück, das ihn antwortend findet: ein Baustein, den seine Kontakte
 beim Einstecken noch einmal verlieren, hinterlässt kein "antwortet nicht"
 über einem Encoder, der antwortet.
+
+Die Zugabe gilt nur dem Winkel. Ein Messwert, von dem ein Schutz abhängt,
+beendet einen Lauf bei seinem ersten Ausfall: die Fenster des INA3221
+speisen den Stopp von BLOCKIERT AB ([Was einen Lauf
+beendet](#was-einen-lauf-beendet)), die Messwerte des Netzteils seine
+Abschaltungen. Ein INA3221, der verstummt, während eine Lücke des AS5600
+offen ist, beendet den Lauf sofort mit dem Grund des INA3221.
 
 ### Was einen Lauf beendet
 
@@ -949,8 +978,8 @@ STOP`), die dann den Grund statt der Dateien nennt. Ein
 Fehler schaltet den Prüfstand statt der Freigabe auf SAFE: ein Netzteil, das
 nicht antwortet oder abgeschaltet hat, kein neuer Messwert, ein Ausgang, der
 nicht anging, ein nicht bestätigter Sollwert, eine Stufe über der Grenze,
-BLOCKIERT AB, Konstantstrom und jeder Grund des INA3221
-([Sicherheit, Fehler](Safety-de.md#fehler)). Auf SAFE schalten auch DISARM,
+BLOCKIERT AB, Konstantstrom, jeder Grund des INA3221 und beide Gründe des
+AS5600 ([Sicherheit, Fehler](Safety-de.md#fehler)). Auf SAFE schalten auch DISARM,
 STOP und das Verlassen der Seite. ARMED mit dem Servo in der Ruhelage bleibt
 der Prüfstand bei den Enden des Bedieners: ein Finger an den Bedienelementen,
 eine Änderung der Einstellungen, AUSGANG AUS und verlorene Touch-Ereignisse. Ein Schritt, den der Lauf gepostet und
@@ -992,10 +1021,16 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `INA3221-Fenster ohne Strom` | ein Lauf am INA3221: das neueste Fenster enthält keine Strommesswerte, oder seine Nummer steht seit 200ms |
 | `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der IOmcu hört auf, die Einstellung zu halten, oder SETUP hat den INA3221 aus |
 | `INA3221 misst nicht mehr` | ein Lauf am INA3221: das Messgerät wechselte, und das Panel nannte die Bedingung nicht |
+| `AS5600 antwortet nicht` | ein Lauf mit AS5600 in Gebrauch: der Baustein antwortet länger als `SERVO_GAP_MAX_MS`, 300ms, nicht ([Der Ausgangsencoder](#der-ausgangsencoder)) |
+| `AS5600 2x in 10s ausgefallen` | ein Lauf mit AS5600 in Gebrauch: der Baustein verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach dem Beginn des Mals davor |
 
 Die sechs Gründe eines Laufs am INA3221 sind die Bedingungen, unter denen der
-INA3221 das Messgerät der Schiene ist. Die Gründe des Netzteils gelten an
-beiden Messgeräten: sein Zustand wird in jedem Lauf gelesen.
+INA3221 das Messgerät der Schiene ist. Jeder beendet den Lauf in der ersten
+Abfrage, die ihn findet: die Fenster des INA3221 speisen den Stopp von
+BLOCKIERT AB, den ein Lauf immer hat (0.1A bis 5.0A, kein AUS), also bekommt
+ein Lauf am INA3221 keine Zugabe für eine Lücke seiner Fenster. Die Gründe
+des Netzteils gelten an beiden Messgeräten: sein Zustand wird in jedem Lauf
+gelesen.
 
 Eine Stufe wird nie über der Grenze verlangt: ein Lauf, dessen Stufen
 außerhalb des Bereichs des Netzteils liegen, wird bei START abgelehnt, und
@@ -1076,6 +1111,7 @@ Prüfstands:
 | `travel (ms)` | ms | in der Zeile einer Ankunft: die Stellzeit dieser Bewegung |
 | `angle (deg)` | deg | nur mit AS5600 an: der Winkel des Horns ab der Mitte, aus dem neuesten Messwert, der zur Zeit der Zeile oder davor genommen wurde; leer, wenn dieser älter als 500ms ist oder fehlt |
 | `travel angle (ms)` | ms | nur mit AS5600 an: in der Zeile nach einer beruhigten Bewegung ihre Stellzeit aus dem Winkel |
+| `angle gap (ms)` | ms | nur mit AS5600 an: in der ersten Zeile zur Zeit des Messwerts, der eine Lücke des nicht antwortenden Bausteins beendete, oder danach, die Länge der Lücke; sonst leer |
 | `meter` | | `INA3221`, `PDMINI` oder `MODEL`, in jeder Zeile |
 | `window` | | am INA3221: die Nummer des Fensters, modulo 65536; ein Schritt von mehr als 1 sind Fenster, die den Lauf nie erreichten |
 | `current max (A)` | A | am INA3221: der höchste 1-ms-Messwert des Fensters |
@@ -1084,9 +1120,9 @@ Prüfstands:
 | `clipped` | | am INA3221: Messwerte des Fensters an einem Bereichsende, bei 255 gehalten |
 
 Die letzten sechs Spalten folgen auf alles davor: Spalten 14 bis 19 ohne
-AS5600, 16 bis 21 mit. Am PD mini und am Modell sind die fünf nach `meter`
-leer. Eine Datei aus der Zeit vor diesen Spalten, 13 breit oder 15 mit
-AS5600, liest die Log-Ansicht wie zuvor: ihr Parser nimmt die Spalten aus
+AS5600, 17 bis 22 mit. Am PD mini und am Modell sind die fünf nach `meter`
+leer. Eine Datei mit weniger Spalten, 13 breit, oder 15 oder 21 mit
+AS5600, liest die Log-Ansicht ebenso: ihr Parser nimmt die Spalten aus
 der Kopfzeile.
 
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; jedes
