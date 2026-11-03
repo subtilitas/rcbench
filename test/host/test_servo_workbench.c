@@ -19,6 +19,7 @@
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "outputs_screen.h"
+#include "prog5v_box.h"
 #include "prog_registry.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -29,6 +30,7 @@
 #include "ui_textkey.h"
 #include "ui_workbench.h"
 #include "ui_theme.h"
+#include "ui_board.h"
 
 #include "servo_bench_rig.h"
 #include "servo_rig.h"
@@ -459,6 +461,29 @@ TEST_CASE(the_run_cards_say_what_their_start_needs)
         CHECK(card_line_reads(0, 0, TR(SV_TAP_HV), UI_C_TEXT_FAINT));
     }
     ui_text_set_language(UI_LANG_EN);
+}
+
+/* On the rbmod carrier with a programming port chosen the AUTOMATIC TEST
+ * card says what its start needs: the PROG 5V on, and no voltage steps,
+ * which reach the servo rails and not the port. */
+TEST_CASE(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps)
+{
+    bench_fresh();
+    servo_screen_set_armed(true);
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    settings_set(SET_SERVO_TARGET, 2.0f);
+    prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
+    bench_frames(100u);
+    open_test();
+    CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_PROG_5V),
+                          UI_C_WARN));
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    bench_frames(100u);
+    CHECK(card_line_reads(0, 0, ui_servo_str(SERVO_STR_START_PROG_STEPS),
+                          UI_C_WARN));
+    prog5v_box_reset();
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
 }
 
 /* ------------------------------------------------------- the read-only caps */
@@ -1089,6 +1114,7 @@ int main(void)
     RUN(the_target_row_opens_outputs_on_what_the_tester_drives);
     RUN(the_target_row_opens_on_the_drive_not_the_setting);
     RUN(the_run_cards_say_what_their_start_needs);
+    RUN(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps);
     RUN(the_supply_caps_show_on_their_button);
     RUN(the_output_page_names_the_tester_port_read_only);
     RUN(the_as5600_lives_on_sensors);

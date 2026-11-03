@@ -332,6 +332,11 @@ void prog5v_box_left(prog5v_by_t by)
     post(false, by, 0u);
 }
 
+void prog5v_box_ask_off(prog5v_by_t by)
+{
+    post(false, by, 0u);
+}
+
 bool prog5v_box_poll_cmd(prog5v_cmd_t *out)
 {
     if (!s_cmd.on && !s_cmd.off) {

@@ -8,12 +8,47 @@
  * the supply's lock while a port is held; the restore question after a
  * LEAVE and after no other end of the hold; every control a tap target above
  * the alert band, every label and value inside its field and every note
- * above the band, in English and German, for both series.
+ * above the band, in English and German, for both series.  On the rbmod
+ * carrier at 4.36 the PORT row's label opens PROGP01 to PROGP04, the entry
+ * taken is SERVO TESTER, and the list stays shut while the bench is ARMED.
  *
  * SPDX-License-Identifier: MIT
  */
 #include "shot_facts_rig.h"
 #include "hitec_panel_rig.h"
+
+#include "prog_choice.h"
+#include "servo_screen.h"
+#include "ui_board.h"
+
+/* The PORT row's label, left of its CONNECT button. */
+static void tap_port_label(void)
+{
+    const gfx_rect_t v = val(HITEC_PANEL_SERVO, 0, 0);
+    ev(AREA.x + 12, cy(v), TOUCH_EVENT_DOWN);
+    ev(AREA.x + 12, cy(v), TOUCH_EVENT_UP);
+    show();
+}
+
+TEST_CASE(on_the_carrier_the_port_row_chooses_the_port)
+{
+    open_en();
+    ui_board_set((uint16_t)OUTBIND_BOARD_RBMOD);
+    prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    show();
+    servo_screen_set_bench_armed(true);
+    tap_port_label();
+    CHECK_EQ(hitec_panel_editor(), 0);
+    servo_screen_set_bench_armed(false);
+    tap_port_label();
+    CHECK_EQ(hitec_panel_editor(), 2);
+    CHECK_STR_EQ(hitec_panel_choice_label(2), "PROGP03  GPIO 15");
+    tap(hitec_panel_choice_rect(2));
+    CHECK_EQ(hitec_panel_editor(), 0);
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 3);
+    prog_choice_reset();
+    ui_board_set((uint16_t)OUTBIND_BOARD_UNKNOWN);
+}
 
 /* --------------------------------------------------------------- series */
 
@@ -676,6 +711,7 @@ int main(void)
 {
     RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);
+    RUN(on_the_carrier_the_port_row_chooses_the_port);
     RUN(the_series_row_and_more_take_no_tap_while_the_port_is_held);
     RUN(hitec_d_receive_is_set_on_more_in_pwm);
     RUN(a_session_closes_hitec_d_receives_list);

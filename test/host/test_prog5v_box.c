@@ -386,6 +386,21 @@ TEST_CASE(an_on_carries_the_cuts_published_as_its_hold_began)
     CHECK_EQ(c.cuts, 8u);
 }
 
+/* The bench's own OFF (an aborted limit run on the carrier's port): posted
+ * with no owner and while a port holds the supply, and over an ON. */
+TEST_CASE(the_benchs_off_goes_out_whoever_switched_it_on)
+{
+    prog5v_cmd_t c;
+
+    fresh(3u);
+    prog5v_box_publish(3u, 21u, 1u);         /* port 1 holds it */
+    prog5v_box_ask_off(PROG5V_BY_SERVO);
+    CHECK(prog5v_box_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+    CHECK_EQ(c.by, PROG5V_BY_SERVO);
+    CHECK(!prog5v_box_poll_cmd(&c));
+}
+
 TEST_CASE(the_holding_port_is_the_sessions_else_some)
 {
     CHECK_EQ(prog5v_box_held_port(-1, -1, false), PROG5V_HELD_NONE);
@@ -471,6 +486,7 @@ int main(void)
     RUN(the_lines_name_the_pin_and_the_reading);
     RUN(the_box_is_drawn_inside_its_rect);
     RUN(an_on_carries_the_cuts_published_as_its_hold_began);
+    RUN(the_benchs_off_goes_out_whoever_switched_it_on);
     RUN(the_holding_port_is_the_sessions_else_some);
     RUN(nothing_happens_without_a_box);
     RUN(a_hold_let_go_at_1999ms_shows_its_hint);

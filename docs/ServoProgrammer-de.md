@@ -206,7 +206,8 @@ einen Neustart erhalten.
   und SERVO PULSES werden mit dem Feld EIN angeboten, und die
   Power-Cycles der Session schalten GPIO 21. Ein PD mini an den
   Servoschienen wird weder gefragt noch beobachtet: ihn während des Laufs
-  ein- oder auszuschalten beendet nichts.
+  ein- oder auszuschalten beendet nichts. Ein abgebrochener Lauf schaltet
+  PROG 5V aus, nicht den PD mini.
 
 ## Der Port
 

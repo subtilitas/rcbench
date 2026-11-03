@@ -10,6 +10,7 @@
  * - the_funcs_follow_the_choice_one_ask_at_a_time
  * - progp04_beside_a_bound_pwm04_is_refused_by_name
  * - no_pulse_without_the_prog_5v
+ * - the_edges_take_no_buffer_and_ask_nothing_unread
  *
  * A chosen port that is not ready stays the destination: prog_link takes no
  * command for the servo outputs in its place.  The lock under an ARM asked
@@ -393,11 +394,60 @@ TEST_CASE(no_pulse_without_the_prog_5v)
     tap(OU_POP_X(1), OU_POP_ROW_Y(1));       /* PROG PORT 2 */
     CHECK_EQ(outputs_screen_port_shown(), 1);
     CHECK_STR_EQ(reason(), TR(PC_NEED_5V));
+    tap(OU_SEG_X(0), OU_PWM_Y);              /* PORT PWM ON: refused */
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
     prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    tap(OU_SEG_X(0), OU_PWM_Y);              /* with the 5V: taken */
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    /* SERVO TESTER on the entry: OUTPUTS, then PORT 2 again. */
+    tap(OU_SEG_X(0), OU_TESTER_Y);
+    CHECK_EQ(prog_choice_port(), 0u);
+    CHECK_STR_EQ(reason(), TR(OUT_PORT_PWM_NEEDS));
+    CHECK(prog_choice_pick(1u));             /* another port */
+    char on[64];
+    snprintf(on, sizeof(on), TR(OUT_PORT_TESTER_ON), 1u);
+    CHECK_STR_EQ(reason(), on);
+    tap(OU_SEG_X(1), OU_TESTER_Y);
+    CHECK_EQ(prog_choice_port(), 2u);
+    /* ARMED: the segment takes nothing and the line says why. */
+    servo_screen_set_bench_armed(true);
+    tap(OU_SEG_X(0), OU_TESTER_Y);
+    CHECK_EQ(prog_choice_port(), 2u);
+    CHECK_STR_EQ(reason(), TR(OUT_PORT_LOCKED));
+    servo_screen_set_bench_armed(false);
     /* OUTPUTS as the target: no 5V is needed. */
     CHECK(prog_choice_pick(0u));
     prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
     CHECK(!prog_choice_needs_5v());
+    done();
+}
+
+/* The edges: no buffer, a port past the four, ports not read yet. */
+TEST_CASE(the_edges_take_no_buffer_and_ask_nothing_unread)
+{
+    char line[32] = "x";
+
+    carrier(LINK_MINOR_CARRIER_PWM);
+    CHECK(!prog_choice_lock_line(NULL, 0u));
+    CHECK(!prog_choice_lock_line(line, 0u));
+    prog_choice_entry(1u, NULL, 0u);
+    prog_choice_entry(5u, line, sizeof(line));
+    CHECK_STR_EQ(line, "");
+    prog_choice_entry(0u, line, sizeof(line));
+    CHECK_STR_EQ(line, "");
+    CHECK(!prog_choice_refusal(0u, line, sizeof(line)));
+    CHECK(!prog_choice_refusal(5u, NULL, 0u));
+    CHECK(prog_choice_pick(3u));
+    port_view_t v;
+    port_view_unknown(&v);
+    port_view_set(&v);
+    prog_choice_tick();
+    CHECK_EQ(g_asks, 0);
+    v.count = 4u;
+    v.has_func = false;
+    port_view_set(&v);
+    prog_choice_tick();
+    CHECK_EQ(g_asks, 0);
     done();
 }
 
@@ -409,5 +459,6 @@ int main(void)
     RUN(the_funcs_follow_the_choice_one_ask_at_a_time);
     RUN(progp04_beside_a_bound_pwm04_is_refused_by_name);
     RUN(no_pulse_without_the_prog_5v);
+    RUN(the_edges_take_no_buffer_and_ask_nothing_unread);
     return test_summary("prog_choice");
 }

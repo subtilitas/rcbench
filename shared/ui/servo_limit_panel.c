@@ -248,7 +248,13 @@ static bool lim_apply(const servo_limrun_do_t *d)
         ++s.ctrl_rev;
     }
     if (d->off) {
-        supply_screen_ask_off();
+        /* The supply that feeds the servo: on the carrier's port the PROG
+         * 5V, not the servo rails' PD mini. */
+        if (lim_fixed_supply()) {
+            prog5v_box_ask_off(PROG5V_BY_SERVO);
+        } else {
+            supply_screen_ask_off();
+        }
     }
     if (d->release) {
         release();

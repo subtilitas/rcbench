@@ -771,7 +771,8 @@ TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
 /* The rbmod carrier's port, fed from the PROG 5V box: the box stands for
  * the PD mini.  A PD mini on the servo rails with its output off refuses
  * nothing there, switched on and off during the run ends nothing, and
- * SEARCH+PROG writes through the box's power cycles.
+ * SEARCH+PROG writes through the box's power cycles.  An abort asks the
+ * PROG 5V off and leaves the PD mini alone.
  * With the box off the run does not start. */
 TEST_CASE(on_the_carrier_the_prog_5v_stands_for_the_pd_mini)
 {
@@ -804,6 +805,30 @@ TEST_CASE(on_the_carrier_the_prog_5v_stands_for_the_pd_mini)
         prog_choice_reset();
         ui_board_set(OUTBIND_BOARD_PICO_HEADER);
     }
+    /* An abort asks the PROG 5V off, and not the rails' PD mini. */
+    lr_fresh(false);
+    g_rig.fixed = true;
+    ui_board_set(OUTBIND_BOARD_RBMOD);
+    prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+    prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+    lr_pd_reading(true);
+    lr_ms(200u);
+    lr_start();
+    CHECK(servo_screen_limit_running());
+    (void)prog5v_box_poll_cmd(NULL);
+    servo_screen_set_link(false);
+    lr_ms(200u);
+    CHECK(!servo_screen_limit_running());
+    prog5v_cmd_t p5;
+    CHECK(prog5v_box_poll_cmd(&p5));
+    CHECK(p5.off && !p5.on);
+    CHECK_EQ(p5.by, PROG5V_BY_SERVO);
+    CHECK(!supply_screen_off_pending());
+    servo_screen_set_link(true);
+    g_rig.fixed = false;
+    prog5v_box_reset();
+    prog_choice_reset();
+    ui_board_set(OUTBIND_BOARD_PICO_HEADER);
 }
 
 /* The bench's own PWM output as the target: SERVO PULSES is not on the
