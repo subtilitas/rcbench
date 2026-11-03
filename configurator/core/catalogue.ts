@@ -1889,7 +1889,7 @@ const checks: Check[] = [
       'Servo-Programmierer mit dem PD mini: VERBINDEN schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV-SERVO auf EIN, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; VERBINDEN erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
     ),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
-    src: repo(PROGRAMMER, 324, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
+    src: repo(PROGRAMMER, 326, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
   },
   {
     id: 'prog-supply-own', kind: 'note',
@@ -1898,7 +1898,7 @@ const checks: Check[] = [
       'Servo-Programmierer ohne den PD mini: Programmierspannung und Stromgrenze werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.',
     ),
     when: { all: [SERVO_PROG, { not: { has: 'pdmini' } }] },
-    src: repo(PROGRAMMER, 435, 'Without a PD mini the voltage and the current limit are stored and not'),
+    src: repo(PROGRAMMER, 437, 'Without a PD mini the voltage and the current limit are stored and not'),
   },
   {
     id: 'prog-level', kind: 'unknown',
@@ -1906,7 +1906,7 @@ const checks: Check[] = [
       "High level of the servo's reply on GPIO 13: not measured, at most 5 V and typically 3.3 V. GPIO 13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
       'Pegel der Antwort des Servos an GPIO 13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GPIO 13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
     ),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 304, 'The level is not measured. GPIO 13 is rated 5.5V while the'),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 306, 'The level is not measured. GPIO 13 is rated 5.5V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
