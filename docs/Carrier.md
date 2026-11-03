@@ -307,11 +307,10 @@ does not latch, or a clamp in copper.
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 position 4, through R4) moves from GPIO 26 to GPIO 15: the trace is cut under the series resistor R4, and a bodge wire runs from R4 to GPIO 15. | GPIO 26 is an ADC pin and not 5V tolerant. A Hitec or KST pull-up puts the servo supply on the programming line. | PROG PORT 3 is GPIO 15 on every carrier. GPIO 26 stays unused. |
 | 2 | A pull-down of 2kΩ to 5kΩ from M7's EN (the GPIO 21 net) to GND. | The buck module's EN reads open as on. Without the pull-down the programming ports' 5V is on while the IOmcu is in reset, in BOOTSEL or unpowered. | The programming ports' supply is off whenever GPIO 21 is not driven high. |
-| 3 | A 5.6V zener from M7's output (VCC_PROGPORT_DCDC) to GND, cathode at the rail. | A braking servo feeds energy back into PROG 5V. M7 cannot sink current and latches off when its output passes about 6.0V for 20us. The zener absorbs the feedback. | No. The PROG 5V lost error ([PROG 5V lost](#prog-5v-lost)) reports a latched M7 with or without the zener. |
+| 3 | A 5.6V 1W zener from M7's output (VCC_PROGPORT_DCDC) to GND, cathode at the rail. | A braking servo feeds energy back into PROG 5V. M7 cannot sink current and latches off when its output passes about 6.0V for 20us. The zener absorbs the feedback. | No. The PROG 5V lost error ([PROG 5V lost](#prog-5v-lost)) reports a latched M7 with or without the zener. |
 
 Item 3's limits:
 
-- The zener's power rating on the tested board is not recorded.
 - M7's over-voltage threshold is 115% to 125% of the output, 5.75V to
   6.25V on 5.00V. A 5.6V zener of ±5% conducts at 5.32V to 5.88V.
 - Above a few hundred mA of feedback the clamp voltage rises past the

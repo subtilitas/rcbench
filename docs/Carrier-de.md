@@ -320,12 +320,10 @@ im Kupfer.
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 Position 4, über R4) wechselt von GPIO 26 auf GPIO 15: die Leiterbahn wird unter dem Serienwiderstand R4 getrennt, und ein Fädeldraht läuft von R4 zu GPIO 15. | GPIO 26 ist ein ADC-Pin und nicht 5V-fest. Ein Pull-up von Hitec oder KST legt die Servoversorgung auf die Programmierleitung. | PROG PORT 3 ist auf jedem Carrier GPIO 15. GPIO 26 bleibt unbenutzt. |
 | 2 | Ein Pull-down von 2kΩ bis 5kΩ von EN an M7 (das Netz von GPIO 21) nach GND. | EN des Buck-Moduls liest offen als an. Ohne den Pull-down sind die 5V der Programmierports an, solange der IOmcu im Reset, im BOOTSEL oder ohne Versorgung ist. | Die Versorgung der Programmierports ist aus, solange GPIO 21 nicht high getrieben wird. |
-| 3 | Eine Z-Diode 5.6V vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene. | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6.0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
+| 3 | Eine Z-Diode 5.6V 1W vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene. | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6.0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
 
 Grenzen von Punkt 3:
 
-- Die Belastbarkeit der Z-Diode auf der getesteten Platine ist nicht
-  festgehalten.
 - Die Überspannungsschwelle von M7 liegt bei 115% bis 125% des Ausgangs,
   5.75V bis 6.25V bei 5.00V. Eine Z-Diode 5.6V mit ±5% leitet bei 5.32V
   bis 5.88V.
