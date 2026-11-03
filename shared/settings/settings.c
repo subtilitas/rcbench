@@ -321,6 +321,15 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_SERVO_BROWNOUT] = {
         "srv_brownout", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    /* The brown-out walk's LOWEST VOLTAGE and STEP.  2.0 to 4.8V and 0.1
+     * to 1.0V hold the walk to at most 31 voltages from 5.0V
+     * (SERVO_TEST_BROWNOUT_MAX). */
+    [SET_SERVO_BO_FLOOR] = {
+        "srv_bo_floor", "V",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 2.0f, 4.8f, 0.1f, 3.0f, NULL, 0 },
+    [SET_SERVO_BO_STEP] = {
+        "srv_bo_step", "V",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 1.0f, 0.1f, 0.2f, NULL, 0 },
     [SET_SERVO_IDLE_MAX] = {
         "srv_idle_max", "A",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.0f, 5.0f, 0.01f, 0.0f, NULL, 0 },

@@ -80,12 +80,26 @@ SETTINGS on the AUTOMATIC TEST card opens them.
 | HOLD CURRENT | 0 to 5.00A | 0, not checked | fail above this holding an end |
 | STEP 4.8V, STEP 6.0V | ON, OFF | ON | the supply steps |
 | HV SERVO | ON, OFF | OFF | adds STEP 7.4V and STEP 8.4V; off at every restart |
-| BROWN-OUT | ON, OFF | ON | from 5.0V down until the servo stops moving |
+| BROWN-OUT | ON 3.0/0.2V, OFF | ON | the brown-out walk: a tap opens its page |
 | TRAVEL TIME | 0 to 5000ms | 0, not checked | fail above this from end to end |
 
 ![HV SERVO on](view:servo-hv)
 
 With HV SERVO on and a step above 6.0V chosen, START TEST on the card opens HV SERVOS ONLY first, naming the highest step.
+
+## The brown-out walk
+
+![The brown-out walk's page](view:servo-brownout)
+
+BROWN-OUT on the automatic test's settings opens the walk's page; CLOSE comes back. The row reads the walk, `ON 3.0/0.2V`: LOWEST VOLTAGE and STEP. After the supply steps the walk starts at 5.0V, or the voltage cap if lower, and goes down by STEP to LOWEST VOLTAGE. It stops at the first voltage that shows no movement.
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| BROWN-OUT | ON, OFF | ON | runs the walk after the supply steps |
+| LOWEST VOLTAGE | 2.0 to 4.8V | 3.0V | the walk's last voltage; a supply whose lowest set point is higher ends it there |
+| STEP | 0.1 to 1.0V | 0.2V | how far each voltage goes down; a last step shorter than STEP lands on LOWEST VOLTAGE |
+
+The note under the rows names the walk on the supply in force and how many voltages it asks for, at most 31. A LOWEST VOLTAGE at or above the start runs the start alone.
 
 ## The limit run's settings
 

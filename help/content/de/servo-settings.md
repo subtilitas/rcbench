@@ -80,12 +80,26 @@ OPTIONEN auf der Karte AUTOMATISCHER TEST öffnet sie.
 | HALTESTROM | 0 bis 5,00A | 0, nicht geprüft | nicht bestanden über diesem Wert beim Halten eines Endes |
 | STUFE 4.8V, STUFE 6.0V | EIN, AUS | EIN | die Netzteilstufen |
 | HV-SERVO | EIN, AUS | AUS | fügt STUFE 7.4V und STUFE 8.4V hinzu; bei jedem Neustart aus |
-| BROWN-OUT | EIN, AUS | EIN | ab 5,0V abwärts, bis das Servo stehen bleibt |
+| BROWN-OUT | EIN 3.0/0.2V, AUS | EIN | der Brown-out-Lauf: ein Tippen öffnet seine Seite |
 | STELLZEIT | 0 bis 5000ms | 0, nicht geprüft | nicht bestanden über diesem Wert von Ende zu Ende |
 
 ![HV-SERVO eingeschaltet](view:servo-hv)
 
 Ist HV-SERVO eingeschaltet und eine Stufe über 6,0V gewählt, öffnet TEST STARTEN auf der Karte zuerst NUR HV-SERVOS und nennt die höchste Stufe.
+
+## Der Brown-out-Lauf
+
+![Die Seite des Brown-out-Laufs](view:servo-brownout)
+
+BROWN-OUT in den Optionen des automatischen Tests öffnet die Seite des Laufs; SCHLIESSEN führt zurück. Die Zeile nennt den Lauf, `EIN 3.0/0.2V`: NIEDRIGSTE SPANNUNG und SCHRITT. Nach den Netzteilstufen beginnt der Lauf bei 5,0V oder der Spannungsgrenze, wenn die niedriger ist, und geht in Schritten von SCHRITT bis NIEDRIGSTE SPANNUNG abwärts. Er endet bei der ersten Spannung ohne Bewegung.
+
+| Option | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| BROWN-OUT | EIN, AUS | EIN | lässt den Lauf nach den Netzteilstufen laufen |
+| NIEDRIGSTE SPANNUNG | 2,0 bis 4,8V | 3,0V | die letzte Spannung des Laufs; ein Netzteil mit höherem kleinstem Sollwert beendet ihn dort |
+| SCHRITT | 0,1 bis 1,0V | 0,2V | wie weit jede Spannung abwärts geht; ein letzter Schritt kürzer als SCHRITT landet auf NIEDRIGSTE SPANNUNG |
+
+Der Hinweis unter den Zeilen nennt den Lauf am geltenden Netzteil und wie viele Spannungen er verlangt, höchstens 31. Eine NIEDRIGSTE SPANNUNG bei oder über dem Start lässt nur den Start laufen.
 
 ## Die Optionen des Endlagenlaufs
 

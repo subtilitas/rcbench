@@ -3793,10 +3793,15 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         if (strcmp(view, "servo-test") == 0) {
             tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
         } else if (strcmp(view, "servo-test-settings") == 0
-                   || strcmp(view, "servo-limits") == 0) {
+                   || strcmp(view, "servo-limits") == 0
+                   || strcmp(view, "servo-brownout") == 0) {
             tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
             tap(SV_RUN_SET_X,
                 UI_BAND_H + SV_RUN_SET_Y(strcmp(view, "servo-limits") == 0));
+            if (strcmp(view, "servo-brownout") == 0) {
+                /* BROWN-OUT, the middle column's last row: its page. */
+                tap(SV_LIST_X(1), UI_BAND_H + SV_LIST_ROW_Y(4));
+            }
         } else if (strcmp(view, "servo-warning") == 0) {
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* TYPE */
             tap(165, UI_BAND_H + 256);                /* HELI CYCLIC */

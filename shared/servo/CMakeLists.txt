@@ -9,7 +9,7 @@
 # through the programmer.  The words of the test and its report are
 # ui_text.def's (servo_str.c).
 set(SRCS servo_limit.c servo_sync.c servo_sim.c servo_sweep.c servo_move.c
-         servo_test.c servo_str.c servo_report.c servo_limrun.c servo_limrun_report.c
+         servo_test.c servo_brownout.c servo_str.c servo_report.c servo_limrun.c servo_limrun_report.c
          servo_gap.c)
 
 if(ESP_PLATFORM)
