@@ -2160,15 +2160,6 @@ const notInRelease: Catalogue['notInRelease'] = [
     release: 'planned',
     src: guide('stage-5'),
   },
-  {
-    id: 'escserial',
-    text: t(
-      'Serial ESC programming (BLHeli_S, AM32 and others): no protocol on a wire.',
-      'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
-    ),
-    release: 'planned',
-    src: repo('STATUS.md', 1117, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | ESCs: screen built, no protocol on a wire'),
-  },
 ];
 
 // ---------------------------------------------------------------------------
