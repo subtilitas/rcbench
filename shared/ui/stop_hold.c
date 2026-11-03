@@ -30,6 +30,9 @@ void stop_hold_reset(void)
 
 void stop_hold_press(bool latched)
 {
+    /* Every press on STOP is a STOP: a reset asked before it and not yet
+     * taken is for a stop that no longer is the last one. */
+    s_asked = false;
     /* A press that latches the stop is a STOP and nothing more: holding it
      * on does not undo it. */
     if (latched) {
@@ -54,6 +57,7 @@ bool stop_hold_release(const touch_event_t *up)
 void stop_hold_cancel(void)
 {
     (void)ui_hold_left(&s_hold);
+    s_asked = false;
 }
 
 bool stop_hold_tick(float dt_s, bool latched)

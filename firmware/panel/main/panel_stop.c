@@ -19,7 +19,15 @@
 
 stop_latch_t s_stop_latch;
 atomic_bool  s_stop_reset_request;
-atomic_uint  s_stop_reset_pressed;
+atomic_uint  s_stop_reset_ms;
+/** @brief When the latest operator's STOP was applied; control task only. */
+static uint32_t s_stop_press_ms;
+
+void stop_pressed_here(void)
+{
+    arming_stop_pressed(&s_arm);
+    s_stop_press_ms = now_ms();
+}
 
 /**
  * @brief One register of the IOmcu, read.
@@ -92,13 +100,13 @@ static bool everything_off(bool link_up)
 void stop_reset_service(bool link_up)
 {
     const uint32_t now = now_ms();
-    (void)stop_latch_follow(&s_stop_latch, arming_pressed_count(&s_arm), now);
-    /* A STOP pressed after the hold completed, which the hold never saw,
-     * refuses the request: the count it carries is older. */
+    (void)stop_latch_follow(&s_stop_latch, arming_pressed_count(&s_arm),
+                            s_stop_press_ms);
+    /* A STOP pressed after the hold completed, or shortly before, is one
+     * the hold never saw, and refuses the request (stop_latch_ask()). */
     if (atomic_exchange(&s_stop_reset_request, false)) {
         (void)stop_latch_ask(&s_stop_latch, arming_stopped(&s_arm),
-                             (uint32_t)atomic_load(&s_stop_reset_pressed),
-                             now);
+                             (uint32_t)atomic_load(&s_stop_reset_ms), now);
     }
     const bool confirmed = stop_latch_read_due(&s_stop_latch, now)
                            && everything_off(link_up);
@@ -107,7 +115,7 @@ void stop_reset_service(bool link_up)
      * the step, and withdraws the reset rather than being reset by it.
      */
     (void)stop_latch_follow(&s_stop_latch, arming_pressed_count(&s_arm),
-                            now_ms());
+                            s_stop_press_ms);
     switch (stop_latch_step(&s_stop_latch, now_ms(), arming_stopped(&s_arm),
                             confirmed)) {
     case STOP_LATCH_RESUME: {

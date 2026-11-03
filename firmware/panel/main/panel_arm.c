@@ -265,7 +265,7 @@ void service_arming(bool link_up)
      */
     if (atomic_exchange(&s_stop_request, false)
         && atomic_exchange(&s_stop_counted, 0u) == 0u) {
-        arming_stop_pressed(&s_arm);        /* the band's STOP, pressed */
+        stop_pressed_here();                /* the band's STOP, pressed */
     }
 
     /*
@@ -707,7 +707,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
             s_arm_take_drv = atomic_load(&s_drv_gaps);
         }
         if (pc.kind == PANEL_CMD_STOP) {
-            arming_stop_pressed(&s_arm);    /* a screen's STOP, pressed */
+            stop_pressed_here();            /* a screen's STOP, pressed */
             outputs_arm(&s_out, false, now_ms());
             throttle_to_zero();
             servo_link_let_go();

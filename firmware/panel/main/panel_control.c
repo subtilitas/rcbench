@@ -303,7 +303,7 @@ void control_pump(void)
             if (arming_stopped(&s_arm)) {
                 evt.flags |= (uint8_t)TOUCH_FLAG_STOP_LATCHED;
             }
-            arming_stop_pressed(&s_arm);
+            stop_pressed_here();
             counted_here = true;
         }
         /*

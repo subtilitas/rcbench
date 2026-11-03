@@ -26,12 +26,17 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   beginnt das Halten zum Lösen: die Füllung geht in 2s von Rot zum Gelb des
   Rahmens über. Ein Loslassen vor 2s zeigt `Halte 2s, um den STOP zu
   lösen.` und fordert nichts an; ein Druck, der von STOP abgleitet, oder ein
-  verlorener Touch fordert nichts an. Bei 2s fragt das Panel den IOmcu alle
+  verlorener Touch fordert nichts an. Das Halten zählt nur, wenn der letzte
+  STOP, sein eigener Druck, 1900ms (`STOP_LATCH_HOLD_SEEN_MS`) oder mehr vor
+  seinem Ende ausgelöst wurde: ein STOP danach, bevor der Control-Task die
+  Anforderung nimmt, lehnt sie ab, ebenso ein neuer Druck auf STOP oder ein
+  verlorener Touch, bevor sie genommen ist. Der Heartbeat bleibt so
+  mindestens 1900ms angehalten, weit über den 500ms, die der IOmcu braucht,
+  um der Leitung zu misstrauen. Bei 2s fragt das Panel den IOmcu alle
   50ms, ob alles aus ist: STATUS nicht ARMED, der SUPPLY-Ausgang aus, der
   PROG_SUPPLY-Ausgang aus, gelesen nach dem Halten, und die eigene Bank SAFE
-  ohne eingeschaltete Versorgung. Sobald das gilt, und frühestens 500ms
-  (`STOP_LATCH_FLOOR_MS`) nach dem letzten STOP, flankt der Heartbeat wieder,
-  und CLEAR wird einmal geschrieben. Der Prüfstand bleibt SAFE: ARM, AUSGANG
+  ohne eingeschaltete Versorgung. Sobald das gilt, flankt der Heartbeat
+  wieder, und CLEAR wird einmal geschrieben. Der Prüfstand bleibt SAFE: ARM, AUSGANG
   EIN und PROG 5V EIN brauchen jeweils ihr eigenes Halten. Ein
   Programmierport, den der STOP in einer Sitzung erwischt, bleibt über das
   Lösen hinweg gehalten; CLEAR oder VERLASSEN auf seiner Seite geht von dort

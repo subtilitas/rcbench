@@ -262,10 +262,13 @@ extern stop_latch_t s_stop_latch;
 /** @brief The reset's hold completed (stop_hold_take_reset()): render side
  *         sets, control task takes (stop_reset_service()). */
 extern atomic_bool  s_stop_reset_request;
-/** @brief The STOPs pressed as the render side saw them when the hold
- *         completed; stored before s_stop_reset_request. */
-extern atomic_uint  s_stop_reset_pressed;
+/** @brief When the render side took the completed hold, now_ms(); stored
+ *         before s_stop_reset_request. */
+extern atomic_uint  s_stop_reset_ms;
 void stop_reset_service(bool link_up);
+/** @brief An operator's STOP, applied now: arming_stop_pressed(), with its
+ *         time kept for the reset (stop_latch_follow()).  Control task only. */
+void stop_pressed_here(void);
 
 /*
  * A disarm returns the command to zero, here and in the output bank.

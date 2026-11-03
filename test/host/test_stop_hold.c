@@ -11,6 +11,7 @@
  * - a_touch_on_an_unlatched_stop_starts_no_hold
  * - a_press_the_status_shows_latched_but_that_latched_starts_no_hold
  * - a_second_contact_that_takes_the_band_ends_the_hold
+ * - a_stop_or_a_loss_before_the_request_is_taken_drops_it
  * - a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once
  * - an_early_release_shows_the_hint_and_asks_nothing
  * - a_press_that_slides_off_stop_asks_nothing
@@ -179,6 +180,28 @@ TEST_CASE(a_second_contact_that_takes_the_band_ends_the_hold)
     CHECK(!stop_hold_take_reset());
 }
 
+TEST_CASE(a_stop_or_a_loss_before_the_request_is_taken_drops_it)
+{
+    /* The hold completes; a new press on STOP comes before the frame takes
+     * the request: that press is a later STOP, and the request goes. */
+    router_on(true);
+    press_latched();
+    for (int i = 0; i < 8; ++i) {
+        ui_router_tick(Q);
+    }
+    touch(sx(), sy(), TOUCH_EVENT_UP, 0);
+    press_latched();
+    CHECK(!stop_hold_take_reset());
+    touch(sx(), sy(), TOUCH_EVENT_UP, 0);
+    /* The same with a touch loss in place of the press. */
+    press_latched();
+    for (int i = 0; i < 8; ++i) {
+        ui_router_tick(Q);
+    }
+    ui_router_cancel_gestures();
+    CHECK(!stop_hold_take_reset());
+}
+
 TEST_CASE(a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once)
 {
     router_on(true);
@@ -341,6 +364,7 @@ int main(void)
     RUN(a_touch_on_an_unlatched_stop_starts_no_hold);
     RUN(a_press_the_status_shows_latched_but_that_latched_starts_no_hold);
     RUN(a_second_contact_that_takes_the_band_ends_the_hold);
+    RUN(a_stop_or_a_loss_before_the_request_is_taken_drops_it);
     RUN(a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once);
     RUN(an_early_release_shows_the_hint_and_asks_nothing);
     RUN(a_press_that_slides_off_stop_asks_nothing);

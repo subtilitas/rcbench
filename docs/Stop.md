@@ -25,11 +25,16 @@ host-tested in `test_stop_latch` and `test_stop_hold`.
   starts the reset's hold: the fill fades from red to the frame's yellow
   across 2s. A release before 2s shows `Hold 2s to reset the STOP.` and
   asks for nothing; a press that slides off STOP or a lost touch asks for
-  nothing. At 2s the panel asks the IOmcu, every 50ms, whether everything
-  is off: STATUS not ARMED, the SUPPLY output off, the PROG_SUPPLY output
-  off, read after the hold, and its own bank SAFE with no supply on. Once
-  it is, and at least 500ms (`STOP_LATCH_FLOOR_MS`) after the last STOP,
-  the heartbeat edges again and CLEAR is written once. The bench stays
+  nothing. The hold counts only when the last STOP, its own press, was
+  applied 1900ms (`STOP_LATCH_HOLD_SEEN_MS`) or more before it completed: a
+  STOP pressed after that, before the control task takes the request,
+  refuses it, and so does a new press on STOP or a lost touch before the
+  request is taken. The heartbeat is then withheld for 1900ms at least,
+  well over the 500ms the IOmcu needs to doubt the line. At 2s the panel
+  asks the IOmcu, every 50ms, whether everything is off: STATUS not ARMED,
+  the SUPPLY output off, the PROG_SUPPLY output off, read after the hold,
+  and its own bank SAFE with no supply on. Once it is, the heartbeat edges
+  again and CLEAR is written once. The bench stays
   SAFE: ARM, OUTPUT ON and PROG 5V ON each need their own hold. A
   programming port the STOP caught in a session stays held across the
   reset; CLEAR or LEAVE on its page goes on from there.

@@ -9,11 +9,13 @@
  * arm, and the panel refuses every ON.  A hold of STOP for UI_HOLD_S (2s)
  * asks for the reset; this module decides when it is done:
  *
- *     hold of STOP completes     stop_latch_ask(): the reset waits
+ *     hold of STOP completes,    stop_latch_ask(): the reset waits
+ *     STOP_LATCH_HOLD_SEEN_MS
+ *     or more after the last
+ *     STOP
  *     the IOmcu confirms         STOP_LATCH_RESUME: arming_stop_release(),
- *     everything off, and at     heartbeat sent again, CLEAR written once,
- *     least STOP_LATCH_FLOOR_MS  the bench stays SAFE
- *     since the last STOP
+ *     everything off             heartbeat sent again, CLEAR written once,
+ *                                the bench stays SAFE
  *     no confirmation within     STOP_LATCH_GIVE_UP: the latch stands, the
  *     STOP_LATCH_CONFIRM_MS      heartbeat stays withheld, the operator is
  *                                told why
@@ -26,10 +28,13 @@
  * IOmcu to ask: the panel's own bank and model are the reading, and the
  * IOmcu, if one is wired, has failed safe on link silence.
  *
- * The floor makes sure the IOmcu has seen the line go quiet: its monitor
- * doubts the line after HEARTBEAT_MAX_GAP_MS (150ms) and latches its arm
- * latch on that edge.  A heartbeat sent again before that edge would be one
- * the far end never stopped trusting.
+ * The hold that asks lasts 2000ms from its own press, which is a STOP as
+ * well; a STOP pressed after it completed is one the hold never saw, and
+ * the request is refused.  The same rule keeps the heartbeat withheld for
+ * at least 500ms, the floor that makes sure the IOmcu has seen the line go
+ * quiet: its monitor doubts the line after HEARTBEAT_MAX_GAP_MS (150ms) and
+ * latches its arm latch on that edge.  A heartbeat sent again before that
+ * edge would be one the far end never stopped trusting.
  *
  * Nothing persists: a panel that restarts starts unlatched, with every
  * output off and the bench SAFE, as at any start.
@@ -48,8 +53,15 @@
 extern "C" {
 #endif
 
-/** @brief The least time from the last STOP to the heartbeat sent again: 500ms. */
-#define STOP_LATCH_FLOOR_MS 500u
+/**
+ * @brief The least time from the last STOP to a completed hold that asks for
+ *        the reset: 1900ms.
+ *
+ * The hold runs UI_HOLD_S (2000ms) from its own press, a STOP the control
+ * task applies at the press; the 100ms spare covers the pass that sees it.
+ * It is far above the 500ms floor the IOmcu needs (see above).
+ */
+#define STOP_LATCH_HOLD_SEEN_MS 1900u
 
 /** @brief How long a reset waits for the IOmcu to confirm: 2000ms. */
 #define STOP_LATCH_CONFIRM_MS 2000u
@@ -71,7 +83,7 @@ extern "C" {
 typedef struct {
     bool     waiting;      /**< a reset is asked and not yet done         */
     uint32_t pressed_seen; /**< arming_pressed_count() at the last look   */
-    uint32_t stop_ms;      /**< when the last STOP was seen               */
+    uint32_t stop_ms;      /**< when the last STOP was applied            */
     bool     stop_known;   /**< a STOP was seen since stop_latch_init()   */
     uint32_t ask_ms;       /**< when the reset was asked                  */
     bool     read_any;     /**< a confirmation was read in this wait      */
@@ -132,31 +144,32 @@ void stop_latch_init(stop_latch_t *l, uint32_t pressed);
  * @brief Follow the count of STOPs pressed, once a pass and before
  *        stop_latch_ask() and stop_latch_step().
  *
- * A count that moved is a STOP: the floor starts again from @p now_ms, a
- * reset that waits is withdrawn, and the grace of the last reset ends.
- * @param l       State; nothing for NULL.
- * @param pressed arming_pressed_count() now.
- * @param now_ms  Current time, in milliseconds.
+ * A count that moved is a STOP: @p press_ms is taken as its time, a reset
+ * that waits is withdrawn, and the grace of the last reset ends.
+ * @param l        State; nothing for NULL.
+ * @param pressed  arming_pressed_count() now.
+ * @param press_ms When the latest STOP was applied, in milliseconds.
  * @return true when a waiting reset was withdrawn.
  */
-bool stop_latch_follow(stop_latch_t *l, uint32_t pressed, uint32_t now_ms);
+bool stop_latch_follow(stop_latch_t *l, uint32_t pressed, uint32_t press_ms);
 
 /**
  * @brief The hold of STOP completed: ask for the reset.
  *
- * @p pressed is the count of STOPs pressed as the side that saw the hold
- * last had it.  A STOP pressed since, between the hold and this call, is
- * one the hold never saw: the request is refused, as one older than the
- * last STOP.  Call after stop_latch_follow() in the same pass.
+ * @p held_ms is when the hold completed.  The last STOP, which the hold's
+ * own press is, has to be STOP_LATCH_HOLD_SEEN_MS or more older than that;
+ * a STOP pressed after the hold completed, or shortly before, is one the
+ * hold never saw, and the request is refused.  Call after
+ * stop_latch_follow() in the same pass.
  * @param l       State.
  * @param latched arming_stopped(): a stop stands.
- * @param pressed arming_pressed_count() as the hold's side last read it.
+ * @param held_ms When the hold completed, in milliseconds.
  * @param now_ms  Current time, in milliseconds.
  * @return true when the reset now waits; false with no stop standing, with
- *         one already waiting, for a request older than the last STOP, and
- *         for NULL.
+ *         one already waiting, for a hold younger than the last STOP's
+ *         STOP_LATCH_HOLD_SEEN_MS, and for NULL.
  */
-bool stop_latch_ask(stop_latch_t *l, bool latched, uint32_t pressed,
+bool stop_latch_ask(stop_latch_t *l, bool latched, uint32_t held_ms,
                     uint32_t now_ms);
 
 /**
@@ -190,13 +203,12 @@ bool stop_latch_read_due(stop_latch_t *l, uint32_t now_ms);
  *     no reset waits                        STOP_LATCH_NONE
  *     no stop stands any more               STOP_LATCH_NONE, withdrawn
  *     past STOP_LATCH_CONFIRM_MS from ask   STOP_LATCH_GIVE_UP
- *     @p confirmed, the floor reached       STOP_LATCH_RESUME
+ *     @p confirmed                          STOP_LATCH_RESUME
  *     otherwise                             STOP_LATCH_NONE
  *
- * The confirmation counts from the floor's millisecond on and up to the
- * bound's: one read at STOP_LATCH_CONFIRM_MS after the ask resumes, one
- * read a millisecond later is an exchange that came back late and resets
- * nothing.
+ * The confirmation counts up to the bound's millisecond: one read at
+ * STOP_LATCH_CONFIRM_MS after the ask resumes, one read a millisecond later
+ * is an exchange that came back late and resets nothing.
  * @param l         State.
  * @param now_ms    Current time, in milliseconds.
  * @param latched   arming_stopped(): a stop stands.

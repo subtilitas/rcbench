@@ -28,7 +28,8 @@
 void stop_hold_reset(void);
 
 /**
- * @brief A DOWN on STOP: the hold starts from zero when @p latched.
+ * @brief A DOWN on STOP: the hold starts from zero when @p latched.  A reset
+ *        asked and not yet taken is dropped: this press is a later STOP.
  * @param latched a stop was latched before this press
  *        (TOUCH_FLAG_STOP_LATCHED)
  */
@@ -49,7 +50,8 @@ void stop_hold_slide(int x, int y);
  */
 bool stop_hold_release(const touch_event_t *up);
 
-/** @brief The touch events were lost: the hold is over and asks for nothing. */
+/** @brief The touch events were lost: the hold is over, and a reset asked and
+ *         not yet taken is dropped. */
 void stop_hold_cancel(void);
 
 /**

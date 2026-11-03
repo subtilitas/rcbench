@@ -41,13 +41,13 @@ void stop_latch_init(stop_latch_t *l, uint32_t pressed)
     l->pressed_seen = pressed;
 }
 
-bool stop_latch_follow(stop_latch_t *l, uint32_t pressed, uint32_t now_ms)
+bool stop_latch_follow(stop_latch_t *l, uint32_t pressed, uint32_t press_ms)
 {
     if (l == NULL || pressed == l->pressed_seen) {
         return false;
     }
     l->pressed_seen = pressed;
-    l->stop_ms      = now_ms;
+    l->stop_ms      = press_ms;
     l->stop_known   = true;
     l->grace        = false;
     const bool was  = l->waiting;
@@ -55,10 +55,16 @@ bool stop_latch_follow(stop_latch_t *l, uint32_t pressed, uint32_t now_ms)
     return was;
 }
 
-bool stop_latch_ask(stop_latch_t *l, bool latched, uint32_t pressed,
+bool stop_latch_ask(stop_latch_t *l, bool latched, uint32_t held_ms,
                     uint32_t now_ms)
 {
-    if (l == NULL || !latched || l->waiting || pressed != l->pressed_seen) {
+    if (l == NULL || !latched || l->waiting) {
+        return false;
+    }
+    /* The hold runs 2000ms from its own press: a STOP younger than that at
+     * its end is a press the hold did not start from. */
+    if (l->stop_known
+        && !reached(held_ms, l->stop_ms + STOP_LATCH_HOLD_SEEN_MS)) {
         return false;
     }
     l->waiting  = true;
@@ -111,9 +117,7 @@ stop_latch_act_t stop_latch_step(stop_latch_t *l, uint32_t now_ms,
         l->waiting = false;
         return STOP_LATCH_GIVE_UP;
     }
-    const bool floor = !l->stop_known
-                       || reached(now_ms, l->stop_ms + STOP_LATCH_FLOOR_MS);
-    if (confirmed && floor) {
+    if (confirmed) {
         l->waiting  = false;
         l->grace    = true;
         l->grace_ms = now_ms;
