@@ -204,7 +204,10 @@ einen Neustart erhalten.
   ihm sagt `PROG-PORTS LAUFEN MIT FESTEN 5V: KEINE STUFEN`.
 - Für den Endlagenlauf steht das Feld PROG 5V für den PD mini: SEARCH+PROG
   und SERVO PULSES werden mit dem Feld EIN angeboten, und die
-  Power-Cycles der Session schalten GPIO 21. Ein PD mini an den
+  Power-Cycles der Session schalten GPIO 21. Mit dem Feld AUS und einem
+  der beiden gewählt zeigt die Karte ENDLAGENLAUF
+  `PROG 5V AUS: IM PROG-5V-FELD EINSCHALTEN`, nicht die Zeile zum PD mini.
+  Ein PD mini an den
   Servoschienen wird weder gefragt noch beobachtet: ihn während des Laufs
   ein- oder auszuschalten beendet nichts. Ein abgebrochener Lauf schaltet
   PROG 5V aus, nicht den PD mini.

@@ -20,6 +20,7 @@
 #include "link_pages.h"
 #include "outputs_screen.h"
 #include "prog5v_box.h"
+#include "prog_choice.h"
 #include "prog_registry.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
@@ -484,6 +485,42 @@ TEST_CASE(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps)
     prog5v_box_reset();
     settings_set(SET_SERVO_TARGET, 0.0f);
     ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+}
+
+/* servo_limit_panel.c's write note, declared in servo_screen_int.h, which
+ * this suite does not take in whole. */
+const char *lim_write_why(void);
+
+/* On the carrier's programming port the LIMIT RUN's write note names the
+ * PROG 5V box, never a PD mini: the box off asks it on, the box on leaves
+ * nothing to say.  Off the carrier the rig's PD mini answers, and the note
+ * is empty there too; the port without one keeps SV_LIM_PROG_NO_PD's line
+ * (test_kst_panel_limrun). */
+TEST_CASE(the_limit_runs_write_note_on_a_carrier_port_names_the_prog_5v)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        bench_fresh();
+        ui_board_set(OUTBIND_BOARD_RBMOD);
+        prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
+        settings_set(SET_SERVO_TARGET, 3.0f);
+        servo_screen_set_drive(3u, 15u, true);   /* PROG PORT 3, GPIO 15 */
+        prog5v_box_publish(2u, 21u, PROG5V_HELD_NONE);
+        bench_frames(100u);
+        CHECK(lim_write_why() != NULL);
+        CHECK_STR_EQ(lim_write_why(), ui_servo_str(SERVO_STR_START_PROG_5V));
+        prog5v_box_publish(3u, 21u, PROG5V_HELD_NONE);
+        bench_frames(100u);
+        CHECK(lim_write_why() == NULL);
+        prog5v_box_reset();
+        prog_choice_reset();
+        ui_board_set(OUTBIND_BOARD_PICO_HEADER);
+        bench_frames(100u);
+        CHECK(lim_write_why() == NULL);
+        settings_set(SET_SERVO_TARGET, 0.0f);
+        servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 /* ------------------------------------------------------- the read-only caps */
@@ -1115,6 +1152,7 @@ int main(void)
     RUN(the_target_row_opens_on_the_drive_not_the_setting);
     RUN(the_run_cards_say_what_their_start_needs);
     RUN(the_test_card_on_a_carrier_port_names_the_prog_5v_and_the_steps);
+    RUN(the_limit_runs_write_note_on_a_carrier_port_names_the_prog_5v);
     RUN(the_supply_caps_show_on_their_button);
     RUN(the_output_page_names_the_tester_port_read_only);
     RUN(the_as5600_lives_on_sensors);
