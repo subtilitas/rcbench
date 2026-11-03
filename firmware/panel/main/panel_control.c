@@ -300,7 +300,7 @@ void control_pump(void)
              * well, which the router learns from the event and not from a
              * snapshot that may already carry this press's own stop.
              */
-            if (arming_stopped(&s_arm)) {
+            if (arming_held(&s_arm)) {
                 evt.flags |= (uint8_t)TOUCH_FLAG_STOP_LATCHED;
             }
             stop_pressed_here();

@@ -50,7 +50,7 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   nimmt die eigene Bank und das eigene Modell des Panels. Ein angeschlossener
   IOmcu, der nicht antwortet, ist über die Stille des Links in den Failsafe
   gegangen und braucht das CLEAR eines ARM, wie nach jedem Link-Failsafe.
-- **FEHLER 10.** Solange ein Stopp eingerastet ist, und 1000ms nach dem
+- **FEHLER 10.** Solange STOP eingerastet ist, und 1000ms nach dem
   Lösen (`STOP_LATCH_GRACE_MS`), lässt das Band LINK_FAULT_HEARTBEAT weg:
   das Panel hält die Leitung selbst an, und FEHLER 10 sähe aus wie der
   Not-Aus oder eine offene Leitung. Der Hardware-Not-Aus an der
@@ -58,5 +58,8 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
 - **Neustart.** Der Stopp wird nicht gespeichert: ein Panel, das neu
   startet, kommt ohne Stopp hoch, SAFE, mit jedem Ausgang aus.
 - Ein Stopp, den der Prüfstand selbst auslöst, ein bei ARMED verlorener
-  Link oder der Watchdog der Render-Schleife, zeigt dasselbe STOP und wird
-  ebenso gelöst. Das nächste Schalten auf ARMED hebt ihn auch auf.
+  Link, ein vom IOmcu abgelehntes Schreiben bei ARMED oder der Watchdog der
+  Render-Schleife, ist nicht diese Sperre: Das Band behält SAFE und jedes
+  FEHLER-Bit, auch FEHLER 10, denn die Ursache kann der Not-Aus oder eine
+  offene Leitung sein, und das nächste Schalten auf ARMED hebt ihn auf. Ein
+  Druck auf STOP darüber rastet STOP wie oben ein.

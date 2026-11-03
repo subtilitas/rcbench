@@ -46,13 +46,15 @@ host-tested in `test_stop_latch` and `test_stop_hold`.
   takes the panel's own bank and model. An IOmcu that is wired and not
   answering has failed safe on link silence and needs an ARM's CLEAR, as
   after any link failsafe.
-- **FAULT 10.** While a stop is latched, and for 1000ms after a reset
+- **FAULT 10.** While STOP is latched, and for 1000ms after a reset
   (`STOP_LATCH_GRACE_MS`), the band leaves out LINK_FAULT_HEARTBEAT: the
   panel withholds the line itself, and FAULT 10 would read as the
   emergency stop or an open wire. The hardware emergency stop on the
   heartbeat line and an open wire show as FAULT 10.
 - **Restart.** The latch is not kept: a panel that restarts comes up
   unlatched, SAFE, with every output off.
-- A stop the bench raises on its own, the link lost while ARMED or the
-  render-loop watchdog, shows the same STOP and is reset the same way. The
-  next switch to ARMED clears it as well.
+- A stop the bench raises on its own, the link lost while ARMED, the IOmcu
+  refusing an armed write or the render-loop watchdog, is not this latch:
+  the band keeps SAFE and every FAULT bit, FAULT 10 included, since the
+  cause may be the emergency stop or an open wire, and the next switch to
+  ARMED clears it. A press on STOP over it latches STOP as above.

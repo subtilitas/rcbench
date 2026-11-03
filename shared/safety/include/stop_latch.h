@@ -162,7 +162,7 @@ bool stop_latch_follow(stop_latch_t *l, uint32_t pressed, uint32_t press_ms);
  * hold never saw, and the request is refused.  Call after
  * stop_latch_follow() in the same pass.
  * @param l       State.
- * @param latched arming_stopped(): a stop stands.
+ * @param latched arming_held(): an operator's STOP stands.
  * @param held_ms When the hold completed, in milliseconds.
  * @param now_ms  Current time, in milliseconds.
  * @return true when the reset now waits; false with no stop standing, with
@@ -211,7 +211,7 @@ bool stop_latch_read_due(stop_latch_t *l, uint32_t now_ms);
  * is an exchange that came back late and resets nothing.
  * @param l         State.
  * @param now_ms    Current time, in milliseconds.
- * @param latched   arming_stopped(): a stop stands.
+ * @param latched   arming_held(): an operator's STOP stands.
  * @param confirmed The IOmcu, read in this pass after the ask, reports the
  *                  bench SAFE and every output off; with no link, the
  *                  panel's own bank and model do.
@@ -222,13 +222,14 @@ stop_latch_act_t stop_latch_step(stop_latch_t *l, uint32_t now_ms,
 
 /**
  * @brief The STATUS fault bitmap the band shows: LINK_FAULT_HEARTBEAT taken
- *        out while a stop stands and for STOP_LATCH_GRACE_MS after a reset.
+ *        out while an operator's STOP stands and for STOP_LATCH_GRACE_MS
+ *        after a reset.
  *
  * The panel withholds the line itself then, and FAULT 10 would read as the
  * emergency stop or an open wire.  Other bits pass.
  * @param l       State; NULL hides nothing beyond @p latched.
  * @param now_ms  Current time, in milliseconds.
- * @param latched arming_stopped(): a stop stands.
+ * @param latched arming_held(): an operator's STOP stands.
  * @param faults  The bitmap as read.
  * @return The bitmap to show.
  */

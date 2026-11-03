@@ -289,8 +289,8 @@ typedef struct {
     bool     link_up;
     bool     armed;
     /**
-     * @brief A stop is latched and the panel withholds the heartbeat
-     * (arming_stopped()).  The armed chip reads STOP, STOP reads STOPPED -
+     * @brief An operator's STOP is latched and the panel withholds the
+     * heartbeat (arming_held()).  The armed chip reads STOP, STOP reads STOPPED -
      * HOLD 2s TO RESET, and a DOWN on STOP starts the reset's hold
      * (stop_hold.h).
      */

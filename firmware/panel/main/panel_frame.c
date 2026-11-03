@@ -539,7 +539,7 @@ void panel_frame_loop(void)
         link_refused = s_snap.link_refused;
         mcu_temp_c  = s_snap.mcu_temp_c;
         run_seconds = s_snap.run_seconds;
-        const bool stop_latched = s_snap.stopped;
+        const bool stop_latched = s_snap.held;
         have_alert  = ui_alert_slot_take(&s_snap.alert, alert, sizeof(alert));
         const uint32_t alert_taken = s_snap.alert.taken;
         const uint32_t withdrawn   = s_snap.alert.withdrawn;

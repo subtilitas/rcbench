@@ -172,12 +172,15 @@ typedef struct {
     uint32_t      arm_gen;     /**< which arm, for the render side's ack */
     float         mcu_temp_c;
     bool          stopped;
+    /** @brief arming_held(): an operator's STOP stands, the band's latched
+     *         STOP (ui_bench_status_t.stop_latched). */
+    bool          held;
     uint32_t      stops;
     uint32_t      pressed;     /**< of the stops, those pressed */
-    uint16_t      faults;
-    uint32_t      link_errors;
+    uint16_t      faults;      /**< STATUS faults as the band shows them */
+    uint32_t      link_errors; /**< the IOmcu's CRC errors and resyncs */
     uint32_t      link_refused; /**< ui_bench_status_t's link_refused */
-    uint32_t      run_seconds;
+    uint32_t      run_seconds; /**< arming_run_seconds() */
     /* The control task's alert, numbered: an alert posted and replaced
      * before a frame took it was never shown (sense_link_alerts()), and one
      * whose cause is over is taken back (control_alert_withdraw()). */

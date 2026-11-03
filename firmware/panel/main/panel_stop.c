@@ -105,7 +105,7 @@ void stop_reset_service(bool link_up)
     /* A STOP pressed after the hold completed, or shortly before, is one
      * the hold never saw, and refuses the request (stop_latch_ask()). */
     if (atomic_exchange(&s_stop_reset_request, false)) {
-        (void)stop_latch_ask(&s_stop_latch, arming_stopped(&s_arm),
+        (void)stop_latch_ask(&s_stop_latch, arming_held(&s_arm),
                              (uint32_t)atomic_load(&s_stop_reset_ms), now);
     }
     const bool confirmed = stop_latch_read_due(&s_stop_latch, now)
@@ -116,7 +116,7 @@ void stop_reset_service(bool link_up)
      */
     (void)stop_latch_follow(&s_stop_latch, arming_pressed_count(&s_arm),
                             s_stop_press_ms);
-    switch (stop_latch_step(&s_stop_latch, now_ms(), arming_stopped(&s_arm),
+    switch (stop_latch_step(&s_stop_latch, now_ms(), arming_held(&s_arm),
                             confirmed)) {
     case STOP_LATCH_RESUME: {
         /*

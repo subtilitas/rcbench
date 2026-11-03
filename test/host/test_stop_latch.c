@@ -60,7 +60,7 @@ static stop_latch_act_t pass(uint32_t t, bool confirmed)
     arming_touch_seen(&a, t);
     (void)stop_latch_follow(&l, arming_pressed_count(&a), t);
     const stop_latch_act_t act =
-        stop_latch_step(&l, t, arming_stopped(&a), confirmed);
+        stop_latch_step(&l, t, arming_held(&a), confirmed);
     if (act == STOP_LATCH_RESUME) {
         arming_stop_release(&a);
     }
@@ -116,6 +116,12 @@ TEST_CASE(a_stop_from_the_far_end_still_clears_with_an_arm)
     arming_stop_from_far_end(&a);
     CHECK(arming_stopped(&a));
     CHECK(!arming_held(&a));
+    /* The far end's own stop may be the emergency stop or an open wire:
+     * its FAULT 10 stays on the band, and no hold resets it. */
+    CHECK_EQ(stop_latch_faults(&l, 50u, arming_held(&a),
+                               (uint16_t)LINK_FAULT_HEARTBEAT),
+             (uint16_t)LINK_FAULT_HEARTBEAT);
+    CHECK(!stop_latch_ask(&l, arming_held(&a), 5000u, 5000u));
     arming_request_arm(&a, 100u);
     CHECK(!arming_stopped(&a));
     CHECK(arming_heartbeat(&a, 100u));
@@ -125,7 +131,7 @@ TEST_CASE(a_reset_asked_before_the_confirmation_waits)
 {
     start(0u);
     touch_stop(0u);
-    CHECK(stop_latch_ask(&l, arming_stopped(&a), 2000u, 2000u));
+    CHECK(stop_latch_ask(&l, arming_held(&a), 2000u, 2000u));
     CHECK(stop_latch_waiting(&l));
     for (uint32_t t = 2000u; t <= 3999u; t += 50u) {
         CHECK_EQ(pass(t, false), STOP_LATCH_NONE);
@@ -142,12 +148,12 @@ TEST_CASE(a_reset_asked_before_the_confirmation_waits)
 TEST_CASE(a_reset_is_asked_only_while_a_stop_stands)
 {
     start(0u);
-    CHECK(!stop_latch_ask(&l, arming_stopped(&a), 100u, 100u));
+    CHECK(!stop_latch_ask(&l, arming_held(&a), 100u, 100u));
     CHECK(!stop_latch_waiting(&l));
     touch_stop(200u);
-    CHECK(stop_latch_ask(&l, arming_stopped(&a), 2200u, 2200u));
+    CHECK(stop_latch_ask(&l, arming_held(&a), 2200u, 2200u));
     /* A second hold while the first waits restarts nothing. */
-    CHECK(!stop_latch_ask(&l, arming_stopped(&a), 2300u, 2300u));
+    CHECK(!stop_latch_ask(&l, arming_held(&a), 2300u, 2300u));
     CHECK_EQ(l.ask_ms, 2200u);
 }
 
@@ -211,7 +217,7 @@ TEST_CASE(no_confirmation_keeps_the_latch_and_the_line_withheld)
     /* Told once; the next hold asks again. */
     CHECK_EQ(give_ups, 1);
     CHECK(!stop_latch_waiting(&l));
-    CHECK(stop_latch_ask(&l, arming_stopped(&a), 10000u, 10000u));
+    CHECK(stop_latch_ask(&l, arming_held(&a), 10000u, 10000u));
     CHECK_EQ(pass(10000u, true), STOP_LATCH_RESUME);
 }
 
@@ -286,7 +292,7 @@ TEST_CASE(clear_is_owed_once_per_reset)
     }
     CHECK_EQ(stop_latch_resets(&l), 1u);
     /* A second hold on an unlatched bench asks for nothing. */
-    CHECK(!stop_latch_ask(&l, arming_stopped(&a), 5000u, 5000u));
+    CHECK(!stop_latch_ask(&l, arming_held(&a), 5000u, 5000u));
     CHECK_EQ(stop_latch_resets(&l), 1u);
     /* A second stop and its reset: one more. */
     touch_stop(6000u);
