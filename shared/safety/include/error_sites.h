@@ -11,7 +11,9 @@
  *     error_sites_stop()      an error found elsewhere: an INA3221 channel
  *                             over its limit, a SUPPLY page event that is
  *                             an error (supply_link_ev_error()), an ON
- *                             taken across lost touch events
+ *                             taken across lost touch events, the
+ *                             carrier's programming-port 5V lost under the
+ *                             panel's ON (prog5v_lost.h)
  *     error_sites_follow()    a counter of errors: the card's failed
  *                             writes, the programmers' session faults
  *     error_sites_cut()       the panel's own supply trip, CURRENT TRIP or

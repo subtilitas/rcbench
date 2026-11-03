@@ -3,7 +3,9 @@
  * @brief The current monitors' set-up on its way to the IOmcu: SETUP
  *        SENSORS' INA228, bus, encoder and INA3221 rows, published by the settings observer on app_main and
  *        taken by the control task; and the SENSE_MAP page's service there
- *        (sense_map_link.h), with what it tells the operator.
+ *        (sense_map_link.h), with what it tells the operator; and the
+ *        INA3221 channel watching the programming ports' 5V, for the PROG
+ *        5V box and the PROG 5V watch (prog5v_lost.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,12 +14,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 
 #include "link_host.h"
 #include "link_pages.h"
 #include "panel.h"
 #include "log_cols.h"
+#include "prog5v_lost.h"
 #include "sense_link.h"
 #include "sense_map_link.h"
 #include "sense_win_link.h"
@@ -338,22 +342,53 @@ void sense_win_service(void)
     }
 }
 
+/** @brief The console's tag. */
+static const char *TAG = "rcbench";
+
+/** @brief The PROG 5V watch (prog5v_lost.h); control task only. */
+static prog5v_lost_t s_p5_lost;
+
+/**
+ * @brief The PROG 5V watch tripped: the error (bench_error_stop()), the
+ *        band's alert and one console line.  Out of line: the lines stay
+ *        off the poll's frame.
+ * @param ch the channel that read it, 0 to 11
+ */
+static __attribute__((noinline)) void prog5v_lost_act(unsigned ch)
+{
+    bench_error_stop();
+    const unsigned mv = prog5v_lost_mv(&s_p5_lost);
+    char line[ALERT_MAX];
+    snprintf(line, sizeof(line), TR(ALERT_P5_LOST),
+             (unsigned)(LINK_SN_I3221_ADDR_MIN + ch / 3u), ch % 3u + 1u,
+             mv / 1000u, (mv % 1000u) / 10u);
+    control_alert(line);
+    char con[112];
+    ESP_LOGI(TAG, "%s", prog5v_lost_line(&s_p5_lost, ch, con, sizeof(con)));
+}
+
 void prog5v_publish_reading(void)
 {
+    prog5v_window_t w = { 0 };
+    int16_t  ma = 0;
+    unsigned ch = 0u;
     if (sense_map_link_in_force(&s_sense_map)) {
         const unsigned en = s_sense_map.held[LINK_SM_ENABLE];
-        for (unsigned c = 0u; c < LINK_SM_CHANNELS; ++c) {
-            uint16_t mv = 0u;
-            int16_t  ma = 0;
+        for (unsigned c = 0u; c < LINK_SM_CHANNELS && !w.ok; ++c) {
             if ((en & (1u << (c / 3u))) != 0u
                 && s_sense_map.held[LINK_SM_WATCH(c)] == LINK_SM_WATCH_PROG_5V
-                && sense_win_link_last(&s_sense_win, c, &mv, &ma)) {
-                prog5v_box_reading(true, mv, ma);
-                return;
+                && sense_win_link_last(&s_sense_win, c, &w.mv, &ma,
+                                       &w.window)) {
+                w.ok = true;
+                ch   = c;
             }
         }
     }
-    prog5v_box_reading(false, 0u, 0);
+    prog5v_box_reading(w.ok, w.mv, ma);
+    if (prog5v_lost_step(&s_p5_lost, prog5v_panel_on(),
+                         prog_supply_link_cuts(&s_psup_link), now_ms(), &w)) {
+        prog5v_lost_act(ch);
+    }
 }
 
 void sense_win_attach(bench_state_t *b, bool ring)

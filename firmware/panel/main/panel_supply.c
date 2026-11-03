@@ -996,6 +996,14 @@ static uint8_t prog5v_held_port(void)
                                 || prog_supply_link_port(&s_psup_link));
 }
 
+bool prog5v_panel_on(void)
+{
+    return prog_supply_link_state(&s_psup_link) == PROG_SUPPLY_ON
+           && prog5v_held_port() == PROG5V_HELD_NONE
+           && arming_heartbeat(&s_arm, now_ms())
+           && !atomic_load(&s_disarm_request);
+}
+
 void prog_supply_publish(void)
 {
     prog5v_box_publish((uint8_t)prog_supply_link_state(&s_psup_link),

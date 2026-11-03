@@ -4801,6 +4801,9 @@ UI_TEXT(ALERT_P5_NO_ANSWER, 94,
 UI_TEXT(ALERT_P5_TOUCH, 94,
     "Touch signal lost while switching on. PROG ports 5V off.",
     "Touch-Signal beim Einschalten verloren. PROG-Ports 5V aus.")
+UI_TEXT(ALERT_P5_LOST, 94,
+    "PROG 5V lost: INA3221 0x%02X CH%u read %u.%02uV while ON. All outputs off.",
+    "PROG 5V ausgefallen: INA3221 0x%02X CH%u las %u.%02uV trotz EIN. Alle Ausgänge aus.")
 UI_TEXT(ALERT_SUPPLY_CHANGED, 94,
     "Supply changed in SETUP. Output off.",
     "Netzteil in SETUP geändert. Ausgang aus.")

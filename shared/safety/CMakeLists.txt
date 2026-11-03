@@ -10,9 +10,10 @@
 # its render loop while the bench is ARMED or the supply's output is on.
 # error_stop.c is the panel's rule for an error: every output off and the
 # bench SAFE; error_sites.c applies it where the panel's control task finds
-# an error.
+# an error.  prog5v_lost.c finds one: the rbmod carrier's programming-port
+# 5V collapsed under the panel's ON.
 set(SRCS heartbeat.c arming.c touch_loss.c safety_gate.c flash_gate.c
-         reset_cause.c frame_watch.c error_stop.c error_sites.c)
+         reset_cause.c frame_watch.c error_stop.c error_sites.c prog5v_lost.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link)

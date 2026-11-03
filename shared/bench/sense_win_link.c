@@ -179,7 +179,7 @@ static bool holds(bool have, const uint16_t *r, uint16_t window)
 }
 
 bool sense_win_link_last(const sense_win_link_t *s, unsigned c, uint16_t *mv,
-                         int16_t *ma)
+                         int16_t *ma, uint16_t *window)
 {
     if (s == NULL || !s->up || !s->page || c >= LINK_SM_CHANNELS) {
         return false;
@@ -199,6 +199,9 @@ bool sense_win_link_last(const sense_win_link_t *s, unsigned c, uint16_t *mv,
     }
     if (ma != NULL) {
         *ma = (int16_t)r[LINK_SX_E(k, LINK_SX_E_MEAN_MA)];
+    }
+    if (window != NULL) {
+        *window = r[LINK_SX_WINDOW];
     }
     return true;
 }

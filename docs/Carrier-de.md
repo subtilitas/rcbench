@@ -164,6 +164,53 @@ wie es AUSGANG EIN des PD mini beurteilt:
 - Firmware-Installation, IOmcu-Update, Flash-Schreiben und WLAN zählen das
   ON ab dem Einreihen in die Warteschlange (`supplies_live_or_coming()`).
 
+### PROG 5V ausgefallen
+
+Der Regler von M7, am ehesten ein JoulWatt JW5068A (am Modul nicht
+bestätigt), schaltet seinen Ausgang bei Überspannung (über 6.0V für 20us)
+oder Unterspannung (unter 3.25V für 200us) ab und hält ihn aus. Er startet
+erst wieder, wenn EN umschaltet. Ein Servo an einem Programmierport, das
+schnell fährt, kann ihn abschalten. Die Page PROG_SUPPLY liest GPIO 21 dann
+weiter als ein.
+
+Das Panel beobachtet 0x40 CH3, solange sein eigenes ON steht: die Page
+liest die 5V ein oder hat das ON bestätigt, kein Programmierport hält sie,
+und der Heartbeat läuft. Zwei neue Fenster von 50ms nacheinander mit einer
+mittleren Busspannung unter 3000mV, beide 500ms oder mehr nach dem ON
+gelesen, sind ein Fehler des Prüfstands:
+
+- SAFE, alle Ausgänge aus und das OFF der Page
+  ([Sicherheit, Fehler](Safety-de.md#fehler)). Das nächste PROG 5V EIN
+  schaltet EN um und hebt die Abschaltung von M7 auf.
+- Das Band: `PROG 5V ausgefallen: INA3221 0x40 CH3 las 0.12V trotz EIN.
+  Alle Ausgänge aus.`
+- Die Konsole, englisch: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V,
+  0.08V in 2 windows, 640ms after ON. All outputs off.`
+- Ein Fehler je ON: keiner mehr, bis die 5V aus und wieder ein waren.
+
+Unter 3.25V für 200us hat der Regler laut Datenblatt abgeschaltet, und ein
+abgeschalteter Ausgang fällt auf nahe 0V. 3000mV und zwei Fenster halten
+das Absinken eines belasteten Ports vom Auslösen ab. Jedes Fenster zählt
+einmal, nach seiner Nummer: das Panel liest die Page einmal je Abfrage,
+etwa alle 50ms, und der IOmcu schließt alle 50ms ein Fenster, also kann
+ein Fenster zweimal gelesen werden. Ein verlangtes AUS, von Hand oder durch
+einen Fehler, startet die 500ms neu: die Page liest die 5V bis zu ihrem
+nächsten Lesen als ein, höchstens 200ms.
+Die Regel ist `shared/safety/prog5v_lost.c` unter `test_prog5v_lost`;
+`test_prog5v_wire` treibt sie mit den Pages wie das Panel.
+
+Aktuelle Einschränkungen:
+
+- Ohne einen INA3221-Kanal, der PROG 5V beobachtet, gibt es keine
+  Beobachtung: keine gültige Map mit einem Kanal für PROG 5V, oder kein
+  gelesenes Fenster dieses Kanals (das Bauteil offline, der Link weg).
+  Eine Platine ohne den Schalter PROG_SUPPLY hat auch keine.
+- Solange eine KST-, Hitec- oder ESC-Wire-Sitzung die 5V hält, gibt es
+  keine Beobachtung: die Sitzung schaltet sie selbst aus und ein.
+- Die Erkennungszeit auf der Hardware ist nicht gemessen. Nach der Regel
+  sind es 2 neue Fenster nach dem Ausfall, etwa 100ms, dazu die 500ms
+  nach dem ON.
+
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 
 ![SERVO auf dem Carrier, das Feld PROG 5V unter PD MINI](img/de/servo-rbmod.png)

@@ -1399,7 +1399,10 @@ under the KST and Hitec programmers. Leaving SERVO switches off a 5V
 SERVO's box switched on, unless a port holds it. With the model as the
 supply the SIMULATED pill sits under the box. SUPPLY shows the same box
 ([Supply](#supply)); the rules are in
-[Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box).
+[Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box). Two windows under
+3000mV while the box's ON stands are an error: SAFE, every output off, and
+`PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.` on
+the band ([Carrier, PROG 5V lost](Carrier.md#prog-5v-lost)).
 
 ![SERVO on the carrier](img/servo-rbmod.png)
 

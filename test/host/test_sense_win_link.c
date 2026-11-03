@@ -146,17 +146,17 @@ TEST_CASE(a_window_takes_the_channels_of_its_own_number)
 }
 
 /* The last read of a channel, for a reading shown live: any window, both
- * kinds of sample, a closed one; channel 2 is 0x40 CH3, channel 11 the
- * last. */
+ * kinds of sample, a closed one, with the window's number; channel 2 is
+ * 0x40 CH3, channel 11 the last. */
 TEST_CASE(the_last_window_of_a_channel_is_its_pages_last_read)
 {
     sense_win_link_init(&s);
     uint16_t mv = 9u;
     int16_t ma = 9;
-    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));   /* no link */
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma, NULL));   /* no link */
     sense_win_link_came_up(&s, 25u);
     sense_win_link_want(&s, 0x0Fu);
-    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));   /* nothing read */
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma, NULL));   /* nothing read */
     uint16_t a[LINK_SX_COUNT];
     uint16_t b[LINK_SX_COUNT];
     page_regs(a, 40u, (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE), 80);
@@ -165,21 +165,24 @@ TEST_CASE(the_last_window_of_a_channel_is_its_pages_last_read)
         (uint16_t)(LINK_SX_E_CURRENT | LINK_SX_E_VOLTAGE);
     CHECK(read_one(0u, a, NULL));
     CHECK(read_one(0u, b, NULL));
-    CHECK(sense_win_link_last(&s, 2u, &mv, &ma));
+    uint16_t win = 0u;
+    CHECK(sense_win_link_last(&s, 2u, &mv, &ma, &win));
     CHECK_EQ(mv, 5000u);
     CHECK_EQ(ma, 82);
-    CHECK(sense_win_link_last(&s, 11u, &mv, &ma));
+    CHECK_EQ(win, 40u);                             /* the page's number */
+    CHECK(sense_win_link_last(&s, 11u, &mv, &ma, &win));
     CHECK_EQ(ma, -15);
-    CHECK(!sense_win_link_last(&s, 6u, &mv, &ma));   /* voltage only */
-    CHECK(!sense_win_link_last(&s, 12u, &mv, &ma));
-    CHECK(sense_win_link_last(&s, 0u, NULL, NULL));
-    CHECK(!sense_win_link_last(NULL, 0u, &mv, &ma));
+    CHECK_EQ(win, 41u);
+    CHECK(!sense_win_link_last(&s, 6u, &mv, &ma, NULL));   /* voltage only */
+    CHECK(!sense_win_link_last(&s, 12u, &mv, &ma, NULL));
+    CHECK(sense_win_link_last(&s, 0u, NULL, NULL, NULL));
+    CHECK(!sense_win_link_last(NULL, 0u, &mv, &ma, NULL));
     /* A page with no window closed under the set-up: none. */
     a[LINK_SX_FLAGS] = 0x03u;
     CHECK(read_one(SENSE_WIN_LINK_READ_MS, a, NULL));
-    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma));
+    CHECK(!sense_win_link_last(&s, 2u, &mv, &ma, NULL));
     sense_win_link_lost(&s);
-    CHECK(!sense_win_link_last(&s, 11u, &mv, &ma));
+    CHECK(!sense_win_link_last(&s, 11u, &mv, &ma, NULL));
 }
 
 /* A page no longer wanted, BAD_PAGE, and a lost link forget what was

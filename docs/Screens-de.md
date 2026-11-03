@@ -1526,7 +1526,11 @@ Feld bleibt unter den Programmern für KST und Hitec. Das Verlassen von
 SERVO schaltet 5V ab, die das Feld auf SERVO eingeschaltet hat, außer ein
 Port hält sie. Mit dem Modell als Netzteil steht die Pille SIMULIERT unter
 dem Feld. SUPPLY zeigt dasselbe Feld ([Netzteil](#netzteil)); die Regeln
-stehen in [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v).
+stehen in [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v). Zwei
+Fenster unter 3000mV, solange das ON des Felds steht, sind ein Fehler:
+SAFE, alle Ausgänge aus, und
+`PROG 5V ausgefallen: INA3221 0x40 CH3 las 0.12V trotz EIN. Alle Ausgänge aus.`
+im Band ([Carrier, PROG 5V ausgefallen](Carrier-de.md#prog-5v-ausgefallen)).
 
 ![SERVO auf dem Carrier](img/de/servo-rbmod.png)
 
