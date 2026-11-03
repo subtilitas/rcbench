@@ -6823,7 +6823,7 @@ treibt nichts und nimmt keinen Tipp.
 | `WEITERE STECKER` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NICHT BETRIEBEN`), J6 PD MINI, J9 TAP, PROG 5V EN an keinem Stecker | der Name, was er trägt, sein GPIO |
 
 Die Zeile unter den Spalten lautet
-`EIN BOARD REV 1 BRAUCHT ZWEI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.`
+`EIN BOARD REV 1 BRAUCHT DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.`
 ([Carrier: Nacharbeit Rev 1](Carrier-de.md#nacharbeit-rev-1)).
 
 Ein Protokoll, das unter OUTPUTS gebunden oder gelöst wird, und ein

@@ -6222,7 +6222,7 @@ drives nothing and takes no tap.
 | `OTHER CONNECTORS` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NOT DRIVEN`), J6 PD MINI, J9 TAP, PROG 5V EN on no connector | the name, what it carries, its GPIO |
 
 The line under the columns reads
-`A REV 1 BOARD NEEDS TWO CHANGES BY HAND. THE HELP PAGE LISTS THEM.`
+`A REV 1 BOARD NEEDS THREE CHANGES BY HAND. THE HELP PAGE LISTS THEM.`
 ([Carrier: Rev 1 rework](Carrier.md#rev-1-rework)).
 
 A protocol bound or let go on OUTPUTS, and a change of board, repaint the
