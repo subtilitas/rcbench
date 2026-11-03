@@ -13,7 +13,7 @@
  * asked for it, the status read taken to 31 only while the
  * page enables it, its angle handed over while the read is fresh and the
  * part answers, and its two events -- not answering, a magnet missing, weak
- * or strong -- each once.
+ * or strong -- each once, the first over once the part answers again.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -633,6 +633,66 @@ TEST_CASE(an_encoder_that_does_not_answer_is_said_once)
     CHECK_EQ(sense_link_events(&sl), 0u);
 }
 
+/*
+ * An encoder pulled off a running bench and plugged back in: its "not
+ * answering" is said at the pull, and again when the contacts drop it once
+ * more on the way in.  Either is over with the read that finds it online:
+ * the band takes the alert back and an event still waiting is dropped, so
+ * no "not answering" stands over an encoder that answers.
+ */
+TEST_CASE(an_encoder_plugged_back_in_takes_back_its_not_answering)
+{
+    enc_wanted(9u);
+    far_enc(ENC_OK, 5u, 1u, 1u);
+    polls(4);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_ENC_SILENT));
+
+    /* Pulled: said, and it stands while the part is away. */
+    far_enc(0u, 0u, 0u, 0u);
+    polls(1);
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_ENC_SILENT);
+    polls(10);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_ENC_SILENT));
+
+    /* Plugged in: it answers, and the alert of the pull is over. */
+    far_enc(ENC_OK, 6u, 2u, 0u);
+    polls(1);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_ENC_SILENT));
+
+    /* Its contacts drop it for one read after the gap: said again, at the
+     * moment it comes back. */
+    now += SENSE_LINK_EVENT_GAP_MS;
+    far_enc(0u, 0u, 0u, 0u);
+    polls(1);
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_ENC_SILENT);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_ENC_SILENT));
+    /* The next read finds it: over, the band's line goes. */
+    far_enc(ENC_OK, 7u, 3u, 0u);
+    polls(1);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_ENC_SILENT));
+    sense_link_enc_t e;
+    CHECK(sense_link_enc(&sl, now, &e));
+
+    /* Dropped by the contacts inside the gap: the event waits, and is
+     * dropped when the band would take it after the part answered, even
+     * put back from a band that never showed it. */
+    far_enc(0u, 0u, 0u, 0u);
+    polls(1);
+    far_enc(ENC_OK, 8u, 4u, 0u);
+    polls(1);
+    sense_link_event_back(&sl, SENSE_LINK_EV_ENC_SILENT);
+    CHECK_EQ(sense_link_event(&sl, now + SENSE_LINK_EVENT_GAP_MS), 0u);
+
+    /* An encoder no longer asked for says nothing stands. */
+    far_enc(0u, 0u, 0u, 0u);
+    polls(1);
+    CHECK(sense_link_event_stands(&sl, SENSE_LINK_EV_ENC_SILENT));
+    sense_setup_t w = setup_default();
+    w.as5600 = false;
+    want(&w);
+    CHECK(!sense_link_event_stands(&sl, SENSE_LINK_EV_ENC_SILENT));
+}
+
 TEST_CASE(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right)
 {
     enc_wanted(9u);
@@ -1038,6 +1098,7 @@ int main(void)
     RUN(the_encoders_angle_is_handed_over_while_the_read_is_fresh);
     RUN(the_link_going_down_takes_the_angle_with_it);
     RUN(an_encoder_that_does_not_answer_is_said_once);
+    RUN(an_encoder_plugged_back_in_takes_back_its_not_answering);
     RUN(a_missing_weak_or_strong_magnet_is_said_once_until_it_is_right);
     RUN(an_angle_read_without_a_magnet_is_not_handed_out);
     RUN(no_magnet_is_the_reason_only_while_the_part_says_so);

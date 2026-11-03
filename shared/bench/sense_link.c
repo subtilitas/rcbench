@@ -998,6 +998,10 @@ bool sense_link_event_stands(const sense_link_t *s, uint32_t ev)
                && (!known || s->refused_i3221 || frame_differs(s, I3221_AT));
     case SENSE_LINK_EV_KEPT:
         return !known || s->refused_bus;
+    case SENSE_LINK_EV_ENC_SILENT:
+        /* Over with the read that finds it online (judge_enc()), or with
+         * the encoder no longer asked for. */
+        return s->want_enc && s->enc_silent_told;
     default:
         return true;
     }
@@ -1028,11 +1032,11 @@ uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms)
         if ((s->events & k_order[i]) == 0u) {
             continue;
         }
-        if ((k_order[i] & SENSE_LINK_EV_SETUP) != 0u
+        if ((k_order[i] & SENSE_LINK_EV_ENDS) != 0u
             && !sense_link_event_stands(s, k_order[i])) {
             /* Put back from a band that never showed it, and over since:
-             * the page holds what is asked, or the settings no longer ask
-             * it. */
+             * the page holds what is asked, the settings no longer ask it,
+             * or the encoder answers again. */
             s->events &= ~k_order[i];
             continue;
         }

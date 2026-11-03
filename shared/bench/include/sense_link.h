@@ -299,6 +299,17 @@ enum {
                                         | SENSE_LINK_EV_I3221_REFUSED   \
                                         | SENSE_LINK_EV_KEPT))
 
+/**
+ * @brief The events whose alert is taken back once sense_link_event_stands()
+ *        is false: the set-up's, and the encoder not answering, which is over
+ *        once it answers again.  An encoder plugged in on a running bench can
+ *        answer, drop out while its contacts settle and answer again; a "not
+ *        answering" left on the band then names a cause that no longer
+ *        holds.
+ */
+#define SENSE_LINK_EV_ENDS ((uint32_t)(SENSE_LINK_EV_SETUP               \
+                                       | SENSE_LINK_EV_ENC_SILENT))
+
 /** @brief The exchange sense_link_next() asks for. */
 typedef enum {
     SENSE_LINK_OP_NONE = 0,
@@ -605,8 +616,10 @@ uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms);
  * refused value stepped back on SETUP ends it once the IOmcu takes the frame;
  * the rest and the write take SENSE_LINK_SETTLE_MS and a poll.  With no IOmcu
  * answering a refusal stands.  SENSE_LINK_EV_KEPT until the next edit asks
- * again.  True for every other event: what a read raised ends with the band's
- * own time.
+ * again.  SENSE_LINK_EV_ENC_SILENT while the encoder is asked for and its
+ * last read said it was not answering: a read that finds it online ends it.
+ * True for every other event: what a read raised ends with the band's own
+ * time.
  *
  * The caller takes back an alert it showed for such an event once this
  * is false; sense_link_event() drops one waiting that is over.

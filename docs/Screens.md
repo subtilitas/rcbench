@@ -1611,7 +1611,8 @@ files. The card, 600 x 188px, holds the run's name, a summary line
 (`4.8 6.0V BROWN-OUT, 60s EACH`, or `..., 20 MOVEMENTS EACH`), START
 TEST (300 x 48px) with the card's SETTINGS (160 x 48px) beside it, the
 state line, the last result with its files
-(`LAST: PASS ATEST004.CSV + .TXT`) and the STALL AT note. START TEST needs
+(`LAST: PASS ATEST004.CSV + .TXT`; for an aborted run the reason in the
+warning colour, `LAST: ABORTED - link lost`) and the STALL AT note. START TEST needs
 the bench in ARMED and a supply that answers; the state line says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
 SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
 OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
@@ -4813,7 +4814,7 @@ once and one at a time like the monitors':
 | Message | When |
 | --- | --- |
 | `IOmcu firmware older than 0.15.0. AS5600 not read.` | the encoder is enabled and the IOmcu speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
-| `AS5600 is not responding at 0x36.` | enabled, and not answering 2.5s after its set-up was taken, or having stopped answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set |
+| `AS5600 is not responding at 0x36.` | enabled, and not answering 2.5s after its set-up was taken, or having stopped answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set. The band takes it back with the first read that finds the part answering |
 | `AS5600 detects no magnet. Check the magnet on the servo horn shaft.` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTRE sets nothing, and a run logs and judges no angle |
 | `AS5600: magnetic field too weak. Move the magnet closer.` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
 | `AS5600: magnetic field too strong. Move the magnet farther away.` | STATUS MD and MH are set. The angle is used, as with ML |

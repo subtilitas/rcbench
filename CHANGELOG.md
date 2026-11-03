@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+### Fixed
+
+- The AUTOMATIC TEST card on SERVO > TEST names why the last run was
+  aborted, in the warning colour: `LAST: ABORTED - link lost`, German
+  `ZULETZT: ABGEBROCHEN - Link verloren`. The card named only `ABORTED` and
+  the files; the reason was on LIVE's result box and in the report alone, so
+  a run that ended while TEST was shown ended with no reason on the screen
+  and the band's last alert read as one.
+- `AS5600 is not responding at 0x36.` leaves the band with the first read
+  that finds the encoder answering. An AS5600 plugged back in whose contacts
+  drop it for a read raised the line as the part came back, and it stood for
+  its 30s over an encoder that answered. An AS5600 that stops answering
+  during an AUTOMATIC TEST, or answers again, does not end the run (host
+  test `a_run_goes_on_across_an_encoder_pulled_and_plugged_back_in`).
+
 ## 0.23.6 - 2026-11-03
 
 0.23.6 is a testing release: its minor number, 23, is odd, and GitHub

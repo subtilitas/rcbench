@@ -419,24 +419,6 @@ TEST_CASE(the_target_row_opens_on_the_drive_not_the_setting)
 
 /* ----------------------------------------------------------- the run cards */
 
-/* Buffer 0 drawn, and whether line @p i of card @p k (its state line is
- * 0) reads @p text in @p col on the card's fill, and nothing else: the
- * AUTOMATIC TEST card's lines in the 10 x 20 face 22px apart, the LIMIT
- * RUN card's in the 8 x 16 face 18px apart under its output line. */
-static bool card_line_reads(int k, int i, const char *text, ui_color_id_t col)
-{
-    scr->render(&cv, 0);
-    want_fresh();
-    const int y = SV_RUN_CARD_Y(k) + SV_RUN_LINE_DY
-                  + ((k == 0) ? 22 * i : 20 * i + 20 - 2);
-    const gfx_font_t *f = &gfx_font_10x20;
-    const int h = f->height;
-    const gfx_color_t bg = fb[(size_t)y * W + 20u];
-    gfx_fill_rect(&want_cv, UI_MARGIN + 12, (int16_t)y, 596, (int16_t)h, bg);
-    gfx_text(&want_cv, UI_MARGIN + 20, y, text, f, ui_theme_color(col), 1);
-    return same_in(fb, want_fb, UI_MARGIN + 12, y, 596, h);
-}
-
 /* Each card's state line says ARM FIRST on a SAFE bench and HOLD 2s TO
  * START on an armed one; an HV step makes START TEST a tap that opens the
  * warning and the line says so. */

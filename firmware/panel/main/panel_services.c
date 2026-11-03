@@ -139,8 +139,9 @@ static const char *const k_sense_part[2] = { "INA228", "INA3221" };
  * slot (0 none) and its event.  Control task only. */
 static uint32_t s_sense_alert_gen;
 static uint32_t s_sense_alert_ev;
-/* The last alert posted about the set-up asked (SENSE_LINK_EV_SETUP),
- * kept until its cause is over: its number (0 none) and its event. */
+/* The last alert posted about the set-up asked or an encoder not answering
+ * (SENSE_LINK_EV_ENDS), kept until its cause is over: its number (0 none)
+ * and its event. */
 static uint32_t s_sense_setup_gen;
 static uint32_t s_sense_setup_ev;
 
@@ -148,7 +149,8 @@ static uint32_t s_sense_setup_ev;
  * An alert about a set-up that is over is taken back: one the band shows
  * goes from it, one waiting for a frame is dropped and not put back.  A
  * refused value stepped back on SETUP is over once the IOmcu takes the
- * frame; unset pins and one address are over with the edit.
+ * frame; unset pins and one address are over with the edit; an encoder not
+ * answering is over with the read that finds it online.
  */
 static void alert_drop(uint32_t *setup_gen, uint32_t *alert_gen)
 {
@@ -299,7 +301,7 @@ void sense_link_alerts(void)
             : ((m & LINK_SN_ENC_ML) != 0u) ? TR(ALERT_ENC_WEAK)
                                            : TR(ALERT_ENC_STRONG));
     }
-    if ((ev & SENSE_LINK_EV_SETUP) != 0u) {
+    if ((ev & SENSE_LINK_EV_ENDS) != 0u) {
         s_sense_setup_gen = s_sense_alert_gen;
         s_sense_setup_ev  = ev;
     }

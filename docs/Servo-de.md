@@ -912,10 +912,25 @@ der Messwert gelöscht: die Zeile zeigt Striche, und SENSOR-MITTE setzt nichts,
 bis mit dem Link wieder ein Messwert eintrifft. Dasselbe gilt, solange der
 Sensor keinen Magneten meldet.
 
+Ein AS5600, der während eines Laufs verstummt, abgezogen oder an einem
+Wackelkontakt, beendet ihn nicht, und einer, der wieder antwortet,
+ebenso wenig. Der Lauf nimmt die Messwerte, die er bekommt: solange der
+Baustein nicht antwortet, bleibt die Winkelspalte der CSV leer, und eine
+Bewegung, die über die Lücke offen ist, fällt wie oben heraus; ab dem
+nächsten Messwert zählen die Winkel wieder. Für die Lücke selbst hat der
+Bericht keine Zeile. Das Band sagt `AS5600 antwortet nicht unter 0x36.`,
+wenn der Baustein verstummt, und nimmt die Zeile mit dem ersten
+Lesen zurück, das ihn antwortend findet: ein Baustein, den seine Kontakte
+beim Einstecken noch einmal verlieren, hinterlässt kein "antwortet nicht"
+über einem Encoder, der antwortet.
+
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
-schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Ein
+schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
+Grund steht auch in der zweiten Zeile des Ergebniskastens auf LIVE und in
+der letzten Zeile der Karte AUTOMATISCHER TEST (`ZULETZT: ABGEBROCHEN -
+STOP`), die dann den Grund statt der Dateien nennt. Ein
 Fehler schaltet den Prüfstand statt der Freigabe auf SAFE: ein Netzteil, das
 nicht antwortet oder abgeschaltet hat, kein neuer Messwert, ein Ausgang, der
 nicht anging, ein nicht bestätigter Sollwert, eine Stufe über der Grenze,

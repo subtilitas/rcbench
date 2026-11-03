@@ -4633,6 +4633,12 @@ UI_TEXT(SV_SUM_LIM, 0,
 UI_TEXT(SV_CARD_LAST, 0,
     "LAST: %s %s",
     "ZULETZT: %s %s")
+/* An aborted run's last line on the AUTOMATIC TEST card: the verdict and
+ * its reason (SERVO_STR_AB_*, 31 characters at most) in the card's 58
+ * cells; the files are on LIVE's result box. */
+UI_TEXT(SV_CARD_LAST_WHY, 58,
+    "LAST: %s - %s",
+    "ZULETZT: %s - %s")
 UI_TEXT(SV_CAPS, 0,
     "CAPS %.2fV %.2fA: OPEN SUPPLY",
     "GRENZEN %.2fV %.2fA: SUPPLY ÖFFNEN")
