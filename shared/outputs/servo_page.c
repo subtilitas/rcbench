@@ -471,6 +471,13 @@ uint16_t servo_page_hz(const servo_page_t *p)
     return (p != NULL) ? p->regs[LINK_SV_FRAME_HZ] : 0u;
 }
 
+void servo_page_restore_hz(servo_page_t *p, uint16_t hz)
+{
+    if (p != NULL) {
+        p->regs[LINK_SV_FRAME_HZ] = hz;
+    }
+}
+
 uint16_t servo_page_slots_hz(const servo_page_t *p)
 {
     return (p != NULL && p->target_n == 0u) ? p->regs[LINK_SV_FRAME_HZ] : 0u;

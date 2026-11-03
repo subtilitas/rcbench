@@ -9,7 +9,7 @@
  * judged whole (a driven slot on each servo output taken, on every other
  * pin refused, an undriven slot not judged); each pin register of SUPPLY,
  * SENSE, TONE and PROG held to its role's pin with the pins either side
- * refused, PROG's FUNC held to NONE; registers that are no pin left to
+ * refused, PROG's FUNC held to NONE or SERVO PWM; registers that are no pin left to
  * their page; a kept record of the module put on the carrier's pins with
  * its enables and ranges kept; the programming ports restored on the
  * carrier with a servo output beside PROGP04 in the silicon; a board whose
@@ -234,11 +234,14 @@ TEST_CASE(each_programming_port_keeps_its_pin_and_no_function)
             || one(LINK_PAGE_PROG, pin, (uint16_t)(own + 1u))) {
             T_FAIL("port %u took a pin not its own", port);
         }
-        /* FUNC: NONE only; the signal protocols are the servo outputs'. */
+        /* FUNC: NONE or SERVO PWM (4.36), the tester's pulse; DShot and
+         * values past the list are refused. */
         CHECK(one(LINK_PAGE_PROG, LINK_PG_FUNC(port), LINK_PG_FN_NONE));
-        CHECK(!one(LINK_PAGE_PROG, LINK_PG_FUNC(port), LINK_PG_FN_SERVO_PWM));
+        CHECK(one(LINK_PAGE_PROG, LINK_PG_FUNC(port), LINK_PG_FN_SERVO_PWM));
         CHECK(!one(LINK_PAGE_PROG, LINK_PG_FUNC(port), LINK_PG_FN_DSHOT150));
+        CHECK(!one(LINK_PAGE_PROG, LINK_PG_FUNC(port), LINK_PG_FN_DSHOT300));
         CHECK(!one(LINK_PAGE_PROG, LINK_PG_FUNC(port), LINK_PG_FN_DSHOT600));
+        CHECK(!one(LINK_PAGE_PROG, LINK_PG_FUNC(port), LINK_PG_FN_COUNT));
         /* The other registers of a port are the page's. */
         CHECK(one(LINK_PAGE_PROG, LINK_PG_REG(port, LINK_PG_CMD), 999u));
         CHECK(one(LINK_PAGE_PROG, LINK_PG_REG(port, LINK_PG_SLEW), 7u));
@@ -257,6 +260,9 @@ TEST_CASE(each_programming_port_keeps_its_pin_and_no_function)
                              (uint8_t)(LINK_PG_REGS - LINK_PG_PORT0), all));
     /* The last FUNC, port 3's, is judged like the first. */
     all[LINK_PG_FUNC(3u) - LINK_PG_PORT0] = LINK_PG_FN_SERVO_PWM;
+    CHECK(board_fix_write_ok(r, LINK_PAGE_PROG, LINK_PG_PORT0,
+                             (uint8_t)(LINK_PG_REGS - LINK_PG_PORT0), all));
+    all[LINK_PG_FUNC(3u) - LINK_PG_PORT0] = LINK_PG_FN_DSHOT300;
     CHECK(!board_fix_write_ok(r, LINK_PAGE_PROG, LINK_PG_PORT0,
                               (uint8_t)(LINK_PG_REGS - LINK_PG_PORT0), all));
 }
@@ -531,6 +537,66 @@ TEST_CASE(the_ports_hold_their_pins_with_a_servo_output_beside_progp04)
     }
 }
 
+/*
+ * On the carrier a port takes SERVO PWM (4.36) beside the servo outputs,
+ * and the binding of PWM01 to PWM04 wins: PROGP04 (GP0) shares slice 0 with
+ * PWM04 (GP1), so SERVO PWM there is refused while PWM04 carries a PWM
+ * output; PROGP02 (GP14) and PROGP03 (GP15), slice 7, carry no output and
+ * take it.  DShot stays refused by board_fix_write_ok().
+ */
+TEST_CASE(a_carrier_port_takes_servo_pwm_beside_the_outputs_binding)
+{
+    const outbind_roles_t *r = roles();
+    const uint64_t taken = BIT(r->pd_tx) | BIT(r->pd_rx) | BIT(r->sda)
+                           | BIT(r->scl) | BIT(r->tap);
+    for (unsigned with_pwm04 = 0; with_pwm04 < 2u; ++with_pwm04) {
+        outputs_t o;
+        prog_port_t pg;
+        outputs_init(&o, 0u);
+        outputs_reserve_pins(&o, outbind_reserved_mask(RBMOD));
+        for (unsigned i = 0; i < OUTBIND_FIXED_OUTS; ++i) {
+            if (r->out[i] == 1u && with_pwm04 == 0u) {
+                continue;
+            }
+            const out_slot_t pwm = { .driver = OUT_DRIVER_PWM,
+                                     .first_channel = (uint8_t)i,
+                                     .channels = 1, .pin = r->out[i],
+                                     .rate_hz = 50 };
+            CHECK(outputs_configure(&o, (uint8_t)i, &pwm));
+        }
+        out_store_t cfg;
+        out_store_cfg_defaults(&cfg);
+        board_fix_store(r, &cfg);
+        prog_port_init(&pg, LINK_PG_PORTS_MAX);
+        prog_port_restore_fn(&pg, cfg.prog, cfg.prog_func, &o, taken);
+        prog_port_bound(&pg, 0xFu);
+        const uint16_t pwm_fn = (uint16_t)LINK_PG_FN_SERVO_PWM;
+        for (unsigned port = 0; port < 4u; ++port) {
+            CHECK(board_fix_write_ok(r, LINK_PAGE_PROG,
+                                     (uint8_t)LINK_PG_FUNC(port), 1u,
+                                     &pwm_fn));
+            const uint8_t why = prog_port_write(
+                &pg, (uint8_t)LINK_PG_FUNC(port), 1u, &pwm_fn, &o, taken,
+                false, 0u);
+            const bool slice0 = r->prog[port] == 0u;
+            if (slice0 && with_pwm04 != 0u) {
+                CHECK_EQ(why, LINK_NACK_BAD_VALUE);
+            } else {
+                CHECK_EQ(why, 0u);
+                const uint16_t none = (uint16_t)LINK_PG_FN_NONE;
+                CHECK_EQ(prog_port_write(&pg, (uint8_t)LINK_PG_FUNC(port), 1u,
+                                         &none, &o, taken, false, 0u),
+                         0u);
+            }
+        }
+        /* The binding is the same after every ask. */
+        for (unsigned i = 0; i < OUTBIND_FIXED_OUTS; ++i) {
+            const bool there = !(r->out[i] == 1u && with_pwm04 == 0u);
+            CHECK_EQ(o.slot[i].driver == OUT_DRIVER_PWM, there);
+        }
+    }
+}
+
 /* ------------------------------------------------------------- the images */
 
 TEST_CASE(each_board_is_offered_its_own_image)
@@ -729,6 +795,7 @@ int main(void)
     RUN(a_record_of_the_module_starts_on_the_carriers_pins);
     RUN(the_defaults_are_what_an_old_record_starts_from);
     RUN(the_ports_hold_their_pins_with_a_servo_output_beside_progp04);
+    RUN(a_carrier_port_takes_servo_pwm_beside_the_outputs_binding);
     RUN(each_board_is_offered_its_own_image);
     RUN(the_grid_is_the_four_servo_outputs_in_their_order);
     RUN(a_protocol_goes_to_a_servo_output_and_nowhere_else);

@@ -980,6 +980,13 @@ const char *lim_prog_why(void);
  * @return the line that says so, or NULL where the run may write
  */
 const char *lim_write_why(void);
+/**
+ * @brief The run drives the rbmod carrier's programming port, fed from the
+ *        PROG 5V box: a PD mini on the servo rails is not its supply, and
+ *        the run neither asks nor watches it.
+ * @return true on the carrier with a port as the drive's target
+ */
+bool lim_fixed_supply(void);
 const char *lim_blocked(void);
 void lim_end_now(servo_test_abort_t why);
 /* START LIMIT RUN's hold completed; the run every frame; the ended run's

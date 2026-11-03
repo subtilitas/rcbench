@@ -115,10 +115,10 @@ extern const int16_t kpn_rule[KST_RULE_COUNT];
 
 enum {
     P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
-    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES
+    P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT
 };
 
-enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE };
+enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE, C_PORT };
 #define FILES_SAVE (-1)                 /**< list entry value: the entry that saves a new file */
 /**
  * @brief List entry value: the entry that pages on to the files behind these
@@ -555,6 +555,19 @@ void kpn_choice_done(int value);
  * @return true when the control takes a tap
  */
 bool kpn_row_live(const row_t *r);
+
+/**
+ * @brief Whether a tap on the PORT row's label opens the list of the
+ *        carrier's programming ports: a carrier of 4.36 or later
+ *        (prog_choice_offered()), the SERVO tab shown, and the tester
+ *        holding the port.
+ * @return the PORT row, or NULL
+ */
+const row_t *kpn_port_pick_row(void);
+
+/** @brief Opens the list PROGP01 to PROGP04 (C_PORT); nothing while the
+ *         choice is locked. */
+void kpn_port_list(void);
 
 /* kst_panel_touch.c */
 

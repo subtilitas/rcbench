@@ -108,14 +108,14 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 /** @brief What a press is on. */
 enum {
     P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
-    P_APPLY, P_CANCEL, P_TEXTKEY
+    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT
 };
 
 /** @brief A line of Hitec D receive's list that sets nothing. */
 #define HP_RX_LINE (-1)
 
 /** @brief What a list was opened for. */
-enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE, C_FILES, C_RX };
+enum { C_SERIES = 0, C_MORE, C_RESTORE, C_VALUE, C_FILES, C_RX, C_PORT };
 /** @brief The entries of MORE: the supply's in PWM, the session's while
  *         held. */
 enum { MORE_VOLTAGE = 0, MORE_CURRENT, MORE_DISCARD, MORE_REPAIR,
@@ -345,6 +345,19 @@ void hpn_change_line(uint8_t id, const hitec_image_t *img, char *out,
 bool hpn_row_edited(const hpn_row_t *r);
 
 /* hitec_panel_edit.c */
+
+/**
+ * @brief Whether a tap on the PORT row's label opens the list of the
+ *        carrier's programming ports: a carrier of 4.36 or later
+ *        (prog_choice_offered()), the PORT row shown, and the tester
+ *        holding the port.
+ * @return the PORT row, or NULL
+ */
+const hpn_row_t *hpn_port_pick_row(void);
+
+/** @brief Opens the list PROGP01 to PROGP04 (C_PORT); nothing while the
+ *         choice is locked. */
+void hpn_port_list(void);
 
 /** @brief Every editor shut: the keypad, the keyboard, the list and the
  *         page. */

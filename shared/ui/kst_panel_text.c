@@ -16,6 +16,7 @@
 #include "kst_port.h"
 #include "link_pages.h"
 #include "ui_card_text.h"
+#include "prog_choice.h"
 #include "ui_text.h"
 
 /* Last: its layout macros have short names (ROW0, PITCH, ROW_H) and k
@@ -379,7 +380,7 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
         first = (int16_t)kpn_card_text_id(UI_CARD_AT_KP_MSG);
     } else if (id < FIXED_COUNT) {
         first = k_fixed[id][0];
-        second = k_fixed[id][1];
+        second = (int16_t)prog_choice_text(k_fixed[id][1]);
     } else if (id >= KST_PROG_MSG_SES && id - KST_PROG_MSG_SES < SES_COUNT) {
         first = k_ses[id - KST_PROG_MSG_SES];
         if (arg != 0u && (first == TX_KP_S_WRITE_FAILED

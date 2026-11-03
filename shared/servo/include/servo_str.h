@@ -67,6 +67,9 @@ typedef enum {
     SERVO_STR_START_BUSY,
     SERVO_STR_START_TEST_RUNS,
     SERVO_STR_START_LIMIT_RUNS,
+    /* The rbmod carrier's programming port as the target. */
+    SERVO_STR_START_PROG_5V,
+    SERVO_STR_START_PROG_STEPS,
     /* The TXT report, in the order it is written. */
     SERVO_STR_R_TITLE,
     SERVO_STR_R_RESULT,

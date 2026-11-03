@@ -148,6 +148,43 @@ With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer sho
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 
+### The port on the rbmod carrier
+
+On the [rbmod carrier](Carrier.md#the-programming-port) with an IOmcu of
+protocol 4.36 or later, the PORT row chooses the port as well. Before
+**CONNECT**, a tap on the row's label opens **PROGRAMMING PORT** with
+`PROGP01  GPIO 13`, `PROGP02  GPIO 14`, `PROGP03  GPIO 15` and
+`PROGP04  GPIO 0`. The entry chosen sets SERVO TESTER, the same setting
+as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
+
+- The panel asks the IOmcu for FUNC SERVO PWM on the chosen port and NONE
+  on the other three. The IOmcu's TARGET, the PROGRAM list's port and
+  the KST limit search follow once the port reads SERVO PWM. Until then
+  the tester sends no command: nothing reaches the servo outputs in the
+  port's place.
+- The PORT row reads the port, `PROGP02 GPIO 14  5V FIXED` on the KST
+  row and `PROG PORT 2 GPIO 14  D SERIES` on the Hitec row, or
+  `NO PROG PORT SET`.
+- **CONNECT** without a port says `Use the programming port to program a
+  servo.` and `Tap the PORT row and choose a programming port.`; with an
+  IOmcu older than 4.36 the second line is
+  `Update the IOmcu to protocol 4.36 or later to choose a port.`
+- The list does not open while ARMED or asked to arm, during a test, a
+  sweep or a limit run, or while a programmer holds a port. The state line
+  then says why: `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS`.
+- While PWM04 carries a PWM output, the PROGP04 entry reads
+  `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)` and is not taken.
+- The ports run from M7's fixed 5V on GPIO 21. The tester's pulse goes out
+  only while the PROG 5V box reads ON; a limit run and a servo test say
+  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` while it is off. A servo
+  test's voltage steps do not reach the port: a test on it says
+  `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
+- For the limit run the PROG 5V box stands for the PD mini: SEARCH+PROG
+  and SERVO PULSES are offered with the box ON, and the session's power
+  cycles switch GPIO 21. A PD mini on the servo rails is neither asked nor
+  watched: switching it on or off during the run ends nothing. A run that
+  aborts switches PROG 5V off, not the PD mini.
+
 ## The port
 
 | State | Line on the SERVO tab | The port carries |

@@ -249,6 +249,15 @@ void prog5v_box_render(const prog5v_box_t *b, gfx_canvas_t *c);
 void prog5v_box_left(prog5v_by_t by);
 
 /**
+ * @brief An OFF asked by the bench, not by a box: a limit run on the rbmod
+ *        carrier's programming port that ended in an abort.  Posted
+ *        whoever switched the supply on and whatever holds it; it stands
+ *        over an ON in the same poll.
+ * @param by the screen that asks
+ */
+void prog5v_box_ask_off(prog5v_by_t by);
+
+/**
  * @brief What the boxes asked, once.
  * @param out receives it; NULL drops it
  * @return true when there was something

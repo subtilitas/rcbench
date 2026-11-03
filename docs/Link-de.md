@@ -78,7 +78,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.35. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.36. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -194,6 +194,9 @@ ESC-Einstellungen](LinkEsc-de.md)). Ab 4.35 beantwortet der IOmcu die Op
 READ_HELD, den zweiten Teil eines Lesens von mehr als 16 Registern ([Lesen von
 höchstens 16 Registern](#lesen-von-höchstens-16-registern)); das Panel sendet
 sie keinem älteren IOmcu, der einen Frame mit einer unbekannten Op verwirft.
+Ab 4.36 nimmt der rbmod-Carrier FUNC SERVO PWM auf seinen Programmierports;
+ein älterer Carrier lehnt sie mit BAD_VALUE ab, und das Panel bietet ihm
+keine Wahl des Ports an.
 Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -1483,11 +1486,20 @@ Auf Board 2 hält der IOmcu jede Rolle auf ihrem Pin:
   anderen Pin wird mit BAD_VALUE abgelehnt. Ein Slot mit Treiber NONE wird
   nicht geprüft.
 - PROG: der PIN jedes Ports ist sein eigener Pin (Port 0 GPIO 13, Port 1
-  GPIO 14, Port 2 GPIO 15, Port 3 GPIO 0), und FUNC ist NONE. Ein
-  Programmierport trägt die Leitungsprotokolle von KST und HITEC und kein
-  Signalprotokoll. Ein PIN-Schreiben eines anderen Pins, auch
-  `LINK_PG_PIN_NONE`, und ein FUNC-Schreiben jeder anderen Funktion werden
-  mit BAD_VALUE abgelehnt.
+  GPIO 14, Port 2 GPIO 15, Port 3 GPIO 0). FUNC ist ab jedem Start NONE; ab
+  4.36 nimmt sie NONE oder SERVO PWM, den Puls des Servotesters
+  ([Carrier: Der Programmierport](Carrier-de.md#der-programmierport)). Ein
+  PIN-Schreiben eines anderen Pins, auch `LINK_PG_PIN_NONE`, und ein
+  FUNC-Schreiben einer DShot-Rate werden mit BAD_VALUE abgelehnt; ein
+  Carrier mit 4.35 oder älter lehnt auch SERVO PWM ab. SERVO PWM auf Port 3
+  (GPIO 0) wird abgelehnt, solange PWM04 (GPIO 1, Slice 0) einen PWM-Slot
+  trägt, wie auf jedem Board, und ein auf diesem Slice gebundener PWM-Slot
+  lässt den Port zuerst los. Ein OUTPUTS-Schreiben oder ein BIND-Commit,
+  das einen PWM-Slot auf den Slice eines SERVO-PWM-Ports legt, wird
+  genommen: der Port geht auf FUNC NONE, sein PWM-Bit auf 0 und TARGET auf
+  0, wenn es den Port nennt. Ein Port, den eine KST- oder HITEC-Session
+  hält, geht nicht zurück, und ein solches Schreiben wird mit BAD_VALUE
+  abgelehnt.
 - TX und RX von SUPPLY sind GPIO 7 und GPIO 6, SDA und SCL von SENSE GPIO 16
   und GPIO 17, der Pin von TONE GPIO 22. Ein Schreiben eines anderen Pins
   wird mit BAD_VALUE abgelehnt. Die übrigen Register der Pages folgen ihren

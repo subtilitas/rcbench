@@ -41,6 +41,9 @@ typedef struct {
     bool rail_deaf;            /* it takes no request */
     bool on_rail;              /* the servo is powered by the PD mini's
                                   output (sim_power()) */
+    bool fixed;                /* the supply is the ports' own fixed 5V
+                                  (the rbmod carrier's PROG 5V), read as
+                                  fixed_on and not as a PD mini */
     bool no_pin;               /* the generator has no pin for the port */
     uint8_t ports;             /* the build's ports; 0 is 1 */
     uint8_t pin_of[4];         /* ports past RIG_PORT: their pins, 0 none */
@@ -242,6 +245,11 @@ static inline void rig_feed_now(kst_prog_feed_t *f)
     f->out_ma = f->supply_read ? g_rig.load_ma : 0u;
     f->set_mv = f->supply_read ? g_rig.sup_mv : 0u;
     f->set_ma = f->supply_read ? g_rig.sup_ma : 0u;
+    if (g_rig.fixed) {
+        f->fixed_on = f->supply_read;
+        f->supply_read = false;
+        f->out_mv = f->out_ma = f->set_mv = f->set_ma = 0u;
+    }
 }
 
 /* 1ms: the IOmcu, one exchange, the control task and the card. */

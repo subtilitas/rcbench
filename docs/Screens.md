@@ -5840,15 +5840,34 @@ on the IOmcu's link (board 2).
 
 - Each PROG PORT entry names its pin, `PROGP01 ON GPIO 13`. PIN takes no
   tap and opens no picker.
-- FUNCTION reads `PROGRAMMING` and takes no tap. A programming port
-  carries the KST and Hitec programmers and no signal protocol; FUNC stays
-  NONE.
-- SERVO TESTER and PORT PWM are not drawn.
-- The line under the rows reads
-  `KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04`.
+- FUNCTION takes no tap. It reads `PROGRAMMING` for FUNC NONE and
+  `SERVO PWM` on the port the servo tester drives.
+- With an IOmcu of protocol 4.36 or later, SERVO TESTER and PORT PWM are
+  drawn as on the module. SERVO TESTER PORT n makes the port the tester's
+  and the programmers' port, the same choice as the programmers' PORT row
+  ([Servo programmer: The port on the rbmod carrier](ServoProgrammer.md#the-port-on-the-rbmod-carrier)).
+  The panel then asks the IOmcu for FUNC SERVO PWM on that port and FUNC
+  NONE on the other three. The IOmcu's TARGET follows once the port reads
+  SERVO PWM.
+- The choice is locked under the SERVO TARGET rules: ARMED or asked to
+  arm, a test, a sweep or a limit run, a programmer holding a port. The
+  line under the rows says why: `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS`
+  or `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT`.
+- PROGP04 (GPIO 0) shares PWM slice 0 with PWM04 (GPIO 1). While PWM04
+  carries a PWM output, PROGP04 is not offered, and the line reads
+  `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)`. The binding of PWM01
+  to PWM04 is never changed for a programming port: a PWM protocol given
+  to PWM04 sets PROGP04 back to FUNC NONE.
+- The ports run from M7's fixed 5V on GPIO 21. PORT PWM ON is taken only
+  while the PROG 5V box reads ON; otherwise the line reads
+  `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, and no pulse goes out.
+  The pulse stops when PROG 5V goes off.
+- With an IOmcu older than 4.36, SERVO TESTER and PORT PWM are not drawn,
+  and the line reads `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
 - WATCHED BY names the carrier's INA3221 channel on the ports' 5V,
   `WATCHED BY INA3221 PROG 5V`, while no channel watches the port itself
-  ([Carrier: The current monitor](Carrier.md#the-current-monitor)).
+  ([Carrier: The current monitor](Carrier.md#the-current-monitor)). CH3
+  reads all four ports together.
 
 ### The overview: OFF
 

@@ -94,11 +94,6 @@ static bool fixed_value(const outbind_roles_t *r, uint8_t page, unsigned reg,
         if (reg == (unsigned)LINK_TN_PIN) { *want = r->tap; return true; }
         return false;
     case LINK_PAGE_PROG:
-        if (reg >= (unsigned)LINK_PG_FUNC0
-            && reg < (unsigned)LINK_PG_FUNC0 + LINK_PG_PORTS_MAX) {
-            *want = (uint16_t)LINK_PG_FN_NONE;
-            return true;
-        }
         if (reg >= (unsigned)LINK_PG_PORT0
             && reg < (unsigned)LINK_PG_PORT0
                          + LINK_PG_PORTS_MAX * (unsigned)LINK_PG_STRIDE
@@ -125,8 +120,17 @@ bool board_fix_write_ok(const outbind_roles_t *r, uint8_t page, uint8_t off,
         return false;
     }
     for (unsigned i = 0; i < n; ++i) {
+        const unsigned reg = (unsigned)off + i;
         uint16_t want = 0u;
-        if (fixed_value(r, page, (unsigned)off + i, &want) && in[i] != want) {
+        if (fixed_value(r, page, reg, &want) && in[i] != want) {
+            return false;
+        }
+        /* FUNC: NONE, or SERVO PWM for the tester's pulse and the limit
+         * search (protocol 4.36); never a DShot rate. */
+        if (page == LINK_PAGE_PROG && reg >= (unsigned)LINK_PG_FUNC0
+            && reg < (unsigned)LINK_PG_FUNC0 + LINK_PG_PORTS_MAX
+            && in[i] != (uint16_t)LINK_PG_FN_NONE
+            && in[i] != (uint16_t)LINK_PG_FN_SERVO_PWM) {
             return false;
         }
     }

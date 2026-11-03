@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "log_name.h"
+#include "prog_choice.h"
 #include "rcbench_version.h"
 #include "sensors_rows.h"
 #include "servo_limrun.h"
@@ -308,6 +309,12 @@ int test_blocked(void)
     }
     if (servo_limrun_running(&s.lim)) {
         return SERVO_STR_START_LIMIT_RUNS;
+    }
+    /* The rbmod carrier's programming port: its pulse needs the PROG 5V,
+     * and the steps' voltages reach the servo rails, not the port. */
+    if (prog_choice_carrier() && prog_choice_port() != 0u) {
+        return prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
+                                      : SERVO_STR_START_PROG_STEPS;
     }
     if (!servo_test_drained(&s.test)
         || !servo_limrun_drained(&s.lim) || s.logger_busy) {

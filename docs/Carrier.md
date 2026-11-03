@@ -53,8 +53,44 @@ The position order is set for the layout.
 
 PWM02 (GPIO 4) and PWM03 (GPIO 5) are one PWM (pulse-width modulation)
 slice and run at one frame rate. PWM04 (GPIO 1) shares slice 0 with
-PROGP04 (GPIO 0). A programming port carries no PWM signal on the carrier,
-so the shared slice limits nothing.
+PROGP04 (GPIO 0), and PROGP02 (GPIO 14) shares slice 7 with PROGP03
+(GPIO 15). From protocol 4.36 the servo tester drives the chosen
+programming port's pulse ([The programming port](#the-programming-port)).
+The binding of PWM01 to PWM04 comes first: a PWM output bound on PWM04
+sets PROGP04 back to FUNC NONE, and while PWM04 carries a PWM output,
+PROGP04 takes no pulse. Only the chosen port runs as SERVO PWM, so
+PROGP02 and PROGP03 never pulse together.
+
+## The programming port
+
+The KST and Hitec programmers and the servo tester share one programming
+port, chosen on the panel and kept over a restart. It is the setting
+SERVO TESTER (SET_SERVO_TARGET): 1 to 4 for PROGP01 to PROGP04, 0 for the
+servo outputs. It is chosen in two places:
+
+- the programmers' PORT row, before CONNECT: a tap on the row's label
+  opens PROGP01 to PROGP04 with their GPIO
+  ([Servo programmer: The port on the rbmod carrier](ServoProgrammer.md#the-port-on-the-rbmod-carrier));
+- a PROG PORT entry on SETUP > OUTPUTS, SERVO TESTER PORT n
+  ([Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).
+
+| Rule | Value |
+| --- | --- |
+| IOmcu protocol | 4.36 or later; an older carrier holds every FUNC at NONE, and the panel offers no choice |
+| FUNC of the chosen port | SERVO PWM, asked by the panel; the other three NONE |
+| FUNC taken by the IOmcu | NONE or SERVO PWM; DShot is refused with BAD_VALUE |
+| FUNC at an IOmcu start | NONE on every port; the panel asks for SERVO PWM again |
+| Locked | ARMED or asked to arm, a test, a sweep or a limit run, a programmer holding a port |
+| PROGP04 | not offered while PWM04 carries a PWM output: `PROGP04 SHARES PWM SLICE 0 WITH PWM04 (GPIO 1)` |
+| Pulse | only while the PROG 5V box reads ON; PORT PWM ON, a servo test and a limit run are refused with `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` |
+| Supply | M7's fixed 5V on GPIO 21; a servo test's voltage steps reach the servo rails, not the port, so a test there is refused with `PROG PORTS RUN AT 5V FIXED: NO STEPS` |
+| Current | INA3221 0x40 CH3 reads all four ports together |
+
+A pulse on a programming port runs only while the bank is ARMED. Every
+error, a STOP and a silent link disarm the bank, and the port's next frame
+is 0 (`test_outputs_hw_ports`). Every error, a lost heartbeat and a silent
+link also switch GPIO 21 off. A PROG 5V OFF by hand stops the pulse as
+well: the panel asks for the pulse only while the box reads ON.
 
 ## Power
 
@@ -196,8 +232,9 @@ fixed:
 - SETUP > OUTPUTS shows PWM01 to PWM04 as the four cells of the grid. A
   surface and a throttle protocol on PWM02 and PWM03 together are refused
   by name. The PROG PORT entries name PROGP01 to PROGP04 and their GPIO,
-  offer no pin and no function, and show no tester
-  ([Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).
+  offer no pin and no function, and from protocol 4.36 offer SERVO TESTER
+  and PORT PWM ([The programming port](#the-programming-port);
+  [Screens: On the rbmod carrier](Screens.md#on-the-rbmod-carrier)).
 - SETUP > SENSORS shows Sensor SDA and SCL and Tap pin at the carrier's pins,
   with no keys and no keypad, the SENSOR BUS entry reads
   `GPIO 16 / 17 SOLDERED`, and 0x40 reads fitted with its three channels on

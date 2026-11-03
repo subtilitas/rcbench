@@ -18,6 +18,7 @@
 #include "out_dshot.h"
 #include "out_ppm.h"
 #include "out_pwm.h"
+#include "out_pwm_map.h"
 #include "port_park.h"
 #include "ppm.h"
 
@@ -86,6 +87,29 @@ static void ports_release_dshot(void)
         }
     }
 }
+/**
+ * @brief Every SERVO PWM port on the slice of @p pin let go, held again by
+ * the next outputs_hw_ports() if the slice leaves it room.
+ *
+ * Two channels of one slice run at one rate, and out_pwm_bind() refuses the
+ * second binding at another.  A slot comes first: a port bound earlier on
+ * its slice would otherwise keep the slot unbound.  On the rbmod carrier
+ * PROGP04 (GP0) shares slice 0 with PWM04 (GP1).
+ *
+ * @param pin  The pin of a slot about to be bound as PWM.
+ */
+static void ports_release_pwm_on(uint8_t pin)
+{
+    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        port_state_t *p = &s_port[i];
+        if (p->bound && !p->parked && p->as.driver == OUT_DRIVER_PWM
+            && out_pwm_same_slice(p->as.pin, pin)) {
+            out_pwm_release(p->as.pin);
+            p->bound = false;
+        }
+    }
+}
+
 /**
  * @brief The ports that render their pulse (outputs_hw_ports_drive()).
  */
@@ -304,6 +328,9 @@ void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
         if (s_shadow[i].driver == OUT_DRIVER_NONE
             || (may_bind & (1u << i)) == 0u) {
             continue;
+        }
+        if (s_shadow[i].driver == OUT_DRIVER_PWM) {
+            ports_release_pwm_on(s_shadow[i].pin);
         }
         /*
          * A slot the silicon cannot serve is left unbound, which is the same

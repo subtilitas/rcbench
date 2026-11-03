@@ -28,6 +28,7 @@
 
 #include "esc_wire_panel.h"
 #include "kst_panel_screen_rig.h"
+#include "prog_choice.h"
 #include "ui_board.h"
 
 /* The PORT row carries what CONNECT asks of the supply, where the bench
@@ -874,6 +875,8 @@ TEST_CASE(a_wire_hold_locks_arm_and_drops_the_ask)
     }
     CHECK(armed);
     CHECK(servo_screen_arm_asked());
+    /* The carrier's PORT choice is locked from the ask on. */
+    CHECK(prog_choice_locked());
     ui_router_set_alert(NULL);
     f.rd.held = true;
     esc_wire_panel_feed(&f);

@@ -817,6 +817,12 @@ unsigned prog_port_slots_free(uint16_t *slots)
 
 uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots)
 {
+    return prog_port_slots_check_yield(p, slots, 0u);
+}
+
+uint8_t prog_port_slots_check_yield(const prog_port_t *p,
+                                    const uint16_t *slots, uint8_t yield)
+{
     if (slots == NULL) {
         return LINK_NACK_BAD_VALUE;
     }
@@ -842,6 +848,7 @@ uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots)
             if (r[LINK_OS_PIN] == pin
                 || (r[LINK_OS_DRIVER] == (uint16_t)OUT_DRIVER_PWM
                     && fn_pwm(p->regs, port)
+                    && (yield & (1u << port)) == 0u
                     && out_pwm_same_slice((uint8_t)r[LINK_OS_PIN],
                                           (uint8_t)pin))) {
                 return LINK_NACK_BAD_VALUE;
@@ -849,6 +856,72 @@ uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots)
         }
     }
     return 0u;
+}
+
+uint8_t prog_port_slots_yield(const prog_port_t *p, const uint16_t *slots)
+{
+    uint8_t m = 0u;
+
+    if (p == NULL || slots == NULL) {
+        return 0u;
+    }
+    for (unsigned s = 0; s < LINK_OUT_SLOTS; ++s) {
+        const uint16_t *r = &slots[(size_t)s * LINK_OS_STRIDE];
+
+        if (r[LINK_OS_DRIVER] != (uint16_t)OUT_DRIVER_PWM
+            || r[LINK_OS_PIN] > OUT_MAX_PIN) {
+            continue;
+        }
+        for (unsigned port = 0; port < p->count; ++port) {
+            const uint16_t pin = p->regs[REG(port, LINK_PG_PIN)];
+
+            if (holds(p, port) && fn_pwm(p->regs, port)
+                && r[LINK_OS_PIN] != pin
+                && out_pwm_same_slice((uint8_t)r[LINK_OS_PIN], (uint8_t)pin)) {
+                m |= (uint8_t)(1u << port);
+            }
+        }
+    }
+    return m;
+}
+
+void prog_port_yield(prog_port_t *p, uint8_t ports, prog_port_yield_t *was)
+{
+    if (p == NULL) {
+        return;
+    }
+    if (was != NULL) {
+        was->ports  = ports;
+        was->pwm    = p->regs[LINK_PG_PWM];
+        was->target = p->regs[LINK_PG_TARGET];
+        was->hz     = p->hz;
+    }
+    for (unsigned port = 0; port < p->count; ++port) {
+        if ((ports & (1u << port)) == 0u) {
+            continue;
+        }
+        p->regs[LINK_PG_FUNC(port)] = (uint16_t)LINK_PG_FN_NONE;
+        p->regs[LINK_PG_PWM] &= (uint16_t)~(1u << port);
+        if (p->regs[LINK_PG_TARGET] == port + 1u) {
+            p->regs[LINK_PG_TARGET] = 0u;
+            p->hz = 0u;
+        }
+    }
+}
+
+void prog_port_unyield(prog_port_t *p, const prog_port_yield_t *was)
+{
+    if (p == NULL || was == NULL) {
+        return;
+    }
+    for (unsigned port = 0; port < p->count; ++port) {
+        if ((was->ports & (1u << port)) != 0u) {
+            p->regs[LINK_PG_FUNC(port)] = (uint16_t)LINK_PG_FN_SERVO_PWM;
+        }
+    }
+    p->regs[LINK_PG_PWM]    = was->pwm;
+    p->regs[LINK_PG_TARGET] = was->target;
+    p->hz                   = was->hz;
 }
 
 _Static_assert(LINK_PG_PORT0 + LINK_PG_PORTS_MAX * LINK_PG_STRIDE

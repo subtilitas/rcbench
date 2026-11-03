@@ -456,7 +456,11 @@ static void supply_sample(const supply_state_t *st, bool in_force)
     const servo_test_reading_t r = test_reading_of(st);
     servo_test_reading(&s.test, &r,
                        s.have_feedback ? svs_deg_to_us(s.measured_deg) : 0u);
-    servo_limrun_supply(&s.lim, &r, test_now());
+    /* The carrier's port runs from the PROG 5V: the servo rails' PD mini
+     * is no supply of the run there. */
+    if (!lim_fixed_supply()) {
+        servo_limrun_supply(&s.lim, &r, test_now());
+    }
     test_tell();
     /* The line, the plot and the CURRENT row are the supply's while it is
      * the rail's meter; with the INA3221 as the meter they are fed by its

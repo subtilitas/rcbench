@@ -13,7 +13,9 @@
  * bound at its kbit/s rate and moved by a rate or function change, framed
  * every 1ms only while the bank is armed for the throttle, its frame the
  * throttle, 0 at the rest, and no frame on SAFE, on ARM SURFACE or on
- * STOP; a DShot port no state machine is left for not held.
+ * STOP; a DShot port no state machine is left for not held; a SERVO PWM
+ * port's pulse 0 once the bank disarms; a PWM slot letting go a port on
+ * its slice before it is bound.
  *
  * The pin drivers are fakes that count what they are asked.  The clock is
  * pico_stub/pico/stdlib.h's.
@@ -120,10 +122,13 @@ void out_pwm_release(uint8_t pin)
     ++g_pwm_releases;
     g_last_pin = pin;
 }
+/* The last pulse written, as the pin carries it: 0 is no pulse. */
+static uint16_t g_pwm_last_us;
+
 void out_pwm_write(uint8_t pin, uint16_t pulse_us)
 {
     (void)pin;
-    (void)pulse_us;
+    g_pwm_last_us = pulse_us;
     ++g_pwm_writes;
 }
 bool out_pwm_write_stamped(uint8_t pin, uint16_t pulse_us, uint64_t *frame_us)
@@ -205,6 +210,59 @@ TEST_CASE(a_parked_port_renders_no_pulse_armed_or_not)
     counts_zero();
     outputs_hw_service(&o);
     CHECK_EQ(g_pwm_writes, 1);
+}
+
+/*
+ * The pulse on a SERVO PWM port follows the bank's arm.  Every error, a
+ * STOP and a silent link disarm the bank (the failsafe's outputs_off(), the
+ * panel's error stop), in the same pass that cuts the rbmod carrier's PROG
+ * 5V: the port's next frame is 0.
+ */
+TEST_CASE(a_servo_pwm_port_drops_its_pulse_when_the_bank_disarms)
+{
+    outputs_t o;
+    outputs_init(&o, 0u);
+    outputs_hw_init();
+    CHECK(outputs_set_role(&o, 9u, OUT_ROLE_SURFACE));
+    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 2000u));
+    CHECK(outputs_set(&o, 9u, 500u, 0u));
+    ports(13u, 0xFFu, 0u);           /* port 0 SERVO PWM on channel 9 */
+    outputs_hw_ports_drive(1u);
+    outputs_arm(&o, true, 0u);
+    outputs_step(&o, 1000u);
+    outputs_hw_service(&o);
+    CHECK(g_pwm_last_us >= 1000u);
+    outputs_arm(&o, false, 0u);
+    outputs_hw_service(&o);
+    CHECK_EQ(g_pwm_last_us, 0u);
+    /* And with the drive bit gone, armed or not. */
+    outputs_arm(&o, true, 0u);
+    outputs_hw_ports_drive(0u);
+    outputs_hw_service(&o);
+    CHECK_EQ(g_pwm_last_us, 0u);
+}
+
+/*
+ * A slot bound as PWM lets go a SERVO PWM port on its slice first: the
+ * rbmod carrier's PWM04 (GP1) beside PROGP04 (GP0), slice 0.  The port is
+ * held again by the next outputs_hw_ports() if the slice leaves it room.
+ */
+TEST_CASE(a_pwm_slot_lets_go_a_port_on_its_slice_first)
+{
+    outputs_t o;
+    outputs_init(&o, 0u);
+    outputs_hw_init();
+    ports(0u, 14u, 0u);              /* GP0 and GP14, both SERVO PWM */
+    CHECK_EQ(outputs_hw_ports_bound(), 3u);
+    const out_slot_t pwm = { .driver = OUT_DRIVER_PWM, .first_channel = 0,
+                             .channels = 1, .pin = 1, .rate_hz = 333 };
+    CHECK(outputs_configure(&o, 0u, &pwm));
+    const uint16_t rate[OUT_MAX_SLOTS] = { 333u };
+    counts_zero();
+    outputs_hw_apply(&o, rate);
+    CHECK_EQ(g_pwm_releases, 1);     /* GP0, not GP14 */
+    CHECK_EQ(outputs_hw_ports_bound(), 2u);
+    CHECK(outputs_hw_bound(0u));
 }
 
 TEST_CASE(a_function_change_lets_go_the_old_way_first)
@@ -617,6 +675,8 @@ int main(void)
 {
     RUN(a_none_port_is_parked_and_held_without_the_generator);
     RUN(a_parked_port_renders_no_pulse_armed_or_not);
+    RUN(a_servo_pwm_port_drops_its_pulse_when_the_bank_disarms);
+    RUN(a_pwm_slot_lets_go_a_port_on_its_slice_first);
     RUN(a_function_change_lets_go_the_old_way_first);
     RUN(a_pin_the_chip_has_not_is_not_held_and_no_pin_lets_go);
     RUN(a_session_takes_a_parked_pin_and_parks_it_again);

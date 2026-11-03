@@ -458,6 +458,58 @@ uint8_t prog_port_channel(uint8_t port);
 uint8_t prog_port_slots_check(const prog_port_t *p, const uint16_t *slots);
 
 /**
+ * @brief As prog_port_slots_check(), with the ports in @p yield judged as
+ *        FUNC NONE: what the page holds once prog_port_yield() has run.
+ *
+ * @param p     The port model, or NULL.
+ * @param slots The OUTPUTS slot registers.
+ * @param yield Bit n for port n.
+ * @return 0, or LINK_NACK_BAD_VALUE as prog_port_slots_check().
+ */
+uint8_t prog_port_slots_check_yield(const prog_port_t *p,
+                                    const uint16_t *slots, uint8_t yield);
+
+/**
+ * @brief The SERVO PWM ports a PWM slot of @p slots shares a slice with, on
+ *        another pin: the ports that give way on a board with soldered pins
+ *        (prog_port_yield()), where the binding of the servo outputs comes
+ *        first.
+ *
+ * @param p     The port model, or NULL.
+ * @param slots The OUTPUTS slot registers, as prog_port_slots_check().
+ * @return Bit n for port n; 0 for a NULL argument.
+ */
+uint8_t prog_port_slots_yield(const prog_port_t *p, const uint16_t *slots);
+
+/** @brief What prog_port_yield() changed, for prog_port_unyield(). */
+typedef struct {
+    uint8_t  ports;  /**< the ports that gave way, bit n for port n */
+    uint16_t pwm;    /**< LINK_PG_PWM before                        */
+    uint16_t target; /**< LINK_PG_TARGET before                     */
+    uint16_t hz;     /**< the rate before                           */
+} prog_port_yield_t;
+
+/**
+ * @brief Ports @p ports back to FUNC NONE, their pulse off, and the TARGET 0
+ *        when it names one of them: what a binding of the rbmod carrier's
+ *        outputs does to a SERVO PWM port on its slice.
+ *
+ * @param p     The port model; NULL is ignored.
+ * @param ports Bit n for port n, each a SERVO PWM port.
+ * @param was   Takes what changed, for prog_port_unyield(); may be NULL.
+ */
+void prog_port_yield(prog_port_t *p, uint8_t ports, prog_port_yield_t *was);
+
+/**
+ * @brief Undo prog_port_yield(): the ports SERVO PWM again, the pulse bits,
+ *        TARGET and rate as before.  For a binding the silicon refused.
+ *
+ * @param p   The port model; NULL is ignored.
+ * @param was What prog_port_yield() recorded; NULL is ignored.
+ */
+void prog_port_unyield(prog_port_t *p, const prog_port_yield_t *was);
+
+/**
  * @brief Unbinds every slot of @p slots whose channel range reaches a port's
  *        bank channel, for a stored page read at start.
  *

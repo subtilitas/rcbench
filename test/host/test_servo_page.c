@@ -233,6 +233,25 @@ TEST_CASE(a_port_sharing_a_slice_takes_only_50_hz)
 }
 
 /*
+ * A rate a refused change took comes back as it was, unchecked: port 9 at
+ * 333Hz, the standard ports and port 9 again read 0, the restore 333.
+ */
+TEST_CASE(a_restored_rate_is_the_rate_before)
+{
+    fresh(false);
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK_EQ(frame_hz(333u), 0u);
+    const uint16_t was = servo_page_hz(&pg);
+    CHECK(servo_page_target(&pg, &o, 0u, 0u));
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK_EQ(servo_page_hz(&pg), 0u);
+    servo_page_restore_hz(&pg, was);
+    CHECK_EQ(servo_page_hz(&pg), 333u);
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 333u);
+    servo_page_restore_hz(NULL, 50u);
+}
+
+/*
  * A change of target returns the rate to 0, so the new target starts at
  * its own rate and never at a faster one meant for the old: the standard
  * ports at 400Hz, then port 9, reads 0; port 9 at 300Hz, named again,
@@ -1154,5 +1173,6 @@ int main(void)
     RUN(a_hold_ends_on_500_ms_of_silence_across_the_tick_wrap);
     RUN(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap);
     RUN(a_sweep_needs_the_surfaces_armed);
+    RUN(a_restored_rate_is_the_rate_before);
     return test_summary("servo_page");
 }

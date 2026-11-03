@@ -113,6 +113,12 @@ static void down(const touch_event_t *evt)
             return;
         }
     }
+    /* On the carrier the PORT row's label opens the ports' list. */
+    const row_t *pr = kpn_port_pick_row();
+    if (pr != NULL && gfx_rect_contains(kpn_row_rect(pr), x, y)) {
+        take(evt, P_PORT, -1);
+        return;
+    }
     if (kpn_notes_paged_at(x, y)) {
         take(evt, P_NOTES, -1);
     }
@@ -256,6 +262,14 @@ static void rest(const touch_event_t *evt)
             }
         }
         break;
+    case P_PORT: {
+        const row_t *pr = kpn_port_pick_row();
+
+        if (pr != NULL && gfx_rect_contains(kpn_row_rect(pr), x, y)) {
+            kpn_port_list();
+        }
+        break;
+    }
     case P_CHOICE:
         if (k.ch.open && which < k.ch.count
             && gfx_rect_contains(kst_panel_choice_rect(which), x, y)) {

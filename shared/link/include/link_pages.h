@@ -166,8 +166,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 35, LINK_OP_READ_HELD. */
-#define LINK_PROTOCOL_MINOR 35u
+/** @brief The minor this build speaks: 36, SERVO PWM on the rbmod carrier's
+ *         programming ports. */
+#define LINK_PROTOCOL_MINOR 36u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -373,6 +374,17 @@ typedef enum {
  * one exchange from it.
  */
 #define LINK_MINOR_READ_HELD 35u
+
+/**
+ * @brief The first minor whose rbmod carrier takes FUNC SERVO PWM on its
+ *        programming ports.
+ *
+ * A port's FUNC there is NONE or SERVO PWM (board_fix.h): the servo tester
+ * and the limit search drive the port's pulse.  An older carrier holds FUNC
+ * at NONE and refuses SERVO PWM with LINK_NACK_BAD_VALUE, so the panel
+ * offers the choice of a programming port only to 4.36 or later.
+ */
+#define LINK_MINOR_CARRIER_PWM 36u
 
 /* ----------------------------------------------------------------- outputs */
 

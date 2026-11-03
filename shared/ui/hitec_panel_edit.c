@@ -21,6 +21,7 @@
 #include "hitec_rx_link.h"
 #include "link_pages.h"
 #include "pdmini.h"
+#include "prog_choice.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_board.h"
@@ -580,13 +581,50 @@ static void list_done(hitec_prog_t *p, int kind, int value)
     }
 }
 
+const hpn_row_t *hpn_port_pick_row(void)
+{
+    if (!prog_choice_offered()
+        || hitec_prog_state(&hp.prog) != HITEC_PROG_PWM) {
+        return NULL;
+    }
+    for (int i = 0; i < HP_ROW_COUNT; ++i) {
+        const hpn_row_t *r = &hpn_rows[i];
+
+        if (r->kind == K_ACT && r->what == A_PORT
+            && r->page == hp.tabs.selected && hpn_row_shown(r)) {
+            return r;
+        }
+    }
+    return NULL;
+}
+
+void hpn_port_list(void)
+{
+    char label[HITEC_PANEL_LINE];
+
+    if (prog_choice_locked()) {
+        return;                 /* the state line says why */
+    }
+    hpn_choice_open(C_PORT, TR(PC_TITLE));
+    hp.ch.current = (int)prog_choice_port();
+    for (uint8_t port = 1u; port <= LINK_PG_PORTS_MAX; ++port) {
+        /* A port an output's slice holds says so in its entry. */
+        if (!prog_choice_refusal(port, label, sizeof(label))) {
+            prog_choice_entry(port, label, sizeof(label));
+        }
+        hpn_choice_add(label, (int)port);
+    }
+}
+
 void hpn_choice_done(int value)
 {
     hitec_prog_t *p = &hp.prog;
     const int kind = hp.ch.kind;
 
     hp.ch.open = false;
-    if (kind == C_SERIES) {
+    if (kind == C_PORT) {
+        (void)prog_choice_pick((uint8_t)value);
+    } else if (kind == C_SERIES) {
         if (hitec_prog_series_set(p, (uint8_t)value)) {
             options_keep();
         }
