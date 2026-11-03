@@ -1526,7 +1526,11 @@ Feld bleibt unter den Programmern für KST und Hitec. Das Verlassen von
 SERVO schaltet 5V ab, die das Feld auf SERVO eingeschaltet hat, außer ein
 Port hält sie. Mit dem Modell als Netzteil steht die Pille SIMULIERT unter
 dem Feld. SUPPLY zeigt dasselbe Feld ([Netzteil](#netzteil)); die Regeln
-stehen in [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v).
+stehen in [Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v). Zwei
+Fenster unter 3000mV, solange das ON des Felds steht, sind ein Fehler:
+SAFE, alle Ausgänge aus, und
+`PROG 5V ausgefallen: INA3221 0x40 CH3 las 0.12V trotz EIN. Alle Ausgänge aus.`
+im Band ([Carrier, PROG 5V ausgefallen](Carrier-de.md#prog-5v-ausgefallen)).
 
 ![SERVO auf dem Carrier](img/de/servo-rbmod.png)
 
@@ -6819,7 +6823,7 @@ treibt nichts und nimmt keinen Tipp.
 | `WEITERE STECKER` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NICHT BETRIEBEN`), J6 PD MINI, J9 TAP, PROG 5V EN an keinem Stecker | der Name, was er trägt, sein GPIO |
 
 Die Zeile unter den Spalten lautet
-`EIN BOARD REV 1 BRAUCHT ZWEI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.`
+`EIN BOARD REV 1 BRAUCHT DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.`
 ([Carrier: Nacharbeit Rev 1](Carrier-de.md#nacharbeit-rev-1)).
 
 Ein Protokoll, das unter OUTPUTS gebunden oder gelöst wird, und ein

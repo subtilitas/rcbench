@@ -209,6 +209,7 @@ TRACKED = [
     "shared/safety/frame_watch.c",
     "shared/safety/error_stop.c",
     "shared/safety/error_sites.c",
+    "shared/safety/prog5v_lost.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_sync.c",
     "shared/servo/servo_sweep.c",

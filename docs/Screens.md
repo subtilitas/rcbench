@@ -1399,7 +1399,10 @@ under the KST and Hitec programmers. Leaving SERVO switches off a 5V
 SERVO's box switched on, unless a port holds it. With the model as the
 supply the SIMULATED pill sits under the box. SUPPLY shows the same box
 ([Supply](#supply)); the rules are in
-[Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box).
+[Carrier, The PROG 5V box](Carrier.md#the-prog-5v-box). Two windows under
+3000mV while the box's ON stands are an error: SAFE, every output off, and
+`PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.` on
+the band ([Carrier, PROG 5V lost](Carrier.md#prog-5v-lost)).
 
 ![SERVO on the carrier](img/servo-rbmod.png)
 
@@ -6219,7 +6222,7 @@ drives nothing and takes no tap.
 | `OTHER CONNECTORS` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NOT DRIVEN`), J6 PD MINI, J9 TAP, PROG 5V EN on no connector | the name, what it carries, its GPIO |
 
 The line under the columns reads
-`A REV 1 BOARD NEEDS TWO CHANGES BY HAND. THE HELP PAGE LISTS THEM.`
+`A REV 1 BOARD NEEDS THREE CHANGES BY HAND. THE HELP PAGE LISTS THEM.`
 ([Carrier: Rev 1 rework](Carrier.md#rev-1-rework)).
 
 A protocol bound or let go on OUTPUTS, and a change of board, repaint the

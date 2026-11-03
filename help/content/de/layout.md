@@ -29,7 +29,7 @@ J3 HEARTBEAT auf GPIO 3, J5 SENSOR I2C auf GPIO 16 und 17, J4 I2C 2 auf GPIO 18 
 
 ## Boards Rev 1
 
-Die Zeile unter den Spalten lautet `EIN BOARD REV 1 BRAUCHT ZWEI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` Die zwei Änderungen stehen in [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1): PROGP03 wandert von GPIO 26 auf GPIO 15, und ein Pull-down hält die 5V der Programmierports aus, solange GPIO 21 nicht getrieben ist. Ein Board Rev 2 trägt beide im Kupfer.
+Die Zeile unter den Spalten lautet `EIN BOARD REV 1 BRAUCHT DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` Die drei Änderungen stehen in [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1): PROGP03 wandert von GPIO 26 auf GPIO 15; ein Pull-down hält die 5V der Programmierports aus, solange GPIO 21 nicht getrieben ist; und eine Z-Diode 5.6V 1W vom Ausgang von M7 nach GND verhindert die Ausfälle durch ein bremsendes Servo. Die Firmware verlässt sich nicht auf die dritte. Rev 2 trägt die ersten zwei im Kupfer; die dritte ist eine offene Designfrage.
 
 ## Verwandte Seiten
 

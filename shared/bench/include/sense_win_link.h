@@ -158,12 +158,15 @@ bool sense_win_link_window(const sense_win_link_t *s, uint16_t window,
  * @param c  The channel, 0 to 11.
  * @param mv Receives the mean bus voltage, mV; NULL is ignored.
  * @param ma Receives the mean current, mA, signed; NULL is ignored.
+ * @param window Receives the window's number, the page's WINDOW register,
+ *               for a reader that takes each window once (the PROG 5V
+ *               watch, prog5v_lost.h); NULL is ignored.
  * @return true when the page's last read holds a closed window with both
  *         current and voltage samples of @p c; false otherwise, for no
  *         link, no page, @p c past 11 and @p s NULL.
  */
 bool sense_win_link_last(const sense_win_link_t *s, unsigned c, uint16_t *mv,
-                         int16_t *ma);
+                         int16_t *ma, uint16_t *window);
 
 /**
  * @brief Each channel's highest current of the windows read since the last

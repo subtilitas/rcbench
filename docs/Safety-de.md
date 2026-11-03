@@ -129,6 +129,7 @@ IOmcu handelt selbst, wenn einer der beiden ausfällt.
 | Ein Schreiben auf die Karte scheitert während eines Laufs, oder das letzte Festschreiben oder Schließen des Lauf-Logs oder der CSV-Datei (comma-separated values) des automatischen Tests danach, einmal je Lauf | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben ([unten](#die-versorgung-eines-programmierports)) | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel (`card_faults_follow()`), der IOmcu für das Schreiben |
 | Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, der IOmcu für das Schreiben |
 | Ein INA3221-Kanal über seiner Grenze | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, beim Lesen von `OVER` alle 200ms, mit einer Konsolenzeile je Kanal ([Bildschirme](Screens-de.md#sensors-die-ina3221-bausteine)); der IOmcu für das Schreiben |
+| Die 5V der Programmierports auf dem Carrier fallen unter dem ON des Panels aus: 2 neue INA3221-Fenster unter 3000mV, 500ms oder mehr nach dem ON ([Carrier, PROG 5V ausgefallen](Carrier-de.md#prog-5v-ausgefallen)) | SAFE | keine offen: die 5V einer Sitzung werden nicht beobachtet | aus | das Panel, mit einer Warnung und einer Konsolenzeile; der IOmcu für das OFF von PROG_SUPPLY |
 | Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
 | Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus, wo er sich schalten lässt: der Schutz des Moduls und ein absinkender Eingang sofort, auch während eines Schreibens; der Rest nach dem Schreiben eines Ports, höchstens 10000ms | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
 | Ein KST- oder Hitec-Vorgang endet in einer Störung des Servos oder der Leitung (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), oder die ESC_WIRE-Page meldet `FAULT` oder erreicht `NOT_BACK` (`esc_link_faults()`) | schon SAFE: eine Sitzung läuft auf einem Prüfstand in SAFE | die Versorgung des Ports aus; der Vorgang ist zu Ende | aus | das Panel (`prog_faults_follow()`) |
@@ -291,8 +292,7 @@ ab, noch setzt er die Spannung eines Power-Cycle, und die Grenzen der
 Ansicht SUPPLY begrenzen nur die Servoschienen, kein VERBINDEN. Sind die
 5V als ein gelesen, schalten VERBINDEN und VERLASSEN nach einem Schreiben
 sie aus und wieder ein, wie den Ausgang des PD mini; sind sie aus,
-schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln
-der Page SUPPLY für einen Port:
+schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln der Page SUPPLY für einen Port:
 
 - Ein Fehler schreibt das OFF der Page, wer immer sie hält und was immer
   das Panel von ihr liest (`error_sites.c`, `prog_supply_link_cut()`). Ein

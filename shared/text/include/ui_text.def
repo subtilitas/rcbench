@@ -1315,8 +1315,8 @@ UI_TEXT(LAYOUT_NOT_DRIVEN, 0,
     "NOT DRIVEN",
     "NICHT BETRIEBEN")
 UI_TEXT(LAYOUT_REWORK, 0,
-    "A REV 1 BOARD NEEDS TWO CHANGES BY HAND. THE HELP PAGE LISTS THEM.",
-    "EIN BOARD REV 1 BRAUCHT ZWEI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.")
+    "A REV 1 BOARD NEEDS THREE CHANGES BY HAND. THE HELP PAGE LISTS THEM.",
+    "EIN BOARD REV 1 BRAUCHT DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.")
 UI_TEXT(LAYOUT_NONE, 0,
     "THIS BOARD HAS NO SOLDERED PINS.",
     "DIESES BOARD HAT KEINE VERLÖTETEN PINS.")
@@ -4801,6 +4801,9 @@ UI_TEXT(ALERT_P5_NO_ANSWER, 94,
 UI_TEXT(ALERT_P5_TOUCH, 94,
     "Touch signal lost while switching on. PROG ports 5V off.",
     "Touch-Signal beim Einschalten verloren. PROG-Ports 5V aus.")
+UI_TEXT(ALERT_P5_LOST, 94,
+    "PROG 5V lost: INA3221 0x%02X CH%u read %u.%02uV while ON. All outputs off.",
+    "PROG 5V ausgefallen: INA3221 0x%02X CH%u las %u.%02uV trotz EIN. Alle Ausgänge aus.")
 UI_TEXT(ALERT_SUPPLY_CHANGED, 94,
     "Supply changed in SETUP. Output off.",
     "Netzteil in SETUP geändert. Ausgang aus.")

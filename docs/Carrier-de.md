@@ -164,6 +164,56 @@ wie es AUSGANG EIN des PD mini beurteilt:
 - Firmware-Installation, IOmcu-Update, Flash-Schreiben und WLAN zählen das
   ON ab dem Einreihen in die Warteschlange (`supplies_live_or_coming()`).
 
+### PROG 5V ausgefallen
+
+Der Regler von M7, am ehesten ein JoulWatt JW5068A (am Modul nicht
+bestätigt), schaltet seinen Ausgang bei Überspannung (über 6.0V für 20us)
+oder Unterspannung (unter 3.25V für 200us) ab und hält ihn aus. Er startet
+erst wieder, wenn EN umschaltet. Die bekannte Ursache auf dem Carrier ist
+die Abschaltung bei Überspannung: ein Servo an einem Programmierport, das
+bremst, speist Energie in die 5V zurück, die M7 nicht aufnehmen kann. Eine
+Z-Diode an der Schiene nimmt sie auf einer nachgearbeiteten Platine auf
+([Nacharbeit Rev 1](#nacharbeit-rev-1), Punkt 3). Die Page PROG_SUPPLY
+liest GPIO 21 dann weiter als ein.
+
+Das Panel beobachtet 0x40 CH3, solange sein eigenes ON steht: die Page
+liest die 5V ein oder hat das ON bestätigt, kein Programmierport hält sie,
+und der Heartbeat läuft. Zwei neue Fenster von 50ms nacheinander mit einer
+mittleren Busspannung unter 3000mV, beide 500ms oder mehr nach dem ON
+gelesen, sind ein Fehler des Prüfstands:
+
+- SAFE, alle Ausgänge aus und das OFF der Page
+  ([Sicherheit, Fehler](Safety-de.md#fehler)). Das nächste PROG 5V EIN
+  schaltet EN um und hebt die Abschaltung von M7 auf.
+- Das Band: `PROG 5V ausgefallen: INA3221 0x40 CH3 las 0.12V trotz EIN.
+  Alle Ausgänge aus.`
+- Die Konsole, englisch: `PROG 5V lost: INA3221 0x40 CH3 read 0.12V,
+  0.08V in 2 windows, 640ms after ON. All outputs off.`
+- Ein Fehler je ON: keiner mehr, bis die 5V aus und wieder ein waren.
+
+Unter 3.25V für 200us hat der Regler laut Datenblatt abgeschaltet, und ein
+abgeschalteter Ausgang fällt auf nahe 0V. 3000mV und zwei Fenster halten
+das Absinken eines belasteten Ports vom Auslösen ab. Jedes Fenster zählt
+einmal, nach seiner Nummer: das Panel liest die Page einmal je Abfrage,
+etwa alle 50ms, und der IOmcu schließt alle 50ms ein Fenster, also kann
+ein Fenster zweimal gelesen werden. Ein verlangtes AUS, von Hand oder durch
+einen Fehler, startet die 500ms neu: die Page liest die 5V bis zu ihrem
+nächsten Lesen als ein, höchstens 200ms.
+Die Regel ist `shared/safety/prog5v_lost.c` unter `test_prog5v_lost`;
+`test_prog5v_wire` treibt sie mit den Pages wie das Panel.
+
+Aktuelle Einschränkungen:
+
+- Ohne einen INA3221-Kanal, der PROG 5V beobachtet, gibt es keine
+  Beobachtung: keine gültige Map mit einem Kanal für PROG 5V, oder kein
+  gelesenes Fenster dieses Kanals (das Bauteil offline, der Link weg).
+  Eine Platine ohne den Schalter PROG_SUPPLY hat auch keine.
+- Solange eine KST-, Hitec- oder ESC-Wire-Sitzung die 5V hält, gibt es
+  keine Beobachtung: die Sitzung schaltet sie selbst aus und ein.
+- Die Erkennungszeit auf der Hardware ist nicht gemessen. Nach der Regel
+  sind es 2 neue Fenster nach dem Ausfall, etwa 100ms, dazu die 500ms
+  nach dem ON.
+
 ![SUPPLY auf dem Carrier](img/de/supply-rbmod.png)
 
 ![SERVO auf dem Carrier, das Feld PROG 5V unter PD MINI](img/de/servo-rbmod.png)
@@ -260,11 +310,23 @@ fest:
 
 ## Nacharbeit Rev 1
 
-Jede Platine der Rev 1 braucht zwei Änderungen von Hand. Das Image des
-Carriers setzt beide voraus. Eine Platine der Rev 2 trägt die zwei
-Änderungen im Kupfer.
+Jede Platine der Rev 1 braucht drei Änderungen von Hand. Das Image des
+Carriers setzt die Punkte 1 und 2 voraus; auf Punkt 3 verlässt es sich
+nicht. Rev 2 trägt die Punkte 1 und 2 im Kupfer. Punkt 3 ist für Rev 2 eine
+offene Designfrage: ein Wandler, der nicht abschaltet, oder eine Klemmung
+im Kupfer.
 
 | # | Änderung | Grund | Die Firmware verlässt sich darauf |
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 Position 4, über R4) wechselt von GPIO 26 auf GPIO 15: die Leiterbahn wird unter dem Serienwiderstand R4 getrennt, und ein Fädeldraht läuft von R4 zu GPIO 15. | GPIO 26 ist ein ADC-Pin und nicht 5V-fest. Ein Pull-up von Hitec oder KST legt die Servoversorgung auf die Programmierleitung. | PROG PORT 3 ist auf jedem Carrier GPIO 15. GPIO 26 bleibt unbenutzt. |
 | 2 | Ein Pull-down von 2kΩ bis 5kΩ von EN an M7 (das Netz von GPIO 21) nach GND. | EN des Buck-Moduls liest offen als an. Ohne den Pull-down sind die 5V der Programmierports an, solange der IOmcu im Reset, im BOOTSEL oder ohne Versorgung ist. | Die Versorgung der Programmierports ist aus, solange GPIO 21 nicht high getrieben wird. |
+| 3 | Eine Z-Diode 5.6V 1W vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene. | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6.0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
+
+Grenzen von Punkt 3:
+
+- Die Überspannungsschwelle von M7 liegt bei 115% bis 125% des Ausgangs,
+  5.75V bis 6.25V bei 5.00V. Eine Z-Diode 5.6V mit ±5% leitet bei 5.32V
+  bis 5.88V.
+- Über einige hundert mA Rückspeisung steigt die Klemmspannung über die
+  Schwelle, also kann ein größeres Servo M7 weiter abschalten (nicht
+  gemessen).
