@@ -850,7 +850,7 @@ TEST_CASE(the_csv_reads_back_in_the_viewer_old_and_new)
         log_csv_opts_default(&opts);
         log_analysis_t an;
         CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
-        const int enc = (variant == 2u) ? 2 : 0;
+        const int enc = (variant == 2u) ? 3 : 0;
         CHECK_EQ(an.n_columns, (int)COLS + enc);
         CHECK_EQ(an.delimiter, ';');
         CHECK_EQ(an.ragged_rows, 0);
@@ -876,9 +876,10 @@ TEST_CASE(the_csv_reads_back_in_the_viewer_old_and_new)
                  "set (V);voltage (V);limit (A);current (A);power (W);"
                  "mode;travel (ms);meter;window;current max (A);"
                  "current min (A);voltage min (V);clipped");
-    CHECK_EQ(strlen(servo_test_csv_header_enc()), 219u);
+    CHECK_EQ(strlen(servo_test_csv_header_enc()), 234u);
     CHECK(strstr(servo_test_csv_header_enc(),
-                 ";travel (ms);angle (deg);travel angle (ms);meter;window;")
+                 ";travel (ms);angle (deg);travel angle (ms);angle gap (ms);"
+                 "meter;window;")
           != NULL);
 
     static const struct {

@@ -297,7 +297,7 @@ void servo_screen_encoder(const servo_test_enc_t *e)
     }
     /* A reading that was queued before the link went down is not the
      * angle now. */
-    const servo_test_enc_t none = { .valid = false };
+    const servo_test_enc_t none = { .valid = false, .taken_ms = test_now() };
     if (!s.link_up) {
         e = &none;
     }
@@ -307,6 +307,8 @@ void servo_screen_encoder(const servo_test_enc_t *e)
         s.enc_raw = e->raw;
     }
     servo_test_encoder(&s.test, e);
+    servo_limrun_encoder(&s.lim, e);
+    test_tell();
     /* Redrawn only when the digits change: tenths of a degree. */
     const int q = e->valid ? (int)lroundf(enc_deg_now() * 10.0f) : 0x7FFF;
     if (q != s.shown_q_enc) {
@@ -685,7 +687,8 @@ void servo_screen_set_link(bool up)
         test_end_now(SERVO_TEST_AB_LINK);
         /* The encoder's last angle is not the horn's now: the dashes, and
          * no ENC CENTRE from it, until a reading arrives with the link. */
-        const servo_test_enc_t none = { .valid = false };
+        const servo_test_enc_t none = { .valid = false,
+                                        .taken_ms = test_now() };
         s.enc_valid     = false;
         s.enc_no_magnet = false;
         servo_test_encoder(&s.test, &none);
