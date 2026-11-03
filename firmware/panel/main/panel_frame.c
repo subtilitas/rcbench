@@ -513,8 +513,13 @@ void panel_frame_loop(void)
         if (ui_router_take_stop()) {
             atomic_store(&s_stop_request, true);
         }
-        /* And the reset's hold, a flag for the same reason. */
+        /* And the reset's hold, a flag for the same reason, with the
+         * STOPs this side had seen: a later one refuses it. */
         if (stop_hold_take_reset()) {
+            snap_lock();
+            const uint32_t pressed = s_snap.pressed;
+            snap_unlock();
+            atomic_store(&s_stop_reset_pressed, (unsigned)pressed);
             atomic_store(&s_stop_reset_request, true);
         }
 

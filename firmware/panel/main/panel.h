@@ -262,6 +262,9 @@ extern stop_latch_t s_stop_latch;
 /** @brief The reset's hold completed (stop_hold_take_reset()): render side
  *         sets, control task takes (stop_reset_service()). */
 extern atomic_bool  s_stop_reset_request;
+/** @brief The STOPs pressed as the render side saw them when the hold
+ *         completed; stored before s_stop_reset_request. */
+extern atomic_uint  s_stop_reset_pressed;
 void stop_reset_service(bool link_up);
 
 /*

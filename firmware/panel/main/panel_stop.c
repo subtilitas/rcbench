@@ -19,6 +19,7 @@
 
 stop_latch_t s_stop_latch;
 atomic_bool  s_stop_reset_request;
+atomic_uint  s_stop_reset_pressed;
 
 /**
  * @brief One register of the IOmcu, read.
@@ -92,8 +93,12 @@ void stop_reset_service(bool link_up)
 {
     const uint32_t now = now_ms();
     (void)stop_latch_follow(&s_stop_latch, arming_pressed_count(&s_arm), now);
+    /* A STOP pressed after the hold completed, which the hold never saw,
+     * refuses the request: the count it carries is older. */
     if (atomic_exchange(&s_stop_reset_request, false)) {
-        (void)stop_latch_ask(&s_stop_latch, arming_stopped(&s_arm), now);
+        (void)stop_latch_ask(&s_stop_latch, arming_stopped(&s_arm),
+                             (uint32_t)atomic_load(&s_stop_reset_pressed),
+                             now);
     }
     const bool confirmed = stop_latch_read_due(&s_stop_latch, now)
                            && everything_off(link_up);

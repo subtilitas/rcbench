@@ -55,9 +55,10 @@ bool stop_latch_follow(stop_latch_t *l, uint32_t pressed, uint32_t now_ms)
     return was;
 }
 
-bool stop_latch_ask(stop_latch_t *l, bool latched, uint32_t now_ms)
+bool stop_latch_ask(stop_latch_t *l, bool latched, uint32_t pressed,
+                    uint32_t now_ms)
 {
-    if (l == NULL || !latched || l->waiting) {
+    if (l == NULL || !latched || l->waiting || pressed != l->pressed_seen) {
         return false;
     }
     l->waiting  = true;

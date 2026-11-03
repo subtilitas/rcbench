@@ -143,13 +143,21 @@ bool stop_latch_follow(stop_latch_t *l, uint32_t pressed, uint32_t now_ms);
 
 /**
  * @brief The hold of STOP completed: ask for the reset.
+ *
+ * @p pressed is the count of STOPs pressed as the side that saw the hold
+ * last had it.  A STOP pressed since, between the hold and this call, is
+ * one the hold never saw: the request is refused, as one older than the
+ * last STOP.  Call after stop_latch_follow() in the same pass.
  * @param l       State.
  * @param latched arming_stopped(): a stop stands.
+ * @param pressed arming_pressed_count() as the hold's side last read it.
  * @param now_ms  Current time, in milliseconds.
  * @return true when the reset now waits; false with no stop standing, with
- *         one already waiting, and for NULL.
+ *         one already waiting, for a request older than the last STOP, and
+ *         for NULL.
  */
-bool stop_latch_ask(stop_latch_t *l, bool latched, uint32_t now_ms);
+bool stop_latch_ask(stop_latch_t *l, bool latched, uint32_t pressed,
+                    uint32_t now_ms);
 
 /**
  * @brief An error while the latch stands: a reset that waits is withdrawn.
