@@ -42,6 +42,12 @@ history is in git.
   the queue against the direct wire: every snapshot equal over 4000 ticks
   with faults) and `test_sense_i2c`.
 
+### Fixed
+
+- On the rbmod carrier's programming port with the PROG 5V box OFF, the
+  LIMIT RUN card names the box (`PROG 5V OFF: SWITCH IT ON IN THE PROG 5V
+  BOX`) when SEARCH+PROG or SERVO PULSES is chosen, not a missing PD mini.
+
 ## 0.23.5 - 2026-11-03
 
 0.23.5 is a testing release: its minor number, 23, is odd, and GitHub
