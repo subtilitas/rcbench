@@ -1520,7 +1520,7 @@ const functions: Fn[] = [
       'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Pulsrate als 50 Hz',
     ),
     needs: [],
-    src: repo('STATUS.md', 118, 'a sweep (square, sine or triangle, run by the IOmcu)'),
+    src: repo('STATUS.md', 119, 'a sweep (square, sine or triangle, run by the IOmcu)'),
   },
   {
     id: 'ppm', group: 'bench',
@@ -1613,7 +1613,7 @@ const functions: Fn[] = [
   {
     id: 'supply', group: 'bench',
     name: t('Supply set from the bench, 1 to 20 V', 'Versorgung vom Prüfstand gestellt, 1 bis 20 V'),
-    needs: ['pdmini'], src: repo('STATUS.md', 120, 'the IOmcu runs it on a PIO UART on the pins the SUPPLY page'),
+    needs: ['pdmini'], src: repo('STATUS.md', 121, 'the IOmcu runs it on a PIO UART on the pins the SUPPLY page'),
   },
   {
     id: 'logs', group: 'bench',
@@ -1714,7 +1714,7 @@ const checks: Check[] = [
       'Both boards run the same release. With different protocol versions the panel shows "Protocol versions do not match. ARMED is blocked."',
       'Beide Platinen laufen mit demselben Release. Bei verschiedenen Protokollversionen zeigt das Panel „Protokollversionen passen nicht zusammen. ARMED ist gesperrt.“',
     ),
-    when: null, src: repo('docs/Link.md', 78, 'Protocol versions do not match. ARMED is blocked.'),
+    when: null, src: repo('docs/Link.md', 80, 'Protocol versions do not match. ARMED is blocked.'),
   },
   {
     id: 'servo-pin', kind: 'note',
@@ -1889,7 +1889,7 @@ const checks: Check[] = [
       'Servo-Programmierer mit dem PD mini: VERBINDEN schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV-SERVO auf EIN, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; VERBINDEN erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
     ),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
-    src: repo(PROGRAMMER, 287, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
+    src: repo(PROGRAMMER, 324, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
   },
   {
     id: 'prog-supply-own', kind: 'note',
@@ -1898,7 +1898,7 @@ const checks: Check[] = [
       'Servo-Programmierer ohne den PD mini: Programmierspannung und Stromgrenze werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.',
     ),
     when: { all: [SERVO_PROG, { not: { has: 'pdmini' } }] },
-    src: repo(PROGRAMMER, 398, 'Without a PD mini the voltage and the current limit are stored and not'),
+    src: repo(PROGRAMMER, 435, 'Without a PD mini the voltage and the current limit are stored and not'),
   },
   {
     id: 'prog-level', kind: 'unknown',
@@ -1906,7 +1906,7 @@ const checks: Check[] = [
       "High level of the servo's reply on GPIO 13: not measured, at most 5 V and typically 3.3 V. GPIO 13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
       'Pegel der Antwort des Servos an GPIO 13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GPIO 13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
     ),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 267, 'The level is not measured. GPIO 13 is rated 5.5V while the'),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 304, 'The level is not measured. GPIO 13 is rated 5.5V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
@@ -2167,7 +2167,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 1048, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | ESCs: screen built, no protocol on a wire'),
+    src: repo('STATUS.md', 1117, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | ESCs: screen built, no protocol on a wire'),
   },
 ];
 
