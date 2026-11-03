@@ -38,7 +38,7 @@ history is in git.
   - The open is refused when the I2C block or its interrupt is taken.
   `protocols/i2c_txq` does not start a soft transaction while its bus
   time plus 20us (`I2C_TXQ_GUARD_US`) would run past a queued hard one's
-  release. Host-tested in `test_sense_txq`, `test_sense_txq_svc` (the service on
+  release, checked at the pick and again after the line settle. Host-tested in `test_sense_txq`, `test_sense_txq_svc` (the service on
   the queue against the direct wire: every snapshot equal over 4000 ticks
   with faults) and `test_sense_i2c`.
 

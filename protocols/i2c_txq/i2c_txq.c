@@ -408,10 +408,15 @@ static void requeue(i2c_txq_t *q)
     q->phase = P_IDLE;
 }
 
+static bool runs_into_hard(const i2c_txq_t *q, const i2c_txq_xfer_t *x,
+                           uint64_t now);
+
 /**
  * @brief The line check of the picked transaction.  High lines send it; a
  *        soft one whose deadline passed in the settle ends
- *        I2C_TXQ_DROPPED instead.  A low line gets settle_us to rise, then the pad pull-ups for
+ *        I2C_TXQ_DROPPED instead, and a soft one that would now run into a
+ *        queued hard one's release (runs_into_hard()) goes back to the
+ *        queue.  A low line gets settle_us to rise, then the pad pull-ups for
  *        probe_us: a line that rises on them is held by nothing and has no
  *        pull-up (I2C_TXQ_NO_PULLUP), one still low after them is held by a
  *        part (I2C_TXQ_BUS_LOW).  Nothing is sent after the probe.
@@ -442,6 +447,10 @@ static void check_lines(i2c_txq_t *q, uint64_t now)
          * settles: it is then dropped, as in the queue. */
         if (q->run->cls == I2C_TXQ_SOFT && after(now, q->run->deadline_us)) {
             end_run(q, I2C_TXQ_DROPPED, now);
+        } else if (q->run->cls == I2C_TXQ_SOFT
+                   && runs_into_hard(q, q->run, now)) {
+            /* The settle took the room it had before a hard release. */
+            requeue(q);
         } else {
             to_wire(q, now);
         }

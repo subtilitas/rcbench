@@ -119,7 +119,9 @@ deadline carries `I2C_TXQ_F_LATE_START`. A transaction on the wire is not
 cut for one that comes later. A soft transaction does not start while its
 computed bus time plus 20us (`I2C_TXQ_GUARD_US`, chosen, not measured)
 would run past the not-before time of a hard transaction already queued:
-a hard one queued ahead of its release finds the bus free then. A hard one
+a hard one queued ahead of its release finds the bus free then. The rule
+is checked when the soft one is picked and again when its lines have
+settled; one that does not fit then is queued again. A hard one
 submitted while a soft one is on the wire waits for its end, at most 300us
 at 400kHz.
 

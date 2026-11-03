@@ -20,7 +20,9 @@
  * (I2C_TXQ_DROPPED), never sent late.  A hard one is sent late and flagged.
  * A soft transaction waits while its computed end plus guard_us lies after
  * the not-before time of a hard one already queued, so a hard one released
- * at its time finds the bus free.
+ * at its time finds the bus free.  The rule holds at the pick and again
+ * when the lines have settled; one that does not fit then is queued
+ * again.
  *
  * Times are microseconds on a 64-bit clock the caller passes in.  Every
  * comparison is made on the difference of two times, so the order holds

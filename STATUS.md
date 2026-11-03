@@ -439,7 +439,8 @@ an abort mid-transaction, the timeout at 999us and 1000us, also across the
 wrap, the bus clear's 9 clocks and STOP, a part it frees and one that
 holds on, SCL stretched, and the trial after it; the first also a soft
 transaction that would run within 20us of a queued hard one's release
-held back, at the guard's limit and 1us either side. `i2c_txq_headers_cxx`
+held back, at the guard's limit and 1us either side, and one that ran
+out of room while its lines settled queued again, 1us either side. `i2c_txq_headers_cxx`
 calls the core from C++11.
 `test_sense_txq` runs the sensor bus on the queue
 (`shared/sense/sense_txq.c`) over the same model: a read of 0, 1, 6 and

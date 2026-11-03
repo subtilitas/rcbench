@@ -368,6 +368,37 @@ TEST_CASE(a_soft_one_waits_when_it_would_run_into_a_hard_release)
     CHECK(done_log[1] == &hard);
     CHECK(done_log[2] == &soft);
 
+    /* Picked at 1000 with SDA low, SDA up at 1010, the next poll at 1031:
+     * 1031 + 120 + 20 runs 1us past the hard release at 1170, so the soft
+     * read goes back to the queue; polled at 1030 it ends on the guard and
+     * goes. */
+    static const struct { uint64_t poll; bool starts; } late[] = {
+        {1031, false}, {1030, true},
+    };
+    for (size_t i = 0; i < sizeof(late) / sizeof(late[0]); ++i) {
+        setup(1000);
+        m.sda_hold_us = 1010;
+        rd2(&hard, 0x40, I2C_TXQ_HARD, 1170, 1220);
+        rd2(&soft, 0x41, I2C_TXQ_SOFT, 1000, 5000);
+        CHECK_EQ(i2c_txq_submit(&q, &hard), I2C_TXQ_E_OK);
+        CHECK_EQ(i2c_txq_submit(&q, &soft), I2C_TXQ_E_OK);
+        i2c_txq_poll(&q, 1000);
+        CHECK_EQ(soft.state, I2C_TXQ_ST_RUNNING);   /* settling */
+        m.now = late[i].poll;
+        i2c_txq_poll(&q, late[i].poll);
+        CHECK_EQ(m.pending, late[i].starts);
+        model_run_to(&m, &q, 2000);
+        CHECK_EQ(hard.result, I2C_TXQ_OK);
+        CHECK_EQ(soft.result, I2C_TXQ_OK);
+        CHECK(hard.start_us == 1170u);
+        CHECK_EQ(hard.flags & I2C_TXQ_F_LATE_START, 0u);
+        if (late[i].starts) {
+            CHECK(soft.start_us == late[i].poll);
+        } else {
+            CHECK(soft.start_us == hard.done_us);
+        }
+    }
+
     /* A soft one whose deadline passes while it waits is dropped. */
     setup(1000);
     rd2(&hard, 0x40, I2C_TXQ_HARD, 1100, 1150);
