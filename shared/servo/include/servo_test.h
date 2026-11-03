@@ -73,12 +73,17 @@
  * idle current stands in for it.
  *
  * The brown-out test follows: from SERVO_TEST_BROWNOUT_START_V (or the cap,
- * if lower) down in SERVO_TEST_BROWNOUT_STEP_V steps, each one SET, SETTLE
- * and IDLE as above and then SERVO_TEST_BROWNOUT_MOVES moves, centre to the
- * high end and back to the low end.  A voltage shows no movement when no
+ * if lower) down in steps of STEP to LOWEST VOLTAGE, the floor (cfg.bo_step_v,
+ * cfg.bo_floor_v), each one SET, SETTLE and IDLE as above and then
+ * SERVO_TEST_BROWNOUT_MOVES moves, centre to the high end and back to the
+ * low end.  The k-th voltage is the start less k steps, to 0.01V
+ * (servo_test_brownout_v()); a floor off that grid is the last voltage
+ * itself, a step shorter than STEP.  A floor at or above the start leaves
+ * one voltage, the start; a supply whose lowest set point lies above the
+ * floor raises the floor to it.  A voltage shows no movement when no
  * reading of any of those moves lies more than that voltage's threshold
  * from the level before its command; the walk stops there, or at the
- * floor, which is the last step when it lies off the step's grid.
+ * floor.
  *
  * The output encoder.  With an AS5600 on the horn shaft (cfg.enc_on) the run
  * also reads the angle, from servo_test_encoder(), and reports it beside the
@@ -199,15 +204,26 @@ extern "C" {
  *         rating is 4.8 to 6.0V. */
 #define SERVO_TEST_HV_ABOVE_V        6.0f
 
-/** @brief The brown-out walk: where it starts, how far each step goes down, and
- *         the lowest voltage it asks for.
+/** @brief The brown-out walk: where it starts, and the defaults of how far
+ *         each step goes down (STEP) and of the lowest voltage it asks for
+ *         (LOWEST VOLTAGE), which a configuration's 0 stands for.
  *
  * A supply whose lowest set point is higher stops it there. */
 #define SERVO_TEST_BROWNOUT_START_V  5.0f
 #define SERVO_TEST_BROWNOUT_STEP_V   0.2f
 #define SERVO_TEST_BROWNOUT_FLOOR_V  3.0f
-/** @brief The steps from START to FLOOR, both included. */
-#define SERVO_TEST_BROWNOUT_MAX      11u
+/** @brief STEP's lowest value, V: the settings' (SET_SERVO_BO_STEP). */
+#define SERVO_TEST_BROWNOUT_STEP_MIN_V  0.1f
+/** @brief STEP's highest value, V. */
+#define SERVO_TEST_BROWNOUT_STEP_MAX_V  1.0f
+/** @brief LOWEST VOLTAGE's lowest value, V: the settings'
+ *         (SET_SERVO_BO_FLOOR). */
+#define SERVO_TEST_BROWNOUT_FLOOR_MIN_V 2.0f
+/** @brief LOWEST VOLTAGE's highest value, V. */
+#define SERVO_TEST_BROWNOUT_FLOOR_MAX_V 4.8f
+/** @brief The most voltages a walk holds: from START to the lowest floor in
+ *         the smallest step, both ends included, (5.0 - 2.0) / 0.1 + 1. */
+#define SERVO_TEST_BROWNOUT_MAX      31u
 /** @brief Moves at each brown-out voltage: centre to the high end, then to the
  *         low end. */
 #define SERVO_TEST_BROWNOUT_MOVES    2u
@@ -369,6 +385,11 @@ typedef struct {
     float    steps_v[SERVO_TEST_STEPS_MAX];
     uint8_t  step_count;
     bool     brownout;
+    /** @brief The brown-out walk's LOWEST VOLTAGE, V; held to its range,
+     *         0 for the default. */
+    float    bo_floor_v;
+    /** @brief Its STEP, V; held to its range, 0 for the default. */
+    float    bo_step_v;
     float    i_limit;       /**< the current limit through the run, A   */
 
     /* The servo: its centre and the two ends the moves go between. */
@@ -555,6 +576,7 @@ typedef struct {
     float    v_max;         /**< the cap as last told                    */
     float    floor_v;       /**< where the brown-out walk stops           */
     float    bo_start_v;                /**< the brown-out walk's start voltage, V */
+    float    bo_step_v;     /**< its step, V                             */
 
     servo_test_step_t steps[SERVO_TEST_STEP_SLOTS];
     uint8_t  step;          /**< the step running                        */
@@ -843,6 +865,53 @@ servo_test_verdict_t servo_test_verdict(const servo_test_t *t);
  * @return steps planned, the brown-out walk counted as one.
  */
 unsigned servo_test_steps_planned(const servo_test_t *t);
+
+/**
+ * @brief The brown-out walk's @p k-th voltage: the start less @p k steps, to
+ *        0.01V, and the floor itself after the last of those above it.
+ *
+ * @param start_v The walk's start, V.
+ * @param floor_v Its floor, V.
+ * @param step_v  Its step, V; above 0.
+ * @param k       0 for the start.
+ * @return the voltage, V; a negative value past the floor, for a start
+ *        below the floor, or for a step not above 0.
+ */
+float servo_test_brownout_v(float start_v, float floor_v, float step_v,
+                            unsigned k);
+
+/**
+ * @brief How many voltages the brown-out walk asks for when every one shows
+ *        movement.
+ *
+ * @param start_v The walk's start, V.
+ * @param floor_v Its floor, V.
+ * @param step_v  Its step, V.
+ * @return the count, 0 for none; at most SERVO_TEST_BROWNOUT_MAX + 1, the
+ *        count it stops counting at.
+ */
+unsigned servo_test_brownout_count(float start_v, float floor_v,
+                                   float step_v);
+
+/**
+ * @brief The walk LOWEST VOLTAGE, STEP and a supply give: its start, floor
+ *        and step, as servo_test_start() takes them from cfg.bo_floor_v and
+ *        cfg.bo_step_v.
+ *
+ * @param floor_set LOWEST VOLTAGE, V; 0 or NaN for the default, held to
+ *        its range.
+ * @param step_set  STEP, V; 0 or NaN for the default, held to its range.
+ * @param v_min     The supply's lowest set point, V.
+ * @param v_max     The voltage cap in force, V.
+ * @param start_v   Out: the start, the cap if below
+ *        SERVO_TEST_BROWNOUT_START_V. NULL to skip.
+ * @param floor_v   Out: the floor; the start when LOWEST VOLTAGE lies at or
+ *        above it, raised to @p v_min when that lies higher. NULL to skip.
+ * @param step_v    Out: the step. NULL to skip.
+ */
+void servo_test_brownout_walk(float floor_set, float step_set, float v_min,
+                              float v_max, float *start_v, float *floor_v,
+                              float *step_v);
 /**
  * @brief Number of the step running.
  *

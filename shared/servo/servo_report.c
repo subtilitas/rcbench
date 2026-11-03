@@ -391,7 +391,7 @@ static bool settings_lines(const servo_test_t *t, cursor_t *c)
     if (here(c)) {
         if (g->brownout) {
             snprintf(b, n, S(R_BROWNOUT), (double)t->bo_start_v,
-                     (double)SERVO_TEST_BROWNOUT_STEP_V, (double)t->floor_v);
+                     (double)t->bo_step_v, (double)t->floor_v);
         } else {
             snprintf(b, n, "%s", S(R_BROWNOUT_NOT_RUN));
         }

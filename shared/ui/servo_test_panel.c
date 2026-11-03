@@ -150,6 +150,8 @@ static void test_cfg(servo_test_cfg_t *c)
     memset(c, 0, sizeof(*c));
     c->step_count = test_steps(c->steps_v);
     c->brownout   = settings_get_bool(SET_SERVO_BROWNOUT);
+    c->bo_floor_v = settings_get(SET_SERVO_BO_FLOOR);
+    c->bo_step_v  = settings_get(SET_SERVO_BO_STEP);
     c->i_limit    = supply_screen_set_i();
     c->centre_us = s.centre_us;
     test_ends(&c->end_lo_us, &c->end_hi_us);

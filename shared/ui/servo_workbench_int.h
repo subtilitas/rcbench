@@ -54,8 +54,9 @@ static inline int rows_page(void)
     switch (wb_task()) {
     case UI_WB_SETTINGS: return s.tabs.selected;
     case UI_WB_TEST:
-        return (s.run_list == RL_AUTO)    ? PG_AUTO
-               : (s.run_list == RL_LIMIT) ? PG_LIMRUN : -1;
+        return (s.run_list == RL_AUTO)       ? PG_AUTO
+               : (s.run_list == RL_LIMIT)    ? PG_LIMRUN
+               : (s.run_list == RL_BROWNOUT) ? PG_BROWNOUT : -1;
     default:             return -1;
     }
 }

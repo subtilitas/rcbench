@@ -607,13 +607,25 @@ statt 0,020A. Ein längeres EINSCHWINGZEIT vermeidet das.
 
 **Brown-out.** Nach den Stufen, mit BROWN-OUT an: ab 5,00V
 (`SERVO_TEST_BROWNOUT_START_V`) oder der geltenden Spannungsgrenze, wenn
-die niedriger ist, in Schritten von 0,20V (`SERVO_TEST_BROWNOUT_STEP_V`)
-abwärts bis 3,00V (`SERVO_TEST_BROWNOUT_FLOOR_V`) oder bis zum kleinsten
-Sollwert des Netzteils, wenn der höher liegt. Die geltende Grenze ist die
-niedrigste aus SPANNUNG MAX, dem Höchstwert des Netzteils und beim PD mini
-seiner Eingangsspannung abzüglich 0,7V. Eine Untergrenze neben dem
-0,20-V-Raster ist die letzte Stufe: am Modell, dessen kleinster Sollwert
-3,3V ist, geht der Lauf 5,0, 4,8 ... 3,4, 3,3V. Jede Spannung durchläuft SETZEN, EINSCHWINGZEIT
+die niedriger ist, in Schritten von SCHRITT abwärts bis NIEDRIGSTE
+SPANNUNG, der Untergrenze, oder bis zum kleinsten Sollwert des Netzteils,
+wenn der höher liegt. SCHRITT ist 0,1 bis 1,0V, vorgegeben 0,20V
+(`SERVO_TEST_BROWNOUT_STEP_V`); NIEDRIGSTE SPANNUNG ist 2,0 bis 4,8V,
+vorgegeben 3,00V (`SERVO_TEST_BROWNOUT_FLOOR_V`). Beide werden auf der
+Seite des Brown-out-Laufs gesetzt, die die Zeile BROWN-OUT der Optionen des
+automatischen Tests öffnet, und im NVS (nichtflüchtiger Speicher) gehalten.
+Die k-te Spannung ist der Start abzüglich k Schritten, auf 0,01V. Die
+geltende Grenze ist die niedrigste aus SPANNUNG MAX, dem Höchstwert des
+Netzteils und beim PD mini seiner Eingangsspannung abzüglich 0,7V. Eine
+Untergrenze neben dem Raster der Schritte ist die letzte Stufe, kürzer als
+SCHRITT: NIEDRIGSTE SPANNUNG 3,1V in Schritten von 0,20V geht 5,0, 4,8 ...
+3,2, 3,1V, und 4,8V in Schritten von 1,0V geht 5,0, 4,8V. Am Modell, dessen
+kleinster Sollwert 3,3V ist, geht der vorgegebene Lauf 5,0, 4,8 ... 3,4,
+3,3V, und eine NIEDRIGSTE SPANNUNG unter 3,3V endet ebenfalls dort. Eine
+NIEDRIGSTE SPANNUNG bei oder über dem Start lässt eine Spannung, den Start:
+unter einer Grenze von 4,5V läuft NIEDRIGSTE SPANNUNG 4,8V nur 4,5V. Die
+feinste Einstellung, 2,0V in Schritten von 0,1V, verlangt 31 Spannungen
+(`SERVO_TEST_BROWNOUT_MAX`). Jede Spannung durchläuft SETZEN, EINSCHWINGZEIT
 und RUHE, dann zwei Bewegungen (`SERVO_TEST_BROWNOUT_MOVES`), von der Mitte
 zum oberen Ende und weiter zum unteren, jede 600ms gehalten. Eine Spannung
 zeigt **keine Bewegung**, wenn kein Messwert der beiden Bewegungen mehr als
@@ -643,8 +655,11 @@ unter der Schwelle bewegen.
 | `SERVO_TEST_WIN_MS` | 50ms | ein Fenster des INA3221 |
 | `SERVO_TEST_NEG_IDLE_A` | 0,020A | ein Ruhestrom unter minus diesem Wert wird als Richtung des Shunts berichtet |
 | `SERVO_TEST_BROWNOUT_START_V` | 5,00V | wo der Brown-out-Lauf beginnt |
-| `SERVO_TEST_BROWNOUT_STEP_V` | 0,20V | jeder Schritt abwärts |
-| `SERVO_TEST_BROWNOUT_FLOOR_V` | 3,00V | die niedrigste verlangte Spannung |
+| `SERVO_TEST_BROWNOUT_STEP_V` | 0,20V | Vorgabe von SCHRITT: jeder Schritt abwärts |
+| `SERVO_TEST_BROWNOUT_STEP_MIN_V`, `_MAX_V` | 0,10V, 1,00V | Bereich von SCHRITT |
+| `SERVO_TEST_BROWNOUT_FLOOR_V` | 3,00V | Vorgabe von NIEDRIGSTE SPANNUNG: die niedrigste verlangte Spannung |
+| `SERVO_TEST_BROWNOUT_FLOOR_MIN_V`, `_MAX_V` | 2,00V, 4,80V | Bereich von NIEDRIGSTE SPANNUNG |
+| `SERVO_TEST_BROWNOUT_MAX` | 31 | die meisten Spannungen eines Laufs: (5,0 - 2,0) / 0,1 + 1 |
 | `SERVO_TEST_BROWNOUT_MOVES` | 2 | Bewegungen je Brown-out-Spannung |
 
 ### Zeitauflösung

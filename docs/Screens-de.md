@@ -2042,7 +2042,9 @@ enden.
 | OPTIONEN > SWEEP | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5Hz, 10 bis 100% des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
 | AUTOMATISCHER TEST > OPTIONEN | TESTDAUER NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
 | AUTOMATISCHER TEST > OPTIONEN | HALTEZEIT, EINSCHWINGZEIT | Haltezeit an jedem Ende, im Test und bei SWEEP; Wartezeit nach einer Spannungsstufe vor dem Messen |
-| AUTOMATISCHER TEST > OPTIONEN | STUFE 4.8 / 6.0 / 7.4 / 8.4V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0V abwärts; 7,4 und 8,4V laufen nur mit HV-SERVO an |
+| AUTOMATISCHER TEST > OPTIONEN | STUFE 4.8 / 6.0 / 7.4 / 8.4V | die Spannungsstufen; 7,4 und 8,4V laufen nur mit HV-SERVO an |
+| AUTOMATISCHER TEST > OPTIONEN | BROWN-OUT | zeigt `EIN 3.0/0.2V` (NIEDRIGSTE SPANNUNG und SCHRITT) oder `AUS`; ein Tippen öffnet die Seite des Brown-out-Laufs, deren SCHLIESSEN und Home-Tag zurückführen |
+| AUTOMATISCHER TEST > BROWN-OUT | BROWN-OUT, NIEDRIGSTE SPANNUNG, SCHRITT | der Lauf ab 5,0V abwärts, an oder aus; seine Untergrenze, 2,0 bis 4,8V, vorgegeben 3,0V; sein Schritt, 0,1 bis 1,0V, vorgegeben 0,2V. Der Hinweis darunter nennt den Lauf am geltenden Netzteil und wie viele Spannungen er verlangt |
 | AUTOMATISCHER TEST > OPTIONEN | HV-SERVO | nimmt die Stufen 7,4 und 8,4V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
 | AUTOMATISCHER TEST > OPTIONEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
 | AUTOMATISCHER TEST > OPTIONEN | RUHESTROM, HALTESTROM, STELLZEIT | Pass/Fail-Grenzen; 0 wird nicht geprüft |
@@ -2229,6 +2231,7 @@ und auf den Einstellungen eines Laufs unter seinem Namen.
 ![TEST mit seinen zwei Laufkarten](img/de/servo-test.png)
 ![Die Einstellungen des automatischen Tests](img/de/servo-test-settings.png)
 ![Die Einstellungen des Endlagenlaufs](img/de/servo-limits.png)
+![Die Einstellungen des Brown-out-Laufs](img/de/servo-brownout.png)
 ![Der Name](img/de/servo-name.png)
 
 Aktuelle Einschränkungen:

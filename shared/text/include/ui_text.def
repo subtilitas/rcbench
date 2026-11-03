@@ -4324,6 +4324,18 @@ UI_TEXT(SV_ROW_HOLD, 0,
 UI_TEXT(SV_ROW_TRAVEL_TIME, 0,
     "TRAVEL TIME",
     "STELLZEIT")
+UI_TEXT(SV_ROW_BO_FLOOR, 0,
+    "LOWEST VOLTAGE",
+    "NIEDRIGSTE SPANNUNG")
+UI_TEXT(SV_ROW_BO_STEP, 0,
+    "STEP",
+    "SCHRITT")
+UI_TEXT(SV_BO_NOTE_WALK, 0,
+    "From %.2fV down in %.2fV steps to %.2fV",
+    "Ab %.2fV abwärts in Schritten von %.2fV bis %.2fV")
+UI_TEXT(SV_BO_NOTE_COUNT, 0,
+    "%u voltages; it stops at the first without movement",
+    "%u Spannungen; Ende bei der ersten ohne Bewegung")
 UI_TEXT(SV_ROW_NAME, 16,
     "NAME",
     "NAME")
@@ -7932,6 +7944,18 @@ UI_SETTING_LABEL(SET_SERVO_BROWNOUT,
 UI_SETTING_HELP(SET_SERVO_BROWNOUT,
     "From 5.0V down until the servo stops moving",
     "Ab 5.0V abwärts, bis das Servo stehen bleibt")
+UI_SETTING_LABEL(SET_SERVO_BO_FLOOR,
+    "Brown-out lowest voltage",
+    "Brown-out niedrigste Spannung")
+UI_SETTING_HELP(SET_SERVO_BO_FLOOR,
+    "The brown-out walk's last voltage, 2.0 to 4.8V",
+    "Letzte Spannung des Brown-out-Laufs, 2.0 bis 4.8V")
+UI_SETTING_LABEL(SET_SERVO_BO_STEP,
+    "Brown-out step",
+    "Brown-out-Schritt")
+UI_SETTING_HELP(SET_SERVO_BO_STEP,
+    "How far each brown-out voltage goes down, 0.1 to 1.0V",
+    "Abstand der Brown-out-Spannungen, 0.1 bis 1.0V")
 UI_SETTING_LABEL(SET_SERVO_IDLE_MAX,
     "Idle current max",
     "Ruhestrom max")
