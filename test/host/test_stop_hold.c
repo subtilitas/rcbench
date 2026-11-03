@@ -9,6 +9,8 @@
  *
  * Cases:
  * - a_touch_on_an_unlatched_stop_starts_no_hold
+ * - a_press_the_status_shows_latched_but_that_latched_starts_no_hold
+ * - a_second_contact_that_takes_the_band_ends_the_hold
  * - a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once
  * - an_early_release_shows_the_hint_and_asks_nothing
  * - a_press_that_slides_off_stop_asks_nothing
@@ -85,9 +87,17 @@ static void touch(int x, int y, touch_event_type_t type, uint8_t flags)
     ui_router_event(&e);
 }
 
+/** @brief A DOWN on STOP the control task marked: a stop latched before it. */
+static void press_latched(void);
+
 /** @brief The middle of STOP. */
 static int sx(void) { return ui_band_stop_rect().x + ui_band_stop_rect().w / 2; }
 static int sy(void) { return ui_band_stop_rect().y + ui_band_stop_rect().h / 2; }
+
+static void press_latched(void)
+{
+    touch(sx(), sy(), TOUCH_EVENT_DOWN, TOUCH_FLAG_STOP_LATCHED);
+}
 
 /** @brief A hold of 7 frames of 0.25s and 0.249s more: 1,999ms. */
 static void hold_1999(void)
@@ -131,10 +141,48 @@ TEST_CASE(a_touch_on_an_unlatched_stop_starts_no_hold)
     CHECK(!stop_hold_take_reset());
 }
 
+TEST_CASE(a_press_the_status_shows_latched_but_that_latched_starts_no_hold)
+{
+    /* The snapshot can carry the press's own stop before the press is
+     * dispatched: only the control task's mark makes a reset's hold. */
+    router_on(true);
+    touch(sx(), sy(), TOUCH_EVENT_DOWN, 0);
+    CHECK(ui_router_take_stop());
+    for (int i = 0; i < 20; ++i) {
+        ui_router_tick(Q);
+    }
+    CHECK(!stop_hold_take_reset());
+    CHECK(stop_hold_held_s() == 0.0f);
+}
+
+TEST_CASE(a_second_contact_that_takes_the_band_ends_the_hold)
+{
+    router_on(true);
+    press_latched();
+    ui_router_tick(1.0f);
+    gfx_rect_t chip;
+    const ui_bench_status_t st = { .link_up = true, .stop_latched = true };
+    CHECK(ui_band_chip_rect(&st, UI_BAND_CHIP_ARMED, &chip));
+    touch_event_t e;
+    memset(&e, 0, sizeof(e));
+    e.type = TOUCH_EVENT_DOWN;
+    e.point.id = 2u;
+    e.point.x = (int16_t)(chip.x + chip.w / 2);
+    e.point.y = (int16_t)(chip.y + chip.h / 2);
+    ui_router_event(&e);
+    touch(sx(), sy(), TOUCH_EVENT_UP, 0);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    for (int i = 0; i < 12; ++i) {
+        ui_router_tick(Q);
+    }
+    CHECK(!stop_hold_take_reset());
+}
+
 TEST_CASE(a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once)
 {
     router_on(true);
-    touch(sx(), sy(), TOUCH_EVENT_DOWN, 0);
+    press_latched();
     /* Still a STOP at the press. */
     CHECK(ui_router_take_stop());
     hold_1999();
@@ -153,14 +201,14 @@ TEST_CASE(a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once)
 TEST_CASE(an_early_release_shows_the_hint_and_asks_nothing)
 {
     router_on(true);
-    touch(sx(), sy(), TOUCH_EVENT_DOWN, 0);
+    press_latched();
     hold_1999();
     touch(sx(), sy(), TOUCH_EVENT_UP, 0);
     CHECK(!stop_hold_take_reset());
     const char *a = ui_router_alert();
     CHECK(a != NULL && strcmp(a, TR(HOLD_HINT_STOP_RESET)) == 0);
     /* And the time does not carry over to the next press. */
-    touch(sx(), sy(), TOUCH_EVENT_DOWN, 0);
+    press_latched();
     ui_router_tick(Q);
     CHECK(!stop_hold_take_reset());
     CHECK(stop_hold_held_s() == Q);
@@ -169,7 +217,7 @@ TEST_CASE(an_early_release_shows_the_hint_and_asks_nothing)
 TEST_CASE(a_press_that_slides_off_stop_asks_nothing)
 {
     router_on(true);
-    touch(sx(), sy(), TOUCH_EVENT_DOWN, 0);
+    press_latched();
     ui_router_tick(1.0f);
     touch(ui_band_stop_rect().x - 20, sy(), TOUCH_EVENT_MOVE, 0);
     for (int i = 0; i < 8; ++i) {
@@ -189,7 +237,7 @@ TEST_CASE(a_press_that_slides_off_stop_asks_nothing)
 TEST_CASE(a_touch_loss_during_the_hold_asks_nothing)
 {
     router_on(true);
-    touch(sx(), sy(), TOUCH_EVENT_DOWN, 0);
+    press_latched();
     ui_router_tick(1.5f);
     ui_router_cancel_gestures();
     for (int i = 0; i < 8; ++i) {
@@ -202,7 +250,7 @@ TEST_CASE(a_touch_loss_during_the_hold_asks_nothing)
 TEST_CASE(a_reset_done_under_the_finger_flashes_it)
 {
     router_on(true);
-    touch(sx(), sy(), TOUCH_EVENT_DOWN, 0);
+    press_latched();
     for (int i = 0; i < 8; ++i) {
         ui_router_tick(Q);
     }
@@ -237,7 +285,7 @@ TEST_CASE(the_hold_fades_the_fill_to_the_frame)
 {
     const gfx_rect_t r = ui_band_stop_rect();
     router_on(true);
-    touch(sx(), sy(), TOUCH_EVENT_DOWN, 0);
+    press_latched();
     ui_router_tick(Q);
     ui_router_tick(Q);
     ui_router_tick(Q);
@@ -291,6 +339,8 @@ TEST_CASE(the_latched_labels_fit_the_button)
 int main(void)
 {
     RUN(a_touch_on_an_unlatched_stop_starts_no_hold);
+    RUN(a_press_the_status_shows_latched_but_that_latched_starts_no_hold);
+    RUN(a_second_contact_that_takes_the_band_ends_the_hold);
     RUN(a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once);
     RUN(an_early_release_shows_the_hint_and_asks_nothing);
     RUN(a_press_that_slides_off_stop_asks_nothing);

@@ -30,7 +30,9 @@ host-tested in `test_stop_latch` and `test_stop_hold`.
   off, read after the hold, and its own bank SAFE with no supply on. Once
   it is, and at least 500ms (`STOP_LATCH_FLOOR_MS`) after the last STOP,
   the heartbeat edges again and CLEAR is written once. The bench stays
-  SAFE: ARM, OUTPUT ON and PROG 5V ON each need their own hold.
+  SAFE: ARM, OUTPUT ON and PROG 5V ON each need their own hold. A
+  programming port the STOP caught in a session stays held across the
+  reset; CLEAR or LEAVE on its page goes on from there.
 - **No confirmation.** Without it within 2000ms (`STOP_LATCH_CONFIRM_MS`)
   the latch stands, the heartbeat stays withheld and the alert says
   `STOP not reset: the IOmcu did not report every output off within 2s.`

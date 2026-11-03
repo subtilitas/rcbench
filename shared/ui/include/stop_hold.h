@@ -5,8 +5,9 @@
  *        (2s).
  *
  * The press that latches a stop is never also the hold that resets it: the
- * hold begins only on a DOWN that finds the stop latched before it
- * (ui_bench_status_t.stop_latched as the router last had it).  The DOWN is
+ * hold begins only on a DOWN the panel's control task marked
+ * TOUCH_FLAG_STOP_LATCHED, a stop latched before the press.  A press that
+ * takes the band from the hold's contact, or a touch loss, ends the hold.  The DOWN is
  * a STOP all the same: the control task applies it at the press.  The hold
  * fills and flashes as every hold in the tree does (ui_hold_t); a release
  * before 2s shows the hint, and a press that slides off STOP or is lost
@@ -29,6 +30,7 @@ void stop_hold_reset(void);
 /**
  * @brief A DOWN on STOP: the hold starts from zero when @p latched.
  * @param latched a stop was latched before this press
+ *        (TOUCH_FLAG_STOP_LATCHED)
  */
 void stop_hold_press(bool latched);
 

@@ -25,6 +25,7 @@
  * - the_heartbeat_fault_is_hidden_while_latched_and_after_the_reset
  * - the_bound_and_the_floor_hold_across_the_millisecond_wrap
  * - a_restart_comes_up_unlatched
+ * - a_held_port_is_no_output_and_every_page_must_read_off
  * - null_is_harmless
  * - the_confirmation_is_read_every_50ms_while_a_reset_waits
  *
@@ -364,6 +365,30 @@ TEST_CASE(a_restart_comes_up_unlatched)
     CHECK(a.arming);
 }
 
+TEST_CASE(a_held_port_is_no_output_and_every_page_must_read_off)
+{
+    stop_latch_reading_t r = { .link_up = true, .far_read = true };
+    CHECK(stop_latch_all_off(&r));
+    /* A programming session stopped under STOP keeps its port. */
+    r.port_held = true;
+    CHECK(stop_latch_all_off(&r));
+    const stop_latch_reading_t base = r;
+    r.bank_armed = true;  CHECK(!stop_latch_all_off(&r)); r = base;
+    r.supply_on = true;   CHECK(!stop_latch_all_off(&r)); r = base;
+    r.prog_on = true;     CHECK(!stop_latch_all_off(&r)); r = base;
+    r.far_read = false;   CHECK(!stop_latch_all_off(&r)); r = base;
+    r.far_armed = true;   CHECK(!stop_latch_all_off(&r)); r = base;
+    r.far_supply = true;  CHECK(!stop_latch_all_off(&r)); r = base;
+    r.far_prog = true;    CHECK(!stop_latch_all_off(&r)); r = base;
+    /* With no link the far pages are not asked; this end still is. */
+    r.link_up = false;
+    r.far_read = false;
+    CHECK(stop_latch_all_off(&r));
+    r.supply_on = true;
+    CHECK(!stop_latch_all_off(&r));
+    CHECK(!stop_latch_all_off(NULL));
+}
+
 TEST_CASE(null_is_harmless)
 {
     stop_latch_init(NULL, 0u);
@@ -410,6 +435,7 @@ int main(void)
     RUN(the_heartbeat_fault_is_hidden_while_latched_and_after_the_reset);
     RUN(the_bound_and_the_floor_hold_across_the_millisecond_wrap);
     RUN(a_restart_comes_up_unlatched);
+    RUN(a_held_port_is_no_output_and_every_page_must_read_off);
     RUN(null_is_harmless);
     RUN(the_confirmation_is_read_every_50ms_while_a_reset_waits);
     return test_summary("stop_latch");

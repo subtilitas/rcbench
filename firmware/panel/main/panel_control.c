@@ -295,7 +295,14 @@ void control_pump(void)
              * slot, telling the far end -- follows when the loop is free.
              * Counted as pressed: an operator's STOP, which a stick run
              * tells apart from the bench's own.
+             *
+             * A stop already latched makes this press the reset's hold as
+             * well, which the router learns from the event and not from a
+             * snapshot that may already carry this press's own stop.
              */
+            if (arming_stopped(&s_arm)) {
+                evt.flags |= (uint8_t)TOUCH_FLAG_STOP_LATCHED;
+            }
             arming_stop_pressed(&s_arm);
             counted_here = true;
         }

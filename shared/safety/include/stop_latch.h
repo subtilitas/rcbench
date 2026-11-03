@@ -96,6 +96,31 @@ typedef enum {
     STOP_LATCH_GIVE_UP,
 } stop_latch_act_t;
 
+/** @brief What the caller read for the confirmation, in one pass. */
+typedef struct {
+    bool bank_armed;   /**< this end's bank is armed                     */
+    bool supply_on;    /**< the supply's output on, or an ON on its way  */
+    bool prog_on;      /**< the ports' own 5V on, owed on, or an ON on its
+                            way                                          */
+    bool port_held;    /**< a programming port is held; stopped, it drives
+                            nothing, and it does not count               */
+    bool link_up;      /**< the link to the IOmcu answers                */
+    bool far_read;     /**< every page below was read and answered       */
+    bool far_armed;    /**< STATUS reads ARMED                           */
+    bool far_supply;   /**< SUPPLY reads its output on                   */
+    bool far_prog;     /**< PROG_SUPPLY reads its output on              */
+} stop_latch_reading_t;
+
+/**
+ * @brief Whether a reading confirms everything off: nothing on at this end
+ *        and, with the link up, every page read and reading off.  A held
+ *        programming port is not an output; a session stopped under STOP
+ *        stays open across the reset.
+ * @param r The reading; NULL confirms nothing.
+ * @return true when it confirms.
+ */
+bool stop_latch_all_off(const stop_latch_reading_t *r);
+
 /**
  * @brief Start with no reset asked.
  * @param l       State; nothing for NULL.

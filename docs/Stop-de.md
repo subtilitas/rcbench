@@ -32,7 +32,10 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   ohne eingeschaltete Versorgung. Sobald das gilt, und frühestens 500ms
   (`STOP_LATCH_FLOOR_MS`) nach dem letzten STOP, flankt der Heartbeat wieder,
   und CLEAR wird einmal geschrieben. Der Prüfstand bleibt SAFE: ARM, AUSGANG
-  EIN und PROG 5V EIN brauchen jeweils ihr eigenes Halten.
+  EIN und PROG 5V EIN brauchen jeweils ihr eigenes Halten. Ein
+  Programmierport, den der STOP in einer Sitzung erwischt, bleibt über das
+  Lösen hinweg gehalten; CLEAR oder VERLASSEN auf seiner Seite geht von dort
+  weiter.
 - **Keine Bestätigung.** Kommt sie nicht binnen 2000ms
   (`STOP_LATCH_CONFIRM_MS`), bleibt der Stopp eingerastet, der Heartbeat
   bleibt angehalten, und der Alert sagt `STOP nicht gelöst: Der IOmcu

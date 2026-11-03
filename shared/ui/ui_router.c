@@ -903,6 +903,11 @@ void ui_router_event(const touch_event_t *evt)
         if (evt->type == TOUCH_EVENT_DOWN
             && (in_stop || in_home || chip != UI_BAND_CHIP_NONE
                 || on_guide)) {
+            /* A press that takes the band from a reset's hold ends it: the
+             * hold's own release would no longer be the band's. */
+            if (s.band_press && s.on_stop) {
+                stop_hold_cancel();
+            }
             /* "?" opens the guide on its release only when it was closed:
              * a DOWN on it closes an open one. */
             s.on_guide   = on_guide && !s.guide;
@@ -921,9 +926,10 @@ void ui_router_event(const touch_event_t *evt)
                 /* On the press: a stop never waits for a lift that may not
                  * come.  Latched rather than dispatched: the application
                  * loop that drives the heartbeat drains it, so a stop also
-                 * stops the line.  Onto a stop already latched, the press
-                 * is also the reset's hold. */
-                stop_hold_press(s.status.stop_latched);
+                 * stops the line.  Onto a stop that was latched before it
+                 * (the control task's mark on the event), the press is
+                 * also the reset's hold. */
+                stop_hold_press((evt->flags & TOUCH_FLAG_STOP_LATCHED) != 0u);
                 s.stop_latched = true;
                 drop_notice();
             }

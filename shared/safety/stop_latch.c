@@ -133,6 +133,17 @@ uint16_t stop_latch_faults(const stop_latch_t *l, uint32_t now_ms,
                 : faults;
 }
 
+bool stop_latch_all_off(const stop_latch_reading_t *r)
+{
+    if (r == NULL || r->bank_armed || r->supply_on || r->prog_on) {
+        return false;
+    }
+    if (!r->link_up) {
+        return true;
+    }
+    return r->far_read && !r->far_armed && !r->far_supply && !r->far_prog;
+}
+
 uint32_t stop_latch_resets(const stop_latch_t *l)
 {
     return (l != NULL) ? l->resets : 0u;
