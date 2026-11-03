@@ -84,6 +84,9 @@ static const char *chip_label(const ui_bench_status_t *st,
         ui_clock(buf, n, st->run_seconds);
         return buf;
     case UI_BAND_CHIP_ARMED:
+        if (st->stop_latched) {
+            return "STOP";
+        }
         return st->armed ? ui_band_armed_label(st->armed_roles)
                          : TR(BAND_SAFE);
     case UI_BAND_CHIP_FAULT:
@@ -377,6 +380,11 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
 #endif
         break;
     case UI_BAND_CHIP_ARMED:
+        if (st->stop_latched) {
+            ids[n++] = TX_BH_STOP;
+            ids[n++] = TX_BH_STOP_RESET;
+            break;
+        }
         if (!st->armed) {
             ids[n++] = TX_BH_SAFE;
             break;
@@ -513,7 +521,8 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
     } else if (chip == UI_BAND_CHIP_LINK) {
         accent = st->link_up ? ui_theme_color(UI_C_OK)
                              : ui_theme_color(UI_C_DANGER);
-    } else if (chip == UI_BAND_CHIP_ARMED && st->armed) {
+    } else if (chip == UI_BAND_CHIP_ARMED
+               && (st->armed || st->stop_latched)) {
         accent = ui_theme_color(UI_C_DANGER);
     }
     char buf[24];
@@ -547,8 +556,9 @@ static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
          * armed state is readable by shape at arm's length, not by
          * colour alone.  It names the role an arm covers when it
          * covers one: an arm on MOTOR leaves the servos without a
-         * pulse, and one on SERVO the motor. */
-        if (st->armed) {
+         * pulse, and one on SERVO the motor.  A latched stop reads STOP
+         * on the same red badge. */
+        if (st->armed || st->stop_latched) {
             *fill = ui_theme_color(UI_C_DANGER);
             *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
         }
@@ -584,6 +594,72 @@ bool ui_band_chip_colors(const ui_bench_status_t *st, ui_band_chip_t chip,
     return true;
 }
 
+/** @brief The latched STOP's frame: 3px. */
+#define STOP_RING 3
+
+/**
+ * @brief STOP's fill: red, lighter while pressed unlatched; latched, red
+ *        fading to the frame's yellow across the reset's hold.  The hold's
+ *        flash over either.
+ * @param latched a stop is latched
+ * @param stop    the press and the hold, or NULL
+ * @return the fill
+ */
+static gfx_color_t stop_body(bool latched, const ui_band_stop_t *stop)
+{
+    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
+    const bool pressed = stop != NULL && stop->pressed;
+    const int flash = (stop != NULL) ? stop->flash_ms : 0;
+    if (!latched) {
+        return ui_hold_flash(pressed ? gfx_lerp(red, GFX_WHITE, 110) : red,
+                             flash);
+    }
+    return ui_hold_flash(ui_hold_fill(red, ui_theme_color(UI_C_WARN),
+                                      (stop != NULL) ? stop->held_s : 0.0f),
+                         flash);
+}
+
+/**
+ * @brief Draw STOP: the red button, or latched the red button in its yellow
+ *        frame with STOPPED over HOLD 2s TO RESET.
+ * @param c       the canvas
+ * @param latched a stop is latched
+ * @param stop    the press and the hold, or NULL
+ */
+static void stop_render(gfx_canvas_t *c, bool latched,
+                        const ui_band_stop_t *stop)
+{
+    const gfx_rect_t r = ui_band_stop_rect();
+    const gfx_color_t body = stop_body(latched, stop);
+    if (!latched) {
+        /* The press lightens the fill in the button; the flash is a fill
+         * of its own. */
+        const bool flashing = stop != NULL && stop->flash_ms > 0;
+        ui_button_font(c, r, "STOP",
+                       flashing ? body : ui_theme_color(UI_C_DANGER),
+                       !flashing && stop != NULL && stop->pressed, true,
+                       UI_FONT_BAND);
+        return;
+    }
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CTL,
+                        ui_theme_color(UI_C_WARN));
+    gfx_fill_round_rect(c, r.x + STOP_RING, r.y + STOP_RING,
+                        r.w - 2 * STOP_RING, r.h - 2 * STOP_RING,
+                        UI_R_CTL - STOP_RING, body);
+    const gfx_color_t ink = ui_is_light(body)
+                                ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
+                                : ui_theme_color(UI_C_TEXT);
+    /* Two lines inside the frame's 42px: 20px of UI_FONT_BAND, 2px, 16px
+     * of UI_FONT_LABEL. */
+    const int top = r.y + STOP_RING + 2;
+    const gfx_rect_t l1 = { r.x, (int16_t)top, r.w, 20 };
+    const gfx_rect_t l2 = { r.x, (int16_t)(top + 22), r.w, 16 };
+    gfx_text_in(c, l1, TR(STOP_LATCHED_1), UI_FONT_BAND, ink, 1,
+                GFX_ALIGN_CENTER);
+    gfx_text_in(c, l2, TR(STOP_LATCHED_2), UI_FONT_LABEL, ink, 1,
+                GFX_ALIGN_CENTER);
+}
+
 /** @brief One step of the 32-bit FNV-1a hash over @p n bytes at @p p. */
 static uint32_t fnv(uint32_t h, const void *p, size_t n)
 {
@@ -595,15 +671,20 @@ static uint32_t fnv(uint32_t h, const void *p, size_t n)
 }
 
 uint32_t ui_band_key(const char *title, bool show_home,
-                     const ui_bench_status_t *st, bool stop_pressed,
+                     const ui_bench_status_t *st, const ui_band_stop_t *stop,
                      bool home_pressed, ui_band_guide_t guide)
 {
     uint32_t h = 2166136261u;
-    const uint8_t flags[5] = {
-        (uint8_t)(title != NULL), (uint8_t)show_home, (uint8_t)stop_pressed,
-        (uint8_t)home_pressed, (uint8_t)guide,
+    const bool latched = st != NULL && st->stop_latched;
+    const uint8_t flags[6] = {
+        (uint8_t)(title != NULL), (uint8_t)show_home,
+        (uint8_t)(stop != NULL && stop->pressed), (uint8_t)home_pressed,
+        (uint8_t)guide, (uint8_t)latched,
     };
     h = fnv(h, flags, sizeof(flags));
+    /* STOP's fill as drawn, the hold's fade and flash included. */
+    const gfx_color_t stop_fill = stop_body(latched, stop);
+    h = fnv(h, &stop_fill, sizeof(stop_fill));
     const int theme = (int)ui_theme_get();
     h = fnv(h, &theme, sizeof(theme));
     if (title != NULL) {
@@ -633,7 +714,7 @@ uint32_t ui_band_key(const char *title, bool show_home,
 }
 
 void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
-                    const ui_bench_status_t *st, bool stop_pressed,
+                    const ui_bench_status_t *st, const ui_band_stop_t *stop,
                     bool home_pressed, ui_band_guide_t guide)
 {
     gfx_fill_rect(c, 0, 0, PANEL_W, UI_BAND_H, ui_theme_color(UI_C_PANEL));
@@ -650,9 +731,7 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
 
     /* STOP is drawn on every screen that carries the band and is always
      * live. */
-    ui_button_font(c, ui_band_stop_rect(), "STOP",
-                   ui_theme_color(UI_C_DANGER), stop_pressed, true,
-                   UI_FONT_BAND);
+    stop_render(c, st != NULL && st->stop_latched, stop);
     guide_render(c, guide);
 
     if (st == NULL) {

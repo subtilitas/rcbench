@@ -944,7 +944,13 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.stopped     = arming_stopped(&s_arm);
     s_snap.stops       = arming_stop_count(&s_arm);
     s_snap.pressed     = arming_pressed_count(&s_arm);
-    s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
+    /* The panel withholds the line itself while a stop stands, and the bit
+     * read then stays until the IOmcu trusts the line again: shown, it
+     * would read as the emergency stop or an open wire. */
+    s_snap.faults      = link_up ? stop_latch_faults(&s_stop_latch, now_ms(),
+                                                     s_snap.stopped,
+                                                     s_dev_faults)
+                                 : (uint16_t)0;
     s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                          + (uint32_t)s_bring.dev_resyncs;
     s_snap.link_refused = s_bring.dev_refused;

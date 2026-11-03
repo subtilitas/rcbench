@@ -26,10 +26,14 @@ Der Arm-Chip nennt, was ein ARM treibt:
 | ARMED SERVO | die Surfaces und ein pulsender PROG PORT, von SERVO; kein Throttle-Ausgang |
 | ARMED | jeder gebundene Ausgang, an einem IOmcu älter als Protokoll 4.18 |
 
-STOP funktioniert auf jedem Bildschirm. Es schaltet auf SAFE und rastet ein: der
-Prüfstand bleibt SAFE, bis er erneut auf ARMED geschaltet wird. Ein
-Bildschirmwechsel, ein ablaufender Hinweis oder ein zurückkehrender Link hebt
-einen Stopp nicht auf.
+STOP funktioniert auf jedem Bildschirm. Es schaltet auf SAFE und rastet ein, wie
+ein Not-Aus-Taster: STOP zeigt dann `GESTOPPT` über `2s HALTEN ZUM LÖSEN` in
+einem gelben Rahmen, der Arm-Chip zeigt STOP, und ARM und jedes Einschalten
+werden abgelehnt. Ein Bildschirmwechsel, ein ablaufender Hinweis, ein
+zurückkehrender Link oder ARM hebt ihn nicht auf. 2s Halten von STOP löst
+ihn, sobald der IOmcu meldet, dass alles aus ist
+([STOP als Not-Aus](Stop-de.md)). Der
+Prüfstand bleibt nach dem Lösen SAFE.
 
 ARM sitzt unten auf einem Prüfstandsbildschirm; STOP sitzt oben im Band.
 
@@ -133,7 +137,7 @@ Der Kasten von FEHLER nennt jedes Bit, seinen Code und seine Bedeutung:
 | 02 | OVERCURRENT | nie |
 | 04 | OVERTEMP | nie |
 | 08 | STALL | nie |
-| 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht: nach jedem STOP bis zum nächsten ARM, bei gedrücktem Not-Aus oder offener Heartbeat-Leitung |
+| 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht, obwohl das Panel sie treibt: bei gedrücktem Not-Aus oder offener Heartbeat-Leitung; ein eingerastetes STOP zeigt stattdessen STOP |
 | 20 | VERSION | nie |
 | 40 | STORE_OFF | der IOmcu kann in diesem Start nicht in seinen Flash schreiben |
 

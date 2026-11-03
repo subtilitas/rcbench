@@ -30,6 +30,7 @@ Network) at 1Mbit/s.
 | Program an ESC through its throttle-stick menu | [Stick programming](StickProgramming.md) |
 | Connect a receiver and inspect its output | [Receiver buses](Receivers.md) |
 | Stop mechanisms and the external circuit they require | [Safety](Safety.md) |
+| Stop with STOP, and reset it | [STOP as an emergency stop](Stop.md) |
 | ESCs with BLHeli_32 firmware: what is and is not supported | [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md) |
 
 ## Reference

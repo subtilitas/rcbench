@@ -152,6 +152,14 @@ UI_TEXT(BAND_FAULT, 12,
 UI_TEXT(BAND_NO_LINK, 16,
     "NO LINK",
     "KEINE VERBINDUNG")
+/* STOP while a stop is latched: two lines in the button, STOPPED in
+ * UI_FONT_BAND over the reset in UI_FONT_LABEL (ui_band.c). */
+UI_TEXT(STOP_LATCHED_1, 0,
+    "STOPPED",
+    "GESTOPPT")
+UI_TEXT(STOP_LATCHED_2, 0,
+    "HOLD 2s TO RESET",
+    "2s HALTEN ZUM LÖSEN")
 UI_TEXT(LINK_REFUSED, 0,
     "Rejected link frames: %lu",
     "Abgelehnte Verbindungsframes: %lu")
@@ -188,6 +196,12 @@ UI_TEXT(BH_MODE_INJECT_LOST, 0,
 UI_TEXT(BH_SAFE, 0,
     "Motor and servo outputs send no pulses. To activate them, hold ARM for 2s on MOTOR & ESC or SERVO. The PD mini output on SUPPLY is switched separately. STOP turns it off too.",
     "Motor- und Servoausgänge geben keine Pulse aus. Halte ARM auf MOTOR & ESC oder SERVO für 2s, um sie zu aktivieren. Der PD-mini-Ausgang auf SUPPLY wird getrennt davon geschaltet. STOP schaltet auch ihn aus.")
+UI_TEXT(BH_STOP, 0,
+    "STOP is latched. Motor and servo outputs, the PD mini output and the programming ports' 5V are off. The panel withholds the heartbeat to the IOmcu. ARM and every ON are refused.",
+    "STOP ist gesetzt. Motor- und Servoausgänge, der PD-mini-Ausgang und die 5V der Programmierports sind aus. Das Panel hält den Heartbeat zum IOmcu an. ARM und jedes Einschalten sind gesperrt.")
+UI_TEXT(BH_STOP_RESET, 0,
+    "Hold STOP for 2s to reset it. The panel waits until the IOmcu reports SAFE and every output off, at least 500ms after the last STOP, then sends the heartbeat again. The bench stays SAFE. Each output needs its own hold to switch on again.",
+    "Halte STOP 2s, um ihn zu lösen. Das Panel wartet, bis der IOmcu SAFE und alle Ausgänge aus meldet, frühestens 500ms nach dem letzten STOP, und sendet dann wieder den Heartbeat. Der Prüfstand bleibt SAFE. Jeder Ausgang braucht zum Einschalten wieder sein eigenes Halten.")
 UI_TEXT(BH_ARMED_MOTOR, 0,
     "Motor outputs send pulses. Servo outputs do not.",
     "Motorausgänge geben Pulse aus. Servoausgänge nicht.")
@@ -219,8 +233,8 @@ UI_TEXT(BH_F_STALL, 0,
     "Stopped because the motor stalled.",
     "Wegen blockiertem Motor gestoppt.")
 UI_TEXT(BH_F_HEARTBEAT, 0,
-    "The safety signal from the panel to the IOmcu has stopped. After any stop, the panel keeps it stopped until the next ARM. Otherwise, the emergency stop is pressed or the heartbeat wire is open. The IOmcu is SAFE and blocks ARMED. The PD mini output is off. Release the emergency stop or check the wire, then hold ARM.",
-    "Das Sicherheitssignal vom Panel zum IOmcu ist ausgefallen. Nach jedem Stopp hält das Panel es bis zum nächsten ARM an. Andernfalls ist der Not-Aus gedrückt oder die Heartbeat-Leitung unterbrochen. Der IOmcu ist SAFE und sperrt ARMED. Der PD-mini-Ausgang ist aus. Löse den Not-Aus oder prüfe die Leitung und halte danach ARM.")
+    "The safety signal from the panel to the IOmcu has stopped while the panel sends it: the emergency stop is pressed or the heartbeat wire is open. A latched STOP shows STOP here instead. The IOmcu is SAFE and blocks ARMED. The PD mini output is off. Release the emergency stop or check the wire, then hold ARM.",
+    "Das Sicherheitssignal vom Panel zum IOmcu ist ausgefallen, obwohl das Panel es sendet: Der Not-Aus ist gedrückt oder die Heartbeat-Leitung unterbrochen. Ein gesetzter STOP zeigt hier stattdessen STOP. Der IOmcu ist SAFE und sperrt ARMED. Der PD-mini-Ausgang ist aus. Löse den Not-Aus oder prüfe die Leitung und halte danach ARM.")
 UI_TEXT(BH_F_VERSION, 0,
     "The versions on the two devices do not match.",
     "Die Versionen der beiden Geräte passen nicht zusammen.")
@@ -2676,8 +2690,8 @@ UI_TEXT(EW_HELD_AFTER_STOP, 100,
     "A stop or a fault ended this session: PIN BACK, then CONNECT.",
     "Ein Stop oder Fehler beendete die Sitzung: PIN ZURÜCK, dann VERBINDEN.")
 UI_TEXT(EW_STOP_PIN_BACK, 100,
-    "The bench's STOP stands: PIN BACK first.",
-    "Der STOP des Bench steht: erst PIN ZURÜCK.")
+    "The bench's STOP stands: hold STOP 2s to reset it.",
+    "Der STOP des Bench steht: Halte STOP 2s, um ihn zu lösen.")
 UI_TEXT(EW_HINT_RELEASE, 94,
     "Hold 2s to release the pin.",
     "Halte 2s, um den Pin freizugeben.")
@@ -2976,8 +2990,8 @@ UI_TEXT(EW_MSG_ARMED, 100,
     "The bench is ARMED: DISARM first.",
     "Der Bench ist ARMED: erst DISARM.")
 UI_TEXT(EW_MSG_STOPPED, 100,
-    "STOP stands: release it first.",
-    "STOP steht: erst lösen.")
+    "STOP stands: hold STOP 2s to reset it.",
+    "STOP steht: Halte STOP 2s, um ihn zu lösen.")
 UI_TEXT(EW_MSG_NO_LINK, 100,
     "No IOmcu answers.",
     "Kein IOmcu antwortet.")
@@ -4828,6 +4842,16 @@ UI_TEXT(ALERT_TOUCH_ARM_AGAIN, 94,
 UI_TEXT(ALERT_TOUCH_STOPPED, 94,
     "Touchscreen stopped responding. Switched to SAFE.",
     "Touchscreen antwortet nicht mehr. Auf SAFE geschaltet.")
+/* An ARM or an ON refused while a STOP an operator pressed stands, in place
+ * of the action's own reason (panel_arm.c, panel_supply.c). */
+UI_TEXT(ALERT_STOP_HELD, 94,
+    "STOP pressed: hold STOP 2s to reset.",
+    "STOP gedrückt: STOP 2s halten zum Lösen.")
+/* The reset's hold completed and the IOmcu did not confirm within
+ * STOP_LATCH_CONFIRM_MS (stop_latch.h): the latch stands. */
+UI_TEXT(ALERT_STOP_NO_CONFIRM, 94,
+    "STOP not reset: the IOmcu did not report every output off within 2s.",
+    "STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.")
 /* The render loop stood still for FRAME_WATCH_MS (frame_watch.h) on an
  * ARMED bench or under a live supply output; shown once it draws again. */
 UI_TEXT(ALERT_SCREEN_STALLED, 94,
@@ -5079,6 +5103,9 @@ UI_TEXT(HOLD_HINT_RESTORE, 94,
 UI_TEXT(HOLD_HINT_CONTINUE, 94,
     "Hold 2s to continue.",
     "Halte 2s, um fortzufahren.")
+UI_TEXT(HOLD_HINT_STOP_RESET, 94,
+    "Hold 2s to reset the STOP.",
+    "Halte 2s, um den STOP zu lösen.")
 UI_TEXT(HOLD_HINT_LEAVE, 94,
     "Hold 2s to leave.",
     "Halte 2s, um zu verlassen.")
@@ -5884,6 +5911,9 @@ UI_TEXT(KP_M_RESTORE_REFUSED, 116,
 UI_TEXT(KP_M_STOPPED, 116,
     "STOP: the operation was aborted.",
     "STOP: der Vorgang wurde abgebrochen.")
+UI_TEXT(KP_M_STOP_LATCHED, 116,
+    "A STOP is latched. Hold STOP 2s to reset it.",
+    "Ein STOP ist gesetzt. Halte STOP 2s, um ihn zu lösen.")
 UI_TEXT(KP_M_TIMEOUT, 116,
     "No result from the IOmcu. Tap READ ALL.",
     "Kein Ergebnis vom IOmcu. ALLES AUSLESEN tippen.")
@@ -6353,8 +6383,8 @@ UI_TEXT(HP_ST_STOPPED, 116,
     "Stopped. The pin is released. Tap CLEAR to go on, or LEAVE.",
     "Gestoppt. Der Pin ist freigegeben. CLEAR zum Fortsetzen oder VERLASSEN.")
 UI_TEXT(HP_ST_STOP_LATCHED, 116,
-    "Stopped. The pin is released. LEAVE, then switch to ARMED once to clear the STOP.",
-    "Gestoppt. Der Pin ist freigegeben. VERLASSEN, dann einmal auf ARMED schalten, um den STOP aufzuheben.")
+    "Stopped. The pin is released. Hold STOP 2s to reset the STOP.",
+    "Gestoppt. Der Pin ist freigegeben. Halte STOP 2s, um den STOP zu lösen.")
 UI_TEXT(HP_ST_NOT_IN_MODE, 116,
     "Port %u is held. The servo is not in programming mode: LEAVE and CONNECT again.",
     "Port %u ist belegt. Das Servo ist nicht im Programmiermodus: VERLASSEN und neu VERBINDEN.")
@@ -6380,11 +6410,8 @@ UI_TEXT(HP_V_CAPPED, 116,
     "Hitec programming runs at 6.0V or less.",
     "Hitec-Programmierung läuft mit höchstens 6.0V.")
 UI_TEXT(HP_STOP_LATCHED, 116,
-    "A STOP is latched. It clears with the next switch to ARMED.",
-    "Ein STOP ist gesetzt. Er wird beim nächsten Schalten auf ARMED aufgehoben.")
-UI_TEXT(HP_STOP_LATCHED_2, 116,
-    "ARM is refused while a port is held: LEAVE first.",
-    "ARM ist gesperrt, solange ein Port belegt ist: zuerst VERLASSEN.")
+    "A STOP is latched. Hold STOP 2s to reset it.",
+    "Ein STOP ist gesetzt. Halte STOP 2s, um ihn zu lösen.")
 UI_TEXT(HP_NOT_IN_MODE, 116,
     "The servo is not in programming mode. LEAVE and CONNECT again.",
     "Das Servo ist nicht im Programmiermodus. VERLASSEN und neu VERBINDEN.")

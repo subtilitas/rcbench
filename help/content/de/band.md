@@ -18,7 +18,7 @@ Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann "?" 
 | BENCH, SIM | BENCH, solange der IOmcu antwortet und die Bildschirme seine Ausgänge ansteuern; SIM, solange das Panel sein eigenes Modell rechnet |
 | INJECT | an Stelle von BENCH und SIM, solange ein Touch-Injector an der I2C-Adresse 0x14 (Inter-Integrated Circuit) antwortet; das Panel sucht ihn einmal, beim Start |
 | FEHLER 01 bis FEHLER 7F | ein Fehlercode, den der IOmcu meldet; fehlt, solange keiner anliegt |
-| SAFE, ARMED MOTOR, ARMED SERVO, ARMED | was das Schalten auf ARMED treibt |
+| SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | was das Schalten auf ARMED treibt; STOP, solange ein Stopp eingerastet ist |
 | Laufzeituhr | die Dauer des laufenden Laufs ab dem Schalten auf ARMED, in Minuten und Sekunden; bei SAFE hält sie den letzten Lauf |
 
 Das Home-Tag führt zum [Menü](overview.md).
@@ -36,7 +36,15 @@ Ein Kanal ohne Befehl seit 500ms steht bei ARMED in Ruhe: ein Throttle auf 0%, e
 
 ## STOP
 
-STOP wirkt auf jedem Bildschirm mit Band. Es schaltet den Prüfstand auf SAFE, schaltet den Ausgang des Netzteils ab und rastet ein: Der Prüfstand bleibt SAFE, bis er erneut auf ARMED geschaltet wird. Ein Bildschirmwechsel, ein ablaufender Alert oder ein zurückkehrender Link hebt einen Stopp nicht auf.
+STOP wirkt auf jedem Bildschirm mit Band. Ein Druck schaltet den Prüfstand auf SAFE, schaltet jeden Ausgang, den Ausgang des Netzteils und die 5V der Programmierports ab und rastet ein, wie ein Not-Aus-Taster. Ein Bildschirmwechsel, ein ablaufender Alert, ein zurückkehrender Link oder ein Schalten auf ARMED hebt einen Stopp nicht auf.
+
+![Ein eingerastetes STOP und sein Kasten](view:band-stop)
+
+- Eingerastet bleibt STOP rot in einem gelben Rahmen und zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, und der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden abgelehnt, mit `STOP gedrückt: STOP 2s halten zum Lösen.`
+- Halte das eingerastete STOP 2s, um es zu lösen. Die Füllung geht in den 2s von Rot nach Gelb über. Danach wartet das Panel, bis der IOmcu SAFE und alle Ausgänge aus meldet, frühestens 500ms nach dem letzten STOP, und sendet wieder den Heartbeat. Der Prüfstand bleibt SAFE: Jeder Ausgang braucht zum Einschalten wieder sein eigenes Halten.
+- Kommt die Antwort des IOmcu nicht binnen 2s, bleibt der Stopp eingerastet, und das Alert-Band sagt `STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.` Halte STOP erneut.
+- Ein Druck auf ein eingerastetes STOP ist ebenfalls ein STOP. Loslassen vor 2s zeigt `Halte 2s, um den STOP zu lösen.`; ein Finger, der von STOP abgleitet, oder ein verlorener Touch löst nichts.
+- Ein Neustart des Panels hebt den Stopp auf: Das Panel startet SAFE, mit jedem Ausgang aus.
 
 - STOP reagiert auf einen Druck, der auf ihm aufsetzt, beim Aufsetzen. Ein Finger, der vom Bildschirm auf STOP rutscht, stoppt nichts. Ein Finger, der auf STOP aufsetzt und wegrutscht, stoppt trotzdem.
 - Ein zweiter Finger auf STOP wird bedient, während der erste zieht, und der Drag endet bei diesem Druck.
@@ -67,7 +75,7 @@ Der Kasten von FEHLER reicht über das Panel, 1008px, mit einem Absatz je gesetz
 | 02 | OVERCURRENT | nie |
 | 04 | OVERTEMP | nie |
 | 08 | STALL | nie |
-| 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht: nach jedem STOP bis zum nächsten ARM, bei gedrücktem Not-Aus oder offener Heartbeat-Leitung |
+| 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht, obwohl das Panel sie treibt: bei gedrücktem Not-Aus oder offener Heartbeat-Leitung; ein eingerastetes STOP zeigt stattdessen STOP |
 | 20 | VERSION | nie |
 | 40 | STORE_OFF | der IOmcu kann in diesem Start nicht in seinen Flash schreiben; Einstellungen, die er bekommt, gelten bis zu seinem Neustart |
 
@@ -119,7 +127,7 @@ Ein Halte-Button wirkt nach 2s Kontakt. ARM, AUSGANG EIN, START TEST, START LIMI
 - Ein Loslassen bei 2s oder später hat gewirkt und zeigt keinen Hinweis.
 - Ein kurzes Tippen ist keine Störung, also ist der Hinweis eine Meldung und kein Alert: Ein Tipp auf das Band löscht ihn früher, ein stehender Alert behält das Band und kein Hinweis erscheint darüber, und ein Alert, der während des Hinweises kommt, ersetzt ihn.
 - STOP löscht den Hinweis sofort, ebenso ein neuer FEHLER-Code oder ein Wechsel von ARMED nach SAFE durch einen Fehler.
-- Die Hinweise, einer je Aktion, jeweils nach `Halte 2s, um`: `auf ARMED zu schalten.`, `den Ausgang einzuschalten.`, `zu übernehmen.`, `den Test zu starten.`, `den Endlagenlauf zu starten.`, `freizugeben.`, `zu schreiben.`, `zurückzuspielen.`, `fortzufahren.`, `zu verlassen.`, `zu laden.`, `den Port freizugeben.`, `zu reparieren.`, `zu starten.`, `zu installieren.`, `zu laden und zu installieren.`, `den IOmcu zu aktualisieren.` und `alle Pin-Zuordnungen zu löschen.`
+- Die Hinweise, einer je Aktion, jeweils nach `Halte 2s, um`: `auf ARMED zu schalten.`, `den Ausgang einzuschalten.`, `zu übernehmen.`, `den Test zu starten.`, `den Endlagenlauf zu starten.`, `freizugeben.`, `zu schreiben.`, `zurückzuspielen.`, `fortzufahren.`, `zu verlassen.`, `zu laden.`, `den Port freizugeben.`, `zu reparieren.`, `zu starten.`, `zu installieren.`, `zu laden und zu installieren.`, `den IOmcu zu aktualisieren.`, `alle Pin-Zuordnungen zu löschen.` und `den STOP zu lösen.`
 
 ## Berührungen nahe am Band
 

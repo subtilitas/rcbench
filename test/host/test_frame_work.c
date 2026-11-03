@@ -324,7 +324,7 @@ static work_t measured(const char *name, const run_t *r)
 static unsigned long band_work(const ui_bench_status_t *st)
 {
     const unsigned long before = gfx_work();
-    ui_band_render(&cv[0], "SERVO", true, st, false, false,
+    ui_band_render(&cv[0], "SERVO", true, st, NULL, false,
                    UI_BAND_GUIDE_NONE);
     return gfx_work() - before;
 }

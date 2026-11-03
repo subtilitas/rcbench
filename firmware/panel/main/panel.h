@@ -24,6 +24,7 @@
 #include "freertos/semphr.h"
 
 #include "arming.h"
+#include "stop_latch.h"
 #include "bench_state.h"
 #include "log_cols.h"
 #include "bind_link.h"
@@ -255,6 +256,13 @@ extern outputs_t s_out;
 extern arming_t  s_arm;
 extern uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 extern atomic_bool s_disarm_request;
+/** @brief The reset of a latched STOP (stop_latch.h); control task only.
+ *         See panel_stop.c. */
+extern stop_latch_t s_stop_latch;
+/** @brief The reset's hold completed (stop_hold_take_reset()): render side
+ *         sets, control task takes (stop_reset_service()). */
+extern atomic_bool  s_stop_reset_request;
+void stop_reset_service(bool link_up);
 
 /*
  * A disarm returns the command to zero, here and in the output bank.

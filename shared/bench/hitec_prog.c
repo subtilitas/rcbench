@@ -1069,8 +1069,8 @@ hitec_prog_msg_id_t hitec_prog_clear(hitec_prog_t *p)
         return say(p, HITEC_PROG_MSG_BUSY, 0u);
     }
     /* A STOP latched at this end withholds the heartbeat: the IOmcu would
-     * refuse the CLEAR as UNSAFE.  It clears with a switch to ARMED, which
-     * a held port refuses. */
+     * refuse the CLEAR as UNSAFE.  It clears with its reset, a hold of the
+     * band's STOP for 2s (stop_latch.h). */
     if (p->f.stopped) {
         return say(p, HITEC_PROG_MSG_STOP_LATCHED, 0u);
     }

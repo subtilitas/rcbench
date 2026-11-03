@@ -6,6 +6,27 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- STOP works as an emergency stop button. One touch, from any screen, puts
+  the bench to SAFE, switches every output, the PD mini output and the
+  programming ports' 5V off, withholds the heartbeat and latches. While it
+  stands, STOP stays red inside a yellow frame and reads `STOPPED` over
+  `HOLD 2s TO RESET` (German `GESTOPPT`, `2s HALTEN ZUM LÖSEN`), the arm
+  chip reads STOP, and ARM, OUTPUT ON, PROG 5V ON, CONNECT and the start of
+  a test or a run are refused with `STOP pressed: hold STOP 2s to reset.`
+  ARM no longer clears it. A hold of STOP for 2s resets it: the panel reads
+  the IOmcu's STATUS, SUPPLY and PROG_SUPPLY pages every 50ms, and once they
+  report SAFE and every output off, and at least 500ms after the last STOP,
+  it sends the heartbeat again and writes CLEAR once. The bench stays SAFE.
+  Without that report within 2000ms the stop stays latched and the alert
+  band says why. A panel restart starts unlatched. Host tests
+  `test_stop_latch` and `test_stop_hold`.
+- The band leaves out FAULT 10 (HEARTBEAT) while a stop is latched and for
+  1000ms after its reset: the panel withholds the line itself then. The
+  hardware emergency stop on the heartbeat line and an open heartbeat wire
+  show FAULT 10 as before.
+
 ### Fixed
 
 - The AUTOMATIC TEST card on SERVO > TEST names why the last run was

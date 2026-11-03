@@ -9,7 +9,10 @@
  *
  * The rules, each of which has cost this project a defect:
  *
- *   - A stop latches.  Only an explicit arm clears it.
+ *   - A stop latches.  A STOP an operator pressed is released only by
+ *     the reset (stop_latch.h): an arm is refused while it stands.  A stop
+ *     from the far end, the link or an arm's handshake clears with an
+ *     explicit arm, or with the reset.
  *   - The heartbeat is suppressed while a stop is latched, and the
  *     IOmcu refuses to arm while the heartbeat is not trusted.  An arm
  *     therefore clears the latch FIRST and waits for the line to settle
@@ -102,6 +105,12 @@ typedef enum {
 typedef struct {
     bool     armed;
     bool     stopped;         /**< the latch                              */
+    /**
+     * @brief The STOP an operator pressed stands: arming_stop_pressed() sets
+     *        it, arming_stop_release() alone clears it, and no arm is taken
+     *        while it is set.  Implies `stopped`.
+     */
+    bool     held;
     /**
      * @brief How many times the bench has been stopped, by any means: a STOP,
      *        the far end, or touch that stopped answering.
@@ -270,11 +279,29 @@ bool arming_stopped(const arming_t *a);
 uint32_t arming_stop_count(const arming_t *a);
 
 /**
- * @brief A STOP an operator pressed: arming_stop(), counted as pressed too.
+ * @brief A STOP an operator pressed: arming_stop(), counted as pressed too,
+ *        and held until arming_stop_release().
  *
  * @param a Policy state.
  */
 void arming_stop_pressed(arming_t *a);
+
+/**
+ * @brief Whether a STOP an operator pressed stands (arming_t.held).
+ *
+ * @param a Policy state.
+ * @return true while it stands; false for NULL.
+ */
+bool arming_held(const arming_t *a);
+
+/**
+ * @brief The reset of the stop is done (stop_latch.h): the latch, held or
+ *        not, is clear and the heartbeat may edge again.  No arm waits
+ *        after it; the bench stays as SAFE as it was.
+ *
+ * @param a Policy state; nothing for NULL.
+ */
+void arming_stop_release(arming_t *a);
 
 /**
  * @brief How many of the stops were pressed (arming_stop_pressed()); never more
@@ -325,7 +352,8 @@ void arming_request_arm(arming_t *a, uint32_t now_ms);
  * @brief The operator asked to arm the outputs of @p roles, a non-zero set of
  *        the caller's role bits; 0 is ignored.
  *
- * Ignored while touch is dead.
+ * Ignored while touch is dead, and while a STOP an operator pressed stands
+ * (arming_held()): that stop is released by its reset alone.
  *
  * Asked while armed for other roles, the bench is not re-armed in place: the
  * next arming_step() returns ARMING_ACT_DISARM, and the arm for @p roles

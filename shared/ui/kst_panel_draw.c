@@ -98,8 +98,9 @@ static int standing(const char *out[2], bool *warn)
 
     *warn = false;
     if (p->f.stopped) {
+        /* What stands is the latch, and the hold that resets it. */
         *warn = true;
-        out[0] = TR(KP_M_STOPPED);
+        out[0] = TR(KP_M_STOP_LATCHED);
         return 1;
     }
     if (kst_prog_writing(p)) {

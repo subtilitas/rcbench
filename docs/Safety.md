@@ -24,6 +24,10 @@ IOmcu reports the heartbeat trusted, writes CLEAR (0x5AFE) on its own,
 then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK (negative
 acknowledge) from the IOmcu to either leaves the panel SAFE.
 
+
+STOP works as an emergency stop button: one touch latches it, a hold of
+2s resets it ([STOP as an emergency stop](Stop.md)).
+
 ### Render-loop watchdog
 
 The control task reads touch, tests STOP's rectangle and beats the heartbeat
@@ -47,8 +51,8 @@ of the bench's own, through the path STOP takes:
   shows when the render loop draws again. A loop that never draws again
   shows nothing new.
 
-The stop latches like STOP. A loop that recovers arms nothing and switches
-nothing on; only the next switch to ARMED clears the latch. One stall makes
+The stop latches as STOP does. A loop that recovers arms nothing and switches
+nothing on; only the next switch to ARMED or STOP's reset clears the latch. One stall makes
 one stop, and the next stall starts at the counter's next move.
 
 The clock starts at the counter's last move, not at the arm. A loop that
@@ -596,7 +600,9 @@ reads the state and shows the alert, is not in the coverage figure.
 
 ## Deliberate behaviours
 
-- STOP latches. The bench stays SAFE until it is switched to ARMED again.
+- STOP latches. The bench stays SAFE, and refuses ARM and every ON, until
+  STOP is held for 2s and the IOmcu confirms everything off
+  ([STOP as an emergency stop](Stop.md)).
 - STOP closes the OUTPUT IS ON question on SUPPLY and SERVO. Each screen
   counts the stops it is told of, and a question stands only under the count
   it was asked with, so an APPLY tapped in the same frame as STOP changes no
@@ -854,8 +860,8 @@ reads the state and shows the alert, is not in the coverage figure.
   Leaving the failsafe takes a write of a defined value (0x5AFE) to the control
   page. The same holds after an IOmcu start and after a distrusted
   heartbeat: see [Arm latch](#arm-latch).
-- A link lost while ARMED is a stop at the panel. It latches like STOP and is
-  cleared by the next switch to ARMED.
+- A link lost while ARMED is a stop at the panel. It latches and is cleared
+  by the next switch to ARMED or by STOP's reset.
 - While the bench is ARMED the IOmcu refuses, with BAD_VALUE, an OUTPUTS
   write that changes a slot and a CHAN_CFG write that changes a channel's
   role or anything of a throttle channel. A surface's slew and pulse range are

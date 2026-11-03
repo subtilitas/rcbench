@@ -31,6 +31,7 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 | Einen ESC über sein Gasknüppel-Menü programmieren | [Stick-Programmierung](StickProgramming-de.md) |
 | Einen Empfänger anschließen und seine Ausgabe prüfen | [Empfängerbusse](Receivers-de.md) |
 | Stoppmechanismen und die externe Schaltung, die sie brauchen | [Sicherheit](Safety-de.md) |
+| Mit STOP stoppen und STOP lösen | [STOP als Not-Aus](Stop-de.md) |
 | ESCs mit BLHeli_32-Firmware: was unterstützt wird und was nicht | [Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md) |
 
 ## Referenz

@@ -1113,6 +1113,12 @@ static void p_drain_commands(void)
         o->done = true;
         if (o->kind == OP_ARM) {
             p_pump();
+            /* A pressed STOP stands until its reset (stop_latch.h): the
+             * operator's hold of STOP, confirmed, just before this ARM.
+             * The reset's own CLEAR is not modelled; the arm writes one. */
+            if (arming_held(&p_arm)) {
+                arming_stop_release(&p_arm);
+            }
             arming_request_arm(&p_arm, T);
         } else if (o->kind == OP_STOP) {
             arming_stop_pressed(&p_arm);
@@ -1564,6 +1570,8 @@ TEST_CASE(an_arm_the_far_end_never_trusts_is_given_up_latched)
     op_at(2, 3000, OP_STOP, 0);
     run_until(5000);
     CHECK(link_dev_arm_latched(&d_dev));
+    /* The STOP's reset first, as p_drain_commands() models it. */
+    arming_stop_release(&p_arm);
     arming_request_arm(&p_arm, T);
     const uint32_t asked = T;
     while (p_arm_gave_up == 0u && (uint32_t)(T - asked) < 2000u) {

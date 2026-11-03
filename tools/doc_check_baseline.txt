@@ -3417,13 +3417,11 @@ shared/ui/include/supply_screen.h: warning: return type of member supply_screen_
 shared/ui/include/ui_alert_slot.h: file has no @file block
 shared/ui/include/ui_alert_slot.h: warning: Compound ui_alert_slot_t is not documented.
 shared/ui/include/ui_alert_slot.h: warning: Member text[UI_ALERT_MAX] (variable) of struct ui_alert_slot_t is not documented.
-shared/ui/include/ui_band.h: warning: parameters of member ui_band_armed_label are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_chip_rect are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_rect are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_render are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_mode are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_link_refused_label are not documented
-shared/ui/include/ui_band.h: warning: return type of member ui_band_armed_label is not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_chip_rect is not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_help_rect is not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_mode is not documented

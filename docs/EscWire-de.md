@@ -202,7 +202,7 @@ ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung. SWITCHED parkt die
 
 STOP im Band stoppt die Sitzung. Ein Schreiben läuft erst bis zum Zurücklesen. ABBRUCH auf der Seite wirkt beim Drücken und schneidet sofort, auch im Schreiben. Ein Stop, eine verlorene Versorgung oder ein verlorener Link schließen einen offenen Editor oder eine Hold-Seite, und der Screen sagt, was geschah.
 
-Nach einem Stop oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK. STOP LÖSCHEN beendet den Stop und hält den Pin weiter. Steht der STOP des Panels, zeigt sie nur PIN ZURÜCK, mit `Der STOP des Bench steht: erst PIN ZURÜCK.`: diesen STOP zu lösen braucht ARM, und ARM wird unter dem Halten abgelehnt.
+Nach einem Stop oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK. STOP LÖSCHEN beendet den Stop und hält den Pin weiter. Steht der STOP des Panels, zeigt sie nur PIN ZURÜCK, mit `Der STOP des Bench steht: Halte STOP 2s, um ihn zu lösen.`: STOP LÖSCHEN braucht den Heartbeat, den der eingerastete STOP anhält. Ist STOP gelöst, erscheint STOP LÖSCHEN wieder.
 
 Nach einem Stop oder Fehler steht das SUPPLY OFF des Panels auf der SUPPLY-Page, bis das Halten endet, das Netzteil kommt unter diesem Halten also nicht wieder an. Die Seite danach bietet nur PIN ZURÜCK, mit `Ein Stop oder Fehler beendete die Sitzung: PIN ZURÜCK, dann VERBINDEN.` Ein ENTER in diesem Zustand wird mit `SUPPLY_OFF` abgelehnt, bevor sich etwas bewegt. Ein SUPPLY OFF unter PIN GEHALTEN ohne Stop oder Fehler zeigt nur die Zeile dieser Ablehnung.
 

@@ -45,6 +45,7 @@
 #include "settings_screen.h"
 #include "settings_sensors.h"
 #include "splash_screen.h"
+#include "stop_hold.h"
 #include "supply_screen.h"
 #include "touch.h"
 #include "ui_band.h"
@@ -512,6 +513,10 @@ void panel_frame_loop(void)
         if (ui_router_take_stop()) {
             atomic_store(&s_stop_request, true);
         }
+        /* And the reset's hold, a flag for the same reason. */
+        if (stop_hold_take_reset()) {
+            atomic_store(&s_stop_reset_request, true);
+        }
 
         bench_state_t bench;
         bool     link_up;
@@ -532,6 +537,7 @@ void panel_frame_loop(void)
         link_refused = s_snap.link_refused;
         mcu_temp_c  = s_snap.mcu_temp_c;
         run_seconds = s_snap.run_seconds;
+        const bool stop_latched = s_snap.stopped;
         have_alert  = ui_alert_slot_take(&s_snap.alert, alert, sizeof(alert));
         const uint32_t alert_taken = s_snap.alert.taken;
         const uint32_t withdrawn   = s_snap.alert.withdrawn;
@@ -551,6 +557,7 @@ void panel_frame_loop(void)
         const ui_bench_status_t status = {
             .link_up     = link_up,
             .armed       = armed,
+            .stop_latched = stop_latched,
             .armed_roles = (uint8_t)((motor_armed_now ? UI_ARMED_MOTOR : 0u)
                                      | (servo_armed_now ? UI_ARMED_SERVO
                                                         : 0u)),
