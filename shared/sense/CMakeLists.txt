@@ -14,13 +14,18 @@
 # CH1's 1ms samples into text lines for a debug build of the IOmcu
 # (its SENSE_TRACE option).  The panel does not compile them; an IOmcu
 # image built without the option does not link them.
+#
+# sense_txq.c is the sensor bus's wire on the I2C transaction queue
+# (protocols/i2c_txq), the IOmcu's and the host suite's; the panel does
+# not compile it.
 set(SRCS sense_bus.c ina228.c ina3221.c as5600.c sense_sched.c sense_sched_cap.c
          sense_i3221_cfg.c sense_svc.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES servo)
 else()
-    add_library(rcbench_sense STATIC ${SRCS} sense_trace_feed.c sense_trace.c)
+    add_library(rcbench_sense STATIC ${SRCS} sense_trace_feed.c sense_trace.c
+                sense_txq.c)
     target_include_directories(rcbench_sense PUBLIC include)
-    target_link_libraries(rcbench_sense PUBLIC rcbench_servo)
+    target_link_libraries(rcbench_sense PUBLIC rcbench_servo rcbench_i2c_txq)
 endif()

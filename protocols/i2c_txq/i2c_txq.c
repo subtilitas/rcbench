@@ -99,6 +99,7 @@ void i2c_txq_cfg_default(i2c_txq_cfg_t *cfg)
     cfg->clear_half_us = I2C_TXQ_CLEAR_HALF_US;
     cfg->clear_stretch_us = I2C_TXQ_CLEAR_STRETCH_US;
     cfg->late_us = I2C_TXQ_LATE_US;
+    cfg->guard_us = I2C_TXQ_GUARD_US;
 }
 
 bool i2c_txq_init(i2c_txq_t *q, const i2c_txq_ops_t *ops, void *ctx,
@@ -407,10 +408,15 @@ static void requeue(i2c_txq_t *q)
     q->phase = P_IDLE;
 }
 
+static bool runs_into_hard(const i2c_txq_t *q, const i2c_txq_xfer_t *x,
+                           uint64_t now);
+
 /**
  * @brief The line check of the picked transaction.  High lines send it; a
  *        soft one whose deadline passed in the settle ends
- *        I2C_TXQ_DROPPED instead.  A low line gets settle_us to rise, then the pad pull-ups for
+ *        I2C_TXQ_DROPPED instead, and a soft one that would now run into a
+ *        queued hard one's release (runs_into_hard()) goes back to the
+ *        queue.  A low line gets settle_us to rise, then the pad pull-ups for
  *        probe_us: a line that rises on them is held by nothing and has no
  *        pull-up (I2C_TXQ_NO_PULLUP), one still low after them is held by a
  *        part (I2C_TXQ_BUS_LOW).  Nothing is sent after the probe.
@@ -441,6 +447,10 @@ static void check_lines(i2c_txq_t *q, uint64_t now)
          * settles: it is then dropped, as in the queue. */
         if (q->run->cls == I2C_TXQ_SOFT && after(now, q->run->deadline_us)) {
             end_run(q, I2C_TXQ_DROPPED, now);
+        } else if (q->run->cls == I2C_TXQ_SOFT
+                   && runs_into_hard(q, q->run, now)) {
+            /* The settle took the room it had before a hard release. */
+            requeue(q);
         } else {
             to_wire(q, now);
         }
@@ -539,8 +549,34 @@ static void drop_late(i2c_txq_t *q, uint64_t now)
 }
 
 /**
+ * @brief Whether soft transaction @p x, started now, would still run when a
+ *        queued hard one is released: its computed end plus guard_us after
+ *        a hard one's not-before time that has not come yet.
+ *
+ * @param q    The queue.
+ * @param x    A soft transaction.
+ * @param now  The present time, in us.
+ * @return True when @p x is to wait for the hard one.
+ */
+static bool runs_into_hard(const i2c_txq_t *q, const i2c_txq_xfer_t *x,
+                           uint64_t now)
+{
+    const uint64_t end = now + i2c_txq_bus_us(x, q->cfg.hz) + q->cfg.guard_us;
+
+    for (size_t i = 0; i < q->n; ++i) {
+        const i2c_txq_xfer_t *h = q->slot[i];
+        if (h->cls == I2C_TXQ_HARD && after(h->not_before_us, now)
+            && after(end, h->not_before_us)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @brief Pick the next transaction whose not-before time has come; a soft
- *        one past its deadline never starts.
+ *        one past its deadline never starts, and a soft one that would
+ *        still run when a queued hard one is released waits.
  *
  * @param q    The queue.
  * @param now  The present time, in us.
@@ -553,7 +589,8 @@ static int pick(const i2c_txq_t *q, uint64_t now)
     for (size_t i = 0; i < q->n; ++i) {
         const i2c_txq_xfer_t *x = q->slot[i];
         if (after(x->not_before_us, now)
-            || (x->cls == I2C_TXQ_SOFT && after(now, x->deadline_us))) {
+            || (x->cls == I2C_TXQ_SOFT && after(now, x->deadline_us))
+            || (x->cls == I2C_TXQ_SOFT && runs_into_hard(q, x, now))) {
             continue;
         }
         if (best < 0 || before(x, q->slot[best])) {
@@ -725,6 +762,11 @@ void i2c_txq_hold(i2c_txq_t *q, bool on)
     if (q != NULL) {
         q->hold = on;
     }
+}
+
+bool i2c_txq_lines_high(const i2c_txq_t *q)
+{
+    return q != NULL && lines_high(q);
 }
 
 bool i2c_txq_clearing(const i2c_txq_t *q)

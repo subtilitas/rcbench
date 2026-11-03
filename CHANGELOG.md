@@ -4,6 +4,44 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
+## Unreleased
+
+### Changed
+
+- The IOmcu's sensor bus runs on `protocols/i2c_txq`: core 1 hands each
+  transaction to the queue as a hard one, due now, and waits for its end
+  with interrupts on (`shared/sense/sense_txq.c`,
+  `firmware/iomcu/src/sense_i2c.c`). The schedule, the bus policy, the
+  400kHz clock, the 1000us limit, the 10us settle and 50us pull-up probe
+  before a start and the 9-clock bus clear stay. What changes:
+  - No transaction runs with core 1's interrupts off; the FIFO load is at
+    most 13 register writes with them off. The flash lock-out may land
+    during a transaction, which ends on the wire while core 1 is parked.
+  - A read is stamped with its end as the block's interrupt or core 1's
+    poll took it; taken more than 100us late, with its start plus its bus
+    time.
+  - A pointer read is one transaction loaded into the FIFO whole, not two
+    pico-sdk calls. The sequence on the wire stays: START, address,
+    pointer, repeated START, address, bytes, STOP. The gaps between bytes
+    are not measured.
+  - The block is reset after a timeout and by the bus clear, not after a
+    NACK or a lost arbitration.
+  - A NACK is told by the block's abort source, not by the lines after
+    it; a line held after a NACK is reported by the next transaction's
+    line check. A lost arbitration with a line still low 10us after the
+    end is SENSE_BUS_LOW without the pad pull-up probe.
+  - The bus clear runs with interrupts on, 24 half-clock steps of 5us,
+    115us from the first to the last without SCL held.
+  - Core 1 polls the queue once a tick; a wait for a transaction asks for
+    an abort after 5000us and gives up after 10000us when the driver never
+    reports one.
+  - The open is refused when the I2C block or its interrupt is taken.
+  `protocols/i2c_txq` does not start a soft transaction while its bus
+  time plus 20us (`I2C_TXQ_GUARD_US`) would run past a queued hard one's
+  release, checked at the pick and again after the line settle. Host-tested in `test_sense_txq`, `test_sense_txq_svc` (the service on
+  the queue against the direct wire: every snapshot equal over 4000 ticks
+  with faults) and `test_sense_i2c`.
+
 ## 0.23.5 - 2026-11-03
 
 0.23.5 is a testing release: its minor number, 23, is odd, and GitHub

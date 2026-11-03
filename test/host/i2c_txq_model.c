@@ -53,6 +53,32 @@ static void op_start(void *ctx, const i2c_txq_xfer_t *x)
     if (m->hang) {
         return;
     }
+    if (m->respond != NULL) {
+        const model_answer_t a = m->respond(m->respond_ctx, x, m->rx);
+        switch (a) {
+        case MODEL_HANG:
+            m->hang = true;
+            return;
+        case MODEL_NACK_ADDR:
+            m->end_abrt = I2C_TXQ_ABRT_ADDR_NOACK;
+            m->end_at = m->now + BYTE_US;
+            return;
+        case MODEL_NACK_DATA:
+            m->end_abrt = I2C_TXQ_ABRT_DATA_NOACK;
+            m->end_at = m->now + 2u * BYTE_US;
+            return;
+        case MODEL_ARB_LOST:
+            /* SDA taken by something else, and held a while after. */
+            m->end_abrt = I2C_TXQ_ABRT_ARB_LOST;
+            m->end_at = m->now + BYTE_US;
+            m->sda_hold_us = (uint32_t)(m->end_at + m->arb_hold_us);
+            return;
+        default:
+            m->rx_n = x->rd_len;
+            m->end_at = m->now + i2c_txq_bus_us(x, I2C_TXQ_HZ) + m->extra_us;
+            return;
+        }
+    }
     if (!m->present[x->addr & 0x7Fu]) {
         m->end_abrt = I2C_TXQ_ABRT_ADDR_NOACK | m->abort_extra;
         m->end_at = m->now + BYTE_US + m->extra_us;

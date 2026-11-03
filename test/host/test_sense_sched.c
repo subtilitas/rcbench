@@ -106,7 +106,8 @@ static void rig(uint8_t channels, bool with_recover)
     i3221->volts[1] = 5.9;
     i3221->volts[2] = 5.8;
     const sense_sched_io_t io = { { timed_read, timed_write, &fb }, now_us,
-                                  with_recover ? recover : NULL, NULL };
+                                  with_recover ? recover : NULL, NULL,
+                                  NULL };
     sense_sched_cfg_t cfg = {
         .ina228_en = true, .ina228_addr = I228_ADDR,
         .ina228_shunt_uohm = I228_UOHM, .ina228_max_ma = I228_MA,
@@ -1798,7 +1799,7 @@ TEST_CASE(a_reset_ina228_is_found_and_set_up_again)
     i228  = fake_add(&fb, FAKE_INA228, I228_ADDR, 200e-6);
     i3221 = fake_add(&fb, FAKE_INA3221, I3221_ADDR, 0.1);
     const sense_sched_io_t io = { { timed_read, timed_write, &fb }, now_us,
-                                  NULL, NULL };
+                                  NULL, NULL, NULL };
     const sense_sched_cfg_t cfg = {
         .ina228_en = true, .ina228_addr = I228_ADDR,
         .ina228_shunt_uohm = I228_UOHM, .ina228_max_ma = 300000u,
@@ -1885,7 +1886,7 @@ TEST_CASE(every_tick_of_the_rotation_fits_a_millisecond)
     i3221 = fake_add(&fb, FAKE_INA3221, I3221_ADDR, 0.1);
     fake_part_t *enc = fake_add(&fb, FAKE_AS5600, AS5600_ADDR, 0.0);
     const sense_sched_io_t io = { { timed_read, timed_write, &fb }, now_us,
-                                  NULL, NULL };
+                                  NULL, NULL, NULL };
     sense_sched_cfg_t cfg = {
         .ina228_en = true, .ina228_addr = I228_ADDR,
         .ina228_shunt_uohm = I228_UOHM, .ina228_max_ma = I228_MA,

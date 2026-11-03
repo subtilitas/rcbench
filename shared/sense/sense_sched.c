@@ -332,14 +332,31 @@ static void roll_windows(sense_sched_t *s, uint64_t now_ms);
  * @brief A read is done: its time, µs, with the windows rolled to it, so what
  * it read goes into the window it was read in.
  *
+ * The time of a read that went through is the end of its transaction, from
+ * the io's done_us() when it has one; any other is now_us().
+ *
+ * @param s The schedule.
+ * @param ok True when the read just made went through.
+ * @return The time of the read, in µs.
+ */
+static uint64_t stamp_read(sense_sched_t *s, bool ok)
+{
+    const uint64_t us = (ok && s->io.done_us != NULL)
+                        ? s->io.done_us(s->io.ctx)
+                        : s->io.now_us(s->io.ctx);
+    roll_windows(s, us / 1000u);
+    return us;
+}
+
+/**
+ * @brief stamp_read() of a read that went through.
+ *
  * @param s The schedule.
  * @return The time of the read, in µs.
  */
 static uint64_t stamp(sense_sched_t *s)
 {
-    const uint64_t us = s->io.now_us(s->io.ctx);
-    roll_windows(s, us / 1000u);
-    return us;
+    return stamp_read(s, true);
 }
 
 /**
@@ -360,7 +377,7 @@ static bool read_ch_current(sense_sched_t *s, unsigned c, sense_value_t *v,
                     && ina3221_read_current(d,
                                             (uint8_t)(c % INA3221_CHANNELS + 1u),
                                             v) == SENSE_OK;
-    const uint64_t us = stamp(s);
+    const uint64_t us = stamp_read(s, ok);
     if (at_us != NULL) {
         *at_us = us;
     }

@@ -86,7 +86,7 @@ static sense_i3221_cfg_t map_all(uint8_t fitted, uint8_t fast)
 static void start(const sense_i3221_cfg_t *m, bool with_228, bool with_enc)
 {
     const sense_sched_io_t io = { { fake_read, fake_write, &fb }, now_us,
-                                  NULL, NULL };
+                                  NULL, NULL, NULL };
     sense_sched_cfg_t cfg;
     memset(&cfg, 0, sizeof(cfg));
     cfg.ina228_en         = with_228;
