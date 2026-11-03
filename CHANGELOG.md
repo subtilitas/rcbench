@@ -6,6 +6,31 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.6 - 2026-11-03
+
+0.23.6 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.5 does; an ESP32-S3 panel stays on the 0.22 line and
+is not offered it. The link protocol is 4.36, as in 0.23.5. The assets are
+`rcbench-panel-p4-v0.23.6.zip`, `rcbench-panel-p4-v0.23.6.bin`,
+`rcbench-iomcu-v0.23.6.zip`, `rcbench-iomcu-rbmod-v0.23.6.zip` and
+`SHA256SUMS`.
+
+A bench on 0.23.5 gets 0.23.6 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers the IOmcu's update over CAN (Controller Area Network)
+when the IOmcu runs another build. A new bench loads both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
+
+The entries below cover the 4 pull requests merged since v0.23.5: #632 and
+#709 to #711.
+
+### Added
+
+- rbmod carrier: PROG 5V lost is an error. While the panel's PROG 5V ON stands (the PROG_SUPPLY page reads it on or acknowledged it, no programming port holds it, the heartbeat runs), two new INA3221 windows in a row under 3000mV on the channel watching PROG 5V, both read 500ms or more after the ON, put the bench SAFE with every output off and the PROG_SUPPLY OFF written. The band reads `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.`, the console one line with both windows and the time since the ON. One error an ON. M7's controller latches off above about 6.0V for 20us or below 3.25V for 200us and restarts only on an EN toggle, which the next PROG 5V ON gives; the known cause is a braking servo feeding energy back into PROG 5V. Rev 1 rework item 3, a 5.6V 1W zener from VCC_PROGPORT_DCDC to GND, absorbs the feedback; the firmware does not rely on it. No watch without a channel watching PROG 5V or while a programmer session holds the 5V ([Carrier, PROG 5V lost](docs/Carrier.md#prog-5v-lost)). `sense_win_link_last()` also hands out the window's number.
+
 ### Changed
 
 - The IOmcu's sensor bus runs on `protocols/i2c_txq`: core 1 hands each
@@ -71,7 +96,6 @@ The entries below cover the 23 pull requests merged since v0.23.4: #684 and
 
 ### Added
 
-- rbmod carrier: PROG 5V lost is an error. While the panel's PROG 5V ON stands (the PROG_SUPPLY page reads it on or acknowledged it, no programming port holds it, the heartbeat runs), two new INA3221 windows in a row under 3000mV on the channel watching PROG 5V, both read 500ms or more after the ON, put the bench SAFE with every output off and the PROG_SUPPLY OFF written. The band reads `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.`, the console one line with both windows and the time since the ON. One error an ON. M7's controller latches off above about 6.0V for 20us or below 3.25V for 200us and restarts only on an EN toggle, which the next PROG 5V ON gives; the known cause is a braking servo feeding energy back into PROG 5V. Rev 1 rework item 3, a 5.6V 1W zener from VCC_PROGPORT_DCDC to GND, absorbs the feedback; the firmware does not rely on it. No watch without a channel watching PROG 5V or while a programmer session holds the 5V ([Carrier, PROG 5V lost](docs/Carrier.md#prog-5v-lost)). `sense_win_link_last()` also hands out the window's number.
 - rbmod carrier: the programming port is chosen on the panel and kept over a restart. A tap on the KST or Hitec programmer's PORT row before CONNECT opens PROGP01 to PROGP04 with their GPIO, and the carrier's PROG PORT entries on OUTPUTS offer SERVO TESTER and PORT PWM. The choice is SERVO TESTER (`srv_target`), so the servo tester, the KST limit search and LEFT/RIGHT drive the chosen port. It is locked under the SERVO TARGET rules, with the reason under the rows. PROGP04 is refused by name while PWM04, on PWM slice 0, carries a PWM output. The pulse goes out only while PROG 5V reads ON; PORT PWM ON, a servo test and a limit run say `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` otherwise, and a servo test on the port says `PROG PORTS RUN AT 5V FIXED: NO STEPS`. A chosen port that does not read SERVO PWM yet takes no tester command, so nothing goes to the servo outputs in its place. For the limit run the PROG 5V box stands for the PD mini: SEARCH+PROG and SERVO PULSES are offered with the box ON, the servo rails' PD mini is neither asked nor watched, and an aborted run switches PROG 5V off.
 - Link 4.36: the rbmod carrier's programming ports take FUNC SERVO PWM besides NONE; DShot stays refused, and every start begins on NONE. An OUTPUTS write or BIND commit that puts a PWM slot on a SERVO PWM port's slice sets that port back to NONE, its pulse off and TARGET 0 where it names it, so PWM04 takes a PWM protocol beside a chosen PROGP04; a port a KST or HITEC session holds refuses such a write. A PWM slot bound on a port's slice lets the port go first, so the binding of PWM01 to PWM04 keeps its rate.
 - ESC signal wire: POWER keeps SWITCHED or BY HAND over a panel restart, in the panel's settings (`escw_by_hand`); with nothing stored it is SWITCHED.
