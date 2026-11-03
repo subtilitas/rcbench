@@ -4,7 +4,26 @@ Notable changes to rcbench. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Commit-level
 history is in git.
 
-## Unreleased
+## 0.23.5 - 2026-11-03
+
+0.23.5 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.4 does; an ESP32-S3 panel stays on the 0.22 line and
+is not offered it. The link protocol is 4.36 (4.33 in 0.23.4). The assets are
+`rcbench-panel-p4-v0.23.5.zip`, `rcbench-panel-p4-v0.23.5.bin`,
+`rcbench-iomcu-v0.23.5.zip`, `rcbench-iomcu-rbmod-v0.23.5.zip` and
+`SHA256SUMS`.
+
+A bench on 0.23.4 gets 0.23.5 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers the IOmcu's update over CAN (Controller Area Network)
+when the IOmcu runs another build. A new bench loads both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
+
+The entries below cover the 23 pull requests merged since v0.23.4: #684 and
+#686 to #707.
 
 ### Added
 
@@ -13,13 +32,25 @@ history is in git.
 - ESC signal wire: POWER keeps SWITCHED or BY HAND over a panel restart, in the panel's settings (`escw_by_hand`); with nothing stored it is SWITCHED.
 - ESC signal wire: a backup's name carries the firmware, `ESCW001-AM32.TXT`, `ESCW002-BLHELI_S.TXT`, `ESCW003-BLUEJAY.TXT`, `ESCW004-ESCAPE32.TXT`, for a backup before a write and one saved by hand. One number runs through the folder; `ESCWnnn.TXT` and other names list and load as they did.
 - ESC signal wire: DELETE A FILE in the session's FILES list deletes a file on a red 2s hold, and the list reads the card again. A backup the session saved is not deleted inside the session.
-
-- Debug builds: the IOmcu's bench console over CAN. A panel built with `RCBENCH_PANEL_CONSOLE` relays its serial ports to an IOmcu built with `IOMCU_CONSOLE`, through the CONSOLE page (0xE0), at most one exchange a control pass: 6,000 bytes/s of output at a 5ms pass, calculated. Every console command runs on the IOmcu, `ewline` included. Both options are off in every released image, and CI reads the images for it. Such a panel carries the console image, and UPDATES offers it over CAN. The console build holds the IOmcu's lines from its start, the reset cause first, for whoever comes.
+- Debug builds: the IOmcu's bench console over CAN. A panel built with `RCBENCH_PANEL_CONSOLE` relays its serial ports to an IOmcu built with `IOMCU_CONSOLE`, through the CONSOLE page (0xE0), at most one exchange a control pass: 6,000 bytes/s of output at a 5ms pass, calculated. Every console command runs on the IOmcu, `ewline` included. Both options are off in every released image, and CI reads the images for it. Such a panel carries the console image, and UPDATES offers it over CAN. The console build holds the IOmcu's lines from its start, the reset cause first, for whoever comes. The relay's own lines land between the IOmcu's lines, never inside one; a gap of 1500ms or more in the control passes, as during an IOmcu update, says `console: no pass from t_ms=<a> to t_ms=<b>`.
 - WI-FI: HOTSPOT PASSWORD and WEB CODE, each RANDOM (the default) or a value of 8 to 63 printable ASCII characters typed on the panel, kept in NVS (non-volatile storage) under `ap_pass` and `web_code`, in plain form. BACK TO RANDOM takes one tap. A change takes effect at the next start of the radio. FORGET HOME NETWORK keeps both. A kept code stays valid until changed; 16 wrong codes still switch the radio off. The page's code entry takes 63 characters, its body limit is 200 bytes, and the cookie carries the code percent-encoded. The panel takes no screenshot while it shows a kept value. `tools/check_wifi_secrets.py` fails CI on a log call that names a kept value.
 - Panel: MOTOR & ESC > PROGRAM's row `AM32, Bluejay, BLHeli_S, ESCape32`, `SIGNAL WIRE` at its right, dimmed until the IOmcu reports `LINK_CAP_PROGRAM`: [ESC signal wire](docs/EscWire.md). CONNECT, identity, tabs of fields, a draft, WRITE with the warning that names each hazardous field, the backup and the record on the card, a file loaded, RESTORE FROM BACKUP on an erased AM32, LEAVE. Voltage and limit are SUPPLY's until typed.
+- ESC signal wire, screen behaviour:
+  - A hold's fill reaches the screen: MOTOR & ESC's session path reads the page set's hold revision and redraws the hold's button alone in each framebuffer, 251 cache-line fills a frame (`motor-wire-hold`).
+  - The action row, BACK, value rows, NEXT, PREV, CANCEL and list entries show the pressed state from press to release, and a press redraws that button alone. A move redraws nothing.
+  - A steady session page moves no revision when the outputs read again: the targets compare by field, not with their padding byte. `motor-wire` draws 0 cache-line fills a frame, 19,271 with the padding moving.
+  - PIN HELD shows `A stop or a fault ended this session` only for a stop or a fault; after a SUPPLY OFF with neither, the `SUPPLY_OFF` refusal's line is the only one.
+  - After a stop or a fault PIN HELD offers PIN BACK only, with a line that names CONNECT after it. The SUPPLY page reports its latched OFF, and an ENTER under it is refused with `LINK_ESC_REF_SUPPLY_OFF` (17).
+  - With the panel's STOP standing, STOPPED offers PIN BACK only, with `The bench's STOP stands: PIN BACK first.` A page's stop keeps CLEAR STOP.
+  - ESCape32's 3 sound and light fields (`volume`, `beacon`, `led`) sit on the tab `INPUT, SOUND` with input and telemetry, 11 rows. Every tab of every firmware is selectable in the strip of 6.
+  - A press on the place of a hidden button, or between two tabs, clears no line.
+  - A line stays on its stage and the page its end leads to; the next press clears it. Arriving on CONNECT with the pin free clears all but `LEFT`, the link's state and an error that ended the flow.
+  - A falling link closes a keypad, a choice and a hold page on any stage, and `ABORT ended it` gives way to the link's state.
+  - VOLTAGE's and LIMIT's keypads end at SUPPLY's limits for this board and setting, and a connect above them is refused with the range message.
+  - RELEASE, RESTORE and NO BACKUP each have their own hold hint, and RELEASE's page names the pin. The German `STOPPED` title reads `GESTOPPT`.
 - SUPPLY: an ESC session's hold counts on every board. On the carrier SUPPLY refuses set points and ON under it (`SUP_HELD_REFUSED_ESC`); KST and Hitec sessions there do not lock it.
 - Panel's editor: an ESC settings file changed there has `edited` as its last line that is not blank, behind any lines added to it, and no checksum line.
-- Panel: the half of the `ESC_WIRE` and `ESC_DATA` pages (`esc_link`, `esc_prog`,
+- Panel: its half of the `ESC_WIRE` and `ESC_DATA` pages (`esc_link`, `esc_prog`,
   `esc_prog_file`). A panel restart closes what the page holds at
   the first read, and again every 1000ms; a pin that does not come back is an error
   and an alert that names the slot or port. The STOP key is the page's STOP. `FAULT`
@@ -38,7 +69,7 @@ history is in git.
   take back keeps the hold until a CLOSE succeeds or the IOmcu restarts. ARM and THROTTLE
   are 0 when the hold begins and at its end. SUPPLY's wiring in force is taken during the hold; a change answers BUSY. An error, TORN and LOST included, parks the line and switches the
   PD mini and PROG_SUPPLY off; a STOP or an ABORT does as well. RAM 7344B: 3856B for the
-  page and 3488B for the line. No screen uses the pages yet. A bidirectional
+  page and 3488B for the line. A bidirectional
   DShot pin resting high on SAFE stays as it is, a current
   limitation ([The ESC settings pages](docs/LinkEsc.md#current-limitations)).
 - Bench console: `esc` runs the page's operations.
@@ -46,15 +77,17 @@ history is in git.
   signal wire, for BLHeli_S layout 33, Bluejay layout 208 and AM32 settings
   revisions 3 and 4; older layouts are shown read-only. It holds protocol A at
   52us a bit, a guard every outgoing frame passes, identification, field maps
-  and a non-blocking session with read-back. It has no link page or screen.
-  Written from a behavioural specification, without access to the
-  firmware sources.
+  and a non-blocking session with read-back. Written from a behavioural
+  specification, without access to the firmware sources. A data announcement
+  is followed by 520us before its data on every firmware: a gap of 104us loses
+  the data on AM32, which ends a message only on more than 234us of idle line.
+  A leave frame is followed by 500us of idle line before the line goes low.
 - `protocols/escwire/ew_file.c`: an ESC's settings as a text file of at most
   5280B, with the page as read, whole, and a CRC-32 (32-bit cyclic redundancy
   check). A load takes editable fields only, into the same firmware and layout.
   A verified file of an AM32 restores an ESC whose 192B read 0xFF when its pin
   code, flash code, bootloader protocol and name are the ESC's. Files go to
-  `BENCH/ESCW/CONF`, `ESCW001.TXT` to `ESCW999.TXT`. No screen uses it.
+  `BENCH/ESCW/CONF`, `ESCW001.TXT` to `ESCW999.TXT`.
   ESCape32's file holds its 46 keys as `key: value` lines and `music`, up to 255
   characters. A load takes the keys and never writes `music`.
 - `protocols/escwire/`: ESCape32's text interface at 38400baud. It holds the
@@ -68,16 +101,18 @@ history is in git.
   access) channels behind `ew_driver_t`. 16 cycles a bit, 52us and 38400baud,
   8N1, idle high; the pad is released 1 bit time after the last stop bit's edge
   and receives with its pull-up. An abort or a capture marked aborted or
-  overflow leaves the pad an input with its pull-down. The IOmcu links it and
-  the released image holds none of it: nothing calls it there. No byte has been
-  to an ESC.
+  overflow leaves the pad an input with its pull-down. The IOmcu links it.
 - Bench console: `ewline <gpio> tx|abort|rx`, in the `IOMCU_CONSOLE` build, runs
   the pin driver on a free pin for a logic analyser. Fixed bytes, SAFE only.
 - Screenshot: a 1000ms hold on the empty part of the band, on any screen with
   the band, takes the frame at once, in any bench state. One picture is held in
   1,305,600B of PSRAM and its popup opens once the bench is idle. SAVE writes
   `screenshots/<name>.PNG`, an 8-bit RGB PNG of 1024 x 600px, on the card. The
-  menu's guide has a fourth page for it.
+  menu's guide has a fourth page for it. The IOmcu update's question and the
+  release reminder take no hold, since they cannot say whether a box covers
+  them. A save that the bench stopped by leaving idle shows `The bench was
+  busy. Nothing saved. Tap SAVE again.` when the popup opens again; a failure
+  answered while the popup is shut shows its own text the same way.
 
 ### Changed
 
@@ -92,40 +127,15 @@ history is in git.
 
 - Link: a read asks for at most 16 registers, 4 reply frames, which the panel's TWAI receive FIFO holds while its interrupt is held on core 0. A wider read (PROG 28, ESC_WIRE status 21, SUPPLY 18, the windows and pages of 28 and 32) is a read of 16 and a READ_HELD (op 6, protocol 4.35) of the rest, which the IOmcu reads in the same page call, so the two parts are one state of the page. An IOmcu older than 4.35 is read in one exchange. The bench console's window is 28 bytes.
 - Link report: the panel's bus line and card row carry the TWAI driver's `rx overrun` and `rx missed`; the IOmcu's 3s CAN line carries `tx_drop`, reply frames given up at a full transmit buffer.
-- OUTPUTS: the line under a port's rows names an ESC or Hitec session's hold. It read `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` at SAFE with no test.
-- OUTPUTS: a FUNCTION or pin ask no longer waits for ever after a panel or IOmcu start. The sweep's state, not known since the link came up, was settled only by a TARGET change or a position. A port on a DShot function, or no port wanted by the SERVO screen, gives neither. The ask now settles it. The amber line names what holds an ask: SAFE, a servo test or sweep, the servo, Hitec or ESC programmer, or a read of the ports.
-- Debug builds: the relay's own lines no longer land inside an IOmcu line; a gap of 1500ms or more in the control passes, as during an IOmcu update, says `console: no pass from t_ms=<a> to t_ms=<b>`.
-- Wi-Fi: the same wrong code in a browser's cookie counts once toward the 16 wrong codes, for a RANDOM and a kept code. A tab open from before a change of the code no longer switches the radio off. The panel remembers the last 4 wrong cookie values as keyed hashes, emptied at every start of the radio. A different value and every `POST /code` count as before.
-- ESC signal wire: a hold's fill reaches the screen. MOTOR & ESC's session path did not read the page set's hold revision, so no hold showed a fill. It now redraws the hold's button alone in each framebuffer, 251 cache-line fills a frame (`motor-wire-hold`).
-- ESC signal wire: the action row, BACK, value rows, NEXT, PREV, CANCEL and list entries show the pressed state from press to release, and a press redraws that button alone. A move redraws nothing.
-- ESC signal wire: PIN HELD shows `A stop or a fault ended this session` only for a stop or a fault; after a SUPPLY OFF with neither, the `SUPPLY_OFF` refusal's line is the only one.
-- ESC signal wire: ESCape32's 3 sound and light fields (`volume`, `beacon`, `led`) were on a seventh tab the tab strip of 6 could not select. They sit on `INPUT, SOUND` with input and telemetry, 11 rows. Every tab of every firmware is selectable.
-- ESC signal wire: a press on the place of a hidden button, or between two tabs, clears no line.
-- ESC signal wire: with the panel's STOP standing, STOPPED offers PIN BACK only, with `The bench's STOP stands: PIN BACK first.` A page's stop keeps CLEAR STOP.
-- ESC signal wire: after a stop or a fault PIN HELD offers PIN BACK only, with a line that names CONNECT after it. The SUPPLY page reports its latched OFF, and an ENTER under it is refused with `LINK_ESC_REF_SUPPLY_OFF` (17) in place of ending as `SUPPLY` after 1.3s.
-- ESC signal wire: VOLTAGE's and LIMIT's keypads end at SUPPLY's limits for this board and setting, and a connect above them is refused with the range message.
-- ESC signal wire: a falling link closes a keypad, a choice and a hold page on any stage, and `ABORT ended it` gives way to the link's state.
-- ESC signal wire: a line stays on its stage and the page its end leads to; the next press clears it. Arriving on CONNECT with the pin free clears all but `LEFT`, the link's state and an error that ended the flow.
-- ESC signal wire: RELEASE, RESTORE and NO BACKUP each have their own hold hint, and RELEASE's page names the pin. German `STOPPED` title reads `GESTOPPT`.
-- ESC signal wire: a steady session page moves no revision when the outputs read again: the targets compare by field, not with their padding byte. `motor-wire` draws 0 cache-line fills a frame, 19,271 with the padding moving.
-
+- OUTPUTS: the line under a port's rows names an ESC or Hitec session's hold. At SAFE with no test it does not read `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS`.
+- OUTPUTS: a FUNCTION or pin ask settles after a panel or IOmcu start. The sweep's state is unknown from the link-up and a TARGET change or a position settles it; a port on a DShot function, or no port wanted by the SERVO screen, gives neither, so the ask settles it. The amber line names what holds an ask: SAFE, a servo test or sweep, the servo, Hitec or ESC programmer, or a read of the ports.
+- Wi-Fi: the same wrong code in a browser's cookie counts once toward the 16 wrong codes, for a RANDOM and a kept code. A tab open from before a change of the code does not switch the radio off. The panel remembers the last 4 wrong cookie values as keyed hashes, emptied at every start of the radio. A different value and every `POST /code` count as before.
 - `docs/BLHeli32.md` no longer says AM32 is fully supported.
 - IOmcu: a non-zero ARM written while a programming port is out of PWM, on KST
   or Hitec, is refused with NOT_ARMED. The ARM and THROTTLE registers are 0 when
   the hold begins and at every way out of it, with a pin given back or not. A stored ARM armed the bank in
   the pass the port returned to PWM, with no new ask; only the panel's press
   guards stood in the way, and a panel just restarted over a held port had none.
-- `protocols/escwire`: 520us between a data announcement and its data, on every
-  firmware. A gap of 104us loses the data on AM32 and no answer comes, since
-  AM32 ends a message only on more than 234us of idle line. A leave frame is
-  followed by 500us of idle line before the line goes low.
-
-- Screenshot: the IOmcu update's question and the release reminder take no
-  hold. They cannot say whether a box covers them, so a hold there copied a
-  picture and the popup would have opened after the screen had gone.
-- Screenshot: a save that the bench stopped by leaving idle shows `The bench
-  was busy. Nothing saved. Tap SAVE again.` when the popup opens again. A
-  failure answered while the popup is shut shows its own text the same way.
 
 ### Removed
 
