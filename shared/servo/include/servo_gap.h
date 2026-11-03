@@ -18,7 +18,7 @@
  * run's current ceilings and the IOmcu's current limit trip, and the
  * supply's readings, which feed its trips -- ends a run at its first loss.
  *
- * Pure C, no clock of its own; times wrap at 2^32 ms.
+ * Pure C, no clock of its own; its millisecond clock wraps at 2^32.
  *
  * SPDX-License-Identifier: MIT
  */
