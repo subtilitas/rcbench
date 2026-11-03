@@ -346,6 +346,9 @@ static void enc_queue(void)
         if (given && !was_valid && q.no_magnet == was_no_magnet) {
             return;
         }
+        /* When it was found so: a run times the part's silence from here
+         * (servo_gap.h). */
+        q.taken_ms    = now_ms();
         given         = true;
         was_valid     = false;
         was_no_magnet = q.no_magnet;

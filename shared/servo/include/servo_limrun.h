@@ -113,6 +113,12 @@
  *   - window means above SERVO_LIMRUN_STALL_MA for SERVO_LIMRUN_STALL_MS
  *     end it;
  *   - no window for SERVO_LIMRUN_WIN_STALE_MS ends it;
+ *   - with cfg.enc_on, the AS5600 not answering for longer than
+ *     SERVO_GAP_MAX_MS, or again less than SERVO_GAP_EVERY_MS after the start
+ *     of the last time, ends it (servo_limrun_encoder(), servo_gap.h): a
+ *     shorter gap is ridden through, since the angle feeds only the report,
+ *     and no angle is taken in it.  The INA3221's windows feed the current
+ *     protections above and get no such allowance;
  *   - each search has its own cap, SERVO_LIMRUN_SEARCH_MS;
  *   - the search's own protections stay (servo_limit.h).
  *
@@ -384,6 +390,8 @@ typedef struct {
     bool     cmd_due;
     bool     enc_valid;
     float    enc_deg;
+    servo_gap_t enc_gap;    /**< the AS5600 not answering, with cfg.enc_on
+                                 (servo_gap.h)                           */
 
     servo_limrun_side_t first[2];   /**< the first search of each side  */
     servo_limrun_side_t after[2];   /**< the last check of each side    */
@@ -472,6 +480,21 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
  * @param w Window to feed. Ignored when NULL or when it has no current reading.
  */
 void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w);
+
+/**
+ * @brief A reading of the output encoder, as the automatic test takes it
+ *        (servo_test_encoder()): one not valid without no_magnet opens a gap
+ *        of the part not answering at its taken_ms, the next from a part that
+ *        answers closes it.  Nothing without cfg.enc_on.  A gap longer than
+ *        SERVO_GAP_MAX_MS ends the run with SERVO_TEST_AB_ENC_SILENT, a second
+ *        one sooner than SERVO_GAP_EVERY_MS after the start of the last with
+ *        SERVO_TEST_AB_ENC_GAPS, both errors.  The angle itself comes with
+ *        servo_limrun_step()'s @c in.
+ *
+ * @param r Run state. Does nothing unless the run is RUNNING.
+ * @param e Encoder reading. Ignored when NULL.
+ */
+void servo_limrun_encoder(servo_limrun_t *r, const servo_test_enc_t *e);
 
 /**
  * @brief The supply's reading.

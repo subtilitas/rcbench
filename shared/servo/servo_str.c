@@ -93,6 +93,8 @@ bool servo_test_abort_error(servo_test_abort_t why)
     case SERVO_TEST_AB_INA_NO_WINDOW:
     case SERVO_TEST_AB_INA_SETUP:
     case SERVO_TEST_AB_INA_METER:
+    case SERVO_TEST_AB_ENC_SILENT:
+    case SERVO_TEST_AB_ENC_GAPS:
         return true;
     default:
         return false;
@@ -143,7 +145,9 @@ const char *servo_test_start_name(servo_test_start_t why)
 #define CSV_BASE  "time (s);test;step;phase;command (us);position (us);" \
                   "set (V);voltage (V);limit (A);current (A);power (W);" \
                   "mode;travel (ms)"
-#define CSV_ENC   ";angle (deg);travel angle (ms)"
+/** @brief The encoder's three columns, with AS5600 on only: the angle, the
+ *         travel time from it and the length of a gap of the part. */
+#define CSV_ENC   ";angle (deg);travel angle (ms);angle gap (ms)"
 #define CSV_METER ";meter;window;current max (A);current min (A);" \
                   "voltage min (V);clipped"
 

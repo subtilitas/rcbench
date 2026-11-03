@@ -127,7 +127,9 @@ The card's summary line names the steps and the length of each, `4.8 6.0V BROWN-
 
 ![A test run](view:servo-run)
 
-TEST stays shown as the run starts, and the card's state line reads the step. LIVE shows its step and phase in a box left of the dial, under `ARM FIRST`, with the meter beside STOP TEST: `PD mini`, the channel, `INA 0x41 CH2`, or `SIMULATION`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`.
+TEST stays shown as the run starts, and the card's state line reads the step. LIVE shows its step and phase in a box left of the dial, under `ARM FIRST`, with the meter beside STOP TEST: `PD mini`, the channel, `INA 0x41 CH2`, or `SIMULATION`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Its windows feed STALL AT's stop, so a gap in them ends the run at once.
+
+With the AS5600 in use from the start, a run rides through a gap of the encoder: the part not answering for up to 300ms, once in 10s. Motor and ESC runs at high current disturb the sensor bus, and a part plugged in during a run does too. No angle is judged in the gap, the report says `AS5600 gaps: 1, the longest 120ms. ...`, and the CSV's `angle gap (ms)` column holds its length. A longer gap ends the run, `AS5600 not answering`, and so does a second one within 10s, `AS5600 dropped out twice in 10s`: both are errors, the output off and the bench SAFE.
 
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)
@@ -219,6 +221,7 @@ Each of these ends the run as ABORTED, with the output off and the servo release
 
 - STOP RUN, STOP, a switch to SAFE, a lost link, leaving the screen, a change to the servo's settings;
 - the INA3221 ceasing to be the meter, or no INA3221 window for 200ms (`no INA3221 window for 0.2s`);
+- with the AS5600 in use from the start, the part not answering for more than 300ms (`AS5600 not answering`), or again within 10s (`AS5600 dropped out twice in 10s`); a shorter, rarer gap is ridden through, and the report counts it;
 - during a search, a window without the rail voltage (`no rail voltage in a window`), or with its mean under 3.0V, the first window included (`supply or rail voltage changed`);
 - a sample at 3.0A or more, a sample at the end of the INA3221's range, or window means above 1.0A for 400ms;
 - a search longer than 40s, a bench that does not switch in 3s, or a programmer step longer than 150s;

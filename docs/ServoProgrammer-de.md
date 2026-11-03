@@ -1240,6 +1240,13 @@ dieses VERLASSEN vorbei ist. Ein VERLASSEN, das scheitert, lässt den Port
 im Programmiermodus, und der Programmierer öffnet sich auf der linken
 Karte.
 
+Ein AS5600, ab dem Start des Laufs in Gebrauch, das in einer Sitzung
+verstummt, beendet den Lauf wie in einer Suche: nach mehr als 300ms, oder
+bei einer zweiten Lücke weniger als 10s nach dem Beginn der ersten, als
+Fehler ([Servo, Schutzmechanismen](Servo-de.md#schutzmechanismen)). Der Port
+bleibt im Programmiermodus wie bei jedem Abbruch in einer Sitzung, und der
+Prüfstand, für die Sitzung schon SAFE, wird nicht erneut auf SAFE gesetzt.
+
 ## Weiteres
 
 ![WEITERES](img/de/servo-kst-more.png)
