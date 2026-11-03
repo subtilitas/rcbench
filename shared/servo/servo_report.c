@@ -672,6 +672,13 @@ static bool encoder_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, S(R_ENC_NO_MAGNET), (unsigned long)t->enc_no_magnet);
         return true;
     }
+    if (t->enc_gap.count > 0u && here(c)) {
+        snprintf(b, n, S(R_ENC_GAPS), (unsigned long)t->enc_gap.count,
+                 (unsigned long)t->enc_gap.longest_ms,
+                 (unsigned)SERVO_GAP_MAX_MS,
+                 (unsigned)(SERVO_GAP_EVERY_MS / 1000u));
+        return true;
+    }
     if ((t->enc_weak > 0u || t->enc_strong > 0u) && here(c)) {
         snprintf(b, n, S(R_ENC_FIELD), (unsigned long)t->enc_weak,
                  (unsigned long)t->enc_strong);

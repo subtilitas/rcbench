@@ -875,7 +875,15 @@ static void log_row(servo_test_t *t, const sample_t *m, uint8_t mode,
                      (unsigned long)t->enc_travel_now_ms);
             t->enc_travel_now_ms = 0u;
         }
-        snprintf(line + used, sizeof(line) - used, ";%s;%s", angle, settle);
+        char gap[12] = "";
+        if (t->enc_gap_now_ms != 0u
+            && (int32_t)(m->at - t->enc_gap_at_ms) >= 0) {
+            snprintf(gap, sizeof(gap), "%lu",
+                     (unsigned long)t->enc_gap_now_ms);
+            t->enc_gap_now_ms = 0u;
+        }
+        snprintf(line + used, sizeof(line) - used, ";%s;%s;%s", angle, settle,
+                 gap);
     }
     const size_t used = strlen(line);
     snprintf(line + used, sizeof(line) - used, ";%s;%s",
@@ -1110,6 +1118,45 @@ void servo_test_window(servo_test_t *t, const servo_test_win_t *w,
             tail);
 }
 
+/**
+ * @brief The part not answering, judged by servo_gap.h's rule: a reading not
+ *        valid without no_magnet opens a gap, one from a part that answers --
+ *        an angle, or no magnet -- closes it.  Only while a run with the
+ *        encoder in use runs.
+ *
+ * A gap that ends the run ends it at @p e's time, as an error; the reading
+ * is then kept as one after the run's end is.
+ *
+ * @param t Run state, running or not.
+ * @param e Encoder reading.
+ */
+static void enc_gap_judge(servo_test_t *t, const servo_test_enc_t *e)
+{
+    if (!servo_test_running(t) || !t->cfg.enc_on) {
+        return;
+    }
+    servo_test_abort_t why = SERVO_TEST_AB_NONE;
+    if (!e->valid && !e->no_magnet) {
+        if (servo_gap_lost(&t->enc_gap, e->taken_ms) == SERVO_GAP_TOO_SOON) {
+            why = SERVO_TEST_AB_ENC_GAPS;
+        }
+    } else if (t->enc_gap.open) {
+        const servo_gap_verdict_t v = servo_gap_back(&t->enc_gap, e->taken_ms);
+        if (v == SERVO_GAP_TOO_LONG) {
+            why = SERVO_TEST_AB_ENC_SILENT;
+        } else {
+            /* Its length on the first row at or after the reading that
+             * ended it. */
+            const uint32_t ms = (uint32_t)(e->taken_ms - t->enc_gap.from_ms);
+            t->enc_gap_now_ms = ((int32_t)ms > 0) ? ms : 1u;
+            t->enc_gap_at_ms  = e->taken_ms;
+        }
+    }
+    if (why != SERVO_TEST_AB_NONE) {
+        finish(t, why, e->taken_ms);
+    }
+}
+
 bool servo_test_enc_at(const servo_test_t *t, uint32_t at_ms, float *deg)
 {
     uint16_t raw = 0u;
@@ -1125,6 +1172,7 @@ void servo_test_encoder(servo_test_t *t, const servo_test_enc_t *e)
     if (t == NULL || e == NULL) {
         return;
     }
+    enc_gap_judge(t, e);
     if (!e->valid || e->gap) {
         /* The angle is not known across a gap: nor is the move open over
          * it, unless it had settled before.  A reading that follows lost
@@ -1211,6 +1259,13 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
         if ((int32_t)(now_ms - heard) >= (int32_t)SERVO_TEST_WIN_STALE_MS) {
             finish(t, SERVO_TEST_AB_WIN_STALE, now_ms);
         }
+    }
+    if (servo_test_running(t) && t->cfg.enc_on
+        && servo_gap_check(&t->enc_gap, now_ms) == SERVO_GAP_TOO_LONG) {
+        /* The encoder's silence: 1ms past SERVO_GAP_MAX_MS,
+         * after the meter's, which names the meter in a pass that finds
+         * both. */
+        finish(t, SERVO_TEST_AB_ENC_SILENT, now_ms);
     }
     if (servo_test_running(t)) {
         const uint32_t in_phase = now_ms - t->phase_ms;

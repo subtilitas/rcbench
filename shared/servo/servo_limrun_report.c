@@ -259,6 +259,14 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
     if (!g->enc_on && text_line(c, SERVO_STR_L_R_ENC_OFF)) {
         return true;
     }
+    if (g->enc_on && r->enc_gap.count > 0u && here(c)) {
+        snprintf(c->buf, c->n, LS(R_ENC_GAPS),
+                 (unsigned long)r->enc_gap.count,
+                 (unsigned long)r->enc_gap.longest_ms,
+                 (unsigned)SERVO_GAP_MAX_MS,
+                 (unsigned)(SERVO_GAP_EVERY_MS / 1000u));
+        return true;
+    }
     if (blank(c) || text_line(c, SERVO_STR_L_R_ENDS_HEAD)) {
         return true;
     }

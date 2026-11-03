@@ -221,6 +221,7 @@ TRACKED = [
     "shared/servo/servo_report.c",
     "shared/servo/servo_limrun.c",
     "shared/servo/servo_limrun_report.c",
+    "shared/servo/servo_gap.c",
     "protocols/openyge/openyge_frame.c",
     "protocols/openyge/openyge_status.c",
     "protocols/openyge/openyge_params.c",

@@ -119,6 +119,7 @@ either goes.
 | The panel's render loop stopped 1000ms | no pulse within 150ms more | cut | off | the panel's control task (`frame_watch.h`), then the IOmcu |
 | STOP | no pulse within 150ms | cut | off | the panel, then the IOmcu |
 | A run's meter or supply fails (`no INA3221 window for 0.2s` and the other errors in [Servo, What ends a run](Servo.md#what-ends-a-run)) | SAFE | none open: a run is ARMED | off | the SERVO screen |
+| A run's AS5600 output encoder, in use from the start, not answering for more than 300ms, or again less than 10s after the start of the last time (`AS5600 not answering`, `AS5600 dropped out twice in 10s`); a shorter, rarer gap does not end the run ([Servo, The output encoder](Servo.md#the-output-encoder)) | SAFE | none open: a session is SAFE already | off | the SERVO screen |
 | A session cut by the link or the heartbeat | as in the rows above | transaction cut | off, after a frame on the wire, 12ms at most | the IOmcu |
 | A card write fails during a run, or the final commit or close of the run log or of the automatic test's CSV (comma-separated values) file after it, once a run | SAFE | the port's supply off, after a write that runs ([below](#a-programming-ports-supply)) | off; a port's after its write, 10000ms at most | the panel (`card_faults_follow()`), the IOmcu for the write |
 | The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, the IOmcu for the write |
