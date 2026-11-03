@@ -667,8 +667,8 @@ void draw_test_stall(gfx_canvas_t *c, int x, int y)
 /**
  * @brief The AUTOMATIC TEST card's lines: over START TEST the steps and
  *        the length of each, and under it why a run cannot start or what it
- *        does now, the last result and its file, and a STALL AT no reading
- *        can pass.
+ *        does now, the last result and its file or, for an aborted run, its
+ *        reason, and a STALL AT no reading can pass.
  * @param c the canvas
  */
 void draw_test_lines(gfx_canvas_t *c)
@@ -707,16 +707,25 @@ void draw_test_lines(gfx_canvas_t *c)
     gfx_text(c, x, y, line, SV_FONT_LABEL, col, 1);
 
     if (s.test.state == SERVO_TEST_DONE && !servo_test_running(&s.test)) {
-        char f[LOG_RUN_NAME_MAX + 4];
-        test_file_name(f, sizeof(f));
-        char name[LOG_RUN_NAME_MAX + 12];
-        snprintf(name, sizeof(name), "%s%s", f,
-                 (s.test_file > 0 && s.test_report) ? " + .TXT" : "");
-        snprintf(line, sizeof(line), TR(SV_CARD_LAST),
-                 ui_servo_str(servo_test_verdict_str(
-                     servo_test_verdict(&s.test))), name);
-        gfx_text(c, x, y + RUN_LINE_P, line, SV_FONT_LABEL,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
+        const servo_test_verdict_t v = servo_test_verdict(&s.test);
+        gfx_color_t last = ui_theme_color(UI_C_TEXT_DIM);
+        if (v == SERVO_TEST_ABORTED) {
+            /* An aborted run names why on the card it was started from:
+             * the band may show something else by then. */
+            snprintf(line, sizeof(line), TR(SV_CARD_LAST_WHY),
+                     ui_servo_str(servo_test_verdict_str(v)),
+                     ui_servo_str(servo_test_abort_str(s.test.why)));
+            last = ui_theme_color(UI_C_WARN);
+        } else {
+            char f[LOG_RUN_NAME_MAX + 4];
+            test_file_name(f, sizeof(f));
+            char name[LOG_RUN_NAME_MAX + 12];
+            snprintf(name, sizeof(name), "%s%s", f,
+                     (s.test_file > 0 && s.test_report) ? " + .TXT" : "");
+            snprintf(line, sizeof(line), TR(SV_CARD_LAST),
+                     ui_servo_str(servo_test_verdict_str(v)), name);
+        }
+        gfx_text(c, x, y + RUN_LINE_P, line, SV_FONT_LABEL, last, 1);
     }
     draw_test_stall(c, x, y + 2 * RUN_LINE_P);
 }

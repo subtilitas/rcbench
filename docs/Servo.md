@@ -845,10 +845,23 @@ live angle while AS5600 is on. A link that goes down clears the reading: the
 row shows dashes and ENC CENTRE sets nothing until a reading arrives with the
 link back. The same holds while the sensor reports no magnet.
 
+An AS5600 that stops answering during a run, pulled off or on a loose
+contact, does not end it, and neither does one that answers again. The run
+takes the readings it gets: while the part does not answer, the CSV's angle
+column is empty and a move open across the gap is left out as above; the
+angles count again from the next reading. The report has no line for the
+gap itself. The band says `AS5600 is not responding at 0x36.` when the part
+stops answering and takes the line back with the first read that finds it
+answering, so a part whose contacts drop it once more while it is plugged in
+leaves no "not responding" over an encoder that answers.
+
 ### What ends a run
 
 Every ending switches the output off, releases the servo to its centre, and
-still writes the report, marked ABORTED with the reason. An error switches the
+still writes the report, marked ABORTED with the reason. The reason is also
+the second line of the result box on LIVE and the last line of the AUTOMATIC
+TEST card (`LAST: ABORTED - STOP`), which then names the reason in place of
+the files. An error switches the
 bench to SAFE in place of the release: the supply not answering or tripped,
 no new reading, an output that did not come on, a set point not read back, a
 step above the cap, STALL AT, constant current and every INA3221 reason

@@ -123,7 +123,7 @@ START TEST on TEST's AUTOMATIC TEST card steps the servo through the supply volt
 
 ![TEST and its two run cards](view:servo-test)
 
-The card's summary line names the steps and the length of each, `4.8 6.0V BROWN-OUT, 60s EACH`. Under START TEST the state line, then the last result and its files, `LAST: PASS ATEST004.CSV + .TXT`.
+The card's summary line names the steps and the length of each, `4.8 6.0V BROWN-OUT, 60s EACH`. Under START TEST the state line, then the last result and its files, `LAST: PASS ATEST004.CSV + .TXT`. An aborted run names its reason there instead, `LAST: ABORTED - link lost`.
 
 ![A test run](view:servo-run)
 

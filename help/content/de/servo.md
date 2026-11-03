@@ -123,7 +123,7 @@ TEST STARTEN auf der Karte AUTOMATISCHER TEST von TEST führt das Servo durch di
 
 ![TEST mit seinen zwei Laufkarten](view:servo-test)
 
-Die Zusammenfassung der Karte nennt die Stufen und die Länge jeder Stufe, `4.8 6.0V BROWN-OUT, JE 60s`. Unter TEST STARTEN folgen die Zustandszeile, dann das letzte Ergebnis und seine Dateien, `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`.
+Die Zusammenfassung der Karte nennt die Stufen und die Länge jeder Stufe, `4.8 6.0V BROWN-OUT, JE 60s`. Unter TEST STARTEN folgen die Zustandszeile, dann das letzte Ergebnis und seine Dateien, `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`. Ein abgebrochener Lauf nennt dort stattdessen seinen Grund, `ZULETZT: ABGEBROCHEN - Link verloren`.
 
 ![Ein Testlauf](view:servo-run)
 

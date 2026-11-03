@@ -1762,7 +1762,8 @@ den Namen des Laufs, eine Zusammenfassung (`4.8 6.0V BROWN-OUT, JE
 60s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN (300 x 48px) mit den
 OPTIONEN der Karte (160 x 48px) daneben, die Zustandszeile, das
 letzte Ergebnis mit seinen Dateien (`ZULETZT: BESTANDEN ATEST004.CSV +
-.TXT`) und den Hinweis zu BLOCKIERT AB. TEST STARTEN braucht einen Prüfstand
+.TXT`; für einen abgebrochenen Lauf der Grund in der Warnfarbe,
+`ZULETZT: ABGEBROCHEN - Link verloren`) und den Hinweis zu BLOCKIERT AB. TEST STARTEN braucht einen Prüfstand
 in ARMED und ein Netzteil, das antwortet; die Zustandszeile sagt ZUERST ARM,
 KEINE STUFE GEWÄHLT, NETZTEIL ANTWORTET NICHT, BEREICH ZU KLEIN (die Enden aus BEREICH
 und WEG fallen auf PULS MITTE), STUFE ÜBER DEN OBERGRENZEN (eine
@@ -5300,7 +5301,7 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 | Meldung | Wann |
 | --- | --- |
 | `IOmcu-Firmware älter als 0.15.0. AS5600 nicht ausgelesen.` | der Encoder ist eingeschaltet, und der IOmcu spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
-| `AS5600 antwortet nicht unter 0x36.` | eingeschaltet, und 2,5s nach seiner Einstellung ohne Antwort, oder verstummt, nachdem er geantwortet hat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt, ML und MH zugleich |
+| `AS5600 antwortet nicht unter 0x36.` | eingeschaltet, und 2,5s nach seiner Einstellung ohne Antwort, oder verstummt, nachdem er geantwortet hat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt, ML und MH zugleich. Das Band nimmt die Zeile mit dem ersten Lesen zurück, das den Baustein antwortend findet |
 | `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.` | er antwortet, ein Winkel wurde gelesen, und STATUS MD (Magnet erkannt) ist nicht gesetzt. Der Zählerstand ist kein Winkel: GEMESSEN zeigt `---`, SENSOR-MITTE setzt nichts, und ein Lauf protokolliert und beurteilt keinen Winkel |
 | `AS5600: Magnetfeld zu schwach. Magnet näher heranbringen.` | STATUS MD und ML sind gesetzt. Der Winkel wird verwendet; das Datenblatt des Sensors spezifiziert sein Rauschen nur für 30 bis 90 mT |
 | `AS5600: Magnetfeld zu stark. Abstand zum Magneten vergrößern.` | STATUS MD und MH sind gesetzt. Der Winkel wird verwendet, wie bei ML |
