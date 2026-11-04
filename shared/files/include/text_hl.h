@@ -133,11 +133,11 @@ typedef struct {
 } text_hl_unit_t;
 
 /** @brief Rows of text_hl_units. */
-#define TEXT_HL_UNIT_COUNT 20u
+#define TEXT_HL_UNIT_COUNT 22u
 
 /**
  * @brief The units a number may carry, case as written: V mV A mA W rpm Hz
- *        us ms s /s deg Grad % mOhm B kB MB mΩ Ω; mOhm for the reports of
+ *        us ms s /s deg Grad % mOhm B kB MB mΩ Ω mm °; mOhm for the reports of
  *        0.22 and older.  test_text_hl holds it to
  *        every unit the report formats of ui_text.def put behind a number.
  */

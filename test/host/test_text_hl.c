@@ -70,7 +70,7 @@ static const char *const k_not_units[] = {
     "readings", "supply", "unseen", "values", "windows", "written",
     "movements", "Bewegungen", "Fenster", "Messwert", "Messwerte", "Werte",
     "Winkelmesswerte", "blockiert", "geschrieben", "nachher",
-    "gez\xC3\xA4hlten", "before", "vorher",
+    "gez\xC3\xA4hlten", "before", "vorher", "writes", "je",
 };
 
 /* Whether @p w of @p n bytes is in k_not_units. */
@@ -341,6 +341,9 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
         {"x +0.15A", 2u, 6u, TEXT_HL_CURR},
         {"x 333Hz)", 2u, 5u, TEXT_HL_RATE},
         {"x 40s", 2u, 3u, TEXT_HL_UNIT},
+        /* The degree sign is two bytes of UTF-8: 0xC2 0xB0. */
+        {"x 27.50\xC2\xB0 y", 2u, 7u, TEXT_HL_UNIT},
+        {"x 46.2mm;", 2u, 6u, TEXT_HL_UNIT},
         {"x 1500us", 2u, 6u, TEXT_HL_UNIT},
         {"x 10.0/s", 2u, 6u, TEXT_HL_UNIT},
         {"x 100.0m\xCE\xA9,", 2u, 8u, TEXT_HL_UNIT},
