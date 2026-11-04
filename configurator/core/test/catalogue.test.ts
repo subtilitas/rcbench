@@ -23,6 +23,7 @@ import type { PictureFolder } from '../tools/pictures.ts';
 
 const OUT_BIND = 'shared/outputs/out_bind.c';
 const SETTINGS = 'shared/settings/settings.c';
+const SCHEMA = 'shared/settings/settings_schema.c';
 const IOMCU_PINS = 'firmware/iomcu/include/iomcu_pins.h';
 
 /** Index of the first function that needs a part. Its id is `servo`. */
@@ -71,16 +72,16 @@ function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = (
     settings[line] = `        "key", "GPIO",`;
     settings[line + 1] = `        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, ${def}, NULL, 0 },`;
   };
-  entry(154, 'SET_SENSE_SDA', 16);
-  entry(157, 'SET_SENSE_SCL', 17);
-  entry(184, 'SET_TONE_PIN', 22);
-  entry(219, 'SET_PDMINI_TX', -1);
-  entry(222, 'SET_PDMINI_RX', -1);
+  entry(134, 'SET_SENSE_SDA', 16);
+  entry(137, 'SET_SENSE_SCL', 17);
+  entry(164, 'SET_TONE_PIN', 22);
+  entry(199, 'SET_PDMINI_TX', -1);
+  entry(202, 'SET_PDMINI_RX', -1);
 
   const iomcu = filler();
   iomcu[53] = '#define IOMCU_HEARTBEAT_PIN  3';
 
-  const files = new Map<string, string[]>([[OUT_BIND, outBind], [SETTINGS, settings], [IOMCU_PINS, iomcu]]);
+  const files = new Map<string, string[]>([[OUT_BIND, outBind], [SCHEMA, settings], [IOMCU_PINS, iomcu]]);
   const squash = (s: string): string => s.replace(/\s+/g, ' ').trim();
   for (const text of ANCHOR_TEXTS) {
     const held = files.get(text.path) ?? filler();
@@ -1047,46 +1048,57 @@ test('tree: a data file that is stale against the firmware tables is reported', 
   };
   reports(checkTree(CATALOGUE, noFile), 'pads', /out_bind\.c does not exist/);
   const noSettings: Tree = {
-    read: (path) => (path === SETTINGS ? null : full.read(path)),
+    read: (path) => (path === SETTINGS || path === SCHEMA ? null : full.read(path)),
     newestTag: RELEASE_TAG,
   };
   reports(checkTree(CATALOGUE, noSettings), 'pins', /settings\.c does not exist/);
 });
 
 test('tree: the pin defaults are read from settings_schema.c where the tree has it', () => {
-  // The table moved out of settings.c: the defaults are the schema file's.
-  const SCHEMA = 'shared/settings/settings_schema.c';
+  // The table is apart from settings.c: the defaults are the schema file's.
   const split = fakeTree(CATALOGUE, (files) => {
-    files.set(SCHEMA, [...lines(files, SETTINGS)]);
     files.set(SETTINGS, Array.from({ length: 2000 }, () => '/* text */'));
   });
   assert.deepEqual(errors(checkTree(CATALOGUE, split)), []);
   const stale = fakeTree(CATALOGUE, (files) => {
-    files.set(SCHEMA, [...lines(files, SETTINGS)]);
-    lines(files, SCHEMA)[155] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+    lines(files, SCHEMA)[135] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, stale), 'pin.sda', /GPIO 16 in the data and 18 in shared\/settings\/settings_schema\.c/);
+
+  // A tree without the schema file holds the table in settings.c.
+  const without = (edit: (files: Map<string, string[]>) => void): Tree => {
+    const full = fakeTree(CATALOGUE, (files) => {
+      files.set(SETTINGS, [...lines(files, SCHEMA)]);
+      edit(files);
+    });
+    return { read: (path) => (path === SCHEMA ? null : full.read(path)), newestTag: RELEASE_TAG };
+  };
+  assert.deepEqual(errors(checkTree(CATALOGUE, without(() => {}))), []);
+  const old = without((files) => {
+    lines(files, SETTINGS)[135] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+  });
+  reports(checkTree(CATALOGUE, old), 'pin.sda', /GPIO 16 in the data and 18 in shared\/settings\/settings\.c/);
 });
 
 test('tree: stale pin defaults are reported', () => {
   const sda = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[155] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+    lines(files, SCHEMA)[135] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, sda), 'pin.sda', /GPIO 16 in the data and 18/);
 
   // The firmware has a default for a pin the data calls a proposal.
   const pd = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[220] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
+    lines(files, SCHEMA)[200] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, pd), 'pin.pd_tx', /proposal in the data/);
 
   const renamed = fakeTree(CATALOGUE, (files) => {
-    lines(files, SETTINGS)[183] = '    [SET_TAP_PIN] = {';
+    lines(files, SCHEMA)[163] = '    [SET_TAP_PIN] = {';
   });
   reports(checkTree(CATALOGUE, renamed), 'pin.tap', /no SET_TONE_PIN/);
 
   const anchor = copy();
-  anchor.pinDefaults[1]!.src = { kind: 'repo', path: SETTINGS, line: 175, tag: TAG };
+  anchor.pinDefaults[1]!.src = { kind: 'repo', path: SCHEMA, line: 155, tag: TAG };
   reports(checkTree(anchor, fakeTree(CATALOGUE)), 'pin.sda', /not inside SET_SENSE_SDA/);
 
   const heartbeat = fakeTree(CATALOGUE, (files) => {
