@@ -83,6 +83,7 @@ void panel_frame_loop(void)
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
     uint32_t last_stops = 0;
+    uint32_t last_resets = 0;
     /* The contact breaks the reset's hold has answered. */
     unsigned stop_breaks_seen = atomic_load(&s_touch_breaks);
 
@@ -143,6 +144,10 @@ void panel_frame_loop(void)
         pressed_now    = s_snap.pressed;
         arm_gen_now    = s_snap.arm_gen;
         snap_unlock();
+        /* The STOP releases as this frame begins: the commands it flushes
+         * carry this count, whatever the control task does meanwhile. */
+        const uint32_t resets_now = atomic_load(&s_stop_resets);
+        s_render_resets = resets_now;
         /* Whether this frame found the touch stream broken; an arm is
          * acknowledged only by a frame that did not.  See the end of the
          * frame. */
@@ -159,12 +164,16 @@ void panel_frame_loop(void)
          * completion and clear the latch.  Every stop is an event here, and
          * touch that stops answering is counted as one.
          */
-        if (stops_now != last_stops) {
+        /* A STOP latch's release the same way: a hold begun while the STOP
+         * stood is one the latch refused, and it does not complete into an
+         * arm or an ON after the reset. */
+        if (stops_now != last_stops || resets_now != last_resets) {
             motor_screen_cancel_arm();
             servo_screen_cancel_arm();
             supply_screen_cancel_on();
         }
-        last_stops = stops_now;
+        last_stops  = stops_now;
+        last_resets = resets_now;
         /* And a stick run on MOTOR & ESC > PROGRAM, which ends on a stop,
          * a disarm or a link that went, and steps on the frame's time.
          * The pressed count tells an operator's STOP from the bench's

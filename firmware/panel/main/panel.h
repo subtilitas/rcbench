@@ -1111,6 +1111,9 @@ extern atomic_uint s_lets_go;
  *  command queued before the latest release drives nothing after it.
  *  Control task writes. */
 extern atomic_uint s_stop_resets;
+/** @brief s_stop_resets as the render task's frame began; the commands it
+ *  flushes carry this.  Render task only. */
+extern uint32_t s_render_resets;
 
 /* The supply's switch and set points, from the render side. */
 extern atomic_bool s_supply_off_request;
