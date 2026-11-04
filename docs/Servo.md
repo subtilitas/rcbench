@@ -1276,8 +1276,13 @@ the task is `shared/ui/servo_rudder_panel.c`.
 
 ### Method
 
-- The angle is the one LIVE's MEASURED reading takes: the AS5600 output
-  encoder's, in degrees from its ENC CENTRE, negated with REVERSE.
+- The angle is the one LIVE's MEASURED reading takes, from the source
+  ANGLE SOURCE names: the AS5600 output encoder's in degrees from its ENC
+  CENTRE, or the IMU's in AS5600 counts from count 0; negated with REVERSE.
+  The first state line names the source, `AS5600` or `IMU X+` with the
+  IMU's AXIS and SIGN.
+- ZERO is taken from count 0 of either source, so a new ENC CENTRE after
+  ZERO moves no deflection.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
   angle from it, wrapped to -180 up to 180°. Before ZERO the deflection is
   the angle itself.
@@ -1295,14 +1300,14 @@ the task is `shared/ui/servo_rudder_panel.c`.
 
 | Reading | Resolution | Range |
 | --- | --- | --- |
-| DEFLECTION | 0.1° shown; the AS5600's 4096 counts a turn, 0.088° | -180.0 to +179.9° |
+| DEFLECTION | 0.1° shown; 4096 counts a turn, 0.088°, for either source | -180.0 to +179.9° |
 | TRAILING EDGE | 0.1mm shown | -500.0 to +500.0mm |
 
 ### Limits
 
 - The AS5600 measures the servo output shaft. A linkage between horn and
   surface makes the surface's deflection differ from the shaft's; the
-  difference is not measured.
+  difference is not measured. The IMU measures what it is fixed to.
 - The deflection is not filtered: a reading's noise shows in its tenths and
   can raise MAX by it. The AS5600's noise on the bench is not measured.
 - REVERSE changes the sign shown and keeps the zero; MAX keeps each side as

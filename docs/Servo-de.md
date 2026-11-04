@@ -1295,9 +1295,13 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 
 ### Verfahren
 
-- Der Winkel ist der, den GEMESSEN auf LIVE nimmt: der des
-  AS5600-Ausgangsencoders, in Grad ab seinem ENC CENTRE, mit REVERSE
-  umgekehrt.
+- Der Winkel ist der, den GEMESSEN auf LIVE nimmt, von der Quelle, die
+  ANGLE SOURCE nennt: der des AS5600-Ausgangsencoders in Grad ab seinem
+  ENC CENTRE oder der der IMU in AS5600-Zählern ab dem Zählwert 0; mit
+  REVERSE umgekehrt. Die erste Zustandszeile nennt die Quelle, `AS5600`
+  oder `IMU X+` mit AXIS und SIGN der IMU.
+- NULLPUNKT wird bei beiden Quellen ab dem Zählwert 0 genommen; ein neues
+  ENC CENTRE nach NULLPUNKT verschiebt keinen Ausschlag.
 - NULLPUNKT nimmt den aktuellen Winkel als Neutrallage der Fläche. Der
   Ausschlag ist der Winkel ab ihr, auf -180 bis unter 180° gefaltet. Vor
   NULLPUNKT ist der Ausschlag der Winkel selbst.
@@ -1316,14 +1320,15 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 
 | Messwert | Auflösung | Bereich |
 | --- | --- | --- |
-| AUSSCHLAG | 0.1° angezeigt; die 4096 Schritte je Umdrehung des AS5600, 0.088° | -180.0 bis +179.9° |
+| AUSSCHLAG | 0.1° angezeigt; 4096 Schritte je Umdrehung, 0.088°, bei beiden Quellen | -180.0 bis +179.9° |
 | HINTERKANTE | 0.1mm angezeigt | -500.0 bis +500.0mm |
 
 ### Grenzen
 
 - Der AS5600 misst die Servoabtriebswelle. Ein Gestänge zwischen Horn und
   Fläche lässt den Ausschlag der Fläche von dem der Welle abweichen; der
-  Unterschied ist nicht gemessen.
+  Unterschied ist nicht gemessen. Die IMU misst das, woran sie befestigt
+  ist.
 - Der Ausschlag ist nicht gefiltert: das Rauschen eines Messwerts zeigt
   sich in seinen Zehnteln und kann MAX darum erhöhen. Das Rauschen des
   AS5600 am Prüfstand ist nicht gemessen.

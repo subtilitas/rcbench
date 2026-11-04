@@ -19,6 +19,7 @@
  * - a_tap_that_slides_off_or_loses_its_release_does_nothing
  * - length_takes_0_or_10_to_500mm_and_refuses_the_gap
  * - the_state_line_names_no_source_stale_and_connected
+ * - the_imu_as_the_source_is_named_and_read
  * - leaving_servo_from_rudder_disarms
  * - the_target_row_names_the_pin_the_buttons_drive
  * - the_knob_moves_the_horn_on_rudder_while_armed
@@ -518,6 +519,38 @@ TEST_CASE(the_state_line_names_no_source_stale_and_connected)
     CHECK_STR_EQ(rudder_line(3, line, sizeof(line)), "");
 }
 
+/* With ANGLE SOURCE IMU the state line names the IMU with its AXIS and
+ * SIGN, SETUP's AS5600 switch off says nothing against it, and the
+ * deflection from ZERO runs in the IMU's AS5600 counts. */
+TEST_CASE(the_imu_as_the_source_is_named_and_read)
+{
+    char line[64];
+    fresh();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    servo_screen_set_imu_axis(1u, true);
+    to_rudder();
+    CHECK(!settings_get_bool(SET_ENC_EN));
+    CHECK_EQ(rudder_source(), RUD_SRC_STALE);
+    CHECK_STR_EQ(rudder_line(0, line, sizeof(line)),
+                 "ANGLE: IMU Y- NOT ANSWERING");
+    reading(0);
+    CHECK_EQ(rudder_source(), RUD_SRC_LIVE);
+    CHECK_STR_EQ(rudder_line(0, line, sizeof(line)), "ANGLE: IMU Y-");
+    press(RUD_C_ZERO);
+    reading(256);                           /* +22.5deg */
+    float d = 0.0f;
+    CHECK(rudder_defl(&d));
+    CHECK_NEAR(d, 22.5f, 1e-3f);
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(rudder_line(0, line, sizeof(line)), "WINKEL: IMU Y-");
+    ui_text_set_language(UI_LANG_EN);
+    /* Back on the AS5600, its switch off in SETUP is the reason again. */
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
+    CHECK_EQ(rudder_source(), RUD_SRC_OFF);
+    CHECK_STR_EQ(rudder_line(0, line, sizeof(line)),
+                 "ANGLE: AS5600 OFF IN SETUP");
+}
+
 /* ---------------------------------------------------- the active output */
 
 /* Leaving SERVO from RUDDER on an armed bench disarms, and a button after
@@ -897,6 +930,7 @@ int main(void)
     RUN(a_tap_that_slides_off_or_loses_its_release_does_nothing);
     RUN(length_takes_0_or_10_to_500mm_and_refuses_the_gap);
     RUN(the_state_line_names_no_source_stale_and_connected);
+    RUN(the_imu_as_the_source_is_named_and_read);
     RUN(leaving_servo_from_rudder_disarms);
     RUN(the_target_row_names_the_pin_the_buttons_drive);
     RUN(the_knob_moves_the_horn_on_rudder_while_armed);

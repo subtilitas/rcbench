@@ -6,7 +6,7 @@ order: 23
 
 # Rudder deflection
 
-RUDDER, a task of [SERVO](servo.md)'s strip, drives one servo and shows how far the control surface it moves is deflected: in degrees from a zero and, with the surface's length entered, in mm at the trailing edge. The angle is the AS5600 output encoder's, as LIVE's MEASURED reading takes it, signed in the direction of the commanded angle. The output card on the right stays as on every task: the TARGET row names what the task drives, and ARM decides whether anything moves.
+RUDDER, a task of [SERVO](servo.md)'s strip, drives one servo and shows how far the control surface it moves is deflected: in degrees from a zero and, with the surface's length entered, in mm at the trailing edge. The angle comes from the source ANGLE SOURCE names on [Sensors](setup-sensors.md): the AS5600 output encoder or the IMU, as LIVE's MEASURED reading takes it, signed in the direction of the commanded angle. The output card on the right stays as on every task: the TARGET row names what the task drives, and ARM decides whether anything moves.
 
 ![RUDDER while SAFE](view:servo-rudder)
 
@@ -14,7 +14,7 @@ RUDDER, a task of [SERVO](servo.md)'s strip, drives one servo and shows how far 
 
 | Part | Shows |
 |---|---|
-| DEFLECTION | the angle from ZERO, -180.0 to +179.9°; before ZERO the angle from the AS5600's ENC CENTRE; `---` without a reading |
+| DEFLECTION | the angle from ZERO, -180.0 to +179.9°; before ZERO the angle from the AS5600's ENC CENTRE, or from the IMU's count 0; `---` without a reading |
 | TRAILING EDGE | L x sin(deflection) for a LENGTH of L mm: what a ruler held upright at the trailing edge reads, signed |
 | MAX | the largest deflection each side since ZERO or RESET MAX, in ° and in mm |
 
@@ -44,9 +44,9 @@ LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm
 
 | Line | Reads |
 |---|---|
-| `ANGLE: AS5600` | the encoder reads |
+| `ANGLE: AS5600`, `ANGLE: IMU X+` | the source reads; the IMU is named with its AXIS and SIGN |
 | `ANGLE: AS5600 OFF IN SETUP` | the AS5600 is off on SETUP > SENSORS |
-| `ANGLE: AS5600 NOT ANSWERING` | on, and no reading arrives |
+| `ANGLE: AS5600 NOT ANSWERING`, `ANGLE: IMU X+ NOT ANSWERING` | on, and no reading arrives; the IMU also while it is off or not connected |
 | `ANGLE: AS5600 SEES NO MAGNET` | the sensor reports no magnet |
 | `ANGLE: NO LINK` | no link to the IOmcu, the RP2350 board |
 | `NO ZERO: FROM THE SENSOR'S CENTRE` | ZERO not taken yet |
@@ -54,4 +54,4 @@ LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm
 
 ## What the angle is
 
-The AS5600 sits on the servo output shaft, so the angle is the shaft's. A linkage between horn and surface makes the two differ: the readout shows the shaft's deflection, and the difference to the surface's is not measured.
+The AS5600 sits on the servo output shaft, so its angle is the shaft's. A linkage between horn and surface makes the two differ: the readout shows the shaft's deflection, and the difference to the surface's is not measured. The IMU measures whatever it is fixed to, on the surface the surface's own angle.

@@ -32,9 +32,6 @@
  * included after it may meet. */
 #include "servo_screen_core_int.h"
 
-/** @brief The source's name on the state line: the output encoder. */
-#define RUD_SOURCE_NAME "AS5600"
-
 /** @brief The card's inner column: from x 18, 500px wide. */
 #define RUD_X      (PAD + 10)
 #define RUD_W      500                    /**< Its width, px. */
@@ -117,7 +114,9 @@ bool rudder_shown(void)
 
 rudder_src_t rudder_source(void)
 {
-    if (!settings_get_bool(SET_ENC_EN)) {
+    /* SETUP's AS5600 switch holds for the AS5600 alone: the IMU's angle
+     * comes in valid only while the IMU is on and connected. */
+    if (enc_src() == SERVO_ANGLE_AS5600 && !settings_get_bool(SET_ENC_EN)) {
         return RUD_SRC_OFF;
     }
     if (!s.link_up) {
@@ -375,25 +374,28 @@ const char *rudder_line(int i, char *buf, size_t n)
     }
     buf[0] = '\0';
     switch (i) {
-    case 0:
+    case 0: {
+        char name[12];
+        (void)enc_name(name, sizeof(name));
         switch (rudder_source()) {
         case RUD_SRC_OFF:
-            snprintf(buf, n, TR(RUD_SRC_OFF), RUD_SOURCE_NAME);
+            snprintf(buf, n, TR(RUD_SRC_OFF), name);
             break;
         case RUD_SRC_NO_LINK:
             snprintf(buf, n, "%s", TR(RUD_SRC_NO_LINK));
             break;
         case RUD_SRC_NO_MAGNET:
-            snprintf(buf, n, TR(RUD_SRC_NO_MAGNET), RUD_SOURCE_NAME);
+            snprintf(buf, n, TR(RUD_SRC_NO_MAGNET), name);
             break;
         case RUD_SRC_STALE:
-            snprintf(buf, n, TR(RUD_SRC_STALE), RUD_SOURCE_NAME);
+            snprintf(buf, n, TR(RUD_SRC_STALE), name);
             break;
         default:
-            snprintf(buf, n, TR(RUD_SRC_LIVE), RUD_SOURCE_NAME);
+            snprintf(buf, n, TR(RUD_SRC_LIVE), name);
             break;
         }
         break;
+    }
     case 1:
         snprintf(buf, n, TR(RUD_PULSE), servo_screen_commanded_text());
         break;

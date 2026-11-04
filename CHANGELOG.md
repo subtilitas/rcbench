@@ -34,7 +34,8 @@ history is in git.
   the seam writes nothing. No screen starts a Hitec run.
 - RUDDER on the SERVO workbench, the fifth task of its strip: drives the
   servo to 1000us, CENTRE or 2000us, or by the rotary knob, only while
-  ARMED, and shows the surface's deflection on the AS5600 in 0.1° and,
+  ARMED, and shows the surface's deflection from the angle source, the
+  AS5600 or the IMU, in 0.1° and,
   with LENGTH (10 to 500mm, hinge line to trailing edge, kept over a
   restart; 0 not set), the trailing edge's travel L x sin in 0.1mm. ZERO
   takes the neutral; MAX holds the largest deflection each side until
