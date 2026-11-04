@@ -231,11 +231,18 @@ TEST_CASE(each_command_encodes_its_bytes)
 {
     uint8_t c[WIT_CMD_LEN];
 
+    CHECK_EQ(WIT_CMD_LEN, 5u);
+    CHECK_EQ(WIT_FRAME_LEN, 11u);
+    CHECK_EQ(WIT_SYNC, 0x55);
     expect(wit_cmd_unlock(c), c, 0x69, 0x88, 0xB5);
     expect(wit_cmd_save(c), c, 0x00, 0x00, 0x00);
     expect(wit_cmd_rate(c, WIT_RATE_200HZ), c, 0x03, 0x0B, 0x00);
     expect(wit_cmd_rate(c, WIT_RATE_0_2HZ), c, 0x03, 0x01, 0x00);
+    expect(wit_cmd_rsw(c, WIT_RSW_TIME), c, 0x02, 0x01, 0x00);
+    expect(wit_cmd_rsw(c, WIT_RSW_ACC), c, 0x02, 0x02, 0x00);
+    expect(wit_cmd_rsw(c, WIT_RSW_GYRO), c, 0x02, 0x04, 0x00);
     expect(wit_cmd_rsw(c, WIT_RSW_ANGLE), c, 0x02, 0x08, 0x00);
+    expect(wit_cmd_rsw(c, WIT_RSW_MAG), c, 0x02, 0x10, 0x00);
     expect(wit_cmd_rsw(c, WIT_RSW_DEFAULT), c, 0x02, 0x1E, 0x00);
     expect(wit_cmd_rsw(c, WIT_RSW_QUAT | WIT_RSW_ANGLE), c, 0x02, 0x08, 0x02);
     expect(wit_cmd_calsw(c, 1), c, 0x01, 0x01, 0x00);
@@ -394,6 +401,11 @@ TEST_CASE(a_parser_state_past_its_buffer_is_reset_not_overrun)
     make_frame(f, WIT_T_ACC, 1, 2, 3, 4);
     CHECK_EQ(feed(&p, f, WIT_FRAME_LEN, &out), 1u);
     CHECK_EQ(out.v[3], 4);
+
+    p.n = WIT_FRAME_LEN;            /* the first byte past the buffer */
+    CHECK_EQ(feed(&p, f, WIT_FRAME_LEN, &out), 1u);
+    CHECK_EQ(out.v[2], 3);
+    CHECK_EQ(p.n, 0u);
 }
 
 int main(void)

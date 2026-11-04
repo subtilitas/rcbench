@@ -49,10 +49,7 @@ void wit_parser_init(wit_parser_t *p)
     if (p == NULL) {
         return;
     }
-    for (unsigned i = 0; i < WIT_FRAME_LEN; ++i) {
-        p->buf[i] = 0u;
-    }
-    p->n = 0u;
+    p->n = 0u;                  /* buf is written before it is read */
     p->frames = 0u;
     p->bad_sum = 0u;
     p->resyncs = 0u;
