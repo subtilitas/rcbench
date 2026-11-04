@@ -313,7 +313,7 @@ TEST_CASE(the_meter_and_the_bench_silent_end_the_run)
     CHECK(run_to(SERVO_RAUTO_PH_ARM, RAUTO_MS));
     g.bench_ms = 0xFFFFFFFFu;
     g.bench_to = -1;
-    const uint32_t a = g.run.phase_ms;
+    const uint32_t a = g.now;
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_BENCH);
     CHECK_EQ(g.run.end_ms - a, SERVO_LIMRUN_BENCH_MS);
@@ -382,6 +382,7 @@ TEST_CASE(a_refused_connect_ends_prog_and_restore_is_offered_after_a_write)
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_PROG);
+    CHECK(g.run.end_ms - g.run.start_ms < 60000u);
     rig_init(0u);
     g.change_at = 2u;
     CHECK(start());
@@ -401,6 +402,17 @@ TEST_CASE(a_refused_connect_ends_prog_and_restore_is_offered_after_a_write)
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_WRITE);
+    /* Read back as before, the pulses already 1000 to 2000us: nothing
+     * changed, no RESTORE. */
+    rig_init(0u);
+    g.pulses[1] = 10000u;
+    g.pulses[2] = 20000u;
+    g.lose_write = 1u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_WRITE);
+    CHECK(!servo_rauto_restore(&g.run));
+    CHECK(servo_rauto_wrote(&g.run));
     rig_init(0u);
     g.leave_fails = true;
     CHECK(start());
@@ -540,6 +552,9 @@ TEST_CASE(the_words_name_every_reason_and_phase)
     servo_rauto_step(&g.run, 2u, NULL, &d);
     CHECK(d.command);
     CHECK_EQ(d.cmd_us, RCENTRE);
+    /* Handed out once. */
+    servo_rauto_step(&g.run, 3u, NULL, &d);
+    CHECK(!d.command);
 }
 
 int main(void)
