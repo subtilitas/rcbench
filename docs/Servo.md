@@ -307,7 +307,8 @@ What differs:
 - The backup file HITEC001 to HITEC999 is saved before the run's first
   write; RESTORE is loading it on FILES of the Hitec programmer and writing
   it with WRITE n VALUES. The box names it, `LOAD HITEC001 IN FILES`, or
-  `NO BACKUP: NO CARD` without a card.
+  `NO BACKUP FILE` when none is saved: no card, or the run ended before
+  the first write's session saved one.
 - The report names the registers, `LEFT END (0xB2): 4841 before, 2341
   after`, the servo as `Hitec D SERIES, DIRECTION CW`, and the pulses as
   the pulse model.

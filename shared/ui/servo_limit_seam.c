@@ -170,6 +170,20 @@ const char *lim_seam_backup(uint8_t fam)
     return hitec(fam) ? hitec_panel_run_backup() : kst_panel_run_backup();
 }
 
+const char *lim_seam_backup_kept(uint8_t fam)
+{
+    if (hitec(fam)) {
+        /* The Hitec seam keeps the model's file as soon as one is saved. */
+        return hitec_panel_run_backup();
+    }
+    const char *f = kst_panel_run_backup();
+    const kst_prog_t *m = kst_panel_model();
+    if ((f == NULL || f[0] == '\0') && kst_prog_backed_up(m)) {
+        f = kst_prog_backup_name(m);
+    }
+    return f;
+}
+
 void lim_seam_end(uint8_t fam)
 {
     if (hitec(fam)) {

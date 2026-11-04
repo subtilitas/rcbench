@@ -212,6 +212,12 @@ TEST_CASE(a_d_series_write_counts_the_save_and_reboot_time_in_the_session_cap)
     CHECK(strstr(hl.report, servo_str(SERVO_STR_L_WHY_WRITE)) != NULL);
     CHECK(!hl.armed);
     CHECK_EQ(hl.cmd, 1500u);
+    /* The write handed over may have landed: RESTORE is offered, with no
+     * file to load since the write's session never saved one. */
+    {
+        char b[96];
+        CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "NO BACKUP FILE");
+    }
     g_q_hold = false;
 }
 

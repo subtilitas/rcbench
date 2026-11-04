@@ -335,8 +335,9 @@ Was anders ist:
 - Die Sicherungsdatei HITEC001 bis HITEC999 wird vor dem ersten Schreiben
   des Laufs gespeichert; ZURÜCKSPIELEN heißt, sie unter DATEIEN des
   Hitec-Programmierers zu laden und mit n WERTE SCHREIBEN zu schreiben. Das
-  Feld nennt sie, `HITEC001 IN DATEIEN LADEN`, oder ohne Karte `KEINE
-  SICHERUNG: KEINE KARTE`.
+  Feld nennt sie, `HITEC001 IN DATEIEN LADEN`, oder `KEINE
+  SICHERUNGSDATEI`, wenn keine gespeichert ist: ohne Karte, oder der Lauf
+  endete, bevor die Sitzung des ersten Schreibens eine speicherte.
 - Der Bericht nennt die Register, `LEFT END (0xB2): 4841 vorher, 2341
   nachher`, das Servo als `Hitec D SERIES, DIRECTION CW` und die Pulse als
   Pulsmodell.

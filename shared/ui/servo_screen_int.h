@@ -1103,6 +1103,12 @@ bool lim_seam_servo(uint8_t fam, servo_limrun_servo_t *sv);
  *  @param fam the family
  *  @return its name, "" for none */
 const char *lim_seam_backup(uint8_t fam);
+/** @brief The file that holds the servo as a run found it, for a run that
+ *         ended with a write on its way: the run's backup, or with none
+ *         handed over yet the session's own file saved before that write.
+ *  @param fam the family
+ *  @return its name, "" or NULL for none */
+const char *lim_seam_backup_kept(uint8_t fam);
 /** @brief The run is over on its programmer.
  *  @param fam the family */
 void lim_seam_end(uint8_t fam);
