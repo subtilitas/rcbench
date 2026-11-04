@@ -50,6 +50,15 @@ TEST_CASE(a_stall_before_the_goal_ends_binds_with_the_angle)
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_STALL);
     CHECK(ended_safe());
 
+    /* A stall while the 1000us side is checked, short of its goal. */
+    rig_init(0u);
+    CHECK(start());
+    CHECK(run_to(SERVO_RAUTO_PH_CHECK, RAUTO_MS));
+    g.bind[0] = 10.0f;
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_BINDS);
+    CHECK_NEAR(g.run.bind_deg, -10.0f, 0.01f);
+
     /* A stall while the servo is held at the centre. */
     rig_init(0u);
     CHECK(start());
@@ -155,7 +164,7 @@ TEST_CASE(not_still_within_3s_ends_not_still)
     CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
     const uint32_t at = g.run.move_ms;
     CHECK(run_to(SERVO_RAUTO_PH_SETTLE, 1000u));
-    CHECK_EQ(g.now - at, SERVO_RAUTO_STILL_MS);
+    CHECK_EQ(g.now - at, 500u);
     while (g.now - at < SERVO_RAUTO_MOVE_MS - 1u) {
         tick();
     }
@@ -173,7 +182,7 @@ TEST_CASE(not_still_within_3s_ends_not_still)
     servo_rauto_do_t d;
     servo_rauto_in_t in = rig_in();
     const uint32_t m = g.run.move_ms;
-    in.still_ms = SERVO_RAUTO_STILL_MS - 1u;
+    in.still_ms = 499u;
     in.angle_deg = -30.0f;
     servo_test_win_t w;
     memset(&w, 0, sizeof(w));
@@ -186,8 +195,8 @@ TEST_CASE(not_still_within_3s_ends_not_still)
         servo_rauto_step(&g.run, m + k, &in, &d);
     }
     CHECK(servo_rauto_running(&g.run));
-    in.still_ms = SERVO_RAUTO_STILL_MS;
-    servo_rauto_step(&g.run, m + SERVO_RAUTO_MOVE_MS, &in, &d);
+    in.still_ms = 500u;
+    servo_rauto_step(&g.run, m + 3000u, &in, &d);
     CHECK(servo_rauto_running(&g.run));
     CHECK_EQ(g.run.step_n, 1u);
     CHECK_NEAR(g.run.steps[0].measured_deg, 30.0f, 1e-4f);
@@ -412,6 +421,12 @@ TEST_CASE(a_refused_connect_ends_prog_and_restore_is_offered_after_a_write)
     CHECK(servo_rauto_switching(&g.run));
     servo_rauto_refused(&g.run, g.now);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_PROG);
+    /* The hold at PULSE CENTRE before SAFE is no programmer's step. */
+    rig_init(0u);
+    CHECK(start());
+    CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_SAFE);
+    CHECK(!servo_rauto_programming(&g.run));
+    CHECK(!servo_rauto_switching(&g.run));
     /* Outside the programmer's steps a refusal changes nothing. */
     CHECK(at_first_move());
     CHECK(!servo_rauto_programming(&g.run));

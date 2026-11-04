@@ -383,10 +383,8 @@ static bool judge_map(servo_rauto_t *r, float ms, bool within,
         fail(r, SERVO_RAUTO_WHY_MAPPING, now_ms);
         return false;
     }
-    if (r->writes[s] >= SERVO_RAUTO_WRITES_MAX) {
-        fail(r, SERVO_RAUTO_WHY_WRITE_CAP, now_ms);
-        return false;
-    }
+    /* The register is found on the run's first writes of a side: no cap
+     * to reach here. */
     const int g = 1 - (int)r->map_reg;
     uint16_t next = 0u;
     if (!next_value(r, g, ms, r->goal_deg[s], &next)) {

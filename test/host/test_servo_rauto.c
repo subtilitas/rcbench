@@ -376,12 +376,12 @@ TEST_CASE(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_
     c.tol_ddeg = SERVO_RAUTO_TOL_MIN_DDEG;
     CHECK(servo_rauto_start(&r, &c, 0u));
     servo_rauto_init(&r);
-    c.tol_ddeg = SERVO_RAUTO_TOL_MAX_DDEG;
+    c.tol_ddeg = 50u;                   /* 5.0° */
     CHECK(servo_rauto_start(&r, &c, 0u));
     servo_rauto_init(&r);
     c.tol_ddeg = SERVO_RAUTO_TOL_MIN_DDEG - 1u;
     CHECK(!servo_rauto_start(&r, &c, 0u));
-    c.tol_ddeg = SERVO_RAUTO_TOL_MAX_DDEG + 1u;
+    c.tol_ddeg = 51u;
     CHECK(!servo_rauto_start(&r, &c, 0u));
 
     c = g.cfg;
@@ -417,8 +417,59 @@ TEST_CASE(the_clock_wrap_inside_a_settle_does_not_end_it)
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
 }
 
+TEST_CASE(a_first_measure_at_the_tolerance_gives_the_side_its_direction)
+{
+    /* 2 counts at 0.25° a count: 0.5°, the tolerance itself. */
+    rig_init(0u);
+    g.gain = 0.25f;
+    g.v[0] = 2u;
+    g.lo = 1u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK_EQ(g.run.sign[0], -1);
+    CHECK_EQ(g.v[0], 110u);
+}
+
+TEST_CASE(a_found_register_is_not_tried_again_on_a_later_write)
+{
+    /* The first write lands 95% of the way; then the servo moves only 30%
+     * of what a write asks: the register stays the one found. */
+    rig_init(0u);
+    g.resp = 0.95f;
+    g.cfg.target_deg[0] = 20.0f;
+    g.cfg.tol_ddeg = 2u;
+    CHECK(start());
+    while (servo_rauto_running(&g.run) && g.run.step_n < 2u) {
+        tick();
+    }
+    CHECK_EQ(g.run.reg_side[0], 0);
+    CHECK(!g.run.map_open);
+    g.v0[0] = g.v[0];
+    g.resp = 0.3f;
+    run_for(RAUTO_MS);
+    CHECK(g.run.why != SERVO_RAUTO_WHY_MAPPING);
+    CHECK_EQ(g.run.reg_side[0], 0);
+    CHECK(g.run.writes[0] >= 2u);
+}
+
+TEST_CASE(the_step_list_keeps_its_18_entries_and_drops_later_ones)
+{
+    CHECK_EQ(sizeof(g.run.steps) / sizeof(g.run.steps[0]), 18u);
+    rig_init(0u);
+    CHECK(start());
+    CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
+    g.run.step_n = 18u;
+    CHECK(run_to(SERVO_RAUTO_PH_SAFE, RAUTO_MS));
+    CHECK_EQ(g.run.step_n, 18u);
+    CHECK(servo_rauto_running(&g.run));
+}
+
 int main(void)
 {
+    RUN(a_first_measure_at_the_tolerance_gives_the_side_its_direction);
+    RUN(a_found_register_is_not_tried_again_on_a_later_write);
+    RUN(the_step_list_keeps_its_18_entries_and_drops_later_ones);
     RUN(a_linear_servo_lands_within_tolerance_in_one_write_a_side);
     RUN(a_servo_five_percent_off_lands_in_two_writes);
     RUN(the_goal_is_target_times_one_plus_margin);
