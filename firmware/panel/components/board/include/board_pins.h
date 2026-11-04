@@ -233,8 +233,8 @@ extern "C" {
 /*
  * A WitMotion BWT901CL reaches the panel through an HC-05 Bluetooth module
  * (panel_imu.c, docs/IMU.md).  The HC-05 takes 5V from H11 pin 1 (the CAN
- * header) and GND from P3.  Each pin below is a placeholder the owner
- * confirms; its comment says so until he does.
+ * header) and GND from P3.  A pin whose comment says "Owner to confirm" is
+ * a placeholder the owner confirms.
  */
 /** @brief The HC-05's UART: UART1 through the GPIO matrix (UART0 is the
  *         console, panel_console.c).  Owner to confirm. */
@@ -245,9 +245,11 @@ extern "C" {
 /** @brief Panel RX from the HC-05's TXD: IO5 of header P3.  Owner to
  *         confirm. */
 #define PANEL_IMU_PIN_RX      GPIO_NUM_5
-/** @brief The HC-05's KEY (EN on the ZS-040): IO2 of header P3, high for
- *         AT commands.  Owner to confirm. */
-#define PANEL_IMU_PIN_KEY     GPIO_NUM_2
+/** @brief The HC-05's KEY (EN on the ZS-040): IO29 of header P3, beside the
+ *         heartbeat's IO28, high for AT commands.  GPIO29 is no strapping
+ *         pin (GPIO34-38), no USB-JTAG pin (GPIO24, GPIO25) and no JTAG pad
+ *         (GPIO2-5). */
+#define PANEL_IMU_PIN_KEY     GPIO_NUM_29
 /** @brief The HC-05's STATE, high while connected: not wired
  *         (GPIO_NUM_NC); the reading's age stands in for it. */
 #define PANEL_IMU_PIN_STATE   GPIO_NUM_NC

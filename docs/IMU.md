@@ -35,8 +35,9 @@ the project's notice.
 ## Wiring
 
 The pins are `PANEL_IMU_*` in
-`firmware/panel/components/board/include/board_pins.h`. Each is a
-placeholder the owner confirms.
+`firmware/panel/components/board/include/board_pins.h`. KEY is on IO29,
+beside the heartbeat's IO28; the UART pins and the 5V are placeholders the
+owner confirms.
 
 | HC-05 (ZS-040 breakout) | Panel | Define |
 | --- | --- | --- |
@@ -44,7 +45,7 @@ placeholder the owner confirms.
 | GND | GND of header P3 | |
 | TXD (3.3V) | IO5 of header P3, UART1 RX | `PANEL_IMU_PIN_RX` |
 | RXD | IO4 of header P3, UART1 TX, 3.3V | `PANEL_IMU_PIN_TX` |
-| EN (KEY) | IO2 of header P3, high for AT commands | `PANEL_IMU_PIN_KEY` |
+| EN (KEY) | IO29 of header P3, high for AT commands | `PANEL_IMU_PIN_KEY` |
 | STATE | not wired; the reading's age stands in for it | `PANEL_IMU_PIN_STATE` (`GPIO_NUM_NC`) |
 
 `PANEL_IMU_UART_NUM` is 1: UART0 is the console's. `PANEL_IMU_BAUD` is
