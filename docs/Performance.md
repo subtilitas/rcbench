@@ -66,7 +66,7 @@ overview-guide                 350      44 KiB
 servo                        2,216     277 KiB
 servo-grip                     521      65 KiB
 servo-current                3,189     399 KiB
-servo-rudder                 4,069     509 KiB
+servo-rudder                 4,030     504 KiB
 supply                       9,871    1234 KiB
 supply-chrome               48,048    6006 KiB
 analyser                         0       0 KiB
