@@ -6,6 +6,27 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.7 - 2026-11-04
+
+0.23.7 is a testing release: its minor number, 23, is odd, and GitHub
+publishes it as a pre-release that is never marked latest. It runs on the
+ESP32-P4 panel, as 0.23.6 does; an ESP32-S3 panel stays on the 0.22 line and
+is not offered it. The link protocol is 4.36, as in 0.23.6. The assets are
+`rcbench-panel-p4-v0.23.7.zip`, `rcbench-panel-p4-v0.23.7.bin`,
+`rcbench-iomcu-v0.23.7.zip`, `rcbench-iomcu-rbmod-v0.23.7.zip` and
+`SHA256SUMS`.
+
+A bench on 0.23.6 gets 0.23.7 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then the install by a 2s hold. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers the IOmcu's update over CAN (Controller Area Network)
+when the IOmcu runs another build. A new bench loads both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
+
+The entries below cover the 16 pull requests merged since v0.23.6: #713 to
+#727 and #729.
+
 ### Added
 
 - RUDDER on the SERVO screen draws the control surface from the side, live:
@@ -29,11 +50,14 @@ history is in git.
 - `protocols/witmotion`: the WitMotion serial frames (0x55, type, 4 x int16, sum)
   decoded to m/s², °/s, ° and µT, and the 5-byte commands (unlock, SAVE, RATE,
   RSW, CALSW, AXIS6). Host-tested; no pin driver.
-- ANGLE SOURCE on SETUP > SENSORS > IMU: AS5600 or IMU (AXIS and SIGN).
+- ANGLE SOURCE on SETUP > SENSORS > IMU (inertial measurement unit):
+  AS5600 or IMU (AXIS and SIGN).
   The servo test, the LIMIT RUN and the SERVO run log read the chosen
   source; the IMU's angle is carried in AS5600 counts (0.088°). The test's
   CSV gains the column `angle source`, last; both reports name the source
-  in the line `Angle source:`.
+  in the line `Angle source:`. A run with the IMU that ends on a gap of the
+  IMU names it: `IMU not answering`, German `IMU antwortet nicht`, or `IMU
+  dropped out twice in 10s`, German `IMU 2x in 10s ausgefallen`.
 - The Hitec programmer takes a run's writes (`hitec_panel_run_*`): the two
   end points in one session, the D series with save and reboot, the classic
   cells with the balance, the backup file before the first write, RESTORE
@@ -59,7 +83,9 @@ history is in git.
   ERROR:(1F) on INQ). Host-tested against scripted answers of both
   firmware versions; no pin driver.
 - A WitMotion BWT901CL over an HC-05 on the panel's UART1 (`PANEL_IMU_*`
-  in board_pins.h). SETUP > SENSORS > IMU: ON/OFF, AXIS, SIGN, RATE (10 to
+  in board_pins.h): the HC-05's RXD on IO4, its TXD on IO5 and its KEY on
+  IO29 of header P3, its 5V and GND on pins 1 and 2 of H9, the RS485
+  header. SETUP > SENSORS > IMU: ON/OFF, AXIS, SIGN, RATE (10 to
   200Hz), ALGORITHM (6-AXIS or 9-AXIS); the IMU tile on SETUP scans
   (11.5s), binds, calibrates the accelerometer (2s hold, 3s still) and
   shows battery, rate and the live angles. The bench sets the HC-05 up
@@ -137,6 +163,9 @@ history is in git.
   that finds the encoder answering. An AS5600 plugged back in whose contacts
   drop it for a read raised the line as the part came back, and it stood for
   its 30s over an encoder that answered.
+- The rotary knob on LIVE leaves the horn to a LIMIT RUN: while the run
+  drives it, and until its session's LEAVE ends, a turn sends no pulse. A
+  turn moved the horn under the run.
 
 ## 0.23.6 - 2026-11-03
 
