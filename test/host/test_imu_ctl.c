@@ -300,6 +300,22 @@ TEST_CASE(calibrate_with_the_frames_lost_ends_failed)
     CHECK(rig_sent_is(&r, r.nsent - 2u, WIT_REG_CALSW, 0u, 0u));
 }
 
+/* Frames every 300ms in a calibration: each one ends a stale stretch the
+ * step never saw stale, and the calibration still ends FAILED. */
+TEST_CASE(calibrate_with_frames_300ms_apart_ends_failed)
+{
+    rig_t r;
+    connected(&r);
+    const imu_cmd_t cal = { IMU_CMD_CALIBRATE, 0u };
+    CHECK(imu_ctl_command(&r.c, &cal, r.t));
+    const uint32_t g0 = r.c.gaps;
+    rig_stream(&r, 3100u, IMU_STALE_MS, 0.0f, 0.0f, 0.0f);
+    CHECK(r.c.gaps > g0);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.cal, IMU_CAL_FAILED);
+}
+
 /* The outbox holds IMU_OUTBOX commands; one more is dropped. */
 TEST_CASE(a_full_outbox_drops_the_command_past_its_room)
 {
@@ -616,6 +632,7 @@ int main(void)
     RUN(sensor_bytes_reach_the_reading_only_outside_an_operation);
     RUN(calibrate_sends_calsw_1_then_after_3s_calsw_0_and_save);
     RUN(calibrate_with_the_frames_lost_ends_failed);
+    RUN(calibrate_with_frames_300ms_apart_ends_failed);
     RUN(a_full_outbox_drops_the_command_past_its_room);
     RUN(a_rate_change_goes_to_the_sensor_once_it_is_connected);
     RUN(imu_off_aborts_the_operation_and_lowers_key);

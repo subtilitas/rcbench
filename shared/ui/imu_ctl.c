@@ -229,6 +229,9 @@ void imu_ctl_feed(imu_ctl_t *c, const uint8_t *b, size_t n, uint32_t now_ms)
             if (c->angle_seen && c->m.r.taken_ms - before >= IMU_STALE_MS) {
                 ++c->gaps;
                 c->gap_at_ms = before + IMU_STALE_MS;
+                if (c->cal == IMU_CAL_RUNNING) {
+                    c->cal_lost = true;   /* a stretch the step missed */
+                }
             }
             c->angle_seen = true;
         }
