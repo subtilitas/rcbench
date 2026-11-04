@@ -21,6 +21,7 @@
  * - zero_and_reset_max_are_refused_while_auto_runs
  * - a_supply_set_anew_outside_a_session_ends_auto
  * - with_user_logs_off_auto_hands_the_logger_nothing
+ * - another_angle_source_drops_the_zero_and_ends_auto
  *
  * SPDX-License-Identifier: MIT
  */
@@ -513,6 +514,48 @@ TEST_CASE(with_user_logs_off_auto_hands_the_logger_nothing)
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), TR(SV_USER_LOGS_OFF));
 }
 
+/* ANGLE SOURCE switched to the IMU in a measure: the zero AUTO measures
+ * from is dropped, and the run ends ABORTED at once with every output
+ * off, before any write lands on the new source's angle; a START then
+ * asks for ZERO.  Switched before a START, the same refusal. */
+TEST_CASE(another_angle_source_drops_the_zero_and_ends_auto)
+{
+    ra_setup(true, true);
+    ra_hold_start();
+    bool there = false;
+    for (int i = 0; i < 400000 && servo_screen_rauto_running(); ++i) {
+        ra_ms(1u);
+        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_SETTLE) {
+            there = true;
+            break;
+        }
+    }
+    CHECK(there);
+    const unsigned left = servo(KST_F_LEFT_ANGLE);
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    ra_ms(20u);
+    CHECK(!servo_screen_rauto_running());
+    ra_ms(3000u);
+    CHECK(!ra.armed);
+    CHECK(!g_rig.sup_on);
+    CHECK_EQ(servo(KST_F_LEFT_ANGLE), left);
+    CHECK(strstr(ra.report, "ABORTED") != NULL);
+    CHECK(strstr(ra.report, "PASS") == NULL);
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
+    ra.armed = true;
+    servo_screen_set_armed(true);
+    ra_ms(100u);
+    CHECK_STR_EQ(rauto_blocked(), TR(RA_NO_ZERO));
+
+    /* Before a START: the zero taken on the AS5600 does not carry over. */
+    ra_setup(true, true);
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    ra_ms(100u);
+    CHECK(rauto_blocked() != NULL);
+    ra_hold_start();
+    CHECK(!servo_screen_rauto_running());
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -522,5 +565,6 @@ int main(void)
     RUN(zero_and_reset_max_are_refused_while_auto_runs);
     RUN(a_supply_set_anew_outside_a_session_ends_auto);
     RUN(with_user_logs_off_auto_hands_the_logger_nothing);
+    RUN(another_angle_source_drops_the_zero_and_ends_auto);
     return test_summary("servo_rauto_kst");
 }

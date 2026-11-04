@@ -1428,6 +1428,7 @@ Der des Endlagenlaufs, in jeder Phase:
 | 200ms kein Fenster | ABGEBROCHEN |
 | der Winkel über 300ms verloren oder eine zweite Lücke binnen 10s | ABGEBROCHEN, `Winkelquelle ausgefallen` |
 | eine abgelehnte Sitzung oder ein Rücklesen, das vom Schreiben abweicht | ABGEBROCHEN |
+| eine andere ANGLE SOURCE oder eine andere AXIS oder SIGN der IMU: der Nullpunkt wird verworfen | ABGEBROCHEN |
 | STOP, DISARM, SERVO verlassen, Messgerät oder Versorgung geändert | ABGEBROCHEN |
 
 Jedes Ende lässt das Servo los, fordert SAFE an und schaltet den Ausgang

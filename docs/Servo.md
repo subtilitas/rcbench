@@ -1396,6 +1396,7 @@ The limit run's, in every phase:
 | no window for 200ms | ABORTED |
 | the angle lost for more than 300ms, or a second gap within 10s | ABORTED, `angle source dropped out` |
 | a session refused, or a read-back that differs from the write | ABORTED |
+| another ANGLE SOURCE, or the IMU's other AXIS or SIGN: the zero is dropped | ABORTED |
 | STOP, DISARM, leaving SERVO, the meter or the supply changed | ABORTED |
 
 Every end lets the servo go, asks SAFE and switches the supply's output

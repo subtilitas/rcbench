@@ -296,6 +296,11 @@ static void ra_step(void)
     for (int k = 0; k < 2; ++k) {
         float deg = 0.0f;
         const bool have = defl_now(&deg);
+        if (servo_rauto_running(&s.ra.run) && !s.rud.geo.zeroed) {
+            /* Another ANGLE SOURCE, or the IMU's other AXIS or SIGN,
+             * dropped the zero the run measures from. */
+            servo_rauto_abort(&s.ra.run, SERVO_TEST_AB_SETTINGS, test_now());
+        }
         const servo_rauto_in_t in = {
             .live        = value_live(),
             .safe        = !bench_arming() && !s.gate.armed,
