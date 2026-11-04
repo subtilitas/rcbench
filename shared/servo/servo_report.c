@@ -281,6 +281,11 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, S(R_SOURCE), src);
         return true;
     }
+    /* The IMU chosen, with no reading at the start: no angles. */
+    if (!g->enc_on && enc_imu(g) && here(c)) {
+        snprintf(b, n, S(L_R_SRC_OFF), src);
+        return true;
+    }
     float per_s = 0.0f, module_s = 0.0f;
     uint32_t every = 0u;
     const bool rated = servo_test_rates(t, &per_s, &module_s, &every);

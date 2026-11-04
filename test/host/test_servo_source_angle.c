@@ -271,6 +271,22 @@ TEST_CASE(the_csv_header_ends_in_angle_source_and_each_row_names_it)
     CHECK(ends_in(bench.csv_head, ";clipped;angle source"));
     CHECK(ends_in(bench.csv_last, ";AS5600"));
 
+    /* The IMU chosen and stale at the start: the run reads no angles and
+     * the report says why. */
+    bench_fresh();
+    short_runs();
+    imu_on(1u, false);
+    (void)imu_pull();
+    bench_frames(400u);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    test_run_out();
+    CHECK(ends_in(bench.csv_head, ";clipped"));
+    CHECK(strstr(bench.report, "Angle source:   IMU Y+, no reading at the "
+                               "start, no angles")
+          != NULL);
+    CHECK(strstr(bench.report, "ENCODER (") == NULL);
+
     /* No source in use: neither the column nor the value. */
     bench_fresh();
     short_runs();
