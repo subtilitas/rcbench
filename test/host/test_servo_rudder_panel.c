@@ -14,6 +14,8 @@
  * - reverse_flips_the_readout_and_keeps_the_zero
  * - the_buttons_drive_1000_1500_2000us_only_while_armed
  * - zero_takes_the_current_angle_and_reset_clears_the_max
+ * - a_new_enc_centre_after_zero_moves_no_deflection
+ * - a_stop_refuses_the_buttons_and_the_knob
  * - a_tap_that_slides_off_or_loses_its_release_does_nothing
  * - length_takes_0_or_10_to_500mm_and_refuses_the_gap
  * - the_state_line_names_no_source_stale_and_connected
@@ -21,6 +23,7 @@
  * - the_target_row_names_the_pin_the_buttons_drive
  * - the_knob_moves_the_horn_on_rudder_while_armed
  * - a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would
+ * - a_new_max_in_mm_alone_repaints_the_readout
  * - the_help_page_leaves_the_target_row_in_view
  * - every_string_fits
  *
@@ -283,7 +286,8 @@ TEST_CASE(zero_takes_the_current_angle_and_reset_clears_the_max)
     reading(100);
     press(RUD_C_ZERO);
     CHECK(rudder_geo()->zeroed);
-    CHECK_NEAR(rudder_geo()->zero_deg, 100.0f * 360.0f / 4096.0f, 1e-3f);
+    CHECK_NEAR(rudder_geo()->zero_deg,
+               servo_test_enc_deg(CENTRE_COUNT + 100u, 0u), 1e-3f);
     CHECK(!rudder_geo()->have[0] && !rudder_geo()->have[1]);
     float d = 1.0f;
     CHECK(rudder_defl(&d));
@@ -303,9 +307,74 @@ TEST_CASE(zero_takes_the_current_angle_and_reset_clears_the_max)
     settings_set(SET_ENC_EN, 0.0f);
     reading(400);
     press(RUD_C_ZERO);
-    CHECK_NEAR(rudder_geo()->zero_deg, 100.0f * 360.0f / 4096.0f, 1e-3f);
+    CHECK_NEAR(rudder_geo()->zero_deg,
+               servo_test_enc_deg(CENTRE_COUNT + 100u, 0u), 1e-3f);
     CHECK(!rudder_geo()->have[0] && !rudder_geo()->have[1]);
     scr->render(&cv, 0);
+}
+
+/* ENC CENTRE taken again after ZERO, the surface not moved: the
+ * deflection stays 0 and MAX takes nothing; before ZERO the deflection is
+ * the angle from the new centre. */
+TEST_CASE(a_new_enc_centre_after_zero_moves_no_deflection)
+{
+    fresh();
+    encoder_on();
+    to_rudder();
+    reading(100);                               /* count 2148 */
+    float d = 1.0f;
+    CHECK(rudder_defl(&d));
+    CHECK_NEAR(d, 100.0f * 360.0f / 4096.0f, 1e-3f);
+    press(RUD_C_ZERO);
+    settings_set(SET_ENC_CENTRE, (float)(CENTRE_COUNT + 100u));
+    reading(100);
+    CHECK(rudder_defl(&d));
+    CHECK_NEAR(d, 0.0f, 1e-4f);
+    CHECK(!rudder_geo()->have[0] && !rudder_geo()->have[1]);
+    reading(100 + 256);
+    CHECK(rudder_defl(&d));
+    CHECK_NEAR(d, 22.5f, 1e-3f);
+    /* Across count 0: the zero near the wrap still reads small. */
+    fresh();
+    encoder_on();
+    to_rudder();
+    reading(-(int)CENTRE_COUNT + 10);           /* count 10 */
+    press(RUD_C_ZERO);
+    reading(-(int)CENTRE_COUNT - 20);           /* count 4076 */
+    CHECK(rudder_defl(&d));
+    CHECK_NEAR(d, -30.0f * 360.0f / 4096.0f, 1e-3f);
+}
+
+/* A STOP (servo_screen_cancel_arm()) on RUDDER takes the value out of
+ * LIVE: a position the buttons or the knob posted and not yet taken is
+ * dropped, and 1000us, CENTRE, 2000us and the knob post nothing until
+ * the bench is ARMED again. */
+TEST_CASE(a_stop_refuses_the_buttons_and_the_knob)
+{
+    fresh_armed();
+    to_rudder();
+    press(RUD_C_2000);
+    servo_screen_cancel_arm();
+    servo_cmd_t c = taken();
+    CHECK(c.kind != SERVO_CMD_POSITION);
+    static const rudder_ctl_t k[3] = { RUD_C_1000, RUD_C_CENTRE, RUD_C_2000 };
+    for (int i = 0; i < 3; ++i) {
+        press(k[i]);
+        c = taken();
+        CHECK(c.kind != SERVO_CMD_POSITION && c.kind != SERVO_CMD_CENTRE);
+    }
+    servo_screen_knob_frame();
+    servo_screen_knob(0.25f);
+    c = taken();
+    CHECK(c.kind != SERVO_CMD_POSITION);
+    /* The bench reports SAFE, then ARMED again: the buttons drive. */
+    servo_screen_set_armed(false);
+    servo_screen_set_armed(true);
+    taken();
+    press(RUD_C_1000);
+    c = taken();
+    CHECK_EQ(c.kind, SERVO_CMD_POSITION);
+    CHECK_EQ(c.value_us, 1000u);
 }
 
 /* A tap is a release over the control it began on: one that slides off,
@@ -598,6 +667,26 @@ TEST_CASE(a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would)
     CHECK(both_whole());
 }
 
+/* Two readings between frames: a MAX whose tenths of a degree stay put
+ * but whose mm move at 500mm repaints the MAX line, as a frame drawn whole
+ * would show it. */
+TEST_CASE(a_new_max_in_mm_alone_repaints_the_readout)
+{
+    fresh();
+    encoder_on();
+    settings_set(SET_RUDDER_LEN_MM, 500.0f);
+    to_rudder();
+    reading(0);
+    press(RUD_C_ZERO);
+    reading(4);                                 /* 0.35deg, 3.07mm */
+    reading(0);
+    two_buffers();
+    CHECK(both_whole());
+    reading(5);                                 /* 0.44deg, 3.84mm */
+    reading(0);
+    CHECK(both_whole());
+}
+
 /* ------------------------------------------------------------ the guide */
 
 /* One page on RUDDER, SAFE and ARMED: the output card's, the dock on the
@@ -720,6 +809,8 @@ int main(void)
     RUN(reverse_flips_the_readout_and_keeps_the_zero);
     RUN(the_buttons_drive_1000_1500_2000us_only_while_armed);
     RUN(zero_takes_the_current_angle_and_reset_clears_the_max);
+    RUN(a_new_enc_centre_after_zero_moves_no_deflection);
+    RUN(a_stop_refuses_the_buttons_and_the_knob);
     RUN(a_tap_that_slides_off_or_loses_its_release_does_nothing);
     RUN(length_takes_0_or_10_to_500mm_and_refuses_the_gap);
     RUN(the_state_line_names_no_source_stale_and_connected);
@@ -727,6 +818,7 @@ int main(void)
     RUN(the_target_row_names_the_pin_the_buttons_drive);
     RUN(the_knob_moves_the_horn_on_rudder_while_armed);
     RUN(a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would);
+    RUN(a_new_max_in_mm_alone_repaints_the_readout);
     RUN(the_help_page_leaves_the_target_row_in_view);
     RUN(every_string_fits);
     return test_summary("servo_rudder_panel");

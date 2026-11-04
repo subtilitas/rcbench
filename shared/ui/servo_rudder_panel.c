@@ -9,7 +9,8 @@
  * takes in (servo_screen_encoder(), enc_shown(), enc_deg_now()), in the
  * direction of the commanded angle as LIVE's MEASURED reading is; the zero
  * and the MAX are kept in the source's own sign, so REVERSE flips what is
- * shown and keeps the zero.  The buttons post as the output card's CENTRE
+ * shown and keeps the zero.  The zero is taken from the source's count 0,
+ * not from ENC CENTRE, so a new ENC CENTRE moves no deflection after ZERO.  The buttons post as the output card's CENTRE
  * does, through the screen's own seam: the output, ARM and the TARGET row
  * that names it are the output card's, the same on every task.
  *
@@ -77,12 +78,26 @@ void rudder_init(void)
 }
 
 /**
- * @brief The source's angle now, in its own sign: enc_deg_now() without
- *        REVERSE.
- * @return degrees from the source's centre
+ * @brief The source's angle now, in its own sign, from its count 0: what
+ *        ZERO takes, so ENC CENTRE has no part in a deflection after it.
+ * @return degrees, -180 up to 180
  */
-static float src_deg_now(void)
+static float src_abs_now(void)
 {
+    return servo_test_enc_deg(s.enc_raw, 0u);
+}
+
+/**
+ * @brief The deflection now, in the source's own sign: from the zero once
+ *        taken, else the angle from the source's centre (enc_deg_now()
+ *        without REVERSE).
+ * @return degrees
+ */
+static float src_defl_now(void)
+{
+    if (s.rud.geo.zeroed) {
+        return servo_rudder_defl(&s.rud.geo, src_abs_now());
+    }
     const float d = enc_deg_now();
     return s.reverse ? -d : d;
 }
@@ -92,8 +107,7 @@ void rudder_angle(void)
     if (!enc_shown()) {
         return;
     }
-    servo_rudder_track(&s.rud.geo, servo_rudder_defl(&s.rud.geo,
-                                                     src_deg_now()));
+    servo_rudder_track(&s.rud.geo, src_defl_now());
 }
 
 const servo_rudder_t *rudder_geo(void)
@@ -125,7 +139,7 @@ bool rudder_defl(float *deg)
     if (deg == NULL || !enc_shown()) {
         return false;
     }
-    const float d = servo_rudder_defl(&s.rud.geo, src_deg_now());
+    const float d = src_defl_now();
     *deg = s.reverse ? -d : d;
     return true;
 }
@@ -257,7 +271,7 @@ static void act(rudder_ctl_t k)
         break;
     case RUD_C_ZERO:
         if (enc_shown()) {
-            servo_rudder_zero(&s.rud.geo, src_deg_now());
+            servo_rudder_zero(&s.rud.geo, src_abs_now());
         }
         break;
     case RUD_C_RESET:
@@ -559,13 +573,18 @@ static uint32_t read_sig(void)
     const bool have = rudder_defl(&defl);
     float m0 = 0.0f, m1 = 0.0f;
     const bool h0 = max_shown(0, &m0), h1 = max_shown(1, &m1);
-    const uint32_t v[10] = {
+    const float len = len_now();
+    const uint32_t v[12] = {
         have ? 1u : 0u,
         have ? (uint32_t)lroundf(defl * 10.0f) : 0u,
         have ? (uint32_t)lroundf(servo_rudder_mm(defl, len_now()) * 10.0f)
              : 0u,
         h0 ? (uint32_t)lroundf(m0 * 10.0f) + 1u : 0u,
         h1 ? (uint32_t)lroundf(m1 * 10.0f) + 1u : 0u,
+        /* The MAX in mm too: two maxima a tenth of a degree alike can
+         * stand a tenth of a mm apart at 500mm. */
+        h0 ? (uint32_t)lroundf(servo_rudder_mm(m0, len) * 10.0f) : 0u,
+        h1 ? (uint32_t)lroundf(servo_rudder_mm(m1, len) * 10.0f) : 0u,
         (uint32_t)rudder_source(),
         s.rud.geo.zeroed ? 1u : 0u,
         (uint32_t)svs_deg_to_us(s.commanded_deg),
@@ -573,7 +592,7 @@ static uint32_t read_sig(void)
         card_sig(),
     };
     uint32_t h = 2166136261u;
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 12; ++i) {
         h = (h ^ v[i]) * 16777619u;
     }
     return h;
