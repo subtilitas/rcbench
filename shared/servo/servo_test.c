@@ -778,6 +778,7 @@ servo_test_start_t servo_test_start(servo_test_t *t,
     t->cfg.danger[sizeof(t->cfg.danger) - 1u]     = '\0';
     t->cfg.firmware[sizeof(t->cfg.firmware) - 1u] = '\0';
     t->cfg.meter.name[sizeof(t->cfg.meter.name) - 1u] = '\0';
+    t->cfg.enc_source[sizeof(t->cfg.enc_source) - 1u] = '\0';
     t->state    = SERVO_TEST_RUNNING;
     t->ended    = false;
     t->start_ms = now_ms;
@@ -885,8 +886,10 @@ static void log_row(servo_test_t *t, const sample_t *m, uint8_t mode,
                  gap);
     }
     const size_t used = strlen(line);
-    snprintf(line + used, sizeof(line) - used, ";%s;%s",
-             servo_test_meter_word(t->cfg.meter.kind), tail);
+    snprintf(line + used, sizeof(line) - used, ";%s;%s%s%s",
+             servo_test_meter_word(t->cfg.meter.kind), tail,
+             t->cfg.enc_on ? ";" : "",
+             t->cfg.enc_on ? servo_test_enc_source(&t->cfg) : "");
     put_line(t, SERVO_TEST_OUT_CSV, line);
 }
 

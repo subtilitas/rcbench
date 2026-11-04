@@ -435,6 +435,10 @@ typedef struct {
     uint16_t enc_centre;    /**< the count at the servo's neutral       */
     float    enc_cmd_deg[2];/**< the commanded angle of the low and the
                                  high end, the screen's degrees          */
+    /** @brief The angle source's name (servo_angle_name()): "AS5600",
+     *         "IMU X+"; empty names the AS5600.  The CSV's last column and
+     *         the report's Angle source line. */
+    char     enc_source[12];
 
     /* For the report only: the settings in force. */
     char     dut[24];
@@ -459,6 +463,16 @@ typedef struct {
      */
     const char *const *text;
 } servo_test_cfg_t;
+
+/**
+ * @brief The run's angle source by name.
+ * @param c The run's settings.
+ * @return c->enc_source, or "AS5600" while it is empty.
+ */
+static inline const char *servo_test_enc_source(const servo_test_cfg_t *c)
+{
+    return (c->enc_source[0] != '\0') ? c->enc_source : "AS5600";
+}
 
 /* ------------------------------------------------------ what it reports */
 
@@ -1139,9 +1153,9 @@ const char *servo_test_start_name(servo_test_start_t why);
 const char *servo_test_csv_header(void);
 /**
  * @brief And with the encoder's three columns, angle, travel angle and angle
- *        gap, between the two groups.
+ *        gap, between the two groups, and the angle source's column last.
  *
- * @return header row of the CSV with the encoder columns.
+ * @return header row of the CSV with the angle source's columns.
  */
 const char *servo_test_csv_header_enc(void);
 

@@ -97,9 +97,10 @@ TEST_CASE(every_row_names_its_part_and_has_its_own_key)
     CHECK_STR_EQ(settings_def(SET_INA3221_MOHM)->key, "ina3221_mohm");
     CHECK(settings_sensors_def(SET_HITEC_RX) == NULL);
     setting_id_t ids[64];
-    /* The 40 INA3221 rows, and the 18 of the other sensors. */
+    /* The 40 INA3221 rows, and the 19 of the other sensors and the angle
+     * source. */
     CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 64),
-             SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 18);
+             SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 19);
 }
 
 TEST_CASE(every_watch_option_is_the_page_code)

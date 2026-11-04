@@ -454,4 +454,12 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_WEB_WRITES] = {
         "web_writes", "",
         SET_CAT_CARD, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(web_writes) },
+    /*
+     * What the servo test, the LIMIT RUN and the SERVO run log read the
+     * angle from (servo_angle_src_t, servo_angle.h): the AS5600, the
+     * default, or the IMU's AXIS with its SIGN, carried in AS5600 counts.
+     */
+    [SET_ANGLE_SOURCE] = {
+        "angle_source", "",
+        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(angle_source) },
 };

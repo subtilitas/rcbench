@@ -205,6 +205,8 @@ typedef enum {
     SET_LOG_AUTO,
     SET_LOG_USER,
     SET_WEB_WRITES,
+    /* --- the angle source of the servo runs ---------------------------- */
+    SET_ANGLE_SOURCE,
 
     SETTING_COUNT
 } setting_id_t;

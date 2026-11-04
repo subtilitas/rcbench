@@ -968,6 +968,46 @@ beendet](#was-einen-lauf-beendet)), die Messwerte des Netzteils seine
 Abschaltungen. Ein INA3221, der verstummt, während eine Lücke des AS5600
 offen ist, beendet den Lauf sofort mit dem Grund des INA3221.
 
+#### Winkelquelle
+
+ANGLE SOURCE unter SETUP > SENSORS > IMU legt fest, woher der Servotest,
+der LIMIT RUN und das SERVO-Lauf-Log den Winkel des Ruderhorns nehmen:
+`AS5600`, die Vorgabe, oder `IMU`. Mit `IMU` ist der Winkel die AXIS der
+IMU mit ihrem SIGN, ab der Null, die der IMU-Bildschirm nimmt (ZERO).
+
+Der Winkel der IMU wird in Zählern des AS5600 geführt, so gilt jede Regel
+oben unverändert:
+
+```
+count = round(angle x 4096 / 360) mod 4096     centre count 0
+```
+
+Ein Zähler sind 0.088°. Der Winkel, den ein Lauf berichtet, ist auf diesen
+Schritt gerastert. Die angegebene Auflösung des Sensors ist 0.05 bis 0.2°
+auf X und Y und 1° auf Z, das das Magnetometer braucht (auf dem Prüfstand
+nicht gemessen). AS5600-Mitte gilt nicht für die IMU, und ENC CENTRE
+nimmt von ihr keinen Zähler.
+
+| | AS5600 | IMU |
+| --- | --- | --- |
+| ein Lauf liest Winkel, wenn | AS5600 an ist und der IOmcu es an hält | beim Start ein Messwert unter 300ms Alter angezeigt wird |
+| Ruhezeit | die des IOmcu, 12 Zähler (1.05°) | die eigene der IMU (`IMU_STILL_DEG`, 0.5°, `imu.h`) |
+| Lücke | antwortet nicht | 300ms kein Messwert (`IMU_STALE_MS`) |
+| Bericht, `Encoder:` | `AS5600 an der Hornwelle, Mittenwert N` | `IMU X+, in AS5600-Zählern (0.088 Grad je Zähler)` |
+
+Eine Lücke der IMU wird durchfahren und beendet einen Lauf wie beim AS5600
+oben: bis 300ms, einmal in 10s. Beide Berichte tragen die Zeile
+`Winkelquelle:    AS5600` oder `Winkelquelle:    IMU X+`. Der Bericht des
+LIMIT RUN nennt die Quelle in der Winkelzeile jedes Endes. Die CSV des
+Servotests hat die Spalte `angle source` zuletzt, nach den Spalten des
+Messgeräts, mit `AS5600` oder `IMU X+` in jeder Zeile; eine Datei ohne die
+Spalte liest LOGS nach denselben Spaltennamen. `angle (deg)` des SERVO-Lauf-Logs ist der
+Winkel der Quelle, wie MEASURED ihn zeigt.
+
+Aktuelle Einschränkung: ein Lauf mit der IMU, der an einer Lücke endet,
+nennt im Abbruchgrund den AS5600 (`AS5600 antwortet nicht`, `AS5600 2x in
+10s ausgefallen`), auf der Karte und im Bericht.
+
 ### Was einen Lauf beendet
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und

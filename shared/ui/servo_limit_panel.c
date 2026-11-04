@@ -234,7 +234,8 @@ static void lim_cfg(servo_limrun_cfg_t *c)
                             s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
     c->shunt_dmohm = settings_sensors_meter_dmohm();
     (void)sensors_rows_meter(c->meter, sizeof(c->meter));
-    c->enc_on = settings_get_bool(SET_ENC_EN) && s.enc_held;
+    c->enc_on = enc_on_now();
+    (void)enc_name(c->source, sizeof(c->source));
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     c->text = ui_servo_table();
 }
@@ -311,7 +312,8 @@ static void lim_step(void)
         const servo_limrun_in_t in = {
             .live      = value_live(),
             .safe      = !bench_arming() && !s.gate.armed,
-            .enc_valid = enc_shown() && s.enc_held,
+            .enc_valid = enc_shown()
+                         && (enc_src() == SERVO_ANGLE_IMU || s.enc_held),
             .enc_deg   = enc_deg_now(),
         };
         servo_limrun_do_t d;

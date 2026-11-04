@@ -896,6 +896,45 @@ a run at its first loss: the INA3221's windows feed STALL AT's stop
 INA3221 that stops answering while a gap of the AS5600 is open ends the run
 at once with the INA3221's reason.
 
+#### Angle source
+
+ANGLE SOURCE on SETUP > SENSORS > IMU sets where the servo test, the LIMIT
+RUN and the SERVO run log take the horn's angle from: `AS5600`, the
+default, or `IMU`. With `IMU` the angle is the IMU's AXIS with its SIGN,
+from the zero the IMU screen takes (ZERO).
+
+The IMU's angle is carried in the AS5600's counts, so every rule above
+holds unchanged:
+
+```
+count = round(angle x 4096 / 360) mod 4096     centre count 0
+```
+
+One count is 0.088°. The angle a run reports is quantised to that step.
+The sensor's stated resolution is 0.05 to 0.2° on X and Y and 1° on Z,
+which needs the magnetometer (not measured on the bench). AS5600 centre
+does not apply to the IMU, and ENC CENTRE takes no count from it.
+
+| | AS5600 | IMU |
+| --- | --- | --- |
+| a run reads angles when | AS5600 is on and the IOmcu holds it on | a reading under 300ms old is on show at the start |
+| still time | the IOmcu's, 12 counts (1.05°) | the IMU's own (`IMU_STILL_DEG`, 0.5°, `imu.h`) |
+| gap | not answering | no reading for 300ms (`IMU_STALE_MS`) |
+| report, `Encoder:` | `AS5600 on the horn shaft, centre count N` | `IMU X+, in AS5600 counts (0.088deg a count)` |
+
+A gap of the IMU is ridden through and ends a run as for the AS5600
+above: up to 300ms, once in 10s. Both reports carry the line
+`Angle source:   AS5600` or `Angle source:   IMU X+`. The LIMIT RUN's
+report names the source on each end's angle line. The servo test's CSV
+has the column `angle source` last, after the meter's columns, with
+`AS5600` or `IMU X+` on every row; LOGS reads a file without the column
+by the same column names. The SERVO run log's `angle (deg)` is the source's angle as
+MEASURED shows it.
+
+Current limitation: a run with the IMU that ends on a gap names the
+AS5600 in its abort reason (`AS5600 not answering`, `AS5600 dropped out
+twice in 10s`), on the card and in the report.
+
 ### What ends a run
 
 Every ending switches the output off, releases the servo to its centre, and

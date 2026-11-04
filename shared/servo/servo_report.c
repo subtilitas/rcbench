@@ -40,6 +40,16 @@ typedef struct {
 #define S(id) servo_str_in(c->text, SERVO_STR_##id)
 
 /**
+ * @brief Whether the run's angle source is the IMU.
+ * @param g The run's settings.
+ * @return true for any source but the AS5600.
+ */
+static bool enc_imu(const servo_test_cfg_t *g)
+{
+    return strcmp(servo_test_enc_source(g), "AS5600") != 0;
+}
+
+/**
  * @brief Count one line, and tell whether it is the one asked for.
  *
  * @param c Cursor. Its count goes up whether or not this is the line.
@@ -255,9 +265,25 @@ static bool header_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, "%s", S(R_NEGATIVE));
         return true;
     }
+    /* The AS5600 with its centre; the IMU, whose angle is carried in the
+     * AS5600's counts from count 0. */
+    const char *src = servo_test_enc_source(g);
     if (g->enc_on && here(c)) {
-        snprintf(b, n, S(R_ENC_DEVICE), (unsigned)g->enc_centre,
-                 (unsigned long)t->enc_reads);
+        if (enc_imu(g)) {
+            snprintf(b, n, S(R_ENC_IMU), src, (unsigned long)t->enc_reads);
+        } else {
+            snprintf(b, n, S(R_ENC_DEVICE), (unsigned)g->enc_centre,
+                     (unsigned long)t->enc_reads);
+        }
+        return true;
+    }
+    if (g->enc_on && here(c)) {
+        snprintf(b, n, S(R_SOURCE), src);
+        return true;
+    }
+    /* The IMU chosen, with no reading at the start: no angles. */
+    if (!g->enc_on && enc_imu(g) && here(c)) {
+        snprintf(b, n, S(L_R_SRC_OFF), src);
         return true;
     }
     float per_s = 0.0f, module_s = 0.0f;
@@ -672,7 +698,14 @@ static bool encoder_lines(const servo_test_t *t, cursor_t *c)
         snprintf(b, n, S(R_ENC_NO_MAGNET), (unsigned long)t->enc_no_magnet);
         return true;
     }
-    if (t->enc_gap.count > 0u && here(c)) {
+    if (t->enc_gap.count > 0u && enc_imu(g) && here(c)) {
+        snprintf(b, n, S(R_IMU_GAPS), (unsigned long)t->enc_gap.count,
+                 (unsigned long)t->enc_gap.longest_ms,
+                 (unsigned)SERVO_GAP_MAX_MS,
+                 (unsigned)(SERVO_GAP_EVERY_MS / 1000u));
+        return true;
+    }
+    if (t->enc_gap.count > 0u && !enc_imu(g) && here(c)) {
         snprintf(b, n, S(R_ENC_GAPS), (unsigned long)t->enc_gap.count,
                  (unsigned long)t->enc_gap.longest_ms,
                  (unsigned)SERVO_GAP_MAX_MS,
@@ -933,7 +966,8 @@ static bool unmeasured_lines(const servo_test_t *t, cursor_t *c)
     const servo_str_t k_lines[] = {
         SERVO_STR_COUNT,            /* the blank line before the heading */
         SERVO_STR_R_UNM_HEAD,
-        t->cfg.enc_on ? SERVO_STR_R_UNM_POSITION_ENC
+        (t->cfg.enc_on && enc_imu(&t->cfg)) ? SERVO_STR_R_UNM_POSITION_IMU
+        : t->cfg.enc_on ? SERVO_STR_R_UNM_POSITION_ENC
         : ina         ? SERVO_STR_R_UNM_POSITION_INA
                       : SERVO_STR_R_UNM_POSITION,
         ina ? SERVO_STR_R_UNM_PEAKS_INA : SERVO_STR_R_UNM_PEAKS,

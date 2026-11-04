@@ -127,9 +127,9 @@ OUTPUT's first note names the port SERVO TESTER is set to, `SERVO TESTER: PORT 1
 |---|---|
 | NAME | the device under test, up to 23 characters; it heads each report |
 | REPORT | a text report, `ATESTnnn.TXT`, beside each test's log, while User logs on SETUP > SD CARD is ON |
-| ENC CENTRE | a tap takes the live count, 0 to 4095, as the centre, with the servo at neutral |
+| ENC CENTRE | a tap takes the live AS5600 count, 0 to 4095, as the centre, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
 
-AS5600, the output encoder, is switched on [Sensors](setup-sensors.md) alone; DUT's button `AS5600 ON OR OFF: OPEN SENSORS` opens that entry and the home tag there comes back. PORT PWM, the pulse on the programming port, is set on the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) alone.
+ANGLE SOURCE on the IMU entry of [Sensors](setup-sensors.md) sets where the runs take the angle from: the AS5600 or the IMU, whose angle runs in AS5600 counts of 0.088°. The test's CSV names the source in its last column, `angle source`, and both reports in the line `Angle source:`. AS5600, the output encoder, is switched on [Sensors](setup-sensors.md) alone; DUT's button `AS5600 ON OR OFF: OPEN SENSORS` opens that entry and the home tag there comes back. PORT PWM, the pulse on the programming port, is set on the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) alone.
 
 ## The TARGET row
 

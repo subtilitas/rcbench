@@ -9260,14 +9260,14 @@ UI_SERVO_TEXT(SERVO_STR_L_R_END_NOT_RUN,
     "%snot searched",
     "%snicht gesucht")
 UI_SERVO_TEXT(SERVO_STR_L_R_ANGLE,
-    "                AS5600 %+.1fdeg at the "
+    "                %s %+.1fdeg at the "
     "last free position",
-    "                 AS5600 %+.1f Grad an der "
+    "                 %s %+.1f Grad an der "
     "letzten freien Stellung")
 UI_SERVO_TEXT(SERVO_STR_L_R_ANGLE_NONE,
-    "                AS5600: no angle at the "
+    "                %s: no angle at the "
     "last free position",
-    "                 AS5600: kein Winkel an "
+    "                 %s: kein Winkel an "
     "der letzten freien Stellung")
 UI_SERVO_TEXT(SERVO_STR_L_R_ENC_OFF,
     "AS5600:         not fitted, no angles",
@@ -9636,6 +9636,50 @@ UI_WEB_TEXT(P_ED_MIXED_LF,
 UI_WEB_TEXT(P_ED_NOT_UTF8,
     "The browser cannot keep every byte of this file (not UTF-8). Edit it on the panel: FILES > EDIT.",
     "Der Browser kann nicht jedes Byte dieser Datei erhalten (kein UTF-8). Am Panel bearbeiten: DATEIEN > BEARBEITEN.")
+
+/* --- the angle source (the servo runs read the AS5600 or the IMU) ------ */
+UI_SETTING_LABEL(SET_ANGLE_SOURCE,
+    "Angle source",
+    "Winkelquelle")
+UI_SETTING_HELP(SET_ANGLE_SOURCE,
+    "Servo runs' angle: AS5600 or IMU",
+    "Winkel der Servoläufe: AS5600/IMU")
+/* servo_angle_src_t's order. */
+UI_OPTIONS(angle_source)
+UI_OPTION("AS5600", NULL)
+UI_OPTION("IMU", NULL)
+UI_OPTIONS_END(angle_source)
+/* The reports' lines of the angle source: its name, the IMU as the
+ * encoder of the servo test, the IMU's words where the AS5600's name the
+ * part, and an IMU with no reading at a LIMIT RUN's start. */
+UI_SERVO_TEXT(SERVO_STR_R_SOURCE,
+    "Angle source:   %s",
+    "Winkelquelle:    %s")
+UI_SERVO_TEXT(SERVO_STR_R_ENC_IMU,
+    "Encoder:        %s, in AS5600 counts "
+    "(0.088deg a count), %lu angle readings",
+    "Encoder:         %s, in AS5600-Zählern "
+    "(0.088 Grad je Zähler), %lu Winkelmesswerte")
+UI_SERVO_TEXT(SERVO_STR_R_UNM_POSITION_IMU,
+    "Position: the IMU measures the horn; "
+    "the current's travel time is reported "
+    "beside the angle's.",
+    "Position: die IMU misst das "
+    "Ruderhorn; die Stellzeit aus dem Strom "
+    "steht neben der aus dem Winkel.")
+UI_SERVO_TEXT(SERVO_STR_R_IMU_GAPS,
+    "IMU gaps: %lu, the longest %lums. A "
+    "run goes on through one of up to %ums "
+    "each %us; no angle is judged in it.",
+    "IMU-Lücken: %lu, die längste %lums. "
+    "Ein Lauf geht durch eine bis %ums alle "
+    "%us weiter; darin wird kein Winkel "
+    "bewertet.")
+UI_SERVO_TEXT(SERVO_STR_L_R_SRC_OFF,
+    "Angle source:   %s, no reading at the "
+    "start, no angles",
+    "Winkelquelle:    %s, kein Messwert beim "
+    "Start, keine Winkel")
 
 #undef UI_TEXT
 #undef UI_SETTING_LABEL

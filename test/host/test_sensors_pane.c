@@ -78,13 +78,14 @@ TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
     fresh_hub();
     setting_id_t ids[64];
     const int n = settings_in_category(SET_CAT_SENSORS, ids, 64);
-    CHECK_EQ(n, 58);
+    CHECK_EQ(n, 59);
     int on_entry = 0;
     for (int i = 0; i < n; ++i) {
         const int e = sensors_pane_entry_of(ids[i]);
         if (e < 0) {
+            /* ANGLE SOURCE goes on the IMU entry with the IMU's rows. */
             CHECK(ids[i] == SET_VIBE_EN || ids[i] == SET_OPTICAL_EN
-                  || ids[i] == SET_OPTICAL_PIN);
+                  || ids[i] == SET_OPTICAL_PIN || ids[i] == SET_ANGLE_SOURCE);
         } else {
             ++on_entry;
         }

@@ -9,6 +9,7 @@
 #include "servo_limrun.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "servo_limrun_int.h"
 
@@ -74,6 +75,16 @@ typedef struct {
 } cur_t;
 
 #define LS(id) servo_str_in(c->text, SERVO_STR_##id)
+
+/**
+ * @brief The run's angle source by name.
+ * @param g The run's settings.
+ * @return g->source, or "AS5600" while it is empty.
+ */
+static const char *src_name(const servo_limrun_cfg_t *g)
+{
+    return (g->source[0] != '\0') ? g->source : "AS5600";
+}
 
 /**
  * @brief Count one line, and tell whether it is the one asked for.
@@ -151,9 +162,10 @@ static bool end_lines(const servo_limrun_t *r, cur_t *c,
     }
     if (r->cfg.enc_on && e->done && here(c)) {
         if (e->enc) {
-            snprintf(c->buf, c->n, LS(L_R_ANGLE), (double)e->enc_deg);
+            snprintf(c->buf, c->n, LS(L_R_ANGLE), src_name(&r->cfg),
+                     (double)e->enc_deg);
         } else {
-            snprintf(c->buf, c->n, "%s", LS(L_R_ANGLE_NONE));
+            snprintf(c->buf, c->n, LS(L_R_ANGLE_NONE), src_name(&r->cfg));
         }
         return true;
     }
@@ -256,10 +268,28 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
                  (unsigned long)((ms % 1000u) / 100u));
         return true;
     }
-    if (!g->enc_on && text_line(c, SERVO_STR_L_R_ENC_OFF)) {
+    /* The AS5600 not fitted, or the IMU without a reading at the start. */
+    const bool imu = strcmp(src_name(g), "AS5600") != 0;
+    if (!g->enc_on && !imu && text_line(c, SERVO_STR_L_R_ENC_OFF)) {
         return true;
     }
-    if (g->enc_on && r->enc_gap.count > 0u && here(c)) {
+    if (!g->enc_on && imu && here(c)) {
+        snprintf(c->buf, c->n, LS(L_R_SRC_OFF), src_name(g));
+        return true;
+    }
+    if (g->enc_on && here(c)) {
+        snprintf(c->buf, c->n, LS(R_SOURCE), src_name(g));
+        return true;
+    }
+    if (g->enc_on && imu && r->enc_gap.count > 0u && here(c)) {
+        snprintf(c->buf, c->n, LS(R_IMU_GAPS),
+                 (unsigned long)r->enc_gap.count,
+                 (unsigned long)r->enc_gap.longest_ms,
+                 (unsigned)SERVO_GAP_MAX_MS,
+                 (unsigned)(SERVO_GAP_EVERY_MS / 1000u));
+        return true;
+    }
+    if (g->enc_on && !imu && r->enc_gap.count > 0u && here(c)) {
         snprintf(c->buf, c->n, LS(R_ENC_GAPS),
                  (unsigned long)r->enc_gap.count,
                  (unsigned long)r->enc_gap.longest_ms,

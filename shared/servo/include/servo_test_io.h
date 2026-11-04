@@ -132,9 +132,9 @@ typedef struct {
 /* --------------------------------------------------- what it hands out */
 
 /** @brief The longest line a log row or a report line takes, terminator
- *         included: the CSV's header with the encoder's columns is 234
- *         characters. */
-#define SERVO_TEST_LINE_MAX 240u
+ *         included: the CSV's header with the angle source's columns is
+ *         247 characters. */
+#define SERVO_TEST_LINE_MAX 256u
 
 typedef enum {
     SERVO_TEST_OUT_NONE = 0,
