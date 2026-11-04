@@ -378,6 +378,17 @@ static void ra_ended(void)
         return;
     }
     s.ra.seen = false;
+    /* A run ended with its first write on its way: no answer handed the
+     * file over, and the session's own backup, saved before that write,
+     * holds the servo as the run found it. */
+    if (servo_rauto_restore(&s.ra.run)) {
+        const char *f = kst_panel_run_backup();
+        const kst_prog_t *m = kst_panel_model();
+        if ((f == NULL || f[0] == '\0') && kst_prog_backed_up(m)) {
+            f = kst_prog_backup_name(m);
+        }
+        servo_rauto_backup(&s.ra.run, f);
+    }
     if (s.ra.leaving) {
         s.ra.end_due = true;
     } else {

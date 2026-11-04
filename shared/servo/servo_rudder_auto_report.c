@@ -332,7 +332,8 @@ static bool prog_lines(const servo_rauto_t *r, cur_t *c)
                  r->sessions);
         return true;
     }
-    if (r->write_ops > 0u && here(c)) {
+    /* A write cut off on its way counts: it may have landed. */
+    if ((r->write_ops > 0u || servo_rauto_restore(r)) && here(c)) {
         if (r->servo.backup[0] != '\0') {
             snprintf(c->buf, c->n, LS(L_R_BACKUP), r->servo.backup);
         } else {

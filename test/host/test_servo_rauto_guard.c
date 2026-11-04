@@ -433,6 +433,7 @@ TEST_CASE(a_refused_connect_ends_prog_and_restore_is_offered_after_a_write)
     CHECK(run_to(SERVO_RAUTO_PH_WRITE, RAUTO_MS));
     servo_rauto_refused(&g.run, g.now);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_WRITE);
+    CHECK(!servo_rauto_restore(&g.run));    /* nothing was sent */
     rig_init(0u);
     CHECK(start());
     CHECK(run_to(SERVO_RAUTO_PH_LEAVE, RAUTO_MS));
@@ -576,8 +577,43 @@ TEST_CASE(the_words_name_every_reason_and_phase)
     CHECK(!d.command);
 }
 
+/* A STOP while a write is on its way, the pulse write and then an end
+ * point's: it may have landed, so RESTORE is offered and the report says
+ * so; a STOP before any value changed offers none. */
+TEST_CASE(a_stop_with_a_write_on_its_way_offers_restore)
+{
+    for (int which = 0; which < 2; ++which) {
+        rig_init(0u);
+        CHECK(start());
+        const int op = which == 0 ? OP_PULSES : OP_WRITE;
+        while (servo_rauto_running(&g.run) && g.op != op) {
+            tick();
+        }
+        CHECK(servo_rauto_running(&g.run));
+        CHECK(g.run.in_flight);
+        servo_rauto_abort(&g.run, SERVO_TEST_AB_STOP, g.now);
+        CHECK_EQ(g.run.verdict, SERVO_RAUTO_ABORTED);
+        CHECK(!g.run.in_flight);
+        CHECK(servo_rauto_restore(&g.run));
+        run_for(1000u);
+        CHECK(ended_safe());
+        CHECK(in_report("Restore:        RESTORE on the programming page"));
+    }
+    /* The pulses already 1000 to 2000us: no pulse write, and a STOP in
+     * the first measure leaves nothing to restore. */
+    rig_init(0u);
+    g.pulses[1] = 10000u;
+    g.pulses[2] = 20000u;
+    CHECK(start());
+    CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
+    CHECK(!g.run.in_flight);
+    servo_rauto_abort(&g.run, SERVO_TEST_AB_STOP, g.now);
+    CHECK(!servo_rauto_restore(&g.run));
+}
+
 int main(void)
 {
+    RUN(a_stop_with_a_write_on_its_way_offers_restore);
     RUN(a_stall_before_the_goal_ends_binds_with_the_angle);
     RUN(a_hard_sample_ends_the_run_with_the_output_off_and_safe_asked);
     RUN(window_means_above_1000ma_end_the_run_at_400ms);

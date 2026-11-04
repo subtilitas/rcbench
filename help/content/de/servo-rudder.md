@@ -67,7 +67,7 @@ AUTO programmiert ein KST- oder Chaservo-Servo am Programmierport so, dass 1000u
 
 Zuerst NULLPUNKT mit der Fläche in Neutrallage; solange der Lauf läuft, sind NULLPUNKT, MAX LÖSCHEN und MANUELL abgelehnt. 2s HALTEN: START startet den Lauf; die Taste heißt dann LAUF BEENDEN, und ein Druck beendet den Lauf sofort. Der Lauf liest das Servo, setzt seinen Pulsbereich auf 1000 bis 2000us, fährt dann je Seite den Endpuls an, wartet, bis der Winkel 500ms ruhig ist, und schreibt einen neuen Endpoint: höchstens 8 Schreibvorgänge je Seite, jeder in einer eigenen Sitzung des Programmierers, mit dem Servo aus- und eingeschaltet. Der Stromschutz des Endlagenlaufs gilt durchgehend: ein Blockieren vor dem Sollwert beendet den Lauf mit `Ruder klemmt bei x°`. Jedes Ende schaltet den Prüfstand auf SAFE und den Ausgang der Versorgung aus.
 
-Die erste Zeile nennt den laufenden Schritt, die Sollwerte oder warum ein START abgelehnt ist; die zweite das Ergebnis; die dritte den Bericht RUDDRnnn.TXT, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN`, wenn ein Lauf, der geschrieben hat, nicht bestanden ist.
+Die erste Zeile nennt den laufenden Schritt, die Sollwerte oder warum ein START abgelehnt ist; die zweite das Ergebnis; die dritte den Bericht RUDDRnnn.TXT, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN`, wenn ein Lauf, der geschrieben oder ein Schreiben unterwegs abgebrochen hat, nicht bestanden ist.
 
 ## Was der Winkel ist
 

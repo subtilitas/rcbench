@@ -1345,7 +1345,8 @@ eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
   1/8, SESSIONS 2`, or why a START is refused, or the goals; the result,
   `PASS: 150>92, 150>92` with each end point's value before and after, or
   `FAIL: reason`; the report's file, or `RESTORE IN PROGRAM` after a FAIL
-  or an abort that wrote.
+  or an abort that wrote, or that cut off a write on its way, which may
+  have landed.
 
 A START is refused, the reason on the first line, while:
 

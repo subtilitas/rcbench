@@ -67,7 +67,7 @@ AUTO programs a KST or Chaservo servo on the programming port so that 1000us and
 
 ZERO the surface at neutral first; while the run runs, ZERO, RESET MAX and MANUAL are refused. HOLD 2s TO START starts the run; it then reads STOP RUN, and a press ends the run at once. The run reads the servo, sets its pulse range to 1000 to 2000us, then per side drives the end pulse, waits for the angle to be still for 500ms and writes a new end point: at most 8 writes a side, each in its own session of the programmer with the servo switched off and on. The current guard of the limit run holds throughout: a stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply's output off.
 
-The first line gives the step under way, the goals, or why a START is refused; the second the result; the third the report RUDDRnnn.TXT, or `RESTORE IN PROGRAM` when a run that wrote did not pass.
+The first line gives the step under way, the goals, or why a START is refused; the second the result; the third the report RUDDRnnn.TXT, or `RESTORE IN PROGRAM` when a run that wrote, or cut off a write on its way, did not pass.
 
 ## What the angle is
 

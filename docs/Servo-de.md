@@ -1374,7 +1374,8 @@ Augenmaß eingestellten Weg am Sender. Der Lauf steht in
   oder die Sollwerte; das Ergebnis, `PASS: 150>92, 150>92` mit dem Wert
   jedes Endpoints davor und danach, oder `NICHT BESTANDEN: Grund`; die Datei
   des Berichts, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN` nach einem NICHT
-  BESTANDEN oder einem Abbruch, der geschrieben hat.
+  BESTANDEN oder einem Abbruch, der geschrieben hat oder ein Schreiben
+  unterwegs abbrach, das angekommen sein kann.
 
 Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
 

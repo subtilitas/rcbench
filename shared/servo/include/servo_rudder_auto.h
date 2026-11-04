@@ -270,6 +270,9 @@ typedef struct {
     bool     read_once;               /**< the read session read the servo */
     bool     pulse_op;                /**< the write under way is the pulses */
     bool     pulses_landed;           /**< 1000.0us and 2000.0us read back */
+    bool     in_flight;               /**< a write or the pulse write handed
+                                           out, its answer not in: an end now
+                                           may leave it landed */
     bool     programmed;              /**< a value differs, or a write failed
                                            once sent */
     unsigned write_ops;               /**< writes sent, pulses included */
@@ -423,7 +426,8 @@ bool servo_rauto_programming(const servo_rauto_t *r);
 bool servo_rauto_wrote(const servo_rauto_t *r);
 /**
  * @brief RESTORE is offered: the run ended as FAIL or ABORTED with the
- *        servo's values changed.
+ *        servo's values changed, or with a write handed out and its
+ *        answer not in (it may have landed).
  * @param r Run state; NULL gives false.
  * @return true when DONE, programmed, and not PASS.
  */

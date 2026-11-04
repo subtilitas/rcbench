@@ -23,6 +23,7 @@
  * - with_user_logs_off_auto_hands_the_logger_nothing
  * - another_angle_source_drops_the_zero_and_ends_auto
  * - the_knob_moves_nothing_while_auto_runs
+ * - a_stop_during_the_pulse_write_offers_restore_and_names_the_backup
  *
  * SPDX-License-Identifier: MIT
  */
@@ -589,6 +590,42 @@ TEST_CASE(the_knob_moves_nothing_while_auto_runs)
     CHECK(strstr(ra.report, "PASS") != NULL);
 }
 
+/* A STOP while the read session's pulse write is on its way, before its
+ * read-back: the write may have landed, so the report names the backup
+ * file and RESTORE, and the box's last line asks for RESTORE. */
+TEST_CASE(a_stop_during_the_pulse_write_offers_restore_and_names_the_backup)
+{
+    ra_setup(true, true);
+    const uint16_t lower0 = servo(KST_F_PULSE_LOWER);
+    ra_hold_start();
+    bool there = false;
+    for (int i = 0; i < 400000 && servo_screen_rauto_running(); ++i) {
+        ra_ms(1u);
+        /* The servo's PULSE LOWER changed, the run still waits for the
+         * write's answer. */
+        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_WRITE
+            && servo(KST_F_PULSE_LOWER) != lower0) {
+            there = true;
+            break;
+        }
+    }
+    CHECK(there);
+    rig_stop(true);
+    servo_screen_cancel_arm();
+    CHECK(!servo_screen_rauto_running());
+    ra_ms(3000u);
+    CHECK(!ra.armed);
+    CHECK(!g_rig.sup_on);
+    CHECK(strstr(ra.report, "ABORTED") != NULL);
+    CHECK(strstr(ra.report, "Backup:         KST") != NULL);
+    CHECK(strstr(ra.report, "Restore:        RESTORE") != NULL);
+    char b[96], want[96];
+    snprintf(want, sizeof(want), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), want);
+    rig_stop(false);
+    CHECK(rig_settle());
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -600,5 +637,6 @@ int main(void)
     RUN(with_user_logs_off_auto_hands_the_logger_nothing);
     RUN(another_angle_source_drops_the_zero_and_ends_auto);
     RUN(the_knob_moves_nothing_while_auto_runs);
+    RUN(a_stop_during_the_pulse_write_offers_restore_and_names_the_backup);
     return test_summary("servo_rauto_kst");
 }

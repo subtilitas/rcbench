@@ -137,6 +137,12 @@ static void finish(servo_rauto_t *r, servo_rauto_verdict_t v,
      * CONNECT: a read that is no servo.  Every later step of the
      * programmer that ends the run is an abort. */
     const bool in_session = r->phase == SERVO_RAUTO_PH_READ;
+    if (r->in_flight) {
+        /* A write on its way when the run ended may have landed: RESTORE
+         * is offered for it. */
+        r->programmed = true;
+        r->in_flight  = false;
+    }
     r->state   = SERVO_RAUTO_DONE;
     r->verdict = v;
     r->why     = why;
@@ -723,6 +729,7 @@ void servo_rauto_connected(servo_rauto_t *r, const servo_rauto_servo_t *sv,
  */
 static void sent_failed(servo_rauto_t *r, uint32_t now_ms)
 {
+    r->in_flight = false;
     ++r->write_ops;
     r->programmed = true;
     abort_why(r, SERVO_RAUTO_WHY_WRITE, now_ms);
@@ -739,6 +746,7 @@ void servo_rauto_written(servo_rauto_t *r, bool ok, const uint16_t *value,
         sent_failed(r, now_ms);
         return;
     }
+    r->in_flight = false;
     ++r->write_ops;
     r->cur[0] = value[0];
     r->cur[1] = value[1];
@@ -763,6 +771,7 @@ void servo_rauto_pulsed(servo_rauto_t *r, bool ok, const uint16_t *pulse_dus,
         sent_failed(r, now_ms);
         return;
     }
+    r->in_flight = false;
     ++r->write_ops;
     memcpy(r->pulse_now, pulse_dus, sizeof(r->pulse_now));
     mark_programmed(r);
@@ -795,6 +804,7 @@ void servo_rauto_refused(servo_rauto_t *r, uint32_t now_ms)
     if (!servo_rauto_running(r)) {
         return;
     }
+    r->in_flight = false;           /* refused before it was sent */
     if (r->phase == SERVO_RAUTO_PH_WRITE) {
         abort_why(r, SERVO_RAUTO_WHY_WRITE, now_ms);
     } else if (prog_phase(r->phase)) {
@@ -915,6 +925,9 @@ void servo_rauto_step(servo_rauto_t *r, uint32_t now_ms,
     }
     *out = r->pend;
     memset(&r->pend, 0, sizeof(r->pend));
+    if (servo_rauto_running(r) && (out->write || out->pulses)) {
+        r->in_flight = true;
+    }
     if (servo_rauto_running(r) && r->cmd_due) {
         out->command = true;
         out->cmd_us  = r->cmd_us;
