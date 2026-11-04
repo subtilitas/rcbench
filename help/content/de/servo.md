@@ -17,7 +17,7 @@ Die Leiste unter dem Band trägt die Aufgaben von SERVO: LIVE, TEST, PROGRAMMIER
 | LIVE | der Winkel des Horns, das Zifferblatt, an seinem Fuß die Messwerte SOLL-PULSBREITE, GEMESSEN und STROM, und der Kasten eines Laufs links vom Zifferblatt |
 | TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF, jede mit ihren OPTIONEN, einer Zusammenfassung, ihrem Start-Halten, dem letzten Ergebnis und seiner Datei; die Grenzen von SUPPLY, nur lesbar |
 | PROGRAMMIEREN | die Liste der Programmierer; eine Zeile öffnet ihren Programmierer über der linken Spalte ([Servo-Programmierer](servo-programmer.md)) |
-| RUDER | der Ausschlag der Ruderfläche in ° und mm, LÄNGE, die Tasten 1000us, ZENTRIEREN und 2000us, NULLPUNKT und MAX ZURÜCKSETZEN ([Ruderausschlag](servo-rudder.md)) |
+| RUDER | der Ausschlag der Ruderfläche in ° und mm, LÄNGE, die Tasten 1000us, ZENTRIEREN und 2000us, NULLPUNKT, MAX LÖSCHEN und AUTO, das die Endpoints eines KST-Servos auf den eingegebenen Ausschlag programmiert ([Ruderausschlag](servo-rudder.md)) |
 | OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING ([Servo-Optionen](servo-settings.md)) |
 
 Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Typzeile, die Messzeile mit der Grafik, die Netzteilzeile, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Jede Zeile, die man dort antippt, ist 48px (7,2mm) hoch oder höher, und ARM ist 60px hoch. Der Drehknopf bewegt das Horn nur auf LIVE und RUDER.

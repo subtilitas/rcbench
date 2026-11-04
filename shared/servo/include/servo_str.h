@@ -310,6 +310,7 @@ typedef enum {
     SERVO_STR_RA_R_IN,
     SERVO_STR_RA_R_OUT,
     SERVO_STR_RA_R_MODEL,
+    SERVO_STR_START_AUTO_RUNS,
     SERVO_STR_COUNT
 } servo_str_t;
 

@@ -1325,7 +1325,7 @@ Prüfstand auf SAFE, aus jeder Aufgabe.
 | LIVE | das Zifferblatt, darüber das Feld eines Laufs, solange er läuft oder sein Ergebnis steht |
 | TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF und die Grenzen von SUPPLY, nur lesbar |
 | PROGRAMMIEREN | die Liste der Programmierer, eine Zeile je Programmierer; eine Zeile öffnet ihren Programmierer über der linken Spalte |
-| RUDER | der Ausschlag einer Ruderfläche in ° und mm, LÄNGE, 1000us, ZENTRIEREN und 2000us, NULLPUNKT und MAX ZURÜCKSETZEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
+| RUDER | der Ausschlag einer Ruderfläche in ° und mm, LÄNGE, 1000us, ZENTRIEREN und 2000us, NULLPUNKT, MAX LÖSCHEN und AUTO ([Ruderausschlag](Servo-de.md#ruderausschlag), [AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING |
 
 Die linke Karte ist 620px breit und beginnt unter der Leiste, bei y 56.
@@ -2807,6 +2807,7 @@ die vorgegebenen Ordner; Ordner Auto-Logs und Ordner User-Logs unter
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines ENDLAGENLAUFS, ohne CSV daneben |
+| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von AUTO auf RUDER, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
 
 Der Name folgt dem Bildschirm, der den Prüfstand geschaltet hat: Ein ARM,
 das die Throttle-Ausgänge verlangt, schreibt `MOTORnnn`, eines, das die
@@ -2843,7 +2844,7 @@ Namen, in `BENCH/LOGS` folgt auf `SUPPL041.CSV` und `SERVO042.CSV` also
 TXT-Datei trägt, ist vergeben, ebenso eine im Namen eines Ordners. Das Panel
 liest einen Ordner einmal, wenn es nach einem Start zum ersten Mal
 hineinschreibt, und merkt sich die Nummer danach; bevor es eine Nummer
-nimmt, prüft es die 10 Namen, die diese Nummer tragen kann (5 Namen, CSV und
+nimmt, prüft es die 12 Namen, die diese Nummer tragen kann (6 Namen, CSV und
 TXT), sodass eine inzwischen geschriebene Datei übersprungen und nicht
 überschrieben wird. Eine Lücke, die eine gelöschte Datei hinterlässt, wird
 nicht gefüllt. Ein Ordner mit einer Nummer 999 unter irgendeinem Namen nimmt

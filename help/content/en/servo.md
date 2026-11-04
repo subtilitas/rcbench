@@ -17,7 +17,7 @@ The strip under the band holds SERVO's tasks: LIVE, TEST, PROGRAM, RUDDER and SE
 | LIVE | the horn's angle, the dial, the readings COMMANDED, MEASURED and CURRENT along its foot, and a run's box left of the dial |
 | TEST | the AUTOMATIC TEST and LIMIT RUN cards, each with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only |
 | PROGRAM | the list of programmers; a row opens its programmer over the left column ([Servo programmer](servo-programmer.md)) |
-| RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
+| RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO, RESET MAX and AUTO, which programs a KST servo's end points to the deflection entered ([Rudder deflection](servo-rudder.md)) |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT ([Servo settings](servo-settings.md)) |
 
 The right card is the output card, the same on every task: the type row, the meter line and plot, the supply line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. Every row tapped there is 48px (7.2mm) tall or taller, and ARM is 60px. The rotary knob moves the horn on LIVE and RUDDER only.

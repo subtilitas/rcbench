@@ -30,7 +30,8 @@
  * an armed bench are exclusive.  DISARM is always taken. */
 bool svs_arm_locked(void)
 {
-    return (prog_holds() || servo_limrun_running(&s.lim))
+    return (prog_holds() || servo_limrun_running(&s.lim)
+            || servo_rauto_running(&s.ra.run))
            && !s.gate.armed;
 }
 
@@ -60,6 +61,10 @@ bool svs_safe_at(int x, int y)
             return servo_limrun_running(&s.lim);
         }
         return s.test_box && servo_test_running(&s.test);
+    }
+    if (rauto_shown() && !s.ov_have
+        && gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
+        return servo_rauto_running(&s.ra.run);
     }
     if (wb_task() == UI_WB_TEST && !s.ov_have && rows_page() < 0
         && gfx_rect_contains(page_area(), x, y)) {

@@ -9682,7 +9682,10 @@ UI_SERVO_TEXT(SERVO_STR_L_R_SRC_OFF,
     "Start, keine Winkel")
 /* ===================================================== AUTO end points */
 /* Slice 6: AUTO on RUDDER (servo_rudder_auto.h), its phase, its reasons
- * and its report RUDDERnnn.TXT. */
+ * and its report RUDDRnnn.TXT. */
+UI_SERVO_TEXT(SERVO_STR_START_AUTO_RUNS,
+    "AUTO IS RUNNING",
+    "AUTO LÄUFT")
 UI_SERVO_TEXT(SERVO_STR_RA_PH_READ,
     "READ SERVO",
     "SERVO LESEN")
@@ -9706,10 +9709,10 @@ UI_SERVO_TEXT(SERVO_STR_RA_WHY_MAPPING,
     "Endpoint einer Seite unklar")
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_LIMIT,
     "goal outside the end point range",
-    "Ziel außerhalb des Endpoint-Bereichs")
+    "Ziel außerhalb der Endpoints")
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_WRITE_CAP,
     "8 writes a side reached",
-    "8 Schreibvorgänge je Seite erreicht")
+    "8x je Seite geschrieben")
 UI_SERVO_TEXT(SERVO_STR_RA_R_TITLE,
     "RCBENCH RUDDER AUTO REPORT",
     "RCBENCH RUDER-AUTO-BERICHT")
@@ -9746,7 +9749,7 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_LENGTH,
     "Length:         %.0fmm; goals 1000us %.1fmm, "
     "2000us %.1fmm at the trailing edge",
     "Länge:           %.0fmm; Sollwerte 1000us "
-    "%.1fmm, 2000us %.1fmm an der Endleiste")
+    "%.1fmm, 2000us %.1fmm an der Hinterkante")
 UI_SERVO_TEXT(SERVO_STR_RA_R_SETTLE,
     "Measure:        the angle still for %ums, "
     "at most %ums after the command",
@@ -9807,6 +9810,84 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_MODEL,
     "linear im Wert des Endpoints, ab der Null "
     "des Ruders. Das ist eine Annahme, keine "
     "Messung; der Lauf misst nach jedem Schreiben.")
+/* AUTO's box on RUDDER (servo_rudder_auto_panel.c): the button that
+ * shows it and the one back, its rows, its START, its lines and why a
+ * START is refused. */
+UI_TEXT(RA_AUTO, 0,
+    "AUTO",
+    "AUTO")
+UI_TEXT(RA_MANUAL, 0,
+    "MANUAL",
+    "MANUELL")
+UI_TEXT(RA_MARGIN, 0,
+    "MARGIN %u%%",
+    "RESERVE %u%%")
+UI_TEXT(RA_TOL, 0,
+    "TOLERANCE %.1f°",
+    "TOLERANZ %.1f°")
+UI_TEXT(RA_START, 0,
+    "HOLD 2s TO START",
+    "2s HALTEN: START")
+UI_TEXT(RA_GOALS, 50,
+    "GOALS 1000us %.1f°, 2000us %.1f°",
+    "SOLL 1000us %.1f°, 2000us %.1f°")
+UI_TEXT(RA_STEP, 50,
+    "%s %uus: WRITE %u/%u, SESSIONS %u",
+    "%s %uus: SCHREIBEN %u/%u, SITZUNGEN %u")
+UI_TEXT(RA_LAST, 50,
+    "%s: %s",
+    "%s: %s")
+UI_TEXT(RA_SET, 50,
+    "PASS: %u>%u, %u>%u",
+    "PASS: %u>%u, %u>%u")
+UI_TEXT(RA_FILE, 50,
+    "REPORT %s",
+    "BERICHT %s")
+UI_TEXT(RA_BINDS_AT, 48,
+    "surface binds at %.1f°",
+    "Ruder klemmt bei %.1f°")
+UI_TEXT(RA_NO_ANGLE, 0,
+    "ANGLE SOURCE: NO READING",
+    "WINKELQUELLE: KEIN MESSWERT")
+UI_TEXT(RA_NO_ZERO, 48,
+    "ZERO FIRST, THE SURFACE AT NEUTRAL",
+    "ERST NULL, DAS RUDER IN NEUTRAL")
+UI_TEXT(RA_RANGE, 48,
+    "PULSE MIN TO MAX MUST HOLD 1000 TO 2000us",
+    "PULS MIN BIS MAX MUSS 1000 BIS 2000us FASSEN")
+UI_TEXT(RA_PROG_PORT, 48,
+    "AUTO PROGRAMS A SERVO ON THE PROG PORT",
+    "AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT")
+UI_TEXT(RA_REFUSED, 48,
+    "TARGET, MARGIN OR TOLERANCE OUT OF RANGE",
+    "SOLL, RESERVE ODER TOLERANZ AUSSERHALB")
+UI_TEXT(HOLD_HINT_RUDDER_AUTO, 94,
+    "Hold 2s to start AUTO.",
+    "Halte 2s, um AUTO zu starten.")
+UI_SETTING_LABEL(SET_RUDDER_DEFL_LO,
+    "AUTO target at 1000us",
+    "AUTO-Soll bei 1000us")
+UI_SETTING_HELP(SET_RUDDER_DEFL_LO,
+    "Deflection AUTO is to reach at 1000us, 0.5 to 90.0°",
+    "Ausschlag, den AUTO bei 1000us erreichen soll, 0.5 bis 90.0°")
+UI_SETTING_LABEL(SET_RUDDER_DEFL_HI,
+    "AUTO target at 2000us",
+    "AUTO-Soll bei 2000us")
+UI_SETTING_HELP(SET_RUDDER_DEFL_HI,
+    "Deflection AUTO is to reach at 2000us, 0.5 to 90.0°",
+    "Ausschlag, den AUTO bei 2000us erreichen soll, 0.5 bis 90.0°")
+UI_SETTING_LABEL(SET_RUDDER_MARGIN,
+    "AUTO margin",
+    "AUTO-Reserve")
+UI_SETTING_HELP(SET_RUDDER_MARGIN,
+    "Programmed past the target by this share, 0 to 50%",
+    "So viel über das Soll hinaus programmiert, 0 bis 50%")
+UI_SETTING_LABEL(SET_RUDDER_TOL,
+    "AUTO tolerance",
+    "AUTO-Toleranz")
+UI_SETTING_HELP(SET_RUDDER_TOL,
+    "How near the goal a measure has to be, 0.1 to 5.0°",
+    "Wie nah am Soll eine Messung liegen muss, 0.1 bis 5.0°")
 
 /* The SERVO workbench's RUDDER task (servo_rudder_panel.c): its tab, the
  * readout of the surface's deflection in ° and in mm at the trailing edge,
@@ -9836,7 +9917,7 @@ UI_TEXT(RUD_ZERO, 0,
     "NULLPUNKT")
 UI_TEXT(RUD_RESET_MAX, 0,
     "RESET MAX",
-    "MAX ZURÜCKSETZEN")
+    "MAX LÖSCHEN")
 UI_TEXT(RUD_MAX, 0,
     "MAX",
     "MAX")

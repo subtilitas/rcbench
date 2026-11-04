@@ -626,10 +626,12 @@ void svs_tick_body(float dt_s)
     kst_panel_set_hv(s.test_hv);
     prog_armed(bench_arming());
     prog_tick(dt_s);
-    /* Not while a limit run holds the port: its box stays on the left
-     * card, and the run gives the port back itself. */
+    /* Not while a limit run or AUTO holds the port: its box stays on the
+     * left card, and the run gives the port back itself. */
     lim_leave_follow();
-    if (!servo_limrun_running(&s.lim) && !s.lim_leaving) {
+    rauto_leave_follow();
+    if (!servo_limrun_running(&s.lim) && !s.lim_leaving
+        && !servo_rauto_running(&s.ra.run) && !s.ra.leaving) {
         prog_follow_hold();
     }
     /* An ARM asked as a programmer took a pin: the IOmcu refuses it, and no
@@ -874,6 +876,8 @@ void svs_tick_body(float dt_s)
         }
     }
     lim_tick();
+    /* AUTO on RUDDER: START's hold, then the run. */
+    rauto_frame(dt_s);
 
     if (s.driving) {
         s.pulse += dt_s * 3.6f;         /* a little under two seconds a cycle */

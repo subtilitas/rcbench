@@ -3342,9 +3342,7 @@ shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_sup
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_sweep_held are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_sweep_started are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_take are not documented
-shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_test_files are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_test_logger_busy are not documented
-shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_test_peek are not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_commanded is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_commanded_text is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_curve_ms is not documented
@@ -3361,7 +3359,6 @@ shared/ui/include/servo_screen.h: warning: return type of member servo_screen_sw
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_take is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_target_locked is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_task is not documented
-shared/ui/include/servo_screen.h: warning: return type of member servo_screen_test_peek is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_tester_target_locked is not documented
 shared/ui/include/servo_screen.h: warning: return type of member servo_screen_testing is not documented
 shared/ui/include/settings_screen.h: warning: Member settings_screen(void) (function) of file settings_screen.h is not documented.
@@ -4005,7 +4002,6 @@ shared/ui/servo_limit_panel.c: warning: Member lim_ended(void) (function) of fil
 shared/ui/servo_limit_panel.c: warning: Member lim_file_name(char *b, size_t n) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_leave_follow(void) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_meter_follow(servo_source_id_t id, uint32_t changes) (function) of file servo_limit_panel.c is not documented.
-shared/ui/servo_limit_panel.c: warning: Member lim_meter_why(void) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_pd_answers(void) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_poll(void) (function) of file servo_limit_panel.c is not documented.
 shared/ui/servo_limit_panel.c: warning: Member lim_prog_why(void) (function) of file servo_limit_panel.c is not documented.
@@ -4119,7 +4115,6 @@ shared/ui/servo_screen_int.h: warning: Member enc_deg_now(void) (function) of fi
 shared/ui/servo_screen_int.h: warning: Member enc_raw (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member enc_shown(void) (function) of file servo_screen_int.h is not documented.
 shared/ui/servo_screen_int.h: warning: Member enc_valid (variable) of struct servo_screen_state_t is not documented.
-shared/ui/servo_screen_int.h: warning: Member files_lim (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member frame_hz (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member from_ms (variable) of struct sweep_drain_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member gate (variable) of struct servo_screen_state_t is not documented.
@@ -4216,7 +4211,6 @@ shared/ui/servo_screen_int.h: warning: Member pause_tap_ms (variable) of struct 
 shared/ui/servo_screen_int.h: warning: Member paused (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member paused (variable) of struct servo_screen_state_t::[struct].undo is not documented.
 shared/ui/servo_screen_int.h: warning: Member peek_kind (variable) of struct servo_screen_state_t is not documented.
-shared/ui/servo_screen_int.h: warning: Member peek_lim (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member pending (variable) of struct servo_screen_state_t is not documented.
 shared/ui/servo_screen_int.h: warning: Member pending (variable) of struct servo_screen_state_t::[struct].undo is not documented.
 shared/ui/servo_screen_int.h: warning: Member pins (variable) of struct servo_screen_state_t is not documented.

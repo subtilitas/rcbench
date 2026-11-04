@@ -51,6 +51,7 @@ set(SRCS
     servo_limit_panel.c
     servo_workbench.c
     servo_rudder_panel.c
+    servo_rudder_auto_panel.c
     kst_panel.c
     kst_panel_text.c
     kst_panel_warn.c

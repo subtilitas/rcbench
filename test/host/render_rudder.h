@@ -21,7 +21,7 @@ bool render_rudder_view(const char *view);
 /**
  * @brief Whether @p view shows an ARMED bench.
  * @param view the view's name
- * @return true for servo-rudder-armed
+ * @return true for servo-rudder-armed and servo-rudder-auto
  */
 bool render_rudder_armed(const char *view);
 

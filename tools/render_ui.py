@@ -727,8 +727,8 @@ SCREENS = {
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
                               "dark"),
     # SERVO's RUDDER task: ZERO taken, the surface at +12.3deg after -24.6
-    # and +25.5, LENGTH 120mm; the same ARMED after 2000us; and with LENGTH
-    # not set, degrees alone.
+    # and +25.5, LENGTH 120mm; the same ARMED after 2000us; with LENGTH
+    # not set, degrees alone; and ARMED with AUTO's box shown.
     "servo-rudder": ("servo-rudder.png", "servo", "dark"),
     "servo-rudder-armed": ("servo-rudder-armed.png", "servo", "dark"),
     "servo-rudder-nolength": ("servo-rudder-nolength.png", "servo", "dark"),
@@ -739,6 +739,7 @@ SCREENS = {
     "imu-scan": ("imu-scan.png", "imu", "dark"),
     "imu-connected": ("imu-connected.png", "imu", "dark"),
     "setup-sensors-imu": ("setup-sensors-imu.png", "setup", "dark"),
+    "servo-rudder-auto": ("servo-rudder-auto.png", "servo", "dark"),
 }
 INCLUDES = ui_sources.INCLUDES
 

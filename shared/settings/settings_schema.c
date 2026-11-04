@@ -496,4 +496,21 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_IMU_ALGO] = {
         "imu_algo", "",
         SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_algo) },
+    /*
+     * AUTO on RUDDER (servo_rudder_auto.h): the deflection each end pulse
+     * is to reach, 1000us and 2000us, as a magnitude; the margin it is
+     * programmed past that by; and how near the goal a measure has to be.
+     */
+    [SET_RUDDER_DEFL_LO] = {
+        "rud_defl_lo", "°",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.5f, 90.0f, 0.5f, 20.0f, NULL, 0 },
+    [SET_RUDDER_DEFL_HI] = {
+        "rud_defl_hi", "°",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.5f, 90.0f, 0.5f, 20.0f, NULL, 0 },
+    [SET_RUDDER_MARGIN] = {
+        "rud_margin", "%",
+        SET_CAT_SERVO, SET_TYPE_INT, 0, 50, 1, 10, NULL, 0 },
+    [SET_RUDDER_TOL] = {
+        "rud_tol", "°",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.1f, 5.0f, 0.1f, 0.5f, NULL, 0 },
 };

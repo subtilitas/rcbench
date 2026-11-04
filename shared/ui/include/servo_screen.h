@@ -576,21 +576,42 @@ bool servo_screen_testing(void);
 bool servo_screen_limit_running(void);
 /** The limit run's phase (servo_limrun_phase_t), for the tests. */
 int servo_screen_limit_phase(void);
+/** @brief Whether AUTO on RUDDER (servo_rudder_auto.h) is under way.
+ *  @return true while its run runs */
+bool servo_screen_rauto_running(void);
+/** @brief AUTO's phase, for the tests.
+ *  @return a servo_rauto_phase_t, as an int */
+int servo_screen_rauto_phase(void);
 
 /**
- * The run's next item for the card, without taking it (servo_test_peek()),
- * and taking it once it is on its way.  The application drains these every
- * frame, whichever screen is up.  A run started with USER LOGS off on
- * SETUP > SD CARD has no item: its items are dropped here.
+ * @brief The run's next item for the card, without taking it
+ *        (servo_test_peek()), and taking it once it is on its way.
+ *
+ * The application drains these every frame, whichever screen is up.  A run
+ * started with USER LOGS off on SETUP > SD CARD has no item: its items are
+ * dropped here.
+ * @param text receives the item's text
+ * @return the item; SERVO_TEST_OUT_NONE for none
  */
 servo_test_out_t servo_screen_test_peek(const char **text);
+/**
+ * @brief The writer of the outbox servo_screen_test_peek() last handed out:
+ *        the AUTOMATIC TEST's, the LIMIT RUN's or AUTO's on RUDDER.
+ * @return LOG_PREFIX_ATEST, LOG_PREFIX_LIMIT or LOG_PREFIX_RUDDR
+ *         (log_name.h), as an int
+ */
+int servo_screen_test_prefix(void);
 void servo_screen_test_pop(void);
 
 /**
- * The number of the files the run's items went to -- ATESTnnn.CSV and,
- * with REPORT, ATESTnnn.TXT, or a limit run's LIMITnnn.TXT -- or -1 when
- * the card took none; and whether the card took the .TXT whole.  Ignored
- * for a run started with USER LOGS off, which sent the logger nothing.
+ * @brief The number of the files the run's items went to, and whether the
+ *        card took the .TXT whole.
+ *
+ * The files are ATESTnnn.CSV and, with REPORT, ATESTnnn.TXT; a limit run's
+ * LIMITnnn.TXT; or AUTO's RUDDRnnn.CSV and RUDDRnnn.TXT.  Ignored for a
+ * run started with USER LOGS off, which sent the logger nothing.
+ * @param number the number; -1 when the card took none
+ * @param report whether the card took the .TXT whole
  */
 void servo_screen_test_files(int number, bool report);
 /** Whether the logger still holds an OPEN or an END the outbox gave it,

@@ -176,7 +176,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | acknowledge, confirm | bestätigen |
 | SILENT (das Urteil des RECEIVER) | KEIN SIGNAL |
 | deflection (einer Ruderfläche), trailing edge, hinge line | Ausschlag, Hinterkante, Scharnierlinie |
-| zero (die genommene Neutrallage), RESET MAX | Nullpunkt, MAX ZURÜCKSETZEN |
+| zero (die genommene Neutrallage), RESET MAX | Nullpunkt, MAX LÖSCHEN |
 
 Eine Beschriftung ist ein Substantiv, wo ein Substantiv reicht. Eine
 Anweisung spricht den Bediener im Imperativ mit du an (Prüfe, Tippe, Halte);

@@ -118,6 +118,7 @@ TRACKED = [
     "shared/ui/servo_limit_panel.c",
     "shared/ui/servo_workbench.c",
     "shared/ui/servo_rudder_panel.c",
+    "shared/ui/servo_rudder_auto_panel.c",
     "shared/ui/kst_panel.c",
     "shared/ui/kst_panel_text.c",
     "shared/ui/kst_panel_warn.c",

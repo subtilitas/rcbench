@@ -994,10 +994,12 @@ TEST_CASE(every_string_fits)
         ui_text_set_language((ui_lang_t)lang);
         CHECK(ui_text_fits(f, TR(WB_RUDDER), 120, 40, 6));
         static const ui_text_id_t k_btn[] = { TX_SV_CENTRE_BTN, TX_RUD_ZERO,
-                                              TX_RUD_RESET_MAX };
+                                              TX_RUD_RESET_MAX, TX_RA_AUTO,
+                                              TX_RA_MANUAL };
         static const rudder_ctl_t k_ctl[] = { RUD_C_CENTRE, RUD_C_ZERO,
-                                              RUD_C_RESET };
-        for (int i = 0; i < 3; ++i) {
+                                              RUD_C_RESET, RUD_C_AUTO,
+                                              RUD_C_AUTO };
+        for (int i = 0; i < 5; ++i) {
             const gfx_rect_t r = rudder_rect(k_ctl[i]);
             CHECK(ui_text_fits(f, ui_tr(k_btn[i]), r.w, r.h, 8));
         }

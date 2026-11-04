@@ -34,6 +34,7 @@ static const char *const k_prefix[LOG_PREFIX_COUNT] = {
     [LOG_PREFIX_SERVO] = "SERVO",
     [LOG_PREFIX_MOTOR] = "MOTOR",
     [LOG_PREFIX_SUPPL] = "SUPPL",
+    [LOG_PREFIX_RUDDR] = "RUDDR",
     [LOG_PREFIX_BENCH] = "BENCH",
     [LOG_PREFIX_ESC]   = "ESC",
 };
@@ -42,8 +43,8 @@ static const char *const k_prefix[LOG_PREFIX_COUNT] = {
  * most 8 characters before the dot. */
 _Static_assert(5 + RUN_DIGITS + SUFFIX_LEN == LOG_RUN_NAME_MAX - 1,
                "SUPPL999.CSV and ATEST999.CSV fill the buffer");
-_Static_assert(LOG_PREFIX_WRITTEN == 5 && LOG_NAME_FORMS == 10,
-               "five prefixes written, ten names probed");
+_Static_assert(LOG_PREFIX_WRITTEN == 6 && LOG_NAME_FORMS == 12,
+               "six prefixes written, twelve names probed");
 _Static_assert(5 + RUN_DIGITS <= 8, "an 8.3 base name");
 
 /**

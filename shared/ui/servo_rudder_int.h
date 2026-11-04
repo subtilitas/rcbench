@@ -19,9 +19,13 @@
  *     numerals in the 32 x 44 face, the MAX of each side under them;
  *   - LENGTH's row, y 168 to 216, a tap opens the keypad;
  *   - 1000us, CENTRE and 2000us, y 228 to 276, 160px each, 10px apart;
- *   - ZERO and RESET MAX, y 288 to 336, 245px each;
+ *   - ZERO, RESET MAX and AUTO, y 288 to 336, 160px each;
  *   - the state lines, y 346 to 444: the angle source, the pulse, the zero
  *     and ARM FIRST.
+ *
+ * AUTO shows AUTO's box (servo_rudder_auto_int.h) in the place of LENGTH,
+ * the three drive buttons and the state lines; the button then reads
+ * MANUAL and brings them back.  The readout and the ZERO row stay.
  *
  * Every control is UI_TAP_MIN tall.  The header holds no helper that reads
  * the state: servo_screen_int.h includes it before the state is declared.
@@ -53,6 +57,7 @@ typedef enum {
     RUD_C_2000,      /**< 2000us                                      */
     RUD_C_ZERO,      /**< ZERO: the angle now is the neutral          */
     RUD_C_RESET,     /**< RESET MAX                                   */
+    RUD_C_AUTO,      /**< AUTO, MANUAL with AUTO's box shown          */
     RUD_C_COUNT      /**< the count, RUD_C_NONE included              */
 } rudder_ctl_t;
 

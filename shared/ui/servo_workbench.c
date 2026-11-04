@@ -346,6 +346,7 @@ void wb_leave(void)
 {
     s.run_list = RL_NONE;
     rudder_cancel();
+    rauto_cancel();
     prog_view_cancel(&s.prog_view);
     ui_wb_strip_cancel(&s.wb);
     ui_target_row_cancel(&s.trow);
@@ -355,6 +356,7 @@ void wb_leave(void)
 void wb_cancel(void)
 {
     rudder_cancel();
+    rauto_cancel();
     ui_wb_strip_cancel(&s.wb);
     ui_target_row_cancel(&s.trow);
     ++s.strip_rev;
@@ -417,6 +419,7 @@ static void task_changed(void)
 {
     ov_let_go();
     rudder_cancel();
+    rauto_cancel();
     prog_view_cancel(&s.prog_view);
     ui_hold_reset(&s.test_hold);
     s.test_down = false;
@@ -528,7 +531,7 @@ bool wb_down(const touch_event_t *evt)
 
 bool wb_rest(const touch_event_t *evt)
 {
-    if (prog_page_rest(evt) || rudder_rest(evt)) {
+    if (prog_page_rest(evt) || rudder_rest(evt) || rauto_rest(evt)) {
         return true;
     }
     if (ui_wb_strip_pressed(&s.wb) && evt->point.id == s.wb.tabs.press_id) {

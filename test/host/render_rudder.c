@@ -7,7 +7,9 @@
  * count 2048; the surface then goes to -24.6° and +25.5°, which MAX holds,
  * and comes back to +12.3°.  LENGTH is 120mm, or not set in
  * servo-rudder-nolength.  servo-rudder-armed is ARMED with 2000us tapped.
- * help-servo-rudder is the task's guide page over the same card, SAFE.
+ * servo-rudder-auto is ARMED with AUTO's box shown: no KST servo on the
+ * programming port, which its first line names.  help-servo-rudder is the
+ * task's guide page over the same card, SAFE.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -59,7 +61,8 @@ bool render_rudder_view(const char *view)
 
 bool render_rudder_armed(const char *view)
 {
-    return strcmp(view, "servo-rudder-armed") == 0;
+    return strcmp(view, "servo-rudder-armed") == 0
+           || strcmp(view, "servo-rudder-auto") == 0;
 }
 
 void render_rudder_pose(const char *view)
@@ -78,10 +81,14 @@ void render_rudder_pose(const char *view)
     reading(2048u - 280u, 1040u);           /* -24.6deg */
     reading(2048u + 290u, 1080u);           /* +25.5deg */
     reading(2048u + 140u, 1120u);           /* +12.3deg */
-    if (render_rudder_armed(view)) {
+    if (strcmp(view, "servo-rudder-armed") == 0) {
         servo_screen_set_armed(true);
         tap_body(438, 252);                 /* 2000us */
-        servo_cmd_t c;
-        while (servo_screen_take(&c)) { }
     }
+    if (strcmp(view, "servo-rudder-auto") == 0) {
+        servo_screen_set_armed(true);
+        tap_body(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);   /* AUTO */
+    }
+    servo_cmd_t c;
+    while (servo_screen_take(&c)) { }
 }

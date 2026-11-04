@@ -21,7 +21,8 @@
  * SERVO_LIMRUN_STALL_MS): a stall before the goal ends the run with
  * SURFACE BINDS AT x°; the angle lost longer than SERVO_GAP_MAX_MS ends it
  * (servo_gap.h); every end switches the output off and asks SAFE.
- * Report RUDDERnnn.TXT; CSV RUDDERnnn.CSV one row a step.
+ * Report RUDDRnnn.TXT; CSV RUDDRnnn.CSV one row a step, the CSV handed out
+ * first, as the automatic test's.
  *
  * In detail:
  *
@@ -251,7 +252,7 @@ typedef struct {
     bool     out_open,                /**< OPEN handed out */
              out_end,                 /**< the last line handed out */
              out_done,                /**< END handed out */
-             csv_open;                /**< the CSV's lines under way */
+             csv_open;                /**< the CSV handed out */
     char     scratch[SERVO_TEST_LINE_MAX];  /**< the line handed out */
     servo_rauto_do_t pend;            /**< asked, for the next step */
 
@@ -409,12 +410,12 @@ bool servo_rauto_wrote(const servo_rauto_t *r);
  */
 bool servo_rauto_restore(const servo_rauto_t *r);
 /**
- * @brief The outbox: OPEN, the report's lines (TXT), the CSV's lines, END.
+ * @brief The outbox: OPEN, the CSV's lines, the report's lines (TXT), END.
  * @param r    Run state; NULL gives NONE.
  * @param text Out: the entry's text; "" for none.
  * @return the next entry; NONE before DONE or once handed out.
  */
-servo_test_out_t servo_rauto_peek(servo_rauto_t *r, const char **text);  /**< TXT then CSV lines */
+servo_test_out_t servo_rauto_peek(servo_rauto_t *r, const char **text);
 /**
  * @brief Take the entry servo_rauto_peek() returned.
  * @param r Run state.

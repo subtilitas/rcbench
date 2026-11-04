@@ -266,8 +266,8 @@ TEST_CASE(pages_of_a_card_cover_it_once_in_rank_order_both_ways)
 TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
 {
     /*
-     * The 7 writers in turn: 999 runs with and without other files
-     * behind them, and the page boundaries.  Each page holds all seven
+     * The 8 writers in turn: 999 runs with and without other files
+     * behind them, and the page boundaries.  Each page holds all eight
      * names and draws them by number, newest at the top; the pages run on
      * by number across the names.
      */
@@ -284,7 +284,7 @@ TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
     pg_card_by(LOG_RUN_LAST, 0, false, LOG_PREFIX_SERVO);
     pg_check();
 
-    /* The first page of the mixed full card: 999 down to 952, all seven
+    /* The first page of the mixed full card: 999 down to 952, all eight
      * names in it. */
     static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
     pg_card_by(LOG_RUN_LAST, 0, true, LOG_PREFIX_BENCH);
@@ -292,13 +292,14 @@ TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
     memset(&q, 0, sizeof(q));
     q.dir = LOG_PAGE_FROM;
     CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), LOG_VIEWER_MAX_FILES);
-    CHECK_STR_EQ(set[0].name, "BENCH999.CSV");       /* 999% 7 == 5 */
-    CHECK_STR_EQ(set[1].name, "SUPPL998.CSV");
-    CHECK_STR_EQ(set[2].name, "MOTOR997.CSV");
-    CHECK_STR_EQ(set[3].name, "SERVO996.CSV");
-    CHECK_STR_EQ(set[4].name, "LIMIT995.CSV");
-    CHECK_STR_EQ(set[5].name, "ATEST994.CSV");
-    CHECK_STR_EQ(set[6].name, "ESC993.CSV");
+    CHECK_STR_EQ(set[0].name, "ESC999.CSV");         /* 999% 8 == 7 */
+    CHECK_STR_EQ(set[1].name, "BENCH998.CSV");
+    CHECK_STR_EQ(set[2].name, "RUDDR997.CSV");
+    CHECK_STR_EQ(set[3].name, "SUPPL996.CSV");
+    CHECK_STR_EQ(set[4].name, "MOTOR995.CSV");
+    CHECK_STR_EQ(set[5].name, "SERVO994.CSV");
+    CHECK_STR_EQ(set[6].name, "LIMIT993.CSV");
+    CHECK_STR_EQ(set[7].name, "ATEST992.CSV");
     CHECK_STR_EQ(set[LOG_VIEWER_MAX_FILES - 1].name, "ATEST952.CSV");
 }
 

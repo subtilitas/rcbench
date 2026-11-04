@@ -174,7 +174,7 @@ One German word per English concept, on every screen and in the report.
 | acknowledge, confirm | bestätigen |
 | SILENT (the RECEIVER's verdict) | KEIN SIGNAL |
 | deflection (of a surface), trailing edge, hinge line | Ausschlag, Hinterkante, Scharnierlinie |
-| zero (the neutral taken), RESET MAX | Nullpunkt, MAX ZURÜCKSETZEN |
+| zero (the neutral taken), RESET MAX | Nullpunkt, MAX LÖSCHEN |
 
 A label is a noun where a noun will do. An instruction speaks to the
 operator in the du-imperative (Prüfe, Tippe, Halte); no "Sie". An uppercase label

@@ -40,7 +40,8 @@ void shot_facts_read(const shot_bench_t *b, shot_facts_t *out)
     out->no_program_io = !b->card_job_out;
     out->no_motion = !servo_screen_sweeping() && !servo_screen_paused();
     out->no_test = !b->testing && !servo_screen_testing()
-                   && !servo_screen_limit_running();
+                   && !servo_screen_limit_running()
+                   && !servo_screen_rauto_running();
     out->no_stick_run = esc_stick_panel_profile() == NULL;
     out->no_update = !b->cu_active && !b->update_busy;
     out->no_fault = b->faults == 0u;

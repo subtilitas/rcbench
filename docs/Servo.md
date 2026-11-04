@@ -1315,6 +1315,110 @@ the task is `shared/ui/servo_rudder_panel.c`.
 - REVERSE changes the sign shown and keeps the zero; MAX keeps each side as
   the sensor saw it, so the sides swap on the screen with REVERSE.
 
+## AUTO end points
+
+### Purpose
+
+AUTO, the third button of RUDDER's ZERO row, programs a KST or Chaservo
+servo's end points so that 1000us and 2000us reach the deflection entered
+for each side, measured on the angle source. It closes the loop on the
+surface's angle in place of the throw a radio's end points are set to by
+eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
+`shared/ui/servo_rudder_auto_panel.c`.
+
+### Running it
+
+- AUTO shows its box in the place of LENGTH, the three drive buttons and
+  the state lines; the readout, the ZERO row and the output card stay.
+  MANUAL, in AUTO's place, brings them back. Neither is taken while the
+  run runs.
+- TARGET 1000us and TARGET 2000us: the deflection each side is to reach,
+  0.5 to 90.0° in steps of 0.5°, 20.0° (settings `rud_defl_lo`,
+  `rud_defl_hi`). With LENGTH set the row shows the trailing edge's mm
+  beside the degrees. MARGIN: 0 to 50%, 10% (`rud_margin`). TOLERANCE:
+  0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the keypad.
+- The goal of a side is its target x (1 + MARGIN): 20.0° at 10% is 22.0°.
+- HOLD 2s TO START starts the run after a 2s hold. While it runs the
+  button reads STOP RUN, and a press ends the run on the press.
+- The three lines under it: the step under way, as `SETTLE 2000us: WRITE
+  1/8, SESSIONS 2`, or why a START is refused, or the goals; the result,
+  `PASS: 150>92, 150>92` with each end point's value before and after, or
+  `FAIL: reason`; the report's file, or `RESTORE IN PROGRAM` after a FAIL
+  or an abort that wrote.
+
+A START is refused, the reason on the first line, while:
+
+| Condition | Line |
+| --- | --- |
+| the bench is SAFE | `ARM FIRST`, as on TEST |
+| another run runs, or a report is still being written | the run's line, as on TEST |
+| the meter is not set up for the servo's current | the limit run's line |
+| the output is not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT` |
+| PULSE MIN is above 1000us or PULSE MAX below 2000us | `PULSE MIN TO MAX MUST HOLD 1000 TO 2000us` |
+| the programmer is busy, or no PD mini or PROG 5V switches the servo off and on | the limit run's line |
+| the angle source gives no reading | `ANGLE SOURCE: NO READING` |
+| ZERO is not taken | `ZERO FIRST, THE SURFACE AT NEUTRAL` |
+
+### Method
+
+- The read session: the servo held at PULSE CENTRE for 1000ms, SAFE asked,
+  CONNECT and the read, PULSE LOWER and PULSE UPPER written to 1000.0us and
+  2000.0us where they are not, LEAVE, ARMED asked.
+- A measure: the end pulse commanded; from 500ms after the command the
+  first angle still for 500ms is taken. No still angle by 3000ms ends the
+  run.
+- A side's direction is the sign of its first measure. Both sides on one
+  sign end the run as `end point of a side not found`.
+- A side outside the tolerance gets value x goal / measured, held to the
+  register's range. A value that rounds to the one in force moves one
+  count toward the goal. The first write goes to LEFT ANGLE; when the side
+  does not move by half the change expected, the value goes to RIGHT ANGLE
+  and LEFT ANGLE back. The register found moves that side, the other one the
+  other side.
+- Each write is a session: the servo held at PULSE CENTRE for 1000ms, SAFE,
+  CONNECT, the write and its read-back, LEAVE with the power cycle that
+  makes the written value act, ARMED, the side measured again. The file of
+  the values before the run is saved before the first write.
+- PASS: both sides within the tolerance, each measured after the last
+  write. A side outside after 8 writes ends the run as `8 writes a side
+  reached`.
+
+### Protections
+
+The limit run's, in every phase:
+
+| Condition | End |
+| --- | --- |
+| a 1ms sample at 3000mA or above, or clipped | ABORTED |
+| window means above 1000mA for 400ms short of the goal minus the tolerance | FAIL, `surface binds at x°` |
+| the same at or past it | ABORTED, stall |
+| no window for 200ms | ABORTED |
+| the angle lost for more than 300ms, or a second gap within 10s | ABORTED, `angle source dropped out` |
+| a session refused, or a read-back that differs from the write | ABORTED |
+| STOP, DISARM, leaving SERVO, the meter or the supply changed | ABORTED |
+
+Every end lets the servo go, asks SAFE and switches the supply's output
+off; a read in the first session that finds no servo asks LEAVE in place
+of the OFF, so the port comes back. The values last written stay in the servo; RESTORE on the
+programming page gives back those before the run.
+
+### Results
+
+The report RUDDRnnn.TXT and the CSV RUDDRnnn.CSV, one row a measure, go to
+USER/LOGS. RUDDR, not RUDDER: an 8.3 name holds 5 letters and 3 digits.
+The report names the servo, the output, the angle source and the meter,
+the targets, goals and tolerance, the end points before and after with
+the side each moves, the writes and sessions, the backup file, and every
+measure with its value, its angle and whether it lies within.
+
+### Limits
+
+- The model is linear: the deflection at an end pulse is taken as
+  proportional to the end point's value from the surface's zero. A servo
+  that is not linear takes more writes; the run measures after every one.
+- Degrees are entered; a target in mm at the trailing edge is not.
+- The Hitec D series is not driven by AUTO.
+
 ## Sweep and SPEED
 
 SWEEP on the SERVO screen drives the servo through SETTINGS > SWEEP's curve.

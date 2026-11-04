@@ -1,7 +1,7 @@
 /**
  * @file
- * @brief AUTO end points: the outbox, the report RUDDERnnn.TXT, the CSV
- *        RUDDERnnn.CSV and the words a reason and a phase are named by; see
+ * @brief AUTO end points: the outbox, the report RUDDRnnn.TXT, the CSV
+ *        RUDDRnnn.CSV and the words a reason and a phase are named by; see
  *        servo_rudder_auto.h.
  *
  * The report is written in the language of the run's table, the CSV in
@@ -43,23 +43,25 @@ servo_test_out_t servo_rauto_peek(servo_rauto_t *r, const char **text)
     if (!r->out_open) {
         return SERVO_TEST_OUT_OPEN;
     }
+    /* The CSV first, then the report: the order the logger writes an
+     * automatic test's two files in, one open at a time. */
     if (!r->csv_open) {
+        if (csv_line(r, r->out_line, r->scratch, sizeof(r->scratch))) {
+            if (text != NULL) {
+                *text = r->scratch;
+            }
+            return SERVO_TEST_OUT_CSV;
+        }
+        r->csv_open = true;
+        r->out_line = 0u;
+    }
+    if (!r->out_end) {
         if (servo_rauto_report_line(r, r->out_line, r->scratch,
                                     sizeof(r->scratch))) {
             if (text != NULL) {
                 *text = r->scratch;
             }
             return SERVO_TEST_OUT_TXT;
-        }
-        r->csv_open = true;
-        r->out_line = 0u;
-    }
-    if (!r->out_end) {
-        if (csv_line(r, r->out_line, r->scratch, sizeof(r->scratch))) {
-            if (text != NULL) {
-                *text = r->scratch;
-            }
-            return SERVO_TEST_OUT_CSV;
         }
         r->out_end = true;
     }

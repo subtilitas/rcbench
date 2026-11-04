@@ -137,6 +137,7 @@ TEST_CASE(every_writer_names_its_runs_and_reads_the_number_back)
         { LOG_PREFIX_SERVO, "SERVO001.CSV", "SERVO999.CSV", "SERVO007.TXT" },
         { LOG_PREFIX_MOTOR, "MOTOR001.CSV", "MOTOR999.CSV", "MOTOR007.TXT" },
         { LOG_PREFIX_SUPPL, "SUPPL001.CSV", "SUPPL999.CSV", "SUPPL007.TXT" },
+        { LOG_PREFIX_RUDDR, "RUDDR001.CSV", "RUDDR999.CSV", "RUDDR007.TXT" },
         { LOG_PREFIX_BENCH, "BENCH001.CSV", "BENCH999.CSV", "BENCH007.TXT" },
         { LOG_PREFIX_ESC,   "ESC001.CSV",   "ESC999.CSV",   "ESC007.TXT"   },
     };
@@ -253,11 +254,11 @@ TEST_CASE(a_name_that_cannot_be_written_is_not_written_as_a_near_miss)
     log_name_build(name, 0u, LOG_PREFIX_SERVO, 1, false);
 }
 
-TEST_CASE(a_number_is_carried_by_ten_names_and_each_takes_it)
+TEST_CASE(a_number_is_carried_by_twelve_names_and_each_takes_it)
 {
     char seen[LOG_NAME_FORMS][LOG_RUN_NAME_MAX];
-    CHECK_EQ(LOG_NAME_FORMS, 10);
-    CHECK_EQ(LOG_PREFIX_WRITTEN, 5);
+    CHECK_EQ(LOG_NAME_FORMS, 12);
+    CHECK_EQ(LOG_PREFIX_WRITTEN, 6);
     for (int f = 0; f < LOG_NAME_FORMS; ++f) {
         log_name_form(seen[f], sizeof(seen[f]), 512, f);
         CHECK_EQ(log_name_number(seen[f]), 512);
@@ -795,7 +796,7 @@ int main(void)
     RUN(every_writer_names_its_runs_and_reads_the_number_back);
     RUN(a_name_that_only_looks_like_a_run_is_not_one);
     RUN(a_name_that_cannot_be_written_is_not_written_as_a_near_miss);
-    RUN(a_number_is_carried_by_ten_names_and_each_takes_it);
+    RUN(a_number_is_carried_by_twelve_names_and_each_takes_it);
     RUN(the_next_number_is_one_above_the_highest_of_any_prefix);
     RUN(a_folder_of_older_bench_files_continues_their_numbering);
     RUN(a_gap_is_not_filled);
