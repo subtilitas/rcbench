@@ -227,6 +227,13 @@ static void expect(size_t n, const uint8_t *got, uint8_t r, uint8_t lo,
     CHECK_EQ(got[4], hi);
 }
 
+/** Fill the buffer with 0xEE, run a command, compare its bytes. */
+#define EXPECT(call, r, lo, hi)                                               \
+    do {                                                                      \
+        memset(c, 0xEE, sizeof c);                                            \
+        expect((call), c, r, lo, hi);                                         \
+    } while (0)
+
 TEST_CASE(each_command_encodes_its_bytes)
 {
     uint8_t c[WIT_CMD_LEN];
@@ -234,23 +241,23 @@ TEST_CASE(each_command_encodes_its_bytes)
     CHECK_EQ(WIT_CMD_LEN, 5u);
     CHECK_EQ(WIT_FRAME_LEN, 11u);
     CHECK_EQ(WIT_SYNC, 0x55);
-    expect(wit_cmd_unlock(c), c, 0x69, 0x88, 0xB5);
-    expect(wit_cmd_save(c), c, 0x00, 0x00, 0x00);
-    expect(wit_cmd_rate(c, WIT_RATE_200HZ), c, 0x03, 0x0B, 0x00);
-    expect(wit_cmd_rate(c, WIT_RATE_0_2HZ), c, 0x03, 0x01, 0x00);
-    expect(wit_cmd_rsw(c, WIT_RSW_TIME), c, 0x02, 0x01, 0x00);
-    expect(wit_cmd_rsw(c, WIT_RSW_ACC), c, 0x02, 0x02, 0x00);
-    expect(wit_cmd_rsw(c, WIT_RSW_GYRO), c, 0x02, 0x04, 0x00);
-    expect(wit_cmd_rsw(c, WIT_RSW_ANGLE), c, 0x02, 0x08, 0x00);
-    expect(wit_cmd_rsw(c, WIT_RSW_MAG), c, 0x02, 0x10, 0x00);
-    expect(wit_cmd_rsw(c, WIT_RSW_DEFAULT), c, 0x02, 0x1E, 0x00);
-    expect(wit_cmd_rsw(c, WIT_RSW_QUAT | WIT_RSW_ANGLE), c, 0x02, 0x08, 0x02);
-    expect(wit_cmd_calsw(c, 1), c, 0x01, 0x01, 0x00);
-    expect(wit_cmd_calsw(c, WIT_CAL_EXIT), c, 0x01, 0x00, 0x00);
-    expect(wit_cmd_calsw(c, WIT_CAL_MAG), c, 0x01, 0x02, 0x00);
-    expect(wit_cmd_axis6(c, true), c, 0x24, 0x01, 0x00);
-    expect(wit_cmd_axis6(c, false), c, 0x24, 0x00, 0x00);
-    expect(wit_cmd(c, 0x7F, 0xABCD), c, 0x7F, 0xCD, 0xAB);
+    EXPECT(wit_cmd_unlock(c), 0x69, 0x88, 0xB5);
+    EXPECT(wit_cmd_save(c), 0x00, 0x00, 0x00);
+    EXPECT(wit_cmd_rate(c, WIT_RATE_200HZ), 0x03, 0x0B, 0x00);
+    EXPECT(wit_cmd_rate(c, WIT_RATE_0_2HZ), 0x03, 0x01, 0x00);
+    EXPECT(wit_cmd_rsw(c, WIT_RSW_TIME), 0x02, 0x01, 0x00);
+    EXPECT(wit_cmd_rsw(c, WIT_RSW_ACC), 0x02, 0x02, 0x00);
+    EXPECT(wit_cmd_rsw(c, WIT_RSW_GYRO), 0x02, 0x04, 0x00);
+    EXPECT(wit_cmd_rsw(c, WIT_RSW_ANGLE), 0x02, 0x08, 0x00);
+    EXPECT(wit_cmd_rsw(c, WIT_RSW_MAG), 0x02, 0x10, 0x00);
+    EXPECT(wit_cmd_rsw(c, WIT_RSW_DEFAULT), 0x02, 0x1E, 0x00);
+    EXPECT(wit_cmd_rsw(c, WIT_RSW_QUAT | WIT_RSW_ANGLE), 0x02, 0x08, 0x02);
+    EXPECT(wit_cmd_calsw(c, 1), 0x01, 0x01, 0x00);
+    EXPECT(wit_cmd_calsw(c, WIT_CAL_EXIT), 0x01, 0x00, 0x00);
+    EXPECT(wit_cmd_calsw(c, WIT_CAL_MAG), 0x01, 0x02, 0x00);
+    EXPECT(wit_cmd_axis6(c, true), 0x24, 0x01, 0x00);
+    EXPECT(wit_cmd_axis6(c, false), 0x24, 0x00, 0x00);
+    EXPECT(wit_cmd(c, 0x7F, 0xABCD), 0x7F, 0xCD, 0xAB);
 }
 
 TEST_CASE(a_rate_code_outside_the_table_is_refused)
@@ -401,8 +408,10 @@ TEST_CASE(a_parser_state_past_its_buffer_is_reset_not_overrun)
     CHECK_EQ(out.v[3], 4);
 
     p.n = WIT_FRAME_LEN;            /* the first byte past the buffer */
+    make_frame(f, WIT_T_GYRO, 7, 8, 9, 10);
     CHECK_EQ(feed(&p, f, WIT_FRAME_LEN, &out), 1u);
-    CHECK_EQ(out.v[2], 3);
+    CHECK_EQ(out.type, WIT_T_GYRO);
+    CHECK_EQ(out.v[2], 9);
     CHECK_EQ(p.n, 0u);
 }
 
