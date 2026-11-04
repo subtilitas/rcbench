@@ -34,7 +34,7 @@ Ein Druck auf die Halten-Taste kürzer als 2s startet nichts, und das Band sagt 
 | RATE, ALTER | die Winkel-Frames der letzten Sekunde und die Zeit, seit der neueste den Bildschirm erreicht hat |
 | AKKU | der Akku des Sensors, aus seinem Frame 0x52; über 6,0V ausgeblendet |
 
-Der Messwert ist 300ms nach dem letzten Winkel-Frame veraltet. Ein Servolauf mit WINKELQUELLE IMU geht durch eine Lücke bis 300ms einmal je 10s weiter, wie bei der des AS5600 ([Servo-Optionen](servo-settings.md)).
+Der Messwert ist 300ms nach dem letzten Winkel-Frame veraltet. Ein Servolauf mit WINKELQUELLE IMU geht durch eine Lücke bis 300ms einmal je 10s weiter, wie bei der des AS5600 ([Servo-Optionen](servo-settings.md)). Eine längere Lücke beendet den Lauf als `IMU antwortet nicht`, eine zweite innerhalb von 10s als `IMU 2x in 10s ausgefallen`.
 
 ## Suchen und binden
 

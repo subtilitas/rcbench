@@ -186,6 +186,7 @@ static void test_cfg(servo_test_cfg_t *c)
     c->enc_on     = enc_on_now();
     c->enc_centre = enc_centre();
     (void)enc_name(c->enc_source, sizeof(c->enc_source));
+    c->enc_imu    = (enc_src() == SERVO_ANGLE_IMU);
     c->enc_cmd_deg[0] = us_to_deg(c->end_lo_us);
     c->enc_cmd_deg[1] = us_to_deg(c->end_hi_us);
     /* The meter the run reads to its end: the servo rail's as the panel

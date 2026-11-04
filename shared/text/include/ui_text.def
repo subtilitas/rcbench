@@ -8488,6 +8488,13 @@ UI_SERVO_TEXT(SERVO_STR_AB_ENC_SILENT,
 UI_SERVO_TEXT(SERVO_STR_AB_ENC_GAPS,
     "AS5600 dropped out twice in 10s",
     "AS5600 2x in 10s ausgefallen")
+/* The same two with the IMU as the angle source (SET_ANGLE_SOURCE). */
+UI_SERVO_TEXT(SERVO_STR_AB_IMU_SILENT,
+    "IMU not answering",
+    "IMU antwortet nicht")
+UI_SERVO_TEXT(SERVO_STR_AB_IMU_GAPS,
+    "IMU dropped out twice in 10s",
+    "IMU 2x in 10s ausgefallen")
 UI_SERVO_TEXT(SERVO_STR_START_OK,
     "",
     NULL)

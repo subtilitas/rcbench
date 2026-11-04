@@ -1187,11 +1187,13 @@ void servo_limrun_encoder(servo_limrun_t *r, const servo_test_enc_t *e)
     }
     if (!e->valid && !e->no_magnet) {
         if (servo_gap_lost(&r->enc_gap, e->taken_ms) == SERVO_GAP_TOO_SOON) {
-            servo_limrun_abort(r, SERVO_TEST_AB_ENC_GAPS, e->taken_ms);
+            servo_limrun_abort(r, servo_test_angle_abort(r->cfg.enc_imu, true),
+                               e->taken_ms);
         }
     } else if (servo_gap_back(&r->enc_gap, e->taken_ms)
                == SERVO_GAP_TOO_LONG) {
-        servo_limrun_abort(r, SERVO_TEST_AB_ENC_SILENT, e->taken_ms);
+        servo_limrun_abort(r, servo_test_angle_abort(r->cfg.enc_imu, false),
+                           e->taken_ms);
     }
 }
 
@@ -1214,7 +1216,8 @@ void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
         } else if (servo_gap_check(&r->enc_gap, now_ms)
                    == SERVO_GAP_TOO_LONG) {
             /* The encoder's silence: 1ms past SERVO_GAP_MAX_MS. */
-            servo_limrun_abort(r, SERVO_TEST_AB_ENC_SILENT, now_ms);
+            servo_limrun_abort(r, servo_test_angle_abort(r->cfg.enc_imu, false),
+                               now_ms);
         }
     }
     if (servo_limrun_running(r) && in != NULL) {

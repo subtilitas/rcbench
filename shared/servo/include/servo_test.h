@@ -149,10 +149,12 @@
  * its end, and the report counts the gaps and gives the longest.  A longer
  * gap ends the run as SERVO_TEST_AB_ENC_SILENT, 1ms past SERVO_GAP_MAX_MS at
  * the latest, and a second gap sooner than that ends it as
- * SERVO_TEST_AB_ENC_GAPS; both are errors.  A run without cfg.enc_on has
- * no gaps.  The encoder feeds no protection, which is what lets a run ride
- * through: the meter's readings, which feed the stall stop, do not get the
- * allowance.
+ * SERVO_TEST_AB_ENC_GAPS; both are errors.  With the IMU as the angle
+ * source (cfg.enc_imu) the same gaps end it as SERVO_TEST_AB_IMU_SILENT and
+ * SERVO_TEST_AB_IMU_GAPS, whose reasons name the IMU.  A run without
+ * cfg.enc_on has no gaps.  The angle source feeds no protection, which is
+ * what lets a run ride through: the meter's readings, which feed the stall
+ * stop, do not get the allowance.
  *
  * A move that never left the tolerance is unmoved; one that moved and was
  * not still for SERVO_TEST_ENC_HOLD_MS before the next command is late.
@@ -439,6 +441,10 @@ typedef struct {
      *         "IMU X+"; empty names the AS5600.  The CSV's last column and
      *         the report's Angle source line. */
     char     enc_source[12];
+    /** @brief The angle source is the IMU: its silence and its gaps end the
+     *         run as SERVO_TEST_AB_IMU_SILENT and _IMU_GAPS, which name it;
+     *         false names the AS5600. */
+    bool     enc_imu;
 
     /* For the report only: the settings in force. */
     char     dut[24];
@@ -518,10 +524,16 @@ typedef enum {
                                      set-up, or it is off in SETUP       */
     SERVO_TEST_AB_INA_METER,    /**< it stopped being the meter, the
                                      condition not known                 */
-    /* A run with the output encoder in use (servo_gap.h). */
+    /* A run with the angle source in use (servo_gap.h): the AS5600's
+     * codes, then the IMU's (cfg.enc_imu), servo_test_angle_abort(). */
     SERVO_TEST_AB_ENC_SILENT,   /**< the AS5600 did not answer for longer
                                      than SERVO_GAP_MAX_MS               */
     SERVO_TEST_AB_ENC_GAPS,     /**< it stopped answering again less than
+                                     SERVO_GAP_EVERY_MS after the start of
+                                     the last time                       */
+    SERVO_TEST_AB_IMU_SILENT,   /**< the IMU gave no reading for longer
+                                     than SERVO_GAP_MAX_MS               */
+    SERVO_TEST_AB_IMU_GAPS,     /**< it went silent again less than
                                      SERVO_GAP_EVERY_MS after the start of
                                      the last time                       */
     SERVO_TEST_AB_COUNT
@@ -1103,10 +1115,23 @@ servo_str_t servo_test_abort_str(servo_test_abort_t why);
  *
  * @param why Abort reason to judge.
  * @return true for SERVO_TEST_AB_SUPPLY_LOST, _TRIPPED, _STALE, _NOT_ON,
- *         _SET_NOT_TAKEN, _CAP, _STALL, _CC and every INA3221 reason; false
- *         for the others and for a value out of range.
+ *         _SET_NOT_TAKEN, _CAP, _STALL, _CC, every INA3221 reason and the
+ *         angle source's four (_ENC_SILENT, _ENC_GAPS, _IMU_SILENT,
+ *         _IMU_GAPS); false for the others and for a value out of range.
  */
 bool servo_test_abort_error(servo_test_abort_t why);
+/**
+ * @brief The reason a gap of the angle source ends a run with, named after
+ *        the source.
+ *
+ * @param imu   The run's source is the IMU (cfg.enc_imu); false for the
+ *              AS5600.
+ * @param twice The gap started less than SERVO_GAP_EVERY_MS after the one
+ *              before; false for a gap longer than SERVO_GAP_MAX_MS.
+ * @return SERVO_TEST_AB_IMU_GAPS or _IMU_SILENT for the IMU,
+ *         SERVO_TEST_AB_ENC_GAPS or _ENC_SILENT for the AS5600.
+ */
+servo_test_abort_t servo_test_angle_abort(bool imu, bool twice);
 /**
  * @brief Table entry for a verdict.
  *

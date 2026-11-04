@@ -10,6 +10,7 @@
  * - the_csv_header_ends_in_angle_source_and_each_row_names_it
  * - the_run_log_angle_follows_the_source
  * - an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run
+ * - an_imu_run_ended_on_a_gap_names_the_imu_on_the_card_and_report
  * - the_old_csv_header_without_the_column_still_reads
  *
  * SPDX-License-Identifier: MIT
@@ -361,7 +362,8 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
     bench_frames(1000u);
     CHECK(!bench.out);
     CHECK_EQ(bench.disarms, 1u);
-    CHECK(strstr(bench.report, ui_servo_str(SERVO_STR_AB_ENC_GAPS)) != NULL);
+    CHECK(strstr(bench.report, "IMU dropped out twice in 10s") != NULL);
+    CHECK(strstr(bench.report, "AS5600 dropped out") == NULL);
     CHECK(strstr(bench.report, "IMU gaps: 2, the longest 300ms.") != NULL);
     CHECK(strstr(bench.report, "AS5600 gaps") == NULL);
 
@@ -392,8 +394,8 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
     CHECK(!servo_screen_testing());
     bench_frames(1000u);
     CHECK_EQ(bench.disarms, 1u);
-    CHECK(strstr(bench.report, ui_servo_str(SERVO_STR_AB_ENC_SILENT))
-          != NULL);
+    CHECK(strstr(bench.report, "IMU not answering") != NULL);
+    CHECK(strstr(bench.report, "AS5600 not answering") == NULL);
 
     /* The limit run alike: 300ms rides, 301ms ends it, and its report
      * names the IMU's gaps. */
@@ -416,8 +418,82 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
             CHECK(strstr(bench.report, "IMU gaps: 1, the longest 301ms.")
                   != NULL);
             CHECK(strstr(bench.report, "AS5600 gaps") == NULL);
+            CHECK(strstr(bench.report, "IMU not answering") != NULL);
+            CHECK(strstr(bench.report, "AS5600 not answering") == NULL);
         }
     }
+}
+
+/*
+ * The reason of an IMU run that ends on a gap names the IMU, in EN and DE:
+ * the AUTOMATIC TEST card's LAST line and the report for the test, the
+ * report for the limit run; a second gap within 10s of the first names
+ * the IMU's gaps.
+ */
+TEST_CASE(an_imu_run_ended_on_a_gap_names_the_imu_on_the_card_and_report)
+{
+    static const char *const k_silent[UI_LANG_COUNT] = {
+        "IMU not answering", "IMU antwortet nicht" };
+    static const char *const k_gaps[UI_LANG_COUNT] = {
+        "IMU dropped out twice in 10s", "IMU 2x in 10s ausgefallen" };
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        /* The test, silent 301ms. */
+        bench_fresh();
+        short_runs();
+        imu_on(0u, false);
+        hold_start(2.3f);
+        bench_frames(3000u);
+        (void)imu_pull();
+        bench_frames(320u);
+        CHECK(!servo_screen_testing());
+        bench_frames(1000u);
+        CHECK(!bench.out);
+        CHECK_STR_EQ(ui_servo_str(SERVO_STR_AB_IMU_SILENT), k_silent[lang]);
+        CHECK(strstr(bench.report, k_silent[lang]) != NULL);
+        CHECK(strstr(bench.report,
+                     servo_str_in(ui_servo_table(), SERVO_STR_AB_ENC_SILENT))
+              == NULL);
+        open_test();
+        char want[96];
+        snprintf(want, sizeof(want), TR(SV_CARD_LAST_WHY),
+                 ui_servo_str(SERVO_STR_ABORTED), k_silent[lang]);
+        CHECK(card_line_reads(0, 1, want, UI_C_WARN));
+        /* The test, two gaps 2.3s apart. */
+        bench_fresh();
+        short_runs();
+        imu_on(0u, false);
+        hold_start(2.3f);
+        bench_frames(3000u);
+        uint32_t t = imu_pull();
+        bench_frames(100u);
+        imu_plug(t + 100u);
+        bench_frames(2200u);
+        CHECK(servo_screen_testing());
+        t = imu_pull();
+        bench_frames(100u);
+        imu_plug(t + 100u);
+        bench_frames(1000u);
+        CHECK(!servo_screen_testing());
+        CHECK(strstr(bench.report, k_gaps[lang]) != NULL);
+        open_test();
+        snprintf(want, sizeof(want), TR(SV_CARD_LAST_WHY),
+                 ui_servo_str(SERVO_STR_ABORTED), k_gaps[lang]);
+        CHECK(card_line_reads(0, 1, want, UI_C_WARN));
+        /* The limit run, silent 301ms. */
+        lim_bench();
+        imu_on(0u, false);
+        bench_frames(200u);
+        hold_start_on(1, 2.3f);
+        CHECK(servo_screen_limit_running());
+        bench_frames(2000u);
+        (void)imu_pull();
+        bench_frames(320u);
+        CHECK(!servo_screen_limit_running());
+        bench_frames(1000u);
+        CHECK(strstr(bench.report, k_silent[lang]) != NULL);
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 /* @p text as the LOGS reader takes it. */
@@ -505,6 +581,7 @@ int main(void)
     RUN(the_csv_header_ends_in_angle_source_and_each_row_names_it);
     RUN(the_run_log_angle_follows_the_source);
     RUN(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run);
+    RUN(an_imu_run_ended_on_a_gap_names_the_imu_on_the_card_and_report);
     RUN(the_old_csv_header_without_the_column_still_reads);
     return test_summary("servo_source_angle");
 }

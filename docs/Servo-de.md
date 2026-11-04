@@ -360,7 +360,7 @@ weiterhin an` beendet einen Lauf, dessen Servo dem Modell nicht folgt.
 | Der INA3221 am Ende seines Bereichs | ein begrenzter Messwert | Abbruch |
 | Stall-Timeout | Fenstermittel über 1,0A für 400ms | Abbruch |
 | Kein Fenster | 200ms, 4 Fenster zu 50ms | Abbruch; `SERVO_TEST_WIN_STALE_MS`, der Wert des automatischen Tests. Ein Fenster ohne Strommesswert zählt nicht als Fenster. Die Fenster speisen die drei Schutzmechanismen darüber, also bekommt eine Lücke in ihnen keine Zugabe |
-| Der AS5600, ab dem Start in Gebrauch | länger als 300ms keine Antwort, oder erneut weniger als 10s nach dem Beginn des Mals davor | Abbruch als Fehler, `AS5600 antwortet nicht` oder `AS5600 2x in 10s ausgefallen`; durch eine kürzere, seltenere Lücke fährt der Lauf, und darin wird kein Winkel genommen, wie im automatischen Test ([Der Ausgangsencoder](#der-ausgangsencoder)). Der Bericht hat die Zeile `AS5600-Lücken: N, die längste Mms. ...`, wenn N größer als 0 ist |
+| Der AS5600, ab dem Start in Gebrauch | länger als 300ms keine Antwort, oder erneut weniger als 10s nach dem Beginn des Mals davor | Abbruch als Fehler, `AS5600 antwortet nicht` oder `AS5600 2x in 10s ausgefallen`, mit WINKELQUELLE IMU `IMU antwortet nicht` oder `IMU 2x in 10s ausgefallen`; durch eine kürzere, seltenere Lücke fährt der Lauf, und darin wird kein Winkel genommen, wie im automatischen Test ([Der Ausgangsencoder](#der-ausgangsencoder)). Der Bericht hat die Zeile `AS5600-Lücken: N, die längste Mms. ...`, wenn N größer als 0 ist |
 | Eine Suche | 40s | Abbruch: 1000µs Weg sind 100 Stellungen zu 250ms, 25s |
 | Ein Schritt des Programmierers | 150s | Abbruch: VERBINDEN mit seinem Lesen, ein Schreiben oder VERLASSEN |
 | Das Umschalten des Prüfstands | 3s | Abbruch, wenn SAFE oder ARMED 3s nach der Anforderung nicht steht |
@@ -1071,9 +1071,9 @@ Messgeräts, mit `AS5600` oder `IMU X+` in jeder Zeile; eine Datei ohne die
 Spalte liest LOGS nach denselben Spaltennamen. `angle (deg)` des SERVO-Lauf-Logs ist der
 Winkel der Quelle, wie MEASURED ihn zeigt.
 
-Aktuelle Einschränkung: ein Lauf mit der IMU, der an einer Lücke endet,
-nennt im Abbruchgrund den AS5600 (`AS5600 antwortet nicht`, `AS5600 2x in
-10s ausgefallen`), auf der Karte und im Bericht.
+Ein Lauf mit der IMU, der an einer Lücke endet, nennt im Abbruchgrund die
+IMU, auf der Karte und im Bericht: `IMU antwortet nicht` für eine Lücke über
+300ms, `IMU 2x in 10s ausgefallen` für eine zweite Lücke innerhalb von 10s.
 
 ### Was einen Lauf beendet
 
@@ -1130,6 +1130,8 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `INA3221 misst nicht mehr` | ein Lauf am INA3221: das Messgerät wechselte, und das Panel nannte die Bedingung nicht |
 | `AS5600 antwortet nicht` | ein Lauf mit AS5600 in Gebrauch: der Baustein antwortet länger als `SERVO_GAP_MAX_MS`, 300ms, nicht ([Der Ausgangsencoder](#der-ausgangsencoder)) |
 | `AS5600 2x in 10s ausgefallen` | ein Lauf mit AS5600 in Gebrauch: der Baustein verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach dem Beginn des Mals davor |
+| `IMU antwortet nicht` | ein Lauf mit WINKELQUELLE IMU: länger als `SERVO_GAP_MAX_MS`, 300ms, kein Messwert der IMU ([Winkelquelle](#winkelquelle)) |
+| `IMU 2x in 10s ausgefallen` | ein Lauf mit WINKELQUELLE IMU: die IMU verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach dem Beginn des Mals davor |
 
 Die sechs Gründe eines Laufs am INA3221 sind die Bedingungen, unter denen der
 INA3221 das Messgerät der Schiene ist. Jeder beendet den Lauf in der ersten

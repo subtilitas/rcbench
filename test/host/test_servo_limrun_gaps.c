@@ -8,7 +8,8 @@
  * programmer's session ends it with no SAFE asked, the bench SAFE already;
  * the report counts the gaps; the INA3221 silent while an encoder gap is
  * open ends the run at once as the meter's silence, not the encoder's; a
- * run without the encoder takes none of it.
+ * run without the encoder takes none of it; with the IMU as the angle
+ * source the two reasons name the IMU.
  *
  * The rig is servo_limrun_rig.h.
  *
@@ -111,6 +112,55 @@ TEST_CASE(a_second_encoder_gap_within_10s_ends_the_limit_run)
     }
 }
 
+/* With the IMU as the angle source the run's three ends on a gap name the
+ * IMU: 301ms closed by a reading, past 300ms by the clock, a second gap
+ * 9999ms after the first. */
+TEST_CASE(an_imu_limit_run_ends_on_its_gaps_with_the_imus_reasons)
+{
+    for (int how = 0; how < 3; ++how) {
+        rig_init(0u, false);
+        rig_pin();
+        g.enc = true;
+        g.cfg.enc_imu = true;
+        snprintf(g.cfg.source, sizeof(g.cfg.source), "%s", "IMU X+");
+        CHECK(start() && run_to(SERVO_LIMRUN_PH_SEARCH, RUN_MS));
+        idle_for(500u);
+        const unsigned disarms = g.disarms;
+        const uint32_t t = g.now;
+        lost(t);
+        if (how == 2) {
+            idle_for(50u);
+            back(t + 50u);
+            idle_for(9999u - 60u);
+            CHECK(servo_limrun_running(&g.run));
+            lost(t + 9999u);
+            CHECK(!servo_limrun_running(&g.run));
+            idle_for(10u);
+        } else {
+            idle_for(300u);
+            CHECK(servo_limrun_running(&g.run));
+            if (how == 1) {
+                back(t + 301u);
+            }
+            idle_for(10u);
+        }
+        CHECK(!servo_limrun_running(&g.run));
+        CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_TEST);
+        CHECK_EQ(g.run.test_why, how == 2 ? SERVO_TEST_AB_IMU_GAPS
+                                          : SERVO_TEST_AB_IMU_SILENT);
+        CHECK(servo_limrun_why_error(g.run.why, g.run.test_why));
+        CHECK_EQ(g.disarms, disarms + 1u);
+        CHECK(g.off);
+        CHECK_EQ(servo_limrun_why_str(&g.run),
+                 how == 2 ? SERVO_STR_AB_IMU_GAPS : SERVO_STR_AB_IMU_SILENT);
+        run_for(100u);
+        CHECK(strstr(g.report, how == 2 ? "IMU dropped out twice in 10s"
+                                        : "IMU not answering") != NULL);
+        CHECK(strstr(g.report, "AS5600 not answering") == NULL);
+        CHECK(strstr(g.report, "AS5600 dropped out") == NULL);
+    }
+}
+
 /* In the programmer's session the bench is SAFE already: the run ends, no
  * SAFE is asked, the output goes off. */
 TEST_CASE(an_encoder_gap_in_a_session_ends_the_run_without_asking_safe)
@@ -167,6 +217,7 @@ int main(void)
     RUN(the_limit_run_rides_through_an_encoder_gap_of_300ms);
     RUN(an_encoder_gap_of_301ms_ends_the_limit_run_as_an_error);
     RUN(a_second_encoder_gap_within_10s_ends_the_limit_run);
+    RUN(an_imu_limit_run_ends_on_its_gaps_with_the_imus_reasons);
     RUN(an_encoder_gap_in_a_session_ends_the_run_without_asking_safe);
     RUN(the_meter_silent_in_an_encoder_gap_ends_the_run_at_once);
     RUN(a_limit_run_without_the_encoder_has_no_gaps);

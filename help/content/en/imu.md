@@ -34,7 +34,7 @@ A press of the hold shorter than 2s starts nothing, and the band says `Hold 2s t
 | RATE, AGE | the angle frames of the last second, and the time since the newest reached the screen |
 | BATTERY | the sensor's battery, from its 0x52 frame; hidden above 6.0V |
 
-The reading is stale 300ms after the last angle frame. A servo run with ANGLE SOURCE IMU rides through a gap of up to 300ms once per 10s, as through the AS5600's ([Servo settings](servo-settings.md)).
+The reading is stale 300ms after the last angle frame. A servo run with ANGLE SOURCE IMU rides through a gap of up to 300ms once per 10s, as through the AS5600's ([Servo settings](servo-settings.md)). A longer gap ends the run as `IMU not answering`, a second within 10s as `IMU dropped out twice in 10s`.
 
 ## Scan and bind
 

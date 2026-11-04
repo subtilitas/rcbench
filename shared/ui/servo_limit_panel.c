@@ -263,6 +263,7 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     (void)sensors_rows_meter(c->meter, sizeof(c->meter));
     c->enc_on = enc_on_now();
     (void)enc_name(c->source, sizeof(c->source));
+    c->enc_imu = (enc_src() == SERVO_ANGLE_IMU);
     snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
     c->text = ui_servo_table();
 }

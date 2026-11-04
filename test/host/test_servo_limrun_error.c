@@ -190,7 +190,8 @@ TEST_CASE(which_reasons_are_errors)
             || why == SERVO_TEST_AB_INA_RESET || why == SERVO_TEST_AB_INA_SILENT
             || why == SERVO_TEST_AB_INA_NO_WINDOW
             || why == SERVO_TEST_AB_INA_SETUP || why == SERVO_TEST_AB_INA_METER
-            || why == SERVO_TEST_AB_ENC_SILENT || why == SERVO_TEST_AB_ENC_GAPS;
+            || why == SERVO_TEST_AB_ENC_SILENT || why == SERVO_TEST_AB_ENC_GAPS
+            || why == SERVO_TEST_AB_IMU_SILENT || why == SERVO_TEST_AB_IMU_GAPS;
         CHECK_EQ(servo_test_abort_error(why), error);
     }
 }
