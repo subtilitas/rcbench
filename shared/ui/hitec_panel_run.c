@@ -28,7 +28,7 @@
 enum { RUN_OP_NONE = 0, RUN_OP_CONNECT, RUN_OP_WRITE, RUN_OP_LEAVE };
 
 /** @brief A run's step and what the run keeps of the operator's. */
-static struct {
+typedef struct {
     uint8_t  op;        /**< RUN_OP_*                                    */
     bool     kept;      /**< the operator's supply values are kept       */
     uint16_t keep_mv;   /**< the kept programming voltage, mV            */
@@ -36,7 +36,10 @@ static struct {
     uint16_t want[2];   /**< the write's travel, left and right          */
     uint32_t said;      /**< the model's message count at the CONNECT    */
     char     backup[HITEC_CARD_NAME_MAX]; /**< the run's backup file      */
-} s_run;
+} run_state_t;
+
+/** @brief The run's state; hitec_panel_run_begin() clears it. */
+static run_state_t s_run;
 
 /**
  * @brief Whatever the overlay has open goes: the run's step is no

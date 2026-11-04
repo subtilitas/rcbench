@@ -45,7 +45,9 @@ typedef struct {
     uint8_t  series;       /**< hitec_family_t */
     uint16_t value[2];     /**< left, right travel */
     uint16_t mid;          /**< D: 0xC2; classic 0 */
-    uint16_t lo, hi;       /**< what the hard rules take, per travel unit */
+    uint16_t lo;           /**< what the hard rules take, per travel unit:
+                                the least */
+    uint16_t hi;           /**< and the most */
     bool     cw;           /**< DIRECTION reads CW */
     char     backup[HITEC_CARD_NAME_MAX]; /**< the session's backup file,
                                                hitec_prog_backup_name() */
