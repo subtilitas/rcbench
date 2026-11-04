@@ -158,6 +158,33 @@ imu_link_t imu_ctl_link(const imu_ctl_t *c);
  */
 uint8_t imu_ctl_rate_code(int option);
 
+/**
+ * @brief Which IMU readings go on to SERVO: each frame once, and a reading
+ *        that went stale once.
+ */
+typedef struct {
+    bool     given;      /**< one went on since the reset */
+    bool     was_valid;  /**< that one was valid */
+    uint32_t last_taken; /**< taken_ms of the last valid one */
+} imu_handout_t;
+
+/**
+ * @brief Forget what went on: the next reading goes, valid or not.  Called
+ *        when ANGLE SOURCE turns to IMU, so SERVO learns the IMU's state
+ *        in place of the AS5600's.
+ * @param h The handout.
+ */
+void imu_handout_reset(imu_handout_t *h);
+
+/**
+ * @brief Whether @p r goes on to SERVO, and note it when it does.
+ * @param h The handout.
+ * @param r The reading.
+ * @return true for a valid reading of a frame not handed before, and for
+ *         the first stale reading after a valid one or after a reset.
+ */
+bool imu_handout_due(imu_handout_t *h, const imu_reading_t *r);
+
 #ifdef __cplusplus
 }
 #endif

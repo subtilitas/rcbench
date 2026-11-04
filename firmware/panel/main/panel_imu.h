@@ -54,7 +54,10 @@ void panel_imu_frame(void);
  * @brief The IMU's angle as the servo runs read it, each reading once: the
  *        axis and the sign SETUP sets, from the zero, in AS5600 counts
  *        (servo_angle_enc()); a reading that went stale once, timed now.
- * @param out Receives the reading.
+ * @param fresh true in the first frame of ANGLE SOURCE IMU: the reading
+ *              goes whatever went before, valid or not, so SERVO drops the
+ *              AS5600's state.
+ * @param out   Receives the reading.
  * @return true when @p out holds one not handed before.
  */
-bool panel_imu_angle(servo_test_enc_t *out);
+bool panel_imu_angle(bool fresh, servo_test_enc_t *out);

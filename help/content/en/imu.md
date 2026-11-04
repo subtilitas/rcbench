@@ -12,7 +12,7 @@ IMU is the screen of the Bluetooth IMU (inertial measurement unit): a WitMotion 
 
 | Control | What it does |
 |---|---|
-| SCAN FOR SENSORS | opens the found list and starts a scan; it takes a press while the HC-05 answers and no scan or bind runs |
+| SCAN FOR SENSORS | opens the found list and starts a scan; it takes a press while the HC-05 answers and no scan, bind or calibration runs |
 | CONNECT TO ANY SENSOR | only after the HC-05 refused a scan with `ERROR:(1F)`: sets it to connect to any sensor that takes PIN 1234 (`AT+CMODE=1`) |
 | HOLD 2s: CALIBRATE ACCELEROMETER | while connected: the sensor's accelerometer calibration. Keep it still and level for the 3s the line counts down |
 | ZERO | takes the current angles as zero; while a reading is there |

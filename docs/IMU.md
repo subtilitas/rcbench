@@ -10,7 +10,9 @@ it finds the module's baud, scans, binds the sensor and restarts the
 module in data mode. The reading is a measurement, not a protection: it is
 stale 300ms after the last angle frame, and a servo run rides through a gap
 of up to 300ms once per 10s, as through the AS5600's
-([Servo procedures](Servo.md)).
+([Servo procedures](Servo.md)). A switch of ANGLE SOURCE hands SERVO the
+new source's state in the next frame: the IMU's reading, valid or not, or
+no AS5600 reading until the part's next one.
 
 WitMotion, BWT901CL, HC-05 and HC-06 are names of their makers' products,
 and Bluetooth is a trademark of its owner. rcbench is independent: it is
@@ -63,7 +65,7 @@ README in `protocols/hc05` has every answer and error.
 | Operation | When | Commands |
 | --- | --- | --- |
 | PROBE | IMU ON, and every 10s while no module answers, also after a scan or bind that found no AT | `AT` at 115,200, 38,400, then 9,600 baud; `AT+VERSION?` |
-| SCAN | SCAN FOR SENSORS | `AT+INIT` (ERROR:(17) ignored), `AT+INQM=1,9,9` (11.52s), `AT+INQ`, `AT+RNAME?<addr>` per device, up to 8 |
+| SCAN | SCAN FOR SENSORS, not while a calibration runs or a sensor command waits | `AT+INIT` (ERROR:(17) ignored), `AT+INQM=1,9,9` (11.52s), `AT+INQ`, `AT+RNAME?<addr>` per device, up to 8 |
 | BIND | a tap on a found device | `AT+ROLE=1`, `AT+PSWD=1234` (`AT+PSWD="1234"` on an ERROR), `AT+PAIR=<addr>,20`, `AT+BIND=<addr>`, `AT+CMODE=0`, `AT+UART=115200,0,0`, `AT+RESET` |
 | ANY | CONNECT TO ANY SENSOR, after a scan refused with ERROR:(1F) | `AT+ROLE=1`, `AT+PSWD=1234`, `AT+CMODE=1`, `AT+UART=115200,0,0`, `AT+RESET` |
 

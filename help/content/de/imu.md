@@ -12,7 +12,7 @@ IMU ist der Bildschirm der Bluetooth-IMU (Inertial Measurement Unit): ein WitMot
 
 | Bedienelement | Was es tut |
 |---|---|
-| SENSOREN SUCHEN | öffnet die Liste der gefundenen Geräte und startet eine Suche; nimmt einen Druck an, solange der HC-05 antwortet und keine Suche und kein Binden läuft |
+| SENSOREN SUCHEN | öffnet die Liste der gefundenen Geräte und startet eine Suche; nimmt einen Druck an, solange der HC-05 antwortet und keine Suche, kein Binden und keine Kalibrierung läuft |
 | MIT JEDEM SENSOR VERBINDEN | nur, nachdem der HC-05 eine Suche mit `ERROR:(1F)` abgelehnt hat: stellt ihn so ein, dass er sich mit jedem Sensor verbindet, der PIN 1234 annimmt (`AT+CMODE=1`) |
 | 2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN | solange verbunden: die Kalibrierung des Beschleunigungssensors. Halte ihn still und waagerecht für die 3s, die die Zeile herunterzählt |
 | NULLPUNKT | nimmt die aktuellen Winkel als Nullpunkt; solange ein Messwert da ist |

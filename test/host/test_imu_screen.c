@@ -268,10 +268,14 @@ TEST_CASE(calibrate_needs_a_2s_hold_and_the_band_hint_on_a_short_press)
         ui_router_tick(0.05f);            /* the flash */
         ui_router_render(&s_c, i & 1);
     }
-    /* Running: the line counts down, the hold takes no press. */
+    /* Running: the line counts down, the hold takes no press, and SCAN
+     * takes none either: the calibration keeps the UART. */
     v.cal = IMU_CAL_RUNNING;
     v.cal_left_ms = 2001u;
     imu_screen_set(&v);
+    CHECK(!ims_row_enabled(IMS_ROW_SCAN));
+    tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
     CHECK_STR_EQ(imu_screen_line(IMS_L_CAL), "KEEP IT STILL AND LEVEL FOR 3s");
     v.cal_left_ms = 2000u;
     imu_screen_set(&v);

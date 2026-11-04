@@ -10,7 +10,9 @@ ein: Es findet die Baudrate des Moduls, sucht, bindet den Sensor und startet
 das Modul im Datenmodus neu. Der Messwert ist eine Messung, kein Schutz: Er
 ist 300ms nach dem letzten Winkel-Frame veraltet, und ein Servolauf geht
 durch eine Lücke bis 300ms einmal je 10s weiter, wie bei der des AS5600
-([Servoverfahren](Servo-de.md)).
+([Servoverfahren](Servo-de.md)). Ein Wechsel der WINKELQUELLE gibt SERVO im
+nächsten Frame den Zustand der neuen Quelle: den Messwert der IMU, gültig
+oder nicht, oder keinen AS5600-Messwert bis zum nächsten des Bausteins.
 
 WitMotion, BWT901CL, HC-05 und HC-06 sind Namen von Produkten ihrer
 Hersteller, und Bluetooth ist eine Marke ihres Inhabers. rcbench ist
@@ -64,7 +66,7 @@ Moduls in `protocols/hc05` nennt jede Antwort und jeden Fehler.
 | Operation | Wann | Befehle |
 | --- | --- | --- |
 | PROBE | IMU EIN, und alle 10s, solange kein Modul antwortet, auch nach einer Suche oder einem Binden ohne AT | `AT` mit 115.200, 38.400, dann 9.600 Baud; `AT+VERSION?` |
-| SCAN | SENSOREN SUCHEN | `AT+INIT` (ERROR:(17) ignoriert), `AT+INQM=1,9,9` (11,52s), `AT+INQ`, `AT+RNAME?<addr>` je Gerät, bis zu 8 |
+| SCAN | SENSOREN SUCHEN, nicht während eine Kalibrierung läuft oder ein Sensorbefehl wartet | `AT+INIT` (ERROR:(17) ignoriert), `AT+INQM=1,9,9` (11,52s), `AT+INQ`, `AT+RNAME?<addr>` je Gerät, bis zu 8 |
 | BIND | ein Tippen auf ein gefundenes Gerät | `AT+ROLE=1`, `AT+PSWD=1234` (`AT+PSWD="1234"` nach einem ERROR), `AT+PAIR=<addr>,20`, `AT+BIND=<addr>`, `AT+CMODE=0`, `AT+UART=115200,0,0`, `AT+RESET` |
 | ANY | MIT JEDEM SENSOR VERBINDEN, nach einer mit ERROR:(1F) abgelehnten Suche | `AT+ROLE=1`, `AT+PSWD=1234`, `AT+CMODE=1`, `AT+UART=115200,0,0`, `AT+RESET` |
 

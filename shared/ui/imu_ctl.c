@@ -158,7 +158,10 @@ bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
     if (c == NULL || cmd == NULL || !c->cfg.en) {
         return false;
     }
-    const bool at_free = c->probed && !hc05_busy(&c->bt);
+    /* An AT operation takes the UART from the sensor: not while the
+     * calibration runs or a sensor command still waits to go out. */
+    const bool at_free = c->probed && !hc05_busy(&c->bt)
+                         && c->cal != IMU_CAL_RUNNING && c->out_n == 0u;
     switch (cmd->kind) {
     case IMU_CMD_SCAN:
         if (!at_free) {
@@ -395,4 +398,28 @@ void imu_ctl_view(const imu_ctl_t *c, imu_view_t *out)
     out->cal = c->cal;
     out->cal_left_ms = (c->cal == IMU_CAL_RUNNING) ? c->cal_left_ms : 0u;
     out->r = c->m.r;
+}
+
+void imu_handout_reset(imu_handout_t *h)
+{
+    if (h != NULL) {
+        memset(h, 0, sizeof(*h));
+    }
+}
+
+bool imu_handout_due(imu_handout_t *h, const imu_reading_t *r)
+{
+    if (h == NULL || r == NULL) {
+        return false;
+    }
+    if (h->given && h->was_valid == r->valid
+        && (!r->valid || r->taken_ms == h->last_taken)) {
+        return false;
+    }
+    h->given = true;
+    h->was_valid = r->valid;
+    if (r->valid) {
+        h->last_taken = r->taken_ms;
+    }
+    return true;
 }

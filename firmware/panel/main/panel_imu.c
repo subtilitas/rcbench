@@ -285,34 +285,29 @@ void panel_imu_frame(void)
     }
 }
 
-bool panel_imu_angle(servo_test_enc_t *out)
+bool panel_imu_angle(bool fresh, servo_test_enc_t *out)
 {
-    static bool     given;
-    static bool     was_valid;
-    static uint32_t last_taken;
+    static imu_handout_t hand;
     const imu_reading_t *r = &s_seen.v.r;
+    if (fresh) {
+        imu_handout_reset(&hand);
+    }
+    /* The same frame is not handed twice: the screen draws faster than a
+     * 10Hz sensor sends. */
+    if (!imu_handout_due(&hand, r)) {
+        return false;
+    }
     servo_angle_in_t in = { 0 };
     if (r->valid) {
-        /* The same frame is not handed twice: the screen draws faster
-         * than a 10Hz sensor sends. */
-        if (given && was_valid && r->taken_ms == last_taken) {
-            return false;
-        }
         in.valid    = true;
         in.deg      = imu_deg(r, (imu_axis_t)settings_get_int(SET_IMU_AXIS),
                               settings_get_int(SET_IMU_SIGN) == 1);
         in.still_ms = r->still_ms;
         in.taken_ms = r->taken_ms;
-        last_taken  = r->taken_ms;
     } else {
-        if (given && !was_valid) {
-            return false;
-        }
         /* When it was found so: a run times the silence from here. */
         in.taken_ms = now_ms();
     }
-    given     = true;
-    was_valid = r->valid;
     (void)servo_angle_enc(&in, out);
     return true;
 }

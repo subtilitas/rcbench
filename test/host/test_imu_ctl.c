@@ -411,6 +411,67 @@ TEST_CASE(commands_are_refused_when_they_cannot_run)
     CHECK(!v.r.zeroed);
 }
 
+/* No AT operation while the calibration runs or its exit commands wait:
+ * CALSW 0 and SAVE go out on time, and SCAN, ANY and BIND are refused. */
+TEST_CASE(no_at_operation_while_the_calibration_or_a_sensor_command_waits)
+{
+    rig_t r;
+    connected(&r);
+    const unsigned at = r.nsent;
+    const imu_cmd_t cal = { IMU_CMD_CALIBRATE, 0u };
+    const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
+    const imu_cmd_t any = { IMU_CMD_ANY, 0u };
+    CHECK(imu_ctl_command(&r.c, &cal, r.t));
+    CHECK(!imu_ctl_command(&r.c, &scan, r.t));  /* unlock still queued */
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.c.out_n, 0u);
+    CHECK(!imu_ctl_command(&r.c, &scan, r.t));  /* the calibration runs */
+    CHECK(!imu_ctl_command(&r.c, &any, r.t));
+    CHECK(!hc05_busy(&r.c.bt));
+    rig_stream(&r, 2001u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.c.cal, IMU_CAL_DONE);
+    CHECK(r.c.out_n > 0u);                       /* CALSW 0 and SAVE wait */
+    CHECK(!imu_ctl_command(&r.c, &scan, r.t));
+    rig_stream(&r, 200u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.nsent, at + 5u);
+    CHECK(rig_sent_is(&r, at + 4u, WIT_REG_SAVE, 0u, 0u));
+    CHECK(r.sent_at[at + 4u] - r.sent_at[at] < IMU_CAL_MS + 4u * 60u);
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));    /* free again */
+}
+
+/* What goes on to SERVO: each frame once, a stale reading once, and
+ * after a reset (ANGLE SOURCE turned to IMU) the next reading whatever
+ * went before. */
+TEST_CASE(the_handout_gives_each_frame_once_and_again_after_a_reset)
+{
+    imu_handout_t h;
+    imu_handout_reset(&h);
+    imu_reading_t rd;
+    memset(&rd, 0, sizeof rd);
+    CHECK(imu_handout_due(&h, &rd));            /* stale, first: goes */
+    CHECK(!imu_handout_due(&h, &rd));           /* stale again: not */
+    imu_handout_reset(&h);
+    CHECK(imu_handout_due(&h, &rd));            /* after a reset: goes */
+    rd.valid = true;
+    rd.taken_ms = 100u;
+    CHECK(imu_handout_due(&h, &rd));
+    CHECK(!imu_handout_due(&h, &rd));           /* the same frame */
+    rd.taken_ms = 120u;
+    CHECK(imu_handout_due(&h, &rd));
+    CHECK_EQ(h.last_taken, 120u);
+    imu_handout_reset(&h);
+    CHECK(imu_handout_due(&h, &rd));            /* the same frame, reset */
+    rd.valid = false;
+    CHECK(imu_handout_due(&h, &rd));            /* went stale: once */
+    CHECK(!imu_handout_due(&h, &rd));
+    CHECK_EQ(h.last_taken, 120u);
+    rd.valid = true;
+    CHECK(imu_handout_due(&h, &rd));            /* valid again, same frame */
+    CHECK(!imu_handout_due(NULL, &rd));
+    CHECK(!imu_handout_due(&h, NULL));
+    imu_handout_reset(NULL);
+}
+
 /* SET_IMU_RATE's options and what a NULL does. */
 TEST_CASE(the_rate_options_are_the_wit_codes_and_null_does_nothing)
 {
@@ -453,6 +514,8 @@ int main(void)
     RUN(a_rate_change_goes_to_the_sensor_once_it_is_connected);
     RUN(imu_off_aborts_the_operation_and_lowers_key);
     RUN(commands_are_refused_when_they_cannot_run);
+    RUN(no_at_operation_while_the_calibration_or_a_sensor_command_waits);
+    RUN(the_handout_gives_each_frame_once_and_again_after_a_reset);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);
     return test_summary("imu_ctl");
 }

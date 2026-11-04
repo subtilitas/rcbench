@@ -47,6 +47,9 @@ void imu_screen_invalidate(void) { touched(); }
  */
 static bool at_free(void)
 {
+    if (ims.v.cal == IMU_CAL_RUNNING) {
+        return false;         /* the calibration keeps the UART */
+    }
     switch (ims.v.link) {
     case IMU_LINK_READY:
     case IMU_LINK_BOUND:
