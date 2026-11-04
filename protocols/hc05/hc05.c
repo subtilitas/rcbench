@@ -343,8 +343,6 @@ static void expired(hc05_t *h, uint8_t s)
     h->wait_ms = 0;
     if (s == S_KEYLOW && h->tries == ABORTED) {
         finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);
-    } else if (s == S_KEY || s == S_KEYLOW) {
-        advance(h);
     } else if (s == S_AT) {
         h->tries = 0;
         if (++h->baud_try >= BAUD_TRIES) {
@@ -357,8 +355,9 @@ static void expired(hc05_t *h, uint8_t s)
         /* A late answer would read as the next device's: AT+STATE? first,
          * and the next name after its +STATE: line and OK. */
         h->tries = FENCE_SENT;
-    } else if (s == S_RNAME) {
-        advance(h); /* no answer to AT+STATE? either: no more names */
+    } else if (s == S_KEY || s == S_KEYLOW || s == S_RNAME) {
+        /* At S_RNAME: no answer to AT+STATE? either, no more names. */
+        advance(h);
     } else {
         finish(h, HC05_ST_FAILED, HC05_ERR_TIMEOUT, 0);
     }
