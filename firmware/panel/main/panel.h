@@ -1051,7 +1051,8 @@ typedef struct {
     /** And how many times it had been told to let go; see s_lets_go. */
     uint32_t         lets_go;
     /** And how many STOP latches their reset had released (s_stop_resets):
-     *  an arm queued while a STOP stood is not applied after the release. */
+     *  an arm or an ON of the supply or the ports' 5V queued while a STOP
+     *  stood is not applied after the release. */
     uint32_t         resets;
     /** And how many times the supply's output had been asked off; see
      *  s_supply_offs. */

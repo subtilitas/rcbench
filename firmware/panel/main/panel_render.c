@@ -489,6 +489,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
                            .stops = stops_now,
                            .supply_offs = atomic_load(&s_supply_offs),
+                           .resets = atomic_load(&s_stop_resets),
                            .pdmini_edits = atomic_load(&s_pdmini_edits),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
@@ -508,6 +509,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_PROG5V, .prog5v = p5,
                            .stops = stops_now,
                            .prog5v_offs = atomic_load(&s_prog5v_offs),
+                           .resets = atomic_load(&s_stop_resets),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
