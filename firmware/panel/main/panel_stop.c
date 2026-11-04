@@ -117,6 +117,8 @@ static void io_clear(void *ctx)
     (void)control_clear_failsafe(&ack);
 }
 
+/** @brief What the reset machine asks of the control task: the IOmcu's
+ *         registers, the heartbeat, CLEAR and the inputs read again. */
 static const stop_latch_io_t k_io = {
     .ctx = NULL, .read = io_read, .resume = io_resume, .clear = io_clear,
     .refresh = io_refresh,
