@@ -7,8 +7,10 @@
  * TEST's LIMIT RUN card, starts it.  This file holds what that button checks first,
  * the run's steps done the way a finger does them (the servo's position,
  * ARM and DISARM, SUPPLY's output), and the programmer's sessions with a
- * KST or Chaservo servo on the programming port.  It also draws the run's
- * box on LIVE's card, its card's lines on TEST and its settings' note.
+ * KST, Chaservo or Hitec servo on the programming port, through the seam
+ * servo_limit_seam.c picks by the LIMIT RUN settings' SERVO row.  It also
+ * draws the run's box on LIVE's card, its card's lines on TEST and its
+ * settings' note.
  *
  * The screen is servo_screen.c; the state and the layout the files share
  * are servo_screen_int.h.
@@ -20,7 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "kst_panel.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
 #include "prog_registry.h"
@@ -142,6 +143,18 @@ const char *lim_blocked(void)
     if (!(s.min_us < s.centre_us && s.centre_us < s.max_us)) {
         return TR(SV_LIM_REFUSED);
     }
+    /* A Hitec servo is searched out to its model's full travel: PULSE MIN
+     * and MAX must take it, or the read ends the run as RANGE. */
+    uint16_t p[3];
+    if (lim_reads() && servo_limrun_family_pulses(lim_family(), p)
+        && (s.min_us * 10u > p[SERVO_LIMRUN_P_LOWER]
+            || s.max_us * 10u < p[SERVO_LIMRUN_P_UPPER])) {
+        static char why[72];
+        snprintf(why, sizeof(why), TR(SV_LIM_HITEC_RANGE),
+                 (unsigned)(p[SERVO_LIMRUN_P_LOWER] / 10u),
+                 (unsigned)(p[SERVO_LIMRUN_P_UPPER] / 10u));
+        return why;
+    }
     /* On the programming port every run reads the servo first: the
      * programmer must be free to. */
     if (lim_reads()) {
@@ -161,8 +174,14 @@ const char *lim_prog_why(void)
         return TR(SV_LIM_PROG_PORT);
     }
     if (!servo_limrun_running(&s.lim)
-        && (prog_reg_servo_holds() || !kst_panel_run_ready())) {
+        && (prog_reg_servo_holds() || !lim_seam_ready(lim_family()))) {
         return TR(SV_LIM_PROG_BUSY);
+    }
+    /* A classic Hitec servo enters programming mode only at power-up: even
+     * the read needs a supply the bench switches. */
+    if (lim_family_now() == SERVO_LIMRUN_FAM_HITEC_C && !lim_pd_feeds()
+        && !lim_fixed_supply()) {
+        return TR(HP_NEED_PD_C);
     }
     /* The carrier's port: its supply is the PROG 5V box's. */
     if (lim_fixed_supply() && !prog5v_box_on()) {
@@ -193,12 +212,15 @@ const char *lim_prog_why(void)
 /**
  * @brief Why the run writes nothing to the servo.
  *
- * A KST or Chaservo servo takes a written value only from its next
- * power-up (docs/ServoProgrammer.md, "The power cycle"): with a PD mini,
+ * A KST or Chaservo servo, and a classic Hitec servo, takes a written
+ * value only from its next power-up (docs/ServoProgrammer.md, "The power
+ * cycle"): with a PD mini,
  * or on the rbmod carrier's port with the PROG 5V box on, every session's
  * CONNECT and the LEAVE after a write switch it off and on; on a rail fed
  * from elsewhere nothing does, and the check after the write would search
- * the servo as it was.  Asked before a start only.
+ * the servo as it was.  A Hitec D series servo saves and restarts inside
+ * the write itself (hitec_prog.h) and needs no power cycle.  Asked before a
+ * start only.
  *
  * @return on the carrier's port with the PROG 5V box off, the line that
  *         asks it on; SV_LIM_PROG_NO_PD's line on the programming port
@@ -206,7 +228,8 @@ const char *lim_prog_why(void)
  */
 const char *lim_write_why(void)
 {
-    if (!lim_reads() || servo_limrun_running(&s.lim) || lim_pd_feeds()) {
+    if (!lim_reads() || servo_limrun_running(&s.lim) || lim_pd_feeds()
+        || lim_family() == SERVO_LIMRUN_FAM_HITEC_D) {
         return NULL;
     }
     /* The carrier's port has no PD mini to name: the box is its switch. */
@@ -230,6 +253,7 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     c->read       = lim_reads();
     c->program    = c->read && lim_programs();
     c->set_pulses = c->read && lim_sets_pulses();
+    c->family     = c->read ? lim_family() : (uint8_t)SERVO_LIMRUN_FAM_KST;
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     c->frame_hz = s.frame_hz;
@@ -278,7 +302,8 @@ static bool lim_apply(const servo_limrun_do_t *d)
         post(SERVO_CMD_ARM, 0);
         ++s.arm_rev;
     }
-    kst_prog_msg_id_t m = KST_PROG_MSG_NONE;
+    const uint8_t fam = s.lim.cfg.family;
+    bool taken = true;
     if (d->connect && lim_pd_feeds()
         && (!s.sup.output || !s.lim.sup_online)) {
         /* A PD mini the run did not start with, or one whose output is
@@ -288,19 +313,18 @@ static bool lim_apply(const servo_limrun_do_t *d)
         again = true;
     } else if (d->connect) {
         const bool pd = lim_pd_feeds();
-        m = kst_panel_run_connect(
-            pd, (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
+        taken = lim_seam_connect(
+            fam, pd, (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
             (uint16_t)lroundf(supply_screen_set_i() * 1000.0f));
     } else if (d->write) {
-        m = kst_panel_run_write(d->angle[0], d->angle[1]);
+        taken = lim_seam_write(fam, d->angle);
     } else if (d->pulses) {
-        m = kst_panel_run_pulses(d->pulse_dus[0], d->pulse_dus[1]);
+        taken = lim_seam_pulses(fam, d->pulse_dus);
     } else if (d->leave) {
-        m = kst_panel_run_leave();
-        s.lim_leaving = m == KST_PROG_MSG_NONE
-                        && !servo_limrun_running(&s.lim);
+        taken = lim_seam_leave(fam);
+        s.lim_leaving = taken && !servo_limrun_running(&s.lim);
     }
-    if (m != KST_PROG_MSG_NONE) {
+    if (!taken) {
         servo_limrun_refused(&s.lim, test_now());
         again = true;
     }
@@ -334,14 +358,13 @@ static void lim_poll(void)
     if (!servo_limrun_programming(&s.lim)) {
         return;
     }
-    const kst_panel_run_t r = kst_panel_run_poll();
-    if (r == KST_PANEL_RUN_NONE || r == KST_PANEL_RUN_BUSY) {
+    const uint8_t fam = s.lim.cfg.family;
+    bool ok = false;
+    if (!lim_seam_poll(fam, &ok)) {
         return;
     }
-    const bool ok = r == KST_PANEL_RUN_OK;
     servo_limrun_servo_t sv;
     memset(&sv, 0, sizeof(sv));
-    unsigned type_no = 0u;
     switch (s.lim.phase) {
     case SERVO_LIMRUN_PH_CONNECT:
         if (!ok) {
@@ -349,28 +372,25 @@ static void lim_poll(void)
              * read's NOT_KST; the port is held in programming mode then,
              * and the LEAVE the run asks gives it back.  Any other end is
              * a failed session. */
-            if (kst_panel_run_no_servo()) {
+            if (lim_seam_no_servo(fam)) {
                 servo_limrun_no_servo(&s.lim, test_now());
             } else {
                 servo_limrun_refused(&s.lim, test_now());
             }
             break;
         }
-        sv.ok = kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
-                                    &sv.reversion, &type_no, sv.pulse_dus);
-        sv.type = type_no;
+        (void)lim_seam_servo(fam, &sv);
         /* No backup at a CONNECT: the programmer's is an earlier run's
          * until this run's first write (servo_limrun_backup()). */
         servo_limrun_connected(&s.lim, &sv, test_now());
         break;
     case SERVO_LIMRUN_PH_WRITE:
         if (ok) {
-            (void)kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
-                                      &sv.reversion, &type_no, sv.pulse_dus);
+            (void)lim_seam_servo(fam, &sv);
         }
         /* The file saved before the run's first write, sent whether it
          * ended well or not. */
-        servo_limrun_backup(&s.lim, kst_panel_run_backup());
+        servo_limrun_backup(&s.lim, lim_seam_backup(fam));
         if (s.lim.pulse_op) {
             servo_limrun_pulsed(&s.lim, ok, ok ? sv.pulse_dus : NULL,
                                 test_now());
@@ -396,12 +416,18 @@ static void lim_ended(void)
         return;
     }
     s.lim_seen = false;
+    /* A run ended with a write on its way: no answer handed the file over,
+     * and the session's own backup, saved before that write, holds the
+     * servo as the run found it. */
+    if (servo_limrun_restore(&s.lim)) {
+        servo_limrun_backup(&s.lim, lim_seam_backup_kept(s.lim.cfg.family));
+    }
     /* A LEAVE on its way is the run's to the end: the programmer's run, and
      * the supply values it keeps, end when the port is back. */
     if (s.lim_leaving) {
         s.lim_end_due = true;
     } else {
-        kst_panel_run_end();
+        lim_seam_end(s.lim.cfg.family);
     }
     test_tell();
     ++s.test_rev;
@@ -412,13 +438,12 @@ static void lim_ended(void)
  * or, refused, still in programming.  Whichever screen is up. */
 void lim_leave_follow(void)
 {
-    if (s.lim_leaving
-        && kst_prog_state(kst_panel_model()) != KST_PROG_LEAVING) {
+    if (s.lim_leaving && !lim_seam_leaving(s.lim.cfg.family)) {
         s.lim_leaving = false;
     }
     if (s.lim_end_due && !s.lim_leaving) {
         s.lim_end_due = false;
-        kst_panel_run_end();
+        lim_seam_end(s.lim.cfg.family);
     }
 }
 
@@ -474,7 +499,7 @@ void lim_begin(void)
     }
     s.lim_changes = s.changes;
     if (c.read) {
-        kst_panel_run_begin();
+        lim_seam_begin(c.family);
     }
     if (!lim_fixed_supply()) {
         /* The supply as the run starts: with none read yet, one that does
@@ -503,9 +528,7 @@ void lim_begin(void)
     s.lim_box    = true;
     s.test_box   = false;
     close_panels();
-    if (kst_panel_is_open() && !kst_panel_holds_port()) {
-        kst_panel_close();
-    }
+    lim_seam_close_pages();
     servo_invalidate();
     ++s.ctrl_rev;
 }
@@ -530,6 +553,7 @@ uint32_t lim_signature(void)
 
 void lim_tick(void)
 {
+    lim_seam_follow();
     lim_poll();
     lim_step();
     lim_ended();
@@ -644,8 +668,16 @@ void draw_lim_box(gfx_canvas_t *c)
         }
         if (servo_limrun_restore(r)) {
             /* The values last written stay in the servo; the programmer
-             * puts back the ones before the run. */
-            snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+             * puts back the ones before the run: KST's RESTORE, the Hitec
+             * programmer's backup file. */
+            if (r->cfg.family == SERVO_LIMRUN_FAM_KST) {
+                snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+            } else if (r->servo.backup[0] != '\0') {
+                snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE_HITEC),
+                         r->servo.backup);
+            } else {
+                snprintf(l3, sizeof(l3), "%s", TR(SV_LIM_NO_BACKUP));
+            }
             col3 = ui_theme_color(UI_C_WARN);
         } else if (r->why == SERVO_LIMRUN_WHY_RANGE) {
             /* The servo's pulses and the bench's range, side by side. */
@@ -736,8 +768,10 @@ void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
         return;
     }
     const bool pulses = running ? s.lim.cfg.set_pulses : lim_sets_pulses();
+    const bool hitec = lim_family_now() != SERVO_LIMRUN_FAM_KST;
     gfx_text(c, x, y,
-             prog     ? TR(SV_LIM_PROG_NOTE)
+             prog && hitec ? TR(SV_LIM_PROG_NOTE_HITEC)
+             : prog   ? TR(SV_LIM_PROG_NOTE)
              : pulses ? TR(SV_LIM_PULSES_NOTE)
                       : TR(SV_LIM_SEARCH_NOTE),
              SV_FONT_LABEL, ui_theme_color(UI_C_TEXT_FAINT), 1);
@@ -770,7 +804,14 @@ void draw_lim_lines(gfx_canvas_t *c)
     const bool pulses = running ? s.lim.cfg.set_pulses : lim_sets_pulses();
     char line[96];
     const char *mode = prog ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH);
-    if (running ? s.lim.cfg.read : lim_reads()) {
+    const uint8_t fam = lim_family_now();
+    if ((running ? s.lim.cfg.read : lim_reads())
+        && fam != SERVO_LIMRUN_FAM_KST) {
+        /* The Hitec programmer's series, which its SERVO tab sets. */
+        snprintf(line, sizeof(line), TR(SV_SUM_LIM_HITEC), mode,
+                 ui_setting_option(SET_HITEC_SERIES,
+                                   fam == SERVO_LIMRUN_FAM_HITEC_D ? 1 : 0));
+    } else if (running ? s.lim.cfg.read : lim_reads()) {
         snprintf(line, sizeof(line), TR(SV_SUM_LIM), mode,
                  pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
     } else {

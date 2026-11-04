@@ -78,7 +78,8 @@ static bool to_phase(servo_limrun_phase_t ph)
 
 /* Each reason the caller has: in every phase the run ends ABORTED, asks
  * the output off and lets the servo go, once; RESTORE is named where a
- * value was written. */
+ * value was written, or where a write is on its way in WRITE (it may
+ * land). */
 TEST_CASE(every_caller_abort_ends_every_phase_with_the_output_off)
 {
     static const servo_test_abort_t k_why[] = {
@@ -95,6 +96,8 @@ TEST_CASE(every_caller_abort_ends_every_phase_with_the_output_off)
                 continue;
             }
             const bool wrote = servo_limrun_wrote(&g.run);
+            const bool on_way = g.run.in_flight;
+            CHECK_EQ(on_way, k_phases[p].ph == SERVO_LIMRUN_PH_WRITE);
             servo_limrun_abort(&g.run, k_why[w], g.now);
             run_for(100u);
             CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
@@ -104,8 +107,8 @@ TEST_CASE(every_caller_abort_ends_every_phase_with_the_output_off)
             CHECK_EQ(g.releases, 1u);
             CHECK_EQ(g.ends, 1u);
             CHECK_EQ(wrote, k_phases[p].wrote);
-            CHECK_EQ(servo_limrun_restore(&g.run), wrote);
-            CHECK_EQ(strstr(g.report, "RESTORE") != NULL, wrote);
+            CHECK_EQ(servo_limrun_restore(&g.run), wrote || on_way);
+            CHECK_EQ(strstr(g.report, "RESTORE") != NULL, wrote || on_way);
             if (k_phases[p].at == AT_READ || k_phases[p].at == AT_PULSES) {
                 CHECK(!g.driven);
             }

@@ -865,8 +865,9 @@ operator's pages, as the limit run does on a KST servo
 ([Programming the servo's travel limits](Servo.md#programming-the-servos-travel-limits)).
 The programmer has the seam for one on a Hitec servo
 (`shared/bench/include/hitec_prog_run.h`,
-`shared/ui/include/hitec_panel_run.h`). No screen starts a run on a Hitec
-servo.
+`shared/ui/include/hitec_panel_run.h`). The SERVO screen's LIMIT RUN with
+SERVO at HITEC and AUTO on RUDDER start runs through it
+([Servo: Hitec servos](Servo.md#hitec-servos)).
 
 A run writes LEFT END and RIGHT END and nothing else, in travel units:
 

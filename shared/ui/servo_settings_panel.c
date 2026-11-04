@@ -81,7 +81,8 @@ const ov_row_t k_rows[] = {
     { PG_AUTO, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 3, false },
 
     { PG_LIMRUN, R_LIM_MODE,   SETTING_COUNT, TX_SV_ROW_LIM_MODE,  0, 0, true  },
-    { PG_LIMRUN, R_LIM_PULSES, SETTING_COUNT, TX_SV_ROW_LIM_PULSES,  0, 1, false },
+    { PG_LIMRUN, R_LIM_SERVO,  SETTING_COUNT, TX_SV_ROW_LIM_SERVO,  0, 1, false },
+    { PG_LIMRUN, R_LIM_PULSES, SETTING_COUNT, TX_SV_ROW_LIM_PULSES,  1, 1, false },
 
     { PG_BROWNOUT, R_SETTING, SET_SERVO_BROWNOUT, TX_SV_ROW_BROWNOUT,  0, 0, false },
     { PG_BROWNOUT, R_SETTING, SET_SERVO_BO_FLOOR, TX_SV_ROW_BO_FLOOR,  0, 1, false },
@@ -509,6 +510,13 @@ static void edit_row(int i)
          * test's; its CLOSE climbs back there. */
         s.run_list = RL_BROWNOUT;
         servo_invalidate();
+        break;
+    case R_LIM_SERVO:
+        /* The programmer a run started after it goes to: KST/CHASERVO or
+         * HITEC, on the programming port only. */
+        if (!servo_limrun_running(&s.lim) && lim_reads()) {
+            s.lim_hitec = !s.lim_hitec;
+        }
         break;
     case R_LIM_PULSES:
         /* For a run started after it, on the programming port only. */

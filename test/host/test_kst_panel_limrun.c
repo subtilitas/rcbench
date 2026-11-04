@@ -34,7 +34,8 @@
  */
 #define LR_MODE_X  100          /* the LIMIT RUN settings' left column */
 #define LR_MODE_Y  SV_LIST_ROW_Y(0)   /* LIMIT RUN, across both columns */
-#define LR_PULSE_Y SV_LIST_ROW_Y(1)   /* SERVO PULSES, the left column */
+#define LR_PULSE_X SV_LIST_X(1)       /* SERVO PULSES, the middle column */
+#define LR_PULSE_Y SV_LIST_ROW_Y(1)   /* right of SERVO */
 
 /* TEST, and the LIMIT RUN card's own settings opened. */
 static void lr_run_list(void)
@@ -287,7 +288,7 @@ static void lr_start_with(bool pulses)
     lr_run_list();
     screen_tap(LR_MODE_X, LR_MODE_Y);
     if (pulses) {
-        screen_tap(LR_MODE_X, LR_PULSE_Y);
+        screen_tap(LR_PULSE_X, LR_PULSE_Y);
     }
     CHECK(scr->back());
     lr_hold_start();
@@ -747,7 +748,7 @@ TEST_CASE(without_a_pd_mini_a_limit_run_writes_nothing)
         ui_text_set_language((ui_lang_t)lang);
         lr_run_list();
         screen_tap(LR_MODE_X, LR_MODE_Y);
-        screen_tap(LR_MODE_X, LR_PULSE_Y);
+        screen_tap(LR_PULSE_X, LR_PULSE_Y);
         CHECK(scr->back());
         lr_hold_start();
         CHECK(servo_screen_limit_running());
@@ -842,7 +843,7 @@ TEST_CASE(servo_pulses_is_not_offered_for_a_pwm_pin)
     settings_set(SET_SERVO_TARGET, 0.0f);
     lr_ms(40u);
     lr_run_list();
-    screen_tap(LR_MODE_X, LR_PULSE_Y);      /* where SERVO PULSES would be */
+    screen_tap(LR_PULSE_X, LR_PULSE_Y);      /* where SERVO PULSES would be */
     CHECK(scr->back());
     lr_hold_start();
     CHECK(servo_screen_limit_running());

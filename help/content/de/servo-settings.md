@@ -110,7 +110,8 @@ OPTIONEN auf der Karte ENDLAGENLAUF öffnet sie.
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | was ENDLAGENLAUF STARTEN tut: die Enden suchen oder zusätzlich LEFT ANGLE und RIGHT ANGLE programmieren |
-| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit ZIEL auf PROG-PORT angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0us |
+| SERVO | KST/CHASERVO, HITEC | der zuletzt unter PROGRAMMIEREN geöffnete Programmierer, sonst KST/CHASERVO | nur mit ZIEL auf PROG-PORT angezeigt: der Programmierer, zu dem die Sitzungen des Laufs gehen; HITEC in der Serie der Zeile SERIE des Hitec-Programmierers ([Hitec-Servos](servo.md#hitec-servos)) |
+| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit ZIEL auf PROG-PORT und SERVO auf KST/CHASERVO angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0us |
 
 ## Die Grenzen von SUPPLY
 
@@ -153,4 +154,4 @@ Die Zeile folgt dem Ziel, das der IOmcu hält, nicht der Einstellung. Eine Ände
 
 ## Die Werte behalten
 
-AUSGANG, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für die Sitzung. SWEEP, die Optionen des automatischen Tests, PRÜFLING und ZIEL werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.
+AUSGANG, HV-SERVO, ENDLAGENLAUF, SERVO und SERVOPULSE gelten für die Sitzung. SWEEP, die Optionen des automatischen Tests, PRÜFLING und ZIEL werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.

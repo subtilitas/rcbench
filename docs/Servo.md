@@ -52,9 +52,13 @@ Duration: the host test holds a full search against the modelled servo to under
 
 The LIMIT RUN card on the SERVO screen's TEST task holds the run; its
 **SETTINGS** opens the run's settings one level down. There **LIMIT RUN**
-chooses SEARCH ONLY or SEARCH + PROGRAM with a tap. **SERVO PULSES**, shown with
-TARGET on PROG PORT only, chooses KEEP or 1000-2000 with a tap; it
-starts at KEEP. The home tag goes back to the card. **START LIMIT RUN** on
+chooses SEARCH ONLY or SEARCH + PROGRAM with a tap. **SERVO**, shown with
+TARGET on PROG PORT only, chooses KST/CHASERVO or HITEC with a tap: the
+programmer the run's sessions go to ([Hitec servos](#hitec-servos)). It
+starts at KST/CHASERVO and takes the programmer opened last on PROGRAM.
+**SERVO PULSES**, shown with TARGET on PROG PORT and SERVO at KST/CHASERVO
+only, chooses KEEP or 1000-2000 with a tap; it starts at KEEP. The home
+tag goes back to the card. **START LIMIT RUN** on
 the card starts the run with a 2s hold, as START TEST does; a tap or a
 shorter hold starts nothing.
 
@@ -267,6 +271,57 @@ REVERSION ON.
 
 The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 
+### Hitec servos
+
+With SERVO at HITEC the run's sessions go to the
+[Hitec programmer](HitecProgrammer.md#runs) in the series its SERIES row
+holds, D SERIES or CLASSIC. The search, the overset, the mapping and the
+check are the ones above.
+
+![The LIMIT RUN settings, SERVO at HITEC](img/servo-limrun-hitec.png)
+
+What differs:
+
+| | D SERIES | CLASSIC |
+| --- | --- | --- |
+| LEFT, RIGHT | LEFT END (0xB2), RIGHT END (0xB0) | LEFT END and RIGHT END: cell 0x14 and cell 0x13 on a CW servo, swapped on a CCW one |
+| Unit | counts from NEUTRAL 0xC2: 0xC2 - 0xB2 and 0xB0 - 0xC2; 74.5 a degree on a standard servo | the raw cell, 0 to 255, unit not known |
+| Range a write takes | 1 count to the smaller of 0xC2 - 1 and 16383 - 0xC2 | 0 to 255 |
+| Pulses: NEUTRAL, full travel | 1500.0us; 850.0us and 2150.0us: the target model of `hitec_live.h`, t = (us - 750) x 4, targets 400 and 5600 | 1500.0us; 900.0us and 2100.0us, Hitec's PWM range |
+| A write | the registers 20ms apart, the save (0x70), 100ms, the restart (0x46), 1000ms, the read-back | each cell with its balance in 0x1C, the read-back of 0x00 to 0x23 |
+| Supply | as it is: the D series acts on a write after its own restart | a PD mini, or PROG 5V on the rbmod carrier, for every session, the read included: the entry and the LEAVE switch the supply off and on |
+
+- A Hitec servo has no pulse registers. The run takes the pulses of the
+  table, which are not measured, and searches out to them: PULSE MIN and
+  PULSE MAX must hold them, or START LIMIT RUN stays grey with
+  `HITEC: PULSE MIN/MAX MUST COVER 850-2150us` (CLASSIC: `900-2100us`).
+  TYPE WIDE, 800 to 2200us, holds both. SERVO PULSES is not shown.
+- CLASSIC without a PD mini or PROG 5V keeps the button grey with
+  `Classic servos need a PD mini: the bench cycles the supply.`
+- The 2s hold of START LIMIT RUN is the consent CHECK THIS CHANGE asks for:
+  the run's writes show no page, and each switches ENABLE WRITE TO SERVO on
+  for itself and off at its end. A value outside the range is refused, not
+  clamped.
+- A first CONNECT with no servo answering, or a servo whose end points do
+  not edit, ends the run as FAIL with `no Hitec servo read`.
+- The backup file HITEC001 to HITEC999 is saved before the run's first
+  write; RESTORE is loading it on FILES of the Hitec programmer and writing
+  it with WRITE n VALUES. The box names it, `LOAD HITEC001 IN FILES`, or
+  `NO BACKUP FILE` when none is saved: no card, or the run ended before
+  the first write's session saved one.
+- The report names the registers, `LEFT END (0xB2): 4841 before, 2341
+  after`, the servo as `Hitec D SERIES, DIRECTION CW`, and the pulses as
+  the pulse model.
+
+On the host's modelled D485HW, both ends bound, a run wrote 4 values in 3
+writes and 4 sessions, 107.9s. Which horn position a D series end point
+gives on a CCW servo, which classic cell limits which side, the classic
+cell's unit, and whether either series' travel is linear in the pulse are
+not measured; the mapping step finds the register of each side as it does
+on a KST servo, and a FAIL with `LEFT/RIGHT ANGLE side not found` (the
+KST words, for LEFT END and RIGHT END too) or `an end binds after
+programming` ends a run whose servo does not follow the model.
+
 ### Protections
 
 | Protection | Value | Effect |
@@ -315,10 +370,14 @@ it asked that the bench has not taken yet does not arm the bench after the
 end. A start of the panel clears the run without a report.
 
 The values last written stay in the servo. A run that wrote and did not
-pass says `RESTORE IN PROGRAM` on its box. A write that fails once sent,
+pass says `RESTORE IN PROGRAM` on its box, on a Hitec servo `LOAD HITEC001
+IN FILES` ([Hitec servos](#hitec-servos)). A write that fails once sent,
 with no answer or an answer the programmer does not take, counts as
-written: part of it may have landed. A write the programmer refuses before
-it is sent counts as none. RESTORE on the programmer, after
+written: part of it may have landed. So does a write handed to the
+programmer and not answered when the run ends, a STOP during its session
+included; the `Backup:` line then names the file that session saved
+before it. A write the programmer refuses before it is sent counts as
+none. RESTORE on the programmer, after
 CONNECT and READ ALL, offers `Settings before the limit run.`: the servo as the
 run's first session read it, written back as an ordinary write of LEFT
 ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER. It is offered while the
@@ -1319,8 +1378,8 @@ the task is `shared/ui/servo_rudder_panel.c`.
 
 ### Purpose
 
-AUTO, the third button of RUDDER's ZERO row, programs a KST or Chaservo
-servo's end points so that 1000us and 2000us reach the deflection entered
+AUTO, the third button of RUDDER's ZERO row, programs a KST, Chaservo or
+Hitec servo's end points so that 1000us and 2000us reach the deflection entered
 for each side, measured on the angle source. It closes the loop on the
 surface's angle in place of the throw a radio's end points are set to by
 eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
@@ -1344,9 +1403,16 @@ eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
 - The three lines under it: the step under way, as `SETTLE 2000us: WRITE
   1/8, SESSIONS 2`, or why a START is refused, or the goals; the result,
   `PASS: 150>92, 150>92` with each end point's value before and after, or
-  `FAIL: reason`; the report's file, or `RESTORE IN PROGRAM` after a FAIL
-  or an abort that wrote, or that cut off a write on its way, which may
-  have landed.
+  `FAIL: reason`; the servo the run programs, `SERVO KST/CHASERVO` or
+  `SERVO HITEC D SERIES`, while it runs and before the first run; then the
+  report's file, or `RESTORE IN PROGRAM` (a Hitec servo: `LOAD HITEC001 IN
+  FILES`) after a FAIL or an abort that wrote, or that cut off a write on
+  its way, which may have landed.
+- The servo is the LIMIT RUN settings' SERVO row: KST/CHASERVO, or HITEC
+  in the Hitec programmer's series. It takes the programmer opened last on
+  PROGRAM. On a Hitec servo the end points are LEFT END and RIGHT END in
+  the units of [Hitec servos](#hitec-servos), the read session writes no
+  pulses, and a D series servo needs no PD mini.
 
 A START is refused, the reason on the first line, while:
 
@@ -1420,7 +1486,10 @@ measure with its value, its angle and whether it lies within.
   proportional to the end point's value from the surface's zero. A servo
   that is not linear takes more writes; the run measures after every one.
 - Degrees are entered; a target in mm at the trailing edge is not.
-- The Hitec D series is not driven by AUTO.
+- A D series servo at 1000us stops 76.9% of the way to its end point by
+  the target model of `hitec_live.h`, which is not measured; the run
+  measures after every write. The D series mapping on a CCW servo is not
+  measured.
 
 ## Sweep and SPEED
 

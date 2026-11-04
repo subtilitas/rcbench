@@ -175,6 +175,12 @@ static void finish(servo_limrun_t *r, servo_limrun_verdict_t v,
     }
     const bool in_session = r->phase == SERVO_LIMRUN_PH_CONNECT
                             || r->phase == SERVO_LIMRUN_PH_WRITE;
+    if (r->in_flight) {
+        /* A write on its way when the run ended may have landed: RESTORE
+         * is offered for it. */
+        r->programmed = true;
+        r->in_flight  = false;
+    }
     r->state   = SERVO_LIMRUN_DONE;
     r->verdict = v;
     r->why     = why;
@@ -706,7 +712,8 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
 {
     if (r == NULL || cfg == NULL || servo_limrun_running(r)
         || !(cfg->min_us < cfg->centre_us && cfg->centre_us < cfg->max_us)
-        || ((cfg->program || cfg->set_pulses) && !cfg->read)) {
+        || ((cfg->program || cfg->set_pulses) && !cfg->read)
+        || !limrun_family_ok(cfg)) {
         return false;
     }
     memset(r, 0, sizeof(*r));
@@ -963,7 +970,7 @@ static void first_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
     if (!sv->ok || sv->lo_raw > sv->hi_raw
         || sv->angle[0] < sv->lo_raw || sv->angle[1] < sv->lo_raw) {
         /* No servo, or values the hard rules do not take. */
-        fail(r, SERVO_LIMRUN_WHY_NOT_KST, now_ms);
+        fail(r, limrun_not_servo(r->cfg.family), now_ms);
         return;
     }
     r->read_once = true;
@@ -1062,6 +1069,7 @@ static void mark_programmed(servo_limrun_t *r)
  */
 static void sent_failed(servo_limrun_t *r, uint32_t now_ms)
 {
+    r->in_flight = false;
     r->write_ops += 1u;
     r->programmed = true;
     abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
@@ -1078,6 +1086,7 @@ void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
         sent_failed(r, now_ms);
         return;
     }
+    r->in_flight = false;
     const unsigned n = changes(r, r->want);
     r->writes    += n;
     r->write_ops += 1u;
@@ -1113,6 +1122,7 @@ void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
         sent_failed(r, now_ms);
         return;
     }
+    r->in_flight = false;
     r->writes += (unsigned)(pulse_dus[SERVO_LIMRUN_P_LOWER]
                             != r->pulse_now[SERVO_LIMRUN_P_LOWER])
                  + (unsigned)(pulse_dus[SERVO_LIMRUN_P_UPPER]
@@ -1149,6 +1159,7 @@ void servo_limrun_refused(servo_limrun_t *r, uint32_t now_ms)
     if (!servo_limrun_running(r)) {
         return;
     }
+    r->in_flight = false;           /* refused before it was sent */
     if (r->phase == SERVO_LIMRUN_PH_WRITE) {
         abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
     } else if (r->phase == SERVO_LIMRUN_PH_CONNECT
@@ -1163,7 +1174,7 @@ void servo_limrun_no_servo(servo_limrun_t *r, uint32_t now_ms)
         return;
     }
     if (!r->read_once) {
-        fail(r, SERVO_LIMRUN_WHY_NOT_KST, now_ms);
+        fail(r, limrun_not_servo(r->cfg.family), now_ms);
     } else {
         servo_limrun_refused(r, now_ms);
     }
@@ -1267,6 +1278,9 @@ void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
     }
     *out = r->pend;
     memset(&r->pend, 0, sizeof(r->pend));
+    if (servo_limrun_running(r) && (out->write || out->pulses)) {
+        r->in_flight = true;
+    }
     if (servo_limrun_running(r) && r->cmd_due) {
         /* A search's position, or PULSE CENTRE after one. */
         out->command = true;

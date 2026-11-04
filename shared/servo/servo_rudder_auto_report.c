@@ -14,6 +14,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 /** @brief The CSV's columns: one row a measure. */
 #define RAUTO_CSV_HEAD "step;side (us);write;value;measured (deg);" \
@@ -283,9 +284,24 @@ static bool reg_line(const servo_rauto_t *r, cur_t *c, int g)
     if (!here(c)) {
         return false;
     }
-    const bool kst = r->cfg.family == SERVO_RAUTO_FAM_KST;
-    const char *label = g == 0 ? (kst ? LS(L_R_LEFT) : LS(RA_R_REG_1))
-                               : (kst ? LS(L_R_RIGHT) : LS(RA_R_REG_2));
+    /* The register by its name (servo_limrun_reg_name(): the families are
+     * the limit run's), padded to the column of KST's labels; a Hitec
+     * servo's CCW stands in REVERSION. */
+    const char *col = g == 0 ? LS(L_R_LEFT) : LS(L_R_RIGHT);
+    char label[32];
+    if (r->cfg.family == SERVO_RAUTO_FAM_KST) {
+        snprintf(label, sizeof(label), "%s", col);
+    } else {
+        char head[28];
+        snprintf(head, sizeof(head), "%s:",
+                 servo_limrun_reg_name(
+                     r->cfg.family,
+                     (uint8_t)((unsigned)g | (r->servo.reversion
+                                                  ? SERVO_LIMRUN_REG_CCW
+                                                  : 0u))));
+        const int w = (int)strlen(col) - 1;
+        snprintf(label, sizeof(label), "%-*s ", w > 0 ? w : 0, head);
+    }
     const servo_str_t side = r->reg_side[g] == 0   ? SERVO_STR_RA_R_SIDE_LO
                              : r->reg_side[g] == 1 ? SERVO_STR_RA_R_SIDE_HI
                                                    : SERVO_STR_L_R_SIDE_UNKNOWN;
@@ -341,7 +357,10 @@ static bool prog_lines(const servo_rauto_t *r, cur_t *c)
         }
         return true;
     }
-    return servo_rauto_restore(r) && text_line(c, SERVO_STR_RA_R_RESTORE);
+    return servo_rauto_restore(r)
+           && text_line(c, r->cfg.family == SERVO_RAUTO_FAM_KST
+                               ? SERVO_STR_RA_R_RESTORE
+                               : SERVO_STR_L_R_RESTORE_HITEC);
 }
 
 /**

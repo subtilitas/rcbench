@@ -582,6 +582,16 @@ bool servo_screen_rauto_running(void);
 /** @brief AUTO's phase, for the tests.
  *  @return a servo_rauto_phase_t, as an int */
 int servo_screen_rauto_phase(void);
+/** @brief The servo family a limit run started now takes, by the LIMIT
+ *         RUN settings' SERVO row, for the tests.
+ *  @return a servo_limrun_family_t, as an int */
+int servo_screen_limit_family(void);
+/** @brief SERVO PULSES for the session, for the tests.
+ *  @return true while it reads 1000-2000 */
+bool servo_screen_limit_pulses(void);
+/** @brief Why START LIMIT RUN cannot start now, for the tests.
+ *  @return the card's line, or NULL */
+const char *servo_screen_limit_blocked(void);
 
 /**
  * @brief The run's next item for the card, without taking it

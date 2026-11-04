@@ -55,7 +55,7 @@ LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis
 
 ## AUTO
 
-AUTO programmiert ein KST- oder Chaservo-Servo am Programmierport so, dass 1000us und 2000us den je Seite eingegebenen Ausschlag erreichen. Der Kasten nimmt den Platz von LÄNGE, den Tasten zum Ansteuern und den Statuszeilen ein; MANUELL bringt sie zurück.
+AUTO programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite eingegebenen Ausschlag erreichen. Das Servo ist die [Option SERVO des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs), die den zuletzt unter PROGRAMMIEREN geöffneten Programmierer übernimmt; die dritte Zeile des Kastens nennt es, `SERVO HITEC D-SERIE`. Der Kasten nimmt den Platz von LÄNGE, den Tasten zum Ansteuern und den Statuszeilen ein; MANUELL bringt sie zurück.
 
 ![Der Kasten von AUTO, ARMED](view:servo-rudder-auto)
 
@@ -65,9 +65,9 @@ AUTO programmiert ein KST- oder Chaservo-Servo am Programmierport so, dass 1000u
 | RESERVE | so viel über das Soll hinaus programmiert, 0 bis 50%, 10%: 20.0° bei 10% ergeben einen Sollwert von 22.0° |
 | TOLERANZ | wie nah am Sollwert eine Messung liegen muss, 0.1 bis 5.0°, 0.5° |
 
-Zuerst NULLPUNKT mit der Fläche in Neutrallage; solange der Lauf läuft, sind NULLPUNKT, MAX LÖSCHEN und MANUELL abgelehnt. 2s HALTEN: START startet den Lauf; die Taste heißt dann LAUF BEENDEN, und ein Druck beendet den Lauf sofort. Der Lauf liest das Servo, setzt seinen Pulsbereich auf 1000 bis 2000us, fährt dann je Seite den Endpuls an, wartet, bis der Winkel 500ms ruhig ist, und schreibt einen neuen Endpoint: höchstens 8 Schreibvorgänge je Seite, jeder in einer eigenen Sitzung des Programmierers, mit dem Servo aus- und eingeschaltet. Der Stromschutz des Endlagenlaufs gilt durchgehend: ein Blockieren vor dem Sollwert beendet den Lauf mit `Ruder klemmt bei x°`. Jedes Ende schaltet den Prüfstand auf SAFE und den Ausgang der Versorgung aus.
+Zuerst NULLPUNKT mit der Fläche in Neutrallage; solange der Lauf läuft, sind NULLPUNKT, MAX LÖSCHEN und MANUELL abgelehnt. 2s HALTEN: START startet den Lauf; die Taste heißt dann LAUF BEENDEN, und ein Druck beendet den Lauf sofort. Der Lauf liest das Servo, setzt den Pulsbereich eines KST-Servos auf 1000 bis 2000us, fährt dann je Seite den Endpuls an, wartet, bis der Winkel 500ms ruhig ist, und schreibt einen neuen Endpoint: höchstens 8 Schreibvorgänge je Seite, jeder in einer eigenen Sitzung des Programmierers, mit dem Servo aus- und eingeschaltet. Der Stromschutz des Endlagenlaufs gilt durchgehend: ein Blockieren vor dem Sollwert beendet den Lauf mit `Ruder klemmt bei x°`. Jedes Ende schaltet den Prüfstand auf SAFE und den Ausgang der Versorgung aus.
 
-Die erste Zeile nennt den laufenden Schritt, die Sollwerte oder warum ein START abgelehnt ist; die zweite das Ergebnis; die dritte den Bericht RUDDRnnn.TXT, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN`, wenn ein Lauf, der geschrieben oder ein Schreiben unterwegs abgebrochen hat, nicht bestanden ist.
+Die erste Zeile nennt den laufenden Schritt, die Sollwerte oder warum ein START abgelehnt ist; die zweite das Ergebnis; die dritte den Bericht RUDDRnnn.TXT, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN`, wenn ein Lauf, der geschrieben oder ein Schreiben unterwegs abgebrochen hat, nicht bestanden ist, an einem Hitec-Servo `HITEC001 IN DATEIEN LADEN`.
 
 ## Was der Winkel ist
 

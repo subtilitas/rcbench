@@ -211,8 +211,11 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
      * said as done whether or not a search followed. */
     const bool ran = r->searched;
     const bool pulsed = g->set_pulses && r->pulses_landed;
+    const bool kst = g->family == SERVO_LIMRUN_FAM_KST;
     const servo_str_t mode =
-        g->program      ? (ran ? SERVO_STR_L_R_MODE_PROGRAM
+        g->program && !kst ? (ran ? SERVO_STR_L_R_MODE_PROGRAM_HITEC
+                                  : SERVO_STR_L_R_MODE_PROGRAM_NONE_HITEC)
+        : g->program    ? (ran ? SERVO_STR_L_R_MODE_PROGRAM
                                : SERVO_STR_L_R_MODE_PROGRAM_NONE)
         : g->set_pulses ? (ran      ? SERVO_STR_L_R_MODE_PULSES
                            : pulsed ? SERVO_STR_L_R_MODE_PULSES_SET_NONE
@@ -355,6 +358,35 @@ static void raw_text(char *buf, size_t n, uint16_t v)
 }
 
 /**
+ * @brief A register's label as the report's column has it: KST's own words,
+ *        a Hitec register by servo_limrun_reg_name() padded to that column.
+ *
+ * @param r   Run state.
+ * @param c   Cursor: the language.
+ * @param g   Register, SERVO_LIMRUN_LEFT or SERVO_LIMRUN_RIGHT.
+ * @param buf Out: the label, a space after it.
+ * @param n   Size of buf, bytes.
+ */
+static void reg_label(const servo_limrun_t *r, const cur_t *c, int g,
+                      char *buf, size_t n)
+{
+    const char *col = g == SERVO_LIMRUN_LEFT ? LS(L_R_LEFT) : LS(L_R_RIGHT);
+    if (r->cfg.family == SERVO_LIMRUN_FAM_KST) {
+        snprintf(buf, n, "%s", col);
+        return;
+    }
+    /* r->servo.reversion holds a Hitec servo's CCW. */
+    const uint8_t reg = (uint8_t)((unsigned)g
+                                  | (r->servo.reversion ? SERVO_LIMRUN_REG_CCW
+                                                        : 0u));
+    char head[28];
+    snprintf(head, sizeof(head), "%s:",
+             servo_limrun_reg_name(r->cfg.family, reg));
+    const int w = (int)strlen(col) - 1;
+    snprintf(buf, n, "%-*s ", w > 0 ? w : 0, head);
+}
+
+/**
  * @brief The lines of one register: its angle, count and side, then its linear
  *        fit once the side is found and needed.
  *
@@ -366,8 +398,9 @@ static void raw_text(char *buf, size_t n, uint16_t v)
 static bool reg_lines(const servo_limrun_t *r, cur_t *c, int g)
 {
     if (here(c)) {
-        snprintf(c->buf, c->n, LS(L_R_REG),
-                 g == SERVO_LIMRUN_LEFT ? LS(L_R_LEFT) : LS(L_R_RIGHT),
+        char name[32];
+        reg_label(r, c, g, name, sizeof(name));
+        snprintf(c->buf, c->n, LS(L_R_REG), name,
                  (unsigned)r->servo.angle[g], (unsigned)r->cur[g],
                  servo_str_in(c->text, side_word(r, g)));
         return true;
@@ -410,7 +443,9 @@ static double us_of(uint16_t dus)
  */
 static bool prog_lines(const servo_limrun_t *r, cur_t *c)
 {
-    if (blank(c) || text_line(c, SERVO_STR_L_R_PROG_HEAD)) {
+    const bool hitec = r->cfg.family != SERVO_LIMRUN_FAM_KST;
+    if (blank(c) || text_line(c, hitec ? SERVO_STR_L_R_PROG_HEAD_HITEC
+                                       : SERVO_STR_L_R_PROG_HEAD)) {
         return true;
     }
     if (!r->cfg.read) {
@@ -420,13 +455,20 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
         return text_line(c, SERVO_STR_L_R_PROG_NO_SERVO);
     }
     if (here(c)) {
-        snprintf(c->buf, c->n, LS(L_R_SERVO), r->servo.type,
-                 r->servo.reversion ? LS(R_ON) : LS(R_OFF));
+        if (hitec) {
+            snprintf(c->buf, c->n, LS(L_R_SERVO_HITEC),
+                     r->cfg.family == SERVO_LIMRUN_FAM_HITEC_D ? "D SERIES"
+                                                               : "CLASSIC",
+                     r->servo.reversion ? "CCW" : "CW");
+        } else {
+            snprintf(c->buf, c->n, LS(L_R_SERVO), r->servo.type,
+                     r->servo.reversion ? LS(R_ON) : LS(R_OFF));
+        }
         return true;
     }
     const uint16_t *p0 = r->servo.pulse_dus;
     if (here(c)) {
-        snprintf(c->buf, c->n, LS(L_R_PULSES),
+        snprintf(c->buf, c->n, hitec ? LS(L_R_PULSES_HITEC) : LS(L_R_PULSES),
                  us_of(p0[SERVO_LIMRUN_P_NEUTRAL]),
                  us_of(p0[SERVO_LIMRUN_P_LOWER]),
                  us_of(p0[SERVO_LIMRUN_P_UPPER]));
@@ -472,8 +514,9 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
         return true;
     }
     /* The programmer holds the values before the run from the run's first
-     * write on: a run that sent none has no backup. */
-    if (r->write_ops > 0u && here(c)) {
+     * write on: a run that sent none has no backup.  A write cut off on its
+     * way counts: it may have landed. */
+    if ((r->write_ops > 0u || limrun_restore(r)) && here(c)) {
         if (r->servo.backup[0] != '\0') {
             snprintf(c->buf, c->n, LS(L_R_BACKUP), r->servo.backup);
         } else {
@@ -481,7 +524,9 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
         }
         return true;
     }
-    if (limrun_restore(r) && text_line(c, SERVO_STR_L_R_RESTORE)) {
+    if (limrun_restore(r)
+        && text_line(c, hitec ? SERVO_STR_L_R_RESTORE_HITEC
+                              : SERVO_STR_L_R_RESTORE)) {
         return true;
     }
     if (!r->cfg.program || r->verdict == SERVO_LIMRUN_FREE) {
@@ -507,7 +552,11 @@ static bool tail_lines(const servo_limrun_t *r, cur_t *c)
     if (blank(c)) {
         return true;
     }
-    if (r->cfg.program && text_line(c, SERVO_STR_L_R_UNIT)) {
+    const servo_str_t unit =
+        r->cfg.family == SERVO_LIMRUN_FAM_HITEC_D   ? SERVO_STR_L_R_UNIT_HITEC_D
+        : r->cfg.family == SERVO_LIMRUN_FAM_HITEC_C ? SERVO_STR_L_R_UNIT_HITEC_C
+                                                    : SERVO_STR_L_R_UNIT;
+    if (r->cfg.program && text_line(c, unit)) {
         return true;
     }
     return text_line(c, SERVO_STR_L_R_BENCH);
@@ -576,6 +625,7 @@ servo_str_t servo_limrun_why_str(const servo_limrun_t *r)
     case SERVO_LIMRUN_WHY_BEFORE_NEUTRAL: return SERVO_STR_L_WHY_BEFORE_NEUTRAL;
     case SERVO_LIMRUN_WHY_NEUTRAL:        return SERVO_STR_L_WHY_NEUTRAL;
     case SERVO_LIMRUN_WHY_RANGE:          return SERVO_STR_L_WHY_RANGE;
+    case SERVO_LIMRUN_WHY_NOT_HITEC:      return SERVO_STR_L_WHY_NOT_HITEC;
     default:                              return SERVO_STR_AB_NONE;
     }
 }

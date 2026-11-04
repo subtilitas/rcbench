@@ -110,7 +110,8 @@ SETTINGS on the LIMIT RUN card opens them.
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | LIMIT RUN | SEARCH ONLY, SEARCH + PROGRAM | SEARCH ONLY | what START LIMIT RUN does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE |
-| SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with TARGET on PROG PORT only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
+| SERVO | KST/CHASERVO, HITEC | the programmer opened last on PROGRAM, else KST/CHASERVO | shown with TARGET on PROG PORT only: the programmer the run's sessions go to; HITEC in the series of the Hitec programmer's SERIES row ([Hitec servos](servo.md#hitec-servos)) |
+| SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with TARGET on PROG PORT and SERVO at KST/CHASERVO only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us before the search |
 
 ## SUPPLY's caps
 
@@ -153,4 +154,4 @@ The row follows the target the IOmcu holds, not the setting. A TARGET change wai
 
 ## Keeping the values
 
-OUTPUT, HV SERVO, LIMIT RUN and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.
+OUTPUT, HV SERVO, LIMIT RUN, SERVO and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.

@@ -9761,12 +9761,6 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_GAPS,
 UI_SERVO_TEXT(SERVO_STR_RA_R_PROG_HEAD,
     "PROGRAMMING (end points, unit not known)",
     "PROGRAMMIEREN (Endpoints, Einheit unbekannt)")
-UI_SERVO_TEXT(SERVO_STR_RA_R_REG_1,
-    "End point 1:    ",
-    "Endpoint 1:      ")
-UI_SERVO_TEXT(SERVO_STR_RA_R_REG_2,
-    "End point 2:    ",
-    "Endpoint 2:      ")
 UI_SERVO_TEXT(SERVO_STR_RA_R_SIDE_LO,
     "moves the 1000us side",
     "bewegt die 1000us-Seite")
@@ -10155,6 +10149,98 @@ UI_TEXT(IMU_ERR_NONE_FOUND, 53,
 UI_TEXT(IMU_ERR_ARG, 53,
     "THE ADDRESS OR THE PIN IS NOT ONE THE HC-05 TAKES",
     "ADRESSE ODER PIN NIMMT DER HC-05 NICHT AN")
+
+/* Slice 8: the LIMIT RUN settings' SERVO row and the limit run's lines for a
+ * Hitec servo (servo_limit_seam.c). */
+UI_TEXT(SV_ROW_LIM_SERVO, 0,
+    "SERVO",
+    "SERVO")
+UI_TEXT(SV_LIM_SERVO_KST, 12,
+    "KST/CHASERVO",
+    "KST/CHASERVO")
+UI_TEXT(SV_LIM_SERVO_HITEC, 12,
+    "HITEC",
+    "HITEC")
+UI_TEXT(SV_LIM_PROG_NOTE_HITEC, 0,
+    "REDUCES LEFT/RIGHT END ON A HITEC SERVO",
+    "VERRINGERT LEFT/RIGHT END BEI HITEC-SERVOS")
+UI_TEXT(SV_LIM_HITEC_RANGE, 58,
+    "HITEC: PULSE MIN/MAX MUST COVER %u-%uus",
+    "HITEC: PULS MIN/MAX MUSS %u-%uus ABDECKEN")
+UI_TEXT(SV_SUM_LIM_HITEC, 58,
+    "%s, HITEC %s",
+    "%s, HITEC %s")
+UI_TEXT(SV_LIM_RESTORE_HITEC, 31,
+    "LOAD %s IN FILES",
+    "%s IN DATEIEN LADEN")
+UI_TEXT(SV_LIM_NO_BACKUP, 31,
+    "NO BACKUP FILE",
+    "KEINE SICHERUNGSDATEI")
+UI_TEXT(RA_SERVO, 50,
+    "SERVO %s",
+    "SERVO %s")
+UI_TEXT(RA_SERVO_HITEC, 50,
+    "SERVO HITEC %s",
+    "SERVO HITEC %s")
+
+/* Slice 8: the limit run on a Hitec servo (servo_limrun.h, "Servo
+ * families"): its reason, its report's lines. */
+UI_SERVO_TEXT(SERVO_STR_L_WHY_NOT_HITEC,
+    "no Hitec servo read",
+    "kein Hitec-Servo gelesen")
+UI_SERVO_TEXT(SERVO_STR_L_R_PROG_HEAD_HITEC,
+    "PROGRAMMING (LEFT END and RIGHT END, "
+    "travel units)",
+    "PROGRAMMIEREN (LEFT END und RIGHT END, "
+    "Wegeinheiten)")
+UI_SERVO_TEXT(SERVO_STR_L_R_SERVO_HITEC,
+    "Servo:          Hitec %s, DIRECTION %s",
+    "Servo:           Hitec %s, DIRECTION %s")
+UI_SERVO_TEXT(SERVO_STR_L_R_PULSES_HITEC,
+    "Pulse model:    NEUTRAL %.1fus, full "
+    "travel at %.1fus and %.1fus, not measured",
+    "Pulsmodell:      NEUTRAL %.1fus, voller "
+    "Weg bei %.1fus und %.1fus, nicht gemessen")
+UI_SERVO_TEXT(SERVO_STR_L_R_UNIT_HITEC_D,
+    "Unit: counts from NEUTRAL 0xC2, 74.5 a "
+    "degree on a standard servo (the D series "
+    "manual); the travel is taken as linear in "
+    "the pulse from NEUTRAL to the pulse model's "
+    "full travel, which is not measured.",
+    "Einheit: Zählwerte ab NEUTRAL 0xC2, 74.5 "
+    "je Grad an einem Standardservo (Handbuch "
+    "der D-Serie); der Weg gilt als linear im "
+    "Puls von NEUTRAL bis zum vollen Weg des "
+    "Pulsmodells, das ist nicht gemessen.")
+UI_SERVO_TEXT(SERVO_STR_L_R_UNIT_HITEC_C,
+    "Unit: the raw cell, its unit not known; "
+    "the travel is taken as linear in the cell "
+    "and in the pulse from NEUTRAL to the pulse "
+    "model's full travel, which is not measured.",
+    "Einheit: die rohe Zelle, ihre Einheit "
+    "unbekannt; der Weg gilt als linear in der "
+    "Zelle und im Puls von NEUTRAL bis zum "
+    "vollen Weg des Pulsmodells, das ist nicht "
+    "gemessen.")
+UI_SERVO_TEXT(SERVO_STR_L_R_RESTORE_HITEC,
+    "Restore:        load the backup file on "
+    "FILES of the Hitec programmer and write it "
+    "with WRITE n VALUES",
+    "Rückholen:       die Sicherungsdatei unter "
+    "DATEIEN des Hitec-Programmierers laden und "
+    "mit n WERTE SCHREIBEN schreiben")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM_HITEC,
+    "Mode:           search, then LEFT END "
+    "and RIGHT END programmed",
+    "Modus:           Suche, dann LEFT END "
+    "und RIGHT END programmiert")
+UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM_NONE_HITEC,
+    "Mode:           search, then LEFT END "
+    "and RIGHT END to be programmed (no "
+    "search ran)",
+    "Modus:           Suche, dann LEFT END "
+    "und RIGHT END zu programmieren (keine "
+    "Suche gelaufen)")
 
 #undef UI_TEXT
 #undef UI_SETTING_LABEL

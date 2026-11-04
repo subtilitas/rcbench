@@ -179,6 +179,10 @@ SCREENS = {
     "servo-limrun-stopped": ("servo-limrun-stopped.png", "servo", "dark"),
     "servo-limrun-restore": ("servo-limrun-restore.png", "servo", "dark"),
     "servo-limrun-range":   ("servo-limrun-range.png",   "servo", "dark"),
+    # The LIMIT RUN settings on PROG PORT with SERVO at HITEC and the Hitec
+    # programmer's series D SERIES: SERVO PULSES gone, the note for a Hitec
+    # servo.
+    "servo-limrun-hitec":   ("servo-limrun-hitec.png",   "servo", "dark"),
     # The programmer for KST and Chaservo servos over the left card: each
     # tab, each list and each page that asks for a hold, against the
     # simulated servo.

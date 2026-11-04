@@ -2,13 +2,16 @@
  * @file
  * @brief RUDDER's AUTO box: TARGET 1000us and 2000us, MARGIN, TOLERANCE,
  *        START held 2s, the step, the last result and the report; and the
- *        run behind it (servo_rudder_auto.h) on a KST or Chaservo servo on
- *        the programming port, its steps done the way a finger does them.
+ *        run behind it (servo_rudder_auto.h) on a KST, Chaservo or Hitec
+ *        servo on the programming port, its steps done the way a finger
+ *        does them.
  *
  * See servo_rudder_auto_int.h for the layout.  The run takes the angle the
  * screen takes in (servo_screen_encoder()), as RUDDER's readout shows it:
  * the deflection from ZERO.  Its sessions with the programmer are the
- * limit run's (kst_panel_run_*, servo_limit_panel.c lim_apply()).
+ * limit run's, through the seam servo_limit_seam.c picks by the family:
+ * the LIMIT RUN settings' SERVO row, which follows the programmer last
+ * opened on PROGRAM, and for HITEC the Hitec programmer's series.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,7 +20,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "kst_panel.h"
 #include "kst_port.h"
 #include "log_name.h"
 #include "prog5v_box.h"
@@ -51,6 +53,15 @@ _Static_assert(RA_LINE_Y + RA_LINES * RA_LINE_P - 4 <= STOP_FLOOR,
                "the lines end above the alert band");
 _Static_assert(RA_START_Y + UI_TAP_MIN + 8 <= RA_LINE_Y,
                "START ends above the lines");
+
+/* The families are the limit run's, value for value: one SERVO row and one
+ * seam serve both runs. */
+_Static_assert((int)SERVO_RAUTO_FAM_KST == (int)SERVO_LIMRUN_FAM_KST
+                   && (int)SERVO_RAUTO_FAM_HITEC_D
+                          == (int)SERVO_LIMRUN_FAM_HITEC_D
+                   && (int)SERVO_RAUTO_FAM_HITEC_C
+                          == (int)SERVO_LIMRUN_FAM_HITEC_C,
+               "AUTO's families are the limit run's");
 
 /* ------------------------------------------------------------ the state */
 
@@ -153,7 +164,7 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     c->target_deg[1] = settings_get(SET_RUDDER_DEFL_HI);
     c->margin_pct    = (uint8_t)settings_get_int(SET_RUDDER_MARGIN);
     c->tol_ddeg = (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f);
-    c->family    = SERVO_RAUTO_FAM_KST;
+    c->family    = lim_family();
     c->centre_us = s.centre_us;
     const float len = settings_get(SET_RUDDER_LEN_MM);
     c->len_mm = (len >= SERVO_RUDDER_LEN_MIN_MM) ? len : 0.0f;
@@ -256,7 +267,8 @@ static bool ra_apply(const servo_rauto_do_t *d)
         post(SERVO_CMD_ARM, 0);
         ++s.arm_rev;
     }
-    kst_prog_msg_id_t m = KST_PROG_MSG_NONE;
+    const uint8_t fam = s.ra.run.cfg.family;
+    bool taken = true;
     if (d->connect && lim_pd_feeds()
         && (!s.sup.output || !s.ra.sup_online)) {
         /* A PD mini the run did not start with, or one whose output is
@@ -269,20 +281,19 @@ static bool ra_apply(const servo_rauto_do_t *d)
         }
         again = true;
     } else if (d->connect) {
-        m = kst_panel_run_connect(
-            lim_pd_feeds(),
+        taken = lim_seam_connect(
+            fam, lim_pd_feeds(),
             (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
             (uint16_t)lroundf(supply_screen_set_i() * 1000.0f));
     } else if (d->write) {
-        m = kst_panel_run_write(d->value[0], d->value[1]);
+        taken = lim_seam_write(fam, d->value);
     } else if (d->pulses) {
-        m = kst_panel_run_pulses(d->pulse_dus[0], d->pulse_dus[1]);
+        taken = lim_seam_pulses(fam, d->pulse_dus);
     } else if (d->leave) {
-        m = kst_panel_run_leave();
-        s.ra.leaving = m == KST_PROG_MSG_NONE
-                       && !servo_rauto_running(&s.ra.run);
+        taken = lim_seam_leave(fam);
+        s.ra.leaving = taken && !servo_rauto_running(&s.ra.run);
     }
-    if (m != KST_PROG_MSG_NONE) {
+    if (!taken) {
         servo_rauto_refused(&s.ra.run, test_now());
         again = true;
     }
@@ -317,42 +328,60 @@ static void ra_step(void)
     }
 }
 
+/**
+ * @brief The servo the programmer holds, in AUTO's terms: a Hitec servo
+ *        with no pulses (servo_rauto_servo_t), its DIRECTION CCW as
+ *        REVERSION.
+ * @param fam the run's family
+ * @param sv receives it
+ */
+static void ra_servo(uint8_t fam, servo_rauto_servo_t *sv)
+{
+    servo_limrun_servo_t l;
+    sv->ok = lim_seam_servo(fam, &l);
+    sv->value[0] = l.angle[0];
+    sv->value[1] = l.angle[1];
+    sv->lo = l.lo_raw;
+    sv->hi = l.hi_raw;
+    sv->reversion = l.reversion;
+    if (fam == SERVO_RAUTO_FAM_KST) {
+        memcpy(sv->pulse_dus, l.pulse_dus, sizeof(sv->pulse_dus));
+    }
+}
+
 /** @brief The programmer's answer to the step under way. */
 static void ra_poll(void)
 {
     if (!servo_rauto_programming(&s.ra.run)) {
         return;
     }
-    const kst_panel_run_t r = kst_panel_run_poll();
-    if (r == KST_PANEL_RUN_NONE || r == KST_PANEL_RUN_BUSY) {
+    const uint8_t fam = s.ra.run.cfg.family;
+    bool ok = false;
+    if (!lim_seam_poll(fam, &ok)) {
         return;
     }
-    const bool ok = r == KST_PANEL_RUN_OK;
     servo_rauto_servo_t sv;
     memset(&sv, 0, sizeof(sv));
-    unsigned type_no = 0u;
     switch (s.ra.run.phase) {
     case SERVO_RAUTO_PH_READ:
     case SERVO_RAUTO_PH_CONNECT:
         if (!ok) {
-            if (kst_panel_run_no_servo()) {
+            if (lim_seam_no_servo(fam)) {
                 servo_rauto_no_servo(&s.ra.run, test_now());
             } else {
                 servo_rauto_refused(&s.ra.run, test_now());
             }
             break;
         }
-        sv.ok = kst_panel_run_servo(sv.value, &sv.lo, &sv.hi, &sv.reversion,
-                                    &type_no, sv.pulse_dus);
+        ra_servo(fam, &sv);
         servo_rauto_connected(&s.ra.run, &sv, test_now());
         break;
     case SERVO_RAUTO_PH_WRITE:
         if (ok) {
-            (void)kst_panel_run_servo(sv.value, &sv.lo, &sv.hi,
-                                      &sv.reversion, &type_no, sv.pulse_dus);
+            ra_servo(fam, &sv);
         }
         /* The file saved before the run's first write. */
-        servo_rauto_backup(&s.ra.run, kst_panel_run_backup());
+        servo_rauto_backup(&s.ra.run, lim_seam_backup(fam));
         if (s.ra.run.pulse_op) {
             servo_rauto_pulsed(&s.ra.run, ok, ok ? sv.pulse_dus : NULL,
                                test_now());
@@ -382,17 +411,13 @@ static void ra_ended(void)
      * file over, and the session's own backup, saved before that write,
      * holds the servo as the run found it. */
     if (servo_rauto_restore(&s.ra.run)) {
-        const char *f = kst_panel_run_backup();
-        const kst_prog_t *m = kst_panel_model();
-        if ((f == NULL || f[0] == '\0') && kst_prog_backed_up(m)) {
-            f = kst_prog_backup_name(m);
-        }
-        servo_rauto_backup(&s.ra.run, f);
+        servo_rauto_backup(&s.ra.run,
+                           lim_seam_backup_kept(s.ra.run.cfg.family));
     }
     if (s.ra.leaving) {
         s.ra.end_due = true;
     } else {
-        kst_panel_run_end();
+        lim_seam_end(s.ra.run.cfg.family);
     }
     test_tell();
     ++s.ctrl_rev;
@@ -400,13 +425,12 @@ static void ra_ended(void)
 
 void rauto_leave_follow(void)
 {
-    if (s.ra.leaving
-        && kst_prog_state(kst_panel_model()) != KST_PROG_LEAVING) {
+    if (s.ra.leaving && !lim_seam_leaving(s.ra.run.cfg.family)) {
         s.ra.leaving = false;
     }
     if (s.ra.end_due && !s.ra.leaving) {
         s.ra.end_due = false;
-        kst_panel_run_end();
+        lim_seam_end(s.ra.run.cfg.family);
     }
 }
 
@@ -505,7 +529,7 @@ static void ra_begin(void)
     }
     s.ra.changes   = s.changes;
     s.ra.sup_watch = false;
-    kst_panel_run_begin();
+    lim_seam_begin(c.family);
     if (!lim_fixed_supply()) {
         servo_test_reading_t r;
         memset(&r, 0, sizeof(r));
@@ -521,9 +545,7 @@ static void ra_begin(void)
     s.ra.report = false;
     s.ra.off    = !settings_get_bool(SET_LOG_USER);
     close_panels();
-    if (kst_panel_is_open() && !kst_panel_holds_port()) {
-        kst_panel_close();
-    }
+    lim_seam_close_pages();
     servo_invalidate();
 }
 
@@ -681,6 +703,42 @@ static void why_text(char *b, size_t n)
     }
 }
 
+/**
+ * @brief The servo a run programs: SERVO KST/CHASERVO, or SERVO HITEC with
+ *        the Hitec programmer's series.
+ * @param b where it goes
+ * @param n its size
+ * @param fam servo_rauto_family_t
+ */
+static void servo_name(char *b, size_t n, uint8_t fam)
+{
+    if (fam == SERVO_RAUTO_FAM_KST) {
+        snprintf(b, n, TR(RA_SERVO), TR(SV_LIM_SERVO_KST));
+    } else {
+        snprintf(b, n, TR(RA_SERVO_HITEC),
+                 ui_setting_option(SET_HITEC_SERIES,
+                                   fam == SERVO_RAUTO_FAM_HITEC_D ? 1 : 0));
+    }
+}
+
+/**
+ * @brief How the values before the run come back: KST's RESTORE, or the
+ *        Hitec programmer's backup file loaded on its FILES.
+ * @param b where it goes
+ * @param n its size
+ * @param r the ended run
+ */
+static void restore_text(char *b, size_t n, const servo_rauto_t *r)
+{
+    if (r->cfg.family == SERVO_RAUTO_FAM_KST) {
+        snprintf(b, n, TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+    } else if (r->servo.backup[0] != '\0') {
+        snprintf(b, n, TR(SV_LIM_RESTORE_HITEC), r->servo.backup);
+    } else {
+        snprintf(b, n, "%s", TR(SV_LIM_NO_BACKUP));
+    }
+}
+
 const char *rauto_line(int i, char *buf, size_t n)
 {
     if (buf == NULL || n == 0u) {
@@ -730,10 +788,10 @@ const char *rauto_line(int i, char *buf, size_t n)
         break;
     case 2:
         if (r->state != SERVO_RAUTO_DONE || running) {
-            break;
-        }
-        if (servo_rauto_restore(r)) {
-            snprintf(buf, n, TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+            /* The servo the run programs, or one started now would. */
+            servo_name(buf, n, running ? r->cfg.family : lim_family());
+        } else if (servo_rauto_restore(r)) {
+            restore_text(buf, n, r);
         } else {
             file_name(buf, n);
         }

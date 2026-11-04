@@ -144,7 +144,7 @@ Der Endlagenlauf sucht, wo das eingebaute Servo an jedem Ende seines Wegs anläu
 ![Der Endlagenlauf, bereit](view:servo-limrun-ready)
 
 1. OPTIONEN auf der Karte antippen, dann ENDLAGENLAUF und NUR SUCHE oder SUCHEN + PROGRAMMIEREN wählen.
-2. Mit ZIEL auf PROG-PORT SERVOPULSE antippen und BEHALTEN oder 1000-2000 wählen. Es beginnt bei BEHALTEN.
+2. Mit ZIEL auf PROG-PORT SERVO antippen und KST/CHASERVO oder HITEC wählen, den Programmierer, zu dem die Sitzungen des Laufs gehen; es übernimmt den zuletzt unter PROGRAMMIEREN geöffneten Programmierer. Mit KST/CHASERVO SERVOPULSE antippen und BEHALTEN oder 1000-2000 wählen. Es beginnt bei BEHALTEN.
 3. Das Home-Tag antippen, zurück zu den Karten.
 4. ENDLAGENLAUF STARTEN 2s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts und zeigt `Halte 2s, um den Endlagenlauf zu starten.` im Alert-Band.
 5. TEST bleibt zu sehen. Der Kasten auf der linken Karte von LIVE zeigt die Phase, die Seite und den Puls sowie den Ausgang, den er treibt.
@@ -215,6 +215,18 @@ Jede anlaufende Seite bekommt zwei Schreibvorgänge, v0 der Wert, den ihr Regist
 Beispiel: NEUTRAL 1500,2us, PULSE LOWER 900,0us, v0 150, die erste Suche frei bei 1000us und blockiert bei 990us. Der Vorhalt ist 150 x 0,850 x 1,03 = 132. Bei 132 ist die Suche frei bis 930us; der Endwert ist 132 x 0,950 = 125.
 
 Nahe der Pulsgrenze, wo der Vorhalt den Anschlag um weniger als 20us verschöbe, schreibt der Lauf den Endwert sofort: v0 x der Anteil am letzten freien Puls der ersten Suche. Das erste Schreiben der ersten anlaufenden Seite findet auch, welches Register diese Seite begrenzt. Zuletzt sucht der Lauf beide Enden erneut: BESTANDEN, wenn beide frei sind, NICHT BESTANDEN, wenn eines anläuft. Ein Lauf schreibt höchstens 8 Werte: die zwei Pulse, zwei auf jeder Seite und zwei, um das Register zu finden. Ein Wert unter 50 ist eine weiche Grenze: Das Halten von 2s beim Start ist die Zustimmung dazu.
+
+### Hitec-Servos
+
+![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC](view:servo-limrun-hitec)
+
+Mit SERVO auf HITEC gehen die Sitzungen des Laufs an den [Hitec-Programmierer](servo-programmer.md), in der Serie, die seine Zeile SERIE hält. Die Register sind LEFT END und RIGHT END: an einem Servo der D-Serie 0xB2 und 0xB0 in Zählwerten ab NEUTRAL 0xC2, an einem klassischen Servo die rohen Zellen 0x14 und 0x13, an einem CCW-Servo vertauscht. Ein Hitec-Servo hat keine Pulsregister, also wird SERVOPULSE nicht angezeigt, und der Lauf nimmt ein Pulsmodell, das nicht gemessen ist: NEUTRAL 1500,0us, der volle Weg bei 850,0us und 2150,0us an der D-Serie, bei 900,0us und 2100,0us an einem klassischen Servo. PULS MIN und PULS MAX müssen sie enthalten, sonst sagt die Karte `HITEC: PULS MIN/MAX MUSS 850-2150us ABDECKEN`; der TYP WEIT, 800 bis 2200us, enthält beide.
+
+- Ein Schreiben der D-Serie speichert und startet das Servo in seiner Sitzung neu: kein PD mini nötig.
+- Ein klassisches Servo braucht für jede Sitzung, auch das Lesen, ein PD mini oder PROG 5V am rbmod-Carrier: `Klassische Servos brauchen ein PD mini: Der Prüfstand schaltet die Versorgung.`
+- Das Halten von 2s beim Start ist die Zustimmung, nach der ÄNDERUNG PRÜFEN fragt; jedes Schreiben schaltet SCHREIBEN INS SERVO FREIGEBEN für sich ein und an seinem Ende aus.
+- Antwortet beim ersten VERBINDEN kein Servo, endet der Lauf mit `kein Hitec-Servo gelesen`.
+- Die Sicherungsdatei HITEC001 bis HITEC999 wird vor dem ersten Schreiben gespeichert. Zum Zurückspielen sie unter DATEIEN des Hitec-Programmierers laden und schreiben: das Feld sagt `HITEC001 IN DATEIEN LADEN`.
 
 ### Was einen Endlagenlauf beendet
 

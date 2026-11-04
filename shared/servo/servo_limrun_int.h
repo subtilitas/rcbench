@@ -27,6 +27,23 @@ typedef enum {
 } limrun_stage_t;
 
 /**
+ * @brief The reason a run ends on when its first CONNECT reads no servo of the
+ *        family (servo_limrun_family.c).
+ * @param family servo_limrun_family_t.
+ * @return SERVO_LIMRUN_WHY_NOT_HITEC for a Hitec family, else
+ *         SERVO_LIMRUN_WHY_NOT_KST.
+ */
+servo_limrun_why_t limrun_not_servo(uint8_t family);
+
+/**
+ * @brief Whether a configuration's family is one a run takes: in the enum,
+ *        and SERVO PULSES only for KST (servo_limrun_family.c).
+ * @param cfg The configuration.
+ * @return true when servo_limrun_start() may take it.
+ */
+bool limrun_family_ok(const servo_limrun_cfg_t *cfg);
+
+/**
  * @brief Distance from NEUTRAL to a side pulse limit, 0.1us, from the
  *        pulses given. servo_limrun_span() wraps this.
  *
