@@ -595,6 +595,7 @@ static void go(hitec_prog_t *p)
         p->st = ST_SES;
         p->op = OP_WRITE;
         p->wrote = true;
+        p->run_wrote = p->run_wrote || p->run;
         hpg_pump(p);
         return;
     }
@@ -781,8 +782,10 @@ void hpw_check_done(hitec_prog_t *p, hitec_ses_t r)
     /* The two reads agree on every address the plan depends on, and the
      * second read leaves the rest of the image as the first read left it:
      * the plan hpw_start() made from the first read is the plan from
-     * both. */
-    if (p->ses.plan.n != 0u && hpf_backup(p)) {
+     * both.  A later session of a run saves no backup file: the file of
+     * the run's first write holds the servo as the run found it, and this
+     * session's backup holds the run's own writes. */
+    if (p->ses.plan.n != 0u && !(p->run && p->run_wrote) && hpf_backup(p)) {
         /* The session's backup goes to its file first. */
         return;
     }

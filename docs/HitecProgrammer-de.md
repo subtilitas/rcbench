@@ -937,6 +937,70 @@ IOmcu.
 
 ![Die Liste von Hitec-D-Empfang](img/de/servo-hitec-rx.png)
 
+## Läufe
+
+Ein Lauf ist eine Folge von Schreibvorgängen, die ein Werkzeug von SERVO
+ohne die Seiten des Bedieners macht, wie der Endlagenlauf an einem
+KST-Servo
+([Die Weggrenzen des Servos programmieren](Servo-de.md#die-weggrenzen-des-servos-programmieren)).
+Die Programmierung hat die Schnittstelle dafür an einem Hitec-Servo
+(`shared/bench/include/hitec_prog_run.h`,
+`shared/ui/include/hitec_panel_run.h`). Keine Seite startet einen Lauf an
+einem Hitec-Servo.
+
+Ein Lauf schreibt ENDE LINKS und ENDE RECHTS und sonst nichts, in
+Wegeinheiten:
+
+| Serie | Links | Rechts | Einheit | Ein Lauf nimmt |
+| --- | --- | --- | --- | --- |
+| D-SERIE | 0xC2 - 0xB2 | 0xB0 - 0xC2 | Zähler ab NEUTRAL 0xC2; 74,5 je Grad an einem Standardservo (Handbuch der D-Serie) | 1 bis zum kleineren von 0xC2 - 1 und 16383 - 0xC2: 8191 bei NEUTRAL 8192 |
+| KLASSISCH | Zelle 0x14 an einem CW-Servo, 0x13 an einem CCW-Servo | Zelle 0x13 an einem CW-Servo, 0x14 an einem CCW-Servo | die Zelle roh | 0 bis 255 |
+
+CW und CCW sind DREHRICHTUNG, wie gelesen: Register 0x5E der D-Serie,
+Bit 0 der klassischen Zelle 0x1B. Ein Servo der D-Serie zählt in beiden
+Richtungen gleich.
+
+- Der Start eines Laufs ist ein Knopf, 2s gehalten. Dieses Halten ist die
+  Zustimmung, nach der ÄNDERUNG PRÜFEN fragt: die eigenen Änderungen des
+  Laufs an ENDE LINKS und ENDE RECHTS nehmen ihre Regel als bestätigt, und
+  jeder Schreibvorgang des Laufs schaltet SCHREIBEN INS SERVO FREIGEBEN für
+  sich ein und an seinem Ende aus. Eine Änderung auf den Reitern der
+  Programmierung öffnet auch während eines Laufs ÄNDERUNG PRÜFEN. Außerhalb
+  eines Laufs schreibt die Schnittstelle nichts und sagt `Schreiben ist
+  gesperrt. Zuerst SCHREIBEN INS SERVO FREIGEBEN einschalten.`
+- Ein Wert außerhalb des Bereichs wird abgelehnt, nicht begrenzt: nichts
+  wird geändert, nichts gesendet, und der Schalter bleibt aus.
+- Jeder Schreibvorgang eines Laufs ist ein Schreiben wie n WERTE SCHREIBEN:
+  das zweite Lesen, der Vermerk auf der Karte, dann die Register der
+  D-Serie im Abstand von 20ms, das Speichern (0x70 = 0xFFFF), 100ms, der
+  Neustart (0x46 = 1), 1000ms und das Zurücklesen der 21 Register; oder
+  jede klassische Zelle mit ihrem Ausgleich in 0x1C, dann das Zurücklesen
+  der Zellen 0x00 bis 0x23. Ein Lauf zählt ein Schreiben als erledigt,
+  wenn sein Zurücklesen beide Werte hält. Ein Schreiben, dessen
+  Zurücklesen abweicht, lässt den Schritt des Laufs scheitern; die Werte,
+  die das Servo hält, liest der Lauf aus diesem Zurücklesen.
+- Die Backup-Datei: das erste Schreiben des Laufs, das einen Schritt
+  sendet, speichert das Backup der Sitzung unter dem nächsten
+  vorgeschlagenen Namen, HITEC001 bis HITEC999, bevor etwas ans Servo
+  geht. Die Datei hält das Servo, wie der Lauf es vorfand. Eine spätere
+  Sitzung desselben Laufs, nach VERLASSEN und VERBINDEN, speichert keine
+  Datei: ihr eigenes Backup hält die früheren Schreibvorgänge des Laufs.
+  Ohne Karte liegt das Backup nur im RAM, und VERLASSEN beendet es.
+- ZURÜCKSPIELEN nach einem Lauf: lade die Backup-Datei des Laufs unter
+  DATEIEN ([Laden einer Backup-Datei](#laden-einer-backup-datei)) und
+  schreibe sie mit n WERTE SCHREIBEN. Sie bringt beide Enden zurück, mit
+  jeder anderen Adresse, die ein Schreiben sendet. ZURÜCKSPIELEN des
+  Backups der Sitzung bringt das Servo zurück, wie diese Sitzung es
+  vorfand; nach einer späteren Sitzung des Laufs ist das ein Wert des
+  Laufs.
+- Das Ende des Laufs schaltet SCHREIBEN INS SERVO FREIGEBEN aus, verwirft
+  den Entwurf und setzt Programmierspannung und -strom auf die Werte der
+  Einstellungen zurück.
+- Welche Hornstellung ein Ende der D-Serie an einem CCW-Servo ergibt und
+  welche klassische Zelle an einem CCW-Servo welche Seite begrenzt, ist
+  nicht gemessen; die Wegeinheiten folgen dem Registermodell
+  (`protocols/hitec`).
+
 ## Bekannte Grenzen
 
 - Klassische Schreibvorgänge über den IOmcu sind an einem Servo gelaufen,

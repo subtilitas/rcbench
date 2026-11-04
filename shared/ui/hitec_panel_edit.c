@@ -371,6 +371,22 @@ static void ask_write(uint8_t kind)
     }
 }
 
+void hpn_supply_caps(void)
+{
+    if (ui_board_prog_5v_pin() >= 0) {
+        /* The carrier's ports run from their own fixed 5V, which the PD
+         * mini's limits do not bound. */
+        hitec_prog_supply_caps(&hp.prog, 0u, 0u);
+    } else {
+        /* Against the SUPPLY screen's limits as they are now. */
+        const supply_caps_t caps = supply_screen_caps();
+
+        hitec_prog_supply_caps(&hp.prog,
+                               (uint16_t)lroundf(caps.v_max * 1000.0f),
+                               (uint16_t)lroundf(caps.i_max * 1000.0f));
+    }
+}
+
 /**
  * @brief The action of the PORT row.
  * @param p the programmer
@@ -380,18 +396,7 @@ static void port_act(hitec_prog_t *p)
     const hitec_prog_state_t st = hitec_prog_state(p);
 
     if (st == HITEC_PROG_PWM) {
-        if (ui_board_prog_5v_pin() >= 0) {
-            /* The carrier's ports run from their own fixed 5V, which the
-             * PD mini's limits do not bound. */
-            hitec_prog_supply_caps(p, 0u, 0u);
-        } else {
-            /* Against the SUPPLY screen's limits as they are now. */
-            const supply_caps_t caps = supply_screen_caps();
-
-            hitec_prog_supply_caps(p,
-                                   (uint16_t)lroundf(caps.v_max * 1000.0f),
-                                   (uint16_t)lroundf(caps.i_max * 1000.0f));
-        }
+        hpn_supply_caps();
         (void)hitec_prog_connect(p);
     } else if (st == HITEC_PROG_HELD) {
         hpn_page_leave();

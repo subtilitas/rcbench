@@ -70,6 +70,7 @@ set(SRCS
     hitec_panel_touch.c
     hitec_panel_draw.c
     hitec_panel_file.c
+    hitec_panel_run.c
     analyser_screen.c
     balance_screen.c
     battery_screen.c

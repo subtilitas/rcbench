@@ -561,6 +561,10 @@ typedef struct {
     bool     write_on;        /**< ENABLE WRITE TO SERVO                  */
     bool     must_read;       /**< a write failed: READ ALL comes first   */
     bool     wrote;           /**< a write of this CONNECT went out       */
+    bool     run;             /**< a run holds the programmer
+                                   (hitec_prog_run.h)                     */
+    bool     run_wrote;       /**< a write of the run went out: a later
+                                   session of the run saves no backup file */
     uint8_t  wr_kind;         /**< hitec_prog_wr_t of the running write   */
     uint8_t  wr_values;       /**< the values it changes                  */
     bool     wr_own_rec;      /**< it made the record that stands         */

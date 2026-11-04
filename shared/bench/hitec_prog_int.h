@@ -9,8 +9,10 @@
  *
  * The functions one file calls of another are prefixed hpg_ (in
  * hitec_prog.c), hpw_ (in hitec_prog_write.c) and hpf_ (in
- * hitec_prog_file.c).  Nothing outside the three files includes this
- * header; the interface is hitec_prog.h.
+ * hitec_prog_file.c).  hitec_prog_run.c, a run's writes, says its
+ * messages through hpg_say2() and defines none of these.  Nothing outside
+ * the four files includes this header; the interface is hitec_prog.h and
+ * hitec_prog_run.h.
  *
  * SPDX-License-Identifier: MIT
  */
