@@ -1356,6 +1356,15 @@ the task is `shared/ui/servo_rudder_panel.c`.
   surface reads 50.0mm; the arc L x deflection would read 52.4mm.
 - MAX holds the largest deflection each side, from every reading on show,
   on every task. ZERO and RESET MAX clear it.
+- The side view right of the state lines draws the surface in section,
+  leading edge on the left: a grey fixed surface, the hinge, and the flap
+  as a cyan wedge at the deflection shown. Positive deflection draws the
+  trailing edge up, so the drawing reads as the TRAILING EDGE sign. The
+  flap is 62px long in an area of 190 x 152px; ticks mark 0, ±30, ±60 and
+  ±90°, dashed lines the MAX of each side and, in AUTO's box, the two
+  targets in amber. A deflection beyond ±90° is drawn at ±90°; the
+  numbers stay as they are. Without a reading the flap lies dim on the
+  neutral line. The drawing is `shared/ui/servo_rudder_flap.c`.
 - 1000us and 2000us command those pulses as angles of the type in force,
   held to TRAVEL and the type's pulse range; CENTRE commands PULSE CENTRE
   plus TRIM. All three and the rotary knob act only while the bench is
@@ -1390,7 +1399,10 @@ eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
 ### Running it
 
 - AUTO shows its box in the place of LENGTH, the three drive buttons and
-  the state lines; the readout, the ZERO row and the output card stay.
+  the state lines; the readout, the ZERO row, the side view and the output
+  card stay. The side view adds TARGET 1000us on the negative side and
+  TARGET 2000us on the positive one, each on the side the last run
+  measured it on.
   MANUAL, in AUTO's place, brings them back. While the run runs, MANUAL,
   ZERO and RESET MAX are refused and drawn dimmed, so the run measures from
   the zero it started with, and the rotary knob moves nothing.

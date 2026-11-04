@@ -20,6 +20,12 @@ RUDER, eine Aufgabe in der Leiste von [SERVO](servo.md), steuert ein Servo und z
 
 Die mm sind der Abstand der Hinterkante von der Neutralebene, nicht der Bogen, den sie zurücklegt. Bei 30° zeigt eine Fläche von 100mm 50.0mm.
 
+## Die Seitenansicht
+
+Rechts der Statuszeilen ist die Fläche im Schnitt gezeichnet, die Nasenkante links: die graue feste Fläche, das Scharnier und das Ruder als cyanfarbener Keil im Ausschlag, den AUSSCHLAG zeigt. Positiver Ausschlag zeichnet die Hinterkante nach oben. Striche markieren 0, ±30, ±60 und ±90°; gestrichelte Linien das MAX jeder Seite. Die Länge des Ruders bleibt fest, also wird ein Ausschlag über ±90° bei ±90° gezeichnet, während die Zahlen weiterzählen. Ohne Messwert liegt das Ruder gedimmt auf der Neutrallinie.
+
+![Die Fläche bei -85.0°](view:servo-rudder-85)
+
 ## LÄNGE
 
 LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis 500mm in Schritten von 1mm, über einen Neustart gespeichert. Ein Tippen öffnet die Zifferntastatur. 1 bis 9mm werden abgelehnt, und die Tastatur zeigt `0 oder 10 bis 500mm`. Mit LÄNGE auf 0 zeigt die Anzeige nur Grad und fragt in der mm-Spalte nach der LÄNGE.
@@ -55,7 +61,7 @@ LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis
 
 ## AUTO
 
-AUTO programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite eingegebenen Ausschlag erreichen. Das Servo ist die [Option SERVO des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs), die den zuletzt unter PROGRAMMIEREN geöffneten Programmierer übernimmt; die dritte Zeile des Kastens nennt es, `SERVO HITEC D-SERIE`. Der Kasten nimmt den Platz von LÄNGE, den Tasten zum Ansteuern und den Statuszeilen ein; MANUELL bringt sie zurück.
+AUTO programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite eingegebenen Ausschlag erreichen. Das Servo ist die [Option SERVO des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs), die den zuletzt unter PROGRAMMIEREN geöffneten Programmierer übernimmt; die dritte Zeile des Kastens nennt es, `SERVO HITEC D-SERIE`. Der Kasten nimmt den Platz von LÄNGE, den Tasten zum Ansteuern und den Statuszeilen ein; MANUELL bringt sie zurück. Die Seitenansicht bleibt und zeigt zusätzlich die beiden Sollwerte als gestrichelte Linien in Bernstein: 1000us auf der negativen Seite, 2000us auf der positiven, oder jedes auf der Seite, auf der der letzte Lauf es gemessen hat.
 
 ![Der Kasten von AUTO, ARMED](view:servo-rudder-auto)
 

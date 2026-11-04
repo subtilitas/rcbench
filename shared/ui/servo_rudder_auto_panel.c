@@ -46,11 +46,13 @@
 #define RA_ROW2_Y (CARD_Y + 172)         /**< MARGIN and TOLERANCE. */
 #define RA_START_Y (CARD_Y + 292)        /**< START. */
 #define RA_LINE_Y (CARD_Y + 348)         /**< The first line. */
-#define RA_LINE_P 24                     /**< The lines' pitch, px. */
+#define RA_LINE_GAP 4                    /**< Between two lines, px. */
+/** @brief The room the lines take, down to the alert band: 88px. */
+#define RA_LINES_H (STOP_FLOOR - RA_LINE_Y)
 
 _Static_assert(2 * RA_HALF_W + RA_GAP == RA_W, "two halves fill the column");
-_Static_assert(RA_LINE_Y + RA_LINES * RA_LINE_P - 4 <= STOP_FLOOR,
-               "the lines end above the alert band");
+_Static_assert(RA_LINES_H >= RA_LINES * 20 + (RA_LINES - 1) * RA_LINE_GAP,
+               "three lines of one row each fit above the alert band");
 _Static_assert(RA_START_Y + UI_TAP_MIN + 8 <= RA_LINE_Y,
                "START ends above the lines");
 
@@ -101,7 +103,7 @@ gfx_rect_t rauto_rect(rauto_ctl_t k)
             (int16_t)(RA_X + ((k == RA_C_TOL) ? RA_HALF_W + RA_GAP : 0)),
             RA_ROW2_Y, RA_HALF_W, UI_TAP_MIN };
     case RA_C_START:
-        return (gfx_rect_t){ RA_X, RA_START_Y, RA_W, UI_TAP_MIN };
+        return (gfx_rect_t){ RA_X, RA_START_Y, RUD_SIDE_W, UI_TAP_MIN };
     default:
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
@@ -109,8 +111,8 @@ gfx_rect_t rauto_rect(rauto_ctl_t k)
 
 gfx_rect_t rauto_lines_rect(void)
 {
-    return (gfx_rect_t){ RA_X, (int16_t)(RA_LINE_Y - 2), RA_W,
-                         (int16_t)(RA_LINES * RA_LINE_P) };
+    return (gfx_rect_t){ RA_X, (int16_t)(RA_LINE_Y - 2), RUD_SIDE_W,
+                         (int16_t)(RA_LINES_H + 2) };
 }
 
 bool servo_screen_rauto_running(void)
@@ -860,33 +862,91 @@ void rauto_render(gfx_canvas_t *c)
     const gfx_rect_t lr = rauto_lines_rect();
     gfx_fill_rect(c, lr.x, lr.y, lr.w, lr.h, ui_theme_color(UI_C_PANEL));
     const servo_rauto_t *r = &s.ra.run;
+    char line[RA_LINES][96];
+    const char *t[RA_LINES];
     for (int i = 0; i < RA_LINES; ++i) {
-        char line[96];
-        if (rauto_line(i, line, sizeof(line))[0] == '\0') {
-            continue;
-        }
-        /* A refused START and RESTORE in the warning colour, the result
-         * in its verdict's. */
-        const bool warn = (i == 0 && !running
-                           && (s.ra.note != NULL || rauto_blocked() != NULL))
-                          || (i == 2 && servo_rauto_restore(r));
-        gfx_color_t col = ui_theme_color(warn ? UI_C_WARN : UI_C_TEXT_DIM);
-        if (i == 1) {
-            col = r->verdict == SERVO_RAUTO_PASS ? ui_theme_color(UI_C_OK)
-                  : r->verdict == SERVO_RAUTO_FAIL
-                      ? ui_theme_color(UI_C_DANGER)
-                      : ui_theme_color(UI_C_WARN);
-        }
-        /* A limit run's refusal (lim_prog_why()) can run past 50 cells:
-         * the 8 x 16 face takes 62. */
-        const gfx_font_t *face = ui_button_face(line, RA_W, 20, 0,
-                                                SV_FONT_LABEL,
-                                                &gfx_font_8x16);
-        gfx_text_in(c,
-                    (gfx_rect_t){ RA_X, (int16_t)(RA_LINE_Y + i * RA_LINE_P),
-                                  RA_W, 20 },
-                    line, face, col, 1, GFX_ALIGN_LEFT);
+        t[i] = rauto_line(i, line[i], sizeof(line[i]));
     }
+    int pitch = 16;
+    const gfx_font_t *face = rauto_lines_face(t, &pitch);
+    if (face == NULL) {
+        /* Past the room: the 8 x 16 face, cut at the alert band. */
+        face = &gfx_font_8x16;
+    }
+    const gfx_rect_t old = c->clip;
+    if (gfx_clip_intersect(c, lr)) {
+        int y = RA_LINE_Y;
+        for (int i = 0; i < RA_LINES; ++i) {
+            if (t[i][0] == '\0') {
+                continue;
+            }
+            /* A refused START and RESTORE in the warning colour, the result
+             * in its verdict's. */
+            const bool warn =
+                (i == 0 && !running
+                 && (s.ra.note != NULL || rauto_blocked() != NULL))
+                || (i == 2 && servo_rauto_restore(r));
+            gfx_color_t col = ui_theme_color(warn ? UI_C_WARN : UI_C_TEXT_DIM);
+            if (i == 1) {
+                col = r->verdict == SERVO_RAUTO_PASS ? ui_theme_color(UI_C_OK)
+                      : r->verdict == SERVO_RAUTO_FAIL
+                          ? ui_theme_color(UI_C_DANGER)
+                          : ui_theme_color(UI_C_WARN);
+            }
+            y += pitch * ui_text_wrap(c, gfx_rect_make(RA_X, y, RUD_SIDE_W,
+                                                       pitch),
+                                      pitch, t[i], face, col)
+                 + RA_LINE_GAP;
+        }
+    }
+    c->clip = old;
+}
+
+const gfx_font_t *rauto_lines_face(const char *const t[RA_LINES], int *pitch)
+{
+    /* The label face at its own height, else the 8 x 16 one. */
+    static const struct {
+        const gfx_font_t *f;
+        int pitch;
+    } k_face[2] = { { SV_FONT_LABEL, 20 }, { &gfx_font_8x16, 16 } };
+    if (t == NULL) {
+        return NULL;
+    }
+    for (int k = 0; k < 2; ++k) {
+        const int p = k_face[k].pitch;
+        int h = 0, n = 0;
+        for (int i = 0; i < RA_LINES; ++i) {
+            if (t[i] == NULL || t[i][0] == '\0') {
+                continue;
+            }
+            h += (n++ > 0 ? RA_LINE_GAP : 0)
+                 + p * ui_text_wrap(NULL, gfx_rect_make(0, 0, RUD_SIDE_W, p),
+                                    p, t[i], k_face[k].f, 0);
+        }
+        if (h <= RA_LINES_H) {
+            if (pitch != NULL) {
+                *pitch = p;
+            }
+            return k_face[k].f;
+        }
+    }
+    return NULL;
+}
+
+bool rauto_targets(float deg[2])
+{
+    if (deg == NULL) {
+        return false;
+    }
+    const servo_rauto_t *r = &s.ra.run;
+    for (int k = 0; k < 2; ++k) {
+        /* The side's direction as the last run measured it, else 1000us
+         * on the negative side, as the commanded angle has it. */
+        const int sg = r->sign[k] != 0 ? r->sign[k] : (k == 0 ? -1 : 1);
+        deg[k] = (float)sg * settings_get(k == 0 ? SET_RUDDER_DEFL_LO
+                                                 : SET_RUDDER_DEFL_HI);
+    }
+    return true;
 }
 
 uint32_t rauto_sig(void)

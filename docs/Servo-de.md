@@ -1382,6 +1382,16 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
   eine Fläche von 100mm 50.0mm; der Bogen L x Ausschlag ergäbe 52.4mm.
 - MAX hält den größten Ausschlag je Seite, aus jedem angezeigten Messwert,
   auf jeder Aufgabe. NULLPUNKT und MAX LÖSCHEN löschen ihn.
+- Die Seitenansicht rechts der Zustandszeilen zeichnet die Fläche im
+  Schnitt, die Nasenkante links: eine graue feste Fläche, das Scharnier
+  und das Ruder als cyanfarbener Keil im angezeigten Ausschlag. Positiver
+  Ausschlag zeichnet die Hinterkante nach oben, also wie das Vorzeichen
+  von HINTERKANTE. Das Ruder ist 62px lang, in einer Fläche von
+  190 x 152px; Striche markieren 0, ±30, ±60 und ±90°, gestrichelte
+  Linien das MAX jeder Seite und im Kasten von AUTO die beiden Sollwerte
+  in Bernstein. Ein Ausschlag über ±90° wird bei ±90° gezeichnet; die
+  Zahlen bleiben, wie sie sind. Ohne Messwert liegt das Ruder gedimmt auf
+  der Neutrallinie. Die Zeichnung steht in `shared/ui/servo_rudder_flap.c`.
 - 1000us und 2000us befehlen diese Pulse als Winkel des eingestellten Typs,
   begrenzt auf WEG und den Pulsbereich des Typs; ZENTRIEREN befiehlt PULS
   MITTE plus TRIMMUNG. Alle drei und der Drehknopf wirken nur, solange der
@@ -1421,8 +1431,11 @@ Augenmaß eingestellten Weg am Sender. Der Lauf steht in
 ### Ablauf
 
 - AUTO zeigt seinen Kasten an der Stelle von LÄNGE, den drei Tasten zum
-  Ansteuern und den Zustandszeilen; die Anzeige, die Zeile NULLPUNKT und
-  die Ausgangskarte bleiben. MANUELL an der Stelle von AUTO bringt sie
+  Ansteuern und den Zustandszeilen; die Anzeige, die Zeile NULLPUNKT, die
+  Seitenansicht und die Ausgangskarte bleiben. Die Seitenansicht zeigt
+  zusätzlich das Soll bei 1000us auf der negativen und das bei 2000us auf
+  der positiven Seite, jedes auf der Seite, auf der der letzte Lauf es
+  gemessen hat. MANUELL an der Stelle von AUTO bringt sie
   zurück. Solange der Lauf läuft, sind MANUELL, NULLPUNKT und MAX LÖSCHEN
   abgelehnt und gedimmt, damit der Lauf ab dem Nullpunkt misst, mit dem er
   begann, und der Drehknopf bewegt nichts.

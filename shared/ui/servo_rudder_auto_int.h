@@ -6,15 +6,19 @@
  *
  * AUTO on RUDDER runs servo_rudder_auto.h on the servo the output card
  * names.  The box takes the place of LENGTH, the drive buttons and the
- * state lines; the readout, the ZERO row and the output card stay.  The
- * box, in the screen's coordinates, every control inside x 18 to 518:
+ * state lines; the readout, the ZERO row, RUDDER's side view of the
+ * surface and the output card stay.  The box, in the screen's
+ * coordinates, every control inside x 18 to 518:
  *
  *   - TARGET 1000us and TARGET 2000us, y 168 to 216, 245px each;
  *   - MARGIN and TOLERANCE, y 228 to 276, 245px each;
  *   - (the ZERO row, y 288 to 336: ZERO, RESET MAX, MANUAL);
- *   - HOLD 2s TO START, y 348 to 396, 500px: STOP RUN while it runs;
- *   - three lines, y 404 to 470: the step or why a START is refused, the
- *     last result, the report.
+ *   - HOLD 2s TO START, y 348 to 396, x 18 to 418: STOP RUN while it runs;
+ *   - three lines, x 18 to 418, y 404 to 492: the step or why a START is
+ *     refused, the last result, the report.  Each wraps at a space; all
+ *     three in the 10 x 20 face, 20px a row, or in the 8 x 16 face, 16px a
+ *     row, where the first takes more than the 88px.
+ *   - (the side view, x 428 to 618, y 340 to 492, with AUTO's targets.)
  *
  * Its run moves the servo, switches the bench and asks the programmer the
  * way the limit run does (servo_limit_panel.c), through the screen's own
@@ -109,6 +113,24 @@ bool rauto_rest(const touch_event_t *evt);
 void rauto_cancel(void);
 /** @brief The box drawn into @p c.  @param c the canvas */
 void rauto_render(gfx_canvas_t *c);
+/**
+ * @brief The face the box's lines are drawn in: the 10 x 20 face while
+ *        the lines, each wrapped at a space to 400px and 4px apart, fit
+ *        the 88px down to the alert band, else the 8 x 16 face while they
+ *        fit there.
+ * @param t the three lines, "" for one not drawn
+ * @param pitch receives the face's row pitch, px; may be NULL
+ * @return the face; NULL when neither fits, or for NULL @p t
+ */
+const gfx_font_t *rauto_lines_face(const char *const t[RA_LINES], int *pitch);
+/**
+ * @brief AUTO's two targets as the side view draws them: TARGET 1000us
+ *        and TARGET 2000us, signed by the side's direction the last run
+ *        measured, else 1000us negative and 2000us positive.
+ * @param deg receives them, degrees: [0] 1000us, [1] 2000us
+ * @return false for NULL
+ */
+bool rauto_targets(float deg[2]);
 /** @brief One number for what the box shows.  @return the number */
 uint32_t rauto_sig(void);
 /** @brief START's hold against the clock and the run every frame.

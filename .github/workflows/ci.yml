@@ -284,10 +284,14 @@ jobs:
       # 1,000 catches one that repaints more.  A changed current repaints
       # the CURRENT row's value, the line and the plot beside the grip, each
       # clipped; 4,000 catches a changed digit that repaints the card.
+      # A new angle on RUDDER repaints the readout, the state lines and the
+      # side view's flap in the boxes of its old and new place; 4,600
+      # catches one that repaints the side view or the card whole.
       - name: The servo card is drawn, and its grip is only breathed on
         run: python3 tools/frame_cost.py servo --max-lines 2800
              && python3 tools/frame_cost.py servo-grip --max-lines 1000
              && python3 tools/frame_cost.py servo-current --max-lines 4000
+             && python3 tools/frame_cost.py servo-rudder --max-lines 4600
 
       # The screen guide caches its dock and draws its badges and corner
       # brackets every frame, about 370 fills on the menu; 1,000 catches

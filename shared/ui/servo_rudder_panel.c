@@ -3,7 +3,8 @@
  * @brief The SERVO workbench's RUDDER task: the control surface's
  *        deflection in ° and mm, LENGTH, the buttons that drive 1000us,
  *        CENTRE and 2000us, ZERO, the MAX of each side, the angle
- *        source's state line, and the task's guide pages.
+ *        source's state line, the side view of the surface at the
+ *        deflection shown, and the task's guide pages.
  *
  * See servo_rudder_int.h for the layout.  The angle is the one the screen
  * takes in (servo_screen_encoder(), enc_shown(), enc_deg_now()), in the
@@ -21,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "servo_rudder_flap.h"
 #include "settings.h"
 #include "ui_help.h"
 #include "ui_keypad.h"
@@ -48,6 +50,8 @@
 #define RUD_ST_Y   (CARD_Y + 292)         /**< The first state line. */
 #define RUD_ST_P   24                     /**< The state lines' pitch. */
 #define RUD_LEN_VAL_W 200                 /**< LENGTH's value, px. */
+#define RUD_FLAP_AX (RUD_X + RUD_SIDE_W + 10) /**< The side view's left. */
+#define RUD_FLAP_AY (CARD_Y + 284)        /**< Its top: under ZERO's row. */
 
 _Static_assert(3 * RUD_BTN_W + 2 * RUD_GAP == RUD_W,
                "the three buttons fill the column");
@@ -59,6 +63,10 @@ _Static_assert(RUD_ST_Y + RUD_LINES * RUD_ST_P <= STOP_FLOOR,
                "the state lines end above the alert band");
 _Static_assert(RUD_NUM_Y + READ_NUM_H <= RUD_MAX_Y - 4,
                "the numerals end above the MAX lines");
+_Static_assert(RUD_FLAP_AY >= RUD_ZERO_Y + UI_TAP_MIN + 4,
+               "the side view starts under the ZERO row");
+_Static_assert(RUD_FLAP_AY < STOP_FLOOR - 100,
+               "the side view ends at the alert band, at least 100px tall");
 
 /* ------------------------------------------------------------ the state */
 
@@ -234,8 +242,15 @@ gfx_rect_t rudder_readout_rect(void)
 
 gfx_rect_t rudder_state_rect(void)
 {
-    return (gfx_rect_t){ RUD_X, (int16_t)(RUD_ST_Y - 2), RUD_W,
+    return (gfx_rect_t){ RUD_X, (int16_t)(RUD_ST_Y - 2), RUD_SIDE_W,
                          (int16_t)(RUD_LINES * RUD_ST_P + 2) };
+}
+
+gfx_rect_t rudder_flap_rect(void)
+{
+    return (gfx_rect_t){ RUD_FLAP_AX, RUD_FLAP_AY,
+                         (int16_t)(PAD + LCARD_W - 10 - RUD_FLAP_AX),
+                         (int16_t)(STOP_FLOOR - RUD_FLAP_AY) };
 }
 
 /**
@@ -539,7 +554,7 @@ static void draw_state(gfx_canvas_t *c)
         }
         const bool warn = (i == 0 && rudder_source() != RUD_SRC_LIVE)
                           || i == 3;
-        gfx_text_in(c, (gfx_rect_t){ RUD_X, (int16_t)y, RUD_W, 20 },
+        gfx_text_in(c, (gfx_rect_t){ RUD_X, (int16_t)y, RUD_SIDE_W, 20 },
                     line, SV_FONT_LABEL,
                     warn ? ui_theme_color(UI_C_WARN)
                          : ui_theme_color(UI_C_TEXT_DIM),
@@ -599,6 +614,43 @@ static void draw_buttons(gfx_canvas_t *c)
                    s.ra.view ? TR(RA_MANUAL) : TR(RA_AUTO), fill,
                    s.rud.pressed == RUD_C_AUTO,
                    !servo_rauto_running(&s.ra.run), SV_FONT_LABEL);
+}
+
+/**
+ * @brief An angle as the side view draws it: held to ±90° and taken to
+ *        the tenth of a degree the readout shows, so what flap_sig()
+ *        hashes is what is drawn.
+ * @param deg the angle, degrees
+ * @return the angle drawn, degrees
+ */
+static float flap_tenths(float deg)
+{
+    return roundf(rudder_flap_clamp(deg) * 10.0f) / 10.0f;
+}
+
+/**
+ * @brief What the side view shows: the deflection on show, the MAX of
+ *        each side, and in AUTO's view AUTO's two targets, each in tenths
+ *        of a degree held to ±90°.
+ * @param v where it goes
+ */
+static void flap_view(rudder_flap_view_t *v)
+{
+    memset(v, 0, sizeof(*v));
+    float d = 0.0f;
+    v->live = rudder_defl(&d);
+    v->defl_deg = v->live ? flap_tenths(d) : 0.0f;
+    for (int k = 0; k < 2; ++k) {
+        float m = 0.0f;
+        v->have_max[k] = max_shown(k, &m);
+        v->max_deg[k] = v->have_max[k] ? flap_tenths(m) : 0.0f;
+    }
+    if (s.ra.view && rauto_targets(v->target_deg)) {
+        v->targets = true;
+        for (int k = 0; k < 2; ++k) {
+            v->target_deg[k] = flap_tenths(v->target_deg[k]);
+        }
+    }
 }
 
 /**
@@ -662,6 +714,76 @@ static uint32_t read_sig(void)
     return hash_of(v, sizeof(v) / sizeof(v[0]));
 }
 
+/**
+ * @brief One number for what the side view shows but the flap's angle, in
+ *        the tenths of a degree flap_view() takes every angle to: a change
+ *        repaints the view whole.
+ * @param v the view
+ * @return the number
+ */
+static uint32_t flap_sig(const rudder_flap_view_t *v)
+{
+    uint32_t w[6];
+    w[0] = (v->live ? 1u : 0u) | (v->have_max[0] ? 2u : 0u)
+           | (v->have_max[1] ? 4u : 0u) | (v->targets ? 8u : 0u);
+    for (int k = 0; k < 2; ++k) {
+        w[1 + k] = (uint32_t)lroundf(v->max_deg[k] * 10.0f);
+        w[3 + k] = (uint32_t)lroundf(v->target_deg[k] * 10.0f);
+    }
+    w[5] = s.ra.view ? 1u : 0u;
+    return hash_of(w, sizeof(w) / sizeof(w[0]));
+}
+
+/**
+ * @brief The flap's angle in a view, in tenths of a degree.
+ * @param v the view
+ * @return the angle; 0 for a dim flap
+ */
+static int16_t flap_dd(const rudder_flap_view_t *v)
+{
+    return (int16_t)lroundf(v->defl_deg * 10.0f);
+}
+
+/**
+ * @brief The side view brought up to date in buffer @p b: whole when what
+ *        it shows but the angle changed, else, for a new angle alone, only
+ *        the boxes of the flap as drawn and as now.
+ * @param c the canvas
+ * @param b the buffer, 0 or 1
+ */
+static void flap_part(gfx_canvas_t *c, int b)
+{
+    rudder_flap_view_t v;
+    flap_view(&v);
+    const uint32_t sig = flap_sig(&v);
+    const int16_t dd = flap_dd(&v);
+    if (s.rud.drawn_flap[b] == sig && s.rud.drawn_dd[b] == dd) {
+        return;
+    }
+    const gfx_rect_t area = rudder_flap_rect();
+    const gfx_rect_t old = c->clip;
+    bool on = gfx_clip_intersect(c, area);
+    if (on && s.rud.drawn_flap[b] == sig) {
+        const rudder_flap_t f = rudder_flap_layout(area);
+        const gfx_rect_t was =
+            rudder_flap_bounds(&f, (float)s.rud.drawn_dd[b] / 10.0f);
+        const gfx_rect_t now = rudder_flap_bounds(&f, v.defl_deg);
+        const int x0 = (was.x < now.x) ? was.x : now.x;
+        const int y0 = (was.y < now.y) ? was.y : now.y;
+        const int x1 = (was.x + was.w > now.x + now.w) ? was.x + was.w
+                                                       : now.x + now.w;
+        const int y1 = (was.y + was.h > now.y + now.h) ? was.y + was.h
+                                                       : now.y + now.h;
+        on = gfx_clip_intersect(c, gfx_rect_make(x0, y0, x1 - x0, y1 - y0));
+    }
+    if (on) {
+        rudder_flap_draw(c, area, &v);
+    }
+    c->clip = old;
+    s.rud.drawn_flap[b] = sig;
+    s.rud.drawn_dd[b]   = dd;
+}
+
 void rudder_render(gfx_canvas_t *c, int buf)
 {
     geo_follow_source();
@@ -676,8 +798,13 @@ void rudder_render(gfx_canvas_t *c, int buf)
         draw_length(c);
         draw_state(c);
     }
+    rudder_flap_view_t v;
+    flap_view(&v);
+    rudder_flap_draw(c, rudder_flap_rect(), &v);
     s.rud.drawn_card[buf & 1] = card_sig();
     s.rud.drawn_read[buf & 1] = read_sig();
+    s.rud.drawn_flap[buf & 1] = flap_sig(&v);
+    s.rud.drawn_dd[buf & 1]   = flap_dd(&v);
 }
 
 /**
@@ -716,6 +843,7 @@ void rudder_render_part(gfx_canvas_t *c, int buf)
         }
         s.rud.drawn_read[b] = sig;
     }
+    flap_part(c, b);
 }
 
 /* ------------------------------------------------------------ the guide */

@@ -20,12 +20,15 @@
  *   - LENGTH's row, y 168 to 216, a tap opens the keypad;
  *   - 1000us, CENTRE and 2000us, y 228 to 276, 160px each, 10px apart;
  *   - ZERO, RESET MAX and AUTO, y 288 to 336, 160px each;
- *   - the state lines, y 346 to 444: the angle source, the pulse, the zero
- *     and ARM FIRST.
+ *   - the state lines, x 18 to 418, y 346 to 444: the angle source, the
+ *     pulse, the zero and ARM FIRST;
+ *   - beside them the side view of the surface (servo_rudder_flap.h),
+ *     x 428 to 618, y 340 to 492: no control, and no touch on it.
  *
  * AUTO shows AUTO's box (servo_rudder_auto_int.h) in the place of LENGTH,
  * the three drive buttons and the state lines; the button then reads
- * MANUAL and brings them back.  The readout and the ZERO row stay.
+ * MANUAL and brings them back.  The readout, the ZERO row and the side
+ * view stay.
  *
  * Every control is UI_TAP_MIN tall.  The header holds no helper that reads
  * the state: servo_screen_int.h includes it before the state is declared.
@@ -84,7 +87,14 @@ typedef struct {
     uint8_t  press_id;      /**< that contact's track id                */
     uint32_t drawn_card[2]; /**< rudder_card_sig() as each buffer drew it */
     uint32_t drawn_read[2]; /**< rudder_read_sig() as each buffer drew it */
+    uint32_t drawn_flap[2]; /**< the side view's sig as each buffer drew it,
+                             *   its angle left out                     */
+    int16_t  drawn_dd[2];   /**< the flap's angle each buffer drew, 0.1° */
 } rudder_t;
+
+/** @brief The width the state lines, and AUTO's START and its lines,
+ *         take left of the side view: x 18 to 418, px. */
+#define RUD_SIDE_W 400
 
 /** @brief The task at its start: no zero, no MAX, no press. */
 void rudder_init(void);
@@ -130,6 +140,10 @@ gfx_rect_t rudder_readout_rect(void);
 
 /** @brief The state lines. @return their rectangle */
 gfx_rect_t rudder_state_rect(void);
+
+/** @brief The side view's area, x 428 to 618, y 340 to 492, above the
+ *         alert band.  @return its rectangle */
+gfx_rect_t rudder_flap_rect(void);
 
 /**
  * @brief State line @p i as drawn now.
@@ -180,7 +194,9 @@ void rudder_render(gfx_canvas_t *c, int buf);
 /**
  * @brief What changed since buffer @p buf last drew the card: the card
  *        whole when a control's state did, else the readout and the state
- *        lines alone when a reading did.
+ *        lines alone when a reading did, and the side view whole when its
+ *        MAX or targets did, or for a new angle alone the boxes of the
+ *        flap as drawn and as now (rudder_flap_bounds()).
  * @param c the canvas
  * @param buf the buffer, 0 or 1
  */

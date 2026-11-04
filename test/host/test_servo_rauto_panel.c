@@ -4,7 +4,8 @@
  *        buttons and the state lines for the box and MANUAL brings them
  *        back; the box's places; a START that cannot run says why and
  *        drives nothing; the rows show their settings; every string fits
- *        its field in both languages.  The run on a servo is
+ *        its field in both languages, the lines wrapped beside the side
+ *        view; the targets the side view draws.  The run on a servo is
  *        test_servo_rauto_kst.c's.
  *
  * Cases:
@@ -12,6 +13,7 @@
  * - the_box_lies_in_the_left_column_clear_of_the_zero_row_and_the_stop_floor
  * - a_start_that_cannot_run_says_why_and_drives_nothing
  * - every_string_fits
+ * - the_targets_take_the_direction_the_run_measured
  *
  * SPDX-License-Identifier: MIT
  */
@@ -107,6 +109,14 @@ TEST_CASE(the_box_lies_in_the_left_column_clear_of_the_zero_row_and_the_stop_flo
     const gfx_rect_t l = rauto_lines_rect();
     CHECK(l.x >= 18 && l.x + l.w <= 518);
     CHECK(l.y + l.h <= UI_BODY_H);
+    /* START and the lines left of the side view, which no control of the
+     * box covers. */
+    const gfx_rect_t fl = rudder_flap_rect();
+    CHECK(rauto_rect(RA_C_START).x + rauto_rect(RA_C_START).w < fl.x);
+    CHECK(l.x + l.w < fl.x);
+    for (int k = RA_C_LO; k < RA_C_COUNT; ++k) {
+        CHECK(!overlap(rauto_rect((rauto_ctl_t)k), fl));
+    }
     CHECK_EQ(rauto_rect(RA_C_NONE).w, 0);
     CHECK_EQ(rauto_rect(RA_C_COUNT).w, 0);
 }
@@ -151,28 +161,134 @@ TEST_CASE(a_start_that_cannot_run_says_why_and_drives_nothing)
     }
 }
 
-/** @brief Whether @p t fits a line of the box, 500px, in the 10 x 20
- *         face. */
-static bool line_fits(const char *t)
+/** @brief The longest a candidate list below holds. */
+#define CAND_MAX 128
+
+/** @brief Strings one of the box's lines can show, at their longest. */
+typedef struct {
+    char t[CAND_MAX][96]; /**< the strings  */
+    int  n;               /**< their count  */
+} cands_t;
+
+/**
+ * @brief @p t added to @p c, once.
+ * @param c the list
+ * @param t the string
+ */
+static void cand(cands_t *c, const char *t)
 {
-    return gfx_text_width(&gfx_font_10x20, t, 1) <= 500;
+    for (int i = 0; i < c->n; ++i) {
+        if (strcmp(c->t[i], t) == 0) {
+            return;
+        }
+    }
+    if (c->n < CAND_MAX) {
+        snprintf(c->t[c->n++], sizeof(c->t[0]), "%s", t);
+    }
 }
 
-/** @brief Whether @p t fits a line in the 8 x 16 face the box falls back
- *         to for a longer line. */
-static bool line_fits_small(const char *t)
+/**
+ * @brief The first line's strings: the step, the goals and every reason a
+ *        START is refused for.
+ * @param c the list
+ */
+static void first_lines(cands_t *c)
 {
-    return gfx_text_width(&gfx_font_8x16, t, 1) <= 500;
+    char t[96];
+    for (int ph = SERVO_RAUTO_PH_READ; ph <= SERVO_RAUTO_PH_CHECK; ++ph) {
+        snprintf(t, sizeof(t), TR(RA_STEP),
+                 ui_servo_str(servo_rauto_phase_str((servo_rauto_phase_t)ph)),
+                 2000u, 8u, 8u, 17u);
+        cand(c, t);
+    }
+    snprintf(t, sizeof(t), TR(RA_GOALS), 99.0, 99.0);
+    cand(c, t);
+    static const ui_text_id_t k_why[] = {
+        TX_RA_NO_ANGLE, TX_RA_NO_ZERO, TX_RA_RANGE, TX_RA_PROG_PORT,
+        TX_RA_REFUSED, TX_SV_LIM_PWM_OFF, TX_SV_LIM_INA_SETUP,
+        TX_SV_LIM_INA_OFFLINE, TX_SV_LIM_INA_NO_WIN, TX_SV_LIM_RAIL_LOW,
+        TX_SV_LIM_PROG_PORT, TX_SV_LIM_PROG_BUSY, TX_SV_LIM_PROG_PD_OFF,
+        TX_SV_LIM_PROG_LOW, TX_SV_LIM_PROG_RAIL, TX_SV_LIM_PROG_NO_PD,
+        TX_HP_NEED_PD_C,
+    };
+    for (size_t k = 0; k < sizeof(k_why) / sizeof(k_why[0]); ++k) {
+        cand(c, ui_tr(k_why[k]));
+    }
+    static const servo_str_t k_start[] = {
+        SERVO_STR_START_NOT_ARMED, SERVO_STR_START_TEST_RUNS,
+        SERVO_STR_START_LIMIT_RUNS, SERVO_STR_START_AUTO_RUNS,
+        SERVO_STR_START_BUSY, SERVO_STR_START_PROG_5V,
+    };
+    for (size_t k = 0; k < sizeof(k_start) / sizeof(k_start[0]); ++k) {
+        cand(c, ui_servo_str(k_start[k]));
+    }
+}
+
+/**
+ * @brief The second line's strings: PASS with its values, FAIL and
+ *        ABORTED with every reason.
+ * @param c the list
+ */
+static void second_lines(cands_t *c)
+{
+    char t[96], w[64];
+    snprintf(t, sizeof(t), TR(RA_SET), 65535u, 65535u, 65535u, 65535u);
+    cand(c, t);
+    static servo_rauto_t r;
+    for (int why = 1; why < (int)SERVO_RAUTO_WHY_COUNT; ++why) {
+        for (int ab = 0; ab < (int)SERVO_TEST_AB_COUNT; ++ab) {
+            memset(&r, 0, sizeof(r));
+            r.why = (servo_rauto_why_t)why;
+            r.test_why = (servo_test_abort_t)ab;
+            if (why == SERVO_RAUTO_WHY_BINDS) {
+                snprintf(w, sizeof(w), TR(RA_BINDS_AT), -89.9);
+            } else {
+                snprintf(w, sizeof(w), "%s",
+                         ui_servo_str(servo_rauto_why_str(&r)));
+            }
+            snprintf(t, sizeof(t), TR(RA_LAST), ui_servo_str(SERVO_STR_FAIL),
+                     w);
+            cand(c, t);
+        }
+    }
+}
+
+/**
+ * @brief The third line's strings: the servo, the report, RESTORE.
+ * @param c the list
+ */
+static void third_lines(cands_t *c)
+{
+    char t[96];
+    snprintf(t, sizeof(t), TR(RA_SERVO), TR(SV_LIM_SERVO_KST));
+    cand(c, t);
+    for (int k = 0; k < 2; ++k) {
+        snprintf(t, sizeof(t), TR(RA_SERVO_HITEC),
+                 ui_setting_option(SET_HITEC_SERIES, k));
+        cand(c, t);
+    }
+    snprintf(t, sizeof(t), TR(RA_FILE), "RUDDR999.TXT");
+    cand(c, t);
+    snprintf(t, sizeof(t), TR(RA_FILE), TR(SV_NOT_RECORDED));
+    cand(c, t);
+    snprintf(t, sizeof(t), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+    cand(c, t);
+    snprintf(t, sizeof(t), TR(SV_LIM_RESTORE_HITEC), "HITEC999.TXT");
+    cand(c, t);
+    cand(c, TR(SV_LIM_NO_BACKUP));
+    cand(c, TR(SV_USER_LOGS_OFF));
 }
 
 /* Every string the box draws, at its longest, in both languages: the rows
- * at their highest values, START and STOP RUN, AUTO and MANUAL, the step
- * line, the result lines with every reason, the report's line, RESTORE
- * and every reason a START is refused for. */
+ * at their highest values, START and STOP RUN, AUTO and MANUAL; and every
+ * first line with every second and every third, wrapped beside the side
+ * view, above the alert band in one face or the other. */
 TEST_CASE(every_string_fits)
 {
     const gfx_font_t *f = &gfx_font_10x20;
-    char t[128], w[64];
+    char t[128];
+    static cands_t l0, l1, l2;
+    int small = 0;
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         const gfx_rect_t half = rauto_rect(RA_C_LO);
@@ -186,68 +302,71 @@ TEST_CASE(every_string_fits)
         CHECK(ui_text_fits(f, TR(SV_LIM_STOP), st.w, st.h, 8));
         CHECK(ui_text_fits(f, TR(RA_AUTO), 160, 48, 8));
         CHECK(ui_text_fits(f, TR(RA_MANUAL), 160, 48, 8));
-        for (int ph = SERVO_RAUTO_PH_READ; ph <= SERVO_RAUTO_PH_CHECK; ++ph) {
-            snprintf(t, sizeof(t), TR(RA_STEP),
-                     ui_servo_str(servo_rauto_phase_str(
-                         (servo_rauto_phase_t)ph)),
-                     2000u, 8u, 8u, 17u);
-            CHECK(line_fits(t));
-        }
-        snprintf(t, sizeof(t), TR(RA_SET), 65535u, 65535u, 65535u, 65535u);
-        CHECK(line_fits(t));
-        snprintf(t, sizeof(t), TR(RA_GOALS), 99.0, 99.0);
-        CHECK(line_fits(t));
-        static servo_rauto_t r;
-        for (int why = 1; why < (int)SERVO_RAUTO_WHY_COUNT; ++why) {
-            for (int ab = 0; ab < (int)SERVO_TEST_AB_COUNT; ++ab) {
-                memset(&r, 0, sizeof(r));
-                r.why = (servo_rauto_why_t)why;
-                r.test_why = (servo_test_abort_t)ab;
-                if (why == SERVO_RAUTO_WHY_BINDS) {
-                    snprintf(w, sizeof(w), TR(RA_BINDS_AT), -89.9);
-                } else {
-                    snprintf(w, sizeof(w), "%s",
-                             ui_servo_str(servo_rauto_why_str(&r)));
+        memset(&l0, 0, sizeof(l0));
+        memset(&l1, 0, sizeof(l1));
+        memset(&l2, 0, sizeof(l2));
+        first_lines(&l0);
+        second_lines(&l1);
+        third_lines(&l2);
+        CHECK(l0.n < CAND_MAX && l1.n < CAND_MAX && l2.n < CAND_MAX);
+        for (int i = 0; i < l0.n; ++i) {
+            for (int j = 0; j < l1.n; ++j) {
+                for (int k = 0; k < l2.n; ++k) {
+                    const char *const three[RA_LINES] = { l0.t[i], l1.t[j],
+                                                          l2.t[k] };
+                    int pitch = 0;
+                    const gfx_font_t *face = rauto_lines_face(three, &pitch);
+                    if (face == NULL) {
+                        T_FAIL("lang %d: \"%s\" / \"%s\" / \"%s\" past "
+                               "the alert band", lang, l0.t[i], l1.t[j],
+                               l2.t[k]);
+                        return;
+                    }
+                    small += face == &gfx_font_8x16;
+                    CHECK_EQ(pitch, face == &gfx_font_8x16 ? 16 : 20);
                 }
-                snprintf(t, sizeof(t), TR(RA_LAST),
-                         ui_servo_str(SERVO_STR_ABORTED), w);
-                CHECK(line_fits(t));
-                snprintf(t, sizeof(t), TR(RA_LAST),
-                         ui_servo_str(SERVO_STR_FAIL), w);
-                CHECK(line_fits(t));
             }
-        }
-        snprintf(t, sizeof(t), TR(RA_FILE), "RUDDR999.TXT");
-        CHECK(line_fits(t));
-        snprintf(t, sizeof(t), TR(RA_FILE), TR(SV_NOT_RECORDED));
-        CHECK(line_fits(t));
-        snprintf(t, sizeof(t), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
-        CHECK(line_fits(t));
-        static const ui_text_id_t k_why[] = {
-            TX_RA_NO_ANGLE, TX_RA_NO_ZERO, TX_RA_RANGE, TX_RA_PROG_PORT,
-            TX_RA_REFUSED, TX_SV_LIM_PWM_OFF,
-        };
-        for (size_t k = 0; k < sizeof(k_why) / sizeof(k_why[0]); ++k) {
-            CHECK(line_fits(ui_tr(k_why[k])));
-        }
-        /* The limit run's refusals, some past 50 cells: the 8 x 16 face. */
-        static const ui_text_id_t k_lim[] = {
-            TX_SV_LIM_PROG_PORT, TX_SV_LIM_PROG_BUSY, TX_SV_LIM_PROG_PD_OFF,
-            TX_SV_LIM_PROG_LOW, TX_SV_LIM_PROG_RAIL, TX_SV_LIM_PROG_NO_PD,
-        };
-        for (size_t k = 0; k < sizeof(k_lim) / sizeof(k_lim[0]); ++k) {
-            CHECK(line_fits_small(ui_tr(k_lim[k])));
-        }
-        static const servo_str_t k_start[] = {
-            SERVO_STR_START_NOT_ARMED, SERVO_STR_START_TEST_RUNS,
-            SERVO_STR_START_LIMIT_RUNS, SERVO_STR_START_AUTO_RUNS,
-            SERVO_STR_START_BUSY, SERVO_STR_START_PROG_5V,
-        };
-        for (size_t k = 0; k < sizeof(k_start) / sizeof(k_start[0]); ++k) {
-            CHECK(line_fits(ui_servo_str(k_start[k])));
         }
     }
     ui_text_set_language(UI_LANG_EN);
+    /* The longest take the small face, the German Hitec refusal of 78
+     * cells among them. */
+    CHECK(small > 0);
+    /* One short line alone takes the label face; NULL takes none. */
+    const char *const one[RA_LINES] = { "ARM FIRST", "", "" };
+    int pitch = 0;
+    CHECK(rauto_lines_face(one, &pitch) == &gfx_font_10x20);
+    CHECK_EQ(pitch, 20);
+    CHECK(rauto_lines_face(one, NULL) == &gfx_font_10x20);
+    CHECK(rauto_lines_face(NULL, &pitch) == NULL);
+    /* Lines past any room: none fits. */
+    static char big[RA_LINES][96];
+    for (int i = 0; i < RA_LINES; ++i) {
+        memset(big[i], 'M', 95);
+        for (int k = 9; k < 95; k += 10) {
+            big[i][k] = ' ';
+        }
+        big[i][95] = '\0';
+    }
+    const char *const huge[RA_LINES] = { big[0], big[1], big[2] };
+    CHECK(rauto_lines_face(huge, &pitch) == NULL);
+}
+
+/* The targets as the side view draws them: 1000us negative and 2000us
+ * positive before a run measured them; a side the run measured the other
+ * way round is drawn that way; NULL takes nothing. */
+TEST_CASE(the_targets_take_the_direction_the_run_measured)
+{
+    fresh();
+    scr->enter();
+    to_auto();
+    settings_set(SET_RUDDER_DEFL_LO, 15.0f);
+    settings_set(SET_RUDDER_DEFL_HI, 25.5f);
+    float d[2] = { 0.0f, 0.0f };
+    CHECK(rauto_targets(d));
+    CHECK_NEAR(d[0], -15.0f, 1e-4f);
+    CHECK_NEAR(d[1], 25.5f, 1e-4f);
+    CHECK(!rauto_targets(NULL));
 }
 
 int main(void)
@@ -256,5 +375,6 @@ int main(void)
     RUN(the_box_lies_in_the_left_column_clear_of_the_zero_row_and_the_stop_floor);
     RUN(a_start_that_cannot_run_says_why_and_drives_nothing);
     RUN(every_string_fits);
+    RUN(the_targets_take_the_direction_the_run_measured);
     return test_summary("servo_rauto_panel");
 }

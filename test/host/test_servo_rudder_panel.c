@@ -778,9 +778,9 @@ TEST_CASE(the_knob_moves_the_horn_on_rudder_while_armed)
 
 /* ---------------------------------------------------------- the repaint */
 
-/* A new reading repaints the readout and the state lines alone, in both
- * buffers, and each ends as a frame drawn whole would; a disarm repaints
- * the card. */
+/* A new reading repaints the readout, the state lines and the side view
+ * alone, in both buffers, and each ends as a frame drawn whole would; a
+ * disarm repaints the card. */
 TEST_CASE(a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would)
 {
     fresh_armed();
@@ -796,18 +796,22 @@ TEST_CASE(a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would)
     scr->render(&cv, 0);
     const gfx_rect_t ro = rudder_readout_rect();
     const gfx_rect_t st = rudder_state_rect();
-    int outside = 0, inside = 0;
+    const gfx_rect_t fl = rudder_flap_rect();
+    int outside = 0, inside = 0, flap = 0;
     for (int y = 0; y < UI_BODY_H; ++y) {
         for (int x = 0; x < W; ++x) {
             const bool in = gfx_rect_contains(ro, x, y)
-                            || gfx_rect_contains(st, x, y);
+                            || gfx_rect_contains(st, x, y)
+                            || gfx_rect_contains(fl, x, y);
             const bool moved = fb[(size_t)y * W + x] != ref[(size_t)y * W + x];
             outside += (!in && moved) ? 1 : 0;
             inside += (in && moved) ? 1 : 0;
+            flap += (moved && gfx_rect_contains(fl, x, y)) ? 1 : 0;
         }
     }
     CHECK_EQ(outside, 0);
     CHECK(inside > 0);
+    CHECK(flap > 0);
     scr->render(&cv1, 1);
     CHECK(both_whole());
     /* The same reading again: nothing to repaint. */
@@ -986,7 +990,8 @@ TEST_CASE(the_help_page_leaves_the_target_row_in_view)
 
 /* Every string RUDDER draws fits its field in both languages at its
  * longest: the tab, the buttons, LENGTH's value, the labels, the widest
- * readings with their units, the MAX lines and every state line. */
+ * readings with their units, the MAX lines and every state line in the
+ * 400px beside the side view. */
 TEST_CASE(every_string_fits)
 {
     const gfx_font_t *f = &gfx_font_10x20;
@@ -1010,23 +1015,25 @@ TEST_CASE(every_string_fits)
         CHECK(gfx_text_width(f, TR(RUD_DEFL), 1) <= 240);
         CHECK(gfx_text_width(f, TR(RUD_EDGE), 1) <= 240);
         CHECK(gfx_text_width(f, TR(RUD_NO_LENGTH), 1) <= 240);
-        CHECK(gfx_text_width(f, TR(RUD_NOT_ZEROED), 1) <= 500);
+        CHECK(gfx_text_width(f, TR(RUD_NOT_ZEROED), 1) <= RUD_SIDE_W);
         char line[80];
         snprintf(line, sizeof(line), "%s -180.0°  +180.0°", TR(RUD_MAX));
         CHECK(gfx_text_width(f, line, 1) <= 240);
         snprintf(line, sizeof(line), "%s -500.0mm  +500.0mm", TR(RUD_MAX));
         CHECK(gfx_text_width(f, line, 1) <= 240);
         snprintf(line, sizeof(line), TR(RUD_PULSE), "2500us");
-        CHECK(gfx_text_width(f, line, 1) <= 500);
+        CHECK(gfx_text_width(f, line, 1) <= RUD_SIDE_W);
         static const ui_text_id_t k_src[] = {
             TX_RUD_SRC_OFF, TX_RUD_SRC_NO_LINK, TX_RUD_SRC_NO_MAGNET,
             TX_RUD_SRC_STALE, TX_RUD_SRC_LIVE };
         for (size_t i = 0; i < sizeof(k_src) / sizeof(k_src[0]); ++i) {
             snprintf(line, sizeof(line), ui_tr(k_src[i]), "AS5600");
-            CHECK(gfx_text_width(f, line, 1) <= 500);
+            CHECK(gfx_text_width(f, line, 1) <= RUD_SIDE_W);
+            snprintf(line, sizeof(line), ui_tr(k_src[i]), "IMU X+");
+            CHECK(gfx_text_width(f, line, 1) <= RUD_SIDE_W);
         }
         CHECK(gfx_text_width(f, ui_servo_str(SERVO_STR_START_NOT_ARMED), 1)
-              <= 500);
+              <= RUD_SIDE_W);
     }
     ui_text_set_language(UI_LANG_EN);
     /* The widest readings with their units in a column of 250px. */
