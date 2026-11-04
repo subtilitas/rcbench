@@ -172,6 +172,11 @@ void panel_frame_loop(void)
             servo_screen_cancel_arm();
             supply_screen_cancel_on();
         }
+        /* The stick run's hold sees a stop through its own count below;
+         * a release it is told of here. */
+        if (resets_now != last_resets) {
+            esc_stick_panel_stop_released();
+        }
         last_stops  = stops_now;
         last_resets = resets_now;
         /* And a stick run on MOTOR & ESC > PROGRAM, which ends on a stop,

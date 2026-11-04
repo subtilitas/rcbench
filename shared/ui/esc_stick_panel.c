@@ -709,6 +709,12 @@ void esc_stick_panel_bench(uint32_t now_ms, bool armed, uint32_t stops,
     t->link_up = link_up;
 }
 
+void esc_stick_panel_stop_released(void)
+{
+    sp_end_hold();
+    sp_end_run(ESC_STICK_R_STOP);
+}
+
 void esc_stick_panel_set_throttle(bool read, uint8_t channels)
 {
     s.st.bind_read = read;
