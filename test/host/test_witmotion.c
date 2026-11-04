@@ -356,7 +356,6 @@ TEST_CASE(two_thousand_frames_of_noise_never_hand_out_a_frame_with_a_bad_sum)
 
 TEST_CASE(a_null_argument_does_nothing)
 {
-    uint8_t c[WIT_CMD_LEN] = { 9, 9, 9, 9, 9 };
     wit_parser_t p;
     wit_frame_t out = { .type = 7, .v = { 1, 2, 3, 4 } };
     wit_acc_t acc;
@@ -387,7 +386,6 @@ TEST_CASE(a_null_argument_does_nothing)
     CHECK_EQ(wit_cmd_rsw(NULL, 3), 0u);
     CHECK_EQ(wit_cmd_calsw(NULL, 1), 0u);
     CHECK_EQ(wit_cmd_axis6(NULL, true), 0u);
-    CHECK_EQ(c[0], 9);
 }
 
 TEST_CASE(a_parser_state_past_its_buffer_is_reset_not_overrun)
