@@ -43,6 +43,12 @@ history is in git.
   nothing. The task's screen guide marks the output card's TARGET row and
   ARM, which it shares with every task. SERVO's tabs are 120px wide, and the German
   strip draws in the 8 x 16 face.
+- `protocols/hc05`: the HC-05 AT set-up as an SPP (serial port profile)
+  master, fed bytes and a clock: PROBE (115200, 38400, 9600 baud), SCAN
+  (INQ 11.5s, names), BIND (PAIR 20s, BIND, CMODE 0, UART 115200) and
+  CONNECT TO ANY (CMODE 1); the firmware 3.0 quirks (quoted PIN,
+  ERROR:(1F) on INQ). Host-tested against scripted answers of both
+  firmware versions; no pin driver.
 
 ### Changed
 
