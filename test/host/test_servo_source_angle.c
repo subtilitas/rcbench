@@ -380,6 +380,30 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
     CHECK_EQ(bench.disarms, 1u);
     CHECK(strstr(bench.report, ui_servo_str(SERVO_STR_AB_ENC_SILENT))
           != NULL);
+
+    /* The limit run alike: 300ms rides, 301ms ends it, and its report
+     * names the IMU's gaps. */
+    for (uint32_t len = 300u; len <= 301u; ++len) {
+        lim_bench();
+        imu_on(0u, false);
+        bench_frames(200u);
+        hold_start_on(1, 2.3f);
+        CHECK(servo_screen_limit_running());
+        bench_frames(2000u);
+        const uint32_t at = imu_pull();
+        bench_frames(300u);
+        CHECK(servo_screen_limit_running());
+        imu_plug(at + len);
+        bench_frames(40u);
+        CHECK_EQ(servo_screen_limit_running(), len <= SERVO_GAP_MAX_MS);
+        if (len > SERVO_GAP_MAX_MS) {
+            bench_frames(1000u);
+            CHECK(!bench.out);
+            CHECK(strstr(bench.report, "IMU gaps: 1, the longest 301ms.")
+                  != NULL);
+            CHECK(strstr(bench.report, "AS5600 gaps") == NULL);
+        }
+    }
 }
 
 /* @p text as the LOGS reader takes it. */
