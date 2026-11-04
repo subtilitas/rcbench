@@ -1330,8 +1330,9 @@ eye. The run is `shared/servo/servo_rudder_auto.c`; the box is
 
 - AUTO shows its box in the place of LENGTH, the three drive buttons and
   the state lines; the readout, the ZERO row and the output card stay.
-  MANUAL, in AUTO's place, brings them back. Neither is taken while the
-  run runs.
+  MANUAL, in AUTO's place, brings them back. While the run runs, MANUAL,
+  ZERO and RESET MAX are refused and drawn dimmed: the run measures from
+  the zero it started with.
 - TARGET 1000us and TARGET 2000us: the deflection each side is to reach,
   0.5 to 90.0° in steps of 0.5°, 20.0° (settings `rud_defl_lo`,
   `rud_defl_hi`). With LENGTH set the row shows the trailing edge's mm

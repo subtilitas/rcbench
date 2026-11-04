@@ -453,16 +453,77 @@ TEST_CASE(a_found_register_is_not_tried_again_on_a_later_write)
     CHECK(g.run.writes[0] >= 2u);
 }
 
-TEST_CASE(the_step_list_keeps_its_18_entries_and_drops_later_ones)
+TEST_CASE(the_step_list_keeps_its_34_entries_and_drops_later_ones)
 {
-    CHECK_EQ(sizeof(g.run.steps) / sizeof(g.run.steps[0]), 18u);
+    CHECK_EQ(sizeof(g.run.steps) / sizeof(g.run.steps[0]), 34u);
+    CHECK_EQ(SERVO_RAUTO_STEPS_MAX, 34u);
     rig_init(0u);
     CHECK(start());
     CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
-    g.run.step_n = 18u;
+    g.run.step_n = SERVO_RAUTO_STEPS_MAX;
     CHECK(run_to(SERVO_RAUTO_PH_SAFE, RAUTO_MS));
-    CHECK_EQ(g.run.step_n, 18u);
+    CHECK_EQ(g.run.step_n, SERVO_RAUTO_STEPS_MAX);
     CHECK(servo_rauto_running(&g.run));
+}
+
+/* Each write moves a side 1.35 times the linear change, 17° goals, 0.1°
+ * tolerance: both sides take all 8 writes, and the 1000us side's CHECK
+ * after the 2000us side's writes is recorded as the last measure. */
+TEST_CASE(eight_writes_a_side_keep_every_measure_and_the_last_check)
+{
+    rig_init(0u);
+    g.resp = 1.35f;
+    g.cfg.target_deg[0] = 17.0f / 1.1f;
+    g.cfg.target_deg[1] = 17.0f / 1.1f;
+    g.cfg.tol_ddeg = 1u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK_EQ(g.run.writes[0], SERVO_RAUTO_WRITES_MAX);
+    CHECK_EQ(g.run.writes[1], SERVO_RAUTO_WRITES_MAX);
+    CHECK(g.run.step_n <= SERVO_RAUTO_STEPS_MAX);
+    const servo_rauto_step_t *last = &g.run.steps[g.run.step_n - 1u];
+    CHECK_EQ(last->side, 0u);
+    CHECK(last->within);
+    CHECK_EQ(last->n, SERVO_RAUTO_WRITES_MAX);
+    /* The 2000us side's last measure, within, just before it. */
+    CHECK_EQ(g.run.steps[g.run.step_n - 2u].side, 1u);
+    CHECK(g.run.steps[g.run.step_n - 2u].within);
+}
+
+/* The 1000us side is the second register's, which holds 150 counts (30°);
+ * the first register sits at lo, 50, and cannot lower the side to its 22°
+ * goal.  The run writes the second register instead and finds the mapping
+ * the other way round; LIMIT only where neither register can move. */
+TEST_CASE(an_unmapped_side_tries_the_second_register_before_limit)
+{
+    rig_init(0u);
+    g.map[0] = 1;
+    g.map[1] = 0;
+    g.v[0] = 50u;
+    g.v[1] = 150u;
+    g.cfg.target_deg[0] = 20.0f;
+    g.cfg.target_deg[1] = 20.0f;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK_EQ(g.run.reg_side[0], 1);
+    CHECK_EQ(g.run.reg_side[1], 0);
+    CHECK_EQ(g.v[0], 110u);
+    CHECK_EQ(g.v[1], 110u);
+    CHECK_EQ(g.run.writes[0], 1u);
+    CHECK_EQ(g.run.writes[1], 1u);
+
+    /* Both registers at lo, the side above its goal: LIMIT, no write. */
+    rig_init(0u);
+    g.v[0] = g.v[1] = 50u;
+    g.cfg.target_deg[0] = 5.0f;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_LIMIT);
+    CHECK_EQ(g.run.writes[0], 0u);
+    CHECK_EQ(g.write_ops, 1u);          /* the pulse write alone */
 }
 
 TEST_CASE(a_check_outside_the_tolerance_writes_that_side_again)
@@ -493,7 +554,9 @@ int main(void)
     RUN(a_check_outside_the_tolerance_writes_that_side_again);
     RUN(a_first_measure_at_the_tolerance_gives_the_side_its_direction);
     RUN(a_found_register_is_not_tried_again_on_a_later_write);
-    RUN(the_step_list_keeps_its_18_entries_and_drops_later_ones);
+    RUN(the_step_list_keeps_its_34_entries_and_drops_later_ones);
+    RUN(eight_writes_a_side_keep_every_measure_and_the_last_check);
+    RUN(an_unmapped_side_tries_the_second_register_before_limit);
     RUN(a_linear_servo_lands_within_tolerance_in_one_write_a_side);
     RUN(a_servo_five_percent_off_lands_in_two_writes);
     RUN(the_goal_is_target_times_one_plus_margin);

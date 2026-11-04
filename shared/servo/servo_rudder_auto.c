@@ -336,7 +336,14 @@ static void plan_write(servo_rauto_t *r, uint8_t s, float ms, uint32_t now_ms)
         g = 0;                  /* the first register tried first */
     }
     uint16_t next = 0u;
-    if (!next_value(r, g, ms, r->goal_deg[s], &next)) {
+    bool can = next_value(r, g, ms, r->goal_deg[s], &next);
+    if (!can && find) {
+        /* The first register cannot move toward the goal: the side may be
+         * the second one's, which can. */
+        g = 1;
+        can = next_value(r, g, ms, r->goal_deg[s], &next);
+    }
+    if (!can) {
         fail(r, SERVO_RAUTO_WHY_LIMIT, now_ms);
         return;
     }

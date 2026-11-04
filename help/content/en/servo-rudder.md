@@ -35,8 +35,8 @@ LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm
 | 1000us, 2000us | refused; drawn dimmed | commands that pulse, held to TRAVEL and the pulse range of the type in force |
 | CENTRE | refused; drawn dimmed | commands PULSE CENTRE plus TRIM |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value, as on LIVE |
-| ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; another ANGLE SOURCE, the IMU's other AXIS or SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same |
-| RESET MAX | clears MAX; the zero stays | the same |
+| ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; another ANGLE SOURCE, the IMU's other AXIS or SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same; refused while AUTO runs |
+| RESET MAX | clears MAX; the zero stays | the same; refused while AUTO runs |
 | AUTO | shows AUTO's box ([AUTO](#auto)) | the same |
 
 1000us, CENTRE and 2000us act on the press. LENGTH, ZERO, RESET MAX and AUTO act on a tap that lifts on them. The PULSE line under the buttons names the pulse commanded. A tab switch keeps the servo where it was put; DISARM, STOP and leaving SERVO switch the bench to SAFE.
@@ -65,7 +65,7 @@ AUTO programs a KST or Chaservo servo on the programming port so that 1000us and
 | MARGIN | programmed past the target by this share, 0 to 50%, 10%: 20.0° at 10% is a goal of 22.0° |
 | TOLERANCE | how near the goal a measure has to be, 0.1 to 5.0°, 0.5° |
 
-ZERO the surface at neutral first. HOLD 2s TO START starts the run; it then reads STOP RUN, and a press ends the run at once. The run reads the servo, sets its pulse range to 1000 to 2000us, then per side drives the end pulse, waits for the angle to be still for 500ms and writes a new end point: at most 8 writes a side, each in its own session of the programmer with the servo switched off and on. The current guard of the limit run holds throughout: a stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply's output off.
+ZERO the surface at neutral first; while the run runs, ZERO, RESET MAX and MANUAL are refused. HOLD 2s TO START starts the run; it then reads STOP RUN, and a press ends the run at once. The run reads the servo, sets its pulse range to 1000 to 2000us, then per side drives the end pulse, waits for the angle to be still for 500ms and writes a new end point: at most 8 writes a side, each in its own session of the programmer with the servo switched off and on. The current guard of the limit run holds throughout: a stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply's output off.
 
 The first line gives the step under way, the goals, or why a START is refused; the second the result; the third the report RUDDRnnn.TXT, or `RESTORE IN PROGRAM` when a run that wrote did not pass.
 

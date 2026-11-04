@@ -18,6 +18,7 @@
  * - a_stop_during_auto_ends_it_with_every_output_off
  * - auto_without_a_pd_mini_or_a_zero_is_refused_and_says_why
  * - a_tap_on_stop_run_ends_auto_at_once
+ * - zero_and_reset_max_are_refused_while_auto_runs
  *
  * SPDX-License-Identifier: MIT
  */
@@ -407,11 +408,47 @@ TEST_CASE(a_tap_on_stop_run_ends_auto_at_once)
     CHECK(strstr(ra.report, "ABORTED") != NULL);
 }
 
+/* ZERO and RESET MAX tapped while AUTO holds the 1000us side at about
+ * -36°: refused, the run measures from the zero it started with and
+ * programs both end points alike. */
+TEST_CASE(zero_and_reset_max_are_refused_while_auto_runs)
+{
+    ra_setup(true, true);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    bool there = false;
+    for (int i = 0; i < 400000 && servo_screen_rauto_running(); ++i) {
+        ra_ms(1u);
+        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_SETTLE
+            && ra.sv.position_us < 1100.0f) {
+            there = true;
+            break;
+        }
+    }
+    CHECK(there);
+    screen_tap(ZERO_X, SV_RUD_ZERO_Y);
+    screen_tap(SV_RUD_AUTO_X - 170, SV_RUD_ZERO_Y);      /* RESET MAX */
+    screen_tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);            /* MANUAL */
+    CHECK(rauto_shown());
+    CHECK(servo_screen_rauto_running());
+    ra_run_out();
+    CHECK(strstr(ra.report, "PASS") != NULL);
+    const unsigned lo = servo(KST_F_LEFT_ANGLE);
+    const unsigned hi = servo(KST_F_RIGHT_ANGLE);
+    CHECK(lo >= 90u && lo <= 94u);
+    CHECK(hi >= 90u && hi <= 94u);
+    /* Idle again: MANUAL is taken. */
+    ra_ms(100u);
+    screen_tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    CHECK(!rauto_shown());
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
     RUN(a_stop_during_auto_ends_it_with_every_output_off);
     RUN(auto_without_a_pd_mini_or_a_zero_is_refused_and_says_why);
     RUN(a_tap_on_stop_run_ends_auto_at_once);
+    RUN(zero_and_reset_max_are_refused_while_auto_runs);
     return test_summary("servo_rauto_kst");
 }

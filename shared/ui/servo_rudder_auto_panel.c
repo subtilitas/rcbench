@@ -138,7 +138,8 @@ static setting_id_t row_setting(rauto_ctl_t k)
  */
 static bool defl_now(float *deg)
 {
-    return s.rud.geo.zeroed && rudder_defl(deg);
+    /* rudder_defl() first: it drops a zero taken from another source. */
+    return rudder_defl(deg) && s.rud.geo.zeroed;
 }
 
 /**

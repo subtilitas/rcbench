@@ -48,9 +48,11 @@
  *     servo_rauto_scaled().  A value that rounds to the one in force moves
  *     one count toward the goal.  One that cannot move because the goal
  *     needs more than lo..hi gives ends the run as FAIL
- *     (SERVO_RAUTO_WHY_LIMIT); a side measured outside after
+ *     (SERVO_RAUTO_WHY_LIMIT), while the side's register is not found yet
+ *     only once neither register can move; a side measured outside after
  *     SERVO_RAUTO_WRITES_MAX writes as FAIL (SERVO_RAUTO_WHY_WRITE_CAP).
- *   - The first write goes to the first register (KST LEFT ANGLE) and the
+ *   - The first write goes to the first register (KST LEFT ANGLE), or to
+ *     the second where the first cannot move toward the goal, and the
  *     side is measured again.  The side moved when it lands within the
  *     tolerance or travels at least half the change the model gives,
  *     toward it; it moved the wrong way when it travels that far the other
@@ -116,6 +118,13 @@ extern "C" {
 
 /** @brief Writes a side takes at most. */
 #define SERVO_RAUTO_WRITES_MAX  8u
+/**
+ * @brief The measures a run can take: between two writes at most two (the
+ *        written side, then the other side's CHECK), and as many before
+ *        the first write and after the last, over 2 x SERVO_RAUTO_WRITES_MAX
+ *        writes.
+ */
+#define SERVO_RAUTO_STEPS_MAX   (2u * (2u * SERVO_RAUTO_WRITES_MAX + 1u))
 /** @brief A measure takes the angle once it is still this long, ms. */
 #define SERVO_RAUTO_STILL_MS    500u
 /** @brief A measure ends the run when the angle is not still this long after
@@ -242,7 +251,7 @@ typedef struct {
     float    bind_deg;                /**< the angle at a bind */
     servo_gap_t gap;                  /**< the angle source's gaps */
     /** @brief Every measure, in order. */
-    servo_rauto_step_t steps[2u * (SERVO_RAUTO_WRITES_MAX + 1u)];
+    servo_rauto_step_t steps[SERVO_RAUTO_STEPS_MAX];
     uint8_t  step_n;                  /**< steps recorded */
     bool     have_win;                /**< a window arrived */
     uint32_t last_win_ms;             /**< the last window's time */

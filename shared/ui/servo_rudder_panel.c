@@ -297,6 +297,11 @@ static void open_length(void)
 static void act(rudder_ctl_t k)
 {
     geo_follow_source();
+    /* AUTO measures from the zero and LENGTH as they stood at its start:
+     * neither changes, nor MAX, while it runs. */
+    if (servo_rauto_running(&s.ra.run) && k != RUD_C_AUTO) {
+        return;
+    }
     switch (k) {
     case RUD_C_LENGTH:
         open_length();
@@ -329,7 +334,9 @@ void rudder_down(const touch_event_t *evt)
         }
         if (k == RUD_C_1000 || k == RUD_C_CENTRE || k == RUD_C_2000) {
             drive((rudder_ctl_t)k);
-        } else if (s.rud.pressed == RUD_C_NONE) {
+        } else if (s.rud.pressed == RUD_C_NONE
+                   && !(servo_rauto_running(&s.ra.run)
+                        && k != RUD_C_AUTO)) {
             s.rud.pressed  = (uint8_t)k;
             s.rud.press_id = evt->point.id;
             ++s.ctrl_rev;
@@ -565,8 +572,8 @@ static void draw_length(gfx_canvas_t *c)
 /**
  * @brief The buttons: 1000us, CENTRE and 2000us dimmed while the value is
  *        not live, and not drawn with AUTO's box shown; ZERO dimmed
- *        without a reading; AUTO, or MANUAL with the box, dimmed while
- *        AUTO's run runs.
+ *        without a reading; ZERO, RESET MAX and AUTO, or MANUAL with the
+ *        box, dimmed while AUTO's run runs.
  * @param c the canvas
  */
 static void draw_buttons(gfx_canvas_t *c)
@@ -582,10 +589,12 @@ static void draw_buttons(gfx_canvas_t *c)
         ui_button_font(c, rudder_rect(RUD_C_2000), k_us[1], fill, false,
                        live, SV_FONT_LABEL);
     }
+    const bool idle = !servo_rauto_running(&s.ra.run);
     ui_button_font(c, rudder_rect(RUD_C_ZERO), TR(RUD_ZERO), fill,
-                   s.rud.pressed == RUD_C_ZERO, enc_shown(), SV_FONT_LABEL);
+                   s.rud.pressed == RUD_C_ZERO, enc_shown() && idle,
+                   SV_FONT_LABEL);
     ui_button_font(c, rudder_rect(RUD_C_RESET), TR(RUD_RESET_MAX), fill,
-                   s.rud.pressed == RUD_C_RESET, true, SV_FONT_LABEL);
+                   s.rud.pressed == RUD_C_RESET, idle, SV_FONT_LABEL);
     ui_button_font(c, rudder_rect(RUD_C_AUTO),
                    s.ra.view ? TR(RA_MANUAL) : TR(RA_AUTO), fill,
                    s.rud.pressed == RUD_C_AUTO,
