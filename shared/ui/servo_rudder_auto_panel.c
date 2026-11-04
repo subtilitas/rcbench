@@ -874,8 +874,8 @@ void rauto_render(gfx_canvas_t *c)
         face = &gfx_font_8x16;
     }
     const gfx_rect_t old = c->clip;
-    int y = RA_LINE_Y;
     if (gfx_clip_intersect(c, lr)) {
+        int y = RA_LINE_Y;
         for (int i = 0; i < RA_LINES; ++i) {
             if (t[i][0] == '\0') {
                 continue;

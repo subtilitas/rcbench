@@ -137,8 +137,12 @@ static void dashed(gfx_canvas_t *c, const rudder_flap_t *f, float deg,
     float ux, uy;
     unit_of(deg, &ux, &uy);
     const float hx = f->hinge_x, hy = f->hinge_y;
-    for (float r = RUD_FLAP_HINGE_R + 3.0f; r < f->flap_len;
-         r += DASH_ON + DASH_OFF) {
+    const float r0 = RUD_FLAP_HINGE_R + 3.0f;
+    for (int i = 0;; ++i) {
+        const float r = r0 + (float)i * (DASH_ON + DASH_OFF);
+        if (r >= f->flap_len) {
+            break;
+        }
         const float r1 = fminf(r + DASH_ON, f->flap_len);
         gfx_capsule_aaf(c, hx + r * ux, hy + r * uy, hx + r1 * ux,
                         hy + r1 * uy, LINE_W, col);
