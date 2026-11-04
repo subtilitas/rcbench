@@ -1053,6 +1053,21 @@ test('tree: a data file that is stale against the firmware tables is reported', 
   reports(checkTree(CATALOGUE, noSettings), 'pins', /settings\.c does not exist/);
 });
 
+test('tree: the pin defaults are read from settings_schema.c where the tree has it', () => {
+  // The table moved out of settings.c: the defaults are the schema file's.
+  const SCHEMA = 'shared/settings/settings_schema.c';
+  const split = fakeTree(CATALOGUE, (files) => {
+    files.set(SCHEMA, [...lines(files, SETTINGS)]);
+    files.set(SETTINGS, Array.from({ length: 2000 }, () => '/* text */'));
+  });
+  assert.deepEqual(errors(checkTree(CATALOGUE, split)), []);
+  const stale = fakeTree(CATALOGUE, (files) => {
+    files.set(SCHEMA, [...lines(files, SETTINGS)]);
+    lines(files, SCHEMA)[155] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+  });
+  reports(checkTree(CATALOGUE, stale), 'pin.sda', /GPIO 16 in the data and 18 in shared\/settings\/settings_schema\.c/);
+});
+
 test('tree: stale pin defaults are reported', () => {
   const sda = fakeTree(CATALOGUE, (files) => {
     lines(files, SETTINGS)[155] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';

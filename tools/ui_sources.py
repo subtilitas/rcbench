@@ -213,6 +213,7 @@ SOURCES = [
     "shared/ui/sensors_pane.c",
     "shared/ui/sensors_rows.c",
     "shared/settings/settings.c",
+    "shared/settings/settings_schema.c",
     "shared/settings/settings_sensors.c",
     "shared/settings/settings_text.c",
     "shared/logfile/log_numbers.c",

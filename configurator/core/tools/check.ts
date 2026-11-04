@@ -775,6 +775,9 @@ export function checkRoutes(c: Catalogue): Finding[] {
 
 const OUT_BIND = 'shared/outputs/out_bind.c';
 const SETTINGS = 'shared/settings/settings.c';
+/** The settings' schema table in a tree that holds it apart from the model;
+ *  a tree without the file holds the table in `SETTINGS`. */
+const SETTINGS_SCHEMA = 'shared/settings/settings_schema.c';
 const IOMCU_PINS = 'firmware/iomcu/include/iomcu_pins.h';
 
 export type FirmwarePin = { gpio: number; pad: number; reserved: boolean; line: number };
@@ -878,7 +881,9 @@ export function checkTree(c: Catalogue, tree: Tree): Finding[] {
     out.push(err('pin.heartbeat', `is GPIO ${heartbeat.gpio} in the data and GPIO ${hb[1]} in ${IOMCU_PINS}`));
   }
 
-  const settings = tree.read(SETTINGS);
+  const schema = tree.read(SETTINGS_SCHEMA);
+  const table = schema === null ? SETTINGS : SETTINGS_SCHEMA;
+  const settings = schema ?? tree.read(SETTINGS);
   if (settings === null) {
     out.push(err('pins', `${SETTINGS} does not exist at ${RELEASE_TAG}`));
   } else {
@@ -888,18 +893,18 @@ export function checkTree(c: Catalogue, tree: Tree): Finding[] {
       const id = `pin.${pin.signal}`;
       const found = parseSettingDefault(settings, key);
       if (found === null) {
-        out.push(err(id, `${SETTINGS} has no ${key}`));
+        out.push(err(id, `${table} has no ${key}`));
         continue;
       }
       if (pin.choice === 'default' && found.def !== pin.gpio) {
-        out.push(err(id, `default is GPIO ${pin.gpio} in the data and ${found.def} in ${SETTINGS}`));
+        out.push(err(id, `default is GPIO ${pin.gpio} in the data and ${found.def} in ${table}`));
       }
       if (pin.choice === 'proposal' && found.def !== -1) {
-        out.push(err(id, `is a proposal in the data; ${SETTINGS} has the default ${found.def}`));
+        out.push(err(id, `is a proposal in the data; ${table} has the default ${found.def}`));
       }
-      if (pin.src?.kind === 'repo' && pin.src.path === SETTINGS
+      if (pin.src?.kind === 'repo' && pin.src.path === table
         && (pin.src.line < found.line || pin.src.line > found.line + 2)) {
-        out.push(err(id, `src is not inside ${key}, ${SETTINGS}:${found.line}`));
+        out.push(err(id, `src is not inside ${key}, ${table}:${found.line}`));
       }
     }
   }
