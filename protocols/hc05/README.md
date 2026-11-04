@@ -64,7 +64,7 @@ baud can stay in the module's line buffer and spoil the first command.
 | `AT+RNAME?<addr>` | `+RNAME:<name>`, then OK | 3000ms (`HC05_RNAME_MS`) |
 | `AT+STATE?`, after a name that did not come | `+STATE:<state>`, then OK | 3000ms (`HC05_RNAME_MS`) |
 | `AT+PAIR=<addr>,20` | OK | 22000ms (`HC05_PAIR_MS`: the 20s pairing time plus 2000ms) |
-| `AT+RESET` | OK | 1500ms (`HC05_RESET_MS`) |
+| `AT+RESET` | OK, with KEY high | 100ms (`HC05_KEY_SETTLE_MS`), then KEY low; an OK in the hold still counts |
 | the restart after `AT+RESET`'s OK | nothing: KEY low | 1500ms (`HC05_RESET_MS`) |
 
 - SCAN: `AT+ROLE=1` makes the module the master first; a factory module
@@ -86,6 +86,12 @@ baud can stay in the module's line buffer and spoil the first command.
   asks KEY low, so the module restarts in data mode, holds it low and
   stays busy for 1500ms, then asks the UART to 115200 baud and ends DONE.
   An operation started at once after DONE finds the module restarted.
+  KEY waits 100ms for that OK only: the module restarts on the command,
+  and its OK can be lost. Without the OK KEY goes low at 100ms all the
+  same and the hold runs; an OK in the hold ends DONE, none ends
+  `HC05_ERR_TIMEOUT`. A module that restarts within 100ms of
+  `AT+RESET` comes back with KEY high, in AT mode at 38400 baud; its
+  restart time is not measured.
 - A PIN (personal identification number) is 1 to 16 decimal digits. The
   BWT901CL's is 1234.
 

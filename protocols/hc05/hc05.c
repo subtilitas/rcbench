@@ -73,9 +73,12 @@ static const uint32_t k_bauds[] = { HC05_BAUD_DATA, HC05_BAUD_ALT,
 #define FENCE_STATE 2u /**< its +STATE: line came */
 /** @} */
 
-/** @brief hc05_t.tries at S_KEYLOW: hc05_abort() came after AT+RESET went
- *         out; the hold ends the operation FAILED. */
-#define ABORTED 1u
+/** @brief hc05_t.tries at S_KEYLOW: why the hold ends the operation
+ *         FAILED.  0: it goes on to the data baud. @{ */
+#define ABORTED    1u /**< hc05_abort() came after AT+RESET went out */
+#define RESET_LOST 2u /**< AT+RESET's OK has not come: HC05_ERR_TIMEOUT
+                            unless it comes in the hold */
+/** @} */
 
 /** @brief The error code AT+INIT answers when the SPP (serial port
  *         profile) library is up already. */
@@ -274,8 +277,10 @@ static uint32_t command(hc05_t *h, uint8_t s)
         put(h, ",0,0");
         break;
     default: /* S_RESET */
+        /* KEY stays high this long only: the module restarts on the
+         * command, its OK or not, and KEY low then means data mode. */
         put(h, "+RESET");
-        wait = HC05_RESET_MS;
+        wait = HC05_KEY_SETTLE_MS;
         break;
     }
     put(h, "\r\n");
@@ -341,8 +346,14 @@ static void next_name(hc05_t *h)
 static void expired(hc05_t *h, uint8_t s)
 {
     h->wait_ms = 0;
-    if (s == S_KEYLOW && h->tries == ABORTED) {
-        finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);
+    if (s == S_KEYLOW && h->tries != 0u) {
+        finish(h, HC05_ST_FAILED,
+               h->tries == ABORTED ? HC05_ERR_NONE : HC05_ERR_TIMEOUT, 0);
+    } else if (s == S_RESET) {
+        /* No OK yet: KEY low and the hold all the same; an OK in the hold
+         * still counts. */
+        ++h->step;
+        h->tries = RESET_LOST;
     } else if (s == S_AT) {
         h->tries = 0;
         if (++h->baud_try >= BAUD_TRIES) {
@@ -398,6 +409,9 @@ static void take_line(hc05_t *h, const char *line)
                                              &code);
     const uint8_t s = stage(h);
 
+    if (s == S_KEYLOW && kind == HC05_LINE_OK && h->tries == RESET_LOST) {
+        h->tries = 0; /* AT+RESET's OK, late */
+    }
     if (s == S_KEY || s == S_KEYLOW) {
         return;
     }

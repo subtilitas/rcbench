@@ -50,7 +50,7 @@ extern "C" {
 #define HC05_INQ_MS(n)   ((n) * 1280u + 2000u) /**< AT+INQ of n units */
 #define HC05_RNAME_MS    3000u   /**< AT+RNAME? */
 #define HC05_PAIR_MS     22000u  /**< AT+PAIR, 20s pairing plus 2s */
-#define HC05_RESET_MS    1500u   /**< AT+RESET */
+#define HC05_RESET_MS    1500u   /**< the restart after AT+RESET, KEY low */
 #define HC05_KEY_SETTLE_MS 100u  /**< KEY raised to the first byte */
 /** @} */
 

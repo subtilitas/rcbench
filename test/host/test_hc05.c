@@ -444,6 +444,23 @@ static uint32_t any_to_reset(hc05_t *h, uint32_t t0)
     return t0 + 100u;
 }
 
+TEST_CASE(a_reset_ok_after_key_went_low_still_counts)
+{
+    hc05_t h;
+    hc05_act_t a;
+    const uint32_t t = any_to_reset(&h, 0);
+    CHECK_EQ(step_all(&h, t + HC05_KEY_SETTLE_MS - 1u, NULL), HC05_ACT_NONE);
+    CHECK(step_all(&h, t + HC05_KEY_SETTLE_MS, &a) == HC05_ACT_KEY && !a.key);
+    feed_line(&h, "OK");
+    CHECK_EQ(step_all(&h, t + HC05_KEY_SETTLE_MS + HC05_RESET_MS - 1u, NULL),
+             HC05_ACT_NONE);
+    CHECK(step_all(&h, t + HC05_KEY_SETTLE_MS + HC05_RESET_MS, &a)
+          == HC05_ACT_BAUD);
+    CHECK_EQ(a.baud, HC05_BAUD_DATA);
+    CHECK_EQ(h.state, HC05_ST_DONE);
+    CHECK_EQ(h.err, HC05_ERR_NONE);
+}
+
 TEST_CASE(an_abort_after_the_reset_keeps_key_low_through_the_restart)
 {
     hc05_t h;
@@ -926,7 +943,7 @@ static void fence_times_out(uint32_t t0)
     CHECK_STR_EQ(h.found[1].name, "");
 }
 
-/* AT+RESET without its OK: TIMEOUT at HC05_RESET_MS. */
+/* AT+RESET without its OK: KEY low at 100ms, TIMEOUT after the hold. */
 static void reset_times_out(uint32_t t0)
 {
     hc05_t h;
@@ -935,12 +952,49 @@ static void reset_times_out(uint32_t t0)
     s.reset_silent = true;
     hc05_init(&h);
     CHECK(hc05_any(&h, "1234", t0));
-    (void)sim_run(&s, &h, t0, 80000u);
+    const uint32_t end = sim_run(&s, &h, t0, 80000u);
     CHECK_EQ(h.err, HC05_ERR_TIMEOUT);
     const sim_log_t *reset = nth_act(&s, HC05_ACT_SEND, 7);
     const sim_log_t *low = nth_act(&s, HC05_ACT_KEY, 1);
     CHECK(reset != NULL && is_send(&reset->act, "AT+RESET"));
-    CHECK(low != NULL && (uint32_t)(low->t - reset->t) == HC05_RESET_MS);
+    CHECK(low != NULL && (uint32_t)(low->t - reset->t) == HC05_KEY_SETTLE_MS);
+    CHECK(low != NULL && (uint32_t)(t0 + end - low->t) == HC05_RESET_MS);
+}
+
+/* AT+RESET taken, its OK lost: KEY low at 100ms, busy through the
+ * hold, TIMEOUT at its end; the module restarts with KEY low. */
+static void reset_ok_lost(uint32_t t0)
+{
+    hc05_t h;
+    sim_t s;
+    sim_init(&s, 2, HC05_BAUD_OLD);
+    s.reset_ok_lost = true;
+    hc05_init(&h);
+    CHECK(hc05_any(&h, "1234", t0));
+    uint32_t k = 0;
+    for (; k < 80000u; ++k) {
+        sim_tick(&s, &h, t0 + k);
+        if (s.nlog > 1u && s.log[s.nlog - 1u].act.kind == HC05_ACT_KEY
+            && !s.log[s.nlog - 1u].act.key) {
+            break;
+        }
+    }
+    const sim_log_t *reset = nth_act(&s, HC05_ACT_SEND, 7);
+    CHECK(reset != NULL && is_send(&reset->act, "AT+RESET"));
+    CHECK_EQ((uint32_t)(t0 + k - reset->t), HC05_KEY_SETTLE_MS);
+    CHECK(hc05_busy(&h));
+    CHECK(!hc05_probe(&h, t0 + k));
+    for (uint32_t j = 1; j < HC05_RESET_MS; ++j) {
+        sim_tick(&s, &h, t0 + k + j);
+    }
+    CHECK(hc05_busy(&h));
+    sim_tick(&s, &h, t0 + k + HC05_RESET_MS);
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+    CHECK_EQ(h.err, HC05_ERR_TIMEOUT);
+    CHECK(!h.key);
+    CHECK_EQ(s.restarts, 1);
+    CHECK(!s.restarted_key);
+    CHECK_EQ(s.baud, HC05_BAUD_DATA);
 }
 
 TEST_CASE(a_timeout_fails_the_operation_at_exactly_its_limit)
@@ -953,6 +1007,7 @@ TEST_CASE(a_timeout_fails_the_operation_at_exactly_its_limit)
     at_tick_0_and_before_the_wrap(rname_times_out, 2000u);
     at_tick_0_and_before_the_wrap(fence_times_out, 4000u);
     at_tick_0_and_before_the_wrap(reset_times_out, 1000u);
+    at_tick_0_and_before_the_wrap(reset_ok_lost, 2000u);
 }
 
 TEST_CASE(abort_ends_a_running_scan_and_drops_key)
@@ -1141,6 +1196,7 @@ int main(void)
     RUN(scan_on_firmware_2_0_lists_two_devices_with_their_names);
     RUN(a_late_name_is_not_taken_for_the_next_device);
     RUN(an_operation_right_after_bind_or_any_finds_the_module_in_data_mode);
+    RUN(a_reset_ok_after_key_went_low_still_counts);
     RUN(an_abort_after_the_reset_keeps_key_low_through_the_restart);
     RUN(scan_sets_the_master_role_before_the_inquiry_on_both_firmwares);
     RUN(scan_ignores_error_17_on_init);

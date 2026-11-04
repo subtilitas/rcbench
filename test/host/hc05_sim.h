@@ -76,6 +76,7 @@ typedef struct {
     bool pswd_any;       /* AT+PSWD answers ERROR:(0) in either form */
     bool init_error;     /* AT+INIT answers ERROR:(4) */
     bool reset_silent;   /* AT+RESET answers nothing */
+    bool reset_ok_lost;  /* AT+RESET restarts the module, its OK is lost */
     bool pair_error;     /* AT+PAIR answers ERROR:(15) */
     const char *inq_answer; /* AT+INQ answers this line alone */
     uint32_t inq_units;  /* the units AT+INQM set */
@@ -304,7 +305,9 @@ static void sim_command(sim_t *s, const char *cmd, uint32_t now)
         if (s->reset_silent) {
             return;
         }
-        sim_say(s, at, "OK");
+        if (!s->reset_ok_lost) {
+            sim_say(s, at, "OK");
+        }
         s->restart_at = at + SIM_RESTART_MS;
         s->restart_due = true;
     } else {
