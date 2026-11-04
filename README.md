@@ -126,7 +126,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **98.1%**, 76,387 of 77,853 lines in 328 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **98.1%**, 76,501 of 77,967 lines in 329 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).
@@ -174,7 +174,7 @@ or to name a design or protocol reference. This covers:
 - the protocol and firmware names OpenYGE, S.BUS, S.BUS2, JETI EX Bus, SRXL2,
   DShot, KISS, BLHeli_S, BLHeli_32, AM32, ESCape32 and VESC;
 - the board, module and component makers Waveshare, Raspberry Pi, Espressif,
-  WeAct, Osoyoo, Matek, DAOKAI and Texas Instruments;
+  WeAct, Osoyoo, Matek, DAOKAI, WitMotion and Texas Instruments;
 - the distributors Digi-Key, LCSC and JLCPCB;
 - every other maker, product, protocol and firmware name in this repository.
   The section "Trademarks" of [NOTICE](NOTICE) has the list.
