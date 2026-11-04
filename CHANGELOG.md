@@ -17,6 +17,9 @@ history is in git.
   than STEP lands on LOWEST VOLTAGE, and a LOWEST VOLTAGE at or above the
   start runs the start alone. A walk asks for up to 31 voltages. The
   report's `Brown-out:` line names the step in force.
+- `protocols/witmotion`: the WitMotion serial frames (0x55, type, 4 x int16, sum)
+  decoded to m/s², °/s, ° and µT, and the 5-byte commands (unlock, SAVE, RATE,
+  RSW, CALSW, AXIS6). Host-tested; no pin driver.
 
 ### Changed
 

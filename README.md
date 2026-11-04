@@ -174,7 +174,7 @@ or to name a design or protocol reference. This covers:
 - the protocol and firmware names OpenYGE, S.BUS, S.BUS2, JETI EX Bus, SRXL2,
   DShot, KISS, BLHeli_S, BLHeli_32, AM32, ESCape32 and VESC;
 - the board, module and component makers Waveshare, Raspberry Pi, Espressif,
-  WeAct, Osoyoo, Matek, DAOKAI and Texas Instruments;
+  WeAct, Osoyoo, Matek, DAOKAI, WitMotion and Texas Instruments;
 - the distributors Digi-Key, LCSC and JLCPCB;
 - every other maker, product, protocol and firmware name in this repository.
   The section "Trademarks" of [NOTICE](NOTICE) has the list.

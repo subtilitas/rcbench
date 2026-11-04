@@ -163,6 +163,7 @@ Everything that parses input somebody else produced:
 | `protocols/openyge` | ESC telemetry and parameter frames |
 | `protocols/dshot` | the ESC telemetry reply: 21 line bits, GCR (group-coded recording) decode, 4-bit checksum, extended telemetry frame types |
 | `protocols/pdmini` | replies of the PD (Power Delivery) Mini module on its UART (universal asynchronous receiver-transmitter): command byte, length (fixed per command, or a length byte for text) and CRC8 (cyclic redundancy check) |
+| `protocols/witmotion` | frames from a WitMotion inertial sensor on its UART (universal asynchronous receiver-transmitter): the sync byte, a type byte, 4 words and the 8-bit sum of the first 10 bytes; a frame with a wrong sum is dropped and the parser looks for the next sync byte inside the bytes it holds; a decoder refuses a frame of another type |
 | `protocols/phase_tap` | words from the DMA (direct memory access) ring of the motor-phase capture: 31-bit counts extended to 64 bits, overrun detection |
 | `shared/link` | CAN (Controller Area Network) frames between the two boards, and the board drawing the IOmcu serves (`link_drawing_parse()`: the length is exactly the header, the pads and the shapes; every count, kind and value is in range, and every pad ring and shape lies inside the outline) |
 | `shared/can` | CAN controller frames and the CAN self-test status frame |

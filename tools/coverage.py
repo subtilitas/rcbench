@@ -266,6 +266,7 @@ TRACKED = [
     "protocols/escwire/ew_file_read.c",
     "protocols/escwire/ew_file_load.c",
     "protocols/i2c_txq/i2c_txq.c",
+    "protocols/witmotion/witmotion.c",
     "shared/logfile/servo_store.c",
     "shared/outputs/kst_port.c",
     "shared/outputs/hitec_port.c",
