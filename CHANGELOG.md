@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- RUDDER on the SERVO screen draws the control surface from the side, live:
+  a grey fixed surface, the hinge and a cyan flap at the deflection shown,
+  trailing edge up for a positive deflection. The flap is 62px long in an
+  area of 190 x 152px right of the state lines, so it shows the true angle
+  from -90 to +90°; beyond that it is drawn at ±90° and the numbers read
+  on. Ticks mark 0, ±30, ±60 and ±90°, dashed lines the MAX of each side,
+  and in AUTO's box amber dashed lines the two targets. Without a reading
+  the flap lies dim on the neutral line. The state lines, AUTO's START and
+  its lines take x 18 to 418; AUTO's lines wrap at a space.
 - The AUTOMATIC TEST's brown-out walk takes two settings, on its own page:
   BROWN-OUT on the automatic test's settings opens it, and the row reads
   `ON 3.0/0.2V` or `OFF`. LOWEST VOLTAGE, 2.0 to 4.8V, is the walk's last

@@ -20,6 +20,12 @@ RUDDER, a task of [SERVO](servo.md)'s strip, drives one servo and shows how far 
 
 The mm are the trailing edge's distance from the neutral plane, not the arc it travels. At 30° a surface of 100mm reads 50.0mm.
 
+## The side view
+
+Right of the state lines the surface is drawn in section, leading edge on the left: the grey fixed surface, the hinge, and the flap as a cyan wedge at the deflection DEFLECTION shows. Positive deflection draws the trailing edge up. Ticks mark 0, ±30, ±60 and ±90°; dashed lines mark the MAX of each side. The flap's length stays fixed, so a deflection beyond ±90° is drawn at ±90° while the numbers read on. Without a reading the flap lies dim on the neutral line.
+
+![The surface at -85.0°](view:servo-rudder-85)
+
 ## LENGTH
 
 LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm in steps of 1mm, kept over a restart. A tap opens the keypad. 1 to 9mm are refused, and the keypad says `0 or 10 to 500mm`. With LENGTH at 0 the readout shows degrees alone and asks for LENGTH in the mm column.
@@ -55,7 +61,7 @@ LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm
 
 ## AUTO
 
-AUTO programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us reach the deflection entered for each side. The servo is the [limit run's SERVO setting](servo-settings.md#the-limit-run-s-settings), which takes the programmer opened last on PROGRAM; the box's third line names it, `SERVO HITEC D SERIES`. The box takes the place of LENGTH, the drive buttons and the state lines; MANUAL brings them back.
+AUTO programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us reach the deflection entered for each side. The servo is the [limit run's SERVO setting](servo-settings.md#the-limit-run-s-settings), which takes the programmer opened last on PROGRAM; the box's third line names it, `SERVO HITEC D SERIES`. The box takes the place of LENGTH, the drive buttons and the state lines; MANUAL brings them back. The side view stays and adds the two targets as amber dashed lines: 1000us on the negative side, 2000us on the positive one, or each on the side the last run measured it on.
 
 ![AUTO's box, ARMED](view:servo-rudder-auto)
 

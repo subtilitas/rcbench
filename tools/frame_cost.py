@@ -74,7 +74,7 @@ INCLUDES = ui_sources.INCLUDES
 
 MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
          "overview", "overview-guide", "servo", "servo-grip",
-         "servo-current", "supply",
+         "servo-current", "servo-rudder", "supply",
          "supply-chrome",
          "analyser", "logs", "settings", "settings-list", "battery",
          "balance",

@@ -13,6 +13,10 @@
  *   overview  the menu, whose tiles are chrome and are never in a frame
  *   servo     the servo card, whose arm and grip are drawn from coverage
  *   servo-grip  the same, repainting only the breathing grip
+ *   servo-rudder  SERVO's RUDDER task with an AS5600 reading every frame
+ *             whose deflection differs in the tenths shown: the readout,
+ *             the state lines and the side view of the surface, each
+ *             clipped to itself
  *   servo-current  the same as servo-grip with the INA3221 as the servo
  *             rail's meter and a window every frame whose current differs
  *             in the digits shown: the grip, the CURRENT row's value, the
@@ -69,6 +73,8 @@
 #include "ew_map.h"
 #include "link_pages.h"
 #include "servo_screen.h"
+#include "servo_spots.h"
+#include "settings.h"
 #include "splash_screen.h"
 #include "supply.h"
 #include "supply_screen.h"
@@ -196,6 +202,41 @@ static void wire_open(void)
                 (int)esc_wire_panel_stage());
         exit(1);
     }
+}
+
+/**
+ * @brief The AS5600's reading at @p raw counts, as the panel hands it over.
+ * @param raw the count, 0 to 4095
+ * @param at_ms its time, ms
+ */
+static void rudder_reading(uint16_t raw, uint32_t at_ms)
+{
+    const servo_test_enc_t e = { .valid = true, .raw = raw,
+                                 .taken_ms = at_ms };
+    servo_screen_encoder(&e);
+}
+
+/**
+ * @brief SERVO's RUDDER task with the AS5600 on and linked, a reading on
+ *        show and the MAX of both sides taken.
+ */
+static void rudder_open(void)
+{
+    settings_set(SET_ENC_EN, 1.0f);
+    settings_set(SET_ENC_CENTRE, 2048.0f);
+    settings_set(SET_RUDDER_LEN_MM, 120.0f);
+    servo_screen_set_link(true);
+    const int16_t x = SV_TAB_RUDDER_X;
+    const int16_t y = (int16_t)(UI_BAND_H + SV_TAB_Y);
+    const touch_event_t tap[] = {
+        { .type = TOUCH_EVENT_DOWN, .point = { .id = 1, .x = x, .y = y } },
+        { .type = TOUCH_EVENT_UP,   .point = { .id = 1, .x = x, .y = y } },
+    };
+    ui_router_event(&tap[0]);
+    ui_router_event(&tap[1]);
+    rudder_reading(2048u - 280u, 100u);
+    rudder_reading(2048u + 290u, 140u);
+    rudder_reading(2048u + 140u, 180u);
 }
 
 /**
@@ -448,6 +489,9 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         if (strcmp(mode, "servo-current") == 0) {
             servo_screen_source(SERVO_SOURCE_INA3221, 1u);
         }
+        if (strcmp(mode, "servo-rudder") == 0) {
+            rudder_open();
+        }
         /* One tick a phase, and the first spends nothing. */
         for (int f = 0; f <= UI_HOLD_FLASH_MS / UI_HOLD_FLASH_PHASE_MS; ++f) {
             ui_router_tick((float)UI_HOLD_FLASH_PHASE_MS / 1000.0f);
@@ -512,6 +556,12 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
              * breathes, which is the frame the clipped repaint exists for. */
             if (strcmp(mode, "servo") == 0) {
                 servo_screen_set_commanded(38.0f + (float)((i % 20) - 10));
+            }
+            if (strcmp(mode, "servo-rudder") == 0) {
+                /* A reading a frame, 3 counts (0.26°) apart: the readout
+                 * and the drawing change on every one. */
+                rudder_reading((uint16_t)(2048u + 140u + 3u * (unsigned)(i % 16)),
+                               200u + 40u * (uint32_t)i);
             }
             servo_screen_feedback(servo_screen_commanded(), 0.4f, true);
             if (strcmp(mode, "servo-current") == 0) {

@@ -732,10 +732,12 @@ SCREENS = {
                               "dark"),
     # SERVO's RUDDER task: ZERO taken, the surface at +12.3deg after -24.6
     # and +25.5, LENGTH 120mm; the same ARMED after 2000us; with LENGTH
-    # not set, degrees alone; and ARMED with AUTO's box shown.
+    # not set, degrees alone; ARMED with AUTO's box shown; and the surface
+    # at -85.0deg, the side view near its -90deg end.
     "servo-rudder": ("servo-rudder.png", "servo", "dark"),
     "servo-rudder-armed": ("servo-rudder-armed.png", "servo", "dark"),
     "servo-rudder-nolength": ("servo-rudder-nolength.png", "servo", "dark"),
+    "servo-rudder-85": ("servo-rudder-85.png", "servo", "dark"),
     # The IMU tile's screen: the HC-05 answering with no sensor bound; the
     # found list after SCAN; bound and connected at 50Hz with ZERO taken.
     # SETUP > SENSORS on the IMU entry, connected.

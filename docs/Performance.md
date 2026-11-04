@@ -66,6 +66,7 @@ overview-guide                 350      44 KiB
 servo                        2,216     277 KiB
 servo-grip                     521      65 KiB
 servo-current                3,189     399 KiB
+servo-rudder                 4,069     509 KiB
 supply                       9,871    1234 KiB
 supply-chrome               48,048    6006 KiB
 analyser                         0       0 KiB
@@ -114,6 +115,7 @@ est. ms and est. fps: not measured
 | `servo` | the servo screen with the arm redrawn |
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
+| `servo-rudder` | SERVO > RUDDER with an AS5600 reading in every frame, 0.26° from the one before: the readout, the state lines and the side view's flap repainted, each clipped to itself |
 | `supply` | the supply screen with its output on, a sample landing every frame |
 | `motor-wire-hold` | the ESC signal wire session on LEAVE's page, a finger on its 2s hold |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `motor-wire`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
@@ -236,6 +238,7 @@ a change that makes the model draw more, not a frame that misses the panel:
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
+| `servo-rudder` | 4,600 | a new angle on RUDDER that repaints more than the readout, the state lines and the flap's two boxes |
 | `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,720 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the eleven `-chrome` modes | 72,000 | a growing full repaint |

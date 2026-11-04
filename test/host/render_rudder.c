@@ -7,6 +7,7 @@
  * count 2048; the surface then goes to -24.6° and +25.5°, which MAX holds,
  * and comes back to +12.3°.  LENGTH is 120mm, or not set in
  * servo-rudder-nolength.  servo-rudder-armed is ARMED with 2000us tapped.
+ * servo-rudder-85 then goes to -85.0°, which MAX takes as its negative side.
  * servo-rudder-auto is ARMED with AUTO's box shown: no KST servo on the
  * programming port, which its first line names.  help-servo-rudder is the
  * task's guide page over the same card, SAFE.
@@ -81,6 +82,9 @@ void render_rudder_pose(const char *view)
     reading(2048u - 280u, 1040u);           /* -24.6deg */
     reading(2048u + 290u, 1080u);           /* +25.5deg */
     reading(2048u + 140u, 1120u);           /* +12.3deg */
+    if (strcmp(view, "servo-rudder-85") == 0) {
+        reading(2048u - 967u, 1160u);       /* -85.0deg */
+    }
     if (strcmp(view, "servo-rudder-armed") == 0) {
         servo_screen_set_armed(true);
         tap_body(438, 252);                 /* 2000us */
