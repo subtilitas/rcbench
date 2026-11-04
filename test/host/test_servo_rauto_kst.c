@@ -19,6 +19,8 @@
  * - auto_without_a_pd_mini_or_a_zero_is_refused_and_says_why
  * - a_tap_on_stop_run_ends_auto_at_once
  * - zero_and_reset_max_are_refused_while_auto_runs
+ * - a_supply_set_anew_outside_a_session_ends_auto
+ * - with_user_logs_off_auto_hands_the_logger_nothing
  *
  * SPDX-License-Identifier: MIT
  */
@@ -320,6 +322,16 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK(ra.offs >= 1u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "REPORT RUDDR007.TXT");
+    snprintf(want, sizeof(want), TR(RA_SET), 150u,
+             (unsigned)servo(KST_F_LEFT_ANGLE), 150u,
+             (unsigned)servo(KST_F_RIGHT_ANGLE));
+    CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), want);
+    /* The programmer's run is over: a second START is free once ARMED. */
+    CHECK(kst_panel_run_ready());
+    ra.armed = true;
+    servo_screen_set_armed(true);
+    ra_ms(100u);
+    CHECK(rauto_blocked() == NULL);
 }
 
 /* A STOP during AUTO (servo_screen_cancel_arm(), the panel's STOP stamp
@@ -443,6 +455,64 @@ TEST_CASE(zero_and_reset_max_are_refused_while_auto_runs)
     CHECK(!rauto_shown());
 }
 
+/* The PD mini's voltage set point moved in a measure, outside the
+ * programmer's sessions: ABORTED, `supply or rail voltage changed`, every
+ * output off; the box's second line names it. */
+TEST_CASE(a_supply_set_anew_outside_a_session_ends_auto)
+{
+    ra_setup(true, true);
+    ra_hold_start();
+    bool there = false;
+    for (int i = 0; i < 400000 && servo_screen_rauto_running(); ++i) {
+        ra_ms(1u);
+        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_SETTLE) {
+            there = true;
+            break;
+        }
+    }
+    CHECK(there);
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.output = true;
+    st.set_v = supply_screen_set_v() + 0.1f;
+    st.set_i = supply_screen_set_i();
+    st.v = st.set_v;
+    st.samples = 1u;
+    st.taken_ms = g_rig.ms;
+    st.stamped = true;
+    servo_screen_supply(&st);
+    CHECK(!servo_screen_rauto_running());
+    ra_ms(3000u);
+    CHECK(!ra.armed);
+    CHECK(!g_rig.sup_on);
+    CHECK(strstr(ra.report, "ABORTED - supply or rail voltage changed")
+          != NULL);
+    char b[96], want[96];
+    snprintf(want, sizeof(want), TR(RA_LAST),
+             ui_servo_str(SERVO_STR_ABORTED),
+             ui_servo_str(SERVO_STR_L_WHY_SUPPLY));
+    CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), want);
+}
+
+/* USER LOGS off on SETUP > SD CARD: the run hands out no OPEN and no line,
+ * and the box's last line reads USER LOGS OFF. */
+TEST_CASE(with_user_logs_off_auto_hands_the_logger_nothing)
+{
+    ra_setup(true, true);
+    settings_set(SET_LOG_USER, 0.0f);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    ra_run_out();
+    CHECK(!servo_screen_rauto_running());
+    CHECK_EQ(ra.opens_csv, 0u);
+    CHECK_EQ(ra.ends, 0u);
+    CHECK_EQ(ra.len, 0u);
+    char b[96];
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), TR(SV_USER_LOGS_OFF));
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -450,5 +520,7 @@ int main(void)
     RUN(auto_without_a_pd_mini_or_a_zero_is_refused_and_says_why);
     RUN(a_tap_on_stop_run_ends_auto_at_once);
     RUN(zero_and_reset_max_are_refused_while_auto_runs);
+    RUN(a_supply_set_anew_outside_a_session_ends_auto);
+    RUN(with_user_logs_off_auto_hands_the_logger_nothing);
     return test_summary("servo_rauto_kst");
 }

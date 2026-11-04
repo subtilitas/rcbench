@@ -216,7 +216,8 @@ typedef enum {
     SERVO_RAUTO_WHY_STALL, SERVO_RAUTO_WHY_BINDS, SERVO_RAUTO_WHY_NOT_STILL,
     SERVO_RAUTO_WHY_ANGLE, SERVO_RAUTO_WHY_NO_SERVO, SERVO_RAUTO_WHY_PROG,
     SERVO_RAUTO_WHY_WRITE, SERVO_RAUTO_WHY_MAPPING, SERVO_RAUTO_WHY_LIMIT,
-    SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_COUNT,
+    SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_SUPPLY,
+    SERVO_RAUTO_WHY_COUNT,
 } servo_rauto_why_t;
 
 /** @brief One measure of one side. */
@@ -385,6 +386,15 @@ void servo_rauto_step(servo_rauto_t *r, uint32_t now_ms, const servo_rauto_in_t 
  * @param now_ms Time, ms.
  */
 void servo_rauto_abort(servo_rauto_t *r, servo_test_abort_t why, uint32_t now_ms);
+/**
+ * @brief The supply changed under the run outside a session: it answers
+ *        where it did not at the start, its output went on, or its set
+ *        points moved.  The run ends as ABORTED with WHY_SUPPLY, the limit
+ *        run's `supply or rail voltage changed`.
+ * @param r      Run state; nothing unless RUNNING.
+ * @param now_ms Time, ms.
+ */
+void servo_rauto_supply_changed(servo_rauto_t *r, uint32_t now_ms);
 /**
  * @brief Whether the run is RUNNING.
  * @param r Run state; NULL gives false.

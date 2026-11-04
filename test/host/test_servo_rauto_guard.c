@@ -532,7 +532,7 @@ TEST_CASE(the_words_name_every_reason_and_phase)
         SERVO_STR_RA_WHY_NO_SERVO, SERVO_STR_L_WHY_PROG,
         SERVO_STR_L_WHY_WRITE, SERVO_STR_RA_WHY_MAPPING,
         SERVO_STR_RA_WHY_LIMIT, SERVO_STR_RA_WHY_WRITE_CAP,
-        SERVO_STR_L_WHY_BENCH,
+        SERVO_STR_L_WHY_BENCH, SERVO_STR_L_WHY_SUPPLY,
     };
     r.test_why = SERVO_TEST_AB_STOP;
     for (int k = 0; k < (int)SERVO_RAUTO_WHY_COUNT; ++k) {

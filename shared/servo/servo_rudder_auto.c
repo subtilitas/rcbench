@@ -185,6 +185,14 @@ void servo_rauto_abort(servo_rauto_t *r, servo_test_abort_t why,
     abort_why(r, SERVO_RAUTO_WHY_TEST, now_ms);
 }
 
+void servo_rauto_supply_changed(servo_rauto_t *r, uint32_t now_ms)
+{
+    if (!servo_rauto_running(r)) {
+        return;
+    }
+    abort_why(r, SERVO_RAUTO_WHY_SUPPLY, now_ms);
+}
+
 /* ------------------------------------------------------------ the steps */
 
 /**

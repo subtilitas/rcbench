@@ -142,6 +142,9 @@ TEST_CASE(a_start_that_cannot_run_says_why_and_drives_nothing)
         CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "");
         CHECK_STR_EQ(rauto_line(3, b, sizeof(b)), "");
         CHECK_STR_EQ(rauto_line(0, NULL, 0), "");
+        char keep[4] = "abc";
+        CHECK_STR_EQ(rauto_line(0, keep, 0), "");
+        CHECK_STR_EQ(keep, "abc");          /* nothing written */
         CHECK_EQ(taken_kind(), SERVO_CMD_NONE);
         scr->render(&cv, 0);
     }

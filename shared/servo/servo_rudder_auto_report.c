@@ -450,6 +450,7 @@ servo_str_t servo_rauto_why_str(const servo_rauto_t *r)
     case SERVO_RAUTO_WHY_LIMIT:     return SERVO_STR_RA_WHY_LIMIT;
     case SERVO_RAUTO_WHY_WRITE_CAP: return SERVO_STR_RA_WHY_WRITE_CAP;
     case SERVO_RAUTO_WHY_BENCH:     return SERVO_STR_L_WHY_BENCH;
+    case SERVO_RAUTO_WHY_SUPPLY:    return SERVO_STR_L_WHY_SUPPLY;
     default:                        return SERVO_STR_AB_NONE;
     }
 }

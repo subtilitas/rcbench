@@ -261,9 +261,12 @@ static bool ra_apply(const servo_rauto_do_t *d)
         && (!s.sup.output || !s.ra.sup_online)) {
         /* A PD mini the run did not start with, or one whose output is
          * off: the session would switch it on beside the rail's feed. */
-        servo_rauto_abort(&s.ra.run, s.sup.output ? SERVO_TEST_AB_SETTINGS
-                                                  : SERVO_TEST_AB_SUPPLY_OFF,
-                          test_now());
+        if (s.sup.output) {
+            servo_rauto_supply_changed(&s.ra.run, test_now());
+        } else {
+            servo_rauto_abort(&s.ra.run, SERVO_TEST_AB_SUPPLY_OFF,
+                              test_now());
+        }
         again = true;
     } else if (d->connect) {
         m = kst_panel_run_connect(
@@ -445,8 +448,9 @@ void rauto_supply(const servo_test_reading_t *r)
         return;
     }
     servo_test_abort_t why = SERVO_TEST_AB_NONE;
+    bool changed = false;
     if (!s.ra.sup_online) {
-        why = r->online ? SERVO_TEST_AB_SETTINGS : SERVO_TEST_AB_NONE;
+        changed = r->online;
     } else if (!r->online) {
         why = SERVO_TEST_AB_SUPPLY_LOST;
     } else if (s.ra.sup_out && r->trip != 0u) {
@@ -456,9 +460,13 @@ void rauto_supply(const servo_test_reading_t *r)
     } else if (r->output != s.ra.sup_out
                || fabsf(r->set_v - s.ra.sup_v) > 0.005f
                || fabsf(r->set_i - s.ra.sup_i) > 0.0005f) {
-        why = SERVO_TEST_AB_SETTINGS;
+        changed = true;             /* switched on from off, or set anew */
     }
-    if (why != SERVO_TEST_AB_NONE) {
+    if (changed) {
+        servo_rauto_supply_changed(&s.ra.run, test_now());
+        ra_step();
+        ra_ended();
+    } else if (why != SERVO_TEST_AB_NONE) {
         rauto_end_now(why);
     }
 }
