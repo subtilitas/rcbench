@@ -179,7 +179,6 @@ TRACKED = [
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
     "shared/settings/settings.c",
-    "shared/settings/settings_schema.c",
     "shared/settings/settings_sensors.c",
     "shared/settings/settings_text.c",
     "shared/logfile/log_numbers.c",
@@ -416,6 +415,8 @@ DATA_ONLY = {
     "shared/outputs/out_board_rbmod.c",
     # The Wi-Fi page's file manager as C strings, by tools/gen_web_blob.py.
     "shared/webaccess/wa_web_blob.c",
+    # The settings' schema, one row per setting.
+    "shared/settings/settings_schema.c",
 }
 
 # Below this, CI fails.  Raise it when the suite gets better; never lower it
