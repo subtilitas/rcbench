@@ -528,43 +528,117 @@ TEST_CASE(a_timeout_fails_the_operation_at_exactly_its_limit)
     at_tick_0_and_before_the_wrap(fence_times_out, 4000u);
 }
 
+/* A probe by hand up to its first AT at @p t0 + 100. */
+static void probe_to_at(hc05_t *h, uint32_t t0)
+{
+    hc05_act_t a;
+    hc05_init(h);
+    CHECK(hc05_probe(h, t0));
+    CHECK_EQ(step_all(h, t0, NULL), HC05_ACT_KEY);
+    CHECK(step_all(h, t0 + 100u, &a) == HC05_ACT_SEND && is_send(&a, "AT"));
+}
+
+/* An abort during AT+INQ with no answer at all: FAILED when the fence's
+ * wait, the inquiry's own plus HC05_AT_MS, runs out, not 1ms before. */
+static void abort_fence_times_out(uint32_t t0)
+{
+    hc05_t h;
+    hc05_act_t a;
+    const uint32_t sent = scan_to_inq(&h, t0);
+    hc05_abort(&h);
+    CHECK(step_all(&h, sent + 5u, &a) == HC05_ACT_SEND
+          && is_send(&a, "AT+STATE?"));
+    const uint32_t wait = HC05_INQ_MS(HC05_INQ_UNITS) + HC05_AT_MS;
+    CHECK_EQ(step_all(&h, sent + 5u + wait - 1u, NULL), HC05_ACT_NONE);
+    CHECK(hc05_busy(&h));
+    CHECK(step_all(&h, sent + 5u + wait, &a) == HC05_ACT_KEY && !a.key);
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+    CHECK_EQ(h.err, HC05_ERR_NONE);
+}
+
 TEST_CASE(abort_ends_a_running_scan_and_drops_key)
 {
     hc05_t h;
     hc05_act_t a;
+
+    /* In AT+INQ: AT+STATE? goes out, the inquiry's lines and OK are
+     * dropped, the fence's +STATE: and OK end it FAILED. */
     const uint32_t sent = scan_to_inq(&h, 0);
     feed_line(&h, "+INQ:" SENSOR ",1F00,FFC0");
     hc05_abort(&h);
-    CHECK(!hc05_busy(&h));
-    CHECK_EQ(h.state, HC05_ST_FAILED);
-    CHECK_EQ(h.err, HC05_ERR_NONE);
-    CHECK(step_all(&h, sent + 1u, &a) == HC05_ACT_KEY && !a.key);
-    CHECK(!h.key);
-    /* The rest of the inquiry changes nothing. */
+    CHECK(hc05_busy(&h));
+    CHECK(!hc05_probe(&h, sent + 1u));
+    CHECK(step_all(&h, sent + 1u, &a) == HC05_ACT_SEND
+          && is_send(&a, "AT+STATE?"));
     feed_line(&h, "+INQ:1:2:3,1F00,FFC0");
     feed_line(&h, "OK");
+    CHECK(hc05_busy(&h));
+    hc05_abort(&h); /* a second abort changes nothing */
+    feed_line(&h, "+STATE:INQUIRING");
+    CHECK(hc05_busy(&h));
+    feed_line(&h, "OK");
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+    CHECK_EQ(h.err, HC05_ERR_NONE);
     CHECK_EQ(h.found_n, 1);
-    CHECK_EQ(h.state, HC05_ST_FAILED);
+    CHECK(step_all(&h, sent + 2u, &a) == HC05_ACT_KEY && !a.key);
+    CHECK(!h.key);
     CHECK_EQ(step_all(&h, sent + 20000u, NULL), HC05_ACT_NONE);
-    /* A second abort, an abort while idle and of NULL do nothing. */
-    hc05_abort(&h);
-    CHECK_EQ(h.state, HC05_ST_FAILED);
-    hc05_init(&h);
-    hc05_abort(&h);
-    CHECK_EQ(h.state, HC05_ST_IDLE);
-    hc05_abort(NULL);
 
-    /* An abort before KEY was asked high asks nothing. */
+    at_tick_0_and_before_the_wrap(abort_fence_times_out, 6000u);
+
+    /* In the name fence: the AT+STATE? already out serves. */
+    const uint32_t rn = scan_to_rname(&h, 0);
+    CHECK(step_all(&h, rn + HC05_RNAME_MS, &a) == HC05_ACT_SEND
+          && is_send(&a, "AT+STATE?"));
+    hc05_abort(&h);
+    CHECK_EQ(step_all(&h, rn + HC05_RNAME_MS + 1u, NULL), HC05_ACT_NONE);
+    feed_line(&h, "+STATE:PAIRABLE");
+    feed_line(&h, "OK");
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+
+    /* In the handshake or before KEY: FAILED at once; a start after it
+     * raises KEY again. */
+    probe_to_at(&h, 0);
+    hc05_abort(&h);
+    CHECK(!hc05_busy(&h));
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+    CHECK(hc05_probe(&h, 200));
+    CHECK(step_all(&h, 200, &a) == HC05_ACT_KEY && a.key);
     hc05_init(&h);
     CHECK(hc05_probe(&h, 0));
     hc05_abort(&h);
     CHECK_EQ(step_all(&h, 0, NULL), HC05_ACT_NONE);
-
-    /* A start right after an abort raises KEY again. */
-    (void)scan_to_inq(&h, 0);
+    /* An abort while idle and of NULL do nothing. */
+    hc05_init(&h);
     hc05_abort(&h);
-    CHECK(hc05_probe(&h, 200));
-    CHECK(step_all(&h, 200, &a) == HC05_ACT_KEY && a.key);
+    CHECK_EQ(h.state, HC05_ST_IDLE);
+    hc05_abort(NULL);
+}
+
+TEST_CASE(an_operation_after_an_aborted_scan_takes_none_of_its_answers)
+{
+    hc05_t h;
+    sim_t s;
+    sim_init(&s, 2, HC05_BAUD_DATA);
+    sim_add_dev(&s, SENSOR, 0x1F00u, 0xFFC0u, "HC-06", 2500u);
+    hc05_init(&h);
+    CHECK(hc05_scan(&h, 0));
+    uint32_t t = 0;
+    for (; t < 11500u; ++t) {
+        sim_tick(&s, &h, t);
+    }
+    hc05_abort(&h);
+    for (; t < 40000u && hc05_busy(&h); ++t) {
+        sim_tick(&s, &h, t);
+    }
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+    CHECK(hc05_probe(&h, t));
+    (void)sim_run(&s, &h, t, 10000u);
+    CHECK_EQ(h.state, HC05_ST_DONE);
+    CHECK_STR_EQ(h.version, "2.0-20100601");
+    const char *want[] = { "AT", "AT+ROLE=1", "AT+INIT", "AT+INQM=1,9,9",
+                           "AT+INQ", "AT+STATE?", "AT", "AT+VERSION?" };
+    check_cmds(&s, want, 8u);
 }
 
 TEST_CASE(a_second_start_while_busy_is_refused)
@@ -688,6 +762,7 @@ int main(void)
     RUN(scan_on_firmware_3_0_ends_inq_refused_on_error_1f);
     RUN(a_timeout_fails_the_operation_at_exactly_its_limit);
     RUN(abort_ends_a_running_scan_and_drops_key);
+    RUN(an_operation_after_an_aborted_scan_takes_none_of_its_answers);
     RUN(a_second_start_while_busy_is_refused);
     RUN(found_is_capped_at_eight_devices);
     RUN(lines_outside_a_wait_are_ignored);

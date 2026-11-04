@@ -105,9 +105,14 @@ baud can stay in the module's line buffer and spoil the first command.
 | `HC05_ERR_NONE_FOUND` | the inquiry ended with no device | 0 |
 | `HC05_ERR_ARG` | `hc05_bind()` or `hc05_any()` with a bad address or PIN; nothing is sent | 0 |
 
-`hc05_abort()` ends a running operation FAILED with `HC05_ERR_NONE`. The
-next `hc05_step()` asks KEY low when KEY was high. Lines that come after
-it change nothing. After `AT+RESET` has gone out the module restarts
+`hc05_abort()` ends a running operation FAILED with `HC05_ERR_NONE`, and
+the next `hc05_step()` asks KEY low when KEY was high. Before KEY has
+settled or during the handshake's `AT` this happens at once. With any
+other command out, its late answers must not reach the next operation:
+`AT+STATE?` goes out, every line up to its `+STATE:` line and OK is
+dropped, and the operation ends FAILED then, or when the command's own
+timeout plus 1000ms runs out (14520ms in `AT+INQ`, 23000ms in
+`AT+PAIR`). The machine is busy until then. After `AT+RESET` has gone out the module restarts
 whatever comes: an abort then asks KEY low, keeps the machine busy for
 the 1500ms hold, and ends FAILED with `HC05_ERR_NONE` at its end, without
 the data baud action.

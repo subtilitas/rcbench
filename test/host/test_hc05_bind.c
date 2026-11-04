@@ -400,8 +400,12 @@ TEST_CASE(bind_and_any_refuse_a_bad_address_or_pin)
         CHECK(!hc05_step(&h, 0, &a));
     }
     /* A refusal after an operation that left KEY high still drops it. */
-    (void)scan_to_inq(&h, 0);
+    hc05_init(&h);
+    CHECK(hc05_probe(&h, 0));
+    (void)step_all(&h, 0, NULL);
+    (void)step_all(&h, 100, NULL);
     hc05_abort(&h);
+    CHECK(h.key);
     CHECK(!hc05_any(&h, "", 0));
     CHECK(step_all(&h, 1, &a) == HC05_ACT_KEY && !a.key);
 }

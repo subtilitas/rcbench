@@ -73,6 +73,14 @@ static const uint32_t k_bauds[] = { HC05_BAUD_DATA, HC05_BAUD_ALT,
 #define FENCE_STATE 2u /**< its +STATE: line came */
 /** @} */
 
+/** @brief hc05_t.tries at a command stage after hc05_abort(): AT+STATE?
+ *         goes out, every line up to its +STATE: line and OK is dropped,
+ *         then the operation ends FAILED.  So no answer to the aborted
+ *         command reaches the next operation. @{ */
+#define ABORT_FENCE 3u /**< AT+STATE? to send or sent */
+#define ABORT_STATE 4u /**< its +STATE: line came */
+/** @} */
+
 /** @brief hc05_t.tries at S_KEYLOW: why the hold ends the operation
  *         FAILED.  0: it goes on to the data baud. @{ */
 #define ABORTED    1u /**< hc05_abort() came after AT+RESET went out */
@@ -208,6 +216,29 @@ static void put_addr(hc05_t *h, const char *addr)
 }
 
 /**
+ * @brief The answer's timeout of a command stage.
+ * @param s The stage.
+ * @return The timeout, in ms.
+ */
+static uint32_t stage_wait(uint8_t s)
+{
+    switch (s) {
+    case S_INQ:
+        return HC05_INQ_MS(HC05_INQ_UNITS);
+    case S_RNAME:
+        return HC05_RNAME_MS;
+    case S_PAIR:
+        return HC05_PAIR_MS;
+    case S_RESET:
+        /* KEY stays high this long only: the module restarts on the
+         * command, its OK or not, and KEY low then means data mode. */
+        return HC05_KEY_SETTLE_MS;
+    default:
+        return HC05_AT_MS;
+    }
+}
+
+/**
  * @brief Build the command of @p s into the action, emptied by queue().
  * @param h The machine.
  * @param s A command stage.
@@ -215,9 +246,14 @@ static void put_addr(hc05_t *h, const char *addr)
  */
 static uint32_t command(hc05_t *h, uint8_t s)
 {
-    uint32_t wait = HC05_AT_MS;
     h->act.kind = HC05_ACT_SEND;
     put(h, "AT");
+    if (h->tries >= ABORT_FENCE) {
+        /* The aborted command's answers come first: its own time, then
+         * the fence's. */
+        put(h, "+STATE?\r\n");
+        return stage_wait(s) + HC05_AT_MS;
+    }
     switch (s) {
     case S_AT:
         break;
@@ -235,7 +271,6 @@ static uint32_t command(hc05_t *h, uint8_t s)
         break;
     case S_INQ:
         put(h, "+INQ");
-        wait = HC05_INQ_MS(HC05_INQ_UNITS);
         break;
     case S_RNAME:
         if (h->tries != 0u) {
@@ -244,7 +279,6 @@ static uint32_t command(hc05_t *h, uint8_t s)
             put(h, "+RNAME?");
             put_addr(h, h->found[h->name_i].addr);
         }
-        wait = HC05_RNAME_MS;
         break;
     case S_ROLE:
         put(h, "+ROLE=1");
@@ -259,7 +293,6 @@ static uint32_t command(hc05_t *h, uint8_t s)
         put_addr(h, h->target);
         put(h, ",");
         put_u32(h, PAIR_S);
-        wait = HC05_PAIR_MS;
         break;
     case S_BIND:
         put(h, "+BIND=");
@@ -277,14 +310,11 @@ static uint32_t command(hc05_t *h, uint8_t s)
         put(h, ",0,0");
         break;
     default: /* S_RESET */
-        /* KEY stays high this long only: the module restarts on the
-         * command, its OK or not, and KEY low then means data mode. */
         put(h, "+RESET");
-        wait = HC05_KEY_SETTLE_MS;
         break;
     }
     put(h, "\r\n");
-    return wait;
+    return stage_wait(s);
 }
 
 /**
@@ -346,7 +376,9 @@ static void next_name(hc05_t *h)
 static void expired(hc05_t *h, uint8_t s)
 {
     h->wait_ms = 0;
-    if (s == S_KEYLOW && h->tries != 0u) {
+    if (h->tries >= ABORT_FENCE && s != S_KEYLOW) {
+        finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);
+    } else if (s == S_KEYLOW && h->tries != 0u) {
         finish(h, HC05_ST_FAILED,
                h->tries == ABORTED ? HC05_ERR_NONE : HC05_ERR_TIMEOUT, 0);
     } else if (s == S_RESET) {
@@ -409,6 +441,14 @@ static void take_line(hc05_t *h, const char *line)
                                              &code);
     const uint8_t s = stage(h);
 
+    if (h->tries >= ABORT_FENCE && s != S_KEYLOW) {
+        if (kind == HC05_LINE_STATE) {
+            h->tries = ABORT_STATE;
+        } else if (kind == HC05_LINE_OK && h->tries == ABORT_STATE) {
+            finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);
+        }
+        return;
+    }
     if (s == S_KEYLOW && kind == HC05_LINE_OK && h->tries == RESET_LOST) {
         h->tries = 0; /* AT+RESET's OK, late */
     }
@@ -600,6 +640,19 @@ void hc05_abort(hc05_t *h)
             h->act_due = false;
         }
         h->tries = ABORTED;
+        return;
+    }
+    if (h->wait_ms != 0u && s != S_KEY && s != S_AT) {
+        /* A command is out: its late answers must not reach the next
+         * operation.  A fence already out (S_RNAME) serves as this one. */
+        if (s == S_RNAME && h->tries == FENCE_SENT) {
+            h->tries = ABORT_FENCE;
+        } else if (s == S_RNAME && h->tries == FENCE_STATE) {
+            h->tries = ABORT_STATE;
+        } else if (h->tries < ABORT_FENCE) {
+            h->tries = ABORT_FENCE;
+            h->wait_ms = 0;
+        }
         return;
     }
     finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);
