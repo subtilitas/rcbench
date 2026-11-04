@@ -858,6 +858,61 @@ No line shows while no IOmcu answers, and none for PULL-UP on an older IOmcu.
 
 ![Hitec D receive's list](img/servo-hitec-rx.png)
 
+## Runs
+
+A run is a sequence of writes that a SERVO tool makes without the
+operator's pages, as the limit run does on a KST servo
+([Programming the servo's travel limits](Servo.md#programming-the-servos-travel-limits)).
+The programmer has the seam for one on a Hitec servo
+(`shared/bench/include/hitec_prog_run.h`,
+`shared/ui/include/hitec_panel_run.h`). No screen starts a run on a Hitec
+servo.
+
+A run writes LEFT END and RIGHT END and nothing else, in travel units:
+
+| Series | Left | Right | Unit | A run takes |
+| --- | --- | --- | --- | --- |
+| D SERIES | 0xC2 - 0xB2 | 0xB0 - 0xC2 | counts from NEUTRAL 0xC2; 74.5 a degree on a standard servo (the D series manual) | 1 to the smaller of 0xC2 - 1 and 16383 - 0xC2: 8191 at NEUTRAL 8192 |
+| CLASSIC | cell 0x14 on a CW servo, 0x13 on a CCW one | cell 0x13 on a CW servo, 0x14 on a CCW one | the raw cell | 0 to 255 |
+
+CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
+0x1B bit 0. A D series servo counts the same way in both directions.
+
+- The run's start is a button held 2s. That hold is the consent CHECK
+  THIS CHANGE asks for: the run's own edits of LEFT END and RIGHT END take
+  their rule as confirmed, and each write of the run switches ENABLE WRITE
+  TO SERVO on for itself and off at its end. An edit on the programmer's
+  tabs during a run still opens CHECK THIS CHANGE. Outside a run the seam
+  writes nothing and says `Writing is off. Switch ENABLE WRITE TO SERVO on
+  first.`
+- A value outside the range is refused, not clamped: nothing is edited,
+  nothing is sent, and the switch stays off.
+- Every write of a run is a write as WRITE n VALUES makes it: the second
+  read, the record on the card, then the D series registers 20ms apart,
+  the save (0x70 = 0xFFFF), 100ms, the restart (0x46 = 1), 1000ms and the
+  read-back of the 21 registers; or each classic cell with its balance in
+  0x1C, then the read-back of cells 0x00 to 0x23. A run counts a write as
+  done when its read-back holds both values. A write whose read-back
+  differs fails the run's step; the run reads the values the servo holds
+  from that read-back.
+- The backup file: the run's first write that sends a step saves the
+  session's backup to the next proposed name, HITEC001 to HITEC999, before
+  anything goes to the servo. The file holds the servo as the run found
+  it. A later session of the same run, after a LEAVE and a CONNECT, saves
+  no file: its own backup holds the run's earlier writes. With no card the
+  backup is in RAM only, and LEAVE ends it.
+- RESTORE after a run: load the run's backup file on FILES
+  ([Loading a backup file](#loading-a-backup-file)) and write it with
+  WRITE n VALUES. It brings both end points back with every other address
+  a write sends. RESTORE of the session's backup brings back the servo as
+  that session found it, which after a later session of the run is a
+  value of the run.
+- The run's end switches ENABLE WRITE TO SERVO off, drops the draft and
+  gives the programming voltage and current back to the settings' values.
+- Which horn position a D series end point gives on a CCW servo, and
+  which classic cell limits which side on a CCW servo, are not measured;
+  the travel units follow the register model (`protocols/hitec`).
+
 ## Current limitations
 
 - Classic writes through the IOmcu are run on one servo, an HS-7955TG

@@ -459,6 +459,9 @@ hitec_prog_edit_t hpn_edit_take(int32_t value);
 void hpn_page_apply(void);
 /** @brief The programmer's options from the settings. */
 void hpn_options_load(void);
+/** @brief The supply limits a CONNECT is held to: none on the rbmod
+ *         carrier's fixed 5V, else the SUPPLY screen's as they are now. */
+void hpn_supply_caps(void);
 
 /* hitec_panel_file.c */
 

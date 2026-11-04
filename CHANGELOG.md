@@ -25,6 +25,13 @@ history is in git.
   source; the IMU's angle is carried in AS5600 counts (0.088°). The test's
   CSV gains the column `angle source`, last; both reports name the source
   in the line `Angle source:`.
+- The Hitec programmer takes a run's writes (`hitec_panel_run_*`): the two
+  end points in one session, the D series with save and reboot, the classic
+  cells with the balance, the backup file before the first write, RESTORE
+  after. Values are travel units: D series counts from NEUTRAL 0xC2, classic
+  the raw cells 0x13 and 0x14 by DIRECTION. The run's 2s start hold
+  confirms the end point rule for the run's own edits only; outside a run
+  the seam writes nothing. No screen starts a Hitec run.
 
 ### Changed
 
