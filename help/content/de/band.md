@@ -43,7 +43,7 @@ STOP wirkt auf jedem Bildschirm mit Band. Ein Druck schaltet den Prüfstand auf 
 - Eingerastet bleibt STOP rot in einem gelben Rahmen und zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, und der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden abgelehnt, mit `STOP gedrückt: STOP 2s halten zum Lösen.`
 - Halte das eingerastete STOP 2s, um es zu lösen. Die Füllung geht in den 2s von Rot nach Gelb über. Danach wartet das Panel, bis der IOmcu SAFE und alle Ausgänge aus meldet, frühestens 500ms nach dem letzten STOP, und sendet wieder den Heartbeat. Der Prüfstand bleibt SAFE: Jeder Ausgang braucht zum Einschalten wieder sein eigenes Halten.
 - Kommt die Antwort des IOmcu nicht binnen 2s, bleibt der Stopp eingerastet, und das Alert-Band sagt `STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.` Halte STOP erneut.
-- Ein Druck auf ein eingerastetes STOP ist ebenfalls ein STOP. Loslassen vor 2s zeigt `Halte 2s, um den STOP zu lösen.`; ein Finger, der von STOP abgleitet, oder ein verlorener Touch löst nichts.
+- Ein Druck auf ein eingerastetes STOP ist ebenfalls ein STOP. Das Halten zählt nur, solange ein Finger die vollen 2s auf STOP bleibt. Loslassen vor 2s zeigt `Halte 2s, um den STOP zu lösen.`; ein Finger, der von STOP abgleitet, ein zweiter Finger auf dem Band, ein Bildschirmwechsel, verlorene Touch-Ereignisse oder ein Touch-Controller, der 100ms nicht antwortet, löst nichts.
 - Ein Neustart des Panels hebt den Stopp auf: Das Panel startet SAFE, mit jedem Ausgang aus.
 
 - STOP reagiert auf einen Druck, der auf ihm aufsetzt, beim Aufsetzen. Ein Finger, der vom Bildschirm auf STOP rutscht, stoppt nichts. Ein Finger, der auf STOP aufsetzt und wegrutscht, stoppt trotzdem.

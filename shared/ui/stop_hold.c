@@ -60,9 +60,15 @@ void stop_hold_cancel(void)
     s_asked = false;
 }
 
-bool stop_hold_tick(float dt_s, bool latched)
+bool stop_hold_tick(float dt_s, bool latched, bool contact)
 {
     ui_hold_flash_step(&s_hold, dt_s);
+    if (!contact) {
+        /* The press the hold counts is no longer the router's: a screen
+         * change or a band press dropped it.  One that fired waits for
+         * nothing more and keeps its flash. */
+        (void)ui_hold_leave(&s_hold);
+    }
     if (s_waiting && !latched) {
         /* The reset is done: the press that asked for it flashes, if it is
          * still on the glass. */

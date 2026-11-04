@@ -268,10 +268,23 @@ extern atomic_bool  s_stop_reset_request;
 /** @brief When the render side took the completed hold, now_ms(); stored
  *         before s_stop_reset_request. */
 extern atomic_uint  s_stop_reset_ms;
+/** @brief Contact breaks counted (stop_touch_watch()): control task counts,
+ *         the render side ends the reset's hold at each. */
+extern atomic_uint  s_touch_breaks;
+/** @brief The reset's machine at the start: unlatched (stop_latch_init()).
+ *         Control task. */
+void stop_reset_init(void);
+/** @brief One transition of the reset's machine (stop_latch_run()), once a
+ *         pass after the stops are served.  Control task.
+ *  @param link_up whether the link to the IOmcu answers */
 void stop_reset_service(bool link_up);
 /** @brief An operator's STOP, applied now: arming_stop_pressed(), with its
- *         time kept for the reset (stop_latch_follow()).  Control task only. */
+ *         time kept for the reset.  Control task only. */
 void stop_pressed_here(void);
+/** @brief Counts a contact break when the touch controller has gone
+ *         unanswered for STOP_LATCH_FRESH_MS (100ms).  Control task, at the
+ *         rate touch is judged. */
+void stop_touch_watch(void);
 
 /*
  * A disarm returns the command to zero, here and in the output bank.

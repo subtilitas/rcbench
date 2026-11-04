@@ -53,9 +53,11 @@ arm latch set, sets it again on link silence and on a distrusted heartbeat,
 and releases it only on a CLEAR; the panel latches a stop when the link goes
 quiet while the bench is ARMED. STOP works as an emergency stop: one touch
 latches it, ARM and every ON are refused while it stands, and a hold of 2s
-resets it once the IOmcu reports everything off; the bench stays SAFE
-([STOP as an emergency stop](docs/Stop.md), `test_stop_latch`,
-`test_stop_hold`). [Reference](docs/Safety.md).
+on one unbroken contact resets it once the IOmcu reports everything off;
+the bench stays SAFE. One state machine carries the reset out, host-tested
+on its own and over the wire with an IOmcu that confirms and one that never
+does ([STOP as an emergency stop](docs/Stop.md), `test_stop_latch`,
+`test_stop_hold`, `test_safety_gate`). [Reference](docs/Safety.md).
 
 **Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
 role (throttle or surface) rendered by a driver from a table (PWM (pulse-width

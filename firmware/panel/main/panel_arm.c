@@ -106,7 +106,7 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     arming_set_line_wait(&s_arm, ARMING_LINE_WAIT_MS);
     /* No stop latched and no reset waiting: a restart clears the latch, and
      * the bench starts SAFE with every output off. */
-    stop_latch_init(&s_stop_latch, arming_pressed_count(&s_arm));
+    stop_reset_init();
     /* The supply starts switched off, its readings those of an off output. */
     supply_sim_init(&s_supply_sim);
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);

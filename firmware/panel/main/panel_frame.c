@@ -83,6 +83,8 @@ void panel_frame_loop(void)
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
     uint32_t last_stops = 0;
+    /* The contact breaks the reset's hold has answered. */
+    unsigned stop_breaks_seen = atomic_load(&s_touch_breaks);
 
     panel_shot_init();
 
@@ -513,8 +515,15 @@ void panel_frame_loop(void)
         if (ui_router_take_stop()) {
             atomic_store(&s_stop_request, true);
         }
+        /* A contact break ends the reset's hold: the touch controller has
+         * stopped reporting the contact it rests on. */
+        const unsigned breaks = atomic_load(&s_touch_breaks);
+        if (breaks != stop_breaks_seen) {
+            stop_breaks_seen = breaks;
+            stop_hold_cancel();
+        }
         /* And the reset's hold, a flag for the same reason, with when it
-         * was taken: a STOP applied later, or 1900ms before, refuses it. */
+         * was taken: a STOP or a break less than 1900ms before refuses it. */
         if (stop_hold_take_reset()) {
             atomic_store(&s_stop_reset_ms, (unsigned)now_ms());
             atomic_store(&s_stop_reset_request, true);

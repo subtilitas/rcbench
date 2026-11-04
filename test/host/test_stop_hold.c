@@ -16,6 +16,8 @@
  * - an_early_release_shows_the_hint_and_asks_nothing
  * - a_press_that_slides_off_stop_asks_nothing
  * - a_touch_loss_during_the_hold_asks_nothing
+ * - a_screen_change_during_the_hold_asks_nothing
+ * - a_touch_controller_failure_during_the_hold_asks_nothing
  * - a_reset_done_under_the_finger_flashes_it
  * - the_latched_stop_is_red_in_a_yellow_frame
  * - the_hold_fades_the_fill_to_the_frame
@@ -270,6 +272,46 @@ TEST_CASE(a_touch_loss_during_the_hold_asks_nothing)
     CHECK(stop_hold_held_s() == 0.0f);
 }
 
+TEST_CASE(a_screen_change_during_the_hold_asks_nothing)
+{
+    /* Navigation drops the router's press on STOP: the finger that stays
+     * on the glass holds nothing, and the new screen's band starts no
+     * hold of its own. */
+    router_on(true);
+    press_latched();
+    ui_router_tick(1.0f);
+    ui_router_goto(SCREEN_SETUP);
+    for (int i = 0; i < 8; ++i) {
+        ui_router_tick(Q);
+    }
+    CHECK(!stop_hold_take_reset());
+    CHECK(stop_hold_held_s() == 0.0f);
+    /* Back on the overview the press is still not the router's. */
+    ui_router_goto(SCREEN_OVERVIEW);
+    for (int i = 0; i < 8; ++i) {
+        ui_router_tick(Q);
+    }
+    CHECK(!stop_hold_take_reset());
+    touch(sx(), sy(), TOUCH_EVENT_UP, 0);
+    CHECK(!stop_hold_take_reset());
+}
+
+TEST_CASE(a_touch_controller_failure_during_the_hold_asks_nothing)
+{
+    /* The control task counts a break when the controller goes unanswered
+     * for 100ms; the frame answers it with stop_hold_cancel().  The finger
+     * the controller last reported is not one the hold can count on. */
+    router_on(true);
+    press_latched();
+    ui_router_tick(1.75f);
+    stop_hold_cancel();
+    for (int i = 0; i < 8; ++i) {
+        ui_router_tick(Q);
+    }
+    CHECK(!stop_hold_take_reset());
+    CHECK(stop_hold_held_s() == 0.0f);
+}
+
 TEST_CASE(a_reset_done_under_the_finger_flashes_it)
 {
     router_on(true);
@@ -369,6 +411,8 @@ int main(void)
     RUN(an_early_release_shows_the_hint_and_asks_nothing);
     RUN(a_press_that_slides_off_stop_asks_nothing);
     RUN(a_touch_loss_during_the_hold_asks_nothing);
+    RUN(a_screen_change_during_the_hold_asks_nothing);
+    RUN(a_touch_controller_failure_during_the_hold_asks_nothing);
     RUN(a_reset_done_under_the_finger_flashes_it);
     RUN(the_latched_stop_is_red_in_a_yellow_frame);
     RUN(the_hold_fades_the_fill_to_the_frame);

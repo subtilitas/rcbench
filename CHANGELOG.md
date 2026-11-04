@@ -27,13 +27,17 @@ history is in git.
   `HOLD 2s TO RESET` (German `GESTOPPT`, `2s HALTEN ZUM LÖSEN`), the arm
   chip reads STOP, and ARM, OUTPUT ON, PROG 5V ON, CONNECT and the start of
   a test or a run are refused with `STOP pressed: hold STOP 2s to reset.`
-  ARM no longer clears it. A hold of STOP for 2s resets it: the panel reads
-  the IOmcu's STATUS, SUPPLY and PROG_SUPPLY pages every 50ms, and once they
-  report SAFE and every output off, and at least 500ms after the last STOP,
-  it sends the heartbeat again and writes CLEAR once. The bench stays SAFE.
-  Without that report within 2000ms the stop stays latched and the alert
-  band says why. A panel restart starts unlatched. Host tests
-  `test_stop_latch` and `test_stop_hold`.
+  ARM no longer clears it. A hold of STOP for 2s on one unbroken contact
+  resets it; a release, a slide off STOP, a second contact on the band, lost
+  touch events, a screen change or a touch controller unanswered for 100ms
+  ends the hold. One state machine carries the reset out: it reads the
+  IOmcu's STATUS, SUPPLY and PROG_SUPPLY pages every 50ms, and once they
+  report SAFE and every output off, and at least 500ms after the STOP, it
+  sends the heartbeat again and writes CLEAR once. A STOP from any state
+  sends it back to LATCHED. The bench stays SAFE. Without that report
+  within 2000ms the stop stays latched and the alert band says why. A panel
+  restart starts unlatched. Host tests `test_stop_latch`, `test_stop_hold`
+  and two wire-level cases in `test_safety_gate`.
 - The band leaves out FAULT 10 (HEARTBEAT) while a stop is latched and for
   1000ms after its reset: the panel withholds the line itself then. The
   hardware emergency stop on the heartbeat line and an open heartbeat wire

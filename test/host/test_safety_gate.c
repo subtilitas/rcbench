@@ -41,6 +41,7 @@
 #include "outputs.h"
 #include "outputs_pages.h"
 #include "safety_gate.h"
+#include "stop_latch.h"
 
 /* ------------------------------------------------------- the gate alone */
 
@@ -625,6 +626,10 @@ static uint8_t d_control_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
+/* An IOmcu whose STATUS reads ARMED whatever its gate says: one that never
+ * confirms a reset. */
+static bool d_status_armed;
+
 /* STATE and FAULTS as the firmware fills them at a read. */
 static void d_status_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
@@ -632,6 +637,9 @@ static void d_status_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     uint16_t st[LINK_ST_COUNT] = { 0 };
     safety_gate_status(&d_beat, &d_dev, d_control, &st[LINK_ST_STATE],
                        &st[LINK_ST_FAULTS]);
+    if (d_status_armed) {
+        st[LINK_ST_STATE] = (uint16_t)LINK_STATE_ARMED;
+    }
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = st[off + i];
     }
@@ -1095,12 +1103,93 @@ typedef struct {
     uint16_t value;
     bool     done;
 } op_t;
-enum { OP_ARM = 1, OP_STOP, OP_THROTTLE };
+/* OP_HOLD: the reset's hold of STOP completes (stop_hold_take_reset()). */
+enum { OP_ARM = 1, OP_STOP, OP_THROTTLE, OP_HOLD };
 static op_t w_ops[8];
 
 static void op_at(unsigned i, uint32_t at, int kind, uint16_t value)
 {
     w_ops[i] = (op_t){ T0 + at, kind, value, false };
+}
+
+/* -- the reset of a pressed STOP: panel_stop.c around the real machine */
+static stop_latch_t p_latch;
+static uint32_t     p_press_ms;     /* stop_pressed_here()'s stamp        */
+static bool         p_hold_req;     /* s_stop_reset_request               */
+static uint32_t     p_hold_ms;      /* s_stop_reset_ms                    */
+static unsigned     p_reset_reads, p_reset_clears, p_reset_resumes,
+                    p_reset_give_ups;
+static uint32_t     p_first_read_at, p_resume_at;
+
+/* read_inputs() */
+static void p_reset_in(stop_latch_in_t *in)
+{
+    in->now_ms   = T;
+    in->pressed  = arming_pressed_count(&p_arm);
+    in->press_ms = p_press_ms;
+    in->held     = arming_held(&p_arm);
+    in->link_up  = p_link_up;
+    in->local_on = outputs_armed(&p_out);
+}
+
+static void r_refresh(void *ctx, stop_latch_in_t *in)
+{
+    (void)ctx;
+    p_reset_in(in);
+}
+
+/* io_read(): one register over the wire. */
+static bool r_read(void *ctx, uint8_t page, uint8_t reg, uint16_t *out)
+{
+    (void)ctx;
+    if (p_reset_reads++ == 0u) {
+        p_first_read_at = T;
+    }
+    link_msg_t m;
+    if (!xchg(LINK_OP_READ, page, reg, 1, NULL, &m)
+        || m.op != LINK_OP_DATA) {
+        return false;
+    }
+    *out = m.regs[0];
+    return true;
+}
+
+static void r_resume(void *ctx)
+{
+    (void)ctx;
+    ++p_reset_resumes;
+    p_resume_at = T;
+    arming_stop_release(&p_arm);
+}
+
+/* io_clear(): control_clear_failsafe(). */
+static void r_clear(void *ctx)
+{
+    (void)ctx;
+    ++p_reset_clears;
+    const uint16_t magic = LINK_CLEAR_MAGIC;
+    link_msg_t ack;
+    (void)xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1, &magic,
+               &ack);
+}
+
+static const stop_latch_io_t k_reset_io = {
+    .ctx = NULL, .read = r_read, .resume = r_resume, .clear = r_clear,
+    .refresh = r_refresh,
+};
+
+/* stop_reset_service() */
+static void p_stop_reset_service(void)
+{
+    stop_latch_in_t in;
+    memset(&in, 0, sizeof(in));
+    p_reset_in(&in);
+    in.hold_done = p_hold_req;
+    in.hold_ms   = p_hold_ms;
+    p_hold_req   = false;
+    if (stop_latch_run(&p_latch, &in, &k_reset_io) == STOP_LATCH_GIVE_UP) {
+        ++p_reset_give_ups;
+    }
 }
 
 static void p_drain_commands(void)
@@ -1122,12 +1211,16 @@ static void p_drain_commands(void)
             arming_request_arm(&p_arm, T);
         } else if (o->kind == OP_STOP) {
             arming_stop_pressed(&p_arm);
+            p_press_ms = T;
             outputs_arm(&p_out, false, T);
             p_throttle = 0;
             if (p_link_up) {
                 link_msg_t a;
                 (void)p_control_write(false, &a);
             }
+        } else if (o->kind == OP_HOLD) {
+            p_hold_req = true;
+            p_hold_ms  = T;
         } else {
             p_throttle = o->value;
         }
@@ -1148,6 +1241,18 @@ static void world_init(uint32_t t0)
     arming_init(&p_arm, t0, HEARTBEAT_SETTLE_MS);
     arming_set_line_wait(&p_arm, ARMING_LINE_WAIT_MS);
     outputs_init(&p_out, t0);
+    {
+        stop_latch_in_t in;
+        memset(&in, 0, sizeof(in));
+        p_reset_in(&in);
+        stop_latch_init(&p_latch, &in);
+    }
+    p_press_ms = 0;
+    p_hold_req = false;
+    p_hold_ms = 0;
+    p_reset_reads = p_reset_clears = p_reset_resumes = p_reset_give_ups = 0;
+    p_first_read_at = p_resume_at = 0;
+    d_status_armed = false;
     (void)outputs_set_role(&p_out, P_CH_THROTTLE, OUT_ROLE_THROTTLE);
     p_throttle = 0;
     p_link_up = false;
@@ -1177,6 +1282,7 @@ static void run_until(uint32_t end)
     while ((int32_t)(T - end) < 0) {
         p_pump();
         p_service_arming();
+        p_stop_reset_service();
         p_drain_commands();
         if (p_extra_ms != 0u && (int32_t)(T - p_extra_at) >= 0) {
             const uint32_t ms = p_extra_ms;
@@ -1794,6 +1900,71 @@ TEST_CASE(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched)
  * A role ARM in the register with the gate unable to arm reports no roles:
  * the answer to the outputs is "none", not what the register says.
  */
+/* Armed at 70%, STOP pressed at 3s, its reset's hold completing at 5s. */
+static void stop_then_hold(uint32_t t0)
+{
+    armed_at_70(t0, WIRE_LOST);
+    op_at(2, 3000, OP_STOP, 0);
+    op_at(3, 5000, OP_HOLD, 0);
+}
+
+TEST_CASE(a_reset_over_the_wire_completes_on_an_iomcu_that_confirms)
+{
+    stop_then_hold(0);
+    run_until(2900);
+    CHECK(d_drives_70());
+    /* The STOP: the line withheld, the IOmcu off and latched. */
+    run_until(4990);
+    CHECK(!outputs_driving(&d_bank));
+    CHECK(link_dev_arm_latched(&d_dev));
+    CHECK(!d_beat.alive);
+    CHECK(arming_held(&p_arm));
+    CHECK_EQ(p_reset_reads, 0u);
+    run_until(8000);
+    /* The reset ran to its end with the link up all along. */
+    CHECK(p_link_up);
+    CHECK_EQ(stop_latch_state(&p_latch), STOP_LATCH_UNLATCHED);
+    CHECK_EQ(stop_latch_resets(&p_latch), 1u);
+    CHECK(!arming_held(&p_arm));
+    CHECK(!arming_stopped(&p_arm));
+    /* Read before the heartbeat went again, and 500ms or more after the
+     * STOP; CLEAR once, after it. */
+    CHECK(p_reset_reads >= 1u);
+    CHECK_EQ(p_reset_resumes, 1u);
+    CHECK((int32_t)(p_resume_at - p_first_read_at) > 0);
+    CHECK((uint32_t)(p_resume_at - T0) >= 3000u + STOP_LATCH_FLOOR_MS);
+    CHECK_EQ(p_reset_clears, 1u);
+    /* The IOmcu trusts the line again and its latch is released; nothing
+     * drives and nothing is armed. */
+    CHECK(d_beat.alive);
+    CHECK(!link_dev_arm_latched(&d_dev));
+    CHECK(!outputs_driving(&d_bank));
+    CHECK(!outputs_armed(&p_out));
+    CHECK_EQ(d_arm_edges, 1u);
+    CHECK_EQ(p_reset_give_ups, 0u);
+}
+
+TEST_CASE(a_reset_over_the_wire_gives_up_on_an_iomcu_that_never_confirms)
+{
+    stop_then_hold(0);
+    run_until(4990);
+    CHECK(link_dev_arm_latched(&d_dev));
+    d_status_armed = true;
+    run_until(10000);
+    CHECK(p_link_up);
+    CHECK_EQ(p_reset_give_ups, 1u);
+    CHECK_EQ(stop_latch_state(&p_latch), STOP_LATCH_LATCHED);
+    /* Asked every 50ms for 2000ms, then left: the latch and the withheld
+     * line stand, and no CLEAR went. */
+    CHECK(p_reset_reads >= 35u && p_reset_reads <= 45u);
+    CHECK_EQ(p_reset_resumes, 0u);
+    CHECK_EQ(p_reset_clears, 0u);
+    CHECK(arming_held(&p_arm));
+    CHECK(!d_beat.alive);
+    CHECK(link_dev_arm_latched(&d_dev));
+    CHECK(!outputs_driving(&d_bank));
+}
+
 TEST_CASE(a_gate_that_may_not_arm_reports_no_roles)
 {
     gate_init(0);
@@ -1842,6 +2013,8 @@ int main(void)
     RUN(an_arm_the_far_end_never_trusts_is_given_up_latched);
     RUN(a_touch_outage_disarms_and_the_next_arm_is_taken);
     RUN(a_gate_that_may_not_arm_reports_no_roles);
+    RUN(a_reset_over_the_wire_completes_on_an_iomcu_that_confirms);
+    RUN(a_reset_over_the_wire_gives_up_on_an_iomcu_that_never_confirms);
     RUN(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll);
     RUN(any_exchange_nobody_answers_stops_an_armed_panel_at_once);
     RUN(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched);

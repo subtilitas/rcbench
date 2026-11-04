@@ -21,33 +21,48 @@ host-tested in `test_stop_latch` and `test_stop_hold`.
   alert `STOP pressed: hold STOP 2s to reset.`; the KST, Hitec and ESC
   wire programmers refuse CONNECT with their stop line. An arm does not
   clear this stop.
-- **Reset.** A press that lands on a latched STOP is a STOP as well, and
-  starts the reset's hold: the fill fades from red to the frame's yellow
-  across 2s. A release before 2s shows `Hold 2s to reset the STOP.` and
-  asks for nothing; a press that slides off STOP or a lost touch asks for
-  nothing. The hold counts only when the last STOP, its own press, was
-  applied 1900ms (`STOP_LATCH_HOLD_SEEN_MS`) or more before it completed: a
-  STOP pressed after that, before the control task takes the request,
-  refuses it, and so does a new press on STOP or a lost touch before the
-  request is taken. The heartbeat is then withheld for 1900ms at least,
-  well over the 500ms the IOmcu needs to doubt the line. At 2s the panel
-  asks the IOmcu, every 50ms, whether everything is off: STATUS not ARMED,
-  the SUPPLY output off, the PROG_SUPPLY output off, read after the hold,
-  and its own bank SAFE with no supply on. Once it is, the heartbeat edges
-  again and CLEAR is written once. The bench stays
-  SAFE: ARM, OUTPUT ON and PROG 5V ON each need their own hold. A
-  programming port the STOP caught in a session stays held across the
-  reset; CLEAR or LEAVE on its page goes on from there.
-- **No confirmation.** Without it within 2000ms (`STOP_LATCH_CONFIRM_MS`)
-  the latch stands, the heartbeat stays withheld and the alert says
-  `STOP not reset: the IOmcu did not report every output off within 2s.`
-  A STOP or an error during the wait withdraws the reset.
+- **Reset hold.** A press that lands on a latched STOP is a STOP as well,
+  and starts the reset's hold: the fill fades from red to the frame's
+  yellow across 2s. The hold completes only on one unbroken contact on
+  STOP for 2s, with the touch controller answering throughout. Each of
+  these ends it and asks for nothing: a release before 2s, which shows
+  `Hold 2s to reset the STOP.`; a slide off STOP; a second contact on the
+  band; lost touch events; a screen change; a touch controller unanswered
+  for 100ms (`STOP_LATCH_FRESH_MS`), which the control task counts as a
+  contact break. A STOP or a break less than 1900ms (`STOP_LATCH_HOLD_SEEN_MS`)
+  before the hold's end, or after it, refuses the request.
+- **Reset.** One state machine on the control task carries the reset out,
+  one step a pass:
+
+  | State | Leaves when | To |
+  |---|---|---|
+  | LATCHED | a hold that spans the latest STOP and break | HOLD_DONE |
+  | HOLD_DONE | 100ms after the hold: the first read issued | ASKING |
+  | ASKING | everything reads off, 500ms (`STOP_LATCH_FLOOR_MS`) or more after the STOP | CONFIRMED |
+  | ASKING | no confirmation within 2000ms (`STOP_LATCH_CONFIRM_MS`) | LATCHED |
+  | CONFIRMED | the heartbeat edges again | RESUMED |
+  | RESUMED | CLEAR written once, link up | CLEAR_WRITTEN |
+  | CLEAR_WRITTEN | done | UNLATCHED |
+
+  A STOP from any state goes back to LATCHED; a contact break or an error
+  goes back from HOLD_DONE, ASKING and CONFIRMED. A STOP pressed during one
+  of the machine's own reads counts before that read does. "Everything
+  off" is read every 50ms in ASKING: STATUS not ARMED, the SUPPLY output
+  off where the IOmcu serves that page, the PROG_SUPPLY output off where it
+  serves that one, and this end's bank SAFE with no supply or 5V on. The
+  bench stays SAFE after the reset: ARM, OUTPUT ON and PROG 5V ON each need
+  their own hold. A programming port the STOP caught in a session stays
+  held across the reset; CLEAR or LEAVE on its page goes on from there.
+- **No confirmation.** The latch stands, the heartbeat stays withheld and
+  the alert says `STOP not reset: the IOmcu did not report every output off
+  within 2s.` The next hold asks again.
 - **No link.** With no IOmcu answering there is nobody to ask: the reset
-  takes the panel's own bank and model. An IOmcu that is wired and not
+  takes the panel's own bank and model, and no CLEAR is written. An IOmcu that is wired and not
   answering has failed safe on link silence and needs an ARM's CLEAR, as
   after any link failsafe.
-- **FAULT 10.** While STOP is latched, and for 1000ms after a reset
-  (`STOP_LATCH_GRACE_MS`), the band leaves out LINK_FAULT_HEARTBEAT: the
+- **FAULT 10.** While STOP is latched, while its reset finishes, and for
+  1000ms after it (`STOP_LATCH_GRACE_MS`), the band leaves out
+  LINK_FAULT_HEARTBEAT: the
   panel withholds the line itself, and FAULT 10 would read as the
   emergency stop or an open wire. The hardware emergency stop on the
   heartbeat line and an open wire show as FAULT 10.

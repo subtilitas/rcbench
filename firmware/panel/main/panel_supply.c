@@ -241,8 +241,9 @@ static error_bench_t error_bench(void)
  */
 static void error_act(error_act_t a)
 {
-    /* An error withdraws a STOP's reset that waits: the operator holds STOP
-     * again once the error is dealt with. */
+    /* An error sends a STOP's reset that is not yet resumed back to
+     * LATCHED: the operator holds STOP again once the error is dealt
+     * with. */
     if (a.off_first || a.disarm || a.supply_off || a.cut || a.prog_off) {
         (void)stop_latch_error(&s_stop_latch);
     }

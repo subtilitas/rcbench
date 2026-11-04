@@ -439,7 +439,10 @@ void ui_router_tick(float dt_s)
         }
     }
     shot_hold_tick(dt_s);
-    (void)stop_hold_tick(dt_s, s.status.stop_latched);
+    /* The hold counts only while the router owns the press on STOP: a
+     * screen change or a press that took the band dropped it. */
+    (void)stop_hold_tick(dt_s, s.status.stop_latched,
+                         s.band_press && s.on_stop);
     shot_over_settle();
     ui_shot_poll();
     shot_service();

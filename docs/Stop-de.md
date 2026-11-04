@@ -22,36 +22,53 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   mit dem Alert `STOP gedrückt: STOP 2s halten zum Lösen.` abgelehnt; die
   Programmierungen für KST, Hitec und die ESC-Leitung lehnen VERBINDEN mit
   ihrer Stopp-Zeile ab. Ein ARM hebt diesen Stopp nicht auf.
-- **Lösen.** Ein Druck auf ein eingerastetes STOP ist ebenfalls ein STOP und
-  beginnt das Halten zum Lösen: die Füllung geht in 2s von Rot zum Gelb des
-  Rahmens über. Ein Loslassen vor 2s zeigt `Halte 2s, um den STOP zu
-  lösen.` und fordert nichts an; ein Druck, der von STOP abgleitet, oder ein
-  verlorener Touch fordert nichts an. Das Halten zählt nur, wenn der letzte
-  STOP, sein eigener Druck, 1900ms (`STOP_LATCH_HOLD_SEEN_MS`) oder mehr vor
-  seinem Ende ausgelöst wurde: ein STOP danach, bevor der Control-Task die
-  Anforderung nimmt, lehnt sie ab, ebenso ein neuer Druck auf STOP oder ein
-  verlorener Touch, bevor sie genommen ist. Der Heartbeat bleibt so
-  mindestens 1900ms angehalten, weit über den 500ms, die der IOmcu braucht,
-  um der Leitung zu misstrauen. Bei 2s fragt das Panel den IOmcu alle
-  50ms, ob alles aus ist: STATUS nicht ARMED, der SUPPLY-Ausgang aus, der
-  PROG_SUPPLY-Ausgang aus, gelesen nach dem Halten, und die eigene Bank SAFE
-  ohne eingeschaltete Versorgung. Sobald das gilt, flankt der Heartbeat
-  wieder, und CLEAR wird einmal geschrieben. Der Prüfstand bleibt SAFE: ARM, AUSGANG
-  EIN und PROG 5V EIN brauchen jeweils ihr eigenes Halten. Ein
-  Programmierport, den der STOP in einer Sitzung erwischt, bleibt über das
-  Lösen hinweg gehalten; CLEAR oder VERLASSEN auf seiner Seite geht von dort
-  weiter.
-- **Keine Bestätigung.** Kommt sie nicht binnen 2000ms
-  (`STOP_LATCH_CONFIRM_MS`), bleibt der Stopp eingerastet, der Heartbeat
-  bleibt angehalten, und der Alert sagt `STOP nicht gelöst: Der IOmcu
-  meldete nicht binnen 2s alle Ausgänge aus.` Ein STOP oder ein Fehler
-  während des Wartens nimmt das Lösen zurück.
+- **Halten zum Lösen.** Ein Druck auf ein eingerastetes STOP ist ebenfalls
+  ein STOP und beginnt das Halten zum Lösen: die Füllung geht in 2s von Rot
+  zum Gelb des Rahmens über. Das Halten zählt nur bei einer ununterbrochenen
+  Berührung auf STOP über 2s, während der Touch-Controller durchgehend
+  antwortet. Jedes davon beendet es und fordert nichts an: ein Loslassen
+  vor 2s, das `Halte 2s, um den STOP zu lösen.` zeigt; ein Abgleiten von
+  STOP; eine zweite Berührung auf dem Band; verlorene Touch-Ereignisse; ein
+  Bildschirmwechsel; ein Touch-Controller, der 100ms
+  (`STOP_LATCH_FRESH_MS`) nicht antwortet, was der Control-Task als
+  Kontaktabbruch zählt. Ein STOP oder ein Abbruch weniger als 1900ms
+  (`STOP_LATCH_HOLD_SEEN_MS`) vor dem Ende des Haltens, oder danach, lehnt
+  die Anforderung ab.
+- **Lösen.** Eine Zustandsmaschine im Control-Task führt das Lösen aus,
+  ein Schritt pro Durchlauf:
+
+  | Zustand | Verlässt ihn, wenn | Nach |
+  |---|---|---|
+  | LATCHED | ein Halten, das den letzten STOP und Abbruch umfasst | HOLD_DONE |
+  | HOLD_DONE | 100ms nach dem Halten: das erste Lesen gesendet | ASKING |
+  | ASKING | alles liest aus, 500ms (`STOP_LATCH_FLOOR_MS`) oder mehr nach dem STOP | CONFIRMED |
+  | ASKING | keine Bestätigung binnen 2000ms (`STOP_LATCH_CONFIRM_MS`) | LATCHED |
+  | CONFIRMED | der Heartbeat flankt wieder | RESUMED |
+  | RESUMED | CLEAR einmal geschrieben, Link steht | CLEAR_WRITTEN |
+  | CLEAR_WRITTEN | fertig | UNLATCHED |
+
+  Ein STOP aus jedem Zustand führt zurück nach LATCHED; ein Kontaktabbruch
+  oder ein Fehler führt aus HOLD_DONE, ASKING und CONFIRMED zurück. Ein
+  STOP, der während eines Lesens der Maschine gedrückt wird, zählt vor
+  diesem Lesen. "Alles aus" wird in ASKING alle 50ms gelesen: STATUS nicht
+  ARMED, der SUPPLY-Ausgang aus, wo der IOmcu diese Seite bedient, der
+  PROG_SUPPLY-Ausgang aus, wo er diese bedient, und die eigene Bank SAFE
+  ohne eingeschaltete Versorgung oder 5V. Der Prüfstand bleibt nach dem
+  Lösen SAFE: ARM, AUSGANG EIN und PROG 5V EIN brauchen jeweils ihr eigenes
+  Halten. Ein Programmierport, den der STOP in einer Sitzung erwischt,
+  bleibt über das Lösen hinweg gehalten; CLEAR oder VERLASSEN auf seiner
+  Seite geht von dort weiter.
+- **Keine Bestätigung.** Der Stopp bleibt eingerastet, der Heartbeat bleibt
+  angehalten, und der Alert sagt `STOP nicht gelöst: Der IOmcu meldete
+  nicht binnen 2s alle Ausgänge aus.` Das nächste Halten fragt erneut.
 - **Kein Link.** Antwortet kein IOmcu, ist niemand zu fragen: das Lösen
-  nimmt die eigene Bank und das eigene Modell des Panels. Ein angeschlossener
+  nimmt die eigene Bank und das eigene Modell des Panels, und kein CLEAR wird
+  geschrieben. Ein angeschlossener
   IOmcu, der nicht antwortet, ist über die Stille des Links in den Failsafe
   gegangen und braucht das CLEAR eines ARM, wie nach jedem Link-Failsafe.
-- **FEHLER 10.** Solange STOP eingerastet ist, und 1000ms nach dem
-  Lösen (`STOP_LATCH_GRACE_MS`), lässt das Band LINK_FAULT_HEARTBEAT weg:
+- **FEHLER 10.** Solange STOP eingerastet ist, solange sein Lösen läuft,
+  und 1000ms danach (`STOP_LATCH_GRACE_MS`), lässt das Band
+  LINK_FAULT_HEARTBEAT weg:
   das Panel hält die Leitung selbst an, und FEHLER 10 sähe aus wie der
   Not-Aus oder eine offene Leitung. Der Hardware-Not-Aus an der
   Heartbeat-Leitung und eine offene Leitung zeigen FEHLER 10.
