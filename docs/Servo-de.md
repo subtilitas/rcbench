@@ -59,9 +59,13 @@ Servo auf unter 12s. Ein Lauf am Prüfstand ist nicht gemessen.
 Die Karte ENDLAGENLAUF auf der Aufgabe TEST des SERVO-Bildschirms enthält
 den Lauf; ihr **OPTIONEN** öffnet die Einstellungen des Laufs eine Ebene
 tiefer. Dort wählt **ENDLAGENLAUF** mit einem Tippen NUR SUCHE oder SUCHEN +
-PROGRAMMIEREN. **SERVOPULSE**, nur mit ZIEL auf PROG-PORT angezeigt, wählt
-mit einem Tippen BEHALTEN oder 1000-2000; es beginnt bei BEHALTEN. Das
-Home-Tag führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
+PROGRAMMIEREN. **SERVO**, nur mit ZIEL auf PROG-PORT angezeigt, wählt mit
+einem Tippen KST/CHASERVO oder HITEC: den Programmierer, zu dem die
+Sitzungen des Laufs gehen ([Hitec-Servos](#hitec-servos)). Es beginnt bei
+KST/CHASERVO und übernimmt den Programmierer, der unter PROGRAMMIEREN
+zuletzt geöffnet wurde. **SERVOPULSE**, nur mit ZIEL auf PROG-PORT und
+SERVO auf KST/CHASERVO angezeigt, wählt mit einem Tippen BEHALTEN oder
+1000-2000; es beginnt bei BEHALTEN. Das Home-Tag führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
 startet den Lauf nach 2s Halten, wie TEST STARTEN; ein Tippen oder ein
 kürzeres Halten startet nichts.
 
@@ -291,6 +295,62 @@ und 5 Sitzungen, 97,7s, mit REVERSION EIN.
 Die gefundenen Enden werden nicht auf PULS MIN und PULS MAX des
 Prüfstands angewendet.
 
+### Hitec-Servos
+
+Mit SERVO auf HITEC gehen die Sitzungen des Laufs an den
+[Hitec-Programmierer](HitecProgrammer-de.md#läufe), in der Serie, die
+seine Zeile SERIE hält, D-SERIE oder KLASSISCH. Suche, Vorhalt, Zuordnung
+und Prüfung sind die oben beschriebenen.
+
+![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC](img/de/servo-limrun-hitec.png)
+
+Was anders ist:
+
+| | D-SERIE | KLASSISCH |
+| --- | --- | --- |
+| LINKS, RECHTS | LEFT END (0xB2), RIGHT END (0xB0) | LEFT END und RIGHT END: Zelle 0x14 und Zelle 0x13 an einem CW-Servo, an einem CCW-Servo vertauscht |
+| Einheit | Zählwerte ab NEUTRAL 0xC2: 0xC2 - 0xB2 und 0xB0 - 0xC2; 74,5 je Grad an einem Standardservo | die rohe Zelle, 0 bis 255, Einheit unbekannt |
+| Bereich eines Schreibens | 1 Zählwert bis zum kleineren von 0xC2 - 1 und 16383 - 0xC2 | 0 bis 255 |
+| Pulse: NEUTRAL, voller Weg | 1500,0us; 850,0us und 2150,0us: das Zielmodell aus `hitec_live.h`, t = (us - 750) x 4, Ziele 400 und 5600 | 1500,0us; 900,0us und 2100,0us, der PWM-Bereich von Hitec |
+| Ein Schreiben | die Register im Abstand von 20ms, das Speichern (0x70), 100ms, der Neustart (0x46), 1000ms, das Zurücklesen | jede Zelle mit ihrem Ausgleich in 0x1C, das Zurücklesen von 0x00 bis 0x23 |
+| Versorgung | wie sie ist: die D-Serie übernimmt ein Schreiben nach ihrem eigenen Neustart | ein PD mini, oder PROG 5V am rbmod-Carrier, für jede Sitzung, auch das Lesen: Einstieg und VERLASSEN schalten die Versorgung aus und ein |
+
+- Ein Hitec-Servo hat keine Pulsregister. Der Lauf nimmt die Pulse der
+  Tabelle, die nicht gemessen sind, und sucht bis zu ihnen: PULS MIN und
+  PULS MAX müssen sie enthalten, sonst bleibt ENDLAGENLAUF STARTEN grau mit
+  `HITEC: PULS MIN/MAX MUSS 850-2150us ABDECKEN` (KLASSISCH: `900-2100us`).
+  Der TYP WEIT, 800 bis 2200us, enthält beide. SERVOPULSE wird nicht
+  angezeigt.
+- KLASSISCH ohne PD mini oder PROG 5V hält die Taste grau mit
+  `Klassische Servos brauchen ein PD mini: Der Prüfstand schaltet die
+  Versorgung.`
+- Die 2s Halten von ENDLAGENLAUF STARTEN sind die Zustimmung, die ÄNDERUNG
+  PRÜFEN verlangt: die Schreibvorgänge des Laufs zeigen keine Seite, und
+  jeder schaltet SCHREIBEN INS SERVO FREIGEBEN für sich ein und an seinem
+  Ende aus. Ein Wert außerhalb des Bereichs wird abgelehnt, nicht
+  begrenzt.
+- Ein erstes VERBINDEN, auf das kein Servo antwortet, oder ein Servo, dessen
+  Endpoints sich nicht ändern lassen, beendet den Lauf als NICHT BESTANDEN
+  mit `kein Hitec-Servo gelesen`.
+- Die Sicherungsdatei HITEC001 bis HITEC999 wird vor dem ersten Schreiben
+  des Laufs gespeichert; ZURÜCKSPIELEN heißt, sie unter DATEIEN des
+  Hitec-Programmierers zu laden und mit n WERTE SCHREIBEN zu schreiben. Das
+  Feld nennt sie, `HITEC001 IN DATEIEN LADEN`, oder ohne Karte `KEINE
+  SICHERUNG: KEINE KARTE`.
+- Der Bericht nennt die Register, `LEFT END (0xB2): 4841 vorher, 2341
+  nachher`, das Servo als `Hitec D SERIES, DIRECTION CW` und die Pulse als
+  Pulsmodell.
+
+Am modellierten D485HW des Hosts, beide Enden blockiert, schrieb ein Lauf
+4 Werte in 3 Schreibvorgängen und 4 Sitzungen, 107,9s. Welche Hornstellung
+ein Endpoint der D-Serie an einem CCW-Servo ergibt, welche klassische
+Zelle welche Seite begrenzt, die Einheit der klassischen Zelle und ob der
+Weg beider Serien linear im Puls ist, ist nicht gemessen; der
+Zuordnungsschritt findet das Register jeder Seite wie an einem KST-Servo,
+und ein NICHT BESTANDEN mit `LEFT/RIGHT ANGLE: Seite unklar` (die
+KST-Wörter, auch für LEFT END und RIGHT END) oder `ein Ende läuft
+weiterhin an` beendet einen Lauf, dessen Servo dem Modell nicht folgt.
+
 ### Schutzmechanismen
 
 | Schutz | Wert | Wirkung |
@@ -343,7 +403,8 @@ Prüfstand nach dem Ende nicht auf ARMED. Ein Start des Panels löscht den
 Lauf ohne Bericht.
 
 Die zuletzt geschriebenen Werte bleiben im Servo. Ein Lauf, der schrieb und
-nicht bestand, zeigt in seinem Feld `ZURÜCKSPIELEN IN PROGRAMMIEREN`. Ein
+nicht bestand, zeigt in seinem Feld `ZURÜCKSPIELEN IN PROGRAMMIEREN`, an
+einem Hitec-Servo `HITEC001 IN DATEIEN LADEN` ([Hitec-Servos](#hitec-servos)). Ein
 Schreiben, das nach dem Senden scheitert, ohne Antwort oder mit einer
 Antwort, die der Programmierer nicht annimmt, gilt als geschrieben: ein Teil
 davon kann angekommen sein. Ein Schreiben, das der Programmierer vor dem
@@ -1344,7 +1405,7 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 ### Zweck
 
 AUTO, die dritte Taste in der Zeile NULLPUNKT von RUDER, programmiert die
-Endpoints eines KST- oder Chaservo-Servos so, dass 1000us und 2000us den je
+Endpoints eines KST-, Chaservo- oder Hitec-Servos so, dass 1000us und 2000us den je
 Seite eingegebenen Ausschlag erreichen, gemessen an der Winkelquelle. Es
 schließt den Regelkreis über den Winkel der Fläche statt über einen nach
 Augenmaß eingestellten Weg am Sender. Der Lauf steht in
@@ -1372,10 +1433,19 @@ Augenmaß eingestellten Weg am Sender. Der Lauf steht in
 - Die drei Zeilen darunter: der laufende Schritt, etwa `EINSCHWINGEN
   2000us: SCHREIBEN 1/8, SITZUNGEN 2`, oder warum ein START abgelehnt ist,
   oder die Sollwerte; das Ergebnis, `PASS: 150>92, 150>92` mit dem Wert
-  jedes Endpoints davor und danach, oder `NICHT BESTANDEN: Grund`; die Datei
-  des Berichts, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN` nach einem NICHT
-  BESTANDEN oder einem Abbruch, der geschrieben hat oder ein Schreiben
-  unterwegs abbrach, das angekommen sein kann.
+  jedes Endpoints davor und danach, oder `NICHT BESTANDEN: Grund`; das
+  Servo, das der Lauf programmiert, `SERVO KST/CHASERVO` oder `SERVO HITEC
+  D-SERIE`, während er läuft und vor dem ersten Lauf; danach die Datei des
+  Berichts, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN` (an einem Hitec-Servo
+  `HITEC001 IN DATEIEN LADEN`) nach einem NICHT BESTANDEN oder einem
+  Abbruch, der geschrieben hat oder ein Schreiben unterwegs abbrach, das
+  angekommen sein kann.
+- Das Servo ist die Zeile SERVO der Einstellungen des ENDLAGENLAUFS:
+  KST/CHASERVO, oder HITEC in der Serie des Hitec-Programmierers. Es
+  übernimmt den Programmierer, der unter PROGRAMMIEREN zuletzt geöffnet
+  wurde. An einem Hitec-Servo sind die Endpoints LEFT END und RIGHT END in
+  den Einheiten aus [Hitec-Servos](#hitec-servos), die Lesesitzung schreibt
+  keine Pulse, und ein Servo der D-Serie braucht kein PD mini.
 
 Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
 
@@ -1454,7 +1524,10 @@ sie innerhalb liegt.
   Wert des Endpoints ab dem Nullpunkt der Fläche. Ein nicht lineares Servo
   braucht mehr Schreibvorgänge; der Lauf misst nach jedem.
 - Eingegeben werden Grad; ein Soll in mm an der Hinterkante nicht.
-- Die Hitec-D-Serie wird von AUTO nicht angesteuert.
+- Ein Servo der D-Serie hält bei 1000us nach dem Zielmodell aus
+  `hitec_live.h` bei 76,9% des Wegs zu seinem Endpoint an; das ist nicht
+  gemessen, der Lauf misst nach jedem Schreiben. Die Zuordnung der
+  D-Serie an einem CCW-Servo ist nicht gemessen.
 
 ## Sweep und TEMPO
 

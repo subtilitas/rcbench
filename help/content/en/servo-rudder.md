@@ -55,7 +55,7 @@ LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm
 
 ## AUTO
 
-AUTO programs a KST or Chaservo servo on the programming port so that 1000us and 2000us reach the deflection entered for each side. The box takes the place of LENGTH, the drive buttons and the state lines; MANUAL brings them back.
+AUTO programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us reach the deflection entered for each side. The servo is the [limit run's SERVO setting](servo-settings.md#the-limit-run-s-settings), which takes the programmer opened last on PROGRAM; the box's third line names it, `SERVO HITEC D SERIES`. The box takes the place of LENGTH, the drive buttons and the state lines; MANUAL brings them back.
 
 ![AUTO's box, ARMED](view:servo-rudder-auto)
 
@@ -65,9 +65,9 @@ AUTO programs a KST or Chaservo servo on the programming port so that 1000us and
 | MARGIN | programmed past the target by this share, 0 to 50%, 10%: 20.0° at 10% is a goal of 22.0° |
 | TOLERANCE | how near the goal a measure has to be, 0.1 to 5.0°, 0.5° |
 
-ZERO the surface at neutral first; while the run runs, ZERO, RESET MAX and MANUAL are refused. HOLD 2s TO START starts the run; it then reads STOP RUN, and a press ends the run at once. The run reads the servo, sets its pulse range to 1000 to 2000us, then per side drives the end pulse, waits for the angle to be still for 500ms and writes a new end point: at most 8 writes a side, each in its own session of the programmer with the servo switched off and on. The current guard of the limit run holds throughout: a stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply's output off.
+ZERO the surface at neutral first; while the run runs, ZERO, RESET MAX and MANUAL are refused. HOLD 2s TO START starts the run; it then reads STOP RUN, and a press ends the run at once. The run reads the servo, sets a KST servo's pulse range to 1000 to 2000us, then per side drives the end pulse, waits for the angle to be still for 500ms and writes a new end point: at most 8 writes a side, each in its own session of the programmer with the servo switched off and on. The current guard of the limit run holds throughout: a stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply's output off.
 
-The first line gives the step under way, the goals, or why a START is refused; the second the result; the third the report RUDDRnnn.TXT, or `RESTORE IN PROGRAM` when a run that wrote, or cut off a write on its way, did not pass.
+The first line gives the step under way, the goals, or why a START is refused; the second the result; the third the report RUDDRnnn.TXT, or `RESTORE IN PROGRAM` when a run that wrote, or cut off a write on its way, did not pass, `LOAD HITEC001 IN FILES` on a Hitec servo.
 
 ## What the angle is
 

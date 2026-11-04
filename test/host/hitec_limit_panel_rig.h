@@ -36,12 +36,12 @@
 #include "servo_source.h"
 #include "settings_sensors.h"
 
-/* The LIMIT RUN settings: LIMIT RUN across both columns, SERVO PULSES the
- * left column of row 1, SERVO the right one. */
+/* The LIMIT RUN settings: LIMIT RUN across two columns, SERVO the left
+ * column of row 1, SERVO PULSES the one right of it. */
 #define HL_MODE_X  LROW_X(0)
 #define HL_MODE_Y  LROW_Y(0)
-#define HL_PULSE_X LROW_X(0)
-#define HL_SERVO_X LROW_X(1)
+#define HL_SERVO_X LROW_X(0)
+#define HL_PULSE_X LROW_X(1)
 #define HL_ROW1_Y  LROW_Y(1)
 
 static struct {

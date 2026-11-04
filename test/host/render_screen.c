@@ -1473,6 +1473,8 @@ static void servo_run_view(bool to_the_end, bool ina)
  *             and RESTORE's list: the servo as the run found it
  *   -nopd     -ready, and then no PD mini answers: SEARCH+PROG and SERVO
  *             PULSES chosen and not offered
+ *   -hitec    the LIMIT RUN settings, SERVO at HITEC on the Hitec
+ *             programmer's D SERIES and SEARCH+PROG: SERVO PULSES gone
  */
 static struct {
     servo_sim_t sv;
@@ -1614,10 +1616,22 @@ static void limrun_view(const char *view)
     limrun_ms(400u);
     tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);   /* TEST */
     tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(1));     /* its SETTINGS */
+    if (strcmp(v, "-hitec") == 0) {
+        /* The Hitec programmer's model in PWM, its series D SERIES; SERVO
+         * to HITEC, then LIMIT RUN to SEARCH+PROG; the list left open. */
+        render_hitec_feed(false);
+        settings_set(SET_HITEC_SERIES, 1.0f);
+        limrun_ms(40u);
+        tap(100, UI_BAND_H + SV_LIST_ROW_Y(1));
+        tap(100, UI_BAND_H + SV_LIST_ROW_Y(0));
+        limrun_ms(100u);
+        return;
+    }
     if (s_lr.prog) {
         tap(100, UI_BAND_H + SV_LIST_ROW_Y(0)); /* LIMIT RUN: SEARCH+PROG */
         if (strcmp(v, "-range") != 0) {
-            tap(100, UI_BAND_H + SV_LIST_ROW_Y(1)); /* SERVO PULSES */
+            /* SERVO PULSES, right of SERVO */
+            tap(SV_LIST_X(1), UI_BAND_H + SV_LIST_ROW_Y(1));
         }
     }
     {

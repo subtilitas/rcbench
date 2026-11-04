@@ -31,7 +31,7 @@ history is in git.
   after. Values are travel units: D series counts from NEUTRAL 0xC2, classic
   the raw cells 0x13 and 0x14 by DIRECTION. The run's 2s start hold
   confirms the end point rule for the run's own edits only; outside a run
-  the seam writes nothing. No screen starts a Hitec run.
+  the seam writes nothing.
 - RUDDER on the SERVO workbench, the fifth task of its strip: drives the
   servo to 1000us, CENTRE or 2000us, or by the rotary knob, only while
   ARMED, and shows the surface's deflection from the angle source, the
@@ -66,6 +66,14 @@ history is in git.
   at 160px each; AUTO's box takes the place of LENGTH, the drive buttons
   and the state lines, and MANUAL brings them back. Report RUDDRnnn.TXT
   and RUDDRnnn.CSV. RESET MAX reads MAX LÖSCHEN in German.
+- LIMIT RUN and AUTO on a Hitec servo: the SERVO row of the LIMIT RUN's
+  settings chooses KST/CHASERVO or HITEC, and takes the programmer opened
+  last on PROGRAM; a D series run writes LEFT END (0xB2) and RIGHT END
+  (0xB0) in counts from NEUTRAL (0xC2) with save and reboot, a classic run
+  the cells 0x13/0x14; SERVO PULSES is KST only. A Hitec run searches out to
+  a pulse model, NEUTRAL 1500.0us and the full travel at 850.0 and 2150.0us
+  (D series) or 900.0 and 2100.0us (classic), which PULSE MIN and MAX must
+  hold. RESTORE on a Hitec servo is the backup file HITECnnn loaded on FILES.
 
 ### Changed
 

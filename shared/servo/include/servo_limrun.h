@@ -252,10 +252,10 @@ typedef enum {
  *         targets 400 and 5600 the end points.  Classic: Hitec's PWM range,
  *         900us to 2100us.  Neither is measured. */
 #define SERVO_LIMRUN_HITEC_NEUTRAL_DUS 15000u
-#define SERVO_LIMRUN_HITEC_D_LOWER_DUS 8500u
-#define SERVO_LIMRUN_HITEC_D_UPPER_DUS 21500u
-#define SERVO_LIMRUN_HITEC_C_LOWER_DUS 9000u
-#define SERVO_LIMRUN_HITEC_C_UPPER_DUS 21000u
+#define SERVO_LIMRUN_HITEC_D_LOWER_DUS 8500u  /**< D series, 850.0us     */
+#define SERVO_LIMRUN_HITEC_D_UPPER_DUS 21500u /**< D series, 2150.0us    */
+#define SERVO_LIMRUN_HITEC_C_LOWER_DUS 9000u  /**< classic, 900.0us      */
+#define SERVO_LIMRUN_HITEC_C_UPPER_DUS 21000u /**< classic, 2100.0us     */
 
 /** @brief servo_limrun_reg_name()'s @c reg flag: the servo's DIRECTION reads
  *         CCW, which swaps the classic cells. */

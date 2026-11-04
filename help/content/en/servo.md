@@ -144,7 +144,7 @@ The limit run finds where the installed servo binds at each end of its travel. I
 ![The limit run, ready](view:servo-limrun-ready)
 
 1. Tap SETTINGS on the card, then LIMIT RUN to choose SEARCH ONLY or SEARCH + PROGRAM.
-2. With TARGET on PROG PORT, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
+2. With TARGET on PROG PORT, tap SERVO to choose KST/CHASERVO or HITEC, the programmer the run's sessions go to; it takes the programmer opened last on PROGRAM. With KST/CHASERVO, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
 3. Tap the home tag to go back to the cards.
 4. Hold START LIMIT RUN for 2s while the bench is ARMED. A tap or a shorter hold starts nothing and shows `Hold 2s to start the limit run.` in the alert band.
 5. TEST stays shown. The box on LIVE's left card shows the phase, the side and the pulse, and the output it drives.
@@ -215,6 +215,18 @@ Each bound side gets two writes, v0 the value its register held:
 Example: NEUTRAL 1500.2us, PULSE LOWER 900.0us, v0 150, the first search free at 1000us and bound at 990us. The overset is 150 x 0.850 x 1.03 = 132. At 132 the search is free out to 930us; the final value is 132 x 0.950 = 125.
 
 Near the pulse limit, where the overset would move the stop less than 20us, the run writes the final value at once: v0 x the share at the first search's last free pulse. The first bound side's first write also finds which register limits that side. Last, the run searches both ends again: PASS when both are free, FAIL when one binds. A run writes 8 values at most: the two pulses, two on each side, and two to find the register. A value below 50 is a soft limit: the 2s start hold is the consent to it.
+
+### Hitec servos
+
+![The LIMIT RUN settings, SERVO at HITEC](view:servo-limrun-hitec)
+
+With SERVO at HITEC the run's sessions go to the [Hitec programmer](servo-programmer.md) in the series its SERIES row holds. The registers are LEFT END and RIGHT END: on a D series servo 0xB2 and 0xB0 in counts from NEUTRAL 0xC2, on a classic servo the raw cells 0x14 and 0x13, swapped on a CCW servo. A Hitec servo has no pulse registers, so SERVO PULSES is not shown and the run takes a pulse model that is not measured: NEUTRAL 1500.0us, the full travel at 850.0us and 2150.0us on a D series servo, at 900.0us and 2100.0us on a classic one. PULSE MIN and PULSE MAX must hold these, or the card says `HITEC: PULSE MIN/MAX MUST COVER 850-2150us`; TYPE WIDE, 800 to 2200us, holds both.
+
+- A D series write saves and restarts the servo inside its session: no PD mini is needed.
+- A classic servo needs a PD mini, or PROG 5V on the rbmod carrier, for every session, the read included: `Classic servos need a PD mini: the bench cycles the supply.`
+- The 2s start hold is the consent CHECK THIS CHANGE asks for; each write switches ENABLE WRITE TO SERVO on for itself and off at its end.
+- No servo answering the first CONNECT ends the run with `no Hitec servo read`.
+- The backup file HITEC001 to HITEC999 is saved before the first write. To restore, load it on FILES of the Hitec programmer and write it: the box says `LOAD HITEC001 IN FILES`.
 
 ### What ends a limit run
 

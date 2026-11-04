@@ -1337,8 +1337,11 @@ static inline bool lim_reads(void)
         && s.drive_target != SERVO_SCREEN_TARGET_NO_LINK;
 }
 
-/* The SERVO row reads HITEC: a run started now goes to the Hitec
- * programmer. */
+/**
+ * @brief The SERVO row reads HITEC: a run started now goes to the Hitec
+ *        programmer.
+ * @return true for a Hitec family
+ */
 static inline bool lim_hitec_now(void)
 {
     return lim_family() != 0u;

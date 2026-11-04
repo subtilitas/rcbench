@@ -945,8 +945,9 @@ KST-Servo
 ([Die Weggrenzen des Servos programmieren](Servo-de.md#die-weggrenzen-des-servos-programmieren)).
 Die Programmierung hat die Schnittstelle dafür an einem Hitec-Servo
 (`shared/bench/include/hitec_prog_run.h`,
-`shared/ui/include/hitec_panel_run.h`). Keine Seite startet einen Lauf an
-einem Hitec-Servo.
+`shared/ui/include/hitec_panel_run.h`). Der ENDLAGENLAUF des
+SERVO-Bildschirms mit SERVO auf HITEC und AUTO auf RUDER starten Läufe
+über sie ([Servo: Hitec-Servos](Servo-de.md#hitec-servos)).
 
 Ein Lauf schreibt ENDE LINKS und ENDE RECHTS und sonst nichts, in
 Wegeinheiten:
