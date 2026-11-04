@@ -254,10 +254,11 @@ TEST_CASE(the_data_keeps_inside_its_element_in_both_languages)
                              "\"wn\",\"vo\",\"cu\",\"pw\",\"rt\",\"un\","
                              "\"cm\",\"hx\",\"ky\",\"nm\",\"lt\",\"pu\","
                              "\"ch\"]") != NULL);
-        /* The unit table, the ohm sign as UTF-8. */
+        /* The unit table, the ohm and the degree sign as UTF-8. */
         CHECK(strstr(g_elem, "\"units\":[[\"V\",6],[\"mV\",6],[\"A\",7],")
               != NULL);
-        CHECK(strstr(g_elem, ",[\"m\xce\xa9\",10],[\"\xce\xa9\",10]]")
+        CHECK(strstr(g_elem, ",[\"m\xce\xa9\",10],[\"\xce\xa9\",10],"
+                             "[\"mm\",10],[\"\xc2\xb0\",10]]")
               != NULL);
     }
     fake_free(&fs);

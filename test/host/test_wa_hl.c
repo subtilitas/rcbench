@@ -538,6 +538,7 @@ static const char *const k_edges[] = {
     "x [not loaded] y", "not measured", "(cut short)", "6.00V", "6.00Volt",
     "5x", "12 mV", "12  mV", "1.2.3", "-3", "+4.5A", "-", "+", "50%",
     "3/s", "100m\xce\xa9", "4\xce\xa9", "90deg", "90 Grad", "1.5.", "a1.5V",
+    "27.50\xc2\xb0", "27.5\xc2\xb0x", "46.2mm", "\xc2\xb0",
     ".5V", "1.V", "rpm 1200rpm 50Hz", "3kB 4MB 5B", "3 kB", "3 kBx",
     "00: 1A 2B 3C", "00: 1A 2B 3C ", "0F: 1A 2", "1A: zz", "checksum 9F3A77C1",
     "checksum  9F3A77C1  ", "checksum 9F3A77C", "checksum9F3A77C1",
