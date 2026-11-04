@@ -105,17 +105,23 @@ baud can stay in the module's line buffer and spoil the first command.
 | `HC05_ERR_NONE_FOUND` | the inquiry ended with no device | 0 |
 | `HC05_ERR_ARG` | `hc05_bind()` or `hc05_any()` with a bad address or PIN; nothing is sent | 0 |
 
-`hc05_abort()` ends a running operation FAILED with `HC05_ERR_NONE`, and
-the next `hc05_step()` asks KEY low when KEY was high. Before KEY has
-settled or during the handshake's `AT` this happens at once. With any
-other command out, its late answers must not reach the next operation:
-`AT+STATE?` goes out, every line up to its `+STATE:` line and OK is
-dropped, and the operation ends FAILED then, or when the command's own
-timeout plus 1000ms runs out (14520ms in `AT+INQ`, 23000ms in
-`AT+PAIR`). The machine is busy until then. After `AT+RESET` has gone out the module restarts
-whatever comes: an abort then asks KEY low, keeps the machine busy for
-the 1500ms hold, and ends FAILED with `HC05_ERR_NONE` at its end, without
-the data baud action.
+An exchange that does not end on its own answer leaves through the
+fence: a command's timeout (for `AT`, the last of the 3 bauds; a late
+answer at an earlier baud is noise at the next one), and `hc05_abort()`
+with a command out. `AT+STATE?` goes out with KEY still high, every line
+up to its `+STATE:` line and OK is dropped, and the operation ends FAILED
+then, or when the command's own timeout plus 1000ms runs out (2000ms for
+most commands, 14520ms after `AT+INQ`, 23000ms after `AT+PAIR`). The
+error is the one that began the fence: `HC05_ERR_TIMEOUT`,
+`HC05_ERR_NO_AT`, or `HC05_ERR_NONE` for an abort. The machine is busy
+until then, so no late answer reaches the next operation. A timeout of
+`AT+RNAME?` runs the same fence and then goes on with the next device.
+An abort before KEY has settled ends at once, nothing having been sent.
+After `AT+RESET` the 1500ms hold with KEY low is the fence, as
+`AT+STATE?` with KEY low would go to the radio: an abort then keeps the
+hold and ends FAILED with `HC05_ERR_NONE` at its end, without the data
+baud action. An answer later than the fence's wait is not caught: it
+would be read by the next exchange.
 
 ## Answers and addresses
 

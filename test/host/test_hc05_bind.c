@@ -309,8 +309,7 @@ static void pair_times_out(uint32_t t0)
           && is_send(&a, "AT+PAIR=98D3,31,FD5C81,20"));
     CHECK_EQ(step_all(&h, t0 + 100u + HC05_PAIR_MS - 1u, NULL),
              HC05_ACT_NONE);
-    CHECK_EQ(step_all(&h, t0 + 100u + HC05_PAIR_MS, NULL), HC05_ACT_KEY);
-    CHECK_EQ(h.err, HC05_ERR_TIMEOUT);
+    check_fence(&h, t0 + 100u + HC05_PAIR_MS, HC05_ERR_TIMEOUT);
 }
 
 /* AT+RESET without its OK: KEY low at 100ms, TIMEOUT after the hold. */
@@ -403,7 +402,6 @@ TEST_CASE(bind_and_any_refuse_a_bad_address_or_pin)
     hc05_init(&h);
     CHECK(hc05_probe(&h, 0));
     (void)step_all(&h, 0, NULL);
-    (void)step_all(&h, 100, NULL);
     hc05_abort(&h);
     CHECK(h.key);
     CHECK(!hc05_any(&h, "", 0));

@@ -79,6 +79,9 @@ typedef struct {
     bool reset_ok_lost;  /* AT+RESET restarts the module, its OK is lost */
     bool pair_error;     /* AT+PAIR answers ERROR:(15) */
     const char *inq_answer; /* AT+INQ answers this line alone */
+    const char *late_cmd; /* the first command starting so answers late */
+    uint32_t late_ms;     /* by this much */
+    uint32_t shift;       /* added to every answer of the command at hand */
     uint32_t inq_units;  /* the units AT+INQM set */
     uint32_t inq_max;    /* the devices AT+INQM set */
     bool inited;
@@ -140,6 +143,7 @@ static void sim_say_n(sim_t *s, uint32_t at, const char *text, size_t n)
     if (s->nout >= SIM_OUT_MAX) {
         return;
     }
+    at += s->shift;
     /* One command at a time: no answer before the one queued last. */
     if (s->nout > 0u && (int32_t)(at - s->busy_until) <= 0) {
         at = s->busy_until + 1u;
@@ -222,6 +226,15 @@ static void sim_command(sim_t *s, const char *cmd, uint32_t now)
 
     if (s->ncmd < SIM_LOG_MAX) {
         snprintf(s->cmds[s->ncmd++], SIM_TEXT_MAX, "%s", cmd);
+    }
+    s->shift = 0;
+    /* late_cmd names a command, not a prefix of a longer name:
+     * "AT+INQ" is not AT+INQM, "AT" is not AT+ROLE=1. */
+    const size_t ln = s->late_cmd != NULL ? strlen(s->late_cmd) : 0u;
+    if (s->late_cmd != NULL && strncmp(cmd, s->late_cmd, ln) == 0
+        && !(cmd[ln] >= 'A' && cmd[ln] <= 'Z') && cmd[ln] != '+') {
+        s->shift = s->late_ms;
+        s->late_cmd = NULL;
     }
     if (s->dirty) {
         s->dirty = false;
@@ -308,7 +321,7 @@ static void sim_command(sim_t *s, const char *cmd, uint32_t now)
         if (!s->reset_ok_lost) {
             sim_say(s, at, "OK");
         }
-        s->restart_at = at + SIM_RESTART_MS;
+        s->restart_at = at + s->shift + SIM_RESTART_MS;
         s->restart_due = true;
     } else {
         sim_say(s, at, "ERROR:(0)");
@@ -345,6 +358,7 @@ static void sim_rx(sim_t *s, const hc05_act_t *a, uint32_t now)
     memcpy(cmd, a->data, n);
     cmd[n] = '\0';
     sim_command(s, cmd, now);
+    s->shift = 0;
 }
 
 static void sim_take(sim_t *s, const hc05_act_t *a, uint32_t now)

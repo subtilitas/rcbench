@@ -73,12 +73,14 @@ static const uint32_t k_bauds[] = { HC05_BAUD_DATA, HC05_BAUD_ALT,
 #define FENCE_STATE 2u /**< its +STATE: line came */
 /** @} */
 
-/** @brief hc05_t.tries at a command stage after hc05_abort(): AT+STATE?
+/** @brief hc05_t.tries in the fence, the one way out of an exchange that
+ *         did not end on its own answer (a timeout, an abort): AT+STATE?
  *         goes out, every line up to its +STATE: line and OK is dropped,
- *         then the operation ends FAILED.  So no answer to the aborted
- *         command reaches the next operation. @{ */
-#define ABORT_FENCE 3u /**< AT+STATE? to send or sent */
-#define ABORT_STATE 4u /**< its +STATE: line came */
+ *         or its wait runs out, and only then does the operation end
+ *         FAILED with hc05_t.err, set when the fence began.  So no late
+ *         answer reaches the next operation. @{ */
+#define FENCE_OUT 3u /**< AT+STATE? to send or sent */
+#define FENCE_IN  4u /**< its +STATE: line came */
 /** @} */
 
 /** @brief hc05_t.tries at S_KEYLOW: why the hold ends the operation
@@ -248,7 +250,7 @@ static uint32_t command(hc05_t *h, uint8_t s)
 {
     h->act.kind = HC05_ACT_SEND;
     put(h, "AT");
-    if (h->tries >= ABORT_FENCE) {
+    if (h->tries >= FENCE_OUT) {
         /* The aborted command's answers come first: its own time, then
          * the fence's. */
         put(h, "+STATE?\r\n");
@@ -369,6 +371,19 @@ static void next_name(hc05_t *h)
 }
 
 /**
+ * @brief Start the fence: the operation stays busy and ends FAILED with
+ *        @p err when the fence ends.
+ * @param h   The machine, at a command stage.
+ * @param err Why the operation fails.
+ */
+static void fence(hc05_t *h, hc05_err_t err)
+{
+    h->err = err;
+    h->tries = FENCE_OUT;
+    h->wait_ms = 0;
+}
+
+/**
  * @brief A stage's wait ran out.
  * @param h The machine, running.
  * @param s The stage.
@@ -376,8 +391,8 @@ static void next_name(hc05_t *h)
 static void expired(hc05_t *h, uint8_t s)
 {
     h->wait_ms = 0;
-    if (h->tries >= ABORT_FENCE && s != S_KEYLOW) {
-        finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);
+    if (h->tries >= FENCE_OUT && s != S_KEYLOW) {
+        finish(h, HC05_ST_FAILED, h->err, 0);
     } else if (s == S_KEYLOW && h->tries != 0u) {
         finish(h, HC05_ST_FAILED,
                h->tries == ABORTED ? HC05_ERR_NONE : HC05_ERR_TIMEOUT, 0);
@@ -390,8 +405,9 @@ static void expired(hc05_t *h, uint8_t s)
         h->tries = 0;
         if (++h->baud_try >= BAUD_TRIES) {
             h->baud = 0;
-            finish(h, HC05_ST_FAILED, HC05_ERR_NO_AT, 0);
+            fence(h, HC05_ERR_NO_AT);
         } else {
+            /* A late answer at this baud is noise at the next one. */
             h->step = STEP_BAUD;
         }
     } else if (s == S_RNAME && h->tries == 0u) {
@@ -402,7 +418,7 @@ static void expired(hc05_t *h, uint8_t s)
         /* At S_RNAME: no answer to AT+STATE? either, no more names. */
         advance(h);
     } else {
-        finish(h, HC05_ST_FAILED, HC05_ERR_TIMEOUT, 0);
+        fence(h, HC05_ERR_TIMEOUT);
     }
 }
 
@@ -441,11 +457,11 @@ static void take_line(hc05_t *h, const char *line)
                                              &code);
     const uint8_t s = stage(h);
 
-    if (h->tries >= ABORT_FENCE && s != S_KEYLOW) {
+    if (h->tries >= FENCE_OUT && s != S_KEYLOW) {
         if (kind == HC05_LINE_STATE) {
-            h->tries = ABORT_STATE;
-        } else if (kind == HC05_LINE_OK && h->tries == ABORT_STATE) {
-            finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);
+            h->tries = FENCE_IN;
+        } else if (kind == HC05_LINE_OK && h->tries == FENCE_IN) {
+            finish(h, HC05_ST_FAILED, h->err, 0);
         }
         return;
     }
@@ -642,16 +658,15 @@ void hc05_abort(hc05_t *h)
         h->tries = ABORTED;
         return;
     }
-    if (h->wait_ms != 0u && s != S_KEY && s != S_AT) {
-        /* A command is out: its late answers must not reach the next
-         * operation.  A fence already out (S_RNAME) serves as this one. */
+    if (h->wait_ms != 0u && s != S_KEY) {
+        /* A command is out: the fence.  One already out serves: the name
+         * fence of S_RNAME, or a timeout's, whose error stands. */
         if (s == S_RNAME && h->tries == FENCE_SENT) {
-            h->tries = ABORT_FENCE;
+            h->tries = FENCE_OUT;
         } else if (s == S_RNAME && h->tries == FENCE_STATE) {
-            h->tries = ABORT_STATE;
-        } else if (h->tries < ABORT_FENCE) {
-            h->tries = ABORT_FENCE;
-            h->wait_ms = 0;
+            h->tries = FENCE_IN;
+        } else if (h->tries < FENCE_OUT) {
+            fence(h, HC05_ERR_NONE);
         }
         return;
     }

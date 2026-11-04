@@ -112,10 +112,11 @@ TEST_CASE(probe_with_no_answer_fails_no_at_after_three_bauds)
     CHECK_EQ(h.state, HC05_ST_FAILED);
     CHECK_EQ(h.err, HC05_ERR_NO_AT);
     CHECK_EQ(h.baud, 0);
-    CHECK_EQ(s.sends, 3);
+    CHECK_EQ(s.sends, 4); /* 3 x AT, then the fence's AT+STATE? */
     CHECK_EQ(count_act(&s, HC05_ACT_BAUD), 3);
-    /* The last try's AT at 2100ms, its wait 1000ms. */
-    CHECK_EQ(end, HC05_KEY_SETTLE_MS + 3u * HC05_AT_MS);
+    /* The last try's AT at 2100ms, its wait 1000ms, then the fence's
+     * 1000ms + 1000ms unanswered. */
+    CHECK_EQ(end, HC05_KEY_SETTLE_MS + 5u * HC05_AT_MS);
     CHECK(!h.key);
 
     /* An operation after it starts at 115200: no baud is known. */
@@ -362,9 +363,7 @@ static void inq_times_out(uint32_t t0)
     feed_line(&h, "+INQ:" SENSOR ",1F00,FFC0");
     CHECK_EQ(step_all(&h, sent + HC05_INQ_MS(9) - 1u, NULL), HC05_ACT_NONE);
     CHECK(hc05_busy(&h));
-    CHECK_EQ(step_all(&h, sent + HC05_INQ_MS(9), NULL), HC05_ACT_KEY);
-    CHECK_EQ(h.state, HC05_ST_FAILED);
-    CHECK_EQ(h.err, HC05_ERR_TIMEOUT);
+    check_fence(&h, sent + HC05_INQ_MS(9), HC05_ERR_TIMEOUT);
 }
 
 TEST_CASE(scan_runs_for_inqm_timeout_plus_two_seconds)
@@ -453,10 +452,7 @@ static void at_times_out(uint32_t t0)
           && is_send(&a, "AT+VERSION?"));
     CHECK_EQ(step_all(&h, t0 + 2098u, NULL), HC05_ACT_NONE);
     CHECK(hc05_busy(&h));
-    CHECK_EQ(step_all(&h, t0 + 2099u, &a), HC05_ACT_KEY);
-    CHECK(!a.key);
-    CHECK_EQ(h.state, HC05_ST_FAILED);
-    CHECK_EQ(h.err, HC05_ERR_TIMEOUT);
+    check_fence(&h, t0 + 2099u, HC05_ERR_TIMEOUT);
 }
 
 /* A scan by hand with two devices, its first AT+RNAME? sent at the
@@ -528,6 +524,115 @@ TEST_CASE(a_timeout_fails_the_operation_at_exactly_its_limit)
     at_tick_0_and_before_the_wrap(fence_times_out, 4000u);
 }
 
+/* A command of one operation that answers past its timeout. */
+typedef struct {
+    int fw;              /* the firmware script */
+    hc05_op_t op;        /* the operation */
+    const char *cmd;     /* the command, as its text starts */
+    uint32_t late_ms;    /* how late its answer comes */
+    hc05_state_t state;  /* how the operation ends */
+    hc05_err_t err;
+} late_row_t;
+
+/* Every command of every operation, each answer 500ms past its timeout.
+ * AT+RESET's OK 600ms on comes in the 1500ms hold, where it counts. */
+static const late_row_t k_late[] = {
+    { 2, HC05_OP_PROBE, "AT", 1500u, HC05_ST_FAILED, HC05_ERR_NO_AT },
+    { 2, HC05_OP_PROBE, "AT+VERSION?", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_SCAN, "AT+ROLE=1", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_SCAN, "AT+INIT", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_SCAN, "AT+INQM", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_SCAN, "AT+INQ", 14020u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_SCAN, "AT+RNAME?", 3500u, HC05_ST_DONE, HC05_ERR_NONE },
+    { 2, HC05_OP_BIND, "AT+ROLE=1", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_BIND, "AT+PSWD", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_BIND, "AT+PAIR", 22500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_BIND, "AT+BIND", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_BIND, "AT+CMODE=0", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_BIND, "AT+UART", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_BIND, "AT+RESET", 600u, HC05_ST_DONE, HC05_ERR_NONE },
+    { 2, HC05_OP_ANY, "AT+ROLE=1", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_ANY, "AT+PSWD", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_ANY, "AT+CMODE=1", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_ANY, "AT+UART", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 2, HC05_OP_ANY, "AT+RESET", 600u, HC05_ST_DONE, HC05_ERR_NONE },
+    { 3, HC05_OP_PROBE, "AT", 1500u, HC05_ST_FAILED, HC05_ERR_NO_AT },
+    { 3, HC05_OP_PROBE, "AT+VERSION?", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_SCAN, "AT+ROLE=1", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_SCAN, "AT+INIT", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_SCAN, "AT+INQM", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_SCAN, "AT+INQ", 14020u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_BIND, "AT+ROLE=1", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_BIND, "AT+PSWD=\"", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_BIND, "AT+PAIR", 22500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_BIND, "AT+BIND", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_BIND, "AT+CMODE=0", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_BIND, "AT+UART", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_BIND, "AT+RESET", 600u, HC05_ST_DONE, HC05_ERR_NONE },
+    { 3, HC05_OP_ANY, "AT+ROLE=1", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_ANY, "AT+PSWD=\"", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_ANY, "AT+CMODE=1", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_ANY, "AT+UART", 1500u, HC05_ST_FAILED, HC05_ERR_TIMEOUT },
+    { 3, HC05_OP_ANY, "AT+RESET", 600u, HC05_ST_DONE, HC05_ERR_NONE },
+};
+
+/* Start @p op on @p h. */
+static bool start_op(hc05_t *h, hc05_op_t op, uint32_t now)
+{
+    switch (op) {
+    case HC05_OP_PROBE:
+        return hc05_probe(h, now);
+    case HC05_OP_SCAN:
+        return hc05_scan(h, now);
+    case HC05_OP_BIND:
+        return hc05_bind(h, SENSOR, "1234", now);
+    default:
+        return hc05_any(h, "1234", now);
+    }
+}
+
+TEST_CASE(a_late_answer_to_any_command_reaches_no_later_exchange)
+{
+    for (size_t i = 0; i < sizeof k_late / sizeof k_late[0]; ++i) {
+        const late_row_t *r = &k_late[i];
+        hc05_t h;
+        sim_t s;
+        /* At 115200 the next PROBE's first AT goes at the module's baud,
+         * where a late answer would be read. */
+        sim_init(&s, r->fw, HC05_BAUD_DATA);
+        sim_add_dev(&s, "1:2:3", 0x1F00u, 0xFFC0u, "FIRST", 2000u);
+        sim_add_dev(&s, SENSOR, 0x1F00u, 0xFFC0u, "HC-06", 2500u);
+        s.late_cmd = r->cmd;
+        s.late_ms = r->late_ms;
+        hc05_init(&h);
+        CHECK(start_op(&h, r->op, 0));
+        const uint32_t end = sim_run(&s, &h, 0, 90000u);
+        if (h.state != r->state || h.err != r->err || s.late_cmd != NULL) {
+            T_FAIL("row %zu (%s, firmware %d): state %d err %d", i, r->cmd,
+                   r->fw, (int)h.state, (int)h.err);
+        }
+        if (r->op == HC05_OP_SCAN && r->state == HC05_ST_DONE) {
+            CHECK_STR_EQ(h.found[0].name, "");
+            CHECK_STR_EQ(h.found[1].name, "HC-06");
+        }
+        /* The machine went idle only after the late answer came: the next
+         * operation, started at once, takes none of it. */
+        const unsigned before = s.ncmd;
+        CHECK(hc05_probe(&h, end + 1u));
+        (void)sim_run(&s, &h, end + 1u, 20000u);
+        const char *want_v = r->fw == 3 ? "3.0-20170601" : "2.0-20100601";
+        if (h.state != HC05_ST_DONE || strcmp(h.version, want_v) != 0
+            || s.ncmd != before + 2u
+            || strcmp(s.cmds[before], "AT") != 0
+            || strcmp(s.cmds[before + 1u], "AT+VERSION?") != 0) {
+            T_FAIL("row %zu (%s, firmware %d): the next PROBE ends %d, "
+                   "version \"%s\", %u commands", i, r->cmd, r->fw,
+                   (int)h.state, h.version, s.ncmd - before);
+        }
+        CHECK_EQ(s.bytes_key_low, 0);
+    }
+}
+
 /* A probe by hand up to its first AT at @p t0 + 100. */
 static void probe_to_at(hc05_t *h, uint32_t t0)
 {
@@ -596,9 +701,16 @@ TEST_CASE(abort_ends_a_running_scan_and_drops_key)
     feed_line(&h, "OK");
     CHECK_EQ(h.state, HC05_ST_FAILED);
 
-    /* In the handshake or before KEY: FAILED at once; a start after it
-     * raises KEY again. */
+    /* In the handshake's AT: the fence as well. */
     probe_to_at(&h, 0);
+    hc05_abort(&h);
+    check_fence(&h, 101u, HC05_ERR_NONE);
+
+    /* In KEY's settle, nothing sent: FAILED at once; a start after it
+     * raises KEY again. */
+    hc05_init(&h);
+    CHECK(hc05_probe(&h, 0));
+    CHECK_EQ(step_all(&h, 0, NULL), HC05_ACT_KEY);
     hc05_abort(&h);
     CHECK(!hc05_busy(&h));
     CHECK_EQ(h.state, HC05_ST_FAILED);
@@ -761,6 +873,7 @@ int main(void)
     RUN(scan_runs_for_inqm_timeout_plus_two_seconds);
     RUN(scan_on_firmware_3_0_ends_inq_refused_on_error_1f);
     RUN(a_timeout_fails_the_operation_at_exactly_its_limit);
+    RUN(a_late_answer_to_any_command_reaches_no_later_exchange);
     RUN(abort_ends_a_running_scan_and_drops_key);
     RUN(an_operation_after_an_aborted_scan_takes_none_of_its_answers);
     RUN(a_second_start_while_busy_is_refused);

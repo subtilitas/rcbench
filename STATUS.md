@@ -385,8 +385,10 @@ ctest also builds and runs `escwire_headers_cxx`.
 its 3 bauds and with no module, KEY high from 100ms before the
 first byte to the end, the scan with AT+ROLE=1 first, ERROR:(17) on
 AT+INIT and ERROR:(1F) on AT+INQ, a late name, each timeout at its limit
-and 1ms before it at tick 0 and across the clock's wrap, the abort and the
-cap of 8 devices. `test_hc05_bind` runs BIND and ANY on the same module:
+and 1ms before it at tick 0 and across the clock's wrap, every command of
+every operation on both firmwares answering 500ms past its timeout with
+no line of it reaching the next operation, the abort and the cap of 8
+devices. `test_hc05_bind` runs BIND and ANY on the same module:
 the commands in order, the quoted PIN, a failed pairing, the restart with
 KEY low and the reset's OK late, lost or aborted, the timeouts of AT+PAIR
 and AT+RESET the same way. `test_hc05_lines` runs its answer lines, the

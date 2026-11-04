@@ -152,4 +152,19 @@ static uint32_t scan_to_inq(hc05_t *h, uint32_t t0)
     return t0 + 100u;
 }
 
+/* At @p now the fence's AT+STATE? goes out and the machine stays busy; its
+ * +STATE: line and OK end the operation FAILED with @p err, KEY low next. */
+static void check_fence(hc05_t *h, uint32_t now, hc05_err_t err)
+{
+    hc05_act_t a;
+    CHECK(step_all(h, now, &a) == HC05_ACT_SEND && is_send(&a, "AT+STATE?"));
+    CHECK(hc05_busy(h));
+    feed_line(h, "+STATE:PAIRABLE");
+    CHECK(hc05_busy(h));
+    feed_line(h, "OK");
+    CHECK_EQ(h->state, HC05_ST_FAILED);
+    CHECK_EQ(h->err, err);
+    CHECK(step_all(h, now, &a) == HC05_ACT_KEY && !a.key);
+}
+
 #endif
