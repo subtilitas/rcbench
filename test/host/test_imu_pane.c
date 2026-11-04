@@ -130,6 +130,14 @@ TEST_CASE(a_rate_change_is_a_command_to_the_sensor_and_a_notice)
                  "RATE SAVED: SWITCH THE SENSOR OFF AND ON");
     CHECK_STR_EQ(sensors_rows_imu_notice(SET_IMU_ALGO),
                  "ALGORITHM SAVED IN THE SENSOR");
+    /* In a calibration they wait for its end, and say so. */
+    sensors_rows_set_imu_cal(true);
+    CHECK_STR_EQ(sensors_rows_imu_notice(SET_IMU_RATE),
+                 "RATE GOES TO THE SENSOR AFTER THE CALIBRATION; THEN SWITCH "
+                 "IT OFF AND ON");
+    CHECK_STR_EQ(sensors_rows_imu_notice(SET_IMU_ALGO),
+                 "ALGORITHM GOES TO THE SENSOR AFTER THE CALIBRATION");
+    sensors_rows_set_imu_cal(false);
     sensors_rows_set_imu(IMU_LINK_NO_FRAMES, 0u);
     CHECK_STR_EQ(sensors_rows_imu_notice(SET_IMU_RATE),
                  "RATE GOES TO THE SENSOR WHEN IT CONNECTS; THEN SWITCH IT "
@@ -141,7 +149,9 @@ TEST_CASE(a_rate_change_is_a_command_to_the_sensor_and_a_notice)
         ui_text_set_language((ui_lang_t)lang);
         static const ui_text_id_t k[] = { TX_IMU_RATE_SAVED, TX_IMU_RATE_LATER,
                                           TX_IMU_ALGO_SAVED,
-                                          TX_IMU_ALGO_LATER };
+                                          TX_IMU_ALGO_LATER,
+                                          TX_IMU_RATE_AFTER_CAL,
+                                          TX_IMU_ALGO_AFTER_CAL };
         for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
             CHECK(ui_router_alert_rows(ui_tr(k[i])) <= 2);
         }

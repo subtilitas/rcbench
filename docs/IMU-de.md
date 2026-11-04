@@ -99,7 +99,10 @@ gültig.
 
 Die Befehle gehen 50ms auseinander. Eine Änderung von RATE oder ALGORITHMUS,
 während der Sensor nicht verbunden ist, geht, sobald seine Frames kommen.
-Eine neue RATE gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde.
+Eine während einer Kalibrierung geht nach deren CALSW 0 und SAVE. Unlock,
+die Schreibbefehle und SAVE kommen erst in die Warteschlange, wenn alle in
+die 8 Befehlsplätze passen; bis dahin wartet die Änderung, und der
+Schreibbefehl trägt den letzten Wert aus SETUP. Eine neue RATE gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde.
 NULLPUNKT nimmt die aktuellen Winkel auf dem Panel als Nullpunkt; an den
 Sensor geht nichts, und ein Neustart vergisst ihn.
 

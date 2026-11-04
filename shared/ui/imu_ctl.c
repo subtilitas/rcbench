@@ -325,8 +325,9 @@ static void data_side(imu_ctl_t *c, uint32_t now_ms)
      * fits: a change that comes while the outbox is full waits, and the
      * write that goes carries SETUP's latest value. */
     const unsigned need = 2u + (c->rate_due ? 1u : 0u) + (c->algo_due ? 1u : 0u);
+    /* Not while the calibration runs: its CALSW 0 and SAVE go first. */
     if (imu_ctl_link(c) == IMU_LINK_CONNECTED && (c->rate_due || c->algo_due)
-        && IMU_OUTBOX - c->out_n >= need) {
+        && c->cal != IMU_CAL_RUNNING && IMU_OUTBOX - c->out_n >= need) {
         uint8_t b[WIT_CMD_LEN] = { 0 };
         queue_unlock(c);
         if (c->rate_due) {

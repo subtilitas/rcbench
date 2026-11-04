@@ -469,6 +469,36 @@ TEST_CASE(no_at_operation_while_the_calibration_or_a_sensor_command_waits)
     CHECK(imu_ctl_command(&r.c, &scan, r.t));    /* free again */
 }
 
+/* RATE held on the arrow during a calibration: no setting is queued while
+ * it runs; CALSW 0 and SAVE go first, then unlock, SETUP's last RATE and
+ * SAVE. */
+TEST_CASE(a_rate_change_in_a_calibration_waits_for_its_end)
+{
+    rig_t r;
+    connected(&r);
+    const unsigned at = r.nsent;
+    const imu_cmd_t cal = { IMU_CMD_CALIBRATE, 0u };
+    CHECK(imu_ctl_command(&r.c, &cal, r.t));
+    for (int i = 0; i < 20; ++i) {
+        rig_cfg(&r, true, "98D3:31:F5A1B2", i % 5, true);
+        rig_stream(&r, 33u, 20u, 0.0f, 0.0f, 0.0f);
+        CHECK(r.c.cal != IMU_CAL_RUNNING || r.nsent <= at + 2u);
+    }
+    rig_stream(&r, 3000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.c.cal, IMU_CAL_DONE);
+    CHECK(!r.c.rate_due);
+    CHECK_EQ(r.nsent, at + 8u);
+    CHECK(rig_sent_unlock(&r, at));
+    CHECK(rig_sent_is(&r, at + 1u, WIT_REG_CALSW, 1u, 0u));
+    CHECK(rig_sent_unlock(&r, at + 2u));
+    CHECK(rig_sent_is(&r, at + 3u, WIT_REG_CALSW, 0u, 0u));
+    CHECK(rig_sent_is(&r, at + 4u, WIT_REG_SAVE, 0u, 0u));
+    CHECK(rig_sent_unlock(&r, at + 5u));
+    /* The 20th change is option 4: 200Hz. */
+    CHECK(rig_sent_is(&r, at + 6u, WIT_REG_RATE, WIT_RATE_200HZ, 0u));
+    CHECK(rig_sent_is(&r, at + 7u, WIT_REG_SAVE, 0u, 0u));
+}
+
 /* What goes on to SERVO: each frame once, a stale reading once, after a
  * reset (ANGLE SOURCE turned to IMU) the next reading whatever went before,
  * and a stale stretch that frames ended before SERVO looked as a stale
@@ -591,6 +621,7 @@ int main(void)
     RUN(imu_off_aborts_the_operation_and_lowers_key);
     RUN(commands_are_refused_when_they_cannot_run);
     RUN(no_at_operation_while_the_calibration_or_a_sensor_command_waits);
+    RUN(a_rate_change_in_a_calibration_waits_for_its_end);
     RUN(the_handout_gives_each_frame_once_and_again_after_a_reset);
     RUN(a_frame_after_the_stale_point_counts_a_gap);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);

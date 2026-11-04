@@ -275,6 +275,7 @@ void panel_imu_frame(void)
     taskEXIT_CRITICAL(&s_mux);
     imu_screen_set(&s_seen.v);
     sensors_rows_set_imu(s_seen.v.link, s_seen.v.r.rate_dhz);
+    sensors_rows_set_imu_cal(s_seen.v.cal == IMU_CAL_RUNNING);
     /* A new IMU zero drops RUDDER's zero and MAX taken on the IMU. */
     servo_screen_set_imu_zero(s_seen.zero_gen);
     /* A bind that ended is kept in SETUP: the address and the name, with a

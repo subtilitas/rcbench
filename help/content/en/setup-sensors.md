@@ -205,7 +205,7 @@ A WitMotion BWT901CL angle sensor through an HC-05 Bluetooth module on the panel
 | IMU algorithm | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS takes the magnetometer for Z |
 | Angle source | AS5600, IMU | AS5600 | where the servo runs take their angle from ([Servo settings](servo-settings.md)) |
 
-A RATE or ALGORITHM change goes to the sensor with SAVE (`FF AA 00 00 00`) while it is connected. The band says `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. With the sensor not connected it says `RATE GOES TO THE SENSOR WHEN IT CONNECTS; THEN SWITCH IT OFF AND ON` and sends it when frames come.
+A RATE or ALGORITHM change goes to the sensor with SAVE (`FF AA 00 00 00`) while it is connected. The band says `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. With the sensor not connected it says `RATE GOES TO THE SENSOR WHEN IT CONNECTS; THEN SWITCH IT OFF AND ON` and sends it when frames come. While the IMU screen's calibration runs it says `RATE GOES TO THE SENSOR AFTER THE CALIBRATION; THEN SWITCH IT OFF AND ON` and sends it after the calibration's CALSW 0 and SAVE.
 
 | State | When |
 |---|---|

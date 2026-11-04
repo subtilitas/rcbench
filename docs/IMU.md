@@ -95,7 +95,10 @@ version), 0x52 (the battery, the fourth word unsigned, V x 100) and 0x51
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) or `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | a change of IMU algorithm |
 
 The commands go 50ms apart. A RATE or ALGORITHM change made while the sensor
-is not connected goes when its frames come. A new RATE takes effect after
+is not connected goes when its frames come. One made during a calibration
+goes after its CALSW 0 and SAVE. Unlock, the writes and SAVE queue only
+once all of them fit the 8 command slots; until then the change waits and
+the write carries SETUP's last value. A new RATE takes effect after
 the sensor is switched off and on. ZERO takes the current angles as zero on
 the panel; nothing goes to the sensor, and a restart forgets it.
 

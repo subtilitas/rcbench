@@ -219,6 +219,14 @@ void sensors_rows_publish_watch(void);
 void sensors_rows_set_imu(imu_link_t link, uint16_t rate_dhz);
 
 /**
+ * @brief Sets whether the IMU's calibration runs, as the panel last read
+ *        it: RATE and ALGORITHM then wait for its end, and their notice
+ *        says so.
+ * @param running The calibration runs.
+ */
+void sensors_rows_set_imu_cal(bool running);
+
+/**
  * @brief The IMU's state as last set.
  * @return The link state.
  */

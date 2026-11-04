@@ -429,6 +429,14 @@ void sensors_rows_set_imu(imu_link_t link, uint16_t rate_dhz)
     s_imu_dhz = rate_dhz;
 }
 
+/** @brief The IMU's calibration runs, as the panel last said. */
+static bool s_imu_cal;
+
+void sensors_rows_set_imu_cal(bool running)
+{
+    s_imu_cal = running;
+}
+
 imu_link_t sensors_rows_imu(void)
 {
     return s_imu;
@@ -484,10 +492,12 @@ const char *sensors_rows_imu_notice(setting_id_t id)
     }
     const bool now = s_imu == IMU_LINK_CONNECTED;
     if (id == SET_IMU_RATE) {
-        return now ? TR(IMU_RATE_SAVED) : TR(IMU_RATE_LATER);
+        return !now ? TR(IMU_RATE_LATER)
+               : s_imu_cal ? TR(IMU_RATE_AFTER_CAL) : TR(IMU_RATE_SAVED);
     }
     if (id == SET_IMU_ALGO) {
-        return now ? TR(IMU_ALGO_SAVED) : TR(IMU_ALGO_LATER);
+        return !now ? TR(IMU_ALGO_LATER)
+               : s_imu_cal ? TR(IMU_ALGO_AFTER_CAL) : TR(IMU_ALGO_SAVED);
     }
     return NULL;
 }

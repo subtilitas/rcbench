@@ -205,7 +205,7 @@ Ein WitMotion-BWT901CL-Winkelsensor über ein HC-05-Bluetooth-Modul an UART1 des
 | IMU-Algorithmus | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS nimmt das Magnetometer für Z |
 | Winkelquelle | AS5600, IMU | AS5600 | woher die Servoläufe ihren Winkel nehmen ([Servo-Optionen](servo-settings.md)) |
 
-Eine Änderung von RATE oder ALGORITHMUS geht mit SAVE (`FF AA 00 00 00`) an den Sensor, solange er verbunden ist. Das Band sagt `RATE GESPEICHERT: SENSOR AUS- UND EINSCHALTEN`. Ist der Sensor nicht verbunden, sagt es `RATE GEHT AN DEN SENSOR, SOBALD ER VERBUNDEN IST; DANN AUS- UND EINSCHALTEN` und sendet sie, sobald Frames kommen.
+Eine Änderung von RATE oder ALGORITHMUS geht mit SAVE (`FF AA 00 00 00`) an den Sensor, solange er verbunden ist. Das Band sagt `RATE GESPEICHERT: SENSOR AUS- UND EINSCHALTEN`. Ist der Sensor nicht verbunden, sagt es `RATE GEHT AN DEN SENSOR, SOBALD ER VERBUNDEN IST; DANN AUS- UND EINSCHALTEN` und sendet sie, sobald Frames kommen. Während die Kalibrierung des IMU-Bildschirms läuft, sagt es `RATE GEHT NACH DER KALIBRIERUNG AN DEN SENSOR; DANN AUS- UND EINSCHALTEN` und sendet sie nach CALSW 0 und SAVE der Kalibrierung.
 
 | Zustand | Wann |
 |---|---|
