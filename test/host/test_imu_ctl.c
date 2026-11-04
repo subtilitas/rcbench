@@ -44,7 +44,9 @@ TEST_CASE(imu_on_probes_and_a_silent_hc05_is_no_module_retried_every_10s)
     rig_cfg(&r, true, "", 2, true);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_MODULE);
     const uint32_t took = rig_settle(&r, 10000u);
-    CHECK(took < 5000u);
+    /* KEY settles, AT times out at the 3 bauds, then the fence's
+     * AT+STATE? waits its 2000ms. */
+    CHECK(took <= HC05_KEY_SETTLE_MS + 3u * HC05_AT_MS + 2u * HC05_AT_MS);
     CHECK_EQ(r.c.err, HC05_ERR_NO_AT);
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_MODULE);
     const unsigned sends = r.sim.sends;

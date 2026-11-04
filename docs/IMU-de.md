@@ -72,9 +72,10 @@ Nach AT+RESET startet das Modul mit KEY low im Datenmodus neu. Die
 gebundene Adresse und der Name aus der Suche gehen nach SETUP (`imu_addr`,
 `imu_name`, 23 Zeichen behalten), und ein Speichern wird erbeten; ANY behält
 `*`. Solange keine Operation läuft, sind die Bytes des UART die Frames des
-Sensors. Ein Modul, dessen Inquiry noch läuft, wenn IMU während einer Suche
-auf AUS geht, antwortet auf die nächste Probe zu spät: die Probe 10s später
-findet es.
+Sensors. IMU AUS während einer Operation hält den HC-05 belegt, bis der
+Fence seine späten Antworten abgefangen hat: bis zu 14.520ms nach AT+INQ,
+23.000ms nach AT+PAIR. Eine Probe eines stummen Moduls endet nach 5.100ms:
+100ms KEY settle, 1000ms bei jeder der 3 Baudraten und 2000ms Fence.
 
 ## Der Sensor
 

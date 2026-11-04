@@ -70,9 +70,11 @@ README in `protocols/hc05` has every answer and error.
 After AT+RESET the module restarts in data mode with KEY low. The bound
 address and the name from the scan go into SETUP (`imu_addr`, `imu_name`,
 23 characters kept) and a save is asked; ANY keeps `*`. While no operation
-runs, the UART's bytes are the sensor's frames. A module whose inquiry
-still runs when IMU is switched OFF in a scan answers the next probe late:
-the probe 10s later finds it.
+runs, the UART's bytes are the sensor's frames. IMU OFF during an
+operation keeps the HC-05 busy until the fence has caught its late
+answers: up to 14,520ms after AT+INQ, 23,000ms after AT+PAIR. A probe of a
+silent module ends after 5,100ms: 100ms KEY settle, 1000ms at each of the
+3 bauds, and the 2000ms fence.
 
 ## The sensor
 
