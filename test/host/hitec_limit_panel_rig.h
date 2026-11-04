@@ -11,7 +11,12 @@
  * through the registers NEUTRAL 0xC2 and the end points 0xB2 and 0xB0
  * (hitec_live.h's mapping), 0.15us of horn a count from 1500us; the
  * D485HW's 4841 and 4811 counts are 726 and 722us, past both stops at 1150
- * and 1880us.  One frame of the rig is 1ms; the screen ticks every 20ms.
+ * and 1880us.  A classic servo's horn: the share of the way from 1500us to
+ * 900us or 2100us times the end cell of that side, 2.2us a count (cell
+ * 0x14 the short pulses on a CW servo); the HS-5645MG's 162 and 194 are
+ * 356 and 427us.  With hl.enc the AS5600 reads the surface at 0.06° a us
+ * of the horn every 40ms, its centre count 2048.  One frame of the rig is
+ * 1ms; the screen ticks every 20ms.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -45,6 +50,9 @@ static struct {
     bool armed;
     bool pd;                    /* a PD mini answers on the SERVO screen */
     bool pd_out;                /* its output                            */
+    bool enc;                   /* the AS5600 reads the surface          */
+    int last_raw;
+    uint32_t still_from;
     float sum;
     unsigned n;
     uint32_t win_end;
@@ -83,9 +91,29 @@ static inline void hl_drain(void)
     }
 }
 
-/* Where the horn of the D series servo on the line stands for the pulse. */
+/* The AS5600's centre count; the surface's degrees a us of the horn. */
+#define HL_CENTRE_COUNT 2048
+#define HL_DEG_PER_US   0.06f
+
+/* Where the horn of a classic servo on the line stands for the pulse. */
+static inline uint16_t hl_horn_c(void)
+{
+    const bool low = hl.cmd < 1500u;
+    float share = low ? (1500.0f - (float)hl.cmd) / 600.0f
+                      : ((float)hl.cmd - 1500.0f) / 600.0f;
+    share = share > 1.0f ? 1.0f : share;
+    const bool cw = (g_drv.eeprom[0x1B] & 1u) != 0u;
+    const uint8_t cell = (low == cw) ? g_drv.eeprom[0x14] : g_drv.eeprom[0x13];
+    const float off = share * 2.2f * (float)cell;
+    return (uint16_t)lroundf(low ? 1500.0f - off : 1500.0f + off);
+}
+
+/* Where the horn of the servo on the line stands for the pulse. */
 static inline uint16_t hl_horn(void)
 {
+    if (hitec_prog_series(model()) == HITEC_CLASSIC) {
+        return hl_horn_c();
+    }
     int32_t t = ((int32_t)hl.cmd - 750) * 4;
     t = t < 0 ? 0 : t > 6000 ? 6000 : t;
     const float mid = (float)g_drv.dreg[0xC2];
@@ -137,6 +165,25 @@ static inline void hl_pd_reading(void)
     servo_screen_supply(&st);
 }
 
+/* The surface's angle as the AS5600 reads it, with its still time. */
+static inline void hl_encoder(void)
+{
+    const float deg = (hl.sv.position_us - 1500.0f) * HL_DEG_PER_US;
+    const int raw = (HL_CENTRE_COUNT + (int)lroundf(deg * 4096.0f / 360.0f))
+                    & 4095;
+    if (abs(raw - hl.last_raw) > 1) {
+        hl.last_raw = raw;
+        hl.still_from = g_ms;
+    }
+    const uint32_t still = g_ms - hl.still_from;
+    const servo_test_enc_t e = {
+        .valid = true, .raw = (uint16_t)raw,
+        .still_ms = (uint16_t)(still > 60000u ? 60000u : still),
+        .taken_ms = g_ms,
+    };
+    servo_screen_encoder(&e);
+}
+
 static inline void hl_ms(uint32_t ms)
 {
     for (uint32_t k = 0; k < ms; ++k) {
@@ -157,6 +204,9 @@ static inline void hl_ms(uint32_t ms)
             hl.sum = 0.0f;
             hl.n = 0u;
             servo_screen_window(&w, SERVO_SOURCE_INA3221, 2u);
+        }
+        if (hl.enc && g_ms % 40u == 0u) {
+            hl_encoder();
         }
         if (g_ms % 20u != 0u) {
             continue;

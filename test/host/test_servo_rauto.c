@@ -246,7 +246,7 @@ TEST_CASE(the_pulse_write_comes_first_on_kst_and_hitec_gets_none)
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
     CHECK_EQ(g.pulse_ops, 0u);
     CHECK(in_report("Servo:          DIGITAL, Hitec D"));
-    CHECK(in_report("End point 1:    150 before, 138 after"));
+    CHECK(in_report("LEFT END (0xB2): 150 before, 138 after"));
 
     rig_init(0u);
     g.cfg.family = SERVO_RAUTO_FAM_HITEC_C;

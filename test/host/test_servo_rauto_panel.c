@@ -139,7 +139,8 @@ TEST_CASE(a_start_that_cannot_run_says_why_and_drives_nothing)
         CHECK(!servo_screen_rauto_running());
         CHECK_STR_EQ(rauto_line(0, b, sizeof(b)), why);
         CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), "");
-        CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "");
+        /* The servo a run started now programs. */
+        CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "SERVO KST/CHASERVO");
         CHECK_STR_EQ(rauto_line(3, b, sizeof(b)), "");
         CHECK_STR_EQ(rauto_line(0, NULL, 0), "");
         char keep[4] = "abc";

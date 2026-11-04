@@ -9761,12 +9761,6 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_GAPS,
 UI_SERVO_TEXT(SERVO_STR_RA_R_PROG_HEAD,
     "PROGRAMMING (end points, unit not known)",
     "PROGRAMMIEREN (Endpoints, Einheit unbekannt)")
-UI_SERVO_TEXT(SERVO_STR_RA_R_REG_1,
-    "End point 1:    ",
-    "Endpoint 1:      ")
-UI_SERVO_TEXT(SERVO_STR_RA_R_REG_2,
-    "End point 2:    ",
-    "Endpoint 2:      ")
 UI_SERVO_TEXT(SERVO_STR_RA_R_SIDE_LO,
     "moves the 1000us side",
     "bewegt die 1000us-Seite")
@@ -10182,6 +10176,12 @@ UI_TEXT(SV_LIM_RESTORE_HITEC, 31,
 UI_TEXT(SV_LIM_NO_BACKUP, 31,
     "NO BACKUP: NO CARD",
     "KEINE SICHERUNG: KEINE KARTE")
+UI_TEXT(RA_SERVO, 50,
+    "SERVO %s",
+    "SERVO %s")
+UI_TEXT(RA_SERVO_HITEC, 50,
+    "SERVO HITEC %s",
+    "SERVO HITEC %s")
 
 /* Slice 8: the limit run on a Hitec servo (servo_limrun.h, "Servo
  * families"): its reason, its report's lines. */

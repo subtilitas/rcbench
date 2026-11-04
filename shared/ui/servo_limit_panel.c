@@ -174,7 +174,7 @@ const char *lim_prog_why(void)
         return TR(SV_LIM_PROG_PORT);
     }
     if (!servo_limrun_running(&s.lim)
-        && (prog_reg_servo_holds() || !lim_seam_ready())) {
+        && (prog_reg_servo_holds() || !lim_seam_ready(lim_family()))) {
         return TR(SV_LIM_PROG_BUSY);
     }
     /* A classic Hitec servo enters programming mode only at power-up: even
@@ -302,6 +302,7 @@ static bool lim_apply(const servo_limrun_do_t *d)
         post(SERVO_CMD_ARM, 0);
         ++s.arm_rev;
     }
+    const uint8_t fam = s.lim.cfg.family;
     bool taken = true;
     if (d->connect && lim_pd_feeds()
         && (!s.sup.output || !s.lim.sup_online)) {
@@ -313,14 +314,14 @@ static bool lim_apply(const servo_limrun_do_t *d)
     } else if (d->connect) {
         const bool pd = lim_pd_feeds();
         taken = lim_seam_connect(
-            pd, (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
+            fam, pd, (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
             (uint16_t)lroundf(supply_screen_set_i() * 1000.0f));
     } else if (d->write) {
-        taken = lim_seam_write(d->angle);
+        taken = lim_seam_write(fam, d->angle);
     } else if (d->pulses) {
-        taken = lim_seam_pulses(d->pulse_dus);
+        taken = lim_seam_pulses(fam, d->pulse_dus);
     } else if (d->leave) {
-        taken = lim_seam_leave();
+        taken = lim_seam_leave(fam);
         s.lim_leaving = taken && !servo_limrun_running(&s.lim);
     }
     if (!taken) {
@@ -357,8 +358,9 @@ static void lim_poll(void)
     if (!servo_limrun_programming(&s.lim)) {
         return;
     }
+    const uint8_t fam = s.lim.cfg.family;
     bool ok = false;
-    if (!lim_seam_poll(&ok)) {
+    if (!lim_seam_poll(fam, &ok)) {
         return;
     }
     servo_limrun_servo_t sv;
@@ -370,25 +372,25 @@ static void lim_poll(void)
              * read's NOT_KST; the port is held in programming mode then,
              * and the LEAVE the run asks gives it back.  Any other end is
              * a failed session. */
-            if (lim_seam_no_servo()) {
+            if (lim_seam_no_servo(fam)) {
                 servo_limrun_no_servo(&s.lim, test_now());
             } else {
                 servo_limrun_refused(&s.lim, test_now());
             }
             break;
         }
-        (void)lim_seam_servo(&sv);
+        (void)lim_seam_servo(fam, &sv);
         /* No backup at a CONNECT: the programmer's is an earlier run's
          * until this run's first write (servo_limrun_backup()). */
         servo_limrun_connected(&s.lim, &sv, test_now());
         break;
     case SERVO_LIMRUN_PH_WRITE:
         if (ok) {
-            (void)lim_seam_servo(&sv);
+            (void)lim_seam_servo(fam, &sv);
         }
         /* The file saved before the run's first write, sent whether it
          * ended well or not. */
-        servo_limrun_backup(&s.lim, lim_seam_backup());
+        servo_limrun_backup(&s.lim, lim_seam_backup(fam));
         if (s.lim.pulse_op) {
             servo_limrun_pulsed(&s.lim, ok, ok ? sv.pulse_dus : NULL,
                                 test_now());
@@ -419,7 +421,7 @@ static void lim_ended(void)
     if (s.lim_leaving) {
         s.lim_end_due = true;
     } else {
-        lim_seam_end();
+        lim_seam_end(s.lim.cfg.family);
     }
     test_tell();
     ++s.test_rev;
@@ -430,12 +432,12 @@ static void lim_ended(void)
  * or, refused, still in programming.  Whichever screen is up. */
 void lim_leave_follow(void)
 {
-    if (s.lim_leaving && !lim_seam_leaving()) {
+    if (s.lim_leaving && !lim_seam_leaving(s.lim.cfg.family)) {
         s.lim_leaving = false;
     }
     if (s.lim_end_due && !s.lim_leaving) {
         s.lim_end_due = false;
-        lim_seam_end();
+        lim_seam_end(s.lim.cfg.family);
     }
 }
 
@@ -491,7 +493,7 @@ void lim_begin(void)
     }
     s.lim_changes = s.changes;
     if (c.read) {
-        lim_seam_begin();
+        lim_seam_begin(c.family);
     }
     if (!lim_fixed_supply()) {
         /* The supply as the run starts: with none read yet, one that does

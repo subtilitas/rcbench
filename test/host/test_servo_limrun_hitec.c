@@ -274,6 +274,34 @@ TEST_CASE(a_run_across_the_32_bit_ms_wrap_passes)
     CHECK(h.hs.value[0] < 4470u && h.hs.value[1] < 4470u);
 }
 
+/* A write the programmer never answers: the run waits SERVO_LIMRUN_PROG_MS
+ * for it, the D series' save and reboot inside that, and not a 1ms
+ * longer; it then ends ABORTED with the output off. */
+TEST_CASE(a_write_never_answered_ends_at_the_programmer_cap)
+{
+    h_init_d(0u, true);
+    CHECK(h_start());
+    for (uint32_t k = 0; k < H_RUN_MS && h.op != H_OP_WRITE; ++k) {
+        h_tick();
+    }
+    CHECK_EQ(h.op, H_OP_WRITE);
+    CHECK_EQ(h.run.phase, SERVO_LIMRUN_PH_WRITE);
+    const uint32_t at = h.run.phase_ms;
+    h.prog_ms = 0xFFFFFFFFu;            /* the answer never comes */
+    while (h.now - at < SERVO_LIMRUN_PROG_MS - 10u) {
+        h_tick();
+    }
+    CHECK(servo_limrun_running(&h.run));
+    CHECK_EQ(h.run.phase, SERVO_LIMRUN_PH_WRITE);
+    while (h.now - at < SERVO_LIMRUN_PROG_MS + 10u) {
+        h_tick();
+    }
+    CHECK(!servo_limrun_running(&h.run));
+    CHECK_EQ(h.run.verdict, SERVO_LIMRUN_ABORTED);
+    CHECK_EQ(h.run.why, SERVO_LIMRUN_WHY_PROG);
+    CHECK_EQ(h.offs, 1u);
+}
+
 TEST_CASE(the_family_pulses_are_the_hitec_model_and_none_for_kst)
 {
     uint16_t p[3] = { 1u, 2u, 3u };
@@ -300,6 +328,7 @@ int main(void)
     RUN(restore_is_offered_after_a_fail_with_the_values_before_the_run);
     RUN(a_bench_range_short_of_the_pulse_model_is_refused_before_a_drive);
     RUN(a_run_across_the_32_bit_ms_wrap_passes);
+    RUN(a_write_never_answered_ends_at_the_programmer_cap);
     RUN(the_family_pulses_are_the_hitec_model_and_none_for_kst);
     return test_summary("servo_limrun_hitec");
 }

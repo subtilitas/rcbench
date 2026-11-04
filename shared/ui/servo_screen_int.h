@@ -1048,48 +1048,64 @@ uint8_t lim_family(void);
 /** @brief The family of the run under way or last run, else lim_family().
  *  @return servo_limrun_family_t */
 uint8_t lim_family_now(void);
-/** @brief The family's programmer can take a run's CONNECT.
+/* Each lim_seam_*() call names the family of the run it serves
+ * (servo_limrun_family_t): KST/CHASERVO goes to kst_panel.h's run seam,
+ * either Hitec one to hitec_panel_run.h's. */
+/** @brief The programmer can take a run's CONNECT.
+ *  @param fam the family
  *  @return true when its port is in PWM with nothing under way */
-bool lim_seam_ready(void);
-/** @brief A run with a read begins on its family's programmer. */
-void lim_seam_begin(void);
+bool lim_seam_ready(uint8_t fam);
+/** @brief A run with a read begins on its family's programmer.
+ *  @param fam the family */
+void lim_seam_begin(uint8_t fam);
 /** @brief CONNECT on the run's programmer.
+ *  @param fam the family
  *  @param pd with a PD mini at @p mv and @p ma
  *  @param mv the programming voltage, mV
  *  @param ma the current limit, mA
  *  @return true when it started */
-bool lim_seam_connect(bool pd, uint16_t mv, uint16_t ma);
+bool lim_seam_connect(uint8_t fam, bool pd, uint16_t mv, uint16_t ma);
 /** @brief The two travel values, in the family's units.
+ *  @param fam the family
  *  @param v LEFT and RIGHT
  *  @return true when the write started */
-bool lim_seam_write(const uint16_t v[2]);
+bool lim_seam_write(uint8_t fam, const uint16_t v[2]);
 /** @brief KST's PULSE LOWER and PULSE UPPER, 0.1us.
+ *  @param fam the family
  *  @param p the two pulses
- *  @return true when the write started; false for a Hitec run */
-bool lim_seam_pulses(const uint16_t p[2]);
+ *  @return true when the write started; false for a Hitec family */
+bool lim_seam_pulses(uint8_t fam, const uint16_t p[2]);
 /** @brief LEAVE on the run's programmer.
+ *  @param fam the family
  *  @return true when it started */
-bool lim_seam_leave(void);
+bool lim_seam_leave(uint8_t fam);
 /** @brief The run's programmer is still leaving.
+ *  @param fam the family
  *  @return true while its LEAVE runs */
-bool lim_seam_leaving(void);
+bool lim_seam_leaving(uint8_t fam);
 /** @brief The step under way, polled.
+ *  @param fam the family
  *  @param ok receives whether it ended well
  *  @return true once it has ended, false while none runs or it runs */
-bool lim_seam_poll(bool *ok);
+bool lim_seam_poll(uint8_t fam, bool *ok);
 /** @brief The CONNECT found no servo answering.
+ *  @param fam the family
  *  @return true for none */
-bool lim_seam_no_servo(void);
-/** @brief The servo the programmer holds, as the run takes it: travel
- *         values, the hard rules' range, and the pulses (a Hitec servo the
- *         family's model).
+bool lim_seam_no_servo(uint8_t fam);
+/** @brief The servo the programmer holds, as the limit run takes it:
+ *         travel values, the hard rules' range, and the pulses (a Hitec
+ *         servo the family's model, its DIRECTION CCW as REVERSION).
+ *  @param fam the family
  *  @param sv receives it
- *  @return sv->ok */
-bool lim_seam_servo(servo_limrun_servo_t *sv);
-/** @brief The run's backup file.  @return its name, "" for none */
-const char *lim_seam_backup(void);
-/** @brief The run is over on its programmer. */
-void lim_seam_end(void);
+ *  @return sv->ok: for a Hitec family, a servo of its series */
+bool lim_seam_servo(uint8_t fam, servo_limrun_servo_t *sv);
+/** @brief The run's backup file.
+ *  @param fam the family
+ *  @return its name, "" for none */
+const char *lim_seam_backup(uint8_t fam);
+/** @brief The run is over on its programmer.
+ *  @param fam the family */
+void lim_seam_end(uint8_t fam);
 /** @brief The SERVO row follows the programmer last opened on PROGRAM. */
 void lim_seam_follow(void);
 /** @brief A programmer page open and not holding its port closes as a run
