@@ -53,21 +53,21 @@ static void queue(imu_ctl_t *c, const uint8_t cmd[WIT_CMD_LEN], size_t len)
 /** @brief Queue the unlock. @param c The controller. */
 static void queue_unlock(imu_ctl_t *c)
 {
-    uint8_t b[WIT_CMD_LEN];
+    uint8_t b[WIT_CMD_LEN] = { 0 };
     queue(c, b, wit_cmd_unlock(b));
 }
 
 /** @brief Queue SAVE. @param c The controller. */
 static void queue_save(imu_ctl_t *c)
 {
-    uint8_t b[WIT_CMD_LEN];
+    uint8_t b[WIT_CMD_LEN] = { 0 };
     queue(c, b, wit_cmd_save(b));
 }
 
 /** @brief Queue CALSW @p mode. @param c The controller. @param mode wit_cal_t. */
 static void queue_calsw(imu_ctl_t *c, uint8_t mode)
 {
-    uint8_t b[WIT_CMD_LEN];
+    uint8_t b[WIT_CMD_LEN] = { 0 };
     queue(c, b, wit_cmd_calsw(b, mode));
 }
 
@@ -303,7 +303,7 @@ static void data_side(imu_ctl_t *c, uint32_t now_ms)
         }
     }
     if (imu_ctl_link(c) == IMU_LINK_CONNECTED && (c->rate_due || c->algo_due)) {
-        uint8_t b[WIT_CMD_LEN];
+        uint8_t b[WIT_CMD_LEN] = { 0 };
         queue_unlock(c);
         if (c->rate_due) {
             queue(c, b, wit_cmd_rate(b, c->cfg.rate_code));
