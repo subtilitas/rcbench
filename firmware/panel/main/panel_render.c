@@ -437,6 +437,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
+                           .resets = atomic_load(&s_stop_resets),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
@@ -447,6 +448,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
+                           .resets = atomic_load(&s_stop_resets),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
@@ -456,6 +458,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
+                           .resets = atomic_load(&s_stop_resets),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);

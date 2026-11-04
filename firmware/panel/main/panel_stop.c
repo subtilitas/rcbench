@@ -101,6 +101,9 @@ static bool io_read(void *ctx, uint8_t page, uint8_t reg, uint16_t *out)
 static void io_resume(void *ctx)
 {
     (void)ctx;
+    /* Before the release: a command queued while the STOP stood is out of
+     * date from the pass that releases it. */
+    atomic_fetch_add(&s_stop_resets, 1u);
     arming_stop_release(&s_arm);
 }
 

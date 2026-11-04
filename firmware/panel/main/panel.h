@@ -1050,6 +1050,9 @@ typedef struct {
     uint32_t         stops;
     /** And how many times it had been told to let go; see s_lets_go. */
     uint32_t         lets_go;
+    /** And how many STOP latches their reset had released (s_stop_resets):
+     *  an arm queued while a STOP stood is not applied after the release. */
+    uint32_t         resets;
     /** And how many times the supply's output had been asked off; see
      *  s_supply_offs. */
     uint32_t         supply_offs;
@@ -1103,6 +1106,10 @@ extern QueueHandle_t s_supply_q;  /**< control task -> app_main */
 extern atomic_bool s_stop_request;
 extern atomic_uint s_stop_counted;  /**< s_touch_q number of a counted STOP, 0 none */
 extern atomic_uint s_lets_go;
+/** @brief STOP latches released by their reset (stop_reset_service()); a
+ *  command queued before the latest release drives nothing after it.
+ *  Control task writes. */
+extern atomic_uint s_stop_resets;
 
 /* The supply's switch and set points, from the render side. */
 extern atomic_bool s_supply_off_request;

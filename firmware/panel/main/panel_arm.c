@@ -654,6 +654,10 @@ void drain_commands(bool link_up, bench_state_t *bench)
          * touch dying or from the far end has no queued STOP behind it to
          * settle the surfaces a second time.
          *
+         * The same for a STOP latch released between the asking and the
+         * arriving: an arm queued while the STOP stood is one the latch
+         * refused, and the reset does not make it current.
+         *
          * Only what drives.  A disarm, a release or a binding asked for
          * before the stop still means what it meant.
          */
@@ -668,7 +672,8 @@ void drain_commands(bool link_up, bench_state_t *bench)
                                     || pc.servo.kind == SERVO_CMD_HOLD));
         if (drives
             && (pc.stops != arming_stop_count(&s_arm)
-                || pc.lets_go != atomic_load(&s_lets_go))) {
+                || pc.lets_go != atomic_load(&s_lets_go)
+                || pc.resets != atomic_load(&s_stop_resets))) {
             continue;
         }
         /*
