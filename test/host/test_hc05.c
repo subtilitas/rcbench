@@ -157,6 +157,14 @@ TEST_CASE(an_operation_after_a_probe_tries_the_probed_baud_first)
     CHECK(hc05_probe(&h, 90000u));
     (void)sim_run(&s, &h, 90000u, 10000u);
     CHECK_EQ(nth_act(&s, HC05_ACT_BAUD, 0)->act.baud, HC05_BAUD_DATA);
+
+    /* And its version: a probe that finds no module leaves "". */
+    CHECK_STR_EQ(h.version, "2.0-20100601");
+    s.silent = true;
+    CHECK(hc05_probe(&h, 110000u));
+    (void)sim_run(&s, &h, 110000u, 10000u);
+    CHECK_EQ(h.err, HC05_ERR_NO_AT);
+    CHECK_STR_EQ(h.version, "");
 }
 
 TEST_CASE(probe_with_no_answer_fails_no_at_after_three_bauds)
@@ -221,6 +229,13 @@ TEST_CASE(a_probe_after_junk_at_a_wrong_baud_sends_at_once_more)
     CHECK_EQ(h.state, HC05_ST_FAILED);
     CHECK_EQ(h.err, HC05_ERR_REFUSED);
     CHECK_EQ(h.err_code, 3);
+    /* The next operation has its own retry. */
+    CHECK(hc05_probe(&h, 5000));
+    (void)step_all(&h, 5000, NULL);
+    (void)step_all(&h, 5100, NULL);
+    feed_line(&h, "ERROR:(0)");
+    CHECK(step_all(&h, 5101, &a) == HC05_ACT_SEND && is_send(&a, "AT"));
+    CHECK(hc05_busy(&h));
     /* The retry is once per baud: a FAIL refuses at once. */
     hc05_init(&h);
     CHECK(hc05_probe(&h, 0));
@@ -495,6 +510,16 @@ TEST_CASE(bind_sends_role_pswd_pair_bind_cmode_uart_reset_in_order)
     CHECK_EQ(s.cmode, 0);
     CHECK_STR_EQ(s.bind, SENSOR_CMD);
     CHECK_EQ(s.uart_set, HC05_BAUD_DATA);
+
+    /* A 1-digit PIN goes in. */
+    sim_init(&s, 2, HC05_BAUD_OLD);
+    sim_add_dev(&s, SENSOR, 0x1F00u, 0xFFC0u, "HC-06", 3000u);
+    s.dev_pin = "7";
+    hc05_init(&h);
+    CHECK(hc05_bind(&h, SENSOR, "7", 0));
+    (void)sim_run(&s, &h, 0, 80000u);
+    CHECK_EQ(h.state, HC05_ST_DONE);
+    CHECK_STR_EQ(s.cmds[2], "AT+PSWD=7");
 
     /* The address with commas and a 16-digit PIN go in as well. */
     sim_init(&s, 2, HC05_BAUD_OLD);

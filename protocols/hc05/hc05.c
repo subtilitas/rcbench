@@ -147,7 +147,6 @@ static void advance(hc05_t *h)
 {
     ++h->step;
     h->wait_ms = 0;
-    h->tries = 0;
     if (stage(h) == S_END) {
         finish(h, HC05_ST_DONE, HC05_ERR_NONE, 0);
     }
@@ -195,7 +194,7 @@ static void put_addr(hc05_t *h, const char *addr)
 }
 
 /**
- * @brief Build the command of @p s into the action and queue it.
+ * @brief Build the command of @p s into the action, emptied by queue().
  * @param h The machine.
  * @param s A command stage.
  * @return The answer's timeout, in ms.
@@ -204,7 +203,6 @@ static uint32_t command(hc05_t *h, uint8_t s)
 {
     uint32_t wait = HC05_AT_MS;
     h->act.kind = HC05_ACT_SEND;
-    h->act.len = 0;
     put(h, "AT");
     switch (s) {
     case S_AT:
