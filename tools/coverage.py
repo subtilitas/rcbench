@@ -179,6 +179,7 @@ TRACKED = [
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
     "shared/settings/settings.c",
+    "shared/settings/settings_schema.c",
     "shared/settings/settings_sensors.c",
     "shared/settings/settings_text.c",
     "shared/logfile/log_numbers.c",
