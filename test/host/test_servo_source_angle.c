@@ -365,6 +365,20 @@ TEST_CASE(an_imu_silent_300ms_is_a_gap_and_a_second_within_10s_ends_the_run)
     CHECK(strstr(bench.report, "IMU gaps: 2, the longest 300ms.") != NULL);
     CHECK(strstr(bench.report, "AS5600 gaps") == NULL);
 
+    /* One gap of 300ms: the run goes on to PASS and names it. */
+    bench_fresh();
+    short_runs();
+    imu_on(0u, false);
+    hold_start(2.3f);
+    bench_frames(3000u);
+    t = imu_pull();
+    bench_frames(300u);
+    imu_plug(t + 300u);
+    test_run_out();
+    CHECK_EQ(bench.disarms, 0u);
+    CHECK(strstr(bench.report, "Result:         PASS") != NULL);
+    CHECK(strstr(bench.report, "IMU gaps: 1, the longest 300ms.") != NULL);
+
     /* 301ms: the first gap ends the run. */
     bench_fresh();
     short_runs();
