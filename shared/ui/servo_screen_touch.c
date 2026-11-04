@@ -110,10 +110,12 @@ static bool on_the_dial(int px, int py, float *deg)
 }
 
 /* Latches that something other than the knob holds the horn: the knob
- * moves it on LIVE and on RUDDER only, and never under AUTO's run. */
+ * moves it on LIVE and on RUDDER only, and never under the automatic
+ * test, a LIMIT RUN (to the end of its session's leave) or AUTO's run. */
 void svs_knob_note_owner(void)
 {
     if ((!live_shown() && !rudder_shown()) || servo_test_running(&s.test)
+        || servo_limrun_running(&s.lim) || s.lim_leaving
         || servo_rauto_running(&s.ra.run) || s.sweeping || s.paused) {
         s.knob_owned = true;
     }

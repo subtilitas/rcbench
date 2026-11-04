@@ -1,7 +1,7 @@
 /*
  * What the SERVO screen's limit run decides: START LIMIT RUN on
- * TEST's LIMIT RUN card, what refuses it, its report and every source
- * that aborts it.
+ * TEST's LIMIT RUN card, what refuses it, its report, every source
+ * that aborts it, and the knob moving nothing while it runs.
  *
  * The screen and its fixtures are servo_rig.h, the bench
  * servo_bench_rig.h.
@@ -643,6 +643,52 @@ TEST_CASE(a_limit_run_with_user_logs_off_writes_no_report)
     CHECK(lim_line_reads(2, want, UI_C_TEXT_DIM));
 }
 
+/* The pulse the bench drives, every 20ms for @p n frames, into @p trace;
+ * with @p turn a knob turn before each frame, +0.2 and -0.1 of the span in
+ * turn. */
+static void lim_trace(bool turn, uint16_t *trace, size_t n)
+{
+    for (size_t k = 0u; k < n; ++k) {
+        if (turn) {
+            servo_screen_knob_frame();
+            servo_screen_knob((k % 2u == 0u) ? 0.2f : -0.1f);
+        }
+        bench_frames(20u);
+        trace[k] = bench.cmd;
+    }
+}
+
+/* The limit run owns the horn: a knob turn on LIVE, ARMED, while it runs
+ * posts nothing, and the run drives the same pulses as without the turns.
+ * Before the run the same turn moves the horn. */
+TEST_CASE(the_knob_moves_nothing_while_a_limit_run_drives_the_horn)
+{
+    enum { N = 150 };                       /* 3s of frames */
+    static uint16_t still[N], turned[N];
+    for (int turn = 0; turn < 2; ++turn) {
+        lim_bench();
+        close_settings();
+        const uint16_t was = bench.cmd;
+        servo_screen_knob_frame();
+        servo_screen_knob(0.2f);
+        bench_frames(20u);
+        CHECK(bench.cmd != was);            /* LIVE, ARMED: the knob moves it */
+        lim_bench();
+        lim_hold(2.3f);
+        CHECK(servo_screen_limit_running());
+        close_settings();
+        CHECK(lim_box_reads(0, TR(SV_LIM_TITLE), UI_C_ACCENT));
+        lim_trace(turn != 0, turn ? turned : still, N);
+        CHECK(servo_screen_limit_running());
+    }
+    unsigned moved = 0u;
+    for (int k = 0; k < N; ++k) {
+        CHECK_EQ(turned[k], still[k]);
+        moved += (still[k] != still[0]) ? 1u : 0u;
+    }
+    CHECK(moved > 0u);                      /* the search moved it */
+}
+
 int main(void)
 {
     RUN(a_limit_run_starts_only_armed_on_the_ina3221);
@@ -656,5 +702,6 @@ int main(void)
     RUN(a_pd_mini_heard_first_after_the_start_ends_a_limit_run);
     RUN(every_abort_source_ends_a_limit_run_with_the_output_off);
     RUN(a_limit_run_with_user_logs_off_writes_no_report);
+    RUN(the_knob_moves_nothing_while_a_limit_run_drives_the_horn);
     return test_summary("servo_limit_panel");
 }
