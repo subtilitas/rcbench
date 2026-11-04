@@ -55,8 +55,8 @@ läuft, beschreibt
 - Der Prüfstand ist SAFE. VERBINDEN wird abgelehnt bei ARMED, bei einem
   angeforderten Schalten auf ARMED und mit einem Finger auf ARM: `Zuerst
   DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Ein
-  gesetzter STOP lehnt es ebenfalls ab: `Ein STOP ist gesetzt. Er wird beim
-  nächsten Schalten auf ARMED aufgehoben.`
+  gesetzter STOP lehnt es ebenfalls ab: `Ein STOP ist gesetzt. Halte STOP 2s, um
+  ihn zu lösen.`
 - Ein klassisches Servo geht nur beim Einschalten in den Programmiermodus,
   also schaltet der Prüfstand seine Versorgung aus und ein: VERBINDEN für
   KLASSISCH braucht ein PD mini, das antwortet, sonst `Klassische Servos
@@ -851,7 +851,7 @@ unbeantwortet, wenn SERVO verlassen wird, ist sie weg, wie bei NEIN.
 
 | Ereignis | Der Port | Was der Bediener tut |
 | --- | --- | --- |
-| STOP, gedrückt oder vom Prüfstand selbst | Der IOmcu bricht die Transaktion nach dem Frame auf der Leitung ab, behält den Port mit losgelassenem Pin und setzt STOPPED. Das Panel setzt den Stopp und hält den Heartbeat zurück | `Gestoppt. Der Pin ist freigegeben. VERLASSEN, dann einmal auf ARMED schalten, um den STOP aufzuheben.`, und keine Zeile bietet CLEAR an. CLEAR und ALLES AUSLESEN werden bei gesetztem STOP abgelehnt: der IOmcu würde das CLEAR als UNSAFE ablehnen. VERLASSEN, dann ARM und DISARM, dann VERBINDEN |
+| STOP, gedrückt oder vom Prüfstand selbst | Der IOmcu bricht die Transaktion nach dem Frame auf der Leitung ab, behält den Port mit losgelassenem Pin und setzt STOPPED. Das Panel setzt den Stopp und hält den Heartbeat zurück | `Gestoppt. Der Pin ist freigegeben. Halte STOP 2s, um den STOP zu lösen.`, und keine Zeile bietet CLEAR an. CLEAR und ALLES AUSLESEN werden bei gesetztem STOP abgelehnt: der IOmcu würde das CLEAR als UNSAFE ablehnen. STOP 2s halten; ist er gelöst, setzt CLEAR fort oder VERLASSEN beendet die Sitzung |
 | Ein Schalten auf SAFE am Prüfstand allein | STOPPED, kein gesetzter Stopp | `Gestoppt. Der Pin ist freigegeben. CLEAR zum Fortsetzen oder VERLASSEN.` CLEAR setzt das Lesen fort |
 | ABBRECHEN | Der Vorgang endet; der Port bleibt gehalten | ALLES AUSLESEN erneut, oder VERLASSEN |
 | Die Verbindung verstummt | Der Failsafe des IOmcu löst aus, und der Port bleibt gehalten; das Modul des Panels zählt ihn nicht als seinen | Sobald die Verbindung zurück ist, sagt die Programmierung `Port von einer anderen Hitec-Sitzung belegt.` und bietet PORT FREIGEBEN an |

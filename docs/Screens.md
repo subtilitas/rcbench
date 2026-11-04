@@ -25,9 +25,13 @@ The arm chip names what the switch to ARMED drives:
 | ARMED SERVO | the surfaces and a pulsing PROG PORT, from SERVO; no throttle output |
 | ARMED | every bound output, on an IOmcu older than protocol 4.18 |
 
-STOP works on every screen. It switches to SAFE and latches: the bench stays SAFE
-until it is ARMED again. Navigating away, an alert expiring or the link
-recovering does not clear a stop.
+STOP works on every screen. It switches to SAFE and latches, as an emergency
+stop button does: STOP then reads `STOPPED` over `HOLD 2s TO RESET` in a
+yellow frame, the arm chip reads STOP, and ARM and every ON are refused.
+Navigating away, an alert expiring, the link recovering or ARM does not
+clear it. A hold of STOP for 2s resets it once the IOmcu reports everything
+off ([STOP as an emergency stop](Stop.md)).
+The bench stays SAFE after the reset.
 
 ARM is at the bottom of a bench screen; STOP is at the top of the band.
 
@@ -121,7 +125,7 @@ The FAULT box names each bit, its code and what it means:
 | 02 | OVERCURRENT | never |
 | 04 | OVERTEMP | never |
 | 08 | STALL | never |
-| 10 | HEARTBEAT | the safety line from the panel stopped: after any STOP until the next arm, a pressed emergency stop or an open heartbeat wire |
+| 10 | HEARTBEAT | the safety line from the panel stopped while the panel sends it: a pressed emergency stop or an open heartbeat wire; a latched STOP shows STOP instead |
 | 20 | VERSION | never |
 | 40 | STORE_OFF | the IOmcu cannot write its flash this boot |
 

@@ -1901,7 +1901,11 @@ TEST_CASE(a_run_across_the_wrap_ends_and_holds_whatever_ends_it)
         t += 4000u;
         AT_BASE(run_at(t) == 3u, how);
 
-        /* The next run counts from zero, from its own arm. */
+        /* The next run counts from zero, from its own arm.  A pressed
+         * STOP is released by its reset first; an arm does not. */
+        if (how == 0) {
+            arming_stop_release(&a);
+        }
         t = arm_by(t);
         AT_BASE(a.armed, how);
         AT_BASE(arming_run_seconds(&a) == 0u, how);

@@ -18,7 +18,7 @@ From the left: the home tag with the screen's name, then the chips, then "?" on 
 | BENCH, SIM | BENCH while the IOmcu answers and the screens drive its outputs; SIM while the panel runs its own model |
 | INJECT | in place of BENCH and SIM while a touch injector answers at I2C (Inter-Integrated Circuit) address 0x14; a panel looks for one once, at start-up |
 | FAULT 01 to FAULT 7F | a fault code the IOmcu reports; absent while there is none |
-| SAFE, ARMED MOTOR, ARMED SERVO, ARMED | what the switch to ARMED drives |
+| SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | what the switch to ARMED drives; STOP while a stop is latched |
 | run clock | the length of the current run from the switch to ARMED, minutes and seconds; it holds the last run at SAFE |
 
 The home tag goes to the [menu](overview.md).
@@ -36,8 +36,15 @@ A channel with no command for 500ms sits at rest while ARMED: a throttle at 0%, 
 
 ## STOP
 
-STOP works on every screen that has the band. It switches the bench to SAFE, switches the supply output off and latches: the bench stays SAFE until it is switched to ARMED again. Leaving the screen, an alert that clears or a link that comes back does not clear a stop.
+STOP works on every screen that has the band. One press switches the bench to SAFE, switches every output, the supply output and the programming ports' 5V off and latches, as an emergency stop button does. Leaving the screen, an alert that clears, a link that comes back or a switch to ARMED does not clear it.
 
+![A latched STOP and its box](view:band-stop)
+
+- While it is latched, STOP stays red inside a yellow frame and reads `STOPPED` over `HOLD 2s TO RESET`, and the arm chip reads STOP. ARM, OUTPUT ON, PROG 5V ON, CONNECT and the start of a test or a run are refused, with `STOP pressed: hold STOP 2s to reset.`
+- Hold the latched STOP for 2s to reset it. The fill turns from red to yellow across the 2s. The panel then waits until the IOmcu reports SAFE and every output off, at least 500ms after the last STOP, and sends the heartbeat again. The bench stays SAFE: each output needs its own hold to switch on again.
+- Without the IOmcu's answer within 2s, the stop stays latched and the alert band says `STOP not reset: the IOmcu did not report every output off within 2s.` Hold STOP again.
+- A press on a latched STOP is a STOP too. The hold counts only while one finger stays on STOP for the whole 2s. A release before 2s shows `Hold 2s to reset the STOP.`; a finger that slides off STOP, a second finger on the band, a screen change, lost touch events or a touch controller that stops answering for 100ms resets nothing.
+- A restart of the panel clears the latch: the panel starts SAFE with every output off.
 - STOP acts on a press that lands on it, at the press. A finger that slides onto STOP from the screen stops nothing. A finger that lands on STOP and slides off stops all the same.
 - A second finger on STOP is answered while the first finger drags, and the drag ends at that press.
 - With a chip's box open, a press on STOP closes the box and stops at once.
@@ -67,7 +74,7 @@ The FAULT box spans the panel, 1008px, with one paragraph per set bit:
 | 02 | OVERCURRENT | never |
 | 04 | OVERTEMP | never |
 | 08 | STALL | never |
-| 10 | HEARTBEAT | the safety line from the panel stopped: after any STOP until the next arm, a pressed emergency stop, or an open heartbeat wire |
+| 10 | HEARTBEAT | the safety line from the panel stopped while the panel sends it: a pressed emergency stop or an open heartbeat wire; a latched STOP shows STOP instead |
 | 20 | VERSION | never |
 | 40 | STORE_OFF | the IOmcu cannot write its flash this boot; set-ups sent to it last until it restarts |
 
@@ -119,7 +126,7 @@ A hold button acts after 2s of contact. ARM, OUTPUT ON, START TEST, START LIMIT 
 - A release at 2s or later has acted and shows no hint.
 - A short tap is not a fault, so the hint is a notice and not an alert: a tap on the band clears it earlier, an alert showing keeps the band and no hint shows over it, and an alert that arrives while the hint shows replaces it.
 - STOP clears the hint at once, and so does a new FAULT code or a switch from ARMED to SAFE by an error.
-- The hints, one per action: `Hold 2s to switch to ARMED.`, `switch the output on`, `apply`, `start the test`, `start the limit run`, `enable`, `write`, `restore`, `continue`, `leave`, `load`, `release the port`, `repair`, `run`, `install`, `download and install`, `update the IOmcu` and `clear all pin assignments`, each after `Hold 2s to`.
+- The hints, one per action: `Hold 2s to switch to ARMED.`, `switch the output on`, `apply`, `start the test`, `start the limit run`, `enable`, `write`, `restore`, `continue`, `leave`, `load`, `release the port`, `repair`, `run`, `install`, `download and install`, `update the IOmcu`, `clear all pin assignments` and `reset the STOP`, each after `Hold 2s to`.
 
 ## Touch near the band
 

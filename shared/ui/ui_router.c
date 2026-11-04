@@ -18,6 +18,7 @@
 #include "ui_screen.h"
 #include "ui_shot.h"
 #include "shot_hold.h"
+#include "stop_hold.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -234,6 +235,7 @@ void ui_router_init(void)
     }
     ui_shot_reset();
     shot_hold_reset();
+    stop_hold_reset();
     ui_router_invalidate();
 }
 
@@ -437,6 +439,10 @@ void ui_router_tick(float dt_s)
         }
     }
     shot_hold_tick(dt_s);
+    /* The hold counts only while the router owns the press on STOP: a
+     * screen change or a press that took the band dropped it. */
+    (void)stop_hold_tick(dt_s, s.status.stop_latched,
+                         s.band_press && s.on_stop);
     shot_over_settle();
     ui_shot_poll();
     shot_service();
@@ -900,6 +906,11 @@ void ui_router_event(const touch_event_t *evt)
         if (evt->type == TOUCH_EVENT_DOWN
             && (in_stop || in_home || chip != UI_BAND_CHIP_NONE
                 || on_guide)) {
+            /* A press that takes the band from a reset's hold ends it: the
+             * hold's own release would no longer be the band's. */
+            if (s.band_press && s.on_stop) {
+                stop_hold_cancel();
+            }
             /* "?" opens the guide on its release only when it was closed:
              * a DOWN on it closes an open one. */
             s.on_guide   = on_guide && !s.guide;
@@ -918,7 +929,10 @@ void ui_router_event(const touch_event_t *evt)
                 /* On the press: a stop never waits for a lift that may not
                  * come.  Latched rather than dispatched: the application
                  * loop that drives the heartbeat drains it, so a stop also
-                 * stops the line. */
+                 * stops the line.  Onto a stop that was latched before it
+                 * (the control task's mark on the event), the press is
+                 * also the reset's hold. */
+                stop_hold_press((evt->flags & TOUCH_FLAG_STOP_LATCHED) != 0u);
                 s.stop_latched = true;
                 drop_notice();
             }
@@ -929,12 +943,17 @@ void ui_router_event(const touch_event_t *evt)
              * release went missing is over, and DISARM or a run's STOP is
              * not swallowed as its rest. */
             s.band_press = false;
+            if (s.on_stop) {
+                (void)stop_hold_release(NULL);
+            }
         }
         if (s.band_press && evt->point.id == s.band_id) {
             if (evt->type == TOUCH_EVENT_UP) {
                 s.band_press = false;
                 if (s.on_stop) {
-                    /* STOP acted on the press; its release does nothing. */
+                    /* STOP acted on the press; its release ends the
+                     * reset's hold, with the hint if it was early. */
+                    (void)stop_hold_release(evt);
                 } else if (s.on_guide) {
                     if (on_guide && touch_event_is_tap_up(evt)) {
                         guide_open();
@@ -950,6 +969,8 @@ void ui_router_event(const touch_event_t *evt)
                     /* The home tag takes a release the finger made. */
                     router_back();
                 }
+            } else if (s.on_stop) {
+                stop_hold_slide(evt->point.x, evt->point.y);
             }
             return;
         }
@@ -1085,6 +1106,7 @@ void ui_router_cancel_gestures(void)
     s.band_press = false;
     s.guide_press = false;   /* the guide stays open */
     shot_hold_lost();
+    stop_hold_cancel();
     ui_shot_cancel_press();
     memset(s.owned, 0, sizeof(s.owned));
 
@@ -1301,18 +1323,22 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     {
         const char *title = ui_router_title(s.current);
         const bool home = has_home(s.current);
-        const bool stop_down = s.band_press && s.on_stop;
+        const ui_band_stop_t stop_down = {
+            .pressed  = s.band_press && s.on_stop,
+            .held_s   = stop_hold_held_s(),
+            .flash_ms = stop_hold_flash_ms(),
+        };
         const bool home_down = s.band_press && s.on_home;
         const unsigned buf = (unsigned)buffer_index & 1u;
         const ui_band_guide_t guide = s.guide ? UI_BAND_GUIDE_OPEN
                                       : ui_router_guide_shown()
                                           ? UI_BAND_GUIDE_SHOWN
                                           : UI_BAND_GUIDE_NONE;
-        const uint32_t key = ui_band_key(title, home, &s.status, stop_down,
+        const uint32_t key = ui_band_key(title, home, &s.status, &stop_down,
                                          home_down, guide);
         if (s.status.simulated || (s.band_drawn & (1u << buf)) == 0u
             || s.band_key[buf] != key) {
-            ui_band_render(c, title, home, &s.status, stop_down, home_down,
+            ui_band_render(c, title, home, &s.status, &stop_down, home_down,
                            guide);
             band_now = true;
             s.band_key[buf] = key;

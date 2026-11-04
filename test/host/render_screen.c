@@ -2438,7 +2438,7 @@ static void pose_update(const char *view)
  * A help bubble of the band, opened by a tap on its chip over the menu.
  * The status is the view's: band-fault has the three bits this release
  * sets, band-fault-all every bit and one this panel has no name for --
- * the tallest bubble there is.
+ * the tallest bubble there is.  band-stop has a STOP latched.
  */
 static void band_view(const char *view, ui_bench_status_t *st)
 {
@@ -2462,6 +2462,11 @@ static void band_view(const char *view, ui_bench_status_t *st)
         chip = UI_BAND_CHIP_MODE;
     } else if (strcmp(view, "band-clock") == 0) {
         chip = UI_BAND_CHIP_CLOCK;
+    } else if (strcmp(view, "band-stop") == 0) {
+        /* A latched STOP: STOPPED - HOLD 2s TO RESET in its frame, the
+         * chip reading STOP, and its box. */
+        chip = UI_BAND_CHIP_ARMED;
+        st->stop_latched = true;
     } else if (strncmp(view, "band-armed", 10) == 0
                || strcmp(view, "band-safe") == 0) {
         chip = UI_BAND_CHIP_ARMED;

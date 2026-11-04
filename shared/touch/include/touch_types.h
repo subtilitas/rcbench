@@ -65,6 +65,14 @@ typedef enum {
  */
 #define TOUCH_FLAG_JUMP   0x02u
 
+/**
+ * @brief On a DOWN on STOP: a stop was already latched when the press came
+ * down.  The panel's control task sets it as it applies the press, before
+ * the press's own stop is counted, so the router starts the reset's hold
+ * on this press alone (stop_hold.h) and never on the press that latched.
+ */
+#define TOUCH_FLAG_STOP_LATCHED 0x04u
+
 /** @brief A DOWN, MOVE or UP of one contact. */
 typedef struct {
     touch_event_type_t type;    /**< DOWN, MOVE or UP          */

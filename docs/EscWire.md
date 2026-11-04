@@ -202,7 +202,7 @@ ESCape32 has no LEAVE: a power cycle ends its session. SWITCHED parks the line a
 
 STOP in the band stops the session. A write runs to its read-back first. ABORT on the page acts on the press and cuts at once, also in a write. A stop, a supply lost or a link lost closes an open editor or hold page, and the screen says what happened.
 
-After a stop or a fault the page offers CLEAR STOP and PIN BACK. CLEAR STOP ends the stop and keeps the pin held. With the panel's own STOP standing, only PIN BACK shows, with `The bench's STOP stands: PIN BACK first.`: releasing that STOP takes ARM, and ARM is refused under the hold.
+After a stop or a fault the page offers CLEAR STOP and PIN BACK. CLEAR STOP ends the stop and keeps the pin held. With the panel's own STOP standing, only PIN BACK shows, with `The bench's STOP stands: hold STOP 2s to reset it.`: CLEAR STOP needs the heartbeat, which the latched STOP withholds. Once STOP is reset, CLEAR STOP shows again.
 
 After a stop or a fault the panel's SUPPLY OFF stands on the SUPPLY page until the hold ends, so the supply does not come on again under this hold. The page held after it offers only PIN BACK, with `A stop or a fault ended this session: PIN BACK, then CONNECT.` An ENTER that meets this state is refused with `SUPPLY_OFF` before anything moves. A SUPPLY OFF under PIN HELD with no stop or fault shows only that refusal's line.
 

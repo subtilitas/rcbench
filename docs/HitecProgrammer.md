@@ -51,7 +51,7 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 - The bench is SAFE. CONNECT is refused on an ARMED bench, on one asked to
   arm and with a finger on ARM: `Tap DISARM first. The port cannot be taken
   over while ARMED.` A latched STOP refuses it too:
-  `A STOP is latched. It clears with the next switch to ARMED.`
+  `A STOP is latched. Hold STOP 2s to reset it.`
 - A classic servo enters programming mode only at power-up, so the bench
   cycles its supply: CONNECT for CLASSIC needs a PD mini that answers,
   otherwise `Classic servos need a PD mini: the bench cycles the supply.`
@@ -777,7 +777,7 @@ stays on. Left unanswered when SERVO is left, the question is gone, as NO.
 
 | Event | The port | What the operator does |
 | --- | --- | --- |
-| STOP, pressed or the bench's own | The IOmcu cuts the transaction after the frame on the wire, keeps the port with the pin released and sets STOPPED. The panel latches the stop and withholds the heartbeat | `Stopped. The pin is released. LEAVE, then switch to ARMED once to clear the STOP.`, and no line offers CLEAR. CLEAR and READ ALL are refused with the STOP latched: the IOmcu would refuse the CLEAR as UNSAFE. LEAVE, then ARM and DISARM, then CONNECT |
+| STOP, pressed or the bench's own | The IOmcu cuts the transaction after the frame on the wire, keeps the port with the pin released and sets STOPPED. The panel latches the stop and withholds the heartbeat | `Stopped. The pin is released. Hold STOP 2s to reset the STOP.`, and no line offers CLEAR. CLEAR and READ ALL are refused with the STOP latched: the IOmcu would refuse the CLEAR as UNSAFE. Hold STOP 2s; once it is reset, CLEAR goes on or LEAVE ends the session |
 | A switch to SAFE at the bench alone | STOPPED, no latch | `Stopped. The pin is released. Tap CLEAR to go on, or LEAVE.` CLEAR goes on with the read |
 | ABORT | The operation ends; the port stays held | READ ALL again, or LEAVE |
 | The link goes silent | The IOmcu's failsafe latches and the port stays held; the panel's module does not count it as its own | Once the link is back the overlay says `Port held by another Hitec session.` and offers RELEASE PORT |

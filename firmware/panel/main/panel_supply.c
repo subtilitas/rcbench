@@ -241,6 +241,12 @@ static error_bench_t error_bench(void)
  */
 static void error_act(error_act_t a)
 {
+    /* An error sends a STOP's reset that is not yet resumed back to
+     * LATCHED: the operator holds STOP again once the error is dealt
+     * with. */
+    if (a.off_first || a.disarm || a.supply_off || a.cut || a.prog_off) {
+        (void)stop_latch_error(&s_stop_latch);
+    }
     if (a.off_first) {
         supply_switch(false);
     }
@@ -387,9 +393,10 @@ void supply_follow_set(void)
 
 /*
  * What the supply screen asked for.  An ON completes a hold, so it goes the
- * way an arm does: not past a stop, an OFF, a change to the PD mini's
- * wiring or a touch loss that came after the screen posted it, and watched after it is taken until the render side
- * has seen the output on (supply_watch_service()).  The operator repeats the
+ * way an arm does: not past a stop, a STOP latch's release, an OFF, a
+ * change to the PD mini's wiring or a touch loss that came after the screen
+ * posted it, and watched after it is taken until the render side has seen
+ * the output on (supply_watch_service()).  The operator repeats the
  * hold.
  */
 void apply_supply_cmd(const panel_cmd_t *pc)
@@ -414,8 +421,12 @@ void apply_supply_cmd(const panel_cmd_t *pc)
         /* The pump first, so a STOP or a loss still in the driver's queue
          * is counted before the ON is judged against them. */
         control_pump();
-        if (!supply_link_session_blocks(s_prog_taken, ports_own_supply())
+        if (arming_held(&s_arm)) {
+            /* A pressed STOP stands: no ON until its reset. */
+            control_alert(TR(ALERT_STOP_HELD));
+        } else if (!supply_link_session_blocks(s_prog_taken, ports_own_supply())
             && pc->stops == arming_stop_count(&s_arm)
+            && pc->resets == atomic_load(&s_stop_resets)
             && pc->supply_offs == atomic_load(&s_supply_offs)
             && pc->pdmini_edits == atomic_load(&s_pdmini_edits)
             && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
@@ -452,8 +463,12 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
      * counted before the ON is judged against them; then the PD mini's
      * OUTPUT ON rules. */
     control_pump();
-    if (!s_prog_taken
+    if (arming_held(&s_arm)) {
+        /* A pressed STOP stands: no ON until its reset. */
+        control_alert(TR(ALERT_STOP_HELD));
+    } else if (!s_prog_taken
         && pc->stops == arming_stop_count(&s_arm)
+        && pc->resets == atomic_load(&s_stop_resets)
         && pc->prog5v_offs == atomic_load(&s_prog5v_offs)
         && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
                              s_lost_notice_seq, pc->consumed_seq)

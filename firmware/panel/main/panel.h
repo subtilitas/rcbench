@@ -24,6 +24,7 @@
 #include "freertos/semphr.h"
 
 #include "arming.h"
+#include "stop_latch.h"
 #include "bench_state.h"
 #include "log_cols.h"
 #include "bind_link.h"
@@ -171,12 +172,15 @@ typedef struct {
     uint32_t      arm_gen;     /**< which arm, for the render side's ack */
     float         mcu_temp_c;
     bool          stopped;
+    /** @brief arming_held(): an operator's STOP stands, the band's latched
+     *         STOP (ui_bench_status_t.stop_latched). */
+    bool          held;
     uint32_t      stops;
     uint32_t      pressed;     /**< of the stops, those pressed */
-    uint16_t      faults;
-    uint32_t      link_errors;
+    uint16_t      faults;      /**< STATUS faults as the band shows them */
+    uint32_t      link_errors; /**< the IOmcu's CRC errors and resyncs */
     uint32_t      link_refused; /**< ui_bench_status_t's link_refused */
-    uint32_t      run_seconds;
+    uint32_t      run_seconds; /**< arming_run_seconds() */
     /* The control task's alert, numbered: an alert posted and replaced
      * before a frame took it was never shown (sense_link_alerts()), and one
      * whose cause is over is taken back (control_alert_withdraw()). */
@@ -255,6 +259,32 @@ extern outputs_t s_out;
 extern arming_t  s_arm;
 extern uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 extern atomic_bool s_disarm_request;
+/** @brief The reset of a latched STOP (stop_latch.h); control task only.
+ *         See panel_stop.c. */
+extern stop_latch_t s_stop_latch;
+/** @brief The reset's hold completed (stop_hold_take_reset()): render side
+ *         sets, control task takes (stop_reset_service()). */
+extern atomic_bool  s_stop_reset_request;
+/** @brief When the render side took the completed hold, now_ms(); stored
+ *         before s_stop_reset_request. */
+extern atomic_uint  s_stop_reset_ms;
+/** @brief Contact breaks counted (stop_touch_watch()): control task counts,
+ *         the render side ends the reset's hold at each. */
+extern atomic_uint  s_touch_breaks;
+/** @brief The reset's machine at the start: unlatched (stop_latch_init()).
+ *         Control task. */
+void stop_reset_init(void);
+/** @brief One transition of the reset's machine (stop_latch_run()), once a
+ *         pass after the stops are served.  Control task.
+ *  @param link_up whether the link to the IOmcu answers */
+void stop_reset_service(bool link_up);
+/** @brief An operator's STOP, applied now: arming_stop_pressed(), with its
+ *         time kept for the reset.  Control task only. */
+void stop_pressed_here(void);
+/** @brief Counts a contact break when the touch controller has gone
+ *         unanswered for STOP_LATCH_FRESH_MS (100ms).  Control task, at the
+ *         rate touch is judged. */
+void stop_touch_watch(void);
 
 /*
  * A disarm returns the command to zero, here and in the output bank.
@@ -1020,6 +1050,10 @@ typedef struct {
     uint32_t         stops;
     /** And how many times it had been told to let go; see s_lets_go. */
     uint32_t         lets_go;
+    /** @brief And how many STOP latches their reset had released
+     *  (s_stop_resets): an arm or an ON of the supply or the ports' 5V
+     *  queued while a STOP stood is not applied after the release. */
+    uint32_t         resets;
     /** And how many times the supply's output had been asked off; see
      *  s_supply_offs. */
     uint32_t         supply_offs;
@@ -1073,6 +1107,13 @@ extern QueueHandle_t s_supply_q;  /**< control task -> app_main */
 extern atomic_bool s_stop_request;
 extern atomic_uint s_stop_counted;  /**< s_touch_q number of a counted STOP, 0 none */
 extern atomic_uint s_lets_go;
+/** @brief STOP latches released by their reset (stop_reset_service()); a
+ *  command queued before the latest release drives nothing after it.
+ *  Control task writes. */
+extern atomic_uint s_stop_resets;
+/** @brief s_stop_resets as the render task's frame began; the commands it
+ *  flushes carry this.  Render task only. */
+extern uint32_t s_render_resets;
 
 /* The supply's switch and set points, from the render side. */
 extern atomic_bool s_supply_off_request;

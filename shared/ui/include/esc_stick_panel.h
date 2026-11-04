@@ -51,6 +51,14 @@ void esc_stick_panel_bench(uint32_t now_ms, bool armed, uint32_t stops,
                              uint32_t pressed, bool link_up);
 
 /**
+ * @brief A STOP latch was released by its reset: what a stop ends, this
+ *        ends.  The warning's hold under way drops, and a run that queued
+ *        an ARM the application has not taken ends with STOP, so a hold
+ *        begun while the STOP stood never arms after the release.
+ */
+void esc_stick_panel_stop_released(void);
+
+/**
  * The output binding, every frame: whether one is read
  * (BIND_READ_OK), and the channels it binds as a throttle
  * (outputs_role_channels(), one bit each).  RUN is refused

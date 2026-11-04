@@ -63,6 +63,7 @@ SOURCES = [
     "shared/ui/ui_shot.c",
     "shared/ui/shot_gate.c",
     "shared/ui/shot_hold.c",
+    "shared/ui/stop_hold.c",
     "shared/ui/ui_pinlist.c",
     "shared/ui/ui_board.c",
     "shared/ui/servo_screen.c",

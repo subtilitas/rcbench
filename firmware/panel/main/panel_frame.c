@@ -45,6 +45,7 @@
 #include "settings_screen.h"
 #include "settings_sensors.h"
 #include "splash_screen.h"
+#include "stop_hold.h"
 #include "supply_screen.h"
 #include "touch.h"
 #include "ui_band.h"
@@ -82,6 +83,9 @@ void panel_frame_loop(void)
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
     uint32_t last_stops = 0;
+    uint32_t last_resets = 0;
+    /* The contact breaks the reset's hold has answered. */
+    unsigned stop_breaks_seen = atomic_load(&s_touch_breaks);
 
     panel_shot_init();
 
@@ -140,6 +144,10 @@ void panel_frame_loop(void)
         pressed_now    = s_snap.pressed;
         arm_gen_now    = s_snap.arm_gen;
         snap_unlock();
+        /* The STOP releases as this frame begins: the commands it flushes
+         * carry this count, whatever the control task does meanwhile. */
+        const uint32_t resets_now = atomic_load(&s_stop_resets);
+        s_render_resets = resets_now;
         /* Whether this frame found the touch stream broken; an arm is
          * acknowledged only by a frame that did not.  See the end of the
          * frame. */
@@ -156,12 +164,21 @@ void panel_frame_loop(void)
          * completion and clear the latch.  Every stop is an event here, and
          * touch that stops answering is counted as one.
          */
-        if (stops_now != last_stops) {
+        /* A STOP latch's release the same way: a hold begun while the STOP
+         * stood is one the latch refused, and it does not complete into an
+         * arm or an ON after the reset. */
+        if (stops_now != last_stops || resets_now != last_resets) {
             motor_screen_cancel_arm();
             servo_screen_cancel_arm();
             supply_screen_cancel_on();
         }
-        last_stops = stops_now;
+        /* The stick run's hold sees a stop through its own count below;
+         * a release it is told of here. */
+        if (resets_now != last_resets) {
+            esc_stick_panel_stop_released();
+        }
+        last_stops  = stops_now;
+        last_resets = resets_now;
         /* And a stick run on MOTOR & ESC > PROGRAM, which ends on a stop,
          * a disarm or a link that went, and steps on the frame's time.
          * The pressed count tells an operator's STOP from the bench's
@@ -512,6 +529,19 @@ void panel_frame_loop(void)
         if (ui_router_take_stop()) {
             atomic_store(&s_stop_request, true);
         }
+        /* A contact break ends the reset's hold: the touch controller has
+         * stopped reporting the contact it rests on. */
+        const unsigned breaks = atomic_load(&s_touch_breaks);
+        if (breaks != stop_breaks_seen) {
+            stop_breaks_seen = breaks;
+            stop_hold_cancel();
+        }
+        /* And the reset's hold, a flag for the same reason, with when it
+         * was taken: a STOP or a break less than 1900ms before refuses it. */
+        if (stop_hold_take_reset()) {
+            atomic_store(&s_stop_reset_ms, (unsigned)now_ms());
+            atomic_store(&s_stop_reset_request, true);
+        }
 
         bench_state_t bench;
         bool     link_up;
@@ -532,6 +562,7 @@ void panel_frame_loop(void)
         link_refused = s_snap.link_refused;
         mcu_temp_c  = s_snap.mcu_temp_c;
         run_seconds = s_snap.run_seconds;
+        const bool stop_latched = s_snap.held;
         have_alert  = ui_alert_slot_take(&s_snap.alert, alert, sizeof(alert));
         const uint32_t alert_taken = s_snap.alert.taken;
         const uint32_t withdrawn   = s_snap.alert.withdrawn;
@@ -551,6 +582,7 @@ void panel_frame_loop(void)
         const ui_bench_status_t status = {
             .link_up     = link_up,
             .armed       = armed,
+            .stop_latched = stop_latched,
             .armed_roles = (uint8_t)((motor_armed_now ? UI_ARMED_MOTOR : 0u)
                                      | (servo_armed_now ? UI_ARMED_SERVO
                                                         : 0u)),

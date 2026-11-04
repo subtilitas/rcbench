@@ -428,6 +428,8 @@ void knob_apply(const knob_turn_t *turn, bool frame_lost)
  * writes) and the number of the last event it took.  The control task
  * compares both when it takes an arm; see arm_watch_take_ok().
  */
+uint32_t s_render_resets;
+
 void flush_screen_commands(uint32_t stops_now)
 {
     const uint32_t loss_gen = atomic_load(&s_loss_gen);
@@ -437,6 +439,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
+                           .resets = s_render_resets,
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
@@ -447,6 +450,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
+                           .resets = s_render_resets,
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
@@ -456,6 +460,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),
+                           .resets = s_render_resets,
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);
@@ -486,6 +491,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
                            .stops = stops_now,
                            .supply_offs = atomic_load(&s_supply_offs),
+                           .resets = s_render_resets,
                            .pdmini_edits = atomic_load(&s_pdmini_edits),
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
@@ -505,6 +511,7 @@ void flush_screen_commands(uint32_t stops_now)
         panel_cmd_t pc = { .kind = PANEL_CMD_PROG5V, .prog5v = p5,
                            .stops = stops_now,
                            .prog5v_offs = atomic_load(&s_prog5v_offs),
+                           .resets = s_render_resets,
                            .loss_gen = loss_gen,
                            .consumed_seq = consumed };
         send_cmd(&pc);

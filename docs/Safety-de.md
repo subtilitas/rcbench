@@ -25,6 +25,7 @@ Heartbeat vertraut, schreibt dann CLEAR (0x5AFE) allein, dann ARM, THROTTLE
 und MOTOR_POLES in einem Frame, und ein NACK (negative Quittung) des
 IOmcu auf eines von beiden lässt das Panel SAFE.
 
+
 ### Watchdog der Render-Schleife
 
 Der Control-Task liest den Touch, prüft das Rechteck von STOP und erzeugt
@@ -51,8 +52,8 @@ Stopp des Prüfstands selbst, auf dem Weg, den STOP nimmt:
   Schleife, die nie wieder zeichnet, zeigt nichts Neues.
 
 Der Stopp rastet ein wie STOP. Eine Schleife, die wieder läuft, schaltet
-nichts auf ARMED und nichts ein; erst das nächste Schalten auf ARMED löst
-die Sperre. Ein Stillstand ergibt einen Stopp, und der nächste Stillstand
+nichts auf ARMED und nichts ein; erst ARM oder das Lösen von STOP hebt die
+Sperre auf. Ein Stillstand ergibt einen Stopp, und der nächste Stillstand
 beginnt mit der nächsten Bewegung des Zählers.
 
 Die Zeit läuft ab der letzten Bewegung des Zählers, nicht ab dem Schalten
@@ -644,8 +645,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
 
 ## Verhaltensweisen, die Absicht sind
 
-- STOP rastet ein. Der Prüfstand bleibt SAFE, bis er erneut auf ARMED
-  geschaltet wird.
+- STOP rastet ein wie ein Not-Aus: der Prüfstand bleibt SAFE, bis STOP 2s
+  gehalten ist und der IOmcu alles aus meldet ([STOP als Not-Aus](Stop-de.md)).
 - STOP schließt die Rückfrage AUSGANG IST EINGESCHALTET auf SUPPLY und SERVO. Jeder
   Bildschirm zählt die Stopps, die ihm gemeldet werden, und eine Rückfrage
   gilt nur unter dem Zählerstand, mit dem sie gestellt wurde. Ein ÜBERNEHMEN
@@ -959,7 +960,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Start des IOmcu und nach einem Heartbeat, dem nicht vertraut
   wurde: siehe [Arm-Latch](#arm-latch).
 - Ein Link, der bei einem Prüfstand in ARMED ausfällt, ist am Panel ein Stopp. Er
-  rastet ein wie STOP und wird vom nächsten Schalten auf ARMED gelöst.
+  rastet ein und wird von ARM oder vom Lösen von STOP aufgehoben.
 - Solange der Prüfstand ARMED ist, weist der IOmcu mit BAD_VALUE ein
   Schreiben auf OUTPUTS ab, das einen Slot ändert, und ein Schreiben auf
   CHAN_CFG, das die Rolle eines Kanals oder irgendetwas an einem

@@ -10,6 +10,7 @@
  * - every_end_draws_its_reason
  * - a_run_that_cannot_start_says_why
  * - pages_step_back_and_leaving_closes_timing
+ * - a_stop_release_takes_the_hold_and_a_queued_arm_away
  * - a_stop_or_a_lost_touch_takes_a_queued_arm_away
  * - the_screen_passes_the_supplys_own_state
  *
@@ -338,6 +339,28 @@ TEST_CASE(pages_step_back_and_leaving_closes_timing)
 }
 
 /*
+ * A STOP latch's release ends what a stop ends: a hold of RUN begun while
+ * the STOP stood drops, and a run whose ARM the application has not taken
+ * ends with STOP and queues no ARM.
+ */
+TEST_CASE(a_stop_release_takes_the_hold_and_a_queued_arm_away)
+{
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);                     /* ARM queued, not taken */
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
+    esc_stick_panel_stop_released();
+    CHECK_EQ(drain_cmds(MOTOR_CMD_ARM), 0);
+    const esc_stick_t *run = esc_stick_panel_stick();
+    CHECK(!esc_stick_running(run));
+    CHECK_EQ(run->reason, ESC_STICK_R_STOP);
+    CHECK(!supply_screen_output_live());
+    scr->leave();
+}
+
+/*
  * The hold completes in the frame's tick, after the frame handed its
  * commands over, so its ARM waits a frame in the screen.  A stop or a
  * touch loss in between must take it away: the next frame would stamp it
@@ -426,6 +449,7 @@ int main(void)
     RUN(every_end_draws_its_reason);
     RUN(a_run_that_cannot_start_says_why);
     RUN(pages_step_back_and_leaving_closes_timing);
+    RUN(a_stop_release_takes_the_hold_and_a_queued_arm_away);
     RUN(a_stop_or_a_lost_touch_takes_a_queued_arm_away);
     RUN(the_screen_passes_the_supplys_own_state);
     return test_summary("esc_stick_panel_phases");

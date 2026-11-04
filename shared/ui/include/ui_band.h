@@ -21,6 +21,21 @@ extern "C" {
 /** Where STOP is, in panel coordinates.  The router hit-tests it. */
 gfx_rect_t ui_band_stop_rect(void);
 
+/**
+ * @brief What STOP looks like beyond the bench's status.
+ *
+ * Unlatched, STOP is a red button.  With ui_bench_status_t.stop_latched it
+ * stays filled red inside a 3px yellow (UI_C_WARN) frame, as a pressed
+ * emergency stop inside its ring, and reads STOPPED over HOLD 2s TO RESET.
+ * The reset's hold fades the fill to the frame's yellow across UI_HOLD_S
+ * (2s) and flashes when the reset is done (stop_hold.h).
+ */
+typedef struct {
+    bool  pressed;  /**< a press is on STOP                     */
+    float held_s;   /**< the reset's hold, s; 0 for none        */
+    int   flash_ms; /**< the hold's flash still to run, ms      */
+} ui_band_stop_t;
+
 /** @brief What the band shows of the screen guide (ui_help.h). */
 typedef enum {
     UI_BAND_GUIDE_NONE = 0, /**< no "?": the screen has no guide pages   */
@@ -64,9 +79,13 @@ const char *ui_band_mode_inject(void);
 #endif
 
 /**
- * The armed chip's label for @p roles, UI_ARMED_* bits: ARMED MOTOR, ARMED
- * SERVO, or ARMED for both and for none.  English in every language, as
- * STOP and the other controls are.
+ * @brief The armed chip's label for @p roles: ARMED MOTOR, ARMED SERVO, or
+ *        ARMED for both and for none.
+ *
+ * English in every language, as STOP and the other controls are.  With a
+ * stop latched the chip reads STOP in place of SAFE and ARMED.
+ * @param roles UI_ARMED_* bits
+ * @return the label
  */
 const char *ui_band_armed_label(uint8_t roles);
 
@@ -141,13 +160,13 @@ bool ui_band_chip_colors(const ui_bench_status_t *st, ui_band_chip_t chip,
  * @param title the current screen's title, or NULL
  * @param show_home whether the title is the home tag
  * @param st the bench's status, or NULL
- * @param stop_pressed STOP is pressed
+ * @param stop STOP's press and hold, or NULL for none
  * @param home_pressed the home tag is pressed
  * @param guide what the band shows of the guide
  * @return the number, a 32-bit FNV-1a hash
  */
 uint32_t ui_band_key(const char *title, bool show_home,
-                     const ui_bench_status_t *st, bool stop_pressed,
+                     const ui_bench_status_t *st, const ui_band_stop_t *stop,
                      bool home_pressed, ui_band_guide_t guide);
 
 /**
@@ -157,14 +176,14 @@ uint32_t ui_band_key(const char *title, bool show_home,
  *                     which has no home tag and no bench status.
  * @param show_home    Whether the title is the home tag.
  * @param st           The bench's status, or NULL.
- * @param stop_pressed STOP is pressed.
+ * @param stop         STOP's press and hold, or NULL for none.
  * @param home_pressed The home tag is pressed.
  * @param guide        What the band shows of the screen guide.  With the
  *                     guide open the home tag is not drawn: the guide's
  *                     PREV and NEXT take its place (ui_help_render_nav()).
  */
 void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
-                    const ui_bench_status_t *st, bool stop_pressed,
+                    const ui_bench_status_t *st, const ui_band_stop_t *stop,
                     bool home_pressed, ui_band_guide_t guide);
 
 #ifdef __cplusplus

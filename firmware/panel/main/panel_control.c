@@ -295,8 +295,15 @@ void control_pump(void)
              * slot, telling the far end -- follows when the loop is free.
              * Counted as pressed: an operator's STOP, which a stick run
              * tells apart from the bench's own.
+             *
+             * A stop already latched makes this press the reset's hold as
+             * well, which the router learns from the event and not from a
+             * snapshot that may already carry this press's own stop.
              */
-            arming_stop_pressed(&s_arm);
+            if (arming_held(&s_arm)) {
+                evt.flags |= (uint8_t)TOUCH_FLAG_STOP_LATCHED;
+            }
+            stop_pressed_here();
             counted_here = true;
         }
         /*
@@ -364,6 +371,9 @@ void control_pump(void)
     if (saw_touch || touch_age_ms() < 200u) {
         arming_touch_seen(&s_arm, now_ms());
     }
+    /* And the contact a reset's hold rests on: reports that stop for 100ms
+     * break it. */
+    stop_touch_watch();
     /* And judged here, at the rate touch is judged: this runs inside the
      * link's wait, where arming_step() does not. */
     arming_touch_poll(&s_arm, now_ms());

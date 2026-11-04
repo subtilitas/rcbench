@@ -20,6 +20,28 @@ history is in git.
 
 ### Changed
 
+- STOP works as an emergency stop button. One touch, from any screen, puts
+  the bench to SAFE, switches every output, the PD mini output and the
+  programming ports' 5V off, withholds the heartbeat and latches. While it
+  stands, STOP stays red inside a yellow frame and reads `STOPPED` over
+  `HOLD 2s TO RESET` (German `GESTOPPT`, `2s HALTEN ZUM LÖSEN`), the arm
+  chip reads STOP, and ARM, OUTPUT ON, PROG 5V ON, CONNECT and the start of
+  a test or a run are refused with `STOP pressed: hold STOP 2s to reset.`
+  ARM no longer clears it. A hold of STOP for 2s on one unbroken contact
+  resets it; a release, a slide off STOP, a second contact on the band, lost
+  touch events, a screen change or a touch controller unanswered for 100ms
+  ends the hold. One state machine carries the reset out: it reads the
+  IOmcu's STATUS, SUPPLY and PROG_SUPPLY pages every 50ms, and once they
+  report SAFE and every output off, and at least 500ms after the STOP, it
+  sends the heartbeat again and writes CLEAR once. A STOP from any state
+  sends it back to LATCHED. The bench stays SAFE. Without that report
+  within 2000ms the stop stays latched and the alert band says why. A panel
+  restart starts unlatched. Host tests `test_stop_latch`, `test_stop_hold`
+  and two wire-level cases in `test_safety_gate`.
+- The band leaves out FAULT 10 (HEARTBEAT) while a stop is latched and for
+  1000ms after its reset: the panel withholds the line itself then. The
+  hardware emergency stop on the heartbeat line and an open heartbeat wire
+  show FAULT 10 as before.
 - An AS5600 output encoder in use from the start of an AUTOMATIC TEST or a
   LIMIT RUN that stops answering is a gap of the run. A gap of up to 300ms
   (`SERVO_GAP_MAX_MS`) that starts 10s (`SERVO_GAP_EVERY_MS`) or more after

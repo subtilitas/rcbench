@@ -86,12 +86,15 @@ SCREENS = {
     # breaks one theme is caught.
     "overview-light": ("overview-light.png", "overview", "light"),
     # The help bubbles of the band's chips over the menu: FAULT with the
-    # three bits this release sets, LINK, SAFE, and ARMED MOTOR.
+    # three bits this release sets, LINK, SAFE, ARMED MOTOR and STOP.
     "band-fault": ("band-fault.png", "overview", "dark"),
     "band-link":  ("band-link.png",  "overview", "dark"),
     "band-link-refused": ("band-link-refused.png", "overview", "dark"),
     "band-safe":  ("band-safe.png",  "overview", "dark"),
     "band-armed": ("band-armed.png", "overview", "dark"),
+    # A latched STOP: the button red in its yellow frame, the chip STOP,
+    # and the chip's box.
+    "band-stop":  ("band-stop.png",  "overview", "dark"),
     # An alert across the bottom of the menu, with its x.
     "overview-alert": ("overview-alert.png", "overview", "dark"),
     # The screen guide over the menu at page 1: the dock on the right, the

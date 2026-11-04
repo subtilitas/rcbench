@@ -21,6 +21,7 @@ set(SRCS
     ui_shot.c
     shot_gate.c
     shot_hold.c
+    stop_hold.c
     ui_pinlist.c
     ui_board.c
     ui_router.c

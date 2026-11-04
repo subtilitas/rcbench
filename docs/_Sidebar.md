@@ -16,6 +16,7 @@ Using the bench
 - [Stick programming](StickProgramming.md)
 - [Receiver buses](Receivers.md)
 - [Safety](Safety.md)
+- [STOP as an emergency stop](Stop.md)
 - [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md)
 
 Reference
@@ -50,6 +51,7 @@ Den Prüfstand benutzen
 - [Stick-Programmierung](StickProgramming-de.md)
 - [Empfängerbusse](Receivers-de.md)
 - [Sicherheit](Safety-de.md)
+- [STOP als Not-Aus](Stop-de.md)
 - [Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md)
 
 Referenz

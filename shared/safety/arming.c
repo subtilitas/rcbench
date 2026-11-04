@@ -104,6 +104,25 @@ void arming_stop_pressed(arming_t *a)
     }
     arming_stop(a);
     ++a->pressed;
+    a->held = true;
+}
+
+bool arming_held(const arming_t *a)
+{
+    return a != NULL && a->held;
+}
+
+void arming_stop_release(arming_t *a)
+{
+    if (a == NULL) {
+        return;
+    }
+    /* An armed bench is not undone here: a stop that stands has disarmed
+     * it at the step after it (ARMING_ACT_DISARM), and the reset is
+     * confirmed only on a bench that reads SAFE. */
+    a->held    = false;
+    a->stopped = false;
+    a->arming  = false;
 }
 
 uint32_t arming_pressed_count(const arming_t *a)
@@ -123,7 +142,8 @@ uint8_t arming_roles(const arming_t *a)
 
 void arming_request_arm_roles(arming_t *a, uint32_t now_ms, uint8_t roles)
 {
-    if (a == NULL || roles == 0u || arming_touch_dead(a, now_ms)) {
+    if (a == NULL || roles == 0u || arming_touch_dead(a, now_ms)
+        || a->held) {
         return;
     }
     /* Other roles than the bench is armed for: a disarm first, so nothing
@@ -133,7 +153,8 @@ void arming_request_arm_roles(arming_t *a, uint32_t now_ms, uint8_t roles)
     }
     a->roles = roles;
     /*
-     * The latch clears here, before the write, so the heartbeat resumes and
+     * A latch the far end, the link or a handshake set clears here, before
+     * the write, so the heartbeat resumes and
      * the IOmcu can come to trust it.  Clearing it only after a
      * successful write deadlocks: the write needs the line, the line needs
      * the latch cleared.

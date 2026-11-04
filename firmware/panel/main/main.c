@@ -360,6 +360,7 @@ atomic_bool        s_disarm_request;
  * one would otherwise put back what it let go of.
  */
 atomic_uint s_lets_go;
+atomic_uint s_stop_resets;
 /*
  * And how many times the supply's output has been asked off, for the same
  * reason: an OFF is a flag as well as a queue entry, so an ON still behind it

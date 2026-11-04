@@ -104,6 +104,9 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     /* And past the settle an arm waits for the far end's own word on the
      * line; see far_line_trusted(). */
     arming_set_line_wait(&s_arm, ARMING_LINE_WAIT_MS);
+    /* No stop latched and no reset waiting: a restart clears the latch, and
+     * the bench starts SAFE with every output off. */
+    stop_reset_init();
     /* The supply starts switched off, its readings those of an off output. */
     supply_sim_init(&s_supply_sim);
     supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
@@ -253,14 +256,16 @@ void service_arming(bool link_up)
     /*
      * STOP latches rather than clearing on the next frame: a stop that lasts
      * one frame is one the IOmcu may never see, and its monostable holds
-     * for longer than a frame.  Only an explicit arm clears it.
+     * for longer than a frame.  A pressed STOP is released by its reset
+     * alone, a hold of STOP for 2s (stop_reset_service()); an arm is
+     * refused while it stands.
      *
      * This is the router's backstop for a press the pump's own hit test
      * missed; a press it saw has already been applied there.
      */
     if (atomic_exchange(&s_stop_request, false)
         && atomic_exchange(&s_stop_counted, 0u) == 0u) {
-        arming_stop_pressed(&s_arm);        /* the band's STOP, pressed */
+        stop_pressed_here();                /* the band's STOP, pressed */
     }
 
     /*
@@ -278,6 +283,8 @@ void service_arming(bool link_up)
         servo_link_let_go();
     }
     supply_follow_stops();
+    /* After the let-go: the reset is confirmed on a bench that reads off. */
+    stop_reset_service(link_up);
 
     /*
      * One place decides, and it is the one under test.  A disarm here is the
@@ -583,9 +590,10 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
     switch (mc->kind) {
     case MOTOR_CMD_ARM:
         /*
-         * Arming is the deliberate act that clears a latched stop. The policy
-         * clears it, gives the heartbeat time to be believed and only then
-         * asks for the write; see shared/safety/arming.c.
+         * Arming is the deliberate act that clears a stop the far end or the
+         * link latched; a pressed STOP refuses it (arming_held()).  The
+         * policy clears the latch, gives the heartbeat time to be believed
+         * and only then asks for the write; see shared/safety/arming.c.
          */
         /* The throttle's outputs, and no other: a servo bound beside the
          * motor stays without a pulse.  Armed for the surfaces, the bench
@@ -646,6 +654,10 @@ void drain_commands(bool link_up, bench_state_t *bench)
          * touch dying or from the far end has no queued STOP behind it to
          * settle the surfaces a second time.
          *
+         * The same for a STOP latch released between the asking and the
+         * arriving: an arm queued while the STOP stood is one the latch
+         * refused, and the reset does not make it current.
+         *
          * Only what drives.  A disarm, a release or a binding asked for
          * before the stop still means what it meant.
          */
@@ -660,7 +672,8 @@ void drain_commands(bool link_up, bench_state_t *bench)
                                     || pc.servo.kind == SERVO_CMD_HOLD));
         if (drives
             && (pc.stops != arming_stop_count(&s_arm)
-                || pc.lets_go != atomic_load(&s_lets_go))) {
+                || pc.lets_go != atomic_load(&s_lets_go)
+                || pc.resets != atomic_load(&s_stop_resets))) {
             continue;
         }
         /*
@@ -678,6 +691,11 @@ void drain_commands(bool link_up, bench_state_t *bench)
                            && pc.motor.kind == MOTOR_CMD_ARM)
                           || (pc.kind == PANEL_CMD_SERVO
                               && pc.servo.kind == SERVO_CMD_ARM);
+        if (arms && arming_held(&s_arm)) {
+            /* A pressed STOP stands: its reset releases it, not an arm. */
+            control_alert(TR(ALERT_STOP_HELD));
+            continue;
+        }
         if (arms && s_prog_taken) {
             /* Programming a servo and an armed bench are exclusive,
              * whichever screen asks. */
@@ -694,7 +712,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
             s_arm_take_drv = atomic_load(&s_drv_gaps);
         }
         if (pc.kind == PANEL_CMD_STOP) {
-            arming_stop_pressed(&s_arm);    /* a screen's STOP, pressed */
+            stop_pressed_here();            /* a screen's STOP, pressed */
             outputs_arm(&s_out, false, now_ms());
             throttle_to_zero();
             servo_link_let_go();
