@@ -15,7 +15,9 @@
  *    the run does not, an ordinary write after the run does;
  *  - the run's end switches the write off;
  *  - a value past lo or hi is refused, the exact limits taken;
- *  - the gates: no servo read, ARMED, a write that changes nothing.
+ *  - the gates: no servo read, ARMED, a write that changes nothing;
+ *  - a right travel past hi that the register would take;
+ *  - a write of one step, REPAIR, saves the backup file first.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -475,6 +477,45 @@ TEST_CASE(a_run_write_is_refused_armed_and_unchanged_with_the_switch_off)
     CHECK_EQ(g_drv.dreg[0xB2], D_MID - 4000u);
 }
 
+TEST_CASE(a_right_travel_past_hi_is_refused_where_the_register_would_take_it)
+{
+    /* NEUTRAL 6000: hi is 5999 by the left side, and a right travel of
+     * 6000 (0xB0 = 12000) is one the register takes. */
+    rig();
+    servo_d485();
+    g_drv.dreg[0xC2] = 6000u;
+    connected();
+    CHECK_EQ(servo().hi, 5999u);
+    hitec_prog_run_begin(model());
+    CHECK_EQ(hitec_prog_run_write(model(), 100u, 6000u),
+             HITEC_PROG_MSG_EDIT_REFUSED);
+    CHECK_EQ(hitec_prog_message(model())->arg, HITEC_SET_ERR_RANGE);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK_EQ(hitec_prog_run_write(model(), 100u, 5999u), HITEC_PROG_MSG_NONE);
+    done();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_drv.dreg[0xB0], 11999u);
+}
+
+TEST_CASE(a_one_step_write_saves_the_backup_file_first)
+{
+    /* REPAIR is the classic balance alone: a plan of one step. */
+    rig();
+    servo_hs5645();
+    g_drv.eeprom[HITEC_C_SUM_LAST] ^= 0x01u;
+    g_card = true;
+    CHECK(hitec_prog_series_set(model(), HITEC_CLASSIC));
+    connected();
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_repair(model()), HITEC_PROG_MSG_NONE);
+    done();
+    CHECK_EQ(msg(), HITEC_PROG_MSG_REPAIRED);
+    CHECK_EQ(g_drv.c_writes, 1u);
+    CHECK_EQ(g_files_saves, 1u);
+    CHECK_STR_EQ(hitec_prog_backup_name(model()), "HITEC001");
+}
+
 int main(void)
 {
     RUN(d_series_travel_units_are_counts_from_0xc2_both_ways);
@@ -488,5 +529,7 @@ int main(void)
     RUN(run_end_switches_write_off);
     RUN(a_value_past_lo_or_hi_is_refused_as_the_hard_rules_say);
     RUN(a_run_write_is_refused_armed_and_unchanged_with_the_switch_off);
+    RUN(a_right_travel_past_hi_is_refused_where_the_register_would_take_it);
+    RUN(a_one_step_write_saves_the_backup_file_first);
     return test_summary("hitec_prog_run");
 }
