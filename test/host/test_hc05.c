@@ -426,6 +426,77 @@ TEST_CASE(an_operation_right_after_bind_or_any_finds_the_module_in_data_mode)
     CHECK_EQ(h.state, HC05_ST_DONE);
 }
 
+/* ANY by hand up to its AT+RESET, sent at the returned time. */
+static uint32_t any_to_reset(hc05_t *h, uint32_t t0)
+{
+    hc05_act_t a;
+    hc05_init(h);
+    CHECK(hc05_any(h, "1234", t0));
+    (void)step_all(h, t0, NULL);
+    for (int i = 0; i < 5; ++i) {
+        (void)step_all(h, t0 + 100u, NULL);
+        feed_line(h, "OK");
+    }
+    CHECK(step_all(h, t0 + 100u, &a) == HC05_ACT_SEND
+          && is_send(&a, "AT+RESET"));
+    return t0 + 100u;
+}
+
+TEST_CASE(an_abort_after_the_reset_keeps_key_low_through_the_restart)
+{
+    hc05_t h;
+    hc05_act_t a;
+
+    /* In the hold after the reset's OK: still busy, FAILED at its end. */
+    uint32_t t = any_to_reset(&h, 0);
+    feed_line(&h, "OK");
+    CHECK(step_all(&h, t + 5u, &a) == HC05_ACT_KEY && !a.key);
+    hc05_abort(&h);
+    CHECK(hc05_busy(&h));
+    CHECK(!hc05_probe(&h, t + 6u));
+    CHECK_EQ(step_all(&h, t + 5u + HC05_RESET_MS - 1u, NULL), HC05_ACT_NONE);
+    CHECK(hc05_busy(&h));
+    CHECK_EQ(step_all(&h, t + 5u + HC05_RESET_MS, NULL), HC05_ACT_NONE);
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+    CHECK_EQ(h.err, HC05_ERR_NONE);
+    CHECK(!h.key);
+
+    /* AT+RESET sent, its OK not yet come: KEY low at once, the hold, a
+     * late OK changes nothing. */
+    t = any_to_reset(&h, 0);
+    hc05_abort(&h);
+    CHECK(hc05_busy(&h));
+    CHECK(step_all(&h, t + 1u, &a) == HC05_ACT_KEY && !a.key);
+    feed_line(&h, "OK");
+    CHECK_EQ(step_all(&h, t + HC05_RESET_MS, NULL), HC05_ACT_NONE);
+    CHECK(hc05_busy(&h));
+    CHECK_EQ(step_all(&h, t + 1u + HC05_RESET_MS, NULL), HC05_ACT_NONE);
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+
+    /* Against the module: ANY, abort in the hold, PROBE at once after
+     * the end: the module restarted in data mode at 115200. */
+    sim_t s;
+    sim_init(&s, 2, HC05_BAUD_OLD);
+    hc05_init(&h);
+    CHECK(hc05_any(&h, "1234", 0));
+    for (t = 0; t < 20000u; ++t) {
+        sim_tick(&s, &h, t);
+        if (s.nlog > 1u && s.log[s.nlog - 1u].act.kind == HC05_ACT_KEY
+            && !s.log[s.nlog - 1u].act.key) {
+            break;
+        }
+    }
+    hc05_abort(&h);
+    const uint32_t end = sim_run(&s, &h, t + 1u, 10000u);
+    CHECK_EQ(h.state, HC05_ST_FAILED);
+    CHECK(hc05_probe(&h, t + 1u + end));
+    (void)sim_run(&s, &h, t + 1u + end, 10000u);
+    CHECK_EQ(s.restarts, 1);
+    CHECK(!s.restarted_key);
+    CHECK_EQ(h.state, HC05_ST_DONE);
+    CHECK_EQ(h.baud, HC05_BAUD_DATA);
+}
+
 TEST_CASE(scan_ignores_error_17_on_init)
 {
     hc05_t h;
@@ -1033,6 +1104,7 @@ int main(void)
     RUN(scan_on_firmware_2_0_lists_two_devices_with_their_names);
     RUN(a_late_name_is_not_taken_for_the_next_device);
     RUN(an_operation_right_after_bind_or_any_finds_the_module_in_data_mode);
+    RUN(an_abort_after_the_reset_keeps_key_low_through_the_restart);
     RUN(scan_ignores_error_17_on_init);
     RUN(scan_runs_for_inqm_timeout_plus_two_seconds);
     RUN(scan_on_firmware_3_0_ends_inq_refused_on_error_1f);

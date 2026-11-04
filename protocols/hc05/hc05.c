@@ -73,6 +73,10 @@ static const uint32_t k_bauds[] = { HC05_BAUD_DATA, HC05_BAUD_ALT,
 #define FENCE_STATE 2u /**< its +STATE: line came */
 /** @} */
 
+/** @brief hc05_t.tries at S_KEYLOW: hc05_abort() came after AT+RESET went
+ *         out; the hold ends the operation FAILED. */
+#define ABORTED 1u
+
 /** @brief The error code AT+INIT answers when the SPP (serial port
  *         profile) library is up already. */
 #define CODE_INIT_AGAIN 0x17u
@@ -337,7 +341,9 @@ static void next_name(hc05_t *h)
 static void expired(hc05_t *h, uint8_t s)
 {
     h->wait_ms = 0;
-    if (s == S_KEY || s == S_KEYLOW) {
+    if (s == S_KEYLOW && h->tries == ABORTED) {
+        finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);
+    } else if (s == S_KEY || s == S_KEYLOW) {
         advance(h);
     } else if (s == S_AT) {
         h->tries = 0;
@@ -568,6 +574,19 @@ bool hc05_any(hc05_t *h, const char *pin, uint32_t now_ms)
 void hc05_abort(hc05_t *h)
 {
     if (h == NULL || h->state != HC05_ST_RUNNING) {
+        return;
+    }
+    const uint8_t s = stage(h);
+    if ((s == S_RESET && h->wait_ms != 0u) || s == S_KEYLOW) {
+        /* AT+RESET went out: the module restarts whatever comes.  KEY low
+         * and the hold run to their end, so no operation raises KEY in the
+         * restart; the operation then ends FAILED, HC05_ERR_NONE. */
+        if (s == S_RESET) {
+            ++h->step;
+            h->wait_ms = 0;
+            h->act_due = false;
+        }
+        h->tries = ABORTED;
         return;
     }
     finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);

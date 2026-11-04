@@ -100,7 +100,10 @@ baud can stay in the module's line buffer and spoil the first command.
 
 `hc05_abort()` ends a running operation FAILED with `HC05_ERR_NONE`. The
 next `hc05_step()` asks KEY low when KEY was high. Lines that come after
-it change nothing.
+it change nothing. After `AT+RESET` has gone out the module restarts
+whatever comes: an abort then asks KEY low, keeps the machine busy for
+the 1500ms hold, and ends FAILED with `HC05_ERR_NONE` at its end, without
+the data baud action.
 
 ## Answers and addresses
 
