@@ -95,10 +95,20 @@ bool servo_test_abort_error(servo_test_abort_t why)
     case SERVO_TEST_AB_INA_METER:
     case SERVO_TEST_AB_ENC_SILENT:
     case SERVO_TEST_AB_ENC_GAPS:
+    case SERVO_TEST_AB_IMU_SILENT:
+    case SERVO_TEST_AB_IMU_GAPS:
         return true;
     default:
         return false;
     }
+}
+
+servo_test_abort_t servo_test_angle_abort(bool imu, bool twice)
+{
+    if (imu) {
+        return twice ? SERVO_TEST_AB_IMU_GAPS : SERVO_TEST_AB_IMU_SILENT;
+    }
+    return twice ? SERVO_TEST_AB_ENC_GAPS : SERVO_TEST_AB_ENC_SILENT;
 }
 
 servo_str_t servo_test_verdict_str(servo_test_verdict_t v)

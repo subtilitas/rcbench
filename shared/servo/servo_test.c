@@ -1140,12 +1140,12 @@ static void enc_gap_judge(servo_test_t *t, const servo_test_enc_t *e)
     servo_test_abort_t why = SERVO_TEST_AB_NONE;
     if (!e->valid && !e->no_magnet) {
         if (servo_gap_lost(&t->enc_gap, e->taken_ms) == SERVO_GAP_TOO_SOON) {
-            why = SERVO_TEST_AB_ENC_GAPS;
+            why = servo_test_angle_abort(t->cfg.enc_imu, true);
         }
     } else if (t->enc_gap.open) {
         const servo_gap_verdict_t v = servo_gap_back(&t->enc_gap, e->taken_ms);
         if (v == SERVO_GAP_TOO_LONG) {
-            why = SERVO_TEST_AB_ENC_SILENT;
+            why = servo_test_angle_abort(t->cfg.enc_imu, false);
         } else {
             /* Its length on the first row at or after the reading that
              * ended it. */
@@ -1267,7 +1267,7 @@ void servo_test_step(servo_test_t *t, uint32_t now_ms,
         /* The encoder's silence: 1ms past SERVO_GAP_MAX_MS,
          * after the meter's, which names the meter in a pass that finds
          * both. */
-        finish(t, SERVO_TEST_AB_ENC_SILENT, now_ms);
+        finish(t, servo_test_angle_abort(t->cfg.enc_imu, false), now_ms);
     }
     if (servo_test_running(t)) {
         const uint32_t in_phase = now_ms - t->phase_ms;

@@ -10,7 +10,8 @@
  * 301ms, at its start, before its end, during a move whose angle had not
  * settled, and on a second gap within 10s; the gap in the CSV's angle gap
  * column and in the report, in EN and DE; a part that answers without its
- * magnet ending a gap; a run without the encoder taking none of it.
+ * magnet ending a gap; a run without the encoder taking none of it; a run
+ * with the IMU as the angle source naming the IMU in its two reasons.
  *
  * The rig is servo_test_rig.h.
  *
@@ -253,6 +254,52 @@ TEST_CASE(a_second_encoder_gap_within_10s_ends_the_test)
     }
 }
 
+/* With the IMU as the angle source the same three ends name the IMU: a
+ * gap of 301ms closed by a reading, one past 300ms found by the clock,
+ * and a second gap 9999ms after the first; the AS5600's words are not in
+ * the report. */
+TEST_CASE(an_imu_run_ends_on_its_gaps_with_the_imus_reasons)
+{
+    for (int how = 0; how < 3; ++how) {
+        servo_test_cfg_t c;
+        gap_rig(&c, 40u);
+        c.enc_imu = true;
+        CHECK_EQ(start(&c), SERVO_TEST_START_OK);
+        run_ms(2000u);
+        const uint32_t t = g.now;
+        enc_lost(t);
+        if (how == 2) {
+            run_until(t + 100u);
+            enc_back(t + 100u);
+            run_until(t + 9994u);
+            CHECK(servo_test_running(&g.t));
+            enc_lost(t + 9999u);
+        } else {
+            run_until(t + 300u);
+            CHECK(servo_test_running(&g.t));
+            if (how == 1) {
+                enc_back(t + 301u);
+            }
+            frame();
+        }
+        CHECK(!servo_test_running(&g.t));
+        CHECK_EQ(g.t.why, how == 2 ? SERVO_TEST_AB_IMU_GAPS
+                                   : SERVO_TEST_AB_IMU_SILENT);
+        CHECK(servo_test_abort_error(g.t.why));
+        run_out(10000u);
+        CHECK(g.off_asked);
+        CHECK(g.released);
+        CHECK(strstr(g.report, how == 2 ? "IMU dropped out twice in 10s"
+                                        : "IMU not answering") != NULL);
+        CHECK(strstr(g.report, "AS5600 not answering") == NULL);
+        CHECK(strstr(g.report, "AS5600 dropped out") == NULL);
+    }
+    CHECK_EQ(servo_test_angle_abort(false, false), SERVO_TEST_AB_ENC_SILENT);
+    CHECK_EQ(servo_test_angle_abort(false, true), SERVO_TEST_AB_ENC_GAPS);
+    CHECK_EQ(servo_test_angle_abort(true, false), SERVO_TEST_AB_IMU_SILENT);
+    CHECK_EQ(servo_test_angle_abort(true, true), SERVO_TEST_AB_IMU_GAPS);
+}
+
 /* A run that starts while the encoder does not answer starts in a gap:
  * an angle within 300ms rides, none ends the run at 301ms or after. */
 TEST_CASE(a_test_started_in_an_encoder_gap_rides_300ms_of_it)
@@ -404,10 +451,22 @@ TEST_CASE(the_gap_texts_read_in_german)
         /* ASCII in both languages: a byte a cell. */
         CHECK(strlen(servo_str_in(tb, SERVO_STR_AB_ENC_SILENT)) <= 31u);
         CHECK(strlen(servo_str_in(tb, SERVO_STR_AB_ENC_GAPS)) <= 31u);
+        CHECK(strlen(servo_str_in(tb, SERVO_STR_AB_IMU_SILENT)) <= 31u);
+        CHECK(strlen(servo_str_in(tb, SERVO_STR_AB_IMU_GAPS)) <= 31u);
     }
     ui_text_set_language(UI_LANG_EN);
     CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_ENC_GAPS),
                  "AS5600 dropped out twice in 10s");
+    CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_IMU_SILENT),
+                 "IMU not answering");
+    CHECK_STR_EQ(servo_test_abort_name(SERVO_TEST_AB_IMU_GAPS),
+                 "IMU dropped out twice in 10s");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(servo_str_in(ui_servo_table(), SERVO_STR_AB_IMU_SILENT),
+                 "IMU antwortet nicht");
+    CHECK_STR_EQ(servo_str_in(ui_servo_table(), SERVO_STR_AB_IMU_GAPS),
+                 "IMU 2x in 10s ausgefallen");
+    ui_text_set_language(UI_LANG_EN);
 }
 
 int main(void)
@@ -418,6 +477,7 @@ int main(void)
     RUN(the_test_rides_through_an_encoder_gap_of_300ms);
     RUN(an_encoder_gap_of_301ms_ends_the_test_as_an_error);
     RUN(a_second_encoder_gap_within_10s_ends_the_test);
+    RUN(an_imu_run_ends_on_its_gaps_with_the_imus_reasons);
     RUN(a_test_started_in_an_encoder_gap_rides_300ms_of_it);
     RUN(a_gap_during_a_move_leaves_it_out_and_judges_nothing);
     RUN(a_gap_at_the_tests_end_leaves_its_verdict);

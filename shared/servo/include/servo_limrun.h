@@ -284,6 +284,9 @@ typedef struct {
     bool     enc_on;      /**< an angle source reads the horn shaft     */
     char     source[12];  /**< its name (servo_angle_name()): "AS5600",
                                "IMU X+"; "" names the AS5600            */
+    bool     enc_imu;     /**< the source is the IMU: its silence and gaps
+                               end the run as SERVO_TEST_AB_IMU_SILENT and
+                               _IMU_GAPS; false names the AS5600        */
     char     firmware[16];
     /** @brief The report's language: SERVO_STR_COUNT entries, NULL for
      *         English. */
@@ -534,8 +537,9 @@ void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w);
  *        answers closes it.  Nothing without cfg.enc_on.  A gap longer than
  *        SERVO_GAP_MAX_MS ends the run with SERVO_TEST_AB_ENC_SILENT, a second
  *        one sooner than SERVO_GAP_EVERY_MS after the start of the last with
- *        SERVO_TEST_AB_ENC_GAPS, both errors.  The angle itself comes with
- *        servo_limrun_step()'s @c in.
+ *        SERVO_TEST_AB_ENC_GAPS, both errors; with the IMU as the angle
+ *        source (cfg.enc_imu) with SERVO_TEST_AB_IMU_SILENT and _IMU_GAPS.
+ *        The angle itself comes with servo_limrun_step()'s @c in.
  *
  * @param r Run state. Does nothing unless the run is RUNNING.
  * @param e Encoder reading. Ignored when NULL.

@@ -36,8 +36,9 @@ enthält den Hinweis des Projekts.
 ## Verdrahtung
 
 Die Pins sind `PANEL_IMU_*` in
-`firmware/panel/components/board/include/board_pins.h`. Jeder ist ein
-Platzhalter, den der Eigentümer bestätigt.
+`firmware/panel/components/board/include/board_pins.h`. KEY liegt auf IO29,
+neben IO28 des Heartbeats; die UART-Pins und die 5V sind Platzhalter, die
+der Eigentümer bestätigt.
 
 | HC-05 (Breakout ZS-040) | Panel | Define |
 | --- | --- | --- |
@@ -45,7 +46,7 @@ Platzhalter, den der Eigentümer bestätigt.
 | GND | GND des Headers P3 | |
 | TXD (3,3V) | IO5 des Headers P3, UART1 RX | `PANEL_IMU_PIN_RX` |
 | RXD | IO4 des Headers P3, UART1 TX, 3,3V | `PANEL_IMU_PIN_TX` |
-| EN (KEY) | IO2 des Headers P3, high für AT-Befehle | `PANEL_IMU_PIN_KEY` |
+| EN (KEY) | IO29 des Headers P3, high für AT-Befehle | `PANEL_IMU_PIN_KEY` |
 | STATE | nicht verdrahtet; das Alter des Messwerts steht dafür | `PANEL_IMU_PIN_STATE` (`GPIO_NUM_NC`) |
 
 `PANEL_IMU_UART_NUM` ist 1: UART0 gehört der Konsole. `PANEL_IMU_BAUD` ist

@@ -330,7 +330,7 @@ programming` ends a run whose servo does not follow the model.
 | The INA3221 at the end of its range | a clipped sample | abort |
 | Stall timeout | window means above 1.0A for 400ms | abort |
 | No window | 200ms, 4 windows of 50ms | abort; `SERVO_TEST_WIN_STALE_MS`, the automatic test's figure. A window without a current reading does not count as a window. The windows feed the three protections above, so a gap in them gets no allowance |
-| The AS5600, with AS5600 in use from the start | not answering for more than 300ms, or again less than 10s after the start of the time before | abort as an error, `AS5600 not answering` or `AS5600 dropped out twice in 10s`; a shorter, rarer gap is ridden through and no angle is taken in it, as in the automatic test ([The output encoder](#the-output-encoder)). The report has the line `AS5600 gaps: N, the longest Mms. ...` when N is more than 0 |
+| The AS5600, with AS5600 in use from the start | not answering for more than 300ms, or again less than 10s after the start of the time before | abort as an error, `AS5600 not answering` or `AS5600 dropped out twice in 10s`, with ANGLE SOURCE IMU `IMU not answering` or `IMU dropped out twice in 10s`; a shorter, rarer gap is ridden through and no angle is taken in it, as in the automatic test ([The output encoder](#the-output-encoder)). The report has the line `AS5600 gaps: N, the longest Mms. ...` when N is more than 0 |
 | One search | 40s | abort: 1000µs of travel is 100 positions of 250ms, 25s |
 | One programmer step | 150s | abort: CONNECT with its read, a write or LEAVE |
 | The bench switching | 3s | abort when SAFE or ARMED is not in place 3s after the run asked |
@@ -992,9 +992,9 @@ has the column `angle source` last, after the meter's columns, with
 by the same column names. The SERVO run log's `angle (deg)` is the source's angle as
 MEASURED shows it.
 
-Current limitation: a run with the IMU that ends on a gap names the
-AS5600 in its abort reason (`AS5600 not answering`, `AS5600 dropped out
-twice in 10s`), on the card and in the report.
+A run with the IMU that ends on a gap names the IMU in its abort reason,
+on the card and in the report: `IMU not answering` for a gap longer than
+300ms, `IMU dropped out twice in 10s` for a second gap within 10s.
 
 ### What ends a run
 
@@ -1049,6 +1049,8 @@ left as they are.
 | `INA3221 no longer the meter` | a run on the INA3221: the meter changed and the panel did not name the condition |
 | `AS5600 not answering` | a run with AS5600 in use: the part has not answered for more than `SERVO_GAP_MAX_MS`, 300ms ([The output encoder](#the-output-encoder)) |
 | `AS5600 dropped out twice in 10s` | a run with AS5600 in use: the part stopped answering less than `SERVO_GAP_EVERY_MS`, 10000ms, after the start of the time before |
+| `IMU not answering` | a run with ANGLE SOURCE IMU: no IMU reading for more than `SERVO_GAP_MAX_MS`, 300ms ([Angle source](#angle-source)) |
+| `IMU dropped out twice in 10s` | a run with ANGLE SOURCE IMU: the IMU went silent less than `SERVO_GAP_EVERY_MS`, 10000ms, after the start of the time before |
 
 The six reasons of a run on the INA3221 are the conditions under which the
 INA3221 is the rail's meter. Each ends the run at the first poll that finds
