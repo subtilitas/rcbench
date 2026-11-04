@@ -104,6 +104,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "servo_angle.h"
 #include "servo_gap.h"
 #include "servo_limrun.h"
 #include "servo_test.h"
@@ -126,16 +127,6 @@ extern "C" {
 #define SERVO_RAUTO_TOL_MAX_DDEG 50u     /**< 5.0° */
 /** @brief The outbox: the report's files, TXT and CSV. */
 #define SERVO_RAUTO_OUTBOX      2u
-
-/** @brief A reading of the angle source, as servo_angle.h hands it in. */
-typedef struct {
-    bool     valid;      /**< a reading within IMU_STALE_MS */
-    float    deg;        /**< from the zero, signed, -180 to 180 */
-    uint16_t still_ms;   /**< the still time at the reading, ms */
-    uint32_t taken_ms;   /**< when the panel had it; for one not valid,
-                              when it was found so */
-    bool     gap;        /**< readings before this one were lost */
-} servo_angle_in_t;
 
 /** @brief The servo's family: which programmer's registers the values are. */
 typedef enum {
@@ -317,7 +308,7 @@ void servo_rauto_window(servo_rauto_t *r, const servo_test_win_t *w);
  * @param r Run state; nothing unless RUNNING.
  * @param a The reading; NULL is ignored.
  */
-void servo_rauto_angle(servo_rauto_t *r, const servo_angle_in_t *a);  /* servo_angle.h, see note */
+void servo_rauto_angle(servo_rauto_t *r, const servo_angle_in_t *a);
 /**
  * @brief The programmer's CONNECT answered with the servo it read.
  * @param r      Run state; nothing outside READ and CONNECT.
