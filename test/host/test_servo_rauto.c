@@ -465,8 +465,32 @@ TEST_CASE(the_step_list_keeps_its_18_entries_and_drops_later_ones)
     CHECK(servo_rauto_running(&g.run));
 }
 
+TEST_CASE(a_check_outside_the_tolerance_writes_that_side_again)
+{
+    rig_init(0u);
+    CHECK(start());
+    /* The 1000us side within, then 10% more travel on it. */
+    while (servo_rauto_running(&g.run) && !g.run.verified[0]) {
+        tick();
+    }
+    g.dir[0] = -1.1f;
+    while (servo_rauto_running(&g.run) && g.run.phase != SERVO_RAUTO_PH_CHECK) {
+        tick();
+    }
+    CHECK(g.run.verified[0]);
+    while (servo_rauto_running(&g.run) && g.run.phase == SERVO_RAUTO_PH_CHECK) {
+        tick();
+    }
+    CHECK(!g.run.verified[0]);
+    CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_SAFE);
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK_EQ(g.run.writes[0], 2u);
+}
+
 int main(void)
 {
+    RUN(a_check_outside_the_tolerance_writes_that_side_again);
     RUN(a_first_measure_at_the_tolerance_gives_the_side_its_direction);
     RUN(a_found_register_is_not_tried_again_on_a_later_write);
     RUN(the_step_list_keeps_its_18_entries_and_drops_later_ones);

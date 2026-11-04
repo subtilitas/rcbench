@@ -112,16 +112,16 @@ uint16_t servo_rauto_scaled(uint16_t value, float goal_deg, float measured_deg,
     if (v >= (double)hi) {
         return hi < lo ? lo : hi;
     }
-    const uint16_t k = (uint16_t)lround(v);
-    return k > hi ? hi : k;
+    /* Under hi, so its rounding is at most hi. */
+    return (uint16_t)lround(v);
 }
 
 /* ------------------------------------------------------------- the end */
 
 /**
- * @brief The run is over.  It lets the servo go and asks SAFE; inside the
- *        programmer's session an end that is no abort asks LEAVE, every
- *        other end the output off.
+ * @brief The run is over.  It lets the servo go and asks SAFE; a FAIL in
+ *        the read session's CONNECT asks LEAVE, every other end the output
+ *        off.
  * @param r      Run state.
  * @param v      Verdict.
  * @param why    Reason.
@@ -133,9 +133,10 @@ static void finish(servo_rauto_t *r, servo_rauto_verdict_t v,
     if (r->state != SERVO_RAUTO_RUNNING) {
         return;
     }
-    const bool in_session = r->phase == SERVO_RAUTO_PH_READ
-                            || r->phase == SERVO_RAUTO_PH_CONNECT
-                            || r->phase == SERVO_RAUTO_PH_WRITE;
+    /* An end that is no abort holds the port only in the read session's
+     * CONNECT: a read that is no servo.  Every later step of the
+     * programmer that ends the run is an abort. */
+    const bool in_session = r->phase == SERVO_RAUTO_PH_READ;
     r->state   = SERVO_RAUTO_DONE;
     r->verdict = v;
     r->why     = why;

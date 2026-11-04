@@ -364,7 +364,8 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
         /* A word joined to a number is no unit, nor are the letters of
          * one that run on. */
         "x 6.00Volt", "x 5x", "x 5x free", "x 3Ab", "x 5v", "x 1500usx",
-        "x 5\xCE\xA9x", "x 5m\xCE", "x 4.80Vs", "x 5V_",
+        "x 5\xCE\xA9x", "x 5m\xCE", "x 4.80Vs", "x 5V_", "x 5\xC2\xB0x",
+        "x 5m\xC2\xB0", "x 5\xC2",
     };
     for (size_t i = 0u; i < sizeof(k_text) / sizeof(k_text[0]); ++i) {
         const size_t n = hl_line(k_text[i], 3u, TEXT_HL_KIND_TEXT);
@@ -375,6 +376,13 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
                        (unsigned)hl_spans[s].start);
             }
         }
+    }
+    /* A degree sign cut at the line's end is no unit. */
+    text_hl_span_t cut[8];
+    const size_t nc = text_hl_line("x 5\xC2\xB0", 4u, 3u, TEXT_HL_KIND_TEXT,
+                                   NULL, cut, 8u);
+    for (size_t s = 0u; s < nc; ++s) {
+        CHECK(cut[s].cls < TEXT_HL_VOLT || cut[s].cls > TEXT_HL_UNIT);
     }
     /* A range: the second number takes the unit. */
     size_t n = hl_line("x 800-2200 us", 3u, TEXT_HL_KIND_TEXT);

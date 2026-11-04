@@ -40,9 +40,9 @@ TEST_CASE(a_stall_before_the_goal_ends_binds_with_the_angle)
     CHECK(in_report("Result:         FAIL - surface binds at 20.0°"));
     CHECK_EQ(servo_rauto_why_str(&g.run), SERVO_STR_RA_WHY_BINDS);
 
-    /* Bound past the goal: the servo stalls, the surface is not short. */
+    /* Bound at the goal less the tolerance: the surface is not short. */
     rig_init(0u);
-    g.bind[1] = 27.4f;
+    g.bind[1] = 27.5f - 0.2f;
     g.cfg.tol_ddeg = 2u;
     CHECK(start());
     run_for(RAUTO_MS);
@@ -195,6 +195,8 @@ TEST_CASE(not_still_within_3s_ends_not_still)
         servo_rauto_step(&g.run, m + k, &in, &d);
     }
     CHECK(servo_rauto_running(&g.run));
+    /* Still 499ms is not still. */
+    CHECK_EQ(g.run.step_n, 0u);
     in.still_ms = 500u;
     servo_rauto_step(&g.run, m + 3000u, &in, &d);
     CHECK(servo_rauto_running(&g.run));
@@ -347,6 +349,11 @@ TEST_CASE(the_meter_and_the_bench_silent_end_the_run)
     CHECK(at_first_move());
     servo_rauto_abort(&g.run, SERVO_TEST_AB_STOP, g.now);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_ABORTED);
+    run_for(10u);
+    char head[96];
+    snprintf(head, sizeof(head), "Result:         ABORTED - %s\n",
+             servo_str(SERVO_STR_AB_STOP));
+    CHECK(in_report(head));
     servo_rauto_abort(&g.run, SERVO_TEST_AB_LINK, g.now);
     CHECK_EQ(g.run.test_why, SERVO_TEST_AB_STOP);
 }
@@ -440,7 +447,12 @@ TEST_CASE(a_refused_connect_ends_prog_and_restore_is_offered_after_a_write)
     CHECK(!servo_rauto_programming(&g.run));
     CHECK(!servo_rauto_switching(&g.run));
     /* Outside the programmer's steps a refusal changes nothing. */
+    rig_init(0u);
+    CHECK(start());
+    CHECK(run_to(SERVO_RAUTO_PH_WRITE, RAUTO_MS));
+    CHECK(servo_rauto_programming(&g.run));
     CHECK(at_first_move());
+    CHECK_EQ(g.run.phase_ms, g.run.move_ms);
     CHECK(!servo_rauto_programming(&g.run));
     CHECK(!servo_rauto_switching(&g.run));
     servo_rauto_refused(&g.run, g.now);
@@ -491,6 +503,13 @@ TEST_CASE(a_read_that_is_no_servo_fails_and_gives_the_port_back)
         run_for(RAUTO_MS);
         CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NO_SERVO);
     }
+    /* lo and hi one value: read, and the goal out of its reach. */
+    rig_init(0u);
+    g.v[0] = g.v[1] = 150u;
+    g.lo = g.hi = 150u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_LIMIT);
     rig_init(0u);
     g.v[0] = 50u;
     g.v[1] = 255u;
