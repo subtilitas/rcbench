@@ -209,6 +209,12 @@ typedef enum {
     SET_ANGLE_SOURCE,
     /* --- the SERVO workbench's RUDDER task -------------------------------- */
     SET_RUDDER_LEN_MM,
+    /* --- the Bluetooth IMU (SETUP > SENSORS > IMU, imu_ctl.h) ------------ */
+    SET_IMU_EN,
+    SET_IMU_AXIS,
+    SET_IMU_SIGN,
+    SET_IMU_RATE,
+    SET_IMU_ALGO,
 
     SETTING_COUNT
 } setting_id_t;
@@ -246,6 +252,9 @@ typedef enum {
     SET_TEXT_DUT_NAME = 0,   /**< the device under test, for the report */
     SET_TEXT_LOG_AUTO_DIR,   /**< AUTO LOG FOLDER: the automatic logs'  */
     SET_TEXT_LOG_USER_DIR,   /**< USER LOG FOLDER: the tests' files     */
+    SET_TEXT_IMU_ADDR,       /**< the sensor the HC-05 is bound to, as
+                                  +INQ prints it; "*" any sensor          */
+    SET_TEXT_IMU_NAME,       /**< its name from the scan, 23 characters */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 

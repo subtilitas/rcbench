@@ -133,8 +133,8 @@ TEST_CASE(every_row_fits_between_its_edge_and_its_keys_in_both_languages)
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
-            setting_id_t ids[64];
-            const int n = settings_in_category((setting_cat_t)cat, ids, 64);
+            setting_id_t ids[96];
+            const int n = settings_in_category((setting_cat_t)cat, ids, 96);
             for (int i = 0; i < n; ++i) {
                 const setting_id_t id = ids[i];
                 const setting_def_t *d = settings_def(id);

@@ -28,6 +28,7 @@
 #include "esp_private/esp_clk.h"
 #include "freertos/FreeRTOS.h"
 #include "panel.h"
+#include "panel_imu.h"
 #include "panel_main.h"
 #include "sdkconfig.h"
 #include "settings.h"
@@ -159,6 +160,12 @@ void publish_log_auto(void)
  * store that holds a folder no longer allowed writes to the default.
  * Written by the text observer on app_main.
  */
+void settings_text_changed(setting_text_id_t id)
+{
+    publish_log_folder(id);
+    panel_imu_text_changed(id);
+}
+
 void publish_log_folder(setting_text_id_t id)
 {
     char dir[CARD_DIR_MAX];
@@ -274,6 +281,8 @@ void settings_changed(setting_id_t id)
         publish_pdmini();
     } else if (id == SET_HITEC_RX) {
         publish_hitec_rx();
+    } else if (id >= SET_IMU_EN && id <= SET_IMU_ALGO) {
+        panel_imu_settings_changed(id);
     } else if (settings_sensors_row(id)) {
         publish_sense();          /* SETUP > SENSORS */
     } else {

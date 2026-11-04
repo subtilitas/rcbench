@@ -472,4 +472,28 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         "rud_len_mm", "mm",
         SET_CAT_SERVO, SET_TYPE_FLOAT, 0.0f, 500.0f, 1.0f, 0.0f, NULL, 0,
         10.0f },
+    /*
+     * The Bluetooth IMU (imu_ctl.h, docs/IMU.md): a WitMotion BWT901CL
+     * through an HC-05 on the panel's UART.  ON runs the HC-05's set-up
+     * and reads the sensor.  AXIS and SIGN pick the angle the servo runs
+     * and RUDDER read (imu_axis_t).  RATE (imu_rate) and ALGORITHM
+     * (imu_algo, AXIS6) go to the sensor as a command with SAVE when it is
+     * connected, else when it next connects; a RATE takes effect after a
+     * power cycle of the sensor.
+     */
+    [SET_IMU_EN] = {
+        "imu_en", "",
+        SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_IMU_AXIS] = {
+        "imu_axis", "",
+        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_axis) },
+    [SET_IMU_SIGN] = {
+        "imu_sign", "",
+        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_sign) },
+    [SET_IMU_RATE] = {
+        "imu_rate", "",
+        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 2, ENUM_OPTS(imu_rate) },
+    [SET_IMU_ALGO] = {
+        "imu_algo", "",
+        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_algo) },
 };

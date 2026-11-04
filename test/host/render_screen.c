@@ -36,6 +36,7 @@
 #include "coproc_update_screen.h"
 #include "render_files.h"
 #include "render_help.h"
+#include "render_imu.h"
 #include "render_rudder.h"
 #include "render_shot.h"
 #include "render_esc_wire.h"
@@ -662,8 +663,8 @@ static void setup_row_value(int row)
  */
 static void setup_value(setting_cat_t cat, setting_id_t id)
 {
-    setting_id_t ids[64];
-    const int n = settings_in_category(cat, ids, 64);
+    setting_id_t ids[96];
+    const int n = settings_in_category(cat, ids, 96);
     int row = -1;
     for (int i = 0; i < n && i < 64; ++i) {
         if (ids[i] == id) {
@@ -1978,6 +1979,7 @@ static ui_screen_id_t id_of(const char *name)
         { "updates",    SCREEN_UPDATES },
         { "upd-remind", SCREEN_UPD_REMIND },
         { "layout",     SCREEN_LAYOUT },
+        { "imu",        SCREEN_IMU },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -3970,7 +3972,8 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
      * the carrier (setup-sensors-rbmod) 0x40 is the board's.
      */
     if (strncmp(view, "setup-sensors", 13) == 0
-        && strcmp(view, "setup-sensors-ina228") != 0) {
+        && strcmp(view, "setup-sensors-ina228") != 0
+        && strcmp(view, "setup-sensors-imu") != 0) {
         settings_set(SET_INA_FIT(1), 1.0f);
         settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
         settings_set(SET_INA_LIM(4), 800.0f);
@@ -4256,6 +4259,7 @@ int main(int argc, char **argv)
 
     pose_shown_setup(id, view);
     pose_shown_tools(id, view);
+    render_imu_pose(view);
     gfx_canvas_t c;
     gfx_canvas_init(&c, fb, W, H, W);
 

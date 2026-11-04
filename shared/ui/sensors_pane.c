@@ -30,6 +30,10 @@ static const setting_id_t k_as5600[] = { SET_ENC_EN, SET_ENC_CENTRE };
 static const setting_id_t k_tap[] = { SET_TONE_EN, SET_TONE_PIN, SET_TONE_F_MIN,
                                       SET_TONE_F_MAX, SET_TONE_SPLIT,
                                       SET_TONE_GAP, SET_TONE_PERIODS };
+/** @brief The IMU's rows, the enable row first; ANGLE SOURCE last. */
+static const setting_id_t k_imu[] = { SET_IMU_EN, SET_IMU_AXIS, SET_IMU_SIGN,
+                                      SET_IMU_RATE, SET_IMU_ALGO,
+                                      SET_ANGLE_SOURCE };
 
 /** @brief Appends @p table to all_rows()'s out, counted in its n. */
 #define COPY_ROWS(table)                                             \
@@ -53,6 +57,7 @@ static int all_rows(int entry, setting_id_t *out)
     case SENS_ENTRY_INA228: COPY_ROWS(k_ina228); break;
     case SENS_ENTRY_AS5600: COPY_ROWS(k_as5600); break;
     case SENS_ENTRY_TAP:    COPY_ROWS(k_tap);    break;
+    case SENS_ENTRY_IMU:    COPY_ROWS(k_imu);    break;
     default: {
         const int a = entry - SENS_ENTRY_INA3221_0;
         if (a < 0 || a >= SET_INA_PARTS) {
@@ -120,6 +125,7 @@ const char *sensors_pane_name(int entry, char *buf, size_t n)
     case SENS_ENTRY_INA228: snprintf(buf, n, "INA228");              break;
     case SENS_ENTRY_AS5600: snprintf(buf, n, "AS5600");              break;
     case SENS_ENTRY_TAP:    snprintf(buf, n, "%s", TR(SET_HD_TAP));  break;
+    case SENS_ENTRY_IMU:    snprintf(buf, n, "IMU");                 break;
     default:
         if (entry >= SENS_ENTRY_INA3221_0
             && entry < SENS_ENTRY_INA3221_0 + SET_INA_PARTS) {
@@ -203,6 +209,8 @@ const char *sensors_pane_state(int entry, char *buf, size_t n, gfx_color_t *ink)
         *ink = sensors_rows_word_color(st);
     } else if (entry == SENS_ENTRY_AS5600 || entry == SENS_ENTRY_TAP) {
         on_state(entry, buf, n, ink);
+    } else if (entry == SENS_ENTRY_IMU) {
+        (void)sensors_rows_imu_state(buf, n, ink);
     } else {
         const int a = entry - SENS_ENTRY_INA3221_0;
         snprintf(buf, n, "%s", sensors_rows_state(a));

@@ -306,8 +306,8 @@ TEST_CASE(categories_partition_every_setting)
     /* And the four INA3221 keys of 0.21, in none (settings_sensors.h). */
     CHECK_EQ(total + 4, SETTING_COUNT);
 
-    setting_id_t ids[64];
-    int n = settings_in_category(SET_CAT_APP, ids, 64);
+    setting_id_t ids[96];
+    int n = settings_in_category(SET_CAT_APP, ids, 96);
     for (int i = 0; i < n; ++i) {
         CHECK_EQ(settings_def(ids[i])->cat, SET_CAT_APP);
     }

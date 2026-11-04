@@ -13,6 +13,7 @@
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "supply_screen.h"
+#include "imu_screen.h"
 #include "upd_screen.h"
 #include "wifi_screen.h"
 #include "ui_screen.h"
@@ -157,7 +158,8 @@ static void guide_close(void);
  * The openers, each on a row of its own: a control on one screen that opens
  * another, whose home tag then returns to the opener.  OUTPUTS opens from the
  * TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile; SUPPLY
- * and SETUP from SERVO's caps and AS5600 buttons; WI-FI from UPDATES' button
+ * and SETUP from SERVO's caps and AS5600 buttons and from IMU's IMU SETTINGS;
+ * WI-FI from UPDATES' button
  * and LOGS' WI-FI button.  SETUP's WI-FI tile needs no row: WI-FI's parent is
  * SETUP.
  * A screen with no row here, or entered from a screen not on its row, leaves
@@ -174,6 +176,7 @@ static const struct {
     { SCREEN_SETUP,   SCREEN_SERVO },
     { SCREEN_WIFI,    SCREEN_UPDATES },
     { SCREEN_WIFI,    SCREEN_LOGS },
+    { SCREEN_SETUP,   SCREEN_IMU },
 };
 
 static bool opens(ui_screen_id_t opener, ui_screen_id_t id)
@@ -208,6 +211,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_UPD_REMIND: return upd_remind_screen();
     case SCREEN_FILES:    return files_screen();
     case SCREEN_LAYOUT:   return layout_screen();
+    case SCREEN_IMU:      return imu_screen();
     default:              return overview_screen();
     }
 }
@@ -310,6 +314,7 @@ void ui_router_invalidate(void)
     upd_screen_invalidate();
     files_screen_invalidate();
     layout_screen_invalidate();
+    imu_screen_invalidate();
 }
 
 bool ui_router_shot_refused(void)

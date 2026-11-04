@@ -96,11 +96,11 @@ TEST_CASE(every_row_names_its_part_and_has_its_own_key)
     CHECK_EQ(settings_def(SET_INA3221_EN)->cat, SET_CAT_COUNT);
     CHECK_STR_EQ(settings_def(SET_INA3221_MOHM)->key, "ina3221_mohm");
     CHECK(settings_sensors_def(SET_HITEC_RX) == NULL);
-    setting_id_t ids[64];
-    /* The 40 INA3221 rows, and the 19 of the other sensors and the angle
-     * source. */
-    CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 64),
-             SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 19);
+    setting_id_t ids[96];
+    /* The 40 INA3221 rows, and the 24 of the other sensors, the angle
+     * source and the IMU. */
+    CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 96),
+             SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 24);
 }
 
 TEST_CASE(every_watch_option_is_the_page_code)
@@ -482,8 +482,8 @@ TEST_CASE(a_part_entry_lists_fitted_and_its_rows_when_fitted)
     CHECK_EQ(rows[1], SET_INA_W(6));
     CHECK_EQ(rows[9], SET_INA_LIM(8));
     /* By schema index: another part's rows are not listed. */
-    setting_id_t ids[64];
-    const int n = settings_in_category(SET_CAT_SENSORS, ids, 64);
+    setting_id_t ids[96];
+    const int n = settings_in_category(SET_CAT_SENSORS, ids, 96);
     for (int i = 0; i < n; ++i) {
         const int row = settings_screen_row_of(SET_CAT_SENSORS, i);
         CHECK(row == -1 || sensors_pane_entry_of(ids[i])

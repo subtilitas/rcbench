@@ -165,8 +165,8 @@ TEST_CASE(a_tap_steps_each_kind_of_key_once)
 {
     bool seen[4] = { false, false, false, false };
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
-        setting_id_t ids[64];
-        const int n = settings_in_category((setting_cat_t)cat, ids, 64);
+        setting_id_t ids[96];
+        const int n = settings_in_category((setting_cat_t)cat, ids, 96);
         for (int row = 0; row < n && row < 6; ++row) {
             const setting_def_t *d = settings_def(ids[row]);
             if (seen[d->type]) {
@@ -397,8 +397,8 @@ TEST_CASE(a_press_that_slides_off_a_key_sideways_steps_nothing)
 TEST_CASE(the_gap_between_two_rows_is_no_key)
 {
     gesture_screen(SET_CAT_SENSORS);
-    setting_id_t ids[64];
-    settings_in_category(SET_CAT_SENSORS, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(SET_CAT_SENSORS, ids, 96);
     const int row = row_of(KEY_ID);
     const int top = LIST_Y + settings_screen_row_of(SET_CAT_SENSORS, row)
                              * ROW_PITCH;
@@ -626,8 +626,8 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
 TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
 {
     gesture_screen(LIST_CAT);
-    setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(LIST_CAT, ids, 96);
 
     /* The other category's tile, into the band in one report. */
     feed_tap(FEED_LONE, home_x(), home_y());

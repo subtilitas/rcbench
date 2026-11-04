@@ -6,13 +6,13 @@ order: 62
 
 # Sensoren
 
-SENSORS, die vierte Kategorie auf [SETUP](setup.md), stellt jedes Gerät ein, das der IOmcu liest: den Sensorbus, den INA228, bis zu vier TI INA3221, Dreikanal-Strommonitore auf 0x40 bis 0x43, den Winkelsensor AS5600 und den Phasenabgriff. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert.
+SENSORS, die vierte Kategorie auf [SETUP](setup.md), stellt jedes Gerät ein, das der IOmcu liest: den Sensorbus, den INA228, bis zu vier TI INA3221, Dreikanal-Strommonitore auf 0x40 bis 0x43, den Winkelsensor AS5600 und den Phasenabgriff; dazu die Bluetooth-IMU (Inertial Measurement Unit) des Panels. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert.
 
 ## Die linke Liste
 
 ![Zwei Bausteine bestückt, 0x40 online](view:setup-sensors)
 
-Links steht eine Liste mit 8 Einträgen, 220px breit: SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF. Ein Eintrag zeigt den Namen des Sensors und darunter, was der Sensor tut. Ein Tippen auf einen Eintrag zeigt rechts seine Zeilen, 754px breit.
+Links steht eine Liste mit 9 Einträgen, 220px breit: SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF, IMU. Ein Eintrag zeigt den Namen des Sensors und darunter, was der Sensor tut. Ein Tippen auf einen Eintrag zeigt rechts seine Zeilen, 754px breit.
 
 - Ein Eintrag mit Einschaltzeile zeigt allein diese Zeile, solange er aus ist, und sein Zustand lautet `AUS`. EIN ergänzt die übrigen Zeilen darunter.
 - Ein Druck wählt beim Loslassen, innerhalb 8px vom Druck und auf dem Eintrag. Weiteres Rutschen wählt nichts und verschiebt nichts.
@@ -26,6 +26,7 @@ Links steht eine Liste mit 8 Einträgen, 220px breit: SENSORBUS, INA228, INA3221
 | SENSORBUS | `GPIO 16 / 17`; `KEINE PINS GESETZT`; `VOM IOMCU ABGELEHNT`; auf dem Carrier `GPIO 16 / 17 VERLÖTET` |
 | INA228, INA3221 0x40 bis 0x43 | [Was ein Baustein tut](#was-ein-baustein-tut) |
 | AS5600, PHASENABGRIFF | `EIN`; `VOM IOMCU ABGELEHNT` |
+| IMU | [Die IMU](#die-imu) |
 
 ## SENSORBUS und INA228
 
@@ -189,8 +190,36 @@ Der IOmcu lehnt einen ADC-Pin (Analog-Digital-Umsetzer), einen an einen Ausgang 
 
 Vibration und Optischer Tacho haben gespeicherte Schlüssel und keinen Eintrag: kein Bildschirm und kein IOmcu liest sie in diesem Release.
 
+## Die IMU
+
+![SENSORS auf dem IMU-Eintrag, verbunden](view:setup-sensors-imu)
+
+Ein WitMotion-BWT901CL-Winkelsensor über ein HC-05-Bluetooth-Modul an UART1 des Panels. Die Kachel [IMU](imu.md) auf SETUP sucht ihn, bindet ihn und kalibriert ihn; dieser Eintrag hält seine Einstellungen.
+
+| Einstellung | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| IMU | EIN, AUS | AUS | die Einrichtung des HC-05 und der Messwert des Sensors |
+| IMU-Achse | X, Y, Z | X | der Winkel, den die Servoläufe und RUDER lesen; `Z: 1° MIT MAGNETOMETER` |
+| IMU-Vorzeichen | +, - | + | `-` dreht diesen Winkel um |
+| IMU-Rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | die Frames des Sensors je Sekunde; sie gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde |
+| IMU-Algorithmus | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS nimmt das Magnetometer für Z |
+| Winkelquelle | AS5600, IMU | AS5600 | woher die Servoläufe ihren Winkel nehmen ([Servo-Optionen](servo-settings.md)) |
+
+Eine Änderung von RATE oder ALGORITHMUS geht mit SAVE (`FF AA 00 00 00`) an den Sensor, solange er verbunden ist. Das Band sagt `RATE GESPEICHERT: SENSOR AUS- UND EINSCHALTEN`. Ist der Sensor nicht verbunden, sagt es `RATE GEHT AN DEN SENSOR, SOBALD ER VERBUNDEN IST; DANN AUS- UND EINSCHALTEN` und sendet sie, sobald Frames kommen.
+
+| Zustand | Wann |
+|---|---|
+| `AUS` | IMU AUS |
+| `KEIN HC-05` | der HC-05 antwortet auf `AT` bei keiner von 115200, 38400 und 9600 Baud; das Panel fragt alle 10s erneut |
+| `KEIN SENSOR GEBUNDEN` | der HC-05 antwortet; kein Sensor ist gebunden |
+| `SUCHE LÄUFT`, `BINDEN LÄUFT` | eine Suche oder ein Binden läuft |
+| `GEBUNDEN` | gebunden; seitdem kein Winkel-Frame |
+| `VERBUNDEN 50Hz` | Winkel-Frames in den letzten 300ms, mit dieser Rate |
+| `KEINE FRAMES` | gebunden, Frames kamen, keiner in den letzten 300ms |
+
 ## Verwandte Seiten
 
 - [Setup](setup.md)
 - [Netzteil](supply.md): die Verdrahtung des PD mini, im Tab PD MINI.
 - [Servo](servo.md)
+- [IMU](imu.md)

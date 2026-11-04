@@ -90,8 +90,8 @@ static int show(setting_id_t id)
     } else if (settings_screen_category() != (int)cat) {
         open_category(cat);
     }
-    setting_id_t ids[64];
-    const int n = settings_in_category(cat, ids, 64);
+    setting_id_t ids[96];
+    const int n = settings_in_category(cat, ids, 96);
     int row = -1;
     for (int i = 0; i < n; ++i) {
         if (ids[i] == id) {

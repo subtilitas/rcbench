@@ -162,6 +162,14 @@ SOURCES = [
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
+    # IMU, its controller and the protocol cores they read.
+    "shared/ui/imu_ctl.c",
+    "shared/ui/imu_screen.c",
+    "shared/ui/imu_screen_draw.c",
+    "shared/bench/imu.c",
+    "protocols/witmotion/witmotion.c",
+    "protocols/hc05/hc05.c",
+    "protocols/hc05/hc05_line.c",
     # FILES, and the file manager's core it starts its jobs and keeps its
     # panes with (shared/files), the logger's open-file rule with it.
     "shared/ui/files_screen.c",
@@ -278,6 +286,8 @@ INCLUDES = [
     "protocols/escwire/include",
     "protocols/hitec/include",
     "protocols/dshot/include",
+    "protocols/hc05/include",
+    "protocols/witmotion/include",
 ]
 
 # The files of shared/ui/CMakeLists.txt that SOURCES leaves out, and why.

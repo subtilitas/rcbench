@@ -31,6 +31,7 @@
 #include "outputs_screen.h"
 #include "overview_screen.h"
 #include "panel.h"
+#include "panel_imu.h"
 #include "panel_main.h"
 #include "panel_perf.h"
 #include "panel_shot.h"
@@ -40,6 +41,7 @@
 #include "prog_choice.h"
 #include "sensors_rows.h"
 #include "servo_link.h"
+#include "servo_angle.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -383,8 +385,20 @@ void panel_frame_loop(void)
         }
         supply_screen_set_baud(supply_real ? atomic_load(&s_supply_baud)
                                            : 0u);
+        /* The angle source: the AS5600's readings as the control task
+         * queued them, or with ANGLE SOURCE IMU the IMU's, each once, and
+         * the AS5600's then dropped.  The IMU screen's view and commands
+         * go first, so the reading is this frame's. */
+        panel_imu_frame();
+        const bool imu_src =
+            settings_get_int(SET_ANGLE_SOURCE) == (int)SERVO_ANGLE_IMU;
         servo_test_enc_t enc;
         while (xQueueReceive(s_enc_q, &enc, 0) == pdTRUE) {
+            if (!imu_src) {
+                servo_screen_encoder(&enc);
+            }
+        }
+        if (imu_src && panel_imu_angle(&enc)) {
             servo_screen_encoder(&enc);
         }
         /* The servo rail's meter, then the INA3221's CH1 windows, each

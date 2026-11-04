@@ -67,6 +67,9 @@ SOURCES = [
     "test/host/render_help.c",
     # SERVO's RUDDER task: its tab tapped, the angle fed, ZERO taken.
     "test/host/render_rudder.c",
+    # The Bluetooth IMU: its screen handed a view, SCAN tapped; SENSORS on
+    # the IMU entry.
+    "test/host/render_imu.c",
     "shared/bench/hitec_link.c",
     "shared/outputs/hitec_port.c",
     # The Hitec files' views run their requests on a folder in memory.
@@ -729,6 +732,13 @@ SCREENS = {
     "servo-rudder": ("servo-rudder.png", "servo", "dark"),
     "servo-rudder-armed": ("servo-rudder-armed.png", "servo", "dark"),
     "servo-rudder-nolength": ("servo-rudder-nolength.png", "servo", "dark"),
+    # The IMU tile's screen: the HC-05 answering with no sensor bound; the
+    # found list after SCAN; bound and connected at 50Hz with ZERO taken.
+    # SETUP > SENSORS on the IMU entry, connected.
+    "imu": ("imu.png", "imu", "dark"),
+    "imu-scan": ("imu-scan.png", "imu", "dark"),
+    "imu-connected": ("imu-connected.png", "imu", "dark"),
+    "setup-sensors-imu": ("setup-sensors-imu.png", "setup", "dark"),
 }
 INCLUDES = ui_sources.INCLUDES
 

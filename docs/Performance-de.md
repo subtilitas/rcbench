@@ -418,6 +418,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 376 | 1 728 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
+| `imu` | `imu_task`, UART und HC-05-Einrichtung der Bluetooth-IMU (`panel_imu.c`) | 3 072 | 1 200 | 832 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 6 912 | 2 912 | 2 960 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
@@ -540,6 +541,7 @@ gestellt, zeigt sie, was das Werkzeug nicht verfolgt.
 | `control` | 6 144 | nicht gemessen |
 | `runlog` | 6 656 | nicht gemessen |
 | `knob` | 3 072 | nicht gemessen |
+| `imu` | 3 072 | nicht gemessen |
 | `touch` | 4 096 | nicht gemessen |
 | `wifi_ctl` | 6 912 | nicht gemessen |
 | `mdns` | 4 096 | nicht gemessen |

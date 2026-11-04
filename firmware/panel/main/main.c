@@ -143,6 +143,7 @@ void publish_throttle_ramp(void)
 #include "fw_ota.h"
 #include "fw_release.h"
 #include "fw_trial.h"
+#include "panel_imu.h"
 #include "upd_screen.h"
 #include "wifi_access.h"
 #include "wifi_screen.h"
@@ -954,6 +955,8 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     knob_task_start();
+    /* The Bluetooth IMU's UART, KEY and task, with the settings loaded. */
+    panel_imu_start();
 
     /* What internal RAM holds with every task of the panel running and the
      * radio off. */

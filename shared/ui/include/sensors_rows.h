@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "imu_screen.h"
 #include "sense_limit_link.h"
 #include "sense_map_link.h"
 #include "settings.h"
@@ -206,6 +207,62 @@ const char *sensors_rows_port_watch(unsigned port, char *buf, size_t n);
  *         settings as they stand (outputs_screen_set_port_watch(),
  *         sensors_rows_port_watch()). */
 void sensors_rows_publish_watch(void);
+
+/* ------------------------------------------------- the Bluetooth IMU */
+
+/**
+ * @brief Sets the IMU's state, as the panel last read it (imu_ctl.h).  A
+ *        change repaints SETUP.
+ * @param link     The link state; IMU_LINK_OFF at start.
+ * @param rate_dhz The angle frames of the last second, 0.1Hz.
+ */
+void sensors_rows_set_imu(imu_link_t link, uint16_t rate_dhz);
+
+/**
+ * @brief The IMU's state as last set.
+ * @return The link state.
+ */
+imu_link_t sensors_rows_imu(void);
+
+/**
+ * @brief The IMU entry's state as last set, in words and colour
+ *        (sensors_rows_imu_word(), sensors_rows_imu_color()).
+ * @param buf Takes the words.
+ * @param n   The size of @p buf, bytes.
+ * @param ink Takes their colour.
+ * @return @p buf; "" for no buffer.
+ */
+const char *sensors_rows_imu_state(char *buf, size_t n, gfx_color_t *ink);
+
+/**
+ * @brief A link state in words, in the language showing: OFF, NO HC-05,
+ *        NO SENSOR BOUND, SCANNING, BINDING, BOUND, CONNECTED 50Hz or NO
+ *        FRAMES.
+ * @param link     The state; one out of range reads as OFF.
+ * @param rate_dhz CONNECTED's rate, 0.1Hz, shown in whole Hz.
+ * @param buf      Takes the words, at most 25 cells.
+ * @param n        The size of @p buf, bytes.
+ * @return @p buf; "" for no buffer.
+ */
+const char *sensors_rows_imu_word(imu_link_t link, uint16_t rate_dhz,
+                                  char *buf, size_t n);
+
+/**
+ * @brief The colour a link state is drawn in.
+ * @param link The state.
+ * @return UI_OK connected, UI_WARN for NO HC-05 and NO FRAMES, dim else.
+ */
+gfx_color_t sensors_rows_imu_color(imu_link_t link);
+
+/**
+ * @brief The notice a change of @p id gives, in the language showing:
+ *        RATE's says the sensor saved it and needs a power cycle, or that
+ *        it goes when the sensor connects; ALGORITHM's the same without
+ *        the power cycle.
+ * @param id The setting that changed.
+ * @return The notice; NULL for another setting, or with IMU OFF.
+ */
+const char *sensors_rows_imu_notice(setting_id_t id);
 
 #ifdef __cplusplus
 }

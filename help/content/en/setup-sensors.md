@@ -6,13 +6,13 @@ order: 62
 
 # Sensors
 
-SENSORS, the fourth category on [SETUP](setup.md), sets up every device the IOmcu reads: the sensor bus, the INA228, up to four TI INA3221 three-channel current monitors at 0x40 to 0x43, the AS5600 output encoder and the phase tap. The settings are kept and saved like every other setting on SETUP.
+SENSORS, the fourth category on [SETUP](setup.md), sets up every device the IOmcu reads: the sensor bus, the INA228, up to four TI INA3221 three-channel current monitors at 0x40 to 0x43, the AS5600 output encoder and the phase tap; and the panel's own Bluetooth IMU (inertial measurement unit). The settings are kept and saved like every other setting on SETUP.
 
 ## The left list
 
 ![Two parts fitted, 0x40 online](view:setup-sensors)
 
-A list of 8 entries stands on the left, 220px wide: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP. An entry shows the sensor's name and, under it, what the sensor is doing. A tap on an entry shows its rows on the right, 754px wide.
+A list of 9 entries stands on the left, 220px wide: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP, IMU. An entry shows the sensor's name and, under it, what the sensor is doing. A tap on an entry shows its rows on the right, 754px wide.
 
 - An entry with an enable row shows that row alone while it is off, and its state reads `OFF`. ON adds the other rows under it.
 - A press selects on its release, within 8px of the press and on the entry. A slide further selects nothing and scrolls nothing.
@@ -26,6 +26,7 @@ A list of 8 entries stands on the left, 220px wide: SENSOR BUS, INA228, INA3221 
 | SENSOR BUS | `GPIO 16 / 17`; `NO PINS SET`; `NOT ACCEPTED BY THE IOMCU`; on the carrier `GPIO 16 / 17 SOLDERED` |
 | INA228, INA3221 0x40 to 0x43 | [What a part is doing](#what-a-part-is-doing) |
 | AS5600, PHASE TAP | `ON`; `NOT ACCEPTED BY THE IOMCU` |
+| IMU | [The IMU](#the-imu) |
 
 ## SENSOR BUS and INA228
 
@@ -189,8 +190,36 @@ The IOmcu refuses an ADC (analog-to-digital converter) pin, a pin bound to an ou
 
 Vibration and Optical tacho have stored keys and no entry: no screen or IOmcu reads them in this release.
 
+## The IMU
+
+![SENSORS on the IMU entry, connected](view:setup-sensors-imu)
+
+A WitMotion BWT901CL angle sensor through an HC-05 Bluetooth module on the panel's UART1. The [IMU](imu.md) tile on SETUP scans for it, binds it and calibrates it; this entry holds its settings.
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| IMU | ON, OFF | OFF | the HC-05's set-up and the sensor's reading |
+| IMU axis | X, Y, Z | X | the angle the servo runs and RUDDER read; `Z: 1° WITH THE MAGNETOMETER` |
+| IMU sign | +, - | + | `-` turns that angle round |
+| IMU rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | the sensor's frames a second; it takes effect after the sensor is switched off and on |
+| IMU algorithm | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS takes the magnetometer for Z |
+| Angle source | AS5600, IMU | AS5600 | where the servo runs take their angle from ([Servo settings](servo-settings.md)) |
+
+A RATE or ALGORITHM change goes to the sensor with SAVE (`FF AA 00 00 00`) while it is connected. The band says `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. With the sensor not connected it says `RATE GOES TO THE SENSOR WHEN IT CONNECTS; THEN SWITCH IT OFF AND ON` and sends it when frames come.
+
+| State | When |
+|---|---|
+| `OFF` | IMU OFF |
+| `NO HC-05` | the HC-05 answers `AT` at none of 115200, 38400 and 9600 baud; the panel asks again every 10s |
+| `NO SENSOR BOUND` | the HC-05 answers; no sensor is bound |
+| `SCANNING`, `BINDING` | a scan or a bind runs |
+| `BOUND` | bound; no angle frame since |
+| `CONNECTED 50Hz` | angle frames within the last 300ms, at that rate |
+| `NO FRAMES` | bound, frames came, none in the last 300ms |
+
 ## Related pages
 
 - [Setup](setup.md)
 - [Supply](supply.md): the PD mini's wiring, on the PD MINI tab.
 - [Servo](servo.md)
+- [IMU](imu.md)
