@@ -24,8 +24,8 @@ when the IOmcu runs another build. A new bench loads both boards over USB
 (Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
 describes.
 
-The entries below cover the 15 pull requests merged since v0.23.6: #713 to
-#727.
+The entries below cover the 16 pull requests merged since v0.23.6: #713 to
+#727 and #729.
 
 ### Added
 
