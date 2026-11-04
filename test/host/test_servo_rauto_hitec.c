@@ -221,11 +221,41 @@ TEST_CASE(a_d_series_write_counts_the_save_and_reboot_time_in_the_session_cap)
     g_q_hold = false;
 }
 
+/* A STOP after the first write's session saved HITEC001 and before the
+ * write's answer: AUTO counts the write as landed, offers RESTORE with the
+ * file and names it in the report. */
+TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup)
+{
+    char b[96];
+    ha_setup(false);
+    ha_hold_start();
+    CHECK(servo_screen_rauto_running());
+    for (int i = 0; i < 400000 && g_files_saves == 0u; ++i) {
+        hl_ms(1u);
+    }
+    CHECK_EQ(g_files_saves, 1u);
+    CHECK_EQ(g_drv.d_saves, 0u);
+    CHECK(servo_screen_rauto_running());
+    press_stop();
+    servo_screen_cancel_arm();
+    hl.armed = false;
+    servo_screen_set_armed(false);
+    hl_ms(200u);
+    CHECK(!servo_screen_rauto_running());
+    hl_ms(10000u);
+    CHECK(strstr(hl.report, "ABORTED") != NULL);
+    CHECK(strstr(hl.report, "Backup:         HITEC001") != NULL);
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "LOAD HITEC001 IN FILES");
+    CHECK(!hl.armed);
+    CHECK(!hitec_prog_write_on(model()));
+}
+
 int main(void)
 {
     RUN(auto_lands_a_d_series_servo_within_tolerance);
     RUN(auto_on_a_classic_servo_writes_8_bit_cells_within_lo_hi);
     RUN(auto_on_a_classic_ccw_servo_writes_cell_0x13_for_the_short_pulses);
     RUN(a_d_series_write_counts_the_save_and_reboot_time_in_the_session_cap);
+    RUN(a_stop_with_the_first_hitec_write_on_its_way_names_the_backup);
     return test_summary("servo_rauto_hitec");
 }

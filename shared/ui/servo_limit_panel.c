@@ -416,6 +416,12 @@ static void lim_ended(void)
         return;
     }
     s.lim_seen = false;
+    /* A run ended with a write on its way: no answer handed the file over,
+     * and the session's own backup, saved before that write, holds the
+     * servo as the run found it. */
+    if (servo_limrun_restore(&s.lim)) {
+        servo_limrun_backup(&s.lim, lim_seam_backup_kept(s.lim.cfg.family));
+    }
     /* A LEAVE on its way is the run's to the end: the programmer's run, and
      * the supply values it keeps, end when the port is back. */
     if (s.lim_leaving) {

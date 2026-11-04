@@ -175,6 +175,12 @@ static void finish(servo_limrun_t *r, servo_limrun_verdict_t v,
     }
     const bool in_session = r->phase == SERVO_LIMRUN_PH_CONNECT
                             || r->phase == SERVO_LIMRUN_PH_WRITE;
+    if (r->in_flight) {
+        /* A write on its way when the run ended may have landed: RESTORE
+         * is offered for it. */
+        r->programmed = true;
+        r->in_flight  = false;
+    }
     r->state   = SERVO_LIMRUN_DONE;
     r->verdict = v;
     r->why     = why;
@@ -1063,6 +1069,7 @@ static void mark_programmed(servo_limrun_t *r)
  */
 static void sent_failed(servo_limrun_t *r, uint32_t now_ms)
 {
+    r->in_flight = false;
     r->write_ops += 1u;
     r->programmed = true;
     abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
@@ -1079,6 +1086,7 @@ void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
         sent_failed(r, now_ms);
         return;
     }
+    r->in_flight = false;
     const unsigned n = changes(r, r->want);
     r->writes    += n;
     r->write_ops += 1u;
@@ -1114,6 +1122,7 @@ void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
         sent_failed(r, now_ms);
         return;
     }
+    r->in_flight = false;
     r->writes += (unsigned)(pulse_dus[SERVO_LIMRUN_P_LOWER]
                             != r->pulse_now[SERVO_LIMRUN_P_LOWER])
                  + (unsigned)(pulse_dus[SERVO_LIMRUN_P_UPPER]
@@ -1150,6 +1159,7 @@ void servo_limrun_refused(servo_limrun_t *r, uint32_t now_ms)
     if (!servo_limrun_running(r)) {
         return;
     }
+    r->in_flight = false;           /* refused before it was sent */
     if (r->phase == SERVO_LIMRUN_PH_WRITE) {
         abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
     } else if (r->phase == SERVO_LIMRUN_PH_CONNECT
@@ -1268,6 +1278,9 @@ void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
     }
     *out = r->pend;
     memset(&r->pend, 0, sizeof(r->pend));
+    if (servo_limrun_running(r) && (out->write || out->pulses)) {
+        r->in_flight = true;
+    }
     if (servo_limrun_running(r) && r->cmd_due) {
         /* A search's position, or PULSE CENTRE after one. */
         out->command = true;

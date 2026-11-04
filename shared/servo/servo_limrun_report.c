@@ -514,8 +514,9 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
         return true;
     }
     /* The programmer holds the values before the run from the run's first
-     * write on: a run that sent none has no backup. */
-    if (r->write_ops > 0u && here(c)) {
+     * write on: a run that sent none has no backup.  A write cut off on its
+     * way counts: it may have landed. */
+    if ((r->write_ops > 0u || limrun_restore(r)) && here(c)) {
         if (r->servo.backup[0] != '\0') {
             snprintf(c->buf, c->n, LS(L_R_BACKUP), r->servo.backup);
         } else {

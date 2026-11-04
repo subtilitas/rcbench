@@ -373,8 +373,11 @@ The values last written stay in the servo. A run that wrote and did not
 pass says `RESTORE IN PROGRAM` on its box, on a Hitec servo `LOAD HITEC001
 IN FILES` ([Hitec servos](#hitec-servos)). A write that fails once sent,
 with no answer or an answer the programmer does not take, counts as
-written: part of it may have landed. A write the programmer refuses before
-it is sent counts as none. RESTORE on the programmer, after
+written: part of it may have landed. So does a write handed to the
+programmer and not answered when the run ends, a STOP during its session
+included; the `Backup:` line then names the file that session saved
+before it. A write the programmer refuses before it is sent counts as
+none. RESTORE on the programmer, after
 CONNECT and READ ALL, offers `Settings before the limit run.`: the servo as the
 run's first session read it, written back as an ordinary write of LEFT
 ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER. It is offered while the

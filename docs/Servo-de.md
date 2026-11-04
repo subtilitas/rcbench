@@ -408,7 +408,10 @@ nicht bestand, zeigt in seinem Feld `ZURÜCKSPIELEN IN PROGRAMMIEREN`, an
 einem Hitec-Servo `HITEC001 IN DATEIEN LADEN` ([Hitec-Servos](#hitec-servos)). Ein
 Schreiben, das nach dem Senden scheitert, ohne Antwort oder mit einer
 Antwort, die der Programmierer nicht annimmt, gilt als geschrieben: ein Teil
-davon kann angekommen sein. Ein Schreiben, das der Programmierer vor dem
+davon kann angekommen sein. Ebenso ein Schreiben, das dem Programmierer
+übergeben und beim Ende des Laufs nicht beantwortet ist, auch nach einem
+STOP in seiner Sitzung; die Zeile `Backup:` nennt dann die Datei, die diese
+Sitzung davor gespeichert hat. Ein Schreiben, das der Programmierer vor dem
 Senden ablehnt, gilt als keines.
 ZURÜCKSPIELEN im Programmierer bietet nach VERBINDEN und ALLES AUSLESEN `Werte vor dem Endlagenlauf.` an: das Servo, wie die erste Sitzung des Laufs es las,
 zurückgeschrieben als gewöhnliches Schreiben von LEFT ANGLE, RIGHT ANGLE,

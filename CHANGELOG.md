@@ -74,6 +74,9 @@ history is in git.
   a pulse model, NEUTRAL 1500.0us and the full travel at 850.0 and 2150.0us
   (D series) or 900.0 and 2100.0us (classic), which PULSE MIN and MAX must
   hold. RESTORE on a Hitec servo is the backup file HITECnnn loaded on FILES.
+- The LIMIT RUN counts a write handed to the programmer and not answered
+  when the run ends as written: RESTORE is offered and the report names
+  the backup that write's session saved.
 
 ### Changed
 

@@ -467,6 +467,9 @@ typedef struct {
     unsigned write_ops;     /**< writes sent, one that failed included    */
     unsigned sessions;
     bool     pulses_landed; /**< the pulses read back as 1000 and 2000us */
+    bool     in_flight;     /**< a write or the pulse write handed out, its
+                                 *   answer not in: an end now may leave it
+                                 *   landed                                */
     bool     programmed;    /**< a value differs from the servo's own, or
                                  *   a write failed once sent              */
 
@@ -702,8 +705,9 @@ bool servo_limrun_programming(const servo_limrun_t *r);
  */
 bool servo_limrun_wrote(const servo_limrun_t *r);
 /**
- * @brief The run ended as FAIL or ABORTED with the servo's values changed:
- *        RESTORE gives back the ones before it.
+ * @brief The run ended as FAIL or ABORTED with the servo's values changed,
+ *        or with a write handed out and its answer not in (it may have
+ *        landed): RESTORE gives back the ones before it.
  *
  * @param r Run state.
  * @return true when the run is DONE, programmed, and ended as FAIL or ABORTED;

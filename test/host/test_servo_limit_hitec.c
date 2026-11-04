@@ -225,6 +225,35 @@ TEST_CASE(a_stop_during_a_hitec_run_ends_it_with_every_output_off)
     CHECK_EQ(hl.arms, arms);
 }
 
+/* A STOP after the first write's session saved HITEC001 and before the
+ * write's answer: the write may land, so the run counts as programmed,
+ * RESTORE is offered and the report names the backup. */
+TEST_CASE(a_stop_with_the_first_hitec_write_on_its_way_offers_restore)
+{
+    hl_fresh(false);
+    hl_settings(true, true);
+    hl_hold_start();
+    CHECK(servo_screen_limit_running());
+    for (int i = 0; i < 400000 && g_files_saves == 0u; ++i) {
+        hl_ms(1u);
+    }
+    CHECK_EQ(g_files_saves, 1u);
+    CHECK_EQ(g_drv.d_saves, 0u);
+    CHECK(servo_screen_limit_running());
+    press_stop();
+    servo_screen_cancel_arm();
+    hl.armed = false;
+    servo_screen_set_armed(false);
+    hl_ms(200u);
+    CHECK(!servo_screen_limit_running());
+    hl_ms(10000u);
+    CHECK(strstr(hl.report, "ABORTED") != NULL);
+    CHECK(strstr(hl.report, "Backup:         HITEC001") != NULL);
+    CHECK(strstr(hl.report, "Restore:        load the backup file") != NULL);
+    CHECK(!hl.armed);
+    CHECK(!hitec_prog_write_on(model()));
+}
+
 int main(void)
 {
     RUN(the_limit_run_card_offers_hitec_when_the_row_says_so_and_hides_servo_pulses);
@@ -233,5 +262,6 @@ int main(void)
     RUN(a_d_series_limit_run_programs_0xb2_and_0xb0_through_the_seam);
     RUN(a_classic_ccw_limit_run_lowers_cell_0x13_for_the_short_pulses);
     RUN(a_stop_during_a_hitec_run_ends_it_with_every_output_off);
+    RUN(a_stop_with_the_first_hitec_write_on_its_way_offers_restore);
     return test_summary("servo_limit_hitec");
 }
