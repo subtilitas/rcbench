@@ -4,7 +4,7 @@
  *
  * One array per UI_OPTIONS() of ui_text.def, settings_opts_<name>, with
  * its length, settings_opts_n_<name>.  Defined in settings_text.c and bound
- * to their settings by the schema rows of settings.c and
+ * to their settings by the schema rows of settings_schema.c and
  * settings_sensors.c.
  *
  * SPDX-License-Identifier: MIT

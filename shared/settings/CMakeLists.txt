@@ -5,7 +5,7 @@
 # page's rule and the board's catalogue allow, so the model reads both.  The
 # labels, help lines, categories and option names are ui_text.def's English
 # (settings_text.c).
-set(SRCS settings.c settings_sensors.c settings_text.c)
+set(SRCS settings.c settings_schema.c settings_sensors.c settings_text.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include

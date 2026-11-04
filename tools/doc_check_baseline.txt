@@ -2746,7 +2746,6 @@ shared/settings/settings.c: warning: Member derive(void) (function) of file sett
 shared/settings/settings.c: warning: Member differs_from_stored(void) (function) of file settings.c is not documented.
 shared/settings/settings.c: warning: Member dirty (variable) of struct [struct].s is not documented.
 shared/settings/settings.c: warning: Member hold (variable) of struct [struct].s is not documented.
-shared/settings/settings.c: warning: Member k_defs[SETTING_COUNT] (variable) of file settings.c is not documented.
 shared/settings/settings.c: warning: Member k_text_defs[SETTING_TEXT_COUNT] (variable) of file settings.c is not documented.
 shared/settings/settings.c: warning: Member key (variable) of struct [struct].k_text_defs is not documented.
 shared/settings/settings.c: warning: Member mark_dirty(void) (function) of file settings.c is not documented.
