@@ -646,6 +646,9 @@ void hc05_abort(hc05_t *h)
         return;
     }
     const uint8_t s = stage(h);
+    if (h->tries >= FENCE_OUT && s != S_KEYLOW) {
+        return; /* a fence runs or waits to go out: it stands */
+    }
     if ((s == S_RESET && h->wait_ms != 0u) || s == S_KEYLOW) {
         /* AT+RESET went out: the module restarts whatever comes.  KEY low
          * and the hold run to their end, so no operation raises KEY in the
@@ -658,16 +661,14 @@ void hc05_abort(hc05_t *h)
         h->tries = ABORTED;
         return;
     }
+    if (s == S_RNAME && h->tries != 0u) {
+        /* The name fence is out: it serves as this one. */
+        h->tries = h->tries == FENCE_SENT ? FENCE_OUT : FENCE_IN;
+        h->err = HC05_ERR_NONE;
+        return;
+    }
     if (h->wait_ms != 0u && s != S_KEY) {
-        /* A command is out: the fence.  One already out serves: the name
-         * fence of S_RNAME, or a timeout's, whose error stands. */
-        if (s == S_RNAME && h->tries == FENCE_SENT) {
-            h->tries = FENCE_OUT;
-        } else if (s == S_RNAME && h->tries == FENCE_STATE) {
-            h->tries = FENCE_IN;
-        } else if (h->tries < FENCE_OUT) {
-            fence(h, HC05_ERR_NONE);
-        }
+        fence(h, HC05_ERR_NONE); /* a command is out */
         return;
     }
     finish(h, HC05_ST_FAILED, HC05_ERR_NONE, 0);

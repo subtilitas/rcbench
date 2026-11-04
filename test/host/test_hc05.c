@@ -739,7 +739,10 @@ TEST_CASE(an_operation_after_an_aborted_scan_takes_none_of_its_answers)
     for (; t < 11500u; ++t) {
         sim_tick(&s, &h, t);
     }
+    /* Twice before the next step: the second leaves the fence asked. */
     hc05_abort(&h);
+    hc05_abort(&h);
+    CHECK(hc05_busy(&h));
     for (; t < 40000u && hc05_busy(&h); ++t) {
         sim_tick(&s, &h, t);
     }
