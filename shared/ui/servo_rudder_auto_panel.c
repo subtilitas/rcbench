@@ -807,17 +807,17 @@ void rauto_render(gfx_canvas_t *c)
         if (rauto_line(i, line, sizeof(line))[0] == '\0') {
             continue;
         }
-        gfx_color_t col = ui_theme_color(UI_C_TEXT_DIM);
-        if (i == 0 && !running && (s.ra.note != NULL
-                                   || rauto_blocked() != NULL)) {
-            col = ui_theme_color(UI_C_WARN);
-        } else if (i == 1) {
+        /* A refused START and RESTORE in the warning colour, the result
+         * in its verdict's. */
+        const bool warn = (i == 0 && !running
+                           && (s.ra.note != NULL || rauto_blocked() != NULL))
+                          || (i == 2 && servo_rauto_restore(r));
+        gfx_color_t col = ui_theme_color(warn ? UI_C_WARN : UI_C_TEXT_DIM);
+        if (i == 1) {
             col = r->verdict == SERVO_RAUTO_PASS ? ui_theme_color(UI_C_OK)
                   : r->verdict == SERVO_RAUTO_FAIL
                       ? ui_theme_color(UI_C_DANGER)
                       : ui_theme_color(UI_C_WARN);
-        } else if (i == 2 && servo_rauto_restore(r)) {
-            col = ui_theme_color(UI_C_WARN);
         }
         /* A limit run's refusal (lim_prog_why()) can run past 50 cells:
          * the 8 x 16 face takes 62. */
