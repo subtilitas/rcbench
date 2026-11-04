@@ -270,6 +270,12 @@ typedef enum {
     SERVO_STR_L_R_RESTORE,
     SERVO_STR_L_R_UNIT,
     SERVO_STR_L_R_BENCH,
+    /* The angle source (servo_angle.h). */
+    SERVO_STR_R_SOURCE,
+    SERVO_STR_R_ENC_IMU,
+    SERVO_STR_R_UNM_POSITION_IMU,
+    SERVO_STR_R_IMU_GAPS,
+    SERVO_STR_L_R_SRC_OFF,
     SERVO_STR_COUNT
 } servo_str_t;
 

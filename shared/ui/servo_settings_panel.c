@@ -514,8 +514,9 @@ static void edit_row(int i)
         }
         break;
     case R_ENC_CENTRE:
-        /* The servo is at its neutral: the live count is the centre. */
-        if (enc_shown()) {
+        /* The servo is at its neutral: the live count is the centre.  An
+         * IMU's zero is taken on the IMU screen, not here. */
+        if (enc_shown() && enc_src() == SERVO_ANGLE_AS5600) {
             settings_set(SET_ENC_CENTRE, (float)s.enc_raw);
             settings_request_save();
         }

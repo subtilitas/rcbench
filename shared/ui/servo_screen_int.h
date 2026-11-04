@@ -28,6 +28,7 @@
 #include "gfx.h"
 #include "kst_panel.h"
 #include "prog5v_box.h"
+#include "servo_angle.h"
 #include "servo_limrun.h"
 #include "servo_screen.h"
 #include "servo_sweep.h"
@@ -698,6 +699,8 @@ typedef struct {
     bool      have_now;
     bool      link_up;
     bool      enc_held;      /**< IOmcu holds the encoder on (set_enc_held) */
+    uint8_t   imu_axis;      /**< the IMU's AXIS, 0 X (set_imu_axis)   */
+    bool      imu_neg;       /**< its SIGN negative                     */
     int       test_note;     /**< servo_str_t the engine refused a START
                                   with, 0 none; test_blocked() is live  */
     int       test_file;     /**< its files' number; 0 not yet, -1 none */
@@ -1090,12 +1093,44 @@ static inline bool in_force_dangerous(void)
     return dangerous(s.type, s.frame_hz);
 }
 
+/** @brief The angle source in force: SETUP > SENSORS > IMU's ANGLE SOURCE.
+ *  @return SERVO_ANGLE_IMU or SERVO_ANGLE_AS5600. */
+static inline servo_angle_src_t enc_src(void)
+{
+    return (settings_get_int(SET_ANGLE_SOURCE) == (int)SERVO_ANGLE_IMU)
+               ? SERVO_ANGLE_IMU : SERVO_ANGLE_AS5600;
+}
+
 /* Whether the encoder's last reading is on show and may be used: one the
- * link carried, with the encoder on in SETUP.  A link that goes down takes
- * the reading with it (servo_screen_set_link()). */
+ * link carried, with the encoder on in SETUP; or the IMU's, which the
+ * panel hands in valid only while it is on and connected.  A link that
+ * goes down takes the reading with it (servo_screen_set_link()). */
 static inline bool enc_shown(void)
 {
-    return s.enc_valid && s.link_up && settings_get_bool(SET_ENC_EN);
+    return s.enc_valid && s.link_up
+           && (enc_src() == SERVO_ANGLE_IMU || settings_get_bool(SET_ENC_EN));
+}
+
+/** @brief Whether a run started now reads angles: the AS5600 on in SETUP
+ *         and held on by the IOmcu, whose set-up is written only while
+ *         SAFE; the IMU with a reading on show.
+ *  @return true when the run's cfg takes enc_on. */
+static inline bool enc_on_now(void)
+{
+    return (enc_src() == SERVO_ANGLE_IMU)
+               ? enc_shown()
+               : (settings_get_bool(SET_ENC_EN) && s.enc_held);
+}
+
+/**
+ * @brief The source's name for a run's report and CSV: "AS5600", "IMU X+".
+ * @param buf Receives the name.
+ * @param n   The size of @p buf.
+ * @return @p buf.
+ */
+static inline const char *enc_name(char *buf, size_t n)
+{
+    return servo_angle_name(enc_src(), s.imu_axis, s.imu_neg, buf, n);
 }
 
 static inline gfx_rect_t overlay_area(void)
@@ -1284,12 +1319,20 @@ static inline uint8_t save_state(void)
 
 /* --- helpers the screen and the limit run inline ------------------------- */
 
+/** @brief The count the source's degrees are taken from: AS5600 centre for
+ *         the AS5600, 0 for the IMU, whose zero is taken before its counts.
+ *  @return the centre count, 0 to 4095. */
+static inline uint16_t enc_centre(void)
+{
+    return servo_angle_centre(enc_src(),
+                              (uint16_t)settings_get_int(SET_ENC_CENTRE));
+}
+
 /* The encoder's angle from its centre, degrees, in the direction of the
  * commanded angle: negated with REVERSE on, as us_to_deg() is. */
 static inline float enc_deg_now(void)
 {
-    const float d = servo_test_enc_deg(
-        s.enc_raw, (uint16_t)settings_get_int(SET_ENC_CENTRE));
+    const float d = servo_test_enc_deg(s.enc_raw, enc_centre());
     return s.reverse ? -d : d;
 }
 

@@ -3320,7 +3320,6 @@ shared/ui/include/sensors_rows.h: warning: return type of member sensors_rows_wh
 shared/ui/include/servo_screen.h: warning: Member servo_screen(void) (function) of file servo_screen.h is not documented.
 shared/ui/include/servo_screen.h: warning: Member servo_screen_test_pop(void) (function) of file servo_screen.h is not documented.
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_clock are not documented
-shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_encoder are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_feedback are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_knob are not documented
 shared/ui/include/servo_screen.h: warning: parameters of member servo_screen_on_testing are not documented

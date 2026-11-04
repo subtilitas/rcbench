@@ -76,12 +76,16 @@ void servo_screen_knob_cancel(void);
 bool servo_screen_take(servo_cmd_t *out);
 
 /**
- * A reading of the output encoder (an AS5600 on the horn shaft), each one
- * once, in the order they arrive.  With AS5600 on in SETUP the MEASURED row
- * shows its angle from the centre count, and a run reads it for the angle
- * results in its CSV and report.  A reading that is not valid -- the sensor
- * not answering, or answering and detecting no magnet -- shows "---", and
- * ENC CENTRE takes nothing from it.
+ * @brief A reading of the angle source, each one once, in the order they arrive:
+ * the AS5600 on the horn shaft, or with ANGLE SOURCE IMU the IMU's angle in
+ * AS5600 counts from count 0 (servo_angle_enc()).  With AS5600 on in SETUP,
+ * or with the IMU as the source, the MEASURED row shows its angle from the
+ * source's centre (servo_angle_centre()), and a run reads it for the angle
+ * results in its CSV and report.  A reading that is not valid -- the
+ * sensor not answering, or answering and detecting no magnet -- shows
+ * "---", and ENC CENTRE takes nothing from it nor from any IMU reading.
+ *
+ * @param e The reading; NULL does nothing.
  */
 void servo_screen_encoder(const servo_test_enc_t *e);
 
@@ -154,10 +158,11 @@ uint16_t servo_screen_commanded(void);
 bool servo_screen_log_pulse(uint16_t *us);
 
 /**
- * @brief The encoder's angle for a SERVO run's log row, as MEASURED shows it:
- *        AS5600 on in SETUP, a valid reading and the link up.
+ * @brief The angle source's angle for a SERVO run's log row, as MEASURED
+ *        shows it: AS5600 on in SETUP or the IMU as the source, a valid
+ *        reading and the link up.
  *
- * @param deg Receives the horn's angle from the centre count, deg.
+ * @param deg Receives the horn's angle from the source's centre, deg.
  * @return true when an angle is shown; false with @p deg NULL.
  */
 bool servo_screen_log_angle(float *deg);
@@ -356,6 +361,17 @@ void servo_screen_set_surfaces(bool any);
  *  only while the bank is disarmed: a run started with the AS5600 setting on
  *  and this false has no angles, and takes no angle columns. */
 void servo_screen_set_enc_held(bool held);
+
+/**
+ * @brief The IMU's AXIS and SIGN, as SETUP > SENSORS > IMU sets them: the
+ *        name a run with ANGLE SOURCE IMU gives its report and CSV
+ *        ("IMU X+").  The angle itself comes in through
+ *        servo_screen_encoder(), in AS5600 counts from count 0
+ *        (servo_angle_enc()).
+ * @param axis 0 X, 1 Y, 2 Z.
+ * @param neg  The SIGN negative.
+ */
+void servo_screen_set_imu_axis(uint8_t axis, bool neg);
 
 /** The pin servo_screen_set_drive() takes for a port without a known pin. */
 #define SERVO_SCREEN_NO_PIN 0xFFu

@@ -125,8 +125,9 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
     /* Side by side: the current's table is there too. */
     CHECK(strstr(g.report, "RESULTS PER STEP (currents in mA, times in ms)") != NULL);
 
-    /* The CSV has three more columns before the meter's six, and the settle
-     * on the row after it; no gap, so the gap column is empty. */
+    /* The CSV has three more columns before the meter's six and the angle
+     * source after them, and the settle on the row after it; no gap, so
+     * the gap column is empty. */
     CHECK(strncmp(g.csv_text, servo_test_csv_header_enc(),
                   strlen(servo_test_csv_header_enc())) == 0);
     CHECK(strstr(servo_test_csv_header_enc(), ";travel (ms);angle (deg);travel angle (ms);angle gap (ms)") != NULL);
@@ -140,7 +141,7 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
         for (const char *q = p + 1; q < e; ++q) {
             fields += (*q == ';') ? 1u : 0u;
         }
-        CHECK_EQ(fields, 22u);
+        CHECK_EQ(fields, 23u);
         ++rows;
         /* Cells 13 and 14: the angle and the settle. */
         const char *angle = csv_cell(p + 1, 13u);
@@ -151,7 +152,8 @@ TEST_CASE(a_run_with_the_encoder_reports_the_angle_beside_the_current)
         }
         with_settle += (settle[1] != ';') ? 1u : 0u;
         with_angle += (angle[1] != ';') ? 1u : 0u;
-        CHECK(strncmp(csv_cell(p + 1, 15u), ";;PDMINI;;;;;\n", 14) == 0);
+        /* The meter's six, and the angle source last. */
+        CHECK(strncmp(csv_cell(p + 1, 15u), ";;PDMINI;;;;;;AS5600\n", 21) == 0);
         p = e;
     }
     CHECK(rows > 40u);

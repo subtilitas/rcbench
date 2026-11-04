@@ -738,6 +738,12 @@ void servo_screen_set_enc_held(bool held)
     s.enc_held = held;
 }
 
+void servo_screen_set_imu_axis(uint8_t axis, bool neg)
+{
+    s.imu_axis = axis;
+    s.imu_neg  = neg;
+}
+
 void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm)
 {
     if (target == 0u || target == SERVO_SCREEN_TARGET_UNKNOWN

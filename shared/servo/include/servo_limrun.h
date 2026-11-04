@@ -242,7 +242,9 @@ typedef struct {
     uint16_t shunt_dmohm; /**< the INA3221's shunt, 0.1mOhm            */
     char     meter[20];   /**< its channel: "INA3221 0x41 CH2"; "" names
                                it "INA3221"                             */
-    bool     enc_on;      /**< an AS5600 reads the horn shaft           */
+    bool     enc_on;      /**< an angle source reads the horn shaft     */
+    char     source[12];  /**< its name (servo_angle_name()): "AS5600",
+                               "IMU X+"; "" names the AS5600            */
     char     firmware[16];
     /** @brief The report's language: SERVO_STR_COUNT entries, NULL for
      *         English. */

@@ -647,7 +647,9 @@ static void draw_readings(gfx_canvas_t *c)
     char mea[16];
     if (enc_shown()) {
         snprintf(mea, sizeof(mea), "%+.1f", (double)enc_deg_now());
-    } else if (s.have_feedback && !settings_get_bool(SET_ENC_EN)) {
+    } else if (s.have_feedback && enc_src() == SERVO_ANGLE_AS5600
+               && !settings_get_bool(SET_ENC_EN)) {
+        /* No angle source chosen: the servo's own feedback. */
         snprintf(mea, sizeof(mea), "%+.1f", (double)s.measured_deg);
     } else {
         snprintf(mea, sizeof(mea), "---");

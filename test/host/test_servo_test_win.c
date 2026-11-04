@@ -851,7 +851,12 @@ TEST_CASE(the_csv_reads_back_in_the_viewer_old_and_new)
         log_analysis_t an;
         CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
         const int enc = (variant == 2u) ? 3 : 0;
-        CHECK_EQ(an.n_columns, (int)COLS + enc);
+        /* And the angle source's column last. */
+        CHECK_EQ(an.n_columns, (int)COLS + enc + ((variant == 2u) ? 1 : 0));
+        if (variant == 2u) {
+            CHECK_STR_EQ(an.columns[COLS + 3].name, "angle source");
+            CHECK(!an.columns[COLS + 3].numeric);
+        }
         CHECK_EQ(an.delimiter, ';');
         CHECK_EQ(an.ragged_rows, 0);
         CHECK_EQ(an.time_index, 0);
@@ -876,11 +881,12 @@ TEST_CASE(the_csv_reads_back_in_the_viewer_old_and_new)
                  "set (V);voltage (V);limit (A);current (A);power (W);"
                  "mode;travel (ms);meter;window;current max (A);"
                  "current min (A);voltage min (V);clipped");
-    CHECK_EQ(strlen(servo_test_csv_header_enc()), 234u);
+    CHECK_EQ(strlen(servo_test_csv_header_enc()), 247u);
     CHECK(strstr(servo_test_csv_header_enc(),
                  ";travel (ms);angle (deg);travel angle (ms);angle gap (ms);"
                  "meter;window;")
           != NULL);
+    CHECK(strstr(servo_test_csv_header_enc(), ";clipped;angle source") != NULL);
 
     static const struct {
         const char *name;

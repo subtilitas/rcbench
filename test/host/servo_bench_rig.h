@@ -21,6 +21,7 @@
 #include "servo_rig.h"
 
 #include "sense_link.h"
+#include "servo_angle.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
 #include "servo_test.h"
@@ -64,6 +65,9 @@ static struct {
     /* The output encoder: the horn at 0.09 degrees a us from 1500, counted
      * from 3000, read every 40ms with a 12-count still time. */
     bool     enc;
+    /* The same angle from the IMU instead: degrees from its zero at 1500us,
+     * through servo_angle_enc(), as the panel hands it in. */
+    bool     imu;
     uint32_t enc_next;
     bool     enc_anchored;
     uint16_t enc_anchor;
@@ -247,8 +251,15 @@ static inline void bench_frames(uint32_t ms)
             }
             if ((int32_t)(bench.now - bench.enc_next) >= 0) {
                 bench.enc_next += 40u;
-                const servo_test_enc_t e = { true, raw,
+                servo_test_enc_t e = { true, raw,
                     (uint16_t)(bench.now - bench.enc_anchor_ms), bench.now, false, false, false, false };
+                if (bench.imu) {
+                    const servo_angle_in_t in = {
+                        .valid = true,
+                        .deg = (bench.sv.position_us - 1500.0f) * 0.09f,
+                        .still_ms = e.still_ms, .taken_ms = bench.now };
+                    (void)servo_angle_enc(&in, &e);
+                }
                 servo_screen_encoder(&e);
             }
         }

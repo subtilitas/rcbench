@@ -20,6 +20,11 @@ history is in git.
 - `protocols/witmotion`: the WitMotion serial frames (0x55, type, 4 x int16, sum)
   decoded to m/s², °/s, ° and µT, and the 5-byte commands (unlock, SAVE, RATE,
   RSW, CALSW, AXIS6). Host-tested; no pin driver.
+- ANGLE SOURCE on SETUP > SENSORS > IMU: AS5600 or IMU (AXIS and SIGN).
+  The servo test, the LIMIT RUN and the SERVO run log read the chosen
+  source; the IMU's angle is carried in AS5600 counts (0.088°). The test's
+  CSV gains the column `angle source`, last; both reports name the source
+  in the line `Angle source:`.
 
 ### Changed
 

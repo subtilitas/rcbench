@@ -127,9 +127,9 @@ Der erste Hinweis auf AUSGANG nennt den Port, auf dem SERVO-TESTER steht, `SERVO
 |---|---|
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
 | BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange User-Logs unter SETUP > SD CARD EIN ist |
-| SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
+| SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert des AS5600, 0 bis 4095, als Mitte, mit dem Servo in Neutral; mit ANGLE SOURCE IMU übernimmt er nichts |
 
-AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Sensoren](setup-sensors.md) geschaltet; die Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING öffnet diesen Eintrag, und das Home-Tag dort führt zurück. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.
+ANGLE SOURCE auf dem Eintrag IMU von [Sensoren](setup-sensors.md) legt fest, woher die Läufe den Winkel nehmen: vom AS5600 oder von der IMU, deren Winkel in AS5600-Zählern von 0.088° läuft. Die CSV des Tests nennt die Quelle in ihrer letzten Spalte, `angle source`, und beide Berichte in der Zeile `Winkelquelle:`. AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Sensoren](setup-sensors.md) geschaltet; die Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING öffnet diesen Eintrag, und das Home-Tag dort führt zurück. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.
 
 ## Die Zeile ZIEL
 

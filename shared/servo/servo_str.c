@@ -145,9 +145,13 @@ const char *servo_test_start_name(servo_test_start_t why)
 #define CSV_BASE  "time (s);test;step;phase;command (us);position (us);" \
                   "set (V);voltage (V);limit (A);current (A);power (W);" \
                   "mode;travel (ms)"
-/** @brief The encoder's three columns, with AS5600 on only: the angle, the
- *         travel time from it and the length of a gap of the part. */
+/** @brief The encoder's three columns, with an angle source only: the
+ *         angle, the travel time from it and the length of a gap of the
+ *         source. */
 #define CSV_ENC   ";angle (deg);travel angle (ms);angle gap (ms)"
+/** @brief The angle source's column, with an angle source only: after the
+ *         meter's, so every column of a file without it keeps its place. */
+#define CSV_SRC   ";angle source"
 #define CSV_METER ";meter;window;current max (A);current min (A);" \
                   "voltage min (V);clipped"
 
@@ -158,7 +162,7 @@ const char *servo_test_csv_header(void)
 
 const char *servo_test_csv_header_enc(void)
 {
-    return CSV_BASE CSV_ENC CSV_METER;
+    return CSV_BASE CSV_ENC CSV_METER CSV_SRC;
 }
 
 const char *servo_test_meter_word(uint8_t kind)
