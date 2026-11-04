@@ -570,6 +570,7 @@ static void reset(void)
     prog_init();
     servo_limrun_init(&s.lim);
     s.lim_sig = lim_signature();
+    rauto_init();
 
     ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
     ui_tabs_init_text(&s.tabs, k_pages, PG_COUNT,
@@ -596,7 +597,8 @@ static bool s_testing_last;
 void test_tell(void)
 {
     const bool running = servo_test_running(&s.test)
-                         || servo_limrun_running(&s.lim);
+                         || servo_limrun_running(&s.lim)
+                         || servo_rauto_running(&s.ra.run);
     if (running != s_testing_last) {
         s_testing_last = running;
         if (s_testing_told != NULL) {
@@ -624,6 +626,7 @@ void svs_ask_disarm(void)
 void servo_screen_service(void)
 {
     lim_leave_follow();
+    rauto_leave_follow();
     test_ended();
     test_restore_service();
 }
@@ -657,6 +660,7 @@ static void leave(void)
     s.test_down = false;
     ui_hold_reset(&s.lim_hold);
     s.lim_down = false;
+    rauto_cancel();
     post(SERVO_CMD_DISARM, 0);
     /* The button reads ARM when the screen comes back; a DISARM asked of an
      * armed bench stands until the bench answers it. */
@@ -747,6 +751,7 @@ static void cancel(void)
     s.test_down = false;
     ui_hold_reset(&s.lim_hold);
     s.lim_down = false;
+    rauto_cancel();
     ++s.test_rev;
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);

@@ -44,15 +44,15 @@
 #define RUD_BTN_W  160                    /**< One of them, px. */
 #define RUD_GAP    10                     /**< Between two, px. */
 #define RUD_ZERO_Y (CARD_Y + 232)         /**< ZERO and RESET MAX. */
-#define RUD_ZERO_W 245                    /**< One of them, px. */
+#define RUD_ZERO_W 160                    /**< One of them, px. */
 #define RUD_ST_Y   (CARD_Y + 292)         /**< The first state line. */
 #define RUD_ST_P   24                     /**< The state lines' pitch. */
 #define RUD_LEN_VAL_W 200                 /**< LENGTH's value, px. */
 
 _Static_assert(3 * RUD_BTN_W + 2 * RUD_GAP == RUD_W,
                "the three buttons fill the column");
-_Static_assert(2 * RUD_ZERO_W + RUD_GAP == RUD_W,
-               "ZERO and RESET MAX fill the column");
+_Static_assert(3 * RUD_ZERO_W + 2 * RUD_GAP == RUD_W,
+               "ZERO, RESET MAX and AUTO fill the column");
 _Static_assert(RUD_X + RUD_W <= PAD + LCARD_W - 10,
                "the column ends inside the card");
 _Static_assert(RUD_ST_Y + RUD_LINES * RUD_ST_P <= STOP_FLOOR,
@@ -200,6 +200,10 @@ static float len_now(void)
 
 gfx_rect_t rudder_rect(rudder_ctl_t k)
 {
+    /* AUTO's box holds the place of LENGTH and the drive buttons. */
+    if (s.ra.view && k >= RUD_C_LENGTH && k <= RUD_C_2000) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
     switch (k) {
     case RUD_C_LENGTH:
         return (gfx_rect_t){ RUD_X, RUD_LEN_Y, RUD_W, UI_TAP_MIN };
@@ -211,7 +215,8 @@ gfx_rect_t rudder_rect(rudder_ctl_t k)
                              RUD_BTN_Y, RUD_BTN_W, UI_TAP_MIN };
     }
     case RUD_C_ZERO:
-    case RUD_C_RESET: {
+    case RUD_C_RESET:
+    case RUD_C_AUTO: {
         const int i = (int)k - (int)RUD_C_ZERO;
         return (gfx_rect_t){ (int16_t)(RUD_X + i * (RUD_ZERO_W + RUD_GAP)),
                              RUD_ZERO_Y, RUD_ZERO_W, UI_TAP_MIN };
@@ -292,6 +297,11 @@ static void open_length(void)
 static void act(rudder_ctl_t k)
 {
     geo_follow_source();
+    /* AUTO measures from the zero and LENGTH as they stood at its start:
+     * neither changes, nor MAX, while it runs. */
+    if (servo_rauto_running(&s.ra.run) && k != RUD_C_AUTO) {
+        return;
+    }
     switch (k) {
     case RUD_C_LENGTH:
         open_length();
@@ -304,6 +314,9 @@ static void act(rudder_ctl_t k)
     case RUD_C_RESET:
         servo_rudder_reset_max(&s.rud.geo);
         break;
+    case RUD_C_AUTO:
+        rauto_view(!s.ra.view);
+        break;
     default:
         break;
     }
@@ -311,7 +324,7 @@ static void act(rudder_ctl_t k)
 
 void rudder_down(const touch_event_t *evt)
 {
-    if (evt == NULL || !rudder_shown()) {
+    if (evt == NULL || !rudder_shown() || rauto_down(evt)) {
         return;
     }
     for (int k = RUD_C_LENGTH; k < RUD_C_COUNT; ++k) {
@@ -321,7 +334,9 @@ void rudder_down(const touch_event_t *evt)
         }
         if (k == RUD_C_1000 || k == RUD_C_CENTRE || k == RUD_C_2000) {
             drive((rudder_ctl_t)k);
-        } else if (s.rud.pressed == RUD_C_NONE) {
+        } else if (s.rud.pressed == RUD_C_NONE
+                   && !(servo_rauto_running(&s.ra.run)
+                        && k != RUD_C_AUTO)) {
             s.rud.pressed  = (uint8_t)k;
             s.rud.press_id = evt->point.id;
             ++s.ctrl_rev;
@@ -556,7 +571,9 @@ static void draw_length(gfx_canvas_t *c)
 
 /**
  * @brief The buttons: 1000us, CENTRE and 2000us dimmed while the value is
- *        not live; ZERO dimmed without a reading.
+ *        not live, and not drawn with AUTO's box shown; ZERO dimmed
+ *        without a reading; ZERO, RESET MAX and AUTO, or MANUAL with the
+ *        box, dimmed while AUTO's run runs.
  * @param c the canvas
  */
 static void draw_buttons(gfx_canvas_t *c)
@@ -564,16 +581,24 @@ static void draw_buttons(gfx_canvas_t *c)
     static const char *const k_us[2] = { "1000us", "2000us" };
     const gfx_color_t fill = ui_theme_color(UI_C_PANEL_HI);
     const bool live = value_live();
-    ui_button_font(c, rudder_rect(RUD_C_1000), k_us[0], fill, false, live,
-                   SV_FONT_LABEL);
-    ui_button_font(c, rudder_rect(RUD_C_CENTRE), TR(SV_CENTRE_BTN), fill,
-                   false, live, SV_FONT_LABEL);
-    ui_button_font(c, rudder_rect(RUD_C_2000), k_us[1], fill, false, live,
-                   SV_FONT_LABEL);
+    if (!s.ra.view) {
+        ui_button_font(c, rudder_rect(RUD_C_1000), k_us[0], fill, false,
+                       live, SV_FONT_LABEL);
+        ui_button_font(c, rudder_rect(RUD_C_CENTRE), TR(SV_CENTRE_BTN), fill,
+                       false, live, SV_FONT_LABEL);
+        ui_button_font(c, rudder_rect(RUD_C_2000), k_us[1], fill, false,
+                       live, SV_FONT_LABEL);
+    }
+    const bool idle = !servo_rauto_running(&s.ra.run);
     ui_button_font(c, rudder_rect(RUD_C_ZERO), TR(RUD_ZERO), fill,
-                   s.rud.pressed == RUD_C_ZERO, enc_shown(), SV_FONT_LABEL);
+                   s.rud.pressed == RUD_C_ZERO, enc_shown() && idle,
+                   SV_FONT_LABEL);
     ui_button_font(c, rudder_rect(RUD_C_RESET), TR(RUD_RESET_MAX), fill,
-                   s.rud.pressed == RUD_C_RESET, true, SV_FONT_LABEL);
+                   s.rud.pressed == RUD_C_RESET, idle, SV_FONT_LABEL);
+    ui_button_font(c, rudder_rect(RUD_C_AUTO),
+                   s.ra.view ? TR(RA_MANUAL) : TR(RA_AUTO), fill,
+                   s.rud.pressed == RUD_C_AUTO,
+                   !servo_rauto_running(&s.ra.run), SV_FONT_LABEL);
 }
 
 /**
@@ -600,7 +625,8 @@ static uint32_t hash_of(const uint32_t *v, size_t n)
 static uint32_t card_sig(void)
 {
     const uint32_t v[] = { value_live() ? 1u : 0u, enc_shown() ? 1u : 0u,
-                           (uint32_t)lroundf(len_now()), s.rud.pressed };
+                           (uint32_t)lroundf(len_now()), s.rud.pressed,
+                           s.ra.view ? rauto_sig() : 0u };
     return hash_of(v, sizeof(v) / sizeof(v[0]));
 }
 
@@ -643,9 +669,13 @@ void rudder_render(gfx_canvas_t *c, int buf)
     gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
                   ui_theme_color(UI_C_PANEL));
     draw_readout(c);
-    draw_length(c);
     draw_buttons(c);
-    draw_state(c);
+    if (s.ra.view) {
+        rauto_render(c);
+    } else {
+        draw_length(c);
+        draw_state(c);
+    }
     s.rud.drawn_card[buf & 1] = card_sig();
     s.rud.drawn_read[buf & 1] = read_sig();
 }
@@ -681,7 +711,9 @@ void rudder_render_part(gfx_canvas_t *c, int buf)
     const uint32_t sig = read_sig();
     if (s.rud.drawn_read[b] != sig) {
         clipped_to(c, rudder_readout_rect(), draw_readout);
-        clipped_to(c, rudder_state_rect(), draw_state);
+        if (!s.ra.view) {
+            clipped_to(c, rudder_state_rect(), draw_state);
+        }
         s.rud.drawn_read[b] = sig;
     }
 }

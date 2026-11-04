@@ -1224,7 +1224,7 @@ SAFE, from any task.
 | LIVE | the dial, and a run's box over it while a run is under way or its result is shown |
 | TEST | the AUTOMATIC TEST and LIMIT RUN cards, and SUPPLY's caps, read-only |
 | PROGRAM | the list of programmers, one row each; a row opens its programmer over the left column |
-| RUDDER | a control surface's deflection in ° and mm, LENGTH, 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
+| RUDDER | a control surface's deflection in ° and mm, LENGTH, 1000us, CENTRE and 2000us, ZERO, RESET MAX and AUTO ([Rudder deflection](Servo.md#rudder-deflection), [AUTO end points](Servo.md#auto-end-points)) |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT |
 
 The left card is 620px wide and starts under the strip, at y 56. The
@@ -2565,6 +2565,7 @@ table names the default folders; Auto log folder and User log folder on
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
+| `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure; its report is `RUDDRnnn.TXT` |
 
 The name follows the screen that armed the bench: an arm that asks for the
 throttle outputs writes `MOTORnnn`, an arm that asks for the surfaces writes
@@ -2596,8 +2597,8 @@ carries it, so in `BENCH/LOGS` `SUPPL041.CSV` and `SERVO042.CSV` are
 followed by `MOTOR043.CSV` or `SUPPL043.CSV`. A number carried by a CSV or a
 TXT file is taken, and so is one carried by a folder's name. The panel walks
 a folder once, the first time it writes there after a start, and remembers
-the number after that; before it takes a number it checks the 10 names that
-number can carry (5 names, CSV and TXT), so a file written in between is
+the number after that; before it takes a number it checks the 12 names that
+number can carry (6 names, CSV and TXT), so a file written in between is
 stepped over and not overwritten. A gap left by a deleted file is not
 filled. A folder holding a number 999 under any name takes no further run,
 even with lower numbers free: the band reads

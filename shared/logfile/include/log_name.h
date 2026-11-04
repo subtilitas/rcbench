@@ -87,22 +87,23 @@ typedef enum {
                                  servo test of firmware 0.21.0 and older     */
     LOG_PREFIX_MOTOR,       /**< "MOTOR": ARMED on MOTOR & ESC or ESC STICK */
     LOG_PREFIX_SUPPL,       /**< "SUPPL": the SUPPLY output on while SAFE  */
+    LOG_PREFIX_RUDDR,       /**< "RUDDR": RUDDER's AUTO end points        */
     LOG_PREFIX_BENCH,       /**< "BENCH": firmware 0.21.0 and older          */
     LOG_PREFIX_ESC,         /**< "ESC": firmware 0.21.0 and older            */
     LOG_PREFIX_COUNT
 } log_prefix_t;
 
 /**
- * @brief How many prefixes this firmware writes: ATEST to SUPPL.
+ * @brief How many prefixes this firmware writes: ATEST to RUDDR.
  */
 #define LOG_PREFIX_WRITTEN ((int)LOG_PREFIX_BENCH)
 
 /**
  * @brief Every name a number written now can be carried by: each written prefix
- *        with ".CSV" and with ".TXT", 10 names.
+ *        with ".CSV" and with ".TXT", 12 names.
  *
  * A number is taken while any of them is in the folder; the numbering walk
- * reads all 7 prefixes.
+ * reads all 8 prefixes.
  */
 #define LOG_NAME_FORMS (LOG_PREFIX_WRITTEN * 2)
 
@@ -155,7 +156,7 @@ void log_run_name(char *out, size_t out_size, int number);
 
 /**
  * @brief The run number in @p name, or -1 when the name is not a run log under
- *        any of the 7 prefixes.
+ *        any of the 8 prefixes.
  *
  * Case is ignored, so a card taken to a computer and written back in lower
  * case still lists in run order.  The name has to be one of the prefixes,
@@ -195,7 +196,7 @@ int log_report_number(const char *name);
 
 /**
  * @brief The number @p name takes from its folder's series: a run log's or a
- *        report's, under any of the 7 prefixes, or -1 for a name that takes
+ *        report's, under any of the 8 prefixes, or -1 for a name that takes
  *        none.
  *
  * What the numbering walk reads.

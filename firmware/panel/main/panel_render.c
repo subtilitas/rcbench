@@ -337,6 +337,7 @@ void test_lines_service(void)
         }
         test_line_t l;
         l.kind = (uint8_t)k;
+        l.prefix = (uint8_t)servo_screen_test_prefix();
         snprintf(l.text, sizeof(l.text), "%s", text);
         const bool open = k == SERVO_TEST_OUT_OPEN
                           || k == SERVO_TEST_OUT_OPEN_TXT;

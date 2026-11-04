@@ -73,7 +73,7 @@ bool lim_fixed_supply(void)
  * @brief A PD mini that feeds the servo the run reads.
  * @return true when a PD mini answers and the port is not the carrier's
  */
-static bool lim_pd_feeds(void)
+bool lim_pd_feeds(void)
 {
     return lim_pd_answers() && !lim_fixed_supply();
 }
@@ -82,7 +82,7 @@ static bool lim_pd_feeds(void)
  * run reads the INA3221 and nothing else: the PD mini's readings and the
  * model are refused.  No channel of a fitted part watching the tester's
  * target is no INA3221 set up for it (SETUP > SENSORS). */
-static const char *lim_meter_why(void)
+const char *lim_meter_why(void)
 {
     if (settings_sensors_fast() == LINK_SM_FAST_NONE
         || s.src_why == SERVO_SOURCE_WHY_OFF
@@ -110,8 +110,11 @@ const char *lim_blocked(void)
     if (servo_test_running(&s.test)) {
         return ui_servo_str(SERVO_STR_START_TEST_RUNS);
     }
-    if (!servo_test_drained(&s.test)
-        || !servo_limrun_drained(&s.lim) || s.logger_busy) {
+    if (servo_rauto_running(&s.ra.run)) {
+        return ui_servo_str(SERVO_STR_START_AUTO_RUNS);
+    }
+    if (!servo_test_drained(&s.test) || !servo_limrun_drained(&s.lim)
+        || !servo_rauto_drained(&s.ra.run) || s.logger_busy) {
         return ui_servo_str(SERVO_STR_START_BUSY);
     }
     const char *meter = lim_meter_why();

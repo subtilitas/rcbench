@@ -31,7 +31,8 @@ const text_hl_unit_t text_hl_units[TEXT_HL_UNIT_COUNT] = {
     {"s", TEXT_HL_UNIT},     {"/s", TEXT_HL_UNIT},  {"deg", TEXT_HL_UNIT},
     {"Grad", TEXT_HL_UNIT},  {"%", TEXT_HL_UNIT},   {"mOhm", TEXT_HL_UNIT},
     {"B", TEXT_HL_UNIT},     {"kB", TEXT_HL_UNIT},  {"MB", TEXT_HL_UNIT},
-    {"mΩ", TEXT_HL_UNIT},    {"Ω", TEXT_HL_UNIT},
+    {"mΩ", TEXT_HL_UNIT},    {"Ω", TEXT_HL_UNIT},   {"mm", TEXT_HL_UNIT},
+    {"°", TEXT_HL_UNIT},
 };
 
 /** @brief Expands a row of TEXT_HL_CLASS_ROWS to its style sheet name. */
@@ -280,8 +281,8 @@ const char *text_hl_class_css(text_hl_class_t cls)
 }
 
 /**
- * @brief The end of a unit's bytes from byte @p k: a "%"; or a "/" and
- *        letters, or letters; the ohm sign counts as a letter.
+ * @brief The end of a unit's bytes from byte @p k: a "%" or a degree sign;
+ *        or a "/" and letters, or letters; the ohm sign counts as a letter.
  *
  * @param line The line.
  * @param len  Its bytes.
@@ -304,6 +305,9 @@ static size_t unit_end(const unsigned char *line, size_t len, size_t k)
         } else if (u + 1u < len && line[u] == 0xCEu &&
                    line[u + 1u] == 0xA9u) {
             u += 2u;    /* the ohm sign, U+03A9 in UTF-8 */
+        } else if (u == k && u + 1u < len && line[u] == 0xC2u &&
+                   line[u + 1u] == 0xB0u) {
+            return u + 2u;  /* the degree sign, U+00B0: a unit alone */
         } else {
             break;
         }

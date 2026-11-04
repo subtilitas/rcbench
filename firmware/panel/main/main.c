@@ -571,8 +571,8 @@ log_run_kind_t        s_log_kind;
  * bench run's is s_log_cad's. */
 float               s_log_t;
 
-/* An automatic servo test or a limit run is running, for the control
- * task's bench and supply logs:
+/* An automatic servo test, a limit run or AUTO on RUDDER is running, for
+ * the control task's bench and supply logs:
  * stored by the SERVO screen in the call that starts or ends a run
  * (servo_screen_on_testing()), so a row is neither written into a run nor
  * left out after it by a frame's length. */

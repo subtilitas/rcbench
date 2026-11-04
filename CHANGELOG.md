@@ -57,6 +57,15 @@ history is in git.
   over AT at 115200, 38400 or 9600 baud. With ANGLE SOURCE IMU the servo
   runs and RUDDER read the IMU's angle. SENSORS' left list holds 9 entries
   of 48px at a 48px pitch.
+- AUTO on RUDDER programs a KST or Chaservo servo's end points so that
+  1000us and 2000us reach the deflection entered per side (0.5 to 90.0°,
+  20.0°) times 1 + MARGIN (0 to 50%, 10%) within TOLERANCE (0.1 to 5.0°,
+  0.5°): at most 8 writes a side, each a session of the programmer, the
+  limit run's current guard throughout; a stall before the goal ends it
+  with SURFACE BINDS AT. RUDDER's ZERO row reads ZERO, RESET MAX and AUTO
+  at 160px each; AUTO's box takes the place of LENGTH, the drive buttons
+  and the state lines, and MANUAL brings them back. Report RUDDRnnn.TXT
+  and RUDDRnnn.CSV. RESET MAX reads MAX LÖSCHEN in German.
 
 ### Changed
 

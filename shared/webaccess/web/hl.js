@@ -143,6 +143,9 @@ var RcbHl = (function () {
         u++;
       } else if (u + 1 < len && s[u] === 0xCE && s[u + 1] === 0xA9) {
         u += 2;
+      } else if (u === k && u + 1 < len && s[u] === 0xC2 &&
+                 s[u + 1] === 0xB0) {
+        return u + 2;
       } else {
         break;
       }

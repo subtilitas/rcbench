@@ -1314,7 +1314,7 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
   ein senkrecht an die Hinterkante gehaltenes Lineal anzeigt. Bei 30° zeigt
   eine Fläche von 100mm 50.0mm; der Bogen L x Ausschlag ergäbe 52.4mm.
 - MAX hält den größten Ausschlag je Seite, aus jedem angezeigten Messwert,
-  auf jeder Aufgabe. NULLPUNKT und MAX ZURÜCKSETZEN löschen ihn.
+  auf jeder Aufgabe. NULLPUNKT und MAX LÖSCHEN löschen ihn.
 - 1000us und 2000us befehlen diese Pulse als Winkel des eingestellten Typs,
   begrenzt auf WEG und den Pulsbereich des Typs; ZENTRIEREN befiehlt PULS
   MITTE plus TRIMMUNG. Alle drei und der Drehknopf wirken nur, solange der
@@ -1338,6 +1338,123 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 - REVERSE ändert das angezeigte Vorzeichen und behält den Nullpunkt; MAX
   behält jede Seite so, wie der Sensor sie sah, also tauschen die Seiten mit
   REVERSE auf dem Bildschirm.
+
+## AUTO-Endpoints
+
+### Zweck
+
+AUTO, die dritte Taste in der Zeile NULLPUNKT von RUDER, programmiert die
+Endpoints eines KST- oder Chaservo-Servos so, dass 1000us und 2000us den je
+Seite eingegebenen Ausschlag erreichen, gemessen an der Winkelquelle. Es
+schließt den Regelkreis über den Winkel der Fläche statt über einen nach
+Augenmaß eingestellten Weg am Sender. Der Lauf steht in
+`shared/servo/servo_rudder_auto.c`, der Kasten in
+`shared/ui/servo_rudder_auto_panel.c`.
+
+### Ablauf
+
+- AUTO zeigt seinen Kasten an der Stelle von LÄNGE, den drei Tasten zum
+  Ansteuern und den Zustandszeilen; die Anzeige, die Zeile NULLPUNKT und
+  die Ausgangskarte bleiben. MANUELL an der Stelle von AUTO bringt sie
+  zurück. Solange der Lauf läuft, sind MANUELL, NULLPUNKT und MAX LÖSCHEN
+  abgelehnt und gedimmt, damit der Lauf ab dem Nullpunkt misst, mit dem er
+  begann, und der Drehknopf bewegt nichts.
+- Soll bei 1000us und bei 2000us: der Ausschlag, den jede Seite erreichen
+  soll, 0.5 bis 90.0° in Schritten von 0.5°, 20.0° (Einstellungen
+  `rud_defl_lo`, `rud_defl_hi`). Mit gesetzter LÄNGE zeigt die Zeile die mm
+  an der Hinterkante neben den Grad. RESERVE: 0 bis 50%, 10%
+  (`rud_margin`). TOLERANZ: 0.1 bis 5.0°, 0.5° (`rud_tol`). Ein Tippen
+  öffnet die Zifferntastatur.
+- Der Sollwert einer Seite ist ihr Soll x (1 + RESERVE): 20.0° bei 10%
+  sind 22.0°.
+- 2s HALTEN: START startet den Lauf nach 2s Halten. Während er läuft, heißt
+  die Taste LAUF BEENDEN, und ein Druck beendet den Lauf beim Drücken.
+- Die drei Zeilen darunter: der laufende Schritt, etwa `EINSCHWINGEN
+  2000us: SCHREIBEN 1/8, SITZUNGEN 2`, oder warum ein START abgelehnt ist,
+  oder die Sollwerte; das Ergebnis, `PASS: 150>92, 150>92` mit dem Wert
+  jedes Endpoints davor und danach, oder `NICHT BESTANDEN: Grund`; die Datei
+  des Berichts, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN` nach einem NICHT
+  BESTANDEN oder einem Abbruch, der geschrieben hat oder ein Schreiben
+  unterwegs abbrach, das angekommen sein kann.
+
+Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
+
+| Bedingung | Zeile |
+| --- | --- |
+| der Prüfstand SAFE ist | `ZUERST ARM`, wie auf TEST |
+| ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
+| das Messgerät nicht für den Servostrom eingerichtet ist | die Zeile des Endlagenlaufs |
+| der Ausgang nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT` |
+| PULS MIN über 1000us oder PULS MAX unter 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us FASSEN` |
+| der Programmierer belegt ist oder kein PD mini und kein PROG 5V das Servo aus- und einschaltet | die Zeile des Endlagenlaufs |
+| die Winkelquelle keinen Messwert gibt | `WINKELQUELLE: KEIN MESSWERT` |
+| NULLPUNKT nicht genommen ist | `ERST NULL, DAS RUDER IN NEUTRAL` |
+
+### Verfahren
+
+- Die Lesesitzung: das Servo 1000ms auf PULS MITTE gehalten, SAFE
+  angefordert, CONNECT und das Lesen, PULSE LOWER und PULSE UPPER auf
+  1000.0us und 2000.0us geschrieben, wo sie es nicht sind, LEAVE, ARMED
+  angefordert.
+- Eine Messung: der Endpuls befohlen; ab 500ms nach dem Befehl wird der
+  erste Winkel genommen, der 500ms ruhig ist. Kein ruhiger Winkel bis
+  3000ms beendet den Lauf.
+- Die Richtung einer Seite ist das Vorzeichen ihrer ersten Messung. Beide
+  Seiten mit einem Vorzeichen beenden den Lauf mit `Endpoint einer Seite
+  unklar`.
+- Eine Seite außerhalb der Toleranz bekommt Wert x Sollwert / gemessen,
+  begrenzt auf den Bereich des Registers. Ein Wert, der auf den geltenden
+  rundet, geht einen Zählwert zum Sollwert hin. Das erste Schreiben geht an
+  LEFT ANGLE; bewegt sich die Seite nicht um die Hälfte der erwarteten
+  Änderung, geht der Wert an RIGHT ANGLE und LEFT ANGLE zurück. Das
+  gefundene Register bewegt diese Seite, das andere die andere Seite.
+- Jedes Schreiben ist eine Sitzung: das Servo 1000ms auf PULS MITTE
+  gehalten, SAFE, CONNECT, das Schreiben und sein Rücklesen, LEAVE mit dem
+  Aus- und Einschalten, das den geschriebenen Wert wirken lässt, ARMED, die
+  Seite neu gemessen. Die Datei mit den Werten vor dem Lauf wird vor dem
+  ersten Schreiben gespeichert.
+- PASS: beide Seiten innerhalb der Toleranz, jede nach dem letzten
+  Schreiben gemessen. Eine Seite außerhalb nach 8 Schreibvorgängen beendet
+  den Lauf mit `8x je Seite geschrieben`.
+
+### Schutz
+
+Der des Endlagenlaufs, in jeder Phase:
+
+| Bedingung | Ende |
+| --- | --- |
+| ein 1ms-Messwert ab 3000mA oder begrenzt | ABGEBROCHEN |
+| Fenstermittel über 1000mA für 400ms vor dem Sollwert minus der Toleranz | NICHT BESTANDEN, `Ruder klemmt bei x°` |
+| dasselbe am Sollwert oder darüber | ABGEBROCHEN, Blockieren |
+| 200ms kein Fenster | ABGEBROCHEN |
+| der Winkel über 300ms verloren oder eine zweite Lücke binnen 10s | ABGEBROCHEN, `Winkelquelle ausgefallen` |
+| eine abgelehnte Sitzung oder ein Rücklesen, das vom Schreiben abweicht | ABGEBROCHEN |
+| eine andere ANGLE SOURCE oder eine andere AXIS oder SIGN der IMU: der Nullpunkt wird verworfen | ABGEBROCHEN |
+| STOP, DISARM, SERVO verlassen, Messgerät oder Versorgung geändert | ABGEBROCHEN |
+
+Jedes Ende lässt das Servo los, fordert SAFE an und schaltet den Ausgang
+der Versorgung aus; ein Lesen in der ersten Sitzung, das kein Servo
+findet, fordert statt des AUS ein LEAVE an, damit der Port zurückkommt.
+Die zuletzt geschriebenen Werte bleiben im Servo; RESTORE auf der
+Programmierseite spielt die von vor dem Lauf zurück.
+
+### Ergebnisse
+
+Der Bericht RUDDRnnn.TXT und die CSV RUDDRnnn.CSV, eine Zeile je Messung,
+gehen nach USER/LOGS. RUDDR, nicht RUDDER: ein 8.3-Name fasst 5 Buchstaben
+und 3 Ziffern. Der Bericht nennt das Servo, den Ausgang, die Winkelquelle
+und das Messgerät, Soll, Sollwerte und Toleranz, die Endpoints davor und
+danach mit der Seite, die jeder bewegt, die Schreibvorgänge und Sitzungen,
+die Sicherungsdatei und jede Messung mit ihrem Wert, ihrem Winkel und ob
+sie innerhalb liegt.
+
+### Grenzen
+
+- Das Modell ist linear: der Ausschlag am Endpuls gilt als proportional zum
+  Wert des Endpoints ab dem Nullpunkt der Fläche. Ein nicht lineares Servo
+  braucht mehr Schreibvorgänge; der Lauf misst nach jedem.
+- Eingegeben werden Grad; ein Soll in mm an der Hinterkante nicht.
+- Die Hitec-D-Serie wird von AUTO nicht angesteuert.
 
 ## Sweep und TEMPO
 

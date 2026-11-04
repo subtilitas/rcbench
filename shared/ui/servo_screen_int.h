@@ -32,6 +32,7 @@
 #include "servo_limrun.h"
 #include "servo_rudder_int.h"
 #include "servo_screen.h"
+#include "servo_rudder_auto_int.h"
 #include "servo_sweep.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -376,6 +377,9 @@ typedef struct {
 } svs_drag_filter_t;
 
 /* The screen's state, the pages' with it. */
+/** @brief The outboxes servo_screen_test_peek() hands out, in its order. */
+enum { PEEK_TEST = 0, PEEK_LIM, PEEK_RAUTO };
+
 typedef struct {
     /* The profile in force, for this session only: STANDARD PWM at 50Hz
      * at every restart. */
@@ -756,11 +760,11 @@ typedef struct {
     const char *lim_note;    /**< why the last START was refused, or NULL */
     uint32_t  lim_changes;   /**< the meter's change count at the start */
     uint32_t  lim_sig;
-    /* The outbox the logger last peeked, and whose files' number comes
-     * back (servo_screen_test_files()). */
-    bool      peek_lim;
+    /* The outbox the logger last peeked, PEEK_*, and whose files' number
+     * comes back (servo_screen_test_files()). */
+    uint8_t   peek_from;     /**< the outbox last peeked, PEEK_*     */
     servo_test_out_t peek_kind;
-    bool      files_lim;
+    uint8_t   files_from;    /**< the outbox of the last OPEN taken  */
     /* The logger has an OPEN or an END of the last run not answered yet
      * (servo_screen_test_logger_busy()). */
     bool      logger_busy;
@@ -787,6 +791,7 @@ typedef struct {
     bool     drawn_ghost[2]; /**< and whether that one was drawn         */
     svs_drag_filter_t df;    /**< the drag's filtered target, svs_drag_tick() */
     rudder_t rud;            /**< RUDDER's task (servo_rudder_int.h)     */
+    rauto_ui_t ra;           /**< RUDDER's AUTO (servo_rudder_auto_int.h) */
 } servo_screen_state_t;
 
 /* The state, in servo_screen.c. */
@@ -1002,6 +1007,17 @@ const char *lim_write_why(void);
  */
 bool lim_fixed_supply(void);
 const char *lim_blocked(void);
+/**
+ * @brief Why the INA3221 is not the meter a run may start on.
+ * @return the line, or NULL
+ */
+const char *lim_meter_why(void);
+/**
+ * @brief A PD mini feeds the servo a run reads: one answers, and the port
+ *        is not the rbmod carrier's.
+ * @return true when it does
+ */
+bool lim_pd_feeds(void);
 void lim_end_now(servo_test_abort_t why);
 /* START LIMIT RUN's hold completed; the run every frame; the ended run's
  * LEAVE, whichever screen is up; the meter changed under the run. */

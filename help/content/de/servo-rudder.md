@@ -16,7 +16,7 @@ RUDER, eine Aufgabe in der Leiste von [SERVO](servo.md), steuert ein Servo und z
 |---|---|
 | AUSSCHLAG | den Winkel ab NULLPUNKT, -180.0 bis +179.9°; vor NULLPUNKT den Winkel ab ENC CENTRE des AS5600 oder ab dem Zählwert 0 der IMU; `---` ohne Messwert |
 | HINTERKANTE | L x sin(Ausschlag) bei einer LÄNGE von L mm: was ein senkrecht an die Hinterkante gehaltenes Lineal anzeigt, mit Vorzeichen |
-| MAX | den größten Ausschlag je Seite seit NULLPUNKT oder MAX ZURÜCKSETZEN, in ° und in mm |
+| MAX | den größten Ausschlag je Seite seit NULLPUNKT oder MAX LÖSCHEN, in ° und in mm |
 
 Die mm sind der Abstand der Hinterkante von der Neutralebene, nicht der Bogen, den sie zurücklegt. Bei 30° zeigt eine Fläche von 100mm 50.0mm.
 
@@ -34,11 +34,12 @@ LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis
 |---|---|---|
 | 1000us, 2000us | abgelehnt; gedimmt | befiehlt diesen Puls, begrenzt auf WEG und den Pulsbereich des eingestellten Typs |
 | ZENTRIEREN | abgelehnt; gedimmt | befiehlt PULS MITTE plus TRIMMUNG |
-| Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt das Horn vom befohlenen Wert aus, wie auf LIVE |
-| NULLPUNKT | nimmt den aktuellen Winkel als Neutrallage und löscht MAX; grau ohne Messwert; eine andere ANGLE SOURCE, eine andere AXIS oder SIGN der IMU oder ein NULLPUNKT oder NULLPUNKT WEG auf dem IMU-Bildschirm verwirft Nullpunkt und MAX | dasselbe |
-| MAX ZURÜCKSETZEN | löscht MAX; der Nullpunkt bleibt | dasselbe |
+| Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt das Horn vom befohlenen Wert aus, wie auf LIVE; abgelehnt, solange AUTO läuft |
+| NULLPUNKT | nimmt den aktuellen Winkel als Neutrallage und löscht MAX; grau ohne Messwert; eine andere ANGLE SOURCE, eine andere AXIS oder SIGN der IMU oder ein NULLPUNKT oder NULLPUNKT WEG auf dem IMU-Bildschirm verwirft Nullpunkt und MAX | dasselbe; abgelehnt, solange AUTO läuft |
+| MAX LÖSCHEN | löscht MAX; der Nullpunkt bleibt | dasselbe; abgelehnt, solange AUTO läuft |
+| AUTO | zeigt den Kasten von AUTO ([AUTO](#auto)) | dasselbe |
 
-1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT und MAX ZURÜCKSETZEN wirken bei einem Tippen, das auf ihnen loslässt. Die Zeile PULS unter den Tasten nennt den befohlenen Puls. Ein Wechsel des Reiters lässt das Servo, wo es steht; DISARM, STOP und das Verlassen von SERVO schalten den Prüfstand auf SAFE.
+1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT, MAX LÖSCHEN und AUTO wirken bei einem Tippen, das auf ihnen loslässt. Die Zeile PULS unter den Tasten nennt den befohlenen Puls. Ein Wechsel des Reiters lässt das Servo, wo es steht; DISARM, STOP und das Verlassen von SERVO schalten den Prüfstand auf SAFE.
 
 ## Die Statuszeilen
 
@@ -51,6 +52,22 @@ LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis
 | `WINKEL: KEINE VERBINDUNG` | keine Verbindung zur IOmcu, der RP2350-Platine |
 | `KEIN NULLPUNKT: AB SENSORMITTE` | NULLPUNKT noch nicht genommen |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
+
+## AUTO
+
+AUTO programmiert ein KST- oder Chaservo-Servo am Programmierport so, dass 1000us und 2000us den je Seite eingegebenen Ausschlag erreichen. Der Kasten nimmt den Platz von LÄNGE, den Tasten zum Ansteuern und den Statuszeilen ein; MANUELL bringt sie zurück.
+
+![Der Kasten von AUTO, ARMED](view:servo-rudder-auto)
+
+| Zeile | Setzt |
+|---|---|
+| 1000us, 2000us | den Soll-Ausschlag dieser Seite, 0.5 bis 90.0°, 20.0°; mit gesetzter LÄNGE daneben die mm an der Hinterkante |
+| RESERVE | so viel über das Soll hinaus programmiert, 0 bis 50%, 10%: 20.0° bei 10% ergeben einen Sollwert von 22.0° |
+| TOLERANZ | wie nah am Sollwert eine Messung liegen muss, 0.1 bis 5.0°, 0.5° |
+
+Zuerst NULLPUNKT mit der Fläche in Neutrallage; solange der Lauf läuft, sind NULLPUNKT, MAX LÖSCHEN und MANUELL abgelehnt. 2s HALTEN: START startet den Lauf; die Taste heißt dann LAUF BEENDEN, und ein Druck beendet den Lauf sofort. Der Lauf liest das Servo, setzt seinen Pulsbereich auf 1000 bis 2000us, fährt dann je Seite den Endpuls an, wartet, bis der Winkel 500ms ruhig ist, und schreibt einen neuen Endpoint: höchstens 8 Schreibvorgänge je Seite, jeder in einer eigenen Sitzung des Programmierers, mit dem Servo aus- und eingeschaltet. Der Stromschutz des Endlagenlaufs gilt durchgehend: ein Blockieren vor dem Sollwert beendet den Lauf mit `Ruder klemmt bei x°`. Jedes Ende schaltet den Prüfstand auf SAFE und den Ausgang der Versorgung aus.
+
+Die erste Zeile nennt den laufenden Schritt, die Sollwerte oder warum ein START abgelehnt ist; die zweite das Ergebnis; die dritte den Bericht RUDDRnnn.TXT, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN`, wenn ein Lauf, der geschrieben oder ein Schreiben unterwegs abgebrochen hat, nicht bestanden ist.
 
 ## Was der Winkel ist
 

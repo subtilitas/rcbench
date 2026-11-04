@@ -100,7 +100,7 @@ const char *const wa_web_css[] = {
     NULL,
 };
 
-/** @brief hl.js, 9542 bytes. */
+/** @brief hl.js, 9631 bytes. */
 const char *const wa_web_hl_js[] = {
     "var RcbHl = (function () {\n"
     "'use strict';\n"
@@ -213,6 +213,9 @@ const char *const wa_web_hl_js[] = {
     "u++;\n"
     "} else if (u + 1 < len && s[u] === 0xCE && s[u + 1] === 0xA9) {\n"
     "u += 2;\n"
+    "} else if (u === k && u + 1 < len && s[u] === 0xC2 &&\n"
+    "s[u + 1] === 0xB0) {\n"
+    "return u + 2;\n"
     "} else {\n"
     "break;\n"
     "}\n"
@@ -286,13 +289,13 @@ const char *const wa_web_hl_js[] = {
     "i++;\n"
     "}\n"
     "return i === len;\n"
-    "}\n"
+    "}\n",
     "while (i < len && s[i] >= 97 && s[i] <= 122) {\n"
     "i++;\n"
     "}\n"
     "if (i === 0 || i + 1 >= len || s[i] !== 61) {\n"
     "return false;\n"
-    "}\n",
+    "}\n"
     "for (i++; i < len; ++i) {\n"
     "if (!isHex(s[i])) {\n"
     "return false;\n"
@@ -398,13 +401,13 @@ const char *const wa_web_hl_js[] = {
     "var lead = 0;\n"
     "if (hexLine(s, len)) {\n"
     "sp.emit(0, len, t.c.hx);\n"
-    "return;\n"
+    "return;\n",
     "}\n"
     "while (lead < len && isBlank(s[lead])) {\n"
     "lead++;\n"
     "}\n"
     "if (lead < len && s[lead] === 35) {\n"
-    "sp.emit(0, lead, t.c.tx);\n",
+    "sp.emit(0, lead, t.c.tx);\n"
     "sp.emit(lead, len - lead, t.c.cm);\n"
     "return;\n"
     "}\n"
@@ -498,12 +501,12 @@ const char *const wa_web_hl_js[] = {
     "}\n"
     "function line(t, s, lineNo, kind) {\n"
     "var sp = new Spans(t.cap, t.c.tx);\n"
-    "var len = s.length;\n"
+    "var len = s.length;\n",
     "if (t.cap === 0 || len === 0) {\n"
     "return sp.out;\n"
     "}\n"
     "if (kind === KIND_TEXT) {\n"
-    "textLine(t, sp, s, len, lineNo);\n",
+    "textLine(t, sp, s, len, lineNo);\n"
     "} else if (kind === KIND_JSON) {\n"
     "jsonLine(t, sp, s, len);\n"
     "} else if (kind === KIND_CSV) {\n"

@@ -545,6 +545,7 @@ atomic_bool s_test_report;
 static FILE    *s_test_fp;
 static int      s_test_num;
 static bool     s_test_txt;      /* s_test_fp is the report               */
+static log_prefix_t s_test_prefix; /**< the open run's writer            */
 static unsigned s_test_lines;    /* since the last commit                 */
 static bool     s_test_failed;
 static bool     s_test_txt_bad;  /* a write or the close of the report failed */
@@ -558,9 +559,10 @@ static bool     s_test_file_bad;
 
 /**
  * @brief Run @p number's file in the test folder as a path on the card:
- *        ATESTnnn.CSV, ATESTnnn.TXT or LIMITnnn.TXT.
+ *        ATESTnnn.CSV, ATESTnnn.TXT, LIMITnnn.TXT, RUDDRnnn.CSV or
+ *        RUDDRnnn.TXT.
  *
- * @param prefix  LOG_PREFIX_ATEST or LOG_PREFIX_LIMIT.
+ * @param prefix  LOG_PREFIX_ATEST, LOG_PREFIX_LIMIT or LOG_PREFIX_RUDDR.
  * @param number  The run's number.
  * @param txt     true for the .TXT report, false for the CSV.
  * @param path    Receives the path.
@@ -617,29 +619,34 @@ static void test_close(void)
  * The file's path goes to the console as take_create() opens it,
  * "logging to ..."; a take that opens no file logs why.
  *
- * @param txt  true for a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
- *             run): its LIMITnnn.TXT is opened under the number, and no
- *             CSV.  false for the AUTOMATIC TEST's ATESTnnn.CSV.
+ * @param txt    true for a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit
+ *               run): its LIMITnnn.TXT is opened under the number, and no
+ *               CSV.  false for a CSV first, its report after it: the
+ *               AUTOMATIC TEST's ATESTnnn.CSV, AUTO's RUDDRnnn.CSV.
+ * @param prefix The run's writer as the screen names it; LOG_PREFIX_ATEST
+ *               for one that is not LOG_PREFIX_RUDDR.
  */
-static void test_open(bool txt)
+static void test_open(bool txt, log_prefix_t prefix)
 {
     test_close();
     s_test_num    = -1;
     s_test_txt    = txt;
+    s_test_prefix = txt ? LOG_PREFIX_LIMIT
+                  : (prefix == LOG_PREFIX_RUDDR) ? LOG_PREFIX_RUDDR
+                                                 : LOG_PREFIX_ATEST;
     s_test_lines  = 0u;
     s_test_failed = false;
     s_test_txt_bad = false;
     atomic_store(&s_test_report, false);
     int number = -1;
     folder_take(LOG_FOLDER_USER, s_test_dir);
-    const log_take_t r = take(s_test_dir,
-                              txt ? LOG_PREFIX_LIMIT : LOG_PREFIX_ATEST, txt,
+    const log_take_t r = take(s_test_dir, s_test_prefix, txt,
                               &s_test_fp,
                               txt ? &s_test_open_txt : &s_test_open_run,
                               LOG_TAB_USER, &number);
     if (r == LOG_TAKE_OK) {
         s_test_num = number;
-        test_path(txt ? LOG_PREFIX_LIMIT : LOG_PREFIX_ATEST, number, txt,
+        test_path(s_test_prefix, number, txt,
                   s_test_path, sizeof(s_test_path));
         s_test_count = 0u;
         s_test_file_bad = false;
@@ -670,7 +677,8 @@ static void test_write(const test_line_t *l)
 {
     if (l->kind == SERVO_TEST_OUT_OPEN
         || l->kind == SERVO_TEST_OUT_OPEN_TXT) {
-        test_open(l->kind == SERVO_TEST_OUT_OPEN_TXT);
+        test_open(l->kind == SERVO_TEST_OUT_OPEN_TXT,
+                  (log_prefix_t)l->prefix);
         return;
     }
     if (l->kind == SERVO_TEST_OUT_END) {
@@ -694,7 +702,7 @@ static void test_write(const test_line_t *l)
          * is set before the CSV's goes, so the run stays open between. */
         atomic_store(&s_test_open_txt, (unsigned)s_test_num);
         test_close();
-        test_path(LOG_PREFIX_ATEST, s_test_num, true, s_test_path,
+        test_path(s_test_prefix, s_test_num, true, s_test_path,
                   sizeof(s_test_path));
         s_test_txt = true;
         s_test_count = 0u;

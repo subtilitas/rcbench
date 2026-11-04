@@ -70,7 +70,7 @@ static const char *const k_not_units[] = {
     "readings", "supply", "unseen", "values", "windows", "written",
     "movements", "Bewegungen", "Fenster", "Messwert", "Messwerte", "Werte",
     "Winkelmesswerte", "blockiert", "geschrieben", "nachher",
-    "gez\xC3\xA4hlten", "before", "vorher",
+    "gez\xC3\xA4hlten", "before", "vorher", "writes", "je",
 };
 
 /* Whether @p w of @p n bytes is in k_not_units. */
@@ -341,6 +341,9 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
         {"x +0.15A", 2u, 6u, TEXT_HL_CURR},
         {"x 333Hz)", 2u, 5u, TEXT_HL_RATE},
         {"x 40s", 2u, 3u, TEXT_HL_UNIT},
+        /* The degree sign is two bytes of UTF-8: 0xC2 0xB0. */
+        {"x 27.50\xC2\xB0 y", 2u, 7u, TEXT_HL_UNIT},
+        {"x 46.2mm;", 2u, 6u, TEXT_HL_UNIT},
         {"x 1500us", 2u, 6u, TEXT_HL_UNIT},
         {"x 10.0/s", 2u, 6u, TEXT_HL_UNIT},
         {"x 100.0m\xCE\xA9,", 2u, 8u, TEXT_HL_UNIT},
@@ -361,7 +364,8 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
         /* A word joined to a number is no unit, nor are the letters of
          * one that run on. */
         "x 6.00Volt", "x 5x", "x 5x free", "x 3Ab", "x 5v", "x 1500usx",
-        "x 5\xCE\xA9x", "x 5m\xCE", "x 4.80Vs", "x 5V_",
+        "x 5\xCE\xA9x", "x 5m\xCE", "x 4.80Vs", "x 5V_", "x 5\xC2\xB0x",
+        "x 5m\xC2\xB0", "x 5\xC2",
     };
     for (size_t i = 0u; i < sizeof(k_text) / sizeof(k_text[0]); ++i) {
         const size_t n = hl_line(k_text[i], 3u, TEXT_HL_KIND_TEXT);
@@ -372,6 +376,13 @@ TEST_CASE(a_number_with_a_unit_takes_the_units_class)
                        (unsigned)hl_spans[s].start);
             }
         }
+    }
+    /* A degree sign cut at the line's end is no unit. */
+    text_hl_span_t cut[8];
+    const size_t nc = text_hl_line("x 5\xC2\xB0", 4u, 3u, TEXT_HL_KIND_TEXT,
+                                   NULL, cut, 8u);
+    for (size_t s = 0u; s < nc; ++s) {
+        CHECK(cut[s].cls < TEXT_HL_VOLT || cut[s].cls > TEXT_HL_UNIT);
     }
     /* A range: the second number takes the unit. */
     size_t n = hl_line("x 800-2200 us", 3u, TEXT_HL_KIND_TEXT);

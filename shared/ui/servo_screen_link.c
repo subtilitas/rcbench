@@ -158,6 +158,7 @@ void servo_screen_cancel_arm(void)
      * to. */
     value_edge(ui_value_ask_leave(&s.gate), SERVO_TEST_AB_STOP);
     test_end_now(SERVO_TEST_AB_STOP);
+    rauto_cancel();
     if (s.test_down || s.test_hold.held_s > 0.0f
         || s.lim_down || s.lim_hold.held_s > 0.0f) {
         ui_hold_reset(&s.test_hold);
@@ -309,6 +310,7 @@ void servo_screen_encoder(const servo_test_enc_t *e)
     rudder_angle();
     servo_test_encoder(&s.test, e);
     servo_limrun_encoder(&s.lim, e);
+    rauto_angle(e);
     test_tell();
     /* Redrawn only when the digits change: tenths of a degree. */
     const int q = e->valid ? (int)lroundf(enc_deg_now() * 10.0f) : 0x7FFF;
@@ -463,6 +465,7 @@ static void supply_sample(const supply_state_t *st, bool in_force)
      * is no supply of the run there. */
     if (!lim_fixed_supply()) {
         servo_limrun_supply(&s.lim, &r, test_now());
+        rauto_supply(&r);
     }
     test_tell();
     /* The line, the plot and the CURRENT row are the supply's while it is
@@ -495,6 +498,7 @@ static bool source_take(servo_source_id_t id, uint32_t changes)
     }
     test_meter_follow(id, changes);
     lim_meter_follow(id, changes);
+    rauto_meter_follow(id, changes);
     s.have_changes = true;
     s.changes      = changes;
     /* More than one change ahead: changes went by unseen, and another meter
@@ -595,6 +599,7 @@ void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
                                               : 0u);
         }
         servo_limrun_window(&s.lim, &tw);
+        servo_rauto_window(&s.ra.run, &tw);
         test_tell();
     }
     rail_plot();

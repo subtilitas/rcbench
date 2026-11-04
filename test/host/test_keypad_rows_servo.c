@@ -19,6 +19,7 @@
 #include "servo_rig.h"
 
 #include "keypad_rows_rig.h"
+#include "servo_rudder_auto_int.h"
 #include "ui_text.h"
 
 /** @brief The caps the supply reports: 4.00 to 8.40V, 0.50 to 3.00A. */
@@ -32,6 +33,7 @@ typedef enum {
     AT_AUTO,        /**< TEST > AUTOMATIC TEST's SETTINGS */
     AT_BROWNOUT,    /**< ... > its BROWN-OUT row's page */
     AT_RUDDER,      /**< RUDDER's LENGTH row        */
+    AT_RAUTO,       /**< RUDDER's AUTO box          */
     AT_SET,         /**< LIVE's SET line            */
 } at_t;
 
@@ -67,6 +69,10 @@ static const where_t k_where[] = {
     { AT_BROWNOUT, LROW_X(0), LROW_Y(1) }, /* LOWEST VOLTAGE */
     { AT_BROWNOUT, LROW_X(0), LROW_Y(2) }, /* STEP          */
     { AT_RUDDER, SV_RUD_LEN_X, SV_RUD_LEN_Y }, /* LENGTH     */
+    { AT_RAUTO,  SV_RA_L_X, SV_RA_ROW_Y(0) },  /* TARGET 1000us */
+    { AT_RAUTO,  SV_RA_R_X, SV_RA_ROW_Y(0) },  /* TARGET 2000us */
+    { AT_RAUTO,  SV_RA_L_X, SV_RA_ROW_Y(1) },  /* MARGIN     */
+    { AT_RAUTO,  SV_RA_R_X, SV_RA_ROW_Y(1) },  /* TOLERANCE  */
     { AT_SET,    SUP_V_X, SUP_ROW_Y },     /* the voltage   */
     { AT_SET,    SUP_I_X, SUP_ROW_Y },     /* the current   */
 };
@@ -79,7 +85,8 @@ static const setting_id_t k_ids[] = {
     SET_SERVO_LEN_MOVES, SET_SERVO_DWELL_MS, SET_SERVO_SETTLE_MS,
     SET_SERVO_STALL_A, SET_SERVO_IDLE_MAX, SET_SERVO_HOLD_MAX,
     SET_SERVO_TRAVEL_MAX_MS, SET_SERVO_BO_FLOOR, SET_SERVO_BO_STEP,
-    SET_RUDDER_LEN_MM,
+    SET_RUDDER_LEN_MM, SET_RUDDER_DEFL_LO, SET_RUDDER_DEFL_HI,
+    SET_RUDDER_MARGIN, SET_RUDDER_TOL,
 };
 #define FIRST_SETTING 6
 
@@ -130,6 +137,15 @@ static void open_row(int row)
         break;
     case AT_RUDDER:
         tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+        if (rauto_shown()) {
+            tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);     /* MANUAL */
+        }
+        break;
+    case AT_RAUTO:
+        tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+        if (!rauto_shown()) {
+            tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);     /* AUTO */
+        }
         break;
     case AT_SET:
         close_settings();
@@ -157,7 +173,7 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
         { "travel", TR(SV_ROW_TRAVEL), "deg", 10.0f, 90.0f, 0, 60.0f },
         { "rate", TR(SV_ROW_RATE), "Hz", 50.0f, 333.0f, 0, 60.0f },
         { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
-        { 0 }, { 0 }, { 0 }, { 0 },
+        { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
         { "set V", TR(SUP_VOLTAGE), "V", 4.0f, 8.4f, 2, 5.5f },
         { "set I", TR(SUP_CURRENT_LIMIT), "A", 0.5f, 3.0f, 2, 1.25f },
     };
@@ -167,12 +183,16 @@ TEST_CASE(every_servo_keypad_takes_ok_and_refuses_and_cancels)
         TX_SV_ROW_HOLD, TX_SV_ROW_TRAVEL_TIME, TX_SV_ROW_BO_FLOOR,
         TX_SV_ROW_BO_STEP, TX_RUD_LENGTH,
     };
+    const int n_lbl = (int)(sizeof(k_labels) / sizeof(k_labels[0]));
     for (int r = 0; r < ROW_COUNT; ++r) {
         fresh();
         supply_screen_set_caps(&k_caps);
         const int i = r - FIRST_SETTING;
         if (i >= 0 && i < (int)(sizeof(k_ids) / sizeof(k_ids[0]))) {
-            rows[r] = kpr_setting(k_ids[i], ui_tr(k_labels[i]));
+            /* AUTO's rows are titled with the setting's own label. */
+            rows[r] = kpr_setting(k_ids[i], i < n_lbl
+                                  ? ui_tr(k_labels[i])
+                                  : ui_setting_label(k_ids[i]));
         }
         kpr_row(&k_servo, r, &rows[r]);
     }
@@ -221,7 +241,7 @@ TEST_CASE(every_servo_number_has_a_keypad_row)
         }
         CHECK_EQ(seen, 1);
     }
-    CHECK_EQ(numbers, 16);
+    CHECK_EQ(numbers, 20);
 }
 
 int main(void)

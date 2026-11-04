@@ -6,7 +6,7 @@
  * The logger writes each run under a number from its folder's series
  * (log_name.h): one above the highest number the folder holds, under any
  * prefix, read by one directory walk the first time the folder is written
- * and remembered after that.  Before a number is taken its 10 names
+ * and remembered after that.  Before a number is taken its 12 names
  * (LOG_NAME_FORMS) are probed, so a file written since the walk is stepped
  * over and not overwritten.
  *

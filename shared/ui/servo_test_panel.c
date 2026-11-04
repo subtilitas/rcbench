@@ -293,6 +293,7 @@ void test_restore_service(void)
 void test_end_now(servo_test_abort_t why)
 {
     lim_end_now(why);
+    rauto_end_now(why);
     if (!servo_test_running(&s.test)) {
         return;
     }
@@ -314,14 +315,17 @@ int test_blocked(void)
     if (servo_limrun_running(&s.lim)) {
         return SERVO_STR_START_LIMIT_RUNS;
     }
+    if (servo_rauto_running(&s.ra.run)) {
+        return SERVO_STR_START_AUTO_RUNS;
+    }
     /* The rbmod carrier's programming port: its pulse needs the PROG 5V,
      * and the steps' voltages reach the servo rails, not the port. */
     if (prog_choice_carrier() && prog_choice_port() != 0u) {
         return prog_choice_needs_5v() ? SERVO_STR_START_PROG_5V
                                       : SERVO_STR_START_PROG_STEPS;
     }
-    if (!servo_test_drained(&s.test)
-        || !servo_limrun_drained(&s.lim) || s.logger_busy) {
+    if (!servo_test_drained(&s.test) || !servo_limrun_drained(&s.lim)
+        || !servo_rauto_drained(&s.ra.run) || s.logger_busy) {
         return SERVO_STR_START_BUSY;
     }
     /* What the engine would refuse, said live: a refusal stays on the
@@ -433,59 +437,82 @@ void ask_hv_test(void)
 bool servo_screen_testing(void) { return servo_test_running(&s.test); }
 
 /*
- * The automatic test's outbox first, then the limit run's: one of the two
- * runs at a time, and each drained before the other starts.  A run started
- * with USER LOGS off hands the logger nothing: its lines are taken here and
- * dropped, so no OPEN reaches the logger, no number is taken and no card
- * alert can follow.
+ * The automatic test's outbox first, then the limit run's, then AUTO's on
+ * RUDDER: one of the runs at a time, and each drained before another
+ * starts.  A run started with USER LOGS off hands the logger nothing: its
+ * lines are taken here and dropped, so no OPEN reaches the logger, no
+ * number is taken and no card alert can follow.
  */
 servo_test_out_t servo_screen_test_peek(const char **text)
 {
     for (;;) {
         servo_test_out_t k = servo_test_peek(&s.test, text);
-        bool lim = false;
+        uint8_t from = PEEK_TEST;
         if (k == SERVO_TEST_OUT_NONE) {
             k = servo_limrun_peek(&s.lim, text);
-            lim = k != SERVO_TEST_OUT_NONE;
+            from = PEEK_LIM;
         }
-        if (k != SERVO_TEST_OUT_NONE && (lim ? s.lim_off : s.test_off)) {
-            if (lim) {
+        if (k == SERVO_TEST_OUT_NONE) {
+            k = servo_rauto_peek(&s.ra.run, text);
+            from = PEEK_RAUTO;
+        }
+        const bool off = from == PEEK_LIM     ? s.lim_off
+                         : from == PEEK_RAUTO ? s.ra.off
+                                              : s.test_off;
+        if (k != SERVO_TEST_OUT_NONE && off) {
+            if (from == PEEK_LIM) {
                 servo_limrun_pop(&s.lim);
+            } else if (from == PEEK_RAUTO) {
+                servo_rauto_pop(&s.ra.run);
             } else {
                 servo_test_pop(&s.test);
             }
             continue;
         }
-        s.peek_lim  = lim;
+        s.peek_from = k == SERVO_TEST_OUT_NONE ? PEEK_TEST : from;
         s.peek_kind = k;
         return k;
     }
+}
+
+int servo_screen_test_prefix(void)
+{
+    return s.peek_from == PEEK_RAUTO ? (int)LOG_PREFIX_RUDDR
+           : s.peek_from == PEEK_LIM ? (int)LOG_PREFIX_LIMIT
+                                     : (int)LOG_PREFIX_ATEST;
 }
 
 void servo_screen_test_pop(void)
 {
     if (s.peek_kind == SERVO_TEST_OUT_OPEN
         || s.peek_kind == SERVO_TEST_OUT_OPEN_TXT) {
-        s.files_lim = s.peek_lim;
+        s.files_from = s.peek_from;
     }
-    if (s.peek_lim) {
+    if (s.peek_from == PEEK_LIM) {
         servo_limrun_pop(&s.lim);
+    } else if (s.peek_from == PEEK_RAUTO) {
+        servo_rauto_pop(&s.ra.run);
     } else {
         servo_test_pop(&s.test);
     }
     s.peek_kind = SERVO_TEST_OUT_NONE;
-    s.peek_lim  = false;
+    s.peek_from = PEEK_TEST;
 }
 
 void servo_screen_test_files(int number, bool report)
 {
     /* The last OPEN's answer, which is not the answer for a run whose
      * OPEN never went. */
-    if (s.files_lim ? s.lim_off : s.test_off) {
+    const uint8_t f = s.files_from;
+    if (f == PEEK_LIM ? s.lim_off : f == PEEK_RAUTO ? s.ra.off : s.test_off) {
         return;
     }
-    int *file = s.files_lim ? &s.lim_file : &s.test_file;
-    bool *whole = s.files_lim ? &s.lim_report : &s.test_report;
+    int *file = f == PEEK_LIM     ? &s.lim_file
+                : f == PEEK_RAUTO ? &s.ra.file
+                                  : &s.test_file;
+    bool *whole = f == PEEK_LIM     ? &s.lim_report
+                  : f == PEEK_RAUTO ? &s.ra.report
+                                    : &s.test_report;
     if (number != *file || report != *whole) {
         *file  = number;
         *whole = report;

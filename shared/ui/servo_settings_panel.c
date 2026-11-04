@@ -282,10 +282,11 @@ void ask_restore_follow(void)
     float v = 0.0f;
     float i = 0.0f;
 
-    /* A limit run's read session takes the port and gives it back inside
-     * the run, which drives the supply at the set points it found: no
-     * question about them, now or after the run. */
-    if (servo_limrun_running(&s.lim) || s.lim_leaving) {
+    /* A limit run's or AUTO's sessions take the port and give it back
+     * inside the run, which drives the supply at the set points it found:
+     * no question about them, now or after the run. */
+    if (servo_limrun_running(&s.lim) || s.lim_leaving
+        || servo_rauto_running(&s.ra.run) || s.ra.leaving) {
         if (supply_screen_restore_offer(NULL, NULL)) {
             supply_screen_restore_taken();
         }
@@ -403,11 +404,13 @@ bool target_locked_for(setting_id_t id)
         if (settings_get_bool(SET_SERVO_PORT_PWM)) {
             /* Off is taken, armed or not, outside a run. */
             return s.sweeping || servo_test_running(&s.test)
-                   || servo_limrun_running(&s.lim);
+                   || servo_limrun_running(&s.lim)
+                   || servo_rauto_running(&s.ra.run);
         }
     }
     return s.gate.armed || s.sweeping || servo_test_running(&s.test)
-           || servo_limrun_running(&s.lim) || prog_holds();
+           || servo_limrun_running(&s.lim) || servo_rauto_running(&s.ra.run)
+           || prog_holds();
 }
 
 bool target_locked(const ov_row_t *r)

@@ -46,6 +46,17 @@
  *         to 216; its middle. */
 #define SV_RUD_LEN_X       268
 #define SV_RUD_LEN_Y       192                /**< Its row. */
+/** @brief RUDDER's ZERO row (servo_rudder_int.h): y 288 to 336; AUTO,
+ *         x 358 to 518, its middle. */
+#define SV_RUD_AUTO_X      438
+#define SV_RUD_ZERO_Y      312                /**< The ZERO row. */
+/** @brief AUTO's box (servo_rudder_auto_int.h): its left and right half,
+ *         x 18 to 263 and 273 to 518, their middles. */
+#define SV_RA_L_X          140
+#define SV_RA_R_X          395                /**< The right half. */
+/** @brief The box's row @p r: TARGET (0) at y 168 to 216, MARGIN and
+ *         TOLERANCE (1) at 228 to 276; HOLD 2s TO START (2) at 348 to 396. */
+#define SV_RA_ROW_Y(r)     ((r) < 2 ? 192 + 60 * (r) : 372)
 /** @brief RUDDER's readings: the numerals' top, and the mm column's left
  *         edge (the degrees' is x 18). */
 #define SV_RUD_NUM_Y       86

@@ -30,7 +30,8 @@
  * an armed bench are exclusive.  DISARM is always taken. */
 bool svs_arm_locked(void)
 {
-    return (prog_holds() || servo_limrun_running(&s.lim))
+    return (prog_holds() || servo_limrun_running(&s.lim)
+            || servo_rauto_running(&s.ra.run))
            && !s.gate.armed;
 }
 
@@ -60,6 +61,10 @@ bool svs_safe_at(int x, int y)
             return servo_limrun_running(&s.lim);
         }
         return s.test_box && servo_test_running(&s.test);
+    }
+    if (rauto_shown() && !s.ov_have
+        && gfx_rect_contains(rauto_rect(RA_C_START), x, y)) {
+        return servo_rauto_running(&s.ra.run);
     }
     if (wb_task() == UI_WB_TEST && !s.ov_have && rows_page() < 0
         && gfx_rect_contains(page_area(), x, y)) {
@@ -105,11 +110,11 @@ static bool on_the_dial(int px, int py, float *deg)
 }
 
 /* Latches that something other than the knob holds the horn: the knob
- * moves it on LIVE and on RUDDER only. */
+ * moves it on LIVE and on RUDDER only, and never under AUTO's run. */
 void svs_knob_note_owner(void)
 {
     if ((!live_shown() && !rudder_shown()) || servo_test_running(&s.test)
-        || s.sweeping || s.paused) {
+        || servo_rauto_running(&s.ra.run) || s.sweeping || s.paused) {
         s.knob_owned = true;
     }
 }

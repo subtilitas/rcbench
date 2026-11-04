@@ -9680,6 +9680,214 @@ UI_SERVO_TEXT(SERVO_STR_L_R_SRC_OFF,
     "start, no angles",
     "Winkelquelle:    %s, kein Messwert beim "
     "Start, keine Winkel")
+/* ===================================================== AUTO end points */
+/* Slice 6: AUTO on RUDDER (servo_rudder_auto.h), its phase, its reasons
+ * and its report RUDDRnnn.TXT. */
+UI_SERVO_TEXT(SERVO_STR_START_AUTO_RUNS,
+    "AUTO IS RUNNING",
+    "AUTO LÄUFT")
+UI_SERVO_TEXT(SERVO_STR_RA_PH_READ,
+    "READ SERVO",
+    "SERVO LESEN")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_BINDS,
+    "surface binds before the goal",
+    "Ruder klemmt vor dem Ziel")
+UI_SERVO_TEXT(SERVO_STR_RA_BINDS_AT,
+    "surface binds at %.1f°",
+    "Ruder klemmt bei %.1f°")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_NOT_STILL,
+    "surface not still within 3s",
+    "Ruder in 3s nicht ruhig")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_ANGLE,
+    "angle source dropped out",
+    "Winkelquelle ausgefallen")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_NO_SERVO,
+    "no programmable servo read",
+    "kein programmierbares Servo")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_MAPPING,
+    "end point of a side not found",
+    "Endpoint einer Seite unklar")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_LIMIT,
+    "goal outside the end point range",
+    "Ziel außerhalb der Endpoints")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_WRITE_CAP,
+    "8 writes a side reached",
+    "8x je Seite geschrieben")
+UI_SERVO_TEXT(SERVO_STR_RA_R_TITLE,
+    "RCBENCH RUDDER AUTO REPORT",
+    "RCBENCH RUDER-AUTO-BERICHT")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SERVO,
+    "Servo:          %s, %s",
+    "Servo:           %s, %s")
+UI_SERVO_TEXT(SERVO_STR_RA_R_OUTPUT,
+    "Output:         %s",
+    "Ausgang:         %s")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SOURCE,
+    "Angle:          %s, deflection from the zero",
+    "Winkel:          %s, Ausschlag ab der Null")
+UI_SERVO_TEXT(SERVO_STR_RA_R_METER,
+    "Current:        %s, 50ms windows",
+    "Strom:           %s, 50ms-Fenster")
+UI_SERVO_TEXT(SERVO_STR_RA_R_PROTECT,
+    "Protections:    a sample at %.1fA, above "
+    "%.1fA for %ums, no window for %ums, the "
+    "angle lost for more than %ums or twice in %us",
+    "Schutz:          ein Messwert ab %.1fA, "
+    "über %.1fA für %ums, kein Fenster für %ums, "
+    "der Winkel über %ums oder 2x in %us verloren")
+UI_SERVO_TEXT(SERVO_STR_RA_R_TARGETS,
+    "Targets:        1000us %.1f°, 2000us %.1f°, "
+    "margin %u%%",
+    "Ziele:           1000us %.1f°, 2000us %.1f°, "
+    "Reserve %u%%")
+UI_SERVO_TEXT(SERVO_STR_RA_R_GOALS,
+    "Goals:          1000us %.2f°, 2000us %.2f°, "
+    "tolerance %.1f°",
+    "Sollwerte:       1000us %.2f°, 2000us %.2f°, "
+    "Toleranz %.1f°")
+UI_SERVO_TEXT(SERVO_STR_RA_R_LENGTH,
+    "Length:         %.0fmm; goals 1000us %.1fmm, "
+    "2000us %.1fmm at the trailing edge",
+    "Länge:           %.0fmm; Sollwerte 1000us "
+    "%.1fmm, 2000us %.1fmm an der Hinterkante")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SETTLE,
+    "Measure:        the angle still for %ums, "
+    "at most %ums after the command",
+    "Messung:         der Winkel %ums ruhig, "
+    "höchstens %ums nach dem Befehl")
+UI_SERVO_TEXT(SERVO_STR_RA_R_GAPS,
+    "Angle gaps:     %lu, the longest %lums",
+    "Winkellücken:    %lu, die längste %lums")
+UI_SERVO_TEXT(SERVO_STR_RA_R_PROG_HEAD,
+    "PROGRAMMING (end points, unit not known)",
+    "PROGRAMMIEREN (Endpoints, Einheit unbekannt)")
+UI_SERVO_TEXT(SERVO_STR_RA_R_REG_1,
+    "End point 1:    ",
+    "Endpoint 1:      ")
+UI_SERVO_TEXT(SERVO_STR_RA_R_REG_2,
+    "End point 2:    ",
+    "Endpoint 2:      ")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SIDE_LO,
+    "moves the 1000us side",
+    "bewegt die 1000us-Seite")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SIDE_HI,
+    "moves the 2000us side",
+    "bewegt die 2000us-Seite")
+UI_SERVO_TEXT(SERVO_STR_RA_R_WRITES,
+    "Writes:         1000us side %u, 2000us side "
+    "%u, at most %u writes a side; sessions %u",
+    "Schreiben:       1000us-Seite %u, 2000us-Seite "
+    "%u, höchstens %u je Seite; Sitzungen %u")
+UI_SERVO_TEXT(SERVO_STR_RA_R_RESTORE,
+    "Restore:        RESTORE on the programming "
+    "page, from the values before the run",
+    "Zurück:          RESTORE auf der "
+    "Programmierseite, aus den Werten vor dem Lauf")
+UI_SERVO_TEXT(SERVO_STR_RA_R_STEPS_HEAD,
+    "MEASURES (side, write, value, measured, goal)",
+    "MESSUNGEN (Seite, Schreiben, Wert, gemessen, Soll)")
+UI_SERVO_TEXT(SERVO_STR_RA_R_NO_STEPS,
+    "No measure taken.",
+    "Keine Messung.")
+UI_SERVO_TEXT(SERVO_STR_RA_R_STEP,
+    "%uus  write %u  value %s  measured %.2f°  "
+    "goal %.2f°  %s",
+    "%uus  Schreiben %u  Wert %s  gemessen %.2f°  "
+    "Soll %.2f°  %s")
+UI_SERVO_TEXT(SERVO_STR_RA_R_IN,
+    "within",
+    "innerhalb")
+UI_SERVO_TEXT(SERVO_STR_RA_R_OUT,
+    "outside",
+    "außerhalb")
+UI_SERVO_TEXT(SERVO_STR_RA_R_MODEL,
+    "Model: the deflection at an end pulse is "
+    "taken as linear in the end point's value, "
+    "from the surface's zero. That is an "
+    "assumption, not a measurement; the run "
+    "measures after every write.",
+    "Modell: der Ausschlag am Endpuls gilt als "
+    "linear im Wert des Endpoints, ab der Null "
+    "des Ruders. Das ist eine Annahme, keine "
+    "Messung; der Lauf misst nach jedem Schreiben.")
+/* AUTO's box on RUDDER (servo_rudder_auto_panel.c): the button that
+ * shows it and the one back, its rows, its START, its lines and why a
+ * START is refused. */
+UI_TEXT(RA_AUTO, 0,
+    "AUTO",
+    "AUTO")
+UI_TEXT(RA_MANUAL, 0,
+    "MANUAL",
+    "MANUELL")
+UI_TEXT(RA_MARGIN, 0,
+    "MARGIN %u%%",
+    "RESERVE %u%%")
+UI_TEXT(RA_TOL, 0,
+    "TOLERANCE %.1f°",
+    "TOLERANZ %.1f°")
+UI_TEXT(RA_START, 0,
+    "HOLD 2s TO START",
+    "2s HALTEN: START")
+UI_TEXT(RA_GOALS, 50,
+    "GOALS 1000us %.1f°, 2000us %.1f°",
+    "SOLL 1000us %.1f°, 2000us %.1f°")
+UI_TEXT(RA_STEP, 50,
+    "%s %uus: WRITE %u/%u, SESSIONS %u",
+    "%s %uus: SCHREIBEN %u/%u, SITZUNGEN %u")
+UI_TEXT(RA_LAST, 50,
+    "%s: %s",
+    "%s: %s")
+UI_TEXT(RA_SET, 50,
+    "PASS: %u>%u, %u>%u",
+    "PASS: %u>%u, %u>%u")
+UI_TEXT(RA_FILE, 50,
+    "REPORT %s",
+    "BERICHT %s")
+UI_TEXT(RA_BINDS_AT, 48,
+    "surface binds at %.1f°",
+    "Ruder klemmt bei %.1f°")
+UI_TEXT(RA_NO_ANGLE, 0,
+    "ANGLE SOURCE: NO READING",
+    "WINKELQUELLE: KEIN MESSWERT")
+UI_TEXT(RA_NO_ZERO, 48,
+    "ZERO FIRST, THE SURFACE AT NEUTRAL",
+    "ERST NULL, DAS RUDER IN NEUTRAL")
+UI_TEXT(RA_RANGE, 48,
+    "PULSE MIN TO MAX MUST HOLD 1000 TO 2000us",
+    "PULS MIN BIS MAX MUSS 1000 BIS 2000us FASSEN")
+UI_TEXT(RA_PROG_PORT, 48,
+    "AUTO PROGRAMS A SERVO ON THE PROG PORT",
+    "AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT")
+UI_TEXT(RA_REFUSED, 48,
+    "TARGET, MARGIN OR TOLERANCE OUT OF RANGE",
+    "SOLL, RESERVE ODER TOLERANZ AUSSERHALB")
+UI_TEXT(HOLD_HINT_RUDDER_AUTO, 94,
+    "Hold 2s to start AUTO.",
+    "Halte 2s, um AUTO zu starten.")
+UI_SETTING_LABEL(SET_RUDDER_DEFL_LO,
+    "AUTO target at 1000us",
+    "AUTO-Soll bei 1000us")
+UI_SETTING_HELP(SET_RUDDER_DEFL_LO,
+    "Deflection AUTO is to reach at 1000us, 0.5 to 90.0°",
+    "Ausschlag, den AUTO bei 1000us erreichen soll, 0.5 bis 90.0°")
+UI_SETTING_LABEL(SET_RUDDER_DEFL_HI,
+    "AUTO target at 2000us",
+    "AUTO-Soll bei 2000us")
+UI_SETTING_HELP(SET_RUDDER_DEFL_HI,
+    "Deflection AUTO is to reach at 2000us, 0.5 to 90.0°",
+    "Ausschlag, den AUTO bei 2000us erreichen soll, 0.5 bis 90.0°")
+UI_SETTING_LABEL(SET_RUDDER_MARGIN,
+    "AUTO margin",
+    "AUTO-Reserve")
+UI_SETTING_HELP(SET_RUDDER_MARGIN,
+    "Programmed past the target by this share, 0 to 50%",
+    "So viel über das Soll hinaus programmiert, 0 bis 50%")
+UI_SETTING_LABEL(SET_RUDDER_TOL,
+    "AUTO tolerance",
+    "AUTO-Toleranz")
+UI_SETTING_HELP(SET_RUDDER_TOL,
+    "How near the goal a measure has to be, 0.1 to 5.0°",
+    "Wie nah am Soll eine Messung liegen muss, 0.1 bis 5.0°")
 
 /* The SERVO workbench's RUDDER task (servo_rudder_panel.c): its tab, the
  * readout of the surface's deflection in ° and in mm at the trailing edge,
@@ -9709,7 +9917,7 @@ UI_TEXT(RUD_ZERO, 0,
     "NULLPUNKT")
 UI_TEXT(RUD_RESET_MAX, 0,
     "RESET MAX",
-    "MAX ZURÜCKSETZEN")
+    "MAX LÖSCHEN")
 UI_TEXT(RUD_MAX, 0,
     "MAX",
     "MAX")

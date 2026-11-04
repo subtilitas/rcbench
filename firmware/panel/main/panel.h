@@ -606,6 +606,7 @@ typedef struct {
 /* One line of a servo test's files, render loop -> logger. */
 typedef struct {
     uint8_t kind;                        /* servo_test_out_t */
+    uint8_t prefix;                      /**< an OPEN's log_prefix_t */
     char    text[SERVO_TEST_LINE_MAX];
 } test_line_t;
 
