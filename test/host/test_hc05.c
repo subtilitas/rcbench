@@ -343,9 +343,10 @@ TEST_CASE(scan_on_firmware_2_0_lists_two_devices_with_their_names)
     CHECK_STR_EQ(h.found[1].name, "PHONE");
     CHECK_EQ(h.found[1].dev_class, 0x020C);
     CHECK_EQ(h.found[1].rssi, -90);
-    const char *want[] = { "AT", "AT+INIT", "AT+INQM=1,9,9", "AT+INQ",
+    const char *want[] = { "AT", "AT+ROLE=1", "AT+INIT", "AT+INQM=1,9,9",
+                           "AT+INQ",
                            "AT+RNAME?98D3,31,FD5C81", "AT+RNAME?2,72,D2224" };
-    check_cmds(&s, want, 6u);
+    check_cmds(&s, want, 7u);
 
     /* A name that does not come: "" after HC05_RNAME_MS, and the next
      * device's still read.  A FAIL: "" at once. */
@@ -379,10 +380,11 @@ TEST_CASE(a_late_name_is_not_taken_for_the_next_device)
     CHECK_STR_EQ(h.found[0].name, "");
     CHECK_STR_EQ(h.found[1].addr, SENSOR);
     CHECK_STR_EQ(h.found[1].name, "HC-06");
-    const char *want[] = { "AT", "AT+INIT", "AT+INQM=1,9,9", "AT+INQ",
+    const char *want[] = { "AT", "AT+ROLE=1", "AT+INIT", "AT+INQM=1,9,9",
+                           "AT+INQ",
                            "AT+RNAME?1,2,3", "AT+STATE?",
                            "AT+RNAME?98D3,31,FD5C81" };
-    check_cmds(&s, want, 7u);
+    check_cmds(&s, want, 8u);
 }
 
 TEST_CASE(an_operation_right_after_bind_or_any_finds_the_module_in_data_mode)
@@ -497,6 +499,38 @@ TEST_CASE(an_abort_after_the_reset_keeps_key_low_through_the_restart)
     CHECK_EQ(h.baud, HC05_BAUD_DATA);
 }
 
+TEST_CASE(scan_sets_the_master_role_before_the_inquiry_on_both_firmwares)
+{
+    for (int fw = 2; fw <= 3; ++fw) {
+        hc05_t h;
+        sim_t s;
+        sim_init(&s, fw, HC05_BAUD_OLD);
+        sim_add_dev(&s, SENSOR, 0x1F00u, 0xFFC0u, "HC-06", 2500u);
+        s.inq_on_3 = true;
+        hc05_init(&h);
+        CHECK(hc05_scan(&h, 0));
+        (void)sim_run(&s, &h, 0, 60000u);
+        CHECK_EQ(h.state, HC05_ST_DONE);
+        CHECK_EQ(s.role, 1);
+        const char *want[] = { "AT", "AT+ROLE=1", "AT+INIT", "AT+INQM=1,9,9",
+                               "AT+INQ", "AT+RNAME?98D3,31,FD5C81" };
+        check_cmds(&s, want, 6u);
+        CHECK_STR_EQ(h.found[0].name, "HC-06");
+    }
+    /* An ERROR to AT+ROLE=1 refuses the scan before AT+INIT. */
+    hc05_t h;
+    hc05_act_t a;
+    hc05_init(&h);
+    CHECK(hc05_scan(&h, 0));
+    (void)step_all(&h, 0, NULL);
+    (void)step_all(&h, 100, NULL);
+    feed_line(&h, "OK");
+    CHECK(step_all(&h, 100, &a) == HC05_ACT_SEND && is_send(&a, "AT+ROLE=1"));
+    feed_line(&h, "ERROR:(11)");
+    CHECK_EQ(h.err, HC05_ERR_REFUSED);
+    CHECK_EQ(h.err_code, 0x11);
+}
+
 TEST_CASE(scan_ignores_error_17_on_init)
 {
     hc05_t h;
@@ -533,6 +567,9 @@ static uint32_t scan_to_inq(hc05_t *h, uint32_t t0)
     CHECK(hc05_scan(h, t0));
     CHECK_EQ(step_all(h, t0, NULL), HC05_ACT_KEY);
     CHECK(step_all(h, t0 + 100u, &a) == HC05_ACT_SEND && is_send(&a, "AT"));
+    feed_line(h, "OK");
+    CHECK(step_all(h, t0 + 100u, &a) == HC05_ACT_SEND
+          && is_send(&a, "AT+ROLE=1"));
     feed_line(h, "OK");
     CHECK(step_all(h, t0 + 100u, &a) == HC05_ACT_SEND
           && is_send(&a, "AT+INIT"));
@@ -582,7 +619,7 @@ TEST_CASE(scan_runs_for_inqm_timeout_plus_two_seconds)
     const uint32_t end = sim_run(&s, &h, 0, 60000u);
     CHECK_EQ(h.state, HC05_ST_FAILED);
     CHECK_EQ(h.err, HC05_ERR_NONE_FOUND);
-    CHECK_EQ(s.ncmd, 4);
+    CHECK_EQ(s.ncmd, 5);
     CHECK(end > 9u * 1280u);
 }
 
@@ -1059,7 +1096,7 @@ TEST_CASE(found_is_capped_at_eight_devices)
         CHECK_STR_EQ(h.found[i].name, "N");
     }
     /* The inquiry ends at its ninth device, before its 11.52s. */
-    CHECK_EQ(s.ncmd, 4u + HC05_FOUND_MAX);
+    CHECK_EQ(s.ncmd, 5u + HC05_FOUND_MAX);
     CHECK(end < 9u * 1280u + 8u * 1000u);
 }
 
@@ -1105,6 +1142,7 @@ int main(void)
     RUN(a_late_name_is_not_taken_for_the_next_device);
     RUN(an_operation_right_after_bind_or_any_finds_the_module_in_data_mode);
     RUN(an_abort_after_the_reset_keeps_key_low_through_the_restart);
+    RUN(scan_sets_the_master_role_before_the_inquiry_on_both_firmwares);
     RUN(scan_ignores_error_17_on_init);
     RUN(scan_runs_for_inqm_timeout_plus_two_seconds);
     RUN(scan_on_firmware_3_0_ends_inq_refused_on_error_1f);

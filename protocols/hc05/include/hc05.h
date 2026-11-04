@@ -5,7 +5,7 @@
  *        baud to use and where to hold KEY.  No pin driver.
  *
  * Operations: PROBE (AT at 115200, 38400 and 9600 baud, then AT+VERSION?),
- * SCAN (AT+INIT, ERROR:(17) ignored; AT+INQM=1,HC05_INQ_MAX,n;
+ * SCAN (AT+ROLE=1, AT+INIT, ERROR:(17) ignored; AT+INQM=1,HC05_INQ_MAX,n;
  * AT+INQ, each +INQ: line a device; AT+RNAME? per address) and BIND
  * (AT+ROLE=1, AT+PSWD=\<pin\>, on ERROR a second try quoted for firmware
  * 3.0, AT+PAIR=\<addr\>,20, AT+BIND=\<addr\>, AT+CMODE=0, AT+UART=115200,0,0,

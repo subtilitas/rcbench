@@ -42,8 +42,8 @@ enum {
 /** @brief PROBE's stages. */
 static const uint8_t k_probe[] = { S_KEY, S_BAUD, S_AT, S_VERSION, S_END };
 /** @brief SCAN's stages. */
-static const uint8_t k_scan[] = { S_KEY, S_BAUD, S_AT, S_INIT, S_INQM,
-                                  S_INQ, S_RNAME, S_END };
+static const uint8_t k_scan[] = { S_KEY, S_BAUD, S_AT, S_ROLE, S_INIT,
+                                  S_INQM, S_INQ, S_RNAME, S_END };
 /** @brief BIND's stages. */
 static const uint8_t k_bind[] = { S_KEY, S_BAUD, S_AT, S_ROLE, S_PSWD,
                                   S_PAIR, S_BIND, S_CMODE0, S_UART,

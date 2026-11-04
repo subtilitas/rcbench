@@ -53,7 +53,7 @@ baud can stay in the module's line buffer and spoil the first command.
 | Operation | Commands after the handshake | Ends |
 |---|---|---|
 | PROBE | `AT+VERSION?` | DONE, `version` holds the text after `+VERSION:` |
-| SCAN | `AT+INIT`, `AT+INQM=1,9,9`, `AT+INQ`, `AT+RNAME?<addr>` per device | DONE, `found[0..found_n-1]` |
+| SCAN | `AT+ROLE=1`, `AT+INIT`, `AT+INQM=1,9,9`, `AT+INQ`, `AT+RNAME?<addr>` per device | DONE, `found[0..found_n-1]` |
 | BIND | `AT+ROLE=1`, `AT+PSWD=<pin>`, `AT+PAIR=<addr>,20`, `AT+BIND=<addr>`, `AT+CMODE=0`, `AT+UART=115200,0,0`, `AT+RESET` | DONE, the module set to connect to `<addr>` at 115200 baud |
 | ANY | `AT+ROLE=1`, `AT+PSWD=<pin>`, `AT+CMODE=1`, `AT+UART=115200,0,0`, `AT+RESET` | DONE, the module set to connect to any slave that takes the PIN |
 
@@ -67,7 +67,8 @@ baud can stay in the module's line buffer and spoil the first command.
 | `AT+RESET` | OK | 1500ms (`HC05_RESET_MS`) |
 | the restart after `AT+RESET`'s OK | nothing: KEY low | 1500ms (`HC05_RESET_MS`) |
 
-- SCAN: an ERROR:(17) to `AT+INIT` (the SPP library is up already) is no
+- SCAN: `AT+ROLE=1` makes the module the master first; a factory module
+  is a slave (`AT+ROLE=0`). An ERROR:(17) to `AT+INIT` (the SPP library is up already) is no
   error. `AT+INQM=1,9,9` asks for RSSI (received signal strength
   indication) mode, at most 9 devices and 9 units of 1.28s: 11.52s. The
   first report of each address is kept, up to 8. An inquiry that reports
@@ -231,9 +232,9 @@ inquiry's timing, the quoted PIN, a restart in data mode or in AT mode by
 the level of KEY. No HC-05 has been run with this code.
 
 Not measured: whether every module answers `AT+INQ` with KEY raised after
-power-up rather than held high at power-up; whether a module in the slave
-role (the factory setting, `AT+ROLE=0`) runs `AT+INQ`, since SCAN sends no
-`AT+ROLE=1`; the time a module takes to restart after `AT+RESET`; firmware
+power-up rather than held high at power-up; whether `AT+INQ` needs an
+`AT+RESET` after `AT+ROLE=1` on firmware 3.0, which SCAN does not send;
+the error code a module in the slave role answers `AT+INQ` with; the time a module takes to restart after `AT+RESET`; firmware
 3.0's error codes and the form of its `+INQ:` lines.
 
 ## Trademarks

@@ -11,6 +11,7 @@
  * at its own time and ends with OK after INQM's units of 1.28s or at the
  * ninth device; AT+RESET restarts the module 300ms after its OK, at the
  * AT+UART baud with KEY low and at 38400 (full AT mode) with KEY high.
+ * It starts in the slave role and runs AT+INQ only after AT+ROLE=1.
  *
  * The driver runs the machine 1ms at a time: the answers due are fed, then
  * every action of that ms is taken.  The sim counts what a host must never
@@ -179,6 +180,11 @@ static void sim_inq(sim_t *s, uint32_t now)
     }
     if (!s->inited) {
         sim_say(s, now + SIM_LAT_MS, "ERROR:(16)");
+        return;
+    }
+    if (s->role != 1) {
+        /* A slave runs no inquiry; the code is this sim's choice. */
+        sim_say(s, now + SIM_LAT_MS, "ERROR:(0)");
         return;
     }
     if (s->fw == 3 && !s->inq_on_3) {
