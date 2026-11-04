@@ -17,6 +17,8 @@
  * - the_max_of_each_side_is_dashed_from_the_hinge
  * - auto_s_view_adds_the_targets_in_amber
  * - the_light_theme_draws_in_its_own_colours
+ * - a_new_angle_repaints_the_flap_s_boxes_alone_as_a_whole_frame_would
+ * - auto_s_three_lines_are_drawn_beside_the_view
  *
  * SPDX-License-Identifier: MIT
  */
@@ -276,6 +278,75 @@ TEST_CASE(the_light_theme_draws_in_its_own_colours)
     ui_theme_set(UI_THEME_DARK);
 }
 
+/* Inside both MAX, a new angle repaints the boxes of the flap as drawn
+ * and as now, not the view: a pixel of the view's corner keeps what it
+ * holds.  Angles there and back, in both buffers in turn, end as frames
+ * drawn whole; a new MAX repaints the view. */
+TEST_CASE(a_new_angle_repaints_the_flap_s_boxes_alone_as_a_whole_frame_would)
+{
+    fresh();
+    zeroed();
+    reading(-600);
+    reading(600);
+    reading(0);
+    two_buffers();
+    CHECK(both_whole());
+    const gfx_rect_t a = rudder_flap_rect();
+    const size_t corner = (size_t)(a.y + 1) * W + (size_t)(a.x + 1);
+    fb[corner] = 0x1234u;
+    reading(30);
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[corner], 0x1234u);
+    static const int k_go[] = { 256, 128, -300, 40, -40, 500 };
+    for (size_t i = 0; i < sizeof(k_go) / sizeof(k_go[0]); ++i) {
+        reading(k_go[i]);
+        scr->render(&cv, 0);
+        scr->render(&cv1, 1);
+    }
+    fb[corner] = ui_theme_color(UI_C_PANEL);
+    CHECK(both_whole());
+    fb[corner] = 0x1234u;
+    reading(700);                               /* a new MAX */
+    scr->render(&cv, 0);
+    CHECK_EQ(fb[corner], ui_theme_color(UI_C_PANEL));
+}
+
+/**
+ * @brief Pixels in a row band of AUTO's lines, x 18 to 418, that are not
+ *        the card's colour.
+ * @param y0 the band's top, body px
+ * @param h its height, px
+ * @return the count
+ */
+static int ink_in(int y0, int h)
+{
+    int n = 0;
+    for (int y = y0; y < y0 + h; ++y) {
+        for (int x = 18; x < 18 + RUD_SIDE_W; ++x) {
+            n += fb[(size_t)y * W + x] != ui_theme_color(UI_C_PANEL);
+        }
+    }
+    return n;
+}
+
+/* SAFE in AUTO's box: ARM FIRST on the first line's row, nothing on the
+ * second line, SERVO KST/CHASERVO on the row after; nothing past the
+ * floor. */
+TEST_CASE(auto_s_three_lines_are_drawn_beside_the_view)
+{
+    fresh();
+    tap(SV_TAB_RUDDER_X, SV_TAB_Y);
+    tap(SV_RUD_AUTO_X, SV_RUD_ZERO_Y);
+    scr->render(&cv, 0);
+    char b[96];
+    CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), "");
+    const gfx_rect_t l = rauto_lines_rect();
+    const int y0 = l.y + 2;
+    CHECK(ink_in(y0, 20) > 0);                  /* ARM FIRST */
+    CHECK(ink_in(y0 + 24, 20) > 0);             /* SERVO KST/CHASERVO */
+    CHECK_EQ(ink_in(y0 + 48, l.y + l.h - (y0 + 48)), 0);
+}
+
 int main(void)
 {
     RUN(the_side_view_lies_beside_the_state_lines_under_the_zero_row);
@@ -285,5 +356,7 @@ int main(void)
     RUN(the_max_of_each_side_is_dashed_from_the_hinge);
     RUN(auto_s_view_adds_the_targets_in_amber);
     RUN(the_light_theme_draws_in_its_own_colours);
+    RUN(a_new_angle_repaints_the_flap_s_boxes_alone_as_a_whole_frame_would);
+    RUN(auto_s_three_lines_are_drawn_beside_the_view);
     return test_summary("rudder_flap_view");
 }

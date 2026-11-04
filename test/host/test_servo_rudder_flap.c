@@ -17,6 +17,7 @@
  * - the_max_and_the_targets_are_dashed_in_their_colours
  * - the_drawing_paints_nothing_outside_its_area
  * - a_new_angle_changes_pixels_only_inside_the_two_bounds
+ * - the_ticks_mark_0_30_60_and_90_degrees_either_side
  *
  * SPDX-License-Identifier: MIT
  */
@@ -354,6 +355,27 @@ TEST_CASE(a_new_angle_changes_pixels_only_inside_the_two_bounds)
                             (int)f.hinge_y));
 }
 
+/* A tick at every 30° from -90 to +90, past the flap's reach, and none
+ * at the 15° between them. */
+TEST_CASE(the_ticks_mark_0_30_60_and_90_degrees_either_side)
+{
+    fresh();
+    const rudder_flap_view_t v = { .live = true, .defl_deg = 0.0f };
+    rudder_flap_draw(&s_c, k_area, &v);
+    const rudder_flap_t f = rudder_flap_layout(k_area);
+    const float r = f.flap_len + (RUD_FLAP_TICK_IN + RUD_FLAP_TICK_OUT) / 2.0f;
+    for (int d = -90; d <= 90; d += 15) {
+        float x = 0.0f, y = 0.0f;
+        rudder_flap_at(&f, (float)d, r, &x, &y);
+        const bool tick = (d % 30) == 0;
+        const gfx_color_t px = px_at((int)lroundf(x), (int)lroundf(y));
+        /* A 1.5px tick on a slant blends its centre pixel. */
+        if ((px != ui_theme_color(UI_C_PANEL)) != tick) {
+            T_FAIL("at %d° the pixel is %04x", d, (unsigned)px);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(the_places_follow_the_area);
@@ -366,5 +388,6 @@ int main(void)
     RUN(the_max_and_the_targets_are_dashed_in_their_colours);
     RUN(the_drawing_paints_nothing_outside_its_area);
     RUN(a_new_angle_changes_pixels_only_inside_the_two_bounds);
+    RUN(the_ticks_mark_0_30_60_and_90_degrees_either_side);
     return test_summary("servo_rudder_flap");
 }
