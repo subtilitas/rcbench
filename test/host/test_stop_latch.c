@@ -17,6 +17,7 @@
  * - a_stop_after_the_hold_began_refuses_it
  * - a_contact_break_during_the_hold_refuses_it
  * - a_break_in_the_hold_counted_after_it_sends_the_reset_back
+ * - a_finger_leaving_after_the_hold_lets_the_reset_finish
  * - a_stop_from_any_state_goes_back_to_latched
  * - a_stop_inside_a_read_counts_before_the_reading
  * - a_hold_before_the_confirmation_restarts_nothing
@@ -376,6 +377,27 @@ TEST_CASE(a_break_in_the_hold_counted_after_it_sends_the_reset_back)
     CHECK_EQ(run_to(2055u, STOP_LATCH_ASKING), 2055u + 3000u);
     CHECK_EQ(w.reads, 0);
     CHECK(!arming_heartbeat(&a, w.t));
+}
+
+TEST_CASE(a_finger_leaving_after_the_hold_lets_the_reset_finish)
+{
+    start(0u);
+    /* The IOmcu reads ARMED for a while: the reset stays in ASKING. */
+    w.state = (uint16_t)LINK_STATE_ARMED;
+    (void)stop_and_hold(0u);
+    CHECK_EQ(run_to(2005u, STOP_LATCH_ASKING), 2100u);
+    /* The finger left at 2001ms, after the hold completed; it counts as
+     * a break 100ms on. */
+    w.breaks   = 1u;
+    w.break_ms = 2001u + STOP_LATCH_FRESH_MS;
+    (void)pass(w.break_ms);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_ASKING);
+    w.state = 0u;
+    (void)run_to(w.t + 5u, STOP_LATCH_UNLATCHED);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_UNLATCHED);
+    CHECK_EQ(w.resumes, 1);
+    CHECK_EQ(w.clears, 1);
+    CHECK(!arming_held(&a));
 }
 
 TEST_CASE(a_stop_from_any_state_goes_back_to_latched)
@@ -772,6 +794,7 @@ int main(void)
     RUN(a_stop_after_the_hold_began_refuses_it);
     RUN(a_contact_break_during_the_hold_refuses_it);
     RUN(a_break_in_the_hold_counted_after_it_sends_the_reset_back);
+    RUN(a_finger_leaving_after_the_hold_lets_the_reset_finish);
     RUN(a_stop_from_any_state_goes_back_to_latched);
     RUN(a_stop_inside_a_read_counts_before_the_reading);
     RUN(a_hold_before_the_confirmation_restarts_nothing);

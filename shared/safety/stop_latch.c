@@ -61,8 +61,9 @@ void stop_latch_init(stop_latch_t *l, const stop_latch_in_t *in)
 /**
  * @brief Take in the STOPs and contact breaks counted since the last look.
  *
- * A STOP sends the machine back to LATCHED from any state.  A break sends a
- * reset that is not yet resumed back: the contact it rested on is gone.
+ * A STOP sends the machine back to LATCHED from any state.  A break whose
+ * contact went before the hold completed sends a reset that is not yet
+ * resumed back: the contact it rested on was gone.
  * @param l  State.
  * @param in The inputs.
  * @return true when the machine went back.
@@ -77,7 +78,12 @@ static bool follow(stop_latch_t *l, const stop_latch_in_t *in)
             l->event_ms = in->break_ms;
         }
         l->event_known = true;
-        if (resetting(l->state)) {
+        /* A break is counted STOP_LATCH_FRESH_MS after the contact went.
+         * One whose contact went after the hold completed is the finger
+         * leaving the glass, and the reset goes on. */
+        if (resetting(l->state)
+            && (int32_t)(in->break_ms - STOP_LATCH_FRESH_MS - l->hold_ms)
+                   < 0) {
             l->state = STOP_LATCH_LATCHED;
             back = true;
         }

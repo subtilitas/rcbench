@@ -27,8 +27,11 @@
  *     CLEAR_WRITTEN                                  -> UNLATCHED, DONE
  *
  * A STOP from any state goes back to LATCHED.  A contact break
- * (stop_latch_in_t.breaks) and an error (stop_latch_error()) go back to
- * LATCHED from HOLD_DONE, ASKING and CONFIRMED.  stop_latch_run() makes one
+ * (stop_latch_in_t.breaks) whose contact went before the hold completed,
+ * and an error (stop_latch_error()), go back to LATCHED from HOLD_DONE,
+ * ASKING and CONFIRMED.  A break counted STOP_LATCH_FRESH_MS after its
+ * contact went; a finger leaving after the hold completed lets the reset
+ * finish.  stop_latch_run() makes one
  * transition; after each exchange in it, io.refresh() reads the inputs
  * again, and a STOP that landed in the exchange sends the machine back
  * before the reading counts.
