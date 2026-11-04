@@ -1208,9 +1208,11 @@ of the ESC's own values and open no keypad.
 ![Servo](img/servo.png)
 
 SERVO is a workbench. The strip under the band holds its tasks, **LIVE**,
-**TEST**, **PROGRAM** and **SETTINGS** (German `LIVE`, `TEST`,
-`PROGRAMMIEREN`, `OPTIONEN`), 150 x 40px a tab, 4px apart, from y 8
-under the band. The tile opens LIVE. A tab
+**TEST**, **PROGRAM**, **RUDDER** and **SETTINGS** (German `LIVE`, `TEST`,
+`PROGRAMMIEREN`, `RUDER`, `OPTIONEN`), 120 x 40px a tab, 4px apart, from
+y 8 under the band. The English labels draw in the 10 x 20 face, the
+German ones in the 8 x 16 face: `PROGRAMMIEREN` is 13 cells, and a tab of
+120px holds 10 of the larger face. The tile opens LIVE. A tab
 switch is no navigation level: the home tag goes home from every task, and
 climbs one level only from a run's settings back to TEST and from a
 programmer back to PROGRAM's list. Each task keeps its page and what is
@@ -1222,6 +1224,7 @@ SAFE, from any task.
 | LIVE | the dial, and a run's box over it while a run is under way or its result is shown |
 | TEST | the AUTOMATIC TEST and LIMIT RUN cards, and SUPPLY's caps, read-only |
 | PROGRAM | the list of programmers, one row each; a row opens its programmer over the left column |
+| RUDDER | a control surface's deflection in ° and mm, LENGTH, 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT |
 
 The left card is 620px wide and starts under the strip, at y 56. The
@@ -1259,8 +1262,8 @@ the button, is what returns the surfaces to centre, and even that leaves the
 pins bound and driving, at the middle of their travel. A switch to SAFE, or leaving
 the screen, which switches to SAFE, is what stops the edges. With the rotary knob on,
 turning it moves the horn from where it is ([the knob](#panel-the-rotary-knob)),
-on LIVE alone: on TEST, on PROGRAM, on SETTINGS, under a panel and under a
-programmer the dial is out of sight and a turn moves nothing. A turn in the
+on LIVE and on RUDDER: on TEST, on PROGRAM, on SETTINGS, under a panel and
+under a programmer a turn moves nothing. A turn in the
 frame in which LIVE comes back moves nothing either; the next one does.
 
 One finger drags the dial. A press by a second finger anywhere on the screen

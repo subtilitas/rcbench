@@ -5,7 +5,8 @@
  *
  * The strip shows LIVE (the dial, SWEEP, CENTRE, RELEASE), TEST (the
  * AUTOMATIC TEST and LIMIT RUN cards), PROGRAM (the registry's SERVO rows,
- * prog_registry.h) and SETTINGS (OUTPUT, SWEEP, DUT).  A tile opens LIVE;
+ * prog_registry.h), RUDDER (a control surface's deflection,
+ * servo_rudder_panel.c) and SETTINGS (OUTPUT, SWEEP, DUT).  A tile opens LIVE;
  * each task keeps its own state for the session -- SETTINGS its page, TEST
  * the run whose settings are open, PROGRAM its list's page and search --
  * and a tab switch is no navigation level.  A run card's SETTINGS opens
@@ -55,7 +56,8 @@
 
 /* SERVO's tasks. */
 #define SERVO_TASKS (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_TEST) \
-                     | UI_WB_HAS(UI_WB_PROGRAM) | UI_WB_HAS(UI_WB_SETTINGS))
+                     | UI_WB_HAS(UI_WB_PROGRAM) | UI_WB_HAS(UI_WB_RUDDER) \
+                     | UI_WB_HAS(UI_WB_SETTINGS))
 
 /* ---------------------------------------------------- PROGRAM's sessions */
 
@@ -320,6 +322,7 @@ void wb_init(void)
     ui_target_row_init(&s.trow, (gfx_rect_t){ RC_X, TARGET_Y, RC_W,
                                               TARGET_H });
     prog_view_init(&s.prog_view, page_area());
+    rudder_init();
 }
 
 void wb_enter(void)
@@ -342,6 +345,7 @@ void wb_enter(void)
 void wb_leave(void)
 {
     s.run_list = RL_NONE;
+    rudder_cancel();
     prog_view_cancel(&s.prog_view);
     ui_wb_strip_cancel(&s.wb);
     ui_target_row_cancel(&s.trow);
@@ -350,6 +354,7 @@ void wb_leave(void)
 
 void wb_cancel(void)
 {
+    rudder_cancel();
     ui_wb_strip_cancel(&s.wb);
     ui_target_row_cancel(&s.trow);
     ++s.strip_rev;
@@ -411,6 +416,7 @@ gfx_rect_t lim_start_rect(void)
 static void task_changed(void)
 {
     ov_let_go();
+    rudder_cancel();
     prog_view_cancel(&s.prog_view);
     ui_hold_reset(&s.test_hold);
     s.test_down = false;
@@ -522,7 +528,7 @@ bool wb_down(const touch_event_t *evt)
 
 bool wb_rest(const touch_event_t *evt)
 {
-    if (prog_page_rest(evt)) {
+    if (prog_page_rest(evt) || rudder_rest(evt)) {
         return true;
     }
     if (ui_wb_strip_pressed(&s.wb) && evt->point.id == s.wb.tabs.press_id) {

@@ -7,8 +7,8 @@
  * If the layout moves these move with it.  Taken by servo_rig.h and
  * render_screen.c.
  *
- *   - the strip: LIVE, TEST, PROGRAM, SETTINGS from x 9, 150px each, 4px
- *     apart, y 8 to 48 (SV_STRIP_*);
+ *   - the strip: LIVE, TEST, PROGRAM, RUDDER, SETTINGS from x 9, 120px
+ *     each, 4px apart, y 8 to 48 (SV_STRIP_*);
  *   - PROGRAM's list (prog_registry.h) in the page area from y 56: rows 34
  *     px each and 40px apart; the first row is the KST and Chaservo
  *     programmer;
@@ -37,10 +37,19 @@
 #define SV_SHAFT_Y         239                /**< The shaft's row. */
 
 #define SV_TAB_Y           28                 /**< The strip's tabs. */
-#define SV_TAB_LIVE_X      84                 /**< LIVE's tab. */
-#define SV_TAB_TEST_X      238                /**< TEST's tab. */
-#define SV_TAB_PROGRAM_X   392                /**< PROGRAM's tab. */
-#define SV_TAB_SETTINGS_X  546                /**< SETTINGS' tab. */
+#define SV_TAB_LIVE_X      69                 /**< LIVE's tab. */
+#define SV_TAB_TEST_X      193                /**< TEST's tab. */
+#define SV_TAB_PROGRAM_X   317                /**< PROGRAM's tab. */
+#define SV_TAB_RUDDER_X    441                /**< RUDDER's tab. */
+#define SV_TAB_SETTINGS_X  565                /**< SETTINGS' tab. */
+/** @brief RUDDER's LENGTH row (servo_rudder_int.h): x 18 to 518, y 168
+ *         to 216; its middle. */
+#define SV_RUD_LEN_X       268
+#define SV_RUD_LEN_Y       192                /**< Its row. */
+/** @brief RUDDER's readings: the numerals' top, and the mm column's left
+ *         edge (the degrees' is x 18). */
+#define SV_RUD_NUM_Y       86
+#define SV_RUD_MM_X        268                /**< The mm column. */
 #define SV_PROG_ROW_X      250                /**< PROGRAM's rows. */
 /** @brief PROGRAM's row @p r: 48px tall at a 56px pitch from the page
  *         area's top, 56, and 10px. */

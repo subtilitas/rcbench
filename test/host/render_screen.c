@@ -36,6 +36,7 @@
 #include "coproc_update_screen.h"
 #include "render_files.h"
 #include "render_help.h"
+#include "render_rudder.h"
 #include "render_shot.h"
 #include "render_esc_wire.h"
 #include "render_hitec.h"
@@ -4213,6 +4214,7 @@ int main(int argc, char **argv)
                        && strcmp(view, "servo-limrun-range") != 0)
                    || strcmp(view, "setup-leave-armed") == 0
                    || render_files_armed(view)
+                   || render_rudder_armed(view)
                    || strcmp(view, "setup-rotation") == 0
                    || (mo_prog && s_stick_armed);
     /* An arm covers the role of the screen that asked for it. */
@@ -4243,6 +4245,7 @@ int main(int argc, char **argv)
     if (id == SCREEN_FILES) {
         render_files_pose(view);
     }
+    render_rudder_pose(view);
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);
     }

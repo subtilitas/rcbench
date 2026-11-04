@@ -664,8 +664,8 @@ TEST_CASE(the_knob_moves_the_horn_on_live_alone)
 
 /* ----------------------------------------------------------- PROGRAM */
 
-/* The strip reads LIVE, TEST, PROGRAM, SETTINGS from the left, 150px a
- * tab; a tap on each selects it, and PROGRAM shows its list with no
+/* The strip reads LIVE, TEST, PROGRAM, RUDDER, SETTINGS from the left,
+ * 120px a tab; a tap on each selects it, and PROGRAM shows its list with no
  * session open. */
 TEST_CASE(the_strip_reads_live_test_program_settings)
 {
@@ -683,11 +683,12 @@ TEST_CASE(the_strip_reads_live_test_program_settings)
         CHECK_EQ(servo_screen_task(), (int)k[i].task);
         CHECK(!kst_panel_is_open());
     }
-    /* The tabs in order, 154px apart from x 9. */
+    /* The tabs in order, 124px apart from x 9. */
     for (int t = 0; t < (int)UI_WB_TASKS; ++t) {
-        CHECK_EQ(SV_TAB_LIVE_X + 154 * t,
+        CHECK_EQ(SV_TAB_LIVE_X + 124 * t,
                  (t == 0) ? SV_TAB_LIVE_X : (t == 1) ? SV_TAB_TEST_X
-                 : (t == 2) ? SV_TAB_PROGRAM_X : SV_TAB_SETTINGS_X);
+                 : (t == 2) ? SV_TAB_PROGRAM_X
+                 : (t == 3) ? SV_TAB_RUDDER_X : SV_TAB_SETTINGS_X);
     }
     /* PROGRAM's page draws in both languages; a tile opens LIVE again. */
     for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {

@@ -830,6 +830,8 @@ static const ui_screen_t k_screen = {
     .render = svs_render,
     .back   = back,
     .safe_at = svs_safe_at,
+    .help_count = rudder_help_count,
+    .help_page  = rudder_help_page,
 };
 
 const ui_screen_t *servo_screen(void) { return &k_screen; }

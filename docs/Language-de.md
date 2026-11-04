@@ -175,6 +175,8 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | IP address | IP-Adresse |
 | acknowledge, confirm | bestätigen |
 | SILENT (das Urteil des RECEIVER) | KEIN SIGNAL |
+| deflection (einer Ruderfläche), trailing edge, hinge line | Ausschlag, Hinterkante, Scharnierlinie |
+| zero (die genommene Neutrallage), RESET MAX | Nullpunkt, MAX ZURÜCKSETZEN |
 
 Eine Beschriftung ist ein Substantiv, wo ein Substantiv reicht. Eine
 Anweisung spricht den Bediener im Imperativ mit du an (Prüfe, Tippe, Halte);
@@ -322,7 +324,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 523 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 527 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -373,7 +375,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.934
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 2.955
 Einträge mit ID und 90 Optionen, 10 davon mit leerem Englisch.
 
 1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

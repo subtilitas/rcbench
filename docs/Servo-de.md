@@ -11,7 +11,9 @@ Stromsensor über ein Paar Ausgänge, der nicht bestückt ist, und läuft nur
 gegen ein modelliertes Servo. Ihre Vorgabewerte stammen aus
 `servo_limit_defaults()` und `servo_sync_defaults()` in `shared/servo/`. Das
 dritte, der [automatische Test](#automatischer-test), liest den Strom des
-Netzteils, das das Servo versorgt.
+Netzteils, das das Servo versorgt. RUDER, eine Aufgabe der SERVO-Werkbank,
+liest den Ausschlag einer Ruderfläche in ° und mm
+([Ruderausschlag](#ruderausschlag)).
 
 ## Eingebaute mechanische Endlage
 
@@ -1279,6 +1281,62 @@ Das Panel zentriert die Ruderflächen, bevor es
 auf ARMED schaltet, und der Bildschirm zeigt die Ruhelage, wenn der Prüfstand
 ARMED meldet; die Zeit zwischen beidem ist auf einem Prüfstand nicht
 gemessen.
+
+## Ruderausschlag
+
+### Zweck
+
+RUDER steuert ein Servo und zeigt, wie weit die Fläche ausschlägt, die es
+bewegt: in Grad ab einem Nullpunkt und, mit eingegebener Länge der Fläche,
+in mm an der Hinterkante. Es beantwortet „wie viele mm schlägt dieses Ruder
+aus“ ohne Lineal am Modell. Die Geometrie steht in
+`shared/servo/servo_rudder.c`, die Aufgabe in
+`shared/ui/servo_rudder_panel.c`.
+
+### Verfahren
+
+- Der Winkel ist der, den GEMESSEN auf LIVE nimmt, von der Quelle, die
+  ANGLE SOURCE nennt: der des AS5600-Ausgangsencoders in Grad ab seinem
+  ENC CENTRE oder der der IMU in AS5600-Zählern ab dem Zählwert 0; mit
+  REVERSE umgekehrt. Die erste Zustandszeile nennt die Quelle, `AS5600`
+  oder `IMU X+` mit AXIS und SIGN der IMU.
+- NULLPUNKT wird bei beiden Quellen ab dem Zählwert 0 genommen; ein neues
+  ENC CENTRE nach NULLPUNKT verschiebt keinen Ausschlag. Eine andere ANGLE
+  SOURCE oder eine andere AXIS oder SIGN der IMU verwirft Nullpunkt und
+  MAX: die Aufgabe liest wie vor NULLPUNKT.
+- NULLPUNKT nimmt den aktuellen Winkel als Neutrallage der Fläche. Der
+  Ausschlag ist der Winkel ab ihr, auf -180 bis unter 180° gefaltet. Vor
+  NULLPUNKT ist der Ausschlag der Winkel selbst.
+- LÄNGE L ist die Fläche von der Scharnierlinie bis zur Hinterkante, 0 oder
+  10 bis 500mm (Einstellung `rud_len_mm`, 0 = nicht gesetzt). Der Weg ist
+  L x sin(Ausschlag): der Abstand der Hinterkante von der Neutralebene, was
+  ein senkrecht an die Hinterkante gehaltenes Lineal anzeigt. Bei 30° zeigt
+  eine Fläche von 100mm 50.0mm; der Bogen L x Ausschlag ergäbe 52.4mm.
+- MAX hält den größten Ausschlag je Seite, aus jedem angezeigten Messwert,
+  auf jeder Aufgabe. NULLPUNKT und MAX ZURÜCKSETZEN löschen ihn.
+- 1000us und 2000us befehlen diese Pulse als Winkel des eingestellten Typs,
+  begrenzt auf WEG und den Pulsbereich des Typs; ZENTRIEREN befiehlt PULS
+  MITTE plus TRIMMUNG. Alle drei und der Drehknopf wirken nur, solange der
+  Prüfstand ARMED ist. Die Zeile ZIEL der Ausgangskarte nennt den Pin, den
+  sie ansteuern.
+
+| Messwert | Auflösung | Bereich |
+| --- | --- | --- |
+| AUSSCHLAG | 0.1° angezeigt; 4096 Schritte je Umdrehung, 0.088°, bei beiden Quellen | -180.0 bis +179.9° |
+| HINTERKANTE | 0.1mm angezeigt | -500.0 bis +500.0mm |
+
+### Grenzen
+
+- Der AS5600 misst die Servoabtriebswelle. Ein Gestänge zwischen Horn und
+  Fläche lässt den Ausschlag der Fläche von dem der Welle abweichen; der
+  Unterschied ist nicht gemessen. Die IMU misst das, woran sie befestigt
+  ist.
+- Der Ausschlag ist nicht gefiltert: das Rauschen eines Messwerts zeigt
+  sich in seinen Zehnteln und kann MAX darum erhöhen. Das Rauschen des
+  AS5600 am Prüfstand ist nicht gemessen.
+- REVERSE ändert das angezeigte Vorzeichen und behält den Nullpunkt; MAX
+  behält jede Seite so, wie der Sensor sie sah, also tauschen die Seiten mit
+  REVERSE auf dem Bildschirm.
 
 ## Sweep und TEMPO
 

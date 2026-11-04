@@ -65,6 +65,8 @@ SOURCES = [
     "test/host/render_esc_wire.c",
     # The screen guide's views: opened and turned by taps.
     "test/host/render_help.c",
+    # SERVO's RUDDER task: its tab tapped, the angle fed, ZERO taken.
+    "test/host/render_rudder.c",
     "shared/bench/hitec_link.c",
     "shared/outputs/hitec_port.c",
     # The Hitec files' views run their requests on a folder in memory.
@@ -721,6 +723,12 @@ SCREENS = {
     "panel-download": ("panel-download.png", "panel-update", "dark"),
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
                               "dark"),
+    # SERVO's RUDDER task: ZERO taken, the surface at +12.3deg after -24.6
+    # and +25.5, LENGTH 120mm; the same ARMED after 2000us; and with LENGTH
+    # not set, degrees alone.
+    "servo-rudder": ("servo-rudder.png", "servo", "dark"),
+    "servo-rudder-armed": ("servo-rudder-armed.png", "servo", "dark"),
+    "servo-rudder-nolength": ("servo-rudder-nolength.png", "servo", "dark"),
 }
 INCLUDES = ui_sources.INCLUDES
 
@@ -779,6 +787,8 @@ FIT_ONLY = {
     "help-overview-2": (None, "overview", "dark"),
     "help-overview-3": (None, "overview", "dark"),
     "help-band-worst": (None, "motor", "dark"),
+    # SERVO's RUDDER guide: the output card's page over the task.
+    "help-servo-rudder":   (None, "servo", "dark"),
     # A tap on ARM and on OUTPUT ON, released before 2s: the button's hint
     # in the alert band.
     "hold-hint-arm":    (None, "motor", "dark"),

@@ -11,8 +11,10 @@
  * rail's reading, and the functions one of the five calls of another,
  * prefixed svs_: among them the conversions between angle, pulse and
  * command in servo_screen.c.  Nothing outside these five files includes
- * this header; the seam with the screen's pages and panels is
- * servo_screen_int.h, which this header includes.
+ * this header but servo_rudder_panel.c, RUDDER's task, whose buttons
+ * command the horn as the output card's CENTRE does; the seam with the
+ * screen's pages and panels is servo_screen_int.h, which this header
+ * includes.
  *
  * SPDX-License-Identifier: MIT
  */

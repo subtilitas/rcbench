@@ -3610,7 +3610,6 @@ shared/ui/include/ui_workbench.h: warning: Member UI_WB_STRIP_Y (macro definitio
 shared/ui/include/ui_workbench.h: warning: Member UI_WB_TAB_GAP (macro definition) of file ui_workbench.h is not documented.
 shared/ui/include/ui_workbench.h: warning: Member UI_WB_TAB_W (macro definition) of file ui_workbench.h is not documented.
 shared/ui/include/ui_workbench.h: warning: Member tabs (variable) of struct ui_wb_strip_t is not documented.
-shared/ui/include/ui_workbench.h: warning: Member ui_wb_strip_render(const ui_wb_strip_t *w, gfx_canvas_t *c) (function) of file ui_workbench.h is not documented.
 shared/ui/include/ui_workbench.h: warning: parameters of member ui_wb_strip_cancel are not documented
 shared/ui/include/ui_workbench.h: warning: parameters of member ui_wb_strip_event are not documented
 shared/ui/include/ui_workbench.h: warning: parameters of member ui_wb_strip_has are not documented
@@ -4548,7 +4547,6 @@ shared/ui/ui_watermark.c: warning: Member s_cache (variable) of file ui_watermar
 shared/ui/ui_watermark.c: warning: Member w (variable) of struct [struct].s_cache is not documented.
 shared/ui/ui_widgets.c: warning: Member tag_width(const char *title, bool chevron) (function) of file ui_widgets.c is not documented.
 shared/ui/ui_widgets.c: warning: Member ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text, bool pressed, bool open) (function) of file ui_widgets.c is not documented.
-shared/ui/ui_workbench.c: file has no @file block
 shared/ui/upd_screen.c: warning: Member aborted_text(upd_why_t why) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member act(int hit) (function) of file upd_screen.c is not documented.
 shared/ui/upd_screen.c: warning: Member answered (variable) of struct [struct].s_rem is not documented.

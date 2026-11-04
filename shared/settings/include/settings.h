@@ -207,6 +207,8 @@ typedef enum {
     SET_WEB_WRITES,
     /* --- the angle source of the servo runs ---------------------------- */
     SET_ANGLE_SOURCE,
+    /* --- the SERVO workbench's RUDDER task -------------------------------- */
+    SET_RUDDER_LEN_MM,
 
     SETTING_COUNT
 } setting_id_t;
