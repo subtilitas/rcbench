@@ -745,6 +745,11 @@ void servo_screen_set_imu_axis(uint8_t axis, bool neg)
     s.imu_neg  = neg;
 }
 
+void servo_screen_set_imu_zero(uint32_t gen)
+{
+    s.imu_zero_gen = gen;
+}
+
 void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm)
 {
     if (target == 0u || target == SERVO_SCREEN_TARGET_UNKNOWN

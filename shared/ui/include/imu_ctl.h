@@ -89,6 +89,12 @@ typedef struct {
     uint8_t      out_head;       /**< the oldest's index */
     uint32_t     out_ms;         /**< when the last command went */
     bool         out_sent;       /**< out_ms holds a time */
+    bool         angle_seen;     /**< an angle frame since IMU ON */
+    uint32_t     gaps;           /**< angle frames that came after the
+                                      reading went stale, counted */
+    uint32_t     gap_at_ms;      /**< when the last of those went stale */
+    uint32_t     zero_gen;       /**< ZERO, CLEAR ZERO, and IMU OFF with a
+                                      zero kept, counted */
 } imu_ctl_t;
 
 /** @brief Clear: IMU OFF, nothing bound. @param c NULL does nothing. */
@@ -160,13 +166,24 @@ uint8_t imu_ctl_rate_code(int option);
 
 /**
  * @brief Which IMU readings go on to SERVO: each frame once, and a reading
- *        that went stale once.
+ *        that went stale once, also one that was valid again before SERVO
+ *        looked.
  */
 typedef struct {
     bool     given;      /**< one went on since the reset */
     bool     was_valid;  /**< that one was valid */
     uint32_t last_taken; /**< taken_ms of the last valid one */
+    uint32_t gaps;       /**< imu_ctl_t's gaps as last seen */
 } imu_handout_t;
+
+/** @brief What imu_handout_next() says goes on to SERVO. */
+typedef enum {
+    IMU_HAND_NONE,     /**< nothing: the reading went on already */
+    IMU_HAND_READING,  /**< the reading, valid or stale */
+    IMU_HAND_GAP,      /**< a stale reading, timed at gap_at_ms: the reading
+                            went stale and back before SERVO looked; the
+                            next call hands the reading */
+} imu_hand_t;
 
 /**
  * @brief Forget what went on: the next reading goes, valid or not.  Called
@@ -177,13 +194,17 @@ typedef struct {
 void imu_handout_reset(imu_handout_t *h);
 
 /**
- * @brief Whether @p r goes on to SERVO, and note it when it does.
- * @param h The handout.
- * @param r The reading.
- * @return true for a valid reading of a frame not handed before, and for
- *         the first stale reading after a valid one or after a reset.
+ * @brief What goes on to SERVO now, noted as gone.
+ * @param h    The handout.
+ * @param r    The reading.
+ * @param gaps imu_ctl_t's gaps as published with @p r.
+ * @return IMU_HAND_GAP when the reading went stale and back since a valid
+ *         one went on; IMU_HAND_READING for a valid reading of a frame not
+ *         handed before, and for the first stale one after a valid one or
+ *         a reset; IMU_HAND_NONE otherwise.
  */
-bool imu_handout_due(imu_handout_t *h, const imu_reading_t *r);
+imu_hand_t imu_handout_next(imu_handout_t *h, const imu_reading_t *r,
+                            uint32_t gaps);
 
 #ifdef __cplusplus
 }

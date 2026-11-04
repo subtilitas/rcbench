@@ -58,6 +58,8 @@ void panel_imu_frame(void);
  *              goes whatever went before, valid or not, so SERVO drops the
  *              AS5600's state.
  * @param out   Receives the reading.
- * @return true when @p out holds one not handed before.
+ * @return true when @p out holds one not handed before; call again in the
+ *         same frame while it is true, as a stale stretch and the reading
+ *         that ended it come as two.
  */
 bool panel_imu_angle(bool fresh, servo_test_enc_t *out);

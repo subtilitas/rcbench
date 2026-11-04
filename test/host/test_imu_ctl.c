@@ -341,6 +341,27 @@ TEST_CASE(a_rate_change_goes_to_the_sensor_once_it_is_connected)
     rig_stream(&r, 300u, 20u, 0.0f, 0.0f, 0.0f);
     CHECK_EQ(r.nsent, 7u);
     CHECK(rig_sent_is(&r, 5u, WIT_REG_AXIS6, 1u, 0u));
+    /* ALGORITHM held on the arrow, 12 changes 33ms apart: the outbox's 8
+     * slots fill, the change waits, and the last write is SETUP's last. */
+    bool six = true;
+    for (int i = 0; i < 12; ++i) {
+        six = !six;
+        rig_cfg(&r, true, "98D3:31:F5A1B2", 4, six);
+        rig_stream(&r, 33u, 20u, 0.0f, 0.0f, 0.0f);
+    }
+    rig_stream(&r, 1000u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK(!r.c.algo_due);
+    CHECK_EQ(r.c.out_n, 0u);
+    CHECK(r.nsent < RIG_SENT_MAX);
+    unsigned last = RIG_SENT_MAX;
+    for (unsigned i = 0; i < r.nsent; ++i) {
+        if (r.sent[i][2] == WIT_REG_AXIS6) {
+            last = i;
+        }
+    }
+    CHECK(last < r.nsent);
+    CHECK(rig_sent_is(&r, last, WIT_REG_AXIS6, six ? 1u : 0u, 0u));
+    CHECK(rig_sent_is(&r, r.nsent - 1u, WIT_REG_SAVE, 0u, 0u));
     /* The first values a controller takes send nothing. */
     rig_t q;
     rig_init(&q, 2, HC05_BAUD_DATA);
@@ -406,9 +427,18 @@ TEST_CASE(commands_are_refused_when_they_cannot_run)
     imu_ctl_view(&r.c, &v);
     CHECK(v.r.zeroed);
     CHECK(fabsf(v.r.zero[2] - 3.0f) < 0.01f);
+    CHECK_EQ(r.c.zero_gen, 1u);
     CHECK(imu_ctl_command(&r.c, &unzero, r.t));
     imu_ctl_view(&r.c, &v);
     CHECK(!v.r.zeroed);
+    CHECK_EQ(r.c.zero_gen, 2u);
+    /* IMU OFF with a zero kept is a new zero too; without one it is not. */
+    CHECK(imu_ctl_command(&r.c, &zero, r.t));
+    rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
+    CHECK_EQ(r.c.zero_gen, 4u);
+    rig_cfg(&r, true, "98D3:31:F5A1B2", 2, true);
+    rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
+    CHECK_EQ(r.c.zero_gen, 4u);
 }
 
 /* No AT operation while the calibration runs or its exit commands wait:
@@ -439,37 +469,83 @@ TEST_CASE(no_at_operation_while_the_calibration_or_a_sensor_command_waits)
     CHECK(imu_ctl_command(&r.c, &scan, r.t));    /* free again */
 }
 
-/* What goes on to SERVO: each frame once, a stale reading once, and
- * after a reset (ANGLE SOURCE turned to IMU) the next reading whatever
- * went before. */
+/* What goes on to SERVO: each frame once, a stale reading once, after a
+ * reset (ANGLE SOURCE turned to IMU) the next reading whatever went before,
+ * and a stale stretch that frames ended before SERVO looked as a stale
+ * reading ahead of the valid one. */
 TEST_CASE(the_handout_gives_each_frame_once_and_again_after_a_reset)
 {
     imu_handout_t h;
     imu_handout_reset(&h);
     imu_reading_t rd;
     memset(&rd, 0, sizeof rd);
-    CHECK(imu_handout_due(&h, &rd));            /* stale, first: goes */
-    CHECK(!imu_handout_due(&h, &rd));           /* stale again: not */
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_READING); /* stale */
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_NONE);
     imu_handout_reset(&h);
-    CHECK(imu_handout_due(&h, &rd));            /* after a reset: goes */
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_READING);
     rd.valid = true;
     rd.taken_ms = 100u;
-    CHECK(imu_handout_due(&h, &rd));
-    CHECK(!imu_handout_due(&h, &rd));           /* the same frame */
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_READING);
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_NONE); /* same frame */
     rd.taken_ms = 120u;
-    CHECK(imu_handout_due(&h, &rd));
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_READING);
     CHECK_EQ(h.last_taken, 120u);
     imu_handout_reset(&h);
-    CHECK(imu_handout_due(&h, &rd));            /* the same frame, reset */
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_READING);
     rd.valid = false;
-    CHECK(imu_handout_due(&h, &rd));            /* went stale: once */
-    CHECK(!imu_handout_due(&h, &rd));
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_READING); /* stale */
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_NONE);
     CHECK_EQ(h.last_taken, 120u);
     rd.valid = true;
-    CHECK(imu_handout_due(&h, &rd));            /* valid again, same frame */
-    CHECK(!imu_handout_due(NULL, &rd));
-    CHECK(!imu_handout_due(&h, NULL));
+    CHECK_EQ(imu_handout_next(&h, &rd, 0u), IMU_HAND_READING);
+    /* Stale and valid again between two looks: the gap, then the frame. */
+    rd.taken_ms = 520u;
+    CHECK_EQ(imu_handout_next(&h, &rd, 1u), IMU_HAND_GAP);
+    CHECK_EQ(imu_handout_next(&h, &rd, 1u), IMU_HAND_READING);
+    CHECK_EQ(imu_handout_next(&h, &rd, 1u), IMU_HAND_NONE);
+    /* A gap SERVO already saw as stale goes once, as the stale reading. */
+    rd.valid = false;
+    CHECK_EQ(imu_handout_next(&h, &rd, 1u), IMU_HAND_READING);
+    rd.valid = true;
+    rd.taken_ms = 900u;
+    CHECK_EQ(imu_handout_next(&h, &rd, 2u), IMU_HAND_READING);
+    /* A reset takes the count as it stands. */
+    imu_handout_reset(&h);
+    CHECK_EQ(imu_handout_next(&h, &rd, 7u), IMU_HAND_READING);
+    CHECK_EQ(imu_handout_next(&h, &rd, 7u), IMU_HAND_NONE);
+    CHECK_EQ(imu_handout_next(NULL, &rd, 0u), IMU_HAND_NONE);
+    CHECK_EQ(imu_handout_next(&h, NULL, 0u), IMU_HAND_NONE);
     imu_handout_reset(NULL);
+}
+
+/* A frame 300ms or more after the one before ends a stale stretch: it is
+ * counted with the time the reading went stale; a shorter pause is none. */
+TEST_CASE(a_frame_after_the_stale_point_counts_a_gap)
+{
+    rig_t r;
+    connected(&r);
+    CHECK_EQ(r.c.gaps, 0u);
+    const uint32_t last = r.c.m.r.taken_ms;
+    rig_run(&r, 400u);
+    rig_stream(&r, 1u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.c.gaps, 1u);
+    CHECK_EQ(r.c.gap_at_ms, last + IMU_STALE_MS);
+    const uint32_t t1 = r.c.m.r.taken_ms;
+    rig_run(&r, IMU_STALE_MS - 2u);
+    rig_stream(&r, 1u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK(r.c.m.r.taken_ms - t1 < IMU_STALE_MS);
+    CHECK_EQ(r.c.gaps, 1u);
+    const uint32_t t2 = r.c.m.r.taken_ms;
+    rig_run(&r, IMU_STALE_MS - 1u);
+    rig_stream(&r, 1u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.c.m.r.taken_ms - t2, IMU_STALE_MS);
+    CHECK_EQ(r.c.gaps, 2u);
+    /* IMU OFF and ON: the first frame after is no gap. */
+    rig_cfg(&r, false, "98D3:31:F5A1B2", 2, true);
+    rig_cfg(&r, true, "98D3:31:F5A1B2", 2, true);
+    (void)rig_settle(&r, 5000u);
+    rig_stream(&r, 100u, 20u, 0.0f, 0.0f, 0.0f);
+    CHECK_EQ(r.c.gaps, 2u);
 }
 
 /* SET_IMU_RATE's options and what a NULL does. */
@@ -516,6 +592,7 @@ int main(void)
     RUN(commands_are_refused_when_they_cannot_run);
     RUN(no_at_operation_while_the_calibration_or_a_sensor_command_waits);
     RUN(the_handout_gives_each_frame_once_and_again_after_a_reset);
+    RUN(a_frame_after_the_stale_point_counts_a_gap);
     RUN(the_rate_options_are_the_wit_codes_and_null_does_nothing);
     return test_summary("imu_ctl");
 }

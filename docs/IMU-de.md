@@ -12,7 +12,10 @@ ist 300ms nach dem letzten Winkel-Frame veraltet, und ein Servolauf geht
 durch eine Lücke bis 300ms einmal je 10s weiter, wie bei der des AS5600
 ([Servoverfahren](Servo-de.md)). Ein Wechsel der WINKELQUELLE gibt SERVO im
 nächsten Frame den Zustand der neuen Quelle: den Messwert der IMU, gültig
-oder nicht, oder keinen AS5600-Messwert bis zum nächsten des Bausteins.
+oder nicht, oder keinen AS5600-Messwert bis zum nächsten des Bausteins. Eine
+veraltete Strecke, die ein Frame vor dem nächsten Bild des Bildschirms
+beendet, erreicht SERVO trotzdem: ein veralteter Messwert, 300ms nach dem
+letzten Frame datiert, geht vor dem neuen.
 
 WitMotion, BWT901CL, HC-05 und HC-06 sind Namen von Produkten ihrer
 Hersteller, und Bluetooth ist eine Marke ihres Inhabers. rcbench ist

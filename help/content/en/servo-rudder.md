@@ -35,7 +35,7 @@ LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm
 | 1000us, 2000us | refused; drawn dimmed | commands that pulse, held to TRAVEL and the pulse range of the type in force |
 | CENTRE | refused; drawn dimmed | commands PULSE CENTRE plus TRIM |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value, as on LIVE |
-| ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; another ANGLE SOURCE, or the IMU's other AXIS or SIGN, drops the zero and MAX | the same |
+| ZERO | takes the current angle as the neutral and clears MAX; grey without a reading; another ANGLE SOURCE, the IMU's other AXIS or SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX | the same |
 | RESET MAX | clears MAX; the zero stays | the same |
 
 1000us, CENTRE and 2000us act on the press. LENGTH, ZERO and RESET MAX act on a tap that lifts on them. The PULSE line under the buttons names the pulse commanded. A tab switch keeps the servo where it was put; DISARM, STOP and leaving SERVO switch the bench to SAFE.

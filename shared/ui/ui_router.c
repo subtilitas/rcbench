@@ -733,6 +733,9 @@ static __attribute__((noinline)) void router_back(void)
         }
     }
     ui_router_goto(to);
+    /* Going back is a return, not an opening: SETUP, come back to from
+     * IMU, leaves for its own parent, not for IMU again. */
+    s.opener = SCREEN_COUNT;
 }
 
 /* The slot of contact @p id in the screen's table, or -1 when the screen

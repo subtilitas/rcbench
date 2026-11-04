@@ -60,6 +60,9 @@ typedef struct {
 typedef struct {
     imu_view_t v;         /**< the view */
     uint32_t   bind_seq;  /**< binds that ended DONE (imu_ctl_t) */
+    uint32_t   gaps;      /**< stale stretches ended by a frame (imu_ctl_t) */
+    uint32_t   gap_at_ms; /**< when the last of them went stale */
+    uint32_t   zero_gen;  /**< the zero's generation (imu_ctl_t) */
 } imu_pub_t;
 
 /** @brief The frame task's values and commands to the task; NULL off. */
@@ -160,6 +163,9 @@ static void imu_task(void *arg)
         }
         imu_ctl_view(&s_ctl, &s_next.v);
         s_next.bind_seq = s_ctl.bind_seq;
+        s_next.gaps = s_ctl.gaps;
+        s_next.gap_at_ms = s_ctl.gap_at_ms;
+        s_next.zero_gen = s_ctl.zero_gen;
         if (s_next.v.link != was) {
             ESP_LOGI(TAG, "link %d -> %d", (int)was, (int)s_next.v.link);
             was = s_next.v.link;
@@ -269,6 +275,8 @@ void panel_imu_frame(void)
     taskEXIT_CRITICAL(&s_mux);
     imu_screen_set(&s_seen.v);
     sensors_rows_set_imu(s_seen.v.link, s_seen.v.r.rate_dhz);
+    /* A new IMU zero drops RUDDER's zero and MAX taken on the IMU. */
+    servo_screen_set_imu_zero(s_seen.zero_gen);
     /* A bind that ended is kept in SETUP: the address and the name, with a
      * save asked, so the sensor is the bound one after a restart. */
     if (s_seen.bind_seq != s_kept_seq) {
@@ -293,12 +301,16 @@ bool panel_imu_angle(bool fresh, servo_test_enc_t *out)
         imu_handout_reset(&hand);
     }
     /* The same frame is not handed twice: the screen draws faster than a
-     * 10Hz sensor sends. */
-    if (!imu_handout_due(&hand, r)) {
+     * 10Hz sensor sends.  A stale stretch the frames ended before this
+     * task looked goes first, as a stale reading timed when it began. */
+    const imu_hand_t give = imu_handout_next(&hand, r, s_seen.gaps);
+    if (give == IMU_HAND_NONE) {
         return false;
     }
     servo_angle_in_t in = { 0 };
-    if (r->valid) {
+    if (give == IMU_HAND_GAP) {
+        in.taken_ms = s_seen.gap_at_ms;
+    } else if (r->valid) {
         in.valid    = true;
         in.deg      = imu_deg(r, (imu_axis_t)settings_get_int(SET_IMU_AXIS),
                               settings_get_int(SET_IMU_SIGN) == 1);

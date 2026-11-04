@@ -641,6 +641,34 @@ TEST_CASE(another_imu_sign_drops_the_zero_and_the_max)
     dropped();
 }
 
+/* With the IMU as the source, an IMU ZERO or CLEAR ZERO drops RUDDER's
+ * zero and MAX: every IMU angle moved with it.  The same generation handed
+ * in again keeps them. */
+TEST_CASE(a_new_imu_zero_drops_the_zero_and_the_max)
+{
+    fresh();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    servo_screen_set_imu_axis(1u, false);
+    servo_screen_set_imu_zero(0u);
+    to_rudder();
+    zero_and_max();
+    servo_screen_set_imu_zero(0u);
+    CHECK(rudder_geo()->zeroed);
+    servo_screen_set_imu_zero(1u);              /* IMU ZERO */
+    scr->render(&cv, 0);
+    dropped();
+    zero_and_max();
+    servo_screen_set_imu_zero(2u);              /* CLEAR ZERO */
+    dropped();
+    /* On the AS5600 an IMU zero is none of RUDDER's business. */
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
+    encoder_on();
+    zero_and_max();
+    servo_screen_set_imu_zero(3u);
+    CHECK(rudder_geo()->zeroed);
+    servo_screen_set_imu_zero(0u);
+}
+
 /* ---------------------------------------------------- the active output */
 
 /* Leaving SERVO from RUDDER on an armed bench disarms, and a button after
@@ -1024,6 +1052,7 @@ int main(void)
     RUN(another_source_drops_the_zero_and_the_max);
     RUN(another_imu_axis_drops_the_zero_and_the_max);
     RUN(another_imu_sign_drops_the_zero_and_the_max);
+    RUN(a_new_imu_zero_drops_the_zero_and_the_max);
     RUN(leaving_servo_from_rudder_disarms);
     RUN(the_target_row_names_the_pin_the_buttons_drive);
     RUN(the_knob_moves_the_horn_on_rudder_while_armed);

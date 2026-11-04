@@ -98,6 +98,10 @@ TEST_CASE(the_tile_opens_the_screen_and_home_returns_to_setup)
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     CHECK_EQ(settings_screen_category(), -1);     /* on the tiles */
+    /* SETUP, come back to by IMU's home tag, leaves for OVERVIEW: the
+     * return is no opening. */
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
     /* IMU SETTINGS opens SENSORS on the IMU entry; its home tag comes back. */
     on_imu(&v);
     tap_rect(imu_screen_row_rect(IMS_ROW_SETTINGS));
@@ -108,6 +112,8 @@ TEST_CASE(the_tile_opens_the_screen_and_home_returns_to_setup)
     CHECK_EQ(ui_router_current(), SCREEN_IMU);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
 
 TEST_CASE(scan_posts_the_command_and_the_list_shows_the_found_devices)

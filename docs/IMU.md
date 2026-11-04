@@ -12,7 +12,9 @@ stale 300ms after the last angle frame, and a servo run rides through a gap
 of up to 300ms once per 10s, as through the AS5600's
 ([Servo procedures](Servo.md)). A switch of ANGLE SOURCE hands SERVO the
 new source's state in the next frame: the IMU's reading, valid or not, or
-no AS5600 reading until the part's next one.
+no AS5600 reading until the part's next one. A stale stretch that a frame
+ends before the screen's next frame still reaches SERVO: a stale reading
+timed 300ms after the last frame goes ahead of the new one.
 
 WitMotion, BWT901CL, HC-05 and HC-06 are names of their makers' products,
 and Bluetooth is a trademark of its owner. rcbench is independent: it is

@@ -1282,8 +1282,9 @@ the task is `shared/ui/servo_rudder_panel.c`.
   The first state line names the source, `AS5600` or `IMU X+` with the
   IMU's AXIS and SIGN.
 - ZERO is taken from count 0 of either source, so a new ENC CENTRE after
-  ZERO moves no deflection. Another ANGLE SOURCE, or the IMU's other AXIS
-  or SIGN, drops the zero and MAX: the task reads as before ZERO.
+  ZERO moves no deflection. Another ANGLE SOURCE, the IMU's other AXIS or
+  SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX:
+  the task reads as before ZERO.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
   angle from it, wrapped to -180 up to 180°. Before ZERO the deflection is
   the angle itself.

@@ -98,7 +98,11 @@ static void switch_off(imu_ctl_t *c)
     if (c->cal == IMU_CAL_RUNNING) {
         cal_end(c, false);
     }
+    if (c->m.r.zeroed) {
+        ++c->zero_gen;        /* the zero goes with the reading */
+    }
     imu_init(&c->m);
+    c->angle_seen = false;
     c->probed = false;
     c->had_frames = false;
     c->found_n = 0u;
@@ -194,9 +198,14 @@ bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
         c->cal_left_ms = IMU_CAL_MS;
         return true;
     case IMU_CMD_ZERO:
-        return imu_zero(&c->m);
+        if (!imu_zero(&c->m)) {
+            return false;
+        }
+        ++c->zero_gen;
+        return true;
     case IMU_CMD_UNZERO:
         imu_unzero(&c->m);
+        ++c->zero_gen;
         return true;
     case IMU_CMD_NONE:
     default:
@@ -212,7 +221,17 @@ void imu_ctl_feed(imu_ctl_t *c, const uint8_t *b, size_t n, uint32_t now_ms)
     if (hc05_busy(&c->bt)) {
         hc05_feed(&c->bt, b, n);
     } else if (c->cfg.en) {
+        const uint32_t before = c->m.r.taken_ms;
         imu_feed(&c->m, b, n, now_ms);
+        if (c->m.r.taken_ms != before) {
+            /* An angle after the stale point: the reading was stale for
+             * a while, which the frame task may not have seen. */
+            if (c->angle_seen && c->m.r.taken_ms - before >= IMU_STALE_MS) {
+                ++c->gaps;
+                c->gap_at_ms = before + IMU_STALE_MS;
+            }
+            c->angle_seen = true;
+        }
     }
 }
 
@@ -302,7 +321,12 @@ static void data_side(imu_ctl_t *c, uint32_t now_ms)
             c->cal_left_ms = IMU_CAL_MS - held;
         }
     }
-    if (imu_ctl_link(c) == IMU_LINK_CONNECTED && (c->rate_due || c->algo_due)) {
+    /* Unlock, the writes due and SAVE go as one sequence, once all of it
+     * fits: a change that comes while the outbox is full waits, and the
+     * write that goes carries SETUP's latest value. */
+    const unsigned need = 2u + (c->rate_due ? 1u : 0u) + (c->algo_due ? 1u : 0u);
+    if (imu_ctl_link(c) == IMU_LINK_CONNECTED && (c->rate_due || c->algo_due)
+        && IMU_OUTBOX - c->out_n >= need) {
         uint8_t b[WIT_CMD_LEN] = { 0 };
         queue_unlock(c);
         if (c->rate_due) {
@@ -407,19 +431,26 @@ void imu_handout_reset(imu_handout_t *h)
     }
 }
 
-bool imu_handout_due(imu_handout_t *h, const imu_reading_t *r)
+imu_hand_t imu_handout_next(imu_handout_t *h, const imu_reading_t *r,
+                            uint32_t gaps)
 {
     if (h == NULL || r == NULL) {
-        return false;
+        return IMU_HAND_NONE;
+    }
+    const bool gap = h->given && h->gaps != gaps;
+    h->gaps = gaps;
+    if (gap && h->was_valid && r->valid) {
+        h->was_valid = false;
+        return IMU_HAND_GAP;
     }
     if (h->given && h->was_valid == r->valid
         && (!r->valid || r->taken_ms == h->last_taken)) {
-        return false;
+        return IMU_HAND_NONE;
     }
     h->given = true;
     h->was_valid = r->valid;
     if (r->valid) {
         h->last_taken = r->taken_ms;
     }
-    return true;
+    return IMU_HAND_READING;
 }

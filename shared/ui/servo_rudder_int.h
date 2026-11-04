@@ -71,9 +71,10 @@ typedef struct {
      *         sign: REVERSE flips what is shown, not what is kept. */
     servo_rudder_t geo;
     /** @brief The source @ref geo is kept against: 0 none yet, 1 the
-     *         AS5600, 2 + 2 x AXIS + SIGN the IMU.  Another source in
-     *         force drops the zero and the MAX. */
-    uint8_t  geo_src;
+     *         AS5600, 2 + 2 x AXIS + SIGN the IMU, plus 16 x the IMU's
+     *         zero generation.  Another source in force drops the zero
+     *         and the MAX. */
+    uint32_t geo_src;
     uint8_t  pressed;       /**< rudder_ctl_t a tap is on, RUD_C_NONE   */
     uint8_t  press_id;      /**< that contact's track id                */
     uint32_t drawn_card[2]; /**< rudder_card_sig() as each buffer drew it */

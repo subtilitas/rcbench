@@ -409,7 +409,9 @@ void panel_frame_loop(void)
                 servo_screen_encoder(&enc);
             }
         }
-        if (imu_src && panel_imu_angle(imu_fresh, &enc)) {
+        /* Two at most: a stale stretch, then the reading that ended it. */
+        for (int i = 0; i < 2 && imu_src
+                        && panel_imu_angle(imu_fresh && i == 0, &enc); ++i) {
             servo_screen_encoder(&enc);
         }
         /* The servo rail's meter, then the INA3221's CH1 windows, each
