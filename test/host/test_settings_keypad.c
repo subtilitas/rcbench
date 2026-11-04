@@ -432,9 +432,9 @@ TEST_CASE(a_refusal_inside_the_range_says_why_until_the_next_key)
         const char *shunt, *limit, *sda;
     } k_why[] = {
         { UI_LANG_EN, "0 or 5.0 to 1000.0mΩ", "0 or 10 to 32767mA",
-          "Pins the bus takes: 0 4 6 14 16 18 20 26" },
+          "Allowed bus pins: 0 4 6 14 16 18 20 26" },
         { UI_LANG_DE, "0 oder 5.0 bis 1000.0mΩ", "0 oder 10 bis 32767mA",
-          "Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26" },
+          "Zulässige Bus-Pins: 0 4 6 14 16 18 20 26" },
     };
     for (size_t i = 0; i < sizeof(k_why) / sizeof(k_why[0]); ++i) {
         ui_text_set_language(k_why[i].lang);
@@ -489,7 +489,7 @@ TEST_CASE(tap_pin_takes_only_the_pins_the_module_brings_out)
                  "0 1 2 4 5 6 7 13 14 15 16 17 18 19 20 21 22");
     char why[64];
     CHECK_STR_EQ(ui_setting_keypad_why(SET_TONE_PIN, 23.0f, why, sizeof(why)),
-                 "Pins the tap takes: 0 1 2 4 5 6 7 13 14 15 16 17 18 19 20 "
+                 "Allowed tap pins: 0 1 2 4 5 6 7 13 14 15 16 17 18 19 20 "
                  "21 22");
     CHECK(ui_setting_keypad_why(SET_TONE_PIN, 22.0f, why, sizeof(why))
           == NULL);
@@ -557,9 +557,9 @@ TEST_CASE(a_short_sda_reason_keeps_whole_pins)
         ui_lang_t lang;
         const char *text, *cut;
     } k_lang[] = {
-        { UI_LANG_EN, "Pins the bus takes: ", "Pins the bus takes: 0 4 6" },
-        { UI_LANG_DE, "Pins, die der Bus nimmt: ",
-          "Pins, die der Bus nimmt: 0 4 6" },
+        { UI_LANG_EN, "Allowed bus pins: ", "Allowed bus pins: 0 4 6" },
+        { UI_LANG_DE, "Zulässige Bus-Pins: ",
+          "Zulässige Bus-Pins: 0 4 6" },
     };
     for (size_t i = 0; i < sizeof(k_lang) / sizeof(k_lang[0]); ++i) {
         ui_text_set_language(k_lang[i].lang);

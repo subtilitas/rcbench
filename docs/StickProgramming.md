@@ -54,7 +54,7 @@ What it does not know:
 
 ## On the screen
 
-MOTOR & ESC, then PROGRAM, then the row `ESCs by throttle stick`:
+MOTOR & ESC, then PROGRAM, then the row `ESCs via throttle stick`:
 
 ![PROGRAM's list](img/motor-program.png)
 

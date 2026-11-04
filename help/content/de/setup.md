@@ -14,7 +14,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in drei Kate
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| PANEL | `THEMA, SPRACHE, DREHKNOPF` | die Liste von PANEL |
+| PANEL | `DESIGN, SPRACHE, DREHKNOPF` | die Liste von PANEL |
 | SENSORS | `STROM, WINKEL, PHASENABGRIFF` | [Sensoren](setup-sensors.md): der Sensorbus, die Strommonitore INA228 und INA3221, der AS5600, der Phasenabgriff und die Bluetooth-IMU, eine linke Liste von 9 neben den Zeilen des gewählten |
 | OUTPUTS | `PROTOKOLLE, PINS, PLATINE` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, auf einer Zeichnung der Platine |
 | SD CARD | `LOGS, BROWSER-SCHREIBEN` | die Liste von SD CARD: welche Logs das Panel schreibt, und wohin, und was ein Browser zum Schreiben braucht |
@@ -46,7 +46,7 @@ Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Ei
 - **Tipp**: Eine Taste schaltet einmal, wenn der Finger innerhalb von 8px um den Druckpunkt auf der Taste abhebt.
 - **Halten**: Eine gehaltene Taste schaltet zuerst nach 0,45s, dann 8-mal pro Sekunde und ab 2,25s 30-mal pro Sekunde.
 - **Scrollen**: Ein senkrechtes Ziehen über mehr als 8px irgendwo auf der Liste scrollt sie und ändert keinen Wert.
-- **Tastenfeld**: Ein Tippen auf den Wert einer Zahl, zwischen ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste. Es nennt die Einstellung, ihren Bereich und ihre Einheit und nimmt so viele Stellen nach dem Punkt, wie der Schritt hat. OK setzt den Wert wie ein Schritt auf den näheren Schritt: 73% Helligkeit sind 75%. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es offen und nennt dort stattdessen den Grund in der Warnfarbe: `0 oder 5.0 bis 1000.0mΩ` für einen Shunt zwischen 0 und 5,0mΩ, `0 oder 10 bis 32767mA` für eine Stromgrenze zwischen 0 und 10mA, `Pins, die der Bus nimmt: 0 4 6 14 16 18 20 26` für einen Pin für Sensor-SDA, den der Bus nicht haben kann, `Diesen GPIO hält der andere PD-mini-Pin` für den GPIO des anderen PD-mini-Pins. Die nächste Taste bringt den Bereich zurück. ABBRECHEN und das Home-Tag ändern nichts. -1, ein nicht gesetzter Pin, wird mit `-` gesetzt: Das Tastenfeld eines Pins hat keine Taste `+/-`.
+- **Tastenfeld**: Ein Tippen auf den Wert einer Zahl, zwischen ihren Tasten `-` und `+`, öffnet das Tastenfeld über der Liste. Es nennt die Einstellung, ihren Bereich und ihre Einheit und nimmt so viele Stellen nach dem Punkt, wie der Schritt hat. OK setzt den Wert wie ein Schritt auf den näheren Schritt: 73% Helligkeit sind 75%. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es offen und nennt dort stattdessen den Grund in der Warnfarbe: `0 oder 5.0 bis 1000.0mΩ` für einen Shunt zwischen 0 und 5,0mΩ, `0 oder 10 bis 32767mA` für eine Stromgrenze zwischen 0 und 10mA, `Zulässige Bus-Pins: 0 4 6 14 16 18 20 26` für einen Pin für Sensor-SDA, den der Bus nicht haben kann, `GPIO vom anderen PD-mini-Pin belegt` für den GPIO des anderen PD-mini-Pins. Die nächste Taste bringt den Bereich zurück. ABBRECHEN und das Home-Tag ändern nichts. -1, ein nicht gesetzter Pin, wird mit `-` gesetzt: Das Tastenfeld eines Pins hat keine Taste `+/-`.
 - Ein Finger zur selben Zeit: Ein zweiter Finger tut nichts, solange einer drückt oder scrollt.
 
 Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der offenen Kategorie auf seine Vorgabe zurück; auf SENSORS tut `INA228 ZURÜCKSETZEN` das allein für den gewählten Eintrag.
@@ -113,8 +113,8 @@ Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angef
 | Dimmen nach | 0 bis 60min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
 | Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 an einem eigenen Bus, IO30 und IO31 des Headers P3 (I2C: Inter-Integrated Circuit), dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
-| Knopf-Skala | 90 bis 720deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
-| Tastatur durchsichtig | AUS, 25%, 50% | AUS | wie viel des Texts durch die Tastatur des Texteditors auf [Files](files.md#der-texteditor) scheint; andere Tastaturen bleiben deckend |
+| Drehknopfbereich | 90 bis 720deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
+| Tastaturtransparenz | AUS, 25%, 50% | AUS | wie viel des Texts durch die Tastatur des Texteditors auf [Files](files.md#der-texteditor) scheint; andere Tastaturen bleiben deckend |
 | Demo-Modus | EIN, AUS | AUS | blendet das Wasserzeichen SIMULATION ab dem nächsten Bild aus; das Band zeigt weiter SIM, und die Kacheln zeigen weiter SIMULIERT. Das Panel zeichnet das Wasserzeichen nur, solange kein IOmcu antwortet, die Einstellung ändert also nichts an einem Prüfstand mit IOmcu |
 
 Die Hintergrundbeleuchtung ist an, solange das Panel läuft. Keine Einstellung schaltet sie.
@@ -145,17 +145,17 @@ Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Nichts
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
-| Auto-Logs | EIN, AUS | EIN | ein Log je ARMED- und Netzteil-Lauf in Ordner Auto-Logs: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
-| User-Logs | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in Ordner User-Logs |
+| Auto-Aufzeichnungen | EIN, AUS | EIN | ein Log je ARMED- und Netzteil-Lauf in Ordner Auto-Aufzeichnungen: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
+| Testaufzeichnungen | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in Ordner Testaufzeichnungen |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | was die Browserseite von WI-FI braucht, um die Karte zu ändern: [WLAN](wifi.md#schreiben-per-browser) |
-| Ordner Auto-Logs | ein Ordner | `BENCH/LOGS` | wohin Auto-Logs schreibt |
-| Ordner User-Logs | ein Ordner | `USER/LOGS` | wohin User-Logs schreibt |
+| Ordner Auto-Aufzeichnungen | ein Ordner | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
+| Ordner Testaufzeichnungen | ein Ordner | `USER/LOGS` | wohin Testaufzeichnungen schreibt |
 
 - AUS schreibt keine Datei und nimmt keine Nummer. Keine Kartenmeldung dieser Art von Lauf erscheint.
-- Auto-Logs während eines Laufs ausgeschaltet beendet dessen Datei an dieser Stelle; während eines ARMED- oder Netzteil-Laufs eingeschaltet, beginnt dort eine Datei.
-- User-Logs zählt bei TEST STARTEN und ENDLAGENLAUF STARTEN: Ein Lauf behält, womit er gestartet ist. Ist es aus, nennt der SERVO-Bildschirm `USER-LOGS AUS` an der Stelle der Datei.
-- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei User-Logs EIN, ob `ATESTnnn.TXT` geschrieben wird.
-- Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, wird unabhängig von Auto-Logs geschrieben.
+- Auto-Aufzeichnungen während eines Laufs ausgeschaltet beendet dessen Datei an dieser Stelle; während eines ARMED- oder Netzteil-Laufs eingeschaltet, beginnt dort eine Datei.
+- Testaufzeichnungen zählt bei TEST STARTEN und ENDLAGENLAUF STARTEN: Ein Lauf behält, womit er gestartet ist. Ist es aus, nennt der SERVO-Bildschirm `TESTAUFZEICHNUNGEN AUS` an der Stelle der Datei.
+- BERICHT unter SERVO > OPTIONEN > PRÜFLING entscheidet bei Testaufzeichnungen EIN, ob `ATESTnnn.TXT` geschrieben wird.
+- Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, wird unabhängig von Auto-Aufzeichnungen geschrieben.
 - [Logs](logs.md#was-ein-lauf-schreibt) listet die Ordner.
 
 Ein Tippen auf die Zeile eines Ordners öffnet die Tastatur auf dem Ordner. Ihre Taste `.` schreibt `/`. OK übernimmt den Ordner in Großbuchstaben; SPEICHERN behält ihn. ABBRECHEN und das Home-Tag lassen den Ordner, wie er war. Ein während eines Laufs geänderter Ordner gilt ab der nächsten Datei; der Lauf endet, wo er begonnen hat, und der nächste wird nach dem nummeriert, was der neue Ordner enthält. Beide Zeilen dürfen denselben Ordner nennen.
@@ -168,10 +168,10 @@ Für einen Ordner, den die Karte nicht nehmen kann, lässt OK die Tastatur offen
 |---|---|---|
 | ein Ordnername leer, oder `/` am Anfang, am Ende oder doppelt | `/LOGS`, `LOGS/`, `A//B` | `Ein Ordnername ist leer` |
 | über 8 Zeichen in einem Ordnernamen | `BENCHLOGS`; `BENCHLOG` wird genommen | `Höchstens 8 Zeichen je Ordner` |
-| über 2 Ordner | `A/B/C`; `A/B` wird genommen | `Höchstens 2 Ordner tief` |
+| über 2 Ordner | `A/B/C`; `A/B` wird genommen | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` oder `BENCH/ESCW`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Ordner der Prüfstand-Dateien` |
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` oder `BENCH/ESCW`, die eigenen Dateien des Prüfstands | `BENCH/KST`; `BENCH/KSTX` wird genommen | `Für Prüfstand-Dateien reserviert` |
 
 ## SENSORS
 

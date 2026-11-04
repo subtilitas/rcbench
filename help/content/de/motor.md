@@ -63,7 +63,7 @@ Die Zeile ZIEL oben auf der Karte STEUERUNG nennt, was der Throttle treibt: das 
 | `GEMISCHT GPIO 0 GPIO 4` | die Throttle-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
 | `GPIO 0 GPIO 1` | jeder Throttle-Pin läuft mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
 | `KEIN MOTOR-PIN` | die Bindung ist gelesen, und kein Pin ist als Motor gebunden; Warnfarbe |
-| `PINS NICHT GELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte; Warnfarbe |
+| `PINS NICHT AUSGELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte; Warnfarbe |
 
 Ein Tipp auf ZIEL öffnet [Ausgänge](outputs.md) auf dem Protokoll, an das die Gas-Pins gebunden sind, oder auf der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist, und der Prüfstand schaltet auf SAFE wie bei jedem Weg vom Bildschirm. Das Home-Tag auf OUTPUTS führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde.
 
@@ -130,11 +130,11 @@ Der Kopf der Grafik zeigt den Nenn-kV-Wert, die gemessene Drehzahl je Volt und E
 
 ## Das Log eines Laufs
 
-Jedes Schalten auf ARMED schreibt eine Datei, `MOTORnnn.CSV`, in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels, solange Auto-Logs unter [SETUP](setup.md#sd-card) > SD CARD EIN ist. Bei stehendem Link ist eine Zeile eine beantwortete Abfrage, etwa 19 Zeilen pro Sekunde an einem Prüfstand; andere Prüfstände sind nicht gemessen. Die Datei schließt beim Schalten auf SAFE. [Logs](logs.md) öffnet sie und zeichnet sie.
+Jedes Schalten auf ARMED schreibt eine Datei, `MOTORnnn.CSV`, in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels, solange Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD EIN ist. Bei stehendem Link ist eine Zeile eine beantwortete Abfrage, etwa 19 Zeilen pro Sekunde an einem Prüfstand; andere Prüfstände sind nicht gemessen. Die Datei schließt beim Schalten auf SAFE. [Logs](logs.md) öffnet sie und zeichnet sie.
 
 ## Verwandte Seiten
 
-- [Motor-Optionen](motor-settings.md): der Akku, Nenn-kV, Motorpole, Leerlaufpuls und Vollpuls.
+- [Motor-Optionen](motor-settings.md): der Akku, Nenn-kV, Motorpole, Leerlaufpuls und Vollgaspuls.
 - [ESC STICK](motor-stick.md): einen ESC über sein Gasknüppel-Menü programmieren.
 - [Ausgänge](outputs.md): welche Pins der Throttle treibt.
 - [Setup](setup.md): der Drehknopf.

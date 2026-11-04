@@ -6,7 +6,7 @@ order: 12
 
 # ESC STICK
 
-ESC STICK sets an ESC (electronic speed controller) through its throttle-stick menu. The bench powers the ESC from the PD mini supply, moves the throttle to the positions the ESC profile names, and counts the menu's beeps as pulses in the supply current. It opens from the row `ESCs by throttle stick` on MOTOR & ESC's [PROGRAM](motor.md#program), full width under the output strip.
+ESC STICK sets an ESC (electronic speed controller) through its throttle-stick menu. The bench powers the ESC from the PD mini supply, moves the throttle to the positions the ESC profile names, and counts the menu's beeps as pulses in the supply current. It opens from the row `ESCs via throttle stick` on MOTOR & ESC's [PROGRAM](motor.md#program), full width under the output strip.
 
 No ESC has been recorded and no profile is verified. Every beep time is a default kept as a setting. DONE means every selection move was made on a counted group, not that the ESC stored it.
 

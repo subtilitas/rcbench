@@ -16,10 +16,10 @@ IMU ist der Bildschirm der Bluetooth-IMU (Inertial Measurement Unit): ein WitMot
 | MIT JEDEM SENSOR VERBINDEN | nur, nachdem der HC-05 eine Suche mit `ERROR:(1F)` abgelehnt hat: stellt ihn so ein, dass er sich mit jedem Sensor verbindet, der PIN 1234 annimmt (`AT+CMODE=1`) |
 | 2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN | solange verbunden: die Kalibrierung des Beschleunigungssensors. Halte ihn still und waagerecht für die 3s, die die Zeile herunterzählt |
 | NULLPUNKT | nimmt die aktuellen Winkel als Nullpunkt; solange ein Messwert da ist. Mit ANGLE SOURCE IMU verwirft RUDDER seinen Nullpunkt und MAX |
-| NULLPUNKT WEG | die Winkel wieder ab dem eigenen Nullpunkt des Sensors |
-| IMU-EINSTELLUNGEN | öffnet den IMU-Eintrag von [Sensoren](setup-sensors.md#die-imu); dessen Home-Tag führt hierher zurück |
+| NULLPUNKT LÖSCHEN | die Winkel wieder ab dem eigenen Nullpunkt des Sensors |
+| IMU-OPTIONEN | öffnet den IMU-Eintrag von [Sensoren](setup-sensors.md#die-imu); dessen Home-Tag führt hierher zurück |
 
-Ein Druck auf die Halten-Taste kürzer als 2s startet nichts, und das Band sagt `Halte 2s, um die Beschleunigung zu kalibrieren.`.
+Ein Druck auf die Halten-Taste kürzer als 2s startet nichts, und das Band sagt `Halte 2s, um den Beschleunigungssensor zu kalibrieren.`.
 
 ## Die Karte
 
@@ -29,7 +29,7 @@ Ein Druck auf die Halten-Taste kürzer als 2s startet nichts, und das Band sagt 
 |---|---|
 | `SENSOR: HC-06` | den Namen des gebundenen Sensors aus der Suche, `OHNE NAMEN` ohne einen, `KEINER GEBUNDEN` oder `JEDER IN REICHWEITE`; darunter seine Adresse |
 | `HC-05: 2.0-20100601` | die Firmware des HC-05, `---`, bis er geantwortet hat |
-| Zustand | `IMU AUS IN IMU-EINSTELLUNGEN`, `KEIN HC-05`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `BINDEN LÄUFT`, `GEBUNDEN`, `VERBUNDEN 50Hz` oder `KEINE FRAMES` |
+| Zustand | `IMU AUS IN IMU-OPTIONEN`, `KEIN HC-05`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `BINDEN LÄUFT`, `GEBUNDEN`, `VERBUNDEN 50Hz` oder `KEINE FRAMES` |
 | X, Y, Z | die Winkel ab dem Nullpunkt, 0,1°, `---` ohne Messwert. Die Achse, die die Servoläufe lesen, steht in der Akzentfarbe |
 | RATE, ALTER | die Winkel-Frames der letzten Sekunde und die Zeit, seit der neueste den Bildschirm erreicht hat |
 | AKKU | der Akku des Sensors, aus seinem Frame 0x52; über 6,0V ausgeblendet |
@@ -40,14 +40,14 @@ Der Messwert ist 300ms nach dem letzten Winkel-Frame veraltet. Ein Servolauf mit
 
 ![Drei Geräte gefunden](view:imu-scan)
 
-Eine Suche dauert bis zu 40s: 11,5s Inquiry, dann der Name jedes gefundenen Geräts, bis zu 8. Ein Tippen auf ein Gerät bindet den HC-05 mit PIN 1234 daran und schließt die Liste; der HC-05 startet dann neu und verbindet sich damit. SETUP behält Adresse und Namen und bittet ums Speichern. NEU SUCHEN startet eine weitere Suche; SCHLIESSEN und das Home-Tag schließen die Liste.
+Eine Suche dauert bis zu 40s: 11,5s Inquiry, dann der Name jedes gefundenen Geräts, bis zu 8. Ein Tippen auf ein Gerät bindet den HC-05 mit PIN 1234 daran und schließt die Liste; der HC-05 startet dann neu und verbindet sich damit. SETUP behält Adresse und Namen und bittet ums Speichern. AKTUALISIEREN startet eine weitere Suche; SCHLIESSEN und das Home-Tag schließen die Liste.
 
 | Zeile | Bedeutung |
 |---|---|
-| `HC-05 ANTWORTET NICHT AUF AT: KABEL UND KEY PRÜFEN` | kein OK bei 115200, 38400 oder 9600 Baud |
+| `HC-05 ANTWORTET NICHT AUF AT. PRÜFE KABEL UND KEY` | kein OK bei 115200, 38400 oder 9600 Baud |
 | `DER HC-05 LEHNT DIE SUCHE AB: ERROR:(1F)` | Firmware 3.0 lehnt eine Suche laut Berichten ab; MIT JEDEM SENSOR VERBINDEN bindet den einen Sensor in Reichweite |
-| `KEIN GERÄT GEFUNDEN: IST DER SENSOR AN?` | die Inquiry endete ohne Gerät |
-| `KOPPELN FEHLGESCHLAGEN: SENSOR AN UND IN REICHWEITE?` | `AT+PAIR` antwortete FAIL oder ERROR |
+| `KEIN GERÄT GEFUNDEN: IST DER SENSOR EIN?` | die Inquiry endete ohne Gerät |
+| `PAIRING FEHLGESCHLAGEN: SENSOR EIN UND IN REICHWEITE?` | `AT+PAIR` antwortete FAIL oder ERROR |
 
 ## Verwandte Seiten
 

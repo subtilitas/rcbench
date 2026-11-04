@@ -519,11 +519,11 @@ TEST_CASE(a_part_the_iomcu_does_not_read_marks_its_rows)
     CHECK(!sensors_rows_unheld(SET_INA_FIT(1)));
     CHECK(!sensors_rows_unheld(SET_HITEC_RX));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(3)),
-                 "IOmcu before 0.22.0: one part, CH1 at 1kHz.");
+                 "IOmcu before 0.22.0: 1 chip, CH1 at 1kHz.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(6)),
-                 "Every channel off. The IOmcu takes none.");
+                 "All channels off. None are measured.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(9)),
-                 "INA228 on this address. Neither is read.");
+                 "INA228 address conflict. Neither is read.");
     sensors_rows_set_status((uint16_t)SENS_PART_REFUSED);
     CHECK(sensors_rows_unheld(SET_INA_W(0)));
     CHECK(settings_screen_unheld(SET_INA_W(0)));
@@ -554,14 +554,14 @@ TEST_CASE(a_limit_the_iomcu_does_not_hold_marks_its_row)
                                        | (1u << 11)));
     CHECK(sensors_rows_unheld(SET_INA_LIM(11)));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(11)),
-                 "IOmcu before 0.22.0: no limit is judged.");
+                 "IOmcu before 0.22.0: no limit is checked.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_W(11)),
                  "Not accepted by the IOmcu.");
     CHECK_STR_EQ(sensors_rows_why(SET_INA_FIT(0)),
                  "Not accepted by the IOmcu.");
     sensors_rows_set_status((uint16_t)(SENS_PART_DARK << 12));
     CHECK_STR_EQ(sensors_rows_why(SET_INA_LIM(11)),
-                 "Every channel off. The IOmcu takes none.");
+                 "All channels off. None are measured.");
     /* The row reads OFF at 0 and mA as the page takes them. */
     settings_set(SET_INA_LIM(3), 1250.0f);
     CHECK_EQ(settings_sensors_limit_ma(3), 1250u);
@@ -617,7 +617,7 @@ TEST_CASE(every_part_state_has_its_words_and_colour)
         { SENS_PART_WRONG,     "ANOTHER ID ANSWERS",        UI_C_WARN },
         { SENS_PART_REFUSED,   "NOT ACCEPTED BY THE IOMCU", UI_C_WARN },
         { SENS_PART_DARK,      "EVERY CHANNEL OFF",         UI_C_WARN },
-        { SENS_PART_SAME_ADDR, "INA228 ON THIS ADDRESS",    UI_C_WARN },
+        { SENS_PART_SAME_ADDR, "INA228 AT THIS ADDRESS",    UI_C_WARN },
         { SENS_PART_OLD,       "NOT READ, IOMCU < 0.22.0",  UI_C_WARN },
         { SENS_PART_NO_BUS,    "NO BUS PINS",               UI_C_WARN },
     };
@@ -665,8 +665,8 @@ TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
     }
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_LOST, 0u, 0u, 0),
-                 "An INA3221 channel passed its limit; which one was lost "
-                 "on the link.");
+                 "An INA3221 channel exceeded its limit. Its channel number "
+                 "was lost on the link.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_REFUSED, 0u, 0u, 0),
                  "INA3221 limits rejected. Check SENSORS.");
@@ -701,8 +701,7 @@ TEST_CASE(an_over_alert_names_its_channel_target_and_limit)
                  "ber der Grenze von 32.77A.");
     CHECK_STR_EQ(sensors_rows_alert(buf, sizeof(buf),
                                     SENSE_LIMIT_LINK_EV_REFUSED, 0u, 0u, 0),
-                 "INA3221-Grenzen abgelehnt. SENSORS pr"
-                 "\xc3\xbc" "fen.");
+                 "INA3221-Grenzen abgelehnt. Pr\xc3\xbc" "fe SENSORS.");
     ui_text_set_language(UI_LANG_EN);
 }
 

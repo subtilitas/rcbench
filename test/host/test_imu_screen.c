@@ -418,7 +418,7 @@ TEST_CASE(the_state_line_names_every_link_state)
         "BINDING", "BOUND", "CONNECTED 50Hz", "NO FRAMES",
     };
     static const char *const de[] = {
-        "IMU AUS IN IMU-EINSTELLUNGEN", "KEIN HC-05", "KEIN SENSOR GEBUNDEN",
+        "IMU AUS IN IMU-OPTIONEN", "KEIN HC-05", "KEIN SENSOR GEBUNDEN",
         "SUCHE LÄUFT", "BINDEN LÄUFT", "GEBUNDEN", "VERBUNDEN 50Hz",
         "KEINE FRAMES",
     };
@@ -457,7 +457,7 @@ TEST_CASE(the_state_line_names_every_link_state)
           "PAIRING FAILED: IS THE SENSOR ON AND IN RANGE?" },
         { HC05_ERR_NONE_FOUND, 0u, "NO DEVICE FOUND: IS THE SENSOR ON?" },
         { HC05_ERR_ARG, 0u,
-          "THE ADDRESS OR THE PIN IS NOT ONE THE HC-05 TAKES" },
+          "THE HC-05 DOES NOT ACCEPT THIS ADDRESS OR PIN" },
     };
     for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
         v.err = k[i].e;

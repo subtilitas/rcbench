@@ -70,11 +70,11 @@ The strip names what the session drives: `TARGET SLOT 1 GPIO 0`, then the supply
 | TARGET | throttle slots and DShot ports | the first |
 | POWER | SWITCHED, BY HAND | SWITCHED |
 | VOLTAGE | 3.00V, or SUPPLY's lower limit if higher, to SUPPLY's upper limit for this board and setting | SUPPLY's set point |
-| LIMIT | 0.05A, or SUPPLY's lower limit if higher, to SUPPLY's upper limit for this board and setting | SUPPLY's set point |
+| CURRENT LIMIT | 0.05A, or SUPPLY's lower limit if higher, to SUPPLY's upper limit for this board and setting | SUPPLY's set point |
 | ENTRY HOLD | 0.5s to 120s | 3.0s |
 | OFF TIME | 0s to 10s | 1.0s |
 
-The session has no default voltage. VOLTAGE and LIMIT follow SUPPLY until a tap on the number types another. POWER keeps the last choice over a panel restart, in the panel's settings (NVS key `escw_by_hand`); a panel with none stored starts on SWITCHED. SWITCHED uses the PD mini. BY HAND drives the line high and waits at most 60s for `POWER IS ON`.
+The session has no default voltage. VOLTAGE and CURRENT LIMIT follow SUPPLY until a tap on the number types another. POWER keeps the last choice over a panel restart, in the panel's settings (NVS key `escw_by_hand`); a panel with none stored starts on SWITCHED. SWITCHED uses the PD mini. BY HAND drives the line high and waits at most 60s for `POWER IS ON`.
 
 Take the propeller off. Connect signal and ground only: a BEC (battery eliminator circuit) on the ESC's centre wire would feed the bench's rail. Unplug servos. CONNECT is a red 2s hold.
 
@@ -202,11 +202,11 @@ ESCape32 has no LEAVE: a power cycle ends its session. SWITCHED parks the line a
 
 STOP in the band stops the session. A write runs to its read-back first. ABORT on the page acts on the press and cuts at once, also in a write. A stop, a supply lost or a link lost closes an open editor or hold page, and the screen says what happened.
 
-After a stop or a fault the page offers CLEAR STOP and PIN BACK. CLEAR STOP ends the stop and keeps the pin held. With the panel's own STOP standing, only PIN BACK shows, with `The bench's STOP stands: hold STOP 2s to reset it.`: CLEAR STOP needs the heartbeat, which the latched STOP withholds. Once STOP is reset, CLEAR STOP shows again.
+After a stop or a fault the page offers CLEAR STOP and PIN BACK. CLEAR STOP ends the stop and keeps the pin held. With the panel's own STOP standing, only PIN BACK shows, with `The bench STOP is latched: hold STOP 2s to reset it.`: CLEAR STOP needs the heartbeat, which the latched STOP withholds. Once STOP is reset, CLEAR STOP shows again.
 
 After a stop or a fault the panel's SUPPLY OFF stands on the SUPPLY page until the hold ends, so the supply does not come on again under this hold. The page held after it offers only PIN BACK, with `A stop or a fault ended this session: PIN BACK, then CONNECT.` An ENTER that meets this state is refused with `SUPPLY_OFF` before anything moves. A SUPPLY OFF under PIN HELD with no stop or fault shows only that refusal's line.
 
-A pin held in `OPEN` with no stop and nothing running has a page of its own: after ABORT, after CLEAR STOP, and after a refused ENTER, whose reason shows on it, such as no PD mini or a voltage too close to the source. It shows POWER, VOLTAGE, LIMIT, ENTRY HOLD and OFF TIME, read-only, and offers ENTER AGAIN, a red 2s hold, and PIN BACK; after a stop or a fault, CLEAR STOP included, it offers PIN BACK only. ENTER AGAIN sends those values: the session's current ones, which follow SUPPLY until typed, not those of the last CONNECT. BY HAND shows no voltage and no limit. A value that moves under the hold ends the hold. After ABORT the line says ABORT ended it. BACK names the button that ends the stage.
+A pin held in `OPEN` with no stop and nothing running has a page of its own: after ABORT, after CLEAR STOP, and after a refused ENTER, whose reason shows on it, such as no PD mini or a voltage too close to the source. It shows POWER, VOLTAGE, CURRENT LIMIT, ENTRY HOLD and OFF TIME, read-only, and offers ENTER AGAIN, a red 2s hold, and PIN BACK; after a stop or a fault, CLEAR STOP included, it offers PIN BACK only. ENTER AGAIN sends those values: the session's current ones, which follow SUPPLY until typed, not those of the last CONNECT. BY HAND shows no voltage and no limit. A value that moves under the hold ends the hold. After ABORT the line says ABORT ended it. BACK names the button that ends the stage.
 
 A line on the page stays on the stage where it happened and on the page its end leads to. The next press on a button shown clears it; a press on an empty place clears nothing. Arriving on CONNECT with the pin free and no flow clears every line but `LEFT`, the link's state and an error that says what ended the flow, which clears at the next press. A link that falls closes a keypad, a choice and a hold page on any stage, and its line replaces `ABORT ended it`.
 

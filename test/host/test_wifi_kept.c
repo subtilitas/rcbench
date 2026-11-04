@@ -1,6 +1,6 @@
 /**
  * @file test_wifi_kept.c
- * @brief WI-FI's HOTSPOT PASSWORD and WEB CODE: the buttons of the radio-off
+ * @brief WI-FI's HOTSPOT PASSWORD and ACCESS CODE: the buttons of the radio-off
  *        view, the view of each, the keyboard at 7, 8, 63 and 64 characters,
  *        BACK TO RANDOM with no typing, the home tag's levels, what a
  *        screenshot may take, and the rows and lines with a 63-character value
@@ -423,7 +423,7 @@ TEST_CASE(the_view_says_what_stands_and_what_went_wrong)
     show();
     const uint32_t long_view = band_hash(0, WF_SCAN_BY);
     CHECK(long_view != short_view);
-    /* ACCESS CODE off says so on WEB CODE's view and not on the other's. */
+    /* ACCESS CODE off says so on ACCESS CODE's view and not on the other's. */
     v.code_on = false;
     show();
     const uint32_t off_view = band_hash(0, WF_SCAN_BY);

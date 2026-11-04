@@ -76,22 +76,22 @@ TEST_CASE(a_run_reads_the_windows_and_none_of_the_supplys_readings)
     CHECK(rows_with(h.out.csv, COL_MODE, "OFF") <= 3u);
 
     const char *r = h.out.report;
-    CHECK(strstr(r, "Log:            the .CSV with this file's number, one "
-                    "row per INA3221 window\n") != NULL);
+    CHECK(strstr(r, "Log:            .CSV with the same file number; "
+                    "one row per INA3221 window\n") != NULL);
     CHECK(strstr(r, "Supply:         PD mini\n") != NULL);
     CHECK(strstr(r, "Current:        INA3221, shunt 100.0mΩ, range "
                     "1.638A\n") != NULL);
     CHECK(strstr(r, "Voltage:        INA3221, load side of the shunt\n")
           != NULL);
-    CHECK(strstr(r, "Shunt:          up to 0.164V lost across it at the "
-                    "range") != NULL);
-    CHECK(strstr(r, "Readings:       20.0 /s windows closed by the INA3221, "
-                    "20.0 /s reached the test\n") != NULL);
+    CHECK(strstr(r, "Shunt:          voltage drop up to 0.164V at full "
+                    "current range") != NULL);
+    CHECK(strstr(r, "Readings:       20.0/s INA3221 windows completed; "
+                    "20.0/s reached the test\n") != NULL);
     CHECK(strstr(r, "Skipped:        0 windows the INA3221 closed never "
                     "reached the test\n") != NULL);
-    CHECK(strstr(r, "Resolution:     one window every 50ms: a travel "
-                    "time is late by up to two windows and the poll that "
-                    "reads them\n") != NULL);
+    CHECK(strstr(r, "Resolution:     one window every 50ms; travel time "
+                    "can be overestimated by up to two windows plus "
+                    "polling time\n") != NULL);
     CHECK(strstr(r, "Lag:            about 50ms") != NULL);
     CHECK(strstr(r, "Repeats:") == NULL);
     CHECK(strstr(r, "Travel times:   an upper bound, not checked against "
@@ -103,10 +103,10 @@ TEST_CASE(a_run_reads_the_windows_and_none_of_the_supplys_readings)
                     "ms\n") != NULL);
     CHECK(strstr(r, " 4.80  4.79  4.59     20     20    400    450 ")
           != NULL);
-    CHECK(strstr(r, "Position: nothing measures the horn; every result is "
-                    "the current of the INA3221 channel named above.\n")
+    CHECK(strstr(r, "Position: the horn position is not measured. All results "
+                    "are based on current from the INA3221 channel named above.\n")
           != NULL);
-    CHECK(strstr(r, "every result is the supply's current") == NULL);
+    CHECK(strstr(r, "All results are based on the supply's current.") == NULL);
     CHECK(strstr(r, "INA3221:        not used") == NULL);
 }
 
@@ -119,8 +119,7 @@ TEST_CASE(a_run_on_the_pd_mini_reads_no_window)
         servo_test_ina_t why;
         const char      *text;
     } k_why[] = {
-        { SERVO_TEST_INA_OLD, "the IOmcu is older than firmware "
-                              "0.16.0" },
+        { SERVO_TEST_INA_OLD, "IOmcu firmware is older than 0.16.0" },
         { SERVO_TEST_INA_NOT_HELD, "the IOmcu does not hold its "
                                    "set-up" },
         { SERVO_TEST_INA_SILENT, "it does not answer" },

@@ -53,7 +53,7 @@ Jeder gebundene Pin ist ein Slot der OUTPUTS-Seite des IOmcu, in Pin-Reihenfolge
 |---|---|---|
 | OFF | bindet nichts; zeigt die ganze Bindung | 0 |
 | SERVO PWM | PWM (Pulsweitenmodulation) mit 50Hz, für ein Servo oder ein Ruder | bis 8 |
-| MOTOR PWM | derselbe Puls mit 50Hz, für einen ESC; von Leerlaufpuls bis Vollpuls | bis 8 |
+| MOTOR PWM | derselbe Puls mit 50Hz, für einen ESC; von Leerlaufpuls bis Vollgaspuls | bis 8 |
 | PPM | PPM (Pulspositionsmodulation): 8 Kanäle auf einem Pin mit 40Hz | 1 |
 | DSHOT300, DSHOT600 | digitaler DShot-Throttle mit 300 oder 600kbit/s | bis 8 |
 | DSHOT300 BIDIR, DSHOT600 BIDIR | DShot mit Drehzahl-Telemetrie vom ESC auf derselben Leitung | bis 8 |
@@ -64,11 +64,11 @@ Ein Servokanal zentriert, wenn nichts ihn ansteuert; ein Motorkanal stoppt. Der 
 
 Das Wählen eines Protokolls schreibt nichts. Es bestimmt, welche Tasten hervorgehoben erscheinen und zu welchem Protokoll der nächste Tipp kommt. Die Pins der anderen Protokolle bleiben gebunden.
 
-## Leerlaufpuls und Vollpuls
+## Leerlaufpuls und Vollgaspuls
 
-Ein MOTOR-PWM-Kanal sendet 0% Throttle als Leerlaufpuls und 100% als Vollpuls, ab Werk 1000us und 2000us. Beide stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md), in Schritten von 10us: Leerlaufpuls 800 bis 1600us, Vollpuls 1400 bis 2400us. Ein SERVO-PWM-Kanal behält 1000 bis 2000us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den IOmcu 300ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht mindestens 100us unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss mindestens 100us unter Vollpuls liegen. Nicht gesendet.`.
+Ein MOTOR-PWM-Kanal sendet 0% Throttle als Leerlaufpuls und 100% als Vollgaspuls, ab Werk 1000us und 2000us. Beide stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md), in Schritten von 10us: Leerlaufpuls 800 bis 1600us, Vollgaspuls 1400 bis 2400us. Ein SERVO-PWM-Kanal behält 1000 bis 2000us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den IOmcu 300ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht mindestens 100us unter dem Vollgaspuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss mindestens 100us unter Vollgaspuls liegen. Nicht gesendet.`.
 
-Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses Senders als null. Leerlaufpuls auf oder unter diesen Puls setzen und Vollpuls auf oder über den längsten: Für einen Sender, der 985 bis 2012us sendet, 980us und 2020us.
+Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses Senders als null. Leerlaufpuls auf oder unter diesen Puls setzen und Vollgaspuls auf oder über den längsten: Für einen Sender, der 985 bis 2012us sendet, 980us und 2020us.
 
 ## Die Protokollliste und die Zähler
 
@@ -76,14 +76,14 @@ Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses 
 
 Oben links steht die Protokollliste. Eine Wahl bestimmt das Protokoll, zu dem ein Tipp auf eine Taste kommt, und schreibt nichts. Ein Tipp außerhalb der offenen Liste schließt sie.
 
-Unter der Liste zählt `4 VON 8 PLÄTZEN BELEGT` die Pins über alle Protokolle. Darunter steht in Amber der Grund, warum keine Taste hinzukommen kann:
+Unter der Liste zählt `4 VON 8 SLOTS BELEGT` die Pins über alle Protokolle. Darunter steht in Amber der Grund, warum keine Taste hinzukommen kann:
 
 | Zeile | Wann |
 |---|---|
-| `ALLE 8 PLÄTZE BELEGT` | 8 Pins sind über alle Protokolle gebunden |
+| `ALLE 8 SLOTS BELEGT` | 8 Pins sind über alle Protokolle gebunden |
 | `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, mit 4 gebundenen Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `PROTOKOLL WÄHLEN, DANN PIN TIPPEN` | OFF ist gewählt |
+| `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS` | OFF ist gewählt |
 | `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt; jede Taste ist grau |
 | `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` | die Seiten beschreiben keine Bindung; jede Taste ist grau |
 | `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` | ein Tipp auf GPIO 28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GPIO 13 hält: ein PWM-Slice; die Taste ist grau |
@@ -125,16 +125,16 @@ Der IOmcu hält Pin und Funktion jedes Ports in seinem Flash, mit der Bindung de
 
 | Zeile unter den Zeilen | Bedingung |
 |---|---|
-| `GPIO 5: TEILT PWM-SLICE MIT OUTPUT GPIO 4` | eine Taste getippt auf dem PWM-Slice eines gebundenen PWM-Ausgangs, bei einem SERVO-PWM-Port; die Taste ist grau |
+| `GPIO 5: TEILT PWM-SLICE MIT AUSGANG GPIO 4` | eine Taste getippt auf dem PWM-Slice eines gebundenen PWM-Ausgangs, bei einem SERVO-PWM-Port; die Taste ist grau |
 | `GPIO 28: GLEICHER PWM-KANAL WIE GPIO 12` | eine Taste getippt auf dem Compare-Register eines anderen SERVO-PWM-Ports; die Taste ist grau |
-| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der [Servo-Programmierer](servo-programmer.md) hat einen Port |
-| `WARTET AUF SAFE, KEINEN TEST, SWEEP ODER SERVO-PROGRAMMIERER` | eine Bitte für diesen Port wartet auf einen Prüfstand in Ruhe |
-| `DER IOMCU HAT ES ABGELEHNT` | der IOmcu hat die letzte Bitte abgelehnt oder nicht beantwortet |
+| `GESPERRT: SERVOPROGRAMMIERUNG BELEGT DEN PORT` | der [Servo-Programmierer](servo-programmer.md) hat einen Port |
+| `WARTET AUF SAFE OHNE TEST, SWEEP ODER SERVOPROGRAMMIERUNG` | eine Bitte für diesen Port wartet auf einen Prüfstand in Ruhe |
+| `VOM IOMCU ABGELEHNT` | der IOmcu hat die letzte Bitte abgelehnt oder nicht beantwortet |
 | `VERBINDUNG VOR DEM SCHREIBEN VERLOREN` | die Verbindung brach ab, bevor die Bitte geschrieben war |
-| `PORTS NOCH NICHT GELESEN` | die Ports des IOmcu seit dem Linkaufbau nicht gelesen |
+| `PORTS NOCH NICHT AUSGELESEN` | die Ports des IOmcu seit dem Linkaufbau nicht gelesen |
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED, oder ein Sweep oder ein Test läuft; PORT-PWM geht trotzdem aus |
 | `SERVO-TESTER STEUERT PROG-PORT 3` | der Tester steuert einen anderen Port |
-| `DER SERVO-TESTER BRAUCHT FUNKTION SERVO PWM` | der Port ist KEINE oder DShot |
+| `DER SERVO-TESTER BRAUCHT DIE FUNKTION SERVO PWM` | der Port ist KEINE oder DShot |
 | `IOMCU ÄLTER ALS 0.22.0: NUR SERVO PWM` | der IOmcu hat keine FUNKTION |
 | `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM auf einem Port, der nicht das Ziel des Testers ist |
 
@@ -161,7 +161,7 @@ Eine Platine, die weder Zeichnung noch Form meldet, lässt sich nicht zeichnen: 
 | ausgegraut, `KANAL VON GPIO 0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und GPIO 21, GPIO 6 und GPIO 22) | tut nichts; `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` unter der Zahl |
 | frei, `PAD 7` | nicht gebunden | bindet ihn |
 
-Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber unter der Zahl: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder `SERVO PWM BELEGT 8 PINS`.
+Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber unter der Zahl: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 SLOTS BELEGT` oder `SERVO PWM BELEGT 8 PINS`.
 
 Eine gespeicherte Bindung, die GPIO 13 hält, behält ihn: Der Programmierport hat dann keinen Pin, und der [Servo-Programmierer](servo-programmer.md) sagt das bei VERBINDEN.
 
@@ -181,7 +181,7 @@ Die Einträge PROG PORT nennen den Pin jedes Ports, `PROGP01 AUF GPIO 13`, und d
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
 
-Jeder Besuch von SETUP aus öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. BELEGT listet jeden gebundenen Pin unter seinem Protokoll; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf eine Taste tut nichts, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt nichts an den IOmcu. OFF bleibt gewählt, bis ein Protokoll gewählt wird, auch über das Verlassen des Bildschirms. Ein Wechsel der Platine, etwa ein IOmcu, der während des Besuchs antwortet, oder einer, der gegen einen anderen getauscht wird, wählt OFF, was auch gewählt war; ein zuvor gewähltes Protokoll geht also nicht auf ihn über. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren.
+Jeder Besuch von SETUP aus öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. BELEGT listet jeden gebundenen Pin unter seinem Protokoll; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf eine Taste tut nichts, und die Zeile unter der Liste lautet `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. Das Öffnen des Bildschirms schreibt nichts an den IOmcu. OFF bleibt gewählt, bis ein Protokoll gewählt wird, auch über das Verlassen des Bildschirms. Ein Wechsel der Platine, etwa ein IOmcu, der während des Besuchs antwortet, oder einer, der gegen einen anderen getauscht wird, wählt OFF, was auch gewählt war; ein zuvor gewähltes Protokoll geht also nicht auf ihn über. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren.
 
 ## LETZTER SCHREIBVORGANG
 

@@ -678,7 +678,7 @@ TEST_CASE(every_write_message_names_its_step_and_its_servo)
           "Writing was interrupted after the save, before the restart. "
           "Tap READ ALL.", 1 },
         { HITEC_PROG_MSG_WRITE_CUT, HITEC_PROG_CUT_CHECK, 0,
-          "Every value went out; their check was interrupted. "
+          "All values were sent, but verification was interrupted. "
           "Tap READ ALL.", 1 },
         { HITEC_PROG_MSG_RECORD, 0, 13,
           "Writing was interrupted. The settings may be incomplete.", 2 },

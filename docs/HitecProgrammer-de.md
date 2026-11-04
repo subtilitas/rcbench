@@ -42,21 +42,18 @@ läuft, beschreibt
 
 - Der IOmcu spricht Protokoll 4.23 oder neuer. Mit einem älteren sagt der
   Reiter SERVO `Nicht verfügbar: Der IOmcu hat keinen Hitec-Port.` und
-  `IOmcu auf Version 0.21.1 oder neuer aktualisieren.`
+  `Aktualisiere den IOmcu auf Version 0.21.1 oder neuer.`
 - SERVO-TESTER unter SETUP > OUTPUTS steht auf einem Port, PORT 1, PORT 2,
   PORT 3 oder PORT 4, und der Port nennt einen Pin. Mit OUTPUTS lautet die Zeile PORT
   `KEIN PROG-PORT GESETZT`, und VERBINDEN sagt `Zum Programmieren muss das
   Servo am Programmierport angeschlossen sein.`
   Auf dem rbmod-Carrier mit einem IOmcu ab Protokoll 4.36 wählt die Zeile
   PORT den Port: ein Tipp auf ihre Beschriftung öffnet PROGP01 bis
-  PROGP04, und VERBINDEN ohne Port sagt `PORT-Zeile antippen und einen
-  Programmierport wählen.` ([Servo-Programmer: Der Port auf dem
+  PROGP04, und VERBINDEN ohne Port sagt `Tippe auf die PORT-Zeile und wähle einen Programmierport.` ([Servo-Programmer: Der Port auf dem
   rbmod-Carrier](ServoProgrammer-de.md#der-port-auf-dem-rbmod-carrier)).
 - Der Prüfstand ist SAFE. VERBINDEN wird abgelehnt bei ARMED, bei einem
-  angeforderten Schalten auf ARMED und mit einem Finger auf ARM: `Zuerst
-  DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Ein
-  gesetzter STOP lehnt es ebenfalls ab: `Ein STOP ist gesetzt. Halte STOP 2s, um
-  ihn zu lösen.`
+  angeforderten Schalten auf ARMED und mit einem Finger auf ARM: `Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.` Ein
+  gesetzter STOP lehnt es ebenfalls ab: `Ein STOP ist gesetzt. Halte STOP 2s, um ihn zurückzusetzen.`
 - Ein klassisches Servo geht nur beim Einschalten in den Programmiermodus,
   also schaltet der Prüfstand seine Versorgung aus und ein: VERBINDEN für
   KLASSISCH braucht ein PD mini, das antwortet, sonst `Klassische Servos
@@ -64,8 +61,7 @@ läuft, beschreibt
 - Ein Servo der D-Serie antwortet auf der Leitung so, wie SETUP >
   Hitec-D-Empfang unter WEITERES es einstellt, PULL-UP oder PRECHARGE
   ([Empfangsmodus](LinkHitec-de.md#empfangsmodus)). VERBINDEN wartet, bis
-  der IOmcu diesen Modus hält: `Empfangsart im IOmcu noch nicht gesetzt.
-  Erneut versuchen.`
+  der IOmcu diesen Modus hält: `Empfangsart im IOmcu noch nicht gesetzt. Versuche es erneut.`
 - Die Programmierspannung ist die Einstellung, die auch die
   KST-Programmierung nutzt (SET_SERVO_PROG_V, WEITERES >
   PROGRAMMIERSPANNUNG), für eine Hitec-Sitzung 4,8V bis 6,0V: eine höhere
@@ -84,7 +80,7 @@ läuft, beschreibt
 | DATEIEN | Solange der Port gehalten ist: die Servodateien auf der Karte, Speichern und Laden ([Servodateien](#servodateien)) |
 | SERVO | Das gelesene Modell, `D485HW` oder `HS-5645MG`; ALLES AUSLESEN liest die Werte der Serie erneut |
 | WEITERES | Programmierspannung und Strombegrenzung, jede auf dem Tastenfeld, solange der Tester den Port hat. Solange der Port gehalten ist: ÄNDERUNGEN VERWERFEN, wenn eine Änderung besteht, PRÜFSUMME REPARIEREN bei einer falschen klassischen Prüfsumme und WERKSEINSTELLUNG für ein gelesenes klassisches Servo ([WERKSEINSTELLUNG](#werkseinstellung)) |
-| NACH STOP | CLEAR nach einem Schalten auf SAFE am Prüfstand: der IOmcu löscht das Flag STOPPED des Ports, und das Lesen geht weiter, oder der Einstieg von vorn, wo die Versorgung ausging |
+| NACH STOP | AUFHEBEN nach einem Schalten auf SAFE am Prüfstand: der IOmcu löscht das Flag STOPPED des Ports, und das Lesen geht weiter, oder der Einstieg von vorn, wo die Versorgung ausging |
 | SCHREIBEN INS SERVO FREIGEBEN | Der Schreibschalter, AUS oder EIN ([Der Schreibschalter](#der-schreibschalter)) |
 | ZURÜCKSPIELEN | Das Backup der Sitzung zurück ins Servo, solange es vom Servo abweicht ([Zurückspielen des Backups der Sitzung](#zurückspielen-des-backups-der-sitzung)); solange ein Vermerk zu einem unterbrochenen Schreibvorgang besteht: die Werte davor zurück ins Servo, oder der Vermerk verworfen ([Der Vermerk eines Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)) |
 | n WERTE SCHREIBEN | Der Entwurf ins Servo ([Schreiben](#schreiben)); `1 WERT SCHREIBEN` für einen, aus ohne |
@@ -116,8 +112,7 @@ KST-Programmierung ([Seiten](Screens-de.md#programmierer)).
    `Servo der D-Serie, Modell 34485, ID 0.` oder
    `Klassisches Servo HS-5645MG, Version 0x16.` Ein Modell, das das
    Registermodell nicht kennt, wird im Aufbau des nächstliegenden gelesen,
-   und der Reiter SERVO sagt welches: `Modell unbekannt. Die Felder werden
-   wie beim D485HW gelesen.`
+   und der Reiter SERVO sagt welches: `Modell unbekannt. Die Felder werden wie beim D485HW interpretiert.`
 
 Im Host-Modell (`test_hitec_prog`) dauert VERBINDEN bei der D-Serie 2,4s,
 davon 1,2s der Einstieg, und bei einem klassischen Servo 4,2s bei 16ms je
@@ -156,15 +151,13 @@ Wert nimmt einen Tipp an, solange der Port gehalten und nicht gestoppt ist
 
 | Reiter | D-Serie | Klassisch |
 | --- | --- | --- |
-| BEWEGUNG | SPEED, DEAD BAND, SOFT START | SPEED, DEAD BAND, AUFLÖSUNG |
+| BEWEGUNG | TEMPO, DEAD BAND, SOFT START | TEMPO, DEAD BAND, AUFLÖSUNG |
 | WEG | NEUTRAL, ENDE LINKS, ENDE RECHTS in Servo-Zählern mit Grad (220° über 16383 Zähler, 8192 die Mitte), DREHRICHTUNG | MITTE in Mikrosekunden, ENDE LINKS, ENDE RECHTS als Rohwerte (Einheit unbekannt), DREHRICHTUNG |
 | SCHUTZ | FAILSAFE (AUS, KRAFTLOS oder eine Position in Mikrosekunden), ÜBERLASTSCHUTZ, SMART SENSOR, EMPFINDLICHKEIT (roh) | FAILSAFE, FAILSAFE-POSITION, ÜBERLASTSCHUTZ |
 | INFO | MODELL, ID, POSITION und die Register 0x04, 0x22, 0x8A, 0x8C, 0xD4 und 0xD6 roh | MODELL, VERSION, DATUM, SERIENNR., PRÜFSUMME |
 
 Ein klassisches Abbild, dessen Zellen 0x00 bis 0x1C modulo 256 nicht 0
-ergeben, zeigt PRÜFSUMME `FALSCH` und den Hinweis `Prüfsumme der gespeicherten
-Werte 0x00-0x1C falsch. Servo folgt PWM evtl. nicht, zieht evtl. Strom bis
-zur Grenze.` Ein HS-7955TG mit falscher Prüfsumme
+ergeben, zeigt PRÜFSUMME `FALSCH` und den Hinweis `Prüfsumme für 0x00-0x1C falsch. Das Servo kann PWM ignorieren und Strom bis zur Strombegrenzung ziehen.` Ein HS-7955TG mit falscher Prüfsumme
 zog unter ARM und SWEEP 0,88 bis 0,89A, an der Grenze des PD mini von
 1,00A, die Spannung fiel auf 4,0 bis 4,2V; mit richtiger Prüfsumme zieht es
 0,12 bis 0,28A (ein Servo, einmal gemessen). WEITERES > PRÜFSUMME
@@ -188,7 +181,7 @@ Akzentfüllung.
 
 | Parameter | Eingabe | Werte |
 | --- | --- | --- |
-| D-Serie SPEED | Tastenfeld | 10% bis 100% in Schritten von 10% |
+| D-Serie TEMPO | Tastenfeld | 10% bis 100% in Schritten von 10% |
 | D-Serie DEAD BAND, klassisch DEAD BAND | Liste | Stufen 1 bis 5 |
 | D-Serie SOFT START | Liste | 20%, 40%, 60%, 80%, 100% |
 | D-Serie NEUTRAL, ENDE LINKS, ENDE RECHTS | Tastenfeld | 1 bis 16383 Zähler; ENDE LINKS unter NEUTRAL unter ENDE RECHTS |
@@ -197,7 +190,7 @@ Akzentfüllung.
 | D-Serie ÜBERLASTSCHUTZ, klassisch ÜBERLASTSCHUTZ | Liste | AUS, 10% bis 50% in Schritten von 10% |
 | D-Serie SMART SENSOR, klassisch FAILSAFE | Liste | EIN, AUS |
 | D-Serie ID | Tastenfeld | 0 bis 255 |
-| klassisch SPEED | Tastenfeld | 10% bis 100% in Schritten von 10% |
+| klassisch TEMPO | Tastenfeld | 10% bis 100% in Schritten von 10% |
 | klassisch MITTE | Tastenfeld | 900,00us bis 2100,00us in Schritten von 0,25us |
 | klassisch ENDE LINKS, ENDE RECHTS | Tastenfeld | 0 bis 255, roh |
 | klassisch FAILSAFE-POSITION (HS-5xxx) | Tastenfeld | 900,00us bis 2100,00us in Schritten von 0,25us |
@@ -205,8 +198,8 @@ Akzentfüllung.
 Bereiche und Schritte sind die von `protocols/hitec/hitec_reg.c`. Das
 Tastenfeld zeigt den Bereich; einen Wert, den kein Schritt ergibt, oder
 einen, der die Reihenfolge der Positionen der D-Serie bricht, lehnt das
-Tastenfeld mit dem Grund ab: `Diesen Wert nimmt die Einstellung nicht an.`
-oder `ENDE LINKS, NEUTRAL und ENDE RECHTS müssen aufsteigen.` Eine Änderung
+Tastenfeld mit dem Grund ab: `Dieser Wert ist für diese Einstellung nicht zulässig.`
+oder `ENDE LINKS, NEUTRAL und ENDE RECHTS müssen in aufsteigender Reihenfolge liegen.` Eine Änderung
 schreibt die Nebenwirkungen, die auch die Programmiergeräte von Hitec
 schreiben: DREHRICHTUNG der D-Serie spiegelt NEUTRAL und beide Enden, eine
 klassische MITTE setzt beide Endpunkte auf 0x10, eine klassische
@@ -221,14 +214,14 @@ den Entwurf zurück.
 ### Ein Wert, der einen zweiten Blick braucht
 
 Ein Wert, der eine Regel der folgenden Tabelle bricht, öffnet ÄNDERUNG PRÜFEN mit der Zeile
-des Felds, `SPEED: 100% -> 20%`, der Wert des Servos zuerst, und einer
+des Felds, `TEMPO: 100% -> 20%`, der Wert des Servos zuerst, und einer
 Zeile je Regel. **2s HALTEN ZUM ÜBERNEHMEN** übernimmt ihn; **ABBRECHEN**
 oder die Home-Tag lässt den Entwurf, wie er war.
 
 | Regel | Warnung |
 | --- | --- |
-| SPEED unter 30% | `Ein zu langsames Servo kann zum Kontrollverlust über das Modell führen.` |
-| DEAD BAND unter dem des Servos | `Ein schmales Dead Band kann Pendeln und Erwärmung verursachen.` |
+| TEMPO unter 30% | `Ein zu langsames Servo kann zum Kontrollverlust über das Modell führen.` |
+| DEAD BAND unter dem des Servos | `Ein kleiner DEAD BAND-Wert kann Pendeln und Erwärmung verursachen.` |
 | ÜBERLASTSCHUTZ ausgeschaltet | `Ohne Überlastschutz erhitzt sich ein blockiertes Servo.` |
 | ein Endpunkt, der von dem des Servos abweicht | `Endpunkt geändert. Dadurch ändert sich auch der Servoweg je Knüppelbewegung.` |
 | NEUTRAL oder MITTE, die von der des Servos abweicht | `Die Mitte verschiebt sich. Eine Seite kommt näher an den mechanischen Anschlag.` |
@@ -246,7 +239,7 @@ Vergleichen: jede Änderung daran fragt.
 
 ![Die Liste von SOFT START](img/de/servo-hitec-list.png)
 ![Ein geänderter Wert](img/de/servo-hitec-edit.png)
-![SPEED auf dem Tastenfeld](img/de/servo-hitec-keypad.png)
+![TEMPO auf dem Tastenfeld](img/de/servo-hitec-keypad.png)
 ![ÄNDERUNG PRÜFEN](img/de/servo-hitec-soft.png)
 
 ## Der Schreibschalter
@@ -350,13 +343,11 @@ entsteht:
 | D-Serie: jedes Schreiben | die 12 Register, die ein Plan schreibt (`hitec_writable()`): 0x32, 0x44, 0x4C, 0x4E, 0x54, 0x5E, 0x60, 0x6C, 0x9C, 0xB0, 0xB2, 0xC2 |
 
 Eine Antwort der D-Serie trägt eine Summe, und die D-Serie wird trotzdem
-zweimal gelesen. Die Statuszeile lautet `Zweites Lesen vor dem Schreiben:
-5 von 36.`, und **ABBRECHEN** steht in der Zeile PORT.
+zweimal gelesen. Die Statuszeile lautet `Zweites Auslesen vor dem Schreiben: 5 von 36.`, und **ABBRECHEN** steht in der Zeile PORT.
 
 - Die Lesevorgänge stimmen in jeder Adresse überein: das Schreiben geht
   weiter mit der Backup-Datei, dem Vermerk und dem Plan.
-- Sie weichen in einer Adresse ab: `Zwei Lesevorgänge weichen bei 0x17 ab:
-  mit ALLES AUSLESEN neu lesen.` Die erste abweichende Adresse wird
+- Sie weichen in einer Adresse ab: `Zwei Auslesevorgänge weichen bei 0x17 ab. Lies mit ALLES AUSLESEN erneut aus.` Die erste abweichende Adresse wird
   genannt. Nichts wird geplant, vermerkt, gespeichert oder gesendet; das
   gelesene Servo bleibt das erste Lesen, und die Änderungen und der
   Schalter bleiben. Ein erneutes **n WERTE SCHREIBEN** vergleicht ein neues
@@ -364,8 +355,7 @@ zweimal gelesen. Die Statuszeile lautet `Zweites Lesen vor dem Schreiben:
   erstes Lesen.
 - **ABBRECHEN**, ein STOP oder ein fehlgeschlagenes Lesen während des
   zweiten Lesens beendet das Schreiben ebenso, mit `Der Vorgang wurde
-  abgebrochen.`, der Zeile des STOP oder `Lesen bei Adresse 0x17
-  fehlgeschlagen. ALLES AUSLESEN antippen.`
+  abgebrochen.`, der Zeile des STOP oder `Auslesen bei Adresse 0x17 fehlgeschlagen. Tippe auf ALLES AUSLESEN.`
 
 Die Zeit, die das zweite Lesen hinzufügt, gemessen im Host-Modell
 (`test_hitec_prog_reread`) vom Ende des Haltens bis zum Ende des Lesens:
@@ -383,14 +373,14 @@ Zeiten nicht gemessen.
 
 | Meldung | Das Servo |
 | --- | --- |
-| `Servowerte stimmen nach dem Schreiben nicht. ALLES AUSLESEN antippen.` | hält Werte, die das Zurücklesen anders als im Entwurf fand; der Vermerk bleibt |
-| `Schreiben bei Register 0x54 unterbrochen. ALLES AUSLESEN antippen.` | hat die Register der D-Serie davor angenommen; nichts ist gespeichert |
-| `Schreiben vor dem Speichern im Servo unterbrochen. ALLES AUSLESEN antippen.` | hat die Register angenommen, ungespeichert |
-| `Schreiben nach dem Speichern, vor dem Neustart unterbrochen. ALLES AUSLESEN antippen.` | hat sie gespeichert; der Neustart steht aus |
-| `Alle Werte gesendet; ihre Prüfung wurde unterbrochen. ALLES AUSLESEN antippen.` | hat alle angenommen; das Zurücklesen endete nicht |
-| `Schreiben bei gespeichertem Wert 0x06 unterbrochen. ALLES AUSLESEN antippen.` und `Die Prüfsumme ist evtl. falsch: Servo folgt PWM evtl. nicht, zieht evtl. Strom bis zur Grenze der Versorgung.` | hält vielleicht die neue Zelle ohne ihren Ausgleich |
-| `Gespeicherter Wert 0x06 ist geschrieben, seine Prüfsumme in 0x1C nicht. ALLES AUSLESEN antippen.` und dieselbe zweite Zeile | hält die neue Zelle und den alten Ausgleich: die Prüfsumme ist falsch |
-| `Ein Schreibvorgang endete ungeprüft. Vor dem nächsten ALLES AUSLESEN antippen.` | ein Schreiben, bei dem ein Schritt hinausging, lässt offen, was das Servo hält; ALLES AUSLESEN kommt vor dem nächsten Schreiben |
+| `Servowerte stimmen nach dem Schreiben nicht überein. Tippe auf ALLES AUSLESEN.` | hält Werte, die das Zurücklesen anders als im Entwurf fand; der Vermerk bleibt |
+| `Schreiben bei Register 0x54 unterbrochen. Tippe auf ALLES AUSLESEN.` | hat die Register der D-Serie davor angenommen; nichts ist gespeichert |
+| `Schreiben vor dem Speichern im Servo unterbrochen. Tippe auf ALLES AUSLESEN.` | hat die Register angenommen, ungespeichert |
+| `Schreiben nach dem Speichern, vor dem Neustart unterbrochen. Tippe auf ALLES AUSLESEN.` | hat sie gespeichert; der Neustart steht aus |
+| `Alle Werte gesendet. Ihre Prüfung wurde unterbrochen. Tippe auf ALLES AUSLESEN.` | hat alle angenommen; das Zurücklesen endete nicht |
+| `Schreiben bei gespeichertem Wert 0x06 unterbrochen. Tippe auf ALLES AUSLESEN.` und `Prüfsumme möglicherweise falsch. Das Servo kann PWM ignorieren und Strom bis zur Strombegrenzung ziehen.` | hält vielleicht die neue Zelle ohne ihren Ausgleich |
+| `Gespeicherter Wert 0x06 ist geschrieben, seine Prüfsumme in 0x1C nicht. Tippe auf ALLES AUSLESEN.` und dieselbe zweite Zeile | hält die neue Zelle und den alten Ausgleich: die Prüfsumme ist falsch |
+| `Ein Schreibvorgang ist ungeprüft. Tippe vor dem nächsten Schreiben auf ALLES AUSLESEN.` | ein Schreiben, bei dem ein Schritt hinausging, lässt offen, was das Servo hält; ALLES AUSLESEN kommt vor dem nächsten Schreiben |
 
 Ein Schreiben, das anders als geprüft endet, schaltet den Schalter aus.
 
@@ -401,29 +391,26 @@ endet, das Schreiben endet, bevor ein Schritt das Servo erreicht hat, ein
 ZURÜCKSPIELEN geprüft endet oder er verworfen wird. Mit Karte
 wird er beim nächsten Start des Panels wieder gelesen: ein Panel, das
 während eines Schreibens neu startet, behält ihn. Dann sagt das
-Meldungsband `Schreiben wurde unterbrochen. Die Einstellungen sind
-vielleicht unvollständig.` und `Benutze das Servo nicht. An GPIO 13
-anschließen und ALLES AUSLESEN tippen.`, und der Reiter SERVO behält die
+Meldungsband `Schreiben wurde unterbrochen. Die Einstellungen können unvollständig sein.` und `Benutze das Servo nicht. Schließe es an GPIO 13 an und tippe auf ALLES AUSLESEN.`, und der Reiter SERVO behält die
 erste Zeile, bis ein Servo gelesen ist. Das nächste vollständige Lesen
 vergleicht das Servo mit dem Vermerk, Adresse für Adresse über die
 Adressen, die ein Schreiben ändert:
 
 | Das Servo hält | Meldung | ZURÜCKSPIELEN bietet |
 | --- | --- | --- |
-| die Werte vor dem Schreiben | `Ist dies das Servo, dessen Schreibvorgang an GPIO 13 unterbrochen wurde?` `Es enthält die alten Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.` | das Zurückspielen, das dann nichts sendet und den Vermerk löscht, und das Verwerfen |
-| die Werte, die das Schreiben hinterlassen sollte | dieselbe erste Zeile und `Es enthält die neuen Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.` | das Zurückspielen und das Verwerfen |
-| von beiden etwas | `Das Servo enthält alte und neue Werte gemischt.` `Benutze dieses Servo nicht. ZURÜCKSPIELEN schreibt die Werte vor dem Schreibvorgang zurück.` | das Zurückspielen und das Verwerfen |
-| eine andere Serie, einen anderen Port oder ein anderes Modell der D-Serie, oder einen Wert, der keiner von beiden ist | `Der unterbrochene Schreibvorgang betraf ein anderes Servo.` `Es war an GPIO 13 angeschlossen. Vermerk unter ZURÜCKSPIELEN verwerfen.` | nur das Verwerfen |
+| die Werte vor dem Schreiben | `Ist dies das Servo, dessen Schreibvorgang an GPIO 13 unterbrochen wurde?` `Es enthält die alten Werte. Ist es dasselbe Servo, verwirf den Vermerk unter ZURÜCKSPIELEN.` | das Zurückspielen, das dann nichts sendet und den Vermerk löscht, und das Verwerfen |
+| die Werte, die das Schreiben hinterlassen sollte | dieselbe erste Zeile und `Es enthält die neuen Werte. Ist es dasselbe Servo, verwirf den Vermerk unter ZURÜCKSPIELEN.` | das Zurückspielen und das Verwerfen |
+| von beiden etwas | `Das Servo enthält alte und neue Werte gemischt.` `Benutze dieses Servo nicht. ZURÜCKSPIELEN stellt die Werte vor dem Schreibvorgang wieder her.` | das Zurückspielen und das Verwerfen |
+| eine andere Serie, einen anderen Port oder ein anderes Modell der D-Serie, oder einen Wert, der keiner von beiden ist | `Der unterbrochene Schreibvorgang betraf ein anderes Servo.` `Es war an GPIO 13 angeschlossen. Verwirf den Vermerk unter ZURÜCKSPIELEN.` | nur das Verwerfen |
 
 Der klassische Ausgleich 0x1C wird nicht verglichen: ein Schreiben, das
 zwischen einer Zelle und ihrem Ausgleich abbricht, hinterlässt dort einen
 dritten Wert. ZURÜCKSPIELEN schreibt die Werte vor dem Schreiben als
 eigenes Schreiben zurück, mit dem Schalter, der Halteseite `ZURÜCKSPIELEN`
 und ihrem Zurücklesen; der Vermerk bleibt, bis das geprüft endet.
-`Vermerk zum unterbrochenen Schreibvorgang verwerfen.` entfernt ihn ohne
+`Verwirf den Vermerk zum unterbrochenen Schreibvorgang.` entfernt ihn ohne
 Schreiben. Solange ein Vermerk besteht, werden n WERTE SCHREIBEN und
-PRÜFSUMME REPARIEREN abgelehnt: `Schreiben und PRÜFSUMME REPARIEREN warten
-auf den Vermerk: unter ZURÜCKSPIELEN zurückspielen oder verwerfen.`
+PRÜFSUMME REPARIEREN abgelehnt: `Schreiben und PRÜFSUMME REPARIEREN gesperrt. Spiele unter ZURÜCKSPIELEN Werte zurück oder verwirf den Vermerk.`
 Die Dateiverwaltung zeigt `HITEC.TXT` und `HITEC.NEW` nur mit INFO: eine
 Änderung von Hand könnte falsche Werte an ein Servo senden.
 
@@ -477,8 +464,7 @@ Der erste Eintrag speichert. Darunter stehen die Dateien nach Namen
 sortiert, 5 je Seite, jede mit dem Modell, das ihre Datei nennt. Die
 Dateien mit einem vorgeschlagenen Namen, `HITEC` und 3 Ziffern, stehen
 zusammen an der Stelle von `HITEC000`, die höchste Nummer zuerst. Bei mehr
-als 5 Dateien zählt sie der Titel, `DATEIEN 1 BIS 5 VON 7`, und `Weitere
-Dateien anzeigen.` blättert weiter, nach der letzten zurück zur ersten
+als 5 Dateien zählt sie der Titel, `DATEIEN 1 BIS 5 VON 7`, und `Zeige weitere Dateien an.` blättert weiter, nach der letzten zurück zur ersten
 Seite. Das Panel fragt die Karte nach jeder Seite und wartet höchstens
 5000ms darauf: sonst `Die Karte lässt sich nicht lesen.`
 
@@ -488,7 +474,7 @@ Seite. Das Panel fragt die Karte nach jeder Seite und wartet höchstens
 
 ### Speichern
 
-`Werte dieses Servos in einer neuen Datei speichern.` öffnet die Tastatur
+`Speichere die Servowerte in einer neuen Datei.` öffnet die Tastatur
 mit dem nächsten freien vorgeschlagenen Namen, `HITEC001` bis `HITEC999`.
 Die Tastatur nimmt bis zu 16 Zeichen: A bis Z, 0 bis 9, `-`, `_` und den
 Punkt. **OK** speichert das Servo, wie es zuletzt gelesen wurde; eine
@@ -504,7 +490,7 @@ wird gelistet und geladen.
 | --- | --- |
 | Gespeichert | `Servowerte auf der Karte gespeichert: WING-L.` |
 | Ein Punkt am Anfang oder Ende, oder ein reservierter Name: `HITEC`, `CON`, `PRN`, `AUX`, `NUL`, `COM1` bis `COM9`, `LPT1` bis `LPT9`, allein oder vor einem Punkt | die Tastatur öffnet sich wieder unter `UNGÜLTIGER NAME`; `Ungültiger Name: reserviert oder mit einem Punkt am Anfang oder Ende.` |
-| Eine Datei hat den Namen | die Tastatur öffnet sich wieder unter `NAME VERGEBEN. ANDEREN WÄHLEN.`; `Dieser Dateiname ist bereits vergeben. Keine Datei wurde ersetzt.` |
+| Eine Datei hat den Namen | die Tastatur öffnet sich wieder unter `NAME VERGEBEN. WÄHLE EINEN ANDEREN.`; `Dieser Dateiname ist bereits vergeben. Keine Datei wurde ersetzt.` |
 | Keine Karte | `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
 | Karte voll, oder `HITEC001` bis `HITEC999` beim Backup vor einem Schreiben alle vergeben | `Karte voll. Nichts gespeichert oder ins Servo geschrieben.` |
 | Die Karte ist schreibgeschützt, oder `BENCH`, `BENCH/HITEC` oder `BENCH/HITEC/CONF` ist auf der Karte eine Datei und kein Ordner | `Speichern nicht möglich: Karte schreibgeschützt oder BENCH/HITEC/CONF kein Ordner.` |
@@ -540,8 +526,8 @@ geprüften Schreibvorgänge der Sitzung, die ID 0x32 eingeschlossen,
 erhalten sie. Ein Lesen eines anderen Servos sagt
 
 ```
-Andere Werte als beim letzten Auslesen: als anderes Servo genommen.
-Sein Backup sind die jetzt ausgelesenen Werte.
+Werte weichen vom letzten Auslesen ab. Wird als anderes Servo behandelt.
+Sein Backup enthält die Werte dieses Auslesevorgangs.
 ```
 
 Die Zeile der Backup-Datei entfällt, ZURÜCKSPIELEN bietet das Backup des
@@ -628,7 +614,7 @@ Halten von 2s.
 | Geladen | `WING-L geladen. 2 Werte weichen von den Servowerten ab.` oder `WING-L geladen. 1 Wert weicht von den Servowerten ab.` |
 | Hält die änderbaren Werte des Servos | `WING-L stimmt mit den Servowerten überein. Nichts zu schreiben.`; der Entwurf wird zu den Werten des Servos, und eine Änderung von vor dem Laden fällt samt ihren Bestätigungen weg |
 | Werte außerhalb der änderbaren weichen ab | eine zweite Zeile: `2 gespeicherte Werte außerhalb der Einstellungen weichen ab. Sie werden nicht geladen.` oder `1 gespeicherter Wert außerhalb der Einstellungen weicht ab. Er wird nicht geladen.` |
-| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Werte außerhalb der Einstellungen, auch geladen: 1.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
+| Eine Backup-Datei des gelesenen Servos, deren Werte außerhalb der änderbaren abweichen | DIESE DATEI PRÜFEN mit `Auch geladen: 1 Werte außerhalb der Einstellungen.`; nach dem Halten dieselbe Zeile unter der Zeile des Ladens ([Laden einer Backup-Datei](#laden-einer-backup-datei)) |
 | Von der anderen Serie | `Datei ist KLASSISCH, Servo ist D-SERIE. Nicht geladen.` |
 | Vom anderen klassischen Layout | `Datei ist für HS-7xxx-Servos, dieses Servo ist HS-5xxx. Nicht geladen.` |
 | Von einem anderen Modell desselben Layouts, oder jenseits einer weichen Regel | DIESE DATEI PRÜFEN, unten; `Bestätige die Warnungen, bevor du diese Datei lädst.` |
@@ -643,8 +629,7 @@ Halten von 2s.
 
 DIESE DATEI PRÜFEN öffnet sich, bevor etwas zum Entwurf wird, wenn die
 Datei ein anderes Modell nennt, `Dateimodell D series 34999, Servomodell
-D485HW.` und `Werte eines anderen Modells passen vielleicht nicht zu
-diesem Servo.`, oder wenn ein Wert, den sie lädt, eine weiche Regel
+D485HW.` und `Werte eines anderen Modells eignen sich möglicherweise nicht für dieses Servo.`, oder wenn ein Wert, den sie lädt, eine weiche Regel
 überschreitet, die der eigene Wert des Servos einhält. Die Seite nennt die
 Datei und die abweichenden Werte und dieselben Warnzeilen wie eine Änderung
 jenseits dieser Regeln ([Ein Wert, der einen zweiten
@@ -702,13 +687,11 @@ WERKSEINSTELLUNG gespeicherte Backup-Datei `HITEC001` bringt 0x22 mit den 4
 Werten der Zellen 0x08, 0x13, 0x14 und 0x1B zurück.
 
 Weicht eine klassische Zelle außerhalb der änderbaren Werte ab, öffnet
-sich zuerst DIESE DATEI PRÜFEN mit `Werte außerhalb der
-Einstellungen, auch geladen: 1.`. **2s HALTEN ZUM LADEN** übernimmt die
+sich zuerst DIESE DATEI PRÜFEN mit `Auch geladen: 1 Werte außerhalb der Einstellungen.`. **2s HALTEN ZUM LADEN** übernimmt die
 Zellen in den Entwurf, und die Meldung zeigt dieselbe Zeile unter
 `HITEC001 geladen. 5 Werte weichen von den Servowerten ab.` Eine Zelle, die
 keine Wertzeile nennt, zählt als Wert von **n WERTE SCHREIBEN**; die
-Schreibseite zeigt `Werte außerhalb der Einstellungen, auch
-geschrieben: 1.`, und das Schreiben sendet die Zelle. ZURÜCKSPIELEN,
+Schreibseite zeigt `Auch geschrieben: 1 Werte außerhalb der Einstellungen.`, und das Schreiben sendet die Zelle. ZURÜCKSPIELEN,
 PRÜFSUMME REPARIEREN und WERKSEINSTELLUNG warten darauf wie auf eine
 Änderung; ÄNDERUNGEN VERWERFEN verwirft sie.
 
@@ -722,8 +705,7 @@ vom Servo abweicht: jedes Register der D-Serie und jede klassische Zelle
 0x00 bis 0x23, die ein Plan schreibt, rohe Werte eingeschlossen. Ein Tipp
 öffnet ZURÜCKSPIELEN: die Werte, die sich ändern, `Dieses Backup wird ohne
 Prüfung der Grenzwerte zurückgespielt.`, die Zahl der klassischen Zellen
-ohne änderbaren Wert, die es zurückschreibt, `Werte außerhalb
-der Einstellungen, auch zurückgespielt: 1.`, und die Zeilen der
+ohne änderbaren Wert, die es zurückschreibt, `Auch zurückgespielt: 1 Werte außerhalb der Einstellungen.`, und die Zeilen der
 Backup-Datei. **2s HALTEN ZUM ZURÜCKSPIELEN** schreibt es als Schreiben:
 zuerst die Backup-Datei, wenn keine es hält, der Vermerk, die Schritte und
 das Zurücklesen. Es endet mit `Backup zurückgespielt und geprüft.` Es
@@ -742,17 +724,13 @@ Zellen 0x00 bis 0x23. Das Zurücksetzen des HPP-21 Plus kopiert sie
 darüber, am Prüfstand am 18.10.2026 für das HS-5645MG und das HS-7955TG
 mitgeschnitten. WERKSEINSTELLUNG unter WEITERES plant dieselbe Kopie aus
 den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
-Ausgleich, und öffnet eine Seite mit `Alle Einstellungen gehen auf
-Werkswerte zurück.`, `Quelle sind die eigenen gespeicherten Werkswerte 0x30-0x53
-des Servos.`, den Werten, die sich ändern, der Zahl der Zellen ohne
-Einstellung, die sie schreibt, `Werte außerhalb der Einstellungen,
-auch geschrieben: 1.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
+Ausgleich, und öffnet eine Seite mit `Alle Einstellungen werden auf die Werkswerte zurückgesetzt.`, `Quelle sind die im Servo gespeicherten Werkswerte 0x30-0x53.`, den Werten, die sich ändern, der Zahl der Zellen ohne
+Einstellung, die sie schreibt, `Auch geschrieben: 1 Werte außerhalb der Einstellungen.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
 Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
 den Schalter, keine offene Änderung und keinen Vermerk. Sie wird
 angeboten, solange eine Zelle von 0x00 bis 0x23, die ein Schreiben sendet,
 von ihrer Werkszelle abweicht, auch eine, die keine Einstellung nennt; ein
-Servo, dessen Zellen die Werkswerte schon halten, erhält `Kein Wert weicht
-vom Servo ab.`
+Servo, dessen Zellen die Werkswerte schon halten, erhält `Keine Werte weichen von den Servowerten ab.`
 
 Ein Servo der D-Serie hat keine WERKSEINSTELLUNG: sein Rücksetzbefehl
 (Register 0x6E = 0x0F0F, wie das HFP-30 ihn sendet) hinterlässt Werte, die
@@ -770,7 +748,7 @@ Ein klassisches Servo, dessen Zellen 0x00 bis 0x1C modulo 256 nicht 0
 ergeben, zeigt PRÜFSUMME `FALSCH`, und der Reiter SERVO sagt
 `WEITERES > PRÜFSUMME REPARIEREN schreibt den gespeicherten Wert 0x1C.` PRÜFSUMME
 REPARIEREN unter WEITERES öffnet eine Seite, die den Wert der Zelle und den
-Ausgleich nennt, `Schreibt gespeicherten Wert 0x1C: 0x5F -> 0x5E. Die gespeicherten Werte 0x00-0x1C ergeben dann 0.`; ihr Halten schreibt
+Ausgleich nennt, `Schreibt Wert 0x1C: 0x5F -> 0x5E. Die Summe der Werte 0x00-0x1C ist danach 0.`; ihr Halten schreibt
 den Ausgleich allein, mit seinem Vermerk und dem Zurücklesen der Zellen
 0x00 bis 0x23. Es braucht den Schalter, keine bestehende Änderung (n WERTE
 SCHREIBEN schreibt den Ausgleich mit den Änderungen) und keinen Vermerk.
@@ -805,8 +783,7 @@ lehnt ein gestoppter Port ab, das CLOSE wird immer angenommen.
 Beide Serien beenden ein Verlassen mit eingeschaltetem Ausgang des PD mini,
 bei der Programmierspannung und der Strombegrenzung der Sitzung. Wo die
 Sollwerte von vor VERBINDEN davon abweichen, fragt SERVO, sobald der Port
-wieder in PWM ist: `Deine Versorgungs-Sollwerte 5.50V 2.00A am
-eingeschalteten Ausgang wiederherstellen?`, unter AUSGANG IST
+wieder in PWM ist: `Netzteil-Sollwerte 5.50V 2.00A am eingeschalteten Ausgang wiederherstellen?`, unter AUSGANG IST
 EINGESCHALTET, mit der Änderung jedes abweichenden Sollwerts.
 
 - **JA** gibt dem eingeschalteten Ausgang beide Sollwerte von vor
@@ -851,8 +828,8 @@ unbeantwortet, wenn SERVO verlassen wird, ist sie weg, wie bei NEIN.
 
 | Ereignis | Der Port | Was der Bediener tut |
 | --- | --- | --- |
-| STOP, gedrückt oder vom Prüfstand selbst | Der IOmcu bricht die Transaktion nach dem Frame auf der Leitung ab, behält den Port mit losgelassenem Pin und setzt STOPPED. Das Panel setzt den Stopp und hält den Heartbeat zurück | `Gestoppt. Der Pin ist freigegeben. Halte STOP 2s, um den STOP zu lösen.`, und keine Zeile bietet CLEAR an. CLEAR und ALLES AUSLESEN werden bei gesetztem STOP abgelehnt: der IOmcu würde das CLEAR als UNSAFE ablehnen. STOP 2s halten; ist er gelöst, setzt CLEAR fort oder VERLASSEN beendet die Sitzung |
-| Ein Schalten auf SAFE am Prüfstand allein | STOPPED, kein gesetzter Stopp | `Gestoppt. Der Pin ist freigegeben. CLEAR zum Fortsetzen oder VERLASSEN.` CLEAR setzt das Lesen fort |
+| STOP, gedrückt oder vom Prüfstand selbst | Der IOmcu bricht die Transaktion nach dem Frame auf der Leitung ab, behält den Port mit losgelassenem Pin und setzt STOPPED. Das Panel setzt den Stopp und hält den Heartbeat zurück | `Gestoppt. Der Pin ist frei. Halte STOP 2s, um den STOP zurückzusetzen.`, und keine Zeile bietet AUFHEBEN an. AUFHEBEN und ALLES AUSLESEN werden bei gesetztem STOP abgelehnt: der IOmcu würde das CLEAR als UNSAFE ablehnen. STOP 2s halten; ist er gelöst, setzt AUFHEBEN fort oder VERLASSEN beendet die Sitzung |
+| Ein Schalten auf SAFE am Prüfstand allein | STOPPED, kein gesetzter Stopp | `Gestoppt. Der Pin ist frei. Tippe auf AUFHEBEN zum Fortsetzen oder auf VERLASSEN.` AUFHEBEN setzt das Auslesen fort |
 | ABBRECHEN | Der Vorgang endet; der Port bleibt gehalten | ALLES AUSLESEN erneut, oder VERLASSEN |
 | Die Verbindung verstummt | Der Failsafe des IOmcu löst aus, und der Port bleibt gehalten; das Modul des Panels zählt ihn nicht als seinen | Sobald die Verbindung zurück ist, sagt die Programmierung `Port von einer anderen Hitec-Sitzung belegt.` und bietet PORT FREIGEBEN an |
 | Das Panel startet neu | Wie bei einer verlorenen Verbindung | Wie bei einer verlorenen Verbindung |
@@ -887,16 +864,16 @@ jedem Stopp: ARM wird nur abgelehnt, solange der Port gehalten ist.
 
 | Zeile | Wann |
 | --- | --- |
-| `Kein Servo der D-Serie antwortet. Stecker, Empfangsart und Serie prüfen.` | beim letzten von 3 Versuchen eines Lesens der D-Serie kam kein Byte |
-| `Kein klassisches Servo hat nach dem Einschalten geantwortet. Stecker und Serie prüfen.` | innerhalb von 2s nach dem Einschalten kam kein `+` |
-| `Die Antwort des Servos auf den Einstieg war falsch. Serie prüfen.` | es kamen Bytes, die nicht zum Einstieg passen |
-| `Fehlerhafte Antwort vom Servo (Code 14). Lese erneut.` | ein Versuch schlug fehl; der Code ist der des Decoders (`hitec_rx_t`) |
-| `Lesen bei Adresse 0x32 fehlgeschlagen. ALLES AUSLESEN antippen.` | jeder Versuch an einer Adresse schlug fehl |
-| `Zwei Lesevorgänge weichen bei 0x17 ab: mit ALLES AUSLESEN neu lesen.` | das zweite Lesen vor einem Schreiben weicht vom Lesen ab, aus dem der Plan entsteht ([Das zweite Lesen](#das-zweite-lesen)) |
+| `Kein Servo der D-Serie antwortet. Prüfe Stecker, Empfangsart und Serie.` | beim letzten von 3 Versuchen eines Lesens der D-Serie kam kein Byte |
+| `Kein klassisches Servo hat nach dem Einschalten geantwortet. Prüfe Stecker und Serie.` | innerhalb von 2s nach dem Einschalten kam kein `+` |
+| `Unerwartete Antwort beim Einstieg in den Programmiermodus. Prüfe die Serie.` | es kamen Bytes, die nicht zum Einstieg passen |
+| `Fehlerhafte Antwort vom Servo (Code 14). Werte werden erneut ausgelesen.` | ein Versuch schlug fehl; der Code ist der des Decoders (`hitec_rx_t`) |
+| `Auslesen bei Adresse 0x32 fehlgeschlagen. Tippe auf ALLES AUSLESEN.` | jeder Versuch an einer Adresse schlug fehl |
+| `Zwei Auslesevorgänge weichen bei 0x17 ab. Lies mit ALLES AUSLESEN erneut aus.` | das zweite Lesen vor einem Schreiben weicht vom Lesen ab, aus dem der Plan entsteht ([Das zweite Lesen](#das-zweite-lesen)) |
 | `Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst.` | OPEN oder CLEAR mit UNSAFE abgelehnt |
 | `Der IOmcu hat die Sitzung beendet. Der Port ist wieder im Testermodus.` | der Port ging ohne Befehl dieses Panels zurück in PWM |
 | `Keine rechtzeitige Antwort vom IOmcu. Der Vorgang ist beendet.` | ein Befehl wurde nicht innerhalb von 2000ms angenommen, oder eine Anfrage hatte nach 30.000ms kein Ergebnis |
-| `Die Versorgung folgte der POWER-Anfrage nicht. PD mini prüfen.` | POWER endete mit SUPPLY |
+| `Das Netzteil hat den POWER-Befehl nicht ausgeführt. Prüfe den PD mini.` | POWER endete mit SUPPLY |
 | `Der IOmcu kann die Leitung dieses Ports nicht ansteuern.` | OPEN fand keine freie Leitung |
 | `Der IOmcu hat die Anfrage abgelehnt (Code 7).` | eine Ablehnung ohne eigene Meldung |
 
@@ -919,8 +896,7 @@ oder nicht. Der IOmcu nimmt ihn beim nächsten OPEN einer Leitung der D-Serie un
 ändert nichts, was läuft. In einer Sitzung gibt es keine Änderung: WEITERES listet
 die Zeile dann nicht, die Portzeile zeigt den Modus (`RX PULL-UP`), und eine
 Liste, die beim Start einer Sitzung noch offen ist, schließt. VERLASSEN, Modus
-setzen, VERBINDEN. VERBINDEN wartet, bis der IOmcu den Modus hält: `Empfangsart im
-IOmcu noch nicht gesetzt. Erneut versuchen.` classic-Servos (HS-5xxx, HS-7xxx)
+setzen, VERBINDEN. VERBINDEN wartet, bis der IOmcu den Modus hält: `Empfangsart im IOmcu noch nicht gesetzt. Versuche es erneut.` classic-Servos (HS-5xxx, HS-7xxx)
 brauchen keins davon und übergehen ihn. Die Einstellung erreicht die Leitungen
 dieser Programmierung und die der [Prüfstandskonsole](BenchConsole-de.md).
 
@@ -967,8 +943,7 @@ Richtungen gleich.
   jeder Schreibvorgang des Laufs schaltet SCHREIBEN INS SERVO FREIGEBEN für
   sich ein und an seinem Ende aus. Eine Änderung auf den Reitern der
   Programmierung öffnet auch während eines Laufs ÄNDERUNG PRÜFEN. Außerhalb
-  eines Laufs schreibt die Schnittstelle nichts und sagt `Schreiben ist
-  gesperrt. Zuerst SCHREIBEN INS SERVO FREIGEBEN einschalten.`
+  eines Laufs schreibt die Schnittstelle nichts und sagt `Schreiben ist gesperrt. Aktiviere zuerst SCHREIBEN INS SERVO FREIGEBEN.`
 - Ein Wert außerhalb des Bereichs wird abgelehnt, nicht begrenzt: nichts
   wird geändert, nichts gesendet, und der Schalter bleibt aus.
 - Jeder Schreibvorgang eines Laufs ist ein Schreiben wie n WERTE SCHREIBEN:

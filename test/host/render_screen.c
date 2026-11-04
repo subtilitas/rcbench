@@ -2195,7 +2195,7 @@ static void pose_wifi(const char *view)
     }
     wifi_screen_set(&v);
 
-    /* HOTSPOT PASSWORD's and WEB CODE's views and their keyboard. */
+    /* HOTSPOT PASSWORD's and ACCESS CODE's views and their keyboard. */
     if (strncmp(view, "wifi-kept", 9) == 0) {
         const bool code = strncmp(view, "wifi-kept-code", 14) == 0;
         if (strcmp(view, "wifi-kept-buttons") == 0

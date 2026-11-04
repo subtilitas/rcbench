@@ -52,7 +52,7 @@ TEST_CASE(start_test_starts_a_second_run)
 }
 
 /* The page redraws START TEST and its line when the last report has been
- * taken: no stale LAST REPORT STILL WRITING, no button left disabled. */
+ * taken: no stale REPORT STILL BEING WRITTEN, no button left disabled. */
 TEST_CASE(the_start_line_follows_the_report_being_taken)
 {
     bench_fresh();

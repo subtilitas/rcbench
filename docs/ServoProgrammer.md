@@ -111,7 +111,7 @@ PORT 2, PORT 3 or PORT 4. The TARGET row names the active
 target with its protocol and pins: `PROG PORT 1 GPIO 13` in the warning
 colour, or `SERVO PWM GPIO 4` for the pins bound as SERVO PWM. A port whose
 FUNCTION is NONE is no target: its entry locks **PORT n** and says
-`THE SERVO TESTER NEEDS FUNCTION SERVO PWM`. A stored value 1, the
+`THE SERVO TESTER REQUIRES FUNCTION SERVO PWM`. A stored value 1, the
 PROG PORT of a single-port panel, reads as PORT 1.
 **SERVO TESTER** changes only
 with the bench SAFE, no sweep and no test running, and the port not in
@@ -124,7 +124,7 @@ the accent, and the line under the two names the reason:
 
 | Line | Condition |
 | --- | --- |
-| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | the programmer has the port |
+| `LOCKED: SERVO PROGRAMMING USES THE PORT` | the programmer has the port |
 | `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED or asked to arm, or a sweep or a test runs |
 | `SERVO TESTER DRIVES PROG PORT 3` | another port's entry: the tester drives port 3 |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | **PORT PWM** on an entry whose port is not the target |
@@ -144,7 +144,7 @@ A port without a pin cannot be the target: a slot of OUTPUTS that holds
 GPIO 13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
-With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer shows `Use the programming port to program a servo.` and `Tap TARGET and set SERVO TESTER to PORT 1 to PORT 4.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
+With the standard outputs as target, SERVO TESTER on OUTPUTS, the programmer shows `Use the programming port to program a servo.` and `Tap TARGET and select one of PORT 1 to PORT 4 for SERVO TESTER.`, and every control but **CLOSE** is off. It connects on PORT 1, PORT 2, PORT 3 or PORT 4, the port SERVO TESTER names, with that port's pin.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 
@@ -192,11 +192,11 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
 | State | Line on the SERVO tab | The port carries |
 | --- | --- | --- |
 | PWM, a PD mini answers, its output off | `Tester is using port 1. CONNECT sets 5.0V and 1000mA.` | the tester's pulses |
-| PWM, a PD mini answers, its output on | the same, and `CONNECT switches the output off for 1s and on: the servo starts into programming.` | the tester's pulses |
-| PWM, no PD mini | `Tester is using port 1. No PD mini: supply stays unchanged.` and, in the warning colour, `Switch the servo's supply off and on, tap CONNECT 1s later. The sync follows 250ms after the tap.` | the tester's pulses |
+| PWM, a PD mini answers, its output on | the same, and `CONNECT switches the output off for 1s, then on. The servo enters programming mode.` | the tester's pulses |
+| PWM, no PD mini | `Tester is using port 1. No PD mini: supply stays unchanged.` and, in the warning colour, `Switch the servo supply off, then on. Tap CONNECT 1s later. The sync follows 250ms after the tap.` | the tester's pulses |
 | Connecting | `Connecting on port 1. PWM is off.` | no pulse for 50ms, then low for 100ms, then the entry sequence |
 | The supply off, at **CONNECT** with the output on or at **LEAVE** after a write | `Port 1: supply off for 1s. PWM is off.` | no pulse; the line low |
-| The supply on again | `Port 1: supply on, the servo starts for 1s. PWM is off.` | the line low for 1000ms, then the entry sequence, or PWM after **LEAVE** |
+| The supply on again | `Port 1: supply on. Waiting 1s for servo startup. PWM is off.` | the line low for 1000ms, then the entry sequence, or PWM after **LEAVE** |
 | Programming | `Port 1 is in programming mode. PWM is off.` | frames only |
 | Programming, the supply read | `Port 1 in programming mode. PWM off. 5.00V, 37mA.` | frames only |
 | Working | `Operation in progress: 12 frames.` | frames of the running operation |
@@ -265,7 +265,7 @@ The panel therefore cycles the supply where it can:
 | A write | no cycle: the read-back runs in programming mode | the same | the same |
 
 Without a PD mini the line under the state names the step:
-`Switch the servo's supply off and on, tap CONNECT 1s later. The sync follows 250ms after the tap.` The port makes one entry attempt and does
+`Switch the servo supply off, then on. Tap CONNECT 1s later. The sync follows 250ms after the tap.` The port makes one entry attempt and does
 not repeat it. The sync goes 250ms after the tap, so a tap 1s after the
 power-up puts it 1250ms after the power-up, next to the 1000ms the port
 leaves a servo it switched on itself. How long after a power-up a servo
@@ -273,10 +273,10 @@ still takes the sync is not measured: the bench's Chaservo took it 1000ms
 after, a KST servo on the vendor's card about 3s after.
 
 After a write the message carries a second line: with a PD mini
-`The values act after LEAVE: it switches the supply off for 1s and on.`,
-without one `The written values act after the servo's supply is switched off and on.` LEAVE PROGRAMMING names the same, and the message after
+`The values take effect after LEAVE switches the supply off for 1s, then on.`,
+without one `The written values take effect after the servo supply is switched off and on.` LEAVE PROGRAMMING names the same, and the message after
 it says what happened: `The port is back in tester mode.` and
-`Supply switched off for 1s and on: the written values act.`, or, without
+`Supply switched off for 1s, then on. The written values take effect.`, or, without
 a PD mini, the note again.
 
 ![CONNECT with the output on](img/servo-kst-supply-on.png)
@@ -568,26 +568,26 @@ A write, a read and **DISCARD EDITS** end every confirmation.
 
 | Condition | Warning |
 | --- | --- |
-| MAX. DUTY above the servo's | `Higher duty increases stall current and heat.` |
-| MAX. DUTY below 50% | `Low duty weakens the servo. It may not hold the control surface.` |
-| BOOST above the servo's | `Higher boost can cause buzzing and heat.` |
-| STRETCH above the servo's | `Higher stretch can cause servo oscillation.` |
-| SOFT START switched off | `Without soft start, the servo moves abruptly at power-on.` |
+| MAX. DUTY above the servo's | `A higher MAX. DUTY increases stall current and heat.` |
+| MAX. DUTY below 50% | `A low MAX. DUTY weakens the servo. It may not hold the control surface.` |
+| BOOST above the servo's | `A higher BOOST can cause buzzing and heat.` |
+| STRETCH above the servo's | `A higher STRETCH can cause servo oscillation.` |
+| SOFT START switched off | `Without SOFT START, the servo moves abruptly at power-on.` |
 | SPEED LIMIT switched on | `Speed limit active. The servo moves at the set speed.` |
 | SPEED below 30% with SPEED LIMIT on | `A slow servo can cause loss of control of the model.` |
-| DEAD BAND below the servo's | `A narrow dead band can cause back-and-forth movement and heat.` |
-| DEAD BAND below 1.0µs | `Very narrow dead band. Back-and-forth movement and heat are likely.` |
+| DEAD BAND below the servo's | `A narrow DEAD BAND can cause back-and-forth movement and heat.` |
+| DEAD BAND below 1.0µs | `Very narrow DEAD BAND. Back-and-forth movement and heat are likely.` |
 | MOVE ON SIGNAL LOSS switched on | `On signal loss the servo moves to the failsafe position.` |
 | POSITION more than 300µs from NEUTRAL, MOVE ON SIGNAL LOSS on | `Failsafe position is far from the centre.` |
 | AFTER below 1.0s | `Short dropouts will trigger the failsafe move.` |
-| an end point less than 300µs from NEUTRAL | `End point close to Neutral. Little travel remains on this side.` |
+| an end point less than 300µs from NEUTRAL | `End point close to NEUTRAL. Little travel remains on this side.` |
 | an end point more than 100µs from the servo's | `End point changed. The servo travel per stick movement changes too.` |
 | NEUTRAL more than 20µs from the servo's | `The centre shifts. One side moves closer to the mechanical stop.` |
 | REVERSION changed | `Direction reversed. Check all control surfaces before flight.` |
 | an angle above the servo's | `More travel can push the servo against its stop and burn it out.` |
 | an angle below 50 | `Small angle. Full stick movement gives little servo travel.` |
-| DEAD BAND below 1.0µs with STRETCH above x1 | `Narrow dead band and higher gain can cause oscillation.` |
-| MAX. DUTY above 90% with an angle above the servo's | `High duty and more travel: a stall can destroy the servo.` |
+| DEAD BAND below 1.0µs with STRETCH above x1 | `A narrow DEAD BAND and higher gain can cause oscillation.` |
+| MAX. DUTY above 90% with an angle above the servo's | `A high MAX. DUTY and more travel: a stall can destroy the servo.` |
 
 "The servo's" in this table is the value of the session's backup, the
 servo as the session first read it. A write of the session does not move
@@ -808,18 +808,18 @@ The operator therefore sets the type:
 
 - Once a servo is read, **TYPE** shows the type 20k_sel suggests with a
   question mark, `V6?` or `V8?`, and the line under the state reads
-  `Type not set. 20k_sel suggests V6: check the servo's label, set TYPE.`
+  `Type not set. 20k_sel suggests V6. Check the servo's label and set TYPE.`
   in the warning colour.
 - A tap on **TYPE** opens `SERVO TYPE, AS ON THE SERVO'S LABEL` with **V6**
   and **V8**. The choice shows without the mark, and the line reads
-  `Servo type V6, set on TYPE.`
+  `Servo type V6, selected under TYPE.`
 - The type is the session's: **LEAVE**, a lost session and a restart of the
   IOmcu clear it. A second **READ ALL** keeps it. It is never written to
   the servo; 20k_sel stays as read, on the LOCKED tab as **20K SEL**.
 - A save writes the type set into the file's type line; with no type set
   the file has no type line.
 - A load compares the file's type line with the type set. A tap on a file
-  with no type set opens `SERVO TYPE BEFORE THE LOAD` first; the choice
+  with no type set opens `SELECT SERVO TYPE BEFORE LOADING` first; the choice
   sets the type and the load follows, **CANCEL** loads nothing.
 
 ![The TYPE list](img/servo-kst-type.png)
@@ -927,10 +927,10 @@ lines name what the panel found in place of `No card`
 
 | Where | Card is neither FAT32 nor exFAT (FAT: file allocation table; exFAT: extended FAT): NTFS (New Technology File System), a GPT (GUID partition table) or not formatted | Card that cannot be read |
 | --- | --- | --- |
-| The write page | `Card is neither FAT32 nor exFAT. No backup file will be saved.` | `Cannot read the card. No backup file will be saved.` |
-| The write page, backup file saved | `Card is neither FAT32 nor exFAT. The previous settings are kept in RAM only.` | `Cannot read the card. The previous settings are kept in RAM only.` |
-| The SERVO tab | `Card is neither FAT32 nor exFAT, no backup file. Restore is available only within this session.` | `Cannot read the card, no backup file. Restore is available only within this session.` |
-| **FILES** | `Card is neither FAT32 nor exFAT. Nothing saved or written to the servo.` | `Cannot read the card. Nothing saved or written to the servo.` |
+| The write page | `Card is not FAT32 or exFAT. No backup file will be saved.` | `Cannot read the card. No backup file will be saved.` |
+| The write page, backup file saved | `Card is not FAT32 or exFAT. The previous settings are kept in RAM only.` | `Cannot read the card. The previous settings are kept in RAM only.` |
+| The SERVO tab | `Card is not FAT32 or exFAT. No backup file. Restore is available only within this session.` | `Cannot read the card. No backup file. Restore is available only within this session.` |
+| **FILES** | `Card is not FAT32 or exFAT. Nothing saved or written to the servo.` | `Cannot read the card. Nothing saved or written to the servo.` |
 
 ### Loading
 
@@ -948,7 +948,7 @@ write page and its 2s hold.
 | Edited, without a type line | the same, and `Edited file, no servo type: 27 of 27 values, checked as manual entries.` |
 | Holds the servo's editable values | `KST001 matches the servo settings. Nothing to write.` |
 | Of another type than the one set on **TYPE** | `File is V8, TYPE is V6. Not loaded.` |
-| Tapped with no type set | the list `SERVO TYPE BEFORE THE LOAD`; the load follows the choice. The model's own refusal reads `Set the servo TYPE first: V6 or V8, as the servo's label states.` |
+| Tapped with no type set | the list `SELECT SERVO TYPE BEFORE LOADING`; the load follows the choice. The model's own refusal reads `Set the servo TYPE first: V6 or V8, as the servo's label states.` |
 | Checksum line present and wrong | `File damaged: checksum mismatch. Not loaded.` `Without the checksum line, it is treated as an edited file.` |
 | Not a servo file | `Not a servo settings file. Not loaded.` |
 | A line that does not read | `Cannot read line 12. File not loaded.` |
@@ -1233,9 +1233,9 @@ switches the supply off) unless SERVO is shown again first. After
 
 LEAVE PROGRAMMING opens with `The port returns to servo PWM. The supply stays unchanged.` and `The servo will receive the tester's signal and may move.`
 After a write with a PD mini the first line is
-`The PD mini output goes off for 1s and on, then the port returns to servo PWM.`, and **HOLD 2s TO LEAVE** sends the port's REBOOT operation
+`The PD mini output switches off for 1s, then on. The port then returns to servo PWM.`, and **HOLD 2s TO LEAVE** sends the port's REBOOT operation
 in place of LEAVE. After a write without one the page adds
-`The written values act after the servo's supply is switched off and on.` The
+`The written values take effect after the servo supply is switched off and on.` The
 page warns before changed values are lost and before a session ends that
 could still restore a servo in doubt. **HOLD 2s TO LEAVE** sends the
 port's LEAVE operation of link version 4.15. No frame goes to the servo and
@@ -1322,7 +1322,7 @@ Link versions 4.15 to 4.29 have no wait after the power cycle. The panel
 sends such an IOmcu the cycle without it: the port is in PWM 1000ms after
 the supply reads on, whatever **WAIT BEFORE PWM** holds. With **WAIT
 BEFORE PWM** above 0 the message after it reads
-`Supply switched off for 1s and on: the written values act.` and
+`Supply switched off for 1s, then on. The written values take effect.` and
 `This IOmcu firmware applies no WAIT BEFORE PWM after the cycle.` With
 0ms it is the message of a 4.30 IOmcu.
 

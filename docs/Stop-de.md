@@ -19,7 +19,7 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
 - **Eingerastet.** STOP bleibt rot in einem gelben Rahmen von 3px und zeigt
   `GESTOPPT` über `2s HALTEN ZUM LÖSEN`. Der Arm-Chip im Band zeigt STOP
   statt SAFE oder ARMED. ARM, AUSGANG EIN, PROG 5V EIN, der Start eines Tests oder Endlagenlaufs werden
-  mit dem Alert `STOP gedrückt: STOP 2s halten zum Lösen.` abgelehnt; die
+  mit dem Alert `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.` abgelehnt; die
   Programmierungen für KST, Hitec und die ESC-Leitung lehnen VERBINDEN mit
   ihrer Stopp-Zeile ab. Ein ARM hebt diesen Stopp nicht auf.
 - **Halten zum Lösen.** Ein Druck auf ein eingerastetes STOP ist ebenfalls
@@ -56,7 +56,7 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   ohne eingeschaltete Versorgung oder 5V. Der Prüfstand bleibt nach dem
   Lösen SAFE: ARM, AUSGANG EIN und PROG 5V EIN brauchen jeweils ihr eigenes
   Halten. Ein Programmierport, den der STOP in einer Sitzung erwischt,
-  bleibt über das Lösen hinweg gehalten; CLEAR oder VERLASSEN auf seiner
+  bleibt über das Lösen hinweg gehalten; AUFHEBEN oder VERLASSEN auf seiner
   Seite geht von dort weiter.
 - **Keine Bestätigung.** Der Stopp bleibt eingerastet, der Heartbeat bleibt
   angehalten, und der Alert sagt `STOP nicht gelöst: Der IOmcu meldete

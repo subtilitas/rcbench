@@ -81,7 +81,7 @@ and the line under it says why.
 | Line | Condition |
 | --- | --- |
 | `ARM FIRST` | the bench is SAFE |
-| `LAST REPORT STILL WRITING` | an automatic test or a limit run is under way, or its report is still going to the card |
+| `REPORT STILL BEING WRITTEN` | an automatic test or a limit run is under way, or its report is still going to the card |
 | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
@@ -330,7 +330,7 @@ programming` ends a run whose servo does not follow the model.
 | The INA3221 at the end of its range | a clipped sample | abort |
 | Stall timeout | window means above 1.0A for 400ms | abort |
 | No window | 200ms, 4 windows of 50ms | abort; `SERVO_TEST_WIN_STALE_MS`, the automatic test's figure. A window without a current reading does not count as a window. The windows feed the three protections above, so a gap in them gets no allowance |
-| The AS5600, with AS5600 in use from the start | not answering for more than 300ms, or again less than 10s after the start of the time before | abort as an error, `AS5600 not answering` or `AS5600 dropped out twice in 10s`, with ANGLE SOURCE IMU `IMU not answering` or `IMU dropped out twice in 10s`; a shorter, rarer gap is ridden through and no angle is taken in it, as in the automatic test ([The output encoder](#the-output-encoder)). The report has the line `AS5600 gaps: N, the longest Mms. ...` when N is more than 0 |
+| The AS5600, with AS5600 in use from the start | not answering for more than 300ms, or again less than 10s after the start of the time before | abort as an error, `AS5600 not answering` or `AS5600 dropped out twice in 10s`, with ANGLE SOURCE IMU `IMU not answering` or `IMU dropped out twice in 10s`; a shorter, rarer gap is ridden through and no angle is taken in it, as in the automatic test ([The output encoder](#the-output-encoder)). The report has the line `AS5600 gaps: N, longest Mms. ...` when N is more than 0 |
 | One search | 40s | abort: 1000µs of travel is 100 positions of 250ms, 25s |
 | One programmer step | 150s | abort: CONNECT with its read, a write or LEAVE |
 | The bench switching | 3s | abort when SAFE or ARMED is not in place 3s after the run asked |
@@ -460,12 +460,12 @@ ENDS AFTER PROGRAMMING (both searched again)
 Low end:        free to 1000us; free 0.120A
 High end:       free to 2000us; free 0.120A
 
-Unit: the unit of LEFT ANGLE and RIGHT ANGLE is not known; the travel is taken as linear in the pulse from NEUTRAL to PULSE LOWER and PULSE UPPER, which is not measured.
+Unit: the units of LEFT ANGLE and RIGHT ANGLE are unknown. Travel is assumed linear with pulse width from NEUTRAL to PULSE LOWER and PULSE UPPER; this has not been measured.
 Bench: the ends found are not applied to PULSE MIN and PULSE MAX.
 ```
 
 With the AS5600 fitted, each end has a line with the horn's angle at its
-last free position, `AS5600 +38.5deg at the last free position`. A run
+last free position, `AS5600 +38.5° at the last free position`. A run
 that wrote and did not pass has a `Restore:` line. A run that sent no
 write has no `Backup:` line: the values before the run are held from the
 first write on. The `Backup:` line names the file this run's first write
@@ -756,7 +756,7 @@ the run.
   sample 1.637A. A run on the PD mini goes on with it when the INA3221
   becomes the meter under it.
 - **Why not the INA3221.** A run on the PD mini with an INA3221 fitted on
-  SETUP > SENSORS has the report line `INA3221: not used: <reason>`: `the IOmcu is older than firmware 0.16.0`, `the IOmcu does not hold its
+  SETUP > SENSORS has the report line `INA3221: not used: <reason>`: `IOmcu firmware is older than 0.16.0`, `the IOmcu does not hold its
   set-up`, `it does not answer`, `no window with current in the last 200
   ms`, `it reset itself`, `it has worked for less than 1s`, or `the supply
   is the panel's model`.
@@ -790,7 +790,7 @@ the run.
 | STALL AT at or above the current limit | at START TEST | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 3.00A cannot be reached: current limit 2.00A` |
 | STALL AT at or above the INA3221's range | at START TEST with the INA3221 as the meter | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 2.00A cannot be reached: INA3221 range 1.638A` |
 
-- Every comparison of a current with IDLE CURRENT, HOLD CURRENT and STALL AT
+- Every comparison of a current with IDLE CURRENT, HOLDING CURRENT and STALL AT
   is made in whole mA, in the verdict and in the report alike: a reading of
   0.050A against a limit of 0.05A passes, and 0.051A fails.
 - On the PD mini the 1000ms count from the first reading above STALL AT:
@@ -943,7 +943,7 @@ an angle or reporting no magnet. A run that starts while the part does not
 answer starts in a gap. A reading with no magnet is no gap: the part
 answers. A queue to the screen that overflows (above) is no gap either: no
 reading of the part went missing at the IOmcu. The report has the line
-`AS5600 gaps: N, the longest Mms. ...` when N is more than 0, and the CSV's
+`AS5600 gaps: N, longest Mms. ...` when N is more than 0, and the CSV's
 `angle gap (ms)` column the length of each gap that the run rode through.
 A run without AS5600 in use has no gaps. The band says `AS5600 is not
 responding at 0x36.` when the part stops answering and takes the line back
@@ -1069,7 +1069,7 @@ Over the voltage steps (the brown-out walk is reported, not judged), FAIL
 when one of these holds:
 
 - the highest idle current is above IDLE CURRENT;
-- the highest holding current is above HOLD CURRENT;
+- the highest holding current is above HOLDING CURRENT;
 - the longest travel time is above TRAVEL TIME, where the current's meter
   times travel (not the PD mini, and not the INA3221's windows);
 - a reading after SETTLING TIME is above STALL AT;
@@ -1079,8 +1079,8 @@ when one of these holds:
 Otherwise NOT MEASURABLE when a counted move was unseen, or when the
 brown-out walk saw no movement at its first voltage, and PASS when neither
 holds. A run of the brown-out walk alone that sees nothing reads NOT
-MEASURABLE, not PASS. Its `Result` line then reads `no movement seen at
-5.00V, the brown-out walk's first voltage`, and `Brown-out start` under
+MEASURABLE, not PASS. Its `Result` line then reads `no movement detected at
+5.00V, the first voltage of the brown-out test`, and `Brown-out start` under
 the limits gives the same voltage with NOT MEASURABLE. NOT MEASURABLE says the current could not show every move: a servo
 moving under the threshold and one standing still read alike. The report's
 `Result` line gives how many of the counted moves showed no movement, and
@@ -1157,15 +1157,15 @@ RCBENCH SERVO TEST REPORT
 Result:         PASS
 Device:         MG90S
 Firmware:       rcbench 0.23.7
-Log:            the .CSV with this file's number, one row per supply reading
+Log:            .CSV with the same file number; one row per supply reading
 Supply:         PD mini
 Current:        PD mini
 Voltage:        PD mini
-Readings:       9.1 /s taken by the supply, 9.1 /s reached the test
+Readings:       9.1/s taken by the supply; 9.1/s reached the test
 Skipped:        0 readings the supply took never reached the test
-Resolution:     one reading every 109ms: a travel time is late by up to that
+Resolution:     one reading every 109ms; travel time can be overestimated by up to this interval
 Lag:            about 300ms from a change of current to the reading that shows it
-Repeats:        a reading can repeat the last value for several readings
+Repeats:        several consecutive readings can contain the same value
 Travel times:   an upper bound, not checked against the limit
 Const. current: 0 supply readings, longest stretch 0ms
 Duration:       184.0s
@@ -1176,12 +1176,12 @@ Type:           STANDARD PWM, centre 1500us, 1000-2000us, trim +0us, reverse OFF
 Frame rate:     50Hz
 Can destroy:    none in force
 HV servo:       OFF, no step above 6.0V
-Ends:           1100us and 1900us (RANGE 80% of TRAVEL +/-90deg)
+Ends:           1100us and 1900us (RANGE 80% of TRAVEL +/-90°)
 Steps:          4.80V 6.00V
 Brown-out:      from 5.00V down in 0.20V steps to 3.00V
 Current limit:  2.00A
 Timing:         settle 500ms, idle 1000ms, dwell 200ms (hold measured 600ms)
-Length:         60s a step
+Length:         60s per step
 Limits:         idle OFF, holding OFF, travel 800ms, stall 2.00A
 
 RESULTS PER STEP (currents in mA, times in ms)
@@ -1189,14 +1189,14 @@ RESULTS PER STEP (currents in mA, times in ms)
     V     V   min   Idle Thresh Moving   Peak    low   high Travel Longest Moves Late Unseen
  4.80  4.80  4.80      4     20     37     65      1      1    861     989    41    0      0
  6.00  6.00  5.99      1     20     40     77      1      1    892     978    41    0      0
-Thresh: movement is a reading max(0.020A, 3 x idle noise) from the level before the command.
-Arrival: after a reading Thresh above the end's holding level, the first back within 0.05A of it.
-Late: moves seen moving that did not arrive within 3300ms.
+Thresh: movement threshold is max(0.020A, 3 x idle noise) relative to the level before the command.
+Arrival: after a reading Thresh above the end's holding level, the first reading back within 0.05A of that level.
+Late: moves with detected movement that did not arrive within 3300ms.
 Unseen: moves with no movement seen; not timed, not counted late.
 
 BROWN-OUT
 Movement seen at every step down to 3.00V; lower not tested.
-Movement seen: a reading of a move more than Thresh, 0.023A at 3.00V, from the level before it.
+Movement seen: a current reading differs from the pre-move level by more than Thresh (0.023A at 3.00V).
 
 AGAINST THE PASS/FAIL LIMITS
 Idle current     highest 0.004A, limit OFF: not checked
@@ -1209,9 +1209,9 @@ Moves seen       0 unseen: PASS
 Brown-out start  movement seen at 5.00V: PASS
 
 NOT MEASURED
-Position: nothing measures the horn; every result is the supply's current.
+Position: the horn position is not measured. All results are based on the supply's current.
 Current peaks between two readings: the supply reports one value a reading.
-The command's way from the panel to the pin, inside every travel time.
+Command delay from the panel to the pin; included in every travel time.
 ```
 
 Every move is seen at the 0.020A threshold and arrives; the brown-out
@@ -1220,7 +1220,7 @@ this servo below 5.00V. The same replay of a 1102HB digital servo, which
 holds 0.015 to 0.029A and peaks at 0.039 to 0.044A, reads:
 
 ```
-Result:         NOT MEASURABLE - 25 of 46 counted moves showed no movement in the current
+Result:         NOT MEASURABLE - no movement detected in the current for 25 of 46 counted moves
 ...
   Set  Meas     V                               Hold   Hold
     V     V   min   Idle Thresh Moving   Peak    low   high Travel Longest Moves Late Unseen
@@ -1238,18 +1238,18 @@ A run on the INA3221 has these lines in place of the PD mini's, here from
 the host suite's modelled bench:
 
 ```
-Log:            the .CSV with this file's number, one row per INA3221 window
+Log:            .CSV with the same file number; one row per INA3221 window
 Supply:         PD mini
 Current:        INA3221 0x40 CH1, shunt 100.0mΩ, range 1.638A
 Voltage:        INA3221 0x40 CH1, load side of the shunt
-Shunt:          up to 0.164V lost across it at the range; the set point is not raised for it
-Readings:       20.0 /s windows closed by the INA3221, 20.0 /s reached the test
+Shunt:          voltage drop up to 0.164V at full current range; the set point is not raised to compensate
+Readings:       20.0/s INA3221 windows completed; 20.0/s reached the test
 Skipped:        0 windows the INA3221 closed never reached the test
-Resolution:     one window every 50ms: a travel time is late by up to two windows and the poll that reads them
+Resolution:     one window every 50ms; travel time can be overestimated by up to two windows plus polling time
 Lag:            about 50ms from a change of current to the reading that shows it
 Travel times:   an upper bound, not checked against the limit
 ...
-Position: nothing measures the horn; every result is the current of the INA3221 channel named above.
+Position: the horn position is not measured. All results are based on current from the INA3221 channel named above.
 Current between two 1ms samples of that channel: a window holds their mean, highest and lowest.
 ```
 
@@ -1436,10 +1436,10 @@ A START is refused, the reason on the first line, while:
 | another run runs, or a report is still being written | the run's line, as on TEST |
 | the meter is not set up for the servo's current | the limit run's line |
 | the output is not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT` |
-| PULSE MIN is above 1000us or PULSE MAX below 2000us | `PULSE MIN TO MAX MUST HOLD 1000 TO 2000us` |
+| PULSE MIN is above 1000us or PULSE MAX below 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
 | the programmer is busy, or no PD mini or PROG 5V switches the servo off and on | the limit run's line |
 | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
-| ZERO is not taken | `ZERO FIRST, THE SURFACE AT NEUTRAL` |
+| ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
 
 ### Method
 
@@ -1462,8 +1462,7 @@ A START is refused, the reason on the first line, while:
   makes the written value act, ARMED, the side measured again. The file of
   the values before the run is saved before the first write.
 - PASS: both sides within the tolerance, each measured after the last
-  write. A side outside after 8 writes ends the run as `8 writes a side
-  reached`.
+  write. A side outside after 8 writes ends the run as `8 writes per side reached`.
 
 ### Protections
 

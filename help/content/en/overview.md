@@ -17,7 +17,7 @@ Eight tiles, 243 x 255px each, in 4 columns and 2 rows: the workbenches in the f
 | Tile | Line under the name | Page |
 |---|---|---|
 | MOTOR & ESC | drive, V/A, rpm | [Motor and ESC](motor.md) |
-| SERVO | travel, current, program | [Servo](servo.md) |
+| SERVO | travel, current, programming | [Servo](servo.md) |
 | SUPPLY | set and log V/A | [Supply](supply.md) |
 | LOGS | runs, files | [Logs](logs.md) |
 | RECEIVER | S.BUS, PPM, frames | [Receiver](analyser.md) |

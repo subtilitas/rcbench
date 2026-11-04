@@ -235,7 +235,7 @@ auch immer ENABLE hält; ein IOmcu von 0.15.0 oder älter nimmt sie mit
 ENABLE 0 an und weist das danach freigegebene Bauteil ab. Das Format auf dem
 Draht und die Protokoll-Minor sind dieselben. Ein Panel von 0.15.0 oder
 älter, dessen zwei Pin-Einstellungen unabhängig sind, sieht die Abweisung bei
-der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GPIO 15/GPIO 17 abgelehnt. SENSORS prüfen.`, einmal je Änderung und je Link-Aufbau,
+der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GPIO 15/GPIO 17 abgelehnt. Prüfe SENSORS.`, einmal je Änderung und je Link-Aufbau,
 und die Page behält die Pins, die sie hatte. Seine Pins auf −1 werden als
 ENABLE 0 mit 0 für den Pin geschrieben und angenommen. Eine
 Konfiguration im Flash des IOmcu, deren Pins kein Paar sind, wird
@@ -1148,21 +1148,20 @@ für eine veraltete: jede Zahl, die die Einstellung zulässt, liegt im Bereich,
 den die Page annimmt.
 
 Die Endpunkte der Gaskanäle, die Einstellungen `Leerlaufpuls` und
-`Vollpuls`, gehen über CHAN_CFG und nicht im Frame, der auf ARMED schaltet.
+`Vollgaspuls`, gehen über CHAN_CFG und nicht im Frame, der auf ARMED schaltet.
 Das Panel sendet sie, wenn ein IOmcu zu antworten beginnt, nach jeder
 Änderung und nach jeder Zuordnung, sobald die Änderung 300ms geruht hat, bei
 einem Poll, dessen Schreiben von ARM = 0 quittiert wurde: es liest die Page,
 schreibt sie nur, wenn die Gaskanäle abweichen, und prüft die gespeicherten
 Register, die die Quittung trägt. Ein Lesen oder Schreiben, das niemand
 beantwortet, bleibt offen. Ein abgelehntes Lesen, ein abgelehntes Schreiben,
-ein Leerlaufpuls, der nicht mindestens 100us unter dem Vollpuls liegt, oder eine Quittung, deren
+ein Leerlaufpuls, der nicht mindestens 100us unter dem Vollgaspuls liegt, oder eine Quittung, deren
 Gaskanäle ein anderes Paar halten, beendet die Schuld mit einem Hinweis und
 sperrt das Schalten auf ARMED, bis eine Änderung, eine Zuordnung oder ein
 Link-up das Paar in Kraft bringt. Solange sie bei bestehendem Link offen oder
 gesperrt sind, schreibt das Panel kein Schalten auf ARMED und nennt den Grund,
-von `Pulsbereich noch nicht an den IOmcu gesendet. ARM erneut halten.` bis
-`Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut
-halten.`; [Ein Pulsbereich unterwegs](Safety-de.md#ein-pulsbereich-unterwegs)
+von `Pulsbereich noch nicht an den IOmcu gesendet. Halte ARM erneut.` bis
+`Kein Pulsbereich vom IOmcu. Aktualisiere die IOmcu-Firmware, dann halte ARM erneut.`; [Ein Pulsbereich unterwegs](Safety-de.md#ein-pulsbereich-unterwegs)
 hat die Regeln und die Texte. Die Regel ist die des Panels: Der IOmcu übernimmt ein
 Schreiben von CHAN_CFG, bevor er es quittiert, und hat keine eigene Regel für
 eine Änderung, die er nicht empfangen hat.
@@ -1528,8 +1527,7 @@ des PD mini, und kein Port hält die Page SUPPLY.
 
 Ein Panel bietet jedem IOmcu das Image des Boards an, das er meldet. Das
 Release-Panel trägt beide Images; ein Board, für das es kein Image trägt,
-bekommt kein Angebot, und UPDATES zeigt `Kein IOmcu-Image für dieses Board
-in diesem Panel-Build.`.
+bekommt kein Angebot, und UPDATES zeigt `Dieser Panel-Build enthält keine IOmcu-Firmware für diese Platine.`.
 
 `test/host/test_board_fix.c` hält den Katalog des Carriers gegen seine
 Rollen, die Pins jeder Page am Pin der Rolle und an den Pins daneben, einen
@@ -1735,9 +1733,9 @@ gelesen, mit HASH_RUNNING des IOmcu über dieselbe Zahl von Bytes.
 | Ergebnis | Panel |
 | --- | --- |
 | gleich | nichts |
-| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Update unter UPDATES.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
+| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
 | ein Image auf Probe | schreibt sofort BUY und meldet `Neue IOmcu-Firmware dauerhaft übernommen.` |
-| BAD_PAGE oder keine Slots | der Alarm `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` |
+| BAD_PAGE oder keine Slots | der Alarm `IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.` |
 
 Die Prüfung läuft auch bei einer abweichenden Protokoll-Major: die
 Identitätsregister und die Update-Pages antworten über Majors hinweg, und das

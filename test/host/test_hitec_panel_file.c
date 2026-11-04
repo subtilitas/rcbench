@@ -653,9 +653,8 @@ TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back)
 }
 
 /*
- * The count of stored values of no setting closes its sentence: a sentence
- * that wraps leaves the count alone on a row ("1."), cut off from what it
- * counts.  Each one fits a row of the page and of the message band at the
+ * The count of stored values of no setting stays on the same row as its
+ * sentence. Each fits a row of the page and of the message band at the
  * widest count a file holds, 255.
  */
 TEST_CASE(a_count_of_stored_values_stays_on_its_sentences_row)

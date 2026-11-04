@@ -108,7 +108,7 @@ and ends 4px above the alert band; the geometry is the KST programmer's
    `D series servo, model 34485, ID 0.` or
    `Classic servo HS-5645MG, version 0x16.` A model the register model does
    not name is read in the layout of the closest one, and the SERVO tab
-   says which: `Model not known. The fields are read as on the D485HW.`
+   says which: `Unknown model. Fields are interpreted as for the D485HW.`
 
 In the host model (`test_hitec_prog`) a D series CONNECT takes 2.4s, 1.2s of
 it the entry, and a classic one 4.2s at a frame of 16ms and 7.6s at one of
@@ -191,8 +191,7 @@ marked twice: by `*` before it and by the accent fill.
 The ranges and steps are those of `protocols/hitec/hitec_reg.c`. The
 keypad shows the range; a value no step gives, or one that breaks the order
 of the D series positions, is refused on the keypad with the reason:
-`Not a value this setting takes.` or `LEFT END, NEUTRAL and RIGHT END must
-ascend.` An edit writes the side effects the vendor programmer writes: a D
+`This value is not allowed for this setting.` or `LEFT END, NEUTRAL and RIGHT END must be in ascending order.` An edit writes the side effects the vendor programmer writes: a D
 series DIRECTION mirrors NEUTRAL and both ends, a classic CENTRE sets both
 end points to 0x10, a classic DIRECTION swaps them and takes the failsafe
 position from the factory cells 0x49 and 0x4A, and every classic edit
@@ -211,7 +210,7 @@ it was.
 | Rule | Warning |
 | --- | --- |
 | SPEED below 30% | `A slow servo can cause loss of control of the model.` |
-| DEAD BAND below the servo's | `A narrow dead band can cause back-and-forth movement and heat.` |
+| DEAD BAND below the servo's | `A narrow DEAD BAND can cause back-and-forth movement and heat.` |
 | OVERLOAD PROTECTION switched off | `Without overload protection a stalled servo heats up.` |
 | an end point other than the servo's | `End point changed. The servo travel per stick movement changes too.` |
 | NEUTRAL or CENTRE other than the servo's | `The centre shifts. One side moves closer to the mechanical stop.` |
@@ -357,10 +356,10 @@ measured.
 | `Writing was interrupted at register 0x54. Tap READ ALL.` | took the D series registers before it; nothing is saved |
 | `Writing was interrupted before the servo saved. Tap READ ALL.` | took the registers, unsaved |
 | `Writing was interrupted after the save, before the restart. Tap READ ALL.` | saved them; the restart is owed |
-| `Every value went out; their check was interrupted. Tap READ ALL.` | took all of them; the read-back did not end |
+| `All values were sent, but verification was interrupted. Tap READ ALL.` | took all of them; the read-back did not end |
 | `Writing was interrupted at stored value 0x06. Tap READ ALL.` and `The checksum may be wrong: the servo may ignore PWM and draw current up to the supply limit.` | may hold the new cell without its balance |
 | `Stored value 0x06 is written, its checksum in 0x1C is not. Tap READ ALL.` and the same second line | holds the new cell and the old balance: the checksum is wrong |
-| `A write did not end verified. Tap READ ALL before the next write.` | a write once a step went out leaves what the servo holds unknown; READ ALL comes before the next write |
+| `A write was not verified. Tap READ ALL before writing again.` | a write once a step went out leaves what the servo holds unknown; READ ALL comes before the next write |
 
 A write that ends any way but verified switches the switch off.
 
@@ -379,7 +378,7 @@ record, address by address over the addresses a write changes:
 | --- | --- | --- |
 | the values before the write | `Is this the servo whose write was interrupted on GPIO 13?` `It has the old values. If this is the same servo, discard the record under RESTORE.` | the restore, which then sends nothing and clears the record, and the discard |
 | the values the write was to leave | the same first line and `It has the new values. If this is the same servo, discard the record under RESTORE.` | the restore and the discard |
-| some of each | `The servo contains both old and new settings.` `Do not use this servo. RESTORE writes the values before the write back.` | the restore and the discard |
+| some of each | `The servo contains both old and new settings.` `Do not use this servo. RESTORE recovers the values from before the write.` | the restore and the discard |
 | another series, port or D series model, or a value that is neither | `The interrupted write affected a different servo.` `It was connected to GPIO 13. Discard the record under RESTORE.` | the discard only |
 
 The classic balance 0x1C is not compared: a write cut between a cell and its
@@ -387,8 +386,7 @@ balance leaves a third value there. RESTORE writes the values before the
 write back as a write of its own, with the switch, the hold page `RESTORE`
 and its read-back; the record stays until that ends verified. `Discard the
 record of the interrupted write.` removes it without a write. While a
-record stands WRITE n VALUES and REPAIR CHECKSUM are refused: `Writes and REPAIR
-CHECKSUM wait for the record of an interrupted write: restore or discard it under RESTORE.` The file
+record stands WRITE n VALUES and REPAIR CHECKSUM are refused: `An interrupted write blocks writing and REPAIR CHECKSUM. Use RESTORE to restore or discard its record.` The file
 manager shows `HITEC.TXT` and `HITEC.NEW` with INFO only: a hand edit could
 send wrong values to a servo.
 
@@ -497,8 +495,8 @@ session's own verified writes, the ID 0x32 included, keep it. A read of
 another servo says
 
 ```
-Other values than the last read: taken as another servo.
-Its backup is this read.
+Values differ from the last read. Treated as a different servo.
+Its backup contains the values from this read.
 ```
 
 The backup file line goes, RESTORE does not offer the first servo's
@@ -579,7 +577,7 @@ servo before the write switch, the write page and its 2s hold.
 | Of the other series | `File is CLASSIC, servo is D SERIES. Not loaded.` |
 | Of the other classic layout | `File is for HS-7xxx servos, this servo is HS-5xxx. Not loaded.` |
 | Of another model of the same layout, or past a soft rule | CHECK THIS FILE, below; `Confirm the warnings before loading this file.` |
-| A wrong check | `File damaged: checksum mismatch. Not loaded.` `A file edited by hand does not load.` |
+| A wrong check | `File damaged: checksum mismatch. Not loaded.` `Manually edited files cannot be loaded.` |
 | Ends before its check line | `File damaged: it ends before its check line. Not loaded.` and the same second line |
 | A line that is not the one due | `Cannot read line 5. File not loaded.` and the same second line |
 | Not a servo file, or larger than 320 bytes | `Not a servo settings file. Not loaded.` |
@@ -687,7 +685,7 @@ backup file's lines. **HOLD
 and verified.` It needs the switch, no edit standing and no record. It is
 offered while any cell of 0x00 to 0x23 that a write sends differs from its
 factory cell, one no setting names included; a servo whose cells already
-hold the factory values gets `No value differs from the servo's.`
+hold the factory values gets `No values differ from the servo settings.`
 
 A D series servo has no FACTORY DEFAULT: its reset command (register 0x6E
 = 0x0F0F, as the HFP-30 sends it) leaves values that are not known before
@@ -812,14 +810,14 @@ as after any stop: ARM is refused only while the port is held.
 | --- | --- |
 | `No D series servo answers. Check plug, receive mode and series.` | no byte came on the last of 3 tries of a D series read |
 | `No classic servo answered after power-up. Check plug and series.` | no `+` came within 2s after the power-up |
-| `The servo's answer to the entry was wrong. Check the series.` | bytes came that do not fit the entry |
+| `Unexpected reply when entering programming mode. Check the series.` | bytes came that do not fit the entry |
 | `Bad answer from the servo (code 14). Reading again.` | a try failed; the code is the decoder's (`hitec_rx_t`) |
 | `Read failed at address 0x32. Tap READ ALL.` | every try of one address failed |
 | `Two reads differ at 0x17: read again with READ ALL.` | the second read before a write differs from the read the plan is made from ([The second read](#the-second-read)) |
 | `The IOmcu refused: its failsafe is latched.` | OPEN or CLEAR refused UNSAFE |
 | `The IOmcu ended the session. The port is back in tester mode.` | the port went back to PWM with no command of this panel |
 | `No answer from the IOmcu in time. The operation ended.` | a command not taken within 2000ms, or a request without an outcome within 30,000ms |
-| `The supply did not follow the POWER request. Check the PD mini.` | POWER ended with SUPPLY |
+| `The supply did not execute the POWER request. Check the PD mini.` | POWER ended with SUPPLY |
 | `The IOmcu cannot drive the line of this port.` | OPEN found no free line |
 | `The IOmcu refused the request (code 7).` | a refusal with no message of its own |
 

@@ -86,11 +86,11 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | Zeile | Bedingung |
 | --- | --- |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
-| `LETZTER BERICHT SCHREIBT NOCH` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
+| `BERICHT WIRD NOCH GESCHRIEBEN` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
 | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000ms gehalten, oder kein Fenster mit Strom in den letzten 200ms |
-| `SERVOVERSORGUNG UNTER 3.0V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
+| `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
 | `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL auf PROG-PORT mit PORT-PWM aus |
 | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL auf den Ausgängen des Prüfstands, ohne einen als SERVO PWM gebundenen Ausgang, oder die Bindung noch nicht gelesen: die Worte der Zeile ZIEL |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | PULS MITTE liegt nicht zwischen PULS MIN und PULS MAX |
@@ -112,7 +112,7 @@ Zustandszeile der Karte nennt die Bedingung.
 | --- | --- |
 | `PROGRAMMIEREN: PORT IST NICHT IM PWM-MODUS` | der Programmierer hält den Port, oder der Port ist nicht für einen Lauf bereit |
 | `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` | ein PD mini antwortet mit ausgeschaltetem Ausgang: die Lesesitzung schaltete ihn neben dem Netzteil ein, das die Schiene speist |
-| `PROGRAMMIEREN: VERSORGUNG AUF UNTER 4.8V EINGESTELLT` | ein PD mini antwortet, und sein Sollwert liegt unter 4,8V |
+| `PROGRAMMIEREN: NETZTEIL AUF UNTER 4.8V EINGESTELLT` | ein PD mini antwortet, und sein Sollwert liegt unter 4,8V |
 | `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8V oder ist nicht gelesen |
 
 Ohne PD mini kann der Lauf das Servo nicht aus- und einschalten, und ein
@@ -138,7 +138,7 @@ VERBINDEN liest alle Register, VERLASSEN gibt den Port zurück, und der Lauf
 schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert.
 
 - Ein Lesen, das scheitert, beendet den Lauf vor jeder Suche: NICHT
-  BESTANDEN, `kein KST- oder Chaservo-Servo`, wenn das erste VERBINDEN kein
+  BESTANDEN, `kein KST/Chaservo ausgelesen`, wenn das erste VERBINDEN kein
   Servo findet, das antwortet (ein Servo, das kein KST oder Chaservo ist,
   antwortet nicht), oder das gelesene Servo Werte hält, die die harten
   Regeln nicht annehmen; ABGEBROCHEN, `PROG-PORT-Sitzung gescheitert`, wenn
@@ -240,11 +240,11 @@ RIGHT ANGLE diese Seite. Ein Ende, das mit beiden Registern versucht
 bleibt, beendet den Lauf als NICHT BESTANDEN, `LEFT/RIGHT ANGLE: Seite
 unklar`. Ein Ende, das sich um 20µs oder mehr nach innen bewegt, ebenso.
 Ein Ende, das mit seinem Register auf dem kleinsten Wert anläuft, beendet
-ihn als NICHT BESTANDEN, `läuft beim kleinsten Winkel an`. Ein Register,
+ihn als NICHT BESTANDEN, `blockiert beim kleinsten Winkel`. Ein Register,
 dessen Seite nie anlief, behält seinen Wert.
 
 Zuletzt werden beide Enden noch einmal gesucht: BESTANDEN, wenn beide frei
-sind, NICHT BESTANDEN `ein Ende läuft weiterhin an`, wenn eines anläuft.
+sind, NICHT BESTANDEN `Endlage blockiert weiterhin`, wenn eines anläuft.
 Nach NICHT BESTANDEN folgt kein weiteres Schreiben; ZURÜCKSPIELEN bringt
 die Werte vor dem Lauf zurück.
 
@@ -331,12 +331,11 @@ Was anders ist:
   begrenzt.
 - Ein erstes VERBINDEN, auf das kein Servo antwortet, oder ein Servo, dessen
   Endpoints sich nicht ändern lassen, beendet den Lauf als NICHT BESTANDEN
-  mit `kein Hitec-Servo gelesen`.
+  mit `kein Hitec-Servo ausgelesen`.
 - Die Sicherungsdatei HITEC001 bis HITEC999 wird vor dem ersten Schreiben
   des Laufs gespeichert; ZURÜCKSPIELEN heißt, sie unter DATEIEN des
   Hitec-Programmierers zu laden und mit n WERTE SCHREIBEN zu schreiben. Das
-  Feld nennt sie, `HITEC001 IN DATEIEN LADEN`, oder `KEINE
-  SICHERUNGSDATEI`, wenn keine gespeichert ist: ohne Karte, oder der Lauf
+  Feld nennt sie, `HITEC001 IN DATEIEN LADEN`, oder `KEINE BACKUP-DATEI`, wenn keine gespeichert ist: ohne Karte, oder der Lauf
   endete, bevor die Sitzung des ersten Schreibens eine speicherte.
 - Der Bericht nennt die Register, `LEFT END (0xB2): 4841 vorher, 2341
   nachher`, das Servo als `Hitec D SERIES, DIRECTION CW` und die Pulse als
@@ -349,8 +348,7 @@ Zelle welche Seite begrenzt, die Einheit der klassischen Zelle und ob der
 Weg beider Serien linear im Puls ist, ist nicht gemessen; der
 Zuordnungsschritt findet das Register jeder Seite wie an einem KST-Servo,
 und ein NICHT BESTANDEN mit `LEFT/RIGHT ANGLE: Seite unklar` (die
-KST-Wörter, auch für LEFT END und RIGHT END) oder `ein Ende läuft
-weiterhin an` beendet einen Lauf, dessen Servo dem Modell nicht folgt.
+KST-Wörter, auch für LEFT END und RIGHT END) oder `Endlage blockiert weiterhin` beendet einen Lauf, dessen Servo dem Modell nicht folgt.
 
 ### Schutzmechanismen
 
@@ -360,11 +358,11 @@ weiterhin an` beendet einen Lauf, dessen Servo dem Modell nicht folgt.
 | Der INA3221 am Ende seines Bereichs | ein begrenzter Messwert | Abbruch |
 | Stall-Timeout | Fenstermittel über 1,0A für 400ms | Abbruch |
 | Kein Fenster | 200ms, 4 Fenster zu 50ms | Abbruch; `SERVO_TEST_WIN_STALE_MS`, der Wert des automatischen Tests. Ein Fenster ohne Strommesswert zählt nicht als Fenster. Die Fenster speisen die drei Schutzmechanismen darüber, also bekommt eine Lücke in ihnen keine Zugabe |
-| Der AS5600, ab dem Start in Gebrauch | länger als 300ms keine Antwort, oder erneut weniger als 10s nach dem Beginn des Mals davor | Abbruch als Fehler, `AS5600 antwortet nicht` oder `AS5600 2x in 10s ausgefallen`, mit WINKELQUELLE IMU `IMU antwortet nicht` oder `IMU 2x in 10s ausgefallen`; durch eine kürzere, seltenere Lücke fährt der Lauf, und darin wird kein Winkel genommen, wie im automatischen Test ([Der Ausgangsencoder](#der-ausgangsencoder)). Der Bericht hat die Zeile `AS5600-Lücken: N, die längste Mms. ...`, wenn N größer als 0 ist |
+| Der AS5600, ab dem Start in Gebrauch | länger als 300ms keine Antwort, oder erneut weniger als 10s nach dem Beginn des Mals davor | Abbruch als Fehler, `AS5600 antwortet nicht` oder `AS5600 2x in 10s ausgefallen`, mit WINKELQUELLE IMU `IMU antwortet nicht` oder `IMU 2x in 10s ausgefallen`; durch eine kürzere, seltenere Lücke fährt der Lauf, und darin wird kein Winkel genommen, wie im automatischen Test ([Der Ausgangsencoder](#der-ausgangsencoder)). Der Bericht hat die Zeile `AS5600-Aussetzer: N, längster Mms. ...`, wenn N größer als 0 ist |
 | Eine Suche | 40s | Abbruch: 1000µs Weg sind 100 Stellungen zu 250ms, 25s |
 | Ein Schritt des Programmierers | 150s | Abbruch: VERBINDEN mit seinem Lesen, ein Schreiben oder VERLASSEN |
 | Das Umschalten des Prüfstands | 3s | Abbruch, wenn SAFE oder ARMED 3s nach der Anforderung nicht steht |
-| Das Netzteil | Sollwerte und Ausgang, ein oder aus, wie bei seiner ersten Messung, ob es antwortet oder nicht, in jeder Phase außer den Sitzungen des Programmierers (VERBINDEN bis VERLASSEN), denen das Netzteil gehört; ein Ausgang, der beim Start aus ist und eingeschaltet wird, oder ein Netzteil, das beim Start nicht antwortet und später antwortet, mit ein- oder ausgeschaltetem Ausgang, beendet den Lauf als `Netzteil oder Spannung geändert`, so wird neben einer Schiene, die anderswo gespeist wird, kein zweites Netzteil eingeschaltet; ein VERBINDEN wird nicht gesendet, solange ein PD mini antwortet, mit dem der Lauf nicht begonnen hat, oder dessen Ausgang aus ist: der Lauf endet, wie eine Messung außerhalb einer Sitzung ihn beendet, mit `Netzteil oder Spannung geändert` für einen PD mini, mit dem der Lauf nicht begonnen hat, und mit `Netzteilausgang ging aus` für seinen eigenen; während einer Suche zudem die Schienenspannung innerhalb 1,0V des ersten Fensters | Abbruch |
+| Das Netzteil | Sollwerte und Ausgang, ein oder aus, wie bei seiner ersten Messung, ob es antwortet oder nicht, in jeder Phase außer den Sitzungen des Programmierers (VERBINDEN bis VERLASSEN), denen das Netzteil gehört; ein Ausgang, der beim Start aus ist und eingeschaltet wird, oder ein Netzteil, das beim Start nicht antwortet und später antwortet, mit ein- oder ausgeschaltetem Ausgang, beendet den Lauf als `Netzteil oder Spannung geändert`, so wird neben einer Schiene, die anderswo gespeist wird, kein zweites Netzteil eingeschaltet; ein VERBINDEN wird nicht gesendet, solange ein PD mini antwortet, mit dem der Lauf nicht begonnen hat, oder dessen Ausgang aus ist: der Lauf endet, wie eine Messung außerhalb einer Sitzung ihn beendet, mit `Netzteil oder Spannung geändert` für einen PD mini, mit dem der Lauf nicht begonnen hat, und mit `Netzteilausgang abgeschaltet` für seinen eigenen; während einer Suche zudem die Schienenspannung innerhalb 1,0V des ersten Fensters | Abbruch |
 | Die Schienenspannung im Fenster einer Suche | in jedem Fenster einer Suche vorhanden, ihr Mittel bei 3,0V oder mehr (`SERVO_LIMRUN_RAIL_MIN_MV`), das erste Fenster eingeschlossen | Abbruch, bevor das Fenster die Suche bewegt: `kein Spannungswert im Fenster` ohne Wert, `Netzteil oder Spannung geändert` unter 3,0V; Bezug des 1,0-V-Bands ist das erste Fenster des Laufs, das die Spannung enthält |
 | Schrittweite | 10µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
 
@@ -453,7 +451,7 @@ an dem der Lauf begann, und den Dateinamen des Berichts.
 
 Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS` ohne CSV-Datei
 daneben, unter der nächsten freien Nummer dieses Ordners, geschrieben
-unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit User-Logs AUS unter
+unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit Testaufzeichnungen AUS unter
 SETUP > SD CARD wird kein Bericht geschrieben
 ([Setup](Screens-de.md#sd-card-welche-logs-geschrieben-werden-und-wohin)). Während eines Laufs schreiben weder das
 Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
@@ -494,13 +492,13 @@ RIGHT ANGLE:     150 vorher, 95 nachher; begrenzt das obere Ende
                  Anteil frei 0.620, blockiert 0.640; Vorhalt 99, Anteil 0.960; Endwert 95
 Verfahren:       linear im Puls; Vorhalt +3% auf den Anteil am ersten blockierten Puls, dann der Anteil, den seine Suche frei fand
 Schreibvorgänge: Werte geschrieben 6, Schreibvorgänge gesendet 4, Grenze 8 Werte; Sitzungen 4
-Sicherung:       KST001, die Werte vor dem Lauf
+Backup:          KST001, die Werte vor dem Lauf
 
 ENDEN NACH DEM PROGRAMMIEREN (beide neu gesucht)
 Unteres Ende:    frei bis 1000us; frei 0.120A
 Oberes Ende:     frei bis 2000us; frei 0.120A
 
-Einheit: die Einheit von LEFT ANGLE und RIGHT ANGLE ist unbekannt; der Weg gilt als linear im Puls von NEUTRAL bis PULSE LOWER und PULSE UPPER, das ist nicht gemessen.
+Einheit: Die Einheit von LEFT ANGLE und RIGHT ANGLE ist unbekannt. Der Weg wird als linear zur Pulsbreite von NEUTRAL bis PULSE LOWER und PULSE UPPER angenommen. Das ist nicht gemessen.
 Prüfstand: die gefundenen Enden werden nicht auf PULS MIN und PULS MAX angewendet.
 ```
 
@@ -820,9 +818,8 @@ PWM-Frame misst, verwendet der Lauf nicht.
   mini läuft mit ihm weiter, wenn der INA3221 unter ihm zum Messgerät wird.
 - **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem ein INA3221
   unter SETUP > SENSORS bestückt ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
-  `der IOmcu ist älter als Firmware 0.16.0`, `der IOmcu hält
-  seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strom in
-  den letzten 200ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger
+  `IOmcu-Firmware älter als 0.16.0`, `der IOmcu hält
+  seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strommesswert in den letzten 200ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger
   als 1s` oder `das Netzteil ist vom Panel simuliert`.
 - **Strom mit Vorzeichen.** Ein negativer Strom ist ein Messwert.
   RUHESTROM, HALTESTROM, BLOCKIERT AB und die Spitze nehmen seinen Betrag,
@@ -974,7 +971,7 @@ ein in diesem Zustand gestarteter Lauf eingeschlossen. Ein als zu schwach oder
 zu stark gemeldeter Magnet (ML, MH) bei gesetztem MD lässt den Winkel in
 Gebrauch: das Datenblatt nennt keine Wirkung auf den Winkel und spezifiziert
 sein Rauschen nur für 30 bis 90 mT. Der Bericht zählt diese Messwerte: `Feld:
-N Messwert(e) mit zu schwachem Magneten, M mit zu starkem. ...`. Keine der
+N Messwert(e) bei zu schwachem Magnetfeld, M bei zu starkem. ...`. Keine der
 beiden Zeilen steht im Bericht, wenn ihre Zahlen 0 sind.
 
 Der Bericht bekommt eine Kopfzeile (`Encoder:`), eine Tabelle je Stufe (den
@@ -1019,8 +1016,8 @@ antwortenden Bausteins, mit Winkel oder mit "kein Magnet". Ein Lauf, der
 startet, während der Baustein nicht antwortet, startet in einer Lücke. Ein
 Messwert ohne Magnet ist keine Lücke: der Baustein antwortet. Eine
 übergelaufene Warteschlange zum Bildschirm (oben) ist auch keine: am IOmcu
-fehlte kein Lesen des Bausteins. Der Bericht hat die Zeile `AS5600-Lücken:
-N, die längste Mms. ...`, wenn N größer als 0 ist, und die Spalte
+fehlte kein Lesen des Bausteins. Der Bericht hat die Zeile `AS5600-Aussetzer:
+N, längster Mms. ...`, wenn N größer als 0 ist, und die Spalte
 `angle gap (ms)` der CSV die Länge jeder Lücke, durch die der Lauf fuhr. Ein
 Lauf ohne AS5600 in Gebrauch hat keine Lücken. Das Band sagt `AS5600 antwortet nicht unter 0x36.`,
 wenn der Baustein verstummt, und nimmt die Zeile mit dem ersten
@@ -1108,24 +1105,24 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | --- | --- |
 | `STOP` | STOP in der Leiste |
 | `Prüfstand SAFE` | DISARM oder alles andere, was den Prüfstand auf SAFE geschaltet hat |
-| `Link verloren` | der Link zum IOmcu ging während des Laufs verloren |
+| `Verbindung verloren` | der Link zum IOmcu ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
 | `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, ein Programmierer, geöffnet aus der Liste von PROGRAMMIEREN |
 | `Servo-Optionen geändert` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder TEMPO geändert |
 | `Touch-Ereignisse verloren` | zwischen zwei Frames gingen Ereignisse verloren |
 | `Netzteil antwortet nicht` | ein Messwert als nicht antwortend markiert |
 | `Netzteil abgeschaltet` | der Ausgang ging durch eine Abschaltschwelle aus |
-| `Netzteilausgang ging aus` | der Ausgang ging anders aus, AUSGANG AUS eingeschlossen |
+| `Netzteilausgang abgeschaltet` | der Ausgang ging anders aus, AUSGANG AUS eingeschlossen |
 | `seit 1.5s kein Messwert` | `SERVO_TEST_STALE_MS` |
-| `Netzteilausgang ging nicht an` | 3000ms nach dem ON nicht an |
+| `Netzteilausgang nicht aktiv` | 3000ms nach dem ON nicht an |
 | `Sollwert 3s nicht bestätigt` | das Netzteil hat die Spannung einer Stufe nicht übernommen |
-| `Stufe über Spannungsobergrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder die Eingangsspannung des PD mini abzüglich 0,7V |
+| `Stufe über Spannungsgrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder die Eingangsspannung des PD mini abzüglich 0,7V |
 | `1s über BLOCKIERT AB` | `SERVO_TEST_STALL_ABORT_MS` |
 | `1s im Konstantstrom` | das Netzteil meldete `SERVO_TEST_CC_ABORT_MS` lang Konstantstrom |
 | `0.2s kein INA3221-Fenster` | ein Lauf am INA3221: `SERVO_TEST_WIN_STALE_MS` ohne ein Fenster mit Strom und Spannung. Ein Durchlauf 199ms nach dem letzten Fenster lässt den Lauf laufen, einer bei 200ms beendet ihn |
 | `INA3221 setzte sich zurück` | ein Lauf am INA3221: der Reset-Zähler des Bausteins hat sich bewegt |
 | `INA3221 antwortet nicht` | ein Lauf am INA3221: kein Lesen von SENSE in 200ms zeigt den Baustein online und erkannt an einem Bus, der nicht hängt |
-| `INA3221-Fenster ohne Strom` | ein Lauf am INA3221: das neueste Fenster enthält keine Strommesswerte, oder seine Nummer steht seit 200ms |
+| `INA3221-Fenster ohne Stromwert` | ein Lauf am INA3221: das neueste Fenster enthält keine Strommesswerte, oder seine Nummer steht seit 200ms |
 | `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der IOmcu hört auf, die Einstellung zu halten, oder SETUP hat den INA3221 aus |
 | `INA3221 misst nicht mehr` | ein Lauf am INA3221: das Messgerät wechselte, und das Panel nannte die Bedingung nicht |
 | `AS5600 antwortet nicht` | ein Lauf mit AS5600 in Gebrauch: der Baustein antwortet länger als `SERVO_GAP_MAX_MS`, 300ms, nicht ([Der Ausgangsencoder](#der-ausgangsencoder)) |
@@ -1184,9 +1181,9 @@ eigene Task der SD-Karte schreibt seine Dateien dorthin: `ATESTnnn.CSV`, eine
 Zeile je Messwert des Messgeräts des Laufs, und mit BERICHT an (OPTIONEN >
 PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
 `LIMITnnn.TXT` der Endlagenläufe in diesem Ordner
-([Logs](Screens-de.md#logs)). Mit User-Logs AUS unter SETUP > SD CARD,
+([Logs](Screens-de.md#logs)). Mit Testaufzeichnungen AUS unter SETUP > SD CARD,
 gelesen bei TEST STARTEN, schreibt der Lauf keine Datei, und das Ergebnis
-nennt `USER-LOGS AUS`. Ein Lauf ist eine CSV: das eigene
+nennt `TESTAUFZEICHNUNGEN AUS`. Ein Lauf ist eine CSV: das eigene
 Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen
 wieder, wenn der Lauf endet. Eine Nummer, die nur ein
@@ -1253,7 +1250,7 @@ ERGEBNISSE JE STUFE (Ströme in mA, Zeiten in ms)
 
 Dieselbe Wiedergabe eines 1102HB, das 0,015 bis 0,029A hält und in
 Bewegung bis 0,039 bis 0,044A zieht, lautet `NICHT MESSBAR - bei 25 von 46
-gezählten Bewegungen keine Bewegung im Strom erkannt`: seine Bewegungen zum
+gezählten Bewegungen keine Bewegung am Stromverlauf erkannt`: seine Bewegungen zum
 oberen Ende verlassen die 0,028A des unteren Endes und überschreiten sie
 nie um 0,020A. Auf 0.13.0 lautete dasselbe Servo NICHT BESTANDEN, alle 34
 gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBROCHEN -
@@ -1269,19 +1266,19 @@ Ein Lauf am INA3221 hat diese Zeilen anstelle derer des PD mini, hier vom
 modellierten Prüfstand der Host-Suite:
 
 ```
-Log:             die .CSV mit der Nummer dieser Datei, eine Zeile je Fenster des INA3221
+Aufzeichnung:    .CSV mit derselben Dateinummer; eine Zeile je INA3221-Fenster
 Netzteil:        PD mini
 Strom:           INA3221 0x40 CH1, Shunt 100.0mΩ, Bereich 1.638A
 Spannung:        INA3221 0x40 CH1, Lastseite des Shunts
-Shunt:           bis 0.164V fallen am Bereichsende an ihm ab; der Sollwert wird dafür nicht angehoben
-Messwerte:       20.0 /s Fenster vom INA3221 geschlossen, 20.0 /s erreichten den Test
+Shunt:           Spannungsabfall bis 0.164V am Ende des Messbereichs; der Sollwert wird nicht zum Ausgleich erhöht
+Messwerte:       20.0/s abgeschlossene INA3221-Fenster, 20.0/s im Test angekommen
 Übersprungen:    0 Fenster des INA3221 erreichten den Test nie
-Auflösung:       ein Fenster alle 50ms: eine Stellzeit ist um bis zu zwei Fenster und den Poll, der sie liest, zu lang
+Auflösung:       ein Fenster alle 50ms; die Stellzeit kann um bis zu zwei Fenster plus Abfragezeit zu lang sein
 Verzögerung:     etwa 50ms von einer Stromänderung bis zum Messwert, der sie zeigt
-Stellzeiten:     eine Obergrenze, nicht gegen die Grenze geprüft
+Stellzeiten:     Obergrenzen; nicht mit der eingestellten Grenze verglichen
 ...
-Position: nichts misst das Ruderhorn; jedes Ergebnis ist der Strom des oben genannten INA3221-Kanals.
-Strom zwischen zwei 1-ms-Messwerten dieses Kanals: ein Fenster enthält deren Mittel, Höchst- und Tiefstwert.
+Position: Die Lage des Ruderhorns wird nicht gemessen. Alle Ergebnisse beruhen auf dem Strom des oben genannten INA3221-Kanals.
+Strom zwischen zwei Messwerten dieses Kanals im Abstand von 1ms: Ein Fenster enthält deren Mittel-, Höchst- und Tiefstwert.
 ```
 
 ### Was nicht gemessen ist
@@ -1370,7 +1367,7 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 - NULLPUNKT wird bei beiden Quellen ab dem Zählwert 0 genommen; ein neues
   ENC CENTRE nach NULLPUNKT verschiebt keinen Ausschlag. Eine andere ANGLE
   SOURCE, eine andere AXIS oder SIGN der IMU oder ein NULLPUNKT oder
-  NULLPUNKT WEG auf dem IMU-Bildschirm verwirft Nullpunkt und MAX: die
+  NULLPUNKT LÖSCHEN auf dem IMU-Bildschirm verwirft Nullpunkt und MAX: die
   Aufgabe liest wie vor NULLPUNKT.
 - NULLPUNKT nimmt den aktuellen Winkel als Neutrallage der Fläche. Der
   Ausschlag ist der Winkel ab ihr, auf -180 bis unter 180° gefaltet. Vor
@@ -1451,7 +1448,7 @@ Augenmaß eingestellten Weg am Sender. Der Lauf steht in
   die Taste LAUF BEENDEN, und ein Druck beendet den Lauf beim Drücken.
 - Die drei Zeilen darunter: der laufende Schritt, etwa `EINSCHWINGEN
   2000us: SCHREIBEN 1/8, SITZUNGEN 2`, oder warum ein START abgelehnt ist,
-  oder die Sollwerte; das Ergebnis, `PASS: 150>92, 150>92` mit dem Wert
+  oder die Sollwerte; das Ergebnis, `BESTANDEN: 150>92, 150>92` mit dem Wert
   jedes Endpoints davor und danach, oder `NICHT BESTANDEN: Grund`; das
   Servo, das der Lauf programmiert, `SERVO KST/CHASERVO` oder `SERVO HITEC
   D-SERIE`, während er läuft und vor dem ersten Lauf; danach die Datei des
@@ -1474,10 +1471,10 @@ Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
 | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
 | das Messgerät nicht für den Servostrom eingerichtet ist | die Zeile des Endlagenlaufs |
 | der Ausgang nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT` |
-| PULS MIN über 1000us oder PULS MAX unter 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us FASSEN` |
+| PULS MIN über 1000us oder PULS MAX unter 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
 | der Programmierer belegt ist oder kein PD mini und kein PROG 5V das Servo aus- und einschaltet | die Zeile des Endlagenlaufs |
 | die Winkelquelle keinen Messwert gibt | `WINKELQUELLE: KEIN MESSWERT` |
-| NULLPUNKT nicht genommen ist | `ERST NULL, DAS RUDER IN NEUTRAL` |
+| NULLPUNKT nicht genommen ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
 
 ### Verfahren
 
@@ -1489,8 +1486,7 @@ Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
   erste Winkel genommen, der 500ms ruhig ist. Kein ruhiger Winkel bis
   3000ms beendet den Lauf.
 - Die Richtung einer Seite ist das Vorzeichen ihrer ersten Messung. Beide
-  Seiten mit einem Vorzeichen beenden den Lauf mit `Endpoint einer Seite
-  unklar`.
+  Seiten mit einem Vorzeichen beenden den Lauf mit `Endpoint einer Seite fehlt`.
 - Eine Seite außerhalb der Toleranz bekommt Wert x Sollwert / gemessen,
   begrenzt auf den Bereich des Registers. Ein Wert, der auf den geltenden
   rundet, geht einen Zählwert zum Sollwert hin. Das erste Schreiben geht an
@@ -1504,7 +1500,7 @@ Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
   ersten Schreiben gespeichert.
 - PASS: beide Seiten innerhalb der Toleranz, jede nach dem letzten
   Schreiben gemessen. Eine Seite außerhalb nach 8 Schreibvorgängen beendet
-  den Lauf mit `8x je Seite geschrieben`.
+  den Lauf mit `8 Schreibvorgänge je Seite`.
 
 ### Schutz
 

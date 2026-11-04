@@ -120,7 +120,7 @@ A finger on the dial, CENTRE, RELEASE, STOP, a switch to SAFE and leaving the sc
 
 ## The automatic test
 
-START TEST on TEST's AUTOMATIC TEST card steps the servo through the supply voltages chosen in the card's settings. At each step it measures the current at rest, moving and holding, times the travel, and finds the voltage at which the servo stops moving. START TEST is a 2s hold. It needs the bench ARMED and a supply that answers; otherwise the card's state line names the reason: `ARM FIRST`, `NO STEP CHOSEN`, `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `A STEP IS OUTSIDE THE CAPS` or `LAST REPORT STILL WRITING`.
+START TEST on TEST's AUTOMATIC TEST card steps the servo through the supply voltages chosen in the card's settings. At each step it measures the current at rest, moving and holding, times the travel, and finds the voltage at which the servo stops moving. START TEST is a 2s hold. It needs the bench ARMED and a supply that answers; otherwise the card's state line names the reason: `ARM FIRST`, `NO STEP CHOSEN`, `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `STEP OUTSIDE VOLTAGE LIMITS` or `REPORT STILL BEING WRITTEN`.
 
 ![TEST and its two run cards](view:servo-test)
 
@@ -130,7 +130,7 @@ The card's summary line names the steps and the length of each, `4.8 6.0V BROWN-
 
 TEST stays shown as the run starts, and the card's state line reads the step. LIVE shows its step and phase in a box left of the dial, under `ARM FIRST`, with the meter beside STOP TEST: `PD mini`, the channel, `INA 0x41 CH2`, or `SIMULATION`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Its windows feed STALL AT's stop, so a gap in them ends the run at once.
 
-With the AS5600 in use from the start, a run rides through a gap of the encoder: the part not answering for up to 300ms, once in 10s. Motor and ESC runs at high current disturb the sensor bus, and a part plugged in during a run does too. No angle is judged in the gap, the report says `AS5600 gaps: 1, the longest 120ms. ...`, and the CSV's `angle gap (ms)` column holds its length. A longer gap ends the run, `AS5600 not answering`, and so does a second one within 10s, `AS5600 dropped out twice in 10s`: both are errors, the output off and the bench SAFE. With ANGLE SOURCE IMU the same two endings read `IMU not answering` and `IMU dropped out twice in 10s`.
+With the AS5600 in use from the start, a run rides through a gap of the encoder: the part not answering for up to 300ms, once in 10s. Motor and ESC runs at high current disturb the sensor bus, and a part plugged in during a run does too. No angle is judged in the gap, the report says `AS5600 gaps: 1, longest 120ms. ...`, and the CSV's `angle gap (ms)` column holds its length. A longer gap ends the run, `AS5600 not answering`, and so does a second one within 10s, `AS5600 dropped out twice in 10s`: both are errors, the output off and the bench SAFE. With ANGLE SOURCE IMU the same two endings read `IMU not answering` and `IMU dropped out twice in 10s`.
 
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)
@@ -163,7 +163,7 @@ The run reads only the INA3221 channel that watches the tester's target. With th
 | `PORT PWM OFF. NO PULSES ON THIS PORT.` | TARGET is PROG PORT with PORT PWM off |
 | `NO SERVO PWM PIN`, `PINS NOT READ` | TARGET is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
 | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
-| `LAST REPORT STILL WRITING` | a test or a run is under way, or its report is still going to the card |
+| `REPORT STILL BEING WRITTEN` | a test or a run is under way, or its report is still going to the card |
 
 ### The search
 

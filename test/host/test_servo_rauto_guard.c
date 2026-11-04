@@ -370,7 +370,7 @@ TEST_CASE(a_refused_connect_ends_prog_and_restore_is_offered_after_a_write)
     CHECK(!servo_rauto_restore(&g.run));
     CHECK(!servo_rauto_wrote(&g.run));
     CHECK(in_report("No servo read: nothing written."));
-    CHECK(in_report("No measure taken."));
+    CHECK(in_report("No measurements taken."));
 
     /* The second write's CONNECT refused: RESTORE. */
     rig_init(0u);

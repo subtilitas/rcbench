@@ -55,7 +55,7 @@ TEST_CASE(the_limit_run_rides_through_an_encoder_gap_of_300ms)
     CHECK_EQ(g.run.verdict, SERVO_LIMRUN_FOUND);
     CHECK_EQ(g.run.enc_gap.count, 1u);
     CHECK_EQ(g.run.enc_gap.longest_ms, 300u);
-    CHECK(strstr(g.report, "AS5600 gaps: 1, the longest 300ms.") != NULL);
+    CHECK(strstr(g.report, "AS5600 gaps: 1, longest 300ms.") != NULL);
 }
 
 TEST_CASE(an_encoder_gap_of_301ms_ends_the_limit_run_as_an_error)

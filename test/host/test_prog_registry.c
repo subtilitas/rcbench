@@ -179,7 +179,7 @@ TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
     CHECK(!l.headings);
     const prog_reg_row_t *stick = &rows[l.e[0].row];
     CHECK_EQ(stick->name, TX_PL_STICK);
-    CHECK_STR_EQ(ui_tr(stick->name), "ESCs by throttle stick");
+    CHECK_STR_EQ(ui_tr(stick->name), "ESCs via throttle stick");
     CHECK_EQ(stick->group, TX_PL_GRP_STICK);
     CHECK_STR_EQ(ui_tr(stick->group), "STICK MENU");
     CHECK_EQ(stick->transport, TX_MO_SET_THROTTLE);

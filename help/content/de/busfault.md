@@ -16,7 +16,7 @@ Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200ms lang inne
 
 - Die Überschrift ist das Urteil.
 - WAS DAS BEDEUTET sagt es in einer Zeile.
-- IN DIESER REIHENFOLGE PRÜFEN listet, was zu prüfen ist, die billigste Prüfung zuerst.
+- PRÜFREIHENFOLGE listet, was zu prüfen ist, die billigste Prüfung zuerst.
 - Die rechte Spalte zeigt, was beide Enden gezählt haben: gesendet, zurück, verändert, verloren.
 
 ![Nichts kam zurück](view:busfault-silent)
@@ -24,7 +24,7 @@ Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200ms lang inne
 | Überschrift | WAS DAS BEDEUTET | Die Prüfungen zielen auf |
 |---|---|---|
 | `Kein Testframe kam zurück.` | `Keine Antwort am Bus. Die beiden Platinen können keine Daten austauschen.` | Versorgung, vertauschte CANH und CANL, das Release, die Abschlüsse |
-| `Testframes kamen mit veränderten Daten zurück.` | `Frames kommen mit veränderten Daten an. Verkabelung und Bit-Timing prüfen.` | die Abschlüsse, die Länge der Stichleitung, verdrillte CANH und CANL |
+| `Testframes kamen mit veränderten Daten zurück.` | `Frames kommen mit veränderten Daten an. Prüfe Verkabelung und Bit-Timing.` | die Abschlüsse, die Länge der Stichleitung, verdrillte CANH und CANL |
 | `Einige Testframes gingen verloren.` | `Einige Frames gehen verloren. Der Bus meldet Fehler.` | die Abschlüsse, die Buslänge, verdrillte CANH und CANL, einen Stecker |
 | `Testframes gingen ohne Busfehler verloren.` | `Frames kamen korrekt an, wurden aber ungelesen verworfen. Kein Verkabelungsfehler.` | nicht die Leitung; mit den Zahlen rechts melden |
 
@@ -46,7 +46,7 @@ Derselbe Bildschirm öffnet, wenn ein Link, der stand, seit 4s weg ist. Die Übe
 
 Bei ARMED öffnet der Bildschirm nie: Er hat kein STOP. Bei ARMED meldet das Alert-Band, dass der Link weg ist, und der Bildschirm wartet auf das Schalten auf SAFE.
 
-Dieselben Zahlen gehen nach `BENCH/RCBENCH.LOG` auf der SD-Karte (Secure Digital), eine Zeile je Bericht, solange der Link weg ist. Die Datei hält höchstens 1MiB (1.048.576 Bytes): Eine Zeile, die sie darüber brächte, benennt sie in `BENCH/RCBENCH.OLD` um, ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Zeilen werden unabhängig von Auto-Logs unter [SETUP](setup.md#sd-card) > SD CARD geschrieben.
+Dieselben Zahlen gehen nach `BENCH/RCBENCH.LOG` auf der SD-Karte (Secure Digital), eine Zeile je Bericht, solange der Link weg ist. Die Datei hält höchstens 1MiB (1.048.576 Bytes): Eine Zeile, die sie darüber brächte, benennt sie in `BENCH/RCBENCH.OLD` um, ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Zeilen werden unabhängig von Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD geschrieben.
 
 ## Den Bildschirm verlassen
 

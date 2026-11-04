@@ -45,7 +45,7 @@
  * The editor.  EDIT switches the view to the editor and opens the
  * keyboard's editor mode (ui_textkey_open_editor()), 4 rows of keys with
  * no digit row, under a text of 8 rows (10 with SMALL); a cursor shows
- * where a key types.  SETUP > PANEL's Keyboard see-through (SET_KB_SEE)
+ * where a key types.  SETUP > PANEL's Keyboard transparency (SET_KB_SEE)
  * lets the text show through the keyboard: OFF, 25% or 50%.  While it is
  * above OFF the panel is drawn to its full height under the keyboard and
  * the rows below the 8 (10) show through the keys; the 8 (10) over the

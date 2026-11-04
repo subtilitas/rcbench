@@ -737,7 +737,7 @@ TEST_CASE(every_choice_finds_its_option_list)
     CHECK(settings_option_list(SET_INA_W_01)
           != settings_option_list(SET_SERVO_TARGET));
     CHECK_STR_EQ(settings_label(SET_PACK_CELLS), "Cells");
-    CHECK_STR_EQ(settings_help(SET_PACK_CELLS), "Series count in the pack");
+    CHECK_STR_EQ(settings_help(SET_PACK_CELLS), "Number of cells in series");
     CHECK_STR_EQ(settings_label(SET_INA_SH_23), "0x42 CH3 shunt");
     CHECK_STR_EQ(settings_help(SET_THEME), "");
 }

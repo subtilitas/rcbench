@@ -23,7 +23,7 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche und Download brauchen:
 
 - ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` über der Taste `NETZWERK SPEICHERN: WI-FI ÖFFNEN`, die WI-FI öffnet und über das Home-Tag zurückführt, und NACH UPDATES SUCHEN ist grau;
-- den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf. Sonst ist die Taste grau, und die Karte sagt `Für WLAN muss SAFE aktiv und das Netzteil aus sein.`;
+- den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf. Sonst ist die Taste grau, und die Karte sagt `WLAN benötigt SAFE und einen ausgeschalteten Netzteilausgang.`;
 - kein laufendes Update des IOmcu und keine Panel-Installation im Gang.
 
 Der Download braucht außerdem, dass keine Platinenzeichnung geladen oder gespeichert wird.
@@ -60,7 +60,7 @@ In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Lini
 | `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` | die Version des laufenden Builds ist nicht lesbar; nichts wird angeboten |
 | `Unerwartete Antwort von GitHub.` | der `Location`-Header, oder mit TESTING die Antwort, fehlt oder ist ungültig; eine zweite Zeile sagt, was |
 | `WLAN ausgeschaltet: Prüfstand ARMED.` und ähnliche | ARMED, der Netzteilausgang, ein Log-Lauf oder STOP beendeten die Suche |
-| `Abgebrochen: ...` | WI-FI, das Update des IOmcu oder ABBRECHEN beendeten die Suche; `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` verschwindet, sobald die Sitzung von WI-FI geendet hat und das Funkteil aus ist |
+| `Abgebrochen: ...` | WI-FI, das Update des IOmcu oder ABBRECHEN beendeten die Suche; `Abgebrochen: Die Seite WI-FI nutzt das WLAN.` verschwindet, sobald die Sitzung von WI-FI geendet hat und das Funkteil aus ist |
 
 ![Eine Suche ohne Antwort](view:updates-failed)
 
@@ -68,7 +68,7 @@ Der Tag lautet `v` und MAJOR.MINOR.PATCH, nur Ziffern, jede Zahl von 0 bis 65535
 
 ## Die Release-Linie
 
-0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für das 7-Zoll-Display-Board mit ESP32-P4 von Waveshare.
+0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für die 7-Zoll-Display-Platine mit ESP32-P4 von Waveshare.
 
 Die Linie des ESP32-P4-Panels enthält jedes Release: Eine Suche bietet in beiden Einstellungen jedes Release an, das neuer als der laufende Build ist.
 
@@ -122,9 +122,9 @@ Das Halten braucht, was die Frage braucht: einen IOmcu mit einem anderen Build, 
 | `Wartet auf die Build-Prüfung des IOmcu.` | ein IOmcu antwortet; sein Build ist noch nicht verglichen |
 | `Build des IOmcu wird geprüft.` | der SHA-256-Vergleich läuft |
 | `Build-Prüfung fehlgeschlagen. Sie läuft bei der nächsten Verbindung erneut.` | der Vergleich endete ohne Antwort |
-| `Kein Update über CAN. Firmware einmal über USB installieren.` | der IOmcu hat keine Update-Pages oder keine Partitionstabelle |
-| `Kein IOmcu-Image für dieses Board in diesem Panel-Build.` | der IOmcu meldet ein Board, für das dieser Panel-Build kein Image trägt; kein Update wird angeboten |
-| `Der IOmcu nutzt den Build dieses Panels.` | es gibt nichts zu senden |
+| `Kein Update über CAN. Installiere Firmware einmal über USB.` | der IOmcu hat keine Update-Pages oder keine Partitionstabelle |
+| `Dieser Panel-Build enthält keine IOmcu-Firmware für diese Platine.` | der IOmcu meldet ein Board, für das dieser Panel-Build kein Image trägt; kein Update wird angeboten |
+| `Der IOmcu nutzt den im Panel enthaltenen Build.` | es gibt nichts zu senden |
 | `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an |
 | `Wartet, bis das WLAN des Panels aus ist.` | eine Suche, ein Download oder [WLAN](wifi.md) hat den Funk an |
 | `Wartet: Die Installation der Panel-Firmware läuft.` | eine Panel-Installation ist im Gang |

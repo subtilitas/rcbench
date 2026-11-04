@@ -17,7 +17,7 @@ Acht Kacheln zu je 243 x 255px, in 4 Spalten und 2 Reihen: die Werkbänke in der
 | Kachel | Zeile unter dem Namen | Seite |
 |---|---|---|
 | MOTOR & ESC | Antrieb, V/A, Drehzahl | [Motor und ESC](motor.md) |
-| SERVO | Weg, Strom, Programm | [Servo](servo.md) |
+| SERVO | Weg, Strom, Programmierung | [Servo](servo.md) |
 | SUPPLY | V/A einstellen, aufzeichnen | [Netzteil](supply.md) |
 | LOGS | Läufe, Dateien | [Logs](logs.md) |
 | RECEIVER | S.BUS, PPM, Frames | [Receiver](analyser.md) |

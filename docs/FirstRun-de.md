@@ -134,8 +134,7 @@ die Einrichtung der Strommonitore, mit der Ausnahme für einen RP2350 der
 Stepping A2, die [unten](#die-partitionstabelle-des-iomcu) steht.
 
 Das Panel darf zuerst kommen. An einem IOmcu ohne Partitionstabelle zeigt
-das Panel `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal
-über USB installieren.`, bis Schritt 2 erledigt ist; der Link läuft
+das Panel `IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.`, bis Schritt 2 erledigt ist; der Link läuft
 solange.
 
 ### Der IOmcu über CAN
@@ -149,7 +148,7 @@ sich beide Platinen vor und nach dem Update.
 1. Beide Platinen mit verdrahtetem Link einschalten. Beim Link-Aufbau
    vergleicht das Panel das laufende Image des IOmcu per SHA-256 mit dem
    Image, das es trägt, findet einen anderen Build, und das Band meldet
-   `IOmcu nutzt einen anderen Build. Update unter UPDATES.`.
+   `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`.
 2. Die Frage öffnet sich auf dem Menü, solange die Bench SAFE ist, der
    Ausgang der Versorgung aus und der Funk des Panels aus. Sie nennt die
    Version auf dem IOmcu und die Version im Panel. START 2s halten, oder
@@ -169,8 +168,7 @@ den IOmcu auf seinem Build; das Panel fragt nach seinem nächsten Start
 wieder. Fällt während des Updates der Strom aus, läuft das alte Image
 weiter, und der nächste Link-Aufbau bietet das Update wieder an. Ein IOmcu,
 der das USB-Laden für 0.19.0 verpasst hat, hat keine Partitionstabelle: das
-Band meldet `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal
-über USB installieren.`, und er bekommt [Schritt 2](#aus-den-release-assets).
+Band meldet `IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.`, und er bekommt [Schritt 2](#aus-den-release-assets).
 Die Dauer des Updates über CAN ist nicht gemessen.
 
 ### Die SD-Karte von 0.21.0 und älter

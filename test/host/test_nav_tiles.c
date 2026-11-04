@@ -705,12 +705,12 @@ TEST_CASE(the_home_tiles_carry_the_planned_names_and_lines)
     };
     static const char *const k_line[UI_LANG_COUNT][8] = {
         [UI_LANG_EN] = {
-            "drive, V/A, rpm", "travel, current, program", "set and log V/A",
+            "drive, V/A, rpm", "travel, current, programming", "set and log V/A",
             "runs, files", "S.BUS, PPM, frames", "cells, iR, mAh",
             "vibration, phase", "panel, pins, card, Wi-Fi",
         },
         [UI_LANG_DE] = {
-            "Antrieb, V/A, Drehzahl", "Weg, Strom, Programm",
+            "Antrieb, V/A, Drehzahl", "Weg, Strom, Programmierung",
             "V/A einstellen, aufzeichnen", "Läufe, Dateien",
             "S.BUS, PPM, Frames", "Zellen, iR, mAh", "Vibration, Phase",
             "Panel, Pins, Karte, WLAN",
@@ -835,7 +835,7 @@ TEST_CASE(a_tile_line_breaks_at_a_space_inside_its_padding)
     const int row2 = row1 + look.line_pitch;
     static const struct { const char *line; bool second; } k_case[] = {
         { "V/A einstellen, aufzeichnen", true },
-        { "travel, current, program", true },
+        { "travel, current, programming", true },
         { "ABCDEFGHIJKLMNOPQRSTUVWXYZABCD", false },
         { "runs, files", false },
     };

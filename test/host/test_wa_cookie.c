@@ -39,7 +39,7 @@ static uint32_t count_rand(void *ctx)
 static uint32_t g_seed;
 
 /**
- * @brief A session at the access point: RANDOM, or with @p kept as WEB CODE.
+ * @brief A session at the access point: RANDOM, or with @p kept as ACCESS CODE.
  * @param w     The session.
  * @param kept  The kept code, or NULL for RANDOM.
  */

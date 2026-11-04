@@ -139,7 +139,7 @@ TEST_CASE(the_screen_opens_on_the_overview)
     CHECK_STR_EQ(trace(), TRACE_OFF);
     CHECK_STR_EQ(reason(), "CHOOSE A PROTOCOL, THEN TAP PINS");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(reason(), "PROTOKOLL WÄHLEN, DANN PIN TIPPEN");
+    CHECK_STR_EQ(reason(), "WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS");
     ui_text_set_language(UI_LANG_EN);
 
     /* SERVO PWM picked: its own pins show their pad, the others' their
@@ -430,7 +430,7 @@ TEST_CASE(a_tap_on_a_pin_does_nothing_while_off_is_selected)
     CHECK(memcmp(&before, outputs_screen_binding(), sizeof(before)) == 0);
     CHECK_STR_EQ(reason(), "CHOOSE A PROTOCOL, THEN TAP PINS");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(reason(), "PROTOKOLL WÄHLEN, DANN PIN TIPPEN");
+    CHECK_STR_EQ(reason(), "WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS");
     ui_text_set_language(UI_LANG_EN);
 }
 

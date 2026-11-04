@@ -274,8 +274,8 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
      * the limits say where, not "0 of 0 moves". */
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
     CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
-                           "seen at 5.00V, the brown-out walk's first "
-                           "voltage\n") != NULL);
+                           "detected at 5.00V, the first "
+                           "voltage of the brown-out test\n") != NULL);
     CHECK(strstr(g.report, "0 of 0") == NULL);
     CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00V: "
                            "NOT MEASURABLE\n") != NULL);
@@ -295,8 +295,8 @@ TEST_CASE(the_brownout_walk_ends_at_the_floor)
     CHECK(!g.t.steps[1].moved);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_NOT_MEASURABLE);
     CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
-                           "seen at 5.00V, the brown-out walk's first "
-                           "voltage\n") != NULL);
+                           "detected at 5.00V, the first "
+                           "voltage of the brown-out test\n") != NULL);
     CHECK(strstr(g.report, "Moves seen       0 unseen: PASS\n") != NULL);
     CHECK(strstr(g.report, "Brown-out start  no movement seen at 5.00V: "
                            "NOT MEASURABLE\n") != NULL);
@@ -357,7 +357,8 @@ TEST_CASE(each_limit_fails_the_run)
     CHECK(strstr(g.report, "Supply:         PD mini\n") != NULL);
     CHECK(strstr(g.report, "Lag:            about 300ms from a change of "
                            "current to the reading that shows it\n") != NULL);
-    CHECK(strstr(g.report, "Repeats:        a reading can repeat") != NULL);
+    CHECK(strstr(g.report, "Repeats:        several consecutive readings "
+                           "can contain the same value") != NULL);
     CHECK(strstr(g.report, "Travel times:   an upper bound, not checked "
                            "against the limit\n") != NULL);
     CHECK(strstr(g.report, "Travel time      longest 700ms, limit 500ms: "
@@ -436,8 +437,9 @@ TEST_CASE(a_servo_that_does_not_move_is_not_measurable)
     CHECK_EQ(g.t.steps[0].travels, 0u);
     CHECK_EQ(g.t.steps[0].no_rise, 2u);
     CHECK_EQ(g.t.steps[0].timeouts, 0u);
-    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - 2 of 2 counted "
-                           "moves showed no movement in the current") != NULL);
+    CHECK(strstr(g.report, "Result:         NOT MEASURABLE - no movement "
+                           "detected in the current for 2 of 2 counted moves")
+          != NULL);
     /* The step's line, then the note under it. */
     CHECK(strstr(g.report, "    2    0      2\n 4.80  NOT MEASURABLE\n")
           != NULL);

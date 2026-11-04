@@ -9,7 +9,7 @@ Dieser Code entstand aus einer Verhaltensspezifikation, ohne Zugriff auf die Fir
 ## Aktuelle Einschränkungen
 
 - Ein bidirektionaler DShot-Pin ruht bei SAFE auf high, die Eintrittsbedingung eines Bootloaders. Was das nächste ARM danach tut, ist nicht gemessen.
-- Nach `TORN` oder `LOST` gehen alle Ausgänge aus. Auf BLHeli_S und Bluejay verliert die Seite dann ihre 48 Tag-Bytes und liest sich nur noch. Ein AM32 bleibt gelöscht bis AUS BACKUP HERSTELLEN.
+- Nach `TORN` oder `LOST` gehen alle Ausgänge aus. Auf BLHeli_S und Bluejay verliert die Seite dann ihre 48 Tag-Bytes und liest sich nur noch. Ein AM32 bleibt gelöscht bis BACKUP ZURÜCKSPIELEN.
 - 10 fehlgeschlagene Lesungen der Page, 50ms beim Poll-Takt, stoppen eine Sitzung. Ein Schreiben bekommt keine Ausnahme: es endet als `NO_ANSWER`, mit Fehler und STOP.
 - Der Eintrag `ESCW.TXT` entsteht vor dem Schreiben. Bei einem aufgegebenen Schreiben bleibt ein schon geschriebener Eintrag auf der Karte. Er sagt nicht, wie das Schreiben endete.
 - SimonK wird nicht unterstützt: dieser Bench hat keinen Code dafür, und kein Screen bietet es an. Ein ESC mit SimonK gibt `Keine Antwort`.
@@ -27,7 +27,7 @@ Eine Seite ohne Feldnamen zeigt ihre Bytes, 16 je Zeile. Eine Firmware oder ein 
 
 ## Drücken und Halten
 
-Ein Knopf zeigt die gedrückte Farbe vom Druck bis zum Loslassen. Ein Druck zeichnet nur diesen Knopf neu. Ein Hold füllt sich in 2s von seiner dunklen Farbe zu Rot, in beiden Framebuffern; ABBRUCH wirkt beim Druck.
+Ein Knopf zeigt die gedrückte Farbe vom Druck bis zum Loslassen. Ein Druck zeichnet nur diesen Knopf neu. Ein Hold füllt sich in 2s von seiner dunklen Farbe zu Rot, in beiden Framebuffern; ABBRECHEN wirkt beim Druck.
 
 ![Hold auf VERBINDEN bei 1s von 2s](img/de/motor-wire-fill-connect.png)
 
@@ -41,11 +41,11 @@ Ein Knopf zeigt die gedrückte Farbe vom Druck bis zum Loslassen. Ein Druck zeic
 
 ![Hold auf FREIGEBEN bei 1s von 2s](img/de/motor-wire-fill-release.png)
 
-![Hold auf HERSTELLEN bei 1s von 2s](img/de/motor-wire-fill-restore.png)
+![Hold auf ZURÜCKSPIELEN bei 1s von 2s](img/de/motor-wire-fill-restore.png)
 
-![NEU LESEN gedrückt](img/de/motor-wire-press-read.png)
+![NEU AUSLESEN gedrückt](img/de/motor-wire-press-read.png)
 
-![STROM IST AN gedrückt](img/de/motor-wire-press-hand.png)
+![VERSORGUNG EIN gedrückt](img/de/motor-wire-press-hand.png)
 
 ![ZURÜCK gedrückt](img/de/motor-wire-press-back.png)
 
@@ -68,13 +68,13 @@ Der Streifen nennt, was die Sitzung treibt: `ZIEL SLOT 1 GPIO 0`, dann das Netzt
 | Zeile | Bereich | Vorgabe |
 |---|---|---|
 | ZIEL | Gas-Slots und DShot-Ports | der erste |
-| STROM | SWITCHED, BY HAND | SWITCHED |
+| VERSORGUNG | SWITCHED, BY HAND | SWITCHED |
 | SPANNUNG | 3.00V, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für dieses Board und diese Einstellung | Sollwert von SUPPLY |
-| LIMIT | 0.05A, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für dieses Board und diese Einstellung | Sollwert von SUPPLY |
-| ENTRY HOLD | 0.5s bis 120s | 3.0s |
+| STROMBEGRENZUNG | 0.05A, oder die untere Grenze von SUPPLY, falls höher, bis zur oberen Grenze von SUPPLY für dieses Board und diese Einstellung | Sollwert von SUPPLY |
+| EINSTIEGSZEIT | 0.5s bis 120s | 3.0s |
 | AUS-ZEIT | 0s bis 10s | 1.0s |
 
-Die Sitzung hat keine Vorgabespannung. SPANNUNG und LIMIT folgen SUPPLY, bis ein Tipp auf die Zahl eine andere eingibt. STROM behält die letzte Wahl über einen Neustart des Panels, in den Einstellungen des Panels (NVS-Schlüssel `escw_by_hand`); ein Panel ohne gespeicherten Wert beginnt mit SWITCHED. SWITCHED nutzt den PD mini. BY HAND legt die Leitung auf high und wartet höchstens 60s auf `STROM IST AN`.
+Die Sitzung hat keine Vorgabespannung. SPANNUNG und STROMBEGRENZUNG folgen SUPPLY, bis ein Tipp auf die Zahl eine andere eingibt. VERSORGUNG behält die letzte Wahl über einen Neustart des Panels, in den Einstellungen des Panels (NVS-Schlüssel `escw_by_hand`); ein Panel ohne gespeicherten Wert beginnt mit SWITCHED. SWITCHED nutzt den PD mini. BY HAND legt die Leitung auf high und wartet höchstens 60s auf `VERSORGUNG EIN`.
 
 Nimm den Propeller ab. Schließe nur Signal und Masse an: ein BEC (Battery Eliminator Circuit) auf der Mittelader des ESC speist sonst die Schiene des Bench. Stecke Servos ab. VERBINDEN ist ein roter Hold von 2s.
 
@@ -144,7 +144,7 @@ IDENTITÄT nennt Firmware, Version, Layout oder Revision, Signatur oder Name, un
 
 n WERTE SCHREIBEN öffnet eine Seite mit den Änderungen. Jedes heikle Feld bleibt editierbar: die Seite nennt es zuerst mit `PRÜFE`, in der Warnfarbe, und seinem neuen Wert. Eine Seite listet 12 Änderungen. ZURÜCK und WEITER blättern, und der rote Hold von 2s erscheint, wenn die letzte Seite gezeigt wurde. ESCape32 hat bis zu 46 Änderungen, 4 Seiten.
 
-Was die Seite listet, schreibt der Hold: die Seite hält eine eigene Kopie des Entwurfs. Vom Hold bis zum Ergebnis des Schreibens nimmt die Sitzung nur ABBRUCH und STOP. ABBRUCH, während die Karte arbeitet, gibt das Schreiben auf, der ESC bleibt unverändert. SCHREIBEN wartet, solange eine Datei von der Karte unterwegs ist. Eine Datei, die bei offener Seite kommt, wird nicht geladen, und die Seite sagt es.
+Was die Seite listet, schreibt der Hold: die Seite hält eine eigene Kopie des Entwurfs. Vom Hold bis zum Ergebnis des Schreibens nimmt die Sitzung nur ABBRECHEN und STOP. ABBRECHEN, während die Karte arbeitet, gibt das Schreiben auf, der ESC bleibt unverändert. SCHREIBEN wartet, solange eine Datei von der Karte unterwegs ist. Eine Datei, die bei offener Seite kommt, wird nicht geladen, und die Seite sagt es.
 
 1. Das erste Schreiben einer Sitzung speichert das Backup der Sitzung nach `BENCH/ESCW/CONF`, als `ESCW001-AM32.TXT` bis `ESCW999-AM32.TXT` (siehe [Namen der Backups](#namen-der-backups)). Ohne Karte, oder bei einer Karte, die es ablehnt, fragt die Seite; ein zweiter Hold von 2s geht ohne.
 2. Der Eintrag `BENCH/ESCW/CONF/ESCW.TXT` nimmt die geänderten Felder und den ESC wie gelesen auf. Eine Karte, die ihn ablehnt, stellt dieselbe Frage.
@@ -178,7 +178,7 @@ DATEI LÖSCHEN macht aus der Liste eine, aus der ein Tipp löscht. Ein Tipp öff
 
 ## Gelöschter AM32
 
-Ein AM32, dessen Einstellungen sich als 0xFF lesen, bietet AUS BACKUP HERSTELLEN und sonst nichts und speichert kein Backup. Eine Datei gilt nur, wenn ihre CRC-32 stimmt und Pin-Code, Flash-Code, Bootloader-Protokoll und Name denen des ESC gleichen. Das Herstellen ist ein roter Hold von 2s.
+Ein AM32, dessen Einstellungen sich als 0xFF lesen, bietet BACKUP ZURÜCKSPIELEN und sonst nichts und speichert kein Backup. Eine Datei gilt nur, wenn ihre CRC-32 stimmt und Pin-Code, Flash-Code, Bootloader-Protokoll und Name denen des ESC gleichen. Das Zurückspielen ist ein roter Hold von 2s.
 
 ![Gelöschter AM32](img/de/motor-wire-erased.png)
 
@@ -188,9 +188,9 @@ Ein AM32, dessen Einstellungen sich als 0xFF lesen, bietet AUS BACKUP HERSTELLEN
 
 ZURÜCK öffnet VERLASSEN, einen Hold von 2s. Der ESC verlässt seinen Bootloader, die Leitung geht auf low, die Versorgung aus und der Pin an seinen Ausgang zurück. Nicht geschriebene Änderungen gehen verloren.
 
-Auf einem gelöschten AM32 sagt die Seite von ZURÜCK, dass der ESC gelöscht bleibt bis AUS BACKUP HERSTELLEN, dass der Pin zurückgeht und die Versorgung ausgeht. Ihr Hold sendet CLOSE; mit BY HAND sagt die Seite, den Strom des ESC zu trennen.
+Auf einem gelöschten AM32 sagt die Seite von ZURÜCK, dass der ESC gelöscht bleibt bis BACKUP ZURÜCKSPIELEN, dass der Pin zurückgeht und die Versorgung ausgeht. Ihr Hold sendet CLOSE; mit BY HAND sagt die Seite, den Strom des ESC zu trennen.
 
-ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung. SWITCHED parkt die Leitung und schaltet die Versorgung aus. BY HAND parkt die Leitung und sagt, den Strom des ESC zu trennen.
+ESCape32 hat kein LEAVE: Aus- und Einschalten beendet die Sitzung. SWITCHED parkt die Leitung und schaltet die Versorgung aus. BY HAND parkt die Leitung und sagt, den Strom des ESC zu trennen.
 
 ![Verlassen](img/de/motor-wire-am-leave.png)
 
@@ -200,15 +200,15 @@ ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung. SWITCHED parkt die
 
 ## Stops und andere Schreiber
 
-STOP im Band stoppt die Sitzung. Ein Schreiben läuft erst bis zum Zurücklesen. ABBRUCH auf der Seite wirkt beim Drücken und schneidet sofort, auch im Schreiben. Ein Stop, eine verlorene Versorgung oder ein verlorener Link schließen einen offenen Editor oder eine Hold-Seite, und der Screen sagt, was geschah.
+STOP im Band stoppt die Sitzung. Ein Schreiben läuft erst bis zum Zurücklesen. ABBRECHEN auf der Seite wirkt beim Drücken und schneidet sofort, auch im Schreiben. Ein Stop, eine verlorene Versorgung oder ein verlorener Link schließen einen offenen Editor oder eine Hold-Seite, und der Screen sagt, was geschah.
 
-Nach einem Stop oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK. STOP LÖSCHEN beendet den Stop und hält den Pin weiter. Steht der STOP des Panels, zeigt sie nur PIN ZURÜCK, mit `Der STOP des Bench steht: Halte STOP 2s, um ihn zu lösen.`: STOP LÖSCHEN braucht den Heartbeat, den der eingerastete STOP anhält. Ist STOP gelöst, erscheint STOP LÖSCHEN wieder.
+Nach einem Stop oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK. STOP LÖSCHEN beendet den Stop und hält den Pin weiter. Steht der STOP des Panels, zeigt sie nur PIN ZURÜCK, mit `STOP ist eingerastet: Halte STOP 2s, um ihn zurückzusetzen.`: STOP LÖSCHEN braucht den Heartbeat, den der eingerastete STOP anhält. Ist STOP gelöst, erscheint STOP LÖSCHEN wieder.
 
-Nach einem Stop oder Fehler steht das SUPPLY OFF des Panels auf der SUPPLY-Page, bis das Halten endet, das Netzteil kommt unter diesem Halten also nicht wieder an. Die Seite danach bietet nur PIN ZURÜCK, mit `Ein Stop oder Fehler beendete die Sitzung: PIN ZURÜCK, dann VERBINDEN.` Ein ENTER in diesem Zustand wird mit `SUPPLY_OFF` abgelehnt, bevor sich etwas bewegt. Ein SUPPLY OFF unter PIN GEHALTEN ohne Stop oder Fehler zeigt nur die Zeile dieser Ablehnung.
+Nach einem Stop oder Fehler steht das SUPPLY OFF des Panels auf der SUPPLY-Page, bis das Halten endet, das Netzteil kommt unter diesem Halten also nicht wieder an. Die Seite danach bietet nur PIN ZURÜCK, mit `Ein Stopp oder Fehler beendete die Sitzung: PIN ZURÜCK, dann VERBINDEN.` Ein ENTER in diesem Zustand wird mit `SUPPLY_OFF` abgelehnt, bevor sich etwas bewegt. Ein SUPPLY OFF unter PIN GEHALTEN ohne Stop oder Fehler zeigt nur die Zeile dieser Ablehnung.
 
-Ein gehaltener Pin ohne Stop und ohne laufenden Vorgang hat eine eigene Seite: nach ABBRUCH, nach STOP LÖSCHEN und nach einem abgelehnten ENTER, dessen Grund dort steht, etwa kein PD mini oder eine Spannung zu nah an der Quelle. Sie zeigt STROM, SPANNUNG, LIMIT, ENTRY HOLD und AUS-ZEIT nur zum Lesen und bietet NEU STARTEN, einen roten Hold von 2s, und PIN ZURÜCK; nach einem Stop oder Fehler, auch nach STOP LÖSCHEN, bietet sie nur PIN ZURÜCK. NEU STARTEN sendet diese Werte: die aktuellen der Sitzung, die dem Netzteil folgen, bis eine Zahl getippt ist, nicht die des letzten VERBINDEN. BY HAND zeigt keine Spannung und kein Limit. Ein Wert, der sich unter dem Hold ändert, beendet den Hold. Nach ABBRUCH sagt die Zeile, dass ABBRUCH es beendet hat. ZURÜCK nennt den Knopf, der die Stufe beendet.
+Ein gehaltener Pin ohne Stop und ohne laufenden Vorgang hat eine eigene Seite: nach ABBRECHEN, nach STOP LÖSCHEN und nach einem abgelehnten ENTER, dessen Grund dort steht, etwa kein PD mini oder eine Spannung zu nah an der Quelle. Sie zeigt VERSORGUNG, SPANNUNG, STROMBEGRENZUNG, EINSTIEGSZEIT und AUS-ZEIT nur zum Lesen und bietet NEU STARTEN, einen roten Hold von 2s, und PIN ZURÜCK; nach einem Stop oder Fehler, auch nach STOP LÖSCHEN, bietet sie nur PIN ZURÜCK. NEU STARTEN sendet diese Werte: die aktuellen der Sitzung, die dem Netzteil folgen, bis eine Zahl getippt ist, nicht die des letzten VERBINDEN. BY HAND zeigt keine Spannung und kein Limit. Ein Wert, der sich unter dem Hold ändert, beendet den Hold. Nach ABBRECHEN sagt die Zeile, dass ABBRECHEN es beendet hat. ZURÜCK nennt den Knopf, der die Stufe beendet.
 
-Eine Zeile der Seite bleibt auf der Stufe, auf der sie entstand, und auf der Seite, zu der ihr Ende führt. Der nächste Druck auf einen gezeigten Knopf löscht sie; ein Druck auf eine leere Stelle löscht nichts. Die Ankunft auf VERBINDEN mit freiem Pin und ohne Ablauf löscht jede Zeile außer `LEFT`, dem Zustand des Links und einem Fehler, der sagt, was den Ablauf beendet hat; der geht beim nächsten Druck. Ein fallender Link schließt Keypad, Auswahl und Hold-Seite auf jeder Stufe, und seine Zeile ersetzt die zu ABBRUCH.
+Eine Zeile der Seite bleibt auf der Stufe, auf der sie entstand, und auf der Seite, zu der ihr Ende führt. Der nächste Druck auf einen gezeigten Knopf löscht sie; ein Druck auf eine leere Stelle löscht nichts. Die Ankunft auf VERBINDEN mit freiem Pin und ohne Ablauf löscht jede Zeile außer `LEFT`, dem Zustand des Links und einem Fehler, der sagt, was den Ablauf beendet hat; der geht beim nächsten Druck. Ein fallender Link schließt Keypad, Auswahl und Hold-Seite auf jeder Stufe, und seine Zeile ersetzt die zu ABBRECHEN.
 
 Ein Pin, den ein anderer Schreiber hält, die Bench-Konsole oder eine Sitzung vor einem Panel-Neustart, bietet PIN FREIGEBEN mit einem Hold von 2s. Die Seite nennt den Pin: seinen GPIO und seinen Slot oder Port. ARM wird abgelehnt, solange ein Pin gehalten ist, und der Alarm nennt die ESC-Programmierung.
 

@@ -107,10 +107,10 @@ TEST_CASE(a_tap_on_a_folder_row_opens_the_folder_keyboard_on_it)
     ui_text_set_language(UI_LANG_DE);
     open_folder(SET_TEXT_LOG_USER_DIR);
     CHECK_STR_EQ(kb()->text, CARD_USER_LOGS);
-    CHECK_STR_EQ(kb()->title, "Ordner User-Logs");
+    CHECK_STR_EQ(kb()->title, "Ordner Testaufzeichnungen");
     key(UI_TK_CANCEL);
     open_folder(SET_TEXT_LOG_AUTO_DIR);
-    CHECK_STR_EQ(kb()->title, "Ordner Auto-Logs");
+    CHECK_STR_EQ(kb()->title, "Ordner Auto-Aufzeichnungen");
     key(UI_TK_CANCEL);
     ui_text_set_language(UI_LANG_EN);
 }
@@ -301,8 +301,8 @@ TEST_CASE(the_leave_warning_names_both_folders)
     CHECK_STR_EQ(warn_line(1), "User log folder: USER/LOGS -> TESTS/A");
     CHECK_STR_EQ(warn_line(2), "");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(warn_line(0), "Ordner Auto-Logs: BENCH/LOGS -> RUNS");
-    CHECK_STR_EQ(warn_line(1), "Ordner User-Logs: USER/LOGS -> TESTS/A");
+    CHECK_STR_EQ(warn_line(0), "Ordner Auto-Aufzeichnungen: BENCH/LOGS -> RUNS");
+    CHECK_STR_EQ(warn_line(1), "Ordner Testaufzeichnungen: USER/LOGS -> TESTS/A");
     ui_text_set_language(UI_LANG_EN);
     ui_router_render(&s_c, 0);
     /* DISCARD, under the strip's second column. */

@@ -40,7 +40,7 @@ STOP wirkt auf jedem Bildschirm mit Band. Ein Druck schaltet den Prüfstand auf 
 
 ![Ein eingerastetes STOP und sein Kasten](view:band-stop)
 
-- Eingerastet bleibt STOP rot in einem gelben Rahmen und zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, und der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden abgelehnt, mit `STOP gedrückt: STOP 2s halten zum Lösen.`
+- Eingerastet bleibt STOP rot in einem gelben Rahmen und zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, und der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden abgelehnt, mit `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.`
 - Halte das eingerastete STOP 2s, um es zu lösen. Die Füllung geht in den 2s von Rot nach Gelb über. Danach wartet das Panel, bis der IOmcu SAFE und alle Ausgänge aus meldet, frühestens 500ms nach dem letzten STOP, und sendet wieder den Heartbeat. Der Prüfstand bleibt SAFE: Jeder Ausgang braucht zum Einschalten wieder sein eigenes Halten.
 - Kommt die Antwort des IOmcu nicht binnen 2s, bleibt der Stopp eingerastet, und das Alert-Band sagt `STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.` Halte STOP erneut.
 - Ein Druck auf ein eingerastetes STOP ist ebenfalls ein STOP. Das Halten zählt nur, solange ein Finger die vollen 2s auf STOP bleibt. Loslassen vor 2s zeigt `Halte 2s, um den STOP zu lösen.`; ein Finger, der von STOP abgleitet, ein zweiter Finger auf dem Band, ein Bildschirmwechsel, verlorene Touch-Ereignisse oder ein Touch-Controller, der 100ms nicht antwortet, löst nichts.
@@ -92,7 +92,7 @@ Das Bild ist, was das Panel zeigt, samt Band, auch über einer Box, einer Liste 
 Das Popup öffnet sich, sobald der Prüfstand ruht und sonst nichts offen ist: SAFE, Netzteil und PROG 5V aus, kein Port gehalten, keine Programmier-Session, kein Sweep, Test oder Lauf, kein Update, kein FAULT, kein Log offen, der Link da oder der Prüfstand simuliert. Endet das, schließt sich das Popup und das Bild wartet wieder.
 
 - Die Tastatur ändert den Namen, standardmäßig `SHOT` und die nächste Nummer, bis 55 Bytes. `.PNG` bleibt.
-- `SICHERN` schreibt `screenshots/<Name>.PNG` auf die Karte und legt den Ordner an, wenn er fehlt. Ein vergebener Name wird abgelehnt; nichts wird überschrieben.
+- `SPEICH.` schreibt `screenshots/<Name>.PNG` auf die Karte und legt den Ordner an, wenn er fehlt. Ein vergebener Name wird abgelehnt; nichts wird überschrieben.
 - CANCEL verwirft das Bild. Ein Fehler, keine Karte oder eine volle Karte, bleibt auf dem Popup, das Bild bleibt erhalten.
 - Die Datei ist ein PNG von 1024 x 600px, für jeden Browser und PC. Sie zeigt sich in [FILES](files.md) und auf der Wi-Fi-Seite.
 

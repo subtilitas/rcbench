@@ -79,7 +79,7 @@ TEST_CASE(j1_and_j2_follow_the_connectors_position_order)
     CHECK(draw_guarded(-1));
     ui_text_set_language(UI_LANG_DE);
     CHECK(layout_screen_pos(0, 0, &p));
-    CHECK_STR_EQ(p.state, "PROGRAMMIEREN");
+    CHECK_STR_EQ(p.state, "PROGRAMMIERUNG");
     layout_screen_invalidate();
     CHECK(draw_guarded(-1));
     ui_text_set_language(UI_LANG_EN);

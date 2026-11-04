@@ -208,8 +208,8 @@ TEST_CASE(the_pin_keys_stop_at_the_limits_and_step_over_the_other_pin)
 TEST_CASE(the_pin_keypad_refuses_the_other_pin_and_takes_0)
 {
     static const struct { ui_lang_t lang; const char *why; } k[] = {
-        { UI_LANG_EN, "The other PD mini pin holds this GPIO" },
-        { UI_LANG_DE, "Diesen GPIO hält der andere PD-mini-Pin" },
+        { UI_LANG_EN, "GPIO already used by the other PD mini pin" },
+        { UI_LANG_DE, "GPIO vom anderen PD-mini-Pin belegt" },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         on_tab();

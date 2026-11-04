@@ -161,7 +161,7 @@ TEST_CASE(a_soldered_pin_row_has_no_keys_and_says_so)
     CHECK(!ui_setting_keypad_offered(SET_SENSE_SDA));
     CHECK(!ui_setting_keypad_offered(SET_PDMINI_TX));
     CHECK_STR_EQ(settings_screen_help(SET_TONE_PIN),
-                 "Soldered on this board. Not a setting here.");
+                 "Soldered on this board. Not editable here.");
     ui_router_render(&s_c, 0);
 
     /* On the module the row steps and the keypad opens. */
@@ -169,7 +169,7 @@ TEST_CASE(a_soldered_pin_row_has_no_keys_and_says_so)
     (void)ui_board_apply_pins(NULL);
     CHECK(ui_setting_keypad_offered(SET_SENSE_SDA));
     CHECK(strcmp(settings_screen_help(SET_TONE_PIN),
-                 "Soldered on this board. Not a setting here.") != 0);
+                 "Soldered on this board. Not editable here.") != 0);
     tap(pl.x + pl.w / 2, UI_BAND_H + pl.y + pl.h / 2);
     CHECK(settings_get_int(SET_SENSE_SDA) != before);
 }

@@ -161,10 +161,10 @@ TEST_CASE(a_guard_refusal_is_a_reason_with_the_guards_status)
     json_begin();
     wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_BODY, WA_REQ_PUT), false);
     CHECK_STR_EQ(json_end(), "{\"error\":\"BODY\",\"text\":"
-                             "\"A read carries no body.\"}");
+                             "\"Read requests must not have a body.\"}");
     json_begin();
     wa_api_error_json(&g_out, wa_api_of_guard(WA_GUARD_HOST, WA_REQ_PUT), true);
-    CHECK(has(json_end(), "{\"error\":\"HOST\",\"text\":\"Das Panel"));
+    CHECK(has(json_end(), "{\"error\":\"HOST\",\"text\":\"\xc3\x96" "ffne das Panel"));
 }
 
 /* A form over its limit names the form's limit, not the file's. */
@@ -205,7 +205,7 @@ TEST_CASE(a_refusal_is_its_word_and_its_text_in_json)
     wa_api_error_json(&g_out, WA_API_TOO_BIG, true);
     CHECK_STR_EQ(json_end(), "{\"error\":\"TOO_BIG\",\"text\":"
                              "\"\xc3\x9c" "ber 1MB: zu gro\xc3\x9f zum "
-                             "\xc3\x96" "ffnen. Herunterladen.\"}");
+                             "\xc3\x96" "ffnen. Lade die Datei herunter.\"}");
     /* A text with an apostrophe stays one JSON string. */
     json_begin();
     wa_api_error_json(&g_out, WA_API_LOCKED, false);
