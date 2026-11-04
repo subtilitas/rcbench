@@ -51,7 +51,7 @@ static void tap_home(void)
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
  * can reach.  The table's order, row by row: PANEL, SENSORS and OUTPUTS;
- * SD CARD, WI-FI and UPDATES, with room for the carrier's LAYOUT.
+ * SD CARD, WI-FI and UPDATES; IMU, with room for the carrier's LAYOUT.
  * ESC / BENCH is no tile: its rows are MOTOR & ESC > SETTINGS'.  FILES is no
  * tile either: it is a tab of LOGS' strip.
  */
@@ -63,7 +63,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_and_updates)
         const char    *title;
     } k_tools[] = {
         { 2, SCREEN_OUTPUTS, "OUTPUTS" }, { 4, SCREEN_WIFI, "WI-FI" },
-        { 5, SCREEN_UPDATES, "UPDATES" },
+        { 5, SCREEN_UPDATES, "UPDATES" }, { 6, SCREEN_IMU, "IMU" },
     };
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();

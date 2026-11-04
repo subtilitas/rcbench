@@ -135,8 +135,8 @@ TEST_CASE(the_pd_minis_one_pin_rule_reads_the_pins_in_force)
 static int list_row(setting_id_t id)
 {
     const setting_cat_t cat = settings_def(id)->cat;
-    setting_id_t ids[64];
-    const int n = settings_in_category(cat, ids, 64);
+    setting_id_t ids[96];
+    const int n = settings_in_category(cat, ids, 96);
     for (int i = 0; i < n; ++i) {
         if (ids[i] == id) {
             return settings_screen_row_of(cat, i);

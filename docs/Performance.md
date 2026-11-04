@@ -82,7 +82,7 @@ settings-sim                 3,304     413 KiB
 battery-sim                  3,146     393 KiB
 analyser-chrome             61,108    7638 KiB
 logs-chrome                 27,356    3420 KiB
-settings-chrome             31,866    3983 KiB
+settings-chrome             33,826    4228 KiB
 settings-list-chrome        37,162    4645 KiB
 battery-chrome              58,117    7265 KiB
 balance-chrome              63,426    7928 KiB
@@ -390,6 +390,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,376 | 1,728 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
+| `imu` | `imu_task`, the Bluetooth IMU's UART and HC-05 set-up (`panel_imu.c`) | 3,072 | 1,200 | 832 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 6,912 | 2,912 | 2,960 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
@@ -503,6 +504,7 @@ not follow.
 | `control` | 6,144 | not measured |
 | `runlog` | 6,656 | not measured |
 | `knob` | 3,072 | not measured |
+| `imu` | 3,072 | not measured |
 | `touch` | 4,096 | not measured |
 | `wifi_ctl` | 6,912 | not measured |
 | `mdns` | 4,096 | not measured |

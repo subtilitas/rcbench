@@ -411,3 +411,93 @@ void sensors_rows_publish_watch(void)
             (uint8_t)port, sensors_rows_port_watch(port, label, sizeof(label)));
     }
 }
+
+/* ------------------------------------------------- the Bluetooth IMU */
+
+/** @brief The IMU's state as the panel last said; see s_status. */
+static imu_link_t s_imu = IMU_LINK_OFF;
+/** @brief Its rate, 0.1Hz. */
+static uint16_t s_imu_dhz;
+
+void sensors_rows_set_imu(imu_link_t link, uint16_t rate_dhz)
+{
+    /* The rate is shown in whole Hz: a change under 1Hz repaints nothing. */
+    if (link != s_imu || (rate_dhz + 5u) / 10u != (s_imu_dhz + 5u) / 10u) {
+        settings_screen_invalidate();
+    }
+    s_imu = link;
+    s_imu_dhz = rate_dhz;
+}
+
+/** @brief The IMU's calibration runs, as the panel last said. */
+static bool s_imu_cal;
+
+void sensors_rows_set_imu_cal(bool running)
+{
+    s_imu_cal = running;
+}
+
+imu_link_t sensors_rows_imu(void)
+{
+    return s_imu;
+}
+
+const char *sensors_rows_imu_word(imu_link_t link, uint16_t rate_dhz,
+                                  char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    switch (link) {
+    case IMU_LINK_NO_MODULE: snprintf(buf, n, "%s", TR(IMU_ST_NO_MODULE)); break;
+    case IMU_LINK_READY:     snprintf(buf, n, "%s", TR(IMU_ST_READY));     break;
+    case IMU_LINK_SCANNING:  snprintf(buf, n, "%s", TR(IMU_ST_SCANNING));  break;
+    case IMU_LINK_BINDING:   snprintf(buf, n, "%s", TR(IMU_ST_BINDING));   break;
+    case IMU_LINK_BOUND:     snprintf(buf, n, "%s", TR(IMU_ST_BOUND));     break;
+    case IMU_LINK_CONNECTED:
+        snprintf(buf, n, TR(IMU_ST_CONNECTED), (unsigned)((rate_dhz + 5u) / 10u));
+        break;
+    case IMU_LINK_NO_FRAMES: snprintf(buf, n, "%s", TR(IMU_ST_NO_FRAMES)); break;
+    case IMU_LINK_OFF:
+    default:                 snprintf(buf, n, "%s", TR(OFF));              break;
+    }
+    return buf;
+}
+
+const char *sensors_rows_imu_state(char *buf, size_t n, gfx_color_t *ink)
+{
+    if (ink != NULL) {
+        *ink = sensors_rows_imu_color(s_imu);
+    }
+    return sensors_rows_imu_word(s_imu, s_imu_dhz, buf, n);
+}
+
+gfx_color_t sensors_rows_imu_color(imu_link_t link)
+{
+    switch (link) {
+    case IMU_LINK_CONNECTED:
+        return UI_OK;
+    case IMU_LINK_NO_MODULE:
+    case IMU_LINK_NO_FRAMES:
+        return UI_WARN;
+    default:
+        return UI_TEXT_DIM;
+    }
+}
+
+const char *sensors_rows_imu_notice(setting_id_t id)
+{
+    if (!settings_get_bool(SET_IMU_EN)) {
+        return NULL;
+    }
+    const bool now = s_imu == IMU_LINK_CONNECTED;
+    if (id == SET_IMU_RATE) {
+        return !now ? TR(IMU_RATE_LATER)
+               : s_imu_cal ? TR(IMU_RATE_AFTER_CAL) : TR(IMU_RATE_SAVED);
+    }
+    if (id == SET_IMU_ALGO) {
+        return !now ? TR(IMU_ALGO_LATER)
+               : s_imu_cal ? TR(IMU_ALGO_AFTER_CAL) : TR(IMU_ALGO_SAVED);
+    }
+    return NULL;
+}

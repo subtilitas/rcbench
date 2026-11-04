@@ -139,7 +139,7 @@ bool bring_up(void)
     /* Installed before the load, so the count the store returns is owed to
      * the IOmcu the same way an edit made later is. */
     settings_set_observer(settings_changed);
-    settings_set_text_observer(publish_log_folder);
+    settings_set_text_observer(settings_text_changed);
     /* Screen rotation is held while ARMED, as the router's status says:
      * the status DISCARD on SETUP waits on. */
     settings_set_armed(bench_armed);

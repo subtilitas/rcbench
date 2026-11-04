@@ -100,16 +100,19 @@
 #define ROW_HELP_DY 40 /**< the help line's top, px */
 
 /**
- * @brief SENSORS' left list: 8 entries of 220 x 50px at a 54px pitch, down the
- *        list's 428px.  The name in the body face at 3px, the state in the
- *        8 x 16 face at 29px: 25 cells end short of the entry's edge.  The list
- *        pane starts 10px right of it.
+ * @brief SENSORS' left list: 9 entries of 220 x 48px at a 48px pitch, from
+ *        the list's top to 4px above the strip, 432px.  Each entry takes
+ *        touches over its 48px and draws its card 1px in from its top and
+ *        bottom, 2px between two cards.  The name in the body face at 3px,
+ *        the state in the 8 x 16 face at 28px: 25 cells end short of the
+ *        entry's edge.  The list pane starts 10px right of it.
  */
 #define ENTRY_W 220 /**< an entry's width, px */
-#define ENTRY_H 50 /**< an entry's height, px */
-#define ENTRY_PITCH 54 /**< an entry's pitch, px */
+#define ENTRY_H 48 /**< an entry's height, px: the tap target */
+#define ENTRY_PITCH 48 /**< an entry's pitch, px */
+#define ENTRY_INSET 1 /**< the card's inset from the entry's top and bottom, px */
 #define ENTRY_NAME_DY 3 /**< the name's top, px */
-#define ENTRY_STATE_DY 29 /**< the state's top, px */
+#define ENTRY_STATE_DY 28 /**< the state's top, px */
 #define PANE_X (HUB_M + ENTRY_W + HUB_M) /**< the pane's left edge, px: 240 */
 
 /**
@@ -229,6 +232,7 @@ static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY_LINE(SET_CAT_CARD, TX_SET_HUB_CARD, ui_icon_chart),
     HUB_SCREEN(SCREEN_WIFI, TX_SET_HUB_WIFI, ui_icon_wifi),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
+    HUB_SCREEN(SCREEN_IMU, TX_SET_HUB_IMU, ui_icon_chip),
 };
 
 /** @brief Tiles of every board; a board that solders its pins adds LAYOUT. */
@@ -241,8 +245,10 @@ _Static_assert(SETTINGS_HUB_SLOTS == HUB_COLS * HUB_ROWS,
 _Static_assert(HUB_M + HUB_ROWS * (HUB_TH + HUB_M) <= STRIP_Y,
                "the grid ends above the strip");
 _Static_assert(LIST_Y + LIST_H <= STRIP_Y, "the list ends above the strip");
-_Static_assert(SENS_ENTRY_COUNT * ENTRY_PITCH - (ENTRY_PITCH - ENTRY_H) <= LIST_H,
-               "SENSORS' left list ends where the list ends");
+_Static_assert(LIST_Y + SENS_ENTRY_COUNT * ENTRY_PITCH <= STRIP_Y - 4,
+               "SENSORS' left list ends 4px above the strip");
+_Static_assert(ENTRY_STATE_DY + 16 <= ENTRY_H - ENTRY_INSET,
+               "an entry's state ends inside its card");
 _Static_assert(ENTRY_H >= UI_TAP_MIN, "an entry is a tap target");
 _Static_assert(STRIP_Y + STRIP_H <= SCREEN_H - UI_ALERT_H,
                "the strip ends above the alert band");

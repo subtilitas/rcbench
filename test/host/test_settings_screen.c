@@ -27,8 +27,8 @@ TEST_CASE(screen_switches_category_and_renders)
 TEST_CASE(plus_and_minus_change_the_setting_under_them)
 {
     fresh_screen();
-    setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(LIST_CAT, ids, 96);
 
     int before = settings_get_int(ids[0]);
     tap(PLUS_X + BTN_W / 2, row_y(0));
@@ -85,8 +85,8 @@ TEST_CASE(changing_the_theme_from_the_screen_takes_effect)
     fresh_screen();
     open_category(SET_CAT_APP);
 
-    setting_id_t ids[64];
-    int n = settings_in_category(SET_CAT_APP, ids, 64);
+    setting_id_t ids[96];
+    int n = settings_in_category(SET_CAT_APP, ids, 96);
     int theme_row = -1;
     for (int i = 0; i < n; ++i) {
         if (ids[i] == SET_THEME) { theme_row = i; }
@@ -115,8 +115,8 @@ TEST_CASE(a_theme_stepped_back_shows_saved_on_the_next_frame)
     for (int k = 0; k < 2; ++k) {
         fresh_screen();
         open_category(SET_CAT_APP);
-        setting_id_t ids[64];
-        const int n = settings_in_category(SET_CAT_APP, ids, 64);
+        setting_id_t ids[96];
+        const int n = settings_in_category(SET_CAT_APP, ids, 96);
         int row = -1;
         for (int i = 0; i < n; ++i) {
             if (ids[i] == ids_to_step[k]) { row = i; }
@@ -154,8 +154,8 @@ TEST_CASE(a_theme_stepped_back_shows_saved_on_the_next_frame)
 TEST_CASE(a_drag_scrolls_instead_of_pressing)
 {
     fresh_screen();
-    setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(LIST_CAT, ids, 96);
     int before = settings_get_int(ids[0]);
 
     /* Press on the + key, then move well past the slop before releasing.
@@ -184,8 +184,8 @@ TEST_CASE(holding_a_key_repeats_with_acceleration)
 {
     fresh_hub();
     open_sensor(SET_INA228_UOHM);
-    setting_id_t ids[64];
-    settings_in_category(SET_CAT_SENSORS, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(SET_CAT_SENSORS, ids, 96);
 
     /* INA228 SHUNT: 50..20000 uOhm in steps of 1, which is why holding has
      * to work at all.  ids[] holds it at its row. */
@@ -231,8 +231,8 @@ TEST_CASE(holding_a_key_repeats_with_acceleration)
 TEST_CASE(reset_button_restores_the_open_category)
 {
     fresh_screen();
-    setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(LIST_CAT, ids, 96);
 
     settings_set(ids[0], settings_def(ids[0])->max);
     settings_set(SET_PACK_CELLS, 4);
@@ -253,8 +253,8 @@ TEST_CASE(leaving_the_screen_no_longer_saves_on_its_own)
     settings_set_store(&s_mem_store);
     s_save_calls = 0;
 
-    setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(LIST_CAT, ids, 96);
     tap(PLUS_X + BTN_W / 2, row_y(0));
     CHECK(settings_dirty());
 
@@ -275,8 +275,8 @@ TEST_CASE(the_save_button_asks_and_the_application_decides_when)
     settings_set_store(&s_mem_store);
     s_save_calls = 0;
 
-    setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(LIST_CAT, ids, 96);
     tap(PLUS_X + BTN_W / 2, row_y(0));
     CHECK(settings_dirty());
     CHECK(!settings_save_asked());
@@ -312,8 +312,8 @@ TEST_CASE(the_request_outlives_the_screen)
     settings_set_store(&s_mem_store);
     s_save_calls = 0;
 
-    setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(LIST_CAT, ids, 96);
     tap(PLUS_X + BTN_W / 2, row_y(0));
     tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
     CHECK(settings_save_asked());
@@ -339,8 +339,8 @@ TEST_CASE(a_press_while_the_save_is_pending_changes_nothing)
     settings_set_store(&s_mem_store);
     s_save_calls = 0;
 
-    setting_id_t ids[64];
-    settings_in_category(LIST_CAT, ids, 64);
+    setting_id_t ids[96];
+    settings_in_category(LIST_CAT, ids, 96);
     tap(PLUS_X + BTN_W / 2, row_y(0));
 
     /* Offered: holding it down changes the face. */
@@ -701,10 +701,10 @@ static bool row_hold(setting_id_t id)
 TEST_CASE(setup_changes_no_held_setting)
 {
     for (int row = 0; row < 2; ++row) {
-        setting_id_t ids[64];
+        setting_id_t ids[96];
 
         gesture_screen(LIST_CAT);
-        settings_in_category(LIST_CAT, ids, 64);
+        settings_in_category(LIST_CAT, ids, 96);
         s_row_held = ids[row];
         const setting_id_t other = ids[1 - row];
         settings_set_hold(row_hold);

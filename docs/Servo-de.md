@@ -1302,8 +1302,9 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
   oder `IMU X+` mit AXIS und SIGN der IMU.
 - NULLPUNKT wird bei beiden Quellen ab dem Zählwert 0 genommen; ein neues
   ENC CENTRE nach NULLPUNKT verschiebt keinen Ausschlag. Eine andere ANGLE
-  SOURCE oder eine andere AXIS oder SIGN der IMU verwirft Nullpunkt und
-  MAX: die Aufgabe liest wie vor NULLPUNKT.
+  SOURCE, eine andere AXIS oder SIGN der IMU oder ein NULLPUNKT oder
+  NULLPUNKT WEG auf dem IMU-Bildschirm verwirft Nullpunkt und MAX: die
+  Aufgabe liest wie vor NULLPUNKT.
 - NULLPUNKT nimmt den aktuellen Winkel als Neutrallage der Fläche. Der
   Ausschlag ist der Winkel ab ihr, auf -180 bis unter 180° gefaltet. Vor
   NULLPUNKT ist der Ausschlag der Winkel selbst.

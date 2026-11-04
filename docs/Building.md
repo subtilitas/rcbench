@@ -90,8 +90,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
-| `witmotion` | | | yes |
-| `hc05` | | | yes |
+| `witmotion` | yes | | yes |
+| `hc05` | yes | | yes |
 
 ## Toolchains
 

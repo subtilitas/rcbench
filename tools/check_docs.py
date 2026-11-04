@@ -307,9 +307,12 @@ OPTION_RE = re.compile(r'^UI_OPTION\("([^"]+)",', re.M)
 # names one at a time.  Keyboard see-through's OFF, 25% and 50% (kb_see)
 # are a word and two numbers prose uses for much else.  Browser writes'
 # OPEN, ACCESS CODE, HOLD and OFF (web_writes) are words every screen's
-# prose uses for its own buttons and states.
+# prose uses for its own buttons and states.  The IMU's AXIS (imu_axis: X,
+# Y, Z) and SIGN (imu_sign: +, -) are single characters any page holds,
+# and its RATE (imu_rate, 10Hz to 200Hz) frequencies prose gives for much
+# else.
 NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch", "kb_see",
-             "web_writes"}
+             "web_writes", "imu_axis", "imu_sign", "imu_rate"}
 
 
 def option_lists() -> dict[str, list[str]]:

@@ -406,6 +406,11 @@ ASSERTED = {
             "&& (int)LINK_ESC_LINE_LOW == (int)EW_LINE_LOW",
         ),
     },
+    "hc05": {
+        "shared/ui/imu_screen.c": (
+            "IMS_LY + (HC05_FOUND_MAX - 1) * IMS_LP + IMS_LH + 4 <= IMS_FLOOR",
+        ),
+    },
     "hitec": {
         "shared/bench/hitec_link.c": (
             "(int)HITEC_DEC_LISTEN == (int)LINK_HITEC_DEC_LISTEN "

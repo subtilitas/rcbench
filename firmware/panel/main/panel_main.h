@@ -47,8 +47,15 @@ extern char s_boot_alert[ALERT_MAX];
 void settings_changed(setting_id_t id);
 
 /**
- * @brief The settings model's observer for texts: hands a log folder to
- *        the log writer.
+ * @brief The settings model's observer for texts: a log folder to the log
+ *        writer (publish_log_folder()), the IMU's bound sensor to its task
+ *        (panel_imu_text_changed()).
+ * @param id The text setting that changed.
+ */
+void settings_text_changed(setting_text_id_t id);
+
+/**
+ * @brief Hands a log folder to the log writer.
  * @param id The text setting that changed.
  */
 void publish_log_folder(setting_text_id_t id);

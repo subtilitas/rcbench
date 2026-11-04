@@ -31,6 +31,7 @@
 #include "outputs_screen.h"
 #include "overview_screen.h"
 #include "panel.h"
+#include "panel_imu.h"
 #include "panel_main.h"
 #include "panel_perf.h"
 #include "panel_shot.h"
@@ -40,6 +41,7 @@
 #include "prog_choice.h"
 #include "sensors_rows.h"
 #include "servo_link.h"
+#include "servo_angle.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -383,8 +385,33 @@ void panel_frame_loop(void)
         }
         supply_screen_set_baud(supply_real ? atomic_load(&s_supply_baud)
                                            : 0u);
+        /* The angle source: the AS5600's readings as the control task
+         * queued them, or with ANGLE SOURCE IMU the IMU's, each once, and
+         * the AS5600's then dropped.  The IMU screen's view and commands
+         * go first, so the reading is this frame's. */
+        panel_imu_frame();
+        const bool imu_src =
+            settings_get_int(SET_ANGLE_SOURCE) == (int)SERVO_ANGLE_IMU;
+        static bool s_imu_src_was;
+        const bool imu_fresh = imu_src && !s_imu_src_was;
         servo_test_enc_t enc;
+        if (!imu_src && s_imu_src_was) {
+            /* Back to the AS5600: none until its next reading, which a
+             * connected part sends within its 40ms poll, so the IMU's
+             * last state does not stand under the AS5600's name. */
+            memset(&enc, 0, sizeof(enc));
+            enc.taken_ms = now_ms();
+            servo_screen_encoder(&enc);
+        }
+        s_imu_src_was = imu_src;
         while (xQueueReceive(s_enc_q, &enc, 0) == pdTRUE) {
+            if (!imu_src) {
+                servo_screen_encoder(&enc);
+            }
+        }
+        /* Two at most: a stale stretch, then the reading that ended it. */
+        for (int i = 0; i < 2 && imu_src
+                        && panel_imu_angle(imu_fresh && i == 0, &enc); ++i) {
             servo_screen_encoder(&enc);
         }
         /* The servo rail's meter, then the INA3221's CH1 windows, each

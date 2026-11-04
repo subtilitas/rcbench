@@ -61,8 +61,8 @@ static int show(setting_id_t id)
     if (cat == SET_CAT_SENSORS) {
         open_sensor(id);
     }
-    setting_id_t ids[64];
-    const int n = settings_in_category(cat, ids, 64);
+    setting_id_t ids[96];
+    const int n = settings_in_category(cat, ids, 96);
     int row = -1;
     for (int i = 0; i < n; ++i) {
         if (ids[i] == id) {
@@ -137,8 +137,8 @@ TEST_CASE(every_number_row_on_setup_takes_ok_and_refuses_and_cancels)
 {
     int rows = 0;
     for (int c = 0; c < CAT_COUNT; ++c) {
-        setting_id_t ids[64];
-        const int n = settings_in_category(k_cats[c], ids, 64);
+        setting_id_t ids[96];
+        const int n = settings_in_category(k_cats[c], ids, 96);
         for (int i = 0; i < n; ++i) {
             const setting_id_t id = ids[i];
             const setting_def_t *d = settings_def(id);

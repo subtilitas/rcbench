@@ -373,6 +373,15 @@ void servo_screen_set_enc_held(bool held);
  */
 void servo_screen_set_imu_axis(uint8_t axis, bool neg);
 
+/**
+ * @brief The IMU's zero generation, which ZERO, CLEAR ZERO and IMU OFF with
+ *        a zero kept raise (imu_ctl_t's zero_gen).  Another generation
+ *        moves every IMU angle: RUDDER drops a zero and MAX taken on the
+ *        IMU before it, as for another AXIS or SIGN.
+ * @param gen The generation.
+ */
+void servo_screen_set_imu_zero(uint32_t gen);
+
 /** The pin servo_screen_set_drive() takes for a port without a known pin. */
 #define SERVO_SCREEN_NO_PIN 0xFFu
 /** The target servo_screen_set_drive() takes while the IOmcu's page

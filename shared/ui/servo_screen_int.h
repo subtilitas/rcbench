@@ -707,6 +707,7 @@ typedef struct {
     bool      enc_held;      /**< IOmcu holds the encoder on (set_enc_held) */
     uint8_t   imu_axis;      /**< the IMU's AXIS, 0 X (set_imu_axis)   */
     bool      imu_neg;       /**< its SIGN negative                     */
+    uint32_t  imu_zero_gen;  /**< the IMU's zero generation (set_imu_zero) */
     int       test_note;     /**< servo_str_t the engine refused a START
                                   with, 0 none; test_blocked() is live  */
     int       test_file;     /**< its files' number; 0 not yet, -1 none */

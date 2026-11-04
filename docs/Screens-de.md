@@ -4532,13 +4532,14 @@ Zeile in der Schrift 10 x 20px.
   `STROM, WINKEL, PHASENABGRIFF`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
-- Drei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan))
-  und UPDATES ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie
+- Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
+  UPDATES ([Updates](#updates)) und IMU ([Die Bluetooth-IMU](#die-bluetooth-imu)).
+  Das Band jedes Bildschirms nennt ihn wie
   seine Kachel, und das Band dieser Seite zeigt SETUP. [Files](#files) ist ein
   Tab der Kachel [LOGS](#logs).
 - LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
-  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 3 Plätze
-  frei, auf diesem 2. Die Seite hält 9, und der Build schlägt bei einem zehnten
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 2 Plätze
+  frei, auf diesem 1. Die Seite hält 9, und der Build schlägt bei einem zehnten
   Eintrag fehl.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -4570,7 +4571,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, WI-FI, UPDATES | den Kacheln; OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück, WI-FI, von der Taste auf LOGS oder UPDATES geöffnet, ebenso. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [WLAN](#wlan)) |
+| OUTPUTS, WI-FI, UPDATES, IMU | den Kacheln; OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück, WI-FI, von der Taste auf LOGS oder UPDATES geöffnet, ebenso. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [WLAN](#wlan)) |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -4896,15 +4897,17 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 
 ### SENSORS: die geteilte Ansicht
 
-SENSORS hält jedes Gerät, das der IOmcu liest, in einer geteilten Ansicht: eine
-linke Liste mit 8 Einträgen und rechts daneben die Zeilen des gewählten
-Eintrags.
+SENSORS hält jedes Gerät, das der IOmcu liest, und die Bluetooth-IMU des
+Panels in einer geteilten Ansicht: eine linke Liste mit 9 Einträgen und rechts
+daneben die Zeilen des gewählten Eintrags.
 
 ![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
 
-Die linke Liste reicht von Body-y 8 bis 436: 8 Einträge von 220 x 50px im Abstand
-von 54px, von oben nach unten SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600
-und PHASENABGRIFF. Ein Eintrag zeigt seinen Namen im 12 x 24px-Font und darunter
+Die linke Liste reicht von Body-y 8 bis 440, 4px über dem Streifen: 9 Einträge
+von 220 x 48px im Abstand von 48px, von oben nach unten SENSORBUS, INA228,
+INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF und IMU. Ein Eintrag nimmt
+Berührungen über seine 48px an und zeichnet seine Karte 1px innerhalb seiner
+Ober- und Unterkante, 2px zwischen zwei Karten. Ein Eintrag zeigt seinen Namen im 12 x 24px-Font und darunter
 seinen Zustand im 8 x 16px-Font. Der gewählte Eintrag hat die helle Füllung und
 die Akzentkante; beim Start ist der erste Eintrag gewählt. Die Liste rechts ist
 754px breit ab x 240: Tasten, Wertfeld, Keypad und Scrollbalken stehen wie auf
@@ -4918,6 +4921,7 @@ jeder Liste, und Name und Hilfe einer Zeile haben 438px, 43 Zellen des
 | INA3221 0x40 bis 0x43 | ein Zustand der Tabelle unter [SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine) | 10 |
 | AS5600 | `EIN`, `VOM IOMCU ABGELEHNT` | 2 |
 | PHASENABGRIFF | `EIN`, `VOM IOMCU ABGELEHNT` | 7 |
+| IMU | `KEIN HC-05`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `BINDEN LÄUFT`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 6 |
 
 - Ein Eintrag mit Einschaltzeile zeigt allein diese Zeile und liest `AUS`,
   solange er aus ist. EIN ergänzt die übrigen Zeilen darunter.
@@ -5400,6 +5404,34 @@ ausgeschaltet ist und die Page ihn aus hält. Abgriff-Pause 2ms mit Tiefster
 Ton 400Hz wird gewollt abgelehnt: die Pause muss mindestens eine Periode
 des tiefsten Tons lang sein, 2,5ms bei 400Hz (`tone_init()`,
 `protocols/phase_tap/tone.c`).
+
+### Die Bluetooth-IMU
+
+![IMU, verbunden mit 50Hz, NULLPUNKT gesetzt](img/de/imu-connected.png)
+
+Die IMU-Kachel von SETUP öffnet IMU, den Bildschirm eines WitMotion-BWT901CL-
+Winkelsensors, der das Panel über ein HC-05-Bluetooth-Modul an UART1 erreicht
+([Die Bluetooth-IMU](IMU-de.md)). Der IMU-Eintrag von SENSORS hält seine
+Zeilen: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
+50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
+WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
+Body-y 16: SENSOREN SUCHEN, MIT JEDEM SENSOR VERBINDEN (nur, nachdem der HC-05
+eine Suche mit `ERROR:(1F)` abgelehnt hat), `2s HALTEN: BESCHLEUNIGUNG
+KALIBRIEREN`, NULLPUNKT und NULLPUNKT WEG nebeneinander, und
+IMU-EINSTELLUNGEN, das SENSORS auf dem IMU-Eintrag öffnet; dessen Home-Tag
+führt zurück. Die Karte rechts, x 484 bis 1016, nennt den gebundenen Sensor
+und seine Adresse, die Firmware des HC-05, den Zustand, die Winkel X, Y und Z
+ab dem Nullpunkt im 16 x 28px-Font (die Achse, die die Läufe lesen, in der
+Akzentfarbe), die Rate der Winkel-Frames, das Alter des neuesten und den Akku
+des Sensors. SENSOREN SUCHEN öffnet die Liste der gefundenen Geräte: bis zu 8
+Geräte von 640 x 48px im Abstand von 52px; ein Tippen bindet eines und
+schließt die Liste. Das Home-Tag schließt zuerst die Liste. Der Messwert ist
+300ms nach dem letzten Winkel-Frame veraltet, die Aussetzer-Toleranz eines
+Laufs ([Servoverfahren](Servo-de.md)).
+
+![Die Liste nach SENSOREN SUCHEN](img/de/imu-scan.png)
+
+![SENSORS auf dem IMU-Eintrag](img/de/setup-sensors-imu.png)
 
 ### SD CARD: welche Logs geschrieben werden, und wohin
 

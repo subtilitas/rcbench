@@ -1,14 +1,15 @@
 /**
  * @file sensors_pane.h
- * @brief SETUP > SENSORS' split pane: the 8 entries of the left list (SENSOR
- *        BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP), the rows each
+ * @brief SETUP > SENSORS' split pane: the 9 entries of the left list (SENSOR
+ *        BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP, IMU), the rows each
  *        one shows, its state word, and its reset.  SETUP's own list renderer
  *        draws the rows (settings_rows.c, settings_draw.c).
  *
  * An entry with an enable row shows that row alone while it is off and the
  * sensor's other rows under it while it is on.  The bus has no enable row and
  * shows its 2 pin rows always.  Vibration and the optical tacho have keys in
- * this category and no entry: no firmware reads them.
+ * this category and no entry: no firmware reads them.  The IMU's state is
+ * the panel's (sensors_rows_set_imu()), not the IOmcu's.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -31,6 +32,7 @@ enum {
     SENS_ENTRY_INA3221_0,    /**< FITTED and 3 channels x 3 rows, 0x40     */
     SENS_ENTRY_AS5600 = SENS_ENTRY_INA3221_0 + SET_INA_PARTS, /**< enable, centre */
     SENS_ENTRY_TAP,          /**< enable, pin, 2 tones, split, gap, periods */
+    SENS_ENTRY_IMU,          /**< enable, axis, sign, rate, algorithm, angle source */
     SENS_ENTRY_COUNT
 };
 
@@ -79,7 +81,8 @@ const char *sensors_pane_name(int entry, char *buf, size_t n);
  *
  * The bus: its pins, or NO PINS SET.  An enabled INA228 or INA3221: the word
  * of its sens_part_t.  An enabled AS5600 or phase tap: ON.  A row the IOmcu
- * does not hold makes the bus, the AS5600 and the tap NOT ACCEPTED.
+ * does not hold makes the bus, the AS5600 and the tap NOT ACCEPTED.  The
+ * IMU: its link state (sensors_rows_imu_word()).
  *
  * @param entry The entry.
  * @param buf   Takes the words.

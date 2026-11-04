@@ -234,9 +234,10 @@ static void draw_entries(gfx_canvas_t *c)
         const gfx_rect_t r = settings_screen_entry_rect(e);
         const bool sel = e == sensors_pane_selected();
         const bool down = s.hit_kind == HIT_ENTRY && s.hit_index == e;
-        gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
+        const int cy = r.y + ENTRY_INSET, ch = r.h - 2 * ENTRY_INSET;
+        gfx_fill_chamfer_rect_ex(c, r.x, cy, r.w, ch, 8, 0, 8, 0,
                                  sel ? UI_PANEL_HI : UI_PANEL);
-        gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
+        gfx_draw_chamfer_rect_ex(c, r.x, cy, r.w, ch, 8, 0, 8, 0,
                                  (sel || down) ? UI_ACCENT : UI_EDGE);
         char name[24], state[48];
         gfx_color_t ink = UI_TEXT_DIM;

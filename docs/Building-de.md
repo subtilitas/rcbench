@@ -91,8 +91,8 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `openyge` · `ppm` · `i2c_txq` | | ja | ja |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ja | ja | ja |
 | `escwire` | | ja | ja |
-| `witmotion` | | | ja |
-| `hc05` | | | ja |
+| `witmotion` | ja | | ja |
+| `hc05` | ja | | ja |
 
 ## Toolchains
 

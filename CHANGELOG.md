@@ -49,6 +49,14 @@ history is in git.
   CONNECT TO ANY (CMODE 1); the firmware 3.0 quirks (quoted PIN,
   ERROR:(1F) on INQ). Host-tested against scripted answers of both
   firmware versions; no pin driver.
+- A WitMotion BWT901CL over an HC-05 on the panel's UART1 (`PANEL_IMU_*`
+  in board_pins.h). SETUP > SENSORS > IMU: ON/OFF, AXIS, SIGN, RATE (10 to
+  200Hz), ALGORITHM (6-AXIS or 9-AXIS); the IMU tile on SETUP scans
+  (11.5s), binds, calibrates the accelerometer (2s hold, 3s still) and
+  shows battery, rate and the live angles. The bench sets the HC-05 up
+  over AT at 115200, 38400 or 9600 baud. With ANGLE SOURCE IMU the servo
+  runs and RUDDER read the IMU's angle. SENSORS' left list holds 9 entries
+  of 48px at a 48px pitch.
 
 ### Changed
 

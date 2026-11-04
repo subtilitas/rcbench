@@ -4116,12 +4116,13 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
   The settings of the pack, the motor and the throttle output are on
   MOTOR & ESC > SETTINGS
   ([MOTOR & ESC settings](#motor--esc-settings)).
-- Three screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
-  ([Wi-Fi](#wi-fi)) and UPDATES ([Updates](#updates)). The band of each names it
+- Four screens of their own: OUTPUTS ([Outputs](#outputs)), WI-FI
+  ([Wi-Fi](#wi-fi)), UPDATES ([Updates](#updates)) and IMU
+  ([The Bluetooth IMU](#the-bluetooth-imu)). The band of each names it
   as its tile does, and the band of this page reads SETUP. [Files](#files) is a
   tab of the [LOGS](#logs) tile.
 - LAYOUT ([Layout](#layout)) as the last tile on a board with soldered pins,
-  the [rbmod carrier](Carrier.md). 3 slots are free on any other board and 2
+  the [rbmod carrier](Carrier.md). 2 slots are free on any other board and 1
   on that one. The page holds 9, and the build fails at a tenth entry.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -4151,7 +4152,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, WI-FI, UPDATES | the tiles; OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there, WI-FI opened from the button of LOGS or UPDATES likewise. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Wi-Fi](#wi-fi)) |
+| OUTPUTS, WI-FI, UPDATES, IMU | the tiles; OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there, WI-FI opened from the button of LOGS or UPDATES likewise. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Wi-Fi](#wi-fi)) |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -4446,15 +4447,18 @@ across a third of its travel from -travel to +travel.
 
 ### SENSORS: the split pane
 
-SENSORS holds every device the IOmcu reads, in a split pane: a left list of 8
-entries, and right of it the selected entry's rows.
+SENSORS holds every device the IOmcu reads, and the panel's own Bluetooth
+IMU, in a split pane: a left list of 9 entries, and right of it the selected
+entry's rows.
 
 ![SENSORS, two parts fitted](img/setup-sensors.png)
 
-The left list runs from body y 8 to 436: 8 entries of 220 x 50px at a 54px
-pitch, top to bottom SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600 and
-PHASE TAP. An entry shows its name in the 12 x 24px face and its state under
-it in the 8 x 16px face. The selected entry has the lit fill and the accent
+The left list runs from body y 8 to 440, 4px above the strip: 9 entries of
+220 x 48px at a 48px pitch, top to bottom SENSOR BUS, INA228, INA3221 0x40 to
+0x43, AS5600, PHASE TAP and IMU. An entry takes touches over its 48px and
+draws its card 1px in from its top and bottom, 2px between two cards. An
+entry shows its name in the 12 x 24px face and its state under it in the
+8 x 16px face. The selected entry has the lit fill and the accent
 edge; the first entry is selected at start-up. The list on its right is 754px
 wide from x 240: the keys, the value field, the keypad and the scroll bar stand
 where they stand on any list, and a row's name and help have 438px, 43 cells
@@ -4467,6 +4471,7 @@ of the 10 x 20px face.
 | INA3221 0x40 to 0x43 | a state of the table in [SENSORS: the INA3221 parts](#sensors-the-ina3221-parts) | 10 |
 | AS5600 | `ON`, `NOT ACCEPTED BY THE IOMCU` | 2 |
 | PHASE TAP | `ON`, `NOT ACCEPTED BY THE IOMCU` | 7 |
+| IMU | `NO HC-05`, `NO SENSOR BOUND`, `SCANNING`, `BINDING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 6 |
 
 - An entry with an enable row shows that row alone and reads `OFF` while it is
   off. ON adds the entry's other rows under it.
@@ -4915,6 +4920,32 @@ pin taken, or once the tap is switched off and the page holds it off. Tap gap
 2ms with Tap lowest tone at 400Hz is refused by design: the gap has to be
 at least one period of the lowest tone, 2.5ms at 400Hz
 (`tone_init()`, `protocols/phase_tap/tone.c`).
+
+### The Bluetooth IMU
+
+![IMU, connected at 50Hz with ZERO taken](img/imu-connected.png)
+
+SETUP's IMU tile opens IMU, the screen of a WitMotion BWT901CL angle
+sensor that reaches the panel through an HC-05 Bluetooth module on UART1
+([The Bluetooth IMU](IMU.md)). SENSORS' IMU entry holds its rows: IMU ON or
+OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
+default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
+controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
+CONNECT TO ANY SENSOR (only after the HC-05 refused a scan with
+`ERROR:(1F)`), `HOLD 2s: CALIBRATE ACCELEROMETER`, ZERO and CLEAR ZERO side
+by side, and IMU SETTINGS, which opens SENSORS on the IMU entry; its home tag
+comes back. The card on the right, x 484 to 1016, names the bound sensor and
+its address, the HC-05's firmware, the state, the angles X, Y and Z from the
+zero in the 16 x 28px face (the axis the runs read in the accent), the rate
+of angle frames, the age of the newest one and the sensor's battery. SCAN
+opens the found list: up to 8 devices of 640 x 48px at a 52px pitch, a tap
+binds one and closes the list. The home tag closes the list first. The
+reading is stale 300ms after the last angle frame, the dropout allowance of
+a run ([Servo procedures](Servo.md)).
+
+![The found list after SCAN](img/imu-scan.png)
+
+![SENSORS on the IMU entry](img/setup-sensors-imu.png)
 
 ### SD CARD: which logs are written, and where
 

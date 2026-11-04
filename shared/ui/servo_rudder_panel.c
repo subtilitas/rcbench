@@ -99,12 +99,14 @@ static float src_defl_now(void)
  *        or the IMU with its AXIS and SIGN.
  * @return 1 the AS5600, 2 + 2 x AXIS + SIGN the IMU
  */
-static uint8_t src_key(void)
+static uint32_t src_key(void)
 {
     if (enc_src() != SERVO_ANGLE_IMU) {
         return 1u;
     }
-    return (uint8_t)(2u + 2u * (s.imu_axis & 3u) + (s.imu_neg ? 1u : 0u));
+    /* A new IMU zero moves every IMU angle: it is another source too. */
+    return 2u + 2u * (s.imu_axis & 3u) + (s.imu_neg ? 1u : 0u)
+           + 16u * (s.imu_zero_gen & 0x0FFFFFFFu);
 }
 
 /**
@@ -114,7 +116,7 @@ static uint8_t src_key(void)
  */
 static void geo_follow_source(void)
 {
-    const uint8_t k = src_key();
+    const uint32_t k = src_key();
     if (s.rud.geo_src != k) {
         servo_rudder_init(&s.rud.geo);
         s.rud.geo_src = k;
