@@ -30,6 +30,7 @@
 #include "prog5v_box.h"
 #include "servo_angle.h"
 #include "servo_limrun.h"
+#include "servo_rudder_int.h"
 #include "servo_screen.h"
 #include "servo_sweep.h"
 #include "settings.h"
@@ -58,8 +59,13 @@
 #define RCARD_X (PAD + LCARD_W + 8) /**< The output card's left edge, px. */
 #define RCARD_W (W - RCARD_X - PAD) /**< The output card's width: 380px. */
 /**
- * @brief SERVO's task strip at the 1024 x 600 sizes: four tabs of 150 x
+ * @brief SERVO's task strip at the 1024 x 600 sizes: five tabs of 120 x
  *        40px, 4px apart, from y 8, and the page from y 56.
+ *
+ * A tab of 120px holds a label of 10 cells of 10 x 20 within
+ * UI_TABS_PAD: every English one.  The German row draws in the 8 x 16
+ * face: PROGRAMMIEREN is 13 cells, and ui_tabs_font() takes one face for
+ * the row.
  *
  * The shared UI_WB_ figures stay at their 24px strip for MOTOR & ESC and
  * SUPPLY until those are laid out at the new sizes; these are SERVO's own,
@@ -69,7 +75,7 @@
 #define SV_STRIP_X UI_WB_STRIP_X
 #define SV_STRIP_Y (UI_WB_STRIP_Y + 2)  /**< The strip's top: 8px. */
 #define SV_STRIP_H (UI_WB_STRIP_H + 16) /**< A tab's height: 40px. */
-#define SV_TAB_W   (UI_WB_TAB_W + 38)   /**< A tab's width: 150px. */
+#define SV_TAB_W   (UI_WB_TAB_W + 8)    /**< A tab's width: 120px. */
 #define SV_TAB_GAP UI_WB_TAB_GAP        /**< Between two tabs: 4px. */
 #define SV_PAGE_Y  (UI_WB_PAGE_Y + 18)  /**< The page's top: 56px. */
 /** @brief The left card's top: the page area under SERVO's strip. */
@@ -159,7 +165,7 @@ _Static_assert(RC_W >= PROG5V_BOX_MIN_W, "the PROG 5V box fits the card");
 #define BTN_GAP   8                    /**< Between two of them, px. */
 #define ARM_Y     (BTN_Y + BTN_H + 10) /**< ARM and DISARM, px. */
 #define ARM_H     60                   /**< ARM's height, px: 9.0mm. */
-_Static_assert(SV_STRIP_X + 4 * SV_TAB_W + 3 * SV_TAB_GAP + 3 <= RCARD_X,
+_Static_assert(SV_STRIP_X + 5 * SV_TAB_W + 4 * SV_TAB_GAP + 3 <= RCARD_X,
                "SERVO's strip ends left of the output card");
 _Static_assert(SV_STRIP_Y + SV_STRIP_H + 3 <= SV_PAGE_Y,
                "SERVO's strip ends above its page");
@@ -779,6 +785,7 @@ typedef struct {
     float    drawn_cmd[2];   /**< the commanded one behind it            */
     bool     drawn_ghost[2]; /**< and whether that one was drawn         */
     svs_drag_filter_t df;    /**< the drag's filtered target, svs_drag_tick() */
+    rudder_t rud;            /**< RUDDER's task (servo_rudder_int.h)     */
 } servo_screen_state_t;
 
 /* The state, in servo_screen.c. */

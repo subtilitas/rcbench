@@ -76,6 +76,7 @@ SOURCES = [
     "shared/ui/servo_test_panel.c",
     "shared/ui/servo_limit_panel.c",
     "shared/ui/servo_workbench.c",
+    "shared/ui/servo_rudder_panel.c",
     # The programmer for KST and Chaservo servos SERVO opens, and the
     # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",
@@ -234,6 +235,7 @@ SOURCES = [
     "shared/servo/servo_move.c",
     "shared/servo/servo_test.c",
     "shared/servo/servo_brownout.c",
+    "shared/servo/servo_rudder.c",
     "shared/servo/servo_str.c",
     "shared/servo/servo_report.c",
     "shared/servo/servo_limit.c",

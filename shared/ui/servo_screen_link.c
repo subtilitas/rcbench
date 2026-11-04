@@ -306,6 +306,7 @@ void servo_screen_encoder(const servo_test_enc_t *e)
     if (e->valid) {
         s.enc_raw = e->raw;
     }
+    rudder_angle();
     servo_test_encoder(&s.test, e);
     servo_limrun_encoder(&s.lim, e);
     test_tell();

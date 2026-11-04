@@ -59,10 +59,12 @@ TEST_CASE(the_strip_holds_its_tasks_in_order_with_live_always)
         { UI_WB_HAS(UI_WB_SETTINGS), 2, { UI_WB_LIVE, UI_WB_SETTINGS } },
         { UI_WB_HAS(UI_WB_TEST) | UI_WB_HAS(UI_WB_SETTINGS), 3,
           { UI_WB_LIVE, UI_WB_TEST, UI_WB_SETTINGS } },
-        { 0xFFu, 4,
-          { UI_WB_LIVE, UI_WB_TEST, UI_WB_PROGRAM, UI_WB_SETTINGS } },
-        { 0xF0u | UI_WB_HAS(UI_WB_PROGRAM), 2,
+        { 0xFFu, 5,
+          { UI_WB_LIVE, UI_WB_TEST, UI_WB_PROGRAM, UI_WB_RUDDER,
+            UI_WB_SETTINGS } },
+        { 0xE0u | UI_WB_HAS(UI_WB_PROGRAM), 2,
           { UI_WB_LIVE, UI_WB_PROGRAM } },
+        { UI_WB_HAS(UI_WB_RUDDER), 2, { UI_WB_LIVE, UI_WB_RUDDER } },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         ui_wb_strip_t w;

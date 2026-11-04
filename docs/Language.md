@@ -173,6 +173,8 @@ One German word per English concept, on every screen and in the report.
 | IP address | IP-Adresse |
 | acknowledge, confirm | bestätigen |
 | SILENT (the RECEIVER's verdict) | KEIN SIGNAL |
+| deflection (of a surface), trailing edge, hinge line | Ausschlag, Hinterkante, Scharnierlinie |
+| zero (the neutral taken), RESET MAX | Nullpunkt, MAX ZURÜCKSETZEN |
 
 A label is a noun where a noun will do. An instruction speaks to the
 operator in the du-imperative (Prüfe, Tippe, Halte); no "Sie". An uppercase label
@@ -309,7 +311,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 523 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 527 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -354,7 +356,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 2,934 entries
+A language is one more column in every entry of the table: 2,955 entries
 with an ID and 90 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

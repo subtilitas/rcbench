@@ -10,16 +10,17 @@ SERVO steuert ein Servo, misst seinen Strom auf der Servoschiene, führt einen a
 
 ## Die Werkbank
 
-Die Leiste unter dem Band trägt die Aufgaben von SERVO: LIVE, TEST, PROGRAMMIEREN und OPTIONEN. Ein Wechsel des Reiters ist keine Ebene: das Home-Tag führt von jeder Aufgabe nach Hause und steigt nur aus den Optionen eines Laufs eine Ebene zurück zu TEST und aus einem Programmierer zurück zur Liste von PROGRAMMIEREN. Jede Aufgabe behält ihre Seite und Auswahl bis zum Neustart des Panels. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE.
+Die Leiste unter dem Band trägt die Aufgaben von SERVO: LIVE, TEST, PROGRAMMIEREN, RUDER und OPTIONEN. Ein Wechsel des Reiters ist keine Ebene: das Home-Tag führt von jeder Aufgabe nach Hause und steigt nur aus den Optionen eines Laufs eine Ebene zurück zu TEST und aus einem Programmierer zurück zur Liste von PROGRAMMIEREN. Jede Aufgabe behält ihre Seite und Auswahl bis zum Neustart des Panels. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE.
 
 | Aufgabe | Linke Karte |
 |---|---|
 | LIVE | der Winkel des Horns, das Zifferblatt, an seinem Fuß die Messwerte SOLL-PULSBREITE, GEMESSEN und STROM, und der Kasten eines Laufs links vom Zifferblatt |
 | TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF, jede mit ihren OPTIONEN, einer Zusammenfassung, ihrem Start-Halten, dem letzten Ergebnis und seiner Datei; die Grenzen von SUPPLY, nur lesbar |
 | PROGRAMMIEREN | die Liste der Programmierer; eine Zeile öffnet ihren Programmierer über der linken Spalte ([Servo-Programmierer](servo-programmer.md)) |
+| RUDER | der Ausschlag der Ruderfläche in ° und mm, LÄNGE, die Tasten 1000us, ZENTRIEREN und 2000us, NULLPUNKT und MAX ZURÜCKSETZEN ([Ruderausschlag](servo-rudder.md)) |
 | OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING ([Servo-Optionen](servo-settings.md)) |
 
-Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Typzeile, die Messzeile mit der Grafik, die Netzteilzeile, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Jede Zeile, die man dort antippt, ist 48px (7,2mm) hoch oder höher, und ARM ist 60px hoch. Der Drehknopf bewegt das Horn nur auf LIVE.
+Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Typzeile, die Messzeile mit der Grafik, die Netzteilzeile, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Jede Zeile, die man dort antippt, ist 48px (7,2mm) hoch oder höher, und ARM ist 60px hoch. Der Drehknopf bewegt das Horn nur auf LIVE und RUDER.
 
 ## In Ruhe
 

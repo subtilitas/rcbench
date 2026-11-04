@@ -1,4 +1,8 @@
-/*
+/**
+ * @file
+ * @brief A workbench's task strip (ui_workbench.h): the tasks a mask
+ *        names, as tabs of ui_tabs in the strip's order.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -8,10 +12,11 @@
 
 #include "ui_text.h"
 
-/* Each task's label: LIVE is the strip's own word; TEST, PROGRAM and
- * SETTINGS are the words SERVO's pages, the programmer and SUPPLY use. */
+/** @brief Each task's label: LIVE and RUDDER are the strip's own words;
+ *         TEST, PROGRAM and SETTINGS are the words SERVO's pages, the
+ *         programmer and SUPPLY use. */
 static const ui_text_id_t k_label[UI_WB_TASKS] = {
-    TX_WB_LIVE, TX_SV_PG_TEST, TX_KP_PROGRAM, TX_SUP_SETTINGS,
+    TX_WB_LIVE, TX_SV_PG_TEST, TX_KP_PROGRAM, TX_WB_RUDDER, TX_SUP_SETTINGS,
 };
 
 void ui_wb_strip_init(ui_wb_strip_t *w, unsigned tasks, int16_t x, int16_t y)
@@ -43,7 +48,12 @@ ui_wb_task_t ui_wb_strip_task(const ui_wb_strip_t *w)
     return (ui_wb_task_t)w->task[w->tabs.selected];
 }
 
-/* The tab that shows @p task, or -1. */
+/**
+ * @brief The tab that shows @p task.
+ * @param w the strip
+ * @param task the task
+ * @return its tab's index, or -1 where the strip lacks it
+ */
 static int tab_of(const ui_wb_strip_t *w, ui_wb_task_t task)
 {
     for (int i = 0; i < w->tabs.count; ++i) {

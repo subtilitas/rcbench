@@ -17,6 +17,7 @@
 #include "motor_rig.h"
 
 #include "link_pages.h"
+#include "ui_workbench.h"
 
 /** @brief The body row 4px over the alert band: no text reaches it. */
 #define TEXT_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
@@ -209,7 +210,7 @@ TEST_CASE(no_text_lies_under_the_alert_band)
         tap(MO_TABLE_TAB_X, MO_PANE_Y);
         CHECK_EQ(ink_under_the_alert_band(), 0);
         tap(MO_TAB_X(2), MO_TAB_Y);                   /* SETTINGS */
-        CHECK_EQ(motor_screen_task(), 3);
+        CHECK_EQ(motor_screen_task(), (int)UI_WB_SETTINGS);
         settings_set(SET_PACK_MAH, mah + 100.0f);     /* not saved */
         CHECK(settings_dirty());
         tick_for(1);

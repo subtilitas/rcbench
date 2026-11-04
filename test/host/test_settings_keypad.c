@@ -589,13 +589,15 @@ TEST_CASE(a_short_sda_reason_keeps_whole_pins)
 }
 
 /* The off gap's reason is built from the row: every row with an off gap
- * is a shunt of 0 or 5.0 to 1000.0mOhm in 0.1 steps or a limit of 0 or
- * 10 to 32767mA in 10mA steps, and its reason says so.  A NULL buffer
+ * is a shunt of 0 or 5.0 to 1000.0mOhm in 0.1 steps, a limit of 0 or
+ * 10 to 32767mA in 10mA steps or RUDDER's LENGTH of 0 or 10 to 500mm in
+ * 1mm steps, and its reason says so.  A NULL buffer
  * gives an empty text. */
 TEST_CASE(the_off_gap_reason_is_what_the_schema_holds)
 {
     int shunts = 0;
     int limits = 0;
+    int lengths = 0;
     char why[64];
     for (int i = 0; i < (int)SETTING_COUNT; ++i) {
         const setting_id_t id = (setting_id_t)i;
@@ -604,7 +606,15 @@ TEST_CASE(the_off_gap_reason_is_what_the_schema_holds)
             continue;
         }
         CHECK_NEAR(d->min, 0.0f, 1e-6f);
-        if (strcmp(d->unit, "mΩ") == 0) {
+        if (id == SET_RUDDER_LEN_MM) {
+            /* RUDDER's LENGTH: not set, or 10 to 500mm. */
+            ++lengths;
+            CHECK_NEAR(d->off_below, 10.0f, 1e-6f);
+            CHECK_NEAR(d->max, 500.0f, 1e-6f);
+            CHECK_EQ(settings_decimals(id), 0);
+            CHECK_STR_EQ(ui_setting_keypad_why(id, 9.0f, why, sizeof(why)),
+                         "0 or 10 to 500mm");
+        } else if (strcmp(d->unit, "mΩ") == 0) {
             ++shunts;
             CHECK_NEAR(d->off_below, 5.0f, 1e-6f);
             CHECK_NEAR(d->max, 1000.0f, 1e-6f);
@@ -627,6 +637,7 @@ TEST_CASE(the_off_gap_reason_is_what_the_schema_holds)
     }
     CHECK_EQ(shunts, SET_INA_CHANNELS);
     CHECK_EQ(limits, SET_INA_CHANNELS);
+    CHECK_EQ(lengths, 1);
 }
 
 /* ------------------------------------------------------ ARMED and held */

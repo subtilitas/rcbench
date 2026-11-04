@@ -9681,6 +9681,75 @@ UI_SERVO_TEXT(SERVO_STR_L_R_SRC_OFF,
     "Winkelquelle:    %s, kein Messwert beim "
     "Start, keine Winkel")
 
+/* The SERVO workbench's RUDDER task (servo_rudder_panel.c): its tab, the
+ * readout of the surface's deflection in ° and in mm at the trailing edge,
+ * LENGTH, the buttons, the MAX of each side, the angle source's state lines
+ * (50 cells of 10 x 20 a line; a %s names the source, AS5600) and the page
+ * of its guide. */
+UI_TEXT(WB_RUDDER, 0,
+    "RUDDER",
+    "RUDER")
+UI_TEXT(RUD_DEFL, 0,
+    "DEFLECTION",
+    "AUSSCHLAG")
+UI_TEXT(RUD_EDGE, 0,
+    "TRAILING EDGE",
+    "HINTERKANTE")
+UI_TEXT(RUD_LENGTH, 0,
+    "LENGTH",
+    "LÄNGE")
+UI_TEXT(RUD_LEN_NOT_SET, 0,
+    "NOT SET",
+    "NICHT GESETZT")
+UI_TEXT(RUD_NO_LENGTH, 0,
+    "SET LENGTH FOR mm",
+    "LÄNGE SETZEN FÜR mm")
+UI_TEXT(RUD_ZERO, 0,
+    "ZERO",
+    "NULLPUNKT")
+UI_TEXT(RUD_RESET_MAX, 0,
+    "RESET MAX",
+    "MAX ZURÜCKSETZEN")
+UI_TEXT(RUD_MAX, 0,
+    "MAX",
+    "MAX")
+UI_TEXT(RUD_NOT_ZEROED, 50,
+    "NO ZERO: FROM THE SENSOR'S CENTRE",
+    "KEIN NULLPUNKT: AB SENSORMITTE")
+UI_TEXT(RUD_PULSE, 0,
+    "PULSE %s",
+    "PULS %s")
+UI_TEXT(RUD_SRC_OFF, 46,
+    "ANGLE: %s OFF IN SETUP",
+    "WINKEL: %s AUS IN SETUP")
+UI_TEXT(RUD_SRC_NO_LINK, 50,
+    "ANGLE: NO LINK",
+    "WINKEL: KEINE VERBINDUNG")
+UI_TEXT(RUD_SRC_NO_MAGNET, 46,
+    "ANGLE: %s SEES NO MAGNET",
+    "WINKEL: %s SIEHT KEINEN MAGNETEN")
+UI_TEXT(RUD_SRC_STALE, 46,
+    "ANGLE: %s NOT ANSWERING",
+    "WINKEL: %s ANTWORTET NICHT")
+UI_TEXT(RUD_SRC_LIVE, 0,
+    "ANGLE: %s",
+    "WINKEL: %s")
+UI_TEXT(HG_RUD_TITLE_OUT, 0,
+    "RUDDER: WHAT IT DRIVES",
+    "RUDER: WAS ES ANSTEUERT")
+UI_TEXT(HG_RUD_TARGET, 0,
+    "What the buttons and the knob drive. A tap opens OUTPUTS while SAFE.",
+    "Was die Tasten und der Drehknopf ansteuern. Ein Tippen öffnet OUTPUTS, solange SAFE.")
+UI_TEXT(HG_RUD_ARM, 0,
+    "Hold 2s to ARM. DISARM, STOP or leaving SERVO switches to SAFE.",
+    "2s halten für ARM. DISARM, STOP oder SERVO verlassen schaltet auf SAFE.")
+UI_SETTING_LABEL(SET_RUDDER_LEN_MM,
+    "Rudder length",
+    "Ruderlänge")
+UI_SETTING_HELP(SET_RUDDER_LEN_MM,
+    "Hinge line to trailing edge for the mm on RUDDER, 0 or 10 to 500mm",
+    "Scharnierlinie bis Hinterkante für die mm auf RUDER, 0 oder 10 bis 500mm")
+
 #undef UI_TEXT
 #undef UI_SETTING_LABEL
 #undef UI_SETTING_HELP

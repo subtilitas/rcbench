@@ -989,7 +989,9 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
     /* The keypad and the keyboard keep their own counts of what changed;
      * the dial too, which repaints whole only where it is not on its own. */
     const uint32_t ov_rev = s.ctrl_rev + s.kp.revision + s.tk.revision;
-    const bool dial_whole = !dial_on_its_own(cover)
+    /* RUDDER repaints its readout on its own (rudder_render_part()). */
+    const bool rudder_alone = !cover && wb_task() == UI_WB_RUDDER;
+    const bool dial_whole = !dial_on_its_own(cover) && !rudder_alone
                             && s.drawn_dial[buf] != s.dial_rev;
     if (s.drawn_ctrl[buf] != ov_rev || dial_whole) {
         /* The plot when it moved or this buffer has never had it. */
@@ -1017,6 +1019,8 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
             draw_rows_page(c);
         } else if (wb_task() == UI_WB_PROGRAM) {
             draw_prog_page(c);
+        } else if (wb_task() == UI_WB_RUDDER) {
+            rudder_render(c, buf);
         } else {
             draw_test_page(c);
         }
@@ -1071,6 +1075,10 @@ void svs_render(gfx_canvas_t *c, int buffer_index)
             s.drawn_save[buf] = save_state();
             clipped(c, save_line_rect(), draw_save_line);
         }
+        return;
+    }
+    if (rudder_alone) {
+        rudder_render_part(c, buf);
         return;
     }
     if (wb_task() == UI_WB_TEST) {

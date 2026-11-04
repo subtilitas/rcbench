@@ -26,6 +26,7 @@
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_keypad.h"
+#include "ui_setting_keypad.h"
 #include "ui_tabs.h"
 #include "ui_textkey.h"
 #include "ui_text.h"
@@ -616,7 +617,16 @@ static void keypad_done(ui_keypad_result_t r, float v)
             reissue();
             break;
         case KT_SETTING:
-            settings_set(s.kp_setting, v);
+            /* A number with an off gap (RUDDER's LENGTH: 0 or 10 to
+             * 500mm) takes the settings' keypad rule: a value in the gap
+             * is refused and the keypad stays open, saying why. */
+            if (settings_def(s.kp_setting)->off_below <= 0.0f) {
+                settings_set(s.kp_setting, v);
+            } else if (ui_setting_keypad_ok(&s.kp, s.kp_setting, v)
+                       == UI_SETKEY_REFUSED) {
+                s.kp_target = KT_SETTING;
+                break;
+            }
             settings_request_save();
             break;
         default:

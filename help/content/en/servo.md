@@ -10,16 +10,17 @@ SERVO drives a servo, measures its current on the servo rail, runs an automatic 
 
 ## The workbench
 
-The strip under the band holds SERVO's tasks: LIVE, TEST, PROGRAM and SETTINGS. A tab switch is no level: the home tag goes home from every task, and climbs one level only from a run's settings back to TEST and from a programmer back to PROGRAM's list. Each task keeps its page and selection until the panel restarts. Leaving SERVO switches the bench to SAFE.
+The strip under the band holds SERVO's tasks: LIVE, TEST, PROGRAM, RUDDER and SETTINGS. A tab switch is no level: the home tag goes home from every task, and climbs one level only from a run's settings back to TEST and from a programmer back to PROGRAM's list. Each task keeps its page and selection until the panel restarts. Leaving SERVO switches the bench to SAFE.
 
 | Task | Left card |
 |---|---|
 | LIVE | the horn's angle, the dial, the readings COMMANDED, MEASURED and CURRENT along its foot, and a run's box left of the dial |
 | TEST | the AUTOMATIC TEST and LIMIT RUN cards, each with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only |
 | PROGRAM | the list of programmers; a row opens its programmer over the left column ([Servo programmer](servo-programmer.md)) |
+| RUDDER | the control surface's deflection in ° and mm, LENGTH, the buttons 1000us, CENTRE and 2000us, ZERO and RESET MAX ([Rudder deflection](servo-rudder.md)) |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT ([Servo settings](servo-settings.md)) |
 
-The right card is the output card, the same on every task: the type row, the meter line and plot, the supply line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. Every row tapped there is 48px (7.2mm) tall or taller, and ARM is 60px. The rotary knob moves the horn on LIVE only.
+The right card is the output card, the same on every task: the type row, the meter line and plot, the supply line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. Every row tapped there is 48px (7.2mm) tall or taller, and ARM is 60px. The rotary knob moves the horn on LIVE and RUDDER only.
 
 ## At rest
 

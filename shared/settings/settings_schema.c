@@ -462,4 +462,14 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_ANGLE_SOURCE] = {
         "angle_source", "",
         SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(angle_source) },
+    /*
+     * RUDDER's LENGTH: the control surface from its hinge line to its
+     * trailing edge, which turns a deflection into mm (servo_rudder.h).
+     * 0 is not set, and the task shows degrees alone; 1 to 9mm are not
+     * taken.
+     */
+    [SET_RUDDER_LEN_MM] = {
+        "rud_len_mm", "mm",
+        SET_CAT_SERVO, SET_TYPE_FLOAT, 0.0f, 500.0f, 1.0f, 0.0f, NULL, 0,
+        10.0f },
 };

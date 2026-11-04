@@ -10,7 +10,9 @@ travel limits. The second, the synchroniser, needs a current sensor across a
 pair of outputs, which is not fitted, and runs against a modelled servo only.
 Their defaults are from `servo_limit_defaults()` and `servo_sync_defaults()`
 in `shared/servo/`. The third, the [automatic test](#automatic-test), reads
-the current of the supply that feeds the servo.
+the current of the supply that feeds the servo. RUDDER, a task of the SERVO
+workbench, reads a control surface's deflection in ° and mm
+([Rudder deflection](#rudder-deflection)).
 
 ## Installed mechanical limit
 
@@ -1261,6 +1263,50 @@ position of it is sent after the switch to SAFE. The controls, one by one:
 The panel centres the surfaces before it switches to ARMED and the screen shows
 the rest when the bench reports ARMED; the time between the two on a bench
 is not measured.
+
+## Rudder deflection
+
+### Purpose
+
+RUDDER drives one servo and shows how far the surface it moves is
+deflected: in degrees from a zero and, with the surface's length entered,
+in mm at the trailing edge. It answers "how many mm does this rudder throw"
+without a ruler at the model. The geometry is `shared/servo/servo_rudder.c`;
+the task is `shared/ui/servo_rudder_panel.c`.
+
+### Method
+
+- The angle is the one LIVE's MEASURED reading takes: the AS5600 output
+  encoder's, in degrees from its ENC CENTRE, negated with REVERSE.
+- ZERO takes the current angle as the surface's neutral. The deflection is the
+  angle from it, wrapped to -180 up to 180°. Before ZERO the deflection is
+  the angle itself.
+- LENGTH L is the surface from its hinge line to its trailing edge, 0 or
+  10 to 500mm (setting `rud_len_mm`, 0 = not set). The travel is
+  L x sin(deflection): the trailing edge's distance from the neutral plane,
+  what a ruler held upright at the trailing edge reads. At 30° a 100mm
+  surface reads 50.0mm; the arc L x deflection would read 52.4mm.
+- MAX holds the largest deflection each side, from every reading on show,
+  on every task. ZERO and RESET MAX clear it.
+- 1000us and 2000us command those pulses as angles of the type in force,
+  held to TRAVEL and the type's pulse range; CENTRE commands PULSE CENTRE
+  plus TRIM. All three and the rotary knob act only while the bench is
+  ARMED. The output card's TARGET row names the pin they drive.
+
+| Reading | Resolution | Range |
+| --- | --- | --- |
+| DEFLECTION | 0.1° shown; the AS5600's 4096 counts a turn, 0.088° | -180.0 to +179.9° |
+| TRAILING EDGE | 0.1mm shown | -500.0 to +500.0mm |
+
+### Limits
+
+- The AS5600 measures the servo output shaft. A linkage between horn and
+  surface makes the surface's deflection differ from the shaft's; the
+  difference is not measured.
+- The deflection is not filtered: a reading's noise shows in its tenths and
+  can raise MAX by it. The AS5600's noise on the bench is not measured.
+- REVERSE changes the sign shown and keeps the zero; MAX keeps each side as
+  the sensor saw it, so the sides swap on the screen with REVERSE.
 
 ## Sweep and SPEED
 

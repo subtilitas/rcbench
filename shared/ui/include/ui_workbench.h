@@ -4,8 +4,9 @@
  *        band.
  *
  * A workbench is a home tile that drives an output (SERVO today; MOTOR &
- * ESC and SUPPLY reuse it).  Its tasks are LIVE, TEST, PROGRAM and
+ * ESC and SUPPLY reuse it).  Its tasks are LIVE, TEST, PROGRAM, RUDDER and
  * SETTINGS, always in that order; a task the device lacks is not drawn.
+ * RUDDER is SERVO's alone.
  * The strip is the existing ui_tabs control, one row across the screen's
  * full width, so the output card on the right stays where it is on every
  * task.
@@ -40,6 +41,7 @@ typedef enum {
     UI_WB_LIVE = 0,
     UI_WB_TEST,
     UI_WB_PROGRAM,
+    UI_WB_RUDDER,   /**< a control surface's deflection: SERVO's */
     UI_WB_SETTINGS,
     UI_WB_TASKS
 } ui_wb_task_t;
@@ -50,8 +52,9 @@ typedef enum {
 /*
  * Geometry in the screen's own coordinates (the body under the band).  A
  * tab is 112px: PROGRAMMIEREN, the longest label, is 13 cells of 8px.
- * Four tabs take 460px, which the 488px page area of a workbench holds.
- * The page area and the output card start at UI_WB_PAGE_Y.
+ * Four tabs take 460px, which the 488px page area of a workbench holds;
+ * SERVO lays its five out at its own sizes (servo_screen_int.h).  The page
+ * area and the output card start at UI_WB_PAGE_Y.
  */
 #define UI_WB_STRIP_X 9
 #define UI_WB_STRIP_Y 6
@@ -111,6 +114,11 @@ gfx_rect_t ui_wb_strip_rect(const ui_wb_strip_t *w);
 /** The tab of @p task, or an empty rectangle when the strip lacks it. */
 gfx_rect_t ui_wb_strip_tab_rect(const ui_wb_strip_t *w, ui_wb_task_t task);
 
+/**
+ * @brief Draw the strip's tabs.
+ * @param w the strip; NULL or no tab draws nothing
+ * @param c the canvas
+ */
 void ui_wb_strip_render(const ui_wb_strip_t *w, gfx_canvas_t *c);
 
 #ifdef __cplusplus

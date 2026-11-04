@@ -1308,8 +1308,11 @@ Listen der eigenen Werte des Reglers und öffnen kein Tastenfeld.
 ![Servo](img/de/servo.png)
 
 SERVO ist eine Werkbank. Die Leiste unter dem Band trägt ihre Aufgaben,
-**LIVE**, **TEST**, **PROGRAMMIEREN** und **OPTIONEN**, 150 x 40px je
-Reiter, 4px Abstand, ab y 8 unter dem Band.
+**LIVE**, **TEST**, **PROGRAMMIEREN**, **RUDER** und **OPTIONEN**, 120 x
+40px je Reiter, 4px Abstand, ab y 8 unter dem Band. Die englischen
+Beschriftungen stehen in der Schrift 10 x 20, die deutschen in 8 x 16:
+`PROGRAMMIEREN` hat 13 Zeichen, und ein Reiter von 120px fasst 10 der
+größeren Schrift.
 Die Kachel öffnet LIVE. Ein Wechsel des Reiters ist keine Navigationsebene:
 das Home-Tag führt von jeder Aufgabe nach Hause und steigt nur aus den
 Einstellungen eines Laufs eine Ebene zurück zu TEST und aus einem
@@ -1322,6 +1325,7 @@ Prüfstand auf SAFE, aus jeder Aufgabe.
 | LIVE | das Zifferblatt, darüber das Feld eines Laufs, solange er läuft oder sein Ergebnis steht |
 | TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF und die Grenzen von SUPPLY, nur lesbar |
 | PROGRAMMIEREN | die Liste der Programmierer, eine Zeile je Programmierer; eine Zeile öffnet ihren Programmierer über der linken Spalte |
+| RUDER | der Ausschlag einer Ruderfläche in ° und mm, LÄNGE, 1000us, ZENTRIEREN und 2000us, NULLPUNKT und MAX ZURÜCKSETZEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING |
 
 Die linke Karte ist 620px breit und beginnt unter der Leiste, bei y 56.
@@ -1366,10 +1370,9 @@ und auch dann bleiben die Pins gebunden und treiben weiter, auf der Mitte
 ihres Wegs. Beendet werden die Flanken durch ein Schalten auf SAFE oder durch das
 Verlassen des Bildschirms, was auf SAFE schaltet. Bei eingeschaltetem Drehknopf
 bewegt dessen Drehung das Horn von dort aus, wo es steht
-([der Knopf](#panel-der-drehknopf)), nur auf LIVE: auf TEST, auf
-PROGRAMMIEREN, auf OPTIONEN, unter einem Feld und unter einem
-Programmierer ist das
-Zifferblatt nicht zu sehen, und eine Drehung bewegt nichts. Eine Drehung im
+([der Knopf](#panel-der-drehknopf)), nur auf LIVE und auf RUDER: auf
+TEST, auf PROGRAMMIEREN, auf OPTIONEN, unter einem Feld und unter einem
+Programmierer bewegt eine Drehung nichts. Eine Drehung im
 Frame, in dem LIVE zurückkommt, bewegt ebenfalls nichts; die nächste
 bewegt.
 
