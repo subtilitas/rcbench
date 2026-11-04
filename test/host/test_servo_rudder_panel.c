@@ -20,6 +20,9 @@
  * - length_takes_0_or_10_to_500mm_and_refuses_the_gap
  * - the_state_line_names_no_source_stale_and_connected
  * - the_imu_as_the_source_is_named_and_read
+ * - another_source_drops_the_zero_and_the_max
+ * - another_imu_axis_drops_the_zero_and_the_max
+ * - another_imu_sign_drops_the_zero_and_the_max
  * - leaving_servo_from_rudder_disarms
  * - the_target_row_names_the_pin_the_buttons_drive
  * - the_knob_moves_the_horn_on_rudder_while_armed
@@ -551,6 +554,93 @@ TEST_CASE(the_imu_as_the_source_is_named_and_read)
                  "ANGLE: AS5600 OFF IN SETUP");
 }
 
+/**
+ * @brief A zero taken at count 0 and a MAX of +22.5deg on the source in
+ *        force, both checked.
+ */
+static void zero_and_max(void)
+{
+    reading(0);
+    press(RUD_C_ZERO);
+    reading(256);
+    reading(0);
+    const servo_rudder_t *g = rudder_geo();
+    CHECK(g->zeroed);
+    CHECK(g->have[1]);
+}
+
+/**
+ * @brief Neither a zero nor a MAX kept, and the NO ZERO line on show.
+ */
+static void dropped(void)
+{
+    char line[64];
+    const servo_rudder_t *g = rudder_geo();
+    CHECK(!g->zeroed);
+    CHECK(!g->have[0]);
+    CHECK(!g->have[1]);
+    CHECK_STR_EQ(rudder_line(2, line, sizeof(line)),
+                 "NO ZERO: FROM THE SENSOR'S CENTRE");
+}
+
+/* A zero and a MAX taken on the AS5600 are dropped when ANGLE SOURCE turns
+ * to the IMU, across leaving SERVO and coming back; the IMU's first
+ * reading then reads from its own centre, not against the old zero. */
+TEST_CASE(another_source_drops_the_zero_and_the_max)
+{
+    fresh();
+    encoder_on();
+    to_rudder();
+    zero_and_max();
+    servo_screen_set_imu_axis(2u, true);        /* not the source: kept */
+    CHECK(rudder_geo()->zeroed);
+    scr->leave();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    scr->enter();
+    to_rudder();
+    dropped();
+    const servo_test_enc_t e = { .valid = true, .raw = 0u,
+                                 .taken_ms = 5000u };
+    servo_screen_encoder(&e);
+    float d = 1.0f;
+    CHECK(rudder_defl(&d));
+    CHECK_NEAR(d, 0.0f, 1e-3f);
+    CHECK(!rudder_geo()->have[0]);
+    /* Back to the AS5600: the IMU's zero goes the same way. */
+    zero_and_max();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_AS5600);
+    dropped();
+}
+
+/* With the IMU as the source, another AXIS drops the zero and the MAX;
+ * the same AXIS and SIGN handed in again keep them. */
+TEST_CASE(another_imu_axis_drops_the_zero_and_the_max)
+{
+    fresh();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    servo_screen_set_imu_axis(0u, false);
+    to_rudder();
+    zero_and_max();
+    servo_screen_set_imu_axis(0u, false);
+    CHECK(rudder_geo()->zeroed);
+    servo_screen_set_imu_axis(1u, false);
+    dropped();
+}
+
+/* With the IMU as the source, the other SIGN on the same AXIS drops the
+ * zero and the MAX, and a render after it draws NO ZERO. */
+TEST_CASE(another_imu_sign_drops_the_zero_and_the_max)
+{
+    fresh();
+    settings_set(SET_ANGLE_SOURCE, (float)SERVO_ANGLE_IMU);
+    servo_screen_set_imu_axis(1u, false);
+    to_rudder();
+    zero_and_max();
+    servo_screen_set_imu_axis(1u, true);
+    scr->render(&cv, 0);
+    dropped();
+}
+
 /* ---------------------------------------------------- the active output */
 
 /* Leaving SERVO from RUDDER on an armed bench disarms, and a button after
@@ -931,6 +1021,9 @@ int main(void)
     RUN(length_takes_0_or_10_to_500mm_and_refuses_the_gap);
     RUN(the_state_line_names_no_source_stale_and_connected);
     RUN(the_imu_as_the_source_is_named_and_read);
+    RUN(another_source_drops_the_zero_and_the_max);
+    RUN(another_imu_axis_drops_the_zero_and_the_max);
+    RUN(another_imu_sign_drops_the_zero_and_the_max);
     RUN(leaving_servo_from_rudder_disarms);
     RUN(the_target_row_names_the_pin_the_buttons_drive);
     RUN(the_knob_moves_the_horn_on_rudder_while_armed);

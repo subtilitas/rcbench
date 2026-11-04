@@ -94,8 +94,36 @@ static float src_defl_now(void)
     return s.reverse ? -d : d;
 }
 
+/**
+ * @brief The source in force as rudder_t's geo_src keeps it: the AS5600,
+ *        or the IMU with its AXIS and SIGN.
+ * @return 1 the AS5600, 2 + 2 x AXIS + SIGN the IMU
+ */
+static uint8_t src_key(void)
+{
+    if (enc_src() != SERVO_ANGLE_IMU) {
+        return 1u;
+    }
+    return (uint8_t)(2u + 2u * (s.imu_axis & 3u) + (s.imu_neg ? 1u : 0u));
+}
+
+/**
+ * @brief The zero and the MAX dropped when the source in force is not the
+ *        one they were taken from: another sensor's counts, or the IMU's
+ *        other AXIS or SIGN, have no relation to them.
+ */
+static void geo_follow_source(void)
+{
+    const uint8_t k = src_key();
+    if (s.rud.geo_src != k) {
+        servo_rudder_init(&s.rud.geo);
+        s.rud.geo_src = k;
+    }
+}
+
 void rudder_angle(void)
 {
+    geo_follow_source();
     if (!enc_shown()) {
         return;
     }
@@ -104,6 +132,7 @@ void rudder_angle(void)
 
 const servo_rudder_t *rudder_geo(void)
 {
+    geo_follow_source();
     return &s.rud.geo;
 }
 
@@ -130,6 +159,7 @@ rudder_src_t rudder_source(void)
 
 bool rudder_defl(float *deg)
 {
+    geo_follow_source();
     if (deg == NULL || !enc_shown()) {
         return false;
     }
@@ -259,6 +289,7 @@ static void open_length(void)
  */
 static void act(rudder_ctl_t k)
 {
+    geo_follow_source();
     switch (k) {
     case RUD_C_LENGTH:
         open_length();
@@ -373,6 +404,7 @@ const char *rudder_line(int i, char *buf, size_t n)
         return "";
     }
     buf[0] = '\0';
+    geo_follow_source();
     switch (i) {
     case 0: {
         char name[12];
@@ -604,6 +636,7 @@ static uint32_t read_sig(void)
 
 void rudder_render(gfx_canvas_t *c, int buf)
 {
+    geo_follow_source();
     const gfx_rect_t a = page_area();
     gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
                   ui_theme_color(UI_C_PANEL));
@@ -633,6 +666,7 @@ static void clipped_to(gfx_canvas_t *c, gfx_rect_t r,
 
 void rudder_render_part(gfx_canvas_t *c, int buf)
 {
+    geo_follow_source();
     const int b = buf & 1;
     if (s.rud.drawn_card[b] != card_sig()) {
         const gfx_rect_t old = c->clip;

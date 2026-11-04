@@ -35,7 +35,7 @@ LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis
 | 1000us, 2000us | abgelehnt; gedimmt | befiehlt diesen Puls, begrenzt auf WEG und den Pulsbereich des eingestellten Typs |
 | ZENTRIEREN | abgelehnt; gedimmt | befiehlt PULS MITTE plus TRIMMUNG |
 | Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt das Horn vom befohlenen Wert aus, wie auf LIVE |
-| NULLPUNKT | nimmt den aktuellen Winkel als Neutrallage und löscht MAX; grau ohne Messwert | dasselbe |
+| NULLPUNKT | nimmt den aktuellen Winkel als Neutrallage und löscht MAX; grau ohne Messwert; eine andere ANGLE SOURCE oder eine andere AXIS oder SIGN der IMU verwirft Nullpunkt und MAX | dasselbe |
 | MAX ZURÜCKSETZEN | löscht MAX; der Nullpunkt bleibt | dasselbe |
 
 1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT und MAX ZURÜCKSETZEN wirken bei einem Tippen, das auf ihnen loslässt. Die Zeile PULS unter den Tasten nennt den befohlenen Puls. Ein Wechsel des Reiters lässt das Servo, wo es steht; DISARM, STOP und das Verlassen von SERVO schalten den Prüfstand auf SAFE.
