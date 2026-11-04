@@ -46,6 +46,7 @@ typedef struct {
     uint16_t rssi;     /* the RSSI word printed */
     const char *name;  /* NULL: AT+RNAME? answers FAIL */
     bool name_silent;  /* AT+RNAME? answers nothing */
+    uint32_t name_late_ms; /* not 0: AT+RNAME? answers this late */
     uint32_t inq_ms;   /* its +INQ line after AT+INQ, ms */
 } sim_dev_t;
 
@@ -96,6 +97,7 @@ typedef struct {
     unsigned nraw;
     sim_out_t out[SIM_OUT_MAX];
     unsigned nout;
+    uint32_t busy_until; /* the last answer queued: answers keep order */
     char cmds[SIM_LOG_MAX][SIM_TEXT_MAX]; /* commands at the right baud */
     unsigned ncmd;
     sim_log_t log[SIM_LOG_MAX * 2u];      /* every action */
@@ -136,6 +138,11 @@ static void sim_say_n(sim_t *s, uint32_t at, const char *text, size_t n)
     if (s->nout >= SIM_OUT_MAX) {
         return;
     }
+    /* One command at a time: no answer before the one queued last. */
+    if (s->nout > 0u && (int32_t)(at - s->busy_until) <= 0) {
+        at = s->busy_until + 1u;
+    }
+    s->busy_until = at;
     sim_out_t *o = &s->out[s->nout++];
     o->at = at;
     memcpy(o->text, text, n);
@@ -243,9 +250,13 @@ static void sim_command(sim_t *s, const char *cmd, uint32_t now)
             return;
         }
         char buf[SIM_TEXT_MAX];
+        const uint32_t late = d->name_late_ms != 0u ? d->name_late_ms : 800u;
         snprintf(buf, sizeof buf, "+RNAME:%s", d->name);
-        sim_say(s, now + 800u, buf);
-        sim_say(s, now + 801u, "OK");
+        sim_say(s, now + late, buf);
+        sim_say(s, now + late + 1u, "OK");
+    } else if (strcmp(cmd, "AT+STATE?") == 0) {
+        sim_say(s, at, "+STATE:PAIRABLE");
+        sim_say(s, at + 1u, "OK");
     } else if (strcmp(cmd, "AT+ROLE=1") == 0) {
         s->role = 1;
         sim_say(s, at, "OK");

@@ -292,7 +292,9 @@ TEST_CASE(key_is_raised_before_the_first_byte_and_dropped_at_the_end)
         CHECK_EQ(count_act(&s, HC05_ACT_KEY), 2);
         const sim_log_t *low = nth_act(&s, HC05_ACT_KEY, 1);
         CHECK(!low->act.key);
-        CHECK_EQ(low->t, end);
+        /* BIND and ANY hold KEY low HC05_RESET_MS for the restart. */
+        const bool reset = ops[i] == HC05_OP_BIND || ops[i] == HC05_OP_ANY;
+        CHECK_EQ(low->t, reset ? end - HC05_RESET_MS : end);
         hc05_act_t a;
         CHECK(!hc05_step(&h, end + 1u, &a));
         CHECK_EQ(a.kind, HC05_ACT_NONE);
@@ -360,6 +362,68 @@ TEST_CASE(scan_on_firmware_2_0_lists_two_devices_with_their_names)
     CHECK_STR_EQ(h.found[0].name, "");
     CHECK_STR_EQ(h.found[1].name, "");
     CHECK_STR_EQ(h.found[2].name, "LAST");
+}
+
+TEST_CASE(a_late_name_is_not_taken_for_the_next_device)
+{
+    hc05_t h;
+    sim_t s;
+    sim_init(&s, 2, HC05_BAUD_OLD);
+    sim_add_dev(&s, "1:2:3", 0x1F00u, 0xFFC0u, "DEVICE-A", 2000u);
+    sim_add_dev(&s, SENSOR, 0x1F00u, 0xFFC0u, "HC-06", 2500u);
+    s.devs[0].name_late_ms = HC05_RNAME_MS + 500u;
+    hc05_init(&h);
+    CHECK(hc05_scan(&h, 0));
+    (void)sim_run(&s, &h, 0, 60000u);
+    CHECK_EQ(h.state, HC05_ST_DONE);
+    CHECK_STR_EQ(h.found[0].name, "");
+    CHECK_STR_EQ(h.found[1].addr, SENSOR);
+    CHECK_STR_EQ(h.found[1].name, "HC-06");
+    const char *want[] = { "AT", "AT+INIT", "AT+INQM=1,9,9", "AT+INQ",
+                           "AT+RNAME?1,2,3", "AT+STATE?",
+                           "AT+RNAME?98D3,31,FD5C81" };
+    check_cmds(&s, want, 7u);
+}
+
+TEST_CASE(an_operation_right_after_bind_or_any_finds_the_module_in_data_mode)
+{
+    static const hc05_op_t ops[] = { HC05_OP_BIND, HC05_OP_ANY };
+    for (size_t i = 0; i < 2u; ++i) {
+        hc05_t h;
+        sim_t s;
+        const uint32_t end = run_op(&h, &s, ops[i]);
+        CHECK_EQ(h.state, HC05_ST_DONE);
+        /* DONE comes after the restart: KEY was low through it. */
+        CHECK_EQ(s.restarts, 1);
+        CHECK(!s.restarted_key);
+        /* Busy until then: a start during the hold is refused. */
+        s.nlog = 0;
+        CHECK(hc05_probe(&h, end));
+        (void)sim_run(&s, &h, end, 10000u);
+        CHECK_EQ(h.state, HC05_ST_DONE);
+        CHECK_EQ(h.baud, HC05_BAUD_DATA);
+        CHECK_EQ(count_act(&s, HC05_ACT_BAUD), 1);
+    }
+    /* During the hold the machine is busy. */
+    hc05_t h;
+    sim_t s;
+    sim_init(&s, 2, HC05_BAUD_OLD);
+    hc05_init(&h);
+    CHECK(hc05_any(&h, "1234", 0));
+    uint32_t t = 0;
+    for (; t < 20000u; ++t) {
+        sim_tick(&s, &h, t);
+        if (s.nlog > 1u && s.log[s.nlog - 1u].act.kind == HC05_ACT_KEY
+            && !s.log[s.nlog - 1u].act.key) {
+            break;
+        }
+    }
+    CHECK(hc05_busy(&h));
+    CHECK(!hc05_probe(&h, t + 1u));
+    hc05_act_t a;
+    CHECK_EQ(step_all(&h, t + HC05_RESET_MS - 1u, NULL), HC05_ACT_NONE);
+    CHECK(step_all(&h, t + HC05_RESET_MS, &a) == HC05_ACT_BAUD);
+    CHECK_EQ(h.state, HC05_ST_DONE);
 }
 
 TEST_CASE(scan_ignores_error_17_on_init)
@@ -695,26 +759,63 @@ static void pair_times_out(uint32_t t0)
     CHECK_EQ(h.err, HC05_ERR_TIMEOUT);
 }
 
-/* A name that never comes: the next device asked at HC05_RNAME_MS. */
+/* A scan by hand with two devices, its first AT+RNAME? sent at the
+ * returned time. */
+static uint32_t scan_to_rname(hc05_t *h, uint32_t t0)
+{
+    hc05_act_t a;
+    const uint32_t sent = scan_to_inq(h, t0);
+    feed_line(h, "+INQ:1:2:3,1F00,FFC0");
+    feed_line(h, "+INQ:1:2:4,1F00,FFC0");
+    feed_line(h, "OK");
+    CHECK(step_all(h, sent + 10u, &a) == HC05_ACT_SEND
+          && is_send(&a, "AT+RNAME?1,2,3"));
+    return sent + 10u;
+}
+
+/* A name that never comes: AT+STATE? at HC05_RNAME_MS, the late answer
+ * dropped, the next device asked after +STATE: and OK. */
 static void rname_times_out(uint32_t t0)
 {
     hc05_t h;
     hc05_act_t a;
-    const uint32_t sent = scan_to_inq(&h, t0);
-    feed_line(&h, "+INQ:1:2:3,1F00,FFC0");
-    feed_line(&h, "+INQ:1:2:4,1F00,FFC0");
+    const uint32_t sent = scan_to_rname(&h, t0);
+    CHECK_EQ(step_all(&h, sent + HC05_RNAME_MS - 1u, NULL), HC05_ACT_NONE);
+    CHECK(step_all(&h, sent + HC05_RNAME_MS, &a) == HC05_ACT_SEND
+          && is_send(&a, "AT+STATE?"));
+    feed_line(&h, "+RNAME:A");
     feed_line(&h, "OK");
-    CHECK(step_all(&h, sent + 10u, &a) == HC05_ACT_SEND
-          && is_send(&a, "AT+RNAME?1,2,3"));
-    CHECK_EQ(step_all(&h, sent + 10u + HC05_RNAME_MS - 1u, NULL),
-             HC05_ACT_NONE);
-    CHECK(step_all(&h, sent + 10u + HC05_RNAME_MS, &a) == HC05_ACT_SEND
+    feed_line(&h, "FAIL");
+    CHECK_EQ(step_all(&h, sent + HC05_RNAME_MS + 1u, NULL), HC05_ACT_NONE);
+    feed_line(&h, "+STATE:PAIRABLE");
+    feed_line(&h, "OK");
+    CHECK(step_all(&h, sent + HC05_RNAME_MS + 1u, &a) == HC05_ACT_SEND
           && is_send(&a, "AT+RNAME?1,2,4"));
     CHECK_STR_EQ(h.found[0].name, "");
     feed_line(&h, "+RNAME:B");
     feed_line(&h, "OK");
     CHECK_EQ(h.state, HC05_ST_DONE);
     CHECK_STR_EQ(h.found[1].name, "B");
+}
+
+/* AT+STATE? unanswered as well: the scan ends DONE at HC05_RNAME_MS
+ * after it, the names left "". */
+static void fence_times_out(uint32_t t0)
+{
+    hc05_t h;
+    hc05_act_t a;
+    const uint32_t sent = scan_to_rname(&h, t0);
+    CHECK(step_all(&h, sent + HC05_RNAME_MS, &a) == HC05_ACT_SEND
+          && is_send(&a, "AT+STATE?"));
+    feed_line(&h, "+STATE:PAIRABLE"); /* no OK after it */
+    const uint32_t fence = sent + HC05_RNAME_MS;
+    CHECK_EQ(step_all(&h, fence + HC05_RNAME_MS - 1u, NULL), HC05_ACT_NONE);
+    CHECK(hc05_busy(&h));
+    CHECK(step_all(&h, fence + HC05_RNAME_MS, &a) == HC05_ACT_KEY && !a.key);
+    CHECK_EQ(h.state, HC05_ST_DONE);
+    CHECK_EQ(h.found_n, 2);
+    CHECK_STR_EQ(h.found[0].name, "");
+    CHECK_STR_EQ(h.found[1].name, "");
 }
 
 /* AT+RESET without its OK: TIMEOUT at HC05_RESET_MS. */
@@ -742,6 +843,7 @@ TEST_CASE(a_timeout_fails_the_operation_at_exactly_its_limit)
     at_tick_0_and_before_the_wrap(at_times_out, 50u);
     at_tick_0_and_before_the_wrap(pair_times_out, 10000u);
     at_tick_0_and_before_the_wrap(rname_times_out, 2000u);
+    at_tick_0_and_before_the_wrap(fence_times_out, 4000u);
     at_tick_0_and_before_the_wrap(reset_times_out, 1000u);
 }
 
@@ -874,13 +976,13 @@ TEST_CASE(found_is_capped_at_eight_devices)
     /* The sensor reported twice is one device. */
     s.inq_raw[0] = "+INQ:1:0:1,1F00,FFB0";
     s.nraw = 1;
-    s.devs[0].inq_ms = 50u;
+    s.devs[0].inq_ms = 5000u;
     hc05_init(&h);
     CHECK(hc05_scan(&h, 0));
     const uint32_t end = sim_run(&s, &h, 0, 80000u);
     CHECK_EQ(h.state, HC05_ST_DONE);
     CHECK_EQ(h.found_n, HC05_FOUND_MAX);
-    CHECK_EQ(h.found[0].rssi, -64);
+    CHECK_EQ(h.found[0].rssi, -80);
     for (unsigned i = 0; i < HC05_FOUND_MAX; ++i) {
         CHECK_STR_EQ(h.found[i].addr, addrs[i]);
         CHECK_STR_EQ(h.found[i].name, "N");
@@ -929,6 +1031,8 @@ int main(void)
     RUN(a_probe_after_junk_at_a_wrong_baud_sends_at_once_more);
     RUN(key_is_raised_before_the_first_byte_and_dropped_at_the_end);
     RUN(scan_on_firmware_2_0_lists_two_devices_with_their_names);
+    RUN(a_late_name_is_not_taken_for_the_next_device);
+    RUN(an_operation_right_after_bind_or_any_finds_the_module_in_data_mode);
     RUN(scan_ignores_error_17_on_init);
     RUN(scan_runs_for_inqm_timeout_plus_two_seconds);
     RUN(scan_on_firmware_3_0_ends_inq_refused_on_error_1f);

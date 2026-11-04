@@ -34,7 +34,7 @@ enum {
     S_CMODE1,  /**< AT+CMODE=1: any slave */
     S_UART,    /**< AT+UART=115200,0,0 */
     S_RESET,   /**< AT+RESET */
-    S_KEYLOW,  /**< KEY low, before the module restarts */
+    S_KEYLOW,  /**< KEY low, then HC05_RESET_MS for the restart */
     S_DATA,    /**< the UART to the data baud */
     S_END,     /**< the operation is done */
 };
@@ -66,6 +66,12 @@ static const uint32_t k_bauds[] = { HC05_BAUD_DATA, HC05_BAUD_ALT,
                                     HC05_BAUD_OLD };
 /** @brief How many bauds the handshake tries. */
 #define BAUD_TRIES ((uint8_t)(sizeof k_bauds / sizeof k_bauds[0]))
+
+/** @brief hc05_t.tries at S_RNAME: AT+STATE? went out after a name that
+ *         did not come, and its +STATE: line has come.  0: AT+RNAME?. @{ */
+#define FENCE_SENT  1u /**< AT+STATE? sent */
+#define FENCE_STATE 2u /**< its +STATE: line came */
+/** @} */
 
 /** @brief The error code AT+INIT answers when the SPP (serial port
  *         profile) library is up already. */
@@ -147,6 +153,7 @@ static void advance(hc05_t *h)
 {
     ++h->step;
     h->wait_ms = 0;
+    h->tries = 0;
     if (stage(h) == S_END) {
         finish(h, HC05_ST_DONE, HC05_ERR_NONE, 0);
     }
@@ -224,8 +231,12 @@ static uint32_t command(hc05_t *h, uint8_t s)
         wait = HC05_INQ_MS(HC05_INQ_UNITS);
         break;
     case S_RNAME:
-        put(h, "+RNAME?");
-        put_addr(h, h->found[h->name_i].addr);
+        if (h->tries != 0u) {
+            put(h, "+STATE?");
+        } else {
+            put(h, "+RNAME?");
+            put_addr(h, h->found[h->name_i].addr);
+        }
         wait = HC05_RNAME_MS;
         break;
     case S_ROLE:
@@ -291,7 +302,7 @@ static void queue(hc05_t *h, uint8_t s)
     case S_KEYLOW:
         h->act.kind = HC05_ACT_KEY;
         h->act.key = false;
-        advance(h);
+        h->wait_ms = HC05_RESET_MS;
         break;
     case S_DATA:
         h->act.kind = HC05_ACT_BAUD;
@@ -326,7 +337,7 @@ static void next_name(hc05_t *h)
 static void expired(hc05_t *h, uint8_t s)
 {
     h->wait_ms = 0;
-    if (s == S_KEY) {
+    if (s == S_KEY || s == S_KEYLOW) {
         advance(h);
     } else if (s == S_AT) {
         h->tries = 0;
@@ -336,8 +347,12 @@ static void expired(hc05_t *h, uint8_t s)
         } else {
             h->step = STEP_BAUD;
         }
+    } else if (s == S_RNAME && h->tries == 0u) {
+        /* A late answer would read as the next device's: AT+STATE? first,
+         * and the next name after its +STATE: line and OK. */
+        h->tries = FENCE_SENT;
     } else if (s == S_RNAME) {
-        next_name(h);
+        advance(h); /* no answer to AT+STATE? either: no more names */
     } else {
         finish(h, HC05_ST_FAILED, HC05_ERR_TIMEOUT, 0);
     }
@@ -378,7 +393,17 @@ static void take_line(hc05_t *h, const char *line)
                                              &code);
     const uint8_t s = stage(h);
 
-    if (s == S_KEY) {
+    if (s == S_KEY || s == S_KEYLOW) {
+        return;
+    }
+    if (s == S_RNAME && h->tries != 0u) {
+        /* The fence: every line up to +STATE: and its OK is dropped. */
+        if (kind == HC05_LINE_STATE) {
+            h->tries = FENCE_STATE;
+        } else if (kind == HC05_LINE_OK && h->tries == FENCE_STATE) {
+            h->tries = 0;
+            next_name(h);
+        }
         return;
     }
     if (kind == HC05_LINE_OK) {
@@ -624,7 +649,7 @@ bool hc05_step(hc05_t *h, uint32_t now_ms, hc05_act_t *out)
     if (out->kind == HC05_ACT_KEY) {
         h->key = out->key;
     }
-    if (out->kind == HC05_ACT_SEND || (out->kind == HC05_ACT_KEY && out->key)) {
+    if (out->kind == HC05_ACT_SEND || out->kind == HC05_ACT_KEY) {
         h->sent_ms = now_ms;
     }
     return true;

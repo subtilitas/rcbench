@@ -62,22 +62,29 @@ baud can stay in the module's line buffer and spoil the first command.
 | each command not named below | OK | 1000ms (`HC05_AT_MS`) |
 | `AT+INQ` | `+INQ:` lines, then OK | 13520ms (`HC05_INQ_MS(9)`: 9 units of 1.28s plus 2000ms) |
 | `AT+RNAME?<addr>` | `+RNAME:<name>`, then OK | 3000ms (`HC05_RNAME_MS`) |
+| `AT+STATE?`, after a name that did not come | `+STATE:<state>`, then OK | 3000ms (`HC05_RNAME_MS`) |
 | `AT+PAIR=<addr>,20` | OK | 22000ms (`HC05_PAIR_MS`: the 20s pairing time plus 2000ms) |
 | `AT+RESET` | OK | 1500ms (`HC05_RESET_MS`) |
+| the restart after `AT+RESET`'s OK | nothing: KEY low | 1500ms (`HC05_RESET_MS`) |
 
 - SCAN: an ERROR:(17) to `AT+INIT` (the SPP library is up already) is no
   error. `AT+INQM=1,9,9` asks for RSSI (received signal strength
   indication) mode, at most 9 devices and 9 units of 1.28s: 11.52s. The
   first report of each address is kept, up to 8. An inquiry that reports
-  no device ends `HC05_ERR_NONE_FOUND`. A name that does not come within
-  3000ms, or a FAIL or ERROR to `AT+RNAME?`, leaves that device's name ""
-  and the scan goes on with the next one.
+  no device ends `HC05_ERR_NONE_FOUND`. A FAIL or ERROR to `AT+RNAME?`
+  leaves that device's name "" and the scan goes on with the next one. A
+  name that does not come within 3000ms leaves it "" too, and `AT+STATE?`
+  goes out before the next device's `AT+RNAME?`: every line up to its
+  `+STATE:` line and OK is dropped, so a late `+RNAME:` is never taken for
+  the next device. No answer to `AT+STATE?` within 3000ms ends the scan
+  DONE with the names left "".
 - BIND and ANY: an ERROR to `AT+PSWD=<pin>` sends `AT+PSWD="<pin>"` once
   (`pswd_quoted`), the form firmware 3.0 takes. A FAIL, an ERROR or no
   OK to `AT+PAIR` ends the bind: `HC05_ERR_PAIR` for FAIL and ERROR,
   `HC05_ERR_TIMEOUT` for no answer. After the OK of `AT+RESET` the machine
-  asks KEY low, so the module restarts in data mode, then asks the UART
-  to 115200 baud and ends DONE.
+  asks KEY low, so the module restarts in data mode, holds it low and
+  stays busy for 1500ms, then asks the UART to 115200 baud and ends DONE.
+  An operation started at once after DONE finds the module restarted.
 - A PIN (personal identification number) is 1 to 16 decimal digits. The
   BWT901CL's is 1234.
 
