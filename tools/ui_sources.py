@@ -251,6 +251,8 @@ SOURCES = [
     "shared/servo/servo_limrun_report.c",
     "shared/servo/servo_gap.c",
     "shared/servo/servo_angle.c",
+    "shared/servo/servo_rudder_auto.c",
+    "shared/servo/servo_rudder_auto_report.c",
     "protocols/sbus/sbus.c",
     "protocols/dshot/dshot_telem.c",
     "shared/outputs/outputs.c",

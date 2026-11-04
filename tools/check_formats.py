@@ -42,9 +42,10 @@ PROTOCOLS = ROOT / "protocols"
 DEF = SHARED / "text" / "include" / "ui_text.def"
 UI_TEXT_H = SHARED / "ui" / "include" / "ui_text.h"
 # The files that look the servo test's words up, each with its macro: the
-# automatic test's report and the limit run's.
+# automatic test's report, the limit run's and AUTO end points'.
 LOOKUPS = ((SHARED / "servo" / "servo_report.c", "S"),
-           (SHARED / "servo" / "servo_limrun_report.c", "LS"))
+           (SHARED / "servo" / "servo_limrun_report.c", "LS"),
+           (SHARED / "servo" / "servo_rudder_auto_report.c", "LS"))
 
 FLAGS = ["-std=c11", "-fsyntax-only", "-Wformat=2", "-Wformat-nonliteral",
          "-Wformat-signedness"]

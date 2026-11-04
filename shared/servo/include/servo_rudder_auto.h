@@ -123,7 +123,7 @@ extern "C" {
 #define SERVO_RAUTO_MARGIN_MAX  50u      /**< % */
 /** @brief The tolerance's range, 0.1°. */
 #define SERVO_RAUTO_TOL_MIN_DDEG 1u      /**< 0.1° */
-#define SERVO_RAUTO_TOL_MAX_DDEG 50u
+#define SERVO_RAUTO_TOL_MAX_DDEG 50u     /**< 5.0° */
 /** @brief The outbox: the report's files, TXT and CSV. */
 #define SERVO_RAUTO_OUTBOX      2u
 
@@ -166,7 +166,8 @@ typedef struct {
 typedef struct {
     bool     ok;              /**< read, a servo of the family, editable */
     uint16_t value[2];        /**< the two registers' travel values */
-    uint16_t lo, hi;          /**< the values the hard rules take */
+    uint16_t lo,              /**< the smallest value the hard rules take */
+             hi;              /**< the largest */
     bool     reversion;       /**< REVERSION on */
     uint16_t pulse_dus[3];    /**< KST: NEUTRAL, LOWER, UPPER; else 0 */
     char     backup[16];      /**< the backup file; "" for memory only */
@@ -229,28 +230,39 @@ typedef struct {
 
 /** @brief A run's state.  The members after pend are the run's own. */
 typedef struct {
-    servo_rauto_cfg_t   cfg;
-    servo_rauto_state_t state;
-    servo_rauto_phase_t phase;
-    servo_rauto_verdict_t verdict;
-    servo_rauto_why_t   why;
+    servo_rauto_cfg_t   cfg;          /**< as started */
+    servo_rauto_state_t state;        /**< IDLE, RUNNING, DONE */
+    servo_rauto_phase_t phase;        /**< the phase under way */
+    servo_rauto_verdict_t verdict;    /**< once DONE */
+    servo_rauto_why_t   why;          /**< once DONE */
     servo_test_abort_t  test_why;     /**< for SERVO_RAUTO_WHY_TEST */
-    uint32_t start_ms, end_ms, phase_ms;
+    uint32_t start_ms,                /**< the start, ms */
+             end_ms,                  /**< the end, ms */
+             phase_ms;                /**< the phase's start, ms */
     servo_rauto_servo_t servo;        /**< as the read session read it */
     uint16_t cur[2];                  /**< what the servo holds now */
     int8_t   reg_side[2];             /**< the side each register moves, -1 */
     uint8_t  side;                    /**< the side measured or written */
     uint8_t  writes[2];               /**< writes by side */
     unsigned sessions;                /**< CONNECTs answered */
-    float    goal_deg[2], measured_deg[2];
+    float    goal_deg[2],             /**< target x (1 + margin), ° */
+             measured_deg[2];         /**< each side's last measure, ° */
     float    bind_deg;                /**< the angle at a bind */
     servo_gap_t gap;                  /**< the angle source's gaps */
+    /** @brief Every measure, in order. */
     servo_rauto_step_t steps[2u * (SERVO_RAUTO_WRITES_MAX + 1u)];
     uint8_t  step_n;                  /**< steps recorded */
-    bool     have_win; uint32_t last_win_ms; bool elevated; uint32_t elevated_ms;
-    unsigned out_line; bool out_open, out_end, out_done, csv_open;
-    char     scratch[SERVO_TEST_LINE_MAX];
-    servo_rauto_do_t pend;
+    bool     have_win;                /**< a window arrived */
+    uint32_t last_win_ms;             /**< the last window's time */
+    bool     elevated;                /**< window means above STALL_MA */
+    uint32_t elevated_ms;             /**< since then */
+    unsigned out_line;                /**< the outbox's next line */
+    bool     out_open,                /**< OPEN handed out */
+             out_end,                 /**< the last line handed out */
+             out_done,                /**< END handed out */
+             csv_open;                /**< the CSV's lines under way */
+    char     scratch[SERVO_TEST_LINE_MAX];  /**< the line handed out */
+    servo_rauto_do_t pend;            /**< asked, for the next step */
 
     bool     safe_asked;              /**< PH_SAFE: SAFE asked */
     bool     read_once;               /**< the read session read the servo */
@@ -263,10 +275,10 @@ typedef struct {
     uint16_t pulse_now[3];            /**< KST: NEUTRAL, LOWER, UPPER now */
     uint16_t want[2];                 /**< the write under way */
     uint16_t cmd_us;                  /**< the command last asked */
-    bool     cmd_due;
+    bool     cmd_due;                 /**< the command still to hand out */
     uint32_t move_ms;                 /**< the measure's command */
     bool     angle_valid;             /**< the last step's angle */
-    float    angle_deg;
+    float    angle_deg;               /**< its deflection, ° */
     int8_t   sign[2];                 /**< each side's direction, 0 unknown */
     bool     verified[2];             /**< within at the last measure */
     unsigned verified_at[2];          /**< total at that measure */

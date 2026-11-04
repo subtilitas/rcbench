@@ -97,6 +97,7 @@ typedef struct {
     const char *const *text;    /**< the language table; NULL for English */
 } cur_t;
 
+/** @brief Entry @p id of the cursor's table. */
 #define LS(id) servo_str_in(c->text, SERVO_STR_##id)
 
 /**

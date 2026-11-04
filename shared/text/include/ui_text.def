@@ -9684,8 +9684,8 @@ UI_SERVO_TEXT(SERVO_STR_L_R_SRC_OFF,
 /* Slice 6: AUTO on RUDDER (servo_rudder_auto.h), its phase, its reasons
  * and its report RUDDERnnn.TXT. */
 UI_SERVO_TEXT(SERVO_STR_RA_PH_READ,
-    "READ",
-    "LESEN")
+    "READ SERVO",
+    "SERVO LESEN")
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_BINDS,
     "surface binds before the goal",
     "Ruder klemmt vor dem Ziel")

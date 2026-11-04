@@ -230,6 +230,8 @@ TRACKED = [
     "shared/servo/servo_limrun_report.c",
     "shared/servo/servo_gap.c",
     "shared/servo/servo_angle.c",
+    "shared/servo/servo_rudder_auto.c",
+    "shared/servo/servo_rudder_auto_report.c",
     "protocols/openyge/openyge_frame.c",
     "protocols/openyge/openyge_status.c",
     "protocols/openyge/openyge_params.c",
