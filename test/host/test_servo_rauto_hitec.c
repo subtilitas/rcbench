@@ -140,6 +140,30 @@ TEST_CASE(auto_on_a_classic_servo_writes_8_bit_cells_within_lo_hi)
     CHECK(strstr(hl.report, servo_str(SERVO_STR_RA_WHY_LIMIT)) != NULL);
     CHECK(g_drv.eeprom[0x14] <= 255u);
     CHECK(!hl.armed);
+    /* The cells written stay: the third line names the backup to load. */
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "LOAD HITEC001 IN FILES");
+}
+
+/* The HS-5645MG at DIRECTION CCW: 1000us is cell 0x13's side (194 counts,
+ * 21.3°), 2000us cell 0x14's (162 counts, 17.8°); AUTO raises each toward
+ * 22° and names them by the servo's direction. */
+TEST_CASE(auto_on_a_classic_ccw_servo_writes_cell_0x13_for_the_short_pulses)
+{
+    ha_setup(true);
+    hl_classic_ccw();
+    hl_ms(100u);
+    CHECK(rauto_blocked() == NULL);
+    ha_hold_start();
+    CHECK(servo_screen_rauto_running());
+    ha_run_out();
+    CHECK(strstr(hl.report, "PASS") != NULL);
+    CHECK(strstr(hl.report, "LEFT END (CELL 0x13): 194 before") != NULL);
+    CHECK(strstr(hl.report, "RIGHT END (CELL 0x14): 162 before") != NULL);
+    CHECK(fabsf(defl_at(1000u) - 22.0f) <= 0.5f);
+    CHECK(fabsf(defl_at(2000u) - 22.0f) <= 0.5f);
+    CHECK(g_drv.eeprom[0x13] > 194u);
+    CHECK(g_drv.eeprom[0x14] > 162u);
+    CHECK_EQ(g_drv.eeprom[0x1B] & 1u, 0u);
 }
 
 TEST_CASE(a_d_series_write_counts_the_save_and_reboot_time_in_the_session_cap)
@@ -195,6 +219,7 @@ int main(void)
 {
     RUN(auto_lands_a_d_series_servo_within_tolerance);
     RUN(auto_on_a_classic_servo_writes_8_bit_cells_within_lo_hi);
+    RUN(auto_on_a_classic_ccw_servo_writes_cell_0x13_for_the_short_pulses);
     RUN(a_d_series_write_counts_the_save_and_reboot_time_in_the_session_cap);
     return test_summary("servo_rauto_hitec");
 }

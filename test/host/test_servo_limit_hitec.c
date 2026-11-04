@@ -80,6 +80,40 @@ TEST_CASE(a_hitec_start_is_refused_before_a_drive_where_it_cannot_run)
     settings_set(SET_HITEC_SERIES, (float)HITEC_D);
 }
 
+/**
+ * @brief PULSE MIN and MAX typed on the output settings, back to TEST.
+ * @param min PULSE MIN, us, as typed
+ * @param max PULSE MAX, us, as typed
+ */
+static void hl_pulses(const char *min, const char *max)
+{
+    open_settings();
+    tap(ROW_L_X, ROW_Y(2));                  /* PULSE MIN */
+    keys(min);
+    tap(ROW_L_X, ROW_Y(3));                  /* PULSE MAX */
+    keys(max);
+    close_settings();
+    hl_ms(100u);
+}
+
+/* The D series model's full travel at the exact limits: PULSE MIN 850us and
+ * MAX 2150us take it; 851us or 2149us falls 1us short. */
+TEST_CASE(pulse_min_850us_and_max_2150us_are_the_d_series_exact_limits)
+{
+    hl_fresh(false);
+    hl_settings(true, true);
+    hl_pulses("850", "2150");
+    CHECK(servo_screen_limit_blocked() == NULL);
+    hl_pulses("851", "2150");
+    CHECK_STR_EQ(servo_screen_limit_blocked(),
+                 "HITEC: PULSE MIN/MAX MUST COVER 850-2150us");
+    hl_pulses("850", "2149");
+    CHECK_STR_EQ(servo_screen_limit_blocked(),
+                 "HITEC: PULSE MIN/MAX MUST COVER 850-2150us");
+    hl_pulses("850", "2150");
+    CHECK(servo_screen_limit_blocked() == NULL);
+}
+
 /* SEARCH + PROGRAM on the D485HW, no PD mini: the read session, then each
  * write a session of the Hitec programmer -- SAFE, CONNECT, the write with
  * its save and reboot, LEAVE, ARMED -- 0xB2 and 0xB0 lowered toward 0xC2
@@ -121,6 +155,31 @@ TEST_CASE(a_d_series_limit_run_programs_0xb2_and_0xb0_through_the_seam)
     CHECK(hl.arms >= 2u);
     CHECK(!hitec_prog_write_on(model()));
     CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_PWM);
+}
+
+/* A classic HS-5645MG at DIRECTION CCW: the short pulses are cell 0x13's,
+ * 194 counts, 427us past the stop at 1150us; the long ones cell 0x14's,
+ * 162 counts, 356us inside the stop at 1880us.  The run lowers 0x13 only
+ * and names it LEFT END. */
+TEST_CASE(a_classic_ccw_limit_run_lowers_cell_0x13_for_the_short_pulses)
+{
+    hl_fresh(true);
+    servo_hs5645();
+    hl_classic_ccw();
+    settings_set(SET_HITEC_SERIES, (float)HITEC_CLASSIC);
+    hl_settings(true, true);
+    CHECK(servo_screen_limit_blocked() == NULL);
+    hl_hold_start();
+    CHECK(servo_screen_limit_running());
+    hl_run_out();
+    CHECK(!servo_screen_limit_running());
+    CHECK(strstr(hl.report, "Result:         PASS\n") != NULL);
+    CHECK(strstr(hl.report, "DIRECTION CCW") != NULL);
+    CHECK(strstr(hl.report, "LEFT END (CELL 0x13): 194 before") != NULL);
+    CHECK(strstr(hl.report, "RIGHT END (CELL 0x14): 162 before") != NULL);
+    CHECK(g_drv.eeprom[0x13] < 194u);
+    CHECK_EQ(g_drv.eeprom[0x14], 162u);
+    CHECK_EQ(g_drv.eeprom[0x1B] & 1u, 0u);
 }
 
 /* A STOP while the run searches after its first write: the run ends
@@ -170,7 +229,9 @@ int main(void)
 {
     RUN(the_limit_run_card_offers_hitec_when_the_row_says_so_and_hides_servo_pulses);
     RUN(a_hitec_start_is_refused_before_a_drive_where_it_cannot_run);
+    RUN(pulse_min_850us_and_max_2150us_are_the_d_series_exact_limits);
     RUN(a_d_series_limit_run_programs_0xb2_and_0xb0_through_the_seam);
+    RUN(a_classic_ccw_limit_run_lowers_cell_0x13_for_the_short_pulses);
     RUN(a_stop_during_a_hitec_run_ends_it_with_every_output_off);
     return test_summary("servo_limit_hitec");
 }

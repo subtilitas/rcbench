@@ -282,6 +282,18 @@ static inline void hl_fresh(bool pd)
     hl_ms(400u);
 }
 
+/* The classic servo on the line turned to DIRECTION CCW: cell 0x1B's bit 0
+ * cleared, cell 0x1C balanced so that 0x00 to 0x1C still sum to 0. */
+static inline void hl_classic_ccw(void)
+{
+    g_drv.eeprom[0x1B] &= (uint8_t)~1u;
+    unsigned sum = 0u;
+    for (unsigned c = 0u; c < 0x1Cu; ++c) {
+        sum += g_drv.eeprom[c];
+    }
+    g_drv.eeprom[0x1C] = (uint8_t)(0u - sum);
+}
+
 /* TEST's LIMIT RUN settings, the rows tapped as asked, back to TEST. */
 static inline void hl_settings(bool hitec, bool prog)
 {
