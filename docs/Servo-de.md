@@ -1357,8 +1357,8 @@ Augenmaß eingestellten Weg am Sender. Der Lauf steht in
   Ansteuern und den Zustandszeilen; die Anzeige, die Zeile NULLPUNKT und
   die Ausgangskarte bleiben. MANUELL an der Stelle von AUTO bringt sie
   zurück. Solange der Lauf läuft, sind MANUELL, NULLPUNKT und MAX LÖSCHEN
-  abgelehnt und gedimmt: der Lauf misst ab dem Nullpunkt, mit dem er
-  begann.
+  abgelehnt und gedimmt, damit der Lauf ab dem Nullpunkt misst, mit dem er
+  begann, und der Drehknopf bewegt nichts.
 - Soll bei 1000us und bei 2000us: der Ausschlag, den jede Seite erreichen
   soll, 0.5 bis 90.0° in Schritten von 0.5°, 20.0° (Einstellungen
   `rud_defl_lo`, `rud_defl_hi`). Mit gesetzter LÄNGE zeigt die Zeile die mm

@@ -22,6 +22,7 @@
  * - a_supply_set_anew_outside_a_session_ends_auto
  * - with_user_logs_off_auto_hands_the_logger_nothing
  * - another_angle_source_drops_the_zero_and_ends_auto
+ * - the_knob_moves_nothing_while_auto_runs
  *
  * SPDX-License-Identifier: MIT
  */
@@ -556,6 +557,38 @@ TEST_CASE(another_angle_source_drops_the_zero_and_ends_auto)
     CHECK(!servo_screen_rauto_running());
 }
 
+/* The rotary knob turned both ways while AUTO holds an end pulse, on
+ * RUDDER with the box shown: no POSITION but AUTO's own, the end pulse
+ * stays, and the run passes. */
+TEST_CASE(the_knob_moves_nothing_while_auto_runs)
+{
+    ra_setup(true, true);
+    ra_hold_start();
+    bool there = false;
+    for (int i = 0; i < 400000 && servo_screen_rauto_running(); ++i) {
+        ra_ms(1u);
+        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_SETTLE
+            && (ra.cmd == 1000u || ra.cmd == 2000u)) {
+            there = true;
+            break;
+        }
+    }
+    CHECK(there);
+    CHECK(rauto_shown());
+    const uint16_t end = ra.cmd;
+    for (int k = 0; k < 10; ++k) {
+        servo_screen_knob(k % 2 == 0 ? 0.05f : -0.05f);
+        servo_cmd_t c;
+        while (servo_screen_take(&c)) {
+            CHECK(c.kind != SERVO_CMD_POSITION || c.value_us == end);
+        }
+        ra_ms(20u);
+        CHECK_EQ(ra.cmd, end);
+    }
+    ra_run_out();
+    CHECK(strstr(ra.report, "PASS") != NULL);
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -566,5 +599,6 @@ int main(void)
     RUN(a_supply_set_anew_outside_a_session_ends_auto);
     RUN(with_user_logs_off_auto_hands_the_logger_nothing);
     RUN(another_angle_source_drops_the_zero_and_ends_auto);
+    RUN(the_knob_moves_nothing_while_auto_runs);
     return test_summary("servo_rauto_kst");
 }

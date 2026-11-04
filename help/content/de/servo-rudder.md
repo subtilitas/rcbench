@@ -34,7 +34,7 @@ LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis
 |---|---|---|
 | 1000us, 2000us | abgelehnt; gedimmt | befiehlt diesen Puls, begrenzt auf WEG und den Pulsbereich des eingestellten Typs |
 | ZENTRIEREN | abgelehnt; gedimmt | befiehlt PULS MITTE plus TRIMMUNG |
-| Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt das Horn vom befohlenen Wert aus, wie auf LIVE |
+| Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt das Horn vom befohlenen Wert aus, wie auf LIVE; abgelehnt, solange AUTO läuft |
 | NULLPUNKT | nimmt den aktuellen Winkel als Neutrallage und löscht MAX; grau ohne Messwert; eine andere ANGLE SOURCE, eine andere AXIS oder SIGN der IMU oder ein NULLPUNKT oder NULLPUNKT WEG auf dem IMU-Bildschirm verwirft Nullpunkt und MAX | dasselbe; abgelehnt, solange AUTO läuft |
 | MAX LÖSCHEN | löscht MAX; der Nullpunkt bleibt | dasselbe; abgelehnt, solange AUTO läuft |
 | AUTO | zeigt den Kasten von AUTO ([AUTO](#auto)) | dasselbe |
