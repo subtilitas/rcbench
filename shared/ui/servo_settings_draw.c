@@ -66,6 +66,9 @@ static bool row_unused(const ov_row_t *r)
     if (r->kind == R_LIM_PULSES) {
         return servo_limrun_running(&s.lim) || lim_write_why() != NULL;
     }
+    if (r->kind == R_LIM_SERVO) {
+        return servo_limrun_running(&s.lim);
+    }
     if (r->kind != R_SETTING) {
         return false;
     }
@@ -116,6 +119,10 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_LIM_PULSES:
         snprintf(buf, n, "%s",
                  s.lim_pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
+        return;
+    case R_LIM_SERVO:
+        snprintf(buf, n, "%s",
+                 s.lim_hitec ? TR(SV_LIM_SERVO_HITEC) : TR(SV_LIM_SERVO_KST));
         return;
     case R_ENC_CENTRE:
         snprintf(buf, n, "%d", settings_get_int(SET_ENC_CENTRE));

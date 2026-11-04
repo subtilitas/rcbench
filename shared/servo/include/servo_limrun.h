@@ -140,6 +140,21 @@
  * release), and asks SAFE where it waited for ARMED; the values last
  * written stay in the servo.
  *
+ * Servo families (cfg.family, servo_limrun_family_t).  KST and Chaservo
+ * servos are read and written as above.  A Hitec servo goes through the
+ * Hitec programmer's run seam (hitec_panel_run.h) and has no pulse
+ * registers: the caller hands its pulses from servo_limrun_family_pulses(),
+ * NEUTRAL 1500.0us and the full travel at 850.0us and 2150.0us on a D
+ * series servo (the target model of hitec_live.h), at 900.0us and 2100.0us
+ * on a classic one (Hitec's PWM range); neither is measured.  The two
+ * registers are LEFT END and RIGHT END in travel units: D series counts
+ * from NEUTRAL 0xC2 (LEFT END 0xB2, RIGHT END 0xB0), classic the raw cells
+ * 0x14 and 0x13 (swapped on a CCW servo).  The search, the overset, the
+ * mapping and the check are the same for every family; servo_limrun_start()
+ * refuses set_pulses for a family other than KST, and a CONNECT that reads
+ * no servo of the family ends the run as SERVO_LIMRUN_WHY_NOT_KST or
+ * SERVO_LIMRUN_WHY_NOT_HITEC.
+ *
  * Pure: fed windows, the programmer's results and the clock, it moves
  * nothing itself.  Its report leaves through an outbox
  * (servo_limrun_peek()) as one LIMITnnn.TXT.
@@ -223,6 +238,29 @@ enum {
     SERVO_LIMRUN_P_UPPER = 2,
 };
 
+/** @brief The servo families a run programs. */
+typedef enum {
+    SERVO_LIMRUN_FAM_KST = 0,   /**< KST and Chaservo: LEFT and RIGHT ANGLE */
+    SERVO_LIMRUN_FAM_HITEC_D,   /**< Hitec D series: 0xB2 and 0xB0          */
+    SERVO_LIMRUN_FAM_HITEC_C,   /**< Hitec classic: cells 0x14 and 0x13     */
+    SERVO_LIMRUN_FAM_COUNT
+} servo_limrun_family_t;
+
+/** @brief The Hitec pulse model (servo_limrun_family_pulses()), 0.1us: NEUTRAL,
+ *         and the pulses at which the full travel of LEFT END and RIGHT END is
+ *         reached.  D series: hitec_live.h's target model, t = (us - 750) x 4,
+ *         targets 400 and 5600 the end points.  Classic: Hitec's PWM range,
+ *         900us to 2100us.  Neither is measured. */
+#define SERVO_LIMRUN_HITEC_NEUTRAL_DUS 15000u
+#define SERVO_LIMRUN_HITEC_D_LOWER_DUS 8500u
+#define SERVO_LIMRUN_HITEC_D_UPPER_DUS 21500u
+#define SERVO_LIMRUN_HITEC_C_LOWER_DUS 9000u
+#define SERVO_LIMRUN_HITEC_C_UPPER_DUS 21000u
+
+/** @brief servo_limrun_reg_name()'s @c reg flag: the servo's DIRECTION reads
+ *         CCW, which swaps the classic cells. */
+#define SERVO_LIMRUN_REG_CCW 0x02u
+
 typedef struct {
     uint16_t centre_us, min_us, max_us;   /**< PULSE CENTRE, MIN, MAX   */
     /** @brief A KST or Chaservo servo on the programming port: read first, and
@@ -233,6 +271,7 @@ typedef struct {
                                read only */
     bool     set_pulses;  /**< PULSE LOWER and PULSE UPPER to 1000 and
                                2000us before the search; read only */
+    uint8_t  family;      /**< servo_limrun_family_t; set_pulses is KST only */
 
     /* For the report only. */
     char     dut[24];
@@ -352,6 +391,7 @@ typedef enum {
                                          PULSE UPPER                      */
     SERVO_LIMRUN_WHY_RANGE,         /**< PULSE LOWER to PULSE UPPER not
                                          inside PULSE MIN to PULSE MAX    */
+    SERVO_LIMRUN_WHY_NOT_HITEC,     /**< no Hitec servo read              */
     SERVO_LIMRUN_WHY_COUNT
 } servo_limrun_why_t;
 
@@ -469,8 +509,9 @@ void servo_limrun_init(servo_limrun_t *r);
  * @param cfg    Configuration of the run.
  * @param now_ms Start time, ms.
  * @return true when the run started; false for a NULL r or cfg, a run already
- *        RUNNING, a centre not strictly between min_us and max_us, or program
- *        or set_pulses without read.
+ *        RUNNING, a centre not strictly between min_us and max_us, program
+ *        or set_pulses without read, a family not in servo_limrun_family_t,
+ *        or set_pulses with a family other than SERVO_LIMRUN_FAM_KST.
  */
 bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
                         uint32_t now_ms);
@@ -595,8 +636,9 @@ void servo_limrun_refused(servo_limrun_t *r, uint32_t now_ms);
  * @brief The programmer's CONNECT ended with no servo answering
  *        (KST_SES_ERR_NO_SERVO).
  *
- * The run's first CONNECT ends it as FAIL with SERVO_LIMRUN_WHY_NOT_KST, as a
- * read that is no KST or Chaservo servo does; a later CONNECT ends it as
+ * The run's first CONNECT ends it as FAIL with SERVO_LIMRUN_WHY_NOT_KST, or
+ * SERVO_LIMRUN_WHY_NOT_HITEC for a Hitec family, as a read that is no servo of
+ * the family does; a later CONNECT ends it as
  * servo_limrun_refused() does, with SERVO_LIMRUN_WHY_PROG.  Nothing at any
  * other step.
  *
@@ -799,6 +841,30 @@ uint16_t servo_limrun_overset(uint16_t v0, int32_t d, int32_t span,
  */
 uint16_t servo_limrun_scaled(uint16_t v, int32_t d, int32_t span,
                              uint16_t lo_raw);
+
+/**
+ * @brief The register names of a family for the report: "LEFT ANGLE",
+ *        "LEFT END (0xB2)", "LEFT END (CELL 0x14)".
+ *
+ * @param family servo_limrun_family_t; any other value names KST's.
+ * @param reg    SERVO_LIMRUN_LEFT or SERVO_LIMRUN_RIGHT, with
+ *        SERVO_LIMRUN_REG_CCW for a servo whose DIRECTION reads CCW: a classic
+ *        servo's LEFT END is cell 0x13 then.
+ * @return the name, never NULL.
+ */
+const char *servo_limrun_reg_name(uint8_t family, uint8_t reg);
+
+/**
+ * @brief The pulses a family's servo is searched and scaled by, for a family
+ *        with no pulse registers: NEUTRAL, the full travel's pulses below and
+ *        above it (SERVO_LIMRUN_HITEC_*_DUS).
+ *
+ * @param family    servo_limrun_family_t.
+ * @param pulse_dus Out: NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1us; left as
+ *        it is for KST, whose servo states its own.
+ * @return true for a Hitec family; false for KST or a value not in the enum.
+ */
+bool servo_limrun_family_pulses(uint8_t family, uint16_t pulse_dus[3]);
 
 #ifdef __cplusplus
 }
