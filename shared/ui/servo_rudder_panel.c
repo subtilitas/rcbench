@@ -39,7 +39,6 @@
 #define RUD_X      (PAD + 10)
 #define RUD_W      500                    /**< Its width, px. */
 #define RUD_MM_X   (RUD_X + 250)          /**< The mm reading's column. */
-#define RUD_COL_W  250                    /**< A reading's column, px. */
 #define RUD_LBL_Y  (CARD_Y + 8)           /**< The readings' labels. */
 #define RUD_NUM_Y  (CARD_Y + 30)          /**< Their numerals, 44px. */
 #define RUD_MAX_Y  (CARD_Y + 82)          /**< The MAX lines. */
@@ -66,15 +65,11 @@ _Static_assert(RUD_NUM_Y + READ_NUM_H <= RUD_MAX_Y - 4,
 
 /* ------------------------------------------------------------ the state */
 
+/* The rest of `rud` is the zeroes reset() cleared the state to: no press,
+ * and buffers that have drawn no card yet repaint it whole. */
 void rudder_init(void)
 {
     servo_rudder_init(&s.rud.geo);
-    s.rud.pressed  = RUD_C_NONE;
-    s.rud.press_id = 0u;
-    for (int b = 0; b < 2; ++b) {
-        s.rud.drawn_card[b] = UINT32_MAX;
-        s.rud.drawn_read[b] = UINT32_MAX;
-    }
 }
 
 /**
@@ -546,20 +541,31 @@ static void draw_buttons(gfx_canvas_t *c)
 }
 
 /**
+ * @brief An FNV-1a hash of @p n words.
+ * @param v the words
+ * @param n their count
+ * @return the hash
+ */
+static uint32_t hash_of(const uint32_t *v, size_t n)
+{
+    uint32_t h = 2166136261u;
+    for (size_t i = 0; i < n; ++i) {
+        h = (h ^ v[i]) * 16777619u;
+    }
+    return h;
+}
+
+/**
  * @brief One number for what the controls show: a change repaints the
- *        card whole.
+ *        card whole.  A change of language or theme is the router's,
+ *        which repaints every screen (ui_router_invalidate()).
  * @return the number
  */
 static uint32_t card_sig(void)
 {
-    uint32_t h = 2166136261u;
-    const uint32_t v[5] = { value_live() ? 1u : 0u, enc_shown() ? 1u : 0u,
-                            (uint32_t)lroundf(len_now()), s.rud.pressed,
-                            (uint32_t)ui_text_language() };
-    for (int i = 0; i < 5; ++i) {
-        h = (h ^ v[i]) * 16777619u;
-    }
-    return h;
+    const uint32_t v[] = { value_live() ? 1u : 0u, enc_shown() ? 1u : 0u,
+                           (uint32_t)lroundf(len_now()), s.rud.pressed };
+    return hash_of(v, sizeof(v) / sizeof(v[0]));
 }
 
 /**
@@ -574,7 +580,7 @@ static uint32_t read_sig(void)
     float m0 = 0.0f, m1 = 0.0f;
     const bool h0 = max_shown(0, &m0), h1 = max_shown(1, &m1);
     const float len = len_now();
-    const uint32_t v[12] = {
+    const uint32_t v[] = {
         have ? 1u : 0u,
         have ? (uint32_t)lroundf(defl * 10.0f) : 0u,
         have ? (uint32_t)lroundf(servo_rudder_mm(defl, len_now()) * 10.0f)
@@ -591,11 +597,7 @@ static uint32_t read_sig(void)
         prog_holds() ? 1u : 0u,
         card_sig(),
     };
-    uint32_t h = 2166136261u;
-    for (int i = 0; i < 12; ++i) {
-        h = (h ^ v[i]) * 16777619u;
-    }
-    return h;
+    return hash_of(v, sizeof(v) / sizeof(v[0]));
 }
 
 void rudder_render(gfx_canvas_t *c, int buf)

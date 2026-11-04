@@ -24,6 +24,7 @@
  * - the_knob_moves_the_horn_on_rudder_while_armed
  * - a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would
  * - a_new_max_in_mm_alone_repaints_the_readout
+ * - the_max_lines_the_state_colours_and_a_press_are_drawn
  * - the_help_page_leaves_the_target_row_in_view
  * - every_string_fits
  *
@@ -687,6 +688,86 @@ TEST_CASE(a_new_max_in_mm_alone_repaints_the_readout)
     CHECK(both_whole());
 }
 
+/**
+ * @brief Pixels of colour @p col in the body's box.
+ * @return the count
+ */
+static int pixels_of(gfx_rect_t r, gfx_color_t col)
+{
+    int n = 0;
+    for (int y = r.y; y < r.y + r.h; ++y) {
+        for (int x = r.x; x < r.x + r.w; ++x) {
+            n += fb[(size_t)y * W + x] == col;
+        }
+    }
+    return n;
+}
+
+/* The MAX lines read MAX, the negative side, then the positive, in ° and
+ * in mm; the source's line takes the warning colour only while it gives
+ * no reading, ARM FIRST always; a press on LENGTH, ZERO and RESET MAX is
+ * drawn until it lifts. */
+TEST_CASE(the_max_lines_the_state_colours_and_a_press_are_drawn)
+{
+    fresh();
+    two_buffers();
+    encoder_on();
+    settings_set(SET_RUDDER_LEN_MM, 100.0f);
+    to_rudder();
+    reading(0);
+    press(RUD_C_ZERO);
+    reading(-280);                              /* -24.6deg */
+    reading(290);                               /* +25.5deg */
+    reading(140);
+    scr->render(&cv, 0);
+    char want[64];
+    const float lo = 280.0f * 360.0f / 4096.0f, hi = 290.0f * 360.0f / 4096.0f;
+    static const int max_y = 138;
+    snprintf(want, sizeof(want), "MAX -%.1f°  +%.1f°", (double)lo, (double)hi);
+    gfx_fill_rect(&cref, DEG_X, max_y, 240, 20, ui_theme_color(UI_C_PANEL));
+    gfx_text(&cref, DEG_X, max_y, want, &gfx_font_10x20,
+             ui_theme_color(UI_C_TEXT), 1);
+    CHECK(box_same(DEG_X, max_y, 240, 20));
+    snprintf(want, sizeof(want), "MAX -%.1fmm  +%.1fmm",
+             (double)servo_rudder_mm(lo, 100.0f),
+             (double)servo_rudder_mm(hi, 100.0f));
+    gfx_fill_rect(&cref, SV_RUD_MM_X, max_y, 240, 20,
+                  ui_theme_color(UI_C_PANEL));
+    gfx_text(&cref, SV_RUD_MM_X, max_y, want, &gfx_font_10x20,
+             ui_theme_color(UI_C_TEXT), 1);
+    CHECK(box_same(SV_RUD_MM_X, max_y, 240, 20));
+
+    /* SAFE, zeroed, live: ANGLE and PULSE dim, ARM FIRST in the warning
+     * colour on the third line. */
+    const gfx_color_t warn = ui_theme_color(UI_C_WARN);
+    const gfx_rect_t st = rudder_state_rect();
+    const gfx_rect_t l0 = { st.x, (int16_t)(st.y + 2), st.w, 20 };
+    const gfx_rect_t l2 = { st.x, (int16_t)(st.y + 2 + 48), st.w, 20 };
+    CHECK_EQ(pixels_of(l0, warn), 0);
+    CHECK(pixels_of(l2, warn) > 0);
+    servo_screen_set_armed(true);
+    scr->render(&cv, 0);
+    CHECK_EQ(pixels_of(st, warn), 0);
+    settings_set(SET_ENC_EN, 0.0f);
+    scr->render(&cv, 0);
+    CHECK(pixels_of(l0, warn) > 0);
+    settings_set(SET_ENC_EN, 1.0f);
+    reading(140);
+
+    static const rudder_ctl_t k[3] = { RUD_C_LENGTH, RUD_C_ZERO, RUD_C_RESET };
+    for (int i = 0; i < 3; ++i) {
+        const gfx_rect_t r = rudder_rect(k[i]);
+        scr->render(&cv, 0);
+        memcpy(ref, fb, FB_BYTES);
+        ev(r.x + r.w - 6, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
+        scr->render(&cv, 0);
+        CHECK(!box_same(r.x, r.y, r.w, r.h));
+        ev(r.x + r.w - 6, r.y + 300, TOUCH_EVENT_UP, 1);
+        scr->render(&cv, 0);
+        CHECK(box_same(r.x, r.y, r.w, r.h));
+    }
+}
+
 /* ------------------------------------------------------------ the guide */
 
 /* One page on RUDDER, SAFE and ARMED: the output card's, the dock on the
@@ -709,10 +790,12 @@ TEST_CASE(the_help_page_leaves_the_target_row_in_view)
     CHECK_EQ(p.must_show.y, TARGET_ROW_Y);
     CHECK_EQ(p.must_show.w, SV_RC_W);
     CHECK_EQ(p.must_show.h, 48);
-    gfx_rect_t m = p.must_show;
-    m.y = (int16_t)(m.y + UI_BAND_H);
+    const gfx_rect_t m = { p.must_show.x,
+                           (int16_t)(p.must_show.y + UI_BAND_H),
+                           p.must_show.w, p.must_show.h };
     const gfx_rect_t dock = ui_help_dock_rect(p.side);
     CHECK(m.x >= dock.x + dock.w || m.x + m.w <= dock.x);
+    CHECK(m.y >= dock.y && m.y + m.h <= dock.y + dock.h);
     /* DISARM out from under the dock. */
     CHECK(p.item[1].rect.x >= dock.x + dock.w);
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -819,6 +902,7 @@ int main(void)
     RUN(the_knob_moves_the_horn_on_rudder_while_armed);
     RUN(a_reading_repaints_the_readout_alone_and_as_a_whole_frame_would);
     RUN(a_new_max_in_mm_alone_repaints_the_readout);
+    RUN(the_max_lines_the_state_colours_and_a_press_are_drawn);
     RUN(the_help_page_leaves_the_target_row_in_view);
     RUN(every_string_fits);
     return test_summary("servo_rudder_panel");
