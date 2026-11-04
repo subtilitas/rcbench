@@ -35,14 +35,17 @@ the project's notice.
 ## Wiring
 
 The pins are `PANEL_IMU_*` in
-`firmware/panel/components/board/include/board_pins.h`. KEY is on IO29,
-beside the heartbeat's IO28; the UART pins and the 5V are placeholders the
-owner confirms.
+`firmware/panel/components/board/include/board_pins.h`. The signals go to
+header P3, KEY on IO29 beside the heartbeat's IO28. The 5V and GND come from
+H9, the RS485 header, which the bench does not use otherwise: its pin 1 is
+Core_5V, the same net as pin 1 of the CAN header H11, so the CAN cable stays
+as it is. IO4 and IO5 are the ESP32-P4's pad-JTAG pins (MTMS, MTDO); with
+debugging over USB-JTAG they are plain GPIOs.
 
 | HC-05 (ZS-040 breakout) | Panel | Define |
 | --- | --- | --- |
-| VCC (3.6 to 6V) | 5V of header H11, pin 1 (owner to confirm) | |
-| GND | GND of header P3 | |
+| VCC (3.6 to 6V) | Core_5V of header H9 (RS485), pin 1 | |
+| GND | GND of header H9 (RS485), pin 2 | |
 | TXD (3.3V) | IO5 of header P3, UART1 RX | `PANEL_IMU_PIN_RX` |
 | RXD | IO4 of header P3, UART1 TX, 3.3V | `PANEL_IMU_PIN_TX` |
 | EN (KEY) | IO29 of header P3, high for AT commands | `PANEL_IMU_PIN_KEY` |

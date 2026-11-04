@@ -36,14 +36,17 @@ enthält den Hinweis des Projekts.
 ## Verdrahtung
 
 Die Pins sind `PANEL_IMU_*` in
-`firmware/panel/components/board/include/board_pins.h`. KEY liegt auf IO29,
-neben IO28 des Heartbeats; die UART-Pins und die 5V sind Platzhalter, die
-der Eigentümer bestätigt.
+`firmware/panel/components/board/include/board_pins.h`. Die Signale gehen auf
+den Header P3, KEY auf IO29 neben IO28 des Heartbeats. 5V und GND kommen von
+H9, dem RS485-Header, den der Prüfstand sonst nicht nutzt: sein Pin 1 ist
+Core_5V, dasselbe Netz wie Pin 1 des CAN-Headers H11, das CAN-Kabel bleibt
+also, wie es ist. IO4 und IO5 sind die Pad-JTAG-Pins des ESP32-P4 (MTMS,
+MTDO); mit Debugging über USB-JTAG sind sie gewöhnliche GPIOs.
 
 | HC-05 (Breakout ZS-040) | Panel | Define |
 | --- | --- | --- |
-| VCC (3,6 bis 6V) | 5V des Headers H11, Pin 1 (vom Eigentümer zu bestätigen) | |
-| GND | GND des Headers P3 | |
+| VCC (3,6 bis 6V) | Core_5V des Headers H9 (RS485), Pin 1 | |
+| GND | GND des Headers H9 (RS485), Pin 2 | |
 | TXD (3,3V) | IO5 des Headers P3, UART1 RX | `PANEL_IMU_PIN_RX` |
 | RXD | IO4 des Headers P3, UART1 TX, 3,3V | `PANEL_IMU_PIN_TX` |
 | EN (KEY) | IO29 des Headers P3, high für AT-Befehle | `PANEL_IMU_PIN_KEY` |
