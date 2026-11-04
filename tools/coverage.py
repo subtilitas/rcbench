@@ -269,6 +269,8 @@ TRACKED = [
     "protocols/escwire/ew_file.c",
     "protocols/escwire/ew_file_read.c",
     "protocols/escwire/ew_file_load.c",
+    "protocols/hc05/hc05.c",
+    "protocols/hc05/hc05_line.c",
     "protocols/i2c_txq/i2c_txq.c",
     "protocols/witmotion/witmotion.c",
     "shared/logfile/servo_store.c",
