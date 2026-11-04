@@ -178,6 +178,12 @@ TEST_CASE(a_refused_scan_offers_any_and_any_keeps_the_any_address)
     CHECK_EQ(v.err, HC05_ERR_INQ_REFUSED);
     CHECK_EQ(v.err_code, 0x1Fu);
     CHECK_EQ(v.found_n, 0u);
+    /* The next operation's start clears the last error until it ends. */
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    CHECK_EQ(r.c.err, HC05_ERR_NONE);
+    CHECK_EQ(r.c.err_code, 0u);
+    (void)rig_settle(&r, 40000u);
+    CHECK_EQ(r.c.err, HC05_ERR_INQ_REFUSED);
     const imu_cmd_t any = { IMU_CMD_ANY, 0u };
     CHECK(imu_ctl_command(&r.c, &any, r.t));
     (void)rig_settle(&r, 40000u);
@@ -191,7 +197,6 @@ TEST_CASE(a_refused_scan_offers_any_and_any_keeps_the_any_address)
     /* A scan that starts again clears the offer until it ends. */
     CHECK(imu_ctl_command(&r.c, &scan, r.t));
     CHECK(!r.c.inq_refused);
-    CHECK_EQ(r.c.err, HC05_ERR_NONE);           /* the last error cleared */
     (void)rig_settle(&r, 40000u);
     CHECK(r.c.inq_refused);
     /* IMU OFF clears it too. */
