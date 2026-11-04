@@ -380,6 +380,24 @@ TEST_CASE(zero_posts_zero_and_the_lines_show_the_zeroed_angles)
         ++n;
     }
     CHECK_EQ(n, 4);
+    /* A ZERO press while the calibration runs: CALIBRATE is off, the press
+     * on ZERO stays and acts on the lift. */
+    v = view_connected();
+    v.cal = IMU_CAL_RUNNING;
+    v.cal_left_ms = 2000u;
+    imu_screen_set(&v);
+    const gfx_rect_t z = imu_screen_row_rect(IMS_ROW_ZERO);
+    finger(FEED_LONE, z.x + z.w / 2, UI_BAND_H + z.y + z.h / 2);
+    ui_router_tick(0.1f);
+    lift(FEED_LONE);
+    CHECK_EQ(took().kind, IMU_CMD_ZERO);
+    /* The operation's line is in the warning colour. */
+    v.err = HC05_ERR_NONE_FOUND;
+    imu_screen_set(&v);
+    char buf[96];
+    gfx_color_t ink = 0;
+    CHECK(ims_line(IMS_L_ERR, buf, sizeof buf, &ink) != NULL);
+    CHECK_EQ(ink, UI_WARN);
 }
 
 /* The card's state line: each of the 8 link states, in both languages. */

@@ -246,7 +246,15 @@ TEST_CASE(calibrate_sends_calsw_1_then_after_3s_calsw_0_and_save)
     CHECK(rig_sent_unlock(&r, at));
     CHECK(rig_sent_is(&r, at + 1u, WIT_REG_CALSW, 1u, 0u));
     CHECK(r.sent_at[at + 1u] - r.sent_at[at] >= IMU_CMD_GAP_MS);
-    rig_stream(&r, 1700u, 20u, 0.0f, 0.0f, 0.0f);
+    /* 2999ms held: still running; at 3000ms it ends. */
+    rig_stream(&r, 1500u, 20u, 0.0f, 0.0f, 0.0f);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.cal, IMU_CAL_RUNNING);
+    CHECK_EQ(v.cal_left_ms, 1u);
+    rig_stream(&r, 1u, 20u, 0.0f, 0.0f, 0.0f);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.cal, IMU_CAL_DONE);
+    rig_stream(&r, 200u, 20u, 0.0f, 0.0f, 0.0f);
     imu_ctl_view(&r.c, &v);
     CHECK_EQ(v.cal, IMU_CAL_DONE);
     CHECK_EQ(v.cal_left_ms, 0u);
