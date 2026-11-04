@@ -7,6 +7,9 @@
  * fractions of a pixel, so a flap turning by a tenth of a degree moves its
  * trailing edge by about a tenth of a pixel rather than a whole one.  The
  * tapers are runs of short capsules whose widths step down along the run.
+ * A line takes one sine and one cosine, and a new angle alone repaints
+ * the boxes of the flap before and after (rudder_flap_bounds()), so a
+ * frame of a moving flap fills two small boxes, not the area.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,6 +31,20 @@
 #define LINE_W 1.5f
 /** @brief The capsules a taper is drawn in. */
 #define TAPER_STEPS 8
+
+/**
+ * @brief The unit vector of a flap at @p deg, in the screen's rows
+ *        counting down: one sine and one cosine for a whole line.
+ * @param deg the angle, degrees, held by rudder_flap_clamp()
+ * @param ux where its column step goes
+ * @param uy where its row step goes
+ */
+static void unit_of(float deg, float *ux, float *uy)
+{
+    const float a = rudder_flap_clamp(deg) * DEG2RAD;
+    *ux = cosf(a);
+    *uy = -sinf(a);
+}
 
 rudder_flap_t rudder_flap_layout(gfx_rect_t area)
 {
@@ -62,9 +79,10 @@ float rudder_flap_clamp(float deg)
 void rudder_flap_at(const rudder_flap_t *f, float deg, float r, float *x,
                     float *y)
 {
-    const float a = rudder_flap_clamp(deg) * DEG2RAD;
-    *x = f->hinge_x + r * cosf(a);
-    *y = f->hinge_y - r * sinf(a);
+    float ux, uy;
+    unit_of(deg, &ux, &uy);
+    *x = f->hinge_x + r * ux;
+    *y = f->hinge_y + r * uy;
 }
 
 gfx_rect_t rudder_flap_bounds(const rudder_flap_t *f, float deg)
@@ -116,13 +134,14 @@ static void taper(gfx_canvas_t *c, float ax, float ay, float bx, float by,
 static void dashed(gfx_canvas_t *c, const rudder_flap_t *f, float deg,
                    gfx_color_t col)
 {
+    float ux, uy;
+    unit_of(deg, &ux, &uy);
+    const float hx = f->hinge_x, hy = f->hinge_y;
     for (float r = RUD_FLAP_HINGE_R + 3.0f; r < f->flap_len;
          r += DASH_ON + DASH_OFF) {
         const float r1 = fminf(r + DASH_ON, f->flap_len);
-        float x0, y0, x1, y1;
-        rudder_flap_at(f, deg, r, &x0, &y0);
-        rudder_flap_at(f, deg, r1, &x1, &y1);
-        gfx_capsule_aaf(c, x0, y0, x1, y1, LINE_W, col);
+        gfx_capsule_aaf(c, hx + r * ux, hy + r * uy, hx + r1 * ux,
+                        hy + r1 * uy, LINE_W, col);
     }
 }
 
@@ -135,11 +154,14 @@ static void dashed(gfx_canvas_t *c, const rudder_flap_t *f, float deg,
 static void ticks(gfx_canvas_t *c, const rudder_flap_t *f)
 {
     const gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
+    const float r0 = f->flap_len + RUD_FLAP_TICK_IN;
+    const float r1 = f->flap_len + RUD_FLAP_TICK_OUT;
     for (int d = -90; d <= 90; d += 30) {
-        float x0, y0, x1, y1;
-        rudder_flap_at(f, (float)d, f->flap_len + RUD_FLAP_TICK_IN, &x0, &y0);
-        rudder_flap_at(f, (float)d, f->flap_len + RUD_FLAP_TICK_OUT, &x1, &y1);
-        gfx_capsule_aaf(c, x0, y0, x1, y1, LINE_W, col);
+        float ux, uy;
+        unit_of((float)d, &ux, &uy);
+        gfx_capsule_aaf(c, f->hinge_x + r0 * ux, f->hinge_y + r0 * uy,
+                        f->hinge_x + r1 * ux, f->hinge_y + r1 * uy, LINE_W,
+                        col);
     }
 }
 
