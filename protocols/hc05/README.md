@@ -253,7 +253,7 @@ the owners. The full notice is in the repository's
 
 ## Tests
 
-`test/host/test_hc05.c` runs the operations against the scripted module,
+`test/host/test_hc05.c` and `test_hc05_bind.c` run the operations against the scripted module (`hc05_sim.h`, with the shared steps in `hc05_rig.h`),
 `test/host/test_hc05_lines.c` the lines, the addresses and the `+INQ:`
 fields. The table in `STATUS.md` has the line coverage per file.
 
