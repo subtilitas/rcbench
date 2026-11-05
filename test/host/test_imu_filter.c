@@ -81,13 +81,13 @@ TEST_CASE(the_step_response_moves_one_kth_of_the_rest_each_frame)
         feed(&m, 0.0f, t);
         CHECK_EQ(m.r.angle[0], 0.0f);
         const float step = word_of(10.0f);
-        double want = 0.0;
+        float want = 0.0f;
         for (int32_t n = 1; n <= 3 * k; ++n) {
             t += 100u;
             feed(&m, 10.0f, t);
-            want += ((double)step - want) / (double)k;
+            want += (step - want) / (float)k;
             for (int a = 0; a < 3; ++a) {
-                CHECK_NEAR(m.r.angle[a], (float)want, 1e-4f);
+                CHECK_NEAR(m.r.angle[a], want, 1e-4f);
             }
             if (n == k) {
                 CHECK(m.r.angle[0] >= 0.63f * step);
@@ -173,7 +173,7 @@ TEST_CASE(a_connect_a_reconnect_and_a_bind_seed_the_filter)
     wit_angle_frame(f, 0.0f, 0.0f, 0.0f);
     imu_sensor_feed(&s, f, sizeof f, t += 1000u);
     wit_angle_frame(f, 10.0f, 0.0f, 0.0f);
-    imu_sensor_feed(&s, f, sizeof f, t += 100u);
+    imu_sensor_feed(&s, f, sizeof f, t + 100u);
     CHECK_NEAR(s.m.r.angle[0], word_of(10.0f) / 10.0f, 1e-3f);
 }
 
