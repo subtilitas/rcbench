@@ -446,9 +446,9 @@ verspäteter Durchlauf diesen Frame, ohne ihn durch einen vollen Puffer zu verli
 Dasselbe Schreiben als 8 Frames direkt hintereinander verliert 6 davon an
 einen Durchlauf von 20ms (`test_bind_link`).
 
-Die Kosten einer Änderung, und woran sie gemessen werden:
+Die Kosten einer Änderung bei einem Panel mit 4.9 oder älter und bei dem Panel dieses Builds mit einem IOmcu mit 4.10:
 
-| | 0.14.0 | Dieser Build, IOmcu mit 4.10 |
+| | Panel mit 4.9 oder älter | Dieser Build, IOmcu mit 4.10 |
 | --- | ---: | ---: |
 | Austausche | 5 | 20 |
 | Anfrage-Frames | 19 | 20 |
@@ -1084,7 +1084,7 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x32 | `KST` | lesen, schreiben | die Servo-Programmier-Page: das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Die Schreibseite umfasst 29 Register: das Kommando in 0 bis 3, gesendet als ein Frame; das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 24; die Auswahl der Image-Ansicht in 25; Versorgungsspannung und -strom eines ENTER in 26 und 27; und die Wartezeit LEAVE_MS in 28. [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) nennt die Regeln. Nichts wird gehalten |
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 28 Register, vor 4.26 24. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte, dann die FUNC jedes Ports in 24 bis 27 (seit 4.26). [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew, Endpunkte und FUNC werden im Flash des IOmcu gehalten |
 | 0x34 | `HITEC` | lesen, schreiben | rohe Transaktionen der Hitec-Servoleitung auf einem Programmierport (seit 4.23). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Zahl der Transaktionen, Ergebnis und Abweisung, Anzahl und Flags des Mitschnitts, das Ergebnis des Dekoders, den dekodierten Wert, `VIEW`, die empfangenen Bytes in 8 Registern und in 16 Registern die Startzeiten der Bytes oder den Lauf. Ein Schreiben nimmt 24: das Kommando in den Registern 0 bis 3, ein Frame, die bereitgestellte Transaktion, Dekoder und Sollwerte eines POWER in 4 bis 21, `VIEW` in 22 und den Empfangsmodus einer Leitung der D-Serie in 23 (seit 4.24). [Der Programmierport für Servos von Hitec](LinkHitec-de.md) nennt die Regeln. Nichts wird gehalten |
-| 0x35 | SENSE_MAP | lesen, schreiben | bis zu 4 INA3221 an 0x40 bis 0x43 auf dem Bus von SENSE (seit 4.25). Register 0 die bestückten Bauteile, Bit a für 0x40 + a; 1 `FAST`, der Kanal, der jede 1ms gelesen wird (0 bis 11, 0xFF keiner); 2 bis 13 der Shunt jedes Kanals in 0,1mΩ (0 aus, 50 bis 10000); 14 bis 25 was jeder Kanal misst (0 nichts, 0x01 bis 0x08 ein Ausgangskanal, 0x10 bis 0x13 ein Programmierport, 0x20 die Versorgung); nur lesbar: 26 bis 29 die Die-ID jedes Bauteils, 30 Flags, 31 reserviert. Die Register 0 bis 25 hält der IOmcu im Flash. Solange die Map in Kraft ist, spiegeln Bit 1 von ENABLE und die Register 8 bis 10 von SENSE sie. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md) nennt die Regeln |
+| 0x35 | SENSE_MAP | lesen, schreiben | bis zu 4 INA3221 an 0x40 bis 0x43 auf dem Bus von SENSE (seit 4.25). Register 0 die bestückten Bauteile, Bit a für 0x40 + a; 1 `FAST`, der Kanal, der jede 1ms gelesen wird (0 bis 11, 0xFF keiner); 2 bis 13 der Shunt jedes Kanals in 0,1mΩ (0 aus, 50 bis 10000); 14 bis 25 was jeder Kanal misst (0 nichts, 0x01 bis 0x08 ein Ausgangskanal, 0x10 bis 0x13 ein Programmierport, 0x20 die Versorgung, 0x30 bis 0x32 eine eigene Schiene der Platine seit 4.33); nur lesbar: 26 bis 29 die Die-ID jedes Bauteils, 30 Flags, 31 reserviert. Die Register 0 bis 25 hält der IOmcu im Flash. Solange die Map in Kraft ist, spiegeln Bit 1 von ENABLE und die Register 8 bis 10 von SENSE sie. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md) nennt die Regeln |
 | 0x36 | SENSE_LIMIT | lesen, schreiben | eine Stromgrenze je Kanal von SENSE_MAP (seit 4.27); der IOmcu markiert eine überschrittene Grenze, das Panel behandelt sie als Fehler. Register 0 bis 11 die Grenze jedes Kanals in mA (0 keine, 1 bis 32767), im Flash des IOmcu gehalten; nur lesbar: 12 `OVER`, Bit c ein Fenster von Kanal c über seiner Grenze seit dem letzten Lesen des Registers, das es löscht; 13 `OVER_COUNT`, Kanal-Fenster über der Grenze, modulo 65536; 14 und 15 reserviert. 16 Register. [Die INA3221-Map und ihre Fenster](LinkSensors-de.md#sense_limit) nennt die Regeln |
 | 0x37 | SENSE_WIN_A | lesen | das letzte 50-ms-Fenster der Kanäle 0 bis 5 (seit 4.25): die Fensternummer, Flags, und 5 Register je Kanal: mittlerer und höchster Strom (mA, mit Vorzeichen), mittlere und niedrigste Busspannung (mV), Flags. Jedes Schreiben wird mit READ_ONLY abgewiesen. Nichts wird gehalten |
 | 0x38 | SENSE_WIN_B | lesen | das der Kanäle 6 bis 11, wie SENSE_WIN_A (seit 4.25) |
@@ -1605,8 +1605,8 @@ Der Flash des IOmcu (Modul mit 4MB, RP2350A):
 | 0x3FC000 bis 0x3FDFFF | 8KiB | ungenutzt | Ausgangsspeicher, Datenpartition `store` (Partition 2) |
 | 0x3FE000 bis 0x3FFFFF | 8KiB | Ausgangsspeicher | ungenutzt: einmal für alte Bindungen gelesen, nie geschrieben |
 
-Ein Slot hat 2.084.864 Byte, 509 Sektoren zu 4KiB. Das Image von 0.18 hat
-etwa 192KB, 9% eines Slots. Der letzte Sektor bleibt ungenutzt, weil die
+Ein Slot hat 2.084.864 Byte, 509 Sektoren zu 4KiB. Das Standard-Image hat
+278.508 Byte, 13% eines Slots. Der letzte Sektor bleibt ungenutzt, weil die
 Umgehung für RP2350-E10 beim Laden einer UF2 (USB Flashing Format) auf einen
 Chip mit Stepping A2 ihn löschen kann. `firmware/iomcu/partitions.json` ist
 die Tabelle; der Build gibt ihre Offsets an den Code weiter und schlägt fehl,
