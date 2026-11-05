@@ -22,7 +22,7 @@ Schließe bei `BY HAND` die ESC-Versorgung an, sobald du dazu aufgefordert wirst
 
 ## Einstellungen
 
-Tippe auf eine Zahl, um das Tastenfeld zu öffnen, oder auf eine Auswahl, um ihre Liste zu öffnen. Jeder Editor zeigt eine Hilfzeile. Änderungen bleiben auf dem Panel, bis du `n WERTE SCHREIBEN` verwendest.
+Tippe auf eine Zahl, um das Tastenfeld zu öffnen, oder auf eine Auswahl, um ihre Liste zu öffnen. Jeder Editor zeigt eine Hilfezeile. Änderungen bleiben auf dem Panel, bis du `n WERTE SCHREIBEN` verwendest.
 
 `NUR LESEN` erklärt, warum Schreiben nicht verfügbar ist. Die Zeilen sind abgeblendet.
 

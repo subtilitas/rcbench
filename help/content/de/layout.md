@@ -27,7 +27,7 @@ Rechts in jeder J1-Zeile steht `PROGRAMMIERUNG`: Diese Ports dienen der KST- und
 
 J3 HEARTBEAT liegt auf GPIO 3, J5 SENSOR I2C auf GPIO 16 und 17, J4 I2C 2 auf GPIO 18 und 19 (`NICHT ANGESTEUERT`), J6 PD MINI auf GPIO 7 und 6 und J9 TAP auf GPIO 22. PROG 5V EN liegt auf GPIO 21 und ist auf keinen Stecker geführt.
 
-## Boards Rev 1
+## Platinen Rev 1
 
 Unter den Spalten steht `PLATINE REV 1: DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1) beschreibt alle drei Änderungen: PROGP03 von GPIO 26 auf GPIO 15 verlegen; die 5V der Programmierports durch einen Pull-down ausgeschaltet halten, solange GPIO 21 nicht angesteuert ist; und eine Z-Diode mit 5,6V und 1W vom Ausgang von M7 nach GND ergänzen, um Ausfälle durch ein bremsendes Servo zu verhindern. Die Firmware setzt die dritte Änderung nicht voraus. Bei Rev 2 sind die ersten zwei im Platinenlayout umgesetzt; die dritte bleibt eine offene Designfrage.
 

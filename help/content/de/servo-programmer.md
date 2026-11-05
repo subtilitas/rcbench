@@ -8,7 +8,7 @@ order: 22
 
 Die Servoprogrammierung liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung und zeigt sie als Einstellungen. Beide Marken verwenden dasselbe Protokoll und denselben Registersatz. Änderungen werden erst auf Anforderung zurückgeschrieben.
 
-Öffne PROGRAMMIEREN auf [SERVO](servo.md) und wähle `KST- und Chaservo-Servos`. Die Sitzung verdeckt eine Ebene unter der Liste die linke Spalte und die Aufgabenreiter. SCHLIESSEN oder das Home-Feld führt zur Liste zurück. Das Öffnen beendet einen laufenden automatischen Test.
+Öffne PROGRAMMIEREN auf [SERVO](servo.md) und wähle `KST- und Chaservo-Servos`. Die Sitzung liegt eine Ebene unter der Liste und verdeckt die linke Spalte und die Aufgabenreiter. SCHLIESSEN oder das Home-Feld führt zur Liste zurück. Das Öffnen beendet einen laufenden automatischen Test.
 
 ![Die Liste von PROGRAMMIEREN](view:servo-program)
 
