@@ -76,6 +76,11 @@ radio advertises the name `HC-06`.
 A tap on a row binds that sensor at once. SETUP keeps its address with the
 address type, `00:0C:BF:08:19:29 P` (public) or `... R` (random), as
 `imu_ble`, and its name as `imu_name`, 23 characters, and asks for a save.
+The save goes to nvs at the next frame with the bench SAFE and no supply
+on or starting.
+IMU OFF keeps the bind; at IMU ON after a restart the panel connects to it
+without a scan. Only a new bind replaces it. Flashing the merged image at
+0x0 erases nvs and with it the bind ([Building](Building.md)).
 Binding another sensor replaces the one before. A scan while a sensor is
 connected keeps the link; a scan while a connect is pending cancels it,
 and the connects go on after the scan.

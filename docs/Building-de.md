@@ -372,7 +372,9 @@ idf.py -C firmware/panel -B firmware/panel/build-noinject -D RCBENCH_TOUCH_INJEC
 idf.py -C firmware/panel -B firmware/panel/build-noperf -D RCBENCH_PERF_LOG=OFF build
 
 # panel, as one image at offset 0 (the ESP32-P4's bootloader sits at
-# 0x2000 inside it); it erases the settings in nvs
+# 0x2000 inside it); it erases the settings in nvs: the image fills
+# 0xD000 to 0x12FFF (nvs, 24,576 bytes) with 0xFF. `idf.py flash` writes
+# 0x2000, 0xC000, 0x14000 and 0x20000 only and keeps nvs.
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin

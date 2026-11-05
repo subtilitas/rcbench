@@ -82,7 +82,12 @@ meldet den Namen `HC-06`.
 Ein Tippen auf eine Zeile bindet diesen Sensor sofort. SETUP behält seine
 Adresse mit dem Adresstyp, `00:0C:BF:08:19:29 P` (öffentlich) oder `... R`
 (zufällig), als `imu_ble` und seinen Namen als `imu_name`, 23 Zeichen, und
-fordert das Speichern an. Ein neu gebundener Sensor ersetzt den vorigen.
+fordert das Speichern an. Gespeichert wird in nvs im nächsten Frame mit
+SAFE und ohne Versorgung an oder im Anlauf. IMU AUS behält die Bindung;
+bei IMU EIN nach einem Neustart verbindet sich das Panel ohne Suche mit
+ihr. Nur eine neue Bindung ersetzt sie. Das Flashen des zusammengeführten Images ab 0x0
+löscht nvs und damit die Bindung ([Bauen](Building-de.md)).
+Ein neu gebundener Sensor ersetzt den vorigen.
 Eine Suche bei verbundenem Sensor behält die Verbindung; eine Suche während
 eines laufenden Verbindungsaufbaus bricht diesen ab, und die Versuche gehen
 nach der Suche weiter.

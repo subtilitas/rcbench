@@ -457,6 +457,41 @@ TEST_CASE(imu_off_ends_the_link_and_forgets_the_list)
     CHECK(imu_ble_up(&r.c.ble));
 }
 
+/* The panel's start after a restart: SETUP holds the address and IMU OFF,
+ * Bluetooth is not started.  IMU OFF keeps the address in the view; IMU
+ * ON starts the radio, and its sync connects to the address at once,
+ * without a scan. */
+TEST_CASE(a_stored_address_with_imu_off_connects_without_a_scan_at_imu_on)
+{
+    rig_t r;
+    memset(&r, 0, sizeof r);
+    bsim_init(&r.sim);
+    bsim_adv(&r.sim, 200u, &k_rig_addr, -50, k_rig_adv, sizeof k_rig_adv);
+    imu_ctl_init(&r.c);
+    r.t = 1000u;
+    rig_cfg(&r, false, RIG_ADDR, 2, true);
+    rig_run(&r, 100u);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.link, IMU_LINK_OFF);
+    CHECK_STR_EQ(v.bound_addr, RIG_ADDR);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), 0);
+    rig_cfg(&r, true, RIG_ADDR, 2, true);
+    imu_ctl_radio(&r.c, IMU_RADIO_STARTING, NULL, r.t);
+    rig_run(&r, 100u);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_STARTING);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), 0);
+    imu_ctl_radio(&r.c, IMU_RADIO_READY, "2.13.0", r.t);
+    rig_tick(&r);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_CONNECT), 1);
+    CHECK_EQ(bsim_count(&r.sim, BLEU_ACT_SCAN), 0);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_CONNECTING);
+    (void)rig_settle(&r, 2000u);
+    CHECK(imu_ble_up(&r.c.ble));
+    imu_ctl_view(&r.c, &v);
+    CHECK_STR_EQ(v.bound_addr, RIG_ADDR);
+}
+
 /* What cannot run now is refused: BIND without a scan, CALIBRATE and ZERO
  * without a reading, an unknown kind, SCAN before Bluetooth is synced.
  * ZERO and UNZERO with one. */
@@ -672,6 +707,7 @@ int main(void)
     RUN(a_full_outbox_drops_the_command_past_its_room);
     RUN(a_rate_change_goes_to_the_sensor_once_it_is_connected);
     RUN(imu_off_ends_the_link_and_forgets_the_list);
+    RUN(a_stored_address_with_imu_off_connects_without_a_scan_at_imu_on);
     RUN(commands_are_refused_when_they_cannot_run);
     RUN(no_bind_while_a_scan_runs_and_a_rebind_keeps_the_link);
     RUN(a_rate_change_in_a_calibration_waits_for_its_end);
