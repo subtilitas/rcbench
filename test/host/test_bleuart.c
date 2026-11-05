@@ -212,6 +212,10 @@ TEST_CASE(notifications_off_the_link_are_not_stream_bytes)
     CHECK(s2.notifies_sent > 0u);
     CHECK_EQ(b2.notifies, 0);
     CHECK_EQ(s2.nrx, 0);
+    /* Handle 0 is no 1E4D while 1E4D is not known. */
+    e = notify(&b2, k_cap_20, 20);
+    CHECK_EQ(e.h1, 0);
+    CHECK(!bleu_event(&b2, &e, 1000));
     bleu_enable(&b2, false, 1000);
     e = notify(&b, k_cap_20, 20);
     CHECK(!bleu_event(&b2, &e, 1000));

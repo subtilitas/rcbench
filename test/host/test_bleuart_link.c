@@ -272,6 +272,44 @@ TEST_CASE(a_disconnect_in_every_state_retries_after_the_gap)
     }
 }
 
+TEST_CASE(a_reconnect_takes_none_of_the_last_links_handles)
+{
+    /* First link on the standard table; the sensor then loses 8841. */
+    bsim_t s;
+    bleu_t b;
+    bsim_init(&s);
+    uint32_t t = bsim_up(&s, &b, &k_cap_addr, 0);
+    CHECK_EQ(b.rx_val, H_RX_VAL);
+    bsim_drop_chr(&s, bleu_uuid_rx);
+    bsim_drop(&s, t + 1u, 0x08);
+    bsim_run(&s, &b, t + 1u, t + 2000u);
+    CHECK_EQ(b.st, BLEU_ST_NOT_WIT);
+    CHECK_EQ(b.rx_val, 0);
+
+    /* Dropped between the subscribe's answer and the 6DAA read; the next
+     * link has no 6DAA to read and takes commands. */
+    bsim_init(&s);
+    s.silent = BSIM_Q_SUB;
+    t = run_to_state(&s, &b, BLEU_ST_SUBSCRIBE);
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_WRITE_DONE;
+    e.conn = b.conn;
+    e.token = b.tok_link;
+    (void)bleu_event(&b, &e, t + 1u);
+    CHECK(bleu_link_up(&b));
+    CHECK(!bleu_can_send(&b));
+    e.kind = BLEU_EV_DISCONNECT;
+    e.status = 0x08;
+    (void)bleu_event(&b, &e, t + 1u);
+    s.connected = false;
+    s.silent = 0;
+    bsim_drop_chr(&s, bleu_uuid_param);
+    (void)bsim_until(&s, &b, t + 1u, 3000, bsim_can_send);
+    CHECK(bleu_can_send(&b));
+    CHECK_EQ(bsim_count(&s, BLEU_ACT_READ), 0);
+}
+
 TEST_CASE(a_disconnect_while_connecting_or_on_another_link_is_ignored)
 {
     bsim_t s;
@@ -771,6 +809,7 @@ int main(void)
     RUN(a_device_without_the_service_8841_notify_or_cccd_is_refused);
     RUN(a_failed_discovery_step_retries_after_the_gap);
     RUN(a_disconnect_in_every_state_retries_after_the_gap);
+    RUN(a_reconnect_takes_none_of_the_last_links_handles);
     RUN(a_disconnect_while_connecting_or_on_another_link_is_ignored);
     RUN(a_drop_during_a_step_ends_the_step_and_retries);
     RUN(a_scan_during_a_pending_connect_cancels_it_and_the_connect_resumes);
