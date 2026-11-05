@@ -1,6 +1,7 @@
 /*
  * A model of the Hitec line's PIO (programmable input/output) state machine
- * and the helpers that drive it, for test_hitec_pio.c.
+ * and the helpers that drive it, for test_hitec_pio.c and
+ * test_hitec_pio_answer.c.
  *
  * assemble() reads protocols/hitec/rp2350/hitec_line.pio with an assembler
  * for the instructions it uses; run_model() steps the program one state
@@ -224,6 +225,8 @@ typedef struct {
     unsigned pushes;
     uint64_t due_end;
     unsigned abort_pc;        /* where the machine was at the restart */
+    uint64_t resume;          /* the first cycle the receiver waits again
+                               * after an answer; 0 for none */
 } model_t;
 
 static uint64_t t_of(const model_t *m, uint64_t cyc)
@@ -308,6 +311,7 @@ static void run_model(model_t *m, uint64_t max_cycles)
     m->answers = 0;
     m->pushes = 0;
     m->due_end = 0;
+    m->resume = 0;
     m->pad[m->n_pad].cyc = 0;
     m->pad[m->n_pad].dir = false;
     m->pad[m->n_pad].latch = false;
@@ -352,6 +356,10 @@ static void run_model(model_t *m, uint64_t max_cycles)
         if (m->due_run != NULL && m->pushes > 0u && m->due_end == 0u
             && !hitec_pio_answer_due(m->due_run, m->pushes, pc)) {
             m->due_end = cyc;
+        }
+        if (delay == 0u && m->answers > 0u && m->resume == 0u
+            && pc == REL_PC + 1u) {
+            m->resume = cyc;
         }
         if (delay > 0u) {
             --delay;
@@ -652,8 +660,9 @@ static void d_answer(double first_ns, const uint8_t *a, unsigned n)
 }
 
 /* A classic command and its reply, and a D read and its answer where the
- * clock gives the D series a divider, at a system clock of @p hz. */
-static void check_clock_runs(uint32_t hz)
+ * clock gives the D series a divider, at a system clock of @p hz.  Only
+ * test_hitec_pio.c runs the clocks, hence the attribute. */
+__attribute__((unused)) static void check_clock_runs(uint32_t hz)
 {
     hitec_xfer_t x;
     hitec_capture_t cap;
@@ -696,8 +705,9 @@ static void check_clock_runs(uint32_t hz)
     check_at(cap.byte[0].at_ns, 6000000.0);
 }
 
-/* The smallest clock @p family takes, found by bisection. */
-static uint32_t lowest_clock(uint8_t family)
+/* The smallest clock @p family takes, found by bisection; test_hitec_pio.c
+ * only. */
+__attribute__((unused)) static uint32_t lowest_clock(uint8_t family)
 {
     uint32_t lo = 1;
     uint32_t hi = 20000000u;

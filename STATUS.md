@@ -1220,7 +1220,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 455 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1300,7 +1300,8 @@ The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`,
 `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`,
 `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`,
-`test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`,
+`test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pio_answer`,
+`test_hitec_line`, `test_hitec_pre`,
 `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`,
 `test_hitec_session_move`, `test_hitec_live`, `test_hitec_port`, `test_hitec_port_stop`,
 `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`,
@@ -1478,7 +1479,13 @@ buffer. `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of bot
 families, the transactions and every refusal of the reply decoders, with frames and reply
 times read off bench captures. `test_hitec_pio` runs the pin driver's arithmetic and its PIO
 program in a model of the state machine, as `test_kst_pio` does; the IOmcu build fails when
-the assembled program differs from the words the test runs.
+the assembled program differs from the words the test runs. `test_hitec_pio_answer` holds
+the end of a LISTEN's answer in the same model: the receiver waits again 1 cycle after the
+answer's 10th bit time, and a start bit from 1 cycle to 6 bit times after the stop bit is
+taken. `test_hitec_line` runs the pin driver on a fake of the pico-sdk calls it makes: a
+transaction past its time and an abort stop the state machine, let the channel take the
+receive FIFO and count the bytes before the restart, the time at its limit and 1us before
+it and across the clock's wrap, the 64 reads of the FIFO's settle, and every abort path.
 
 No servo is connected. `test_hitec_pre` runs the precharge-and-sample receiver's core: the
 cycle counts at every clock from 48 to 250MHz, the sampler's program stepped instruction by

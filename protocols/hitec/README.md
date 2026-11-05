@@ -534,7 +534,7 @@ not used.
 | Start bit time in a capture | within 1 cycle (1/16 bit) of the edge, and the input synchroniser's 2 system clock cycles |
 | Data bit samples | 23 to 25 cycles after the start bit's edge plus 16 per bit: 1.44 to 1.56 bit times into each bit |
 | Stop bit sample | 151 to 153 cycles after the edge, 9.44 to 9.56 bit times |
-| Answer | an open-drain line changes the direction for its start bit 160 cycles after the sample that saw the first byte's start bit: 10.0 to 10.13 bit times after that edge, 520.8 to 527.3us at 19 200bit/s. The programmers send theirs 0.52 to 0.55ms after it. A push-pull line changes the level 1 cycle later. The answer is 10 bit times; the receiver waits for the idle level again 1 cycle after its stop bit ends |
+| Answer | an open-drain line changes the direction for its start bit 160 cycles after the sample that saw the first byte's start bit: 10.0 to 10.13 bit times after that edge, 520.8 to 527.3us at 19 200bit/s. The programmers send theirs 0.52 to 0.55ms after it. A push-pull line changes the level 1 cycle later. The answer is 10 bit times; the receiver waits for the idle level again 1 cycle after its stop bit ends, so a start bit needs 1 cycle (1/16 bit: 3.26us classic, 0.54us D series) of idle level after the answer's stop bit: one with less is not taken at its time |
 | Lead before the first start bit | the transaction's lead, rounded up to 2 cycles, or 8 cycles plus the bit times that pad the front of the stream to a word, whichever is longer: a D read is driven low 117.2us, a D write 89.0us |
 | Window end to idle | 7 cycles: the drain empties the output shift register, which drops an answer no byte called for |
 | Push-pull | the level moves 1 cycle after the direction would: the bits on the wire sit 1 cycle late, and the release cuts the last stop bit to 15 cycles |
@@ -838,8 +838,9 @@ Not measured:
   `out null, 12` drops the front of the answer word, and the DMA
   handshakes. The host suite models them.
 - On a chip: that a byte pushed just before the restart of a transaction
-  past its time reaches the capture. The pin driver is not in the host
-  build.
+  past its time or an abort reaches the capture, and the time the DMA
+  channel takes to empty the receive FIFO against the driver's 64 reads.
+  The host suite runs the pin driver on a fake of the pico-sdk.
 - The register model's open items, listed under
   [Write plans](#write-plans).
 
@@ -899,7 +900,24 @@ read off bench captures. `test/host/test_hitec_pio.c` (23 cases) assembles
 uses, runs the words in a model of the state machine
 (`test/host/hitec_pio_model.h`), holds them to
 `test/host/fixtures/hitec_line_words.txt` and runs both families through
-it. The pin driver's C file is not in the host build.
+it. `test/host/test_hitec_pio_answer.c` (3 cases) runs the end of a
+LISTEN's answer in the same model: the receiver waits again 161 cycles
+after the answer's start bit, 1 after its stop bit, where the 16 bit times
+of the answer word would give 257; a start bit from 1 cycle to 6 bit times
+after the stop bit is taken and stamped; one right at the stop bit's end is
+not taken at its time. `test/host/test_hitec_line.c` (13 cases) runs
+`rp2350/hitec_line.c` on a fake of the pico-sdk calls it makes
+(`test/host/fake_pico_hitec/`), whose receive channel takes a FIFO word
+only while the driver waits for it: a transaction past its time with a
+byte still in the FIFO and with bytes pushed as the time runs out, the
+order stop, FIFO to buffer, count, channel stop, FIFO clear, restart; the
+time at its limit, 1us before it and across the clock's wrap; the settle
+giving up after 64 reads; a full receive, a word left in the FIFO kept out
+of the next transaction, a receive that ends at idle; a 1-byte LISTEN's
+answer let out whole, an answer cut by a restart past the time; an abort
+during a receive, inside and after the answer, with nothing running and a
+second time, of a PRECHARGE request and of the PRECHARGE sampler, which
+gives back the pin's two registers.
 
 ```sh
 cmake -S test/host -B test/host/build
