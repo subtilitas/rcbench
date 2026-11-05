@@ -89,7 +89,7 @@ und von je 1 HS-5645MG, HS-7955TG und HS-5955TG (18.10. bis 20.10.2026)
 | WEITERES | Programmierspannung und Strombegrenzung, jede auf dem Tastenfeld, solange der Tester den Port hat. Solange der Port gehalten ist: ÄNDERUNGEN VERWERFEN, wenn eine Änderung besteht, PRÜFSUMME REPARIEREN bei einer falschen klassischen Prüfsumme und WERKSEINSTELLUNG für ein gelesenes klassisches Servo ([WERKSEINSTELLUNG](#werkseinstellung)) |
 | NACH STOP | AUFHEBEN nach dem Schalten auf SAFE am Prüfstand: Der IOmcu löscht das Flag STOPPED des Ports. Das Auslesen geht weiter; war die Versorgung ausgeschaltet, beginnt der Einstieg erneut |
 | SCHREIBEN INS SERVO FREIGEBEN | Der Schreibschalter, AUS oder EIN ([Der Schreibschalter](#der-schreibschalter)) |
-| ZURÜCKSPIELEN | Das Backup der Sitzung zurück ins Servo, solange es vom Servo abweicht ([Zurückspielen des Backups der Sitzung](#zurückspielen-des-backups-der-sitzung)); solange ein Vermerk zu einem unterbrochenen Schreibvorgang besteht: die Werte davor zurück ins Servo, oder der Vermerk verworfen ([Der Vermerk eines Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)) |
+| ZURÜCKSPIELEN | Das Backup der Sitzung zurück ins Servo, solange es vom Servo abweicht; nur ein klassisches Servo mit Seriennummer ([Zurückspielen des Backups der Sitzung](#zurückspielen-des-backups-der-sitzung)); solange ein Vermerk zu einem unterbrochenen Schreibvorgang besteht: die Werte davor zurück ins Servo, oder der Vermerk verworfen ([Der Vermerk eines Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)) |
 | n WERTE SCHREIBEN | Der Entwurf ins Servo ([Schreiben](#schreiben)); `1 WERT SCHREIBEN` für einen, aus ohne |
 
 Unter den Zeilen zeigt die Statuszeile den aktuellen Vorgang des Ports.
@@ -356,7 +356,8 @@ Werte werden mit denen verglichen, aus denen der Plan erstellt wurde:
 
 | Schreiben | Erneut gelesen |
 | --- | --- |
-| Klassisch: n WERTE SCHREIBEN, die Werte einer geladenen Datei, PRÜFSUMME REPARIEREN, ZURÜCKSPIELEN eines Vermerks oder des Backups der Sitzung | Zellen 0x00 bis 0x23, der Ausgleich 0x1C eingeschlossen: 36 |
+| Klassisch: n WERTE SCHREIBEN, die Werte einer geladenen Datei, PRÜFSUMME REPARIEREN, ZURÜCKSPIELEN eines Vermerks | Zellen 0x00 bis 0x23, der Ausgleich 0x1C eingeschlossen: 36 |
+| Klassisch: ZURÜCKSPIELEN des Backups der Sitzung | Zellen 0x00 bis 0x23 und die Seriennummer 0x80 bis 0x86: 43 |
 | Klassisch: WERKSEINSTELLUNG | Zellen 0x00 bis 0x23 und der Werksblock 0x30 bis 0x53, aus dem ihre Werte stammen: 72 |
 | D-Serie: jedes Schreiben | die 12 Register, die ein Plan schreibt (`hitec_writable()`): 0x32, 0x44, 0x4C, 0x4E, 0x54, 0x5E, 0x60, 0x6C, 0x9C, 0xB0, 0xB2, 0xC2 |
 
@@ -545,8 +546,12 @@ ausgelesenen Servo zugeordnet, wenn:
 
 Der Vergleich bezieht sich auf das vorige Ausleseergebnis, nicht auf das
 Backup. Erfolgreich geprüfte Schreibvorgänge der Sitzung, einschließlich
-der ID 0x32, erhalten deshalb die Zuordnung. Wird ein Servo als ein anderes
-behandelt, erscheint
+der ID 0x32, erhalten deshalb die Zuordnung. Ein zweites Exemplar eines
+Modells, das ohne VERLASSEN oder VERBINDEN an den Port kommt, beendet das
+Backup deshalb beim ersten vollständigen Auslesen, wenn seine
+Seriennummer (klassisch) oder seine ID 0x32 (D-Serie) von der des
+Exemplars abweicht, von dem das Backup stammt. Wird ein Servo als ein
+anderes behandelt, erscheint
 
 ```
 Werte weichen vom letzten Auslesen ab. Wird als anderes Servo behandelt.
@@ -726,8 +731,40 @@ PRÜFSUMME REPARIEREN und WERKSEINSTELLUNG warten darauf wie auf eine
 **ZURÜCKSPIELEN** bietet `Backup der zuerst in dieser Sitzung ausgelesenen
 Werte.` an, solange das Backup in einer Adresse, die ein Schreiben sendet,
 vom Servo abweicht: jedes Register der D-Serie und jede klassische Zelle
-0x00 bis 0x23, die ein Plan schreibt, rohe Werte eingeschlossen. Ein Tipp
-öffnet ZURÜCKSPIELEN: die Werte, die sich ändern, `Dieses Backup wird ohne
+0x00 bis 0x23, die ein Plan schreibt, rohe Werte eingeschlossen.
+
+ZURÜCKSPIELEN des Backups der Sitzung schreibt nur in ein Servo, das das
+Panel von jedem anderen Exemplar seines Modells unterscheidet: ein
+klassisches Servo, dessen Seriennummer, 7 ASCII-Ziffern in den Zellen 0x80
+bis 0x86, das Auslesen und das Backup gleich halten. Das zweite Lesen des
+Schreibens liest die Seriennummer erneut. Ein Servo, das nach dem letzten
+ALLES AUSLESEN an den Port kommt, beendet das Schreiben deshalb, bevor ein
+Schritt hinausgeht, mit der ersten abweichenden Zelle der Seriennummer:
+`Zwei Auslesevorgänge weichen bei 0x80 ab. Lies mit ALLES AUSLESEN erneut
+aus.` Ein Servo der D-Serie hat kein Register mit einer Seriennummer, das
+das Panel kennt: seine ID 0x32 ist eine Einstellung, und zwei Exemplare
+eines Modells können dieselbe ID und dieselben Werte halten. Ein
+klassisches Servo mit einer Zelle der Seriennummer, die keine ASCII-Ziffer
+ist, hat ebenfalls keine Seriennummer. In beiden Fällen öffnet ein Tipp
+auf den Eintrag keine Seite, sendet nichts und lässt den Schalter, wie er
+ist:
+
+```
+ZURÜCKSPIELEN abgelehnt: Dieses Servo ist von einem anderen Servo seines Modells nicht zu unterscheiden.
+Es hat keine Seriennummer. Lade seine Backup-Datei unter DATEIEN.
+```
+
+Die Backup-Datei der Sitzung, die der Reiter SERVO nennt, hält dieselben
+Werte; DATEIEN lädt sie in den Entwurf, und n WERTE SCHREIBEN schreibt sie
+([Laden einer Backup-Datei](#laden-einer-backup-datei)). Ohne eingebundene
+Karte liegt das Backup nur im RAM, und ein Servo der D-Serie hat keinen
+Weg zu ihm zurück. Ob sich ein anderes Register der D-Serie als 0x32
+zwischen zwei Exemplaren eines Modells unterscheidet, ist nicht gemessen.
+
+![ZURÜCKSPIELEN des Backups einer D-Serie abgelehnt](img/de/servo-hitec-restore-unit.png)
+
+An einem klassischen Servo mit Seriennummer öffnet ein Tipp
+ZURÜCKSPIELEN: die Werte, die sich ändern, `Dieses Backup wird ohne
 Prüfung der Grenzwerte zurückgespielt.`, die Zahl der klassischen Zellen
 ohne änderbaren Wert, die es zurückschreibt, `Auch zurückgespielt: 1 Werte außerhalb der Einstellungen.`, und die Zeilen der
 Backup-Datei. **2s HALTEN ZUM ZURÜCKSPIELEN** schreibt es als Schreiben:
@@ -738,7 +775,7 @@ unterbrochenen Schreibens, behält es diesen und braucht zuerst dessen
 Vergleich durch ALLES AUSLESEN, wie ZURÜCKSPIELEN des Vermerks.
 
 ![Die Liste ZURÜCKSPIELEN](img/de/servo-hitec-restore-backup.png)
-![ZURÜCKSPIELEN des Backups der Sitzung](img/de/servo-hitec-restore-page.png)
+![ZURÜCKSPIELEN des Backups der Sitzung eines HS-5645MG](img/de/servo-hitec-restore-page.png)
 
 ## WERKSEINSTELLUNG
 
@@ -997,10 +1034,12 @@ Richtungen gleich.
 - ZURÜCKSPIELEN nach einem Lauf: lade die Backup-Datei des Laufs unter
   DATEIEN ([Laden einer Backup-Datei](#laden-einer-backup-datei)) und
   schreibe sie mit n WERTE SCHREIBEN. Sie bringt beide Enden zurück, mit
-  jeder anderen Adresse, die ein Schreiben sendet. ZURÜCKSPIELEN des
-  Sitzungsbackups stellt die Werte vom Beginn dieser Sitzung wieder her.
-  In einer späteren Sitzung desselben Laufs enthalten sie bereits frühere
-  Änderungen des Laufs.
+  jeder anderen Adresse, die ein Schreiben sendet. An einem klassischen
+  Servo mit Seriennummer stellt ZURÜCKSPIELEN des Sitzungsbackups die
+  Werte vom Beginn dieser Sitzung wieder her; in einer späteren Sitzung
+  desselben Laufs enthalten sie bereits frühere Änderungen des Laufs. An
+  einem Servo der D-Serie ist es abgelehnt ([Zurückspielen des Backups der
+  Sitzung](#zurückspielen-des-backups-der-sitzung)).
 - Das Ende des Laufs schaltet SCHREIBEN INS SERVO FREIGEBEN aus, verwirft
   den Entwurf und setzt Programmierspannung und -strom auf die Werte der
   Einstellungen zurück.
@@ -1037,12 +1076,6 @@ Richtungen gleich.
   Servo, wie sie es dann vorfindet, mit den Werten des unterbrochenen
   Schreibens; der Vermerk des Schreibens und die Backup-Datei der alten
   Sitzung halten die Werte davor.
-- Zwei Servos der D-Serie desselben Modells werden nur an ihren Werten
-  unterschieden. Ein zweites D485HW, dessen Register, die ein Schreiben
-  sendet, die Werte des letzten Lesens des ersten halten, behält das Backup
-  des ersten, und ZURÜCKSPIELEN des Backups der Sitzung schreibt die Werte
-  des ersten hinein. Welches Register, wenn überhaupt, sich zwischen zwei
-  Exemplaren eines Modells unterscheidet, ist nicht gemessen.
 - Eine außerhalb des Panels geschriebene oder bearbeitete Servodatei wird
   nicht geladen.
 - Der Vermerk wird nur beim Start des Panels von der Karte gelesen.

@@ -34,6 +34,7 @@ set(SRCS
     hitec_prog_write.c
     hitec_prog_file.c
     hitec_prog_run.c
+    hitec_prog_unit.c
     hitec_card.c
     kst_link.c
     kst_prog.c

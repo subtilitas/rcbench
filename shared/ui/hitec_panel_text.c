@@ -656,6 +656,8 @@ static const int16_t k_lines[HITEC_PROG_MSG_COUNT][2] = {
     [HITEC_PROG_MSG_LOAD_CHECK]    = { TX_KP_M_LOAD_SOFT, -1 },
     [HITEC_PROG_MSG_LOADED]        = { -1, -1 },
     [HITEC_PROG_MSG_BACKUP_RESTORED] = { TX_KP_M_RESTORED, -1 },
+    [HITEC_PROG_MSG_BACKUP_UNIT]   = { TX_HP_BACKUP_UNIT,
+                                       TX_HP_BACKUP_UNIT_2 },
     [HITEC_PROG_MSG_FACTORY_DONE]  = { TX_HP_FACTORY_DONE, -1 },
     [HITEC_PROG_MSG_LOADED_RAW]    = { -1, -1 },
     [HITEC_PROG_MSG_OTHER_SERVO]   = { TX_HP_OTHER_SERVO,

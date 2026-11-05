@@ -294,6 +294,7 @@ static bool of_the_session(unsigned id)
     case HITEC_PROG_MSG_LOADED_RAW:
     case HITEC_PROG_MSG_OTHER_SERVO:
     case HITEC_PROG_MSG_READS_DIFFER:
+    case HITEC_PROG_MSG_BACKUP_UNIT:
         return true;
     default:
         return false;

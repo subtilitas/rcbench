@@ -19,6 +19,17 @@ history is in git.
 
 ### Fixed
 
+- RESTORE of a Hitec session's backup writes only to a classic servo whose
+  serial, cells 0x80 to 0x86, the read and the backup hold alike. A second
+  servo of one model, put on the port without LEAVE or CONNECT, could get
+  the first one's backup when its registers held the first one's last-read
+  values. A D series servo has no serial register, and a classic one with
+  a non-digit serial cell holds none: for both RESTORE says `RESTORE
+  refused: this servo cannot be told apart from another servo of its
+  model.` and sends nothing. The session's backup file under FILES holds
+  the same values. The write's second read reads the serial again, 43
+  cells instead of 36, so a servo swapped after the last READ ALL ends the
+  write before a step.
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint
   the whole screen when the arm moves or the AS5600 angle changes in its
   tenths. None of these pages shows either value. The station measured 15.1
