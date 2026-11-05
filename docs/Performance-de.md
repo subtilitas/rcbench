@@ -119,7 +119,7 @@ est. ms and est. fps: not measured
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
-| `servo-rudder` | SERVO > RUDER mit einem AS5600-Messwert in jedem Frame, 0.26° vom vorigen entfernt: die Anzeige, die Zustandszeilen und das Ruder der Seitenansicht neu gezeichnet, jedes auf sich selbst beschnitten |
+| `servo-rudder` | SERVO > RUDER mit einem AS5600-Messwert in jedem Frame, 0,26° vom vorigen entfernt: die Anzeige, die Zustandszeilen und das Ruder der Seitenansicht neu gezeichnet, jedes auf sich selbst beschnitten |
 | `servo-test` | SERVO > TEST mit bewegtem Arm und einem AS5600-Messwert in jedem Frame, wie ein automatischer Test oder ein Limit Run sie liefert: die Seite zeigt keines von beiden, also wird nichts neu gezeichnet |
 | `supply` | der Netzteilbildschirm mit eingeschaltetem Ausgang, ein Sample in jedem Frame |
 | `motor-wire-hold` | die Sitzung der ESC-Signalleitung auf der Seite VERLASSEN, ein Finger auf ihrem Hold von 2s |

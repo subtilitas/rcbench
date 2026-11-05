@@ -169,8 +169,8 @@ wie es AUSGANG EIN des PD mini beurteilt:
 ### PROG 5V ausgefallen
 
 Der Regler von M7, am ehesten ein JoulWatt JW5068A (am Modul nicht
-bestätigt), schaltet seinen Ausgang bei Überspannung (über 6.0V für 20us)
-oder Unterspannung (unter 3.25V für 200us) ab und hält ihn aus. Er startet
+bestätigt), schaltet seinen Ausgang bei Überspannung (über 6,0V für 20us)
+oder Unterspannung (unter 3,25V für 200us) ab und hält ihn aus. Er startet
 erst wieder, wenn EN umschaltet. Die bekannte Ursache auf dem Carrier ist
 die Abschaltung bei Überspannung: ein Servo an einem Programmierport, das
 bremst, speist Energie in die 5V zurück, die M7 nicht aufnehmen kann. Eine
@@ -193,7 +193,7 @@ wenn beide frühestens 500ms nach ON gelesen werden:
   0.08V in 2 windows, 640ms after ON. All outputs off.`
 - Ein Fehler je ON: keiner mehr, bis die 5V aus und wieder ein waren.
 
-Unter 3.25V für 200us hat der Regler laut Datenblatt abgeschaltet, und ein
+Unter 3,25V für 200us hat der Regler laut Datenblatt abgeschaltet, und ein
 abgeschalteter Ausgang fällt auf nahe 0V. 3000mV und zwei Fenster halten
 das Absinken eines belasteten Ports vom Auslösen ab. Jedes Fenster zählt
 einmal, nach seiner Nummer: das Panel liest die Page einmal je Abfrage,
@@ -227,7 +227,7 @@ Aktuelle Einschränkungen:
 ## Der Strommonitor
 
 Ein INA3221 (M5) am Sensorbus auf Adresse 0x40 überwacht die drei
-Versorgungen. Sein VS liegt an +3.3V, und der Carrier verbindet sein VPU mit VCC. Die
+Versorgungen. Sein VS liegt an +3,3V, und der Carrier verbindet sein VPU mit VCC. Die
 I2C-Pull-ups des Moduls hängen an VPU und sind damit die Pull-ups von Bus 1:
 die Firmware betreibt Bus 1 (GPIO 16 SDA, GPIO 17 SCL) mit abgeschalteten
 Pad-Pulls des RP2350.
@@ -254,9 +254,9 @@ SETUP > SENSORS zeigt diese Zeilen ohne Tasten zum Bearbeiten:
 ![SENSORS auf dem Carrier](img/de/setup-sensors-rbmod.png)
 
 - Shunts und Grenzen lassen sich wie an jedem Prüfstand einstellen: Shunt
-  AUS oder 5.0 bis 1000.0mΩ, Vorgabe 100.0mΩ; Grenze AUS oder 10 bis
+  AUS oder 5,0 bis 1000,0mΩ, Vorgabe 100,0mΩ; Grenze AUS oder 10 bis
   32767mA ([Bildschirme: SENSORS](Screens-de.md#sensors-die-ina3221-bausteine)).
-  Der Shuntwert von M5 auf dem Carrier steht hier nicht fest; 100.0mΩ ist
+  Der Shuntwert von M5 auf dem Carrier steht hier nicht fest; 100,0mΩ ist
   der des DAOKAI-Moduls.
 - 0x41 bis 0x43 sind frei für Bausteine an J5.
 - Der Kanal, der mit 1kHz gelesen wird und den der Servotest und der
@@ -326,13 +326,13 @@ Klemmschaltung auf der Platine.
 | --- | --- | --- | --- |
 | 1 | PROGP03 (J1 Position 4, über R4) wechselt von GPIO 26 auf GPIO 15: die Leiterbahn wird unter dem Serienwiderstand R4 getrennt, und ein Fädeldraht läuft von R4 zu GPIO 15. | GPIO 26 ist ein ADC-Pin und nicht 5V-fest. Ein Pull-up von Hitec oder KST legt die Servoversorgung auf die Programmierleitung. | PROG PORT 3 ist auf jedem Carrier GPIO 15. GPIO 26 bleibt unbenutzt. |
 | 2 | Ein Pull-down von 2kΩ bis 5kΩ von EN an M7 (das Netz von GPIO 21) nach GND. | EN des Buck-Moduls liest offen als an. Ohne den Pull-down sind die 5V der Programmierports an, solange der IOmcu im Reset, im BOOTSEL oder ohne Versorgung ist. | Die Versorgung der Programmierports ist aus, solange GPIO 21 nicht high getrieben wird. |
-| 3 | Eine Z-Diode 5.6V 1W vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene. | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6.0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
+| 3 | Eine Z-Diode 5,6V 1W vom Ausgang von M7 (VCC_PROGPORT_DCDC) nach GND, Kathode an der Schiene. | Ein bremsendes Servo speist Energie in PROG 5V zurück. M7 kann keinen Strom aufnehmen und schaltet ab, wenn sein Ausgang etwa 6,0V für 20us überschreitet. Die Z-Diode nimmt die Rückspeisung auf. | Nein. Der Fehler PROG 5V ausgefallen ([PROG 5V ausgefallen](#prog-5v-ausgefallen)) meldet ein abgeschaltetes M7 mit oder ohne die Z-Diode. |
 
 Grenzen von Punkt 3:
 
 - Die Überspannungsschwelle von M7 liegt bei 115% bis 125% des Ausgangs,
-  5.75V bis 6.25V bei 5.00V. Eine Z-Diode 5.6V mit ±5% leitet bei 5.32V
-  bis 5.88V.
+  5,75V bis 6,25V bei 5,00V. Eine Z-Diode 5,6V mit ±5% leitet bei 5,32V
+  bis 5,88V.
 - Über einige hundert mA Rückspeisung steigt die Klemmspannung über die
   Schwelle, also kann ein größeres Servo M7 weiter abschalten (nicht
   gemessen).
