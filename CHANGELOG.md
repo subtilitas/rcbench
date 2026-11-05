@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- Browser test of the Wi-Fi page's file manager. `test/host/wa_page_dump.c`
+  writes the page `wa_page_main()` builds, and `test/host/wa_mock_server.py`
+  serves it with a mock of the file API, its refusals and its request guard.
+  `test/web/files.spec.ts` runs 18 tests in Chromium in English and German:
+  paging through 49 entries, the highlight classes of a report against
+  `text_hl_line()`, an edit and save, the 412 round trip with the unsaved
+  question, upload, rename, move and delete, and the write buttons while
+  writes are closed. The CI job is `Web file manager browser test`.
+
 ### Fixed
 
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint
