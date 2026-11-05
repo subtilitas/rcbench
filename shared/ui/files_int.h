@@ -619,3 +619,22 @@ void fs_event(const touch_event_t *e);
 
 /** @brief Drop a press under way: the touch stream lost an event. */
 void fs_cancel_press(void);
+
+/* --- help_files.c ------------------------------------------------------- */
+
+struct ui_help_page;
+
+/**
+ * @brief The screen guide's pages of FILES: three over the panes, none
+ *        while a box, a question, a keyboard or the text viewer is up.
+ * @return The count.
+ */
+int fs_help_count(void);
+
+/**
+ * @brief Page @p i of FILES' guide.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+bool fs_help_page(int i, struct ui_help_page *out);

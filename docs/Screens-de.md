@@ -160,9 +160,9 @@ zu flashen.
 
 "?" im Statusband öffnet die Hilfe zur aktuellen Seite. Nummerierte Marken
 kennzeichnen die Bedienelemente; ein Hilfefeld erklärt ihre Funktion.
-Das Menü, OUTPUTS und SETUP haben eine Hilfe, die anderen Seiten haben
-kein "?". Auch Tastenfelder, Tastaturen, offene Listen und
-Bestätigungsdialoge zeigen kein "?".
+Das Menü, OUTPUTS, SETUP, LOGS und FILES haben eine Hilfe, die anderen
+Seiten haben kein "?". Auch Tastenfelder, Tastaturen, offene Listen, Boxen
+und Bestätigungsdialoge zeigen kein "?".
 
 ![Die Hilfe des Menüs auf Seite 1](img/de/help-overview.png)
 
@@ -224,11 +224,11 @@ Die Hilfe des Menüs hat vier Seiten:
 4. Die leere Stelle im Band für die Screenshot-Haltegeste, mit dem Hilfefeld
    rechts.
 
-Die Hilfen von OUTPUTS und SETUP haben eigene Seiten für jeden Zustand
+Die Hilfen von OUTPUTS, SETUP, LOGS und FILES haben eigene Seiten für jeden Zustand
 ihrer Seite. Auf Hilfeseite 1 steht das Hilfefeld rechts, auf der letzten
 links; ein
 Bedienelement, das das Hilfefeld zum Teil verdeckt, wird markiert, wo es
-sichtbar ist. Keine der beiden Seiten steuert einen Ausgang an, daher bleiben
+sichtbar ist. Keine dieser Seiten steuert einen Ausgang an, daher bleiben
 alle ihre Hilfeseiten auch in ARMED sichtbar.
 
 | Seite, Zustand | Hilfeseiten | Markiert |
@@ -239,10 +239,18 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 | OUTPUTS, Platinenansicht | 2 | die Fläche der Protokollliste, LETZTER SCHREIBVORGANG, PINS, die linke Taste; BELEGT, die Haltetaste zum Löschen aller Pin-Zuordnungen, wenn angeboten, die rechte Taste |
 | OUTPUTS, Eintrag PROG PORT | 2 | die Fläche des Eintrags, PIN, FUNKTION, SERVO-TESTER, PORT-PWM; dann BELEGT und eine Taste, in der Platinenansicht |
 | OUTPUTS, Rasteransicht | 1 | die Fläche der Protokollliste, das erste Feld, LETZTER SCHREIBVORGANG; bei einem Eintrag PROG PORT seine Fläche und Zeilen |
+| LOGS, Dateiliste | 2 | die Ordner-Tabs, eine Zeile, AKTUALISIEREN, WI-FI; FILES, VORIGE und NÄCHSTE bei mehreren Seiten, die Scrollleiste, LÖSCHEN, ÖFFNEN |
+| LOGS, Importansicht | 2 | ERKANNT, TRENNZ., ZAHLEN; die Spalten, ZURÜCK, GRAFIK |
+| LOGS, Grafik | 1 | ein Reihen-Chip, die Grafik, ZURÜCK, `<` und `>` |
+| FILES, Spalten | 3 | LOGS, Ordner, Zeile und Scrollleiste der linken Spalte; AKTUALISIEREN, KOPIEREN, VERSCHIEBEN, UMBENENNEN; die rechte Spalte, LÖSCHEN, NEU, INFO, ÖFFNEN |
 
 ![Die Hilfe von SETUP auf Seite 1](img/de/help-setup.png)
 
 ![Die Hilfe von OUTPUTS auf Seite 1](img/de/help-outputs.png)
+
+![Die Hilfe von LOGS auf Seite 1](img/de/help-logs.png)
+
+![Die Hilfe von FILES auf Seite 1](img/de/help-files.png)
 
 ## Screenshot
 

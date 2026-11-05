@@ -28,6 +28,9 @@ history is in git.
   mark up to 5 controls a page and all show while ARMED, since neither
   screen drives an output. An open list, a keypad, a keyboard or the
   warning on leaving SETUP has no guide.
+- The screen guide covers LOGS and FILES: LOGS' file list and import view
+  (2 pages each) and its plot (1 page), FILES' panes (3 pages). The DELETE
+  question, a box, a keyboard and the text viewer have no guide.
 
 ### Fixed
 

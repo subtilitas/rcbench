@@ -4,8 +4,8 @@
  *
  * help-overview is the menu's guide at page 1, help-overview-2 to
  * help-overview-4 its other pages, each opened and turned by taps through
- * the router as a person does.  help-setup, help-outputs and their
- * states' views open the guide over the view
+ * the router as a person does.  help-setup, help-outputs, help-logs,
+ * help-files and their states' views open the guide over the view
  * render_help_base() names, posed as that view is.  help-band-worst is MOTOR & ESC's band with
  * the widest row of chips test_nav_bubble finds: a clock of 10 hours,
  * ARMED MOTOR, FAULT 7F, BENCH and LINK.
@@ -53,6 +53,11 @@ static const struct {
     { "help-outputs-odd", "outputs-odd" },
     { "help-outputs-rbmod", "outputs-rbmod" },
     { "help-outputs-rbmod-port", "outputs-rbmod-port" },
+    { "help-logs", "logs" },
+    { "help-logs-pages", "logs-pages" },
+    { "help-logs-import", "logs-import" },
+    { "help-logs-plot", "logs-plot" },
+    { "help-files", "files" },
 };
 
 const char *render_help_base(const char *view)

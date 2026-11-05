@@ -741,6 +741,8 @@ static const ui_screen_t s_screen = {
     .cancel = cancel,
     .render = lv_render,
     .back = back,
+    .help_count = lv_help_count,
+    .help_page = lv_help_page,
 };
 
 const ui_screen_t *log_viewer_screen(void)

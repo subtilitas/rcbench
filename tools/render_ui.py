@@ -105,9 +105,12 @@ SCREENS = {
     # The screen guide over the menu at page 1: the dock on the right, the
     # left two columns of tiles marked.
     "help-overview": ("help-overview.png", "overview", "dark"),
-    # The guide over SETUP's tiles and OUTPUTS' board view, each at page 1.
+    # The guide over SETUP's tiles, OUTPUTS' board view, LOGS' file list
+    # and FILES' panes, each at page 1.
     "help-setup": ("help-setup.png", "setup", "dark"),
     "help-outputs": ("help-outputs.png", "outputs", "dark"),
+    "help-logs": ("help-logs.png", "logs", "dark"),
+    "help-files": ("help-files.png", "files", "dark"),
     # The screenshot's popup over the menu, a save under way and a card that
     # was full.
     "shot-popup": ("shot-popup.png", "shot", "dark"),
@@ -810,10 +813,10 @@ FIT_ONLY = {
     "help-band-worst": (None, "motor", "dark"),
     # SERVO's RUDDER guide: the output card's page over the task.
     "help-servo-rudder":   (None, "servo", "dark"),
-    # The other pages of SETUP's and OUTPUTS' guides, in each state that
-    # has its own: a list, SENSORS, the carrier's tiles, a PROG PORT entry,
-    # the grid view, an odd binding read and the carrier (render_help_base()
-    # names the view each opens over).
+    # The other pages of SETUP's, OUTPUTS', LOGS' and FILES' guides, in
+    # each state that has its own: a list, SENSORS, the carrier's tiles, a
+    # PROG PORT entry, the grid view, the carrier, a paged list, the import
+    # view and the plot (render_help_base() names the view each opens over).
     "help-setup-2": (None, "setup", "dark"),
     "help-setup-rbmod-2": (None, "setup", "dark"),
     "help-setup-list": (None, "setup", "dark"),
@@ -827,6 +830,13 @@ FIT_ONLY = {
     "help-outputs-odd-2": (None, "outputs", "dark"),
     "help-outputs-rbmod": (None, "outputs", "dark"),
     "help-outputs-rbmod-port": (None, "outputs", "dark"),
+    "help-logs-2": (None, "logs", "dark"),
+    "help-logs-pages-2": (None, "logs", "dark"),
+    "help-logs-import": (None, "logs", "dark"),
+    "help-logs-import-2": (None, "logs", "dark"),
+    "help-logs-plot": (None, "logs", "dark"),
+    "help-files-2": (None, "files", "dark"),
+    "help-files-3": (None, "files", "dark"),
     # ESC STICK > Great Planes: model rows with the MANUAL tag and the
     # longest reason beside their family.
     "motor-stick-greatplanes": (None, "motor", "dark"),
@@ -1004,14 +1014,15 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "files-edit-see50"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
-# The screen guide's views over SETUP and OUTPUTS: the dock
+# The screen guide's views over SETUP, OUTPUTS, LOGS and FILES: the dock
 # takes half the body, so the screen's strings on the other half are cut at
 # its edge and the marks are drawn over them by design.  The fit check
 # measures their dock, band and marks; the screen's own strings are
 # measured in the view each opens over (render_help_base() in
 # test/host/render_help.c).
 GUIDE_VIEWS = {name for name in (*SCREENS, *FIT_ONLY)
-               if name.startswith(("help-setup", "help-outputs"))}
+               if name.startswith(("help-setup", "help-outputs", "help-logs",
+                                   "help-files"))}
 
 # English overflows the layout has for a time: (view, string, finding), word
 # for word as --fit prints them; none today.  Each is a defect of the

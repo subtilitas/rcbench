@@ -46,6 +46,8 @@ SOURCES = [
     "shared/ui/ui_help.c",
     "shared/ui/help_outputs.c",
     "shared/ui/help_setup.c",
+    "shared/ui/help_logs.c",
+    "shared/ui/help_files.c",
     "shared/ui/ui_text.c",
     "shared/ui/ui_value_ask.c",
     "shared/ui/splash_screen.c",

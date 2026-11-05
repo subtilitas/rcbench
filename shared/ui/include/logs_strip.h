@@ -45,6 +45,13 @@ extern "C" {
 void logs_strip_render(gfx_canvas_t *c, ui_screen_id_t here);
 
 /**
+ * @brief Where the tab of screen @p id lies, in the body's coordinates.
+ * @param id SCREEN_LOGS or SCREEN_FILES.
+ * @return The tab's rect; empty for another screen.
+ */
+gfx_rect_t logs_strip_tab_rect(ui_screen_id_t id);
+
+/**
  * @brief One touch event of the screen @p here, on its first level.  A tap on
  *        another tab than @p here's opens that screen.
  *
