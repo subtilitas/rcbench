@@ -203,14 +203,13 @@ static const setting_id_t k_pd[SUP_PD_ROWS] = {
  * @brief PD MINI row @p i's controls as far as the screen shows them: its
  *        - key to its + key, or its value alone for the switch and a pin
  *        soldered on the board.
- * @param i  The row.
- * @param id The row's setting, k_pd[@p i].
+ * @param i The row.
  * @return The rect.
  */
-static gfx_rect_t pd_controls(int i, setting_id_t id)
+static gfx_rect_t pd_controls(int i)
 {
     gfx_rect_t r = sup_pd_value_rect(i);
-    if (i > 0 && !settings_fixed(id)) {
+    if (sup_pd_has_keys(i)) {
         r = both(sup_pd_key_rect(i, false), sup_pd_key_rect(i, true));
         /* From 10px into the - key, so the badge left of it clears the
          * row's help line, which runs to x 354 in German. */
@@ -229,7 +228,7 @@ static void page_pdmini(ui_help_page_t *p)
         TX_HG_SU_PD_EN, TX_HG_SU_PD_TX, TX_HG_SU_PD_RX, TX_HG_SU_PD_BAUD,
     };
     for (int i = 0; i < SUP_PD_ROWS; ++i) {
-        item(p, ui_setting_label(k_pd[i]), k_text[i], pd_controls(i, k_pd[i]),
+        item(p, ui_setting_label(k_pd[i]), k_text[i], pd_controls(i),
              UI_HELP_AT_LEFT);
     }
 }

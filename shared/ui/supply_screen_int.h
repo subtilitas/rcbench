@@ -644,6 +644,13 @@ gfx_rect_t sup_pd_value_rect(int i);
  */
 gfx_rect_t sup_pd_key_rect(int i, bool plus);
 /**
+ * @brief Whether PD MINI's row @p i has - and + keys: a pin not soldered,
+ *        and the baud. Enable flips on a tap of its value.
+ * @param i the row
+ * @return true when it has
+ */
+bool sup_pd_has_keys(int i);
+/**
  * @brief A press on the PD MINI tab: taken on a key or a value, refused with
  *        the lock's reason on the band while a lock stands.
  * @param evt the DOWN event
