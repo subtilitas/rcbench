@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- Bluetooth LE host on the panel: NimBLE on the P4, the controller on the
+  ESP32-C6, HCI over the existing SDIO link (esp_hosted 2.13.0, VHCI).
+  `main/panel_ble.c` starts it on the task `blestart`: the C6's link, the
+  controller init and enable requests (an unanswered one is logged and the
+  start goes on), the host task `nimble_host` and the wait of 3,000ms for
+  its sync, logged as `ble: synced in <n>ms` or `ble: no sync within
+  3000ms`. Its events go to a queue of 32 x 64 bytes. The console build's
+  `ble scan` starts it and prints every report of a 10,000ms scan; no other
+  build starts it, and no screen shows it. The default image grows by
+  44,688 bytes, the console image by 75,408.
 - Browser test of the Wi-Fi page's file manager. `test/host/wa_page_dump.c`
   writes the page `wa_page_main()` builds, and `test/host/wa_mock_server.py`
   serves it with a mock of the file API, its refusals and its request guard.

@@ -414,6 +414,23 @@ security) handshake and every read under it: esp_http_client reaches its
 transport through a function pointer. Its stack uses the page server's allocation; the two tasks
 never run concurrently; the handshake's depth is not measured.
 
+The console build (`RCBENCH_PANEL_CONSOLE`, [The bench
+console](BenchConsole.md)) has three tasks more. Its `ble scan` is the only
+caller of `panel_ble_start()` (`main/panel_ble.c`), so the other builds hold
+neither Bluetooth LE (Low Energy) task. ESP-IDF's
+`nimble_port_freertos_init()` creates `nimble_host` with the panel's entry,
+priority 21 on core 0 and the stack `CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE`.
+Its depth follows NimBLE's events and the scan's callback by name
+(`NIMBLE_CALLS`); the host's other calls through a pointer are not
+followed, and the tool's output counts them. `blestart` ends once the wait for
+the host's sync has ended.
+
+| Task of the console build | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
+| --- | --- | ---: | ---: | ---: |
+| `console` | `console_task`, the serial ports to the IOmcu's console, and `ble scan` (`panel_console.c`) | 4,096 | 1,472 | 1,584 |
+| `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,184 | 1,872 |
+| `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
+
 `runlog`'s deepest chain mounts the SD card: the listing of the servo
 files the card serves (`hitec_card_run()`, `list()`, `servo_store_preset()`,
 `io_walk()`, `storage_walk()`), the mount again of a card found gone
@@ -468,8 +485,9 @@ the tool cannot see, and each depth above is a lower bound for that reason:
 - recursion: a function already on a chain is not entered again, so a
   chain runs round a cycle at most once.
 
-CI runs the tool with `--check-doc`, which fails when the table above or the
-count of calls through a pointer differs from the build.
+CI runs the tool with `--check-doc`, which fails when the first table above
+or the count of calls through a pointer differs from the default build, or
+the table of the console build differs from the console build.
 
 ### High-water marks on the board
 
@@ -650,6 +668,36 @@ I (…) rcbench: internal RAM: <n> B free at the lowest, <n> B free now, largest
 | mode 3, a release check | not measured | not measured |
 
 PSRAM free at start-up: not measured.
+
+Bluetooth LE (Low Energy) runs on the C6 as well; the P4 runs its host,
+NimBLE ([Building, Bluetooth LE through the
+ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)). The host starts
+at `panel_ble_start()`, which only the console build's `ble scan` calls, and
+stays until the panel restarts. The start logs the free memory before and
+after it:
+
+```text
+I (…) ble: host started; internal RAM <n>B free before, <n>B after; PSRAM <n>B before, <n>B after
+```
+
+Its internal RAM: the `nimble_host` stack of 4,096 bytes for good, the
+`blestart` stack of 4,096 bytes until the start has ended, and the event
+queue of 32 x 64 = 2,048 bytes in .bss. esp_hosted takes a buffer per HCI
+packet; those are not counted. NimBLE's pools and buffers are in PSRAM
+(`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`). The figures on a board are not
+measured.
+
+What the Bluetooth LE configuration adds to the image, from the linker map
+(`esp_idf_size`), ESP-IDF v6.1, built without the IOmcu images. The default
+build has no caller of the host, so most of NimBLE is left out of it:
+
+| Build | Application image (bytes) | Of it Bluetooth LE (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it Bluetooth LE (bytes) |
+| --- | ---: | ---: | ---: | ---: |
+| default | 3,078,608 | 44,688 | 179,190 | 486 |
+| console (`RCBENCH_PANEL_CONSOLE`) | 3,113,888 | 75,408 | 188,360 | 3,448 |
+
+The .bss in PSRAM is 2,587,632 bytes in both builds, with and without
+Bluetooth LE.
 
 A radio start that fails logs the step, the error's name and the internal
 heap at that moment:

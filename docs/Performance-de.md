@@ -442,6 +442,24 @@ esp_http_client erreicht seinen Transport über einen Funktionszeiger. Sein
 Stack nutzt den Speicher des Seitenservers; die beiden Tasks laufen nie gleichzeitig; die Tiefe des
 Handshakes ist nicht gemessen.
 
+Der Konsolen-Build (`RCBENCH_PANEL_CONSOLE`, [Die
+Prüfstandskonsole](BenchConsole-de.md)) hat drei Tasks mehr. Sein `ble scan`
+ist der einzige Aufrufer von `panel_ble_start()` (`main/panel_ble.c`), die
+anderen Builds haben deshalb keinen der beiden Bluetooth-LE-Tasks (Low
+Energy). `nimble_port_freertos_init()` von ESP-IDF legt `nimble_host` mit
+dem Einstieg des Panels an, Priorität 21 auf Kern 0, Stack
+`CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE`. Seine Tiefe folgt den Events von
+NimBLE und dem Callback des Scans über ihre Namen (`NIMBLE_CALLS`); den
+übrigen Aufrufen des Hosts über einen Zeiger folgt sie nicht, die Ausgabe
+des Werkzeugs zählt sie. `blestart` endet, sobald das Warten auf den Sync
+des Hosts vorbei ist.
+
+| Task des Konsolen-Builds | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
+| --- | --- | ---: | ---: | ---: |
+| `console` | `console_task`, die seriellen Ports zur Konsole des IOmcu, und `ble scan` (`panel_console.c`) | 4 096 | 1 472 | 1 584 |
+| `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 184 | 1 872 |
+| `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
+
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
 Servodateien, die die Karte bedient (`hitec_card_run()`, `list()`,
 `servo_store_preset()`, `io_walk()`, `storage_walk()`), das erneute Einbinden einer Karte, die aufgehört
@@ -503,7 +521,9 @@ oben ist deshalb eine Untergrenze:
   Zyklus.
 
 CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
-Tabelle oben oder die Zahl der Aufrufe über einen Zeiger vom Build abweicht.
+erste Tabelle oben oder die Zahl der Aufrufe über einen Zeiger vom
+Standard-Build abweicht oder die Tabelle des Konsolen-Builds vom
+Konsolen-Build.
 
 ### High-Water-Marks auf dem Board
 
@@ -695,6 +715,37 @@ I (…) rcbench: internal RAM: <n> B free at the lowest, <n> B free now, largest
 | Modus 3, eine Release-Suche | nicht gemessen | nicht gemessen |
 
 Freier PSRAM beim Start: nicht gemessen.
+
+Auch Bluetooth LE (Low Energy) läuft auf dem C6; der P4 betreibt seinen Host,
+NimBLE ([Bauen, Bluetooth LE über den
+ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)). Der Host startet
+mit `panel_ble_start()`, das nur `ble scan` des Konsolen-Builds aufruft, und
+bleibt bis zum Neustart des Panels. Der Start protokolliert den freien
+Speicher davor und danach:
+
+```text
+I (…) ble: host started; internal RAM <n>B free before, <n>B after; PSRAM <n>B before, <n>B after
+```
+
+Sein interner RAM: der Stack von `nimble_host` mit 4 096 Bytes auf Dauer,
+der Stack von `blestart` mit 4 096 Bytes, bis der Start vorbei ist, und die
+Event-Queue mit 32 x 64 = 2 048 Bytes in .bss. esp_hosted belegt je
+HCI-Paket einen Puffer; diese sind nicht gezählt. Die Pools und Puffer von
+NimBLE liegen im PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`). Die
+Zahlen auf einem Board sind nicht gemessen.
+
+Was die Bluetooth-LE-Konfiguration zum Image hinzufügt, aus der Linker-Map
+(`esp_idf_size`), ESP-IDF v6.1, gebaut ohne die IOmcu-Images. Der
+Standard-Build ruft den Host nicht auf, deshalb fehlt ihm der größte Teil von
+NimBLE:
+
+| Build | Anwendungs-Image (Bytes) | Davon Bluetooth LE (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon Bluetooth LE (Bytes) |
+| --- | ---: | ---: | ---: | ---: |
+| Standard | 3 078 608 | 44 688 | 179 190 | 486 |
+| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 113 888 | 75 408 | 188 360 | 3 448 |
+
+Die .bss im PSRAM ist in beiden Builds 2 587 632 Bytes, mit und ohne
+Bluetooth LE.
 
 Ein WLAN-Start, der fehlschlägt, protokolliert den Schritt, den Namen des
 Fehlers und den internen Heap in diesem Moment:

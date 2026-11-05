@@ -539,8 +539,10 @@ SDIO läuft mit 4 Bit Breite und 40MHz.
 `firmware/panel/sdkconfig.defaults` gibt sie an esp_hosted, und
 `components/c6_link/c6_link.c` bricht den Build ab, wenn beide abweichen.
 `c6_link` bringt die Verbindung hinter einem Mutex hoch, sodass sich jeder
-Nutzer des C6 einen Reset und einen Start teilt; der Wi-Fi-Task ruft
-`c6_link_up()` vor `esp_wifi_init()` auf.
+Nutzer des C6 einen Reset und einen Start teilt: der Wi-Fi-Task ruft
+`c6_link_up()` vor `esp_wifi_init()` auf, der Start von Bluetooth LE vor
+NimBLE ([Bluetooth LE über den
+ESP32-C6](#bluetooth-le-über-den-esp32-c6)).
 
 ### Die managed components
 
@@ -718,6 +720,68 @@ PSRAM legen; es ist aus, und der freie interne RAM damit ist nicht gemessen.
 Weitere Speicherbelegungen von esp_hosted sind hier nicht erfasst. Die
 Konsolenzeile `wifi: radio up` nennt den freien internen RAM mit laufendem
 Funkteil.
+
+## Bluetooth LE über den ESP32-C6
+
+Der C6 betreibt den BLE-Controller (Bluetooth Low Energy), der P4 den
+BLE-Host, NimBLE. esp_hosted überträgt die HCI-Pakete (Host Controller
+Interface) zwischen beiden als VHCI (virtuelles HCI) über die SDIO-Verbindung
+des Wi-Fi, Schnittstelle `ESP_HCI_IF`: keine zusätzlichen Pins.
+`firmware/panel/sdkconfig.defaults` enthält die Konfiguration unter
+"Bluetooth LE through the ESP32-C6": Central und Observer, eine Verbindung,
+kein Security Manager, keine Funktionen von Bluetooth 5.0, der Speicher von
+NimBLE im PSRAM, sein Host-Task auf Kern 0.
+
+`firmware/panel/main/panel_ble.c` startet den Host einmal, mit
+`panel_ble_start()`, in einem eigenen Task, `blestart`, und der Host bleibt
+bis zum Neustart des Panels. Nur `ble scan` des Konsolen-Builds ([Die
+Prüfstandskonsole](BenchConsole-de.md)) ruft es auf. Die Schritte und ihre
+Zeilen auf der Konsole:
+
+1. `c6_link_up()`, geteilt mit dem Wi-Fi: wer von beiden zuerst kommt, setzt
+   den C6 zurück und startet ihn. Eine gescheiterte Verbindung beendet den
+   Start: `ble: no link to the C6: no Bluetooth until the panel restarts`.
+2. Die Controller-Anfragen an den C6, `esp_hosted_bt_controller_init()` und
+   `_enable()`. esp_hosted ab 2.5.2 auf dem C6 lässt den Controller aus, bis
+   der Host fragt; ältere Firmware kennt diese Anfragen nicht und startet
+   ihren Controller selbst. esp_hosted beendet eine unbeantwortete Anfrage
+   nach 5s. Eine von drei Zeilen:
+   - `ble: C6 controller init and enable answered in <n>ms and <n>ms`;
+   - `ble: C6 controller init not answered in <n>ms: a C6 firmware without
+     the requests, its controller runs from its own start`; das Enable geht
+     dann nicht hinaus;
+   - `ble: C6 controller init <error> in <n>ms, enable <error> in <n>ms:
+     the host start goes on`.
+3. `nimble_port_init()` und der Host-Task `nimble_host`, dann das Warten auf
+   den Sync des Hosts, seinen HCI-Reset und die Abfragen danach, die der C6
+   beantwortet, höchstens 3 000ms (`PANEL_BLE_SYNC_MS`):
+   - `ble: synced in <n>ms, own address type <n>`, die Zeit ab dem Start
+     des Host-Tasks; oder
+   - `ble: no sync within 3000ms: the C6 answers no HCI; the host keeps
+     trying`. Ein späterer Sync schreibt seine eigene Zeile `synced in` mit
+     der längeren Zeit, und Bluetooth LE ist ab dann bereit.
+4. `ble: host started; internal RAM <n>B free before, <n>B after; PSRAM
+   <n>B before, <n>B after`, und `blestart` endet.
+
+Ein späterer Reset des Hosts, bei einem HCI-Fehler oder einem C6, der
+verstummt, schreibt `ble: host reset, reason <n>`; NimBLE synchronisiert
+von selbst neu und schreibt `ble: synced again`. Die Events aus den
+Callbacks des Hosts gehen in eine FreeRTOS-Queue mit 32 Elementen zu 64
+Bytes (`panel_ble.h`); eine volle Queue verwirft das Event und zählt es.
+
+Aktuelle Einschränkungen:
+
+- Der Transport-Start von NimBLE (`ble_transport_ll_init()` in
+  `vhci_drv.c` von esp_hosted) hält das Panel mit einem Abort an, wenn die
+  SDIO-Verbindung nicht steht. `panel_ble.c` startet NimBLE erst, nachdem
+  `c6_link_up()` die Verbindung gemeldet hat; eine Verbindung, die zwischen
+  dieser Antwort und dem Transport-Start ausfällt, löst den Abort aus.
+- Die Firmware des ausgelieferten C6 meldet Version 0.0.0 und beantwortet
+  keine Versionsanfrage. Ob sie die Controller-Anfragen annimmt und ob ihr
+  Controller überhaupt auf HCI antwortet, ist nicht gemessen.
+- Wi-Fi und Bluetooth LE teilen sich das eine 2,4-GHz-Funkteil des C6
+  (Software-Koexistenz des C6) und den SDMMC-Controller mit der SD-Karte.
+  Ihre Wirkung aufeinander ist nicht gemessen.
 
 ## CI
 

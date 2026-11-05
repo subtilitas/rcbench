@@ -55,10 +55,59 @@ def test_a_task_the_table_lacks_and_one_it_invents_fail():
 
 
 def test_both_pages_carry_the_task_table_and_the_count():
-    for page, header, sentence in sc.PERFORMANCE:
+    for page, header, sentence, option_header in sc.PERFORMANCE:
         text = page.read_text(encoding="utf-8")
         assert sc.doc_rows(text, header), page.name
         assert re.search(sentence, " ".join(text.split())), page.name
+        assert sc.doc_rows(text, option_header), page.name
+
+
+def test_the_console_tables_hold_the_option_tasks_and_no_other():
+    """Each page's table of the console build names exactly the tasks of
+    OPTION_TASKS, by the names they run under, and the main table none."""
+    names = {"console", "blestart", sc.NIMBLE_TASK}
+    for page, header, _, option_header in sc.PERFORMANCE:
+        text = page.read_text(encoding="utf-8")
+        assert set(sc.doc_rows(text, option_header)) == names, page.name
+        assert not names & set(sc.doc_rows(text, header)), page.name
+
+
+def test_a_console_build_is_held_to_the_console_table_only():
+    """With option tasks measured, the main table and the count are not
+    read: the console build's main task differs from the default build's."""
+    rows = {}
+    for page, _, _, option_header in sc.PERFORMANCE[:1]:
+        rows = sc.doc_rows(page.read_text(encoding="utf-8"), option_header)
+    option = {n: tuple(v) for n, v in rows.items()}
+    out = sc.check_panel_doc({"main": (1, 2, 3)}, 0, option)
+    assert [o for o in out if o.startswith("Performance.md")] == []
+    moved = dict(option, console=(4096, 1, 2))
+    out = sc.check_panel_doc({}, 0, moved)
+    assert any("gives console as" in o for o in out)
+
+
+def test_the_nimble_host_task_is_read_from_its_init_call(tmp_path):
+    """panel_ble.c hands its host function to nimble_port_freertos_init();
+    its stack is the build's CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE."""
+    (tmp_path / "config").mkdir()
+    hdr = tmp_path / "config" / "sdkconfig.h"
+    hdr.write_text("#define CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE 4096\n")
+    rows, errors = sc.nimble_tasks(tmp_path)
+    assert errors == []
+    assert [r[:3] for r in rows] == [("ble_host_task", "nimble_host", 4096)]
+    assert "ble_host_task" in sc.OPTION_TASKS
+    hdr.write_text("#define CONFIG_OTHER 1\n")
+    rows, errors = sc.nimble_tasks(tmp_path)
+    assert rows == [] and len(errors) == 1
+
+
+def test_nimble_calls_name_the_panels_gap_callback():
+    """The scan's callback of panel_ble.c is a static gap_event, the one
+    ble_gap_disc() is handed."""
+    src = (PANEL_MAIN / "panel_ble.c").read_text(encoding="utf-8")
+    assert sc.NIMBLE_CALLS["ble_gap_disc_report"] == ("panel_ble.c:gap_event",)
+    assert re.search(r"\bstatic int gap_event\(", src)
+    assert re.search(r"\bble_gap_disc\([^;]*\bgap_event\b", src, re.S)
 
 
 @pytest.mark.parametrize("rel, inside", [
