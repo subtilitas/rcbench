@@ -234,7 +234,7 @@ das Band 102 288 Pixelbesuche SAFE und 114 281 ARMED, mit rotem Chip und
 Laufuhr. Der Router merkt sich je Framebuffer `ui_band_key()` des zuletzt
 gezeichneten Bands und zeichnet es nur neu, wenn sich der Schlüssel bewegt: die
 Laufuhr einmal je Sekunde, solange der Prüfstand ARMED ist, ein Chip, ein Druck
-auf STOP oder auf den Home-Tag. Über einem simulierten Prüfstand wird es jeden
+auf STOP oder auf das Home-Feld. Über einem simulierten Prüfstand wird es jeden
 Frame gezeichnet, unter dem Watermark. `test_frame_work` zählt die Pixel, die
 der Rasterizer je Frame besucht (`gfx_work()`, nur in die Host-Suite gebaut),
 und hält ARMED in Ruhe bei SAFE in Ruhe plus dem Band einmal je Sekunde, eine
