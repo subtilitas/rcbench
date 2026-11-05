@@ -140,10 +140,10 @@ void servo_screen_arm_refused(uint32_t ask)
     if (!ui_value_refused(&s.gate, ask)) {
         return;
     }
-    if (s.arm_down || s.arm.held_s > 0.0f) {
-        ui_hold_reset(&s.arm);
-        s.arm_down = false;
-    }
+    /* A finger still on ARM after its hold posted is no press any more:
+     * the button draws released and the programmer may take its port. */
+    ui_hold_reset(&s.arm);
+    s.arm_down = false;
     ++s.arm_rev;
     ++s.ctrl_rev;
 }

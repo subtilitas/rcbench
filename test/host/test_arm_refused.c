@@ -583,6 +583,9 @@ TEST_CASE(a_refusal_under_a_finger_on_arm_ends_the_hold)
     CHECK_EQ(s.kind, SERVO_CMD_ARM);
     frame_after(s.ask);
     CHECK(!servo_screen_arm_asked());
+    /* ARM draws released under the finger. */
+    frames(UI_HOLD_FLASH_MS / 10 + 2);
+    CHECK(looks_safe());
     frames(HOLD_FRAMES);
     lift(FEED_LONE);
     CHECK(!servo_screen_take(&s));
@@ -624,6 +627,7 @@ TEST_CASE(a_refusal_after_a_disarm_changes_nothing)
     servo_cmd_t s = { .kind = SERVO_CMD_NONE };
     CHECK(servo_screen_take(&s));
     CHECK_EQ(s.kind, SERVO_CMD_DISARM);
+    CHECK_EQ(s.ask, 0u);                              /* stamps an ARM only */
     ui_router_goto(SCREEN_SERVO);
     arming_hs_facts_t f = { .link_up = true, .rate_settled = true,
                             .disarm_asked = true };
