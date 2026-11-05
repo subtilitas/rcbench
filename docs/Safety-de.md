@@ -757,7 +757,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
 - Der Router ordnet jeden Kontakt vom Drücken bis zum Loslassen genau
   einem Empfänger zu. Eine Seite bekommt ein Move oder ein Release nur für einen
   Kontakt, dessen Druck sie bekommen hat. Ein Kontakt, der auf dem Statusband
-  (den oberen 48px) oder auf dem Alert-Band aufsetzt, gehört dem Router, bis
+  (den oberen 60px) oder auf dem Alert-Band aufsetzt, gehört dem Router, bis
   er abhebt, wohin er auch wandert. Die Ausnahme ist ein Druck auf ein
   Bedienelement, das anhält, was der Prüfstand treibt (DISARM, AUSGANG AUS,
   ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN), das die Seite

@@ -687,7 +687,7 @@ reads the state and shows the alert, is not in the coverage figure.
 - A contact has one owner from its press to its release, and the router
   decides it. A screen is handed a move or a release only for a contact whose
   press it was handed. A contact that comes down on the status band (the top
-  48px) or on the alert band is the router's until it lifts, wherever it
+  60px) or on the alert band is the router's until it lifts, wherever it
   travels. The exception is a press on a control that stops what the bench
   drives (DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN),
   which the screen names to the router (`safe_at` in ui_screen.h): under the
