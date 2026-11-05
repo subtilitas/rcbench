@@ -594,6 +594,9 @@ TEST_CASE(the_repeat_and_the_timeout_hold_across_the_wrap)
 /* Numbers run 1 to 7 and round again, never 0 and never twice in a row. */
 TEST_CASE(exchange_numbers_run_one_to_seven)
 {
+    CHECK_EQ(LINK_MINOR_REPEAT, 37u);
+    CHECK_EQ(LINK_SEQ_MAX, 7u);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_REPEAT);
     link_host_init(&host, 0u);
     host.numbered = true;
     uint8_t last = 0u;
