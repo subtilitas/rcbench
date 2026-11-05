@@ -220,6 +220,55 @@ TEST_CASE(a_classic_servo_without_a_serial_is_asked_for_too)
     CHECK_EQ(g_drv.eeprom[0x06], fix_hs5645()[0x06]);
 }
 
+TEST_CASE(a_model_the_table_does_not_know_is_named_as_read)
+{
+    char unit[HITEC_PANEL_LINE];
+
+    /* A D series model number of no known model: its number. */
+    open_en();
+    servo_d485();
+    g_drv.dreg[HITEC_D_REG_MODEL] = 34999u;
+    tap_connect();
+    g_card = true;
+    prun(20u);
+    card_in();
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    tap(val(HITEC_PANEL_SERVO, 4, 1));
+    hold(2.1f);
+    until(HITEC_PROG_HELD);
+    show();
+    restore_page();
+    snprintf(unit, sizeof(unit), TR(HP_UNIT_D), "SERVO 34999", 0u);
+    CHECK(page_has(unit));
+    /* A classic name of no known model, no serial: its name cells. */
+    open_en();
+    servo_hs5645();
+    memcpy(&g_drv.eeprom[HITEC_C_NAME], "HS5XTEST\0\0\0\0\0\0\0\0", 16u);
+    for (unsigned c = 0; c < HITEC_C_SERIAL_LEN; ++c) {
+        g_drv.eeprom[HITEC_C_SERIAL + c] = 0xFFu;
+    }
+    tap(val(HITEC_PANEL_SERVO, 1, 0));
+    tap(hitec_panel_choice_rect(1));
+    tap_connect();
+    g_card = true;
+    prun(20u);
+    card_in();
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
+             HITEC_PROG_EDIT_OK);
+    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    tap(val(HITEC_PANEL_SERVO, 4, 1));
+    hold(2.1f);
+    until(HITEC_PROG_HELD);
+    show();
+    restore_page();
+    snprintf(unit, sizeof(unit), TR(HP_UNIT_C), "HS5XTEST");
+    CHECK(page_has(unit));
+}
+
 TEST_CASE(the_backup_age_reads_in_seconds_to_119s_then_in_minutes)
 {
     d_written(UI_LANG_EN);
@@ -351,6 +400,7 @@ int main(void)
     RUN(a_d_series_restore_asks_for_the_unit_and_its_hold_writes);
     RUN(the_page_names_the_id_the_servo_holds);
     RUN(a_classic_servo_without_a_serial_is_asked_for_too);
+    RUN(a_model_the_table_does_not_know_is_named_as_read);
     RUN(the_backup_age_reads_in_seconds_to_119s_then_in_minutes);
     RUN(a_short_press_shows_the_hint_and_writes_nothing);
     RUN(cancel_leaves_and_a_tap_elsewhere_stays_without_writing);
