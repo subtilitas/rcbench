@@ -801,7 +801,7 @@ ohne Halten oder Warten auf das Loslassen. DISARM und STOP halten den
 Ausgang ohne Rampe an. SPITZENWERTE ZURÜCKSETZEN löscht die Spitzenmarken
 und lässt die laufenden Messwerte unverändert.
 
-### WIRK. ist eine Guessimetrik
+### WIRK. ist eine Schätzung
 
 Die Kopfzeile des Telemetriefelds zeigt Nenn-kV, die gemessenen Umdrehungen
 pro Minute und Volt sowie WIRK.: gemessene rpm/V geteilt durch Nenn-kV.
@@ -1070,15 +1070,15 @@ Leerlaufpuls muss mindestens 100us unter Vollgaspuls liegen
 (`LINK_CC_THROTTLE_GAP_US`). Die Eingabebereiche überlappen: 800 bis 1600us
 und 1400 bis 2400us. Verletzt ein Wert den Abstand, bleibt das Tastenfeld
 offen und der bisherige Wert erhalten. Anstelle des Bereichs erscheint
-in der Warnfarbe `Leerlaufpuls höchstens 1900us (100us unter Vollgaspuls)`
-oder `Vollgaspuls mindestens 1100us (100us über Leerlaufpuls)`.
+in der Warnfarbe `Leerlaufpuls höchstens 1900us (100us unter Vollpuls)`
+oder `Vollpuls mindestens 1100us (100us über Leerlaufpuls)`.
 
 Das Panel prüft denselben Abstand vor dem Senden des Paars an den IOmcu.
 Dessen eigene Schreibprüfung begrenzt jeden Puls auf 400 bis 2500us,
 prüft aber nicht den Abstand.
 
 Leerlaufpuls und Vollgaspuls lassen sich nur in SAFE ändern. Der IOmcu
-übernimmt die Endpunkte im entschärften Zustand, 300ms nach der letzten
+übernimmt die Endpunkte, solange der Prüfstand SAFE ist, 300ms nach der letzten
 Änderung. Beim Wechsel auf ARMED werden keine Endpunkte gesendet. In ARMED,
 während einer ARM-Haltegeste und bei ausstehender ARM- oder DISARM-Antwort
 sind beide Wertefelder gesperrt. Ihre Hilfezeile zeigt
@@ -2171,7 +2171,7 @@ wirklich angesteuerten Ziel.
 
 Dort wählt SERVO-TESTER über die ZIEL-Einstellung OUTPUTS oder einen
 Programmierport; PORT-PWM steuert dessen Puls. Beides wird im NVS
-(nichtflüchtiger Speicher) gesichert. Das Verlassen von SERVO schaltet
+(nichtflüchtiger Speicher) gespeichert. Das Verlassen von SERVO schaltet
 auf SAFE und beendet Sweep oder Test. Das OUTPUTS-Home-Feld führt zur
 Aufgabe zurück, auf der ZIEL angetippt wurde.
 
@@ -4076,7 +4076,7 @@ Dateien auf, sendet sie und nimmt Uploads ohne Code an. Der Bildschirm zeigt
 installiert trotzdem erst nach 2s Halten am Panel.
 
 Vor der Codeprüfung wird jede Anfrage wie folgt geprüft, unabhängig vom
-Zugangscode-Schalter (`shared/webaccess/wa_guard.h`):
+Zugangscode-Schalter (`shared/webaccess/include/wa_guard.h`):
 
 | Prüfung | Abgelehnt mit |
 | --- | --- |
@@ -4242,7 +4242,7 @@ Spalten neu eingelesen.
 | NEUE TEXTDATEI | eine leere Datei mit dem getippten Namen dort; ein vergebener Name wird abgelehnt |
 | UMBENENNEN | der gewählte Eintrag unter dem getippten Namen in seinem Ordner; nur eine andere Groß- und Kleinschreibung ist auch ein Umbenennen |
 | VERSCHIEBEN | der gewählte Eintrag in den Ordner der anderen Spalte, unter seinem Namen; ein Ordner nur, wenn er leer ist |
-| LÖSCHEN | fragt `VON DER KARTE LÖSCHEN` mit dem Namen, ob es die Datei oder den leeren Ordner löscht, den Bericht, den ein Lauf-Log mitnimmt, und dass es sich nicht rückgängig machen lässt; ein Ordner nur, wenn er leer ist |
+| LÖSCHEN | fragt `VON KARTE LÖSCHEN` mit dem Namen, ob es die Datei oder den leeren Ordner löscht, den Bericht, den ein Lauf-Log mitnimmt, und dass es sich nicht rückgängig machen lässt; ein Ordner nur, wenn er leer ist |
 
 Ein getippter oder hochgeladener Name folgt der Tastatur des Panels ohne
 die deutschen Buchstaben: 1 bis 59 Bytes ASCII (American Standard Code
@@ -4426,7 +4426,7 @@ meldet den Fehler; das Panel läuft weiter.
 
 Der Server der Seite beantwortet auch vier Lesezugriffe für ein Skript:
 eine Seite eines Ordners, die Angaben zu einem Eintrag, eine Textdatei
-ganz und den Zustand des Panels (`shared/webaccess/wa_api.h`,
+ganz und den Zustand des Panels (`shared/webaccess/include/wa_api.h`,
 `firmware/panel/components/wifi_access/wifi_files.c`); und vier
 Schreibzugriffe (`shared/webaccess/wa_api_write.c`,
 `firmware/panel/components/wifi_access/wifi_write.c`). Die Dateiverwaltung
@@ -4840,7 +4840,7 @@ kopfüber eingebaut ist.
   ablehnt, schickt seinen Frame ungedreht hinaus. Bild und Touch sind ab
   diesem Frame NORMAL, das Band sagt `Bilddrehung 180° fehlgeschlagen.
   NORMAL bis zum Neustart.`, und die Konsole sagt `rotation 180 off: PPA
-  timeout` (oder `PPA error`). Die gespeicherte Einstellung bleibt 180°, und
+  timeout after <n> us` (oder `PPA error after <n> us`). Die gespeicherte Einstellung bleibt 180°, und
   der nächste Start dreht wieder. Beendet die PPA eine Kopie erst nach dem Timeout, schreibt sie deren
   Block nachträglich. Dieser Block bleibt gedreht, bis der Bildschirm ihn
   neu zeichnet.
@@ -6284,8 +6284,8 @@ Band zeigt `Leerlaufpuls muss mindestens 100us unter Vollgaspuls liegen. Nicht g
 
 Ein ESC, dessen Gasweg an einem Sender kalibriert wurde, nimmt den kürzesten
 Puls dieses Senders als null. Einen Leerlaufpuls darüber liest der ESC als Gas,
-das nicht ganz unten ist, und er schaltet nicht scharf; viele ESCs piepen dann
-schnell. Stelle den Leerlaufpuls auf oder unter den kürzesten Senderpuls und den
+das nicht ganz unten ist, und der ESC gibt den Motor nicht frei; ein ESC kann dann
+schnell piepen. Stelle den Leerlaufpuls auf oder unter den kürzesten Senderpuls und den
 Vollgaspuls auf oder über den längsten. Bei einem Sender mit 985 bis 2012us
 sind das beispielsweise 980us und 2020us.
 

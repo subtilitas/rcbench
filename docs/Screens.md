@@ -747,7 +747,7 @@ on contact, with no hold or wait for release. DISARM and STOP stop the
 output without a ramp. RESET PEAKS clears the peak markers while leaving
 live readings unchanged.
 
-### EFF is a guessimetric
+### EFF is an estimate
 
 The telemetry panel's header shows the rated kV, the revolutions per minute
 per volt the motor is actually turning, and EFF, the second divided by the
@@ -1002,7 +1002,7 @@ IOmcu's own write check enforces 400 to 2500us for each pulse but does not
 check the gap.
 
 Idle pulse and Full pulse can change only while SAFE. The IOmcu accepts
-the endpoints while disarmed, 300ms after the last edit; switching to
+the endpoints while the bench is SAFE, 300ms after the last edit; switching to
 ARMED sends no endpoints. While ARMED, during an ARM hold, or while an ARM
 or DISARM response is pending, both value boxes are locked. Their help
 line reads `Set on a SAFE bench only` in the warning colour. An open
@@ -3765,7 +3765,7 @@ and the screen says `Access code off. Any device on the network can open the pag
 panel.
 
 Every request is checked before the access code, with the code on and
-off (`shared/webaccess/wa_guard.h`):
+off (`shared/webaccess/include/wa_guard.h`):
 
 | Check | Refused with |
 | --- | --- |
@@ -4081,7 +4081,7 @@ the panel continues to run.
 The server also provides four read operations for scripts: a page of
 folder entries, details of one entry, a complete text file, and the panel's
 state
-(`shared/webaccess/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`);
+(`shared/webaccess/include/wa_api.h`, `firmware/panel/components/wifi_access/wifi_files.c`);
 and four writes (`shared/webaccess/wa_api_write.c`,
 `firmware/panel/components/wifi_access/wifi_write.c`).
 The page's file manager reads the card through them, through the same
@@ -4462,7 +4462,8 @@ panel mounted upside down.
 - A flip whose copies take longer than 50ms, or that the PPA refuses, sends
   its frame out unturned. Picture and touch are NORMAL from that frame on,
   the band says `Screen rotation 180° failed. NORMAL until restart.`, and
-  the console says `rotation 180 off: PPA timeout` (or `PPA error`). The
+  the console says `rotation 180 off: PPA timeout after <n> us` (or
+  `PPA error after <n> us`). The
   stored setting stays 180°, and the next start turns again. A copy the PPA
   ends after its timeout writes its block once more: that block shows
   turned until its screen repaints it.
@@ -5201,7 +5202,7 @@ cache, so neither core runs code from flash for its duration. The write is taken
 on the first frame at which the bench is SAFE with no switch to ARMED waiting, the
 supply's output is off with no ON queued, and no board drawing is being
 fetched or kept. On the settings screen that is the next frame, and
-the label goes to `SAVED` as fast as the eye follows the press. While ARMED, the
+the label goes to `SAVED` in that frame. While ARMED, the
 request stands as `WHEN IDLE` until the bench is SAFE.
 
 A failed write leaves the label at `NOT SAVED` in the danger colour
@@ -5825,13 +5826,13 @@ band says `Idle pulse must be at least 100us below Full pulse. Not sent.`.
 
 An ESC whose throttle range was calibrated on a transmitter takes that
 transmitter's shortest pulse as zero. An Idle pulse above it reads to the ESC
-as throttle not at the bottom, and the ESC does not arm; many ESCs beep
+as throttle not at the bottom, and the ESC does not arm; an ESC may beep
 rapidly in that state. Set the Idle pulse at or below the transmitter's
 shortest pulse and the Full pulse at or above its longest: for a transmitter
 that sends 985 to 2012us, 980us and 2020us.
 
 When the protocol can take no more pins, the reason is under the count in amber:
-`NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM TAKES 8
+`NEEDS 8 CHANNELS, 4 FREE`, `ALL 8 SLOTS IN USE`, or `SERVO PWM USES 8
 PINS`. A board drawn entirely in grey with nothing beside it reads as a
 fault, and PPM greys the whole board whenever anything else is bound.
 
@@ -6353,7 +6354,7 @@ marked on the board itself, on a short trace in from the pad:
 | --- | --- |
 | white round marker, 36px, with a large **G**, 40px in from the pad | ground |
 | amber round marker, 32px, with the voltage: **5V0**, **3V3** | a rail at a fixed voltage |
-| amber round marker with **PWR** | a rail that is an input, VSYS: a number that is only sometimes true is worse here than none |
+| amber round marker with **PWR** | a rail that is an input, VSYS, which has no fixed voltage |
 | dim cross on the pad | neither, like RUN and 3V3_EN |
 
 The marks go inside the outline because that is the only room left: the
