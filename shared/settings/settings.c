@@ -52,7 +52,7 @@ static const struct {
     [SET_TEXT_DUT_NAME]     = { "srv_dut", "SERVO", SET_CAT_COUNT },
     [SET_TEXT_LOG_AUTO_DIR] = { "log_auto_dir", "BENCH/LOGS", SET_CAT_CARD },
     [SET_TEXT_LOG_USER_DIR] = { "log_user_dir", "USER/LOGS", SET_CAT_CARD },
-    [SET_TEXT_IMU_ADDR]     = { "imu_addr", "", SET_CAT_COUNT },
+    [SET_TEXT_IMU_ADDR]     = { "imu_ble", "", SET_CAT_COUNT },
     [SET_TEXT_IMU_NAME]     = { "imu_name", "", SET_CAT_COUNT },
 };
 

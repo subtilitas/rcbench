@@ -396,7 +396,7 @@ appears once in the scan. Another `ble` line prints the commands.
 | `ble: scan done: <n> reports, reason <n>, <n> events dropped since start-up` | the scan ended; reason 0 is its end after 10,000ms |
 | `ble: no scan: no link to the C6` | the C6's link failed |
 | `ble: no scan: no sync` | the host had no sync within 3,000ms; the host keeps trying, and a later `ble scan` scans once it has synced |
-| `ble: no scan: <error>` | NimBLE refused the scan |
+| `ble: no scan: <error>` | NimBLE refused the scan; `ESP_ERR_INVALID_STATE` while the IMU scans or connects, as NimBLE runs one such procedure at a time |
 | `ble: a scan is under way` | a `ble scan` while one waits or runs |
 | `ble: commands: ble scan` | any other line that starts with `ble` |
 

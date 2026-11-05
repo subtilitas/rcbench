@@ -15,17 +15,16 @@ history is in git.
   (the board's C6 reports none and runs its controller without them; it
   gets them only after a missing sync), the host task `nimble_host` and the
   wait of 3,000ms for its sync, logged as `ble: synced in <n>ms` or `ble: no sync within
-  3000ms`. Its events go to a queue of 32 x 64 bytes. The console build's
-  `ble scan` starts it and prints every report of a 10,000ms scan; no other
-  build starts it, and no screen shows it. The default image grows by
-  44,688 bytes, the console image by 76,080.
+  3000ms`. Its events go to a queue of 32 x 64 bytes. The first IMU ON
+  starts it; the console build's `ble scan` starts it too and prints every
+  report of a 10,000ms scan.
 - `protocols/bleuart`: a BLE (Bluetooth Low Energy) central for the ISSC
   Transparent UART service of the BWT901CL, without radio code. It parses
   advertising reports into a scan list of 8 devices, connects to the bound
   address, discovers the service, subscribes to 1E4D, reads 6DAA once,
   writes commands on 8841 and reconnects 1000ms after a failure or drop.
   Host-tested by `test_bleuart`, `test_bleuart_link` and
-  `test_bleuart_adv`; no firmware uses it yet.
+  `test_bleuart_adv`.
 - Browser test of the Wi-Fi page's file manager. `test/host/wa_page_dump.c`
   writes the page `wa_page_main()` builds, and `test/host/wa_mock_server.py`
   serves it with a mock of the file API, its refusals and its request guard.
@@ -43,6 +42,20 @@ history is in git.
 
 ### Changed
 
+- The Bluetooth IMU reads the WitMotion BWT901CL over Bluetooth LE through
+  the board's ESP32-C6, in place of an HC-05 on UART1. The first IMU ON
+  starts Bluetooth LE. SCAN FOR SENSORS scans for 10s and lists the
+  devices that advertise 0x18F0 or the ISSC UART service, with name,
+  address and RSSI, and counts the others as hidden; a tap binds a sensor
+  without pairing, and the panel connects to it and again 1s after a drop.
+  SETUP keeps the address with its type under the new key `imu_ble`; an
+  address stored for the HC-05 is not read. The IMU screen and SETUP >
+  SENSORS > IMU show STARTING BLUETOOTH, NO BLUETOOTH ON C6, C6 FAILED:
+  RESTART, CONNECTING and the errors of the link, of a refused command
+  write and of the scan, and the C6's version in place of the HC-05's.
+  CONNECT TO ANY SENSOR is gone. The panel no longer builds
+  `protocols/hc05`; IO4, IO5 and IO29 of header P3 are free. The `imu`
+  task's stack is 4,096 bytes.
 - The panel's link to the ESP32-C6 is the component `c6_link`, one mutex
   around its reset and start, for Wi-Fi and Bluetooth LE alike. Wi-Fi works
   as before. Its console lines carry the tag `c6`: `c6: C6: esp_hosted

@@ -194,11 +194,11 @@ Vibration und Optischer Tacho besitzen gespeicherte Schlüssel, aber keinen Eint
 
 ![SENSORS auf dem IMU-Eintrag, verbunden](view:setup-sensors-imu)
 
-Der Winkelsensor WitMotion BWT901CL wird über ein HC-05-Bluetooth-Modul an UART1 des Panels verbunden. Suche, Zuordnung und Kalibrierung erfolgen über die Kachel [IMU](imu.md) in SETUP. Dieser Eintrag enthält seine Einstellungen.
+Der Winkelsensor WitMotion BWT901CL wird über Bluetooth LE durch den ESP32-C6 des Boards verbunden. Suche, Zuordnung und Kalibrierung erfolgen über die Kachel [IMU](imu.md) in SETUP. Dieser Eintrag enthält seine Einstellungen.
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
-| IMU | EIN, AUS | AUS | die Einrichtung des HC-05 und der Messwert des Sensors |
+| IMU | EIN, AUS | AUS | Bluetooth LE, die Verbindung zum gebundenen Sensor und sein Messwert; das erste EIN startet Bluetooth LE bis zum Neustart des Panels |
 | IMU-Achse | X, Y, Z | X | der Winkel, den die Servoläufe und RUDER lesen; `Z: 1° MIT MAGNETOMETER` |
 | IMU-Vorzeichen | +, - | + | `-` dreht diesen Winkel um |
 | IMU-Rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | die Frames des Sensors je Sekunde; sie gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde |
@@ -210,12 +210,15 @@ Der Winkelsensor WitMotion BWT901CL wird über ein HC-05-Bluetooth-Modul an UART
 | Zustand | Wann |
 |---|---|
 | `AUS` | IMU AUS |
-| `KEIN HC-05` | der HC-05 antwortet auf `AT` bei keiner von 115200, 38400 und 9600 Baud; das Panel fragt alle 10s erneut |
-| `KEIN SENSOR GEBUNDEN` | der HC-05 antwortet; kein Sensor ist gebunden |
-| `SUCHE LÄUFT`, `BINDEN LÄUFT` | eine Suche oder ein Binden läuft |
-| `GEBUNDEN` | gebunden; seitdem kein Winkel-Frame |
+| `BLUETOOTH STARTET` | Bluetooth LE startet: die Verbindung zum C6, der Host, sein Sync |
+| `KEIN BLUETOOTH AM C6` | der Host hat keinen Sync mit dem C6; er versucht es weiter |
+| `C6 AUSGEFALLEN: NEUSTART` | die Verbindung zum C6 schlug fehl; WLAN und Bluetooth sind bis zum Neustart des Panels aus |
+| `KEIN SENSOR GEBUNDEN` | Bluetooth läuft; kein Sensor ist gebunden |
+| `SUCHE LÄUFT` | eine Suche läuft |
+| `VERBINDE` | das Panel verbindet sich mit dem gebundenen Sensor und richtet seinen Dienst ein |
+| `GEBUNDEN` | abonniert, noch kein Winkel-Frame; oder das gebundene Gerät ist kein WitMotion-Sensor |
 | `VERBUNDEN 50Hz` | Winkel-Frames in den letzten 300ms, mit dieser Rate |
-| `KEINE FRAMES` | gebunden, Frames kamen, keiner in den letzten 300ms |
+| `KEINE FRAMES` | abonniert, Frames kamen, keiner in den letzten 300ms |
 
 ## Verwandte Seiten
 

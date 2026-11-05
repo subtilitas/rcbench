@@ -115,7 +115,7 @@ void render_imu_pose(const char *view)
         while (imu_screen_take(&c)) { }
         v.found_n = 2u;
         device(&v.found[0], "00:0C:BF:08:19:29", "HC-06", -50);
-        device(&v.found[1], "00:0C:BF:0A:44:17", "HC-06", -71);
+        device(&v.found[1], "00:0C:BF:0A:44:17", "", -71);
         v.hidden = 4u;
         imu_screen_set(&v);
     }

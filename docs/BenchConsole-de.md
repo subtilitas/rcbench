@@ -416,7 +416,7 @@ Befehle.
 | `ble: scan done: <n> reports, reason <n>, <n> events dropped since start-up` | der Scan ist zu Ende; Grund 0 ist sein Ende nach 10 000ms |
 | `ble: no scan: no link to the C6` | die Verbindung zum C6 ist ausgefallen |
 | `ble: no scan: no sync` | der Host hatte binnen 3 000ms keinen Sync; er versucht es weiter, und ein späteres `ble scan` scannt, sobald er synchron ist |
-| `ble: no scan: <error>` | NimBLE hat den Scan abgelehnt |
+| `ble: no scan: <error>` | NimBLE hat den Scan abgelehnt; `ESP_ERR_INVALID_STATE`, solange die IMU sucht oder sich verbindet, da NimBLE nur eine solche Prozedur zugleich ausführt |
 | `ble: a scan is under way` | ein `ble scan`, während einer wartet oder läuft |
 | `ble: commands: ble scan` | jede andere Zeile, die mit `ble` beginnt |
 

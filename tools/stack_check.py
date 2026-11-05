@@ -143,11 +143,11 @@ PANEL_DIR = ROOT / "firmware" / "panel"
 # entry, the name and the stack size are their first three arguments.
 TASK_CREATE = ("xTaskCreatePinnedToCore", "xTaskCreate")
 # Entries of a task only a build option reaches: console_task, which
-# RCBENCH_PANEL_CONSOLE compiles, and Bluetooth LE's start and host tasks,
-# which only the console's `ble scan` starts (main/panel_ble.c).  A build
-# without the option has none of them; one with it holds each as any other,
-# and --check-doc holds them to the table of the console build.
-OPTION_TASKS = {"console_task", "ble_start_task", "ble_host_task"}
+# RCBENCH_PANEL_CONSOLE compiles.  A build without the option does not have
+# it; one with it holds it as any other, and --check-doc holds it to the
+# table of the console build.  Bluetooth LE's start and host tasks are in
+# every build: the IMU's first IMU ON starts them (main/panel_imu.c).
+OPTION_TASKS = {"console_task"}
 # ESP-IDF's NimBLE port creates the Bluetooth LE host task itself
 # (nimble_port_freertos_init() in nimble_port_freertos.c): its entry is the
 # one the panel's call passes, its name ESP-IDF's, its stack this option of

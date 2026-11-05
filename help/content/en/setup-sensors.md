@@ -194,11 +194,11 @@ Vibration and Optical tacho have stored keys and no entry: no screen or IOmcu re
 
 ![SENSORS on the IMU entry, connected](view:setup-sensors-imu)
 
-The WitMotion BWT901CL connects through an HC-05 Bluetooth module on the panel's UART1. Use the [IMU](imu.md) tile on SETUP to scan, bind and calibrate it. This entry contains its settings.
+The WitMotion BWT901CL connects over Bluetooth LE through the board's ESP32-C6. Use the [IMU](imu.md) tile on SETUP to scan, bind and calibrate it. This entry contains its settings.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
-| IMU | ON, OFF | OFF | the HC-05's set-up and the sensor's reading |
+| IMU | ON, OFF | OFF | Bluetooth LE, the link to the bound sensor and its reading; the first ON starts Bluetooth LE until the panel restarts |
 | IMU axis | X, Y, Z | X | the angle the servo runs and RUDDER read; `Z: 1° WITH THE MAGNETOMETER` |
 | IMU sign | +, - | + | `-` turns that angle round |
 | IMU rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | the sensor's frames a second; it takes effect after the sensor is switched off and on |
@@ -210,12 +210,15 @@ RATE and ALGORITHM changes are sent with the sensor's SAVE command (`FF AA 00 00
 | State | When |
 |---|---|
 | `OFF` | IMU OFF |
-| `NO HC-05` | the HC-05 answers `AT` at none of 115200, 38400 and 9600 baud; the panel asks again every 10s |
-| `NO SENSOR BOUND` | the HC-05 answers; no sensor is bound |
-| `SCANNING`, `BINDING` | a scan or a bind runs |
-| `BOUND` | bound; no angle frame since |
+| `STARTING BLUETOOTH` | Bluetooth LE starts: the C6's link, the host, its sync |
+| `NO BLUETOOTH ON C6` | the host has no sync with the C6; it keeps trying |
+| `C6 FAILED: RESTART` | the C6's link failed; Wi-Fi and Bluetooth are off until the panel restarts |
+| `NO SENSOR BOUND` | Bluetooth runs; no sensor is bound |
+| `SCANNING` | a scan runs |
+| `CONNECTING` | the panel connects to the bound sensor and sets up its service |
+| `BOUND` | subscribed, no angle frame yet; or the bound device is not a WitMotion sensor |
 | `CONNECTED 50Hz` | angle frames within the last 300ms, at that rate |
-| `NO FRAMES` | bound, frames came, none in the last 300ms |
+| `NO FRAMES` | subscribed, frames came, none in the last 300ms |
 
 ## Related pages
 

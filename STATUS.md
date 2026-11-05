@@ -955,22 +955,20 @@ command to the pin.
 
 ### Bluetooth IMU
 
-Built and host-tested: a WitMotion BWT901CL through an HC-05 on the panel's UART1
-(`PANEL_IMU_*` in board_pins.h: TX IO4, RX IO5 and KEY IO29 of header P3, 5V and GND from
-the RS485 header H9). The reading (`shared/bench/imu.c`, `test_imu`), the sensor's side: its
-commands, the calibration and the gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without
-a radio), the HC-05 link's AT set-up (`shared/ui/imu_hc05.c`), the controller that joins the
-two (`shared/ui/imu_ctl.c`, `test_imu_ctl` against `hc05_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`), SETUP > SENSORS > IMU
-(`test_imu_pane`) and the panel's UART task (`firmware/panel/main/panel_imu.c`). With ANGLE
-SOURCE IMU the servo runs read its angle in AS5600 counts. No HC-05 or BWT901CL has been run
-with this code.
-
-Built and host-tested, not yet in a firmware: the BLE (Bluetooth Low Energy) central for the
-sensor's ISSC Transparent UART service (`protocols/bleuart`): the advertising data parser and
-the scan list (`test_bleuart_adv`), connect, discovery, subscribe, the 6DAA read, the write
-path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` against
-`test/host/ble_sim.h` and the owner's capture of the sensor's notifications). It has not run
-against NimBLE or the sensor.
+Built and host-tested: a WitMotion BWT901CL over Bluetooth LE (Low Energy, BLE) through the
+board's ESP32-C6, NimBLE on the P4 (`firmware/panel/main/panel_ble.c`). The BLE central for
+the sensor's ISSC Transparent UART service (`protocols/bleuart`): the advertising data parser
+and the scan list (`test_bleuart_adv`), connect, discovery, subscribe, the 6DAA read, the
+write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` against
+`test/host/ble_sim.h` and the owner's capture of the sensor's notifications). The reading
+(`shared/bench/imu.c`, `test_imu`), the sensor's side: its commands, the calibration and the
+gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
+(`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
+`test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
+SETUP > SENSORS > IMU (`test_imu_pane`) and the panel's IMU task
+(`firmware/panel/main/panel_imu.c`). With ANGLE SOURCE IMU the servo runs read its angle in
+AS5600 counts. The link has not run against NimBLE's answers or the sensor. `protocols/hc05`
+and its suites stay in the host suite; no firmware builds them.
 
 ### Phase tap (ESC tones)
 
@@ -1195,8 +1193,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` | yes | | yes |
-| `bleuart` | | | yes |
+| `hc05` | | | yes |
+| `bleuart` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets

@@ -4652,7 +4652,7 @@ of the 10 x 20px face.
 | INA3221 0x40 to 0x43 | a state of the table in [SENSORS: the INA3221 parts](#sensors-the-ina3221-parts) | 10 |
 | AS5600 | `ON`, `NOT ACCEPTED BY THE IOMCU` | 2 |
 | PHASE TAP | `ON`, `NOT ACCEPTED BY THE IOMCU` | 7 |
-| IMU | `NO HC-05`, `NO SENSOR BOUND`, `SCANNING`, `BINDING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 6 |
+| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 6 |
 
 - An entry with an enable row shows that row alone and reads `OFF` while it is
   off. ON adds the entry's other rows under it.
@@ -5109,20 +5109,20 @@ at least one period of the lowest tone, 2.5ms at 400Hz
 ![IMU, connected at 50Hz with ZERO taken](img/imu-connected.png)
 
 SETUP's IMU tile opens the screen for a WitMotion BWT901CL angle sensor,
-connected to the panel through an HC-05 Bluetooth module on UART1
-([The Bluetooth IMU](IMU.md)). SENSORS' IMU entry holds its rows: IMU ON or
+connected to the panel over Bluetooth LE through the board's ESP32-C6
+([The Bluetooth IMU](IMU.md)); the first IMU ON starts Bluetooth LE. SENSORS' IMU entry holds its rows: IMU ON or
 OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
 default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
 controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
-CONNECT TO ANY SENSOR (only after the HC-05 refused a scan with
-`ERROR:(1F)`), `HOLD 2s: CALIBRATE ACCELEROMETER`, ZERO and CLEAR ZERO side
+a free slot, `HOLD 2s: CALIBRATE ACCELEROMETER`, ZERO and CLEAR ZERO side
 by side, and IMU SETTINGS, which opens SENSORS on the IMU entry; its home tag
 comes back. The card on the right, x 484 to 1016, names the bound sensor and
-its address, the HC-05's firmware, the state, the angles X, Y and Z from the
+its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
 zero in the 16 x 28px face (the axis the runs read in the accent), the rate
 of angle frames, the age of the newest one and the sensor's battery. SCAN
-opens the found list: up to 8 devices of 640 x 48px at a 52px pitch, a tap
-binds one and closes the list. The home tag closes the list first. The
+opens the found list for a scan of 10s: up to 8 sensors of 640 x 48px at a
+52px pitch with name, address and RSSI, and the count of the other devices
+the scan heard under SCAN AGAIN; a tap binds one and closes the list. The home tag closes the list first. The
 reading is stale 300ms after the last angle frame, the dropout allowance of
 a run ([Servo procedures](Servo.md)).
 

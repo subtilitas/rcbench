@@ -257,8 +257,9 @@ typedef enum {
     SET_TEXT_DUT_NAME = 0,   /**< the device under test, for the report */
     SET_TEXT_LOG_AUTO_DIR,   /**< AUTO LOG FOLDER: the automatic logs'  */
     SET_TEXT_LOG_USER_DIR,   /**< USER LOG FOLDER: the tests' files     */
-    SET_TEXT_IMU_ADDR,       /**< the sensor the HC-05 is bound to, as
-                                  +INQ prints it; "*" any sensor          */
+    SET_TEXT_IMU_ADDR,       /**< the bound sensor's BLE address and its
+                                  type, "00:0C:BF:08:19:29 P"; key
+                                  imu_ble                                 */
     SET_TEXT_IMU_NAME,       /**< its name from the scan, 23 characters */
     SETTING_TEXT_COUNT
 } setting_text_id_t;

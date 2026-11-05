@@ -5042,7 +5042,7 @@ Schrift 10 x 20px.
 | INA3221 0x40 bis 0x43 | ein Zustand der Tabelle unter [SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine) | 10 |
 | AS5600 | `EIN`, `VOM IOMCU ABGELEHNT` | 2 |
 | PHASENABGRIFF | `EIN`, `VOM IOMCU ABGELEHNT` | 7 |
-| IMU | `KEIN HC-05`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `BINDEN LÄUFT`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 6 |
+| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 6 |
 
 - Bei einem ausgeschalteten Eintrag mit Einschaltzeile erscheint nur diese
   Zeile; sein Zustand lautet `AUS`. EIN blendet die übrigen Zeilen ein.
@@ -5524,21 +5524,22 @@ des tiefsten Tons lang sein, 2,5ms bei 400Hz (`tone_init()`,
 ![IMU, verbunden mit 50Hz, NULLPUNKT gesetzt](img/de/imu-connected.png)
 
 Die IMU-Kachel unter SETUP öffnet den Bildschirm für den Winkelsensor
-WitMotion BWT901CL. Er ist über ein HC-05-Bluetooth-Modul an UART1 mit dem
-Panel verbunden ([Die Bluetooth-IMU](IMU-de.md)). Seine Einstellungen
+WitMotion BWT901CL. Er ist über Bluetooth LE durch den ESP32-C6 des Boards
+mit dem Panel verbunden ([Die Bluetooth-IMU](IMU-de.md)); das erste IMU EIN
+startet Bluetooth LE. Seine Einstellungen
 stehen im IMU-Eintrag unter SENSORS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
 50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
 WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
-Body-y 16: SENSOREN SUCHEN, MIT JEDEM SENSOR VERBINDEN (nur, nachdem der HC-05
-eine Suche mit `ERROR:(1F)` abgelehnt hat), `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, NULLPUNKT und NULLPUNKT LÖSCHEN nebeneinander, und
+Body-y 16: SENSOREN SUCHEN, ein freier Platz, `2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN`, NULLPUNKT und NULLPUNKT LÖSCHEN nebeneinander, und
 IMU-OPTIONEN, das SENSORS auf dem IMU-Eintrag öffnet; dessen Home-Tag
 führt zurück. Die Karte rechts, x 484 bis 1016, nennt den gebundenen Sensor
-und seine Adresse, die Firmware des HC-05, den Zustand, die Winkel X, Y und Z
+und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
 relativ zum Nullpunkt in der Schrift 16 x 28px (die von den Läufen
 verwendete Achse in der Akzentfarbe), die Rate der Winkel-Frames, das Alter des neuesten und den Akku
-des Sensors. SENSOREN SUCHEN öffnet die Liste der gefundenen Geräte: bis zu 8
-Geräte von 640 x 48px im Abstand von 52px; ein Tippen bindet eines und
-schließt die Liste. Das Home-Tag schließt zuerst die Liste. Der Messwert ist
+des Sensors. SENSOREN SUCHEN öffnet die Liste für eine Suche von 10s: bis zu
+8 Sensoren von 640 x 48px im Abstand von 52px mit Name, Adresse und RSSI,
+unter AKTUALISIEREN die Zahl der übrigen Geräte, die die Suche hörte; ein
+Tippen bindet einen und schließt die Liste. Das Home-Tag schließt zuerst die Liste. Der Messwert ist
 300ms nach dem letzten Winkel-Frame veraltet, die Aussetzer-Toleranz eines
 Laufs ([Servoverfahren](Servo-de.md)).
 
