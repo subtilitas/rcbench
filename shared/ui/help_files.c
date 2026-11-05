@@ -81,7 +81,7 @@ bool fs_help_page(int i, ui_help_page_t *out)
                           FS_LIST(1));
     }
     for (int k = 0; k < 4; ++k) {
-        const int b = k_foot[i][k];
+        const int b = (int)k_foot[i][k];
         if (b >= 0) {
             (void)ui_help_add(out, ui_tr(k_foot_text[b].label),
                               k_foot_text[b].text, FS_FOOT(b));
