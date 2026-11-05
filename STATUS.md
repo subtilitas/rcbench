@@ -1220,7 +1220,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 455 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1254,9 +1254,9 @@ The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_can`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
 `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`,
-`test_outputs_hw_ports`, `test_outstore`, `test_can_timing`, `test_can_selftest`,
+`test_outputs_hw_ports`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
-`test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_touch_loss`,
+`test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
 `test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
 `test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,

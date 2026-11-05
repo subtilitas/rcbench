@@ -6,7 +6,8 @@
 # watchdog together.  flash_gate.c is the panel's rule for when a write of
 # its own flash may start, and the IOmcu's for when one of its own may
 # not.  reset_cause.c names why the IOmcu last started, from the
-# registers its boot leaves behind.  frame_watch.c is the panel's watchdog on
+# registers its boot leaves behind; boot_diag.c prints the boot ROM's
+# record of that boot.  frame_watch.c is the panel's watchdog on
 # its render loop while the bench is ARMED or the supply's output is on.
 # error_stop.c is the panel's rule for an error: every output off and the
 # bench SAFE; error_sites.c applies it where the panel's control task finds
@@ -14,7 +15,7 @@
 # 5V collapsed under the panel's ON.  stop_latch.c is the reset of the
 # panel's STOP: from a hold of STOP to the heartbeat sent again.
 set(SRCS heartbeat.c arming.c touch_loss.c safety_gate.c flash_gate.c
-         reset_cause.c frame_watch.c error_stop.c error_sites.c prog5v_lost.c
+         reset_cause.c boot_diag.c frame_watch.c error_stop.c error_sites.c prog5v_lost.c
          stop_latch.c)
 
 if(ESP_PLATFORM)

@@ -230,6 +230,25 @@ none`, wenn das Boot-ROM keines lieferte), `params` seine Reboot-Parameter,
 beim Boot und setzt SCRATCH2 und SCRATCH3 danach auf 0. Die längste Zeile
 hat 153 Byte mit ihrem LF.
 
+Auf jede Reset-Zeile folgt der Eintrag des Boot-ROM zum selben Boot, aus
+`rom_get_boot_info()`:
+
+    rcbench-iomcu: boot type NORMAL partition none source slot 0 diagnostic 0x00010355
+
+| Feld | Werte |
+| --- | --- |
+| `type` | der Boot-Typ: `NORMAL`, `BOOTSEL`, `RAM_IMAGE`, `FLASH_UPDATE`, `PC_SP`, sonst sein Wert in Hex; `+CHAINED` bei einem verketteten Boot |
+| `partition` | die gebootete Partition: `0` Slot A, `1` Slot B; `none` |
+| `source` | was das Diagnosewort beschreibt: `slot 0` nach dem Einschalten (die Suche nach der Partitionstabelle, Boot-Slot 0 in Bit 0-15 und Slot 1 in Bit 16-31); `0` nach `picotool reboot -a -g 0` (Partition A in Bit 0-15, Partition B in Bit 16-31); `none` |
+| `diagnostic` | das Wort, in den BOOT_DIAGNOSTIC_*-Bits aus `boot/bootrom_constants.h` des pico-sdk: 0x0001 durchsucht, 0x0004 gültige Block-Schleife, 0x0008 gültige IMAGE_DEF, 0x0010 Partitionstabelle, 0x0020 betrachtet, 0x0040 gewählt, 0x0200 Tabelle geprüft, 0x0800 Image-Hash geprüft, 0x1000 Image geprüft, 0x4000 gestartet, 0x8000 Startbedingung nicht erfüllt |
+
+`boot info none`, wenn das Boot-ROM keinen lieferte. Die längste Zeile hat
+99 Byte mit ihrem LF. Die Zeile oben ist das gescheiterte Einschalten eines
+IOmcu der Station in BOOTSEL: Partitionstabelle gelesen und geprüft, kein
+Image gestartet. Die Anwendung gibt dieselbe Zeile bei jedem Start aus, den
+sie erreicht; nach `picotool reboot -a -g 0` zeigt sie also, welche Schritte
+Slot A und Slot B bestanden haben.
+
 CHIP_RESET ändert sich nur bei einem Reset auf Chip-Ebene, und seine Bits
 sind nur lesbar (RP2350-Datenblatt, Abschnitte 7.3 und 7.4, Tabelle 489).
 Der Reboot des Boot-ROM setzt das System über die Power-on State Machine

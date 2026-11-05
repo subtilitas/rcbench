@@ -20,6 +20,7 @@
 
 #include "iomcu.h"
 
+#include "boot_diag.h"
 #include "reset_cause.h"
 #include "sense_limit.h"
 #include "sense_map.h"
@@ -87,6 +88,18 @@ _Static_assert(RESET_PICOTOOL_P0 == (uint32_t)BOOT_PARTITION_NONE,
 /** @brief The registers as reset_start() read them. */
 static reset_regs_t s_reset;
 
+/**
+ * @brief The boot ROM's record of this boot, the line after every reset
+ * line: boot type, partition booted, diagnostic source and word
+ * (boot_diag.h).
+ */
+static void boot_say(void)
+{
+    char boot[BOOT_DIAG_TEXT_MAX];
+    (void)boot_diag_text(&s_reset, boot, sizeof(boot));
+    IOMCU_SAY("rcbench-iomcu: %s\n", boot);
+}
+
 void reset_start(void)
 {
     /* CHIP_RESET's HAD_* bits are RO (datasheet table 489) and change only
@@ -105,6 +118,7 @@ void reset_start(void)
     memset(&info, 0, sizeof(info));
     s_reset.boot_ok = rom_get_boot_info(&info) != 0;
     s_reset.boot_word = info.boot_word;
+    s_reset.boot_diagnostic = info.boot_diagnostic;
     s_reset.reboot_params[0] = info.reboot_params[0];
     s_reset.reboot_params[1] = info.reboot_params[1];
 
@@ -113,6 +127,9 @@ void reset_start(void)
     /* Before the console exists, like can_start()'s line; can_report()
      * repeats it every 3s. */
     printf("rcbench-iomcu: reset %s\n", text);
+    char boot[BOOT_DIAG_TEXT_MAX];
+    (void)boot_diag_text(&s_reset, boot, sizeof(boot));
+    printf("rcbench-iomcu: %s\n", boot);
 }
 
 #if IOMCU_CONSOLE
@@ -122,6 +139,7 @@ void reset_say(void)
 
     (void)reset_cause_full(&s_reset, why, sizeof(why));
     IOMCU_SAY("rcbench-iomcu: reset %s\n", why);
+    boot_say();
 }
 #endif
 
@@ -214,6 +232,7 @@ void can_report(uint32_t now)
     char why[RESET_CAUSE_FULL_MAX];
     (void)reset_cause_full(&s_reset, why, sizeof(why));
     IOMCU_SAY("rcbench-iomcu: reset %s\n", why);
+    boot_say();
     if (!s_can_up) {
         IOMCU_SAY("rcbench-iomcu: CAN did not answer on SPI -- module fitted? "
                   "wiring on GP9-12?\n");

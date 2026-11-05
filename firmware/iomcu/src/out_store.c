@@ -18,6 +18,7 @@
 #include "pico/stdlib.h"
 
 #include "out_store_map.h"
+#include "out_store_range.h"
 
 /**
  * @brief Where it goes: the data partition "store" of partitions.json, two
@@ -78,6 +79,11 @@ _Static_assert(IOMCU_STORE_BYTES == STORE_SECTORS * FLASH_SECTOR_SIZE,
                "partitions.json: the store partition is not two sectors");
 _Static_assert(STORE_OFFSET + IOMCU_STORE_BYTES <= STORE_OLD_OFFSET,
                "partitions.json: the store overlaps the old store's sectors");
+_Static_assert(OUT_STORE_RANGE_SECTOR == FLASH_SECTOR_SIZE
+               && OUT_STORE_RANGE_PAGE == FLASH_PAGE_SIZE,
+               "out_store_range.h does not name this flash's sector and page");
+_Static_assert(IOMCU_SLOT_A_OFFSET >= OUT_STORE_RANGE_FLOOR,
+               "partitions.json: slot A overlaps the boot ROM's boot slots");
 _Static_assert(STORE_V7_SLOTS <= 255u,
                "the store has more slots than a slot index holds");
 _Static_assert(STORE_V7_BYTES == FLASH_PAGE_SIZE
@@ -596,8 +602,7 @@ bool out_store_window_open(void)
 
 bool out_store_flash_erase(uint32_t off)
 {
-    if (off % FLASH_SECTOR_SIZE != 0u
-        || off + FLASH_SECTOR_SIZE > STORE_OFFSET) {
+    if (!out_store_range_erase_ok(off, STORE_OFFSET)) {
         return false;
     }
     flash_op_t op = { .off = off, .erase = true };
@@ -606,9 +611,7 @@ bool out_store_flash_erase(uint32_t off)
 
 bool out_store_flash_program(uint32_t off, const uint8_t *data, uint32_t len)
 {
-    if (data == NULL || off % FLASH_SECTOR_SIZE != 0u
-        || len % FLASH_PAGE_SIZE != 0u || len > FLASH_SECTOR_SIZE
-        || off + len > STORE_OFFSET) {
+    if (data == NULL || !out_store_range_program_ok(off, len, STORE_OFFSET)) {
         return false;
     }
     flash_op_t op = { .off = off, .erase = false, .data = data, .len = len };

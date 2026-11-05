@@ -220,6 +220,24 @@ gave none), `params` its reboot parameters, `scratch` WATCHDOG SCRATCH2 and
 SCRATCH3. The firmware reads them once at boot and then zeroes SCRATCH2 and
 SCRATCH3. The longest line is 153 bytes with its LF.
 
+Each reset line is followed by the boot ROM's record of the same boot, from
+`rom_get_boot_info()`:
+
+    rcbench-iomcu: boot type NORMAL partition none source slot 0 diagnostic 0x00010355
+
+| Field | Values |
+| --- | --- |
+| `type` | the boot type: `NORMAL`, `BOOTSEL`, `RAM_IMAGE`, `FLASH_UPDATE`, `PC_SP`, else its value in hex; `+CHAINED` for a chained boot |
+| `partition` | the partition booted: `0` slot A, `1` slot B; `none` |
+| `source` | what the diagnostic word describes: `slot 0` after a power-on (the search for the partition table, boot slot 0 in bits 0-15 and slot 1 in bits 16-31); `0` after `picotool reboot -a -g 0` (partition A in bits 0-15, partition B in bits 16-31); `none` |
+| `diagnostic` | the word, in the BOOT_DIAGNOSTIC_* bits of pico-sdk's `boot/bootrom_constants.h`: 0x0001 searched, 0x0004 valid block loop, 0x0008 valid IMAGE_DEF, 0x0010 partition table, 0x0020 considered, 0x0040 chosen, 0x0200 table verified, 0x0800 image hash checked, 0x1000 image verified, 0x4000 launched, 0x8000 launch condition failed |
+
+`boot info none` when the boot ROM gave none. The longest line is 99 bytes
+with its LF. The line above is the failed power-on of a station IOmcu in
+BOOTSEL: the partition table read and verified, no image launched. The
+application prints the same line on every start it reaches, so after
+`picotool reboot -a -g 0` it shows which steps slots A and B passed.
+
 CHIP_RESET changes only at a chip-level reset, and its bits are read-only
 (RP2350 datasheet, sections 7.3 and 7.4, table 489). The boot ROM's reboot
 resets the system through the power-on state machine, not the chip: after
