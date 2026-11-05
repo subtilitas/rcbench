@@ -83,8 +83,8 @@ throttle signal: while the page holds the pin the output has released it, an app
 leaves that slot unbound (`esc_port_may_bind()`), and the module has no function
 that makes a pulse pattern.
 
-Disarming does not count as a stop: ARM is refused from OPEN onward,
-so the bank is already disarmed. The panel's STOP sends the STOP
+Switching to SAFE does not count as a stop: ARM is refused from OPEN onward,
+so the bank is already SAFE. The panel's STOP sends the STOP
 operation; a failsafe edge independently triggers a stop.
 
 **What counts as an error.** Any operation of the session that ends other than

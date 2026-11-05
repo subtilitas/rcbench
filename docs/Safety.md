@@ -131,8 +131,8 @@ either goes.
 
 SAFE means the panel asks DISARM. The request withholds the heartbeat while
 it stands, so the IOmcu fails safe within 150ms even when the panel's
-control task waits in an exchange. A bench that is SAFE already is not
-disarmed again: on a SAFE bench the withheld heartbeat would end a
+control task waits in an exchange. A bench that is SAFE already gets no
+second DISARM: on a SAFE bench the withheld heartbeat would end a
 programming port's session for no output it drives. The rule is
 `error_stop()` in `shared/safety/error_stop.c`, under `test_error_stop`.
 The control task applies it where it finds an error through
