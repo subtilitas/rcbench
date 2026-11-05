@@ -481,8 +481,7 @@ sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 is on no board. This guide gives no part, timing network, trigger polarity or
 gates, so it cannot be followed to build it, and an assembler improvising one
 may produce something that stays enabled after the edges stop, which is the
-failure it exists to prevent. The parts selected for the IO board are in
-[Control](../hardware/docs/Control.md), group A.
+failure it exists to prevent. Parts: [Control](../hardware/docs/Control.md).
 
 What it has to do, so that a circuit can be designed against it and checked:
 

@@ -157,9 +157,7 @@ The `PWM1` configuration does not survive the invocation. `--set` followed by
 a separate capture reads back `enabled` off and `output_frequency` 1000.
 Stimulus and capture have to be one command.
 
-The PWM1 tables above are a signal the analyser generated itself. The
-analyser has also captured the IOmcu's ESC signal wire driver on GPIO 13 and
-GPIO 14 ([escwire README](../protocols/escwire/README.md#on-a-chip-no-esc-attached)).
+The PWM1 tables above are a signal the analyser generated itself. It has also captured the IOmcu's ESC signal wire driver on GPIO 13 and GPIO 14 ([escwire README](../protocols/escwire/README.md#on-a-chip-no-esc-attached)).
 Measurements of other IOmcu outputs are not recorded on this page.
 
 Clearing that gate means the driver exists. It says nothing about whether the
