@@ -184,7 +184,7 @@ as the PROG PORT entries of **OUTPUTS**, and is kept over a restart.
   `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX` while it is off. A servo
   test's voltage steps do not reach the port: a test on it says
   `PROG PORTS RUN AT 5V FIXED: NO STEPS`.
-- For the limit run the PROG 5V box stands for the PD mini: SEARCH+PROG
+- For the limit run the PROG 5V box stands for the PD mini: SEARCH + PROGRAM
   and SERVO PULSES are offered with the box ON, and the session's power
   cycles switch GPIO 21. With the box OFF and either chosen, the LIMIT RUN
   card says `PROG 5V OFF: SWITCH IT ON IN THE PROG 5V BOX`, not the PD mini
@@ -555,8 +555,8 @@ their font has no micro sign.
 | POSITION | Uncontrolled Pos, µs | 500 to 2500µs and within PULSE LOWER to PULSE UPPER |
 | AFTER | Uncontrolled Time, s | 0.4 to 13.0s |
 
-The limits are those of `protocols/kst/kst_limits.c`; the panel holds none
-of its own. The lower limit of MAX. DUTY and the 5% of SPEED are choices,
+The limits are the constants of `protocols/kst/include/kst_limits.h`, checked
+in `protocols/kst/kst_limits.c`; the panel holds none of its own. The lower limit of MAX. DUTY and the 5% of SPEED are choices,
 not readings of a servo.
 
 ### A value a hard limit refuses
