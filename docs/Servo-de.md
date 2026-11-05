@@ -674,10 +674,11 @@ das Ruherauschen anpasst. Beim Nachspielen der beiden unten beschriebenen
 Prüfstandsläufe liefern ein Band von 0,05A und ein Band in Höhe der
 Schwelle dieselben Stellzeiten, auf die Millisekunde genau. Messwerte um
 mehr als die Schwelle über dem Haltestrom gelten in beiden Fällen noch
-als Bewegung. Entscheidend ist daher die angepasste Bewegungsschwelle. 0.13.0 nahm
-0,10A als Bewegung, und der MG90S bewegt sich mit 0,04 bis 0,077A über
-0,001A Haltestrom: keine Bewegung wurde erkannt, jede lief nach 3000ms aus
-und zählte als verspätet, und der Lauf lautete NICHT BESTANDEN.
+als Bewegung. Entscheidend ist daher die angepasste Bewegungsschwelle. Eine feste
+Bewegungsschwelle von 0,10A, der Wert der Firmware 0.13.0, übersieht den
+MG90S, der sich mit 0,04 bis 0,077A über 0,001A Haltestrom bewegt: keine
+Bewegung wird erkannt, jede läuft nach 3000ms aus und zählt als verspätet,
+und der Lauf lautet NICHT BESTANDEN.
 
 **Einschränkung: die Bewegung zur Mitte kann in RUHE reichen.** Mit
 EINSCHWINGZEIT 500ms tragen die Messwerte in RUHE noch das Ende der Bewegung
@@ -977,7 +978,7 @@ Position. Das Panel verwendet ihn nicht als Winkel. Der Lauf erhält
 einen ungültigen Messwert mit Begründung, die Winkelspalte der CSV bleibt
 leer und eine noch nicht abgeschlossene Bewegung ohne bestätigte Ruhe
 wird wie oben aus der Auswertung ausgeschlossen. Der Bericht hat
-dann die Zeile `Kein Magnet: AS5600 meldete N-mal keinen. ...`; N zählt, wie
+dann die Zeile `Kein Magnet: AS5600 meldete N-mal keinen Magneten. ...`; N zählt, wie
 oft der Sensor im Lauf aus einem anderen Zustand zu "kein Magnet" wechselte,
 ein in diesem Zustand gestarteter Lauf eingeschlossen. Ein als zu schwach oder
 zu stark gemeldeter Magnet (ML, MH) bei gesetztem MD lässt den Winkel in
@@ -1071,7 +1072,7 @@ und SENSOR-MITTE übernimmt keinen Zählerstand von ihr.
 | ein Lauf liest Winkel, wenn | AS5600 an ist und der IOmcu es an hält | beim Start ein Messwert unter 300ms Alter angezeigt wird |
 | Ruhezeit | die des IOmcu, 12 Zählschritte (1,05°) | die eigene der IMU (`IMU_STILL_DEG`, 0,5°, `imu.h`) |
 | Lücke | antwortet nicht | 300ms kein Messwert (`IMU_STALE_MS`) |
-| Bericht, `Encoder:` | `AS5600 an der Hornwelle, Mittenwert N` | `IMU X+, in AS5600-Zählern (0.088 Grad je Zähler)` |
+| Bericht, `Encoder:` | `AS5600 an der Welle des Ruderhorns, Mittenwert N` | `IMU X+, in AS5600-Zählschritten (0.088° je Schritt)` |
 
 Für IMU-Lücken gilt dieselbe Toleranz wie für den AS5600: höchstens
 300ms, wobei der Beginn der vorherigen Lücke mindestens 10s zurückliegen
@@ -1130,7 +1131,7 @@ wird. Sollwerte, die du nach dem Lauf geändert hast, bleiben erhalten.
 | `Netzteil abgeschaltet` | der Ausgang ging durch eine Abschaltschwelle aus |
 | `Netzteilausgang abgeschaltet` | der Ausgang ging anders aus, AUSGANG AUS eingeschlossen |
 | `seit 1.5s kein Messwert` | `SERVO_TEST_STALE_MS` |
-| `Netzteilausgang nicht aktiv` | 3000ms nach dem ON nicht an |
+| `Netzteilausgang blieb aus` | 3000ms nach dem ON nicht an |
 | `Sollwert 3s nicht bestätigt` | das Netzteil hat die Spannung einer Stufe nicht übernommen |
 | `Stufe über Spannungsgrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder die Eingangsspannung des PD mini abzüglich 0,7V |
 | `1s über BLOCKIERT AB` | `SERVO_TEST_STALL_ABORT_MS` |
@@ -1185,7 +1186,7 @@ wie vielen der gezählten Bewegungen keine Bewegung erkannt wurde, und
 `Unerkannt` deren Zahl. Ein Servo, das sich nicht bewegt, lautet NICHT
 MESSBAR, nicht NICHT BESTANDEN. Kam keine Bewegung an, gibt es keine
 längste Stellzeit, und die Zeile `Stellzeit` lautet `längste --` und
-`nicht gemessen, keine Bewegung kam an`, an jedem Strommesser.
+`nicht gemessen, keine Bewegung erreichte das Ziel`, an jedem Strommesser.
 
 Eine Bestehensgrenze von 0 ist ausgeschaltet. BLOCKIERT AB wird dagegen
 immer geprüft. Ein
@@ -1272,12 +1273,12 @@ Dieselbe Wiedergabe eines 1102HB, das 0,015 bis 0,029A hält und in
 Bewegung bis 0,039 bis 0,044A zieht, lautet `NICHT MESSBAR - bei 25 von 46
 gezählten Bewegungen keine Bewegung am Stromverlauf erkannt`: seine Bewegungen zum
 oberen Ende verlassen die 0,028A des unteren Endes und überschreiten sie
-nie um 0,020A. Auf 0.13.0 lautete dasselbe Servo NICHT BESTANDEN, alle 34
-gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBROCHEN -
+nie um 0,020A. Mit der festen Schwelle von 0,10A (Firmware 0.13.0) lautet dasselbe Servo
+NICHT BESTANDEN, alle 34 gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBROCHEN -
 <Grund>`. Unter einer abgeschnittenen Stufe steht eine Zeile `(verkürzt)`,
 unter einer Stufe, deren gezählte Bewegungen alle unerkannt blieben, eine
 Zeile `NICHT MESSBAR`, bei beidem beides in einer Zeile. Eine nie erreichte
-Stufe zeigt `nicht gelaufen`. Die Zeilen der Stufentabelle sind höchstens
+Stufe zeigt `nicht ausgeführt`. Die Zeilen der Stufentabelle sind höchstens
 92 Zeichen breit, so breit wie eine Zeile der Aufzeichnungsansicht: Ströme in ganzen
 mA nehmen je 6 Zeichen, die Spaltenköpfe zwei Zeilen. `Kann zerstören` nennt das rote Schild, wenn
 ein Heli-Typ oder eine Pulsrate über 60Hz gilt.
@@ -1306,8 +1307,8 @@ Strom zwischen zwei Messwerten dieses Kanals im Abstand von 1ms: Ein Fenster ent
 Ein Tester hat drei Prüfstandsläufe mit Firmware 0.13.0 und dem PD mini
 aufgezeichnet: mit einem MG90S-Mikroservo, einem Digitalservo 1102HB und
 einem Digitalservo MS24. Das MS24, in Bewegung 0,16 bis 0,18A, bestand. MG90S
-und 1102HB lauteten NICHT BESTANDEN, jede Bewegung verspätet, weil 0.13.0
-0,10A als Bewegung nahm; beide Servos bewegten sich. Die Host-Suite spielt die gekürzten CSVs von MG90S und 1102HB
+und 1102HB lauteten NICHT BESTANDEN, jede Bewegung verspätet, weil die Firmware 0.13.0
+die Bewegungsschwelle auf 0,10A festlegte; beide Servos bewegten sich. Die Host-Suite spielt die gekürzten CSVs von MG90S und 1102HB
 (`test/host/fixtures/`) gegen den Testablauf nach. Hinzu kommt ein
 MS24-ähnlicher Fall mit den dreifachen Stromwerten des MG90S.
 Die Host-Suite prüft den Ablauf außerdem mit `servo_sim` und
