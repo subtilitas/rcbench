@@ -18,6 +18,7 @@ From left to right, the band contains the home tag and screen name, the status c
 | BENCH, SIM | BENCH while the IOmcu answers and the screens drive its outputs; SIM while the panel runs its own model |
 | INJECT | in place of BENCH and SIM while a touch injector answers at I2C (Inter-Integrated Circuit) address 0x14; a panel looks for one once, at start-up |
 | FAULT 01 to FAULT 7F | a fault code the IOmcu reports; absent while there is none |
+| HWSTOP | in FAULT's place, red, while [SETUP > PANEL > Hardware stop](setup.md#panel) is ON and the heartbeat bit (10) is set: the bench's stop button is pressed or its cable is broken |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | what the switch to ARMED drives; STOP while a stop is latched |
 | run clock | the length of the current run from the switch to ARMED, minutes and seconds; it holds the last run at SAFE |
 
@@ -79,6 +80,19 @@ The FAULT box spans the panel, 1008px, with one paragraph per set bit:
 | 40 | STORE_OFF | the IOmcu cannot write its flash this boot; set-ups sent to it last until it restarts |
 
 For a bit this release never sets, the box says to flash both boards from one release.
+
+## HWSTOP
+
+![HWSTOP and its box](view:band-hwstop)
+
+A stop button on the bench sits in the heartbeat line between the panel and the IOmcu. A pressed button and a broken or unplugged cable both open the line, and the IOmcu sets bit 10, HEARTBEAT. With SETUP > PANEL > Hardware stop OFF, the default, the band shows `FAULT 10`. With it ON, the band shows a red `HWSTOP` chip in FAULT's place.
+
+- The bench reacts the same either way: the IOmcu is SAFE, the motor and servo outputs and the PD mini output are off, and ARM is refused.
+- HWSTOP does not tell a pressed button from a broken cable. If releasing the button does not clear it, check the cable and its plugs.
+- To clear it, release the button or repair the cable. HWSTOP goes 80 to 700ms after the line closes, without an ARM: the IOmcu trusts the line after 4 good heartbeat intervals of 20ms, and the panel reads the IOmcu's status every 500ms.
+- The bench stays SAFE. Hold ARM for 2s to switch the outputs on again.
+- Other bits set at the same time are listed in HWSTOP's box, which spans the panel as FAULT's does. They show as a FAULT code again once HWSTOP goes.
+- While the panel's own STOP is latched, while its reset runs and for 1000ms after it, the panel withholds the heartbeat itself, and the band shows neither HWSTOP nor FAULT 10.
 
 ## Screenshot
 

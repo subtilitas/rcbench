@@ -3403,12 +3403,10 @@ shared/ui/include/supply_screen.h: warning: return type of member supply_screen_
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_task is not documented
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_typed_asks is not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_chip_rect are not documented
-shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_rect are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_render are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_mode are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_link_refused_label are not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_chip_rect is not documented
-shared/ui/include/ui_band.h: warning: return type of member ui_band_help_rect is not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_mode is not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_mode_inject is not documented
 shared/ui/include/ui_band.h: warning: return type of member ui_band_stop_rect is not documented

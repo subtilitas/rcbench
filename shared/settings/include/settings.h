@@ -93,6 +93,7 @@ typedef enum {
     SET_KNOB_SCALE,
     SET_KB_SEE,
     SET_DEMO_MODE,
+    SET_HW_STOP,
     /* --- interfaces ---------------------------------------------------- */
     SET_INA228_EN,
     SET_INA228_ADDR,

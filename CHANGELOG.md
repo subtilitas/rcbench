@@ -22,6 +22,12 @@ history is in git.
   the diagnostic word describes and the word, read through
   `rom_get_boot_info()`. After `picotool reboot -a -g 0` the word shows
   which steps slots A and B passed. Both boards, rp2350_can and rbmod.
+- SETUP > PANEL > Hardware stop, OFF by default, for a bench with a stop
+  button in the heartbeat line. ON, the band shows the heartbeat bit as a red
+  HWSTOP chip in place of FAULT 10, with a help box that names the pressed
+  button or a broken cable and how to clear it. The chip goes 80 to about
+  680ms after the line closes, with no ARM. What the bench does on the bit
+  is unchanged; OFF, the band is as before.
 
 ### Fixed
 

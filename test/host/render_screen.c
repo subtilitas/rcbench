@@ -197,6 +197,8 @@ static bool s_enc_on;
 static bool s_rot_on;
 /* The time zone stored at LOS ANGELES, the longest option. */
 static bool s_tz_on;
+/* SETUP > PANEL > Hardware stop stored ON. */
+static bool s_hwstop_on;
 
 /* The settings model's ARMED source, as the panel's (panel_boot.c). */
 static bool router_armed(void)
@@ -217,6 +219,9 @@ static bool lang_load(float *values, int count)
     }
     if (s_tz_on && (int)SET_TIME_ZONE < count) {
         values[SET_TIME_ZONE] = 7.0f;
+    }
+    if (s_hwstop_on && (int)SET_HW_STOP < count) {
+        values[SET_HW_STOP] = 1.0f;
     }
     if (s_enc_on && (int)SET_ENC_CENTRE < count) {
         values[SET_ENC_EN]     = 1.0f;
@@ -2455,7 +2460,9 @@ static void pose_update(const char *view)
  * A help bubble of the band, opened by a tap on its chip over the menu.
  * The status is the view's: band-fault has the three bits this release
  * sets, band-fault-all every bit and one this panel has no name for --
- * the tallest bubble there is.  band-stop has a STOP latched.
+ * the tallest bubble there is.  band-stop has a STOP latched.  band-hwstop
+ * has SETUP > PANEL > Hardware stop ON and the heartbeat bit, and
+ * band-hwstop-all every bit beside it.
  */
 static void band_view(const char *view, ui_bench_status_t *st)
 {
@@ -2470,6 +2477,11 @@ static void band_view(const char *view, ui_bench_status_t *st)
     if (strncmp(view, "band-fault", 10) == 0) {
         st->faults = (strcmp(view, "band-fault-all") == 0) ? 0xFFu : 0x51u;
         chip = UI_BAND_CHIP_FAULT;
+    } else if (strncmp(view, "band-hwstop", 11) == 0) {
+        /* SETUP > PANEL > Hardware stop ON and the heartbeat bit: HWSTOP
+         * in FAULT's place; -all with every other bit in its box. */
+        st->faults = (strcmp(view, "band-hwstop-all") == 0) ? 0xFFu : 0x10u;
+        chip = UI_BAND_CHIP_HWSTOP;
     } else if (strcmp(view, "band-bench") == 0
                || strcmp(view, "band-sim") == 0) {
         chip = UI_BAND_CHIP_MODE;
@@ -3935,6 +3947,12 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
         setup_tile(SET_CAT_APP);
         setup_scroll_rows(4);
     }
+    /* PANEL scrolled to its end: Hardware stop, stored ON. */
+    if (strcmp(view, "setup-hw-stop") == 0) {
+        setup_tile(SET_CAT_APP);
+        setup_scroll_rows(5);
+        setup_scroll_rows(5);
+    }
     /* SETUP's SD CARD: AUTO LOGS and USER LOGS, and the two folders. */
     if (strcmp(view, "setup-card") == 0) {
         setup_tile(SET_CAT_CARD);
@@ -4153,6 +4171,8 @@ int main(int argc, char **argv)
     s_enc_on = strcmp(view, "servo-encoder") == 0;
     s_rot_on = strcmp(view, "setup-rotation") == 0;
     s_tz_on = strcmp(view, "setup-time-zone") == 0;
+    s_hwstop_on = strcmp(view, "setup-hw-stop") == 0
+                  || strcmp(view, "band-hwstop") == 0;
     s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);

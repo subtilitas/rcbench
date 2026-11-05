@@ -18,6 +18,7 @@ Von links nach rechts stehen das Home-Feld mit dem Seitennamen, die Status-Chips
 | BENCH, SIM | BENCH, solange der IOmcu antwortet und die Seiten seine Ausgänge ansteuern; SIM, solange das Panel sein eigenes Modell berechnet |
 | INJECT | ersetzt BENCH und SIM, solange ein Touch-Injector an der I2C-Adresse 0x14 (Inter-Integrated Circuit) antwortet; das Panel sucht ihn einmal beim Start |
 | FEHLER 01 bis FEHLER 7F | ein vom IOmcu gemeldeter Fehlercode; ohne Fehler ist der Chip ausgeblendet |
+| HWSTOP | rot an der Stelle von FEHLER, solange [SETUP > PANEL > Hardware-STOP](setup.md#panel) EIN ist und das Heartbeat-Bit (10) gesetzt ist: Der STOP-Taster des Prüfstands ist gedrückt oder sein Kabel unterbrochen |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | welche Ausgänge bei ARMED angesteuert werden; STOP bei eingerastetem Stopp |
 | Laufzeituhr | die Laufdauer seit dem Schalten auf ARMED in Minuten und Sekunden; bei SAFE bleibt die Dauer des letzten Laufs stehen |
 
@@ -80,6 +81,19 @@ Das Hilfefeld von FEHLER ist 1008px breit und erstreckt sich über das Panel. Je
 | 40 | STORE_OFF | der IOmcu kann in diesem Start nicht in seinen Flash schreiben; Einstellungen, die er bekommt, gelten bis zu seinem Neustart |
 
 Bei einem Bit, das dieses Release nicht setzt, fordert das Hilfefeld dazu auf, beide Platinen mit demselben Release zu flashen.
+
+## HWSTOP
+
+![HWSTOP und sein Kasten](view:band-hwstop)
+
+Ein STOP-Taster am Prüfstand liegt in der Heartbeat-Leitung zwischen Panel und IOmcu. Ein gedrückter Taster und ein unterbrochenes oder abgezogenes Kabel öffnen beide die Leitung, und der IOmcu setzt Bit 10, HEARTBEAT. Mit SETUP > PANEL > Hardware-STOP auf AUS, der Vorgabe, zeigt das Band `FEHLER 10`. Mit EIN zeigt das Band an der Stelle von FEHLER einen roten Chip `HWSTOP`.
+
+- Der Prüfstand reagiert in beiden Fällen gleich: Der IOmcu ist SAFE, Motor- und Servoausgänge und der PD-mini-Ausgang sind aus, und ARM ist gesperrt.
+- HWSTOP unterscheidet einen gedrückten Taster nicht von einem unterbrochenen Kabel. Verschwindet es nach dem Lösen des Tasters nicht, prüfe das Kabel und seine Stecker.
+- Zum Aufheben löse den Taster oder repariere das Kabel. HWSTOP verschwindet 80 bis 700ms, nachdem die Leitung wieder geschlossen ist, ohne ARM: Der IOmcu vertraut der Leitung nach 4 guten Heartbeat-Intervallen von 20ms, und das Panel liest den Status des IOmcu alle 500ms.
+- Der Prüfstand bleibt SAFE. Halte ARM 2s, um die Ausgänge wieder einzuschalten.
+- Gleichzeitig gesetzte weitere Bits stehen im Kasten von HWSTOP, der wie der von FEHLER über das Panel reicht. Sobald HWSTOP verschwindet, zeigt das Band sie wieder als FEHLER-Code.
+- Solange der eigene STOP des Panels eingerastet ist, während sein Lösen läuft und 1000ms danach hält das Panel den Heartbeat selbst an, und das Band zeigt weder HWSTOP noch FEHLER 10.
 
 ## Screenshot
 

@@ -8,8 +8,8 @@ A guide to the controls, readings and menu marks on each screen.
 
 Every screen shares the top status band. From right to left it shows STOP,
 "?" on screens with a [guide](#the-screen-guide), the run clock (while ARMED
-or after a run), the arm chip, any reported FAULT code, the mode, and LINK or
-NO LINK. BENCH means the link is up and the panel controls the IOmcu's
+or after a run), the arm chip, any reported FAULT code or
+[HWSTOP](#hwstop), the mode, and LINK or NO LINK. BENCH means the link is up and the panel controls the IOmcu's
 outputs. SIM means no IOmcu answers and the panel uses its own models.
 INJECT replaces either mode while a touch injector answers at I2C
 (Inter-Integrated Circuit) address 0x14. The panel checks for an injector
@@ -77,12 +77,12 @@ tag and LINK.
 ### Chip help
 
 Tap a status chip to open its help box: LINK or NO LINK, the mode, FAULT,
-the arm chip or the run clock. The box explains the current state and what
+HWSTOP, the arm chip or the run clock. The box explains the current state and what
 to do. It opens 4px below the band, aligned with the chip's left edge and
 shifted left where necessary to remain 8px inside the panel.
 
 The box is 640px wide, fitting 60 characters per line in the 10 x 20px font
-with 21px line spacing. The FAULT box spans 1008px and fits 97 characters
+with 21px line spacing. The FAULT and HWSTOP boxes span 1008px and fit 97 characters
 per line, with one paragraph per set bit. No box overlaps the status band
 or the alert band, so STOP remains visible.
 
@@ -91,7 +91,8 @@ or the alert band, so STOP remains visible.
 - The text follows the state while the box is open. A fault that appears
   shows at once, one that clears goes, and a box follows its chip when the
   run clock appears and moves the chips.
-- A box whose chip goes closes: FAULT when the faults clear, the run clock
+- A box whose chip goes closes: FAULT when the faults clear, HWSTOP when
+  the heartbeat bit clears, the run clock
   when it goes.
 - A tap on another chip closes the box and opens that chip's box, in one
   tap. A press on the other chip that slides off it before it lifts closes
@@ -142,6 +143,26 @@ says to flash both boards from one release.
 ![The SAFE box](img/band-safe.png)
 
 ![The ARMED MOTOR box](img/band-armed.png)
+
+### HWSTOP
+
+![HWSTOP in FAULT's place, and its box](img/band-hwstop.png)
+
+With SETUP > PANEL > Hardware stop ON, the heartbeat bit (10) shows as a red
+HWSTOP chip in FAULT's place, for a bench with a stop button in the
+heartbeat line ([Hardware stop button](Safety.md#hardware-stop-button)). A
+pressed button and a broken cable both show HWSTOP. The setting is OFF by
+default, and OFF the band shows FAULT 10.
+
+- HWSTOP takes FAULT's place, so the row of chips is no wider: HWSTOP is 6
+  characters, `FEHLER 7F` 9. Other bits set with it are in HWSTOP's box,
+  after its two paragraphs, and come back as a FAULT code when it goes.
+- The chip is the danger red of the latched STOP's badge, its text in the
+  dark ink of the bright fills.
+- It goes on the first band drawn from a STATUS read without the bit, 80 to
+  about 680ms after the line closes, with no ARM.
+- While the panel's own STOP is latched, while its reset runs and for
+  1000ms after it, the band leaves out bit 10, as HWSTOP and as FAULT 10.
 
 ## The screen guide
 
@@ -4347,7 +4368,11 @@ default and is described under [Logs](#logs). Keyboard transparency sets how
 much of the text shows through the text editor's keyboard: OFF, 25% or 50%,
 OFF by default; described under [The text editor](#the-text-editor). Demo mode
 hides the SIMULATION watermark and leaves the band's SIM chip
-([The status band](#the-status-band)).
+([The status band](#the-status-band)). Hardware stop, the last row and OFF
+by default, shows the heartbeat fault as HWSTOP in place of FAULT 10
+([HWSTOP](#hwstop)).
+
+![PANEL scrolled to Hardware stop, stored ON](img/setup-hw-stop.png)
 
 Eight settings are stored without affecting firmware operation. Units and
 Dim after appear under PANEL; Cells, Capacity and Internal R appear on
