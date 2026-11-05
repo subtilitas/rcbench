@@ -492,6 +492,85 @@ TEST_CASE(a_stored_address_with_imu_off_connects_without_a_scan_at_imu_on)
     CHECK_STR_EQ(v.bound_addr, RIG_ADDR);
 }
 
+/* The view's list, hidden count and errors belong to the last scan: a new
+ * scan clears them at its start, IMU OFF clears them, and a failed write's
+ * mark does not outlive IMU OFF.  A random address binds with type R; one
+ * past the list is refused. */
+TEST_CASE(scan_and_imu_off_clear_the_list_the_hidden_count_and_the_error)
+{
+    static const bleu_addr_t rnd = {
+        { 0x01u, 0x02u, 0x03u, 0x04u, 0x05u, 0xC6u }, BLEU_ADDR_RANDOM
+    };
+    static const bleu_addr_t phone = {
+        { 0x11u, 0x22u, 0x33u, 0x44u, 0x55u, 0x66u }, BLEU_ADDR_PUBLIC
+    };
+    static const uint8_t phone_ad[] = { 0x02u, 0x01u, 0x06u, 0x06u, 0x09u,
+                                        'P', 'H', 'O', 'N', 'E' };
+    const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
+    rig_t r;
+    imu_view_t v;
+    rig_init(&r);
+    rig_cfg(&r, true, "", 2, true);
+    /* A scan the host refuses: its code. */
+    r.sim.scan_fail = true;
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.err, IMU_ERR_SCAN);
+    CHECK_EQ(v.err_code, 2u);
+    /* A scan that hears nothing: NONE FOUND, the old code gone. */
+    r.sim.scan_fail = false;
+    r.sim.nadv = 0;
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, BLEU_SCAN_MS + 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.err, IMU_ERR_NONE_FOUND);
+    CHECK_EQ(v.err_code, 0u);
+    /* A random-address sensor and a phone: one listed, one hidden. */
+    bsim_adv(&r.sim, 300u, &rnd, -60, k_rig_adv, sizeof k_rig_adv);
+    bsim_adv(&r.sim, 400u, &phone, -70, phone_ad, sizeof phone_ad);
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, BLEU_SCAN_MS + 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 1u);
+    CHECK_EQ(v.hidden, 1u);
+    CHECK_EQ(v.err, IMU_ERR_NONE);
+    /* The next scan starts with an empty list. */
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 0u);
+    CHECK_EQ(v.hidden, 0u);
+    rig_run(&r, BLEU_SCAN_MS + 10u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 1u);
+    const imu_cmd_t past = { IMU_CMD_BIND, 1u };
+    CHECK(!imu_ctl_command(&r.c, &past, r.t));
+    const imu_cmd_t bind = { IMU_CMD_BIND, 0u };
+    CHECK(imu_ctl_command(&r.c, &bind, r.t));
+    imu_ctl_view(&r.c, &v);
+    CHECK_STR_EQ(v.bound_addr, "C6:05:04:03:02:01 R");
+    /* IMU OFF in a scan: list, count and errors gone; at ON no NONE FOUND
+     * of the scan it cut. */
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, 500u);
+    r.c.ble.op_err = IMU_ERR_WRITE;
+    r.c.ble.op_code = 9u;
+    r.c.ble.wr_failed = true;
+    r.c.ble.hidden = 3u;
+    rig_cfg(&r, false, "C6:05:04:03:02:01 R", 2, true);
+    CHECK(!imu_ble_write_failed(&r.c.ble));
+    rig_cfg(&r, true, "C6:05:04:03:02:01 R", 2, true);
+    rig_run(&r, 100u);
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 0u);
+    CHECK_EQ(v.hidden, 0u);
+    CHECK(v.err != IMU_ERR_NONE_FOUND && v.err != IMU_ERR_WRITE);
+    CHECK_EQ(r.c.ble.op_code, 0u);
+    /* The list is empty now: its first row, still in memory, is not bound. */
+    CHECK(!imu_ctl_command(&r.c, &bind, r.t));
+}
+
 /* What cannot run now is refused: BIND without a scan, CALIBRATE and ZERO
  * without a reading, an unknown kind, SCAN before Bluetooth is synced.
  * ZERO and UNZERO with one. */
@@ -708,6 +787,7 @@ int main(void)
     RUN(a_rate_change_goes_to_the_sensor_once_it_is_connected);
     RUN(imu_off_ends_the_link_and_forgets_the_list);
     RUN(a_stored_address_with_imu_off_connects_without_a_scan_at_imu_on);
+    RUN(scan_and_imu_off_clear_the_list_the_hidden_count_and_the_error);
     RUN(commands_are_refused_when_they_cannot_run);
     RUN(no_bind_while_a_scan_runs_and_a_rebind_keeps_the_link);
     RUN(a_rate_change_in_a_calibration_waits_for_its_end);
