@@ -163,6 +163,30 @@ static int title_of(const ui_screen_t *sc, int n)
     return ui_help_page(sc, false, n, &p) ? (int)p.title : -1;
 }
 
+/**
+ * @brief Check the titles and item counts of the pages @p sc offers SAFE.
+ * @param sc     The screen.
+ * @param n      The pages expected.
+ * @param titles Each page's title.
+ * @param items  Each page's item count.
+ * @param what   The state, for failure messages.
+ */
+static void check_marks(const ui_screen_t *sc, int n, const int *titles,
+                        const int *items, const char *what)
+{
+    for (int i = 0; i < n; ++i) {
+        ui_help_page_t p;
+        if (!ui_help_page(sc, false, i, &p)) {
+            T_FAIL("%s: page %d missing", what, i + 1);
+            continue;
+        }
+        if ((int)p.title != titles[i] || p.count != items[i]) {
+            T_FAIL("%s: page %d has title %d and %d items, not %d and %d",
+                   what, i + 1, (int)p.title, p.count, titles[i], items[i]);
+        }
+    }
+}
+
 /** @brief SERVO on a state of the table below, from a fresh screen. */
 typedef struct {
     const char *what;   /**< the state's name                            */
@@ -170,7 +194,8 @@ typedef struct {
     int page_x;         /**< SETTINGS' page tab, 0 for none              */
     bool autobox;       /**< RUDDER with AUTO's box                      */
     int safe;           /**< the pages offered SAFE                      */
-    int first;          /**< the first page's title                      */
+    int titles[4];      /**< each SAFE page's title                      */
+    int items[4];       /**< each SAFE page's item count                 */
 } servo_state_t;
 
 /**
@@ -194,15 +219,30 @@ static void servo_to(const servo_state_t *st)
 
 /** @brief SERVO's states with pages: each task and SETTINGS' pages. */
 static const servo_state_t k_servo[] = {
-    { "LIVE", 0, 0, false, 3, TX_HG_SV_TITLE_LIVE },
-    { "TEST", SV_TAB_TEST_X, 0, false, 3, TX_HG_SV_TITLE_TEST },
-    { "PROGRAM", SV_TAB_PROGRAM_X, 0, false, 3, TX_HG_SV_TITLE_PROG },
-    { "RUDDER", SV_TAB_RUDDER_X, 0, false, 4, TX_HG_SV_TITLE_RUDDER },
-    { "AUTO", SV_TAB_RUDDER_X, 0, true, 4, TX_HG_SV_TITLE_AUTO },
-    { "OUTPUT", SV_TAB_SETTINGS_X, 0, false, 4, TX_HG_SV_TITLE_OUTPUT },
+    { "LIVE", 0, 0, false, 3,
+      { TX_HG_SV_TITLE_LIVE, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 4, 4, 3 } },
+    { "TEST", SV_TAB_TEST_X, 0, false, 3,
+      { TX_HG_SV_TITLE_TEST, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 4, 4, 3 } },
+    { "PROGRAM", SV_TAB_PROGRAM_X, 0, false, 3,
+      { TX_HG_SV_TITLE_PROG, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 1, 4, 3 } },
+    { "RUDDER", SV_TAB_RUDDER_X, 0, false, 4,
+      { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 5, 3, 4, 4 } },
+    { "AUTO", SV_TAB_RUDDER_X, 0, true, 4,
+      { TX_HG_SV_TITLE_AUTO, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 4, 2, 4, 4 } },
+    { "OUTPUT", SV_TAB_SETTINGS_X, 0, false, 4,
+      { TX_HG_SV_TITLE_OUTPUT, TX_HG_SV_TITLE_OUTPUT_2, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 5, 4, 4, 3 } },
     { "SWEEP", SV_TAB_SETTINGS_X, SV_PAGE_X(1), false, 3,
-      TX_HG_SV_TITLE_SWEEP },
-    { "DUT", SV_TAB_SETTINGS_X, SV_PAGE_X(2), false, 3, TX_HG_SV_TITLE_DUT },
+      { TX_HG_SV_TITLE_SWEEP, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 3, 4, 3 } },
+    { "DUT", SV_TAB_SETTINGS_X, SV_PAGE_X(2), false, 3,
+      { TX_HG_SV_TITLE_DUT, TX_HG_SV_TITLE_CARD, TX_HG_SV_TITLE_DRIVE },
+      { 5, 4, 3 } },
 };
 
 /* ----------------------------------------------------------------- cases */
@@ -223,9 +263,7 @@ TEST_CASE(every_servo_page_fits_and_hides_no_stop)
                 snprintf(what, sizeof(what), "SERVO %s lang %d theme %d",
                          st->what, lang, th);
                 CHECK_EQ(check_pages(scr, false, what), st->safe);
-                CHECK_EQ(title_of(scr, 0), st->first);
-                CHECK_EQ(title_of(scr, st->safe - 2), TX_HG_SV_TITLE_CARD);
-                CHECK_EQ(title_of(scr, st->safe - 1), TX_HG_SV_TITLE_DRIVE);
+                check_marks(scr, st->safe, st->titles, st->items, what);
                 servo_screen_set_armed(true);
                 CHECK_EQ(check_pages(scr, true, what), 2);
                 CHECK(ui_help_armed_note(scr, true));
@@ -247,11 +285,20 @@ TEST_CASE(every_supply_page_fits_and_hides_no_stop)
     static const struct {
         const char *what;
         int tabs;           /* taps: 0 LIVE, 1 SETTINGS, 2 PD MINI */
-        int safe, armed, first;
+        int safe, armed;
+        int titles[4], items[4];
     } k_states[] = {
-        { "LIVE", 0, 3, 2, TX_HG_SU_TITLE_LIVE },
-        { "LIMITS", 1, 4, 3, TX_HG_SU_TITLE_LIMITS },
-        { "PD MINI", 2, 3, 2, TX_HG_SU_TITLE_PDMINI },
+        { "LIVE", 0, 3, 2,
+          { TX_HG_SU_TITLE_LIVE, TX_HG_SU_TITLE_READ, TX_HG_SU_TITLE_CONTROL },
+          { 4, 5, 3 } },
+        { "LIMITS", 1, 4, 3,
+          { TX_HG_SU_TITLE_LIMITS, TX_HG_SU_TITLE_TRIPS, TX_HG_SU_TITLE_READ,
+            TX_HG_SU_TITLE_CONTROL },
+          { 4, 5, 5, 2 } },
+        { "PD MINI", 2, 3, 2,
+          { TX_HG_SU_TITLE_PDMINI, TX_HG_SU_TITLE_READ,
+            TX_HG_SU_TITLE_CONTROL },
+          { 4, 5, 2 } },
     };
     for (size_t k = 0; k < sizeof(k_states) / sizeof(k_states[0]); ++k) {
         for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -284,7 +331,8 @@ TEST_CASE(every_supply_page_fits_and_hides_no_stop)
                 snprintf(what, sizeof(what), "SUPPLY %s lang %d theme %d",
                          k_states[k].what, lang, th);
                 CHECK_EQ(check_pages(sup, false, what), k_states[k].safe);
-                CHECK_EQ(title_of(sup, 0), k_states[k].first);
+                check_marks(sup, k_states[k].safe, k_states[k].titles,
+                            k_states[k].items, what);
                 CHECK_EQ(check_pages(sup, true, what), k_states[k].armed);
             }
         }
