@@ -4,7 +4,8 @@
  * answer of every step, a late answer and another update's answer
  * ignored, each step's limit at one millisecond under it and at it, the
  * same across the 32-bit millisecond wrap, the activate call only from
- * 2.6.0 on, and a failed write closed without an activate.
+ * 2.6.0 on, a failed write closed without an activate, and the write
+ * lengths at one byte under and over a run.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -129,13 +130,15 @@ TEST_CASE(the_row_names_the_first_reason_in_order)
     CHECK_EQ(fw_c6_row(NULL, NULL), FW_C6_ROW_NO_IMAGE);
     fw_c6_feed_t f = ready_feed();
     f.armed = f.supply = f.run = f.drawing = f.iomcu = f.installing = true;
-    f.radio_up = f.ending = true;
+    f.radio_up = f.ble_starting = f.ending = true;
     static const fw_c6_why_t order[] = {
         FW_C6_WHY_ARMED, FW_C6_WHY_SUPPLY, FW_C6_WHY_RUN, FW_C6_WHY_DRAWING,
-        FW_C6_WHY_IOMCU, FW_C6_WHY_INSTALL, FW_C6_WHY_RADIO, FW_C6_WHY_ENDING,
+        FW_C6_WHY_IOMCU, FW_C6_WHY_INSTALL, FW_C6_WHY_RADIO, FW_C6_WHY_BLE,
+        FW_C6_WHY_ENDING,
     };
     bool *flags[] = { &f.armed, &f.supply, &f.run, &f.drawing, &f.iomcu,
-                      &f.installing, &f.radio_up, &f.ending };
+                      &f.installing, &f.radio_up, &f.ble_starting,
+                      &f.ending };
     for (size_t i = 0; i < sizeof(order) / sizeof(order[0]); ++i) {
         fw_c6_why_t why = FW_C6_WHY_NONE;
         CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);
@@ -488,6 +491,53 @@ TEST_CASE(the_last_write_is_the_rest_of_the_image)
     CHECK_EQ(g_o.phase, FW_C6_PH_END);
 }
 
+TEST_CASE(a_step_carries_its_update_and_a_success_names_no_failed_phase)
+{
+    start(T0);
+    const fw_c6_step_t l = next(T0);
+    CHECK_EQ(l.gen, g_o.gen);
+    CHECK(fw_c6_ota_answer(&g_o, l.gen, 0, true, k_26));
+    (void)next(T0);
+    CHECK(ok());
+    write_all(T0);
+    (void)next(T0);
+    CHECK(ok());
+    (void)next(T0);
+    CHECK(ok());
+    CHECK_EQ(g_o.result, FW_C6_RES_UPDATED);
+    CHECK_EQ(g_o.failed_in, FW_C6_PH_IDLE);
+    start(T0);
+    (void)next(T0);
+    CHECK(fw_c6_ota_answer(&g_o, g_o.gen, 0, true, k_carried));
+    CHECK_EQ(g_o.result, FW_C6_RES_SAME);
+    CHECK_EQ(g_o.failed_in, FW_C6_PH_IDLE);
+}
+
+TEST_CASE(an_image_one_byte_short_of_a_run_is_one_short_write)
+{
+    fw_c6_ota_init(&g_o);
+    MUST(fw_c6_ota_start(&g_o, FW_C6_RUN_BYTES - 1u, k_carried, T0));
+    (void)next(T0);
+    CHECK(ok());
+    (void)next(T0);
+    CHECK(ok());
+    CHECK_EQ(next(T0).len, FW_C6_RUN_BYTES - 1u);
+    CHECK(ok());
+    CHECK_EQ(g_o.phase, FW_C6_PH_END);
+    /* One byte over a run: a full run, then one byte. */
+    fw_c6_ota_init(&g_o);
+    MUST(fw_c6_ota_start(&g_o, FW_C6_RUN_BYTES + 1u, k_carried, T0));
+    (void)next(T0);
+    CHECK(ok());
+    (void)next(T0);
+    CHECK(ok());
+    CHECK_EQ(next(T0).len, FW_C6_RUN_BYTES);
+    CHECK(ok());
+    const fw_c6_step_t last = next(T0);
+    CHECK_EQ(last.offset, FW_C6_RUN_BYTES);
+    CHECK_EQ(last.len, 1u);
+}
+
 int main(void)
 {
     g_img = malloc(FW_C6_SLOT_BYTES + 64u);
@@ -510,6 +560,8 @@ int main(void)
     RUN(an_answer_for_another_update_or_no_step_is_ignored);
     RUN(a_start_while_one_runs_or_out_of_range_changes_nothing);
     RUN(the_last_write_is_the_rest_of_the_image);
+    RUN(a_step_carries_its_update_and_a_success_names_no_failed_phase);
+    RUN(an_image_one_byte_short_of_a_run_is_one_short_write);
     free(g_img);
     return test_summary("fw_c6");
 }
