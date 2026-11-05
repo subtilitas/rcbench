@@ -87,7 +87,7 @@ das sie so trägt, wie sie lesen, wird angenommen. Die Flag-Bits 4 bis 6 von
 SENSE und seine INA3221-Die-ID sind die des Spiegelbauteils. Die Register 0
 bis 11 von SERVO_SENSE sind die drei Kanäle des Spiegelbauteils. SERVO_WIN
 ist der Ring von `FAST`, und Kanal 1 einer Messung auf SERVO_SENSE ist
-`FAST`: ein Scharfschalten der Messung, solange `FAST` 0xFF ist, wird mit
+`FAST`: ein ARM der Messung, solange `FAST` 0xFF ist, wird mit
 BAD_VALUE abgewiesen.
 
 Das Fähigkeitsbit 3 von IDENTITY (`SERVO_SENSE`, Strom je Ausgang) ist das

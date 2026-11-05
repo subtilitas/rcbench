@@ -695,7 +695,7 @@ gedruckt wird: Core 1 wird für jedes im RAM geparkt.
 ### 8.8 Noch nicht erreichbar
 
 Die Messung der Bewegung auf SERVO_SENSE (der PWM-Frame auf 1µs
-gestempelt und die Stellzeiten) schaltet der Servotest des Panels scharf,
+gestempelt und die Stellzeiten) löst der Servotest des Panels per ARM aus,
 der sie noch nicht nutzt. Eine Stellzeit gegen ein Oszilloskop am PWM-Pin
 und am Shunt wartet darauf.
 
@@ -717,7 +717,7 @@ einem AS5600 auf der Welle des Servos.
 | --- | --- |
 | ein PWM-Ausgang (Pulsweitenmodulation) gibt eine andere Pulsbreite aus als im Durchlauf davor, 50ms oder mehr nach der letzten Änderung dieses Ausgangs | 4s ab dem Frame, der den Puls trägt; Triggerzeile `$C` |
 | `t` auf der Konsole getippt | 10s; Triggerzeile `$K` |
-| die PWM-Flanke des Capture | 4s; Triggerzeile `$E`. Kein veröffentlichtes Panel schaltet das Capture scharf, mit einem solchen kommt dieser Trigger nicht vor |
+| die PWM-Flanke des Capture | 4s; Triggerzeile `$E`. Kein veröffentlichtes Panel löst das Capture per ARM aus, mit einem solchen kommt dieser Trigger nicht vor |
 
 Jedes MOVE des automatischen Servotests ist eine geänderte Pulsbreite: ein
 Test mit dem veröffentlichten Panel wird ohne Capture aufgezeichnet. Ein
