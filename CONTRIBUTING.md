@@ -217,7 +217,7 @@ fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
 
 `mutation.yml` runs every mutant of every line of `shared/safety` and
-`shared/outputs` (3032 mutants) each Sunday at 03:17 UTC and on demand. It has
+`shared/outputs` (6100 mutants in 75 files) each Sunday at 03:17 UTC and on demand. It has
 no mutant limit and runs in 6 shards of files (file i of the sorted list goes
 to shard i mod 6). A shard starts no mutant after 18000s, stops one build or
 suite run after 600s and ends within 21000s; the mutants left are reported as
