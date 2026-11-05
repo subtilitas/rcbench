@@ -309,7 +309,7 @@ static void cmd_rname(hc05emu_t *e, const char *p, uint32_t now_ms)
     }
     const uint8_t code = hc05emu_addr_read(&p, addr);
     if (code != 0u || *p != '\0') {
-        hc05emu_error(e, code != 0u ? code : EMU_E_CMD);
+        hc05emu_error(e, code); /* EMU_E_CMD is 0 */
         return;
     }
     const int i = hc05emu_find(e, addr);
@@ -431,7 +431,7 @@ static void cmd_bind(hc05emu_t *e, const char *p, uint32_t now_ms)
     }
     const uint8_t code = hc05emu_addr_read(&p, addr);
     if (code != 0u || *p != '\0') {
-        hc05emu_error(e, code != 0u ? code : EMU_E_CMD);
+        hc05emu_error(e, code); /* EMU_E_CMD is 0 */
         return;
     }
     memcpy(e->cfg.bind, addr, sizeof e->cfg.bind);

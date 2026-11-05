@@ -320,8 +320,8 @@ void hc05emu_found(hc05emu_t *e, const uint8_t *addr, uint32_t cod,
     put_hex(&p, d->cod);
     if (e->cfg.inq_mode != 0u) {
         *p++ = ',';
-        put_hex(&p, d->rssi == INT16_MAX ? 0x7FFFu
-                                         : (uint32_t)(uint16_t)d->rssi);
+        /* INT16_MAX, an unknown RSSI, prints as 7FFF, as an HC-05 does. */
+        put_hex(&p, (uint32_t)(uint16_t)d->rssi);
     }
     *p = '\0';
     hc05emu_say(e, line);

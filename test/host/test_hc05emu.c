@@ -68,6 +68,8 @@ TEST_CASE(every_set_is_stored_saved_and_answered_ok)
     CHECK_STR_EQ(e.cfg.pin, "1234567890ABCDEF");
     answers(&e, &r, "AT+BIND=98d3,31,fd5c81", "OK\r\n");
     answers(&e, &r, "AT+BIND?", "+BIND:98D3:31:FD5C81\r\nOK\r\n");
+    answers(&e, &r, "AT+BIND=0,1,02", "OK\r\n");
+    answers(&e, &r, "AT+BIND?", "+BIND:0:1:2\r\nOK\r\n");
     answers(&e, &r, "AT+BIND=1A:7D:DA7113", "OK\r\n");
     answers(&e, &r, "AT+BIND?", "+BIND:1A:7D:DA7113\r\nOK\r\n");
     answers(&e, &r, "AT+UART=9600,1,2", "OK\r\n");
@@ -78,14 +80,14 @@ TEST_CASE(every_set_is_stored_saved_and_answered_ok)
     answers(&e, &r, "AT+INQM?", "+INQM:0,255,1\r\nOK\r\n");
     answers(&e, &r, "AT+INQM=2,1,48", "OK\r\n");
     answers(&e, &r, "AT+INQM?", "+INQM:2,1,48\r\nOK\r\n");
-    CHECK_EQ(r.saves, 9u);
+    CHECK_EQ(r.saves, 10u);
     CHECK(memcmp(&r.nvs, &e.cfg, sizeof r.nvs) == 0);
     answers(&e, &r, "AT+ORGL", "OK\r\n");
     hc05emu_cfg_t d;
     hc05emu_cfg_default(&d);
     CHECK(memcmp(&e.cfg, &d, sizeof d) == 0);
     CHECK(memcmp(&r.nvs, &d, sizeof d) == 0);
-    CHECK_EQ(r.saves, 10u);
+    CHECK_EQ(r.saves, 11u);
     answers(&e, &r, "AT+INIT", "OK\r\n");
     answers(&e, &r, "AT+INIT", "ERROR:(17)\r\n");
     answers(&e, &r, "AT+STATE?", "+STATE:PAIRABLE\r\nOK\r\n");

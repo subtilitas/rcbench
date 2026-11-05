@@ -111,6 +111,17 @@ TEST_CASE(an_inquiry_keeps_sixteen_devices)
     CHECK_EQ(g_e.found_n, 16u);
     CHECK_EQ(g_e.inq_told, 16u);
     CHECK_EQ(g_e.op, HC05EMU_OP_INQ);
+    /* The next inquiry counts its devices from 0: two of 2 end it. */
+    hc05emu_inq_done(&g_e, 2);
+    emu_cmd(&g_e, &g_r, "AT+INQM=1,2,2", 3, g_text);
+    emu_cmd(&g_e, &g_r, "AT+INQ", 3, g_text);
+    for (unsigned i = 0; i < 2u; ++i) {
+        const uint8_t a[6] = { 1, 0, 0, 0, 0, (uint8_t)i };
+        hc05emu_found(&g_e, a, 0u, -1, NULL, 4);
+    }
+    (void)emu_drain(&g_e, &g_r, 4, g_text);
+    CHECK_STR_EQ(g_text, "+INQ:100:0:0,0,FFFF\r\n+INQ:100:0:1,0,FFFF\r\nOK\r\n");
+    CHECK_EQ(g_e.op, HC05EMU_OP_NONE);
 }
 
 /* AT+INQ of 2 units ends with OK and STOP at 2560ms, not 1ms before. */

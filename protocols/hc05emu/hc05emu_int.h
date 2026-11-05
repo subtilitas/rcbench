@@ -17,7 +17,8 @@
 
 /** @brief The HC-05 error codes of ERROR:(hh) this module answers, from
  *         the HC-05 datasheet's table. @{ */
-#define EMU_E_CMD        0x00u /**< a command it does not take */
+#define EMU_E_CMD        0x00u /**< a command it does not take; 0, so an
+                                     *   address code of 0 is this one */
 #define EMU_E_NAP        0x05u /**< the address's NAP is too long */
 #define EMU_E_UAP        0x06u /**< the address's UAP is too long */
 #define EMU_E_LAP        0x07u /**< the address's LAP is too long */
