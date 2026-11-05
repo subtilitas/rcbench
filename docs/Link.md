@@ -76,7 +76,7 @@ measured.
 | UPDATE_CTL and UPDATE_DATA at the check after a link-up: HASH_RUNNING, BUY, ABORT | yes | answered from the copy |
 | the update itself, BEGIN to FINISH | no | the update takes the link down first and runs unnumbered; a COMMIT sent again is harmless ([The transfer](#the-transfer)) |
 | ACTIVATE | no | the IOmcu restarts 20ms after its answer, and a repeat could reach the new image as a command of its own |
-| a request whose wait saw a STOP or an error stop | no | the request can be the ARM the stop overtook; it waits out the 1000ms |
+| a request whose wait saw a STOP, or a disarm an error or a screen posted | no | the request can be the ARM the stop overtook; it waits out the 1000ms. The disarm's own write keeps its repeat |
 | any request to an IOmcu older than 4.37, and the identity probes while the link is down | no | unnumbered: an older IOmcu refuses a numbered frame as a window past the end of a page, and the IOmcu that answers a probe may be an older one |
 
 A late answer to a request already answered after its repeat carries that

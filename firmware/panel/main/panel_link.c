@@ -85,8 +85,10 @@ bool exchange(link_host_t *host, const link_msg_t *req,
         return false;
     }
     const uint32_t sent_us = (uint32_t)esp_timer_get_time();
-    /* A stop applied while this waits takes the repeat back. */
-    const uint32_t stops_at_send = arming_stop_count(&s_arm);
+    /* A stop, or a disarm an error or a screen posts, applied while this
+     * waits takes the repeat back. */
+    const uint32_t stops_at_send  = arming_stop_count(&s_arm);
+    const bool     disarm_at_send = atomic_load(&s_disarm_request);
     for (size_t i = 0; i < n; ++i) {
         if (!can_twai_send(&out[i], 5)) {
             /* Nothing reached the wire, so there is nothing to wait for.
@@ -133,10 +135,14 @@ bool exchange(link_host_t *host, const link_msg_t *req,
          * the first answer and acts on nothing again, so an answer lost on
          * the wire costs 50ms and no FAULT 01 instead of the 1000ms below.
          * Never after a stop applied during this wait (the pump above may
-         * apply one): the request may be the ARM the stop overtook.  A
-         * repeat that does not reach the wire leaves the wait as it is.
+         * apply one), nor after a disarm posted during it (an error's,
+         * bench_error_stop()): the request may be the ARM the stop
+         * overtook.  The disarm's own write, sent while its request stands,
+         * keeps its repeat.  A repeat that does not reach the wire leaves
+         * the wait as it is.
          */
-        if (arming_stop_count(&s_arm) != stops_at_send) {
+        if (arming_stop_count(&s_arm) != stops_at_send
+            || (!disarm_at_send && atomic_load(&s_disarm_request))) {
             link_host_retry_cancel(host);
         }
         link_msg_t again;

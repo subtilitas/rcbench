@@ -82,7 +82,7 @@ ist nicht gemessen.
 | UPDATE_CTL und UPDATE_DATA bei der Prüfung nach einem Link-up: HASH_RUNNING, BUY, ABORT | ja | aus der Kopie beantwortet |
 | das Update selbst, BEGIN bis FINISH | nein | das Update baut zuerst den Link ab und läuft ohne Nummern; ein erneut gesendeter COMMIT schadet nicht ([Die Übertragung](#die-übertragung)) |
 | ACTIVATE | nein | der IOmcu startet 20ms nach seiner Antwort neu, und eine Wiederholung könnte das neue Image als eigener Befehl erreichen |
-| eine Anfrage, während deren Wartezeit ein STOP oder ein Fehlerstopp kam | nein | die Anfrage kann das ARM sein, das der Stopp überholt hat; sie wartet die 1000ms ab |
+| eine Anfrage, während deren Wartezeit ein STOP kam oder ein Fehler oder ein Bildschirm ein Ausschalten anforderte | nein | die Anfrage kann das ARM sein, das der Stopp überholt hat; sie wartet die 1000ms ab. Das Schreiben des Ausschaltens selbst behält seine Wiederholung |
 | jede Anfrage an einen IOmcu älter als 4.37, und die Identity-Abfragen bei abgebautem Link | nein | ohne Nummer: ein älterer IOmcu weist einen nummerierten Frame als Fenster hinter dem Ende einer Page ab, und der IOmcu, der eine Abfrage beantwortet, kann ein älterer sein |
 
 Eine späte Antwort auf eine Anfrage, die schon nach ihrer Wiederholung
