@@ -1538,8 +1538,9 @@ lines naming the port and pin the loop drives, and every way off on the overlay.
 `test_hitec_find` runs FIND STOP on each side to a block (the stop within 37 counts of it, the
 end point 75 counts inside, nothing written or saved), the step of 37 counts every 2 passes,
 the reach's edge with no block, the 40s cap counted from the request, a stop too close to the
-neutral, the operator's end before and during the search, the refusals, no edit while it
-runs, a bind on the way to the neutral, MOVE OFF, ABORT and STOP during the search.
+neutral, the operator's end before and during the search, the refusals, no edit while it runs,
+a second search after a stop found, a bind on the way to the neutral, MOVE OFF, ABORT and STOP
+during the search.
 `test_hitec_panel_find` runs its row in DIRECTION's place, its keys of 48px and more, the tap
 that starts and the tap that ends it, the note, each end's line in both languages and a tab
 change during the search.

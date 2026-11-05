@@ -106,7 +106,10 @@ TEST_CASE(the_find_row_takes_directions_place_while_move_servo_runs)
     v = val(HITEC_PANEL_TRAVEL, FIND_ROW, 0);
     CHECK(l.w >= UI_TAP_MIN && l.h >= UI_TAP_MIN);
     CHECK(r.w >= UI_TAP_MIN && r.h >= UI_TAP_MIN);
-    CHECK(l.x >= v.x && r.x + r.w <= v.x + v.w);
+    /* The two halves of a wide value, 260px. */
+    CHECK_EQ(v.w, 260);
+    CHECK_EQ(l.x, v.x);
+    CHECK_EQ(r.x + r.w, v.x + v.w);
     CHECK(l.x + l.w < r.x);
     /* MOVE OFF: DIRECTION is back once the end ran. */
     tap(val(HITEC_PANEL_TRAVEL, MOVE_ROW, 0));
@@ -136,8 +139,14 @@ TEST_CASE(a_tap_starts_the_search_and_a_second_tap_ends_it)
              (unsigned)(HITEC_LIVE_FIND_MS / 1000u));
     CHECK(note_has(want));
     CHECK(!note_has(TR(HP_LIVE_NOTE)));
-    /* The other side's key takes no tap while one side searches. */
-    tap(hitec_panel_find_rect(true));
+    /* The other side's key takes no tap while one side searches: nothing
+     * is said either. */
+    {
+        const uint32_t seq = hitec_prog_message(model())->seq;
+
+        tap(hitec_panel_find_rect(true));
+        CHECK_EQ(hitec_prog_message(model())->seq, seq);
+    }
     CHECK_EQ(hitec_prog_find_side(model()), (int)HITEC_FIND_LEFT);
     /* The step keys are gone while it searches. */
     CHECK_EQ(hitec_panel_step_rect(HITEC_PANEL_TRAVEL, LEFT_ROW, false).w, 0);

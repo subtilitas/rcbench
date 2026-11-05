@@ -110,7 +110,6 @@ static void hard_end(hitec_prog_t *p, hitec_ses_t r)
 static void end_begin(hitec_prog_t *p)
 {
     hitec_live_find_abort(&p->mv.fs);
-    p->mv.find_req = 0u;
     p->mv.phase = (uint8_t)HITEC_MOVE_CENTRE;
     (void)runs(p, hitec_session_move(&p->ses, HITEC_LIVE_D_T_MID, false));
 }
@@ -258,10 +257,7 @@ static void find_end(hitec_prog_t *p, hitec_prog_msg_id_t id, unsigned arg,
     (void)hpg_say2(p, id, arg, reg);
     m->find_req = 0u;
     m->find_go = false;
-    m->find_halt = false;
     m->phase = (uint8_t)HITEC_MOVE_RUN;
-    /* From where the horn stands, inside the reach: the slew from there. */
-    m->last_p = m->pos;
     hitec_live_judge_init(&m->j, m->ends.mid, m->pos, p->ma_open);
     pass(p);
 }

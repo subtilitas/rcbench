@@ -327,6 +327,20 @@ TEST_CASE(the_positions_take_no_edit_while_the_search_runs)
     CHECK(hitec_prog_move_on(model()));
 }
 
+TEST_CASE(a_second_search_after_a_stop_found_takes_no_edit_either)
+{
+    moving();
+    g_drv.d_block_lo = BLOCK_L;
+    (void)hitec_prog_find_start(model(), HITEC_FIND_LEFT);
+    until_msg(HITEC_PROG_MSG_FIND_FOUND_L, 60000u);
+    CHECK(!model()->mv.find_edit);
+    CHECK_EQ(hitec_prog_find_start(model(), HITEC_FIND_RIGHT),
+             HITEC_PROG_MSG_NONE);
+    CHECK_EQ(hitec_prog_move_edit(model(), HITEC_P_D_RIGHT_END, 12000),
+             HITEC_PROG_EDIT_REFUSED);
+    CHECK_EQ(draft(HITEC_P_D_RIGHT_END), 13003);
+}
+
 TEST_CASE(a_bind_on_the_way_to_the_neutral_is_the_loops)
 {
     unsigned reboots;
@@ -434,6 +448,7 @@ int main(void)
     RUN(a_stop_asked_before_the_search_begins_drops_it);
     RUN(find_stop_is_refused_without_move_servo_on_and_while_one_runs);
     RUN(the_positions_take_no_edit_while_the_search_runs);
+    RUN(a_second_search_after_a_stop_found_takes_no_edit_either);
     RUN(a_bind_on_the_way_to_the_neutral_is_the_loops);
     RUN(move_off_during_the_search_runs_the_end);
     RUN(abort_during_the_search_runs_the_end);

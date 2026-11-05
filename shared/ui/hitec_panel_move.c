@@ -184,22 +184,31 @@ bool hpn_find_live(bool right)
            && (side < 0 || side == mine);
 }
 
+/**
+ * @brief Draws one key of the FIND STOP row.
+ * @param c     the canvas
+ * @param r     the row
+ * @param i     its index in hpn_rows, for the key pressed
+ * @param right true for RIGHT END's
+ */
+static void find_key(gfx_canvas_t *c, const hpn_row_t *r, int i, bool right)
+{
+    const bool runs = hitec_prog_find_side(&hp.prog)
+                      == (right ? (int)HITEC_FIND_RIGHT
+                                : (int)HITEC_FIND_LEFT);
+
+    ui_button_font(c, hpn_find_rect(r, right),
+                   right ? TR(HP_END_R) : TR(HP_END_L),
+                   ui_theme_color(runs ? UI_C_WARN : UI_C_PANEL_SUNK),
+                   hp.have && hp.pressed == P_ROW && hp.row == i
+                       && hp.find_right == right,
+                   hpn_find_live(right), HP_FONT);
+}
+
 void hpn_find_draw(gfx_canvas_t *c, const hpn_row_t *r, int i)
 {
-    const int side = hitec_prog_find_side(&hp.prog);
-
-    for (int k = 0; k < 2; ++k) {
-        const bool right = k == 1;
-        const bool runs = side == (right ? (int)HITEC_FIND_RIGHT
-                                         : (int)HITEC_FIND_LEFT);
-
-        ui_button_font(c, hpn_find_rect(r, right),
-                       right ? TR(HP_END_R) : TR(HP_END_L),
-                       ui_theme_color(runs ? UI_C_WARN : UI_C_PANEL_SUNK),
-                       hp.have && hp.pressed == P_ROW && hp.row == i
-                           && hp.find_right == right,
-                       hpn_find_live(right), HP_FONT);
-    }
+    find_key(c, r, i, false);
+    find_key(c, r, i, true);
 }
 
 void hpn_find_act(bool right)
