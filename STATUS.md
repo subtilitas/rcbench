@@ -476,6 +476,11 @@ or a stretch of arc outside the clip and walks the antialiased shapes row by row
 own pixels (`test_gfx_clip`). ARMED at rest draws what SAFE at rest draws plus the band's
 run clock once a second, a held position draws the grip's box, and a moving arm stays under
 140,000 pixel visits a frame (`test_frame_work`; host suite only).
+The IMU screen repaints the card lines a new reading changes and CALIBRATE's button while
+its hold fills, SUPPLY repaints neither the PLOT and TABLE tabs nor its heading row for a
+sample, and WI-FI repaints nothing for an idle second inside the minute it shows; the KST
+and Hitec sessions count a PD mini reading as their state line writes it
+(`test_repaint_parts`: both buffers pixel for pixel the same as frames drawn whole).
 
 RUDDER (`shared/ui/servo_rudder_panel.c`, `shared/servo/servo_rudder.c`) shows the angle
 source's angle, the AS5600's or the IMU's, as a control surface's deflection from ZERO in
@@ -1220,7 +1225,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1235,7 +1240,8 @@ The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_prog5v_wire`, `test_prog5v_servo`, `test_prog5v_supply`, `test_pdmini`, `test_motor`,
 `test_motor_draw`, `test_motor_throttle`, `test_motor_arm`, `test_motor_workbench`,
 `test_motor_program`, `test_motor_layout`, `test_value_state`, `test_servo`,
-`test_servo_knob`, `test_servo_drag`, `test_servo_repaint`, `test_frame_work`,
+`test_servo_knob`, `test_servo_drag`, `test_servo_repaint`, `test_repaint_parts`,
+`test_frame_work`,
 `test_servo_dial_sweep`, `test_servo_letgo`, `test_servo_curve`, `test_servo_supply`,
 `test_servo_restore`, `test_servo_run`, `test_servo_run_gaps`, `test_servo_target`,
 `test_servo_rail`, `test_servo_meter`, `test_servo_settings`, `test_servo_trim_keypad`,

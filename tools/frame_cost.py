@@ -74,7 +74,8 @@ INCLUDES = ui_sources.INCLUDES
 
 MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
          "overview", "overview-guide", "servo", "servo-grip",
-         "servo-current", "servo-rudder", "servo-test", "supply",
+         "servo-current", "servo-rudder", "servo-test", "servo-kst",
+         "servo-hitec", "supply",
          "supply-chrome",
          "analyser", "logs", "settings", "settings-list", "battery",
          "balance",
@@ -86,6 +87,7 @@ MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
          "battery-chrome", "balance-chrome", "motor-stick-chrome",
          "motor-wire-chrome",
          "picker", "picker-chrome", "wifi", "wifi-chrome", "wifi-keys",
+         "wifi-idle", "imu", "imu-hold",
          "clear",
          "vlines", "hlines"]
 

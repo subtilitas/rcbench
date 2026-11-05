@@ -629,10 +629,21 @@ uint32_t kst_panel_hold_revision(void)
     return k.hold_rev;
 }
 
-/** @brief Everything of the model a render shows, as one number. */
+/**
+ * @brief Everything of the model a render shows, as one number.  The PD
+ *        mini's reading counts as the state line writes it: 10mV and 1mA
+ *        while the port is in programming, nothing in any other state, so
+ *        a reading the page does not show repaints nothing.
+ * @return the number
+ */
 static uint32_t signature(void)
 {
     const kst_prog_t *p = &k.prog;
+    uint32_t line = 2166136261u;
+
+    for (const char *t = kst_panel_status_line(0); *t != '\0'; ++t) {
+        line = (line ^ (uint8_t)*t) * 16777619u;
+    }
     const uint32_t part[] = {
         (uint32_t)kst_prog_state(p), (uint32_t)kst_prog_op(p),
         kst_prog_planning(p),
@@ -645,7 +656,7 @@ static uint32_t signature(void)
         kst_prog_card_busy(p), kst_prog_files_seq(p),
         (uint32_t)kst_prog_load_skipped(p),
         (uint32_t)(kst_prog_load_skipped(p) >> 32),
-        p->f.target, p->f.supply_read, p->f.out_mv, p->f.out_ma,
+        p->f.target, p->f.supply_read, line,
         kst_prog_supply_mv(p), kst_prog_supply_ma(p), k.hv,
         kst_prog_wait_ms(p),
         /* RESTORE is offered from the backup once it is fetched. */

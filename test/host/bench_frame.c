@@ -20,6 +20,10 @@
  *   servo-test  SERVO's TEST task with the arm moved and an AS5600 reading
  *             in every frame, as an automatic test or a limit run gives:
  *             nothing on the page shows either, so nothing is repainted
+ *   servo-kst  SERVO > PROGRAM's KST session on a port in PWM, the PD
+ *             mini's reading moving in every frame: the page does not show
+ *             it there
+ *   servo-hitec  the same on the Hitec session
  *   servo-current  the same as servo-grip with the INA3221 as the servo
  *             rail's meter and a window every frame whose current differs
  *             in the digits shown: the grip, the CURRENT row's value, the
@@ -46,6 +50,11 @@
  *   motor-wire  the ESC signal-wire session at rest on a read ESC: the outputs read
  *             again and the session fed every frame, nothing shown changing
  *   motor-wire-hold  the same on LEAVE's page, a finger on its 2s hold
+ *   imu       the IMU screen with an angle frame in every frame, X 0.1°
+ *             from the one before
+ *   imu-hold  the IMU screen, a finger on CALIBRATE ACCELEROMETER's hold
+ *   wifi-idle WI-FI with the access point up, the idle time 1s shorter in
+ *             every frame: the page shows it in minutes
  *   <screen>-chrome  the same, repainted in full every frame
  *   <screen>-sim     the same with the SIMULATION watermark
  *
@@ -68,9 +77,13 @@
 #include <string.h>
 
 #include "gfx.h"
+#include "hitec_panel.h"
+#include "imu_screen.h"
+#include "kst_panel.h"
 #include "out_bind.h"
 #include "overview_screen.h"
 #include "picker_screen.h"
+#include "prog_registry.h"
 #include "settings_screen.h"
 #include "esc_wire_panel.h"
 #include "ew_map.h"
@@ -259,6 +272,132 @@ static void test_open(void)
     ui_router_event(&tap[1]);
 }
 
+/** @brief WI-FI's view in the wifi modes, as last handed over. */
+static wifi_view_t s_wifi;
+
+/**
+ * @brief WI-FI's view of frame @p i: the idle time 1s shorter than in the
+ *        frame before, 599s at frame 0.
+ * @param i the frame
+ */
+static void wifi_idle(int i)
+{
+    s_wifi.idle_left_s = (uint32_t)(599 - i);
+    wifi_screen_set(&s_wifi);
+}
+
+/**
+ * @brief A tap of contact 1 at (@p x, @p y) of the body, through the router.
+ * @param x the column, px
+ * @param y the row under the band, px
+ */
+static void tap_body(int x, int y)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x,
+                                   .y = (int16_t)(UI_BAND_H + y) } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+/**
+ * @brief The programmers' feed of frame @p i: the port in PWM, the PD mini
+ *        on, its reading 3mV and 1mA off the one before.
+ * @param i the frame
+ */
+static void prog_frame(int i)
+{
+    static kst_prog_feed_t k;
+    static hitec_prog_feed_t h;
+
+    memset(&k, 0, sizeof(k));
+    k.now_ms = 1000u + 26u * (uint32_t)i;
+    k.rd.phase = KST_LINK_READY;
+    k.rd.known = true;
+    k.rd.port = LINK_KST_PWM;
+    k.target = 1u;
+    k.port_pin[0] = 13u;
+    k.port_pin_known = 1u;
+    k.card = true;
+    k.supply_read = true;
+    k.out_mv = (uint16_t)(5000 + 3 * (i % 7));
+    k.out_ma = (uint16_t)(37 + i % 5);
+    k.set_mv = 5000u;
+    k.set_ma = 1000u;
+    kst_panel_feed(&k);
+    memset(&h, 0, sizeof(h));
+    h.now_ms = k.now_ms;
+    h.rd.phase = HITEC_LINK_READY;
+    h.rd.known = true;
+    h.target = 1u;
+    h.port_pin[0] = 13u;
+    h.port_pin_known = 1u;
+    h.card = true;
+    h.supply_read = true;
+    h.out_mv = k.out_mv;
+    h.out_ma = k.out_ma;
+    hitec_panel_feed(&h);
+}
+
+/**
+ * @brief SERVO > PROGRAM's row @p row opened, the tester on PROG PORT 1:
+ *        0 the KST session, 1 the Hitec one.
+ * @param row the row
+ */
+static void prog_open(int row)
+{
+    ui_bench_status_t st = k_status;
+
+    st.armed = false;
+    st.capabilities = (uint16_t)(st.capabilities | LINK_CAP_SERVO_PWM);
+    ui_router_set_status(&st);
+    prog_registry_set_ports(0u, 0u);
+    servo_screen_set_drive(1u, 13u, true);
+    prog_frame(0);
+    tap_body(SV_TAB_PROGRAM_X, SV_TAB_Y);
+    tap_body(SV_PROG_ROW_X, SV_PROG_ROW_Y(row));
+}
+
+/**
+ * @brief The IMU's view of frame @p i: the sensor bound and connected at
+ *        50Hz, X 0.1° further in every frame when @p move.
+ * @param i the frame
+ * @param move whether the angle moves
+ */
+static void imu_frame(int i, bool move)
+{
+    imu_view_t v;
+
+    memset(&v, 0, sizeof(v));
+    v.link = IMU_LINK_CONNECTED;
+    strcpy(v.bound_addr, "98D3:31:F5A1B2");
+    strcpy(v.bound_name, "HC-06");
+    v.r.valid = true;
+    v.r.taken_ms = 1000u + 20u * (uint32_t)i;
+    v.r.angle[0] = 10.7f + (move ? 0.1f * (float)(i % 20) : 0.0f);
+    v.r.angle[1] = 0.3f;
+    v.r.angle[2] = 87.2f;
+    v.r.rate_dhz = 500u;
+    v.r.battery_v = 3.95f;
+    v.r.temp_c = NAN;
+    v.r.frames = 100u + 3u * (uint32_t)i;
+    imu_screen_set(&v);
+}
+
+/**
+ * @brief A finger down on CALIBRATE ACCELEROMETER's hold.
+ */
+static void imu_hold(void)
+{
+    const gfx_rect_t r = imu_screen_hold_rect();
+    const touch_event_t e = {
+        .type = TOUCH_EVENT_DOWN,
+        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                   .y = (int16_t)(UI_BAND_H + r.y + r.h / 2) } };
+    ui_router_event(&e);
+}
+
 /**
  * @brief BACK's LEAVE page, a finger on its hold: every tick moves the fill.
  */
@@ -365,7 +504,10 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         /* WI-FI with the access point up; "wifi-keys" is the same
          * screen with the Wi-Fi keyboard open, a key typed every frame. */
         { "wifi-keys",  SCREEN_WIFI },
+        { "wifi-idle",  SCREEN_WIFI },
         { "wifi",       SCREEN_WIFI },
+        { "imu-hold",   SCREEN_IMU },
+        { "imu",        SCREEN_IMU },
     };
     bool plain = false;
     bool plain_chrome = false;
@@ -498,14 +640,28 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         } else {
             wifi_screen_set(&v);
         }
+        s_wifi = v;
     }
 
+    const bool imu = start == SCREEN_IMU;
+    if (imu) {
+        imu_frame(0, false);
+        if (strcmp(mode, "imu-hold") == 0) {
+            imu_hold();
+        }
+    }
+
+    const bool prog = strcmp(mode, "servo-kst") == 0
+                      || strcmp(mode, "servo-hitec") == 0;
     if (servo) {
         /* A position is taken only on an armed bench.  The arm's flash
          * repaints ARM for UI_HOLD_FLASH_MS, which is no part of a steady
          * frame: it is spent here, before the warm renders. */
-        servo_screen_set_armed(true);
+        servo_screen_set_armed(!prog);
         servo_screen_set_commanded(38.0f);
+        if (prog) {
+            prog_open(strcmp(mode, "servo-kst") == 0 ? 0 : 1);
+        }
         if (strcmp(mode, "servo-current") == 0) {
             servo_screen_source(SERVO_SOURCE_INA3221, 1u);
         }
@@ -569,6 +725,12 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
             if (wire) {
                 wire_frame(i);
             }
+            if (strcmp(mode, "imu") == 0) {
+                imu_frame(i + 1, true);
+            }
+            if (strcmp(mode, "wifi-idle") == 0) {
+                wifi_idle(i);
+            }
             ui_router_tick(0.026f);
             ui_router_render(&c, i & 1);
             continue;
@@ -586,6 +748,9 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
                  * and the drawing change on every one. */
                 rudder_reading((uint16_t)(2048u + 140u + 3u * (unsigned)(i % 16)),
                                200u + 40u * (uint32_t)i);
+            }
+            if (prog) {
+                prog_frame(i + 1);
             }
             servo_screen_feedback(servo_screen_commanded(), 0.4f, true);
             if (strcmp(mode, "servo-current") == 0) {

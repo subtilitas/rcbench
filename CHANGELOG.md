@@ -16,6 +16,28 @@ history is in git.
   model the TEST page with a moving arm and a new reading in every frame
   costs 0 cache-line fills, against 30,731 before. CI holds the new
   `servo-test` mode to 1,000.
+- The IMU screen no longer repaints whole for every angle frame or for every
+  frame of the 2s hold on HOLD 2s: CALIBRATE ACCELEROMETER. A reading
+  repaints the card lines that read differently, and the hold its button and
+  the age on the RATE line. In the host frame model an angle frame in every
+  frame costs 101 cache-line fills, against 31,247 before, and the hold 690,
+  against 31,243. CI holds the new `imu` and `imu-hold` modes to 1,000.
+- The KST and Hitec sessions on SERVO > PROGRAM no longer repaint for a PD
+  mini reading their state line does not show: with the port in PWM the
+  line shows the set point, and in programming the reading in 10mV and 1mA.
+  In the host frame model a reading 3mV and 1mA off the one before in every
+  frame costs 0 cache-line fills on either session, against 16,860 (KST) and
+  16,246 (Hitec) before. CI holds the new `servo-kst` and `servo-hitec`
+  modes to 1,000.
+- WI-FI no longer repaints whole once a second while the idle time counts
+  down. The page shows the idle time in whole minutes and repaints when the
+  minute changes. In the host frame model an idle second in every frame costs 0
+  cache-line fills, against 20,331 before. CI holds the new `wifi-idle`
+  mode to 1,000.
+- SUPPLY no longer repaints the PLOT and TABLE tabs and its heading row for
+  every sample. They repaint when the supply starts or stops answering. In
+  the host frame model a sample in every frame costs 8,138 cache-line fills,
+  against 9,692 before.
 
 ## 0.23.8 - 2026-11-05
 
