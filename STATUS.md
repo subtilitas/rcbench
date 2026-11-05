@@ -1143,7 +1143,7 @@ series TRAVEL tab (`shared/bench/hitec_move.c`, `shared/ui/hitec_panel_move.c`: 
 moved to the position edited while SAFE, `-`/`+` keys, the judges, the end with the servo's
 restart and a compare, every hard end an error) is host-tested against the page and a servo
 model whose horn follows its target (`test_hitec_move`, `test_hitec_panel_move`); its
-thresholds are not measured on a bench: [MOVE SERVO](docs/HitecProgrammer.md#move-servo).
+thresholds are not measured on a bench: [MOVE SERVO](docs/HitecMove.md).
 
 ## The tree
 
