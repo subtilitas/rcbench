@@ -396,7 +396,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,472 | 1,632 |
 | `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,888 | 1,168 |
+| `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,872 | 1,184 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -476,7 +476,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  296 such
+  297 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its
@@ -699,8 +699,8 @@ since the IMU starts it:
 
 | Build | Application image (bytes) | Of it NimBLE, `libbt.a`, flash (bytes) | Of it the central, `libbleuart.a`, flash (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it NimBLE (bytes) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| default | 3,095,526 | 62,532 | 8,821 | 179,346 | 693 |
-| console (`RCBENCH_PANEL_CONSOLE`) | 3,119,852 | 62,572 | 8,821 | 189,184 | 693 |
+| default | 3,094,450 | 62,038 | 8,821 | 179,338 | 693 |
+| console (`RCBENCH_PANEL_CONSOLE`) | 3,118,804 | 62,078 | 8,821 | 189,176 | 693 |
 
 The event queue's 2,048 bytes are in the DIRAM figure, outside `libbt.a`.
 esp_hosted (157,292 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and

@@ -83,17 +83,9 @@ static SemaphoreHandle_t s_synced;
 /** @brief s_synced's memory. */
 static StaticSemaphore_t s_synced_mem;
 
-/** @brief The connect variants, rotating after each failed connect: bleuart's
- *  parameters or NimBLE's defaults (NULL), each with the own address type
- *  the sync inferred and then with the other one.  Diagnostics for a
- *  sensor that fails every connect with HCI 0x3E. */
-#define TRY_VARIANTS 4u
-/** @brief The next connect's variant, counted up after each failed connect. */
-static atomic_uint s_try;
-/** @brief A connection was reported up and is not down yet. */
+/** @brief A connection was reported up and is not down yet: a DISCONNECT
+ *  before it ends a connect that failed to be established. */
 static atomic_bool s_conn_up;
-/** @brief The static random address is set for the variants that use it. */
-static atomic_bool s_rnd_set;
 
 /** @brief Advertisers whose last report a connect's log line names. */
 #define HEARD_MAX 8u
@@ -433,17 +425,6 @@ static void log_desc(const char *what, const struct ble_gap_conn_desc *d)
 }
 
 /**
- * @brief A connect that failed: the next one takes the next variant.
- * @param why The status or reason.
- */
-static void try_failed(int why)
-{
-    const unsigned next = atomic_fetch_add(&s_try, 1u) + 1u;
-    ESP_LOGI(TAG, "connect failed with 0x%X: the next try is variant %u",
-             (unsigned)why, next % TRY_VARIANTS);
-}
-
-/**
  * @brief A connection's events into the queue.  Runs on nimble_host.
  * @param ev  NimBLE's event.
  * @param arg The connect's token.
@@ -465,8 +446,6 @@ static int conn_event(struct ble_gap_event *ev, void *arg)
         if (ev->connect.status == 0) {
             atomic_store(&s_conn_up, true);
             put_params(e.conn, &e);
-        } else {
-            try_failed(ev->connect.status);
         }
         {
             struct ble_gap_conn_desc d;
@@ -491,7 +470,8 @@ static int conn_event(struct ble_gap_event *ev, void *arg)
                  (unsigned)e.token);
         log_desc("disconnect: record", &ev->disconnect.conn);
         if (!atomic_exchange(&s_conn_up, false)) {
-            try_failed(ev->disconnect.reason);
+            ESP_LOGI(TAG, "connect: failed to be established, reason 0x%X",
+                     (unsigned)ev->disconnect.reason);
         }
         post(&e);
         break;
@@ -863,40 +843,8 @@ esp_err_t panel_ble_scan(uint32_t ms, panel_ble_report_fn report)
 }
 
 /**
- * @brief The own address type of a variant: the inferred one, or for
- *        variants 2 and 3 the other one.  Random means a static random
- *        address, set once.
- * @param v The variant.
- * @return The type.
- */
-static uint8_t own_type_of(unsigned v)
-{
-    const uint8_t inferred = (uint8_t)atomic_load(&s_own_type);
-    if (v < 2u) {
-        return inferred;
-    }
-    if (inferred != BLE_OWN_ADDR_PUBLIC) {
-        return BLE_OWN_ADDR_PUBLIC;
-    }
-    if (!atomic_load(&s_rnd_set)) {
-        ble_addr_t rnd;
-        int rc = ble_hs_id_gen_rnd(0, &rnd);
-        if (rc == 0) {
-            rc = ble_hs_id_set_rnd(rnd.val);
-        }
-        ESP_LOGI(TAG, "connect: static random address "
-                      "%02X:%02X:%02X:%02X:%02X:%02X set: %d",
-                 rnd.val[5], rnd.val[4], rnd.val[3], rnd.val[2], rnd.val[1],
-                 rnd.val[0], rc);
-        atomic_store(&s_rnd_set, rc == 0);
-    }
-    return BLE_OWN_ADDR_RANDOM;
-}
-
-/**
- * @brief A connect to @p a in the current variant (s_try): bleuart's
- *        parameters or NimBLE's defaults, the inferred own address type or
- *        the other.  Every value goes to the log.
+ * @brief A connect to @p a with bleuart's parameters and the own address
+ *        type the sync inferred.  Every value goes to the log.
  * @param a The action.
  * @return NimBLE's status.
  */
@@ -915,30 +863,15 @@ static int do_connect(const bleu_act_t *a)
         .min_ce_len = 0,
         .max_ce_len = 0,
     };
-    const unsigned v = atomic_load(&s_try) % TRY_VARIANTS;
-    const bool dflt = (v % 2u) != 0u;
-    const uint8_t own = own_type_of(v);
+    const uint8_t own = (uint8_t)atomic_load(&s_own_type);
     ESP_LOGI(TAG, "connect to %02X:%02X:%02X:%02X:%02X:%02X type %u for %ums",
              peer.val[5], peer.val[4], peer.val[3], peer.val[2], peer.val[1],
              peer.val[0], (unsigned)peer.type, (unsigned)a->ms);
-    ESP_LOGI(TAG, "connect: variant %u, own address %s (type %u), %s",
-             v, own == BLE_OWN_ADDR_PUBLIC ? "public" : "random",
-             (unsigned)own, dflt ? "NimBLE's default parameters"
-                                 : "bleuart's parameters");
-    if (dflt) {
-        ESP_LOGI(TAG, "connect: interval %u-%u x 1.25ms, latency %u, "
-                      "timeout %u x 10ms, scan 16/16 x 0.625ms",
-                 (unsigned)BLE_GAP_INITIAL_CONN_ITVL_MIN,
-                 (unsigned)BLE_GAP_INITIAL_CONN_ITVL_MAX,
-                 (unsigned)BLE_GAP_INITIAL_CONN_LATENCY,
-                 (unsigned)BLE_GAP_INITIAL_SUPERVISION_TIMEOUT);
-    } else {
-        ESP_LOGI(TAG, "connect: interval %u-%u x 1.25ms, latency %u, "
-                      "timeout %u x 10ms, scan %u/%u x 0.625ms",
-                 (unsigned)cp.itvl_min, (unsigned)cp.itvl_max,
-                 (unsigned)cp.latency, (unsigned)cp.supervision_timeout,
-                 (unsigned)cp.scan_itvl, (unsigned)cp.scan_window);
-    }
+    ESP_LOGI(TAG, "connect: own address type %u, interval %u-%u x 1.25ms, "
+                  "latency %u, timeout %u x 10ms, scan %u/%u x 0.625ms",
+             (unsigned)own, (unsigned)cp.itvl_min, (unsigned)cp.itvl_max,
+             (unsigned)cp.latency, (unsigned)cp.supervision_timeout,
+             (unsigned)cp.scan_itvl, (unsigned)cp.scan_window);
     int8_t rssi = 0;
     uint32_t age = 0;
     if (last_heard(&peer, &rssi, &age)) {
@@ -948,13 +881,8 @@ static int do_connect(const bleu_act_t *a)
         ESP_LOGI(TAG, "connect: no report heard since the start");
     }
     atomic_store(&s_conn_up, false);
-    const int rc = ble_gap_connect(own, &peer, (int32_t)a->ms,
-                                   dflt ? NULL : &cp, conn_event,
-                                   arg_of(a->token));
-    if (rc != 0) {
-        try_failed(rc);
-    }
-    return rc;
+    return ble_gap_connect(own, &peer, (int32_t)a->ms, &cp, conn_event,
+                           arg_of(a->token));
 }
 
 esp_err_t panel_ble_controller(void)

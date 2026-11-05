@@ -85,8 +85,9 @@ Adresse mit dem Adresstyp, `00:0C:BF:08:19:29 P` (öffentlich) oder `... R`
 fordert das Speichern an. Gespeichert wird in nvs im nächsten Frame mit
 SAFE und ohne Versorgung an oder im Anlauf. IMU AUS behält die Bindung;
 bei IMU EIN nach einem Neustart verbindet sich das Panel ohne Suche mit
-ihr. Nur eine neue Bindung ersetzt sie. Das Flashen des zusammengeführten Images ab 0x0
-löscht nvs und damit die Bindung ([Bauen](Building-de.md)).
+ihr. Nur eine neue Bindung ersetzt sie. Eine HC-05-Bindung wird nicht
+übernommen; einmal suchen und binden. Den Schlüssel `imu_addr` des HC-05
+löscht der erste Start aus nvs.
 Ein neu gebundener Sensor ersetzt den vorigen.
 Eine Suche bei verbundenem Sensor behält die Verbindung; eine Suche während
 eines laufenden Verbindungsaufbaus bricht diesen ab, und die Versuche gehen
@@ -116,16 +117,12 @@ verlangt, wird angenommen und protokolliert. Die Characteristics ACA3 und
 Die Verbindungswerte sind so gewählt, wie eine Handy-Central sie
 erfragt, nicht gegen andere gemessen; sie stehen zusammen in
 `protocols/bleuart/include/bleuart.h` (`BLEU_ITVL_*`, `BLEU_LATENCY`,
-`BLEU_SUPERVISION`, `BLEU_CONN_SCAN_*`). Nach jedem gescheiterten Verbinden
-nimmt das Panel die nächste von vier Varianten und behält die, die
-verbindet:
-
-| Variante | Parameter | Eigene Adresse |
-| ---: | --- | --- |
-| 0 | die der Tabelle | der Typ, den der Sync ermittelt hat (`ble_hs_id_infer_auto()`) |
-| 1 | NimBLEs Vorgaben: Intervall 30 bis 50ms, Latenz 0, Supervision Timeout 2 560ms, Connect-Scan 10ms je 10ms | der ermittelte Typ |
-| 2 | die der Tabelle | der andere Typ; random ist eine statische Zufallsadresse, die das Panel einmal setzt |
-| 3 | NimBLEs Vorgaben | der andere Typ |
+`BLEU_SUPERVISION`, `BLEU_CONN_SCAN_*`). Das Verbinden nimmt den eigenen
+Adresstyp, den der Sync ermittelt hat (`ble_hs_id_infer_auto()`). An einem
+Panel (Station, 2026-11-05) verband der erste Versuch 1,09s nach dem
+Tippen, und die ersten Frames kamen 1,88s danach. Der Controller stellte
+die Verbindung danach auf Intervall 20ms und Supervision Timeout 5 120ms.
+Die MTU ergab 64.
 
 KEINE VERBINDUNG lautet `KEINE VERBINDUNG: SENSOR AN, NAH, KEIN HANDY
 DRAN?`: Ein mit dem Sensor verbundenes Handy sperrt das Panel aus, weil ein
@@ -157,7 +154,18 @@ eintreffen. Eine Änderung während der Kalibrierung wartet bis nach CALSW 0
 und SAVE. Unlock, die Schreibbefehle und SAVE werden erst gemeinsam
 eingereiht, wenn alle in die 8 Befehlsplätze passen. Bis dahin wartet die
 Änderung; gesendet wird der dann aktuelle Wert aus SETUP. Eine neue RATE
-gilt erst, nachdem der Sensor aus- und wieder eingeschaltet wurde. IMU AUS
+gilt erst, nachdem der Sensor aus- und wieder eingeschaltet wurde.
+
+RATE geht nur bei einer Änderung zum Sensor, nicht bei jedem Verbinden:
+jede RATE kommt mit einem SAVE in den Flash des Sensors, und die Rate gilt
+erst nach dem Aus- und Einschalten. RATE in SETUP ist das, was das Panel
+erfragt, Vorgabe 50Hz. Der Sensor läuft mit der zuletzt gespeicherten
+Rate, ab Werk 10Hz. Der IMU-Bildschirm und SETUP > SENSOREN > IMU zeigen
+die Rate, mit der die Winkel-Frames ankommen, gemessen am Panel. Welche
+RATE-Werte über die BLE-Verbindung passen, ist noch nicht gemessen: 50Hz
+mit allen Frames braucht 2 200B/s.
+
+IMU AUS
 während einer Kalibrierung beendet sie mit FAILED; ihr CALSW 0 und SAVE
 gehen beim nächsten Verbinden.
 
@@ -174,8 +182,7 @@ I (…) imu: IMU ON: starting Bluetooth LE
 I (…) ble: synced in <n>ms, own address type <t>
 I (…) ble: scan for 10000ms
 I (…) ble: connect to 00:0C:BF:08:19:29 type 0 for 5000ms
-I (…) ble: connect: variant <v>, own address public (type 0), bleuart's parameters
-I (…) ble: connect: interval 24-40 x 1.25ms, latency 0, timeout 400 x 10ms, scan 96/48 x 0.625ms
+I (…) ble: connect: own address type 0, interval 24-40 x 1.25ms, latency 0, timeout 400 x 10ms, scan 96/48 x 0.625ms
 I (…) ble: connect: last report <r>dBm, <a>ms ago
 I (…) ble: connect: status 0x0, handle <h>, token <k>
 I (…) ble: connect: record: handle <h>, peer 00:0C:BF:08:19:29 type 0 (over the air type 0), own type 0, role 0, interval <i> x 1.25ms, latency 0, timeout <s> x 10ms, clock accuracy <c>
@@ -186,7 +193,7 @@ I (…) imu: <n> frames in 1000ms, rate <r>Hz, roll <x> pitch <y> yaw <z> deg, b
 I (…) imu: command FF AA 69 88 B5
 I (…) ble: disconnect: reason 0x<r>, handle <h>, token <k>
 I (…) ble: disconnect: record: handle <h>, peer …
-I (…) ble: connect failed with 0x<r>: the next try is variant <v>
+I (…) ble: connect: failed to be established, reason 0x<r>
 ```
 
 Grund 0x23E ist HCI 0x3E, Verbindung nicht aufgebaut, wie NimBLE ihn
@@ -203,7 +210,7 @@ Controller-Init- und Enable-Anfragen des C6 erneut
 | Akku | 250mAh, 4h je Ladung (Datenblatt) |
 | Ausgaberate | 0,2 bis 200Hz, ab Werk 10Hz; das Panel bietet 10 bis 200Hz, Vorgabe 50Hz |
 | BLE-Durchsatz | 20 Bytes je Notification; bei 30 bis 50ms und einer Notification je Verbindungsereignis 400 bis 667B/s, unter den 2 200B/s von 50Hz mit allen Frames; die Notifications je Ereignis und die passenden Raten sind nicht gemessen |
-| Verbinden | an einem Panel nicht bestätigt: mit Intervall 15ms, Supervision Timeout 1 000ms und einem Connect-Scan 10ms/10ms endeten 35 Versuche bei -59dBm mit HCI 0x3E (Station, 2026-11-05); die vier Varianten oben sind ungetestet |
+| Verbinden | an einem Panel (Station, 2026-11-05) verbanden diese Werte beim ersten Versuch; mit Intervall 15ms, Supervision Timeout 1 000ms und einem Connect-Scan 10ms/10ms endeten 35 Versuche bei -59dBm mit HCI 0x3E |
 | Genauigkeit X, Y | 0,05° (Datenblatt), 0,2° (Webseite des Herstellers) |
 | Genauigkeit Z | 1° nach der Kalibrierung des Magnetometers, die der Servomotor stört; die Drift von Z ohne diese Kalibrierung ist nicht angegeben |
 | der Winkel eines Laufs | als AS5600-Zählerstand dargestellt: 360 / 4096 = 0,088° je Zähler |

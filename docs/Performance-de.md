@@ -423,7 +423,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 472 | 1 632 |
 | `runlog` | `log_task` | 6 656 | 3 824 | 1 792 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 888 | 1 168 |
+| `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 872 | 1 184 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -509,7 +509,7 @@ oben ist deshalb eine Untergrenze:
   Servodateien geschrieben werden, die es anhand ihrer Namen verfolgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
-  296
+  297
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -746,8 +746,8 @@ weil die IMU ihn startet:
 
 | Build | Anwendungs-Image (Bytes) | Davon NimBLE, `libbt.a`, Flash (Bytes) | Davon die Central, `libbleuart.a`, Flash (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon NimBLE (Bytes) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Standard | 3 095 526 | 62 532 | 8 821 | 179 346 | 693 |
-| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 119 852 | 62 572 | 8 821 | 189 184 | 693 |
+| Standard | 3 094 450 | 62 038 | 8 821 | 179 338 | 693 |
+| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 118 804 | 62 078 | 8 821 | 189 176 | 693 |
 
 Die 2 048 Bytes der Ereignis-Warteschlange stecken in der DIRAM-Zahl,
 außerhalb von `libbt.a`. esp_hosted (157 292 Bytes Flash, 1 571 Bytes DIRAM)

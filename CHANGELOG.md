@@ -50,12 +50,12 @@ history is in git.
   without pairing, and the panel connects to it and again 1s after a drop.
   A connect asks interval 30 to 50ms, latency 0 and supervision timeout
   4s with a 30ms-in-60ms connect scan; a failed connect, HCI 0x3E among
-  them, is retried after 7s, each try in the next of four variants
-  (these parameters or NimBLE's defaults, either own address type), with
-  every value logged. The console build's `ble controller` sends the C6's
-  controller init and enable requests again.
-  SETUP keeps the address with its type under the new key `imu_ble`; an
-  address stored for the HC-05 is not read. The IMU screen and SETUP >
+  them, is retried after 7s. Each try logs its values, the last report's
+  RSSI and NimBLE's connection record. The console build's `ble
+  controller` sends the C6's controller init and enable requests again.
+  SETUP keeps the address with its type under the new key `imu_ble`. An
+  HC-05 binding is not carried over; scan and bind once. The first start
+  erases the HC-05's key `imu_addr` from nvs. The IMU screen and SETUP >
   SENSORS > IMU show STARTING BLUETOOTH, NO BLUETOOTH ON C6, C6 FAILED:
   RESTART, CONNECTING and the errors of the link, of a refused command
   write and of the scan, and the C6's version in place of the HC-05's.

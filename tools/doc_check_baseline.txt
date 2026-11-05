@@ -207,7 +207,6 @@ firmware/panel/components/gt911/touch.c: warning: Member stop (variable) of stru
 firmware/panel/components/gt911/touch.c: warning: Member task (variable) of struct touch_state_t is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member touch_task(void *arg) (function) of file touch.c is not documented.
 firmware/panel/components/gt911/touch.c: warning: Member tracker (variable) of struct touch_state_t is not documented.
-firmware/panel/components/settings_nvs/settings_nvs.c: file has no @file block
 firmware/panel/components/storage/include/storage.h: warning: Compound storage_entry_t is not documented.
 firmware/panel/components/storage/include/storage.h: warning: Member STORAGE_MOUNT_POINT (macro definition) of file storage.h is not documented.
 firmware/panel/components/storage/include/storage.h: warning: Member STORAGE_NAME_MAX (macro definition) of file storage.h is not documented.

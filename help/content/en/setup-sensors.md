@@ -201,7 +201,7 @@ The WitMotion BWT901CL connects over Bluetooth LE through the board's ESP32-C6. 
 | IMU | ON, OFF | OFF | Bluetooth LE, the link to the bound sensor and its reading; the first ON starts Bluetooth LE until the panel restarts |
 | IMU axis | X, Y, Z | X | the angle the servo runs and RUDDER read; `Z: 1° WITH THE MAGNETOMETER` |
 | IMU sign | +, - | + | `-` turns that angle round |
-| IMU rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | the sensor's frames a second; it takes effect after the sensor is switched off and on |
+| IMU rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | the sensor's frames a second; sent only when changed, it takes effect after the sensor is switched off and on; the sensor ships at 10Hz, and `CONNECTED` shows the rate it runs |
 | IMU algorithm | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS takes the magnetometer for Z |
 | Angle source | AS5600, IMU | AS5600 | where the servo runs take their angle from ([Servo settings](servo-settings.md)) |
 

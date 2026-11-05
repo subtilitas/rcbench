@@ -109,7 +109,8 @@ def test_nimble_calls_name_the_panels_gap_callback():
     """The IMU scan's callback of panel_ble.c is a static scan_event, the
     one ble_gap_disc() is handed."""
     src = (PANEL_MAIN / "panel_ble.c").read_text(encoding="utf-8")
-    assert sc.NIMBLE_CALLS["ble_gap_disc_report"] == ("panel_ble.c:scan_event",)
+    assert sc.NIMBLE_CALLS["ble_gap_disc_report"] == (
+        "panel_ble.c:scan_event",)
     assert re.search(r"\bstatic int scan_event\(", src)
     assert re.search(r"\bble_gap_disc\([^;]*\bscan_event\b", src, re.S)
 

@@ -201,7 +201,7 @@ Der Winkelsensor WitMotion BWT901CL wird über Bluetooth LE durch den ESP32-C6 d
 | IMU | EIN, AUS | AUS | Bluetooth LE, die Verbindung zum gebundenen Sensor und sein Messwert; das erste EIN startet Bluetooth LE bis zum Neustart des Panels |
 | IMU-Achse | X, Y, Z | X | der Winkel, den die Servoläufe und RUDER lesen; `Z: 1° MIT MAGNETOMETER` |
 | IMU-Vorzeichen | +, - | + | `-` dreht diesen Winkel um |
-| IMU-Rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | die Frames des Sensors je Sekunde; sie gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde |
+| IMU-Rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | die Frames des Sensors je Sekunde; nur bei einer Änderung gesendet, sie gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde; ab Werk läuft der Sensor mit 10Hz, und `VERBUNDEN` zeigt die Rate, mit der er läuft |
 | IMU-Algorithmus | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS nimmt das Magnetometer für Z |
 | Winkelquelle | AS5600, IMU | AS5600 | woher die Servoläufe ihren Winkel nehmen ([Servo-Optionen](servo-settings.md)) |
 

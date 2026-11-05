@@ -520,6 +520,30 @@ const char *settings_text_key(setting_text_id_t id);
 /** Set it, cut to SETTINGS_TEXT_MAX - 1 characters; an edit like any other. */
 void settings_set_text(setting_text_id_t id, const char *text);
 
+/**
+ * @brief Erases one key from the medium.
+ * @param key The key.
+ * @return Whether the medium held it and it is gone now.
+ */
+typedef bool (*settings_forget_fn)(const char *key);
+
+/**
+ * @brief Hand each retired key to @p forget: keys an earlier build wrote
+ *        and no build reads, such as `imu_addr`, the HC-05's address,
+ *        whose binding is not carried over to `imu_ble`.
+ *        The panel's NVS store does this at its first call.
+ * @param forget Erases one key; NULL erases none.
+ * @return The keys @p forget erased.
+ */
+int settings_forget_retired(settings_forget_fn forget);
+
+/**
+ * @brief A retired key by index.
+ * @param i The index, from 0.
+ * @return The key, NULL past the last.
+ */
+const char *settings_retired_key(int i);
+
 #ifdef ESP_PLATFORM
 /** NVS-backed store; pass to settings_set_store() before settings_init(). */
 const settings_store_t *settings_nvs_store(void);
