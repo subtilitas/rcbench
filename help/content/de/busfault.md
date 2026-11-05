@@ -48,9 +48,21 @@ Die Seite öffnet sich nicht, solange der Prüfstand ARMED ist, da sie kein STOP
 
 Dieselben Zählerstände werden auf der SD-Karte (Secure Digital) in `BENCH/RCBENCH.LOG` geschrieben: eine Zeile je Bericht, solange die Verbindung unterbrochen ist. Die Datei ist auf 1MiB (1.048.576 Bytes) begrenzt. Bevor eine Zeile diese Grenze überschreiten würde, benennt die Aufzeichnung die Datei in `BENCH/RCBENCH.OLD` um und ersetzt eine vorhandene Datei dieses Namens. Anschließend beginnt eine neue `BENCH/RCBENCH.LOG`. Diese Zeilen werden unabhängig von der Einstellung Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD geschrieben.
 
+## Eine Verbindung, die wieder antwortet
+
+![Die Verbindung antwortet wieder](view:busfault-back)
+
+Die Zähler rechts folgen der Verbindung, solange die Seite sichtbar ist. Hat der IOmcu 1s lang jede Anfrage beantwortet, wird der Balken grün und zeigt LINK WIEDER DA, und `verbunden` zählt die Sekunden seit der ersten Antwort. Die Seite des Starttests verhält sich ebenso und behält rechts die Zähler des Tests.
+
+- 2s HALTEN ZUM NEUVERBINDEN ersetzt 2s HALTEN ZUM BESTÄTIGEN. Es öffnet das Menü am echten Prüfstand, SAFE.
+- Eine einzige unbeantwortete Anfrage nimmt NEUVERBINDEN sofort zurück. Die nächste 1s Antworten bietet es wieder an.
+- NEUVERBINDEN löscht nichts. Ein bestehender STOP bleibt, ebenso der FEHLER-Chip. FEHLER 01, der Failsafe des IOmcu, erlischt beim nächsten ARM.
+
 ## Den Bildschirm verlassen
 
-2s HALTEN ZUM BESTÄTIGEN schließt die Seite mit derselben Haltegeste und demselben Übergang wie ARM. Das Bestätigen behebt den Fehler nicht. Der Prüfstand läuft anschließend in der Simulation und steuert keine Ausgänge an. Beim nächsten Start läuft der Selbsttest erneut.
+2s HALTEN ZUM BESTÄTIGEN schließt die Seite mit derselben Haltegeste und demselben Übergang wie ARM. Das Bestätigen behebt den Fehler nicht. Der Prüfstand läuft anschließend in der Simulation und steuert keine Ausgänge an. Beim nächsten Start läuft der Selbsttest erneut. Antwortet die Verbindung wieder, tritt 2s HALTEN ZUM NEUVERBINDEN an ihre Stelle.
+
+Lässt du vor 2s los, zeigt die Seite anstelle des roten Balkens 4s lang bernsteinfarben, was die Taste tut: `Halte 2s, um zu bestätigen.` oder `Halte 2s, um neu zu verbinden.` Ein Tipp auf den Balken schließt den Hinweis.
 
 ## Verwandte Seiten
 

@@ -417,8 +417,9 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 - STOP löscht den Hinweis im selben Frame. Dasselbe gilt bei einem neuen
   Fehlerbit im FEHLER-Chip oder einem Wechsel von ARMED auf SAFE, auch
   durch einen Fehler. Ein Alarm bleibt dabei sichtbar.
-- 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite hat keinen Hinweis,
-  weil diese Seite kein Statusband hat.
+- Die Busfehler-Seite hat kein Statusband. Ihre Haltetaste zeigt den
+  Hinweis anstelle ihres Balkens von 64px, bernsteinfarben mit dunkler
+  Schrift, für 4s. Ein Tipp auf den Balken schließt ihn.
 
 | Taste | Hinweis |
 | --- | --- |
@@ -442,6 +443,8 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
+| 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
+| 2s HALTEN ZUM NEUVERBINDEN auf der Busfehler-Seite | `Halte 2s, um neu zu verbinden.` |
 
 ## Marken im Menü
 
@@ -5747,6 +5750,8 @@ verlassen. Sie verwendet dieselbe Geste und Füllung wie ARM. Die Bestätigung
 behebt den Fehler nicht: Der Prüfstand läuft in Simulation, kein Ausgang
 wird angesteuert, und beim nächsten Start läuft der Test erneut. Band und
 STOP fehlen, weil der Prüfstand hinter diesem Bildschirm nicht ARMED sein kann.
+Antwortet die Verbindung wieder, ist die Haltetaste stattdessen NEUVERBINDEN
+([Eine Verbindung, die wieder antwortet](#eine-verbindung-die-wieder-antwortet)).
 
 ### Ein Link, der abreißt
 
@@ -5806,6 +5811,45 @@ beiden Pins führt etwas anderes.
 
 [Den Link in Betrieb nehmen](Link-de.md) erklärt die Testergebnisse und
 ihre Bedeutung.
+
+### Eine Verbindung, die wieder antwortet
+
+Der Bildschirm folgt der Verbindung, solange er sichtbar ist. Seine rechte
+Spalte bewegt sich mit: `getrennt` zählt die Sekunden seit der letzten
+Antwort, `Anfragen` und `unbeantwortet` zählen die Anfragen, und die Zeilen
+unter CONTROLLER zeigen Zustand und Fehlerzähler des Controllers. Ändert sich
+eine Zahl, wird nur die Spalte neu gezeichnet.
+
+Hat der IOmcu 1000ms lang jede Abfrage beantwortet (`BUSFAULT_BACK_MS`, das
+LINK des Bands), bietet der Bildschirm NEUVERBINDEN an:
+
+- Der Balken wird grün und zeigt `LINK WIEDER DA`.
+- Die Überschrift lautet `Die Verbindung antwortet wieder.`
+- `verbunden` zählt anstelle von `getrennt` die Sekunden seit der ersten
+  Antwort.
+- Die Haltetaste am Fuß zeigt `2s HALTEN ZUM NEUVERBINDEN`. Sie öffnet das
+  Menü am echten Prüfstand, SAFE.
+
+![Die Verbindung antwortet wieder](img/de/busfault-back.png)
+
+- Solange die Verbindung schweigt, gibt es kein NEUVERBINDEN. Die
+  Haltetaste ist `2s HALTEN ZUM BESTÄTIGEN` und führt ins Menü in der
+  Simulation.
+- Eine einzige unbeantwortete Abfrage nimmt NEUVERBINDEN sofort zurück und
+  bringt die Bestätigung zurück. Die nächsten 1000ms Antworten bieten es
+  wieder an.
+- Kommt oder geht NEUVERBINDEN, bricht ein laufendes Halten ab. Hebe den
+  Finger und halte erneut.
+- Die Seite des Starttests bietet NEUVERBINDEN unter derselben Bedingung an.
+  Ihre rechte Spalte behält die Zähler des Tests.
+- NEUVERBINDEN löscht nichts. Ein bestehender STOP bleibt, ebenso der
+  FEHLER-Chip. FEHLER 01 (`LINK_SILENT`: Der IOmcu hat 200ms keine Daten
+  empfangen und selbst auf SAFE geschaltet) erlischt beim nächsten ARM. Nach
+  NEUVERBINDEN zeigt das Band SAFE, LINK und BENCH, dazu STOP oder FEHLER 01,
+  wo eines davon besteht.
+- Eine Bestätigung bei schweigender Verbindung beendet den Bildschirm für
+  diesen Ausfall. Er öffnet erst wieder, wenn die Verbindung geantwortet hat
+  und danach erneut 4s ausgefallen ist.
 
 ## IOmcu-Update
 

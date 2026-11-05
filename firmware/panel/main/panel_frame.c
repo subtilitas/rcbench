@@ -649,11 +649,34 @@ void panel_frame_loop(void)
         }
 
         /*
-         * And the menu once it has been acknowledged.  The hold is the
-         * screen's; where an acknowledged fault leads is not, so it latches
-         * and this decides.
+         * The bus-fault screen follows the link while it shows: the band's
+         * LINK for its RECONNECT offer (BUSFAULT_BACK_MS of answers), and a
+         * stopped link's counters as they move.
          */
-        if (busfault_screen_take_ack()) {
+        if (ui_router_current() == SCREEN_BUSFAULT) {
+            busfault_screen_link(link_up, now_ms());
+            const busfault_report_t *shown = busfault_screen_report();
+            if (shown != NULL && shown->kind == BUSFAULT_LINK_LOST) {
+                busfault_report_t live;
+                link_lost_report(&live);
+                busfault_screen_refresh(&live);
+            }
+        }
+
+        /*
+         * And the menu once a hold has completed.  The hold is the
+         * screen's; where it leads is not, so it latches and this decides.
+         * Both exits lead to the menu and change nothing on the bench: a
+         * STOP, the FAULT chip and the IOmcu's failsafe stay as they are.
+         * A link silent at the acknowledgement has had its screen: the
+         * outage it belongs to does not open it again.
+         */
+        const busfault_exit_t bf_exit = busfault_screen_take_exit();
+        if (bf_exit != BUSFAULT_EXIT_NONE) {
+            if (bf_exit == BUSFAULT_EXIT_SIMULATION
+                && atomic_load(&s_link_lost_ms) != 0u) {
+                s_link_lost_shown = true;
+            }
             ui_router_goto(SCREEN_OVERVIEW);
         }
 
