@@ -1,6 +1,6 @@
 # rcbench configurator
 
-This static page plans a bench for rcbench release 0.23.7. Select the
+This static page plans a bench for rcbench release 0.23.8. Select the
 functions you need to see the required parts, a wiring drawing and a
 pin-to-pin table. Functions are grouped by their required bench hardware.
 Each part beyond the base setup has a remove control. With no functions
