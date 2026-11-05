@@ -45,6 +45,7 @@ rcbench/
     hitec/                Leitung der Hitec-Servos, beide Familien: Frames, Transaktionen, Decoder der Antworten · rp2350: hitec_line.pio · hitec_line
     escwire/              ESC-Einstellungen über die Signalleitung: Protokoll A, Textschnittstelle, Prüfung jedes Frames, Erkennung, Feldtabellen, Sitzung · rp2350: ew_line.pio · ew_line · rp2350: ew_line.pio · ew_line
     hc05/                 AT-Einrichtung eines HC-05-Bluetooth-Moduls: Probe, Scan, Bind, Connect to any; kein Pin-Treiber
+    bleuart/              BLE-Central für den ISSC-Transparent-UART-Dienst: Advertising-Parser, Scan-Liste, Connect, Discovery, Subscribe, Schreiben, Reconnect; kein Pin-Treiber
     i2c_txq/              I2C-Transaktionswarteschlange: früheste Deadline, Timeouts, Leitungsprüfung, Bus-Clear · rp2350: i2c_txq_block auf einem I2C-Block, kein PIO-Programm
     witmotion/            WitMotion-IMU-Frames: Parser, Decoder, Befehlsencoder; kein Pin-Treiber
   firmware/
@@ -94,6 +95,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `escwire` | ja | ja | ja |
 | `witmotion` | ja | | ja |
 | `hc05` | ja | | ja |
+| `bleuart` | | | ja |
 
 ## Toolchains
 
