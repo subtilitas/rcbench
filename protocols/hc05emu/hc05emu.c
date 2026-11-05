@@ -139,9 +139,9 @@ static void boot(hc05emu_t *e, uint32_t now_ms)
     e->mode = e->key ? HC05EMU_MODE_AT : HC05EMU_MODE_DATA;
     e->full_at = e->key;
     e->baud_now = e->key ? HC05EMU_BAUD_FULL_AT : e->cfg.baud;
+    /* No command waits for the radio and none is held: AT+RESET runs only
+     * when none does. */
     e->inited = false;
-    /* No command waits for the radio: AT+RESET runs only when none does. */
-    e->held_due = false;
     e->line_n = 0;
     e->line_over = false;
     e->found_n = 0;
