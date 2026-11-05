@@ -175,7 +175,7 @@ extern "C" {
  * C6 IO19 is CLK, IO18 CMD, IO20 to IO23 D0 to D3; each line has a 51kOhm
  * pull-up.  The C6's EN (chip enable) has a 10kOhm pull-up and 1uF and
  * reaches GPIO54 through 0Ohm: a low holds the C6 in reset.  esp_hosted
- * reads these from sdkconfig.defaults; wifi_radio.c fails the build when
+ * reads these from sdkconfig.defaults; c6_link.c fails the build when
  * the two differ.  Header H4 carries the C6's UART0 (TXD0, RXD0), GND
  * and its strapping pin IO9.
  */

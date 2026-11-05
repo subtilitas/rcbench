@@ -17,6 +17,15 @@ history is in git.
   question, upload, rename, move and delete, and the write buttons while
   writes are closed. The CI job is `Web file manager browser test`.
 
+### Changed
+
+- The panel's link to the ESP32-C6 is the component `c6_link`, one mutex
+  around its reset and start, for Wi-Fi and Bluetooth LE alike. Wi-Fi works
+  as before. Its console lines carry the tag `c6`: `c6: C6: esp_hosted
+  firmware ...`, `c6: C6: firmware version not reported ...` and `c6: C6
+  link failed: C6 held in reset, Wi-Fi and Bluetooth are off until the
+  panel restarts`.
+
 ### Fixed
 
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint

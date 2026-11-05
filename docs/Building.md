@@ -514,7 +514,10 @@ P4; the C6 runs the radio.
 
 SDIO runs 4 bits wide at 40MHz. `components/board/include/board_pins.h`
 names the pins (`BOARD_C6_*`), `firmware/panel/sdkconfig.defaults` hands
-them to esp_hosted, and `wifi_radio.c` fails the build when the two differ.
+them to esp_hosted, and `components/c6_link/c6_link.c` fails the build when
+the two differ. `c6_link` brings the link up behind one mutex, so every
+user of the C6 shares one reset and one start; the Wi-Fi task calls
+`c6_link_up()` before `esp_wifi_init()`.
 
 ### The managed components
 
@@ -554,11 +557,12 @@ and polls for its start event every 200ms. The panel then writes the C6's
 version to the console:
 
 ```
-wifi: C6: esp_hosted firmware 2.13.0, host 2.13.0
+c6: C6: esp_hosted firmware 2.13.0, host 2.13.0
 ```
 
 A C6 firmware without the version request answers with
-`wifi: C6: firmware version not reported, host 2.13.0`, after up to 5s.
+`c6: C6: firmware version not reported, host 2.13.0`, after esp_hosted's
+time-out for the request, 1s.
 esp_hosted also logs `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`
 when the major or minor numbers differ. Espressif states that a host newer
 than its co-processor runs and may see request time-outs; the panel's
@@ -571,7 +575,8 @@ Later Wi-Fi starts reuse the active link without another reset.
 `esp_hosted_connect_to_slave()` returns `ESP_OK` whether or not the C6
 came up (`esp_hosted_api.c` 177-192). The panel takes esp_hosted's
 `ESP_HOSTED_EVENT_TRANSPORT_UP` event as the answer, and waits for it at
-most 1,000ms after that call has returned (`wifi_radio.c`).
+most 1,000ms after that call has returned (`c6_link.c`). A second caller
+waits on the mutex until the first call has ended and then gets its result.
 
 - A C6 that does not start as an SDIO card: esp_hosted gives up after the
   card's start-up, at least 1,500ms after the 1,520ms reset; 1 reset.
@@ -584,8 +589,8 @@ most 1,000ms after that call has returned (`wifi_radio.c`).
   radio's start runs on its own task.
 - A link that fails during a session: esp_hosted posts
   `ESP_HOSTED_EVENT_TRANSPORT_FAILURE`. The panel logs
-  `wifi: C6 link failed: C6 held in reset, Wi-Fi is off until the panel
-  restarts` once, holds the C6 in reset, and the session ends as a failed
+  `c6: C6 link failed: C6 held in reset, Wi-Fi and Bluetooth are off until
+  the panel restarts` once, holds the C6 in reset, and the session ends as a failed
   start. With the C6 in reset its SDIO lines are held high by their
   51kΩ pull-ups, so esp_hosted's read task, priority 23 on core 0, waits
   instead of failing in a loop; this is not measured on a board. The panel
@@ -650,7 +655,7 @@ The SD card on slot 0 and the C6 on slot 1 share one SDMMC controller:
 On the ESP32-P4 a task created through `xTaskCreate()` or
 `xTaskCreatePinnedToCore()` without a core runs on core 0, and core 1
 belongs to the control task and the tasks pinned there. The panel links
-with `--wrap=xTaskCreatePinnedToCore` (`components/wifi_access/wifi_radio.c`)
+with `--wrap=xTaskCreatePinnedToCore` (`components/c6_link/c6_link.c`)
 for it: esp_hosted creates 6 tasks at priority 23 without naming a core.
 `xTaskCreateStatic()` and the `xTaskCreate*WithCaps()` calls are not
 wrapped; esp_hosted uses `xTaskCreateStatic()` only with

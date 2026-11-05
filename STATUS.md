@@ -293,7 +293,7 @@ back to the build before it, which reports it from the restart note the install 
 not host-tested).
 
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
-`esp_hosted` (`wifi_radio.c`, [Wi-Fi through the
+`esp_hosted` (`components/c6_link`, [Wi-Fi through the
 ESP32-C6](docs/Building.md#wi-fi-through-the-esp32-c6)). Measured on a home network on
 2026-10-23, panel build 408c43bd: a download of a 16MiB file at 688-757kB/s, the card read
 and the radio together, not separated; an upload of a 2.56MB image to `/update` at
