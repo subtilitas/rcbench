@@ -91,13 +91,13 @@ Danach folgt `err output full, N bytes dropped`.
 
 ```text
 > r 0x00 0 2
-data page=0x00 off=0 n=2: 0x0004 0x001B
+data page=0x00 off=0 n=2: 0x0004 0x0024
 > w 0x2A 4 1 5000 1000
 nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Getippte Zeilen stehen hier nach `> `; die Konsole gibt keinen Prompt aus.
-Die erste Zeile liest die Protokollversion, 4.27. Die zweite ist das
+Die erste Zeile liest die Protokollversion, 4.36. Die zweite ist das
 Einschalten von SUPPLY mit 5000mV und 1000mA, abgewiesen, weil kein Panel
 einen Heartbeat sendet. Mit laufendem Panel wird dieselbe Zeile angenommen:
 
