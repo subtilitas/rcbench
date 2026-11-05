@@ -4704,7 +4704,7 @@ Touch, wird der Build bestätigt, sobald das gesamte Panel läuft:
 
 - die Karteneinrichtung wurde versucht; auch eine fehlende oder unlesbare Karte zählt;
 - die Einstellungen sind geladen;
-- die Steuer-Task und die Logger-Task sind je einen Durchlauf gelaufen;
+- die Control-Task und die Logger-Task sind je einen Durchlauf gelaufen;
 - ein ganzes Bild hat das Display erreicht, und die Bildschirmschleife ist
   danach einmal gelaufen.
 
@@ -4953,7 +4953,7 @@ kopfüber eingebaut ist.
   DCS: Display Command Set) kann das Bild auf diesem Board nicht drehen:
   Der Strap an seinem PINCTL-Pin hält die Scanrichtung fest, beim Start wie
   bei laufendem Video.
-- Die Kopie läuft in der Render-Schleife, im Flip. Die Steuer-Task, der
+- Die Kopie läuft in der Render-Schleife, im Flip. Die Control-Task, der
   STOP gehört, wartet nie auf sie. Ihre Zeit je Flip ist der Wert `TURN`
   der Konsole. Auf SERVO LIVE beim Schwenken, ARMED, las ein Lauf am
   Prüfplatz TURN 3,8 bis 4,8ms und 30,2fps, gegen 39 bis 45fps bei NORMAL:
@@ -5699,7 +5699,7 @@ Laufs ([Servoverfahren](Servo-de.md)).
 
 - Bei AUS werden weder Dateien geschrieben noch Nummern vergeben.
   Kartenmeldungen für diese Art von Lauf bleiben ebenfalls aus.
-- Die Einstellung Auto-Aufzeichnungen wird bei jedem Durchlauf der Steuer-Task gelesen.
+- Die Einstellung Auto-Aufzeichnungen wird bei jedem Durchlauf der Control-Task gelesen.
   Schaltest du während eines Laufs auf AUS, wird seine Datei geschlossen.
   Schaltest du während eines ARMED- oder Netzteil-Laufs auf EIN, beginnt
   eine neue Datei.
