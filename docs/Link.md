@@ -476,9 +476,9 @@ request frame in flight at a time, a late pass delays the next frame
 instead of losing it to a full buffer. The same write as 8 frames back to back
 loses 6 of them to one 20ms pass (`test_bind_link`).
 
-The cost of one edit, compared with the earlier implementation:
+The cost of one edit, by a panel of 4.9 or older and by this build's panel with a 4.10 IOmcu:
 
-| | 0.14.0 | This build, 4.10 IOmcu |
+| | Panel of 4.9 or older | This build, 4.10 IOmcu |
 | --- | ---: | ---: |
 | Exchanges | 5 | 20 |
 | Request frames | 19 | 20 |
@@ -1064,7 +1064,7 @@ per 5s offer.
 | 0x32 | `KST` | read, write | the servo programming page: the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. The write page has 29 registers: the command in 0 to 3, sent as one frame; the staged image, unlock set and start check in 4 to 24; the image-view selector in 25; the supply voltage and current of an ENTER in 26 and 27; and the LEAVE_MS wait in 28. [The programming port for KST and Chaservo servos](LinkKST.md) has the rules. Nothing is kept |
 | 0x33 | PROG | read, write | the programming ports (since 4.13): 28 registers, 24 before 4.26. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints, then each port's FUNC in 24 to 27 (since 4.26). [The programming ports](#the-programming-ports) has the rules. Pin, slew, endpoints and FUNC are kept in the IOmcu's flash |
 | 0x34 | `HITEC` | read, write | raw transactions of the Hitec servo wire on a programming port (since 4.23). A read gives 32 registers: state, flags and port, `SEQ`, operation and transaction count, result and refusal, the capture's count and flags, the decoder's result, the decoded value, `VIEW`, the received bytes in 8 registers, and in 16 registers the bytes' start times or the run. A write takes 24: the command in registers 0 to 3, one frame, the staged transaction, decoder and POWER set points in 4 to 21, `VIEW` in 22, and the receive mode of a D series line in 23 (since 4.24). [The programming port for Hitec servos](LinkHitec.md) has the rules. Nothing is kept |
-| 0x35 | SENSE_MAP | read, write | up to 4 INA3221 at 0x40 to 0x43 on SENSE's bus (since 4.25). Register 0 the parts fitted, bit a for 0x40 + a; 1 `FAST`, the channel read every 1ms (0 to 11, 0xFF none); 2 to 13 each channel's shunt in 0.1mΩ (0 off, 50 to 10000); 14 to 25 what each channel measures (0 none, 0x01 to 0x08 an output channel, 0x10 to 0x13 a programming port, 0x20 the supply); read only: 26 to 29 each part's die ID, 30 flags, 31 reserved. Registers 0 to 25 are kept in the IOmcu's flash. While the map is in force SENSE's ENABLE bit 1 and registers 8 to 10 mirror it. [The INA3221 map and windows](LinkSensors.md) has the rules |
+| 0x35 | SENSE_MAP | read, write | up to 4 INA3221 at 0x40 to 0x43 on SENSE's bus (since 4.25). Register 0 the parts fitted, bit a for 0x40 + a; 1 `FAST`, the channel read every 1ms (0 to 11, 0xFF none); 2 to 13 each channel's shunt in 0.1mΩ (0 off, 50 to 10000); 14 to 25 what each channel measures (0 none, 0x01 to 0x08 an output channel, 0x10 to 0x13 a programming port, 0x20 the supply, 0x30 to 0x32 a board's own rail since 4.33); read only: 26 to 29 each part's die ID, 30 flags, 31 reserved. Registers 0 to 25 are kept in the IOmcu's flash. While the map is in force SENSE's ENABLE bit 1 and registers 8 to 10 mirror it. [The INA3221 map and windows](LinkSensors.md) has the rules |
 | 0x36 | SENSE_LIMIT | read, write | a current limit per channel of SENSE_MAP (since 4.27); the IOmcu flags a limit passed and the panel answers it as an error. Registers 0 to 11 each channel's limit in mA (0 none, 1 to 32767), kept in the IOmcu's flash; read only: 12 `OVER`, bit c a window of channel c above its limit since the last read of the register, which clears it; 13 `OVER_COUNT`, channel windows over, modulo 65536; 14 and 15 reserved. 16 registers. [The INA3221 map and windows](LinkSensors.md#sense_limit) has the rules |
 | 0x37 | SENSE_WIN_A | read | channels 0 to 5's last 50ms window (since 4.25): the window number, flags, and 5 registers a channel: mean and highest current (mA, signed), mean and lowest bus voltage (mV), flags. Every write is refused with READ_ONLY. Nothing is kept |
 | 0x38 | SENSE_WIN_B | read | channels 6 to 11's, as SENSE_WIN_A (since 4.25) |
@@ -1305,7 +1305,7 @@ slot's own rate starts unbound: OUTPUTS reads driver 0 for it, as for a
 stored slot on the ports' channels. SERVO's register 0 and PROG's `PWM` bits
 are not kept and start at 0, so nothing else is judged at start.
 
-The PWM driver (`firmware/iomcu/src/out_pwm.c`) still clamps a level above
+The PWM driver (`firmware/iomcu/src/out_pwm.c`) clamps a level above
 the frame's last count to that count. The page checks prevent such a value
 from reaching it.
 
@@ -1551,8 +1551,8 @@ The IOmcu's flash (4MB module, RP2350A):
 | 0x3FC000 to 0x3FDFFF | 8KiB | unused | output store, data partition `store` (partition 2) |
 | 0x3FE000 to 0x3FFFFF | 8KiB | output store | unused: read once for old bindings, never written |
 
-A slot is 2,084,864 bytes, 509 sectors of 4KiB. The 0.18 image is about
-192KB, 9% of a slot. The last sector stays unused because the RP2350-E10
+A slot is 2,084,864 bytes, 509 sectors of 4KiB. The default image is
+278,508 bytes, 13% of a slot. The last sector stays unused because the RP2350-E10
 workaround of an A2 chip's UF2 (USB Flashing Format) load can erase it.
 `firmware/iomcu/partitions.json` is the table; the build passes its offsets
 to the code, and the build fails when the image does not fit one slot.
