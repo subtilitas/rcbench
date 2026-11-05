@@ -740,7 +740,7 @@ Backup ihn hält, und die Seite, die ihn sendet, nennt ihn:
   Wert, den das Zurückspielen ändert, den Pairing-Wert als
   `Pairing (KST EXPERT MODE): 00 -> 5A`. Das Zurückspielen des
   Sitzungsbackups auf ein Servo, dessen Werte das Panel nicht kennt, sagt
-  `Ebenfalls zurückgespielt, bei KST EXPERT MODE AUS verborgen: DEAD BAND, BOOST, STRETCH, GESPERRT, Pairing.`
+  `Auch zurückgespielt (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, GESPERRT, Pairing.`
 
 ![Die Schreibseite nennt die verborgenen Werte](img/de/servo-kst-write-expert-off.png)
 

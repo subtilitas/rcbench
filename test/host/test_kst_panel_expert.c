@@ -21,6 +21,8 @@
  * - a_file_check_page_names_the_hidden_values_first
  * - a_restore_with_the_mode_off_names_each_hidden_value_it_changes
  * - a_restore_of_an_unknown_servo_names_the_hidden_values_on_one_line
+ * - a_step_key_held_as_the_mode_turns_off_stops_its_repeat
+ * - the_fullest_pages_with_the_mode_off_end_above_their_buttons
  * - the_active_output_and_the_write_switch_are_the_same_in_both_modes
  *
  * SPDX-License-Identifier: MIT
@@ -572,25 +574,35 @@ TEST_CASE(a_file_check_page_names_the_hidden_values_first)
     fresh_off();
     connected();
     {
-        /* Five values a tab shows and BOOST raised, which asks a second
-         * look; four lines for values on the page. */
-        const kst_field_id_t id[] = { KST_F_BOOST, KST_F_DUTY,
+        /* The three hidden fields, BOOST raised, which asks a second look,
+         * and four values a tab shows: the page has four lines for
+         * values. */
+        const kst_field_id_t id[] = { KST_F_BOOST, KST_F_DEAD_BAND,
+                                      KST_F_STRETCH, KST_F_DUTY,
                                       KST_F_SOFT_START, KST_F_LEFT_ANGLE,
-                                      KST_F_RIGHT_ANGLE, KST_F_UNCONT_TIME };
+                                      KST_F_UNCONT_TIME };
         const uint16_t raw[] = {
             (uint16_t)(servo(KST_F_BOOST) + 3u),
+            (uint16_t)(servo(KST_F_DEAD_BAND) - 2u),
+            (uint16_t)(servo(KST_F_STRETCH) != 0u ? 0u : 1u),
             (uint16_t)(servo(KST_F_DUTY) - 1u),
             (uint16_t)(1u - servo(KST_F_SOFT_START)),
             (uint16_t)(servo(KST_F_LEFT_ANGLE) - 1u),
-            (uint16_t)(servo(KST_F_RIGHT_ANGLE) - 1u),
             (uint16_t)(servo(KST_F_UNCONT_TIME) + 1u),
         };
+        char more[KST_PANEL_LINE];
 
-        file_of("SOFT", id, raw, 6);
+        file_of("SOFT", id, raw, 7);
+        snprintf(more, sizeof(more), TR(KP_VALUES_MORE), 4u);
+        load("SOFT");
+        CHECK_EQ(kst_panel_editor(), 3);
+        /* Each hidden one named; the count is of the four a tab shows. */
+        CHECK(warns_from(hidden_line("DEAD BAND")));
+        CHECK(warns_from(hidden_line("BOOST")));
+        CHECK(warns_from(hidden_line("STRETCH")));
+        CHECK(warns(more));
+        CHECK(!warns_from("MAX. DUTY: "));
     }
-    load("SOFT");
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns_from(hidden_line("BOOST")));
     CHECK(warns(TR(KP_W_BOOST_RAISED)));
     hold(2.1f);
     CHECK_EQ(draft(KST_F_BOOST), servo(KST_F_BOOST) + 3u);
@@ -698,6 +710,91 @@ TEST_CASE(a_restore_of_an_unknown_servo_names_the_hidden_values_on_one_line)
     CHECK(strstr(TR(KP_HIDDEN_UNKNOWN), "Pairing") != NULL);
 }
 
+TEST_CASE(a_step_key_held_as_the_mode_turns_off_stops_its_repeat)
+{
+    uint16_t at;
+    uint32_t rev;
+
+    fresh();
+    connected();
+    tap(kst_panel_tab_rect(PG_TUNE));
+    {
+        const gfx_rect_t plus = kst_panel_step_rect(PG_TUNE, 0, true);
+
+        ev(cx(plus), cy(plus), TOUCH_EVENT_DOWN, 1);
+        ticks(1.0f);
+        CHECK(kst_prog_changes(M) > 0u);
+        at = draft(KST_F_DEAD_BAND);
+        rev = kst_panel_revision();
+        mode(false);
+        CHECK(kst_panel_revision() != rev);
+        ticks(1.5f);
+        ev(cx(plus), cy(plus), TOUCH_EVENT_UP, 1);
+    }
+    CHECK_EQ(draft(KST_F_DEAD_BAND), at);
+    CHECK_EQ(kst_panel_editor(), 0);
+}
+
+/** @brief The rows the open warning page's lines take. */
+static int page_rows(void)
+{
+    int rows = 0;
+
+    for (int i = 0; kst_panel_warning_line(i) != NULL; ++i) {
+        rows += kst_panel_text_rows(kst_panel_warning_line(i));
+    }
+    return rows;
+}
+
+/** @brief The open page's lines end 8px above its buttons: WARN_TOP, 64px,
+ *         and LINE_H, 20px, of kst_panel_int.h. */
+static bool page_fits(void)
+{
+    return AREA.y + 64 + page_rows() * 20 + 8 <= kst_panel_apply_rect().y;
+}
+
+TEST_CASE(the_fullest_pages_with_the_mode_off_end_above_their_buttons)
+{
+    for (int lang = 0; lang < 2; ++lang) {
+        /* Ten values on the write page, three of them hidden. */
+        fresh_off();
+        ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
+        connected();
+        enable();
+        edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
+        edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
+        edit(KST_F_STRETCH,
+             (uint16_t)(servo(KST_F_STRETCH) != 0u ? 0u : 1u));
+        edit(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 2u));
+        edit(KST_F_SOFT_START, (uint16_t)(1u - servo(KST_F_SOFT_START)));
+        edit(KST_F_NEUTRAL, (uint16_t)(servo(KST_F_NEUTRAL) + 5u));
+        edit(KST_F_PULSE_LOWER, (uint16_t)(servo(KST_F_PULSE_LOWER) + 10u));
+        edit(KST_F_PULSE_UPPER, (uint16_t)(servo(KST_F_PULSE_UPPER) - 10u));
+        edit(KST_F_LEFT_ANGLE, (uint16_t)(servo(KST_F_LEFT_ANGLE) - 1u));
+        edit(KST_F_REVERSION, (uint16_t)(1u - servo(KST_F_REVERSION)));
+        tap(val(PG_SERVO, 4, 1));
+        CHECK_EQ(kst_panel_editor(), 3);
+        CHECK(warns_from(hidden_line("DEAD BAND")));
+        CHECK(warns_from(hidden_line("BOOST")));
+        CHECK(warns_from(hidden_line("STRETCH")));
+        CHECK(page_fits());
+        /* The locked session's restore with no card. */
+        restart_locked();
+        ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
+        mode(false);
+        card_out();
+        tick(0.02f);
+        tap(val(PG_SERVO, 3, 0));
+        hold(2.1f);
+        tap(val(PG_SERVO, 4, 0));
+        tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
+        CHECK_EQ(kst_panel_editor(), 3);
+        CHECK(warns(TR(KP_HIDDEN_UNKNOWN)));
+        CHECK(page_fits());
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(the_active_output_and_the_write_switch_are_the_same_in_both_modes)
 {
     char port[2][64];
@@ -739,6 +836,8 @@ int main(void)
     RUN(a_file_check_page_names_the_hidden_values_first);
     RUN(a_restore_with_the_mode_off_names_each_hidden_value_it_changes);
     RUN(a_restore_of_an_unknown_servo_names_the_hidden_values_on_one_line);
+    RUN(a_step_key_held_as_the_mode_turns_off_stops_its_repeat);
+    RUN(the_fullest_pages_with_the_mode_off_end_above_their_buttons);
     RUN(the_active_output_and_the_write_switch_are_the_same_in_both_modes);
     return test_summary("kst_panel_expert");
 }

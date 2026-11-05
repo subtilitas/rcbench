@@ -374,8 +374,8 @@ int kpn_notes_foot(void)
  * @brief Where row @p r is drawn: the page's rows that show, in the order
  *        of kpn_rows, closed up from the top.  A wide row takes a line of
  *        its own, the others two to a line.  With every row shown that is
- *        each row's own row and column.
- * @param r the row, one that shows
+ *        each row's own row and column (test_kst_panel_expert).
+ * @param r the row, one of kpn_rows
  * @param line the line it is drawn on, from 0
  * @param col the column it is drawn in, 0 or 1
  */
@@ -383,36 +383,32 @@ static void packed(const row_t *r, int *line, int *col)
 {
     int ln = 0, c = 0;
 
-    *line = r->row;
-    *col = r->col;
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        const row_t *q = &kpn_rows[i];
-
+    for (const row_t *q = kpn_rows; q < r; ++q) {
         if (q->page != r->page || !kpn_row_shown(q)) {
             continue;
         }
-        if (q->wide != 0u && c != 0) {
-            ++ln;
+        if (q->wide != 0u) {
+            ln += c != 0 ? 2 : 1;       /* the line begun, and its own */
             c = 0;
-        }
-        if (q == r) {
-            *line = ln;
-            *col = c;
-            return;
-        }
-        if (q->wide != 0u || c == 1) {
+        } else if (c == 1) {
             ++ln;
             c = 0;
         } else {
             c = 1;
         }
     }
+    if (r->wide != 0u && c != 0) {
+        ++ln;
+        c = 0;
+    }
+    *line = ln;
+    *col = c;
 }
 
 gfx_rect_t kpn_row_rect(const row_t *r)
 {
     const int col_w = (k.area.w - 30) / 2;
-    int line, col;
+    int line = 0, col = 0;
 
     if (!kpn_row_shown(r)) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
@@ -687,11 +683,11 @@ void kpn_mode_sync(void)
     }
     page = kpn_page();
     if (k.tab_count != 0u) {
-        /* An editor, a page or a press may be about a row that goes. */
+        /* An editor, a page or a press -- a held step key repeats -- may
+         * be about a row that goes. */
         kpn_close_editors();
         k.have = false;
         k.pressed = P_NONE;
-        k.note_page = 0;
     }
     k.expert = on;
     for (int p = 0; p < PG_COUNT; ++p) {

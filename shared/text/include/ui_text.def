@@ -5467,8 +5467,8 @@ UI_TEXT(KP_HIDDEN_VALUE, 116,
     "%s (KST EXPERT MODE): %s -> %s",
     "%s (KST EXPERT MODE): %s -> %s")
 UI_TEXT(KP_HIDDEN_UNKNOWN, 116,
-    "Also restored, hidden while KST EXPERT MODE is OFF: DEAD BAND, BOOST, STRETCH, LOCKED, Pairing.",
-    "Ebenfalls zurückgespielt, bei KST EXPERT MODE AUS verborgen: DEAD BAND, BOOST, STRETCH, GESPERRT, Pairing.")
+    "Also restored (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, LOCKED, Pairing.",
+    "Auch zurückgespielt (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, GESPERRT, Pairing.")
 UI_TEXT(KP_WRITING, 116,
     "Writing. Do not disconnect.",
     "Schreibvorgang läuft. Trenne die Verbindung nicht.")

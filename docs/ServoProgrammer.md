@@ -679,7 +679,7 @@ and the page that sends it names it:
 - The page of [a restore](#restore) names each hidden value the restore
   changes, the pairing value as `Pairing (KST EXPERT MODE): 00 -> 5A`. A
   restore of the session's backup to a servo whose values the panel does
-  not know says `Also restored, hidden while KST EXPERT MODE is OFF: DEAD BAND, BOOST, STRETCH, LOCKED, Pairing.`
+  not know says `Also restored (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, LOCKED, Pairing.`
 
 ![The write page naming the hidden values](img/servo-kst-write-expert-off.png)
 
