@@ -1,0 +1,28 @@
+name: Prepare apt
+description: >-
+  Removes the package lists this build never installs from, makes a stalled
+  download retry, and refreshes the index.  Runs before any apt-get install.
+runs:
+  using: composite
+  steps:
+    - name: Prepare apt
+      shell: bash
+      run: |
+        # The runner image carries package lists this build never installs
+        # from, and apt-get update fails the whole step when any one of them
+        # serves a stale index (for example "Hash Sum mismatch" on
+        # dl.google.com/linux/chrome-stable).  A toolchain install does not
+        # depend on a browser's mirror, so those lists are removed first.
+        #
+        # Matched by glob rather than by name: the image writes these as
+        # .list or as deb822 .sources depending on its version, and a name
+        # that misses leaves the failure exactly as it was.  -v so the log
+        # says what went, since a silent no-op here looks identical to a fix.
+        sudo rm -fv /etc/apt/sources.list.d/*google* \
+                    /etc/apt/sources.list.d/*microsoft* || true
+        # A mirror that stalls mid-download holds the step until the job's
+        # timeout cancels it.  30s without data ends the try and apt fetches
+        # the package again, up to 3 more times.
+        echo 'Acquire::Retries "3"; Acquire::http::Timeout "30"; Acquire::https::Timeout "30";' \
+          | sudo tee /etc/apt/apt.conf.d/80-retries >/dev/null
+        sudo apt-get update

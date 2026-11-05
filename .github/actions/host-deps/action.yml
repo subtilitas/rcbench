@@ -5,22 +5,26 @@ description: >-
 runs:
   using: composite
   steps:
+    - uses: ./.github/actions/apt-prepare
+
+    # The .deb files the install below downloads, kept between runs.  A slow
+    # mirror trickles data and so never trips apt's 30s timeout: cmake's
+    # 14.1MB and valgrind's 15.7MB then take minutes each.  With the files
+    # cached, apt-get downloads only what changed since the cache was saved.
+    # The key changes with this file, so a new package list starts afresh.
+    - name: Restore the downloaded packages
+      uses: actions/cache@v6
+      with:
+        path: ~/.apt-archives
+        key: apt-host-deps-${{ runner.os }}-${{ hashFiles('.github/actions/host-deps/action.yml') }}
+
     - name: Install build dependencies
       shell: bash
       run: |
-        # The runner image carries package lists this build never installs
-        # from, and apt-get update fails the whole step when any one of them
-        # serves a stale index (for example "Hash Sum mismatch" on
-        # dl.google.com/linux/chrome-stable).  A toolchain install does not
-        # depend on a browser's mirror, so those lists are removed first.
-        #
-        # Matched by glob rather than by name: the image writes these as
-        # .list or as deb822 .sources depending on its version, and a name
-        # that misses leaves the failure exactly as it was.  -v so the log
-        # says what went, since a silent no-op here looks identical to a fix.
-        sudo rm -fv /etc/apt/sources.list.d/*google* \
-                    /etc/apt/sources.list.d/*microsoft* || true
-        sudo apt-get update
+        mkdir -p ~/.apt-archives/partial
         sudo apt-get install -y --no-install-recommends \
+          -o Dir::Cache::Archives="$HOME/.apt-archives" \
           cmake ninja-build gcc fonts-dejavu-core valgrind
+        # apt writes as root; the cache step saves as the runner's user.
+        sudo chown -R "$(id -u):$(id -g)" ~/.apt-archives
         python3 -m pip install pillow==12.3.0

@@ -729,7 +729,13 @@ Jeder Job läuft auf Ubuntu 26.04 (`runs-on: ubuntu-26.04`), nicht auf
 build and ctest`, `Host suite under sanitizers`, `Host suite coverage`,
 `Checks that hold prose and generated files to the tree` und `Frame cost of
 every screen`. Jeder installiert seine Pakete über die Composite Action
-`.github/actions/host-deps`. Der Job `Host suite, coverage and the checks that
+`.github/actions/host-deps`. Jede apt-Installation in der CI führt zuerst
+`.github/actions/apt-prepare` aus: Sie entfernt die Google- und
+Microsoft-Paketlisten des Runners, lässt einen Download, der 30s lang keine
+Daten erhält, bis zu 3-mal neu starten, und führt `apt-get update` aus. `host-deps` hält die
+heruntergeladenen `.deb`-Dateien in einem `actions/cache`-Eintrag, dessen
+Schlüssel an der eigenen Datei hängt; ein langsamer Mirror kostet so nur die
+Pakete, die sich seit dem Speichern geändert haben. Der Job `Host suite, coverage and the checks that
 hold prose to the tree` braucht die fünf, läuft auch, wenn einer von ihnen
 fehlschlägt, und schlägt fehl, solange nicht alle fünf erfolgreich sind; es
 ist der Name, den das Branch-Ruleset verlangt. Die Compiler dieses Images
