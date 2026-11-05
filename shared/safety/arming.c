@@ -142,10 +142,17 @@ uint8_t arming_roles(const arming_t *a)
 
 void arming_request_arm_roles(arming_t *a, uint32_t now_ms, uint8_t roles)
 {
+    arming_request_arm_ask(a, now_ms, roles, 0u);
+}
+
+void arming_request_arm_ask(arming_t *a, uint32_t now_ms, uint8_t roles,
+                            uint32_t ask)
+{
     if (a == NULL || roles == 0u || arming_touch_dead(a, now_ms)
         || a->held) {
         return;
     }
+    a->ask = ask;
     /* Other roles than the bench is armed for: a disarm first, so nothing
      * of the old roles is still driving when the new ones start. */
     if (a->armed && roles != a->roles) {
@@ -176,12 +183,38 @@ void arming_request_disarm(arming_t *a)
     a->armed  = false;
 }
 
+/**
+ * @brief The ask stamped @p ask is refused.  An ask without a stamp, 0,
+ *        names nothing and leaves the newest stamped refusal standing.
+ * @param a Policy state.
+ * @param ask The stamp.
+ */
+static void note_refused(arming_t *a, uint32_t ask)
+{
+    if (ask != 0u) {
+        a->refused_ask = ask;
+    }
+}
+
 void arming_refused(arming_t *a)
 {
     if (a != NULL) {
         a->arming = false;
         a->armed  = false;
+        note_refused(a, a->ask);
     }
+}
+
+void arming_refuse_ask(arming_t *a, uint32_t ask)
+{
+    if (a != NULL) {
+        note_refused(a, ask);
+    }
+}
+
+uint32_t arming_refused_ask(const arming_t *a)
+{
+    return (a != NULL) ? a->refused_ask : 0u;
 }
 
 void arming_stop_from_far_end(arming_t *a)
@@ -263,8 +296,10 @@ arming_hs_t arming_handshake_step(arming_t *a, arming_hs_at_t at,
         if (f->endpoints_blocked) {
             /* An edit published while the frame that arms was on the
              * wire: the far end runs at rest on the range it held, and
-             * the caller writes ARM = 0 in the next exchange. */
+             * the caller writes ARM = 0 in the next exchange.  The bank
+             * here never armed: a refusal of the ask. */
             arming_request_disarm(a);
+            note_refused(a, a->ask);
             return ARMING_HS_ENDPOINTS;
         }
         return ARMING_HS_GO;
@@ -446,6 +481,7 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
             /* The far end has not come to trust the line in time.  Given up
              * before CLEAR is written, so its latch stays set. */
             a->arming = false;
+            note_refused(a, a->ask);
             act = ARMING_ACT_GIVE_UP;
         }
     }

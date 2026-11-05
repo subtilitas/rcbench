@@ -680,12 +680,17 @@ static uint32_t servo_ctx_stop_count(void *ctx)
     return arming_stop_count(&s_arm);
 }
 
-/* The surfaces and the programming ports, and no motor. */
-static void servo_ctx_arm_surfaces(void *ctx)
+/**
+ * @brief The surfaces and the programming ports, and no motor, for the ARM
+ *        stamped @p ask.
+ * @param ctx Unused.
+ * @param ask The ARM's stamp (servo_cmd_t.ask).
+ */
+static void servo_ctx_arm_surfaces(void *ctx, uint32_t ask)
 {
     (void)ctx;
-    arming_request_arm_roles(&s_arm, now_ms(),
-                             OUT_ROLE_BIT(OUT_ROLE_SURFACE));
+    arming_request_arm_ask(&s_arm, now_ms(),
+                           OUT_ROLE_BIT(OUT_ROLE_SURFACE), ask);
 }
 
 static const servo_link_ctx_t k_servo_ctx = {

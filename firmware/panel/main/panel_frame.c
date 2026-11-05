@@ -119,6 +119,7 @@ void panel_frame_loop(void)
         uint32_t stops_now;
         uint32_t pressed_now;
         uint32_t arm_gen_now;
+        uint32_t arm_refused_now;
         bool     link_now;
         servo_source_id_t servo_source_now;
         uint32_t servo_changes_now;
@@ -145,6 +146,7 @@ void panel_frame_loop(void)
         stops_now      = s_snap.stops;
         pressed_now    = s_snap.pressed;
         arm_gen_now    = s_snap.arm_gen;
+        arm_refused_now = s_snap.arm_refused;
         snap_unlock();
         /* The STOP releases as this frame begins: the commands it flushes
          * carry this count, whatever the control task does meanwhile. */
@@ -181,6 +183,12 @@ void panel_frame_loop(void)
         }
         last_stops  = stops_now;
         last_resets = resets_now;
+        /* A refused ARM returns the screen that asked to SAFE, once its
+         * stamp is the one it waits on; any other stamp, and the same one
+         * again, changes nothing (ui_value_refused()).  The alert that says
+         * why is the control task's.  No latch moves. */
+        motor_screen_arm_refused(arm_refused_now);
+        servo_screen_arm_refused(arm_refused_now);
         /* And a stick run on MOTOR & ESC > PROGRAM, which ends on a stop,
          * a disarm or a link that went, and steps on the frame's time.
          * The pressed count tells an operator's STOP from the bench's

@@ -283,9 +283,11 @@ void post(servo_cmd_kind_t kind, uint16_t us)
         }
         s.posted_map = svs_map_now();
     }
+    s.pending.ask = 0u;
     if (kind == SERVO_CMD_ARM) {
         s.arm_profile_rev = s.profile_rev;
-        ui_value_ask_arm(&s.gate);
+        s.pending.ask = ui_value_new_ask();
+        ui_value_ask_arm(&s.gate, s.pending.ask);
     } else if (kind == SERVO_CMD_DISARM) {
         ui_value_drop_arm(&s.gate);
     }

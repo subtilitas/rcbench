@@ -183,7 +183,7 @@ TEST_CASE(a_throttle_drag_is_not_an_arming_gesture)
     }
     tick_for(HOLD_TICKS * 2);
     ev(440, 300, TOUCH_EVENT_UP, 1);
-    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f, 0u };
     bool armed_seen = false;
     while (motor_screen_poll_cmd(&c)) {
         if (c.kind == MOTOR_CMD_ARM) { armed_seen = true; }
@@ -326,7 +326,7 @@ TEST_CASE(a_short_press_on_arm_does_nothing)
     ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
     tick_for(HOLD_TICKS * 4);
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
-    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f, 0u };
     int arms = 0;
     while (motor_screen_poll_cmd(&c)) {
         if (c.kind == MOTOR_CMD_ARM) {
@@ -381,7 +381,7 @@ TEST_CASE(a_pending_disarm_cannot_be_overwritten_by_an_arm)
     motor_screen_set_armed(false);
     tap(ARM_X, ARM_Y);                 /* would post ARM */
 
-    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f, 0u };
     CHECK(motor_screen_poll_cmd(&c));
     CHECK_EQ(c.kind, MOTOR_CMD_DISARM);
 }

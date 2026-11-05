@@ -220,6 +220,7 @@ void mo_post(motor_cmd_kind_t kind, float value)
     }
     s.pending.kind  = kind;
     s.pending.value = value;
+    s.pending.ask   = (kind == MOTOR_CMD_ARM) ? ui_value_new_ask() : 0u;
 }
 
 bool motor_screen_poll_cmd(motor_cmd_t *out)
@@ -315,6 +316,21 @@ void motor_screen_cancel_arm(void)
         ui_hold_reset(&s.arm);
         ++s.arm_rev;
     }
+}
+
+void motor_screen_arm_refused(uint32_t ask)
+{
+    if (!ui_value_refused(&s.gate, ask)) {
+        return;
+    }
+    /* A finger still on ARM after its hold posted asks for nothing more:
+     * its release is not a DISARM, and the pulse rows wait for no lift. */
+    if (s.pressed == 1) {
+        s.pressed = 0;
+    }
+    ui_hold_reset(&s.arm);
+    ++s.arm_rev;
+    ++s.ctrl_rev;
 }
 
 /*

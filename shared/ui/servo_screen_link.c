@@ -135,6 +135,19 @@ void servo_screen_set_armed(bool armed)
     ++s.ctrl_rev;
 }
 
+void servo_screen_arm_refused(uint32_t ask)
+{
+    if (!ui_value_refused(&s.gate, ask)) {
+        return;
+    }
+    if (s.arm_down || s.arm.held_s > 0.0f) {
+        ui_hold_reset(&s.arm);
+        s.arm_down = false;
+    }
+    ++s.arm_rev;
+    ++s.ctrl_rev;
+}
+
 void servo_screen_cancel_arm(void)
 {
     /*

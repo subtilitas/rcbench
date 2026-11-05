@@ -44,6 +44,10 @@ typedef enum {
 typedef struct {
     motor_cmd_kind_t kind;
     float            value;
+    /** @brief MOTOR_CMD_ARM: its stamp (ui_value_new_ask()), named back by
+     *        motor_screen_arm_refused() when the bench refuses it; 0 on
+     *        every other command. */
+    uint32_t         ask;
 } motor_cmd_t;
 
 /** Called per sample, so the plot's time base is the sample rate.  The
@@ -101,6 +105,22 @@ bool motor_screen_peak_shown(int channel);
  *  A stop on a bench that was not armed changes nothing about whether it is
  *  armed, and the gesture must end all the same. */
 void motor_screen_cancel_arm(void);
+
+/**
+ * @brief The bench refused the ARM stamped @p ask (motor_cmd_t.ask), for
+ *        the panel's frame to pass on every frame.
+ *
+ * An ARM this screen still waits on under that stamp ends: the screen reads
+ * SAFE, and the TARGET row, the Idle pulse and Full pulse rows and ARM take
+ * a press again.  A hold of ARM under way ends with it, so a finger still
+ * resting on ARM asks for nothing.  The band's alert, which says why, is
+ * the panel's.  Any other stamp changes nothing: an ARM answered, dropped
+ * by a DISARM, a STOP or leaving the screen, followed by a newer ARM, or
+ * asked on another screen.  Nothing is posted, and no STOP latch moves.
+ *
+ * @param ask The stamp of the ARM the bench refused last.
+ */
+void motor_screen_arm_refused(uint32_t ask);
 /**
  * The kV the connected ESC reports, or 0 when it reports none.  Preferred
  * over the SET_MOTOR_KV setting when it is non-zero.

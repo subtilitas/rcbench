@@ -64,7 +64,7 @@ static void router_on(ui_screen_id_t screen)
 
 static motor_cmd_t took(void)
 {
-    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f, 0u };
     (void)motor_screen_poll_cmd(&c);
     return c;
 }

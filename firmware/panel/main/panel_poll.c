@@ -939,6 +939,7 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.armed_roles = outputs_armed_roles(&s_out);
     s_snap.arm_wanted  = arming_link_needed(&s_arm, s_snap.armed);
     s_snap.arm_gen     = s_arm_gen;
+    s_snap.arm_refused = arming_refused_ask(&s_arm);
     s_snap.stopped     = arming_stopped(&s_arm);
     s_snap.held        = arming_held(&s_arm);
     s_snap.stops       = arming_stop_count(&s_arm);

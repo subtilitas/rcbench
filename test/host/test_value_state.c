@@ -164,7 +164,7 @@ TEST_CASE(the_gate_moves_between_its_four_states)
             ui_value_gate_t g = from[st];
             ui_value_edge_t edge = UI_VALUE_EDGE_NONE;
             switch (ev) {
-            case EV_ASK_ARM:   ui_value_ask_arm(&g); break;
+            case EV_ASK_ARM:   ui_value_ask_arm(&g, 1u); break;
             case EV_DROP_ARM:  ui_value_drop_arm(&g); break;
             case EV_ASK_LEAVE: edge = ui_value_ask_leave(&g); break;
             case EV_HIDE:      edge = ui_value_hide(&g); break;
@@ -213,7 +213,7 @@ enum { MC_TRACK = 0, MC_PLUS, MC_MINUS, MC_KNOB, MC_COUNT };
 
 static motor_cmd_t m_took(void)
 {
-    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f, 0u };
     (void)motor_screen_poll_cmd(&c);
     return c;
 }

@@ -143,9 +143,10 @@ static uint32_t fake_stop_count(void *ctx)
     return panel.stops;
 }
 
-static void fake_arm_surfaces(void *ctx)
+static void fake_arm_surfaces(void *ctx, uint32_t ask)
 {
     (void)ctx;
+    (void)ask;
     ++panel.arms;
 }
 

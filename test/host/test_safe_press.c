@@ -360,7 +360,7 @@ TEST_CASE(servo_names_disarm_and_not_arm)
 
 static motor_cmd_kind_t mo_took(void)
 {
-    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f };
+    motor_cmd_t c = { MOTOR_CMD_NONE, 0.0f, 0u };
     (void)motor_screen_poll_cmd(&c);
     return c.kind;
 }

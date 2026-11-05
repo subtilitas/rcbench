@@ -1220,7 +1220,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1240,7 +1240,8 @@ The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_restore`, `test_servo_run`, `test_servo_run_gaps`, `test_servo_target`,
 `test_servo_rail`, `test_servo_meter`, `test_servo_settings`, `test_servo_trim_keypad`,
 `test_servo_test_panel`, `test_servo_error_safe`, `test_servo_limit_panel`,
-`test_servo_workbench`, `test_servo_arm`, `test_safe_press`, `test_analyser`,
+`test_servo_workbench`, `test_servo_arm`, `test_arm_refused`, `test_safe_press`,
+`test_analyser`,
 `test_esc_stick_panel`, `test_esc_stick_panel_phases`, `test_esc_stick_panel_list`,
 `test_esc_stick_panel_steps`, `test_esc_stick_panel_makers`, `test_esc_stick_panel_hold`,
 `test_esc_stick_panel_touch`, `test_esc_stick_panel_home`, `test_esc_stick_panel_keypad`,

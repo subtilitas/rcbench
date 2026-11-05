@@ -326,7 +326,12 @@ void mo_tick(float dt_s)
              * bench that is armed by the time the command lands. */
             mo_throttle_from_zero();
             mo_post(MOTOR_CMD_ARM, 0.0f);
-            ui_value_ask_arm(&s.gate);
+            /* Asked only when it is posted: a DISARM still waiting to be
+             * taken keeps the slot, and no answer comes to an ARM it
+             * kept out. */
+            if (s.pending.kind == MOTOR_CMD_ARM) {
+                ui_value_ask_arm(&s.gate, s.pending.ask);
+            }
         }
     }
     if (s.arm.flash_ms > 0) {

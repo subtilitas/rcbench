@@ -170,6 +170,9 @@ typedef struct {
     uint8_t       armed_roles;
     bool          arm_wanted;  /**< armed, or an arm waiting: arming_link_needed() */
     uint32_t      arm_gen;     /**< which arm, for the render side's ack */
+    /** @brief The stamp of the newest ARM refused (arming_refused_ask()),
+     *         for the screen still waiting on it. */
+    uint32_t      arm_refused;
     float         mcu_temp_c;
     bool          stopped;
     /** @brief arming_held(): an operator's STOP stands, the band's latched
