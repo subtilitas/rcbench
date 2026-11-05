@@ -271,13 +271,16 @@ TEST_CASE(a_new_imu_reading_repaints_its_lines_as_the_whole_frame)
     for (int k = 0; k < 9; ++k) {
         const gfx_rect_t r = imu_screen_line_rect(k);
         const gfx_color_t *px = fb[0] + (size_t)(UI_BAND_H + r.y) * W + r.x;
-        int inked = 0;
+        int inked = 0, accent = 0;
         for (int y = 0; y < r.h; ++y) {
             for (int x = 0; x < r.w; ++x) {
                 inked += px[(size_t)y * W + x] != px[0];
+                accent += px[(size_t)y * W + x] == UI_ACCENT;
             }
         }
         CHECK(inked > 20);
+        /* X, the axis the runs read by default, in the accent alone. */
+        CHECK_EQ(accent > 0, k == 4);
     }
 }
 
@@ -299,6 +302,15 @@ TEST_CASE(the_calibration_hold_and_its_flash_are_the_whole_frame)
     int parts = 0;
     CHECK(same_as_whole(RUN_IMU_CAL, FRAMES, 0.1, &parts));
     CHECK(parts > 70);
+    /* The release at frame 95 repaints both buffers whole, and nothing
+     * after them. */
+    static uint64_t hash[FRAMES];
+    static unsigned long work[FRAMES];
+    draw_run(RUN_IMU_CAL, false, hash, work);
+    CHECK(work[95] > 0ul && work[96] > 0ul);
+    for (int i = 97; i < FRAMES; ++i) {
+        CHECK_EQ(work[i], 0ul);
+    }
     imu_cmd_t cmd = { IMU_CMD_NONE, 0u };
     CHECK(imu_screen_take(&cmd));
     CHECK_EQ(cmd.kind, IMU_CMD_CALIBRATE);
