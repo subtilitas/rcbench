@@ -498,4 +498,15 @@ open work and settled decisions. `CHANGELOG.md` records version history;
 
 ## Pull requests
 
-One change per pull request, with CI green. A pull request starts no CI run: its head is run by hand (`gh workflow run ci.yml --ref <branch>`) once its reviews are clean. A head that lives only in a fork is pushed unchanged to a branch here first (`gh pr checkout <n>`, then `git push origin HEAD:pr/<n>`); the run on `pr/<n>` tests the same commit, so its checks show on the pull request. State the change and its effect.
+One change per pull request, with CI green. A pull request starts no CI run: its head is run by hand (`gh workflow run ci.yml --ref <branch>`) once its reviews are clean. A head that lives only in a fork is pushed unchanged to a branch here first, and only when its `.github/` equals main's: a run uses the workflow files of the commit it runs on, with this repository's token, so a fork's own workflow could ask for write rights.
+
+```sh
+gh pr checkout <n>
+git fetch origin main
+# pushes and runs only when .github/ equals main's
+git diff --quiet origin/main HEAD -- .github/ \
+  && git push origin HEAD:pr/<n> \
+  && gh workflow run ci.yml --ref pr/<n>
+```
+
+The run on `pr/<n>` tests the same commit, so its checks show on the pull request. A fork head that changes `.github/` gets no run here until a maintainer has read those changes. State the change and its effect.
