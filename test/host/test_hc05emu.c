@@ -190,6 +190,9 @@ TEST_CASE(names_are_read_in_either_case_and_arguments_as_given)
     answers(&e, &r, "aT+rOlE?", "+ROLE:1\r\nOK\r\n");
     answers(&e, &r, "at+pswd=abCD", "OK\r\n");
     CHECK_STR_EQ(e.cfg.pin, "abCD");
+    /* Every printable byte but `"` and `,`, the space and `~` among them. */
+    answers(&e, &r, "AT+PSWD= 1~", "OK\r\n");
+    CHECK_STR_EQ(e.cfg.pin, " 1~");
 }
 
 TEST_CASE(a_line_past_the_buffer_a_nul_and_an_empty_line)
