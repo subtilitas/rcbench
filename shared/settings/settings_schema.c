@@ -346,6 +346,15 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         "srv_port_pwm", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
     /*
+     * KST EXPERT MODE (SERVO > SETTINGS > DUT): whether the KST and
+     * Chaservo programmer shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING
+     * and the LOCKED tab.  OFF by default; ON only through the row's 2s
+     * hold, OFF with a tap.  Kept across restarts.
+     */
+    [SET_KST_EXPERT] = {
+        "kst_expert", "",
+        SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    /*
      * The series the programmer for servos by Hitec enters at its next
      * CONNECT, in hitec_family_t's order: classic (HS-5xxx, HS-7xxx) or D
      * series.  Set on its SERVO tab.

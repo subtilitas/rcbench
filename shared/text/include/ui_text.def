@@ -4368,6 +4368,9 @@ UI_TEXT(SV_ROW_REPORT, 16,
 UI_TEXT(SV_ROW_ENC_CENTRE, 16,
     "ENC CENTRE",
     "SENSOR-MITTE")
+UI_TEXT(SV_ROW_KST_EXPERT, 0,
+    "KST EXPERT MODE",
+    "KST EXPERT MODE")
 UI_TEXT(SV_SERVO_TYPE, 30,
     "SERVO TYPE",
     "SERVOTYP")
@@ -5162,6 +5165,9 @@ UI_TEXT(HOLD_HINT_UNBIND, 94,
 UI_TEXT(HOLD_HINT_OVERWRITE, 94,
     "Hold 2s to overwrite.",
     "Halte 2s, um zu überschreiben.")
+UI_TEXT(HOLD_HINT_KST_EXPERT, 94,
+    "Hold 2s to switch KST EXPERT MODE on.",
+    "Halte 2s, um KST EXPERT MODE einzuschalten.")
 
 UI_TEXT(SHOT_TAKEN, 94,
     "Screenshot taken.",
@@ -5457,6 +5463,12 @@ UI_TEXT(KP_CHECK_1, 116,
 UI_TEXT(KP_VALUES_MORE, 116,
     "and %u more",
     "und %u weitere")
+UI_TEXT(KP_HIDDEN_VALUE, 116,
+    "%s (KST EXPERT MODE): %s -> %s",
+    "%s (KST EXPERT MODE): %s -> %s")
+UI_TEXT(KP_HIDDEN_UNKNOWN, 116,
+    "Also restored, hidden while KST EXPERT MODE is OFF: DEAD BAND, BOOST, STRETCH, LOCKED, Pairing.",
+    "Ebenfalls zurückgespielt, bei KST EXPERT MODE AUS verborgen: DEAD BAND, BOOST, STRETCH, GESPERRT, Pairing.")
 UI_TEXT(KP_WRITING, 116,
     "Writing. Do not disconnect.",
     "Schreibvorgang läuft. Trenne die Verbindung nicht.")
@@ -8054,6 +8066,12 @@ UI_SETTING_LABEL(SET_SERVO_PORT_PWM,
 UI_SETTING_HELP(SET_SERVO_PORT_PWM,
     "PWM output when the programming port is the target",
     "PWM am Programmierport, wenn er das Ziel ist")
+UI_SETTING_LABEL(SET_KST_EXPERT,
+    "KST EXPERT MODE",
+    "KST EXPERT MODE")
+UI_SETTING_HELP(SET_KST_EXPERT,
+    "Shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and LOCKED",
+    "Zeigt DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und GESPERRT")
 UI_SETTING_LABEL(SET_HITEC_SERIES,
     "Hitec series",
     "Hitec-Serie")

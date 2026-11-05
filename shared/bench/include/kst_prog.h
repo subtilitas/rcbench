@@ -1355,6 +1355,20 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p);
  */
 bool kst_prog_restore_offered(const kst_prog_t *p, kst_prog_from_t from);
 /**
+ * @brief The image a restore from @p from writes back.
+ *
+ * KST_PROG_FROM_SESSION: the session's backup, while the panel holds it and
+ * it is this servo's; KST_PROG_FROM_JOURNAL: the record of an interrupted
+ * write, while it is this servo's; KST_PROG_FROM_RUN: the servo before a
+ * limit run's first write, while the servo read matches the run.
+ *
+ * @param p    The programmer state.
+ * @param from The source of the image.
+ * @return The image, or NULL where @p from holds none.
+ */
+const kst_image_t *kst_prog_restore_source(const kst_prog_t *p,
+                                          kst_prog_from_t from);
+/**
  * @brief Prepare a restore.
  *
  * For KST_PROG_FROM_JOURNAL the draft becomes the

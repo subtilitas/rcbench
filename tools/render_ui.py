@@ -156,6 +156,8 @@ SCREENS = {
     # The DUT page with the output encoder on, and its angle in the
     # MEASURED row.
     "servo-encoder":  ("servo-encoder.png",  "servo", "dark"),
+    # DUT with KST EXPERT MODE ON; servo-encoder shows it OFF.
+    "servo-dut-expert": ("servo-dut-expert.png", "servo", "dark"),
     "servo-hv":       ("servo-hv.png",       "servo", "dark"),
     "servo-run":      ("servo-run.png",      "servo", "dark"),
     "servo-result":   ("servo-result.png",   "servo", "dark"),
@@ -331,6 +333,14 @@ SCREENS = {
     "servo-kst-soft": ("servo-kst-soft.png", "servo", "dark"),
     "servo-kst-hard": ("servo-kst-hard.png", "servo", "dark"),
     "servo-kst-tune": ("servo-kst-tune.png", "servo", "dark"),
+    # KST EXPERT MODE OFF: TUNE closed up, MORE without RELEASE PAIRING,
+    # and the write page that names the hidden values the draft changes.
+    "servo-kst-tune-expert-off": ("servo-kst-tune-expert-off.png", "servo",
+                                  "dark"),
+    "servo-kst-more-expert-off": ("servo-kst-more-expert-off.png", "servo",
+                                  "dark"),
+    "servo-kst-write-expert-off": ("servo-kst-write-expert-off.png",
+                                   "servo", "dark"),
     "servo-kst-pulse": ("servo-kst-pulse.png", "servo", "dark"),
     "servo-kst-files": ("servo-kst-files.png", "servo", "dark"),
     "servo-kst-files-none": ("servo-kst-files-none.png", "servo", "dark"),

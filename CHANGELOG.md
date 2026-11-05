@@ -6,6 +6,16 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- KST EXPERT MODE, a row of SERVO > SETTINGS > DUT, OFF by default and kept
+  across restarts: ON after a 2s hold, OFF with a tap. With it OFF the KST
+  and Chaservo programmer hides DEAD BAND, BOOST and STRETCH on TUNE,
+  RELEASE PAIRING in MORE and the LOCKED tab; TUNE closes up and the tab
+  strip holds 4 tabs. A file load and a RESTORE still write the whole
+  image: the write page, CHECK THIS FILE and the restore's page name each
+  hidden value that changes, first and in the warning colour.
+
 ### Fixed
 
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint

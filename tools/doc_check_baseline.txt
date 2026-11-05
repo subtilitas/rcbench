@@ -1688,7 +1688,6 @@ shared/bench/kst_card.c: warning: Member s_text[KST_FILE_MAX] (variable) of file
 shared/bench/kst_link.c: warning: Member RES(reg) (macro definition) of file kst_link.c is not documented.
 shared/bench/kst_link.c: warning: Member RESULTS_N (macro definition) of file kst_link.c is not documented.
 shared/bench/kst_link.c: warning: Member STAGE_WINDOWS (macro definition) of file kst_link.c is not documented.
-shared/bench/kst_prog.c: warning: Member source(const kst_prog_t *p, kst_prog_from_t from) (function) of file kst_prog.c is not documented.
 shared/bench/kst_prog_file.c: warning: Member journal (variable) of struct loaded_t is not documented.
 shared/bench/kst_prog_file.c: warning: Member journal_img (variable) of struct loaded_t is not documented.
 shared/bench/kst_prog_file.c: warning: Member journal_pin (variable) of struct loaded_t is not documented.

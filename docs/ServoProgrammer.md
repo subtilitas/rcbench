@@ -462,7 +462,7 @@ power cycle of a **LEAVE** by one of 4.30 or later.
 | SERVO | **READ ALL** | reads the 32 registers, each until 3 of at most 5 reads agree |
 | TYPE | `--`, `V6?`, `V8?`, **V6**, **V8** | [the servo type](#the-servo-type) the operator sets; `V6?` is the guess from 20k_sel |
 | FILES | **CHOOSE** | [saves the servo's values to the card and loads a file](#servo-files) |
-| MORE | **CHOOSE** | in PWM [what CONNECT sets](#the-supply); in programming mode [VERIFY, DISCARD EDITS, RELEASE PAIRING](#more) |
+| MORE | **CHOOSE** | in PWM [what CONNECT sets](#the-supply); in programming mode [VERIFY, DISCARD EDITS and, with KST EXPERT MODE ON, RELEASE PAIRING](#more) |
 | ENABLE WRITE TO SERVO | **OFF**, **ON** | [the write switch](#the-write-switch) |
 | RESTORE | **CHOOSE** | [writes a backup back](#restore) |
 | (no label) | **WRITE n VALUES**, **WRITE 1 VALUE** | [writes the changed values](#writing) |
@@ -514,6 +514,9 @@ further 1.8s.
 ![The stretch list](img/servo-kst-stretch.png)
 
 ### TUNE
+
+DEAD BAND, BOOST and STRETCH show with [KST EXPERT MODE](#expert-mode) ON
+only.
 
 | Row | Register field | Hard limit |
 | --- | --- | --- |
@@ -613,6 +616,8 @@ servo's, it is the value last read. The warnings of
 
 ![The LOCKED tab](img/servo-kst-locked.png)
 
+The tab shows with [KST EXPERT MODE](#expert-mode) ON only.
+
 | Row | Field |
 | --- | --- |
 | 20K SEL | 20k_sel, ON or OFF: a drive setting, not [the servo type](#the-servo-type) |
@@ -625,6 +630,65 @@ encoding is not confirmed. The tab also shows the pairing value, register
 1D, and the card number the vendor tool needs for this servo. A servo in
 Gyro Servo mode is read and not written: the limits of that mode are not
 known.
+
+## Expert mode
+
+KST EXPERT MODE decides which settings and actions the programmer shows.
+It is a row of SERVO > SETTINGS > DUT, OFF by default, and the panel keeps
+it across restarts. OFF to ON takes a 2s hold of the row; a shorter press
+shows `Hold 2s to switch KST EXPERT MODE on.` on the alert band and changes
+nothing. A tap turns it OFF. ON is drawn in the danger colour.
+
+![KST EXPERT MODE ON on DUT](img/servo-dut-expert.png)
+
+With the mode OFF these items are hidden. The reason is the warning the
+[soft limits](#a-value-that-needs-a-second-look) give, or what is not
+known:
+
+| Item | Where | Why it is behind the mode |
+| --- | --- | --- |
+| DEAD BAND | TUNE | `A narrow DEAD BAND can cause back-and-forth movement and heat.` and, below 1.0µs, `Very narrow DEAD BAND. Back-and-forth movement and heat are likely.` |
+| BOOST | TUNE | `A higher BOOST can cause buzzing and heat.` |
+| STRETCH | TUNE | `A higher STRETCH can cause servo oscillation.`; with DEAD BAND below 1.0µs `A narrow DEAD BAND and higher gain can cause oscillation.` |
+| RELEASE PAIRING | MORE | what the servo does with register 1D at 00 is not known |
+| the LOCKED tab | the tab strip | the function or the encoding of its values is not confirmed; the tab is read-only in both modes |
+
+Every other row and action is the same in both modes: SOFT START, MAX.
+DUTY, SPEED LIMIT, SPEED, the PULSE and FAILSAFE tabs, VERIFY, DISCARD
+EDITS, the write switch, WRITE, RESTORE, the servo files, the
+[limit run](#the-limit-run) and RUDDER > AUTO.
+
+The pages close up. TUNE holds MAX. DUTY and SOFT START on its first line
+and SPEED LIMIT and SPEED on its second. The tab strip holds 4 tabs over
+the row that 5 take with the mode ON. MORE lists VERIFY and DISCARD EDITS.
+A press on the place a hidden row had with the mode ON reaches no hidden
+row.
+
+![TUNE with KST EXPERT MODE OFF](img/servo-kst-tune-expert-off.png)
+![MORE with KST EXPERT MODE OFF](img/servo-kst-more-expert-off.png)
+
+A hidden value still reaches the servo where a file or a backup holds it,
+and the page that sends it names it:
+
+- A file load takes the whole file into the draft, hidden values
+  included, and **WRITE n VALUES** counts them.
+- The write page names each hidden value the write changes, first, in the
+  warning colour: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. These lines
+  are never folded into `and n more`; the count is of the values a tab
+  shows. CHECK THIS FILE names them the same way.
+- The page of [a restore](#restore) names each hidden value the restore
+  changes, the pairing value as `Pairing (KST EXPERT MODE): 00 -> 5A`. A
+  restore of the session's backup to a servo whose values the panel does
+  not know says `Also restored, hidden while KST EXPERT MODE is OFF: DEAD BAND, BOOST, STRETCH, LOCKED, Pairing.`
+
+![The write page naming the hidden values](img/servo-kst-write-expert-off.png)
+
+A draft that holds an edit of a hidden value when the mode turns OFF keeps
+it: **WRITE n VALUES** counts it, the write page names it, and **DISCARD
+EDITS** drops it. A change of the mode closes the keypad, the list or the
+page open in the programmer; a page closed that way sends nothing.
+
+The other pictures on this page show the mode ON.
 
 ## The write switch
 
@@ -683,6 +747,8 @@ unit. A value at fault for [a soft limit](#a-value-that-needs-a-second-look)
 is in the warning colour. With more values than lines the last of these
 lines counts the rest: `and 4 more`. A first write with a card shows 7
 values, or 6 and the count; one without a card 6, or 5 and the count.
+With [KST EXPERT MODE](#expert-mode) OFF the values the tabs hide come
+first and are never counted in.
 
 `Keep the servo horn clear. Disconnect the linkage.` and `Test the servo on the bench before fitting it to a model.` follow on the first write after a **CONNECT** and on
 every write that changes REVERSION, NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT
@@ -1028,7 +1094,8 @@ backup is available only until the session ends.
 ## Restore
 
 **RESTORE** opens the list of what there is to restore. Every restore needs
-the write switch and a 2s hold.
+the write switch and a 2s hold. With [KST EXPERT MODE](#expert-mode) OFF
+its page names each value the tabs hide that the restore changes.
 
 ![The restore list](img/servo-kst-restore-list.png)
 ![A restore of the session's backup](img/servo-kst-restore.png)
@@ -1158,8 +1225,8 @@ session, is not asked to SAFE again.
   `Check passed. The servo matches the values already read.` or the count of registers that
   differ.
 - **DISCARD EDITS** sets the draft back to the servo's values.
-- **RELEASE PAIRING** sets register 1D to 00 after the write switch and a
-  2s hold. What the servo does with the value is not known. A restore of
+- **RELEASE PAIRING**, with [KST EXPERT MODE](#expert-mode) ON, sets
+  register 1D to 00 after the write switch and a 2s hold. What the servo does with the value is not known. A restore of
   the session's backup sets it back.
 
 ![Releasing the pairing](img/servo-kst-release.png)

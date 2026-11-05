@@ -17,6 +17,11 @@
  * restore, the write switch and the write.  TUNE, PULSE and FAILSAFE: the editable fields.
  * LOCKED: the fields that are shown and never written by an edit.
  *
+ * KST EXPERT MODE (SET_KST_EXPERT, SERVO > SETTINGS > DUT), OFF by default,
+ * hides DEAD BAND, BOOST and STRETCH on TUNE, RELEASE PAIRING in MORE and
+ * the LOCKED tab: four tabs, TUNE closed up.  The pages that write name
+ * each hidden value they change.  A change of the mode closes every editor.
+ *
  * The overlay stays open while the port holds its pin: PWM and
  * programming are exclusive states of that pin, and CLOSE asks for the
  * way back first.
@@ -293,15 +298,18 @@ int kst_panel_text_rows(const char *s);
 const char *kst_panel_rule_text(unsigned rule);
 
 /*
- * Where things are, for a test's taps.  Rows by page, row and column.  A
- * coordinate no row has gives an empty rectangle (value, step), false (live)
- * or NULL (button, label).  Every control is UI_TAP_MIN (48px) tall or
+ * Where things are, for a test's taps.  Rows by page, row and column, as
+ * each row sits with KST EXPERT MODE ON; with it OFF a page's rows close up
+ * and the rectangles follow.  A coordinate no row has, and a row KST EXPERT
+ * MODE OFF hides, gives an empty rectangle (value, step), false (live) or
+ * NULL (button, label).  Every control is UI_TAP_MIN (48px) tall or
  * more and a control at the foot ends 4px above the alert band.
  */
 /**
- * @brief A tab, one fifth of the row left of CLOSE, 48px tall.
+ * @brief A tab, an equal share of the row left of CLOSE, 48px tall: a
+ *        fifth, a quarter with KST EXPERT MODE OFF.
  * @param page the tab, PG_SERVO to PG_LOCKED; another is the first
- * @return its rectangle
+ * @return its rectangle; empty for LOCKED with KST EXPERT MODE OFF
  */
 gfx_rect_t kst_panel_tab_rect(int page);
 /** @brief CLOSE, 120 x 48px at the top right.
@@ -345,7 +353,8 @@ ui_textkey_t *kst_panel_textkey(void);
  *  4 the keyboard for a file's name. */
 int kst_panel_editor(void);
 
-/** The tab shown: 0 SERVO, 1 TUNE, 2 PULSE, 3 FAILSAFE, 4 LOCKED. */
+/** The tab shown: 0 SERVO, 1 TUNE, 2 PULSE, 3 FAILSAFE, 4 LOCKED (with
+ *  KST EXPERT MODE ON only). */
 int kst_panel_page(void);
 
 /** Line @p i of the open warning page, entry @p i of the open list; NULL

@@ -181,6 +181,7 @@ typedef enum {
     SET_SERVO_PROG_WAIT,
     SET_SERVO_TARGET,
     SET_SERVO_PORT_PWM,
+    SET_KST_EXPERT,
     SET_HITEC_SERIES,
     SET_ESCW_BY_HAND,
     /* --- stick programming ---------------------------------------------- */

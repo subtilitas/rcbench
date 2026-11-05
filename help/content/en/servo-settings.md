@@ -123,12 +123,14 @@ OUTPUT's first note names the port SERVO TESTER is set to, `SERVO TESTER: PORT 1
 
 ![NAME on the keyboard](view:servo-name)
 ![The DUT page with the output encoder on](view:servo-encoder)
+![KST EXPERT MODE ON](view:servo-dut-expert)
 
 | Setting | What it does |
 |---|---|
 | NAME | the device under test, up to 23 characters; it heads each report |
 | REPORT | a text report, `ATESTnnn.TXT`, beside each test's log, while User logs on SETUP > SD CARD is ON |
 | ENC CENTRE | a tap takes the live AS5600 count, 0 to 4095, as the centre, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
+| KST EXPERT MODE | whether the [KST and Chaservo programmer](servo-programmer.md#kst-expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold, OFF with a tap |
 
 ANGLE SOURCE in the IMU entry of [Sensors](setup-sensors.md) selects the AS5600 or IMU for run angles. IMU angles use AS5600 counts of 0.088°. The test CSV identifies the source in its last column, `angle source`; both reports use an `Angle source:` line.
 
@@ -158,4 +160,4 @@ The row follows the target the IOmcu holds, not the setting. A TARGET change wai
 
 ## Keeping the values
 
-OUTPUT, HV SERVO, LIMIT RUN, SERVO and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.
+OUTPUT, HV SERVO, LIMIT RUN, SERVO and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT, KST EXPERT MODE included, and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.

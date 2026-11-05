@@ -63,6 +63,7 @@ const ov_row_t k_rows[] = {
     { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
     { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 2, false },
+    { PG_DUT, R_KST_EXPERT, SETTING_COUNT, TX_SV_ROW_KST_EXPERT,  1, 1, false },
 
     { PG_AUTO, R_SETTING, SET_SERVO_LEN_BY,        TX_SV_ROW_LEN_BY,  2, 0, false },
     { PG_AUTO, R_SETTING, SET_SERVO_LEN_S,         TX_SV_ROW_LEN_S,  2, 1, false },
@@ -736,10 +737,85 @@ void ov_down(const touch_event_t *evt)
             }
         }
         if (gfx_rect_contains(row_rect(i), x, y)) {
-            ov_take(evt, OP_ROW, i);
+            ov_take(evt, k_rows[i].kind == R_KST_EXPERT ? OP_KST_EXPERT
+                                                        : OP_ROW, i);
+            if (k_rows[i].kind == R_KST_EXPERT
+                && !settings_get_bool(SET_KST_EXPERT)) {
+                /* ON takes the 2s hold; OFF is the tap's release. */
+                s.kx_down = true;
+                ui_hold_begin(&s.kx_hold, TX_HOLD_HINT_KST_EXPERT);
+                ++s.kx_rev;
+            }
             return;
         }
     }
+}
+
+gfx_rect_t kx_value_rect(void)
+{
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        if (k_rows[i].kind == R_KST_EXPERT) {
+            return value_rect(i);
+        }
+    }
+    return (gfx_rect_t){ 0, 0, 0, 0 };
+}
+
+void kx_tick(float dt_s)
+{
+    if (!s.kx_down) {
+        return;
+    }
+    /* A press let go of anywhere -- a lost touch, a task or screen left,
+     * a stop -- takes its hold with it. */
+    if (!s.ov_have || s.ov_pressed != OP_KST_EXPERT) {
+        ui_hold_reset(&s.kx_hold);
+        s.kx_down = false;
+        ++s.kx_rev;
+        return;
+    }
+    ++s.kx_rev;
+    if (ui_hold_tick(&s.kx_hold, dt_s)) {
+        s.kx_down = false;
+        ov_let_go();
+        settings_set(SET_KST_EXPERT, 1.0f);
+        settings_request_save();
+    }
+}
+
+/**
+ * @brief The rest of a press on the KST EXPERT MODE row: a finger that
+ *        leaves the row ends it, a hold's early release shows its hint,
+ *        and a tap that began on ON turns the mode OFF.
+ * @param evt the MOVE or UP
+ * @param which the row
+ */
+static void kx_rest(const touch_event_t *evt, int which)
+{
+    const bool on_row = gfx_rect_contains(row_rect(which), evt->point.x,
+                                          evt->point.y);
+
+    if (evt->type != TOUCH_EVENT_UP) {
+        if (!on_row) {
+            if (s.kx_down) {
+                (void)ui_hold_leave(&s.kx_hold);
+                s.kx_down = false;
+                ++s.kx_rev;
+            }
+            ov_let_go();
+        }
+        return;
+    }
+    if (s.kx_down) {
+        (void)ui_hold_end(&s.kx_hold, evt, row_rect(which));
+        s.kx_down = false;
+        ++s.kx_rev;
+    } else if (on_row && touch_event_is_tap_up(evt)
+               && settings_get_bool(SET_KST_EXPERT)) {
+        settings_set(SET_KST_EXPERT, 0.0f);
+        settings_request_save();
+    }
+    ov_let_go();
 }
 
 /* The rest of such a press: its moves and its release. */
@@ -778,6 +854,10 @@ void ov_rest(const touch_event_t *evt)
         ++s.ctrl_rev;
         return;
     }
+    case OP_KST_EXPERT:
+        kx_rest(evt, which);
+        ++s.ctrl_rev;
+        return;
     case OP_TAB:
         if (ui_tabs_event(&s.tabs, evt)) {
             ++s.ctrl_rev;

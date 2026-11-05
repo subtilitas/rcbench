@@ -1220,7 +1220,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 453 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1299,7 +1299,7 @@ The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`,
 `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`,
 `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`,
-`test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`,
+`test_kst_panel_type`, `test_kst_panel_expert`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`,
 `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`,
 `test_hitec_session_move`, `test_hitec_live`, `test_hitec_port`, `test_hitec_port_stop`,
 `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`,
@@ -1410,7 +1410,7 @@ It takes 6.2s on one x86-64 host, 8.1s in the sanitizer build, and ctest stops i
 120s. `tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0` makes 36 mutants
 and the suite fails on each. A defined test case that is never called fails the build
 (`-Werror=unused-function`). `tools/check_docs.py` holds this list to
-`test/host/CMakeLists.txt`. Of the 29 `test_kst_*` binaries, 28 run against the servo and
+`test/host/CMakeLists.txt`. Of the 30 `test_kst_*` binaries, 29 run against the servo and
 line model in `test/host/kst_sim.h`; no servo is connected. 5 run the core of
 `protocols/kst/`; `test_kst_file` is the one for the configuration file and reads 40000
 random texts from 1 fixed seed. `test_servo_store` runs the card layer for those files,
@@ -1431,9 +1431,10 @@ when a session goes and the soft limits' base across sessions, all four over the
 `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_texts`,
 `test_kst_panel_writepage`, `test_kst_panel_screen` and `test_kst_panel_notes` run its
 overlay on the SERVO screen through touches, `test_kst_panel_files`,
-`test_kst_panel_nocard`, `test_kst_panel_limrun` and `test_kst_panel_type` the same
-overlay's servo files, its cases with no card, the limit run and the TYPE row with the lines
-of the supply cycle (all five over `test/host/kst_panel_rig.h`), `test_kst_card` the adapter
+`test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_panel_type` and
+`test_kst_panel_expert` the same overlay's servo files, its cases with no card, the limit
+run, the TYPE row with the lines of the supply cycle and KST EXPERT MODE (all six over
+`test/host/kst_panel_rig.h`), `test_kst_card` the adapter
 between the two and the card layer, with a card that fails, fills and is removed, and
 `test_prog_link` the panel's module for the ports' page. ctest also builds and runs
 `kst_headers_cxx`, which calls the module through its 7 headers from C++11, when the host
@@ -1739,8 +1740,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 844 committed screenshots to the current render,
-422 in English and the same 422 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 852 committed screenshots to the current render,
+426 in English and the same 426 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
