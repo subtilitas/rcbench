@@ -689,7 +689,7 @@ SDMMC-Controller:
 
 Auf dem ESP32-P4 läuft ein Task, der über `xTaskCreate()` oder
 `xTaskCreatePinnedToCore()` ohne Kern angelegt wird, auf Kern 0, und Kern 1
-gehört dem Control-Task und den dort festgelegten Tasks. Dafür linkt das
+gehört der Control-Task und den dort festgelegten Tasks. Dafür linkt das
 Panel mit `--wrap=xTaskCreatePinnedToCore`
 (`components/wifi_access/wifi_radio.c`): esp_hosted legt 6 Tasks mit
 Priorität 23 an, ohne einen Kern zu nennen. `xTaskCreateStatic()` und die
@@ -701,8 +701,8 @@ das den Build abbricht. Die Konsole listet beim Start jeden Task,
 Die SD-Karte und der C6 teilen sich den Anfrage-Mutex des SDMMC-Treibers
 von ESP-IDF, der Priorität vererbt. Hält der Run-Log-Task auf Kern 1 ihn für
 einen Schreibvorgang auf die Karte und wartet ein Task von esp_hosted
-darauf, läuft der Run-Log-Task mit Priorität 23 auf Kern 1, über dem
-Control-Task. Die längste Periode des Control-Tasks unter dieser Last ist
+darauf, läuft der Run-Log-Task mit Priorität 23 auf Kern 1, über der
+Control-Task. Die längste Periode der Control-Task unter dieser Last ist
 nicht gemessen.
 
 Speicher von esp_hosted, alles interner RAM:
