@@ -16,6 +16,14 @@ history is in git.
   model the TEST page with a moving arm and a new reading in every frame
   costs 0 cache-line fills, against 30,731 before. CI holds the new
   `servo-test` mode to 1,000.
+- The ESC STICK crumb names the Dualsky XController profile's model
+  `XController`. It read `XController (model not named in the programming
+  sheet)` in both languages. The Hacker X-Pro (January 2006 edition)
+  profile's model reads `X-Pro (BEC, Opto)`. It read `X-Pro series (BEC and
+  Opto versions)` in both languages.
+- STATUS.md's open item on screens that do not name the output they drive
+  lists the one case left: a programming port held after SERVO is left.
+  ARM names its roles, and the programmers name their port and pin.
 
 ## 0.23.8 - 2026-11-05
 

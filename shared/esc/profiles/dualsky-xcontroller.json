@@ -4,7 +4,7 @@
   "family": "XController, 8-item count menu (5-6-5 melody)",
   "models": [
     {
-      "name": "XController (model not named in the programming sheet)",
+      "name": "XController",
       "cells_min": null,
       "cells_max": null,
       "v_min_mv": null,

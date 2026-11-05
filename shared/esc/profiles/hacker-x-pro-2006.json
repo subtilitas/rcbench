@@ -4,7 +4,7 @@
   "family": "X-Pro (January 2006 edition)",
   "models": [
     {
-      "name": "X-Pro series (BEC and Opto versions)",
+      "name": "X-Pro (BEC, Opto)",
       "cells_min": null,
       "cells_max": 5,
       "v_min_mv": null,

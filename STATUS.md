@@ -2163,21 +2163,19 @@ two orders of magnitude below 19ms on serial NOR flash, or roughly 200 to 2,000u
 **Next evidence or work:** a board: the page program and erase windows from the console lines, the overrun count across
 sixteen saves, the heartbeat after a window, and a power cut mid-save.
 
-### Screens that do not name the output they drive
+### A held programming port is named on SERVO and SUPPLY only
 
-The rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). The SERVO screen meets
-it for its target: the TARGET row on its output card names the protocol and the pins or the
-programming port on every task and stays in sight under the pages, their keypads and the
-servo programmer. The MOTOR screen names its throttle pins and the SUPPLY header the PD
-mini's UART pins. These screens do not meet it: ARM on SERVO and MOTOR switches the whole
-bank to ARMED and names none of it; the servo programmer overlay names a port number instead
-of its pin; a PD mini output stays on after SERVO is left while the servo programmer holds
-its port, and no other screen names it.
+The rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). SERVO names its target on
+every task and under the pages, their keypads and the programmers (the TARGET row, `PROG PORT n
+GPIO m`). MOTOR & ESC names its throttle pins. The KST and Hitec programmers and the ESC wire
+screens name their port and pin. ARM names the roles it drives
+([Safety](docs/Safety.md#deliberate-behaviours)). One case does not meet the rule. Leaving SERVO
+while a programmer holds a port leaves the output SERVO switched on running
+([Screens, SERVO](docs/Screens.md#servo)). On the rbmod carrier the PROG 5V box on SERVO and
+SUPPLY then reads `HELD BY PROG PORT n`. The status band and every other screen do not name the
+held port. On a board without the PROG 5V box only the TARGET row on SERVO names it.
 
-A user can then drive a pin other than the one they expect.
-
-**Next evidence or work:** ARM limited to the screen's role; the programmer naming its pin; the held output named in
-the status band.
+**Next evidence or work:** the held port named in the status band.
 
 ### Betaflight logs are listed nowhere
 
