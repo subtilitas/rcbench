@@ -596,6 +596,14 @@ TEST_CASE(exchange_numbers_run_one_to_seven)
 {
     CHECK_EQ(LINK_MINOR_REPEAT, 37u);
     CHECK_EQ(LINK_SEQ_MAX, 7u);
+    /* The figures docs/Link.md states, held as numbers. */
+    CHECK_EQ(LINK_HOST_RETRY_MS, 50u);
+    CHECK_EQ(LINK_HOST_RETRY_LAST_MS, 200u);
+    CHECK_EQ(LINK_HOST_RETRY_LAST_MS, LINK_DEV_SILENCE_MS);
+    CHECK_EQ(LINK_DEV_REPEAT_MS, 1000u);
+    CHECK_EQ(LINK_DEV_REPEAT_MS, LINK_HOST_TIMEOUT_MS);
+    CHECK_EQ(LINK_DEV_REPEAT_KEEP, 8u);
+    CHECK_EQ(LINK_DEV_REPEAT_KEEP, LINK_CAN_MAX_FRAMES);
     CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_REPEAT);
     link_host_init(&host, 0u);
     host.numbered = true;

@@ -841,6 +841,7 @@ TEST_CASE(every_report_line_fits_at_the_largest_counters)
     }
     CHECK_EQ(most, (unsigned)LINK_REPORT_LINES);
     CHECK_EQ(longest, (size_t)186);
+    CHECK_EQ(LINK_REPORT_LINE, 192);   /* the longest line and its NUL, rounded up */
 }
 
 /* A short buffer takes the start of the line and the count says it was
