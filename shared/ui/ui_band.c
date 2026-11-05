@@ -274,10 +274,10 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
  * The bubble is the DELETE question's box of LOGS: a panel with its border
  * and a title tab, the text in UI_FONT_BAND (10 x 20).  It opens 4px under
  * the band, 8px in from the panel's edges at most.  A bubble is 640px
- * wide, 60 cells of text; FAULT's and HWSTOP's span the panel less 8px each
- * side and
- * the text's 16px padding: 976px, 97 cells on the 1024px panel, so the
- * seven bits and their advice fit above the alert band in either language.
+ * wide, 60 cells of text; FAULT's and HWSTOP's span the panel less 8px
+ * each side and the text's 16px padding: 976px, 97 cells on the 1024px
+ * panel, so the seven bits and their advice fit above the alert band in
+ * either language.
  */
 /** @brief A help bubble's width: 640px, 60 cells of text. */
 #define HELP_W       640
@@ -568,9 +568,8 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
  * @param dot its dot's colour, 0 for none
  * @param fill its fill
  * @param ink its text colour: the theme's text, and on the bright fills of
- *        FAULT's warning, of HWSTOP and of the armed badge the dark text of
- *        the
- *        buttons on bright fills
+ *        FAULT's warning, of HWSTOP and of the armed badge the dark text
+ *        of the buttons on bright fills
  */
 static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
                       gfx_color_t *dot, gfx_color_t *fill, gfx_color_t *ink)
