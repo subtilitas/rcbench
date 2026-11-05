@@ -64,7 +64,7 @@ Until SENSE_MAP is first written the map is derived from SENSE's one INA3221:
 `ENABLE` bit a for the part at SENSE's register 8 while SENSE's ENABLE bit 1
 is set, SENSE's shunt on each channel in SENSE's register 10, `FAST` that
 part's CH1 while CH1 is read, and nothing watched. `FLAGS` bit 9 says so. A
-bench whose panel never writes SENSE_MAP runs as it did before 4.25.
+bench whose panel never writes SENSE_MAP runs on SENSE's one INA3221 alone.
 
 The first write activates the map. No subsequent write can return it
 to derived mode. SENSE's ENABLE bit 1 and registers 8 to 10 then
@@ -189,7 +189,7 @@ version 8 record and starts as from an empty store.
 | 4.33 or later | 4.32 or older, on the rbmod carrier | SENSE_MAP refuses the carrier's map: its `WATCH` values 0x30 to 0x32 are not in that IOmcu's list. SETUP > SENSORS marks 0x40 `NOT ACCEPTED BY THE IOMCU` until the IOmcu runs the panel's image |
 | 4.25 or later | 4.25 or 4.26 | SENSE_MAP and SENSE_WIN as above; the panel sends nothing to SENSE_LIMIT, and SETUP > SENSORS marks every limit that is not OFF as not judged |
 | 4.25 or later | 4.24 or older | the panel sends nothing to the four pages and sets SENSE's one INA3221 to one fitted part ([Screens](Screens.md)) |
-| 4.24 or older | 4.25 or later, map derived | the panel never reads or writes the four pages. SENSE runs as before. Kept limits are judged and `OVER` holds its bits until something reads it |
+| 4.24 or older | 4.25 or later, map derived | the panel never reads or writes the four pages. SENSE keeps its one INA3221. Kept limits are judged and `OVER` holds its bits until something reads it |
 | 4.24 or older | 4.25 or later, map in force | SENSE's ENABLE bit 1 and registers 8 to 10 read the mirror part. A SENSE write that changes them is refused with BAD_VALUE, so that panel cannot change the INA3221 set-up. The INA228, the encoder and the pins stay its own |
 
 ## On the console
