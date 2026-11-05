@@ -160,8 +160,9 @@ zu flashen.
 
 "?" im Statusband öffnet die Hilfe zur aktuellen Seite. Nummerierte Marken
 kennzeichnen die Bedienelemente; ein Hilfefeld erklärt ihre Funktion.
-Das Menü hat eine Hilfe, andere Seiten haben kein "?". Auch Tastenfelder,
-Tastaturen und Bestätigungsdialoge zeigen kein "?".
+Das Menü, OUTPUTS und SETUP haben eine Hilfe, die anderen Seiten haben
+kein "?". Auch Tastenfelder, Tastaturen, offene Listen und
+Bestätigungsdialoge zeigen kein "?".
 
 ![Die Hilfe des Menüs auf Seite 1](img/de/help-overview.png)
 
@@ -222,6 +223,26 @@ Die Hilfe des Menüs hat vier Seiten:
 3. STOP, Arm-Chip, "?" und SIMULIERT, mit dem Hilfefeld links.
 4. Die leere Stelle im Band für die Screenshot-Haltegeste, mit dem Hilfefeld
    rechts.
+
+Die Hilfen von OUTPUTS und SETUP haben eigene Seiten für jeden Zustand
+ihrer Seite. Auf Hilfeseite 1 steht das Hilfefeld rechts, auf der letzten
+links; ein
+Bedienelement, das das Hilfefeld zum Teil verdeckt, wird markiert, wo es
+sichtbar ist. Keine der beiden Seiten steuert einen Ausgang an, daher bleiben
+alle ihre Hilfeseiten auch in ARMED sichtbar.
+
+| Seite, Zustand | Hilfeseiten | Markiert |
+| --- | --- | --- |
+| SETUP, Kacheln | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, LAYOUT auf dem Träger, SPEICHERN |
+| SETUP, eine Liste | 2 | die erste ganze Zeile, der Name der Liste, ZURÜCKSETZEN; von den ganz sichtbaren Zeilen die erste, deren Wert das Ziffernfeld öffnet, sonst die erste mit Tasten: ihr `-` oder `<`, der Wert, `+` oder `>`; SPEICHERN |
+| SETUP, SENSORS | 2 | wie eine Liste, zuerst der gewählte Eintrag |
+| OUTPUTS, Platinenansicht | 2 | die Fläche der Protokollliste, LETZTER SCHREIBVORGANG, PINS, die linke Taste; BELEGT, die Haltetaste zum Löschen aller Pin-Zuordnungen, wenn angeboten, die rechte Taste |
+| OUTPUTS, Eintrag PROG PORT | 2 | die Fläche des Eintrags, PIN, FUNKTION, SERVO-TESTER, PORT-PWM; dann BELEGT und eine Taste, in der Platinenansicht |
+| OUTPUTS, Rasteransicht | 1 | die Fläche der Protokollliste, das erste Feld, LETZTER SCHREIBVORGANG; bei einem Eintrag PROG PORT seine Fläche und Zeilen |
+
+![Die Hilfe von SETUP auf Seite 1](img/de/help-setup.png)
+
+![Die Hilfe von OUTPUTS auf Seite 1](img/de/help-outputs.png)
 
 ## Screenshot
 
@@ -490,7 +511,6 @@ aktiviert ist. Jede Seite nennt die Quelle ihrer Messwerte.
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
 | SUPPLY | der PD mini auf der Registerkarte PD MINI auf SUPPLY eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel mit seinem eigenen Netzteilmodell |
 | RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
-| LOGS, SETUP | immer: sie enthalten keine Messung |
 
 Der IOmcu meldet seine Fähigkeitsbits beim Start. Antwortet kein IOmcu,
 tragen MOTOR & ESC und SERVO ebenfalls die Markierung.

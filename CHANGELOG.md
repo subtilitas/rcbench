@@ -22,6 +22,12 @@ history is in git.
   the diagnostic word describes and the word, read through
   `rom_get_boot_info()`. After `picotool reboot -a -g 0` the word shows
   which steps slots A and B passed. Both boards, rp2350_can and rbmod.
+- The screen guide covers OUTPUTS and SETUP. "?" opens pages for each
+  state: SETUP's tiles, a list and SENSORS (2 pages each); OUTPUTS' board
+  view and a PROG PORT entry (2 pages each) and its grid view (1 page). They
+  mark up to 5 controls a page and all show while ARMED, since neither
+  screen drives an output. An open list, a keypad, a keyboard or the
+  warning on leaving SETUP has no guide.
 
 ### Fixed
 
@@ -30,6 +36,8 @@ history is in git.
   flash calls of the update refused only ranges past the store before. No
   update wrote there; an erase of the table would leave the IOmcu in
   BOOTSEL until a USB load of the install UF2.
+- SETUP's lists clip their rows inside the clip they are drawn with. With
+  the screen guide open on a list, the rows drew under the dock.
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint
   the whole screen when the arm moves or the AS5600 angle changes in its
   tenths. None of these pages shows either value. The station measured 15.1

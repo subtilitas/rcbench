@@ -112,6 +112,53 @@ _Static_assert(OB_FN_Y + UI_TAP_MIN + 4 + 5 * UI_TAP_MIN + 8 + 4 <= OU_FOOT,
  */
 void outputs_screen_set_board_view(bool board);
 
+struct ui_help_page;
+
+/** @brief The grid view's parts the screen guide marks. */
+typedef enum {
+    OUTPUTS_GRID_FACE = 0,  /**< the protocol list's face               */
+    OUTPUTS_GRID_CELL,      /**< the first pin's cell; empty for none   */
+    OUTPUTS_GRID_LAST,      /**< LAST WRITE and the result under it     */
+} outputs_grid_part_t;
+
+/**
+ * @brief Where @p part of the grid view lies, in the screen's coordinates.
+ * @param part The part.
+ * @return Its rect; empty for a cell on a board without pins.
+ */
+gfx_rect_t outputs_grid_rect(outputs_grid_part_t part);
+
+/** @brief The PROG PORT entry's controls the screen guide marks; a rect
+ *         of w 0 for a row the entry does not draw. */
+typedef struct {
+    gfx_rect_t pin;     /**< PIN: the button, or the board view's lines  */
+    gfx_rect_t fn;      /**< FUNCTION's face                             */
+    gfx_rect_t tester;  /**< SERVO TESTER's segments                     */
+    gfx_rect_t pwm;     /**< PORT PWM's segments                         */
+} outputs_port_rects_t;
+
+/**
+ * @brief Where the PROG PORT entry's controls lie in the view in force.
+ * @param out The rects, filled.
+ * @return False while no entry is shown.
+ */
+bool outputs_port_rects(outputs_port_rects_t *out);
+
+/**
+ * @brief The screen guide's pages of OUTPUTS (help_outputs.c): the board
+ *        view's two, the grid view's one; none while a list is open.
+ * @return The count.
+ */
+int outputs_help_count(void);
+
+/**
+ * @brief Page @p i of OUTPUTS' guide.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+bool outputs_help_page(int i, struct ui_help_page *out);
+
 /**
  * @brief Counts every change of what the grid view and the entry draw; the
  *        board view repaints on a change of it.

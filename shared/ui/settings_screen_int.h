@@ -458,6 +458,25 @@ int stg_list_x(void);
  */
 settings_row_t stg_row_entry(int index);
 
+/* --- help_setup.c -------------------------------------------------------- */
+
+struct ui_help_page;
+
+/**
+ * @brief The screen guide's pages of SETUP: two on the tiles, two on a
+ *        list; none while the warning, the keyboard or the keypad is open.
+ * @return The count.
+ */
+int stg_help_count(void);
+
+/**
+ * @brief Page @p i of SETUP's guide.
+ * @param i   The page, from 0.
+ * @param out The page, filled.
+ * @return False past the last page.
+ */
+bool stg_help_page(int i, struct ui_help_page *out);
+
 /* --- settings_draw.c ---------------------------------------------------- */
 
 /**

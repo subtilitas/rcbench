@@ -4141,8 +4141,10 @@ int main(int argc, char **argv)
     }
     const ui_screen_id_t id = id_of(argv[2]);
     const bool light = (argc > 3 && strcmp(argv[3], "light") == 0);
-    /* argv[4] is the golden's name; several share one screen. */
-    const char *view = (argc > 4) ? argv[4] : argv[2];
+    /* argv[4] is the golden's name; several share one screen.  A guide's
+     * view is posed as the view it opens over (render_help_base()). */
+    const char *const shot_view = (argc > 4) ? argv[4] : argv[2];
+    const char *view = render_help_base(shot_view);
     const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
     s_lang = (argc > 5 && strcmp(argv[5], "de") == 0) ? UI_LANG_DE
                                                        : UI_LANG_EN;
@@ -4270,14 +4272,15 @@ int main(int argc, char **argv)
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);
     }
-    if (render_help_view(view)) {
-        render_help_pose(view);
-    }
     pose_shown_views(view);
 
     pose_shown_setup(id, view);
     pose_shown_tools(id, view);
     render_imu_pose(view);
+    /* Last: the guide opens over the screen as the poses left it. */
+    if (render_help_view(shot_view)) {
+        render_help_pose(shot_view);
+    }
     gfx_canvas_t c;
     gfx_canvas_init(&c, fb, W, H, W);
 

@@ -74,6 +74,8 @@ TRACKED = [
     "shared/ui/ui_icons.c",
     "shared/ui/ui_band.c",
     "shared/ui/ui_help.c",
+    "shared/ui/help_outputs.c",
+    "shared/ui/help_setup.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_plot.c",
     "shared/ui/ui_slider.c",

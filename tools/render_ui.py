@@ -105,6 +105,9 @@ SCREENS = {
     # The screen guide over the menu at page 1: the dock on the right, the
     # left two columns of tiles marked.
     "help-overview": ("help-overview.png", "overview", "dark"),
+    # The guide over SETUP's tiles and OUTPUTS' board view, each at page 1.
+    "help-setup": ("help-setup.png", "setup", "dark"),
+    "help-outputs": ("help-outputs.png", "outputs", "dark"),
     # The screenshot's popup over the menu, a save under way and a card that
     # was full.
     "shot-popup": ("shot-popup.png", "shot", "dark"),
@@ -807,6 +810,23 @@ FIT_ONLY = {
     "help-band-worst": (None, "motor", "dark"),
     # SERVO's RUDDER guide: the output card's page over the task.
     "help-servo-rudder":   (None, "servo", "dark"),
+    # The other pages of SETUP's and OUTPUTS' guides, in each state that
+    # has its own: a list, SENSORS, the carrier's tiles, a PROG PORT entry,
+    # the grid view, an odd binding read and the carrier (render_help_base()
+    # names the view each opens over).
+    "help-setup-2": (None, "setup", "dark"),
+    "help-setup-rbmod-2": (None, "setup", "dark"),
+    "help-setup-list": (None, "setup", "dark"),
+    "help-setup-list-2": (None, "setup", "dark"),
+    "help-setup-sensors": (None, "setup", "dark"),
+    "help-setup-sensors-2": (None, "setup", "dark"),
+    "help-outputs-2": (None, "outputs", "dark"),
+    "help-outputs-port": (None, "outputs", "dark"),
+    "help-outputs-port-2": (None, "outputs", "dark"),
+    "help-outputs-grid": (None, "outputs", "dark"),
+    "help-outputs-odd-2": (None, "outputs", "dark"),
+    "help-outputs-rbmod": (None, "outputs", "dark"),
+    "help-outputs-rbmod-port": (None, "outputs", "dark"),
     # ESC STICK > Great Planes: model rows with the MANUAL tag and the
     # longest reason beside their family.
     "motor-stick-greatplanes": (None, "motor", "dark"),
@@ -984,6 +1004,15 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "files-edit-see50"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
+# The screen guide's views over SETUP and OUTPUTS: the dock
+# takes half the body, so the screen's strings on the other half are cut at
+# its edge and the marks are drawn over them by design.  The fit check
+# measures their dock, band and marks; the screen's own strings are
+# measured in the view each opens over (render_help_base() in
+# test/host/render_help.c).
+GUIDE_VIEWS = {name for name in (*SCREENS, *FIT_ONLY)
+               if name.startswith(("help-setup", "help-outputs"))}
+
 # English overflows the layout has for a time: (view, string, finding), word
 # for word as --fit prints them; none today.  Each is a defect of the
 # screen, listed here so the check holds every other string; none is a
@@ -1082,16 +1111,31 @@ def painted_over(items, i, vis, s):
     return None
 
 
-def fit_problems(items, overlay=False):
+def guide_live(items):
+    """The half of the body a guide's screen draws in, as a Rect: the half
+    its dock's web line is not on."""
+    for it in items:
+        if it[0] == "T" and it[4].startswith(("More: ", "Mehr: ")):
+            left = it[1].x < 512
+            return Rect(496 if left else 0, 60, 528, 540)
+    return None
+
+
+def fit_problems(items, overlay=False, guide=False):
     """What overflows, as (string, problem) pairs.  Width only: a language
     changes how long a string is, not how tall.  With @p overlay, a string
-    a later fill covers is not a finding."""
+    a later fill covers is not a finding.  With @p guide, a string the
+    screen draws inside the guide's live half is not measured: the view it
+    opens over measures it."""
     problems = []
     drawn = []          # (index, visible rect, string)
+    live = guide_live(items) if guide else None
     for i, it in enumerate(items):
         if it[0] != "T":
             continue
         _, t, clip, box, s = it
+        if live is not None and live.covers(clip):
+            continue
         if (t.y + t.h <= clip.y or t.y >= clip.b
                 or t.r <= clip.x or t.x >= clip.r):
             # Wholly outside its clip, such as a screen's string on the
@@ -1178,7 +1222,8 @@ def fit(views, langs) -> int:
                 render_one(exe, tmp, name, screen, theme, lang, trace)
                 items, used = read_trace(trace)
                 seen[lang] |= used
-                for s, why in fit_problems(items, name in OVERLAY_VIEWS):
+                for s, why in fit_problems(items, name in OVERLAY_VIEWS,
+                                         name in GUIDE_VIEWS):
                     findings.append((lang, name, s, why))
         judged, stale = judge(findings, KNOWN_OVERFLOWS, set(views))
         for tag, lang, name, s, why in judged:

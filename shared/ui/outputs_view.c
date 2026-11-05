@@ -161,6 +161,8 @@ static const ui_screen_t s_screen = {
     .cancel = cancel,
     .render = render,
     .back   = back,
+    .help_count = outputs_help_count,
+    .help_page  = outputs_help_page,
 };
 
 const ui_screen_t *outputs_view_screen(void) { return &s_screen; }

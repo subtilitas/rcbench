@@ -4,7 +4,9 @@
  *
  * help-overview is the menu's guide at page 1, help-overview-2 to
  * help-overview-4 its other pages, each opened and turned by taps through
- * the router as a person does.  help-band-worst is MOTOR & ESC's band with
+ * the router as a person does.  help-setup, help-outputs and their
+ * states' views open the guide over the view
+ * render_help_base() names, posed as that view is.  help-band-worst is MOTOR & ESC's band with
  * the widest row of chips test_nav_bubble finds: a clock of 10 hours,
  * ARMED MOTOR, FAULT 7F, BENCH and LINK.
  *
@@ -33,6 +35,40 @@ static void tap_mid(gfx_rect_t r)
     ui_router_event(&e);
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
+}
+
+/** @brief The guide's views posed as another view, each with its pages
+ *         help-...-2 and on. */
+static const struct {
+    const char *help; /**< the guide's view, without a page */
+    const char *base; /**< the view it opens over           */
+} k_based[] = {
+    { "help-setup", "setup" },
+    { "help-setup-rbmod", "setup-rbmod" },
+    { "help-setup-list", "setup-application" },
+    { "help-setup-sensors", "setup-sensors" },
+    { "help-outputs", "outputs" },
+    { "help-outputs-port", "outputs-port" },
+    { "help-outputs-grid", "outputs-grid" },
+    { "help-outputs-odd", "outputs-odd" },
+    { "help-outputs-rbmod", "outputs-rbmod" },
+    { "help-outputs-rbmod-port", "outputs-rbmod-port" },
+};
+
+const char *render_help_base(const char *view)
+{
+    size_t n = strlen(view);
+    if (n > 2 && view[n - 2] == '-' && view[n - 1] >= '2'
+        && view[n - 1] <= '9') {
+        n -= 2;
+    }
+    for (size_t i = 0; i < sizeof(k_based) / sizeof(k_based[0]); ++i) {
+        if (strlen(k_based[i].help) == n
+            && strncmp(view, k_based[i].help, n) == 0) {
+            return k_based[i].base;
+        }
+    }
+    return view;
 }
 
 bool render_help_view(const char *view)

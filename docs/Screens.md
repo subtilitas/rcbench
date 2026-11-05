@@ -146,9 +146,9 @@ says to flash both boards from one release.
 ## The screen guide
 
 "?" in the status band opens the current screen's guide. Numbered marks
-identify its controls, and a dock explains each one. The menu has a guide;
-other screens have no "?". Keypads, keyboards and confirmation dialogs
-also have no "?".
+identify its controls, and a dock explains each one. The menu, OUTPUTS
+and SETUP have a guide; the other screens have no "?". Keypads, keyboards,
+open lists and confirmation dialogs also have no "?".
 
 ![The menu's guide at page 1](img/help-overview.png)
 
@@ -208,6 +208,24 @@ The menu guide has four pages:
 3. STOP, the arm chip, "?" and the SIMULATED mark, with the dock on the left.
 4. The empty part of the band used for the screenshot hold, with the dock
    on the right.
+
+The guides of OUTPUTS and SETUP have a set of pages for each state of
+their screen. The dock takes the right half on page 1 and the left half on
+the last page; a control the dock covers in part is marked where it shows.
+Neither screen drives an output, so all their pages show while ARMED.
+
+| Screen, state | Pages | Marked |
+| --- | --- | --- |
+| SETUP, tiles | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, LAYOUT on the carrier, SAVE |
+| SETUP, a list | 2 | the first whole row, the list's name, RESET; of the rows whole in view the first whose value opens the keypad, else the first with keys: its `-` or `<`, the value, `+` or `>`; SAVE |
+| SETUP, SENSORS | 2 | as a list, with the selected entry first |
+| OUTPUTS, board view | 2 | the protocol list's face, LAST WRITE, PINS, the leftmost key; IN USE, UNBIND ALL PINS when offered, the rightmost key |
+| OUTPUTS, PROG PORT entry | 2 | the entry's face, PIN, FUNCTION, SERVO TESTER, PORT PWM; then IN USE and a key, in the board view |
+| OUTPUTS, grid view | 1 | the protocol list's face, the first cell, LAST WRITE; on a PROG PORT entry its face and rows |
+
+![SETUP's guide at page 1](img/help-setup.png)
+
+![OUTPUTS' guide at page 1](img/help-outputs.png)
 
 ## Screenshot
 
@@ -462,7 +480,6 @@ source of its readings.
 | SERVO | the IOmcu drives servo PWM outputs |
 | SUPPLY | the PD mini is enabled on SUPPLY's PD MINI tab, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
 | RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
-| LOGS, SETUP | always: they hold no measurement |
 
 The capability bits come from the IOmcu at bring-up. With no IOmcu
 answering, MOTOR & ESC and SERVO carry the mark too.
