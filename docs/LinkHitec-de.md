@@ -2,47 +2,51 @@
 
 <sub>[English](LinkHitec.md) · **Deutsch**</sub>
 
-Diese Seite ist ein Abschnitt von [Der Link](Link-de.md), der die Verkabelung, das
-Frame-Format, die Page Map und die übrigen Pages enthält. Pins heißen nach ihrer
-GPIO-Nummer (General-Purpose Input/Output). PWM steht für
+Diese Seite beschreibt den Programmierport für Hitec-Servos.
+[Der Link](Link-de.md) behandelt die Verkabelung, das Frame-Format, die
+Page Map und die übrigen Pages. Pins werden mit ihrer GPIO-Nummer
+(General-Purpose Input/Output) bezeichnet. PWM steht für
 Pulsweitenmodulation.
 
-Hitec ist ein Name oder eine Marke seines Inhabers. Er steht hier nur, um zu
-sagen, mit welchen Servos die Page arbeitet.
+Hitec ist ein Name oder eine Marke seines Inhabers. Die Bezeichnung
+kennzeichnet hier nur die Servos, mit denen die Page arbeitet.
 
-Die Hitec-Page (`HITEC`, 0x34) ist neu in 4.23; das Schreibregister 23, der
-Empfangsmodus einer Leitung der D-Serie, ist neu in 4.24. Ab 4.29 hält ein
-gehaltener Port die SUPPLY-Page von OPEN bis CLOSE
+Die Hitec-Page (`HITEC`, 0x34) benötigt Protokoll 4.23 oder höher.
+Schreibregister 23 wählt den Empfangsmodus einer Leitung der D-Serie
+und benötigt 4.24. Ab 4.29 reserviert ein belegter Port die SUPPLY-Page
+von OPEN bis CLOSE
 ([Die Versorgung, solange ein Port gehalten ist](#die-versorgung-solange-ein-port-gehalten-ist)).
 Ab 4.31 markiert ein Schreiber die Schritte eines Schreibens, denen weitere
 folgen, und SUPPLY hält das OFF des Panels zurück, bis das Schreiben endet
 ([Ein OFF während eines Schreibens](#ein-off-während-eines-schreibens)).
-Die Page fährt rohe Transaktionen
-der Hitec-Servoleitung aus [`protocols/hitec`](../protocols/hitec/README.md)
-auf einem Port von [PROG](Link-de.md#die-programmierports): classic (HS-5xxx,
-HS-7xxx, 19.200bit/s) oder D-Serie (115.200bit/s). Die Page hält keine
-Hitec-Session. Der Schreiber stellt eine Transaktion bereit, die Page fährt
-sie, und der Mitschnitt und seine Dekodierung bleiben bis zur nächsten auf
-der Page. Welche Bytes ein Servo nimmt und in welcher Reihenfolge, ist Sache
-des Schreibers. Der Session-Kern
+Die Page führt rohe Transaktionen des Hitec-Servoprotokolls aus
+[`protocols/hitec`](../protocols/hitec/README.md) auf einem
+[PROG](Link-de.md#die-programmierports)-Port aus: classic (HS-5xxx,
+HS-7xxx, 19.200bit/s) oder D-Serie (115.200bit/s). Sie verwaltet keine
+Hitec-Session. Der Aufrufer bereitet eine Transaktion vor, die Page
+führt sie aus. Mitschnitt und dekodiertes Ergebnis bleiben bis zur
+nächsten Transaktion verfügbar. Der Aufrufer muss die Bytes und ihre
+Reihenfolge passend zum Servo wählen. Der Session-Kern
 ([`hitec_session.h`](../protocols/hitec/README.md#session)) und die
 Link-Hälfte des Panels ([Die Link-Hälfte des Panels](#die-link-hälfte-des-panels))
-führen die Programmierung auf der Seite SERVO aus, die ein Servo liest und
-nichts hineinschreibt ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)).
+führen die Lese- und Schreibvorgänge der Programmierung auf der Seite
+SERVO aus ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)).
 `shared/outputs/hitec_port.c` hält die Regeln.
 
-Ein Port ist frei, von dieser Page gehalten oder von der KST-Page gehalten
-([Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)), nie
-zwei davon. Die Page hält einen Port zur Zeit; die KST-Page darf einen
-anderen halten. Nichts wird im Flash gehalten: nach einem Neustart des IOmcu
-ist der Port frei.
+Ein Port ist entweder frei, von dieser Page belegt oder von der KST-Page
+belegt ([Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)).
+Beide Pages können ihn nicht gleichzeitig belegen. Diese Page belegt
+jeweils einen Port; die KST-Page kann einen anderen belegen. Die Belegung
+wird nicht im Flash gespeichert. Nach einem Neustart des IOmcu ist der
+Port frei.
 
-Jeder Port des Builds kann geöffnet werden, 4 ab Protokoll 4.26: der Pin des
-Ports wird übergeben, gleich welche FUNKTION er hat, der geparkte Pin eines
-Ports mit KEINE wie der eines SERVO-PWM-Ports, und bei CLOSE dieser Funktion
-zurückgegeben. Der Bedarf an PIO und DMA ist der der Leitung, auf welchem
-Port sie auch liegt: eine Leitung, also höchstens 2 State Machines und 3
-DMA-Kanäle mit PRECHARGE.
+Jeder Port des Builds kann geöffnet werden, ab Protokoll 4.26 sind es
+4. Der Pin wird unabhängig von seiner FUNKTION übergeben: Das gilt für
+den geparkten Pin eines Ports mit KEINE ebenso wie für einen
+SERVO-PWM-Port. CLOSE gibt den Pin an diese Funktion zurück. Der
+PIO- und DMA-Bedarf hängt von der Leitung ab, nicht vom gewählten Port.
+Für die eine Leitung werden mit PRECHARGE höchstens 2 State Machines
+und 3 DMA-Kanäle benötigt.
 
 Das Panel liest `STATE` mit der PROG-Page alle 500ms, ab 4.23. Solange es
 einen gehaltenen Port nennt (STOPPING bis POWER_OFF), graut SERVO >
@@ -72,17 +76,18 @@ OPEN nimmt den Port:
    Programmspeicher in einem anderen PIO-Block und einen dritten DMA-Kanal;
    ohne sie bleibt der Port ebenfalls mit `NO_LINE` frei.
 
-In OPEN startet ein Kommando eine Transaktion (BUSY). Der Port steht wieder
-in OPEN, wenn der Treiber den Mitschnitt zurückgibt. Der Treiber beendet eine
-Transaktion selbst 1ms nach der längsten Zeit, die sie dauern kann: der
-Mitschnitt behält jedes Byte, das vor diesem Ende empfangen wurde, und ist
-als Überlauf markiert (`CAP` Bit 10). Eine Transaktion, die nach 10.000ms
-noch läuft, bricht zusätzlich die Page ab.
+In OPEN startet ein Kommando eine Transaktion und wechselt zu BUSY.
+Sobald der Treiber den Mitschnitt zurückgibt, steht der Port wieder in
+OPEN. Überschreitet eine Transaktion ihre berechnete Höchstdauer um
+1ms, beendet der Treiber sie. Der Mitschnitt behält alle bis dahin
+empfangenen Bytes und wird als Überlauf markiert (`CAP` Bit 10).
+Zusätzlich bricht die Page jede nach 10.000ms noch laufende Transaktion
+ab.
 
-CLOSE gibt den Port aus jedem Zustand außer frei zurück: eine laufende
-Transaktion wird abgeschnitten, die Leitung geschlossen und der Pin gehört
-dem Generator. Die Versorgung bleibt, wie sie ist. ABORT schneidet ab, was
-läuft, und behält den Port.
+CLOSE gibt den Port aus jedem Zustand außer frei zurück. Eine laufende
+Transaktion wird abgebrochen, die Leitung geschlossen und der Pin an
+den Generator zurückgegeben. Die Versorgung bleibt unverändert. ABORT
+bricht den laufenden Vorgang ab, behält aber den Port.
 
 ## Die Versorgung, solange ein Port gehalten ist
 
@@ -130,8 +135,9 @@ eingeschlossen; die Page erkennt es an den Bytes des Frames, mit oder ohne
 Bit. Ein Lesen, ein MOVE, ein LISTEN, ein LEVEL und ein POWER schreiben
 nichts. Der Schreiber setzt das Bit auf jedem Schritt eines Schreibens
 außer dem letzten: SEND, LISTEN, LEVEL oder POWER. `STATE` Bit 8 zeigt,
-dass das Bit steht. Jedes andere angenommene Kommando löscht
-es, auch ein abgewiesenes, ebenso ein Stopp und CLOSE.
+dass das Bit steht. Jedes andere von der Page verarbeitete Kommando löscht
+es, auch wenn die angeforderte Operation abgelehnt wird. Ein Stopp
+und CLOSE löschen es ebenfalls.
 
 Wie lange ein Servo nach einem schreibenden Frame Versorgung braucht, ist
 nicht gemessen. Die 150ms liegen über der längsten Pause, die ein
@@ -140,16 +146,19 @@ nächsten Frame lässt: 121 bis 128ms beim HPP-21 Plus zwischen zwei
 classic-Einstellungen, 100ms beim HFP-30 vom Speichern der D-Serie bis zum
 Neustart.
 
-Ein OFF, das das Panel auf SUPPLY schreibt, während ein Schreiben läuft,
-liest sofort 0 und erreicht den PD mini, wenn das Schreiben endet: 150ms
-nach dem Ende der Transaktion des letzten schreibenden Frames, spätestens
-10.000ms nach dem OFF (`SUPPLY_PAGE_WRITE_WAIT_MS`). Bis dahin sieht der
-Port seine Versorgung eingeschaltet, und die Schritte laufen weiter. Läuft
-kein Schreiben, erreicht das OFF den PD mini im nächsten Durchlauf. Ein
-verlorener Heartbeat oder ein stiller Link wird nicht zurückgehalten. Vom
-OFF des Panels bis CLOSE schaltet ein POWER die Versorgung wie immer aus,
-und sein ON wird abgewiesen: RESULT 3 (SUPPLY), das Servo bleibt ohne
-Versorgung (`hitec_port_writing()`, `supply_page.h`).
+Schreibt das Panel während eines Servo-Schreibvorgangs OFF auf SUPPLY,
+liefert das Ausgangsregister sofort 0. Der PD mini erhält OFF erst nach
+Ende des Schreibvorgangs: 150ms nach der Transaktion des letzten
+schreibenden Frames, spätestens 10.000ms nach OFF
+(`SUPPLY_PAGE_WRITE_WAIT_MS`). Bis dahin sieht der Port seine Versorgung
+als eingeschaltet und führt die Schreibschritte fort. Ohne laufenden
+Schreibvorgang erreicht OFF den PD mini im nächsten Durchlauf. Eine
+Abschaltung wegen fehlendem Heartbeat oder stillem Link wird nicht
+verzögert.
+
+Vom OFF des Panels bis CLOSE schaltet POWER die Versorgung weiterhin
+aus. Sein ON wird jedoch mit RESULT 3 (SUPPLY) abgelehnt. Das Servo
+bleibt deshalb ohne Versorgung (`hitec_port_writing()`, `supply_page.h`).
 
 | Schreiben | Schritte mit Bit 4 | Letzter Schritt |
 | --- | --- | --- |
@@ -166,10 +175,10 @@ ab; das Panel setzt es erst ab 4.31.
 
 ## Empfangsmodus
 
-Das Schreibregister 23 (`RX_MODE`) sagt, wie eine Leitung der D-Serie die
-Antwort des Servos empfängt, ab dem nächsten OPEN. Das OPEN nimmt den Wert,
-den das Register hält, wenn das OPEN geschrieben wird; eine Änderung bei
-offener Leitung wartet auf das nächste OPEN. Ein OPEN einer classic-Leitung
+Schreibregister 23 (`RX_MODE`) wählt, wie eine Leitung der D-Serie die
+Servoantwort empfängt. OPEN verwendet den Registerwert zum Zeitpunkt
+des Kommandos. Änderungen bei offener Leitung gelten erst beim nächsten
+OPEN. Ein OPEN einer classic-Leitung
 übergeht das Register: ein classic-Servo treibt seinen High-Pegel selbst,
 über etwa 1kΩ, und antwortet an einem Open-Drain-Port ohne Pull-up und
 ohne Precharge (gemessen an einem HS-7955TG, einem HS-5955TG und einem
@@ -232,16 +241,17 @@ Was gemessen ist und was nicht:
 | LEVEL | die Leitung 1us bis 4s auf einem Pegel gehalten, dann losgelassen. Open Drain treibt nur Low | nie |
 | POWER | das Aus- und Einschalten der Versorgung unten, dann ein LISTEN ab dem Einschalten | mit Antwort |
 
-Die Antwort dauert 10 Bitzeiten: Startbit, 8 Datenbits, Stoppbit. Ihr
+Die Antwort dauert 10 Bitzeiten: Startbit, 8 Datenbits und Stoppbit. Ihr
 Startbit beginnt 10,0 bis 10,13 Bitzeiten nach dem Startbit des ersten
-empfangenen Bytes. Der Empfänger wartet ab dem Ende des Stoppbits der
-Antwort auf das nächste Startbit, ein Byte, das der Servo gleich nach der
-Antwort beginnt, wird also empfangen.
+empfangenen Bytes. Ab dem Ende des Antwort-Stoppbits wartet der
+Empfänger wieder auf ein Startbit. Er empfängt damit auch ein Byte,
+das das Servo unmittelbar nach der Antwort sendet.
 
-Vorlauf, Fenster und Pegel reichen bis 4.000.000us. Ein Mitschnitt hält bis
-zu 16 Bytes. Das Fenster zählt nur die Zeit, die auf ein Startbit gewartet
-wird. Jedes empfangene Byte hat die Zeit seines Startbits in ns ab dem Start
-des Empfängers und sein Stoppbit, wie es abgetastet wurde.
+Vorlauf, Fenster und Pegel können bis zu 4.000.000us dauern. Ein
+Mitschnitt enthält bis zu 16 Bytes. Das Fenster zählt nur die Wartezeit
+auf ein Startbit. Für jedes empfangene Byte werden der Startbit-Zeitpunkt
+in ns seit Empfängerstart und der abgetastete Wert des Stoppbits
+gespeichert.
 
 Ein SEND, ein LISTEN oder ein POWER nennt einen Dekoder für den Mitschnitt:
 
@@ -258,7 +268,8 @@ Die Ergebniscodes der Dekoder sind `hitec_rx_t`: 0 OK, 1 ARG, 2 ABORTED,
 
 ## POWER
 
-POWER braucht einen PD mini, der antwortet ([SUPPLY](Link-de.md)). Es:
+POWER benötigt einen antwortenden PD mini ([SUPPLY](Link-de.md)) und
+führt diese Schritte aus:
 
 1. verlangt die Versorgung aus;
 2. wartet, bis sie aus gelesen wird, höchstens 3000ms, sonst Ergebnis 3
@@ -268,10 +279,10 @@ POWER braucht einen PD mini, der antwortet ([SUPPLY](Link-de.md)). Es:
 4. verlangt sie an mit der bereitgestellten Spannung und Stromgrenze;
 5. startet im selben Durchlauf das bereitgestellte LISTEN.
 
-Der Ausgang ist für die bereitgestellte Zeit aus, dazu die 250ms vor der
-Lesung und die Lesungen des Treibers vor dem Einschalten: etwa 760ms bei
-den klassischen 500ms, 762ms gemessen an einem Modul. Die eigene Schaltzeit
-des Moduls ist nicht gemessen.
+Die Auszeit besteht aus der vorgegebenen Dauer, den 250ms bis zum
+Auslesen und den Lesezugriffen des Treibers vor dem Einschalten. Bei
+den klassischen 500ms sind das etwa 760ms; an einem Modul wurden
+762ms gemessen. Die eigene Schaltzeit des Moduls ist nicht gemessen.
 
 Die Spannung ist 4800 bis 6000mV, bis eine Session das Servomodell kennt.
 Die Stromgrenze ist 50 bis 3000mA. Die Spannung plus 700mV muss unter dem
@@ -282,15 +293,16 @@ gibt Ergebnis 4 (`START`) bei eingeschalteter Versorgung. Die SUPPLY-Page
 ist währenddessen und danach gehalten, bis CLOSE
 ([Die Versorgung, solange ein Port gehalten ist](#die-versorgung-solange-ein-port-gehalten-ist)).
 
-Ein Ausschalten der SUPPLY-Page wartet auf ein Byte, das auf der Leitung
-sein kann, höchstens 12ms: Vorlauf und Bytes eines SEND, und ein LISTEN
-oder das LISTEN eines POWER, das antwortet, ganz, weil die Antwort geht,
-sobald das erste Byte gekommen ist.
+Ein OFF auf der SUPPLY-Page wartet bis zu 12ms auf eine mögliche
+Byte-Übertragung. Das umfasst den Vorlauf und die Bytes eines SEND
+sowie das gesamte LISTEN eines LISTEN- oder POWER-Vorgangs mit
+Antwort. Bei Letzteren muss gewartet werden, weil die Antwort erst
+nach Empfang des ersten Bytes gesendet wird.
 
 ## STOP, Schalten auf SAFE, Heartbeat-Verlust und Link-Verlust
 
-Ein Stopp ist der verlorene Heartbeat, der stille Link oder das Schalten der
-Bank auf SAFE. Bei einem Stopp:
+Ein verlorener Heartbeat, ein stiller Link oder das Schalten der Bank
+auf SAFE löst einen Stopp aus. Bei einem Stopp:
 
 - wird eine laufende Transaktion abgebrochen: das Pad wird sofort
   losgelassen, und der Mitschnitt hält die Bytes bis dahin, als abgebrochen
@@ -372,24 +384,27 @@ Die Prüfsumme ist die CRC-16 des Links (Cyclic Redundancy Check), mit
 0xFFFF begonnen, über das niederwertige und dann das höherwertige Byte jedes
 Registers (`link_kst_crc()`), wie auf der KST-Page.
 
-Register 0 bis 3 sind das Kommando: ein Frame, geschrieben als genau diese 4
-Register und ganz oder gar nicht angenommen. Register 4 bis 23 werden vor dem
-Kommando in beliebigen Fenstern geschrieben. Ein Schreiben, das Register 24
-oder höher erreicht, wird mit READ_ONLY abgewiesen, ein `VIEW` über 2 oder
-ein `RX_MODE` über 1 mit BAD_VALUE, und das Fenster ändert nichts.
+Register 0 bis 3 bilden das Kommando. Schreibe genau diese 4 Register
+in einem Frame; die Page übernimmt das Kommando vollständig oder gar
+nicht. Register 4 bis 23 lassen sich vorher in beliebigen Fenstern
+schreiben. Ein Schreibzugriff auf Register 24 oder höher wird mit
+READ_ONLY abgelehnt. Ein `VIEW` über 2 oder ein `RX_MODE` über 1 wird
+mit BAD_VALUE abgelehnt. In jedem dieser Fälle lässt das gesamte
+Schreibfenster die Register unverändert.
 
 Ein Frame mit einer anderen `SEQ` als der der Page plus 1, einer Operation 0
 oder über 8, einem gesetzten Bit außerhalb von Operation, Bit 4 und Port,
 Bit 4 bei OPEN, CLOSE, ABORT oder CLEAR, oder einem `KEY`, der weder 0
-noch 0x48A5 ist, wird mit BAD_VALUE abgewiesen und ändert nichts. Der eben angenommene Frame, noch einmal gesendet, wird quittiert und
-tut nichts. Jeder andere Frame wird quittiert; was aus ihm wurde, steht in
-`RESULT`.
+noch 0x48A5 ist, wird mit BAD_VALUE abgewiesen und ändert nichts. Wird der zuletzt angenommene Frame erneut gesendet, wird er bestätigt,
+aber nicht erneut ausgeführt. Andere gültige Frames werden bestätigt;
+ihr Ergebnis steht in `RESULT`.
 
 ## Abweisungen
 
-Das höherwertige Byte von `RESULT`. Ein Port, den der Build nicht hat, wird
-vor jeder anderen Prüfung mit `PORT` abgewiesen, ABORT ausgenommen. Dann, in
-dieser Reihenfolge für eine Transaktion:
+Das höherwertige Byte von `RESULT` nennt den Ablehnungsgrund. Außer
+bei ABORT wird ein im Build nicht vorhandener Port vor allen anderen
+Prüfungen mit `PORT` abgelehnt. Danach folgen die Transaktionsprüfungen
+in dieser Reihenfolge:
 
 | Code | Name | Warum |
 | ---: | --- | --- |
@@ -437,13 +452,13 @@ Prüfsummen selbst.
 
 ## Die Link-Hälfte des Panels
 
-`shared/bench/hitec_link.c` macht aus einem Schritt einer Session Frames
-dieser Page und aus der Antwort der Page wieder das Ergebnis des Schritts
-(`hitec_ses_result_t`). Es nimmt eine Anfrage zur Zeit: OPEN, einen Schritt
-(SEND, LISTEN oder LEVEL, oder POWER mit den Sollwerten des Aufrufers),
-CLEAR, oder CLOSE eines beliebigen Ports, den die Page hält, auch eines
-Ports, den ein anderer Schreiber geöffnet hat. Jeden Austausch macht der
-Aufrufer; ein Durchlauf macht höchstens 4.
+`shared/bench/hitec_link.c` wandelt einen Session-Schritt in Frames
+dieser Page um und deren Antwort in das Schrittergebnis
+(`hitec_ses_result_t`). Das Modul verarbeitet jeweils eine Anfrage:
+OPEN, einen Schritt (SEND, LISTEN, LEVEL oder POWER mit den Sollwerten
+des Aufrufers), CLEAR oder CLOSE eines von der Page belegten Ports.
+CLOSE ist auch für einen von einem anderen Schreiber geöffneten Port
+möglich. Der Aufrufer führt die Austausche aus, höchstens 4 je Durchlauf.
 
 Eine Anfrage geht in dieser Reihenfolge hinaus:
 
@@ -505,13 +520,13 @@ Wenn der Link nicht antwortet:
   von 10.000ms und ein POWER innerhalb von 23.000ms; die Grenze ist für
   eine Page, die das nicht tut.
 
-ABORT verwirft eine Anfrage, deren Kommando noch nicht hinaus ist. Ein
-Kommando, das ohne Antwort hinausging, geht nicht noch einmal; die `SEQ`
-entscheidet wie oben. Das Kommando ABORT geht, sobald die Page bekannt ist;
-eines, das mit BAD_VALUE abgewiesen wird, geht nach einem Lesen noch einmal,
-mit der `SEQ` der Page. Eine Anfrage, die verworfen wird, während einer
-ihrer Austausche unterwegs ist, hält die nächste Anfrage zurück, bis die
-Antwort dieses Austauschs da ist.
+ABORT verwirft eine Anfrage, deren Kommando noch nicht gesendet wurde.
+Ein bereits gesendetes Kommando ohne Antwort wird nicht erneut gesendet;
+seine `SEQ` entscheidet wie oben über das Ergebnis. Das Kommando ABORT
+wird gesendet, sobald der Zustand der Page bekannt ist. Nach einer
+Ablehnung mit BAD_VALUE liest das Modul die Page und wiederholt ABORT
+mit deren `SEQ`. Wird eine Anfrage während eines laufenden Austauschs
+verworfen, wartet die nächste Anfrage auf dessen Antwort.
 
 Zwischen den Anfragen werden die Register 0 bis 15 alle 100ms gelesen,
 solange die Page einen Port hält, und alle 500ms, solange sie keinen hält.

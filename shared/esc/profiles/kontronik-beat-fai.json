@@ -14,7 +14,7 @@
       "v_max_mv": 27000,
       "current_a": 150,
       "bec": "opto",
-      "firmware_note": "200 A for 15 s",
+      "firmware_note": "200A for 15s",
       "spec_source": "Kontronik_Beat.pdf p.2: 6-18 NiCd/NiMH cells, 150 A continuous; v_max = 18 cells x 1500 mV"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": 36000,
       "current_a": 150,
       "bec": "opto",
-      "firmware_note": "200 A for 15 s",
+      "firmware_note": "200A for 15s",
       "spec_source": "Kontronik_Beat.pdf p.2: 8-24 NiCd/NiMH cells, 150 A continuous; v_max = 24 cells x 1500 mV"
     },
     {
@@ -38,7 +38,7 @@
       "v_max_mv": 45000,
       "current_a": 100,
       "bec": "opto",
-      "firmware_note": "150 A for 15 s",
+      "firmware_note": "150A for 15s",
       "spec_source": "Kontronik_Beat.pdf p.2: 8-30 NiCd/NiMH cells, 100 A continuous; v_max = 30 cells x 1500 mV"
     }
   ],
@@ -62,20 +62,20 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on any 2 of the 3 programming contacts.",
-      "action_de": "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.",
+      "action_de": "Stecke den Jumper auf 2 beliebige der 3 Programmierkontakte.",
       "source": "Kontronik_Beat.pdf p.13 (DE), p.35 (EN)"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 2s or the tone sequence.",
-      "action_de": "Jumper nach 2s oder der Tonfolge abziehen.",
+      "action_de": "Ziehe den Jumper nach 2s oder der Tonfolge ab.",
       "starts_menu": true,
       "source": "Kontronik_Beat.pdf p.13 (DE), p.35 (EN)"
     },
     {
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
-      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "action_de": "Berühre nichts. Warte, bis der ESC den Modus als Töne vollständig wiederholt hat, und tippe dann ERLEDIGT.",
       "source": "Kontronik_Beat.pdf p.13 (DE), the procedure the FAI sheet refers to"
     }
   ],
@@ -88,7 +88,7 @@
       "confirm_signal": "As BEAT.",
       "steps": [
         "As the BEAT procedure (jumper on, power on, wait 2s, pull the jumper), programmed like mode 5 of the BEAT: signal count equals the mode number.",
-        "Wait for the series of the wanted mode and move the throttle (motor switch) to full."
+        "Wait for the series of the desired mode and move the throttle (motor switch) to full."
       ]
     },
     "announce": {
@@ -104,7 +104,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Throttle or motor switch to full during the wanted series."
+      "description": "Throttle or motor switch to full during the desired series."
     },
     "skip": {
       "throttle": "none",
@@ -160,7 +160,7 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
     "Which FAI mode suits which model is not stated (the manual says to test)."
   ],

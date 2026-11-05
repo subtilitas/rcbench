@@ -6,20 +6,20 @@ order: 62
 
 # Sensors
 
-SENSORS, the fourth category on [SETUP](setup.md), sets up every device the IOmcu reads: the sensor bus, the INA228, up to four TI INA3221 three-channel current monitors at 0x40 to 0x43, the AS5600 output encoder and the phase tap; and the panel's own Bluetooth IMU (inertial measurement unit). The settings are kept and saved like every other setting on SETUP.
+SENSORS on [SETUP](setup.md) configures the IOmcu's sensor bus, INA228, up to four TI INA3221 three-channel current monitors at 0x40 to 0x43, AS5600 output encoder and phase tap. It also configures the panel's Bluetooth IMU (inertial measurement unit). Settings are retained and saved like other SETUP values.
 
 ## The left list
 
 ![Two parts fitted, 0x40 online](view:setup-sensors)
 
-A list of 9 entries stands on the left, 220px wide: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP, IMU. An entry shows the sensor's name and, under it, what the sensor is doing. A tap on an entry shows its rows on the right, 754px wide.
+The 220px left list has 9 entries: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP and IMU. Each shows a sensor name and status. Tap an entry to display its settings in the 754px right pane.
 
-- An entry with an enable row shows that row alone while it is off, and its state reads `OFF`. ON adds the other rows under it.
-- A press selects on its release, within 8px of the press and on the entry. A slide further selects nothing and scrolls nothing.
-- Each entry keeps its scroll.
-- A change of entry keeps what is unsaved. SAVE and the leaving warning work as on any list.
-- RESET names the entry, `RESET INA228`, and sets all that entry's rows to their defaults, the hidden rows too. A flick that lands on it does nothing.
-- The knob does nothing on SETUP.
+- Disabled entries show only their enable row and the status `OFF`. Switching ON reveals the remaining settings.
+- Selection occurs on release within the entry and within 8px of the press. A longer slide neither selects nor scrolls.
+- Each entry retains its scroll position.
+- Switching entries preserves unsaved changes. SAVE and the exit warning work as in other lists.
+- RESET names the selected entry, such as `RESET INA228`, and restores all its defaults, including hidden rows. A swipe ending on it has no effect.
+- The rotary knob has no effect on SETUP.
 
 | Entry | State while on |
 |---|---|
@@ -41,7 +41,7 @@ The IOmcu reads a TI INA228 in the ESC's power path and up to four TI INA3221 on
 | INA228 shunt | 50 to 20000uΩ | 200 | the shunt it measures across |
 | INA228 max current | 1.0 to 300.0A, 0.1A steps | 204.8 | the current the range is set for |
 
-The shunt and the maximum go together: shunt in uΩ times maximum in A is at most 163840, which is 163.84mV across the shunt. Each row says what works with the other: `Up to 300.0A on 200uΩ (163.84mV)`. Every shunt has a maximum that works: up to 546uΩ all of 300.0A, at 1000uΩ 163.8A, at 20000uΩ 8.1A. Up to 40.96mV the part reads in steps of 78.125nV, above it in steps of 312.5nV.
+Shunt resistance in uΩ multiplied by maximum current in A must not exceed 163840, equivalent to 163.84mV across the shunt. Each row shows the compatible limit, such as `Up to 300.0A on 200uΩ (163.84mV)`. Every allowed shunt has a valid current range: up to 546uΩ allows 300.0A, 1000uΩ allows 163.8A, and 20000uΩ allows 8.1A. The sensor resolves 78.125nV steps up to 40.96mV and 312.5nV steps above that.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -56,7 +56,7 @@ The shunt and the maximum go together: shunt in uΩ times maximum in A is at mos
 - With the INA228 enabled and answering, the MOTOR & ESC tile loses its SIMULATED mark and [MOTOR & ESC](motor.md#table) reads its voltage and current.
 - With an INA3221 channel watching the servo tester's target, [SERVO](servo.md#the-servo-rail-s-meter) reads the servo rail's current from it.
 - A reading at the top of the range is shown as clipped, never as a value: 163.8mV across the INA3221's shunt.
-- A monitor that stops answering does not switch the bench to SAFE: nothing trips on the monitors' readings.
+- A monitor that stops answering does not switch the bench to SAFE.
 
 ![GPIO 5 refused for Sensor SDA](view:setup-sda-why)
 
@@ -64,9 +64,9 @@ A pin is written with the word first, `GPIO 1`, in the keypad's entry, on the ro
 
 ![The keypad of Sensor SDA, GPIO 1 typed](view:setup-sda-keypad)
 
-The band names what goes wrong, one message at a time, at most one every 5s. For example: `Sensor SDA or SCL not set. Check SENSORS.`, `INA228 and INA3221 both use 0x40. Check SENSORS.`, `INA228 is not responding at 0x45.`, `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.`. A message about the set-up (pins not set, one address, a value rejected) leaves the band as soon as the setting is right again and the IOmcu holds it.
+The band reports one problem at a time, at most once every 5s. Examples include `Sensor SDA or SCL not set. Check SENSORS.`, `INA228 and INA3221 both use 0x40. Check SENSORS.`, `INA228 is not responding at 0x45.` and `INA3221 0x40 CH1 clipped at 1.64A. Reading shows only the limit.` Configuration messages, such as missing pins, an address conflict or a rejected value, clear when the corrected setting is active on the IOmcu.
 
-The INA228 entry's state reads as a part's ([What a part is doing](#what-a-part-is-doing)): `NOT ACCEPTED BY THE IOMCU` also for refused pins and for an IOmcu without the SENSE page, and `SAME ADDRESS AS INA3221` when a fitted part has its address, so neither is read.
+The INA228 uses the [part status messages](#what-a-part-is-doing). `NOT ACCEPTED BY THE IOMCU` also covers rejected pins or an IOmcu without a SENSE page. `SAME ADDRESS AS INA3221` means a fitted INA3221 shares its address; neither sensor is read.
 
 ## The INA3221 parts
 
@@ -74,7 +74,7 @@ The INA228 entry's state reads as a part's ([What a part is doing](#what-a-part-
 |---|---|---|---|
 | 0x40 fitted to 0x43 fitted | ON, OFF | OFF | an INA3221 at this address; the DAOKAI module takes 0x40 with A0 bridged to GND |
 
-A fitted part shows three rows more for each of its three channels. A part not fitted shows no others.
+Enabling a fitted part reveals three settings for each of its three channels. A part marked as not fitted hides these rows.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -82,16 +82,16 @@ A fitted part shows three rows more for each of its three channels. A part not f
 | 0x40 CH1 shunt | OFF, 5.0 to 1000.0mΩ, 0.1mΩ steps | 100.0 | OFF: the channel is not read; 100mΩ reads to 1.64A |
 | 0x40 CH1 limit | OFF, 10 to 32767mA, 10mA steps on the arrows | OFF | the band says when a 50ms window's highest current passes it, and the bench switches to SAFE with the supply output off |
 
-- `+` on a shunt at OFF gives 5.0mΩ, `-` at 5.0mΩ gives OFF.
-- A tap on a shunt's value opens the keypad: 44.4mΩ from the 100.0 default is `4`, `4`, `.`, `4` and OK, where `-` takes 556 steps. 0 is OFF; 0.1 to 4.9 is refused: the keypad stays open and shows `0 or 5.0 to 1000.0mΩ` in place of the range until the next key.
-- The channel read every millisecond, whose current the [SERVO](servo.md#the-servo-rail-s-meter) screen and the servo test use, is the lowest channel with a shunt on a fitted part that watches the servo tester's target: an output while the target is OUTPUTS, PORT n while it is programming port n.
-- The panel writes the set-up 500ms after the last edit, only while the bench is SAFE. The limits go 500ms after their last edit in any state, to an IOmcu of 0.22.0 or later.
+- `+` changes a shunt from OFF to 5.0mΩ; `-` at 5.0mΩ returns to OFF.
+- Tap the shunt value to open its keypad. To change the 100.0mΩ default to 44.4mΩ, enter `4`, `4`, `.`, `4`, then OK; using `-` would require 556 steps. 0 means OFF. Values from 0.1 to 4.9 are refused, leaving the keypad open with `0 or 5.0 to 1000.0mΩ` until the next key.
+- The [SERVO](servo.md#the-servo-rail-s-meter) screen and test use the channel sampled every millisecond. This is the lowest channel with an enabled shunt on a fitted part that watches the tester's target: an output for OUTPUTS, or PORT n for programming port n.
+- The panel sends configuration changes 500ms after the last edit, only while SAFE. Limits are sent 500ms after their last edit in any state, to IOmcu 0.22.0 or later.
 
 ## On the rbmod carrier
 
 ![SENSORS on the carrier, 0x40 soldered](view:setup-sensors-rbmod)
 
-The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders Sensor SDA and SCL at GPIO 16 and GPIO 17, Tap pin at GPIO 22, and an INA3221 at 0x40. These rows are drawn without keys and open no keypad, the values stored for the pins stay and are in force again on a module wired by hand, and they say `Soldered on this board. Not editable here.`:
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), Sensor SDA and SCL are soldered to GPIO 16 and GPIO 17, Tap pin to GPIO 22, and an INA3221 is fitted at 0x40. These rows have no keys or keypad and show `Soldered on this board. Not editable here.` Stored pin settings are preserved and apply again on a manually wired module:
 
 | Row | Reads | Shunt between |
 |---|---|---|
@@ -109,7 +109,7 @@ The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders 
 
 ![A limit on an IOmcu older than 0.22.0](view:setup-sensors-limit)
 
-While a limit is set, the IOmcu judges each channel window of 50ms, and the panel reads which channels passed every 200ms. The band says, at most once every 5s, and once every 30s for a channel that keeps passing. Channels over at the same time take turns: with all 12 over, each is said within 60s.
+For each enabled limit, the IOmcu evaluates the channel's 50ms windows. The panel reads exceedances every 200ms. The band reports at most one every 5s, repeating a persistent exceedance on the same channel every 30s. Simultaneous exceedances are reported in turn; with all 12 channels over their limits, each is named within 60s.
 
 | Band | Meaning |
 |---|---|
@@ -117,7 +117,7 @@ While a limit is set, the IOmcu judges each channel window of 50ms, and the pane
 | `An INA3221 channel exceeded its limit. Its channel number was lost on the link.` | the reply that named the channel was lost; said after the next link-up, not after an IOmcu restart |
 | `INA3221 limits rejected. Check SENSORS.` | the IOmcu refused the limits and keeps its own, or refused the page |
 
-A limit row the IOmcu does not hold is drawn in the warning colour: while its write waits, after a refusal, and on an IOmcu older than 0.22.0 (protocol 4.27), which judges no limit (`IOmcu before 0.22.0: no limit is checked.`).
+A limit row uses the warning colour until the IOmcu has applied its value: while a write is pending, after rejection, or with an IOmcu older than 0.22.0 (protocol 4.27). Those older versions check no limits and show `IOmcu before 0.22.0: no limit is checked.`.
 
 ![The keypad of 0x40 CH1 shunt, 44.4 typed](view:setup-sensors-keypad)
 
@@ -143,7 +143,7 @@ A part's entry says under its name what the part is doing:
 
 ![An IOmcu older than 0.22.0](view:setup-sensors-old)
 
-The rows of a part the IOmcu does not read are drawn in the warning colour, with the reason in place of the help line. An IOmcu older than 0.22.0 (protocol 4.25) reads one INA3221: the part of the channel watching the servo tester's target, else the lowest fitted part.
+Rows for a part the IOmcu does not read use the warning colour, with the reason replacing the help text. An IOmcu older than 0.22.0 (protocol 4.25) reads only one INA3221: the part watching the servo tester's target, or otherwise the lowest fitted part.
 
 A panel updated from 0.21 takes its first set-up from the one INA3221 it had: the part at the old address fitted, its CH1 on the old shunt and watching OUT 1, or PORT 1 when the servo tester's target was the programming port; every limit OFF. The next SAVE keeps it.
 
@@ -151,7 +151,7 @@ A panel updated from 0.21 takes its first set-up from the one INA3221 it had: th
 
 ![Rows the IOmcu has not taken](view:setup-unheld)
 
-A row whose value is not the one the IOmcu holds has its edge and value in the warning colour, and its help line reads `Not accepted by the IOmcu.`. The mark shows:
+A setting that differs from the value active on the IOmcu has a warning-coloured edge and value. Its help line reads `Not accepted by the IOmcu.` This applies:
 
 - after an edit, until the write is taken: 500ms after the last edit, for the current monitors only once the bench is SAFE;
 - on a value the IOmcu refused, until it is changed to one it takes;
@@ -166,15 +166,15 @@ The mark on Sensor SDA, on AS5600 and on the phase tap's rows also turns the ent
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | AS5600 | ON, OFF | OFF | an AS5600 magnetic angle sensor on the servo's output shaft, at its fixed address 0x36 on the sensor bus |
-| AS5600 centre | 0 to 4095 | 0 | the count with the servo at neutral; 4096 counts a turn, 0.0879deg a count |
+| AS5600 centre | 0 to 4095 | 0 | the count with the servo at neutral; 4096 counts a turn, 0.0879° a count |
 
-The encoder needs an IOmcu of 0.15.0 or later. ENC CENTRE on the [servo settings](servo-settings.md#dut) sets the centre from the live reading. The band says when the sensor sees no magnet, `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, or when the magnet is too weak or too strong. A magnet message is said once while the sensor's magnet status stays the same: an edit of another row does not repeat it. Switched off and on again, the sensor says it again.
+The encoder requires IOmcu 0.15.0 or later. ENC CENTRE in [servo settings](servo-settings.md#dut) takes the live reading as centre. The band reports a missing magnet with `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, and also reports weak or strong magnets. Each message appears once while the magnet status is unchanged. Editing another setting does not repeat it; switching the sensor off and on does.
 
 ## The phase tap
 
 ![The phase tap rows](view:setup-tap)
 
-The phase tap hears an ESC's beeps on one motor phase. One IOmcu GPIO reads the phase through a series resistor and a zener clamp. The tap is an input: it drives nothing, and the IOmcu takes a change ARMED or not.
+The phase tap detects ESC beeps on one motor phase. An IOmcu GPIO reads the phase through a series resistor and zener clamp. It is an input and drives no output. The IOmcu accepts changes both while SAFE and ARMED.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -186,7 +186,7 @@ The phase tap hears an ESC's beeps on one motor phase. One IOmcu GPIO reads the 
 | Tap gap | 1 to 100ms | 3 | the silence that ends a beep |
 | Tap min periods | 1 to 64 | 3 | the tone periods that make a beep |
 
-The IOmcu refuses an ADC (analog-to-digital converter) pin, a pin bound to an output, and a pin the sensor bus or the PD mini holds. Tap gap has to be at least one period of Tap lowest tone: 3ms at the default 400Hz, whose period is 2.5ms. A rejected value's message leaves the band once the value is set back to one the IOmcu takes. The run page of [ESC STICK](motor-stick.md) shows the beeps.
+The IOmcu rejects ADC (analog-to-digital converter) pins, output-bound pins, and pins used by the sensor bus or PD mini. Tap gap must cover at least one period of Tap lowest tone: at the default 400Hz, a 2.5ms period requires 3ms. A rejected-value message clears once a valid value is applied. The [ESC STICK](motor-stick.md) run page shows the detected beeps.
 
 Vibration and Optical tacho have stored keys and no entry: no screen or IOmcu reads them in this release.
 
@@ -194,7 +194,7 @@ Vibration and Optical tacho have stored keys and no entry: no screen or IOmcu re
 
 ![SENSORS on the IMU entry, connected](view:setup-sensors-imu)
 
-A WitMotion BWT901CL angle sensor through an HC-05 Bluetooth module on the panel's UART1. The [IMU](imu.md) tile on SETUP scans for it, binds it and calibrates it; this entry holds its settings.
+The WitMotion BWT901CL connects through an HC-05 Bluetooth module on the panel's UART1. Use the [IMU](imu.md) tile on SETUP to scan, bind and calibrate it. This entry contains its settings.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -205,7 +205,7 @@ A WitMotion BWT901CL angle sensor through an HC-05 Bluetooth module on the panel
 | IMU algorithm | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS takes the magnetometer for Z |
 | Angle source | AS5600, IMU | AS5600 | where the servo runs take their angle from ([Servo settings](servo-settings.md)) |
 
-A RATE or ALGORITHM change goes to the sensor with SAVE (`FF AA 00 00 00`) while it is connected. The band says `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. With the sensor not connected it says `RATE IS SENT WHEN THE SENSOR CONNECTS; THEN SWITCH IT OFF AND ON` and sends it when frames come. While the IMU screen's calibration runs it says `RATE IS SENT AFTER CALIBRATION; THEN SWITCH THE SENSOR OFF AND ON` and sends it after the calibration's CALSW 0 and SAVE.
+RATE and ALGORITHM changes are sent with the sensor's SAVE command (`FF AA 00 00 00`). For a connected sensor, the rate message is `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. If disconnected, the panel shows `RATE IS SENT WHEN THE SENSOR CONNECTS; THEN SWITCH IT OFF AND ON` and waits for frames. During IMU calibration it shows `RATE IS SENT AFTER CALIBRATION; THEN SWITCH THE SENSOR OFF AND ON` and defers the change until after CALSW 0 and SAVE.
 
 | State | When |
 |---|---|

@@ -6,19 +6,19 @@ order: 40
 
 # Receiver
 
-RECEIVER shows what a receiver sends on an S.BUS line: sixteen channels with their history, the two digital channels, the frame rate and the decoder's counters. It opens from the RECEIVER tile on the [menu](overview.md). The tile carries the SIMULATED mark in this release.
+RECEIVER displays the data from an S.BUS receiver: sixteen channels with their history, two digital channels, the frame rate and the decoder counters. Open it from the RECEIVER tile on the [menu](overview.md). The tile carries the SIMULATED mark in this release.
 
 ## On the bench: NO SIGNAL
 
 ![The receiver screen with nothing on the wire](view:analyser-silent)
 
-No firmware image feeds this screen in this release. The S.BUS decoder is built and tested, but neither board has a byte source for it. The screen therefore shows NO SIGNAL and `No signal on the wire.`. The lanes are empty, the values read `---`, and RAW DATA reads `No data decoded yet.`.
+Neither board supplies bytes to this screen in this release. The S.BUS decoder is built and tested, but no firmware image connects it to a byte source. The screen therefore shows NO SIGNAL and `No signal on the wire.`. The lanes are empty, the values read `---`, and RAW DATA reads `No data decoded yet.`.
 
 ## What a fed screen shows
 
 ![The receiver screen fed with S.BUS frames in the host renderer](view:analyser)
 
-The pictures in this section come from the host renderer, which feeds the screen with frames. They show what the screen draws once a byte source exists.
+The host renderer supplies frames for the screenshots in this section. They demonstrate how the screen displays data from a byte source.
 
 | Area | Shows |
 |---|---|
@@ -40,11 +40,11 @@ A glitch is a spike in one lane. A dropout is a notch across all sixteen lanes a
 
 ![A receiver in failsafe: every trace red](view:analyser-failsafe)
 
-In FAILSAFE every trace is drawn red. The receiver sends sixteen well-formed values it made up itself. Treat FAILSAFE as a stop, not as sixteen valid channels.
+In FAILSAFE, every trace is red. The receiver sends sixteen well-formed fallback values rather than the transmitter's commands. Treat FAILSAFE as a stop, not as sixteen valid channels.
 
 ## RAW DATA
 
-RAW DATA shows the last frame as hexadecimal bytes, 8 to a row. The header and footer bytes are drawn in the accent colour. Under them: the byte count and the gap the decoder frames on, `25 bytes; a 2000us gap separates frames`, then the resync and bad-tail counts. CHANNELS and RAW DATA switch the left pane.
+RAW DATA shows the last frame as hexadecimal bytes, 8 per row. The header and footer bytes use the accent colour. Below them are the byte count and the gap that separates frames, `25 bytes; a 2000us gap separates frames`, followed by the resync and bad-tail counts. Use CHANNELS and RAW DATA to switch the left pane.
 
 ## Related pages
 

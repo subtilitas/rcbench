@@ -6,18 +6,18 @@ order: 110
 
 # Busfehler
 
-Der Busfehler-Bildschirm sagt, warum Panel und IOmcu nicht über den CAN-Bus (Controller Area Network) miteinander reden. Er öffnet von selbst, in zwei Fällen: Der CAN-Selbsttest beim Start schlägt fehl, oder ein Link, der stand, ist seit 4s weg. Er belegt den ganzen Bildschirm: kein Band und kein STOP. Hinter ihm kann der Prüfstand nicht auf ARMED schalten.
+Die Busfehler-Seite erklärt, warum Panel und IOmcu nicht über den CAN-Bus (Controller Area Network) kommunizieren können. Sie öffnet sich automatisch, wenn der CAN-Selbsttest beim Start fehlschlägt oder eine bestehende Verbindung seit 4s unterbrochen ist. Sie belegt die gesamte Anzeige, ohne Statusband und ohne STOP. Solange die Seite geöffnet ist, kann der Prüfstand nicht auf ARMED schalten.
 
 ## Der Selbsttest beim Start
 
 ![Testframes kommen verändert zurück](view:busfault)
 
-Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200ms lang innerhalb des Splash. Jedes Urteil außer dem, dass alle Testframes unversehrt zurückkamen, öffnet diesen Bildschirm statt des Menüs.
+Das Panel führt bei jedem Start während des Splash einen CAN-Echo-Selbsttest über 1200ms aus. Kommen nicht alle Testframes unversehrt zurück, öffnet sich diese Seite statt des Menüs.
 
-- Die Überschrift ist das Urteil.
-- WAS DAS BEDEUTET sagt es in einer Zeile.
-- PRÜFREIHENFOLGE listet, was zu prüfen ist, die billigste Prüfung zuerst.
-- Die rechte Spalte zeigt, was beide Enden gezählt haben: gesendet, zurück, verändert, verloren.
+- Die Überschrift nennt das Urteil.
+- WAS DAS BEDEUTET erklärt es in einer Zeile.
+- PRÜFREIHENFOLGE listet die Prüfungen auf, beginnend mit dem geringsten Aufwand.
+- Die rechte Spalte zeigt die Zähler an beiden Enden: gesendet, zurück, verändert und verloren.
 
 ![Nichts kam zurück](view:busfault-silent)
 
@@ -28,29 +28,29 @@ Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200ms lang inne
 | `Einige Testframes gingen verloren.` | `Einige Frames gehen verloren. Der Bus meldet Fehler.` | die Abschlüsse, die Buslänge, verdrillte CANH und CANL, einen Stecker |
 | `Testframes gingen ohne Busfehler verloren.` | `Frames kamen korrekt an, wurden aber ungelesen verworfen. Kein Verkabelungsfehler.` | nicht die Leitung; mit den Zahlen rechts melden |
 
-Die Abschlüsse messen bei ausgeschaltetem Prüfstand etwa 60Ω zwischen CANH und CANL. 120Ω heißt, einer der beiden fehlt. Der ganze Bus bleibt unter 5m, jede Stichleitung unter 30cm.
+Miss bei ausgeschaltetem Prüfstand etwa 60Ω zwischen CANH und CANL. Ein Messwert von 120Ω bedeutet, dass einer der beiden Abschlüsse fehlt. Halte die gesamte Buslänge unter 5m und jede Stichleitung unter 30cm.
 
 ## Ein Link, der abbricht
 
-![Panel vom Bus getrennt.](view:busfault-lost)
+![Das Panel ist vom Bus getrennt](view:busfault-lost)
 
-Derselbe Bildschirm öffnet, wenn ein Link, der stand, seit 4s weg ist. Die Überschrift sagt dann, was der eigene CAN-Controller des Panels tut:
+Ist eine bestehende Verbindung seit 4s unterbrochen, öffnet sich dieselbe Seite. Die Überschrift beschreibt dann den Zustand des CAN-Controllers im Panel:
 
 | Überschrift | Bedeutung |
 |---|---|
-| `Panel vom Bus getrennt.` | zu viele Frames blieben unbestätigt; der Controller sendet nichts mehr |
-| `Panel verbindet sich neu.` | er zählt die Ruhezeit, die ein Neuverbinden braucht; 3s warten |
-| `CAN-Controller des Panels ist gestoppt.` | er steht und wurde nicht neu gestartet: ein Fehler in der Firmware des Panels |
-| `Verbindung antwortet nicht mehr.` | der Controller ist am Bus, und nichts antwortet |
-| `Controller-Zustand nicht auslesbar.` | der Treiber läuft nicht; nichts kann gesendet werden |
+| `Panel vom Bus getrennt.` | Zu viele Frames blieben unbestätigt. Der Controller hat das Senden eingestellt. |
+| `Panel verbindet sich neu.` | Der Controller wartet die für die Rückkehr zum Bus nötige Ruhezeit ab. Warte 3s. |
+| `CAN-Controller des Panels ist gestoppt.` | Der Controller ist gestoppt und wurde nicht neu gestartet. Dies ist ein Fehler in der Panel-Firmware. |
+| `Verbindung antwortet nicht mehr.` | Der Controller ist am Bus, erhält aber keine Antwort. |
+| `Controller-Zustand nicht auslesbar.` | Der Treiber läuft nicht; Senden ist nicht möglich. |
 
-Bei ARMED öffnet der Bildschirm nie: Er hat kein STOP. Bei ARMED meldet das Alert-Band, dass der Link weg ist, und der Bildschirm wartet auf das Schalten auf SAFE.
+Die Seite öffnet sich nicht, solange der Prüfstand ARMED ist, da sie kein STOP-Bedienelement hat. Stattdessen meldet das Alarmband die verlorene Verbindung. Die Busfehler-Seite wartet, bis der Prüfstand SAFE ist.
 
-Dieselben Zahlen gehen nach `BENCH/RCBENCH.LOG` auf der SD-Karte (Secure Digital), eine Zeile je Bericht, solange der Link weg ist. Die Datei hält höchstens 1MiB (1.048.576 Bytes): Eine Zeile, die sie darüber brächte, benennt sie in `BENCH/RCBENCH.OLD` um, ersetzt die dort liegende und beginnt eine neue `BENCH/RCBENCH.LOG`. Die Zeilen werden unabhängig von Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD geschrieben.
+Dieselben Zählerstände werden auf der SD-Karte (Secure Digital) in `BENCH/RCBENCH.LOG` geschrieben: eine Zeile je Bericht, solange die Verbindung unterbrochen ist. Die Datei ist auf 1MiB (1.048.576 Bytes) begrenzt. Bevor eine Zeile diese Grenze überschreiten würde, benennt die Aufzeichnung die Datei in `BENCH/RCBENCH.OLD` um und ersetzt eine vorhandene Datei dieses Namens. Anschließend beginnt eine neue `BENCH/RCBENCH.LOG`. Diese Zeilen werden unabhängig von der Einstellung Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD geschrieben.
 
 ## Den Bildschirm verlassen
 
-2s HALTEN ZUM BESTÄTIGEN schließt den Bildschirm, mit der Geste und dem Übergang von ARM. Das Quittieren repariert nichts. Der Prüfstand läuft danach in der Simulation, nichts steuert einen Ausgang an, und der Test läuft beim nächsten Start erneut.
+2s HALTEN ZUM BESTÄTIGEN schließt die Seite mit derselben Haltegeste und demselben Übergang wie ARM. Das Bestätigen behebt den Fehler nicht. Der Prüfstand läuft anschließend in der Simulation und steuert keine Ausgänge an. Beim nächsten Start läuft der Selbsttest erneut.
 
 ## Verwandte Seiten
 

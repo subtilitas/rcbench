@@ -39,38 +39,38 @@ function grid(): SimSettings[] {
 const SIX: SimSettings = { cells: 6, ohms: 470, watts: 2, wiring: 'delta' };
 const OWNER: SimSettings = { cells: 4, ohms: 450, watts: 2, wiring: 'star' };
 
-test('check figure 470 Ω, 6S, delta: the text in English and German', () => {
+test('check figure 470Ω, 6S, delta: the text in English and German', () => {
   const en = simText('en', SIX);
-  assert.equal(en.hot, 'Hottest resistor: 53.6 mA, 1.35 W, 67 % of the rating.');
-  assert.equal(en.rest, 'Other 2 resistors: 26.8 mA, 0.338 W each.');
+  assert.equal(en.hot, 'Hottest resistor: 53.6mA, 1.35W, 67% of its power rating.');
+  assert.equal(en.rest, 'Other 2 resistors: 26.8mA and 0.338W each.');
   assert.equal(en.level?.kind, 'hint');
-  assert.ok(en.level?.text.startsWith('At 67 % of the rating. The rating holds only up to the ambient temperature'));
-  assert.equal(en.basis, 'Worst case: one commutation step held at 25.2 V (6S at 4.2 V per cell). A sensorless ESC cannot commutate on resistors and can hold a step. The ESC also limits the current; this is not modelled.');
+  assert.ok(en.level?.text.startsWith('At 67% of the power rating. This rating applies only up to the ambient temperature'));
+  assert.equal(en.basis, 'Worst case: one commutation step held at 25.2V (6S at 4.2V per cell). A sensorless ESC cannot commutate with a resistive load and may hold one step. Current limiting by the ESC is not included in this model.');
   assert.equal(en.star, null);
   const de = simText('de', SIX);
-  assert.equal(de.hot, 'Heißester Widerstand: 53,6 mA, 1,35 W, 67 % der Belastbarkeit.');
-  assert.equal(de.rest, 'Andere 2 Widerstände: je 26,8 mA, 0,338 W.');
-  assert.ok(de.basis.includes('25,2 V (6S zu 4,2 V je Zelle)'));
-  assert.ok(de.basis.endsWith('Auch der ESC begrenzt den Strom; das ist nicht modelliert.'));
+  assert.equal(de.hot, 'Heißester Widerstand: 53,6mA, 1,35W, 67% seiner Belastbarkeit.');
+  assert.equal(de.rest, 'Andere 2 Widerstände: je 26,8mA und 0,338W.');
+  assert.ok(de.basis.includes('25,2V gehalten (6S mit 4,2V je Zelle)'));
+  assert.ok(de.basis.endsWith('Die Strombegrenzung des ESC ist in diesem Modell nicht berücksichtigt.'));
 });
 
-test('check figure 450 Ω, 16.8 V, star: the text in English and German', () => {
+test('check figure 450Ω, 16.8V, star: the text in English and German', () => {
   const en = simText('en', OWNER);
-  assert.equal(en.hot, 'Hottest 2 resistors: 18.7 mA, 0.157 W each, 7 % of the rating.');
+  assert.equal(en.hot, 'Hottest 2 resistors: 18.7mA and 0.157W each, 7% of their power rating.');
   assert.equal(en.rest, 'Third resistor: no current.');
   assert.equal(en.level, null);
-  assert.ok(en.basis.includes('16.8 V (4S at 4.2 V per cell)'));
-  assert.equal(en.star, 'Star: one end of each resistor goes to A, B or C; the other 3 ends are joined. The drawing shows delta.');
+  assert.ok(en.basis.includes('16.8V (4S at 4.2V per cell)'));
+  assert.equal(en.star, 'Star: connect one end of each resistor to A, B or C, then join the other 3 ends. The drawing shows a delta connection.');
   const de = simText('de', OWNER);
-  assert.equal(de.hot, 'Heißeste 2 Widerstände: je 18,7 mA, 0,157 W, 7 % der Belastbarkeit.');
+  assert.equal(de.hot, 'Heißeste 2 Widerstände: je 18,7mA und 0,157W, 7% ihrer Belastbarkeit.');
   assert.equal(de.rest, 'Dritter Widerstand: kein Strom.');
 });
 
 test('the warning above the rating, the hint from half of it', () => {
   const over = simText('en', { cells: 6, ohms: 100, watts: 0.25, wiring: 'delta' });
   assert.equal(over.level?.kind, 'over');
-  assert.equal(over.level?.text, 'Above the rating of 0.25 W. Choose a higher rating or a higher resistance.');
-  assert.equal(simText('de', { cells: 6, ohms: 100, watts: 0.25, wiring: 'delta' }).level?.text, 'Über der Belastbarkeit von 0,25 W. Eine höhere Belastbarkeit oder einen höheren Widerstand wählen.');
+  assert.equal(over.level?.text, 'Above the power rating of 0.25W. Choose a higher power rating or resistance.');
+  assert.equal(simText('de', { cells: 6, ohms: 100, watts: 0.25, wiring: 'delta' }).level?.text, 'Über der Belastbarkeit von 0,25W. Wähle eine höhere Belastbarkeit oder einen höheren Widerstand.');
   assert.equal(simText('en', DEFAULT_SIM).level, null);
   for (const sim of grid()) {
     const heat = simHeat(sim);
@@ -103,11 +103,11 @@ test('the block: 4 labelled inputs with the values selected, the figures, the wa
     assert.equal((html.match(/<option /g) ?? []).length, 6 + 21 + 6 + 2);
     assert.equal((html.match(/ selected>/g) ?? []).length, 4);
     assert.ok(html.includes(`<option value="4" selected>${packText(lang, 4)}</option>`));
-    assert.ok(html.includes('<option value="470" selected>470 Ω</option>'));
-    assert.ok(html.includes(`<option value="2" selected>2 W</option>`));
+    assert.ok(html.includes('<option value="470" selected>470Ω</option>'));
+    assert.ok(html.includes(`<option value="2" selected>2W</option>`));
     assert.ok(html.includes(`<option value="delta" selected>${lang === 'de' ? 'Dreieck' : 'Delta'}</option>`));
-    assert.ok(html.includes(lang === 'de' ? '<option value="1200">1,2 kΩ</option>' : '<option value="1200">1.2 kΩ</option>'));
-    assert.ok(html.includes(lang === 'de' ? '<option value="0.25">0,25 W</option>' : '<option value="0.25">0.25 W</option>'));
+    assert.ok(html.includes(lang === 'de' ? '<option value="1200">1,2kΩ</option>' : '<option value="1200">1.2kΩ</option>'));
+    assert.ok(html.includes(lang === 'de' ? '<option value="0.25">0,25W</option>' : '<option value="0.25">0.25W</option>'));
     assert.ok(!html.includes('id="sim-over"') && !html.includes('id="sim-hint"') && !html.includes('id="sim-star"'));
   }
   const over = simBlock(view({ cells: 6, ohms: 100, watts: 1, wiring: 'delta' }));
@@ -124,7 +124,7 @@ test('the card of the motor simulator carries the block; a setup without the par
   for (const lang of LANGS) {
     const html = result(view(sim, lang), URL, []);
     assert.equal((html.match(/id="sim"/g) ?? []).length, 1);
-    const name = lang === 'de' ? 'Motorsimulator, selbst gebaut: 3 Widerstände im Stern, 2,2 kΩ, 0,5 W' : 'Motor simulator, self-built: 3 resistors in star, 2.2 kΩ, 0.5 W';
+    const name = lang === 'de' ? 'Motorsimulator, selbst gebaut: 3 Widerstände im Stern, 2,2kΩ, 0,5W' : 'Motor simulator, self-built: 3 resistors in star, 2.2kΩ, 0.5W';
     assert.ok(html.includes(`<b>${name}</b>`), name);
     assert.ok(html.indexOf('id="sim"') > html.indexOf(`<b>${name}</b>`));
     assert.ok(html.indexOf('id="sim"') < html.indexOf('id="h-tested"'));
@@ -142,8 +142,8 @@ test('the parts list, the text and the CSV follow the values', () => {
     const v = view(sim, lang, { functions: ['tap'] });
     const rows = partsList(v).buy.filter((l) => l.part.id === 'sim');
     assert.equal(rows.length, 1);
-    const order = lang === 'de' ? 'Widerstand 1 kΩ, 3 W' : 'Resistor 1 kΩ, 3 W';
-    const check = lang === 'de' ? 'Je 3 W belastbar, nicht weniger.' : 'Rated 3 W each, not less.';
+    const order = lang === 'de' ? 'Widerstand 1kΩ, 3W' : 'Resistor 1kΩ, 3W';
+    const check = lang === 'de' ? 'Je 3W belastbar, nicht weniger.' : 'Rated 3W each, not less.';
     assert.equal(rows[0]!.order, order);
     assert.equal(rows[0]!.check, check);
     assert.equal(rows[0]!.qty, 3);
@@ -166,7 +166,7 @@ test('the PDF names the part for the values and carries the figures under it', (
     const v = view(sim, lang, { functions: ['tap'] });
     const doc = documentModel(v, URL, NOW);
     const items = (id: string): Item[] => doc.sections.find((s) => s.id === id)!.blocks.flatMap((b) => (b.kind === 'list' ? b.items : []));
-    const name = lang === 'de' ? 'Motorsimulator, selbst gebaut: 3 Widerstände im Dreieck, 100 Ω, 1 W' : 'Motor simulator, self-built: 3 resistors in delta, 100 Ω, 1 W';
+    const name = lang === 'de' ? 'Motorsimulator, selbst gebaut: 3 Widerstände im Dreieck, 100Ω, 1W' : 'Motor simulator, self-built: 3 resistors in delta, 100Ω, 1W';
     const card = items('parts').find((i) => i.runs[0]?.text === name);
     assert.ok(card, name);
     const lines = card.lines.map((l) => l.text);
@@ -174,9 +174,9 @@ test('the PDF names the part for the values and carries the figures under it', (
     const text = simText(lang, sim);
     assert.ok(lines.includes(text.hot) && lines.includes(text.rest) && lines.includes(text.level!.text) && lines.includes(text.basis));
     assert.ok(lines.includes(`${lang === 'de' ? 'LiPo-Akku' : 'LiPo pack'}: ${packText(lang, 6)}`));
-    const buy = items('buy').find((i) => i.runs[1]?.text === (lang === 'de' ? 'Widerstand 100 Ω, 1 W' : 'Resistor 100 Ω, 1 W'));
+    const buy = items('buy').find((i) => i.runs[1]?.text === (lang === 'de' ? 'Widerstand 100Ω, 1W' : 'Resistor 100Ω, 1W'));
     assert.ok(buy);
-    assert.ok(!JSON.stringify(doc).includes('470'), 'the PDF names 470 Ω');
+    assert.ok(!JSON.stringify(doc).includes('470'), 'the PDF names 470Ω');
   }
   // The file name names the values: other values, another name.
   assert.notEqual(fileName(view(sim)), fileName(view(DEFAULT_SIM)));

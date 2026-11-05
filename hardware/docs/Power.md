@@ -5,15 +5,15 @@ bench's own pack, and the two monitors that measure what the motor and the
 servo draw. This page records the choice, the alternatives and the stock.
 
 **Availability was checked on 2026-09-01.** Stock figures are not valid after
-that date. Re-check before a layout commits, by the method in
+that date. Check again before committing a layout, using the method in
 [Sourcing](Sourcing.md).
 
 ## Round 1 result
 
-Round 1 of [the research](Research.md) read these parts again on 2026-09-29
+Round 1 of [the research](Research.md) checked these parts again on 2026-09-29
 and selected the power path's parts; [Supply](Supply.md) records each choice,
 its alternatives and its stock, and [Parts](Parts.md) each part's row. The
-comparison below is the one of 2026-09-01 that seeded research categories R6
+comparison below records the 2026-09-01 findings that began research categories R6
 to R8.
 
 | Need | Round 1 result |
@@ -54,7 +54,7 @@ used.
 Each servo rail has two output settings: up to 5.5V for LV (low-voltage)
 servos and up to 8.4V for HV (high-voltage) servos, at 4 to 6.35A. Each
 runs down to the TPS55285's 0.8V to test a servo's brownout behavior (owner,
-2026-09-30). Both are set from software for each rail on its own, and the current limit follows
+2026-09-30). Both settings are controlled separately for each rail in software, and the current limit follows
 the voltage setting. LV and HV servos and an ESC on the multiprotocol ports
 run at the same time (owner, 2026-09-30).
 Each rail's limit goes to 6.35A from the DC input and from the pack alike:
@@ -66,7 +66,7 @@ For one servo 4 to 6.35A is a short peak: a servo that draws it without
 pause burns out. Several servos on one rail can draw it without a time
 limit; an MCP9808T-E/MS beside each TPS55285 switches its rail off when it
 runs hot (owner, 2026-09-30). The continuous current at 6.0V in and 50°C
-is not known; a follow-up of R6 finds it.
+is not known; determining it is assigned to a follow-up of R6.
 
 Three parts of the same TI (Texas Instruments) family, and the MP4246 of
 MPS (Monolithic Power Systems), added by the owner (2026-10-08). The MP4246
@@ -84,15 +84,15 @@ stock was read on 2026-10-08, the others on 2026-09-01:
 All three datasheets state "programmable output current limit up to 6.35A". On
 the '288 and the '289 the register sets a sense voltage, 0 to 63.5mV in 0.5mV
 steps, across a shunt between ISP and ISN; 6.35A is the value with the
-datasheet's 10mΩ example. The ceiling moves with the resistor:
+datasheet's 10mΩ example. The current ceiling depends on the resistor:
 
 | R_sense | Full-scale limit | Step | Dissipation at 8A |
 | --- | --- | --- | --- |
 | 8mΩ | 7.94A | 62.5mA | 0.51W |
 | 6.3mΩ | 10.1A | 79mA | 0.40W |
 
-For the TPS55288, 6.3mΩ in a 1W part gives headroom over 8A. The average inductor current limit is a separate mechanism set by a
-resistor at the ILIM pin and goes to 16A.
+For the TPS55288, 6.3mΩ in a 1W part gives headroom over 8A. The average inductor current limit is separate, is set by a
+resistor at the ILIM pin, and reaches 16A.
 
 On the '285 the sense is internal, so 6.35A is a hard ceiling. It delivers 8A
 but cannot be set to allow 8A; the rail's 6.35A follows from it.
@@ -100,8 +100,8 @@ but cannot be set to allow 8A; the rail's 6.35A follows from it.
 ### MP4246
 
 Figures from the MP4246 datasheet, Rev. 1.0 of 2024-07-16, read from the
-copy LCSC hosts; the MPS site was not reachable, so a later revision is
-not ruled out. Against the servo rails and the adjustable supply:
+copy LCSC hosts; the MPS site was unreachable, so a later revision may
+exist. Comparison with the servo-rail and adjustable-supply requirements:
 
 - **Output floor.** V_out starts at 1V, above the 0.8V the brownout test
   needs. The datasheet gives the ceiling as 22V on its cover and as
@@ -128,20 +128,20 @@ not ruled out. Against the servo rails and the adjustable supply:
 - **Package.** QFN-19, 4 × 5mm; junction −40 to 125°C; thermal shutdown
   at 165°C.
 
-Digi-Key lists the MP4246 as Active (2026-10-08). The stock row above is
-under the 4 a board, 12 for 3 boards, that the TPS55285 covers.
+Digi-Key lists the MP4246 as Active (2026-10-08). Its JLCPCB stock in the table above is
+below the 12 needed for 3 boards at 4 per board, which the held TPS55285 stock covers.
 
 Rejected: MP4245 (36V, 6A peak, I²C) is marked Not For New Designs at
 Digi-Key; the MP4246 above is its sibling with a 22V input and no ADC. MP8859 stops at 3A.
 
 ### Input rail
 
-8.4V at 6.35A is 53.3W out a rail. At 90% efficiency that is 59.3W in:
+8.4V at 6.35A gives 53.3W of output per rail. At 90% efficiency that is 59.3W in:
 4.9A from a 12V input and 3.0A from 20V. The 3 rails at full load draw
 177.8W: 14.8A from 12V and 8.9A from 20V, before the other loads. The
 adjustable supply at 15V and 6.35A delivers 95.3W more; the four draw
-283.6W: 23.6A from 12V and 14.2A from 20V. These are nominal at the
-assumed 90%; the datasheet guarantees no efficiency. The DC input is 12 to 20V (owner, 2026-09-25).
+283.6W: 23.6A from 12V and 14.2A from 20V. These are nominal figures at the
+assumed 90% efficiency; the datasheet guarantees no efficiency. The DC input is 12 to 20V (owner, 2026-09-25).
 
 ## Pack charger: BQ25887 (candidate)
 
@@ -173,7 +173,7 @@ Both are boost chargers off a USB (Universal Serial Bus) input; neither takes
 The charge input is 3A at 5V, 15W (F8). At an assumed 90% efficiency, 13.5
 W reaches the pack: 1.6A at 8.4V and 2.25A at 6.0V. A 2A charger uses the
 whole budget above 6.75V and is limited to 2A below it. A charge current above
-2A splits the function:
+2A requires separate charging and balancing components:
 
 | Part | Role | Balance current | JLCPCB | Digi-Key |
 | --- | --- | --- | --- | --- |
@@ -190,8 +190,8 @@ The owner's choice is one INA3221 channel on each of the 20 output ports; INA322
 analysis below compares the alternatives for one position.
 
 40V, ±35A continuous, 16 bit, with the 800 µΩ shunt inside the package. At 8
-A: 6.4mV drop, 51mW, LSB (least significant bit) about 1.2mA. No shunt to
-lay out, no Kelvin connection, no four-terminal footprint.
+A: 6.4mV drop, 51mW, LSB (least significant bit) about 1.2mA. It needs no external shunt,
+Kelvin connection or four-terminal footprint.
 
 | | INA745A/B | INA238 | INA239 | INA226 |
 | --- | --- | --- | --- | --- |
@@ -208,7 +208,7 @@ to 8A rail is 0.08% against 0.8% of full scale. Digi-Key stocks A; JLCPCB
 stocks B.
 
 Alternatives: INA238 with a 5mΩ shunt gives 40mV at 8A, a 0.25mA LSB and
-0.32W. INA239 is the SPI variant; stock is thin at both vendors. INA226 is a
+0.32W. INA239 is the SPI variant; stock is low at both vendors. INA226 is a
 fifth of the price and in large stock, but has no energy or charge accumulator,
 so consumption would have to be integrated in firmware.
 
@@ -224,8 +224,8 @@ so consumption would have to be integrated in firmware.
 | JLCPCB | 2246 · $4.35 | 29, pre-sale −477 | 0 to 3 |
 | Digi-Key | 0, 2500 due 2026-10-27 | 0, 666 due 2026-11-03 | 0, 2500 due 2026-12-23 |
 
-The owner fixes the INA228 (2026-09-30): it returns to stock soon, as the
-owner states, and the monitor gets no further research. The stock figures
+The owner specifies the INA228 (2026-09-30), states that stock will return soon,
+and excludes the monitor from further research. The stock figures
 above are those of 2026-09-01; the automotive INA228AQDGSRQ1 read JLCPCB none
 and Digi-Key 416 at $3.81 then. The INA238 has the same bus range, the same
 two shunt ranges, the same VSSOP-10 and the same pin order, at 16 bits

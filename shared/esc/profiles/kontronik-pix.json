@@ -14,7 +14,7 @@
       "v_max_mv": 17000,
       "current_a": 40,
       "bec": "switching",
-      "firmware_note": "data given for the PIX 1000/3000 manual: 6-12 NiCd/NiMH cells or 2-4 Li-Ion cells (5.5 to 17 V), BEC 2 A for 4 servos, 45 A for 15 s",
+      "firmware_note": "data given for the PIX 1000/3000 manual: 6-12 NiCd/NiMH cells or 2-4 Li-Ion cells (5.5 to 17V), BEC 2A for 4 servos, 45A for 15s",
       "spec_source": "Kontronik_Pix1000_3000.pdf p.6: 6-12 NiCd/NiMH cells; also 2-4 Li-Ion cells, 5.5-17 V; 40 A continuous"
     },
     {
@@ -62,14 +62,14 @@
     {
       "when": "before_menu",
       "action": "Press the button marked Taster on the label after 2s or the tone sequence.",
-      "action_de": "Taster mit der Aufschrift Taster nach 2s oder der Tonfolge drücken.",
+      "action_de": "Drücke nach 2s oder der Tonfolge den Taster mit der Aufschrift Taster.",
       "starts_menu": true,
       "source": "Kontronik_Pix1000_3000.pdf p.4 (DE), p.10 (EN); Kontronik_Pix4000.pdf p.4"
     },
     {
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
-      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "action_de": "Berühre nichts. Warte, bis der ESC den Modus als Töne vollständig wiederholt hat, und tippe dann ERLEDIGT.",
       "source": "Kontronik_Pix1000_3000.pdf p.4-5; Kontronik_Pix4000.pdf p.4-5"
     }
   ],
@@ -86,7 +86,7 @@
         "Wait 2s or until the ESC sounds an ascending tone sequence.",
         "Operator: press and release the button marked 'Taster' on the ESC label.",
         "The ESC sounds a descending tone sequence, then the mode series with pauses between series (mode 7 after 7 tones, mode 9 after 9 tones).",
-        "Move the throttle to full (stick forward) when the wanted mode sounds. The ESC confirms with a descending tone sequence.",
+        "Move the throttle to full (stick forward) when the desired mode sounds. The ESC confirms with a descending tone sequence.",
         "Mode 2 only: move the throttle to the brake position (stick back); the ESC confirms with a descending sequence. Then optionally move to a separate motor-off position (stick middle); the ESC confirms again.",
         "Control output: the mode is repeated as tones. Disconnect power."
       ]
@@ -104,7 +104,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the throttle to full when the wanted mode sounds."
+      "description": "Move the throttle to full when the desired mode sounds."
     },
     "skip": {
       "throttle": "none",
@@ -114,7 +114,7 @@
     "exit": "Disconnect power after the control output.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Program mode 1 (APM); it clears all settings.",
-    "description": "Throttle at brake, power on, wait 2 s or until the ascending sequence, press the ESC button. The ESC counts modes as tones. Full throttle at the wanted mode stores it. Modes 7 and 9 are added on top of another stored mode."
+    "description": "Throttle at brake, power on, wait 2s or until the ascending sequence, press the ESC button. The ESC counts modes as tones. Full throttle at the desired mode stores it. Modes 7 and 9 are added on top of another stored mode."
   },
   "items": [
     {
@@ -156,9 +156,9 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2s minimum; the end of the wait is the ESC's tone sequence.",
     "Model-specific data of PIX 1000, 3000 and 4000 differ in the type names only; the manuals print one data set.",
     "Position of the button on the ESC is given only as the 'Taster' label."
   ],

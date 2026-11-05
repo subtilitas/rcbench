@@ -668,12 +668,12 @@ def main() -> int:
                     help="fail if the STATUS.md table or a README figure "
                          "would change")
     ap.add_argument("--json", type=pathlib.Path,
-                    help="also write the raw numbers here")
+                    help="also write the measurement data to this file")
     ap.add_argument("--skip-build", action="store_true",
                     help="reuse an existing instrumented build")
     ap.add_argument("--from-json", type=pathlib.Path,
-                    help="render the table from the raw numbers of --json "
-                         "(CI's coverage artifact) instead of measuring")
+                    help="render the table from the --json measurement data "
+                         "(CI coverage artifact) without measuring again")
     args = ap.parse_args()
 
     if args.from_json:

@@ -2,26 +2,27 @@
 
 <sub>[English](OpenYGE.md) · **Deutsch**</sub>
 
-Spezifikation des Protokolls: Frameformat, Telemetrie-Payload,
-Parameterzugriff und Statuskodierung, mit der Arithmetik, die eine Umsetzung
-braucht.
+Diese Spezifikation beschreibt Frameformat, Telemetrie-Payload,
+Parameterzugriff und Statuskodierung einschließlich der Berechnungen,
+die eine Implementierung benötigt.
 
-> **Maßgeblich ist die englische Seite.** Diese Übersetzung gibt jedes Feld,
-> jeden Namen und jeden Wert unverändert wieder, aber die Spezifikation geht in
-> dieser Form zu YGE zur Prüfung, und wer daraus implementiert, sollte im
-> Zweifel dort nachsehen: zwei Fassungen eines Byte-Layouts können sich
-> widersprechen, und nur eine kann recht haben.
+> **Maßgeblich ist die englische Seite.** Diese Übersetzung übernimmt
+> alle Felder, Namen und Werte. Die englische Fassung ist für die Prüfung
+> durch YGE vorgesehen. Ziehe sie bei der Implementierung im Zweifel
+> heran, damit widersprüchliche Fassungen eines Byte-Layouts nicht zu
+> unterschiedlichen Implementierungen führen.
 
-> Die Implementierung wird in einem eigenen Repository verfolgt. Diese Seite
-> ist die Spezifikation von Rang; sie geht zur Prüfung an YGE. Der Codec unter
-> `protocols/openyge/` ist gebaut und getestet, aber nicht in die Firmware
-> eingebunden.
+> Die Implementierung wird in einem separaten Repository entwickelt.
+> Diese Seite gehört zur maßgeblichen Spezifikation für die Prüfung
+> durch YGE. Der Codec unter `protocols/openyge/` ist gebaut und getestet,
+> aber nicht an die Firmware angebunden.
 
-**° markiert eine erschlossene Bedeutung.** Diese Einträge stammen aus dem
-Feldnamen und aus üblicher Praxis bei ESCs (Electronic Speed Controller,
-Motorregler), nicht aus einer verbindlichen Quelle. Abschnitt 8 listet auf,
-was eine Messung oder eine Antwort braucht. ° und Abschnitt 8 zusammen sind
-alles, was auf dieser Seite unsicher ist.
+**° markiert eine erschlossene Bedeutung.** Diese Einträge beruhen auf
+Feldnamen und üblicher Praxis bei ESCs (Electronic Speed Controller,
+Motorregler), nicht auf einer verbindlichen Quelle. Abschnitt 8 nennt
+die Punkte, die durch Messungen oder Auskünfte geklärt werden müssen.
+Die Markierung ° und Abschnitt 8 kennzeichnen zusammen alle unsicheren
+Angaben dieser Seite.
 
 ## 1. Bitübertragungsschicht
 
@@ -91,9 +92,10 @@ Polynom, anderer Seed:
 | OpenYGE | 0x1021 | 0x0000 | keine | keiner | 0x31C3 |
 | rcbench-Link-CRC (`link_crc`) | 0x1021 | 0xFFFF | keine | keiner | 0x29B1 |
 
-`protocols/openyge` bringt die eigene Routine `openyge_crc()` mit, das Modul
-bindet also nichts vom Link ein. Die Host-Suite hält sie am Prüfwert und an
-`link_crc()` mit Seed 0, bei jeder Framelänge von 0 bis 140 Bytes.
+`protocols/openyge` enthält die eigene Routine `openyge_crc()` und ist
+damit unabhängig vom Link-Modul. Die Host-Suite vergleicht sie mit dem
+Prüfwert und mit `link_crc()` bei Seed 0, für jede Framelänge von
+0 bis 140 Bytes.
 
 ---
 
@@ -107,14 +109,15 @@ bindet also nichts vom Link ein. Die Host-Suite hält sie am Prüfwert und an
 | 0x04 | `WRITE_PARAM_RESP` | ESC | quittiert ein Parameterschreiben; trägt zugleich Telemetrie |
 | 0x05 | `WRITE_PARAM_REQ` | Master | einen Parameter schreiben |
 
-Anfragen tragen die 4-Byte-Control-Payload aus Abschnitt 5.2. Jeder Frame vom
-ESC zum Master trägt die vollständige Telemetrie-Payload aus Abschnitt 4, die
-Quittung eines Parameterschreibens eingeschlossen.
+Anfragen enthalten die 4-Byte-Control-Payload aus Abschnitt 5.2. Jeder
+Frame vom ESC zum Master enthält die vollständige Telemetrie-Payload
+aus Abschnitt 4. Das gilt auch für die Bestätigung eines
+Parameterschreibvorgangs.
 
 Das Ausgangsmaterial gibt an, dass Bit 7 von `frame_type` ein Schreiben
 markiert (0x81 für ein Parameter-Update). Keiner der gelisteten Werte benutzt
-es. `frame_type` als schlichte Aufzählung behandeln und alles Ungelistete
-abweisen; ob Bit 7 reserviert ist, ist eine Frage an YGE.
+es. Behandle `frame_type` als Aufzählung und lehne nicht aufgeführte
+Werte ab. Ob Bit 7 reserviert ist, muss YGE klären.
 
 ---
 
@@ -145,11 +148,11 @@ v3-Telemetrieframe hat 34 Bytes, ein Legacy-Frame 32.
 | 22 | 28 | u16 | `pidx` | | Parameterindex, Abschnitt 5 |
 | 24 | 30 | u16 | `pdata` | | Parameterwert, Abschnitt 5 |
 
-Jedes 16-Bit-Feld landet bei beiden Headerlängen auf einem geraden Offset.
-Darauf verlassen darf man sich nicht: Byte für Byte parsen. Einen Puffer auf
-eine Struktur zu casten setzt Little-Endian und fehlendes Padding voraus und
-führt unausgerichtete Zugriffe aus, die auf Architekturen mit strikter
-Ausrichtung Undefined Behaviour sind.
+Jedes 16-Bit-Feld liegt bei beiden Headerlängen auf einem geraden Offset.
+Parse trotzdem Byte für Byte. Ein Cast des Puffers auf eine Struktur
+setzt Little-Endian und eine Struktur ohne Padding voraus. Außerdem
+können unausgerichtete Zugriffe entstehen, die auf Architekturen mit
+strikten Ausrichtungsanforderungen undefiniertes Verhalten haben.
 
 ### Skalierung von `rpm`
 
@@ -171,20 +174,20 @@ Das Protokoll liest und schreibt die Konfiguration des ESC.
 
 ### 5.1 Übertragung: ein Parameter je Frame
 
-Jeder Telemetrieframe trägt ein Paar `(pidx, pdata)`; der ESC geht seine
-Tabelle selbst durch, der Master sammelt. Ein Master baut die Tabelle auf,
-indem er jedes Paar zwischenspeichert, Parameter 0 (die Parameteranzahl)
-liest und die Tabelle erst dann als vollständig behandelt, wenn jeder Index
-`0 … count−1` gesehen wurde.
+Jeder Telemetrieframe enthält ein Paar `(pidx, pdata)`. Der ESC
+durchläuft seine Tabelle, und der Master speichert jedes Paar
+zwischen. Parameter 0 nennt die Parameteranzahl. Die Tabelle ist erst
+vollständig, wenn der Master jeden Index `0 … count−1` empfangen hat.
 
-Bei 20Hz und 32 Parametern dauert das etwa 1,6s. Als Fortschritt anzeigen;
-eine unvollständige Tabelle nie als die Einstellungen des ESC ausgeben.
+Bei 20Hz und 32 Parametern dauert das etwa 1,6s. Zeige währenddessen
+den Fortschritt an. Gib eine unvollständige Tabelle nicht als die
+Einstellungen des ESC aus.
 
-- Solange Schreibvorgänge offen sind, keine zwischengespeicherten Werte mehr
-  übernehmen, sonst überschreibt ein Frame, der schon unterwegs ist, den
-  neuen Wert.
-- Steht ein Schreiben an, die ganze Tabelle zurückziehen und erst wieder
-  veröffentlichen, wenn jeder Index neu gelesen ist.
+- Übernimm keine Cache-Werte, solange Schreibvorgänge ausstehen. Sonst
+  kann ein bereits unterwegs befindlicher Frame den neuen Wert
+  überschreiben.
+- Ziehe die gesamte Tabelle zurück, sobald ein Schreiben geplant ist.
+  Stelle sie erst wieder bereit, wenn jeder Index neu gelesen wurde.
 
 Der Cache in `protocols/openyge/` ist durch eine 64-Bit-Bitmap auf 64 Parameter
 begrenzt; die aktuelle Firmware hat 32.
@@ -208,9 +211,10 @@ Warteschlange einzelner Schreibvorgänge.
 Nach Funktion gruppiert. Die Indizes sind die auf der Leitung beobachteten;
 ° markiert eine aus dem Namen erschlossene Bedeutung.
 
-Die Indizes vor dem Schreiben auf einen echten ESC bestätigen. Lesen ist
-gefahrlos: alle Indizes lesen, eine Einstellung in YGEs eigenem Werkzeug
-ändern, erneut lesen; der Index, der sich bewegt hat, ist der gemeinte.
+Bestätige die Indizes vor dem Schreiben auf einen echten ESC. Lies
+zur Zuordnung zunächst alle Werte aus, ändere eine Einstellung mit
+YGEs eigenem Werkzeug und lies die Werte erneut aus. Der geänderte
+Index gehört zu dieser Einstellung.
 
 Die Kommentare der Referenz sind um 26–28 falsch nummeriert (drei
 aufeinanderfolgende Einträge tragen die 26), also ist mindestens einer der
@@ -292,7 +296,7 @@ Die Einheiten sind vermutlich Mikrosekunden ° .
 
 ## 6. `status1`
 
-Ein Byte mit einem Motorzustand und einem Satz Warnungen.
+Dieses Byte enthält den Motorzustand und die Warnungen.
 
 ### Unteres Nibble: Motorzustand
 
@@ -324,11 +328,12 @@ Zahl angezeigt.
 
 Die Kodierung ist doppelt belegt: `0x80 | 0x40` (BEC-Überstrom) kann nicht
 vorkommen, und diese Kombination bedeutet Sollwertrauschen, ein gestörtes
-Eingangssignal. In dieser Reihenfolge decodieren:
+Eingangssignal. Dekodiere in dieser Reihenfolge:
 
 1. Oberes Nibble genau `0xC0`: Sollwertrauschen. Ende.
-2. Sonst wählt Bit 0x80 das Subjekt: gesetzt BEC, gelöscht ESC.
-3. Die Bits 0x10 / 0x20 / 0x40 sind die Warnungen dieses Subjekts.
+2. Andernfalls wählt Bit 0x80 die betroffene Komponente: gesetzt BEC,
+   gelöscht ESC.
+3. Die Bits 0x10 / 0x20 / 0x40 zeigen die Warnungen dieser Komponente.
 
 ### Warnungen im Kontext des Zustands
 
@@ -348,8 +353,8 @@ abgeschalteter Leistung.
 
 ## 7. Fehler im Referenzcode
 
-Sechs Stellen, an denen Referenzimplementierung und Protokoll
-auseinandergehen. Eine daraus abgeschriebene Umsetzung erbt alle sechs.
+An sechs Stellen weicht die Referenzimplementierung vom Protokoll ab.
+Wer sie unverändert übernimmt, übernimmt auch diese Fehler.
 
 | | |
 | --- | --- |
@@ -360,10 +365,10 @@ auseinandergehen. Eine daraus abgeschriebene Umsetzung erbt alle sechs.
 | 5. Struct-Cast über den Empfangspuffer | setzt Little-Endian, fehlendes Padding und ausgerichtete Zugriffe voraus |
 | 6. Falsch nummerierte Parameterkommentare | drei aufeinanderfolgende Einträge tragen die 26 |
 
-Die Referenz synchronisiert sich neu, indem sie ihren Puffer Byte für Byte
-verwirft. Der Decoder in `protocols/openyge/` prüft jeden Sync-Kandidaten und
-nimmt den frühesten vollständigen Frame; so wird ein Frame zurückgewonnen, der
-hinter Rauschen mit einem plausiblen Sync ankommt.
+Die Referenz verwirft zur Resynchronisation einzelne Pufferbytes. Der
+Dekoder in `protocols/openyge/` prüft jeden Sync-Kandidaten und übernimmt
+den frühesten vollständigen Frame. So kann er einen Frame auch dann
+erkennen, wenn davor Rauschen mit einem plausiblen Sync liegt.
 
 ---
 
@@ -390,14 +395,15 @@ hinter Rauschen mit einem plausiblen Sync ankommt.
 
 ## 9. Stand in rcbench
 
-Keines der beiden Boards führt das Protokoll aus: das IOmcu-Image bindet das
-Modul ein, das Panel-Image nicht, und nichts ruft es auf. Der Entwurf legt es auf den
-IOmcu: eine Anfrage-Antwort-Schleife mit 20Hz, einer
-Umschaltzeit im Mikrosekundenbereich und einem Timeout, das feuert, ob Bytes
-kommen oder nicht. Das Panel sähe das Ergebnis als `bench_state` über das
-Page-Protokoll; kein OpenYGE-Frame überquerte den Panel-Link. Ein Gaskommando
-reiste als Schreiben auf die Control-Page hinter dem Heartbeat und dem Failsafe
-des IOmcu ([Sicherheit](Safety-de.md)).
+Keine der beiden Platinen führt das Protokoll aus. Das IOmcu-Image
+bindet das Modul ein, das Panel-Image nicht; keines ruft es auf. Der
+Entwurf sieht die Verarbeitung auf dem IOmcu vor: eine
+Anfrage-Antwort-Schleife mit 20Hz, Umschaltzeiten im Mikrosekundenbereich
+und einen Timeout, der auch ohne eintreffende Bytes abläuft. Das Panel
+würde das Ergebnis als `bench_state` über das Page-Protokoll erhalten.
+OpenYGE-Frames blieben auf der IOmcu-Seite. Gaskommandos würden als
+Schreibzugriffe auf die Control-Page übertragen und unterlägen dem
+Heartbeat und dem Failsafe des IOmcu ([Sicherheit](Safety-de.md)).
 
 Ein YGE-ESC meldet Spannung, Strom, Verbrauch, eRPM und vier Temperaturen
 selbst, sodass jedes modellierte Feld von `bench_state` eine Quelle hat, bevor

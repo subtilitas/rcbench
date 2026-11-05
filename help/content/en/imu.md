@@ -6,20 +6,20 @@ order: 66
 
 # IMU
 
-IMU is the screen of the Bluetooth IMU (inertial measurement unit): a WitMotion BWT901CL angle sensor on a control surface, which reaches the panel through an HC-05 Bluetooth module on the panel's UART1. It opens from the IMU tile on [Setup](setup.md); its home tag leads back there. The screen drives no output. Its settings are on the IMU entry of [Sensors](setup-sensors.md#the-imu). The wiring and the HC-05's set-up are on the wiki page [The Bluetooth IMU](https://github.com/subtilitas/rcbench/wiki/IMU).
+The IMU screen controls a Bluetooth inertial measurement unit: a WitMotion BWT901CL angle sensor mounted on a control surface. An HC-05 Bluetooth module connects it to the panel's UART1 (universal asynchronous receiver/transmitter). Open the screen from the IMU tile on [Setup](setup.md); the home tag returns there. This screen drives no outputs. Its settings are in the IMU entry of [Sensors](setup-sensors.md#the-imu). See [The Bluetooth IMU](https://github.com/subtilitas/rcbench/wiki/IMU) for wiring and HC-05 setup.
 
 ![IMU with the HC-05 answering and no sensor bound](view:imu)
 
-| Control | What it does |
+| Control | Function |
 |---|---|
-| SCAN FOR SENSORS | opens the found list and starts a scan; it takes a press while the HC-05 answers and no scan, bind or calibration runs |
-| CONNECT TO ANY SENSOR | only after the HC-05 refused a scan with `ERROR:(1F)`: sets it to connect to any sensor that takes PIN 1234 (`AT+CMODE=1`) |
-| HOLD 2s: CALIBRATE ACCELEROMETER | while connected: the sensor's accelerometer calibration. Keep it still and level for the 3s the line counts down |
-| ZERO | takes the current angles as zero; while a reading is there. With ANGLE SOURCE IMU, RUDDER drops its zero and MAX |
-| CLEAR ZERO | the angles from the sensor's own zero again |
-| IMU SETTINGS | opens the IMU entry of [Sensors](setup-sensors.md#the-imu); its home tag comes back here |
+| SCAN FOR SENSORS | opens the device list and starts a scan; available while the HC-05 responds and no scan, binding or calibration is running |
+| CONNECT TO ANY SENSOR | available after the HC-05 refuses a scan with `ERROR:(1F)`; configures it to connect to any sensor that accepts PIN 1234 (`AT+CMODE=1`) |
+| HOLD 2s: CALIBRATE ACCELEROMETER | starts accelerometer calibration while connected; keep the sensor still and level during the 3s countdown |
+| ZERO | uses the current angles as zero when a reading is available; with ANGLE SOURCE IMU, this clears RUDDER's zero and MAX |
+| CLEAR ZERO | restores angles relative to the sensor's own zero |
+| IMU SETTINGS | opens the IMU entry of [Sensors](setup-sensors.md#the-imu); its home tag returns here |
 
-A press of the hold shorter than 2s starts nothing, and the band says `Hold 2s to calibrate the accelerometer.`.
+A press shorter than 2s does not start calibration. The band shows `Hold 2s to calibrate the accelerometer.`.
 
 ## The card
 
@@ -34,13 +34,13 @@ A press of the hold shorter than 2s starts nothing, and the band says `Hold 2s t
 | RATE, AGE | the angle frames of the last second, and the time since the newest reached the screen |
 | BATTERY | the sensor's battery, from its 0x52 frame; hidden above 6.0V |
 
-The reading is stale 300ms after the last angle frame. A servo run with ANGLE SOURCE IMU rides through a gap of up to 300ms once per 10s, as through the AS5600's ([Servo settings](servo-settings.md)). A longer gap ends the run as `IMU not answering`, a second within 10s as `IMU dropped out twice in 10s`.
+A reading becomes stale 300ms after the last angle frame. With ANGLE SOURCE IMU, a servo run tolerates one gap of up to 300ms per 10s, as it does with the AS5600 ([Servo settings](servo-settings.md)). A longer gap ends the run with `IMU not answering`; a second gap within 10s ends it with `IMU dropped out twice in 10s`.
 
 ## Scan and bind
 
 ![Three devices found](view:imu-scan)
 
-A scan takes up to 40s: 11.5s of inquiry, then the name of each device found, up to 8. A tap on a device binds the HC-05 to it with PIN 1234 and closes the list; the HC-05 then restarts and connects to it. SETUP keeps the address and the name and asks for a save. SCAN AGAIN starts another scan; CLOSE and the home tag close the list.
+A scan takes up to 40s: an 11.5s inquiry followed by name requests for up to 8 devices. Tap a device to bind the HC-05 to it with PIN 1234 and close the list. The HC-05 then restarts and connects to that device. SETUP keeps the address and name and requests a save. SCAN AGAIN repeats the scan; CLOSE or the home tag closes the list.
 
 | Line | Meaning |
 |---|---|

@@ -11,7 +11,7 @@
       "v_max_mv": 25200,
       "current_a": 40,
       "bec": null,
-      "firmware_note": "Burst 45 A; BEC 5-7.4 V, 5 A (type not stated); NiCd/NiMH 6-18 cells; S.BUS2 telemetry",
+      "firmware_note": "Burst 45A; BEC 5-7.4V, 5A (type not stated); NiCd/NiMH 6-18 cells; S.BUS2 telemetry",
       "cell_type": "lipo",
       "spec_source": "Robbe_Roxxy_BL-Smart_940-6.pdf p.2"
     }
@@ -32,7 +32,7 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 8000,
-      "confirm_signal": "Long beep about 4 s after power-up, melody (5-6-5) about 4 s later.",
+      "confirm_signal": "Long beep about 4s after power-up, melody (5-6-5) about 4s later.",
       "steps": [
         "Receiver connected, transmitter on, throttle forward (full).",
         "Connect power: after about 4s a long beep.",
@@ -63,7 +63,7 @@
     "exit": "Parameter 8 (8 beeps), then stick to stop: melody 6-5-6; switch the ESC off.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Parameter 7 (7 beeps) resets all data; the sub-menu behaviour is not described.",
-    "description": "Full throttle at power-up gives a long beep after about 4 s and melody 5-6-5 after 4 s more. Parameters 1 to 8 loop as 1 to 8 beeps. Stick to stop while the wanted parameter sounds opens its options (N beeps for option N); full throttle stores the option with melody 5-6-5. Parameter 8 exits."
+    "description": "Full throttle at power-up gives a long beep after about 4s and melody 5-6-5 after 4s more. Parameters 1 to 8 loop as 1 to 8 beeps. Stick to stop while the desired parameter sounds opens its options (N beeps for option N); full throttle stores the option with melody 5-6-5. Parameter 8 exits."
   },
   "items": [
     {
@@ -149,7 +149,7 @@
       ],
       "applies_to": null,
       "source_page": "3-4",
-      "note": "LiPo 3.0/3.1/3.2 V per cell; NiCd/NiMH 25%/50%/60% of start voltage (minimum 4.6 V); LiFe 2.5/2.8/2.9 V per cell."
+      "note": "LiPo 3.0/3.1/3.2V per cell; NiCd/NiMH 25%/50%/60% of start voltage (minimum 4.6V); LiFe 2.5/2.8/2.9V per cell."
     },
     {
       "number": 5,

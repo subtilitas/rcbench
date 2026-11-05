@@ -6,7 +6,9 @@ order: 51
 
 # WLAN
 
-WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der SD-Karte (Secure Digital) zum Herunterladen und zum Ändern, so weit [Schreiben per Browser](#schreiben-per-browser) es erlaubt, und ein Firmware-Image des Panels zum Hochladen. Der Bildschirm öffnet von seiner Kachel auf [SETUP](setup.md), von der Taste WI-FI auf [LOGS](logs.md) und von der Taste auf [Updates](updates.md). Sein Home-Tag führt zu dem zurück, der ihn geöffnet hat. Über der Netzwerkliste oder einer Tastatur führt es zuerst eine Ebene zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu behalten, und von der Liste zu den Tasten. Über der Frage zu einem hochgeladenen Image ist es ABBRECHEN: Das Image wird verworfen, und der Bildschirm bleibt; ein zweites Tippen, solange das Image noch da ist, verlässt ihn. Das Funkmodul läuft nur, solange dieser Bildschirm offen ist: Das Home-Tag, das ihn verlässt, schaltet es aus. Bei jedem Start des Panels ist es aus.
+WI-FI ermöglicht den Browserzugriff auf das Panel. Du kannst Dateien der SD-Karte (Secure Digital) herunterladen, sie gemäß [Schreiben per Browser](#schreiben-per-browser) bearbeiten und Panel-Firmware hochladen. Öffne WI-FI über [SETUP](setup.md), [LOGS](logs.md) oder [Updates](updates.md). Das Home-Feld führt zur aufrufenden Seite zurück.
+
+In Netzwerkliste und Tastatur wirkt Home wie ABBRECHEN: Die Tastatureingabe wird verworfen, die Liste erscheint; von dort geht es zu den Haupttasten zurück. Bei einer Rückfrage zum hochgeladenen Image verwirft Home das Image und bleibt auf WI-FI. Ein zweiter Tipp, während das Image noch vorhanden ist, verlässt die Seite. Dabei schaltet das Funkmodul aus. Auch bei jedem Panelstart ist es ausgeschaltet.
 
 ## Der Startbildschirm
 
@@ -20,15 +22,15 @@ WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der
 | HEIMNETZ LÖSCHEN | löscht das gespeicherte Netz und schaltet den Zugangscode wieder ein; grau, solange keins gespeichert ist |
 | ZUGANGSCODE: EIN, AUS | ob die Browserseite nach dem Zugangscode fragt |
 | HOTSPOT-PASSWORT: ZUFALL, FEST | öffnet das [Hotspot-Passwort](#hotspot-passwort-und-zugangscode) |
-| ZUGANGSCODE: ZUFALL, FEST | öffnet den [Web-Code](#hotspot-passwort-und-zugangscode) |
+| ZUGANGSCODE: ZUFALL, FEST | öffnet den [Zugangscode](#hotspot-passwort-und-zugangscode) |
 
 ## Wenn das Funkmodul nicht starten darf
 
 ![Das Funkmodul darf nicht starten, nachdem es bei einem Schalten auf ARMED ausging](view:wifi-blocked)
 
-Das Funkmodul startet nur mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne offenen Log-Lauf. Sonst sind die Tasten, die es starten, grau, und die Karte sagt, was fehlt. Auf dem rbmod-Carrier zählen die 5V der Programmierports, GPIO 21, ebenfalls als Netzteilausgang: solange ein Programmer einen Port hält und bis SUPPLY sie als `AUS` liest.
+Das Funkmodul benötigt SAFE, einen ausgeschalteten Netzteilausgang und keine offene Aufzeichnung. Andernfalls sind die Starttasten grau, und die Karte nennt den Grund. Auf dem rbmod-Carrier zählt die 5V-Schiene der Programmierports an GPIO 21 ebenfalls als Netzteilausgang. Sie sperrt WLAN, solange eine Servoprogrammierung einen Port belegt und bis SUPPLY die Schiene als `AUS` meldet.
 
-Das Funkmodul geht von selbst aus, und die Karte nennt den Grund in einer Zeile:
+Das Funkmodul schaltet in folgenden Fällen selbstständig aus; die Karte nennt den Grund:
 
 | Zeile | Ursache |
 |---|---|
@@ -40,13 +42,13 @@ Das Funkmodul geht von selbst aus, und die Karte nennt den Grund in einer Zeile:
 | `WLAN nach 16 falschen Zugangscodes ausgeschaltet.` | 16 falsche Codes auf der Seite |
 | `WLAN konnte nicht starten.` | das Funkmodul ließ sich nicht starten |
 
-Das Verlassen des Bildschirms schaltet das Funkmodul ebenfalls ab. Der Link zum IOmcu und der Heartbeat laufen wie auf jedem anderen Bildschirm.
+Auch das Verlassen der Seite schaltet das Funkmodul aus. Verbindung zum IOmcu und Heartbeat laufen wie auf allen anderen Seiten weiter.
 
 ## WLAN-HOTSPOT
 
 ![Der Access Point läuft](view:wifi-ap)
 
-WLAN-HOTSPOT startet das eigene Netz des Panels. Der Bildschirm zeigt, was ein Telefon oder ein Computer braucht.
+WLAN-HOTSPOT startet das eigene Netzwerk des Panels. Die Seite zeigt die Zugangsdaten für Telefon oder Computer.
 
 | Eintrag | Wert |
 |---|---|
@@ -58,9 +60,9 @@ WLAN-HOTSPOT startet das eigene Netz des Panels. Der Bildschirm zeigt, was ein T
 | IP-Adresse | `http://192.168.4.1/` |
 | Reichweite | nicht gemessen |
 
-1. Am Telefon oder Computer das Netz verbinden, das der Bildschirm nennt, mit dem Passwort, das er zeigt.
-2. `http://192.168.4.1/` öffnen.
-3. Den Zugangscode eingeben, den der Bildschirm zeigt.
+1. Verbinde Telefon oder Computer mit dem angezeigten Netzwerk und Passwort.
+2. Öffne `http://192.168.4.1/`.
+3. Gib den auf dem Panel angezeigten Zugangscode ein.
 
 ## HOTSPOT-PASSWORT und ZUGANGSCODE
 
@@ -69,13 +71,13 @@ WLAN-HOTSPOT startet das eigene Netz des Panels. Der Bildschirm zeigt, was ein T
 ![Die Ansicht eines festen Werts](view:wifi-kept-pass-set)
 ![Die Ansicht des Zugangscodes](view:wifi-kept-code)
 
-HOTSPOT-PASSWORT ist das Passwort des Netzes, das WLAN-HOTSPOT startet. ZUGANGSCODE ist der Zugangscode, nach dem die Browserseite fragt. Jeder ist ZUFALL, bei jedem Start des Funks neu, oder ein Wert, den du eingibst und der Neustarts überdauert.
+HOTSPOT-PASSWORT schützt das Netzwerk von WLAN-HOTSPOT. ZUGANGSCODE regelt den Zugang zur Browserseite. Beide können bei jedem Funkstart neu erzeugt werden (ZUFALL) oder als eingegebener Wert Neustarts überdauern.
 
-- WERT EINGEBEN öffnet die Tastatur: 8 bis 63 Zeichen, Buchstaben, Ziffern, Leerzeichen und Satzzeichen.
-- ZURÜCK AUF ZUFALL braucht ein Tippen und keine Eingabe. Die Taste ist grau, solange der Wert ZUFALL ist.
-- Eine Änderung gilt ab dem nächsten WLAN-Start.
-- Jede Ansicht zeigt ihren Wert, also lässt sich ein fester Wert am Panel ohne Browser lesen und zurücksetzen. HEIMNETZ LÖSCHEN behält beide.
-- Das Panel nimmt keinen Screenshot auf, solange es einen festen Wert zeigt.
+- WERT EINGEBEN öffnet die Tastatur für 8 bis 63 Zeichen: Buchstaben, Ziffern, Leer- und Satzzeichen.
+- Tippe auf ZURÜCK AUF ZUFALL, um ohne Eingabe zur Zufallserzeugung zu wechseln. Bei ZUFALL ist die Taste grau.
+- Änderungen gelten ab dem nächsten WLAN-Start.
+- Beide Werte lassen sich auf dem Panel anzeigen und zurücksetzen, ohne Browser. HEIMNETZ LÖSCHEN behält sie.
+- Solange ein fester Wert sichtbar ist, nimmt das Panel keinen Screenshot auf.
 
 ![Die Tastatur eines festen Werts](view:wifi-key-kept)
 ![Weniger als 8 Zeichen](view:wifi-key-kept-short)
@@ -85,13 +87,13 @@ HOTSPOT-PASSWORT ist das Passwort des Netzes, das WLAN-HOTSPOT startet. ZUGANGSC
 ![Die Suche läuft](view:wifi-scanning)
 ![Die gefundenen Netze](view:wifi-scan)
 
-Das Panel kann stattdessen einem WPA2- oder WPA3-Personal-Netz beitreten. HEIMNETZ WÄHLEN sucht höchstens 10s und listet dann bis zu 16 Netze, das stärkste zuerst, mit ihrem Signal in dBm. Netze ohne Namen, offene Netze und Enterprise-Netze fehlen.
+Das Panel kann sich auch mit einem WPA2- oder WPA3-Personal-Netzwerk verbinden. HEIMNETZ WÄHLEN sucht höchstens 10s und listet bis zu 16 Netzwerke nach Signalstärke, mit Angaben in dBm. Namenlose, offene und Enterprise-Netzwerke werden nicht angezeigt.
 
-- Ein Tipp auf ein Netz öffnet die Tastatur für sein Passwort.
-- VERSTECKTES NETZWERK fragt nach dem Namen eines Netzes, das sich nicht ankündigt, dann nach seinem Passwort.
-- AKTUALISIEREN sucht erneut. ABBRECHEN führt zurück.
+- Tippe auf ein Netzwerk, um die Passworttastatur zu öffnen.
+- VERSTECKTES NETZWERK fragt zuerst nach dem Namen, dann nach dem Passwort eines nicht ausgesendeten Netzwerks.
+- AKTUALISIEREN sucht erneut, ABBRECHEN führt zurück.
 
-`Kein WPA2- oder WPA3-Netzwerk gefunden.` heißt: Die Suche ist fertig und hat kein Netz für die Liste gefunden. Eine gescheiterte Suche läuft erneut, höchstens 3 Suchen in den 10s. `WLAN konnte nicht starten.` an der Stelle der Liste heißt: Keine Suche wurde fertig; AKTUALISIEREN versucht es erneut.
+`Kein WPA2- oder WPA3-Netzwerk gefunden.` bedeutet, dass eine Suche ohne passendes Ergebnis abgeschlossen wurde. Fehlgeschlagene Suchen werden wiederholt, höchstens 3-mal innerhalb von 10s. Bei `WLAN konnte nicht starten.` statt der Liste wurde keine Suche abgeschlossen. Versuche es mit AKTUALISIEREN erneut.
 
 ## Die Tastatur
 
@@ -107,7 +109,7 @@ Die Tastatur hat drei Ebenen: Kleinbuchstaben, `ABC` für Großbuchstaben und `#
 ![ANZEIGEN](view:wifi-key-shown)
 ![Weniger als 8 Zeichen](view:wifi-key-short)
 
-Das Passwort steht als Punkte, bis ANZEIGEN gedrückt wird; VERBERGEN verbirgt es wieder. OK unter 8 Zeichen sagt das, und ein 64. Zeichen wird abgelehnt. OK speichert das Netz: Name und Passwort gehen in den NVS (nichtflüchtiger Speicher).
+Das Passwort erscheint als Punkte. ANZEIGEN macht es sichtbar, VERBERGEN verdeckt es wieder. OK meldet Eingaben unter 8 Zeichen; ein 64. Zeichen wird abgelehnt. Bei gültiger Eingabe speichert OK Netzwerkname und Passwort im NVS (nichtflüchtiger Speicher).
 
 ## Mit dem Heimnetz verbinden
 
@@ -116,20 +118,24 @@ Das Passwort steht als Punkte, bis ANZEIGEN gedrückt wird; VERBERGEN verbirgt e
 ![Verbinden](view:wifi-joining)
 ![Verbunden](view:wifi-joined)
 
-MIT HEIMNETZ VERBINDEN verbindet mit dem gespeicherten Netz. Verbunden zeigt der Bildschirm das Netz, die Adresse des Panels und seinen Namen, `http://rcbench-3F7A.local/`. Der Name antwortet auf Computern, die `.local`-Namen auflösen; welche Telefone das tun, ist nicht gemessen. Die Adresse funktioniert auf jedem Gerät.
+MIT HEIMNETZ VERBINDEN öffnet die Verbindung zum gespeicherten Netzwerk. Danach zeigt die Seite Netzwerk, IP-Adresse und Panelnamen, etwa `http://rcbench-3F7A.local/`. Der Name funktioniert auf Computern mit `.local`-Namensauflösung; die Unterstützung auf Telefonen wurde nicht gemessen. Verwende die IP-Adresse, um die Namensauflösung zu umgehen.
 
 | Zeile | Bedingung |
 |---|---|
-| `Verbindung fehlgeschlagen. Passwort abgelehnt.` | das Netz hat das Passwort 3-mal in Folge abgelehnt, oder zuletzt abgelehnt, als die 20s abliefen |
-| `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.` | keine Verbindung innerhalb von 20s, und der letzte Abbruch von anderer Art oder keiner |
-| `Keine Verbindung. Nach 15s noch keine IP-Adresse.` | verbunden, aber keine Adresse innerhalb von 15s |
-| `Verbindung zum Heimnetz verloren.` | verbunden, dann hat das Netz das Panel verloren |
+| `Verbindung fehlgeschlagen. Passwort abgelehnt.` | Passwort 3-mal in Folge abgelehnt oder zuletzt abgelehnt, als die Frist von 20s ablief. |
+| `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.` | Innerhalb von 20s keine WLAN-Assoziierung; letzter Abbruch anderer Art oder kein Abbruchgrund vorhanden. |
+| `Keine Verbindung. Nach 15s noch keine IP-Adresse.` | WLAN-Verbindung aufgebaut, aber nach 15s keine Adresse erhalten. |
+| `Verbindung zum Heimnetz verloren.` | Bestehende Verbindung vom Netzwerk getrennt. |
 
-Ein gescheitertes Verbinden bietet WLAN-HOTSPOT an. WLAN AUS schaltet das Funkmodul ab.
+Nach einem fehlgeschlagenen Verbindungsaufbau wird WLAN-HOTSPOT angeboten. WLAN AUS schaltet das Funkmodul aus.
 
 ## Der Zugangscode
 
-Die Browserseite fragt nach einem Code, bevor sie eine Datei listet, die Karte ändert oder einen Upload annimmt. Der Bildschirm zeigt den Code. Mit ZUGANGSCODE auf ZUFALL hat er 8 Zeichen und ist bei jedem Start des Funkmoduls neu, sodass ein Code aus einer früheren Sitzung nichts öffnet. Mit einem festen ZUGANGSCODE gilt das nicht: Der Code bleibt gültig, bis du ihn änderst, für einen Browser, der ihn behielt, und für jeden, der ihn sah. Über einfaches HTTP im Heimnetz geht er unverschlüsselt durchs Netz. 16 falsche Codes schalten das Funkmodul ab, auch bei einem festen Code. Ein falscher Code in der Eingabe zählt jedes Mal. Ein falscher Code im Cookie eines Browsers zählt einmal, sodass ein offener Tab mit einem früheren Code die 16 nicht aufbraucht. ZUGANGSCODE schaltet den Code für beide Wege ab; der Bildschirm zeigt dann `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload installiert trotzdem erst nach dem Halten von 2s am Panel.
+Vor Dateiliste, Kartenänderung oder Upload verlangt die Browserseite den auf dem Panel angezeigten Zugangscode. ZUFALL erzeugt bei jedem Funkstart 8 neue Zeichen; Codes früherer Sitzungen werden ungültig. Ein fester Code gilt bis zur Änderung weiter, auch für Browser, die ihn gespeichert haben, und Personen, die ihn kennen. Im Heimnetz wird er über unverschlüsseltes HTTP übertragen.
+
+Nach 16 falschen Codes schaltet das Funkmodul aus, auch bei festem Code. Jede falsche Eingabe zählt. Ein falscher Code im Browser-Cookie zählt dagegen nur einmal. Ein offen gebliebener Reiter mit altem Code verbraucht daher nicht alle 16 Versuche.
+
+ZUGANGSCODE kann die Prüfung für Hotspot und Heimnetz ausschalten. Dann steht `Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` auf dem Panel. Eine hochgeladene Firmware erfordert weiterhin 2s Halten am Panel zur Installation.
 
 ## Schreiben per Browser
 
@@ -144,42 +150,58 @@ SETUP > SD CARD > Schreiben per Browser legt fest, was die Seite braucht, um die
 | HALTEN | ein Halten von 2s auf `2s HALTEN: BROWSER DARF SCHREIBEN` neben WLAN AUS, einmal je Sitzung des Funkmoduls |
 | AUS | kein Schreibzugriff wird angenommen |
 
-Eine Zeile unter den Zeilen sagt, was gilt, zum Beispiel `Der Browser darf auf die Karte schreiben: bisher 3 Schreibvorgänge.` Nach dem Halten heißt die Taste `BROWSER-SCHREIBEN AUS`; ein Tipp beendet das Schreiben. Es endet auch, wenn das Funkmodul abschaltet, und die nächste Sitzung beginnt ohne.
+Die Zeile darunter nennt die Schreibfreigabe, etwa `Der Browser darf auf die Karte schreiben: bisher 3 Schreibvorgänge.` Nach erfolgreichem Halten heißt die Taste `BROWSER-SCHREIBEN AUS`. Tippe darauf, um die Freigabe zu beenden. Auch das Ausschalten des Funkmoduls beendet sie. Jede neue Sitzung beginnt ohne die Haltefreigabe.
 
 ![Nach dem Halten, drei Schreibvorgänge](view:wifi-writes-allowed)
 
-Jeder Schreibzugriff wird geprüft wie die von FILES: Prüfstand SAFE, kein Lauf wird aufgezeichnet; die Ordner des Prüfstands, die Vermerke der Servoprogrammierung und die Dateien, die der Logger schreibt, bleiben unberührt; ein Name folgt der Tastatur des Panels. Ein Wechsel zu ARMED hält einen Schreibzugriff an seinen nächsten 16KiB an und verwirft seine `.NEW`-Datei. Solange FILES am Panel an der Karte arbeitet, wartet ein Schreibzugriff bis zu 2s; dann versucht die Seite es nach 2s noch einmal, höchstens 3 Mal.
+Browser-Schreibzugriffe unterliegen denselben Prüfungen wie FILES: SAFE, keine laufende Aufzeichnung, geschützte Prüfstandsordner und Programmiervermerke sowie Schutz offener Aufzeichnungsdateien. Namen folgen den Regeln der Paneltastatur. Ein Wechsel auf ARMED stoppt das Schreiben vor dem nächsten Block von 16KiB und löscht die `.NEW`-Datei. Belegt FILES die Karte, wartet die Anfrage bis zu 2s. Danach versucht die Seite es mit 2s Abstand höchstens 3-mal erneut.
 
 ## Die Browserseite
 
-Die Seite spricht die Sprache des Panels.
+Die Browserseite verwendet die Panelsprache.
 
-- **Panel-Firmware**: die installierte Version, eine Dateiauswahl und Hochladen. Die Datei ist das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Eine Datei größer als 8.126.464 Bytes wird abgelehnt, bevor ein Byte gesendet ist.
-- **Dateien auf der Karte**: die Karte in zwei Spalten, wie [FILES](files.md) sie zeigt: links das Stammverzeichnis, rechts der Ordner Testaufzeichnungen, 48 Einträge je Seite mit VORIGE und NÄCHSTE. Ein Tipp wählt eine Zeile; AKTUALISIEREN, INFO, HERUNTERLADEN und ÖFFNEN wirken auf sie, und eine gedimmte Taste sagt beim Tipp, warum. ÖFFNEN geht in einen Ordner oder zeigt eine Textdatei nur lesend, gefärbt wie am Panel, mit `ZEILE n VON m` gezählt wie im Betrachter des Panels; eine Datei über 1MiB, eine, die der Logger schreibt, und die Vermerke der Servoprogrammierung lassen sich nur herunterladen. INFO nennt die Zeit in der Zone von SETUP > PANEL, Zeitzone, `nicht bekannt` für ein Datum in 1980. Die Seite folgt dem hellen oder dunklen Schema des Browsers in den Theme-Farben des Panels. Eine zweite Reihe hält HOCHLADEN, NEUER ORDNER, NEUE TEXTDATEI, UMBENENNEN, VERSCHIEBEN und LÖSCHEN, gedimmt mit dem Grund, solange [Schreiben per Browser](#schreiben-per-browser) oder der Prüfstand sie ablehnt. HOCHLADEN sendet eine Textdatei bis 1MiB in den Ordner der aktiven Spalte, mit Fortschrittsbalken, und fragt, bevor es eine Datei ersetzt; eine Datei, die sich auf der Karte ändert, während die Frage offen ist, wird nicht ersetzt. VERSCHIEBEN legt den gewählten Eintrag in den Ordner der anderen Spalte. LÖSCHEN fragt zuerst und nimmt den Bericht eines Laufs mit; ein Ordner wird nur leer verschoben oder gelöscht. Ein Name enthält nur ASCII (American Standard Code for Information Interchange): Eine Datei mit einem deutschen Buchstaben im Pfad wird auf FILES umbenannt, verschoben und gelöscht. Eine Datei, die die Seite geöffnet hat und die sich seitdem auf der Karte geändert hat, wird mit `Die Daten auf der Karte haben sich seit dem Lesen geändert. Lies sie erneut ein.` abgelehnt. BEARBEITEN im Betrachter öffnet den Text im Editor des Browsers, gefärbt wie im Betrachter; SPEICHERN schreibt ihn mit seinen eigenen Zeilenenden und seinem BOM (Byte Order Mark) zurück, und nur über die Datei, wie die Seite sie gelesen hat: Eine Änderung am Panel oder anderswo seitdem fragt BLEIBEN, NEU LESEN oder ÜBERSCHREIBEN. ÜBERSCHREIBEN braucht einen Druck von 2s und speichert über die Datei, die das abgelehnte SPEICHERN fand; eine weitere Änderung in dieser Zeit wird ebenso abgelehnt, und eine fehlende Datei lässt sich nicht überschreiben. Eine KST-Datei verliert beim SPEICHERN ihre Prüfsummenzeile, wie am Panel, und ein ESC-Profil sagt, dass es beim nächsten Start gelesen wird. Eine Datei mit gemischten Zeilenenden wird mit LF gespeichert; eine Datei, die kein UTF-8 ist, wird nur am Panel bearbeitet. Mit Schreiben per Browser ZUGANGSCODE fragt SPEICHERN an Ort und Stelle nach dem Code und behält den Text. SCHLIESSEN mit ungespeicherten Änderungen fragt zuerst. Die Seite braucht JavaScript.
-- **Alles als eine ZIP-Datei herunterladen**: die ganze Karte, unkomprimiert gespeichert. Eine Datei, die durch Anhängen wächst, wird gesendet, wie sie beim Start des Downloads war; eine Datei, die dabei hinzukommt, fehlt. Eine Datei, die während des Downloads gelöscht oder umbenannt wird, beendet ihn als fehlgeschlagen; das Rotieren von `BENCH/RCBENCH.LOG` bei 1MiB ist ein Umbenennen. In einem Heimnetz kam eine Datei von 16MiB mit 688-757kB/s herunter, und ein Image von 2,56MB ging mit 556-599kB/s hinauf. Die Seite selbst, 18,9kB mit ihrer alten Kartenliste, brauchte 4,54s; die Seite mit den zwei Spalten und dem Editor hat etwa 60kB, ihre Zeit ist nicht gemessen.
+**Panel-Firmware** zeigt die installierte Version, eine Dateiauswahl und Hochladen. Wähle das Release-Asset `rcbench-panel-p4-vX.Y.Z.bin`. Dateien über 8.126.464 Bytes werden vor der Übertragung abgelehnt.
 
-Die Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage während eines Downloads wartet auf dessen Ende. Ein Download, von dem der Browser 30s lang nichts annimmt, endet, und der Browser meldet ihn als fehlgeschlagen.
+**Dateien auf der Karte** zeigt wie [FILES](files.md) zwei Spalten: links das Stammverzeichnis, rechts den Ordner Testaufzeichnungen, mit 48 Einträgen je Seite sowie VORIGE und NÄCHSTE. Wähle eine Zeile für AKTUALISIEREN, INFO, HERUNTERLADEN oder ÖFFNEN. Ein Tipp auf eine gedimmte Taste erklärt ihre Sperre. Die Seite folgt dem hellen oder dunklen Browserschema mit den Designfarben des Panels.
+
+ÖFFNEN zeigt einen Ordner oder eine Textdatei schreibgeschützt, mit denselben Farben und derselben Zählung `ZEILE n VON m` wie am Panel. Dateien über 1MiB, laufende Aufzeichnungen und Programmiervermerke lassen sich nur herunterladen. INFO verwendet die Zeitzone aus SETUP > PANEL; bei Daten aus 1980 steht `nicht bekannt`.
+
+Die zweite Tastenreihe enthält HOCHLADEN, NEUER ORDNER, NEUE TEXTDATEI, UMBENENNEN, VERSCHIEBEN und LÖSCHEN. Sperren durch [Schreiben per Browser](#schreiben-per-browser) oder den Prüfstand werden mit Grund angezeigt. HOCHLADEN sendet eine Textdatei bis 1MiB in den aktiven Ordner und zeigt den Fortschritt. Vor dem Ersetzen fragt es nach. Ändert sich die Zieldatei während der Rückfrage, wird sie nicht ersetzt. VERSCHIEBEN überträgt den gewählten Eintrag in den anderen Ordner. LÖSCHEN fragt zuerst und entfernt den zugehörigen Laufbericht mit. Ordner müssen zum Verschieben oder Löschen leer sein.
+
+Namen erlauben nur ASCII (American Standard Code for Information Interchange). Verwende FILES am Panel zum Umbenennen, Verschieben oder Löschen von Pfaden mit deutschen Buchstaben. Eine seit dem Einlesen geänderte Datei wird mit `Die Daten auf der Karte haben sich seit dem Lesen geändert. Lies sie erneut ein.` abgelehnt.
+
+BEARBEITEN öffnet den Browser-Texteditor mit denselben Farben wie der Betrachter. SPEICHERN erhält Zeilenenden und BOM (Byte Order Mark); gemischte Zeilenenden werden jedoch zu LF. Dateien außerhalb von UTF-8 lassen sich nur am Panel bearbeiten.
+
+SPEICHERN prüft, ob auf der Karte noch die eingelesene Version liegt. Bei Änderungen am Panel oder anderswo erscheint BLEIBEN, NEU LESEN oder ÜBERSCHREIBEN. Halte ÜBERSCHREIBEN 2s, um die beim abgelehnten Speicherversuch gefundene Version zu ersetzen. Eine weitere Änderung während des Haltens führt erneut zur Ablehnung. Fehlende Dateien lassen sich nicht überschreiben.
+
+Beim Speichern einer KST-Datei entfällt wie am Panel die Prüfsummenzeile. Bei ESC-Profilen weist die Seite auf das Einlesen beim nächsten Start hin. Mit Schreiben per Browser ZUGANGSCODE fragt SPEICHERN nach dem Code und behält den bearbeiteten Text. SCHLIESSEN fragt vor dem Verwerfen ungespeicherter Änderungen nach. Die Seite benötigt JavaScript.
+
+**Alles als eine ZIP-Datei herunterladen** überträgt die gesamte Karte unkomprimiert. Dateien, die durch Anhängen wachsen, werden mit ihrer Größe vom Downloadbeginn gesendet; später hinzugekommene Dateien fehlen. Löschen oder Umbenennen während des Downloads lässt ihn fehlschlagen. Dazu zählt das Rotieren von `BENCH/RCBENCH.LOG` bei 1MiB.
+
+In einem Heimnetz wurde eine Datei von 16MiB mit 688-757kB/s heruntergeladen und ein Image von 2,56MB mit 556-599kB/s hochgeladen. Die 18,9kB große Seite mit der früheren Kartenliste lud in 4,54s. Die Seite mit zwei Spalten und Editor ist etwa 60kB groß; ihre Ladezeit wurde nicht gemessen.
+
+Der Server bearbeitet jeweils eine Anfrage. Während eines Downloads wartet die nächste Anfrage auf dessen Ende. Nimmt der Browser 30s lang keine Daten ab, endet die Übertragung mit einer Fehlermeldung im Browser.
 
 ## Ein Image installieren
 
 ![Ein neueres Image wartet](view:wifi-question)
 
-Ein Image, das die Seite empfangen hat, wartet am Panel als Frage mit beiden Versionen. INSTALL ist ein Halten von 2s, `2s HALTEN ZUM INSTALLIEREN`; der Browser kann es nicht starten. ABBRECHEN verwirft das Image. Die Installation braucht den Prüfstand SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf, keine Platinenzeichnung, die geladen oder gespeichert wird, und kein laufendes IOmcu-Update.
+Nach dem Upload zeigt das Panel eine Rückfrage mit laufender und hochgeladener Version. Halte `2s HALTEN ZUM INSTALLIEREN` für 2s zur Installation; der Browser kann sie nicht starten. ABBRECHEN verwirft das Image. Erforderlich sind SAFE, Netzteilausgang aus, keine offene Aufzeichnung, keine Platinenzeichnung im Lade- oder Speichervorgang und kein laufendes IOmcu-Update.
 
 ![Ein älteres Image, und eine Zeichnung wird gespeichert](view:wifi-older)
 
-Eine ältere Version ist erlaubt, und die Frage sagt, dass sie älter ist.
+Ältere Versionen sind erlaubt und werden in der Rückfrage entsprechend gekennzeichnet.
 
 ![Dieselbe Version, ein anderer Build](view:wifi-rebuild)
 ![Der Build, der läuft](view:wifi-installed)
 
-Dieselbe Version aus einem anderen Build wird als Neuinstallation angeboten. Der Build, der schon läuft, wird nicht angeboten. Das Halten öffnet [PANEL UPDATE](update.md).
+Ein anderer Build derselben Version wird zur Neuinstallation angeboten. Der bereits laufende Build wird nicht angeboten. Das Halten öffnet [PANEL UPDATE](update.md).
 
 ## Aktuelle Einschränkungen
 
-- Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes, ein festes HOTSPOT-PASSWORT und ein fester ZUGANGSCODE liegen im Klartext im Flash des Panels.
-- Die Seite ist reines HTTP (Hypertext Transfer Protocol). In einem Heimnetz gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der Bildschirm sagt das, solange er verbunden ist.
-- Ein Gerät, das diesen Verkehr mitliest, kann einen eigenen Schreibzugriff senden, solange Schreiben erlaubt ist.
-- Der Editor des Browsers speichert eine Datei mit gemischten Zeilenenden mit LF.
-- Ein hochgeladenes Image wird gegen seinen eigenen SHA-256-Hash geprüft, nicht gegen eine Signatur.
-- Das Panel bleibt nur verbunden, solange dieser Bildschirm offen ist.
+- NVS ist nicht verschlüsselt. Heimnetzpasswort, festes HOTSPOT-PASSWORT und fester ZUGANGSCODE liegen im Klartext im Panel-Flash.
+- Die Seite verwendet unverschlüsseltes HTTP (Hypertext Transfer Protocol). Im Heimnetz werden Zugangscode und Dateien unverschlüsselt übertragen. Die verbundene Seite weist darauf hin.
+- Wer diesen Datenverkehr mitliest, kann während einer Schreibfreigabe eigene Schreibanfragen senden.
+- Der Browsereditor vereinheitlicht gemischte Zeilenenden zu LF.
+- Hochgeladene Images werden gegen ihren eigenen SHA-256-Hash geprüft, nicht gegen eine Signatur.
+- Die Verbindung besteht nur, solange diese Seite geöffnet ist.

@@ -1,22 +1,20 @@
 # The measurement bench
 
-A Raspberry Pi 5, a Kingst LA2016 logic analyser and an RP2350 board, wired so
-that this project's protocol claims can be measured instead of asserted, and
-driven over SSH (secure shell) so a measurement can be repeated without
-anybody holding a probe.
+This measurement rig uses a Raspberry Pi 5, a Kingst LA2016 logic analyser
+and an RP2350 board. It measures protocol timing and behaviour and runs
+over SSH (secure shell), so measurements can be repeated without moving
+the probes.
 
-Everything in `firmware/` is outside the host test suite, and every bit timing
-in the tree was written from a specification and exercised only against frames
-the same code builds. `docs/FirstRun.md` section 7 is the list of numbers
-nobody has measured. This bench is what answers it.
+Host tests cannot establish electrical behaviour or timing on the target
+boards. `docs/FirstRun.md` section 7 lists measurements still needed, and
+the protocol documents distinguish captured results from modelled
+behaviour. This rig provides repeatable hardware measurements.
 
 **The host side has been run; the wiring has not.** The sigrok build, the
 analyser scan, a 948-line capture, the PWM1 tables, the udev rules and the
-`pinctrl` pull readings are measured on the bench host. The hardware is being
-assembled, the channel map is a proposal to be checked against the wiring as built, and three of the
-pieces are described rather than written: the panel's debug touch address,
-the decoders and the recipes. Each says so where it is described, and they are
-listed together under *What is not built yet*.
+`pinctrl` pull readings are measured on the bench host. The channel map is a proposal and must be checked against the assembled
+wiring. The touch injector is implemented in `touch-injector/`. The
+decoders and recipes remain proposals, listed under *What is not built yet*.
 
 **A reading taken from a host is a reading at a moment.** Several of the
 numbers recorded here are power-on values that the act of using the bench
@@ -45,13 +43,13 @@ Seven things the tree does that only an instrument can confirm:
 | OpenYGE | telemetry frames and parameter access | the frame timing and the reply latency of a real ESC |
 | KST wire | Manchester coding, half-cell 25.4µs, 27-bit frame from the master, 11-bit reply from the servo, reply window 350 to 600µs after a read | the half-cell of each edge, the start and length of the reply, and the reply of a servo other than the one the windows were set around |
 
-The four ESC protocols and one servo protocol of the modelled programming
-tables are not on this list. The panel holds them as data and has no
-transport for them, so nothing of them reaches a wire: the one-wire
-bootloader protocols of BLHeli_S firmware and AM32 firmware (19,200 baud),
-the text command line of ESCape32 firmware over the signal line, the framed
-packets of VESC firmware (115,200 baud) and the Hitec D-series servo
-protocol. No PROGRAM list offers them.
+The table does not cover every implemented programming transport.
+BLHeli_S, Bluejay and AM32 bootloader access, and the ESCape32 text
+interface, are implemented in `protocols/escwire` and available through
+MOTOR & ESC > PROGRAM > SIGNAL WIRE. Hitec programming is implemented in
+`protocols/hitec` and the servo programmer. Their protocol documents state
+the remaining hardware-validation limits. The modelled VESC parameter
+tables do not provide a programming transport.
 
 ---
 
@@ -66,11 +64,10 @@ with a network address, and it is what an agent drives.
 bitstream extracted from the vendor's software: that extraction is a setup
 step, because without it the analyser enumerates and captures nothing.
 
-**Two separate gates, in this order: the driver, then the bitstream.** Neither
-substitutes for the other, and a bench that has cleared one has cleared one.
+**Check the driver, then the bitstream.** Both are required for capture.
 
-The driver is not in libsigrok 0.5.2, which is the current release and what
-Debian 13 packages: `sigrok-cli --list-supported` on the bench host lists 162
+The driver is absent from libsigrok 0.5.2, the version installed from
+Debian 13 on the recorded bench host: `sigrok-cli --list-supported` on the bench host lists 162
 drivers and no `kingst-la2016`, and naming it prints
 `Driver kingst-la2016 not found.` So the packaged `sigrok-cli` cannot address
 this analyser at all, and the bench needs libsigrok built from git.
@@ -98,8 +95,8 @@ captures.** Measured on the bench host on 2026-09-09, with the distribution's
 | scan | `kingst-la2016:conn=1.5 - Kingst LA2016 with 18 channels: CH0..CH15 PWM1 PWM2` |
 | capture | 948 lines from 1000 samples at 1MHz |
 
-The runpath decides against Debian's library on the default search path, which
-is the whole reason for the `/opt` prefix.
+The runpath selects `/opt/sigrok/lib` ahead of Debian's library on the
+default search path.
 
 **The FX2 firmware upload is confirmed at the USB descriptor level rather than
 inferred.** Before a scan the analyser reports `iManufacturer 0` and
@@ -128,19 +125,16 @@ would be wrong.
 | 100kHz | 100000.0Hz | -0.000% | 50.00% | 2000 |
 | 1MHz | 1000000.0Hz | +0.000% | 50.00% | 20008 |
 
-**Those figures are against the device's own timebase and nothing else.** The
-period standard deviation is 0.0ns on every run, and that is a tell rather
-than a quality figure: the generator and the sample clock come off the same
-FPGA oscillator, so every period lands on an exact number of samples --
-1kHz is precisely 200,000 samples at 200MHz. What is proven is the capture
-path, the timing arithmetic and the duty resolution. A wrong crystal cannot be
-detected this way, because both halves would be wrong together. Absolute
-accuracy is untested; it needs an external reference and none has been
-applied. This is the same trap as a decoder written from the specification the
-firmware was written from: agreement for the same wrong reason.
+**These figures use the device's own timebase.** The period standard
+deviation is 0.0ns because the generator and sample clock share the same
+FPGA oscillator. Each period spans an exact number of samples: 1kHz spans
+200,000 samples at 200MHz. The check validates the capture path, timing
+calculations and duty-cycle resolution. It cannot detect an inaccurate
+oscillator. Absolute timing accuracy remains untested because no external
+reference has been applied.
 
-Duty cycle at 100kHz, which is the half a self-agreeing clock cannot
-manufacture. A ratio does not depend on the timebase being right:
+Duty-cycle measurements at 100kHz test the high-time ratio independently
+of absolute timebase accuracy:
 
 | Commanded | Measured | High |
 | --- | --- | --- |
@@ -411,32 +405,35 @@ Not on the analyser: the relay contacts across both boards' reset and boot
 buttons, closed by the RP2350. They are wiring all the same and belong on the
 same star ground.
 
-**The budget is 16 channels and the map is 15**, so a run takes the subset it
-needs rather than everything at once: an output measurement wants channels 0
-to 3, a link measurement wants 4 to 8, and only a failure that crosses the two
-wants both.
+**The map assigns all 16 channels**, with channel 15 available for TXCAN
+or another signal. Capture the subset needed for each run: channels 0 to 3
+for outputs, 4 to 8 for the link, or both groups for a fault involving both.
 
-**Levels.** The RP2350 runs at 3.3V and its pins are not 5V tolerant.
-Servo and ESC signal lines are commonly 5V, and a one-wire programming line
-idles high through a pull-up at whatever the device runs at. Anything crossing
-between the 3.3V island and a 5V device goes through a level shifter, and
-every probe point gets a series resistor so a mistake costs a resistor. The
-analyser's threshold is set per run rather than left where the last run put
-it.
+**Levels.** The RP2350 uses 3.3V logic. Its fault-tolerant digital inputs
+permit up to 5.5V with IOVDD at 3.3V, but only 3.63V when unpowered. Other
+pin types have different limits; check the exact pin in the
+[RP2350 datasheet](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf).
+Servo and ESC signal levels must be checked for the connected device,
+including while either side is unpowered. This rig uses level translation
+between different logic supplies and series resistors at probe points.
+Series resistors limit fault current; they do not establish a safe input
+voltage. Set the analyser threshold for each run.
 
 ---
 
 ## Safety
 
-**Nothing on this bench spins.** The loads are servos and an ESC that is
-listened to rather than driven into a motor, so the hazards here are a shorted
-rail and a board nobody can restart, not a propeller.
+**Keep motors disconnected during these checks.** The rig uses servos
+and listens to an ESC without driving a motor. Secure the servo and keep
+its travel clear. Check the supply wiring and the means of resetting each
+board before starting a run.
 
 - The bench supply has a current limit set low enough that a short trips it
   rather than burning a track.
 - The analyser is passive and stays passive: it observes, and nothing on it
   drives a line.
-- Every probe point has a series resistor, so a mistake costs a resistor.
+- Fit a series resistor at each probe point and check the input-voltage
+  rating. A resistor alone does not protect against every wiring error.
 
 ---
 
@@ -513,7 +510,7 @@ The SWD specification puts a pull-up on SWDIO at the target, so GPIO8 is the
 line that agrees with it, and OpenOCD's Pi 5 configuration puts SWDIO there
 for the same reason.
 
-**The condition is not decoration.** OpenOCD leaves the lines it drove as
+**Read pulls before OpenOCD uses the lines.** OpenOCD leaves those lines as
 inputs with no pull, so on a host where the check above has run, `pinctrl`
 reports `pn` for GPIO8 and GPIO25 and not the values printed here. Reboot
 before reading a pull, or read a line the bench does not touch.
@@ -521,10 +518,8 @@ before reading a pull, or read a line the bench does not touch.
 the power-on value and the host's uptime beside it, so a `pn` reads as a line
 that has been driven rather than as a contradiction of this table.
 
-**The choice is not a fix for an observed fault.** No target has been on
-either pin, so whether a pull-down on GPIO24 would have cost anything against
-the RP2350's own termination is unknown. Nothing is wired yet, which is the
-whole reason to spend a documentation change here rather than a rewiring later.
+The pin choice follows the specified pull direction. Its effect on a
+real connection is unmeasured: no target has been tested on either pin.
 
 **GPIO8 is SPI0 CE0.** With SPI enabled on the header the `spidev` driver
 claims the line and `linuxgpiod` cannot have it. SPI is off on the bench host
@@ -577,21 +572,21 @@ between runs.
 
 ## Touch, which is the one that matters
 
-The arming logic is argued rather than measured, because the panel's control task is outside the
-host suite and a gesture needs a finger. The cases were: a press held for two
-seconds, a finger that slides off the button, a second contact landing on it,
-a stop pressed while a hold is running, and touch that stops answering
-altogether. All of them are decided by what the GT911 touch controller reports
-over I²C (inter-integrated circuit).
+Arming and touch handling also need checks on the running panel. Cases
+include a two-second hold, a finger sliding off the button, a second
+contact, STOP during a hold, and a controller that stops answering. The
+GT911 reports these contacts over I²C (inter-integrated circuit); the
+injector makes them repeatable from a script.
 
 **So a second board answers as a GT911, at an address of its own.** The
 touch injector (`touch-injector/`) is a Waveshare RP2350-Zero on the panel's
 touch bus. It emulates a GT911 at 0x14 and presses where a USB (Universal
 Serial Bus) serial command from the Pi tells it to.
 
-Sharing the glass's address does not work: two devices both acknowledge and
-their open-drain pulls combine, so what the panel reads is neither. The glass
-answers at 0x5D and the injector at 0x14, so nothing on the bus collides.
+The glass controller and injector must use different addresses. The
+intended pair is 0x5D for the glass and 0x14 for the injector. Check the
+glass address on the assembled board: a GT911 can also use 0x14, and two
+devices answering there would combine their open-drain responses.
 
 **The panel reads both.** A panel image
 (`RCBENCH_TOUCH_INJECTOR` defaults to ON) probes 0x14 once at start-up,
@@ -632,9 +627,10 @@ image holds them.
 MODE chip reads `INJECT` in place of BENCH or SIM. LINK still tells a bench
 from the simulator.
 
-Injected coordinates go through the same mapping as the glass's, which
-scales from the resolution the glass reports. They are panel pixels when the
-glass reports 1024 x 600; the resolution of the panel's GT911 is not measured.
+Injected coordinates are pixels in the panel's 1024 × 600 UI area,
+without the glass controller's mirroring or rotation. The glass report
+is mapped separately before the contacts are merged. See
+`touch-injector/README.md` for the product-ID and address rules.
 
 A recipe says "press at (612, 396), hold 2.1s, release" and the panel
 handles it as a finger. With the
@@ -755,11 +751,10 @@ redundancy check, the host suite emits it as a waveform, and the decoder must
 read back what went in. It needs no hardware and can be done before the bench
 exists.
 
-**That check is necessary and it is not sufficient.** The production path
-calls the same builder (`protocols/dshot/rp2350/out_dshot.c`), so decoder and
-firmware can agree on a bit order or a checksum convention that is wrong in
-the same way, and the round trip would pass. It proves transcription, not
-convention.
+The production path calls the same builder
+(`protocols/dshot/rp2350/out_dshot.c`). A round trip can therefore pass
+when both implementations share an incorrect bit order or checksum rule.
+Independent evidence is needed to validate the protocol convention.
 
 Convention needs a source outside this tree, and there are three, in order of
 what they cost:

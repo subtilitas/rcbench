@@ -11,7 +11,7 @@
       "v_max_mv": 16800,
       "current_a": 18,
       "bec": null,
-      "firmware_note": "Operating voltage 6-16.8 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 6-16.8V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -23,7 +23,7 @@
       "v_max_mv": 25000,
       "current_a": 35,
       "bec": null,
-      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 6-25V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -35,7 +35,7 @@
       "v_max_mv": 25000,
       "current_a": 45,
       "bec": null,
-      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 6-25V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -47,7 +47,7 @@
       "v_max_mv": 25000,
       "current_a": 50,
       "bec": null,
-      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 6-25V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -59,7 +59,7 @@
       "v_max_mv": 25000,
       "current_a": 60,
       "bec": null,
-      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 6-25V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -71,7 +71,7 @@
       "v_max_mv": 25000,
       "current_a": 70,
       "bec": null,
-      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 6-25V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -83,7 +83,7 @@
       "v_max_mv": 25000,
       "current_a": 100,
       "bec": null,
-      "firmware_note": "Operating voltage 6-25 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 6-25V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -95,7 +95,7 @@
       "v_max_mv": 50000,
       "current_a": 60,
       "bec": "opto",
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -107,7 +107,7 @@
       "v_max_mv": 50000,
       "current_a": 60,
       "bec": null,
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -119,7 +119,7 @@
       "v_max_mv": 50000,
       "current_a": 80,
       "bec": "opto",
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -131,7 +131,7 @@
       "v_max_mv": 50000,
       "current_a": 80,
       "bec": null,
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -143,7 +143,7 @@
       "v_max_mv": 50000,
       "current_a": 100,
       "bec": "opto",
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -155,7 +155,7 @@
       "v_max_mv": 50000,
       "current_a": 100,
       "bec": null,
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -167,7 +167,7 @@
       "v_max_mv": 50000,
       "current_a": 120,
       "bec": "opto",
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -179,7 +179,7 @@
       "v_max_mv": 50000,
       "current_a": 120,
       "bec": null,
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -191,7 +191,7 @@
       "v_max_mv": 50000,
       "current_a": 160,
       "bec": "opto",
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -203,7 +203,7 @@
       "v_max_mv": 50000,
       "current_a": 160,
       "bec": null,
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     },
@@ -215,7 +215,7 @@
       "v_max_mv": 50000,
       "current_a": 160,
       "bec": null,
-      "firmware_note": "Operating voltage 16-50 V; PWM 32 kHz",
+      "firmware_note": "Operating voltage 16-50V; PWM 32kHz",
       "cell_type": "lipo",
       "spec_source": "Graupner_BrushlessControlPlusT_EN.pdf p.7-8"
     }
@@ -248,7 +248,7 @@
       "throttle": "max",
       "when": "after_power_on",
       "hold_ms": 6000,
-      "confirm_signal": "Five beeps after the stick returns to full throttle and is held at least 6 s.",
+      "confirm_signal": "Five beeps after the stick returns to full throttle and is held at least 6s.",
       "steps": [
         "Calibrate the stick range as described (full throttle, melody at about 10s, motor off within 4s, melody) up to step 4 or 5.",
         "Move the stick to full throttle again and hold it for at least 6s.",
@@ -268,7 +268,7 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the stick to stop/reverse and back to full throttle to step to the next mode (2 beeps confirm). With the wanted mode shown, hold stop/reverse for 2 s; then each full-throttle move raises the value by one. Hold full throttle at least 2 s to store (3 beeps)."
+      "description": "Move the stick to stop/reverse and back to full throttle to step to the next mode (2 beeps confirm). With the desired mode shown, hold stop/reverse for 2s; then each full-throttle move raises the value by one. Hold full throttle at least 2s to store (3 beeps)."
     },
     "skip": {
       "throttle": "none",
@@ -278,7 +278,7 @@
     "exit": "Disconnect the power supply to store the settings.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Mode 6 value 2 (yes) is factory reset; Mode 5 on controllers without sensor connection.",
-    "description": "After calibrating the stick range, hold full throttle for 6 s for five beeps. Stop then full steps the mode (yellow LED count, 2 beeps). Stop for 2 s opens the values. Each stop-to-full move raises the value (red LED count). Full throttle for 2 s stores it (3 beeps). Disconnect power to finish."
+    "description": "After calibrating the stick range, hold full throttle for 6s for five beeps. Stop then full steps the mode (yellow LED count, 2 beeps). Stop for 2s opens the values. Each stop-to-full move raises the value (red LED count). Full throttle for 2s stores it (3 beeps). Disconnect power to finish."
   },
   "items": [
     {
@@ -475,11 +475,11 @@
     "Which models have a sensor connection: not stated; the mode numbers shift for those without.",
     "Stick-menu defaults: not stated. The telemetry menu lists factory settings (battery LiPo, rotation normal, A-Brake 0%), which may match.",
     "The manual states that mode 3 depends on the model type; the model type must be set first.",
-    "Calibration timings: melody at about 10 s, motor-off within 4 s (6 s for neutral/brake teach-in)."
+    "Calibration timings: melody at about 10s, motor-off within 4s (6s for neutral/brake teach-in)."
   ],
   "notes": [
     "Graupner_BrushlessControlPlusT_EN.pdf names the model type as 'mode 4' in its warning text and as mode 5 in the table; Graupner_BrushlessControlPlusT_DE.pdf and Graupner_BrushlessControl_Series_f3x.pdf say mode 5. The table order (model type is row 5) is used here.",
-    "Graupner_BrushlessControlPlusT_DE.pdf lists 21 models and omits S3046 (50 A) and S3064 (HV 160 COOL); the other two manuals list all models.",
+    "Graupner_BrushlessControlPlusT_DE.pdf lists 21 models and omits S3046 (50A) and S3064 (HV 160 COOL); the other two manuals list all models.",
     "The model-search function (error message 8) is enabled by the trim in Graupner_BrushlessControlPlusT_DE.pdf and by the telemetry setting M.Lost_beep in Graupner_BrushlessControlPlusT_EN.pdf."
   ],
   "schema": 1,

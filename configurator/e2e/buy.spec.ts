@@ -53,7 +53,7 @@ for (const size of SIZES) {
       const list = partsList(view({ functions: ['servo', 'escpow'] }));
       await expect(page.locator('#buy > li')).toHaveCount(list.buy.length);
       await expect(page.locator('#bring > li')).toHaveCount(list.bring.length);
-      await expect(page.locator('#buy-note')).toHaveText(`Parts list as of release v${CATALOGUE.release}. Makers change products without notice. Check every part against its check line before ordering. No warranty.`);
+      await expect(page.locator('#buy-note')).toHaveText(`Parts list for release v${CATALOGUE.release}. Manufacturers may change products without notice. Before ordering, compare each part with its listed requirements. No warranty.`);
       await expect(page.locator('#buy > li[data-part="panel"]')).toContainText('1 × Waveshare ESP32-P4-WIFI6-Touch-LCD-7B');
       await expect(page.locator('#bring > li[data-part="servo"]')).toBeVisible();
       await expect(page.locator('#bring a')).toHaveCount(0);
@@ -65,8 +65,8 @@ for (const size of SIZES) {
         await expect(a).toHaveAttribute('rel', 'noopener noreferrer');
       }
       // The search link of a spec without a maker.
-      await expect(page.locator('#buy > li[data-part="pull"] a.websearch')).toHaveAttribute('href', searchUrl(null, 'Resistor 2.2 kΩ, 0.25 W'));
-      await expect(page.locator('#buy > li[data-part="pull"] a.websearch')).toHaveAttribute('href', 'https://www.google.com/search?q=%22Resistor%202.2%20k%CE%A9%22%20%220.25%20W%22');
+      await expect(page.locator('#buy > li[data-part="pull"] a.websearch')).toHaveAttribute('href', searchUrl(null, 'Resistor 2.2kΩ, 0.25W'));
+      await expect(page.locator('#buy > li[data-part="pull"] a.websearch')).toHaveAttribute('href', 'https://www.google.com/search?q=%22Resistor%202.2k%CE%A9%22%20%220.25W%22');
       await expect(page.locator('#buy > li[data-part="panel"] a.websearch')).toHaveAttribute('href', 'https://www.google.com/search?q=%22Waveshare%22%20%22ESP32-P4-WIFI6-Touch-LCD-7B%22');
       // The links start at the left edge of their row, the search after the maker page.
       const row = page.locator('#buy > li[data-part="panel"]');

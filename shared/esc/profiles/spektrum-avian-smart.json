@@ -11,7 +11,7 @@
       "v_max_mv": 16800,
       "current_a": 15,
       "bec": null,
-      "firmware_note": "BEC 5.2 V at 3 A (type not stated)",
+      "firmware_note": "BEC 5.2V at 3A (type not stated)",
       "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
       "cell_type": "lipo"
     },
@@ -23,7 +23,7 @@
       "v_max_mv": 25200,
       "current_a": 30,
       "bec": null,
-      "firmware_note": "BEC 6 V / 7.2 V at 7 A (type not stated)",
+      "firmware_note": "BEC 6V / 7.2V at 7A (type not stated)",
       "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
       "cell_type": "lipo"
     },
@@ -35,7 +35,7 @@
       "v_max_mv": 25200,
       "current_a": 45,
       "bec": null,
-      "firmware_note": "BEC 6 V / 7.2 V at 7 A (type not stated)",
+      "firmware_note": "BEC 6V / 7.2V at 7A (type not stated)",
       "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
       "cell_type": "lipo"
     },
@@ -47,7 +47,7 @@
       "v_max_mv": 25200,
       "current_a": 60,
       "bec": null,
-      "firmware_note": "BEC 6 V / 7.2 V at 7 A (type not stated)",
+      "firmware_note": "BEC 6V / 7.2V at 7A (type not stated)",
       "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
       "cell_type": "lipo"
     },
@@ -59,7 +59,7 @@
       "v_max_mv": 33600,
       "current_a": 80,
       "bec": null,
-      "firmware_note": "BEC 6 V / 7.4 V / 8.4 V at 8 A (type not stated)",
+      "firmware_note": "BEC 6V / 7.4V / 8.4V at 8A (type not stated)",
       "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (cells and continuous current per model)",
       "cell_type": "lipo"
     },
@@ -71,7 +71,7 @@
       "v_max_mv": 25200,
       "current_a": 100,
       "bec": null,
-      "firmware_note": "BEC 6 V / 7.4 V / 8.4 V at 8 A (type not stated)",
+      "firmware_note": "BEC 6V / 7.4V / 8.4V at 8A (type not stated)",
       "spec_source": "Spektrum_Avian_Smart_series.pdf p.4 (3-6S LiPo, 100 A)",
       "cell_type": "lipo"
     }
@@ -113,17 +113,17 @@
     "select": {
       "throttle": "min",
       "within_ms": 3000,
-      "description": "Select a parameter by moving the stick to the bottom position within 3 s of its tones. Choose an option by moving the stick to full throttle during its tones."
+      "description": "Select a parameter by moving the stick to the bottom position within 3s of its tones. Choose an option by moving the stick to full throttle during its tones."
     },
     "skip": {
       "throttle": "none",
-      "description": "Do not move the stick within 3 s: the ESC goes on to the next parameter. If nothing is selected the list repeats."
+      "description": "Do not move the stick within 3s: the ESC goes on to the next parameter. If nothing is selected the list repeats."
     },
     "confirm_signal": "After a selection the ESC continues down the parameter list; no separate stored-tone is named.",
     "exit": "Select parameter 13 (two long tones plus a series of short tones), then lower the throttle: the ESC arms.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Parameter 12 (two long, two short tones): factory reset.",
-    "description": "Full throttle at power-up for more than 5 s after the two acceptance tones enters programming. Parameters sound in sequence as short and long tones; bottom stick within 3 s selects one, full throttle selects an option, and the list continues. Parameter 13 saves and exits."
+    "description": "Full throttle at power-up for more than 5s after the two acceptance tones enters programming. Parameters sound in sequence as short and long tones; bottom stick within 3s selects one, full throttle selects an option, and the list continues. Parameter 13 saves and exits."
   },
   "items": [
     {
@@ -463,9 +463,9 @@
   ],
   "unknowns": [
     "Tone durations of short and long tones and the gap between tones: not stated.",
-    "How long the ESC holds a parameter's tones before moving on: the manual gives only the 3 s window for selecting.",
+    "How long the ESC holds a parameter's tones before moving on: the manual gives only the 3s window for selecting.",
     "How options sound inside a parameter: the manual says the options are announced by tones; the one-short/two-short column headers of the options table are used for the option numbers.",
-    "Entry timing: programming starts when more than 5 s pass at full throttle after the two short tones; exact moment not stated.",
+    "Entry timing: programming starts when more than 5s pass at full throttle after the two short tones; exact moment not stated.",
     "Whether the options list wraps after the last option: the manual says the list cycles.",
     "Exit tones and the 'series of short tones' count for parameter 13: not stated.",
     "The manual says parameter 12 factory reset has an empty options cell; the confirmation of a reset is not described.",

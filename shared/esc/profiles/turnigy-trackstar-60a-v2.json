@@ -54,17 +54,17 @@
     "select": {
       "throttle": "max",
       "within_ms": 3000,
-      "description": "Answer yes: hold full throttle for about 3000 ms until a confirmation tone sounds, then release to neutral. Answer no: hold full brake for about 3000 ms, then release. A yes stores that value and skips to the next setting; a no moves to the next value. No on all values keeps the stored value."
+      "description": "Answer yes: hold full throttle for about 3000ms until a confirmation tone sounds, then release to neutral. Answer no: hold full brake for about 3000ms, then release. A yes stores that value and skips to the next setting; a no moves to the next value. No on all values keeps the stored value."
     },
     "skip": {
       "throttle": "min",
-      "description": "No (full brake, about 3000 ms) moves to the next value of the same setting."
+      "description": "No (full brake, about 3000ms) moves to the next value of the same setting."
     },
     "confirm_signal": "A beeping tone after each answer is accepted; then release to neutral.",
     "exit": "Disconnect power at any time; settings already answered are kept.",
     "changes_per_entry": "many",
     "reset_to_defaults": null,
-    "description": "Hold full throttle at power-on to reach programming mode. The ESC beeps setting number then value number. Answer yes with full throttle or no with full brake, held about 3 s; a confirmation tone follows; release to neutral for the next question."
+    "description": "Hold full throttle at power-on to reach programming mode. The ESC beeps setting number then value number. Answer yes with full throttle or no with full brake, held about 3s; a confirmation tone follows; release to neutral for the next question."
   },
   "items": [
     {
@@ -292,7 +292,7 @@
     "Wait times between the ring groups ('a few seconds') are not given in ms.",
     "Beep length and gap are not stated.",
     "The beep encoding of setting and value numbers above 4 (long beeps?) is not stated; Beep-Pause-Beep is the only example.",
-    "Hold time of about 3 s is approximate.",
+    "Hold time of about 3s is approximate.",
     "Tone after the last setting (8) is not described."
   ],
   "notes": [

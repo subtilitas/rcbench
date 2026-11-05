@@ -1,6 +1,6 @@
 # sbus
 
-A decoder for the Futaba S.BUS protocol: 16 channels in a frame of 25 bytes.
+This module decodes Futaba S.BUS frames: 16 channels in 25 bytes.
 
 | Part | Files | Depends on |
 |---|---|---|
@@ -18,12 +18,13 @@ image, and no firmware calls it.
 - A frame is 25 bytes: the header 0x0F, 22 bytes of 16 channels at 11 bits
   each, a flag byte and a footer.
 - S.BUS has no checksum. The header value occurs inside channel data, so the
-  decoder frames on silence: a gap of 2000us or more (`SBUS_GAP_US`) starts
-  a frame. The caller passes a timestamp in microseconds with every byte.
+  decoder uses silence to find frame boundaries. A gap of 2000us or more
+  (`SBUS_GAP_US`) starts a frame. The caller supplies a timestamp in
+  microseconds with every byte.
 - Bytes inside a frame are 120us apart. Frames are at least 4ms apart.
 - A raw channel value is 0 to 2047. 172 maps to 1000us and 1811 to 2000us.
-- The flags `failsafe` and `frame_lost` are decoded and not acted on. A
-  caller that drives anything from S.BUS treats `failsafe` as a stop.
+- The decoder reports `failsafe` and `frame_lost` without acting on them.
+  A caller that drives outputs from S.BUS must treat `failsafe` as a stop.
 
 ## Interface
 
@@ -36,9 +37,9 @@ bool     sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
 uint16_t sbus_to_us(uint16_t raw);
 ```
 
-`sbus_decode_byte()` returns true when `out` holds a frame. The decoder
-counts frames, bytes discarded while looking for a boundary, and frames with
-a wrong footer.
+`sbus_decode_byte()` returns true when `out` contains a complete frame.
+The decoder counts frames, bytes discarded while seeking a frame boundary,
+and frames with an invalid footer.
 
 ## Use in another pico-sdk project
 

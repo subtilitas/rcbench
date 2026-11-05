@@ -6,11 +6,11 @@ order: 11
 
 # Motor settings
 
-SETTINGS, the third tab of [MOTOR & ESC](motor.md)'s strip, holds the bench's 8 ESC (electronic speed controller) settings in the left column under three headings, in two columns: PACK and MOTOR on the left, THROTTLE OUTPUT on the right. The right column stays in place and works: the readouts, TARGET, ARM, the totals and RESET PEAKS.
+SETTINGS is the third tab on [MOTOR & ESC](motor.md). Its left pane contains the bench's 8 ESC (electronic speed controller) settings, arranged in two columns: PACK and MOTOR on the left, THROTTLE OUTPUT on the right. The main right column remains visible and usable, with its readouts, TARGET, ARM, totals and RESET PEAKS.
 
 ![SETTINGS](view:motor-settings)
 
-A row shows the setting and its value with its unit, 48px tall, and a help line under them. A tap on the value opens the keypad over the left column and the strip. The keypad names the setting and its range. OK takes a value inside the range; a value outside it keeps the keypad open and names the range in the warning colour. CANCEL, and the home tag, close the keypad and change nothing. A typed value lands on the setting's step: 4321mAh becomes 4300mAh.
+Each 48px row shows a setting, its value and unit, and a help line. Tap the value to open a keypad over the left pane and tab strip. The keypad shows the setting and its range. OK accepts an in-range value. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag closes the keypad without changes. Values are rounded to the setting's step: 4321mAh becomes 4300mAh.
 
 ![The keypad for Capacity](view:motor-settings-keypad)
 
@@ -27,15 +27,15 @@ A row shows the setting and its value with its unit, 48px tall, and a help line 
 | THROTTLE OUTPUT | Full pulse | 1400 to 2400us, steps of 10 | 2000 | the PWM width at 100% throttle |
 | THROTTLE OUTPUT | Ramp limit | 5 to 300%/s, steps of 5 | 55 | the throttle slew of the panel's model, used while no IOmcu answers |
 
-The keypad of Idle pulse refuses a value that is not 100us or more below Full pulse, and the keypad of Full pulse one that is not 100us or more above Idle pulse. The keypad stays open, shows `Idle pulse at most 1900us (100us below Full pulse)` or `Full pulse at least 1100us (100us above Idle pulse)` in the warning colour, and the row keeps its value. The ranges overlap, 800 to 1600us and 1400 to 2400us, so the pair needs this check.
+Idle pulse must be at least 100us below Full pulse. Otherwise, the keypad stays open, leaves the value unchanged and shows `Idle pulse at most 1900us (100us below Full pulse)` or `Full pulse at least 1100us (100us above Idle pulse)` in the warning colour. This check is necessary because the allowed ranges, 800 to 1600us and 1400 to 2400us, overlap.
 
-Idle pulse and Full pulse go to the IOmcu at link-up and on every change. The IOmcu ramps no throttle: a bound pin steps to the command.
+Idle pulse and Full pulse are sent to the IOmcu at link-up and after each change. The IOmcu applies throttle commands immediately to bound pins, without a ramp.
 
-Idle pulse and Full pulse take a value on a SAFE bench only. While the bench is ARMED, ARM is held, or an ARM or a DISARM waits for its answer, their help line reads `Set on a SAFE bench only` in the warning colour and the value takes no tap. A keypad open for one of them closes when ARM is pressed or the bench leaves SAFE. The other 6 rows take a value at any time.
+Idle pulse and Full pulse can be changed only on a SAFE bench. They are locked while the bench is ARMED, ARM is held, or an ARM or DISARM request awaits a response. Their help line then reads `Set on a SAFE bench only` in the warning colour. An open keypad for either setting closes when ARM is pressed or the bench leaves SAFE. The other 6 rows can be changed at any time.
 
-A change of Idle pulse or Full pulse reaches the IOmcu at the first poll 300ms or more after the last edit. Until then, with the IOmcu connected, ARM is refused with `Pulse range not yet sent to the IOmcu. Hold ARM again.` and the bench stays SAFE. Hold ARM again: the 2s hold gives the change the time to arrive.
+A change to Idle pulse or Full pulse reaches the IOmcu on the first poll at least 300ms after the last edit. Until then, with the IOmcu connected, ARM is refused with `Pulse range not yet sent to the IOmcu. Hold ARM again.` and the bench stays SAFE. Hold ARM again: the 2s hold allows time for delivery.
 
-When the IOmcu does not take the pair, ARM stays refused until the pair is in force, and the band says what to change:
+If the IOmcu does not accept the pulse pair, ARM remains refused until the pair is applied. The band explains what to change:
 
 | Band | What to do |
 |---|---|
@@ -44,20 +44,20 @@ When the IOmcu does not take the pair, ARM stays refused until the pair is in fo
 | `IOmcu rejected the pulse range. Change Idle pulse, Full pulse or TARGET.` | shorten the pulse, or bind the motor pin at a slower rate on OUTPUTS: a pulse longer than its PWM frame is refused |
 | `The IOmcu has a different pulse range. Change Idle pulse or Full pulse.` | change either value; the panel sends the pair again |
 
-A binding written on OUTPUTS, and the IOmcu connecting again, also send the pair again.
+Writing a binding on OUTPUTS or reconnecting the IOmcu also resends the pulse pair.
 
 ## Keeping the values
 
-A changed value is in force at once and asks for a write. The panel writes on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. The settings are one store: the write keeps every unsaved value, those changed on SETUP included. The line at the foot of the page says where the store stands:
+A changed value takes effect immediately and requests a save. The panel writes the settings on the first frame when the bench is SAFE, the supply output is off, and no board drawing is being fetched or saved. The write includes every unsaved setting, including changes made on SETUP. The footer shows the save status:
 
 | Line | Meaning |
 |---|---|
-| `SAVED` | nothing is unwritten |
-| `SAVE PENDING` | a write is asked and waits for a quiet bench |
-| `NOT SAVED` | the store refused the write; the values stay in force and unsaved |
-| `SETUP CHANGES NOT SAVED` | values changed on SETUP or another screen are unsaved and no write is asked; the next change here writes them too |
+| `SAVED` | all settings are saved |
+| `SAVE PENDING` | a save is requested and awaits a quiet bench |
+| `NOT SAVED` | the write failed; values remain in effect but unsaved |
+| `SETUP CHANGES NOT SAVED` | changes from SETUP or another screen are unsaved, with no save requested; the next change here saves them too |
 
-After a refused write the values stay unsaved. The next change asks for a write again, and SETUP's warning on leaving lists them ([Leaving with values unsaved](setup.md#leaving-with-values-unsaved)).
+After a failed write, the values remain unsaved. The next change requests another write. Leaving SETUP also lists them in its [unsaved-values warning](setup.md#leaving-with-values-unsaved).
 
 ## Related pages
 

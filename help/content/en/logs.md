@@ -6,25 +6,33 @@ order: 50
 
 # Logs
 
-LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files of one folder and its reports, shows what the import found in a CSV file, plots up to 4 of its columns, and opens a report in the text viewer of [Files](files.md#the-text-viewer). Three tabs at the top left choose the folder, in this order: ROOT (the card's root), USER (User log folder, `USER/LOGS` by default) and BENCH (Auto log folder, `BENCH/LOGS` by default). It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md), and FILES beside it opens [Files](files.md): copy, move, rename and delete on the card. The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
+LOGS lists CSV (comma-separated values) recordings and reports on the panel's SD (Secure Digital) card. It previews the CSV import, plots up to 4 columns, and opens reports in the [Files text viewer](files.md#the-text-viewer). Open it from the LOGS tile on the [menu](overview.md).
+
+The three tabs at the top left select a folder: ROOT for the card root, USER for the User log folder (`USER/LOGS` by default), and BENCH for the Auto log folder (`BENCH/LOGS` by default). WI-FI at the bottom left opens [Wi-Fi](wifi.md). FILES beside it opens [Files](files.md) to copy, move, rename or delete card files.
+
+The home tag works like BACK, returning one level at a time: plot to import view, import view to file list, file list to menu. In the DELETE question, it acts as CANCEL.
 
 ## No card
 
 ![LOGS with no card in the slot](view:logs-nocard)
 
-With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty folder, or one not made yet, reads `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.`, and the root without a CSV file reads `No .csv files in the top-level folder.` The line under it says what the tab holds: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` With AUTO LOGS or USER LOGS off on [SETUP > SD CARD](setup.md), BENCH or USER reads `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.` instead. RESCAN reads the card again. With no card the tabs switch as with one, and each tap on a tab looks for a card again.
+Without a mounted card, the box shows `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty or uncreated folder shows `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.` At the root, it shows `No .csv files in the top-level folder.`
+
+The line below describes the selected tab: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` When AUTO LOGS or USER LOGS is off under [SETUP > SD CARD](setup.md), BENCH or USER instead shows `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.`
+
+RESCAN reads the card again. Tabs remain usable without a card; each tab press also checks for an inserted card.
 
 ## A card that does not mount
 
 ![LOGS with a card that holds no FAT volume](view:logs-nofat)
 
-A card in the slot that holds NTFS (New Technology File System), a GPT (GUID partition table) or no format reads `Card is not FAT32 or exFAT. Format it on a computer.` A card that does not mount for another reason reads `Cannot read the card. Check it on a computer, then tap RESCAN.` [Card formats](#card-formats) says what mounts and how to format a card. Formatting erases the card. RESCAN mounts the card put back.
+A card containing NTFS (New Technology File System), a GPT (GUID partition table) or no filesystem shows `Card is not FAT32 or exFAT. Format it on a computer.` Other mount failures show `Cannot read the card. Check it on a computer, then tap RESCAN.` See [Card formats](#card-formats) for supported formats and formatting instructions. Formatting erases the card. After reinserting it, tap RESCAN to mount it.
 
 ## The file list
 
 ![The file list](view:logs)
 
-The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and names the card by its volume label, `UNITEST`, at the right end of the row; a card without a label shows the name the card reports, or `SD CARD`. The list shows 7 rows at a time, each 48px (about 7.2mm) of the glass to tap; each row is one file with its size.
+The header shows the selected folder, such as `BENCH/LOGS`, to the right of the tabs. At the far right it shows the volume label, such as `UNITEST`, or falls back to the card's reported name or `SD CARD`. The list shows 7 files with their sizes. Each row has a 48px (about 7.2mm) touch target.
 
 | Tab | Folder | Holds |
 |---|---|---|
@@ -32,11 +40,11 @@ The header shows the folder on screen, `BENCH/LOGS`, right of the tabs, and name
 | USER | User log folder, `USER/LOGS` by default | the AUTOMATIC TEST's and the LIMIT RUN's files |
 | BENCH | Auto log folder, `BENCH/LOGS` by default | the automatic log of each ARMED and supply run |
 
-LOGS opens on the tab of the file the panel wrote last, and on BENCH after a start until one is written. Back on LOGS with nothing written since, the tab stays as it was left. A tap on a tab reads its folder from the first page.
+LOGS opens on the tab containing the last file written by the panel. After startup, it uses BENCH until a file is written. If nothing has been written since the last visit, it retains the tab you left. Selecting a tab reads its folder from the first page.
 
-The strip on top, LOGS | FILES, holds the tile's two screens: a tap on a tab opens [Files](files.md), and the home tag of each leads to the menu. It shows on the file list; over a file, a question or a box it does not.
+The top strip, LOGS | FILES, switches between the tile's two screens. Each screen's home tag returns to the menu. The strip appears only on the file list, not over an open file, question or box.
 
-WI-FI in the footer opens [Wi-Fi](wifi.md), to get a log off the card in a browser, and its home tag comes back here. Over the DELETE question or a file it is not there. ARMED it opens as well, and Wi-Fi's own buttons refuse.
+WI-FI in the footer opens [Wi-Fi](wifi.md) for browser downloads; its home tag returns here. The button is hidden over the DELETE question or an open file. It can open Wi-Fi while ARMED, but Wi-Fi's own controls enforce their restrictions.
 
 | Button | What it does |
 |---|---|
@@ -77,17 +85,21 @@ The name follows the screen whose ARM armed the bench, also on an IOmcu older th
 
 AUTO LOGS off on [SETUP > SD CARD](setup.md) writes no file to `BENCH/LOGS` and takes no number; USER LOGS off writes none to `USER/LOGS`, and the SERVO screen names `USER LOGS OFF` in place of the file. Both are on after a start from a new panel or an update.
 
-Auto log folder and User log folder on [SETUP > SD CARD](setup.md#sd-card) set other folders. A changed folder takes the next file, numbered from what that folder holds. Files left in a folder used before are not listed until the folder is set back.
+Choose different folders with Auto log folder and User log folder under [SETUP > SD CARD](setup.md#sd-card). A change applies to the next file, whose number follows the contents of the new folder. Files left in the previous folder reappear only when you select that folder again.
 
 The panel makes each folder the first time it writes there, one level at a time. A file named `BENCH` or `USER` in the root stops that: the band reads `Cannot make folder BENCH/LOGS. Run not recorded.`
 
-Each folder has its own series: a new run takes one above the highest number in its folder, whichever name carries it, the names of firmware 0.21.0 included. A gap left by a deleted file is not filled. A folder holding a number 999 takes no further run, with lower numbers free or not. The list shows every report, a `.TXT` file named like a run: `ATESTnnn.TXT` beside its `ATESTnnn.CSV` or without it, `LIMITnnn.TXT`, and in the root `SERVOnnn.TXT` of firmware 0.21.0 and older. A run and its report are two rows, the CSV first. DELETE on the run removes its report too. Any other `.TXT` file is not listed; FILES shows it. The list shows runs newest first by number, across all names: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
+Each folder has its own sequence. A new run uses one above the highest number found there, regardless of filename prefix, including names from firmware 0.21.0. Deleted numbers are not reused. Once a folder contains number 999, it accepts no further run, even if lower numbers are free.
+
+The list includes reports named like runs: `ATESTnnn.TXT` with or without its `ATESTnnn.CSV`, `LIMITnnn.TXT`, and root-level `SERVOnnn.TXT` from firmware 0.21.0 and older. A run and its report occupy separate rows, CSV first. DELETE on the run removes its report too. Other `.TXT` files appear only in FILES.
+
+Runs are ordered by descending number across all prefixes: `MOTOR043.CSV`, then `SERVO042.CSV`, then `SUPPL041.CSV`.
 
 Firmware 0.21.0 and older writes to the root and does not read `BENCH/LOGS` or `USER/LOGS`.
 
 A run is committed to the card every 20 rows or 1000ms, whichever comes first. A power loss mid-run costs under 1.0s of rows while the card keeps up, up to 84 rows, 4.20s at 20Hz, when it has stalled.
 
-The band reports what the card did to a run:
+The band reports card errors affecting a run:
 
 | Message | Meaning |
 |---|---|
@@ -115,7 +127,7 @@ OPEN on a report opens it in the [text viewer](files.md#the-text-viewer), read-o
 
 ![What the import detected](view:logs-import)
 
-OPEN reads the file and shows what it decided before anything is plotted.
+OPEN reads the file and previews the detected format before plotting it.
 
 | Line | Shows |
 |---|---|
@@ -126,9 +138,11 @@ OPEN reads the file and shows what it decided before anything is plotted.
 | UNEVEN ROWS | rows with another cell count than the header |
 | EVIDENCE | the cells that proved German, English or neither |
 
-The right list names each column with its first value and its range, lowest to highest. A file opens with up to 4 columns chosen: in a SERVO file `pulse`, `angle`, `current` and `voltage`, each where it holds numbers, then the next numeric columns; in any other file its first 4 numeric columns. A tap on a numeric column adds it to the plot or takes it off; the title counts them, `PLOT  4/4`. SEP and NUM step through the choices, AUTO first, when the values or columns look wrong. BACK returns to the list; PLOT draws the chosen columns.
+The right list shows each column's first value and minimum-to-maximum range. Up to 4 columns are selected automatically. For SERVO files, numeric `pulse`, `angle`, `current` and `voltage` columns take priority, followed by other numeric columns. Other files start with the first 4 numeric columns.
 
-A last row without a line feed is a row cut off by a power loss or a full card. It is left out, ROWS shows in the warning colour and the view reads `INCOMPLETE LAST ROW. SKIPPED.`.
+Tap a numeric column to add or remove it; the title counts the selection, for example `PLOT  4/4`. If columns or values look wrong, use SEP and NUM to cycle through the format choices, starting with AUTO. BACK returns to the file list. PLOT draws the selected columns.
+
+A final row without a line feed is treated as incomplete, as can happen after power loss or a full card. It is skipped, ROWS uses the warning colour, and the view shows `INCOMPLETE LAST ROW. SKIPPED.`.
 
 ## The plot
 
@@ -147,13 +161,13 @@ The rows are spaced evenly by row number. The labels under the plot are the file
 
 ![The DELETE question](view:logs-delete)
 
-DELETE opens a question that names the file and its size. Only its own DELETE, pressed and released on that button, removes the file. CANCEL, or leaving the screen, deletes nothing. The run the logger has open is refused.
+DELETE asks for confirmation and shows the filename and size. To remove the file, press and release DELETE within that dialog. CANCEL or leaving the screen keeps the file. A run still open for logging cannot be deleted.
 
 ## Card formats
 
-The panel reads cards formatted FAT12, FAT16, FAT32 or exFAT (extended File Allocation Table): the whole card, or the first of the 4 partitions of an MBR (master boot record) that holds one of them. SDHC cards (4GB to 32GB) come as FAT32, SDXC cards (64GB to 2 TB) as exFAT; both mount as they come.
+The panel reads cards formatted FAT12, FAT16, FAT32 or exFAT (extended File Allocation Table): the whole card, or the first of the 4 partitions of an MBR (master boot record) that holds one of them. SDHC cards (4GB to 32GB) come as FAT32, SDXC cards (64GB to 2TB) as exFAT; both mount as they come.
 
-- Not supported: GPT (GUID Partition Table; GUID: globally unique identifier) partitioning, volumes over 2 TiB, NTFS, ext4, HFS+ and APFS. Such a card does not mount. The panel never formats a card.
+- Not supported: GPT (GUID Partition Table; GUID: globally unique identifier) partitioning, volumes over 2TiB, NTFS, ext4, HFS+ and APFS. Such a card does not mount. The panel never formats a card.
 - To format a card, use the SD Association's SD Memory Card Formatter, or on a computer FAT32 or exFAT on an MBR (on macOS: Scheme `Master Boot Record`).
 - A file of 4GiB and more on an exFAT card is listed with its size, for example `8.00GB`. OPEN reads files up to 2GiB less 1 byte; a larger one stays on the list and OPEN says `BENCH001.CSV is 2GB or larger. Not opened.` [Wi-Fi](wifi.md) downloads it.
 

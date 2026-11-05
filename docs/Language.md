@@ -2,10 +2,10 @@
 
 [Deutsch](Language-de.md)
 
-The panel shows its interface in English or in German. SETUP, PANEL,
-Language picks it (ENGLISH, DEUTSCH). The choice is applied with the theme,
-so the next frame is drawn in the new language; nothing restarts. It is
-kept in NVS (non-volatile storage) like every setting, once SAVE takes it.
+The panel interface is available in English and German. Select ENGLISH
+or DEUTSCH under SETUP > PANEL > Language. The choice is applied with the
+theme, so the next frame uses the selected language without a restart.
+SAVE stores the choice in NVS (non-volatile storage), like other settings.
 
 ![SETUP in German](img/de/setup.png)
 
@@ -14,9 +14,9 @@ kept in NVS (non-volatile storage) like every setting, once SAVE takes it.
 | Follows the language | Stays as it is |
 | --- | --- |
 | labels, setting names and their help, alerts in the band, warning panels, refusal notes, the splash's details | the terms listed under [Terms that stay English](#terms-that-stay-english) |
-| the servo test's TXT (plain text) report, in the language showing when the run starts | the servo test's CSV (comma-separated values) file: its header and the words in its rows (`test`, `phase`, `mode`), so tools read every run alike |
-| the stick programmer's notes and refusals, and an ESC profile's manual steps where the profile gives them in German (`action_de`) | the ESC (electronic speed controller) profiles' names, items and values, which are the manuals' |
-| | the programmer's parameter names and their values, which are the firmware's own, as its configurators show them |
+| the servo test's TXT (plain text) report, in the language selected when the run starts | the servo test's CSV (comma-separated values) file: its header and the words in its rows (`test`, `phase`, `mode`), so tools read every run alike |
+| the stick programmer's notes and refusals, and an ESC profile's manual steps where the profile gives them in German (`action_de`) | the ESC (electronic speed controller) profile names, items and values as given in the manuals |
+| | firmware parameter names and values, as shown in the corresponding configurators |
 | | the console log |
 
 Current limitations:
@@ -26,22 +26,22 @@ Current limitations:
   The alert held for a touch controller that did not answer at start is
   raised in the language kept in NVS and stays until restart; without touch
   the language cannot change meanwhile.
-- The message line of LOGS (a file that cannot be opened or deleted,
-  a deleted file) keeps its language until the next file opened or deleted
+- The LOGS message line, such as an open/delete error or a deletion
+  confirmation, keeps its language until the next open or delete operation
   replaces or clears it.
 - The title of a keypad or a choice list already open keeps its language
   until it closes.
-- The stick engine reports a refusal in English, and the screen finds the
-  translation by that English. A refusal the table does not know is shown in
-  English. `test_text` checks that every refusal the compiled-in profiles
-  produce has a German entry.
+- The stick engine reports refusals in English. The screen uses the
+  English text to look up the translation and falls back to English if
+  there is no matching entry. `test_text` checks that every refusal from
+  the compiled-in profiles has a German entry.
 
 ## Numbers
 
-The screens, the TXT report and the CSV write the decimal point in every
-language: 7.4V, 0.05A. It is the separator of the transmitter, the ESC
-configurators and the supply's own display, and a CSV with a decimal comma
-would need a different field separator. The German pages of this
+The screens, TXT report and CSV use a decimal point in every language:
+7.4V, 0.05A. This matches the transmitter, ESC configurators and the supply's
+own display. A CSV with a decimal comma would need a different field
+separator. The German pages of this
 documentation write the German decimal comma in their prose (7,4V); a
 string quoted from the screen keeps its point (`seit 1.5s kein Messwert`).
 
@@ -209,13 +209,14 @@ is one cell:
 - A width is cells times the cell width: `gfx_text_width()` and
   `gfx_text_cells()` count code points, and `gfx_text_prefix()` gives the
   byte length of the first n cells, so a cut falls between characters.
-- A buffer is bytes, and a German letter takes two of them. The alert band
-  holds `UI_ALERT_MAX`, 128 bytes with the terminator.
+- Buffer capacity is measured in bytes. Each of the German letters listed
+  above takes two bytes. The alert band holds `UI_ALERT_MAX`: 128 bytes,
+  including the terminator.
 
-UTF-8 rather than a single-byte code page: the tables stay readable in the
-source, and the report opens correctly in any editor on a PC. The cost is
-that no width may be taken from `strlen()`; the screens measure with the
-functions above.
+UTF-8 keeps the tables readable in the source and lets a PC editor display
+the report correctly. Unlike a single-byte code page, it does not allow
+text width to be derived from `strlen()`. The screens must measure width
+with the functions above.
 
 ## The tables
 
@@ -245,9 +246,10 @@ language (the language names, addresses, channels, baud rates, `STABLE` and
 `TESTING`, `PULL-UP` and `PRECHARGE`). A translated format converts the
 same arguments in the same order as its English.
 
-The table stays one file, listed in `tools/check_sizes.txt`. A file that
-reads it defines the macros it needs and includes it; the table defines the
-others as empty and undefines all of them at its end. Only `UI_TEXT`
+The table is kept in one file, listed in `tools/check_sizes.txt`. Each
+consumer defines the macros it needs before including the table. The
+table defines the remaining macros as empty and undefines all of them at
+the end. Only `UI_TEXT`
 entries stand under a condition, `#ifdef RCBENCH_TOUCH_INJECTOR`, and the
 define comes with the include path of `shared/text`, so every file that
 reads the table sees the same entries; `test/tools/test_merge_texts.py`
@@ -324,12 +326,13 @@ in German, and fails when a string in either language
   (`outputs-protocol`) is exempt, because the list covers the pins beside
   it by design.
 
-An English overflow that is accepted for a time goes into `KNOWN_OVERFLOWS`
-in the tool, with its view, its string and its measurement; the list is
-empty. A listed one is printed as `known` and does not fail; a German finding that equals one word for word is
-the same string in the same place and does not fail either. An entry the
-check does not find fails until it is taken off the list. The check also
-fails on a string with no declared width that no view draws.
+Temporarily accepted English overflows are listed in `KNOWN_OVERFLOWS`
+with the view, string and measurement. The list is empty. A listed finding
+is printed as `known` and does not fail the check. An identical German
+finding for the same string in the same place is also accepted. If a
+listed overflow is absent from the results, the check fails until the entry is
+removed. It also fails if a string has no declared width and no view draws
+it.
 
 ```bash
 python3 tools/check_formats.py

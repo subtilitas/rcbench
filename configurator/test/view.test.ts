@@ -251,9 +251,9 @@ test('the question before a removal names the functions that go off and the part
 test('the question names a variant that changes and a function that comes on', () => {
   const v: View = { ...view({ functions: ['esc', 'servotest'] }), pending: { part: 'batt', at: 'result' } };
   const said = text(removalWarning(v));
-  assert.ok(said.includes('No function goes off.'), said);
+  assert.ok(said.includes('All functions remain available.'), said);
   assert.ok(said.includes('Variant that changes: ESC power B.'), said);
-  assert.ok(said.includes(`Functions that come on: ${fnName('stick', 'en')}.`), said);
+  assert.ok(said.includes(`Functions enabled: ${fnName('stick', 'en')}.`), said);
   assert.ok(said.endsWith('Remove part Keep'), said);
 });
 
@@ -638,10 +638,10 @@ test('the reason line of a rule part: "Included with these parts" after a bench 
   assert.equal(reasonText(v.setup.parts.find((r) => r.part.id === 'pdmini')!, v), 'Needed by: ESC power B.');
 });
 
-test('a part a rule adds reads "Included with these parts" in English and "Enthalten bei diesen Teilen" in German', () => {
+test('a part a rule adds reads "Included with these parts" in English and "Mit diesen Teilen enthalten" in German', () => {
   assert.equal(STRINGS.stInc[0], 'Included with these parts.');
-  assert.equal(STRINGS.stInc[1], 'Enthalten bei diesen Teilen.');
-  const reasons = { en: 'Included with these parts: PD mini.', de: 'Enthalten bei diesen Teilen: PD mini.' };
+  assert.equal(STRINGS.stInc[1], 'Mit diesen Teilen enthalten.');
+  const reasons = { en: 'Included with these parts: PD mini.', de: 'Mit diesen Teilen enthalten: PD mini.' };
   for (const lang of LANGS) {
     const v = view({ owned: ['pdmini'] }, lang);
     const tap = v.setup.parts.find((r) => r.part.id === 'usbtap')!;

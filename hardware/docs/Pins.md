@@ -1,10 +1,10 @@
 # Pin map
 
-**Status: draft, 2026-09-30.** The GPIO (general-purpose input/output) of the
-IO board's two RP2354B, the main and the measurement IOmcu
+**Status: draft, 2026-09-30.** This page maps the GPIO (general-purpose input/output) of the
+IO board's two RP2354B devices, the main and measurement IOmcus
 ([IOBoard](IOBoard.md#two-iomcus)). [ioboard-pinmap-draft.json](ioboard-pinmap-draft.json) holds the
-same map for tools. The file is the draft of the planned IO board, not of a
-board that exists; the tables below follow it. The schematic's routing can move
+same map for tools. The file describes the planned IO board; no board exists yet.
+The tables below follow that draft. Schematic routing may move
 a signal to another pin with the same function.
 
 `tools/pinmap_check.py` checks the map against the pin functions in
@@ -14,7 +14,7 @@ I²C (Inter-Integrated Circuit) bus stays on one instance, each PIO
 (programmable input/output) block's pins fit one 32-pin window (GPIO 0 to 31 or
 16 to 47), the ADC (analogue-to-digital converter) is on GPIO 40 to 47, and a
 signal that reaches a connector is on GPIO 0 to 39, the fault-tolerant pins.
-Every PIO pin names its protocol, every serial pin its bus, and an I²C bus
+Every PIO pin identifies its protocol, every serial pin identifies its bus, and each I²C bus
 has 2 pins.
 
 ```sh
@@ -30,12 +30,12 @@ python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json
 
 - The rotation inputs (encoder A, B and index, the phase-wire clip, the
   magnetic pickup) and the receiver input sit on the measurement IOmcu.
-  The main IOmcu's motor stall action gets its rpm over the inter-chip
+  The main IOmcu receives the rpm for its motor stall action over the inter-chip
   link (owner, 2026-09-30).
 - The external CAN (Controller Area Network) controller stays on the main
   IOmcu. It shares the display link controller's SPI bus, with its own
   chip select and interrupt (owner, 2026-09-30).
-- The inter-chip link is a UART, 2 pins a side (owner, 2026-09-30). With the
+- The inter-chip link is a UART, with 2 pins per side (owner, 2026-09-30). With the
   link and the lines for VESC controllers on the main IOmcu's two hardware
   UARTs, the UART socket runs as a PIO UART on 1 pin.
 - The TX and RX lines for VESC controllers pass 2 of the 3 spare channels of the two SN74CBTLV3126PWR,
@@ -137,8 +137,8 @@ enables (4 TPS55285 and the TPS55288), the hardware latch read-back, and two
 inputs for the DC input's source status and its brownout, until a decision
 lets one signal serve both (IOBoard.md, DC input brownout detection). On the MCP23017, GPA7 and GPB7 are
 outputs only and come out of reset as inputs, so they carry no port switch,
-converter enable or input; the other 42 lines are free for them, 33 of them used. The third
-expander follows from that; it takes no GPIO.
+converter enable or input; the other 42 lines are free for them, 33 of them used. This requires the third
+expander; it uses no additional GPIO.
 
 ## Rules the map follows
 
@@ -168,7 +168,7 @@ expander follows from that; it takes no GPIO.
   a pico-examples quadrature decoder reads at most one step every 10 system
   clocks.
 - The measurement IOmcu samples its copy of the optical index with PIO,
-  on the timebase of the two accelerometer ADCs (ADCS7476, one an axis), which share SPI0's data and clock with a chip select each.
+  on the timebase of the two accelerometer ADCs (ADCS7476, one per axis), which share SPI0's data and clock with a chip select each.
 - USB VBUS reaches GPIO 37 through a divider, so the USB pull-up follows the
   cable.
 - The cell monitor reaches measurement SPI1 only across an isoSPI or
@@ -181,7 +181,7 @@ expander follows from that; it takes no GPIO.
 
 The SPI modes, the MCP2518FD clock limit, the MLX90614's bus speed, the
 MCP23017's output-only pins and the pad reset state come from the reviews of
-the drafts, which read the datasheets. Round 1's records do not verify them.
+the drafts, which read the datasheets. They are not verified in the records of round 1.
 
 ## Not known
 
@@ -190,8 +190,8 @@ the drafts, which read the datasheets. Round 1's records do not verify them.
   clear of the expanders.
 - The fault outputs of the 4 TPS55285 and the TPS55288, and the port ceiling
   read-backs (V135, up to 40 lines): not pinned.
-- A disable-only input on the pack switch drivers (V53, V160): the map gives the
-  pack switches no pin; one line would take a free main pin.
+- A disable-only input on the pack switch drivers (V53, V160): the map assigns no pin to the
+  pack switches; one line would take a free main pin.
 - The receiver input is receive-only in the map. EX Bus telemetry or an SRXL2
   handshake needs the SN74LVC1T45DBVR's direction pin.
 - The cell monitor's barrier part, an isoSPI transceiver pair or a digital

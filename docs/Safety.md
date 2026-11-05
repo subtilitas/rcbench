@@ -2,8 +2,8 @@
 
 <sub>**English** · [Deutsch](Safety-de.md)</sub>
 
-How the bench stops, the external circuit the design requires, and the
-behaviours that are deliberate.
+This page describes how the bench stops, which external circuit the design
+requires, and which behaviours are intentional.
 
 The project is under development and its functions are not verified on
 hardware.
@@ -35,7 +35,7 @@ without the render loop. A render loop that stops leaves STOP working and
 nothing else. DISARM, the throttle slider, the servo dial and OUTPUT OFF are
 the render loop's, and the outputs keep their last command.
 
-The render loop moves a counter once per pass. The control task reads it in
+The render loop increments a counter once per pass. The control task reads it in
 every 5ms pass and inside every link exchange's wait. While the bench is
 ARMED, while the supply output is on, or, on the rbmod carrier, while the
 programming ports' 5V counts as live for the gates
@@ -57,9 +57,9 @@ one stop, and the next stall starts at the counter's next move.
 
 The clock starts at the counter's last move, not at the arm. A loop that
 froze after it posted ARM or ON stops the bench in the first pass that finds
-it ARMED or the output on. A SAFE bench with the supply off is never
-stopped: the panel's update install, a log loaded on LOGS and a settings
-save stall the loop on a SAFE bench. The install starts only on a SAFE
+it ARMED or the output on. The watchdog does not stop a SAFE bench when both the supply output and
+the programming-port 5V are inactive. Installing a panel update, loading a
+log on LOGS or saving settings can stall the loop in this state. The install starts only on a SAFE
 bench with the supply off and withholds the heartbeat on purpose while it
 writes. At start-up the bench is SAFE with the supply off.
 
@@ -144,8 +144,7 @@ finds: the panel asks DISARM and sends no OFF, since that IOmcu would cut a
 write to the servo's memory in the middle (`error_sites_keeps()`). That
 covers every error above that the panel finds, among them a supply that
 stops answering or gives no reading, an ON taken across lost touch events,
-and an ON the SUPPLY page refuses while a port's ON is on it. Still off,
-whoever holds the supply:
+and an ON the SUPPLY page refuses while a port's ON is on it. The following still switch the supply off, regardless of who holds it:
 
 - the heartbeat or the link going: the IOmcu cuts it;
 - the panel's own supply trips, CURRENT TRIP and VOLTAGE TRIP: the panel
@@ -242,18 +241,17 @@ off and its ON is refused (`RESULT` 3), and the port stays held without
 supply until CLOSE. A KST port that finds the output off after a write
 keeps it off 1000ms and returns to PWM.
 
-The longest writes the code allows end inside 10000ms, computed and not
-measured: a KST write of 33 steps is 1.93s on the wire after its planning;
+The longest calculated write sequences finish within 10000ms. These times
+are computed, not measured: a KST write of 33 steps is 1.93s on the wire after its planning;
 a classic Hitec write of 56 steps with its read-back of 36 cells is 2.9s
 and a D series write of 21 registers with its save, its 1000ms reboot wait
 and its read-back 3.5s, at 32ms a step on the panel's host loopback.
 The second read before a Hitec write's plan ([The second read](HitecProgrammer.md#the-second-read)) writes nothing and holds up no OFF.
 
-A port that lets go of the supply with the output on leaves its own set points on the output; the operator's come back only by YES to SERVO's question, which follows a LEAVE and no other end of the hold,
-(above 6.0V only through HV SERVOS ONLY and its 2s hold) or at the next OFF ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
+When a port releases the supply with the output on, its set points remain in effect. Your set points return at the next OFF, or when you answer YES to SERVO's question after LEAVE. The question appears only after LEAVE, not after other ways of releasing the supply. Choosing YES above 6.0V requires HV SERVOS ONLY and its 2s hold ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
 
-A session fault is an operation that ends in what the servo or the wire
-did. KST: no servo, a register without 3 equal reads, a servo that changed
+A session fault ends an operation because of a problem with the servo or
+the wire. KST: no servo, a register without 3 equal reads, a servo that changed
 under the plan, a write that failed, was rolled back, was torn or changed
 another register, a verify that differs, a driver fault, a supply that did
 not switch. Hitec: no servo, a wrong entry answer, a failed read, a classic
@@ -319,7 +317,7 @@ Current limitations:
   ([An interrupted write](ServoProgrammer.md#an-interrupted-write)).
 - The IOmcu's STATUS fault bits for overcurrent, over-temperature and stall
   (`LINK_FAULT_OVERCURRENT`, `LINK_FAULT_OVERTEMP`, `LINK_FAULT_STALL`) are
-  defined and set by nothing.
+  defined, but no code sets them.
 - The alerts name the error and do not say that the bench switched to SAFE;
   the band shows SAFE.
 - With an IOmcu older than 4.31, a supply a port keeps through a supply
@@ -375,10 +373,9 @@ independent of firmware at both ends.
 
 Monostable window: about 150ms. The heartbeat comes from the panel's control
 task, which runs every 5ms on the core that does not draw, so its period does
-not depend on what a frame costs. The window stays at 150ms, inside the
-IOmcu's 200ms link failsafe, rather than tightening to the new period:
-the margin is what survives a task that is late, and nothing is gained by
-removing it.
+not depend on what a frame costs. The 150ms window is within the
+IOmcu's 200ms link failsafe. Its margin over the task period accommodates
+late task passes.
 
 The monostable is on no board. On the bring-up bench the edges reach the
 IOmcu's GPIO 3 by a direct wire from the panel's heartbeat pin, which is what lets that bench switch to ARMED.
@@ -423,7 +420,7 @@ of its own, priority 5 on core 0, the core that draws. The control task takes
 that task's events from a queue and judges the controller by the time since
 it last answered: 500ms without an answer switches the bench to SAFE and stops the
 heartbeat. The IOmcu's input is pulled down, so an unpowered or
-unplugged panel reads as a line that is not edging.
+unplugged panel produces no edges at that input.
 
 ## Arm latch
 
@@ -505,7 +502,7 @@ panel gives the switch up with `The IOmcu refused to switch to ARMED.` and write
 so the IOmcu's latch stays set. An answer that comes back later than
 those 300ms is not used, whatever it says.
 
-The same 300ms hold through the writes that follow. The panel asks the
+The same 300ms deadline applies to the writes that follow. The panel asks the
 deadline again before CLEAR and before the frame that switches to ARMED, because the
 servo release ahead of them and the CLEAR itself can be answered late. Past
 the deadline before CLEAR, the switch is given up as above with nothing
@@ -528,39 +525,39 @@ IOmcu connected the panel switches its own bank to ARMED after the 100ms.
 ### A pulse range on its way
 
 The frame that switches to ARMED carries ARM, THROTTLE and the pole count,
-and no CHAN_CFG. The throttle's Idle pulse and Full pulse reach the IOmcu on
-their own path: an edit, a binding written on OUTPUTS, a
-link-up edge or the panel's start owes the IOmcu the pair. An IOmcu restart
-or update comes back as a link-up edge. The panel pays the debt at a 50ms
-poll whose write of ARM = 0 was acknowledged, once 300ms
-(`ENDPOINTS_SETTLE_MS`) have passed since the last edit. It reads CHAN_CFG,
-puts the pair on the throttle channels and writes the page when it differs.
-The IOmcu applies a CHAN_CFG write to its outputs before it acknowledges
-it, and the acknowledgement carries what it stored.
+but no CHAN_CFG. Idle pulse and Full pulse are sent to the IOmcu separately.
+An edit, a binding written on OUTPUTS, a link-up edge or panel start marks
+this pair as pending. An IOmcu restart or update also produces a link-up
+edge. The panel sends the pending pair at a 50ms poll after ARM = 0 has
+been acknowledged and at least 300ms (`ENDPOINTS_SETTLE_MS`) have passed
+since the last edit. It reads CHAN_CFG, assigns the pair to the throttle
+channels and writes the page if it differs. The IOmcu applies a CHAN_CFG
+write to its outputs before acknowledging it. The acknowledgement contains
+the values it stored.
 
-| Payment | The debt | A switch to ARMED with the link up |
+| Synchronization result | Pending pair | A switch to ARMED with the link up |
 | --- | --- | --- |
-| the page already holds the pair | paid, nothing written | goes on |
-| the write is acknowledged and every throttle channel stored the pair | paid | goes on |
-| the read or the write is not answered | owed, sent again at the next poll | `Pulse range not yet sent to the IOmcu. Hold ARM again.` |
+| the page already holds the pair | cleared, nothing written | goes on |
+| the write is acknowledged and every throttle channel stored the pair | cleared | goes on |
+| the read or the write is not answered | pending, retried at the next poll | `Pulse range not yet sent to the IOmcu. Hold ARM again.` |
 | the read is refused | ended, `The IOmcu did not report its pulse range.` | `No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.` |
 | Idle pulse is less than 100us below Full pulse | ended, nothing sent, `Idle pulse must be at least 100us below Full pulse. Not sent.` | `Idle pulse less than 100us below Full pulse. Change one, then hold ARM again.` |
 | the write is refused | ended, `The IOmcu rejected the pulse range.` | `IOmcu rejected the pulse range. Change Idle pulse, Full pulse or TARGET.` |
 | the write is acknowledged and a throttle channel stored another pair | ended | `The IOmcu has a different pulse range. Change Idle pulse or Full pulse.` |
 
 The alert of a refused or an inverted pair leaves the band when a later
-payment finds the page holding the pair asked, or a write of it is
+synchronization attempt finds the requested pair on the page, or a write of it is
 acknowledged, before its 30s are up. The same holds for `The IOmcu
 rejected the pole count.`: it leaves the band when a later pole count is
 taken.
 
-The panel asks before CLEAR, after the servo release and the frame rate,
-and writes nothing, CLEAR included; the bench stays SAFE with the outputs at
-rest. It asks again after an acknowledged CLEAR, for an edit that arrived
-while CLEAR was on the wire, and then writes no frame that switches to
-ARMED. It asks a third time once the frame that switches to ARMED is
-acknowledged, for an edit that arrived while that frame was on the wire,
-and then writes ARM = 0 in the next exchange: the IOmcu is ARMED at rest
+The panel checks the pulse-range state before CLEAR, after the servo
+release and frame-rate update. If the range is blocked or still pending,
+it writes nothing, including CLEAR; the bench stays SAFE with the outputs
+at rest. It checks again after CLEAR is acknowledged. If an edit arrived
+while CLEAR was on the wire, it sends no frame to switch to ARMED. It checks
+a third time after the ARMED frame is acknowledged. If an edit arrived
+during that frame, it writes ARM = 0 in the next exchange: the IOmcu is ARMED at rest
 on the range it held for that one exchange (time not measured), and the
 panel's bank does not switch to ARMED. The panel's own screens cannot
 publish an edit there: the two SETTINGS rows lock while ARM is held and
@@ -568,14 +565,13 @@ while an ARM waits for its answer. SETUP's DISCARD, which can revert an
 unsaved value, is on another screen and takes no tap while the bench is
 ARMED, and leaving MOTOR & ESC or SERVO switches the bench to SAFE.
 
-The debt is paid on the control task, the task that writes the switch, so
-the switch never runs while a payment is on the wire. A refused switch is
-not tried again by itself: ARM is held again. STOP is not affected. A
-refusal or another pair stored is not sent again by itself either: the
-same request refused once is refused every time. The block ends at the
-first payment that finds the pair in force after an edit, a binding or a
-link-up, and not before; a payment that is refused again blocks again with
-its reason.
+The control task handles both pulse-range synchronization and the switch
+to ARMED, so they cannot run concurrently on the wire. A refused switch is
+not retried automatically; hold ARM again. STOP is unaffected. A refused
+pair, or a pair stored differently from the request, is not retried
+automatically either. After an edit, binding change or link-up, the block
+remains until a synchronization attempt confirms the requested pair. A
+new refusal keeps the block and reports its reason.
 
 An operator with an IOmcu that refuses the page reads `The IOmcu did not
 report its pulse range.` at the link-up, and `No pulse range from the
@@ -583,18 +579,18 @@ IOmcu. Update the IOmcu firmware, then hold ARM again.` at every hold of
 ARM. The bench does not switch to ARMED with that IOmcu connected. The
 panel offers the IOmcu image it carries at the link-up, after its own 2s
 hold; the IOmcu restarts after the update, and the link-up that follows
-owes the pair again. Without an IOmcu, the panel's own bank switches to
+marks the pair pending again. Without an IOmcu, the panel's own bank switches to
 ARMED as before.
 
-An edit at time 0 is paid at the first poll at or after 300ms: a poll at
-299ms leaves it owed, a poll at 300ms pays it. The time is taken modulo
+An edit at time 0 is synchronized at the first poll at or after 300ms: a
+poll at 299ms leaves it pending; a poll at 300ms processes it. The time is taken modulo
 2^32ms, so the rest runs across the wrap of the millisecond clock. The
 SETTINGS rows for the two values lock while ARM is held, and the hold takes
-2s, so an edit made before the press is normally paid inside the hold.
+2s, so an edit made before the press is normally synchronized during the hold.
 
 With no link the panel's own bank switches to ARMED and nothing is written.
-A link that comes back owes the pair again and holds the IOmcu SAFE until
-an answer, so a refusal from before the link-up lasts until the first
+When the link returns, the pair is marked pending again and the IOmcu stays
+SAFE until an answer, so a refusal from before the link-up lasts until the first
 poll after it, and then only if that poll is refused again. Host-tested in
 `test_endpoints_link` and `test_arming`. The panel's control task, which
 reads the state and shows the alert, is not in the coverage figure.
@@ -680,7 +676,7 @@ reads the state and shows the alert, is not in the coverage figure.
   `TOUCHLOST <panel>/<driver>`.
 - Every control that holds state between a press and its release cancels.
   MOTOR & ESC, SERVO and CAN BUS FAULT have a gesture that completes on a
-  timer, so a lost release there switches to ARMED or acknowledges on its own; the
+  timer, so, without cancellation, a lost release would switch to ARMED or acknowledge on its own; the
   overview's tiles, the keys and cells of OUTPUTS, the settings
   screen's keys, the log viewer's buttons, rows and DELETE question and the
   tab rows of MOTOR & ESC, RECEIVER and BALANCE act on the release instead,
@@ -809,7 +805,7 @@ reads the state and shows the alert, is not in the coverage figure.
   - SERVO: the dial, the knob, CENTRE and SWEEP are the controls. While SAFE,
     the horn and the pulse width shown stay at the position last driven. At
     a switch to ARMED the value becomes the surface's rest, which the pins drive once
-    the switch has paid its release: the midpoint of the channel's endpoints,
+    the switch has completed its release step: the midpoint of the channel's endpoints,
     1500us across 1000 to 2000us and 760us across 660 to 860us. The
     first input after a switch to ARMED starts from there.
 - RELEASE on SERVO is not a position and is taken while the bench is SAFE, where
@@ -936,8 +932,8 @@ The rule:
   (0x70), no reboot. No step of a move carries `MORE`, so an OFF of the
   supply during a move is not held for a write
   ([A programming port's supply](#a-programming-ports-supply)). A value
-  reaches the servo's memory only through a write with its backup, record
-  and read-back.
+  reaches the servo's non-volatile memory only through a write with its
+  backup, record and read-back.
 - The commanded position moves at most 150 counts (2.0deg) a pass and stays
   inside the reach of the servo's stored end points: the positions of
   targets 0 and 6000, 2606 to 13743 on a factory D485HW

@@ -2,12 +2,11 @@
 
 # The rbmod carrier
 
-The rbmod carrier is a board that holds the Waveshare RP2350-CAN module and
-wires every lead to a fixed GPIO (general-purpose input/output). It is a
-fixed configuration: no pin is chosen on the panel. The IOmcu on the carrier
-runs an image of its own, `rcbench-iomcu-rbmod`, and reports board 2 on
-IDENTITY register 5 ([Link: Boards with soldered
-pins](Link.md#boards-with-soldered-pins)).
+The rbmod carrier holds the Waveshare RP2350-CAN module and connects
+each lead to a fixed GPIO (general-purpose input/output). The panel
+cannot change these pin assignments. The carrier's IOmcu runs its own
+image, `rcbench-iomcu-rbmod`, and reports board 2 in IDENTITY register 5
+([Link: Boards with soldered pins](Link.md#boards-with-soldered-pins)).
 
 ## Pins
 
@@ -63,10 +62,10 @@ PROGP02 and PROGP03 never pulse together.
 
 ## The programming port
 
-The KST and Hitec programmers and the servo tester share one programming
-port, chosen on the panel and kept over a restart. It is the setting
-SERVO TESTER (SET_SERVO_TARGET): 1 to 4 for PROGP01 to PROGP04, 0 for the
-servo outputs. It is chosen in two places:
+The KST and Hitec programmers share a programming port with the servo
+tester. The panel stores the choice across restarts in SERVO TESTER
+(SET_SERVO_TARGET): 1 to 4 select PROGP01 to PROGP04; 0 selects the servo
+outputs. Choose the port in either of these places:
 
 - the programmers' PORT row, before CONNECT: a tap on the row's label
   opens PROGP01 to PROGP04 with their GPIO
@@ -101,13 +100,14 @@ well: the panel asks for the pulse only while the box reads ON.
 | M8, buck | the +15V net | +5V: the module's VBUS and J7 | always on |
 | PD mini, on J8 | its own input | VCC_PDMINI: the servo rails A and B on J2 | the SUPPLY page |
 
-The programming ports run from M7's fixed 5V, not from the PD mini. A KST
-or Hitec session leaves the PD mini to the operator: SUPPLY and the SERVO
-screen's SET row take OUTPUT ON and set points through a session, which on
-other boards they refuse. KST and
-Chaservo servos program at 5V. On the carrier the programmers do not set the
-programming ports' voltage: their MORE list reads
-`PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` and offers no voltage or current.
+M7's fixed 5V supplies the programming ports independently of the PD
+mini. During a KST or Hitec session, the operator retains control of the
+PD mini: SUPPLY and the SERVO screen's SET row accept OUTPUT ON and set
+points that they would refuse during a session on other boards. KST and
+Chaservo servos are programmed at 5V. On the carrier, the programmers
+cannot change the programming-port voltage. Their MORE list reads
+`PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21` and offers no voltage or current
+setting.
 
 The KST and Hitec programmers switch GPIO 21 on and off for a session,
 through the PROG_SUPPLY page (link 4.32). The PROG 5V box on SERVO's
@@ -171,10 +171,11 @@ cannot sink. A zener on the rail absorbs it on a reworked board
 ([Rev 1 rework](#rev-1-rework), item 3). The PROG_SUPPLY page then still
 reads GPIO 21 on.
 
-The panel watches 0x40 CH3 while its own ON stands: the page reads the 5V
-on or acknowledged the ON, no programming port holds it, and the heartbeat
-runs. Two new 50ms windows in a row with a mean bus voltage under 3000mV,
-both read 500ms or more after the ON, are an error of the bench:
+The panel monitors 0x40 CH3 while its own ON remains active. The page
+must report the 5V as on or have acknowledged ON, no programming port
+may hold the supply, and the heartbeat must be running. The panel
+reports a bench error after two consecutive new 50ms windows with mean
+bus voltage below 3000mV, provided both are read at least 500ms after ON:
 
 - SAFE, every output off, and the page's OFF
   ([Safety, Errors](Safety.md#errors)). The next PROG 5V ON toggles EN and
@@ -185,13 +186,14 @@ both read 500ms or more after the ON, are an error of the bench:
   windows, 640ms after ON. All outputs off.`
 - One error an ON: none again until the 5V has been off and on.
 
-Under 3.25V for 200us the converter has latched by its datasheet, and a
-latched output falls to near 0V. 3000mV and two windows keep the sag of a
-loaded port from tripping. Each window counts once, by its number: the
-panel reads the page once a poll, about every 50ms, and the IOmcu closes a
-window every 50ms, so one window can be read twice.
-An OFF asked, the operator's or an error's, starts the 500ms again: the
-page reads the 5V on until its next read, 200ms at most.
+According to the datasheet, the converter latches off after 200us below
+3.25V, and its output then falls close to 0V. The 3000mV threshold and
+two-window requirement distinguish that condition from voltage sag
+under load. Each window is counted once by its number. The panel polls
+about every 50ms, and the IOmcu closes a window every 50ms, so a window
+can be read twice. An OFF request, whether from the operator or an error,
+restarts the 500ms interval: the page can still report the 5V as on
+until its next read, at most 200ms later.
 The rule is `shared/safety/prog5v_lost.c` under `test_prog5v_lost`;
 `test_prog5v_wire` drives it with the pages as the panel does.
 
@@ -225,10 +227,11 @@ pull-ups hang on VPU, so they are bus 1's pull-ups: the firmware runs bus 1
 | CH2 | VCC_PDMINI | VCC_SERVOPORT_A, J2 positions 3 and 4 |
 | CH3 | VCC_PROGPORT_DCDC (M7) | VCC_PROGPORT, J1 |
 
-The part and its channels are fixed. The IOmcu keeps the part fitted and
-each channel on its rail on the SENSE_MAP page and refuses a map that moves
-either ([Link, Boards with soldered pins](Link.md#boards-with-soldered-pins)).
-SETUP > SENSORS shows the rows without keys:
+The part and channel assignments are fixed. On SENSE_MAP, the IOmcu
+keeps the part marked as fitted and each channel assigned to its rail.
+It refuses maps that change either assignment
+([Link, Boards with soldered pins](Link.md#boards-with-soldered-pins)).
+SETUP > SENSORS shows these rows without editing keys:
 
 | Row | Reads |
 | --- | --- |
@@ -266,9 +269,9 @@ SETUP > SENSORS shows the rows without keys:
 | --- | --- | --- |
 | `cmake -S firmware/iomcu -B firmware/iomcu/build-rbmod -DIOMCU_BOARD=rbmod` | `rcbench-iomcu-rbmod-install.uf2`, `rcbench-iomcu-rbmod.uf2`, `rcbench-iomcu-rbmod-pt.uf2`, `rcbench-iomcu-rbmod.bin`, `rcbench-iomcu-rbmod.elf` | `rcbench-iomcu-rbmod-vX.Y.Z.zip` |
 
-The first load is the install UF2 (USB Flashing Format) over USB, as in
-[First run](FirstRun.md#from-the-release-assets). After that the panel
-offers each IOmcu the image of the board it reports.
+For the first load, use the install UF2 (USB Flashing Format) over USB,
+as described in [First run](FirstRun.md#from-the-release-assets). The
+panel subsequently offers each IOmcu the image for its reported board.
 
 ## On the panel
 
@@ -298,10 +301,11 @@ fixed:
 
 ## Rev 1 rework
 
-Every rev 1 board needs three changes by hand. The carrier's image assumes
-items 1 and 2 are done; it does not rely on item 3. Rev 2 carries items 1
-and 2 in copper. Item 3 is an open design point for rev 2: a converter that
-does not latch, or a clamp in copper.
+Every rev 1 board requires three manual changes. The carrier image
+assumes that items 1 and 2 are complete; it does not rely on item 3.
+Rev 2 implements items 1 and 2 in the board layout. The solution for
+item 3 remains open for rev 2: a converter that does not latch off, or
+a clamp implemented on the board.
 
 | # | Change | Reason | The firmware relies on it |
 | --- | --- | --- | --- |

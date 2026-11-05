@@ -6,15 +6,15 @@ order: 53
 
 # Files
 
-FILES shows the SD (Secure Digital) card in two panes. It copies, moves, renames and deletes files, makes folders and empty text files, shows a file as text and edits it. It is a tab of the strip on the [LOGS](logs.md) tile. The home tag closes a box or the keyboard first, then leads to the menu. FILES drives no output.
+FILES manages the SD (Secure Digital) card in two panes. You can copy, move, rename and delete files, create folders and empty text files, and view or edit text. Open it from the strip on the [LOGS](logs.md) tile. The home tag closes an open box or keyboard first, then returns to the menu. FILES drives no output.
 
 ## The two panes
 
 ![FILES](view:files)
 
-The left pane opens on the card's root, the right one on the User log folder (`USER/LOGS` by default). The pane with the coloured heading is the active one: OPEN, RENAME, DELETE, NEW and INFO act in it. COPY and MOVE take its selected entry to the other pane's folder. A tap on a row selects it and makes its pane the active one; a second tap on the same row is OPEN.
+The left pane opens at the card root; the right opens in the User log folder (`USER/LOGS` by default). A coloured heading marks the active pane, where OPEN, RENAME, DELETE, NEW and INFO act. COPY and MOVE send the selected entry to the other pane's folder. Tap a row to select it and activate its pane. Tap the same row again to open it.
 
-The button over a pane shows the folder's path and goes up one folder. PREV and NEXT stand beside it while the folder holds more than 48 entries. The heading counts the entries, and `+ 1 NOT LISTED` counts the names the panel does not list: names that start with a full stop, such as `.DS_Store`, and names over 63 bytes. A folder that holds only such entries is not empty.
+The button above each pane shows its folder path; tap it to go up one folder. PREV and NEXT appear beside it when the folder has more than 48 entries. The heading counts the entries. A separate count, such as `+ 1 NOT LISTED`, covers omitted names: those starting with a full stop, such as `.DS_Store`, and those longer than 63 bytes. A folder containing only omitted entries is not empty.
 
 ![The second page of a folder of 120 entries](view:files-paged)
 
@@ -32,7 +32,7 @@ The fault log, `BENCH/RCBENCH.LOG`, takes COPY and DELETE only while the IOmcu l
 
 ## The buttons
 
-A button that would be refused is dimmed. A tap on it says why on the line over the buttons.
+Unavailable buttons are dimmed. Tap one to see the reason above the button row.
 
 | Button | What it does |
 |---|---|
@@ -50,21 +50,21 @@ An existing name is never overwritten: `NOTES.TXT already exists there.` A copy 
 ![NEW's choice](view:files-new)
 ![The keyboard for a new text file](view:files-name)
 
-The keyboard takes up to 59 bytes; Ä Ö Ü ä ö ü ß take 2 each. OK refuses an empty name, one of `" * / : < > ? \ |`, a space or a full stop at either end, and device names such as `CON` or `COM1`, and says why beside the title.
+The keyboard accepts names of up to 59 bytes; each of Ä Ö Ü ä ö ü ß uses 2 bytes. OK rejects empty names, any of `" * / : < > ? \ |`, leading or trailing spaces or full stops, and device names such as `CON` or `COM1`. The reason appears beside the title.
 
 ## The text viewer
 
 ![A servo test's report in the text viewer](view:files-view)
 
-The viewer shows a file as text, read-only. The home tag closes it: back to the panes, or back to [LOGS](logs.md) when LOGS opened it. It opens a file of up to 1MiB and up to 65,536 lines; `Reading the card.` shows while the card is read.
+The viewer opens files read-only, up to 1MiB and 65,536 lines. While reading, it shows `Reading the card.` The home tag returns to the panes, or to [LOGS](logs.md) if opened from there.
 
-- The header shows the file's folder and name, its size, READ-ONLY and `LINE 23 OF 57`: the line on the top row and the file's lines.
-- 18 rows of 92 characters show at once. SMALL switches to a smaller face, 22 rows of 115 characters, for a report's step table; NORMAL switches back. The choice holds until the panel restarts.
-- A line wider than a row continues on the next row, marked `..` at the left.
-- A drag on the text or on the scroll bar scrolls it. PAGE UP and PAGE DOWN move a screen; each is grey at the text's first or last screen.
-- The bench's words take colours: headings, labels such as `Result:`, PASS green, FAIL red, `not measured` and the other words of what did not run in the warning colour, a number with its unit in the unit's colour, `#` comments faint. German reports read the same way. A `.JSON` file is coloured as JSON.
-- A file with LF and CR LF line ends shows `MIXED LINE ENDS`.
-- A file with a NUL byte in its first 4kB reads `Not a text file: a NUL byte in its first 4kB.` An empty file reads `The file is empty.`
+- The header shows the folder, filename, size, READ-ONLY and `LINE 23 OF 57`: the top visible line and the total line count.
+- The normal font shows 18 rows of 92 characters. SMALL shows 22 rows of 115 characters, useful for a report's step table. NORMAL switches back. The choice lasts until the panel restarts.
+- Long lines wrap to the next row, marked `..` at the left.
+- Drag the text or scroll bar to scroll. PAGE UP and PAGE DOWN move by one screen; they are grey at the corresponding end.
+- Reports use colours for headings and labels such as `Result:`. PASS is green, FAIL red, and `not measured` and other unperformed-result words use the warning colour. Numbers with units use the unit's colour; `#` comments are faint. German reports use the same highlighting. `.JSON` files use JSON highlighting.
+- Files containing both LF and CR LF line endings show `MIXED LINE ENDS`.
+- A NUL byte in the first 4kB produces `Not a text file: a NUL byte in its first 4kB.` An empty file shows `The file is empty.`
 
 ![The same report in SMALL](view:files-view-small)
 ![A servo file of the KST programmer](view:files-view-kst)
@@ -93,7 +93,7 @@ EDIT in the viewer opens the editor and its keyboard. The text changes in the pa
 
 ![FILES while the bench is ARMED](view:files-armed)
 
-FILES writes only while the bench is SAFE and no run is being logged. While the bench is ARMED or a run is logged, every button but INFO and RESCAN is dimmed, and the line over the buttons reads `Bench ARMED. The card is read-only.` or `A run is being logged. The card is read-only.` A copy under way stops before its next 16KiB when the bench switches to ARMED or a run starts logging.
+FILES writes only while the bench is SAFE and no run is being logged. During ARMED or logging, COPY, MOVE, RENAME, DELETE and NEW are dimmed. Browsing, reading files, INFO and RESCAN remain available, subject to the normal restrictions on locked files and files being written. The line above the buttons reads `Bench ARMED. The card is read-only.` or `A run is being logged. The card is read-only.` If either condition begins during a copy, the copy stops before its next 16KiB block.
 
 ![FILES while a test is logged](view:files-logging)
 
@@ -104,10 +104,10 @@ FILES writes only while the bench is SAFE and no run is being logged. While the 
 ![INFO on a file](view:files-info)
 ![INFO on a folder](view:files-info-folder)
 
-A job that takes longer than 0.25s shows its progress in a box; CANCEL stops a copy before its next 16KiB. INFO shows the time the card holds, in the zone of SETUP > PANEL's Time zone. A 1980 date reads `not known`: the clock was not set when the file was written ([Setup](setup.md#panel)).
+A job lasting more than 0.25s shows a progress box. CANCEL stops a copy before its next 16KiB block. INFO displays the card's timestamp in the time zone set under SETUP > PANEL. A date in 1980 appears as `not known`: the clock was unset when the file was written ([Setup](setup.md#panel)).
 
 ## No card
 
 ![FILES with no card](view:files-nocard)
 
-With no card, both panes read `No card. Insert one and tap RESCAN.` A card put in, taken out or swapped is found by RESCAN; both panes then go back to the root and the User log folder.
+Without a card, both panes show `No card. Insert one and tap RESCAN.` Tap RESCAN after inserting, removing or replacing a card. Both panes then return to the root and User log folder.

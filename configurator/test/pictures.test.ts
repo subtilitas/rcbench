@@ -124,8 +124,8 @@ test('the 2 pads of channel 1 of the INA3221 carry their print: VIN1+ takes the 
   assert.deepEqual(on('C1B'), [[30, 'servo.POS']]);
   const shunt = CATALOGUE.wires.find((w) => w.b === 'ina3221.C1B')!;
   assert.ok(shunt.note!.en.includes('VIN1+ and VIN1-'));
-  assert.ok(shunt.note!.en.includes('The supply goes to VIN1+, the servo to VIN1-.'));
-  assert.ok(shunt.note!.de.includes('Die Versorgung geht an VIN1+, das Servo an VIN1-.'));
+  assert.ok(shunt.note!.en.includes('Connect the supply to VIN1+ and the servo to VIN1-.'));
+  assert.ok(shunt.note!.de.includes('Verbinde die Versorgung mit VIN1+ und das Servo mit VIN1-.'));
   // The 3 large pads carry their printed names and stay unconfirmed and unconnected.
   const large = ina.pins.find((p) => p.id === 'LP')!;
   assert.equal(large.confirmed, false);

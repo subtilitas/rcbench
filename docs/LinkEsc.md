@@ -2,19 +2,20 @@
 
 <sub>**English** · [Deutsch](LinkEsc-de.md)</sub>
 
-This page is a section of [The link](Link.md), which holds the wiring, the frame
-format, the page map and the other pages. ESC is electronic speed controller, PD
-power delivery, GPIO general-purpose input/output, CRC cyclic redundancy check.
+This page describes access to ESC settings over the link. [The link](Link.md)
+covers the wiring, frame format, page map and other pages. ESC means
+electronic speed controller; PD, power delivery; GPIO, general-purpose
+input/output; and CRC, cyclic redundancy check.
 
-`ESC_WIRE` (0x3A) and `ESC_DATA` (0x3B), new in 4.34, read and write an ESC's
-settings over its signal wire. They hold one session of
+From protocol 4.34, `ESC_WIRE` (0x3A) and `ESC_DATA` (0x3B) read and
+write an ESC's settings over its signal wire. They hold one session of
 [`protocols/escwire`](../protocols/escwire/README.md) on the pin of a throttle slot
 or a DShot programming port. `shared/outputs/esc_port.c` holds the rules. An IOmcu
 that serves them reports `LINK_CAP_PROGRAM` (bit 8).
 
-There is no raw transaction. The IOmcu holds the read copy and judges every frame
-([the guard](../protocols/escwire/README.md)). A panel names an operation and hands
-over a draft.
+The pages do not expose raw transactions. The IOmcu retains the read
+copy and checks every frame ([the guard](../protocols/escwire/README.md)).
+The panel selects an operation and supplies a draft.
 
 ## Which pin
 
@@ -52,10 +53,12 @@ and the time off.
 | `HAND_WAIT`, up to 60000ms | driven high, into an ESC with no power if it is connected; the current is not measured | not touched |
 | DONE, then `RUN` as above | | not touched |
 
-An ESC session feeds the ESC from the PD mini on every board, also where PROG_SUPPLY
-exists. It never switches PROG_SUPPLY on: from OPEN to the give a panel's ON of it is
-refused with `BAD_VALUE`, and an error, a STOP or an ABORT switches it off with the PD mini. A CLOSE with neither leaves it as the panel has it. `READY` follows
-an ESC that answered.
+An ESC session uses the PD mini to power the ESC on every board,
+including boards with PROG_SUPPLY. It never switches PROG_SUPPLY on.
+From OPEN until the port is released, a panel request to switch it on
+is refused with `BAD_VALUE`. An error, STOP or ABORT switches it off
+along with the PD mini. CLOSE without one of those events leaves it
+as set by the panel. The state becomes `READY` when an ESC answers.
 
 ## What each event does
 
@@ -71,15 +74,18 @@ an ESC that answered.
 | IOmcu restart | the chip's reset state | off at boot | free; the slot binds from flash |
 | The supply off, silent, or read off after it read on, in `RUN` or `READY` | parked at once | off | held, `FAULT`, result `SUPPLY` |
 
-A write that a lost link cuts between its erase and its program leaves the page
-erased. See [the session's table](../protocols/escwire/README.md).
+If link loss interrupts a write between erase and program, the ESC's
+memory page remains erased. See
+[the session's table](../protocols/escwire/README.md).
 
 Parked is an input with its pull-down and its buffer off. No state above sends a
 throttle signal: while the page holds the pin the output has released it, an apply
 leaves that slot unbound (`esc_port_may_bind()`), and the module has no function
 that makes a pulse pattern.
 
-A disarm is no stop: with ARM refused from OPEN on nothing is armed for it to end. The panel's STOP is the STOP operation; a failsafe edge is a stop by itself.
+Disarming does not count as a stop: ARM is refused from OPEN onward,
+so the bank is already disarmed. The panel's STOP sends the STOP
+operation; a failsafe edge independently triggers a stop.
 
 **What counts as an error.** Any operation of the session that ends other than
 `EW_SES_OK`, among them `EW_SES_ERR_SILENT`, `NOT_KNOWN`, `READ`, `CHANGED`,
@@ -88,15 +94,18 @@ A disarm is no stop: with ARM refused from OPEN on nothing is armed for it to en
 (`EW_SES_ERR_NO_READ`, `MUST_READ`, `DIRTY`, `ERASED`, `BACKUP`, `NOT_WRITABLE`,
 `STATE`) is a refusal of that command and changes nothing.
 
-**After `TORN` and `LOST`.** The session itself keeps an ESC in its mode after these
-two, for a repair in the same session. The page does not: it aborts the session,
-which parks the line, and switches the supply off, so the ESC loses its power. A
-repair is CLEAR, ENTER and READ. What a power cycle does to a half-written page is
-in the specification's terms:
-a family S or Bluejay ESC rewrites defaults and its 48 tag bytes read 0xFF, which
-makes it read-only here; an AM32 with erased settings stays in its bootloader, and
-only RESTORE writes it. Not measured on an ESC. On `BY HAND` the bench cannot cut the ESC's own
-supply: its line is parked and a person disconnects it.
+**After `TORN` and `LOST`.** The session layer keeps the ESC in its mode
+to allow repair in the same session. The link page instead aborts the
+session, parks the line and switches the supply off. To begin repair,
+use CLEAR, ENTER and READ.
+
+According to the specification, cycling power with a half-written
+memory page makes a family S or Bluejay ESC restore defaults. Its 48
+tag bytes then read 0xFF, making it read-only here. An AM32 with erased
+settings remains in its bootloader, where only RESTORE can write it.
+This is not measured on an ESC. In `BY HAND` mode, the bench cannot
+cut the ESC's own supply: it parks the line, and the operator must
+disconnect power.
 
 **Who switches the rest.** The bank is SAFE for as long as the page is held, so the
 page's line, the PD mini and PROG_SUPPLY are all the IOmcu has on. `LINK_EW_F_FAULT` tells the
@@ -104,8 +113,9 @@ panel, which follows it to the bench's SAFE state.
 
 ## The panel's half
 
-`shared/bench/esc_link.c` asks and follows; it is on every panel. [ESC signal wire](EscWire.md)
-describes the screen; the alert below shows on every screen.
+`shared/bench/esc_link.c` sends requests and tracks their progress on
+every panel. [ESC signal wire](EscWire.md) describes the programming
+screen; the alert described below can appear on any screen.
 
 | Event | What the panel does |
 |---|---|
@@ -220,9 +230,12 @@ running, 2 done, 3 `NO_LINE`, 4 `SUPPLY`, 5 `TIMEOUT`, 6 `CUT`, 7 `SESSION`, 8 `
 
 An ESCape32 page is its 46 values as 16-bit integers in map order.
 
-WRITE needs the key, the CRC, the draft's CRC and the `READS` and `READ_CRC` of the
-read it was made from (else `STALE`), and the session's own rules. A write that changed the page moves `READS` and `READ_CRC`, also under a stop: a draft of the page before it is stale. RESTORE needs the
-same but `READS` and `READ_CRC`.
+WRITE requires the key, the CRC, the draft's CRC, and the `READS` and
+`READ_CRC` values from the read on which the draft is based. A mismatch gives
+`STALE`. The session's own rules also apply. A write that changes the
+page updates `READS` and `READ_CRC`, even during a stop, so a draft
+based on the earlier page becomes stale. RESTORE has the same
+requirements except for `READS` and `READ_CRC`.
 
 ## Older and newer
 
@@ -235,11 +248,12 @@ The panel's [ESC signal wire](EscWire.md) screen drives both pages.
 
 ## What is not measured
 
-On the bench console, `esc` drives it
-([The bench console](BenchConsole.md#the-esc-settings-page)). Its times come from the
-specification or are this module's choice ([`protocols/escwire`](../protocols/escwire/README.md)):
-the entry hold, the time off, 50ms before ON and 60000ms `BY HAND` are chosen. The
-current a line driven high feeds into an unpowered ESC is not measured, nor the power
-stage's state in its bootloader.
+The bench console provides access through `esc`
+([The bench console](BenchConsole.md#the-esc-settings-page)). Timings
+come from the specification or are implementation choices
+([`protocols/escwire`](../protocols/escwire/README.md)). The entry hold,
+off time, 50ms before ON and 60000ms for `BY HAND` are chosen values.
+The current fed into an unpowered ESC by a line driven high is not
+measured. The power stage's state in the bootloader is also not measured.
 
 Written from a behavioural specification, without access to the firmware sources.

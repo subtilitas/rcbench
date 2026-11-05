@@ -3,12 +3,12 @@
 [Deutsch](EscProfiles-de.md)
 
 An ESC (electronic speed controller) profile describes how to program one
-family of ESCs through its throttle-stick menu. It covers how the menu is
-entered, how the ESC sounds a number, and which items and values the menu
-holds. It is the data [stick programming](StickProgramming.md) runs: the
-operator picks an ESC and the values to change, and the bench drives the
-throttle and counts the beeps in the supply current. 24 of the 72 profiles
-are of a kind it runs.
+family of ESCs through its throttle-stick menu. It defines the menu entry
+procedure, the beep pattern for announcing numbers, and the available
+items and values. [Stick programming](StickProgramming.md) uses this data:
+you choose an ESC and the values to change, and the bench drives the
+throttle and counts the beeps in the supply current. It can run 24 of the
+72 profiles.
 
 ## What is in the set
 
@@ -28,8 +28,8 @@ are of a kind it runs.
 
 Every profile is `"verified": false`. The profiles come from 153 manuals and
 were written without an ESC on a bench. No manual states a beep length, a
-gap or a loop time in milliseconds, so every time field is null until a
-bench recording measures it.
+gap or a loop time in milliseconds, so the corresponding timing fields
+remain null until a bench recording supplies measurements.
 
 ## Where profiles live
 
@@ -44,8 +44,8 @@ else is refused. A card file with the id of a built-in profile replaces that
 profile. A card file with a new id adds a profile after the built-in ones.
 File names of 64 characters or more are not read. A card file that would
 take its maker past 512 models (`ESC_MAKER_MODELS_MAX`), counted across
-the maker's profiles built in and from the card, is refused. The card holds at most 32
-profiles; the panel reads the names of the first 64 `.json` files in
+the maker's profiles built in and from the card, is refused. The panel loads at most 32
+card profiles and reads the names of the first 64 `.json` files in
 `/BENCH/ESC/CONF/`. A refused file is named on the console with its reason, for example:
 
 ```
@@ -110,7 +110,7 @@ JSON. The panel does not load them.
 | `scheme.announce.repeat` | 0 to 255: 0 repeats until a choice is made, null not known |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
 | `scheme.listen` | where the stick rests while the menu sounds: `{"throttle": "min"}`, `mid` or `max`. Absent or null: where the entry left it. Set in the 9 profiles for YGE ESCs, whose menu sounds with the stick at minimum after a maximum entry; stick programming runs such a profile only when `hold_ms` gives the entry's length |
-| `scheme.store` | the move that stores a selection once the ESC has answered it: `{"throttle": "min"}`, `mid` or `max`. Absent or null: the selection stores. Set in the 8 mode setups of YGE ESCs, where the stick back to minimum stores the mode |
+| `scheme.store` | the move that stores a selection once the ESC has answered it: `{"throttle": "min"}`, `mid` or `max`. Absent or null: the selection move itself stores the value. Set in the 8 mode setups of YGE ESCs, where the stick back to minimum stores the mode |
 | `scheme.select.within_ms` | 0 to 60000: the time after the tone in which the move counts, or null when not stated |
 | `scheme.value_select` | two-stage menus only: `select` picks the item, then `value_select.throttle` (`min`, `mid`, `max`, `none`) stores the value sounded; `within_ms` as for `select`. Absent or null: the `select` move stores the value |
 | `scheme.changes_per_entry` | `one`, `many` |
@@ -136,7 +136,7 @@ JSON. The panel does not load them.
 | `values` | 1 to 255 of `{"number": 0-255, "name": "...", "default": true}`; numbers unique, at most one default |
 | `values[].entry_throttle` | `min`, `mid`, `max`: the stick position the manual programs this value from, where it is not the entry's; absent or null, the entry's. Stick programming powers the ESC up there for that value |
 | `values[].entry_hold_ms` | 0 to 600000: power-on to the menu when this value is programmed, where the manual gives a wait other than `scheme.entry.hold_ms`; absent or null, the entry's. Kontronik SUN PLUS modes 4 to 6 wait 5000ms |
-| `values[].after_select` | 1 to 4 of `min`, `mid`, `max`: the moves the manual asks for after this value's select move, in order, each once the ESC has answered the one before; absent or null, none. The Kontronik car modes and PIX mode 2 go to `min`, the brake. Each is a move: the first not where the stick is when they begin (the profile's `scheme.store` move, else the select (or `value_select`) move), and none the same as the one before; a file with one that stays put is refused. Stick programming makes each STORE after the one before, after the profile's `scheme.store` move; a two-stage profile takes none |
+| `values[].after_select` | 1 to 4 positions from `min`, `mid`, `max`: the moves required after selecting this value. They run in order, each after the ESC acknowledges the preceding move. Absent or null: no extra moves. Kontronik car modes and PIX mode 2 use `min`, the brake. Every entry must change the stick position. The first must differ from the preceding `scheme.store` position, or from the select (or `value_select`) position if there is no store move. Later entries must differ from their predecessor; a file that leaves the stick in place is refused. Stick programming performs these STORE moves after the profile's `scheme.store` move. Two-stage profiles do not accept this field |
 | `applies_to` | model names of this profile, or null for all. Stick programming offers the item only on those models |
 | `applies_when` | a condition in words, e.g. `"model type heli"` |
 
@@ -176,8 +176,8 @@ each step is in [Stick programming](StickProgramming.md#manual-steps).
 (its switch at full throttle) and `greatplanes-electrifly-c-series` (its on/off
 button). `graupner-brushless-control-t`, whose menu is read from LEDs, and
 `hacker-master-senstrol`, which needs its motor's identification chip, a
-second channel and a JetiBox, are `assisted` with none: no step a person can
-be asked for at a moment.
+second channel and a JetiBox, are `assisted` without listed steps: their requirements cannot be reduced
+to a prompt for a single action at a defined point.
 
 ## Adding or correcting a profile
 
@@ -202,9 +202,9 @@ The texts the panel carries write a number and its unit together: `2s`,
 (`3 beeps`). These are `brand`, `family`, `automatable_note`, the entry's
 `steps`, a model's `name`, an item's `name` and `applies_when`, a value's
 `name` and a manual step's `action` and `action_de`, the strings
-`gen_esc_profiles.py` compiles into the C. `check_units.py` holds them; the
-research fields (`sources`, `notes`, `unknowns`, the descriptions, a model's
-`spec_source` and `firmware_note`) are not held.
+`gen_esc_profiles.py` compiles into C. `check_units.py` checks these strings;
+it does not check the research fields (`sources`, `notes`, `unknowns`, the descriptions, a model's
+`spec_source` and `firmware_note`).
 
 CI (continuous integration) runs `--check`. The host suite parses every file
 with the panel's reader and compares the result with the generated table,

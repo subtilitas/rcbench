@@ -118,7 +118,7 @@ test('prose that names another release is an error with file and line', () => {
   const f = checkDocs('0.17.0', docs);
   assert.equal(f.length, 1);
   assert.match(f[0]!.msg, /^README\.md:2 names release 0\.16\.0, package\.json is 0\.17\.0$/);
-  assert.deepEqual(checkDocs('0.17.0', [{ file: 'x.md', text: 'Release 0.17.0 and v0.17.0; 0.16.0 alone, 4.2 ms' }]), []);
+  assert.deepEqual(checkDocs('0.17.0', [{ file: 'x.md', text: 'Release 0.17.0 and v0.17.0; 0.16.0 alone, 4.2ms' }]), []);
 });
 
 test('the Markdown files of the configurator state the release of package.json', () => {

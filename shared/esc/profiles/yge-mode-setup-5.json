@@ -13,7 +13,7 @@
       "v_max_mv": 16800,
       "current_a": 18,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 2 A continuous, 4 A peak",
+      "firmware_note": "BEC 5.5V, 2A continuous, 4A peak",
       "spec_source": "YGE_18-30_en.pdf p.1 (2-4s; 18 A, 30 A)",
       "cell_type": "lipo"
     },
@@ -25,7 +25,7 @@
       "v_max_mv": 16800,
       "current_a": 30,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 2 A continuous, 4 A peak",
+      "firmware_note": "BEC 5.5V, 2A continuous, 4A peak",
       "spec_source": "YGE_18-30_en.pdf p.1 (2-4s; 18 A, 30 A)",
       "cell_type": "lipo"
     },
@@ -37,7 +37,7 @@
       "v_max_mv": 25200,
       "current_a": 40,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "firmware_note": "BEC 5.5V, 3A continuous, 5A peak",
       "spec_source": "YGE_40-60_V5_en.pdf p.1 (2-6s; 40 A, 60 A)",
       "cell_type": "lipo"
     },
@@ -49,7 +49,7 @@
       "v_max_mv": 25200,
       "current_a": 60,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "firmware_note": "BEC 5.5V, 3A continuous, 5A peak",
       "spec_source": "YGE_40-60_V5_en.pdf p.1 (2-6s; 40 A, 60 A)",
       "cell_type": "lipo"
     },
@@ -61,7 +61,7 @@
       "v_max_mv": 25200,
       "current_a": 90,
       "bec": "switching",
-      "firmware_note": "BEC 5.7 / 7.4 / 8.0 V by jumper, 8 A continuous, 18 A peak",
+      "firmware_note": "BEC 5.7 / 7.4 / 8.0V by jumper, 8A continuous, 18A peak",
       "spec_source": "YGE_90-120LVK_V3_en.pdf p.1 (3-6s; table 90 LV, 120 LV, 120 LV K)",
       "cell_type": "lipo"
     },
@@ -73,7 +73,7 @@
       "v_max_mv": 25200,
       "current_a": 120,
       "bec": "switching",
-      "firmware_note": "BEC 5.7 / 7.4 / 8.0 V by jumper, 8 A continuous, 18 A peak",
+      "firmware_note": "BEC 5.7 / 7.4 / 8.0V by jumper, 8A continuous, 18A peak",
       "spec_source": "YGE_90-120LVK_V3_en.pdf p.1 (3-6s; table 90 LV, 120 LV, 120 LV K)",
       "cell_type": "lipo"
     },
@@ -85,7 +85,7 @@
       "v_max_mv": 25200,
       "current_a": 120,
       "bec": "switching",
-      "firmware_note": "BEC 5.7 / 7.4 / 8.0 V by jumper, 8 A continuous, 18 A peak; the manuals do not say how the K version differs",
+      "firmware_note": "BEC 5.7 / 7.4 / 8.0V by jumper, 8A continuous, 18A peak; the manuals do not say how the K version differs",
       "spec_source": "YGE_90-120LVK_V3_en.pdf p.1 (3-6s; table 90 LV, 120 LV, 120 LV K)",
       "cell_type": "lipo"
     }
@@ -162,7 +162,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Throttle to maximum while the wanted mode is being sounded (or just after its tones; the manual does not say which); the ESC answers with 2 tones."
+      "description": "Throttle to maximum while the desired mode is being sounded (or just after its tones; the manual does not say which); the ESC answers with 2 tones."
     },
     "skip": {
       "throttle": "none",
@@ -180,7 +180,7 @@
     "exit": "Throttle to minimum after selection: 2 tones, then the cell-count tones and the arming tones; the ESC is then armed. Power cycle also leaves the menu.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Selecting a mode sets every parameter of that mode to its default; there is no separate reset.",
-    "description": "Power is applied with the throttle at maximum. After 20 interval tones and 2 confirmation tones the throttle goes to minimum and the ESC counts through the modes, one tone count per mode. Throttle to maximum at the wanted count selects it (2 tones). Throttle back to minimum stores it (2 tones) and arms the ESC."
+    "description": "Power is applied with the throttle at maximum. After 20 interval tones and 2 confirmation tones the throttle goes to minimum and the ESC counts through the modes, one tone count per mode. Throttle to maximum at the desired count selects it (2 tones). Throttle back to minimum stores it (2 tones) and arms the ESC."
   },
   "items": [
     {
@@ -219,8 +219,8 @@
     "Duration of the 20 interval tones before entry: not stated, so the time from power-on to the 2 confirmation tones is unmeasured",
     "Whether maximum throttle selects during the count or only after the last tone of a count: not stated",
     "Number of times the mode sequence repeats before it ends or restarts: not stated",
-    "Minimum supply voltage at which the menu is entered: not stated; ESC cell detection needs a voltage matching the cell count and a 1-20 V bench supply covers at most 4 cells at 4.2 V",
-    "Behaviour on a current-limited 3 A bench supply: not stated; the manuals say the ESC is to be powered from batteries only, power supplies are not allowed",
+    "Minimum supply voltage at which the menu is entered: not stated; ESC cell detection needs a voltage matching the cell count and a 1-20V bench supply covers at most 4 cells at 4.2V",
+    "Behaviour on a current-limited 3A bench supply: not stated; the manuals say the ESC is to be powered from batteries only, power supplies are not allowed",
     "Idle current of the ESC with the motor connected: not stated, needed to separate tones from the idle level when counting beeps from supply current",
     "Which of the 2 tones after selection marks success when the throttle is moved during a tone: not stated"
   ],
@@ -230,9 +230,9 @@
     "Power applied with the throttle at maximum enters programming; the manuals tell the user to unplug the battery, set the throttle to minimum and reconnect to leave without changes.",
     "Start-up sequence in normal operation: 3 descending tones, then one tone per LiPo cell, then 3 ascending tones when the throttle is at stop.",
     "Mode 2 is the as-delivered mode on all models in this file (manual headings: governor preprogrammed, mode 2).",
-    "Gov-Store learn throttle differs: YGE_40-60_V5_en.pdf and YGE_Bedienungsanleitung-40-60-V5.pdf give 100 %; YGE_18-30_en.pdf, YGE_Bedienungsanleitung-18-30.pdf and the LVK manuals give about 90 % as an example.",
-    "YGE_90LV-120LVK_V3_en.pdf and YGE_90-120LVK_V3_en.pdf differ only in one BEC step label (7.4 V 2-cell Li-Ion / Li-Po versus Li-Ion).",
-    "Default parameters after any mode selection (mode 2 list): timing 18 degrees, brake off, LiPo slow-down cut-off, automatic cell count, active freewheel on, governor on, P gain 0.9, I gain 0.05, start-up speed heli middle, PWM 9 kHz, start-up power auto 1-32. Selecting another mode resets all settings to default.",
+    "Gov-Store learn throttle differs: YGE_40-60_V5_en.pdf and YGE_Bedienungsanleitung-40-60-V5.pdf give 100%; YGE_18-30_en.pdf, YGE_Bedienungsanleitung-18-30.pdf and the LVK manuals give about 90% as an example.",
+    "YGE_90LV-120LVK_V3_en.pdf and YGE_90-120LVK_V3_en.pdf differ only in one BEC step label (7.4V 2-cell Li-Ion / Li-Po versus Li-Ion).",
+    "Default parameters after any mode selection (mode 2 list): timing 18 degrees, brake off, LiPo slow-down cut-off, automatic cell count, active freewheel on, governor on, P gain 0.9, I gain 0.05, start-up speed heli middle, PWM 9kHz, start-up power auto 1-32. Selecting another mode resets all settings to default.",
     "Fine adjustment needs the YGE ProgCard (all files); that is outside stick programming.",
     "yge-mode-setup-6 uses the same procedure with a sixth mode; this file lists modes 1-5."
   ]

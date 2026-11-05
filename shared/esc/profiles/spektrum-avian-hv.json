@@ -11,7 +11,7 @@
       "v_max_mv": 58800,
       "current_a": 160,
       "bec": null,
-      "firmware_note": "BEC 6.0/7.4/8.4 V at 10 A (25 A peak listed); type not stated",
+      "firmware_note": "BEC 6.0/7.4/8.4V at 10A (25A peak listed); type not stated",
       "spec_source": "Spektrum_Avian_160-200HV.pdf p.4 (6-14S LiPo, 160 A / 200 A)",
       "cell_type": "lipo"
     },
@@ -23,7 +23,7 @@
       "v_max_mv": 58800,
       "current_a": 200,
       "bec": null,
-      "firmware_note": "BEC 6.0/7.4/8.4 V at 10 A (25 A peak listed); type not stated",
+      "firmware_note": "BEC 6.0/7.4/8.4V at 10A (25A peak listed); type not stated",
       "spec_source": "Spektrum_Avian_160-200HV.pdf p.4 (6-14S LiPo, 160 A / 200 A)",
       "cell_type": "lipo"
     }
@@ -44,7 +44,7 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Another series of tones after more than 5 s at full throttle following the two acceptance tones.",
+      "confirm_signal": "Another series of tones after more than 5s at full throttle following the two acceptance tones.",
       "steps": [
         "Transmitter on, throttle full.",
         "Connect battery: three ascending tones.",
@@ -75,7 +75,7 @@
     "exit": "Not described; the box procedure says to switch the ESC off and on after saving.",
     "changes_per_entry": "many",
     "reset_to_defaults": null,
-    "description": "The manual describes programming with the Smart Programmer Box and SmartLink; it does not describe the stick selection or option steps. The calibration tip says the ESC enters programming mode after more than 5 s at full throttle."
+    "description": "The manual describes programming with the Smart Programmer Box and SmartLink; it does not describe the stick selection or option steps. The calibration tip says the ESC enters programming mode after more than 5s at full throttle."
   },
   "items": [
     {
@@ -457,13 +457,13 @@
   "unknowns": [
     "Stick procedure for selecting a parameter and an option: not in this manual. The contents page lists 'Stick Programming' (page 8) but page 8 is the programmer-box section.",
     "Tone durations and gaps: not stated.",
-    "Whether the stick procedure of Spektrum_Avian_Smart_series.pdf (bottom stick within 3 s, full throttle for an option) applies to this ESC: not stated.",
+    "Whether the stick procedure of Spektrum_Avian_Smart_series.pdf (bottom stick within 3s, full throttle for an option) applies to this ESC: not stated.",
     "Exit and save: only the box and a power cycle are described.",
     "Item numbers follow the parameter list; the tone code for 12-15 is read from the table header, which names only the first eight columns.",
     "Defaults come from black table cells in the page image."
   ],
   "notes": [
-    "Spektrum_Avian_160-200HV.pdf has the same 15 parameters as Spektrum_Avian_130Pro.pdf but different values for cells (6S-14S), BEC (6.0/7.4/8.4 V) and timing degrees (5, 15, 30), and the contents page shows a stick-programming section whose text is absent.",
+    "Spektrum_Avian_160-200HV.pdf has the same 15 parameters as Spektrum_Avian_130Pro.pdf but different values for cells (6S-14S), BEC (6.0/7.4/8.4V) and timing degrees (5, 15, 30), and the contents page shows a stick-programming section whose text is absent.",
     "The page 8 note says power the ESC off and on after adjusting parameters; changes are not applied otherwise."
   ],
   "schema": 1,

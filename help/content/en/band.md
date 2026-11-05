@@ -6,11 +6,11 @@ order: 2
 
 # Status band and STOP
 
-The status band is the top 60px of every screen except the splash, the bus-fault screen, PANEL UPDATE and the progress of an IOmcu update. It names the screen, shows the state of the bench and holds STOP.
+The status band occupies the top 60px of each screen except the splash, bus-fault screen, PANEL UPDATE and IOmcu update progress. It shows the screen name and bench state and provides the STOP control.
 
 ## What the band shows
 
-From the left: the home tag with the screen's name, then the chips, then "?" on a screen with a guide, then STOP at the right edge.
+From left to right, the band contains the home tag and screen name, the status chips, a "?" where a guide is available, and STOP at the right edge.
 
 | Chip | Shows |
 |---|---|
@@ -36,7 +36,7 @@ A channel with no command for 500ms sits at rest while ARMED: a throttle at 0%, 
 
 ## STOP
 
-STOP works on every screen that has the band. One press switches the bench to SAFE, switches every output, the supply output and the programming ports' 5V off and latches, as an emergency stop button does. Leaving the screen, an alert that clears, a link that comes back or a switch to ARMED does not clear it.
+STOP works on every screen with a status band. Pressing it immediately switches the bench to SAFE and turns off every output, the supply output and the programming ports' 5V. It latches like an emergency stop button. Changing screens, clearing an alert, restoring the link or requesting ARMED does not clear the latch.
 
 ![A latched STOP and its box](view:band-stop)
 
@@ -54,13 +54,13 @@ STOP works on every screen that has the band. One press switches the bench to SA
 ![The box under the LINK chip](view:band-link)
 ![The box under the SAFE chip](view:band-safe)
 
-A tap on a chip opens a box under the band. It says what the chip's state means for the bench and what to do. The box is 640px wide and opens 4px under the band. A tap on another chip closes it and opens that chip's box. Any other tap closes it and does nothing else, except on DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST or STOP RUN: those act on the same press, as with no box. Leaving the screen closes it too. The text follows the state while the box is open.
+Tap a chip to open its help box. The box explains the current state and what to do. It is 640px wide and appears 4px below the band. Tapping another chip switches to that chip's box. Other taps close the box without acting, except DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN: these act on the same press. Leaving the screen also closes the box. While open, its text follows changes in the state.
 
 ![The box under ARMED MOTOR](view:band-armed)
 
 ![LINK with 37 refused link frames](view:band-link-refused)
 
-While the IOmcu has refused link frames since its power-up, the LINK box ends with the count, for example `Rejected link frames: 37`.
+If the IOmcu has refused any link frames since power-up, the LINK box ends with their count, for example `Rejected link frames: 37`.
 
 ## FAULT codes
 
@@ -82,30 +82,30 @@ For a bit this release never sets, the box says to flash both boards from one re
 
 ## Screenshot
 
-Hold the empty part of the band for 1s, between the home tag and the chips. Nothing on the panel marks the place. The band's notice says `Screenshot taken.` at 1s, and the release does nothing. A press on a chip, the home tag, "?" or STOP is no screenshot, and neither is a slide out of the gap, a second finger or a lost touch.
+Hold the unmarked gap between the home tag and the chips for 1s. At 1s, the band reports `Screenshot taken.`; releasing your finger does nothing further. Pressing a chip, the home tag, "?" or STOP does not take a screenshot. Sliding out of the gap, using a second finger or losing touch cancels the gesture.
 
-The picture is what the panel shows, band included, also over a box, a list or a keypad. It is taken at once while ARMED too and touches no output; STOP and DISARM stay live. One picture is held in memory: another hold replaces it, and a restart loses it. The splash, the bus-fault screen, PANEL UPDATE and the progress of an IOmcu update have no band and no hold.
+The screenshot captures the current display, including the band and any open box, list or keypad. Capture is immediate even while ARMED and affects no output; STOP and DISARM remain active. Only one picture is held in memory. Another hold replaces it, and a restart discards it. The splash, bus-fault screen, PANEL UPDATE and IOmcu update progress have no band, so they cannot use this gesture.
 
 ![The screenshot's popup](view:shot-popup)
 
-The popup opens once the bench is idle and nothing else is up: SAFE, supply and PROG 5V off, no port held, no programming session, sweep, test or run, no update, no FAULT, no log open, the link up or the bench simulated. If that stops, the popup closes and the picture waits again.
+The save popup waits until the bench is idle: SAFE, supply output and PROG 5V off, no held port, programming session, sweep, test, run, update, FAULT or open log. The link must be up unless the bench is simulated. If any of these conditions changes, the popup closes and the picture waits until they are met again.
 
-- The keyboard edits the name, `SHOT` and the next number by default, up to 55 bytes. `.PNG` stays.
-- SAVE writes `screenshots/<name>.PNG` on the card and makes the folder when it is missing. A taken name is refused; nothing is overwritten.
-- CANCEL drops the picture. A failure, no card or a full card, stays on the popup with the picture kept.
-- The file is a PNG of 1024 x 600px, for any browser or PC. It shows in [FILES](files.md) and on the Wi-Fi page.
+- Use the keyboard to edit the name, up to 55 bytes. The default is `SHOT` followed by the next number. The `.PNG` extension stays fixed.
+- SAVE writes `screenshots/<name>.PNG` to the card, creating the folder if needed. Existing names are refused; no file is overwritten.
+- CANCEL discards the picture. If saving fails, for example because the card is missing or full, the popup stays open and retains the picture.
+- The file is a 1024 x 600px PNG (Portable Network Graphics), viewable in a browser or on a PC. It appears in [FILES](files.md) and on the Wi-Fi page.
 
 ## The screen guide
 
 ![The menu's guide at page 1](view:help-overview)
 
-"?", 8px left of STOP, opens the guide of the screen on top. The menu has one; the other screens show no "?" yet. The guide numbers up to 5 controls of the screen with a badge and corner brackets and lists them in a dock of 480 x 488px on one half of the screen: each control's name, then what it does in 3 rows at most. The other half keeps running. The dock's last row names this help's address.
+"?", 8px left of STOP, opens the guide for the current screen. The menu has a guide; other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
 
-- PREV and NEXT turn the pages. They sit in the band in place of the home tag, the same spot on every page, so a second tap where the first landed turns the next page. CLOSE, at the dock's bottom, or a tap on "?" closes the guide.
-- A tap anywhere else closes it and does nothing else.
-- STOP works through the guide: a press on STOP closes it and stops at once. DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN act on the same press, as with no guide.
-- The knob moves nothing while the guide is open.
-- While ARMED the guide shows only the pages that cover no control that stops an output and no TARGET row.
+- PREV and NEXT turn the guide pages. They replace the home tag in the band and stay in the same position on every page. Repeated taps at the same position keep turning pages. CLOSE at the bottom of the dock, or "?", closes the guide.
+- Tapping elsewhere closes the guide without acting on the screen below.
+- STOP closes the guide and stops the bench immediately. DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST and STOP RUN also act on the same press.
+- The knob has no effect while the guide is open.
+- While ARMED, the guide shows only pages that leave output-stop controls and the TARGET row uncovered.
 
 ## The alert band
 
@@ -120,7 +120,7 @@ A fault the open screen does not show appears in a red band, 44px high, across t
 
 ## Hold buttons
 
-A hold button acts after 2s of contact. ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and every button labelled `HOLD 2s TO ...` are hold buttons. A release before 2s sends nothing and shows the button's hint in the alert band for 4s, in amber instead of red, for example `Hold 2s to switch to ARMED.`
+A hold button acts after 2s of contact. ARM, OUTPUT ON, START TEST, START LIMIT RUN, APPLY and every button labelled `HOLD 2s TO ...` use this gesture. Releasing before 2s sends no command. Instead, the alert band shows an amber hint for 4s, for example `Hold 2s to switch to ARMED.`
 
 - The hint shows only for a release the finger made on the button. It does not show when the finger slid off the button first, when the touch was lost, for a second finger's contact, or on a screen without the status band.
 - A release at 2s or later has acted and shows no hint.

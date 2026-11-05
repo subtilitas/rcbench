@@ -37,9 +37,9 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 7000,
-      "confirm_signal": "Long tone about 2 s after power-up, then the melody 5-6-5 about 5 s later",
+      "confirm_signal": "Long tone about 2s after power-up, then the melody 5-6-5 about 5s later",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery",
         "Wait about 2000ms: long tone",
         "Wait about 5000ms more: melody 5-6-5, programming mode entered"
@@ -58,22 +58,22 @@
     "select": {
       "throttle": "min",
       "within_ms": 3000,
-      "description": "Item: throttle to min within 3000 ms after the tone."
+      "description": "Item: throttle to minimum within 3000ms after the tone."
     },
     "value_select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Value: throttle to max after hearing the value tone."
+      "description": "Value: throttle to maximum after hearing the value tone."
     },
     "skip": {
       "throttle": "none",
       "description": "Leave the throttle unchanged."
     },
     "confirm_signal": "Melody 5-6-5 after a value is stored.",
-    "exit": "After 5-6-5, throttle to min within 2000 ms; or item 8 then throttle to min within 3000 ms.",
+    "exit": "After 5-6-5, throttle to minimum within 2000ms; or item 8 then throttle to minimum within 3000ms.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Item 7 selects 'set all to default'.",
-    "description": "Throttle max, battery on, long tone at about 2 s, melody 5-6-5 at about 5 s later. Eight item tones loop; throttle to min within 3 s selects one. Value tones loop; throttle to max on the wanted tone stores it (5-6-5) and returns to the item loop."
+    "description": "Throttle at maximum, battery on, long tone at about 2s, melody 5-6-5 at about 5s later. Eight item tones loop; throttle to minimum within 3s selects one. Value tones loop; throttle to maximum on the desired tone stores it (5-6-5) and returns to the item loop."
   },
   "items": [
     {
@@ -230,7 +230,7 @@
   "notes": [
     "Dualsky_XController_FR.pdf (Flash RC, French) and Dualsky_XController_Lite_programming.pdf (English) carry the same menu.",
     "Conflict: English sheet says brake default is Disabled; French sheet says brake active by default. No default flag set on item 1.",
-    "Conflict: English sheet default cutoff threshold is High; French sheet says medium. Nixx cutoff: English 0 %/50 %/60 % of start voltage; French 60 %/65 %/70 %. No default flag set on item 4.",
+    "Conflict: English sheet default cutoff threshold is High; French sheet says medium. Nixx cutoff: English 0%/50%/60% of start voltage; French 60%/65%/70%. No default flag set on item 4.",
     "French sheet names value 3 of item 3 'stop' and value 3 of item 5 'tres doux'.",
     "Dualsky_XController_Lite.pdf (XC-xx-Lite, Roxxy-style) uses a different gesture set and is a separate profile."
   ],

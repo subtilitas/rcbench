@@ -6,19 +6,19 @@ Releases 0.9.1 to 0.1.0. The format follows
 
 ## 0.9.1 - 2026-10-05
 
-Two panel fixes. The ESC pulse endpoints, Idle pulse and Full pulse, reach
-the motor channels and no others, and reach them when they change rather than
-with the next pin ticked on OUTPUTS. A touch queue that loses events can no
-longer hand a surviving event to a stale gesture or let a hold complete on a
-finger that has gone: both queues number their events, and an arm is watched
+This release fixes two panel defects. The ESC pulse endpoints, Idle pulse and Full pulse, apply
+only to motor channels and take effect when edited, without waiting for
+another pin selection on OUTPUTS. A touch queue that loses events can no
+longer hand a surviving event to a stale gesture or complete a hold after the
+finger has lifted: both queues number their events, and an arm is watched
 until the screens have seen it. The link protocol is 4.0, unchanged, so either
-image goes on alone.
+firmware image can be updated independently.
 
 ### Fixed
 
 - **A touch queue that filled dropped the release that ends an arming
-  gesture.** The panel's touch queue evicted an entry when it filled, and no
-  choice of which one is safe: a release that never arrives leaves a screen
+  gesture.** The panel's touch queue evicted an entry when it filled, but discarding
+  any event can invalidate a gesture: a release that never arrives leaves a screen
   holding a press, a press that never arrives orphans the release after it,
   and the movement where a finger leaves a button is what abandons the hold.
   Both queues, the panel's and the driver's, now number every event their
@@ -46,11 +46,11 @@ image goes on alone.
     command is collected on the frame after the one that posts it, and the
     frame that observes a loss cancels before that collection, so an arm
     completed by a hold whose contact was lost is dropped before it reaches
-    the bench. An arm already handed to the control task carries how many
-    times the render task had dropped gestures and the last event it had
-    taken; the control task drains the driver's queue, drops an arm the
-    render task has had a loss since, and after applying it stops the bench
-    on any loss until the render task acknowledges the armed bench, which a
+    the bench. An arm already handed to the control task carries the render task’s
+    gesture-cancellation count and last processed event. The control task
+    drains the driver's queue and drops the arm if the render task has
+    detected a loss since. After applying an arm, it stops the bench on any
+    loss until the render task acknowledges the armed bench, which a
     frame does only when it began armed and found the stream whole. The
     look runs inside every link exchange's wait, so a backlog of servo
     exchanges behind the arm cannot keep it driving. A later loss
@@ -74,18 +74,18 @@ image goes on alone.
   put ARM = 0 at the far end and was acknowledged, and a coprocessor that
   links up while the bench is armed is held disarmed until it has the
   range. The
-  case behind it is #170: an ESC calibrated on a 985 to 2012 us transmitter
+  reported case is #170: an ESC calibrated on a 985 to 2012 us transmitter
   needs an Idle pulse of 980 us.
 
 ## 0.9.0 - 2026-10-05
 
-Two reports from a bench and one protocol change. Extended telemetry comes on
+This release addresses two bench reports and changes the link protocol. Extended telemetry works
 with AM32 2.21, which showed speed and nothing else: voltage, current, power
 and ESC temperature stayed empty because the bench asked before the ESC could
-take the command. LOGS deletes a file from the card behind a second panel
-that names it. The link protocol is 4.0: the write that arms carries the pole
+take the command. LOGS requires confirmation in a second panel that names the file
+before deleting it from the card. The link protocol is 4.0: the write that arms carries the pole
 count, and a panel and a coprocessor on different majors do not arm, so both
-images go on together.
+firmware images must be updated together.
 
 ### Added
 
@@ -106,7 +106,8 @@ images go on together.
   between the panel's last pole write and its ARM write no longer reaches the
   coprocessor one 50 ms poll into the run, where the run's sticky `rpm_max`
   kept the speed the old divisor produced. MOTOR_POLES is register 2 of the
-  page and CLEAR is register 3; a register changing meaning is a major. CLEAR
+  page and CLEAR is register 3; changing a register’s meaning requires a major
+  version change. CLEAR
   stays a write of its own ahead of the arm, because the coprocessor checks
   ARM against its failsafe before it applies a CLEAR from the same frame. The
   page's rules -- the throttle range, a pole count even and 2 to 42 or zero,
@@ -116,17 +117,17 @@ images go on together.
   - A panel and a coprocessor on different sides of the bump do not arm. The
     panel treats a coprocessor reporting another protocol major as absent,
     keeps the link down and raises `protocol mismatch -- will not arm`, so
-    both images go on together.
+    both images must be updated together.
 
 ### Fixed
 
 - **Extended telemetry comes on with AM32 (#172).** The bench sent command 13
   only as the first ten frames of a run. AM32 2.21 takes a command only once
   it has armed itself on 1 s of zero throttle, and it restarts after 0.5 s
-  without a frame, which a disarmed bench never sends, so every ask arrived
+  without a frame, which a disarmed bench never sends, so every request arrived
   too early: speed showed, and voltage, current, power and ESC temperature
-  stayed empty. The ask is now repeated every 500 ms while the throttle is at
-  zero, until an extended frame comes back or 10 asks have gone, and it never
+  stayed empty. The request is now repeated every 500 ms while the throttle is at
+  zero, until an extended frame comes back or 10 requests have been sent, and it never
   takes the place of a throttle above zero. Replies are read as extended
   telemetry from the first repeat, so the one status frame AM32 sends when it
   takes the command is heard. The schedule is `shared/dshot/dshot_edt.c`,
@@ -135,13 +136,13 @@ images go on together.
 
 ## 0.8.2 - 2026-09-10
 
-Ten defects found in review of 0.8.1 and one reported from a bench. Three
-reach a pin: a servo bound beside a motor drove its low endpoint for 500 ms
+This release fixes ten defects found in the 0.8.1 review and one
+reported from a bench. Three affect physical outputs: a servo bound beside a motor drove its low endpoint for 500 ms
 on every arm from MOTOR & ESC, a CONTROL write refused on one register kept
 the registers ahead of it, and the extended-telemetry enable went out
 without the bit that marks it as a command. The Motor & ESC plot holds the
 last run instead of scrolling it away. The link protocol is 3.0, unchanged,
-so either image goes on alone.
+so either firmware image can be updated independently.
 
 ### Fixed
 
@@ -194,14 +195,14 @@ so either image goes on alone.
   that reports no speed when none was sent covers zero only, and every count
   the schema allows is non-zero, so a stale count reaches the plot and the
   CSV carrying a valid bit. Fitting a 12-pole motor to a bench still holding
-  14 reads 14.3 % low. An edit is now owed to the far end and paid at the
-  next poll, and, when it is still outstanding, once more before the write
+  14 reads 14.3 % low. An edit is now kept pending and sent at the
+  next poll. If it is still outstanding, it is sent once more before the write
   that arms -- a run begun on the old divisor puts a wrong speed into its
   sticky peak, which no later correction removes. An edit landing in the few
-  instructions between that payment and the arming write reaches the far end
+  instructions between that update and the arming write reaches the far end
   at the next 50 ms poll, so up to 50 ms of that run is converted with the
-  previous count; STATUS.md carries the window as an open item. A write
-  nobody answers stays owed; one the coprocessor refuses is not retried.
+  previous count; STATUS.md carries the window as an open item. An unanswered write
+  stays pending; one the coprocessor refuses is not retried.
 
 - **Extended DShot telemetry was requested with the command frame's telemetry
   bit clear.** On a value of 1 to 47 that bit is what marks the frame as a
@@ -250,11 +251,10 @@ so either image goes on alone.
   bench is armed: arming clears it, disarming holds it as it stood. The panel
   tag reads `TELEMETRY HELD` while it holds a run and `TELEMETRY IDLE` over
   `no run recorded` before the first arm, the right axis reads `END` rather
-  than `NOW`, and the plot is framed -- a held plot that looked live would be
-  a worse defect than the one being fixed. The readouts, the TABLE pane, the
-  totals and the temperature strip stay live at all times. What is given up:
-  a disarmed bench has no rolling trace, so the current falling after a STOP
-  is on the readouts and not on the plot.
+  than `NOW`, and the plot has a frame to distinguish the held trace from
+  live telemetry. The readouts, the TABLE pane, the totals and the temperature
+  strip stay live at all times. A disarmed bench has no rolling trace, so the
+  current falling after a STOP appears on the readouts and not on the plot.
 
 ### Changed
 
@@ -268,8 +268,8 @@ so either image goes on alone.
 ## 0.8.1 - 2026-09-09
 
 No output could be bound on 0.8.0. Choosing a protocol on SETTINGS/OUTPUTS put
-the screen back to `OFF` within one poll, and `OFF` takes no pins, so no pin
-could be ticked and no binding could be made. PICK A PIN had the same cause.
+the screen back to `OFF` within one poll, and `OFF` allows no pin selection, so no output
+could be assigned. PICK A PIN had the same cause.
 There is no workaround on 0.8.0.
 
 ### Fixed
@@ -287,8 +287,8 @@ There is no workaround on 0.8.0.
   happens: the record format changed, so every store reads as unwritten and
   every operator starts at `OFF`.
 
-  Which protocol is being edited is the screen's, and a protocol equal to what
-  the pins already say is no longer treated as a claim about it. Two more
+  The screen now owns the protocol selection. A read-back that merely matches
+  the bound pins no longer replaces that selection. Two more
   cases go with the first. A second protocol started while one is bound is not
   on the page either, so a bench wired for an ESC could not then add a servo;
   and editing the higher of two bound protocols was dragged back to the lower
@@ -302,10 +302,10 @@ There is no workaround on 0.8.0.
 
 ## 0.8.0 - 2026-09-09
 
-Bidirectional DShot leaves the pin inverted, which it never has. Whether an
+Bidirectional DShot now sends an inverted signal on the pin. Whether an
 ESC answers it is untested: plain DShot has run a motor on the bring-up bench,
 and nothing bidirectional -- no inverted frame, no reply, no telemetry -- has
-been put against an ESC. A save on the OUTPUTS screen costs one page program rather than
+been tested with an ESC. A save on the OUTPUTS screen costs one page program rather than
 an erase and a program, so the erase that stops the coprocessor answering for
 about 19 ms falls to one save in sixteen and is taken in a quiet window
 instead of under the save. Neither window has been measured on this build, so
@@ -315,10 +315,10 @@ beats the safety line, and is committed as the run goes rather than at the
 disarm. SPEED on the servo screen renders a rate below 50% that differs from
 50%.
 
-Several things change what a bench does after it is flashed, and each needs
-something from the operator or shows them something new:
+After flashing this release, the following changes require setup or
+affect how readings should be interpreted:
 
-- **The link protocol is 3.0**, so both images go on together. The panel
+- **The link protocol is 3.0**, so both firmware images must be updated together. The panel
   refuses to arm against a coprocessor that speaks another major.
 - **The output store's record format is version 3**, so the first boot starts
   from no binding at all. The pins are ticked again on SETTINGS/OUTPUTS, and
@@ -335,7 +335,7 @@ something from the operator or shows them something new:
   of its speed frames read as temperature or voltage -- the case under Changed
   below, and the reason to watch the first readings on a new ESC.
 - **The bench shows the ESC's own voltage, current, power and temperature**,
-  which it never did. `MOT` stays blank unless the ESC reports a second
+  for the first time. `MOT` stays blank unless the ESC reports a second
   temperature, where it used to read `0C`.
 - **The run log writes an empty cell** where nothing measured a quantity,
   where it used to write a number. A reader that treated 0 as a measurement
@@ -471,7 +471,8 @@ something from the operator or shows them something new:
   `MOT 0C`; it now validates the ESC's alone and `LINK_BN_TEMP_MOT_OK` (bit 4)
   validates the motor's. That is a meaning change on an existing bit rather
   than an addition, which is what moves the major. The panel refuses to arm
-  against a coprocessor whose major differs, so both images go on together.
+  against a coprocessor whose major differs, so both images must be updated
+  together.
 - **The bench page carries the ESC's own measurements.** Voltage, current,
   power and ESC temperature were zeroed every sample and had no source at all;
   the coprocessor publishes them from extended DShot telemetry now, on a
@@ -491,7 +492,7 @@ something from the operator or shows them something new:
   disturbs nothing else.
 - **A run takes one number above the highest the card holds**, rather than the
   lowest free one. A gap left by deleting a run on a computer is not filled,
-  because a run written into one is the newest run wearing the oldest number
+  because a newly recorded run would then have an older number,
   and a full list would rank it last and drop it. A card already holding
   `BENCH999.CSV` therefore records nothing, where before it would have taken a
   gap. Deleting *that* run is what frees the number, because a gap lower down
@@ -553,8 +554,8 @@ something from the operator or shows them something new:
   rather than written. Two tap points are stated as unknown rather than
   guessed -- where the panel's I2C bus is brought out, and where RXCAN can be
   probed between the XL2515 and its transceiver.
-- **The LOGS screen reads a run off the card**, which is what the viewer was
-  written against a fake for. It lists `.csv` runs, opens one and analyses it;
+- **The LOGS screen reads a run off the card.** The viewer previously used
+  a simulated source. It lists `.csv` runs, opens one and analyses it;
   a `.bfl` decoder does not exist, so the empty line says `.csv` only.
 - `test_outstore`, the forty-fourth host binary: where a save goes in the
   store, which sector can be erased and what a power cut in either leaves
@@ -563,12 +564,12 @@ something from the operator or shows them something new:
 
 ## 0.7.0 - 2026-09-08
 
-The servo screen can drive a servo. Arming existed only on MOTOR & ESC and
-leaving that screen disarms, so the horn followed the finger and nothing
-moved; SPEED changed the drawing and not the servo; and every bench showed
+The servo screen can arm and drive a servo. Arming existed only on MOTOR & ESC and
+leaving that screen disarms, so the displayed horn followed the finger while the physical servo
+stayed still; SPEED changed the drawing and not the servo; and every bench showed
 FAULT 01 from power-up.
 
-Most of what follows is the arming and command path either side of that
+Most changes below address arming and command delivery around that
 button. A stop, a disarm and a release each have to survive a link that is
 slow, a queue that is full, a screen that is being left and a touch
 controller that stops answering, and each of those was a way for something to
@@ -630,10 +631,10 @@ keep driving after the operator had asked it to stop.
   safe on its own account. A disarm nobody can deliver does not hold the line
   down for ever.
 - **An explicit RELEASE waited for the end of the drain.** Only the disarm
-  branch cleared the slot it had let go of; a release recorded the debt and
-  left it to the post-drain service, behind whatever else was queued -- two
-  blocking exchanges for an outputs binding, for instance. Both pay it before
-  returning to the queue.
+  branch cleared the slot immediately. An explicit release remained pending
+  until the post-drain service, behind whatever else was queued -- two
+  blocking exchanges for an outputs binding, for instance. Both paths now
+  clear the slot before returning to the queue.
 - **A disarm could not reach a write already on the wire.** The far end
   applies a write and then acknowledges it, so a disarm arriving while that
   acknowledgement was in flight found the output already bound -- and a lost
@@ -647,8 +648,8 @@ keep driving after the operator had asked it to stop.
   answer again inside one blocking link exchange: by the time the policy ran
   the controller was healthy, so nothing in the state said the outage had
   happened, and the heartbeat need not have been withheld long enough for the
-  far end to fail safe either. What was armed comes down, on the edge that
-  saw the outage rather than on the state afterwards.
+  far end to fail safe either. An armed bench now disarms when the outage is
+  detected, even if touch recovers before the policy runs.
 - **A servo's three writes could not be countermanded partway through.** Each
   waits up to LINK_HOST_TIMEOUT_MS (1000 ms) with the pump running inside it,
   so a stop or a disarm could arrive between one write and the next and the
@@ -687,12 +688,13 @@ keep driving after the operator had asked it to stop.
   servo screen's arm releases the slot first, and that release can wait a
   second on the wire with the pump running inside it, so a stop -- or touch
   dying and recovering -- could invalidate the gesture between the drain's
-  check and the request. The gesture is asked about again after the release.
-- **A newer servo write did not void an older release.** A release that failed
-  keeps its debt, and a position written afterwards rebinds the slot to what
-  was asked for; paying the debt then cleared it and left the pin dead until
-  the next refresh. A write that the far end acknowledged voids a release
-  owed for that slot, and one that failed does not.
+  check and the request. The gesture is revalidated after the release.
+- **A newer servo write did not void an older release.** A failed release
+  remains pending, and a position written afterwards rebinds the slot to the
+  requested position. Executing the pending release then cleared the slot and
+  left the pin inactive until the next refresh. A write acknowledged by the
+  far end cancels an older pending release for that slot; a failed write does
+  not.
 - **A leave-time disarm could be evicted from the command queue.** The queue
   drops its oldest entry when full, and leaving a screen generates commands
   on the way out while the next screen generates more, so the disarm posted by
@@ -701,11 +703,11 @@ keep driving after the operator had asked it to stop.
   as well as a queue entry now, the way a stop is; applying it twice costs
   nothing.
 - **An older servo release could clear a binding that had just been made.** A
-  release that timed out keeps its debt, and a binding applied afterwards in
-  the same drain writes every slot including slot 0; paying the debt then
-  cleared the binding the outputs screen had just been told was written, and
-  the far end kept the cleared page. A binding that lands says what slot 0 is,
-  so it voids an older release owed for it.
+  release that timed out remains pending, and a binding applied afterwards in
+  the same drain writes every slot including slot 0. Executing the pending
+  release then cleared the binding the outputs screen had just been told was
+  written, and the far end kept the cleared page. A successful binding sets
+  slot 0, so it cancels an older pending release for that slot.
 - **STOP waited out a link exchange before it did anything.** The press was
   recorded and acted on by the policy, which is exactly what a blocked loop
   cannot reach: a servo command makes up to three exchanges of up to
@@ -714,8 +716,8 @@ keep driving after the operator had asked it to stop.
   wait, so the safety line stops being asserted in the same pass and the
   coprocessor fails safe within HEARTBEAT_MAX_GAP_MS (150 ms) whatever the
   panel is waiting for. The rest of a stop follows when the loop is free.
-- **A stop on a bench that was not armed left the servo driven.** Letting go
-  hung off the policy's disarm, which does not happen when nothing was armed,
+- **A stop on a bench that was not armed left the servo driven.** Releasing the servo
+  depended on the policy’s disarm, which does not happen when nothing was armed,
   so a servo held from before the stop kept its slot refreshed every 100 ms --
   over the top of an outputs binding made afterwards. Every stop lets go now,
   counted rather than inferred from the disarm.
@@ -750,8 +752,8 @@ keep driving after the operator had asked it to stop.
   only where the policy steps, and a link exchange waits up to 1000 ms while
   touch is still being pumped: a controller that died and recovered inside
   one such wait was never seen to have died, and a hold left standing by it
-  completed and was accepted. Touch health is judged where touch is judged
-  now, at the rate it is judged.
+  completed and was accepted. Touch health is now checked during that
+  wait, at the touch-poll rate.
 - **An arm still settling was not abandoned when touch died.** The disarm was
   gated on the bench being armed, and an arm that is settling is not armed
   yet, so a controller recovering before the deadline armed the bench from a
@@ -781,11 +783,11 @@ keep driving after the operator had asked it to stop.
   did not, and the arm rendered the old position. It asks first now, and the
   arm waits for the clear.
 - **An unpayable release debt refused every arm.** Leaving the servo screen
-  with the link down leaves a release owed that nothing can pay, and the arm
-  gate refused every arm until a coprocessor answered -- including arming the
+  with the link down leaves a release pending that cannot be delivered, and
+  the arm gate refused every arm until a coprocessor answered -- including arming the
   panel's own bank in simulation, where no far-end output exists. The gate
   applies only while there is a link, and the far end is not told to arm while
-  a slot is still owed a release instead.
+  a release for a slot is still pending.
 - **Arming left the servo screen showing a position it had discarded.** An
   arm drops the held command and the slot so it starts from nothing, and the
   screen went on believing it was driving -- so the next change of type, trim
@@ -836,7 +838,7 @@ keep driving after the operator had asked it to stop.
   `arming_stop()` abandons an arm rather than deferring it, so the newer
   stop stands. Both screens' ARM went through this.
 - **An arm could proceed on a servo release that did not land.** A release
-  that is not acknowledged keeps its debt, but the arm went ahead anyway, so
+  that is not acknowledged remains pending, but the arm went ahead anyway, so
   a transient link error during the release meant arming with the slot and
   its command still installed at the far end. An outstanding release now
   refuses the arm and says so on the alert band.
@@ -876,7 +878,7 @@ keep driving after the operator had asked it to stop.
   it had been, with nobody having touched anything. Letting go of the servo
   is now paired with returning the throttle to zero, in every path that stops
   the bench. A release that cannot be sent -- the screen left while the link
-  is down -- is kept as a debt and sent when the link is back, so a slot
+  is down -- remains pending and is sent when the link is back, so a slot
   cannot outlive the screen that bound it.
 - **A servo other than the standard one was driven against the wrong
   endpoints.** The panel configured the channel with a fixed 1000 to 2000 us
@@ -886,7 +888,7 @@ keep driving after the operator had asked it to stop.
 
 ## 0.6.1 - 2026-09-07
 
-The throttle reached no bound pin, so an ESC (electronic speed controller) on
+Throttle changes reached no assigned pin, so an ESC (electronic speed controller) on
 the OUTPUTS screen initialised, armed, and held one value at every slider
 position. A PWM (pulse-width modulation) ESC could only be bound as a servo,
 whose channel rests at half throttle.
@@ -919,15 +921,15 @@ whose channel rests at half throttle.
   probed for a free file name one card transaction at a time: a card holding
   400 runs cost 400 opens with nothing pumped in between, against a
   HEARTBEAT_MAX_GAP_MS ceiling of 150 ms. The pump now runs between probes and
-  the scan starts where the last one finished. The retry was the worse half --
-  the arming edge was read from the file handle, so a card that is full or
-  unwritable made every pass look like a fresh arm and rescan once per
+  the scan starts where the last one finished. Retries made this worse:
+  the arming edge was inferred from the file handle, so a full or unwritable
+  card made every pass look like a fresh arm. The scan repeated once per
   CONTROL_PERIOD_MS for as long as the bench stayed armed. Whether a run is
   open is its own flag now, and a run that is not being recorded says so on
   the alert band rather than only on a console that is not reachable on every
   board.
-- **The outputs board went grey without saying why.** The rules refusing every
-  pin are right and the screen kept them to itself: a bench with one servo pin
+- **The outputs board went grey without saying why.** The screen correctly refused every
+  pin but did not show the reason: a bench with one servo pin
   bound leaves seven channels free, PPM needs eight, and the whole board greys
   with nothing beside it. The reason now sits under the protocol in amber --
   the channels needed against the channels free, the slots when those run out
@@ -936,9 +938,9 @@ whose channel rests at half throttle.
 
 ## 0.6.0 - 2026-09-07
 
-Applying an output binding never worked, PPM never worked, and an arm could
-carry the throttle from before the last stop. All three were on the bench the
-whole time and none of them showed as an error.
+Output binding and PPM did not work, and arming could restore the
+throttle value from before the last stop. These defects were present in
+earlier builds without an error indication.
 
 ### Fixed
 
@@ -951,8 +953,8 @@ whole time and none of them showed as an error.
   second, so the coprocessor's own LINK_DEV_SILENCE_MS (200 ms) watchdog
   latched failsafe. Both output pages are 32 registers wide, so it happened
   on every apply, and the second page of the pair was never sent: the far end
-  kept a new channel configuration against the old slots. An acknowledgement
-  is now taken in pieces the way a read's answer already was. Reported as #99
+  kept a new channel configuration against the old slots. Acknowledgements
+  are now collected in fragments, as read replies already were. Reported as #99
   and identified from a bench: LINK steady, LAST WRITE reading NO LINK, and
   `stale 8` in the panel's own counters -- one mismatch per frame.
 - **PPM could be selected and never drove a pin.** The catalogue offered PPM
@@ -971,7 +973,8 @@ whole time and none of them showed as an error.
   a->armed itself and arming_step()'s disarm is gated on a->armed. A
   coprocessor disarm therefore left the throttle at its last position while
   the screen showed zero, and the next arm sent it. Every arm now starts from
-  zero, at the arm rather than at each path that has to remember.
+  zero, with the reset performed when arming rather than left to each disarm
+  path.
 - **The arming hold did not end when the finger left the button**, so a press
   that started on ARM and slid onto the plot armed the bench two seconds
   later. Coming back does not resume it: the contact is finished and arming
@@ -980,8 +983,8 @@ whole time and none of them showed as an error.
   disarmed, turning the operator's stopping contact into an arming one. The
   gesture now ends on the way to disarmed.
 - **The link-up edge counted a sample that was never read.** While the link is
-  down the question asked is the identity page, so an answer there says a
-  coprocessor is present and nothing about the bench. One plot column and one
+  down the panel requests the identity page. Its reply establishes that a
+  coprocessor is present but contains no bench measurements. One plot column and one
   CSV row carried the previous bench values, or zeros at boot.
 
 ### Changed
@@ -991,8 +994,8 @@ whole time and none of them showed as an error.
   became a file static. The image differs by 12 bytes of .flash.text, all of
   it two inlining decisions: no other symbol changes size, and a control
   build with the steps forced inline reproduces the baseline's choices
-  exactly. It buys readability, not coverage -- the steps are static and
-  reach file statics, so the host suite still cannot link them.
+  exactly. The change improves readability but adds no test coverage: the steps are
+  static and access file statics, so the host suite still cannot link them.
 - The panel's expander write records that it is single-threaded, names every
   caller, and states that a lock added later has to be bounded well under
   HEARTBEAT_MAX_GAP_MS (150 ms) -- I2C_TIMEOUT_MS is already 100 ms of it.
@@ -1002,9 +1005,9 @@ whole time and none of them showed as an error.
 
 ## 0.5.0 - 2026-09-06
 
-A link that dropped never came back, and the panel could not say why. Both
-are fixed, and the panel now explains a bad bus on its own screen instead of
-on a console that is not always reachable.
+A lost link could not reconnect, and the panel did not explain the
+cause. This release fixes reconnection and adds on-screen bus diagnostics
+for use when the console is unavailable.
 
 ### Fixed
 
@@ -1027,11 +1030,11 @@ on a console that is not always reachable.
 ### Added
 
 - **The CAN self-test runs at every start-up**, 1200 ms inside the splash and
-  before the identity poll. A verdict other than every probe coming back
-  intact puts the panel on a screen of its own instead of the menu: the
-  verdict, what to check in the order that costs least to check, and what
-  both ends counted. It was behind a compile-time flag and a console before,
-  which an operator has neither of.
+  before the identity poll. If any probe fails to return intact, the panel
+  opens a diagnostic screen instead of the menu. It shows the verdict,
+  checks ordered from easiest to hardest, and counters from both ends. The
+  test previously required a compile-time flag and console access; it was
+  not available from the panel.
 - **A link that was up and has been gone for 4 s says so on the same
   screen**, with this end's own counters -- what the CAN controller is doing,
   its transmit, receive and bus error counts, how many times the bus has been
@@ -1043,8 +1046,8 @@ on a console that is not always reachable.
   file rather than a photograph.
 - The acknowledgement on both is a two-second hold, ARM's gesture and its
   fade. `UI_HOLD_S`, `ui_hold_fill()` and `ui_hold_flash()` move to
-  `ui_widgets` and ARM is ported onto them, so the two cannot come to look
-  different from each other.
+  `ui_widgets` and ARM is ported onto them, so their appearance remains
+  consistent.
 
 ### Changed
 
@@ -1063,8 +1066,9 @@ on a console that is not always reachable.
 
 ## 0.4.2 - 2026-09-06
 
-The panel could not get back on the CAN bus once it fell off it, and the
-coprocessor's console could not say whether anything was arriving.
+The panel could not reconnect to the CAN bus after losing the
+connection. The coprocessor console did not show whether frames were
+arriving.
 
 ### Fixed
 
@@ -1092,8 +1096,8 @@ coprocessor's console could not say whether anything was arriving.
   rcbench-iomcu: CAN up, 1000000 bit/s, 4271 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
   ```
 
-  A count standing still while the panel says NO LINK means nothing is
-  arriving; a count climbing while the panel says NO LINK means the answers
+  An unchanged count while the panel says NO LINK means nothing is
+  arriving; an increasing count while the panel says NO LINK means the replies
   are not getting back. No counter and no protocol register changed:
   `s_frames` is the one already published as `LINK_ST_FRAMES_LO`/`_HI`.
 - The panel's link report, printed every 5 s while the link is down, carries
@@ -1103,8 +1107,9 @@ coprocessor's console could not say whether anything was arriving.
 
 ## 0.4.1 - 2026-09-06
 
-Two flash writes that stopped the bench, and the button that said a save had
-happened when none had been asked for. Both were found on hardware.
+This release addresses two flash writes that stopped the bench and a
+button that reported a save without a save request. Both problems were
+observed on hardware.
 
 ### Fixed
 
@@ -1133,8 +1138,8 @@ happened when none had been asked for. Both were found on hardware.
   whole state -- `SAVED` with nothing unwritten, `SAVE` with something to
   write, `WHEN IDLE` once asked and still waiting. Leaving the screen writes
   nothing; unsaved values are kept until the panel is switched off.
-- The two doors on the settings screen, OUTPUTS and PICK A PIN, move up 16
-  pixels: SAVE takes the space under RESET CATEGORY.
+- The two navigation buttons on the settings screen, OUTPUTS and PICK A PIN,
+  move up 16 pixels: SAVE takes the space under RESET CATEGORY.
 
 ### Added
 
@@ -1142,21 +1147,21 @@ happened when none had been asked for. Both were found on hardware.
   interrupts off and prints it: `rcbench-iomcu: outputs saved, flash window
   <n> us`, and `out_store_last_window_us()` reads it back. The window is
   bounded by the flash part rather than by anything this firmware chooses,
-  and it has never been measured on hardware; the number says whether it is a
-  second cause of the same kind as #99. Nothing is compensated for it.
+  and it has never been measured on hardware. The measurement will show
+  whether this is a second cause of the same kind as #99. Nothing is compensated for it.
 - `setup-dirty.png`, the twenty-ninth committed screenshot: the settings
   screen with a value changed and SAVE offered.
 
 ## 0.4.0 - 2026-09-05
 
-A board the panel has never met is now usable without reflashing the panel:
-it says which pins it has, where they are, which pads are grounds and rails,
-and what it looks like.
+The panel can use a new board without being reflashed. The board
+provides its pin list, pin positions, ground and supply pads, and drawing.
 
 ### Added
 
-- **A board describes itself over the link.** Four read-only pages, and each
-  one degrades on its own rather than taking the others with it. `CATALOGUE`
+- **A board describes itself over the link.** Five pages describe the board;
+  four are read-only. Each degrades on its own rather than taking the others
+  with it. `CATALOGUE`
   (0x24) carries which GPIOs the board brings out, the pad number printed
   beside each and what holds the ones an output may not have. `SHAPE` (0x25)
   carries the outline, the pitch and the corner pad 1 sits at, which is what
@@ -1165,9 +1170,9 @@ and what it looks like.
   and `ART_DATA` (0x27) carry a photograph of the board, 62 bytes at a time.
   A coprocessor that serves none of them behaves as one built before them
   did: the panel offers nothing for that board, which is what it did before.
-- **The pin picker**, behind PICK A PIN on the Setup screen. The board drawn
-  with a button on every pin an output may have, each on a straight trace to
-  its own pad, because at any size that fits a 480-pixel panel a pad is under
+- **The pin picker**, behind PICK A PIN on the Setup screen. It draws the
+  board with a button for every available output pin, each connected by a
+  straight trace to its own pad, because at any size that fits a 480-pixel panel a pad is under
   40 px across and smaller than a fingertip. A pin the coprocessor reserves
   gets no button and a cross on the pad. A board that reports no shape is not
   drawn at all: a picture from a guessed form factor points at the wrong pad
@@ -1200,16 +1205,15 @@ and what it looks like.
 - `log_csv_analyse` 241 lines to 36 and `log_csv_build` 221 to 22, split into
   named pieces with behaviour unchanged.
 - The artwork fetch sequence moved from the panel into
-  `shared/artwork/art_fetch.c` with the link passed in, so the block order and
-  every failure path are exercised by the host suite instead of by nothing.
+  `shared/artwork/art_fetch.c` with the link passed in, so the host suite now exercises the block order and every failure path.
 
 ### Fixed
 
 
 - Both images reported firmware 0.0.0. The identity page has carried
-  firmware major, minor and patch since the page map was written and nothing
-  ever set them, so a board asked what it was running answered wrongly and
-  answered confidently. `shared/link/include/rcbench_version.h` holds the
+  firmware major, minor and patch since the page map was written, but nothing
+  set them. A board therefore reported the wrong firmware version when
+  queried. `shared/link/include/rcbench_version.h` holds the
   three numbers once; the coprocessor publishes them and the panel prints
   what came back on its bring-up line, beside the protocol version. The panel
   is the host and publishes no identity of its own, so it puts its own build
@@ -1218,8 +1222,8 @@ and what it looks like.
   so a release cut without moving it fails the build rather than shipping a
   board that misreports itself.
 - `outbind_learn_board()` wrote pins into its slot as it parsed, so a
-  catalogue refused part way left half of itself over the board already
-  learned while reporting failure.
+  catalogue rejected part way through left a partial update over the board
+  already learned, despite reporting failure.
 - A board numbered from its right-hand corner had its pad row mirrored across
   the outline rather than reversed along itself, which moves the whole row by
   a hundredth of a millimetre when the centring remainder is odd.
@@ -1242,7 +1246,7 @@ and what it looks like.
 
 ## 0.3.0 - 2026-09-04
 
-The coprocessor drives a pin, and remembers which one.
+The coprocessor drives an output pin and saves its assignment.
 
 ### Added
 
@@ -1257,14 +1261,14 @@ The coprocessor drives a pin, and remembers which one.
 - Bidirectional DShot is driver 4 on the OUTPUTS page, not a flag on driver
   3: it inverts the line and the checksum, so an ESC set up for one protocol
   ignores the other.
-- CONTROL register 3, MOTOR_POLES. An ESC reports electrical periods and has
-  no idea what it is bolted to, so the magnet count is the one number the
-  wire has to carry for a mechanical speed to exist. The panel sends it from
+- CONTROL register 3, MOTOR_POLES. An ESC reports electrical periods but does
+  not know the motor’s magnet count, so the link must carry that count to
+  calculate mechanical speed. The panel sends it from
   the `Motor poles` setting when the coprocessor answers; at zero the
   coprocessor reports no speed rather than one derived from a guess. Protocol
   version 2.1.
 - The output bank refuses a pin the build has reserved. The pin in an OUTPUTS
-  slot is whatever an operator typed, and the coprocessor reserves the safety
+  slot comes from operator input, and the coprocessor reserves the safety
   line, the CAN controller's five pins, and every number above the last GPIO
   the part has.
 - The coprocessor's capability word reports servo PWM, ESC drive and ESC
@@ -1304,8 +1308,8 @@ The coprocessor drives a pin, and remembers which one.
 
 ## 0.2.1 - 2026-09-03
 
-Arming is a deliberate gesture, and the first release cut from a tree whose
-CI passes.
+Arming requires a deliberate gesture. This is the first release from
+a revision that passes CI.
 
 ### Changed
 
@@ -1315,8 +1319,8 @@ CI passes.
   is a gesture an elbow can make. Disarming stays a press: stopping never
   needs a hold.
 - Arming flashes the whole button twice -- white, black, the danger red it
-  settles on, and again, one drawn frame each, about 154 ms at 39 Hz. What
-  was there decayed from white over 180 ms, which is a fade and reads as one.
+  settles on, and again, one drawn frame each, about 154 ms at 39 Hz. The previous effect
+  faded from white over 180 ms and looked like a fade rather than a flash.
 
 ### Fixed
 
@@ -1328,9 +1332,10 @@ CI passes.
 - `tools/frame_cost.py` failed ruff on an 81-character line, and had done
   since the per-screen modes were added.
 - `tools/frame_cost.py --check-doc` failed on CI and not locally. Its
-  tolerance is for machine-to-machine variation and was 1%, which was enough
-  only while the row pattern skipped every hyphenated mode; the largest of
-  them drifts about 275 fills of 22,700 between machines. It is 2%.
+  tolerance for machine-to-machine variation was 1%, which was enough only
+  while the row pattern skipped every hyphenated mode. The largest of those
+  modes varies by about 275 fills out of 22,700 between machines. The tolerance
+  is now 2%.
 - The coverage table in `STATUS.md` did not follow `motor_screen.c`.
 
 ### Known limitations
@@ -1347,15 +1352,15 @@ CI passes.
 
 ## 0.2.0 - 2026-09-03
 
-The panel runs the bench from a task of its own, and the screen from what is
-left. Three defects that made the panel unusable on hardware are fixed, and a
+A dedicated task controls the bench, and the display uses the remaining
+processing time. Three defects that made the panel unusable on hardware are fixed, and a
 multi-agent review of the result found twenty more.
 
 ### Added
 
 - A control task pinned to the core that does not draw owns touch, STOP,
-  arming, the outputs, the link and the heartbeat, at a fixed 5 ms. Drawing
-  keeps `app_main`. A frame that costs 50 ms no longer rate-limits steering.
+  arming, the outputs, the link and the heartbeat on a fixed 5 ms cycle.
+  Drawing remains in `app_main`. A frame that costs 50 ms no longer rate-limits steering.
 - `shared/safety/arming.c` holds the rules that decide whether the bench may
   be armed, as a state machine over timestamps with no driver, link or task,
   and `test_arming` holds nine cases over them. The policy was inside the
@@ -1412,7 +1417,7 @@ multi-agent review of the result found twenty more.
 - A latched stop could not be cleared while a coprocessor was attached: the
   latch suppresses the heartbeat, the coprocessor refuses to arm without one,
   and the latch cleared only after a successful arm.
-- A tap on the splash latched STOP, which draws no STOP to press.
+- A tap on the splash latched STOP, although the splash has no STOP button.
 - A stop could be dropped by a full command queue, and by a test-then-clear
   that lost one arriving between the two.
 - A drag whose release never arrived stayed latched, and a later contact
@@ -1441,7 +1446,7 @@ multi-agent review of the result found twenty more.
 
 ## 0.1.0 - 2026-09-02
 
-First tagged release. Pre-release firmware: no output driver produces a
+This is the first tagged release. The firmware is a pre-release: no output driver produces a
 signal, and the control-page and settings-store changes have not run on
 hardware.
 

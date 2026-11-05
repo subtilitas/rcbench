@@ -194,9 +194,9 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 7000,
-      "confirm_signal": "Two short beeps after about 2 s, special tone (56712) after about 5 s more",
+      "confirm_signal": "Two short beeps after about 2s, special tone (56712) after about 5s more",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery (ESC switch on where fitted)",
         "Wait about 2000ms: Beep-Beep",
         "Wait about 5000ms more: special tone, programming mode entered"
@@ -215,19 +215,19 @@
     "select": {
       "throttle": "min",
       "within_ms": 3000,
-      "description": "Item: throttle to min (full brake) within 3000 ms after the wanted item tone. V1 manual also accepts neutral."
+      "description": "Item: throttle to minimum (full brake) within 3000ms after the desired item tone. V1 manual also accepts neutral."
     },
     "value_select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Value: throttle to max (full throttle) when the wanted value tone sounds. Holding max for over 2 s after the saved tone returns to the item loop."
+      "description": "Value: throttle to maximum (full throttle) when the desired value tone sounds. Holding max for over 2s after the saved tone returns to the item loop."
     },
     "skip": {
       "throttle": "none",
       "description": "Leave the throttle unchanged and wait for the next tone."
     },
     "confirm_signal": "Special tone (1515) after a value is stored.",
-    "exit": "After the saved tone move the throttle to min within 2000 ms, or disconnect the battery.",
+    "exit": "After the saved tone move the throttle to minimum within 2000ms, or disconnect the battery.",
     "changes_per_entry": "many",
     "reset_to_defaults": null,
     "description": "Same gesture set as the Hobbywing FlyFun menu with only four items: running mode, cell count, cutoff threshold, timing. No exit or reset item exists."
@@ -362,7 +362,7 @@
     "Gap between beeps and between tones in ms is not stated.",
     "Window for selecting a value after its tone is not stated (only 'move to max when the tone sounds').",
     "Pause between tone repetitions before the loop restarts is not stated.",
-    "Whether the entry hold (2 s then 5 s) has a tolerance is not stated.",
+    "Whether the entry hold (2s then 5s) has a tolerance is not stated.",
     "Item cell-count values for the HV models: 5S, 6S, 8S, 10S, 12S (values 2-6), normal models 2S-6S (values 2-6); per-model use follows the manual notes.",
     "SeaKing-30A-V3 lists the external programming port as not available; stick programming is described for all V3 models without exception.",
     "Running-mode default differs between editions, see notes. SeaKing-130A-HV offers forward only in the V1 manual."
@@ -370,7 +370,7 @@
   "notes": [
     "Default running mode conflict: Hobbywing_SeaKing_V1_Turnigy.pdf marks 'Forward Only' as default; Hobbywing_SeaKing_2022.pdf (V3) marks 'Forward and Backward'. No default flag is set on item 1.",
     "The V1 manual is the Turnigy-branded SeaKing manual; the Turnigy-branded model name is not stated in the text.",
-    "V1 manual also states a 3000 ms item window and exit at neutral or bottom within 2000 ms."
+    "V1 manual also states a 3000ms item window and exit at neutral or bottom within 2000ms."
   ],
   "schema": 1,
   "verified": false

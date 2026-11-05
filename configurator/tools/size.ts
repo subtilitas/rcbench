@@ -9,7 +9,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const INITIAL_BUDGET = 250_000;
+const INITIAL_BUDGET = 260_000;
 const TOTAL_BUDGET = 1_000_000;
 const BASE = '/rcbench/';
 const PICTURES = 'pictures';

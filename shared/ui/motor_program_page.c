@@ -6,10 +6,10 @@
  * MOTOR & ESC's PROGRAM: the list of the registry's MOTOR rows
  * (prog_registry.h) in the left column, and the session a row opens.
  *
- * The list is the registry's view: one group, STICK MENU, with one
- * row that opens ESC STICK.  The output card stays on the right while the
- * list shows.  A live row's session is full width: it covers the left
- * column and the rail, one level down, and the strip row above it holds the
+ * The registry supplies the STICK MENU and SIGNAL WIRE groups. Their rows
+ * open ESC STICK and the signal-wire programmer. The output card stays on
+ * the right while the list shows. A live row's session is full width: it
+ * covers the left column and the rail, one level down. The strip row above it holds the
  * output strip in place of the tabs and the card:
  *
  *     TARGET DSHOT300 GPIO 0 GPIO 1   SUPPLY 7.60V  1.00A   SAFE

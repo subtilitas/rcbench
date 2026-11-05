@@ -6,7 +6,7 @@ order: 64
 
 # Updates
 
-UPDATES asks GitHub which panel firmware release is the newest and installs it. It opens from the UPDATES key on [Setup](setup.md). A [reminder at start](upd_remind.md) asks the same question once per start of the panel. 0.22 is the last release for the ESP32-S3 panel; the ESP32-P4 panel is offered every newer release, see [The release line](#the-release-line).
+UPDATES checks GitHub for newer panel firmware and offers to install it. Open it from [Setup](setup.md). The [startup reminder](upd_remind.md) performs the same check once per panel start. The ESP32-S3 panel is limited to the 0.22 release line; ESP32-P4 accepts newer lines. See [The release line](#the-release-line).
 
 ![UPDATES](view:updates)
 
@@ -20,11 +20,11 @@ UPDATES asks GitHub which panel firmware release is the newest and installs it. 
 
 ## What the check needs
 
-The card names the running version and the kept home network. The check and the download need:
+The card shows the running version and saved home network. Checking and downloading require:
 
-- a home network kept on [Wi-Fi](wifi.md#choosing-a-home-network). Without one the card says `No home network saved.` over the button `SAVE A NETWORK: OPEN WI-FI`, which opens WI-FI and comes back by the home tag, and CHECK FOR UPDATES is grey;
-- the bench SAFE, the supply output off and no log run open. Otherwise the key is grey and the card says `Wi-Fi requires SAFE, the supply output off,`;
-- no IOmcu update running and no panel install under way.
+- A home network saved on [Wi-Fi](wifi.md#choosing-a-home-network). Without one, the card shows `No home network saved.` and the button `SAVE A NETWORK: OPEN WI-FI`. Open WI-FI to save a network, then use its home tag to return. CHECK FOR UPDATES remains grey until a network is saved.
+- A SAFE bench, the supply output off and no open log run. Otherwise the button is grey and the card shows `Wi-Fi requires SAFE, the supply output off,`.
+- No IOmcu update or panel installation in progress.
 
 The download also needs no board drawing being fetched or kept.
 
@@ -34,7 +34,7 @@ The download also needs no board drawing being fetched or kept.
 
 An odd minor number is a testing release, published on GitHub as a pre-release (0.21.x). An even minor number is a stable release (0.22.x).
 
-The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Security) request and reads the newest release's tag from the answer. Then the radio goes off. The join, the address and the request take 30s at most, together. The card shows the step and the seconds left.
+The panel joins the home network, sends an HTTPS (HTTP over Transport Layer Security) request and reads the release tag from the response, then switches the radio off. Joining, obtaining an address and making the request share a 30s deadline. The card shows the current step and seconds remaining.
 
 | RELEASES | Request | What is read |
 |---|---|---|
@@ -64,7 +64,7 @@ On both settings a release is offered only when it is of the panel's release lin
 
 ![A check that found no answer](view:updates-failed)
 
-The tag reads `v` and MAJOR.MINOR.PATCH, digits only, each number from 0 to 65535 in at most 5 digits and without a leading zero. A release is newer when its MAJOR is higher, or MAJOR is equal and MINOR is higher, or both are equal and PATCH is higher.
+A valid tag is `v` followed by MAJOR.MINOR.PATCH. Each component contains only digits, from 0 to 65535, with at most 5 digits and no leading zero. Versions are compared by MAJOR, then MINOR, then PATCH.
 
 ## The release line
 
@@ -78,7 +78,7 @@ The ESP32-P4 panel's line holds every release: a check offers any release newer 
 | `v0.23.0` | up to date |
 | `v0.22.1` | up to date; an older release is never offered |
 
-The ESP32-S3 panel's line, 0.22, offers 0.22.x only, and its card's foot says so in its first lines:
+The ESP32-S3 panel accepts only 0.22.x. The first footer lines state this restriction:
 
 | GitHub names | Panel on 0.22.0 |
 |---|---|
@@ -87,22 +87,22 @@ The ESP32-S3 panel's line, 0.22, offers 0.22.x only, and its card's foot says so
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `No newer release for the ESP32-S3 panel.` |
 | a tag out of form, such as `v0.22.1-rc1` | `Unexpected response from GitHub.` |
 
-With TESTING, when the highest of the 10 newest releases is past the line, the highest release of the line among them is offered in its place once it is newer than the running build. With STABLE, when GitHub's latest release is past the line and newer than the running build, the panel sends the same request once more and offers the newest 0.22.x among those 10 when it is newer. When that request fails, the card reads as without it.
+With TESTING, if the highest version among the 10 newest releases is beyond the panel's line, the highest compatible version in that list is offered instead, provided it is newer than the running build. With STABLE, if GitHub's latest release is beyond the line and newer than the running build, the panel requests that same 10-release list once and looks for a newer 0.22.x. If the request fails, it keeps the result from the initial check.
 
 ## The download
 
 The 2s hold is the one confirmation: no question follows. The panel joins the home network within 30s and fetches `SHA256SUMS` and `rcbench-panel-p4-vX.Y.Z.bin` of the release over HTTPS. It follows at most 3 redirects, only to `github.com`, `release-assets.githubusercontent.com` and `objects.githubusercontent.com`.
 
-1. `SHA256SUMS` is 4096 bytes at most and holds exactly one line for the image.
-2. The image announces its size first; an image without a size, of 0 bytes or over 8,126,464 bytes is refused. It is kept in PSRAM (pseudo-static random-access memory).
-3. The image's SHA-256 (Secure Hash Algorithm, 256 bits) equals its line in `SHA256SUMS`.
-4. Every check of an uploaded image runs, and the image names the release's version.
+1. `SHA256SUMS` must be no larger than 4096 bytes and contain exactly one line for the image.
+2. The image must announce its size. Missing size, 0 bytes or more than 8,126,464 bytes is refused. The image is held in PSRAM (pseudo-static random-access memory).
+3. Its SHA-256 (Secure Hash Algorithm, 256 bits) must match the `SHA256SUMS` entry.
+4. It must pass every uploaded-image check and identify itself as the release version.
 
-Only then the [panel update](update.md) writes it, as INSTALL does. Nothing touches the flash before.
+Only after these checks does the [panel updater](update.md) write the image, as with INSTALL. Flash is untouched before then.
 
 ![The download](view:panel-download)
 
-CANCEL ends the download. STOP, ARMED, the supply output, a log run, a board drawing being fetched and 180s from the hold end it too. The running build stays; CLOSE goes back to UPDATES, or to the menu when the hold was the reminder's.
+CANCEL ends the download. STOP, ARMED, supply output, an open log run or a board drawing being fetched also cancels it, as does the 180s deadline measured from the hold. The running build is kept. CLOSE returns to UPDATES, or to the menu if the download began from the reminder.
 
 ![A download that stopped](view:panel-download-failed)
 
@@ -110,9 +110,9 @@ CANCEL ends the download. STOP, ARMED, the supply output, a log run, a board dra
 
 ![Another build on the IOmcu](view:updates-coproc)
 
-Under the buttons, UPDATES names the version the IOmcu runs (`Running: 0.21.2`) and the version of the image this panel carries (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the update the link-up's question starts, with the same progress screen. When the update ends, or the START was spent, the screen returns to UPDATES.
+Below the buttons, UPDATES shows the running IOmcu version (`Running: 0.21.2`) and bundled image version (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the same update and progress screen as the prompt at link-up. The screen returns to UPDATES when the update ends or the START request expires.
 
-The hold takes what the question takes: an IOmcu that runs another build, the bench SAFE, the supply output off, the Wi-Fi radio wholly off and no panel install under way. Otherwise it is grey and the line above it says why, the first of these that holds:
+The hold has the same requirements as the prompt: an IOmcu running a different build, a SAFE bench, supply output off, Wi-Fi fully off and no panel installation. Otherwise it is grey. The line above it shows the first applicable reason:
 
 | Line | Condition |
 |---|---|

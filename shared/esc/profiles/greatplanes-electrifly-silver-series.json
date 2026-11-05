@@ -11,7 +11,7 @@
       "v_max_mv": 20000,
       "current_a": 8,
       "bec": null,
-      "firmware_note": "5 V / 1.5 A BEC; NiCd/NiMH 6-12 cells",
+      "firmware_note": "5V / 1.5A BEC; NiCd/NiMH 6-12 cells",
       "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
       "cell_type": "lipo"
     },
@@ -23,7 +23,7 @@
       "v_max_mv": 20000,
       "current_a": 12,
       "bec": null,
-      "firmware_note": "5 V / 1.5 A BEC; NiCd/NiMH 6-12 cells",
+      "firmware_note": "5V / 1.5A BEC; NiCd/NiMH 6-12 cells",
       "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
       "cell_type": "lipo"
     },
@@ -35,7 +35,7 @@
       "v_max_mv": 20000,
       "current_a": 25,
       "bec": null,
-      "firmware_note": "5 V / 2.0 A BEC; NiCd/NiMH 6-12 cells",
+      "firmware_note": "5V / 2.0A BEC; NiCd/NiMH 6-12 cells",
       "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
       "cell_type": "lipo"
     },
@@ -47,7 +47,7 @@
       "v_max_mv": 20000,
       "current_a": 35,
       "bec": null,
-      "firmware_note": "5 V / 2.0 A BEC; NiCd/NiMH 6-12 cells",
+      "firmware_note": "5V / 2.0A BEC; NiCd/NiMH 6-12 cells",
       "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
       "cell_type": "lipo"
     },
@@ -59,7 +59,7 @@
       "v_max_mv": 20000,
       "current_a": 45,
       "bec": null,
-      "firmware_note": "5 V / 2.0 A BEC; NiCd/NiMH 6-12 cells",
+      "firmware_note": "5V / 2.0A BEC; NiCd/NiMH 6-12 cells",
       "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
       "cell_type": "lipo"
     },
@@ -71,7 +71,7 @@
       "v_max_mv": 20000,
       "current_a": 45,
       "bec": null,
-      "firmware_note": "5 V / 2.0 A BEC; NiCd/NiMH 7-14 cells",
+      "firmware_note": "5V / 2.0A BEC; NiCd/NiMH 7-14 cells",
       "spec_source": "GreatPlanes_Electrifly_SilverSeries.pdf p.4 (2-4 LiPo, 4 LiPo for SS-45D; manual says \"20V max w/o BEC\", v_max_mv is that stated 20 V)",
       "cell_type": "lipo"
     },
@@ -122,7 +122,7 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Two beeps 5 s after power-up at full throttle.",
+      "confirm_signal": "Two beeps 5s after power-up at full throttle.",
       "steps": [
         "Throttle full, transmitter on, connect battery.",
         "After 5s: two beeps.",
@@ -154,7 +154,7 @@
     "exit": "After the four arming beeps the ESC is armed and programming is finished.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "Full throttle at power-up for 5 s, off, full, off toggles the brake. The beep count per move (2 or 1) tells the new state; four beeps mean armed. Normal power-up at stick off beeps the stored state."
+    "description": "Full throttle at power-up for 5s, off, full, off toggles the brake. The beep count per move (2 or 1) tells the new state; four beeps mean armed. Normal power-up at stick off beeps the stored state."
   },
   "items": [
     {
@@ -178,11 +178,11 @@
     }
   ],
   "unknowns": [
-    "Beep duration, gap and the 5 s hold tolerance: not stated.",
+    "Beep duration, gap and the 5s hold tolerance: not stated.",
     "Whether the repeat procedure always inverts the stored state: manual says 'repeat the process' to switch the brake off.",
     "BEC type for SS-8 to SS-45D: not stated.",
-    "SS-60 and SS-80 settings other than brake (direction, timing 12 or 20 degrees, frequency 8 or 16 kHz, cutoff 5.6-37.0 V) need the Programming Card GPMM1895; no stick procedure given.",
-    "Cell and voltage limits: SS-8 to SS-45 list 2-4 LiPo; SS-45D lists 4 LiPo; SS-60 and SS-80 list 4-12 LiPo cells (12.4-50 V). v_min of 12400 mV is the manual's own number."
+    "SS-60 and SS-80 settings other than brake (direction, timing 12 or 20 degrees, frequency 8 or 16kHz, cutoff 5.6-37.0V) need the Programming Card GPMM1895; no stick procedure given.",
+    "Cell and voltage limits: SS-8 to SS-45 list 2-4 LiPo; SS-45D lists 4 LiPo; SS-60 and SS-80 list 4-12 LiPo cells (12.4-50V). v_min of 12400mV is the manual's own number."
   ],
   "notes": [
     "The two manuals give the same brake procedure; GreatPlanes_Electrifly_SS-60_SS-80.pdf adds that the brake state is stored until changed.",

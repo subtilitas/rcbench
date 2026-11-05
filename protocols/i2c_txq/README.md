@@ -1,18 +1,19 @@
 # i2c_txq
 
-A transaction queue for one I2C (Inter-Integrated Circuit) bus master. The
-core holds the transactions of one bus, picks the next by class and
-deadline, drops a soft one whose deadline has passed, ends one that does
-not finish, checks the lines before a start, aborts, and runs the bus
-clear and the trial after it. Nothing in it waits: every step that needs
-time is taken on a later poll. The pin driver runs the queue on one of the
-RP2350's two I2C blocks: each transaction goes to the block's transmit
-FIFO (first in, first out) whole, STOP included, and the block's interrupt
-reports its end.
+This module queues transactions for one I2C (Inter-Integrated Circuit)
+bus master. The core selects transactions by class and deadline, drops
+expired soft transactions and times out transactions that do not finish.
+It also checks the lines before starting, handles aborts, clears the bus
+and marks the first transaction after a clear as a trial. The core never
+waits: a later poll performs each step that requires time to pass.
 
-In this repository the IOmcu's sensor bus runs on it: core 1 hands each
-transaction of the sensor schedule to the queue on the block of the
-SENSE page's pins and waits for its end (`shared/sense/sense_txq.c`,
+The pin driver uses one of the RP2350's two I2C blocks. It loads each
+complete transaction, including STOP, into the block's transmit FIFO
+(first in, first out). An interrupt reports completion.
+
+The IOmcu uses this queue for its sensor bus. Core 1 submits each
+scheduled sensor transaction to the I2C block selected by the SENSE
+page's pins and waits for the result (`shared/sense/sense_txq.c`,
 `firmware/iomcu/src/sense_i2c.c`).
 
 | Part | Files | Depends on |
@@ -72,19 +73,20 @@ The queue fills `rd`, `state`, `result`, `flags`, `start_us` and
 `done_us`, and calls the done callback, if one is set, from the context
 that ended the transaction.
 
-The callback may submit again and poll, as `i2c_txq_block_submit()` does.
-A poll made while another queue call is under way does not run there. The
-outermost call runs it after its own work, up to 16 times
-(`I2C_TXQ_REPOLLS`) while callbacks keep polling. So queue calls never
-nest deeper than one, a transaction a callback submits starts within the
-call that ran the callback, and a callback that submits an expired
-transaction on every call ends at most 17 of them per outer call.
+The callback may submit another transaction and poll the queue, as
+`i2c_txq_block_submit()` does. A poll requested during another queue call
+is deferred until the outermost call finishes its own work. That call
+then services up to 16 deferred polls (`I2C_TXQ_REPOLLS`) while callbacks
+continue requesting them. Queue calls therefore never nest more than one
+level. A transaction submitted by a callback can start before the outer
+call returns. A callback that repeatedly submits expired transactions
+can complete at most 17 of them in one outer call.
 
-The callback may also shut the queue (`i2c_txq_shut()`), or close the
-driver's bus. The queue then calls no driver function after the shut and
-is left idle: a bus clear whose cut transaction's callback shut the queue
-does not start. A bus clear that a callback starts while another clear
-begins runs once.
+The callback may also shut the queue (`i2c_txq_shut()`) or close the
+driver's bus. After shutdown the queue calls no driver function and
+remains idle. If a bus clear aborts a transaction and its callback shuts
+the queue, the clear does not start. If the callback requests a clear
+while another clear is starting, the clear runs only once.
 
 The bus time is 9 clocks a byte, address bytes included, plus 1 clock
 each for the START, the repeated START and the STOP
@@ -102,12 +104,12 @@ between bytes are not counted. At 400kHz:
 
 ## Order
 
-One transaction is on the wire at a time. Of the queued ones whose
-not-before time has come:
+Only one transaction uses the wire at a time. Among queued transactions
+whose not-before time has arrived, the queue applies this order:
 
-1. a hard one goes before every soft one;
-2. inside a class the earliest deadline goes first;
-3. on equal deadlines the one submitted first goes first.
+1. Hard transactions precede soft transactions.
+2. Within each class, the earliest deadline comes first.
+3. Equal deadlines are resolved by submission order.
 
 A soft transaction whose deadline has passed is never started: the next
 poll ends it `I2C_TXQ_DROPPED`. A deadline equal to the present time
@@ -164,10 +166,11 @@ Flags of a finished transaction:
 | `I2C_TXQ_F_LATE_STAMP` | `done_us` is the computed end, not the report's time |
 | `I2C_TXQ_F_ABORT` | `i2c_txq_abort()` asked for its end |
 
-The end of a transaction is stamped with the time the driver reports it.
-A report more than 100us (`I2C_TXQ_LATE_US`) after `start_us` plus the bus
-time takes `start_us` plus the bus time instead, and the flag. Only an
-`I2C_TXQ_OK` transaction is stamped that way.
+A completed transaction normally receives the driver's report time as
+its timestamp. For an `I2C_TXQ_OK` transaction reported more than 100us
+(`I2C_TXQ_LATE_US`) after its computed end, the queue instead uses
+`start_us` plus the bus time and sets `I2C_TXQ_F_LATE_STAMP`. Failed
+transactions keep the report time.
 
 ## Line check
 
@@ -204,18 +207,18 @@ clock (5us, `I2C_TXQ_CLEAR_HALF_US`) after the one before:
 3. a STOP: SCL low, SDA low, SCL released, SDA released;
 4. both lines read, the controller set up again and the pins back on it.
 
-A part part way through a byte finishes it in the 9 clocks and lets SDA
-go (NXP UM10204 section 3.1.16). `i2c_txq_clear_result()` is `I2C_TXQ_OK`
+A device partway through a byte finishes it within the 9 clocks and
+releases SDA (NXP UM10204 section 3.1.16). `i2c_txq_clear_result()` is `I2C_TXQ_OK`
 when both lines read high at step 4, `I2C_TXQ_BUS_LOW` when one is low.
 Nothing starts during the clear; soft transactions past their deadline are
 still dropped. A step is taken at the first poll at or after its time: at
 a poll every 1ms the clear takes 24ms, at a poll every 5us or faster
 120us, without SCL held.
 
-The first transaction picked after the clear carries `I2C_TXQ_F_TRIAL`.
-The trial is spent by any end but `I2C_TXQ_ABORTED`; after an abort the
-next transaction is the trial. What a trial's result means for the bus, stuck or
-working, is the caller's decision.
+The first transaction selected after the clear carries `I2C_TXQ_F_TRIAL`.
+Any result except `I2C_TXQ_ABORTED` completes the trial. After an abort,
+the next transaction becomes the trial. The caller decides whether the
+result means that the bus is working or remains stuck.
 
 ## Interface
 
@@ -248,11 +251,12 @@ out of range, an unknown class), `I2C_TXQ_E_BUSY` (the descriptor is queued
 or running), `I2C_TXQ_E_CLOSED` (the queue is shut) or `I2C_TXQ_E_FULL`
 (16 queued). It starts nothing; the next poll does.
 
-`i2c_txq_shut()` ends everything `I2C_TXQ_ABORTED` like `i2c_txq_flush()`,
-and refuses every submit from before its first callback on, so a callback
-that submits again leaves nothing queued. A shut queue takes no submit,
-poll or bus clear until `i2c_txq_init()`. `i2c_txq_init()` on a queue with
-transactions still in it does not end them: shut it first.
+Like `i2c_txq_flush()`, `i2c_txq_shut()` ends all transactions with
+`I2C_TXQ_ABORTED`. It rejects submissions before invoking the first
+callback, so callbacks cannot leave new transactions queued. A shut
+queue accepts no submission, poll or bus clear until `i2c_txq_init()`.
+Initialisation does not complete existing transactions; shut a queue
+before reinitialising it.
 
 Driver, `i2c_txq_block.h`:
 
@@ -324,9 +328,9 @@ The host suite runs the core over a modelled bus
 IOmcu's sensor bus on it over the same model (`test_sense_txq`,
 `test_sense_txq_svc`, `test_sense_i2c`).
 
-The time the `IC_TAR` change takes, the gap the block leaves between a
-STOP and the next START, the interrupt latency, the order of `STOP_DET` and `TX_ABRT` after an
-abort, and the CPU time a transaction costs are not measured.
+The following are not measured: the time needed to change `IC_TAR`, the
+gap between STOP and the next START, interrupt latency, the order of
+`STOP_DET` and `TX_ABRT` after an abort, and the CPU time per transaction.
 
 ## Use in another pico-sdk project
 

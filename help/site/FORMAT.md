@@ -1,10 +1,10 @@
 # Web help: content format
 
-`tools/help_site.py` builds the panel's web help from `help/content/`. The
-help is static HTML (HyperText Markup Language), in English and German, and
-is published on GitHub Pages under `help/` beside the configurator. This file
-is the format the generator accepts. Anything outside it fails the build with
-`file:line: message`.
+`tools/help_site.py` builds the panel's web help from `help/content/`.
+The English and German help pages are static HTML (HyperText Markup
+Language), published on GitHub Pages under `help/` beside the
+configurator. This document defines the accepted format. Unsupported
+syntax fails the build with `file:line: message`.
 
 ```
 python3 tools/help_site.py                  # build into build/help/
@@ -13,29 +13,30 @@ python3 tools/help_site.py --check          # run every check, write nothing
 python3 tools/help_site.py --page FILE --out DIR   # one page, for a preview
 ```
 
-`--page` renders one file with the checks of that file alone: syntax, views
-and images. The checks across pages (the screen list, the two languages,
-links between pages) run with a full build and with `--check`. A preview
-also writes the page's counterpart in the other language when it exists,
-and the index of each language, so the header's links land.
+`--page` previews one file and checks its syntax, views and images.
+Checks across pages, including screen coverage, language pairs and links,
+run only during a full build or with `--check`. A preview also writes the
+page's counterpart when available and both language indexes, so the
+header links work.
 
-A build empties its output folder first. It refuses a folder that holds
-the repository or a source of the help, and an existing folder that is not
-empty and has no `.help-site` file, which marks a folder the tool wrote.
+A build empties its output folder before writing. It refuses any folder
+that contains the repository or help sources. It also refuses a nonempty
+folder without a `.help-site` file, the marker identifying output from
+this tool.
 
 ## Files
 
-- One file per page and language: `help/content/en/<id>.md` and
+- Use one file per page and language: `help/content/en/<id>.md` and
   `help/content/de/<id>.md`.
-- `<id>` of a screen page is the router screen in lower case without
-  `SCREEN_`: `SCREEN_COPROC_UPDATE` is `coproc_update`.
-- Every `SCREEN_*` of `shared/ui/include/ui_screen.h` except `SCREEN_SPLASH`
-  and `SCREEN_COUNT` has a page in both languages.
-- Extra pages for a large part of a screen use any id of lower-case letters,
-  digits, `-` and `_`, for example `servo-programmer`.
-- A file whose name starts with `_` is not a page. The build and the checks
-  skip it. `_example.md` shows the format.
-- Every page exists in both languages.
+- A screen page's `<id>` is its router screen name in lower case, without
+  `SCREEN_`: `SCREEN_COPROC_UPDATE` becomes `coproc_update`.
+- Every `SCREEN_*` in `shared/ui/include/ui_screen.h`, except
+  `SCREEN_SPLASH` and `SCREEN_COUNT`, needs a page in both languages.
+- An extra page for part of a screen may use an id containing lower-case
+  letters, digits, `-` and `_`, such as `servo-programmer`.
+- Files whose names start with `_` are excluded from the build and
+  checks. `_example.md` demonstrates the format.
+- Every page needs an English and a German version.
 
 ## Header
 
@@ -55,15 +56,16 @@ order: 3
 | `title` | the page title: the browser tab, the index and the `<h1>` when the body has no `#` heading |
 | `order` | an integer from 0 to 9999; the index lists pages by it, then by id |
 
-- The three keys are required, each once. Other keys fail.
-- A screen page's `screen` matches its file name: `servo.md` has
-  `screen: SERVO`. One page per screen and language.
-- `screen` and `order` are the same in both languages.
+- Each of the three keys is required exactly once. Other keys are rejected.
+- A screen page's `screen` value must match its filename: `servo.md` has
+  `screen: SERVO`. Use one page per screen and language.
+- `screen` and `order` must match in both languages.
 
 ## Body
 
-Blocks are separated by a blank line. A heading is one line with a blank
-line before and after it; every other block runs to the next blank line.
+Separate blocks with a blank line. Each heading occupies one line, with
+a blank line before and after it. Other blocks continue until the next
+blank line.
 
 | Block | Syntax | Notes |
 |---|---|---|
@@ -93,31 +95,37 @@ Inline, in paragraphs, list items, table cells and headings:
 | `#<anchor>` | a heading on the same page |
 | `index.md` | the help's index of the same language; no content page is named `index.md` |
 
-An anchor is the heading text as shown (a code span with its characters, a
-link with its label only) in lower case, with every run of characters other
-than letters and digits replaced by `-`, and no `-` at either end:
-`## Run a test` is `#run-a-test`. Every other target fails, including
-relative paths into the repository and `javascript:`.
+Anchors are derived from the displayed heading text. Code spans retain
+their characters, and links contribute only their labels. The text is
+converted to lower case; each run of characters other than letters or
+digits becomes `-`, with leading and trailing hyphens removed. For
+example, `## Run a test` becomes `#run-a-test`. Targets outside the table
+above are rejected, including relative repository paths and `javascript:`.
 
 ### Images
 
-`![caption](view:servo-model)` shows the screenshot of the view
-`servo-model` of `tools/render_ui.py` (its `SCREENS` table). The English page
-takes `docs/img/servo-model.png`, the German page
-`docs/img/de/servo-model.png`. The caption is the image's text alternative
-and the line under it; it is plain text without links. The build copies only
-the referenced images.
+`![caption](view:servo-model)` inserts the `servo-model` screenshot from
+the `SCREENS` table in `tools/render_ui.py`. English pages use
+`docs/img/servo-model.png`; German pages use `docs/img/de/servo-model.png`.
+The caption supplies both the image's text alternative and the visible
+line below it. Captions are plain text without links. The build copies
+only images referenced by the pages.
 
 ### Not in the format
 
-These fail: headings `####` and deeper, `#` without a space after it, setext
-headings (`===` or `---` under a line), a `---` rule, fenced code blocks,
-indented code blocks (4 spaces or a tab), block quotes (`>`), `*` and `+`
-list markers (on any line of a block), nested lists, single `*` emphasis,
-`_` and `__` emphasis, reference links (`[text][ref]`) and reference
-definitions (`[label]: target`), hard line breaks (two spaces or a `\` at
-the end of a line), images inside text, image targets without `view:`, a
-link or caption that renders as no text, and an unclosed `**` or backtick.
+The following are rejected:
+
+- headings at level `####` or deeper, `#` without a following space, setext
+  headings (`===` or `---` below a line), and `---` rules;
+- fenced code blocks, indented code blocks (4 spaces or a tab), and block
+  quotes (`>`);
+- `*` or `+` list markers anywhere in a block, and nested lists;
+- single `*`, `_` or `__` emphasis, reference links (`[text][ref]`), and
+  reference definitions (`[label]: target`);
+- hard line breaks (two spaces or a `\` at the end of a line);
+- images inside text, image targets without `view:`, and links or captions
+  that render as empty text;
+- unclosed `**` or backticks.
 
 HTML in the text is escaped: `<b>` shows as the characters `<b>`.
 
@@ -126,13 +134,13 @@ HTML in the text is escaped: `<b>` shows as the characters `<b>`.
 `--check` and every build fail on:
 
 - a `SCREEN_*` without a page in either language;
-- a page in one language without its counterpart in the other;
-- a view that is not in `render_ui.py`'s `SCREENS`, or has no PNG (Portable
-  Network Graphics) file in that page's language;
-- an English and a German page of one id whose heading levels, in order, or
-  views, in order, differ;
-- a link to a page or anchor that does not exist;
-- anything outside the format above.
+- a page without its counterpart in the other language;
+- a view absent from `render_ui.py`'s `SCREENS`, or without a PNG (Portable
+  Network Graphics) file for the page's language;
+- different heading-level sequences or view sequences in the English and
+  German versions of a page;
+- a link to a missing page or anchor;
+- syntax outside the format defined here.
 
 ## Output
 

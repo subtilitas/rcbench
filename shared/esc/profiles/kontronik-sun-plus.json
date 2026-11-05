@@ -14,7 +14,7 @@
       "v_max_mv": 16000,
       "current_a": 18,
       "bec": null,
-      "firmware_note": "6-12 NiCd cells or 2-3 Li-Ion cells (5.5 to 16 V); BEC 2 A for 4 servos; 22 A for 15 s; motors up to Speed 480",
+      "firmware_note": "6-12 NiCd cells or 2-3 Li-Ion cells (5.5 to 16V); BEC 2A for 4 servos; 22A for 15s; motors up to Speed 480",
       "spec_source": "Kontronik_Sun_Plus.pdf p.2: 6-12 NiCd cells; also 2-3 Li-Ion cells, 5.5-16 V; 18 A continuous"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": 16000,
       "current_a": 30,
       "bec": null,
-      "firmware_note": "40 A for 15 s; motors up to Speed 600",
+      "firmware_note": "40A for 15s; motors up to Speed 600",
       "spec_source": "Kontronik_Sun_Plus.pdf p.2: 6-12 NiCd cells; also 2-3 Li-Ion cells, 5.5-16 V; 30 A continuous"
     },
     {
@@ -38,7 +38,7 @@
       "v_max_mv": 16000,
       "current_a": 40,
       "bec": null,
-      "firmware_note": "50 A for 15 s",
+      "firmware_note": "50A for 15s",
       "spec_source": "Kontronik_Sun_Plus.pdf p.2: 6-12 NiCd cells; also 2-3 Li-Ion cells, 5.5-16 V; 40 A continuous"
     }
   ],
@@ -56,14 +56,14 @@
     {
       "when": "before_menu",
       "action": "Press the button after the tone sequence: 2s for modes 1 to 3, 5s for modes 4 to 6.",
-      "action_de": "Taster nach der Tonfolge drücken: 2s bei Modi 1 bis 3, 5s bei Modi 4 bis 6.",
+      "action_de": "Drücke den Taster nach der Tonfolge: 2s bei Modi 1 bis 3, 5s bei Modi 4 bis 6.",
       "starts_menu": true,
       "source": "Kontronik_Sun_Plus.pdf p.3-6 (DE), p.11-13 (EN)"
     },
     {
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
-      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "action_de": "Berühre nichts. Warte, bis der ESC den Modus als Töne vollständig wiederholt hat, und tippe dann ERLEDIGT.",
       "source": "Kontronik_Sun_Plus.pdf p.3-7 (DE), p.13 (EN)"
     }
   ],
@@ -80,7 +80,7 @@
         "Wait 2s (modes 1, 2, 3) or 5s (modes 4, 5, 6) or until the ESC sounds an ascending tone sequence.",
         "Operator: press the ESC button ('Taster').",
         "The ESC sounds a descending tone sequence, then the mode series.",
-        "Move the throttle to full (stick forward) when the wanted mode sounds.",
+        "Move the throttle to full (stick forward) when the desired mode sounds.",
         "The ESC confirms with a descending tone sequence. Mode 2: a separate brake position can then be set (optional). Mode 6: move the stick to the brake position afterwards.",
         "Control output: the mode is repeated as tones. Disconnect power."
       ]
@@ -98,7 +98,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the throttle to full when the wanted mode sounds."
+      "description": "Move the throttle to full when the desired mode sounds."
     },
     "skip": {
       "throttle": "none",
@@ -108,7 +108,7 @@
     "exit": "Disconnect power after the control output.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Program mode 1 (APM).",
-    "description": "Brushed ESC with mode programming through the ESC button. The entry wait is 2 s for modes 1 to 3 and 5 s for modes 4 to 6. The series counts modes as tones; full throttle stores the selected mode."
+    "description": "Brushed ESC with mode programming through the ESC button. The entry wait is 2s for modes 1 to 3 and 5s for modes 4 to 6. The series counts modes as tones; full throttle stores the selected mode."
   },
   "items": [
     {
@@ -162,17 +162,17 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
     "The manual's drawings for modes 4 and 5 show '5 sec' between the first and second tone series; whether it is the pause between series is not stated in text.",
-    "Entry wait is 2 s in modes 1 to 3 and 5 s in modes 4 to 6; whether the 5 s is a minimum or the same as the 'until the ESC signals' condition is not stated.",
+    "Entry wait is 2s in modes 1 to 3 and 5s in modes 4 to 6; whether the 5s is a minimum or the same as the 'until the ESC signals' condition is not stated.",
     "Position of the button on the ESC is not stated."
   ],
   "notes": [
     "INDEX.csv lists 'ProgCard'; the manual names the ProgCARD (order no. 9305) for individual parameters.",
     "The motor drive is brushed ('Kollektormotoren'), 3-wire inputs only.",
     "Modes 2 to 6 and 9 start at 'Neutralstellung' (Kontronik_Sun_Plus.pdf p.4-7). The English text places it for mode 4 as 'neutral position (back position)' (p.12 EN), and mode 5 sets a two-position motor switch, which has no middle, to it (p.13 EN): neutral is read as the back, and modes 2, 3, 5 and 9 power up at MIN. Mode 6, the car mode, moves to the EMF-brake position after full throttle (p.13 EN), a brake below neutral, so it carries entry_throttle mid; the manual does not place its neutral.",
-    "Modes 4, 5 and 6 wait 5 s for the ascending tones before the button (Kontronik_Sun_Plus.pdf p.5-6 DE, p.12-13 EN), modes 1, 2, 3 and 9 wait 2 s: entry_hold_ms 5000 on modes 4 to 6, the scheme's 2000 ms for the rest.",
+    "Modes 4, 5 and 6 wait 5s for the ascending tones before the button (Kontronik_Sun_Plus.pdf p.5-6 DE, p.12-13 EN), modes 1, 2, 3 and 9 wait 2s: entry_hold_ms 5000 on modes 4 to 6, the scheme's 2000ms for the rest.",
     "Mode 6 moves the stick to the brake position after the full-throttle selection (Kontronik_Sun_Plus.pdf p.6-7 DE, p.13 EN): after_select min, made STORE after the selection; the manual gives no time.",
     "After the store the ESC repeats the stored mode as tones (control output, 'Kontrollausgabe'), and the manual disconnects power after it (Kontronik_Sun_Plus.pdf p.3-7 (DE), p.13 (EN)). The step before_power_off holds the run powered until the operator taps DONE. The manual names no lock for a power-off before the end of it."
   ]

@@ -47,7 +47,7 @@ Den Prüfstand benutzen
 - [Bildschirme](Screens-de.md)
 - [Auswuchten](Balance-de.md)
 - [Servoverfahren](Servo-de.md)
-- [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)
+- [Servoprogrammierung für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 - [Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)
 - [Die Bluetooth-IMU](IMU-de.md)
 - [Stick-Programmierung](StickProgramming-de.md)

@@ -25,7 +25,7 @@
       "v_max_mv": 12600,
       "current_a": 8,
       "bec": null,
-      "firmware_note": "BEC 5 V, 2 A, type not stated; 10 A for 15 s",
+      "firmware_note": "BEC 5V, 2A, type not stated; 10A for 15s",
       "spec_source": "YGE_8S-12S_en.pdf p.1 (2-3s; manual gives 10 A for 15 s, no continuous value); 8 A continuous from model name and live-hobby.de/en/1-sorto/YGE-8A-Brushless-ESC-2-3S-YGE-8-S.html",
       "cell_type": "lipo"
     },
@@ -37,7 +37,7 @@
       "v_max_mv": 12600,
       "current_a": 12,
       "bec": null,
-      "firmware_note": "BEC 5 V, 2 A, type not stated; 14 A for 5 s",
+      "firmware_note": "BEC 5V, 2A, type not stated; 14A for 5s",
       "spec_source": "YGE_8S-12S_en.pdf p.1 (2-3s; manual gives 14 A for 5 s, no continuous value); 12 A continuous from model name and live-hobby.de YGE-12A-Brushless-Regler-Steller-2-3S-YGE-12-S",
       "cell_type": "lipo"
     },
@@ -49,7 +49,7 @@
       "v_max_mv": 25200,
       "current_a": 40,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "firmware_note": "BEC 5.5V, 3A continuous, 5A peak",
       "spec_source": "YGE_YGE-60_V4.pdf p.1 (2-6s; table 40 A, 60 A)",
       "cell_type": "lipo"
     },
@@ -61,7 +61,7 @@
       "v_max_mv": 25200,
       "current_a": 60,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "firmware_note": "BEC 5.5V, 3A continuous, 5A peak",
       "spec_source": "YGE_YGE-60_V4.pdf p.1 (2-6s; table 40 A, 60 A)",
       "cell_type": "lipo"
     },
@@ -73,7 +73,7 @@
       "v_max_mv": 25200,
       "current_a": 100,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "firmware_note": "BEC 5.5V, 3A continuous, 5A peak",
       "spec_source": "YGE_YGE-100-V4.pdf p.1 (2-6s; table 100 A, 120 A)",
       "cell_type": "lipo"
     },
@@ -85,7 +85,7 @@
       "v_max_mv": 25200,
       "current_a": 120,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak",
+      "firmware_note": "BEC 5.5V, 3A continuous, 5A peak",
       "spec_source": "YGE_YGE-100-V4.pdf p.1 (2-6s; table 100 A, 120 A)",
       "cell_type": "lipo"
     },
@@ -97,7 +97,7 @@
       "v_max_mv": 25200,
       "current_a": 75,
       "bec": "switching",
-      "firmware_note": "Water cooled; forward/reverse; BEC 5.5 V, 3 A continuous, 5 A peak",
+      "firmware_note": "Water cooled; forward/reverse; BEC 5.5V, 3A continuous, 5A peak",
       "spec_source": "YGE_YGE-120-Navy.pdf p.1 (2-6s; 75 A, 120 A with water cooling)",
       "cell_type": "lipo"
     },
@@ -109,7 +109,7 @@
       "v_max_mv": 25200,
       "current_a": 120,
       "bec": "switching",
-      "firmware_note": "Water cooled; forward/reverse; BEC 5.5 V, 3 A continuous, 5 A peak",
+      "firmware_note": "Water cooled; forward/reverse; BEC 5.5V, 3A continuous, 5A peak",
       "spec_source": "YGE_YGE-120-Navy.pdf p.1 (2-6s; 75 A, 120 A with water cooling)",
       "cell_type": "lipo"
     },
@@ -121,7 +121,7 @@
       "v_max_mv": 33600,
       "current_a": 155,
       "bec": "switching",
-      "firmware_note": "BEC 5.5 V, 3 A continuous, 5 A peak; 200 A for 5 s",
+      "firmware_note": "BEC 5.5V, 3A continuous, 5A peak; 200A for 5s",
       "spec_source": "YGE_YGE-155-Opto-BEC.pdf p.1 (2-8s, 155 A continuous, 200 A for 5 s)",
       "cell_type": "lipo"
     },
@@ -133,7 +133,7 @@
       "v_max_mv": 33600,
       "current_a": 155,
       "bec": "opto",
-      "firmware_note": "Receiver battery with optocoupler; 200 A for 5 s",
+      "firmware_note": "Receiver battery with optocoupler; 200A for 5s",
       "spec_source": "YGE_YGE-155-Opto-BEC.pdf p.1 (2-8s, 155 A continuous, 200 A for 5 s)",
       "cell_type": "lipo"
     },
@@ -145,7 +145,7 @@
       "v_max_mv": 34000,
       "current_a": 155,
       "bec": "opto",
-      "firmware_note": "Water cooled; forward/reverse; 6-34 V; 200 A for 5 s",
+      "firmware_note": "Water cooled; forward/reverse; 6-34V; 200A for 5s",
       "spec_source": "YGE_YGE-155-Navy-Opto-V3.pdf p.1 (2-8s, 6-34 V, 155 A with water cooling)",
       "cell_type": "lipo"
     },
@@ -205,7 +205,7 @@
       "v_max_mv": 50400,
       "current_a": null,
       "bec": "opto",
-      "firmware_note": "150 A about 30 s",
+      "firmware_note": "150A about 30s",
       "spec_source": "YGE_Bedienungsanleitung-150HV-FAI.pdf p.1 (4-12s); only 150 A for 30 s stated, no continuous current",
       "cell_type": "lipo"
     },
@@ -217,7 +217,7 @@
       "v_max_mv": 25200,
       "current_a": 160,
       "bec": "switching",
-      "firmware_note": "BEC 5.7/7.4/8.0 V, 8 A continuous, 18 A peak",
+      "firmware_note": "BEC 5.7/7.4/8.0V, 8A continuous, 18A peak",
       "spec_source": "YGE_160FAI_V3_en.pdf p.1 (3-6s; specified current is continuous)",
       "cell_type": "lipo"
     },
@@ -229,7 +229,7 @@
       "v_max_mv": 42000,
       "current_a": null,
       "bec": "opto",
-      "firmware_note": "200 A about 30 s",
+      "firmware_note": "200A about 30s",
       "spec_source": "YGE_Bedienungsanleitung-200HV-FAI.pdf p.1 (4-10s); only 200 A for 30 s stated, no continuous current",
       "cell_type": "lipo"
     },
@@ -241,7 +241,7 @@
       "v_max_mv": 25200,
       "current_a": null,
       "bec": "none",
-      "firmware_note": "no BEC; receiver battery 4.8-8.4 V",
+      "firmware_note": "no BEC; receiver battery 4.8-8.4V",
       "spec_source": "YGE_Bedienungsanleitung-300FAI.pdf p.1 (3-6s); only maximum full-throttle current 300 A stated, 150 A for 5 s part load, no continuous current",
       "cell_type": "lipo"
     }
@@ -372,7 +372,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Throttle to maximum while the wanted item or value is being sounded; the ESC answers with one tone. Selecting an item opens its values; selecting a value stores it."
+      "description": "Throttle to maximum while the desired item or value is being sounded; the ESC answers with one tone. Selecting an item opens its values; selecting a value stores it."
     },
     "skip": {
       "throttle": "none",
@@ -542,8 +542,8 @@
     "Duration of the 20 interval tones before entry: not stated, so the time from power-on to the 2 confirmation tones is unmeasured",
     "Whether maximum throttle selects during the count or only after the last tone of a count: not stated",
     "Number of times the mode sequence repeats before it ends or restarts: not stated",
-    "Minimum supply voltage at which the menu is entered: not stated; ESC cell detection needs a voltage matching the cell count and a 1-20 V bench supply covers at most 4 cells at 4.2 V",
-    "Behaviour on a current-limited 3 A bench supply: not stated; the manuals say the ESC is to be powered from batteries only, power supplies are not allowed",
+    "Minimum supply voltage at which the menu is entered: not stated; ESC cell detection needs a voltage matching the cell count and a 1-20V bench supply covers at most 4 cells at 4.2V",
+    "Behaviour on a current-limited 3A bench supply: not stated; the manuals say the ESC is to be powered from batteries only, power supplies are not allowed",
     "Idle current of the ESC with the motor connected: not stated, needed to separate tones from the idle level when counting beeps from supply current",
     "Whether the RC-Setup in YGE_rc_setup.pdf (unofficial English translation dated 2012, source ESC generation not named) applies unchanged to every model listed: the model manuals point to an RC-Setup / Knüppel-Setup manual without reproducing it",
     "Whether Navy models and the 155 Navy Opto (forward/reverse; no governor in their data lists) have extra or fewer items than the 5 listed, or lack Speed control: not stated",
@@ -564,19 +564,19 @@
     "Basic setup (done before the advanced setup): throttle at maximum, power on, constant tone; then move the stick to the neutral position (fully back for no brake, in the bottom quarter for brake) and wait for the acknowledgement; this stores both end positions. Next the soft start is chosen with the stick position: maximum throttle for fastest, further back for softer, middle as a compromise; wait for the acknowledgement, then move the stick back and the ESC arms.",
     "Stick positions of the basic setup are stored; throttle range is therefore learned in this procedure.",
     "Tone sequences in normal operation: descending tones = receiver signal recognised; ascending tones = stop position recognised and ESC armed; after the descending tones, tones for cell count follow (n identical tones = n LiPo cells, 2-6 cells; above 6 cells a different high-low sequence).",
-    "NiMH is announced as 2 different high / low tones; free voltage as 2x2 low / high tones (default 12 V for the future PC setup).",
+    "NiMH is announced as 2 different high / low tones; free voltage as 2x2 low / high tones (default 12V for the future PC setup).",
     "Start-up sequences: 3 descending tones, cell tones, 3 ascending tones on 7S, 8S/12S, 40/60/100/120 V4, Navy V4 and 155; the 155 models give 2 high and 2 low tones for 7 and 8 cells.",
     "YGE_YGE-7S.pdf: to enter RC-Setup the ESC must see full throttle at power-up; where a receiver outputs a stop signal at power-up this only works if the ESC is disconnected from the receiver, full throttle is given after binding and the ESC is plugged in again. A bench throttle source that outputs full throttle at power-on avoids this.",
     "YGE_8S-12S_en.pdf and YGE_Bedienungsanleitung-8S-12S.pdf disagree on the brake steps (5 in the English edition, 3 in the German one) and on battery types (German edition adds 4-10 NiMH cells; English edition lists 2-3 LiPo only).",
-    "YGE_YGE-100-V4.pdf is titled for the L series 40 to 160 A but its type table lists 40, 60, 100 and 120 A.",
+    "YGE_YGE-100-V4.pdf is titled for the L series 40 to 160A but its type table lists 40, 60, 100 and 120A.",
     "On the 155 models the battery must be connected in a fixed order (negative first, then the thin positive lead for anti-spark, then the thick positive lead) before any throttle is given.",
     "A fault stored in the ESC is cleared by powering up at full throttle and unplugging after the interval tone; leaving the stick at full throttle for longer enters the RC-Setup instead (all small-ESC manuals in this file).",
     "HV V4 (120HV K, 160HV K; ProgCard / RC-Setup only): the model manual names the ProgCard as the main tool and refers stick setup to the YGE RC-setup manual; that this menu applies to these models is inferred from the reference, not stated per model.",
-    "HV V4 (120HV K, 160HV K; ProgCard / RC-Setup only): Governor modes are named in the text ('one of the two Gov modes') but no mode menu is listed; the defaults after activating one are timing 18 deg, brake off, active freewheel on, P-gain 0.9, I-gain 0.05, startup speed heli slow, PWM 8 kHz, startup power auto 1-32%.",
+    "HV V4 (120HV K, 160HV K; ProgCard / RC-Setup only): Governor modes are named in the text ('one of the two Gov modes') but no mode menu is listed; the defaults after activating one are timing 18deg, brake off, active freewheel on, P-gain 0.9, I-gain 0.05, startup speed heli slow, PWM 8kHz, startup power auto 1-32%.",
     "HV V4 (120HV K, 160HV K; ProgCard / RC-Setup only): Error clearing: connect battery with stick at full power, disconnect after the interval beep while keeping full power; releasing the stick first enters RC-Setup.",
     "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): the model manual names the ProgCard as the main tool and refers stick setup to the YGE RC-setup manual; that this menu applies to these models is inferred from the reference, not stated per model.",
-    "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): 150HV FAI partial-load rating: English manual says 100 A for about 5 s, German manual says 90 A for 5 s (YGE_150HV-FAI_en.pdf vs YGE_Bedienungsanleitung-150HV-FAI.pdf).",
-    "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): Delivery state stated: timing 18 deg, brake middle, undervoltage cutoff LiPo mode 3.1 V per cell. Brake steps: smooth 0.5 s, middle 0.3 s, hard 0.2 s (150HV and 200HV FAI).",
+    "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): 150HV FAI partial-load rating: English manual says 100A for about 5s, German manual says 90A for 5s (YGE_150HV-FAI_en.pdf vs YGE_Bedienungsanleitung-150HV-FAI.pdf).",
+    "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): Delivery state stated: timing 18deg, brake middle, undervoltage cutoff LiPo mode 3.1V per cell. Brake steps: smooth 0.5s, middle 0.3s, hard 0.2s (150HV and 200HV FAI).",
     "FAI (pylon racing / hotliner; ProgCard / RC-Setup only): The 160 FAI V3 manual gives 3 to 6s LiPo and an adjustable switching BEC; the 300 FAI has no BEC."
   ]
 }

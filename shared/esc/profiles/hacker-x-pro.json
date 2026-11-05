@@ -143,7 +143,7 @@
       "v_max_mv": 42000,
       "current_a": 75,
       "bec": "opto",
-      "firmware_note": "protection threshold 12.0 V stated for this type in the leaflet",
+      "firmware_note": "protection threshold 12.0V stated for this type in the leaflet",
       "cell_type": "lipo",
       "spec_source": "Hacker_X-Pro_Regler_de.pdf p.4"
     },
@@ -206,13 +206,13 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Two low tones then two high tones ('_ _ - -') about 5 s after power-up.",
+      "confirm_signal": "Two low tones then two high tones ('_ _ - -') about 5s after power-up.",
       "steps": [
         "Throttle signal at full power.",
         "Connect the drive battery (switch on where fitted); Opto versions need an external supply for the receiver connected first.",
         "Wait 5s for the two low plus two high tones.",
         "Brake: move throttle to stop right after these tones.",
-        "Other items: keep full throttle until the wanted pattern sounds; move throttle to stop while its five repetitions are playing."
+        "Other items: keep full throttle until the desired pattern sounds; move throttle to stop while its five repetitions are playing."
       ]
     },
     "announce": {
@@ -223,12 +223,12 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": 5,
-      "description": "Each selectable setting has its own tone pattern, shown five times in a row, then the next setting follows in the order of the list (battery type, under-voltage behaviour, acceleration, timing, frequency, rotation reverse, rpm control). One pattern names item and value together: battery type uses N short beeps per group (NiCd one, 2 cells two and so on), timing uses 1 to 3 high tones, acceleration uses V, VV, VVV, 8 kHz is a falling and 16 kHz a rising tone. Symbols as printed: '.' short low beep, '-' short high beep, '_' long tone, '\\' falling, '/' rising, 'V' high-low-high, 'W' doubled V. A pattern ends after its fifth repetition. Whether the list loops is not stated."
+      "description": "Each selectable setting has its own tone pattern, shown five times in a row, then the next setting follows in the order of the list (battery type, under-voltage behaviour, acceleration, timing, frequency, rotation reverse, rpm control). One pattern names item and value together: battery type uses N short beeps per group (NiCd one, 2 cells two and so on), timing uses 1 to 3 high tones, acceleration uses V, VV, VVV, 8kHz is a falling and 16kHz a rising tone. Symbols as printed: '.' short low beep, '-' short high beep, '_' long tone, '\\' falling, '/' rising, 'V' high-low-high, 'W' doubled V. A pattern ends after its fifth repetition. Whether the list loops is not stated."
     },
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the throttle to stop while the wanted series of five patterns is sounding."
+      "description": "Move the throttle to stop while the desired series of five patterns is sounding."
     },
     "skip": {
       "throttle": "none",
@@ -238,7 +238,7 @@
     "exit": "Automatic after the single change; disconnect the battery before another change. If the programming mode starts by mistake, disconnecting the battery prevents a change.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "Full throttle at power-up gives two low plus two high tones after 5 s. Stop right after them toggles the brake. Otherwise full throttle is kept; each setting sounds as a five-times repeated pattern and stop during one stores it. One change per entry. Choosing any battery type by stick turns LiPo autodetect off; it can be switched on again only with the USB interface."
+    "description": "Full throttle at power-up gives two low plus two high tones after 5s. Stop right after them toggles the brake. Otherwise full throttle is kept; each setting sounds as a five-times repeated pattern and stop during one stores it. One change per entry. Choosing any battery type by stick turns LiPo autodetect off; it can be switched on again only with the USB interface."
   },
   "items": [
     {
@@ -303,7 +303,7 @@
       ],
       "applies_to": null,
       "source_page": "3 (en), 8 (de 2016)",
-      "note": "Value numbers are beep counts per group; NiCd is one beep. Factory state is LiPo autodetect at 3.2 V per cell (pack above 3.8 V per cell needed), which has no pattern."
+      "note": "Value numbers are beep counts per group; NiCd is one beep. Factory state is LiPo autodetect at 3.2V per cell (pack above 3.8V per cell needed), which has no pattern."
     },
     {
       "number": 3,
@@ -436,12 +436,12 @@
     "Number of beeps used for the NiCd entry: German 2016 text says one, the pattern rows show five groups."
   ],
   "notes": [
-    "Cutoff voltages: 3 LiPo cells 8.7 V, 4 cells 11.6 V, 5 cells 14.5 V in Hacker_X-Pro.pdf, Hacker_X-Pro_rev3_en.pdf and Hacker_X-Pro_series_leaflet.pdf; 8.3 V, 11.3 V, 14.2 V in Hacker_X-Pro_Regler_de.pdf (2016).",
+    "Cutoff voltages: 3 LiPo cells 8.7V, 4 cells 11.6V, 5 cells 14.5V in Hacker_X-Pro.pdf, Hacker_X-Pro_rev3_en.pdf and Hacker_X-Pro_series_leaflet.pdf; 8.3V, 11.3V, 14.2V in Hacker_X-Pro_Regler_de.pdf (2016).",
     "Hacker_X-Pro_Regler_de.pdf p8 labels the '_' symbol 'long high beep' in the English text and 'langer tiefer Ton' (long low tone) in the German text.",
     "Hacker_X-Pro_Regler_de.pdf p8 row 5S reads '5 short beeps / 2 short beeps'; read as five.",
     "Hacker_X-Pro.pdf is the 03/08 print and Hacker_X-Pro_rev3_en.pdf the 06/07 print; their text is identical except the date.",
-    "Models: only Hacker_X-Pro_Regler_de.pdf p4 has a model table. Voltage maximum is 4.2 V per cell times the highest LiPo count.",
-    "The power-off threshold is 5.5 V, 12.0 V for the X-75-Opto (leaflet p6).",
+    "Models: only Hacker_X-Pro_Regler_de.pdf p4 has a model table. Voltage maximum is 4.2V per cell times the highest LiPo count.",
+    "The power-off threshold is 5.5V, 12.0V for the X-75-Opto (leaflet p6).",
     "The manual does not permit power supplies, only batteries.",
     "Opto versions need an external receiver supply connected before the drive battery.",
     "The USB interface (order no. 87201006) offers more settings: variable LiPo cutoff, brake off/soft/hard, finer timing, three acceleration stages; not a stick method."

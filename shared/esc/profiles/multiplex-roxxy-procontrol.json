@@ -11,7 +11,7 @@
       "v_max_mv": 25200,
       "current_a": 45,
       "bec": "switching",
-      "firmware_note": "Short-time 65 A; SBEC 5.0 V or 6.0 V, 5.0 A",
+      "firmware_note": "Short-time 65A; SBEC 5.0V or 6.0V, 5.0A",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
     },
@@ -23,7 +23,7 @@
       "v_max_mv": 25200,
       "current_a": 65,
       "bec": "switching",
-      "firmware_note": "Short-time 85 A; SBEC 5.0/6.0/7.4/8.4 V, 8.0 A",
+      "firmware_note": "Short-time 85A; SBEC 5.0/6.0/7.4/8.4V, 8.0A",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
     },
@@ -35,7 +35,7 @@
       "v_max_mv": 25200,
       "current_a": 85,
       "bec": "switching",
-      "firmware_note": "Short-time 100 A; SBEC 5.0/6.0/7.4/8.4 V, 8.0 A",
+      "firmware_note": "Short-time 100A; SBEC 5.0/6.0/7.4/8.4V, 8.0A",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
     },
@@ -47,7 +47,7 @@
       "v_max_mv": 25200,
       "current_a": 125,
       "bec": "switching",
-      "firmware_note": "Short-time 150 A; SBEC 5.0/6.0/7.4/8.4 V, 8.0 A",
+      "firmware_note": "Short-time 150A; SBEC 5.0/6.0/7.4/8.4V, 8.0A",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
     },
@@ -59,7 +59,7 @@
       "v_max_mv": 25200,
       "current_a": 155,
       "bec": "switching",
-      "firmware_note": "Short-time 200 A; SBEC 5.0/6.0/7.4/8.4 V, 8.0 A",
+      "firmware_note": "Short-time 200A; SBEC 5.0/6.0/7.4/8.4V, 8.0A",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
     },
@@ -71,7 +71,7 @@
       "v_max_mv": 50400,
       "current_a": 120,
       "bec": "opto",
-      "firmware_note": "Short-time 150 A; no BEC",
+      "firmware_note": "Short-time 150A; no BEC",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
     },
@@ -83,7 +83,7 @@
       "v_max_mv": 50400,
       "current_a": 150,
       "bec": "opto",
-      "firmware_note": "Short-time 180 A; no BEC",
+      "firmware_note": "Short-time 180A; no BEC",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_ProControl_2106.pdf p.2"
     }
@@ -104,7 +104,7 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 2000,
-      "confirm_signal": "Four times two fast beeps about 2 s after power-up at full throttle.",
+      "confirm_signal": "Four times two fast beeps about 2s after power-up at full throttle.",
       "steps": [
         "Transmitter on, throttle stick to full throttle.",
         "Connect the battery.",
@@ -133,8 +133,8 @@
     "confirm_signal": "Not described beyond the move to the next item; no separate stored-tone is named.",
     "exit": "Disconnect the battery.",
     "changes_per_entry": "many",
-    "reset_to_defaults": "Item 4 (reset): full throttle on the reset item restores the factory settings (brake off, LiPo auto cells, cutoff 3.0 V / 60%, timing auto, SBEC 5.0 V, governor off, rotation clockwise, start strength medium 30%, cutoff mode throttling). The acknowledging tone is not described.",
-    "description": "Full throttle at power-up; after 2 s four double beeps. The items cycle automatically. Throttle to idle during an item gives a melody and then the item's values in turn; full throttle on the right value stores it and the ESC goes to the next item. Disconnecting the battery ends programming."
+    "reset_to_defaults": "Item 4 (reset): full throttle on the reset item restores the factory settings (brake off, LiPo auto cells, cutoff 3.0V / 60%, timing auto, SBEC 5.0V, governor off, rotation clockwise, start strength medium 30%, cutoff mode throttling). The acknowledging tone is not described.",
+    "description": "Full throttle at power-up; after 2s four double beeps. The items cycle automatically. Throttle to idle during an item gives a melody and then the item's values in turn; full throttle on the right value stores it and the ESC goes to the next item. Disconnecting the battery ends programming."
   },
   "items": [
     {
@@ -210,7 +210,7 @@
       ],
       "applies_to": null,
       "source_page": "9, 11",
-      "note": "For NiCd/NiMH the thresholds are 50%, 60% and 65% of the start voltage; the manual's reset list gives '3.0 V / 60%'."
+      "note": "For NiCd/NiMH the thresholds are 50%, 60% and 65% of the start voltage; the manual's reset list gives '3.0V / 60%'."
     },
     {
       "number": 4,
@@ -284,7 +284,7 @@
       ],
       "applies_to": null,
       "source_page": "10-11",
-      "note": "PROcontrol 45 offers only 5.0 V and 6.0 V."
+      "note": "PROcontrol 45 offers only 5.0V and 6.0V."
     },
     {
       "number": 7,

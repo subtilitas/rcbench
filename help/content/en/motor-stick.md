@@ -6,9 +6,9 @@ order: 12
 
 # ESC STICK
 
-ESC STICK sets an ESC (electronic speed controller) through its throttle-stick menu. The bench powers the ESC from the PD mini supply, moves the throttle to the positions the ESC profile names, and counts the menu's beeps as pulses in the supply current. It opens from the row `ESCs via throttle stick` on MOTOR & ESC's [PROGRAM](motor.md#program), full width under the output strip.
+ESC STICK configures an ESC (electronic speed controller) through its throttle-stick menu. The bench powers the ESC from the PD mini supply, moves the throttle to the positions specified by the profile, and counts menu beeps as pulses in the supply current. Open `ESCs via throttle stick` under MOTOR & ESC > [PROGRAM](motor.md#program). The session fills the width below the output strip.
 
-No ESC has been recorded and no profile is verified. Every beep time is a default kept as a setting. DONE means every selection move was made on a counted group, not that the ESC stored it.
+No ESC has been recorded and no profile is verified. All beep timings are configurable defaults. DONE means the selection movements were made at counted groups; it does not confirm that the ESC stored the changes.
 
 ## Before a run
 
@@ -18,7 +18,7 @@ No ESC has been recorded and no profile is verified. Every beep time is a defaul
 4. Connect the ESC's power leads to the supply output. Enable the PD mini on [SUPPLY's PD MINI tab](supply.md#pd-mini-tab).
 5. Switch the supply output off.
 
-RUN opens nothing while one of these is missing, and the line beside RUN names the reason, for example `No throttle pin assigned. Assign one on OUTPUTS.` or `Supply is simulated. RUN needs a PD mini.`. RUN needs a supply reading no older than 1000ms that reports the output off with at most 20mA for 200ms.
+RUN remains unavailable until these requirements are met. The line beside it explains why, for example `No throttle pin assigned. Assign one on OUTPUTS.` or `Supply is simulated. RUN needs a PD mini.` RUN requires a supply reading no older than 1000ms, with the output off and current at or below 20mA for 200ms.
 
 ## Makers and models
 
@@ -49,7 +49,9 @@ SEARCH filters the level showing. Its keyboard docks on the right and every key 
 
 ![Two values picked: RUN 2](view:motor-stick-items)
 
-A profile's page lists its menu items. Each starts at KEEP, which leaves the item as it is. `-` and `+` move through the item's values and stop at either end. ACTION, NOT A SETTING marks an item that is an action, such as a reset; NO OPTIONS an item with one value. A page shows 6 items. The column at the right holds CHANGE with the items shown and `^` and `v`, which scroll them; MANUAL INTERVENTION REQUIRED where the profile has manual steps; the menu's kind, the supply's voltage and current for the run and the entry time; and the selected item's values and the default. RUN counts the values picked.
+A profile page lists its menu items, initially set to KEEP so they remain unchanged. Use `-` and `+` to select values; they stop at either end of the list. ACTION, NOT A SETTING marks an action such as a reset. NO OPTIONS marks an item with only one value. Each page shows 6 items.
+
+The right column contains CHANGE, the visible item range and the `^` and `v` scroll buttons. It also shows MANUAL INTERVENTION REQUIRED when applicable, the menu type, run voltage and current, entry time, and the selected item's values and default. RUN shows how many values you have selected.
 
 TIMING opens the beep timings and the supply settings, laid out the same way:
 
@@ -57,7 +59,7 @@ TIMING opens the beep timings and the supply settings, laid out the same way:
 
 None of the timings is measured. CLOSE asks for them to be saved; the save waits for the bench SAFE and the supply output off.
 
-`-` and `+` step a row. A tap on its value opens the keypad over the page. It names the setting, its range and its unit, and takes the step's digits after the point. OK sets the value as a step does, onto the nearer step: 1.23A is 1.25A. A value outside the range keeps the keypad open and names the range in the warning colour. CANCEL and the home tag change nothing; TIMING stays.
+Use `-` and `+` to adjust a setting, or tap its value to open the keypad. The keypad shows the name, range and unit, with decimal places matching the step size. OK rounds to the nearest step: 1.23A becomes 1.25A. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag discards the edit and leaves TIMING open.
 
 ![The keypad of Beep min, 250 typed](view:motor-stick-timing-keypad)
 
@@ -69,7 +71,7 @@ RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It
 
 ![A run counting item groups](view:motor-stick-run)
 
-The run switches the bench to ARMED MOTOR. The page shows the phase, the beeps of the group under way, the last group and whether it was in order, and the current against its floor. ABORT, the home tag, STOP and leaving the screen end the run with the throttle at MIN, the supply off and the bench SAFE. After ABORT or the home tag the result stays on the page.
+The run switches the bench to ARMED MOTOR. The page shows its phase, the current group's beep count, the last group and whether it was in sequence, and the current relative to its floor. ABORT, the home tag, STOP or leaving the screen ends the run: throttle at MIN, supply off, bench SAFE. After ABORT or the home tag, the result remains on the page.
 
 The stack light's green is lit while a beep is detected, for at least 150ms.
 
@@ -90,19 +92,19 @@ With the phase tap enabled on SETUP, SENSORS, the page adds a read-only readout:
 
 ![Done](view:motor-stick-done)
 
-The result stays until OK: which selections were made, and for an ended run the reason.
+The result lists the selections made and, for an interrupted run, the reason it ended. It remains until OK.
 
 ![Stopped by STOP: red dark](view:motor-stick-aborted)
 ![Ended by the supply: red lit](view:motor-stick-failed)
 
-The stack light's red is lit when the run ended because something was not as expected, a stop the bench raised itself included. It stays dark on DONE, a STOP pressed, ABORT, the home tag and leaving the screen.
+The red stack light indicates an unexpected end to the run, including a stop raised by the bench itself. It stays off for DONE, a pressed STOP, ABORT, the home tag or leaving the screen.
 
 ## Manual steps
 
 ![A profile with manual steps](view:motor-stick-hand)
 ![Its manual steps](view:motor-stick-hand-info)
 
-Some ESCs enter their programming mode only when a person fits a jumper or presses a button on the ESC. Every Kontronik ESC in the set is one. Such a profile shows MANUAL INTERVENTION REQUIRED in red. A tap shows the steps and when each is due; they open by themselves the first time the profile is opened after a start.
+Some ESCs require a jumper or a button press on the ESC to enter programming mode. This applies to every Kontronik ESC in the set. Such profiles show MANUAL INTERVENTION REQUIRED in red. Tap it to see the steps and their timing. They also open automatically the first time you open the profile after a restart.
 
 ![The warning with a step before power-up](view:motor-stick-hand-warning)
 ![Four steps before power-up, read under ALL STEPS](view:motor-stick-hand-steps)
@@ -111,7 +113,7 @@ The warning lists the steps due before the power-up. When they do not all fit, A
 
 ![The run waiting for the jumper](view:motor-stick-hand-prompt)
 
-A step due during the run covers the page with DONE and ABORT. DONE is dark for its first 1000ms. No DONE within 60s ends the run with NOT CONFIRMED.
+When a manual step is due during a run, a prompt covers the page with DONE and ABORT. DONE is disabled for the first 1000ms. If it is not pressed within 60s, the run ends with NOT CONFIRMED.
 
 ![The steps after programming, at the end of a run](view:motor-stick-hand-after)
 
@@ -119,7 +121,7 @@ Steps due after programming open when the run is over.
 
 ![The run waiting for the ESC's confirmation](view:motor-stick-hand-end)
 
-A Kontronik ESC confirms a stored mode with tones and locks itself when its supply goes off before the confirmation ends. The run holds the ESC powered after the store, the stick where it stored, until DONE.
+A Kontronik ESC confirms a stored mode with tones. Removing power before confirmation ends locks the ESC. After storing, the run keeps the ESC powered and the stick at its storage position until DONE.
 
 ![NOT CONFIRMED: the ESC may be locked](view:motor-stick-hand-locked)
 

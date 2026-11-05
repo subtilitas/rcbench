@@ -14,7 +14,7 @@
       "v_max_mv": 17000,
       "current_a": 30,
       "bec": null,
-      "firmware_note": "NiCd cells; BEC 2 A for 4 servos; 40 A for 15 s",
+      "firmware_note": "NiCd cells; BEC 2A for 4 servos; 40A for 15s",
       "spec_source": "Kontronik_Smile.pdf p.2: 6-12 NiCd/NiMH cells, 30 A continuous, 17 V stated"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": 17000,
       "current_a": 45,
       "bec": null,
-      "firmware_note": "NiCd cells; BEC 2 A for 4 servos; 55 A for 15 s",
+      "firmware_note": "NiCd cells; BEC 2A for 4 servos; 55A for 15s",
       "spec_source": "Kontronik_Smile.pdf p.2: 6-12 NiCd/NiMH cells, 45 A continuous, 17 V stated"
     },
     {
@@ -38,7 +38,7 @@
       "v_max_mv": 24000,
       "current_a": 45,
       "bec": "opto",
-      "firmware_note": "NiCd cells; 55 A for 15 s",
+      "firmware_note": "NiCd cells; 55A for 15s",
       "spec_source": "Kontronik_Smile.pdf p.2: 6-18 NiCd/NiMH cells, 45 A continuous, 24 V stated"
     }
   ],
@@ -56,14 +56,14 @@
     {
       "when": "before_menu",
       "action": "Press and release the button after 2s or the tone sequence.",
-      "action_de": "Taster nach 2s oder der Tonfolge drücken und loslassen.",
+      "action_de": "Drücke den Taster nach 2s oder der Tonfolge und lass ihn los.",
       "starts_menu": true,
       "source": "Kontronik_Smile.pdf p.4 (DE), p.17 (EN)"
     },
     {
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
-      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "action_de": "Berühre nichts. Warte, bis der ESC den Modus als Töne vollständig wiederholt hat, und tippe dann ERLEDIGT.",
       "source": "Kontronik_Smile.pdf p.4-9 (DE), p.17-22 (EN)"
     }
   ],
@@ -73,14 +73,14 @@
       "throttle": "min",
       "when": "before_power_on",
       "hold_ms": 2000,
-      "confirm_signal": "Tone sequence after the 2 s wait; mode series after the button press.",
+      "confirm_signal": "Tone sequence after the 2s wait; mode series after the button press.",
       "steps": [
-        "Connect the motor. Transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for mode 6.",
+        "Connect the motor. Switch the transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for mode 6.",
         "Apply drive power.",
         "Wait 2s or until the ESC sounds its tone sequence.",
         "Operator: press and release the button on the ESC ('Taster').",
         "Wait for the mode series; modes 7 and 9 are reached by waiting for the 7-fold or 9-fold signal.",
-        "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 6: then move the stick to brake (back).",
+        "Move the throttle to full (stick forward) when the desired mode sounds. Mode 6: then move the stick to brake (back).",
         "The ESC repeats the mode as control output. Disconnect power."
       ]
     },
@@ -97,7 +97,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the throttle to full when the wanted mode sounds."
+      "description": "Move the throttle to full when the desired mode sounds."
     },
     "skip": {
       "throttle": "none",
@@ -162,9 +162,9 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2s minimum; the end of the wait is the ESC's tone sequence.",
     "Button location on the ESC is not stated.",
     "Mode 9 needs a mode other than mode 1 programmed first; the manual says 'any mode except mode 1'."
   ],

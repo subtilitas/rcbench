@@ -1,7 +1,8 @@
 # phase_tap
 
-The edges of one ESC (electronic speed controller) motor phase, captured on
-one input pin and turned into beeps with their pitch.
+This module captures the edges of one ESC (electronic speed controller)
+motor phase on an input pin. It detects beeps and determines their pitch
+from those edges.
 
 The module has two parts.
 
@@ -11,22 +12,23 @@ The module has two parts.
 | RP2350 pin driver | `rp2350/tone_cap.pio`, `rp2350/tone_cap.c`, `rp2350/tone_cap.h` | the core, pico-sdk |
 
 - `tone.c` is the detector: edges in, windows and beeps out.
-- `edge_ring.c` reads the words the capture leaves in its ring and extends
-  their 31-bit counts to 64 bits.
-- `tone_svc.c` is one pass: ring to detector to finished beeps.
+- `edge_ring.c` reads the capture ring and extends its 31-bit counts to
+  64 bits.
+- `tone_svc.c` runs one processing pass from the ring, through the detector,
+  to completed beep records.
 
 ## Constraints
 
-- The capture is built for a 150MHz system clock and is refused at any
-  other (`TONE_SVC_SYS_HZ`).
+- Capture requires a 150MHz system clock (`TONE_SVC_SYS_HZ`). Starting
+  capture at any other clock rate is refused.
 - One tick is 4 system clocks, 26.7ns. A word carries 31 bits of the tick
   count, which wraps every 57.3s. The caller's estimate of the present
-  tick has to be within 28.6s of the truth.
+  tick must be within 28.6s of the actual tick count.
 - The capture hold-off is 8000ns (`TONE_SVC_HOLD_NS`). A rise starts a
   burst only after a low of at least twice the hold-off.
-- The ring is 4096 words (`TONE_RING_WORDS`). A reader the DMA (direct
-  memory access) channel has lapped discards the ring and reports an
-  overrun.
+- The ring holds 4096 words (`TONE_RING_WORDS`). If the DMA (direct memory
+  access) channel laps the reader, the reader discards the ring contents
+  and reports an overrun.
 - A pass is made every 1ms and takes at most 16 finished beeps
   (`TONE_SVC_BEEPS`).
 - The detector's limits: a window of 1ms to 100ms, a silence of at most
@@ -52,8 +54,8 @@ size_t   tone_svc_step(tone_svc_t *s, const tone_cmd_t *cmd,
                        tone_status_t *st);
 ```
 
-`tone.h` and `edge_ring.h` are the detector and the ring reader by
-themselves, for a caller with its own pass.
+`tone.h` and `edge_ring.h` expose the detector and ring reader separately
+for callers that provide their own processing loop.
 
 Driver, `tone_cap.h`:
 

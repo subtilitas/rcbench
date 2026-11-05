@@ -70,7 +70,7 @@
       "hold_ms": null,
       "confirm_signal": "Three-tone melody, cell-count beeps (LiPo only), long beep, three-tone melody, then the beep for parameter 1",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery",
         "Wait for: melody, cell beeps, long beep, melody, then the first parameter beep"
       ]
@@ -93,7 +93,7 @@
     "value_select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Setting: throttle up after the beep of the wanted setting. No window stated."
+      "description": "Setting: throttle up after the beep of the desired setting. No window stated."
     },
     "skip": {
       "throttle": "none",
@@ -103,7 +103,7 @@
     "exit": "Disconnect the battery. After parameter 7 or 8 is selected the ESC leaves programming mode and runs normally.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Parameter 7 (7 beeps) resets all data.",
-    "description": "Throttle at max, then battery on. A melody, cell beeps, a long beep and another melody play, then parameter 1 is beeped. Eight parameters cycle; throttle to stop selects the current one; throttle up on a setting beep stores it and a melody confirms. Further parameters follow."
+    "description": "Throttle at maximum, then battery on. A melody, cell beeps, a long beep and another melody play, then parameter 1 is beeped. Eight parameters cycle; throttle to stop selects the current one; throttle up on a setting beep stores it and a melody confirms. Further parameters follow."
   },
   "items": [
     {
@@ -263,7 +263,7 @@
   ],
   "notes": [
     "The connections text of the manual names a Roxxy BL-Control 7xx; the manual is a rebadged text. Menu and parameters are as listed here.",
-    "Item 4 threshold values are 3.0 / 3.2 / 3.4 V per cell; Nixx 0 / 50 / 60 % of initial voltage.",
+    "Item 4 threshold values are 3.0 / 3.2 / 3.4V per cell; Nixx 0 / 50 / 60% of initial voltage.",
     "Dualsky_XController_Lite_programming.pdf describes a different (Hobbywing-style, 5-6-5 melody) scheme and is in dualsky-xcontroller."
   ],
   "schema": 1,

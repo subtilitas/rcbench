@@ -2,36 +2,36 @@
 
 <sub>[English](BenchConsole.md) · **Deutsch**</sub>
 
-Die Prüfstandskonsole ist ein Werkzeug für den Prüfstand, nur für Debug-Builds.
-Sie ist in keinem veröffentlichten Image. Ein IOmcu, der mit der Option `IOMCU_CONSOLE` gebaut
-ist, liest Kommandozeilen auf seiner seriellen USB-Schnittstelle (Universal
-Serial Bus) und liest und schreibt damit die Link-Pages aus
-[Der Link](Link-de.md). Eine Station an dieser Schnittstelle bedient die
-Pages des IOmcu ohne einen Bildschirm des Panels dafür: die KST-Page, SUPPLY,
-PROG, HITEC und jede andere Page.
+Die Prüfstandskonsole liest und schreibt die Link-Pages des IOmcu über
+Kommandozeilen. Sie ist nur in Debug-Builds verfügbar, nicht in
+veröffentlichten Images. Baue den IOmcu mit der Option `IOMCU_CONSOLE`,
+um seine serielle USB-Schnittstelle (Universal Serial Bus) dafür zu
+nutzen. Eine daran angeschlossene Station kann auf KST, SUPPLY, PROG,
+HITEC und die übrigen Pages aus [Der Link](Link-de.md) zugreifen, auch
+wenn das Panel keine eigene Seite dafür hat.
 
-Jede Anfrage geht durch die Page-Handler, die der Link benutzt. Eine Page
-weist der Konsole ab, was sie dem Panel abweist: ein Schreiben von ARM bei
-gesetzter Arm-Sperre, ein KST- oder HITEC-Kommando ohne seinen
-Schreibschlüssel oder mit falscher Prüfsumme, ein Einschalten von SUPPLY
-ohne Heartbeat, eine Transaktion nach einem Stopp. Die Konsole hat keine
-Rechte, die das Panel nicht hat.
+Jede Anfrage durchläuft dieselben Page-Handler wie eine Anfrage über den
+Link. Es gelten dieselben Ablehnungen: ein Schreiben von ARM bei
+gesetzter Arm-Sperre, ein KST- oder HITEC-Kommando ohne Schreibschlüssel
+oder mit falscher Prüfsumme, ein Einschalten von SUPPLY ohne Heartbeat
+und eine Transaktion nach einem Stopp. Die Konsole hat dieselben Rechte
+wie das Panel.
 
-Eine Anfrage der Konsole ist kein Link-Verkehr. Sie hält den Failsafe des
-stillen Links (200ms) nicht auf, und sie ist kein Heartbeat. Jede Page, die
-einen vertrauenswürdigen Heartbeat und einen nicht stillen Link braucht,
-braucht ein laufendes Panel neben der Konsole: das Einschalten von SUPPLY,
-eine KST-Session, jedes HITEC-Kommando außer ABORT und CLOSE und ein ARM.
-Ohne Panel werden sie abgewiesen oder gestoppt, wie auf einem Prüfstand,
-dessen Panel stehen geblieben ist.
+Eine Konsolenanfrage zählt weder als Link-Verkehr noch als Heartbeat. Sie
+verhindert deshalb nicht, dass der Failsafe nach 200ms ohne Link-Verkehr
+auslöst. Vorgänge, die einen vertrauenswürdigen Heartbeat und einen
+aktiven Link brauchen, benötigen auch ein laufendes Panel: das
+Einschalten von SUPPLY, eine KST-Session, jedes HITEC-Kommando außer ABORT
+und CLOSE sowie ARM. Ohne Panel werden diese Vorgänge abgelehnt oder
+gestoppt, ebenso wie beim Ausfall des Panels.
 
 Die Konsole kann schreiben, was das Panel schreiben kann, CONTROL
 eingeschlossen. Ein Schreiben von ARM aus der Konsole schaltet die Bank auf
 ARMED, wenn jede Regel des Safety Gate es zulässt ([Sicherheit](Safety-de.md)).
 Ein CLEAR aus der Konsole löst die Arm-Sperre und den Failsafe wie das des
 Panels; der Link wird 200ms nach der letzten Anfrage des Panels wieder
-still. Die Konsole nur auf einem Prüfstand ohne Propeller und mit
-gesicherten Ausgängen benutzen, wie bei jeder Arbeit am Prüfstand.
+still. Benutze die Konsole wie bei jeder Arbeit am Prüfstand nur ohne
+Propeller und mit gesicherten Ausgängen.
 
 ## Bauen
 
@@ -57,13 +57,14 @@ Arbeitsspeicher in ihrem eigenen Zustand, nicht auf dem Stack.
 
 ## Zeilen
 
-Eine Zeile endet mit CR oder LF und hält höchstens 160 Zeichen; eine längere
-Zeile wird ganz abgewiesen. Tokens sind durch Leerzeichen getrennt. Zahlen
-sind dezimal oder hexadezimal mit `0x`. Die Konsole nimmt bis zu 64 Zeichen
-je Durchlauf der Hauptschleife des IOmcu und gibt weder Prompt noch Echo
-aus.
+Eine Zeile endet mit CR oder LF und enthält höchstens 160 Zeichen.
+Längere Zeilen werden vollständig abgelehnt. Tokens sind durch
+Leerzeichen getrennt. Zahlen sind dezimal oder mit `0x` hexadezimal. Die
+Konsole verarbeitet bis zu 64 Zeichen je Durchlauf der Hauptschleife des
+IOmcu. Sie gibt weder einen Prompt noch ein Echo aus.
 
-Jede Antwort ist eine Zeile oder mehr, jede beginnt mit einem Wort:
+Eine Antwort besteht aus einer oder mehreren Zeilen. Jede beginnt mit
+einem dieser Wörter:
 
 | Wort | Bedeutet |
 | --- | --- |
@@ -74,9 +75,10 @@ Jede Antwort ist eine Zeile oder mehr, jede beginnt mit einem Wort:
 | `page` | eine Zeile von `pages` |
 | `hitec` | ein hitec-Kommando und sein Bericht |
 
-Die Ausgabe geht in ganzen Zeilen, auch über den Link an ein Panel, durch einen Puffer von 2.048 Byte hinaus,
-so schnell der USB-Host sie nimmt. Was nicht passt, fällt weg, und eine
-Zeile `err output full, N bytes dropped` folgt.
+Die Ausgabe durchläuft einen Puffer von 2.048 Byte in ganzen Zeilen.
+Sie wird so schnell übertragen, wie der USB-Host oder das Panel über den
+Link sie annimmt. Zeilen, die nicht hineinpassen, werden verworfen.
+Danach folgt `err output full, N bytes dropped`.
 
 ## Rohe Pages
 
@@ -104,8 +106,9 @@ einen Heartbeat sendet. Mit laufendem Panel wird dieselbe Zeile angenommen:
 ack page=0x2A off=4 n=3: 0x0001 0x1388 0x03E8
 ```
 
-Die Programmierports und eine KST-Session gehen genauso. CMD 0x0041 ist
-ENTER (1) auf Port 0 mit gesetztem Bit 6; `SEQ` ist die der Page plus 1:
+Dieselben Kommandos greifen auf die Programmierports zu und starten eine
+KST-Session. CMD 0x0041 ist ENTER (1) auf Port 0 mit gesetztem Bit 6.
+Verwende den aktuellen Wert von `SEQ` der Page plus 1:
 
 ```text
 > r 0x33 0 8
@@ -121,22 +124,22 @@ die Register, den Schlüssel und die Prüfsumme.
 
 ## Hitec
 
-Die `hitec`-Kommandos schreiben die HITEC-Page
-([Der Programmierport für Servos von Hitec](LinkHitec-de.md)). Jedes stellt
-die Register 4 bis 21 der Page bereit, rechnet ihre Prüfsumme, liest `SEQ`
-und sendet das Kommando mit `SEQ` plus 1. Es setzt den Schreibschlüssel
-0x48A5 in jedes SEND und in ein LISTEN oder POWER, das antwortet. Ein
-Kommando, das die Page abweist, wird sofort gemeldet:
+Die `hitec`-Kommandos schreiben auf die HITEC-Page
+([Der Programmierport für Servos von Hitec](LinkHitec-de.md)). Jedes belegt
+die Register 4 bis 21, berechnet ihre Prüfsumme und liest `SEQ`. Es sendet
+das Kommando mit `SEQ` plus 1. Der Schreibschlüssel 0x48A5 wird bei jedem
+SEND sowie bei LISTEN oder POWER mit Antwort gesetzt. Eine Ablehnung
+durch die Page wird sofort gemeldet:
 
 ```text
 hitec SEND port=0 refused STOPPED
 ```
 
-Ein Kommando, das etwas startet, druckt `hitec <op> port=<n> started`, und
-der Bericht folgt, wenn der Port damit fertig ist. Ein Kommando, das den
-Port in seinem eigenen Frame frei oder offen lässt, etwa CLOSE oder CLEAR,
-druckt den Bericht sofort. Die Zeilen des Berichts, die letzte für jedes
-empfangene Byte:
+Ein Kommando, das einen Vorgang startet, gibt
+`hitec <op> port=<n> started` aus. Der Bericht folgt nach Abschluss des
+Vorgangs. Kommandos, die den Port innerhalb ihres Frames freigeben oder
+offen lassen, etwa CLOSE oder CLEAR, geben den Bericht sofort aus. Er
+enthält diese Zeilen; die letzte wird für jedes empfangene Byte wiederholt:
 
 ```text
 hitec done state=<state> port=<n> flags=<flags> seq=<n> op=<op> count=<n> result=<result> refusal=<refusal>
@@ -158,13 +161,12 @@ nur, solange die Page einen Mitschnitt hält.
 hitec now state=OPEN port=0 flags=RAIL ...
 ```
 
-`flags=PRECHARGE` und `rx=` sagen zweierlei. `PRECHARGE` in `flags` ist
-Register 23, der Empfangsmodus, den das nächste OPEN einer Leitung der
-D-Serie nimmt. `rx=` in der Zeile `hitec line` ist der Modus, den das letzte
-OPEN nahm: der der offenen Leitung, solange eine offen ist, und nach CLOSE
-behalten. Sie weichen ab, wenn Register 23 geschrieben wird,
-während eine Leitung offen ist: die offene Leitung behält ihren Modus bis
-CLOSE. Das Panel schreibt Register 23 bei jedem Link-Aufbau und bei jeder
+`flags=PRECHARGE` und `rx=` beschreiben unterschiedliche Zustände.
+`PRECHARGE` in `flags` entspricht Register 23: dem Empfangsmodus für das
+nächste OPEN einer Leitung der D-Serie. `rx=` in der Zeile `hitec line`
+zeigt den Modus des letzten OPEN und bleibt auch nach CLOSE erhalten.
+Wird Register 23 bei offener Leitung geschrieben, können beide Angaben
+abweichen. Die offene Leitung behält ihren Modus bis CLOSE. Das Panel schreibt Register 23 bei jedem Link-Aufbau und bei jeder
 Änderung von Hitec-D-Empfang in der Liste WEITERES des Hitec-Tabs:
 jeder auf SETUP gesetzte Wert gilt sofort.
 
@@ -211,19 +213,21 @@ sein Speichern vor dem Neustart. Solange es steht, `flags=MORE`, wartet ein
 OFF, das das Panel an SUPPLY schreibt, auf den letzten Schritt des
 Schreibens, höchstens 10.000ms nach dem OFF
 ([Ein OFF während eines Schreibens](LinkHitec-de.md#ein-off-während-eines-schreibens)).
-Ein Schritt, der 10.000ms oder mehr nach dem OFF getippt wird, geht an ein
-Servo, dessen Versorgung aus ist. Ein SEND, dessen Frame schreibt, wird auch ohne
-`more` zurückgehalten, und 150ms danach; ein OFF während eines Lesens oder
-eines LISTEN wird nicht zurückgehalten.
+Ein Schritt, der 10.000ms oder mehr nach dem OFF eingegeben wird, erreicht
+ein Servo ohne Versorgung. OFF wird auch während eines SEND mit
+schreibendem Frame und für 150ms danach zurückgehalten, selbst ohne
+`more`. Während eines Lesens oder eines LISTEN wird OFF nicht
+zurückgehalten.
 
 ```text
 hitec c 0 0x62 0x10 0x55 more
 hitec c 0 0x62 0x1C 0xAA
 ```
 
-Eine Option von `send`, `listen` oder `power`, die fehlt, ist 0: keine
-Lücke, kein Fenster, kein empfangenes Byte, kein Dekoder. `answer` ist die
-Ausnahme: fehlt es, wird nichts beantwortet; `answer=0` antwortet 0x00. Ein
+Nicht angegebene Optionen von `send`, `listen` und `power` haben den Wert
+0: keine Lücke, kein Fenster, kein empfangenes Byte und kein Dekoder. Die
+Ausnahme ist `answer`: Ohne diese Option wird keine Antwort gesendet;
+`answer=0` sendet 0x00. Ein
 fehlendes `lead=` lässt die Auffüllung der PIO-Wörter vorn stehen: ein SEND
 der D-Serie mit 5 Bytes wird mit und ohne `lead=88` 117,2us low getrieben.
 `send` fügt kein Summenbyte hinzu. Die rohe Form von
@@ -242,7 +246,7 @@ einem D485HW: 2,2kΩ von der Signalleitung zur Servoversorgung, und jedes
 Lesen wird beantwortet; mit dem Pull-up des Pads allein beantwortet der
 Servo keines (`rx=SILENT`).
 [Der Programmierport für Servos von Hitec](LinkHitec-de.md#hinein-und-hinaus)
-nennt, was offen ist.
+nennt die noch ungeklärten Punkte.
 
 `hitec c` braucht eine offene classic-Leitung und `hitec d` eine offene
 Leitung der D-Serie. Auf einer Leitung der anderen Familie schreibt die
@@ -252,7 +256,7 @@ Konsole nichts und sagt es:
 err the line is classic; this command needs a D series line
 ```
 
-Eine Session von Hand, classic, Port 0:
+Eine manuell gesteuerte classic-Session auf Port 0:
 
 ```text
 > hitec open 0 c
@@ -264,7 +268,7 @@ hitec done state=OPEN port=0 ...
 > hitec close 0
 ```
 
-Ein Lesen der D-Serie an Port 0 ohne Pull-up an der Signalleitung:
+Ein Lesevorgang der D-Serie an Port 0 ohne Pull-up an der Signalleitung:
 
 ```text
 > hitec open 0 d pp pre
@@ -278,9 +282,9 @@ hitec line pin=13 line=0x11 rx=pre ...
 Hitec-D-Empfang (Liste WEITERES des Hitec-Tabs) schreibt. Das Panel schreibt es wieder bei
 seiner nächsten Änderung dieser Zeile und bei jedem Link-Aufbau.
 
-Ein rohes `w` der HITEC-Page bekommt keinen Bericht und keinen Schlüssel;
-das [Beispiel](LinkHitec-de.md#eine-transaktion-von-hand) schreibt eine
-Transaktion so.
+Ein direktes `w` auf die HITEC-Page erzeugt keinen Bericht und fügt keinen
+Schlüssel hinzu. Das [Beispiel](LinkHitec-de.md#eine-transaktion-von-hand)
+zeigt eine solche Transaktion.
 
 ## Der Pin-Treiber der Signalleitung
 
@@ -322,10 +326,11 @@ die nicht passen.
 
 ## Die ESC-Einstellungs-Page
 
-`esc` treibt [die Page ESC_WIRE](LinkEsc-de.md) mit den Frames, die ein Panel sendet:
-dieselben Prüfungen, dieselben Ablehnungen. Es braucht ein laufendes Panel neben der
-Konsole, wie jede Page, die einen Heartbeat braucht. Kein Befehl davon schreibt in einen
-ESC. Es ist in keinem veröffentlichten Image.
+`esc` greift mit denselben Frames wie das Panel auf
+[die Page ESC_WIRE](LinkEsc-de.md) zu. Es gelten dieselben Prüfungen und
+Ablehnungen. Wie andere Pages, die einen Heartbeat benötigen, braucht
+sie neben der Konsole ein laufendes Panel. Keiner dieser Befehle schreibt
+in einen ESC. Die Funktion ist nicht in veröffentlichten Images enthalten.
 
 ```
 esc
@@ -348,9 +353,15 @@ esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 w
 
 ## Über den Link, ohne USB am IOmcu
 
-Nur Debug-Builds. Kein veröffentlichtes Image beider Seiten enthält etwas davon.
+Diese Funktion ist nur in Debug-Builds enthalten. Sie fehlt in den
+veröffentlichten Images beider Seiten.
 
-Ein Panel, gebaut mit `RCBENCH_PANEL_CONSOLE`, leitet seine seriellen Ports, UART0 und USB-Serial-JTAG, über die CONSOLE-Page (0xE0) des Links an ein IOmcu, gebaut mit `IOMCU_CONSOLE`. Jeder Befehl dieser Seite läuft auf dem IOmcu wie an USB, `ewline` und andere Befehle, die Leitungen treiben, eingeschlossen, und lehnt ab, was er dort ablehnt. USB funktioniert weiter, wenn es gesteckt ist.
+Ein mit `RCBENCH_PANEL_CONSOLE` gebautes Panel leitet seine seriellen
+Ports UART0 und USB-Serial-JTAG an einen mit `IOMCU_CONSOLE` gebauten
+IOmcu weiter. Dafür nutzt es die CONSOLE-Page (0xE0) des Links. Befehle
+werden dort mit demselben Verhalten und denselben Ablehnungen wie über
+USB ausgeführt. Das gilt auch für `ewline` und andere Befehle, die
+Leitungen treiben. Die USB-Verbindung des IOmcu bleibt nutzbar.
 
 ```bash
 export PICO_SDK_PATH=/path/to/pico-sdk
@@ -381,11 +392,18 @@ Das Panel trägt dieses Image. Ein IOmcu mit einem anderen Build meldet bei der 
 
 Die eigenen Zeilen des Relays landen nie in einer IOmcu-Zeile. Ein Fenster endet an beliebiger Stelle, also behält das Panel eine Zeile des IOmcu bis zu ihrem LF, bis zu 256 Byte, und die Zeile des Relays geht zuerst. Eine längere Zeile geht geschnitten weiter, und eine Relay-Zeile nach diesem Schnitt beginnt eine neue Zeile. Eine Zeile, die beim Neustart des IOmcu nicht beendet ist, geht mit einem eigenen LF hinaus, vor der Zeile `restarted`.
 
-Das Panel findet die Page, indem es sie liest. Die Page hat kein Capability-Bit und keine Protokoll-Minor: ein IOmcu ohne sie antwortet `BAD_PAGE`, wie für jede Page, die es nicht hat.
+Das Panel erkennt die Page durch einen Lesezugriff. Es gibt dafür weder
+ein Capability-Bit noch eine eigene Minor-Version des Protokolls. Ein
+IOmcu ohne diese Page antwortet mit `BAD_PAGE`, wie bei jeder nicht
+unterstützten Page.
 
 ### Raten
 
-Das Relay macht höchstens einen Austausch je Control-Durchlauf, 5ms, wenn nichts sonst den Durchlauf hält, nach dem eigenen Polling des Panels, und keinen, solange ein IOmcu-Update den Link hält. Die Tabelle ist aus den Frames berechnet, bei einem Durchlauf von genau 5ms.
+Das Relay führt nach dem Polling des Panels höchstens einen Austausch
+je Control-Durchlauf aus. Ohne Verzögerung durch andere Arbeit dauert
+ein Durchlauf 5ms. Während eines IOmcu-Updates bleibt der Link für das
+Update reserviert; das Relay führt dann keinen Austausch aus. Die
+Tabelle ist aus den Frames für einen Durchlauf von genau 5ms berechnet.
 
 | Verkehr | Frames | Rate |
 | --- | --- | --- |
@@ -401,13 +419,24 @@ Gemessen an der Station mit einem Fenster von 60 Byte, das dieser Build nicht ha
 
 Bei 1Mbit/s dauert ein Frame mit 8 Byte etwa 150us, dauerhafte Ausgabe bei der berechneten Rate belegt also etwa 11% des Busses. Bei 1.330 bis 1.650 Byte/s leert sich der Puffer von 2.048 Byte in etwa 1,2s bis 1,5s. Ausgabe schneller als das, länger als dieser Puffer reicht, verliert ganze Zeilen, auch die 3s-Zeilen des IOmcu; die nächste Zeile sagt `err output full, N bytes dropped` wie an USB. Ausgabe wird auch zurückgehalten, wenn der eigene Puffer des Panels von 4.096 Byte unter 412 Byte frei hat, etwa wenn ein serieller Host das Lesen einstellt.
 
-Ein Fenster bleibt am IOmcu, bis es bestätigt ist, also kostet eine verlorene Antwort einen zweiten Lesevorgang und kein Byte. Ein unbeantworteter Austausch hält den Control-Durchlauf bis zu 1000ms, wie jeder Austausch des Panels, und der Heartbeat läuft weiter.
+Der IOmcu behält ein Fenster bis zur Bestätigung. Bei einer verlorenen
+Antwort ist deshalb ein weiterer Lesevorgang nötig, ohne dass Bytes
+verloren gehen. Ein unbeantworteter Austausch blockiert den
+Control-Durchlauf bis zu 1000ms, wie andere Austausche des Panels. Der
+Heartbeat läuft dabei weiter.
 
 ### Was sich nicht ändert
 
 Die Befehle erreichen die Pages über `link_dev_apply()`. Eine Anfrage der Konsole ist kein Link-Verkehr: sie hält den Stille-Failsafe nicht auf. Die Frames der CONSOLE-Page sind Anfragen des Panels, wie seine Polls, und enden, wenn das Panel endet. Die eigenen Module des Panels schreiben weiter: der Supply-Link, `hitec_link`, `kst_link`, `esc_link` und das Schreiben von ARM und THROTTLE alle 50ms können überschreiben, was ein `w` der Konsole in dieselben Register schrieb. Ein Schreiben von ARM aus der Konsole erreicht die Page, und das nächste Schreiben des Panels nach 50ms überschreibt es mit dessen eigenem Arming-Zustand.
 
-Beim Start des IOmcu warten seine Zeilen im Puffer auf einen USB-Host oder ein Panel, soweit die 2.048 Byte sie halten. `rcbench-iomcu: reset ...` ist die erste davon, mit der Ursache des Starts, und wiederholt sich alle 3s. Eine Zeile vom Panel läuft ganz und lässt die unfertige Zeile eines USB-Hosts, wie sie war. Sind USB-Host und Panel beide da, geht die Ausgabe im Tempo des langsameren; ein USB-Host, der den Port offen hat und das Lesen einstellt, hält sie ebenfalls auf.
+Beim Start des IOmcu wartet seine Ausgabe im 2.048-Byte-Puffer auf einen
+USB-Host oder ein Panel, bis zur Kapazität des Puffers. Die erste Zeile,
+`rcbench-iomcu: reset ...`, nennt die Startursache und wiederholt sich
+alle 3s. Eine Zeile vom Panel wird vollständig verarbeitet, ohne eine
+teilweise eingegebene USB-Zeile zu verändern. Sind USB-Host und Panel
+angeschlossen, bestimmt der langsamere Leser das Ausgabetempo. Ein
+USB-Host, der den Port offen lässt, aber das Lesen einstellt, hält die
+Ausgabe ebenfalls auf.
 
 ## Grenzen
 

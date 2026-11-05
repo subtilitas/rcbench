@@ -6,45 +6,45 @@ order: 40
 
 # Receiver
 
-RECEIVER zeigt, was ein Empfänger auf einer S.BUS-Leitung sendet: sechzehn Kanäle mit ihrem Verlauf, die beiden digitalen Kanäle, die Frame Rate und die Zähler des Decoders. Der Bildschirm öffnet über die Kachel RECEIVER im [Menü](overview.md). Die Kachel trägt in diesem Release die Marke SIMULIERT.
+RECEIVER zeigt die Daten eines S.BUS-Empfängers: sechzehn Kanäle mit ihrem Verlauf, zwei digitale Kanäle, die Frame-Rate und die Zähler des Decoders. Öffne die Seite über die Kachel RECEIVER im [Menü](overview.md). Die Kachel trägt in diesem Release die Markierung SIMULIERT.
 
 ## Am Prüfstand: KEIN SIGNAL
 
-![Der RECEIVER-Bildschirm ohne Signal auf der Leitung](view:analyser-silent)
+![Die Seite RECEIVER ohne Signal auf der Leitung](view:analyser-silent)
 
-In diesem Release speist kein Firmware-Image diesen Bildschirm. Der S.BUS-Decoder ist gebaut und getestet, aber keine der beiden Platinen hat eine Bytequelle für ihn. Der Bildschirm zeigt daher KEIN SIGNAL und `Kein Signal auf der Leitung.`. Die Spuren sind leer, die Werte zeigen `---`, und ROHDATEN zeigt `Noch keine Daten dekodiert.`.
+In diesem Release liefert keine der beiden Platinen Bytes an diese Seite. Der S.BUS-Decoder ist gebaut und getestet, aber kein Firmware-Image verbindet ihn mit einer Bytequelle. Die Seite zeigt daher KEIN SIGNAL und `Kein Signal auf der Leitung.`. Die Spuren sind leer, die Werte zeigen `---`, und unter ROHDATEN steht `Noch keine Daten dekodiert.`.
 
 ## Was ein gespeister Bildschirm zeigt
 
-![Der RECEIVER-Bildschirm, im Host-Renderer mit S.BUS-Frames gespeist](view:analyser)
+![Die Seite RECEIVER mit S.BUS-Frames aus dem Host-Renderer](view:analyser)
 
-Die Bilder dieses Abschnitts stammen aus dem Host-Renderer, der den Bildschirm mit Frames speist. Sie zeigen, was der Bildschirm zeichnet, sobald es eine Bytequelle gibt.
+Der Host-Renderer liefert die Frames für die Bilder in diesem Abschnitt. Die Bilder zeigen, wie die Seite Daten aus einer Bytequelle darstellt.
 
-| Bereich | Zeigt |
+| Bereich | Anzeige |
 |---|---|
-| CH01 bis CH16 | eine Spur je Kanal: etwa 2,8s Verlauf bei 71 Frames je Sekunde, 200 Werte, ein Balken für den aktuellen Wert und den Wert in us |
+| CH01 bis CH16 | eine Spur je Kanal: etwa 2,8s Verlauf bei 71 Frames je Sekunde, 200 Werte, ein Balken für den aktuellen Wert und der Wert in us |
 | Zustandsblock | KEIN SIGNAL, FRAME LOST, FAILSAFE oder LIVE, mit einer Zeile darunter |
 | BUS | `S.BUS` |
 | RATE | Frames pro Sekunde, in Hz |
 | FRAMES, RESYNC, BAD TAIL | dekodierte Frames, Neusynchronisierungen, Frames mit einem Abschluss, den der Decoder ablehnt |
-| DIGITAL | CH17 und CH18 als Leuchten: der Punkt leuchtet, solange der Kanal gesetzt ist; sie nehmen keinen Tipp an |
+| DIGITAL | CH17 und CH18 als Leuchten: Der Punkt leuchtet, solange der Kanal gesetzt ist. Die Leuchten reagieren nicht auf Antippen. |
 
 Ein Störimpuls ist eine Spitze in einer Spur. Ein Aussetzer ist eine Kerbe quer über alle sechzehn Spuren im selben Moment.
 
 | Zustand | Zeile | Bedeutung |
 |---|---|---|
 | LIVE | `Signal vom Sender empfangen.` | Frames kommen an; die Werte sind gültig |
-| FRAME LOST | `Ein fehlerhafter Frame wurde empfangen.` | dieser Frame kam nicht unversehrt an; häufig am Prüfstand deutet das auf die Verdrahtung |
-| FAILSAFE | `Dies sind Ersatzwerte.` | der Empfänger hat den Sender verloren und sendet seine Failsafe-Werte |
-| KEIN SIGNAL | `Kein Signal auf der Leitung.` | kein Frame; Versorgung des Empfängers, Verdrahtung und Pin prüfen |
+| FRAME LOST | `Ein fehlerhafter Frame wurde empfangen.` | Der Frame kam nicht unversehrt an. Häufige Fehler am Prüfstand deuten auf die Verdrahtung hin. |
+| FAILSAFE | `Dies sind Ersatzwerte.` | Der Empfänger hat die Verbindung zum Sender verloren und sendet seine Failsafe-Werte. |
+| KEIN SIGNAL | `Kein Signal auf der Leitung.` | Kein Frame kommt an. Prüfe die Versorgung des Empfängers, die Verdrahtung und den Pin. |
 
 ![Ein Empfänger im Failsafe: jede Spur rot](view:analyser-failsafe)
 
-Im FAILSAFE ist jede Spur rot gezeichnet. Der Empfänger sendet sechzehn formal gültige Werte, die er selbst erzeugt hat. FAILSAFE als Stopp behandeln, nicht als sechzehn gültige Kanäle.
+Im Zustand FAILSAFE ist jede Spur rot. Der Empfänger sendet sechzehn formal gültige Ersatzwerte anstelle der Senderbefehle. Behandle FAILSAFE als Stopp, nicht als sechzehn gültige Kanäle.
 
 ## ROHDATEN
 
-ROHDATEN zeigt den letzten Frame als hexadezimale Bytes, 8 je Zeile. Kopf- und Abschlussbyte stehen in der Akzentfarbe. Darunter: die Bytezahl und die Pause, an der der Decoder Frames trennt, `25 Bytes; 2000us Pause zwischen den Frames`, dann die Zähler für Resync und Bad tail. KANÄLE und ROHDATEN wechseln die linke Ansicht.
+ROHDATEN zeigt den letzten Frame als hexadezimale Bytes, 8 je Zeile. Kopf- und Abschlussbyte erscheinen in der Akzentfarbe. Darunter stehen die Bytezahl und die Pause zur Trennung der Frames, `25 Bytes; 2000us Pause zwischen den Frames`, gefolgt von den Zählern für Resync und Bad tail. Mit KANÄLE und ROHDATEN wechselst du die linke Ansicht.
 
 ## Verwandte Seiten
 

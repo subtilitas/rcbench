@@ -255,7 +255,8 @@ def render(name: str, src: str, drawing: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--check", action="store_true",
-                    help="write nothing; fail when a checked-in file differs")
+                    help="check without writing; fail if a committed file "
+                         "differs")
     args = ap.parse_args(argv)
     bad = 0
     for name, src, dst in BOARDS:

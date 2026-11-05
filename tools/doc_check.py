@@ -693,9 +693,10 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--update", action="store_true")
-    parser.add_argument("--base", help="also fail on any warning in a "
-                        "file new since the merge base with this revision "
-                        "and on changed lines")
+    parser.add_argument("--base",
+                        help="also fail on warnings on changed lines or "
+                             "anywhere in files added since the merge base "
+                             "with this revision")
     parser.add_argument("--log", type=pathlib.Path,
                         help="read this warning log instead of running "
                         "Doxygen")

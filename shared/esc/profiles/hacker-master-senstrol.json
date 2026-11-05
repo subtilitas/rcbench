@@ -98,7 +98,7 @@
       ],
       "applies_to": null,
       "source_page": "11",
-      "note": "Switch modes (set with the JetiBox): MODE 1 three-position switch (0 off, 1 rpm, 2 torque), MODE 2 two-position (off, rpm), MODE 3 two-position (off, torque), MODE 4 no switch, rpm mode, MODE 5 no switch, torque mode. Default MODE 1."
+      "note": "Switch modes (set with the JetiBox): MODE 1 three-position switch (0 off, 1rpm, 2 torque), MODE 2 two-position (off, rpm), MODE 3 two-position (off, torque), MODE 4 no switch, rpm mode, MODE 5 no switch, torque mode. Default MODE 1."
     }
   ],
   "unknowns": [
@@ -106,12 +106,12 @@
     "How long full throttle must be held before the two beeps: not stated.",
     "Time window for the move to minimum after the two beeps: not stated.",
     "Whether the teaching repeats on each power-up or only when the ranges are unknown: not stated.",
-    "Pulse widths (ms) for the switch positions: given only as -100 %, 0 %, +100 %.",
-    "Operation with the bench supply of 1-20 V: the ESC specifies 18 to 50.4 V (6 to 12 cells); only 18 to 20 V overlaps.",
+    "Pulse widths (ms) for the switch positions: given only as -100%, 0%, +100%.",
+    "Operation with the bench supply of 1-20V: the ESC specifies 18 to 50.4V (6 to 12 cells); only 18 to 20V overlaps.",
     "Whether the ESC starts without the motor and its chip connected: the manual says it cannot be operated without the chip."
   ],
   "notes": [
-    "Weight of Master Senstrol 120: about 151 g in Hacker_Master_Senstrol_120-180_2018_de.pdf p4, about 125 g in Hacker_Master_Senstrol_120-180_2020_de.pdf p4.",
+    "Weight of Master Senstrol 120: about 151g in Hacker_Master_Senstrol_120-180_2018_de.pdf p4, about 125g in Hacker_Master_Senstrol_120-180_2020_de.pdf p4.",
     "The 2018 and 2020 editions carry the same teaching sequence; the 2020 edition renames the product 'Hacker Master Senstrol' and adds the RoHS reference.",
     "The manual forbids operation from a power supply, only batteries.",
     "The Opto type has no BEC (table); the manual lists the receiver as powered before the drive battery and gives no receiver supply data."

@@ -16,16 +16,16 @@ Jede Line, die der L2 nicht hält, kostet einen 64-Byte-Fill aus dem PSRAM und,
 sobald sie beschrieben ist, ein 64-Byte-Write-Back. Die Tabelle unten zählt
 diese Fills, und die lassen sich auf dem Host exakt messen.
 
-Die Zeit eines Frames ist sein PSRAM-Traffic und seine Instruktionen, und
-welches von beiden einen Frame auf diesem Board begrenzt, ist nicht gemessen.
+Die Zeichenzeit eines Frames hängt vom PSRAM-Datenverkehr und den ausgeführten
+Instruktionen ab. Welcher Faktor sie auf diesem Board begrenzt, ist nicht gemessen.
 Der eine Bildschirm mit Zahlen von beiden Seiten deutet auf die
-Instruktionen: SERVO > LIVE während eines Sweeps hat 2 431 Fills in der
-Tabelle, 304KiB Traffic, und die Konsole las DRAW 13,8 bis 16,5ms ([Auf dem
-Board](#auf-dem-board)); als reiner Traffic wären das 19 bis 23MB/s. Die
-Fills halten die Seite des Traffics; `test_frame_work` hält die Seite der
-Instruktionen in Pixelbesuchen ([Regeln](#regeln)).
+Instruktionen: SERVO > LIVE während eines Sweeps hat 2 216 Fills in der
+Tabelle, 277KiB Traffic, und die Konsole las DRAW 13,8 bis 16,5ms ([Auf dem
+Board](#auf-dem-board)); als reiner Traffic wären das 17 bis 21MB/s. Die
+Fill-Zahl erfasst den Datenverkehr; `test_frame_work` begrenzt den
+Zeichenaufwand anhand der Pixelbesuche ([Regeln](#regeln)).
 
-Mit Screen rotation 180° zeichnet ein Bildschirm in einen logischen Buffer
+Mit Bilddrehung 180° zeichnet ein Bildschirm in einen logischen Buffer
 derselben Größe im PSRAM, und der Flip lässt die PPA (Pixel-Processing
 Accelerator) die Blöcke, die der Frame geändert hat, gedreht in den
 Framebuffer kopieren, bevor er ihn zeigt. Das Modell zählt das Zeichnen,
@@ -44,12 +44,12 @@ Misses füllen den L2 neben den Daten. Geladen wird der x86-Code des Hosts,
 dessen Größe und Anordnung sich vom RISC-V-Code unterscheiden; wie weit das
 die Fills verschiebt, ist nicht gemessen.
 
-Was ein Fill an Zeit kostet, ist die effektive Bandbreite der Schreibzugriffe
-der CPU in den PSRAM, während die DPI liest. Sie ist nicht gemessen; die
+Die Zeit pro Fill hängt von der effektiven Bandbreite der Schreibzugriffe
+der CPU in den PSRAM ab, während die DPI liest. Sie ist nicht gemessen; die
 Tabelle gibt deshalb Fills und Traffic und keine Zeit. Das Panel misst sie
 beim Start ([Auf dem Board](#auf-dem-board)); `PROBE_CLEAR_US` im Werkzeug
 nimmt diese Zahl auf, und die Tabelle gibt dann für jeden Modus eine
-geschätzte Zeit und Frame Rate, allein aus dem Traffic.
+geschätzte Zeit und Bildrate, allein aus dem Datenverkehr.
 
 <!-- framecost:start -->
 ```
@@ -132,8 +132,8 @@ est. ms and est. fps: not measured
 
 Die Zahl wiederholt sich bei jedem Lauf desselben Stands exakt: Das Werkzeug
 gibt cachegrind die Geometrie aller drei Caches vor, sodass keiner von der CPU
-des Hosts übernommen wird, und der Bench zeichnet von einem Stack mit fester
-Lage innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
+des Hosts übernommen wird, und der Test zeichnet mit einem Stack an fester
+Position innerhalb von 64KB, sodass argv, die Umgebungsvariablen und die Pfade sie
 nicht verschieben. `test_frame_cost.py` misst fünf Modi zweimal und schlägt
 bei einem Fill Unterschied fehl. Compiler, C-Bibliothek und valgrind prägen
 die Zahl weiterhin. Die Tabelle enthält die Zahlen des ubuntu-26.04-Runners
@@ -145,28 +145,28 @@ bis zu 22 Fills. Fills hängen vom Code-Layout ab: 18 Builds eines Baums, mit an
 Link-Reihenfolgen, ergaben battery-sim 3167 bis 3353 Fills, frame 9466 bis 9810, servo
 2236 bis 2693 und settings-list-chrome 36320 bis 37282. `frame_cost.py --check-doc`
 prüft die Tabelle deshalb mit einer Toleranz von 3%, mindestens 500 Fills. Keine zwei
-der 18 Builds liegen weiter auseinander. Zeilen unter etwa 700 Fills hält diese Prüfung nicht. Es schlägt auch fehl, wenn die
+der 18 Builds liegen weiter auseinander. Zeilen unter etwa 700 Fills werden durch diese Prüfung kaum begrenzt. Sie schlägt auch fehl, wenn die
 Zeile, die die Rate des Panels und die Bandbreite nennt, vom Profil des
 Werkzeugs abweicht.
 
 ## Regeln
 
-**Zeilenweise zeichnen.** Siebzehn senkrechte Linien über die volle Höhe
-kosten 10 204 Fills; dieselbe Pixelzahl als waagerechte Linien kostet 171,
+**Zeichne zeilenweise.** Siebzehn senkrechte Linien über die volle Höhe
+kosten 10 204 Fills; dieselbe Pixelzahl als waagerechte Linien kostet 180,
 weil jede Line vom vorigen Pixel noch geladen ist. Die Oberfläche ist in
 waagerechte Bänder gegliedert, und eine senkrechte Trennlinie ist eine
-bewusste Ausgabe.
+bewusst gewählter Mehraufwand.
 
-**Das Chrome cachen.** Alles neu zu zeichnen kostet 22 000 bis 64 000 Fills,
+**Cache das Chrome.** Alles neu zu zeichnen kostet 22 000 bis 64 000 Fills,
 die `-chrome`-Modi, ein gecachter ruhiger Frame desselben Bildschirms keinen:
-60 992 Fills für das vollständige Neuzeichnen von RECEIVER gegen 0 für seinen
+61 108 Fills für das vollständige Neuzeichnen von RECEIVER gegen 0 für seinen
 ruhigen Frame. Jeder Bildschirm führt je Framebuffer eine
 Bitmaske dessen, was er schon gezeichnet hat; dafür ist das Argument
 `buffer_index` von `render()` da. Das Panel wechselt zwischen zwei Buffern;
 ein Bildschirm, der nur den gerade gezeichneten Buffer invalidiert, lässt den
 anderen einen Frame zurück, was als Flackern erscheint.
 
-**Ein Stencil, das sich nicht bewegt, wird gecacht.** SIMULATION wird auf
+**Cache ein Stencil, das sich nicht bewegt.** SIMULATION wird auf
 jedem Frame gezeichnet, sobald die Prüfstandswerte `LINK_BN_SIMULATED` tragen,
 also auch bei einem IOmcu, der mit simulierten Werten antwortet.
 Gedrehter Text scannt seine gedrehte Bounding-Box, von Ecke zu Ecke also die
@@ -178,13 +178,13 @@ danach nur noch: bei 800 x 480px mit 144 721 Instruktionen je Frame statt
 8 412 078. Die Zahl bei 1024 x 600px ist nicht gemessen.
 
 **Eine Zahl von Fills ist keine Zahl von Zyklen.** Die Tabelle oben misst
-Cache-Line-Fills, und das Watermark kostet davon nur 3 685, `sim` gegen
-`frame`: seine Zeit ist Arithmetik je Pixel, kein Traffic, und die Tabelle
-kann sie nicht zeigen. Wo die gemessene Frame-Zeit eines Modus
-über dem liegt, was seine Fills vorhersagen, erst Instruktionen zählen, dann der
-Schätzung trauen.
+Cache-Line-Fills, und das Watermark kostet davon nur 3 698, `sim` gegen
+`frame`: seine Zeit entfällt auf Arithmetik je Pixel, die die Traffic-Tabelle
+nicht zeigt. Zähle die Instruktionen, bevor du der
+Schätzung vertraust, wenn die gemessene Frame-Zeit eines Modus
+über dem aus seinen Fills vorhergesagten Wert liegt.
 
-**Ein Bedienelement, das sich jeden Frame bewegt, bekommt seinen eigenen
+**Gib einem Bedienelement, das sich jeden Frame bewegt, einen eigenen
 Zähler.** Ein Drag liefert eine Berührung je Frame. Eine Revision, die es mit den
 Bedienelementen daneben teilte, würde sie bei jeder Berührung alle neu
 zeichnen. Das Gas des Motorbildschirms hat seine eigene und zeichnet die Box
@@ -193,15 +193,14 @@ Der Modus `throttle` in der Tabelle oben misst das gegen einen Sample-Frame.
 Der Flip quantisiert auf ganze Panel-Frames: 60,4, 30,2 oder 20,1fps. Die
 Frame-Zeit eines Drags auf dem Board ist nicht gemessen.
 
-Zu löschen ist, was ein Widget bemalt, nicht was es einnimmt. Der Daumen des
-Sliders und sein Schatten stehen 5px oben und 7px unten über den Track
+Lösche die vom Widget gezeichneten Pixel, nicht nur seine nominelle Fläche. Der Schiebergriff und sein Schatten stehen 5px oben und 7px unten über den Track
 hinaus, und die Hero-Ziffern sind 32px hoch mit 3px Schräge auf einer 30px
-hohen Zeile. Ein Clear in der Grösse des Tracks oder der Zeile lässt daher an
-jeder Position, die der Finger passiert hat, einen Daumen und die Füsse der
+hohen Zeile. Ein Löschen in der Größe der Bahn oder der Zeile lässt daher an
+jeder vom Finger durchlaufenen Position einen Schiebergriff und die unteren Teile der
 Ziffern stehen. `ui_slider_painted_rect()` liefert die Region, statt sie den
 Aufrufer herleiten zu lassen.
 
-**Nur auf Frames zeichnen, die etwas zu zeichnen haben.** Samples kommen mit
+**Zeichne nur Frames, in denen sich etwas geändert hat.** Samples kommen mit
 20Hz, das Panel zeichnet mit 60,38Hz (gemessen, der VSYNC-Wert der Konsole),
 also haben zwei von drei Frames nichts Neues. Der DPI-Takt ist 48MHz, nicht
 die 52MHz, die `board_pins.h` anfordert; bei 48MHz ergäbe sein Frame von
@@ -221,7 +220,7 @@ Clip begrenzt, was ein Primitiv schreibt, nicht was es rechnet. Die SERVO-Karte
 zeichnet ihren atmenden Griff durch eine Box von 73px Seitenlänge neu und ein
 bewegtes Horn durch Boxen von etwa 170px, jeweils indem sie die ganze Karte
 unter dem Clip zeichnet. Deshalb überspringt der Rasterizer eine Glyphe oder
-eine Siebensegment-Ziffer, deren Zelle ausserhalb des Clips liegt, läuft einen
+eine Siebensegment-Ziffer, deren Zelle außerhalb des Clips liegt, läuft einen
 Bogen nur in den Richtungen ab, in denen der Clip liegt, läuft Kreisscheibe,
 Kapsel und Ring mit Antialiasing je Zeile nur über die Pixel, die sie dort
 bedecken können, und rechnet den Winkel eines Teilrings je Pixel nur nahe
@@ -237,7 +236,7 @@ auf STOP oder auf den Home-Tag. Über einem simulierten Prüfstand wird es jeden
 Frame gezeichnet, unter dem Watermark. `test_frame_work` zählt die Pixel, die
 der Rasterizer je Frame besucht (`gfx_work()`, nur in die Host-Suite gebaut),
 und hält ARMED in Ruhe bei SAFE in Ruhe plus dem Band einmal je Sekunde, eine
-gehaltene Position bei SAFE plus sechs Lagen der Box des Griffs, ein gesweeptes
+gehaltene Position bei SAFE plus sechs Lagen der Box des Griffs, ein im Endlagenlauf bewegtes
 oder gezogenes Horn bei 140 000 Besuchen je Frame und MOTOR & ESC LIVE ARMED in
 Ruhe bei 300 000.
 
@@ -246,8 +245,8 @@ Ruhe bei 300 000.
 CI hält jeden Modus unten an eine Obergrenze von
 Fills je Frame. Eine Obergrenze liegt 13 bis 29% über der größten Zahl ihrer
 Modi in der Tabelle oben, und ein Modus unter 700 Fills wird bei 1 000
-gehalten. Eine Obergrenze fängt eine Änderung, die das Modell mehr zeichnen
-lässt, nicht einen Frame, der das Panel verpasst:
+gehalten. Eine Obergrenze erkennt zusätzlichen Zeichenaufwand
+im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpasst:
 
 | Modi | Obergrenze (Fills) | Fängt |
 | --- | ---: | --- |
@@ -257,7 +256,7 @@ lässt, nicht einen Frame, der das Panel verpasst:
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | `servo-rudder` | 4 600 | ein neuer Winkel auf RUDER, der mehr als die Anzeige, die Zustandszeilen und die beiden Boxen des Ruders neu zeichnet |
-| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 720 Fills in der Tabelle oben |
+| `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 713 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
 | `wifi-keys` | 42 000 | eine Taste der WLAN-Tastatur, die mehr als den Bildschirm neu zeichnet |
@@ -274,14 +273,14 @@ ein Frame hält mit den Samples Schritt, solange sein Traffic bei der
 effektiven Bandbreite in drei Panel-Frames passt. Diese Bandbreite ist nicht
 gemessen, daher ist die Obergrenze nicht gesetzt.
 
-Braucht ein künftiger Bereich mehr Platz, sind die verbleibenden Hebel vom
-gröbsten zum feinsten: die Höhe des Plots, seine Breite, und das
-Simulations-Watermark auf den tatsächlich neu gezeichneten Bereich zu
-clippen.
+Braucht ein künftiger Bereich mehr Spielraum, bleiben vom
+gröbsten zum gezieltesten Eingriff: die Höhe des Plots verringern, seine Breite verringern und das
+Simulations-Watermark auf den tatsächlich neu gezeichneten Bereich
+beschränken.
 
 ## Auf dem Board
 
-Die Konsolenzeilen dieses Abschnitts kommen mit der Build-Option
+Die Konsolenzeilen dieses Abschnitts aktiviert die Build-Option
 `RCBENCH_PERF_LOG`, standardmäßig ON (`firmware/panel/CMakeLists.txt`):
 
 ```sh
@@ -295,8 +294,8 @@ zusätzlichen Panel-Build.
 
 Release-Images werden mit `RCBENCH_PERF_LOG=OFF` gebaut und geben keine
 dieser Zeilen aus. Der CI-Build, ein lokales `idf.py build` und ein Build
-mit `-D RCBENCH_PERF_LOG=ON` behalten sie; um auf den Quellen eines
-Releases zu messen, ohne das Flag bauen. `tools/check_perf_log.py` hält das
+mit `-D RCBENCH_PERF_LOG=ON` behalten sie; baue ohne das Flag, um mit den Quellen eines
+Releases zu messen. `tools/check_perf_log.py` hält das
 Release-Image an die Einstellung: Es schlägt fehl, wenn das Image den Text
 der Messung beim Start, den Text des Stack-Scans oder das Symbol
 `scan_stacks` enthält.
@@ -325,7 +324,7 @@ Bildwiederholrate des Panels, wie das Panel sie seit der Ratenzeile davor
 zählt; FLIP TIMEOUTS zählt die Buffer-Wechsel seit dem Start, die 200ms
 vergeblich auf ein Frame-done-Ereignis gewartet haben. DRAW ist die
 Zeichenzeit eines Frames, WAIT die Zeit, die der Buffer-Wechsel danach
-blockiert hat, und TURN der Teil von WAIT, den Screen rotation 180° für die
+blockiert hat, und TURN der Teil von WAIT, den Bilddrehung 180° für die
 gedrehte Kopie des Frames gebraucht hat, 0 in NORMAL. Die Fensterzeile
 umfasst die Frames, die seit der Ratenzeile davor auf dem gezeigten
 Bildschirm gezeichnet wurden, weniger als 300, wenn der Bildschirm dazwischen
@@ -340,8 +339,8 @@ jede 6. Ratenzeile einen Stack-Scan ([High-Water-Marks auf dem
 Board](#high-water-marks-auf-dem-board)). Ihre Zeit auf dem Board ist nicht
 gemessen, außer der des Stack-Scans, die das Panel ausgibt.
 
-Einmal beim Start, vor dem ersten Frame des Splash, misst das Panel die Zeit
-von vier Löschvorgängen des hinteren Buffers, nach einem, den es nicht misst:
+Beim Start, vor dem ersten Frame des Startbilds, löscht das Panel den hinteren
+Buffer einmal ohne Zeitmessung. Danach misst es vier weitere Löschvorgänge:
 
 ```text
 I (…) rcbench: PSRAM probe: 4 clears of 1228800B in <n> us, <n> us each
@@ -376,11 +375,11 @@ ein Fill und ein Write-Back je Line. Die Zeit eines Löschens, gesetzt als
 `frame_cost.py --check-doc` liest diese Tabelle: ein Modus, den das Werkzeug
 nicht zeichnet, schlägt fehl, und DRAW Mittel der Zeile `clear` und
 `PROBE_CLEAR_US` sind zusammen gemessen oder gar nicht und stimmen auf
-0,05ms überein. Die übrigen Zahlen sind eine Aufzeichnung des Boards, die
-keine Prüfung hält; Mittel und Extreme der Frames eines Bildschirms sind das,
-woran die Schätzung des Modells für seinen Modus gemessen wird.
+0,05ms überein. Die übrigen Zahlen sind Messwerte des Boards und werden nicht automatisch
+geprüft. Minimum, Mittelwert und Maximum der Frame-Zeiten eines Bildschirms
+dienen zum Vergleich mit der Modellschätzung für diesen Modus.
 
-Eine Fensterzeile ist auf einem Board noch nicht gelesen. Die Ratenzeile
+Eine auf einem Board erfasste Fensterzeile liegt nicht vor. Die Ratenzeile
 eines Laufs am Prüfplatz auf SERVO > LIVE, der Prüfstand ARMED, ergab:
 
 | Der Arm | Screen rotation | fps | DRAW (ms) | TURN (ms) |
@@ -409,9 +408,9 @@ Linkable Format) des Panels. Der ESP32-P4 führt RISC-V-Code aus, den
 Punkt, den ihr Stack Pointer erreicht (`addi sp, sp, -N` und seine
 komprimierten Formen), und die Tiefe ist die größte Summe der Frames entlang
 einer Kette vom Einstiegspunkt der Task. Ein Sprung aus einer Funktion
-heraus, die Form eines Tail Calls, zählt als Aufruf. Die Tasks sind jedes
-`xTaskCreatePinnedToCore()` und `xTaskCreate()` im eigenen Code des Panels
-unter `firmware/panel`, ohne `managed_components/`, und die Main-Task. CI
+heraus, die Form eines Tail Calls, zählt als Aufruf. Die Analyse umfasst alle mit
+`xTaskCreatePinnedToCore()` oder `xTaskCreate()` im eigenen Panel-Code
+unter `firmware/panel` angelegten Tasks, ohne `managed_components/`, sowie die Main-Task. CI
 führt das Werkzeug nach dem Panel-Build aus und schlägt fehl, wenn die Tiefe
 einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
@@ -437,7 +436,7 @@ in der Tabelle: Ihre Tiefe ist nicht gemessen, und die Konsole meldet, was
 sie unbenutzt lassen (unten). Die Tiefe von `wifi_get` lässt den
 TLS-Handshake (Transport Layer Security) und jedes Lesen darunter aus:
 esp_http_client erreicht seinen Transport über einen Funktionszeiger. Sein
-Stack ist der des Servers der Seite, der nie neben ihm läuft; die Tiefe des
+Stack nutzt den Speicher des Seitenservers; die beiden Tasks laufen nie gleichzeitig; die Tiefe des
 Handshakes ist nicht gemessen.
 
 Die tiefste Kette von `runlog` bindet die SD-Karte ein: die Liste der
@@ -481,8 +480,8 @@ oben ist deshalb eine Untergrenze:
   denen der Startprüfung nach einem Update, den Callbacks des Links des
   SERVO-Bildschirms in das Panel, den Hooks der Sitzungen, die
   SERVO > PROGRAMMIEREN und MOTOR & ESC > PROGRAMMIEREN öffnen, und den
-  Kartenfunktionen, über die die Lauf-Logs, das Fehlerprotokoll und die
-  Servodateien geschrieben werden, denen es nach Namen folgt
+  Kartenfunktionen, über die die Laufaufzeichnungen, das Fehlerprotokoll und die
+  Servodateien geschrieben werden, die es anhand ihrer Namen verfolgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
   296
@@ -505,8 +504,8 @@ Tabelle oben oder die Zahl der Aufrufe über einen Zeiger vom Build abweicht.
 
 ### High-Water-Marks auf dem Board
 
-Die erste Ratenzeile und jede 6. danach, 30s auseinander bei 60,4fps, wollen
-einen Scan des Stacks jeder Task. Der Scan ist `uxTaskGetSystemState()` von
+Die erste Ratenzeile und jede 6. danach, im Abstand von 30s bei 60,4fps, fordern
+einen Scan des Stacks jeder Task an. Der Scan ist `uxTaskGetSystemState()` von
 FreeRTOS. Er hält den Kernel-Lock, mit maskierten Interrupts auf dem Kern des
 Renderns, während er den unbenutzten Stack jeder Task Byte für Byte liest;
 ein Kernel-Aufruf auf dem anderen Kern, auch der der Control-Task, wartet
@@ -534,9 +533,9 @@ nicht gemessen.
 
 Die Zahl ist die High-Water-Mark von FreeRTOS: die Bytes am unteren Ende des
 Stacks, die seit dem Start der Task kein Frame beschrieben hat, ohne die
-Kontexte der Koprozessoren. Sie umfasst nur die Pfade, die das Panel
-durchlaufen hat, und begrenzt deshalb nichts; neben die tiefste Kette oben
-gestellt, zeigt sie, was das Werkzeug nicht verfolgt.
+Kontexte der Koprozessoren. Sie erfasst nur ausgeführte Pfade und liefert keine Obergrenze für den
+Stackbedarf ungetesteter Pfade. Der Vergleich mit der tiefsten Kette oben
+zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 
 | Task | Stack (Bytes) | Auf dem Board nie benutzt (Bytes) |
 | --- | ---: | ---: |
@@ -610,7 +609,7 @@ Durchlauf der Hauptschleife von Kern 0 fährt dann 1 Slice in
 längste gefundene 816us. Das Planen endet nach 216 000 Einheiten,
 höchstens 2 161 Durchläufen, mit einem Plan, ohne Plan oder mit dem
 Ergebnis "too complex", wenn die Einheiten vorher verbraucht sind. Der
-teuerste gefundene Auftrag braucht 120 136 Einheiten, höchstens 1 202
+aufwendigste gefundene Auftrag benötigt 120 136 Einheiten, höchstens 1 202
 Durchläufe und 397 bis 647ms Planerzeit. Alle Zeiten gelten für 150MHz,
 sind in einem Emulator aus den ausgeführten Instruktionen mit ARM GNU 14.2
 bei -O3 berechnet und nicht auf Hardware gemessen. Die Zeit eines
@@ -637,17 +636,17 @@ Jede Tiefe ist eine Untergrenze:
   Zyklus.
 
 Der Stack von Kern 0 ist der gesamte RAM-Bereich `SCRATCH_Y`, 0x20081000
-bis 0x20082000; das Image legt nichts anderes hinein, und der Link schlägt
-fehl, sobald etwas hineingelegt wird. Darunter, in `SCRATCH_X`, liegt das
+bis 0x20082000; das Image legt nichts anderes hinein, und das Linken schlägt
+fehl, sobald dort etwas anderes abgelegt wird. Darunter, in `SCRATCH_X`, liegt das
 4096 Bytes große Array, das das pico-sdk als eigenen Stack für Kern 1
 reserviert und auf dem dieses Image nicht läuft. Dieselbe Definition
 bestimmt die Größe dieses Arrays.
 
 `-v` listet sie alle auf, und die tiefste Kette jeder Task.
 
-Die UI des Panels hält ihre Frames klein, wo das wenig kostet. Der
-Zeichner einer Seite ist eine eigene Funktion, sodass nur die angezeigte
-Seite ihre Puffer hält: in ESC STICK ruft `esc_stick_panel_render()` die
+Die UI des Panels hält ihre Stack-Frames klein, soweit das wenig Aufwand verursacht.
+Jede Seite hat eine eigene Zeichenfunktion, sodass nur die angezeigte
+Seite ihre Puffer benötigt: in ESC STICK ruft `esc_stick_panel_render()` die
 angezeigte Seite auf, und `mo_render()` von MOTOR & ESC ruft den Weg der
 Sitzung und den seines Körpers als zwei Funktionen auf, sodass die Seiten
 einer Sitzung nicht auf dem Frame des Körpers liegen. Eine Zeile, die zur
@@ -677,8 +676,8 @@ Release-Suche oder ein Download):
 I (…) wifi: radio up, mode <n>; internal RAM <n> B free
 ```
 
-Und in einem Frame nach einer Ratenzeile, wenn die tiefste freie Zahl seit
-dem Start gefallen ist ([Auf dem Board](#auf-dem-board)):
+In einem Frame nach einer Ratenzeile meldet das Panel außerdem einen neuen Tiefststand
+des freien Speichers seit dem Start ([Auf dem Board](#auf-dem-board)):
 
 ```text
 I (…) rcbench: internal RAM: <n> B free at the lowest, <n> B free now, largest block <n> B
@@ -705,18 +704,18 @@ Die Schritte sind `esp_netif_init`, `esp_event_loop_create_default`, die
 beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
 `esp_wifi_set_mode`, `esp_wifi_set_config`, `esp_wifi_start`,
 `httpd_start` und das Anlegen der Tasks `wifi_ctl`, `wifi_get` und `mdns`.
-Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
-stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
+Kann ESP-IDF keinen Speicher für eine Netzwerkschnittstelle belegen, hält
+eine Assertion in ESP-IDF das Panel an. Das Panel startet dann neu.
 
 Die Funk-Task `wifi_ctl` belegt 6.912 Bytes internen RAM für ihren Stack,
 beim ersten Funkstart oder bei der ersten Release-Prüfung, und behält sie
-bis zum Neustart des Panels. Die statischen Werte des Builds für den
-internen RAM (unten) ändern sich dadurch nicht.
+bis zum Neustart des Panels. Diese Belegung ist in den statischen Werten des Builds für den
+internen RAM (unten) nicht enthalten.
 
-Die Kartenaufgabe `cardjob` von FILES belegt 6.656 Bytes internen RAM für
+Die Karten-Task `cardjob` von FILES belegt 6.656 Bytes internen RAM für
 ihren Stack und 16.384 Bytes DMA-fähigen internen RAM für ihren
 Kopierpuffer. Beides wird bei der ersten Anfrage von FILES belegt, nicht
-beim Start, und das Panel schreibt den freien internen RAM davor und
+beim Start, und das Panel protokolliert den freien internen RAM davor und
 danach:
 
 ```text
@@ -724,7 +723,7 @@ I (…) rcbench: files: cardjob started; internal RAM <n>B free before, <n>B aft
 ```
 
 Ohne den RAM lautet die Zeile `W (…) rcbench: files: no internal RAM for
-cardjob`, und FILES meldet `Nicht genug Speicher.` Die Aufgabe bleibt bis
+cardjob`, und FILES meldet `Nicht genug Speicher.` Die Task bleibt bis
 zum Neustart des Panels, also ist die Zahl von `wifi: radio up` nach der
 ersten Anfrage von FILES bei jedem Funkstart niedriger. Auf einem Panel
 fiel sie am 2026-10-29 um 23.456 Bytes, von 318.195 auf 294.739, zwischen
@@ -776,9 +775,9 @@ Seite beantwortet eine Anfrage nach der anderen: Eine Anfrage, die während
 eines Downloads kommt, wartet auf dessen Ende. In einem Heimnetz lief ein
 Download einer Datei von 16MiB mit 688-757kB/s, Kartenlesen und Funk
 zusammen, nicht getrennt, bei einem Ping von im Mittel 14,6ms, und ein
-Upload eines Image von 2,56MB über `/update` mit 556-599kB/s. Das Panel
+Upload eines Images von 2,56MB über `/update` mit 556-599kB/s. Das Panel
 meldete keinen SDIO-Fehler (Secure Digital Input/Output) und zeichnete
-während der Downloads 60fps. Was die Rate begrenzt:
+während der Downloads 60fps. Faktoren, die die Übertragungsrate begrenzen:
 
 | Glied | Einstellung | Grenze |
 | --- | --- | --- |
@@ -829,7 +828,7 @@ I (…) wifi: file: sent, 16777216 of 16777216 B read in <n> ms
 W (…) wifi: file: receiver gone, <n> of 16777216 B read in <n> ms
 ```
 
-Die anderen Enden lauten `nothing taken for 30 s`, `radio going off` und
+Die weiteren Meldungen zum Übertragungsende lauten `nothing taken for 30 s`, `radio going off` und
 `card read failed`.
 
 ### Einen Download messen
@@ -837,23 +836,22 @@ Die anderen Enden lauten `nothing taken for 30 s`, `radio going off` und
 Auf einem Rechner im selben Heimnetz wie das Panel, mit `curl` und, unter
 Linux, `iw`:
 
-1. Eine Datei von 16 777 216 Bytes ins Wurzelverzeichnis der Karte
-   kopieren: `head -c 16777216 /dev/urandom > RATE16M.BIN`.
-2. Am Panel WI-FI öffnen, dem Heimnetz beitreten und den Zugangscode
-   ausschalten. `<panel>` unten ist die Adresse, die WI-FI zeigt.
-3. Die eigene Verbindung des Rechners notieren und seinen Power Save
-   ausschalten: `iw dev wlan0 link`, `iw dev wlan0 get power_save`,
-   `sudo iw dev wlan0 set power_save off`. Die Umlaufzeit notieren:
+1. Kopiere eine Datei von 16 777 216 Bytes ins Wurzelverzeichnis der Karte: `head -c 16777216 /dev/urandom > RATE16M.BIN`.
+2. Öffne WI-FI am Panel, verbinde es mit dem Heimnetz und schalte den Zugangscode
+   aus. `<panel>` unten ist die Adresse, die WI-FI zeigt.
+3. Notiere die eigene Verbindung des Rechners und schalte seinen Power Save
+   aus: `iw dev wlan0 link`, `iw dev wlan0 get power_save`,
+   `sudo iw dev wlan0 set power_save off`. Notiere die Umlaufzeit:
    `ping -c 20 <panel>`.
-4. Die Rate, 3-mal:
+4. Miss die Rate 3-mal:
    `curl -s -o /dev/null --max-time 600 -w '%{http_code} %{size_download} B %{time_total} s %{speed_download} B/s\n' http://<panel>/card/RATE16M.BIN`.
    Jeder Lauf antwortet `200 16777216 B`, und die Konsole protokolliert
    `file: sent, 16777216 of 16777216 B read in <n> ms`.
-5. Ein Download, der mittendrin abbricht, und die nächste Anfrage:
+5. Brich einen Download mittendrin ab und starte danach die nächste Anfrage:
    `curl -s -o /dev/null --max-time 5 http://<panel>/card/RATE16M.BIN; curl -s -o /dev/null -w '%{http_code} %{time_total} s\n' --max-time 10 http://<panel>/`.
    Die zweite antwortet `200`; die Konsole protokolliert
    `file: receiver gone`.
-6. Ein Empfänger, der aufhört zu lesen: eine Verbindung, die die Datei
+6. Simuliere einen Empfänger, der aufhört zu lesen: Öffne eine Verbindung, die die Datei
    anfragt und dann nichts liest,
    `python3 -c 'import socket,time; s=socket.create_connection(("<panel>",80)); s.sendall(b"GET /card/RATE16M.BIN HTTP/1.1\r\nHost: p\r\n\r\n"); time.sleep(60)' &`,
    dann nach 35s
@@ -872,9 +870,10 @@ an, dessen FatFs kein exFAT hat. Lange Dateinamen bleiben, wie
 `sdkconfig.defaults` sie setzt: an, 255 Zeichen, der Arbeitspuffer auf dem
 Heap.
 
-Was exFAT kostet, gelesen aus dem P4-Build mit ESP-IDF v5.5.5, auf v6.1
-nicht wiederholt, gegen denselben Stand, gebaut ohne das Einbinden von `fatfs_exfat.cmake` und ohne
-diesen Halt, beide ohne `RCBENCH_IOMCU_BIN`:
+Der folgende Mehrbedarf für exFAT stammt aus dem P4-Build mit ESP-IDF v5.5.5;
+die Messung wurde auf v6.1 nicht wiederholt. Verglichen wird derselbe Stand,
+gebaut ohne das Einbinden von `fatfs_exfat.cmake` und ohne die Build-Prüfung.
+Beide Builds enthalten kein `RCBENCH_IOMCU_BIN`:
 
 | Posten | Ohne exFAT | Mit exFAT | Wo |
 | --- | ---: | ---: | --- |

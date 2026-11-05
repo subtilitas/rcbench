@@ -236,9 +236,9 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "4 beeps after about 5 s",
+      "confirm_signal": "4 beeps after about 5s",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery",
         "Wait about 5000ms: 4 beeps, programming mode entered"
       ]
@@ -256,17 +256,17 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the throttle to min while the group of the wanted choice plays; the mode is saved. Whether the stick may be held for the whole group of 5 is not stated."
+      "description": "Move the throttle to minimum while the group of the desired choice plays; the mode is saved. Whether the stick may be held for the whole group of 5 is not stated."
     },
     "skip": {
       "throttle": "none",
-      "description": "Keep the throttle at max."
+      "description": "Keep the throttle at maximum."
     },
     "confirm_signal": "Not stated; the manual says the mode is saved and the battery may be disconnected.",
     "exit": "Disconnect the battery after the mode is saved. One parameter per power cycle.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "Throttle max, battery on, wait 5 s for 4 beeps. Groups of 5 single, 5 double, 5 triple, 5 quad and 5 penta beeps loop. Throttle to min during the group of the wanted choice saves it. One parameter per power cycle; other parameters need the program card."
+    "description": "Throttle at maximum, battery on, wait 5s for 4 beeps. Groups of 5 single, 5 double, 5 triple, 5 quad and 5 penta beeps loop. Throttle to min during the group of the desired choice saves it. One parameter per power cycle; other parameters need the program card."
   },
   "items": [
     {
@@ -314,7 +314,7 @@
     "Whether the throttle must stay at max between tones is not stated beyond 'if left at max beyond 5 s the sequence starts'.",
     "Chart tone glyphs are text approximations; pitch information is not available.",
     "Which group sets the brake is unclear: the text says 'the first quad group' toggles brake off/medium, but quad beeps are also the automatic-timing choice.",
-    "Duration of the 5 s wait is 'about'.",
+    "Duration of the 5s wait is 'about'.",
     "Confirmation tone after saving is not described.",
     "Value numbers of items 1 and 2 are the beep counts of the group (1-3 and 4-5)."
   ],

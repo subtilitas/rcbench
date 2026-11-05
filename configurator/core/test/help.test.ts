@@ -49,7 +49,7 @@ function define(source: string, name: string): number | null {
 /** Millivolts as the text writes them: "0.5V" in English, "0,5V" in German. */
 const volts = (mv: number, lang: 'en' | 'de'): string => {
   const v = String(mv / 1000);
-  return `${lang === 'de' ? v.replace('.', ',') : v} V`;
+  return `${lang === 'de' ? v.replace('.', ',') : v}V`;
 };
 
 test('the wording of the texts: no pad, the German labels of the panel, SAFE and ARMED', () => {
@@ -59,8 +59,8 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
   assert.match(help('servoprog').en, /programming port, GPIO 13\./);
   // The two states of the bench carry the names of the status band of the panel, SAFE and ARMED, in both
   // languages; no text names them in prose.
-  assert.match(help('logs').en, /while the bench is ARMED, and while it is SAFE with the supply output on;/);
-  assert.match(help('logs').de, /, solange der Prüfstand ARMED ist oder bei SAFE der Ausgang des Netzteils an ist;/);
+  assert.match(help('logs').en, /while the bench is ARMED, or SAFE with the supply output on\./);
+  assert.match(help('logs').de, /, solange der Prüfstand ARMED ist oder bei SAFE der Netzteilausgang eingeschaltet ist\./);
   // A state word in prose, any case but the band's ARMED; the German words of the glossary and their forms.
   const stateEn = /\b(?:un|dis)?armed\b|\bArmed\b|\bdisarm\w*|\bDisarm\w*|\bDISARM\w*/;
   const stateDe = /scharf|schärf|gesichert|entschärf|\bDISARM\w*|NICHT ARMED|\bnach ARM\b/i;
@@ -88,20 +88,20 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
   const estopPart = CATALOGUE.parts.find((p) => p.id === 'estop')!;
   for (const text of [help('estop').en, estopPart.role!.en]) {
     assert.doesNotMatch(text, /switches off no supply/);
-    assert.match(text, /breaks no power line/);
-    assert.match(text, /output of the PD mini (?:off|go off)/);
+    assert.match(text, /(?:breaks no power line|does not interrupt power)/);
+    assert.match(text, /(?:output of the PD mini off|turns off its outputs and the PD mini output)/);
   }
   for (const text of [help('estop').de, estopPart.role!.de]) {
     assert.doesNotMatch(text, /schaltet keine Versorgung ab/);
-    assert.match(text, /trennt keine Versorgungsleitung/);
-    assert.match(text, /Ausgang des PD mini (?:aus|gehen aus)/);
+    assert.match(text, /(?:trennt keine Versorgungsleitung|unterbricht keine Versorgung)/);
+    assert.match(text, /Ausgang des PD mini (?:aus|ab)/);
   }
   // Both name the bench switching to SAFE, not the PD mini alone.
   assert.match(estopPart.role!.en, /the IOmcu switches the bench to SAFE and the output of the PD mini off\./);
   assert.match(estopPart.role!.de, /der IOmcu schaltet den Prüfstand auf SAFE und den Ausgang des PD mini aus\./);
-  assert.match(help('estop').en, /the IOmcu switches the bench to SAFE: its outputs and the output of the PD mini go off\./);
-  assert.match(help('estop').de, /schaltet der IOmcu den Prüfstand auf SAFE: seine Ausgänge und der Ausgang des PD mini gehen aus\./);
-  assert.match(help('estop').en, /an ESC battery or a servo supply of your own stays connected/);
+  assert.match(help('estop').en, /the IOmcu switches the bench to SAFE and turns off its outputs and the PD mini output\./);
+  assert.match(help('estop').de, /schaltet der IOmcu den Prüfstand auf SAFE und schaltet seine Ausgänge sowie den Ausgang des PD mini ab\./);
+  assert.match(help('estop').en, /an ESC battery or separate servo supply stays connected/);
 });
 
 test('the numbers of the texts match the sources at the release tag', (t) => {
@@ -119,8 +119,8 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
   // estop: the heartbeat ceiling, and SUPPLY switches the output off when the heartbeat is lost.
   const gap = define(read('shared/safety/include/heartbeat.h'), 'HEARTBEAT_MAX_GAP_MS');
   assert.equal(gap, 150);
-  assert.match(help('estop').en, new RegExp(`after ${gap} ms without a heartbeat edge`));
-  assert.match(help('estop').de, new RegExp(`nach ${gap} ms ohne Heartbeat-Flanke`));
+  assert.match(help('estop').en, new RegExp(`After ${gap}ms without a heartbeat edge`));
+  assert.match(help('estop').de, new RegExp(`Nach ${gap}ms ohne Heartbeat-Flanke`));
   assert.match(read('shared/outputs/supply_page.c'), /if \(!beat_alive\)/);
 
   // supply: the range of the module and the cap of the set point under its input. The cap is
@@ -132,11 +132,11 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
   const vMax = define(pd, 'PDMINI_V_MAX_MV')!;
   const iMin = define(pd, 'PDMINI_I_MIN_MA')!;
   const iMax = define(pd, 'PDMINI_I_MAX_MA')!;
-  assert.match(help('supply').en, new RegExp(`${vMin / 1000} to ${vMax / 1000} V, ${iMin / 1000} to ${iMax / 1000} A`));
+  assert.match(help('supply').en, new RegExp(`${vMin / 1000} to ${vMax / 1000}V, ${iMin / 1000} to ${iMax / 1000}A`));
   // Every text that states the cap, the bubble of the supply among them, states it in one form: at least
   // the cap below the input, and the same number.
-  assert.match(help('supply').en, /the voltage at least \d+(?:\.\d+)? V below the input voltage of the module/);
-  assert.match(help('supply').de, /die Spannung mindestens \d+(?:,\d+)? V unter der Eingangsspannung des Moduls/);
+  assert.match(help('supply').en, /Output voltage must stay at least \d+(?:\.\d+)?V below the module input voltage/);
+  assert.match(help('supply').de, /Die Ausgangsspannung muss mindestens \d+(?:,\d+)?V unter der Eingangsspannung des Moduls bleiben/);
   const texts = [
     help('supply'),
     ...CATALOGUE.safety.map((s) => s.text),
@@ -144,25 +144,25 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
     ...CATALOGUE.powerSources.map((p) => p.text),
   ];
   const stated = texts.flatMap((x) => [
-    ...[...x.en.matchAll(/at least (\d+(?:\.\d+)?) V below/g)].map((m) => `${m[1]} V`),
-    ...[...x.de.matchAll(/mindestens (\d+(?:,\d+)?) V unter/g)].map((m) => `${m[1]} V`),
+    ...[...x.en.matchAll(/at least (\d+(?:\.\d+)?)V below/g)].map((m) => `${m[1]}V`),
+    ...[...x.de.matchAll(/mindestens (\d+(?:,\d+)?)V unter/g)].map((m) => `${m[1]}V`),
   ]);
   assert.ok(stated.length >= 10, `${stated.length} statements of the cap`);
   // The cap is never stated as "at most N V under the input", which reads as "within N V of the input", and
   // no text keeps the form "input less N V" next to the stated one.
   for (const x of texts) {
-    assert.doesNotMatch(x.en, /at most \d+(?:\.\d+)? V (?:under|below)/, x.en);
-    assert.doesNotMatch(x.de, /höchstens \d+(?:,\d+)? V unter/, x.de);
-    assert.doesNotMatch(x.en, /\bless \d+(?:\.\d+)? V/, x.en);
-    assert.doesNotMatch(x.de, /\bminus \d+(?:,\d+)? V/, x.de);
+    assert.doesNotMatch(x.en, /at most \d+(?:\.\d+)?V (?:under|below)/, x.en);
+    assert.doesNotMatch(x.de, /höchstens \d+(?:,\d+)?V unter/, x.de);
+    assert.doesNotMatch(x.en, /\bless \d+(?:\.\d+)?V/, x.en);
+    assert.doesNotMatch(x.de, /\bminus \d+(?:,\d+)?V/, x.de);
   }
   assert.deepEqual([...new Set(stated)].sort(), [volts(cap, 'de'), volts(cap, 'en')].sort());
 
   // stick: the share of the ESC profiles the ESC STICK class runs.
   const runs = /runs (\d+) of the (\d+) profiles/.exec(read('STATUS.md'));
   assert.ok(runs !== null);
-  assert.match(help('stick').en, new RegExp(`; ${runs[1]} of the ${runs[2]} ESC profiles run\\.`));
-  assert.match(help('stick').de, new RegExp(`; ${runs[1]} der ${runs[2]} ESC-Profile laufen\\.`));
+  assert.match(help('stick').en, new RegExp(`; ${runs[1]} of the ${runs[2]} ESC profiles are runnable\\.`));
+  assert.match(help('stick').de, new RegExp(`; ${runs[1]} der ${runs[2]} ESC-Profile sind ausführbar\\.`));
 
   // servo, German: the controls carry the labels of the German panel.
   // The German of a screen string: an entry of the one text table, its English then its German, or, in a
@@ -175,5 +175,5 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
       new RegExp(`\\[TX_${key}\\]\\s*=\\s*"([^"]+)"`).exec(read('shared/ui/ui_text_de.c'))![1]!;
   const controls = ['SV_ROW_TRIM', 'SV_ROW_TRAVEL', 'SV_ROW_REVERSE'].map(label);
   assert.deepEqual(controls, ['TRIMMUNG', 'WEG', 'UMKEHREN']);
-  assert.match(help('servo').de, new RegExp(`Pulsbreite, ${controls[0]}, ${controls[1]} und ${controls[2]},`));
+  assert.match(help('servo').de, new RegExp(`Pulsbreite, ${controls[0]}, ${controls[1]} und ${controls[2]} einstellen\\.`));
 });

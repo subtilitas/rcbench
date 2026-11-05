@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 310 192" width="310" height="192" role="img" aria-labelledby="pul-t" aria-describedby="pul-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
-<title id="pul-t">2 resistors, 2.2 kΩ</title>
+<title id="pul-t">2 resistors, 2.2kΩ</title>
 <desc id="pul-d">Illustration of the 2 pull-up resistors R1 and R2, joined at one end.</desc>
 <defs>
 <linearGradient id="pul-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>

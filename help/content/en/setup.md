@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's bench-wide settings in three categories: PANEL, SENSORS and SD CARD. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
+SETUP contains bench-wide panel settings under PANEL, SENSORS and SD CARD. ESC (electronic speed controller) settings are under [MOTOR & ESC, SETTINGS](motor-settings.md). Open SETUP from the [menu](overview.md) to see its 3-by-3 tile grid. Each category opens a full-width settings list.
 
 ## The tiles
 
@@ -27,7 +27,7 @@ SETUP holds the panel's bench-wide settings in three categories: PANEL, SENSORS 
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
-The home tag at the top left climbs one level at a time:
+The home tag at the top left returns one level at a time:
 
 | From | The home tag leads to |
 |---|---|
@@ -39,15 +39,15 @@ The home tag at the top left climbs one level at a time:
 
 ![The hub, everything saved](view:setup)
 
-The list is 984px wide (754px on SENSORS) and shows 6 rows of 64px. Under it a strip, 48px tall, holds the category's name, RESET CATEGORY and the save button. The strip ends 4px above the band an alert shows across the bottom, so an alert covers no key, row or button.
+The list is 984px wide, or 754px on SENSORS, with 6 rows of 64px. A 48px strip below it contains the category name, RESET CATEGORY and the save button. It ends 4px above the alert band, so alerts never cover a key, row or button.
 
 A row shows the setting, a help line and its value with its unit. A number has `-` and `+` keys; a switch or a choice has `<` and `>`.
 
-- **Tap**: a key steps once when the finger lifts within 8px of the press, inside the key.
-- **Hold**: a held key steps first after 0.45s, then 8 times a second, and 30 times a second from 2.25s.
-- **Scroll**: a vertical drag of more than 8px anywhere on the list scrolls it and changes no value.
-- **Keypad**: a tap on a number's value, between its `-` and `+`, opens the keypad over the list. It names the setting, its range and its unit, and takes as many digits after the point as the step has. OK sets the value as a step does, onto the nearer step: 73% brightness is 75%. A value outside the range keeps the keypad open and names the range in the warning colour. A value inside the range that the keys never reach keeps it open and names the reason there instead, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit between 0 and 10mA, `Allowed bus pins: 0 4 6 14 16 18 20 26` for a Sensor SDA pin the bus cannot have, `GPIO already used by the other PD mini pin` for the other PD mini pin's GPIO. The next key brings the range back. CANCEL and the home tag change nothing. -1, a pin not set, is set with `-`: a pin's keypad has no `+/-` key.
-- One finger at a time: a second finger does nothing while one presses or scrolls.
+- **Tap**: a key steps once when you release inside it, within 8px of the initial press.
+- **Hold**: repetition starts after 0.45s at 8 steps per second, increasing to 30 per second after 2.25s.
+- **Scroll**: drag vertically by more than 8px anywhere on the list to scroll without changing a value.
+- **Keypad**: tap a numeric value between `-` and `+`. The keypad shows the setting, range and unit, with decimal places matching the step size. OK rounds to the nearest step: 73% brightness becomes 75%. An out-of-range value leaves the keypad open and highlights the range. Values within the displayed range but excluded from the allowed steps show a specific reason instead: `0 or 5.0 to 1000.0mΩ` for a shunt between 0 and 5.0mΩ, `0 or 10 to 32767mA` for a current limit between 0 and 10mA, `Allowed bus pins: 0 4 6 14 16 18 20 26` for an invalid Sensor SDA pin, or `GPIO already used by the other PD mini pin`. The next key restores the range text. CANCEL or the home tag discards the edit. Set an unassigned pin (-1) with `-`; pin keypads have no `+/-` key.
+- Only one finger is handled at a time. A second finger has no effect while the first presses or scrolls.
 
 A changed value is in force at once. RESET CATEGORY sets every value of the open category back to its default; on SENSORS `RESET INA228` does it for the selected entry alone.
 
@@ -60,24 +60,26 @@ A changed value is in force at once. RESET CATEGORY sets every value of the open
 
 ![A changed value, with SAVE offered](view:setup-dirty)
 
-A changed value is not written to flash until SAVE is pressed. A value stepped back to the one stored is no change: the button reads `SAVED` again, and a write asked for is dropped.
+SAVE writes changed values to flash. Returning every value to its stored value clears the changes: the button reads `SAVED` again and any pending write is cancelled.
 
 | Label | Meaning |
 |---|---|
-| `SAVED` | nothing is unwritten; the button does nothing |
-| `SAVE` | something is unwritten; a press asks for a write |
-| `WHEN IDLE` | the write waits for a quiet bench |
-| `NOT SAVED` | the store refused the write; a press tries again |
+| `SAVED` | all values are saved; the button has no effect |
+| `SAVE` | unsaved values remain; press to request a write |
+| `WHEN IDLE` | a write awaits a quiet bench |
+| `NOT SAVED` | the write failed; press to retry |
 
-The write happens on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. While ARMED the button reads `WHEN IDLE` until the bench is SAFE. Values not saved last until the panel is switched off. Leaving a list or the tiles writes nothing.
+The write occurs on the first frame when the bench is SAFE, the supply output is off, and no board drawing is being fetched or saved. While ARMED, the button reads `WHEN IDLE` until the bench is SAFE. Unsaved values remain in effect until power-off. Leaving a list or the tile page does not save them.
 
-`NOT SAVED` cannot say how much reached the flash: a refusal part way leaves the keys written before it, so the next start can load a mix of new and old values. After a refusal the button stays `NOT SAVED` or `SAVE` until a save succeeds, even with every value stepped back.
+`NOT SAVED` does not indicate how much reached flash. A failed write can leave some keys updated, so the next start may load a mix of old and new values. After failure, the button stays `NOT SAVED` or `SAVE` until a save succeeds, even if you restore all previous values.
 
 ## Leaving with values unsaved
 
 ![One value unsaved, at the home tag](view:setup-leave)
 
-The home tag on the tiles leads to the menu. While the save button reads `SAVE` or `NOT SAVED`, it opens a warning first. The warning lists each value that differs from the stored one as `name: stored -> now`, with the value and unit as the list shows them. The stored values are the ones loaded at start-up or written by the last successful save. The list includes the DUT (device under test) name and the values set on other screens, such as SERVO, ESC STICK or MOTOR & ESC: one save keeps them all.
+The tile page's home tag returns to the menu. If the save button reads `SAVE` or `NOT SAVED`, it first warns about unsaved changes. Each changed value appears as `name: stored -> now`, with the same value format and unit as in the list. Stored values are those loaded at startup or written by the last successful save.
+
+The warning also includes the DUT (device under test) name and settings from other screens, such as SERVO, ESC STICK and MOTOR & ESC. One save writes them all.
 
 | Button | What it does |
 |---|---|
@@ -93,7 +95,7 @@ The home tag on the tiles leads to the menu. While the save button reads `SAVE` 
 
 ![Twelve values unsaved](view:setup-leave-many)
 
-A change on [MOTOR & ESC, SETTINGS](motor-settings.md) asks for a write itself, and that write keeps SETUP's unsaved values too.
+Changing a setting on [MOTOR & ESC, SETTINGS](motor-settings.md) requests a save automatically. That write includes unsaved SETUP values.
 
 No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or on the way to OUTPUTS, WI-FI and UPDATES. STOP stops the bench and leaves the warning open. A screen the panel opens by itself, such as the bus-fault screen after a link loss, closes the warning and leaves the values in force and unsaved.
 
@@ -113,17 +115,21 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Dim after | 0 to 60min, steps of 5 | 0 | stored; no screen uses it in this release |
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
 | Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on a bus of its own, IO30 and IO31 of header P3 (I2C: Inter-Integrated Circuit), turns the throttle on MOTOR & ESC or the horn on SERVO |
-| Knob range | 90 to 720deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
+| Knob range | 90 to 720°, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
 | Keyboard transparency | OFF, 25%, 50% | OFF | how much of the text shows through the text editor's keyboard on [Files](files.md#the-text-editor); other keyboards stay opaque |
 | Demo mode | ON, OFF | OFF | hides the SIMULATION watermark from the next frame; the band still says SIM and the tiles still say SIMULATED. The panel draws the watermark only while no IOmcu answers, so the setting changes nothing on a bench with an IOmcu |
 
 The backlight is on while the panel runs. No setting switches it.
 
-Screen rotation turns the picture as each frame goes out, through the ESP32-P4's PPA (pixel-processing accelerator), and turns touch with it, so every control stays under the finger. A contact at (x, y) in NORMAL is at (1023 - x, 599 - y) in 180°. Touch injector contacts do not turn. The row has no keys while the bench is ARMED. When a frame's copy takes longer than 50ms, picture and touch go back to NORMAL together and the band says so; the setting stays 180°, and the next start turns again.
+Screen rotation uses the ESP32-P4's PPA (pixel-processing accelerator) to rotate each outgoing frame and its touch coordinates together. A contact at (x, y) in NORMAL maps to (1023 - x, 599 - y) at 180°. Touch injector contacts are not rotated. The setting's row has no keys while ARMED.
+
+If copying a frame takes more than 50ms, picture and touch both return to NORMAL, with a message in the band. The setting remains 180°, so rotation is attempted again at the next start.
 
 ![Screen rotation at 180° while ARMED](view:setup-rotation)
 
-The panel has no RTC (real-time clock) chip. Its clock starts unset at each power-on and is set by NTP (Network Time Protocol): each join of the home network asks `pool.ntp.org` once, for at most 30000ms. A join that ends before the answer keeps the radio up for it, 30000ms at most; ARM, STOP, the supply, a log run and an install take the radio down at once. Current limitation: a first DNS (Domain Name System) server of the home network that does not answer delays the request by about 7s after each join. A software restart keeps the clock. FAT stores a file's time as local time at the moment of writing: a later change of Time zone does not move the times of files already on the card. Until an answer, files the panel writes are dated 1980; FILES INFO reads such a date as `not known`. The access point asks no time server.
+The panel has no RTC (real-time clock) chip. Its clock is unset after power-on and set through NTP (Network Time Protocol). Each join of the home network makes one request to `pool.ntp.org`, lasting at most 30000ms. If the join ends before the answer, the radio remains on for that request, for at most 30000ms. ARM, STOP, supply operation, a log run or an installation shuts it down immediately. An unresponsive first DNS (Domain Name System) server delays the request by about 7s after each join.
+
+A software restart preserves the clock. FAT stores timestamps in local time at the moment of writing; changing Time zone does not alter existing file timestamps. Until NTP answers, written files are dated 1980 and FILES INFO shows `not known`. Access-point mode does not query a time server.
 
 ![Time zone set to LOS ANGELES](view:setup-time-zone)
 
@@ -131,11 +137,11 @@ The panel has no RTC (real-time clock) chip. Its clock starts unset at each powe
 
 ### The rotary knob
 
-- The knob moves a value by how far it turns, never to where it points. At 270deg a quarter turn moves the throttle 33.3 points.
-- It never switches to ARMED. While the bench is SAFE a turn moves nothing and is not kept.
-- The first reading after power-up, or after the sensor stopped answering, sets a reference and moves nothing.
-- A finger on the throttle track or the SERVO dial owns the value while it is down.
-- The sensor is read every 10ms. A step over 90deg between two readings is dropped.
+- The knob changes a value by the amount turned, not its absolute position. With a 270° range, a quarter turn changes throttle by 33.3 percentage points.
+- It never switches to ARMED. Turns while SAFE have no effect and are discarded.
+- The first reading after power-up or a sensor outage establishes a reference without moving the output.
+- A finger held on the throttle track or SERVO dial takes precedence over the knob.
+- The sensor is read every 10ms. A change greater than 90° between readings is discarded.
 
 The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of the board is on its bus. The panel never addresses 0x14 or 0x5D for it, where the GT911 touch controller answers on the touch bus, nor 0x00 to 0x03 or 0x78 to 0x7F, which the I2C specification reserves. With no sensor fitted, Rotary knob ON probes 0x06 every 100ms. The host tests show that this changes nothing else; on the panel it is not measured. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
 
@@ -158,11 +164,11 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever Auto logs says.
 - [Logs](logs.md#what-a-run-writes) lists the folders.
 
-A tap on a folder's row opens the keyboard on the folder. Its `.` key types `/`. OK takes the folder in upper case; SAVE keeps it. CANCEL and the home tag keep the folder as it was. A folder changed during a run takes the next file; the run finishes where it started, and the next one is numbered from what the new folder holds. Both rows may name one folder.
+Tap a folder row to open its keyboard. The `.` key enters `/`. OK applies the folder in uppercase; SAVE stores it. CANCEL or the home tag keeps the previous folder. A change during a run applies to the next file: the current run finishes in its original folder. The next run's number follows the new folder's contents. Both settings may use the same folder.
 
 ![The folder keyboard with a folder refused](view:setup-folder)
 
-OK keeps the keyboard open, and the folder as it was, for a folder the card cannot take. The line right of the title says why:
+An invalid folder leaves the keyboard open and the setting unchanged. The line beside the title explains why:
 
 | Refused | Example | Line |
 |---|---|---|
@@ -175,7 +181,7 @@ OK keeps the keyboard open, and the folder as it was, for a folder the card cann
 
 ## SENSORS
 
-SENSORS holds every device the IOmcu reads, an entry each in a list on the left: the sensor bus, the INA228, the four INA3221, the AS5600 and the phase tap. [Sensors](setup-sensors.md) describes them.
+SENSORS lists the IOmcu's sensor bus, INA228, four INA3221 monitors, AS5600 and phase tap, plus the panel's Bluetooth IMU. Each has an entry in the left list. See [Sensors](setup-sensors.md).
 
 ## Related pages
 

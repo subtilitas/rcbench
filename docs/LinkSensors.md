@@ -2,16 +2,18 @@
 
 <sub>**English** · [Deutsch](LinkSensors-de.md)</sub>
 
-This page is a section of [The link](Link.md), which holds the wiring, the frame
-format, the page map and the other pages. I2C is Inter-Integrated Circuit.
+This page describes the INA3221 configuration and measurement pages.
+[The link](Link.md) covers the wiring, frame format, page map and other
+pages. I2C means Inter-Integrated Circuit.
 
-SENSE_MAP (0x35), SENSE_WIN_A (0x37) and SENSE_WIN_B (0x38) are new in 4.25,
-SENSE_LIMIT (0x36) in 4.27.
-SENSE_MAP sets up to 4 TI INA3221 current monitors on the sensor bus SENSE
-opens, at 0x40 to 0x43: which parts are fitted, a shunt for each of their 12
-channels, what each channel measures, and the FAST channel. The two window
-pages carry every channel's last 50ms window. SENSE_LIMIT holds a current
-limit for each channel and flags the windows above it.
+SENSE_MAP (0x35), SENSE_WIN_A (0x37) and SENSE_WIN_B (0x38) require
+protocol 4.25 or later; SENSE_LIMIT (0x36) requires 4.27.
+SENSE_MAP configures up to 4 TI INA3221 current monitors at addresses
+0x40 to 0x43 on the sensor bus opened by SENSE. It specifies the fitted
+parts, the shunt and measurement assignment for each of their 12
+channels, and the FAST channel. The two window pages provide each
+channel's latest 50ms window. SENSE_LIMIT sets a current limit for
+each channel and flags windows that exceed it.
 `shared/outputs/sense_map.c` and `sense_limit.c` hold the rules;
 `test_sense_map` and `test_sense_limit` test them on the host.
 
@@ -30,10 +32,10 @@ is CH1 of the part at 0x40, channel 11 is CH3 of the part at 0x43.
 | 30 | `FLAGS` | read only: bit a part a online; bit 4 + a part a answered with another identity; bit 8 the map has been written and is kept (`IN_FORCE`); bit 9 it has never been written and is SENSE's one part (`DERIVED`) |
 | 31 | reserved | reads 0 |
 
-Registers 0 to 25 are kept in the IOmcu's flash. A write lies within them:
-one that reaches register 26 is refused with READ_ONLY. The registers written
-are merged into the map and the whole map is judged; a map refused leaves
-every register as it was. Refused with BAD_VALUE:
+Registers 0 to 25 are stored in the IOmcu's flash. A write must remain
+within this range; reaching register 26 gives READ_ONLY. The proposed
+values are merged into the map, then the entire map is checked. If it
+is refused, every register remains unchanged. BAD_VALUE is returned for:
 
 - `ENABLE` above 15;
 - `FAST` not 0xFF and past 11, on a part not fitted, or on a channel whose
@@ -48,12 +50,13 @@ every register as it was. Refused with BAD_VALUE:
   pins while the map opens the bus;
 - any change while the bank drives an output.
 
-A part not fitted keeps the values written for it, judged by range alone. A
-change of `ENABLE`, `FAST` or a shunt is a new set-up: core 1 sets the bus up
-again, and every reading and window of the set-up before goes. A change of
-`WATCH` alone is not a new set-up. A write of the map in force changes
-nothing and is taken in any bank state, and so is a first write of the
-derived map as it reads.
+Values written for an unfitted part are retained and checked only for
+range. Changing `ENABLE`, `FAST` or a shunt creates a new configuration:
+core 1 reconfigures the bus and discards all readings and windows from
+the previous configuration. Changing only `WATCH` does not do this.
+Writing the map already in force changes nothing and is accepted in
+any bank state. The same applies to the first write of the derived map
+with the values it currently reports.
 
 ## SENSE and the map
 
@@ -63,9 +66,9 @@ is set, SENSE's shunt on each channel in SENSE's register 10, `FAST` that
 part's CH1 while CH1 is read, and nothing watched. `FLAGS` bit 9 says so. A
 bench whose panel never writes SENSE_MAP runs as it did before 4.25.
 
-The first write puts the map in force, and it stays in force: no write
-returns it to the derived map. From then on SENSE's ENABLE bit 1 and
-registers 8 to 10 mirror the map:
+The first write activates the map. No subsequent write can return it
+to derived mode. SENSE's ENABLE bit 1 and registers 8 to 10 then
+mirror the map:
 
 | SENSE | With the map in force |
 | --- | --- |
@@ -89,9 +92,9 @@ write taken.
 
 ## SENSE_WIN_A and SENSE_WIN_B
 
-Every channel's last complete 50ms window: channels 0 to 5 on SENSE_WIN_A,
-6 to 11 on SENSE_WIN_B. Every write is refused with READ_ONLY. Nothing is
-kept.
+These pages expose each channel's latest complete 50ms window:
+channels 0 to 5 on SENSE_WIN_A and 6 to 11 on SENSE_WIN_B. All writes
+are refused with READ_ONLY. These pages are not stored in flash.
 
 | Register | Name | Meaning |
 | ---: | --- | --- |
@@ -117,11 +120,12 @@ channels and the INA228 take 43.4%. At most one part is probed a tick.
 
 ## SENSE_LIMIT
 
-A current limit for each channel, and the channels whose window passed it.
-The IOmcu flags a limit passed and acts on nothing itself. The panel reads
-the flag every 200ms and answers it as an error: the bench switches to SAFE
-and the supply output switches off; one a programming port holds goes off
-after a write to the servo's memory that runs, from link 4.31
+This page holds a current limit for each channel and flags channels
+whose window exceeds it. The IOmcu sets the flag but takes no action
+itself. The panel reads the flag every 200ms and treats it as an
+error: the bench switches to SAFE and the supply output switches off.
+From link 4.31, if a programming port holds the supply during a write
+to servo memory, shutdown waits for that write to finish
 ([Safety, A programming port's supply](Safety.md#a-programming-ports-supply)).
 
 | Register | Name | Meaning |
@@ -148,18 +152,21 @@ windows over; core 0 adds what the counts gained whenever it takes core 1's
 snapshot, so no window is missed however long core 0 takes. A limit
 written applies from the next window that closes.
 
-`OVER` holds its bits until a read covers register 12: that read returns
-them and clears them. A reply lost on the link loses those bits;
-`OVER_COUNT` still counts them. A new set-up keeps `OVER` and
-`OVER_COUNT`. The console line reads both without clearing.
+`OVER` retains its bits until a read includes register 12. That read
+returns and clears the bits. If the reply is lost on the link, those
+bits are lost to the reader, but remain included in `OVER_COUNT`.
+Reconfiguration preserves `OVER` and `OVER_COUNT`. The console reads
+both without clearing them.
 
 ## Kept in flash
 
-The IOmcu keeps SENSE_MAP's registers 0 to 25, whether the map is in force,
-and SENSE_LIMIT's registers 0 to 11 in its store record, version 8. A version 8 record is 308 bytes and fills a slot of
-two 256-byte flash pages: 8 slots a 4096-byte sector, 16 in the store. A save
-programs both pages in one window. A program cut off in either page reads as
-no record: the record's count of 0 bits and its CRC-16 cover both pages.
+The IOmcu's version 8 store record contains SENSE_MAP registers 0 to
+25, the flag indicating whether the map is in force, and SENSE_LIMIT
+registers 0 to 11. A version 8 record occupies 308 bytes in a slot of
+two 256-byte flash pages: 8 slots per 4096-byte sector, 16 in the
+store. A save programs both pages in one window. Programming interrupted
+in either page leaves no valid record, because the record's count of
+0 bits and its CRC-16 cover both pages.
 
 At boot the limits come back through SENSE_LIMIT's write checks; a kept
 value above 32767 leaves every limit 0. The map comes back after SENSE's

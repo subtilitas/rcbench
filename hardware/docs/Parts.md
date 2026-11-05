@@ -3,8 +3,8 @@
 One row per part that round 1 of [the component research](Research.md)
 selected for the IO (input/output) board, from
 `hardware/research/round1/selection.json` and the returns of the P4 stock
-and lifecycle verifier named in each row. Every figure in a row is that
-verifier's reading, except the placements of MCP23017T-E/SS, 3 a board from the
+and lifecycle verifier named in each row. Each row uses that
+verifier's figures, except for the placement counts of MCP23017T-E/SS, 3 a board from the
 draft [pin map](Pins.md), of the RP2354B, its 12MHz crystal
 and its core regulator inductor, 2 a board for the owner's two IOmcus
 (2026-09-30), and of SN74LVC1G04DBVR,
@@ -12,21 +12,21 @@ BTS7004-1EPP, 2N7002BK,215 and MCP9808T-E/MS. The SN74LVC1G04DBVR row adds
 the counts of two verifiers, as the research's cross-category check does.
 The other three follow the 3 servo rails and the adjustable supply the owner
 set on 2026-09-30: a rail gate on each servo rail and a temperature sensor
-beside each of the 4 converters. The adjustable supply's gate is not counted:
+beside each of the 4 converters. The adjustable supply's gate is excluded from the count because
 the BTS7004-1EPP does not switch its output below about 4.1V. The owner's 0.8V lowest servo rail (2026-09-30)
 refutes two rows below it: the BTS7004-1EPP starts at 4.1V at most, and the
-TPS259474LRPWR takes 2.7V at least. Follow-ups of R3 and R6 replace them. The Read column gives the time, in UTC (Coordinated
+TPS259474LRPWR takes 2.7V at least. Replacement selection is assigned to follow-ups of R3 and R6. The Read column gives the time, in UTC (Coordinated
 Universal Time), the JLCPCB figures were read. LCSC is the distributor whose parts library
 JLCPCB assembles from; an LCSC number is `C` followed by digits.
 
-**The stock figures were read on 2026-09-29.** They are not valid after
-that day. `tools/jlc_stock.py` reads them again:
+**The stock figures were read on 2026-09-29.** They describe
+that date only. `tools/jlc_stock.py` reads them again:
 
 ```sh
 python3 tools/jlc_stock.py --check 5
 ```
 
-It reads JLCPCB's API (application programming interface) for every LCSC
+The tool queries JLCPCB's API (application programming interface) for every LCSC
 number on this page and Digi-Key's API for every row whose second source
 is Digi-Key and for the part off the board. The gate of each part is
 sourcing rule 4 of [Research](Research.md#sourcing-rules): stock at or
@@ -46,13 +46,13 @@ STMicroelectronics. S, Q and V followed by a number are the research's
 questions to the owner, P4 its verifiers, and the runs named FU- its
 follow-up tasks.
 
-A function with no part is not on this page. Those functions, and the
-figures no verifier re-read, are listed with the pages of each group:
+Functions with no selected part are omitted from this page. Those functions and
+figures that no verifier checked again are listed on the pages for each group:
 [Control](Control.md) for R1 to R4, [Supply](Supply.md) for R5 to R8 and
 [Sensing](Sensing.md) for R9 to R13. Library type is JLCPCB's
 `componentLibraryType`: every row with an LCSC number reads `expand`, the
-extended library, which question S6 allows. The package is the code JLCPCB
-or the datasheet gives it. R1 to R13 in the Function column are the
+extended library, which question S6 allows. The package is identified by the code used by JLCPCB
+or the datasheet. R1 to R13 in the Function column are the
 research categories of [Research](Research.md#research-categories).
 
 ## Selected parts
@@ -109,11 +109,11 @@ research categories of [Research](Research.md#research-categories).
 | R13 load-cell bridge ADC | ADS1235IRHBR | Texas Instruments | C2669975 | VQFN-32-EP (5 x 5mm) | 1340 | 1220 | extended | 2026-09-29T03:27:42Z | 1 | not held (export of 2026-09-25) | Digi-Key: 0 against the gate of 50 on 2026-09-29 (2026-09-29T02:48:13Z; ADS1235IRHBT, the 250-piece reel of the same device, 401). The owner's stock exception: Digi-Key, the second vendor, read stock 0 against the gate of 50 on 2026-09-29; the owner keeps the part and notes the exception (owner, 2026-09-29) | ACTIVE (TI page) | none per part; TI: life cycles typically 10 to 15 years | none | `hardware/research/round1/FU-C1/016-P4-stock-R13.json` |
 | R13 load-cell excitation | BD450M2FP3-CE2 | ROHM | C308595 | SOT-223-4 (F) | 3165 | 3062 | extended | 2026-09-29T03:27:43Z | 1 | not held (export of 2026-09-25) | Digi-Key: 3618 (2026-09-29T02:48:18Z) | Active (ROHM page) | not on the ROHM longevity list | none | `hardware/research/round1/FU-C1/016-P4-stock-R13.json` |
 
-Every row on the board passes its gate at JLCPCB on the readings above. Every
+Every part fitted to the board passes its JLCPCB stock threshold on the readings above. Every
 row whose second source is Digi-Key passes the gate there, except
 ADS1235IRHBR, which carries the owner's stock exception in its row.
 WSBE8518L1000JKA2, the external shunt, has no second source: no alternate
-is known for it, and the owner has the report.
+is known, and this has been reported to the owner.
 
 ## Alternates and Q options
 

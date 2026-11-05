@@ -104,9 +104,9 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 2000,
-      "confirm_signal": "Two short beeps after about 2 s",
+      "confirm_signal": "Two short beeps after about 2s",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery",
         "Wait about 2000ms: two short beeps, programming mode entered"
       ]
@@ -124,12 +124,12 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Item: throttle to min while the wanted item tone sounds; one special tone confirms the item is entered."
+      "description": "Item: throttle to minimum while the desired item tone sounds; one special tone confirms the item is entered."
     },
     "value_select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Value: throttle to max on the wanted value tone; one special tone confirms the value is stored."
+      "description": "Value: throttle to maximum on the desired value tone; one special tone confirms the value is stored."
     },
     "skip": {
       "throttle": "none",
@@ -139,7 +139,7 @@
     "exit": "Disconnect the battery; or keep waiting to pick the next item.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Item 4 (4 short beeps) 'Restore factory setup defaults'.",
-    "description": "Throttle max, battery on, two short beeps after 2 s. Ten item tones loop, each four times. Throttle to min on the wanted item enters it; value tones then loop; throttle to max on the wanted value stores it. Disconnect the battery to leave."
+    "description": "Throttle at maximum, battery on, two short beeps after 2s. Ten item tones loop, each four times. Throttle to min on the desired item enters it; value tones then loop; throttle to maximum on the desired value stores it. Disconnect the battery to leave."
   },
   "items": [
     {
@@ -410,15 +410,15 @@
   "unknowns": [
     "Beep duration, gap and loop length in ms are not stated.",
     "No window in ms for the min or max gesture is given.",
-    "Whether the loop returns to item selection after a stored value (the manual says 'keep waiting to the next programmable item') is clear but the delay is not stated.",
+    "The manual explicitly states that the ESC returns to item selection after storing a value (\"keep waiting to the next programmable item\"). It does not state the delay.",
     "How long the first beeps after power-on (entry) hold is 'about 2 seconds'.",
     "The special-tone sound is not described."
   ],
   "notes": [
-    "Cutoff threshold value 3 is 3.2 V/60 % in the tone table and 3.2 V/65 % in the text (settings 3).",
+    "Cutoff threshold value 3 is 3.2V/60% in the tone table and 3.2V/65% in the text (settings 3).",
     "Restore list gives 'Cut Off Voltage Threshold 3.0V/60%'.",
     "INDEX.csv groups Mystery with Gecko; Mystery uses a different tone scheme (mystery-ztw-melody-menu).",
-    "Items 6 values 7.4 V and 8.4 V: the manual says Gecko 45A has only 5.0 V and 6.0 V."
+    "Item 6 values 7.4V and 8.4V: the manual says Gecko 45A has only 5.0V and 6.0V."
   ],
   "schema": 1,
   "verified": false

@@ -272,7 +272,7 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Four-tone melody about 5 s after power-up; the motor does not start.",
+      "confirm_signal": "Four-tone melody about 5s after power-up; the motor does not start.",
       "steps": [
         "Throttle signal at full power (transmitter on).",
         "Connect the drive battery; switch the BEC on where fitted (MasterSpin 11 has no switch).",
@@ -293,7 +293,7 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the throttle to the stop position while the wanted group is sounding."
+      "description": "Move the throttle to the stop position while the desired group is sounding."
     },
     "skip": {
       "throttle": "none",
@@ -303,7 +303,7 @@
     "exit": "Disconnect the battery. The motor runs on throttle movement right after the confirmation.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "Throttle at full, then power: four-tone melody after about 5 s, groups of 1 to 6 beeps after about 5 s more, each five times. Throttle to stop during the wanted group selects that mode and stores it. Factory state is mode 1."
+    "description": "Throttle at full, then power: four-tone melody after about 5s, groups of 1 to 6 beeps after about 5s more, each five times. Throttle to stop during the desired group selects that mode and stores it. Factory state is mode 1."
   },
   "items": [
     {
@@ -352,8 +352,8 @@
   "notes": [
     "Model table: Hacker_MasterSpin.pdf p16 and Hacker_MasterSpin_de.pdf p16 list MasterSpin 170 Opto and 220 Opto; Hacker_MasterSpin_old_en.pdf p16 (Release 0107) lists 200 Opto and 300 Opto in their place with the same size and voltage data.",
     "Hacker_MasterSpin_de.pdf lists the tables with several rows broken across lines; values were read from the English editions where the text layout is ambiguous.",
-    "The table row 'MasterSpin 66' states a current of 70 A.",
-    "After a normal power-up the ESC beeps once (brake on) or twice (brake off), then after about 5 s plays timing monitor beeps (can be disabled with the JetiBox) (p8).",
+    "The table row 'MasterSpin 66' states a current of 70A.",
+    "After a normal power-up the ESC beeps once (brake on) or twice (brake off), then after about 5s plays timing monitor beeps (can be disabled with the JetiBox) (p8).",
     "All three editions list six groups, 1 to 6 beeps."
   ],
   "schema": 1,

@@ -2,38 +2,40 @@
 
 <sub>**English** · [Deutsch](LinkHitec-de.md)</sub>
 
-This page is a section of [The link](Link.md), which holds the wiring, the frame
-format, the page map and the other pages. Pins are named by GPIO (general-purpose
-input/output) number. PWM is pulse-width modulation.
+This page describes the Hitec programming port. [The link](Link.md)
+covers the wiring, frame format, page map and other pages. Pins are
+identified by GPIO (general-purpose input/output) number. PWM means
+pulse-width modulation.
 
 Hitec is a name or trademark of its owner. It is used here only to say which
 servos the page works with.
 
-The Hitec page (`HITEC`, 0x34) is new in 4.23; write register 23, the
-receive mode of a D series line, is new in 4.24. From 4.29 a held port
-holds the SUPPLY page from OPEN to CLOSE
+The Hitec page (`HITEC`, 0x34) requires protocol 4.23 or later. Write
+register 23, which selects a D series line's receive mode, requires 4.24.
+From 4.29, a held port reserves the SUPPLY page from OPEN to CLOSE
 ([The supply while a port is held](#the-supply-while-a-port-is-held)). From
 4.31 a writer marks the steps of a write that more steps follow, and SUPPLY
 holds the panel's OFF back until the write ends
 ([An OFF during a write](#an-off-during-a-write)).
-The page runs raw transactions of
-the Hitec servo wire of [`protocols/hitec`](../protocols/hitec/README.md) on
-one port of [PROG](Link.md#the-programming-ports): classic (HS-5xxx,
-HS-7xxx, 19,200bit/s) or D series (115,200bit/s). The page holds no Hitec
-session. The writer stages one transaction, the page runs it, and the
-capture and its decoding stay on the page until the next one. Which bytes a
-servo takes, and in which order, is the writer's business. The session core
+The page executes raw transactions from the Hitec servo wire protocol in
+[`protocols/hitec`](../protocols/hitec/README.md) on one
+[PROG](Link.md#the-programming-ports) port: classic (HS-5xxx, HS-7xxx,
+19,200bit/s) or D series (115,200bit/s). It does not manage a Hitec
+session. The caller stages one transaction, and the page executes it.
+The capture and decoded result remain available until the next
+transaction. The caller must select the bytes and their order for the
+servo. The session core
 ([`hitec_session.h`](../protocols/hitec/README.md#session)) and the panel's
 link half ([The panel's link half](#the-panels-link-half)) run the
-programmer on the SERVO screen, which reads a servo and writes nothing to
-it ([Servo programmer for Hitec servos](HitecProgrammer.md)).
+programmer on the SERVO screen, including its reads and writes
+([Servo programmer for Hitec servos](HitecProgrammer.md)).
 `shared/outputs/hitec_port.c` holds the rules.
 
-A port is free, held by this page or held by the KST page
-([The programming port for KST and Chaservo servos](LinkKST.md)), never two
-of them. The page holds one port at a time; the KST page may hold another.
-Nothing is kept in flash: after a restart of the IOmcu the port is
-free.
+A port is either free, held by this page or held by the KST page
+([The programming port for KST and Chaservo servos](LinkKST.md)). It cannot
+be held by both pages. This page holds one port at a time; the KST page
+may hold another. Port ownership is not stored in flash, so an IOmcu
+restart leaves the port free.
 
 Any of the build's ports may be opened, 4 from protocol 4.26: the port's pin
 is handed over whatever its FUNCTION, a NONE port's parked pin as a SERVO
@@ -68,15 +70,17 @@ OPEN takes the port:
    and a third DMA channel; without them the port stays free with
    `NO_LINE` as well.
 
-In OPEN a command starts one transaction (BUSY). The port is in OPEN again
-when the driver hands back the capture. The driver ends a transaction itself
-1ms after the longest it can take: the capture keeps every byte received
-before that end and is marked overflow (`CAP` bit 10). A transaction that
-still runs after 10,000ms is aborted by the page as well.
+In OPEN, a command starts one transaction and enters BUSY. The port
+returns to OPEN when the driver returns the capture. The driver ends a
+transaction if it exceeds its calculated maximum duration by 1ms. The
+capture retains all bytes received up to that point and is marked as an
+overflow (`CAP` bit 10). The page also aborts any transaction still
+running after 10,000ms.
 
-CLOSE gives the port back from any state but free: a running transaction is
-cut, the line closed and the pin the generator's. The supply is left as it
-is. ABORT cuts what runs and keeps the port.
+CLOSE releases the port from any state other than free. It cuts any
+running transaction, closes the line and returns the pin to the
+generator. The supply is unchanged. ABORT cuts the running operation
+but retains the port.
 
 ## The supply while a port is held
 
@@ -122,7 +126,8 @@ included; the page tells it from the frame's bytes, with or without the
 bit. A read, a MOVE, a LISTEN, a LEVEL and a POWER write nothing. The
 writer sets the bit on every step of a write but the last: SEND, LISTEN,
 LEVEL or POWER. `STATE` bit 8 shows the bit standing. Every other command
-taken clears it, a refused one included, and so do a stop and CLOSE.
+processed by the page clears it, even if the requested operation is
+refused. A stop and CLOSE also clear it.
 
 How long a servo needs its supply after a frame that writes is not
 measured. The 150ms are above the longest gap a vendor programmer leaves
@@ -130,15 +135,17 @@ after a writing frame before its next frame: 121 to 128ms on the HPP-21
 Plus between two classic settings, 100ms on the HFP-30 from the D series
 save to the restart.
 
-An OFF the panel writes to SUPPLY while a write runs reads 0 at once and
-reaches the PD mini when the write ends: 150ms after the last writing
-frame's transaction ends, or 10,000ms after the OFF at the latest
-(`SUPPLY_PAGE_WRITE_WAIT_MS`). Until then the port sees its supply on and
-the steps go on. With no write running the OFF reaches the PD mini in the
-next pass. A lost heartbeat or a silent link is not held. From the panel's
-OFF to CLOSE, a POWER switches the supply off as ever and its ON is
-refused: `RESULT` 3 (`SUPPLY`), and the servo stays without power
-(`hitec_port_writing()`, `supply_page.h`).
+If the panel writes OFF to SUPPLY during a servo write, the output
+register immediately reads 0. The OFF reaches the PD mini when the write
+ends: 150ms after the last writing frame's transaction, or at most
+10,000ms after OFF (`SUPPLY_PAGE_WRITE_WAIT_MS`). Until then, the port
+sees its supply as on and continues the write steps. With no write
+running, OFF reaches the PD mini in the next pass. Shutdown due to a
+lost heartbeat or a silent link is not deferred.
+
+From the panel's OFF until CLOSE, POWER still switches the supply off,
+but its ON is refused with `RESULT` 3 (`SUPPLY`). The servo therefore
+remains unpowered (`hitec_port_writing()`, `supply_page.h`).
 
 | Write | Steps with bit 4 | Last step |
 | --- | --- | --- |
@@ -154,10 +161,9 @@ bit 4 with BAD_VALUE; the panel sets it from 4.31 only.
 
 ## Receive mode
 
-Write register 23 (`RX_MODE`) says how a D series line receives the
-servo's answer, from the next OPEN on. The OPEN takes the value the
-register holds when the OPEN is written; a change while a line is open
-waits for the next OPEN. An OPEN of a classic line ignores the register:
+Write register 23 (`RX_MODE`) selects how a D series line receives the
+servo's answer. OPEN uses the register value at the time of the command.
+A change made while the line is open takes effect at the next OPEN. An OPEN of a classic line ignores the register:
 a classic servo drives its high level itself, through about 1kΩ, and
 answers with neither a pull-up nor a precharge on an open-drain port
 (measured on an HS-7955TG, an HS-5955TG and an HS-5645MG at a 5.0V
@@ -222,10 +228,10 @@ received. The receiver waits for the next start bit from the end of the
 answer's stop bit, so a byte the servo starts right after the answer is
 received.
 
-Leads, windows and levels run to 4,000,000us. A capture holds up to 16
-bytes. The window counts the time spent waiting for a start bit only. Each
-received byte has its start bit's time in ns from the receiver's start, and
-its stop bit as sampled.
+Leads, windows and levels can last up to 4,000,000us. A capture holds
+up to 16 bytes. The window counts only time spent waiting for a start
+bit. For each received byte, the capture records the start-bit time in
+ns relative to receiver start and the sampled stop-bit value.
 
 A SEND, a LISTEN or a POWER names a decoder for the capture:
 
@@ -264,15 +270,15 @@ LISTEN the driver refuses gives result 4 (`START`) with the supply on. The
 SUPPLY page is held throughout and after it, until CLOSE
 ([The supply while a port is held](#the-supply-while-a-port-is-held)).
 
-An OFF of the SUPPLY page waits for a byte that may be on the wire, 12ms
-at most: a SEND's lead and bytes, and the whole of a LISTEN or a POWER's
-LISTEN that answers, since the answer goes out when the first byte has
-come.
+An OFF on the SUPPLY page waits up to 12ms for possible byte
+transmission. This covers a SEND's lead and bytes, and the entire LISTEN
+of a LISTEN or POWER operation that sends an answer. The latter must
+wait because the answer is sent when the first byte arrives.
 
 ## STOP, a switch to SAFE, heartbeat loss and link loss
 
-A stop is the heartbeat lost, the link silent, or the bank switched to SAFE.
-On a stop:
+A lost heartbeat, a silent link or a switch of the bank to SAFE triggers
+a stop. On a stop:
 
 - a running transaction is aborted: the pad is released at once and the
   capture holds the bytes so far, marked aborted (result 6, `CUT`);
@@ -352,24 +358,25 @@ The check is the link's CRC-16 (cyclic redundancy check), seeded 0xFFFF,
 over each register's low byte and then its high byte (`link_kst_crc()`), as
 on the KST page.
 
-Registers 0 to 3 are the command: one frame, written as exactly those 4
-registers and taken whole or not at all. Registers 4 to 23 are written in
-any windows before the command. A write that reaches register 24 or higher
-is refused with READ_ONLY, a `VIEW` above 2 or an `RX_MODE` above 1 with
-BAD_VALUE, and the window changes nothing.
+Registers 0 to 3 form the command. Write exactly those 4 registers in
+one frame; the page accepts the whole command or none of it. Registers
+4 to 23 can be written in any windows before the command. A write that
+reaches register 24 or higher is refused with READ_ONLY. A `VIEW` above
+2 or an `RX_MODE` above 1 is refused with BAD_VALUE. In each case, the
+entire write window leaves the registers unchanged.
 
 A frame with a `SEQ` other than the page's plus 1, an operation 0 or above
 8, a bit set outside the operation, bit 4 and the port, bit 4 on OPEN,
 CLOSE, ABORT or CLEAR, or a `KEY` that is neither 0 nor 0x48A5 is refused
-with BAD_VALUE and changes nothing. The frame just
-taken, sent again, is acknowledged and does nothing. Every other frame is
-acknowledged; what became of it is in `RESULT`.
+with BAD_VALUE and changes nothing. Resending the most recently accepted frame acknowledges it without
+executing it again. Other valid frames are acknowledged, and `RESULT`
+reports their outcome.
 
 ## Refusals
 
-`RESULT`'s high byte. A port the build does not have is refused with
-`PORT` before every other check, ABORT excepted. Then, in this order for a
-transaction:
+The high byte of `RESULT` gives the refusal. Except for ABORT, a port
+absent from the build is refused with `PORT` before any other check.
+Transaction checks then follow this order:
 
 | Code | Name | Why |
 | ---: | --- | --- |
@@ -475,12 +482,12 @@ When the link does not answer:
   from the panel. The page ends every transaction within 10,000ms and a
   POWER within 23,000ms, so this limit is for a page that does not.
 
-ABORT drops a request whose command has not gone. A command sent without an
-answer is not sent again; the `SEQ` decides as above. The ABORT command
-goes as soon as the page is known; one refused with BAD_VALUE goes again
-after a read, with the page's `SEQ`. A request dropped while one of its
-exchanges is out holds the next request off until that exchange's answer
-is in.
+ABORT drops a request if its command has not been sent. A command sent
+without an answer is not resent; its `SEQ` determines the outcome as
+above. The ABORT command is sent as soon as the page state is known. If
+it is refused with BAD_VALUE, the module reads the page and retries with
+the page's `SEQ`. If a request is dropped while an exchange is pending,
+the next request waits until that exchange's answer arrives.
 
 Between requests registers 0 to 15 are read every 100ms while the page
 holds a port and every 500ms while it holds none. An IOmcu below 4.23 is

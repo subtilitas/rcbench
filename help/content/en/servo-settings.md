@@ -6,7 +6,7 @@ order: 21
 
 # Servo settings
 
-SETTINGS, the third tab of [SERVO](servo.md)'s strip, shows the servo's settings in the page area on three pages: OUTPUT, SWEEP and DUT (device under test). Each run's own settings open from its card on TEST: the card's SETTINGS shows them as a list one level down, and CLOSE at the list's top right or the home tag goes back to the cards. The output card on the right stays in place and works. A value opens the keypad, a list opens a list, a switch flips on the tap, and NAME opens a keyboard.
+SETTINGS on the [SERVO](servo.md) strip has three pages: OUTPUT, SWEEP and DUT (device under test). Each run has separate settings: open SETTINGS on its TEST card to see the list, then use CLOSE at the top right or the home tag to return. The output card stays visible and usable on the right. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
 
 ## OUTPUT
 
@@ -14,12 +14,12 @@ SETTINGS, the third tab of [SERVO](servo.md)'s strip, shows the servo's settings
 
 | Setting | Range | What it does |
 |---|---|---|
-| TYPE | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | the servo profile |
-| FRAME RATE | the type's list, or CUSTOM on the keypad | how often a pulse is sent |
-| PULSE MIN, CENTRE, MAX | 400 to 2500us; each end at least 50us from CENTRE | -90deg is MIN, 0 is CENTRE, +90deg is MAX |
-| TRIM | -200 to +200us, 5us a step | added to the centre; a tap on the value opens the keypad with a `+/-` key |
-| TRAVEL | 10 to 90deg | how far the horn may go each way |
-| REVERSE | ON, OFF | the direction the angle maps onto the pulse |
+| TYPE | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | selects the servo profile |
+| FRAME RATE | the type's list, or CUSTOM on the keypad | sets how often a pulse is sent |
+| PULSE MIN, CENTRE, MAX | 400 to 2500us; each end at least 50us from CENTRE | maps -90° to MIN, 0° to CENTRE and +90° to MAX |
+| TRIM | -200 to +200us, 5us steps | adds to the centre; tap the value for a keypad with a `+/-` key |
+| TRAVEL | 10 to 90° | limits horn movement in each direction |
+| REVERSE | ON, OFF | reverses the mapping from angle to pulse |
 
 | Type | Centre | Travel | Frame rates |
 |---|---|---|---|
@@ -35,15 +35,15 @@ The OUTPUT settings are kept for the session. Every restart goes back to STANDAR
 
 ![TRIM's keypad, -25us typed](view:servo-trim-keypad)
 
-TRIM's keypad has a `+/-` key between the point and OK: it puts a minus sign in front of the entry or takes it away. OK takes -200 to +200us onto the nearer 5us step: 13 is 15, -12 is -10. -201 keeps the keypad open and names the range in the warning colour.
+TRIM's keypad has a `+/-` key between the decimal point and OK. It adds or removes a leading minus sign. OK accepts -200 to +200us and rounds to the nearest 5us: 13 becomes 15, -12 becomes -10. Entering -201 leaves the keypad open and highlights the range in the warning colour.
 
 ## The warning for fast rates
 
 ![CAN DESTROY THE SERVO](view:servo-warning)
 
-A heli type, or any frame rate above 60Hz, can destroy a servo not made for it. Choosing one opens a warning in the danger colour that names the choice. It is applied after HOLD 2s TO APPLY is held. CANCEL, a finger that slides off and leaving the screen apply nothing. The type and rate in force stay red on the right card.
+A heli type or frame rate above 60Hz can destroy a servo not designed for it. Selecting either opens a warning in the danger colour, naming the choice. Hold HOLD 2s TO APPLY to apply it. CANCEL, sliding your finger off, or leaving the screen discards the choice. An active hazardous type or rate stays red on the right card.
 
-The OUTPUT page says what became of the rate:
+The OUTPUT page reports the rate status:
 
 | Note | Meaning |
 |---|---|
@@ -91,7 +91,7 @@ With HV SERVO on and a step above 6.0V chosen, START TEST on the card opens HV S
 
 ![The brown-out walk's page](view:servo-brownout)
 
-BROWN-OUT on the automatic test's settings opens the walk's page; CLOSE comes back. The row reads the walk, `ON 3.0/0.2V`: LOWEST VOLTAGE and STEP. After the supply steps the walk starts at 5.0V, or the voltage cap if lower, and goes down by STEP to LOWEST VOLTAGE. It stops at the first voltage that shows no movement.
+BROWN-OUT in the automatic test settings opens the walk's page; CLOSE returns. Its row summarises LOWEST VOLTAGE and STEP, for example `ON 3.0/0.2V`. After the supply steps, the walk starts at 5.0V or the voltage cap, whichever is lower. It decreases by STEP towards LOWEST VOLTAGE, stopping at the first voltage with no movement.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -99,7 +99,7 @@ BROWN-OUT on the automatic test's settings opens the walk's page; CLOSE comes ba
 | LOWEST VOLTAGE | 2.0 to 4.8V | 3.0V | the walk's last voltage; a supply whose lowest set point is higher ends it there |
 | STEP | 0.1 to 1.0V | 0.2V | how far each voltage goes down; a last step shorter than STEP lands on LOWEST VOLTAGE |
 
-The note under the rows names the walk on the supply in force and how many voltages it asks for, at most 31. A LOWEST VOLTAGE at or above the start runs the start alone.
+The note below the rows describes the walk for the active supply and the number of voltages requested, at most 31. If LOWEST VOLTAGE is at or above the starting voltage, only the starting voltage is tested.
 
 ## The limit run's settings
 
@@ -115,7 +115,7 @@ SETTINGS on the LIMIT RUN card opens them.
 
 ## SUPPLY's caps
 
-The voltage and current caps the set points and a run's steps stay inside show under TEST's cards and on DUT on a button, `CAPS 21.00V 5.00A: OPEN SUPPLY`, the caps in force. The button opens [SUPPLY](supply.md) on SETTINGS, LIMITS, where they are set, and the home tag there comes back. It is grey while TARGET is locked: leaving SERVO would switch the bench to SAFE.
+The active voltage and current caps constrain set points and run steps. They appear below the TEST cards and on DUT in a button such as `CAPS 21.00V 5.00A: OPEN SUPPLY`. Tap it to open [SUPPLY](supply.md) > SETTINGS > LIMITS, where you can set them. The home tag returns. The button is grey while TARGET is locked, because leaving SERVO would switch the bench to SAFE.
 
 OUTPUT's first note names the port SERVO TESTER is set to, `SERVO TESTER: PORT 1. Set it on OUTPUTS.` It takes no tap: the setting's home is [Outputs](outputs.md#the-prog-port-entry).
 
@@ -130,13 +130,17 @@ OUTPUT's first note names the port SERVO TESTER is set to, `SERVO TESTER: PORT 1
 | REPORT | a text report, `ATESTnnn.TXT`, beside each test's log, while User logs on SETUP > SD CARD is ON |
 | ENC CENTRE | a tap takes the live AS5600 count, 0 to 4095, as the centre, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
 
-ANGLE SOURCE on the IMU entry of [Sensors](setup-sensors.md) sets where the runs take the angle from: the AS5600 or the IMU, whose angle runs in AS5600 counts of 0.088°. The test's CSV names the source in its last column, `angle source`, and both reports in the line `Angle source:`. AS5600, the output encoder, is switched on [Sensors](setup-sensors.md) alone; DUT's button `AS5600 ON OR OFF: OPEN SENSORS` opens that entry and the home tag there comes back. PORT PWM, the pulse on the programming port, is set on the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) alone.
+ANGLE SOURCE in the IMU entry of [Sensors](setup-sensors.md) selects the AS5600 or IMU for run angles. IMU angles use AS5600 counts of 0.088°. The test CSV identifies the source in its last column, `angle source`; both reports use an `Angle source:` line.
+
+Enable or disable the AS5600 output encoder on [Sensors](setup-sensors.md). DUT's `AS5600 ON OR OFF: OPEN SENSORS` button opens that entry, and its home tag returns. PORT PWM, the programming-port pulse, is set only in the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry).
 
 ## The TARGET row
 
 ![The TARGET row with PROG PORT](view:servo-target)
 
-The TARGET row of the output card names what the tester drives as `protocol pins`, and picks it, as on MOTOR & ESC: a tap opens [Outputs](outputs.md#the-prog-port-entry), on what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known. There SERVO TESTER picks OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the IOmcu's programming port. Leaving SERVO switches the bench to SAFE and ends a sweep or a test; the home tag on OUTPUTS comes back to SERVO on the same task. The row stays in sight on every task, under the pages and under the servo programmer. It is locked while ARMED, during a sweep, an automatic test or a limit run, and while the servo programmer holds the port.
+TARGET on the output card identifies the driven outputs as `protocol pins`. Tap it to open [Outputs](outputs.md#the-prog-port-entry): PROG PORT when the IOmcu drives the programming port, SERVO PWM when it drives the outputs, or the overview when the target is unknown. There, SERVO TESTER selects OUTPUTS (pins bound as SERVO PWM) or PROG PORT (the IOmcu programming port).
+
+Leaving SERVO switches the bench to SAFE and ends any sweep or test. The home tag on OUTPUTS returns to the same SERVO task. TARGET remains visible below the pages and programmer on every task. It is locked while ARMED, during a sweep, automatic test or limit run, or while the servo programmer holds the port.
 
 ![The PROG PORT entry of OUTPUTS](view:outputs-port)
 

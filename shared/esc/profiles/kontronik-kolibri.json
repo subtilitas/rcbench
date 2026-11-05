@@ -14,7 +14,7 @@
       "v_max_mv": 25000,
       "current_a": 60,
       "bec": "switching",
-      "firmware_note": "BEC 10 A continuous, 30 A peak; 5.6 V default, 5 to 9 V",
+      "firmware_note": "BEC 10A continuous, 30A peak; 5.6V default, 5 to 9V",
       "spec_source": "https://kontronik.com/en/produkt/kolibri-60-lv-i"
     },
     {
@@ -38,7 +38,7 @@
       "v_max_mv": 25000,
       "current_a": 140,
       "bec": "switching",
-      "firmware_note": "second sensor port; mode 9 valid",
+      "firmware_note": "Second sensor port; mode 9 applies.",
       "spec_source": "https://kontronik.com/en/produkt/kolibri-140-lv-i"
     },
     {
@@ -62,7 +62,7 @@
       "v_max_mv": 50000,
       "current_a": 140,
       "bec": "switching",
-      "firmware_note": "second sensor port; mode 9 valid",
+      "firmware_note": "Second sensor port; mode 9 applies.",
       "spec_source": "https://kontronik.com/en/produkt/kolibri-140-hv-i"
     }
   ],
@@ -80,14 +80,14 @@
     {
       "when": "before_menu",
       "action": "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).",
-      "action_de": "Taster am ESC nach den Zellentönen drücken (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).",
+      "action_de": "Drücke nach den Zellentönen den ESC-Taster (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).",
       "starts_menu": true,
       "source": "Kontronik_KOLIBRI_de.pdf p.7 (DE), p.18 (EN)"
     },
     {
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.",
-      "action_de": "Nicht berühren: warten, bis der ESC seine Modusbestätigung beendet hat (Töne, LED), dann ERLEDIGT tippen.",
+      "action_de": "Berühre nichts. Warte auf das Ende der Modusbestätigung (Töne, LED) und tippe dann ERLEDIGT.",
       "locks": true,
       "source": "Kontronik_KOLIBRI_de.pdf p.7, p.9, p.10 (DE)"
     }
@@ -100,12 +100,12 @@
       "hold_ms": null,
       "confirm_signal": "Ascending three-tone sequence plus cell-count tones; descending three-tone sequence after the button press.",
       "steps": [
-        "Transmitter on, throttle at motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+        "Switch the transmitter on; set the throttle to motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
         "Connect the motor. Apply drive power.",
         "The ESC sounds an ascending three-tone sequence and single tones for the detected LiPo cell count (long tone = 4 cells, short tone = 1 cell).",
         "Operator: press the button marked on the ESC.",
         "The ESC sounds a descending three-tone sequence, then the mode series 1, 2, 3 ... one tone more per series.",
-        "Move the throttle to full (100%) after the wanted tone count.",
+        "Move the throttle to full (100%) after the desired tone count.",
         "The ESC confirms with an ascending three-tone sequence and repeats the mode as tones. Mode 2: a further stick position may be set. Mode 6: move the stick to reverse (0%) after the full-throttle confirmation.",
         "Wait for the confirmation (up to about 2s for mode 4) before disconnecting power; otherwise the ESC locks (9 LED flashes)."
       ]
@@ -123,7 +123,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the throttle to 100 % when the series of the wanted mode sounds."
+      "description": "Move the throttle to 100% when the series of the desired mode sounds."
     },
     "skip": {
       "throttle": "none",
@@ -133,7 +133,7 @@
     "exit": "Wait for the confirmation, then disconnect drive power.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Program mode 1 (APM).",
-    "description": "Throttle at 0 %, apply power, press the ESC button after the cell-count tones. The ESC counts modes as single tones. Full throttle at the wanted count stores the mode. Modes 8, 9 and 10 continue with a second stage that counts protocol or voltage steps."
+    "description": "Throttle at 0%, apply power, press the ESC button after the cell-count tones. The ESC counts modes as single tones. Full throttle at the desired count stores the mode. Modes 8, 9 and 10 continue with a second stage that counts protocol or voltage steps."
   },
   "items": [
     {
@@ -321,14 +321,14 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
     "No timed wait before the button press; the time allowed after power-up is not stated.",
     "Item number 2 is an index chosen here.",
     "Input voltage range, cell count and rated current of each KOLIBRI model are not given in the manual text read.",
     "Mode 5 is listed as unused. Whether the ESC sounds a series for mode 5 is not stated.",
-    "Telemetry stage: the number of tones is the protocol number; the time allowed to return the throttle to 0 % is not stated.",
-    "BEC stage: tones per 0.2 V step beginning at 5.0 V (no tone) up to 9 V; the value list is derived from that rule."
+    "Telemetry stage: the number of tones is the protocol number; the time allowed to return the throttle to 0% is not stated.",
+    "BEC stage: tones per 0.2V step beginning at 5.0V (no tone) up to 9V; the value list is derived from that rule."
   ],
   "notes": [
     "Telemetry table differs from the KOSMIK: tone 3 is Futaba here and 'not used' on the KOSMIK, and tone 8 (FrSky) exists here only.",

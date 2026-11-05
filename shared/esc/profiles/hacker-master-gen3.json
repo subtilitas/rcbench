@@ -380,13 +380,13 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Four-tone melody about 5 s after power-up. The motor does not start although the throttle is at full.",
+      "confirm_signal": "Four-tone melody about 5s after power-up. The motor does not start although the throttle is at full.",
       "steps": [
         "Throttle signal at full power, then connect the drive battery (switch the BEC on where fitted).",
         "Wait about 5s for the four-tone melody (programming mode entered).",
         "Mode toggle (item 1): move throttle to stop immediately after the melody.",
-        "Timing (item 2): keep full throttle, wait about 5s more, then listen to the groups of 1 to 4 beeps; move to stop during the wanted group.",
-        "PWM frequency, cutoff voltage or direction (items 3, 4): keep full throttle through all timing groups, then the long/short patterns follow; move to stop during the wanted pattern."
+        "Timing (item 2): keep full throttle, wait about 5s more, then listen to the groups of 1 to 4 beeps; move to stop during the desired group.",
+        "PWM frequency, cutoff voltage or direction (items 3, 4): keep full throttle through all timing groups, then the long/short patterns follow; move to stop during the desired pattern."
       ]
     },
     "announce": {
@@ -397,12 +397,12 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": 5,
-      "description": "After the melody and a further wait of about 5 s, the ESC plays groups of 1, 2, 3 and 4 beeps in turn (timing, items 2). Each group is repeated five times in a row before the next count starts. A group ends after its fifth repetition. For item 3 and item 4 the ESC afterwards plays three patterns of long and short tones, each also shown five times: all long, alternating long and short, all short; a long-short-long pattern stands for direction reversal. The manual does not say whether the sequence loops after the last pattern. Car current limit (item 5) plays groups of 1 to 4 beeps, five repetitions each, directly after the melody."
+      "description": "After the melody and a further wait of about 5s, the ESC plays groups of 1, 2, 3 and 4 beeps in turn (timing, items 2). Each group is repeated five times in a row before the next count starts. A group ends after its fifth repetition. For item 3 and item 4 the ESC afterwards plays three patterns of long and short tones, each also shown five times: all long, alternating long and short, all short; a long-short-long pattern stands for direction reversal. The manual does not say whether the sequence loops after the last pattern. Car current limit (item 5) plays groups of 1 to 4 beeps, five repetitions each, directly after the melody."
     },
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the throttle to the stop position while the wanted group or pattern is sounding. The stop position is minimum throttle on aircraft types and the centre position on Car types. Selecting the mode toggle needs the move right after the melody."
+      "description": "Move the throttle to the stop position while the desired group or pattern is sounding. The stop position is minimum throttle on aircraft types and the centre position on Car types. Selecting the mode toggle needs the move right after the melody."
     },
     "skip": {
       "throttle": "none",
@@ -412,7 +412,7 @@
     "exit": "The ESC is armed after the confirmation and the motor starts on throttle movement. Disconnect the battery to leave and to start another change.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "Throttle at full power before connecting the battery gives a four-tone melody after about 5 s. Stop right after the melody toggles the operating mode. Staying at full throttle starts the timing groups (1 to 4 beeps, five times each), then the PWM-frequency or cutoff-voltage patterns with the direction-reversal pattern. Stop during one group or pattern stores that single setting; further changes need a new power-up."
+    "description": "Throttle at full power before connecting the battery gives a four-tone melody after about 5s. Stop right after the melody toggles the operating mode. Staying at full throttle starts the timing groups (1 to 4 beeps, five times each), then the PWM-frequency or cutoff-voltage patterns with the direction-reversal pattern. Stop during one group or pattern stores that single setting; further changes need a new power-up."
   },
   "items": [
     {
@@ -495,7 +495,7 @@
         "Master 77-O-Heli"
       ],
       "source_page": "16-17",
-      "note": "applies_to expanded from the manual's rule: all models rated 40 A or more, except Navy and Car."
+      "note": "applies_to expanded from the manual's rule: all models rated 40A or more, except Navy and Car."
     },
     {
       "number": 3,
@@ -524,7 +524,7 @@
         "Master B-Car Mini"
       ],
       "source_page": "17",
-      "note": "Replaces the PWM-frequency item on the types up to 30 A. Default not stated."
+      "note": "Replaces the PWM-frequency item on the types up to 30A. Default not stated."
     },
     {
       "number": 4,
@@ -591,7 +591,7 @@
         "Master B-Car Comp"
       ],
       "source_page": "18",
-      "note": "Entered with the throttle at max brake instead of full power. Groups of 1 to 4 beeps, five repetitions each. Default not stated."
+      "note": "Entered with the throttle at maximum brake instead of full power. Groups of 1 to 4 beeps, five repetitions each. Default not stated."
     },
     {
       "number": 6,
@@ -624,13 +624,13 @@
     "Navy: which beep count belongs to forward-only and which to forward-reverse mode: not stated.",
     "Navy: tone sequence after the full-power detection and length of the window for the centre move: not stated.",
     "Car: which throttle end is 'max brake' for the current-limit entry: not stated.",
-    "Default values of cutoff voltage (up to 30 A types), current limit and direction: not stated.",
+    "Default values of cutoff voltage (up to 30A types), current limit and direction: not stated.",
     "Acknowledgement melody for each stored change: shown only as note symbols, no durations.",
-    "Whether OPTO types need an external 4.5-6.0 V supply for stick programming: given for the programming box only.",
+    "Whether OPTO types need an external 4.5-6.0V supply for stick programming: given for the programming box only.",
     "Master 90-O-Acro Competition special brake and its stick menu: only referenced, not described."
   ],
   "notes": [
-    "The PWM-frequency stage exists from the 40 A types up; types up to 30 A use the cutoff-voltage stage instead (p16-17).",
+    "The PWM-frequency stage exists from the 40A types up; types up to 30A use the cutoff-voltage stage instead (p16-17).",
     "The programming-box table (p24-25) lists further settings that have no stick sequence; those are not in this profile.",
     "The manual forbids operation from a power supply because motor braking can raise the input voltage. A bench supply needs a clamp or sink if the motor is connected; with no motor connected the risk is not stated.",
     "Pages cited are the printed page numbers."

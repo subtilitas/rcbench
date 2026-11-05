@@ -1288,28 +1288,30 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description="Check and evaluate a SENSE_TRACE console log.")
     ap.add_argument("log", type=pathlib.Path,
-                    help="the terminal's capture of the console")
+                    help="a terminal capture of the console output")
     ap.add_argument("--out", type=pathlib.Path,
-                    help="directory for the CSV files (default: the log's)")
+                    help="CSV output directory (default: the log directory)")
     ap.add_argument("--servo-csv", type=pathlib.Path,
                     help="a servo test's CSV file with `travel angle (ms)`")
     ap.add_argument("--csv-offset", type=float,
-                    help="IOmcu time less CSV time, s, for the "
-                         "log's first boot (default: found from the "
+                    help="IOmcu time minus CSV time, in seconds, for the "
+                         "first boot in the log (default: inferred from "
                          "moves)")
     ap.add_argument("--pair-ms", type=float, default=150.0,
-                    help="a row and a command pair within this (default "
-                         "150 ms)")
+                    help="maximum time gap between a CSV row and its matching "
+                         "command pair, in milliseconds (default: 150ms)")
     ap.add_argument("--floor", type=float, default=0.020,
-                    help="the threshold's floor, A (default 0.020)")
+                    help="minimum current threshold, in amperes (default: "
+                         "0.020A)")
     ap.add_argument("--loaded-channel", type=channel, action="append",
                     metavar="N",
-                    help="a channel (a $C line's ch=) whose output has a "
-                         "load in CH1's supply; once for each. The "
-                         "commands of every other channel are left out "
-                         "(default: every channel is loaded)")
+                    help="channel whose output draws from the CH1 supply, "
+                         "identified by ch= in a $C line; repeat for each "
+                         "loaded channel. Commands for other channels are "
+                         "excluded (default: all channels are loaded)")
     ap.add_argument("--replay", type=pathlib.Path,
-                    help="a built test/host sense_trace_replay")
+                    help="path to the sense_trace_replay executable built "
+                         "from test/host")
     ap.add_argument("--no-csv", action="store_true",
                     help="write no CSV files")
     args = ap.parse_args()

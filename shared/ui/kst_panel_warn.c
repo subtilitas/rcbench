@@ -435,8 +435,9 @@ void kpn_warn_release(void)
     (void)warn_no_file();
 }
 
-/* The way back to PWM: through a supply cycle after a write with a PD mini,
- * with a note of the cycle the values wait for without one. */
+/* The way back to PWM: through a supply cycle after a write with a
+ * switchable supply (PD mini or the carrier's fixed 5V), with a note of the
+ * cycle the values wait for without one. */
 void kpn_warn_leave(void)
 {
     warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE),  TR(KP_HOLD_LEAVE), TX_HOLD_HINT_LEAVE);

@@ -119,11 +119,11 @@ test('the needs of a function are the parts the resolver adds to the base setup 
   // The words, once in full.
   const en = (id: string, options: Options = DEFAULT_OPTIONS): string[] => functionHelp(view({ options }), id)!.needs;
   assert.deepEqual(en('servotest'), ['Needs: PD mini, PD charger, T-plug.', 'Connects: Servo.']);
-  assert.deepEqual(en('escpow'), ['Needs: ESC battery, 2 × 2.2 kΩ (only without INA3221), INA228.', 'Connects: ESC.']);
+  assert.deepEqual(en('escpow'), ['Needs: ESC battery, 2 × 2.2kΩ (only without INA3221), INA228.', 'Connects: ESC.']);
   assert.deepEqual(en('servo'), ['Needs: Servo supply (only without PD mini).', 'Connects: Servo.']);
   assert.deepEqual(en('servo', { ...DEFAULT_OPTIONS, servoPower: 'bench' }), ['Connects: Servo.']);
   assert.deepEqual(en('logs'), ['Needs: microSD card.']);
-  assert.deepEqual(functionHelp(view({}, 'de'), 'escpow')!.needs, ['Braucht: ESC-Akku, 2 × 2,2 kΩ (nur ohne INA3221), INA228.', 'Schließt an: ESC.']);
+  assert.deepEqual(functionHelp(view({}, 'de'), 'escpow')!.needs, ['Braucht: ESC-Akku, 2 × 2,2kΩ (nur ohne INA3221), INA228.', 'Schließt an: ESC.']);
 });
 
 test('a function that sets a variant names it', () => {
@@ -153,17 +153,17 @@ test('the needs of a part are the parts it brings and the wires of its supply in
   // The power input of the PD mini is a supply wire too: the USB-C cable from the T-plug.
   assert.deepEqual(needs('pdmini'), [
     'Needs: PD charger, T-plug.',
-    'PD in: T-plug OUT, USB-C socket. USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at least 0.7 V below the input voltage.',
+    'PD in: T-plug OUT, USB-C socket. USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at least 0.7V below the input voltage.',
   ]);
   assert.match(needs('pdmini', DEFAULT_OPTIONS, 'de')[1]!, /^PD-Eingang: T-Stecker OUT, USB-C-Buchse\. USB-C-Kabel, /);
   assert.deepEqual(needs('sd'), ['Needs no further part of the bench.']);
-  assert.deepEqual(needs('ina3221'), ['Needs no further part of the bench.', 'Supply, 3.3 V: IOmcu 3V3 (pad 36).']);
+  assert.deepEqual(needs('ina3221'), ['Needs no further part of the bench.', 'Supply, 3.3V: IOmcu 3V3 (pad 36).']);
   // The INA228 board decides the supply: 5V from VBUS for the MATEK board, 3.3V for the XT90 board.
-  assert.equal(needs('ina228')[1], 'Supply, 5 V: IOmcu VBUS (pad 40). The MATEK board needs 4 to 9 V.');
-  assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' })[1]!, /^Supply, 3\.3 V: IOmcu 3V3 \(pad 36\)\. /);
-  assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' }, 'de')[1]!, /^Versorgung, 3,3 V: IOmcu 3V3 \(Pad 36\)\. /);
+  assert.equal(needs('ina228')[1], 'Supply, 5V: IOmcu VBUS (pad 40). The MATEK board needs 4 to 9V.');
+  assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' })[1]!, /^Supply, 3\.3V: IOmcu 3V3 \(pad 36\)\. /);
+  assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' }, 'de')[1]!, /^Versorgung, 3,3V: IOmcu 3V3 \(Pad 36\)\. /);
   // On the Osoyoo breakout board the supply is a terminal.
-  assert.equal(needs('ina3221', { ...DEFAULT_OPTIONS, connection: 'osoyoo' })[1], 'Supply, 3.3 V: terminal 3V3.');
+  assert.equal(needs('ina3221', { ...DEFAULT_OPTIONS, connection: 'osoyoo' })[1], 'Supply, 3.3V: terminal 3V3.');
 });
 
 test('a part names every wire of its supply, logic and power, that ends on it, in every variant', () => {

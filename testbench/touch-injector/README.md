@@ -2,13 +2,13 @@
 
 The touch injector is a Waveshare RP2350-Zero on the panel's touch bus.
 It emulates a GT911 touch controller at I2C (Inter-Integrated Circuit)
-address 0x14 and presses where a USB (Universal Serial Bus) serial command
-tells it to. A panel image polls 0x14
-beside the glass's controller and merges both when 0x14 answers at
-start-up with the injector's product ID; `RCBENCH_TOUCH_INJECTOR` defaults to ON, and a panel built with
-`-D RCBENCH_TOUCH_INJECTOR=OFF` never reads 0x14 as an injector. A panel
-that finds nothing at 0x14 at start-up does not look again until its next
-start.
+address 0x14. USB (Universal Serial Bus) serial commands specify touch
+positions and gestures. At start-up, the panel checks 0x14 for the
+injector's product ID. If found, it polls the injector and merges its
+contacts with those from the glass controller. `RCBENCH_TOUCH_INJECTOR`
+defaults to ON. A build with `-D RCBENCH_TOUCH_INJECTOR=OFF` never reads
+0x14 as an injector. If the start-up check finds no injector, the panel
+does not check again until it restarts.
 
 The panel tells the injector from the glass by its product ID, not by its
 address. The injector reports `9INJ` at registers 0x8140 to 0x8143
@@ -53,9 +53,9 @@ image.
 The RP2350-Zero prints these pins as `GP4`, `GP5`, `GP6`, `GP7` and `GP16`.
 The console of the injector writes the I2C pins as `GP4` and `GP5`.
 
-The connector is the board's 4-pin I2C header ("The touch bus header" in
-`docs/Building.md`); the order of its pins is not known, so SDA and SCL are
-found with a meter before a lead goes on. The injector has no pull-ups and
+Use the board's 4-pin I2C header ("The touch bus header" in
+`docs/Building.md`). Its pin order is not known. Identify SDA and SCL with
+a meter before connecting a lead. The injector has no pull-ups and
 enables none. Whether the board's bus has pull-ups of its own is not measured.
 
 ## Build
@@ -241,7 +241,7 @@ suite's panel, which reads every 10ms; on the bench they are not measured.
 
 ### Errors
 
-Errors are one line and the command is not run:
+An error returns one line without running the command:
 
 | Reply | Cause |
 | --- | --- |
@@ -269,8 +269,8 @@ Closing the port lifts every contact that is down, without a reply.
 
 ## Station check: DISARM and STOP during a drag
 
-The check that a second finger stops the bench while a drag drives the
-output. The points are the SERVO screen's (`test/host/servo_spots.h`), in
+This check verifies that a second contact can stop the bench while a
+drag drives the output. The points are the SERVO screen's (`test/host/servo_spots.h`), in
 panel pixels: ARM and DISARM at 826, 514; the band's STOP at 934, 30; the
 dial drag at x 495 from 30 degrees above the shaft (y 258) to 30 degrees
 below (y 368). The host suite runs the same check

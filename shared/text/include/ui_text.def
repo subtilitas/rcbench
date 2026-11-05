@@ -5714,8 +5714,8 @@ UI_TEXT(KP_M_ACT_AT_LEAVE, 116,
     "The values take effect after LEAVE switches the supply off for 1s, then on.",
     "Die Werte werden nach VERLASSEN wirksam: Die Versorgung wird 1s aus- und wieder eingeschaltet.")
 UI_TEXT(KP_LEAVE_CYCLE, 116,
-    "The PD mini output switches off for 1s, then on. The port then returns to servo PWM.",
-    "Der Ausgang des PD mini schaltet 1s aus und wieder ein. Danach wechselt der Port zu Servo-PWM.")
+    "LEAVE switches the supply off for 1s, then on. The port then returns to servo PWM.",
+    "VERLASSEN schaltet die Versorgung 1s aus und wieder ein. Danach wechselt der Port zu Servo-PWM.")
 UI_TEXT(KP_BACKUP_FILE, 116,
     "Backup file of this session: %s.",
     "Backup-Datei dieser Sitzung: %s.")

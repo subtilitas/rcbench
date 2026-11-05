@@ -61,10 +61,9 @@ VIEW_NAME = re.compile(r"[a-z0-9][a-z0-9-]*")
 CHROME = {
     "en": {
         "name": "rcbench panel help",
-        "intro": "The panel of the rcbench test bench, screen by screen: "
-                 "what each screen shows and what it lets the user do. "
-                 "The screenshots are rendered by the panel's own drawing "
-                 "code.",
+        "intro": "A guide to each screen on the rcbench panel: its controls, "
+                 "readings and limits. The screenshots are rendered by "
+                 "the panel's own drawing code.",
         "pages": "Pages",
         "switch": "Deutsch",
         "configurator": "Bench configurator",
@@ -72,10 +71,9 @@ CHROME = {
     },
     "de": {
         "name": "rcbench Panel-Hilfe",
-        "intro": "Das Panel des rcbench-Prüfstands, Bildschirm für "
-                 "Bildschirm: was jeder Bildschirm zeigt und was er "
-                 "bedienen lässt. Die Screenshots zeichnet der Code, der "
-                 "auch auf dem Panel zeichnet.",
+        "intro": "Bedienung, Anzeigen und Grenzen jeder Seite des "
+                 "rcbench-Prüfstands. Die Screenshots entstehen mit "
+                 "dem Zeichencode des Panels.",
         "pages": "Seiten",
         "switch": "English",
         "configurator": "Bench-Konfigurator",

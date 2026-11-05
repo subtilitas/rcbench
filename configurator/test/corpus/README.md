@@ -1,8 +1,8 @@
 # Hash corpus
 
-Links to the configurator, each with the setup the page makes of it. The
-corpus is the compatibility contract of the URL hash: a link that is in the
-corpus keeps its meaning.
+This corpus stores configurator links and the setup each link produces.
+It defines the URL hash compatibility contract: every stored link must
+retain its meaning.
 
 | File | Holds |
 |---|---|
@@ -36,8 +36,8 @@ Entries by name:
 | `bad-percent-` | 20 | Percent-encoding: encoded separators, broken escapes, a byte that is no UTF-8, a plus sign. |
 | `bad-shape-` | 20 | Input that is no key-value list: script text, repeated separators, other separators. |
 
-Every malformed entry gives a setup without an exception. An entry whose hash
-carries no readable selection gives the base setup.
+Every malformed entry must resolve without an exception. A hash with no
+readable selection produces the base setup.
 
 A hash of 64kB is stored as a recipe `{ prefix, unit, count, suffix }`.
 
@@ -71,11 +71,11 @@ npm run corpus -- add <name> "<why>" '<hash>'
 npm test
 ```
 
-`<name>` is lower case letters, digits and hyphens. `<why>` is one sentence:
-what the entry is in the corpus for. The tool computes `expect` from the code
-of the commit, appends the entry and rewrites `wires.json`. It refuses a name
-or a hash that the corpus holds. Read the new `expect` before the commit: the
-tool stores what the page does, right or wrong.
+`<name>` contains lowercase letters, digits and hyphens. `<why>` is one
+sentence explaining what the entry checks. The tool computes `expect`
+from the current code, appends the entry and rewrites `wires.json`. It
+rejects duplicate names and hashes. Review `expect` before committing:
+the tool records actual behaviour, including any existing error.
 
 Add an entry for each new function, each new part, each new option token and
 each new key of the hash.

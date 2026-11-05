@@ -14,7 +14,7 @@
       "v_max_mv": 25000,
       "current_a": 40,
       "bec": null,
-      "firmware_note": "the manual uses this as an example; other KONTROL-X sizes are not listed",
+      "firmware_note": "The manual uses this model as an example; it does not list other KONTROL-X sizes.",
       "spec_source": "https://www.rcjapan.net/index.php?main_page=product_info&cPath=257_274_314&products_id=19182 (dealer, quotes 2-6 S LiPo, 6-25 V, 40 A continuous); Kontronik_Kontrol-X_Kolibri-X.pdf p.3 for 40 A"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": null,
       "current_a": 60,
       "bec": null,
-      "firmware_note": "English example; the German text gives 90 LV = 90 A",
+      "firmware_note": "English example; the German text gives 90 LV = 90A",
       "spec_source": "Kontronik_Kontrol-X_Kolibri-X.pdf p.3 and p.11: model name = continuous current (90 LV = 90 A); cells and voltage not found in manual, kontronik.com or dealer pages"
     },
     {
@@ -56,14 +56,14 @@
     {
       "when": "before_menu",
       "action": "Press the button under the shrink tube after 2s or the tone sequence.",
-      "action_de": "Taster unter dem Schrumpfschlauch nach 2s oder der Tonfolge drücken.",
+      "action_de": "Drücke den Taster unter dem Schrumpfschlauch nach 2s oder der Tonfolge.",
       "starts_menu": true,
       "source": "Kontronik_Kontrol-X_Kolibri-X.pdf p.2, p.4 (DE), p.12 (EN)"
     },
     {
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.",
-      "action_de": "Nicht berühren: warten, bis der ESC seine Modusbestätigung beendet hat (Töne, LED), dann ERLEDIGT tippen.",
+      "action_de": "Berühre nichts. Warte auf das Ende der Modusbestätigung (Töne, LED) und tippe dann ERLEDIGT.",
       "locks": true,
       "source": "Kontronik_Kontrol-X_Kolibri-X.pdf p.4 (DE), p.11 (EN)"
     }
@@ -74,14 +74,14 @@
       "throttle": "min",
       "when": "before_power_on",
       "hold_ms": 2000,
-      "confirm_signal": "Tone sequence after the 2 s wait; sequence after the button press.",
+      "confirm_signal": "Tone sequence after the 2s wait; sequence after the button press.",
       "steps": [
         "Connect the motor if tones are to be audible. Transmitter on. Throttle to motor-off.",
         "Apply drive power.",
         "Wait 2s or until the ESC sounds its tone sequence.",
         "Operator: press the ESC button (push button under the heat shrink).",
         "The ESC sounds a tone sequence, then the mode series, mode 1 as one tone, mode 2 as two tones, with a pause between series.",
-        "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 3: then move the throttle to full reverse (stick back).",
+        "Move the throttle to full (stick forward) when the desired mode sounds. Mode 3: then move the throttle to full reverse (stick back).",
         "The ESC repeats the mode as tones. Wait for it, then disconnect power (an interrupted run locks the ESC; 8 LED flashes)."
       ]
     },
@@ -98,7 +98,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the throttle to full when the wanted mode sounds."
+      "description": "Move the throttle to full when the desired mode sounds."
     },
     "skip": {
       "throttle": "none",
@@ -108,7 +108,7 @@
     "exit": "Disconnect power after the confirmation.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Program mode 1 (reset to delivery state).",
-    "description": "Throttle at motor-off, apply power, wait 2 s, press the ESC button. The ESC counts modes as tones. Full throttle selects the mode; mode 3 additionally needs a full reverse position."
+    "description": "Throttle at motor-off, apply power, wait 2s, press the ESC button. The ESC counts modes as tones. Full throttle selects the mode; mode 3 additionally needs a full reverse position."
   },
   "items": [
     {
@@ -146,16 +146,16 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2s minimum; the end of the wait is the ESC's tone sequence.",
     "Voltage range, cell count and rated current of the models are not listed in the text read.",
     "What differentiates mode 1 from mode 2 beyond the fixed stick range is not stated.",
     "Button location beyond 'under the heat shrink' is not stated."
   ],
   "notes": [
     "INDEX.csv summarises these as throttle only; the procedure text includes a button press (step 5), so the entry needs a person.",
-    "Kontronik_Kontrol-X_Kolibri-X.pdf gives the KOLIBRI-X example as 90 LV = 90 A on the German side and 60 LV = 60 A on the English side.",
+    "Kontronik_Kontrol-X_Kolibri-X.pdf gives the KOLIBRI-X example as 90 LV = 90A on the German side and 60 LV = 60A on the English side.",
     "Mode 3 (forward and reverse) puts full reverse at the back (Kontronik_Kontrol-X_Kolibri-X.pdf p.4, p.12), so its motor-off start is taken as the middle: entry_throttle mid. The manual does not say 'middle'. Modes 1, 2 and 4 say 'motor off' only and are taken as the back.",
     "Mode 3 moves the stick to full reverse (back) after full forward (Kontronik_Kontrol-X_Kolibri-X.pdf p.4 DE, p.12 EN): after_select min, made STORE after the selection; the manual gives no time.",
     "The manual asks for the power to stay on until the ESC has confirmed the mode: a supply off before that is taken as programming broken off and locks the ESC, shown as 8 LED flashes (Kontronik_Kontrol-X_Kolibri-X.pdf p.4 (DE), p.11 (EN)). The step before_power_off holds the run powered until the operator taps DONE."

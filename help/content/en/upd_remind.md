@@ -6,7 +6,7 @@ order: 65
 
 # Release reminder
 
-The reminder says that a newer panel firmware release is on GitHub. It opens on the [menu](overview.md) after the check at start found one. REMINDER AT START on [Updates](updates.md) switches it; it is on by default.
+The reminder announces a newer panel firmware release on GitHub. It opens on the [menu](overview.md) when the startup check finds one. REMINDER AT START on [Updates](updates.md) enables or disables it; it is enabled by default.
 
 ![The reminder](view:upd-remind)
 
@@ -18,11 +18,11 @@ The reminder says that a newer panel firmware release is on GitHub. It opens on 
 
 ## When the check runs
 
-With the reminder on and a home network kept, the panel checks once after each start. It waits for the splash to be gone, the bench SAFE, the supply output off, no log run open, WI-FI closed and no IOmcu update offered or running. A check that finds no such moment within 10min of the start does not run at that start.
+With the reminder enabled and a saved home network, the panel checks once after each startup. It waits until the splash has closed, the bench is SAFE, the supply output is off, no log run is open, WI-FI is closed, and no IOmcu update is offered or running. If these conditions are not met within 10min of startup, the check is skipped for that startup.
 
-The reminder does not open while the bench is ARMED or an arm waits, while the supply output is on, or while the IOmcu's update question or progress is up. It opens once those have gone and the menu shows.
+The reminder waits while the bench is ARMED or an arm request is pending, the supply output is on, or an IOmcu update question or progress screen is open. It opens when these conditions have cleared and the menu is visible.
 
-A check that finds no newer release or fails shows nothing; its result is on [Updates](updates.md).
+If the check fails or finds no newer release, no reminder appears. Its result is available on [Updates](updates.md).
 
 ## Related pages
 

@@ -32,13 +32,13 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Two low tones then two high tones ('_ _--') about 5 s after power-up.",
+      "confirm_signal": "Two low tones then two high tones ('_ _--') about 5s after power-up.",
       "steps": [
         "Throttle signal at full power.",
         "Connect the drive battery (switch on where fitted).",
         "Wait 5s for the two low plus two high tones.",
         "Brake: move throttle to stop right after these tones.",
-        "Other items: keep full throttle; move throttle to stop while the wanted pattern is sounding (each shown five times)."
+        "Other items: keep full throttle; move throttle to stop while the desired pattern is sounding (each shown five times)."
       ]
     },
     "announce": {
@@ -54,7 +54,7 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the throttle to stop while the wanted pattern is sounding."
+      "description": "Move the throttle to stop while the desired pattern is sounding."
     },
     "skip": {
       "throttle": "none",
@@ -64,7 +64,7 @@
     "exit": "Automatic after the single change. Disconnect the battery before the next change. Powering up with full throttle by mistake: disconnect the battery to avoid a change.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "Full throttle at power-up, two low plus two high tones after 5 s. Stop right after them toggles the brake. Otherwise full throttle is kept while each setting plays as a five-times repeated tone pattern; stop during one pattern stores it. One change per entry."
+    "description": "Full throttle at power-up, two low plus two high tones after 5s. Stop right after them toggles the brake. Otherwise full throttle is kept while each setting plays as a five-times repeated tone pattern; stop during one pattern stores it. One change per entry."
   },
   "items": [
     {
@@ -244,7 +244,7 @@
   "notes": [
     "This 2006 edition has no LiPo autodetect, no 6 to 10 cell options and lists battery defaults per BEC/Opto version; later editions are in hacker-x-pro.",
     "Under-voltage behaviour default is reduce power; acceleration default is fast (p2).",
-    "Power-off threshold 5.5 V or the programmed cutoff, whichever comes first (p5)."
+    "Power-off threshold 5.5V or the programmed cutoff, whichever comes first (p5)."
   ],
   "schema": 1,
   "verified": false

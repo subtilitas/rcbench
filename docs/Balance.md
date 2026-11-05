@@ -2,12 +2,12 @@
 
 <sub>**English** · [Deutsch](Balance-de.md)</sub>
 
-Setting up the balance screen, where the two sensors go, and which sensors
-work.
+This page explains how to set up BALANCE, place the sensors and select
+suitable sensors.
 
-A balance result is a magnitude and an angle. Both come from two sensors: a
-vibration sensor and, optionally, an index sensor giving one pulse per
-revolution. Two placement errors produce a wrong result with no visible sign on
+A balance result consists of a magnitude and an angle. The procedure uses
+a vibration sensor and, optionally, an index sensor that provides one pulse
+per revolution. Two placement errors produce a wrong result with no visible sign on
 screen: a vibration sensor on a compliant mount measures a filtered version of
 the bearing's motion, and an index mark on a blade produces one pulse per blade
 instead of one per revolution.
@@ -20,7 +20,7 @@ Set the blade count (2 to 6) and the rotor type. The screen converts the
 measured angle into a blade reference ("between blades two and three") in
 addition to the angle.
 
-The count's `-` and `+` step it on the press. A tap on the count opens the
+Press `-` or `+` to change the blade count immediately. A tap on the count opens the
 keypad over both cards, 1008 x 428px with keys of 242 x 72px, its foot
 4px above the alert band. OK takes 2 to 6; any other count keeps the
 keypad open and names the range in the warning colour. CANCEL, OK with

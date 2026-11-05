@@ -6,19 +6,20 @@
 on every push to `main`. Edit the files, not the wiki.</sub>
 
 rcbench is a motor, ESC (electronic speed controller) and servo test bench
-built from two processors: an ESP32-P4 touch panel, the Waveshare ESP32-P4 7B
-(user interface on a 1024x600 MIPI DSI (Mobile Industry Processor Interface,
-Display Serial Interface) display, settings, SD card, Wi-Fi through its
-ESP32-C6), and an RP2350 IOmcu (IO microcontroller: measurement, outputs,
-and every protocol with timing requirements). The two are connected over CAN (Controller Area
-Network) at 1Mbit/s.
+with two processors. The Waveshare ESP32-P4 7B panel handles the user
+interface on a 1024x600 MIPI DSI (Mobile Industry Processor Interface,
+Display Serial Interface) display, settings, the SD (Secure Digital) card
+and Wi-Fi through its ESP32-C6. The RP2350 IOmcu (input/output
+microcontroller) handles measurements, outputs and every protocol with
+timing requirements. CAN (Controller Area Network) at 1Mbit/s connects the
+two.
 
 ## Using the bench
 
 | Task | Page |
 | --- | --- |
 | Feature list | [What this is for](Manifest.md) |
-| Choose the parts of a bench and wire them | [Bench configurator](https://subtilitas.github.io/rcbench/) (web page: parts list, list to buy with maker pages and web search links, wiring drawing and pin-to-pin table for the selected setup) |
+| Choose the parts of a bench and wire them | [Bench configurator](https://subtilitas.github.io/rcbench/) (web page: parts list, shopping list with manufacturer pages and web search links, wiring diagram and pin-to-pin table for the selected setup) |
 | Build and flash both boards | [Building](Building.md) |
 | Wire the two boards and verify the bus | [Bringing up the link](Bringup.md) |
 | Flash both boards and run the bench for the first time | [First run on hardware](FirstRun.md) |
@@ -26,7 +27,7 @@ Network) at 1Mbit/s.
 | Balance a propeller or a ducted fan | [Balancing](Balance.md) |
 | Measure a servo's installed limit, or synchronise two servos | [Servo procedures](Servo.md) |
 | Read, back up and change the settings of a KST or Chaservo servo | [Servo programmer for KST and Chaservo servos](ServoProgrammer.md) |
-| Read the settings of a Hitec servo | [Servo programmer for Hitec servos](HitecProgrammer.md) |
+| Read, back up and change the settings of a Hitec servo | [Servo programmer for Hitec servos](HitecProgrammer.md) |
 | Program an ESC through its throttle-stick menu | [Stick programming](StickProgramming.md) |
 | Connect a receiver and inspect its output | [Receiver buses](Receivers.md) |
 | Stop mechanisms and the external circuit they require | [Safety](Safety.md) |

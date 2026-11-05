@@ -14,7 +14,7 @@
       "v_max_mv": 50000,
       "current_a": 120,
       "bec": "switching",
-      "firmware_note": "BEC 5.6 V default, 5 to 6 V adjustable; 5 A continuous, 15 A peak",
+      "firmware_note": "BEC 5.6V default, 5 to 6V adjustable; 5A continuous, 15A peak",
       "spec_source": "Kontronik_Heli-Jive.pdf p.3: input voltage 16-50 V, 120 A continuous; cells: https://www.hobbyexclusiv.de/KONTRONIK-HeliJive-120-HV (dealer, 5-12 LiPo, 16-50V, 120A)"
     }
   ],
@@ -38,20 +38,20 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on 2 of the 3 programming contacts (the German manual: the 2 marked ones).",
-      "action_de": "Jumper auf 2 der 3 Programmierkontakte stecken (deutsches Handbuch: die 2 markierten).",
+      "action_de": "Stecke den Jumper auf 2 der 3 Programmierkontakte (deutsches Handbuch: die 2 markierten).",
       "source": "Kontronik_Heli-Jive.pdf p.6 (DE), p.15 (EN)"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 2s or the tone sequence, within 10s of power-up.",
-      "action_de": "Jumper nach 2s oder der Tonfolge abziehen, innerhalb 10s nach dem Einschalten.",
+      "action_de": "Ziehe den Jumper nach 2s oder der Tonfolge ab, innerhalb von 10s nach dem Einschalten.",
       "starts_menu": true,
       "source": "Kontronik_Heli-Jive.pdf p.6, p.9 (DE), p.15 (EN)"
     },
     {
       "when": "after_programming",
       "action": "The jumper may be fitted again; it can stay on the ESC in use.",
-      "action_de": "Jumper darf wieder gesteckt werden und im Betrieb am ESC bleiben.",
+      "action_de": "Du darfst den Jumper wieder aufstecken und im Betrieb am ESC lassen.",
       "source": "Kontronik_Heli-Jive.pdf p.6"
     }
   ],
@@ -61,7 +61,7 @@
       "throttle": "min",
       "when": "before_power_on",
       "hold_ms": 2000,
-      "confirm_signal": "Tone sequence after the 2 s wait, second sequence after the jumper is removed.",
+      "confirm_signal": "Tone sequence after the 2s wait, second sequence after the jumper is removed.",
       "steps": [
         "Operator: fit the jumper on 2 of the 3 programming contacts. Connect the motor if tones are to be audible.",
         "Transmitter on, receiver on. Throttle stick or switch to the brake position.",
@@ -69,7 +69,7 @@
         "Wait 2s or until the ESC sounds its tone sequence.",
         "Operator: pull the jumper off within 10s after power-up.",
         "The ESC sounds a second tone sequence, then the mode series, mode N as N tones.",
-        "Move the throttle to full when the wanted mode sounds. The ESC confirms with 3 tones.",
+        "Move the throttle to full when the desired mode sounds. The ESC confirms with 3 tones.",
         "To program autorotation, move the stick or switch to the AR position (modes 2 to 6). To leave it off, keep the throttle at full.",
         "The ESC repeats the mode and adds a warning tone if AR is on, then a bell tone. Disconnect power. The jumper may be fitted again and stay on the ESC in flight."
       ]
@@ -87,7 +87,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the throttle or switch to full while the wanted mode series sounds."
+      "description": "Move the throttle or switch to full while the desired mode series sounds."
     },
     "skip": {
       "throttle": "none",
@@ -97,7 +97,7 @@
     "exit": "Disconnect drive power.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Program mode 1 (APM); the manual says mode 1 is usable only as reset.",
-    "description": "Jumper procedure with a 10 s limit for removing the jumper after power-up. Modes 1 to 8 are sounded as 1 to 8 tones in the German text. After selecting a mode the throttle can go to a third (AR) position to store autorotation."
+    "description": "Jumper procedure with a 10s limit for removing the jumper after power-up. Modes 1 to 8 are sounded as 1 to 8 tones in the German text. After selecting a mode the throttle can go to a third (AR) position to store autorotation."
   },
   "items": [
     {
@@ -172,18 +172,18 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2s minimum; the end of the wait is the ESC's tone sequence.",
     "Whether mode 9 and 10 tones are sounded is not stated: both manuals state the series only to 8 tones in the procedure text.",
-    "AR position range (the transmitter example uses 15 to 20 %) and the tolerance the ESC accepts are not stated as a window.",
+    "AR position range (the transmitter example uses 15 to 20%) and the tolerance the ESC accepts are not stated as a window.",
     "Item number 2 is an index chosen here; the ESC does not sound an item number for AR."
   ],
   "notes": [
     "Kontronik_Heli-Jive.pdf (German) lists modes 1 to 9. Kontronik_Heli-Jive_es.pdf adds mode 10 (LRPM).",
-    "Soft start range: German text 8 to 25 s, Spanish text 8 to 12 s.",
+    "Soft start range: German text 8 to 25s, Spanish text 8 to 12s.",
     "Both manuals state 'mode 8: eight tones' as the end of the series in the procedure, while the tables list modes 9 and 10.",
-    "The AR step is not an own mode; it is added to modes 2 to 6.",
-    "The jumper is pulled within 10 s of connecting the drive battery (Kontronik_Heli-Jive.pdf p.6, p.9 DE; p.15, p.18 EN)."
+    "The AR step is not a separate mode; it is added to modes 2 to 6.",
+    "The jumper is pulled within 10s of connecting the drive battery (Kontronik_Heli-Jive.pdf p.6, p.9 DE; p.15, p.18 EN)."
   ]
 }

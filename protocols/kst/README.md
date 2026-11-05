@@ -1,18 +1,20 @@
 # kst
 
-Programming KST and Chaservo servos over the signal wire. The two brands
-share one protocol and one register set. The core holds frame coding, reply
-decoding, the register model, limits, write planning, the session state
-machine and the configuration file. The pin driver puts the wire on one RP2350 pin.
+This module programs KST and Chaservo servos over the signal wire. Both
+brands use the same protocol and register set. The core provides frame
+encoding, reply decoding, the register model, limits, write planning, the
+session state machine and configuration files. The pin driver uses one
+RP2350 pin.
 
 | Part | Files | Depends on |
 |---|---|---|
 | Core | `kst_wire.c`, `kst_reg.c`, `kst_limits.c`, `kst_plan.c`, `kst_session.c`, `kst_pio.c`, `kst_file.c`, 7 headers under `include/` | C11 standard headers |
 | RP2350 pin driver | `rp2350/kst_line.pio`, `rp2350/kst_line.c`, `rp2350/kst_line.h` | the core; pico-sdk `hardware_pio`, `hardware_dma`, `hardware_gpio`, `hardware_clocks`, `hardware_timer` |
 
-A driver with 3 functions (`kst_driver_t`) connects the core to a pin;
-`rp2350/` holds the one for the RP2350. Neither part has been run on
-hardware: no frame of this code has been sent to a servo.
+A driver with 3 functions (`kst_driver_t`) connects the core to a pin.
+The RP2350 implementation is in `rp2350/`. Neither the core nor the pin
+driver has been tested on hardware. No frame from this code has been sent
+to a servo.
 
 ## Constraints
 
@@ -86,9 +88,9 @@ no checksum.
 | Gap from the end of a window to the next frame | 3ms; 20ms after a window without a valid reply; 3ms inside the entry sequence |
 | Entry | line low 100ms, read 0x01, sync burst of 64 pulses, read 0x01 |
 
-Every failed check of the decoder has its own result code (`kst_rx_t`), so a
-log tells a silent servo from a late reply, a wrong bit rate, a broken cell
-and a lost edge.
+Each failed decoder check has a distinct result code (`kst_rx_t`). A
+log can therefore distinguish a silent servo, a late reply, an incorrect
+bit rate, an invalid cell and a missing edge.
 
 The servo's signal pin is a microcontroller GPIO (general-purpose
 input/output). The high level of its reply is at most 5V and typically
@@ -96,7 +98,7 @@ input/output). The high level of its reply is at most 5V and typically
 
 | Master | Rating of its pin | On the wire |
 | --- | --- | --- |
-| RP2350 GPIO0 to 39, IOVDD (input/output supply) at 3.3V | 5.5V | no level shifter, no clamp |
+| Fault-tolerant RP2350 digital GPIO, IOVDD (input/output supply) at 3.3V | 5.5V | no level shifter, no clamp |
 | The same pin, IOVDD at 0V | 3.63V | a servo that drives the wire at 5V exceeds the rating |
 
 What the servo's pin does at idle while the master is unpowered is not
@@ -164,10 +166,11 @@ ends the operation with nothing sent.
 and soft rules a target breaks. A plan whose target breaks a hard rule is
 not built. Soft rules are for the caller to show and confirm.
 
-A write plan runs as: read all registers and compare with the plan's start
-image; per write the frame and 2 reads of that register; after the last
-write a read of all 32 registers against the target. A write that does not
-take after 3 attempts is undone back to the last consistent image. The
+A write plan starts by reading all registers and comparing them with its
+starting image. Each write sends the frame and reads that register twice.
+After the last write, the session reads all 32 registers and compares
+them with the target. If a write fails after 3 attempts, the session tries
+to restore the last consistent image. The
 result codes tell a plan that changed nothing (`KST_SES_ERR_WRITE_FAILED`),
 one that was undone (`KST_SES_ERR_ROLLED_BACK`) and one whose undo failed
 (`KST_SES_ERR_TORN`). After `KST_SES_ERR_TORN`, `KST_SES_ERR_UNINTENDED` or
@@ -181,11 +184,11 @@ operation that runs. An edit, a write and a restore end with
 then is for the new backup. The backup of the servo before the power cycle
 is the caller's to keep.
 
-The caller's part: stop PWM (pulse-width modulation) on the pin before
-entry, keep it stopped until the servo's supply was off, check the supply
-voltage, store the backup image and a journal of the running plan
-(`step_index`), and ask for the confirmations of soft rules and of an
-unchecked restore.
+The caller must stop PWM (pulse-width modulation) on the pin before
+entry and keep it stopped until the servo supply has been switched off.
+It must also check the supply voltage, store the backup image and a
+journal of the active plan (`step_index`), and request confirmation for
+soft rules and an unchecked restore.
 
 ## RP2350 pin driver
 
@@ -263,15 +266,16 @@ initialised before the `add_subdirectory()`; it is an INTERFACE library, so
 chip links `rcbench_kst` and supplies its own `kst_driver_t`. Nothing in
 the folder names a file outside it.
 
-The caller's part on the pin: stop every other use of the pin before
-`kst_line_open()`, and hold it stopped until the servo's supply was off.
+Before `kst_line_open()`, the caller must stop every other use of the
+pin. Those uses remain stopped until the servo supply has been switched
+off.
 
 ## Configuration file
 
-`kst_file.h` turns the 32 registers of a servo into a text file and back.
-The module works on buffers the caller holds: no file access, no heap, no
-`stdio`. A written file has 35 lines and fewer than 1024 bytes; the one
-below has 808. `kst_file_parse()` refuses a text above 3432 bytes
+`kst_file.h` formats the servo's 32 registers as text and parses that
+text back into an image. It uses caller-owned buffers, with no file
+access, heap allocation or `stdio`. A formatted file has 35 lines and
+fewer than 1024 bytes; the example below has 808. `kst_file_parse()` refuses a text above 3432 bytes
 (`KST_FILE_MAX`). It holds one `kst_file_t`, 320 bytes, on its stack; a
 `kst_file_load_t` is 72 bytes with arm-none-eabi-gcc 14.2 and 88 bytes with
 gcc on x86-64.
@@ -363,12 +367,12 @@ every line end keeps the checksum valid. The checksum line may lack its
 line end, and blank lines may follow it. Any other byte behind it refuses
 the file (`KST_FILE_ERR_TRAILING`).
 
-Both kinds take the 3 bytes EF BB BF, the byte order mark of UTF-8 (8-bit
-Unicode Transformation Format), in front of the header. The mark is not
-part of the checksum.
+Both verified and edited files accept the 3 bytes EF BB BF, the UTF-8
+(8-bit Unicode Transformation Format) byte order mark, before the header.
+The mark is excluded from the checksum.
 
-A person changes a file by removing the checksum line, or writes one from
-nothing:
+To edit a file, remove its checksum line and change the field values.
+An edited file can also be written from scratch:
 
 ```text
 KST servo configuration, format 2
@@ -414,8 +418,8 @@ verified file has `named` equal to `fields`.
 
 ### Loading
 
-`kst_file_load()` holds a parsed file against the image read from the
-connected servo and gives the image to write.
+`kst_file_load()` checks a parsed file against the image read from the
+connected servo and returns the target image.
 
 1. Type. The caller passes the servo's type as the operator set it. A
    file that states a type loads into a servo of that type and into no
@@ -517,12 +521,12 @@ No frame of this code has been sent to a servo, and the pin driver has not
 run on a chip. The tests run against the servo and line model in
 `test/host/kst_sim.h`.
 
-Before a write to a servo is relied on, a bench has to measure, on the
-port path the servo is connected through:
+Before relying on writes to a servo, measure the following through the
+same port and wiring as the intended installation:
 
-1. The line's electricals: the levels and edges of a frame and of a reply at
-   the connector, the pull-down, and the time the pad and the servo both
-   drive.
+1. Electrical behaviour: frame and reply levels and edges at the
+   connector, the pull-down, and the duration for which the pad and servo
+   drive the line simultaneously.
 2. The motor's state in programming mode. A Chaservo acted on a written
    LEFT ANGLE and RIGHT ANGLE only after a power cycle; other registers
    and KST servos are not measured.

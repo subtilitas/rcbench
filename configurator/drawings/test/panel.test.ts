@@ -79,7 +79,7 @@ test('the pad kinds and rail voltages are the ones of k_pico_pads and k_pico_pin
   assert.ok(Object.keys(PANEL_RAILS).every((name) => CATALOGUE.pads.some((p) => p.name === name)));
 });
 
-test('every ring of copro.svg lands on its pad of the grid to 0.01 mm', () => {
+test('every ring of copro.svg lands on its pad of the grid to 0.01mm', () => {
   const anchors = JSON.parse(readFileSync(ANCHORS_FILE, 'utf8')) as { files: Record<string, { pins: Record<string, { x: number; y: number }> }> };
   const pins = anchors.files['copro.svg']!.pins;
   for (let n = 1; n <= 40; n++) {

@@ -14,7 +14,7 @@
       "v_max_mv": 25000,
       "current_a": 40,
       "bec": "switching",
-      "firmware_note": "BEC 2.5 A continuous, about 3 A for 10 s; 50 A limited current",
+      "firmware_note": "BEC 2.5A continuous, about 3A for 10s; 50A limited current",
       "spec_source": "Kontronik_Jazz.pdf p.3 (German) / p.13 (English): input voltage 6-25 V, continuous current in type table; cell count not stated"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": 25000,
       "current_a": 55,
       "bec": "switching",
-      "firmware_note": "BEC 2.5 A / 3 A; 65 A limited current (German side), 70 A (English side)",
+      "firmware_note": "BEC 2.5A / 3A; 65A limited current (German side), 70A (English side)",
       "spec_source": "Kontronik_Jazz.pdf p.3 (German) / p.13 (English): input voltage 6-25 V, continuous current in type table; cells: https://www.modellsport.ch/Hubschrauber/Regler-BEC/Kontronik/Kontronik-JAZZ-55-LV-Regler.html (dealer, 2 bis 6 LiPo)"
     },
     {
@@ -38,7 +38,7 @@
       "v_max_mv": 25000,
       "current_a": 80,
       "bec": "switching",
-      "firmware_note": "BEC 4 A / 5 A; 100 A limited current",
+      "firmware_note": "BEC 4A / 5A; 100A limited current",
       "spec_source": "Kontronik_Jazz.pdf p.3 (German) / p.13 (English): input voltage 6-25 V, continuous current in type table; cells: http://www.deheli.ch/shop/xtcommerce/product_info.php/info/p1089_Regler-Jazz-80-LV.html (dealer, Zellenzahl LiPo 2-6)"
     },
     {
@@ -50,7 +50,7 @@
       "v_max_mv": 13000,
       "current_a": 15,
       "bec": "switching",
-      "firmware_note": "20 A short term; BEC 1.5 A continuous",
+      "firmware_note": "20A short term; BEC 1.5A continuous",
       "spec_source": "Kontronik_MiniJazz.pdf p.3: 2-3 LiPo, 5.5-13 V, 15 A continuous"
     },
     {
@@ -86,20 +86,20 @@
     {
       "when": "before_power",
       "action": "JAZZ: fit the jumper on any 2 of the 3 programming contacts. MINIJAZZ has a button instead.",
-      "action_de": "JAZZ: Jumper auf 2 beliebige der 3 Programmierkontakte stecken. MINIJAZZ hat stattdessen einen Taster.",
+      "action_de": "JAZZ: Stecke den Jumper auf 2 beliebige der 3 Programmierkontakte. MINIJAZZ hat stattdessen einen Taster.",
       "source": "Kontronik_Jazz.pdf p.6 (DE), p.15 (EN); Kontronik_MiniJazz.pdf p.6"
     },
     {
       "when": "before_menu",
       "action": "After 2s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.",
-      "action_de": "Nach 2s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster drücken.",
+      "action_de": "Nach 2s oder der Tonfolge: JAZZ: Ziehe den Jumper ab. MINIJAZZ: Drücke den Taster.",
       "starts_menu": true,
       "source": "Kontronik_Jazz.pdf p.6; Kontronik_MiniJazz.pdf p.6 (DE), p.15 (EN)"
     },
     {
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
-      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "action_de": "Berühre nichts. Warte, bis der ESC den Modus als Töne vollständig wiederholt hat, und tippe dann ERLEDIGT.",
       "source": "Kontronik_Jazz.pdf p.6 (DE), p.15-16 (EN); Kontronik_MiniJazz.pdf p.6, p.15-16"
     }
   ],
@@ -109,7 +109,7 @@
       "throttle": "min",
       "when": "before_power_on",
       "hold_ms": 2000,
-      "confirm_signal": "Three-tone sequence after the 2 s wait, a second three-tone sequence after the jumper is removed.",
+      "confirm_signal": "Three-tone sequence after the 2s wait, a second three-tone sequence after the jumper is removed.",
       "steps": [
         "Operator: fit the jumper on any 2 of the 3 programming contacts. Connect the motor to the ESC if the tones are to be audible.",
         "Switch the transmitter on. Throttle to the brake position (stick back). For modes 6 and 8 use the motor-off position instead.",
@@ -117,8 +117,8 @@
         "Wait 2s or until the ESC sounds its three-tone sequence (pictogram in the manual).",
         "Operator: pull the jumper off.",
         "The ESC sounds a second three-tone sequence, then the mode series 1, 2, 3 ... 9 with a pause between series.",
-        "Move the throttle to full (stick forward) while the wanted mode series sounds.",
-        "Mode 2 only: move the throttle to the wanted separate motor-off position after the ESC's confirmation tones. Modes 6 and 8: move the throttle to maximum brake (stick back).",
+        "Move the throttle to full (stick forward) while the desired mode series sounds.",
+        "Mode 2 only: move the throttle to the desired separate motor-off position after the ESC's confirmation tones. Modes 6 and 8: move the throttle to maximum brake (stick back).",
         "The ESC repeats the stored mode as a check. Then disconnect drive power."
       ]
     },
@@ -135,7 +135,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the throttle from the starting position to full while the series for the wanted mode is sounding."
+      "description": "Move the throttle from the starting position to full while the series for the desired mode is sounding."
     },
     "skip": {
       "throttle": "none",
@@ -145,7 +145,7 @@
     "exit": "Disconnect drive power after the control output.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Program mode 1 (APM). This clears every stored setting.",
-    "description": "Fit the jumper, set the stick, apply power and wait for the tone sequence, then pull the jumper. The ESC cycles through the modes as 1 to 9 tones. Moving the throttle to full during the wanted series stores that mode. One mode is stored per power cycle."
+    "description": "Fit the jumper, set the stick, apply power and wait for the tone sequence, then pull the jumper. The ESC cycles through the modes as 1 to 9 tones. Moving the throttle to full during the desired series stores that mode. One mode is stored per power cycle."
   },
   "items": [
     {
@@ -208,16 +208,16 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2s minimum; the end of the wait is the ESC's tone sequence.",
     "Time allowed between connecting power and removing the jumper is not stated for JAZZ / MINIJAZZ.",
     "MINIJAZZ 20 LV continuous current is not given in the manual.",
-    "Cell count range of JAZZ 40/55/80 LV is not stated; only the 6 to 25 V input range.",
+    "Cell count range of JAZZ 40/55/80 LV is not stated; only the 6 to 25V input range.",
     "Whether the symbols in step 4 are ascending or descending is not readable in the pictogram."
   ],
   "notes": [
-    "Kontronik_Jazz.pdf lists the JAZZ 55 LV limited current as 65 A on the German side and 70 A on the English side.",
+    "Kontronik_Jazz.pdf lists the JAZZ 55 LV limited current as 65A on the German side and 70A on the English side.",
     "Kontronik_MiniJazz.pdf follows the JAZZ procedure and mode list; its type table lists 15 LV and 20 LV only.",
     "INDEX.csv names 'Jazz 40-6-18'; the manual uses 'JAZZ 40 LV'.",
     "MINIJAZZ is entered with a button ('Taster drücken', Kontronik_MiniJazz.pdf p.6 DE; 'Push Taster' p.15 EN), not a jumper; the manual's 'Jumper' is a glossary entry only.",

@@ -110,13 +110,13 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Two low tones then two high tones ('_ _ - -') about 5 s after power-up.",
+      "confirm_signal": "Two low tones then two high tones ('_ _ - -') about 5s after power-up.",
       "steps": [
         "Throttle signal at full power.",
         "Connect the drive battery (switch on where fitted).",
         "Wait 5s for the two low plus two high tones.",
         "Brake: move throttle to stop right after these tones (2010 edition) or within 5s of them (2004 edition).",
-        "Other items: keep full throttle; each setting plays a tone pattern five times; move throttle to stop while the wanted pattern is sounding."
+        "Other items: keep full throttle; each setting plays a tone pattern five times; move throttle to stop while the desired pattern is sounding."
       ]
     },
     "announce": {
@@ -127,12 +127,12 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": 5,
-      "description": "Each selectable setting has its own tone pattern, shown five times in a row, then the next setting follows in the order of the list (battery type, under-voltage behaviour, acceleration, timing, frequency, rotation reverse). One pattern identifies item and value together: for example three low-then-short beeps for 3 LiPo cells, three high tones for hard timing, falling tones for 8 kHz. Tone symbols as printed: '.' short beep, '-' short high tone, '_' long tone, '\\' falling tone, '/' rising tone, 'V' high-low-high melody, 'W' double V. A pattern ends after its fifth repetition. Whether the list loops is not stated."
+      "description": "Each selectable setting has its own tone pattern, shown five times in a row, then the next setting follows in the order of the list (battery type, under-voltage behaviour, acceleration, timing, frequency, rotation reverse). One pattern identifies item and value together: for example three low-then-short beeps for 3 LiPo cells, three high tones for hard timing, falling tones for 8kHz. Tone symbols as printed: '.' short beep, '-' short high tone, '_' long tone, '\\' falling tone, '/' rising tone, 'V' high-low-high melody, 'W' double V. A pattern ends after its fifth repetition. Whether the list loops is not stated."
     },
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the throttle to stop while the wanted pattern is sounding."
+      "description": "Move the throttle to stop while the desired pattern is sounding."
     },
     "skip": {
       "throttle": "none",
@@ -142,7 +142,7 @@
     "exit": "Exit is automatic after the single change. The motor then runs on throttle movement. Disconnect the battery before the next change.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "Full throttle at power-up gives two low plus two high tones after 5 s. Stop right after them toggles the brake. Otherwise full throttle is kept while each setting plays as a five-times repeated tone pattern; stop during one pattern stores it. One change per entry."
+    "description": "Full throttle at power-up gives two low plus two high tones after 5s. Stop right after them toggles the brake. Otherwise full throttle is kept while each setting plays as a five-times repeated tone pattern; stop during one pattern stores it. One change per entry."
   },
   "items": [
     {
@@ -287,16 +287,16 @@
     "Whether the pattern list loops after the last pattern: not stated.",
     "Exact length of the brake window: 'immediately' (2010) versus 'within 5 s' (2004).",
     "Whether '-----' in the timing row means five groups of one tone (read here) or a single run: the layout in the manual is ambiguous.",
-    "Power-off threshold of the ESC itself: 5.8 V stated, or the programmed cutoff."
+    "Power-off threshold of the ESC itself: 5.8V stated, or the programmed cutoff."
   ],
   "notes": [
-    "Brake window: Hacker_X-Series_old_X-Manual.pdf p4 says within 5 s after the first tones; Hacker_X-Controller_de.pdf p4 says immediately after them.",
-    "3-cell cutoff: 7.8 V (Hacker_X-Series_old_X-Manual.pdf p4) versus 8.3 V (Hacker_X-Controller_de.pdf p4); default battery type is 3 LiPo, about 7.8 V in the 2004 edition and about 8.3 V in the 2010 edition.",
+    "Brake window: Hacker_X-Series_old_X-Manual.pdf p4 says within 5s after the first tones; Hacker_X-Controller_de.pdf p4 says immediately after them.",
+    "3-cell cutoff: 7.8V (Hacker_X-Series_old_X-Manual.pdf p4) versus 8.3V (Hacker_X-Controller_de.pdf p4); default battery type is 3 LiPo, about 7.8V in the 2004 edition and about 8.3V in the 2010 edition.",
     "4 and 5 LiPo cells exist only in the 2010 edition and only on Opto versions.",
     "The 2004 edition prints the 2-cell pattern with six groups; read here as five.",
-    "Model table of the 2004 edition lists X-7 to X-30; the 2010 edition adds X-5, X-40, X-40 Opto. Voltage maxima are 4.2 V per cell times the highest LiPo count.",
+    "Model table of the 2004 edition lists X-7 to X-30; the 2010 edition adds X-5, X-40, X-40 Opto. Voltage maxima are 4.2V per cell times the highest LiPo count.",
     "The manual says the bench supply is not allowed: use batteries only.",
-    "Factory defaults: brake off, 3 LiPo, reduce power, acceleration delayed, timing auto, 8 kHz.",
+    "Factory defaults: brake off, 3 LiPo, reduce power, acceleration delayed, timing auto, 8kHz.",
     "Hacker_X-Series_old_X-Manual.pdf carries a PDF mailer banner on each page."
   ],
   "schema": 1,

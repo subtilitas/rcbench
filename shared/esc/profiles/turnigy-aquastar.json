@@ -35,7 +35,7 @@
       "v_max_mv": 50400,
       "current_a": 240,
       "bec": "none",
-      "firmware_note": "the settings table and flowchart are labelled HV 240A",
+      "firmware_note": "The settings table and flowchart are labelled HV 240A.",
       "cell_type": "lipo",
       "spec_source": "Turnigy_Aquastar.pdf p.2"
     }
@@ -54,7 +54,7 @@
     {
       "when": "at_power_up",
       "action": "Switch the ESC's own switch on, with the throttle at MAX and the drive battery connected.",
-      "action_de": "Den Schalter des ESC einschalten, mit Throttle auf MAX und angestecktem Antriebsakku.",
+      "action_de": "Schalte den ESC ein, wenn Throttle auf MAX steht und der Antriebsakku angesteckt ist.",
       "source": "Turnigy_Aquastar.pdf p.3, p.12"
     }
   ],
@@ -66,7 +66,7 @@
       "hold_ms": null,
       "confirm_signal": "3 beeps, then 4 beeps, then 7 beeps",
       "steps": [
-        "Transmitter on, throttle at max, ESC switch off, receiver powered separately",
+        "Switch the transmitter on; set the throttle to maximum, ESC switch off, receiver powered separately",
         "Switch the ESC on: 3 beeps",
         "4 beeps follow (the throttle calibration window; do not move the throttle)",
         "7 beeps: programming mode entered"
@@ -90,7 +90,7 @@
     "value_select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Option: move throttle to the highest position after the wanted option's beeps."
+      "description": "Option: move throttle to the highest position after the desired option's beeps."
     },
     "skip": {
       "throttle": "none",
@@ -100,7 +100,7 @@
     "exit": "Item 10 (10 beeps) exits and the ESC is ready ('GO').",
     "changes_per_entry": "many",
     "reset_to_defaults": null,
-    "description": "Throttle max, ESC switched on: 3 beeps, 4 beeps, 7 beeps. Items 1-10 loop as N beeps. Throttle to lowest picks an item; its options play as 1st, 2nd, ... beeps; throttle to highest picks one and 3 beeps confirm. Item 10 exits."
+    "description": "Throttle at maximum, ESC switched on: 3 beeps, 4 beeps, 7 beeps. Items 1-10 loop as N beeps. Throttle to lowest picks an item; its options play as 1st, 2nd, ... beeps; throttle to highest picks one and 3 beeps confirm. Item 10 exits."
   },
   "items": [
     {
@@ -280,9 +280,9 @@
     "How the 4 beeps before the 7 beeps differ from the calibration 4 long beeps is not stated."
   ],
   "notes": [
-    "Default conflict for item 1: the settings table and flowchart mark Auto; the settings text marks 12.0 V as default and says the HV 240A is preset to 12.0 V. No default flag set on item 1.",
-    "The settings table lists 9.0 V (3S) for LVC; the text and flowchart list 12.0 V as the first fixed value. The flowchart numbering is used.",
-    "Brake: the text lists a hard brake (option 3, 70 %); table and flowchart list only disabled and soft.",
+    "Default conflict for item 1: the settings table and flowchart mark Auto; the settings text marks 12.0V as default and says the HV 240A is preset to 12.0V. No default flag set on item 1.",
+    "The settings table lists 9.0V (3S) for LVC; the text and flowchart list 12.0V as the first fixed value. The flowchart numbering is used.",
+    "Brake: the text lists a hard brake (option 3, 70%); table and flowchart list only disabled and soft.",
     "Items 2, 7 and 9 are marked None/reserve in the flowchart."
   ],
   "schema": 1,

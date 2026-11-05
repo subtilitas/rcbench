@@ -2,9 +2,9 @@
 
 <sub>**English** · [Deutsch](Bringup-de.md)</sub>
 
-How to verify that frames cross the CAN (Controller Area Network) bus between
-the two boards, and how to read the report. The wiring is in [The
-link](Link.md).
+This page explains how to check frame transfer over the CAN (Controller
+Area Network) bus between the two boards and interpret the diagnostic
+report. For wiring, see [The link](Link.md).
 
 ## Echo self-test
 
@@ -15,20 +15,22 @@ not work, the fault is above the wire.
 
 ### IOmcu
 
-Nothing to configure. The IOmcu starts CAN at boot, prints whether the
-controller answered, and echoes probes permanently. The echo costs one register
-read per loop and answers only frames addressed to a page the map does not use.
+No configuration is required. The IOmcu starts CAN at boot, reports
+whether the controller answered, and remains available to echo probes.
+The echo check costs one register read per loop. It answers only frames
+addressed to a page that the page map does not use.
 
 Boot output on the IOmcu's USB (Universal Serial Bus) console, repeated
 every 3s:
 
     rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
 
-`requests served` counts link page requests the panel sent and this end
-answered; `self-test echoes` counts probe frames and is 0 unless the panel's
-CAN self-test is running. `tx_drop` counts reply frames this end gave up
-after 1000 tries at a full transmit buffer; the panel then waits out its
-exchange. The first two together say which end has stopped:
+`requests served` counts link page requests sent by the panel and
+answered by the IOmcu. `self-test echoes` counts probe frames and is 0
+unless the panel's CAN self-test is running. `tx_drop` counts reply
+frames abandoned after 1000 attempts to use a full transmit buffer; the
+panel then waits for its exchange to time out. Together, the first two
+counters indicate which end has stopped:
 
 | Requests | Panel says | Reading |
 | --- | --- | --- |
@@ -36,15 +38,17 @@ exchange. The first two together say which end has stopped:
 | standing still | `NO LINK` | nothing is arriving — the panel has stopped transmitting, or the wiring is open |
 | climbing | `NO LINK` | requests arrive and the answers do not get back |
 
-`CAN did not answer on SPI` means the controller did not report configuration
-mode after reset. The fault is on SPI (module not fitted, wiring on GPIO 8 to
-GPIO 12), not on the CAN bus.
+`CAN did not answer on SPI` means the controller did not report
+configuration mode after reset. The fault is on the SPI (Serial
+Peripheral Interface) connection: the module is not fitted or its wiring
+on GPIO 8 to GPIO 12 is faulty. This message does not indicate a CAN bus
+fault.
 
 ### Panel
 
-The test runs at every start-up, inside the splash and before the identity
-poll: a broken bus is then diagnosed as a broken bus rather than as an
-identity that never answered.
+The test runs at every start-up, during the splash and before the
+identity poll. This lets the panel diagnose a bus fault before waiting
+for an identity response.
 
 First the panel asks the IOmcu for its status, for up to 5000ms, and starts
 the test at the first answer. The IOmcu opens CAN after its supply boot-off,
@@ -101,9 +105,11 @@ were corrupted on the wire (termination, timing, length). Frames lost with zero
 bus errors arrived intact and were dropped by a receiver that did not read in
 time.
 
-If the transmit error counter reaches 128 during the test, no other node is
-acknowledging: the IOmcu is not on the bus at all. The test reports this
-once, before the run is over.
+If the transmit error counter reaches 128 during the test, the firmware
+reports an early warning once. Missing acknowledgements are a possible
+cause, but other transmission errors also raise the counter. This reading
+alone does not establish that the IOmcu is absent from the bus; see
+[Bus off](Link.md#bus-off).
 
 ### The bus-fault screen
 
@@ -114,16 +120,16 @@ fitted, and both look like a bench that shows no numbers.
 
 ![Frames cross and arrive changed](img/busfault.png)
 
-The verdict is the heading, the list under it is what to check in the order
-that costs least to check, and the right-hand column is what both ends
-counted. `returned` is green when anything came back at all; `BUS OFF` means
-this panel has stopped transmitting.
+The heading shows the verdict. The list below it gives checks in order
+of increasing effort, and the right-hand column shows both ends'
+counters. `returned` is green if any frame came back; `BUS OFF` means
+the panel has stopped transmitting.
 
 ![Nothing came back](img/busfault-silent.png)
 
-Leaving it takes a two-second hold on the button across the bottom, the same
-gesture and the same fade as ARM. A screen that says the bench cannot be
-trusted should not be dismissible by a touch that could have been a sleeve.
+To leave this screen, hold the button across the bottom for two seconds.
+It uses the same gesture and fade as ARM. The hold is intended to prevent a brief
+contact, such as a sleeve touching the screen, from dismissing the fault.
 
 Acknowledging does not repair anything and does not disable the test: the
 bench runs in simulation, nothing drives an output, and the test runs again at
@@ -135,16 +141,18 @@ bits and long runs of one level are what a marginal bus fails on.
 
 ## Link report
 
-After bring-up the panel polls the IOmcu's identity page every second
-until it answers, then polls the bench page at 20Hz and the status page every
-500ms. Every 5s while the link is down, and once a minute while it is up, the
-panel prints a diagnosis. The control task, which beats the heartbeat,
-takes the counters and hands them to the logger task, which formats and
-prints the lines: up to 7 lines take 50ms and more on the console, and the
-heartbeat's limit is 150ms. A queue of 2 reports holds them; with the
-logger held by the card and the queue full, the control task prints the
-report itself, and no line is dropped. The heartbeat gap with the report
-off the control task is not measured.
+After bring-up, the panel polls the IOmcu's identity page every second
+until it answers. It then polls the bench page at 20Hz and the status page
+every 500ms. The panel prints a diagnosis every 5s while the link is down
+and once a minute while it is up.
+
+The control task, which generates the heartbeat, collects the counters
+and passes them to the logger task for formatting and output. A report
+of up to 7 lines takes 50ms or more on the console; the heartbeat limit
+is 150ms. The queue holds 2 reports. If card access blocks the logger
+and the queue is full, the control task prints the report itself so that
+no line is dropped. The heartbeat gap when the logger prints the report
+is not measured.
 
     I (…) rcbench: LINK answers arrive too late
     W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
@@ -153,17 +161,20 @@ off the control task is not measured.
     I (…) rcbench:   iomcu  frames 36000 crc 0 resync 0 refused 0
     I (…) rcbench:   round trip min 620 avg 700 max 1400 us
 
-The diagnosis and the `last` line cover the window since the previous
-report: 60s while the link is up, 5s while it is down, and at the first
-report the time since start-up. The `panel` and `iomcu` lines are totals
-since start-up. One burst of late answers at an IOmcu drop is the
-diagnosis of the report that covers it; the next report of a healthy link
-says `link healthy`. A window of fewer than 4 polls says `link healthy`; a
-link that is down is probed about once a second, so its 5s window holds 4
-or 5 polls. An IOmcu counter below its figure at the previous report counts
-from 0 again (the IOmcu restarted, or a 16-bit status register wrapped), and
-the window takes its new value. The IOmcu's `crc` and `resync` are levels,
-not counts, and appear in the `last` line as read: see below.
+The diagnosis and the `last` line cover the interval since the previous
+report: 60s while the link is up, 5s while it is down, and the time since
+start-up for the first report. The `panel` and `iomcu` lines contain
+totals since start-up. A burst of late replies during an IOmcu outage
+affects the report for that interval; the next report says `link healthy`
+if the link has recovered.
+
+An interval with fewer than 4 polls also says `link healthy`. A link that
+is down is probed about once a second, so its 5s interval contains 4 or
+5 polls. If an IOmcu counter is lower than in the previous report, the
+calculation assumes it restarted from 0 and uses its new value. This
+happens after an IOmcu restart or a 16-bit status register wrap. The
+IOmcu's `crc` and `resync` are current levels rather than cumulative
+counts; the `last` line shows them as read, as explained below.
 
 | Diagnosis | Meaning |
 | --- | --- |
@@ -174,9 +185,9 @@ not counts, and appear in the `last` line as read: see below.
 | `answers arrive too late` | a reply slower than the poll timeout, or a stalled far end |
 | `works, and not every time` | marginal timing, or a poll period tighter than the round trip |
 
-`nack` in the panel line counts requests the IOmcu answered with a NACK
-(negative acknowledge). A NACK is an answer: the link works, and the page
-kept what it held ([Frames](Link.md#frames)). A set-up from SETUP
+`nack` in the panel line counts requests that the IOmcu answered with a
+NACK (negative acknowledgement). A NACK confirms communication over the
+link but leaves the page's values unchanged ([Frames](Link.md#frames)). A set-up from SETUP
 that a page refuses is one each: one write per refused value,
 not written again until the value changes, so stepping through rows on SETUP
 counts one NACK for each value the IOmcu refuses (Tap gap 2ms with Tap
@@ -196,8 +207,8 @@ received and refused to decode since its power-up (`LINK_ST_REFUSED_LO` and
 
 ## Why the IOmcu last started
 
-At start-up and every 3s after it, the IOmcu's console names why the IOmcu
-last started, with every raw value:
+At start-up and every 3s afterwards, the IOmcu console reports the cause
+of the last start, including all raw values:
 
     rcbench-iomcu: reset FLASH_UPDATE (chip_reset 0x00010000 reason 0x1 boot 0x010104FF params 0x101FD000 0x00000000 scratch 0x101FD000 0x00000000)
 
@@ -242,9 +253,9 @@ source of the RP2350 boot ROM and of picotool 2.x.
 
 ## What to record
 
-The round trip, both ends' error counters, and the IOmcu's overflow
-count. The round trip sets what a poll period has to clear; the counters say
-whether the bus or the software was the limit.
+Record the round-trip time, both ends' error counters and the IOmcu's
+overflow count. The poll period must allow for the round trip. The
+counters indicate whether the bus or the software limited communication.
 
 With both boards powered, also confirm on a scope that GPIO28 (`PANEL_HEARTBEAT_PIN`) edges at the
 rate [Safety](Safety.md) specifies. GPIO28 is IO28 of the 12-pin header P3.
