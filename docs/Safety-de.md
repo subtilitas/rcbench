@@ -2,8 +2,8 @@
 
 <sub>[English](Safety.md) · **Deutsch**</sub>
 
-Wie der Prüfstand anhält, welche externe Schaltung der Entwurf voraussetzt,
-und welche Verhaltensweisen Absicht sind.
+Diese Seite beschreibt, wie der Prüfstand anhält, welche externe Schaltung
+der Entwurf voraussetzt und welche Verhaltensweisen beabsichtigt sind.
 
 Das Projekt ist in Entwicklung, und seine Funktionen sind nicht auf Hardware
 verifiziert.
@@ -12,18 +12,19 @@ verifiziert.
 
 | Mechanismus | Deckt ab | Stand |
 | --- | --- | --- |
-| Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
+| Der Heartbeat bleibt aus | das Panel hängt, wird zurückgesetzt, hat einen Brown-out oder ist abgesteckt; STOP ist gedrückt | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des IOmcu, 200ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
 | Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist, der Ausgang des Netzteils an ist oder die 5V der Programmierports auf dem Carrier an sind | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
 
-Ein gedrücktes STOP stoppt den Heartbeat, schaltet das eigene
-Ausgangsmodell des Panels auf SAFE und schreibt ARM = 0 auf die Control-Page. Bei
-stehendem Link schreibt das Panel ARM und THROTTLE mit jedem Poll alle 50ms;
-ein bewusstes Schalten auf ARMED wartet, bis der IOmcu meldet, dass er dem
-Heartbeat vertraut, schreibt dann CLEAR (0x5AFE) allein, dann ARM, THROTTLE
-und MOTOR_POLES in einem Frame, und ein NACK (negative Quittung) des
-IOmcu auf eines von beiden lässt das Panel SAFE.
+Ein Druck auf STOP stoppt den Heartbeat, schaltet das eigene
+Ausgangsmodell des Panels auf SAFE und schreibt ARM = 0 auf die Control-Page.
+Bei bestehender Verbindung schreibt das Panel ARM und THROTTLE bei jedem
+Poll alle 50ms. Beim angeforderten Wechsel zu ARMED wartet es, bis der
+IOmcu den Heartbeat als vertrauenswürdig meldet. Dann schreibt es CLEAR
+(0x5AFE) separat und anschließend ARM, THROTTLE und MOTOR_POLES in einem
+Frame. Beantwortet der IOmcu einen der beiden Schreibvorgänge mit NACK
+(negative Quittung), bleibt das Panel SAFE.
 
 
 ### Watchdog der Render-Schleife
@@ -34,7 +35,7 @@ STOP weiter und sonst nichts. DISARM, der Gas-Schieberegler, das Zifferblatt
 von SERVO und OUTPUT OFF gehören der Render-Schleife, und die Ausgänge behalten ihr
 letztes Kommando.
 
-Die Render-Schleife zählt einen Zähler pro Durchlauf weiter. Der
+Die Render-Schleife erhöht einen Zähler bei jedem Durchlauf. Der
 Control-Task liest ihn in jedem Durchlauf alle 5ms und in der Wartezeit
 jedes Link-Austauschs. Ist der Prüfstand ARMED, der Ausgang des
 Netzteils an oder zählen auf dem rbmod-Carrier die 5V der
@@ -59,15 +60,16 @@ beginnt mit der nächsten Bewegung des Zählers.
 Die Zeit läuft ab der letzten Bewegung des Zählers, nicht ab dem Schalten
 auf ARMED. Eine Schleife, die stehen blieb, nachdem sie ARM oder ON
 abgeschickt hatte, stoppt den Prüfstand im ersten Durchlauf, der ihn ARMED
-oder den Ausgang an findet. Ein Prüfstand in SAFE mit ausgeschaltetem
-Netzteil wird nie gestoppt: die Installation eines Panel-Updates, ein Log,
-das LOGS lädt, und das Speichern der Einstellungen halten die Schleife auf
-einem Prüfstand in SAFE an. Die Installation beginnt nur in SAFE mit
+oder den Ausgang an findet. Der Watchdog stoppt einen Prüfstand in SAFE nicht, solange sowohl der
+Netzteil-Ausgang als auch die 5V der Programmierports inaktiv sind. In
+diesem Zustand können die Installation eines Panel-Updates, das Laden
+einer Aufzeichnung auf LOGS und das Speichern der Einstellungen die
+Schleife anhalten. Die Installation beginnt nur in SAFE mit
 ausgeschaltetem Netzteil und hält den Heartbeat beim Schreiben absichtlich
 an. Beim Start ist der Prüfstand SAFE und das Netzteil aus.
 
-Die Zeit ist 1000ms wegen der längsten Durchläufe, die die Render-Schleife
-auf einem Bildschirm macht, der einen Ausgang treibt:
+Die Grenze von 1000ms berücksichtigt die längsten Durchläufe der
+Render-Schleife auf einer Seite, die einen Ausgang steuert:
 
 | Aufruf im Durchlauf | Höchstens |
 | --- | --- |
@@ -77,8 +79,8 @@ auf einem Bildschirm macht, der einen Ausgang treibt:
 | Ein Kommando an den Control-Task in eine volle Queue | 5ms pro Kommando |
 | Die Konsolenzeile alle 300 Frames | etwa 11ms bei 115200 Baud, nicht gemessen |
 | Speichern der Einstellungen | nie, während der Prüfstand ARMED ist, ein Schalten auf ARMED wartet, das Netzteil an ist oder ein ON wartet (`flash_gate_open()`) |
-| Der Blick des Servo-Programmierers auf die Karte (SERVO > PROGRAMMIEREN) | ein Statuskommando an die Karte oder ein Mount, dann das Lesen seines Datensatzes (`KST.TXT`); jedes Kartenkommando begrenzt der Treiber auf 1000ms, nicht gemessen |
-| LOGS: die Liste, das Öffnen eines Logs und sein Plot | als Fortschritt gezählt, pro Verzeichniseintrag und pro Lesen (`panel_card.c`); ein Lesen begrenzt der Kartentreiber, nicht gemessen |
+| Kartenzugriff der Servoprogrammierung (SERVO > PROGRAMMIEREN) | eine Statusabfrage der Karte oder das Einbinden, dann das Lesen des Vermerks (`KST.TXT`); jedes Kartenkommando ist durch den Treiber auf 1000ms begrenzt, nicht gemessen |
+| LOGS: Liste, Öffnen und Zeichnen einer Aufzeichnung | jeder Verzeichniseintrag und jeder Lesevorgang zählt als Fortschritt (`panel_card.c`); der Kartentreiber begrenzt jeden Lesevorgang, nicht gemessen |
 
 Der begrenzte Teil, 50ms + 200ms + die Kopie + das Zeichnen, ist etwa
 300ms. 1000ms ist etwa das Dreifache davon und das Doppelte der 500ms, nach
@@ -90,31 +92,32 @@ Bekannte Einschränkungen:
   200ms. Die Schleife läuft dann etwa 4-mal pro Sekunde, und der Watchdog
   löst nicht aus: DISARM und die anderen Bedienelemente wirken weiter, auf
   einem Bild, das sich nicht ändert.
-- Der Servo-Programmierer sieht auf der Render-Schleife nach der Karte, und
-  während einer Session ist der Ausgang des Netzteils an. Braucht ein
-  Statuskommando oder ein Mount 1000ms oder länger, zum Beispiel hinter dem
-  Schreiben eines anderen Tasks auf dieselbe Karte, stoppt das den
-  Prüfstand und beendet die Session.
-- Wer SERVO verlässt, während ein Programmierport das Netzteil hält, lässt
-  den Ausgang an. Ein einzelnes Lesen von der Karte, das auf LOGS 1000ms oder
-  länger braucht, stoppt dann den Prüfstand und beendet die Session des
+- Die Servoprogrammierung greift im Render-Task auf die Karte zu. Während
+  einer Sitzung ist der Netzteil-Ausgang eingeschaltet. Dauert eine
+  Statusabfrage oder das Einbinden der Karte 1000ms oder länger, stoppt der
+  Prüfstand und beendet die Sitzung. Dies kann etwa geschehen, wenn ein
+  anderer Task gerade auf dieselbe Karte schreibt.
+- Beim Verlassen von SERVO bleibt der Ausgang an, wenn ein Programmierport
+  das Netzteil hält. Dauert ein einzelner Kartenzugriff auf LOGS dann
+  1000ms oder länger, stoppt der Prüfstand und beendet die Sitzung des
   Ports.
 
 ## Fehler
 
-Die Regel: ein Fehler schaltet jeden Ausgang aus und den Prüfstand auf SAFE.
-Ein Fehler ist eine Störung, die beendet, was der Prüfstand treibt. Das
-eigene AUS, DISARM und die Änderungen der bedienenden Person sind keine
-Fehler.
+Ein Fehler schaltet jeden Ausgang aus und den Prüfstand auf SAFE. Als
+Fehler gilt hier eine Störung, die den vom Prüfstand gesteuerten Vorgang
+beendet. Ein von dir ausgelöstes AUS, DISARM oder eine Änderung zählt nicht
+als Fehler.
 
 Die Ausgänge sind die Servo-PWM-Slots und DShot-Throttle-Kanäle der Bank,
 die vier Programmierports (Servo-PWM, DShot, die KST-Leitung, die
 Hitec-Leitung), der Ausgang des PD (Power Delivery) mini und auf dem
 rbmod-Carrier die eigenen 5V der Programmierports an GPIO 21
 ([Die 5V der Programmierports auf dem Carrier](#die-5v-der-programmierports-auf-dem-carrier)). Der Phase Tap
-auf der Page TONE ist ein Eingang und treibt nichts. Das Panel hat keinen
-Draht zu einem Ausgang: es handelt über den Link und den Heartbeat, und der
-IOmcu handelt selbst, wenn einer der beiden ausfällt.
+auf der Protokollseite TONE ist ein Eingang und steuert keinen Ausgang. Das
+Panel ist mit keinem Ausgang direkt verdrahtet. Es steuert sie über die
+Verbindung zum IOmcu und den Heartbeat; der IOmcu reagiert selbstständig,
+wenn einer der beiden ausfällt.
 
 | Störung | Servo-PWM und DShot, an der Bank und an den Ports | KST- und Hitec-Sitzungen | Ausgang des PD mini | Wer handelt |
 | --- | --- | --- | --- | --- |
@@ -141,7 +144,7 @@ es den Heartbeat zurück, sodass der IOmcu binnen 150ms sicher abschaltet,
 auch wenn der Control-Task des Panels in einem Austausch wartet. Ein
 Prüfstand, der schon SAFE ist, wird nicht noch einmal auf SAFE geschaltet:
 in SAFE würde der zurückgehaltene Heartbeat die Sitzung eines
-Programmierports beenden, ohne dass dieser einen Ausgang treibt. Die Regel
+Programmierports beenden, obwohl die Ausgangsbank bereits aus ist. Die Regel
 ist `error_stop()` in `shared/safety/error_stop.c`, getestet in
 `test_error_stop`. Der Control-Task wendet sie dort, wo er einen Fehler
 findet, über `shared/safety/error_sites.c` an, getestet in
@@ -155,7 +158,8 @@ abbrechen würde (`error_sites_keeps()`). Das gilt für jeden Fehler oben,
 den das Panel findet, darunter ein Netzteil, das nicht antwortet oder
 keinen Messwert liefert, ein ON über verlorene Touch-Ereignisse hinweg und
 ein ON, das die Page SUPPLY abweist, während das ON eines Ports auf ihr
-steht. Weiterhin aus, gleich wer das Netzteil hält:
+steht. In den folgenden Fällen wird weiterhin abgeschaltet, unabhängig davon, wer
+das Netzteil hält:
 
 - ein verlorener Heartbeat oder Link: der IOmcu schaltet ab;
 - die eigenen Abschaltschwellen des Panels für das Netzteil, ÜBERSTROM und
@@ -169,8 +173,7 @@ steht. Weiterhin aus, gleich wer das Netzteil hält:
 Ein Port hält das Netzteil, solange zwei Angaben es sagen: FLAGS-Bit 11
 der Page SUPPLY (`LINK_SP_PORT`), so wie das Panel es zuletzt gelesen hat,
 und eine KST- oder Hitec-Sitzung mit einem Port, so wie das Panel die Page
-KST oder HITEC zuletzt gelesen hat (`supply_link_port_holds()`). Das Halten
-endet bei der ersten der beiden, die sein Ende sagt. Auf einem IOmcu vor
+KST oder HITEC zuletzt gelesen hat (`supply_link_port_holds()`). Der Port gilt als freigegeben, sobald eine der beiden Angaben dies meldet. Auf einem IOmcu vor
 4.29 hält eine Hitec-Sitzung das Netzteil vom OFF eines POWER bis zum Ende
 seines Zuhörens, und ein Fehler zwischen zwei POWER schaltet es aus. Ein
 IOmcu vor 4.13 hat dieses Bit nicht, und dort hält kein Port das Netzteil.
@@ -190,16 +193,15 @@ zurück.
 Die 5V der Programmierports auf dem Carrier haben keine solche Ausnahme. Ihre Page, PROG_SUPPLY, gibt es ab
 4.32, und jeder IOmcu, der sie bedient, hält das OFF für ein Schreiben zurück; ihr eigenes Port-Bit
 (`LINK_PS_PORT`) geht nicht in die Regel ein. Auf dem Carrier lässt eine KST- oder Hitec-Sitzung das Bit der
-Page SUPPLY gelöscht, weil die Ports an den 5V hängen und nicht am PD mini (`ports_tell_supply()`). Eine
-solche Sitzung hält dort auch die bedienende Person nicht vom PD mini fern: SUPPLY und die Zeile SOLL des
-SERVO-Bildschirms nehmen AUSGANG EIN und Sollwerte während ihrer an (`supply_link_session_blocks()`), und der
-IOmcu nimmt sie. Eine ESC-Sitzung setzt das Bit auf jeder Platine, auch auf dem Carrier, weil SWITCHED den ESC
+Page SUPPLY gelöscht, weil die Ports an den 5V hängen und nicht am PD mini (`ports_tell_supply()`). Während einer
+solchen Sitzung kannst du den PD mini weiter bedienen: SUPPLY und die Zeile SOLL auf SERVO nehmen
+AUSGANG EIN und Sollwerte an (`supply_link_session_blocks()`), ebenso der IOmcu. Eine ESC-Sitzung setzt das Bit auf jeder Platine, auch auf dem Carrier, weil SWITCHED den ESC
 aus dem PD mini versorgt. SUPPLY lehnt dann Sollwerte und EIN ab und sagt, dass die ESC-Programmierung sie
-hält (`SUP_HELD_REFUSED_ESC`). Auf jeder anderen Platine hält eine Sitzung mit einem Port beides vom PD mini
-fern, und nur AUSGANG AUS funktioniert.
+hält (`SUP_HELD_REFUSED_ESC`). Auf jeder anderen Platine sperrt eine Sitzung mit einem Port sowohl EIN als auch Sollwertänderungen
+am PD mini. Nur AUSGANG AUS funktioniert.
 
-Ein Port hält nur den Ausgang des PD mini. Auf dem Modell des Panels liegt
-kein Port, und ein Fehler schaltet es aus. Ein Netzteil, das nicht
+Ein Port hält nur den Ausgang des PD mini. Die Simulation des Panels hat
+keinen zugeordneten Port; ein Fehler schaltet sie aus. Ein Netzteil, das nicht
 antwortet oder keinen Messwert liefert und das kein Port hält, wird
 ausgeschaltet, damit es nicht von selbst wieder angeht, wenn es wieder
 antwortet. Behält ein Port es, wird die Störung einmal behandelt und
@@ -260,20 +262,20 @@ der Port bleibt ohne Versorgung gehalten bis CLOSE. Ein KST-Port, der den
 Ausgang nach einem Schreiben aus findet, hält ihn 1000ms aus und kehrt nach
 PWM zurück.
 
-Die längsten Schreibvorgänge, die der Code zulässt, enden innerhalb von
-10000ms, berechnet und nicht gemessen: ein KST-Schreiben mit 33 Schritten
+Die längsten berechneten Schreibfolgen enden innerhalb von 10000ms.
+Diese Zeiten sind berechnet, nicht gemessen: ein KST-Schreiben mit 33 Schritten
 dauert 1,93s auf der Leitung nach seinem Planen; ein classic-Hitec-Schreiben
 mit 56 Schritten und dem Zurücklesen von 36 Zellen 2,9s und ein Schreiben
 der D-Serie mit 21 Registern, Speichern, 1000ms Warten nach dem Neustart
 und Zurücklesen 3,5s, bei 32ms je Schritt auf der Host-Schleife des Panels. Das zweite Lesen vor dem Plan eines Hitec-Schreibens ([Das zweite Lesen](HitecProgrammer-de.md#das-zweite-lesen)) schreibt nichts und hält kein Ausschalten auf.
 
-Ein Port, der das Netzteil bei eingeschaltetem Ausgang freigibt, lässt seine Sollwerte am Ausgang; die des Bedieners kommen nur über JA auf die Frage von SERVO, die einem Verlassen folgt und keinem anderen Ende des Haltens, (über 6,0V nur über NUR HV-SERVOS und sein Halten von 2s) oder beim nächsten Ausschalten zurück ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
+Gibt ein Port das Netzteil bei eingeschaltetem Ausgang frei, bleiben seine Sollwerte wirksam. Deine Sollwerte gelten wieder beim nächsten Ausschalten oder wenn du die Rückfrage auf SERVO nach VERLASSEN mit JA beantwortest. Diese Rückfrage erscheint nur nach VERLASSEN, nicht nach einer anderen Freigabe. Bei JA über 6,0V sind NUR HV-SERVOS und 2s Halten erforderlich ([Servo-Programmierer, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
 
-Eine Störung der Sitzung ist ein Vorgang, der an dem endet, was das Servo
-oder die Leitung getan hat. KST: kein Servo, ein Register ohne 3 gleiche
-Lesungen, ein Servo, das sich unter dem Plan geändert hat, ein Schreiben,
-das scheiterte, zurückgerollt wurde, zerrissen ist oder ein anderes
-Register änderte, eine Prüfung mit Abweichung, ein Fehler des Treibers,
+Eine Sitzungsstörung beendet einen Vorgang wegen eines Problems mit dem
+Servo oder der Leitung. KST: kein Servo, ein Register ohne 3 gleiche
+Lesungen, ein Servo, das sich unter dem Plan geändert hat, ein Schreibvorgang,
+der fehlschlug, rückgängig gemacht wurde, unvollständig blieb oder ein
+anderes Register änderte, eine Prüfung mit Abweichung, ein Fehler des Treibers,
 eine Versorgung, die nicht schaltete. Hitec: kein Servo, eine falsche
 Antwort beim Einstieg, ein gescheitertes Lesen, ein classic-Schreiben ohne
 Antwort, ein Zurücklesen mit Abweichung, ein Schritt, den der Decoder
@@ -286,12 +288,12 @@ beenden die Sitzung selbst.
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) laufen die
 Programmierports am 5V-Abwärtswandler M7, geschaltet über GPIO 21 (Link
 4.32, die Page PROG_SUPPLY). Der PD mini speist nur die Servoschienen. Die
-Programmer für KST und Hitec schalten die 5V für eine Sitzung ein und aus,
+Servoprogrammierungen für KST und Hitec schalten die 5V für eine Sitzung ein und aus,
 und das Feld PROG 5V auf SERVO und SUPPLY schaltet sie von Hand
-([Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v)). Die Programmer lesen auf dem Carrier
-nichts vom PD mini: sein Sollwert lehnt weder ein VERBINDEN unter 4.8V
-ab, noch setzt er die Spannung eines Power-Cycle, und die Grenzen der
-Ansicht SUPPLY begrenzen nur die Servoschienen, kein VERBINDEN. Sind die
+([Carrier, Das Feld PROG 5V](Carrier-de.md#das-feld-prog-5v)). Auf dem Carrier lesen die Servoprogrammierungen den PD mini
+nicht aus. Sein Sollwert führt weder unter 4,8V zu einer Ablehnung von
+VERBINDEN noch bestimmt er die Spannung beim Aus- und Einschalten. Die
+Grenzen auf SUPPLY gelten nur für die Servoschienen, nicht für VERBINDEN. Sind die
 5V als ein gelesen, schalten VERBINDEN und VERLASSEN nach einem Schreiben
 sie aus und wieder ein, wie den Ausgang des PD mini; sind sie aus,
 schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln der Page SUPPLY für einen Port:
@@ -306,12 +308,12 @@ schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln der Page SUPPLY für
 - Bei jedem Start des IOmcu ist sie aus, ab der ersten Anweisung von
   `main()` low getrieben; der Pull-down an EN von M7 hält sie aus, solange
   der IOmcu GPIO 21 nicht treibt.
-- Ein ON vom Panel wird ohne lebenden Heartbeat mit NOT_ARMED und mit
-  BAD_VALUE abgelehnt, solange ein Port die Versorgung hält.
+- Ein ON vom Panel wird ohne aktiven Heartbeat mit NOT_ARMED abgelehnt.
+  Hält ein Port die Versorgung, lautet die Ablehnung BAD_VALUE.
 - Ein Port schaltet sie nur ein, nachdem das Panel seit dem letzten
   Verlust des Heartbeats das Register 4 der Page (PANEL) geschrieben hat.
   Ein Panel vor Link 4.32, das weder diese Versorgung noch ihre Sperren
-  kennt, schreibt es nie, also bekommen seine Programmer die 5V nie.
+  kennt, schreibt es nie, daher erhalten seine Servoprogrammierungen keine 5V.
 - Eine Firmware-Installation, ein Update des IOmcu, ein Schreiben in den
   Flash des Panels und das WLAN des Panels warten, solange die 5V
   an sind, seit dem Aufbau des Links oder seit einem Lesen ohne Antwort
@@ -320,8 +322,8 @@ schaltet VERBINDEN das Servo ein. Die Page folgt den Regeln der Page SUPPLY für
 
 SUPPLY zeigt ihren Zustand unter OUTPUT: `PROG-PORTS 5V, GPIO 21: EIN`,
 `AUS` oder `UNBEKANNT`, wenn das letzte Lesen ohne Antwort blieb. Der
-Kern ist `shared/outputs/prog_supply.c` unter `test_prog_supply`; das Ende
-des Panels ist `shared/bench/prog_supply_link.c` unter
+Kern liegt in `shared/outputs/prog_supply.c`, getestet in `test_prog_supply`.
+Die Panel-Seite liegt in `shared/bench/prog_supply_link.c`, getestet in
 `test_prog_supply_link`, das Feld `shared/ui/prog5v_box.c` unter
 `test_prog5v_box`.
 
@@ -340,14 +342,14 @@ Aktuelle Einschränkungen:
 - Ein Hitec-Schreiben, das nach einem Schritt mit MORE in einer Störung
   endet, hält das OFF zurück bis zum nächsten Kommando der HITEC-Page oder
   10000ms.
-- Eine Störung der Sitzung beendet die Sitzung mit der Versorgung. Nach
+- Eine Sitzungsstörung beendet die Sitzung und schaltet die Versorgung aus. Nach
   einem gescheiterten KST-Schreiben endet das eigene Backup der Sitzung
   mit ihr; der Vermerk vor dem Schreiben bleibt, und das Lesen nach
   VERBINDEN vergleicht das Servo damit
   ([Ein unterbrochenes Schreiben](ServoProgrammer-de.md#ein-unterbrochenes-schreiben)).
 - Die Fehlerbits des IOmcu auf STATUS für Überstrom, Übertemperatur und
   Stall (`LINK_FAULT_OVERCURRENT`, `LINK_FAULT_OVERTEMP`,
-  `LINK_FAULT_STALL`) sind definiert und werden von nichts gesetzt.
+  `LINK_FAULT_STALL`) sind definiert, werden aber von keinem Code gesetzt.
 - Die Meldungen nennen den Fehler und sagen nicht, dass der Prüfstand auf
   SAFE geschaltet hat; die Leiste zeigt SAFE.
 - Mit einem IOmcu älter als 4.31 bleibt ein Netzteil, das ein Port über
@@ -359,7 +361,7 @@ Aktuelle Einschränkungen:
 
 ### Grenzen der Hardware
 
-Firmware kann ein Board, das nicht läuft, nicht abdecken:
+Firmware kann nicht eingreifen, wenn die Platine nicht läuft:
 
 - Der IOmcu im Reset oder in BOOTSEL gehalten. Seine Pins sind Eingänge,
   die Bank und die Ports senden also keinen Puls, aber ein offener Eingang
@@ -375,7 +377,7 @@ Firmware kann ein Board, das nicht läuft, nicht abdecken:
   Leistungspfad. Abgedeckt durch das Monoflop.
 - Der PD mini antwortet auf seinem UART nicht. Der IOmcu sendet ein blindes
   OFF nur an ein Modul, das geantwortet hat und dessen OFF-Argument bekannt
-  ist. Das Monoflop deckt das nicht ab, solange beide Boards laufen. Ein
+  ist. Das Monoflop deckt das nicht ab, solange beide Platinen laufen. Ein
   Lastschalter hinter dem Ausgang des PD mini, offen, solange ihn kein Pin
   des IOmcu geschlossen hält, deckte es ab; er ist nicht spezifiziert.
 
@@ -398,12 +400,12 @@ eintreffen. Absturz, hängender Task, Reset, Brown-out und abgestecktes Kabel
 führen dann zum selben Ergebnis: keine Flanken, kein Ausgang, unabhängig von
 der Firmware an beiden Enden.
 
-Fenster des Monoflops: etwa 150ms. Der Heartbeat kommt aus dem Control-Task
-des Panels, der alle 5ms auf dem Kern läuft, der nicht zeichnet, und dessen
-Periode damit nicht davon abhängt, was ein Frame kostet. Das Fenster bleibt
-bei 150ms und liegt innerhalb des 200-ms-Link-Failsafes des IOmcu,
-statt auf die neue Periode zu schrumpfen: die Reserve ist das, was einen
-verspäteten Task überlebt.
+Das Zeitfenster des Monoflops beträgt etwa 150ms. Der Heartbeat kommt aus
+dem Control-Task des Panels. Dieser läuft alle 5ms auf dem Kern, der nicht
+zeichnet; seine Periode hängt daher nicht von der Zeit zum Zeichnen eines
+Frames ab. Das Fenster von 150ms liegt innerhalb des Link-Failsafes von
+200ms des IOmcu. Die Reserve gegenüber der Task-Periode fängt verspätete
+Durchläufe ab.
 
 Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
 Flanken über eine direkte Leitung vom Heartbeat-Pin des Panels den GPIO 3 des IOmcu, weshalb
@@ -412,13 +414,14 @@ dieser Prüfstand auf ARMED schalten kann.
 Das Monoflop wird von den Flanken des Panels nachgetriggert und nimmt die
 Ausgänge weg, wenn diese ausbleiben. Was es gegenüber der direkten Leitung
 hinzufügt: Es tut das, ohne dass die Firmware des IOmcu etwas tun muss.
-Drei Fälle, und der mittlere ist die Lücke:
+Die folgende Tabelle unterscheidet drei Fälle. Das Monoflop deckt zusätzlich
+den mittleren Fall ab:
 
 | | Direkte Leitung und Firmware | Mit Monoflop |
 |---|---|---|
-| Das Panel hört auf zu schlagen, der IOmcu ist gesund | schaltet auf SAFE nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
-| Das Panel hört auf zu schlagen und der IOmcu kann nicht handeln (hängt, oder bedient seinen Monitor nicht) | nichts schaltet auf SAFE, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
-| Das Panel ist gesund und der IOmcu verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel schlägt weiter, das Monoflop bleibt bestromt |
+| Das Panel sendet keinen Heartbeat mehr, der IOmcu läuft fehlerfrei | schaltet auf SAFE nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
+| Das Panel sendet keinen Heartbeat mehr und der IOmcu kann nicht handeln (hängt, oder bedient seinen Monitor nicht) | nichts schaltet auf SAFE, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
+| Das Panel läuft fehlerfrei und der IOmcu verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel sendet weiter den Heartbeat, das Monoflop bleibt bestromt |
 
 Die dritte Zeile ist kein Fall, für den das Monoflop da ist, und keine
 Hardware in diesem Entwurf deckt sie ab. Solange das Bauteil fehlt, ist auch
@@ -434,7 +437,7 @@ Monoflop Heartbeat und Rauschen nicht unterscheiden kann. Die Konstanten aus
 | | Wert | |
 | --- | ---: | --- |
 | Flankenabstand des Panels | 20ms | `HEARTBEAT_PERIOD_MS`, eine Flanke alle 20ms, also alle 4 Perioden des Control-Tasks zu 5ms, nicht je Frame |
-| Akzeptierter Abstand | 4–150ms | kürzer ist Rauschen; länger heisst, die Schleife, die STOP besitzt, steht |
+| Akzeptierter Abstand | 4–150ms | kürzer gilt als Rauschen; länger bedeutet, dass die für STOP zuständige Schleife steht |
 | Gute Abstände, bevor der Leitung vertraut wird | 4 | 80ms bei der Rate des Panels |
 
 Die Prüfung ist asymmetrisch: vier gute Abstände, bevor der Leitung vertraut
@@ -500,7 +503,7 @@ ersten Mal antwortet, bevor ein ARM an ihn geschrieben wird.
 
 ### Neustart des IOmcu während eines Laufs
 
-Der IOmcu stellt seine Ausgangsbindung aus dem Flash wieder her und
+Der IOmcu stellt seine Ausgangszuordnung aus dem Flash wieder her und
 startet mit gesetztem Latch und ohne Kommando. Die Bank des Panels ist noch
 bis zu 1000ms ARMED. Zwei Fälle:
 
@@ -511,7 +514,7 @@ bis zu 1000ms ARMED. Zwei Fälle:
   mit NOT_ARMED abgewiesen, und bei dieser Antwort rastet am Panel ein Stopp
   ein.
 
-In beiden bleiben die Ausgänge aus, bis eine Person ARM hält. Auf dem Host
+In beiden Fällen bleiben die Ausgänge aus, bis du ARM hältst. Auf dem Host
 getestet in `test_safety_gate` für Ausfälle von 5, 30, 50, 60, 300, 1000 und
 5000ms bei je 55 Reset-Phasen und drei Modellen der Leitung. Wie lange der IOmcu vom Reset bis zu seinem ersten
 beantworteten Frame braucht, ist nicht gemessen.
@@ -520,8 +523,9 @@ Der Ausgang des PD mini wird zuerst ausgeschaltet. Gleich nachdem die
 Verdrahtung wiederhergestellt ist, und vor dem Sensorbus, dem Löschen im
 Speicher, Core 1 und dem CAN-Controller, liest der IOmcu das Modul und
 schreibt OFF an einen Ausgang, der an gelesen wird (`supply_boot_off()`).
-WHO_AM_I geht erneut, sobald eines scheitert (`pdmini_hurry()`), 415ms je
-Versuch, sodass unter AUTO alle sieben Raten in 2,9s versucht sind. Das
+Nach einem fehlgeschlagenen WHO_AM_I wird die Anfrage erneut gesendet
+(`pdmini_hurry()`), mit 415ms je Versuch. Unter AUTO werden so alle sieben
+Raten in 2,9s versucht. Das
 Warten endet, wenn das Modul aus gelesen wird, oder nach 3500ms
 (`SUPPLY_PAGE_BOOT_OFF_MS`); ein Modul, das nicht antwortet, verzögert den
 Link bei jedem Start um so viel. Auf dem Host getestet in
@@ -554,7 +558,7 @@ innerhalb von 150ms. Die Grenze der Frist ist der Frame, der auf ARMED schaltet,
 selbst. Er wird zur Frist oder davor geschrieben, und seine Quittung kann
 bis zum Timeout von 1000ms (`LINK_HOST_TIMEOUT_MS`) später eintreffen; der
 IOmcu hat dann die angefragte Rolle auf ARMED geschaltet, in Ruhe: Gas 0
-für MOTOR & ESC und dessen Stick-Läufe, Surfaces zentriert für SERVO. Das Panel macht das nicht rückgängig. Bleibt ein Austausch des Schaltens auf ARMED
+für MOTOR & ESC und dessen Stick-Läufe, Ruderflächen zentriert für SERVO. Das Panel macht das nicht rückgängig. Bleibt ein Austausch des Schaltens auf ARMED
 unbeantwortet (das Lesen von STATUS, das Freigeben des Servos, CLEAR oder
 der Frame, der auf ARMED schaltet), hat er den Timeout von 1000ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schalten auf ARMED
@@ -565,41 +569,42 @@ angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
 
 ### Ein Pulsbereich unterwegs
 
-Der Frame, der auf ARMED schaltet, trägt ARM, THROTTLE und die Polzahl,
-aber kein CHAN_CFG. Leerlaufpuls und Vollgaspuls des Gases erreichen den IOmcu
-auf einem eigenen Weg: eine Änderung, eine auf OUTPUTS geschriebene Zuordnung, eine Link-up-Flanke oder der Start des Panels
-schuldet dem IOmcu das Paar. Ein Neustart oder ein Update des IOmcu kommt
-als Link-up-Flanke zurück. Das Panel begleicht die Schuld bei einem Poll im
-50-ms-Takt, dessen Schreiben von ARM = 0 quittiert wurde, sobald 300ms
+Der Frame zum Schalten auf ARMED enthält ARM, THROTTLE und die Polzahl,
+aber kein CHAN_CFG. Leerlaufpuls und Vollgaspuls werden separat an den IOmcu
+übertragen. Eine Änderung, eine auf OUTPUTS geschriebene Zuordnung, eine
+Link-up-Flanke oder der Start des Panels markiert dieses Wertepaar als noch
+zu übertragen. Auch ein Neustart oder Update des IOmcu erzeugt eine
+Link-up-Flanke. Das Panel überträgt das Paar bei einem Poll im Takt von
+50ms, nachdem ARM = 0 quittiert wurde und mindestens 300ms
 (`ENDPOINTS_SETTLE_MS`) seit der letzten Änderung vergangen sind. Es liest
-CHAN_CFG, setzt das Paar auf die Gaskanäle und schreibt die Seite, wenn sie
-abweicht. Der IOmcu übernimmt ein Schreiben von CHAN_CFG in seine Ausgänge,
-bevor er es quittiert, und die Quittung trägt, was er gespeichert hat.
+CHAN_CFG, weist das Paar den Gaskanälen zu und schreibt die Seite, falls sie
+abweicht. Der IOmcu übernimmt CHAN_CFG in seine Ausgänge, bevor er das
+Schreiben quittiert. Die Quittung enthält die gespeicherten Werte.
 
-| Begleichen | Die Schuld | Ein Schalten auf ARMED bei bestehendem Link |
+| Ergebnis des Abgleichs | Ausstehendes Wertepaar | Schalten auf ARMED bei bestehendem Link |
 | --- | --- | --- |
-| die Seite hält das Paar schon | beglichen, nichts geschrieben | geht weiter |
-| das Schreiben wird quittiert, und jeder Gaskanal hat das Paar gespeichert | beglichen | geht weiter |
+| die Seite hält das Paar schon | erledigt, nichts geschrieben | geht weiter |
+| das Schreiben wird quittiert, und jeder Gaskanal hat das Paar gespeichert | erledigt | geht weiter |
 | das Lesen oder das Schreiben bleibt unbeantwortet | offen, beim nächsten Poll erneut gesendet | `Pulsbereich noch nicht an den IOmcu gesendet. Halte ARM erneut.` |
 | das Lesen wird abgelehnt | beendet, `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` | `Kein Pulsbereich vom IOmcu. Aktualisiere die IOmcu-Firmware, dann halte ARM erneut.` |
 | der Leerlaufpuls liegt weniger als 100us unter dem Vollgaspuls | beendet, nichts gesendet, `Leerlaufpuls muss mindestens 100us unter Vollgaspuls liegen. Nicht gesendet.` | `Leerlaufpuls weniger als 100us unter Vollgaspuls. Ändere einen, dann halte ARM erneut.` |
 | das Schreiben wird abgelehnt | beendet, `Der IOmcu hat den Pulsbereich abgelehnt.` | `IOmcu hat den Pulsbereich abgelehnt. Ändere Leerlaufpuls, Vollgaspuls oder ZIEL.` |
 | das Schreiben wird quittiert, und ein Gaskanal hat ein anderes Paar gespeichert | beendet | `Der IOmcu hat einen anderen Pulsbereich. Ändere Leerlaufpuls oder Vollgaspuls.` |
 
-Der Alert eines abgelehnten oder vertauschten Paars verlässt das Band vor
-Ablauf seiner 30s, sobald eine spätere Zahlung die Page mit dem
-verlangten Paar findet oder ein Schreiben davon quittiert wird. Dasselbe gilt
-für `Der IOmcu hat die Polzahl abgelehnt.`: er verlässt das Band, sobald
-eine spätere Polzahl übernommen wird.
+Die Warnung zu einem abgelehnten oder vertauschten Wertepaar verschwindet
+vor Ablauf ihrer 30s aus der Leiste, sobald ein späterer Abgleich das
+verlangte Paar auf der Seite findet oder das Schreiben bestätigt wird.
+Dasselbe gilt für `Der IOmcu hat die Polzahl abgelehnt.`: Diese Meldung
+verschwindet, sobald eine spätere Polzahl übernommen wird.
 
-Das Panel fragt vor dem CLEAR, nach dem Freigeben des Servos und der
-Pulsrate, und schreibt nichts, auch kein CLEAR; der Prüfstand bleibt SAFE mit
-den Ausgängen in Ruhe. Es fragt nach einem quittierten CLEAR erneut, für
-eine Änderung, die eintraf, während das CLEAR unterwegs war, und schreibt
-dann keinen Frame, der auf ARMED schaltet. Es fragt ein drittes Mal, sobald
-der Frame, der auf ARMED schaltet, quittiert ist, für eine Änderung, die
-eintraf, während dieser Frame unterwegs war, und schreibt dann ARM = 0 im
-nächsten Austausch: der IOmcu ist für diesen einen Austausch in Ruhe ARMED
+Das Panel prüft den Zustand des Pulsbereichs vor CLEAR, nach der Freigabe
+des Servos und dem Aktualisieren der Pulsrate. Ist der Bereich gesperrt
+oder noch nicht übertragen, schreibt es nichts, auch kein CLEAR. Der
+Prüfstand bleibt SAFE mit den Ausgängen in Ruhe. Nach einem quittierten
+CLEAR prüft es erneut. Traf während CLEAR eine Änderung ein, sendet es
+keinen Frame zum Schalten auf ARMED. Die dritte Prüfung folgt nach der
+Quittung dieses Frames. Traf während seiner Übertragung eine Änderung
+ein, schreibt das Panel im nächsten Austausch ARM = 0: der IOmcu ist für diesen einen Austausch in Ruhe ARMED
 auf dem Bereich, den er hielt (Dauer nicht gemessen), und die Bank des
 Panels schaltet nicht auf ARMED. Die Bildschirme des Panels können dort
 keine Änderung veröffentlichen: die beiden Zeilen auf OPTIONEN sind
@@ -609,34 +614,33 @@ kann, liegt auf einem anderen Bildschirm und nimmt keinen Tipp an, solange
 der Prüfstand ARMED ist, und das Verlassen von MOTOR & ESC oder SERVO
 schaltet den Prüfstand auf SAFE.
 
-Die Schuld wird auf dem Control-Task beglichen, dem Task, der das Schalten
-schreibt, also läuft das Schalten nie, während ein Begleichen unterwegs ist.
-Ein abgelehntes Schalten wird nicht von selbst wiederholt: ARM wird erneut
-gehalten. STOP ist davon nicht berührt. Eine Ablehnung oder ein anders
-gespeichertes Paar wird auch nicht von selbst erneut gesendet: dieselbe
-einmal abgelehnte Anfrage wird jedes Mal abgelehnt. Die Sperre endet beim
-ersten Begleichen nach einer Änderung, einer Zuordnung oder einem Link-up,
-das das Paar in Kraft findet, und nicht vorher; ein Begleichen, das erneut
-abgelehnt wird, sperrt erneut mit seinem Grund.
+Der Control-Task übernimmt sowohl den Abgleich des Pulsbereichs als auch
+das Schalten auf ARMED. Beide können daher nicht gleichzeitig übertragen
+werden. Ein abgelehnter Wechsel wird nicht automatisch wiederholt; halte
+ARM erneut. STOP ist davon unberührt. Auch ein abgelehntes oder abweichend
+gespeichertes Wertepaar wird nicht automatisch erneut gesendet. Nach einer
+Änderung, einer Zuordnung oder einem Link-up bleibt die Sperre bestehen,
+bis ein Abgleich das verlangte Paar bestätigt. Eine erneute Ablehnung
+behält die Sperre bei und nennt den Grund.
 
 Wer einen IOmcu angeschlossen hat, der die Seite ablehnt, liest beim
 Link-up `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` und bei jedem
 Halten von ARM `Kein Pulsbereich vom IOmcu. Aktualisiere die IOmcu-Firmware, dann halte ARM erneut.`. Mit diesem IOmcu schaltet der Prüfstand nicht auf
 ARMED. Das Panel bietet beim Link-up das IOmcu-Image an, das es mitbringt,
 nach seinem eigenen Halten von 2s; der IOmcu startet nach dem Update neu,
-und der folgende Link-up schuldet das Paar erneut. Ohne IOmcu schaltet die
+und der folgende Link-up markiert das Paar erneut zur Übertragung. Ohne IOmcu schaltet die
 eigene Bank des Panels auf ARMED.
 
-Eine Änderung zur Zeit 0 wird beim ersten Poll ab 300ms beglichen: ein Poll
-bei 299ms lässt sie offen, ein Poll bei 300ms begleicht sie. Die Zeit wird
+Eine Änderung zur Zeit 0 wird beim ersten Poll ab 300ms abgeglichen: Ein
+Poll bei 299ms lässt sie offen, ein Poll bei 300ms verarbeitet sie. Die Zeit wird
 modulo 2^32ms genommen, also läuft die Ruhezeit über den Überlauf der
 Millisekundenuhr hinweg. Die Zeilen der beiden Werte auf OPTIONEN sind
 gesperrt, solange ARM gehalten wird, und das Halten dauert 2s, also ist eine
-Änderung vor dem Druck in der Regel innerhalb des Haltens beglichen.
+Änderung vor dem Druck in der Regel während des Haltens abgeglichen.
 
 Ohne Link schaltet die eigene Bank des Panels auf ARMED, und nichts wird
-geschrieben. Ein Link, der zurückkommt, schuldet das Paar erneut und hält
-den IOmcu SAFE bis zu einer Antwort; eine Ablehnung von vor dem Link-up
+geschrieben. Kehrt der Link zurück, wird das Paar erneut zur Übertragung markiert, und
+der IOmcu bleibt bis zu einer Antwort SAFE; eine Ablehnung von vor dem Link-up
 dauert also bis zum ersten Poll danach, und nur dann weiter, wenn dieser
 Poll erneut abgelehnt wird. Auf dem Host getestet in `test_endpoints_link`
 und `test_arming`. Der Control-Task des Panels, der den Zustand liest und
@@ -711,19 +715,20 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   diese Obergrenze.
 - Ein Frame, der Touch-Events verloren hat, bricht die laufende Geste ab.
   Eine volle Touch-Queue verwirft ihren ältesten Eintrag, um den neuesten
-  aufzunehmen, und keine Wahl dort ist für sich sicher: Ein Release, das nie
-  ankommt, lässt eine Seite einen Druck halten, ein Druck, der nie ankommt,
-  macht das Release danach elternlos, und die Bewegung, mit der ein Finger
-  eine Taste verlässt, ist das, was das Halten aufgibt. Der Render-Task
-  leert die Queue vom anderen Kern, das Prüfen eines Eintrags entscheidet
-  also nicht, welcher entfernt wird. Stattdessen nummeriert der eine
+  aufzunehmen. Keine Auswahl des zu verwerfenden Ereignisses ist für sich
+  sicher: Fehlt das Loslassen, bleibt auf einer Seite ein Druck aktiv.
+  Fehlt das Drücken, lässt sich das spätere Loslassen keinem Druck
+  zuordnen. Auch die Bewegung, mit der ein Finger eine Taste verlässt,
+  ist nötig, um ein Halten abzubrechen. Der Render-Task
+  leert die Queue auf dem anderen Kern. Das Prüfen eines Eintrags legt
+  daher nicht fest, welcher Eintrag entfernt wird. Stattdessen nummeriert der eine
   Erzeuger jeder Queue jedes Event, das er anbietet, ob die Queue es behält
   oder nicht, und der Verbraucher findet einen Verlust als Lücke in den
   Nummern: am ersten Event danach, bevor es behandelt wird, oder am Ende
   eines Leerens gegen die Nummer, die der Erzeuger vor dem Leeren
   veröffentlicht hat. Kein Zähler, der auf einem Kern steigt, muss rechtzeitig
   auf dem anderen gelesen werden. Der Render-Task sagt dann jeder Seite, dass
-  ihr Bild vom Glas veraltet ist, nicht nur der obersten, weil ein Event,
+  ihr erfasster Berührungszustand veraltet ist, nicht nur der obersten, weil ein Event,
   das den Verlust überlebt hat, von der Seite mit dem Druck weg navigiert haben
   kann; jede Seite verwirft jede laufende Geste. Das kommandiert nichts,
   genau wie ein frühes Loslassen, mit der einen Ausnahme weiter unten. Beide
@@ -737,11 +742,11 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   `TOUCHLOST <Panel>/<Treiber>`. Der Control-Task verwirft aus demselben
   Grund seinen eigenen Vermerk eines STOP-Drucks bei einem Verlust im
   Treiber: Er besitzt diesen Druck unabhängig von den Seiten.
-- Jedes Bedienelement, das zwischen Druck und Release Zustand hält, bricht
-  ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
-  Timer fertig wird, ein verlorenes Release schaltet dort also von selbst
-  auf ARMED oder quittiert; die Kacheln der Übersicht, die Zellen des Outputs-
-  und des Picker-Bildschirms, die Tasten des Einstellungs-Bildschirms, die
+- Jedes Bedienelement mit einem gespeicherten Zustand zwischen Drücken
+  und Loslassen bricht seine laufende Geste ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
+  Timer fertig wird, ohne diesen Abbruch würde ein verlorenes Release dort von selbst
+  auf ARMED schalten oder quittieren; die Kacheln der Übersicht, die Zellen auf OUTPUTS
+  und in der Auswahl, die Tasten des Einstellungs-Bildschirms, die
   Tasten, Zeilen und die LÖSCHEN-Rückfrage des Log-Viewers und die Tab-Zeilen
   von MOTOR & ESC, RECEIVER und BALANCE wirken stattdessen auf das Release,
   und ein gehaltener Druck besitzt eine Track-ID, die der Controller
@@ -749,8 +754,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   das fehlende Release gehalten. Die LÖSCHEN-Rückfrage bleibt bei einem Abbruch
   offen und nimmt den nächsten frischen Druck an. HOME und STOP sind die eigene
   Geste des Routers, und er bricht sie selbst ab.
-- Ein Kontakt hat vom Druck bis zum Release einen Besitzer, und der Router
-  entscheidet ihn. Eine Seite bekommt ein Move oder ein Release nur für einen
+- Der Router ordnet jeden Kontakt vom Drücken bis zum Loslassen genau
+  einem Empfänger zu. Eine Seite bekommt ein Move oder ein Release nur für einen
   Kontakt, dessen Druck sie bekommen hat. Ein Kontakt, der auf dem Statusband
   (den oberen 48px) oder auf dem Alert-Band aufsetzt, gehört dem Router, bis
   er abhebt, wohin er auch wandert. Die Ausnahme ist ein Druck auf ein
@@ -812,7 +817,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
 - Die Seiten verlassen sich dafür nicht auf den Router. Jeder Druck beendet
   einen Drag auf einem Schieberegler oder dem SERVO-Zifferblatt, der noch
   hängt, wo auch immer der Druck landet, und das Verlassen von SERVO beendet
-  einen Drag auf dem Zifferblatt. SUPPLY hält einen Druck zur Zeit; ein Druck
+  einen Drag auf dem Zifferblatt. SUPPLY erfasst jeweils einen aktiven Druck; ein Druck
   mit der Track-ID des gehaltenen sagt, dass dieser Kontakt weg ist, und der
   gehaltene Druck wird verworfen, wie ein Touch-Verlust ihn verwirft. Nicht
   am Panel gemessen: ob der GT911 einem einzelnen Finger bei
@@ -822,15 +827,14 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Aufsetzen: Der Heartbeat fällt im selben Durchlauf weg, und der IOmcu
   geht innerhalb von 150ms in den sicheren Zustand. Ein Druck, der auf STOP
   aufsetzt und vor dem Abheben davon weggeführt wird, stoppt trotzdem. Bricht
-  der Touch-Strom ab, während STOP gehalten wird, kommandiert das nichts
+  der Strom der Touch-Ereignisse ab, während STOP gehalten wird, kommandiert das nichts
   weiter: Der Druck hat den Prüfstand schon gestoppt.
 - Ein Druck auf DISARM schaltet beim Aufsetzen auf SAFE, also verliert ein
   Release, das eine volle Queue verschluckt, nichts. Ein Abbruch in ARMED,
   während ein Druck auf ARM noch liegt, dessen Halten nicht ausgelöst hat,
   schaltet ebenfalls auf SAFE: Die Taste unter diesem Finger zeigt DISARM.
   Das Schalten auf ARMED hat sein Kommando schon abgesetzt, wenn der Finger abhebt,
-  ein halb abgebrochenes Schalten auf ARMED kommandiert also nichts, und das ist
-  richtig so. Ein Abbruch verwirft außerdem ein Schalten auf ARMED, das die
+  ein vorzeitig abgebrochenes Halten auf ARM sendet daher keinen Befehl. Ein Abbruch verwirft außerdem ein Schalten auf ARMED, das die
   Seite bereits abgesetzt hat und die Anwendung noch nicht abgeholt hat --
   ein Kommando wird im Frame nach dem absetzenden weitergereicht, und der
   Frame, der einen Verlust bemerkt, bricht vor diesem Weiterreichen ab. Ein
@@ -853,20 +857,21 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Control-Task es tun. Nach der Bestätigung sehen die Seiten einen Verlust
   gegen einen Prüfstand in ARMED. Über einen Verlust hinweg schaltet also
   nichts auf ARMED. Ein abgesetztes DISARM bleibt.
-- Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
-  Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
-  Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track
-  fordert den ganzen Weg an, und einer, der innerhalb eines 50-ms-Polls
-  abgeschlossen ist, ist ein Sprung von 0 auf 100% am Pin. Slider, die
-  nichts Gefährliches kommandieren, etwa die Sweep-Geschwindigkeit des
-  Servobildschirms, behalten Tap-to-set.
+- Das Gas ändert sich entsprechend der Strecke, um die du den Finger
+  bewegst. Die Stelle, an der du aufsetzt, setzt keinen Gaswert. Auch ein
+  Druck am Ende der Reglerbahn sendet daher keinen Befehl. Ein Ziehen über
+  die ganze Bahn fordert den gesamten Wertebereich an. Erfolgt es innerhalb
+  eines Polls von 50ms, entsteht am Pin ein Sprung von 0 auf 100%.
+  Schieberegler für ungefährliche Einstellungen, etwa die
+  SWEEP-Geschwindigkeit auf SERVO, lassen sich weiterhin durch Antippen
+  direkt einstellen.
 - Ein Ausgangswert ändert sich nur auf einem Prüfstand in ARMED, auf
   MOTOR & ESC wie auf SERVO. Solange der Prüfstand nicht ARMED ist, ändert
   kein Bedienelement der beiden Bildschirme den Wert, den es kommandiert:
   Nichts wird gepostet, der Wert und seine Anzeige bleiben, das
   Bedienelement wird gedimmt gezeichnet, und der Bildschirm zeigt
   `ZUERST ARM`. Eine Drehung des Drehknopfs in dieser Zeit wird nicht
-  aufgehoben. Die Ablehnung reicht vom DISARM, bis der Prüfstand ARMED
+  für später gespeichert. Die Ablehnung reicht vom DISARM, bis der Prüfstand ARMED
   meldet, umfasst also die Zeit zwischen einem durchgelaufenen Halten auf
   ARM und der Antwort des Prüfstands. Von einem DISARM an, das ein Bildschirm
   anfordert, oder einem STOP auf einem Prüfstand in ARMED, bis der Prüfstand
@@ -894,8 +899,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   - SERVO: Das Zifferblatt, der Drehknopf, ZENTRIEREN und SWEEP sind die
     Bedienelemente. In SAFE bleiben das Horn und die gezeigte Pulsbreite
     auf der zuletzt gefahrenen Stellung. Bei einem ARM wird der Wert zur
-    Ruhelage der Ruderfläche, die die Pins treiben, sobald das ARM seine
-    Freigabe bezahlt hat: die Mitte zwischen den Endpunkten des Kanals,
+    Ruhelage der Ruderfläche, die die Pins treiben, sobald beim Schalten auf ARMED der
+    Freigabeschritt abgeschlossen ist: die Mitte zwischen den Endpunkten des Kanals,
     1500us über 1000 bis 2000us und 760us über 660 bis 860us. Die erste
     Eingabe nach einem ARM beginnt dort.
 - FREIGEBEN auf SERVO ist keine Stellung und wird auf einem Prüfstand
@@ -908,9 +913,9 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
 - Der Drehknopf (ein Winkelsensor MT6701 unter 0x06; SETUP, PANEL, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
   die Strecke, die er gedreht wird, wie der Slider, und es gelten dieselben
-  Regeln. Er schaltet nie auf ARMED: Das einzige Schalten auf ARMED ist der ARM-Hold. Auf beiden
+  Regeln. Er schaltet nie auf ARMED: Dafür musst du ARM halten. Auf beiden
   Bildschirmen bewegt eine Drehung auf einem Prüfstand in SAFE nichts
-  und wird nicht aufgehoben; nach einem ARM bewegt der Knopf auf MOTOR & ESC
+  und wird nicht für später gespeichert; nach einem ARM bewegt der Knopf auf MOTOR & ESC
   von 0% aus weiter und auf SERVO von der Ruhelage aus. Das Verlassen des
   Bildschirms schaltet auf SAFE. Die
   erste Messung nach dem
@@ -933,8 +938,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Der Knopf wird von einer eigenen Task auf dem Kern gelesen, den der Renderer
   benutzt, nie von der Control-Task, mit 5ms Bus-Timeout für jede
   Transaktion eines Polls: eine Adressprobe, solange er keine Referenz hat, dann drei
-  Lesezugriffe. Eine fehlgeschlagene Transaktion kostet dazu die Erholung des
-  Treibers, einen Reset des Controllers und ein Freiräumen des Busses, das bis
+  Lesezugriffe. Bei einer fehlgeschlagenen Transaktion kommt die Fehlerbehandlung des
+  Treibers hinzu: ein Reset des Controllers und ein Freigeben des Busses, das bis
   zu 50ms länger wartet, solange SDA low gehalten wird. Der Knopf hängt an einem
   eigenen I2C-Controller (I2C_NUM_1, IO30 und IO31 des Headers P3), und
   nichts sonst liegt an diesem Bus; ein Sensor, der SDA low hält,
@@ -965,7 +970,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   CHAN_CFG, das die Rolle eines Kanals oder irgendetwas an einem
   Throttle-Kanal ändert. Slew und Pulsbereich einer Surface werden in ARMED
   angenommen: der SERVO-Bildschirm schreibt sie mit jeder Position. Das Panel
-  schreibt eine Bindung und den Pulsbereich des Throttle nur in SAFE.
+  schreibt eine Zuordnung und den Pulsbereich des Gases nur in SAFE.
 - Bei totem Link, verlorenem Heartbeat und absinkendem Eingang des PD mini
   handelt der IOmcu aus eigener Befugnis und meldet den Fehler beim
   nächsten Poll. Seine Fehlerbits für Überstrom, Übertemperatur und Stall
@@ -1012,11 +1017,11 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   `slew_per_s * 500 / 1000` weit, bevor der Timeout ihn zurückholt. In beiden
   Fällen treibt er, und beendet wird das durch ein Schalten auf SAFE.
 - Die Einstellung `Rampengrenze`, 5 bis 300%/s, gilt für die Gas-Bank des
-  Panels. Diese Bank ist der modellierte Prüfstand: ihr geslewter Wert wird
-  vom Telemetrie-Simulator gelesen und sonst von nichts, und nur solange der
-  Link unten ist. Einem antwortenden IOmcu wird stattdessen das rohe
+  Panels. Diese Bank ist der simulierte Prüfstand: Ihr durch die Rampe begrenzter Wert wird
+  vom Telemetrie-Simulator gelesen und sonst von nichts, und nur solange die
+  Verbindung unterbrochen ist. Einem antwortenden IOmcu wird stattdessen das rohe
   Kommando geschickt, und `outbind_to_chan_cfg()` schreibt für keinen Kanal
-  einen Slew, ein als Throttle gebundener Pin springt also im nächsten
+  einen Slew, ein als Gasausgang zugeordneter Pin springt also im nächsten
   1-ms-Durchlauf darauf. Das physische Gas wird nicht gerampt, per
   Entscheidung: die Bank rampt ein Throttle nur aufwärts, ein Ramp auf dem
   Draht würde also nur den Anstieg verlangsamen und sonst nichts. [STATUS.md,
@@ -1033,7 +1038,7 @@ den Programmierdraht, nicht als Pulsbreite.
 
 Die Regel:
 
-- Eine Bewegung braucht eine betretene Sitzung (`hitec_session_move()`;
+- Eine Bewegung setzt eine Sitzung im Programmiermodus voraus (`hitec_session_move()`;
   sonst abgelehnt mit `HITEC_SES_ERR_NOT_IN_MODE`). D series: ein Ziel von 0
   bis 6000 in Register 0x1E geschrieben, dann Register 0x0C, die Position,
   zurückgelesen. Classic: `66` mit einem Ziel von 3600 bis 8400 (900 bis
@@ -1043,8 +1048,8 @@ Die Regel:
   Speichern (0x70), kein Neustart. Kein Schritt einer Bewegung trägt MORE,
   ein OFF der Versorgung während einer Bewegung wird also nicht für ein
   Schreiben gehalten ([Die Versorgung eines Programmierports](#die-versorgung-eines-programmierports)).
-  Ein Wert erreicht den Speicher des Servos nur über ein Schreiben mit
-  Backup, Protokoll und Rücklesen.
+  Ein Wert erreicht den nichtflüchtigen Speicher des Servos nur durch einen
+  Schreibvorgang mit Backup, Vermerk und Zurücklesen.
 - Die kommandierte Position bewegt sich höchstens 150 Zähler (2.0deg) je
   Durchlauf und bleibt innerhalb der Reichweite der gespeicherten Endpunkte
   des Servos: der Positionen der Ziele 0 und 6000, 2606 bis 13743 bei einem
@@ -1058,7 +1063,7 @@ Die Regel:
   sich um weniger als die Hälfte einer kommandierten Änderung von 3deg oder
   mehr bewegt hat. Eine Blockierung setzt das Kommando auf die letzte freie
   Position zurück, 75 Zähler (1.0deg) zur Neutralstellung hin.
-- Die Abbildung nimmt nur ein auf CW gestelltes Servo
+- Die Abbildung gilt nur für ein auf CW gestelltes Servo
   (`hitec_live_d_ends()`).
 - Bewegungen werden mit einem 2s langen Halten eingeschaltet, und nur mit
   einem antwortenden PD mini mit eingeschaltetem Ausgang: STOP schaltet den
@@ -1084,8 +1089,8 @@ Aktuelle Einschränkungen:
 ## Heartbeat statt Enable-Pegel
 
 Ein statischer Enable-Pegel versagt, wenn die Firmware mit gesetztem Pin
-hängen bleibt. Flanken laufen von selbst ab. Die Periodenprüfung in der
-Firmware weist eine kurzgeschlossene oder klingelnde Leitung ab, die ein
-Monoflop allein annehmen würde.
+hängen bleibt. Bleiben Flanken aus, läuft das Zeitfenster ab. Die Periodenprüfung in der
+Firmware weist eine kurzgeschlossene Leitung oder eine Leitung mit
+Nachschwingungen ab, die ein Monoflop allein akzeptieren würde.
 
 Das Panel hat keine Leitung zu irgendeinem Ausgang.

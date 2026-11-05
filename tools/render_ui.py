@@ -1214,8 +1214,8 @@ def main() -> int:
     ap.add_argument("--dir", type=pathlib.Path,
                     default=REPO / "docs" / "img")
     ap.add_argument("--lang", choices=sorted(LANGS) + ["all"], default="all",
-                    help="the language to render (default: every one; "
-                         "German goes to docs/img/de/)")
+                    help="language to render (default: all; German images go "
+                         "to docs/img/de/)")
     ap.add_argument("--check", action="store_true",
                     help="fail if any render differs from the committed image")
     ap.add_argument("--fit", action="store_true",

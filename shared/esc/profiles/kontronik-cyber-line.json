@@ -14,7 +14,7 @@
       "v_max_mv": 16000,
       "current_a": 40,
       "bec": null,
-      "firmware_note": "NiCd cells; BEC 1.5 A for 4 servos; 55 A for 15 s",
+      "firmware_note": "NiCd cells; BEC 1.5A for 4 servos; 55A for 15s",
       "spec_source": "Kontronik_Cyber-Line.pdf p.2: 6-12 NiCd/NiMH cells, 40 A continuous, 16 V stated"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": 19000,
       "current_a": 50,
       "bec": null,
-      "firmware_note": "BEC 3 A: 5 servos up to 8 cells or 3 servos up to 14 cells; 70 A for 15 s",
+      "firmware_note": "BEC 3A: 5 servos up to 8 cells or 3 servos up to 14 cells; 70A for 15s",
       "spec_source": "Kontronik_Cyber-Line.pdf p.2: 6-14 NiCd/NiMH cells, 50 A continuous, 19 V stated"
     },
     {
@@ -68,19 +68,19 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the programming contacts.",
-      "action_de": "Jumper auf die Programmierkontakte stecken.",
+      "action_de": "Stecke den Jumper auf die Programmierkontakte.",
       "source": "Kontronik_Cyber-Line.pdf p.5-8"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off as soon as the drive battery is connected.",
-      "action_de": "Jumper abziehen, sobald der Antriebsakku angesteckt ist.",
+      "action_de": "Ziehe den Jumper ab, sobald der Antriebsakku angesteckt ist.",
       "source": "Kontronik_Cyber-Line.pdf p.6-7"
     },
     {
       "when": "during_menu",
       "action": "Current limit and reset: fit the jumper again while the ESC beeps, as the program asks.",
-      "action_de": "Strombegrenzung und Reset: Jumper wieder stecken, während der ESC piept, wie das Programm es verlangt.",
+      "action_de": "Strombegrenzung und Reset: Stecke den Jumper nach Aufforderung wieder auf, während der ESC piept.",
       "source": "Kontronik_Cyber-Line.pdf p.5, p.8"
     }
   ],
@@ -90,12 +90,12 @@
       "throttle": "min",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Signal after jumper removal; 3-fold or 4-fold signal after about 5 s; 6-fold signal about 30 s after reset beeps.",
+      "confirm_signal": "Signal after jumper removal; 3-fold or 4-fold signal after about 5s; 6-fold signal about 30s after reset beeps.",
       "steps": [
-        "Receiver battery connected on ESC types without BEC. Transmitter on.",
+        "For ESCs without a BEC, connect the receiver battery. Switch the transmitter on.",
         "Stick-way teach-in: throttle to brake or motor-off (stick back), operator fits the jumper and turns on the radio; apply drive power and pull the jumper; one signal; move to full; one signal; for EMK brake move to motor-off (may equal brake); for a start button fit the jumper again; two signals; disconnect power.",
-        "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5s for the 4-fold signal; count the beeps (10% each); move the throttle out of the brake position at the wanted count; the ESC repeats the strength; disconnect power.",
-        "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
+        "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5s for the 4-fold signal; count the beeps (10% each); move the throttle out of the brake position at the desired count; the ESC repeats the strength; disconnect power.",
+        "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the desired count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
         "Reset: any throttle position; fit the jumper and turn on the radio; apply power and fit/keep the jumper while the ESC beeps several times; about 30s after the last signal a 6-fold signal arrives; the LED flashes continuously; disconnect power."
       ]
     },
@@ -107,7 +107,7 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": null,
-      "description": "After the wait signal, the ESC sounds one beep per unit (5 A for the current limit, 10 % for the brake strength); the throttle movement at the wanted count stores it, and the ESC repeats the stored value."
+      "description": "After the wait signal, the ESC sounds one beep per unit (5A for the current limit, 10% for the brake strength); the throttle movement at the desired count stores it, and the ESC repeats the stored value."
     },
     "select": {
       "throttle": "mid",
@@ -121,7 +121,7 @@
     "confirm_signal": "The ESC repeats the stored value as beeps; two signals after the jumper is replugged for current regulation or the start button.",
     "exit": "Disconnect power.",
     "changes_per_entry": "one",
-    "reset_to_defaults": "Reset program: jumper on, power on, about 30 s later a 6-fold signal, LED flashes continuously.",
+    "reset_to_defaults": "Reset program: jumper on, power on, about 30s later a 6-fold signal, LED flashes continuously.",
     "description": "Four separate programs on a jumper-and-signals scheme. The throttle position at power-up and the signal count the ESC reaches select the program. Settings are taught by moving the stick."
   },
   "items": [
@@ -184,7 +184,7 @@
   ],
   "unknowns": [
     "Signal is an LED flash plus a beep with the motor connected; beep duration and gaps are not stated.",
-    "Time allowed between steps is not stated except the 'about 5 s' wait for the 3-fold or 4-fold signal and about 30 s for the reset.",
+    "Time allowed between steps is not stated except the 'about 5 s' wait for the 3-fold or 4-fold signal and about 30s for the reset.",
     "How the ESC decides between stick-way teach-in and brake-strength entry when both start with the stick back and the jumper pulled at power-up is not stated in the text.",
     "Item numbers are the signal counts where the manual gives them; item 1 is the stick-way teach-in, which has no count.",
     "Input and rating of CYOPT types are not stated in the text read."

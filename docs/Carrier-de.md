@@ -2,12 +2,12 @@
 
 # Der rbmod-Carrier
 
-Der rbmod-Carrier ist eine Platine, die das Waveshare-Modul RP2350-CAN trägt
-und jede Leitung auf einen festen GPIO (General-Purpose Input/Output) legt.
-Er ist eine feste Konfiguration: am Panel wird kein Pin gewählt. Der IOmcu
-auf dem Carrier läuft mit einem eigenen Image, `rcbench-iomcu-rbmod`, und
-meldet Board 2 in Register 5 von IDENTITY ([Link: Boards mit verlöteten
-Pins](Link-de.md#boards-mit-verlöteten-pins)).
+Der rbmod-Carrier trägt das Waveshare-Modul RP2350-CAN und verbindet
+jede Leitung mit einem festen GPIO (General-Purpose Input/Output).
+Diese Pin-Zuordnung lässt sich am Panel nicht ändern. Der IOmcu auf dem
+Carrier verwendet das eigene Image `rcbench-iomcu-rbmod` und meldet
+Board 2 in Register 5 von IDENTITY
+([Link: Boards mit verlöteten Pins](Link-de.md#boards-mit-verlöteten-pins)).
 
 ## Pins
 
@@ -32,8 +32,8 @@ nicht betrieben.
 
 ## Die Stecker J1 und J2
 
-Jede Position ist Signal, + und GND. Jedes Signal hat einen
-Serienwiderstand von 120Ω.
+Jede Position hat die Anschlüsse Signal, + und GND. In jeder
+Signalleitung liegt ein Serienwiderstand von 120Ω.
 
 | J1 Position | Signal | GPIO | Schiene + |
 | --- | --- | --- | --- |
@@ -51,23 +51,23 @@ Serienwiderstand von 120Ω.
 
 Die Reihenfolge der Positionen folgt dem Layout.
 
-PWM02 (GPIO 4) und PWM03 (GPIO 5) sind ein PWM-Slice (Pulsweitenmodulation)
-und laufen mit einer Framerate. PWM04 (GPIO 1) teilt Slice 0 mit PROGP04
+PWM02 (GPIO 4) und PWM03 (GPIO 5) teilen sich einen PWM-Slice
+(Pulsweitenmodulation) und verwenden dieselbe Pulsrate. PWM04 (GPIO 1) teilt Slice 0 mit PROGP04
 (GPIO 0), und PROGP02 (GPIO 14) teilt Slice 7 mit PROGP03 (GPIO 15). Ab
 Protokoll 4.36 treibt der Servotester den Puls des gewählten
 Programmierports ([Der Programmierport](#der-programmierport)). Die
-Bindung von PWM01 bis PWM04 geht vor: ein auf PWM04 gebundener
-PWM-Ausgang setzt PROGP04 auf FUNC NONE zurück, und solange PWM04 einen
-PWM-Ausgang trägt, bekommt PROGP04 keinen Puls. Nur der gewählte Port läuft als
+Zuordnung von PWM01 bis PWM04 hat Vorrang: Ein PWM-Ausgang auf PWM04
+setzt PROGP04 auf FUNC NONE zurück. Solange PWM04 einen PWM-Ausgang
+trägt, gibt PROGP04 keinen Puls aus. Nur der gewählte Port läuft als
 SERVO PWM, PROGP02 und PROGP03 pulsen also nie zusammen.
 
 ## Der Programmierport
 
-Die Programmer für KST und Hitec und der Servotester teilen einen
-Programmierport, der am Panel gewählt und über einen Neustart behalten
-wird. Er ist die Einstellung SERVO-TESTER (SET_SERVO_TARGET): 1 bis 4 für
-PROGP01 bis PROGP04, 0 für die Servoausgänge. Gewählt wird er an zwei
-Stellen:
+Die Servoprogrammierung für KST und Hitec teilt sich einen
+Programmierport mit dem Servotester. Das Panel speichert die Auswahl
+über Neustarts hinweg in SERVO-TESTER (SET_SERVO_TARGET): 1 bis 4 wählen
+PROGP01 bis PROGP04, 0 wählt die Servoausgänge. Wähle den Port an einer
+dieser Stellen:
 
 - in der Zeile PORT der Programmer, vor VERBINDEN: ein Tipp auf die
   Beschriftung der Zeile öffnet PROGP01 bis PROGP04 mit ihrem GPIO
@@ -103,20 +103,22 @@ Puls nur an, solange das Feld EIN zeigt.
 | M8, Buck | das Netz +15V | +5V: VBUS des Moduls und J7 | immer an |
 | PD mini, an J8 | sein eigener Eingang | VCC_PDMINI: die Servoschienen A und B an J2 | die SUPPLY-Page |
 
-Die Programmierports laufen aus den festen 5V von M7, nicht aus dem PD mini.
-Eine KST- oder Hitec-Sitzung lässt den PD mini der bedienenden Person:
-SUPPLY und die Zeile SOLL des SERVO-Bildschirms nehmen während einer
-Sitzung AUSGANG EIN und Sollwerte an, die sie auf anderen Platinen
-abweisen. KST- und Chaservo-Servos programmieren mit 5V. Auf dem Carrier stellen die
-Programmer die Spannung der Programmierports nicht ein: ihre Liste MORE
-zeigt `PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21` und bietet weder Spannung
-noch Strom an.
+M7 versorgt die Programmierports mit festen 5V, unabhängig vom PD mini.
+Während einer KST- oder Hitec-Sitzung kannst du den PD mini weiter
+bedienen: SUPPLY und die Zeile SOLL auf SERVO nehmen AUSGANG EIN und
+Sollwerte an, die sie während einer Sitzung auf anderen Platinen
+ablehnen. KST- und Chaservo-Servos werden mit 5V programmiert. Auf dem
+Carrier kann die Servoprogrammierung die Spannung der Programmierports
+nicht ändern. Ihre Liste WEITERES zeigt
+`PROGRAMMIERSPANNUNG: 5V FEST, GPIO 21` und bietet keine Einstellung für
+Spannung oder Strom an.
 
-Die Programmer für KST und Hitec schalten GPIO 21 für eine Sitzung ein und
-aus, über die Page PROG_SUPPLY (Link 4.32). Das Feld PROG 5V auf der
-Ausgangskarte von SERVO und auf LIVE von SUPPLY schaltet sie von Hand:
-PROG 5V EIN ist ein Halten von 2s, PROG 5V AUS ein Tipp, bei SAFE und bei
-ARMED, wie AUSGANG EIN des PD mini. Das Feld nennt den Pin,
+Die Servoprogrammierung für KST und Hitec schaltet GPIO 21 während einer
+Sitzung über die Page PROG_SUPPLY ein und aus (Link 4.32). Manuell
+schaltest du sie im Feld PROG 5V auf der Ausgangskarte von SERVO oder
+unter LIVE auf SUPPLY: Halte PROG 5V EIN für 2s oder tippe auf
+PROG 5V AUS. Das ist bei SAFE und ARMED möglich, wie AUSGANG EIN
+des PD mini. Das Feld nennt den Pin,
 `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster von 50ms an
 0x40 CH3, `5.02V  0.120A` ([Der Strommonitor](#der-strommonitor)). Solange
 die Sitzung eines Programmers die 5V hält, nimmt das Feld keinen Druck an
@@ -174,13 +176,14 @@ die Abschaltung bei Überspannung: ein Servo an einem Programmierport, das
 bremst, speist Energie in die 5V zurück, die M7 nicht aufnehmen kann. Eine
 Z-Diode an der Schiene nimmt sie auf einer nachgearbeiteten Platine auf
 ([Nacharbeit Rev 1](#nacharbeit-rev-1), Punkt 3). Die Page PROG_SUPPLY
-liest GPIO 21 dann weiter als ein.
+meldet GPIO 21 dabei weiterhin als eingeschaltet.
 
-Das Panel beobachtet 0x40 CH3, solange sein eigenes ON steht: die Page
-liest die 5V ein oder hat das ON bestätigt, kein Programmierport hält sie,
-und der Heartbeat läuft. Zwei neue Fenster von 50ms nacheinander mit einer
-mittleren Busspannung unter 3000mV, beide 500ms oder mehr nach dem ON
-gelesen, sind ein Fehler des Prüfstands:
+Das Panel überwacht 0x40 CH3, solange sein eigenes ON aktiv ist. Die
+Page muss die 5V als eingeschaltet melden oder ON bestätigt haben,
+kein Programmierport darf die Versorgung belegen, und der Heartbeat
+muss laufen. Zwei aufeinanderfolgende neue Fenster von 50ms mit einer
+mittleren Busspannung unter 3000mV lösen einen Prüfstandsfehler aus,
+wenn beide frühestens 500ms nach ON gelesen werden:
 
 - SAFE, alle Ausgänge aus und das OFF der Page
   ([Sicherheit, Fehler](Safety-de.md#fehler)). Das nächste PROG 5V EIN
@@ -203,12 +206,14 @@ Die Regel ist `shared/safety/prog5v_lost.c` unter `test_prog5v_lost`;
 
 Aktuelle Einschränkungen:
 
-- Ohne einen INA3221-Kanal, der PROG 5V beobachtet, gibt es keine
-  Beobachtung: keine gültige Map mit einem Kanal für PROG 5V, oder kein
-  gelesenes Fenster dieses Kanals (das Bauteil offline, der Link weg).
-  Eine Platine ohne den Schalter PROG_SUPPLY hat auch keine.
-- Solange eine KST-, Hitec- oder ESC-Wire-Sitzung die 5V hält, gibt es
-  keine Beobachtung: die Sitzung schaltet sie selbst aus und ein.
+- Die Überwachung benötigt einen INA3221-Kanal für PROG 5V und
+  ausgelesene Fenster dieses Kanals. Sie fehlt bei ungültiger Map,
+  fehlender Kanalzuordnung oder ausbleibenden Fenstern, etwa weil das
+  Bauteil offline oder der Link unterbrochen ist. Auf einer Platine
+  ohne Schalter PROG_SUPPLY fehlt die Überwachung von PROG 5V ebenfalls.
+- Während einer KST-, Hitec- oder ESC-Wire-Sitzung, die die 5V belegt,
+  ist die Überwachung ausgesetzt. Die Sitzung schaltet die Versorgung
+  selbst aus und ein.
 - Die Erkennungszeit auf der Hardware ist nicht gemessen. Nach der Regel
   sind es 2 neue Fenster nach dem Ausfall, etwa 100ms, dazu die 500ms
   nach dem ON.
@@ -233,11 +238,11 @@ Pad-Pulls des RP2350.
 | CH2 | VCC_PDMINI | VCC_SERVOPORT_A, J2 Positionen 3 und 4 |
 | CH3 | VCC_PROGPORT_DCDC (M7) | VCC_PROGPORT, J1 |
 
-Das Bauteil und seine Kanäle sind fest. Der IOmcu hält das Bauteil auf der
-Page SENSE_MAP bestückt und jeden Kanal auf seiner Schiene und lehnt eine
-Map ab, die eins davon verschiebt
+Bauteil und Kanalzuordnungen sind fest. Auf SENSE_MAP hält der IOmcu
+das Bauteil als bestückt markiert und jeden Kanal seiner Schiene
+zugeordnet. Er lehnt Maps ab, die eine dieser Zuordnungen ändern
 ([Link, Boards mit verlöteten Pins](Link-de.md#boards-mit-verlöteten-pins)).
-SETUP > SENSORS zeigt die Zeilen ohne Tasten:
+SETUP > SENSORS zeigt diese Zeilen ohne Tasten zum Bearbeiten:
 
 | Zeile | Zeigt |
 | --- | --- |
@@ -248,7 +253,7 @@ SETUP > SENSORS zeigt die Zeilen ohne Tasten:
 
 ![SENSORS auf dem Carrier](img/de/setup-sensors-rbmod.png)
 
-- Die Shunts und die Grenzen sind Einstellungen wie an jeder Bench: Shunt
+- Shunts und Grenzen lassen sich wie an jedem Prüfstand einstellen: Shunt
   AUS oder 5.0 bis 1000.0mΩ, Vorgabe 100.0mΩ; Grenze AUS oder 10 bis
   32767mA ([Bildschirme: SENSORS](Screens-de.md#sensors-die-ina3221-bausteine)).
   Der Shuntwert von M5 auf dem Carrier steht hier nicht fest; 100.0mΩ ist
@@ -260,12 +265,12 @@ SETUP > SENSORS zeigt die Zeilen ohne Tasten:
   GPIO 4 oder GPIO 5. Mit SERVO PWM auf beiden Schienen liest er nur die
   Schiene des niedrigsten GPIO. Mit einem Programmierport als Ziel des
   Testers ist es CH3.
-- SERVO und der Limit-Lauf nennen das Messgerät nach seiner Schiene:
+- SERVO und der Endlagenlauf benennen das Messgerät nach seiner Schiene:
   `INA SCHIENE A` über dem Plot, `INA3221 SCHIENE A` auf der Karte TEST.
   Das Band nennt die Schiene eines Kanals über seiner Grenze:
   `INA3221 0x40 CH2 (SCHIENE A) über der Grenze von 0.80A.`. Die Zeile
   ÜBERWACHT VON jedes Programmierports nennt CH3, `INA3221 PROG 5V`. Die
-  Spalten des Laufprotokolls heißen `rail b`, `rail a` und `prog 5v`.
+  Spalten der Laufaufzeichnung heißen `rail b`, `rail a` und `prog 5v`.
 - Ein IOmcu-Image älter als Protokoll 4.33 lehnt die Map des Carriers ab:
   0x40 zeigt `VOM IOMCU NICHT ÜBERNOMMEN`, bis der IOmcu das Image des
   Panels fährt.
@@ -276,9 +281,10 @@ SETUP > SENSORS zeigt die Zeilen ohne Tasten:
 | --- | --- | --- |
 | `cmake -S firmware/iomcu -B firmware/iomcu/build-rbmod -DIOMCU_BOARD=rbmod` | `rcbench-iomcu-rbmod-install.uf2`, `rcbench-iomcu-rbmod.uf2`, `rcbench-iomcu-rbmod-pt.uf2`, `rcbench-iomcu-rbmod.bin`, `rcbench-iomcu-rbmod.elf` | `rcbench-iomcu-rbmod-vX.Y.Z.zip` |
 
-Das erste Laden ist die Install-UF2 (USB Flashing Format) über USB, wie in
-[Erster Lauf](FirstRun-de.md#aus-den-release-assets). Danach bietet das
-Panel jedem IOmcu das Image des Boards an, das er meldet.
+Verwende für die erste Installation die Install-UF2 (USB Flashing
+Format) über USB, wie unter
+[Erster Lauf](FirstRun-de.md#aus-den-release-assets) beschrieben. Danach
+bietet das Panel jedem IOmcu das Image für dessen gemeldetes Board an.
 
 ## Am Panel
 
@@ -309,11 +315,12 @@ fest:
 
 ## Nacharbeit Rev 1
 
-Jede Platine der Rev 1 braucht drei Änderungen von Hand. Das Image des
-Carriers setzt die Punkte 1 und 2 voraus; auf Punkt 3 verlässt es sich
-nicht. Rev 2 trägt die Punkte 1 und 2 im Kupfer. Punkt 3 ist für Rev 2 eine
-offene Designfrage: ein Wandler, der nicht abschaltet, oder eine Klemmung
-im Kupfer.
+Jede Platine der Rev 1 benötigt drei manuelle Änderungen. Das
+Carrier-Image setzt voraus, dass die Punkte 1 und 2 umgesetzt sind;
+Punkt 3 setzt es nicht voraus. Bei Rev 2 sind die Punkte 1 und 2 im
+Platinenlayout enthalten. Die Lösung für Punkt 3 ist bei Rev 2 noch
+offen: ein Wandler ohne verriegelnde Abschaltung oder eine
+Klemmschaltung auf der Platine.
 
 | # | Änderung | Grund | Die Firmware verlässt sich darauf |
 | --- | --- | --- | --- |

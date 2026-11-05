@@ -197,9 +197,10 @@ def main(argv: list[str] | None = None) -> int:
     """
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--check", action="store_true",
-                    help="fail if the checked-in C file differs")
+                    help="check without writing; fail if the committed C file "
+                         "differs")
     ap.add_argument("--sizes", action="store_true",
-                    help="print the bytes of each file as served")
+                    help="print the size in bytes of each file as served")
     ap.add_argument("--root", type=pathlib.Path, default=REPO,
                     help=argparse.SUPPRESS)
     args = ap.parse_args(argv)

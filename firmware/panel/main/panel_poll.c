@@ -178,13 +178,11 @@ static bool probe_identity(link_msg_t *reply)
 {
     bool answered;
     /*
-     * The bus first, because a controller that has fallen off it cannot ask
-     * anything.  A transmitter nobody answers -- an IOmcu not powered
-     * yet, or one that has reset -- adds 8 to its error counter per attempt
-     * and is off the bus in about four milliseconds, and the ESP32-P4's TWAI
-     * does not come back on its own.  Without this the first quiet moment on
-     * the bus is permanent: every later transmit fails, the panel shows NO
-     * LINK and only a power cycle clears it.
+     * Recover the bus first: a controller in bus off cannot send a probe.
+     * The ESP32-P4's TWAI needs software recovery and a restart once bus
+     * off is reached.  Restoring the peer alone does not clear that state.
+     * Missing ACK alone need not cause bus off because CAN has an
+     * error-passive ACK exception; can_twai.c describes it.
      */
     if (can_twai_recover() == CAN_TWAI_RECOVERING) {
         ++s_recoveries;

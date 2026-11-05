@@ -424,7 +424,7 @@ test('option visibility follows the parts of the setup', () => {
   assert.equal(option(resolve(CATALOGUE, select(['servotest'])), 'servoPower').visible, false);
 });
 
-test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo breakout board, the PD mini', () => {
+test('servo power: the external supply, the 5V pin, the strip of the Osoyoo breakout board, the PD mini', () => {
   const plus = (setup: Setup): Array<[number, string, string | null]> => setup.wires
     .filter((w) => w.cls === 'power' && [w.a, w.b].some((end) => end === 'servo.POS' || end === 'ina3221.C1A'))
     .map((w) => [w.n, w.a, w.b]);
@@ -606,11 +606,11 @@ function sensorSupply(setup: Setup): Array<[number, string, string | null, strin
     .map((w) => [w.n, w.a, w.b, w.net]);
 }
 
-test('the module with XT90 plugs takes 3.3 V from pad 36 and never VBUS from pad 40', () => {
+test('the module with XT90 plugs takes 3.3V from pad 36 and never VBUS from pad 40', () => {
   const xt90 = resolve(CATALOGUE, select(['escpow'], [], { ina228Board: 'xt90' }));
   assert.deepEqual(sensorSupply(xt90), [[55, 'pad.36', 'ina228.V3', '3v3']]);
   const wire = xt90.wires.find((w) => w.n === 55)!;
-  assert.deepEqual(wire.signal, { en: 'supply, 3.3 V', de: 'Versorgung, 3,3 V' });
+  assert.deepEqual(wire.signal, { en: 'supply, 3.3V', de: 'Versorgung, 3,3V' });
   // The other wires on pad 36 carry the same net and the same signal text.
   for (const other of CATALOGUE.wires.filter((w) => w.a === 'pad.36')) {
     assert.equal(other.net, '3v3', `wire ${other.n}`);
@@ -623,12 +623,12 @@ test('the module with XT90 plugs takes 3.3 V from pad 36 and never VBUS from pad
   assert.equal(supplyPin.confirmed, true);
 });
 
-test('the MATEK board takes 5 V from pad 40', () => {
+test('the MATEK board takes 5V from pad 40', () => {
   const matek = resolve(CATALOGUE, select(['escpow']));
   assert.deepEqual(sensorSupply(matek), [[41, 'pad.40', 'ina228.V5', 'vbus']]);
   const wire = matek.wires.find((w) => w.n === 41)!;
-  assert.deepEqual(wire.signal, { en: 'supply, 5 V', de: 'Versorgung, 5 V' });
-  assert.deepEqual(wire.note, { en: 'The MATEK board needs 4 to 9 V.', de: 'Die MATEK-Platine braucht 4 bis 9 V.' });
+  assert.deepEqual(wire.signal, { en: 'supply, 5V', de: 'Versorgung, 5V' });
+  assert.deepEqual(wire.note, { en: 'The MATEK board needs 4 to 9V.', de: 'Die MATEK-Platine braucht 4 bis 9V.' });
 });
 
 test('no setup holds both supply wires of the INA228 board, and the board variant decides', () => {

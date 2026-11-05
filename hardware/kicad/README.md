@@ -1,7 +1,7 @@
 # KiCad library of the rcbench modules
 
-Footprints and symbols for the modules the bench is built from, for a carrier
-PCB (printed circuit board) that takes them. KiCad 10 format: footprint
+Footprints and symbols for mounting the bench's modules on a carrier
+PCB (printed circuit board). KiCad 10 format: footprint
 version 20260206, symbol library version 20251024. KiCad 10.0.7 or newer
 loads both files. KiCad 9 and older refuse both files.
 
@@ -41,7 +41,7 @@ python3 hardware/kicad/tools/step_check.py       # CI: exit 1 on a bad model
    path of `hardware/kicad/rcbench_modules.3dshapes`. Without it the 3D
    viewer shows the footprints without models.
 
-Footprint origin is pad 1. Every footprint draws the board outline and its
+Each footprint's origin is pad 1. Every footprint draws the board outline and its
 main parts in top view on F.SilkS and F.Fab; the courtyard is the outline of
 everything drawn plus 0.25mm.
 
@@ -67,9 +67,9 @@ repository; each spec names them.
 | `USBC_PD_Trigger_DIP3_30x20mm` | USB-C PD trigger, 3-way DIP switch | 2 (+, -) | vendor photo | about 0.2mm |
 | `DCDC_Buck_Mini_30x18mm_EN` | mini buck DC-DC, 4R7, input 6-20V | 5 (IN+ IN- EN OUT+ OUT-) | dimensions printed on the vendor photo | grid exact; EN pad 0.5mm |
 
-The accuracy figures are estimates from the measuring, not checked against
-boards with a caliper. Check a module against its footprint before ordering
-a PCB; the ADXL345 board rests on a single photo, and listings of it give
+The accuracy figures are estimates from those measurements; they have not been
+checked against physical boards with a caliper. Check a module against its footprint before ordering
+a PCB; the ADXL345 dimensions rely on a single photo, and its listings give
 four different sizes.
 
 ## 3D models
@@ -79,8 +79,8 @@ four different sizes.
 gives the board thickness, the mount and one box, cylinder or prism per
 part with its height. The generator writes one solid per part with
 planar faces only; circles are polygons of 16 to 32 sides. Each drilled
-pad is a hole through the module board. The model frame is the
-footprint's: origin at pad 1, z = 0 on the carrier's top side, so the
+pad is a hole through the module board. The model uses the
+footprint's coordinate system: origin at pad 1, z = 0 on the carrier's top side, so the
 footprint places it with no offset, scale or rotation.
 
 | Mount | Modules | Position |
@@ -98,19 +98,19 @@ Sources of the heights, as each spec lists them:
 | part class figure, not measured | everything else, for example USB-C receptacle 3.2mm, QFN 0.9mm, SOIC-8 1.75mm, 0805 0.6mm |
 
 No source gives a board thickness; boards are drawn 1.6mm (the WeAct
-model measures 1.69mm over copper). The part on a board is not always
+model measures 1.69mm over copper). The exact part fitted to a board is not always
 identified: the XT90 variant and the INA219 terminal are the closest
 catalogue parts. No source was found for the RP2350-CAN heights, the PD
 trigger, the mini buck or the T-plug. All boards are drawn green (owner,
-2026-10-28), whatever the colour of the real board. Parts a spec does not
-draw are not in its model: bottom-side parts, the RP2350-CAN
+2026-10-28), whatever the colour of the real board. Parts omitted from a spec
+are also absent from its model: bottom-side parts, the RP2350-CAN
 castellations, the XT90 board's milled slots and the AS5600 magnet.
 
 ### Renders
 
-`tools/step_render.py` reads each STEP file back with OpenCASCADE, the
-geometry kernel KiCad reads STEP with, and draws it shaded with face edges
-from above the front left. The images below are its output, 640 x 480px:
+`tools/step_render.py` reads each STEP file with OpenCASCADE, the
+geometry kernel KiCad uses to read STEP. It renders a shaded view with face edges
+from above and to the front left. The images below are its output, 640 x 480px:
 
 ```sh
 pip install cadquery-ocp==8.0.1.1.0 pillow
@@ -141,10 +141,10 @@ The renders are not checked by CI; run the command after changing a
   module's contact positions, for reference.
 - The PD Power Mini has no UART pads. Its UART runs on the USB-C data lines
   (DP = TX, DM = RX, 3.3V); the symbol notes it and has no pins for it.
-- The XT90 board's print says its screw holes carry circuitry: the holes are
+- The XT90 board's markings indicate that its screw holes carry circuitry: the holes are
   non-plated in the footprint and must not be joined to anything.
 - Pin 1 of the JST-GH connectors on the MATEK board follows the board print;
-  which lead JST calls pin 1 is not checked.
+  which contact JST designates pin 1 has not been checked.
 - KiCad 10.0.3 shows the symbol library empty, without an error message;
   10.0.7 loads it. Versions between are not tested. Whether 10.0.3 loads the
   footprint library is not tested.

@@ -2,14 +2,14 @@
 
 [English](EscProfiles.md)
 
-Ein ESC-Profil (Electronic Speed Controller) beschreibt, wie eine Familie
-von ESCs über ihr Gasknüppel-Menü programmiert wird. Es enthält, wie das Menü
-betreten wird, wie der ESC eine Zahl ausgibt und welche Punkte und Werte das
-Menü hat. Es sind die Daten, die die
-[Stick-Programmierung](StickProgramming-de.md) ausführt: Der Bediener wählt
-einen ESC und die zu ändernden Werte, und der Prüfstand bewegt das Gas und
-zählt die Pieptöne im Versorgungsstrom. 24 der 72 Profile sind von einer
-Art, die sie ausführt.
+Ein ESC-Profil beschreibt die Programmierung einer Familie elektronischer
+Drehzahlregler (ESC, Electronic Speed Controller) über ihr Gasknüppel-Menü.
+Es legt den Einstieg ins Menü, die Pieptonfolgen zur Ausgabe von Zahlen
+sowie die verfügbaren Menüpunkte und Werte fest. Die
+[Stick-Programmierung](StickProgramming-de.md) verwendet diese Daten: Du
+wählst einen ESC und die zu ändernden Werte; der Prüfstand steuert das Gas
+und zählt die Pieptöne im Versorgungsstrom. Er kann 24 der 72 Profile
+ausführen.
 
 ## Was im Satz steht
 
@@ -29,8 +29,9 @@ Art, die sie ausführt.
 
 Jedes Profil ist `"verified": false`. Die Profile stammen aus 153
 Handbüchern und sind ohne ESC am Prüfstand entstanden. Kein Handbuch nennt
-eine Pieplänge, eine Pause oder eine Schleifenzeit in Millisekunden, deshalb
-ist jedes Zeitfeld null, bis eine Aufnahme am Prüfstand es misst.
+eine Pieptondauer, eine Pause oder eine Schleifenzeit in Millisekunden. Die
+zugehörigen Zeitfelder bleiben deshalb null, bis eine Aufzeichnung am
+Prüfstand Messwerte liefert.
 
 ## Wo Profile liegen
 
@@ -39,17 +40,17 @@ ist jedes Zeitfeld null, bis eine Aufnahme am Prüfstand es misst.
 | Eingebaut | `shared/esc/profiles/*.json`, in das Panel-Image übersetzt | immer |
 | SD-Karte | `/BENCH/ESC/CONF/*.json` | einmal, beim Start |
 
-Eine Datei auf der Karte heißt wie ihre id: `/BENCH/ESC/CONF/hobbywing-flyfun-8item.json`
+Eine Datei auf der Karte trägt ihre `id` als Namen: `/BENCH/ESC/CONF/hobbywing-flyfun-8item.json`
 enthält `"id": "hobbywing-flyfun-8item"`. Groß- und Kleinschreibung dürfen
-abweichen; alles andere wird abgelehnt. Eine Datei mit der id eines
-eingebauten Profils ersetzt dieses Profil. Eine Datei mit neuer id fügt ein
-Profil hinter den eingebauten an. Eine Datei, die ihren Hersteller über
-512 Modelle (`ESC_MAKER_MODELS_MAX`) brächte, gezählt über seine eingebauten
-Profile und die von der Karte, wird abgelehnt. Dateinamen ab 64 Zeichen werden nicht
-gelesen. Die
-Karte hält höchstens 32 Profile; das Panel liest die Namen der ersten 64
-`.json`-Dateien in `/BENCH/ESC/CONF/`. Eine abgelehnte Datei wird auf der Konsole mit
-Grund genannt, zum Beispiel:
+abweichen; andere Unterschiede werden abgelehnt. Eine Datei mit der `id`
+eines eingebauten Profils ersetzt dieses Profil. Eine neue `id` fügt ein
+Profil hinter den eingebauten an. Eine Datei wird abgelehnt, wenn dadurch
+für einen Hersteller mehr als 512 Modelle (`ESC_MAKER_MODELS_MAX`) geladen
+würden. Dabei zählen seine eingebauten Profile und die Profile von der
+Karte zusammen. Dateinamen ab 64 Zeichen werden nicht gelesen. Das Panel
+lädt höchstens 32 Kartenprofile und liest die Namen der ersten 64
+`.json`-Dateien in `/BENCH/ESC/CONF/`. Abgelehnte Dateien erscheinen auf der
+Konsole mit dem Grund, zum Beispiel:
 
 ```
 ESC profiles: MYESC.JSON refused: items[2].values: not 1-255 entries
@@ -66,8 +67,9 @@ Abgelehnt wird eine Datei, die:
 - anders heißt als ihre id;
 - eine Regel unten verletzt.
 
-Der Generator wendet dieselben Regeln auf die Dateien im Repository an. Das Panel läuft ohne Karte; dann sind die
-eingebauten Profile der ganze Satz.
+Der Generator wendet dieselben Regeln auf die Dateien im Repository an.
+Das Panel läuft auch ohne Karte; dann stehen nur die eingebauten Profile
+zur Verfügung.
 
 ## Die Datei
 
@@ -112,8 +114,8 @@ JSON. Das Panel lädt sie nicht.
 | `scheme.announce.beep_ms`, `gap_ms`, `group_gap_ms` | 0 bis 60000, oder null |
 | `scheme.announce.repeat` | 0 bis 255: 0 wiederholt bis zur Auswahl, null unbekannt |
 | `scheme.select.throttle`, `scheme.skip.throttle` | `min`, `mid`, `max`, `none` |
-| `scheme.listen` | wo der Knüppel ruht, während das Menü läuft: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null: wo der Einstieg ihn ließ. Gesetzt in den 9 Profilen für YGE-ESCs, deren Menü nach einem Einstieg bei Maximum mit dem Knüppel auf Minimum läuft; die Stick-Programmierung führt ein solches Profil nur aus, wenn `hold_ms` die Länge des Einstiegs nennt |
-| `scheme.store` | die Bewegung, die eine Auswahl speichert, nachdem der ESC sie beantwortet hat: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null: die Auswahl speichert. Gesetzt in den 8 Mode-Setups der YGE-ESCs, wo der Knüppel zurück auf Minimum den Modus speichert |
+| `scheme.listen` | Knüppelstellung während der Pieptonfolge des Menüs: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null, bleibt die Knüppelstellung vom Einstieg erhalten. Gesetzt in den 9 Profilen für YGE-ESCs, deren Menü nach einem Einstieg bei Maximum mit dem Knüppel auf Minimum läuft; die Stick-Programmierung führt ein solches Profil nur aus, wenn `hold_ms` die Länge des Einstiegs nennt |
+| `scheme.store` | die Bewegung, die eine Auswahl speichert, nachdem der ESC sie beantwortet hat: `{"throttle": "min"}`, `mid` oder `max`. Fehlt es oder ist es null, speichert bereits die Auswahlbewegung den Wert. Gesetzt in den 8 Mode-Setups der YGE-ESCs, wo der Knüppel zurück auf Minimum den Modus speichert |
 | `scheme.select.within_ms` | 0 bis 60000: die Zeit nach dem Ton, in der die Bewegung zählt, oder null, wenn nicht angegeben |
 | `scheme.value_select` | nur bei zweistufigen Menüs: `select` wählt den Punkt, dann speichert `value_select.throttle` (`min`, `mid`, `max`, `none`) den angesagten Wert; `within_ms` wie bei `select`. Fehlt es oder ist es null, speichert die `select`-Bewegung den Wert |
 | `scheme.changes_per_entry` | `one`, `many` |
@@ -137,9 +139,9 @@ JSON. Das Panel lädt sie nicht.
 | `name` | wie das Handbuch ihn nennt |
 | `key` | 1 bis 32 aus `a-z 0-9 _`; eine Bedeutung über alle Marken: `brake`, `timing`, `cutoff_voltage`, `cutoff_type`, `battery_type`, `cell_count`, `startup`, `governor`, `direction`, `throttle_range`, `pwm_freq`, `aircraft_type`, `mode`, `reset` |
 | `values` | 1 bis 255 aus `{"number": 0-255, "name": "...", "default": true}`; Nummern eindeutig, höchstens ein Standardwert |
-| `values[].entry_throttle` | `min`, `mid`, `max`: die Knüppelstellung, aus der das Handbuch diesen Wert programmiert, wo sie nicht die des Einstiegs ist; fehlt sie oder ist null, die des Einstiegs. Die Stick-Programmierung schaltet den ESC für diesen Wert dort ein |
-| `values[].entry_hold_ms` | 0 bis 600000: Einschalten bis Menü, wenn dieser Wert programmiert wird, wo das Handbuch eine andere Wartezeit als `scheme.entry.hold_ms` nennt; fehlt es oder ist null, die des Einstiegs. Kontronik SUN PLUS Modi 4 bis 6 warten 5000ms |
-| `values[].after_select` | 1 bis 4 aus `min`, `mid`, `max`: die Bewegungen, die das Handbuch nach der Auswahlbewegung dieses Werts verlangt, der Reihe nach, jede, wenn der ESC die vorige beantwortet hat; fehlt es oder ist null, keine. Die Kontronik-Car-Modi und PIX Modus 2 gehen auf `min`, die Bremse. Jede ist eine Bewegung: die erste nicht dorthin, wo der Knüppel steht, wenn sie beginnen (die Bewegung `scheme.store` des Profils, sonst die Auswahlbewegung (oder `value_select`)), und keine gleich der davor; eine Datei mit einer, die stehen bleibt, wird abgelehnt. Die Stick-Programmierung macht jede SPEICHERN nach der vorigen, nach der Bewegung `scheme.store` des Profils; ein zweistufiges Profil nimmt keine |
+| `values[].entry_throttle` | `min`, `mid`, `max`: die laut Handbuch für diesen Wert erforderliche Knüppelstellung, falls sie von der Einstiegsstellung abweicht. Fehlt sie oder ist sie null, gilt die Einstiegsstellung. Die Stick-Programmierung schaltet den ESC für diesen Wert in dieser Stellung ein |
+| `values[].entry_hold_ms` | 0 bis 600000: Wartezeit vom Einschalten bis zum Menü für diesen Wert, falls das Handbuch von `scheme.entry.hold_ms` abweicht. Fehlt sie oder ist sie null, gilt die Wartezeit des Einstiegs. Kontronik SUN PLUS Modi 4 bis 6 warten 5000ms |
+| `values[].after_select` | 1 bis 4 Stellungen aus `min`, `mid`, `max`: die nach der Auswahl dieses Werts erforderlichen Bewegungen. Sie laufen der Reihe nach, jeweils nachdem der ESC die vorige Bewegung bestätigt hat. Fehlt das Feld oder ist es null, gibt es keine weiteren Bewegungen. Kontronik-Car-Modi und PIX Modus 2 gehen auf `min`, die Bremse. Jeder Eintrag muss die Knüppelstellung ändern. Der erste muss von der vorherigen Stellung aus `scheme.store` abweichen; ohne Speicherbewegung gilt die Auswahlstellung (oder `value_select`). Weitere Einträge müssen sich jeweils vom vorigen unterscheiden. Eine Datei, die den Knüppel stehen lässt, wird abgelehnt. Die Stick-Programmierung führt diese SPEICHERN-Bewegungen nach der Bewegung aus `scheme.store` aus. Zweistufige Profile erlauben dieses Feld nicht |
 | `applies_to` | Modellnamen dieses Profils, oder null für alle. Die Stick-Programmierung bietet den Punkt nur an diesen Modellen an |
 | `applies_when` | eine Bedingung in Worten, z. B. `"model type heli"` |
 
@@ -148,8 +150,9 @@ oder `applies_when` haben.
 
 ### Handgriffe
 
-`manual` listet, was ein Mensch außer Gas und Versorgung am ESC tut, in der
-Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
+`manual` listet die Handgriffe am ESC, die zusätzlich zur Gassteuerung und
+Stromversorgung nötig sind, in ihrer Ausführungsreihenfolge. Fehlt das Feld
+oder ist es null, sind keine Handgriffe hinterlegt.
 
 ```json
 "manual": [
@@ -169,10 +172,11 @@ Reihenfolge, in der ein Lauf darauf trifft. Fehlt es oder ist null: keine.
 | `locks` | `true` an einem Schritt `before_power_off`, wo das Handbuch sagt, dass der ESC sich sperrt, wenn seine Versorgung vor dem Schritt ausgeht, wie bei Kontronik KOBY, JIVE Pro, KOLIBRI, KONTROL-X und KOSMIK; fehlt es, null oder `false` sonst, und nur an dieser Art. Die Stick-Programmierung sagt dann, dass der ESC gesperrt sein kann, nicht nur, dass der Wert womöglich nicht gespeichert ist |
 | `hold_ms` | nur `at_power_up`: 0 bis 60000, wie lange der Schritt nach dem Einschalten gehalten wird; fehlt oder null, wo nicht angegeben |
 
-`source` und jedes andere Feld eines Schritts bleiben im JSON. Die Aktion
-ist der eigene Text des Profils: deutsch, wo das Profil `action_de` nennt
-und die Oberfläche deutsch ist, sonst englisch. Jeder Schritt im Satz hat
-sein Deutsch. Der Bildschirm zeigt `when` in der Sprache der Oberfläche.
+`source` und jedes andere Feld eines Schritts bleiben im JSON. Der Text
+der Handlung stammt aus dem Profil. Er erscheint auf Deutsch, wenn das
+Profil `action_de` enthält und die Oberfläche auf Deutsch eingestellt ist,
+sonst auf Englisch. Alle hinterlegten Schritte haben eine deutsche
+Fassung. Die Anzeige zeigt `when` in der Sprache der Oberfläche.
 Was ein Lauf mit jedem Schritt tut, steht unter
 [Stick-Programmierung](StickProgramming-de.md#handgriffe).
 
@@ -181,21 +185,22 @@ Was ein Lauf mit jedem Schritt tut, steht unter
 Ein/Aus-Taster). `graupner-brushless-control-t`, dessen Menü an LEDs
 abgelesen wird, und `hacker-master-senstrol`, das den
 Identifikationschip seines Motors, einen zweiten Kanal und eine JetiBox
-braucht, sind `assisted` ohne Schritte: kein Handgriff, um den ein Mensch zu
-einem Zeitpunkt gebeten werden kann.
+braucht, sind als `assisted` ohne Schritte hinterlegt. Ihre Anforderungen
+lassen sich nicht als Aufforderung zu einem einzelnen Handgriff an einem
+bestimmten Punkt des Ablaufs abbilden.
 
 ## Ein Profil hinzufügen oder korrigieren
 
-An einem Prüfstand: die Datei nach `/BENCH/ESC/CONF/` auf die Karte kopieren
-und das Panel neu starten. Der Ordner wird am Computer angelegt; das Panel
-liest ihn nur.
+Für einen einzelnen Prüfstand: Kopiere die Datei nach `/BENCH/ESC/CONF/`
+auf die Karte und starte das Panel neu. Lege den Ordner am Computer an; das
+Panel liest ihn nur.
 
-Firmware 0.21.0 und älter liest `/ESC/`. Das Panel liest diesen Ordner
-nicht: Seine Dateien wirken wieder, sobald sie am Computer nach
-`/BENCH/ESC/CONF/` verschoben sind.
+Firmware 0.21.0 und älter liest `/ESC/`. Das aktuelle Panel liest diesen
+Ordner nicht. Verschiebe seine Dateien am Computer nach
+`/BENCH/ESC/CONF/`, damit sie wieder geladen werden.
 
-Im Repository: die Datei unter `shared/esc/profiles/` ändern oder anlegen,
-dann die C-Datei neu erzeugen und prüfen:
+Im Repository: Ändere oder ergänze die Datei unter `shared/esc/profiles/`.
+Erzeuge anschließend die C-Datei neu und prüfe sie:
 
 ```sh
 python3 tools/gen_esc_profiles.py
@@ -209,12 +214,12 @@ sein Leerzeichen (`3 beeps`). Das sind `brand`, `family`,
 `automatable_note`, die `steps` des Einstiegs, der `name` eines Modells, der
 `name` und `applies_when` eines Menüpunkts, der `name` eines Werts und
 `action` und `action_de` eines Handgriffs: die Strings, die
-`gen_esc_profiles.py` in die C-Datei übernimmt. `check_units.py` hält sie;
-die Recherchefelder (`sources`, `notes`, `unknowns`, die Beschreibungen,
-`spec_source` und `firmware_note` eines Modells) nicht.
+`gen_esc_profiles.py` in die C-Datei übernimmt. `check_units.py` prüft diese
+Strings. Die Recherchefelder (`sources`, `notes`, `unknowns`, die
+Beschreibungen, `spec_source` und `firmware_note` eines Modells) prüft es nicht.
 
 CI (Continuous Integration) führt `--check` aus. Die Host-Suite liest jede
-Datei mit dem Leser des Panels und vergleicht das Ergebnis Feld für Feld mit
+Datei mit dem Parser des Panels und vergleicht das Ergebnis Feld für Feld mit
 der erzeugten Tabelle, damit Generator und Kartenleser dieselben Dateien
 annehmen. Der Test `esc_parity` der Suite ändert diese Dateien 3000-mal, in
 Struktur und Text, und schlägt bei einem Ergebnis fehl, das Generator und
@@ -229,7 +234,7 @@ Kartenleser verschieden lesen.
 - Die Pieptonfelder (`beep_ms`, `gap_ms`, `group_gap_ms`) sind in jedem
   Profil null, und die Stick-Programmierung liest sie nicht: ihre Zeiten
   kommen aus ihren Einstellungen.
-- Die Versorgung des Prüfstands ist das PD mini, höchstens 20V. ESCs, deren
+- Das Netzteil des Prüfstands ist der PD mini mit höchstens 20V. ESCs, deren
   Mindesteingang darüber liegt, etwa YGE Opto und Navy ab 6S, brauchen eine
   externe Versorgung.
 - Wo ein Menü die Punkte durch Tonhöhe statt durch Anzahl unterscheidet

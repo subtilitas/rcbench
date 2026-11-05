@@ -2,10 +2,11 @@
 
 <sub>[English](Manifest.md) · **Deutsch**</sub>
 
-Der Prüfstand misst und treibt die Teile eines RC-Antriebs (RC: Radio
-Control, Funkfernsteuerung): Motor und ESC (Electronic Speed Controller,
-Motorregler), Servos, Empfängerbusse, Propellerwucht und Akkuzustand. Diese
-Seite listet die ursprünglichen Anforderungen und ihre Umsetzung.
+Der Prüfstand steuert Komponenten eines RC-Systems (Radio Control,
+Funkfernsteuerung) an und misst sie: Motor und ESC (Electronic Speed
+Controller, Motorregler), Servos und Empfängerbusse. Weitere Aufgaben sind
+das Auswuchten von Propellern und die Beurteilung des Akkuzustands. Diese
+Seite beschreibt die ursprünglichen Anforderungen und ihre Umsetzung.
 
 ## Anforderungen
 
@@ -25,12 +26,12 @@ Die ursprüngliche Anforderungsliste:
 
 | Anforderung | Umsetzung |
 | --- | --- |
-| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-IOmcu, des zweiten der beiden RP2354B des IO-Boards (hardware/docs/IOBoard.md). Der Touch-Bus des Panels (GPIO7, GPIO8) trägt den Touch-Controller, und der Drehknopf hat einen eigenen I²C-Bus. |
+| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-IOmcu, dem zweiten der beiden RP2354B der IO-Platine (hardware/docs/IOBoard.md). Am Touch-Bus des Panels (GPIO7, GPIO8) hängt der Touch-Controller. Der Drehknopf hat einen eigenen I²C-Bus. |
 | ESC-Programmierer (ESCs mit AM32- und BLHeli_S-Firmware gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) |
 | Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am IOmcu, auf einer gemeinsamen Zeitbasis abgetastet |
 | Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll |
-| Servoprogrammierung | Servos von KST und Chaservo: ein Programmierer auf dem SERVO-Bildschirm mit Backup, Limitprüfung und Schreibschalter, über den Programmierport des IOmcu ([Servo-Programmierer](ServoProgrammer-de.md)). Servos von Hitec, klassisch HS-5xxx und HS-7xxx und die D-Serie: eine Programmierung auf dem SERVO-Bildschirm, die die Einstellungen liest und keine schreibt ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md), [Der Programmierport für Servos von Hitec](LinkHitec-de.md)) |
-| Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Reader (CSV: Comma-Separated Values), der Dezimalkomma und Dezimalpunkt, eine Einheitenzeile und unvollständige Zeilen akzeptiert |
+| Servoprogrammierung | Servos von KST und Chaservo: eine Servoprogrammierung auf der Seite SERVO mit Backup, Grenzprüfungen und Schreibfreigabe, über den Programmierport des IOmcu ([Servoprogrammierung](ServoProgrammer-de.md)). Servos von Hitec, klassisch HS-5xxx und HS-7xxx und die D-Serie: eine Servoprogrammierung auf der Seite SERVO, die Einstellungen ausliest, sichert und schreibt ([Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md), [Der Programmierport für Servos von Hitec](LinkHitec-de.md)) |
+| Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Leser (Comma-Separated Values), der Dezimalkomma oder Dezimalpunkt, eine Einheitenzeile und Zeilen unterschiedlicher Länge akzeptiert |
 
 Der Stand jeder Anforderung steht in [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).
 
@@ -45,10 +46,10 @@ Der Stand jeder Anforderung steht in [STATUS.md](https://github.com/subtilitas/r
 
 ## Lizenzregel
 
-Jedes Protokoll wird aus seiner veröffentlichten Spezifikation implementiert
-oder, wo keine veröffentlicht ist, aus Mitschnitten der Leitung an eigener
-Hardware des Projekts: das Programmierprotokoll von KST- und Chaservo-Servos
-ist der eine Fall.
+Jedes Protokoll wird anhand seiner veröffentlichten Spezifikation
+implementiert. Fehlt eine solche Spezifikation, dienen Mitschnitte der
+Signalleitung an eigener Hardware des Projekts als Grundlage. Das betrifft
+das Programmierprotokoll von KST- und Chaservo-Servos.
 Die meisten offenen Implementierungen dieser Protokolle stehen unter GPL (GNU
 General Public License) oder AGPL (GNU Affero General Public License), was mit
 der MIT-Lizenz (MIT: Massachusetts Institute of Technology) dieses

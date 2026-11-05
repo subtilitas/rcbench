@@ -660,14 +660,13 @@ def main() -> int:
     ap.add_argument("build", nargs="?")
     ap.add_argument("-v", "--verbose", action="store_true")
     ap.add_argument("--iomcu", action="store_true",
-                    help="BUILD is an IOmcu build: check its two cores")
+                    help="treat BUILD as an IOmcu build and check both cores")
     ap.add_argument("--check-doc", action="store_true",
-                    help="also fail when the panel's task table, or with "
-                         "--iomcu core 0's row of the IOmcu table and "
-                         "its count of calls through a register, in "
-                         "docs/Performance.md or docs/Performance-de.md, or "
-                         "core 0's sentence in STATUS.md, differs from this "
-                         "build")
+                    help="also check the documented figures against this "
+                         "build: the panel task table, or with --iomcu the "
+                         "core 0 row and indirect-call count in both "
+                         "Performance guides and the core 0 statement in "
+                         "STATUS.md")
     args = ap.parse_args()
 
     if args.iomcu:

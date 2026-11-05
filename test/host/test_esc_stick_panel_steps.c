@@ -237,8 +237,8 @@ TEST_CASE(a_manual_step_shows_in_the_language_showing)
                  p->manual[1].action);
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(esc_stick_panel_step_text(&p->manual[1]),
-                 "Nach 2s oder der Tonfolge: JAZZ: Jumper abziehen. "
-                 "MINIJAZZ: Taster dr\xC3\xBC" "cken.");
+                 "Nach 2s oder der Tonfolge: JAZZ: Ziehe den Jumper ab. "
+                 "MINIJAZZ: Dr\xC3\xBC" "cke den Taster.");
     /* No German in the step: the English. */
     esc_manual_t m = p->manual[0];
     m.action_de = "";

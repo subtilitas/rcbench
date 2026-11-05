@@ -4,18 +4,21 @@
 import type { Lang, SignalClass } from '../../contract.ts';
 
 const P = {
-  docTitle: ['rcbench bench setup', 'rcbench Prüfstand-Aufbau'],
+  docTitle: [
+    'rcbench setup',
+    'rcbench-Aufbau',
+  ],
   release: ['Firmware release of the catalogue: {r}', 'Firmware-Release des Katalogs: {r}'],
   date: ['Date: {d}', 'Datum: {d}'],
   link: ['Link to this setup: ', 'Link zu diesem Aufbau: '],
   quantity: [
-    'Each entry is needed once. A count inside a name is the number of pieces.',
-    'Jeder Eintrag wird einmal gebraucht. Eine Zahl im Namen ist die Stückzahl.',
+    'Each entry is needed once. A number in the item name specifies the quantity.',
+    'Jeder Eintrag wird einmal benötigt. Eine Zahl in der Bezeichnung gibt die Stückzahl an.',
   ],
   noParts: ['No parts.', 'Keine Teile.'],
   buyHint: [
-    'A part with a tick of your own under "Parts you own" is left out. A row with a tick at "Have it" stands under "You have". A maker page and a web search are links.',
-    'Ein Teil mit eigenem Haken unter „Teile, die vorhanden sind“ fehlt hier. Eine Zeile mit Haken bei „Habe ich“ steht unter „Hast du“. Herstellerseite und Websuche sind Links.',
+    'Parts selected under "Parts you own" are omitted. Rows marked "Have it" appear under "You have". Manufacturer pages and web searches are linked.',
+    'Teile, die du unter „Vorhandene Teile“ ausgewählt hast, werden ausgelassen. Zeilen mit „Habe ich“ stehen unter „Bereits vorhanden“. Herstellerseiten und Websuchen sind verlinkt.',
   ],
   notEnabled: ['Not enabled', 'Nicht aktiviert'],
   allEnabled: ['Every function of the catalogue is enabled.', 'Jede Funktion des Katalogs ist aktiviert.'],

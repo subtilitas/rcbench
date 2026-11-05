@@ -2,17 +2,17 @@
 
 <sub>**English** · [Deutsch](EscWire-de.md)</sub>
 
-This page describes MOTOR & ESC > PROGRAM's row `AM32, Bluejay, BLHeli_S, ESCape32`, `SIGNAL WIRE` at its right. ESC is electronic speed controller. The session reads and writes an ESC's settings over its signal wire, from a throttle slot or a DShot port. The row stays dimmed until the IOmcu reports `LINK_CAP_PROGRAM`. The pages behind it are [The ESC settings pages](LinkEsc.md).
+Under MOTOR & ESC > PROGRAM, the row `AM32, Bluejay, BLHeli_S, ESCape32` has `SIGNAL WIRE` on its right. It opens a session that reads and writes an electronic speed controller's (ESC's) settings over its signal wire, using a throttle slot or a DShot port. The row stays dimmed until the IOmcu reports `LINK_CAP_PROGRAM`. The data layouts are described in [The ESC settings pages](LinkEsc.md).
 
 This code was written from a behavioural specification, without access to the firmware sources.
 
 ## Current limitations
 
 - A bidirectional DShot pin rests high on SAFE, which is a bootloader's entry condition. What the next ARM does after that is not measured.
-- All outputs go off after `TORN` or `LOST`. On BLHeli_S and Bluejay the page then loses its 48 tag bytes and reads read-only. An AM32 stays erased until RESTORE FROM BACKUP.
-- 10 failed reads of the page, 50ms at the poll rate, stop a session. A write gets no exception: it ends as `NO_ANSWER`, with a fault and a STOP.
-- The record `ESCW.TXT` is written before a write. A record stays on the card for a write given up after the record went. It does not say how the write ended.
-- SimonK is not supported: this bench has no wire code for it, and no screen offers it. An ESC with SimonK gives `No answer`.
+- All outputs go off after `TORN` or `LOST`. On BLHeli_S and Bluejay the settings page then loses its 48 tag bytes and becomes read-only. An AM32 stays erased until RESTORE FROM BACKUP.
+- 10 failed reads of the page, 50ms at the poll rate, stop a session. This also applies during a write: it ends as `NO_ANSWER`, with a fault and a STOP.
+- The record `ESCW.TXT` is saved before the write starts. It stays on the card even if the write is then abandoned. It does not record the write's outcome.
+- SimonK is not supported: the bench has no signal-wire implementation for it, and no screen offers it. An ESC with SimonK gives `No answer`.
 
 ## What it takes
 
@@ -63,7 +63,7 @@ A button shows the pressed colour from press to release. A press on a button rep
 
 ## Connect
 
-The strip names what the session drives: `TARGET SLOT 1 GPIO 0`, then the supply and SAFE or ARMED. No pin shows in the warning colour.
+The strip identifies the session target, for example `TARGET SLOT 1 GPIO 0`, followed by the supply and SAFE or ARMED. If no target pin is available, the target text uses the warning colour.
 
 | Row | Range | Default |
 |---|---|---|
@@ -74,7 +74,7 @@ The strip names what the session drives: `TARGET SLOT 1 GPIO 0`, then the supply
 | ENTRY HOLD | 0.5s to 120s | 3.0s |
 | OFF TIME | 0s to 10s | 1.0s |
 
-The session has no default voltage. VOLTAGE and CURRENT LIMIT follow SUPPLY until a tap on the number types another. POWER keeps the last choice over a panel restart, in the panel's settings (NVS key `escw_by_hand`); a panel with none stored starts on SWITCHED. SWITCHED uses the PD mini. BY HAND drives the line high and waits at most 60s for `POWER IS ON`.
+The session has no default voltage. VOLTAGE and CURRENT LIMIT follow SUPPLY until you tap a number and enter a different value. POWER retains the last choice across panel restarts in non-volatile storage (NVS key `escw_by_hand`). Without a stored choice, it starts on SWITCHED. SWITCHED uses the PD mini. BY HAND drives the line high and waits at most 60s for `POWER IS ON`.
 
 Take the propeller off. Connect signal and ground only: a BEC (battery eliminator circuit) on the ESC's centre wire would feed the bench's rail. Unplug servos. CONNECT is a red 2s hold.
 
@@ -142,15 +142,15 @@ IDENTITY names the firmware, the version, the layout or revision, the signature 
 
 ## Write
 
-WRITE n VALUES opens a page that lists the changes. Each hazardous field stays editable: the page names it with `CHECK`, first, in the warning colour, with its new value. A page lists 12 changes. PREV and NEXT turn the list, and the red 2s hold is offered once the last page has been shown. ESCape32 has up to 46 changes, 4 pages.
+WRITE n VALUES opens a list of changes. Hazardous fields remain editable and appear first, marked `CHECK` in the warning colour, with their new values. Each page lists 12 changes. PREV and NEXT turn the pages. The red 2s hold becomes available after you have seen the last page. ESCape32 allows up to 46 changes across 4 pages.
 
-What the page lists is what the hold writes: the page keeps its own copy of the draft. From the hold to the write's outcome the session takes ABORT and STOP only. ABORT while the card works gives the write up, and the ESC is unchanged. WRITE waits while a file is on its way from the card. A file that comes while a page is open is not loaded, and the page says so.
+The confirmation page keeps its own copy of the draft, so the hold writes exactly the changes listed. From the hold until the write's outcome, the session accepts only ABORT and STOP. ABORT during card activity abandons the write and leaves the ESC unchanged. WRITE waits while a file is being read from the card. If that file arrives while a confirmation page is open, it is not loaded; the page reports this.
 
-1. The first write of a session saves the session's backup to `BENCH/ESCW/CONF`, as `ESCW001-AM32.TXT` to `ESCW999-AM32.TXT` (see [Backup names](#backup-names)). With no card, or a card that refuses it, the page asks; a second 2s hold goes without one.
-2. The record `BENCH/ESCW/CONF/ESCW.TXT` takes the changed fields and the ESC as read. A card that refuses it asks the same question.
-3. The page re-reads, writes, reads back and says the result in words. A BLHeli_S or Bluejay write takes about 3848ms.
+1. The first write of a session saves the session's backup to `BENCH/ESCW/CONF`, as `ESCW001-AM32.TXT` to `ESCW999-AM32.TXT` (see [Backup names](#backup-names)). If the card is missing or the save fails, the page asks for confirmation. A second 2s hold continues without the backup.
+2. The record `BENCH/ESCW/CONF/ESCW.TXT` stores the changed fields and the settings read from the ESC. If this save fails, the page asks for the same confirmation.
+3. The session re-reads, writes, reads back and reports the result in words. A BLHeli_S or Bluejay write takes about 3848ms.
 
-An erased page is no backup. The session's backup is its first read that is not erased; after a RESTORE that is the read following it. A `music` line with a byte outside 0x20 to 0x7E gives no file: the session writes nothing and says why.
+An erased settings page cannot serve as a backup. The session uses its first non-erased read; after a RESTORE, this is the read that follows the restore. If a `music` line contains a byte outside 0x20 to 0x7E, no file is created. The session writes nothing and explains why.
 
 ![Write page](img/motor-wire-am-write.png)
 
@@ -166,19 +166,19 @@ An erased page is no backup. The session's backup is its first read that is not 
 
 ![Writing](img/motor-wire-am-running.png)
 
-FILES lists the files on the card, newest first, 11 to a page under SAVE THE SESSION'S BACKUP and DELETE A FILE, and saves the session's backup by hand. A file goes into the draft, to the same firmware and layout, editable fields only. A file changed in the panel's editor has `edited` as its last line in place of the checksum, and the programmer reads its field lines.
+FILES lists the card's files, newest first, with 11 per page below SAVE THE SESSION'S BACKUP and DELETE A FILE. It also lets you save the session's backup manually. Loading a file changes only the draft's editable fields and requires matching firmware and layout. A file changed in the panel's editor has `edited` as its last line in place of the checksum; the programmer reads its field lines.
 
 ### Backup names
 
-A backup's name is `ESCW`, a number from 001 to 999 and the firmware: `ESCW001-AM32.TXT`, `ESCW002-BLHELI_S.TXT`, `ESCW003-BLUEJAY.TXT`, `ESCW004-ESCAPE32.TXT`. A backup saved by hand takes the same name. The number is one above the highest in the folder, with or without a firmware, so no number is taken twice and the newest file lists first. With number 999 taken the lowest free number is used; with all 999 taken the save says the card is full. Files named `ESCW001.TXT`, and files copied in under other names, list and load the same way. `ESCW.TXT` is the record, never a backup.
+A backup's name is `ESCW`, a number from 001 to 999 and the firmware: `ESCW001-AM32.TXT`, `ESCW002-BLHELI_S.TXT`, `ESCW003-BLUEJAY.TXT`, `ESCW004-ESCAPE32.TXT`. A manually saved backup uses the same naming scheme. Its number is one above the highest in the folder, including names with and without a firmware suffix. This avoids duplicate numbers and lists the newest file first. With number 999 taken the lowest free number is used; with all 999 taken the save says the card is full. Files named `ESCW001.TXT`, and files copied in under other names, list and load the same way. `ESCW.TXT` is the record, never a backup.
 
 ### Deleting a file
 
-DELETE A FILE turns the list into one a tap deletes from. A tap opens DELETE A FILE, a red 2s hold, which names the file. After the delete the list reads the card again. A backup this session saved since CONNECT is not deleted inside the session: the line says so, and LOGS > FILES deletes it. A delete that fails says so, and the file stays as it was. A delete runs only on the card the list was read from: with another card in since, it deletes nothing and says so.
+DELETE A FILE switches the list to deletion mode. Tapping a file opens a confirmation that names the file and requires a red 2s hold. After deletion, the list is read from the card again. Backups saved in this session since CONNECT cannot be deleted here; the page explains this. Use LOGS > FILES to delete them. If deletion fails, the file remains unchanged and the page reports the failure. Deletion applies only to the card from which the list was read. If you have since changed the card, nothing is deleted and the page explains why.
 
 ## Erased AM32
 
-An AM32 whose settings read 0xFF offers RESTORE FROM BACKUP and nothing else, and saves no backup. A file is taken only when its CRC-32 holds and its pin code, flash code, bootloader protocol and name equal the ESC's. The restore is a red 2s hold.
+An AM32 whose settings read 0xFF offers only RESTORE FROM BACKUP and saves no backup. A file is accepted only if its CRC-32 checksum is valid and its pin code, flash code, bootloader protocol and name match the ESC's. Restoring requires a red 2s hold.
 
 ![Erased AM32](img/motor-wire-erased.png)
 
@@ -190,7 +190,7 @@ BACK opens LEAVE, a 2s hold. The ESC leaves its bootloader, the line goes low, t
 
 On an erased AM32 BACK's page says the ESC stays erased until RESTORE FROM BACKUP, that the pin goes back and that the supply goes off. Its hold sends CLOSE; with BY HAND the page says to disconnect the ESC's power.
 
-ESCape32 has no LEAVE: a power cycle ends its session. SWITCHED parks the line and switches the supply off. BY HAND parks the line and says to disconnect the ESC's power.
+ESCape32 has no LEAVE wire command: a power cycle ends its session. SWITCHED parks the line and switches the supply off. BY HAND parks the line and says to disconnect the ESC's power.
 
 ![Leave](img/motor-wire-am-leave.png)
 
@@ -200,15 +200,15 @@ ESCape32 has no LEAVE: a power cycle ends its session. SWITCHED parks the line a
 
 ## Stops and other writers
 
-STOP in the band stops the session. A write runs to its read-back first. ABORT on the page acts on the press and cuts at once, also in a write. A stop, a supply lost or a link lost closes an open editor or hold page, and the screen says what happened.
+STOP in the band stops the session, but an ongoing write reaches its read-back first. ABORT on the page acts immediately on press, including during a write. A stop, loss of supply or loss of the link closes any open editor or hold page. The screen reports what happened.
 
 After a stop or a fault the page offers CLEAR STOP and PIN BACK. CLEAR STOP ends the stop and keeps the pin held. With the panel's own STOP standing, only PIN BACK shows, with `The bench STOP is latched: hold STOP 2s to reset it.`: CLEAR STOP needs the heartbeat, which the latched STOP withholds. Once STOP is reset, CLEAR STOP shows again.
 
-After a stop or a fault the panel's SUPPLY OFF stands on the SUPPLY page until the hold ends, so the supply does not come on again under this hold. The page held after it offers only PIN BACK, with `A stop or a fault ended this session: PIN BACK, then CONNECT.` An ENTER that meets this state is refused with `SUPPLY_OFF` before anything moves. A SUPPLY OFF under PIN HELD with no stop or fault shows only that refusal's line.
+After a stop or a fault, the panel keeps SUPPLY OFF latched on the SUPPLY page until the pin is released. The supply therefore cannot come on again while the session holds the pin. The PIN HELD page then offers only PIN BACK, with `A stop or a fault ended this session: PIN BACK, then CONNECT.` ENTER in this state is refused with `SUPPLY_OFF` before anything moves. A SUPPLY OFF refusal under PIN HELD with no stop or fault shows only the refusal message.
 
-A pin held in `OPEN` with no stop and nothing running has a page of its own: after ABORT, after CLEAR STOP, and after a refused ENTER, whose reason shows on it, such as no PD mini or a voltage too close to the source. It shows POWER, VOLTAGE, CURRENT LIMIT, ENTRY HOLD and OFF TIME, read-only, and offers ENTER AGAIN, a red 2s hold, and PIN BACK; after a stop or a fault, CLEAR STOP included, it offers PIN BACK only. ENTER AGAIN sends those values: the session's current ones, which follow SUPPLY until typed, not those of the last CONNECT. BY HAND shows no voltage and no limit. A value that moves under the hold ends the hold. After ABORT the line says ABORT ended it. BACK names the button that ends the stage.
+A pin held in `OPEN` with no stop and nothing running has a page of its own: after ABORT, after CLEAR STOP, and after a refused ENTER, whose reason shows on it, such as no PD mini or a voltage too close to the source. It shows POWER, VOLTAGE, CURRENT LIMIT, ENTRY HOLD and OFF TIME, read-only, and offers ENTER AGAIN, a red 2s hold, and PIN BACK; after a stop or a fault, CLEAR STOP included, it offers PIN BACK only. ENTER AGAIN sends those values: the session's current ones, which follow SUPPLY until typed, not those of the last CONNECT. BY HAND shows no voltage and no limit. If a value changes during the hold, the hold is cancelled. After ABORT the line says ABORT ended it. BACK names the button that ends the stage.
 
-A line on the page stays on the stage where it happened and on the page its end leads to. The next press on a button shown clears it; a press on an empty place clears nothing. Arriving on CONNECT with the pin free and no flow clears every line but `LEFT`, the link's state and an error that says what ended the flow, which clears at the next press. A link that falls closes a keypad, a choice and a hold page on any stage, and its line replaces `ABORT ended it`.
+A message remains visible during the stage in which it occurred and on the page that follows that stage. Pressing a visible button clears it; pressing an empty area does not. On arrival at CONNECT with the pin free and no active flow, all messages are cleared except `LEFT`, the link state and the error that ended the flow. That error clears on the next button press. Link loss closes any keypad, choice list or hold page at any stage, and its message replaces `ABORT ended it`.
 
 A pin another writer holds, the bench console or a session before a panel restart, offers RELEASE PIN with a 2s hold. The page names the pin: its GPIO and its slot or port. ARM is refused while a pin is held, and the alert names the ESC programmer.
 

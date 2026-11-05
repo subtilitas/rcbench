@@ -14,7 +14,7 @@
       "v_max_mv": 18000,
       "current_a": 40,
       "bec": null,
-      "firmware_note": "NiCd cells; BEC 1.5 A for 4 servos; 50 A for 15 s limited",
+      "firmware_note": "NiCd cells; BEC 1.5A for 4 servos; 50A for 15s limited",
       "spec_source": "Kontronik_Star-Line.pdf p.2: 6-12 NiCd/NiMH cells, 40 A continuous; v_max = 12 cells x 1500 mV"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": 21000,
       "current_a": 50,
       "bec": null,
-      "firmware_note": "BEC 5 A; 60 A for 15 s",
+      "firmware_note": "BEC 5A; 60A for 15s",
       "spec_source": "Kontronik_Star-Line.pdf p.2: 6-14 NiCd/NiMH cells, 50 A continuous; v_max = 14 cells x 1500 mV"
     },
     {
@@ -62,7 +62,7 @@
       "v_max_mv": 27000,
       "current_a": 70,
       "bec": "opto",
-      "firmware_note": "90 A for 15 s",
+      "firmware_note": "90A for 15s",
       "spec_source": "Kontronik_Star-Line.pdf p.2: 6-18 NiCd/NiMH cells, 70 A continuous; v_max = 18 cells x 1500 mV"
     }
   ],
@@ -80,20 +80,20 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the two gold contacts.",
-      "action_de": "Jumper auf die beiden Goldkontakte stecken.",
+      "action_de": "Stecke den Jumper auf die beiden Goldkontakte.",
       "source": "Kontronik_Star-Line.pdf p.3, p.5"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 5s or the tone sequence.",
-      "action_de": "Jumper nach 5s oder der Tonfolge abziehen.",
+      "action_de": "Ziehe den Jumper nach 5s oder der Tonfolge ab.",
       "starts_menu": true,
       "source": "Kontronik_Star-Line.pdf p.5"
     },
     {
       "when": "before_power_off",
       "action": "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.",
-      "action_de": "Nicht berühren: warten, bis der ESC den Modus fertig wiederholt hat (Töne), dann ERLEDIGT tippen.",
+      "action_de": "Berühre nichts. Warte, bis der ESC den Modus als Töne vollständig wiederholt hat, und tippe dann ERLEDIGT.",
       "source": "Kontronik_Star-Line.pdf p.5-10 (DE/EN)"
     }
   ],
@@ -103,15 +103,15 @@
       "throttle": "min",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Tone sequence after the 5 s wait.",
+      "confirm_signal": "Tone sequence after the 5s wait.",
       "steps": [
         "Operator: fit the jumper. Connect the motor if tones are to be audible.",
-        "Transmitter and receiver on. Throttle to brake (stick back); mode 3: motor-off (stick back); mode 6: motor-off (stick middle).",
+        "Switch the transmitter and receiver on. Throttle to brake (stick back); mode 3: motor-off (stick back); mode 6: motor-off (stick middle).",
         "Apply drive power.",
         "Wait 5s or until the ESC sounds its tone sequence.",
         "Operator: pull the jumper off.",
         "Mode series sounds.",
-        "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake (back). Mode 4: the jumper can be fitted again to enable a start button.",
+        "Move the throttle to full when the desired mode sounds. Mode 6: then stick to brake (back). Mode 4: the jumper can be fitted again to enable a start button.",
         "Control output repeats the mode. Disconnect power."
       ]
     },
@@ -128,7 +128,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Throttle to full during the wanted series."
+      "description": "Throttle to full during the desired series."
     },
     "skip": {
       "throttle": "none",
@@ -138,7 +138,7 @@
     "exit": "Disconnect power.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Program mode 1 (APM).",
-    "description": "Jumper procedure with a 5 s wait (the other jumper families wait 2 s). Mode N is N tones. The ESC drives brushed motors."
+    "description": "Jumper procedure with a 5s wait (the other jumper families wait 2s). Mode N is N tones. The ESC drives brushed motors."
   },
   "items": [
     {
@@ -185,11 +185,11 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "The 'or until' event ending the 5 s wait is a pictogram; its tone pattern is not stated.",
+    "The 'or until' event ending the 5s wait is a pictogram; its tone pattern is not stated.",
     "BEC type of the BEC models is not stated beyond the current rating; 'linear' is not claimed by the manual.",
-    "Mode 7 to 9 do not exist in this manual."
+    "Modes 7 to 9 do not exist in this manual."
   ],
   "notes": [
     "The BEC type for StarBEC 40-6-12 is not stated; the bec field there reflects no manual statement.",

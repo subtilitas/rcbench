@@ -1,15 +1,14 @@
-# rcbench bench configurator
+# rcbench configurator
 
-A static page for release 0.23.7 of rcbench. The visitor ticks what the bench
-does. The page lists the parts, draws the wiring and prints a pin-to-pin table.
-The functions stand in groups by the bench hardware they need. A part of the
-result beyond the base setup has a remove control.
-Without a tick it shows the base setup: panel, IOmcu and the 4 wires
-between them.
+This static page plans a bench for rcbench release 0.23.7. Select the
+functions you need to see the required parts, a wiring drawing and a
+pin-to-pin table. Functions are grouped by their required bench hardware.
+Each part beyond the base setup has a remove control. With no functions
+selected, the page shows the panel, IOmcu and the 4 wires between them.
 
 A servo and an ESC (electronic speed controller) are test objects: devices the
 visitor connects and tests. They are not hardware of the bench. The page lists
-them under "What you connect and test", never as a part the bench needs.
+them under "Devices to connect and test", never as a part the bench needs.
 
 The page states once, in its footer, that rcbench is under development and
 that its functions are not verified on hardware. No function, part or power
@@ -240,20 +239,21 @@ The first group is "Runs on the base setup". It has 2 parts:
   part of the bench. A tick connects the test object.": "Drive a servo",
   "Program a KST or Chaservo servo" and "Drive an ESC".
 
-A function is active when the setup holds every part it needs and every option
-it forces, and the test object it drives is connected. Each row states its
-state in words:
+A function is active when the planned setup includes all required parts,
+uses the options it requires, and includes its test object. This state
+describes the plan; it does not detect a physical connection. Each row
+states its status in words:
 
 | State | Text | Tick |
 |---|---|---|
 | Ticked by the visitor | "Selected by you." | yes |
-| Active through the parts of the setup | "Included with these parts." (German: "Enthalten bei diesen Teilen.") | no |
+| Active through the parts of the setup | "Included with these parts." (German: "Mit diesen Teilen enthalten.") | no |
 | Active through a connected test object | "Active: Servo is connected." | no |
 | Runs on the base setup | "Included with the base setup." | none |
 | Not active, needs the test object only | "Connects: Servo." | no |
 | Not active | "Adds: <parts>" or the reason | no |
 
-A part carries one reason line. A part that a rule adds along with a bench part reads "Included with these parts: PD mini." (German: "Enthalten bei diesen Teilen: PD mini."), as the T-plug and the charger do. A part that a rule adds for another cause, such as an option or a test object, reads "Needed by: ESC power B." (German: "Nötig für: ESC-Versorgung B."). A part that a function needs reads "Needed by: <function>."
+A part carries one reason line. A part that a rule adds along with a bench part reads "Included with these parts: PD mini." (German: "Mit diesen Teilen enthalten: PD mini."), as the T-plug and the charger do. A part that a rule adds for another cause, such as an option or a test object, reads "Needed by: ESC power B." (German: "Nötig für: ESC-Versorgung B."). A part that a function needs reads "Needed by: <function>."
 
 4 variants follow the setup: connection to the IOmcu, INA228 board, ESC
 power and servo power. Servo power is A, the visitor's own supply (default),
@@ -336,7 +336,7 @@ ESC. Every removal opens a question under the
 control; no part leaves without the confirming answer. The question lists the
 functions that go off with the state of each, the other parts that leave or
 come in and the option that changes. For a part that takes nothing with it, it
-states "No function goes off and no other part leaves." Its 2 answers are
+states "All functions and other parts remain in the setup." Its 2 answers are
 "Remove part and these functions", or "Remove part" when no function goes off,
 and "Keep". The focus moves to "Keep". "Keep" and the Escape key return the
 focus to the control. The question has the role `alertdialog` and does not
@@ -351,7 +351,7 @@ you own". Its test object stays connected by the tick of "Drive a servo" or
 | Heading | Content |
 |---|---|
 | Parts | The bench hardware of the setup, each with the reason it is there. The summary counts these parts. The motor simulator carries its heat calculation. See "Motor simulator". |
-| What you connect and test | The connected test objects, each with the functions that use it. Without one, a sentence says so. |
+| Devices to connect and test | The connected test objects, each with the functions that use it. Without one, a sentence says so. |
 | Parts to buy | What to order for the setup, with quantity, maker, ordering name, check line, maker page, web search and a "have it" tick, and the copy buttons. Under "You have", the rows with that tick. Under "You bring", the test objects and their supplies. See "Parts to buy". |
 | Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use; "In this setup: one of these" marks the 2 external servo supplies, of which the setup uses one. |
 
@@ -430,9 +430,9 @@ The section "Parts to buy", in German "Teile zum Kaufen", lists the rows of
 
 | Element | Content |
 |---|---|
-| Disclaimer | "Parts list as of release v<release>. Makers change products without notice. Check every part against its check line before ordering. No warranty." The release is the `release` field of the data file. |
+| Disclaimer | "Parts list for release v<release>. Manufacturers may change products without notice. Before ordering, compare each part with its listed requirements. No warranty." The release is the `release` field of the data file. |
 | Row | Quantity ("2 ×"), maker and ordering name, "Any maker" for a generic row, "Modelled part: no product chosen" for a modelled part, the check line, the links "Maker page" and "Web search", then the tick "Have it" ("Habe ich"). |
-| You have | Heading "You have" ("Hast du"), shown while a row has the tick "Have it". Each row with quantity, maker and ordering name and the ticked checkbox; removing the tick returns the row to the rows to buy. |
+| You have | Heading "You have" ("Bereits vorhanden"), shown while a row has the tick "Have it". Each row with quantity, maker and ordering name and the ticked checkbox; removing the tick returns the row to the rows to buy. |
 | You bring | The test objects and the parts with `yours: true`: servo, servo supply, ESC and motor, ESC battery. Each with its check line, without a link and without a tick. |
 | Copy as text | Heading with the release, the setup link of Copy link, the disclaimer, the rows to buy with their links, the rows under "You have" by quantity and name, the rows to bring. Lines end in LF. |
 | Copy as CSV | A header row in the page language, then 1 record per row to buy. Columns: quantity, maker, ordering name, check, maker page, search link. Every field in double quotes, a double quote doubled, records end in CR LF (RFC 4180). The rows under "You have" and the rows to bring are not in it. |
@@ -463,7 +463,7 @@ The search link is built when the list is rendered:
 each term in double quotes. A double quote inside a term is dropped. The
 characters `! ' ( ) *` are percent-encoded as well. Example: the pull-up
 resistor gives
-`https://www.google.com/search?q=%22Resistor%202.2%20k%CE%A9%22%20%220.25%20W%22`.
+`https://www.google.com/search?q=%22Resistor%202.2k%CE%A9%22%20%220.25W%22`.
 
 Every link of the list opens in a new tab with `rel="noopener noreferrer"`.
 The page embeds, preloads and prefetches nothing of Google or a maker; the
@@ -523,14 +523,17 @@ wire point of `drawings/anchors.json`.
 The legend below the picture names both widths ("power line", "signal") and
 both supply colours, in English and German.
 
-Controls: the buttons zoom in, zoom out and fit; the same on the keys `+`,
-`-` and `0` with the focus on the picture box; the arrow keys move the
-picture. A drag with the mouse or 1 finger moves the zoomed picture; at fit,
-1 finger on the picture scrolls the page up and down. 2 fingers zoom, Ctrl and
-the wheel zoom. Tab from the box reaches the wires; the arrow keys, Home and
-End walk them; Enter or Space marks a wire and its table row. The wire button
-of a table row marks the wire in the picture. The page does not scroll
-sideways at 360px width: the picture moves inside its box.
+Use the buttons to zoom in, zoom out or fit the picture. With focus on
+the picture box, `+`, `-` and `0` perform the same actions, and the arrow
+keys move the picture. Drag with the mouse or 1 finger to pan a zoomed
+picture. At the fitted scale, 1 finger scrolls the page vertically. Pinch
+with 2 fingers or use Ctrl and the mouse wheel to zoom.
+
+Press Tab from the box to reach the wires. The arrow keys, Home and End
+move between them; Enter or Space highlights a wire and its table row.
+The wire button in a table row also highlights the wire in the picture.
+At 360px viewport width, the picture pans inside its box without making
+the page scroll sideways.
 
 `test/diagram.test.ts` routes every distinct setup of the resolver sweep and
 fails when a segment is not horizontal or vertical, 2 wires share a segment
@@ -618,7 +621,7 @@ export chunk on the first use.
 |---|---|
 | File name | `rcbench-setup-<8 hex digits>-<en or de>.pdf`. The digits are a 32 bit FNV-1a hash of the selection and the "have it" ticks as the URL hash writes them, without the language. |
 | Page | A4, 15mm margins. Footer on every page: the sentence on product and company names of the page footer, without the link to `NOTICE`, and "Page x of y". |
-| Sections | Title with firmware release, date, share link and the state of the project. Safety notes. Parts. What you connect and test. Parts to buy, with the disclaimer, what you have and what you bring. Power sources. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
+| Sections | Title with firmware release, date, share link and the state of the project. Safety notes. Parts. Devices to connect and test. Parts to buy, with the disclaimer, what you have and what you bring. Power sources. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
 | Text | Inter Regular and Bold, embedded as the subset of the glyphs the document uses. Text is selectable and searchable. |
 | Drawing | The SVG of the page as vector paths and text, in the print colours, scaled to the text width and at most 1 page. |
 | Wire table | The header row repeats on every page. No row is split. |

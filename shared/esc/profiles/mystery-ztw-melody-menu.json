@@ -223,20 +223,20 @@
     }
   ],
   "automatable": "full",
-  "automatable_note": "The tones differ in rhythm and pitch; the bench counts current pulses only, whether the tones can be told apart by current is untested. OPTO models have no BEC.",
+  "automatable_note": "The tones differ in rhythm and pitch. The bench counts current pulses only; whether it can distinguish the tones from those pulses is untested. OPTO models have no BEC.",
   "scheme": {
     "type": "melody_groups",
     "entry": {
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": null,
-      "confirm_signal": "Two short beeps after power-up, then (within the first 5 s) the throttle-calibration window",
+      "confirm_signal": "Two short beeps after power-up, then (within the first 5s) the throttle-calibration window",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery",
         "Wait for two short beeps: programming mode entered",
         "If the throttle goes to min within 5s, the throttle calibration is changed (avoid this)",
-        "Keep the throttle at max beyond 5s: the ESC starts the tone sequence"
+        "Keep the throttle at maximum beyond 5s: the ESC starts the tone sequence"
       ]
     },
     "announce": {
@@ -252,17 +252,17 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move throttle to min while the wanted tone plays. The ESC emits two beeps to confirm the new setting is stored."
+      "description": "Move throttle to minimum while the desired tone plays. The ESC emits two beeps to confirm the new setting is stored."
     },
     "skip": {
       "throttle": "none",
-      "description": "Keep the throttle at max and wait for the next tone."
+      "description": "Keep the throttle at maximum and wait for the next tone."
     },
     "confirm_signal": "Two beeps (**) after the setting is stored.",
-    "exit": "One setting per power cycle: disconnect the battery, wait 5 s, reconnect.",
+    "exit": "One setting per power cycle: disconnect the battery, wait 5s, reconnect.",
     "changes_per_entry": "one",
-    "reset_to_defaults": "Select the restore tone (long dashes) and move the throttle to min.",
-    "description": "Throttle max, battery on, two short beeps. After 5 s with the throttle still at max the tone loop starts; throttle to min while the wanted tone plays saves it and two beeps confirm. Disconnect, wait 5 s, repeat for another setting."
+    "reset_to_defaults": "Select the restore tone (long dashes) and move the throttle to minimum.",
+    "description": "Throttle at maximum, battery on, two short beeps. After 5s with the throttle still at maximum the tone loop starts; throttle to minimum while the desired tone plays saves it and two beeps confirm. Disconnect, wait 5s, repeat for another setting."
   },
   "items": [
     {
@@ -478,7 +478,7 @@
   ],
   "notes": [
     "Readytosky_30A_ESC.pdf is the same manual text as Mystery_ESC.pdf with model A-OEM-30A; Mystery_ESC.pdf names ZTW as maker (brand set to Mystery).",
-    "Mystery_ESC.pdf: the tone table gives Medium cutoff as 3.0 V/60 %; the text gives Ni cutoffs 50/65/65 % and the restore list gives 3.0 V/65 %. Same text in Readytosky_30A_ESC.pdf.",
+    "Mystery_ESC.pdf: the tone table gives Medium cutoff as 3.0V/60%; the text gives Ni cutoffs 50/65/65% and the restore list gives 3.0V/65%. Same text in Readytosky_30A_ESC.pdf.",
     "Same tone chart as Hitec Energy Sport (hitec-energy-sport); the Hitec manual has a different entry text.",
     "INDEX.csv says this scheme matches ZTW Gecko; it does not (Gecko uses short/long counts)."
   ],

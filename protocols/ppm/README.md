@@ -1,6 +1,7 @@
 # ppm
 
-PPM (pulse-position modulation) out: up to 8 channels on one pin.
+This module generates PPM (pulse-position modulation) output for up to
+8 channels on one pin.
 
 The module has two parts.
 
@@ -12,7 +13,7 @@ The module has two parts.
 ## Constraints
 
 - At most 8 channels per frame (`PPM_MAX_CHANNELS`).
-- A channel is 400us to 2500us, both ends included
+- A channel pulse is 400us to 2500us, including both endpoints
   (`PPM_CHANNEL_MIN_US`, `PPM_CHANNEL_MAX_US`). A width outside the range is
   refused, not clamped.
 - The mark is 300us and the frame 22.5ms by default.
@@ -23,7 +24,7 @@ The module has two parts.
 - The driver takes 1 PIO (programmable input/output) state machine and 2 DMA
   (direct memory access) channels per pin. The frame repeats without the
   processor.
-- A channel written during a frame takes effect in the next frame.
+- A channel update received during a frame takes effect in the next frame.
 - The polarity is positive. Negative shift is a pad inversion the caller
   sets.
 - `OUT_PPM_MAX_PINS` pins are bound at one time, 8 unless the build defines
@@ -39,8 +40,9 @@ size_t   ppm_frame(const uint16_t *channel_us, uint8_t channels,
 uint32_t ppm_min_frame_us(uint8_t channels, const ppm_cfg_t *cfg);
 ```
 
-`ppm_frame()` writes mark, space, mark, space and so on, in microseconds,
-and returns the number of runs or 0 for a frame that cannot be built.
+`ppm_frame()` writes alternating mark and space durations in
+microseconds. It returns the number of runs, or 0 if the frame cannot
+be built.
 
 Driver, `out_ppm.h`:
 

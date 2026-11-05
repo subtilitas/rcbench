@@ -32,9 +32,9 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 7000,
-      "confirm_signal": "Two short beeps about 2 s after power-up, then a special tone about 5 s later (written as 56712 or a rising tone in the manuals)",
+      "confirm_signal": "Two short beeps about 2s after power-up, then a special tone about 5s later (written as 56712 or a rising tone in the manuals)",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery",
         "Wait about 2000ms: two short beeps",
         "Wait about 5000ms more: special tone, programming mode entered"
@@ -53,22 +53,22 @@
     "select": {
       "throttle": "min",
       "within_ms": 3000,
-      "description": "Item: move the throttle to min within 3000 ms after the wanted item tone."
+      "description": "Item: move the throttle to minimum within 3000ms after the desired item tone."
     },
     "value_select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Value: move the throttle to max while the wanted value tone sounds. The window length is not stated."
+      "description": "Value: move the throttle to maximum while the desired value tone sounds. The window length is not stated."
     },
     "skip": {
       "throttle": "none",
       "description": "Leave the throttle unchanged and wait for the next tone."
     },
     "confirm_signal": "Special tone (written 1515) after a value is stored.",
-    "exit": "Item 12 (2 long + 2 short beeps) then throttle to min within 3000 ms.",
+    "exit": "Item 12 (2 long + 2 short beeps) then throttle to minimum within 3000ms.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Item 11 (2 long + 1 short beeps) selects 'factory reset'.",
-    "description": "Throttle at max, then battery on. Two short beeps after about 2 s and a special tone after about 5 s mark programming mode. The ESC loops item tones; throttle to min within 3 s of the wanted item selects it. Value tones then loop; throttle to max on the wanted tone stores it and returns to the item loop."
+    "description": "Throttle at maximum, then battery on. Two short beeps after about 2s and a special tone after about 5s mark programming mode. The ESC loops item tones; throttle to minimum within 3s of the desired item selects it. Value tones then loop; throttle to maximum on the desired tone stores it and returns to the item loop."
   },
   "items": [
     {
@@ -346,7 +346,7 @@
     "Gap between beeps and between tones in ms is not stated.",
     "Window for selecting a value after its tone is not stated (only 'move to max when the tone sounds').",
     "Pause between tone repetitions before the loop restarts is not stated.",
-    "Whether the entry hold (2 s then 5 s) has a tolerance is not stated.",
+    "Whether the entry hold (2s then 5s) has a tolerance is not stated.",
     "Default of item 8 (active freewheeling) is not resolved, see notes.",
     "Cutoff voltage values are stated as approximate ('about')."
   ],

@@ -1,34 +1,34 @@
 # Where the hardware stands
 
-The running record for `hardware/`. Stock figures carry the date they were
-taken and are not valid after it.
+The current design record for `hardware/`. Stock figures describe the date
+on which they were recorded; check them again before ordering.
 
-**Status: no board exists.** No schematic and no layout exist. Round 1 of
+**Status: no custom board exists.** There is no schematic or layout. Round 1 of
 [the component research](docs/Research.md) ran from 2026-09-28 to 2026-09-30
 and selected 49 parts for the IO (input/output) board, each with its stock in
 [Parts](docs/Parts.md) and its reason on the page of its group:
 [Control](docs/Control.md) (R1 to R4), [Supply](docs/Supply.md) (R5 to R8) and
 [Sensing](docs/Sensing.md) (R9 to R13). The owner decided Q4, Q8 and Q9 on
-2026-09-29. Three held or fixed inputs do not stand: the TPS55285 is refuted
+2026-09-29. Three held or fixed inputs remain unresolved in the research results: the TPS55285 is refuted
 at 4.0A continuous from the pack floor, the INA238 fails the stock gate at
 both vendors, and no 18650 cell is selected. The owner keeps the TPS55285
 and uses three, one for each of three servo rails, each with a heatsink and a
-temperature shutdown (2026-09-30). The owner also fixes the INA228 in place of
-the INA238 and names the pack the bench is to use, an SLS XTRON 3000mAh 2S1P
+temperature shutdown (2026-09-30). The owner also specifies the INA228 in place of
+the INA238 and selects the bench pack, an SLS XTRON 3000mAh 2S1P
 pack sold at Stefansliposhop (2026-09-30). The RP2354B is held in the owner's JLCPCB personal
 parts library, 20 of them, and 12 TPS55285, beside the other parts listed
 under [Held parts](docs/Research.md#held-parts) (export of 2026-09-25).
-[The IO board specification](docs/IOBoard.md) is a draft with the chosen part
-on each line. The workflow scripts are in `~/rcbench-research/tools-research/` on the owner's machine, outside the repository (prerequisite 6),
-and the returns of every task are under `hardware/research/round1/` on the
-branch `research/round1-results`. Round 2 is planned in
-[Research](docs/Research.md#round-2); its returns go under
+[The IO board specification](docs/IOBoard.md) is a draft that records the chosen parts
+where selections are available. The workflow scripts are in `~/rcbench-research/tools-research/` on the owner's machine, outside the repository (prerequisite 6),
+and each task's reports are under `hardware/research/round1/` on the
+branch `research/round1-results`. The plan for round 2 is in
+[Research](docs/Research.md#round-2); its reports go under
 `hardware/research/round2/` on `research/round2-results`.
 
 The [KiCad library](kicad/README.md) holds a footprint, a symbol and a STEP
 3D model for each of the 12 modules the bench is built from. Its positions
-come from maker drawings and photos, not from a caliper, and its part
-heights are part class figures, not measured.
+come from manufacturer drawings and photos, without caliper verification. Part
+heights come from models, datasheets or estimates for the part class, as listed in the library.
 [Mechanical parts](mechanical/README.md) holds STEP models of the M16
 emergency stop button, its nut and anti-rotation shim; dimensions not on the seller's
 drawing are estimated.
@@ -67,12 +67,12 @@ drawing are estimated.
 
 ## Open
 
-The first nine rows come from round 1 and are reported to the owner. A part
-a row needs comes from a follow-up of its research category in stage 1 of
-round 2, or from stage 2 of round 2 for a passive, a connector, or the
-protection on the signal, sensor, balance-lead, link and heartbeat connectors
-([Research](docs/Research.md#round-2)). The group pages state each with its
-evidence, as not known or not verified.
+The first nine rows come from round 1 and are reported to the owner. Any
+additional part must be selected in a follow-up for its research category in stage 1 of
+round 2. Passives, connectors and protection for the signal, sensor, balance-lead,
+link and heartbeat connectors belong to stage 2 of round 2
+([Research](docs/Research.md#round-2)). The group pages give the evidence for
+each item and mark it as not known or not verified.
 
 | Item | State | Needs |
 | --- | --- | --- |
@@ -96,7 +96,7 @@ evidence, as not known or not verified.
 
 - **A hall-effect sensor for the 300A path.** It avoids the shunt's 9W and
   its layout, at the cost of gain and offset drift on the bench's primary
-  measurement. The shunt is the measurement.
+  measurement. The design uses the shunt for this measurement.
 - **Bilingual pages** while no board exists. See [the README](README.md).
 
 ## Order of work
@@ -107,24 +107,24 @@ evidence, as not known or not verified.
    ruled on (owner, 2026-09-30).
 2. Stage 1 of round 2 of the component research (owner, 2026-10-01;
    [Research](docs/Research.md#round-2)): follow-up tasks of round 1's
-   categories for the ICs and the parts round 1's categories name that round 1
-   left without a part or whose requirement changed, the follow-ups those
-   rulings call for among them, planned in 7 runs of at most 32 agents each.
+   categories for the ICs and other parts named in round 1's categories
+   that round 1 left unselected or whose requirements have changed. This includes the follow-ups
+   required by those rulings, planned in 7 runs of at most 32 agents each.
    Round 1 of the component research ran from 2026-09-28 to 2026-09-30, as in
    [its scope](docs/Research.md#scope): the ICs, the parts that fix an IC's
    surroundings, both motor shunts, the switch of the ESC pack with its input
    protection, and the 18650 cells of the bench's own pack, in six tasks
    (question S8) and 9 follow-up tasks, each of at most 32 agents (owner,
-   2026-09-24). The commit each task read is in the status line of
+   2026-09-24). The status line records the commit used by each task in
    [Research](docs/Research.md).
 3. Stage 2 of round 2 selects the passives and the connectors, the DC input
-   connector among them, by part type, with no P1 and one verifier (owner,
+   connector among them, by part type, without P1 and with one verifier (owner,
    2026-10-01). It also selects the protection on the signal, sensor,
    balance-lead, link and heartbeat connectors. The power input's protection
    (R5) and the ESC pack path's (R3) are round 1's categories, which stage 1
    researches. Stage 2 has no scripts in `~/rcbench-research/tools-research/`. Round 3 sets the
-   mechanical, thermal and layout constraints, the converter's heatsink among
-   them ([Research](docs/Research.md#scope)).
+   mechanical, thermal and layout constraints, including the converter's
+   heatsink ([Research](docs/Research.md#scope)).
 4. Schematic.
 5. Order each part with a manufacturer lead time of 16 weeks or more as soon
    as the schematic fixes it. On 2026-09-01 Texas Instruments quoted 16 weeks

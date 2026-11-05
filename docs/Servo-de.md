@@ -2,13 +2,14 @@
 
 <sub>[English](Servo.md) · **Deutsch**</sub>
 
-Drei Verfahren am Servo. Das erste misst ein Servo im eingebauten Zustand:
-die Endlagensuche läuft auf dem SERVO-Bildschirm und liest den INA3221-Kanal,
-der das Ziel des Servotesters überwacht, und
-bei einem KST- oder Chaservo-Servo am Programmierport kann sie die eigenen
-Weggrenzen des Servos senken. Das zweite, der Abgleich, braucht einen
-Stromsensor über ein Paar Ausgänge, der nicht bestückt ist, und läuft nur
-gegen ein modelliertes Servo. Ihre Vorgabewerte stammen aus
+Diese Seite beschreibt drei Servoverfahren. Das erste misst ein Servo
+im eingebauten Zustand: Die Endlagensuche auf SERVO liest den
+INA3221-Kanal aus, der dem Ziel des Servotesters zugeordnet ist. Bei
+einem KST-, Chaservo- oder unterstützten Hitec-Servo am Programmierport
+kann sie auch die eigenen Weggrenzen des Servos verringern. Das zweite
+Verfahren, der Abgleich, braucht einen Sensor für den gemeinsamen Strom
+zweier Ausgänge. Dieser Sensor ist nicht bestückt; der Abgleich läuft
+deshalb nur mit einem simulierten Servo. Ihre Vorgabewerte stammen aus
 `servo_limit_defaults()` und `servo_sync_defaults()` in `shared/servo/`. Das
 dritte, der [automatische Test](#automatischer-test), liest den Strom des
 Netzteils, das das Servo versorgt. RUDER, eine Aufgabe der SERVO-Werkbank,
@@ -19,10 +20,10 @@ liest den Ausschlag einer Ruderfläche in ° und mm
 
 ### Zweck
 
-Im Sender gesetzte Endpunkte sind Schätzungen. Ein Servo, das gegen einen
-mechanischen Anschlag gehalten wird, zieht Blockierstrom, solange es dorthin
-befohlen wird, und der Einbau, nicht das Servo, bestimmt, wo der Anschlag
-liegt. Die beiden Enden des Ruderwegs unterscheiden sich; beide messen.
+Im Sender gesetzte Endpunkte sind Schätzungen. Ein Servo, das gegen einen mechanischen Anschlag drückt, zieht
+Blockierstrom, solange diese Stellung angefordert wird. Wo der Anschlag
+liegt, hängt vom Einbau ab. Die beiden Enden des Ruderwegs unterscheiden
+sich; miss deshalb beide.
 
 ### Verfahren
 
@@ -33,9 +34,8 @@ dieses Ende, so wird das Ende selbst gemessen.
 Nach jedem Schritt wartet sie 120ms, bis das Servo steht, und mittelt den
 Strom über 80ms. Solange die Fläche frei läuft, ist der Strom flach und
 niedrig. Das Gestänge gilt als blockiert, wenn der Strom das 1,8-Fache des
-Grundstroms im freien Lauf übersteigt und mindestens 0,15A darüber liegt. Die
-Suche hält beim ersten solchen Schritt an, nimmt 25µs zurück und meldet diese
-Pulsweite als Endpunkt.
+Grundstroms im freien Lauf übersteigt und mindestens 0,15A darüber liegt. Die Suche stoppt beim ersten solchen Schritt. Als Endpunkt meldet sie
+die letzte freie Pulsweite, um weitere 25µs zur Mitte zurückgenommen.
 
 Am Prüfstand sucht der Endlagenlauf (`shared/servo/servo_limrun.c`) zuerst
 die untere Seite, dann die obere. Wo, hängt vom Ziel ab:
@@ -43,38 +43,37 @@ die untere Seite, dann die obere. Wo, hängt vom Ziel ab:
 | ZIEL | Zuerst gelesen | Suche |
 | --- | --- | --- |
 | ein SERVO-PWM-Pin auf OUTPUTS | nichts | PULS MITTE bis PULS MIN und PULS MAX |
-| PROG-PORT | eine Lesesitzung des [Programmierers](ServoProgrammer-de.md) | NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
+| PROG-PORT, KST/CHASERVO | eine Lesesitzung der [Servoprogrammierung](ServoProgrammer-de.md) | NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
 
-Der Abstand zu diesem Ende ersetzt die 600µs. Der Strom sind die
-50-ms-Fenster des überwachenden INA3221-Kanals, jede Stellung dauert also 250ms. Vor und
-nach jeder Suche steht das Servo 1000ms in der Mitte: der Rückweg von
-einem Ende, 600µs bei 0,67µs/ms, dauert 900ms, und der Grundstrom soll
-ihn nicht sehen.
+Der Abstand zu diesem Ende ersetzt die 600µs. Der Strom wird in Fenstern von 50ms am zugeordneten INA3221-Kanal
+gemessen; jede Stellung dauert deshalb 250ms. Vor und nach jeder Suche
+bleibt das Servo 1000ms in der Mitte. Der Rückweg von einem 600µs
+entfernten Ende dauert bei 0,67µs/ms 900ms und muss vor der Messung des
+Grundstroms abgeschlossen sein.
 
 Dauer: der Host-Test begrenzt eine vollständige Suche gegen das modellierte
 Servo auf unter 12s. Ein Lauf am Prüfstand ist nicht gemessen.
 
 ### Starten
 
-Die Karte ENDLAGENLAUF auf der Aufgabe TEST des SERVO-Bildschirms enthält
-den Lauf; ihr **OPTIONEN** öffnet die Einstellungen des Laufs eine Ebene
-tiefer. Dort wählt **ENDLAGENLAUF** mit einem Tippen NUR SUCHE oder SUCHEN +
-PROGRAMMIEREN. **SERVO**, nur mit ZIEL auf PROG-PORT angezeigt, wählt mit
-einem Tippen KST/CHASERVO oder HITEC: den Programmierer, zu dem die
-Sitzungen des Laufs gehen ([Hitec-Servos](#hitec-servos)). Es beginnt bei
+Öffne die Karte ENDLAGENLAUF unter TEST auf SERVO. **OPTIONEN** öffnet
+die Einstellungen des Laufs eine Ebene tiefer. Dort wählt **ENDLAGENLAUF** mit einem Tippen NUR SUCHE oder SUCHEN +
+PROGRAMMIEREN. **SERVO** erscheint nur, wenn ZIEL auf PROG-PORT steht. Wähle dort mit
+einem Tippen KST/CHASERVO oder HITEC; diese Servoprogrammierung übernimmt
+die Sitzungen des Laufs ([Hitec-Servos](#hitec-servos)). Es beginnt bei
 KST/CHASERVO und übernimmt den Programmierer, der unter PROGRAMMIEREN
 zuletzt geöffnet wurde. **SERVOPULSE**, nur mit ZIEL auf PROG-PORT und
 SERVO auf KST/CHASERVO angezeigt, wählt mit einem Tippen BEHALTEN oder
-1000-2000; es beginnt bei BEHALTEN. Das Home-Tag führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
+1000-2000; es beginnt bei BEHALTEN. Die Home-Markierung führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
 startet den Lauf nach 2s Halten, wie TEST STARTEN; ein Tippen oder ein
 kürzeres Halten startet nichts.
 
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 
-Die Zeile unter der Schaltfläche nennt die ganze Zeit, was der Lauf treibt
-und liest: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSORS das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während der Lauf
-geht, zeigt die linke Karte von LIVE sein Feld: die Phase, die Seite und den befohlenen
-Puls, und in der dritten Zeile wieder den Ausgang. Die Zeile ZIEL der
+Die Zeile unter der Schaltfläche zeigt während des gesamten Laufs den
+angesteuerten Ausgang und den verwendeten Strommesskanal: `AUSGANG PROG-PORT 1 GPIO 13, STROM INA3221 0x41 CH2`, oder, solange der Tester die Standardausgänge treibt, `AUSGANG SERVO PWM GPIO 2, STROM INA3221 0x40 CH1`. Der Kanal ist der, der in SETUP > SENSORS das Ziel des Testers überwacht, der niedrigste mit Shunt auf einem bestückten Baustein; `STROM INA3221`, solange keiner es tut. Während des Laufs zeigt die linke Karte von LIVE die Phase, die Seite
+und die angeforderte Pulsweite sowie den Ausgang erneut in der dritten
+Zeile. Die Zeile ZIEL der
 Ausgangskarte bleibt ebenfalls sichtbar.
 
 ![Der Endlagenlauf beim Programmieren](img/de/servo-limrun.png)
@@ -88,20 +87,21 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | `ZUERST ARM` | der Prüfstand ist SAFE |
 | `BERICHT WIRD NOCH GESCHRIEBEN` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
 | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
-| `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
-| `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000ms gehalten, oder kein Fenster mit Strom in den letzten 200ms |
-| `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
+| `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
+| `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
+| `SERVOVERSORGUNG UNTER 3.0V ODER OHNE MESSWERT` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An einem ausgeschalteten Ausgang werden 0V gemessen, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0V liegen unter den 4,8V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
 | `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL auf PROG-PORT mit PORT-PWM aus |
-| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL auf den Ausgängen des Prüfstands, ohne einen als SERVO PWM gebundenen Ausgang, oder die Bindung noch nicht gelesen: die Worte der Zeile ZIEL |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Zeile ZIEL |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | PULS MITTE liegt nicht zwischen PULS MIN und PULS MAX |
 
 ### Die Weggrenzen des Servos programmieren
 
 SUCHEN + PROGRAMMIEREN wird für ein Servo am Programmierport angeboten: ZIEL auf
-PROG-PORT, der Port in PWM und eine Versorgung von 4,8V oder mehr. Mit
-einem antwortenden PD mini muss dessen Ausgang eingeschaltet sein, und sein
-Sollwert zählt; ohne ihn der Mittelwert
-der Servoschiene im letzten Fenster des INA3221. An den Ausgängen des
+PROG-PORT, der Port in PWM und eine Versorgung von 4,8V oder mehr. Versorgt ein PD mini den Port, muss sein Ausgang eingeschaltet sein;
+geprüft wird sein Sollwert. Ohne diese Versorgung zählt die mittlere
+Schienenspannung im letzten INA3221-Fenster. Auf dem rbmod-Carrier muss
+zusätzlich PROG 5V eingeschaltet sein. Ein PD mini an den anderen
+Servoausgängen versorgt den Programmierport nicht. An den Ausgängen des
 Prüfstands sucht der Lauf nur, die Zeile lautet NUR SUCHE, und der Hinweis
 darunter in den Einstellungen des Laufs lautet `PROGRAMMIEREN ERFORDERT EIN SERVO AM PROG-PORT`. Am PROG-PORT
 beginnt jeder Lauf mit einer Lesesitzung, deshalb halten die übrigen
@@ -115,20 +115,25 @@ Zustandszeile der Karte nennt die Bedingung.
 | `PROGRAMMIEREN: NETZTEIL AUF UNTER 4.8V EINGESTELLT` | ein PD mini antwortet, und sein Sollwert liegt unter 4,8V |
 | `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8V oder ist nicht gelesen |
 
-Ohne PD mini kann der Lauf das Servo nicht aus- und einschalten, und ein
-KST- oder Chaservo-Servo übernimmt einen geschriebenen Wert erst danach
+Ein KST- oder Chaservo-Servo übernimmt geschriebene Werte nach einem
+Aus- und Einschalten
 ([der Versorgungszyklus](ServoProgrammer-de.md#der-versorgungszyklus)).
-SUCHEN + PROGRAMMIEREN und **SERVOPULSE** auf 1000-2000 werden dann nicht
-angeboten, und die Karte zeigt
-`PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`, solange eines davon
-gewählt ist. Der Lauf liest das Servo und sucht nur.
+Der Lauf kann dafür den PD mini oder die 5V-Versorgung der
+Programmierports auf dem Carrier schalten. Ohne beides sind SUCHEN +
+PROGRAMMIEREN und **SERVOPULSE** auf 1000-2000 nicht verfügbar. Bei ihrer
+Auswahl erscheint
+`PROGRAMMIEREN: KEIN PD MINI ZUM AUS- UND EINSCHALTEN`; der Lauf liest
+das Servo nur aus und sucht. Hitec-Servos der D-Serie starten nach dem
+Schreiben selbst neu und brauchen für diesen Schritt keine schaltbare
+Versorgung, wie unten beschrieben.
 
 ![Kein PD mini: der Lauf schreibt nichts](img/de/servo-limrun-nopd.png)
 
-Mit PD mini schaltet
-jedes VERBINDEN des Laufs dessen Ausgang 1s aus und wieder ein, und das
-VERLASSEN nach einem Schreiben ebenso; die Prüfung nach dem Schreiben sucht
-das Servo also mit den neuen Werten.
+Versorgt ein PD mini den Port, schaltet jedes VERBINDEN seinen Ausgang
+1s aus und wieder ein; VERLASSEN nach einem Schreiben ebenso. Auf dem
+Carrier übernimmt die feste 5V-Versorgung der Programmierports diese
+Zyklen. Die Suche nach dem Schreiben prüft das Servo deshalb mit den
+bereits wirksamen neuen Werten.
 
 #### Zuerst lesen
 
@@ -173,12 +178,12 @@ Hinweis in den Einstellungen des Laufs sagt `NUR SUCHE: SETZT NUR PULSE LOWER/UP
 #### Die Register und das Modell
 
 LEFT ANGLE und RIGHT ANGLE sind die eigenen Weggrenzen des Servos, je ein
-8-Bit-Register, in einer unbekannten Einheit. Der kleinste Wert, den die
-harten Regeln des Programmierers nehmen, ist bei einem KST 1: 0 wird
-abgelehnt. Ein Wert unter 50 ist eine weiche Grenze; das Halten von 2s
+8-Bit-Register, in einer unbekannten Einheit. Der kleinste zulässige Wert ist bei einem KST 1; die harten Grenzen der
+Servoprogrammierung schließen 0 aus. Ein Wert unter 50 ist eine weiche Grenze; das Halten von 2s
 beim Start ist die Zustimmung dazu.
 
-Der Lauf nimmt das Servo als linear. PULSE LOWER und PULSE UPPER sind die
+Der Lauf setzt einen linearen Zusammenhang zwischen Pulsweite und
+Servoweg voraus. PULSE LOWER und PULSE UPPER sind die
 Eingangspulse, bei denen das Servo den vollen Weg erreicht, den LEFT ANGLE
 und RIGHT ANGLE setzen. Zwischen NEUTRAL und diesem Puls ist der Weg linear
 im Puls; darüber hinaus hält das Servo den vollen Weg. Der Anteil einer
@@ -221,8 +226,8 @@ der volle Weg bei 1000,2µs.
 
 Der Vorhalt entfällt, wo v1 nicht unter v0 läge, oder wo das Modell den
 Anschlag um weniger als 20µs verschiebt: d0 x (v0 - v1) / v1 unter 20µs,
-d0 der Abstand des letzten freien Pulses der ersten Suche von NEUTRAL. Eine
-Suche könnte diese Verschiebung nicht von keiner unterscheiden. Die erste
+d0 der Abstand des letzten freien Pulses der ersten Suche von NEUTRAL. Eine Suche könnte eine so kleine Verschiebung nicht von einer
+unveränderten Endlage unterscheiden. Die erste
 Suche zählt dann als die des Vorhalts, und `v2 = floor(v0 x f0)`, f0 der
 Anteil an ihrem letzten freien Puls: ein Schreibvorgang für diese Seite.
 
@@ -236,17 +241,16 @@ wird gesucht. Das Ende hat sich bewegt, wenn es frei ist oder sein
 Endpunkt 20µs weiter außen liegt. Ein Ende, das innerhalb von 20µs blieb,
 schickt LEFT ANGLE auf seinen Wert zurück und den aus dem v0 von RIGHT
 ANGLE neu berechneten Wert an RIGHT ANGLE; bewegt es sich dann, begrenzt
-RIGHT ANGLE diese Seite. Ein Ende, das mit beiden Registern versucht
-bleibt, beendet den Lauf als NICHT BESTANDEN, `LEFT/RIGHT ANGLE: Seite
-unklar`. Ein Ende, das sich um 20µs oder mehr nach innen bewegt, ebenso.
-Ein Ende, das mit seinem Register auf dem kleinsten Wert anläuft, beendet
-ihn als NICHT BESTANDEN, `blockiert beim kleinsten Winkel`. Ein Register,
-dessen Seite nie anlief, behält seinen Wert.
+RIGHT ANGLE diese Seite. Bleibt das Ende bei beiden versuchten Registern unverändert, endet der
+Lauf als NICHT BESTANDEN, `LEFT/RIGHT ANGLE: Seite
+unklar`. Dasselbe gilt, wenn sich das Ende um 20µs oder mehr nach innen bewegt.
+Blockiert eine Seite noch beim kleinsten Registerwert, endet der Lauf
+als NICHT BESTANDEN, `blockiert beim kleinsten Winkel`. Ein Register, dessen Seite nie blockierte, bleibt unverändert.
 
 Zuletzt werden beide Enden noch einmal gesucht: BESTANDEN, wenn beide frei
 sind, NICHT BESTANDEN `Endlage blockiert weiterhin`, wenn eines anläuft.
-Nach NICHT BESTANDEN folgt kein weiteres Schreiben; ZURÜCKSPIELEN bringt
-die Werte vor dem Lauf zurück.
+Nach NICHT BESTANDEN folgt kein weiteres Schreiben. Mit ZURÜCKSPIELEN
+kannst du die Werte vor dem Lauf wiederherstellen.
 
 #### Sitzungen
 
@@ -281,9 +285,9 @@ er wieder schreibt.
 | `SERVO_LIMRUN_MOVED_US` | 20µs | ein Ende, das sich bewegt hat oder blieb; die kleinste Verschiebung des Anschlags, für die ein Vorhalt geschrieben wird |
 | `SERVO_LIMRUN_RETURN_MS` | 1000ms | in der Mitte vor jeder Suche und vor jedem SAFE |
 
-Schreiben: kein Schritt des Protokolls ist bekannt, der einen Wert dauerhaft
-macht, und kein Schreiben, das nur das RAM ändert. Jedes Schreiben ist das
-Registerschreiben, das der Programmierer zurückliest. Ob ein KST-Servo den
+Ein eigener Protokollschritt zum dauerhaften Speichern ist nicht bekannt;
+ebenso wenig ein Schreibbefehl, der nur das RAM ändert. Jeder Schreibvorgang
+schreibt ein Register und liest es zur Kontrolle zurück. Ob ein KST-Servo den
 Wert bei jedem Schreiben im EEPROM (elektrisch löschbarer programmierbarer
 Nur-Lese-Speicher) ablegt und wie viele Schreibvorgänge dieser Speicher
 verträgt, ist unbekannt; die Grenze hält einen Lauf bei 8 Werten. Ein Lauf
@@ -297,9 +301,10 @@ Prüfstands angewendet.
 
 ### Hitec-Servos
 
-Mit SERVO auf HITEC gehen die Sitzungen des Laufs an den
-[Hitec-Programmierer](HitecProgrammer-de.md#läufe), in der Serie, die
-seine Zeile SERIE hält, D-SERIE oder KLASSISCH. Suche, Vorhalt, Zuordnung
+Mit SERVO auf HITEC übernimmt die
+[Hitec-Servoprogrammierung](HitecProgrammer-de.md#läufe) die Sitzungen des
+Laufs. Verwendet wird die unter SERIE gewählte Familie, D-SERIE oder
+KLASSISCH. Suche, Vorhalt, Zuordnung
 und Prüfung sind die oben beschriebenen.
 
 ![Die Optionen des ENDLAGENLAUFS, SERVO auf HITEC](img/de/servo-limrun-hitec.png)
@@ -332,9 +337,9 @@ Was anders ist:
 - Ein erstes VERBINDEN, auf das kein Servo antwortet, oder ein Servo, dessen
   Endpoints sich nicht ändern lassen, beendet den Lauf als NICHT BESTANDEN
   mit `kein Hitec-Servo ausgelesen`.
-- Die Sicherungsdatei HITEC001 bis HITEC999 wird vor dem ersten Schreiben
-  des Laufs gespeichert; ZURÜCKSPIELEN heißt, sie unter DATEIEN des
-  Hitec-Programmierers zu laden und mit n WERTE SCHREIBEN zu schreiben. Das
+- Die Backup-Datei HITEC001 bis HITEC999 wird vor dem ersten Schreiben
+  des Laufs gespeichert. Lade sie zum Zurückspielen unter DATEIEN der
+  Hitec-Servoprogrammierung und schreibe sie mit n WERTE SCHREIBEN. Das
   Feld nennt sie, `HITEC001 IN DATEIEN LADEN`, oder `KEINE BACKUP-DATEI`, wenn keine gespeichert ist: ohne Karte, oder der Lauf
   endete, bevor die Sitzung des ersten Schreibens eine speicherte.
 - Der Bericht nennt die Register, `LEFT END (0xB2): 4841 vorher, 2341
@@ -345,8 +350,9 @@ Am modellierten D485HW des Hosts, beide Enden blockiert, schrieb ein Lauf
 4 Werte in 3 Schreibvorgängen und 4 Sitzungen, 107,9s. Welche Hornstellung
 ein Endpoint der D-Serie an einem CCW-Servo ergibt, welche klassische
 Zelle welche Seite begrenzt, die Einheit der klassischen Zelle und ob der
-Weg beider Serien linear im Puls ist, ist nicht gemessen; der
-Zuordnungsschritt findet das Register jeder Seite wie an einem KST-Servo,
+Weg beider Serien linear von der Pulsweite abhängt, ist nicht gemessen.
+Der Zuordnungsschritt ermittelt das Register jeder Seite wie bei einem
+KST-Servo,
 und ein NICHT BESTANDEN mit `LEFT/RIGHT ANGLE: Seite unklar` (die
 KST-Wörter, auch für LEFT END und RIGHT END) oder `Endlage blockiert weiterhin` beendet einen Lauf, dessen Servo dem Modell nicht folgt.
 
@@ -355,21 +361,21 @@ KST-Wörter, auch für LEFT END und RIGHT END) oder `Endlage blockiert weiterhin
 | Schutz | Wert | Wirkung |
 | --- | ---: | --- |
 | Stromobergrenze | 3,0A | Abbruch, bei jedem 1-ms-Messwert eines Fensters geprüft |
-| Der INA3221 am Ende seines Bereichs | ein begrenzter Messwert | Abbruch |
+| Der INA3221 an seiner Messgrenze | ein abgeschnittener Messwert | Abbruch |
 | Stall-Timeout | Fenstermittel über 1,0A für 400ms | Abbruch |
-| Kein Fenster | 200ms, 4 Fenster zu 50ms | Abbruch; `SERVO_TEST_WIN_STALE_MS`, der Wert des automatischen Tests. Ein Fenster ohne Strommesswert zählt nicht als Fenster. Die Fenster speisen die drei Schutzmechanismen darüber, also bekommt eine Lücke in ihnen keine Zugabe |
-| Der AS5600, ab dem Start in Gebrauch | länger als 300ms keine Antwort, oder erneut weniger als 10s nach dem Beginn des Mals davor | Abbruch als Fehler, `AS5600 antwortet nicht` oder `AS5600 2x in 10s ausgefallen`, mit WINKELQUELLE IMU `IMU antwortet nicht` oder `IMU 2x in 10s ausgefallen`; durch eine kürzere, seltenere Lücke fährt der Lauf, und darin wird kein Winkel genommen, wie im automatischen Test ([Der Ausgangsencoder](#der-ausgangsencoder)). Der Bericht hat die Zeile `AS5600-Aussetzer: N, längster Mms. ...`, wenn N größer als 0 ist |
+| Kein Fenster | 200ms, 4 Fenster zu 50ms | Abbruch; `SERVO_TEST_WIN_STALE_MS`, der Wert des automatischen Tests. Ein Fenster ohne Strommesswert zählt nicht als Fenster. Die drei Schutzmechanismen darüber verwenden diese Fenster; für eine Lücke gilt deshalb keine zusätzliche Toleranzzeit |
+| Der AS5600, ab dem Start in Gebrauch | länger als 300ms keine Antwort oder eine erneute Lücke innerhalb von weniger als 10s seit Beginn der vorherigen | Abbruch als Fehler, `AS5600 antwortet nicht` oder `AS5600 2x in 10s ausgefallen`, mit WINKELQUELLE IMU `IMU antwortet nicht` oder `IMU 2x in 10s ausgefallen`; bei einer kürzeren, selteneren Lücke läuft der Test weiter, ohne dabei Winkelwerte zu übernehmen, wie im automatischen Test ([Der Ausgangsencoder](#der-ausgangsencoder)). Der Bericht hat die Zeile `AS5600-Aussetzer: N, längster Mms. ...`, wenn N größer als 0 ist |
 | Eine Suche | 40s | Abbruch: 1000µs Weg sind 100 Stellungen zu 250ms, 25s |
 | Ein Schritt des Programmierers | 150s | Abbruch: VERBINDEN mit seinem Lesen, ein Schreiben oder VERLASSEN |
 | Das Umschalten des Prüfstands | 3s | Abbruch, wenn SAFE oder ARMED 3s nach der Anforderung nicht steht |
 | Das Netzteil | Sollwerte und Ausgang, ein oder aus, wie bei seiner ersten Messung, ob es antwortet oder nicht, in jeder Phase außer den Sitzungen des Programmierers (VERBINDEN bis VERLASSEN), denen das Netzteil gehört; ein Ausgang, der beim Start aus ist und eingeschaltet wird, oder ein Netzteil, das beim Start nicht antwortet und später antwortet, mit ein- oder ausgeschaltetem Ausgang, beendet den Lauf als `Netzteil oder Spannung geändert`, so wird neben einer Schiene, die anderswo gespeist wird, kein zweites Netzteil eingeschaltet; ein VERBINDEN wird nicht gesendet, solange ein PD mini antwortet, mit dem der Lauf nicht begonnen hat, oder dessen Ausgang aus ist: der Lauf endet, wie eine Messung außerhalb einer Sitzung ihn beendet, mit `Netzteil oder Spannung geändert` für einen PD mini, mit dem der Lauf nicht begonnen hat, und mit `Netzteilausgang abgeschaltet` für seinen eigenen; während einer Suche zudem die Schienenspannung innerhalb 1,0V des ersten Fensters | Abbruch |
 | Die Schienenspannung im Fenster einer Suche | in jedem Fenster einer Suche vorhanden, ihr Mittel bei 3,0V oder mehr (`SERVO_LIMRUN_RAIL_MIN_MV`), das erste Fenster eingeschlossen | Abbruch, bevor das Fenster die Suche bewegt: `kein Spannungswert im Fenster` ohne Wert, `Netzteil oder Spannung geändert` unter 3,0V; Bezug des 1,0-V-Bands ist das erste Fenster des Laufs, das die Spannung enthält |
-| Schrittweite | 10µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
+| Schrittweite | 10µs | begrenzt die Änderung der angeforderten Pulsweite je Schritt; wie stark das Horn dabei gegen einen Anschlag drückt, hängt vom Einbau ab |
 
-Sie gelten in jeder Phase. Die Suche und die Schutzmechanismen lesen den
-Betrag des Stroms: ein verkehrt herum eingebauter Shunt liest ein
-anlaufendes Servo als stärker negativen Strom, und der Lauf findet es wie
-mit richtig eingebautem Shunt. Ein Messwert von -32768mA zählt als
+Sie gelten in jeder Phase. Suche und Schutzmechanismen verwenden den
+Betrag des Stroms. Bei umgekehrtem Shunt wird der Strom eines
+blockierenden Servos stärker negativ; die Blockierung wird trotzdem
+wie bei richtig eingebautem Shunt erkannt. Ein Messwert von -32768mA zählt als
 32768mA, über der Grenze von 3,0A. Der Lauf folgt den Regeln für ARMED des
 SERVO-Bildschirms und des Programmierports: sein ARM wird abgelehnt,
 solange der Port gehalten wird, eine STOP-Sperre oder verlorene
@@ -382,8 +388,7 @@ modelliertes Servo getestet; keines der beiden Firmware-Images ruft es auf.
 ### Was einen Endlagenlauf beendet
 
 STOP, LAUF BEENDEN im Feld auf LIVE oder auf der Karte ENDLAGENLAUF, ein Umschalten auf
-SAFE durch den Bediener, Linkverlust, das Verlassen des Bildschirms, der
-Bediener, der das Servo nimmt, eine Änderung an den Einstellungen des
+SAFE durch den Bediener, Linkverlust, das Verlassen des Bildschirms, die manuelle Übernahme des Servos, eine Änderung an den Einstellungen des
 Servos, verlorene Touch-Ereignisse, der INA3221, der aufhört, das Messgerät zu sein,
 und ein Netzteil, das aufhört zu antworten, auslöst, ausschaltet oder
 dessen Sollwerte sich ändern: die Gründe des automatischen Tests, in
@@ -414,10 +419,10 @@ Senden ablehnt, gilt als keines.
 ZURÜCKSPIELEN im Programmierer bietet nach VERBINDEN und ALLES AUSLESEN `Werte vor dem Endlagenlauf.` an: das Servo, wie die erste Sitzung des Laufs es las,
 zurückgeschrieben als gewöhnliches Schreiben von LEFT ANGLE, RIGHT ANGLE,
 PULSE LOWER und PULSE UPPER. Das Angebot steht, solange das gelesene Servo
-sich darin in diesen vier Feldern und in keinem anderen unterscheidet. Es liegt im Speicher des
-Panels: ein Start des Panels vergisst es, die Sicherungsdatei auf der Karte
-bleibt. Eine Sitzung nach dem Lauf gehört dem Bediener: ihr erstes
-Schreiben sichert eine eigene Sicherungsdatei.
+sich darin in diesen vier Feldern und in keinem anderen unterscheidet. Diese Werte liegen im Arbeitsspeicher des Panels und gehen bei einem
+Neustart verloren. Die Backup-Datei auf der Karte bleibt erhalten.
+Eine Sitzung nach dem Lauf ist unabhängig davon; ihr erstes Schreiben
+legt eine eigene Backup-Datei an.
 
 ![Ein Lauf, nach einem Schreiben beendet](img/de/servo-limrun-stopped.png)
 ![ZURÜCKSPIELEN nach einem Endlagenlauf](img/de/servo-limrun-restore.png)
@@ -435,10 +440,10 @@ Schreiben sichert eine eigene Sicherungsdatei.
 
 | Urteil | Bedeutung |
 | --- | --- |
-| GEFUNDEN | nur Suche: ein Ende läuft an; die Endpunkte werden gemeldet |
-| FREI | kein Ende läuft an; nichts wird geschrieben |
+| GEFUNDEN | nur Suche: eine Endlage blockiert; die Endpunkte werden gemeldet |
+| FREI | keine Endlage blockiert; nichts wird geschrieben |
 | BESTANDEN | programmiert, und beide Enden in der letzten Suche frei |
-| NICHT BESTANDEN | der Lauf endete wie geplant und ein Ende läuft weiterhin an, oder das Servo lässt sich nicht programmieren |
+| NICHT BESTANDEN | der Lauf endete wie geplant und eine Endlage blockiert weiterhin, oder das Servo lässt sich nicht programmieren |
 | ABGEBROCHEN | ein Schutz, der Bediener, der Link, das Messgerät, das Netzteil oder der Programmierer hat ihn beendet |
 
 Das Feld auf der linken Karte zeigt bis SCHLIESSEN das Urteil, den Grund
@@ -453,10 +458,10 @@ Der Bericht ist eine eigene `LIMITnnn.TXT` in `USER/LOGS` ohne CSV-Datei
 daneben, unter der nächsten freien Nummer dieses Ordners, geschrieben
 unabhängig davon, was BERICHT auf PRÜFLING sagt. Mit Testaufzeichnungen AUS unter
 SETUP > SD CARD wird kein Bericht geschrieben
-([Setup](Screens-de.md#sd-card-welche-logs-geschrieben-werden-und-wohin)). Während eines Laufs schreiben weder das
-Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
-läuft durch den Lauf weiter, wie seine Summen. Vom Start des Laufs, bis die
-Karte den Bericht geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
+([Setup](Screens-de.md#sd-card-welche-logs-geschrieben-werden-und-wohin)). Während eines Laufs schreiben weder die Prüfstands- noch die
+Netzteilaufzeichnung eine Zeile. Die Laufzeit und Summen der
+Netzteilaufzeichnung werden weitergezählt. Vom Start bis zum Schließen
+der Berichtsdatei auf der Karte gilt der Lauf als offener Aufzeichnungslauf: WLAN und ein Update warten
 darauf, wie auf die CSV eines Laufs. Ein Lauf am modellierten
 Servo des Hosts mit REVERSION AUS und SERVOPULSE auf 1000-2000; die
 Anschläge bei 1150µs und 1880µs Hornweg liegen bei 1208µs und 1817µs
@@ -513,12 +518,14 @@ nie die Datei eines früheren Laufs. Die Zeile `Gesucht:` nennt Mitte und Enden 
 Lauf, der vor seiner ersten Suche endete, hat keine. Ein Lauf an einem
 SERVO-PWM-Pin hat keine Zeile `Servopulse:`.
 
-Nicht gemessen: jede Zahl oben an einem echten Servo. Unbekannt sind die
-Einheit von LEFT ANGLE und RIGHT ANGLE, welches Register an einem echten
-KST- oder Chaservo-Servo welche Pulsseite begrenzt, ob ein geschriebener
-Wert einen Neustart der Versorgung übersteht, ob sich das Servo bewegt,
-wenn seine Grenze geschrieben wird, wie lange eine Sitzung an der Hardware
-dauert, und die Zeit von VERLASSEN bis zu einem wirksamen ARM.
+Der vollständige Endlagenlauf und die Zahlen oben wurden nicht an einem
+echten Servo gemessen. Unbekannt bleiben die Einheit von LEFT ANGLE und
+RIGHT ANGLE, ihre Zuordnung zu den Pulsseiten an einem echten KST- oder
+Chaservo-Servo, Bewegungen beim Schreiben einer Grenze, die Dauer einer
+Sitzung an der Hardware und die Zeit von VERLASSEN bis zu einem wirksamen
+ARM. Bei den Versuchen mit der Servoprogrammierung an einem Chaservo
+überstanden geschriebene Werte einen Versorgungszyklus. Die Persistenz
+bei KST-Servos und über wiederholte Zyklen ist nicht gemessen.
 
 ## Zwei Servos auf einer Ruderfläche abgleichen
 
@@ -546,8 +553,7 @@ Strom über den Suchlauf um mindestens 0,08A schwankt. Die Stromobergrenze
 für das Paar liegt bei 4,0A.
 
 Jedes Ende bekommt seine eigene Korrektur; ein Gestänge mit Horn und
-Schubstange ist nicht symmetrisch zur Mitte. Ein Stromsensor über das Paar
-genügt.
+Schubstange ist nicht symmetrisch zur Mitte. Ein Sensor für den gemeinsamen Strom beider Servos genügt.
 
 ### Ergebnisse
 
@@ -563,22 +569,23 @@ genügt.
 
 ### Zweck
 
-Was ein Servo in Ruhe, in Bewegung und beim Halten eines Endes zieht und wie
-lange es von Ende zu Ende braucht, bei den Versorgungsspannungen, für die es
-ausgelegt ist; und die Spannung, unter der es sich nicht bewegt
-(Brown-out). Nichts am Prüfstand misst das Horn, solange der Ausgangsencoder
-(siehe unten) nicht an ist, also wird jedes Ergebnis am Strom des Netzteils
-abgelesen, das das Servo versorgt: am PD mini (WeAct PD
+Der automatische Test misst den Strom in Ruhe, während der Bewegung
+und beim Halten einer Endstellung. Er schätzt die Stellzeit bei den für
+das Servo vorgesehenen Spannungen und sucht die Spannung, bei der keine
+Bewegung mehr erkennbar ist (Brown-out). Ohne eingeschaltete Winkelquelle
+(siehe unten) misst er keine Hornposition. Bewegung wird aus dem Strom
+des Netzteils abgeleitet, das das Servo versorgt: am PD mini (WeAct PD
 Power Mini V1), wenn der Tab PD MINI auf SUPPLY ihn freigibt, sonst am Netzteilmodell
-des Panels. Ein Lauf am Modell sagt das in seinem Bericht, und seine Zahlen
-sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
+des Panels. Ein Lauf am Modell ist im Bericht als Simulation gekennzeichnet; seine
+Messwerte sind simuliert. Ist der INA3221 bei TEST STARTEN das Messgerät der
 Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen den
 INA3221-Kanal, der das Ziel des Testers überwacht, in 50-ms-Fenstern: siehe
 [Der Strommesser des Laufs](#der-strommesser-des-laufs).
 
-TEST STARTEN auf der Karte AUTOMATISCHER TEST der Aufgabe TEST von SERVO startet ihn;
-[Bildschirme](Screens-de.md#servo) beschreibt die Bedienung. Die Engine ist
-`shared/servo/servo_test.c`; die Konstanten unten stehen in `servo_test.h`.
+Starte den Test mit TEST STARTEN auf der Karte AUTOMATISCHER TEST unter
+TEST auf SERVO. Die [Bildschirmbeschreibung](Screens-de.md#servo) erklärt
+die Bedienung. Der Ablauf ist in `shared/servo/servo_test.c` implementiert;
+die unten genannten Konstanten stehen in `servo_test.h`.
 
 ### Verfahren
 
@@ -591,7 +598,7 @@ Jede Stufe durchläuft diese Phasen:
 | Phase | Das Servo | Endet |
 | --- | --- | --- |
 | SETZEN | auf PULS MITTE; die Spannung wird verlangt; die erste Stufe schaltet den Ausgang ein | wenn das Netzteil den Sollwert auf 0,05V genau zurückliest, spätestens nach 3000ms |
-| EINSCHWINGZEIT | auf PULS MITTE | nach EINSCHWINGZEIT des Laufs |
+| EINSCHWINGEN | auf PULS MITTE | nach EINSCHWINGZEIT des Laufs |
 | RUHE | auf PULS MITTE: der Ruhestrom ist der Mittelwert der Messwerte, das Ruherauschen ihre Standardabweichung | nach 1000ms |
 | BEWEGEN | ein Sprung auf ein Ende, ohne Rampe: TEMPO gilt nicht | bei der Ankunft oder nach 3000ms plus der Verzögerung des Strommessers (3300ms am PD mini): verspätet mit erkannter Bewegung, unerkannt ohne |
 | HOLD | an diesem Ende: der Haltestrom ist der Mittelwert der Messwerte | nach HALTEZEIT, mindestens 600ms |
@@ -601,14 +608,18 @@ PULS MITTE, ohne Trim. Mit den Vorgaben (BEREICH 80%, WEG +/-90 Grad,
 PULS MIN 1000us, MAX 2000us) sind das 1100 und 1900us. KURVE und TEMPO
 gelten nur für SWEEP.
 
-Auch ein Lauf, der zu Ende geht, schaltet den Ausgang aus und gibt das Servo
-zur Mitte frei. Auf dem Prüfstand, den er in ARMED zurücklässt, ist der
-gezeigte befohlene Wert dann die Ruhelage, wie nach FREIGEBEN: 1500us bei
-STANDARD PWM, gleich welcher TRIMMUNG, und der nächste Drag oder die nächste
-Knopfdrehung beginnt dort. Die ersten beiden Bewegungen einer Stufe, von der Mitte zum
-unteren Ende und weiter zum oberen, werden nicht gezählt: sie messen den Haltestrom an jedem
-Ende. Danach gehen die gezählten Bewegungen von Ende zu Ende, BEWEGUNGEN viele
-oder für TESTZEIT, wie TESTDAUER NACH sagt, höchstens 1000 je Stufe.
+Auch nach einem vollständig abgeschlossenen Lauf wird der Ausgang
+ausgeschaltet und das Servo zur Mitte freigegeben. Der Prüfstand bleibt
+ARMED. Die angezeigte Sollposition ist dann wie nach FREIGEBEN die
+Ruhelage: bei STANDARD PWM 1500us, unabhängig von TRIMMUNG. Die nächste
+Ziehbewegung oder Drehknopfbewegung beginnt dort.
+
+Die ersten beiden Bewegungen jeder Stufe gehen von der Mitte zum unteren
+und dann zum oberen Ende. Sie messen den Haltestrom an beiden Enden und
+zählen nicht zum Ergebnis. Danach folgen Bewegungen von Ende zu Ende:
+entweder die unter BEWEGUNGEN gewählte Anzahl oder so lange wie TESTZEIT
+vorgibt, abhängig von TESTDAUER NACH. Je Stufe werden höchstens
+1000 Bewegungen gezählt.
 
 - **Schwelle:** je Stufe der größere Wert aus 0,020A
   (`SERVO_TEST_MOVE_MIN_A`) und dem 3-fachen (`SERVO_TEST_NOISE_K`)
@@ -618,28 +629,29 @@ oder für TESTZEIT, wie TESTDAUER NACH sagt, höchstens 1000 je Stufe.
 - **Bewegung:** ein Messwert, der mehr als die Schwelle vom Wert vor dem
   Befehl entfernt ist: darüber, oder darunter, wenn das Servo ein Ende
   verlässt, an dem es gegen einen Anschlag gedrückt hat.
-- **Ankunft:** nach Bewegung ein Messwert mehr als die Schwelle über dem
-  Haltestrom des Zielendes, dann der erste Messwert, der wieder auf 0,05A
-  (`SERVO_TEST_BAND_A`) daran liegt, auf jeder Seite. Ein Messwert, der die
-  Schwelle über dem Wert liegt, ist nie eine Ankunft; das Band von 0,05A
-  beendet also keine Bewegung zu früh, wo die Schwelle kleiner ist. Ein
-  Messwert, der
-  stattdessen mehr als 0,05A unter den Wert fällt, wie nach einem
-  Stromstoß beim Beschleunigen, übergibt die Bewegung der Regel unten. Die
-  Halteströme der beiden Enden können
-  sich um mehr als 0,05A unterscheiden; ein Messwert, der noch auf dem
-  Wert des Startendes liegt, oder ein steigender Strom, der den Wert des
-  Ziels durchläuft, ist keine Ankunft.
-- **Ankunft an einem Ende, das härter gehalten wird, als das Servo sich
-  bewegt**, einem Ende am Anschlag: dieser Wert wird nie überschritten,
-  also ist die Bewegung beim ersten von zwei Messwerten in Folge angekommen,
-  die nach Bewegung auf 0,05A am Wert und aneinander liegen. Ein Strom, der
-  den Wert des Ziels mit weniger als 0,05A je Messwert durchsteigt, kann
-  dort für eine Ankunft gehalten werden.
-- **Nicht unterscheidbar:** ein Servo, dessen Strom in Bewegung auf 0,05A
-  am Haltestrom des Ziels liegt, ist von einem, das schon dort steht, nicht
-  zu unterscheiden; eine Bewegung zu diesem Ende endet bei ihren ersten zwei
-  Messwerten nach Bewegung.
+- **Ankunft:** Nach erkannter Bewegung muss zunächst ein Messwert um
+  mehr als die Schwelle über dem Haltestrom des Zielendes liegen. Als
+  Ankunft zählt dann der erste Messwert, der wieder innerhalb von 0,05A
+  (`SERVO_TEST_BAND_A`) um diesen Haltestrom liegt. Ein Messwert, der noch
+  um mehr als die Schwelle darüber liegt, gilt weiterhin als Bewegung,
+  auch wenn er schon im Band von 0,05A liegt. Das breitere Band erkennt
+  deshalb keine Ankunft zu früh. Fällt der Strom stattdessen um mehr als
+  0,05A unter den Haltestrom, etwa nach einem Stromstoß beim
+  Beschleunigen, gilt die folgende Regel. Die Halteströme beider Enden
+  können sich um mehr als 0,05A unterscheiden. Ein Messwert noch auf dem
+  Niveau des Startendes oder ein steigender Strom beim Durchlaufen des
+  Zielniveaus zählt deshalb nicht als Ankunft.
+- **Ankunft bei einem höheren Halte- als Bewegungsstrom**, etwa an einem
+  mechanischen Anschlag: Der Strom überschreitet das Halteniveau nicht.
+  Als Ankunft zählt deshalb der erste von zwei aufeinanderfolgenden
+  Messwerten nach erkannter Bewegung, die jeweils höchstens 0,05A vom
+  Halteniveau und voneinander abweichen. Ein Strom, der das Zielniveau
+  mit weniger als 0,05A Anstieg je Messwert durchläuft, kann dabei
+  irrtümlich als Ankunft erkannt werden.
+- **Nicht unterscheidbar:** Liegt der Bewegungsstrom innerhalb von 0,05A
+  um den Haltestrom des Ziels, lässt sich das bewegte Servo nicht von
+  einem bereits angekommenen unterscheiden. Die ersten zwei Messwerte
+  nach erkannter Bewegung bestimmen dann die Ankunft.
 - **Fenster:** eine Bewegung hat 3000ms (`SERVO_TEST_TRAVEL_TIMEOUT_MS`)
   plus die Verzögerung des Strommessers, um anzukommen: 3300ms am PD mini,
   dessen Messwerte eine Ankunft etwa 300ms später zeigen. Die Verzögerung
@@ -657,11 +669,12 @@ oder für TESTZEIT, wie TESTDAUER NACH sagt, höchstens 1000 je Stufe.
 - **Strom in Bewegung:** der Mittelwert der Messwerte zwischen Befehl und
   Ankunft; der Spitzenwert ist der höchste davon.
 
-Warum das Band bei 0,05A bleibt, während die Schwelle mitgeht: die
-Wiedergaben der beiden Läufe am Prüfstand unten messen mit dem Band bei
-0,05A und mit dem Band gleich der Schwelle dieselben Bewegungen auf die
-Millisekunde gleich, weil ein Messwert, der die Schwelle über dem Wert
-liegt, nie eine Ankunft ist. Mitgehen musste die Schwelle. 0.13.0 nahm
+Das Ankunftsband bleibt bei 0,05A, während sich die Bewegungsschwelle an
+das Ruherauschen anpasst. Beim Nachspielen der beiden unten beschriebenen
+Prüfstandsläufe liefern ein Band von 0,05A und ein Band in Höhe der
+Schwelle dieselben Stellzeiten, auf die Millisekunde genau. Messwerte um
+mehr als die Schwelle über dem Haltestrom gelten in beiden Fällen noch
+als Bewegung. Entscheidend ist daher die angepasste Bewegungsschwelle. 0.13.0 nahm
 0,10A als Bewegung, und der MG90S bewegt sich mit 0,04 bis 0,077A über
 0,001A Haltestrom: keine Bewegung wurde erkannt, jede lief nach 3000ms aus
 und zählte als verspätet, und der Lauf lautete NICHT BESTANDEN.
@@ -671,7 +684,7 @@ EINSCHWINGZEIT 500ms tragen die Messwerte in RUHE noch das Ende der Bewegung
 der Stufe zur Mitte: beim 1102HB bei 5,00V 0,025A, fallend auf 0,003A,
 aus der Verzögerung des PD mini von 0,3s und der Bewegung selbst. Das hebt
 den Ruhemittelwert und das Rauschen und damit die Schwelle: dort 0,026A
-statt 0,020A. Ein längeres EINSCHWINGZEIT vermeidet das.
+statt 0,020A. Eine längere EINSCHWINGZEIT vermeidet diese Überlagerung.
 
 **Brown-out.** Nach den Stufen, mit BROWN-OUT an: ab 5,00V
 (`SERVO_TEST_BROWNOUT_START_V`) oder der geltenden Spannungsgrenze, wenn
@@ -684,21 +697,20 @@ Seite des Brown-out-Laufs gesetzt, die die Zeile BROWN-OUT der Optionen des
 automatischen Tests öffnet, und im NVS (nichtflüchtiger Speicher) gehalten.
 Die k-te Spannung ist der Start abzüglich k Schritten, auf 0,01V. Die
 geltende Grenze ist die niedrigste aus SPANNUNG MAX, dem Höchstwert des
-Netzteils und beim PD mini seiner Eingangsspannung abzüglich 0,7V. Eine
-Untergrenze neben dem Raster der Schritte ist die letzte Stufe, kürzer als
-SCHRITT: NIEDRIGSTE SPANNUNG 3,1V in Schritten von 0,20V geht 5,0, 4,8 ...
+Netzteils und beim PD mini seiner Eingangsspannung abzüglich 0,7V. Liegt die Untergrenze zwischen zwei regulären Stufen, wird sie als letzte
+Stufe angefahren; dieser letzte Schritt ist kürzer als SCHRITT: NIEDRIGSTE SPANNUNG 3,1V in Schritten von 0,20V geht 5,0, 4,8 ...
 3,2, 3,1V, und 4,8V in Schritten von 1,0V geht 5,0, 4,8V. Am Modell, dessen
 kleinster Sollwert 3,3V ist, geht der vorgegebene Lauf 5,0, 4,8 ... 3,4,
-3,3V, und eine NIEDRIGSTE SPANNUNG unter 3,3V endet ebenfalls dort. Eine
-NIEDRIGSTE SPANNUNG bei oder über dem Start lässt eine Spannung, den Start:
-unter einer Grenze von 4,5V läuft NIEDRIGSTE SPANNUNG 4,8V nur 4,5V. Die
+3,3V, und eine NIEDRIGSTE SPANNUNG unter 3,3V endet ebenfalls dort. Liegt NIEDRIGSTE SPANNUNG bei oder über der Startspannung, wird nur die
+Startspannung geprüft. Bei einer Grenze von 4,5V und NIEDRIGSTE SPANNUNG
+4,8V läuft der Test deshalb nur bei 4,5V. Die
 feinste Einstellung, 2,0V in Schritten von 0,1V, verlangt 31 Spannungen
-(`SERVO_TEST_BROWNOUT_MAX`). Jede Spannung durchläuft SETZEN, EINSCHWINGZEIT
+(`SERVO_TEST_BROWNOUT_MAX`). Jede Spannung durchläuft SETZEN, EINSCHWINGEN
 und RUHE, dann zwei Bewegungen (`SERVO_TEST_BROWNOUT_MOVES`), von der Mitte
-zum oberen Ende und weiter zum unteren, jede 600ms gehalten. Eine Spannung
-zeigt **keine Bewegung**, wenn kein Messwert der beiden Bewegungen mehr als
-die Schwelle dieser Spannung, aus ihren eigenen Messwerten in RUHE, vom Wert
-vor ihrem Befehl entfernt liegt. Der Lauf abwärts endet bei der ersten
+zum oberen Ende und weiter zum unteren, jede 600ms gehalten. Bei einer Spannung wird **keine Bewegung** erkannt, wenn kein Messwert
+der beiden Bewegungen um mehr als die zugehörige Schwelle vom Strom vor
+dem jeweiligen Befehl abweicht. Die Schwelle stammt aus der RUHE-Messung
+bei dieser Spannung. Der Lauf abwärts endet bei der ersten
 Spannung ohne Bewegung; der Bericht nennt sie, die niedrigste, bei der sich
 das Servo noch bewegt hat, und die Schwelle der zuletzt gelaufenen
 Spannung. Keine Bewegung schon bei der ersten Spannung, 5,00V, lautet
@@ -738,9 +750,9 @@ vom IOmcu gezählt. Ein Lesen der Seite, bei dem SAMPLES stehen
 geblieben ist, bringt keinen neuen Messwert, gleich welche Spannung und
 welchen Strom es trägt (ein Display-Lesen auf dem IOmcu, das langsam
 war (bis 400ms, `PDMINI_REPLY_MS`) oder fehlschlug, lässt die letzten stehen),
-und ein Lauf ohne neuen Messwert über 1,5s endet. Ein Messwert trägt die
-Panelzeit des ersten Lesens der Seite, das seinen Zählerstand zeigte; das
-Modell zählt und stempelt seine eigenen Schritte. Der IOmcu liest den
+und ein Lauf ohne neuen Messwert über 1,5s endet. Als Zeitstempel erhält der Messwert die Panelzeit der ersten Abfrage,
+die diesen Zählerstand liefert. Das Modell zählt seine eigenen Schritte
+und versieht sie selbst mit Zeitstempeln. Der IOmcu liest den
 Ausgang des PD mini alle 100ms (`PDMINI_DISPLAY_MS`), das Panel die Seite
 alle 100ms (`SUPPLY_LINK_READ_MS`); ein neuer Messwert erreicht den Test
 also bestenfalls alle 100ms, beim Modell alle 50ms. Springt SAMPLES
@@ -750,8 +762,8 @@ die Rate des Netzteils schließt sie ein. Der Bericht nennt beide Raten, im
 Lauf gemessen, und den mittleren Abstand zweier Messwerte, die den Test
 erreicht haben.
 
-Eine Stellzeit endet am ersten Messwert, der wieder am Haltestrom liegt; sie
-ist also um bis zu einen Abstand zu lang. Sie enthält auch den Weg des Befehls
+Die Stellzeit endet am ersten Messwert, der wieder am Haltestrom liegt.
+Sie kann deshalb um bis zu ein Messintervall zu lang ausfallen. Sie enthält auch den Weg des Befehls
 vom Panel zum Pin: Render-Schleife, Control-Task, CAN-Link (Controller Area
 Network) und den nächsten PWM-Frame (Pulsweitenmodulation). Diese
 Verzögerung ist nicht gemessen. Wie der PD mini einen Messwert mittelt, ist
@@ -776,8 +788,8 @@ STELLZEIT wie der PD mini: gar nicht.
 Am INA3221 ist ein Messwert ein Fenster, gezählt an der Nummer des Fensters:
 springt sie zwischen zwei Fenstern, die der Lauf bekam, um mehr als eins,
 zählt die Zeile `Übersprungen` die fehlenden. Das Panel nimmt jedes Fenster
-einmal und in Reihenfolge; die Queue zum Bildschirm fasst 8, ein Frame von
-mehr als 400ms verliert also die ältesten. Die Zeit eines Fensters ist der
+einmal und in Reihenfolge. Die Warteschlange zum Bildschirm fasst 8;
+dauert ein Frame länger als 400ms, gehen die ältesten Fenster verloren. Die Zeit eines Fensters ist der
 späteste Zeitpunkt, zu dem es geschlossen haben kann: die Panelzeit des
 Lesens, das es brachte, abzüglich 50ms für jedes Fenster, das nach ihm
 schloss und im selben Lesen kam. Fenster, die zusammen ankommen, liegen im
@@ -800,10 +812,10 @@ Messgerät der Servo-Schiene, wie das Panel es beim Start des Laufs nennt
 | Stellzeit | bis zum Messwert, der die Ankunft zeigt: um bis zu einen Messwert und etwa 300ms Verzögerung zu lang | bis zum Fenster, das die Ankunft zeigt: um bis zu zwei Fenster und den Poll, der sie liest, zu lang, 145ms |
 | STELLZEIT | berichtet, nicht geprüft | berichtet, nicht geprüft |
 | Eine Bewegung ist verspätet nach | 3300ms | 3050ms |
-| Spannung und Strom des Netzteils | jede Zahl und jede Zeile | nicht verwendet und nicht geloggt |
+| Spannung und Strom des Netzteils | jede Zahl und jede Zeile | nicht verwendet und nicht aufgezeichnet |
 | Zustand des Netzteils: antwortet, Ausgang, Abschaltung, zurückgelesener Sollwert, Modus | gelesen | gelesen |
 
-Am INA3221 misst das Panel eine Bewegung aus den Fenstern. Die
+Beim INA3221 ermittelt das Panel die Stellzeit aus den Messfenstern. Die
 Bewegungsaufzeichnung des IOmcu, die eine Bewegung in 1ms ab dem
 PWM-Frame misst, verwendet der Lauf nicht.
 
@@ -815,7 +827,8 @@ PWM-Frame misst, verwendet der Lauf nicht.
   dem PD mini weiter: die beiden Messgeräte stimmen nicht überein. In einem
   aufgezeichneten Lauf eines MS24 war der höchste Messwert des PD mini
   0,390A und der höchste 1-ms-Messwert des INA3221 1,637A. Ein Lauf am PD
-  mini läuft mit ihm weiter, wenn der INA3221 unter ihm zum Messgerät wird.
+  mini verwendet ihn weiter, auch wenn der INA3221 währenddessen als
+  Messgerät verfügbar wird.
 - **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem ein INA3221
   unter SETUP > SENSORS bestückt ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
   `IOmcu-Firmware älter als 0.16.0`, `der IOmcu hält
@@ -826,17 +839,16 @@ PWM-Frame misst, verwendet der Lauf nicht.
   CSV und Bericht behalten das Vorzeichen. Ein Lauf, dessen Ruhestrom in
   einer Stufe unter -0,020A liegt (`SERVO_TEST_NEG_IDLE_A`), hat die
   Berichtszeile `Strom in Ruhe negativ: Richtung des Shunts`.
-- **Übersteuern.** Der INA3221 liest eine Shuntspannung bis 163,8mV:
-  1,638A an einem Shunt von 0,1Ω, 3,276A an 0,05Ω. Ein Messwert an einem
-  Ende dieses Bereichs zählt in seinem Fenster mit dem Bereichsende, und das
-  Fenster ist ein Messwert wie jeder andere: sein Mittel, seine Spitze und
-  sein Platz im Urteil sind die Werte, die der Baustein lieferte. Die Spalte
-  `clipped` der CSV nennt die Zahl solcher Messwerte im Fenster, die
-  Berichtszeile `Übersteuert` die Zahl der Fenster mit einem; ihre Werte
-  sind eine Untergrenze. Wie viele Messwerte eines Fensters übersteuert
-  sind, entscheidet nichts. Ein Servo, das mehr zieht als der Bereich, liest
-  sich als das Bereichsende. Welcher Shunt bestückt ist, entscheidet, was
-  dieses Messgerät zeigen kann.
+- **Übersteuern.** Der INA3221 misst Shuntspannungen bis 163,8mV:
+  1,638A an einem Shunt von 0,1Ω, 3,276A an 0,05Ω. Ein abgeschnittener
+  Messwert geht mit dem Wert der Messgrenze in sein Fenster ein. Mittelwert,
+  Spitze und Bewertung beruhen weiterhin auf den vom Baustein gelieferten
+  Werten. Die CSV-Spalte `clipped` zählt solche Messwerte je Fenster;
+  die Berichtszeile `Übersteuert` zählt Fenster mit mindestens einem davon.
+  Bei Übersteuerung sind die Stromangaben nur Untergrenzen. Die Anzahl
+  abgeschnittener Messwerte entscheidet nicht über das Ergebnis. Ein
+  höherer tatsächlicher Strom wird weiterhin als Messgrenze angezeigt.
+  Welcher Shunt bestückt ist, bestimmt daher den messbaren Strombereich.
 - **Der Spannungsabfall am Shunt.** `Ist V` und `V min` werden hinter dem
   Shunt gemessen. Der Sollwert wird für den Abfall nicht angehoben: am
   Bereichsende fallen am Shunt 0,164V ab, bei jedem Shuntwert, und die
@@ -878,7 +890,7 @@ PWM-Frame misst, verwendet der Lauf nicht.
 Nicht gemessen: was der PD mini mit einem Servo am Anschlag meldet
 (Konstantstrom oder Überstrom, und ob er selbst abschaltet) und wie lange er
 nach einem Einschaltstrom Konstantstrom hält. Im aufgezeichneten Lauf des
-MS24 hielt er ihn zweimal 0,43s lang während gesunder Bewegungen, bei 0,004
+MS24 hielt er ihn zweimal 0,43s lang während unauffälliger Bewegungen, bei 0,004
 bis 0,342A.
 
 ### Der Ausgangsencoder
@@ -886,12 +898,13 @@ bis 0,342A.
 Ein magnetischer Winkelsensor AS5600 auf der Ausgangswelle des Servos, in
 SETUP, SENSORS unter AS5600 eingestellt (Standard AUS) und vom IOmcu
 gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
-Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
-und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
-Grenze. Ohne AS5600 sind der Lauf, seine CSV und sein Bericht wie ohne das
-Bauteil. Der IOmcu übernimmt das SENSE-Setup nur bei einer Bank in SAFE. Ein Lauf nutzt den Winkel nur, wenn der IOmcu AS5600 als
-eingeschaltet hält: wird AS5600 bei einer Bank in ARMED eingeschaltet, hat der Lauf
-keine Winkelspalten, bis das Setup in SAFE übernommen ist.
+Winkel des Horns hinzu. Die aus dem Strom ermittelten Ergebnisse bleiben unverändert. Der
+Winkel geht nicht in das Urteil ein und hat keinen Grenzwert. Ist AS5600
+ausgeschaltet, verhalten sich Lauf, CSV und Bericht wie ohne den Sensor.
+Der IOmcu übernimmt die SENSE-Einstellungen nur in SAFE. Ein Lauf nutzt
+den Winkel erst, wenn der IOmcu AS5600 als eingeschaltet bestätigt hat.
+Schaltest du AS5600 in ARMED ein, fehlen deshalb die Winkelspalten,
+bis die Einstellung in SAFE übernommen wurde.
 
 Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
 oder SENSOR-MITTE auf OPTIONEN > PRÜFLING, die den aktuellen Zählerstand nimmt,
@@ -899,15 +912,14 @@ wenn das Servo in Neutral steht), in Grad von -180 bis knapp unter 180. Der
 Sensor zählt in der Richtung hoch, auf die sein DIR-Pin gelegt ist; der Test
 nimmt an, dass der Winkel mit der Pulsbreite steigt, eine DIR-Beschaltung in
 die andere Richtung zeigt sich also als Winkelfehler vom Doppelten des Wegs.
-Die befohlenen Winkel sind die der Seite: -90 Grad bei PULS MIN, +90 bei
+Die Sollwinkel entsprechen der Anzeige: -90 Grad bei PULS MIN, +90 bei
 PULS MAX, mit UMKEHREN und TRIMMUNG. Bei UMKEHREN an wird der gemessene Winkel
-genauso negiert, auf der Seite, im Bericht und in der CSV; ein Horn am
-befohlenen Ende zeigt dann keinen Fehler. Ein Servo, das über diese Spanne weniger als
+genauso negiert, auf der Seite, im Bericht und in der CSV; ein Horn an der angeforderten Endstellung zeigt dann keinen Fehler. Ein Servo, das über diese Spanne weniger als
 90 Grad dreht, zeigt den Unterschied als Winkelfehler.
 
-Der Zählerstand springt von 4095 auf 0, jeder Winkel ist also eine Position
-auf einer Umdrehung, und keine zwei werden als bloße Zahlen subtrahiert oder
-gemittelt. Der Abstand einer Bewegung von ihrem Start wird auf dem kürzeren
+Der Zählerstand springt von 4095 auf 0. Jeder Winkel beschreibt deshalb
+eine Position auf einer Umdrehung. Differenzen und Mittelwerte werden
+auf dem Kreis berechnet; der Übergang über null wird dabei berücksichtigt. Der Abstand einer Bewegung von ihrem Start wird auf dem kürzeren
 Weg genommen, 0 bis 180 Grad: zwei Positionen 1 Schritt beiderseits der halben Umdrehung von
 der Mitte liegen 0,18 Grad auseinander, nicht 359,8. Die Endwinkel einer Stufe
 an einem Ende werden als Abstände vom ersten von ihnen gemittelt, und der
@@ -939,14 +951,13 @@ Für jede Bewegung, vom Befehl bis zum nächsten Befehl (Konstanten in
 | spät | er bewegte sich und war vor dem nächsten Befehl keine 100ms ruhig |
 
 Die Toleranz ist `SENSE_ENC_STILL_TOL` des IOmcu; `test_as5600` hält
-beide gleich. Die Ruhezeit führt der IOmcu in seinem 2-ms-Messintervall,
+beide gleich. Der IOmcu ermittelt die Ruhezeit mit seinem Messintervall von 2ms,
 die Stellzeit hängt also nicht davon ab, wie oft das Panel die Page liest (alle
 40ms). Sie beginnt beim Befehl, wie der Test ihn ausgibt, und enthält den
 Weg des Befehls zum Pin: die Render-Schleife, den Control Task, den Link und
 den nächsten PWM-Frame, bis zu einem Poll-Intervall und einem Frame, nicht
-gemessen. Sie endet, wenn der Winkel innerhalb von 1,05 Grad seines Endwerts
-ist, und das ist früher als die letzte Bewegung des Arms um die Zeit, die das
-dauert: bei einem Servo mit 0,09 Grad je Mikrosekunde und 1,2µs je
+gemessen. Sie endet, sobald der Winkel höchstens 1,05 Grad vom Endwert abweicht.
+Der Arm kann sich während des verbleibenden Wegs noch bewegen: bei einem Servo mit 0,09 Grad je Mikrosekunde und 1,2µs je
 Millisekunde etwa 10ms. Berichtet werden nur gezählte Bewegungen; die
 Bewegungen, die das Horn zuerst an jedes Ende stellen, nicht. Eine Bewegung
 fällt aus den Zählungen des Winkels heraus, weder unbewegt noch spät, wenn der
@@ -962,15 +973,16 @@ die sich vor der Lücke oder dem Abbruch beruhigt hatte, behält ihr Ergebnis.
 
 Der Winkel ist nur ein Messwert, solange der Sensor seinen Magneten erkennt
 (STATUS MD, [Link](Link-de.md)). Meldet er keinen, ist sein Zählerstand keine
-Position: das Panel gibt ihn an nichts weiter, der Messwert erreicht den Lauf
-als ungültig mit dem Grund, die Winkelspalte der CSV bleibt leer, und eine
-offene, noch nicht beruhigte Bewegung fällt wie oben heraus. Der Bericht hat
+Position. Das Panel verwendet ihn nicht als Winkel. Der Lauf erhält
+einen ungültigen Messwert mit Begründung, die Winkelspalte der CSV bleibt
+leer und eine noch nicht abgeschlossene Bewegung ohne bestätigte Ruhe
+wird wie oben aus der Auswertung ausgeschlossen. Der Bericht hat
 dann die Zeile `Kein Magnet: AS5600 meldete N-mal keinen. ...`; N zählt, wie
 oft der Sensor im Lauf aus einem anderen Zustand zu "kein Magnet" wechselte,
 ein in diesem Zustand gestarteter Lauf eingeschlossen. Ein als zu schwach oder
 zu stark gemeldeter Magnet (ML, MH) bei gesetztem MD lässt den Winkel in
 Gebrauch: das Datenblatt nennt keine Wirkung auf den Winkel und spezifiziert
-sein Rauschen nur für 30 bis 90 mT. Der Bericht zählt diese Messwerte: `Feld:
+sein Rauschen nur für 30 bis 90mT. Der Bericht zählt diese Messwerte: `Feld:
 N Messwert(e) bei zu schwachem Magnetfeld, M bei zu starkem. ...`. Keine der
 beiden Zeilen steht im Bericht, wenn ihre Zahlen 0 sind.
 
@@ -996,11 +1008,11 @@ der Messwert gelöscht: die Zeile zeigt Striche, und SENSOR-MITTE setzt nichts,
 bis mit dem Link wieder ein Messwert eintrifft. Dasselbe gilt, solange der
 Sensor keinen Magneten meldet.
 
-Ein AS5600, ab dem Start eines Laufs in Gebrauch, das verstummt, ist eine
-Lücke des Encoders. Motor- und ESC-Läufe mit hohem Strom stören den
+Bleibt die Antwort eines seit Laufbeginn verwendeten AS5600 aus, beginnt
+eine Messlücke des Encoders. Motor- und ESC-Läufe mit hohem Strom stören den
 gemeinsamen I2C-Bus, und ein Baustein, der während eines Laufs an den Bus
-gesteckt wird, lässt einen anderen daran kurz ausfallen; der Winkel speist
-keinen Schutz, also fährt der Lauf durch eine solche Lücke (Konstanten in
+gesteckt wird, lässt einen anderen daran kurz ausfallen; kein Schutzmechanismus hängt vom Winkel ab, deshalb toleriert der Lauf
+eine solche Lücke (Konstanten in
 `servo_gap.h`):
 
 | Lücke | Lauf |
@@ -1009,7 +1021,8 @@ keinen Schutz, also fährt der Lauf durch eine solche Lücke (Konstanten in
 | länger als 300ms | endet im ersten Durchlauf nach 300ms, oder mit dem Messwert, der eine Lücke von 301ms beendet: `AS5600 antwortet nicht` |
 | Beginn weniger als 10000ms nach dem Beginn der Lücke davor, 9999ms eingeschlossen | endet mit ihrem Beginn: `AS5600 2x in 10s ausgefallen` |
 
-Beide Enden sind Fehler: Ausgang aus, Prüfstand auf SAFE. Eine Lücke beginnt
+Beide Abbruchgründe gelten als Fehler: Der Ausgang wird ausgeschaltet
+und der Prüfstand auf SAFE gesetzt. Eine Lücke beginnt
 mit der Abfrage der Steuer-Task, die den Baustein nicht antwortend findet
 (das SENSE-Lesen alle 40ms), und endet mit dem ersten Lesen eines
 antwortenden Bausteins, mit Winkel oder mit "kein Magnet". Ein Lauf, der
@@ -1025,7 +1038,7 @@ Lesen zurück, das ihn antwortend findet: ein Baustein, den seine Kontakte
 beim Einstecken noch einmal verlieren, hinterlässt kein "antwortet nicht"
 über einem Encoder, der antwortet.
 
-Die Zugabe gilt nur dem Winkel. Ein Messwert, von dem ein Schutz abhängt,
+Diese Toleranzzeit gilt nur für die Winkelmessung. Ein Messwert, von dem ein Schutz abhängt,
 beendet einen Lauf bei seinem ersten Ausfall: die Fenster des INA3221
 speisen den Stopp von BLOCKIERT AB ([Was einen Lauf
 beendet](#was-einen-lauf-beendet)), die Messwerte des Netzteils seine
@@ -1034,39 +1047,41 @@ offen ist, beendet den Lauf sofort mit dem Grund des INA3221.
 
 #### Winkelquelle
 
-ANGLE SOURCE unter SETUP > SENSORS > IMU legt fest, woher der Servotest,
-der LIMIT RUN und das SERVO-Lauf-Log den Winkel des Ruderhorns nehmen:
-`AS5600`, die Vorgabe, oder `IMU`. Mit `IMU` ist der Winkel die AXIS der
-IMU mit ihrem SIGN, ab der Null, die der IMU-Bildschirm nimmt (ZERO).
+WINKELQUELLE unter SETUP > SENSORS > IMU legt fest, woher Servotest,
+ENDLAGENLAUF und SERVO-Aufzeichnung den Hornwinkel beziehen: `AS5600`
+als Vorgabe oder `IMU`. Bei `IMU` wird die gewählte IMU-Achse mit dem
+IMU-Vorzeichen verwendet, bezogen auf den auf der IMU-Seite gesetzten
+NULLPUNKT.
 
-Der Winkel der IMU wird in Zählern des AS5600 geführt, so gilt jede Regel
-oben unverändert:
+Der IMU-Winkel wird in Zählerstände des AS5600 umgerechnet. Dadurch
+gelten die oben beschriebenen Regeln auch für diese Quelle:
 
 ```
 count = round(angle x 4096 / 360) mod 4096     centre count 0
 ```
 
-Ein Zähler sind 0.088°. Der Winkel, den ein Lauf berichtet, ist auf diesen
-Schritt gerastert. Die angegebene Auflösung des Sensors ist 0.05 bis 0.2°
-auf X und Y und 1° auf Z, das das Magnetometer braucht (auf dem Prüfstand
-nicht gemessen). AS5600-Mitte gilt nicht für die IMU, und ENC CENTRE
-nimmt von ihr keinen Zähler.
+Ein Zählschritt entspricht 0,088°. Der gemeldete Winkel ist auf diese
+Schrittweite gerastert. Die angegebene Sensorauflösung beträgt 0,05 bis
+0,2° auf X und Y sowie 1° auf Z. Z benötigt das Magnetometer; dies ist
+am Prüfstand nicht gemessen. AS5600-Mitte gilt nicht für die IMU,
+und SENSOR-MITTE übernimmt keinen Zählerstand von ihr.
 
 | | AS5600 | IMU |
 | --- | --- | --- |
 | ein Lauf liest Winkel, wenn | AS5600 an ist und der IOmcu es an hält | beim Start ein Messwert unter 300ms Alter angezeigt wird |
-| Ruhezeit | die des IOmcu, 12 Zähler (1.05°) | die eigene der IMU (`IMU_STILL_DEG`, 0.5°, `imu.h`) |
+| Ruhezeit | die des IOmcu, 12 Zählschritte (1,05°) | die eigene der IMU (`IMU_STILL_DEG`, 0,5°, `imu.h`) |
 | Lücke | antwortet nicht | 300ms kein Messwert (`IMU_STALE_MS`) |
 | Bericht, `Encoder:` | `AS5600 an der Hornwelle, Mittenwert N` | `IMU X+, in AS5600-Zählern (0.088 Grad je Zähler)` |
 
-Eine Lücke der IMU wird durchfahren und beendet einen Lauf wie beim AS5600
-oben: bis 300ms, einmal in 10s. Beide Berichte tragen die Zeile
+Für IMU-Lücken gilt dieselbe Toleranz wie für den AS5600: höchstens
+300ms, wobei der Beginn der vorherigen Lücke mindestens 10s zurückliegen
+muss. Längere oder häufigere Lücken beenden den Lauf. Beide Berichte tragen die Zeile
 `Winkelquelle:    AS5600` oder `Winkelquelle:    IMU X+`. Der Bericht des
-LIMIT RUN nennt die Quelle in der Winkelzeile jedes Endes. Die CSV des
+ENDLAGENLAUFS nennt die Quelle in der Winkelzeile jeder Endlage. Die CSV des
 Servotests hat die Spalte `angle source` zuletzt, nach den Spalten des
 Messgeräts, mit `AS5600` oder `IMU X+` in jeder Zeile; eine Datei ohne die
-Spalte liest LOGS nach denselben Spaltennamen. `angle (deg)` des SERVO-Lauf-Logs ist der
-Winkel der Quelle, wie MEASURED ihn zeigt.
+Spalte liest LOGS nach denselben Spaltennamen. `angle (deg)` der SERVO-Aufzeichnung enthält den Winkel dieser Quelle,
+wie er unter GEMESSEN angezeigt wird.
 
 Ein Lauf mit der IMU, der an einer Lücke endet, nennt im Abbruchgrund die
 IMU, auf der Karte und im Bericht: `IMU antwortet nicht` für eine Lücke über
@@ -1074,8 +1089,10 @@ IMU, auf der Karte und im Bericht: `IMU antwortet nicht` für eine Lücke über
 
 ### Was einen Lauf beendet
 
-Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
-schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
+Jeder Abbruch schaltet den Ausgang aus und schreibt trotzdem einen
+Bericht mit ABGEBROCHEN und dem Grund. Bleibt der Prüfstand ARMED,
+wird die Steuerung des Servos freigegeben und die Sollposition kehrt
+zur Ruhelage zurück. Der
 Grund steht auch in der zweiten Zeile des Ergebniskastens auf LIVE und in
 der letzten Zeile der Karte AUTOMATISCHER TEST (`ZULETZT: ABGEBROCHEN -
 STOP`), die dann den Grund statt der Dateien nennt. Ein
@@ -1084,22 +1101,21 @@ nicht antwortet oder abgeschaltet hat, kein neuer Messwert, ein Ausgang, der
 nicht anging, ein nicht bestätigter Sollwert, eine Stufe über der Grenze,
 BLOCKIERT AB, Konstantstrom, jeder Grund des INA3221 und beide Gründe des
 AS5600 ([Sicherheit, Fehler](Safety-de.md#fehler)). Auf SAFE schalten auch DISARM,
-STOP und das Verlassen der Seite. ARMED mit dem Servo in der Ruhelage bleibt
-der Prüfstand bei den Enden des Bedieners: ein Finger an den Bedienelementen,
-eine Änderung der Einstellungen, AUSGANG AUS und verlorene Touch-Ereignisse. Ein Schritt, den der Lauf gepostet und
-das Panel noch nicht gesendet hat, wenn der Prüfstand auf SAFE schaltet oder
+STOP und das Verlassen der Seite. Bei manuellen Eingriffen bleibt der Prüfstand ARMED und die Sollposition
+kehrt zur Ruhelage zurück: Berühren der Bedienelemente, Ändern der
+Einstellungen und AUSGANG AUS. Dasselbe gilt bei verlorenen
+Touch-Ereignissen. Eine vom Lauf angeforderte, aber vom Panel noch nicht gesendete Stufe, wenn der Prüfstand auf SAFE schaltet oder
 stoppt, wird nicht gesendet. Nach einem Lauf, den DISARM, STOP oder das
-Verlassen der Seite beendet hat, bleiben Horn und SOLL-PULSBREITE auf der
-Stellung, die der Lauf zuletzt gefahren hat; nach einem Ende, das den
+Verlassen der Seite beendet hat, bleiben die Hornanzeige und SOLL-PULSBREITE auf der zuletzt vom Lauf
+angeforderten Stellung; nach einem Ende, das den
 Prüfstand in ARMED lässt, zeigen sie die Ruhelage, in die die Freigabe die Pins
 stellt, 1500us bei STANDARD PWM, gleich welcher TRIMMUNG, und der nächste Drag
-oder die nächste Knopfdrehung beginnt dort. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
-Lauf zurück, gleich welche Seite oben ist. Das wartet, bis das OFF des
-Laufs gesendet ist, ein danach genommener Messwert zeigt, dass das Netzteil selbst den Ausgang
-aus meldet,
-kein ON unterwegs ist und AUSGANG EIN weder auf SERVO noch auf SUPPLY
-gehalten wird. Sollwerte, die nach
-dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
+oder die nächste Knopfdrehung beginnt dort. Nach dem Lauf werden die vorherigen Sollwerte von SUPPLY
+wiederhergestellt, unabhängig von der geöffneten Seite. Das geschieht
+erst, wenn der Ausschaltbefehl des Laufs gesendet wurde, eine spätere
+Messung den Ausgang als ausgeschaltet bestätigt, kein Einschaltbefehl
+unterwegs ist und AUSGANG EIN weder auf SERVO noch auf SUPPLY gehalten
+wird. Sollwerte, die du nach dem Lauf geändert hast, bleiben erhalten.
 
 | Grund im Bericht | Ursache |
 | --- | --- |
@@ -1108,7 +1124,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `Verbindung verloren` | der Link zum IOmcu ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
 | `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, ein Programmierer, geöffnet aus der Liste von PROGRAMMIEREN |
-| `Servo-Optionen geändert` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder TEMPO geändert |
+| `Servo-Optionen geändert` | Typ, Pulsrate, Pulse, Trimmung, Weg, Umkehrung oder TEMPO geändert |
 | `Touch-Ereignisse verloren` | zwischen zwei Frames gingen Ereignisse verloren |
 | `Netzteil antwortet nicht` | ein Messwert als nicht antwortend markiert |
 | `Netzteil abgeschaltet` | der Ausgang ging durch eine Abschaltschwelle aus |
@@ -1120,21 +1136,21 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `1s über BLOCKIERT AB` | `SERVO_TEST_STALL_ABORT_MS` |
 | `1s im Konstantstrom` | das Netzteil meldete `SERVO_TEST_CC_ABORT_MS` lang Konstantstrom |
 | `0.2s kein INA3221-Fenster` | ein Lauf am INA3221: `SERVO_TEST_WIN_STALE_MS` ohne ein Fenster mit Strom und Spannung. Ein Durchlauf 199ms nach dem letzten Fenster lässt den Lauf laufen, einer bei 200ms beendet ihn |
-| `INA3221 setzte sich zurück` | ein Lauf am INA3221: der Reset-Zähler des Bausteins hat sich bewegt |
+| `INA3221 setzte sich zurück` | ein Lauf am INA3221: der Reset-Zähler des Bausteins hat sich geändert |
 | `INA3221 antwortet nicht` | ein Lauf am INA3221: kein Lesen von SENSE in 200ms zeigt den Baustein online und erkannt an einem Bus, der nicht hängt |
 | `INA3221-Fenster ohne Stromwert` | ein Lauf am INA3221: das neueste Fenster enthält keine Strommesswerte, oder seine Nummer steht seit 200ms |
 | `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der IOmcu hört auf, die Einstellung zu halten, oder SETUP hat den INA3221 aus |
 | `INA3221 misst nicht mehr` | ein Lauf am INA3221: das Messgerät wechselte, und das Panel nannte die Bedingung nicht |
 | `AS5600 antwortet nicht` | ein Lauf mit AS5600 in Gebrauch: der Baustein antwortet länger als `SERVO_GAP_MAX_MS`, 300ms, nicht ([Der Ausgangsencoder](#der-ausgangsencoder)) |
-| `AS5600 2x in 10s ausgefallen` | ein Lauf mit AS5600 in Gebrauch: der Baustein verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach dem Beginn des Mals davor |
+| `AS5600 2x in 10s ausgefallen` | ein Lauf mit AS5600 in Gebrauch: der Baustein verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach Beginn der vorherigen Lücke |
 | `IMU antwortet nicht` | ein Lauf mit WINKELQUELLE IMU: länger als `SERVO_GAP_MAX_MS`, 300ms, kein Messwert der IMU ([Winkelquelle](#winkelquelle)) |
-| `IMU 2x in 10s ausgefallen` | ein Lauf mit WINKELQUELLE IMU: die IMU verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach dem Beginn des Mals davor |
+| `IMU 2x in 10s ausgefallen` | ein Lauf mit WINKELQUELLE IMU: die IMU verstummte weniger als `SERVO_GAP_EVERY_MS`, 10000ms, nach Beginn der vorherigen Lücke |
 
 Die sechs Gründe eines Laufs am INA3221 sind die Bedingungen, unter denen der
 INA3221 das Messgerät der Schiene ist. Jeder beendet den Lauf in der ersten
 Abfrage, die ihn findet: die Fenster des INA3221 speisen den Stopp von
-BLOCKIERT AB, den ein Lauf immer hat (0.1A bis 5.0A, kein AUS), also bekommt
-ein Lauf am INA3221 keine Zugabe für eine Lücke seiner Fenster. Die Gründe
+BLOCKIERT AB, der immer aktiv ist (0,1A bis 5,0A, kein AUS). Für fehlende
+INA3221-Fenster gibt es deshalb keine zusätzliche Toleranzzeit. Die Gründe
 des Netzteils gelten an beiden Messgeräten: sein Zustand wird in jedem Lauf
 gelesen.
 
@@ -1144,8 +1160,9 @@ eine Grenze, die während des Laufs sinkt, beendet ihn vor der Stufe darüber.
 
 ### Urteil
 
-Über die Spannungsstufen (der Brown-out-Lauf wird berichtet, nicht
-beurteilt) NICHT BESTANDEN, wenn eines davon zutrifft:
+Die Spannungsstufen erhalten das Urteil NICHT BESTANDEN, wenn eine der
+folgenden Bedingungen erfüllt ist. Der Brown-out-Lauf wird berichtet,
+aber nicht gegen diese Grenzen bewertet:
 
 - der höchste Ruhestrom liegt über RUHESTROM;
 - der höchste Haltestrom liegt über HALTESTROM;
@@ -1170,7 +1187,8 @@ MESSBAR, nicht NICHT BESTANDEN. Kam keine Bewegung an, gibt es keine
 längste Stellzeit, und die Zeile `Stellzeit` lautet `längste --` und
 `nicht gemessen, keine Bewegung kam an`, an jedem Strommesser.
 
-Eine Pass/Fail-Grenze von 0 wird nicht geprüft; BLOCKIERT AB immer. Ein
+Eine Bestehensgrenze von 0 ist ausgeschaltet. BLOCKIERT AB wird dagegen
+immer geprüft. Ein
 Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
 [Blockieren und Konstantstrom](#blockieren-und-konstantstrom).
 
@@ -1184,21 +1202,21 @@ PRÜFLING) `ATESTnnn.TXT`. Die Nummer gehört zu einer Reihe mit den
 ([Logs](Screens-de.md#logs)). Mit Testaufzeichnungen AUS unter SETUP > SD CARD,
 gelesen bei TEST STARTEN, schreibt der Lauf keine Datei, und das Ergebnis
 nennt `TESTAUFZEICHNUNGEN AUS`. Ein Lauf ist eine CSV: das eigene
-Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
+Laufaufzeichnung des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen
 wieder, wenn der Lauf endet. Eine Nummer, die nur ein
 `ATESTnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
 vergeben, damit kein Bericht überschrieben wird, und LÖSCHEN in der
-Log-Ansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
+Aufzeichnungsansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
 annimmt, sagt das in der Leiste und im Ergebnis, `NICHT AUFGEZEICHNET`. Zeilen, für
 die die Warteschlange zur Karte keinen Platz hatte, zählt der Bericht. Vom
 Start des Laufs, bis die Karte seine CSV und seinen Bericht geschlossen hat,
-gilt der Lauf als offener Log-Lauf, die Zeit zwischen dem OPEN der Datei und
+gilt der Lauf als offener Aufzeichnungslauf, die Zeit zwischen dem OPEN der Datei und
 seiner Antwort eingeschlossen: WLAN und ein Update warten darauf, und die
-Log-Ansicht listet und öffnet die Datei, die noch geschrieben wird, nicht.
+Aufzeichnungsansicht listet und öffnet die Datei, die noch geschrieben wird, nicht.
 
-Die CSV, mit Semikolon getrennt und Dezimalpunkt, wie jedes Log des
-Prüfstands:
+Die CSV verwendet Semikolons als Trennzeichen und den Dezimalpunkt,
+wie jede Aufzeichnung des Prüfstands:
 
 | Spalte | Einheit | Bedeutung |
 | --- | --- | --- |
@@ -1215,21 +1233,23 @@ Prüfstands:
 | `power (W)` | W | Spannung mal Strom |
 | `mode` | | der des Netzteils: `CV`, `CC` oder `OFF`. Am INA3221 der Modus des letzten Messwerts des Netzteils, leer vor dem ersten |
 | `travel (ms)` | ms | in der Zeile einer Ankunft: die Stellzeit dieser Bewegung |
-| `angle (deg)` | deg | nur mit AS5600 an: der Winkel des Horns ab der Mitte, aus dem neuesten Messwert, der zur Zeit der Zeile oder davor genommen wurde; leer, wenn dieser älter als 500ms ist oder fehlt |
-| `travel angle (ms)` | ms | nur mit AS5600 an: in der Zeile nach einer beruhigten Bewegung ihre Stellzeit aus dem Winkel |
-| `angle gap (ms)` | ms | nur mit AS5600 an: in der ersten Zeile zur Zeit des Messwerts, der eine Lücke des nicht antwortenden Bausteins beendete, oder danach, die Länge der Lücke; sonst leer |
+| `angle (deg)` | deg | bei verwendeter Winkelquelle: der Winkel des Horns ab der Mitte, aus dem neuesten Messwert, der zur Zeit der Zeile oder davor genommen wurde; leer, wenn dieser älter als 500ms ist oder fehlt |
+| `travel angle (ms)` | ms | bei verwendeter Winkelquelle: in der Zeile nach einer beruhigten Bewegung ihre Stellzeit aus dem Winkel |
+| `angle gap (ms)` | ms | bei verwendeter Winkelquelle: in der ersten Zeile zur Zeit des Messwerts, der eine Lücke des nicht antwortenden Bausteins beendete, oder danach, die Länge der Lücke; sonst leer |
 | `meter` | | `INA3221`, `PDMINI` oder `MODEL`, in jeder Zeile |
 | `window` | | am INA3221: die Nummer des Fensters, modulo 65536; ein Schritt von mehr als 1 sind Fenster, die den Lauf nie erreichten |
 | `current max (A)` | A | am INA3221: der höchste 1-ms-Messwert des Fensters |
 | `current min (A)` | A | am INA3221: sein tiefster |
 | `voltage min (V)` | V | am INA3221: der tiefste Messwert der Busspannung im Fenster |
 | `clipped` | | am INA3221: Messwerte des Fensters an einem Bereichsende, bei 255 gehalten |
+| `angle source` | | bei verwendeter Winkelquelle: ihr Name, `AS5600` oder `IMU X+`, in jeder Zeile |
 
-Die letzten sechs Spalten folgen auf alles davor: Spalten 14 bis 19 ohne
-AS5600, 17 bis 22 mit. Am PD mini und am Modell sind die fünf nach `meter`
-leer. Eine Datei mit weniger Spalten, 13 breit, oder 15 oder 21 mit
-AS5600, liest die Log-Ansicht ebenso: ihr Parser nimmt die Spalten aus
-der Kopfzeile.
+Die sechs Messgerätespalten stehen ohne Winkeldaten an Position 14 bis
+19, mit Winkeldaten an Position 17 bis 22. Bei verwendeter Winkelquelle
+folgt ihr Name in Spalte 23. Beim PD mini und beim Modell bleiben die
+fünf Spalten nach `meter` leer. Auch ältere Dateien mit weniger Spalten
+lassen sich öffnen: 13 ohne AS5600 oder 15 beziehungsweise 21 mit AS5600.
+Die Aufzeichnungsansicht erkennt die Spalten an den Namen in der Kopfzeile.
 
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; jedes
 seiner Wörter ist ein Eintrag in `shared/text/include/ui_text.def`, mit
@@ -1258,9 +1278,9 @@ gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBR
 unter einer Stufe, deren gezählte Bewegungen alle unerkannt blieben, eine
 Zeile `NICHT MESSBAR`, bei beidem beides in einer Zeile. Eine nie erreichte
 Stufe zeigt `nicht gelaufen`. Die Zeilen der Stufentabelle sind höchstens
-92 Zeichen breit, so breit wie eine Zeile der Log-Ansicht: Ströme in ganzen
+92 Zeichen breit, so breit wie eine Zeile der Aufzeichnungsansicht: Ströme in ganzen
 mA nehmen je 6 Zeichen, die Spaltenköpfe zwei Zeilen. `Kann zerstören` nennt das rote Schild, wenn
-ein Heli-Typ oder eine Frame Rate über 60Hz gilt.
+ein Heli-Typ oder eine Pulsrate über 60Hz gilt.
 
 Ein Lauf am INA3221 hat diese Zeilen anstelle derer des PD mini, hier vom
 modellierten Prüfstand der Host-Suite:
@@ -1283,15 +1303,16 @@ Strom zwischen zwei Messwerten dieses Kanals im Abstand von 1ms: Ein Fenster ent
 
 ### Was nicht gemessen ist
 
-Drei Läufe von 0.13.0 am Prüfstand mit dem PD mini, von einem Tester: ein MG90S-Mikroservo, ein Digitalservo 1102HB
-und ein Digitalservo MS24. Das MS24, in Bewegung 0,16 bis 0,18A, bestand. MG90S
+Ein Tester hat drei Prüfstandsläufe mit Firmware 0.13.0 und dem PD mini
+aufgezeichnet: mit einem MG90S-Mikroservo, einem Digitalservo 1102HB und
+einem Digitalservo MS24. Das MS24, in Bewegung 0,16 bis 0,18A, bestand. MG90S
 und 1102HB lauteten NICHT BESTANDEN, jede Bewegung verspätet, weil 0.13.0
-0,10A als Bewegung nahm; beide Servos bewegten sich. Die Host-Suite gibt
-die CSVs von MG90S und 1102HB (`test/host/fixtures/`, gekürzt) gegen die
-Engine wieder, dazu einen MS24-ähnlichen Fall, die Ströme des MG90S mal 3.
-Die Host-Suite prüft die Engine gegen `servo_sim` und
-`supply_sim`, die Seite SERVO, die sie führt, und die CSV, vom Parser der
-Log-Ansicht zurückgelesen. Nicht gemessen: die Mittelung des PD mini und die
+0,10A als Bewegung nahm; beide Servos bewegten sich. Die Host-Suite spielt die gekürzten CSVs von MG90S und 1102HB
+(`test/host/fixtures/`) gegen den Testablauf nach. Hinzu kommt ein
+MS24-ähnlicher Fall mit den dreifachen Stromwerten des MG90S.
+Die Host-Suite prüft den Ablauf außerdem mit `servo_sim` und
+`supply_sim`, seine Steuerung durch die Seite SERVO und das erneute
+Einlesen der CSV durch den Parser der Aufzeichnungsansicht. Nicht gemessen: die Mittelung des PD mini und die
 Verzögerung des Befehls bis zum Pin.
 
 `test_servo_test_win`, `test_servo_test_win_read` und `test_servo_test_win_chain` fahren den Test mit dem INA3221 als Messgerät auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
@@ -1300,7 +1321,7 @@ nimmt jedes einmal und `servo_source` nennt das Messgerät, neben einem
 Modell des PD mini, das alle 104ms gelesen wird. Zwei Aufzeichnungen von
 einem Prüfstand auf 0.14.0 werden wiedergegeben: die ganze CSV eines MS24 am
 PD mini (`servo-ms24-pdmini.csv`) mit ihren zwei Abschnitten im
-Konstantstrom, und das daneben geschriebene Prüfstandslog
+Konstantstrom, und die parallel geschriebene Prüfstandsaufzeichnung
 (`servo-ms24-windows.csv`), das 1309 der 3817 Fenster enthält, die der
 INA3221 schloss, und einen Lauf am INA3221 an seiner ersten Lücke von mehr als
 200ms beendet: auf Fenster 19804 folgt 20409, 30,25s später. Der Lauf liest
@@ -1312,8 +1333,8 @@ Konstantstrom-Regel an einem PD mini.
 
 ## Die befohlene Stellung folgt dem Zustand ARMED
 
-Die befohlene Stellung des SERVO-Bildschirms ändert sich nur, solange der
-Prüfstand ARMED ist, also solange ein Pin ihr folgt.
+Die auf SERVO angezeigte Sollposition ändert sich nur in ARMED, wenn
+die Ausgänge den Steuerbefehlen folgen.
 
 | Prüfstand | Befohlene Stellung |
 | --- | --- |
@@ -1328,13 +1349,13 @@ Prüfstand ARMED ist, also solange ein Pin ihr folgt.
 | WIDE | 800 bis 2200us | 1500us |
 | HELI CYCLIC | 820 bis 2220us | 1520us |
 
-Die Ruhelage ist `outputs_role_rest()` in `shared/outputs/outputs.c`, der
-Wert, den der IOmcu auf einem Kanal in ARMED ausgibt, den niemand
-kommandiert, umgerechnet über den Bereich, den die Kommandos des Bildschirms
-tragen. Dieser Bereich ist auf PULS MITTE zentriert; ein PULS MITTE abseits
-der Mitte zwischen PULS MIN und MAX ist also der Wert beim ARM. TRIMMUNG
-verschiebt befohlene Stellungen und nicht die Ruhelage: Mit TRIMMUNG +20 zeigt
-das ARM 1500us, und eine Stellung bei 0deg ist 1520us.
+Die Ruhelage wird durch `outputs_role_rest()` in
+`shared/outputs/outputs.c` bestimmt. Diesen Wert gibt der IOmcu in ARMED
+auf einem Kanal ohne aktiven Steuerbefehl aus, umgerechnet auf den
+Pulsbereich der Bildschirmbefehle. Dieser Bereich ist auf PULS MITTE zentriert; ein PULS MITTE abseits
+der Mitte zwischen PULS MIN und MAX ist also der Wert beim ARM. TRIMMUNG verändert die angeforderten Stellungen, lässt die Ruhelage
+aber unverändert. Mit TRIMMUNG +20 werden beim Wechsel zu ARMED 1500us
+angezeigt; ein Befehl für 0deg entspricht dagegen 1520us.
 
 Ein Sweep endet beim Wechsel auf SAFE, und seine zuletzt gezeichnete Stellung
 bleibt auf dem Bildschirm; keine seiner Stellungen wird nach dem Wechsel auf SAFE
@@ -1359,24 +1380,26 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 
 ### Verfahren
 
-- Der Winkel ist der, den GEMESSEN auf LIVE nimmt, von der Quelle, die
-  ANGLE SOURCE nennt: der des AS5600-Ausgangsencoders in Grad ab seinem
-  ENC CENTRE oder der der IMU in AS5600-Zählern ab dem Zählwert 0; mit
-  REVERSE umgekehrt. Die erste Zustandszeile nennt die Quelle, `AS5600`
-  oder `IMU X+` mit AXIS und SIGN der IMU.
-- NULLPUNKT wird bei beiden Quellen ab dem Zählwert 0 genommen; ein neues
-  ENC CENTRE nach NULLPUNKT verschiebt keinen Ausschlag. Eine andere ANGLE
-  SOURCE, eine andere AXIS oder SIGN der IMU oder ein NULLPUNKT oder
-  NULLPUNKT LÖSCHEN auf dem IMU-Bildschirm verwirft Nullpunkt und MAX: die
-  Aufgabe liest wie vor NULLPUNKT.
+- Der Winkel entspricht GEMESSEN auf LIVE und stammt aus der unter
+  WINKELQUELLE gewählten Quelle: AS5600 relativ zu SENSOR-MITTE oder IMU,
+  umgerechnet in AS5600-Zählerstände relativ zu 0. UMKEHREN kehrt das
+  Vorzeichen um. Die erste Zustandszeile nennt die Quelle, `AS5600` oder
+  `IMU X+`, mit der gewählten IMU-Achse und dem IMU-Vorzeichen.
+- NULLPUNKT speichert seine Referenz relativ zum rohen Zählwert 0 der
+  Quelle. Eine spätere Änderung von SENSOR-MITTE verändert den Ausschlag
+  deshalb nicht. Änderst du WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen,
+  werden Nullpunkt und MAX verworfen. Dasselbe gilt für NULLPUNKT und
+  NULLPUNKT LÖSCHEN auf der IMU-Seite. Die Anzeige entspricht dann wieder
+  dem Zustand vor dem Setzen des RUDER-Nullpunkts.
 - NULLPUNKT nimmt den aktuellen Winkel als Neutrallage der Fläche. Der
   Ausschlag ist der Winkel ab ihr, auf -180 bis unter 180° gefaltet. Vor
   NULLPUNKT ist der Ausschlag der Winkel selbst.
-- LÄNGE L ist die Fläche von der Scharnierlinie bis zur Hinterkante, 0 oder
+- LÄNGE L ist der Abstand von der Scharnierlinie bis zur Hinterkante, 0 oder
   10 bis 500mm (Einstellung `rud_len_mm`, 0 = nicht gesetzt). Der Weg ist
   L x sin(Ausschlag): der Abstand der Hinterkante von der Neutralebene, was
   ein senkrecht an die Hinterkante gehaltenes Lineal anzeigt. Bei 30° zeigt
-  eine Fläche von 100mm 50.0mm; der Bogen L x Ausschlag ergäbe 52.4mm.
+  eine Fläche von 100mm einen Weg von 50,0mm; der Bogen L x Ausschlag
+  ergäbe 52,4mm.
 - MAX hält den größten Ausschlag je Seite, aus jedem angezeigten Messwert,
   auf jeder Aufgabe. NULLPUNKT und MAX LÖSCHEN löschen ihn.
 - Die Seitenansicht rechts der Zustandszeilen zeichnet die Fläche im
@@ -1397,8 +1420,8 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 
 | Messwert | Auflösung | Bereich |
 | --- | --- | --- |
-| AUSSCHLAG | 0.1° angezeigt; 4096 Schritte je Umdrehung, 0.088°, bei beiden Quellen | -180.0 bis +179.9° |
-| HINTERKANTE | 0.1mm angezeigt | -500.0 bis +500.0mm |
+| AUSSCHLAG | 0,1° angezeigt; 4096 Schritte je Umdrehung, 0,088°, bei beiden Quellen | -180,0 bis +179,9° |
+| HINTERKANTE | 0,1mm angezeigt | -500,0 bis +500,0mm |
 
 ### Grenzen
 
@@ -1409,9 +1432,9 @@ aus“ ohne Lineal am Modell. Die Geometrie steht in
 - Der Ausschlag ist nicht gefiltert: das Rauschen eines Messwerts zeigt
   sich in seinen Zehnteln und kann MAX darum erhöhen. Das Rauschen des
   AS5600 am Prüfstand ist nicht gemessen.
-- REVERSE ändert das angezeigte Vorzeichen und behält den Nullpunkt; MAX
-  behält jede Seite so, wie der Sensor sie sah, also tauschen die Seiten mit
-  REVERSE auf dem Bildschirm.
+- UMKEHREN ändert das angezeigte Vorzeichen und erhält den Nullpunkt.
+  MAX speichert die Seiten in der ursprünglichen Sensorrichtung; mit
+  UMKEHREN tauschen sie deshalb auf dem Bildschirm die Seiten.
 
 ## AUTO-Endpoints
 
@@ -1437,15 +1460,15 @@ Augenmaß eingestellten Weg am Sender. Der Lauf steht in
   abgelehnt und gedimmt, damit der Lauf ab dem Nullpunkt misst, mit dem er
   begann, und der Drehknopf bewegt nichts.
 - Soll bei 1000us und bei 2000us: der Ausschlag, den jede Seite erreichen
-  soll, 0.5 bis 90.0° in Schritten von 0.5°, 20.0° (Einstellungen
+  soll, 0,5 bis 90,0° in Schritten von 0,5°, vorgegeben 20,0° (Einstellungen
   `rud_defl_lo`, `rud_defl_hi`). Mit gesetzter LÄNGE zeigt die Zeile die mm
   an der Hinterkante neben den Grad. RESERVE: 0 bis 50%, 10%
-  (`rud_margin`). TOLERANZ: 0.1 bis 5.0°, 0.5° (`rud_tol`). Ein Tippen
+  (`rud_margin`). TOLERANZ: 0,1 bis 5,0°, vorgegeben 0,5° (`rud_tol`). Ein Tippen
   öffnet die Zifferntastatur.
-- Der Sollwert einer Seite ist ihr Soll x (1 + RESERVE): 20.0° bei 10%
-  sind 22.0°.
-- 2s HALTEN: START startet den Lauf nach 2s Halten. Während er läuft, heißt
-  die Taste LAUF BEENDEN, und ein Druck beendet den Lauf beim Drücken.
+- Der Zielwert einer Seite ist der eingegebene Ausschlag x (1 + RESERVE):
+  20,0° bei 10% ergeben 22,0°.
+- Halte 2s HALTEN: START für 2s gedrückt, um den Lauf zu starten. Während
+  des Laufs heißt die Taste LAUF BEENDEN; ein Druck beendet ihn sofort.
 - Die drei Zeilen darunter: der laufende Schritt, etwa `EINSCHWINGEN
   2000us: SCHREIBEN 1/8, SITZUNGEN 2`, oder warum ein START abgelehnt ist,
   oder die Sollwerte; das Ergebnis, `BESTANDEN: 150>92, 150>92` mit dem Wert
@@ -1471,20 +1494,20 @@ Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
 | ein anderer Lauf läuft oder ein Bericht noch geschrieben wird | die Zeile des Laufs, wie auf TEST |
 | das Messgerät nicht für den Servostrom eingerichtet ist | die Zeile des Endlagenlaufs |
 | der Ausgang nicht der Programmierport ist | `AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT` |
-| PULS MIN über 1000us oder PULS MAX unter 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
-| der Programmierer belegt ist oder kein PD mini und kein PROG 5V das Servo aus- und einschaltet | die Zeile des Endlagenlaufs |
+| PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` |
+| die Servoprogrammierung belegt ist oder bei KST/Chaservo und klassischen Hitec-Servos weder PD mini noch PROG 5V die Versorgung schalten kann | die Zeile des Endlagenlaufs |
 | die Winkelquelle keinen Messwert gibt | `WINKELQUELLE: KEIN MESSWERT` |
 | NULLPUNKT nicht genommen ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` |
 
 ### Verfahren
 
-- Die Lesesitzung: das Servo 1000ms auf PULS MITTE gehalten, SAFE
-  angefordert, CONNECT und das Lesen, PULSE LOWER und PULSE UPPER auf
-  1000.0us und 2000.0us geschrieben, wo sie es nicht sind, LEAVE, ARMED
-  angefordert.
-- Eine Messung: der Endpuls befohlen; ab 500ms nach dem Befehl wird der
-  erste Winkel genommen, der 500ms ruhig ist. Kein ruhiger Winkel bis
-  3000ms beendet den Lauf.
+- Die Lesesitzung hält das Servo 1000ms auf PULS MITTE und fordert SAFE
+  an. VERBINDEN liest das Servo aus. Nur bei KST/Chaservo werden
+  PULSE LOWER und PULSE UPPER bei Bedarf auf 1000,0us und 2000,0us
+  geschrieben. Danach folgen VERLASSEN und die Anforderung von ARMED.
+- Für eine Messung wird der Endpuls angefordert. Ab 500ms nach dem
+  Befehl zählt der erste Winkel, der seit 500ms ruhig ist. Liegt bis
+  3000ms kein solcher Winkel vor, endet der Lauf.
 - Die Richtung einer Seite ist das Vorzeichen ihrer ersten Messung. Beide
   Seiten mit einem Vorzeichen beenden den Lauf mit `Endpoint einer Seite fehlt`.
 - Eine Seite außerhalb der Toleranz bekommt Wert x Sollwert / gemessen,
@@ -1494,11 +1517,12 @@ Ein START wird abgelehnt, der Grund in der ersten Zeile, solange:
   Änderung, geht der Wert an RIGHT ANGLE und LEFT ANGLE zurück. Das
   gefundene Register bewegt diese Seite, das andere die andere Seite.
 - Jedes Schreiben ist eine Sitzung: das Servo 1000ms auf PULS MITTE
-  gehalten, SAFE, CONNECT, das Schreiben und sein Rücklesen, LEAVE mit dem
-  Aus- und Einschalten, das den geschriebenen Wert wirken lässt, ARMED, die
-  Seite neu gemessen. Die Datei mit den Werten vor dem Lauf wird vor dem
+  gehalten, SAFE, VERBINDEN, Schreiben und Kontrolllesen, VERLASSEN mit dem für
+  diese Servofamilie nötigen Versorgungszyklus, ARMED und erneutes Messen
+  der Seite. Hitec-Servos der D-Serie starten bereits beim Schreiben
+  selbst neu. Die Datei mit den Werten vor dem Lauf wird vor dem
   ersten Schreiben gespeichert.
-- PASS: beide Seiten innerhalb der Toleranz, jede nach dem letzten
+- BESTANDEN: beide Seiten innerhalb der Toleranz, jede nach dem letzten
   Schreiben gemessen. Eine Seite außerhalb nach 8 Schreibvorgängen beendet
   den Lauf mit `8 Schreibvorgänge je Seite`.
 
@@ -1508,36 +1532,38 @@ Der des Endlagenlaufs, in jeder Phase:
 
 | Bedingung | Ende |
 | --- | --- |
-| ein 1ms-Messwert ab 3000mA oder begrenzt | ABGEBROCHEN |
+| ein Messwert im Abstand von 1ms ab 3000mA oder an der Messgrenze abgeschnitten | ABGEBROCHEN |
 | Fenstermittel über 1000mA für 400ms vor dem Sollwert minus der Toleranz | NICHT BESTANDEN, `Ruder klemmt bei x°` |
 | dasselbe am Sollwert oder darüber | ABGEBROCHEN, Blockieren |
 | 200ms kein Fenster | ABGEBROCHEN |
 | der Winkel über 300ms verloren oder eine zweite Lücke binnen 10s | ABGEBROCHEN, `Winkelquelle ausgefallen` |
 | eine abgelehnte Sitzung oder ein Rücklesen, das vom Schreiben abweicht | ABGEBROCHEN |
-| eine andere ANGLE SOURCE oder eine andere AXIS oder SIGN der IMU: der Nullpunkt wird verworfen | ABGEBROCHEN |
+| WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen geändert: der Nullpunkt wird verworfen | ABGEBROCHEN |
 | STOP, DISARM, SERVO verlassen, Messgerät oder Versorgung geändert | ABGEBROCHEN |
 
 Jedes Ende lässt das Servo los, fordert SAFE an und schaltet den Ausgang
 der Versorgung aus; ein Lesen in der ersten Sitzung, das kein Servo
 findet, fordert statt des AUS ein LEAVE an, damit der Port zurückkommt.
-Die zuletzt geschriebenen Werte bleiben im Servo; RESTORE auf der
-Programmierseite spielt die von vor dem Lauf zurück.
+Die zuletzt geschriebenen Werte bleiben im Servo. Bei KST/Chaservo
+bietet ZURÜCKSPIELEN auf der Programmierseite die Werte vor dem Lauf an.
+Bei Hitec lädst du die Backup-Datei unter DATEIEN der
+Hitec-Servoprogrammierung und schreibst sie mit n WERTE SCHREIBEN.
 
 ### Ergebnisse
 
 Der Bericht RUDDRnnn.TXT und die CSV RUDDRnnn.CSV, eine Zeile je Messung,
 gehen nach USER/LOGS. RUDDR, nicht RUDDER: ein 8.3-Name fasst 5 Buchstaben
 und 3 Ziffern. Der Bericht nennt das Servo, den Ausgang, die Winkelquelle
-und das Messgerät, Soll, Sollwerte und Toleranz, die Endpoints davor und
+und das Messgerät, eingegebene Ausschläge, Zielwerte und Toleranz, die Endpoints davor und
 danach mit der Seite, die jeder bewegt, die Schreibvorgänge und Sitzungen,
-die Sicherungsdatei und jede Messung mit ihrem Wert, ihrem Winkel und ob
-sie innerhalb liegt.
+die Backup-Datei und jede Messung mit Registerwert, Winkel und der
+Angabe, ob sie innerhalb der Toleranz liegt.
 
 ### Grenzen
 
 - Das Modell ist linear: der Ausschlag am Endpuls gilt als proportional zum
-  Wert des Endpoints ab dem Nullpunkt der Fläche. Ein nicht lineares Servo
-  braucht mehr Schreibvorgänge; der Lauf misst nach jedem.
+  Wert des Endpoints ab dem Nullpunkt der Fläche. Ein nicht lineares Servo kann mehr Schreibvorgänge benötigen oder den
+  Zielwert verfehlen. Der Lauf misst nach jedem Schreiben.
 - Eingegeben werden Grad; ein Soll in mm an der Hinterkante nicht.
 - Ein Servo der D-Serie hält bei 1000us nach dem Zielmodell aus
   `hitec_live.h` bei 76,9% des Wegs zu seinem Endpoint an; das ist nicht
@@ -1565,8 +1591,8 @@ Amplitude in Grad (BEREICH des Wegs zu beiden Seiten von PULS MITTE):
 TEMPO unter 100% erlaubt 3,6 Grad/s je Prozent: 36 Grad/s bei 10%,
 356,4 Grad/s bei 99%. Bei 100% wird der Befehl nicht verlangsamt, und
 nichts wird begrenzt. Ein Rechteck ist bei jedem TEMPO unter 100%
-begrenzt. HALTEZEIT zählt nicht: es fügt Zeit an den Enden hinzu, nicht zur
-Bewegung. Die Zeile folgt den Einstellungen, vor dem Druck auf SWEEP und
+begrenzt. HALTEZEIT beeinflusst diese Grenze nicht: Sie verlängert die Pausen an
+den Enden, nicht die Bewegung dazwischen. Die Zeile folgt den Einstellungen, vor dem Druck auf SWEEP und
 während er läuft. `sweep_slew_limited()` in `shared/servo/servo_sweep.c`
 entscheidet das, in den Befehlseinheiten, in denen der IOmcu die Rampe
 fährt.
@@ -1580,9 +1606,10 @@ fährt.
 Die Zeile verschwindet, wenn TEMPO steigt oder TEMPO (die Rate) oder
 BEREICH auf der Seite SWEEP sinkt.
 
-Die Zeile vergleicht die Kurve nur mit TEMPO. Ein Servo, das langsamer ist
-als beide, begrenzt den Sweep ebenfalls; nichts auf dem Prüfstand misst das
-Ruderhorn, daher wird das nicht angezeigt.
+Die Warnung vergleicht die angeforderte Kurve mit TEMPO. Ein Servo,
+das langsamer als beide Vorgaben läuft, kann den tatsächlichen Sweep
+ebenfalls begrenzen. Die Warnung verwendet jedoch keine Messung des
+Hornwinkels.
 
 PAUSE, der Sweep-Knopf während ein Sweep läuft, hält den Ausgang dort, wo
 er gerade steht, und der Knopf heißt PAUSIERT, gefüllt in der Warnfarbe.
@@ -1595,13 +1622,12 @@ erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 
 Die Strommessung an der Servoschiene. Die Endlagensuche liest den
 INA3221-Kanal, der das Ziel des Testers überwacht, verdrahtet und
-bestückt in SETUP > SENSORS, und sonst nichts. Der
-Abgleich braucht einen Sensor über das Paar der Ausgänge, der nicht bestückt
-ist. Der automatische Test liest den INA3221 oder den PD mini, oder läuft am
+bestückt in SETUP > SENSORS, und sonst nichts. Der Abgleich braucht einen Sensor für den gemeinsamen Strom beider
+Ausgänge; dieser Sensor ist nicht bestückt. Der automatische Test liest den INA3221 oder den PD mini, oder läuft am
 Netzteilmodell des Panels. Das Programmieren von LEFT ANGLE und RIGHT ANGLE
 braucht den Programmierport ([Servo-Programmierer](ServoProgrammer-de.md)).
 
-Die Pulse selbst gibt es: der PWM-Treiber (Pulsweitenmodulation) des
-IOmcu ist geschrieben, [DShot und die Output-Treiber](DShot-de.md)
-beschreibt ihn. Die Reihenfolge der Arbeiten steht in
+Der PWM-Treiber (Pulsweitenmodulation) des IOmcu erzeugt die Pulse;
+[DShot und die Ausgangstreiber](DShot-de.md) beschreibt ihn.
+Die geplanten Arbeiten stehen in
 [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

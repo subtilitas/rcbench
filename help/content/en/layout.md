@@ -6,13 +6,13 @@ order: 63
 
 # Layout
 
-LAYOUT shows the connectors of a board with soldered pins, the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier). It opens from its LAYOUT tile on [Setup](setup.md) while the IOmcu reports that board; the tile reads `CONNECTORS AND PINS` there. Its home tag leads back to SETUP. The screen drives nothing and takes no tap: the pins are soldered, and [Outputs](outputs.md) gives each servo output its protocol.
+LAYOUT shows the connectors and soldered pins of the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier). Open it from the LAYOUT tile on [Setup](setup.md), available while the IOmcu reports that board. The tile reads `CONNECTORS AND PINS`, and the home tag returns to SETUP. The diagram does not drive outputs or accept taps. The pins are soldered; use [Outputs](outputs.md) to assign each servo output its protocol.
 
 ![LAYOUT on the carrier](view:layout-rbmod)
 
 ## J1 and J2
 
-Each connector position is signal, + and GND, in the order the connector numbers them. A row shows the position, the role, its GPIO (general-purpose input/output) and the net on its +.
+Each connector position has signal, + and GND pins. Rows follow the connector's numbering and show the position, role, GPIO (general-purpose input/output) and the net connected to +.
 
 | Position | J1, programming ports | J2, servo outputs |
 |---|---|---|
@@ -21,7 +21,7 @@ Each connector position is signal, + and GND, in the order the connector numbers
 | 3 | PROGP02, GPIO 14, VCC_PROGPORT | PWM01, GPIO 2, VCC_SERVOPORT_A |
 | 4 | PROGP03, GPIO 15, VCC_PROGPORT | PWM04, GPIO 1, VCC_SERVOPORT_A |
 
-On the right of a J1 row stands `PROGRAMMING`: a programming port carries the KST and Hitec programmers. On the right of a J2 row stands the protocol bound on the output, `OFF` for none, or `NOT READ` until the binding of this board is read. A protocol bound or let go on OUTPUTS shows here on the next frame.
+The right side of each J1 row reads `PROGRAMMING`: these ports serve the KST and Hitec programmers. Each J2 row shows its output's assigned protocol, `OFF` if none is assigned, or `NOT READ` until the board's assignment has been read. Changes made on OUTPUTS appear here on the next frame.
 
 ## Other connectors
 
@@ -29,7 +29,7 @@ J3 HEARTBEAT on GPIO 3, J5 SENSOR I2C on GPIO 16 and 17, J4 I2C 2 on GPIO 18 and
 
 ## Rev 1 boards
 
-The line under the columns reads `A REV 1 BOARD NEEDS THREE MANUAL CHANGES. THE HELP PAGE LISTS THEM.` The three changes are in [Carrier: Rev 1 rework](https://github.com/subtilitas/rcbench/wiki/Carrier#rev-1-rework): PROGP03 moves from GPIO 26 to GPIO 15; a pull-down holds the programming ports' 5V off while GPIO 21 is not driven; and a 5.6V 1W zener from M7's output to GND stops the dropouts a braking servo causes. The firmware does not rely on the third. Rev 2 carries the first two in copper; the third is an open design point.
+The line under the columns reads `A REV 1 BOARD NEEDS THREE MANUAL CHANGES. THE HELP PAGE LISTS THEM.` [Carrier: Rev 1 rework](https://github.com/subtilitas/rcbench/wiki/Carrier#rev-1-rework) describes all three: moving PROGP03 from GPIO 26 to GPIO 15; adding a pull-down to keep the programming ports' 5V off while GPIO 21 is not driven; and adding a 5.6V 1W zener from M7's output to GND to prevent dropouts caused by a braking servo. The firmware does not rely on the third change. Rev 2 includes the first two in its copper layout; the third remains an open design point.
 
 ## Related pages
 

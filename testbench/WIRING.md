@@ -1,11 +1,11 @@
 # Wiring the bench, step by step
 
-In order. Each step ends with a check that can be run before the next one is
-made, so a mistake is found at the step that made it rather than three steps
-later in a capture that reads plausibly.
+Follow the steps in order and complete each check before continuing.
+This makes a wiring error easier to locate before it affects later
+measurements.
 
-`README.md` says what the bench is for and why each part is there. This says
-what to connect.
+`README.md` describes the rig and its components. This guide gives the
+connections and checks.
 
 **Nothing is powered while anything is being connected.** The one exception is
 the Pi, which stays on for the checks and whose 3.3V and 5V pins are not
@@ -20,7 +20,7 @@ used for any of them.
 | Jumper leads | female-to-female for headers, and a few female-to-pin for probe tips |
 | Signal relays | two per board (one for BOOT, one for RESET) with gold-plated contacts. A button line switches microamps and contacts rated for power grow a film a dry circuit will not break through |
 | Relay driver | a transistor and a flyback diode per coil, or a relay module that has them, run from its own supply rather than the panel's rail. **Each input needs a resistor holding it at the inactive level**: pull-down for an active-high driver, pull-up for active-low. GPIO 16 to GPIO 19 are inputs whenever the RP2350 is reset or reflashed, which is the recovery this guide relies on, and an undriven gate can close a BOOT or RESET contact and hold a board out of its own firmware |
-| Series resistors | a few hundred ohms, one per analyser probe lead. It costs nothing and a mistake then costs a resistor |
+| Series resistors | a few hundred ohms per analyser probe lead, to limit fault current; they do not replace voltage-rating checks |
 | Two 120Ω terminators | one at each end of the CAN pair. Two in parallel are the 60Ω the pair should measure |
 | Level translation | for any line that leaves the 3.3V island: a translator that senses the target's rail, not a divider chosen once |
 | A camera and a mount | rigid enough that it does not move between sessions; the calibration is only valid while it does not |
@@ -52,15 +52,12 @@ that is not deliberately biased: open. A signal pad that reads a few ohms to
 ground is a lead in the wrong hole, and it is easier to find now than after
 power.
 
-**Deliberately biased is not the same as shorted.** The relay driver in
-section 4 holds its input down when nothing is driving it, so that pad reads
-its pull-down to ground rather than open: tens of kilohms, and it is
-supposed to. So is any other input given a defined inactive level. What this
-check is looking for is single-digit ohms, which is a lead in the wrong hole;
-a resistance in the kilohms is a bias, and taking it out to make this check
-pass would leave the relay's coil free to follow a floating pin. Write down
-what each biased pad is expected to read before measuring, so the reading is
-compared against a number rather than against a habit.
+**Account for intentional bias resistors.** The relay-driver input in
+section 4 reads its pull-down resistance, typically tens of kilohms,
+instead of an open circuit. Other biased inputs behave similarly. Record
+each expected resistance before measuring. Investigate an unexpected
+single-digit-ohm reading, but keep the resistors that establish inactive
+input levels.
 
 ### Where the power comes from
 
@@ -113,10 +110,8 @@ and pin 20 is the ground opposite pin 19.
 SWDIO is on GPIO8 because that pin comes up pulled up and GPIO24 comes up
 pulled down, and the SWD specification puts a pull-up on SWDIO. OpenOCD's own
 `interface/raspberrypi5-gpiod.cfg` puts SWDIO on GPIO8 for the same reason.
-**This is not a fix for anything observed.** No target has been on either pin,
-so whether a pull-down on GPIO24 would have cost anything is unknown; the pin
-that matches the specification is the one to wire while nothing is
-wired.
+The choice follows the specified pull direction. Its effect on an
+actual target connection is not measured.
 
 Those pulls are power-on values and reading them back proves nothing once the
 check below has run: OpenOCD leaves the lines it drove with no pull at all.
@@ -167,13 +162,10 @@ It should find a target and exit without complaint. With nothing on the pins
 it gets as far as `Linux GPIOD JTAG/SWD bitbang driver` and then
 `Error connecting DP: cannot read IDR`.
 
-**That error does not tell you the target is absent.** It is what an empty
-header reads as, and it is equally what a target reads as when SWCLK and SWDIO
-are swapped, when either lead is off, when the ground is not on the star, or
-when the chip number is wrong. Getting it means OpenOCD reached the pins and
-found nothing answering on them; which of those it is, is what the rest of
-this step is for. Recheck the two leads against the table above before
-concluding anything about the board.
+**This error means that no target answered.** Possible causes include
+an absent target, swapped SWCLK and SWDIO leads, a disconnected lead,
+missing common ground or an incorrect gpiochip number. Recheck the leads
+against the table and confirm the chip number before diagnosing the board.
 
 There is no clock to come down to. `linuxgpiod` runs at a fixed rate:
 OpenOCD prints `Note: The adapter "linuxgpiod" doesn't support configurable
@@ -246,10 +238,9 @@ to ground and the relay is only closing it.
 Coils from their own supply, through their driver, controlled by the RP2350.
 Coil unpowered is button not pressed, which is the state a board runs in.
 
-Four driver inputs need four pins. The testbench firmware does not exist yet,
-so the whole of this table is a proposal to fix when it is written rather than
-something the tree already says. It is here because an assembler cannot wire
-step 7 without it.
+The relay driver needs four control pins. The table below is a proposed
+assignment for the testbench firmware, which is not implemented. It also
+reserves the heartbeat-injection pin needed in step 7.
 
 | RP2350 pin | Carries | Direction |
 |---|---|---|
@@ -348,15 +339,13 @@ data cable to the Pi: the USB shell grounds the panel a second time, in
 parallel with its star lead, and the return path that creates is not visible
 in a capture; it is visible as noise nobody can source.
 
-**But that socket is also where the panel's power comes from.** The supply
-table gives the panel its own USB-C, on the socket it is flashed from, which
-is the socket section 4's data cable is in. Pulling that cable takes the
-panel's power with it, and a capture of an unpowered panel is a flat trace
-that no amount of pulsing RESET will change. So it is a swap, not an unplug:
-move that socket to its own USB supply, or to a charge-only cable, or leave
-the data cable in through an isolated USB adapter. Whichever of the three,
-the panel is powered and its ground returns only through the star lead before
-either capture below.
+**Keep the panel powered from its separate supply.** The flashing socket
+also supplies the panel, so removing the Pi's data cable removes that
+power. Replace it with the panel's own USB supply, or use an isolated USB
+adapter with suitable power isolation. A charge-only cable from the Pi
+still connects ground and does not remove the second return path. Before
+capturing, confirm that the panel is powered and its ground returns only
+through the star lead.
 
 **Check, one: the tap.** Capture SCL and SDA while the panel starts. 2m
 samples at 4MHz is 0.5s, and the panel's first transaction is somewhere in
@@ -628,12 +617,12 @@ took four seconds and one that was never asserted at all are the same picture.
 Firmware is being told the panel is alive, and so is the interlock, until the
 capture is running and the branch comes out.
 
-**Bind first, then switch to ARMED.** Binding is done on SETTINGS/OUTPUTS, and both bench
+**Assign the output before arming.** Pin assignment is under SETUP → OUTPUTS, and both bench
 screens switch to SAFE as they are left (`shared/ui/motor_screen.c`,
 `shared/ui/servo_screen.c`), so switching to ARMED and then walking to OUTPUTS to bind
 undoes it on the way. In order:
 
-1. **SETTINGS/OUTPUTS**: bind the output the capture watches, which is GPIO 0 on
+1. **SETUP → OUTPUTS**: assign the output watched by the capture, GPIO 0 on
    D0 here.
 2. **MOTOR & ESC**, or **SERVO** for a pulse output: open it and press ARM there.
 3. **Command it away from rest**: throttle above zero, or the horn off
@@ -741,8 +730,8 @@ points at the panel.
 
 ## 8. The camera
 
-Mounted so the panel fills as much of the frame as it can, square to the glass
-and fixed. Nothing about the calibration survives the mount moving.
+Mount the camera square to the glass, with the panel filling as much of
+the frame as possible. Keep the mount fixed and recalibrate if it moves.
 
 **Check.** One photograph of the splash screen. It is drawn from constants,
 fills the panel and has corners, so it is what the transform is computed from.
@@ -789,8 +778,7 @@ frames arriving with nobody to collect them, not an old image.
 
 ## Photographs that would help
 
-When the bench exists, these are the ones worth taking, and what each has to
-show:
+Photograph the assembled rig with enough detail to check these items:
 
 1. **The whole rig**, so the layout and the lead lengths are visible.
 2. **The star ground point**, with every lead that returns to it.
@@ -808,5 +796,4 @@ show:
 9. **One frame from the camera**, showing the splash, so the calibration can
    be checked before anything depends on it.
 
-A photograph of a connector whose silkscreen cannot be read is a photograph
-that has to be taken again, so close and lit beats wide and dim.
+Use enough light and a close view to make connector labels readable.

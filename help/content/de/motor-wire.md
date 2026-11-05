@@ -6,36 +6,36 @@ order: 13
 
 # ESC-Signalleitung
 
-Die Sitzung liest und schreibt die Einstellungen eines ESC (Electronic Speed Controller) mit AM32, Bluejay, BLHeli_S oder ESCape32 über seine Signalleitung. Öffne sie auf MOTOR & ESC > PROGRAMMIEREN. Die Zeile ist abgeblendet, bis der IOmcu die Fähigkeit meldet.
+Diese Sitzung liest und schreibt ESC-Einstellungen (Electronic Speed Controller) über die Signalleitung. Unterstützt werden AM32, Bluejay, BLHeli_S und ESCape32. Öffne sie unter MOTOR & ESC > PROGRAMMIEREN. Die Zeile bleibt abgeblendet, bis der IOmcu die erforderliche Fähigkeit meldet.
 
 SimonK wird nicht unterstützt.
 
 ## Vor dem Verbinden
 
 1. Nimm den Propeller ab.
-2. Schließe nur Signal und Masse an, die Mittelader des ESC getrennt. Ein BEC (Battery Eliminator Circuit) speist sonst die Schiene des Bench.
-3. Stecke Servos ab.
-4. Prüfe `ZIEL`, `VERSORGUNG`, `SPANNUNG` und `STROMBEGRENZUNG`. `SPANNUNG` und `STROMBEGRENZUNG` folgen SUPPLY, bis du andere eingibst.
+2. Schließe nur Signal und Masse an. Lass die Mittelader des ESC getrennt: Ein BEC (Battery Eliminator Circuit) würde die Versorgungsschiene des Prüfstands speisen.
+3. Stecke die Servos ab.
+4. Prüfe `ZIEL`, `VERSORGUNG`, `SPANNUNG` und `STROMBEGRENZUNG`. `SPANNUNG` und `STROMBEGRENZUNG` folgen SUPPLY, bis du andere Werte eingibst.
 5. Halte `2s HALTEN: VERBINDEN` für 2s.
 
-Mit `BY HAND` schließe den Strom des ESC an, wenn die Seite es sagt, und tippe binnen 60s auf `VERSORGUNG EIN`.
+Schließe bei `BY HAND` die ESC-Versorgung an, sobald du dazu aufgefordert wirst. Tippe innerhalb von 60s auf `VERSORGUNG EIN`.
 
 ## Einstellungen
 
-Tippe auf eine Zahl für das Tastenfeld, oder auf eine Auswahl für ihre Liste. Jeder Editor zeigt eine Zeile Hilfe. Eine Änderung bleibt auf dem Panel bis `n WERTE SCHREIBEN`.
+Tippe auf eine Zahl, um das Tastenfeld zu öffnen, oder auf eine Auswahl, um ihre Liste zu öffnen. Jeder Editor zeigt eine Hilfzeile. Änderungen bleiben auf dem Panel, bis du `n WERTE SCHREIBEN` verwendest.
 
-`NUR LESEN` nennt seinen Grund. Die Zeilen sind abgeblendet, und es gibt kein Schreiben.
+`NUR LESEN` erklärt, warum Schreiben nicht verfügbar ist. Die Zeilen sind abgeblendet.
 
 ## Schreiben
 
-Die Seite listet die Änderungen, jedes heikle Feld zuerst, mit `PRÜFE` und seinem neuen Wert. Eine lange Liste hat `WEITER` und `ZURÜCK`: das Halten kommt, wenn die letzte Seite gezeigt wurde. Halte 2s. Danach wirken nur `ABBRECHEN` und `STOP`, bis das Schreiben endet. Das erste Schreiben einer Sitzung speichert erst das Backup, und eine gelöschte Seite ist kein Backup. Ohne Karte fragt die Seite.
+Die Schreibseite listet die Änderungen auf. Sicherheitskritische Felder stehen zuerst, mit `PRÜFE` neben dem neuen Wert. Eine lange Liste blätterst du mit `WEITER` und `ZURÜCK` durch. Erst nach Anzeige der letzten Seite wird die Haltefunktion verfügbar. Halte 2s. Bis zum Ende des Schreibvorgangs sind anschließend nur `ABBRECHEN` und `STOP` aktiv. Vor dem ersten Schreiben einer Sitzung wird ein Backup gespeichert; eine gelöschte Seite kann nicht als Backup dienen. Ohne Karte erscheint eine Rückfrage.
 
-Ein Schreiben auf BLHeli_S oder Bluejay dauert etwa 3848ms. Lass den Strom an.
+Ein Schreibvorgang auf BLHeli_S oder Bluejay dauert etwa 3848ms. Lass die Versorgung eingeschaltet.
 
 ## Dateien
 
-`DATEIEN` listet `ESCW001` bis `ESCW999` auf der Karte. Eine Datei geht in den Entwurf, für dieselbe Firmware und dasselbe Layout. Ein AM32, der sich gelöscht liest, bietet `BACKUP ZURÜCKSPIELEN` und sonst nichts.
+`DATEIEN` listet `ESCW001` bis `ESCW999` auf der Karte. Beim Laden werden die Werte in den Entwurf übernommen; Firmware und Layout müssen übereinstimmen. Wird ein AM32 als gelöscht ausgelesen, ist nur `BACKUP ZURÜCKSPIELEN` verfügbar.
 
 ## Verlassen
 
-Nach einem Stop oder Fehler bietet die gehaltene Seite nur `PIN ZURÜCK`: `VERBINDEN` kommt danach. `ZURÜCK` öffnet die Seite zum Verlassen: halte 2s. Ein gelöschter AM32 bleibt gelöscht bis `BACKUP ZURÜCKSPIELEN`; der Pin geht zurück und die Versorgung aus. ESCape32 hat kein LEAVE: ein Power-Cycle beendet die Sitzung, und mit `BY HAND` trennst du seinen Strom.
+Nach einem Stopp oder Fehler bietet die gehaltene Sitzung nur `PIN ZURÜCK` an. Erst danach ist `VERBINDEN` verfügbar. `ZURÜCK` öffnet die Seite zum Verlassen; halte dort 2s. Ein gelöschter AM32 bleibt bis zu `BACKUP ZURÜCKSPIELEN` gelöscht. Beim Verlassen wird der Pin freigegeben und das Netzteil ausgeschaltet. ESCape32 hat keinen LEAVE-Befehl: Aus- und Einschalten beendet die Sitzung. Trenne bei `BY HAND` die ESC-Versorgung selbst.

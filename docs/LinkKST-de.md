@@ -3,17 +3,17 @@
 <sub>[English](LinkKST.md) · **Deutsch**</sub>
 
 Diese Seite ist ein Abschnitt von [Der Link](Link-de.md), der die Verkabelung, das
-Frame-Format, die Page Map und die übrigen Pages enthält. Pins heißen nach ihrer
-GPIO-Nummer (General-Purpose Input/Output). PWM steht für
+Frame-Format, die Page Map und die übrigen Pages enthält. Pins sind mit ihrer
+GPIO-Nummer angegeben (General-Purpose Input/Output). PWM steht für
 Pulsweitenmodulation.
 
-Die Servo-Programmier-Page (`KST`, 0x32) ist neu in 4.12 und nennt seit 4.13
-einen Programmierport. Die
-Page fährt das Programmierprotokoll aus
+Die Page zur Servoprogrammierung (`KST`, 0x32) erfordert 4.12 oder neuer;
+ab 4.13 nennen Kommandos einen Programmierport. Die
+Page führt das Programmierprotokoll aus
 [`protocols/kst`](../protocols/kst/README.md) für KST- und Chaservo-Servos,
-die ein Protokoll und einen Registersatz teilen, auf einem Port von
-[PROG](Link-de.md#die-programmierports) zur Zeit. Ein Port gibt PWM-Pulse aus oder
-fährt das Programmierprotokoll, nie beides. Ob ein KST- oder Chaservo-Servo
+die ein Protokoll und einen Registersatz teilen, jeweils auf einem Port von
+[PROG](Link-de.md#die-programmierports) aus. Ein Port gibt PWM-Pulse aus oder
+führt das Programmierprotokoll aus, nie beides gleichzeitig. Ob ein KST- oder Chaservo-Servo
 im Programmiermodus PWM-Pulsen folgt, ist nicht gemessen. Ein
 Standard-Servoport ist kein Programmierport, und ein Kommando, das einen
 nennt, wird abgewiesen.
@@ -21,17 +21,17 @@ nennt, wird abgewiesen.
 Die Session läuft auf dem IOmcu mit dem Planer und den Grenzen des
 Moduls. Das Panel schreibt eine Operation und die Images, die sie braucht.
 Es liest den Zustand, das Ergebnis und die 32 Register des Servos. Es sendet
-keinen Registerschreibzugriff. `shared/outputs/kst_port.c` hält die Regeln.
-Nichts wird im Flash gehalten: nach einem Neustart des IOmcu steht
-der Port in PWM ohne Session und mit gelöschtem Bit 4 in Register 0, gleich
-in welchem Modus das Servo ist, und die Versorgung ist aus angefordert.
+keinen direkten Schreibzugriff auf ein Servoregister. `shared/outputs/kst_port.c` hält die Regeln.
+Nichts wird im Flash gespeichert. Nach einem Neustart des IOmcu steht
+der Port ohne Session in PWM, und Bit 4 in Register 0 ist gelöscht, unabhängig
+vom Modus des Servos. Die Versorgung wird ausgeschaltet angefordert.
 
 Die Session plant ein WRITE und ein RESTORE selbst (seit 4.14). Der Frame
 des Kommandos prüft den Auftrag und bereitet den Job des Planers vor, 64us
 Planerarbeit. Ein Ziel, das der Planer ohne Suche abweist, wird dort
 abgewiesen (PLAN_RULES, PLAN_R00, PLAN_PAIRING), und keine Operation
 startet. Jeder andere Auftrag startet die Operation, und jeder Durchlauf
-der Hauptschleife von Kern 0 fährt dann einen Slice des Planers: 100 bis
+der Hauptschleife von Kern 0 bearbeitet dann einen Slice des Planers: 100 bis
 109 Einheiten Arbeit, höchstens 892us. Solange der Port plant, ist Bit 3
 von Register 0 gesetzt, das Low-Byte von `LINK_KS_RESULT` liest 35, der
 Frame-Zähler liest 0, und kein Frame geht an das Servo. Das Planen endet
@@ -48,7 +48,7 @@ nach höchstens 216 000 Einheiten, 2 161 Durchläufen:
 
 Bei den Ergebnissen 33, 34 und 11 wird nichts an das Servo gesendet, die
 Session ist nicht gesperrt, und das nächste WRITE wird ohne READ_ALL
-angenommen. Der teuerste gefundene Auftrag braucht 120 136 Einheiten,
+angenommen. Der aufwendigste gefundene Auftrag benötigt 120 136 Einheiten,
 höchstens 1 202 Durchläufe und 397 bis 647ms Planerzeit. Die Zeiten sind in
 einem Emulator aus den ausgeführten Instruktionen für 150MHz berechnet
 ([Performance](Performance-de.md#der-iomcu)) und nicht auf Hardware
@@ -72,11 +72,11 @@ Versorgungsmodell.
 | LEAVING | 6 | der Leitungstreiber, auf Low getrieben | wie sie ist: nicht geschaltet, kein Sollwert geschrieben | nach der Wartezeit aus Schreibregister 28, nach PWM (seit 4.15) |
 
 Die Einstiegssequenz der Session hält die Leitung nach LOW weitere 100ms
-auf Low. Ab LOW hat der Generator den Pin nicht. Jede Quelle eines
+auf Low. Ab LOW wird der Pin nicht vom Generator angesteuert. Jede Quelle eines
 PWM-Kommandos (das Panel, der Sweep, der automatische Test) endet am
 Bankkanal des Ports, keine erreicht also den Pin; PROG und SERVO nehmen ein
 solches Kommando weiterhin an. Das `PWM`-Bit des Ports und `TARGET` bleiben
-über eine Session wie geschrieben, und der Puls ist zurück, wenn der Port
+während einer Session unverändert. Der Puls kehrt zurück, wenn der Port
 wieder in PWM steht. Der IOmcu schreibt kein Flash, solange der Port
 nicht in PWM steht.
 
@@ -99,23 +99,23 @@ solange es einen Ausgang des PD mini liest, der an ist und unter 4800mV
 gesetzt ist, was auch immer der IOmcu mit diesem ENTER tut.
 4800mV ist `KST_PORT_SUPPLY_MIN_MV`; die
 Versorgungsspannung, die ein Servo zum Speichern eines Registers braucht,
-ist nicht gemessen. In LOW tut der Port dann eines von zwei Dingen:
+ist nicht gemessen. In LOW hängt das Vorgehen vom Zustand des Ausgangs ab:
 
 - der Ausgang ist aus angefordert: die Sollwerte werden geschrieben und der
   Ausgang wird eingeschaltet. Die Session beginnt 1000ms nachdem der PD
   mini an liest;
 - der Ausgang ist an: die Spannung wird auf die niedrigere der zwei
   Spannungen gestellt und die Stromgrenze auf die niedrigere der zwei
-  Grenzen (die Grenze seit 4.15). Nichts wird geschrieben, wo beide schon
-  die des Ausgangs sind.
+  Grenzen (die Grenze seit 4.15). Es wird nichts geschrieben, wenn beide bereits
+  den Sollwerten des Ausgangs entsprechen.
 
-Kein Schritt des Ports hebt die Spannung oder die Stromgrenze eines
-Ausgangs, der an ist, und das Verlassen des Programmierens stellt keinen
-höheren Wert wieder her, den ENTER gesenkt hat. Ein PD mini, der nicht innerhalb von 3000ms wie
+Der Port erhöht in keinem Schritt die Spannung oder Stromgrenze eines
+eingeschalteten Ausgangs. Beim Verlassen der Programmierung stellt er keinen
+höheren Wert wieder her, den ENTER abgesenkt hat. Ein PD mini, der nicht innerhalb von 3000ms wie
 angefordert liest, beendet ENTER mit Ergebnis 32: der Port steht in PWM, und
 ein Ausgang, den dieses ENTER eingeschaltet hat, ist wieder aus.
 
-POWER_CYCLED und REBOOT in PROGRAMMING, bei an angefordertem PD mini,
+POWER_CYCLED und REBOOT in PROGRAMMING bei eingeschaltet angefordertem PD mini
 schalten die Versorgung aus und ein: aus, RAIL_OFF für 1000ms ab der
 Lesung, die sie aus zeigt, an mit den Sollwerten, die sie hatte, RAIL_WAIT
 für 1000ms ab der Lesung, die sie an zeigt, dann PWM mit gelöschtem Bit 4.
@@ -133,9 +133,9 @@ Panel nutzt REBOOT für VERBINDEN bei eingeschaltetem Ausgang des PD mini und
 für VERLASSEN nach einem Schreiben
 ([ServoProgrammer-de.md](ServoProgrammer-de.md#der-versorgungszyklus)).
 
-Antwortet kein PD mini, fasst der Port keine Versorgung an. Die Session
-läuft, Bit 10 liest 0, POWER_CYCLED ist das Wort des Bedieners, dass das
-Servo ohne Spannung war, und bringt den Port sofort nach PWM, und REBOOT
+Antwortet kein PD mini, greift der Port auf keine Versorgung zu. Die Session
+läuft, und Bit 10 liest 0. POWER_CYCLED gilt als Bestätigung des Bedieners, dass das
+Servo ohne Spannung war, und bringt den Port sofort nach PWM. REBOOT
 wird mit NO_SUPPLY abgewiesen. REBOOT wird ebenso abgewiesen, solange der PD
 mini aus angefordert ist.
 
@@ -145,7 +145,7 @@ kein OFF ist, mit BAD_VALUE ab: ein ON eines Ausgangs, der aus ist, und jede
 Änderung der Spannung oder der Stromgrenze, nach oben oder unten (seit 4.15;
 4.13 und 4.14 weisen nur ein ON und ein Heben der Spannung ab). Ein
 Schreiben mit OUTPUT 0 wird als OFF angenommen, welche Sollwerte auch
-mitkommen, und die Seite behält die Sollwerte, die sie hatte. Ein Schreiben,
+mitkommen. Die Page behält dabei ihre bisherigen Sollwerte. Ein Schreiben,
 das einen Ausgang, der an ist, mit den geltenden Sollwerten wiederholt, wird
 angenommen. Der Port schaltet den Ausgang nicht ein, solange eine eben
 geschriebene Verdrahtung der Versorgung noch nicht im Flash ist.
@@ -162,8 +162,8 @@ Abfallen braucht, ist nicht gemessen.
 Ab 4.31 wartet ein OFF, das das Panel schreibt, während der Port in den
 Speicher des Servos schreibt, auf das Schreiben: ein WRITE, ein RESTORE
 oder ein RELEASE von der Pause vor seinem ersten Schreib-Frame bis zum Ende
-der Rücklesungen seines letzten, die Schreibvorgänge eines Zurückrollens
-und ein volles Lesen nach einer abweichenden Rücklesung eingeschlossen,
+der Rücklesungen seines letzten, einschließlich der Schreibvorgänge eines Rollbacks
+und eines vollständigen Auslesens nach einer abweichenden Rücklesung,
 und 150ms danach (`KST_PORT_WRITE_TAIL_MS`, `kst_port_writing()`). Der
 Port sieht die Versorgung bis dahin eingeschaltet, und das OFF erreicht
 den PD mini im Durchlauf danach, spätestens 10.000ms nach dem OFF
@@ -171,12 +171,12 @@ den PD mini im Durchlauf danach, spätestens 10.000ms nach dem OFF
 wird abgebrochen. Das Servo antwortet 3687 bis 3714us nach einem
 Schreib-Frame (gemessen); ob und wann es den Wert übernimmt, ist nicht
 gemessen, die 150ms sind die Grenze der HITEC-Page. Ein OFF während des
-Planens oder des vollen Lesens vor dem ersten Schreib-Frame wird nicht
-zurückgehalten: nichts ist zum Servo gegangen, und die Operation endet mit
+Planens oder des vollständigen Auslesens vor dem ersten Schreib-Frame wird nicht
+zurückgehalten: Es wurde noch kein Schreibzugriff an das Servo gesendet, und die Operation endet mit
 Ergebnis 19. Ein OFF während eines ENTER, eines READ_ALL, eines VERIFY,
 eines Versorgungszyklus oder eines LEAVE wird ebenso nicht
-zurückgehalten. Ein verlorener
-Heartbeat wird nicht zurückgehalten. Vom OFF des Panels, bis der Port
+zurückgehalten. Das Abschalten bei einem verlorenen
+Heartbeat wird nicht verzögert. Vom OFF des Panels, bis der Port
 wieder in PWM steht, weist SUPPLY das eigene ON des Ports ab: ein REBOOT,
 dessen Zyklus in RAIL_OFF steht, endet in PWM mit Ergebnis 32 (SUPPLY)
 und ausgeschalteter Versorgung
@@ -189,7 +189,7 @@ die Register ARM und THROTTLE 0, also bleibt die Bank SAFE bis zur nächsten
 Anforderung. ENTER wird mit
 BUSY abgewiesen, solange die Bank ARMED ist (seit 4.15).
 
-Wo die Versorgung endet, wenn etwas ausfällt:
+Zustände von Versorgung und Port nach einem Fehler:
 
 | Ereignis | Die Versorgung | Der Port |
 | --- | --- | --- |
@@ -205,7 +205,7 @@ Wo die Versorgung endet, wenn etwas ausfällt:
 | Das Panel fordert die Versorgung in RAIL_OFF aus an (4.31) | bleibt aus: das ON des Zyklus wird abgewiesen | PWM, Ergebnis 32 |
 | Das Panel fordert die Versorgung aus an, während ein WRITE, RESTORE oder RELEASE sendet (4.31) | an, bis die Rücklesungen des letzten Schreib-Frames enden, und 150ms danach, höchstens 10.000ms, dann aus | die Operation endet, wie sie enden würde; danach wie bei einer in PROGRAMMING aus angeforderten Versorgung |
 
-Die Versorgung endet aus, wann immer kein Panel da ist, das sie ausschalten
+Die Versorgung wird ausgeschaltet, wenn kein Panel mehr vorhanden ist, das sie ausschalten
 könnte: SUPPLY schaltet den PD mini aus, wenn der Heartbeat endet, und der
 Port schaltet nichts ein, solange dem Heartbeat nicht vertraut wird. Ein
 Servo ohne Spannung ist in keinem Modus; ein Port, der so nach PWM
@@ -215,22 +215,22 @@ zurückkehrt, hat also Bit 4 gelöscht.
 
 LEAVE (Operation 10, seit 4.15) bringt einen Port von PROGRAMMING nach PWM
 zurück, mit der Versorgung, wie sie ist. Der Port sendet keinen Frame,
-schaltet nichts und schreibt keinen Sollwert. Ein Ausgang, der an ist,
-bleibt an, mit seiner Spannung und seiner Stromgrenze, auch einer, den ENTER
-eingeschaltet oder abgesenkt hat. Antwortet kein PD mini, tut der Port
+schaltet nichts und schreibt keinen Sollwert. Ein eingeschalteter Ausgang
+bleibt mit seiner Spannung und Stromgrenze eingeschaltet. Das gilt auch, wenn ENTER
+ihn eingeschaltet oder seine Sollwerte abgesenkt hat. Antwortet kein PD mini, tut der Port
 dasselbe. POWER_CYCLED und REBOOT bleiben, wie sie sind.
 
 Ein angenommenes LEAVE setzt den Port in LEAVING. Der Leitungstreiber hält
 den Pin für die Wartezeit aus Schreibregister 28 (`LEAVE_MS`) auf Low, 0 bis
 10 000ms, gezählt ab dem Kommando. Die Wartezeit ist 100ms, bis ein Panel
 das Register schreibt, und das Register behält das Geschriebene bis zum
-Neustart des IOmcu. Das Register nimmt jeden Wert: ein LEAVE, das
+Neustart des IOmcu. Das Register nimmt jeden Wert an: ein LEAVE, das
 mehr als 10 000 darin findet, wird mit LEAVE_MS abgewiesen, der Port bleibt
 in PROGRAMMING, und der Wert wird nicht begrenzt. Ein Schreiben des
 Registers, während der Port wartet, gilt für das nächste LEAVE. Nach der
 Wartezeit hat der Generator den Pin, der Port steht in PWM mit gelöschten
-Bits 4 und 5 und Ergebnis 0, und der Puls des Ports ist zurück, wie sein
-`PWM`-Bit und `TARGET` es sagen. Eine Wartezeit von 0ms endet beim nächsten
+Bits 4 und 5 und Ergebnis 0, und der Puls des Ports kehrt entsprechend seinem
+`PWM`-Bit und `TARGET` zurück. Eine Wartezeit von 0ms endet beim nächsten
 Durchlauf der Hauptschleife. Die verbleibende Zeit steht nicht auf der
 Page: alle 32 Leseregister sind belegt. Ein Panel zählt sie mit seiner
 eigenen Uhr.
@@ -267,7 +267,7 @@ Versorgung, der Pin und der Zustand wie zuvor.
 | Der PD mini hört auf zu antworten | unberührt | die Wartezeit läuft weiter |
 | Jedes andere Kommando | wie sie ist | abgewiesen mit BUSY |
 
-Ein Stopp in dem Durchlauf, in dem die Wartezeit endet, kommt zuerst: der
+Ein Stopp im selben Durchlauf wie das Ende der Wartezeit hat Vorrang: der
 Port steht in PROGRAMMING.
 
 ## Die Wartezeit nach einem Versorgungszyklus
@@ -304,9 +304,9 @@ PWM** in Register 28, und nur an einen IOmcu mit 4.30 oder neuer. Steht
 | Der PD mini hört auf zu antworten | unberührt | die Wartezeit läuft weiter |
 | Jedes andere Kommando | wie sie ist | abgewiesen mit BUSY; ein Schreiben auf Register 28 gilt für die nächste Wartezeit |
 
-Das STOP des Panels ist ein Schalten auf SAFE, der Ausgang von SUPPLY auf 0
-geschrieben und ein ABORT. In der Wartezeit gibt das davon, was der Port
-zuerst sieht, den Pin frei. Kommt ein ABORT zuerst, steht der Port in
+STOP am Panel löst drei Vorgänge aus: Schalten auf SAFE, Schreiben von 0
+auf den Ausgang von SUPPLY und ABORT. In der Wartezeit gibt der zuerst vom Port
+erkannte Vorgang den Pin frei. Kommt ein ABORT zuerst, steht der Port in
 PROGRAMMING, und die ausgeschaltete Versorgung beendet das dann wie in
 PROGRAMMING: 1000ms aus, dann PWM. Ein ABORT in RAIL_OFF oder RAIL_WAIT
 beendet den Zyklus aus, wie ohne das Bit, und keine Wartezeit folgt.
@@ -316,7 +316,7 @@ ist nicht gemessen.
 
 ## Register
 
-Ein Lesen gibt diese Register:
+Lesezugriffe liefern diese Register:
 
 | Register | Name | Liest |
 | ---: | --- | --- |
@@ -333,7 +333,7 @@ Ein Lesen gibt diese Register:
 | 14, 15 | `DELAY_MIN_US`, `DELAY_MAX_US` | die letzte Flanke eines Lese-Frames bis zur ersten Flanke seiner Antwort, µs; 0 vor der ersten |
 | 16 bis 31 | `IMAGE` | Servoregister 2 k im Low-Byte von Register 16 + k, 2 k + 1 im High-Byte. Das zuletzt gelesene Image, oder das Backup, solange `VIEW` 1 ist; 0 solange es keines gibt |
 
-Ein Schreiben sieht andere Register:
+Schreibzugriffe adressieren andere Register:
 
 | Register | Name | Nimmt |
 | ---: | --- | --- |
@@ -382,7 +382,7 @@ hat, liest vor und nach einem Neustart `SEQ` 0 und Operation 0: startet er
 zwischen seinem ersten Kommando und diesem Lesen neu, gilt die Anfrage als
 verworfen. Von solchen ersten Kommandos starten nur ENTER und REBOOT eine
 Operation; jedes Schreiben braucht PROGRAMMING, das ein ENTER startet. Ein
-angenommenes Kommando wird quittiert; was aus ihm wurde, steht in
+angenommenes Kommando wird bestätigt; sein Ergebnis steht in
 `LINK_KS_RESULT`.
 
 | Operation | Wert | Tut |
@@ -437,15 +437,15 @@ Operation plant; es ist nie das Ergebnis einer beendeten Operation.
 | LOCKED | 20 | ein LEAVE, während nur RESTORE angenommen wird (seit 4.15) |
 | SUPPLY_LOW | 21 | ein ENTER, dessen Versorgungsspannung, die bereitgestellte oder die niedrigere eines Ausgangs, der an ist, unter 4800mV liegt (seit 4.15) |
 
-Die Werte 3 und 4 werden nicht gegeben. Ein Ergebnis, das die Session ohne
+Die Werte 3 und 4 werden nicht vergeben. Ein Ergebnis, das die Session ohne
 Plan kennt (5, 7, 8, 9 und 10 bei einem RESTORE, dessen bereitgestelltes
 Image nicht das Backup ist), wird vor PLAN_RULES, PLAN_R00 und PLAN_PAIRING
 gegeben (seit 4.14): eine gesperrte Session beantwortet ein WRITE mit
 Ergebnis 9, gleich welches Ziel es hat. NO_ENABLE wird vor jedem anderen
-Grund geprüft. Das Panel sendet den Key nur, solange sein Schalter ENABLE
-WRITE TO SERVO an ist; ein Kommando, das den IOmcu ohne ihn erreicht,
-schreibt also in keinem Zustand des Ports. Kein Bildschirm dieses Builds
-hält diesen Schalter.
+Grund geprüft. Das Panel sendet den Key nur, solange sein Schalter SCHREIBEN INS SERVO
+FREIGEBEN eingeschaltet ist. Ein Kommando, das den IOmcu ohne den Key erreicht,
+schreibt in keinem Zustand des Ports. Der Schalter befindet sich in der
+Servoprogrammierung des SERVO-Bildschirms.
 
 Ein Programmierport ist per Definition bidirektional: sein Pin ist ein
 blanker GPIO, den der Leitungstreiber zwischen Ausgang und Eingang
@@ -454,10 +454,10 @@ mit Ergebnis 4.
 
 ## STOP, Schalten auf SAFE, Heartbeat-Verlust und Link-Verlust
 
-Der Port sieht drei Dinge. Ein Stopp ist die Flanke des Failsafe (der
-Heartbeat hat geendet oder der Link ist still geworden) oder die Flanke des
-Schaltens der Bank auf SAFE. Unsicher ist die Zeit, in der dem Heartbeat nicht
-vertraut wird oder der Link still ist. Das dritte ist die Versorgung: SUPPLY
+Der Port unterscheidet drei Bedingungen. Ein Stopp ist der Übergang in den
+Failsafe (der Heartbeat ist ausgefallen oder der Link ist still geworden) oder
+der Wechsel der Bank auf SAFE. Der unsichere Zustand dauert an, solange dem Heartbeat nicht
+vertraut wird oder der Link still ist. Die dritte Bedingung ist der Zustand der Versorgung: SUPPLY
 schaltet den PD mini aus, wenn der Heartbeat endet, und das Panel schreibt
 den Ausgang von SUPPLY bei jedem STOP aus.
 
@@ -494,10 +494,9 @@ mini antwortet, hält der Port sie 1000ms aus und kehrt mit gelöschten Bits
 laufen dann. Jedes andere Kommando wird mit BUSY abgewiesen, und das Planen
 geht weiter. Ein PD mini, der aufhört zu antworten, beendet es nicht.
 
-Ein
-Schalten auf SAFE wird als Flanke gesehen: der Port stoppt einmal und nimmt wieder
-Kommandos, während die Bank SAFE bleibt; ein Servo wird also an einem
-Prüfstand in SAFE gelesen und geschrieben. Solange dem Heartbeat nicht
+Ein Schalten auf SAFE wird als Übergang behandelt: Der Port stoppt einmal und nimmt danach wieder
+Kommandos an, während die Bank SAFE bleibt. Ein Servo lässt sich also an einem
+Prüfstand in SAFE auslesen und beschreiben. Solange dem Heartbeat nicht
 vertraut wird oder der Link still ist, beginnt kein Frame, und jede
 Operation außer ABORT und POWER_CYCLED wird mit UNSAFE abgewiesen.
 
@@ -522,8 +521,8 @@ Das Panel schaltet die Versorgung auf SUPPLY wieder ein.
 | 4.12 | 4.13 oder neuer | ein Kommando von 4.12 hat Bit 6 gelöscht und wird mit PORT abgewiesen; ein Schreiben auf Register 26 oder 27 kommt nie. Der Port bleibt in PWM |
 | 4.11 oder älter | 4.13 oder neuer | das Panel liest und schreibt 0x32 nie; der Port bleibt in PWM |
 
-`shared/bench/kst_link.c` ist die Hälfte des Panels. Eine Anfrage nennt den
-Port, für ENTER Spannung und Strom der Versorgung und für LEAVE und einen
+`shared/bench/kst_link.c` ist die Hälfte des Panels. Eine Anfrage gibt den
+Port an, für ENTER Spannung und Strom der Versorgung und für LEAVE und einen
 REBOOT mit dem Bit (`then_leave`) die Wartezeit, die das Modul über
 10 000ms abweist, bevor etwas gesendet wird.
 Es stellt die
@@ -536,10 +535,10 @@ gelesene Page Bit 3 gesetzt und Ergebnis 35 hat, und RUNNING vor dem ersten
 Lesen und ab dem Plan. Es sendet ein Kommando bis zu 3-mal noch einmal, wenn
 keine Antwort kommt, nach `kst_link_abort()` kein Mal, und liest `SEQ` nach einer Abweisung mit BAD_VALUE neu.
 Nach einem abgewiesenen ABORT behält dieses Lesen die Prüfungen von oben:
-eine Page abseits der `SEQ` des Panels oder mit Operation 0 nach einem
+eine Page mit einer von der des Panels abweichenden `SEQ` oder mit Operation 0 nach einem
 Lesen, das eine nannte, beendet die laufende Operation als neu gestartet,
-nie als erledigt. Ein mit BAD_VALUE abgewiesenes ABORT geht nach dem Lesen
-noch einmal, mit der `SEQ` der Page.
+nie als erledigt. Ein mit BAD_VALUE abgewiesenes ABORT wird nach dem Lesen
+mit der `SEQ` der Page erneut gesendet.
 Ein mit BAD_PAGE abgewiesenes Lesen der Register 0 bis 3 heißt: ein
 IOmcu ohne die Page; mit jedem anderen Code abgewiesen zählt es als
 unbeantwortet und wird erneut gesendet. Bei einem IOmcu ohne die Page
@@ -549,9 +548,9 @@ trägt diese Nummer.
 Es weist WRITE, RESTORE und RELEASE ohne den Schalter des Aufrufers ab,
 bevor etwas gesendet wird. `shared/bench/supply_link.c` nimmt ein Kommando,
 das der Port auf SUPPLY hinterlassen hat, als das angeforderte und schreibt
-sein eigenes nicht darüber (`supply_link_adopted()`). Der Programmierer des
-SERVO-Bildschirms ist der Aufrufer
-([Servo-Programmierer](ServoProgrammer-de.md)).
+sein eigenes nicht darüber (`supply_link_adopted()`). Die Servoprogrammierung des
+SERVO-Bildschirms ruft das Modul auf
+([Servoprogrammierung](ServoProgrammer-de.md)).
 
 `test_kst_port` fährt den Port und die Page gegen das Servo- und das
 Versorgungsmodell: jeden Übergang und jede Abweisung, einen Stopp in jedem
@@ -574,7 +573,7 @@ abgeschaltete Versorgung in der Wartezeit. `test_kst_cycle_wait` fährt
 die Wartezeit nach dem Zyklus eines REBOOT: Wartezeiten von 0, 1, 300 und
 10 000ms, die Abweisung bei 10 001ms, das Bit an jeder anderen Operation
 und aus PWM, Bit 4, einen REBOOT ohne das Bit nach einer geschriebenen
-Wartezeit, ABORT, ein Schalten auf SAFE, eine nicht sichere Bench, die
+Wartezeit, ABORT, ein Schalten auf SAFE, einen Prüfstand im unsicheren Zustand, die
 ausgeschaltete Versorgung und einen schweigenden PD mini in der Wartezeit,
 ABORT in RAIL_OFF und RAIL_WAIT, jedes andere Kommando in der Wartezeit,
 die Wartezeit über den Überlauf bei 2^32ms und die Frames des Moduls für

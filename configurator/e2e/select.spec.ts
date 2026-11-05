@@ -376,8 +376,8 @@ for (const size of SIZES) {
       await expect(warning.locator('li')).toHaveCount(2);
       await expect(warning.locator('li').nth(0)).toHaveText(`${fnName('servotest')} Selected by you.`);
       await expect(warning.locator('li').nth(1)).toHaveText(`${fnName('supply')} Included with these parts.`);
-      await expect(warning).toContainText(`Parts that leave with it: ${short('charger')}, ${short('usbtap')}.`);
-      await expect(warning).toContainText(`Parts that come in: ${short('ssup')}.`);
+      await expect(warning).toContainText(`Parts removed: ${short('charger')}, ${short('usbtap')}.`);
+      await expect(warning).toContainText(`Parts added: ${short('ssup')}.`);
       // The servo is no part that stays or leaves: the question names it nowhere as a part.
       await expect(warning).not.toContainText('Parts you own');
       // The question stands under its control and inside the viewport.
@@ -507,10 +507,10 @@ for (const size of SIZES) {
       await tabTo(page, 'rm-batt');
       await page.keyboard.press('Enter');
       const warning = page.locator('#rmwarn');
-      await expect(warning).toContainText('No function goes off.');
+      await expect(warning).toContainText('All functions remain available.');
       await expect(warning).toContainText('Variant that changes: ESC power B.');
-      await expect(warning).toContainText(`Parts that come in: ${['pdmini', 'charger', 'usbtap'].map((id) => short(id)).join(', ')}.`);
-      await expect(warning).toContainText(`Functions that come on: ${fnName('stick')}, ${fnName('supply')}.`);
+      await expect(warning).toContainText(`Parts added: ${['pdmini', 'charger', 'usbtap'].map((id) => short(id)).join(', ')}.`);
+      await expect(warning).toContainText(`Functions enabled: ${fnName('stick')}, ${fnName('supply')}.`);
       await expect(page.locator('#rm-yes')).toHaveText('Remove part');
       await page.keyboard.press('Shift+Tab');
       await page.keyboard.press('Enter');
@@ -524,9 +524,9 @@ for (const size of SIZES) {
       await page.keyboard.press('Enter');
       const dc = page.getByRole('alertdialog', { name: `Remove ${short('dcsup')}?` });
       await expect(dc).toBeVisible();
-      await expect(dc).toContainText('No function goes off.');
+      await expect(dc).toContainText('All functions remain available.');
       await expect(dc).toContainText('Variant that changes: Servo power A.');
-      await expect(dc).toContainText(`Parts that come in: ${short('ssup')}.`);
+      await expect(dc).toContainText(`Parts added: ${short('ssup')}.`);
       await expect(page.locator('#rm-yes')).toHaveText('Remove part');
       await page.keyboard.press('Shift+Tab');
       await page.keyboard.press('Enter');
@@ -765,7 +765,7 @@ for (const size of SIZES) {
         expect(await page.locator('input[data-p]:checked').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.p))).toEqual(['pdmini']);
         await expect(page.locator('.msg')).toHaveCount(0);
         // The T-plug is in the parts list with its reason.
-        const reason = lang === 'en' ? 'Included with these parts: PD mini.' : 'Enthalten bei diesen Teilen: PD mini.';
+        const reason = lang === 'en' ? 'Included with these parts: PD mini.' : 'Mit diesen Teilen enthalten: PD mini.';
         await expect(page.locator('#result ul.parts:not([id]) > li', { hasText: short('usbtap', lang) })).toContainText(reason);
         await fits(page);
         // The id was never a function or an option value: those links keep their notice.

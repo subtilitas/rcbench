@@ -6,24 +6,24 @@ order: 80
 
 # Balance
 
-BALANCE finds where a propeller or fan needs mass, and shows where the two sensors go. It opens from the BALANCE tile on the [menu](overview.md). Three tabs: BALANCE, TEST RIG and AIRCRAFT.
+BALANCE shows the amount and position of balancing mass for a propeller or fan, along with sensor placement. It uses fixed example values in this release; no sensor is fitted. Open it from the BALANCE tile on the [menu](overview.md). It has three tabs: BALANCE, TEST RIG and AIRCRAFT.
 
 ## The BALANCE tab
 
 ![A two-blade propeller](view:balance)
 
-A balance result is a magnitude and an angle. The right card sets the rotor and shows the result.
+A balance result consists of a magnitude and an angle. Use the right card to select the rotor and view the result.
 
-| Control or row | What it does |
+| Control or row | Function |
 |---|---|
-| PROPELLER, EDF | the rotor type; EDF is an EDF (electric ducted fan) |
-| BLADES, `-`, `+` | the blade count, 2 to 6; a tap on the count opens the keypad |
-| VIBRATION | the vibration, in g |
-| ANGLE | the angle of the heavy spot, in deg |
-| ADD | the mass to add, in g |
-| WHERE | where the mass goes: between two blades, or on the hub at an angle |
+| PROPELLER, EDF | selects the rotor type; EDF means electric ducted fan |
+| BLADES, `-`, `+` | sets the blade count from 2 to 6; tap the count to open the keypad |
+| VIBRATION | vibration, in g |
+| ANGLE | angle of the heavy spot, in ° |
+| ADD | mass to add, in g |
+| WHERE | position for the mass: between two blades, or at an angle on the hub |
 
-No sensor is fitted in this release. VIBRATION, ANGLE and ADD are fixed values, 0.42g, 265deg and 0.35g, not a measurement. A SIMULATED pill and `Not measured.` stand under them. The blade arithmetic works: WHERE turns the angle into a blade reference for the blade count set.
+VIBRATION, ANGLE and ADD show fixed values of 0.42g, 265° and 0.35g. These are not measurements. A SIMULATED pill and `Not measured.` appear below them. WHERE calculates a blade reference from the angle and the selected blade count.
 
 ![A five-blade ducted fan](view:balance-edf)
 
@@ -31,25 +31,25 @@ For a ducted fan the correction is an angle on the hub, `hub, 265°`, because a 
 
 ![The blade count's keypad, 5 typed](view:balance-keypad)
 
-The keypad covers both cards. OK takes 2 to 6; any other count keeps it open and names the range in the warning colour. CANCEL, the home tag and a tab close it and change nothing.
+The keypad covers both cards. OK accepts counts from 2 to 6. Any other count leaves the keypad open and shows the allowed range in the warning colour. CANCEL, the home tag or a tab closes it without changing the count.
 
-Without an index pulse, balancing takes four runs: a baseline, then a trial mass at 0, 120 and 240°. An index pulse halves that.
+Without an index pulse, balancing requires four runs: a baseline, followed by runs with a trial mass at 0, 120 and 240°. An index pulse reduces the number of runs to two.
 
 ## The TEST RIG tab
 
 ![Where the sensors go on a rig](view:balance-rig)
 
-- The accelerometer goes across the shaft, as close to the bearing as it goes, bolted rather than taped.
-- The index mark goes on the motor bell, one mark a turn, drawn with a pen. Tape is mass on the part being balanced. A mark on a blade gives one pulse per blade.
-- The sensor lead stays out of the propeller wash.
+- Bolt the accelerometer across the shaft, as close to the bearing as possible. Do not tape it in place.
+- Draw one index mark on the motor bell with a pen, giving one pulse per revolution. Tape adds mass to the part being balanced. Marking the blades produces one pulse per blade.
+- Keep the sensor lead out of the propeller wash.
 
 ## The AIRCRAFT tab
 
 ![Where the sensors go on an aircraft](view:balance-aircraft)
 
-- The accelerometer goes flat on the firewall, near the bolts, not on the cowl.
-- The index mark goes on the bell, not the spinner: a spinner goes back on at a new angle.
-- Tie the tail down. An aircraft free to rock is a spring in the measurement.
+- Mount the accelerometer flat on the firewall near the bolts, not on the cowl.
+- Put the index mark on the motor bell. A spinner can be refitted at a different angle.
+- Tie the tail down. An aircraft that can rock acts as a spring and affects the measurement.
 
 ## Related pages
 

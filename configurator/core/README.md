@@ -1,13 +1,13 @@
 # Configurator core
 
-The core of the rcbench bench configurator: one data file, one resolver and the
-checks on both. It has no runtime dependency and no build step. Node.js 24 runs
-the TypeScript files directly.
+The rcbench configurator core consists of a catalogue, a resolver and
+checks for both. It has no runtime dependencies and needs no build step.
+Node.js 24 runs the TypeScript files directly.
 
-The data describes release 0.23.7. Every record carries a source: a file and
-line at the tag `v0.23.7`, a section of the build guide, a photo taken for
-the build guide, or a dated statement of the project owner. A fact that no source confirms is marked as unknown in the
-data and is not asserted.
+The data describes release 0.23.7. Every record names its source: a file
+and line at tag `v0.23.7`, a build-guide section, a photo taken for the guide,
+or a dated statement from the project owner. Facts without supporting
+evidence are marked as unknown.
 
 ## Files
 
@@ -32,9 +32,8 @@ data and is not asserted.
 
 ## Bench hardware and test objects
 
-A part with `testObject: true` is a device that the visitor connects and
-tests: the servo and the ESC. It is not hardware of the bench. Every other
-part is bench hardware.
+A part with `testObject: true` is a device connected to the bench for
+testing: the servo or ESC. All other parts are bench hardware.
 
 | Field | Meaning |
 | --- | --- |
@@ -108,14 +107,14 @@ programming voltage and the current limit are then stored and not applied.
 
 ## Resolver
 
-`resolve` is pure: no input or output, no clock, no random number. It returns a
-setup for every input. Ids that the catalogue does not hold, parts that are not
-selectable and option values outside the type go to `ignored`. Output arrays
-are in catalogue order.
+`resolve` is a pure function: it performs no input/output operations and
+uses neither a clock nor random numbers. It returns a setup for every
+input. Unknown ids, non-selectable parts and invalid option values appear
+in `ignored`. Output arrays follow catalogue order.
 
-`CATALOGUE`, `DEFAULT_OPTIONS`, `OPTION_VALUES` and `OPTION_KEYS` are frozen. A
-setup holds parts, pins and wires of the catalogue by reference, so a write to
-one of these records throws a `TypeError`. The arrays of a setup are its own.
+`CATALOGUE`, `DEFAULT_OPTIONS`, `OPTION_VALUES` and `OPTION_KEYS` are frozen.
+A setup references the catalogue's parts, pins and wires. Changing one of
+those records throws a `TypeError`. The setup owns its output arrays.
 
 The order of work:
 
@@ -301,8 +300,8 @@ the run. The Configurator workflow runs it and fails on an error. The Release
 workflow runs it with `--warn-only` on every tag push: an error is a warning
 there as well, and no release waits for the check.
 
-The data moves to a release in the release pull request, with the firmware
-header `shared/link/include/rcbench_version.h`. That pull request changes
+To align the data with a release, update it in the release pull request
+alongside `shared/link/include/rcbench_version.h`. The update changes
 `version` in `../package.json` and `../package-lock.json`, from which
 `../release.ts` derives the release and its tag, `release` in
 `../drawings/anchors.json`, and the release numbers of the configurator's

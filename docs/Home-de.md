@@ -3,16 +3,16 @@
 <sub>[English](Home.md) · **Deutsch**</sub>
 
 <sub>Diese Seiten werden aus `docs/` im Repository erzeugt und bei jedem Push
-auf `main` überschrieben. Die Dateien bearbeiten, nicht das Wiki.</sub>
+auf `main` überschrieben. Bearbeite deshalb die Dateien im Repository.</sub>
 
 rcbench ist ein Prüfstand für Motoren, ESCs (Electronic Speed Controller,
-Motorregler) und Servos, aufgebaut aus zwei Prozessoren: einem
-ESP32-P4-Touchpanel, dem Waveshare ESP32-P4 7B (Bedienoberfläche auf einem
-1024x600-Display an MIPI DSI (Mobile Industry Processor Interface, Display
-Serial Interface), Einstellungen, SD-Karte, Wi-Fi über seinen ESP32-C6), und
-einem RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
-Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
-1Mbit/s verbunden.
+Motorregler) und Servos mit zwei Prozessoren. Das Panel, ein Waveshare
+ESP32-P4 7B, übernimmt die Bedienoberfläche auf einem 1024x600-Display an
+MIPI DSI (Mobile Industry Processor Interface, Display Serial Interface),
+die Einstellungen, die SD-Karte (Secure Digital) und WLAN über seinen
+ESP32-C6. Der RP2350-IOmcu (Input/Output-Mikrocontroller) übernimmt Messungen,
+Ausgänge und alle Protokolle mit Zeitanforderungen. CAN (Controller Area
+Network) mit 1Mbit/s verbindet die beiden.
 
 ## Den Prüfstand benutzen
 
@@ -23,11 +23,11 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 | Beide Platinen bauen und flashen | [Bauen](Building-de.md) |
 | Die beiden Platinen verkabeln und den Bus prüfen | [Den Link in Betrieb nehmen](Bringup-de.md) |
 | Beide Platinen flashen und den Prüfstand zum ersten Mal betreiben | [Erster Lauf auf der Hardware](FirstRun-de.md) |
-| Die Bildschirme bedienen | [Bildschirme](Screens-de.md) |
+| Die Seiten der Oberfläche bedienen | [Bildschirme](Screens-de.md) |
 | Einen Propeller oder Impeller auswuchten | [Auswuchten](Balance-de.md) |
-| Die eingebaute Endlage eines Servos messen oder zwei Servos abgleichen | [Servoverfahren](Servo-de.md) |
-| Die Einstellungen eines KST- oder Chaservo-Servos lesen, sichern und ändern | [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md) |
-| Die Einstellungen eines Hitec-Servos lesen | [Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md) |
+| Die mechanische Endlage eines eingebauten Servos messen oder zwei Servos abgleichen | [Servoverfahren](Servo-de.md) |
+| Die Einstellungen eines KST- oder Chaservo-Servos auslesen, sichern und ändern | [Servoprogrammierung für KST- und Chaservo-Servos](ServoProgrammer-de.md) |
+| Die Einstellungen eines Hitec-Servos auslesen, sichern und ändern | [Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md) |
 | Einen ESC über sein Gasknüppel-Menü programmieren | [Stick-Programmierung](StickProgramming-de.md) |
 | Einen Empfänger anschließen und seine Ausgabe prüfen | [Empfängerbusse](Receivers-de.md) |
 | Stoppmechanismen und die externe Schaltung, die sie brauchen | [Sicherheit](Safety-de.md) |
@@ -38,17 +38,17 @@ Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 
 | Seite | Inhalt |
 | --- | --- |
-| [Der rbmod-Carrier](Carrier-de.md) | Pins, Stecker, Versorgung und Nacharbeit Rev 1 der Trägerplatine |
+| [Der rbmod-Carrier](Carrier-de.md) | Pins, Stecker, Stromversorgung und Nacharbeiten an Rev 1 der Trägerplatine |
 | [Der Link](Link-de.md) | CAN-Verkabelung, Verhalten bei Ausfall, das Page-Protokoll |
 | [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) | Das Drahtprotokoll des Programmierports für Servos von KST und Chaservo |
 | [Der Programmierport für Servos von Hitec](LinkHitec-de.md) | Das Drahtprotokoll des Programmierports für Servos von Hitec |
-| [Die Pages für ESC-Einstellungen](LinkEsc-de.md) | Die Pages, die die Einstellungen eines ESC über seinen Signaldraht lesen und schreiben |
+| [Die Pages für ESC-Einstellungen](LinkEsc-de.md) | Pages zum Auslesen und Schreiben von ESC-Einstellungen über die Signalleitung |
 | [Die INA3221-Map und ihre Fenster](LinkSensors-de.md) | Die Map der INA3221-Strommonitore und ihre Abtastfenster |
-| [Die Prüfstandskonsole](BenchConsole-de.md) | Die Befehlskonsole des IOmcu an seinem USB-Serial-Port, ein Werkzeug des Prüfstands |
-| [DShot und die Output-Treiber](DShot-de.md) | DShot-Frames, Telemetrie und die Output-Treiber |
+| [Die Prüfstandskonsole](BenchConsole-de.md) | Die Befehlskonsole des IOmcu an seinem seriellen USB-Anschluss (Universal Serial Bus), ein Werkzeug für den Prüfstand |
+| [DShot und die Output-Treiber](DShot-de.md) | DShot-Frames, Telemetrie und die Ausgangstreiber |
 | [Das OpenYGE-Protokoll](OpenYGE-de.md) | Spezifikation des ESC-Telemetrie- und Parameterprotokolls |
 | [ESC-Programmierprofile](EscProfiles-de.md) | Die Profile für die ESC-Programmierung |
-| [ESC-Signalleitung](EscWire-de.md) | Einstellungen eines ESC über die Signalleitung lesen und schreiben: AM32, Bluejay, BLHeli_S, ESCape32 |
+| [ESC-Signalleitung](EscWire-de.md) | Einstellungen eines ESC über die Signalleitung auslesen und schreiben: AM32, Bluejay, BLHeli_S, ESCape32 |
 | [Performance](Performance-de.md) | Zeichenbudget in Cache-Line-Fills |
 | [Sprache der Oberfläche](Language-de.md) | Die Sprache der Oberfläche und ihre Texte |
 

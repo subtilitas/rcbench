@@ -6,109 +6,109 @@ order: 10
 
 # Motor und ESC
 
-MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet einen Lauf auf: Spannung, Strom, Leistung und Drehzahl über der Zeit. Der Bildschirm öffnet über die Kachel MOTOR & ESC im [Menü](overview.md), immer auf LIVE.
+MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet Spannung, Strom, Leistung und Drehzahl eines Laufs über der Zeit auf. Öffne die Seite über die Kachel MOTOR & ESC im [Menü](overview.md). Sie beginnt immer mit LIVE.
 
 ## Die Leiste
 
-Die Leiste oben hält drei Aufgaben, LIVE, PROGRAMMIEREN und OPTIONEN. Ein Tipp wechselt die Aufgabe. LIVE behält beim Wechsel seine Ansicht, GRAFIK oder TABELLE.
+Die obere Leiste bietet drei Aufgaben: LIVE, PROGRAMMIEREN und OPTIONEN. Tippe auf eine Aufgabe, um zu wechseln. LIVE behält dabei die gewählte Ansicht, GRAFIK oder TABELLE.
 
-| Aufgabe | Die linke Spalte |
+| Aufgabe | Linke Spalte |
 |---|---|
-| LIVE | die Grafik oder die Tabelle, und der Throttle |
-| PROGRAMMIEREN | die Liste der ESC-Programmierer ([Programmieren](#programmieren)) |
-| OPTIONEN | [Motor-Optionen](motor-settings.md): der Akku, der Motor und der Gasausgang |
+| LIVE | Grafik oder Tabelle und Gasregler |
+| PROGRAMMIEREN | Liste der ESC-Programmierer ([Programmieren](#programmieren)) |
+| OPTIONEN | [Motor-Optionen](motor-settings.md): Akku, Motor und Gasausgang |
 
-Die rechte Spalte ist auf den drei Aufgaben dieselbe: die Temperaturen, die vier Anzeigen und die Karte STEUERUNG mit den Summen in ihrer Titelzeile, ZIEL, SPITZENWERTE ZURÜCKSETZEN und ARM. ARM steht am Fuß der Karte, wo SERVO sein ARM hat, und wirkt auf jeder Aufgabe. Eine Sitzung aus PROGRAMMIEREN deckt sie ab.
+Die rechte Spalte ist bei allen drei Aufgaben gleich: Temperaturen, vier Anzeigen und die Karte STEUERUNG. Die Karte enthält Summen in der Titelzeile, ZIEL, SPITZENWERTE ZURÜCKSETZEN und ARM. ARM steht wie bei SERVO am unteren Kartenrand und funktioniert bei jeder Aufgabe. Eine unter PROGRAMMIEREN geöffnete Sitzung verdeckt die Karte.
 
-Das Home-Tag oben links steigt eine Ebene nach der anderen:
+Das Home-Feld oben links führt jeweils eine Ebene zurück:
 
-| Von | Das Home-Tag führt zu |
+| Ausgangspunkt | Ziel des Home-Felds |
 |---|---|
-| dem Tastenfeld auf OPTIONEN | OPTIONEN; der Wert bleibt unverändert |
-| einer Sitzung auf PROGRAMMIEREN | eine Ebene höher in der Sitzung, dann zur Liste von PROGRAMMIEREN |
-| LIVE, der Liste von PROGRAMMIEREN oder OPTIONEN | dem Menü; der Prüfstand schaltet auf SAFE |
+| Tastenfeld auf OPTIONEN | OPTIONEN; der Wert bleibt unverändert |
+| Sitzung auf PROGRAMMIEREN | eine Ebene höher in der Sitzung, dann zur Liste von PROGRAMMIEREN |
+| LIVE, Liste von PROGRAMMIEREN oder OPTIONEN | Menü; der Prüfstand schaltet auf SAFE |
 
 ## Programmieren
 
 ![Die Liste von PROGRAMMIEREN](view:motor-program)
 
-PROGRAMMIEREN listet die ESC-Programmierer. Seine eine Zeile, `ESCs per Gasknüppel` in der Gruppe STICK-MENÜ, treibt die als Throttle gebundenen Pins und öffnet [ESC STICK](motor-stick.md). Die modellierten Tabellen für BLHeli_S-, AM32-, ESCape32- und VESC-Firmware haben keinen Transport und keine Zeile.
+PROGRAMMIEREN bietet zwei Wege zur ESC-Programmierung. `ESCs per Gasknüppel` unter STICK-MENÜ öffnet [ESC STICK](motor-stick.md) und steuert die als Gas zugeordneten Pins. `AM32, Bluejay, BLHeli_S, ESCape32` unter SIGNALLEITUNG öffnet die [Programmierung über die Signalleitung](motor-wire.md). Diese Zeile bleibt gedimmt, bis der IOmcu die benötigte Fähigkeit meldet.
 
-ESC STICK öffnet über die volle Breite, über der linken und der rechten Spalte. Anstelle der Reiter zeigt die Zeile der Leiste den Ausgangsstreifen, eine Zeile:
+ESC STICK verdeckt beide Spalten. Anstelle der Reiter erscheint ein einzeiliger Ausgangsstreifen:
 
 `ZIEL DSHOT300 GPIO 0 GPIO 1   NETZTEIL 7.60V  1.00A   SAFE`
 
-- ZIEL: das Protokoll und die Pins, die der Lauf treibt, in der Warnfarbe, solange kein Pin gebunden oder die Bindung nicht gelesen ist.
-- NETZTEIL: der Ausgang des PD mini, wie er liest, `NETZTEIL EIN` ohne Messwerte, `NETZTEIL AUS` oder `NETZTEIL --`, solange das Netzteil nicht antwortet.
-- SAFE oder ARMED: der Prüfstand.
+- ZIEL: Protokoll und Pins des Laufs. Die Warnfarbe erscheint, wenn kein Pin zugeordnet ist oder die Zuordnung noch nicht ausgelesen wurde.
+- NETZTEIL: Ausgangsmesswerte des PD mini, `NETZTEIL EIN` ohne Messwerte, `NETZTEIL AUS` oder `NETZTEIL --`, wenn das Netzteil nicht antwortet.
+- SAFE oder ARMED: Zustand des Prüfstands.
 
-Solange ESC STICK offen ist, erreicht kein Druck ARM oder einen Reiter. Das Öffnen auf einem Prüfstand, der nicht SAFE ist, schaltet ihn auf SAFE. Das Verlassen von MOTOR & ESC beendet einen Lauf, schaltet den Prüfstand auf SAFE und schließt ESC STICK.
+Solange ESC STICK geöffnet ist, lassen sich ARM und die Reiter nicht drücken. Beim Öffnen schaltet der Prüfstand bei Bedarf auf SAFE. Das Verlassen von MOTOR & ESC beendet den Lauf, schaltet auf SAFE und schließt ESC STICK.
 
 ## Vor dem ersten Lauf
 
-![Link steht, noch nie ARMED, kein Pin als Motor gebunden](view:motor-idle)
+![Verbindung steht, noch kein Lauf bei ARMED, kein Motor-Pin zugeordnet](view:motor-idle)
 
-- Das Tag der Grafik lautet `TELEMETRIE INAKTIV`, und die Grafik zeigt `Noch kein Lauf aufgezeichnet.`, bis zum ersten Schalten auf ARMED.
-- Die Zeile unter dem Balken lautet `ZUERST ARM`, solange der Prüfstand SAFE ist. Der Balken und die Tasten `-1` und `+1` sind gedimmt und nehmen keinen Befehl an.
-- Die Anzeigen zeigen `---`, solange nichts einen Wert gemeldet hat.
-- ZIEL lautet `KEIN MOTOR-PIN` in der Warnfarbe: Die Bindung ist gelesen, und kein Pin ist als Motor gebunden. Einen Pin unter [Ausgänge](outputs.md) binden.
+- Bis zum ersten Schalten auf ARMED lautet die Beschriftung der Grafik `TELEMETRIE INAKTIV`; die Grafik zeigt `Noch kein Lauf aufgezeichnet.`.
+- Bei SAFE steht unter dem Balken `ZUERST ARM`. Der Balken und die Tasten `-1` und `+1` sind gedimmt und nehmen keine Eingabe an.
+- Die Anzeigen zeigen `---`, solange kein Wert gemeldet wurde.
+- ZIEL zeigt `KEIN MOTOR-PIN` in der Warnfarbe, wenn die Zuordnung ausgelesen wurde und kein Motor-Pin zugeordnet ist. Ordne unter [Ausgänge](outputs.md) einen Pin zu.
 
 ## ZIEL
 
-Die Zeile ZIEL oben auf der Karte STEUERUNG nennt, was der Throttle treibt: das Protokoll, dann die Pins, `DSHOT300 GPIO 0 GPIO 1`. Es sind die Pins, die unter [Ausgänge](outputs.md) als MOTOR PWM oder mit einem DShot-Protokoll gebunden sind. Das Wertefeld fasst 25 Zeichen; Pins, die nicht passen, werden gezählt, `DSHOT300 GPIO 0 GPIO 1 +6`.
+ZIEL oben auf der Karte STEUERUNG nennt die Gasausgänge nach Protokoll und Pin: `DSHOT300 GPIO 0 GPIO 1`. Es sind die Pins, die unter [Ausgänge](outputs.md) als MOTOR PWM oder mit einem DShot-Protokoll zugeordnet sind. Das Wertefeld fasst 25 Zeichen. Passt die Pin-Liste nicht hinein, ersetzt eine Anzahl die übrigen Pins: `DSHOT300 GPIO 0 GPIO 1 +6`.
 
-| ZIEL lautet | Bedingung |
+| ZIEL zeigt | Bedingung |
 |---|---|
-| `DSHOT300 GPIO 0 GPIO 1` | das Protokoll und die Pins, die der Throttle treibt, in Pin-Reihenfolge |
-| `GEMISCHT GPIO 0 GPIO 4` | die Throttle-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
-| `GPIO 0 GPIO 1` | jeder Throttle-Pin läuft mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
-| `KEIN MOTOR-PIN` | die Bindung ist gelesen, und kein Pin ist als Motor gebunden; Warnfarbe |
-| `PINS NICHT AUSGELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte; Warnfarbe |
+| `DSHOT300 GPIO 0 GPIO 1` | Protokoll und Gas-Pins in Pin-Reihenfolge |
+| `GEMISCHT GPIO 0 GPIO 4` | Die Gas-Pins nutzen mindestens zwei Protokolle, oder einer nutzt eine Pulsrate, die keinem Protokoll auf OUTPUTS entspricht. |
+| `GPIO 0 GPIO 1` | Alle Gas-Pins nutzen Pulsraten, die keinem Protokoll auf OUTPUTS entsprechen. |
+| `KEIN MOTOR-PIN` | Zuordnung ausgelesen, kein Motor-Pin zugeordnet; Warnfarbe |
+| `PINS NICHT AUSGELESEN` | Verbindung unterbrochen, Pages nicht ausgelesen oder keine Pin-Karte für die Platine vorhanden; Warnfarbe |
 
-Ein Tipp auf ZIEL öffnet [Ausgänge](outputs.md) auf dem Protokoll, an das die Gas-Pins gebunden sind, oder auf der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist, und der Prüfstand schaltet auf SAFE wie bei jedem Weg vom Bildschirm. Das Home-Tag auf OUTPUTS führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde.
+Tippe auf ZIEL, um [Ausgänge](outputs.md) beim zugeordneten Gas-Protokoll zu öffnen. Bei mehreren Protokollen oder unbekanntem Protokoll öffnet sich die Übersicht. Wie bei jedem Verlassen von MOTOR & ESC schaltet der Prüfstand auf SAFE. Das Home-Feld auf OUTPUTS führt zu der Aufgabe zurück, von der du gekommen bist.
 
-ZIEL nimmt keinen Tipp an und ist gesperrt gezeichnet:
+ZIEL erscheint gesperrt und nimmt keinen Tipp an:
 
-- solange der Prüfstand nicht SAFE ist: ARMED, ein ARM gefragt und nicht beantwortet, ein DISARM gefragt und nicht beantwortet;
+- solange der Prüfstand nicht SAFE ist: Er ist ARMED, oder eine ARM- oder DISARM-Anfrage wartet auf Antwort;
 - solange ARM gehalten wird;
-- solange der [Servo-Programmierer](servo-programmer.md) einen Port hält.
+- solange die [Servoprogrammierung](servo-programmer.md) einen Port belegt.
 
-ARM schaltet die ganze Gruppe der Throttle-Ausgänge auf ARMED, nicht nur die hier genannten Pins.
+ARM schaltet die gesamte Gruppe der Gasausgänge auf ARMED, auch Pins, die hier nicht genannt sind.
 
 ## Ein Lauf
 
 ![Ein Lauf bei ARMED ohne IOmcu: SIM und das Wasserzeichen SIMULATION](view:motor)
 
-1. ARM 2s halten. Die Füllung geht von Grün nach Rot über; der Prüfstand schaltet auf ARMED, wenn der Übergang vollständig ist. Früheres Loslassen schaltet nichts und zeigt `Halte 2s, um auf ARMED zu schalten.` im Alert-Band.
-2. Den Throttle ziehen. Er bewegt sich um den Weg des Fingers, nicht dorthin, wo der Finger aufsetzt. `-1` und `+1` ändern um einen Prozentpunkt.
-3. DISARM tippen oder STOP drücken, um den Lauf zu beenden. Beide stoppen den Ausgang sofort, ohne Rampe, und setzen den Throttle auf 0%.
+1. Halte ARM 2s. Die Füllung geht von Grün nach Rot über. Am Ende des Übergangs schaltet der Prüfstand auf ARMED. Lässt du früher los, ändert sich der Zustand nicht, und das Hinweisband zeigt `Halte 2s, um auf ARMED zu schalten.`.
+2. Ziehe den Gasregler. Er folgt dem Weg des Fingers und springt nicht zur Stelle, an der du aufsetzt. `-1` und `+1` ändern den Wert um einen Prozentpunkt.
+3. Tippe auf DISARM oder drücke STOP, um den Lauf zu beenden. Beide stoppen den Ausgang sofort, ohne Rampe, und setzen Gas auf 0%.
 
-Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der Grafik steht `JETZT`. ARM ist gesperrt gezeichnet, solange der [Servo-Programmierer](servo-programmer.md) einen Port hält.
+Bei ARMED lautet die Beschriftung der Grafik `TELEMETRIE LIVE`; am rechten Rand steht `JETZT`. ARM erscheint gesperrt, solange die [Servoprogrammierung](servo-programmer.md) einen Port belegt.
 
 | Bedienelement | SAFE | ARMED |
 |---|---|---|
-| Der Balken | abgelehnt; gedimmt gezeichnet | bewegt den Throttle um den Weg des Fingers |
-| `-1`, `+1` | abgelehnt; gedimmt gezeichnet | ändern um einen Prozentpunkt |
-| Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt den Throttle von seinem Wert aus |
+| Balken | gesperrt und gedimmt | bewegt den Gasregler um den Weg des Fingers |
+| `-1`, `+1` | gesperrt und gedimmt | ändern den Wert um einen Prozentpunkt |
+| Drehknopf | gesperrt; Drehungen werden verworfen | ändert Gas ausgehend vom aktuellen Wert |
 | ARM | schaltet nach 2s Halten auf ARMED | DISARM: schaltet bei einem Tipp auf SAFE |
 | SPITZENWERTE ZURÜCKSETZEN | löscht die Spitzenmarken | löscht die Spitzenmarken |
 | GRAFIK, TABELLE | wechseln die Ansicht von LIVE | wechseln die Ansicht von LIVE |
 
-Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der aufhört zu antworten, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0%.
+Beim Verlassen der Seite, auch über ZIEL, schaltet der Prüfstand auf SAFE und setzt Gas auf 0%. Dasselbe geschieht bei Verbindungsverlust oder ausbleibender Antwort des Touch-Controllers.
 
-Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels. SETUP, PANEL, Demo-Modus EIN blendet das Wasserzeichen SIMULATION aus; SIM bleibt.
+Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über der Seite. Alle Werte stammen dann aus dem Panelmodell. SETUP, PANEL, Demo-Modus EIN blendet das Wasserzeichen SIMULATION aus; SIM bleibt.
 
 ## Ein gehaltener Lauf
 
 ![Die Grafik hält den Lauf nach dem Schalten auf SAFE](view:motor-held)
 
-Das Schalten auf SAFE hält die Grafik, wie sie stand: Das Tag lautet `LETZTE TELEMETRIE`, und am rechten Rand steht `ENDE`. Das nächste Schalten auf ARMED löscht sie. Die Grafik hat 600 Spalten bei 20 Messungen pro Sekunde, 30,0s. Ein längerer Lauf zeigt seine letzten 30,0s; der ganze Lauf steht in seiner CSV-Datei (Comma-Separated Values) auf der Karte.
+Beim Schalten auf SAFE friert die Grafik ein. Ihre Beschriftung lautet `LETZTE TELEMETRIE`, am rechten Rand steht `ENDE`. Das nächste Schalten auf ARMED löscht sie. Mit 600 Spalten bei 20 Messungen pro Sekunde deckt sie 30,0s ab. Bei längeren Läufen zeigt sie die letzten 30,0s; die CSV-Datei (Comma-Separated Values) auf der Karte enthält den gesamten Lauf.
 
 Die Anzeigen, die Ansicht TABELLE, die Summen und der Temperaturstreifen bleiben immer live, ARMED oder nicht.
 
 ## Die Abfragerate und die Temperaturen
 
-Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und daneben die Abfragerate und die Fehlerzahl des Links. Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, fügt die Zeile darunter ihre Zahl an. Die drei Temperaturen stehen auf jeder Aufgabe in der Zeile über der rechten Spalte: ESC und MOT von der Prüfstandsseite des IOmcu, MCU vom Chip des ESP32-P4 im Panel.
+Auf LIVE stehen GRAFIK und TABELLE unter dem Titel der Telemetriekarte, daneben die Abfragerate und die Fehlerzahl der Verbindung. Hat der IOmcu seit dem Einschalten Link-Frames abgelehnt, erscheint deren Anzahl in der Zeile darunter. Über der rechten Spalte stehen bei jeder Aufgabe drei Temperaturen: ESC und MOT aus der Prüfstands-Page des IOmcu, MCU vom ESP32-P4-Chip im Panel.
 
 ![37 abgelehnte Link-Frames in der Zeile](view:motor-refused)
 
@@ -116,26 +116,26 @@ Auf LIVE trägt die Telemetriekarte unter ihrem Titel GRAFIK und TABELLE und dan
 
 ![Die Ansicht TABELLE mit einem INA228 als Quelle](view:motor-table)
 
-TABELLE listet Spannung, Strom, Leistung und Drehzahl, jeweils mit ihrer Spitze. Ein Kanal, für den nichts geantwortet hat, zeigt `--`.
+TABELLE zeigt Spannung, Strom, Leistung und Drehzahl mit ihren Spitzenwerten. Ohne gemeldeten Wert steht beim jeweiligen Kanal `--`.
 
-- Ist der INA228 unter SETUP, SENSORS eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20Hz. Die Überschrift nennt `INA228`.
-- `ÜBERSTEUERT` folgt der Überschrift, solange ein Strom das Ende des Messbereichs erreicht hat: Strom und Leistung sind dann Grenzen, keine Werte.
-- `ESC MELDET` listet Spannung und Strom aus der eigenen Telemetrie des ESC, und `Abw.` ist der Wert des ESC minus dem des INA228.
-- Ohne INA228 sind die Kanäle die Telemetrie des ESC, und `ESC MELDET` fehlt.
-- Die Drehzahl kommt aus der bidirektionalen DShot-Telemetrie. Eine Größe, die nichts misst, bleibt leer und wird nicht simuliert.
+- Ist der INA228 unter SETUP, SENSORS eingeschaltet und antwortet er, liefert er Spannung, Strom und Leistung. Es sind die Mittelwerte des letzten Messfensters von 50ms im IOmcu, ausgelesen mit 20Hz. Die Überschrift lautet `INA228`.
+- `ÜBERSTEUERT` folgt der Überschrift, wenn ein Strommesswert die Messbereichsgrenze erreicht hat. Strom und Leistung sind dann Grenzwerte, keine gemessenen Werte.
+- `ESC MELDET` zeigt Spannung und Strom aus der ESC-Telemetrie. `Abw.` ist der ESC-Wert minus dem INA228-Wert.
+- Ohne INA228 stammen die Werte aus der ESC-Telemetrie; `ESC MELDET` entfällt.
+- Die Drehzahl stammt aus der bidirektionalen DShot-Telemetrie. Nicht gemessene Größen bleiben leer und werden nicht simuliert.
 
 ## kV, rpm/V und EFF
 
-Der Kopf der Grafik zeigt den Nenn-kV-Wert, die gemessene Drehzahl je Volt und EFF, das Zweite geteilt durch das Erste, begrenzt auf 199%. Der Nenn-kV-Wert ist die Einstellung `Nenn-kV` unter MOTOR & ESC, OPTIONEN, 0 bis 10000rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und EFF fehlt. EFF zählt nur Kupferverluste und schließt die Verluste des ESC ein; es ist eine obere Grenze, kein Wirkungsgrad an der Welle.
+Der Kopf der Grafik zeigt Nenn-kV, gemessene Drehzahl je Volt und EFF. EFF ist die gemessene Drehzahl je Volt geteilt durch Nenn-kV, begrenzt auf 199%. Stelle `Nenn-kV` unter MOTOR & ESC, OPTIONEN ein: 0 bis 10000rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und EFF entfällt. EFF berücksichtigt nur Kupferverluste einschließlich der ESC-Verluste. Es ist daher eine obere Grenze, kein Wirkungsgrad an der Welle.
 
 ## Das Log eines Laufs
 
-Jedes Schalten auf ARMED schreibt eine Datei, `MOTORnnn.CSV`, in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels, solange Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD EIN ist. Bei stehendem Link ist eine Zeile eine beantwortete Abfrage, etwa 19 Zeilen pro Sekunde an einem Prüfstand; andere Prüfstände sind nicht gemessen. Die Datei schließt beim Schalten auf SAFE. [Logs](logs.md) öffnet sie und zeichnet sie.
+Ist Auto-Aufzeichnungen unter [SETUP](setup.md#sd-card) > SD CARD EIN, beginnt jedes Schalten auf ARMED eine Datei `MOTORnnn.CSV` in `BENCH/LOGS` auf der SD-Karte (Secure Digital) des Panels. Bei bestehender Verbindung erzeugt jede beantwortete Abfrage eine Zeile. An einem Prüfstand wurden etwa 19 Zeilen pro Sekunde gemessen; für andere Prüfstände liegen keine Messungen vor. Beim Schalten auf SAFE schließt die Datei. Öffne sie unter [Logs](logs.md), um den Lauf als Grafik anzuzeigen.
 
 ## Verwandte Seiten
 
-- [Motor-Optionen](motor-settings.md): der Akku, Nenn-kV, Motorpole, Leerlaufpuls und Vollgaspuls.
-- [ESC STICK](motor-stick.md): einen ESC über sein Gasknüppel-Menü programmieren.
-- [Ausgänge](outputs.md): welche Pins der Throttle treibt.
-- [Setup](setup.md): der Drehknopf.
-- [Sensoren](setup-sensors.md): der INA228.
+- [Motor-Optionen](motor-settings.md): Akku, Nenn-kV, Motorpole, Leerlaufpuls und Vollgaspuls.
+- [ESC STICK](motor-stick.md): ESC über sein Gasknüppel-Menü programmieren.
+- [Ausgänge](outputs.md): Pins für die Gassteuerung.
+- [Setup](setup.md): Drehknopf.
+- [Sensoren](setup-sensors.md): INA228.

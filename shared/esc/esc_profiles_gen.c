@@ -120,7 +120,7 @@ static const esc_item_t p_castle_phoenix_edge_items[] = {
 
 /* dualsky-xcontroller */
 static const char *const p_dualsky_xcontroller_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: long tone",
     "Wait about 5000ms more: melody 5-6-5, programming mode entered",
@@ -182,7 +182,7 @@ static const esc_item_t p_dualsky_xcontroller_items[] = {
 
 /* dualsky-xcontroller-lite */
 static const char *const p_dualsky_xcontroller_lite_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait for: melody, cell beeps, long beep, melody, then the first parameter beep",
 };
@@ -437,10 +437,10 @@ static const esc_item_t p_graupner_brushless_control_t_items[] = {
 
 /* greatplanes-electrifly-c-series */
 static const char *const p_greatplanes_electrifly_c_series_steps[] = {
-    "Transmitter on, stick at brake position (towards you).",
+    "Switch the transmitter on; move the stick at brake position (towards you).",
     "Press the ESC on/off button: 3 beeps (brake setup state).",
     "Move stick to full power: 5 beeps; wait 5s: 7 beeps.",
-    "Move stick to the brake position while the wanted count sounds.",
+    "Move stick to the brake position while the desired count sounds.",
 };
 static const esc_model_t p_greatplanes_electrifly_c_series_models[] = {
     { "C-25", 2u, 3u, false, 12600u, 25u, 0u },
@@ -458,8 +458,8 @@ static const esc_value_t p_greatplanes_electrifly_c_series_v1[] = {
     { "4-cell Li-Po (blue LED blinks 4)", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_greatplanes_electrifly_c_series_manual[] = {
-    { ESC_MANUAL_AT_POWER_UP, "Press the ESC's on/off button: once for brake setup; held 4-5s, until the red LED goes out, for battery setup.", 0u, "Ein/Aus-Taster des ESC: einmal f\303\274r Bremse; 4-5s halten, bis die rote LED ausgeht, f\303\274r Akkutyp.", false, false },
-    { ESC_MANUAL_DURING_MENU, "Battery setup: press the button to step the type, read it on the blue LED; hold it 2-3s to store.", 0u, "Akkutyp: Taster dr\303\274cken zum Weiterschalten, an der blauen LED ablesen; 2-3s halten zum Speichern.", false, false },
+    { ESC_MANUAL_AT_POWER_UP, "Press the ESC's on/off button: once for brake setup; held 4-5s, until the red LED goes out, for battery setup.", 0u, "Dr\303\274cke den Ein/Aus-Taster einmal f\303\274r Bremse; halte ihn 4-5s bis zum Erl\303\266schen der roten LED f\303\274r Akkutyp.", false, false },
+    { ESC_MANUAL_DURING_MENU, "Battery setup: press the button to step the type, read it on the blue LED; hold it 2-3s to store.", 0u, "Akkutyp: Dr\303\274cke den Taster zum Weiterschalten; lies die blaue LED ab. Halte ihn 2-3s zum Speichern.", false, false },
 };
 static const esc_item_t p_greatplanes_electrifly_c_series_items[] = {
     { "Brake", "brake", 1u, 2u, p_greatplanes_electrifly_c_series_v0,
@@ -525,8 +525,8 @@ static const char *const p_hacker_master_gen3_steps[] = {
     "Throttle signal at full power, then connect the drive battery (switch the BEC on where fitted).",
     "Wait about 5s for the four-tone melody (programming mode entered).",
     "Mode toggle (item 1): move throttle to stop immediately after the melody.",
-    "Timing (item 2): keep full throttle, wait about 5s more, then listen to the groups of 1 to 4 beeps; move to stop during the wanted group.",
-    "PWM frequency, cutoff voltage or direction (items 3, 4): keep full throttle through all timing groups, then the long/short patterns follow; move to stop during the wanted pattern.",
+    "Timing (item 2): keep full throttle, wait about 5s more, then listen to the groups of 1 to 4 beeps; move to stop during the desired group.",
+    "PWM frequency, cutoff voltage or direction (items 3, 4): keep full throttle through all timing groups, then the long/short patterns follow; move to stop during the desired pattern.",
 };
 static const esc_model_t p_hacker_master_gen3_models[] = {
     { "Master 4-B-Flight", 2u, 3u, false, 13000u, 4u, 4000u },
@@ -737,7 +737,7 @@ static const char *const p_hacker_x_pro_steps[] = {
     "Connect the drive battery (switch on where fitted); Opto versions need an external supply for the receiver connected first.",
     "Wait 5s for the two low plus two high tones.",
     "Brake: move throttle to stop right after these tones.",
-    "Other items: keep full throttle until the wanted pattern sounds; move throttle to stop while its five repetitions are playing.",
+    "Other items: keep full throttle until the desired pattern sounds; move throttle to stop while its five repetitions are playing.",
 };
 static const esc_model_t p_hacker_x_pro_models[] = {
     { "X-5-Pro", 2u, 3u, false, 12600u, 5u, 0u },
@@ -822,7 +822,7 @@ static const char *const p_hacker_x_pro_2006_steps[] = {
     "Connect the drive battery (switch on where fitted).",
     "Wait 5s for the two low plus two high tones.",
     "Brake: move throttle to stop right after these tones.",
-    "Other items: keep full throttle; move throttle to stop while the wanted pattern is sounding (each shown five times).",
+    "Other items: keep full throttle; move throttle to stop while the desired pattern is sounding (each shown five times).",
 };
 static const esc_model_t p_hacker_x_pro_2006_models[] = {
     { "X-Pro series (BEC and Opto versions)", 0u, 5u, false, 0u, 0u, 0u },
@@ -889,7 +889,7 @@ static const char *const p_hacker_x_series_steps[] = {
     "Connect the drive battery (switch on where fitted).",
     "Wait 5s for the two low plus two high tones.",
     "Brake: move throttle to stop right after these tones (2010 edition) or within 5s of them (2004 edition).",
-    "Other items: keep full throttle; each setting plays a tone pattern five times; move throttle to stop while the wanted pattern is sounding.",
+    "Other items: keep full throttle; each setting plays a tone pattern five times; move throttle to stop while the desired pattern is sounding.",
 };
 static const esc_model_t p_hacker_x_series_models[] = {
     { "X-5", 2u, 3u, false, 12600u, 5u, 0u },
@@ -949,7 +949,7 @@ static const esc_item_t p_hacker_x_series_items[] = {
 
 /* hitec-energy-sport */
 static const char *const p_hitec_energy_sport_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait 2000ms: 4 groups of two fast beeps (within 4s of power-up per the tone chart)",
     "Distinct tones then play in a loop",
@@ -1027,7 +1027,7 @@ static const esc_item_t p_hitec_energy_sport_items[] = {
 
 /* hobbywing-flyfun-8item */
 static const char *const p_hobbywing_flyfun_8item_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: two short beeps",
     "Wait about 5000ms more: special tone, programming mode entered",
@@ -1102,7 +1102,7 @@ static const esc_item_t p_hobbywing_flyfun_8item_items[] = {
 
 /* hobbywing-flyfun-hv-9item */
 static const char *const p_hobbywing_flyfun_hv_9item_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: two short beeps",
     "Wait about 5000ms more: special tone, programming mode entered",
@@ -1170,7 +1170,7 @@ static const esc_item_t p_hobbywing_flyfun_hv_9item_items[] = {
 
 /* hobbywing-flyfun-v5 */
 static const char *const p_hobbywing_flyfun_v5_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: two short beeps",
     "Wait about 5000ms more: special tone, programming mode entered",
@@ -1289,7 +1289,7 @@ static const esc_item_t p_hobbywing_flyfun_v5_items[] = {
 
 /* hobbywing-platinum-v3 */
 static const char *const p_hobbywing_platinum_v3_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: two short beeps",
     "Wait about 5000ms more: special tone, programming mode entered",
@@ -1401,7 +1401,7 @@ static const esc_item_t p_hobbywing_platinum_v3_items[] = {
 
 /* hobbywing-seaking-boat */
 static const char *const p_hobbywing_seaking_boat_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery (ESC switch on where fitted)",
     "Wait about 2000ms: Beep-Beep",
     "Wait about 5000ms more: special tone, programming mode entered",
@@ -1464,7 +1464,7 @@ static const esc_item_t p_hobbywing_seaking_boat_items[] = {
 
 /* hobbywing-skywalker-120a-v2 */
 static const char *const p_hobbywing_skywalker_120a_v2_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: two short beeps",
     "Wait about 5000ms more: special tone, programming mode entered",
@@ -1563,7 +1563,7 @@ static const esc_item_t p_hobbywing_skywalker_120a_v2_items[] = {
 
 /* hobbywing-skywalker-v2-hv-opto */
 static const char *const p_hobbywing_skywalker_v2_hv_opto_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: two short beeps",
     "Wait about 5000ms more: special tone, programming mode entered",
@@ -1656,7 +1656,7 @@ static const esc_item_t p_hobbywing_skywalker_v2_hv_opto_items[] = {
 
 /* hobbywing-skywalker-v2-mini */
 static const char *const p_hobbywing_skywalker_v2_mini_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: two short beeps",
     "Wait about 5000ms more: special tone, programming mode entered",
@@ -1755,7 +1755,7 @@ static const esc_item_t p_hobbywing_skywalker_v2_mini_items[] = {
 
 /* jeti-spin-3p */
 static const char *const p_jeti_spin_3p_steps[] = {
-    "Transmitter on, stick to full throttle.",
+    "Switch the transmitter on; move the stick to full throttle.",
     "Connect the main pack, switch on the receiver switch if one is fitted.",
     "Wait 5s: four beeps (. . - .).",
     "Stick to 'close' (motor off) within the window: sets the brake option and gives 1 or 2 beeps.",
@@ -1859,7 +1859,7 @@ static const char *const p_kontronik_3p_steps[] = {
     "Move to the max speed position; LED flashes. Move to the motor-off position; LED flashes.",
     "Move to the brake speed position; LED flashes twice.",
     "Disconnect power, pull the jumper, reconnect power.",
-    "Phase 2 (optional): throttle at max speed position, apply power; flash, then three flashes. Move to brake position for counter-clockwise or keep max for clockwise; three or four flashes confirm.",
+    "Phase 2 (optional): throttle at maximum speed position, apply power; flash, then three flashes. Move to brake position for counter-clockwise or keep max for clockwise; three or four flashes confirm.",
     "Cutoff: jumper still plugged at the final flash = cutoff on; pulled = cutoff off.",
     "Arming switch (optional): pull the jumper and plug it again within about 5s after phase 2; two flashes confirm.",
 };
@@ -1886,8 +1886,8 @@ static const esc_value_t p_kontronik_3p_v3[] = {
     { "enabled by pulling and re-plugging the jumper within about 5s", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_3p_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold pins; it stays on through phase 1.", 0u, "Jumper auf die beiden Goldkontakte stecken; er bleibt w\303\244hrend Phase 1 stecken.", false, false },
-    { ESC_MANUAL_DURING_MENU, "Between phases: power off, pull the jumper, power on. Phase 2: pull it before the last flashes to switch cutoff off.", 0u, "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: vor den letzten Blinkzeichen abziehen, Abschaltung aus.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold pins; it stays on through phase 1.", 0u, "Stecke den Jumper auf die beiden Goldkontakte. Lass ihn w\303\244hrend Phase 1 gesteckt.", false, false },
+    { ESC_MANUAL_DURING_MENU, "Between phases: power off, pull the jumper, power on. Phase 2: pull it before the last flashes to switch cutoff off.", 0u, "Zwischen Phasen: aus, Jumper ab, ein. Phase 2: Ziehe ihn vor den letzten Blinkzeichen ab (Abschaltung aus).", false, false },
 };
 static const esc_item_t p_kontronik_3p_items[] = {
     { "Throttle positions (brake off, max speed, motor off) and brake speed (phase 1)", "throttle_range", 1u, 4u, p_kontronik_3p_v0,
@@ -1903,12 +1903,12 @@ static const esc_item_t p_kontronik_3p_items[] = {
 /* kontronik-3sl */
 static const char *const p_kontronik_3sl_steps[] = {
     "Operator: fit the jumper on the programming contacts. Connect the motor if tones are to be audible.",
-    "Transmitter and receiver on. Throttle to brake (stick back); mode 3 and 6: motor-off position.",
+    "Switch the transmitter and receiver on. Throttle to brake (stick back); mode 3 and 6: motor-off position.",
     "Apply drive power.",
     "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: pull the jumper off.",
     "Mode series sounds; mode 7 is reached at the 7-fold signal.",
-    "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake.",
+    "Move the throttle to full when the desired mode sounds. Mode 6: then stick to brake.",
     "Control output repeats the mode. Disconnect power.",
 };
 static const esc_model_t p_kontronik_3sl_models[] = {
@@ -1928,9 +1928,9 @@ static const esc_value_t p_kontronik_3sl_v0[] = {
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_3sl_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Jumper auf die beiden Goldkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the three-tone sequence.", 0u, "Jumper nach 2s oder dem Dreiklang abziehen.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Stecke den Jumper auf die beiden Goldkontakte.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the three-tone sequence.", 0u, "Ziehe den Jumper nach 2s oder dem Dreiklang ab.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_3sl_items[] = {
     { "Mode", "mode", 1u, 7u, p_kontronik_3sl_v0,
@@ -1940,12 +1940,12 @@ static const esc_item_t p_kontronik_3sl_items[] = {
 /* kontronik-beat */
 static const char *const p_kontronik_beat_steps[] = {
     "Operator: fit the jumper on any 2 of the 3 programming contacts. Connect the motor if tones are to be audible.",
-    "Transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for modes 6 and 8.",
+    "Switch the transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for modes 6 and 8.",
     "Apply drive power.",
     "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: pull the jumper off.",
     "The ESC sounds the mode series. Mode 7 is reached by waiting for the 7-fold signal.",
-    "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 6: then stick to brake (back). Mode 8: then stick to full reverse (back).",
+    "Move the throttle to full (stick forward) when the desired mode sounds. Mode 6: then stick to brake (back). Mode 8: then stick to full reverse (back).",
     "Control output: the ESC repeats the mode. Disconnect power.",
 };
 static const esc_model_t p_kontronik_beat_models[] = {
@@ -1970,9 +1970,9 @@ static const esc_value_t p_kontronik_beat_v0[] = {
     { "Car 2: forward and reverse", 8u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
 };
 static const esc_manual_t p_kontronik_beat_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Jumper nach 2s oder der Tonfolge abziehen.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Stecke den Jumper auf 2 beliebige der 3 Programmierkontakte.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Ziehe den Jumper nach 2s oder der Tonfolge ab.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_beat_items[] = {
     { "Mode", "mode", 1u, 8u, p_kontronik_beat_v0,
@@ -1982,7 +1982,7 @@ static const esc_item_t p_kontronik_beat_items[] = {
 /* kontronik-beat-car */
 static const char *const p_kontronik_beat_car_steps[] = {
     "As the BEAT procedure (jumper on, power on, wait 2s, pull the jumper), programmed like mode 6 of the BEAT: signal count equals the mode number.",
-    "Wait for the series of the wanted mode and move the throttle to full.",
+    "Wait for the series of the desired mode and move the throttle to full.",
     "Mode 8 is programmed like mode 7 with 8 signals and can be combined with modes 2 to 6.",
 };
 static const esc_model_t p_kontronik_beat_car_models[] = {
@@ -1999,9 +1999,9 @@ static const esc_value_t p_kontronik_beat_car_v0[] = {
     { "Forward / reverse, combinable with modes 2 to 6", 8u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
 };
 static const esc_manual_t p_kontronik_beat_car_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Jumper nach 2s oder der Tonfolge abziehen.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Stecke den Jumper auf 2 beliebige der 3 Programmierkontakte.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Ziehe den Jumper nach 2s oder der Tonfolge ab.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_beat_car_items[] = {
     { "Mode", "mode", 1u, 8u, p_kontronik_beat_car_v0,
@@ -2011,7 +2011,7 @@ static const esc_item_t p_kontronik_beat_car_items[] = {
 /* kontronik-beat-fai */
 static const char *const p_kontronik_beat_fai_steps[] = {
     "As the BEAT procedure (jumper on, power on, wait 2s, pull the jumper), programmed like mode 5 of the BEAT: signal count equals the mode number.",
-    "Wait for the series of the wanted mode and move the throttle (motor switch) to full.",
+    "Wait for the series of the desired mode and move the throttle (motor switch) to full.",
 };
 static const esc_model_t p_kontronik_beat_fai_models[] = {
     { "BEAT FAI 7/10", 6u, 18u, true, 27000u, 150u, 0u },
@@ -2028,9 +2028,9 @@ static const esc_value_t p_kontronik_beat_fai_v0[] = {
     { "Reverse motor rotation", 7u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_beat_fai_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Jumper auf 2 beliebige der 3 Programmierkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Jumper nach 2s oder der Tonfolge abziehen.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on any 2 of the 3 programming contacts.", 0u, "Stecke den Jumper auf 2 beliebige der 3 Programmierkontakte.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Ziehe den Jumper nach 2s oder der Tonfolge ab.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_beat_fai_items[] = {
     { "Mode", "mode", 1u, 7u, p_kontronik_beat_fai_v0,
@@ -2039,10 +2039,10 @@ static const esc_item_t p_kontronik_beat_fai_items[] = {
 
 /* kontronik-cyber-line */
 static const char *const p_kontronik_cyber_line_steps[] = {
-    "Receiver battery connected on ESC types without BEC. Transmitter on.",
+    "For ESCs without a BEC, connect the receiver battery. Switch the transmitter on.",
     "Stick-way teach-in: throttle to brake or motor-off (stick back), operator fits the jumper and turns on the radio; apply drive power and pull the jumper; one signal; move to full; one signal; for EMK brake move to motor-off (may equal brake); for a start button fit the jumper again; two signals; disconnect power.",
-    "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5s for the 4-fold signal; count the beeps (10% each); move the throttle out of the brake position at the wanted count; the ESC repeats the strength; disconnect power.",
-    "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
+    "Brake strength: same start; apply power and pull the jumper; a signal; wait about 5s for the 4-fold signal; count the beeps (10% each); move the throttle out of the brake position at the desired count; the ESC repeats the strength; disconnect power.",
+    "Current limit: throttle at full, jumper on, radio on; apply power and pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the desired count; the ESC repeats the value; fit the jumper again for current regulation; two signals; disconnect power.",
     "Reset: any throttle position; fit the jumper and turn on the radio; apply power and fit/keep the jumper while the ESC beeps several times; about 30s after the last signal a 6-fold signal arrives; the LED flashes continuously; disconnect power.",
 };
 static const esc_model_t p_kontronik_cyber_line_models[] = {
@@ -2065,9 +2065,9 @@ static const esc_value_t p_kontronik_cyber_line_v3[] = {
     { "undervoltage cutoff off: pull the jumper during the reset sequence", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_cyber_line_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Jumper auf die Programmierkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off as soon as the drive battery is connected.", 0u, "Jumper abziehen, sobald der Antriebsakku angesteckt ist.", false, false },
-    { ESC_MANUAL_DURING_MENU, "Current limit and reset: fit the jumper again while the ESC beeps, as the program asks.", 0u, "Strombegrenzung und Reset: Jumper wieder stecken, w\303\244hrend der ESC piept, wie das Programm es verlangt.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Stecke den Jumper auf die Programmierkontakte.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off as soon as the drive battery is connected.", 0u, "Ziehe den Jumper ab, sobald der Antriebsakku angesteckt ist.", false, false },
+    { ESC_MANUAL_DURING_MENU, "Current limit and reset: fit the jumper again while the ESC beeps, as the program asks.", 0u, "Strombegrenzung und Reset: Stecke den Jumper nach Aufforderung wieder auf, w\303\244hrend der ESC piept.", false, false },
 };
 static const esc_item_t p_kontronik_cyber_line_items[] = {
     { "Stick positions (brake / motor-off, full) with optional EMK brake and start button", "throttle_range", 1u, 1u, p_kontronik_cyber_line_v0,
@@ -2088,7 +2088,7 @@ static const char *const p_kontronik_heli_jive_steps[] = {
     "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: pull the jumper off within 10s after power-up.",
     "The ESC sounds a second tone sequence, then the mode series, mode N as N tones.",
-    "Move the throttle to full when the wanted mode sounds. The ESC confirms with 3 tones.",
+    "Move the throttle to full when the desired mode sounds. The ESC confirms with 3 tones.",
     "To program autorotation, move the stick or switch to the AR position (modes 2 to 6). To leave it off, keep the throttle at full.",
     "The ESC repeats the mode and adds a warning tone if AR is on, then a bell tone. Disconnect power. The jumper may be fitted again and stay on the ESC in flight.",
 };
@@ -2112,9 +2112,9 @@ static const esc_value_t p_kontronik_heli_jive_v1[] = {
     { "on: throttle moved to the AR position after the confirmation tones", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_heli_jive_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on 2 of the 3 programming contacts (the German manual: the 2 marked ones).", 0u, "Jumper auf 2 der 3 Programmierkontakte stecken (deutsches Handbuch: die 2 markierten).", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence, within 10s of power-up.", 0u, "Jumper nach 2s oder der Tonfolge abziehen, innerhalb 10s nach dem Einschalten.", true, false },
-    { ESC_MANUAL_AFTER_PROGRAMMING, "The jumper may be fitted again; it can stay on the ESC in use.", 0u, "Jumper darf wieder gesteckt werden und im Betrieb am ESC bleiben.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on 2 of the 3 programming contacts (the German manual: the 2 marked ones).", 0u, "Stecke den Jumper auf 2 der 3 Programmierkontakte (deutsches Handbuch: die 2 markierten).", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence, within 10s of power-up.", 0u, "Ziehe den Jumper nach 2s oder der Tonfolge ab, innerhalb von 10s nach dem Einschalten.", true, false },
+    { ESC_MANUAL_AFTER_PROGRAMMING, "The jumper may be fitted again; it can stay on the ESC in use.", 0u, "Du darfst den Jumper wieder aufstecken und im Betrieb am ESC lassen.", false, false },
 };
 static const esc_item_t p_kontronik_heli_jive_items[] = {
     { "Mode", "mode", 1u, 10u, p_kontronik_heli_jive_v0,
@@ -2126,7 +2126,7 @@ static const esc_item_t p_kontronik_heli_jive_items[] = {
 /* kontronik-heli-line */
 static const char *const p_kontronik_heli_line_steps[] = {
     "Stick-way teach-in: throttle at motor-off (stick back), jumper on, radio on; apply power, pull the jumper; a signal; move to full; a signal; for throttle compensation move to motor-off, otherwise wait; 2 beeps = without, 3 beeps = with; optional start button press; 2 or 3 beeps; disconnect power.",
-    "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
+    "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the desired count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
     "Reset: any throttle position; jumper on, radio on; apply power, pull the jumper; the ESC beeps several times; about 30s after the last signal a 6-fold signal arrives; LED flashes continuously; disconnect power.",
 };
 static const esc_model_t p_kontronik_heli_line_models[] = {
@@ -2143,9 +2143,9 @@ static const esc_value_t p_kontronik_heli_line_v2[] = {
     { "reset: about 30s after the last signal a 6-fold signal arrives; LED flashes continuously", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_heli_line_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Jumper auf die Programmierkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off as soon as the drive battery is connected.", 0u, "Jumper abziehen, sobald der Antriebsakku angesteckt ist.", false, false },
-    { ESC_MANUAL_DURING_MENU, "Current regulation and reset: fit the jumper again when the program asks; a start button is pressed and let go.", 0u, "Stromregelung und Reset: Jumper wieder stecken, wenn das Programm es verlangt; Starttaster dr\303\274cken und loslassen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the programming contacts.", 0u, "Stecke den Jumper auf die Programmierkontakte.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off as soon as the drive battery is connected.", 0u, "Ziehe den Jumper ab, sobald der Antriebsakku angesteckt ist.", false, false },
+    { ESC_MANUAL_DURING_MENU, "Current regulation and reset: fit the jumper again when the program asks; a start button is pressed and let go.", 0u, "Stromregelung und Reset: Stecke den Jumper nach Aufforderung wieder auf. Dr\303\274cke den Starttaster und lass ihn los.", false, false },
 };
 static const esc_item_t p_kontronik_heli_line_items[] = {
     { "Stick positions (motor-off, full) with throttle compensation and start button", "throttle_range", 1u, 1u, p_kontronik_heli_line_v0,
@@ -2164,8 +2164,8 @@ static const char *const p_kontronik_jazz_steps[] = {
     "Wait 2s or until the ESC sounds its three-tone sequence (pictogram in the manual).",
     "Operator: pull the jumper off.",
     "The ESC sounds a second three-tone sequence, then the mode series 1, 2, 3 ... 9 with a pause between series.",
-    "Move the throttle to full (stick forward) while the wanted mode series sounds.",
-    "Mode 2 only: move the throttle to the wanted separate motor-off position after the ESC's confirmation tones. Modes 6 and 8: move the throttle to maximum brake (stick back).",
+    "Move the throttle to full (stick forward) while the desired mode series sounds.",
+    "Mode 2 only: move the throttle to the desired separate motor-off position after the ESC's confirmation tones. Modes 6 and 8: move the throttle to maximum brake (stick back).",
     "The ESC repeats the stored mode as a check. Then disconnect drive power.",
 };
 static const esc_model_t p_kontronik_jazz_models[] = {
@@ -2187,9 +2187,9 @@ static const esc_value_t p_kontronik_jazz_v0[] = {
     { "LiPo undervoltage cutoff, 2.7 to 3V per cell, added on top of another mode", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jazz_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "JAZZ: fit the jumper on any 2 of the 3 programming contacts. MINIJAZZ has a button instead.", 0u, "JAZZ: Jumper auf 2 beliebige der 3 Programmierkontakte stecken. MINIJAZZ hat stattdessen einen Taster.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "After 2s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.", 0u, "Nach 2s oder der Tonfolge: JAZZ: Jumper abziehen. MINIJAZZ: Taster dr\303\274cken.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "JAZZ: fit the jumper on any 2 of the 3 programming contacts. MINIJAZZ has a button instead.", 0u, "JAZZ: Stecke den Jumper auf 2 beliebige der 3 Programmierkontakte. MINIJAZZ hat stattdessen einen Taster.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "After 2s or the tone sequence: JAZZ: pull the jumper off. MINIJAZZ: press the button.", 0u, "Nach 2s oder der Tonfolge: JAZZ: Ziehe den Jumper ab. MINIJAZZ: Dr\303\274cke den Taster.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_jazz_items[] = {
     { "Mode", "mode", 1u, 9u, p_kontronik_jazz_v0,
@@ -2204,8 +2204,8 @@ static const char *const p_kontronik_jive_steps[] = {
     "Wait 2s or until the ESC sounds its three-tone sequence.",
     "Operator: pull the jumper off.",
     "The ESC sounds a second three-tone sequence, then the mode series 1 to 11.",
-    "Move the throttle to full while the wanted series sounds.",
-    "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10% per tone); move the throttle to motor-off at the wanted count.",
+    "Move the throttle to full while the desired series sounds.",
+    "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10% per tone); move the throttle to motor-off at the desired count.",
     "The ESC repeats the stored mode. Disconnect drive power.",
 };
 static const esc_model_t p_kontronik_jive_models[] = {
@@ -2232,8 +2232,8 @@ static const esc_value_t p_kontronik_jive_v1[] = {
     { "each tone adds 10% brake strength; the count at which the throttle returns to motor-off is stored", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jive_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the 2 marked programming contacts (English manual: any 2 of the 3).", 0u, "Jumper auf die 2 markierten Programmierkontakte stecken (englisches Handbuch: 2 beliebige der 3).", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Jumper nach 2s oder der Tonfolge abziehen.", true, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the 2 marked programming contacts (English manual: any 2 of the 3).", 0u, "Stecke den Jumper auf die 2 markierten Programmierkontakte (englisches Handbuch: 2 beliebige der 3).", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 2s or the tone sequence.", 0u, "Ziehe den Jumper nach 2s oder der Tonfolge ab.", true, false },
 };
 static const esc_item_t p_kontronik_jive_items[] = {
     { "Mode", "mode", 1u, 11u, p_kontronik_jive_v0,
@@ -2244,13 +2244,13 @@ static const esc_item_t p_kontronik_jive_items[] = {
 
 /* kontronik-jive-pro */
 static const char *const p_kontronik_jive_pro_steps[] = {
-    "Transmitter on, throttle at motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+    "Switch the transmitter on; set the throttle to motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
     "Operator: plug in the jumper cable.",
     "Connect the motor. Apply drive power.",
     "The ESC sounds an ascending three-tone sequence and single tones for the detected cell count (long tone = 4 cells, short tone = 1 cell). The LED flashes.",
     "Operator: pull the jumper cable. The ESC sounds a descending three-tone sequence.",
     "The ESC sounds mode series 1, 2, 3 ... one tone more per series; the LED flashes the same count.",
-    "Move the throttle to full (100%) after the wanted tone count.",
+    "Move the throttle to full (100%) after the desired tone count.",
     "The ESC confirms with an ascending three-tone sequence and the mode as tones. Mode 2: a further stick position can then be set. Mode 6: move the stick to reverse (0%) after the full-throttle confirmation.",
     "Wait for the confirmation before disconnecting power; otherwise the ESC treats programming as incomplete and locks (9 LED flashes).",
 };
@@ -2285,9 +2285,9 @@ static const esc_value_t p_kontronik_jive_pro_v1[] = {
     { "8.0V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_jive_pro_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Plug the jumper cable onto the ESC.", 0u, "Jumperkabel auf den ESC stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper cable off after the cell-count tones, within 10s of power-up.", 0u, "Jumperkabel nach den Zellent\303\266nen abziehen, innerhalb 10s nach dem Einschalten.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false, true },
+    { ESC_MANUAL_BEFORE_POWER, "Plug the jumper cable onto the ESC.", 0u, "Stecke das Jumperkabel auf den ESC.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper cable off after the cell-count tones, within 10s of power-up.", 0u, "Ziehe das Jumperkabel nach den Zellent\303\266nen ab, innerhalb von 10s nach dem Einschalten.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte auf das Ende der Modusbest\303\244tigung (T\303\266ne, LED) und tippe dann ERLEDIGT.", false, true },
 };
 static const esc_item_t p_kontronik_jive_pro_items[] = {
     { "Mode", "mode", 1u, 6u, p_kontronik_jive_pro_v0,
@@ -2303,7 +2303,7 @@ static const char *const p_kontronik_koby_steps[] = {
     "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: press the button under the shrink tubing on the ESC.",
     "The ESC sounds a tone sequence, then the mode series, with a pause between series.",
-    "Move the throttle to full when the wanted mode sounds. Mode 10 is reached after the 10th tone.",
+    "Move the throttle to full when the desired mode sounds. Mode 10 is reached after the 10th tone.",
     "Mode 2 only: move the throttle to a separate motor-off position after the ESC's confirmation.",
     "The ESC repeats the mode. Wait for it, then disconnect power (an interrupted run locks the ESC; 9 LED flashes).",
 };
@@ -2339,8 +2339,8 @@ static const esc_value_t p_kontronik_koby_v1[] = {
     { "8.0V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_koby_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2s oder der Tonfolge dr\303\274cken.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false, true },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2s or the tone sequence.", 0u, "Dr\303\274cke den Taster unter dem Schrumpfschlauch nach 2s oder der Tonfolge.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte auf das Ende der Modusbest\303\244tigung (T\303\266ne, LED) und tippe dann ERLEDIGT.", false, true },
 };
 static const esc_item_t p_kontronik_koby_items[] = {
     { "Mode", "mode", 1u, 5u, p_kontronik_koby_v0,
@@ -2351,12 +2351,12 @@ static const esc_item_t p_kontronik_koby_items[] = {
 
 /* kontronik-kolibri */
 static const char *const p_kontronik_kolibri_steps[] = {
-    "Transmitter on, throttle at motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+    "Switch the transmitter on; set the throttle to motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
     "Connect the motor. Apply drive power.",
     "The ESC sounds an ascending three-tone sequence and single tones for the detected LiPo cell count (long tone = 4 cells, short tone = 1 cell).",
     "Operator: press the button marked on the ESC.",
     "The ESC sounds a descending three-tone sequence, then the mode series 1, 2, 3 ... one tone more per series.",
-    "Move the throttle to full (100%) after the wanted tone count.",
+    "Move the throttle to full (100%) after the desired tone count.",
     "The ESC confirms with an ascending three-tone sequence and repeats the mode as tones. Mode 2: a further stick position may be set. Mode 6: move the stick to reverse (0%) after the full-throttle confirmation.",
     "Wait for the confirmation (up to about 2s for mode 4) before disconnecting power; otherwise the ESC locks (9 LED flashes).",
 };
@@ -2412,8 +2412,8 @@ static const esc_value_t p_kontronik_kolibri_v2[] = {
     { "9.0V", 20u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kolibri_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster am ESC nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false, true },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button on the ESC after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Dr\303\274cke nach den Zellent\303\266nen den ESC-Taster (Schrumpfschlauch-Versionen: hinten, nahe dem Sensoranschluss).", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte auf das Ende der Modusbest\303\244tigung (T\303\266ne, LED) und tippe dann ERLEDIGT.", false, true },
 };
 static const esc_item_t p_kontronik_kolibri_items[] = {
     { "Mode", "mode", 1u, 9u, p_kontronik_kolibri_v0,
@@ -2431,7 +2431,7 @@ static const char *const p_kontronik_kontrol_x_steps[] = {
     "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: press the ESC button (push button under the heat shrink).",
     "The ESC sounds a tone sequence, then the mode series, mode 1 as one tone, mode 2 as two tones, with a pause between series.",
-    "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 3: then move the throttle to full reverse (stick back).",
+    "Move the throttle to full (stick forward) when the desired mode sounds. Mode 3: then move the throttle to full reverse (stick back).",
     "The ESC repeats the mode as tones. Wait for it, then disconnect power (an interrupted run locks the ESC; 8 LED flashes).",
 };
 static const esc_model_t p_kontronik_kontrol_x_models[] = {
@@ -2446,8 +2446,8 @@ static const esc_value_t p_kontronik_kontrol_x_v0[] = {
     { "Reverse motor rotation", 4u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kontrol_x_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2s or the tone sequence.", 0u, "Taster unter dem Schrumpfschlauch nach 2s oder der Tonfolge dr\303\274cken.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false, true },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button under the shrink tube after 2s or the tone sequence.", 0u, "Dr\303\274cke den Taster unter dem Schrumpfschlauch nach 2s oder der Tonfolge.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte auf das Ende der Modusbest\303\244tigung (T\303\266ne, LED) und tippe dann ERLEDIGT.", false, true },
 };
 static const esc_item_t p_kontronik_kontrol_x_items[] = {
     { "Mode", "mode", 1u, 4u, p_kontronik_kontrol_x_v0,
@@ -2456,12 +2456,12 @@ static const esc_item_t p_kontronik_kontrol_x_items[] = {
 
 /* kontronik-kosmik */
 static const char *const p_kontronik_kosmik_steps[] = {
-    "Transmitter on, throttle at motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
+    "Switch the transmitter on; set the throttle to motor-off (0%). Connect the ESC master cable to the receiver throttle channel; receiver on.",
     "Connect the motor. Apply drive power.",
     "The ESC sounds an ascending three-tone sequence and single tones for the detected LiPo cell count (long tone = 4 cells, short tone = 1 cell).",
     "Operator: press the button marked PRESS on the ESC (on shrink-tube versions on the back near the sensor slot).",
     "The ESC sounds a descending three-tone sequence, then the mode series 1, 2, 3 ... one tone more per series.",
-    "Move the throttle to full (100%) after the wanted tone count.",
+    "Move the throttle to full (100%) after the desired tone count.",
     "The ESC confirms with an ascending three-tone sequence and repeats the mode as tones. Mode 2: a further stick position may be set. Mode 6: move the stick to reverse (0%) after the full-throttle confirmation.",
     "Wait for the confirmation (up to about 2s for mode 4) before disconnecting power; otherwise the ESC locks (10 red LED flashes).",
 };
@@ -2518,8 +2518,8 @@ static const esc_value_t p_kontronik_kosmik_v2[] = {
     { "8.0V", 15u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_kosmik_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Taster mit der Aufschrift PRESS nach den Zellent\303\266nen dr\303\274cken (Schrumpfschlauch: hinten, nahe dem Sensoranschluss).", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC seine Modusbest\303\244tigung beendet hat (T\303\266ne, LED), dann ERLEDIGT tippen.", false, true },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button marked PRESS after the cell-count tones (shrink-tube versions: on the back, near the sensor slot).", 0u, "Dr\303\274cke nach den Zellent\303\266nen den Taster PRESS (Schrumpfschlauch: hinten, nahe dem Sensoranschluss).", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has ended its mode confirmation (tones, LED), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte auf das Ende der Modusbest\303\244tigung (T\303\266ne, LED) und tippe dann ERLEDIGT.", false, true },
 };
 static const esc_item_t p_kontronik_kosmik_items[] = {
     { "Mode", "mode", 1u, 9u, p_kontronik_kosmik_v0,
@@ -2551,8 +2551,8 @@ static const esc_value_t p_kontronik_mini20_v1[] = {
     { "off: jumper removed", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_mini20_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts; it stays on through phase 1.", 0u, "Jumper auf die beiden Goldkontakte stecken; er bleibt w\303\244hrend Phase 1 stecken.", false, false },
-    { ESC_MANUAL_DURING_MENU, "Between phases: power off, pull the jumper, power on. Phase 2: pull it between the flashes to switch cutoff off.", 0u, "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: zwischen den Blinkzeichen abziehen, Abschaltung aus.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts; it stays on through phase 1.", 0u, "Stecke den Jumper auf die beiden Goldkontakte. Lass ihn w\303\244hrend Phase 1 gesteckt.", false, false },
+    { ESC_MANUAL_DURING_MENU, "Between phases: power off, pull the jumper, power on. Phase 2: pull it between the flashes to switch cutoff off.", 0u, "Zwischen Phasen: aus, Jumper ab, ein. Phase 2: Ziehe ihn zwischen den Blinkzeichen ab (Abschaltung aus).", false, false },
 };
 static const esc_item_t p_kontronik_mini20_items[] = {
     { "Throttle positions and brake yes/no (phase 1)", "throttle_range", 1u, 2u, p_kontronik_mini20_v0,
@@ -2569,7 +2569,7 @@ static const char *const p_kontronik_opto_bec_steps[] = {
     "Apply drive power. After about 5s the ESC signals that it has detected the brake / motor-off position.",
     "Move the throttle to full and keep it there until the ESC signals the full position, about 5s after the last signal.",
     "Brake wanted: move the throttle to motor-off. Brake not wanted: leave it at full.",
-    "After about 5 more s a double signal confirms storing.",
+    "After about 5 more seconds, a double signal confirms that the settings are stored.",
     "Start button function (optional): press the start button again within about 5s; another double signal confirms.",
     "Disconnect drive power and remove the bridge. After reconnecting, a double signal after about 1s shows readiness once the throttle is at motor-off or brake.",
 };
@@ -2588,8 +2588,8 @@ static const esc_value_t p_kontronik_opto_bec_v2[] = {
     { "enabled by pressing the start button after the double signal", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_opto_bec_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the short-circuit bridge on the two gold contacts, or hold a start button there while powering up.", 0u, "Kurzschlussbr\303\274cke auf die beiden Goldkontakte stecken, oder dort einen Starttaster beim Einschalten halten.", false, false },
-    { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the bridge.", 0u, "Br\303\274cke abziehen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the short-circuit bridge on the two gold contacts, or hold a start button there while powering up.", 0u, "Stecke die Kurzschlussbr\303\274cke auf die beiden Goldkontakte oder halte dort beim Einschalten den Starttaster gedr\303\274ckt.", false, false },
+    { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the bridge.", 0u, "Ziehe die Br\303\274cke ab.", false, false },
 };
 static const esc_item_t p_kontronik_opto_bec_items[] = {
     { "Throttle positions: brake or motor-off, full", "throttle_range", 1u, 1u, p_kontronik_opto_bec_v0,
@@ -2628,9 +2628,9 @@ static const esc_value_t p_kontronik_optomax_v2[] = {
     { "off: bridge removed before the double signal", 2u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_optomax_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the short-circuit bridge on the two gold contacts.", 0u, "Kurzschlussbr\303\274cke auf die beiden Goldkontakte stecken.", false, false },
-    { ESC_MANUAL_DURING_MENU, "To switch the cutoff off, pull the bridge before the double signal.", 0u, "Zum Ausschalten der Abschaltung die Br\303\274cke vor dem Doppelsignal abziehen.", false, false },
-    { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the bridge.", 0u, "Br\303\274cke abziehen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the short-circuit bridge on the two gold contacts.", 0u, "Stecke die Kurzschlussbr\303\274cke auf die beiden Goldkontakte.", false, false },
+    { ESC_MANUAL_DURING_MENU, "To switch the cutoff off, pull the bridge before the double signal.", 0u, "Ziehe die Br\303\274cke vor dem Doppelsignal ab, um die Abschaltung zu deaktivieren.", false, false },
+    { ESC_MANUAL_AFTER_PROGRAMMING, "Remove the bridge.", 0u, "Ziehe die Br\303\274cke ab.", false, false },
 };
 static const esc_item_t p_kontronik_optomax_items[] = {
     { "Throttle positions", "throttle_range", 1u, 1u, p_kontronik_optomax_v0,
@@ -2648,7 +2648,7 @@ static const char *const p_kontronik_pix_steps[] = {
     "Wait 2s or until the ESC sounds an ascending tone sequence.",
     "Operator: press and release the button marked 'Taster' on the ESC label.",
     "The ESC sounds a descending tone sequence, then the mode series with pauses between series (mode 7 after 7 tones, mode 9 after 9 tones).",
-    "Move the throttle to full (stick forward) when the wanted mode sounds. The ESC confirms with a descending tone sequence.",
+    "Move the throttle to full (stick forward) when the desired mode sounds. The ESC confirms with a descending tone sequence.",
     "Mode 2 only: move the throttle to the brake position (stick back); the ESC confirms with a descending sequence. Then optionally move to a separate motor-off position (stick middle); the ESC confirms again.",
     "Control output: the mode is repeated as tones. Disconnect power.",
 };
@@ -2665,8 +2665,8 @@ static const esc_value_t p_kontronik_pix_v0[] = {
     { "LiPo undervoltage detection: switches between 0.7 to 0.8V per NiCd/NiMH cell and 2.7 to 3V per LiPo cell", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_pix_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button marked Taster on the label after 2s or the tone sequence.", 0u, "Taster mit der Aufschrift Taster nach 2s oder der Tonfolge dr\303\274cken.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button marked Taster on the label after 2s or the tone sequence.", 0u, "Dr\303\274cke nach 2s oder der Tonfolge den Taster mit der Aufschrift Taster.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_pix_items[] = {
     { "Mode", "mode", 1u, 5u, p_kontronik_pix_v0,
@@ -2675,12 +2675,12 @@ static const esc_item_t p_kontronik_pix_items[] = {
 
 /* kontronik-smile */
 static const char *const p_kontronik_smile_steps[] = {
-    "Connect the motor. Transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for mode 6.",
+    "Connect the motor. Switch the transmitter and receiver on. Throttle to brake (stick back) for modes 1, 2 and 5; to motor-off (stick back) for modes 3, 4 and 7; to motor-off (stick middle) for mode 6.",
     "Apply drive power.",
     "Wait 2s or until the ESC sounds its tone sequence.",
     "Operator: press and release the button on the ESC ('Taster').",
     "Wait for the mode series; modes 7 and 9 are reached by waiting for the 7-fold or 9-fold signal.",
-    "Move the throttle to full (stick forward) when the wanted mode sounds. Mode 6: then move the stick to brake (back).",
+    "Move the throttle to full (stick forward) when the desired mode sounds. Mode 6: then move the stick to brake (back).",
     "The ESC repeats the mode as control output. Disconnect power.",
 };
 static const esc_model_t p_kontronik_smile_models[] = {
@@ -2699,8 +2699,8 @@ static const esc_value_t p_kontronik_smile_v0[] = {
     { "LiPo undervoltage cutoff, 3V per cell, added on top of another mode", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_smile_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press and release the button after 2s or the tone sequence.", 0u, "Taster nach 2s oder der Tonfolge dr\303\274cken und loslassen.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Press and release the button after 2s or the tone sequence.", 0u, "Dr\303\274cke den Taster nach 2s oder der Tonfolge und lass ihn los.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_smile_items[] = {
     { "Mode", "mode", 1u, 8u, p_kontronik_smile_v0,
@@ -2710,12 +2710,12 @@ static const esc_item_t p_kontronik_smile_items[] = {
 /* kontronik-star-line */
 static const char *const p_kontronik_star_line_steps[] = {
     "Operator: fit the jumper. Connect the motor if tones are to be audible.",
-    "Transmitter and receiver on. Throttle to brake (stick back); mode 3: motor-off (stick back); mode 6: motor-off (stick middle).",
+    "Switch the transmitter and receiver on. Throttle to brake (stick back); mode 3: motor-off (stick back); mode 6: motor-off (stick middle).",
     "Apply drive power.",
     "Wait 5s or until the ESC sounds its tone sequence.",
     "Operator: pull the jumper off.",
     "Mode series sounds.",
-    "Move the throttle to full when the wanted mode sounds. Mode 6: then stick to brake (back). Mode 4: the jumper can be fitted again to enable a start button.",
+    "Move the throttle to full when the desired mode sounds. Mode 6: then stick to brake (back). Mode 4: the jumper can be fitted again to enable a start button.",
     "Control output repeats the mode. Disconnect power.",
 };
 static const esc_model_t p_kontronik_star_line_models[] = {
@@ -2734,9 +2734,9 @@ static const esc_value_t p_kontronik_star_line_v0[] = {
     { "Car: proportional brake", 6u, false, ESC_THR_MID, 0u, 1u, { ESC_THR_MIN } },
 };
 static const esc_manual_t p_kontronik_star_line_manual[] = {
-    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Jumper auf die beiden Goldkontakte stecken.", false, false },
-    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 5s or the tone sequence.", 0u, "Jumper nach 5s oder der Tonfolge abziehen.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_POWER, "Fit the jumper on the two gold contacts.", 0u, "Stecke den Jumper auf die beiden Goldkontakte.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Pull the jumper off after 5s or the tone sequence.", 0u, "Ziehe den Jumper nach 5s oder der Tonfolge ab.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_star_line_items[] = {
     { "Mode", "mode", 1u, 6u, p_kontronik_star_line_v0,
@@ -2750,7 +2750,7 @@ static const char *const p_kontronik_sun_plus_steps[] = {
     "Wait 2s (modes 1, 2, 3) or 5s (modes 4, 5, 6) or until the ESC sounds an ascending tone sequence.",
     "Operator: press the ESC button ('Taster').",
     "The ESC sounds a descending tone sequence, then the mode series.",
-    "Move the throttle to full (stick forward) when the wanted mode sounds.",
+    "Move the throttle to full (stick forward) when the desired mode sounds.",
     "The ESC confirms with a descending tone sequence. Mode 2: a separate brake position can then be set (optional). Mode 6: move the stick to the brake position afterwards.",
     "Control output: the mode is repeated as tones. Disconnect power.",
 };
@@ -2769,8 +2769,8 @@ static const esc_value_t p_kontronik_sun_plus_v0[] = {
     { "LiPo undervoltage detection (2.7 to 3V per cell instead of 0.7 to 0.8V)", 9u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_kontronik_sun_plus_manual[] = {
-    { ESC_MANUAL_BEFORE_MENU, "Press the button after the tone sequence: 2s for modes 1 to 3, 5s for modes 4 to 6.", 0u, "Taster nach der Tonfolge dr\303\274cken: 2s bei Modi 1 bis 3, 5s bei Modi 4 bis 6.", true, false },
-    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Nicht ber\303\274hren: warten, bis der ESC den Modus fertig wiederholt hat (T\303\266ne), dann ERLEDIGT tippen.", false, false },
+    { ESC_MANUAL_BEFORE_MENU, "Press the button after the tone sequence: 2s for modes 1 to 3, 5s for modes 4 to 6.", 0u, "Dr\303\274cke den Taster nach der Tonfolge: 2s bei Modi 1 bis 3, 5s bei Modi 4 bis 6.", true, false },
+    { ESC_MANUAL_BEFORE_POWER_OFF, "Hands off: wait until the ESC has finished repeating the mode (tones), then tap DONE.", 0u, "Ber\303\274hre nichts. Warte, bis der ESC den Modus als T\303\266ne vollst\303\244ndig wiederholt hat, und tippe dann ERLEDIGT.", false, false },
 };
 static const esc_item_t p_kontronik_sun_plus_items[] = {
     { "Mode", "mode", 1u, 7u, p_kontronik_sun_plus_v0,
@@ -2868,8 +2868,8 @@ static const esc_item_t p_multiplex_roxxy_bl_900_items[] = {
 static const char *const p_multiplex_roxxy_bl_control_s_bec_steps[] = {
     "Battery disconnected, stick to full throttle, transmitter on.",
     "Connect a charged flight battery: rising tone sequence, then in LiPo mode cell-count beeps.",
-    "Stick to centre.",
-    "Stick to full throttle.",
+    "Move the stick to centre.",
+    "Move the stick to full throttle.",
     "Stick to centre: rising tone sequence four times, programming mode.",
 };
 static const esc_model_t p_multiplex_roxxy_bl_control_s_bec_models[] = {
@@ -3035,11 +3035,11 @@ static const esc_item_t p_multiplex_roxxy_procontrol_items[] = {
 
 /* mystery-ztw-melody-menu */
 static const char *const p_mystery_ztw_melody_menu_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait for two short beeps: programming mode entered",
     "If the throttle goes to min within 5s, the throttle calibration is changed (avoid this)",
-    "Keep the throttle at max beyond 5s: the ESC starts the tone sequence",
+    "Keep the throttle at maximum beyond 5s: the ESC starts the tone sequence",
 };
 static const esc_model_t p_mystery_ztw_melody_menu_models[] = {
     { "MY8A", 2u, 4u, false, 16800u, 8u, 0u },
@@ -3584,7 +3584,7 @@ static const esc_item_t p_spektrum_avian_smart_items[] = {
 
 /* sunrise-pro */
 static const char *const p_sunrise_pro_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 5000ms: 4 beeps, programming mode entered",
 };
@@ -3626,7 +3626,7 @@ static const esc_item_t p_sunrise_pro_items[] = {
 
 /* surpass-kxss */
 static const char *const p_surpass_kxss_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: 2 beeps",
     "Wait about 5000ms more: rising tone, programming mode entered",
@@ -3689,7 +3689,7 @@ static const esc_item_t p_surpass_kxss_items[] = {
 
 /* turnigy-aquastar */
 static const char *const p_turnigy_aquastar_steps[] = {
-    "Transmitter on, throttle at max, ESC switch off, receiver powered separately",
+    "Switch the transmitter on; set the throttle to maximum, ESC switch off, receiver powered separately",
     "Switch the ESC on: 3 beeps",
     "4 beeps follow (the throttle calibration window; do not move the throttle)",
     "7 beeps: programming mode entered",
@@ -3739,7 +3739,7 @@ static const esc_value_t p_turnigy_aquastar_v6[] = {
     { "exit programming and go", 1u, false, ESC_THR_NONE, 0u, 0u, { 0 } },
 };
 static const esc_manual_t p_turnigy_aquastar_manual[] = {
-    { ESC_MANUAL_AT_POWER_UP, "Switch the ESC's own switch on, with the throttle at MAX and the drive battery connected.", 0u, "Den Schalter des ESC einschalten, mit Throttle auf MAX und angestecktem Antriebsakku.", false, false },
+    { ESC_MANUAL_AT_POWER_UP, "Switch the ESC's own switch on, with the throttle at MAX and the drive battery connected.", 0u, "Schalte den ESC ein, wenn Throttle auf MAX steht und der Antriebsakku angesteckt ist.", false, false },
 };
 static const esc_item_t p_turnigy_aquastar_items[] = {
     { "Low cutoff voltage", "cutoff_voltage", 1u, 10u, p_turnigy_aquastar_v0,
@@ -3847,7 +3847,7 @@ static const char *const p_yge_aureus_steps[] = {
     "Wait for 20 interval beeps, then 2 confirmation beeps",
     "Move throttle stick to minimum",
     "Listen to the menu: N beeps = mode N",
-    "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+    "At the desired mode, move throttle stick to maximum; 2 confirmation beeps",
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_aureus_models[] = {
@@ -3878,7 +3878,7 @@ static const char *const p_yge_hv_steps[] = {
     "Wait for 20 interval beeps, then 2 confirmation beeps",
     "Move throttle stick to minimum",
     "Listen to the menu: N beeps = mode N",
-    "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+    "At the desired mode, move throttle stick to maximum; 2 confirmation beeps",
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_hv_models[] = {
@@ -3908,7 +3908,7 @@ static const char *const p_yge_hvt_steps[] = {
     "Wait for 20 interval beeps, then 2 confirmation beeps",
     "Move throttle stick to minimum",
     "Listen to the menu: N beeps = mode N",
-    "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+    "At the desired mode, move throttle stick to maximum; 2 confirmation beeps",
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_hvt_models[] = {
@@ -3940,7 +3940,7 @@ static const char *const p_yge_hvt_navy_steps[] = {
     "Wait for 20 interval beeps, then 2 confirmation beeps",
     "Move throttle stick to minimum",
     "Listen to the menu: N beeps = mode N",
-    "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+    "At the desired mode, move throttle stick to maximum; 2 confirmation beeps",
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_hvt_navy_models[] = {
@@ -4133,7 +4133,7 @@ static const char *const p_yge_saphir_steps[] = {
     "Wait for 20 interval beeps, then 2 confirmation beeps",
     "Move throttle stick to minimum",
     "Listen to the menu: N beeps = mode N",
-    "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+    "At the desired mode, move throttle stick to maximum; 2 confirmation beeps",
     "Move throttle stick to minimum; 2 confirmation beeps; ESC arms",
 };
 static const esc_model_t p_yge_saphir_models[] = {
@@ -4157,7 +4157,7 @@ static const esc_item_t p_yge_saphir_items[] = {
 
 /* ztw-gecko */
 static const char *const p_ztw_gecko_steps[] = {
-    "Transmitter on, throttle at max",
+    "Switch the transmitter on; set the throttle to maximum",
     "Connect battery",
     "Wait about 2000ms: two short beeps, programming mode entered",
 };
@@ -4440,7 +4440,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "hitec-energy-sport", "Hitec",
       "Energy Sport programmable ESC, melody tone menu",
       ESC_SCHEME_MELODY_GROUPS, ESC_ENC_MELODY, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_FULL,
-      "The tones differ in rhythm and pitch; the bench counts current pulses only, whether the tones can be told apart by current is untested.",
+      "The tones differ in rhythm and pitch. The bench counts current pulses only; whether it can distinguish the tones from those pulses is untested.",
       ESC_THR_MAX, false, 2000u,
       ESC_THR_MIN, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, 4, true, false,
@@ -4764,7 +4764,7 @@ const esc_profile_t esc_profiles_builtin[] = {
     { "mystery-ztw-melody-menu", "Mystery",
       "Mystery MY-series (ZTW) melody tone menu",
       ESC_SCHEME_MELODY_GROUPS, ESC_ENC_MELODY, ESC_ANNOUNCE_ITEM_THEN_VALUE, ESC_AUTO_FULL,
-      "The tones differ in rhythm and pitch; the bench counts current pulses only, whether the tones can be told apart by current is untested. OPTO models have no BEC.",
+      "The tones differ in rhythm and pitch. The bench counts current pulses only; whether it can distinguish the tones from those pulses is untested. OPTO models have no BEC.",
       ESC_THR_MAX, false, 0u,
       ESC_THR_MIN, 0u, ESC_THR_NONE, 0u, ESC_THR_NONE, ESC_THR_NONE, ESC_THR_NONE,
       0u, 0u, 0u, 0u, 4, true, false,

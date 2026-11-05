@@ -1,7 +1,7 @@
 # dshot
 
-DShot out to an ESC (electronic speed controller) and the telemetry burst
-back on the same wire.
+This module sends DShot frames to an ESC (electronic speed controller)
+and receives the telemetry reply on the same wire.
 
 The module has two parts.
 
@@ -18,12 +18,13 @@ The module has two parts.
 - A bidirectional reply is 21 line bits at 5/4 of the frame rate, GCR
   (group-coded recording) coded. The driver samples it 5 times per bit
   (`DSHOT_RX_OVERSAMPLE`) into 8 words of 32 bits.
-- The driver has no frame rate of its own. One call sends one frame. A frame
-  asked for while the previous one is still in the queue is dropped.
+- The caller sets the frame rate: each call sends one frame. A request
+  made while the previous frame is still queued is dropped.
 - The rate is given in kbit/s. A rate of 0 is refused.
-- A plain pin takes 1 PIO (programmable input/output) state machine. A
-  bidirectional pin takes 2 in one PIO block, the receiver directly above
-  the transmitter. A bind that cannot get that pair is refused.
+- A plain output uses 1 PIO (programmable input/output) state machine. A
+  bidirectional output uses 2 in the same PIO block, with the receiver
+  directly above the transmitter. Binding is refused if that pair is
+  unavailable.
 - `OUT_DSHOT_MAX_PINS` pins are bound at one time, 8 unless the build
   defines another number.
 - Not confirmed against an ESC: the extended telemetry frame types and
@@ -45,9 +46,10 @@ bool     dshot_edt_frame(dshot_edt_t *e, bool stopped, uint32_t now_ms);
 uint32_t dshot_edt_millivolts(uint16_t count);   /* also _amps, _celsius */
 ```
 
-`dshot_edt_*()` schedules the command that asks for extended telemetry:
-an ask is 10 repeats and the next starts 500ms after the last repeat (509
-ms between starts at 1kHz), at zero throttle, at most 10 asks per run.
+`dshot_edt_*()` schedules requests for extended telemetry at zero
+throttle. Each request repeats the command 10 times. The next request
+starts 500ms after the last repeat: 509ms between starts at 1kHz. A run
+sends at most 10 requests.
 
 `dshot_throttle(command, span)` maps a command from 0 to `span` onto 0
 (stop) or a throttle value from 48 to 2047: 0 gives 0, 1 gives 48 for a
@@ -65,13 +67,13 @@ void out_dshot_stop(uint8_t pin);
 void out_dshot_release(uint8_t pin);
 ```
 
-`out_dshot_bind()` on a pin already bound with the same rate and mode returns
-true and leaves the output running. With a different rate or mode it returns
-false and the old output keeps running; a caller that wants the new settings
-calls `out_dshot_release()` first.
+`out_dshot_bind()` returns true if the pin is already bound at the
+requested rate and mode. The output continues running. A different rate
+or mode returns false and also leaves the existing output running. Call
+`out_dshot_release()` before binding the pin with different settings.
 
-`out_dshot_stop()` sends nothing further. An ESC stops on the silence after
-its own timeout.
+`out_dshot_stop()` stops sending frames. The ESC stops after its own
+signal-loss timeout.
 
 ## Use in another pico-sdk project
 

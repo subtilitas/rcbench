@@ -11,7 +11,7 @@
       "v_max_mv": 16800,
       "current_a": 15,
       "bec": "switching",
-      "firmware_note": "Order 1-01050; burst 25 A; S-BEC 5.0 V max 2.3 A (burst 3 A)",
+      "firmware_note": "Order 1-01050; burst 25A; S-BEC 5.0V max 2.3A (burst 3A)",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_BL-715_S-BEC.pdf p.1 (715, 720); Multiplex_BL-Control_740-755_S-BEC.pdf p.1 (740, 755)"
     },
@@ -23,7 +23,7 @@
       "v_max_mv": 16800,
       "current_a": 20,
       "bec": "switching",
-      "firmware_note": "Order 31 8974; burst 30 A; S-BEC 5.0 V max 3.0 A (burst 5 A)",
+      "firmware_note": "Order 31 8974; burst 30A; S-BEC 5.0V max 3.0A (burst 5A)",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_BL-715_S-BEC.pdf p.1 (715, 720); Multiplex_BL-Control_740-755_S-BEC.pdf p.1 (740, 755)"
     },
@@ -35,7 +35,7 @@
       "v_max_mv": 25200,
       "current_a": 40,
       "bec": "switching",
-      "firmware_note": "Order 1-01317; burst 55 A; S-BEC 5.0 V max 4 A (burst 7 A)",
+      "firmware_note": "Order 1-01317; burst 55A; S-BEC 5.0V max 4A (burst 7A)",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_BL-715_S-BEC.pdf p.1 (715, 720); Multiplex_BL-Control_740-755_S-BEC.pdf p.1 (740, 755)"
     },
@@ -47,7 +47,7 @@
       "v_max_mv": 25200,
       "current_a": 55,
       "bec": "switching",
-      "firmware_note": "Order 31 8975 (1-01010); burst 70 A; S-BEC 5.0 V max 4 A (burst 7 A)",
+      "firmware_note": "Order 31 8975 (1-01010); burst 70A; S-BEC 5.0V max 4A (burst 7A)",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_BL-715_S-BEC.pdf p.1 (715, 720); Multiplex_BL-Control_740-755_S-BEC.pdf p.1 (740, 755)"
     }
@@ -84,8 +84,8 @@
       "steps": [
         "Battery disconnected, stick to full throttle, transmitter on.",
         "Connect a charged flight battery: rising tone sequence, then in LiPo mode cell-count beeps.",
-        "Stick to centre.",
-        "Stick to full throttle.",
+        "Move the stick to centre.",
+        "Move the stick to full throttle.",
         "Stick to centre: rising tone sequence four times, programming mode."
       ]
     },
@@ -186,7 +186,7 @@
       ],
       "applies_to": null,
       "source_page": "5-6",
-      "note": "Power reduction starts at 3.2 V per cell (LiPo) or 6.0 V (NiXX) and the motor is off at 2.9 V or 5.8 V."
+      "note": "Power reduction starts at 3.2V per cell (LiPo) or 6.0V (NiXX) and the motor is off at 2.9V or 5.8V."
     },
     {
       "number": 5,
@@ -205,7 +205,7 @@
       ],
       "applies_to": null,
       "source_page": "6",
-      "note": "Start-up time: soft 3.0 s helicopter and 1.3 s fixed-wing; standard 1.0 s helicopter and 0.2 s fixed-wing."
+      "note": "Start-up time: soft 3.0s helicopter and 1.3s fixed-wing; standard 1.0s helicopter and 0.2s fixed-wing."
     },
     {
       "number": 6,

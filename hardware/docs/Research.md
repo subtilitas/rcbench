@@ -1,12 +1,12 @@
 # IO (input/output) board component research
 
-The plan for the multi-agent research that selects the integrated circuits
-(ICs) of the IO board, and the record of its run. The owner accepted the plan
+This page records the plan and runs of the multi-agent research for
+selecting the IO board's integrated circuits (ICs). The owner accepted the plan
 on 2026-09-25. **Round 1 ran from 2026-09-28 to 2026-09-30**, as six tasks
 (question S8) and 9 follow-up tasks, each a workflow of at most 32 agents
-(owner, 2026-09-24). Each task read the commit of `research/round1`, the
-branch of [prerequisite 4](#prerequisites), that its `task.json` under
-`hardware/research/round1/<run>/` records:
+(owner, 2026-09-24). Each task read the commit of `research/round1` recorded in its `task.json`
+under `hardware/research/round1/<run>/`. This is the branch defined in
+[prerequisite 4](#prerequisites):
 
 | Task | Run | Date | Commit of `research/round1` read |
 | --- | --- | --- | --- |
@@ -20,15 +20,14 @@ branch of [prerequisite 4](#prerequisites), that its `task.json` under
 | T5 | T5 | 2026-09-29 | `e13f5f60d2e5` |
 | T6 | T6 | 2026-09-30 | `9460c22ec32d` |
 
-Two runs stopped and were run again: FU-A4 (`FU-A4-stopped-1`, 2026-09-29,
-`e13f5f60d2e5`) and T6 (`T6-stopped-1`, 2026-09-29, `9460c22ec32d`). The
-parts round 1 selected are in [Parts](Parts.md), with the reasons and the
-open items on [Control](Control.md), [Supply](Supply.md) and
+Two runs stopped and were restarted: FU-A4 (`FU-A4-stopped-1`, 2026-09-29,
+`e13f5f60d2e5`) and T6 (`T6-stopped-1`, 2026-09-29, `9460c22ec32d`). The parts selected in round 1 are listed in [Parts](Parts.md). The selection
+reasons and open items are in [Control](Control.md), [Supply](Supply.md) and
 [Sensing](Sensing.md). The sections from [Scope](#scope) to
 [Prerequisites](#prerequisites) are the plan round 1's tasks read, with the
-owner's later decisions marked by their dates. [Round 2](#round-2) is the
-plan of round 2's runs. The questions below serve both rounds.
-Some tables below use a term before the text expands it: PWM is pulse-width
+owner's later decisions marked by their dates. [Round 2](#round-2) describes the
+plan for round 2's runs. The questions below serve both rounds.
+Some tables use abbreviations before the text defines them: PWM is pulse-width
 modulation, PPM pulse-position modulation, UART a universal asynchronous
 receiver-transmitter, RGB LED a red-green-blue light-emitting diode, LV and
 HV low and high voltage, ESR equivalent series resistance, IEC the
@@ -40,11 +39,12 @@ current and EEPROM electrically erasable programmable read-only memory.
 
 ## Goals
 
-The goals the owner sets after round 1, in order. Each holds for every run
-that starts after its date and for the pages those runs write.
+These are the goals set by the owner after round 1, in priority order. Each
+applies to every run that starts after its stated date and to the pages
+produced by those runs.
 
-1. **Cost (owner, 2026-10-06).** The IO board costs about one third of the
-   estimate of 2026-10-06: about €135 a board in place of about €400. The
+1. **Cost (owner, 2026-10-06).** The target cost for the IO board is about one
+   third of the estimate of 2026-10-06: about €135 per board instead of about €400. The
    estimate is $399 to $485 a board, each part bought in the quantity 10
    boards need, without shipping, customs or VAT (value-added tax): the
    parts after round 2 at JLCPCB and LCSC prices ($286), passives,
@@ -52,12 +52,12 @@ that starts after its date and for the pages those runs write.
    none of them selected), a 6-layer PCB (printed circuit board, $15 to
    $35) and assembly at JLCPCB ($46 to $55, of which $27 to $30 is the $3
    fee for each distinct extended-library part). The target is on the same
-   basis. A run ranks every candidate by its unit price at the 10-board
-   quantity beside its fit, prefers JLCPCB's basic library, and counts the
-   distinct extended parts it adds. Where a requirement makes the target
-   unreachable, the run names the requirement and what it costs a board,
-   and the owner decides; a run does not relax a requirement on its own.
-   The largest items a board in the estimate:
+   basis. A run ranks every candidate by both its fit and its unit price at the
+   10-board quantity, prefers JLCPCB's basic library, and counts the distinct
+   extended parts it adds. Where a requirement makes the target
+   unreachable, the run identifies the requirement and its cost per board. The owner
+   decides whether to change it; a run does not relax a requirement on its own.
+   The largest items per board in the estimate:
 
    | Part | Function | Count | Unit | A board |
    | --- | --- | --- | --- | --- |
@@ -74,14 +74,14 @@ that starts after its date and for the pages those runs write.
 
    The estimate's prices are from the jlcparts copy of 2026-09-14, except the
    BSC014N04LSATMA1's, Digi-Key's on 2026-10-06. Round 2 records no
-   placements a board; the counts follow each function (20 for a part on
+   placement counts per board; these counts are derived from each function (20 for a part on
    each port, 3 or 4 for a part on each rail). Per-port circuits are 100 of
    the 217 placements and $81 of the $286.
 
 The IO board is the IOmcu board: the RP2354B, the CAN (Controller Area
 Network) link to the display, the outputs, the receiver inputs, the sensor
-front ends and the power path. [The specification](IOBoard.md) lists what it
-has to do; this page lists how its parts are found.
+front ends and the power path. [The specification](IOBoard.md) lists its requirements; this page describes
+how its parts are selected.
 
 ## Scope
 
@@ -91,23 +91,21 @@ has to do; this page lists how its parts are found.
 | 2 | first, follow-up tasks of round 1's categories for the ICs and IC surroundings that round 1 left without a part or whose requirement changed ([Round 2](#round-2); owner, 2026-10-01); then passives; ESD (electrostatic discharge) and overvoltage protection on the signal, sensor, balance-lead, link and heartbeat connectors (the power input's protection is R5 and the ESC pack path's is R3, both in round 1); connectors; crystals and inductors not fixed in round 1 |
 | 3 | mechanical, thermal, layout constraints; the busbar, mounting and cabling of the external 300A path, whose shunt is in round 1 |
 
-Not in any round: the link pages and IOmcu code that carry a
-measurement or a function from the IO board to the display. The specification
+The link pages and IOmcu code that carry a measurement or a function from
+the IO board to the display are outside all rounds. The specification
 lists each as required: receiver data, port currents and the servo
-procedures, cell readings, vibration, thrust and torque. They are firmware
-work. P6 marks such a line "hardware selected, link open" and does not return
-it as a gap. Two questions from the same lines do reach round 1, because they
-choose hardware or fix a value: which sensor gives the servo's measured
+procedures, cell readings, vibration, thrust and torque. These require firmware work. P6 marks each such line "hardware selected,
+link open" and does not report it as a gap. Two questions from those lines are included in round 1 because they
+determine the hardware or a required value: which sensor gives the servo's measured
 position (R11), and which source fills the BENCH voltage and current registers
 (R8) and the rpm register (R11) when more than one reports. P1 asks the owner
 both.
 
-Fixed inputs. Round 1 checks them for stock, lifecycle and a second source.
-A fixed input that fails a check is reported to the owner, not re-selected.
+Round 1 checks each fixed input for stock, lifecycle and a second source.
+It reports a failed check to the owner without selecting a replacement.
 A row that says "whatever a run returns" names a part the owner keeps
-(owner, 2026-10-02). Where no run verifies such a part, the selection
-keeps it as the owner's. The pages state each check no run confirmed as
-not known. Any other fixed input that no run verifies stays open for the
+(owner, 2026-10-02). If no run verifies such a part, the selection retains it as an owner
+decision. The pages mark each unconfirmed check as not known. Any other fixed input that no run verifies stays open for the
 owner.
 
 | Input | Value | Source |
@@ -121,13 +119,13 @@ owner.
 | accelerometer | ADXL316WBCSZ (owner, 2026-10-02), fixed without further research and kept whatever a run returns. Its datasheet states no figure for its delay drift between runs | [Sensing](Sensing.md) |
 | optical index | TCND5000 (owner, 2026-10-02), fixed without further research and kept whatever a run returns. Its datasheet states no detector response time | [Sensing](Sensing.md) |
 
-The BQ25887 in [Power](Power.md) takes 3.9 to 6.2V only and does not charge
-from the 12 to 20V DC (direct current) input. It is a seed of R7, not a fixed
-input. The INA3221AIRGVR of the 20 port monitors is the Port current monitor
+The BQ25887 in [Power](Power.md) accepts only 3.9 to 6.2V and cannot charge
+from the 12 to 20V DC (direct current) input. It is a search seed for R7, not
+a fixed input. The INA3221AIRGVR of the 20 port monitors is the Port current monitor
 of the fixed inputs above (owner, 2026-10-03).
 
-Owner decisions of 2026-09-24. A value the owner set on 2026-09-25 or later
-carries its date:
+These are the owner's decisions of 2026-09-24. Values set on 2026-09-25 or
+later carry their own dates:
 
 | Decision | Value |
 | --- | --- |
@@ -140,7 +138,8 @@ carries its date:
 | Checking | every finding is countered by a critic |
 | Size of a task | at most 32 agents per task |
 
-Owner decisions of 2026-09-27, each applied where the last column says:
+The owner's decisions of 2026-09-27 apply in the places listed in the last
+column:
 
 | Decision | Value | Applied in |
 | --- | --- | --- |
@@ -161,13 +160,14 @@ Owner decisions of 2026-09-27, each applied where the last column says:
 | RP2354B stepping | A4 | fixed inputs, R1 |
 | Digi-Key figures | stock, the manufacturer's lead time and the product status, read from Digi-Key's API only. The API carries no dated incoming quantity, and none is recorded | [Sourcing rules 1, 5 and 7](#sourcing-rules), P2 |
 
-The stock figures in [Power](Power.md) are dated 2026-09-01 and state that they
-are not valid after it. Round 1 takes them again.
+The stock figures in [Power](Power.md) are dated 2026-09-01 and are marked as
+invalid after that date. Round 1 reads them again.
 
 ### Consequence of the RP2354B's 2MB flash
 
-Three places in the IOmcu build assume more than 2MB of flash. All
-three change before the first IO board build:
+Three places in the IOmcu build inspected for this research assumed more
+than 2MB of flash. The plan requires all three to change before the first IO
+board build:
 
 | Place | Assumes | With the RP2354B |
 | --- | --- | --- |
@@ -179,7 +179,7 @@ The IOmcu image carries the board drawing as a constant array of
 1,560 bytes (`firmware/iomcu/src/board_drawing_rp2350_can.c`). The
 image-size check counts it with the code.
 
-The in-package flash sets how long the core stops for a save. The 19ms
+The in-package flash determines how long a save stalls the core. The 19ms
 erase-and-program window in [STATUS.md](../../STATUS.md#open-items) is a
 measurement on the bring-up module's 4MB flash
 (`firmware/iomcu/CMakeLists.txt:5-7`), a different part from the 2MB
@@ -187,26 +187,24 @@ W25Q16JV. The W25Q16JV datasheet (revision D, 2016-08-12, read from a copy)
 gives a 4kB sector erase of 45ms typical and 400ms maximum, a 256-byte page
 program of 0.4ms typical and 3ms maximum, and at least 100,000
 program-erase cycles a sector. Those figures are for the packaged parts in its
-ordering list, which refers KGD (known good die) parts to Winbond. The W25Q16JV
-datasheet `www.winbond.com` served without a login on 2026-09-27 is the
-W25Q16JV-DTR datasheet (revision I, published 2026-05-28), whose ordering list names only
+ordering list, which refers KGD (known good die) parts to Winbond. The W25Q16JV datasheet served by `www.winbond.com` without a login on
+2026-09-27 was the W25Q16JV-DTR datasheet (revision I, published 2026-05-28), whose ordering list names only
 DTR (double transfer rate) parts. It gives the same erase and program times.
 It gives at least 100,000 program-erase cycles without "per sector": its
 revision history removes those words. Whether the RP2354B's die is a DTR part
 is not known. No public Winbond document gives figures for the W25Q16JVWI die.
 R1 records them as not known. Q8 and P5 budget with the packaged parts'
-maximums, each marked as a packaged-part figure (owner, 2026-09-27). Question
-Q8 decides between those stalls and a store off the flash.
+maximums, each marked as a packaged-part figure (owner, 2026-09-27). Question Q8 decides whether to accept those stalls or use storage outside
+the flash.
 
 ## Sourcing rules
 
-Every agent applies these. They extend [Sourcing](Sourcing.md) and do not
-replace it.
+Every agent applies these rules alongside [Sourcing](Sourcing.md).
 
 1. **JLCPCB's parts library for the board.** A part placed on the IO board has
-   an LCSC number (`C` followed by digits), and JLCPCB assembly places it. A
-   part off the board, such as the external shunt or an external switch
-   module (question F7), is bought at the second vendor of question S3 and
+   an LCSC number (`C` followed by digits), and JLCPCB assembly places it. A part mounted off the board, such as the external shunt or an external
+   switch module (question F7), is bought from the second vendor named in
+   question S3 and
    passes rules 2, 4, 5 and 7 there, with the stock read from that vendor's
    API (prerequisite 3). The bench's pack is the exception: the SLS XTRON 3000mAh
    2S1P pack is bought at Stefansliposhop (owner, 2026-09-30), whose stock is
@@ -216,21 +214,21 @@ replace it.
 2. **Allowlisted manufacturers only.** The list is question S1 for ICs, S9
    for the 18650 cells of the bench's own pack, and S2 for the rest. The
    bench's pack is the owner's SLS XTRON pack, from a maker outside S9, and
-   is exempt from this rule (owner, 2026-09-30). A part
-   from a manufacturer not on the list is not a
-   candidate, whatever its stock. A seed from such a manufacturer is dropped.
+   is exempt from this rule (owner, 2026-09-30). A part from a manufacturer outside the list is not a candidate, regardless
+   of its stock. A seed from such a manufacturer is dropped.
    A maker's other names count as its listed name: Maxim and Linear as Analog
    Devices, Cypress as Infineon (S1), and RAMXEED as Fujitsu (owner,
    2026-09-27). JLCPCB labels some rows "JLCPCB Assembly"; that is not a maker,
-   and such a row is not a candidate. Where JLCPCB's label contradicts the maker
-   that the part number and the datasheet name, the datasheet counts: C2061051, an
+   and such a row is not a candidate. Where JLCPCB's label disagrees with the manufacturer identified by the
+   part number and datasheet, the datasheet takes precedence: C2061051, an
    MB85RC256V, is labelled "Fuji Electric" (2026-09-27).
-   Connectors are not in S2: round 1 selects none, and their makers, JST for
-   the Qwiic ports of Q7 among them, are asked before round 2.
+   Connectors are not covered by S2. Round 1 selects none; approval for their
+   manufacturers, including JST for the Qwiic ports of Q7, is requested
+   before round 2.
 3. **Find in jlcparts, count at JLCPCB.** The `yaqwsx/jlcparts` database is a
    rolling cache: each scheduled run refreshes a limited number of parts, and
    each part carries its own `fetched_at`. It is used to find candidates,
-   never to count them. On 2026-09-14 the copy published at
+   never to establish stock counts. On 2026-09-14 the copy published at
    `yaqwsx.github.io/jlcparts/data/` lost every part below LCSC number
    C6374508 (upstream issue #159). On 2026-09-27 it held 985,000 rows and none
    of this page's fixed inputs or held parts. The research searches the last
@@ -242,8 +240,8 @@ replace it.
    `web_build-10342101918.zip`, has the SHA-256 (Secure Hash Algorithm,
    256 bits) `4e578005c4bcce8a7cc825ce3c7e06ddb197acdce228e223af57cc2631eda5f9`.
    The `cache.sqlite3` unpacked from it, the file agents open, has
-   `48b41b803d7b6bbe0fa7e25b5db430a8421f8175ad559e2c4b4bfc3a73d28c26`. A part
-   listed after 2026-09-14 is not in it. Every agent that searches jlcparts
+   `48b41b803d7b6bbe0fa7e25b5db430a8421f8175ad559e2c4b4bfc3a73d28c26`. The copy excludes parts
+   listed after 2026-09-14. Every agent that searches jlcparts
    opens that file read-only. 25.1% of its rows have an empty maker field.
    20.0% have empty attributes. INA238AIDGSR (C2868250) has an empty maker
    field. TPS55285VALR (C52160906) has an empty maker field and empty
@@ -252,20 +250,19 @@ replace it.
    are blank. It takes the maker from JLCPCB's API (`componentBrandEn`) and
    every requirement value from the datasheet.
    Stock comes from JLCPCB's own API, as in [Sourcing](Sourcing.md): `stockCount`,
-   `canPresaleNumber`, `componentLibraryType` and the price breaks. The
-   reading is the result whose LCSC number equals the part's, not the first
-   result of the keyword search. A part off the board (rule 1) is found and
+   `canPresaleNumber`, `componentLibraryType` and the price breaks. The reading comes from the result with the part's exact LCSC number, which
+   may differ from the first keyword-search result. A part off the board (rule 1) is found and
    counted at the second vendor of question S3, Digi-Key, through its API
    (prerequisite 3). P2 uses that API's keyword search, and the part's LCSC
    number is none.
-4. **Stock gate.** `stockCount` at or above question S4's rule applied to the
-   part's need, and `canPresaleNumber` zero or above. A negative presale count
-   fails whatever the stock says. The need is boards (question S7) × placements
-   per board. Where the specification fixes the placements (20 for each
+4. **Stock gate.** `stockCount` must meet the threshold from question S4 for
+   the quantity needed, and `canPresaleNumber` must be zero or above. A
+   negative presale count fails regardless of stock. The quantity needed is
+   boards (question S7) × placements per board. Where the specification fixes the placements (20 for each
    per-port part, 7 for the INA3221), that number is used. Where it does not, for example the
    MOSFETs (metal-oxide-semiconductor field-effect transistors) of a pack
-   switch, P2 states a range and its basis, and the gate applies at the top of
-   the range.
+   switch, P2 states a range and its basis. The gate uses the highest value in
+   that range.
 5. **A second source.** Either a pin-compatible alternate that also passes
    rules 1 to 4 and works in the same circuit and firmware configuration
    (registers, I²C address, start-up, surrounding parts), or the same part at the second vendor of question S3 with
@@ -274,14 +271,13 @@ replace it.
    second vendor already (rule 1), so its second source is an alternate that
    passes rules 1 to 4 and fits the same mounting and connections. A part
    bought at the second vendor reaches JLCPCB assembly through the personal
-   library (rule 6). The INA238
-   and INA228 share one footprint ([Sourcing](Sourcing.md)). On the figures of
-   2026-09-01 neither route passes for the INA238: the INA228 had 29 at JLCPCB
+   library (rule 6). The INA238 and INA228 share a footprint ([Sourcing](Sourcing.md)). Neither
+   route passes for the INA238 under the figures of 2026-09-01: the INA228 had 29 at JLCPCB
    with a presale count of −477, and the INA238 had 0 at Digi-Key with 2500 due
    2026-10-27. Round 1 reports that to the owner.
 6. **Personal library.** Agents cannot read the owner's JLCPCB personal library;
-   it needs a login. A part held there passes rule 4 when the quantity the
-   owner states, with its date, is at or above boards × placements per board.
+   access requires a login. A part held there passes rule 4 when the owner's
+   dated quantity is at or above boards × placements per board.
    Question S4's threshold does not apply to it, because a held part is not
    substituted between quote and build.
 7. **Every figure is dated and sourced.** A stock count carries the date and the
@@ -293,9 +289,9 @@ replace it.
 
 ### Held parts
 
-The owner's JLCPCB personal library, exported on 2026-09-25
-([inventory-2026-09-25.csv](inventory-2026-09-25.csv)). The quantity is the
-JLCPCB column of the export; the global-sourcing and consigned columns are 0 for
+This table lists the owner's JLCPCB personal library as exported on
+2026-09-25 ([inventory-2026-09-25.csv](inventory-2026-09-25.csv)). Quantities
+come from the export's JLCPCB column; the global-sourcing and consigned columns are 0 for
 every row. A held part passes rule 4 by rule 6 when its quantity covers 5 boards
 (S7) × its placements per board. It is still a candidate only when its maker is
 on the list of S1 or S2 (rule 2) and it meets the category's requirement values.
@@ -328,7 +324,7 @@ TPS82740BSIPR (C5187175), TPS82740ASIPR (C544660) and GRM32ER61A107ME20L
 
 ## Lifecycle check
 
-Recorded for every candidate that reaches the shortlist.
+The following fields are recorded for every shortlisted candidate.
 
 | Field | Source | Gate |
 | --- | --- | --- |
@@ -340,17 +336,18 @@ Recorded for every candidate that reaches the shortlist.
 
 ## Research categories
 
-Each row has an ID (identifier), R1 to R13. Each row runs one P1 and one P1 critic
-in T1, then one P2, one P3, one re-rank and two P4 agents in its group's task
+Each row has an ID (identifier), R1 to R13. Each category has one P1 and one
+P1 critic in T1, then one P2, one P3, one re-rank and two P4 agents in its
+group's task
 ([Agent layout](#agent-layout)). The requirement
 values each row is checked against are in [the specification](IOBoard.md) and
 in the row itself. P1 reads both; "P1 asks" in either is a question P1 raises. A
 front end in any category that drives one of the RP2354B's 8 ADC inputs keeps
 that input within its rating while the 3.3V rail is down and the front end's
-supply is up. The seeds are starting points for the search, not choices. None
-has been checked for stock, lifecycle or fit. The concerns column holds what
-the plan's critics found against a seed. It rests on search-engine summaries,
-which count as weak evidence, and on the tree.
+supply is up. The seeds are starting points for the search, not selected parts. At this
+stage, none has been checked for stock, lifecycle or fit. The concerns
+column records objections raised by the plan's critics. These come from
+search-engine summaries, which count as weak evidence, and from the tree.
 
 | ID | Category | Seeds | Concerns found |
 | --- | --- | --- | --- |
@@ -371,20 +368,19 @@ which count as weak evidence, and on the tree.
 ## Agent layout
 
 Every finding is checked by a critic that did not produce it and is told to
-refute it. Nothing reaches a page or the owner on one agent's word. P0 returns
+refute it. No finding reaches a page or the owner on the evidence of one agent alone. P0 returns
 reachability, not a finding, and has no critic. A critic of each P1 re-derives
 its markings and questions before they reach the owner, and one agent re-checks
-every question a critic added (owner, 2026-09-27). Each agent returns a
-fixed schema, so a critic compares like with like. An agent that returns
-nothing, because it failed or was skipped, has checked nothing: a missing
-verifier or critic never counts as one that did not refute. The script starts
-that role again from the task's free agents, and with none left the item goes
-to a follow-up task.
+every question a critic added (owner, 2026-09-27). Each agent returns its result in a
+fixed schema, so critics can compare the same fields. An agent that fails or is skipped and returns nothing provides no completed
+check. A missing verifier or critic never counts as a completed check
+without a refutation. The script restarts that role using a free agent from
+the task. If none remain, the item goes to a follow-up task.
 
-A task is one workflow run of at most 32 agents. The workflow script counts
-the agents a task plans before it starts and refuses a task over 32. It counts
-each agent it starts, the adjudicators and verifier pairs among them, and moves
-work that does not fit into a follow-up task, which it returns with its result.
+A task is one workflow run of at most 32 agents. Before a task starts, the workflow script counts its planned agents and
+rejects a task with more than 32. It counts every agent started, including
+adjudicators and verifier pairs. Work beyond that limit goes to a follow-up
+task, which the script includes in its result.
 
 A workflow script has no file or git access. The workflow returns each
 agent's result in its fixed schema. The session that launched the task writes
@@ -393,10 +389,10 @@ each result as one JSON (JavaScript Object Notation) file under
 commits them before the next task starts (owner, 2026-09-27). The session
 passes each task the commit of the branch of prerequisite 4 that it reads; P0
 checks out that commit read-only, and the session records it beside the
-returns. A later task reads what earlier tasks returned from those files only,
-and the owner's answers from the commit of the branch of prerequisite 4 that it
-records. P7
-writes the pages from them, and its critic checks each figure against them.
+returns. A later task reads earlier returns only from those files. It reads the
+owner's answers from its recorded commit of the branch of prerequisite 4.
+P7 writes the pages from these sources, and its critic checks every figure
+against them.
 
 ```text
 T1  P0 reachability (1)                                              28
@@ -422,8 +418,8 @@ T6  P7 write the pages (1) and a page critic (1)                      2
 
 After T1, T2 (group A) and T4 (group C) run in either order. T3 (group B, power)
 runs after both, because R5 sizes the rails from the parts T2 and T4 select.
-Within a task, the categories run side by side, and each category runs P2,
-P3, the re-rank and P4 in that order.
+Within a task, the categories run in parallel. Each category runs P2, P3,
+the re-rank and P4 in that order.
 
 | Phase | Agents | Does | Returns |
 | --- | --- | --- | --- |
@@ -440,22 +436,20 @@ P3, the re-rank and P4 in that order.
 
 Size. T1 28, T2 21, T4 26, T3 21, T5 4, T6 2: 102 agents in six tasks, the
 largest 28 (S8). T1 keeps 4 agents free, T2 and T3 keep 11, T4 keeps 6, T5
-keeps 28 and T6 keeps 30. The free agents take the adjudicators and the
-verifier pairs that refutations call for, and the restarts of agents that
-return nothing. A refutation costs 3 agents: 1 adjudicator and 2 verifiers for
+keeps 28 and T6 keeps 30. These free slots are used for the adjudicators and verifier pairs required
+by refutations, and to restart agents that return nothing. A refutation costs 3 agents: 1 adjudicator and 2 verifiers for
 the next-ranked part. With no restarts, T2 and T3 absorb 3 refutations each,
-and T4 absorbs 2. More go to a follow-up task. A host that P0 reached and that
-refuses an agent later in the task, as `www.analog.com` did after about 15
-requests on 2026-09-27, is recorded with the time and the client; the figure
-is recorded as not read, and the item goes to a follow-up task. A lifecycle
+and T4 absorbs 2. More go to a follow-up task. If a host that P0 reached later refuses an agent, the time and client are
+recorded, the figure is marked as not read, and the item goes to a follow-up
+task. This occurred at `www.analog.com` after about 15 requests on 2026-09-27. A lifecycle
 status is read at Digi-Key in that case ([Lifecycle check](#lifecycle-check)).
 
 Follow-up tasks. A gap P6 returns, a conflict P5 returns, the owner's choice on
 Q9 when it adds or changes a part, or a refutation a task cannot absorb,
 becomes a follow-up task of at most 32 agents. It runs P0, then for each
-category the phases of T2. For a gap that is a missing requirement value, P1,
-its critic and the P1 re-check run first and raise the question under Raised
-by P1, and P2 waits for the owner's answer. Follow-up tasks run in at most 2 rounds. After a
+category the phases of T2. If the gap is a missing requirement value, P1, its critic and the P1
+re-check run first and raise the question under Raised by P1. P2 waits for
+the owner's answer. Follow-up tasks run in at most 2 rounds. After a
 follow-up task that changes a part, P5 and its critic run again, then P6 and
 its critic. A gap left after the second round is written on the pages as not
 known and reported to the owner. Follow-up tasks add to the total of 102.
@@ -482,8 +476,8 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
    there, min(16, CPUs − 2), with `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`
    unset. The session's Dynamic workflow size setting is advisory; the tasks run at the
    sizes S8 approves (owner, 2026-09-27). Every agent runs on the session's
-   model at the session's effort (owner, 2026-09-27). The run records these
-   versions, the model, the effort and that number again.
+   model at the session's effort (owner, 2026-09-27). Each run records these versions, the model, the effort and the concurrency
+   limit again.
 2. **Network access from that server.** P0 checks every host. At minimum:
    `jlcpcb.com`, `www.lcsc.com`, `datasheets.raspberrypi.com` and
    `pip-assets.raspberrypi.com`, where it redirects, `www.raspberrypi.com`,
@@ -519,9 +513,8 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
    Product Information V4 with the owner's credentials, `DIGIKEY_CLIENT_ID`
    and `DIGIKEY_CLIENT_SECRET` in the environment ([Sourcing](Sourcing.md#digi-key)).
    P2 and P4 read stock, the manufacturer's lead time and the product status
-   there, and P2 uses its keyword search. The `tools/jlc_stock.py` that P7
-   writes reads stock there. Digi-Key's pages
-   sit behind a Cloudflare challenge: plain `curl` and curl_cffi get HTTP 403.
+   there, and P2 uses its keyword search. The `tools/jlc_stock.py` written by P7 also reads stock there. Digi-Key's
+   pages sit behind a Cloudflare challenge: plain `curl` and curl_cffi get HTTP 403.
    P0 checks the API, not a page.
 4. **The repository** checked out on the server at branch `research/round1`,
    so every agent reads the same specification. The branch starts from `main`
@@ -529,7 +522,9 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
    the workflow scripts of prerequisite 6 are merged, and before pull request
    #167 merges (owner, 2026-09-27): #167
    rewrites lines of `testbench/WIRING.md` and `docs/Safety.md` that the
-   specification cites by number. The branch is kept until P7 finishes. Its starting commit is recorded in the status line. The owner's answers arrive on that branch in stages. Each
+   specification cites by number. The branch is retained until P7 finishes, and its starting commit is
+   recorded in the status line. The owner's answers arrive on that branch
+   in stages. Each
    task reads the branch's commit at its start and records it with its
    returns. P1, R3, R4 and P5 read `hardware/docs/Monostable.md` and the pages
    it links at commit 23c82ca6ca976d956098cfafd25dbefa11584f5d, the head of
@@ -543,8 +538,8 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
    4 to 8A. Where the two differ, the owner's decisions on the branch hold
    ([the specification](IOBoard.md#conflicts-in-the-tree)). Pull request #167
    conflicts with `main` in `STATUS.md` and `hardware/STATUS.md`, and the
-   conflict is resolved by hand when it merges; the research reads it by
-   commit, so the conflict does not hold the run.
+   conflict is resolved by hand when it merges; the research reads a specific
+   commit, so the conflict does not block the run.
 5. **Access on the server.** Model access for the workflow's agents, read
    access to `github.com/subtilitas/rcbench` including branch
    `monostable-specification`, push access to the branch of prerequisite 4
@@ -553,16 +548,16 @@ known and reported to the owner. Follow-up tasks add to the total of 102.
    access (2026-09-27). The results branch starts from the same `main`
    commit as the branch of prerequisite 4. The session commits each task's
    returns to the results branch. Before T6 the session merges the branch of
-   prerequisite 4 into it, so P7 works on a page that carries every answer.
+   prerequisite 4 into it, so P7 works from pages containing every answer.
    P7 and its critic write the pages there, and the session commits them after
    T6. While the tasks run, nothing is pushed to `main`, and a pull request of
    the results is opened only when the owner asks for one.
-6. **The workflow scripts and their schemas**, in `~/rcbench-research/tools-research/`
-   (its `README.md`): `round1.js`, one run per
+6. **The workflow scripts and their schemas** are in
+   `~/rcbench-research/tools-research/`, documented in its `README.md`: `round1.js`, one run per
    task; the return schema of each role; the host table; `vendors.py`, the
    readings agents take; and `session.py`, which prepares a task, records its
-   returns and commits them. `session.py check` holds them to this page in CI
-   (continuous integration), with a dry run of every task on mock agents. They
+   returns and commits them. `session.py check` checks that they follow this page in CI (continuous
+   integration), with a dry run of every task using mock agents. They
    reach `main` through a pull request that the automated reviewers and the
    owner review, before T1 runs (owner, 2026-09-27).
 7. **The display's current draw** on the link cable at the voltage of F6, peak
@@ -581,10 +576,10 @@ Round 2 runs in two stages (owner, 2026-10-01):
 | 1 | every function of R1 to R3 and R5 to R11 that the rules below do not leave to stage 2: the ICs and the parts round 1's categories name, among them those under [Follow-ups](#follow-ups), which round 1 left without a part or whose requirement changed after round 1 | round 1's, as follow-up tasks: one P1 follow-up, P2-P4 follow-ups, a P5-P6 follow-up, then T6 writes the pages |
 | 2 | the passives, connectors and connector protection of row 2 of the [Scope](#scope) table, by part type: resistors and capacitors, inductors and crystals, connectors, connector protection | no P1 and one verifier; the connector makers of Sourcing rule 2 are asked before it; its plan is not on this page |
 
-The scripts in `~/rcbench-research/tools-research/` run stage 1. Stage 2 has no scripts: its
-categories, records and gates do not exist.
+The scripts in `~/rcbench-research/tools-research/` run stage 1. No scripts,
+categories, record formats or gates have been defined for stage 2.
 
-Where this section differs from a row under [Research categories](#research-categories) or [Agent layout](#agent-layout), this section and [the specification](IOBoard.md) hold. The category rows are the plan as round 1 read it. For example, the 9.9A pack current in R5 and R7 is about 49.7A in the specification's Pack path current row.
+Where this section differs from [Research categories](#research-categories) or [Agent layout](#agent-layout), this section and [the specification](IOBoard.md) take precedence. The category rows are the plan as round 1 read it. For example, the 9.9A pack current in R5 and R7 is about 49.7A in the specification's Pack path current row.
 
 ### Branches and records
 
@@ -612,7 +607,7 @@ Where this section differs from a row under [Research categories](#research-cate
 
 ### Follow-ups
 
-Functions whose requirement changed after round 1 or that round 1 left without a part, by category. The P2-P4 follow-ups also requalify every other function of their categories. Each row gives the requirement that changed after round 1, or the reason round 1 left the function without a part. Function names are those of `selection.json`. A function marked "new" is in no inventory of round 1, and the P1 follow-up adds it.
+Functions whose requirement changed after round 1 or that round 1 left without a part, by category. The P2-P4 follow-ups also requalify every other function of their categories. Each row states the requirement changed after round 1 or the reason round 1 left the function without a part. Function names match `selection.json`. The P1 follow-up adds functions marked "new", which are absent from all round 1 inventories.
 
 | Function | Category | Requirement or reason | Source |
 | --- | --- | --- | --- |
@@ -649,19 +644,20 @@ Functions whose requirement changed after round 1 or that round 1 left without a
 
 Stage 1 plans 83 agents in 7 runs, the largest 22.
 
-FU-2A and FU-2C run in either order. FU-2B1 and FU-2B2 run after both, for the reason T3 ran after T2 and T4: R5 sizes the rails from the parts of R1 to R4 and R9 to R13.
+FU-2A and FU-2C run in either order. FU-2B1 and FU-2B2 run after both because R5 sizes the rails from the parts selected in R1 to R4 and R9 to R13. This is the same dependency that required T3 to follow T2 and T4.
 
-R5 and R7 run together, because the pack path's about 49.7A sizes the source selection, the pack disconnect and the pack's protection. R6 and R8 run together, because the port switch, the converters' shutdown and the port monitors' alerts act on one servo path.
+R5 and R7 run together because the pack path's draw of about 49.7A determines the required ratings of the source selection, pack disconnect and pack protection. R6 and R8 run together, because the port switch, the converters' shutdown and the port monitors' alerts act on one servo path.
 
 A run of 3 categories or fewer keeps 16 free agents or more: 5 refutations at 3 agents each. Round 1's R3 has 19 functions.
 
 A conflict or gap that FU-2P56 returns goes to pass 2: a P2-P4 follow-up of its categories, then a P5-P6 follow-up, before T6.
 
-Each round 1 run from FU-A2 to T5 records in its `task.json` the Digi-Key calls left when `prepare` read the count (`run_info`, `digikey_calls_left`). The runs before FU-A2 and T6's two runs record no count. On 2026-09-29 the runs that used the day's cache lowered the count, from their own reading to that of the run recorded next, by 2 (FU-A4-stopped-1), 13 (FU-C2), 15 (FU-A4), 21 (FU-B3, four categories), 73 (FU-B1, four categories), 74 (FU-C1, five categories), 87 (FU-A3, three categories) and 195 (T3, four categories); each figure includes the next run's reading. T5's is not recorded. FU-A2, without the cache, lowered it by 255, and T2 made 367 calls (the scripts' `README.md` in `~/rcbench-research/tools-research/`). Round 2's figures are not measured. At round 1's figures, FU-2A, FU-2C, FU-2B1 and FU-2B2 take about 356 calls together: 87 as FU-A3, 74 as FU-C1, and 195 for R5 to R8 as T3. Of one UTC (Coordinated Universal Time) day's 1,000 calls, with no other use that day, each of the four starts with more than 600 left. FU-2P56's count is not measured, as T5's is not recorded. FU-2P1 reads no stock, and `prepare` reads no count for it; its P0 probes the Digi-Key API and its P1 agents may read Digi-Key, a count that is not measured. T6's two runs of `tools/jlc_stock.py --check 5` read Digi-Key for each row whose second source is Digi-Key; that count is not measured.
+Each round 1 run from FU-A2 to T5 records in its `task.json` the Digi-Key calls left when `prepare` read the count (`run_info`, `digikey_calls_left`). The runs before FU-A2 and T6's two runs record no count. On 2026-09-29 the runs that used the day's cache lowered the count, from their own reading to that of the run recorded next, by 2 (FU-A4-stopped-1), 13 (FU-C2), 15 (FU-A4), 21 (FU-B3, four categories), 73 (FU-B1, four categories), 74 (FU-C1, five categories), 87 (FU-A3, three categories) and 195 (T3, four categories); each figure includes the call that reads the count for the next run. T5's count is not recorded. FU-A2, without the cache, lowered it by 255, and T2 made 367 calls (the scripts' `README.md` in `~/rcbench-research/tools-research/`). Round 2's figures are not measured. Using round 1's figures, FU-2A, FU-2C, FU-2B1 and FU-2B2 are estimated to take about 356 calls together: 87 as FU-A3, 74 as FU-C1, and 195 for R5 to R8 as T3. Of one UTC (Coordinated Universal Time) day's 1,000 calls, with no other use that day, each of the four starts with more than 600 left. FU-2P56's count is not measured, as T5's is not recorded. FU-2P1 reads no stock, and `prepare` reads no count for it; its P0 probes the Digi-Key API and its P1 agents may read Digi-Key, a count that is not measured. T6's two runs of `tools/jlc_stock.py --check 5` read Digi-Key for each row whose second source is Digi-Key; that count is not measured.
 
 ### Pages of round 2
 
 T6 of round 2 writes the pages from:
+
 - the returns under `hardware/research/round1/` and `hardware/research/round2/`;
 - `hardware/research/round2/selection.json`;
 - the budget and combinations of round 2's last P5-P6 follow-up, as its critic upheld them;
@@ -671,16 +667,16 @@ P7 writes `hardware/docs/IOBoard.md`, `hardware/STATUS.md`, this page's status l
 
 The status line keeps round 1's table and adds a table of round 2's runs: each run, its date and the commit of `research/round2` it read.
 
-The critic checks as in round 1, each figure against a file under either directory.
+As in round 1, the critic checks each figure against a file in either directory.
 
-[Pins](Pins.md) and `hardware/docs/ioboard-pinmap-draft.json` are not outputs. A part that changes a pin's use is stated on its group page as not known in the pin map.
+[Pins](Pins.md) and `hardware/docs/ioboard-pinmap-draft.json` are not outputs. If a selected part changes a pin's use, its group page marks the resulting pin assignment as not known in the pin map.
 
 ## Questions for the owner
 
 Answered on 2026-09-24 and 2026-09-25: power, motor current, servo current,
 the sensor inputs, where the research runs, the checking rule and the size of
-a task, recorded under [Scope](#scope) with the decisions of 2026-09-27. A
-proposed answer is not an answer: the tasks read the Answer column only.
+a task, recorded under [Scope](#scope) with the decisions of 2026-09-27. The tasks use only the Answer column; a proposed answer does not authorize
+a decision.
 
 ### Sourcing
 
@@ -728,14 +724,14 @@ whole run.
 
 #### Raised by P1
 
-After T1, and after a follow-up task that raises a question, the session writes into this table each question P1's critic
-confirmed and each question a critic added that the P1 re-check confirmed,
-with IDs V1, V2 and so on, and the category each holds. It commits the page on
+After T1 and after any follow-up task that raises a question, the session
+adds the confirmed questions to this table: those confirmed by P1's critic,
+and those added by a critic and confirmed by the P1 re-check. Each receives
+an ID, V1, V2 and so on, and lists the category it blocks. It commits the page on
 the branch of prerequisite 4. The owner answers each with a value, or marks it
 "for research". P2 finds a value marked for research at its primary source and
-records it as found, not given. P4's datasheet verifier re-reads it. A
-question whose value only feeds a decision under
-[Decided on the research's output](#decided-on-the-researchs-output) holds
+records it as found, not given. P4's datasheet verifier re-reads it. A question whose value only informs a decision under
+[Decided on the research's output](#decided-on-the-researchs-output) blocks
 neither P2 nor the start of its task. The questions that name the INA238
 (V154 to V162, V179) apply to the INA228, the motor monitor the owner fixes
 in its place (2026-09-30). The questions that name 18650 cells (V137, V145,
@@ -1015,11 +1011,11 @@ V151) apply to the pouch cells of the SLS XTRON pack the owner names
 
 #### Decided on the research's output
 
-These stay open while the research runs. The research tasks report the
-alternatives with their figures, and P5 budgets both alternatives of Q4 and
-Q8. The owner decides each before T6 and writes the decision in the last
-column; `~/rcbench-research/tools-research/session.py prepare T6` refuses to start T6 while one is
-empty.
+These decisions remain open while the research runs. The tasks report the
+alternatives and their figures, and P5 budgets both alternatives for Q4 and
+Q8. The owner decides each before T6 and records the decision in the last
+column. `~/rcbench-research/tools-research/session.py prepare T6` refuses to
+start T6 while any decision is empty.
 
 | ID | To decide | Reported by | Decision (owner, date) |
 | --- | --- | --- | --- |

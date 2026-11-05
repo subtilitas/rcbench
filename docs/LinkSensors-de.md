@@ -2,18 +2,19 @@
 
 <sub>[English](LinkSensors.md) · **Deutsch**</sub>
 
-Diese Seite ist ein Abschnitt von [Der Link](Link-de.md), der die Verkabelung, das
-Frame-Format, die Page Map und die übrigen Pages enthält. I2C steht für
-Inter-Integrated Circuit.
+Diese Seite beschreibt die Konfigurations- und Messwert-Pages des
+INA3221. [Der Link](Link-de.md) behandelt Verkabelung, Frame-Format,
+Page Map und die übrigen Pages. I2C steht für Inter-Integrated Circuit.
 
-SENSE_MAP (0x35), SENSE_WIN_A (0x37) und SENSE_WIN_B (0x38) sind neu in 4.25,
-SENSE_LIMIT (0x36) in 4.27.
-SENSE_MAP richtet bis zu 4 Strommonitore TI INA3221 auf dem Sensorbus ein,
-den SENSE öffnet, an 0x40 bis 0x43: welche Bauteile bestückt sind, einen
-Shunt für jeden ihrer 12 Kanäle, was jeder Kanal misst, und den FAST-Kanal.
-Die beiden Fenster-Pages tragen das letzte 50-ms-Fenster jedes Kanals.
-SENSE_LIMIT hält eine Stromgrenze für jeden Kanal und markiert die Fenster
-darüber. `shared/outputs/sense_map.c` und `sense_limit.c` halten die Regeln;
+SENSE_MAP (0x35), SENSE_WIN_A (0x37) und SENSE_WIN_B (0x38) benötigen
+Protokoll 4.25 oder höher; SENSE_LIMIT (0x36) benötigt 4.27.
+SENSE_MAP konfiguriert bis zu 4 Strommonitore TI INA3221 an den
+Adressen 0x40 bis 0x43 auf dem von SENSE geöffneten Sensorbus. Die
+Map legt die bestückten Bauteile, den Shunt und die Messzuordnung
+jedes ihrer 12 Kanäle sowie den FAST-Kanal fest. Die beiden
+Fenster-Pages enthalten das letzte 50-ms-Fenster jedes Kanals.
+SENSE_LIMIT legt pro Kanal eine Stromgrenze fest und markiert
+Fenster, die sie überschreiten. `shared/outputs/sense_map.c` und `sense_limit.c` halten die Regeln;
 `test_sense_map` und `test_sense_limit` testen sie auf dem Host.
 
 Kanal c ist Kanal ch von Bauteil a für c = 3 a + ch - 1, also 0 bis 11:
@@ -31,11 +32,11 @@ Kanal 0 ist CH1 des Bauteils an 0x40, Kanal 11 ist CH3 des Bauteils an 0x43.
 | 30 | `FLAGS` | nur lesbar: Bit a Bauteil a online; Bit 4 + a Bauteil a hat mit einer anderen Identität geantwortet; Bit 8 die Map wurde geschrieben und wird gehalten (`IN_FORCE`); Bit 9 sie wurde nie geschrieben und ist das eine Bauteil von SENSE (`DERIVED`) |
 | 31 | reserviert | liest 0 |
 
-Die Register 0 bis 25 hält der IOmcu im Flash. Ein Schreiben liegt in ihnen:
-eines, das Register 26 erreicht, wird mit READ_ONLY abgewiesen. Die
-geschriebenen Register werden in die Map übernommen, und die ganze Map wird
-geprüft; eine abgewiesene Map lässt jedes Register, wie es war. Mit
-BAD_VALUE abgewiesen:
+Die Register 0 bis 25 werden im Flash des IOmcu gespeichert. Ein
+Schreibzugriff muss innerhalb dieses Bereichs bleiben; erreicht er
+Register 26, folgt READ_ONLY. Die vorgeschlagenen Werte werden in
+die Map eingefügt, danach wird die gesamte Map geprüft. Bei einer
+Ablehnung bleiben alle Register unverändert. BAD_VALUE folgt bei:
 
 - `ENABLE` über 15;
 - `FAST` nicht 0xFF und über 11, auf einem nicht bestückten Bauteil oder auf
@@ -51,13 +52,14 @@ BAD_VALUE abgewiesen:
   abweist: die Pins des Busses, solange die Map den Bus öffnet;
 - jede Änderung, solange die Bank einen Ausgang treibt.
 
-Ein nicht bestücktes Bauteil behält die für es geschriebenen Werte, nur auf
-ihren Bereich geprüft. Eine Änderung von `ENABLE`, `FAST` oder einem Shunt
-ist eine neue Konfiguration: Core 1 richtet den Bus neu ein, und jede Lesung
-und jedes Fenster der Konfiguration davor fällt weg. Eine Änderung nur von
-`WATCH` ist keine neue Konfiguration. Ein Schreiben der geltenden Map ändert
-nichts und wird in jedem Zustand der Bank angenommen, ebenso ein erstes
-Schreiben der abgeleiteten Map, wie sie liest.
+Werte für ein nicht bestücktes Bauteil bleiben erhalten und werden
+nur auf ihren Bereich geprüft. Eine Änderung von `ENABLE`, `FAST`
+oder einem Shunt erzeugt eine neue Konfiguration: Core 1 richtet den
+Bus neu ein und verwirft alle Messwerte und Fenster der vorherigen
+Konfiguration. Eine Änderung allein von `WATCH` löst das nicht aus.
+Das Schreiben der bereits gültigen Map ändert nichts und wird in
+jedem Zustand der Bank angenommen. Dasselbe gilt für das erste
+Schreiben der abgeleiteten Map mit ihren aktuell gelesenen Werten.
 
 ## SENSE und die Map
 
@@ -66,11 +68,11 @@ INA3221 von SENSE abgeleitet: `ENABLE` Bit a für das Bauteil an Register 8
 von SENSE, solange Bit 1 von ENABLE in SENSE gesetzt ist, der Shunt von SENSE
 auf jedem Kanal in Register 10 von SENSE, `FAST` CH1 dieses Bauteils,
 solange CH1 gelesen wird, und nichts beobachtet. Bit 9 von `FLAGS` sagt das.
-Eine Bench, deren Panel SENSE_MAP nie schreibt, läuft wie vor 4.25.
+Ein Prüfstand, dessen Panel SENSE_MAP nie schreibt, arbeitet wie vor 4.25.
 
-Das erste Schreiben setzt die Map in Kraft, und sie bleibt in Kraft: kein
-Schreiben macht sie wieder zur abgeleiteten Map. Von da an spiegeln Bit 1
-von ENABLE und die Register 8 bis 10 von SENSE die Map:
+Das erste Schreiben aktiviert die Map. Kein weiterer Schreibzugriff
+kann sie in den abgeleiteten Modus zurücksetzen. Danach spiegeln
+Bit 1 von ENABLE und die Register 8 bis 10 von SENSE die Map:
 
 | SENSE | Mit der Map in Kraft |
 | --- | --- |
@@ -97,9 +99,10 @@ Schreiben an SENSE oder SENSE_MAP.
 
 ## SENSE_WIN_A und SENSE_WIN_B
 
-Das letzte vollständige 50-ms-Fenster jedes Kanals: Kanäle 0 bis 5 auf
-SENSE_WIN_A, 6 bis 11 auf SENSE_WIN_B. Jedes Schreiben wird mit READ_ONLY
-abgewiesen. Nichts wird gehalten.
+Diese Pages enthalten das letzte vollständige 50-ms-Fenster jedes
+Kanals: Kanäle 0 bis 5 auf SENSE_WIN_A, 6 bis 11 auf SENSE_WIN_B.
+Alle Schreibzugriffe werden mit READ_ONLY abgelehnt. Die Pages
+werden nicht im Flash gespeichert.
 
 | Register | Name | Bedeutung |
 | ---: | --- | --- |
@@ -111,9 +114,10 @@ abgewiesen. Nichts wird gehalten.
 | 5 + 5 k | `MIN_MV` | niedrigste Busspannung in mV |
 | 6 + 5 k | `E_FLAGS` | Bit 0 Stromsamples, Bit 1 Spannungssamples, Bit 2 ein Stromsample am oberen Bereichsende, Bit 3 eines am unteren |
 
-Eintrag k von SENSE_WIN_B ist Kanal 6 + k. Ein Sample am Bereichsende bleibt
-aus den Werten heraus, wie auf SERVO_SENSE. Ein abgeschalteter Kanal oder
-einer eines Bauteils, das nicht online ist, liest durchweg 0.
+Eintrag k von SENSE_WIN_B entspricht Kanal 6 + k. Wie bei SERVO_SENSE
+gehen Samples am Bereichsende nicht in die berechneten Werte ein.
+Ein abgeschalteter Kanal oder ein Kanal eines nicht erreichbaren
+Bauteils liefert durchgehend 0.
 
 Die Raten, je 1-ms-Tick bei 400kHz: `FAST` jede 1ms; jeder andere Kanal
 mit einem Shunt reihum, einer je Tick, 1000 / n Hz bei n davon (500Hz je
@@ -126,12 +130,12 @@ Bauteil wird je Tick abgefragt.
 
 ## SENSE_LIMIT
 
-Eine Stromgrenze für jeden Kanal, und die Kanäle, deren Fenster sie
-überschritten hat. Der IOmcu markiert eine überschrittene Grenze und handelt
-selbst nicht. Das Panel liest die Markierung alle 200ms und behandelt sie als
-Fehler: der Prüfstand schaltet auf SAFE und der Ausgang des Netzteils aus;
-hält ein Programmierport ihn, geht er ab Link 4.31 nach einem laufenden
-Schreiben in den Speicher des Servos aus
+Diese Page enthält eine Stromgrenze je Kanal und markiert Kanäle,
+deren Fenster sie überschreiten. Der IOmcu setzt nur die Markierung.
+Das Panel liest sie alle 200ms und behandelt sie als Fehler: Der
+Prüfstand schaltet auf SAFE und den Netzteilausgang aus. Ab Link
+4.31 wartet die Abschaltung auf das Ende eines laufenden Schreibens
+in den Servospeicher, wenn ein Programmierport die Versorgung belegt
 ([Sicherheit, Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)).
 
 | Register | Name | Bedeutung |
@@ -141,10 +145,12 @@ Schreiben in den Speicher des Servos aus
 | 13 | `OVER_COUNT` | nur lesbar: Kanal-Fenster über der Grenze, modulo 65536, seit dem Start des IOmcu |
 | 14, 15 | reserviert | lesen 0 |
 
-Die Register 0 bis 11 hält der IOmcu im Flash. Ein Schreiben liegt in ihnen:
-eines, das Register 12 erreicht, wird mit READ_ONLY abgewiesen, ein Wert über
-32767 mit BAD_VALUE, und ein abgewiesenes Schreiben speichert keines seiner
-Register. Ein Schreiben wird in jedem Zustand der Bank angenommen.
+Die Register 0 bis 11 werden im Flash des IOmcu gespeichert. Ein
+Schreibzugriff muss in diesem Bereich bleiben. Erreicht er Register
+12, folgt READ_ONLY; ein Wert über 32767 führt zu BAD_VALUE. Bei
+einer Ablehnung wird keines der Register des Schreibzugriffs
+gespeichert. Gültige Zugriffe werden in jedem Zustand der Bank
+angenommen.
 
 Core 1 prüft das 50-ms-Fenster jedes Kanals einmal, wenn das Fenster
 schließt. Ein Fenster liegt über der Grenze, wenn sein höchster Strom, in mA
@@ -161,28 +167,29 @@ er den Snapshot von Core 1 übernimmt, so dass kein Fenster verloren geht,
 gleich wie lange Core 0 braucht. Eine geschriebene Grenze gilt ab dem
 nächsten Fenster, das schließt.
 
-`OVER` hält seine Bits, bis ein Lesen Register 12 abdeckt: dieses Lesen gibt
-sie zurück und löscht sie. Eine auf dem Link verlorene Antwort verliert diese
-Bits; `OVER_COUNT` zählt sie trotzdem. Eine neue Konfiguration lässt `OVER`
-und `OVER_COUNT` stehen. Die Konsolenzeile liest beide, ohne zu löschen.
+`OVER` behält seine Bits, bis ein Lesezugriff Register 12 einschließt.
+Dieser Zugriff liefert die Bits zurück und löscht sie. Geht die
+Antwort auf dem Link verloren, fehlen dem Leser diese Bits;
+`OVER_COUNT` zählt sie trotzdem. Eine neue Konfiguration erhält
+`OVER` und `OVER_COUNT`. Die Konsole liest beide, ohne sie zu löschen.
 
 ## Im Flash gehalten
 
-Der IOmcu hält die Register 0 bis 25 von SENSE_MAP, ob die Map in Kraft
-ist, und die Register 0 bis 11 von SENSE_LIMIT in seinem Speicher-Record,
-Version 8. Ein Record der Version 8 ist 308 Bytes groß und
-füllt einen Slot aus zwei Flash-Pages zu 256 Bytes: 8 Slots je Sektor zu
-4096 Bytes, 16 im Speicher. Ein Speichern programmiert beide Pages in einem
-Fenster. Ein in einer der beiden Pages abgebrochenes Programmieren liest als
-kein Record: die Zahl der 0-Bits des Records und seine CRC-16 decken beide
-Pages ab.
+Der Speicherdatensatz des IOmcu in Version 8 enthält die Register
+0 bis 25 von SENSE_MAP, das Flag für die aktivierte Map und die
+Register 0 bis 11 von SENSE_LIMIT. Ein Datensatz der Version 8
+belegt 308 Bytes in einem Slot aus zwei Flash-Pages zu 256 Bytes:
+8 Slots je Sektor zu 4096 Bytes, 16 im Speicher. Ein Speichervorgang
+programmiert beide Pages in einem Fenster. Ein Abbruch in einer der
+Pages hinterlässt keinen gültigen Datensatz: Die Zahl seiner 0-Bits
+und seine CRC-16 decken beide Pages ab.
 
-Beim Booten kommen die Grenzen durch die Prüfungen eines Schreibens an
-SENSE_LIMIT zurück; ein gehaltener Wert über 32767 lässt jede Grenze auf 0.
-Die Map kommt nach der Konfiguration von SENSE zurück, durch die
-Prüfungen des Schreibens, und nur, wenn die Konfiguration von SENSE
-angenommen wurde. Eine gehaltene Map, die dort abgewiesen wird, kommt nicht
-zurück, und die Map liest abgeleitet.
+Beim Booten durchlaufen die gespeicherten Grenzen dieselben Prüfungen
+wie ein Schreibzugriff auf SENSE_LIMIT. Ein Wert über 32767 lässt
+alle Grenzen auf 0. Die Map wird erst nach erfolgreicher
+SENSE-Konfiguration wiederhergestellt und ebenfalls mit den
+Schreibprüfungen geprüft. Wird die gespeicherte Map abgelehnt,
+bleibt sie im abgeleiteten Modus.
 
 Ein Speicher, den ein früherer Build geschrieben hat, hält Records der
 Versionen 3 bis 7 in Slots aus einer Page. Dieser Build liest den neuesten

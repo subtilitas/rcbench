@@ -6,20 +6,20 @@ order: 62
 
 # Sensoren
 
-SENSORS, die vierte Kategorie auf [SETUP](setup.md), stellt jedes Gerät ein, das der IOmcu liest: den Sensorbus, den INA228, bis zu vier TI INA3221, Dreikanal-Strommonitore auf 0x40 bis 0x43, den Winkelsensor AS5600 und den Phasenabgriff; dazu die Bluetooth-IMU (Inertial Measurement Unit) des Panels. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert.
+SENSORS auf [SETUP](setup.md) konfiguriert den Sensorbus des IOmcu, den INA228, bis zu vier Dreikanal-Strommonitore TI INA3221 an 0x40 bis 0x43, den AS5600-Winkelsensor und den Phasenabgriff. Hinzu kommt die Bluetooth-IMU (Inertial Measurement Unit) des Panels. Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
 
 ## Die linke Liste
 
 ![Zwei Bausteine bestückt, 0x40 online](view:setup-sensors)
 
-Links steht eine Liste mit 9 Einträgen, 220px breit: SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF, IMU. Ein Eintrag zeigt den Namen des Sensors und darunter, was der Sensor tut. Ein Tippen auf einen Eintrag zeigt rechts seine Zeilen, 754px breit.
+Die linke, 220px breite Liste hat 9 Einträge: SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF und IMU. Jeder zeigt Sensorname und Status. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen.
 
-- Ein Eintrag mit Einschaltzeile zeigt allein diese Zeile, solange er aus ist, und sein Zustand lautet `AUS`. EIN ergänzt die übrigen Zeilen darunter.
-- Ein Druck wählt beim Loslassen, innerhalb 8px vom Druck und auf dem Eintrag. Weiteres Rutschen wählt nichts und verschiebt nichts.
+- Ausgeschaltete Einträge zeigen nur die Einschaltzeile und den Status `AUS`. EIN blendet die übrigen Einstellungen ein.
+- Die Auswahl erfolgt beim Loslassen innerhalb des Eintrags und höchstens 8px vom Druckpunkt entfernt. Längeres Ziehen wählt und scrollt nichts.
 - Jeder Eintrag behält seine Scrollposition.
-- Ein Wechsel des Eintrags behält, was ungespeichert ist. SPEICHERN und die Warnung beim Verlassen arbeiten wie auf jeder Liste.
-- RESET nennt den Eintrag, `INA228 ZURÜCKSETZEN`, und setzt alle Zeilen dieses Eintrags auf ihre Vorgaben, auch die verborgenen. Ein Wischen, das auf der Taste landet, bewirkt nichts.
-- Der Drehknopf tut auf SETUP nichts.
+- Beim Eintragswechsel bleiben ungespeicherte Änderungen erhalten. SPEICHERN und die Warnung beim Verlassen funktionieren wie bei anderen Listen.
+- Die Rücksetztaste nennt den Eintrag, etwa `INA228 ZURÜCKSETZEN`, und setzt alle seine Werte einschließlich verborgener Zeilen auf die Vorgaben zurück. Ein Wischen, das auf ihr endet, hat keine Wirkung.
+- Der Drehknopf hat auf SETUP keine Wirkung.
 
 | Eintrag | Zustand im Betrieb |
 |---|---|
@@ -41,32 +41,32 @@ Der IOmcu liest einen TI INA228 im Strompfad des ESC und bis zu vier TI INA3221 
 | INA228-Shunt | 50 bis 20000uΩ | 200 | der Shunt, über dem er misst |
 | INA228-Höchststrom | 1,0 bis 300,0A, Schritte von 0,1A | 204,8 | der Strom, für den der Messbereich gesetzt ist |
 
-Shunt und Höchststrom gehören zusammen: Shunt in uΩ mal Höchststrom in A ist höchstens 163840, also 163,84mV über dem Shunt. Jede Zeile nennt, was zur anderen passt: `Bis 300.0A an 200uΩ (163.84mV)`. Jeder Shunt hat einen passenden Höchststrom: bis 546uΩ die vollen 300,0A, bei 1000uΩ 163,8A, bei 20000uΩ 8,1A. Bis 40,96mV misst das Bauteil in Schritten von 78,125nV, darüber in Schritten von 312,5nV.
+Shuntwiderstand in uΩ mal Höchststrom in A darf 163840 nicht überschreiten. Das entspricht 163,84mV über dem Shunt. Jede Zeile nennt die zur anderen Einstellung passende Grenze, etwa `Bis 300.0A an 200uΩ (163.84mV)`. Für jeden zulässigen Shunt gibt es einen gültigen Strombereich: bis 546uΩ die vollen 300,0A, bei 1000uΩ 163,8A, bei 20000uΩ 8,1A. Bis 40,96mV beträgt die Auflösung 78,125nV, darüber 312,5nV.
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Sensor-SDA | -1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | der GPIO (General-Purpose Input/Output) des IOmcu für SDA; -1 setzt keinen Bus |
 | Sensor-SCL | SDA + 1, oder -1 | 17 | folgt Sensor-SDA; die Zeile hat keine Tasten |
 
-- Der Bus läuft mit 400kHz; das ist keine Einstellung.
-- Das Tastenfeld lehnt einen Pin für Sensor-SDA ab, den der Bus nicht haben kann, und listet statt des Bereichs die Pins, die er nimmt: GPIO 5 getippt zeigt `Zulässige Bus-Pins: 0 4 6 14 16 18 20 26`.
-- Die Adresse bleibt an den Enden ihres Bereichs stehen: `-` bei 0x40 und `+` bei 0x4F ändern nichts.
-- Pins, an die nichts angeschlossen ist, gelten als nicht antwortende Monitore, nicht als blockierter Bus.
-- Der IOmcu übernimmt eine Änderung nur, solange der Prüfstand SAFE ist.
-- Ist der INA228 eingeschaltet und antwortet er, verliert die Kachel MOTOR & ESC ihre Marke SIMULIERT, und [MOTOR & ESC](motor.md#tabelle) zeigt seine Spannung und seinen Strom.
-- Misst ein Kanal eines INA3221 unter [Sensoren](setup-sensors.md) das Ziel des Servotesters, liest [SERVO](servo.md#das-messgerät-der-servoschiene) den Strom der Servoschiene von ihm.
-- Ein Messwert am oberen Ende des Bereichs wird als übersteuert gezeigt, nie als Wert: 163,8mV über dem Shunt des INA3221.
-- Ein Monitor, der aufhört zu antworten, schaltet den Prüfstand nicht auf SAFE: Auf die Messwerte der Monitore löst nichts aus.
+- Der Bus läuft fest mit 400kHz.
+- Bei einem unzulässigen Sensor-SDA-Pin zeigt das Tastenfeld die gültigen Pins statt des Bereichs. Die Eingabe GPIO 5 führt zu `Zulässige Bus-Pins: 0 4 6 14 16 18 20 26`.
+- Die Adresse stoppt an den Bereichsgrenzen: `-` bei 0x40 und `+` bei 0x4F haben keine Wirkung.
+- Unbeschaltete Pins führen zu nicht antwortenden Monitoren, nicht zur Meldung eines blockierten Busses.
+- Der IOmcu übernimmt Konfigurationsänderungen nur bei SAFE.
+- Ist der INA228 eingeschaltet und antwortet er, entfällt SIMULIERT auf der Kachel MOTOR & ESC. [MOTOR & ESC](motor.md#tabelle) zeigt dann seine Spannung und seinen Strom.
+- Überwacht ein INA3221-Kanal das Ziel des Servotesters, verwendet [SERVO](servo.md#das-messgerät-der-servoschiene) seinen Strommesswert für die Servoschiene.
+- Ein Messwert am oberen Bereichsende wird als übersteuert gekennzeichnet und nicht als gültiger Messwert behandelt: beim INA3221 sind dies 163,8mV über dem Shunt.
+- Eine ausbleibende Monitorantwort schaltet den Prüfstand nicht auf SAFE.
 
 ![GPIO 5 für Sensor-SDA abgelehnt](view:setup-sda-why)
 
-Ein Pin steht mit dem Wort voran, `GPIO 1`, im Eintrag des Tastenfelds, in der Zeile und in der Frage beim Verlassen von SETUP ohne Speichern. Der Kopf des Tastenfelds nennt den Bereich ebenso, `GPIO -1 bis 47`.
+Pins erscheinen mit dem Präfix GPIO, etwa `GPIO 1`: im Tastenfeld, in der Einstellungszeile und in der Warnung vor ungespeicherten SETUP-Werten. Auch der Bereich im Tastenfeld nutzt diese Form, etwa `GPIO -1 bis 47`.
 
 ![Das Tastenfeld von Sensor-SDA, GPIO 1 getippt](view:setup-sda-keypad)
 
-Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. Prüfe SENSORS.`, `INA228 und INA3221 nutzen beide 0x40. Prüfe SENSORS.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.`. Eine Meldung über die Einstellung (Pins nicht festgelegt, eine Adresse, ein abgelehnter Wert) verlässt das Band, sobald die Einstellung wieder stimmt und der IOmcu sie hält.
+Das Band zeigt jeweils eine Fehlermeldung, höchstens alle 5s. Beispiele sind `SDA oder SCL der Sensoren nicht festgelegt. Prüfe SENSORS.`, `INA228 und INA3221 nutzen beide 0x40. Prüfe SENSORS.`, `INA228 antwortet nicht unter 0x45.` und `INA3221 0x40 CH1 bei 1.64A übersteuert. Anzeige zeigt nur den Grenzwert.` Konfigurationsmeldungen zu fehlenden Pins, Adresskonflikten oder abgelehnten Werten verschwinden, sobald die korrigierte Einstellung im IOmcu aktiv ist.
 
-Der Zustand des Eintrags INA228 liest sich wie der eines Bausteins ([Was ein Baustein tut](#was-ein-baustein-tut)): `VOM IOMCU ABGELEHNT` auch für abgelehnte Pins und für einen IOmcu ohne die Page SENSE, und `ADRESSE WIE INA3221`, wenn ein bestückter Baustein seine Adresse hat, sodass keiner gelesen wird.
+Der INA228 verwendet die [Statusmeldungen der Bausteine](#was-ein-baustein-tut). `VOM IOMCU ABGELEHNT` gilt auch bei abgelehnten Pins oder fehlender SENSE-Page. `ADRESSE WIE INA3221` bedeutet, dass ein bestückter INA3221 dieselbe Adresse nutzt; dann wird keiner der beiden Sensoren ausgelesen.
 
 ## Die INA3221-Bausteine
 
@@ -74,24 +74,24 @@ Der Zustand des Eintrags INA228 liest sich wie der eines Bausteins ([Was ein Bau
 |---|---|---|---|
 | 0x40 bestückt bis 0x43 bestückt | EIN, AUS | AUS | ein INA3221 an dieser Adresse; das DAOKAI-Modul nimmt 0x40 mit A0 nach GND gebrückt |
 
-Ein bestückter Baustein zeigt drei Zeilen mehr für jeden seiner drei Kanäle. Ein nicht bestückter Baustein zeigt keine weiteren.
+Ein als bestückt aktivierter Baustein zeigt für jeden seiner drei Kanäle drei weitere Einstellungen. Bei nicht bestückten Bausteinen bleiben diese Zeilen verborgen.
 
-| Einstellung | Bereich | Vorgabe | Was sie tut |
+| Einstellung | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
-| 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, sonst KEINE | worin der Shunt des Kanals liegt: ein Ausgangskanal, ein Programmierport oder die Versorgungsschiene |
-| 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0mΩ, Schritte von 0,1mΩ | 100,0 | AUS: der Kanal wird nicht gelesen; 100mΩ misst bis 1,64A |
-| 0x40 CH1 Grenze | AUS, 10 bis 32767mA, Schritte von 10mA mit den Pfeilen | AUS | das Band sagt, wenn der höchste Strom eines 50-ms-Fensters sie überschreitet, und der Prüfstand schaltet auf SAFE mit dem Ausgang des Netzteils aus |
+| 0x40 CH1 misst | KEINE, AUSGANG 1 bis AUSGANG 8, PORT 1 bis 4, NETZTEIL | AUSGANG 1 für 0x40 CH1, sonst KEINE | Strompfad des Shunts: Ausgangskanal, Programmierport oder Versorgungsschiene. |
+| 0x40 CH1 Shunt | AUS, 5,0 bis 1000,0mΩ, Schritte von 0,1mΩ | 100,0 | AUS deaktiviert die Messung. Mit 100mΩ reicht der Messbereich bis 1,64A. |
+| 0x40 CH1 Grenze | AUS, 10 bis 32767mA, Pfeiltasten in Schritten von 10mA | AUS | Überschreitet der Spitzenstrom eines Fensters von 50ms die Grenze, meldet das Band dies. Der Prüfstand schaltet auf SAFE und den Netzteilausgang aus. |
 
-- `+` auf einem Shunt bei AUS gibt 5,0mΩ, `-` bei 5,0mΩ gibt AUS.
-- Ein Tippen auf den Wert eines Shunts öffnet das Tastenfeld: 44,4mΩ vom Standardwert 100,0 sind `4`, `4`, `.`, `4` und OK, wo `-` 556 Schritte braucht. 0 ist AUS; 0,1 bis 4,9 wird abgelehnt: Das Tastenfeld bleibt offen und zeigt bis zur nächsten Taste `0 oder 5.0 bis 1000.0mΩ` statt des Bereichs.
-- Der Kanal, der jede Millisekunde gelesen wird und dessen Strom der Bildschirm [SERVO](servo.md#das-messgerät-der-servoschiene) und der Servotest nutzen, ist der niedrigste Kanal mit Shunt an einem bestückten Baustein, der das Ziel des Servotesters misst: einen Ausgang, solange das Ziel OUTPUTS ist, PORT n, solange es Programmierport n ist.
-- Das Panel schreibt die Einstellung 500ms nach der letzten Änderung, nur bei einem Prüfstand in SAFE. Die Grenzen gehen 500ms nach ihrer letzten Änderung in jedem Zustand an einen IOmcu mit 0.22.0 oder neuer.
+- `+` schaltet den Shunt von AUS auf 5,0mΩ; `-` bei 5,0mΩ zurück auf AUS.
+- Tippe auf den Shuntwert, um das Tastenfeld zu öffnen. Für 44,4mΩ statt der Vorgabe 100,0mΩ gib `4`, `4`, `.`, `4` und OK ein. Mit `-` wären 556 Schritte nötig. 0 bedeutet AUS. Werte von 0,1 bis 4,9 werden abgelehnt; das Tastenfeld bleibt mit `0 oder 5.0 bis 1000.0mΩ` bis zur nächsten Eingabe offen.
+- [SERVO](servo.md#das-messgerät-der-servoschiene) und der Servotest verwenden den jede Millisekunde gemessenen Kanal. Gewählt wird der niedrigste Kanal mit eingeschaltetem Shunt auf einem bestückten Baustein, der das Testerziel überwacht: ein Ausgang bei OUTPUTS oder PORT n bei Programmierport n.
+- Konfigurationsänderungen werden 500ms nach der letzten Eingabe nur bei SAFE an den IOmcu gesendet. Grenzen werden 500ms nach ihrer letzten Änderung in jedem Zustand an IOmcu 0.22.0 oder neuer gesendet.
 
 ## Auf dem rbmod-Carrier
 
 ![SENSORS auf dem Carrier, 0x40 verlötet](view:setup-sensors-rbmod)
 
-Der [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) lötet Sensor SDA und SCL auf GPIO 16 und GPIO 17, Tap-Pin auf GPIO 22 und einen INA3221 auf 0x40. Diese Zeilen stehen ohne Tasten und öffnen kein Tastenfeld, die für die Pins gespeicherten Werte bleiben und gelten wieder an einem von Hand verdrahteten Modul, und sie sagen `Auf Platine verlötet. Hier nicht änderbar.`:
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) sind Sensor-SDA und Sensor-SCL mit GPIO 16 und GPIO 17, der Abgriff-Pin mit GPIO 22 fest verlötet. Ein INA3221 ist unter 0x40 bestückt. Diese Zeilen haben weder Tasten noch Tastenfeld und zeigen `Auf Platine verlötet. Hier nicht änderbar.` Gespeicherte Pin-Einstellungen bleiben erhalten und gelten wieder auf einem von Hand verdrahteten Modul:
 
 | Zeile | Zeigt | Shunt zwischen |
 |---|---|---|
@@ -100,24 +100,24 @@ Der [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) löte
 | 0x40 CH2 misst | SCHIENE A | dem PD mini und Servoschiene A: PWM01, PWM04 |
 | 0x40 CH3 misst | PROG PORTS 5V | den 5V von GPIO 21 und den Programmierports |
 
-- Die Shunts und die Grenzen bleiben Einstellungen, mit den Bereichen oben.
-- 0x41 bis 0x43 sind frei für Bausteine am Stecker J5 des Sensorbusses.
-- Der Kanal, der jede Millisekunde gelesen wird, ist die Schiene des niedrigsten GPIO, den der Servotester als SERVO PWM treibt: CH2 für PWM01 (GPIO 2) oder PWM04 (GPIO 1), CH1 für PWM02 (GPIO 4) oder PWM03 (GPIO 5). Mit einem Programmierport als Ziel ist es CH3.
-- SERVO nennt das Messgerät nach seiner Schiene, `INA SCHIENE A`; eine Grenzmeldung lautet `INA3221 0x40 CH2 (SCHIENE A) über der Grenze von 0.80A.`.
+- Shunts und Grenzen bleiben mit den oben genannten Bereichen einstellbar.
+- 0x41 bis 0x43 sind für Bausteine am Sensorbus-Stecker J5 frei.
+- Jede Millisekunde wird die Schiene des niedrigsten als SERVO PWM angesteuerten GPIO gemessen: CH2 für PWM01 (GPIO 2) oder PWM04 (GPIO 1), CH1 für PWM02 (GPIO 4) oder PWM03 (GPIO 5). Bei einem Programmierport als Ziel wird CH3 gemessen.
+- SERVO benennt das Messgerät nach der Schiene, etwa `INA SCHIENE A`. Eine Grenzmeldung lautet `INA3221 0x40 CH2 (SCHIENE A) über der Grenze von 0.80A.`.
 
 ## Grenzen
 
 ![Eine Grenze bei einem IOmcu älter als 0.22.0](view:setup-sensors-limit)
 
-Solange eine Grenze gesetzt ist, prüft der IOmcu jedes 50-ms-Fenster eines Kanals, und das Panel liest alle 200ms, welche Kanäle sie überschritten haben. Das Band sagt, höchstens einmal alle 5s und einmal alle 30s für einen Kanal, der sie weiter überschreitet. Kanäle, die gleichzeitig darüber liegen, kommen reihum dran: sind alle 12 darüber, wird jeder innerhalb von 60s gesagt.
+Bei gesetzter Grenze wertet der IOmcu jedes Messfenster von 50ms des Kanals aus. Das Panel liest Überschreitungen alle 200ms. Im Band erscheint höchstens alle 5s eine Meldung; eine anhaltende Überschreitung desselben Kanals wird alle 30s wiederholt. Gleichzeitige Überschreitungen werden reihum gemeldet. Sind alle 12 Kanäle betroffen, wird jeder innerhalb von 60s genannt.
 
 | Band | Bedeutung |
 |---|---|
-| `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80A.` | ein Fenster hat die Grenze des Kanals überschritten; in Klammern, was der Kanal misst; die Grenze, an der das Fenster geprüft wurde |
-| `Ein INA3221-Kanal überschritt seine Grenze. Die Kanalnummer ging bei der Übertragung verloren.` | die Antwort, die den Kanal nannte, ging verloren; gesagt nach dem nächsten Link-Aufbau, nicht nach einem Neustart des IOmcu |
-| `INA3221-Grenzen abgelehnt. Prüfe SENSORS.` | der IOmcu hat die Grenzen abgelehnt und behält seine, oder er hat die Page abgelehnt |
+| `INA3221 0x41 CH2 (PORT 1) über der Grenze von 0.80A.` | Ein Messfenster überschritt die Kanalgrenze. In Klammern steht der überwachte Strompfad, danach die bei der Prüfung geltende Grenze. |
+| `Ein INA3221-Kanal überschritt seine Grenze. Die Kanalnummer ging bei der Übertragung verloren.` | Die Antwort mit der Kanalnummer ging verloren. Die Meldung folgt beim nächsten Verbindungsaufbau, nicht nach einem IOmcu-Neustart. |
+| `INA3221-Grenzen abgelehnt. Prüfe SENSORS.` | Der IOmcu hat die Grenzen abgelehnt und behält seine Werte, oder er hat die Page abgelehnt. |
 
-Eine Zeile GRENZE, die der IOmcu nicht hält, steht in der Warnfarbe: solange ihr Schreiben wartet, nach einer Ablehnung und bei einem IOmcu älter als 0.22.0 (Protokoll 4.27), der keine Grenze prüft (`IOmcu vor 0.22.0: keine Grenze geprüft.`).
+Eine noch nicht vom IOmcu angewendete Grenze erscheint in der Warnfarbe: bei ausstehendem Schreibvorgang, nach Ablehnung oder mit IOmcu-Versionen vor 0.22.0 (Protokoll 4.27). Diese prüfen keine Grenzen und zeigen `IOmcu vor 0.22.0: keine Grenze geprüft.`.
 
 ![Das Tastenfeld von 0x40 CH1 Shunt, 44,4 getippt](view:setup-sensors-keypad)
 
@@ -125,7 +125,7 @@ Eine Zeile GRENZE, die der IOmcu nicht hält, steht in der Warnfarbe: solange ih
 
 ## Was ein Baustein tut
 
-Der Eintrag eines Bausteins sagt unter seinem Namen, was er tut:
+Unter dem Bausteinnamen steht sein Status:
 
 | Zustand | Bedeutung |
 |---|---|
@@ -143,38 +143,38 @@ Der Eintrag eines Bausteins sagt unter seinem Namen, was er tut:
 
 ![Ein IOmcu älter als 0.22.0](view:setup-sensors-old)
 
-Die Zeilen eines Bausteins, den der IOmcu nicht liest, stehen in der Warnfarbe, mit dem Grund statt der Hilfezeile. Ein IOmcu älter als 0.22.0 (Protokoll 4.25) liest einen INA3221: den Baustein des Kanals, der das Ziel des Servotesters misst, sonst den niedrigsten bestückten.
+Nicht vom IOmcu ausgelesene Bausteine erscheinen mit ihren Zeilen in der Warnfarbe; die Hilfezeile nennt den Grund. Ein IOmcu vor 0.22.0 (Protokoll 4.25) liest nur einen INA3221: den Baustein, der das Servotesterziel überwacht, sonst den niedrigsten bestückten.
 
-Ein Panel, das von 0.21 aktualisiert wurde, nimmt seine erste Einstellung von dem einen INA3221, den es hatte: der Baustein an der alten Adresse bestückt, sein CH1 auf dem alten Shunt und misst AUSGANG 1, oder PORT 1, wenn das Ziel des Servotesters der Programmierport war; jede Grenze AUS. Das nächste SPEICHERN behält sie.
+Beim Update von 0.21 werden die bisherigen INA3221-Einstellungen übernommen: Die alte Adresse gilt als bestückt, CH1 erhält den bisherigen Shunt und überwacht AUSGANG 1 oder PORT 1, falls der Servotester den Programmierport als Ziel hatte. Alle Grenzen beginnen bei AUS. Das nächste SPEICHERN sichert diese Werte.
 
 ## Eine Zeile, die der IOmcu nicht hält
 
 ![Zeilen, die der IOmcu nicht übernommen hat](view:setup-unheld)
 
-Eine Zeile, deren Wert nicht der ist, den der IOmcu hält, hat Rand und Wert in der Warnfarbe, und ihre Hilfezeile lautet `Vom IOmcu nicht übernommen.`. Die Markierung steht:
+Weicht ein Einstellwert vom aktiven IOmcu-Wert ab, erscheinen Rand und Wert in der Warnfarbe. Die Hilfezeile lautet `Vom IOmcu nicht übernommen.` Das gilt:
 
-- nach einer Änderung, bis das Schreiben übernommen ist: 500ms nach der letzten Änderung, für die Strommonitore erst, wenn der Prüfstand SAFE ist;
-- bei einem Wert, den der IOmcu abgelehnt hat, bis er auf einen geändert wird, den er annimmt;
-- bei einem eingeschalteten Teil, das der IOmcu aus hält: Sensor-SDA auf -1, der INA228 auf der Adresse eines bestückten INA3221 oder ein IOmcu, der für das Teil zu alt ist.
+- nach einer Änderung bis zur Übernahme: 500ms nach der letzten Eingabe, bei Strommonitoren erst bei SAFE;
+- nach einer Ablehnung bis zur Änderung auf einen zulässigen Wert;
+- bei einem aktivierten Baustein, den der IOmcu ausgeschaltet hält, etwa wegen Sensor-SDA -1, eines INA228-Adresskonflikts mit einem bestückten INA3221 oder einer zu alten IOmcu-Version.
 
 Solange kein IOmcu antwortet, ist keine Zeile markiert. AS5600-Mitte ist ein eigener Wert des Panels und wird nie markiert.
 
-Die Markierung auf Sensor SDA, auf AS5600 und auf den Zeilen des Phasenabgriffs stellt auch den Zustand des Eintrags auf `VOM IOMCU ABGELEHNT`.
+Bei Sensor-SDA, AS5600 und den Phasenabgriff-Einstellungen setzt diese Markierung auch den Eintragsstatus auf `VOM IOMCU ABGELEHNT`.
 
 ## Der Winkelsensor
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | AS5600 | EIN, AUS | AUS | ein magnetischer Winkelsensor AS5600 an der Abtriebswelle des Servos, auf seiner festen Adresse 0x36 am Sensorbus |
-| AS5600-Mitte | 0 bis 4095 | 0 | der Zählwert mit dem Servo in Neutral; 4096 Zählwerte je Umdrehung, 0,0879deg je Zählwert |
+| AS5600-Mitte | 0 bis 4095 | 0 | der Zählwert mit dem Servo in Neutral; 4096 Zählwerte je Umdrehung, 0,0879° je Zählwert |
 
-Der Winkelsensor braucht einen IOmcu mit 0.15.0 oder neuer. SENSOR-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) setzt die Mitte aus dem aktuellen Messwert. Das Band meldet, wenn der Sensor keinen Magneten sieht, `AS5600 erkennt keinen Magneten. Prüfe den Magneten an der Servoabtriebswelle.`, oder wenn der Magnet zu schwach oder zu stark ist. Eine Magnetmeldung kommt einmal, solange der Magnetstatus des Sensors gleich bleibt: eine Änderung einer anderen Zeile wiederholt sie nicht. Nach dem Aus- und Wiedereinschalten des Sensors kommt sie wieder.
+Der AS5600 benötigt IOmcu 0.15.0 oder neuer. SENSOR-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) übernimmt den aktuellen Messwert als Mitte. Bei fehlendem Magneten zeigt das Band `AS5600 erkennt keinen Magneten. Prüfe den Magneten an der Servoabtriebswelle.` Auch ein zu schwacher oder zu starker Magnet wird gemeldet. Jede Meldung erscheint einmal, solange der Magnetstatus unverändert bleibt. Eine andere Einstellung löst keine Wiederholung aus; Aus- und Einschalten des Sensors schon.
 
 ## Der Phasenabgriff
 
 ![Die Zeilen des Phasenabgriffs](view:setup-tap)
 
-Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO des IOmcu liest die Phase über einen Vorwiderstand und eine Zener-Klemme. Der Abgriff ist ein Eingang: Er treibt nichts, und der IOmcu übernimmt eine Änderung bei ARMED wie bei SAFE.
+Der Phasenabgriff erkennt ESC-Pieptöne an einer Motorphase. Ein IOmcu-GPIO liest die Phase über Vorwiderstand und Zener-Klemme. Als Eingang steuert er keinen Ausgang. Änderungen übernimmt der IOmcu sowohl bei SAFE als auch bei ARMED.
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -186,15 +186,15 @@ Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO de
 | Abgriff-Pause | 1 bis 100ms | 3 | die Stille, die einen Piepton beendet |
 | Min. Perioden | 1 bis 64 | 3 | die Tonperioden, die einen Piepton ergeben |
 
-Der IOmcu lehnt einen ADC-Pin (Analog-Digital-Umsetzer), einen an einen Ausgang gebundenen Pin und einen Pin ab, den der Sensorbus oder der PD mini hält. Abgriff-Pause muss mindestens eine Periode von Tiefster Ton lang sein: 3ms bei den voreingestellten 400Hz, deren Periode 2,5ms ist. Die Meldung eines abgelehnten Werts verlässt das Band, sobald der Wert auf einen zurückgestellt ist, den der IOmcu nimmt. Die Laufseite von [ESC STICK](motor-stick.md) zeigt die Pieptöne.
+Der IOmcu lehnt ADC-Pins (Analog-Digital-Umsetzer), zugeordnete Ausgangspins sowie vom Sensorbus oder PD mini belegte Pins ab. Abgriff-Pause muss mindestens eine Periode von Tiefster Ton abdecken. Bei der Vorgabe 400Hz dauert sie 2,5ms, daher sind 3ms nötig. Die Meldung zu einem abgelehnten Wert verschwindet nach Übernahme eines gültigen Werts. Die Laufseite von [ESC STICK](motor-stick.md) zeigt die erkannten Pieptöne.
 
-Vibration und Optischer Tacho haben gespeicherte Schlüssel und keinen Eintrag: kein Bildschirm und kein IOmcu liest sie in diesem Release.
+Vibration und Optischer Tacho besitzen gespeicherte Schlüssel, aber keinen Eintrag. In diesem Release verwendet weder eine Seite noch der IOmcu diese Werte.
 
 ## Die IMU
 
 ![SENSORS auf dem IMU-Eintrag, verbunden](view:setup-sensors-imu)
 
-Ein WitMotion-BWT901CL-Winkelsensor über ein HC-05-Bluetooth-Modul an UART1 des Panels. Die Kachel [IMU](imu.md) auf SETUP sucht ihn, bindet ihn und kalibriert ihn; dieser Eintrag hält seine Einstellungen.
+Der Winkelsensor WitMotion BWT901CL wird über ein HC-05-Bluetooth-Modul an UART1 des Panels verbunden. Suche, Zuordnung und Kalibrierung erfolgen über die Kachel [IMU](imu.md) in SETUP. Dieser Eintrag enthält seine Einstellungen.
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -205,7 +205,7 @@ Ein WitMotion-BWT901CL-Winkelsensor über ein HC-05-Bluetooth-Modul an UART1 des
 | IMU-Algorithmus | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS nimmt das Magnetometer für Z |
 | Winkelquelle | AS5600, IMU | AS5600 | woher die Servoläufe ihren Winkel nehmen ([Servo-Optionen](servo-settings.md)) |
 
-Eine Änderung von RATE oder ALGORITHMUS geht mit SAVE (`FF AA 00 00 00`) an den Sensor, solange er verbunden ist. Das Band sagt `RATE GESPEICHERT: SCHALTE DEN SENSOR AUS UND EIN`. Ist der Sensor nicht verbunden, sagt es `RATE WIRD BEIM VERBINDEN GESENDET. SCHALTE DEN SENSOR DANACH AUS UND EIN` und sendet sie, sobald Frames kommen. Während die Kalibrierung des IMU-Bildschirms läuft, sagt es `RATE WIRD NACH DER KALIBRIERUNG GESENDET. SCHALTE DEN SENSOR DANACH AUS UND EIN` und sendet sie nach CALSW 0 und SAVE der Kalibrierung.
+Änderungen an RATE und ALGORITHMUS werden mit dem SAVE-Befehl des Sensors (`FF AA 00 00 00`) gesendet. Bei verbundenem Sensor lautet die Ratenmeldung `RATE GESPEICHERT: SCHALTE DEN SENSOR AUS UND EIN`. Ohne Verbindung erscheint `RATE WIRD BEIM VERBINDEN GESENDET. SCHALTE DEN SENSOR DANACH AUS UND EIN`; das Panel wartet auf Frames. Während der Kalibrierung steht `RATE WIRD NACH DER KALIBRIERUNG GESENDET. SCHALTE DEN SENSOR DANACH AUS UND EIN`. Dann folgt die Änderung erst nach CALSW 0 und SAVE der Kalibrierung.
 
 | Zustand | Wann |
 |---|---|

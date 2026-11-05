@@ -1,8 +1,8 @@
 # pdmini
 
-A driver for the WeAct PD Power Mini V1 Buck, a USB-C PD (Power Delivery)
-trigger and buck module, on its UART (universal asynchronous
-receiver-transmitter).
+This driver controls the WeAct PD Power Mini V1 Buck over its UART
+(universal asynchronous receiver-transmitter). The device combines a
+USB-C PD (Power Delivery) trigger and a buck converter.
 
 The module has two parts.
 
@@ -15,11 +15,11 @@ The module has two parts.
 
 - Set points: 1000mV to 20000mV and 50mA to 3000mA.
 - A request is a command byte, its arguments and a CRC8 (cyclic redundancy
-  check, polynomial 0x31, initial 0xFF). The module answers a write with
-  nothing, so each write is confirmed by the matching read.
-- One transaction at a time: the pins are handed over 5ms before a request,
-  a reply has 400ms and 60ms more per byte, at most 600ms, and the pins
-  rest 10ms between transactions.
+  check, polynomial 0x31, initial 0xFF). The module sends no reply to a
+  write, so each write is confirmed by a corresponding read.
+- Only one transaction runs at a time. The pins are attached 5ms before a
+  request. The reply timeout is 400ms plus 60ms per byte, capped at 600ms.
+  The pins rest for 10ms between transactions.
 - Between transactions both pins are inputs with a pull-down. A transmit
   line idling high back-feeds an unpowered module.
 - The output is read every 100ms, its state and the input every 500ms,
@@ -28,8 +28,9 @@ The module has two parts.
   as each transaction takes its reply time. At rest the input is read
   850ms apart at 100ms late, 1.3s apart at 200ms and 2.5s apart at
   390ms; the state up to 1.5s apart (host model).
-- A reading 400ms past its due goes before the next set-point write, one at
-  a time with another transaction between two. The state read, and the
+- A reading overdue by 400ms takes priority over the next set-point
+  write. These priority reads run one at a time, with another transaction
+  between them. The state read, and the
   input read before a write, may also follow another reading straight away.
   With a module that answers at once, set points changed every 50ms delay
   a display read to about 500ms and a state read to about 900ms after the
@@ -53,16 +54,16 @@ The module has two parts.
 - Current limitation: with replies 279ms or more late and a set point
   changed every 50ms, the display is read 3.7s to 5.0s after the last
   display read (5.0s at 390ms). From 263ms late the gap is over 2.9s.
-  A user that switches the output off after 3s without a reading, as the
-  rcbench panel does, switches it off then; the panel reads the page every
-  100ms, which adds up to 100ms to the gap it sees. At rest the display
-  read stands up to 2.5s at 390ms (1.8s at 280ms).
-- 3 failed state reads in a row take the module for gone.
-- WHO_AM_I goes again 1000ms after the last one while nothing answers;
-  with `pdmini_hurry()` on, as soon as the last one has failed, 415ms a
-  try.
-- A voltage set point is capped 700mV under the input the module reports,
-  rounded down to 10mV, and is never under 1000mV.
+  A caller that switches the output off after 3s without a reading, as
+  the rcbench panel does, reaches that timeout. The panel reads the page
+  every 100ms, which adds up to 100ms to the observed gap. At rest, the
+  gap between display reads reaches 2.5s at 390ms (1.8s at 280ms).
+- 3 consecutive failed state reads mark the module as disconnected.
+- While the module does not answer, WHO_AM_I is retried 1000ms after
+  the previous request. With `pdmini_hurry()` enabled, each retry starts
+  as soon as the previous attempt fails: one attempt every 415ms.
+- The voltage set point is capped 700mV below the reported input voltage
+  and rounded down to 10mV. It never falls below 1000mV.
 - A live output whose input reads under the set point plus 500mV on 2 reads
   in a row is switched off and held off. The rule is chosen without a bench
   measurement. From the sag to the cut takes about 1.0s with a module that
@@ -73,8 +74,9 @@ The module has two parts.
   (2 x 33mΩ) drops 200mV. The drop on a real source and cable is not
   measured. A dip of 200mV or more from the reading the cap was taken from
   cuts a set point at the cap.
-- An ON asked while the input reads under 1500mV is not written: there is
-  no room for the lowest set point. The output is held off as for a sag.
+- An ON request is not sent while the input reads below 1500mV: even the
+  lowest set point lacks the required headroom. The output stays off, as
+  it does after an input-voltage sag.
 - The core is non-blocking and keeps no time of its own. The caller passes
   milliseconds.
 - The pin driver takes 2 PIO (programmable input/output) state machines and

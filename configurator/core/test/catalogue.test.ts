@@ -722,7 +722,7 @@ test('text: exclamation marks, banned words, foreign characters and tags are rep
   reports(checkString('x', 'two\nlines', false), 'x', /U\+000A/);
   reports(checkString('x', 'tab\there', false), 'x', /U\+0009/);
   reports(checkString('x', 'CJK 中', false), 'x', /U\+4E2D/);
-  assert.deepEqual(checkString('x', '120 Ω, 200 µΩ, 2 × 2,2 kΩ, −1, SETUP → OUTPUTS, 0,5 V – „Text“', false), []);
+  assert.deepEqual(checkString('x', '120Ω, 200 µΩ, 2 × 2,2kΩ, −1, SETUP → OUTPUTS, 0,5V – „Text“', false), []);
 
   reports(checkString('x', ' leading', false), 'x', /white space/);
   reports(checkString('x', '<b>Bold</b> in a wire note.', false), 'x', /tag <b>/);

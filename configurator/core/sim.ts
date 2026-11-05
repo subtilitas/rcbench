@@ -77,12 +77,12 @@ export function sig(lang: Lang, value: number): string {
 }
 
 /** "16.8V", "21.0V". */
-export const voltsText = (lang: Lang, volts: number): string => `${comma(lang, volts.toFixed(1))} V`;
+export const voltsText = (lang: Lang, volts: number): string => `${comma(lang, volts.toFixed(1))}V`;
 /** "470Ω", "1.2kΩ". */
 export const ohmsText = (lang: Lang, ohms: number): string =>
-  (ohms < 1000 ? `${ohms} Ω` : `${comma(lang, String(ohms / 1000))} kΩ`);
+  (ohms < 1000 ? `${ohms}Ω` : `${comma(lang, String(ohms / 1000))}kΩ`);
 /** "0.25W", "2W". */
-export const wattsText = (lang: Lang, watts: number): string => `${comma(lang, String(watts))} W`;
+export const wattsText = (lang: Lang, watts: number): string => `${comma(lang, String(watts))}W`;
 
 const both = (f: (lang: Lang) => string): Text => ({ en: f('en'), de: f('de') });
 

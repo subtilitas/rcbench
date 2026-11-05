@@ -59,7 +59,7 @@ test('a line breaks after a space or a break character, and inside a word only w
 
 test('a line never exceeds its width and keeps every character, with bold runs', () => {
   const f = fonts();
-  const runs = [{ text: 'Supply of the ESC from ' }, { text: 'two sources only:', bold: true }, { text: ' A, its own battery, or B, 1 to 20 V, 3 A.' }];
+  const runs = [{ text: 'Supply of the ESC from ' }, { text: 'two sources only:', bold: true }, { text: ' A, its own battery, or B, 1 to 20V, 3A.' }];
   for (const max of [40, 80, 160, 320, 510]) {
     const lines = wrap(f, runs, 9.5, max);
     for (const line of lines) assert.ok(line.width <= max + 1e-9, `${max}: ${line.width}`);

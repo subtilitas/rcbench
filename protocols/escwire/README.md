@@ -1,13 +1,15 @@
 # escwire
 
-Reading and writing the settings of an ESC (electronic speed controller) over
-its signal wire, for ESCs with BLHeli_S, Bluejay, AM32 and ESCape32 firmware.
-The core holds the transaction, the frames of the binary bootloader protocol
-(protocol A), the lines of the text interface, the guard every outgoing frame
-and line passes, identification, the field maps, the session and the settings
-file. A driver with 5 functions (`ew_driver_t`) connects the core to a pin;
-`rp2350/ew_line.c` is that driver on one RP2350 pin. The IOmcu's `ESC_WIRE` page
-calls it; MOTOR & ESC > PROGRAM's signal-wire row reaches it.
+This module reads and writes the settings of an ESC (electronic speed
+controller) over its signal wire. It supports BLHeli_S, Bluejay, AM32 and
+ESCape32 firmware. The core provides transactions, binary bootloader frames
+(protocol A), text commands, identification, field maps, sessions and settings
+files. A guard checks every outgoing frame and command.
+
+A driver with 5 functions (`ew_driver_t`) connects the core to a pin.
+`rp2350/ew_line.c` implements that driver on one RP2350 pin. The IOmcu's
+`ESC_WIRE` page calls it. The panel opens it through the SIGNAL WIRE row under
+MOTOR & ESC > PROGRAM.
 
 This module was written from a behavioural specification, without access to
 the firmware sources. The specification states what an ESC and a host exchange
@@ -88,8 +90,9 @@ follows says what they did. A read goes with a new address on every try.
   shown and not written, a backup included.
 - SimonK is not supported. Its frames are refused as unknown commands.
 
-Melody and tune areas, tags, markers and every byte no field names go back as
-they were read. A stored value that is none of a field's own reads `raw 17`.
+Writes preserve melody and tune areas, tags, markers and every byte that
+has no named field. A stored value outside a field's known values is shown
+as raw data, for example `raw 17`.
 
 ## Text interface
 
@@ -107,12 +110,13 @@ ESCape32 has no bootloader frames: a command line on the signal wire, 38400baud,
 A reply with no last line, a low stop bit, or a byte other than a printable
 character or LF is a failed try. These times are a host's choice.
 
-**Entry.** 3 silent tries of the first contact are followed by 2500ms with the
-line driven high (`EW_SES_TEXT_HOLD_MS`), then `info`. The first contact is a
-framing error to this ESC and resets it; it opens its command line after 2s with
-the line high. Any byte on any of the 3 tries sends no line:
-`EW_SES_ERR_CONTACT`. Worst case
-without an answer: the hold, 300ms, 2500ms and 600ms.
+**Entry.** After 3 unanswered first-contact attempts, the session drives the
+line high for 2500ms (`EW_SES_TEXT_HOLD_MS`) and sends `info`. ESCape32 treats
+the first contact as a framing error and resets. It opens its command line
+after 2s with the line high. If any byte arrives during any of the 3 attempts,
+the session sends no text command and returns `EW_SES_ERR_CONTACT`. With no
+answer, the worst-case duration is the initial hold plus 300ms, 2500ms and
+600ms.
 
 **The page.** `ew_map_e32` holds 46 numeric keys in the order of the wire's key
 numbers. The page in `orig`, `page` and a draft is 92B: each key a 16-bit integer,
@@ -161,10 +165,10 @@ false and `id.why` is `EW_WHY_SHOW_KEYS`, until a read that is whole. A revision
 other than 17, a revision above 255 or one that does not read as `rev<N>.<M>` is
 read-only (`EW_WHY_TEXT_REVISION`), and its `show` is taken on the first try.
 
-**Leaving.** The interface has no command to leave. `ew_session_leave()` sends
-nothing, parks the line at once and returns `EW_SES_OK`; the caller switches the
-supply off. It is refused while `save_open` stands. On an ESC on its own
-supply a person disconnects it.
+**Leaving.** The interface has no leave command. `ew_session_leave()` sends
+nothing, parks the line immediately and returns `EW_SES_OK`. The caller then
+switches the supply off. Leaving is refused while `save_open` is set. If the
+ESC uses a separate supply, the operator disconnects it.
 
 ## Use
 
@@ -189,22 +193,24 @@ ew_session_leave(&s);
 while (ew_session_step(&s) == EW_SES_BUSY) { }
 ```
 
-The hold before the first contact is 500 to 120000ms. 3000ms covers an ESC with
-the default melody, about 1.1s, and not one with a custom melody, which can
-last far longer.
+The hold before first contact is 500 to 120000ms. A 3000ms hold covers the
+default melody of about 1.1s. A custom melody can last much longer and may
+require a longer hold.
 
 ## The write
 
-1. The guard judges the draft (`ew_guard_approve()`): only editable fields
-   differ, and only to their values. Otherwise the call returns
-   `EW_SES_ERR_REFUSED` with the byte in `bad_off`. A draft equal to the page
-   read ends with no frame.
-2. A read and a compare with the page read. A difference ends with
-   `EW_SES_ERR_CHANGED`. On AM32 byte 2 is excepted, and the new one is taken.
-3. EFM8: address, erase, address, announce and data, program. AM32: address,
-   announce and data, program; the ESC erases its page itself.
-4. A read and a compare with the draft; on AM32 byte 2 is excepted, since the
-   bootloader sets it.
+1. The guard checks the draft (`ew_guard_approve()`). Only editable fields
+   may change, and each must contain an allowed value. Otherwise the call
+   returns `EW_SES_ERR_REFUSED`, with the offending byte in `bad_off`. If the
+   draft matches the original page, the operation sends no frame.
+2. The session reads the page again and compares it with the original. A
+   difference returns `EW_SES_ERR_CHANGED`. AM32 byte 2 is excluded from the
+   comparison, and its new value is retained.
+3. For EFM8, the sequence is address, erase, address, announce and data,
+   program. For AM32, it is address, announce and data, program; the ESC
+   erases its own page.
+4. The session reads back the page and compares it with the draft. AM32
+   byte 2 is excluded because the bootloader sets it.
 
 A step that fails, or a read-back that differs, runs the procedure again from
 step 3, 3 times at most.
@@ -252,9 +258,10 @@ link is lost. Power lost between an erase and a program leaves the page empty.
 
 ## The settings file
 
-`ew_file.h` writes a page as text (`ew_file.c`), reads a text back (`ew_file_read.c`) and holds it against an
-ESC (`ew_file_load.c`). It has no file access and no heap: the caller holds a buffer of
-`EW_FILE_MAX` (5280B), and `ew_file_t` takes 618B.
+`ew_file.h` formats a page as text (`ew_file.c`), parses it
+(`ew_file_read.c`) and checks it against an ESC (`ew_file_load.c`). The module
+has no file access or heap allocation. The caller supplies an `EW_FILE_MAX`
+buffer (5280B); `ew_file_t` occupies 618B.
 
 ```text
 ESC settings backup, format 1
@@ -273,10 +280,10 @@ bytes 192
 checksum 1A2B3C4D
 ```
 
-An EFM8's file has `Signature: E8B2` in place of the 5 lines from the pin code
-to the name. A page of an ESC no firmware was found for goes out as
-`Firmware: none`, `Layout: 0`, with its bytes and no field lines. A backup holds
-the page as read, whole, melody and tune included. Lines are ASCII (American
+An EFM8 file uses `Signature: E8B2` in place of the 5 lines from pin code
+to name. If the firmware cannot be identified, the file contains
+`Firmware: none`, `Layout: 0` and the raw bytes, with no field lines. A backup
+contains the complete page as read, including melody and tune data. Lines are ASCII (American
 Standard Code for Information Interchange), at most 64 characters. The checksum
 is CRC-32 (IEEE 802.3) over the lines before it, a line end counted as one LF
 (line feed), so a transfer that turns every LF into CR LF (carriage return, line
@@ -469,8 +476,10 @@ analyser ([The bench console](../../docs/BenchConsole.md#the-signal-wires-pin-dr
 
 ## Not measured
 
-No frame or line of this code has been sent to an ESC, and every time and value in
-this file comes from the specification or is a host's choice:
+No frame or text command from this code has been sent to an ESC. ESC timing
+and behaviour come from the specification; host timeouts and limits are
+implementation choices. The pin-driver measurements above use no ESC. The
+following still require measurement:
 
 - the receive tolerance of an ESC and its transmit bit time;
 - the time from power-on to bootloader entry; a first contact whose low bits

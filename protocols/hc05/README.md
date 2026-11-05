@@ -1,13 +1,15 @@
 # hc05
 
-The AT command set-up of an HC-05 Bluetooth module as an SPP (serial port
-profile) master. The core is a state machine fed the module's bytes and a
-millisecond clock. It tells its caller what to do next: drive the KEY pin,
-set the UART (universal asynchronous receiver-transmitter) to a baud, or
-send a command. It finds the module's baud, reads its firmware version,
-lists the devices in range with their names, and binds the module to one
-of them or sets it to connect to any slave. The module has no pin driver:
-the caller owns the UART and the KEY pin.
+This module configures an HC-05 Bluetooth module as an SPP (serial port
+profile) master using AT commands. The core is a state machine supplied
+with received bytes and a millisecond clock. It asks the caller to drive
+the KEY pin, set the UART (universal asynchronous receiver-transmitter)
+baud rate or send a command.
+
+The core detects the baud rate, reads the firmware version and lists
+nearby devices by name. It can bind the HC-05 to one device or configure
+it to connect to any slave. The module has no pin driver: the caller
+controls the UART and KEY pin.
 
 In this repository it sets up the HC-05 that connects the panel to a
 WitMotion BWT901CL angle sensor, whose radio is an HC-06 slave.
@@ -40,14 +42,15 @@ WitMotion BWT901CL angle sensor, whose radio is an HC-06 slave.
 
 Every operation starts with KEY high. The first byte goes out 100ms
 later (`HC05_KEY_SETTLE_MS`). KEY stays high until the operation ends:
-the HC-05 answers AT+INQ and AT+RNAME? only while it is high. After the
-end the next `hc05_step()` asks KEY low.
+the HC-05 answers AT+INQ and AT+RNAME? only while it is high. Once the operation ends,
+the next `hc05_step()` requests KEY low.
 
 The handshake sends `AT` and waits 1000ms (`HC05_AT_MS`) for OK at each
 baud: 115200, 38400, then 9600. PROBE starts at 115200. SCAN, BIND and
 ANY start at the baud the module last answered at, then try the other two
-in that order. No OK at any baud ends the operation `HC05_ERR_NO_AT`. An
-ERROR to `AT` sends `AT` once more at the same baud: bytes sent at a wrong
+in that order. If none of the baud rates returns OK, the operation ends with
+`HC05_ERR_NO_AT`. An ERROR response to `AT` causes one retry at the same
+baud rate: bytes sent at a wrong
 baud can stay in the module's line buffer and spoil the first command.
 
 | Operation | Commands after the handshake | Ends |
@@ -68,8 +71,8 @@ baud can stay in the module's line buffer and spoil the first command.
 | the restart after `AT+RESET`'s OK | nothing: KEY low | 1500ms (`HC05_RESET_MS`) |
 
 - SCAN: `AT+ROLE=1` makes the module the master first; a factory module
-  is a slave (`AT+ROLE=0`). An ERROR:(17) to `AT+INIT` (the SPP library is up already) is no
-  error. `AT+INQM=1,9,9` asks for RSSI (received signal strength
+  is a slave (`AT+ROLE=0`). An ERROR:(17) response to `AT+INIT` means that the SPP library is
+  already initialised and is accepted. `AT+INQM=1,9,9` asks for RSSI (received signal strength
   indication) mode, at most 9 devices and 9 units of 1.28s: 11.52s. The
   first report of each address is kept, up to 8. An inquiry that reports
   no device ends `HC05_ERR_NONE_FOUND`. A FAIL or ERROR to `AT+RNAME?`
@@ -151,7 +154,7 @@ the comma form, `hc05_addr_show()` the colon form; each reads either
 form, one separator kind in one address, and keeps the digits and their
 case as given. The longest address is 14 bytes plus the NUL.
 
-An `+INQ:` line carries the address, the class of device (1 to 6 hex
+A `+INQ:` line carries the address, the class of device (1 to 6 hex
 digits; `dev_class` keeps its low 16 bits, the major and minor device
 class, not the service bits 16 to 23) and the RSSI (1 to 4 hex digits, a
 16-bit two's complement word: `FFBC` is -68). A line without an RSSI
@@ -195,7 +198,7 @@ hc05_line_t hc05_parse_line(const char *line, char *value, size_t cap,
                             uint8_t *code);
 ```
 
-`hc05_step()` hands out one action a call:
+`hc05_step()` returns one action per call:
 
 | Action | The caller |
 |---|---|
@@ -243,10 +246,10 @@ Under ESP-IDF the folder is a component: add it to
 
 ## Measured and not measured
 
-The host suite runs the machine against the scripted module of
-`test/host/hc05_sim.h`: answer tables of firmware 2.0 and 3.0, the
-inquiry's timing, the quoted PIN, a restart in data mode or in AT mode by
-the level of KEY. No HC-05 has been run with this code.
+The host suite runs the state machine against the scripted module in
+`test/host/hc05_sim.h`. It covers firmware 2.0 and 3.0 response tables,
+inquiry timing, the quoted PIN, and restarts into data or AT mode according
+to the KEY level. This code has not been run on an HC-05.
 
 Not measured: whether every module answers `AT+INQ` with KEY raised after
 power-up rather than held high at power-up; whether `AT+INQ` needs an

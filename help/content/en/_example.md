@@ -6,14 +6,15 @@ order: 9999
 
 # Format example
 
-This file shows every construct of the help's format. The build skips files
-whose name starts with `_`; `tools/help_site.py --page` renders it. The
-format is in `help/site/FORMAT.md`.
+This file demonstrates the help format. Files whose names start with `_`
+are excluded from a full build; use `tools/help_site.py --page` to preview
+this example. The format is defined in `help/site/FORMAT.md`.
 
 ## Text
 
-A paragraph runs to the next blank line. **Bold** marks a word, `CODE`
-quotes a label the screen shows. HTML such as <b>this</b> shows as text.
+A paragraph ends at the next blank line. **Bold** marks a word; `CODE`
+quotes a screen label. HTML (HyperText Markup Language), such as
+<b>this</b>, appears as text.
 
 - A bulleted item.
 - A second item that runs onto

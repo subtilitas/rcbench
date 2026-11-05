@@ -6,27 +6,27 @@ order: 64
 
 # Updates
 
-UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und installiert es. Der Bildschirm öffnet über die Taste UPDATES unter [Setup](setup.md). Eine [Erinnerung beim Start](upd_remind.md) stellt dieselbe Frage einmal pro Start des Panels. 0.22 ist das letzte Release für das ESP32-S3-Panel; dem ESP32-P4-Panel wird jedes neuere Release angeboten, siehe [Die Release-Linie](#die-release-linie).
+UPDATES sucht auf GitHub nach neuerer Panel-Firmware und bietet deren Installation an. Öffne die Seite über [Setup](setup.md). Die [Erinnerung beim Start](upd_remind.md) führt dieselbe Suche einmal je Panelstart aus. Das ESP32-S3-Panel ist auf die Linie 0.22 begrenzt; ESP32-P4 unterstützt neuere Linien. Siehe [Die Release-Linie](#die-release-linie).
 
 ![UPDATES](view:updates)
 
-| Bedienelement | Was es tut |
+| Bedienelement | Wirkung |
 |---|---|
-| NACH UPDATES SUCHEN | fragt GitHub einmal; dieselbe Taste heißt ABBRECHEN, solange die Suche läuft |
-| ERINNERUNG BEIM START: EIN / AUS | schaltet die Suche beim Start und ihre Erinnerung; gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk an |
-| RELEASES: STABLE / TESTING | legt fest, welche Releases eine Suche liest, siehe [Die Suche](#die-suche); gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk STABLE; ein Wechsel blendet das letzte Ergebnis aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
-| 2s HALTEN ZUM LADEN & INSTALLIEREN | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
-| 2s HALTEN ZUM IOMCU-UPDATE | startet das [IOmcu-Update](coproc_update.md) aus dem Image, das dieses Panel mitbringt, auch nachdem seine Frage abgelehnt wurde |
+| NACH UPDATES SUCHEN | Fragt GitHub einmal ab. Während der Suche heißt die Taste ABBRECHEN. |
+| ERINNERUNG BEIM START: EIN / AUS | Aktiviert Startsuche und Erinnerung. Mit SPEICHERN unter [Setup](setup.md#die-werte-behalten) speichern; Vorgabe EIN. |
+| RELEASES: STABLE / TESTING | Wählt die geprüften Releases; siehe [Die Suche](#die-suche). Mit SPEICHERN unter [Setup](setup.md#die-werte-behalten) speichern; Vorgabe STABLE. Ein Wechsel verwirft die Ergebnisanzeige. Ein unter der anderen Einstellung gefundenes Release wird nicht angeboten. |
+| 2s HALTEN ZUM LADEN & INSTALLIEREN | Erscheint nach Fund eines neueren Releases und lädt, prüft und installiert es. |
+| 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage. |
 
 ## Was die Suche braucht
 
-Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche und Download brauchen:
+Die Karte zeigt laufende Version und gespeichertes Heimnetz. Suche und Download benötigen:
 
-- ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` über der Taste `NETZWERK SPEICHERN: WI-FI ÖFFNEN`, die WI-FI öffnet und über das Home-Tag zurückführt, und NACH UPDATES SUCHEN ist grau;
-- den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf. Sonst ist die Taste grau, und die Karte sagt `WLAN benötigt SAFE und einen ausgeschalteten Netzteilausgang.`;
-- kein laufendes Update des IOmcu und keine Panel-Installation im Gang.
+- Ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne dieses erscheinen `Kein Heimnetz gespeichert.` und `NETZWERK SPEICHERN: WI-FI ÖFFNEN`. Öffne WI-FI zum Speichern eines Netzwerks und kehre über das Home-Feld zurück. NACH UPDATES SUCHEN bleibt bis dahin grau.
+- Einen Prüfstand in SAFE, ausgeschalteten Netzteilausgang und keine offene Aufzeichnung. Andernfalls ist die Taste grau; die Karte zeigt `WLAN benötigt SAFE und einen ausgeschalteten Netzteilausgang.`.
+- Kein laufendes IOmcu-Update und keine laufende Panel-Installation.
 
-Der Download braucht außerdem, dass keine Platinenzeichnung geladen oder gespeichert wird.
+Während des Downloads darf außerdem keine Platinenzeichnung geladen oder gespeichert werden.
 
 ## Die Suche
 
@@ -34,12 +34,12 @@ Der Download braucht außerdem, dass keine Platinenzeichnung geladen oder gespei
 
 Eine ungerade Minor-Nummer ist ein Testing-Release, auf GitHub als Pre-Release veröffentlicht (0.21.x). Eine gerade Minor-Nummer ist ein Stable-Release (0.22.x).
 
-Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über Transport Layer Security) und liest den Tag des neuesten Release aus der Antwort. Danach geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen höchstens 30s. Die Karte zeigt den Schritt und die verbleibenden Sekunden.
+Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über Transport Layer Security) und liest den Release-Tag aus der Antwort. Danach schaltet es das Funkmodul aus. Verbindungsaufbau, Adressvergabe und Anfrage teilen sich eine Frist von 30s. Die Karte zeigt den laufenden Schritt und die Restzeit.
 
-| RELEASES | Anfrage | Was gelesen wird |
+| RELEASES | Anfrage | Auswertung |
 |---|---|---|
-| STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release; liegt es hinter der Release-Linie und ist neuer als der laufende Build, folgt einmal die Anfrage von TESTING |
-| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` jedes der 10 nach Datum neuesten Releases, Testing oder Stable, aus der JSON-Antwort (JavaScript Object Notation); genommen wird die höchste Version unter denen, die kein Entwurf sind, gleich in welcher Reihenfolge; gelesen in Stücken von 4096 Bytes, höchstens 262 144 Bytes, und nicht gespeichert; ein ungültiges Release lehnt die ganze Antwort ab |
+| STABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | Tag aus dem `Location`-Header. GitHubs Latest-Release ist kein Pre-Release. Ist es neuer als der laufende Build und liegt außerhalb der Release-Linie, folgt einmal die TESTING-Anfrage. |
+| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` der 10 nach Datum neuesten Releases, Testing oder Stable, aus der JSON-Antwort (JavaScript Object Notation). Gewählt wird die höchste Version, die kein Entwurf ist, unabhängig von der Reihenfolge. Die Antwort wird in Blöcken von 4096 Bytes bis höchstens 262.144 Bytes verarbeitet und nicht gespeichert. Ein ungültiger Release-Eintrag verwirft die gesamte Antwort. |
 
 In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Linie des Panels gehört und neuer als der laufende Build ist. Die Linie des ESP32-P4-Panels enthält jedes Release, siehe [Die Release-Linie](#die-release-linie).
 
@@ -64,13 +64,13 @@ In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Lini
 
 ![Eine Suche ohne Antwort](view:updates-failed)
 
-Der Tag lautet `v` und MAJOR.MINOR.PATCH, nur Ziffern, jede Zahl von 0 bis 65535 in höchstens 5 Ziffern und ohne führende Null. Ein Release ist neuer, wenn sein MAJOR größer ist, oder MAJOR gleich und MINOR größer, oder beide gleich und PATCH größer.
+Ein gültiger Tag besteht aus `v` und MAJOR.MINOR.PATCH. Jeder Bestandteil enthält nur Ziffern, liegt zwischen 0 und 65535 und hat höchstens 5 Stellen ohne führende Null. Verglichen wird zuerst MAJOR, bei Gleichheit MINOR, danach PATCH.
 
 ## Die Release-Linie
 
 0.22 ist das letzte Release für das ESP32-S3-Panel. Spätere Releases sind für die 7-Zoll-Display-Platine mit ESP32-P4 von Waveshare.
 
-Die Linie des ESP32-P4-Panels enthält jedes Release: Eine Suche bietet in beiden Einstellungen jedes Release an, das neuer als der laufende Build ist.
+Die Release-Linie des ESP32-P4-Panels umfasst alle Versionen. In beiden Einstellungen wird ein gefundenes Release angeboten, wenn es neuer als der laufende Build ist.
 
 | GitHub nennt | ESP32-P4-Panel mit 0.23.0 |
 |---|---|
@@ -78,7 +78,7 @@ Die Linie des ESP32-P4-Panels enthält jedes Release: Eine Suche bietet in beide
 | `v0.23.0` | aktuell |
 | `v0.22.1` | aktuell; ein älteres Release wird nie angeboten |
 
-Die Linie des ESP32-S3-Panels, 0.22, bietet nur 0.22.x an, und der Fuß ihrer Karte sagt das in seinen ersten Zeilen:
+Das ESP32-S3-Panel akzeptiert nur 0.22.x. Die ersten Zeilen im Kartenfuß nennen diese Einschränkung:
 
 | GitHub nennt | Panel mit 0.22.0 |
 |---|---|
@@ -87,22 +87,22 @@ Die Linie des ESP32-S3-Panels, 0.22, bietet nur 0.22.x an, und der Fuß ihrer Ka
 | `v0.23.0`, `v0.24.0`, `v1.0.0` | `Kein neueres Release für das ESP32-S3-Panel.` |
 | ein ungültiger Tag, etwa `v0.22.1-rc1` | `Unerwartete Antwort von GitHub.` |
 
-Liegt mit TESTING das höchste der 10 neuesten Releases hinter der Linie, wird an seiner Stelle das höchste Release der Linie unter ihnen angeboten, sobald es neuer als der laufende Build ist. Liegt mit STABLE das Latest-Release von GitHub hinter der Linie und ist neuer als der laufende Build, sendet das Panel diese Anfrage einmal mehr und bietet das neueste 0.22.x unter diesen 10 an, wenn es neuer ist. Scheitert diese Anfrage, lautet die Karte wie ohne sie.
+Liegt unter TESTING die höchste Version der 10 neuesten Releases außerhalb der Panel-Linie, wird stattdessen die höchste passende Version aus dieser Liste angeboten, sofern sie neuer als der laufende Build ist. Liegt unter STABLE GitHubs Latest-Release außerhalb der Linie und über der laufenden Version, fragt das Panel einmal dieselbe Liste mit 10 Releases ab und sucht darin nach einem neueren 0.22.x. Scheitert die Anfrage, bleibt das Ergebnis der ersten Prüfung.
 
 ## Der Download
 
 Das Halten über 2s ist die einzige Bestätigung: Es folgt keine Frage. Das Panel verbindet sich innerhalb von 30s mit dem Heimnetz und lädt `SHA256SUMS` und `rcbench-panel-p4-vX.Y.Z.bin` des Release über HTTPS. Es folgt höchstens 3 Redirects, nur zu `github.com`, `release-assets.githubusercontent.com` und `objects.githubusercontent.com`.
 
-1. `SHA256SUMS` hat höchstens 4096 Bytes und genau eine Zeile für das Image.
-2. Das Image kündigt zuerst seine Größe an; ein Image ohne Größe, mit 0 Bytes oder über 8.126.464 Bytes wird abgelehnt. Es liegt im PSRAM (Pseudo-Static Random-Access Memory).
-3. Der SHA-256 (Secure Hash Algorithm, 256 Bit) des Image gleicht seiner Zeile in `SHA256SUMS`.
-4. Jede Prüfung eines hochgeladenen Image läuft, und das Image nennt die Version des Release.
+1. `SHA256SUMS` darf höchstens 4096 Bytes enthalten und muss genau eine Zeile für das Image haben.
+2. Das Image muss seine Größe ankündigen. Fehlende Größe, 0 Bytes oder mehr als 8.126.464 Bytes werden abgelehnt. Das Image liegt im PSRAM (Pseudo-Static Random-Access Memory).
+3. Sein SHA-256 (Secure Hash Algorithm, 256 Bit) muss dem Eintrag in `SHA256SUMS` entsprechen.
+4. Es muss alle Prüfungen für hochgeladene Images bestehen und die Version des Releases nennen.
 
-Erst dann schreibt das [Panel-Update](update.md) es, so wie INSTALL. Vorher berührt nichts den Flash.
+Erst nach diesen Prüfungen schreibt das [Panel-Update](update.md) das Image wie bei INSTALLIEREN. Vorher bleibt der Flash unverändert.
 
 ![Der Download](view:panel-download)
 
-ABBRECHEN beendet den Download. STOP, ARMED, der Netzteilausgang, ein Log-Lauf, eine geladene Platinenzeichnung und 180s nach dem Halten beenden ihn auch. Der laufende Build bleibt; SCHLIESSEN geht zurück zu UPDATES, oder zum Menü, wenn das Halten das der Erinnerung war.
+ABBRECHEN beendet den Download. Auch STOP, ARMED, ein eingeschalteter Netzteilausgang, eine offene Aufzeichnung, das Laden einer Platinenzeichnung oder die Frist von 180s ab dem Halten brechen ihn ab. Der laufende Build bleibt erhalten. SCHLIESSEN führt zu UPDATES zurück oder zum Menü, wenn der Download über die Erinnerung begann.
 
 ![Ein abgebrochener Download](view:panel-download-failed)
 
@@ -110,9 +110,9 @@ ABBRECHEN beendet den Download. STOP, ARMED, der Netzteilausgang, ein Log-Lauf, 
 
 ![Ein anderer Build auf dem IOmcu](view:updates-coproc)
 
-Unter den Tasten nennt UPDATES die Version, die der IOmcu laufen hat (`Läuft: 0.21.2`), und die Version des Images, das dieses Panel mitbringt (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE startet das Update, das die Frage beim Link-up startet, mit demselben Fortschritt. Endet das Update, oder verfiel der START, kehrt der Bildschirm zu UPDATES zurück.
+Unter den Tasten nennt UPDATES die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie die Rückfrage beim Verbindungsaufbau. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
 
-Das Halten braucht, was die Frage braucht: einen IOmcu mit einem anderen Build, den Prüfstand SAFE, den Netzteilausgang aus, den WLAN-Funk ganz aus und keine Panel-Installation im Gang. Sonst ist es grau, und die Zeile darüber sagt, warum, das Erste davon, das gilt:
+Für das Halten gelten dieselben Voraussetzungen wie für die Rückfrage: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund:
 
 | Zeile | Bedingung |
 |---|---|
@@ -129,14 +129,14 @@ Das Halten braucht, was die Frage braucht: einen IOmcu mit einem anderen Build, 
 | `Wartet, bis das WLAN des Panels aus ist.` | eine Suche, ein Download oder [WLAN](wifi.md) hat den Funk an |
 | `Wartet: Die Installation der Panel-Firmware läuft.` | eine Panel-Installation ist im Gang |
 
-Ist das Halten aktiv, lautet die Zeile `Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.`, oder `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe für ein älteres Image.
+Bei verfügbarer Haltetaste steht `Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.`. Bei einem älteren Image erscheint stattdessen `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe.
 
 ## Aktuelle Einschränkungen
 
-- Wie lange Suche und Download in einem echten Netz dauern, ist nicht gemessen.
-- Ein erster DNS-Server (Domain Name System) des Heimnetzes, der nicht antwortet, verzögert nach einer Verbindung jede Namensauflösung um etwa 7s, von den 30s der Suche: lwIP fragt diesen Server 4-mal, bis zu 7s lang, vor dem nächsten.
-- TESTING: GitHub beantwortet ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, geteilt von allen Geräten dahinter. Das Panel wiederholt keine Anfrage.
-- TESTING liest die 10 nach Datum neuesten Releases. Ein Release, das nach Datum älter ist, sieht das Panel nicht, wie hoch seine Version auch ist.
-- Die Release-Liste enthält die 10 nach Datum neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
-- Die Daten der Zertifikate werden nicht geprüft: mbedTLS ist ohne seine Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von ESP-IDF).
-- Ein Release, dessen Dateien nicht `rcbench-panel-p4-vX.Y.Z.bin` und `SHA256SUMS` heißen, lässt sich nicht laden.
+- Die Dauer von Suche und Download in einem echten Netz wurde nicht gemessen.
+- Ein nicht antwortender erster DNS-Server (Domain Name System) verzögert nach dem Verbinden jede Namensauflösung um etwa 7s innerhalb der Suchfrist von 30s. lwIP fragt diesen Server 4-mal für insgesamt bis zu 7s ab, bevor es den nächsten versucht.
+- Unter TESTING erlaubt GitHub ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, gemeinsam für alle Geräte dahinter. Das Panel wiederholt keine Anfrage.
+- TESTING liest die 10 nach Datum neuesten Releases. Ältere Veröffentlichungen werden unabhängig von ihrer Versionsnummer nicht erfasst.
+- Die Liste ist auf diese 10 Releases begrenzt (`per_page=10`). Ein Patch-Release 0.22.x wird in keiner Einstellung gefunden, wenn danach mindestens 10 Releases veröffentlicht wurden.
+- Die zeitliche Gültigkeit von Zertifikaten wird nicht geprüft. mbedTLS ist ohne Ablaufprüfung gebaut (`CONFIG_MBEDTLS_HAVE_TIME_DATE` aus, die Vorgabe von ESP-IDF).
+- Zum Download müssen die Release-Dateien `rcbench-panel-p4-vX.Y.Z.bin` und `SHA256SUMS` heißen.

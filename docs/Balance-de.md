@@ -2,38 +2,37 @@
 
 <sub>[English](Balance.md) · **Deutsch**</sub>
 
-Den Auswucht-Bildschirm einrichten, wohin die beiden Sensoren gehören und
-welche Sensoren funktionieren.
+Diese Seite beschreibt, wie du BALANCE einrichtest, die Sensoren
+platzierst und geeignete Sensoren auswählst.
 
-Ein Auswuchtergebnis ist ein Betrag und ein Winkel. Beides stammt aus zwei
-Sensoren: einem Vibrationssensor und optional einem Indexsensor mit einem
-Impuls pro Umdrehung. Zwei Platzierungsfehler erzeugen ein falsches Ergebnis
-ohne sichtbares Zeichen auf dem Bildschirm: ein Vibrationssensor auf einer
-nachgiebigen Befestigung misst eine gefilterte Fassung der Lagerbewegung, und
-eine Indexmarke auf einem Blatt liefert einen Impuls pro Blatt statt einen pro
-Umdrehung.
+Ein Auswuchtergebnis besteht aus einem Betrag und einem Winkel. Das
+Verfahren nutzt einen Vibrationssensor und optional einen Indexsensor mit
+einem Impuls pro Umdrehung. Zwei Platzierungsfehler verfälschen das Ergebnis,
+ohne dass die Anzeige darauf hinweist: Eine nachgiebige Befestigung filtert
+die vom Vibrationssensor erfasste Lagerbewegung. Eine Indexmarke auf einem
+Blatt liefert einen Impuls pro Blatt statt eines Impulses pro Umdrehung.
 
 ## Den Bildschirm einrichten
 
 ![Der Rotor und wohin die Masse kommt](img/de/balance.png)
 
-Blattzahl (2 bis 6) und Rotortyp einstellen. Der Bildschirm rechnet den
+Stelle die Blattzahl (2 bis 6) und den Rotortyp ein. Die Seite rechnet den
 gemessenen Winkel zusätzlich in eine Blattangabe um („zwischen Blatt zwei und
 drei“).
 
-`-` und `+` der Blattzahl stellen sie beim Aufsetzen. Ein Tipp auf die Zahl
-öffnet das Tastenfeld über beiden Karten, 1008 x 428px mit Tasten von
-242 x 72px, sein Fuß 4px über dem Alarmband. OK nimmt 2 bis 6; jede andere
-Zahl lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe.
-ABBRECHEN, OK ohne getippten Wert, das Home-Tag und ein Reiter schließen es
-und ändern nichts.
+`-` und `+` ändern die Blattzahl sofort beim Aufsetzen des Fingers. Ein
+Tipp auf die Zahl öffnet das Tastenfeld über beiden Karten: 1008 x 428px,
+mit Tasten von 242 x 72px und einer Unterkante 4px über dem Alarmband. OK
+übernimmt Werte von 2 bis 6. Bei jeder anderen Zahl bleibt das Tastenfeld
+offen und zeigt den gültigen Bereich in der Warnfarbe. ABBRECHEN, OK ohne
+Eingabe, das Home-Tag und ein Reiter schließen es ohne Änderung.
 
 ![Das Tastenfeld der Blattzahl](img/de/balance-keypad.png)
 
 Die Anzeigewerte (Vibration 0,42g, Winkel 265°, zuzufügende Masse 0,35g) sind
-feste Werte und keine Messung. Eine Marke SIMULIERT und der Text „Nicht
-gemessen.“ stehen darunter, in derselben Pille wie im Menü. Nur der Reiter
-WUCHTEN trägt die Marke.
+feste Werte und keine Messung. Die Kennzeichnung SIMULIERT und der Text „Nicht
+gemessen.“ stehen darunter im selben Statusfeld wie im Menü. Nur der
+Reiter WUCHTEN trägt diese Kennzeichnung.
 
 Bei einem Impeller wird die Korrektur als Winkel auf der Nabe angegeben, weil
 eine Blattspitze im Kanal nicht erreichbar ist:
@@ -62,12 +61,12 @@ eine Blattspitze im Kanal nicht erreichbar ist:
   Motorhaube. Die Haube ist eine Verkleidung, oft gummigelagert, und bewegt
   sich gegenüber dem Motorträger.
 - Ein flach montierter Dreiachssensor hat zwei Achsen in der Spantebene, quer
-  zur Welle. Eine davon verwenden, die dritte ignorieren.
+  zur Welle. Verwende eine dieser beiden Achsen; die dritte bleibt unberücksichtigt.
 - Die Indexmarke gehört auf die Glocke. Ein Spinner wird für den Transport
   abgenommen und in einem anderen Winkel wieder aufgesetzt, was die
   Phasenreferenz der vorherigen Auswuchtung ungültig macht.
-- Das Flugzeug festzurren. Eine frei stehende Zelle ist eine Feder in Reihe
-  mit der Messung.
+- Zurre das Flugzeug fest. Ein frei stehendes Modell wirkt wie eine Feder
+  in Reihe mit der Messung.
 
 ## Sensorauswahl
 
@@ -77,9 +76,9 @@ Vier-Lauf-Methode: ein Grundlauf, danach eine Probemasse bei 0°, 120° und
 sich also nicht aus. Sie braucht Bandbreite: bei 10 000rpm (revolutions per
 minute, Umdrehungen pro Minute) liegt die Grundfrequenz bei 167Hz, die eine
 IMU (Inertial Measurement Unit, Trägheitssensor), die fusionierte Lagedaten
-mit 100Hz liefert, nicht auflösen kann. Einen analogen Sensor (Piezo oder
+mit 100Hz liefert, nicht auflösen kann. Schließe einen analogen Sensor (Piezo oder
 analoger Beschleunigungssensor) an den ADC (Analog-Digital-Wandler) des
-IOmcu anschließen.
+IOmcu an.
 
 Mit Indeximpuls halbiert sich die Zahl der Läufe, und nur die Schwankung der
 Sensorverzögerung zählt; ein konstanter Anteil kürzt sich heraus, weil der
@@ -89,7 +88,7 @@ Verzögerung, weder konstant noch spezifiziert, das sind 300° bei 10 000rpm.
 
 ## Was die Messung braucht
 
-Einen Beschleunigungssensor und optional einen Indexsensor am IOmcu.
-Keiner von beiden ist bestückt; der Bildschirm arbeitet deshalb aus dem Modell
-und trägt die Marke SIMULIERT. Einrichtung, Blattumrechnung und beide
+Die Messung benötigt einen Beschleunigungssensor und optional einen
+Indexsensor am IOmcu. Keiner von beiden ist bestückt. Die Seite zeigt
+deshalb simulierte Werte und trägt die Kennzeichnung SIMULIERT. Einrichtung, Blattumrechnung und beide
 Platzierungsanleitungen funktionieren ohne die Sensoren.

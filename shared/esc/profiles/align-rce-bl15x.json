@@ -11,7 +11,7 @@
       "v_max_mv": 12600,
       "current_a": 15,
       "bec": "linear",
-      "firmware_note": "Integrated BEC adjustable 5.0 V (default), 5.5 V, 6.0 V; the BEC type is stated on a third-party page, not by Align",
+      "firmware_note": "Integrated BEC adjustable 5.0V (default), 5.5V, 6.0V; the BEC type is stated on a third-party page, not by Align",
       "spec_source": "https://www.hobbyhangar.co.nz/kx880003a-15a-brushless-escgoverner-mode-rce-bl15x (dealer quoting Align: input 5.5-12.6 V, Li-Po 2-3 cells, 15 A continuous); the Align manual scans in Align_RCE-BL15X_kestral.html give no voltage",
       "cell_type": "lipo"
     }
@@ -151,7 +151,7 @@
     "Beep or buzz durations: not stated; the audible feedback column is images.",
     "Mid stick position: the page says mid is stick at about 20% giving a 50% command only under the author's throttle curve (normal mode), not a manual value.",
     "Hold times between steps: not stated.",
-    "Default value of each item: not stated except BEC 5.0 V.",
+    "Default value of each item: not stated except BEC 5.0V.",
     "Cell count, voltage limits: not stated.",
     "Whether step 3 in the table (listed twice) is the item after calibration: the table numbers calibration as step 3 and the first item also as 3."
   ],

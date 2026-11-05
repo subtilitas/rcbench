@@ -6,13 +6,13 @@ order: 70
 
 # Battery
 
-BATTERY shows how far each cell of a pack departs from the pack's mean, and gives a verdict on the pack. It opens from the BATTERY tile on the [menu](overview.md). The tile carries the SIMULATED mark in this release.
+BATTERY shows each cell's voltage difference from the pack average and gives a verdict on the pack. Open it from the BATTERY tile on the [menu](overview.md). The tile carries the SIMULATED mark in this release.
 
 ## On the bench: no pack
 
 ![BATTERY with nothing feeding it](view:battery-none)
 
-No firmware feeds this screen in this release: neither board reads a balance lead. The screen therefore shows NO PACK, `No battery connected to the balance lead.`, and `No monitor on the balance lead.` where the plot would be. The rows read `---`.
+Neither board reads a balance lead in this release, so the firmware supplies no measurements to this screen. It shows NO PACK, `No battery connected to the balance lead.`, and `No monitor on the balance lead.` in place of the plot. The rows read `---`.
 
 ## What a fed screen shows
 
@@ -20,9 +20,9 @@ No firmware feeds this screen in this release: neither board reads a balance lea
 
 The picture comes from the host renderer, which feeds the screen with cell voltages.
 
-- CELL DIFFERENCE draws each cell as its departure from the pack's mean. From a spread of 30mV the weakest cell is drawn red.
-- The scale follows the pack down to a floor of 12mV and is printed beside the plot.
-- Under each bar: the cell's number and its voltage.
+- CELL DIFFERENCE plots each cell's voltage difference from the pack average. At a spread of 30mV or more, the weakest cell appears in red.
+- The scale adjusts to the pack, with a minimum of 12mV, and is printed beside the plot.
+- Each bar has the cell number and voltage beneath it.
 
 | Verdict | Line | Spread |
 |---|---|---|
@@ -42,7 +42,7 @@ The spread is the widest gap between any two cells.
 | PACK iR | the pack's internal resistance |
 | USED | the charge used, of the capacity |
 
-Measure under load. At rest a weak cell reads like the others.
+Measure under load. A weak cell may appear normal at rest.
 
 ## Related pages
 

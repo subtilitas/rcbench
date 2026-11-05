@@ -11,7 +11,7 @@
       "v_max_mv": 16800,
       "current_a": 25,
       "bec": "switching",
-      "firmware_note": "Order 1-01171; burst 35 A; pulse frequency 41.6 kHz; S-BEC 5.5 V max 2.0 A (burst 3 A)",
+      "firmware_note": "Order 1-01171; burst 35A; pulse frequency 41.6kHz; S-BEC 5.5V max 2.0A (burst 3A)",
       "cell_type": "lipo",
       "spec_source": "Multiplex_Roxxy_BL-725_S-BEC_4D.pdf p.1"
     }
@@ -32,7 +32,7 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": null,
-      "confirm_signal": "Three-way tone sequence, a pause of about 3 s, then a longer fourth sound.",
+      "confirm_signal": "Three-way tone sequence, a pause of about 3s, then a longer fourth sound.",
       "steps": [
         "Battery disconnected, transmitter on, throttle stick at maximum.",
         "Connect a charged flight battery: three-way tone sequence.",
@@ -63,7 +63,7 @@
     "exit": "Disconnect battery.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "The stick position at power-up picks the mode: motor OFF for forward only, centre for forward and reverse (4D). Throttle range is calibrated by powering up at maximum, waiting for the long fourth sound after about 3 s, and moving the stick to minimum."
+    "description": "The stick position at power-up picks the mode: motor OFF for forward only, centre for forward and reverse (4D). Throttle range is calibrated by powering up at maximum, waiting for the long fourth sound after about 3s, and moving the stick to minimum."
   },
   "items": [
     {

@@ -2,11 +2,11 @@
 
 [English](Language.md)
 
-Das Panel zeigt seine Oberfläche auf Englisch oder auf Deutsch. SETUP,
-PANEL, Sprache wählt sie (ENGLISH, DEUTSCH). Die Wahl gilt zusammen mit
-dem Design, das nächste Bild erscheint in der neuen Sprache; nichts startet
-neu. Sie liegt wie jede Einstellung im NVS (Non-Volatile Storage), sobald
-SPEICHERN sie übernimmt.
+Die Oberfläche des Panels ist auf Englisch und Deutsch verfügbar. Wähle
+unter SETUP > PANEL > Sprache zwischen ENGLISH und DEUTSCH. Die Wahl wird
+zusammen mit dem Design übernommen; das nächste Bild erscheint ohne
+Neustart in der gewählten Sprache. SPEICHERN legt die Wahl wie andere
+Einstellungen im NVS (Non-Volatile Storage) ab.
 
 ![SETUP auf Deutsch](img/de/setup.png)
 
@@ -27,21 +27,21 @@ Aktuelle Einschränkungen:
   gelöscht wird. Der gehaltene Alarm für einen Touch-Controller, der beim
   Start nicht antwortete, entsteht in der Sprache aus dem NVS und bleibt bis
   zum Neustart; ohne Touch lässt sich die Sprache bis dahin nicht ändern.
-- Die Meldezeile von LOGS (eine Datei, die sich nicht öffnen oder
-  löschen ließ, eine gelöschte Datei) bleibt in ihrer Sprache, bis die
-  nächste geöffnete oder gelöschte Datei sie ersetzt oder leert.
+- Die Meldezeile von LOGS, etwa bei einem Fehler beim Öffnen oder Löschen
+  oder nach erfolgreichem Löschen, behält ihre Sprache. Erst der nächste
+  Öffnungs- oder Löschvorgang ersetzt oder leert sie.
 - Der Titel eines schon offenen Tastenfelds oder einer Auswahlliste bleibt
   in seiner Sprache, bis es sich schließt.
-- Die Stick-Engine meldet eine Ablehnung auf Englisch, und die Seite findet
-  die Übersetzung über dieses Englisch. Eine Ablehnung, die die Tabelle nicht
-  kennt, erscheint auf Englisch. `test_text` prüft, dass jede Ablehnung der
-  einkompilierten Profile einen deutschen Eintrag hat.
+- Die Stick-Engine meldet Ablehnungen auf Englisch. Die Seite sucht anhand
+  dieses englischen Textes die Übersetzung. Fehlt ein passender Eintrag,
+  erscheint die Ablehnung auf Englisch. `test_text` prüft, dass jede
+  Ablehnung der einkompilierten Profile einen deutschen Eintrag hat.
 
 ## Zahlen
 
-Die Seiten, der TXT-Bericht und die CSV schreiben in jeder Sprache den
-Dezimalpunkt: 7.4V, 0.05A. Es ist das Trennzeichen des Senders, der
-ESC-Konfiguratoren und der eigenen Anzeige des Netzteils, und eine CSV mit
+Die Seiten, der TXT-Bericht und die CSV verwenden in jeder Sprache den
+Dezimalpunkt: 7.4V, 0.05A. Das entspricht der Darstellung am Sender, in den
+ESC-Konfiguratoren und auf der Anzeige des Netzteils. Eine CSV mit
 Dezimalkomma bräuchte ein anderes Feldtrennzeichen. Die deutschen Seiten
 dieser Dokumentation schreiben im Fließtext das deutsche Dezimalkomma
 (7,4V); ein Text, der vom Bildschirm zitiert wird, behält seinen Punkt
@@ -217,13 +217,14 @@ eine Zelle:
   `gfx_text_cells()` zählen Codepoints, und `gfx_text_prefix()` liefert die
   Bytelänge der ersten n Zellen, damit ein Schnitt zwischen zwei Zeichen
   fällt.
-- Ein Puffer misst Bytes, und ein deutscher Buchstabe belegt zwei. Das
-  Alarmband fasst `UI_ALERT_MAX`, 128 Bytes mit Endezeichen.
+- Die Kapazität eines Puffers wird in Bytes angegeben. Jeder der oben
+  aufgeführten deutschen Buchstaben belegt zwei Bytes. Das Alarmband fasst
+  `UI_ALERT_MAX`: 128 Bytes einschließlich Endezeichen.
 
-UTF-8 statt einer Ein-Byte-Codepage: Die Tabellen bleiben im Quelltext
-lesbar, und der Bericht öffnet sich in jedem Editor am PC richtig. Der Preis
-ist, dass keine Breite aus `strlen()` kommen darf; die Seiten messen mit den
-Funktionen oben.
+UTF-8 hält die Tabellen im Quelltext lesbar und ermöglicht die korrekte
+Darstellung des Berichts in einem PC-Editor. Anders als bei einer
+Ein-Byte-Codepage darf die Textbreite nicht aus `strlen()` abgeleitet
+werden. Die Seiten müssen dafür die oben genannten Funktionen verwenden.
 
 ## Die Tabellen
 
@@ -253,9 +254,10 @@ dasselbe Wort sind (die Namen der Sprachen, Adressen, Kanäle, Baudraten,
 `STABLE` und `TESTING`, `PULL-UP` und `PRECHARGE`). Ein übersetztes Format
 wandelt dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 
-Die Tabelle bleibt eine Datei und steht in `tools/check_sizes.txt`. Eine
-Datei, die sie liest, definiert die Makros, die sie braucht, und bindet sie
-ein; die Tabelle definiert die übrigen leer und hebt am Ende alle auf. Nur
+Die Tabelle bleibt in einer Datei, die in `tools/check_sizes.txt` steht.
+Jede einbindende Datei definiert zuerst die benötigten Makros. Die Tabelle
+definiert die übrigen Makros leer und hebt am Ende alle Makrodefinitionen
+auf. Nur
 Einträge `UI_TEXT` stehen unter einer Bedingung, `#ifdef
 RCBENCH_TOUCH_INJECTOR`, und das Define kommt mit dem Include-Pfad von
 `shared/text`, sodass jede Datei, die die Tabelle liest, dieselben Einträge
@@ -281,26 +283,26 @@ nicht. Ein deutscher Eintrag `NULL` zeigt auch dort sein Englisch
 
 ## Einen Text hinzufügen
 
-1. Einen Eintrag im Abschnitt der Seite anlegen, die ihn zeichnet, Englisch
+1. Lege einen Eintrag im Abschnitt der Seite an, die ihn zeichnet, Englisch
    zuerst: `UI_TEXT(ID, cells, "English", "Deutsch")`. `cells` ist die
    Breite des Feldes in Zellen seines Fonts, wo kein Screenshot den Text
    zeigt, und 0, wo eine gerenderte Ansicht ihn zeigt.
-2. Ihn mit `TR(ID)` zeichnen. Name und Hilfetext einer Einstellung sind ein
+2. Zeichne ihn mit `TR(ID)`. Name und Hilfetext einer Einstellung sind ein
    Eintrag `UI_SETTING_LABEL` und ein Eintrag `UI_SETTING_HELP` für ihre
    ID `SET_`; eine Optionsliste ist ein Block `UI_OPTIONS`, den
    `ENUM_OPTS(name)` in `shared/settings/settings.c` an seine Einstellung
    bindet.
-3. Zahl und Einheit ohne Leerzeichen schreiben, in beiden Sprachen: `40s`,
+3. Schreibe Zahl und Einheit in beiden Sprachen ohne Leerzeichen: `40s`,
    `6.00V`, `%ums`, `%.2fV`, `100%`, `180°`. Ein Wort nach einer Zahl behält
    sein Leerzeichen: `3 Servos`.
-4. Die Host-Suite, `python3 tools/render_ui.py --fit`,
+4. Führe die Host-Suite, `python3 tools/render_ui.py --fit`,
    `python3 tools/check_formats.py`, `python3 tools/check_units.py --check`
-   und `python3 tools/check_docs.py` ausführen. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
+   und `python3 tools/check_docs.py` aus. `test_text` schlägt fehl bei einem Eintrag ohne Deutsch, bei
    einem deutschen Format, das andere Argumente wandelt als sein Englisch,
    bei einem Text, der breiter ist als seine angegebenen Zellen, bei einem
    Buchstaben, den die Fonts nicht enthalten, bei einem Byte, das kein
    gültiges UTF-8 ist, und bei einer ID `SERVO_STR_`, deren Englisch leer
-   ist, wo es das nicht sein soll. `servo_str.c` baut nicht, wenn die Zahl
+   ist, wo es das nicht sein soll. `servo_str.c` lässt sich nicht kompilieren, wenn die Zahl
    der Einträge `UI_SERVO_TEXT` von `SERVO_STR_COUNT` abweicht.
 
 Ein Branch, der die Texte noch in der Form mit mehreren Dateien hat
@@ -338,14 +340,14 @@ Sprachen
   offener Protokollliste (`outputs-protocol`) ist ausgenommen, weil die
   Liste die Pins daneben absichtlich verdeckt.
 
-Ein englischer Überlauf, der für eine Zeit hingenommen wird, kommt in
-`KNOWN_OVERFLOWS` im Werkzeug, mit seiner Ansicht, seinem Text und seinem
-Messwert; die Liste ist leer. Ein gelisteter wird als `known` ausgegeben und
-schlägt nicht fehl; ein deutscher Befund, der einem
-davon Wort für Wort gleicht, ist derselbe Text an derselben Stelle und
-schlägt ebenfalls nicht fehl. Ein Eintrag, den die Prüfung nicht findet,
-schlägt fehl, bis er aus der Liste genommen ist. Die Prüfung schlägt auch bei
-einem Text ohne angegebene Breite fehl, den keine Ansicht zeichnet.
+Vorübergehend akzeptierte englische Überläufe stehen in `KNOWN_OVERFLOWS`
+mit Ansicht, Text und Messwert. Die Liste ist leer. Ein gelisteter Befund
+wird als `known` ausgegeben und lässt die Prüfung nicht fehlschlagen.
+Dasselbe gilt für einen wortgleichen deutschen Befund zum selben Text an
+derselben Stelle. Fehlt ein gelisteter Überlauf im Ergebnis, schlägt die
+Prüfung fehl, bis der Eintrag entfernt wird. Sie schlägt auch fehl, wenn
+ein Text keine angegebene Breite hat und von keiner Ansicht gezeichnet
+wird.
 
 ```bash
 python3 tools/check_formats.py
@@ -378,29 +380,29 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.089
 Einträge mit ID und 102 Optionen, 10 davon mit leerem Englisch.
 
-1. Die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
-   ergänzen und den Parameter in jedem Makro, das eine Spalte liest: 7
+1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
+   und den Parameter in jedem Makro, das eine Spalte liest: 7
    leere Vorgaben am Kopf der Tabelle und 20 Zeilen `#define` in 7 Dateien
    (`ui_text.h`, `ui_text.c`, `settings.c`, `settings_text.c`,
    `settings_opts.h`, `servo_str.c`, `wa_page.c`). `NULL` zeigt das
    Englische.
-2. `UI_LANG_xx` in `ui_lang_t` in `shared/ui/include/ui_text.h` eintragen,
-   und den eigenen Namen der Sprache an derselben Stelle in die Optionsliste
+2. Trage `UI_LANG_xx` in `ui_lang_t` in `shared/ui/include/ui_text.h` ein
+   und den Eigennamen der Sprache an derselben Stelle in die Optionsliste
    `language`.
-3. Den deutschen Block in `shared/ui/ui_text.c` (`DE()`, seine Tabellen und
-   `ui_lang_de`) für die neue Spalte kopieren, `ui_lang_xx` in `k_langs`
-   und seine Deklaration in `ui_text.h` eintragen.
+3. Kopiere den deutschen Block in `shared/ui/ui_text.c` (`DE()`, seine
+   Tabellen und `ui_lang_de`) für die neue Spalte. Trage `ui_lang_xx` in
+   `k_langs` und seine Deklaration in `ui_text.h` ein.
 4. Ein Buchstabe, den die Text-Fonts nicht enthalten, kommt in die Liste in
    `FONTS` in `tools/gen_font.py`, und `python3 tools/gen_font.py` erzeugt
    sie neu. Jeder Buchstabe belegt ein Byte je Pixel in jedem der fünf
    Text-Fonts: 128, 200, 288, 448 und 720 Byte in den Fonts 8x16, 10x20,
    12x24, 16x28 und 20x36, zusammen 1.784 Byte.
-5. Die Sprache in `LANGS` in `tools/render_ui.py` und im Argument von
-   `test/host/render_screen.c` eintragen, dann
+5. Trage die Sprache in `LANGS` in `tools/render_ui.py` und im Argument von
+   `test/host/render_screen.c` ein. Führe dann
    `python3 tools/render_ui.py --fit` und `python3 tools/render_ui.py`
-   ausführen.
-6. `german_has_every_string` in `test/host/test_text.c` auf die neue
-   Tabelle erweitern, ihr Glossar hier schreiben und diese Seite übersetzen.
+   aus.
+6. Erweitere `german_has_every_string` in `test/host/test_text.c` auf die
+   neue Tabelle, ergänze hier ihr Glossar und übersetze diese Seite.
 
 Zwei Leser nehmen die deutsche Spalte nach ihrer Position: `TABLE_ENTRY` in
 `tools/check_docs.py` und die Prüfung der Servo-Bedienelemente in

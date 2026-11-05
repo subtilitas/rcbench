@@ -6,13 +6,13 @@ order: 63
 
 # Layout
 
-LAYOUT zeigt die Stecker eines Boards mit verlöteten Pins, des [rbmod-Carriers](https://github.com/subtilitas/rcbench/wiki/Carrier-de). Es öffnet über seine Kachel LAYOUT auf [SETUP](setup.md), solange der IOmcu dieses Board meldet; die Kachel zeigt dort `STECKER UND PINS`. Sein Home-Tag führt zurück zu SETUP. Der Bildschirm treibt nichts und nimmt keinen Tipp: die Pins sind verlötet, und [Ausgänge](outputs.md) gibt jedem Servoausgang sein Protokoll.
+LAYOUT zeigt die Stecker und verlöteten Pins des [rbmod-Carriers](https://github.com/subtilitas/rcbench/wiki/Carrier-de). Öffne die Seite über die Kachel LAYOUT auf [SETUP](setup.md). Die Kachel ist verfügbar, solange der IOmcu diese Platine meldet, und zeigt `STECKER UND PINS`. Das Home-Feld führt zurück zu SETUP. Die Ansicht steuert keine Ausgänge an und reagiert nicht auf Antippen. Die Pins sind verlötet; ordne jedem Servoausgang sein Protokoll unter [OUTPUTS](outputs.md) zu.
 
 ![LAYOUT auf dem Carrier](view:layout-rbmod)
 
 ## J1 und J2
 
-Jede Steckerposition ist Signal, + und GND, in der Folge, in der der Stecker sie nummeriert. Eine Zeile zeigt die Position, die Rolle, ihren GPIO (General-Purpose Input/Output) und das Netz an ihrem +.
+Jede Steckerposition umfasst Signal, + und GND. Die Zeilen folgen der Nummerierung des Steckers und zeigen Position, Funktion, GPIO (General-Purpose Input/Output) und das mit + verbundene Netz.
 
 | Position | J1, Programmierports | J2, Servoausgänge |
 |---|---|---|
@@ -21,15 +21,15 @@ Jede Steckerposition ist Signal, + und GND, in der Folge, in der der Stecker sie
 | 3 | PROGP02, GPIO 14, VCC_PROGPORT | PWM01, GPIO 2, VCC_SERVOPORT_A |
 | 4 | PROGP03, GPIO 15, VCC_PROGPORT | PWM04, GPIO 1, VCC_SERVOPORT_A |
 
-Rechts in einer Zeile von J1 steht `PROGRAMMIERUNG`: ein Programmierport trägt die Programmer von KST und Hitec. Rechts in einer Zeile von J2 steht das auf dem Ausgang gebundene Protokoll, `OFF` für keines, oder `NICHT AUSGELESEN`, bis die Bindung dieses Boards gelesen ist. Ein Protokoll, das unter OUTPUTS gebunden oder gelöst wird, zeigt sich hier im nächsten Frame.
+Rechts in jeder J1-Zeile steht `PROGRAMMIERUNG`: Diese Ports dienen der KST- und Hitec-Programmierung. Jede J2-Zeile zeigt das zugeordnete Ausgangsprotokoll, `OFF` ohne Zuordnung oder `NICHT AUSGELESEN`, bis die Zuordnung dieser Platine ausgelesen ist. Änderungen unter OUTPUTS erscheinen hier im nächsten Frame.
 
 ## Weitere Stecker
 
-J3 HEARTBEAT auf GPIO 3, J5 SENSOR I2C auf GPIO 16 und 17, J4 I2C 2 auf GPIO 18 und 19 (`NICHT ANGESTEUERT`), J6 PD MINI auf GPIO 7 und 6, J9 TAP auf GPIO 22, und PROG 5V EN auf GPIO 21, der an keinem Stecker liegt.
+J3 HEARTBEAT liegt auf GPIO 3, J5 SENSOR I2C auf GPIO 16 und 17, J4 I2C 2 auf GPIO 18 und 19 (`NICHT ANGESTEUERT`), J6 PD MINI auf GPIO 7 und 6 und J9 TAP auf GPIO 22. PROG 5V EN liegt auf GPIO 21 und ist auf keinen Stecker geführt.
 
 ## Boards Rev 1
 
-Die Zeile unter den Spalten lautet `PLATINE REV 1: DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` Die drei Änderungen stehen in [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1): PROGP03 wandert von GPIO 26 auf GPIO 15; ein Pull-down hält die 5V der Programmierports aus, solange GPIO 21 nicht getrieben ist; und eine Z-Diode 5.6V 1W vom Ausgang von M7 nach GND verhindert die Ausfälle durch ein bremsendes Servo. Die Firmware verlässt sich nicht auf die dritte. Rev 2 trägt die ersten zwei im Kupfer; die dritte ist eine offene Designfrage.
+Unter den Spalten steht `PLATINE REV 1: DREI ÄNDERUNGEN VON HAND. DIE HILFE NENNT SIE.` [Carrier: Nacharbeit Rev 1](https://github.com/subtilitas/rcbench/wiki/Carrier-de#nacharbeit-rev-1) beschreibt alle drei Änderungen: PROGP03 von GPIO 26 auf GPIO 15 verlegen; die 5V der Programmierports durch einen Pull-down ausgeschaltet halten, solange GPIO 21 nicht angesteuert ist; und eine Z-Diode mit 5,6V und 1W vom Ausgang von M7 nach GND ergänzen, um Ausfälle durch ein bremsendes Servo zu verhindern. Die Firmware setzt die dritte Änderung nicht voraus. Bei Rev 2 sind die ersten zwei im Platinenlayout umgesetzt; die dritte bleibt eine offene Designfrage.
 
 ## Verwandte Seiten
 

@@ -11,7 +11,7 @@
       "v_max_mv": 33600,
       "current_a": 50,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-50-010-0102-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -23,7 +23,7 @@
       "v_max_mv": 33600,
       "current_a": 75,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-75-010-0101-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -35,7 +35,7 @@
       "v_max_mv": 33600,
       "current_a": 100,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-100-010-0100-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -47,7 +47,7 @@
       "v_max_mv": 33600,
       "current_a": 130,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-130-010-0099-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -59,7 +59,7 @@
       "v_max_mv": 33600,
       "current_a": 200,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-200-010-0098-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -71,7 +71,7 @@
       "v_max_mv": 34000,
       "current_a": 50,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-50-010-0113-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -83,7 +83,7 @@
       "v_max_mv": 33600,
       "current_a": 75,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-75-010-0112-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -95,7 +95,7 @@
       "v_max_mv": 33600,
       "current_a": 100,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-100-010-0111-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -107,7 +107,7 @@
       "v_max_mv": 33600,
       "current_a": 130,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-130-010-0110-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },
@@ -119,7 +119,7 @@
       "v_max_mv": 33600,
       "current_a": 200,
       "bec": null,
-      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5 A (type not stated)",
+      "firmware_note": "Edge and Edge Lite: onboard BEC rated up to 5A (type not stated)",
       "spec_source": "https://castlecreations.com/products/air-esc-phoenix-edge-lite-200-010-0109-00 (Input Voltage Range, Max Voltage, Max Continuous Amperage at Full Throttle)",
       "cell_type": "lipo"
     },

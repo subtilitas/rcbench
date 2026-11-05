@@ -820,7 +820,8 @@ def main(argv: list[str] | None = None) -> int:
     """
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--check", action="store_true",
-                    help="write nothing; fail when a checked-in file differs")
+                    help="check without writing; fail if a committed file "
+                         "differs")
     ap.add_argument("--preview", type=pathlib.Path, metavar="DIR",
                     help="write each pose as a PNG into DIR")
     args = ap.parse_args(argv)

@@ -463,7 +463,8 @@ def main(argv: list[str] | None = None) -> int:
                     help=f"the ref the change is measured against "
                          f"(default {DEFAULT_BASE})")
     ap.add_argument("--files", nargs="+", default=[], metavar="FILE",
-                    help="mutate every line of these files, not a change")
+                    help="mutate all lines in these files, not only changed "
+                         "lines")
     ap.add_argument("--list", action="store_true",
                     help="print the mutants and stop")
     ap.add_argument("--max-mutants", type=int, default=DEFAULT_MAX,
@@ -477,11 +478,12 @@ def main(argv: list[str] | None = None) -> int:
                          f"seconds (default {DEFAULT_TIMEOUT_S})")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
     ap.add_argument("--max-survivors", type=int,
-                    help="exit 1 when more than this many survive")
+                    help="exit 1 if the number of surviving mutants exceeds "
+                         "this limit")
     ap.add_argument("--json", type=pathlib.Path,
-                    help="write every result here")
+                    help="write all results to this file")
     ap.add_argument("--summary", type=pathlib.Path,
-                    help="append the result as Markdown here")
+                    help="append the results as Markdown to this file")
     args = ap.parse_args(argv)
 
     try:

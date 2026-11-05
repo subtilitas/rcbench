@@ -88,7 +88,7 @@ def on_this_tree(runs: list[dict]) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--repo", required=True, help="OWNER/REPO")
-    ap.add_argument("--sha", required=True, help="the full commit id")
+    ap.add_argument("--sha", required=True, help="the full commit ID")
     ap.add_argument("--workflow", default=WORKFLOW)
     args = ap.parse_args(argv)
     # Both reach a URL; neither is taken on trust.

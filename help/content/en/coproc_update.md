@@ -6,20 +6,20 @@ order: 100
 
 # IOmcu update
 
-A panel firmware image carries the IOmcu's image and offers it when the IOmcu runs another build. The check runs at every link-up over the CAN (Controller Area Network) bus and compares SHA-256 (Secure Hash Algorithm, 256 bits) digests, not version numbers. A different build raises the alert `IOmcu runs a different build. Update it on UPDATES.`.
+Each panel firmware image includes an IOmcu image. The panel offers it whenever the connected IOmcu runs a different build. It checks at every link-up over the CAN (Controller Area Network) bus, comparing SHA-256 (Secure Hash Algorithm, 256 bits) digests rather than version numbers. A mismatch raises the alert `IOmcu runs a different build. Update it on UPDATES.`.
 
 ## The question
 
 ![The question on the menu](view:coproc-update)
 
-The question opens from the [menu](overview.md), with UPDATE in the band, while the bench is SAFE, the supply output is off, the Wi-Fi radio is off and no panel update is under way. It names the version the IOmcu runs and the version the panel carries.
+The update question opens on the [menu](overview.md), with UPDATE in the band, when the bench is SAFE, the supply output and Wi-Fi radio are off, and no panel update is running. It shows the IOmcu's running version and the version included with the panel.
 
 | Control | What it does |
 |---|---|
 | HOLD 2s TO START | starts the update after a 2s hold, with the gesture and fade of ARM |
 | CANCEL | closes the question; the panel does not ask again for that version until it restarts, and [Updates](updates.md#the-iomcu) still starts the update |
 
-The home tag declines it as CANCEL does. A screen the panel forces over the question declines nothing: the [fault screen](busfault.md) of a lost link, and a panel update's download. The next link-up offers again, and the question opens on the menu under the same conditions.
+The home tag declines the update as CANCEL does. An interruption by another screen does not decline it: this applies to the [fault screen](busfault.md) after a lost link and to a panel-update download. The next link-up offers the update again, and the question opens on the menu when the same conditions are met.
 
 ![An older image](view:coproc-update-older)
 
@@ -29,7 +29,7 @@ An older image is offered too. The question then reads `The firmware on this pan
 
 ![Sending firmware.](view:coproc-update-progress)
 
-Once the hold completes, the update has the panel to itself. The link goes down, the outputs are off, and the IOmcu refuses ARM until the update ends. The progress fills the screen with no band and no STOP.
+After the hold completes, the update takes exclusive control of the panel. The link goes down and the outputs are off. The IOmcu refuses ARM until the update ends. The progress display occupies the whole screen, with no status band or STOP control.
 
 | Step | Shown while |
 |---|---|
@@ -43,7 +43,7 @@ The transfer time is not measured.
 
 ## How it ended
 
-The screen returns to the menu when the update ends, or to [Updates](updates.md#the-iomcu) when its hold started the update, and the alert band says how:
+When the update ends, the panel returns to the menu, or to [Updates](updates.md#the-iomcu) if it was started there. The alert band reports the result:
 
 | Alert | Meaning |
 |---|---|

@@ -6,8 +6,8 @@ This page is a section of [The link](Link.md), which holds the wiring, the frame
 format, the page map and the other pages. Pins are named by GPIO (general-purpose
 input/output) number. PWM is pulse-width modulation.
 
-The servo programming page (`KST`, 0x32) is new in 4.12 and names a
-programming port since 4.13. The page
+The servo programming page (`KST`, 0x32) requires 4.12 or later; commands
+name a programming port from 4.13 onward. The page
 runs the programming protocol of
 [`protocols/kst`](../protocols/kst/README.md) for KST and Chaservo servos,
 which share one protocol and one register set, on one port of
@@ -18,14 +18,14 @@ is no programming port and a command that names one is refused.
 
 The session runs on the IOmcu with the module's planner and limits.
 The panel writes an operation and the images it needs. It reads the state,
-the result and the servo's 32 registers. It sends no register write.
-`shared/outputs/kst_port.c` holds the rules. Nothing is kept in flash: after
-a restart of the IOmcu the port is in PWM with no session and bit 4 of
-register 0 clear, whatever mode the servo is in, and the supply is asked
+the result and the servo's 32 registers. It sends no direct write to a servo register.
+`shared/outputs/kst_port.c` holds the rules. Nothing is kept in flash. After
+an IOmcu restart, the port is in PWM with no session and bit 4 of
+register 0 clear, regardless of the servo's mode. The supply is requested
 off.
 
-The session plans a WRITE and a RESTORE itself (since 4.14). The command's
-frame checks the request and prepares the planner's job, 64us of planner
+The session plans a WRITE and a RESTORE itself (since 4.14). Processing the command's
+frame checks the request and prepares the planner's job, requiring 64us of planner
 work. A target the planner refuses without a search is refused there
 (PLAN_RULES, PLAN_R00, PLAN_PAIRING) and no operation starts. Every other
 request starts the operation, and each pass of core 0's main loop then does
@@ -38,12 +38,12 @@ ends after 216,000 units at most, 2,161 passes:
 - with no order of writes that keeps every image in between valid: result
   33;
 - with the 216,000 units spent before either is known: result 34. The
-  request is not known to have no plan;
+  planner has not determined whether a plan exists;
 - a RESTORE whose result cannot be checked, without the confirmation:
   result 11.
 
 Nothing is sent to the servo for results 33, 34 and 11, the session is not
-locked, and the next WRITE is taken without a READ_ALL. The costliest
+locked, and the next WRITE is taken without a READ_ALL. The most expensive
 request found takes 120,136 units, 1,202 passes at most and 397 to 647ms
 of planner time. The times are computed in an emulator from the
 instructions executed at 150MHz
@@ -67,7 +67,7 @@ servo, line and supply model.
 | LEAVING | 6 | the wire driver, driven low | as it is: not switched, no set point written | after the wait of write register 28, to PWM (since 4.15) |
 
 The entry sequence of the session holds the line low for another 100ms
-after LOW. From LOW on the generator does not have the pin. Every source of
+after LOW. From LOW onward, the generator has no control of the pin. Every source of
 a PWM command (the panel, the sweep, the automatic test) ends at the port's
 bank channel, so none reaches the pin; PROG and SERVO still take such a
 command. The port's `PWM` bit and `TARGET` stay as written through a
@@ -96,7 +96,7 @@ then does one of two things:
   switched on. The session starts 1000ms after the PD mini reads on;
 - the output is on: the voltage is set to the lower of the two voltages and
   the current limit to the lower of the two limits (the limit since 4.15).
-  Nothing is written where both are the output's already.
+  Nothing is written if both already match the output's set points.
 
 No step of the port raises the voltage or the current limit of an output
 that is on, and leaving programming does not restore a higher value that
@@ -120,7 +120,7 @@ switch. The panel uses REBOOT for CONNECT with the PD mini's output on and
 for LEAVE after a write ([ServoProgrammer.md](ServoProgrammer.md#the-power-cycle)).
 
 With no PD mini answering the port touches no supply. The session runs, bit
-10 reads 0, POWER_CYCLED is the operator's word that the servo was without
+10 reads 0, POWER_CYCLED is the operator's confirmation that the servo was without
 power and returns the port to PWM at once, and REBOOT is refused with
 NO_SUPPLY. REBOOT is refused the same way while the PD mini is asked off.
 
@@ -152,11 +152,11 @@ OFF reaches the PD mini in the pass after, 10,000ms after the OFF at the
 latest (`SUPPLY_PAGE_WRITE_WAIT_MS`). The full read after the last write
 is cut. The servo answers a write frame 3687 to 3714us after it
 (measured); whether and when it commits the value is not measured, and
-the 150ms are the HITEC page's bound. An OFF during the planning or the
-full read before the first write frame is not held: nothing has gone to
+the 150ms are the HITEC page's bound. An OFF during planning or the
+full read before the first write frame is not held: no write has gone to
 the servo, and the operation ends with result 19. An OFF during an ENTER,
-a READ_ALL, a VERIFY, a power cycle or a LEAVE is not held either. The heartbeat lost is
-not held. From the panel's OFF until the port is in PWM again, SUPPLY
+a READ_ALL, a VERIFY, a power cycle or a LEAVE is not held either. Shutdown after heartbeat loss is
+not deferred. From the panel's OFF until the port is in PWM again, SUPPLY
 refuses the port's own ON: a REBOOT whose cycle is in RAIL_OFF ends in PWM
 with result 32 (`SUPPLY`) and the supply off
 ([Safety, A programming port's supply](Safety.md#a-programming-ports-supply)).
@@ -164,9 +164,9 @@ with result 32 (`SUPPLY`) and the supply off
 The IOmcu does not switch the bank to ARMED while a programming port is out of
 PWM: a non-zero write of ARM is refused with NOT_ARMED, a zero is taken, and at
 the return to PWM, by any path, the ARM and THROTTLE registers are 0, so the bank stays SAFE
-until a new ask. ENTER is refused with BUSY while the bank is ARMED (since 4.15).
+until a new request to arm. ENTER is refused with BUSY while the bank is ARMED (since 4.15).
 
-Where the supply ends when something fails:
+Supply and port states after a failure:
 
 | Event | The supply | The port |
 | --- | --- | --- |
@@ -195,17 +195,17 @@ set point. An output that is on stays on at its voltage and current limit,
 also one that ENTER switched on or lowered. With no PD mini answering the
 port does the same. POWER_CYCLED and REBOOT stay as they are.
 
-A LEAVE that is taken puts the port in LEAVING. The wire driver holds the
+An accepted LEAVE puts the port in LEAVING. The wire driver holds the
 pin low for the wait in write register 28 (`LEAVE_MS`), 0 to 10,000ms,
 counted from the command. The wait is 100ms until a panel writes the
 register, and the register keeps what was written until the IOmcu
 restarts. The register takes every value: a LEAVE that finds more than 10,000 in it is refused with LEAVE_MS,
 the port stays in PROGRAMMING, and the value is not clamped. A write to the
-register while the port waits is for the next LEAVE. After the wait the
+register while the port waits applies to the next LEAVE. After the wait the
 generator has the pin, the port is in PWM with bits 4 and 5 clear and result
 0, and the port's pulse is back as its `PWM` bit and `TARGET` say. A wait of
 0ms ends at the next pass of the main loop. The time left is not on the
-page: all 32 read registers are in use. A panel counts it from its own
+page: all 32 read registers are in use. The panel measures it with its own
 clock.
 
 Not measured on a KST or Chaservo servo: the time the line has to be low
@@ -239,7 +239,7 @@ the state as they were.
 | The PD mini stops answering | untouched | the wait goes on |
 | Any other command | as it is | refused with BUSY |
 
-A stop in the pass in which the wait ends comes first: the port is in
+A stop in the same pass as the end of the wait takes precedence: the port is in
 PROGRAMMING.
 
 ## The wait after a supply cycle
@@ -288,7 +288,7 @@ measured.
 
 ## Registers
 
-A read gives these registers:
+Reads return these registers:
 
 | Register | Name | Reads |
 | ---: | --- | --- |
@@ -305,7 +305,7 @@ A read gives these registers:
 | 14, 15 | `DELAY_MIN_US`, `DELAY_MAX_US` | the last edge of a read frame to the first edge of its reply, µs; 0 before the first |
 | 16 to 31 | `IMAGE` | servo register 2 k in the low byte of register 16 + k, 2 k + 1 in the high byte. The image last read, or the backup while `VIEW` is 1; 0 while there is none |
 
-A write sees other registers:
+Writes address a different set of registers:
 
 | Register | Name | Takes |
 | ---: | --- | --- |
@@ -325,7 +325,7 @@ The check is the link's CRC-16 (cyclic redundancy check), seeded 0xFFFF,
 over each register's low byte and then its high byte (`link_kst_crc()`).
 
 Registers 0 to 3 are the command: one frame, written as exactly those 4
-registers and taken whole or not at all. Registers 4 to 28 are written in
+registers and taken whole or not at all. Registers 4 to 28 can be written in
 any windows before the command. A write that reaches register 29 or higher
 is refused with READ_ONLY, a window that touches registers 0 to 3 and is
 not exactly them with BAD_RANGE. A command with a reserved bit, an operation
@@ -349,8 +349,8 @@ no result. An IOmcu that has taken no command since it started reads
 `SEQ` 0 and operation 0 before and after a start: when it starts again
 between its first command and that read, the request counts as dropped.
 Of such first commands only ENTER and REBOOT start an operation; every
-write needs PROGRAMMING, which an ENTER starts. A command that is taken is
-acknowledged; what became of it is in `RESULT`.
+write needs PROGRAMMING, which an ENTER starts. An accepted command is
+acknowledged; its outcome is reported in `RESULT`.
 
 | Operation | Value | Does |
 | --- | ---: | --- |
@@ -409,7 +409,7 @@ session answers a WRITE with result 9 whatever the target is. NO_ENABLE is
 checked before every other
 reason. The panel sends the key only while its switch ENABLE WRITE TO SERVO
 is on, so a command that reaches the IOmcu without it writes nothing
-in any state of the port. No screen holds that switch in this build.
+in any state of the port. The switch is on the SERVO screen's programmer.
 
 A programming port is bidirectional by definition: its pin is a bare GPIO
 that the wire driver turns between output and input. A servo behind an
@@ -417,10 +417,10 @@ output-only buffer ends ENTER with result 4.
 
 ## STOP, switch to SAFE, heartbeat loss and link loss
 
-The port sees three things. A stop is the failsafe's edge (the heartbeat
-stopped or the link went silent) or the edge of the bank's switch to SAFE. Unsafe is
-the time the heartbeat is not trusted or the link is silent. The third is
-the supply: SUPPLY switches the PD mini off when the heartbeat stops, and
+The port distinguishes three conditions. A stop is the transition into
+failsafe (the heartbeat stopped or the link went silent) or the bank's
+transition to SAFE. The unsafe condition lasts while the heartbeat is not
+trusted or the link is silent. The third condition is the supply state: SUPPLY switches the PD mini off when the heartbeat stops, and
 the panel writes SUPPLY's output off at every STOP.
 
 The panel's STOP is therefore three things at the IOmcu: a switch to SAFE of
@@ -452,9 +452,9 @@ alone. After the panel's STOP, a lost heartbeat or a silent link it is off,
 and with a PD mini answering the port keeps it off for 1000ms and returns
 to PWM with bits 4 and 5 clear. POWER_CYCLED and REBOOT end the planning
 and then run. Every other command is refused with BUSY and the planning
-goes on. A PD mini that stops answering does not end it. A switch to SAFE is seen as an edge: the port stops once and takes commands
-again while the bank stays SAFE, so a servo is read and written on a
-bench that is SAFE. While the heartbeat is not trusted or the link is silent no
+goes on. A PD mini that stops answering does not end it. A switch to SAFE is handled as a transition: the port stops once, then accepts commands
+again while the bank remains SAFE. A servo can therefore be read and written
+with the bench in SAFE. While the heartbeat is not trusted or the link is silent no
 frame starts and every operation but ABORT and POWER_CYCLED is refused with
 UNSAFE.
 
@@ -494,7 +494,7 @@ command again up to 3 times when no answer comes, and not once after
 a refusal with BAD_VALUE. After a refused ABORT that read keeps the checks
 above: a page off the panel's `SEQ`, or with operation 0 after a read that
 named one, ends the operation that runs as restarted, never as done. An
-ABORT refused with BAD_VALUE goes again after the read, with the page's
+ABORT refused with BAD_VALUE is resent after the read, with the page's
 `SEQ`. A read of registers 0 to 3 refused with BAD_PAGE
 means an IOmcu without the page; refused with any other code it counts
 as unanswered and is sent again. An IOmcu without the page keeps, for

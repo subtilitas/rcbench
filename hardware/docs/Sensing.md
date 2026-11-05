@@ -5,16 +5,16 @@ balance lead; ESC is electronic speed controller), R10 (the converter for the
 accelerometer, question Q4), R11 (rotation and vibration front ends), R12
 (motor temperature, the external I²C ports and the non-volatile store,
 question Q8; I²C is Inter-Integrated Circuit) and R13 (the load cells). This
-page records the choice, the alternatives, the stock and the reason, from the
-returns of round 1 under `hardware/research/round1/` and
-`hardware/research/round1/selection.json`. One row per part, with every stock
-field, is in [Parts](Parts.md).
+page records the selected parts, alternatives, stock and reasons for each choice, based on
+the reports from round 1 under `hardware/research/round1/` and
+`hardware/research/round1/selection.json`. [Parts](Parts.md) has one row per part with every stock
+field.
 
-**Availability was checked on 2026-09-29.** Stock figures are not valid after
-that day. `python3 tools/jlc_stock.py --check 5` reads them again.
+**Availability was checked on 2026-09-29.** The stock figures describe
+that date only. `python3 tools/jlc_stock.py --check 5` reads them again.
 
 P2 to P6 are the phases of [Research](Research.md#agent-layout): P4 the
-verifiers, P5 the cross-category check and P6 the completeness check. T1 to T6 are its tasks, and the runs named FU- its follow-up tasks. S, F, Q and V followed by a number are its questions to the owner, cited with the owner's answer. A figure no P4 verifier re-read is marked not verified. The alternatives below rank 1 are not verified by P4; their figures are the re-rank's.
+verifiers, P5 the cross-category check and P6 the completeness check. T1 to T6 identify its tasks, and names beginning with FU- identify follow-up tasks. S, F, Q and V followed by a number identify questions to the owner, cited with the corresponding answer. Figures that no P4 verifier checked again are marked not verified. Alternatives below rank 1 are not verified by P4; their figures come from the revised ranking.
 
 ## Summary
 
@@ -54,8 +54,8 @@ part's row in [Parts](Parts.md).
 | --- | --- | --- |
 | Cell monitor | ADBMS1818ASWAZ-RL | ADBMS1818ASWAZ-R7 (the same part on a 300-piece reel), ADBMS1818ASWZ-RL (another land pattern), LTC6813HLWE-1#3ZZPBF and LTC6813HLWE-1#3ZZTRPBF; not verified |
 
-It needs an auxiliary V+ of at least 16V for packs under 16V, and round 2's
-input network for a reversed lead.
+The cell monitor needs an auxiliary V+ of at least 16V for packs under 16V.
+The input network for a reversed lead is assigned to round 2.
 
 ## R10: converter for the accelerometer
 
@@ -76,7 +76,7 @@ input network for a reversed lead.
 | Encoder decode | RP2354B, 2 PIO state machines | none: no external decoder from an allowed maker is in the parts database |
 | Rotation from the ESC, rotation inputs, BENCH rpm source, servo measured position | RP2354B | none |
 
-The encoder decode's program is not in the tree.
+The encoder-decoding program is not in the source tree.
 
 ## R12: temperature, external ports and store
 
@@ -89,7 +89,7 @@ The encoder decode's program is not in the tree.
 | Non-volatile store, EEPROM, verified, not chosen | M24256E-FMN6TP (JLCPCB 125,256, Digi-Key 185) | none |
 
 Digi-Key lists PCA9548APWR as Not For New Designs; Texas Instruments' page,
-the status of record, reads ACTIVE.
+the authoritative status source for this research, lists it as ACTIVE.
 
 ## R13: load cells
 
@@ -100,7 +100,7 @@ the status of record, reads ACTIVE.
 
 ## Budget of the Q4 and Q8 options
 
-P5's budget in T5, as its critic upheld it
+P5's budget from T5, upheld by its critic
 (`hardware/research/round1/T5/002-P5.json`,
 `hardware/research/round1/T5/004-P5-critic.json`).
 
@@ -113,7 +113,7 @@ P5's budget in T5, as its critic upheld it
 
 ## Not known
 
-Each item is reported to the owner, with its evidence; a part an item needs comes from a follow-up of its research category, or from round 2 for a passive, a connector, or the protection on the signal, sensor, balance-lead, link and heartbeat connectors ([Research](Research.md#scope)).
+Each item and its evidence are reported to the owner. Any additional part must be selected in a follow-up for its research category. Passives, connectors and protection for the signal, sensor, balance-lead, link and heartbeat connectors belong to round 2 ([Research](Research.md#scope)).
 
 - R11, optical index: not known; no part qualifies. No optical reflective sensor searched meets the delay-variation budget of V225, at most 1.244µs at 1,092Hz (65,535rpm): VCNT2030, VCNT2020, VCNT2025X01, QRD1114, QRE1113GR, RPR-220, TCND5000, TCRT5000 and TCRT5000L state response times of 10 to 70µs (`hardware/research/round1/FU-C2/002-P2-R11.json`). The magnetic pickup of the same category is selected. The phase-wire clip's TLV3201AIDBVR holds for a ground-referenced front end only; that front end is open again (Phase-wire clip front end in [hardware STATUS](../STATUS.md#open)).
 
@@ -122,11 +122,11 @@ and [Supply](Supply.md#not-known).
 
 ## Not verified
 
-The owner accepted each as open (owner, 2026-09-29).
+The owner accepted these items as unresolved (owner, 2026-09-29).
 
 - R11: optical index. No part; not verified.
 
-Figures of group C that no P4 verifier confirmed; each is not verified:
+The following group C figures remain unverified because no P4 verifier confirmed them:
 
 - R9: figure found V186, not confirmed in FU-C1; not verified.
 - R9: figure found V187, not confirmed in FU-C1; not verified.

@@ -1,17 +1,20 @@
 # hitec
 
-The signal-wire programming protocols of Hitec servos. The core holds the
-frames of both wire families, the transactions a driver runs, the reply
-decoders, the arithmetic of the PIO (programmable input/output) pin driver
-and the register models: the parameters, their encodings and the writes a
-change takes ([Register model](#register-model)), and the session: entry,
-reads, write plans, moves and leave, handed out one step at a time to a
-caller that runs them ([Session](#session)), and the arithmetic and judges
-of a D series horn moved inside a session ([Live loop](#live-loop)). The pin driver puts the wire on one
-RP2350 pin. In this repository the IOmcu's HITEC link page
-(`shared/outputs/hitec_port.c`,
-[The programming port for Hitec servos](../../docs/LinkHitec.md)) runs the
-transactions on a programming port.
+This module implements Hitec servo programming over the signal wire.
+The core provides frames for both protocol families, transactions, reply
+decoders and timing calculations for the PIO (programmable input/output)
+pin driver. It also provides:
+
+- a [register model](#register-model) with parameter encodings and write
+  plans;
+- a [session](#session) that presents entry, read, write, move and leave
+  operations to the caller one step at a time;
+- a [live loop](#live-loop) with position calculations and stop detection
+  for a D series servo horn moved within a session.
+
+The pin driver uses one RP2350 pin. The IOmcu's HITEC link page runs the
+transactions on a programming port (`shared/outputs/hitec_port.c`; see
+[The programming port for Hitec servos](../../docs/LinkHitec.md)).
 
 | Part | Files | Depends on |
 |---|---|---|
@@ -20,8 +23,13 @@ transactions on a programming port.
 
 The wire timings below are measured on an HS-5645MG, an HS-7955TG and a
 D485HW with the HPP-21 Plus and HFP-30 programmers, at a 1.4V threshold.
-On a wire this code has run D series reads on a D485HW, answered with the
-pull-up under [Line levels](#line-levels); nothing else of it has.
+The documented IOmcu runs include D485HW reads and selected register
+writes, and classic servo reads. The model and parameter tables below
+identify the evidence for each operation. D series receive measurements
+cover both the pull-up under [Line levels](#line-levels) and
+[precharge sampling](#receive-by-precharge-and-sample). These observations
+do not establish that every session operation or write plan works on
+hardware.
 
 ## Constraints
 
@@ -154,12 +162,12 @@ not check it: it reads 0x00 in every answer on the bench, and 0xFF and
 
 ## Register model
 
-`hitec_reg.h` holds both register models as data: the image of a servo, the
-parameter table, the encodings, model identification and the write plans.
-It runs no transaction; a session reads into an image, edits a copy of it
-(the draft) and sends the writes of a plan. `hitec_image_forget()` marks a cell
-or a register not known again, for a byte the servo may have changed
-since it was read.
+`hitec_reg.h` describes both register models: the servo image, parameter
+table, encodings, model identification and write plans. It runs no
+transactions. A session reads into an image, edits a copy called the
+draft, and sends the writes in a plan. `hitec_image_forget()` marks a cell
+or register as unknown when the servo may have changed its value since
+the last read.
 
 | | Classic: HS-5xxx, HS-7xxx | D series |
 |---|---|---|
@@ -192,8 +200,9 @@ limits, its layouts and its source (`hitec_src_t`): RCBENCH, written
 through the IOmcu and read back; CAPTURED, a vendor programmer's writes
 captured on the wire; READ, read from a servo with no write recorded; DOC,
 documentation only. A mark refers to the measured servo of the layout: the
-D485HW, the HS-5645MG, the HS-7955TG. Every model is written; the mark is
-for the interface to show.
+D485HW, the HS-5645MG, the HS-7955TG. The implementation permits writes
+for every model; the interface displays the source mark to distinguish
+observed behaviour from documentation-only support.
 
 D series, encodings of the HFP-30:
 
@@ -283,8 +292,9 @@ the name.
 
 Not measured:
 
-- No plan of this module has run against a servo. The classic writes and
-  the D series writes but ID and smart sensor are the vendor programmers'.
+- No complete write plan from this module has documented hardware
+  validation. Apart from the D series ID and smart sensor writes, the
+  captured writes come from the vendor programmers.
 - The HFP-30 writes a neutral or an end point after its adjust loop, with
   0x54 and 0x56 beside it; a plan writes the register alone.
 - Whether a D series speed of 20 and the factory 4095 behave the same.
@@ -298,10 +308,11 @@ Not measured:
 
 ## Session
 
-`hitec_session.h` runs one servo through its operations as a state
-machine. It neither touches the wire nor reads a clock: the caller asks for
-the next step, runs it and hands back its result. Nothing in this
-repository calls it yet; the panel is to run it over the HITEC link page.
+`hitec_session.h` manages one servo as a state machine. It neither
+accesses the wire nor reads a clock. The caller requests the next step,
+runs it and returns its result. The bench programmer in
+`shared/bench/hitec_prog.c` and `shared/bench/hitec_prog_write.c` uses
+the session through the HITEC link page.
 
 ```c
 static hitec_session_t s;               /* 1,068 bytes */
@@ -350,8 +361,8 @@ run (refused, not started, the supply refused, the link lost) as FAILED.
 
 - One operation runs at a time. A read, a write, a plan and a move need a
   successful entry; a leave clears `in_mode`. The off time is 0 to
-  10,000ms. A classic entry always cycles the supply; refusing one without
-  a supply the bench switches is the caller's.
+  10,000ms. A classic entry always cycles the supply. The caller must
+  refuse it if the bench cannot switch the servo supply.
 - Reads go in ascending address order, each address once. A full read
   starts from an empty image and keeps the classic version; a read of a
   set keeps the rest of the image.
@@ -423,11 +434,11 @@ Limits:
 
 Not measured:
 
-- No operation of this module has run against a servo. The classic entry
-  follows the IOmcu console runs of 2026-10-20 (POWER, the `+` answered,
-  `67`), with the servo's second `+` in a LISTEN of its own; the time from
-  the end of the POWER to that LISTEN is the caller's, and the servo's
-  second `+` comes 250 to 267ms after its first.
+- Complete session operations have no documented hardware validation.
+  The classic entry follows the IOmcu console runs of 2026-10-20 (POWER,
+  the `+` answered, `67`), with a separate LISTEN for the servo's second
+  `+`. The caller determines the delay between POWER completion and that
+  LISTEN. The servo's second `+` arrives 250 to 267ms after its first.
 - The classic EEPROM write time: the session spaces classic transactions
   2ms apart; the HPP-21 Plus spaces two settings 121 to 128ms, with a read
   of 0x00 to 0x23 between them.
@@ -435,12 +446,12 @@ Not measured:
 
 ## Live loop
 
-`hitec_live.h` holds what lies between a D series move's target (0x1E,
-0 to 6000) and the position it gives (0x0C, 0 to 16383): the arithmetic of
-a horn moved to the value being edited, inside a session, and the judges
-that stop it at a mechanical stop. It runs no transaction and reads no
-clock; the caller passes a 32-bit millisecond clock, and times are
-unsigned differences, so its wrap does not change one.
+`hitec_live.h` maps a D series move target (0x1E, 0 to 6000) to the
+reported position (0x0C, 0 to 16383). It calculates motion toward the
+value being edited and detects contact with a mechanical stop. It runs
+no transactions and reads no clock. The caller supplies a 32-bit
+millisecond clock; unsigned time differences preserve intervals across
+clock wrap.
 
 | Part | Rule |
 | --- | --- |
@@ -528,9 +539,10 @@ not used.
 | Window end to idle | 7 cycles: the drain empties the output shift register, which drops an answer no byte called for |
 | Push-pull | the level moves 1 cycle after the direction would: the bits on the wire sit 1 cycle late, and the release cuts the last stop bit to 15 cycles |
 
-A receiver that samples once in the middle of each bit takes a sender
-whose bit time is 4.4% shorter to 4.9% longer than its own: the stop bit
-sample at 9.44 to 9.56 bit times has to fall inside the sender's tenth bit.
+A receiver that samples once near the middle of each bit accepts a
+sender whose bit time is 4.4% shorter to 4.9% longer than its own. The
+stop-bit sample at 9.44 to 9.56 bit times must fall within the sender's
+tenth bit.
 
 ## Receive by precharge and sample
 
@@ -769,7 +781,7 @@ the 1.4V crossing is known.
 
 | Master | Rating of its pin | Against |
 |---|---|---|
-| RP2350 GPIO, IOVDD (input/output supply) at 3.3V | 5.5V | a servo whose high level is not measured; no level shifter, no clamp |
+| Fault-tolerant RP2350 digital GPIO, IOVDD (input/output supply) at 3.3V | 5.5V | a servo whose high level is not measured; no level shifter, no clamp |
 | The same pin, IOVDD at 0V | 3.63V | a classic servo makes the high level itself and may drive the line while the master is off |
 
 - Classic: whether the internal pull-down holds the line low with no servo

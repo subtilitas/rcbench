@@ -2,8 +2,9 @@
 
 <sub>**English** · [Deutsch](FirstRun-de.md)</sub>
 
-Both boards powered with the heartbeat wire fitted, and every number below
-read on an instrument. Every step says what "good" looks like and what to write down when it is not.
+This procedure checks both powered boards with the heartbeat wire fitted.
+Measure each value below with an instrument. Every step gives the expected
+result and says what to record if the result differs.
 
 Work down the list. Each step assumes the one above it passed.
 
@@ -24,10 +25,9 @@ Work down the list. Each step assumes the one above it passed.
 bidirectional DShot, a bench supply with current limit, and the USB cable for
 each board.
 
-**Do not connect a motor to the ESC yet.** Step 5 drives no pin at all. It
-is the interlock, and no output is the passing result. Step 6 is the first pin
-on an instrument, and the first thing to look at there is the scope, not a
-propeller.
+**Do not connect a motor to the ESC yet.** Step 5 tests the interlock with
+no output connected. Step 6 is the first measurement of an output pin.
+Check it with the oscilloscope before connecting a load.
 
 **Current limit:** set it low enough that a shorted output trips it rather
 than burning a track.
@@ -56,9 +56,9 @@ Updates](Screens.md#updates)). Both take the release asset
 release's `SHA256SUMS`.
 
 The SD (Secure Digital) card holds a FAT32, FAT16, FAT12 or exFAT
-(extended FAT) volume, so a card of up to 2 TB mounts in the format it is
+(extended FAT) volume, so a card of up to 2TB mounts in the format it is
 sold in. The panel does not read NTFS (New Technology File System), a card
-with a GPT (GUID partition table) or a volume over 2 TiB, and it formats no
+with a GPT (GUID partition table) or a volume over 2TiB, and it formats no
 card ([Screens: The SD card's format](Screens.md#the-sd-cards-format)). A
 card from a bench of 0.21.0 or older holds files in folders the panel does
 not read ([below](#the-sd-card-of-0210-and-older)).
@@ -103,7 +103,7 @@ spelling, so `@flash_args` needs esptool 5 or later.
    esptool.py --chip esp32p4 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
    ```
 
-   On a panel whose settings stay:
+   To retain a panel's settings, use:
 
    ```bash
    esptool.py --chip esp32p4 -p /dev/ttyACM0 write_flash @flash_args
@@ -133,7 +133,7 @@ USB.` until step 2 is done; the link runs meanwhile.
 
 An IOmcu on 0.19.0 or later carries the partition table from its USB load
 and takes the image the panel carries over CAN. The panel's link protocol
-is 4.30, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
+is 4.36, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
 4, is the same, so the two boards link before and after the update.
 
 1. Power both boards with the link wired. At link-up the panel compares
@@ -294,11 +294,11 @@ of waiting. It answers one question: do frames cross the bus intact? It
 uses no page protocol, so if it passes and the link still does not work, the
 fault is above the wire.
 
-**Good looks like nothing:** the splash shows `LINK  OK  CAN 1Mbit/s` and
+**Pass:** the splash shows `LINK  OK  CAN 1Mbit/s` and
 hands over to the menu.
 
-**A failure is a screen**, before the menu, with the verdict, what to check in
-order, and both ends' counters. It takes a two-second hold to leave.
+**Fail:** a screen appears before the menu with the verdict, an ordered
+checklist and the counters from both ends. Leaving it requires a two-second hold.
 [Bringing up the link](Bringup.md#the-bus-fault-screen) has the verdicts and
 what each one means.
 
@@ -332,9 +332,10 @@ working, not a fault.
 |---|---|
 | Edge period | 20ms |
 | Gap accepted | 4ms to 150ms |
-| Edges before it counts as alive | 4 |
+| Accepted intervals before the line is trusted | 4 |
 
-So the line must be edging for roughly **80ms** before a switch to ARMED can succeed.
+The line therefore needs roughly **80ms** after its first edge to become
+trusted, before a switch to ARMED can succeed.
 
 **On the scope, at GPIO 3:** a square wave, edge to edge 20ms. If the gap ever
 exceeds 150ms the IOmcu drops it and the next switch to ARMED is refused.
@@ -400,12 +401,12 @@ Nothing is wired to an output yet. This step tests the interlock, not a pin.
 2. **Heartbeat wire fitted, panel ARMED** → the IOmcu accepts.
 3. **Pull the heartbeat wire while ARMED** → it must fail safe within
    **150ms**.
-4. **Press STOP** → latches. It must take an explicit ARM to leave, not a
-   link that recovers.
+4. **Press STOP** → it latches. Hold STOP for 2s and complete the reset
+   procedure before holding ARM again. A recovered link must not clear it.
 5. **Pull the CAN wire while ARMED** → the IOmcu gives up after
    **200ms**; the panel escalates after **1s**.
-6. **Cover the touch panel / let touch die** → after **500ms** of silence
-   switching to ARMED is blocked.
+6. **Simulate a touch-controller failure** → after **500ms** without an
+   answer, switching to ARMED is blocked.
 
 Every one of these is host-tested. **None of the numbers below has been seen on an instrument:** no scope or analyser has read any pulse width, frame period or reply delay in this tree.
 
@@ -430,8 +431,8 @@ compare register. The second of a pair is refused rather than muxed onto the
 first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
 the screen goes on looking configured while the lead produces no pulse.
 
-On the panel: **Setup → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
-**Setup → OUTPUTS**, choose `SERVO PWM` in its list and tap one key on the
+On the panel: **SETUP → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
+**SETUP → OUTPUTS**, choose `SERVO PWM` in its list and tap one key on the
 board drawing — grounds are marked `G`, rails carry their voltage.
 
 **Scope the pin before connecting the servo.**
@@ -484,7 +485,7 @@ INA3221 on the servo rail over I2C (Inter-Integrated Circuit) at 400kHz,
 every 1ms. Every step below says what good
 looks like; anything else is a finding to write down.
 
-**Have to hand:** the MATEK I2C-INA-BM (INA228, 200 µΩ) at the address it
+**Have to hand:** the MATEK I2C-INA-BM (INA228, 200µΩ) at the address it
 ships with, the DAOKAI INA3221 (0.1Ω per channel, 1.638A full scale) with
 its A0 solder bridge closed to GND for 0x40 (as shipped all four A0 bridges
 are open and the address floats between 0x40 and 0x41), two
@@ -494,7 +495,7 @@ supply.
 
 **Set it up on the panel.** SETUP → SENSORS: `INA228` ON; SETUP →
 SENSORS: `0x40 fitted` ON. The other sensor settings default to the modules
-above: INA228 at 0x45 with 200 µΩ, the INA3221 at 0x40 with 0.1Ω on each
+above: INA228 at 0x45 with 200µΩ, the INA3221 at 0x40 with 0.1Ω on each
 channel and CH1 watching OUT 1, SDA on GPIO 16 and SCL on GPIO 17. Without a panel, the build option `IOMCU_SENSE_BRINGUP=ON` enables both
 parts at the page's defaults while no set-up is stored in flash:
 
@@ -578,7 +579,8 @@ when CH1 passes 1.638A, and CH1's current is then a bound, not a value.
 
 ### 8.4 A run: peaks and totals
 
-Press ARM on MOTOR & ESC and hold a steady current for 60s, then switch to SAFE.
+Hold ARM on MOTOR & ESC to switch to ARMED. Maintain a steady current for
+60s, then switch to SAFE.
 
 **Good:** `bench flags` reads 0x63 (with 0x04 and 0x08 too when a
 bidirectional ESC answers). `mAh` counts current × time: 2.00A for 60s
@@ -676,8 +678,7 @@ trace has a `$L n=` line where records are missing and their sum in its
 end line. The end line counts every dropped record from before the
 trace's end, with or without a record kept after it. A sample dropped
 while a set-up record waits for room is counted after that record, so a
-trace that ends at the set-up change does not count it. The time a pass of core 0 gains from writing the lines is not
-measured.
+trace that ends at the set-up change does not count it. The additional time spent by core 0 on writing the lines is not measured.
 
 **The lines** (`shared/sense/sense_trace.h` has every field):
 
@@ -863,8 +864,8 @@ It ends `no command line of channel(s) N` for a named channel that no `$C`
 line of the log has; the exit code stays 0. Two named channels commanded
 within 30ms of each other are not replayed. Without the option every
 channel counts. The tool does not check that a named channel's pin has a
-servo on it: a servo on a channel that is not named moves in the replayed
-current.
+servo on it: current from a servo on an unnamed channel remains in the signal
+being replayed.
 
 `--floor` takes 0.000001A to 1000A, `--pair-ms` more than 0ms up to
 60000ms, `--csv-offset` up to 1e9 s either side of 0, `--loaded-channel`
@@ -944,11 +945,11 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 
 | Symptom | Look here first |
 |---|---|
-| Switch to ARMED refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150ms. Scope GPIO 3. |
-| Switch to ARMED refused, no obvious reason | Touch dead for 500ms blocks it. Touch the panel. |
+| Switch to ARMED refused, wire fitted | Heartbeat has not yet supplied 4 accepted intervals, or a gap exceeds 150ms. Scope GPIO 3. |
+| Switch to ARMED refused, no obvious reason | No touch-controller answer for 500ms blocks it. Check the controller and its connection. |
 | Link up, screen offers no pins | The board's catalogue did not arrive. Console says which page failed. |
 | Heartbeat drops at the first link-up | **The drawing transfer or the flash keeper.** See §4. |
-| Display freezes briefly | A flash write. Expected while the board drawing is kept, once per flash operation, 4 for the RP2350-CAN's drawing. |
+| Display freezes briefly | Check for a flash write while the board drawing is saved: 4 operations for the RP2350-CAN's drawing. The display behavior during those writes is not measured. |
 | IOmcu does not boot after flashing | Image past 4MB. Check the size line from §1. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
 | Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is ARMED |
@@ -957,8 +958,8 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 | `sense flags` 0x0200 that stays | SDA or SCL held low: an unpowered module clamping the bus, a missing pull-up, or a short |
 | `sense present 0x0000` with the bus open | Nothing answers: pull-ups missing, modules unpowered, or SDA and SCL swapped |
 
-**If the bench misbehaves in a way that points at the panel**, the three
-newest and least proven things are all mine and all only compiler-checked:
+**If a fault appears to originate in the panel**, check these three paths.
+Their timing on hardware is not measured:
 
 - the **drawing keep** in the control task, one flash step a pass,
 - the **drawing slice** inside the control task's poll loop, and

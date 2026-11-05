@@ -6,29 +6,29 @@ order: 23
 
 # Ruderausschlag
 
-RUDER, eine Aufgabe in der Leiste von [SERVO](servo.md), steuert ein Servo und zeigt, wie weit die Ruderfläche ausschlägt, die es bewegt: in Grad ab einem Nullpunkt und, mit eingegebener Länge der Fläche, in mm an der Hinterkante. Der Winkel kommt von der Quelle, die ANGLE SOURCE unter [Sensoren](setup-sensors.md) nennt: vom AS5600-Ausgangsencoder oder von der IMU, so wie ihn GEMESSEN auf LIVE nimmt, mit dem Vorzeichen in Richtung des befohlenen Winkels. Die Ausgangskarte rechts bleibt wie auf jeder Aufgabe: die Zeile ZIEL nennt, was die Aufgabe ansteuert, und ARM entscheidet, ob sich etwas bewegt.
+RUDER in der Leiste von [SERVO](servo.md) steuert ein Servo und zeigt den Ruderausschlag. Die Anzeige nennt Grad ab einem Nullpunkt und bei eingegebener Ruderflächentiefe auch Millimeter an der Hinterkante. WINKELQUELLE unter [Sensoren](setup-sensors.md) wählt den AS5600-Ausgangsencoder oder die IMU. Wie bei GEMESSEN auf LIVE folgt das Vorzeichen der Richtung des Sollwinkels. Die Ausgangskarte bleibt rechts sichtbar: ZIEL nennt den angesteuerten Ausgang, und ARM entscheidet, ob er sich bewegen kann.
 
 ![RUDER bei SAFE](view:servo-rudder)
 
 ## Die Anzeige
 
-| Teil | Zeigt |
+| Teil | Anzeige |
 |---|---|
-| AUSSCHLAG | den Winkel ab NULLPUNKT, -180.0 bis +179.9°; vor NULLPUNKT den Winkel ab ENC CENTRE des AS5600 oder ab dem Zählwert 0 der IMU; `---` ohne Messwert |
-| HINTERKANTE | L x sin(Ausschlag) bei einer LÄNGE von L mm: was ein senkrecht an die Hinterkante gehaltenes Lineal anzeigt, mit Vorzeichen |
-| MAX | den größten Ausschlag je Seite seit NULLPUNKT oder MAX LÖSCHEN, in ° und in mm |
+| AUSSCHLAG | Winkel ab NULLPUNKT, -180,0 bis +179,9°. Vor dem Nullsetzen gilt SENSOR-MITTE des AS5600 oder Zählwert 0 der IMU als Bezug; ohne Messwert steht `---`. |
+| HINTERKANTE | L x sin(Ausschlag) bei LÄNGE L mm: der vorzeichenbehaftete Wert eines senkrecht an die Hinterkante gehaltenen Lineals. |
+| MAX | Größter Ausschlag je Seite seit NULLPUNKT oder MAX LÖSCHEN, in ° und mm. |
 
-Die mm sind der Abstand der Hinterkante von der Neutralebene, nicht der Bogen, den sie zurücklegt. Bei 30° zeigt eine Fläche von 100mm 50.0mm.
+Der Millimeterwert ist der Abstand der Hinterkante von der Neutralebene, nicht die zurückgelegte Bogenlänge. Bei 30° und 100mm Ruderflächentiefe beträgt er 50,0mm.
 
 ## Die Seitenansicht
 
-Rechts der Statuszeilen ist die Fläche im Schnitt gezeichnet, die Nasenkante links: die graue feste Fläche, das Scharnier und das Ruder als cyanfarbener Keil im Ausschlag, den AUSSCHLAG zeigt. Positiver Ausschlag zeichnet die Hinterkante nach oben. Striche markieren 0, ±30, ±60 und ±90°; gestrichelte Linien das MAX jeder Seite. Die Länge des Ruders bleibt fest, also wird ein Ausschlag über ±90° bei ±90° gezeichnet, während die Zahlen weiterzählen. Ohne Messwert liegt das Ruder gedimmt auf der Neutrallinie.
+Die Seitenansicht steht rechts neben den Statuszeilen, mit der Nasenkante links. Sie zeigt die feste Fläche grau, das Scharnier und das Ruder als cyanfarbenen Keil im angezeigten Winkel. Positiver Ausschlag hebt die Hinterkante an. Striche markieren 0, ±30, ±60 und ±90°; gestrichelte Linien zeigen MAX je Seite. Die Zeichnung endet bei ±90°, die Zahlenanzeige läuft darüber hinaus weiter. Die gezeichnete Ruderlänge bleibt fest. Ohne Messwert liegt das Ruder gedimmt auf der Neutrallinie.
 
-![Die Fläche bei -85.0°](view:servo-rudder-85)
+![Die Fläche bei -85,0°](view:servo-rudder-85)
 
 ## LÄNGE
 
-LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis 500mm in Schritten von 1mm, über einen Neustart gespeichert. Ein Tippen öffnet die Zifferntastatur. 1 bis 9mm werden abgelehnt, und die Tastatur zeigt `0 oder 10 bis 500mm`. Mit LÄNGE auf 0 zeigt die Anzeige nur Grad und fragt in der mm-Spalte nach der LÄNGE.
+LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500mm in Schritten von 1mm. Die Einstellung bleibt nach einem Neustart erhalten. Tippe darauf, um das Tastenfeld zu öffnen. Werte von 1 bis 9mm werden mit `0 oder 10 bis 500mm` abgelehnt. Bei 0 zeigt die Anzeige nur Grad und fordert in der mm-Spalte die LÄNGE an.
 
 ![LÄNGE nicht gesetzt: nur Grad](view:servo-rudder-nolength)
 
@@ -38,43 +38,47 @@ LÄNGE ist die Fläche von der Scharnierlinie bis zur Hinterkante: 0 oder 10 bis
 
 | Bedienelement | SAFE | ARMED |
 |---|---|---|
-| 1000us, 2000us | abgelehnt; gedimmt | befiehlt diesen Puls, begrenzt auf WEG und den Pulsbereich des eingestellten Typs |
-| ZENTRIEREN | abgelehnt; gedimmt | befiehlt PULS MITTE plus TRIMMUNG |
-| Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt das Horn vom befohlenen Wert aus, wie auf LIVE; abgelehnt, solange AUTO läuft |
-| NULLPUNKT | nimmt den aktuellen Winkel als Neutrallage und löscht MAX; grau ohne Messwert; eine andere ANGLE SOURCE, eine andere AXIS oder SIGN der IMU oder ein NULLPUNKT oder NULLPUNKT LÖSCHEN auf dem IMU-Bildschirm verwirft Nullpunkt und MAX | dasselbe; abgelehnt, solange AUTO läuft |
-| MAX LÖSCHEN | löscht MAX; der Nullpunkt bleibt | dasselbe; abgelehnt, solange AUTO läuft |
-| AUTO | zeigt den Kasten von AUTO ([AUTO](#auto)) | dasselbe |
+| 1000us, 2000us | gesperrt und gedimmt | gibt diesen Puls vor, begrenzt durch WEG und den Pulsbereich des eingestellten Typs |
+| ZENTRIEREN | gesperrt und gedimmt | gibt PULS MITTE plus TRIMMUNG vor |
+| Drehknopf | gesperrt; Drehungen werden verworfen | bewegt das Horn ausgehend vom Sollwert, wie auf LIVE; bei laufendem AUTO gesperrt |
+| NULLPUNKT | setzt den aktuellen Winkel als Neutrallage und löscht MAX; ohne Messwert grau. Änderungen an WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen sowie NULLPUNKT oder NULLPUNKT LÖSCHEN auf der IMU-Seite verwerfen Nullpunkt und MAX. | ebenso; bei laufendem AUTO gesperrt |
+| MAX LÖSCHEN | löscht MAX und behält den Nullpunkt | ebenso; bei laufendem AUTO gesperrt |
+| AUTO | öffnet den [AUTO-Bereich](#auto) | ebenso |
 
-1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT, MAX LÖSCHEN und AUTO wirken bei einem Tippen, das auf ihnen loslässt. Die Zeile PULS unter den Tasten nennt den befohlenen Puls. Ein Wechsel des Reiters lässt das Servo, wo es steht; DISARM, STOP und das Verlassen von SERVO schalten den Prüfstand auf SAFE.
+1000us, ZENTRIEREN und 2000us wirken beim Drücken. LÄNGE, NULLPUNKT, MAX LÖSCHEN und AUTO wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. Beim Reiterwechsel bleibt das Servo an seiner Position. DISARM, STOP oder das Verlassen von SERVO schaltet den Prüfstand auf SAFE.
 
 ## Die Statuszeilen
 
-| Zeile | Bedeutet |
+| Zeile | Bedeutung |
 |---|---|
-| `WINKEL: AS5600`, `WINKEL: IMU X+` | die Quelle liefert Messwerte; die IMU steht mit AXIS und SIGN da |
-| `WINKEL: AS5600 AUS IN SETUP` | der AS5600 ist unter SETUP > SENSORS aus |
-| `WINKEL: AS5600 ANTWORTET NICHT`, `WINKEL: IMU X+ ANTWORTET NICHT` | an, und kein Messwert kommt; bei der IMU auch, solange sie aus oder nicht verbunden ist |
-| `WINKEL: AS5600 SIEHT KEINEN MAGNETEN` | der Sensor meldet keinen Magneten |
-| `WINKEL: KEINE VERBINDUNG` | keine Verbindung zur IOmcu, der RP2350-Platine |
-| `KEIN NULLPUNKT: AB SENSORMITTE` | NULLPUNKT noch nicht genommen |
-| `ZUERST ARM` | der Prüfstand ist SAFE |
+| `WINKEL: AS5600`, `WINKEL: IMU X+` | Quelle liefert Messwerte; bei der IMU stehen Achse und Vorzeichen dabei. |
+| `WINKEL: AS5600 AUS IN SETUP` | AS5600 unter SETUP > SENSORS ausgeschaltet. |
+| `WINKEL: AS5600 ANTWORTET NICHT`, `WINKEL: IMU X+ ANTWORTET NICHT` | Quelle eingeschaltet, aber ohne Messwert; bei der IMU auch ausgeschaltet oder nicht verbunden. |
+| `WINKEL: AS5600 SIEHT KEINEN MAGNETEN` | Sensor meldet keinen Magneten. |
+| `WINKEL: KEINE VERBINDUNG` | Keine Verbindung zum IOmcu, der RP2350-Platine. |
+| `KEIN NULLPUNKT: AB SENSORMITTE` | NULLPUNKT noch nicht gesetzt. |
+| `ZUERST ARM` | Prüfstand ist SAFE. |
 
 ## AUTO
 
-AUTO programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite eingegebenen Ausschlag erreichen. Das Servo ist die [Option SERVO des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs), die den zuletzt unter PROGRAMMIEREN geöffneten Programmierer übernimmt; die dritte Zeile des Kastens nennt es, `SERVO HITEC D-SERIE`. Der Kasten nimmt den Platz von LÄNGE, den Tasten zum Ansteuern und den Statuszeilen ein; MANUELL bringt sie zurück. Die Seitenansicht bleibt und zeigt zusätzlich die beiden Sollwerte als gestrichelte Linien in Bernstein: 1000us auf der negativen Seite, 2000us auf der positiven, oder jedes auf der Seite, auf der der letzte Lauf es gemessen hat.
+AUTO programmiert ein KST-, Chaservo- oder Hitec-Servo am Programmierport so, dass 1000us und 2000us den je Seite vorgegebenen Ausschlag erreichen. Die [Option SERVO des Endlagenlaufs](servo-settings.md#die-optionen-des-endlagenlaufs) übernimmt die zuletzt unter PROGRAMMIEREN geöffnete Servoprogrammierung. Die dritte Zeile nennt sie, etwa `SERVO HITEC D-SERIE`.
+
+Der AUTO-Bereich ersetzt LÄNGE, Ansteuertasten und Statuszeilen; MANUELL stellt sie wieder her. Die Seitenansicht bleibt sichtbar und ergänzt beide Sollwerte als bernsteinfarbene gestrichelte Linien. 1000us liegt auf der negativen, 2000us auf der positiven Seite, oder jeweils auf der vom letzten Lauf gemessenen Seite.
 
 ![Der Kasten von AUTO, ARMED](view:servo-rudder-auto)
 
-| Zeile | Setzt |
+| Zeile | Einstellung |
 |---|---|
-| 1000us, 2000us | den Soll-Ausschlag dieser Seite, 0.5 bis 90.0°, 20.0°; mit gesetzter LÄNGE daneben die mm an der Hinterkante |
-| RESERVE | so viel über das Soll hinaus programmiert, 0 bis 50%, 10%: 20.0° bei 10% ergeben einen Sollwert von 22.0° |
-| TOLERANZ | wie nah am Sollwert eine Messung liegen muss, 0.1 bis 5.0°, 0.5° |
+| 1000us, 2000us | Soll-Ausschlag je Seite, 0,5 bis 90,0°, Vorgabe 20,0°. Bei gesetzter LÄNGE stehen daneben die mm an der Hinterkante. |
+| RESERVE | Anteil über dem Soll-Ausschlag, 0 bis 50%, Vorgabe 10%: 20,0° bei 10% ergeben einen Zielwert von 22,0°. |
+| TOLERANZ | Zulässige Abweichung vom Zielwert, 0,1 bis 5,0°, Vorgabe 0,5°. |
 
-Zuerst NULLPUNKT mit der Fläche in Neutrallage; solange der Lauf läuft, sind NULLPUNKT, MAX LÖSCHEN und MANUELL abgelehnt. 2s HALTEN: START startet den Lauf; die Taste heißt dann LAUF BEENDEN, und ein Druck beendet den Lauf sofort. Der Lauf liest das Servo, setzt den Pulsbereich eines KST-Servos auf 1000 bis 2000us, fährt dann je Seite den Endpuls an, wartet, bis der Winkel 500ms ruhig ist, und schreibt einen neuen Endpoint: höchstens 8 Schreibvorgänge je Seite, jeder in einer eigenen Sitzung des Programmierers, mit dem Servo aus- und eingeschaltet. Der Stromschutz des Endlagenlaufs gilt durchgehend: ein Blockieren vor dem Sollwert beendet den Lauf mit `Ruder klemmt bei x°`. Jedes Ende schaltet den Prüfstand auf SAFE und den Ausgang der Versorgung aus.
+Setze zuerst NULLPUNKT bei neutraler Ruderfläche. Während des Laufs sind NULLPUNKT, MAX LÖSCHEN und MANUELL gesperrt. 2s HALTEN: START beginnt den Lauf. Danach heißt die Taste LAUF BEENDEN; ein Druck beendet ihn sofort.
 
-Die erste Zeile nennt den laufenden Schritt, die Sollwerte oder warum ein START abgelehnt ist; die zweite das Ergebnis; die dritte den Bericht RUDDRnnn.TXT, oder `ZURÜCKSPIELEN IN PROGRAMMIEREN`, wenn ein Lauf, der geschrieben oder ein Schreiben unterwegs abgebrochen hat, nicht bestanden ist, an einem Hitec-Servo `HITEC001 IN DATEIEN LADEN`.
+Der Lauf liest das Servo aus und setzt bei KST den Pulsbereich auf 1000 bis 2000us. Je Seite fährt er den Endpuls an, wartet auf einen 500ms lang ruhigen Winkel und schreibt einen neuen Endpunkt. Er schreibt höchstens 8-mal je Seite, jeweils in einer eigenen Programmiersitzung mit Aus- und Einschalten des Servos. Der Stromschutz des Endlagenlaufs bleibt durchgehend aktiv. Blockiert das Ruder vor dem Zielwert, endet der Lauf mit `Ruder klemmt bei x°`. Bei jedem Ende schaltet der Prüfstand auf SAFE und der Netzteilausgang aus.
+
+Die erste Zeile zeigt den laufenden Schritt, die Zielwerte oder den Grund für einen abgelehnten START. Die zweite nennt das Ergebnis, die dritte den Bericht RUDDRnnn.TXT. Hat ein nicht bestandener Lauf Einstellungen geschrieben oder einen Schreibvorgang abgebrochen, steht dort stattdessen `ZURÜCKSPIELEN IN PROGRAMMIEREN`, bei Hitec `HITEC001 IN DATEIEN LADEN`.
 
 ## Was der Winkel ist
 
-Der AS5600 sitzt auf der Servoabtriebswelle, sein Winkel ist also der der Welle. Ein Gestänge zwischen Horn und Fläche lässt beide auseinanderlaufen: die Anzeige zeigt den Ausschlag der Welle, und der Unterschied zu dem der Fläche ist nicht gemessen. Die IMU misst das, woran sie befestigt ist, auf der Fläche deren eigenen Winkel.
+Der AS5600 misst den Winkel der Servoabtriebswelle. Durch ein Gestänge kann der Ruderausschlag vom Wellenwinkel abweichen; diese Differenz wird nicht gemessen. Die IMU misst den Winkel des Teils, an dem sie befestigt ist. Auf der Ruderfläche misst sie deren eigenen Winkel.

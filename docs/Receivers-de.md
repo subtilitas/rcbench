@@ -2,14 +2,14 @@
 
 <sub>[English](Receivers.md) · **Deutsch**</sub>
 
-Einen Empfänger an den Prüfstand anschließen und seine Ausgabe auf dem
-RECEIVER-Bildschirm lesen.
+Diese Seite beschreibt den Anschluss eines Empfängers und die Anzeige
+seiner Daten auf RECEIVER.
 
 ## Unterstützung
 
 | Bus | Leitung | Stand |
 | --- | --- | --- |
-| S.BUS | invertierter 8E2-UART (UART: Universal Asynchronous Receiver-Transmitter), 100 kBaud, ein Pin | Decoder gebaut und getestet; das PIO-Programm (PIO: Programmable Input/Output), das die invertierte Leitung in Bytes umsetzt, ist nicht geschrieben |
+| S.BUS | invertierter 8E2-UART (UART: Universal Asynchronous Receiver-Transmitter), 100kBaud, ein Pin | Decoder gebaut und getestet; das PIO-Programm (PIO: Programmable Input/Output), das die invertierte Leitung in Bytes umsetzt, ist nicht geschrieben |
 | iBUS, SUMD, CRSF, SRXL2, JETI EX Bus | UART, normal oder invertiert, je ein Pin | geplant |
 
 Jeder Bus ist eine Signalleitung plus Masse an einen Pin des IOmcu.
@@ -17,27 +17,28 @@ Externe Bauteile sind nicht nötig.
 
 ## Zustände
 
-Keine Firmware speist den RECEIVER-Bildschirm: Der S.BUS-Decoder ist in das Panel-Image
-und die Host-Tests eingebunden, auf keinem der beiden Boards gibt es eine
-Bytequelle, und nichts ruft `analyser_screen_push()` oder
-`analyser_screen_silent()` auf. Der Bildschirm zeigt daher KEIN SIGNAL. Die
-folgenden Zustände sind das, was der Bildschirm zeichnet, wenn er gespeist
-wird, wie die Host-Tests ihn ausführen.
+Keine Firmware liefert Daten an RECEIVER. Der S.BUS-Decoder ist in die
+Panel-Firmware und die Host-Tests eingebunden. Auf keiner der beiden
+Platinen gibt es jedoch eine Quelle für Empfangsbytes; weder
+`analyser_screen_push()` noch `analyser_screen_silent()` wird aufgerufen.
+Die Seite zeigt deshalb KEIN SIGNAL. Die folgenden Zustände beschreiben,
+wie sie auf eingespeiste Daten reagiert. Das wird in den Host-Tests geprüft.
 
-Der RECEIVER-Bildschirm zeigt sechzehn Kanäle mit Verlauf, die zwei Digitalkanäle, die
-Frame Rate und die Zähler (Frames, Resyncs, Bad Footers). Der Zustandsblock
-zeigt einen von:
+RECEIVER zeigt sechzehn Kanäle mit Verlauf, die zwei Digitalkanäle, die
+Anzahl der Frames pro Sekunde und die Zähler für Frames, Resyncs und
+fehlerhafte Endbytes (Bad tail). Das Zustandsfeld zeigt einen der folgenden
+Zustände:
 
 | Zustand | Bedeutung | Maßnahme |
 | --- | --- | --- |
 | LIVE | Frames kommen an, der Sender wird empfangen | die Werte sind gültig |
 | FRAME LOST | dieser Frame kam nicht unversehrt an | in großer Entfernung vereinzelt; gehäuft am Prüfstand weist auf Verdrahtung oder Decoder |
-| FAILSAFE | der Empfänger hat den Sender verloren und sendet seine Failsafe-Werte | als Stopp behandeln; die Werte sind wohlgeformt und bedeutungslos |
+| FAILSAFE | der Empfänger hat den Sender verloren und sendet seine Failsafe-Werte | als Stopp behandeln; die Werte sind formal gültig, aber keine gültigen Stellvorgaben des Senders |
 | KEIN SIGNAL | nichts auf der Leitung | Empfängerversorgung, Verdrahtung, Pin |
 
 Ein Empfänger im Failsafe sendet sechzehn plausible, gleichmäßig laufende
-Kanalwerte. Zum Prüfen des Failsafe-Verhaltens eines Empfängers den Sender
-ausschalten und den Zustandsblock beobachten. Bei den meisten Empfängern ist
+Kanalwerte. Schalte zum Prüfen des Failsafe-Verhaltens den Sender aus und beobachte
+das Zustandsfeld. Bei den meisten Empfängern ist
 das Failsafe-Verhalten einstellbar.
 
 ## S.BUS
@@ -52,8 +53,8 @@ das Failsafe-Verhalten einstellbar.
 
 ## Decoder-Regeln
 
-Für jeden Decoder: Framegrenzen an etwas Stärkerem als einem Header-Byte
-erkennen, wo das Protokoll es hergibt, und das Failsafe-Flag vor den Kanälen
-decodieren. Jeder Decoder wird aus seiner Spezifikation geschrieben; die
+Nutze für die Framegrenzen ein zuverlässigeres Merkmal als das Header-Byte,
+wenn das Protokoll eines bietet. Decodiere bei jedem Decoder das
+Failsafe-Flag vor den Kanälen. Jeder Decoder wird aus seiner Spezifikation geschrieben; die
 Lizenzregel steht in
 [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

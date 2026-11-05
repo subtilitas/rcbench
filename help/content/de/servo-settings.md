@@ -6,22 +6,22 @@ order: 21
 
 # Servo-Optionen
 
-OPTIONEN, der dritte Reiter der Leiste von [SERVO](servo.md), zeigt die Optionen des Servos im Seitenbereich auf drei Seiten: AUSGANG, SWEEP und PRÜFLING. Die Optionen jedes Laufs öffnen sich von seiner Karte auf TEST: OPTIONEN auf der Karte zeigt sie als Liste eine Ebene tiefer, und SCHLIESSEN oben rechts in der Liste oder das Home-Tag führt zurück zu den Karten. Die Ausgangskarte rechts bleibt an ihrem Platz und wirkt. Ein Wert öffnet das Tastenfeld, eine Liste öffnet eine Liste, ein Schalter schaltet beim Tipp um, und NAME öffnet eine Tastatur.
+OPTIONEN in der Leiste von [SERVO](servo.md) enthält drei Seiten: AUSGANG, SWEEP und PRÜFLING. Jeder Lauf hat eigene Optionen. Öffne OPTIONEN auf seiner TEST-Karte für die Liste; SCHLIESSEN oben rechts oder das Home-Feld führt zurück. Die Ausgangskarte bleibt rechts sichtbar und bedienbar. Tippe auf eine Zahl für das Tastenfeld, auf eine Auswahl für deren Liste, auf einen Schalter zum Umschalten oder auf NAME für die Tastatur.
 
 ## AUSGANG
 
 ![Die Seite AUSGANG](view:servo-settings)
 
-| Option | Bereich | Was sie tut |
+| Option | Bereich | Wirkung |
 |---|---|---|
-| TYP | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | das Servoprofil |
-| PULSRATE | die Liste des Typs, oder EIGENE EINSTELLUNG über das Tastenfeld | wie oft ein Puls gesendet wird |
-| PULS MIN, PULS MITTE, PULS MAX | 400 bis 2500us; jedes Ende mindestens 50us von PULS MITTE entfernt | -90deg ist MIN, 0 ist MITTE, +90deg ist MAX |
-| TRIMMUNG | -200 bis +200us, 5us je Schritt | wird zur Mitte addiert; ein Tippen auf den Wert öffnet das Tastenfeld mit der Taste `+/-` |
-| WEG | 10 bis 90deg | wie weit das Horn je Richtung gehen darf |
-| UMKEHREN | EIN, AUS | die Richtung, in der der Winkel auf den Puls abgebildet wird |
+| TYP | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | wählt das Servoprofil |
+| PULSRATE | Liste des Typs oder EIGENE EINSTELLUNG über das Tastenfeld | Häufigkeit der ausgegebenen Pulse |
+| PULS MIN, PULS MITTE, PULS MAX | 400 bis 2500us; jedes Ende mindestens 50us von PULS MITTE entfernt | ordnet -90° MIN, 0° MITTE und +90° MAX zu |
+| TRIMMUNG | -200 bis +200us, Schritte von 5us | wird zur Mitte addiert; ein Tipp öffnet das Tastenfeld mit `+/-` |
+| WEG | 10 bis 90° | begrenzt den Hornweg je Richtung |
+| UMKEHREN | EIN, AUS | kehrt die Zuordnung von Winkel zu Puls um |
 
-| Typ | Mitte | Weg | Frame Rates |
+| Typ | Mitte | Weg | Pulsraten |
 |---|---|---|---|
 | STANDARD PWM | 1500us | 1000-2000us | 50, 60, 100, 150, 200, 250, 300, 333Hz |
 | NARROW 760 | 760us | 660-860us | wie STANDARD PWM |
@@ -29,28 +29,28 @@ OPTIONEN, der dritte Reiter der Leiste von [SERVO](servo.md), zeigt die Optionen
 | HELI CYCLIC | 1520us | 820-2220us | 50, 120, 200, 333Hz |
 | HELI TAIL 760 | 760us | 410-1110us | 200, 333, 560Hz |
 
-Ein Puls braucht eine Pause vor dem nächsten Frame: mindestens 1ms bei STANDARD PWM, NARROW 760 und WIDE, 0,5ms bei den Heli-Typen. Eine Frame Rate, die den Pulsen keine Pause lässt, wird abgelehnt.
+Zwischen Pulsende und nächstem Frame ist eine Pause nötig: mindestens 1ms bei STANDARD PWM, NARROW 760 und WIDE, 0,5ms bei den Heli-Typen. Eine Pulsrate ohne ausreichende Pause wird abgelehnt.
 
 Die Optionen von AUSGANG gelten für die Sitzung. Jeder Neustart kehrt zu STANDARD PWM mit 50Hz zurück.
 
 ![Das Tastenfeld der TRIMMUNG, -25us getippt](view:servo-trim-keypad)
 
-Das Tastenfeld der TRIMMUNG hat zwischen dem Punkt und OK eine Taste `+/-`: Sie setzt ein Minuszeichen vor die Eingabe oder nimmt es weg. OK nimmt -200 bis +200us und legt den Wert auf den näheren 5-us-Schritt: 13 wird 15, -12 wird -10. -201 lässt das Tastenfeld offen und nennt den Bereich in der Warnfarbe.
+Das Tastenfeld für TRIMMUNG hat zwischen Dezimalpunkt und OK die Taste `+/-`. Sie setzt oder entfernt das Minuszeichen vor der Eingabe. OK nimmt -200 bis +200us an und rundet auf den nächsten Schritt von 5us: 13 wird 15, -12 wird -10. Bei -201 bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor.
 
 ## Die Warnung bei schnellen Raten
 
 ![KANN DAS SERVO ZERSTÖREN](view:servo-warning)
 
-Ein Heli-Typ oder jede Frame Rate über 60Hz kann ein Servo zerstören, das nicht dafür gebaut ist. Die Wahl öffnet eine Warnung in der Gefahrfarbe, die die Wahl nennt. Sie gilt, nachdem 2s HALTEN ZUM ÜBERNEHMEN gehalten wurde. ABBRECHEN, ein Finger, der abrutscht, und das Verlassen des Bildschirms übernehmen nichts. Typ und Rate, die gelten, bleiben auf der rechten Karte rot.
+Ein Heli-Typ oder eine Pulsrate über 60Hz kann ein ungeeignetes Servo zerstören. Die Auswahl öffnet eine Warnung in der Gefahrfarbe und nennt den gewählten Typ oder die Rate. Halte 2s HALTEN ZUM ÜBERNEHMEN, um die Wahl anzuwenden. ABBRECHEN, Abrutschen mit dem Finger oder Verlassen der Seite verwirft sie. Ein aktiver gefährlicher Typ oder eine solche Rate bleibt auf der rechten Karte rot.
 
-Die Seite AUSGANG sagt, was aus der Rate wurde:
+AUSGANG zeigt den Status der Pulsrate:
 
 | Hinweis | Bedeutung |
 |---|---|
-| `Aktiv: Ausgänge laufen mit 330Hz.` | der IOmcu fährt die Rate auf dem Ziel, das er hält |
-| `Die Pulsrate wird mit der nächsten Position an den IOmcu gesendet.` | noch nicht geschrieben |
-| `ABGELEHNT: ...` | ein Puls ist länger als der Frame, oder ein Pin teilt den PWM-Slice mit anderer Rate; die Pins behalten ihre Rate |
-| `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | kein IOmcu antwortet |
+| `Aktiv: Ausgänge laufen mit 330Hz.` | Der IOmcu verwendet die Rate am aktiven Ziel. |
+| `Die Pulsrate wird mit der nächsten Position an den IOmcu gesendet.` | Noch nicht geschrieben. |
+| `ABGELEHNT: ...` | Ein Puls ist länger als der Frame, oder ein Pin teilt einen PWM-Slice mit anderer Rate. Die Pins behalten ihre Rate. |
+| `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | Kein IOmcu antwortet. |
 
 ## SWEEP
 
@@ -91,15 +91,15 @@ Ist HV-SERVO eingeschaltet und eine Stufe über 6,0V gewählt, öffnet TEST STAR
 
 ![Die Seite des Brown-out-Laufs](view:servo-brownout)
 
-BROWN-OUT in den Optionen des automatischen Tests öffnet die Seite des Laufs; SCHLIESSEN führt zurück. Die Zeile nennt den Lauf, `EIN 3.0/0.2V`: NIEDRIGSTE SPANNUNG und SCHRITT. Nach den Netzteilstufen beginnt der Lauf bei 5,0V oder der Spannungsgrenze, wenn die niedriger ist, und geht in Schritten von SCHRITT bis NIEDRIGSTE SPANNUNG abwärts. Er endet bei der ersten Spannung ohne Bewegung.
+BROWN-OUT in den Optionen des automatischen Tests öffnet die Seite des Laufs; SCHLIESSEN führt zurück. Die Zeile fasst NIEDRIGSTE SPANNUNG und SCHRITT zusammen, etwa `EIN 3.0/0.2V`. Nach den Netzteilstufen beginnt der Lauf bei 5,0V oder der niedrigeren Spannungsgrenze. Er senkt die Spannung jeweils um SCHRITT bis zur NIEDRIGSTEN SPANNUNG und endet bei der ersten Spannung ohne Bewegung.
 
-| Option | Bereich | Vorgabe | Was sie tut |
+| Option | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
-| BROWN-OUT | EIN, AUS | EIN | lässt den Lauf nach den Netzteilstufen laufen |
-| NIEDRIGSTE SPANNUNG | 2,0 bis 4,8V | 3,0V | die letzte Spannung des Laufs; ein Netzteil mit höherem kleinstem Sollwert beendet ihn dort |
-| SCHRITT | 0,1 bis 1,0V | 0,2V | wie weit jede Spannung abwärts geht; ein letzter Schritt kürzer als SCHRITT landet auf NIEDRIGSTE SPANNUNG |
+| BROWN-OUT | EIN, AUS | EIN | führt den Lauf nach den Netzteilstufen aus |
+| NIEDRIGSTE SPANNUNG | 2,0 bis 4,8V | 3,0V | letzte Spannung des Laufs; ein höherer minimaler Netzteilsollwert beendet ihn bereits dort |
+| SCHRITT | 0,1 bis 1,0V | 0,2V | Spannungsabnahme je Stufe; ein kürzerer letzter Schritt endet genau bei NIEDRIGSTE SPANNUNG |
 
-Der Hinweis unter den Zeilen nennt den Lauf am geltenden Netzteil und wie viele Spannungen er verlangt, höchstens 31. Eine NIEDRIGSTE SPANNUNG bei oder über dem Start lässt nur den Start laufen.
+Der Hinweis darunter beschreibt den Lauf mit dem aktiven Netzteil und die Anzahl angeforderter Spannungen, höchstens 31. Liegt NIEDRIGSTE SPANNUNG bei oder über der Startspannung, wird nur die Startspannung geprüft.
 
 ## Die Optionen des Endlagenlaufs
 
@@ -107,51 +107,55 @@ Der Hinweis unter den Zeilen nennt den Lauf am geltenden Netzteil und wie viele 
 
 OPTIONEN auf der Karte ENDLAGENLAUF öffnet sie.
 
-| Option | Bereich | Vorgabe | Was sie tut |
+| Option | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
-| ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | was ENDLAGENLAUF STARTEN tut: die Enden suchen oder zusätzlich LEFT ANGLE und RIGHT ANGLE programmieren |
-| SERVO | KST/CHASERVO, HITEC | der zuletzt unter PROGRAMMIEREN geöffnete Programmierer, sonst KST/CHASERVO | nur mit ZIEL auf PROG-PORT angezeigt: der Programmierer, zu dem die Sitzungen des Laufs gehen; HITEC in der Serie der Zeile SERIE des Hitec-Programmierers ([Hitec-Servos](servo.md#hitec-servos)) |
-| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit ZIEL auf PROG-PORT und SERVO auf KST/CHASERVO angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0us |
+| ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | ENDLAGENLAUF STARTEN sucht die Enden und programmiert optional LEFT ANGLE und RIGHT ANGLE. |
+| SERVO | KST/CHASERVO, HITEC | zuletzt unter PROGRAMMIEREN geöffnete Servoprogrammierung, sonst KST/CHASERVO | Nur bei ZIEL PROG-PORT sichtbar. Wählt die Servoprogrammierung für die Sitzungen des Laufs. HITEC verwendet die in SERIE gewählte Serie ([Hitec-Servos](servo.md#hitec-servos)). |
+| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | Nur bei ZIEL PROG-PORT und SERVO KST/CHASERVO sichtbar. 1000-2000 setzt PULSE LOWER und PULSE UPPER vor der Suche auf 1000,0 und 2000,0us. |
 
 ## Die Grenzen von SUPPLY
 
-Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Laufs bleiben, stehen unter den Karten auf TEST und auf PRÜFLING auf einer Taste, `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`, die geltenden Werte. Die Taste öffnet [SUPPLY](supply.md) auf OPTIONEN, GRENZEN, wo sie eingestellt werden, und das Home-Tag dort führt zurück. Sie ist grau, solange ZIEL gesperrt ist: Das Verlassen von SERVO schaltete den Prüfstand auf SAFE.
+Die aktiven Spannungs- und Stromgrenzen begrenzen Sollwerte und Laufstufen. Sie stehen unter den TEST-Karten und auf PRÜFLING in einer Taste wie `GRENZEN 21.00V 5.00A: SUPPLY ÖFFNEN`. Tippe darauf, um sie unter [SUPPLY](supply.md) > OPTIONEN > GRENZEN einzustellen. Das Home-Feld führt zurück. Bei gesperrtem ZIEL ist die Taste grau, weil das Verlassen von SERVO den Prüfstand auf SAFE schalten würde.
 
-Der erste Hinweis auf AUSGANG nennt den Port, auf dem SERVO-TESTER steht, `SERVO-TESTER: PORT 1. Wähle ihn auf OUTPUTS.` Er nimmt keinen Tipp an: Die Einstellung gehört zu [Outputs](outputs.md#der-eintrag-prog-port).
+Der erste Hinweis auf AUSGANG nennt den für SERVO-TESTER gewählten Port: `SERVO-TESTER: PORT 1. Wähle ihn auf OUTPUTS.` Er ist nicht antippbar. Ändere die Auswahl unter [Ausgänge](outputs.md#der-eintrag-prog-port).
 
 ## PRÜFLING
 
 ![NAME auf der Tastatur](view:servo-name)
 ![Die Seite PRÜFLING mit eingeschaltetem Winkelsensor](view:servo-encoder)
 
-| Option | Was sie tut |
+| Option | Wirkung |
 |---|---|
-| NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
-| BERICHT | ein Textbericht, `ATESTnnn.TXT`, neben dem Log jedes Tests, solange Testaufzeichnungen unter SETUP > SD CARD EIN ist |
-| SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert des AS5600, 0 bis 4095, als Mitte, mit dem Servo in Neutral; mit ANGLE SOURCE IMU übernimmt er nichts |
+| NAME | Prüflingsname mit bis zu 23 Zeichen; steht über jedem Bericht. |
+| BERICHT | Speichert neben jeder Testaufzeichnung einen Textbericht `ATESTnnn.TXT`, solange Testaufzeichnungen unter SETUP > SD CARD EIN ist. |
+| SENSOR-MITTE | Übernimmt per Tipp den aktuellen AS5600-Zählwert von 0 bis 4095 als Mitte, während das Servo neutral steht. Bei WINKELQUELLE IMU ohne Wirkung. |
 
-ANGLE SOURCE auf dem Eintrag IMU von [Sensoren](setup-sensors.md) legt fest, woher die Läufe den Winkel nehmen: vom AS5600 oder von der IMU, deren Winkel in AS5600-Zählern von 0.088° läuft. Die CSV des Tests nennt die Quelle in ihrer letzten Spalte, `angle source`, und beide Berichte in der Zeile `Winkelquelle:`. AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Sensoren](setup-sensors.md) geschaltet; die Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING öffnet diesen Eintrag, und das Home-Tag dort führt zurück. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.
+WINKELQUELLE im IMU-Eintrag von [Sensoren](setup-sensors.md) wählt AS5600 oder IMU für die Laufwinkel. IMU-Winkel werden in AS5600-Zählschritten von 0,088° verwendet. Die Test-CSV nennt die Quelle in ihrer letzten Spalte `angle source`, beide Berichte in der Zeile `Winkelquelle:`.
+
+Schalte den AS5600 an der Hornwelle unter [Sensoren](setup-sensors.md) ein oder aus. Die Taste `AS5600 EIN ODER AUS: SENSORS ÖFFNEN` auf PRÜFLING öffnet diesen Eintrag; das Home-Feld führt zurück. PORT-PWM, der Puls am Programmierport, wird ausschließlich im Eintrag PROG-PORT unter [Ausgänge](outputs.md#der-eintrag-prog-port) eingestellt.
 
 ## Die Zeile ZIEL
 
 ![Die Zeile ZIEL mit PROG-PORT](view:servo-target)
 
-Die Zeile ZIEL der Ausgangskarte nennt, was der Tester treibt, als `Protokoll Pins`, und wählt es, wie auf MOTOR & ESC: ein Tipp öffnet [OUTPUTS](outputs.md#der-eintrag-prog-port) auf dem, was die Zeile zeigt: dem Eintrag PROG-PORT, solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist. Dort wählt SERVO-TESTER OUTPUTS, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des IOmcu. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE und beendet einen Sweep oder einen Test; das Home-Tag auf OUTPUTS führt zurück zu SERVO, auf dieselbe Aufgabe. Die Zeile bleibt auf jeder Aufgabe sichtbar, unter den Seiten und unter dem Servo-Programmierer. Gesperrt ist sie bei ARMED, während eines Sweeps, eines automatischen Tests oder eines Endlagenlaufs und solange der Servo-Programmierer den Port hält.
+ZIEL auf der Ausgangskarte nennt die angesteuerten Ausgänge als `Protokoll Pins`. Tippe darauf, um [OUTPUTS](outputs.md#der-eintrag-prog-port) zu öffnen: PROG-PORT, wenn der IOmcu den Programmierport ansteuert, SERVO PWM bei den Ausgängen oder die Übersicht bei unbekanntem Ziel. Dort wählt SERVO-TESTER zwischen OUTPUTS (als SERVO PWM zugeordnete Pins) und PROG-PORT (Programmierport des IOmcu).
+
+Das Verlassen von SERVO schaltet den Prüfstand auf SAFE und beendet Sweep oder Test. Das Home-Feld auf OUTPUTS führt zur selben SERVO-Aufgabe zurück. ZIEL bleibt unter den Seiten und der Servoprogrammierung bei jeder Aufgabe sichtbar. Bei ARMED, während Sweep, automatischem Test oder Endlagenlauf und bei belegtem Programmierport ist die Zeile gesperrt.
 
 ![Der Eintrag PROG-PORT von OUTPUTS](view:outputs-port)
 
 | Zeile | Bedeutung |
 |---|---|
-| `SERVO PWM GPIO 4`, `SERVO PWM GPIO 2 GPIO 4` | die als SERVO PWM gebundenen GPIOs (General-Purpose Inputs/Outputs); was nicht passt, steht als `+2` |
-| `PROG-PORT 1 GPIO 13` | Programmierport 1 und sein Pin, in der Warnfarbe |
-| `PORT 1 GPIO 13 PWM AUS` | der Port ist das Ziel und gibt keinen Puls aus |
-| `KEIN SERVO-PWM-PIN` | kein Pin ist als SERVO PWM gebunden |
-| `PINS NICHT AUSGELESEN` | keine Bindung wurde gelesen |
-| `UNBEKANNT` | die Programmierport-Seite des IOmcu ist nicht gelesen |
-| `KEINE VERBINDUNG` | kein IOmcu antwortet; der Tester sendet nichts |
+| `SERVO PWM GPIO 4`, `SERVO PWM GPIO 2 GPIO 4` | Als SERVO PWM zugeordnete GPIOs (General-Purpose Inputs/Outputs). Weitere Pins werden als Anzahl wie `+2` angezeigt. |
+| `PROG-PORT 1 GPIO 13` | Programmierport 1 und sein Pin, in der Warnfarbe. |
+| `PORT 1 GPIO 13 PWM AUS` | Port ist das Ziel, gibt aber keinen Puls aus. |
+| `KEIN SERVO-PWM-PIN` | Kein Pin ist als SERVO PWM zugeordnet. |
+| `PINS NICHT AUSGELESEN` | Zuordnung noch nicht ausgelesen. |
+| `UNBEKANNT` | Programmierport-Page des IOmcu noch nicht ausgelesen. |
+| `KEINE VERBINDUNG` | Kein IOmcu antwortet; der Tester sendet nichts. |
 
-Die Zeile folgt dem Ziel, das der IOmcu hält, nicht der Einstellung. Eine Änderung von ZIEL wartet auf einen ruhenden Prüfstand.
+Die Zeile folgt dem aktiven Ziel des IOmcu, nicht dem Einstellwert. Eine Änderung von ZIEL wartet auf einen ruhenden Prüfstand.
 
 ## Die Werte behalten
 
-AUSGANG, HV-SERVO, ENDLAGENLAUF, SERVO und SERVOPULSE gelten für die Sitzung. SWEEP, die Optionen des automatischen Tests, PRÜFLING und ZIEL werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.
+AUSGANG, HV-SERVO, ENDLAGENLAUF, SERVO und SERVOPULSE gelten nur für die Sitzung. SWEEP, Optionen des automatischen Tests, PRÜFLING und ZIEL werden im NVS (nichtflüchtiger Speicher) gespeichert. Wie bei den Netzteiloptionen erfolgt das Schreiben im nächsten Frame bei SAFE und ausgeschaltetem Netzteilausgang.

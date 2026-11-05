@@ -1,7 +1,7 @@
 # Contributing to rcbench
 
-The rules below are enforced by CI (continuous integration) where a machine can
-enforce them. Read this before a large change.
+Read these rules before making a substantial change. CI (continuous
+integration) enforces the checks that can be automated.
 
 ## Licensing rule
 
@@ -30,7 +30,7 @@ configuration over JETI EX Bus are recorded as not planned for this reason.
 
 ## Safety-relevant code
 
-Anything that can make an output move is held to these rules; the reasoning is
+These rules apply to any code that can drive an output. The reasoning is
 in [Safety](docs/Safety.md).
 
 - **Fail safe by absence.** When a signal stops, stop driving. Never require a
@@ -45,7 +45,7 @@ in [Safety](docs/Safety.md).
 
 ## What CI checks
 
-All of it runs locally:
+Run the checks locally with these commands:
 
 ```bash
 cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug
@@ -492,9 +492,9 @@ enforces it. Write German as German rather than translating sentence by
 sentence, and keep technical vocabulary in English: protocol names, mode names,
 register and field names.
 
-The wiki is the manual. `STATUS.md` is the record of what is built, what is
-open and what is settled. `CHANGELOG.md` is the version history;
-`CHANGELOG-0.9.md` holds versions 0.9.1 and older.
+The wiki is the user manual. `STATUS.md` records implemented features,
+open work and settled decisions. `CHANGELOG.md` records version history;
+`CHANGELOG-0.9.md` covers versions 0.9.1 and older.
 
 ## Pull requests
 

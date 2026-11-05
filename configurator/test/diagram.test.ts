@@ -416,8 +416,8 @@ test('the zener diode of the phase tap: body between pad 29 and pad 28, band tow
     const end = tap.paths[0]!.find((p) => p[0] === copro.ix + rec.pins['pad.29']!.x)!;
     assert.ok(end[1] < z.paths[0]![0]![1], `${connection}: wire 52 at ${end[1]}, diode lead at ${z.paths[0]![0]![1]}`);
     assert.deepEqual(z.text, {
-      en: ['3.0 V zener diode,', `band to ${gp22Label}`],
-      de: ['3,0-V-Z-Diode,', `Ring an ${gp22Label}`],
+      en: ['3.0V Zener diode,', `band towards ${gp22Label}`],
+      de: ['3,0V-Z-Diode,', `Ring zu ${gp22Label}`],
     });
     for (const lang of ['en', 'de'] as Lang[]) {
       const html = picture(view({ functions: ['tap'], options: { ...DEFAULT_OPTIONS, connection } }, lang));
@@ -446,10 +446,10 @@ test('the lines of a component follow the data file, and the strip beside the ed
     }
   }
   const pad = { en: 'GPIO 22', de: 'GPIO 22' };
-  assert.deepEqual(componentText({ route: { kind: 'Z' }, signal: { en: 's', de: 's' } }, pad).en, ['3.0 V zener diode,', 'band to GPIO 22']);
+  assert.deepEqual(componentText({ route: { kind: 'Z' }, signal: { en: 's', de: 's' } }, pad).en, ['3.0V Zener diode,', 'band towards GPIO 22']);
   // Another component takes the signal name of its wire. A text without a comma is 1 line.
-  assert.deepEqual(componentText({ route: { kind: 'S' }, signal: { en: 'fuse 2 A', de: 'Sicherung 2 A' } }, pad),
-    { en: ['fuse 2 A,', 'band to GPIO 22'], de: ['Sicherung 2 A,', 'Ring an GPIO 22'] });
+  assert.deepEqual(componentText({ route: { kind: 'S' }, signal: { en: 'fuse 2A', de: 'Sicherung 2A' } }, pad),
+    { en: ['fuse 2A,', 'band to GPIO 22'], de: ['Sicherung 2A,', 'Ring an GPIO 22'] });
   // The strip: 38px to the axis of the body, 6 + 3 + 16 + 4px to the lines, the longest line, 6px, on the 8px grid.
   assert.equal(bayOf(undefined), 80);
   assert.equal(bayOf({ en: ['x'], de: [] }), 80);

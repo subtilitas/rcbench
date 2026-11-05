@@ -14,7 +14,7 @@
       "v_max_mv": 18000,
       "current_a": 30,
       "bec": null,
-      "firmware_note": "NiCd cells; BEC for up to 4 servos; 65 A for 10 s",
+      "firmware_note": "NiCd cells; BEC for up to 4 servos; 65A for 10s",
       "spec_source": "Kontronik_3P_en.pdf p.1: 6-12 NiCd/NiMH cells, 30 A continuous; v_max = 12 cells x 1500 mV"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": 27000,
       "current_a": 30,
       "bec": "opto",
-      "firmware_note": "65 A for 10 s",
+      "firmware_note": "65A for 10s",
       "spec_source": "Kontronik_3P_en.pdf p.1: 6-18 NiCd/NiMH cells, 30 A continuous; v_max = 18 cells x 1500 mV"
     },
     {
@@ -38,7 +38,7 @@
       "v_max_mv": 48000,
       "current_a": 35,
       "bec": "opto",
-      "firmware_note": "75 A for 10 s",
+      "firmware_note": "75A for 10s",
       "spec_source": "Kontronik_3P_en.pdf p.1: 14-32 NiCd/NiMH cells, 35 A continuous; v_max = 32 cells x 1500 mV"
     }
   ],
@@ -62,13 +62,13 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the two gold pins; it stays on through phase 1.",
-      "action_de": "Jumper auf die beiden Goldkontakte stecken; er bleibt während Phase 1 stecken.",
+      "action_de": "Stecke den Jumper auf die beiden Goldkontakte. Lass ihn während Phase 1 gesteckt.",
       "source": "Kontronik_3P_en.pdf p.3"
     },
     {
       "when": "during_menu",
       "action": "Between phases: power off, pull the jumper, power on. Phase 2: pull it before the last flashes to switch cutoff off.",
-      "action_de": "Zwischen den Phasen: aus, Jumper ab, ein. Phase 2: vor den letzten Blinkzeichen abziehen, Abschaltung aus.",
+      "action_de": "Zwischen Phasen: aus, Jumper ab, ein. Phase 2: Ziehe ihn vor den letzten Blinkzeichen ab (Abschaltung aus).",
       "source": "Kontronik_3P_en.pdf p.3, p.5"
     }
   ],
@@ -85,7 +85,7 @@
         "Move to the max speed position; LED flashes. Move to the motor-off position; LED flashes.",
         "Move to the brake speed position; LED flashes twice.",
         "Disconnect power, pull the jumper, reconnect power.",
-        "Phase 2 (optional): throttle at max speed position, apply power; flash, then three flashes. Move to brake position for counter-clockwise or keep max for clockwise; three or four flashes confirm.",
+        "Phase 2 (optional): throttle at maximum speed position, apply power; flash, then three flashes. Move to brake position for counter-clockwise or keep max for clockwise; three or four flashes confirm.",
         "Cutoff: jumper still plugged at the final flash = cutoff on; pulled = cutoff off.",
         "Arming switch (optional): pull the jumper and plug it again within about 5s after phase 2; two flashes confirm."
       ]
@@ -192,11 +192,11 @@
   "unknowns": [
     "Item numbers are step order chosen here; the ESC does not sound item numbers.",
     "Beep duration and spacing are not stated; only LED flashes and 'beep if the motor is connected'.",
-    "Time allowed between steps (stick moves) is not stated except the 5 s arming switch window.",
+    "Time allowed between steps (stick moves) is not stated except the 5s arming switch window.",
     "Reset to defaults is not described."
   ],
   "notes": [
-    "Brake speed at the minimum position: Kontronik_3P_en.pdf says about 2 s, Kontronik_3P_de.pdf says about 3 s.",
+    "Brake speed at the minimum position: Kontronik_3P_en.pdf says about 2s, Kontronik_3P_de.pdf says about 3s.",
     "The motor cables and sensor cables in the manual are for Aveox motors (sensored).",
     "Phase 1 keeps the jumper on until the power is off; only phase 2 and the arming switch handle it during the sequence (Kontronik_3P_en.pdf p.3, p.5)."
   ]

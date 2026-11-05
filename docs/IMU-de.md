@@ -2,20 +2,27 @@
 
 <sub>[English](IMU.md) · **Deutsch**</sub>
 
-Ein WitMotion-BWT901CL-Winkelsensor sitzt auf einem Ruder und sendet seinen
-Winkel über Bluetooth. Ein HC-05-Bluetooth-Modul an UART1 (Universal
-Asynchronous Receiver-Transmitter) des Panels empfängt ihn als SPP-Master
-(Serial Port Profile). Das Panel richtet den HC-05 selbst über AT-Befehle
-ein: Es findet die Baudrate des Moduls, sucht, bindet den Sensor und startet
-das Modul im Datenmodus neu. Der Messwert ist eine Messung, kein Schutz: Er
-ist 300ms nach dem letzten Winkel-Frame veraltet, und ein Servolauf geht
-durch eine Lücke bis 300ms einmal je 10s weiter, wie bei der des AS5600
-([Servoverfahren](Servo-de.md)). Ein Wechsel der WINKELQUELLE gibt SERVO im
-nächsten Frame den Zustand der neuen Quelle: den Messwert der IMU, gültig
-oder nicht, oder keinen AS5600-Messwert bis zum nächsten des Bausteins. Eine
-veraltete Strecke, die ein Frame vor dem nächsten Bild des Bildschirms
-beendet, erreicht SERVO trotzdem: ein veralteter Messwert, 300ms nach dem
-letzten Frame datiert, geht vor dem neuen.
+Die Bluetooth-IMU (Inertial Measurement Unit, Trägheitsmesseinheit) ist ein
+WitMotion-BWT901CL-Winkelsensor auf einem Ruder. Er sendet den Winkel über
+Bluetooth an ein HC-05-Modul an UART1 (Universal Asynchronous
+Receiver-Transmitter) des Panels. Der HC-05 arbeitet als SPP-Master (Serial
+Port Profile). Das Panel richtet ihn über AT-Befehle ein: Es erkennt die
+Baudrate, sucht nach Sensoren, bindet den gewählten Sensor und startet das
+Modul im Datenmodus neu.
+
+Der Messwert dient der Messung, nicht als Schutzfunktion. Er gilt 300ms
+nach dem letzten Winkel-Frame als veraltet. Ein Servolauf toleriert einmal
+je 10s eine Lücke von bis zu 300ms, wie beim AS5600
+([Servoverfahren](Servo-de.md)). Nach einem Wechsel der WINKELQUELLE erhält
+SERVO im nächsten Anzeigebild den Zustand der neuen Quelle: den gültigen
+oder ungültigen IMU-Messwert oder zunächst keinen AS5600-Messwert, bis
+dieser Sensor wieder einen liefert.
+
+Beendet ein eingehender Winkel-Frame eine Phase mit veraltetem Messwert
+noch vor dem nächsten Anzeigebild, erhält SERVO trotzdem zuerst den
+veralteten Zustand. Dazu wird vor dem neuen Messwert ein veralteter
+Messwert mit einem Zeitstempel 300ms nach dem vorherigen Winkel-Frame
+übergeben.
 
 WitMotion, BWT901CL, HC-05 und HC-06 sind Namen von Produkten ihrer
 Hersteller, und Bluetooth ist eine Marke ihres Inhabers. rcbench ist
@@ -30,7 +37,7 @@ enthält den Hinweis des Projekts.
 | Frames und Befehle des Sensors | `protocols/witmotion`, kein Pin-Treiber |
 | der Messwert: Winkel, Nullpunkt, Ruhezeit, Rate, Akku, Alter | `shared/bench/imu.c` |
 | die Steuerung: die Operationen des HC-05, die Befehle des Sensors, der Verbindungszustand | `shared/ui/imu_ctl.c` |
-| der Bildschirm und der IMU-Eintrag von SETUP | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
+| die Seite IMU und ihr Eintrag unter SETUP | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
 | UART, KEY-Leitung und Task | `firmware/panel/main/panel_imu.c` |
 
 ## Verdrahtung
@@ -50,7 +57,7 @@ MTDO); mit Debugging über USB-JTAG sind sie gewöhnliche GPIOs.
 | TXD (3,3V) | IO5 des Headers P3, UART1 RX | `PANEL_IMU_PIN_RX` |
 | RXD | IO4 des Headers P3, UART1 TX, 3,3V | `PANEL_IMU_PIN_TX` |
 | EN (KEY) | IO29 des Headers P3, high für AT-Befehle | `PANEL_IMU_PIN_KEY` |
-| STATE | nicht verdrahtet; das Alter des Messwerts steht dafür | `PANEL_IMU_PIN_STATE` (`GPIO_NUM_NC`) |
+| STATE | nicht verdrahtet; stattdessen wird das Alter des Messwerts ausgewertet | `PANEL_IMU_PIN_STATE` (`GPIO_NUM_NC`) |
 
 `PANEL_IMU_UART_NUM` ist 1: UART0 gehört der Konsole. `PANEL_IMU_BAUD` ist
 115200, die feste Baudrate des BWT901CL. Das Breakout des HC-05 regelt 3,3V
@@ -59,15 +66,16 @@ auf der Platine, sein TXD hat 3,3V, und sein RXD ist nicht 5V-fest; die
 40mA (Datenblatt). Die 5V sind nicht geschaltet: Das Panel kann das Modul
 nicht aus- und einschalten. Das Panel hebt KEY nach dem Einschalten des
 Moduls an; das bringt es in den AT-Modus mit seiner Datenbaudrate. Ein Modul,
-das AT so ablehnt, wird nicht behandelt. Ist STATE an einen GPIO verdrahtet
-und in `PANEL_IMU_PIN_STATE` genannt, schreibt die Konsole seinen Pegel,
-wenn er wechselt.
+das auf diesem Weg keine AT-Befehle akzeptiert, wird nicht unterstützt. Ist STATE an einen GPIO verdrahtet
+und in `PANEL_IMU_PIN_STATE` genannt, protokolliert die Konsole seinen Pegel
+bei jeder Änderung.
 
 ## Die Einrichtung des HC-05
 
-Das Panel hält KEY vom ersten Byte einer Operation bis zu ihrem Ende high,
-100ms vor dem ersten Byte. Jeder Befehl wartet 1000ms auf sein OK, AT+INQ
-13,52s, AT+RNAME? 3000ms, AT+PAIR 22000ms, AT+RESET 1500ms. Das README des
+Das Panel setzt KEY 100ms vor dem ersten Byte einer Operation auf high
+und hält den Pegel bis zu ihrem Ende. Befehle warten 1000ms auf OK, mit
+folgenden Ausnahmen: AT+INQ wartet 13,52s, AT+RNAME? 3000ms, AT+PAIR 22000ms
+und AT+RESET 1500ms. Das README des
 Moduls in `protocols/hc05` nennt jede Antwort und jeden Fehler.
 
 | Operation | Wann | Befehle |
@@ -77,14 +85,17 @@ Moduls in `protocols/hc05` nennt jede Antwort und jeden Fehler.
 | BIND | ein Tippen auf ein gefundenes Gerät | `AT+ROLE=1`, `AT+PSWD=1234` (`AT+PSWD="1234"` nach einem ERROR), `AT+PAIR=<addr>,20`, `AT+BIND=<addr>`, `AT+CMODE=0`, `AT+UART=115200,0,0`, `AT+RESET` |
 | ANY | MIT JEDEM SENSOR VERBINDEN, nach einer mit ERROR:(1F) abgelehnten Suche | `AT+ROLE=1`, `AT+PSWD=1234`, `AT+CMODE=1`, `AT+UART=115200,0,0`, `AT+RESET` |
 
-Nach AT+RESET startet das Modul mit KEY low im Datenmodus neu. Die
-gebundene Adresse und der Name aus der Suche gehen nach SETUP (`imu_addr`,
-`imu_name`, 23 Zeichen behalten), und ein Speichern wird erbeten; ANY behält
-`*`. Solange keine Operation läuft, sind die Bytes des UART die Frames des
-Sensors. IMU AUS während einer Operation hält den HC-05 belegt, bis der
-Fence seine späten Antworten abgefangen hat: bis zu 14.520ms nach AT+INQ,
-23.000ms nach AT+PAIR. Eine Probe eines stummen Moduls endet nach 5.100ms:
-100ms KEY settle, 1000ms bei jeder der 3 Baudraten und 2000ms Fence.
+Nach AT+RESET startet das Modul mit KEY low im Datenmodus neu. Das Panel
+trägt die gebundene Adresse und den gefundenen Namen unter SETUP ein
+(`imu_addr`, `imu_name`, auf 23 Zeichen begrenzt) und fordert das Speichern
+an. ANY speichert `*`. Solange keine Operation läuft, werden die UART-Bytes
+als Sensor-Frames ausgewertet.
+
+Wird IMU während einer Operation ausgeschaltet, bleibt der HC-05 bis zum
+Ende der Wartephase für verspätete Antworten (Fence) belegt: bis zu 14.520ms
+nach AT+INQ und 23.000ms nach AT+PAIR. Die Erkennung eines nicht antwortenden
+Moduls endet nach 5.100ms: 100ms Wartezeit nach dem Setzen von KEY, 1000ms
+bei jeder der 3 Baudraten und 2000ms Fence.
 
 ## Der Sensor
 
@@ -101,27 +112,30 @@ gültig.
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | eine Änderung von IMU-Rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) oder `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | eine Änderung von IMU-Algorithmus |
 
-Die Befehle gehen 50ms auseinander. Eine Änderung von RATE oder ALGORITHMUS,
-während der Sensor nicht verbunden ist, geht, sobald seine Frames kommen.
-Eine während einer Kalibrierung geht nach deren CALSW 0 und SAVE. Unlock,
-die Schreibbefehle und SAVE kommen erst in die Warteschlange, wenn alle in
-die 8 Befehlsplätze passen; bis dahin wartet die Änderung, und der
-Schreibbefehl trägt den letzten Wert aus SETUP. Eine neue RATE gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde.
-NULLPUNKT nimmt die aktuellen Winkel auf dem Panel als Nullpunkt; an den
-Sensor geht nichts, und ein Neustart vergisst ihn.
+Die Befehle werden im Abstand von 50ms gesendet. Eine Änderung von RATE
+oder ALGORITHMUS bei getrenntem Sensor wartet, bis dessen Frames eintreffen.
+Eine Änderung während der Kalibrierung wartet bis nach CALSW 0 und SAVE.
+Unlock, die Schreibbefehle und SAVE werden erst gemeinsam eingereiht, wenn
+alle in die 8 Befehlsplätze passen. Bis dahin wartet die Änderung; gesendet
+wird der dann aktuelle Wert aus SETUP. Eine neue RATE gilt erst, nachdem
+der Sensor aus- und wieder eingeschaltet wurde.
+
+NULLPUNKT übernimmt die aktuellen Winkel auf dem Panel als Nullpunkt. Dabei
+wird nichts an den Sensor gesendet. Der Nullpunkt geht beim Neustart
+verloren.
 
 ## Grenzen
 
 | Punkt | Wert |
 | --- | --- |
 | Akku | 250mAh, 4h je Ladung (Datenblatt) |
-| Ausgaberate | 0,2 bis 200Hz, ab Werk 10Hz; das Panel bietet 10 bis 200Hz, ab Werk 50Hz |
+| Ausgaberate | 0,2 bis 200Hz, ab Werk 10Hz; das Panel bietet 10 bis 200Hz, Vorgabe 50Hz |
 | Genauigkeit X, Y | 0,05° (Datenblatt), 0,2° (Webseite des Herstellers) |
-| Genauigkeit Z | 1° nach der Kalibrierung des Magnetometers, die der Servomotor stört; die Drift von Z ohne es ist nicht angegeben |
-| der Winkel eines Laufs | in AS5600-Zählern getragen: 360 / 4096 = 0,088° je Zähler |
+| Genauigkeit Z | 1° nach der Kalibrierung des Magnetometers, die der Servomotor stört; die Drift von Z ohne diese Kalibrierung ist nicht angegeben |
+| der Winkel eines Laufs | als AS5600-Zählerstand dargestellt: 360 / 4096 = 0,088° je Zähler |
 | der Puffer des HC-05 auf Firmware 3.0 | 230 Bytes, etwa 105ms bei 200Hz (nicht gemessen) |
 | ein Verbindungsabbruch | ob der Sensor seine Frames puffert oder verwirft, ist nicht angegeben; der HC-05 verbindet sich nach einem Reichweitenverlust 30min lang neu |
 | das Alter des Messwerts | veraltet nach 300ms |
 
-Kein HC-05 und kein BWT901CL ist mit diesem Code gelaufen. Die Antworten der
+Dieser Code wurde weder mit einem HC-05 noch mit einem BWT901CL auf Hardware erprobt. Die Antworten der
 Firmware 2.0 und 3.0 stammen aus dem Datenblatt und aus Berichten.

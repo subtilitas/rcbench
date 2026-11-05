@@ -2,22 +2,28 @@
 
 ## Scope
 
-rcbench is a test bench: two microcontrollers, a touch panel and an SD (Secure Digital) card. It
-has no accounts and no user data. It has two remote interfaces, both on the
-panel's Wi-Fi radio, and the radio runs only with the bench SAFE, the supply
-output off and no log run open.
+rcbench is a test bench with two microcontrollers, a touch panel and an
+SD (Secure Digital) card. It has no account system. It stores settings,
+recordings and files, including network credentials when a home network
+is saved. Both network interfaces use the panel's Wi-Fi radio. The radio
+runs only while the bench is SAFE, the supply output is off and no log
+run is open.
 
-The first is the panel's Wi-Fi page: an HTTP (hypertext transfer protocol)
-server that lists and sends the card's files, changes them as SETUP >
-SD CARD > Browser writes allows, and takes a panel firmware image. It runs only while the WI-FI screen is open, and goes off
-after 10min without a request. It answers one request at a time; a
-download the receiver takes nothing of for 30s ends. It runs as a WPA2 (Wi-Fi Protected Access 2)
-access point for 1 client or joins a WPA2 or WPA3 home network. An
-8-character access code, new at every start of the radio, guards the page
-unless the operator switches it off on the panel; 16 wrong codes switch the
-radio off. An uploaded image installs only after a 2s hold on the panel.
-With the code on and off, every request is checked first
-(`shared/webaccess/wa_guard.h`). The `Host` header must name the panel:
+The first interface is the panel's Wi-Fi page, served over HTTP
+(Hypertext Transfer Protocol). It lists and downloads card files, permits
+changes according to SETUP > SD CARD > Browser writes, and accepts panel
+firmware uploads. It runs only while the WI-FI screen is open and stops
+after 10min without a request. The server handles one request at a time
+and ends a download if the receiver takes no data for 30s.
+
+The panel either provides a WPA2 (Wi-Fi Protected Access 2) access point
+for 1 client or joins a WPA2 or WPA3 home network. Each radio start
+generates an 8-character access code. The code protects the page unless
+the operator disables it on the panel. After 16 incorrect codes, the
+radio switches off. Installing an uploaded image requires a 2s hold on
+the panel.
+Every request passes the same initial checks whether the access code is
+enabled or disabled (`shared/webaccess/wa_guard.h`). The `Host` header must name the panel:
 `rcbench-XXXX.local`, `rcbench-XXXX` or the IPv4 address the connection
 came in on, with no port or port 80; anything else gets 421, which
 defeats DNS (domain name system) rebinding. A code entry and an upload
@@ -46,9 +52,10 @@ name FatFs would read as another entry (`fm_path_plain()`: no character
 outside ASCII, since FatFs folds the case of all of Unicode), and every write
 stops at the bench's switch to ARMED.
 
-The second is the panel's own requests to GitHub over HTTPS (HTTP over TLS,
-transport layer security), on the home network the panel keeps; the panel
-serves nothing meanwhile. With a home network kept and REMINDER AT START on
+The second interface is the panel's update client. It requests releases
+from GitHub over HTTPS (HTTP over TLS, Transport Layer Security), using
+the saved home network. The panel does not serve its Wi-Fi page during
+these requests. With a home network kept and REMINDER AT START on
 (SETUP > UPDATES), the panel asks once after each start; CHECK FOR UPDATES on
 the same screen asks once more. Each check sends one request, which RELEASES
 on the same screen chooses, within 30s for the join, the address and the
@@ -83,24 +90,29 @@ bundle of common certificate authorities. The image's SHA-256 (secure hash
 algorithm, 256 bits) must equal its line in `SHA256SUMS`, and every image
 check below runs, before the flash is written.
 
-Current limitations: the page is plain HTTP, so on a home network the code
-and the files cross the network unencrypted; the home network's password is
-kept unencrypted in NVS (non-volatile storage); an image uploaded over the
-page is checked against its own SHA-256, not against a signature, so any
-image built as `rcbench-panel` for the ESP32-P4 installs, and on a home
-network a device between the browser and the panel can replace the image on
-its way; a downloaded image is bound to the release by the certificate
-chain and `SHA256SUMS`, not by a signature, so whoever can publish a release
-on the repository, or a certificate authority in the bundle that issues a
-false certificate, can deliver an image that installs; no certificate's
-validity dates are checked, also after the panel's clock is set from NTP
-(network time protocol), because mbedTLS is built without its expiry check
-(`CONFIG_MBEDTLS_HAVE_TIME_DATE` off, ESP-IDF's default), so a certificate
-past its validity is accepted when its chain checks; esp_http_client keeps
-every response header value in memory without a bound of its own, which only
-a server whose certificate chain checks reaches; the IOmcu image a
-panel image carries comes with it and is offered to the IOmcu, after
-its own 2s hold, at the next link-up.
+Current limitations:
+
+- The page uses plain HTTP. On a home network, access codes and files
+  cross the network without application-layer encryption.
+- The saved home-network password is unencrypted in NVS (non-volatile
+  storage).
+- An uploaded image is checked against its own SHA-256, without a
+  signature. An image built as `rcbench-panel` for the ESP32-P4 can pass
+  those checks. A device between the browser and panel can replace an
+  upload on the network.
+- A downloaded image is tied to the release through the certificate
+  chain and `SHA256SUMS`, without a signature. A party able to publish a
+  repository release, or obtain a false certificate from a trusted
+  authority, can supply an installable image.
+- Certificate validity dates are not checked, even after NTP (Network
+  Time Protocol) sets the clock. mbedTLS is built with
+  `CONFIG_MBEDTLS_HAVE_TIME_DATE` off, the ESP-IDF default. An expired
+  certificate is accepted if its chain passes validation.
+- `esp_http_client` stores response-header values without its own size
+  bound. Only a server whose certificate chain passes validation reaches
+  this processing.
+- The panel firmware includes an IOmcu image. At the next link-up, it
+  offers that image for installation after a separate 2s hold.
 
 Current limitations, the home network:
 
@@ -143,14 +155,14 @@ Two classes of report apply.
 
 ## Unexpected output
 
-Anything that could make the bench drive an output when it should not, or
-defeat one of the stops: a fault that causes an unexpected output, or that lets
-a stop be bypassed, latched off or silently re-armed. Report it the same way as
-a security issue and say so in the title; it is handled with priority.
+Report any fault that can cause an unintended output or defeat a stop.
+This includes bypassing a stop, disabling it or re-arming silently. Use
+the security-reporting route below and identify the output or stop fault
+in the title. These reports receive priority.
 
 ## Input parsing
 
-Everything that parses input somebody else produced:
+The following modules parse input from outside their own trusted state:
 
 | Module | Input |
 | --- | --- |
@@ -181,12 +193,12 @@ Everything that parses input somebody else produced:
 | `shared/webaccess` | requests to the Wi-Fi page: the `Host`, `Origin`, `Referer` and `X-Rcbench-Upload` headers (`wa_guard()`: a host part of at most 63 bytes, the panel's names in any letter case, its dotted address, port 80 or none, no IPv6 literal, `http://` only), the `Cookie` header up to the server's 1024-byte header limit, the URI (uniform resource identifier) path of a card file (percent decoding; `..`, an absolute path, a backslash, an encoded `.` or `/` that forms a traversal, NUL, a name over 255 characters and a path over 384 bytes are refused, and the path stays under the card's mount point), the access code from the form and the cookie (8 characters, compared in full), the upload's declared length, and mDNS (multicast domain name system) queries: at most 512 bytes, every label and compression pointer checked against the packet's end, at most 16 pointer hops |
 | `protocols/hc05` | answer lines of an HC-05 Bluetooth module on its UART (universal asynchronous receiver-transmitter): a line held to 95 bytes, the rest dropped; `OK`, `FAIL`, `ERROR:(hh)` with 1 or 2 hex digits; `+INQ:` lines (an address of 1 to 4, 1 to 2 and 1 to 6 hex digits, a class of 1 to 6 and an RSSI of 1 to 4, any other form dropped, at most 8 devices kept); the remote device names of `+RNAME:`, cut to 31 bytes with each byte outside printable ASCII shown as `?`; the version text, cut to 23 bytes the same way |
 
-The table holds two kinds of module. The first kind is derived from the
-function names in the public headers under `shared/` and `protocols/`. The
-second kind is the forced set in `tools/security_parsers.py`: modules with
-outside input under names that rule cannot see, `shared/settings` and
-`shared/touch`. `tools/security_parsers.py --check` fails when the table and
-the two kinds disagree. CI (continuous integration) runs it.
+The table combines modules detected from public-header function names
+under `shared/` and `protocols/` with an explicit set in
+`tools/security_parsers.py`. The explicit set includes `shared/settings`
+and `shared/touch`, whose external inputs are not detected by the naming
+rule. `tools/security_parsers.py --check` compares both sets with the
+table. CI (continuous integration) runs this check.
 
 The test suite runs under AddressSanitizer and UBSan
 (UndefinedBehaviorSanitizer) in CI. A crash, a read past the end of a buffer or an infinite loop

@@ -1,7 +1,8 @@
 # openyge
 
-The OpenYGE ESC (electronic speed controller) protocol: framing, CRC (cyclic
-redundancy check), telemetry, status and the parameter table.
+This module implements framing, CRC (cyclic redundancy check), telemetry,
+status and the parameter table of the OpenYGE ESC (electronic speed
+controller) protocol.
 
 | Part | Files | Depends on |
 |---|---|---|
@@ -10,7 +11,7 @@ redundancy check), telemetry, status and the parameter table.
 
 The module has no pin driver. The wire is a half-duplex UART (universal
 asynchronous receiver-transmitter) at 115200 baud, 8N1; the caller supplies
-the received bytes and sends the built ones. The specification is
+the received bytes and transmits the encoded frames. The specification is
 `docs/OpenYGE.md` in the rcbench repository.
 
 ## Constraints
@@ -25,8 +26,8 @@ the received bytes and sends the built ones. The specification is
 - Every field is assembled byte by byte. No struct is cast over a buffer.
 - The parameter table holds 64 indices (`OPENYGE_MAX_PARAMS`). A table is
   readable only when every index below its count has been seen.
-- The module builds a parameter write request. It does not decide to send
-  one. The parameter indices are not confirmed against an ESC.
+- The module encodes parameter write requests. The caller decides whether
+  to transmit them. The parameter indices are not confirmed against an ESC.
 - Telemetry values use `float`.
 
 ## Interface
@@ -52,9 +53,9 @@ bool     openyge_motor_rpm(const openyge_params_t *p, uint32_t erpm,
                            float *motor_rpm);
 ```
 
-`openyge_decode_byte()` returns true when `out` holds a frame whose CRC
-holds. The decoder counts frames, CRC errors, resynchronisations and frames
-rejected for impossible contents.
+`openyge_decode_byte()` returns true when `out` contains a frame with a
+valid CRC. The decoder counts frames, CRC errors, resynchronisations and
+frames rejected for invalid contents.
 
 ## Use in another pico-sdk project
 

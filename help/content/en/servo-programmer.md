@@ -6,11 +6,13 @@ order: 22
 
 # Servo programmer
 
-The servo programmer reads the 32 registers of a KST or Chaservo servo over its signal wire, shows them as settings and writes changed settings back. The servos of the two brands share one protocol and one register set. On [SERVO](servo.md), PROGRAM in the strip lists the programmers. The row `KST and Chaservo servos` opens this one over the left column, the strip's tabs with it, one level down; CLOSE or the home tag returns to the list. Opening it ends a running automatic test.
+The servo programmer reads the 32 registers of a KST or Chaservo servo through its signal wire and displays them as settings. Both brands use the same protocol and register set. Changes are written back only when requested.
+
+Open PROGRAM on [SERVO](servo.md), then `KST and Chaservo servos`. The session covers the left column and task tabs, one level below the list. CLOSE or the home tag returns to the list. Opening the programmer ends a running automatic test.
 
 ![PROGRAM's list](view:servo-program)
 
-The row names what it drives: the port SERVO TESTER names and its pin, `PROG PORT 1 GPIO 13`. It is dimmed and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM, which includes no IOmcu answering: the row then reads `IOMCU HAS NO SERVO PWM`.
+The row identifies the SERVO TESTER port and pin, for example `PROG PORT 1 GPIO 13`. It is dimmed and cannot open when the IOmcu, the RP2350 board, does not report servo-PWM support, including when no IOmcu responds. The row then shows `IOMCU HAS NO SERVO PWM`.
 
 ![The row dimmed](view:servo-program-nocap)
 
@@ -20,29 +22,29 @@ It is dimmed with `PORT IN USE` while a Hitec session opened from the bench cons
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench is not affiliated with, endorsed by or sponsored by them. The names say which servos the programmer works with.
 
-The register layout and timing come from 1 KST Tool Card #2 and 1 Chaservo servo. The effect of a register on the servo's motion is not measured: names, units and limits are those the vendor tool displays and accepts.
+Register layout and timing were derived from 1 KST Tool Card #2 and 1 Chaservo servo. Register effects on motion have not been measured. Names, units and limits follow those displayed and accepted by the vendor tool.
 
 ## What it needs
 
 ![The programmer with the tester holding the port](view:servo-kst)
 
-- An IOmcu of 0.17.0 or later (protocol 4.15, LEAVE included).
-- The servo on one of the IOmcu's programming ports, PROG PORT 1 to 4, with FUNCTION SERVO PWM and a pin: port 1 is GPIO 13, pad 17, unless another pin is stored for it; ports 2 to 4 have the pin set on their PROG PORT entry of Outputs.
-- SERVO TESTER on that entry set to that port, PORT 1, PORT 2, PORT 3 or PORT 4; a tap on the TARGET row opens it ([the TARGET row](servo-settings.md#the-target-row)).
-- The bench SAFE. CONNECT is refused while ARMED with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen switches the bench to ARMED.
+- IOmcu 0.17.0 or later (protocol 4.15, including LEAVE).
+- A servo connected to an IOmcu programming port, PROG PORT 1 to 4, with a pin and FUNCTION SERVO PWM. On a manually wired board, port 1 defaults to GPIO 13, pad 17; set other pins in each PROG PORT entry on Outputs. Carrier pins are fixed; see [The port and the supply](#the-port-and-the-supply).
+- SERVO TESTER set to that port: PORT 1, PORT 2, PORT 3 or PORT 4. The [TARGET row](servo-settings.md#the-target-row) opens its Outputs entry. On a carrier with protocol 4.36 or later, you can also choose it from the programmer's PORT row.
+- A SAFE bench. While ARMED, CONNECT is refused with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen can switch the bench to ARMED.
 
 ![An IOmcu without the programming port](view:servo-kst-nopage)
 ![The standard outputs are the target](view:servo-kst-target)
 
-Without these, every control but CLOSE is off and the tab says what is missing.
+If a requirement is unmet, all controls except CLOSE are disabled and the tab explains why.
 
 ## The port and the supply
 
-The port is in PWM (pulse-width modulation) or in programming, never both. CONNECT takes the port out of PWM, sets the supply where a PD mini answers, runs the entry sequence and reads all 32 registers. The button then reads LEAVE, and ABORT while an operation runs.
+The port runs either PWM (pulse-width modulation) or programming. CONNECT stops PWM, sets the supply if a PD mini responds, performs the entry sequence and reads all 32 registers. The button then becomes LEAVE, or ABORT while an operation is running.
 
 ![What CONNECT sets](view:servo-kst-options)
 
-MORE, while the tester has the port, sets what CONNECT applies:
+While the tester owns the port, MORE configures the values applied by CONNECT:
 
 | Entry | Range | Default |
 |---|---|---|
@@ -53,19 +55,25 @@ MORE, while the tester has the port, sets what CONNECT applies:
 ![A PD mini answers](view:servo-kst-supply)
 ![The supply in programming mode](view:servo-kst-supplied)
 
-While the port is out of PWM, the supply's set points belong to the port: the SET row and the SUPPLY screen take no change and no ON. OUTPUT OFF and STOP work. Without a PD mini the voltage and current limit are stored and not applied. Back in PWM, the set points from before the session return once the output is off, at the next OFF when the session left it on; a set point changed in the meantime stays.
+While the port is in programming mode, it controls the supply set points. The SET row and SUPPLY screen reject changes and ON; OUTPUT OFF and STOP remain available. Without a PD mini, voltage and current limit are stored but not applied. After returning to PWM, the pre-session set points are restored once the output is off. If LEAVE keeps it on, restoration waits for the next OFF. Any set point changed in the meantime is retained.
 
 ![The question after LEAVE](view:servo-hitec-restore-ask)
 
-A LEAVE that leaves the output on at the session's set points, with the set points from before the session different, makes SERVO ask once the port is in PWM: `Restore your supply set points 5.50V 2.00A on the live output?` YES gives the live output both of them; a voltage that rises from 6.0V or below to above it opens HV SERVOS ONLY first. NO keeps the session's until the next OFF. The question comes once per LEAVE, waits for SERVO's keypads, lists, warnings, questions and OUTPUT ON's hold, and does not come while a port holds the supply, after an OFF, an error or a STOP, inside a limit run, or when a set point changed since. Only a LEAVE asks: RELEASE PORT, a STOP, an error, a lost link, a restart of the panel or the IOmcu, a port the IOmcu gives back without a LEAVE, and ports that turn to their own supply under a session end the hold without the question, and the session's set points stay until the next OFF. The Hitec programmer asks the same.
+If LEAVE keeps the output on at session set points that differ from the pre-session values, SERVO asks after PWM resumes: `Restore your supply set points 5.50V 2.00A on the live output?` YES applies both values. Raising voltage from 6.0V or below to above 6.0V first opens HV SERVOS ONLY. NO keeps the session values until the next OFF.
 
-On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) the programming ports run from a 5V of their own, switched by GPIO 21, not from the PD mini; MORE reads `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21`. The session switches the 5V where the table below switches the PD mini's output. The PROG 5V box under PD MINI then reads `HELD BY PROG PORT n` and takes no press. With no session the box switches the 5V by hand: PROG 5V ON is a 2s hold, PROG 5V OFF a tap.
+The question appears once per LEAVE. It waits for SERVO keypads, lists, warnings, questions and the OUTPUT ON hold. It is suppressed while a port owns the supply, after OFF, error or STOP, during a limit run, or after a set point has changed.
+
+Only LEAVE triggers this question. RELEASE PORT, STOP, an error, link loss, panel or IOmcu restart, an unsolicited port release, or a switch to the port's own supply ends ownership without asking. Session set points then remain until the next OFF. Hitec programming uses the same behavior.
+
+On the [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier), programming ports use a separate fixed 5V supply switched by GPIO 21. MORE shows `PROGRAMMING VOLTAGE: 5V FIXED, GPIO 21`. The session switches this rail wherever the table below describes switching the PD mini output. During ownership, the PROG 5V box below PD MINI reads `HELD BY PROG PORT n` and accepts no press. Outside a session, hold PROG 5V ON for 2s or tap PROG 5V OFF to control it.
+
+With carrier protocol 4.36 or later, tap the PORT label before CONNECT to choose PROGP01 (GPIO 13), PROGP02 (GPIO 14), PROGP03 (GPIO 15) or PROGP04 (GPIO 0). This sets SERVO TESTER and requests SERVO PWM on that port, NONE on the other three. The tester waits for confirmation before sending commands. Port selection is locked while ARMED or arming, during a test, sweep or limit run, or while a programmer holds a port. A conflicting PWM output on the same slice also blocks the port choice.
 
 ![The KST programmer holding the 5V](view:servo-kst-rbmod)
 
 ## The power cycle
 
-A KST or Chaservo servo enters programming mode only from a power-up, and acts on a written value only from its next power-up: a Chaservo on the bench ignored CONNECT with its supply on, and followed no PWM after a write until its supply was off and on again.
+KST and Chaservo servos enter programming mode after power-up. Written settings take effect at the next power-up. On the tested Chaservo, CONNECT was ignored while power stayed on, and PWM commands were ignored after writing until power was cycled.
 
 | Step | A PD mini with its output on | No PD mini |
 |---|---|---|
@@ -73,7 +81,7 @@ A KST or Chaservo servo enters programming mode only from a power-up, and acts o
 | LEAVE after a write | the output off for 1s, on, the line low for 1s, then PWM | PWM; the values act after the servo's supply is switched off and on |
 | LEAVE with nothing written | PWM after WAIT BEFORE PWM, the supply as it is | the same |
 
-With the output off CONNECT switches it on and enters. ABORT or STOP in the 1s off leaves the output off: `The supply cycle was stopped. The PD mini output stays off.`
+If the output is off, CONNECT switches it on and enters programming. ABORT or STOP during the 1s off period leaves it off: `The supply cycle was stopped. The PD mini output stays off.`
 
 ![CONNECT with the output on](view:servo-kst-supply-on)
 ![The 1s off](view:servo-kst-cycling)
@@ -95,7 +103,9 @@ With the output off CONNECT switches it on and enters. ABORT or STOP in the 1s o
 | RESTORE | CHOOSE | writes a backup back |
 | (no label) | WRITE n VALUES | writes the changed values |
 
-No register holds the series: V8 wing servos read with 20k_sel set, as V6 would. After a read TYPE shows the type 20k_sel suggests with a question mark, `V6?`, and the line under the state asks to check the servo's label. A tap on TYPE sets V6 or V8. The type is the session's, goes into a saved file and holds a load: a file of another type is not loaded, and a file tapped with no type set asks for the type first. The type is never written to the servo.
+No register identifies the series. V8 wing servos can have 20k_sel set as on V6. After reading, TYPE shows the type suggested by that bit with a question mark, such as `V6?`, and asks you to check the servo label. Tap TYPE to confirm V6 or V8.
+
+The type belongs to the session and is included in saved files. Loading requires a matching type; if none is set, selecting a file asks for it first. The type is never written to the servo.
 
 ![The TYPE list](view:servo-kst-type)
 ![A type set](view:servo-kst-type-set)
@@ -108,7 +118,7 @@ A servo whose registers do not fit the known layout is shown and never written: 
 
 ![Edited values on TUNE](view:servo-kst-tune)
 
-A value is edited in a draft on the panel. Nothing reaches the servo before WRITE. A changed value is marked with `*` and the accent fill. A number opens the keypad, limited to what the hard limits accept; STRETCH opens a list; a switch flips on the tap.
+Edits remain in a draft on the panel until WRITE. Changed values have an `*` and accent fill. Tap a number for a keypad constrained by the hard limits, STRETCH for a choice list, or a switch to toggle it.
 
 ![The keypad with the range the limits accept](view:servo-kst-keypad)
 ![The STRETCH list](view:servo-kst-stretch)
@@ -131,7 +141,7 @@ A tap that would break a hard limit changes nothing and names the limit.
 
 ![CHECK THIS CHANGE](view:servo-kst-soft)
 
-A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE, with the servo's value, the new value and one line per limit. HOLD 2s TO APPLY takes it after 2s; CANCEL leaves the draft as it was. A [limit run](servo.md#the-limit-run) asks nothing here: its 2s start hold is the consent to a LEFT ANGLE or RIGHT ANGLE below 50.
+A value within hard limits but outside a soft limit opens CHECK THIS CHANGE. It shows the servo's value, proposed value and one line per affected limit. Hold HOLD 2s TO APPLY for 2s to accept it; CANCEL preserves the draft. A [limit run](servo.md#the-limit-run) uses its 2s start hold as consent for LEFT ANGLE or RIGHT ANGLE below 50 and does not ask again here.
 
 ![The LOCKED tab](view:servo-kst-locked)
 
@@ -139,7 +149,7 @@ A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE,
 
 ![Enabling the write](view:servo-kst-enable)
 
-ENABLE WRITE TO SERVO is off by default. A tap on OFF opens a page that names the risks; HOLD 2s TO ENABLE switches it on after 2s. It goes off at every entry of SERVO, at every STOP, CONNECT and LEAVE, on a lost link, and when a servo is in doubt.
+ENABLE WRITE TO SERVO starts off. Tap OFF to read the risks, then hold HOLD 2s TO ENABLE for 2s. Write access is revoked whenever SERVO is entered, on STOP, CONNECT or LEAVE, on link loss, or when the servo's state is uncertain.
 
 ![Three changed values, the switch on](view:servo-kst-changes)
 ![The write page](view:servo-kst-write)
@@ -162,12 +172,12 @@ A value written and read back is in the servo and acts from its next power-up. W
 
 ![The files on the card](view:servo-kst-files)
 
-FILES lists the servo files in the card's folder `BENCH/KST/CONF`, 5 a page, each with its servo type. The first entry saves the servo's values under a new name, `KST001` and upwards, up to 16 characters.
+FILES lists servo files from `BENCH/KST/CONF`, 5 per page, with their servo type. The first entry saves the servo's values to a new name, starting at `KST001`. Names can contain up to 16 characters.
 
 ![The name of a new file](view:servo-kst-name)
 ![A file loaded](view:servo-kst-file-loaded)
 
-A tap on a file loads it into the draft. Nothing reaches the servo before the write. A file of another type than the one set on TYPE, a damaged file or a value outside its hard limit is not loaded, and the line says why. With no type set the tap opens `SELECT SERVO TYPE BEFORE LOADING` first.
+Tap a file to load it into the draft. It reaches the servo only after writing. A type mismatch, damaged file or value outside a hard limit prevents loading; the status line explains why. Without a confirmed type, `SELECT SERVO TYPE BEFORE LOADING` opens first.
 
 ![The type asked before a load](view:servo-kst-type-first)
 
@@ -176,7 +186,7 @@ A tap on a file loads it into the draft. Nothing reaches the servo before the wr
 ![The restore list](view:servo-kst-restore-list)
 ![A restore of the session's backup](view:servo-kst-restore)
 
-RESTORE writes back the session's backup, the servo as first read after CONNECT, the values before an interrupted write, or `Settings before the limit run.`. Every restore needs the write switch and a 2s hold.
+RESTORE offers the session backup (the first values read after CONNECT), the values before an interrupted write, or `Settings before the limit run.` Every restore requires write access and a 2s hold.
 
 ![MORE in programming mode](view:servo-kst-more)
 
@@ -188,7 +198,7 @@ RESTORE writes back the session's backup, the servo as first read after CONNECT,
 
 ![An interrupted write](view:servo-kst-doubt)
 
-A write counts as interrupted when the link goes, a board restarts, ABORT or a stop ends it, or no result arrives in time. The tab then reads `Writing was interrupted. The settings may be incomplete.` until the servo is read again. READ ALL compares the servo with the record and offers RESTORE.
+A write is considered interrupted after link loss, a board restart, ABORT or stop, or a missing result at the deadline. The tab shows `Writing was interrupted. The settings may be incomplete.` until the servo is read again. READ ALL compares the current settings with the write record and offers RESTORE.
 
 ![The servo holds a mix of old and new values](view:servo-kst-journal)
 
@@ -197,11 +207,17 @@ A write counts as interrupted when the link goes, a board restarts, ABORT or a s
 ![LEAVE PROGRAMMING](view:servo-kst-leave)
 ![LEAVE after a write with a PD mini](view:servo-kst-leave-cycle)
 
-LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM and the servo may move. After a write with a PD mini the page says the output goes off for 1s and on first; without a PD mini it says the values act after the supply is switched off and on. With nothing written the supply stays as it is. HOLD 2s TO LEAVE takes it after 2s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
+LEAVE, CLOSE or the home tag in programming mode opens LEAVE PROGRAMMING. Returning to servo PWM may move the servo. After a write with a PD mini, the page explains that power will cycle off for 1s first. Without a PD mini, it explains that written values require a manual power cycle. If nothing was written, the supply stays unchanged.
+
+Hold HOLD 2s TO LEAVE for 2s. The port holds its line low for WAIT BEFORE PWM, then returns the pin to the tester. Leaving the SERVO screen does not perform LEAVE: the session retains the port and reopens on PROGRAM when you return. Within the programmer, home closes an open keypad, list, warning or keyboard first.
 
 ## Hitec D receive
 
-MORE lists Hitec D receive while the tester has the port. PULL-UP (the default) needs a 2.2kΩ resistor from the signal wire to the servo supply. PRECHARGE needs none: the IOmcu drives the pad high for 100ns every 1.09us and samples it 113ns later. The IOmcu takes the value at its next OPEN of a D series line, so a session offers no change: LEAVE, set it, CONNECT. Classic servos (HS-5xxx, HS-7xxx) need neither and ignore it. An IOmcu of 0.21.1 or 0.21.2 (protocol 4.23) receives with PULL-UP; with PRECHARGE set the list then reads `IOmcu older than 0.22.0: receives with PULL-UP.` An IOmcu older than 0.21.1 has no Hitec line; with PRECHARGE set the list reads `IOmcu older than 0.21.1: no Hitec line.`
+MORE offers Hitec D receive while the tester owns the port. The default PULL-UP requires a 2.2kΩ resistor between signal and servo supply. PRECHARGE needs no resistor: the IOmcu drives the pad high for 100ns every 1.09us and samples it 113ns later.
+
+The setting applies at the next OPEN of a D-series line, so it cannot change during a session. Use LEAVE, change the setting, then CONNECT. Classic HS-5xxx and HS-7xxx servos require neither method and ignore the setting.
+
+IOmcu 0.21.1 and 0.21.2 (protocol 4.23) always receive with PULL-UP. If PRECHARGE is selected, the list shows `IOmcu older than 0.22.0: receives with PULL-UP.` Before 0.21.1, there is no Hitec line; selecting PRECHARGE shows `IOmcu older than 0.21.1: no Hitec line.`
 
 ![Hitec D receive's list](view:servo-hitec-rx)
 

@@ -26,15 +26,15 @@ test('searchQuery: maker and ordering name each in quotes', () => {
 });
 
 test('searchQuery: a spec without a maker is split at ", ", each term in quotes; a double quote leaves a term', () => {
-  assert.equal(searchQuery(null, 'Resistor 2.2 kΩ, 0.25 W'), '"Resistor 2.2 kΩ" "0.25 W"');
-  assert.equal(searchQuery(null, 'Plug 5.5 × 2.1 mm'), '"Plug 5.5 × 2.1 mm"');
+  assert.equal(searchQuery(null, 'Resistor 2.2kΩ, 0.25W'), '"Resistor 2.2kΩ" "0.25W"');
+  assert.equal(searchQuery(null, 'Plug 5.5 × 2.1mm'), '"Plug 5.5 × 2.1mm"');
   assert.equal(searchQuery('A "B"', 'C'), '"A B" "C"');
   assert.equal(searchQuery(null, 'a, , b'), '"a" "b"');
 });
 
 test('searchUrl: Ω, ×, quotes, & and parentheses are percent-encoded', () => {
-  assert.equal(searchUrl(null, 'Resistor 2.2 kΩ, 0.25 W'), `${SEARCH}%22Resistor%202.2%20k%CE%A9%22%20%220.25%20W%22`);
-  assert.equal(searchUrl(null, '5.5 × 2.1 mm'), `${SEARCH}%225.5%20%C3%97%202.1%20mm%22`);
+  assert.equal(searchUrl(null, 'Resistor 2.2kΩ, 0.25W'), `${SEARCH}%22Resistor%202.2k%CE%A9%22%20%220.25W%22`);
+  assert.equal(searchUrl(null, '5.5 × 2.1mm'), `${SEARCH}%225.5%20%C3%97%202.1mm%22`);
   assert.equal(searchUrl('A & B', 'x(1)!*\''), `${SEARCH}%22A%20%26%20B%22%20%22x%281%29%21%2A%27%22`);
   const url = new globalThis.URL(searchUrl('A & B', 'x'));
   assert.equal(url.origin, 'https://www.google.com');

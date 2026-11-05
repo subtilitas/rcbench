@@ -1,7 +1,7 @@
 # Mechanical parts
 
-STEP (ISO 10303-21, AP214 automotive design schema) models of the bought
-mechanical parts of the bench, for the enclosure and panel design. Units
+STEP (ISO 10303-21, AP214 automotive design schema) models of the bench's
+purchased mechanical parts, for designing the enclosure and panel. Units
 are mm. Each part has a spec in this directory; `gen_models.py` writes the
 models from the specs with `hardware/kicad/tools/step_gen.py`.
 
@@ -24,7 +24,7 @@ xvfb-run -a python3 hardware/kicad/tools/step_render.py \
 
 ## Emergency stop button, M16
 
-A latching mushroom button released by turning: red head 24.9mm across,
+A latching mushroom button with a twist release: red head 24.9mm across,
 M16 x 1 thread, hex nut, square anti-rotation shim with a bent tab, 5 tabs
 2.8 x 0.5mm (C, NO, NC, lamp + and -). Overall length 50.1mm.
 
@@ -38,14 +38,14 @@ M16 x 1 thread, hex nut, square anti-rotation shim with a bent tab, 5 tabs
 Dimensions from the seller's drawing: head 24.9mm with a 19.6mm front face
 and 15.7mm long, bezel 2.7mm long, nut front face 29.3mm from the tab
 ends, 12mm of thread behind the nut, tabs 7mm long, M16 x 1, overall
-50.1mm. The side view's 20.4mm is read as the shim's side, which the rear
-view draws as the square around the nut, and 19.6mm as the bezel
+50.1mm. The side view's 20.4mm dimension is interpreted as the side of the shim, shown in the rear
+view as the square around the nut. Its 19.6mm dimension is interpreted as the bezel
 diameter. The rear view's 12.8mm and 13.8mm are not assigned to a part.
 
-Estimated, not on the drawing: the head's front edge radius (2.65mm), the
+The following dimensions are estimated because they are absent from the drawing: the head's front edge radius (2.65mm), the
 bezel chamfer, nut across flats and thickness, shim thickness, bore and
-tab, switch body diameter (15.0mm) and the tab positions. The spec lists
-each. The thread is a plain 16.0mm cylinder; the tab holes and the head
+tab, switch body diameter (15.0mm) and the tab positions. The spec identifies
+each estimate. The thread is represented by a plain 16.0mm cylinder; the tab holes and the head
 print are not modelled. The maker and part number are not known.
 
 ![E-stop models](renders/all.png)

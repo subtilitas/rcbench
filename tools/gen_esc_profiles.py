@@ -810,7 +810,8 @@ def self_test() -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
-                    help="fail if the checked-in C file differs from the JSON")
+                    help="check without writing; fail if the committed C file "
+                         "differs from the JSON profiles")
     args = ap.parse_args()
     # json.loads() reads a whole number with int(), which from Python 3.11
     # refuses more than 4,300 digits; the card reader takes any length in a

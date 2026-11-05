@@ -72,10 +72,10 @@ test('the CAN pins are those of header H11, whose pin 1 takes no wire', () => {
   assert.match(header, /header H11/);
   const text = check('panel-terminals')!.text;
   assert.match(text.en, /CAN header H11 has the print CAN with L, H, GND and 5V/);
-  assert.match(text.en, /The pin 5V is the 5 V rail of the board and takes no wire/);
+  assert.match(text.en, /The pin 5V is the 5V rail of the board and takes no wire/);
   assert.match(text.de, /Der Pin 5V ist die 5-V-Schiene der Platine und bekommt keinen Draht/);
   // 5V is drawn as a print, not a pin: no wire can end on it.
-  assert.ok(!panel.pins.some((p) => /5V|5 V/.test(p.label.en)));
+  assert.ok(!panel.pins.some((p) => /5V|5V/.test(p.label.en)));
   assert.deepEqual(CATALOGUE.wires.filter((w) => w.a.startsWith('panel.')).map((w) => [w.n, w.a]),
     [[1, 'panel.CANH'], [2, 'panel.CANL'], [3, 'panel.CANG'], [4, 'panel.HB'], [5, 'panel.HB']]);
 });

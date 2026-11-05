@@ -15,18 +15,18 @@ the L1 data cache (64KB, 2-way, 64-byte lines) and the L2 cache (128KB,
 from PSRAM and, once written, a 64-byte write-back. The table below counts
 those fills, which can be measured exactly on the host.
 
-A frame's time is its PSRAM traffic and its instructions, and which of the
-two bounds a frame on this board is not measured. The one screen with
+A frame's rendering time depends on its PSRAM traffic and the instructions it
+executes. Which of these limits rendering on this board is not measured. The one screen with
 figures from both sides points at the instructions: SERVO > LIVE during a
-sweep is 2,431 fills in the table, 304KiB of traffic, and the console read
+sweep is 2,216 fills in the table, 277KiB of traffic, and the console read
 DRAW 13.8 to 16.5ms ([On the board](#on-the-board)); as traffic alone that
-is 19 to 23MB/s. The fills hold the traffic side; `test_frame_work` holds
-the instruction side in pixel visits ([Rules](#rules)).
+is 17 to 21MB/s. The fill count tracks memory traffic; `test_frame_work` limits
+rendering work through pixel visits ([Rules](#rules)).
 
 With Screen rotation 180°, a screen draws into a logical buffer of the same
-size in PSRAM, and the flip has the PPA (pixel-processing accelerator) copy
-the blocks the frame changed into the frame buffer, turned, before it
-presents it. The model counts the drawing, not the copy. The copy's time is
+size in PSRAM, and the flip uses the PPA (pixel-processing accelerator) to copy
+the changed blocks, rotated, into the frame buffer before
+presenting it. The model counts the drawing, not the copy. The copy's time is
 the console's TURN; it is part of WAIT and adds to every frame that changes.
 
 `tools/frame_cost.py` builds the real screens for the host and runs them under
@@ -41,7 +41,7 @@ beside the data. The code fetched is the host's x86 code, whose size and
 layout differ from the RISC-V code's; how far that moves the fills is not
 measured.
 
-What a fill costs in time is the effective bandwidth of the CPU's writes into
+The time per fill depends on the effective bandwidth of the CPU's writes into
 PSRAM while the DPI reads. It is not measured, so the table gives fills and
 traffic and no time. The panel measures it at start-up ([On the
 board](#on-the-board)); `PROBE_CLEAR_US` in the tool takes that figure, and
@@ -141,22 +141,22 @@ not touch: a change of texts and Hitec code moved 24 of the 37 modes by up to
 orders, gave battery-sim 3167 to 3353 fills, frame 9466 to 9810, servo 2236 to 2693
 and settings-list-chrome 36320 to 37282. `frame_cost.py --check-doc` therefore checks
 the table to a tolerance of 3%, and never less than 500 fills. No two of the 18 builds
-differ by more than that. Rows under about 700 fills are not held by this check. It fails, too, when the line
+differ by more than that. This check does not tightly constrain rows under about 700 fills. It fails, too, when the line
 that names the panel's rate and the bandwidth differs from the tool's profile.
 
 ## Rules
 
 **Draw row-major.** Seventeen full-height vertical lines cost 10,204 fills;
-the same pixel count as horizontal lines costs 171, because each line is
+the same pixel count as horizontal lines costs 180, because each line is
 resident from the previous pixel. The shell is laid out in horizontal bands, and a
 vertical rule is a deliberate expense.
 
 **Cache the chrome.** Repainting everything costs 22,000 to 64,000 fills,
 the `-chrome` modes, and a cached steady frame of the same screen none:
-60,992 fills for RECEIVER's full repaint against 0 for its steady frame. Every screen keeps a per-framebuffer bitmask of what it has already
+61,108 fills for RECEIVER's full repaint against 0 for its steady frame. Every screen keeps a per-framebuffer bitmask of what it has already
 painted; that is what the `buffer_index` argument of `render()` is for. The
 panel alternates between two buffers, so a screen that invalidates only the
-buffer being drawn leaves the other one a frame behind, which reads as flicker.
+buffer being drawn leaves the other one a frame behind, causing visible flicker.
 
 **Cache a stencil that does not move.** SIMULATION is drawn on every frame
 whenever the bench numbers carry `LINK_BN_SIMULATED`, which includes an
@@ -169,20 +169,20 @@ on 800 x 480px, 144,721 instructions per frame in place of 8,412,078. The
 count on 1024 x 600px is not measured.
 
 **A count of fills is not a count of cycles.** The table above measures
-cache-line fills, and the mark costs only 3,685 of them, `sim` against
-`frame`: its time is arithmetic per pixel, not traffic, and the table cannot
-show it. Where a mode's measured frame time exceeds what its fills
+cache-line fills, and the mark costs only 3,698 of them, `sim` against
+`frame`: its time is spent on arithmetic per pixel, which the traffic table cannot
+show. Where a mode's measured frame time exceeds what its fills
 predict, count instructions before trusting the estimate.
 
 **Give a control that moves every frame its own counter.** A drag delivers a
-touch per frame. A revision shared with the controls beside it would
+touch per frame. Sharing a revision counter with adjacent controls would
 repaint them all on every touch. The motor screen's throttle carries its
 own, and repaints the readout's box and the slider's painted region: the `throttle` mode in the table above measures it against a sample
 frame. The flip quantises to whole panel frames: 60.4, 30.2 or 20.1fps.
 The drag's frame time on the board is not measured.
 
 Clear what a widget paints, not what it occupies. The slider's thumb and its
-shadow stand proud of the track by 5px above and 7px below, and the hero
+shadow extend beyond the track by 5px above and 7px below, and the hero
 numerals are 32px tall with 3px of slant on a 30px row, so a clear sized
 to the track or to the row leaves a thumb at every position the finger passed
 and the numerals' feet behind. `ui_slider_painted_rect()` reports the region
@@ -228,8 +228,8 @@ position to SAFE plus six layers of the grip's box, a swept or dragged horn to
 
 CI holds each mode below to a ceiling of fills per
 frame. A ceiling sits 13 to 29% above the largest figure of its modes in the
-table above, and a mode under 700 fills is held at 1,000. A ceiling catches
-a change that makes the model draw more, not a frame that misses the panel:
+table above, and a mode under 700 fills is held at 1,000. A ceiling detects
+increased drawing work in the model; it does not detect a missed display deadline:
 
 | Modes | Ceiling (fills) | Catches |
 | --- | ---: | --- |
@@ -239,7 +239,7 @@ a change that makes the model draw more, not a frame that misses the panel:
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
 | `servo-rudder` | 4,600 | a new angle on RUDDER that repaints more than the readout, the state lines and the flap's two boxes |
-| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,720 fills in the table above |
+| `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,713 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the eleven `-chrome` modes | 72,000 | a growing full repaint |
 | `wifi-keys` | 42,000 | a key of the Wi-Fi keyboard that repaints more than the screen |
@@ -255,13 +255,13 @@ keeps up with the samples while its traffic fits three panel frames at the
 effective bandwidth. That bandwidth is not measured, so the ceiling is not
 set.
 
-If a future pane needs more room, the remaining levers in order of bluntness
-are the plot's height, its width, and clipping the simulation watermark to the
-region that was repainted.
+If a future pane needs more room, the remaining options, from broadest to most targeted,
+are reducing the plot's height, reducing its width, and clipping the simulation
+watermark to the repainted region.
 
 ## On the board
 
-The console lines of this section come with the build option
+The console lines in this section are enabled by the build option
 `RCBENCH_PERF_LOG`, ON by default (`firmware/panel/CMakeLists.txt`):
 
 ```sh
@@ -315,8 +315,8 @@ stack scan ([High-water marks on the board](#high-water-marks-on-the-board)).
 Their time on the board is not measured, except the stack scan's, which the
 panel logs.
 
-Once at start-up, before the splash's first frame, the panel times four
-clears of the back buffer, after one it does not time:
+At start-up, before the splash's first frame, the panel clears the back buffer
+once without timing it, then times four more clears:
 
 ```text
 I (…) rcbench: PSRAM probe: 4 clears of 1228800B in <n> us, <n> us each
@@ -350,9 +350,9 @@ fill and a write-back for every line. The time of one clear, set as
 
 `frame_cost.py --check-doc` reads this table: a mode the tool does not draw
 fails, and the clear row's DRAW mean and `PROBE_CLEAR_US` are measured
-together or not at all and agree to 0.05ms. The other figures are a record
-of the board, held by no check; the mean and the extremes of a screen's
-frames are what the model's estimate for its mode is set against.
+together or not at all and agree to 0.05ms. The other figures record board measurements and are not checked automatically.
+The minimum, mean and maximum frame times for a screen are compared
+with the model's estimate for that mode.
 
 No window line has been read on a board yet. The rate line of a station run
 on SERVO > LIVE, the bench ARMED, gave:
@@ -381,9 +381,9 @@ file. The ESP32-P4 runs RISC-V code, which `tools/stack_riscv.py` decodes:
 the frame of every function is the lowest point its stack pointer reaches
 (`addi sp, sp, -N` and its compressed forms), and the depth is the largest
 sum of frames along any chain from the task's entry point. A jump out of a
-function, the form a tail call takes, counts as a call. The tasks are every
-`xTaskCreatePinnedToCore()` and `xTaskCreate()` in the panel's own code
-under `firmware/panel`, `managed_components/` left out, and the main task.
+function, the form a tail call takes, counts as a call. The analysis covers every task created by
+`xTaskCreatePinnedToCore()` or `xTaskCreate()` in the panel's own code
+under `firmware/panel`, excluding `managed_components/`, plus the main task.
 CI runs the tool after the panel build and fails when a task's depth exceeds
 its stack less 1024 bytes.
 
@@ -408,8 +408,8 @@ tasks of their own. ESP-IDF and esp_hosted create them, so they are not in
 the table: their depth is not measured, and the console reports what they
 leave unused (below). `wifi_get`'s depth leaves out the TLS (transport layer
 security) handshake and every read under it: esp_http_client reaches its
-transport through a function pointer. Its stack is the page server's, which
-never runs beside it; the handshake's depth is not measured.
+transport through a function pointer. Its stack uses the page server's allocation; the two tasks
+never run concurrently; the handshake's depth is not measured.
 
 `runlog`'s deepest chain mounts the SD card: the listing of the servo
 files the card serves (`hitec_card_run()`, `list()`, `servo_store_preset()`,
@@ -470,7 +470,7 @@ count of calls through a pointer differs from the build.
 
 ### High-water marks on the board
 
-The first rate line and every 6th after it, 30s apart at 60.4fps, want a
+The first rate line and every 6th after it, 30s apart at 60.4fps, request a
 scan of every task's stack. The scan is FreeRTOS's `uxTaskGetSystemState()`.
 It holds the kernel lock, with the render core's interrupts masked, while it
 reads each task's unused stack byte by byte, so a kernel call on the other
@@ -497,9 +497,9 @@ measured.
 
 The figure is FreeRTOS's high-water mark: the bytes at the bottom of the
 stack that no frame has written since the task started, the coprocessor
-contexts left out. It covers only the paths the panel has run, so it bounds
-nothing; set against the deepest chain above, it shows what the tool does
-not follow.
+contexts left out. It covers only executed paths and cannot bound the stack usage of untested
+paths. Comparing it with the deepest chain above reveals usage that the
+tool does not follow.
 
 | Task | Stack (bytes) | Never used on the board (bytes) |
 | --- | ---: | ---: |
@@ -595,15 +595,15 @@ Each depth is a lower bound:
   chain runs round a cycle at most once.
 
 Core 0's stack is the whole of the RAM region `SCRATCH_Y`, 0x20081000 to
-0x20082000; the image places nothing else in it, and the link fails when
-something is. Below it, in `SCRATCH_X`, lies the 4096-byte array the
+0x20082000; the image places nothing else in it, and linking fails if
+anything else is placed there. Below it, in `SCRATCH_X`, lies the 4096-byte array the
 pico-sdk reserves as its own core 1 stack, which this image does not run
 on. The same definition sizes that array.
 
 `-v` lists all of them, and each task's deepest chain.
 
-The panel's UI keeps its frames small where it is cheap. A page's drawer
-is a separate function, so only the page on screen holds its buffers: in
+The panel's UI keeps stack frames small where this requires little overhead.
+Each page has a separate drawing function, so only the visible page holds its buffers: in
 ESC STICK, `esc_stick_panel_render()` calls the page on screen, and MOTOR &
 ESC's `mo_render()` calls the session's way and its body's as two
 functions, so a session's pages do not sit on the body's frame. A line
@@ -631,8 +631,8 @@ download):
 I (…) wifi: radio up, mode <n>; internal RAM <n> B free
 ```
 
-And on a frame after a rate line, when the lowest free figure since
-start-up has fallen ([On the board](#on-the-board)):
+On a frame after a rate line, it also reports a new minimum in free memory
+since start-up ([On the board](#on-the-board)):
 
 ```text
 I (…) rcbench: internal RAM: <n> B free at the lowest, <n> B free now, largest block <n> B
@@ -664,7 +664,7 @@ assertion inside ESP-IDF instead, and the panel restarts.
 
 The radio task `wifi_ctl` takes 6,912 bytes of internal RAM for its stack
 at the first radio start or release check and keeps it until the panel
-restarts. The build's static internal figures (below) do not change with it.
+restarts. This allocation is not reflected in the build's static internal-memory figures below.
 
 FILES' card task `cardjob` takes 6,656 bytes of internal RAM for its stack
 and 16,384 bytes of DMA-capable internal RAM for its copy buffer. Both are
@@ -718,14 +718,14 @@ stay in internal RAM.
 
 ## Wi-Fi downloads
 
-A card file or the ZIP file goes from the panel to the browser over one TCP
+A card file or the ZIP file is sent from the panel to the browser over one TCP
 (transmission control protocol) connection. The page's server answers one
 request at a time: a request that arrives during a download waits for its
 end. On a home network a download of a 16MiB file ran at 688-757kB/s, the
 card read and the radio together, not separated, at a ping average of
 14.6ms, and an upload of a 2.56MB image to `/update` at 556-599kB/s. The
 panel logged no SDIO (Secure Digital input/output) error and drew 60fps
-during the downloads. What bounds the rate:
+during the downloads. Factors that limit the transfer rate:
 
 | Link | Setting | Bound |
 | --- | --- | --- |
@@ -772,7 +772,7 @@ I (…) wifi: file: sent, 16777216 of 16777216 B read in <n> ms
 W (…) wifi: file: receiver gone, <n> of 16777216 B read in <n> ms
 ```
 
-The other endings read `nothing taken for 30 s`, `radio going off` and
+Other termination messages are `nothing taken for 30 s`, `radio going off` and
 `card read failed`.
 
 ### Measuring a download
@@ -813,10 +813,10 @@ build takes a copy of ESP-IDF's `fatfs` component with `FF_FS_EXFAT` set to
 whose FatFs has no exFAT. Long file names stay as `sdkconfig.defaults` sets
 them: on, 255 characters, the working buffer on the heap.
 
-What exFAT costs, read from the P4 build at ESP-IDF v5.5.5, not repeated on
-v6.1, against the same
-tree built with the `fatfs_exfat.cmake` include and that stop taken out,
-both without `RCBENCH_IOMCU_BIN`:
+The following exFAT costs come from a P4 build with ESP-IDF v5.5.5; the
+measurement has not been repeated on v6.1. The comparison uses the same
+source tree with the `fatfs_exfat.cmake` include and build check removed.
+Both builds omit `RCBENCH_IOMCU_BIN`:
 
 | Item | Without exFAT | With exFAT | Where |
 | --- | ---: | ---: | --- |

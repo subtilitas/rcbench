@@ -6,61 +6,61 @@ order: 11
 
 # Motor-Optionen
 
-OPTIONEN, der dritte Reiter der Leiste von [MOTOR & ESC](motor.md), hält die 8 ESC-Einstellungen (Electronic Speed Controller) des Prüfstands in der linken Spalte unter drei Überschriften, in zwei Spalten: AKKU und MOTOR links, GASAUSGANG rechts. Die rechte Spalte bleibt an ihrem Platz und wirkt: die Anzeigen, ZIEL, ARM, die Summen und SPITZENWERTE ZURÜCKSETZEN.
+OPTIONEN ist der dritte Reiter von [MOTOR & ESC](motor.md). Der linke Bereich enthält die 8 ESC-Einstellungen (Electronic Speed Controller) des Prüfstands in zwei Spalten: AKKU und MOTOR links, GASAUSGANG rechts. Die rechte Hauptspalte bleibt sichtbar und bedienbar, mit Anzeigen, ZIEL, ARM, Summen und SPITZENWERTE ZURÜCKSETZEN.
 
 ![OPTIONEN](view:motor-settings)
 
-Eine Zeile zeigt die Einstellung und ihren Wert mit Einheit, 48px hoch, und darunter eine Hilfezeile. Ein Tipp auf den Wert öffnet das Tastenfeld über der linken Spalte und der Leiste. Das Tastenfeld nennt die Einstellung und ihren Bereich. OK übernimmt einen Wert im Bereich; ein Wert außerhalb hält das Tastenfeld offen und nennt den Bereich in der Warnfarbe. ABBRECHEN und das Home-Tag schließen das Tastenfeld und ändern nichts. Ein getippter Wert landet auf dem Schritt der Einstellung: 4321mAh werden 4300mAh.
+Jede 48px hohe Zeile zeigt Einstellung, Wert, Einheit und eine Hilfezeile. Tippe auf den Wert, um das Tastenfeld über dem linken Bereich und der Reiterleiste zu öffnen. Es nennt die Einstellung und ihren Bereich. OK übernimmt gültige Werte. Bei einem Wert außerhalb des Bereichs bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor. ABBRECHEN oder das Home-Feld schließt es ohne Änderung. Werte werden auf die Schrittweite der Einstellung gerundet: Aus 4321mAh werden 4300mAh.
 
 ![Das Tastenfeld für Kapazität](view:motor-settings-keypad)
 
 ## Die Einstellungen
 
-| Überschrift | Einstellung | Bereich | Vorgabe | Was sie tut |
+| Überschrift | Einstellung | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|---|
-| AKKU | Zellen | 1 bis 14S | 6 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
-| AKKU | Kapazität | 0 bis 30000mAh, Schritte von 100mAh | 5000 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
-| AKKU | Innenwiderstand | 0 bis 200mΩ | 18 | gespeichert; kein Bildschirm nutzt ihn in diesem Release |
-| MOTOR | Motorpole | 2 bis 42, Schritte von 2 | 14 | die Drehzahl ist eRPM (elektrische Drehzahl) geteilt durch Pole/2 |
-| MOTOR | Nenn-kV | 0 bis 10000rpm/V, Schritte von 10 | 0 | der kV-Wert auf [LIVE](motor.md#kv-rpm-v-und-eff); 0 lässt ihn leer |
-| GASAUSGANG | Leerlaufpuls | 800 bis 1600us, Schritte von 10 | 1000 | die PWM-Breite (Pulsweitenmodulation) bei 0% Throttle |
-| GASAUSGANG | Vollgaspuls | 1400 bis 2400us, Schritte von 10 | 2000 | die PWM-Breite bei 100% Throttle |
-| GASAUSGANG | Rampengrenze | 5 bis 300%/s, Schritte von 5 | 55 | die Throttle-Rampe des Panelmodells, genutzt, solange kein IOmcu antwortet |
+| AKKU | Zellen | 1 bis 14S | 6 | gespeichert; in diesem Release auf keiner Seite verwendet |
+| AKKU | Kapazität | 0 bis 30000mAh, Schritte von 100mAh | 5000 | gespeichert; in diesem Release auf keiner Seite verwendet |
+| AKKU | Innenwiderstand | 0 bis 200mΩ | 18 | gespeichert; in diesem Release auf keiner Seite verwendet |
+| MOTOR | Motorpole | 2 bis 42, Schritte von 2 | 14 | Drehzahl = eRPM (elektrische Drehzahl) geteilt durch Pole/2 |
+| MOTOR | Nenn-kV | 0 bis 10000rpm/V, Schritte von 10 | 0 | kV-Wert auf [LIVE](motor.md#kv-rpm-v-und-eff); bei 0 bleibt er leer |
+| GASAUSGANG | Leerlaufpuls | 800 bis 1600us, Schritte von 10 | 1000 | PWM-Breite (Pulsweitenmodulation) bei 0% Gas |
+| GASAUSGANG | Vollgaspuls | 1400 bis 2400us, Schritte von 10 | 2000 | PWM-Breite bei 100% Gas |
+| GASAUSGANG | Rampengrenze | 5 bis 300%/s, Schritte von 5 | 55 | Gasrampe des Panelmodells, solange kein IOmcu antwortet |
 
-Das Tastenfeld des Leerlaufpulses lehnt einen Wert ab, der nicht mindestens 100us unter dem Vollgaspuls liegt, das des Vollgaspulses einen, der nicht mindestens 100us über dem Leerlaufpuls liegt. Das Tastenfeld bleibt offen, zeigt `Leerlaufpuls höchstens 1900us (100us unter Vollgaspuls)` oder `Vollgaspuls mindestens 1100us (100us über Leerlaufpuls)` in der Warnfarbe, und die Zeile behält ihren Wert. Die Bereiche überlappen sich, 800 bis 1600us und 1400 bis 2400us, daher braucht das Paar diese Prüfung.
+Der Leerlaufpuls muss mindestens 100us unter dem Vollgaspuls liegen. Andernfalls bleibt das Tastenfeld offen und der Wert unverändert. In der Warnfarbe erscheint `Leerlaufpuls höchstens 1900us (100us unter Vollgaspuls)` oder `Vollgaspuls mindestens 1100us (100us über Leerlaufpuls)`. Diese Prüfung ist nötig, weil sich die zulässigen Bereiche von 800 bis 1600us und 1400 bis 2400us überlappen.
 
-Leerlaufpuls und Vollgaspuls gehen beim Link-Aufbau und bei jeder Änderung an den IOmcu. Der IOmcu fährt keine Throttle-Rampe: Ein gebundener Pin springt auf den Befehl.
+Leerlaufpuls und Vollgaspuls werden beim Verbindungsaufbau und nach jeder Änderung an den IOmcu gesendet. Der IOmcu setzt Gasbefehle an zugeordneten Pins sofort um, ohne Rampe.
 
-Leerlaufpuls und Vollgaspuls nehmen nur bei einem Prüfstand in SAFE einen Wert an. Solange der Prüfstand ARMED ist, ARM gehalten wird oder ein ARM oder ein DISARM auf seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe, und der Wert nimmt keinen Tipp an. Ein offenes Tastenfeld für einen von beiden schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE verlässt. Die anderen 6 Zeilen nehmen jederzeit einen Wert an.
+Leerlaufpuls und Vollgaspuls lassen sich nur bei SAFE ändern. Sie sind gesperrt, solange der Prüfstand ARMED ist, ARM gehalten wird oder eine ARM- oder DISARM-Anfrage auf Antwort wartet. Dann zeigt die Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe. Ein offenes Tastenfeld für einen der beiden Werte schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE verlässt. Die übrigen 6 Werte lassen sich jederzeit ändern.
 
-Eine Änderung von Leerlaufpuls oder Vollgaspuls erreicht den IOmcu beim ersten Poll 300ms oder mehr nach der letzten Eingabe. Bis dahin wird ARM bei angeschlossenem IOmcu mit `Pulsbereich noch nicht an den IOmcu gesendet. Halte ARM erneut.` abgelehnt, und der Prüfstand bleibt SAFE. ARM erneut halten: Das Halten über 2s gibt der Änderung die Zeit anzukommen.
+Eine Änderung von Leerlaufpuls oder Vollgaspuls erreicht den IOmcu bei der ersten Abfrage mindestens 300ms nach der letzten Eingabe. Bis dahin wird ARM bei angeschlossenem IOmcu mit `Pulsbereich noch nicht an den IOmcu gesendet. Halte ARM erneut.` abgelehnt; der Prüfstand bleibt SAFE. Halte ARM erneut: Die 2s geben der Übertragung genügend Zeit.
 
-Übernimmt der IOmcu das Paar nicht, bleibt ARM abgelehnt, bis das Paar in Kraft ist, und das Band sagt, was zu ändern ist:
+Übernimmt der IOmcu das Pulspaar nicht, bleibt ARM gesperrt, bis es angewendet ist. Das Band nennt die nötige Änderung:
 
-| Band | Was tun |
+| Band | Vorgehen |
 |---|---|
-| `Kein Pulsbereich vom IOmcu. Aktualisiere die IOmcu-Firmware, dann halte ARM erneut.` | den IOmcu aktualisieren: Das Panel bietet das mitgebrachte Image an, wenn der IOmcu sich verbindet |
-| `Leerlaufpuls weniger als 100us unter Vollgaspuls. Ändere einen, dann halte ARM erneut.` | Leerlaufpuls senken oder Vollgaspuls erhöhen |
-| `IOmcu hat den Pulsbereich abgelehnt. Ändere Leerlaufpuls, Vollgaspuls oder ZIEL.` | den Puls kürzen oder den Motor-Pin auf OUTPUTS mit einer langsameren Rate zuordnen: Ein Puls, der länger als sein PWM-Frame ist, wird abgelehnt |
-| `Der IOmcu hat einen anderen Pulsbereich. Ändere Leerlaufpuls oder Vollgaspuls.` | einen der beiden Werte ändern; das Panel sendet das Paar erneut |
+| `Kein Pulsbereich vom IOmcu. Aktualisiere die IOmcu-Firmware, dann halte ARM erneut.` | Aktualisiere den IOmcu. Beim Verbinden bietet das Panel sein mitgeliefertes Image an. |
+| `Leerlaufpuls weniger als 100us unter Vollgaspuls. Ändere einen, dann halte ARM erneut.` | Senke den Leerlaufpuls oder erhöhe den Vollgaspuls. |
+| `IOmcu hat den Pulsbereich abgelehnt. Ändere Leerlaufpuls, Vollgaspuls oder ZIEL.` | Kürze den Puls oder ordne den Motor-Pin auf OUTPUTS einer langsameren Rate zu. Ein Puls, der länger als sein PWM-Frame ist, wird abgelehnt. |
+| `Der IOmcu hat einen anderen Pulsbereich. Ändere Leerlaufpuls oder Vollgaspuls.` | Ändere einen der beiden Werte; das Panel sendet das Paar erneut. |
 
-Eine auf OUTPUTS geschriebene Zuordnung und ein erneutes Verbinden des IOmcu senden das Paar ebenfalls erneut.
+Auch das Schreiben einer Zuordnung auf OUTPUTS oder ein erneuter Verbindungsaufbau zum IOmcu sendet das Pulspaar erneut.
 
 ## Die Werte behalten
 
-Ein geänderter Wert gilt sofort und fordert das Schreiben an. Das Panel schreibt im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Die Einstellungen sind ein Speicher: Das Schreiben behält jeden ungespeicherten Wert, auch die unter SETUP geänderten. Die Zeile am Fuß der Seite sagt, wo der Speicher steht:
+Ein geänderter Wert gilt sofort und fordert das Speichern an. Das Panel schreibt die Einstellungen im ersten Frame, in dem der Prüfstand SAFE, der Netzteilausgang ausgeschaltet und keine Platinenzeichnung im Lade- oder Speichervorgang ist. Dabei werden alle ungespeicherten Einstellungen gespeichert, auch Änderungen aus SETUP. Die Fußzeile zeigt den Speicherstatus:
 
 | Zeile | Bedeutung |
 |---|---|
-| `GESPEICHERT` | nichts ist ungeschrieben |
-| `SPEICHERN AUSSTEHEND` | das Schreiben ist angefordert und wartet auf einen ruhenden Prüfstand |
-| `NICHT GESPEICHERT` | der Speicher hat das Schreiben abgelehnt; die Werte gelten und bleiben ungespeichert |
-| `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT` | unter SETUP oder auf einem anderen Bildschirm geänderte Werte sind ungespeichert, und kein Schreiben ist angefordert; die nächste Änderung hier schreibt sie mit |
+| `GESPEICHERT` | Alle Einstellungen sind gespeichert. |
+| `SPEICHERN AUSSTEHEND` | Speichern ist angefordert und wartet auf einen ruhenden Prüfstand. |
+| `NICHT GESPEICHERT` | Das Schreiben ist fehlgeschlagen; die Werte gelten weiter, sind aber ungespeichert. |
+| `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT` | Änderungen aus SETUP oder einer anderen Seite sind ungespeichert, ohne Speicheranforderung. Die nächste Änderung hier speichert sie mit. |
 
-Nach einem abgelehnten Schreiben bleiben die Werte ungespeichert. Die nächste Änderung fordert das Schreiben erneut an, und die Warnung von SETUP beim Verlassen nennt sie ([Mit ungespeicherten Werten verlassen](setup.md#mit-ungespeicherten-werten-verlassen)).
+Nach einem fehlgeschlagenen Schreibvorgang bleiben die Werte ungespeichert. Die nächste Änderung fordert einen neuen Schreibvorgang an. Beim Verlassen von SETUP nennt die [Warnung zu ungespeicherten Werten](setup.md#mit-ungespeicherten-werten-verlassen) diese Änderungen.
 
 ## Verwandte Seiten
 
 - [Motor und ESC](motor.md)
-- [Ausgänge](outputs.md): welche Pins der Throttle treibt.
-- [Setup](setup.md): die Speichertaste und die Warnung beim Verlassen.
+- [Ausgänge](outputs.md): Pins für die Gassteuerung.
+- [Setup](setup.md): Speichertaste und Warnung beim Verlassen.

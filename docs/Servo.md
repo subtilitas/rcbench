@@ -2,12 +2,13 @@
 
 <sub>**English** · [Deutsch](Servo-de.md)</sub>
 
-Three procedures on a servo. The first measures a servo as installed: the
-limit search runs on the SERVO screen and reads the INA3221 channel that
-watches the servo tester's target, and for a KST
-or Chaservo servo on the programming port it can lower the servo's own
-travel limits. The second, the synchroniser, needs a current sensor across a
-pair of outputs, which is not fitted, and runs against a modelled servo only.
+This page describes three servo procedures. The first measures a servo
+as installed: the limit search on SERVO reads the INA3221 channel assigned
+to the servo tester's target. For a KST, Chaservo or supported Hitec servo
+on a programming port, it can also reduce the servo's own travel limits.
+The second, the synchroniser, needs a sensor that measures the combined
+current of two outputs. That sensor is not fitted, so the synchroniser
+runs only against a simulated servo.
 Their defaults are from `servo_limit_defaults()` and `servo_sync_defaults()`
 in `shared/servo/`. The third, the [automatic test](#automatic-test), reads
 the current of the supply that feeds the servo. RUDDER, a task of the SERVO
@@ -29,8 +30,8 @@ The search steps outward from centre in 10µs of pulse width per step (about 0.9
 120ms for the servo to settle and averages the current over 80ms. While the
 surface moves freely the current is flat and low. The linkage counts as bound
 when the current exceeds 1.8 times the free-running baseline and exceeds it by
-at least 0.15A. The search stops at the first such step, backs off 25µs, and
-reports that pulse width as the endpoint.
+at least 0.15A. The search stops at the first such step. It reports the last free pulse
+width, backed off by another 25µs toward centre, as the endpoint.
 
 On the bench the limit run (`shared/servo/servo_limrun.c`) searches the low
 side first, then the high side. Where depends on the target:
@@ -38,12 +39,13 @@ side first, then the high side. Where depends on the target:
 | TARGET | Read first | Search |
 | --- | --- | --- |
 | a SERVO PWM pin on OUTPUTS | nothing | PULSE CENTRE out to PULSE MIN and PULSE MAX |
-| PROG PORT | a read session of the [programmer](ServoProgrammer.md) | the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
+| PROG PORT, KST/CHASERVO | a read session of the [programmer](ServoProgrammer.md) | the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
 
-The distance to that end replaces the 600µs. The current is the watching
-INA3221 channel's 50ms windows, so each position takes 250ms. The servo is held at the
-centre for 1000ms before each search and after it: the return from an end,
-600µs at 0.67µs/ms, takes 900ms, and the baseline is not to see it.
+The distance to that end replaces the 600µs. Current is measured in 50ms windows from the assigned INA3221 channel,
+so each position takes 250ms. The servo is held at the
+centre for 1000ms before each search and after it: returning from an end
+600µs away at 0.67µs/ms takes 900ms, and that movement must finish
+before the baseline is measured.
 
 Duration: the host test holds a full search against the modelled servo to under
 12s. A run on the bench is not measured.
@@ -93,9 +95,11 @@ and the line under it says why.
 ### Programming the servo's travel limits
 
 SEARCH + PROGRAM is offered for a servo on the programming port: TARGET on
-PROG PORT, the port in PWM, and a supply of 4.8V or more. With a PD mini
-answering, its output must be on and its set point counts; without one, the servo rail's mean in the
-INA3221's last window. On the bench's outputs the run searches only, the
+PROG PORT, the port in PWM, and a supply of 4.8V or more. On boards where a PD mini feeds the port, its output must be on and its
+set point is checked. Without that supply, the check uses the servo rail's
+mean voltage in the INA3221's last window. On the rbmod carrier, PROG 5V
+must also be on; a PD mini on the other servo outputs does not feed the
+programming port. On the bench's outputs the run searches only, the
 row reads SEARCH ONLY, and the note under it in the run's settings reads `PROGRAMMING REQUIRES A SERVO ON THE PROG PORT`. On PROG PORT every run starts with a read session, so
 the other conditions stop SEARCH ONLY as well: the button stays grey and the
 card's state line names the condition.
@@ -107,19 +111,22 @@ card's state line names the condition.
 | `PROGRAMMING: SUPPLY SET BELOW 4.8V` | a PD mini answers and its set point is under 4.8V |
 | `PROGRAMMING: SERVO RAIL BELOW 4.8V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8V or not read |
 
-Without a PD mini the run cannot switch the servo off and on, and a KST or
-Chaservo servo acts on a written value only after that
-([the power cycle](ServoProgrammer.md#the-power-cycle)). SEARCH + PROGRAM
-and SERVO PULSES at 1000-2000 are then not offered, and the card reads
-`PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON` while either is
-chosen. The run reads the servo and searches only.
+A KST or Chaservo servo applies written values after a power cycle
+([the power cycle](ServoProgrammer.md#the-power-cycle)). The run can
+provide this through a PD mini or the carrier's programming-port 5V.
+Without either, SEARCH + PROGRAM and SERVO PULSES at 1000-2000 are
+unavailable. Choosing either shows
+`PROGRAMMING: NO PD MINI TO SWITCH THE SERVO OFF AND ON`; the run only
+reads the servo and searches. Hitec D-series servos use their own restart
+after writing and do not require a switched supply for this step, as
+described below.
 
 ![No PD mini: the run writes nothing](img/servo-limrun-nopd.png)
 
-With a PD mini every
-CONNECT of the run switches its output off for 1s and on, and the LEAVE
-after a write does the same, so the check after the write searches the
-servo with the new values in effect.
+With a PD mini supplying the port, each CONNECT switches its output off
+for 1s and back on; LEAVE after a write does the same. On the carrier,
+the programming ports' fixed 5V supplies these cycles. The search after
+the write therefore checks the servo with the new values in effect.
 
 #### The read first
 
@@ -336,7 +343,7 @@ programming` ends a run whose servo does not follow the model.
 | The bench switching | 3s | abort when SAFE or ARMED is not in place 3s after the run asked |
 | The supply | set points and output, on or off, as at its first reading, answering or not, in every phase but the programmer's sessions (CONNECT to LEAVE), which own the supply; an output off at the start and switched on, or a supply that did not answer at the start and answers later, its output on or off, ends the run as `supply or rail voltage changed`, so no second supply is switched on beside a rail fed from elsewhere; a CONNECT is not sent while a PD mini answers that the run did not start with, or one whose output is off: the run ends as a reading outside a session ends it, `supply or rail voltage changed` for a PD mini the run did not start with and `supply output went off` for its own; during a search also the rail within 1.0V of the first window | abort |
 | The rail voltage in a search's window | present in every window of a search, its mean at 3.0V or more (`SERVO_LIMRUN_RAIL_MIN_MV`), the first window included | abort before the window moves the search: `no rail voltage in a window` without a reading, `supply or rail voltage changed` under 3.0V; the 1.0V band's reference is the run's first window, which holds the rail |
-| Step size | 10µs | one step cannot move the horn from free to hard against the stop |
+| Step size | 10µs | limits the change in commanded pulse width per step; how firmly the horn reaches a stop depends on the installation |
 
 These hold in every phase. The search and the protections read the
 current's magnitude: a shunt fitted the other way round reads a bound servo
@@ -381,8 +388,8 @@ none. RESTORE on the programmer, after
 CONNECT and READ ALL, offers `Settings before the limit run.`: the servo as the
 run's first session read it, written back as an ordinary write of LEFT
 ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER. It is offered while the
-servo read differs from it in those four fields and in no other. The hold is in the panel's memory: a start of the
-panel forgets it, and the backup file on the card remains. A session after
+servo read differs from it in those four fields and in no other. These retained values are in the panel's memory and are lost when the
+panel restarts. The backup file on the card remains. A session after
 the run is the operator's: its first write saves its own backup file.
 
 ![A run stopped after a write](img/servo-limrun-stopped.png)
@@ -474,11 +481,13 @@ The `Searched:` line
 names the search's centre and ends; a run that ended before its first
 search has none. A run on a SERVO PWM pin has no `Servo pulses:` line.
 
-Not measured: every figure above on a real servo. The unit of LEFT ANGLE
-and RIGHT ANGLE, which register limits which pulse side on a real KST or
-Chaservo servo, whether a written value persists through a power cycle,
-whether the servo moves when its limit is written, the time a session
-takes on hardware, and the time from LEAVE to a working ARM are not known.
+The full limit run and its figures above have not been measured on a
+real servo. The unit of LEFT ANGLE and RIGHT ANGLE, their mapping to pulse
+sides on a real KST or Chaservo servo, movement while a limit is written,
+session duration on hardware and the delay from LEAVE to a working ARM
+remain unknown. The programmer's observations on one Chaservo include
+values surviving one power cycle; persistence across KST servos and
+repeated cycles has not been measured.
 
 ## Synchronising two servos on one surface
 
@@ -500,13 +509,13 @@ The search holds servo A and sweeps a correction on servo B, at centre and at
 Each stage runs 3 scans of 7 points. The first scan covers ±40µs around the
 stage's start point: 0µs for the centre stage, the ±300µs deflection for the
 end stages. Each later scan is centred on the best point of the scan before and
-covers ±13µs, then ±4µs. Each point waits 120ms plus the travel time at an assumed 0.8
-µs/ms, then averages the current over 100ms. A minimum is accepted when the
+covers ±13µs, then ±4µs. Each point waits 120ms plus the travel time at an assumed
+0.8µs/ms, then averages the current over 100ms. A minimum is accepted when the
 current varies by at least 0.08A across the scan. The current ceiling is 4.0A
 for the pair.
 
 Each end gets its own correction; a linkage with a horn and a pushrod is not
-symmetric about centre. One current sensor across the pair is sufficient.
+symmetric about centre. One sensor measuring the combined current of both servos is sufficient.
 
 ### Results
 
@@ -520,11 +529,12 @@ symmetric about centre. One current sensor across the pair is sufficient.
 
 ### Purpose
 
-What a servo draws at rest, moving and holding an end, and how long it takes
-from end to end, at the supply voltages it is rated for; and the voltage
-below which it stops moving (brown-out). Nothing on the bench measures the
-horn unless the output encoder is on (see below), so every result is read from
-the current of the supply that feeds the servo: the PD mini (WeAct PD Power Mini V1) when SUPPLY's PD MINI tab enables it,
+The automatic test measures current at rest, during movement and while
+holding an end position. It estimates travel time at the servo's rated
+supply voltages and looks for the voltage at which movement becomes
+undetectable (brown-out). Without an enabled angle source (see below), it
+does not measure horn position. Movement is inferred from the current of
+the supply feeding the servo: the PD mini (WeAct PD Power Mini V1) when SUPPLY's PD MINI tab enables it,
 the panel's supply model otherwise. A run on the model says so in its report,
 and its numbers are simulated. While the INA3221 is the servo rail's meter
 at START TEST and the supply is the PD mini, the run reads the INA3221
@@ -547,7 +557,7 @@ Each step runs these phases:
 | Phase | The servo | Ends |
 | --- | --- | --- |
 | SET | at PULSE CENTRE; the voltage asked; the first step switches the output on | the supply reads the set point back within 0.05V, at most 3000ms |
-| SETTLING TIME | at PULSE CENTRE | after the run's SETTLING TIME |
+| SETTLE | at PULSE CENTRE | after the run's SETTLING TIME |
 | IDLE | at PULSE CENTRE: the idle current is the mean of the readings, the idle noise their standard deviation | after 1000ms |
 | MOVE | a step command to one end, with no slew: SPEED does not apply | at the arrival, or after 3000ms plus the meter's lag (3300ms on the PD mini): late with movement seen, unseen without |
 | HOLD | at that end: the holding current is the mean of the readings | after DWELL TIME, at least 600ms |
@@ -575,9 +585,9 @@ end to end, MOVEMENTS of them or for TEST TIME, as TEST LENGTH BY says, at most
   it was pushing on.
 - **Arrival:** after movement, a reading more than the threshold above the
   destination end's holding level, then the first reading back within
-  0.05A (`SERVO_TEST_BAND_A`) of it, on either side. A reading above the
-  level by the threshold is never an arrival, so the 0.05A band times no
-  move early where the threshold is smaller. A reading that falls more
+  0.05A (`SERVO_TEST_BAND_A`) of it, on either side. A reading more than the threshold above that level still means motion,
+  even within the 0.05A band. The wider band therefore cannot mark an
+  arrival early when the threshold is smaller. A reading that falls more
   than 0.05A below the level instead, as after a burst of current while
   the servo accelerates, hands the move to the rule below. The two ends'
   holding levels can differ by more than 0.05A, so a reading still at the
@@ -639,7 +649,7 @@ ends there too. A LOWEST VOLTAGE at or above the start leaves one voltage,
 the start: under a cap of 4.5V, LOWEST VOLTAGE 4.8V walks 4.5V alone. The
 finest setting, 2.0V in 0.1V steps, asks for 31 voltages
 (`SERVO_TEST_BROWNOUT_MAX`). Each voltage runs
-SET, SETTLING TIME and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
+SET, SETTLE and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
 the high end and on to the low end, each held 600ms. A voltage shows **no
 movement** when no reading of either move lies more than that voltage's
 threshold, from its own IDLE readings, from the level before its command.
@@ -693,7 +703,7 @@ supply includes them. The report states both rates as measured during the
 run, and the mean interval between two readings that reached the test.
 
 A travel time ends at the first reading back at the holding level, so it is
-late by up to one interval. It also holds the command's way from the panel
+late by up to one interval. It also includes the delay while the command travels from the panel
 to the pin: render loop, control task, CAN (Controller Area Network) link and
 the next PWM (pulse-width modulation) frame. That delay is not measured. How
 the PD mini averages a reading is not known.
@@ -820,8 +830,8 @@ held it for 0.43s twice during healthy moves, at 0.004 to 0.342A.
 An AS5600 magnetic angle sensor on the servo's output shaft, set up under
 SETUP, SENSORS, AS5600 (default OFF) and read by the IOmcu
 ([Link](Link.md), SENSE registers 26 to 31), adds the horn's angle to a run.
-The current's results are unchanged and the angle decides nothing: it is not
-part of the verdict and has no limit. Without AS5600 on, the run, its CSV and
+The current-based results remain unchanged. Angle measurements have no
+pass/fail limit and do not affect the verdict. Without AS5600 on, the run, its CSV and
 its report are as without the part. The IOmcu takes the SENSE set-up
 only while the bank is SAFE. A run uses the angle only when the
 IOmcu holds AS5600 on: AS5600 switched on while ARMED gives a run
@@ -901,7 +911,7 @@ AS5600 reported none N time(s). ...`, N being the times the sensor went from
 any other state to "no magnet" during the run, a run started in that state
 included. A magnet reported too weak or too strong (ML, MH) with MD set
 leaves the angle in use: the datasheet states no effect on the angle and
-specifies its noise for 30 to 90 mT only. The report counts those readings:
+specifies its noise for 30 to 90mT only. The report counts those readings:
 `Field: N reading(s) with the magnet too weak, M too strong. ...`. Neither
 line is written when its counts are 0.
 
@@ -964,8 +974,8 @@ RUN and the SERVO run log take the horn's angle from: `AS5600`, the
 default, or `IMU`. With `IMU` the angle is the IMU's AXIS with its SIGN,
 from the zero the IMU screen takes (ZERO).
 
-The IMU's angle is carried in the AS5600's counts, so every rule above
-holds unchanged:
+The IMU angle is represented in AS5600 counts, allowing the angle
+processing above to use either source:
 
 ```
 count = round(angle x 4096 / 360) mod 4096     centre count 0
@@ -983,8 +993,9 @@ does not apply to the IMU, and ENC CENTRE takes no count from it.
 | gap | not answering | no reading for 300ms (`IMU_STALE_MS`) |
 | report, `Encoder:` | `AS5600 on the horn shaft, centre count N` | `IMU X+, in AS5600 counts (0.088deg a count)` |
 
-A gap of the IMU is ridden through and ends a run as for the AS5600
-above: up to 300ms, once in 10s. Both reports carry the line
+IMU gaps use the same allowance as AS5600 gaps: at most 300ms, with
+at least 10s between the starts of consecutive gaps. Longer or more
+frequent gaps end the run. Both reports carry the line
 `Angle source:   AS5600` or `Angle source:   IMU X+`. The LIMIT RUN's
 report names the source on each end's angle line. The servo test's CSV
 has the column `angle source` last, after the meter's columns, with
@@ -998,8 +1009,9 @@ on the card and in the report: `IMU not answering` for a gap longer than
 
 ### What ends a run
 
-Every ending switches the output off, releases the servo to its centre, and
-still writes the report, marked ABORTED with the reason. The reason is also
+Every abort switches the output off and still writes a report marked
+ABORTED with the reason. If the bench remains ARMED, control of the servo
+is released and its commanded position returns to rest. The reason is also
 the second line of the result box on LIVE and the last line of the AUTOMATIC
 TEST card (`LAST: ABORTED - STOP`), which then names the reason in place of
 the files. An error switches the
@@ -1012,7 +1024,7 @@ rest, for the operator's endings: a finger on the controls, a settings
 change, OUTPUT OFF and lost touch events.
 A step the run has posted and the panel has not sent when the bench switches to SAFE
 or stops is not sent. After a run ended by a switch to SAFE, STOP or leaving the
-screen, the horn and COMMANDED stay at the position the run last drove;
+screen, the drawn horn and COMMANDED retain the last position commanded by the run;
 after an ending that leaves the bench ARMED they show the rest the release
 puts the pins at, 1500us for STANDARD PWM whatever the trim, and the next
 drag or knob turn starts from it.
@@ -1122,7 +1134,7 @@ writes:
 | `time (s)` | s | when the panel had the reading, from the run's start |
 | `test` | | `STEP` or `BROWN-OUT` |
 | `step` | | the step, 1 to n in the order run |
-| `phase` | | `SET`, `SETTLING TIME`, `IDLE`, `MOVE` or `HOLD` |
+| `phase` | | `SET`, `SETTLE`, `IDLE`, `MOVE` or `HOLD` |
 | `command (us)` | us | the pulse commanded |
 | `position (us)` | us | the measured position; empty, as nothing measures it |
 | `set (V)` | V | the step's voltage |
@@ -1132,21 +1144,23 @@ writes:
 | `power (W)` | W | voltage times current |
 | `mode` | | the supply's: `CV`, `CC` or `OFF`. On the INA3221 the mode of the supply's last reading, empty before the first |
 | `travel (ms)` | ms | on an arrival's row: that move's travel time |
-| `angle (deg)` | deg | with AS5600 on only: the horn's angle from the centre count, from the newest reading taken at or before the row; empty when that reading is older than 500ms or there is none |
-| `travel angle (ms)` | ms | with AS5600 on only: on the row after a move settled, its travel time from the angle |
-| `angle gap (ms)` | ms | with AS5600 on only: on the first row at or after the reading that ended a gap of the part not answering, the gap's length; empty otherwise |
+| `angle (deg)` | deg | with an angle source in use: the horn's angle from the centre count, from the newest reading taken at or before the row; empty when that reading is older than 500ms or there is none |
+| `travel angle (ms)` | ms | with an angle source in use: on the row after a move settled, its travel time from the angle |
+| `angle gap (ms)` | ms | with an angle source in use: on the first row at or after the reading that ended a gap of the part not answering, the gap's length; empty otherwise |
 | `meter` | | `INA3221`, `PDMINI` or `MODEL`, on every row |
 | `window` | | on the INA3221: the window's number, modulo 65536; a step of more than 1 is windows that never reached the run |
 | `current max (A)` | A | on the INA3221: the window's highest 1ms sample |
 | `current min (A)` | A | on the INA3221: its lowest |
 | `voltage min (V)` | V | on the INA3221: the lowest bus voltage sample in the window |
 | `clipped` | | on the INA3221: samples in the window at an end of the range, held at 255 |
+| `angle source` | | with an angle source in use: its name, `AS5600` or `IMU X+`, on every row |
 
-The last six columns follow whatever is before them: columns 14 to 19
-without AS5600, 17 to 22 with it. On the PD mini and the model the five
-after `meter` are empty. A file with fewer columns, 13 wide, or 15 or 21
-with AS5600, reads in the log viewer as well: its parser takes the columns
-from the header row.
+The six meter columns occupy positions 14 to 19 without angle data,
+or 17 to 22 with angle data. When an angle source is in use, its name
+follows in column 23. On the PD mini and the model, the five columns
+after `meter` are empty. Older files with fewer columns, 13 without
+AS5600 or 15 or 21 with it, also open in the log viewer: the parser
+identifies columns from their header names.
 
 The report from the host suite's replay of an MG90S micro servo's run on
 the bench with the PD mini (`test/host/fixtures/servo-mg90s.csv`), with
@@ -1342,8 +1356,8 @@ the task is `shared/ui/servo_rudder_panel.c`.
   CENTRE, or the IMU's in AS5600 counts from count 0; negated with REVERSE.
   The first state line names the source, `AS5600` or `IMU X+` with the
   IMU's AXIS and SIGN.
-- ZERO is taken from count 0 of either source, so a new ENC CENTRE after
-  ZERO moves no deflection. Another ANGLE SOURCE, the IMU's other AXIS or
+- ZERO stores its reference relative to the source's raw count 0. Changing
+  ENC CENTRE afterwards therefore leaves the measured deflection unchanged. Another ANGLE SOURCE, the IMU's other AXIS or
   SIGN, or a ZERO or CLEAR ZERO on the IMU screen, drops the zero and MAX:
   the task reads as before ZERO.
 - ZERO takes the current angle as the surface's neutral. The deflection is the
@@ -1436,16 +1450,17 @@ A START is refused, the reason on the first line, while:
 | another run runs, or a report is still being written | the run's line, as on TEST |
 | the meter is not set up for the servo's current | the limit run's line |
 | the output is not the programming port | `AUTO PROGRAMS A SERVO ON THE PROG PORT` |
-| PULSE MIN is above 1000us or PULSE MAX below 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
-| the programmer is busy, or no PD mini or PROG 5V switches the servo off and on | the limit run's line |
+| PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTRE is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` |
+| the programmer is busy, or a KST/Chaservo or classic Hitec servo has neither a PD mini nor PROG 5V to cycle its supply | the limit run's line |
 | the angle source gives no reading | `ANGLE SOURCE: NO READING` |
 | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` |
 
 ### Method
 
 - The read session: the servo held at PULSE CENTRE for 1000ms, SAFE asked,
-  CONNECT and the read, PULSE LOWER and PULSE UPPER written to 1000.0us and
-  2000.0us where they are not, LEAVE, ARMED asked.
+  CONNECT and the read; for KST/Chaservo only, PULSE LOWER and PULSE UPPER
+  are set to 1000.0us and 2000.0us if needed; then LEAVE and a request
+  for ARMED.
 - A measure: the end pulse commanded; from 500ms after the command the
   first angle still for 500ms is taken. No still angle by 3000ms ends the
   run.
@@ -1458,8 +1473,8 @@ A START is refused, the reason on the first line, while:
   and LEFT ANGLE back. The register found moves that side, the other one the
   other side.
 - Each write is a session: the servo held at PULSE CENTRE for 1000ms, SAFE,
-  CONNECT, the write and its read-back, LEAVE with the power cycle that
-  makes the written value act, ARMED, the side measured again. The file of
+  CONNECT, the write and its read-back, LEAVE, including the power cycle when required for the written values
+  to take effect, ARMED, and another measurement of the side. The file of
   the values before the run is saved before the first write.
 - PASS: both sides within the tolerance, each measured after the last
   write. A side outside after 8 writes ends the run as `8 writes per side reached`.
@@ -1481,8 +1496,10 @@ The limit run's, in every phase:
 
 Every end lets the servo go, asks SAFE and switches the supply's output
 off; a read in the first session that finds no servo asks LEAVE in place
-of the OFF, so the port comes back. The values last written stay in the servo; RESTORE on the
-programming page gives back those before the run.
+of the OFF, so the port comes back. The last written values remain in the servo. For KST/Chaservo, RESTORE
+on the programming page offers the values from before the run. For Hitec,
+load the backup under FILES in the Hitec programmer and write it with
+WRITE n VALUES.
 
 ### Results
 
@@ -1496,8 +1513,8 @@ measure with its value, its angle and whether it lies within.
 ### Limits
 
 - The model is linear: the deflection at an end pulse is taken as
-  proportional to the end point's value from the surface's zero. A servo
-  that is not linear takes more writes; the run measures after every one.
+  proportional to the end point's value from the surface's zero. A nonlinear servo may need more writes or fail to reach the goal.
+  The run measures after every write.
 - Degrees are entered; a target in mm at the trailing edge is not.
 - A D series servo at 1000us stops 76.9% of the way to its end point by
   the target model of `hitec_live.h`, which is not measured; the run
@@ -1521,8 +1538,7 @@ degrees (RANGE of the travel either side of PULSE CENTRE):
 | sine | 2 pi f A | through the centre |
 | triangle | 4 f A | throughout |
 
-SPEED below 100% allows 3.6deg/s per percent: 36deg/s at 10%, 356.4
-deg/s at 99%. At 100% the command is not slewed and nothing is limited. A
+SPEED below 100% allows 3.6deg/s per percent: 36deg/s at 10%, 356.4deg/s at 99%. At 100% the command is not slewed and nothing is limited. A
 square is limited at every SPEED below 100%. The dwell does not enter: it
 adds time at the ends, not to the motion. The line follows the settings,
 before SWEEP is pressed and while it runs. `sweep_slew_limited()` in
@@ -1538,9 +1554,9 @@ IOmcu slews in.
 To clear the line, raise SPEED, or lower SWEEP's SPEED (the rate) or
 RANGE.
 
-The line compares the curve with SPEED only. A servo slower than both limits
-the sweep as well; nothing on the bench measures the horn, so that is not
-shown.
+This warning compares the requested curve with SPEED. A servo that
+moves more slowly than either command can also limit the actual sweep,
+but the warning does not use horn-angle measurements.
 
 PAUSE, the sweep button while a sweep runs, holds the output where it has
 got to, and the button reads PAUSED, filled in the warning colour. A tap on
@@ -1554,12 +1570,12 @@ runs at the new rate.
 Current sensing on the servo rail. The limit search reads the INA3221
 channel that watches the tester's target, wired and
 fitted in SETUP > SENSORS, and nothing else. The synchroniser
-needs a sensor across the pair of outputs, which is not fitted. The
+needs a sensor for the combined current of both outputs; it is not fitted. The
 automatic test reads the INA3221 or the PD mini, or runs on the panel's
 supply model. Programming LEFT ANGLE and RIGHT ANGLE needs the programming
 port ([Servo programmer](ServoProgrammer.md)).
 
-The pulses themselves exist: the IOmcu's PWM (pulse-width modulation)
-driver is written, and [DShot and the output drivers](DShot.md) describes it.
-The order of work is in
+The IOmcu's PWM (pulse-width modulation) driver generates the pulses;
+[DShot and the output drivers](DShot.md) describes it. Planned work is
+listed in
 [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

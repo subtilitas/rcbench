@@ -152,11 +152,12 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
         can_selftest_tick(&st, now_ms());
 
         /*
-         * Said one time, as early as possible.  A CAN transmitter needs one
-         * other node to pull the acknowledge slot dominant; without one every
-         * frame fails and is retried, and the transmit error counter climbs
-         * by 8 each time.  128 is error-passive and means no other node is
-         * on the bus, a different fault from a bus that corrupts frames.
+         * Report the threshold crossing once. A transmit error count of 128
+         * reaches the error-passive threshold; it does not identify the cause.
+         * Missing acknowledgements, wiring faults and bit-timing errors can
+         * all raise this count. An error-passive transmitter with no dominant
+         * acknowledgement or error flag can stop increasing its count, so
+         * missing acknowledgements alone do not guarantee bus-off.
          */
         uint32_t tec = 0;
         /* A read that fails leaves tec at 0, which raises no alarm: the
@@ -165,11 +166,11 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
         (void)can_twai_errors(&tec, NULL, NULL, NULL);
         if (!said_unacked && tec >= 128u && (tec0 < 128u || !have_before)) {
             said_unacked = true;
-            ESP_LOGE(TAG, "nothing is acknowledging: transmit errors reached "
-                          "%lu, so no other node is answering on this bus",
+            ESP_LOGE(TAG, "CAN transmit error counter reached %lu; missing "
+                          "ACKs, wiring faults or bit-timing errors are possible",
                      (unsigned long)tec);
-            ESP_LOGE(TAG, "  IOmcu powered and its own console showing "
-                          "CAN up? CANH/CANL the right way round?");
+            ESP_LOGE(TAG, "  Check IOmcu power and its CAN console status, "
+                          "CANH/CANL wiring and matching bit rates.");
         }
         vTaskDelay(pdMS_TO_TICKS(2));
     }

@@ -92,7 +92,7 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 3000,
-      "confirm_signal": "Two beeps (English page); Chinese page: wait 3 s, beep-beep",
+      "confirm_signal": "Two beeps (English page); Chinese page: wait 3s, beep-beep",
       "steps": [
         "Radio on, throttle at 100%",
         "Connect battery",
@@ -112,12 +112,12 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Item: throttle to 0 % when the wanted item tone sounds. The motor then keeps beeping the value tones."
+      "description": "Item: throttle to 0% when the desired item tone sounds. The motor then keeps beeping the value tones."
     },
     "value_select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Value: throttle to 100 % on the wanted value tone; a special tone confirms the save (Chinese page)."
+      "description": "Value: throttle to 100% on the desired value tone; a special tone confirms the save (Chinese page)."
     },
     "skip": {
       "throttle": "none",
@@ -127,7 +127,7 @@
     "exit": "Disconnect the battery to save and quit; or keep listening to continue.",
     "changes_per_entry": "many",
     "reset_to_defaults": null,
-    "description": "Throttle at 100 %, battery on, beeps mark programming mode. Two item tones loop (1 or 2 short beeps); throttle to 0 % on one enters it; value tones loop; throttle to 100 % on one stores it. Disconnect to leave."
+    "description": "Throttle at 100%, battery on, beeps mark programming mode. Two item tones loop (1 or 2 short beeps); throttle to 0% on one enters it; value tones loop; throttle to 100% on one stores it. Disconnect to leave."
   },
   "items": [
     {
@@ -184,7 +184,7 @@
     }
   ],
   "unknowns": [
-    "Entry wait differs between the English text (two beeps) and the Chinese page (wait 3 s, four beep-beep groups in the example); the entry time in ms is not resolved.",
+    "Entry wait differs between the English text (two beeps) and the Chinese page (wait 3s, four beep-beep groups in the example); the entry time in ms is not resolved.",
     "Beep duration, gap and loop length are not stated.",
     "Windows for the throttle gestures are not stated.",
     "Whether item selection returns after a stored value is stated in the Chinese text only (continue waiting returns to the items).",

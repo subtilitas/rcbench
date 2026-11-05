@@ -6,7 +6,7 @@ order: 23
 
 # Rudder deflection
 
-RUDDER, a task of [SERVO](servo.md)'s strip, drives one servo and shows how far the control surface it moves is deflected: in degrees from a zero and, with the surface's length entered, in mm at the trailing edge. The angle comes from the source ANGLE SOURCE names on [Sensors](setup-sensors.md): the AS5600 output encoder or the IMU, as LIVE's MEASURED reading takes it, signed in the direction of the commanded angle. The output card on the right stays as on every task: the TARGET row names what the task drives, and ARM decides whether anything moves.
+RUDDER on the [SERVO](servo.md) strip drives one servo and displays control-surface deflection. It shows degrees from a zero point and, when the surface length is entered, millimetres at the trailing edge. ANGLE SOURCE on [Sensors](setup-sensors.md) selects the AS5600 output encoder or IMU. Like MEASURED on LIVE, the reading is signed in the direction of the commanded angle. The output card remains on the right: TARGET identifies the driven output, and ARM determines whether it can move.
 
 ![RUDDER while SAFE](view:servo-rudder)
 
@@ -22,13 +22,13 @@ The mm are the trailing edge's distance from the neutral plane, not the arc it t
 
 ## The side view
 
-Right of the state lines the surface is drawn in section, leading edge on the left: the grey fixed surface, the hinge, and the flap as a cyan wedge at the deflection DEFLECTION shows. Positive deflection draws the trailing edge up. Ticks mark 0, ±30, ±60 and ±90°; dashed lines mark the MAX of each side. The flap's length stays fixed, so a deflection beyond ±90° is drawn at ±90° while the numbers read on. Without a reading the flap lies dim on the neutral line.
+The side view sits to the right of the status lines, with the leading edge on the left. It shows the fixed surface in grey, the hinge, and the flap as a cyan wedge at the angle shown by DEFLECTION. Positive deflection raises the trailing edge. Ticks mark 0, ±30, ±60 and ±90°; dashed lines mark each side's MAX. The drawing stops at ±90°, while the numeric reading continues beyond it. The drawn flap length stays fixed. Without a reading, the flap is dimmed on the neutral line.
 
 ![The surface at -85.0°](view:servo-rudder-85)
 
 ## LENGTH
 
-LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm in steps of 1mm, kept over a restart. A tap opens the keypad. 1 to 9mm are refused, and the keypad says `0 or 10 to 500mm`. With LENGTH at 0 the readout shows degrees alone and asks for LENGTH in the mm column.
+LENGTH is the distance from the hinge line to the trailing edge: 0 or 10 to 500mm in 1mm steps. It survives a restart. Tap it to open the keypad. Values from 1 to 9mm are refused with `0 or 10 to 500mm`. At 0, the display shows only degrees and asks for LENGTH in the mm column.
 
 ![LENGTH not set: degrees alone](view:servo-rudder-nolength)
 
@@ -45,7 +45,7 @@ LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm
 | RESET MAX | clears MAX; the zero stays | the same; refused while AUTO runs |
 | AUTO | shows AUTO's box ([AUTO](#auto)) | the same |
 
-1000us, CENTRE and 2000us act on the press. LENGTH, ZERO, RESET MAX and AUTO act on a tap that lifts on them. The PULSE line under the buttons names the pulse commanded. A tab switch keeps the servo where it was put; DISARM, STOP and leaving SERVO switch the bench to SAFE.
+1000us, CENTRE and 2000us act on press. LENGTH, ZERO, RESET MAX and AUTO act when you release a tap on them. PULSE below the buttons shows the commanded pulse. Switching tabs leaves the servo in position. DISARM, STOP or leaving SERVO switches the bench to SAFE.
 
 ## The state lines
 
@@ -61,7 +61,9 @@ LENGTH is the surface from its hinge line to its trailing edge: 0 or 10 to 500mm
 
 ## AUTO
 
-AUTO programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us reach the deflection entered for each side. The servo is the [limit run's SERVO setting](servo-settings.md#the-limit-run-s-settings), which takes the programmer opened last on PROGRAM; the box's third line names it, `SERVO HITEC D SERIES`. The box takes the place of LENGTH, the drive buttons and the state lines; MANUAL brings them back. The side view stays and adds the two targets as amber dashed lines: 1000us on the negative side, 2000us on the positive one, or each on the side the last run measured it on.
+AUTO programs a KST, Chaservo or Hitec servo on the programming port so that 1000us and 2000us produce the deflection specified for each side. The [limit run's SERVO setting](servo-settings.md#the-limit-run-s-settings) selects the programmer last opened on PROGRAM. The third line identifies it, for example `SERVO HITEC D SERIES`.
+
+The AUTO box replaces LENGTH, the drive buttons and status lines; MANUAL restores them. The side view remains visible, with the two targets as amber dashed lines. It places 1000us on the negative side and 2000us on the positive side, or uses the sides measured by the last run.
 
 ![AUTO's box, ARMED](view:servo-rudder-auto)
 
@@ -71,10 +73,12 @@ AUTO programs a KST, Chaservo or Hitec servo on the programming port so that 100
 | MARGIN | programmed past the target by this share, 0 to 50%, 10%: 20.0° at 10% is a goal of 22.0° |
 | TOLERANCE | how near the goal a measure has to be, 0.1 to 5.0°, 0.5° |
 
-ZERO the surface at neutral first; while the run runs, ZERO, RESET MAX and MANUAL are refused. HOLD 2s TO START starts the run; it then reads STOP RUN, and a press ends the run at once. The run reads the servo, sets a KST servo's pulse range to 1000 to 2000us, then per side drives the end pulse, waits for the angle to be still for 500ms and writes a new end point: at most 8 writes a side, each in its own session of the programmer with the servo switched off and on. The current guard of the limit run holds throughout: a stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply's output off.
+First, use ZERO with the surface at neutral. During the run, ZERO, RESET MAX and MANUAL are locked. HOLD 2s TO START begins the run. The button then reads STOP RUN; pressing it ends the run immediately.
 
-The first line gives the step under way, the goals, or why a START is refused; the second the result; the third the report RUDDRnnn.TXT, or `RESTORE IN PROGRAM` when a run that wrote, or cut off a write on its way, did not pass, `LOAD HITEC001 IN FILES` on a Hitec servo.
+The run reads the servo and, for KST, sets its pulse range to 1000 to 2000us. For each side it commands the end pulse, waits for the angle to remain still for 500ms, then writes a new end point. It makes at most 8 writes per side, each in a separate programmer session with the servo switched off and on. The limit run's current guard remains active throughout. A stall before the goal ends the run with `surface binds at x°`. Every end switches the bench to SAFE and the supply output off.
+
+The first line shows the current step, goals or reason START is refused. The second shows the result. The third names the report, RUDDRnnn.TXT. If an unsuccessful run wrote settings or interrupted a write, it instead shows `RESTORE IN PROGRAM`, or `LOAD HITEC001 IN FILES` for a Hitec servo.
 
 ## What the angle is
 
-The AS5600 sits on the servo output shaft, so its angle is the shaft's. A linkage between horn and surface makes the two differ: the readout shows the shaft's deflection, and the difference to the surface's is not measured. The IMU measures whatever it is fixed to, on the surface the surface's own angle.
+The AS5600 measures the servo output shaft. A linkage can make the control surface's deflection differ from the shaft reading; that difference is not measured. The IMU measures the object it is attached to. Mounted on the surface, it measures the surface's own angle.

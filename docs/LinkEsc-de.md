@@ -2,20 +2,22 @@
 
 <sub>[English](LinkEsc.md) · **Deutsch**</sub>
 
-Diese Seite ist ein Abschnitt von [Der Link](Link-de.md), wo Verkabelung,
-Frame-Format, Page-Übersicht und die anderen Pages stehen. ESC ist electronic speed
-controller, PD power delivery, GPIO general-purpose input/output, CRC cyclic
-redundancy check.
+Diese Seite beschreibt den Zugriff auf ESC-Einstellungen über den Link.
+[Der Link](Link-de.md) behandelt Verkabelung, Frame-Format, Page-Übersicht
+und die anderen Pages. ESC steht für Electronic Speed Controller,
+PD für Power Delivery, GPIO für General-Purpose Input/Output und
+CRC für Cyclic Redundancy Check.
 
-`ESC_WIRE` (0x3A) und `ESC_DATA` (0x3B), neu in 4.34, lesen und schreiben die
-Einstellungen eines ESC über seinen Signaldraht. Sie halten eine Session von
+Ab Protokoll 4.34 lesen und schreiben `ESC_WIRE` (0x3A) und
+`ESC_DATA` (0x3B) die ESC-Einstellungen über die Signalleitung. Sie halten eine Session von
 [`protocols/escwire`](../protocols/escwire/README.md) auf dem Pin eines Throttle-Slots
 oder eines DShot-Programmierports. `shared/outputs/esc_port.c` hält die Regeln. Ein
 IOmcu, der sie bedient, meldet `LINK_CAP_PROGRAM` (Bit 8).
 
-Es gibt keine rohe Transaktion. Der IOmcu hält die gelesene Kopie und beurteilt jeden
-Frame ([der Guard](../protocols/escwire/README.md)). Ein Panel nennt eine Operation
-und übergibt einen Entwurf.
+Die Pages bieten keine rohen Transaktionen an. Der IOmcu behält die
+gelesene Kopie und prüft jeden Frame
+([der Guard](../protocols/escwire/README.md)). Das Panel wählt eine
+Operation und übergibt einen Entwurf.
 
 ## Welcher Pin
 
@@ -24,8 +26,9 @@ und übergibt einen Entwurf.
 | Ausgangs-Slot 0 bis 7 | sein Treiber gesetzt ist, er gebunden ist und sein erster Kanal die Throttle-Rolle hat (DShot, bidirektionales DShot, PPM oder Servo-PWM) |
 | Programmierport 0 bis 3 | sein FUNC DShot ist und der IOmcu seinen Pin hält |
 
-Jeder andere Slot oder Port wird mit `NO_PIN` abgelehnt. Nur dieser Pin wechselt:
-andere Throttle-Pins bleiben gebunden und im Leerlauf.
+Jeder andere Slot oder Port wird mit `NO_PIN` abgelehnt. Nur der
+gewählte Pin wird umgeschaltet. Andere Gas-Ausgänge behalten ihre
+Zuordnung und bleiben im Leerlauf.
 
 ## Der Weg hin und zurück
 
@@ -38,8 +41,8 @@ andere Throttle-Pins bleiben gebunden und im Leerlauf.
 
 ## Eintritt
 
-`ENTER` staged die Versorgung (`SWITCHED` oder `BY HAND`), Spannung, Grenze, Hold und
-Auszeit.
+`ENTER` bereitet die Versorgungsart (`SWITCHED` oder `BY HAND`), die
+Spannung, die Strombegrenzung, die Haltezeit und die Auszeit vor.
 
 | `SWITCHED`, am PD mini | Leitung | Versorgung |
 |---|---|---|
@@ -53,10 +56,13 @@ Auszeit.
 | `HAND_WAIT`, bis zu 60000ms | high getrieben, in einen ESC ohne Versorgung, falls verbunden; der Strom ist nicht gemessen | nicht angefasst |
 | DONE, dann `RUN` wie oben | | nicht angefasst |
 
-Eine ESC-Session versorgt den ESC auf jedem Board aus dem PD mini, auch wo es PROG_SUPPLY
-gibt. Sie schaltet PROG_SUPPLY nie ein: von OPEN bis zur Rückgabe wird ein ON des Panels
-dort mit `BAD_VALUE` abgelehnt, und ein Fehler, STOP oder ABORT schaltet es mit dem PD mini aus. Ein CLOSE ohne diese lässt es, wie das Panel es hat. `READY`
-folgt, wenn ein ESC geantwortet hat.
+Eine ESC-Session nutzt auf jeder Platine den PD mini zur Versorgung
+des ESC, auch auf Platinen mit PROG_SUPPLY. Sie schaltet PROG_SUPPLY
+nie ein. Von OPEN bis zur Freigabe wird ein ON des Panels dort mit
+`BAD_VALUE` abgelehnt. Ein Fehler, STOP oder ABORT schaltet PROG_SUPPLY
+zusammen mit dem PD mini aus. CLOSE ohne eines dieser Ereignisse
+lässt den vom Panel gesetzten Zustand unverändert. Sobald ein ESC
+antwortet, folgt der Zustand `READY`.
 
 ## Was jedes Ereignis tut
 
@@ -72,16 +78,20 @@ folgt, wenn ein ESC geantwortet hat.
 | IOmcu-Neustart | der Reset-Zustand des Chips | aus beim Booten | frei; der Slot bindet aus dem Flash |
 | Die Versorgung aus, still oder nach dem Ein als aus gelesen, in `RUN` oder `READY` | sofort geparkt | aus | gehalten, `FAULT`, Ergebnis `SUPPLY` |
 
-Ein Schreiben, das ein verlorener Link zwischen Erase und Program abschneidet,
-hinterlässt die Page gelöscht. Siehe
+Unterbricht ein Link-Verlust einen Schreibvorgang zwischen Erase und
+Program, bleibt die Speicherseite des ESC gelöscht. Siehe
 [die Tabelle der Session](../protocols/escwire/README.md).
 
-Geparkt ist ein Eingang mit Pull-down und abgeschaltetem Puffer. Kein Zustand oben
-sendet ein Throttle-Signal: solange die Page den Pin hält, hat der Ausgang ihn
-losgelassen, ein Apply lässt diesen Slot ungebunden (`esc_port_may_bind()`), und das
-Modul hat keine Funktion, die ein Pulsmuster erzeugt.
+Im geparkten Zustand ist der Pin ein Eingang mit Pull-down und
+abgeschaltetem Puffer. Keiner der genannten Zustände sendet ein
+Gassignal. Solange die Page den Pin belegt, hat der Ausgang ihn
+freigegeben. Ein Apply lässt den Slot ohne Zuordnung
+(`esc_port_may_bind()`), und das Modul enthält keine Funktion zum
+Erzeugen eines Pulsmusters.
 
-Ein DISARM ist kein Stopp: da ARM ab OPEN abgelehnt wird, ist nichts geARMt, das es beenden könnte. Das STOP des Panels ist die Operation STOP; eine Failsafe-Flanke ist von selbst ein Stopp.
+DISARM zählt nicht als Stopp: Ab OPEN wird ARM abgelehnt, die Bank
+ist also bereits ohne Freigabe. STOP am Panel sendet die Operation
+STOP. Eine Failsafe-Flanke löst unabhängig davon einen Stopp aus.
 
 **Was als Fehler zählt.** Jede Operation der Session, die anders als `EW_SES_OK`
 endet, darunter `EW_SES_ERR_SILENT`, `NOT_KNOWN`, `READ`, `CHANGED`, `CLIPPED`, `TORN`
@@ -90,25 +100,32 @@ ausfällt; ein abgelaufenes Warten bei `BY HAND`. Ein Befehl, den die Session vo
 Frame ablehnt (`EW_SES_ERR_NO_READ`, `MUST_READ`, `DIRTY`, `ERASED`, `BACKUP`,
 `NOT_WRITABLE`, `STATE`), ist eine Ablehnung dieses Befehls und ändert nichts.
 
-**Nach `TORN` und `LOST`.** Die Session selbst hält einen ESC nach diesen beiden im
-Modus, für eine Reparatur in derselben Session. Die Page nicht: sie bricht die
-Session ab, was die Leitung parkt, und schaltet die Versorgung aus, sodass der ESC
-seine Versorgung verliert. Eine Reparatur ist CLEAR, ENTER und READ. Was ein
-Aus-und-Ein mit einer halb geschriebenen Page macht, steht in den Worten der
-Spezifikation: ein ESC der Familie S oder Bluejay schreibt Defaults neu und seine 48
-Tag-Bytes lesen 0xFF, was ihn hier nur lesbar macht; ein AM32 mit gelöschten
-Einstellungen bleibt in seinem Bootloader, und nur RESTORE schreibt ihn. Nicht an einem
-ESC gemessen. Bei `BY HAND` kann die Bench die eigene Versorgung des ESC nicht trennen:
-seine Leitung ist geparkt, und ein Mensch trennt ihn.
+**Nach `TORN` und `LOST`.** Die Session-Schicht lässt den ESC in seinem
+Modus, um eine Reparatur in derselben Session zu ermöglichen. Die
+Link-Page bricht dagegen die Session ab, parkt die Leitung und
+schaltet die Versorgung aus. Beginne die Reparatur mit CLEAR, ENTER
+und READ.
 
-**Wer den Rest schaltet.** Die Bank ist SAFE, solange die Page gehalten ist; die
-Leitung der Page, der PD mini und PROG_SUPPLY sind alles, was der IOmcu an hat.
-`LINK_EW_F_FAULT` sagt es dem Panel, das dem in den SAFE-Zustand der Bench folgt.
+Laut Spezifikation stellt ein ESC der Familie S oder Bluejay nach
+einem Aus- und Einschalten mit halb geschriebener Speicherseite die
+Vorgaben wieder her. Seine 48 Tag-Bytes lesen danach 0xFF, sodass er
+hier nur lesbar ist. Ein AM32 mit gelöschten Einstellungen bleibt im
+Bootloader; nur RESTORE kann ihn beschreiben. Das ist nicht an einem
+ESC gemessen. Bei `BY HAND` kann der Prüfstand die eigene Versorgung
+des ESC nicht trennen. Er parkt die Leitung; die Versorgung musst
+du von Hand trennen.
+
+**Wer den Rest schaltet.** Solange die Page belegt ist, bleibt die
+Bank SAFE. Nur die Leitung der Page, der PD mini und PROG_SUPPLY
+können am IOmcu aktiv sein. `LINK_EW_F_FAULT` meldet den Fehler an
+das Panel, das den Prüfstand ebenfalls auf SAFE setzt.
 
 ## Die Hälfte des Panels
 
-`shared/bench/esc_link.c` fragt und folgt; es läuft auf jedem Panel.
-[ESC-Signalleitung](EscWire-de.md) beschreibt den Screen; der Alert unten erscheint auf jedem Screen.
+`shared/bench/esc_link.c` sendet Anfragen und verfolgt ihren Ablauf
+auf jedem Panel. [ESC-Signalleitung](EscWire-de.md) beschreibt die
+Programmierseite; der unten beschriebene Alarm kann auf jeder Seite
+erscheinen.
 
 | Ereignis | Was das Panel tut |
 |---|---|
@@ -123,7 +140,8 @@ Leitung der Page, der PD mini und PROG_SUPPLY sind alles, was der IOmcu an hat.
 | 10 Lesezugriffe der Page in Folge fehlgeschlagen, in einer Anfrage | die Anfrage endet. Mit einem Halten im letzten Lesen: ein Fehler, und `STOP` |
 | Eine Lesekopie mit neuem `READS` oder `READ_CRC` | in Blöcken geholt und gegen `READ_CRC` geprüft, 3 Versuche |
 
-Die Hälfte der SUPPLY-Page (`shared/bench/supply_link.c`) unter einem Halten:
+Das Panel-Modul der SUPPLY-Page (`shared/bench/supply_link.c`) verhält
+sich während einer Reservierung so:
 
 | Ereignis | Was das Panel tut |
 |---|---|
@@ -228,9 +246,13 @@ Befehl wird bestätigt, und was daraus wurde, steht auf der Page: das High-Byte 
 
 Eine ESCape32-Page sind ihre 46 Werte als 16-Bit-Integer in der Reihenfolge der Map.
 
-WRITE braucht den Key, die CRC, die CRC des Entwurfs und `READS` und `READ_CRC` des
-Lesens, aus dem er stammt (sonst `STALE`), und die Regeln der Session. Ein Schreiben, das die Page geändert hat, bewegt `READS` und `READ_CRC`, auch unter einem Stopp: ein Entwurf der Page davor ist veraltet. RESTORE braucht
-dasselbe außer `READS` und `READ_CRC`.
+WRITE benötigt den Schlüssel, die CRC, die CRC des Entwurfs sowie
+`READS` und `READ_CRC` des Lesevorgangs, auf dem der Entwurf beruht.
+Stimmen sie nicht überein, folgt `STALE`. Zusätzlich gelten die
+Regeln der Session. Ein Schreiben, das die Page ändert, aktualisiert
+`READS` und `READ_CRC`, auch während eines Stopps. Ein Entwurf auf
+Basis der vorherigen Page ist dann veraltet. RESTORE benötigt
+dasselbe, außer `READS` und `READ_CRC`.
 
 ## Älter und neuer
 
@@ -239,16 +261,18 @@ dasselbe außer `READS` und `READ_CRC`.
 | jedes | 4.33 oder älter | beide Pages `BAD_PAGE`; `LINK_CAP_PROGRAM` wird nicht gemeldet |
 | 4.33 oder älter | 4.34 | es fasst die Pages nie an; nichts ist gehalten |
 
-Der Screen [ESC-Signalleitung](EscWire-de.md) des Panels treibt beide Pages.
+Die Panel-Seite [ESC-Signalleitung](EscWire-de.md) steuert beide Pages.
 
 ## Was nicht gemessen ist
 
-An der Bench-Konsole treibt `esc` sie
-([Die Bench-Konsole](BenchConsole-de.md#die-esc-einstellungs-page)). Ihre Zeiten kommen
-aus der Spezifikation oder sind die Wahl dieses Moduls
-([`protocols/escwire`](../protocols/escwire/README.md)): Eintritts-Hold, Auszeit, 50ms
-vor dem Ein und 60000ms bei `BY HAND` sind gewählt. Der Strom, den eine high getriebene
-Leitung in einen unversorgten ESC speist, ist nicht gemessen, ebenso wenig der Zustand
-der Endstufe in seinem Bootloader.
+Die Prüfstandskonsole greift mit `esc` auf die Pages zu
+([Die Prüfstandskonsole](BenchConsole-de.md#die-esc-einstellungs-page)).
+Die Zeiten stammen aus der Spezifikation oder sind Festlegungen
+des Moduls ([`protocols/escwire`](../protocols/escwire/README.md)).
+Haltezeit beim Einstieg, Auszeit, 50ms vor dem Einschalten und
+60000ms bei `BY HAND` sind gewählte Werte. Der Strom, den eine auf
+High getriebene Leitung in einen unversorgten ESC speist, ist nicht
+gemessen. Auch der Zustand der Endstufe im Bootloader ist nicht
+gemessen.
 
 Aus einer Verhaltensspezifikation geschrieben, ohne Zugriff auf die Firmware-Quellen.

@@ -48,7 +48,7 @@ for (const lang of ['en', 'de'] as const) {
         await page.goto('./#v=1&f=tap');
         await page.locator('#sim').waitFor();
         await expectFigures(page, lang, DEFAULT_SIM);
-        await expect(page.locator('#buy > li[data-part="sim"]')).toContainText(`3 × ${ORDER[lang]} 470 Ω, 2 W`);
+        await expect(page.locator('#buy > li[data-part="sim"]')).toContainText(`3 × ${ORDER[lang]} 470Ω, 2W`);
 
         // Cells: 4S to 6S. 470Ω, 2W in delta: 1.35W, the hint.
         await page.locator('body').focus();
@@ -85,11 +85,11 @@ for (const lang of ['en', 'de'] as const) {
 
         // The link, the name of the part and its row follow.
         await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=tap&m=6s,560r,1w,star');
-        const name = lang === 'de' ? 'Motorsimulator, selbst gebaut: 3 Widerstände im Stern, 560 Ω, 1 W' : 'Motor simulator, self-built: 3 resistors in star, 560 Ω, 1 W';
+        const name = lang === 'de' ? 'Motorsimulator, selbst gebaut: 3 Widerstände im Stern, 560Ω, 1W' : 'Motor simulator, self-built: 3 resistors in star, 560Ω, 1W';
         await expect(page.locator('ul.parts b', { hasText: name })).toHaveCount(1);
-        const row = `3 × ${ORDER[lang]} 560 Ω, 1 W`;
+        const row = `3 × ${ORDER[lang]} 560Ω, 1W`;
         await expect(page.locator('#buy > li[data-part="sim"]')).toContainText(row);
-        await expect(page.locator('#buy > li[data-part="sim"] a.websearch')).toHaveAttribute('href', searchUrl(null, `${ORDER[lang]} 560 Ω, 1 W`));
+        await expect(page.locator('#buy > li[data-part="sim"] a.websearch')).toHaveAttribute('href', searchUrl(null, `${ORDER[lang]} 560Ω, 1W`));
         await expect(page.locator('#buy')).not.toContainText('470');
         await expect(page.locator('ul.parts b', { hasText: '470' })).toHaveCount(0);
 
@@ -105,7 +105,7 @@ for (const lang of ['en', 'de'] as const) {
         await page.keyboard.press('Enter');
         await expect(page.locator('#b-copy-csv')).toHaveText(t(lang, 'copiedCsv'));
         const csv = await page.evaluate(() => navigator.clipboard.readText());
-        expect(csv).toContain(`"3","","${ORDER[lang]} 560 Ω, 1 W",`);
+        expect(csv).toContain(`"3","","${ORDER[lang]} 560Ω, 1W",`);
         expect(csv).not.toContain('470');
 
         // A reload opens the same values from the link.
@@ -153,7 +153,7 @@ for (const lang of ['en', 'de'] as const) {
         await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=tap&m=560r,star');
         await expect(page.locator('#have [data-h="sim"]')).toHaveCount(0);
         await expect(page.locator('#buy [data-h="sim"]')).not.toBeChecked();
-        await expect(page.locator('#buy > li[data-part="sim"]')).toContainText(`3 × ${ORDER[lang]} 560 Ω, 2 W`);
+        await expect(page.locator('#buy > li[data-part="sim"]')).toContainText(`3 × ${ORDER[lang]} 560Ω, 2W`);
         await expect(page.locator('#sim-ohms')).toBeFocused();
         expect(seen).toEqual({ foreign: [], errors: [] });
       });

@@ -1,6 +1,6 @@
 # Part drawings
 
-Generator and check of the part drawings of the bench configurator.
+This folder generates and checks the rcbench configurator's part drawings.
 
 - 24 drawings: 22 of the 20 parts of the data file (`core/catalogue.ts`), 2 of
   boards outside it. The IOmcu and the INA228 have 2 boards each.
@@ -10,8 +10,9 @@ Generator and check of the part drawings of the bench configurator.
   viewBox of its drawing.
 - `panel.json` holds the IOmcu board as flat shapes on its real pad
   grid, for the PICK A PIN screen of the panel ([Panel drawing](#panel-drawing)).
-- The generator reads the data file and nothing else: no file, no clock, no
-  random number. The same data file gives the same bytes.
+- The generator uses only the catalogue supplied to it. It performs no
+  file access and uses no clock or random numbers. Identical input produces
+  identical output bytes.
 - A file is self-contained: no script, no raster image, no style sheet, no
   reference that leaves the file. Every id carries the prefix of its drawing.
 
@@ -34,8 +35,7 @@ it as a step of the job `build`.
 The SVG files, `anchors.json` and `panel.json` are committed. They are not written during
 `npm run build`, `npm run dev` or `npm test`.
 
-- A change of a label or of a shape shows as a diff of the drawing in the pull
-  request.
+- Label and shape changes appear in the drawing diff of the pull request.
 - `--check` builds every file in memory and compares it byte by byte with the
   committed file. A changed, missing or extra file is a finding.
 - After a change of the data file or of a draw function: `npm run drawings`,
@@ -208,7 +208,8 @@ The table gives the higher of the 2 ratios and names its carrier.
 example both sides of a shunt. The `neighbour` rule exempts them. The wire
 number tells them apart.
 
-Colour is not the only carrier: a wire keeps its wire number of the data file.
+Each wire also carries its catalogue number, so identification does not
+depend on colour alone.
 
 ## Limits
 
@@ -218,8 +219,8 @@ Colour is not the only carrier: a wire keeps its wire number of the data file.
   not compared with the data file. `catalogueMap` leads from the 8 pins of the
   data file to them. Pin `A0` maps to `null`: the address is set by a solder
   bridge, the board has no wire point for it. Pin `LP` maps to 3 pads.
-- Label fit is an estimate. A label that fits by the estimate and overlaps a
-  shape of the drawing is not found.
+- Label fit is estimated. The check does not detect a label that fits the
+  estimated width but overlaps a shape.
 - The carrier board drawing omits the 2-pole VIN terminal and the 3 x 3 pin
   header of the carrier.
 - Carrier board: the servo strips S, V and G beside the screw terminals are

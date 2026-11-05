@@ -22,9 +22,9 @@ published.
 
 ## Status
 
-The rights holder was asked in August 2026 whether the project could obtain
-what reading and writing the parameters requires. The request was declined. The
-item is closed.
+The rights holder was asked in August 2026 for the information needed to
+read and write the parameters. The request was declined. The item is
+closed.
 
 ## Alternative
 

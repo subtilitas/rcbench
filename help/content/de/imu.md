@@ -6,41 +6,41 @@ order: 66
 
 # IMU
 
-IMU ist der Bildschirm der Bluetooth-IMU (Inertial Measurement Unit): ein WitMotion-BWT901CL-Winkelsensor auf einem Ruder, der das Panel über ein HC-05-Bluetooth-Modul an UART1 des Panels erreicht. Er öffnet über die Kachel IMU auf [Setup](setup.md); sein Home-Tag führt dorthin zurück. Der Bildschirm steuert keinen Ausgang an. Seine Einstellungen stehen im IMU-Eintrag von [Sensoren](setup-sensors.md#die-imu). Die Verdrahtung und die Einrichtung des HC-05 beschreibt die Wiki-Seite [Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de).
+Die Seite IMU steuert eine Bluetooth-IMU (Inertial Measurement Unit): einen WitMotion-BWT901CL-Winkelsensor auf einem Ruder. Ein HC-05-Bluetooth-Modul verbindet ihn mit UART1 (Universal Asynchronous Receiver/Transmitter) des Panels. Öffne die Seite über die Kachel IMU auf [SETUP](setup.md); das Home-Feld führt dorthin zurück. Die Seite steuert keine Ausgänge an. Ihre Einstellungen findest du im IMU-Eintrag unter [Sensoren](setup-sensors.md#die-imu). Die Wiki-Seite [Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de) beschreibt die Verdrahtung und die Einrichtung des HC-05.
 
 ![IMU, der HC-05 antwortet, kein Sensor gebunden](view:imu)
 
-| Bedienelement | Was es tut |
+| Bedienelement | Funktion |
 |---|---|
-| SENSOREN SUCHEN | öffnet die Liste der gefundenen Geräte und startet eine Suche; nimmt einen Druck an, solange der HC-05 antwortet und keine Suche, kein Binden und keine Kalibrierung läuft |
-| MIT JEDEM SENSOR VERBINDEN | nur, nachdem der HC-05 eine Suche mit `ERROR:(1F)` abgelehnt hat: stellt ihn so ein, dass er sich mit jedem Sensor verbindet, der PIN 1234 annimmt (`AT+CMODE=1`) |
-| 2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN | solange verbunden: die Kalibrierung des Beschleunigungssensors. Halte ihn still und waagerecht für die 3s, die die Zeile herunterzählt |
-| NULLPUNKT | nimmt die aktuellen Winkel als Nullpunkt; solange ein Messwert da ist. Mit ANGLE SOURCE IMU verwirft RUDDER seinen Nullpunkt und MAX |
-| NULLPUNKT LÖSCHEN | die Winkel wieder ab dem eigenen Nullpunkt des Sensors |
-| IMU-OPTIONEN | öffnet den IMU-Eintrag von [Sensoren](setup-sensors.md#die-imu); dessen Home-Tag führt hierher zurück |
+| SENSOREN SUCHEN | öffnet die Geräteliste und startet eine Suche; verfügbar, solange der HC-05 antwortet und keine Suche, kein Bindevorgang und keine Kalibrierung läuft |
+| MIT JEDEM SENSOR VERBINDEN | verfügbar, nachdem der HC-05 eine Suche mit `ERROR:(1F)` abgelehnt hat; stellt ihn so ein, dass er sich mit jedem Sensor verbindet, der PIN 1234 annimmt (`AT+CMODE=1`) |
+| 2s HALTEN: BESCHLEUNIGUNG KALIBRIEREN | startet bei bestehender Verbindung die Kalibrierung des Beschleunigungssensors; halte ihn während des Countdowns von 3s still und waagerecht |
+| NULLPUNKT | übernimmt die aktuellen Winkel als Nullpunkt, wenn ein Messwert vorliegt; mit WINKELQUELLE IMU werden dabei der Nullpunkt und MAX auf RUDER gelöscht |
+| NULLPUNKT LÖSCHEN | zeigt die Winkel wieder relativ zum eigenen Nullpunkt des Sensors |
+| IMU-OPTIONEN | öffnet den IMU-Eintrag unter [Sensoren](setup-sensors.md#die-imu); dessen Home-Feld führt hierher zurück |
 
-Ein Druck auf die Halten-Taste kürzer als 2s startet nichts, und das Band sagt `Halte 2s, um den Beschleunigungssensor zu kalibrieren.`.
+Ein Druck von weniger als 2s startet keine Kalibrierung. Das Band zeigt `Halte 2s, um den Beschleunigungssensor zu kalibrieren.`.
 
 ## Die Karte
 
 ![Verbunden mit 50Hz, NULLPUNKT gesetzt](view:imu-connected)
 
-| Zeile | Zeigt |
+| Zeile | Anzeige |
 |---|---|
-| `SENSOR: HC-06` | den Namen des gebundenen Sensors aus der Suche, `OHNE NAMEN` ohne einen, `KEINER GEBUNDEN` oder `JEDER IN REICHWEITE`; darunter seine Adresse |
-| `HC-05: 2.0-20100601` | die Firmware des HC-05, `---`, bis er geantwortet hat |
+| `SENSOR: HC-06` | der bei der Suche ermittelte Name des gebundenen Sensors, `OHNE NAMEN` ohne Namen, `KEINER GEBUNDEN` oder `JEDER IN REICHWEITE`; darunter steht die Adresse |
+| `HC-05: 2.0-20100601` | die Firmware des HC-05; bis zur Antwort steht dort `---` |
 | Zustand | `IMU AUS IN IMU-OPTIONEN`, `KEIN HC-05`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `BINDEN LÄUFT`, `GEBUNDEN`, `VERBUNDEN 50Hz` oder `KEINE FRAMES` |
-| X, Y, Z | die Winkel ab dem Nullpunkt, 0,1°, `---` ohne Messwert. Die Achse, die die Servoläufe lesen, steht in der Akzentfarbe |
-| RATE, ALTER | die Winkel-Frames der letzten Sekunde und die Zeit, seit der neueste den Bildschirm erreicht hat |
-| AKKU | der Akku des Sensors, aus seinem Frame 0x52; über 6,0V ausgeblendet |
+| X, Y, Z | die Winkel relativ zum Nullpunkt mit einer Auflösung von 0,1°, ohne Messwert `---`; die von Servoläufen verwendete Achse erscheint in der Akzentfarbe |
+| RATE, ALTER | die Zahl der Winkel-Frames in der letzten Sekunde und die Zeit seit dem jüngsten Frame auf der Seite |
+| AKKU | der Akkuwert des Sensors aus Frame 0x52; über 6,0V ausgeblendet |
 
-Der Messwert ist 300ms nach dem letzten Winkel-Frame veraltet. Ein Servolauf mit WINKELQUELLE IMU geht durch eine Lücke bis 300ms einmal je 10s weiter, wie bei der des AS5600 ([Servo-Optionen](servo-settings.md)). Eine längere Lücke beendet den Lauf als `IMU antwortet nicht`, eine zweite innerhalb von 10s als `IMU 2x in 10s ausgefallen`.
+Ein Messwert gilt 300ms nach dem letzten Winkel-Frame als veraltet. Mit WINKELQUELLE IMU toleriert ein Servolauf eine Lücke von bis zu 300ms je 10s, wie beim AS5600 ([Servo-Optionen](servo-settings.md)). Eine längere Lücke beendet den Lauf mit `IMU antwortet nicht`, eine zweite innerhalb von 10s mit `IMU 2x in 10s ausgefallen`.
 
 ## Suchen und binden
 
 ![Drei Geräte gefunden](view:imu-scan)
 
-Eine Suche dauert bis zu 40s: 11,5s Inquiry, dann der Name jedes gefundenen Geräts, bis zu 8. Ein Tippen auf ein Gerät bindet den HC-05 mit PIN 1234 daran und schließt die Liste; der HC-05 startet dann neu und verbindet sich damit. SETUP behält Adresse und Namen und bittet ums Speichern. AKTUALISIEREN startet eine weitere Suche; SCHLIESSEN und das Home-Tag schließen die Liste.
+Eine Suche dauert bis zu 40s: zunächst 11,5s für die Gerätesuche, danach die Namensabfragen für bis zu 8 Geräte. Tippe auf ein Gerät, um den HC-05 mit PIN 1234 daran zu binden und die Liste zu schließen. Der HC-05 startet anschließend neu und verbindet sich mit dem Gerät. SETUP behält Adresse und Namen und fordert zum Speichern auf. AKTUALISIEREN wiederholt die Suche; SCHLIESSEN oder das Home-Feld schließt die Liste.
 
 | Zeile | Bedeutung |
 |---|---|

@@ -6,37 +6,45 @@ order: 50
 
 # Logs
 
-LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) eines Ordners und seine Berichte, zeigt, was der Import in einer CSV-Datei gefunden hat, zeichnet bis zu 4 ihrer Spalten und öffnet einen Bericht im Textbetrachter von [Files](files.md#der-textbetrachter). Drei Tabs oben links wählen den Ordner, in dieser Reihenfolge: STAMM (das Stammverzeichnis der Karte), USER (Ordner Testaufzeichnungen, vorgegeben `USER/LOGS`) und BENCH (Ordner Auto-Aufzeichnungen, vorgegeben `BENCH/LOGS`). Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md), und DATEIEN daneben öffnet [Files](files.md): Kopieren, Verschieben, Umbenennen und Löschen auf der Karte. Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
+LOGS listet CSV-Aufzeichnungen (Comma-Separated Values) und Berichte auf der SD-Karte (Secure Digital) des Panels. Die Seite zeigt eine Importvorschau, zeichnet bis zu 4 CSV-Spalten und öffnet Berichte im [Textbetrachter von Files](files.md#der-textbetrachter). Öffne sie über die Kachel LOGS im [Menü](overview.md).
+
+Drei Reiter oben links wählen den Ordner: STAMM für das Stammverzeichnis, USER für den Ordner Testaufzeichnungen (Vorgabe `USER/LOGS`) und BENCH für den Ordner Auto-Aufzeichnungen (Vorgabe `BENCH/LOGS`). WI-FI unten links öffnet [WLAN](wifi.md). FILES daneben öffnet [Files](files.md) zum Kopieren, Verschieben, Umbenennen und Löschen.
+
+Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik zur Importansicht, dann zur Dateiliste und zum Menü. In der Rückfrage zu LÖSCHEN wirkt es wie ABBRECHEN.
 
 ## Keine Karte
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Ein leerer Ordner, oder einer, den das Panel noch nicht angelegt hat, zeigt `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, das Stammverzeichnis ohne CSV-Datei `Keine .csv-Dateien im Hauptverzeichnis.` Die Zeile darunter sagt, was der Tab enthält: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) aus, zeigt BENCH bzw. USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.` AKTUALISIEREN liest die Karte erneut. Ohne Karte wechseln die Tabs wie mit Karte, und jeder Tipp auf einen Tab sucht erneut nach einer Karte.
+Ohne eingebundene Karte zeigt der Bereich `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Bei einem leeren oder noch nicht angelegten Ordner erscheint `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, im Stammverzeichnis `Keine .csv-Dateien im Hauptverzeichnis.`
+
+Die Zeile darunter beschreibt den Reiter: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, zeigt BENCH beziehungsweise USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.`
+
+AKTUALISIEREN liest die Karte erneut. Die Reiter funktionieren auch ohne Karte; jeder Tipp prüft erneut, ob eine eingesetzt wurde.
 
 ## Eine Karte, die sich nicht einbinden lässt
 
 ![LOGS mit einer Karte ohne FAT-Volume](view:logs-nofat)
 
-Eine Karte im Steckplatz mit NTFS (New Technology File System), einer GPT (GUID-Partitionstabelle) oder ohne Format zeigt `Karte ohne FAT32 oder exFAT. Formatiere sie am Computer.` Eine Karte, die sich aus anderem Grund nicht einbinden lässt, zeigt `Karte nicht lesbar. Prüfe sie am PC, dann tippe AKTUALISIEREN.` [Kartenformate](#kartenformate) sagt, was mountet und wie eine Karte formatiert wird. Formatieren löscht die Karte. AKTUALISIEREN bindet die wieder eingesetzte Karte ein.
+Eine Karte mit NTFS (New Technology File System), GPT (GUID-Partitionstabelle) oder ohne Dateisystem zeigt `Karte ohne FAT32 oder exFAT. Formatiere sie am Computer.` Bei anderen Einbindefehlern erscheint `Karte nicht lesbar. Prüfe sie am PC, dann tippe AKTUALISIEREN.` [Kartenformate](#kartenformate) beschreibt die unterstützten Formate und das Formatieren. Formatieren löscht die Karte. Setze sie anschließend wieder ein und tippe auf AKTUALISIEREN.
 
 ## Die Dateiliste
 
 ![Die Dateiliste](view:logs)
 
-Der Kopf zeigt rechts der Tabs den gezeigten Ordner, `BENCH/LOGS`, und nennt die Karte mit ihrer Datenträgerbezeichnung, `UNITEST`, am rechten Ende der Zeile; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD CARD`. Die Liste zeigt 7 Zeilen auf einmal, jede 48px (etwa 7,2mm) des Glases zum Tippen; jede Zeile ist eine Datei mit ihrer Größe.
+Die Kopfzeile zeigt rechts neben den Reitern den gewählten Ordner, etwa `BENCH/LOGS`. Ganz rechts steht die Datenträgerbezeichnung, etwa `UNITEST`, ersatzweise der von der Karte gemeldete Name oder `SD CARD`. Die Liste zeigt 7 Dateien mit ihren Größen. Jede Zeile bietet eine 48px (etwa 7,2mm) hohe Berührungsfläche.
 
-| Tab | Ordner | Enthält |
+| Reiter | Ordner | Inhalt |
 |---|---|---|
-| STAMM | Stammverzeichnis | die Läufe von Firmware 0.21.0 und älter |
-| USER | Ordner Testaufzeichnungen, vorgegeben `USER/LOGS` | die Dateien des AUTOMATISCHEN TESTS und des ENDLAGENLAUFS |
-| BENCH | Ordner Auto-Aufzeichnungen, vorgegeben `BENCH/LOGS` | das automatische Log jedes ARMED- und Netzteil-Laufs |
+| STAMM | Stammverzeichnis | Läufe von Firmware 0.21.0 und älter |
+| USER | Ordner Testaufzeichnungen, Vorgabe `USER/LOGS` | Dateien des AUTOMATISCHEN TESTS und des ENDLAGENLAUFS |
+| BENCH | Ordner Auto-Aufzeichnungen, Vorgabe `BENCH/LOGS` | automatische Aufzeichnungen bei ARMED und Netzteilläufen |
 
-LOGS öffnet auf dem Tab der Datei, die das Panel zuletzt geschrieben hat, und nach einem Start auf BENCH, bis eine geschrieben ist. Ist seit dem letzten Besuch nichts geschrieben worden, bleibt der Tab, wie er verlassen wurde. Ein Tipp auf einen Tab liest seinen Ordner ab der ersten Seite.
+LOGS öffnet den Reiter der zuletzt vom Panel geschriebenen Datei. Nach dem Start gilt BENCH, bis eine Datei geschrieben wurde. Ohne neue Datei seit dem letzten Besuch bleibt der zuvor gewählte Reiter erhalten. Ein Tipp auf einen Reiter liest seinen Ordner ab der ersten Seite.
 
-Der Streifen oben, LOGS | FILES, hält die zwei Bildschirme der Kachel: Ein Tipp auf einen Tab öffnet [Files](files.md), und das Home-Tag jedes der beiden führt zum Menü. Er steht auf der Dateiliste, nicht über einer Datei, einer Frage oder einer Box.
+Die obere Leiste LOGS | FILES wechselt zwischen den beiden Seiten der Kachel. Das Home-Feld führt jeweils zum Menü. Die Leiste erscheint nur bei der Dateiliste, nicht über einer offenen Datei, Rückfrage oder einem Dialogfeld.
 
-WI-FI in der Fußzeile öffnet [WLAN](wifi.md), um ein Log im Browser von der Karte zu holen, und sein Home-Tag führt hierher zurück. Über der Rückfrage zu LÖSCHEN oder einer Datei steht es nicht. Bei ARMED öffnet es ebenso, und die Tasten von WLAN lehnen ab.
+WI-FI in der Fußzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das dortige Home-Feld führt hierher zurück. Über der Löschrückfrage oder einer offenen Datei fehlt die Taste. Auch bei ARMED lässt sich WI-FI öffnen; die Bedienelemente der WLAN-Seite prüfen ihre eigenen Sperrbedingungen.
 
 | Taste | Was sie tut |
 |---|---|
@@ -47,21 +55,21 @@ WI-FI in der Fußzeile öffnet [WLAN](wifi.md), um ein Log im Browser von der Ka
 
 ![Die vierte Seite einer vollen Karte](view:logs-pages)
 
-- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, ein Bericht nach seiner eigenen Nummer und nach der CSV-Datei seines Laufs, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat, und die Zeilen einer Seite stehen in derselben Reihenfolge, der neueste Lauf oben. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 145 BIS 192 VON 1000`.
-- Die Seiten werden von oben zu je 48 geschnitten. Stehen vor der gezeigten Seite weniger als 48 Einträge, etwa nachdem ein Lauf aufgezeichnet wurde, zeigt VORIGE die erste Seite.
-- Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist, stehen auf Seite 1. VORIGE überspringt dann auf dem Rückweg ab Seite 3 so viele Einträge, wie aufgezeichnet wurden; NÄCHSTE von Seite 1 zeigt sie, und die Zahlen im Reiter zeigen die Verschiebung.
-- Der Rollbalken am rechten Rand, 56px (etwa 8,4mm) breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
-- Das Öffnen von LOGS liest die Karte: die erste Seite, ihr neuester Lauf gewählt. Ein Lauf, der aufgezeichnet wurde, während LOGS geschlossen war, steht ohne AKTUALISIEREN in der Liste.
-- Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; enthält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite.
-- Nach LÖSCHEN wird die Seite neu gelesen, und die Rollposition bleibt; nichts ist gewählt, LÖSCHEN und ÖFFNEN sind grau, bis eine Zeile gewählt ist.
-- Eine Karte, die eingesteckt, entnommen oder getauscht wird, während das Panel läuft, findet das nächste AKTUALISIEREN, das nächste Öffnen von LOGS, die nächste Seite oder ÖFFNEN und der Start des nächsten Laufs, ohne Neustart. Eine neue Karte öffnet auf ihrer ersten Seite; ein leerer Steckplatz sagt `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
-- Neueste heißt die höchste Nummer im Namen. Das Datum einer Datei ist nur so gut wie die Uhr des Panels: Sie startet bei jedem Einschalten ungestellt, und bis NTP sie im Heimnetz stellt, datiert das Panel Dateien auf 1980 ([Setup](setup.md#panel)).
-- Ein Lauf, der gerade geschrieben wird, steht nicht in der Liste. Seine Nummer in einem anderen Ordner schon.
-- Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8px auf den Zeilen scrollt die Liste und wählt nichts.
+- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Sortierung beginnt beim neuesten Lauf. Berichte folgen ihrer eigenen Nummer und stehen hinter der zugehörigen CSV-Datei; danach folgen prüfstandsfremde Dateien. Innerhalb einer Seite gilt dieselbe Reihenfolge. Bei mehr als 48 Dateien zeigt der Reiter den sichtbaren Bereich, etwa `DATEIEN 145 BIS 192 VON 1000`.
+- Seiten werden vom Listenanfang in Gruppen zu 48 Einträgen gebildet. Liegen vor der aktuellen Seite weniger als 48 Einträge, etwa nach einer neuen Aufzeichnung, führt VORIGE zur ersten Seite.
+- Neue Aufzeichnungen erscheinen auf Seite 1, auch wenn gerade eine spätere Seite offen ist. Beim Zurückblättern ab Seite 3 überspringt VORIGE dadurch so viele Einträge, wie hinzugekommen sind. NÄCHSTE von Seite 1 zeigt sie; die Zahlen im Reiter machen die Verschiebung sichtbar.
+- Der Rollbalken am rechten Rand ist 56px (etwa 8,4mm) breit und scrollt innerhalb der Seite. Tippe auf seine Bahn zum Springen oder ziehe den Griff.
+- Beim Öffnen liest LOGS die erste Seite und wählt den neuesten Lauf. Aufzeichnungen, die bei geschlossenem LOGS entstanden sind, erscheinen ohne AKTUALISIEREN.
+- Auf späteren Seiten liest AKTUALISIEREN ab dem ersten Eintrag der aktuellen Seite. Gibt es inzwischen weniger Einträge, erscheint die letzte Seite.
+- Nach LÖSCHEN wird die Seite neu eingelesen; die Scrollposition bleibt erhalten. Die Auswahl wird aufgehoben. LÖSCHEN und ÖFFNEN bleiben grau, bis du eine Zeile wählst.
+- Kartenwechsel bei laufendem Panel werden ohne Neustart erkannt: bei AKTUALISIEREN, beim Öffnen von LOGS, beim Seitenwechsel, bei ÖFFNEN oder beim Start eines Laufs. Eine neue Karte öffnet auf Seite 1. Ohne Karte erscheint `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.`
+- Neuester Lauf bedeutet höchste Nummer im Namen. Dateidaten hängen von der Paneluhr ab. Sie ist nach jedem Einschalten ungestellt; bis NTP sie im Heimnetz stellt, erhalten Dateien das Jahr 1980 ([Setup](setup.md#panel)).
+- Eine noch laufende Aufzeichnung wird nicht gelistet. Dateien mit derselben Nummer in anderen Ordnern werden angezeigt.
+- Tippe auf eine Zeile zum Auswählen. Ziehen über mehr als 8px scrollt die Liste ohne Auswahl.
 
 ## Was ein Lauf schreibt
 
-Eine Datei ist ein Lauf, im Ordner seiner Art. Ihr Name sagt, was den Lauf gestartet hat:
+Jede Datei enthält einen Lauf und liegt im Ordner seiner Art. Der Name kennzeichnet den Auslöser:
 
 | Ordner | Name | Lauf |
 |---|---|---|
@@ -73,21 +81,25 @@ Eine Datei ist ein Lauf, im Ordner seiner Art. Ihr Name sagt, was den Lauf gesta
 | Stammverzeichnis | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | Läufe von Firmware 0.21.0 und älter; im Stammverzeichnis ist `SERVOnnn` ein Servotest |
 | Stammverzeichnis | `SERVOnnn.TXT` allein | ein Endlagenlauf von Firmware 0.21.0 und älter |
 
-Der Name folgt dem Bildschirm, dessen ARM den Prüfstand geschaltet hat, auch an einem IOmcu älter als 0.18.0, der mit jedem Schalten auf ARMED die Throttle-Ausgänge mitschaltet.
+Der Name richtet sich nach der Seite, deren ARM den Prüfstand aktiviert hat. Das gilt auch bei IOmcu-Versionen vor 0.18.0, die bei jedem Schalten auf ARMED die Gasausgänge mit aktivieren.
 
-AUTO-AUFZEICHNUNGEN aus unter [SETUP > SD CARD](setup.md) schreibt keine Datei nach `BENCH/LOGS` und nimmt keine Nummer; TESTAUFZEICHNUNGEN aus schreibt keine nach `USER/LOGS`, und der SERVO-Bildschirm nennt `TESTAUFZEICHNUNGEN AUS` an der Stelle der Datei. Nach dem Start eines neuen Panels oder einem Update sind beide an.
+Sind AUTO-AUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, entsteht keine Datei in `BENCH/LOGS`, und es wird keine Nummer vergeben. Ausgeschaltete TESTAUFZEICHNUNGEN verhindern Dateien in `USER/LOGS`; SERVO zeigt statt des Dateinamens `TESTAUFZEICHNUNGEN AUS`. Nach dem Start eines neuen Panels oder einem Update sind beide Einstellungen eingeschaltet.
 
-Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen unter [SETUP > SD CARD](setup.md#sd-card) stellen andere Ordner ein. Ein geänderter Ordner gilt ab der nächsten Datei, nummeriert nach dem, was dieser Ordner enthält. Dateien in einem vorher benutzten Ordner werden erst wieder gelistet, wenn der Ordner zurückgestellt ist.
+Wähle andere Speicherorte mit Ordner Auto-Aufzeichnungen und Ordner Testaufzeichnungen unter [SETUP > SD CARD](setup.md#sd-card). Die Änderung gilt ab der nächsten Datei. Ihre Nummer folgt dem Inhalt des neuen Ordners. Dateien im bisherigen Ordner erscheinen erst wieder, wenn du diesen erneut auswählst.
 
 Das Panel legt jeden Ordner an, wenn es zum ersten Mal hineinschreibt, eine Ebene nach der anderen. Eine Datei namens `BENCH` oder `USER` im Stammverzeichnis verhindert das: Das Band zeigt `Ordner BENCH/LOGS nicht anlegbar. Lauf nicht aufgezeichnet.`
 
-Jeder Ordner hat seine eigene Reihe: ein neuer Lauf nimmt eins über der höchsten Nummer in seinem Ordner, gleich unter welchem Namen, die Namen von Firmware 0.21.0 eingeschlossen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Ein Ordner mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Die Liste zeigt jeden Bericht, eine `.TXT`-Datei mit dem Namen eines Laufs: `ATESTnnn.TXT` neben seiner `ATESTnnn.CSV` oder ohne sie, `LIMITnnn.TXT` und im Stammverzeichnis `SERVOnnn.TXT` von Firmware 0.21.0 und älter. Ein Lauf und sein Bericht sind zwei Zeilen, die CSV-Datei zuerst. LÖSCHEN auf dem Lauf entfernt seinen Bericht mit. Jede andere `.TXT`-Datei steht nicht in der Liste; DATEIEN zeigt sie. Die Läufe stehen nach Nummer, der neueste zuerst, über alle Namen: `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
+Jeder Ordner hat eine eigene Nummernfolge. Ein neuer Lauf erhält die höchste vorhandene Nummer plus eins, unabhängig vom Namenspräfix und einschließlich der Namen aus Firmware 0.21.0. Gelöschte Nummern werden nicht erneut verwendet. Enthält ein Ordner die Nummer 999, nimmt er keinen weiteren Lauf an, auch bei freien niedrigeren Nummern.
+
+Die Liste zeigt Berichte mit Laufnamen: `ATESTnnn.TXT` mit oder ohne zugehörige `ATESTnnn.CSV`, `LIMITnnn.TXT` und im Stammverzeichnis `SERVOnnn.TXT` aus Firmware 0.21.0 und älter. Lauf und Bericht stehen in getrennten Zeilen, die CSV zuerst. LÖSCHEN beim Lauf löscht den Bericht mit. Andere `.TXT`-Dateien zeigt nur FILES.
+
+Die Sortierung folgt absteigenden Nummern über alle Präfixe hinweg: `MOTOR043.CSV`, dann `SERVO042.CSV`, dann `SUPPL041.CSV`.
 
 Firmware 0.21.0 und älter schreibt ins Stammverzeichnis und liest `BENCH/LOGS` und `USER/LOGS` nicht.
 
 Ein Lauf wird alle 20 Zeilen oder alle 1000ms auf die Karte festgeschrieben, je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet unter 1,0s an Zeilen, solange die Karte mithält, und bis zu 84 Zeilen, 4,20s bei 20Hz, wenn sie stockt.
 
-Das Band meldet, was die Karte mit einem Lauf gemacht hat:
+Das Band meldet Kartenfehler, die die Aufzeichnung betreffen:
 
 | Meldung | Bedeutung |
 |---|---|
@@ -107,15 +119,15 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 
 ![Der Bericht eines ENDLAGENLAUFS im Textbetrachter](view:logs-report)
 
-ÖFFNEN auf einem Bericht öffnet ihn im [Textbetrachter](files.md#der-textbetrachter), nur lesend. Das Band zeigt dann FILES. Das Home-Tag führt zurück zu LOGS, und der Bericht ist in der Liste wieder gewählt. Ein Bericht über 1MiB bleibt in der Liste, und die Fußzeile meldet `Über 1MB: zu groß. Lade die Datei über WLAN herunter.`
+ÖFFNEN zeigt einen Bericht schreibgeschützt im [Textbetrachter](files.md#der-textbetrachter). Im Band steht dann FILES. Das Home-Feld führt zu LOGS zurück, wo der Bericht wieder ausgewählt ist. Berichte über 1MiB bleiben in der Liste; die Fußzeile meldet `Über 1MB: zu groß. Lade die Datei über WLAN herunter.`
 
-[WLAN](wifi.md) lädt jeden Bericht ebenfalls herunter.
+Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 
 ## Die Importansicht
 
 ![Was der Import erkannt hat](view:logs-import)
 
-ÖFFNEN liest die Datei und zeigt, was der Import entschieden hat, bevor etwas gezeichnet wird.
+ÖFFNEN liest die Datei und zeigt vor dem Zeichnen das erkannte Importformat.
 
 | Zeile | Zeigt |
 |---|---|
@@ -126,36 +138,38 @@ Die ersten fünf hinterlassen keine Datei. Die letzten vier hinterlassen eine Da
 | UNGLEICHE ZEILEN | Zeilen mit einer anderen Zellenzahl als die Kopfzeile |
 | BELEGE | die Zellen, die Deutsch, Englisch oder keins von beiden belegt haben |
 
-Die rechte Liste nennt jede Spalte mit ihrem ersten Wert und ihrem Bereich, vom kleinsten zum größten. Eine Datei öffnet mit bis zu 4 gewählten Spalten: in einer SERVO-Datei `pulse`, `angle`, `current` und `voltage`, jede, wo sie Zahlen hält, dann die nächsten Zahlenspalten; in jeder anderen Datei ihre ersten 4 Zahlenspalten. Ein Tipp auf eine Zahlenspalte nimmt sie in die Grafik auf oder heraus; der Titel zählt sie, `GRAFIK  4/4`. TRENNZEICHEN und ZAHLENFORMAT schalten durch die Möglichkeiten, AUTO zuerst, wenn Werte oder Spalten falsch aussehen. ZURÜCK führt zur Liste; GRAFIK zeichnet die gewählten Spalten.
+Die rechte Liste zeigt jede Spalte mit ihrem ersten Wert und dem Bereich vom kleinsten bis zum größten Wert. Bis zu 4 Spalten werden automatisch gewählt. Bei SERVO-Dateien haben die numerischen Spalten `pulse`, `angle`, `current` und `voltage` Vorrang, danach folgen weitere Zahlenspalten. Bei anderen Dateien werden die ersten 4 Zahlenspalten gewählt.
 
-Eine letzte Zeile ohne Zeilenvorschub ist eine Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat. Sie wird weggelassen, ZEILEN steht in der Warnfarbe, und die Ansicht zeigt `LETZTE ZEILE UNVOLLSTÄNDIG. ÜBERSPRUNGEN.`.
+Tippe auf eine Zahlenspalte, um sie zur Grafik hinzuzufügen oder daraus zu entfernen. Der Titel zählt die Auswahl, etwa `GRAFIK  4/4`. Sehen Werte oder Spalten falsch aus, wechsle mit TRENNZEICHEN und ZAHLENFORMAT durch die Möglichkeiten, beginnend bei AUTO. ZURÜCK führt zur Dateiliste. GRAFIK zeichnet die gewählten Spalten.
+
+Eine letzte Zeile ohne Zeilenvorschub gilt als unvollständig, etwa nach Stromausfall oder bei voller Karte. Sie wird übersprungen. ZEILEN erscheint in der Warnfarbe, daneben steht `LETZTE ZEILE UNVOLLSTÄNDIG. ÜBERSPRUNGEN.`.
 
 ## Die Grafik
 
 ![Die Grafik mit vier Spalten](view:logs-plot)
 
-Der Kopf nennt die Datei, ihre Zeilen, ihre Dauer und ihre Abtastrate. Jede Spalte hat einen Chip mit ihrem Bereich und dem Wert am Cursor.
+Die Kopfzeile nennt Datei, Zeilenzahl, Dauer und Abtastrate. Jede Spalte hat ein Anzeigefeld mit Wertebereich und Cursorwert.
 
-- Ein Finger, `<` und `>` bewegen den Cursor. Die Zeile unten rechts zeigt seine Zeit und seinen Messpunkt.
-- Zwei Finger zoomen: spreizen zum Vergrößern, zusammenziehen zum Verkleinern, beide bewegen zum Verschieben. Die engste Ansicht sind 8 Messpunkte, die weiteste der ganze Lauf.
-- Mit SETUP, PANEL, Ein Finger schiebt eingeschaltet verschiebt ein Finger, der sich mehr als 10px bewegt, eine vergrößerte Ansicht seitwärts.
+- Bewege den Cursor mit einem Finger oder mit `<` und `>`. Unten rechts stehen Zeit und Messpunkt.
+- Zoome mit zwei Fingern: auseinanderziehen zum Vergrößern, zusammenziehen zum Verkleinern. Bewege beide Finger zum Verschieben. Die Ansicht reicht von mindestens 8 Messpunkten bis zum gesamten Lauf.
+- Ist Ein Finger schiebt unter SETUP, PANEL eingeschaltet, verschiebt ein Finger eine vergrößerte Ansicht seitwärts, sobald er sich mehr als 10px bewegt.
 - ZURÜCK führt zur Importansicht.
 
-Die Zeilen stehen gleichmäßig nach Zeilennummer. Die Beschriftungen unter der Grafik sind die Zeitspalte der Datei; eine Lücke in den Zeilen ist ein Sprung in den Beschriftungen.
+Die Grafik verteilt Datenzeilen gleichmäßig nach Zeilennummer. Ihre Beschriftung stammt aus der Zeitspalte. Eine Datenlücke erscheint daher als Sprung in den Zeitangaben.
 
 ## Eine Datei löschen
 
 ![Die Rückfrage von LÖSCHEN](view:logs-delete)
 
-LÖSCHEN öffnet eine Rückfrage, die die Datei und ihre Größe nennt. Nur ihr eigenes LÖSCHEN, auf dieser Taste gedrückt und losgelassen, entfernt die Datei. ABBRECHEN oder das Verlassen des Bildschirms löscht nichts. Der Lauf, den der Logger offen hat, wird abgelehnt.
+LÖSCHEN fragt nach und nennt Dateiname und Größe. Drücke und löse LÖSCHEN innerhalb dieses Dialogs, um die Datei zu entfernen. ABBRECHEN oder das Verlassen der Seite behält sie. Eine noch geöffnete Aufzeichnung lässt sich nicht löschen.
 
 ## Kartenformate
 
-Das Panel liest Karten mit FAT12, FAT16, FAT32 oder exFAT (extended File Allocation Table): die ganze Karte oder die erste der 4 Partitionen eines MBR (Master Boot Record), die eines davon trägt. SDHC-Karten (4GB bis 32GB) kommen mit FAT32, SDXC-Karten (64GB bis 2 TB) mit exFAT; beide mounten so, wie sie kommen.
+Das Panel liest FAT12, FAT16, FAT32 und exFAT (extended File Allocation Table). Es unterstützt das Dateisystem auf der ganzen Karte oder die erste der 4 MBR-Partitionen (Master Boot Record) mit einem dieser Formate. SDHC-Karten von 4GB bis 32GB sind ab Werk mit FAT32, SDXC-Karten von 64GB bis 2TB mit exFAT formatiert. Beide lassen sich im Auslieferungszustand einbinden.
 
-- Nicht unterstützt: GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier), Volumes über 2 TiB, NTFS, ext4, HFS+ und APFS. Eine solche Karte mountet nicht. Das Panel formatiert nie eine Karte.
-- Zum Formatieren dient der SD Memory Card Formatter der SD Association, oder am Rechner FAT32 oder exFAT auf einem MBR (unter macOS: Schema `Master Boot Record`).
-- Eine Datei ab 4GiB auf einer exFAT-Karte steht mit ihrer Größe in der Liste, zum Beispiel `8.00GB`. OPEN liest Dateien bis 2GiB weniger 1 Byte; eine größere bleibt in der Liste, und OPEN meldet `BENCH001.CSV ist 2GB oder größer. Nicht geöffnet.` [WLAN](wifi.md) lädt sie herunter.
+- Nicht unterstützt werden GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier), Volumes über 2TiB sowie NTFS, ext4, HFS+ und APFS. Solche Karten lassen sich nicht einbinden. Das Panel formatiert keine Karten.
+- Verwende zum Formatieren den SD Memory Card Formatter der SD Association oder formatiere am Computer mit FAT32 oder exFAT auf MBR. Unter macOS heißt das Schema `Master Boot Record`.
+- Dateien ab 4GiB auf exFAT erscheinen mit ihrer Größe, etwa `8.00GB`. ÖFFNEN liest bis zu 2GiB minus 1 Byte. Größere Dateien bleiben in der Liste, mit der Meldung `BENCH001.CSV ist 2GB oder größer. Nicht geöffnet.` Über [WLAN](wifi.md) lassen sie sich herunterladen.
 
 ## Verwandte Seiten
 

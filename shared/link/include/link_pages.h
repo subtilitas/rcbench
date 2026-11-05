@@ -1064,8 +1064,10 @@ typedef enum {
     /**
      * @brief The numbers are modelled, not measured.
      *
-     * Set by an IOmcu running without a front end and by the panel's own
-     * simulator; the panel draws SIMULATION across the screen either way.
+     * Identifies simulated bench data. The panel uses its local simulator
+     * when the link is down and marks the display with a watermark. The
+     * current IOmcu reports available measurements and never sets this flag;
+     * missing measurements have their validity bits cleared.
      */
     LINK_BN_SIMULATED  = 1u << 7,
 } link_bench_flag_t;

@@ -171,14 +171,13 @@ bool can_twai_rx_lost(uint32_t *overrun, uint32_t *missed)
 /*
  * Bus-off is permanent until somebody asks for the bus back.
  *
- * A CAN transmitter that gets no acknowledgement retransmits on its own and
- * adds 8 to its error counter each time; at 1Mbit/s a frame nobody answers
- * reaches the bus-off threshold of 256 in about four milliseconds.  So an
- * IOmcu that is not on the bus yet, has reset, or has stopped
- * answering for a moment leaves the panel's controller in TWAI_STATE_BUS_OFF
- * -- and there it stays.  Recovery is not automatic on this peripheral: every
- * twai_transmit() returns ESP_ERR_INVALID_STATE, the link never comes back,
- * and the panel shows NO LINK until it is switched off and on again.
+ * Transmission errors can take the controller to TWAI_STATE_BUS_OFF.
+ * Missing ACK alone does not guarantee that state: CAN's error-passive
+ * ACK exception can stop the transmit error counter from increasing.
+ * See Bosch CAN 2.0, Part B, fault confinement, rule 3, exception 1.
+ * Once bus off is reached, this peripheral needs software recovery and
+ * a restart.  Until then twai_transmit() returns ESP_ERR_INVALID_STATE,
+ * so restoring the peer alone cannot bring the link back.
  *
  * Recovery takes two steps and a wait between them.  twai_initiate_recovery()
  * moves the controller to TWAI_STATE_RECOVERING, where it counts 128

@@ -33,7 +33,7 @@ What it does not know:
    windings read in the current is not measured.
 3. Connect the ESC's signal lead to a pin bound with the throttle role on
    the OUTPUTS screen. A run commands every channel bound as a throttle, as
-   the MOTOR screen does. RUN is refused while the binding binds no pin as
+   MOTOR & ESC does. RUN is refused while the binding binds no pin as
    a throttle (`No throttle pin assigned. Assign one on OUTPUTS.`) and while the
    panel has not read the binding from the IOmcu (`Output assignment not read. Throttle pin unknown.`).
 4. Connect the ESC's power leads to the supply output. The supply is the PD
@@ -167,7 +167,7 @@ A run powers the ESC up with the stick where the manual programs the value
 from: the value's `entry_throttle` where the profile names one, else the
 profile's entry. A Kontronik car mode is programmed with the stick at
 motor-off in the middle, the neutral the mode teaches; the run powers it up
-at MID. The stick moves only while the supply is off: before the first
+at MID. The power-up position changes only while the supply is off: before the first
 power-up, and between two power-ups only once the supply itself reports its
 output off with the current down (`ESC_STICK_OFF_MA`,
 `ESC_STICK_OFF_SETTLE_MS`). It is held there 1000ms
@@ -249,7 +249,7 @@ each with the moment it is due:
 
 | Due | The run |
 | --- | --- |
-| `before_power` | lists it on the warning: HOLD 2s TO RUN is the word that it is done. From the second power-up of a run on, it stops before each power-up and asks again |
+| `before_power` | lists it on the warning; completing HOLD 2s TO RUN confirms that it is done. From the second power-up of a run on, it stops before each power-up and asks again |
 | `at_power_up` | stops before each power-up with the supply off and asks; DONE switches the supply on, and the run counts down the hold the profile gives |
 | `before_menu` | asks once the entry has had its time, with the ESC powered and the stick at the power-up position. A step marked `starts_menu` is the action that starts the menu, and the run counts the beeps from the moment it asks (see below); every other one waits for DONE |
 | `during_menu` | cannot know the moment: the profile does not run, `manual step` |
@@ -482,11 +482,11 @@ Two parts of this rule are not measured:
   makes its second change.
 - How long the ESC runs on from its input capacitors once the PD mini's
   switch has opened. The current shows that the switch is open, not that
-  the ESC has stopped. The 200ms hold covers a small capacitance, for
-  example 2000µF falling 4V at 30mA in about 270ms; it does not cover
-  a large one.
+  the ESC has stopped. The 200ms wait does not establish that the ESC is off. For
+  example, 2000µF takes about 270ms to fall by 4V at 30mA; a larger
+  capacitance takes longer under the same conditions.
 
-Every move goes out as the MOTOR screen's commands do: ARM through the arming
+Every move is sent through the same paths as the commands on MOTOR & ESC: ARM through the arming
 policy, THROTTLE onto the throttle channels, and the supply through SUPPLY's
 own ON and OFF. Nothing bypasses STOP or the rules for switching to ARMED.
 
@@ -525,8 +525,8 @@ own ON and OFF. Nothing bypasses STOP or the rules for switching to ARMED.
 
 ## The settings
 
-TIMING on a profile's page. Kept in the settings with the others. No value
-here is measured.
+Open TIMING on a profile's page. These values are stored with the other
+settings. None is measured.
 
 | Setting | Default | Range | What it is |
 | --- | --- | --- | --- |
@@ -669,9 +669,10 @@ same call as the stop). A run that sees more stops than presses since it
 began ends with BENCH STOPPED, so a stop the bench raised is not hidden by
 a press that came with it.
 
-Every end sets the throttle to MIN, switches the supply off and switches to SAFE; an
-abort does all three in one step. A stop latches as any stop does: the next
-run switches to ARMED again from its own warning.
+Every end sets the throttle to MIN, switches the supply off and switches
+to SAFE; an abort does all three in one step. If STOP is latched, reset it
+before starting another run. Each new run requires its own warning and
+hold before switching to ARMED.
 
 ## The read rate
 
@@ -696,13 +697,13 @@ It is not done.
 
 ## Simulation
 
-With the PD mini off on SUPPLY's PD MINI tab, the SUPPLY screen runs the panel's
-model of a supply. During a stick run the model's current is a simulated ESC
+With the PD mini off on SUPPLY's PD MINI tab, SUPPLY uses the panel's
+supply model. The screen refuses RUN in this state, as described above;
+the model code also contains the following ESC simulation. During a stick run the model's current is a simulated ESC
 (`shared/esc/esc_sim.c`) following the profile: power-on at the entry
 position enters the menu after the profile's `hold_ms` (3000ms without
 one), groups loop with 250ms beeps, 250ms gaps, 800ms long beeps and
-1500ms between groups, at 150mA idle and 600mA more per beep. Every one of
-those numbers is made up. Where the profile names a store move, a selection
+1500ms between groups, at 150mA idle and 600mA more per beep. These values are simulation assumptions, not measurements. Where the profile names a store move, a selection
 is kept only once the stick makes it. An item keyed `exit` leaves the menu
 when it is selected, and one keyed `reset` clears what was stored. The
 model's samples arrive every 50ms. The panel's model does not model a

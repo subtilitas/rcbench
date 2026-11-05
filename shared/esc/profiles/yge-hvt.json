@@ -71,7 +71,7 @@
       "v_max_mv": 58800,
       "current_a": 205,
       "bec": null,
-      "firmware_note": "BEC 5.0-8.4 V, 12 A continuous, 30 A peak; minimum cells 4 (English) or 6 (German)",
+      "firmware_note": "BEC 5.0-8.4V, 12A continuous, 30A peak; minimum cells 4 (English) or 6 (German)",
       "spec_source": "YGE_YGE-205HVT-BEC.pdf p.1 (6-14s, 205 A); YGE_205HVT_BEC_en.pdf states 4-14s",
       "cell_type": "lipo"
     }
@@ -148,7 +148,7 @@
         "Wait for 20 interval beeps, then 2 confirmation beeps",
         "Move throttle stick to minimum",
         "Listen to the menu: N beeps = mode N",
-        "At the wanted mode, move throttle stick to maximum; 2 confirmation beeps",
+        "At the desired mode, move throttle stick to maximum; 2 confirmation beeps",
         "Move throttle stick to minimum; 2 confirmation beeps; ESC arms"
       ]
     },
@@ -165,7 +165,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the stick to maximum while the wanted mode is the one being announced (the manual says 'at the desired mode'). Two confirmation beeps follow. The permitted delay after the last beep of the mode is not stated."
+      "description": "Move the stick to maximum while the desired mode is the one being announced (the manual says 'at the desired mode'). Two confirmation beeps follow. The permitted delay after the last beep of the mode is not stated."
     },
     "skip": {
       "throttle": "min",
@@ -183,7 +183,7 @@
     "exit": "Moving the stick back to minimum after selecting a mode arms the ESC and ends programming. The next change needs a power cycle with throttle at maximum.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Selecting a mode loads that mode's complete parameter set, which overwrites earlier ProgCard or PC-tool settings. No separate reset sequence is described.",
-    "description": "Throttle at maximum, then battery on: after 20 interval beeps and 2 confirmation beeps the ESC is in mode setup. Throttle to minimum; the ESC sounds mode 1 to 6 as 1 to 6 beeps. Throttle to maximum at the wanted mode (2 beeps), then to minimum (2 beeps) to arm. One mode per power cycle."
+    "description": "Throttle at maximum, then battery on: after 20 interval beeps and 2 confirmation beeps the ESC is in mode setup. Throttle to minimum; the ESC sounds mode 1 to 6 as 1 to 6 beeps. Throttle to maximum at the desired mode (2 beeps), then to minimum (2 beeps) to arm. One mode per power cycle."
   },
   "items": [
     {
@@ -226,9 +226,9 @@
     "Maximum delay between the last beep of a mode and the stick move to maximum: not stated.",
     "Whether a minimum stick-at-maximum time at power-on is needed for entry: not stated.",
     "Number of menu cycles before the ESC leaves setup without a selection: not stated.",
-    "Throttle signal type and pulse range for max and min: not stated for this manual (the 60HV/90HV and 120HV-200HV manuals mention 1.1 to 1.9 ms end points for mode 2).",
+    "Throttle signal type and pulse range for max and min: not stated for this manual (the 60HV/90HV and 120HV-200HV manuals mention 1.1 to 1.9ms end points for mode 2).",
     "Supply-current amplitude of the beeps through the motor winding: not stated; the motor must be connected.",
-    "The manuals state the ESC may only be powered from batteries, not from power supplies. Behaviour on a 1-20 V / 3 A supply (cell-count detection, undervoltage cutoff, inrush limit) is not stated.",
+    "The manuals state the ESC may only be powered from batteries, not from power supplies. Behaviour on a 1-20V / 3A supply (cell-count detection, undervoltage cutoff, inrush limit) is not stated.",
     "Parameter values set by each mode: not listed; defaults are unknown.",
     "BEC type (linear or switching) of 205HVT BEC: not stated.",
     "BEC presence of 165HVT, 205HVT, 325HVT (non-BEC types): not stated."

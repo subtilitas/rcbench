@@ -14,7 +14,7 @@
       "v_max_mv": 14000,
       "current_a": 40,
       "bec": null,
-      "firmware_note": "NiCd cells; BEC 5 A for 4 servos and a mini gyro; 55 A for 15 s",
+      "firmware_note": "NiCd cells; BEC 5A for 4 servos and a mini gyro; 55A for 15s",
       "spec_source": "Kontronik_Heli-Line.pdf p.2: 6-10 NiCd/NiMH cells, 40 A continuous, 14 V stated"
     },
     {
@@ -26,7 +26,7 @@
       "v_max_mv": 40000,
       "current_a": 50,
       "bec": "opto",
-      "firmware_note": "70 A for 15 s",
+      "firmware_note": "70A for 15s",
       "spec_source": "Kontronik_Heli-Line.pdf p.2: 8-30 NiCd/NiMH cells, 50 A continuous, 40 V stated"
     }
   ],
@@ -44,19 +44,19 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the programming contacts.",
-      "action_de": "Jumper auf die Programmierkontakte stecken.",
+      "action_de": "Stecke den Jumper auf die Programmierkontakte.",
       "source": "Kontronik_Heli-Line.pdf p.5-6"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off as soon as the drive battery is connected.",
-      "action_de": "Jumper abziehen, sobald der Antriebsakku angesteckt ist.",
+      "action_de": "Ziehe den Jumper ab, sobald der Antriebsakku angesteckt ist.",
       "source": "Kontronik_Heli-Line.pdf p.6"
     },
     {
       "when": "during_menu",
       "action": "Current regulation and reset: fit the jumper again when the program asks; a start button is pressed and let go.",
-      "action_de": "Stromregelung und Reset: Jumper wieder stecken, wenn das Programm es verlangt; Starttaster drücken und loslassen.",
+      "action_de": "Stromregelung und Reset: Stecke den Jumper nach Aufforderung wieder auf. Drücke den Starttaster und lass ihn los.",
       "source": "Kontronik_Heli-Line.pdf p.5-6"
     }
   ],
@@ -66,10 +66,10 @@
       "throttle": "min",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Signal after jumper removal; 3-fold signal after about 5 s for the current limit; 6-fold signal about 30 s after reset beeps.",
+      "confirm_signal": "Signal after jumper removal; 3-fold signal after about 5s for the current limit; 6-fold signal about 30s after reset beeps.",
       "steps": [
         "Stick-way teach-in: throttle at motor-off (stick back), jumper on, radio on; apply power, pull the jumper; a signal; move to full; a signal; for throttle compensation move to motor-off, otherwise wait; 2 beeps = without, 3 beeps = with; optional start button press; 2 or 3 beeps; disconnect power.",
-        "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the wanted count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
+        "Current limit: throttle at full, jumper on, radio on; apply power, pull the jumper; a signal; wait about 5s for the 3-fold signal; count the beeps (5A each); move the throttle out of full at the desired count; the ESC repeats the value; fit the jumper again for current regulation; two beeps; disconnect power.",
         "Reset: any throttle position; jumper on, radio on; apply power, pull the jumper; the ESC beeps several times; about 30s after the last signal a 6-fold signal arrives; LED flashes continuously; disconnect power."
       ]
     },
@@ -81,12 +81,12 @@
       "gap_ms": null,
       "group_gap_ms": null,
       "repeat": null,
-      "description": "After the wait signal the ESC sounds one beep per 5 A (current limit); confirmation of throttle compensation is 2 or 3 beeps."
+      "description": "After the wait signal the ESC sounds one beep per 5A (current limit); confirmation of throttle compensation is 2 or 3 beeps."
     },
     "select": {
       "throttle": "mid",
       "within_ms": null,
-      "description": "Move the throttle out of full at the wanted count."
+      "description": "Move the throttle out of full at the desired count."
     },
     "skip": {
       "throttle": "none",
@@ -95,7 +95,7 @@
     "confirm_signal": "2 or 3 beeps after stick-way teach-in; the current value repeated as beeps.",
     "exit": "Disconnect power.",
     "changes_per_entry": "one",
-    "reset_to_defaults": "Reset program: jumper, power, 30 s, 6-fold signal.",
+    "reset_to_defaults": "Reset program: jumper, power, 30s, 6-fold signal.",
     "description": "Three jumper-and-signals programs for the helicopter ESC: stick ways with throttle compensation, current limit and reset. Undervoltage cutoff is not available (disabled)."
   },
   "items": [
@@ -141,7 +141,7 @@
   ],
   "unknowns": [
     "Signal is an LED flash plus a beep with the motor connected; beep duration and gaps are not stated.",
-    "Time allowed between steps is not stated except the 'about 5 s' wait for the 3-fold or 4-fold signal and about 30 s for the reset.",
+    "Time allowed between steps is not stated except the 'about 5 s' wait for the 3-fold or 4-fold signal and about 30s for the reset.",
     "How the ESC decides between stick-way teach-in and brake-strength entry when both start with the stick back and the jumper pulled at power-up is not stated in the text.",
     "Item numbers are the signal counts where the manual gives them; item 1 is the stick-way teach-in, which has no count.",
     "Which stick position starts which program after the jumper is pulled is read from the drawings only."

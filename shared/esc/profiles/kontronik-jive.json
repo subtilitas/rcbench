@@ -14,7 +14,7 @@
       "v_max_mv": 25000,
       "current_a": 80,
       "bec": "switching",
-      "firmware_note": "BEC voltage 5 to 6 V in 0.2 V steps",
+      "firmware_note": "BEC voltage 5 to 6V in 0.2V steps",
       "spec_source": "Kontronik_Jive.pdf p.3: input voltage 6-25 V, continuous current in type table; cells: https://www.freakware.de/technik/Kontronik/jive_datenblatt.pdf (dealer copy of the Kontronik datasheet, LiPo cell count row)"
     },
     {
@@ -80,13 +80,13 @@
     {
       "when": "before_power",
       "action": "Fit the jumper on the 2 marked programming contacts (English manual: any 2 of the 3).",
-      "action_de": "Jumper auf die 2 markierten Programmierkontakte stecken (englisches Handbuch: 2 beliebige der 3).",
+      "action_de": "Stecke den Jumper auf die 2 markierten Programmierkontakte (englisches Handbuch: 2 beliebige der 3).",
       "source": "Kontronik_Jive.pdf p.6 (DE), p.18 (EN)"
     },
     {
       "when": "before_menu",
       "action": "Pull the jumper off after 2s or the tone sequence.",
-      "action_de": "Jumper nach 2s oder der Tonfolge abziehen.",
+      "action_de": "Ziehe den Jumper nach 2s oder der Tonfolge ab.",
       "starts_menu": true,
       "source": "Kontronik_Jive.pdf p.6 (DE), p.18 (EN)"
     }
@@ -97,7 +97,7 @@
       "throttle": "min",
       "when": "before_power_on",
       "hold_ms": 2000,
-      "confirm_signal": "Three-tone sequence after the 2 s wait, a second three-tone sequence after the jumper is removed.",
+      "confirm_signal": "Three-tone sequence after the 2s wait, a second three-tone sequence after the jumper is removed.",
       "steps": [
         "Operator: fit the jumper on the 2 marked programming contacts. Connect the motor if tones are to be audible.",
         "Transmitter on. Throttle to the brake position (modes 6 and 8: motor-off position).",
@@ -105,8 +105,8 @@
         "Wait 2s or until the ESC sounds its three-tone sequence.",
         "Operator: pull the jumper off.",
         "The ESC sounds a second three-tone sequence, then the mode series 1 to 11.",
-        "Move the throttle to full while the wanted series sounds.",
-        "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10% per tone); move the throttle to motor-off at the wanted count.",
+        "Move the throttle to full while the desired series sounds.",
+        "Mode 2: optional separate motor-off position. Mode 6: throttle to maximum brake. Mode 8: the ESC sounds brake-strength tones (10% per tone); move the throttle to motor-off at the desired count.",
         "The ESC repeats the stored mode. Disconnect drive power."
       ]
     },
@@ -123,7 +123,7 @@
     "select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Move the throttle to full while the series of the wanted mode sounds."
+      "description": "Move the throttle to full while the series of the desired mode sounds."
     },
     "skip": {
       "throttle": "none",
@@ -133,7 +133,7 @@
     "exit": "Disconnect drive power after the control output.",
     "changes_per_entry": "one",
     "reset_to_defaults": "Program mode 1 (APM).",
-    "description": "Same jumper procedure as the JAZZ. The series runs to 11 tones. Mode 8 adds a second stage in which the ESC counts brake strength in 10 % tones and the throttle is returned to motor-off at the wanted count."
+    "description": "Same jumper procedure as the JAZZ. The series runs to 11 tones. Mode 8 adds a second stage in which the ESC counts brake strength in 10% tones and the throttle is returned to motor-off at the desired count."
   },
   "items": [
     {
@@ -208,12 +208,12 @@
     "Gap between tones inside one mode series in ms is not stated.",
     "Pause between two mode series in ms is not stated.",
     "Whether the mode series loops until a mode is selected is not stated.",
-    "Time window in ms for moving the throttle to full after the wanted series is not stated.",
+    "Time window in ms for moving the throttle to full after the desired series is not stated.",
     "Duration in ms of the three-tone sequences (ascending and descending) is not stated.",
-    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2 s minimum; the end of the wait is the ESC's tone sequence.",
-    "Maximum tone count of the F3A brake-strength stage is not stated (the PROGCARD II adjusts in 2.5 % steps).",
+    "Exact timing of the 'wait 2 s or until the tone sequence' step is not stated beyond the 2s minimum; the end of the wait is the ESC's tone sequence.",
+    "Maximum tone count of the F3A brake-strength stage is not stated (the PROGCARD II adjusts in 2.5% steps).",
     "Time between jumper fitting and power-up limit is not stated.",
-    "Factory default mode is not stated in the sections read."
+    "The reviewed sections do not state the factory default mode."
   ],
   "notes": [
     "Mode 8 differs from the JAZZ: it is an F3A-brake motor-plane mode, not car forward/reverse.",

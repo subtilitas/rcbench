@@ -6,15 +6,15 @@ order: 53
 
 # Files
 
-FILES zeigt die SD-Karte (Secure Digital) in zwei Spalten. Er kopiert, verschiebt, benennt um und löscht Dateien, legt Ordner und leere Textdateien an zeigt eine Datei als Text und bearbeitet sie. Er ist ein Tab des Streifens der Kachel [LOGS](logs.md). Das Home-Tag schließt zuerst eine Box oder die Tastatur und führt dann zu dem Bildschirm zurück, der FILES geöffnet hat. FILES steuert keinen Ausgang.
+FILES verwaltet die SD-Karte (Secure Digital) in zwei Spalten. Du kannst Dateien kopieren, verschieben, umbenennen und löschen, Ordner und leere Textdateien anlegen sowie Texte anzeigen und bearbeiten. Öffne die Seite über die Leiste der Kachel [LOGS](logs.md). Das Home-Feld schließt zuerst ein offenes Dialogfeld oder die Tastatur und führt dann zur aufrufenden Seite zurück. FILES steuert keinen Ausgang.
 
 ## Die zwei Spalten
 
 ![FILES](view:files)
 
-Die linke Spalte öffnet im Stammverzeichnis der Karte, die rechte im Ordner Testaufzeichnungen (vorgegeben `USER/LOGS`). Die Spalte mit der farbigen Überschrift ist die aktive: ÖFFNEN, UMBENENNEN, LÖSCHEN, NEU und INFO wirken in ihr. KOPIEREN und VERSCHIEBEN bringen ihren gewählten Eintrag in den Ordner der anderen Spalte. Ein Tipp auf eine Zeile wählt sie und macht ihre Spalte zur aktiven; ein zweiter Tipp auf dieselbe Zeile ist ÖFFNEN.
+Die linke Spalte beginnt im Stammverzeichnis der Karte, die rechte im Ordner Testaufzeichnungen (Vorgabe `USER/LOGS`). Eine farbige Überschrift kennzeichnet die aktive Spalte. Dort wirken ÖFFNEN, UMBENENNEN, LÖSCHEN, NEU und INFO. KOPIEREN und VERSCHIEBEN übertragen den gewählten Eintrag in den Ordner der anderen Spalte. Tippe auf eine Zeile, um sie auszuwählen und ihre Spalte zu aktivieren. Ein zweiter Tipp auf dieselbe Zeile öffnet den Eintrag.
 
-Die Taste über einer Spalte zeigt den Pfad des Ordners und geht einen Ordner höher. VORIGE und NÄCHSTE stehen daneben, solange der Ordner mehr als 48 Einträge hält. Die Überschrift zählt die Einträge, und `+ 1 NICHT GELISTET` zählt die Namen, die das Panel nicht listet: Namen, die mit einem Punkt beginnen, etwa `.DS_Store`, und Namen über 63 Bytes. Ein Ordner, der nur solche Einträge hält, ist nicht leer.
+Die Taste über jeder Spalte zeigt den Ordnerpfad. Tippe darauf, um einen Ordner höher zu gehen. Bei mehr als 48 Einträgen erscheinen daneben VORIGE und NÄCHSTE. Die Überschrift nennt die Anzahl der Einträge. Eine zusätzliche Angabe wie `+ 1 NICHT GELISTET` zählt ausgelassene Namen: solche mit einem Punkt am Anfang, etwa `.DS_Store`, und solche mit mehr als 63 Bytes. Ein Ordner mit ausschließlich ausgelassenen Einträgen ist nicht leer.
 
 ![Die zweite Seite eines Ordners mit 120 Einträgen](view:files-paged)
 
@@ -22,49 +22,49 @@ Jede Zeile zeigt den Namen, die Größe (`512B`, `14kB`, `7.0MB`; 1kB sind 1.024
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein Ordner, den der Prüfstand führt, etwa `BENCH`, `USER` und die Log-Ordner: kein UMBENENNEN oder VERSCHIEBEN; LÖSCHEN nur leer, und der Prüfstand legt ihn beim nächsten Schreiben dort wieder an |
-| GESPERRT | der Vermerk der Servoprogrammierung, `BENCH/KST/CONF/KST.TXT`: nur INFO |
-| WIRD GESCHRIEBEN | eine Datei, die der Logger offen hat: nur INFO |
+| FEST | Vom Prüfstand angelegter Ordner wie `BENCH`, `USER` oder ein Aufzeichnungsordner. UMBENENNEN und VERSCHIEBEN sind gesperrt. LÖSCHEN ist nur bei leerem Ordner möglich; beim nächsten Schreiben legt der Prüfstand ihn wieder an. |
+| GESPERRT | Vermerk der Servoprogrammierung, `BENCH/KST/CONF/KST.TXT`; nur INFO verfügbar. |
+| WIRD GESCHRIEBEN | Eine Datei ist für die Aufzeichnung geöffnet; nur INFO verfügbar. |
 
 ![Die Ordner für ESC und Servo](view:files-conf)
 
-Das Fehlerprotokoll, `BENCH/RCBENCH.LOG`, nimmt KOPIEREN und LÖSCHEN nur bei bestehender Verbindung zur IOmcu an.
+KOPIEREN und LÖSCHEN sind für das Fehlerprotokoll `BENCH/RCBENCH.LOG` nur bei bestehender Verbindung zum IOmcu verfügbar.
 
 ## Die Tasten
 
-Eine Taste, die abgelehnt würde, ist gedimmt. Ein Tipp darauf nennt den Grund in der Zeile über den Tasten.
+Nicht verfügbare Tasten sind gedimmt. Tippe darauf, um den Grund über der Tastenzeile zu lesen.
 
-| Taste | Was sie tut |
+| Taste | Wirkung |
 |---|---|
-| AKTUALISIEREN | sieht in den Steckplatz und liest jede Spalte an der Seite neu, die sie zeigt. Die oberste Zeile und der gewählte Eintrag bleiben; ist der gewählte Eintrag von der Karte verschwunden, ist nichts gewählt, wie nach LÖSCHEN |
-| KOPIEREN | kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert |
-| VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte |
-| UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
-| LÖSCHEN | fragt zuerst. Die CSV-Datei eines Laufs nimmt ihren Bericht mit. Ein Ordner wird nur gelöscht, wenn er leer ist |
-| NEU | ORDNER oder TEXTDATEI, dann die Tastatur für den Namen |
-| INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel |
-| ÖFFNEN | öffnet einen Ordner. Eine CSV-Datei in STAMM, USER oder BENCH öffnet auf [LOGS](logs.md). Jede andere Datei, auch ein Bericht, öffnet im [Textbetrachter](#der-textbetrachter). Eine Datei über 1MiB bleibt hier, `Über 1MB: zu groß. Lade die Datei über WLAN herunter.`, ebenso eine Datei, die der Prüfstand noch schreibt, `ATEST012.TXT wird gerade geschrieben.` |
+| AKTUALISIEREN | Prüft den Karteneinschub und liest beide Spalten auf ihrer aktuellen Seite neu ein. Oberste Zeile und Auswahl bleiben erhalten. Fehlt der gewählte Eintrag auf der Karte, wird die Auswahl wie nach LÖSCHEN aufgehoben. |
+| KOPIEREN | Kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert. |
+| VERSCHIEBEN | Verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte. |
+| UMBENENNEN | Öffnet die Tastatur mit dem Namen des Eintrags. |
+| LÖSCHEN | Fragt vor dem Löschen nach. Beim Löschen einer Lauf-CSV wird der zugehörige Bericht mitgelöscht. Ordner müssen leer sein. |
+| NEU | Bietet ORDNER oder TEXTDATEI und öffnet danach die Tastatur für den Namen. |
+| INFO | Zeigt Name, Ordner, Art, Größe oder Anzahl der Einträge, Zeit und Regel. |
+| ÖFFNEN | Öffnet einen Ordner. CSV-Dateien in STAMM, USER oder BENCH öffnen auf [LOGS](logs.md), andere Dateien einschließlich Berichten im [Textbetrachter](#der-textbetrachter). Dateien über 1MiB bleiben hier: `Über 1MB: zu groß. Lade die Datei über WLAN herunter.` Dasselbe gilt für noch beschriebene Dateien: `ATEST012.TXT wird gerade geschrieben.` |
 
 Ein vorhandener Name wird nie überschrieben: `NOTES.TXT ist dort bereits vorhanden.` Eine Kopie wird als `NAME.NEW` geschrieben und umbenannt, wenn sie vollständig ist.
 
 ![Die Auswahl von NEU](view:files-new)
 ![Die Tastatur für eine neue Textdatei](view:files-name)
 
-Die Tastatur fasst bis zu 59 Bytes; Ä Ö Ü ä ö ü ß zählen je 2. OK lehnt einen leeren Namen ab, eines von `" * / : < > ? \ |`, ein Leerzeichen oder einen Punkt an einem Ende und Gerätenamen wie `CON` oder `COM1`, und nennt den Grund neben dem Titel.
+Die Tastatur nimmt Namen mit bis zu 59 Bytes an; Ä Ö Ü ä ö ü ß belegen je 2 Bytes. OK lehnt leere Namen, eines der Zeichen `" * / : < > ? \ |`, Leerzeichen oder Punkte am Anfang oder Ende sowie Gerätenamen wie `CON` oder `COM1` ab. Der Grund erscheint neben dem Titel.
 
 ## Der Textbetrachter
 
 ![Der Bericht eines Servotests im Textbetrachter](view:files-view)
 
-Der Betrachter zeigt eine Datei als Text, nur lesend. Das Home-Tag schließt ihn: zurück zu den Spalten, oder zurück zu [LOGS](logs.md), wenn LOGS ihn geöffnet hat. Er öffnet eine Datei von bis zu 1MiB und bis zu 65.536 Zeilen; während die Karte gelesen wird, steht `Karte wird gelesen.` da.
+Der Textbetrachter öffnet Dateien mit bis zu 1MiB und 65.536 Zeilen schreibgeschützt. Während des Einlesens zeigt er `Karte wird gelesen.` Das Home-Feld führt zu den Spalten zurück, oder zu [LOGS](logs.md), wenn die Datei dort geöffnet wurde.
 
-- Die Kopfzeile zeigt Ordner und Namen der Datei, ihre Größe, NUR LESEN und `ZEILE 23 VON 57`: die Zeile in der obersten Bildschirmzeile und die Zeilen der Datei.
-- 18 Zeilen zu 92 Zeichen stehen auf einmal da. KLEIN schaltet auf eine kleinere Schrift, 22 Zeilen zu 115 Zeichen, für die Stufentabelle eines Berichts; NORMAL schaltet zurück. Die Wahl gilt, bis das Panel neu startet.
-- Eine Zeile, die breiter ist als eine Bildschirmzeile, setzt sich in der nächsten fort, links mit `..` markiert.
-- Ziehen auf dem Text oder am Rollbalken rollt ihn. SEITE HOCH und SEITE RUNTER bewegen einen Bildschirm; jeder ist am ersten oder letzten Bildschirm grau.
-- Die Wörter des Prüfstands haben Farben: Überschriften, Bezeichnungen wie `Ergebnis:`, BESTANDEN grün, NICHT BESTANDEN rot, `nicht gemessen` und die anderen Wörter für das, was nicht gelaufen ist, in der Warnfarbe, eine Zahl mit Einheit in der Farbe der Einheit, `#`-Kommentare blass. Englische Berichte erscheinen genauso. Eine `.JSON`-Datei ist als JSON gefärbt.
-- Eine Datei mit Zeilenenden LF und CR LF zeigt `GEMISCHTE ZEILENENDEN`.
-- Eine Datei mit einem NUL-Byte in den ersten 4kB meldet `Keine Textdatei: ein NUL-Byte in den ersten 4kB.` Eine leere Datei meldet `Die Datei ist leer.`
+- Die Kopfzeile zeigt Ordner, Dateiname, Größe, NUR LESEN und `ZEILE 23 VON 57`: die oberste sichtbare Zeile und die Gesamtzahl der Zeilen.
+- Die normale Schrift zeigt 18 Zeilen zu 92 Zeichen. KLEIN zeigt 22 Zeilen zu 115 Zeichen, etwa für die Stufentabelle eines Berichts. NORMAL schaltet zurück. Die Wahl gilt bis zum Neustart des Panels.
+- Lange Zeilen werden umgebrochen; Fortsetzungen sind links mit `..` markiert.
+- Ziehe den Text oder den Rollbalken zum Scrollen. SEITE HOCH und SEITE RUNTER bewegen den Text um eine Bildschirmhöhe. Am jeweiligen Ende sind sie grau.
+- Berichte heben Überschriften und Bezeichnungen wie `Ergebnis:` farbig hervor. BESTANDEN erscheint grün, NICHT BESTANDEN rot. `nicht gemessen` und andere Angaben zu nicht ausgeführten Schritten erscheinen in der Warnfarbe. Zahlen mit Einheit erhalten die Farbe der Einheit, `#`-Kommentare sind blass. Englische Berichte verwenden dieselbe Hervorhebung. `.JSON`-Dateien erhalten JSON-Farben.
+- Dateien mit LF und CR LF als Zeilenenden zeigen `GEMISCHTE ZEILENENDEN`.
+- Ein NUL-Byte in den ersten 4kB führt zu `Keine Textdatei: ein NUL-Byte in den ersten 4kB.` Eine leere Datei zeigt `Die Datei ist leer.`
 
 ![Derselbe Bericht mit KLEIN](view:files-view-small)
 ![Eine Servodatei des KST-Programmierers](view:files-view-kst)
@@ -75,16 +75,16 @@ Der Betrachter zeigt eine Datei als Text, nur lesend. Das Home-Tag schließt ihn
 
 BEARBEITEN im Textbetrachter öffnet den Editor und seine Tastatur. Der Text ändert sich im Speicher des Panels; SPEICHERN schreibt ihn auf die Karte.
 
-- Über der Tastatur stehen 8 Zeilen des Texts, 10 mit KLEIN. Die Tastatur hat keine Ziffernreihe: `ABC` gibt Großbuchstaben, `123` die Ziffern und die häufigen Zeichen, `#+=` auf dieser Seite die übrigen Zeichen; `abc` führt zurück. DEL nimmt das Zeichen vor dem Cursor. ENTER beginnt eine neue Zeile mit dem Zeilenende der Datei. `<-` und `->` bewegen den Cursor; ein Tipp auf den Text setzt ihn dorthin. FERTIG schließt die Tastatur, TASTATUR öffnet sie wieder.
-- Die Kopfzeile zeigt GEÄNDERT, sobald der Text von der Karte abweicht, und die Zeile des Cursors.
-- SPEICHERN schreibt den Text als `<Name>.NEW`, löscht die alte Datei und gibt der neuen ihren Namen. SPEICHERN ist gesperrt, solange der Prüfstand ARMED ist oder ein Lauf aufgezeichnet wird; der Text bleibt. Ein Wechsel auf ARMED während des Speicherns hält es an, und die alte Datei bleibt.
-- Eine KST-Datei des Servo-Programmierers verliert ihre Prüfsummenzeile, wenn sie geändert gespeichert wird, in jeder Form, die der Programmierer als eine liest (`checksum`, `CHECKSUM=`, `Checksum:`): der Programmierer liest sie dann als Datei, die ein Mensch bearbeitet hat.
-- SPEICHERN lehnt einen Text mit einem NUL-Byte in den ersten 4kB ab, da FILES die Datei sonst nicht wieder öffnet: `Nicht gespeichert: ein NUL-Byte in den ersten 4kB. FILES öffnet die Datei nicht wieder.`
-- Ein ESC-Profil in `BENCH/ESC/CONF` liest das Panel beim nächsten Start.
-- SPEICHERN schreibt nur über die Datei, wie der Editor sie geöffnet hat. Eine Datei, die sich seitdem auf der Karte geändert hat, durch den Editor der WLAN-Seite oder einen Upload, wird nicht geschrieben: Die Notiz sagt `<Name> wurde seit dem Lesen auf der Karte geändert.`, und die Frage bietet BLEIBEN, das den Text behält, NEU LESEN, das ihn verwirft und die Datei von der Karte liest, und ÜBERSCHREIBEN, 2s gehalten, das den Text über die Datei speichert, die das abgelehnte SPEICHERN fand. Eine weitere Änderung in dieser Zeit wird ebenso abgelehnt. Eine fehlende Datei lässt sich nicht überschreiben: ÜBERSCHREIBEN ist gedimmt.
-- VERWERFEN setzt den Text auf die Datei auf der Karte zurück. Es fragt zuerst, wie das Home-Tag bei ungespeichertem Text: BLEIBEN behält den Text, VERWERFEN lässt die Änderungen fallen.
-- Der Text hält bis zu 1MiB und 65.536 Zeilenenden. Die Tastatur tippt ASCII; einzelne Tasten lassen sich nicht rückgängig machen.
-- SETUP → PANEL → Tastaturtransparenz auf 25% oder 50% lässt den übrigen Text durch die Tastatur scheinen; der Cursor bleibt auf den 8 Zeilen darüber.
+- Über der Tastatur stehen 8 Textzeilen, mit KLEIN 10. Die Tastatur hat keine Ziffernreihe: `ABC` zeigt Großbuchstaben, `123` Ziffern und häufige Zeichen, `#+=` dort die übrigen Zeichen. `abc` führt zurück. DEL löscht das Zeichen vor dem Cursor. ENTER beginnt eine neue Zeile mit dem Zeilenende der Datei. `<-` und `->` bewegen den Cursor; ein Tipp auf den Text setzt ihn an diese Stelle. FERTIG schließt die Tastatur, TASTATUR öffnet sie wieder.
+- Die Kopfzeile zeigt die Cursorzeile und GEÄNDERT, sobald der Text vom Karteninhalt abweicht.
+- SPEICHERN schreibt den Text als `<Name>.NEW`, löscht die alte Datei und benennt die neue entsprechend um. Bei ARMED oder laufender Aufzeichnung ist SPEICHERN gesperrt; der Text bleibt erhalten. Ein Wechsel auf ARMED während des Speicherns bricht den Vorgang ab; die alte Datei bleibt erhalten.
+- Wird eine geänderte KST-Datei der Servoprogrammierung gespeichert, entfällt ihre Prüfsummenzeile. Das gilt für alle erkannten Formen (`checksum`, `CHECKSUM=`, `Checksum:`). Die Servoprogrammierung behandelt sie dadurch als manuell bearbeitete Datei.
+- SPEICHERN lehnt Text mit einem NUL-Byte in den ersten 4kB ab, da FILES ihn sonst nicht erneut öffnen könnte: `Nicht gespeichert: ein NUL-Byte in den ersten 4kB. FILES öffnet die Datei nicht wieder.`
+- Ein ESC-Profil in `BENCH/ESC/CONF` wird beim nächsten Panelstart eingelesen.
+- SPEICHERN überschreibt nur die Dateiversion, die der Editor geöffnet hat. Wurde sie auf der Karte durch den WLAN-Editor oder einen Upload verändert, erscheint `<Name> wurde seit dem Lesen auf der Karte geändert.` BLEIBEN behält den bearbeiteten Text. NEU LESEN verwirft ihn und liest die Datei von der Karte. Halte ÜBERSCHREIBEN 2s, um die beim abgelehnten Speicherversuch gefundene Version zu ersetzen. Ändert sich die Datei erneut, wird das Schreiben wieder abgelehnt. Fehlt sie, bleibt ÜBERSCHREIBEN gedimmt.
+- VERWERFEN setzt den Text auf den Karteninhalt zurück und fragt vorher nach. Das Home-Feld fragt bei ungespeicherten Änderungen ebenfalls: BLEIBEN behält den Text, VERWERFEN verwirft die Änderungen.
+- Der Text darf bis zu 1MiB und 65.536 Zeilenenden enthalten. Die Tastatur gibt ASCII ein; einzelne Tasteneingaben lassen sich nicht rückgängig machen.
+- SETUP → PANEL → Tastaturtransparenz auf 25% oder 50% lässt den übrigen Text durch die Tastatur scheinen. Der Cursor bleibt in den 8 Zeilen darüber.
 
 ![Eine KST-Datei mit einem Kommentar gespeichert](view:files-edit-kst)
 ![Die Frage vor ungespeicherten Änderungen](view:files-edit-unsaved)
@@ -93,7 +93,7 @@ BEARBEITEN im Textbetrachter öffnet den Editor und seine Tastatur. Der Text än
 
 ![FILES, während der Prüfstand ARMED ist](view:files-armed)
 
-FILES schreibt nur, solange der Prüfstand SAFE ist und kein Lauf aufgezeichnet wird. Solange der Prüfstand ARMED ist oder ein Lauf aufgezeichnet wird, sind alle Tasten außer INFO und AKTUALISIEREN gedimmt, und die Zeile über den Tasten zeigt `Prüfstand ARMED. Die Karte ist nur lesbar.` oder `Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.` Eine laufende Kopie hält vor ihren nächsten 16KiB an, wenn der Prüfstand auf ARMED schaltet oder ein Lauf die Aufzeichnung beginnt.
+FILES schreibt nur bei SAFE und ohne laufende Aufzeichnung. Bei ARMED oder laufender Aufzeichnung sind KOPIEREN, VERSCHIEBEN, UMBENENNEN, LÖSCHEN und NEU gedimmt. Durchsehen, Lesen von Dateien, INFO und AKTUALISIEREN bleiben verfügbar; die normalen Beschränkungen für gesperrte Dateien und Dateien im Schreibzugriff gelten weiter. Darüber steht `Prüfstand ARMED. Die Karte ist nur lesbar.` oder `Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.` Beginnt einer dieser Zustände während des Kopierens, stoppt die Kopie vor dem nächsten Block von 16KiB.
 
 ![FILES, während ein Test aufgezeichnet wird](view:files-logging)
 
@@ -104,10 +104,10 @@ FILES schreibt nur, solange der Prüfstand SAFE ist und kein Lauf aufgezeichnet 
 ![INFO zu einer Datei](view:files-info)
 ![INFO zu einem Ordner](view:files-info-folder)
 
-Eine Aufgabe, die länger als 0.25s dauert, zeigt ihren Fortschritt in einer Box; ABBRECHEN hält eine Kopie vor ihren nächsten 16KiB an. INFO zeigt die Zeit, die die Karte führt, in der Zone von SETUP > PANEL, Zeitzone. Ein Datum in 1980 liest sich `nicht bekannt`: Die Uhr war nicht gestellt, als die Datei geschrieben wurde ([Setup](setup.md#panel)).
+Ein Vorgang von mehr als 0,25s zeigt ein Fortschrittsfenster. ABBRECHEN stoppt eine Kopie vor dem nächsten Block von 16KiB. INFO zeigt den Zeitstempel der Karte in der Zeitzone aus SETUP > PANEL. Ein Datum im Jahr 1980 erscheint als `nicht bekannt`: Beim Schreiben war die Uhr nicht gestellt ([Setup](setup.md#panel)).
 
 ## Keine Karte
 
 ![FILES ohne Karte](view:files-nocard)
 
-Ohne Karte zeigen beide Spalten `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Eine eingesetzte, entnommene oder getauschte Karte findet AKTUALISIEREN; beide Spalten gehen dann zurück zum Stammverzeichnis und zum Ordner Testaufzeichnungen.
+Ohne Karte zeigen beide Spalten `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Tippe nach dem Einsetzen, Entnehmen oder Wechseln einer Karte auf AKTUALISIEREN. Beide Spalten kehren dann zum Stammverzeichnis beziehungsweise zum Ordner Testaufzeichnungen zurück.

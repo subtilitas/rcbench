@@ -1,9 +1,9 @@
 # witmotion
 
-The serial protocol of the WitMotion BWT901CL inertial sensor and its
-family: the 11-byte frames decoded to units and the 5-byte commands encoded.
-The module parses and encodes. It decides nothing: which frames to ask for,
-when to send a command and what a reading means belong to the caller.
+This module implements the serial protocol of the WitMotion BWT901CL
+inertial sensor family. It decodes 11-byte frames into physical values
+and encodes 5-byte commands. The caller chooses which frames to request,
+when to send commands and how to interpret the readings.
 
 | Part | Files | Depends on |
 |---|---|---|
@@ -13,7 +13,7 @@ when to send a command and what a reading means belong to the caller.
 The module has no pin driver. The sensor's link is a UART (universal
 asynchronous receiver-transmitter) at 115200 baud, 8N1, fixed on the
 BWT901CL; the caller supplies the received bytes one at a time and sends the
-built commands.
+encoded commands.
 
 ## Constraints
 
@@ -22,7 +22,7 @@ built commands.
   (`WIT_FRAME_LEN`).
 - Types decoded: 0x51 acceleration, 0x52 angular rate, 0x53 angle, 0x54
   magnetic field. Types 0x50 (time) and 0x59 (quaternion) are named
-  (`WIT_T_TIME`, `WIT_T_QUAT`) and handed out as raw words; no decoder
+  (`WIT_T_TIME`, `WIT_T_QUAT`) and returned as raw words; no decoder
   exists for them.
 - Scales: acceleration word / 32768 x 16g with 1g = 9.80665m/s²; angular
   rate word / 32768 x 2000°/s; angle word / 32768 x 180° (32767 is
@@ -40,8 +40,9 @@ built commands.
   the parser looks for the next 0x55 among the bytes it holds, so a frame
   that began inside the dropped one is kept. The bytes skipped on the way
   count in `resyncs`.
-- A sum is 8 bits: 1 in 256 random 11-byte windows that start with 0x55
-  passes it. The parser cannot tell such a window from a frame.
+- The checksum is 8 bits: 1 in 256 random 11-byte windows starting with
+  0x55 passes the check. The parser cannot distinguish such a window from
+  a valid frame.
 - A command is 5 bytes: 0xFF, 0xAA, a register, the value low byte, the value
   high byte (`WIT_CMD_LEN`). The unlock 0xFF 0xAA 0x69 0x88 0xB5 is sent
   first on the newer firmware and is harmless on the older one; its effect
@@ -77,12 +78,12 @@ size_t   wit_cmd_axis6(uint8_t out[WIT_CMD_LEN], bool six);
 uint16_t wit_rate_dhz(uint8_t code);
 ```
 
-`wit_parser_feed()` returns true when `out` holds a frame whose sum holds.
-A NULL pointer makes it return false and take no byte. A decoder returns
+`wit_parser_feed()` returns true when `out` contains a frame with a valid
+checksum. A NULL pointer returns false without consuming a byte. A decoder returns
 false for a frame of another type or a NULL pointer. A command encoder
 returns `WIT_CMD_LEN` and fills the buffer, or returns 0 and leaves it
-untouched. `wit_rate_dhz()` gives the output rate of a code in 0.1Hz (2 for
-0x01, 2000 for 0x0B) and 0 for a code outside the table.
+untouched. `wit_rate_dhz()` returns the output rate in units of 0.1Hz (2 for
+0x01, 2000 for 0x0B), or 0 if the code is not in the table.
 
 ## Use in another pico-sdk project
 

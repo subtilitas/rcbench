@@ -73,7 +73,7 @@
     }
   ],
   "automatable": "full",
-  "automatable_note": "The tones differ in rhythm and pitch; the bench counts current pulses only, whether the tones can be told apart by current is untested.",
+  "automatable_note": "The tones differ in rhythm and pitch. The bench counts current pulses only; whether it can distinguish the tones from those pulses is untested.",
   "scheme": {
     "type": "melody_groups",
     "entry": {
@@ -82,7 +82,7 @@
       "hold_ms": 2000,
       "confirm_signal": "4 groups of two fast beeps, then a cycle of distinct tones and melodies",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery",
         "Wait 2000ms: 4 groups of two fast beeps (within 4s of power-up per the tone chart)",
         "Distinct tones then play in a loop"
@@ -101,17 +101,17 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "While the tone of the wanted option plays, move the throttle to min (the manual says lowest, OFF). The tone stops when the setting is saved."
+      "description": "While the tone of the desired option plays, move the throttle to minimum (the manual says lowest, OFF). The tone stops when the setting is saved."
     },
     "skip": {
       "throttle": "none",
-      "description": "Keep the throttle at max and wait for the next tone."
+      "description": "Keep the throttle at maximum and wait for the next tone."
     },
     "confirm_signal": "The tone stops.",
     "exit": "The ESC saves and exits the function after one change. Power-cycle to change another.",
     "changes_per_entry": "one",
-    "reset_to_defaults": "Select the restore-defaults tone (long dashes) and move the throttle to min.",
-    "description": "Throttle at max, battery on, wait 2 s for 4 groups of two fast beeps. Tones for every setting option loop. Moving the throttle to min while the wanted tone plays saves it; the sound stops. One setting per power cycle."
+    "reset_to_defaults": "Select the restore-defaults tone (long dashes) and move the throttle to minimum.",
+    "description": "Throttle at maximum, battery on, wait 2s for 4 groups of two fast beeps. Tones for every setting option loop. Moving the throttle to minimum while the desired tone plays saves it; the sound stops. One setting per power cycle."
   },
   "items": [
     {

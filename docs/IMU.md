@@ -2,19 +2,24 @@
 
 <sub>**English** · [Deutsch](IMU-de.md)</sub>
 
-A WitMotion BWT901CL angle sensor sits on a control surface and sends its
-angle over Bluetooth. An HC-05 Bluetooth module on the panel's UART1
-(universal asynchronous receiver-transmitter) receives it as SPP (serial
-port profile) master. The panel sets the HC-05 up itself over AT commands:
-it finds the module's baud, scans, binds the sensor and restarts the
-module in data mode. The reading is a measurement, not a protection: it is
-stale 300ms after the last angle frame, and a servo run rides through a gap
-of up to 300ms once per 10s, as through the AS5600's
-([Servo procedures](Servo.md)). A switch of ANGLE SOURCE hands SERVO the
-new source's state in the next frame: the IMU's reading, valid or not, or
-no AS5600 reading until the part's next one. A stale stretch that a frame
-ends before the screen's next frame still reaches SERVO: a stale reading
-timed 300ms after the last frame goes ahead of the new one.
+The Bluetooth IMU (inertial measurement unit) is a WitMotion BWT901CL angle
+sensor placed on a control surface. It sends its angle over Bluetooth to
+an HC-05 module on the panel's UART1 (universal asynchronous
+receiver-transmitter). The HC-05 operates as an SPP (serial port profile)
+master. The panel configures it through AT commands: it detects the
+module's baud rate, scans for sensors, binds the selected sensor and
+restarts the module in data mode.
+
+The reading is a measurement, not a protection. It becomes stale 300ms
+after the last angle frame. A servo run tolerates a gap of up to 300ms
+once per 10s, as it does with the AS5600
+([Servo procedures](Servo.md)). Changing ANGLE SOURCE gives SERVO the new
+source's state in the next display frame: the IMU reading, valid or not,
+or no AS5600 reading until the next reading from that sensor.
+
+If an incoming angle frame ends a stale period before the next display
+frame, SERVO still receives the stale state. A stale reading timestamped
+300ms after the previous angle frame is delivered before the new reading.
 
 WitMotion, BWT901CL, HC-05 and HC-06 are names of their makers' products,
 and Bluetooth is a trademark of its owner. rcbench is independent: it is
@@ -63,9 +68,10 @@ it changes.
 
 ## The HC-05's set-up
 
-The panel holds KEY high from the first byte of an operation to its end,
-100ms before the first byte. Each command waits 1000ms for its OK, AT+INQ
-13.52s, AT+RNAME? 3000ms, AT+PAIR 22000ms, AT+RESET 1500ms. The module's
+The panel raises KEY 100ms before the first byte of an operation and holds
+it high until the operation ends. Commands wait 1000ms for OK, with these
+exceptions: AT+INQ waits 13.52s, AT+RNAME? 3000ms, AT+PAIR 22000ms and
+AT+RESET 1500ms. The module's
 README in `protocols/hc05` has every answer and error.
 
 | Operation | When | Commands |
@@ -75,10 +81,10 @@ README in `protocols/hc05` has every answer and error.
 | BIND | a tap on a found device | `AT+ROLE=1`, `AT+PSWD=1234` (`AT+PSWD="1234"` on an ERROR), `AT+PAIR=<addr>,20`, `AT+BIND=<addr>`, `AT+CMODE=0`, `AT+UART=115200,0,0`, `AT+RESET` |
 | ANY | CONNECT TO ANY SENSOR, after a scan refused with ERROR:(1F) | `AT+ROLE=1`, `AT+PSWD=1234`, `AT+CMODE=1`, `AT+UART=115200,0,0`, `AT+RESET` |
 
-After AT+RESET the module restarts in data mode with KEY low. The bound
-address and the name from the scan go into SETUP (`imu_addr`, `imu_name`,
-23 characters kept) and a save is asked; ANY keeps `*`. While no operation
-runs, the UART's bytes are the sensor's frames. IMU OFF during an
+After AT+RESET, the module restarts in data mode with KEY low. The panel
+stores the bound address and the scanned name in SETUP (`imu_addr`,
+`imu_name`, retaining 23 characters) and requests a save. ANY stores `*`.
+While no operation is running, UART bytes are interpreted as sensor frames. IMU OFF during an
 operation keeps the HC-05 busy until the fence has caught its late
 answers: up to 14,520ms after AT+INQ, 23,000ms after AT+PAIR. A probe of a
 silent module ends after 5,100ms: 100ms KEY settle, 1000ms at each of the
@@ -98,11 +104,11 @@ version), 0x52 (the battery, the fourth word unsigned, V x 100) and 0x51
 | RATE, SAVE | `FF AA 03 <code> 00`, `FF AA 00 00 00` | a change of IMU rate: 0x06 10Hz, 0x07 20Hz, 0x08 50Hz, 0x09 100Hz, 0x0B 200Hz |
 | AXIS6, SAVE | `FF AA 24 01 00` (6-AXIS) or `FF AA 24 00 00` (9-AXIS), `FF AA 00 00 00` | a change of IMU algorithm |
 
-The commands go 50ms apart. A RATE or ALGORITHM change made while the sensor
-is not connected goes when its frames come. One made during a calibration
-goes after its CALSW 0 and SAVE. Unlock, the writes and SAVE queue only
-once all of them fit the 8 command slots; until then the change waits and
-the write carries SETUP's last value. A new RATE takes effect after
+Commands are sent 50ms apart. A RATE or ALGORITHM change made while the
+sensor is disconnected waits until its frames arrive. A change made during
+calibration waits until after CALSW 0 and SAVE. Unlock, the writes and SAVE
+are queued together only when all fit in the 8 command slots. Until then,
+the change waits; the eventual write uses the latest SETUP value. A new RATE takes effect after
 the sensor is switched off and on. ZERO takes the current angles as zero on
 the panel; nothing goes to the sensor, and a restart forgets it.
 

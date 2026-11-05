@@ -11,7 +11,7 @@
       "v_max_mv": 25200,
       "current_a": 130,
       "bec": null,
-      "firmware_note": "Burst 160 A; BEC 10 A continuous, 35 A peak, 6.0/7.4/8.4/9.0/12 V adjustable (type not stated)",
+      "firmware_note": "Burst 160A; BEC 10A continuous, 35A peak, 6.0/7.4/8.4/9.0/12V adjustable (type not stated)",
       "spec_source": "Spektrum_Avian_130Pro.pdf p.5 (3S-6S LiPo, max continuous current 130 A)",
       "cell_type": "lipo"
     }
@@ -53,17 +53,17 @@
     "select": {
       "throttle": "min",
       "within_ms": 3000,
-      "description": "Select a parameter by moving the stick to the bottom position within 3 s of its tones. Choose an option by moving the stick to full throttle during its tones."
+      "description": "Select a parameter by moving the stick to the bottom position within 3s of its tones. Choose an option by moving the stick to full throttle during its tones."
     },
     "skip": {
       "throttle": "none",
-      "description": "Do not move the stick within 3 s: the ESC goes on to the next parameter. If nothing is selected the list repeats."
+      "description": "Do not move the stick within 3s: the ESC goes on to the next parameter. If nothing is selected the list repeats."
     },
     "confirm_signal": "After a selection the ESC continues down the parameter list; no separate stored-tone is named.",
     "exit": "Not clear: the text says select the last parameter (#13); the list has 15 parameters and no exit entry. Power cycle is the fallback.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Parameter 12 (two long, two short tones): factory reset.",
-    "description": "Full throttle at power-up for more than 5 s after the two acceptance tones enters programming. Parameters sound as short and long tones; bottom stick within 3 s selects one, full throttle selects an option. The manual says to select the last parameter to save and exit, but its parameter list has no exit item."
+    "description": "Full throttle at power-up for more than 5s after the two acceptance tones enters programming. Parameters sound as short and long tones; bottom stick within 3s selects one, full throttle selects an option. The manual says to select the last parameter to save and exit, but its parameter list has no exit item."
   },
   "items": [
     {
@@ -237,7 +237,7 @@
       ],
       "applies_to": null,
       "source_page": "11",
-      "note": "Per cell. The description text says 2.8-3.8 V; the table starts at 3.0 V."
+      "note": "Per cell. The description text says 2.8-3.8V; the table starts at 3.0V."
     },
     {
       "number": 7,
@@ -450,7 +450,7 @@
     "Tone durations and gaps: not stated.",
     "The exit item: the text says parameter #13 saves and exits; the list shows 13 = Auto Restart Time. Whether an exit tone code exists is not stated.",
     "How a reset is performed: the manual lists no reset item.",
-    "Cutoff voltage option 2.8 V is mentioned in the description but absent from the table.",
+    "Cutoff voltage option 2.8V is mentioned in the description but absent from the table.",
     "Defaults come from black table cells in the page image.",
     "Parameters 12-15 apply to helicopter (store governor) mode only per the descriptions."
   ],

@@ -26,7 +26,7 @@ function grid(): SimSettings[] {
   return out;
 }
 
-test('the offered values are 1S to 6S, the E12 values from 100 Ω to 4.7 kΩ and 6 ratings', () => {
+test('the offered values are 1S to 6S, the E12 values from 100Ω to 4.7kΩ and 6 ratings', () => {
   assert.deepEqual(SIM_CELLS, [1, 2, 3, 4, 5, 6]);
   assert.deepEqual(SIM_OHMS, [100, 120, 150, 180, 220, 270, 330, 390, 470, 560, 680, 820, 1000, 1200, 1500, 1800, 2200, 2700, 3300, 3900, 4700]);
   assert.deepEqual(SIM_WATTS, [0.25, 0.5, 1, 2, 3, 5]);
@@ -37,7 +37,7 @@ test('the offered values are 1S to 6S, the E12 values from 100 Ω to 4.7 kΩ and
   assert.ok(grid().every(validSim));
 });
 
-test('check figure: 470 Ω at 6S (25.2 V) in delta gives 53.6 mA and 1.35 W', () => {
+test('check figure: 470Ω at 6S (25.2V) in delta gives 53.6mA and 1.35W', () => {
   const heat = simHeat({ cells: 6, ohms: 470, watts: 2, wiring: 'delta' });
   near(heat.volts, 25.2, 'volts');
   assert.equal(sig('en', heat.hot.amps * 1000), '53.6');
@@ -47,7 +47,7 @@ test('check figure: 470 Ω at 6S (25.2 V) in delta gives 53.6 mA and 1.35 W', ()
   assert.equal(heat.level, 'hint');
 });
 
-test('check figure: 450 Ω at 16.8 V in star gives 18.7 mA and 0.157 W', () => {
+test('check figure: 450Ω at 16.8V in star gives 18.7mA and 0.157W', () => {
   const heat = simHeat({ cells: 4, ohms: 450, watts: 2, wiring: 'star' });
   near(heat.volts, 16.8, 'volts');
   assert.equal(sig('en', heat.hot.amps * 1000), '18.7');
@@ -61,7 +61,7 @@ test('delta and star at 1S and at 6S follow V/R, V²/R, V/(2R) and V²/(4R)', ()
   for (const cells of [1, 6]) {
     for (const ohms of [100, 470, 4700]) {
       const v = cells * 4.2;
-      const where = `${cells}S, ${ohms} Ω`;
+      const where = `${cells}S, ${ohms}Ω`;
       const delta = simHeat({ cells, ohms, watts: 2, wiring: 'delta' });
       near(delta.hot.amps, v / ohms, `${where} delta hot A`);
       near(delta.hot.watts, (v * v) / ohms, `${where} delta hot W`);
@@ -114,7 +114,7 @@ test('the level: over above the rating, hint from half of it, ok below', () => {
   assert.equal(level(4, 470, 2, 'delta'), 'ok'); // 30.0%, the default
 });
 
-test('the default values: 0.601 W in the hottest resistor, 30 % of 2 W', () => {
+test('the default values: 0.601W in the hottest resistor, 30% of 2W', () => {
   const heat = simHeat(DEFAULT_SIM);
   assert.equal(sig('en', heat.hot.watts), '0.601');
   assert.equal(sig('en', heat.hot.amps * 1000), '35.7');
@@ -124,15 +124,15 @@ test('numbers carry 3 significant figures, units and a decimal comma in German',
   assert.equal(sig('en', 0), '0');
   assert.equal(sig('en', 0.6), '0.600');
   assert.equal(sig('de', 0.6), '0,600');
-  assert.equal(voltsText('en', 21), '21.0 V');
-  assert.equal(voltsText('de', 16.8), '16,8 V');
-  assert.equal(ohmsText('en', 470), '470 Ω');
-  assert.equal(ohmsText('en', 1000), '1 kΩ');
-  assert.equal(ohmsText('en', 4700), '4.7 kΩ');
-  assert.equal(ohmsText('de', 1200), '1,2 kΩ');
-  assert.equal(wattsText('en', 0.25), '0.25 W');
-  assert.equal(wattsText('de', 0.5), '0,5 W');
-  assert.equal(wattsText('de', 5), '5 W');
+  assert.equal(voltsText('en', 21), '21.0V');
+  assert.equal(voltsText('de', 16.8), '16,8V');
+  assert.equal(ohmsText('en', 470), '470Ω');
+  assert.equal(ohmsText('en', 1000), '1kΩ');
+  assert.equal(ohmsText('en', 4700), '4.7kΩ');
+  assert.equal(ohmsText('de', 1200), '1,2kΩ');
+  assert.equal(wattsText('en', 0.25), '0.25W');
+  assert.equal(wattsText('de', 0.5), '0,5W');
+  assert.equal(wattsText('de', 5), '5W');
 });
 
 test('the default values leave the catalogue as it is', () => {
@@ -149,12 +149,12 @@ test('other values name the part and its row; every other record stays the same 
   assert.notEqual(c, CATALOGUE);
   const part = c.parts.find((p) => p.id === SIM_PART)!;
   assert.deepEqual(part.name, {
-    en: 'Motor simulator, self-built: 3 resistors in star, 1.2 kΩ, 0.25 W',
-    de: 'Motorsimulator, selbst gebaut: 3 Widerstände im Stern, 1,2 kΩ, 0,25 W',
+    en: 'Motor simulator, self-built: 3 resistors in star, 1.2kΩ, 0.25W',
+    de: 'Motorsimulator, selbst gebaut: 3 Widerstände im Stern, 1,2kΩ, 0,25W',
   });
   assert.equal(part.buy.length, 1);
-  assert.deepEqual(part.buy[0]!.order, { en: 'Resistor 1.2 kΩ, 0.25 W', de: 'Widerstand 1,2 kΩ, 0,25 W' });
-  assert.deepEqual(part.buy[0]!.check, { en: 'Rated 0.25 W each, not less.', de: 'Je 0,25 W belastbar, nicht weniger.' });
+  assert.deepEqual(part.buy[0]!.order, { en: 'Resistor 1.2kΩ, 0.25W', de: 'Widerstand 1,2kΩ, 0,25W' });
+  assert.deepEqual(part.buy[0]!.check, { en: 'Rated 0.25W each, not less.', de: 'Je 0,25W belastbar, nicht weniger.' });
   assert.equal(part.buy[0]!.qty, 3);
   assert.equal(part.buy[0]!.maker, null);
   assert.equal(part.short, CATALOGUE.parts.find((p) => p.id === SIM_PART)!.short);

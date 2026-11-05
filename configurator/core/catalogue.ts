@@ -134,7 +134,7 @@ const parts: Part[] = [
     id: 'panel',
     name: t('7-inch ESP32-P4 display board from Waveshare', '7-Zoll-ESP32-P4-Displayplatine von Waveshare'),
     short: same('Panel'),
-    role: t('Touch screen, STOP button, heartbeat source.', 'Touchscreen, STOP-Taste, Quelle des Heartbeat.'),
+    role: t('Touchscreen, STOP button and heartbeat source.', 'Touchscreen, STOP-Taste und Heartbeat-Quelle.'),
     locked: true,
     selectable: false,
     release: 'released',
@@ -151,10 +151,7 @@ const parts: Part[] = [
       pin('HB', same('IO28'), P4_SCHEMATIC),
     ],
     buy: [
-      buy('Waveshare', same('ESP32-P4-WIFI6-Touch-LCD-7B'), t(
-        'The 7-inch touch board with 1024 × 600 pixels and the ESP32-P4. Ask for chip revision 3.2 in the order note: older stock may ship otherwise.',
-        'Die 7-Zoll-Touch-Platine mit 1024 × 600 Pixeln und dem ESP32-P4. In der Bestellnotiz Chip-Revision 3.2 verlangen: Sonst kann ältere Ware kommen.',
-      ), { id: 'p47b', page: 'https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-7b.htm' }),
+      buy('Waveshare', same('ESP32-P4-WIFI6-Touch-LCD-7B'), t('The 7-inch touch board with 1024 × 600 pixels and an ESP32-P4. Specify chip revision 3.2 in the order note; otherwise you may receive older stock.', 'Die 7-Zoll-Touch-Platine mit 1024 × 600 Pixeln und einem ESP32-P4. Gib in der Bestellnotiz Chip-Revision 3.2 an. Sonst erhältst du möglicherweise ältere Ware.'), { id: 'p47b', page: 'https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-7b.htm' }),
     ],
     src: owner('2026-10-21'),
   },
@@ -162,10 +159,7 @@ const parts: Part[] = [
     id: 'copro',
     name: t('Waveshare RP2350-CAN board', 'Waveshare-RP2350-CAN-Platine'),
     short: t('IOmcu', 'IOmcu'),
-    role: t(
-      'IOmcu: drives the outputs, reads the sensors, sets the supply.',
-      'IOmcu: treibt die Ausgänge, liest die Sensoren, stellt die Versorgung.',
-    ),
+    role: t('IOmcu: drives outputs, reads sensors and controls the power supply.', 'IOmcu: steuert die Ausgänge, liest die Sensoren aus und steuert das Netzteil.'),
     locked: true,
     selectable: false,
     release: 'released',
@@ -199,38 +193,23 @@ const parts: Part[] = [
         'The RP2350 board with the CAN controller XL2515 and a 3-pole CAN screw terminal. Not a Pico with a CAN add-on board.',
         'Die RP2350-Platine mit dem CAN-Controller XL2515 und einer 3-poligen CAN-Schraubklemme. Kein Pico mit CAN-Zusatzplatine.',
       ), { page: 'https://www.waveshare.com/rp2350-can.htm' }),
-      buy('Osoyoo', same('Breakout Board for Pico series'), t(
-        'The board with the jumper V Selector and a DC jack. It holds no microcontroller: the RP2350-CAN plugs in where a Pico goes. Not the boards for Nano or UNO.',
-        'Die Platine mit dem Jumper V Selector und einer DC-Buchse. Sie trägt keinen Mikrocontroller: Die RP2350-CAN steckt dort, wo ein Pico sitzt. Nicht die Platinen für Nano oder UNO.',
-      ), { id: 'osoyoo', page: 'https://osoyoo.com/2024/12/02/osoyoo-breakout-board-for-pico-series/', only: { connection: 'osoyoo' } }),
+      buy('Osoyoo', same('Breakout Board for Pico series'), t('The board with a V Selector jumper and a DC jack. It has no microcontroller; the RP2350-CAN plugs into the Pico socket. The Nano and UNO versions are unsuitable.', 'Die Platine mit dem Jumper V Selector und einer DC-Buchse. Sie enthält keinen Mikrocontroller. Die RP2350-CAN wird in den Pico-Steckplatz eingesetzt. Die Varianten für Nano und UNO sind nicht geeignet.'), { id: 'osoyoo', page: 'https://osoyoo.com/2024/12/02/osoyoo-breakout-board-for-pico-series/', only: { connection: 'osoyoo' } }),
     ],
     src: guide('parts'),
   },
   {
     id: 'usb',
-    name: t(
-      '2 USB-C cables with data lines, USB-C charger of at least 3 A',
-      '2 USB-C-Kabel mit Datenleitungen, USB-C-Ladegerät mit mindestens 3 A',
-    ),
+    name: t('2 USB-C cables with data lines, USB-C charger of at least 3A', '2 USB-C-Kabel mit Datenleitungen, USB-C-Ladegerät mit mindestens 3A'),
     short: t('USB-C cables', 'USB-C-Kabel'),
-    role: t(
-      'One 5 V supply per board. The panel on the charger with a short cable.',
-      'Je Platine eine 5-V-Versorgung. Das Panel am Ladegerät mit kurzem Kabel.',
-    ),
+    role: t('Each board needs its own 5V supply. Connect the panel to the charger with a short cable.', 'Jede Platine benötigt eine eigene 5V-Versorgung. Verbinde das Panel über ein kurzes Kabel mit dem Ladegerät.'),
     locked: true,
     selectable: false,
     release: 'released',
     slot: { column: 'none', order: 1 },
     pins: [],
     buy: [
-      buy(null, t('USB-C data cable', 'USB-C-Datenkabel'), t(
-        'Not a charge-only cable: the firmware of each board is flashed over USB.',
-        'Kein reines Ladekabel: Die Firmware jeder Platine wird über USB geflasht.',
-      ), { id: 'cable', qty: 2 }),
-      buy(null, t('USB-C charger, 5 V, 3 A', 'USB-C-Ladegerät, 5 V, 3 A'), t(
-        'At least 3 A at 5 V. It feeds the panel through a short cable.',
-        'Mindestens 3 A bei 5 V. Es speist das Panel über ein kurzes Kabel.',
-      ), { id: 'charger3a' }),
+      buy(null, t('USB-C data cable', 'USB-C-Datenkabel'), t('Use a cable with data lines: both boards are flashed over USB.', 'Verwende ein Kabel mit Datenleitungen. Beide Platinen werden über USB geflasht.'), { id: 'cable', qty: 2 }),
+      buy(null, t('USB-C charger, 5V, 3A', 'USB-C-Ladegerät, 5V, 3A'), t('At least 3A at 5V. It feeds the panel through a short cable.', 'Mindestens 3A bei 5V. Es speist das Panel über ein kurzes Kabel.'), { id: 'charger3a' }),
     ],
     src: guide('also-needed'),
   },
@@ -256,10 +235,7 @@ const parts: Part[] = [
         'For the heartbeat and the UART.',
         'Für Heartbeat und UART.',
       ), { id: 'jumper' }),
-      buy(null, t('Digital multimeter', 'Digitalmultimeter'), t(
-        'With a resistance range: the checks read about 60 Ω from CAN H to CAN L and near 0 Ω on ground paths.',
-        'Mit Widerstandsbereich: Die Prüfungen messen etwa 60 Ω von CAN H nach CAN L und nahe 0 Ω auf Massepfaden.',
-      ), { id: 'dmm' }),
+      buy(null, t('Digital multimeter', 'Digitalmultimeter'), t('It needs a resistance range to check about 60Ω between CAN H and CAN L and near 0Ω along ground connections.', 'Es benötigt einen Widerstandsbereich für die Prüfung von etwa 60Ω zwischen CAN H und CAN L sowie nahe 0Ω auf Masseverbindungen.'), { id: 'dmm' }),
     ],
     src: guide('also-needed'),
   },
@@ -280,10 +256,7 @@ const parts: Part[] = [
     ],
     yours: true,
     buy: [
-      buy(null, t('Servo under test', 'Servo als Prüfling'), t(
-        'Its voltage rating matches the servo power of the setup, see Power sources.',
-        'Seine Nennspannung passt zur Servoversorgung des Aufbaus, siehe Stromquellen.',
-      )),
+      buy(null, t('Servo under test', 'Servo als Prüfling'), t('Its rated voltage must match the selected servo supply. See Power sources.', 'Seine Nennspannung muss zur gewählten Servoversorgung passen. Siehe Stromquellen.')),
     ],
     src: guide('also-needed'),
   },
@@ -291,10 +264,7 @@ const parts: Part[] = [
     id: 'ssup',
     name: t('Servo supply (yours)', 'Servoversorgung (eigene)'),
     short: t('Servo supply', 'Servoversorgung'),
-    role: t(
-      'A 2S LiPo battery or another supply that matches the servo. Voltage within the rating of the servo.',
-      'Ein 2S-LiPo-Akku oder eine andere Versorgung, die zum Servo passt. Spannung innerhalb der Nennwerte des Servos.',
-    ),
+    role: t('A 2S LiPo battery or another supply suitable for the servo. Keep the voltage within the servo rating.', 'Ein 2S-LiPo-Akku oder eine andere geeignete Versorgung für das Servo. Halte die Spannung innerhalb der zulässigen Werte des Servos.'),
     locked: false,
     selectable: false,
     release: 'released',
@@ -305,10 +275,7 @@ const parts: Part[] = [
     ],
     yours: true,
     buy: [
-      buy(null, t('2S LiPo battery or another supply that matches the servo', '2S-LiPo-Akku oder eine andere Versorgung, die zum Servo passt'), t(
-        'Voltage within the rating of the servo. A 2S LiPo battery gives up to 8.4 V.',
-        'Spannung innerhalb der Nennwerte des Servos. Ein 2S-LiPo-Akku liefert bis 8,4 V.',
-      )),
+      buy(null, t('2S LiPo battery or another supply that matches the servo', '2S-LiPo-Akku oder eine andere Versorgung, die zum Servo passt'), t('Keep the supply voltage within the servo rating. A 2S LiPo battery reaches 8.4V.', 'Halte die Versorgungsspannung innerhalb der zulässigen Werte des Servos. Ein 2S-LiPo-Akku erreicht 8,4V.')),
     ],
     src: guide('stage-1'),
   },
@@ -316,29 +283,20 @@ const parts: Part[] = [
   // chosen: the part states the range the board takes, so it is modelled.
   {
     id: 'dcsup',
-    name: t(
-      'DC supply for the Osoyoo breakout board, 7 to 12 V DC (yours)',
-      'DC-Versorgung für die Osoyoo-Breakout-Platine, 7 bis 12 V DC (eigene)',
-    ),
+    name: t('DC supply for the Osoyoo breakout board, 7 to 12V DC (yours)', 'DC-Versorgung für die Osoyoo-Breakout-Platine, 7 bis 12V DC (eigene)'),
     short: t('Osoyoo DC supply', 'Osoyoo-DC-Versorgung'),
-    role: t(
-      'Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12 V DC (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V). Above 12 V the gate-source voltage of the SI2302 (Q3) exceeds its rating of ±12 V (datasheet linked on the product page) at every input: the gate sits at PWRIN through R7, with no clamp. The print of 16 V and the vendor limit of 18 V are above that. The supply connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1 mm, centre positive. The product page names the socket DC005-2.1: the 2.1 mm pin follows from that name; the 5.5 mm outer diameter is the usual size of that socket family and is not stated by the vendor. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.',
-      'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12 V DC (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V). Über 12 V überschreitet die Gate-Source-Spannung des SI2302 (Q3) an jedem Eingang ihren Grenzwert von ±12 V (Datenblatt, verlinkt auf der Produktseite): Das Gate liegt über R7 ohne Begrenzung an PWRIN. Der Aufdruck von 16 V und die Herstellergrenze von 18 V liegen darüber. Die Versorgung wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1 mm, Mittelstift Plus. Die Produktseite nennt die Buchse DC005-2.1: Der Stift von 2,1 mm folgt aus diesem Namen; der Außendurchmesser von 5,5 mm ist das übliche Maß dieser Buchsenfamilie und vom Hersteller nicht angegeben. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.',
-    ),
+    role: t('Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12V DC (vendor recommendation; print 7 to 16V, vendor limit 18V, capacitors rated 16V). Above 12V the gate-source voltage of the SI2302 (Q3) exceeds its rating of ±12V (datasheet linked on the product page) at every input: the gate sits at PWRIN through R7, with no clamp. The print of 16V and the vendor limit of 18V are above that. The supply connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1mm, centre positive. The product page names the socket DC005-2.1: the 2.1mm pin follows from that name; the 5.5mm outer diameter is the usual size of that socket family and is not stated by the vendor. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.', 'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12V DC (Herstellerempfehlung; Aufdruck 7 bis 16V, Herstellergrenze 18V, Kondensatoren mit 16V). Über 12V überschreitet die Gate-Source-Spannung des SI2302 (Q3) an jedem Eingang ihren Grenzwert von ±12V (Datenblatt, verlinkt auf der Produktseite): Das Gate liegt über R7 ohne Begrenzung an PWRIN. Der Aufdruck von 16V und die Herstellergrenze von 18V liegen darüber. Die Versorgung wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1mm, Mittelstift Plus. Die Produktseite nennt die Buchse DC005-2.1: Der Stift von 2,1mm folgt aus diesem Namen; der Außendurchmesser von 5,5mm ist das übliche Maß dieser Buchsenfamilie und vom Hersteller nicht angegeben. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.'),
     locked: false,
     selectable: false,
     modelled: true,
     release: 'released',
-    slot: { column: 'L', order: 12, sub: t('7 to 12 V DC', '7 bis 12 V DC') },
+    slot: { column: 'L', order: 12, sub: t('7 to 12V DC', '7 bis 12V DC') },
     pins: [
       pin('POS', same('+'), OSOYOO_SCHEMATIC),
       pin('NEG', same('−'), OSOYOO_SCHEMATIC),
     ],
     buy: [
-      buy(null, t('DC power supply 7 to 12 V, plug 5.5 × 2.1 mm, centre positive', 'DC-Netzteil 7 bis 12 V, Stecker 5,5 × 2,1 mm, Mittelstift Plus'), t(
-        'Not above 12 V. Centre positive: the DC jack has no reverse-polarity protection. Current it must deliver: not stated.',
-        'Nicht über 12 V. Mittelstift Plus: Die DC-Buchse hat keinen Verpolschutz. Strom, den es liefern muss: nicht angegeben.',
-      )),
+      buy(null, t('DC power supply 7 to 12V, plug 5.5 × 2.1mm, centre positive', 'DC-Netzteil 7 bis 12V, Stecker 5,5 × 2,1mm, Mittelstift Plus'), t('Do not exceed 12V. The centre pin is positive. The DC jack has no reverse-polarity protection. Required current: not stated.', 'Überschreite 12V nicht. Der Mittelstift ist Plus. Die DC-Buchse hat keinen Verpolschutz. Erforderlicher Strom: nicht angegeben.')),
     ],
     src: OSOYOO_PAGE,
   },
@@ -368,10 +326,7 @@ const parts: Part[] = [
     ],
     yours: true,
     buy: [
-      buy(null, t('ESC and motor', 'ESC und Motor'), t(
-        'Signal and ground go to the bench; the centre wire (BEC +) is connected nowhere.',
-        'Signal und Masse gehen an den Prüfstand; die Mittelader (BEC +) wird nirgends angeschlossen.',
-      )),
+      buy(null, t('ESC and motor', 'ESC und Motor'), t('Connect only signal and ground to the bench. Leave the centre wire (BEC +) disconnected.', 'Verbinde nur Signal und Masse mit dem Prüfstand. Lass die Mittelader (BEC +) unbeschaltet.')),
     ],
     src: guide('also-needed'),
   },
@@ -404,10 +359,7 @@ const parts: Part[] = [
       'WeAct-Studio-PD-Power-Mini-V1-Buck-Modul',
     ),
     short: same('PD mini'),
-    role: t(
-      'Supply set from the bench: 1 to 20 V, 0.05 to 3 A (vendor values, not measured).',
-      'Vom Prüfstand gestellte Versorgung: 1 bis 20 V, 0,05 bis 3 A (Herstellerangaben, nicht gemessen).',
-    ),
+    role: t('Power supply controlled by the bench: 1 to 20V, 0.05 to 3A (vendor values, not measured).', 'Vom Prüfstand gesteuertes Netzteil: 1 bis 20V, 0,05 bis 3A (Herstellerangaben, nicht gemessen).'),
     locked: false,
     selectable: true,
     release: 'released',
@@ -429,10 +381,7 @@ const parts: Part[] = [
       },
     ],
     buy: [
-      buy('WeAct Studio', same('PD Power Mini V1 Buck'), t(
-        'The Buck version: output 1 to 20 V, 0.05 to 3 A. The output stays at least 0.5 V below the PD voltage the module requests (PD Vset, 8 to 24 V, firmware V1.0.1.0 or later).',
-        'Die Buck-Version: Ausgang 1 bis 20 V, 0,05 bis 3 A. Der Ausgang bleibt mindestens 0,5 V unter der PD-Spannung, die das Modul anfordert (PD Vset, 8 bis 24 V, ab Firmware V1.0.1.0).',
-      ), { page: 'https://github.com/WeActStudio/WeActStudio.PDPowerMiniV1-Buck' }),
+      buy('WeAct Studio', same('PD Power Mini V1 Buck'), t('The Buck version: output 1 to 20V, 0.05 to 3A. The output stays at least 0.5V below the PD voltage the module requests (PD Vset, 8 to 24V, firmware V1.0.1.0 or later).', 'Die Buck-Version: Ausgang 1 bis 20V, 0,05 bis 3A. Der Ausgang bleibt mindestens 0,5V unter der PD-Spannung, die das Modul anfordert (PD Vset, 8 bis 24V, ab Firmware V1.0.1.0).'), { page: 'https://github.com/WeActStudio/WeActStudio.PDPowerMiniV1-Buck' }),
     ],
     src: guide('parts'),
   },
@@ -447,10 +396,7 @@ const parts: Part[] = [
     slot: { column: 'L', order: 8 },
     pins: [pin('USB', same('USB-C'), guide('wires'))],
     buy: [
-      buy(null, t('USB-C PD charger, 20 V', 'USB-C-PD-Ladegerät, 20 V'), t(
-        'With a 20 V profile. The PD mini output stays at least 0.7 V below the charger voltage: a charger without a 20 V profile ends the range lower.',
-        'Mit 20-V-Profil. Der Ausgang des PD mini bleibt mindestens 0,7 V unter der Spannung des Ladegeräts: Ohne 20-V-Profil endet der Bereich tiefer.',
-      )),
+      buy(null, t('USB-C PD charger, 20V', 'USB-C-PD-Ladegerät, 20V'), t('Choose a charger with a 20V profile. The PD mini output stays at least 0.7V below the charger voltage, so a charger without that profile reduces the available output range.', 'Wähle ein Ladegerät mit 20V-Profil. Der Ausgang des PD mini bleibt mindestens 0,7V unter der Spannung des Ladegeräts. Ohne dieses Profil ist der verfügbare Ausgangsbereich kleiner.')),
     ],
     src: guide('also-needed'),
   },
@@ -458,10 +404,7 @@ const parts: Part[] = [
     id: 'ina3221',
     name: t('DAOKAI INA3221 board, 3 channels', 'DAOKAI-INA3221-Platine, 3 Kanäle'),
     short: same('INA3221'),
-    role: t(
-      'Servo current, 0 to 26 V, up to 1.64 A per channel. I2C 0x40 with the A0 bridge to GND. Header of 8 holes, from the square hole: VS, GND, SCL, SDA, PV, CRI, WAR, TC.',
-      'Servostrom, 0 bis 26 V, bis 1,64 A je Kanal. I2C 0x40 mit A0-Brücke nach GND. Leiste mit 8 Löchern, ab dem quadratischen Loch: VS, GND, SCL, SDA, PV, CRI, WAR, TC.',
-    ),
+    role: t('Servo current, 0 to 26V, up to 1.64A per channel. I2C 0x40 with the A0 bridge to GND. Header of 8 holes, from the square hole: VS, GND, SCL, SDA, PV, CRI, WAR, TC.', 'Servostrom, 0 bis 26V, bis 1,64A je Kanal. I2C 0x40 mit A0-Brücke nach GND. Leiste mit 8 Löchern, ab dem quadratischen Loch: VS, GND, SCL, SDA, PV, CRI, WAR, TC.'),
     locked: false,
     selectable: true,
     release: 'released',
@@ -503,16 +446,13 @@ const parts: Part[] = [
       },
     ],
     buy: [
-      buy('DAOKAI', same('INA3221'), t(
-        'The board with 3 channels, shunts R100 (0.1 Ω) and a header of 8 holes from VS to TC. A unit whose die ID reads 0x1408 instead of 0x3220 is refused.',
-        'Die Platine mit 3 Kanälen, Shunts R100 (0,1 Ω) und einer Leiste mit 8 Löchern von VS bis TC. Ein Exemplar, dessen Die-ID 0x1408 statt 0x3220 liest, wird abgewiesen.',
-      )),
+      buy('DAOKAI', same('INA3221'), t('The board with 3 channels, R100 shunts (0.1Ω) and an 8-hole header from VS to TC. The bench rejects a device that reports die ID 0x1408 instead of 0x3220.', 'Die Platine mit 3 Kanälen, R100-Shunts (0,1Ω) und einer Leiste mit 8 Löchern von VS bis TC. Der Prüfstand lehnt ein Exemplar mit Die-ID 0x1408 statt 0x3220 ab.')),
     ],
     src: guide('parts'),
   },
   {
     id: 'as5600',
-    name: t('AS5600 board with diametric magnet', 'AS5600-Platine mit diametralem Magnet'),
+    name: t('AS5600 board with a diametrically magnetised magnet', 'AS5600-Platine mit diametral magnetisiertem Magneten'),
     short: same('AS5600'),
     role: t(
       'Angle of the servo horn, 12 bit. I2C 0x36, fixed.',
@@ -542,17 +482,14 @@ const parts: Part[] = [
       },
     ],
     buy: [
-      buy(null, t('AS5600 magnetic encoder', 'AS5600-Magnetencoder'), t(
-        'A board with a diametrically magnetised magnet; an axial magnet gives no angle. The board has the pads VCC, OUT, GND, GPO, SDA, SCL, DIR.',
-        'Eine Platine mit diametral magnetisiertem Magnet; ein axialer Magnet gibt keinen Winkel. Die Platine hat die Pads VCC, OUT, GND, GPO, SDA, SCL, DIR.',
-      )),
+      buy(null, t('AS5600 magnetic encoder', 'AS5600-Magnetencoder'), t('A board with a diametrically magnetised magnet. An axially magnetised magnet gives no angle reading. The board has pads VCC, OUT, GND, GPO, SDA, SCL and DIR.', 'Eine Platine mit diametral magnetisiertem Magneten. Ein axial magnetisierter Magnet liefert keinen Winkelmesswert. Die Platine hat die Pads VCC, OUT, GND, GPO, SDA, SCL und DIR.')),
     ],
     src: guide('parts'),
   },
   {
     id: 'pull',
-    name: t('2 resistors, 2.2 kΩ', '2 Widerstände, 2,2 kΩ'),
-    short: t('2 × 2.2 kΩ', '2 × 2,2 kΩ'),
+    name: t('2 resistors, 2.2kΩ', '2 Widerstände, 2,2kΩ'),
+    short: t('2 × 2.2kΩ', '2 × 2,2kΩ'),
     role: t('Pull-ups of the sensor bus.', 'Pull-ups des Sensorbusses.'),
     locked: false,
     selectable: false,
@@ -564,10 +501,7 @@ const parts: Part[] = [
       pin('V', t('R1 and R2, to 3V3', 'R1 und R2, nach 3V3'), guide('wires')),
     ],
     buy: [
-      buy(null, t('Resistor 2.2 kΩ, 0.25 W', 'Widerstand 2,2 kΩ, 0,25 W'), t(
-        'One from SDA and one from SCL to 3V3. 2.2 kΩ, not 22 kΩ.',
-        'Einer von SDA und einer von SCL nach 3V3. 2,2 kΩ, nicht 22 kΩ.',
-      ), { qty: 2 }),
+      buy(null, t('Resistor 2.2kΩ, 0.25W', 'Widerstand 2,2kΩ, 0,25W'), t('One from SDA and one from SCL to 3V3. 2.2kΩ, not 22kΩ.', 'Einer von SDA und einer von SCL nach 3V3. 2,2kΩ, nicht 22kΩ.'), { qty: 2 }),
     ],
     src: guide('wires'),
   },
@@ -627,10 +561,7 @@ const parts: Part[] = [
         'The board carries an INA228 or an INA238. The bench reads the INA228 only and refuses an INA238 (ID 0x238x).',
         'Die Platine trägt einen INA228 oder einen INA238. Der Prüfstand liest nur den INA228 und weist einen INA238 ab (ID 0x238x).',
       ), { id: 'matek', page: 'https://www.mateksys.com/?portfolio=i2c-ina-bm', only: { ina228Board: 'matek' } }),
-      buy(null, t('INA228 module, XT90', 'INA228-Modul, XT90'), t(
-        'With 2 XT90 plugs, board print BIFRC V1.1, header print L A V G 5. Its supply is 3.3 V on V, not 5 V. The maker is not known.',
-        'Mit 2 XT90-Steckern, Aufdruck der Platine BIFRC V1.1, Aufdruck der Leiste L A V G 5. Die Versorgung ist 3,3 V an V, nicht 5 V. Der Hersteller ist nicht bekannt.',
-      ), { id: 'xt90', only: { ina228Board: 'xt90' } }),
+      buy(null, t('INA228 module, XT90', 'INA228-Modul, XT90'), t('With 2 XT90 plugs, board print BIFRC V1.1, header print L A V G 5. Its supply is 3.3V on V, not 5V. The maker is not known.', 'Mit 2 XT90-Steckern, Aufdruck der Platine BIFRC V1.1, Aufdruck der Leiste L A V G 5. Die Versorgung ist 3,3V an V, nicht 5V. Der Hersteller ist nicht bekannt.'), { id: 'xt90', only: { ina228Board: 'xt90' } }),
     ],
     src: guide('parts'),
   },
@@ -707,10 +638,7 @@ const parts: Part[] = [
   },
   {
     id: 'sim',
-    name: t(
-      'Motor simulator, self-built: 3 resistors in delta, 470 Ω, 2 W',
-      'Motorsimulator, selbst gebaut: 3 Widerstände im Dreieck, 470 Ω, 2 W',
-    ),
+    name: t('Motor simulator, self-built: 3 resistors in delta, 470Ω, 2W', 'Motorsimulator, selbst gebaut: 3 Widerstände im Dreieck, 470Ω, 2W'),
     short: t('Motor simulator', 'Motorsimulator'),
     role: t(
       'Stands in for the motor on the phase wires of the ESC.',
@@ -726,41 +654,26 @@ const parts: Part[] = [
       pin('C', t('corner C', 'Ecke C'), guide('wires')),
     ],
     buy: [
-      buy(null, t('Resistor 470 Ω, 2 W', 'Widerstand 470 Ω, 2 W'), t(
-        'Rated 2 W each, not less.',
-        'Je 2 W belastbar, nicht weniger.',
-      ), { qty: 3 }),
+      buy(null, t('Resistor 470Ω, 2W', 'Widerstand 470Ω, 2W'), t('Rated 2W each, not less.', 'Je 2W belastbar, nicht weniger.'), { qty: 3 }),
     ],
     src: guide('parts'),
   },
   {
     id: 'tap',
-    name: t(
-      'Phase tap: resistor 4.7 kΩ 0.25 W, zener diode 3.0 V',
-      'Phasenabgriff: Widerstand 4,7 kΩ 0,25 W, Z-Diode 3,0 V',
-    ),
+    name: t('Phase tap: resistor 4.7kΩ 0.25W, zener diode 3.0V', 'Phasenabgriff: Widerstand 4,7kΩ 0,25W, Z-Diode 3,0V'),
     short: t('Phase tap', 'Phasenabgriff'),
-    role: t(
-      'Reads pitch and length of the beeps of the ESC on phase A.',
-      'Liest Tonhöhe und Länge der ESC-Pieptöne an Phase A.',
-    ),
+    role: t('Measures the pitch and duration of ESC beeps on phase A.', 'Erfasst Tonhöhe und Dauer der ESC-Pieptöne an Phase A.'),
     locked: false,
     selectable: true,
     release: 'released',
-    slot: { column: 'R', order: 13, sub: t('4.7 kΩ, 0.25 W', '4,7 kΩ, 0,25 W') },
+    slot: { column: 'R', order: 13, sub: t('4.7kΩ, 0.25W', '4,7kΩ, 0,25W') },
     pins: [
       pin('IN', t('resistor, end 1', 'Widerstand, Ende 1'), guide('tap')),
       pin('OUT', t('resistor, end 2', 'Widerstand, Ende 2'), guide('tap')),
     ],
     buy: [
-      buy(null, t('Resistor 4.7 kΩ, 0.25 W', 'Widerstand 4,7 kΩ, 0,25 W'), t(
-        'In series from phase A to the tap pin. 4.7 kΩ, not 47 kΩ.',
-        'In Reihe von Phase A zum Abgriff-Pin. 4,7 kΩ, nicht 47 kΩ.',
-      ), { id: 'resistor' }),
-      buy(null, t('Zener diode 3.0 V', 'Z-Diode 3,0 V'), t(
-        'Zener voltage 3.0 V; the type code on the body often reads 3V0.',
-        'Z-Spannung 3,0 V; der Typcode auf dem Gehäuse lautet oft 3V0.',
-      ), { id: 'zener' }),
+      buy(null, t('Resistor 4.7kΩ, 0.25W', 'Widerstand 4,7kΩ, 0,25W'), t('In series from phase A to the tap pin. 4.7kΩ, not 47kΩ.', 'In Reihe von Phase A zum Abgriff-Pin. 4,7kΩ, nicht 47kΩ.'), { id: 'resistor' }),
+      buy(null, t('Zener diode 3.0V', 'Z-Diode 3,0V'), t('Zener voltage 3.0V; the type code on the body often reads 3V0.', 'Z-Spannung 3,0V; der Typcode auf dem Gehäuse lautet oft 3V0.'), { id: 'zener' }),
     ],
     src: guide('parts'),
   },
@@ -805,10 +718,7 @@ const parts: Part[] = [
         '2 USB-C sockets, IN and OUT, and the pads G, D+, D−, V. A board without D+ and D− pads does not fit.',
         '2 USB-C-Buchsen, IN und OUT, und die Pads G, D+, D−, V. Eine Platine ohne Pads für D+ und D− passt nicht.',
       ), { id: 'board' }),
-      buy(null, t('USB-C cable, USB-C at both ends', 'USB-C-Kabel, USB-C an beiden Enden'), t(
-        'From the socket OUT to the PD mini. Rated 3 A or more.',
-        'Von der Buchse OUT zum PD mini. Für 3 A oder mehr ausgelegt.',
-      ), { id: 'cable' }),
+      buy(null, t('USB-C cable, USB-C at both ends', 'USB-C-Kabel, USB-C an beiden Enden'), t('From the socket OUT to the PD mini. Rated 3A or more.', 'Von der Buchse OUT zum PD mini. Für 3A oder mehr ausgelegt.'), { id: 'cable' }),
     ],
     src: OWNER,
   },
@@ -870,8 +780,8 @@ const pads: Pad[] = PAD_ROWS.map(([n, print, gpio, line]): Pad => {
 // OUT +, shared by the servo and the ESC when both run from it.
 // ---------------------------------------------------------------------------
 
-const V33_EN = '3.3 V';
-const V33_DE = '3,3 V';
+const V33_EN = '3.3V';
+const V33_DE = '3,3V';
 
 const PROPOSED = t('Pin proposed by this page.', 'Pin ist ein Vorschlag dieser Seite.');
 const STATED = t(
@@ -898,10 +808,7 @@ const SHUNT_SERVO = t(
 );
 // Holds for both INA228 boards: the shunt of the MATEK board is in this line,
 // the module with XT90 plugs passes it from plug to plug.
-const SENSOR_ESC = t(
-  'The plus line of the ESC runs through the sensor board.',
-  'Die Plusleitung des ESC läuft durch das Sensor-Board.',
-);
+const SENSOR_ESC = t('The positive ESC supply lead passes through the sensor board.', 'Die Plusleitung der ESC-Versorgung läuft durch die Sensorplatine.');
 const SENSOR_ESC_NEG = t(
   'The shunt of this module sits in the minus line of the ESC.',
   'Der Shunt dieses Moduls sitzt in der Minusleitung des ESC.',
@@ -939,29 +846,20 @@ const DC_IN_NEG = t(
   'minus of the same DC input of the Osoyoo breakout board: VIN- at the minus pole of the 2-pole VIN terminal or at H4 pin 1, GND at the outer contact of the DC jack',
   'Minus desselben DC-Eingangs der Osoyoo-Breakout-Platine: VIN- am Minuspol der 2-poligen VIN-Klemme oder an H4 Pin 1, GND am Außenkontakt der DC-Buchse',
 );
-const DC_IN_SIGNAL = t('DC input of the Osoyoo breakout board, 7 to 12 V', 'DC-Eingang der Osoyoo-Breakout-Platine, 7 bis 12 V');
-const DC_IN_NOTE = t(
-  'Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: type DC005-2.1 (product page), plug 5.5 x 2.1 mm (2.1 mm from the socket name, 5.5 mm the usual size of that socket family, not stated by the vendor), centre positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.',
-  'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Typ DC005-2.1 (Produktseite), Stecker 5,5 x 2,1 mm (2,1 mm aus dem Namen der Buchse, 5,5 mm das übliche Maß dieser Buchsenfamilie, vom Hersteller nicht angegeben), Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.',
-);
+const DC_IN_SIGNAL = t('DC input of the Osoyoo breakout board, 7 to 12V', 'DC-Eingang der Osoyoo-Breakout-Platine, 7 bis 12V');
+const DC_IN_NOTE = t('Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: type DC005-2.1 (product page), plug 5.5 x 2.1mm (2.1mm from the socket name, 5.5mm the usual size of that socket family, not stated by the vendor), centre positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.', 'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Typ DC005-2.1 (Produktseite), Stecker 5,5 x 2,1mm (2,1mm aus dem Namen der Buchse, 5,5mm das übliche Maß dieser Buchsenfamilie, vom Hersteller nicht angegeben), Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.');
 
 const wires: Wire[] = [
   {
     n: 1, kind: 'wire', a: 'panel.CANH', b: 'can.H', net: 'canh', cls: 'canh',
     signal: same('CAN H'),
-    note: t(
-      'Twist CAN H and CAN L together. Each branch under 30 cm, the bus under 5 m.',
-      'CAN H und CAN L verdrillen. Jeder Abzweig unter 30 cm, der Bus unter 5 m.',
-    ),
+    note: t('Twist CAN H and CAN L together. Keep each branch shorter than 30cm and the bus shorter than 5m.', 'Verdrille CAN H und CAN L miteinander. Halte jede Stichleitung kürzer als 30cm und den Bus kürzer als 5m.'),
     when: null, stage: 1, route: { kind: 'L', lane: 0 }, src: guide('wires'),
   },
   {
     n: 2, kind: 'wire', a: 'panel.CANL', b: 'can.L', net: 'canl', cls: 'canl',
     signal: same('CAN L'),
-    note: t(
-      '120 Ω termination on at both ends. 1 Mbit/s, set by the firmware.',
-      '120-Ω-Abschluss an beiden Enden eingeschaltet. 1 Mbit/s, von der Firmware gesetzt.',
-    ),
+    note: t('Enable the 120Ω termination at both ends. The firmware sets the rate to 1Mbit/s.', 'Aktiviere den 120Ω-Abschluss an beiden Enden. Die Firmware stellt 1Mbit/s ein.'),
     when: null, stage: 1, route: { kind: 'L', lane: 1 }, src: guide('wires'),
   },
   {
@@ -973,29 +871,20 @@ const wires: Wire[] = [
   {
     n: 4, kind: 'wire', a: 'panel.HB', b: 'pad.5', net: 'hb', cls: 'hb',
     signal: HB,
-    note: t(
-      'The interlock. The IOmcu refuses to arm without it.',
-      'Die Verriegelung. Ohne ihn schaltet der IOmcu nicht auf ARMED.',
-    ),
+    note: t('Heartbeat interlock. Without it, the IOmcu refuses to enter ARMED.', 'Heartbeat-Verriegelung. Ohne sie schaltet der IOmcu nicht auf ARMED.'),
     when: { not: { has: 'estop' } }, stage: 1, route: { kind: 'L', lane: 3 }, pin: 'fixed',
     src: guide('wires'),
   },
   {
     n: 5, kind: 'wire', a: 'panel.HB', b: 'estop.NC1', net: 'hb', cls: 'hb',
     signal: HB,
-    note: t(
-      'In place of wire 4. Use the 2 outer tabs C and NC. The middle tab NO stays unconnected.',
-      'Anstelle von Draht 4. Die 2 äußeren Fahnen C und NC verwenden. Die mittlere Fahne NO bleibt unbeschaltet.',
-    ),
+    note: t('Replaces wire 4. Use the 2 outer tabs, C and NC. Leave the middle NO tab disconnected.', 'Ersetzt Draht 4. Verwende die 2 äußeren Fahnen C und NC. Lass die mittlere Fahne NO unbeschaltet.'),
     when: { has: 'estop' }, stage: 5, route: { kind: 'L', lane: 3 }, src: guide('wires'),
   },
   {
     n: 6, kind: 'wire', a: 'estop.NC2', b: 'pad.5', net: 'hb_in', cls: 'hb',
     signal: HB,
-    note: t(
-      'Optional: 10 kΩ from GPIO 3 to GND on a long lead.',
-      'Optional: 10 kΩ von GPIO 3 nach GND bei langer Leitung.',
-    ),
+    note: t('Optional: 10kΩ from GPIO 3 to GND on a long lead.', 'Optional: 10kΩ von GPIO 3 nach GND bei langer Leitung.'),
     when: { has: 'estop' }, stage: 5, route: { kind: 'L', lane: 4 }, pin: 'fixed',
     src: guide('wires'),
   },
@@ -1003,8 +892,8 @@ const wires: Wire[] = [
     n: 7, kind: 'wire', a: 'pad.4', b: 'servo.SIG', net: 'servo_sig', cls: 'out',
     signal: t(`SERVO PWM, ${V33_EN}`, `SERVO PWM, ${V33_DE}`),
     note: t(
-      `${PROPOSED.en} Bind it under SETUP → OUTPUTS as SERVO PWM.`,
-      `${PROPOSED.de} Unter SETUP → OUTPUTS als SERVO PWM binden.`,
+      `${PROPOSED.en} Assign it to SERVO PWM under SETUP → OUTPUTS.`,
+      `${PROPOSED.de} Ordne ihm unter SETUP → OUTPUTS die Funktion SERVO PWM zu.`,
     ),
     when: SERVO_OUTPUTS, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'proposal',
     src: PAGE,
@@ -1110,7 +999,7 @@ const wires: Wire[] = [
   },
   {
     n: 20, kind: 'wire', a: 'pdmini.OP', b: 'servo.POS', net: 'pd_out', cls: 'power',
-    signal: t('servo power, 1 to 20 V', 'Servoversorgung, 1 bis 20 V'),
+    signal: t('servo power, 1 to 20V', 'Servoversorgung, 1 bis 20V'),
     note: null,
     when: { all: [{ has: 'servo' }, { has: 'pdmini' }, { not: { has: 'ina3221' } }] },
     stage: 2, route: { kind: 'O', lane: 0 }, src: guide('wires'),
@@ -1124,8 +1013,8 @@ const wires: Wire[] = [
   },
   {
     n: 22, kind: 'wire', a: 'pdmini.OP', b: 'esc.POS', net: 'pd_out', cls: 'power',
-    signal: t('ESC power, 1 to 20 V', 'ESC-Versorgung, 1 bis 20 V'),
-    note: t('Up to 3 A.', 'Bis 3 A.'),
+    signal: t('ESC power, 1 to 20V', 'ESC-Versorgung, 1 bis 20V'),
+    note: t('Up to 3A.', 'Bis 3A.'),
     when: { all: [{ has: 'esc' }, { opt: 'escPower', is: 'pd' }, { not: { has: 'ina228' } }] },
     stage: 2, route: { kind: 'O', lane: 2 }, src: guide('wires'),
   },
@@ -1151,10 +1040,7 @@ const wires: Wire[] = [
   {
     n: 26, kind: 'wire', a: 'pad.21', b: 'ina3221.SDA', net: 'sda', cls: 'sda',
     signal: SDA,
-    note: t(
-      'One bus for all sensors, 400 kHz. No output on GPIO 16 or GPIO 17.',
-      'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GPIO 16 oder GPIO 17.',
-    ),
+    note: t('One bus for all sensors, 400kHz. No output on GPIO 16 or GPIO 17.', 'Ein Bus für alle Sensoren, 400kHz. Kein Ausgang auf GPIO 16 oder GPIO 17.'),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
     src: repo('docs/FirstRun.md', 510, '| SDA | GPIO 16 (pad 21) |'),
   },
@@ -1167,14 +1053,14 @@ const wires: Wire[] = [
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
-    signal: t('servo power, 1 to 20 V', 'Servoversorgung, 1 bis 20 V'),
+    signal: t('servo power, 1 to 20V', 'Servoversorgung, 1 bis 20V'),
     note: SHUNT_SERVO,
     when: { all: [{ has: 'servo' }, { has: 'pdmini' }, { has: 'ina3221' }] },
     stage: 3, route: { kind: 'X', left: 12, right: 16, channel: 0 }, src: guide('wires'),
   },
   {
     n: 29, kind: 'wire', a: 'ssup.POS', b: 'ina3221.C1A', net: 'servo_v', cls: 'power',
-    signal: t('servo power, up to 26 V', 'Servoversorgung, bis 26 V'),
+    signal: t('servo power, up to 26V', 'Servoversorgung, bis 26V'),
     note: SHUNT_SERVO,
     when: { all: [SERVO_EXTERNAL, { has: 'ina3221' }] },
     stage: 3, route: { kind: 'X', left: 12, right: 16, channel: 0 }, src: guide('wires'),
@@ -1182,10 +1068,7 @@ const wires: Wire[] = [
   {
     n: 30, kind: 'wire', a: 'servo.POS', b: 'ina3221.C1B', net: 'servo_shunt', cls: 'power',
     signal: SERVO_POWER,
-    note: t(
-      'The back of the board prints VIN1+ and VIN1- at the 2 pads of CH1. The supply goes to VIN1+, the servo to VIN1-.',
-      'Die Rückseite der Platine nennt die 2 Pads von CH1 VIN1+ und VIN1-. Die Versorgung geht an VIN1+, das Servo an VIN1-.',
-    ),
+    note: t('The back of the board labels the 2 CH1 pads VIN1+ and VIN1-. Connect the supply to VIN1+ and the servo to VIN1-.', 'Auf der Rückseite sind die 2 Pads von CH1 mit VIN1+ und VIN1- beschriftet. Verbinde die Versorgung mit VIN1+ und das Servo mit VIN1-.'),
     when: { all: [{ has: 'servo' }, { has: 'ina3221' }] },
     stage: 3, route: { kind: 'X', left: 13, right: 17, channel: 1 }, src: OWNER,
   },
@@ -1209,7 +1092,7 @@ const wires: Wire[] = [
   {
     n: 33, kind: 'wire', a: 'pad.36', b: 'as5600.VCC', net: '3v3', cls: 'logic',
     signal: SUPPLY_33,
-    note: t('This board on 3.3 V: not tested.', 'Diese Platine an 3,3 V: nicht getestet.'),
+    note: t('This board on 3.3V: not tested.', 'Diese Platine an 3,3V: nicht getestet.'),
     when: { has: 'as5600' }, stage: 4, route: { kind: 'R', lane: 9 }, src: guide('stage-4'),
   },
   {
@@ -1237,23 +1120,20 @@ const wires: Wire[] = [
     to: t('GND or VCC, on the board', 'GND oder VCC, auf der Platine'),
     net: 'as5600_dir', cls: 'nc',
     signal: t('direction strap', 'Richtungsbrücke'),
-    note: t(
-      'Never leave DIR open. No wire to the IOmcu.',
-      'DIR nie offen lassen. Kein Draht zum IOmcu.',
-    ),
+    note: t('Always connect DIR to GND or VCC. No wire goes to the IOmcu.', 'Verbinde DIR immer mit GND oder VCC. Zum IOmcu führt keine Leitung.'),
     when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: guide('stage-4'),
   },
   {
     n: 38, kind: 'wire', a: 'pad.21', b: 'pull.SDA', net: 'sda', cls: 'sda',
     signal: same('I2C SDA'),
-    note: t('2.2 kΩ from SDA to 3V3.', '2,2 kΩ von SDA nach 3V3.'),
+    note: t('2.2kΩ from SDA to 3V3.', '2,2kΩ von SDA nach 3V3.'),
     when: { has: 'pull' }, stage: 4, route: { kind: 'R', lane: 13 }, pin: 'default',
     src: guide('wires'),
   },
   {
     n: 39, kind: 'wire', a: 'pad.22', b: 'pull.SCL', net: 'scl', cls: 'scl',
     signal: same('I2C SCL'),
-    note: t('2.2 kΩ from SCL to 3V3.', '2,2 kΩ von SCL nach 3V3.'),
+    note: t('2.2kΩ from SCL to 3V3.', '2,2kΩ von SCL nach 3V3.'),
     when: { has: 'pull' }, stage: 4, route: { kind: 'R', lane: 14 }, pin: 'default',
     src: guide('wires'),
   },
@@ -1265,8 +1145,8 @@ const wires: Wire[] = [
   },
   {
     n: 41, kind: 'wire', a: 'pad.40', b: 'ina228.V5', net: 'vbus', cls: 'logic',
-    signal: t('supply, 5 V', 'Versorgung, 5 V'),
-    note: t('The MATEK board needs 4 to 9 V.', 'Die MATEK-Platine braucht 4 bis 9 V.'),
+    signal: t('supply, 5V', 'Versorgung, 5V'),
+    note: t('The MATEK board needs 4 to 9V.', 'Die MATEK-Platine braucht 4 bis 9V.'),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'matek' }] },
     stage: 5, route: { kind: 'R', lane: 0 }, src: guide('wires'),
   },
@@ -1300,7 +1180,7 @@ const wires: Wire[] = [
   },
   {
     n: 46, kind: 'wire', a: 'pdmini.OP', b: 'ina228.BAT', net: 'pd_out', cls: 'power',
-    signal: t('ESC power, 1 to 20 V', 'ESC-Versorgung, 1 bis 20 V'),
+    signal: t('ESC power, 1 to 20V', 'ESC-Versorgung, 1 bis 20V'),
     note: SENSOR_ESC,
     when: { all: [{ has: 'esc' }, { has: 'ina228' }, { opt: 'escPower', is: 'pd' }] },
     stage: 5, route: { kind: 'X', left: 14, right: 18, channel: 2 }, src: guide('wires'),
@@ -1315,10 +1195,7 @@ const wires: Wire[] = [
   {
     n: 48, kind: 'wire', a: 'esc.A', b: 'sim.A', net: 'phase_a', cls: 'phase',
     signal: t('motor phase', 'Motorphase'),
-    note: t(
-      'Any phase wire to any corner. The tap sits on corner A.',
-      'Jede Phasenleitung an jede Ecke. Der Abgriff sitzt an Ecke A.',
-    ),
+    note: t('Connect each phase wire to a corner; the order does not matter. The tap connects to corner A.', 'Verbinde jede Phasenleitung mit einer Ecke. Die Reihenfolge spielt keine Rolle. Der Abgriff wird an Ecke A angeschlossen.'),
     when: { all: [{ has: 'esc' }, { has: 'sim' }] },
     stage: 5, route: { kind: 'O', lane: 5 }, src: guide('wires'),
   },
@@ -1338,28 +1215,22 @@ const wires: Wire[] = [
   },
   {
     n: 51, kind: 'wire', a: 'sim.A', b: 'tap.IN', net: 'phase_a', cls: 'phase',
-    signal: t('phase A, up to 25.2 V', 'Phase A, bis 25,2 V'),
+    signal: t('phase A, up to 25.2V', 'Phase A, bis 25,2V'),
     note: t('The resistor sits at the corner.', 'Der Widerstand sitzt an der Ecke.'),
     when: { all: [{ has: 'sim' }, { has: 'tap' }] },
     stage: 5, route: { kind: 'X', left: 16, right: 20, channel: 4 }, src: guide('wires'),
   },
   {
     n: 52, kind: 'wire', a: 'pad.29', b: 'tap.OUT', net: 'tap', cls: 'phase',
-    signal: t('tap signal, 3.22 V or less', 'Abgriffsignal, höchstens 3,22 V'),
-    note: t(
-      'Under 30 cm. No output on GPIO 22 while the tap is on.',
-      'Unter 30 cm. Kein Ausgang auf GPIO 22, solange der Abgriff eingeschaltet ist.',
-    ),
+    signal: t('tap signal, 3.22V or less', 'Abgriffsignal, höchstens 3,22V'),
+    note: t('Keep the lead shorter than 30cm. GPIO 22 must not drive an output while the tap is enabled.', 'Halte die Leitung kürzer als 30cm. GPIO 22 darf keinen Ausgang treiben, solange der Abgriff eingeschaltet ist.'),
     when: { has: 'tap' }, stage: 5, route: { kind: 'R', lane: 4 }, pin: 'default',
     src: repo(SETTINGS_SCHEMA, 156, 'the pin GP22 (pad 29)'),
   },
   {
     n: 53, kind: 'component', a: 'pad.29', b: 'pad.28', net: 'tap', netB: 'gnd', cls: 'phase',
     signal: t('zener clamp', 'Z-Dioden-Klemme'),
-    note: t(
-      '3.0 V zener diode across the two adjacent pads, band (cathode) to GPIO 22.',
-      '3,0-V-Z-Diode über die zwei benachbarten Pads, Ring (Kathode) an GPIO 22.',
-    ),
+    note: t('3.0V Zener diode across the two adjacent pads, band (cathode) to GPIO 22.', '3,0V-Z-Diode über die zwei benachbarten Pads, Ring (Kathode) an GPIO 22.'),
     when: { has: 'tap' }, stage: 5, route: { kind: 'Z' }, pin: 'default',
     src: guide('wires'),
   },
@@ -1377,10 +1248,7 @@ const wires: Wire[] = [
   {
     n: 55, kind: 'wire', a: 'pad.36', b: 'ina228.V3', net: '3v3', cls: 'logic',
     signal: SUPPLY_33,
-    note: t(
-      'The pin with the print V. Hole 5 of the header has no pin and takes no wire.',
-      'Der Pin mit dem Aufdruck V. Loch 5 der Leiste hat keinen Pin und bekommt keinen Draht.',
-    ),
+    note: t('Use the pin labelled V. Header hole 5 has no pin and must remain unwired.', 'Verwende den Pin mit dem Aufdruck V. Loch 5 der Leiste hat keinen Pin und bleibt unbeschaltet.'),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
     stage: 5, route: { kind: 'R', lane: 0 }, src: OWNER,
   },
@@ -1413,28 +1281,28 @@ const wires: Wire[] = [
   // so the wire ends in the drawing as a stub with its target in words.
   {
     n: 59, kind: 'wire', a: 'servo.POS', b: 'pad.40', net: 'vbus', cls: 'power',
-    signal: t('servo power, 5 V from USB', 'Servoversorgung, 5 V von USB'),
+    signal: t('servo power, 5V from USB', 'Servoversorgung, 5V von USB'),
     note: SERVO_BENCH_NOTE,
     when: { all: [SERVO_5V_PIN, { not: { has: 'ina3221' } }] },
     stage: 1, route: { kind: 'X', left: 12, right: 16, channel: 0 }, src: OWNER,
   },
   {
     n: 60, kind: 'wire', a: 'pad.40', b: 'ina3221.C1A', net: 'vbus', cls: 'power',
-    signal: t('servo power, 5 V from USB', 'Servoversorgung, 5 V von USB'),
+    signal: t('servo power, 5V from USB', 'Servoversorgung, 5V von USB'),
     note: SERVO_BENCH_NOTE,
     when: { all: [SERVO_5V_PIN, { has: 'ina3221' }] },
     stage: 3, route: { kind: 'R', lane: 16 }, src: OWNER,
   },
   {
     n: 61, kind: 'stub', a: 'servo.POS', b: null, to: STRIP_V, net: 'strip_v', cls: 'power',
-    signal: t('servo power, 3.3 V or 5 V by the jumper', 'Servoversorgung, 3,3 V oder 5 V je nach Jumper'),
+    signal: t('servo power, 3.3V or 5V by the jumper', 'Servoversorgung, 3,3V oder 5V je nach Jumper'),
     note: SERVO_STRIP_NOTE,
     when: { all: [SERVO_STRIP, { not: { has: 'ina3221' } }] },
     stage: 1, route: { kind: 'S' }, src: OWNER,
   },
   {
     n: 62, kind: 'stub', a: 'ina3221.C1A', b: null, to: STRIP_V, net: 'strip_v', cls: 'power',
-    signal: t('servo power, 3.3 V or 5 V by the jumper', 'Servoversorgung, 3,3 V oder 5 V je nach Jumper'),
+    signal: t('servo power, 3.3V or 5V by the jumper', 'Servoversorgung, 3,3V oder 5V je nach Jumper'),
     note: SERVO_STRIP_NOTE,
     when: { all: [SERVO_STRIP, { has: 'ina3221' }] },
     stage: 3, route: { kind: 'S' }, src: OWNER,
@@ -1444,20 +1312,14 @@ const wires: Wire[] = [
   {
     n: 63, kind: 'wire', a: 'usbtap.OUT', b: 'pdmini.USB', net: 'pd_in', cls: 'power',
     signal: t('PD in', 'PD-Eingang'),
-    note: t(
-      'USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at least 0.7 V below the input voltage.',
-      'USB-C-Kabel, in die Buchse OUT und in die USB-C-Buchse des PD mini gesteckt. Die nötige Strombelastbarkeit des Kabels ist nicht angegeben. Ausgang des PD mini mindestens 0,7 V unter der Eingangsspannung.',
-    ),
+    note: t('USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at least 0.7V below the input voltage.', 'USB-C-Kabel, in die Buchse OUT und in die USB-C-Buchse des PD mini gesteckt. Die nötige Strombelastbarkeit des Kabels ist nicht angegeben. Ausgang des PD mini mindestens 0,7V unter der Eingangsspannung.'),
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'O', lane: 4 }, src: OWNER,
   },
   // The servo on the programming port of the IOmcu, in place of wire 7.
   {
     n: 64, kind: 'wire', a: 'pad.17', b: 'servo.SIG', net: 'servo_sig', cls: 'out',
     signal: t(`servo signal: PWM and programming, ${V33_EN}`, `Servosignal: PWM und Programmierung, ${V33_DE}`),
-    note: t(
-      'In place of wire 7. The programming port, port 1: the pin of an IOmcu that has stored none. Set SERVO TESTER to PORT 1 on the PROG PORT 1 entry of SETUP → OUTPUTS.',
-      'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines IOmcu, der keinen gespeichert hat. SERVO-TESTER auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS auf PORT 1 stellen.',
-    ),
+    note: t('Replaces wire 7. Port 1 uses this pin when the IOmcu has no stored pin assignment. In the PROG PORT 1 entry under SETUP → OUTPUTS, set SERVO TESTER to PORT 1.', 'Ersetzt Draht 7. Port 1 verwendet diesen Pin, wenn im IOmcu keine Pin-Zuordnung gespeichert ist. Stelle unter SETUP → OUTPUTS im Eintrag PROG-PORT 1 den SERVO-TESTER auf PORT 1.'),
     when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
     src: repo(PROG_PORT, 86, '#define PROG_PORT_DEFAULT_PIN 13u'),
   },
@@ -1488,12 +1350,12 @@ const wires: Wire[] = [
 const functions: Fn[] = [
   {
     id: 'link', group: 'bench',
-    name: t('CAN link at 1 Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1 Mbit/s und Echo-Selbsttest bei jedem Start'),
+    name: t('CAN link at 1Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1Mbit/s und Echo-Selbsttest bei jedem Start'),
     needs: [], src: repo('STATUS.md', 131, 'CAN drivers (TWAI on the panel, XL2515 on the IOmcu) and the echo self-test'),
   },
   {
     id: 'interlock', group: 'bench',
-    name: t('ARM by a 2 s hold, DISARM and the heartbeat interlock', 'ARM durch 2 s Halten, DISARM und Heartbeat-Verriegelung'),
+    name: t('ARM by a 2s hold, DISARM and the heartbeat interlock', 'ARM durch 2s Halten, DISARM und Heartbeat-Verriegelung'),
     // Arming works on the bring-up bench. The decision to arm is tested on
     // the host only.
     needs: [], src: repo('STATUS.md', 135, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
@@ -1505,20 +1367,17 @@ const functions: Fn[] = [
   },
   {
     id: 'bind', group: 'bench',
-    name: t('Bind protocols to pads on the OUTPUTS screen', 'Protokolle auf dem OUTPUTS-Bildschirm an Pads binden'),
+    name: t('Assign protocols to pads on the OUTPUTS screen', 'Protokolle auf der Seite OUTPUTS den Pads zuordnen'),
     needs: [], src: repo('STATUS.md', 140, 'Ticking or unticking a pin writes the binding and reads it back'),
   },
   {
     id: 'signals', group: 'bench',
-    name: t('Send PWM and DShot signals on bound pads', 'PWM- und DShot-Signale auf gebundenen Pads ausgeben'),
+    name: t('Send PWM and DShot signals on assigned pads', 'PWM- und DShot-Signale auf zugeordneten Pads ausgeben'),
     needs: [], src: repo('STATUS.md', 137, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'sweep', group: 'bench',
-    name: t(
-      'Servo signal: sweep (square, sine, triangle) and frame rates other than 50 Hz',
-      'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Pulsrate als 50 Hz',
-    ),
+    name: t('Servo signal: sweep (square, sine, triangle) and frame rates other than 50Hz', 'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Pulsrate als 50Hz'),
     needs: [],
     src: repo('STATUS.md', 125, 'a sweep (square, sine or triangle, run by the IOmcu)'),
   },
@@ -1529,7 +1388,7 @@ const functions: Fn[] = [
   },
   {
     id: 'settings', group: 'bench',
-    name: t('Settings on the SETUP screen, kept in the flash of the panel', 'Einstellungen auf dem SETUP-Bildschirm, im Flash des Panels gespeichert'),
+    name: t('Settings on the SETUP screen, stored in the panel flash', 'Einstellungen auf der Seite SETUP, im Flash des Panels gespeichert'),
     needs: [],
     src: repo('STATUS.md', 113, 'The panel loads and saves the values in NVS'),
   },
@@ -1569,7 +1428,7 @@ const functions: Fn[] = [
   },
   {
     id: 'servocur', group: 'servo',
-    name: t('Servo current from 1 ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
+    name: t('Servo current from 1ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
     needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 142, 'Current monitors (INA228, INA3221)'),
   },
   {
@@ -1607,17 +1466,17 @@ const functions: Fn[] = [
   },
   {
     id: 'tap', group: 'esc',
-    name: t('Read the beeps of the ESC (phase tap)', 'ESC-Pieptöne lesen (Phasenabgriff)'),
+    name: t('Detect ESC beeps with the phase tap', 'ESC-Pieptöne mit dem Phasenabgriff erfassen'),
     needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 147, 'Phase tap (ESC tones)'),
   },
   {
     id: 'supply', group: 'bench',
-    name: t('Supply set from the bench, 1 to 20 V', 'Versorgung vom Prüfstand gestellt, 1 bis 20 V'),
+    name: t('Bench-controlled power supply, 1 to 20V', 'Vom Prüfstand gesteuertes Netzteil, 1 bis 20V'),
     needs: ['pdmini'], src: repo('STATUS.md', 127, 'the IOmcu runs it on a PIO UART on the pins the SUPPLY page'),
   },
   {
     id: 'logs', group: 'bench',
-    name: t('Run logs on a card', 'Laufprotokolle auf Karte'),
+    name: t('Record runs on a card', 'Läufe auf einer Karte aufzeichnen'),
     needs: ['sd'], src: repo('STATUS.md', 115, 'Logger | built: a run is written while ARMED'),
   },
   {
@@ -1694,18 +1553,12 @@ const rules: Rule[] = [
 const checks: Check[] = [
   {
     id: 'can-60', kind: 'measure',
-    text: t(
-      'CAN H to CAN L, everything unpowered: about 60 Ω. A reading of 120 Ω means one terminator is missing.',
-      'CAN H gegen CAN L, alles stromlos: etwa 60 Ω. 120 Ω heißt: Ein Abschluss fehlt.',
-    ),
+    text: t('With all power disconnected, measure between CAN H and CAN L: expect about 60Ω. A reading of 120Ω means that one termination is missing.', 'Trenne alle Versorgungen und miss zwischen CAN H und CAN L. Erwartet werden etwa 60Ω. Ein Messwert von 120Ω bedeutet, dass ein Abschluss fehlt.'),
     when: null, src: guide('notes'),
   },
   {
     id: 'panel-terminals', kind: 'note',
-    text: t(
-      'Panel: the 4-pin CAN header H11 has the print CAN with L, H, GND and 5V. CAN H, CAN L and GND take wires 1 to 3. The pin 5V is the 5 V rail of the board and takes no wire: the panel runs from its USB-C charger. The heartbeat is the pin IO28 of the 12-pin header P3. The jumper H5 beside the print CAN sits on 120R: the 120 Ω termination. The slide switch at the print ON OFF sits on ON.',
-      'Panel: Die 4-polige CAN-Buchse H11 trägt den Aufdruck CAN mit L, H, GND und 5V. CAN H, CAN L und GND bekommen die Drähte 1 bis 3. Der Pin 5V ist die 5-V-Schiene der Platine und bekommt keinen Draht: Das Panel läuft an seinem USB-C-Ladegerät. Der Heartbeat ist der Pin IO28 der 12-poligen Buchse P3. Der Jumper H5 neben dem Aufdruck CAN steckt auf 120R: der 120-Ω-Abschluss. Der Schiebeschalter am Aufdruck ON OFF steht auf ON.',
-    ),
+    text: t('Panel: the 4-pin CAN header H11 has the print CAN with L, H, GND and 5V. CAN H, CAN L and GND take wires 1 to 3. The pin 5V is the 5V rail of the board and takes no wire: the panel runs from its USB-C charger. The heartbeat is the pin IO28 of the 12-pin header P3. The jumper H5 beside the print CAN sits on 120R: the 120Ω termination. The slide switch at the print ON OFF sits on ON.', 'Panel: Die 4-polige CAN-Buchse H11 trägt den Aufdruck CAN mit L, H, GND und 5V. CAN H, CAN L und GND bekommen die Drähte 1 bis 3. Der Pin 5V ist die 5-V-Schiene der Platine und bekommt keinen Draht: Das Panel läuft an seinem USB-C-Ladegerät. Der Heartbeat ist der Pin IO28 der 12-poligen Buchse P3. Der Jumper H5 neben dem Aufdruck CAN steckt auf 120R: der 120-Ω-Abschluss. Der Schiebeschalter am Aufdruck ON OFF steht auf ON.'),
     when: null, src: P4_SCHEMATIC,
   },
   {
@@ -1726,10 +1579,7 @@ const checks: Check[] = [
   },
   {
     id: 'pd-pins', kind: 'note',
-    text: t(
-      'GPIO 7 (PD mini TX) and GPIO 6 (PD mini RX) come from an owner statement of 2026-10-11. The firmware default is −1, not wired. Set both under SUPPLY → PD MINI.',
-      'GPIO 7 (PD mini TX) und GPIO 6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Voreinstellung der Firmware ist −1, nicht verdrahtet. Beide unter SUPPLY → PD MINI einstellen.',
-    ),
+    text: t('GPIO 7 (PD mini TX) and GPIO 6 (PD mini RX) come from an owner statement dated 2026-10-11. The firmware default is −1, meaning unwired. Set both pins under SUPPLY → PD MINI.', 'GPIO 7 (PD mini TX) und GPIO 6 (PD mini RX) stammen aus einer Angabe des Projektinhabers vom 2026-10-11. Die Firmware-Vorgabe ist −1 für nicht verdrahtet. Stelle beide Pins unter SUPPLY → PD MINI ein.'),
     when: { has: 'pdmini' }, src: OWNER,
   },
   {
@@ -1743,44 +1593,29 @@ const checks: Check[] = [
   },
   {
     id: 'ina3221-a0', kind: 'note',
-    text: t(
-      'INA3221 as delivered: all A0 bridges open, the address changes between 0x40 and 0x41. Set the A0 bridge to GND.',
-      'INA3221 im Lieferzustand: alle A0-Brücken offen, die Adresse wechselt zwischen 0x40 und 0x41. Die A0-Brücke nach GND setzen.',
-    ),
+    text: t('The INA3221 board is delivered with all A0 bridges open, so its address changes between 0x40 and 0x41. Connect A0 to GND with a solder bridge.', 'Bei der gelieferten INA3221-Platine sind alle A0-Brücken offen. Dadurch wechselt die Adresse zwischen 0x40 und 0x41. Verbinde A0 über eine Lötbrücke mit GND.'),
     when: { has: 'ina3221' }, src: guide('wires'),
   },
   {
     id: 'ina3221-pullups', kind: 'unknown',
-    text: t(
-      'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
-      'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
-    ),
+    text: t('Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10kΩ pull-ups. docs/FirstRun.md lists 2.2kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400kHz is stated.', 'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400kHz ist nicht angegeben.'),
     when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 512, '| Pull-ups | 2.2kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
-    text: t(
-      'MATEK board: the pull-up rail is not known. With the board powered and the IOmcu not connected, SDA and SCL read 3.3 V or less to GND.',
-      'MATEK-Platine: Die Pull-up-Schiene ist nicht bekannt. Platine versorgt, IOmcu noch nicht verbunden: SDA und SCL liegen bei höchstens 3,3 V gegen GND.',
-    ),
+    text: t('MATEK board: the pull-up supply is unknown. Power the board with the IOmcu disconnected, then check SDA and SCL against GND. Both must read 3.3V or less.', 'MATEK-Platine: Die Versorgung der Pull-ups ist unbekannt. Versorge die Platine bei getrenntem IOmcu und miss SDA und SCL gegen GND. Beide müssen bei höchstens 3,3V liegen.'),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'matek' }] },
     src: guide('wires'),
   },
   {
     id: 'ina228-xt90', kind: 'note',
-    text: t(
-      'INA228 module with XT90 plugs: GND, SDA and SCL on the sensor bus as on the MATEK I2C-INA-BM board, and the same I2C address. The supply is 3.3 V from 3V3 (pad 36), not 5 V from VBUS (pad 40). This comes from an owner statement of 2026-10-11.',
-      'INA228-Modul mit XT90-Steckern: GND, SDA und SCL am Sensorbus wie bei der MATEK-I2C-INA-BM-Platine, dieselbe I2C-Adresse. Die Versorgung ist 3,3 V von 3V3 (Pad 36), nicht 5 V von VBUS (Pad 40). Das stammt aus einer Angabe des Projektinhabers vom 2026-10-11.',
-    ),
+    text: t('INA228 module with XT90 plugs: GND, SDA and SCL on the sensor bus as on the MATEK I2C-INA-BM board, and the same I2C address. The supply is 3.3V from 3V3 (pad 36), not 5V from VBUS (pad 40). This comes from an owner statement of 2026-10-11.', 'INA228-Modul mit XT90-Steckern: GND, SDA und SCL am Sensorbus wie bei der MATEK-I2C-INA-BM-Platine, dieselbe I2C-Adresse. Die Versorgung ist 3,3V von 3V3 (Pad 36), nicht 5V von VBUS (Pad 40). Das stammt aus einer Angabe des Projektinhabers vom 2026-10-11.'),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
     src: OWNER,
   },
   {
     id: 'ina228-xt90-pads', kind: 'note',
-    text: t(
-      'INA228 module with XT90 plugs: the header has 5 holes with the print L A V G 5. L is SCL, A is SDA, V is the 3.3 V supply of the INA228, G is GND. Hole 5 is the 5 V output of a regulator that is not fitted: it has no pin and takes no wire. Seen with the header at the bottom, the left plug (shrouded, male pins) is the battery side and the right plug (female) is the ESC side. The upper rail is plus, the lower rail with the shunt is minus, and G connects to the ESC end of the shunt. Plus and minus of the ESC both run through the 2 plugs: no wire joins the minus of the source and the minus of the ESC past the module.',
-      'INA228-Modul mit XT90-Steckern: Die Leiste hat 5 Löcher mit dem Aufdruck L A V G 5. L ist SCL, A ist SDA, V ist die 3,3-V-Versorgung des INA228, G ist GND. Loch 5 ist der 5-V-Ausgang eines nicht bestückten Reglers: Es hat keinen Pin und bekommt keinen Draht. Mit der Leiste unten gesehen ist der linke Stecker (mit Kragen, Stifte) die Akkuseite und der rechte Stecker (Buchsen) die ESC-Seite. Die obere Schiene ist Plus, die untere Schiene mit dem Shunt ist Minus, und G liegt am ESC-Ende des Shunts. Plus und Minus des ESC laufen beide durch die 2 Stecker: Kein Draht verbindet das Minus der Quelle und das Minus des ESC am Modul vorbei.',
-    ),
+    text: t('INA228 module with XT90 plugs: the header has 5 holes with the print L A V G 5. L is SCL, A is SDA, V is the 3.3V supply of the INA228, G is GND. Hole 5 is the 5V output of a regulator that is not fitted: it has no pin and takes no wire. Seen with the header at the bottom, the left plug (shrouded, male pins) is the battery side and the right plug (female) is the ESC side. The upper rail is plus, the lower rail with the shunt is minus, and G connects to the ESC end of the shunt. Plus and minus of the ESC both run through the 2 plugs: no wire joins the minus of the source and the minus of the ESC past the module.', 'INA228-Modul mit XT90-Steckern: Die Leiste hat 5 Löcher mit dem Aufdruck L A V G 5. L ist SCL, A ist SDA, V ist die 3,3-V-Versorgung des INA228, G ist GND. Loch 5 ist der 5-V-Ausgang eines nicht bestückten Reglers: Es hat keinen Pin und bekommt keinen Draht. Mit der Leiste unten gesehen ist der linke Stecker (mit Kragen, Stifte) die Akkuseite und der rechte Stecker (Buchsen) die ESC-Seite. Die obere Schiene ist Plus, die untere Schiene mit dem Shunt ist Minus, und G liegt am ESC-Ende des Shunts. Plus und Minus des ESC laufen beide durch die 2 Stecker: Kein Draht verbindet das Minus der Quelle und das Minus des ESC am Modul vorbei.'),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'xt90' }] },
     src: OWNER,
   },
@@ -1803,26 +1638,17 @@ const checks: Check[] = [
   },
   {
     id: 'tap-ground', kind: 'measure',
-    text: t(
-      'Phase tap: everything unpowered, ESC power negative to IOmcu GND (pad 28) reads near 0 Ω. With an opto-isolated ESC input the tap reads nothing.',
-      'Phasenabgriff: alles stromlos, Minus der ESC-Versorgung gegen GND des IOmcu (Pad 28) liest nahe 0 Ω. Bei einem ESC-Eingang mit Optokoppler liest der Abgriff nichts.',
-    ),
+    text: t('Phase tap: disconnect all power, then measure between ESC supply negative and IOmcu GND (pad 28). Expect near 0Ω. The tap cannot read an opto-isolated ESC input.', 'Phasenabgriff: Trenne alle Versorgungen und miss zwischen dem Minus der ESC-Versorgung und GND des IOmcu (Pad 28). Erwartet werden nahe 0Ω. Bei einem optisch getrennten ESC-Eingang liefert der Abgriff keinen Messwert.'),
     when: { has: 'tap' }, src: guide('tap'),
   },
   {
     id: 'sim-ground', kind: 'note',
-    text: t(
-      'No ground wire from the simulator to the IOmcu. It runs parallel to the ground of the ESC and can carry motor current.',
-      'Kein Massedraht vom Simulator zum IOmcu. Er liegt parallel zur Masse des ESC und kann Motorstrom führen.',
-    ),
+    text: t('Do not connect a ground wire from the simulator to the IOmcu. It would form a parallel path to ESC ground and could carry motor current.', 'Verbinde den Simulator nicht über eine Masseleitung mit dem IOmcu. Sie würde einen Parallelpfad zur ESC-Masse bilden und könnte Motorstrom führen.'),
     when: { has: 'sim' }, src: guide('tap'),
   },
   {
     id: 'estop-tabs', kind: 'measure',
-    text: t(
-      'Emergency stop: 3 tabs in a row, C, NO, NC. The names come from the wiring diagram of the seller, not from a measurement. The 2 outer tabs C and NC conduct while the button is released and open when it is pressed. The middle tab NO stays unconnected. Before use, C to NC reads near 0 Ω with the button released and open with the button pressed. No run with the button is stated in the docs.',
-      'Not-Aus: 3 Lötfahnen in einer Reihe, C, NO, NC. Die Namen stammen aus dem Anschlussbild des Verkäufers, nicht aus einer Messung. Die 2 äußeren Fahnen C und NC leiten, solange der Taster nicht gedrückt ist, und öffnen, wenn er gedrückt wird. Die mittlere Fahne NO bleibt unbeschaltet. Vor dem Einsatz liest C gegen NC nahe 0 Ω bei nicht gedrücktem Taster und offen bei gedrücktem Taster. Die Dokumente nennen keinen Lauf mit dem Taster.',
-    ),
+    text: t('Emergency stop: 3 tabs in a row, C, NO, NC. The names come from the wiring diagram of the seller, not from a measurement. The 2 outer tabs C and NC conduct while the button is released and open when it is pressed. The middle tab NO stays unconnected. Before use, C to NC reads near 0Ω with the button released and open with the button pressed. No run with the button is stated in the docs.', 'Not-Aus: 3 Lötfahnen in einer Reihe, C, NO, NC. Die Namen stammen aus dem Anschlussbild des Verkäufers, nicht aus einer Messung. Die 2 äußeren Fahnen C und NC leiten, solange der Taster nicht gedrückt ist, und öffnen, wenn er gedrückt wird. Die mittlere Fahne NO bleibt unbeschaltet. Vor dem Einsatz liest C gegen NC nahe 0Ω bei nicht gedrücktem Taster und offen bei gedrücktem Taster. Die Dokumente nennen keinen Lauf mit dem Taster.'),
     when: { has: 'estop' }, src: OWNER,
   },
   {
@@ -1843,10 +1669,7 @@ const checks: Check[] = [
   },
   {
     id: 'osoyoo-terminals', kind: 'note',
-    text: t(
-      'Osoyoo breakout board: every IO has a strip of 3 pins. From the terminal inward: S, V, G. S joins the pin of the Pico board directly. All V pins of both sides are 1 net. The 3-pin jumper V Selector (print 5V and 3V3) feeds that net from the 5 V converter of the DC input or from the 3.3 V regulator. An ESC lead goes to S and G only: the V pin in the middle stays free.',
-      'Osoyoo-Breakout-Platine: Jeder IO hat eine Leiste mit 3 Pins. Von der Klemme nach innen: S, V, G. S liegt direkt am Pin der Pico-Platine. Alle V-Pins beider Seiten sind 1 Netz. Der 3-polige Jumper V Selector (Aufdruck 5V und 3V3) speist dieses Netz aus dem 5-V-Wandler des DC-Eingangs oder aus dem 3,3-V-Regler. Ein ESC-Kabel geht nur an S und G: Der V-Pin in der Mitte bleibt frei.',
-    ),
+    text: t('Osoyoo breakout board: every IO has a strip of 3 pins. From the terminal inward: S, V, G. S joins the pin of the Pico board directly. All V pins of both sides are 1 net. The 3-pin jumper V Selector (print 5V and 3V3) feeds that net from the 5V converter of the DC input or from the 3.3V regulator. An ESC lead goes to S and G only: the V pin in the middle stays free.', 'Osoyoo-Breakout-Platine: Jeder IO hat eine Leiste mit 3 Pins. Von der Klemme nach innen: S, V, G. S liegt direkt am Pin der Pico-Platine. Alle V-Pins beider Seiten sind 1 Netz. Der 3-polige Jumper V Selector (Aufdruck 5V und 3V3) speist dieses Netz aus dem 5-V-Wandler des DC-Eingangs oder aus dem 3,3-V-Regler. Ein ESC-Kabel geht nur an S und G: Der V-Pin in der Mitte bleibt frei.'),
     when: { opt: 'connection', is: 'osoyoo' }, src: OSOYOO_SCHEMATIC,
   },
   {
@@ -1859,10 +1682,7 @@ const checks: Check[] = [
   },
   {
     id: 'strip-servo-plus', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, servo supply other than the strip: the servo lead connects only its signal and GND to the board, at the S pin of the strip at GPIO 2 (print GP2; GPIO 13 with the servo programmer) and a G pin. Its plus wire goes to the servo supply, the external supply or the PD mini, as the drawing shows; with the INA3221 board in the setup it goes to VIN1- of that board, and the supply to VIN1+. The V pin of the strip stays free. All 40 V pins are 1 net fed through the jumper V Selector: a supply on 1 V pin reaches every strip and the output of the converter or the regulator.',
-      'Osoyoo-Breakout-Platine, Servoversorgung nicht über die Leiste: Das Servokabel verbindet nur Signal und GND mit der Platine, am S-Pin der Leiste an GPIO 2 (Aufdruck GP2; GPIO 13 mit dem Servo-Programmierer) und an einem G-Pin. Seine Plusader geht an die Servoversorgung, die externe Versorgung oder den PD mini, wie die Zeichnung zeigt; mit der INA3221-Platine im Aufbau geht sie an VIN1- dieser Platine und die Versorgung an VIN1+. Der V-Pin der Leiste bleibt frei. Alle 40 V-Pins sind 1 Netz, gespeist über den Jumper V Selector: Eine Versorgung an 1 V-Pin erreicht jede Leiste und den Ausgang des Wandlers oder des Reglers.',
-    ),
+    text: t('Osoyoo breakout board, servo supply other than the strip: the servo lead connects only its signal and GND to the board, at the S pin of the strip at GPIO 2 (print GP2; GPIO 13 with the servo programmer) and a G pin. Its plus wire goes to the servo supply, the external supply or the PD mini, as the drawing shows; with the INA3221 board in the setup it goes to VIN1- of that board, and the supply to VIN1+. The V pin of the strip stays free. All 40 pins labelled V share 1 net fed through the jumper V Selector: a supply on one V pin reaches every strip and the output of the converter or the regulator.', 'Osoyoo-Breakout-Platine, Servoversorgung nicht über die Leiste: Das Servokabel verbindet nur Signal und GND mit der Platine, am S-Pin der Leiste an GPIO 2 (Aufdruck GP2; GPIO 13 mit der Servoprogrammierung) und an einem G-Pin. Seine Plusader geht an die Servoversorgung, die externe Versorgung oder den PD mini, wie die Zeichnung zeigt; mit der INA3221-Platine im Aufbau geht sie an VIN1- dieser Platine und die Versorgung an VIN1+. Der V-Pin der Leiste bleibt frei. Alle 40 mit V beschrifteten Pins bilden 1 Netz, gespeist über den Jumper V Selector: Eine Versorgung an einem V-Pin erreicht jede Leiste und den Ausgang des Wandlers oder des Reglers.'),
     when: { all: [{ has: 'servo' }, { opt: 'connection', is: 'osoyoo' }, { any: [{ has: 'pdmini' }, { opt: 'servoPower', is: 'external' }] }] },
     src: OWNER,
   },
@@ -1876,116 +1696,74 @@ const checks: Check[] = [
   },
   {
     id: 'prog-target', kind: 'note',
-    text: t(
-      'Servo programmer: the servo is on the programming port, GPIO 13 (pad 17), unless another pin is stored for port 1. On the PROG PORT 1 entry of SETUP → OUTPUTS, set SERVO TESTER to PORT 1: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GPIO 13 leaves the port without a pin.',
-      'Servo-Programmierer: Das Servo hängt am Programmierport, GPIO 13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS SERVO-TESTER auf PORT 1 stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, ZENTRIEREN, FREIGEBEN, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf EIN steht; mit PORT-PWM AUS sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GPIO 13 lässt den Port ohne Pin.',
-    ),
+    text: t('Servo programmer: the servo is on the programming port, GPIO 13 (pad 17), unless another pin is stored for port 1. On the PROG PORT 1 entry of SETUP → OUTPUTS, set SERVO TESTER to PORT 1: with OUTPUTS as target the programmer is locked. The sweep, CENTRE, RELEASE, the hold and the automatic test then drive the same pin when PORT PWM on that entry is ON; with PORT PWM OFF the port sends no pulse. A slot of OUTPUTS on GPIO 13 leaves the port without a pin.', 'Servoprogrammierung: Das Servo hängt am Programmierport, GPIO 13 (Pad 17), sofern für Port 1 kein anderer Pin gespeichert ist. Auf dem Eintrag PROG-PORT 1 von SETUP → OUTPUTS SERVO-TESTER auf PORT 1 stellen: Mit OUTPUTS als Ziel ist der Programmierer gesperrt. Sweep, ZENTRIEREN, FREIGEBEN, das Halten und der automatische Test treiben dann denselben Pin, wenn PORT-PWM auf diesem Eintrag auf EIN steht; mit PORT-PWM AUS sendet der Port keinen Puls. Ein Slot von OUTPUTS auf GPIO 13 lässt den Port ohne Pin.'),
     when: SERVO_PROG, src: repo(PROGRAMMER, 97, "| SERVO TESTER | **OUTPUTS**, **PORT n** (the entry's port) |"),
   },
   {
     id: 'prog-supply-pd', kind: 'note',
-    text: t(
-      'Servo programmer with the PD mini: CONNECT switches an output that is off on at the programming voltage, 4.8 to 6.0 V in steps of 0.1 V, up to 8.4 V with HV SERVO on, and at the current limit, 50 to 3000 mA. The defaults are 5.0 V and 1000 mA. An output that is already on runs at the lower of its voltage and the programming voltage and at the lower of the two current limits; CONNECT raises neither. An output that is on under 4.8 V is not programmed until it is raised. STOP switches the supply off.',
-      'Servo-Programmierer mit dem PD mini: VERBINDEN schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV-SERVO auf EIN, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; VERBINDEN erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
-    ),
+    text: t('Servo programmer with the PD mini: CONNECT switches an output that is off on at the programming voltage, 4.8 to 6.0V in steps of 0.1V, up to 8.4V with HV SERVO on, and at the current limit, 50 to 3000mA. The defaults are 5.0V and 1000mA. An output that is already on runs at the lower of its voltage and the programming voltage and at the lower of the two current limits; CONNECT raises neither. An output that is on under 4.8V is not programmed until it is raised. STOP switches the supply off.', 'Servoprogrammierung mit dem PD mini: VERBINDEN schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0V in Schritten von 0,1V, bis 8,4V mit HV-SERVO auf EIN, und mit der Strombegrenzung, 50 bis 3000mA. Voreingestellt sind 5,0V und 1000mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Strombegrenzungn; VERBINDEN erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.'),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
     src: repo(PROGRAMMER, 326, '4.8 to 6.0V in 0.1V; up to 8.4V with HV SERVO on'),
   },
   {
     id: 'prog-supply-own', kind: 'note',
-    text: t(
-      'Servo programmer without the PD mini: the programming voltage and the current limit are stored and not applied. The servo runs from the supply of the variant "Servo power". STOP switches no supply.',
-      'Servo-Programmierer ohne den PD mini: Programmierspannung und Stromgrenze werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.',
-    ),
+    text: t('Servo programmer without the PD mini: the programming voltage and the current limit are stored and not applied. The servo runs from the supply of the variant "Servo power". STOP switches no supply.', 'Servoprogrammierung ohne den PD mini: Programmierspannung und Strombegrenzung werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.'),
     when: { all: [SERVO_PROG, { not: { has: 'pdmini' } }] },
     src: repo(PROGRAMMER, 437, 'Without a PD mini the voltage and the current limit are stored and not'),
   },
   {
     id: 'prog-level', kind: 'unknown',
-    text: t(
-      "High level of the servo's reply on GPIO 13: not measured, at most 5 V and typically 3.3 V. GPIO 13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
-      'Pegel der Antwort des Servos an GPIO 13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GPIO 13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
-    ),
+    text: t('Servo reply level on GPIO 13: not measured; at most 5V and typically 3.3V. GPIO 13 is rated for 5.5V while the IOmcu is powered and 3.63V while unpowered. Power the IOmcu before the servo supply.', 'Pegel der Servoantwort an GPIO 13: nicht gemessen; höchstens 5V und typisch 3,3V. GPIO 13 ist bei versorgtem IOmcu für 5,5V und ohne Versorgung für 3,63V ausgelegt. Schalte den IOmcu vor der Servoversorgung ein.'),
     when: SERVO_PROG, src: repo(PROGRAMMER, 306, 'The level is not measured. GPIO 13 is rated 5.5V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
-    text: t(
-      'The bench itself feeds the servo. At the 5 V pin of the IOmcu board the servo then draws its current from the supply that also powers the logic. This is prone to problems. At the V pin of the Osoyoo breakout board the source depends on the jumper V Selector. For anything but a small servo use a 2S LiPo battery or another external supply that matches the servo.',
-      'Der Prüfstand selbst speist das Servo. Am 5-V-Pin der IOmcu-Platine zieht das Servo seinen Strom dann aus der Versorgung, die auch die Logik speist. Das ist störanfällig. Am V-Pin der Osoyoo-Breakout-Platine hängt die Quelle vom Jumper V Selector ab. Für alles außer einem kleinen Servo einen 2S-LiPo-Akku oder eine andere externe Versorgung verwenden, die zum Servo passt.',
-    ),
+    text: t('The bench itself feeds the servo. At the 5V pin of the IOmcu board the servo then draws its current from the supply that also powers the logic. This is prone to problems. At the V pin of the Osoyoo breakout board the source depends on the jumper V Selector. For anything but a small servo use a 2S LiPo battery or another external supply that matches the servo.', 'Der Prüfstand selbst speist das Servo. Am 5-V-Pin der IOmcu-Platine zieht das Servo seinen Strom dann aus der Versorgung, die auch die Logik speist. Das ist störanfällig. Am V-Pin der Osoyoo-Breakout-Platine hängt die Quelle vom Jumper V Selector ab. Verwende für alle außer kleinen Servos einen 2S-LiPo-Akku oder eine andere externe Versorgung, die zum Servo passt.'),
     when: SERVO_BENCH, src: OWNER,
   },
   {
     id: 'servo-5v-pin', kind: 'unknown',
-    text: t(
-      'Current limit of the 5 V pin of the IOmcu board (VBUS, pad 40): not stated. How much current a small servo is: not stated.',
-      'Stromgrenze des 5-V-Pins der IOmcu-Platine (VBUS, Pad 40): nicht angegeben. Wie viel Strom ein kleines Servo ist: nicht angegeben.',
-    ),
+    text: t('Current limit of the IOmcu 5V pin (VBUS, pad 40): not stated. The maximum current meant by "small servo" is also not stated.', 'Strombelastbarkeit des 5V-Pins der IOmcu-Platine (VBUS, Pad 40): nicht angegeben. Auch der maximale Strom für die Bezeichnung „kleines Servo“ ist nicht angegeben.'),
     when: SERVO_5V_PIN, src: OWNER,
   },
   {
     id: 'strip-jumper', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, warning: the jumper V Selector sets the voltage of every V pin. Check it before a servo is plugged in. Position 5V gives 5 V, but only while a DC supply is connected and the OFF/ON switch is on ON; without it the V pins carry 0 V. Position 3V3 feeds the V pins from the 3.3 V regulator, which gives 3.3 V where the regulator is powered; whether USB alone powers it is not resolved. Set the jumper to 5V for the servo.',
-      'Osoyoo-Breakout-Platine, Warnung: Der Jumper V Selector stellt die Spannung aller V-Pins. Vor dem Einstecken eines Servos prüfen. Stellung 5V gibt 5 V, aber nur, solange eine DC-Versorgung angeschlossen ist und der Schalter OFF/ON auf ON steht; ohne sie führen die V-Pins 0 V. Stellung 3V3 speist die V-Pins aus dem 3,3-V-Regler und gibt 3,3 V, wo der Regler versorgt ist; ob USB allein ihn versorgt, ist nicht geklärt. Den Jumper für das Servo auf 5V setzen.',
-    ),
+    text: t('Osoyoo breakout board, warning: the jumper V Selector sets the voltage of every V pin. Check it before a servo is plugged in. Position 5V gives 5V, but only while a DC supply is connected and the OFF/ON switch is on ON; without it the V pins carry 0V. Position 3V3 feeds the V pins from the 3.3V regulator, which gives 3.3V where the regulator is powered; whether USB alone powers it is not resolved. Set the jumper to 5V for the servo.', 'Osoyoo-Breakout-Platine, Warnung: Der Jumper V Selector stellt die Spannung aller V-Pins. Vor dem Einstecken eines Servos prüfen. Stellung 5V gibt 5V, aber nur, solange eine DC-Versorgung angeschlossen ist und der Schalter OFF/ON auf ON steht; ohne sie führen die V-Pins 0V. Stellung 3V3 speist die V-Pins aus dem 3,3-V-Regler und gibt 3,3V, wo der Regler versorgt ist; ob USB allein ihn versorgt, ist nicht geklärt. Den Jumper für das Servo auf 5V setzen.'),
     when: SERVO_STRIP, src: OSOYOO_SCHEMATIC,
   },
   {
     id: 'strip-dc', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, DC supply: connect exactly 1 supply: at the DC jack, at the VIN terminal or at the 2-pin header H4 (PWRIN and VIN-), never at 2 of them. The vendor states not to use the DC jack and the screw terminal together. The vendor recommends 7 to 12 V.',
-      'Osoyoo-Breakout-Platine, DC-Versorgung: Genau 1 Versorgung anschließen: an der DC-Buchse, an der VIN-Klemme oder am 2-poligen Pfostenverbinder H4 (PWRIN und VIN-), nie an 2 davon. Der Hersteller gibt an, die DC-Buchse und die Schraubklemme nicht zusammen zu verwenden. Der Hersteller empfiehlt 7 bis 12 V.',
-    ),
+    text: t('Osoyoo breakout board, DC supply: connect exactly 1 supply: at the DC jack, at the VIN terminal or at the 2-pin header H4 (PWRIN and VIN-), never at 2 of them. The vendor states not to use the DC jack and the screw terminal together. The vendor recommends 7 to 12V.', 'Osoyoo-Breakout-Platine, DC-Versorgung: Genau 1 Versorgung anschließen: an der DC-Buchse, an der VIN-Klemme oder am 2-poligen Pfostenverbinder H4 (PWRIN und VIN-), nie an 2 davon. Der Hersteller gibt an, die DC-Buchse und die Schraubklemme nicht zusammen zu verwenden. Der Hersteller empfiehlt 7 bis 12V.'),
     when: SERVO_STRIP, src: OSOYOO_PAGE,
   },
   {
     id: 'strip-measure', kind: 'measure',
-    text: t(
-      'Osoyoo breakout board, output check: measure the V pin of the strip at GPIO 2 (print GP2) to the G pin of the same strip before the servo is plugged in. Expected per position of the jumper V Selector: 5V with a DC supply connected and the switch on ON, the output of the converter, 5 V nominal (its range is in the converter entry); 5V without a DC supply or with the switch on OFF, 0 V; 3V3, 3.3 V where the regulator is powered (whether USB alone powers it is not resolved).',
-      'Osoyoo-Breakout-Platine, Ausgangsprüfung: Vor dem Einstecken des Servos den V-Pin der Leiste an GPIO 2 (Aufdruck GP2) gegen den G-Pin derselben Leiste messen. Erwartet je Stellung des Jumpers V Selector: 5V mit angeschlossener DC-Versorgung und Schalter auf ON der Ausgang des Wandlers, 5 V nominal (sein Bereich steht im Wandler-Eintrag); 5V ohne DC-Versorgung oder mit Schalter auf OFF 0 V; 3V3 3,3 V, wo der Regler versorgt ist (ob USB allein ihn versorgt, ist nicht geklärt).',
-    ),
+    text: t('Osoyoo breakout board, output check: measure the V pin of the strip at GPIO 2 (print GP2) to the G pin of the same strip before the servo is plugged in. Expected per position of the jumper V Selector: 5V with a DC supply connected and the switch on ON, the output of the converter, 5V nominal (its range is in the converter entry); 5V without a DC supply or with the switch on OFF, 0V; 3V3, 3.3V where the regulator is powered (whether USB alone powers it is not resolved).', 'Osoyoo-Breakout-Platine, Ausgangsprüfung: Vor dem Einstecken des Servos den V-Pin der Leiste an GPIO 2 (Aufdruck GP2) gegen den G-Pin derselben Leiste messen. Erwartet je Stellung des Jumpers V Selector: 5V mit angeschlossener DC-Versorgung und Schalter auf ON der Ausgang des Wandlers, 5V nominal (sein Bereich steht im Wandler-Eintrag); 5V ohne DC-Versorgung oder mit Schalter auf OFF 0V; 3V3 3,3V, wo der Regler versorgt ist (ob USB allein ihn versorgt, ist nicht geklärt).'),
     when: SERVO_STRIP, src: OSOYOO_SCHEMATIC,
   },
   {
     id: 'strip-feed', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, feed of the V pins: the jumper V Selector is the 3-pin header H3. Pin 1 is the net 3.3V from the regulator U1, pin 2 is the net VCC, pin 3 is the net VOUT_5V from the converter U9. VCC is the V pin of all 40 strips. The regulator takes its input from VSYS of the Pico board. The converter takes its input from the DC jack, the VIN terminal or the 2-pin header H4 (pin 2 PWRIN, pin 1 VIN-) through the OFF/ON switch. No part joins VOUT_5V to the V pins when the jumper is on 3V3, and none joins VBUS to them when it is on 5V: with the jumper on 5V and no DC supply the V pins carry 0 V.',
-      'Osoyoo-Breakout-Platine, Speisung der V-Pins: Der Jumper V Selector ist der 3-polige Pfostenverbinder H3. Pin 1 ist das Netz 3.3V vom Regler U1, Pin 2 ist das Netz VCC, Pin 3 ist das Netz VOUT_5V vom Wandler U9. VCC ist der V-Pin aller 40 Leisten. Der Regler bezieht seinen Eingang aus VSYS der Pico-Platine. Der Wandler bezieht seinen Eingang aus der DC-Buchse, der VIN-Klemme oder dem 2-poligen Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-) über den Schalter OFF/ON. Kein Bauteil verbindet VOUT_5V mit den V-Pins, wenn der Jumper auf 3V3 steht, und keines verbindet VBUS mit ihnen, wenn er auf 5V steht: Mit dem Jumper auf 5V und ohne DC-Versorgung führen die V-Pins 0 V.',
-    ),
+    text: t('Osoyoo breakout board, feed of the V pins: the jumper V Selector is the 3-pin header H3. Pin 1 is the net 3.3V from the regulator U1, pin 2 is the net VCC, pin 3 is the net VOUT_5V from the converter U9. VCC is the V pin of all 40 strips. The regulator takes its input from VSYS of the Pico board. The converter takes its input from the DC jack, the VIN terminal or the 2-pin header H4 (pin 2 PWRIN, pin 1 VIN-) through the OFF/ON switch. No part joins VOUT_5V to the V pins when the jumper is on 3V3, and none joins VBUS to them when it is on 5V: with the jumper on 5V and no DC supply the V pins carry 0V.', 'Osoyoo-Breakout-Platine, Speisung der V-Pins: Der Jumper V Selector ist der 3-polige Pfostenverbinder H3. Pin 1 ist das Netz 3.3V vom Regler U1, Pin 2 ist das Netz VCC, Pin 3 ist das Netz VOUT_5V vom Wandler U9. VCC ist der V-Pin aller 40 Leisten. Der Regler bezieht seinen Eingang aus VSYS der Pico-Platine. Der Wandler bezieht seinen Eingang aus der DC-Buchse, der VIN-Klemme oder dem 2-poligen Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-) über den Schalter OFF/ON. Kein Bauteil verbindet VOUT_5V mit den V-Pins, wenn der Jumper auf 3V3 steht, und keines verbindet VBUS mit ihnen, wenn er auf 5V steht: Mit dem Jumper auf 5V und ohne DC-Versorgung führen die V-Pins 0V.'),
     when: SERVO_STRIP, src: OSOYOO_SCHEMATIC,
   },
   {
     id: 'strip-converter', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, converter chip XL1509, datasheet values of the 5.0 V version: input 7 to 40 V, output 4.8 to 5.2 V at 0.2 to 2 A, switching frequency 150 kHz (127 to 173 kHz), switch current limit 4 A, efficiency 82 % typical at 12 V in and 2 A.',
-      'Osoyoo-Breakout-Platine, Wandler-Chip XL1509, Datenblattwerte der 5,0-V-Version: Eingang 7 bis 40 V, Ausgang 4,8 bis 5,2 V bei 0,2 bis 2 A, Schaltfrequenz 150 kHz (127 bis 173 kHz), Schaltstromgrenze 4 A, Wirkungsgrad typisch 82 % bei 12 V Eingang und 2 A.',
-    ),
+    text: t('Osoyoo breakout board, converter chip XL1509, datasheet values of the 5.0V version: input 7 to 40V, output 4.8 to 5.2V at 0.2 to 2A, switching frequency 150kHz (127 to 173kHz), switch current limit 4A, efficiency 82% typical at 12V in and 2A.', 'Osoyoo-Breakout-Platine, Wandler-Chip XL1509, Datenblattwerte der 5,0-V-Version: Eingang 7 bis 40V, Ausgang 4,8 bis 5,2V bei 0,2 bis 2A, Schaltfrequenz 150kHz (127 bis 173kHz), Schaltstromgrenze 4A, Wirkungsgrad typisch 82% bei 12V Eingang und 2A.'),
     when: SERVO_STRIP, src: XL1509_DATASHEET,
   },
   {
     id: 'strip-input', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, DC input: the input range is set by the board, not by the converter chip. The vendor recommends 7 to 12 V and limits the input voltage to 7 to 18 V. The vendor rates the output of the board at 5 V and 2 A, or 3.3 V and 500 mA.',
-      'Osoyoo-Breakout-Platine, DC-Eingang: Der Eingangsbereich wird von der Platine bestimmt, nicht vom Wandler-Chip. Der Hersteller empfiehlt 7 bis 12 V und begrenzt die Eingangsspannung auf 7 bis 18 V. Der Hersteller gibt den Ausgang der Platine mit 5 V und 2 A oder 3,3 V und 500 mA an.',
-    ),
+    text: t('Osoyoo breakout board, DC input: the input range is set by the board, not by the converter chip. The vendor recommends 7 to 12V and limits the input voltage to 7 to 18V. The vendor rates the output of the board at 5V and 2A, or 3.3V and 500mA.', 'Osoyoo-Breakout-Platine, DC-Eingang: Der Eingangsbereich wird von der Platine bestimmt, nicht vom Wandler-Chip. Der Hersteller empfiehlt 7 bis 12V und begrenzt die Eingangsspannung auf 7 bis 18V. Der Hersteller gibt den Ausgang der Platine mit 5V und 2A oder 3,3V und 500mA an.'),
     when: SERVO_STRIP, src: OSOYOO_PAGE,
   },
   {
     id: 'strip-print', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, prints: the DC jack reads 7 to 16 V and the 2 electrolytic capacitors beside the converter are printed 100 uF 16 V. A supply above 16 V is outside the print and the capacitor rating.',
-      'Osoyoo-Breakout-Platine, Aufdrucke: Die DC-Buchse trägt den Aufdruck 7 bis 16 V, und die 2 Elektrolytkondensatoren neben dem Wandler sind mit 100 uF 16 V bedruckt. Eine Versorgung über 16 V liegt außerhalb des Aufdrucks und der Kondensatorangabe.',
-    ),
+    text: t('Osoyoo breakout board, prints: the DC jack reads 7 to 16V and the 2 electrolytic capacitors beside the converter are printed 100uF 16V. A supply above 16V is outside the print and the capacitor rating.', 'Osoyoo-Breakout-Platine, Aufdrucke: Die DC-Buchse trägt den Aufdruck 7 bis 16V, und die 2 Elektrolytkondensatoren neben dem Wandler sind mit 100uF 16V bedruckt. Eine Versorgung über 16V liegt außerhalb des Aufdrucks und der Kondensatorangabe.'),
     when: SERVO_STRIP, src: OSOYOO_PHOTOS,
   },
   {
     id: 'strip-regulator', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, 3.3 V position: the jumper cap sits on the 3V3 side as delivered (osoyoo.com page; osoyoo.store: not stated). The regulator is an ME6210A33M3G according to the vendor. The vendor rates it at 3.3 V and 500 mA. A servo on the V pin in this position draws from VSYS of the IOmcu board, the supply that also powers the logic, so a servo that draws more than 0.5 A is outside the rating of the regulator. For USB alone with no voltage on the V pins, the vendor names a workaround: a Dupont cable from the S pin of the 3.3 V row to a V pin. Do not use it for the servo. The S pin of the 3.3 V row is the 3V3 pin of the IOmcu board (pad 36), the 3.3 V supply of its logic; its current limit is not stated. With the cable in place and the jumper cap on 5V, the 5 V of the converter reaches that supply. A cable already in place comes off before the jumper cap goes back on any position.',
-      'Osoyoo-Breakout-Platine, Stellung 3,3 V: Die Jumperkappe sitzt im Lieferzustand auf der Seite 3V3 (Seite osoyoo.com; osoyoo.store: nicht angegeben). Der Regler ist laut Hersteller ein ME6210A33M3G. Der Hersteller gibt ihn mit 3,3 V und 500 mA an. Ein Servo am V-Pin in dieser Stellung zieht aus VSYS der IOmcu-Platine, der Versorgung, die auch die Logik speist; ein Servo mit mehr als 0,5 A liegt damit außerhalb der Angabe des Reglers. Bei USB allein ohne Spannung an den V-Pins nennt der Hersteller als Abhilfe ein Dupont-Kabel vom S-Pin der 3,3-V-Reihe zu einem V-Pin. Für das Servo nicht verwenden. Der S-Pin der 3,3-V-Reihe ist der 3V3-Pin der IOmcu-Platine (Pad 36), die 3,3-V-Versorgung ihrer Logik; seine Stromgrenze ist nicht angegeben. Mit gestecktem Kabel und der Jumperkappe auf 5V erreichen die 5 V des Wandlers diese Versorgung. Ein schon gestecktes Kabel kommt ab, bevor die Jumperkappe wieder auf eine Stellung gesteckt wird.',
-    ),
+    text: t('Osoyoo breakout board, 3.3V position: the jumper cap sits on the 3V3 side as delivered (osoyoo.com page; osoyoo.store: not stated). The regulator is an ME6210A33M3G according to the vendor. The vendor rates it at 3.3V and 500mA. A servo on the V pin in this position draws from VSYS of the IOmcu board, the supply that also powers the logic, so a servo that draws more than 0.5A is outside the rating of the regulator. For USB alone with no voltage on the V pins, the vendor names a workaround: a Dupont cable from the S pin of the 3.3V row to a V pin. Do not use it for the servo. The S pin of the 3.3V row is the 3V3 pin of the IOmcu board (pad 36), the 3.3V supply of its logic; its current limit is not stated. With the cable in place and the jumper cap on 5V, the 5V of the converter reaches that supply. A cable already in place comes off before the jumper cap goes back on any position.', 'Osoyoo-Breakout-Platine, Stellung 3,3V: Die Jumperkappe sitzt im Lieferzustand auf der Seite 3V3 (Seite osoyoo.com; osoyoo.store: nicht angegeben). Der Regler ist laut Hersteller ein ME6210A33M3G. Der Hersteller gibt ihn mit 3,3V und 500mA an. Ein Servo am V-Pin in dieser Stellung zieht aus VSYS der IOmcu-Platine, der Versorgung, die auch die Logik speist; ein Servo mit mehr als 0,5A liegt damit außerhalb der Angabe des Reglers. Bei USB allein ohne Spannung an den V-Pins nennt der Hersteller als Abhilfe ein Dupont-Kabel vom S-Pin der 3,3-V-Reihe zu einem V-Pin. Für das Servo nicht verwenden. Der S-Pin der 3,3-V-Reihe ist der 3V3-Pin der IOmcu-Platine (Pad 36), die 3,3-V-Versorgung ihrer Logik; seine Strombelastbarkeit ist nicht angegeben. Mit gestecktem Kabel und der Jumperkappe auf 5V erreichen die 5V des Wandlers diese Versorgung. Ein schon gestecktes Kabel kommt ab, bevor die Jumperkappe wieder auf eine Stellung gesteckt wird.'),
     when: SERVO_STRIP, src: OSOYOO_PAGE,
   },
   {
@@ -1998,18 +1776,12 @@ const checks: Check[] = [
   },
   {
     id: 'strip-load', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, load on a signal pin: each pin carries 1 inverter input of an SN74HC04 as load, leakage up to 1 uA and 3 to 10 pF (datasheet).',
-      'Osoyoo-Breakout-Platine, Last an einem Signalpin: Jeder Pin trägt 1 Inverter-Eingang eines SN74HC04 als Last, Leckstrom bis 1 uA und 3 bis 10 pF (Datenblatt).',
-    ),
+    text: t('Osoyoo breakout board, load on a signal pin: each pin carries 1 inverter input of an SN74HC04 as load, leakage up to 1uA and 3 to 10pF (datasheet).', 'Osoyoo-Breakout-Platine, Last an einem Signalpin: Jeder Pin trägt 1 Inverter-Eingang eines SN74HC04 als Last, Leckstrom bis 1uA und 3 bis 10pF (Datenblatt).'),
     when: { opt: 'connection', is: 'osoyoo' }, src: SN74HC04_DATASHEET,
   },
   {
     id: 'strip-level', kind: 'note',
-    text: t(
-      'Osoyoo breakout board, signal level: the vendor states that the Pico accepts 3.3 V I/O only. S of a strip joins the Pico pin directly, so a signal above 3.3 V at S reaches the pin. In position 5V the V pin carries 5 V, and a device fed from it can drive S above 3.3 V.',
-      'Osoyoo-Breakout-Platine, Signalpegel: Der Hersteller gibt an, dass der Pico nur 3,3-V-Ein- und Ausgänge verträgt. S einer Leiste liegt direkt am Pico-Pin, ein Signal über 3,3 V an S erreicht also den Pin. In Stellung 5V führt der V-Pin 5 V, und ein davon gespeistes Gerät kann S über 3,3 V treiben.',
-    ),
+    text: t('Osoyoo breakout board, signal level: the vendor states that the Pico accepts 3.3V I/O only. S of a strip joins the Pico pin directly, so a signal above 3.3V at S reaches the pin. In position 5V the V pin carries 5V, and a device fed from it can drive S above 3.3V.', 'Osoyoo-Breakout-Platine, Signalpegel: Der Hersteller gibt an, dass der Pico nur 3,3-V-Ein- und Ausgänge verträgt. S einer Leiste liegt direkt am Pico-Pin, ein Signal über 3,3V an S erreicht also den Pin. In Stellung 5V führt der V-Pin 5V, und ein davon gespeistes Gerät kann S über 3,3V treiben.'),
     when: { opt: 'connection', is: 'osoyoo' }, src: OSOYOO_PAGE,
   },
   {
@@ -2022,18 +1794,12 @@ const checks: Check[] = [
   },
   {
     id: 'strip-prog', kind: 'note',
-    text: t(
-      'Osoyoo breakout board with the servo programmer: the servo lead does not plug onto the strip at GPIO 2 (print GP2) as a whole. S of the lead goes to GPIO 13 by wire 64, the plus and GND go where the drawing shows them. The S pin of the strip at GPIO 2 stays free.',
-      'Osoyoo-Breakout-Platine mit dem Servo-Programmierer: Das Servokabel steckt nicht als Ganzes auf der Leiste an GPIO 2 (Aufdruck GP2). S des Kabels geht über Draht 64 an GPIO 13, Plus und GND gehen dorthin, wo die Zeichnung sie zeigt. Der S-Pin der Leiste an GPIO 2 bleibt frei.',
-    ),
+    text: t('Osoyoo breakout board with the servo programmer: the servo lead does not plug onto the strip at GPIO 2 (print GP2) as a whole. S of the lead goes to GPIO 13 by wire 64, the plus and GND go where the drawing shows them. The S pin of the strip at GPIO 2 stays free.', 'Osoyoo-Breakout-Platine mit der Servoprogrammierung: Das Servokabel steckt nicht als Ganzes auf der Leiste an GPIO 2 (Aufdruck GP2). S des Kabels geht über Draht 64 an GPIO 13, Plus und GND gehen dorthin, wo die Zeichnung sie zeigt. Der S-Pin der Leiste an GPIO 2 bleibt frei.'),
     when: { all: [SERVO_STRIP, SERVO_PROG] }, src: OWNER,
   },
   {
     id: 'strip-supply', kind: 'unknown',
-    text: t(
-      'Osoyoo breakout board: the currents of 2 A at 5 V and 500 mA at 3.3 V are vendor values, not measured. The marking of the converter chip is not stated in the schematic; the feedback pin joins the output directly, which fits the fixed 5 V version XL1509-5.0. The part number of the MOSFET Q1 is not stated. With USB alone and the jumper on 3V3 the schematic feeds the 3.3 V regulator from VSYS, while the product page says the V pins carry no voltage with USB alone and a jumper cap on the selector; which holds is not measured. The stall current of the servo is not stated.',
-      'Osoyoo-Breakout-Platine: Die Ströme von 2 A bei 5 V und 500 mA bei 3,3 V sind Herstellerangaben, nicht gemessen. Die Kennzeichnung des Wandler-Chips steht nicht im Schaltplan; der Feedback-Pin liegt direkt am Ausgang, was zur festen 5-V-Version XL1509-5.0 passt. Die Teilenummer des MOSFET Q1 ist nicht angegeben. Mit USB allein und dem Jumper auf 3V3 speist der Schaltplan den 3,3-V-Regler aus VSYS, während die Produktseite sagt, dass die V-Pins mit USB allein und einer Jumperkappe am Selector keine Spannung führen; was gilt, ist nicht gemessen. Der Blockierstrom des Servos ist nicht angegeben.',
-    ),
+    text: t('Osoyoo breakout board: the currents of 2A at 5V and 500mA at 3.3V are vendor values, not measured. The marking of the converter chip is not stated in the schematic; the feedback pin joins the output directly, which fits the fixed 5V version XL1509-5.0. The part number of the MOSFET Q1 is not stated. With USB alone and the jumper on 3V3 the schematic feeds the 3.3V regulator from VSYS, while the product page says the V pins carry no voltage with USB alone and a jumper cap on the selector; which holds is not measured. The stall current of the servo is not stated.', 'Osoyoo-Breakout-Platine: Die Ströme von 2A bei 5V und 500mA bei 3,3V sind Herstellerangaben, nicht gemessen. Die Kennzeichnung des Wandler-Chips steht nicht im Schaltplan; der Feedback-Pin liegt direkt am Ausgang, was zur festen 5-V-Version XL1509-5.0 passt. Die Teilenummer des MOSFET Q1 ist nicht angegeben. Mit USB allein und dem Jumper auf 3V3 speist der Schaltplan den 3,3-V-Regler aus VSYS, während die Produktseite sagt, dass die V-Pins mit USB allein und einer Jumperkappe am Selector keine Spannung führen; was gilt, ist nicht gemessen. Der Blockierstrom des Servos ist nicht angegeben.'),
     when: SERVO_STRIP, src: OSOYOO_PAGE,
   },
   {
@@ -2055,18 +1821,12 @@ const stages: Stage[] = [
   { n: 1, title: t('Stage 1: panel and IOmcu', 'Stufe 1: Panel und IOmcu'), src: guide('stage-1') },
   {
     n: 2,
-    title: t(
-      'Stage 2: PD mini, the supply the bench controls',
-      'Stufe 2: PD mini, die vom Prüfstand gesteuerte Versorgung',
-    ),
+    title: t('Stage 2: PD mini, the bench-controlled power supply', 'Stufe 2: PD mini, das vom Prüfstand gesteuerte Netzteil'),
     src: guide('stage-2'),
   },
   {
     n: 3,
-    title: t(
-      'Stage 3: INA3221, servo current from 1 ms samples',
-      'Stufe 3: INA3221, Servostrom aus 1-ms-Abtastwerten',
-    ),
+    title: t('Stage 3: INA3221, servo current from 1ms samples', 'Stufe 3: INA3221, Servostrom aus 1-ms-Abtastwerten'),
     src: guide('stage-3'),
   },
   {
@@ -2082,38 +1842,23 @@ const stages: Stage[] = [
 
 const safety: Catalogue['safety'] = [
   {
-    text: t(
-      '<b>No propeller.</b> The motor screwed down, or the motor simulator (stage 5) in place of the motor.',
-      '<b>Kein Propeller.</b> Motor festschrauben oder statt des Motors den Motorsimulator (Stufe 5) anschließen.',
-    ),
+    text: t('<b>Remove the propeller.</b> Screw the motor down or replace it with the motor simulator (stage 5).', '<b>Entferne den Propeller.</b> Schraube den Motor fest oder schließe stattdessen den Motorsimulator an (Stufe 5).'),
     src: guide('safety'),
   },
   {
-    text: t(
-      "<b>ESC power from two sources only:</b> A, the ESC's own battery, or B, the PD mini output within its limits: 1 to 20 V, up to 3 A, and at least 0.7 V below its input voltage. A set point over the input voltage puts the module into ERR until it is power cycled.",
-      '<b>Versorgung des ESC nur aus zwei Quellen:</b> A, dem eigenen Akku des ESC, oder B, dem Ausgang des PD mini innerhalb seiner Grenzen: 1 bis 20 V, bis 3 A und mindestens 0,7 V unter der Eingangsspannung. Ein Sollwert über der Eingangsspannung versetzt das Modul in den Zustand ERR, bis es aus- und wieder eingeschaltet wird.',
-    ),
+    text: t('<b>Use one of these ESC power sources:</b> A, the ESC battery, or B, the PD mini output within its limits: 1 to 20V, up to 3A, and at least 0.7V below its input voltage. A set point above the input voltage puts the module into ERR until it is power cycled.', '<b>Verwende eine dieser ESC-Versorgungen:</b> A, den ESC-Akku, oder B, den Ausgang des PD mini innerhalb seiner Grenzen: 1 bis 20V, bis 3A und mindestens 0,7V unter seiner Eingangsspannung. Ein Sollwert über der Eingangsspannung versetzt das Modul in ERR, bis es aus- und wieder eingeschaltet wird.'),
     src: guide('safety'),
   },
   {
-    text: t(
-      '<b>The panel and the IOmcu never power the ESC.</b> Keep their 5 V and 3.3 V pins away from the ESC.',
-      '<b>Panel und IOmcu versorgen den ESC nie.</b> Ihre 5-V- und 3,3-V-Pins bleiben vom ESC getrennt.',
-    ),
+    text: t('<b>Never power the ESC from the panel or IOmcu.</b> Keep their 5V and 3.3V pins disconnected from the ESC.', '<b>Versorge den ESC niemals über Panel oder IOmcu.</b> Lass ihre 5V- und 3,3V-Pins vom ESC getrennt.'),
     src: guide('safety'),
   },
   {
-    text: t(
-      '<b>ESC lead: only signal and ground</b> go to the IOmcu. The centre wire (BEC +) is connected nowhere.',
-      '<b>ESC-Kabel: nur Signal und Masse</b> zum IOmcu. Die Mittelader (BEC +) wird nirgends angeschlossen.',
-    ),
+    text: t('<b>Connect only signal and ground</b> from the ESC lead to the IOmcu. Leave the centre wire (BEC +) disconnected.', '<b>Verbinde nur Signal und Masse</b> des ESC-Kabels mit dem IOmcu. Lass die Mittelader (BEC +) unbeschaltet.'),
     src: guide('safety'),
   },
   {
-    text: t(
-      '<b>STOP</b> switches the bench to SAFE, switches the PD mini output off, and latches until the next ARM. Switching to ARMED takes a 2 s hold on ARM; switching to SAFE takes a press; leaving a bench screen switches to SAFE.',
-      '<b>STOP</b> schaltet den Prüfstand auf SAFE, schaltet den Ausgang des PD mini ab und rastet bis zum nächsten ARM ein. Auf ARMED schalten: ARM 2 s halten. Auf SAFE schalten: kurz tippen. Auch das Verlassen einer Prüfstandsseite schaltet auf SAFE.',
-    ),
+    text: t('<b>STOP</b> switches the bench to SAFE, switches the PD mini output off, and latches until the next ARM. Switching to ARMED takes a 2s hold on ARM; switching to SAFE takes a press; leaving a bench screen switches to SAFE.', '<b>STOP</b> schaltet den Prüfstand auf SAFE, schaltet den Ausgang des PD mini ab und rastet bis zum nächsten ARM ein. Auf ARMED schalten: ARM 2s halten. Auf SAFE schalten: kurz tippen. Auch das Verlassen einer Prüfstandsseite schaltet auf SAFE.'),
     src: guide('safety'),
   },
   {
@@ -2124,10 +1869,7 @@ const safety: Catalogue['safety'] = [
     src: guide('safety'),
   },
   {
-    text: t(
-      'An ARMED bench drives every bound pin. A pin bound as SERVO PWM rests at 1500 µs, which an ESC can read as about half throttle. Bind an ESC as MOTOR PWM or DShot only.',
-      'Ein Prüfstand in ARMED treibt jeden gebundenen Pin. Ein als SERVO PWM gebundener Pin ruht bei 1500 µs, für einen ESC etwa Halbgas. Einen ESC deshalb nur als MOTOR PWM oder DShot binden.',
-    ),
+    text: t('An ARMED bench drives every assigned pin. A pin assigned to SERVO PWM rests at 1500µs, which an ESC can interpret as about half throttle. Assign an ESC only to MOTOR PWM or DShot.', 'Ein Prüfstand in ARMED treibt jeden zugeordneten Pin. Ein Pin mit SERVO PWM ruht bei 1500µs. Ein ESC kann das als etwa Halbgas interpretieren. Ordne einem ESC deshalb nur MOTOR PWM oder DShot zu.'),
     src: guide('safety'),
   },
 ];
@@ -2205,7 +1947,7 @@ const OWN_SUPPLY_TEXT = t(
   'GND joins the GND of the bench. The signal comes from the bench. Plus goes to the servo only, through channel 1 of the INA3221 when it is fitted.',
   'GND liegt an GND des Prüfstands. Das Signal kommt vom Prüfstand. Plus geht nur an das Servo, über Kanal 1 des INA3221, wenn er eingebaut ist.',
 );
-const NOT_SET = t('The bench does not set it.', 'Der Prüfstand stellt sie nicht.');
+const NOT_SET = t('The bench cannot adjust this voltage.', 'Der Prüfstand kann diese Spannung nicht einstellen.');
 const LOGIC_DRAW = t(
   'It draws from the supply that also powers the logic.',
   'Sie zieht aus der Versorgung, die auch die Logik speist.',
@@ -2222,70 +1964,46 @@ const ESC_SIGNAL_ONLY = t(
 const powerSources: PowerSource[] = [
   {
     id: 'usb', feeds: 'logic',
-    label: t('USB, 5 V, one supply per board', 'USB, 5 V, je Platine eine Versorgung'),
-    text: t(
-      'The panel and the IOmcu each run from their own USB-C cable. The panel is on a charger of at least 3 A with a short cable.',
-      'Panel und IOmcu laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 3 A.',
-    ),
+    label: t('USB, 5V, one supply per board', 'USB, 5V, je Platine eine Versorgung'),
+    text: t('The panel and the IOmcu each run from their own USB-C cable. The panel is on a charger of at least 3A with a short cable.', 'Panel und IOmcu laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 3A.'),
     volts: { min: 5, max: 5 }, amps: null, basis: null,
     pros: [t('Each board has its own supply.', 'Jede Platine hat ihre eigene Versorgung.')],
-    cons: [t(
-      'A servo on the 5 V pin, or on a V pin of the Osoyoo breakout board with the jumper on 3V3, draws from it.',
-      'Ein Servo am 5-V-Pin, oder an einem V-Pin der Osoyoo-Breakout-Platine mit dem Jumper auf 3V3, zieht daraus.',
-    )],
+    cons: [t('A servo connected to the 5V pin also draws from this supply. The same applies to an Osoyoo V pin with the jumper on 3V3.', 'Ein Servo am 5V-Pin bezieht seinen Strom ebenfalls aus dieser Versorgung. Das gilt auch für einen Osoyoo-V-Pin mit dem Jumper auf 3V3.')],
     unknowns: [
       t('Current the IOmcu board draws: not stated.', 'Strom, den die IOmcu-Platine zieht: nicht angegeben.'),
-      t('Current the panel draws: not measured. Waveshare states 3 A as the maximum.', 'Strom, den das Panel zieht: nicht gemessen. Waveshare nennt 3 A als Maximum.'),
+      t('Current the panel draws: not measured. Waveshare states 3A as the maximum.', 'Strom, den das Panel zieht: nicht gemessen. Waveshare nennt 3A als Maximum.'),
     ],
     when: null, used: { has: 'usb' }, src: guide('also-needed'),
   },
   {
     id: 'copro-5v', feeds: 'servo',
-    label: t('5 V pin of the IOmcu board (VBUS, pad 40)', '5-V-Pin der IOmcu-Platine (VBUS, Pad 40)'),
-    text: t(
-      'For a small servo. The plus of the servo goes to VBUS, the 5 V of the USB cable of the IOmcu. Signal and GND come from the pads of the IOmcu.',
-      'Für ein kleines Servo. Das Plus des Servos geht an VBUS, die 5 V des USB-Kabels des IOmcu. Signal und GND kommen von den Pads des IOmcu.',
-    ),
+    label: t('5V pin of the IOmcu board (VBUS, pad 40)', '5-V-Pin der IOmcu-Platine (VBUS, Pad 40)'),
+    text: t('For a small servo. The plus of the servo goes to VBUS, the 5V of the USB cable of the IOmcu. Signal and GND come from the pads of the IOmcu.', 'Für ein kleines Servo. Das Plus des Servos geht an VBUS, die 5V des USB-Kabels des IOmcu. Signal und GND kommen von den Pads des IOmcu.'),
     volts: { min: 5, max: 5 }, amps: null, basis: null,
     pros: [t('It needs no further part.', 'Sie braucht kein weiteres Teil.')],
     cons: [
       LOGIC_DRAW,
       LOGIC_PEAK,
-      t('The voltage is fixed at 5 V.', 'Die Spannung liegt fest bei 5 V.'),
+      t('The voltage is fixed at 5V.', 'Die Spannung liegt fest bei 5V.'),
       t('The bench does not limit the current.', 'Der Prüfstand begrenzt den Strom nicht.'),
     ],
-    unknowns: [t('Current limit of the 5 V pin: not stated.', 'Stromgrenze des 5-V-Pins: nicht angegeben.')],
+    unknowns: [t('Current limit of the 5V pin: not stated.', 'Strombelastbarkeit des 5-V-Pins: nicht angegeben.')],
     when: { opt: 'connection', is: 'pads' }, used: SERVO_5V_PIN, src: OWNER,
   },
   {
     id: 'strip-v', feeds: 'servo',
     label: t('V pin of the S V G strip of the Osoyoo breakout board', 'V-Pin der S-V-G-Leiste der Osoyoo-Breakout-Platine'),
-    text: t(
-      'For a small servo. Every IO of the board has a strip with the pins S, V and G. All V pins are 1 net. The jumper V Selector sets it: position 5V feeds it from the XL1509 converter of the DC input, position 3V3 from the 3.3 V regulator. The servo lead plugs onto the strip of its pin.',
-      'Für ein kleines Servo. Jeder IO der Platine hat eine Leiste mit den Pins S, V und G. Alle V-Pins sind 1 Netz. Der Jumper V Selector stellt es: Stellung 5V speist es aus dem XL1509-Wandler des DC-Eingangs, Stellung 3V3 aus dem 3,3-V-Regler. Das Servokabel steckt auf der Leiste seines Pins.',
-    ),
+    text: t('For a small servo. Every IO of the board has a strip with the pins S, V and G. All V pins are 1 net. The jumper V Selector sets it: position 5V feeds it from the XL1509 converter of the DC input, position 3V3 from the 3.3V regulator. The servo lead plugs onto the strip of its pin.', 'Für ein kleines Servo. Jeder IO der Platine hat eine Leiste mit den Pins S, V und G. Alle V-Pins sind 1 Netz. Der Jumper V Selector stellt es: Stellung 5V speist es aus dem XL1509-Wandler des DC-Eingangs, Stellung 3V3 aus dem 3,3-V-Regler. Das Servokabel steckt auf der Leiste seines Pins.'),
     volts: { min: 3.3, max: 5, steps: [3.3, 5] }, amps: null, basis: VENDOR,
     pros: [
-      t('Without the servo programmer and without the INA3221 current sensor the servo plugs straight in.', 'Ohne den Servo-Programmierer und ohne den Stromsensor INA3221 wird das Servo direkt eingesteckt.'),
+      t('Without the servo programmer and without the INA3221 current sensor the servo plugs straight in.', 'Ohne die Servoprogrammierung und ohne den Stromsensor INA3221 wird das Servo direkt eingesteckt.'),
       t('It needs no soldering.', 'Sie braucht kein Löten.'),
-      t(
-        'In position 5V the servo draws from the DC input through a converter rated 2 A. With USB connected this is not the supply of the logic; without USB voltage the converter also feeds VSYS of the Pico board, and the servo and the logic share the 2 A.',
-        'In Stellung 5V zieht das Servo aus dem DC-Eingang über einen Wandler mit 2 A. Mit angeschlossenem USB ist das nicht die Versorgung der Logik; ohne USB-Spannung speist der Wandler auch VSYS der Pico-Platine, und Servo und Logik teilen sich die 2 A.',
-      ),
+      t('In position 5V the servo draws from the DC input through a converter rated 2A. With USB connected this is not the supply of the logic; without USB voltage the converter also feeds VSYS of the Pico board, and the servo and the logic share the 2A.', 'In Stellung 5V zieht das Servo aus dem DC-Eingang über einen Wandler mit 2A. Mit angeschlossenem USB ist das nicht die Versorgung der Logik; ohne USB-Spannung speist der Wandler auch VSYS der Pico-Platine, und Servo und Logik teilen sich die 2A.'),
     ],
     cons: [
-      t(
-        'Warning: the jumper needs a check before a servo is plugged in. In position 3V3 the servo gets 3.3 V where the regulator is powered; whether USB alone powers it is not resolved.',
-        'Warnung: Der Jumper muss vor dem Einstecken eines Servos geprüft werden. In Stellung 3V3 bekommt das Servo 3,3 V, wo der Regler versorgt ist; ob USB allein ihn versorgt, ist nicht geklärt.',
-      ),
-      t(
-        'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is in the parts list as a modelled part.',
-        'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht als modelliertes Teil in der Teileliste.',
-      ),
-      t(
-        'The rating is 2 A at 5 V and 500 mA at 3.3 V (vendor values). A stalled servo draws more than that where its stall current is higher; the stall current of the servo is not stated here.',
-        'Die Angabe lautet 2 A bei 5 V und 500 mA bei 3,3 V (Herstellerwerte). Ein blockiertes Servo zieht mehr, wenn sein Blockierstrom höher liegt; der Blockierstrom des Servos steht hier nicht.',
-      ),
+      t('Warning: the jumper needs a check before a servo is plugged in. In position 3V3 the servo gets 3.3V where the regulator is powered; whether USB alone powers it is not resolved.', 'Warnung: Der Jumper muss vor dem Einstecken eines Servos geprüft werden. In Stellung 3V3 bekommt das Servo 3,3V, wo der Regler versorgt ist; ob USB allein ihn versorgt, ist nicht geklärt.'),
+      t('As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16V, vendor limit 18V, capacitors rated 16V) and the switch on ON; USB does not feed it. Without it the V pins carry 0V. The supply is in the parts list as a modelled part.', 'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16V, Herstellergrenze 18V, Kondensatoren mit 16V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0V. Die Versorgung steht als modelliertes Teil in der Teileliste.'),
+      t('The rating is 2A at 5V and 500mA at 3.3V (vendor values). A stalled servo draws more than that where its stall current is higher; the stall current of the servo is not stated here.', 'Die Angabe lautet 2A bei 5V und 500mA bei 3,3V (Herstellerwerte). Ein blockiertes Servo zieht mehr, wenn sein Blockierstrom höher liegt; der Blockierstrom des Servos steht hier nicht.'),
       t(
         'In position 3V3 the servo draws from VSYS of the IOmcu board, the supply that also powers the logic. A current peak can drop it and reset the boards.',
         'In Stellung 3V3 zieht das Servo aus VSYS der IOmcu-Platine, der Versorgung, die auch die Logik speist. Eine Stromspitze kann sie einbrechen lassen und die Platinen zurücksetzen.',
@@ -2293,7 +2011,7 @@ const powerSources: PowerSource[] = [
       t('The bench does not limit the current.', 'Der Prüfstand begrenzt den Strom nicht.'),
     ],
     unknowns: [
-      t('Current of the board in a measurement: not measured; 2 A and 500 mA are vendor values.', 'Strom der Platine in einer Messung: nicht gemessen; 2 A und 500 mA sind Herstellerwerte.'),
+      t('Available board current: not measured. The 2A and 500mA ratings are vendor values.', 'Verfügbarer Platinenstrom: nicht gemessen. Die Angaben 2A und 500mA stammen vom Hersteller.'),
       t('Whether position 3V3 works with USB alone: the schematic and the product page disagree, not measured.', 'Ob Stellung 3V3 mit USB allein arbeitet: Schaltplan und Produktseite widersprechen sich, nicht gemessen.'),
       t('Stall current of the servo: not stated.', 'Blockierstrom des Servos: nicht angegeben.'),
     ],
@@ -2302,19 +2020,16 @@ const powerSources: PowerSource[] = [
   {
     id: 'pd-servo', feeds: 'servo',
     label: t('PD mini from a USB-C PD charger', 'PD mini an einem USB-C-PD-Ladegerät'),
-    text: t(
-      'The bench sets the output of the PD mini over a UART. The output stays at least 0.7 V below the input voltage. PD: USB Power Delivery.',
-      'Der Prüfstand stellt den Ausgang des PD mini über einen UART. Der Ausgang bleibt mindestens 0,7 V unter der Eingangsspannung. PD: USB Power Delivery.',
-    ),
+    text: t('The bench sets the output of the PD mini over a UART. The output stays at least 0.7V below the input voltage. PD: USB Power Delivery.', 'Der Prüfstand stellt den Ausgang des PD mini über einen UART. Der Ausgang bleibt mindestens 0,7V unter der Eingangsspannung. PD: USB Power Delivery.'),
     volts: { min: 1, max: 20 }, amps: { min: 0.05, max: 3 }, basis: VENDOR,
     pros: [
-      t('The bench sets the voltage and the current limit.', 'Der Prüfstand stellt Spannung und Stromgrenze.'),
+      t('The bench sets voltage and current limit.', 'Der Prüfstand stellt Spannung und Strombegrenzung ein.'),
       t('It is separate from the supply of the logic.', 'Sie ist von der Versorgung der Logik getrennt.'),
       t('The automatic servo test reads its current.', 'Der automatische Servotest liest ihren Strom.'),
     ],
     cons: [
-      t('The current ends at 3 A.', 'Der Strom endet bei 3 A.'),
-      t('A wrong voltage setting can exceed the rating of the servo.', 'Eine falsch gestellte Spannung kann die Nennwerte des Servos überschreiten.'),
+      t('Maximum current: 3A.', 'Maximaler Strom: 3A.'),
+      t('An incorrect voltage setting can exceed the servo rating.', 'Eine falsch eingestellte Spannung kann den zulässigen Wert des Servos überschreiten.'),
       t('It needs a USB-C PD charger, the T-plug and 3 UART wires.', 'Sie braucht ein USB-C-PD-Ladegerät, den T-Stecker und 3 UART-Drähte.'),
     ],
     unknowns: [],
@@ -2331,7 +2046,7 @@ const powerSources: PowerSource[] = [
     pros: [t('It delivers the stall current of a servo.', 'Er liefert den Blockierstrom eines Servos.')],
     cons: [
       t('It has no current limit: a fuse is advised.', 'Er hat keine Strombegrenzung: Eine Sicherung ist ratsam.'),
-      t('It fits only a servo rated for 8.4 V.', 'Er passt nur zu einem Servo, das für 8,4 V ausgelegt ist.'),
+      t('It fits only a servo rated for 8.4V.', 'Er passt nur zu einem Servo, das für 8,4V ausgelegt ist.'),
       t('The voltage changes with the state of charge.', 'Die Spannung ändert sich mit dem Ladezustand.'),
       NOT_SET,
     ],
@@ -2346,7 +2061,7 @@ const powerSources: PowerSource[] = [
       `Ein Labornetzteil oder ein BEC. BEC: Battery Eliminator Circuit. ${OWN_SUPPLY_TEXT.de}`,
     ),
     volts: null, amps: null, basis: null,
-    pros: [t('Voltage and current limit are chosen for the servo.', 'Spannung und Stromgrenze werden für das Servo gewählt.')],
+    pros: [t('Choose voltage and current limit to suit the servo.', 'Wähle Spannung und Strombegrenzung passend zum Servo.')],
     cons: [t('It is a further device.', 'Sie ist ein weiteres Gerät.'), NOT_SET],
     unknowns: [],
     when: null, used: SERVO_EXTERNAL, choice: 'servo-supply', src: OWNER,
@@ -2361,7 +2076,7 @@ const powerSources: PowerSource[] = [
     volts: null, amps: null, basis: null,
     pros: [t('It delivers the current of a running motor.', 'Er liefert den Strom eines laufenden Motors.')],
     cons: [
-      t('The bench sets no voltage and no current limit.', 'Der Prüfstand stellt keine Spannung und keine Stromgrenze.'),
+      t('The bench controls neither voltage nor current limit.', 'Der Prüfstand stellt weder Spannung noch Strombegrenzung ein.'),
       t('STOP does not switch it off.', 'STOP schaltet ihn nicht ab.'),
     ],
     unknowns: [],
@@ -2371,17 +2086,17 @@ const powerSources: PowerSource[] = [
     id: 'pd-esc', feeds: 'esc',
     label: t('B: PD mini from a USB-C PD charger', 'B: PD mini an einem USB-C-PD-Ladegerät'),
     text: t(
-      `${ESC_SIGNAL_ONLY.en} The PD mini feeds the ESC. Its output stays at least 0.7 V below the input voltage.`,
-      `${ESC_SIGNAL_ONLY.de} Der PD mini speist den ESC. Sein Ausgang bleibt mindestens 0,7 V unter der Eingangsspannung.`,
+      `${ESC_SIGNAL_ONLY.en} The PD mini feeds the ESC. Its output stays at least 0.7V below the input voltage.`,
+      `${ESC_SIGNAL_ONLY.de} Der PD mini speist den ESC. Sein Ausgang bleibt mindestens 0,7V unter der Eingangsspannung.`,
     ),
     volts: { min: 1, max: 20 }, amps: { min: 0.05, max: 3 }, basis: VENDOR,
     pros: [
-      t('The bench sets the voltage and the current limit.', 'Der Prüfstand stellt Spannung und Stromgrenze.'),
+      t('The bench sets voltage and current limit.', 'Der Prüfstand stellt Spannung und Strombegrenzung ein.'),
       t('STOP switches its output off.', 'STOP schaltet seinen Ausgang ab.'),
       t('ESC STICK programming counts the beeps from its current.', 'Die ESC-STICK-Programmierung zählt die Pieptöne an seinem Strom.'),
     ],
     cons: [
-      t('The current ends at 3 A.', 'Der Strom endet bei 3 A.'),
+      t('Maximum current: 3A.', 'Maximaler Strom: 3A.'),
     ],
     unknowns: [t(
       'Servo and ESC on the one output at the same time: not stated.',

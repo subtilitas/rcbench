@@ -1,7 +1,7 @@
 # Helpers for Playwright tests
 
-Shared by the specs in `e2e/` and under `e2e/matrix/`. A spec imports
-them with a relative path and the `.ts` ending:
+The test specifications in `e2e/` and `e2e/matrix/` share these helpers.
+Import them with a relative path and the `.ts` extension:
 
 ```ts
 import { SEL, expectSetup, openSetup, selectionOf } from '../lib/setup.ts';
@@ -44,15 +44,15 @@ test('the servo setup', async ({ page }) => {
 
 ## Rules of use
 
-- `readSetup` gives every id list in catalogue order and the wire numbers
-  ascending. The order on the page is not part of what it reads.
+- `readSetup` returns ids in catalogue order and wire numbers in ascending
+  order. It does not preserve their order on the page.
 - `readSetup` finds a part card by the name on it. A card whose name is no
   part name of the catalogue comes back as `?<name>`.
 - `keyboardWalk` leaves the attribute `data-walk` on the controls of the page
   and moves the focus and the scroll position. Call it last, or load the page
   again.
-- `keyboardWalk` reads the position of a stop directly after the key. A page
-  that scrolls smoothly is walked with `reducedMotion: 'reduce'`.
+- `keyboardWalk` reads each focus stop's position immediately after the
+  key press. Set `reducedMotion: 'reduce'` for pages that scroll smoothly.
 - `contrastOf` scrolls the page and measures what is shown: open a `details`
   element first when its content counts.
 - `contrastOf` reads plain background colours. A background image or a

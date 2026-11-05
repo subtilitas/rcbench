@@ -6,68 +6,68 @@ order: 2
 
 # Statusband und STOP
 
-Das Statusband sind die oberen 60px jedes Bildschirms außer dem Splash, dem Busfehler-Bildschirm, PANEL UPDATE und dem Fortschritt eines IOmcu-Updates. Es nennt den Bildschirm, zeigt den Zustand des Prüfstands und trägt STOP.
+Das Statusband belegt die oberen 60px jeder Seite außer Splash, Busfehler-Seite, PANEL UPDATE und Fortschrittsanzeige des IOmcu-Updates. Es zeigt den Seitennamen und den Zustand des Prüfstands und enthält STOP.
 
 ## Was das Band zeigt
 
-Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann "?" auf einem Bildschirm mit Hilfe, dann STOP am rechten Rand.
+Von links nach rechts stehen das Home-Feld mit dem Seitennamen, die Status-Chips, ein "?" bei verfügbarer Hilfe und STOP am rechten Rand.
 
-| Chip | Zeigt |
+| Chip | Anzeige |
 |---|---|
 | VERBINDUNG, KEINE VERBINDUNG | ob der IOmcu auf dem CAN-Bus (Controller Area Network) antwortet |
-| BENCH, SIM | BENCH, solange der IOmcu antwortet und die Bildschirme seine Ausgänge ansteuern; SIM, solange das Panel sein eigenes Modell rechnet |
-| INJECT | an Stelle von BENCH und SIM, solange ein Touch-Injector an der I2C-Adresse 0x14 (Inter-Integrated Circuit) antwortet; das Panel sucht ihn einmal, beim Start |
-| FEHLER 01 bis FEHLER 7F | ein Fehlercode, den der IOmcu meldet; fehlt, solange keiner anliegt |
-| SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | was das Schalten auf ARMED treibt; STOP, solange ein Stopp eingerastet ist |
-| Laufzeituhr | die Dauer des laufenden Laufs ab dem Schalten auf ARMED, in Minuten und Sekunden; bei SAFE hält sie den letzten Lauf |
+| BENCH, SIM | BENCH, solange der IOmcu antwortet und die Seiten seine Ausgänge ansteuern; SIM, solange das Panel sein eigenes Modell berechnet |
+| INJECT | ersetzt BENCH und SIM, solange ein Touch-Injector an der I2C-Adresse 0x14 (Inter-Integrated Circuit) antwortet; das Panel sucht ihn einmal beim Start |
+| FEHLER 01 bis FEHLER 7F | ein vom IOmcu gemeldeter Fehlercode; ohne Fehler ist der Chip ausgeblendet |
+| SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | welche Ausgänge bei ARMED angesteuert werden; STOP bei eingerastetem Stopp |
+| Laufzeituhr | die Laufdauer seit dem Schalten auf ARMED in Minuten und Sekunden; bei SAFE bleibt die Dauer des letzten Laufs stehen |
 
-Das Home-Tag führt zum [Menü](overview.md).
+Das Home-Feld führt zum [Menü](overview.md).
 
 ## Der Arm-Chip
 
-| Chip | Ausgänge, die Pulse bekommen |
+| Chip | Ausgänge mit Pulsen |
 |---|---|
 | SAFE | keine |
-| ARMED MOTOR | die Throttle-Ausgänge, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
-| ARMED SERVO | die Servo-Ausgänge und ein pulsender PROG PORT, von SERVO |
-| ARMED | jeder gebundene Ausgang, an einem IOmcu älter als 0.18.0 |
+| ARMED MOTOR | die Gas-Ausgänge, aktiviert durch ARM auf MOTOR & ESC oder durch einen Stick-Lauf unter PROGRAMMIEREN |
+| ARMED SERVO | die Servoausgänge und ein pulsender PROG-PORT, aktiviert auf SERVO |
+| ARMED | alle zugeordneten Ausgänge, bei einem IOmcu älter als 0.18.0 |
 
-Ein Kanal ohne Befehl seit 500ms steht bei ARMED in Ruhe: ein Throttle auf 0%, ein Servo in der Mitte seines Wegs.
+Erhält ein Kanal 500ms lang keinen Befehl, nimmt er auch bei ARMED seine Ruheposition ein: Gas geht auf 0%, ein Servo auf die Mitte seines Wegs.
 
 ## STOP
 
-STOP wirkt auf jedem Bildschirm mit Band. Ein Druck schaltet den Prüfstand auf SAFE, schaltet jeden Ausgang, den Ausgang des Netzteils und die 5V der Programmierports ab und rastet ein, wie ein Not-Aus-Taster. Ein Bildschirmwechsel, ein ablaufender Alert, ein zurückkehrender Link oder ein Schalten auf ARMED hebt einen Stopp nicht auf.
+STOP wirkt auf jeder Seite mit Statusband. Ein Druck schaltet den Prüfstand sofort auf SAFE und schaltet alle Ausgänge, den Netzteilausgang und die 5V der Programmierports aus. Der Stopp rastet wie ein Not-Aus-Taster ein. Ein Seitenwechsel, ein gelöschter Alarm, die Rückkehr der Verbindung oder eine ARM-Anfrage löst ihn nicht.
 
 ![Ein eingerastetes STOP und sein Kasten](view:band-stop)
 
-- Eingerastet bleibt STOP rot in einem gelben Rahmen und zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, und der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden abgelehnt, mit `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.`
-- Halte das eingerastete STOP 2s, um es zu lösen. Die Füllung geht in den 2s von Rot nach Gelb über. Danach wartet das Panel, bis der IOmcu SAFE und alle Ausgänge aus meldet, frühestens 500ms nach dem letzten STOP, und sendet wieder den Heartbeat. Der Prüfstand bleibt SAFE: Jeder Ausgang braucht zum Einschalten wieder sein eigenes Halten.
-- Kommt die Antwort des IOmcu nicht binnen 2s, bleibt der Stopp eingerastet, und das Alert-Band sagt `STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.` Halte STOP erneut.
-- Ein Druck auf ein eingerastetes STOP ist ebenfalls ein STOP. Das Halten zählt nur, solange ein Finger die vollen 2s auf STOP bleibt. Loslassen vor 2s zeigt `Halte 2s, um den STOP zu lösen.`; ein Finger, der von STOP abgleitet, ein zweiter Finger auf dem Band, ein Bildschirmwechsel, verlorene Touch-Ereignisse oder ein Touch-Controller, der 100ms nicht antwortet, löst nichts.
-- Ein Neustart des Panels hebt den Stopp auf: Das Panel startet SAFE, mit jedem Ausgang aus.
+- Bei eingerastetem Stopp bleibt STOP rot mit gelbem Rahmen. Die Taste zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden mit `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.` abgelehnt.
+- Halte STOP 2s, um den eingerasteten Stopp zu lösen. Die Füllung wechselt dabei von Rot nach Gelb. Das Panel wartet anschließend, bis der IOmcu SAFE und alle Ausgänge als aus meldet, frühestens 500ms nach dem letzten STOP. Dann sendet es wieder den Heartbeat. Der Prüfstand bleibt SAFE. Zum Einschalten jedes Ausgangs musst du dessen Taste erneut halten.
+- Antwortet der IOmcu nicht innerhalb von 2s, bleibt der Stopp eingerastet. Das Alarmband meldet `STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.` Halte STOP erneut.
+- Jeder Druck auf das eingerastete STOP löst ebenfalls STOP aus. Zum Zurücksetzen muss ein Finger die vollen 2s auf STOP bleiben. Loslassen vor 2s zeigt `Halte 2s, um den STOP zu lösen.`. Abgleiten von STOP, ein zweiter Finger auf dem Band, ein Seitenwechsel, verlorene Touch-Ereignisse oder ein 100ms lang nicht antwortender Touch-Controller verhindern das Zurücksetzen.
+- Ein Neustart des Panels löst den Stopp. Das Panel startet SAFE mit ausgeschalteten Ausgängen.
 
-- STOP reagiert auf einen Druck, der auf ihm aufsetzt, beim Aufsetzen. Ein Finger, der vom Bildschirm auf STOP rutscht, stoppt nichts. Ein Finger, der auf STOP aufsetzt und wegrutscht, stoppt trotzdem.
-- Ein zweiter Finger auf STOP wird bedient, während der erste zieht, und der Drag endet bei diesem Druck.
-- Ist der Kasten eines Chips offen, schließt ein Druck auf STOP den Kasten und stoppt sofort.
+- STOP reagiert sofort, wenn der Finger auf der Taste aufsetzt. Hineingleiten vom übrigen Bildschirm löst keinen Stopp aus. Wer auf STOP aufsetzt und danach wegrutscht, hat den Stopp bereits ausgelöst.
+- STOP reagiert auch auf einen zweiten Finger, während der erste einen Regler zieht. Die Ziehbewegung endet mit dem Druck auf STOP.
+- Bei geöffnetem Hilfefeld eines Chips schließt STOP das Feld und stoppt sofort.
 
 ## Hilfe zu den Chips
 
 ![Der Kasten unter dem Chip VERBINDUNG](view:band-link)
 ![Der Kasten unter dem Chip SAFE](view:band-safe)
 
-Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun ist. Der Kasten ist 640px breit und öffnet 4px unter dem Band. Ein Tipp auf einen anderen Chip schließt ihn und öffnet den Kasten dieses Chips. Jeder andere Tipp schließt ihn und tut sonst nichts, außer auf DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN oder LAUF BEENDEN: Diese wirken mit demselben Druck, wie ohne Kasten. Das Verlassen des Bildschirms schließt ihn ebenfalls. Der Text folgt dem Zustand, solange der Kasten offen ist.
+Tippe auf einen Chip, um sein Hilfefeld zu öffnen. Es erklärt den aktuellen Zustand und was du tun kannst. Das Feld ist 640px breit und erscheint 4px unter dem Band. Ein Tipp auf einen anderen Chip wechselt zu dessen Hilfe. Andere Berührungen schließen das Feld, ohne die darunterliegende Bedienung auszulösen. Ausgenommen sind DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN: Sie wirken mit demselben Druck. Ein Seitenwechsel schließt das Feld ebenfalls. Solange es offen ist, folgt der Text dem aktuellen Zustand.
 
 ![Der Kasten unter ARMED MOTOR](view:band-armed)
 
 ![VERBINDUNG mit 37 abgelehnten Link-Frames](view:band-link-refused)
 
-Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, endet der Kasten von VERBINDUNG mit ihrer Zahl, zum Beispiel `Abgelehnte Verbindungsframes: 37`.
+Hat der IOmcu seit dem Einschalten Verbindungsframes abgelehnt, zeigt das Hilfefeld von VERBINDUNG am Ende ihre Anzahl, etwa `Abgelehnte Verbindungsframes: 37`.
 
 ## FEHLER-Codes
 
 ![Der Kasten von FEHLER mit drei gesetzten Bits](view:band-fault)
 
-Der Kasten von FEHLER reicht über das Panel, 1008px, mit einem Absatz je gesetztem Bit:
+Das Hilfefeld von FEHLER ist 1008px breit und erstreckt sich über das Panel. Jedes gesetzte Bit hat einen eigenen Absatz:
 
 | Code | Name | In diesem Release gesetzt, wenn |
 |---|---|---|
@@ -79,59 +79,59 @@ Der Kasten von FEHLER reicht über das Panel, 1008px, mit einem Absatz je gesetz
 | 20 | VERSION | nie |
 | 40 | STORE_OFF | der IOmcu kann in diesem Start nicht in seinen Flash schreiben; Einstellungen, die er bekommt, gelten bis zu seinem Neustart |
 
-Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
+Bei einem Bit, das dieses Release nicht setzt, fordert das Hilfefeld dazu auf, beide Platinen mit demselben Release zu flashen.
 
 ## Screenshot
 
-Den leeren Teil des Bands 1s halten, zwischen Home-Tag und den Chips. Nichts auf dem Panel markiert die Stelle. Die Notiz im Band sagt nach 1s `Screenshot aufgenommen.`, das Loslassen tut nichts. Ein Druck auf einen Chip, das Home-Tag, "?" oder STOP ist kein Screenshot, ebenso wenig ein Gleiten aus der Lücke, ein zweiter Finger oder ein verlorener Touch.
+Halte die unmarkierte Lücke zwischen Home-Feld und Chips 1s lang. Nach 1s meldet das Band `Screenshot aufgenommen.`; das anschließende Loslassen löst nichts weiter aus. Ein Druck auf einen Chip, das Home-Feld, "?" oder STOP nimmt keinen Screenshot auf. Herausgleiten aus der Lücke, ein zweiter Finger oder ein verlorener Touch bricht die Geste ab.
 
-Das Bild ist, was das Panel zeigt, samt Band, auch über einer Box, einer Liste oder einem Tastenfeld. Es entsteht auch in ARMED sofort und berührt keinen Ausgang; STOP und DISARM bleiben aktiv. Ein Bild bleibt im Speicher: Ein weiteres Halten ersetzt es, ein Neustart verliert es. Splash, Bus-Fehler-Bildschirm, PANEL UPDATE und der Fortschritt eines IOmcu-Updates haben kein Band und kein Halten.
+Der Screenshot zeigt die aktuelle Anzeige samt Band und geöffneten Feldern, Listen oder Tastenfeldern. Die Aufnahme erfolgt auch bei ARMED sofort und beeinflusst keinen Ausgang. STOP und DISARM bleiben aktiv. Im Speicher liegt jeweils ein Bild; eine weitere Aufnahme ersetzt es, ein Neustart verwirft es. Splash, Busfehler-Seite, PANEL UPDATE und Fortschrittsanzeige des IOmcu-Updates haben kein Band und unterstützen diese Geste nicht.
 
 ![Das Popup des Screenshots](view:shot-popup)
 
-Das Popup öffnet sich, sobald der Prüfstand ruht und sonst nichts offen ist: SAFE, Netzteil und PROG 5V aus, kein Port gehalten, keine Programmier-Session, kein Sweep, Test oder Lauf, kein Update, kein FAULT, kein Log offen, der Link da oder der Prüfstand simuliert. Endet das, schließt sich das Popup und das Bild wartet wieder.
+Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PROG 5V aus, kein belegter Port, keine Programmiersitzung, kein Sweep, Test, Lauf, Update, FEHLER oder offene Aufzeichnung. Die Verbindung muss bestehen, außer der Prüfstand läuft in der Simulation. Entfällt eine dieser Bedingungen, schließt sich das Popup. Das Bild bleibt gespeichert und wartet, bis alle Bedingungen wieder erfüllt sind.
 
-- Die Tastatur ändert den Namen, standardmäßig `SHOT` und die nächste Nummer, bis 55 Bytes. `.PNG` bleibt.
-- `SPEICH.` schreibt `screenshots/<Name>.PNG` auf die Karte und legt den Ordner an, wenn er fehlt. Ein vergebener Name wird abgelehnt; nichts wird überschrieben.
-- CANCEL verwirft das Bild. Ein Fehler, keine Karte oder eine volle Karte, bleibt auf dem Popup, das Bild bleibt erhalten.
-- Die Datei ist ein PNG von 1024 x 600px, für jeden Browser und PC. Sie zeigt sich in [FILES](files.md) und auf der Wi-Fi-Seite.
+- Ändere den Namen mit der Tastatur, bis zu 55 Bytes. Die Vorgabe ist `SHOT` mit der nächsten Nummer. Die Endung `.PNG` bleibt fest.
+- `SPEICH.` schreibt `screenshots/<Name>.PNG` auf die Karte und legt einen fehlenden Ordner an. Bereits vergebene Namen werden abgelehnt; keine Datei wird überschrieben.
+- ABBRECHEN verwirft das Bild. Scheitert das Speichern, etwa bei fehlender oder voller Karte, bleibt das Popup mit dem Bild geöffnet.
+- Die Datei ist ein PNG (Portable Network Graphics) mit 1024 x 600px, das du im Browser oder auf einem PC ansehen kannst. Sie erscheint in [FILES](files.md) und auf der WLAN-Seite.
 
 ## Die Bildschirmhilfe
 
 ![Die Hilfe des Menüs auf Seite 1](view:help-overview)
 
-"?", 8px links von STOP, öffnet die Hilfe des Bildschirms, der oben ist. Das Menü hat eine; die anderen Bildschirme zeigen noch kein "?". Die Hilfe nummeriert bis zu 5 Bedienelemente des Bildschirms mit einem Abzeichen und Winkeln an den Ecken und listet sie in einem Dock von 480 x 488px auf einer Hälfte des Bildschirms: den Namen jedes Bedienelements, dann was es tut, in höchstens 3 Zeilen. Die andere Hälfte läuft weiter. Die letzte Zeile des Docks nennt die Adresse dieser Hilfe.
+"?", 8px links von STOP, öffnet die Hilfe zur aktuellen Seite. Das Menü hat eine Hilfe; die anderen Seiten haben kein "?". Jede Hilfeseite markiert bis zu 5 Bedienelemente mit Nummern und Eckmarkierungen. Ein Feld von 480 x 488px auf einer Bildschirmhälfte nennt ihre Namen und Funktionen, mit höchstens 3 Zeilen pro Bedienelement. Die andere Hälfte läuft weiter. In der letzten Zeile steht die Adresse dieser Hilfe.
 
-- VORIGE und NÄCHSTE blättern. Sie stehen im Band an der Stelle des Home-Tags, auf jeder Seite an derselben Stelle; ein zweiter Tipp dorthin, wo der erste lag, blättert also weiter. SCHLIESSEN unten im Dock oder ein Tipp auf "?" schließt die Hilfe.
-- Ein Tipp an jede andere Stelle schließt sie und tut sonst nichts.
-- STOP wirkt durch die Hilfe: Ein Druck auf STOP schließt sie und stoppt sofort. DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken mit demselben Druck, wie ohne Hilfe.
-- Der Knopf bewegt nichts, solange die Hilfe offen ist.
-- In ARMED zeigt die Hilfe nur die Seiten, die kein Bedienelement verdecken, das einen Ausgang anhält, und keine ZIEL-Zeile.
+- VORIGE und NÄCHSTE blättern durch die Hilfe. Sie ersetzen das Home-Feld im Band und bleiben auf jeder Seite an derselben Stelle. Wiederholtes Tippen auf dieselbe Position blättert weiter. SCHLIESSEN unten im Hilfefeld oder "?" schließt die Hilfe.
+- Ein Tipp an eine andere Stelle schließt die Hilfe, ohne die darunterliegende Bedienung auszulösen.
+- STOP schließt die Hilfe und stoppt sofort. DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN wirken ebenfalls mit demselben Druck.
+- Der Drehknopf hat bei geöffneter Hilfe keine Wirkung.
+- Bei ARMED zeigt die Hilfe nur Seiten, die weder ein Bedienelement zum Anhalten eines Ausgangs noch eine ZIEL-Zeile verdecken.
 
 ## Das Alert-Band
 
-![Ein Alert über den unteren Rand des Menüs](view:overview-alert)
+![Ein Alarm am unteren Rand des Menüs](view:overview-alert)
 
-Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten Band, 44px hoch, über den unteren Rand des Bildschirms. Es verdeckt, was darunter liegt; ARM und die Bedienelemente, die den Prüfstand anhalten, enden darüber.
+Eine Störung, die die geöffnete Seite nicht anzeigt, erscheint in einem roten, 44px hohen Band am unteren Bildschirmrand. Es verdeckt die darunterliegenden Inhalte. ARM und die Bedienelemente zum Anhalten des Prüfstands enden oberhalb des Bands.
 
-- Es verschwindet 30s nach seinem Eintreffen. Ein neuer Alert startet die 30s neu. Eine Meldung, der Hinweis eines [Halte-Buttons](#halte-buttons), steht 4s in Bernstein und weicht einem Alert.
-- Ein Tipp auf das Band, rechts mit einem `x` markiert, löscht es früher. Der Bildschirm darunter bekommt weder diesen Tipp noch einen zweiten Finger auf dem Band.
-- DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN enden über dem Band: Ein Druck darauf gehört dem Bedienelement, und der Alert bleibt. ARM und AUSGANG EIN unter dem Band werden nicht gedrückt.
-- "Touchscreen antwortet nicht. ARMED ist gesperrt.", beim Start gezeigt, bleibt bis zum Neustart und hat kein `x`.
+- Ein Alarm verschwindet nach 30s. Ein neuer Alarm beginnt diese Zeit erneut. Der Hinweis einer [Halte-Taste](#halte-buttons) erscheint dagegen 4s lang in Bernsteinfarbe und weicht einem Alarm.
+- Tippe auf das Band, um den Alarm vorzeitig zu löschen. Am rechten Rand steht ein `x`. Die Seite darunter erhält weder diesen Tipp noch die Berührung eines zweiten Fingers auf dem Band.
+- DISARM, AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN und LAUF BEENDEN liegen oberhalb des Bands. Ein Druck darauf führt die Aktion aus; der Alarm bleibt. Das Band blockiert Berührungen von ARM und AUSGANG EIN, soweit sie darunterliegen.
+- Die beim Start angezeigte Meldung "Touchscreen antwortet nicht. ARMED ist gesperrt." bleibt bis zum Neustart und hat kein `x`.
 
 ## Halte-Buttons
 
-Ein Halte-Button wirkt nach 2s Kontakt. ARM, AUSGANG EIN, START TEST, START LIMIT RUN, ÜBERNEHMEN und jeder Button mit der Beschriftung `2s HALTEN ZUM ...` sind Halte-Buttons. Ein Loslassen vor 2s sendet nichts und zeigt den Hinweis des Buttons 4s lang im Alert-Band, in Bernstein statt Rot, zum Beispiel `Halte 2s, um auf ARMED zu schalten.`
+Eine Halte-Taste wirkt nach 2s Berührung. ARM, AUSGANG EIN, TEST STARTEN, ENDLAGENLAUF STARTEN, ÜBERNEHMEN und jede Taste mit der Beschriftung `2s HALTEN ZUM ...` verwenden diese Geste. Loslassen vor 2s sendet keinen Befehl. Stattdessen erscheint der Hinweis 4s lang in Bernsteinfarbe im Alarmband, etwa `Halte 2s, um auf ARMED zu schalten.`.
 
-- Der Hinweis erscheint nur bei einem Loslassen, das der Finger auf dem Button gemacht hat. Er erscheint nicht, wenn der Finger vorher vom Button gerutscht ist, wenn der Touch verloren ging, bei dem Kontakt eines zweiten Fingers und auf einem Bildschirm ohne Statusband.
-- Ein Loslassen bei 2s oder später hat gewirkt und zeigt keinen Hinweis.
-- Ein kurzes Tippen ist keine Störung, also ist der Hinweis eine Meldung und kein Alert: Ein Tipp auf das Band löscht ihn früher, ein stehender Alert behält das Band und kein Hinweis erscheint darüber, und ein Alert, der während des Hinweises kommt, ersetzt ihn.
-- STOP löscht den Hinweis sofort, ebenso ein neuer FEHLER-Code oder ein Wechsel von ARMED nach SAFE durch einen Fehler.
-- Die Hinweise, einer je Aktion, jeweils nach `Halte 2s, um`: `auf ARMED zu schalten.`, `den Ausgang einzuschalten.`, `zu übernehmen.`, `den Test zu starten.`, `den Endlagenlauf zu starten.`, `freizugeben.`, `zu schreiben.`, `zurückzuspielen.`, `fortzufahren.`, `zu verlassen.`, `zu laden.`, `den Port freizugeben.`, `zu reparieren.`, `zu starten.`, `zu installieren.`, `zu laden und zu installieren.`, `den IOmcu zu aktualisieren.`, `alle Pin-Zuordnungen zu löschen.` und `den STOP zu lösen.`
+- Der Hinweis erscheint nur, wenn du den Finger auf der Taste loslässt. Er erscheint nicht nach dem Herausrutschen, bei verlorenem Touch, bei einer Berührung mit einem zweiten Finger oder auf einer Seite ohne Statusband.
+- Nach 2s oder länger ist die Aktion bereits ausgelöst; beim Loslassen erscheint kein Hinweis.
+- Ein kurzer Tipp ist keine Störung. Deshalb ist der Hinweis eine Mitteilung und kein Alarm. Ein Tipp auf das Band löscht ihn vorzeitig. Ein bestehender Alarm verdeckt den Hinweis, und ein neu eintreffender Alarm ersetzt ihn.
+- STOP löscht den Hinweis sofort, ebenso ein neuer FEHLER-Code oder ein fehlerbedingter Wechsel von ARMED zu SAFE.
+- Die Hinweise stehen jeweils nach `Halte 2s, um`: `auf ARMED zu schalten.`, `den Ausgang einzuschalten.`, `zu übernehmen.`, `den Test zu starten.`, `den Endlagenlauf zu starten.`, `freizugeben.`, `zu schreiben.`, `zurückzuspielen.`, `fortzufahren.`, `zu verlassen.`, `zu laden.`, `den Port freizugeben.`, `zu reparieren.`, `zu starten.`, `zu installieren.`, `zu laden und zu installieren.`, `den IOmcu zu aktualisieren.`, `alle Pin-Zuordnungen zu löschen.` und `den STOP zu lösen.`
 
 ## Berührungen nahe am Band
 
-- Eine Berührung, die auf dem Band aufsetzt, bleibt beim Band. Rutscht sie in den Bildschirm, bewegt sie dort nichts.
-- Eine Berührung, die auf dem Bildschirm aufsetzt und nach oben ins Band rutscht, wird an ihrer letzten Stelle auf dem Bildschirm losgelassen. Ein Schieberegler oder das SERVO-Zifferblatt behält den Wert von dort. Ein Halten auf ARM oder AUSGANG EIN ist abgebrochen.
-- AUSGANG AUS und START TEST, solange ein Servotest läuft, nehmen ein solches Loslassen an, weil sie etwas anhalten. DISARM hat schon beim Aufsetzen gewirkt.
-- Ein Druck auf das Band, auf STOP oder auf das Alert-Band beendet einen Drag, den ein anderer Finger auf einem Schieberegler oder dem SERVO-Zifferblatt macht.
+- Eine auf dem Band begonnene Berührung bleibt dem Band zugeordnet. Ziehst du den Finger in die Seite darunter, bewegt er dort nichts.
+- Ziehst du eine auf der Seite begonnene Berührung nach oben ins Band, gilt sie an der letzten Position innerhalb der Seite als losgelassen. Ein Schieberegler oder das SERVO-Drehrad behält den dortigen Wert. Eine Haltegeste auf ARM oder AUSGANG EIN wird abgebrochen.
+- AUSGANG AUS und TEST STARTEN während eines laufenden Servotests reagieren auf dieses Loslassen, da sie den Ausgang beziehungsweise Test anhalten. DISARM wirkt bereits beim Aufsetzen.
+- Ein Druck auf das Statusband, STOP oder Alarmband beendet die Ziehbewegung eines anderen Fingers an einem Schieberegler oder am SERVO-Drehrad.

@@ -11,50 +11,51 @@ Pieptöne des Menüs als Pulse im Versorgungsstrom. Auf dem Bildschirm ist es
 ESC STICK, die Zeile STICK-MENÜ von MOTOR & ESC > PROGRAMMIEREN
 ([Programmieren](Screens-de.md#programmieren)).
 
-Was sie nicht weiß:
+Was nicht bekannt oder geprüft ist:
 
-- Kein ESC ist aufgenommen worden. Jede Zeit unten ist ein Vorgabewert, der
-  für eine Messung steht, und als Einstellung gehalten, damit eine Aufnahme
-  ihn ohne neues Image ersetzen kann.
-- Kein Profil ist verifiziert. Punkt- und Wertnummern und Einstiegsgesten
-  sind die der Handbücher.
-- Die eigenen Pieptöne des ESCs nach einer Auswahl werden nicht ausgewertet.
-  FERTIG heißt: jede Auswahlbewegung kam auf eine gezählte Gruppe in der
-  Reihenfolge des Menüs, nicht, dass der ESC sie gespeichert hat.
+- Es liegt keine Aufzeichnung eines ESC vor. Die folgenden Zeitwerte sind
+  Vorgaben anstelle von Messwerten. Sie bleiben einstellbar, damit du sie
+  nach einer Messung ohne neues Image ersetzen kannst.
+- Kein Profil ist verifiziert. Nummern der Menüpunkte und Werte sowie die
+  Schritte zum Menüeinstieg stammen aus den Handbüchern.
+- Die Antworttöne des ESC nach einer Auswahl werden nicht ausgewertet.
+  FERTIG bestätigt, dass jede Auswahlbewegung auf eine gezählte Gruppe in
+  der Menüfolge erfolgte. Es bestätigt nicht, dass der ESC den Wert
+  gespeichert hat.
 
 ## Vor einem Lauf
 
-1. Den Propeller abnehmen. Ein Lauf fährt das Gas auf MAX und zurück,
+1. Nimm den Propeller ab. Ein Lauf fährt das Gas auf MAX und zurück,
    während der ESC versorgt ist. Der ESC ist dann in seinem
    Programmiermenü und treibt nicht, aber in seltenen Fällen kann ein Motor
    anlaufen und drehen.
-2. Entweder den Motor am ESC lassen, fest montiert, oder an seiner Stelle
-   einen Lastwiderstand an die Motorleitungen des ESCs legen. Die Pieptöne
+2. Lasse entweder den fest montierten Motor am ESC angeschlossen oder
+   verbinde stattdessen einen Lastwiderstand mit den Motorleitungen des ESC. Die Pieptöne
    werden in beiden Fällen aus dem Strom gezählt. Der Wert des Widerstands
    ist nicht festgelegt. Er muss
    den Strom bei der Spannung des Laufs unter dessen Strombegrenzung
    halten. Wie gut Pieptöne durch die Wicklungen eines Motors im Strom zu
    lesen sind, ist nicht gemessen.
-3. Die Signalleitung des ESCs an einen Pin legen, der auf dem Bildschirm
-   OUTPUTS mit der Rolle Throttle gebunden ist. Ein Lauf steuert jeden als
-   Throttle gebundenen Kanal, wie der Bildschirm MOTOR. START wird
-   abgelehnt, solange die Bindung keinen Pin als Throttle bindet (`Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.`) und solange das Panel
-   die Bindung nicht vom IOmcu gelesen hat (`Ausgangszuordnung nicht ausgelesen. Gas-Pin unbekannt.`).
-4. Die Versorgungsleitungen des ESCs an den Ausgang des Netzteils legen.
-   Das Netzteil ist der PD mini: ist der PD mini auf SETUP abgeschaltet,
-   tritt das Netzteilmodell des Panels an seine Stelle und schaltet nichts,
+3. Schließe die Signalleitung des ESC an einen Pin an, der auf OUTPUTS
+   als Gasausgang zugeordnet ist. Ein Lauf steuert jeden Kanal mit dieser
+   Rolle, ebenso wie MOTOR & ESC. START wird abgelehnt, solange kein Pin
+   als Gasausgang zugeordnet ist (`Kein Gas-Pin zugeordnet. Ordne einen auf der Seite OUTPUTS zu.`) und solange das Panel
+   die Zuordnung noch nicht vom IOmcu ausgelesen hat (`Ausgangszuordnung nicht ausgelesen. Gas-Pin unbekannt.`).
+4. Schließe die Versorgungsleitungen des ESC an den Netzteil-Ausgang an.
+   Als Netzteil dient der PD mini. Ist er auf SETUP abgeschaltet, verwendet
+   das Panel seine Netzteilsimulation, die keine Hardware schaltet,
    und START wird abgelehnt mit `Netzteil ist simuliert. START benötigt einen PD mini.`. Ein Grund, der entsteht, während die Warnung PROPELLER AB? MOTOR GESICHERT? offen ist, schließt sie, und die Zeile neben START
    nennt den Grund.
-5. Den Ausgang des Netzteils ausschalten. Ein Lauf, der ihn an oder auf dem
-   Weg findet, wird abgelehnt, ebenso einer, dessen Netzteil spannungsführend
-   meldet: sein eigener Zustand an, oder mehr als 20mA (`ESC_STICK_OFF_MA`)
-   durch den Ausgang, im neuesten Messwert. Die Zeile neben START sagt, es
-   zuerst auszuschalten. START braucht außerdem ein Netzteil, das bekannt
-   aus ist: einen Messwert, nicht älter als 1000ms (`ESC_STICK_STALE_MS`),
-   in dem das Netzteil selbst seinen Ausgang aus meldet, mit dem Strom
-   200ms lang bei höchstens 20mA. Kein Messwert, ein älterer oder ein
-   Netzteil, das nicht antwortet, lehnt START ab mit `Kein aktueller Messwert bestätigt, dass das Netzteil aus ist.`. Ein Lauf setzt den Prüfstand unter
-   ARM: solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port
+5. Schalte den Netzteil-Ausgang aus. START wird abgelehnt, wenn der Ausgang
+   an ist oder eine Einschaltanforderung aussteht. Dasselbe gilt, wenn das
+   Netzteil im neuesten Messwert EIN meldet oder mehr als 20mA
+   (`ESC_STICK_OFF_MA`) durch den Ausgang fließen. Die Zeile neben START
+   fordert dann zum Ausschalten auf. Für START muss AUS bestätigt sein:
+   durch einen höchstens 1000ms alten Messwert (`ESC_STICK_STALE_MS`), in
+   dem das Netzteil selbst seinen Ausgang als aus meldet, mit einem Strom
+   von höchstens 20mA über 200ms. Kein Messwert, ein älterer oder ein
+   Netzteil, das nicht antwortet, lehnt START ab mit `Kein aktueller Messwert bestätigt, dass das Netzteil aus ist.`. Ein Lauf schaltet den Prüfstand auf
+   ARMED: solange der [Servoprogrammierung](ServoProgrammer-de.md) einen Port
    hält, wird START abgelehnt mit
    `Servoprogrammierung belegt einen Port. Tippe zuerst auf SERVO auf VERLASSEN.`
 
@@ -71,24 +72,24 @@ Pins nennt, die der Lauf treibt, das Netzteil und den Prüfstand:
 Die Liste hat zwei Ebenen.
 
 - **Hersteller.** Eine Zeile je Hersteller, alphabetisch ohne Rücksicht
-  auf Groß- und Kleinschreibung: sein Name, wie viele seiner Modelle laufen
-  von allen, die er führt (`10 VON 82 AUSFÜHRBAR`), und das rote Schild
+  auf Groß- und Kleinschreibung: sein Name, wie viele seiner aufgeführten Modelle
+  ausführbar sind (`10 VON 82 AUSFÜHRBAR`), und das rote Schild
   MANUELL, wo ein Modell [Handgriffe](#handgriffe) hat. Ein Hersteller, von
   dem kein Modell läuft, ist dunkel gezeichnet. Ein Tippen öffnet seine
   Modelle.
 - **Modelle.** Eine Zeile je Modell dieses Herstellers, nach Strom, dann
   nach höchster Eingangsspannung, dann nach Name; ein Modell ohne Angabe
-  von Strom oder Spannung kommt in diesem Schlüssel zuletzt. Eine Zeile
+  von Strom oder Spannung steht beim jeweiligen Sortierkriterium zuletzt. Eine Zeile
   zeigt das Modell, seinen Strom und seine Spannung, seine Familie, das
   Schild MANUELL und was das Profil seiner Familie ist (Punkte, ein- oder
   zweistufig, KARTE für ein Profil von der SD-Karte (Secure Digital)) oder
   warum es nicht läuft. Der Pfad lautet `ESC STICK > Kontronik`. ZURÜCK
-  führt zu den Herstellern auf der Seite, die es verließ.
+  führt zur zuvor geöffneten Seite der Herstellerliste.
 
-Ein Tippen auf ein Modell öffnet das Profil seiner Familie, mit dem Modell
-benannt: `ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. Das
-Netzteil nimmt die eigene niedrigste Zellenzahl des Modells, wo es eine
-nennt, sonst die niedrigste der Familie. Ein Modell, dessen Profil der
+Ein Tipp auf ein Modell öffnet das Profil seiner Familie mit dem
+Modellnamen: `ESC STICK > Kontronik > JAZZ 55 LV (JAZZ / MINIJAZZ)`. Das
+Netzteil verwendet die niedrigste Zellenzahl dieses Modells, sofern sie
+angegeben ist, sonst die niedrigste der Familie. Ein Modell, dessen Profil der
 Prüfstand nicht ausführen kann, nennt den Grund in seiner Zeile und öffnet
 nichts; ebenso eines, dessen Spannung über der Grenze von SUPPLY liegt.
 Eines, dessen Profil Handgriffe hat, öffnet stattdessen diese, mit dem Grund für dieses Modell. Die Handgriffe, die Netzteilzeile der Seite, START und die Warnung beurteilen alle das geöffnete Modell, nicht das niedrigste der Familie. Zeilen und
@@ -100,8 +101,8 @@ der Kartenleser lehnt eine Datei ohne ihn ab. Er lehnt auch eine Datei ab,
 die ihren Hersteller über 512 Modelle brächte, also führt ein Hersteller
 höchstens 512 Modelle.
 
-Die Zeile unter den Zeilen sagt, dass kein Profil geprüft ist, und die
-Zählung rechts davon zählt die Ebene: `1-9/20 Hersteller, 6 ausführbar` (die Hersteller mit einem laufenden Modell) oder `1-9 von 82, 40
+Unter der Liste steht, dass kein Profil geprüft ist. Die Anzahl rechts
+daneben bezieht sich auf die gezeigte Ebene: `1-9/20 Hersteller, 6 ausführbar` (die Hersteller mit einem laufenden Modell) oder `1-9 von 82, 40
 ausführbar` für die Modelle eines Herstellers.
 
 ![Die Hersteller](img/de/motor-stick.png)
@@ -136,19 +137,19 @@ sobald sich die Suche ändert.
 - Die Zählung sagt, was gefunden wurde: `1-1/1 Hersteller, 1 ausführbar`.
   Ohne Treffer sagt die Liste `Keine passenden Profile gefunden.`
 
-OK schließt die Tastatur und behält die Suche, ABBRECHEN geht zur Suche
-zurück, mit der die Tastatur geöffnet wurde, und CLR, dann OK leert sie.
-Eine Zeile, die bei offener Tastatur getippt wird, öffnet sich, die Suche
-bleibt. Bei geschlossener Tastatur leert X im Feld die Suche. Die Suche
-bleibt über beide Ebenen, die Seite eines Profils und zurück und beim
-Verlassen des Bildschirms erhalten und ist nach einem Neustart leer.
+OK schließt die Tastatur und übernimmt die Suche. ABBRECHEN stellt den
+Suchtext wieder her, mit dem du die Tastatur geöffnet hast. Mit CLR und
+anschließend OK leerst du ihn. Tippst du bei offener Tastatur auf eine
+Zeile, wird sie geöffnet und die Suche bleibt erhalten. Bei geschlossener
+Tastatur löscht X im Suchfeld den Text. Die Suche bleibt beim Wechsel
+zwischen den Ebenen, beim Öffnen und Verlassen eines Profils und beim
+Verlassen der Seite erhalten. Nach einem Neustart ist sie leer.
 
 ![Eine Suche auf den Herstellern wird getippt](img/de/motor-stick-find.png)
 
 ![Eine Suche angewendet, die Modelle von Hobbywing](img/de/motor-stick-found.png)
 
-Die Groß- und Kleinschreibung wird nur für die Buchstaben A bis Z
-ausgeglichen. Ä, Ö und Ü in einem Profil von der Karte passen nur auf
+Die Suche ignoriert Groß- und Kleinschreibung nur bei A bis Z. Ä, Ö und Ü in einem Profil von der Karte passen nur auf
 denselben Buchstaben in derselben Schreibung, und die Tastatur hat keine
 Taste für sie; `*` steht für einen davon. Kein eingebautes Profil hat einen
 Buchstaben außerhalb von ASCII (American Standard Code for Information
@@ -157,8 +158,8 @@ Interchange) im Namen.
 ### Ein Profil und sein Lauf
 
 Die Seite eines Profils listet seine Menüpunkte. Jeder steht anfangs auf
-BEHALTEN und bleibt dann, wie er ist; die Stepper gehen durch die Werte des
-Punkts und halten an beiden Enden an. Punkte mit dem Schlüssel `reset` oder
+BEHALTEN und bleibt dann, wie er ist; mit den Schritttasten wählst du einen Wert des
+Menüpunkts. Die Auswahl endet jeweils am ersten und letzten Wert. Punkte mit dem Schlüssel `reset` oder
 `exit` sind Aktionen, keine Einstellungen: der ESC handelt auf die
 Auswahlbewegung und gibt keine Werte aus, deshalb zeigen ihre Zeilen AKTION, KEINE EINSTELLUNG und bieten nichts an. Ein Punkt mit einem einzigen Wert (die
 einzige Einstellung, die es gibt, oder eine Regel, die als Wert geschrieben
@@ -183,14 +184,14 @@ listet die Punkte, die jedes Modell hat.
 
 ### Die Einschaltstellung
 
-Ein Lauf schaltet den ESC mit dem Knüppel dort ein, von wo das Handbuch den
-Wert programmiert: beim `entry_throttle` des Werts, wo das Profil eines
-nennt, sonst beim Einstieg des Profils. Ein Kontronik-Car-Modus wird mit
+Beim Einschalten steht der Knüppel in der Stellung, die das Handbuch für
+die Programmierung des Werts verlangt. Das ist `entry_throttle` des Werts,
+sofern angegeben, sonst die Einstiegsstellung des Profils. Ein Kontronik-Car-Modus wird mit
 dem Knüppel in der Motor-Aus-Stellung in der Mitte programmiert, der
 Neutralstellung, die der Modus lernt; der Lauf schaltet ihn bei MID ein.
-Der Knüppel bewegt sich nur bei ausgeschaltetem Netzteil: vor dem ersten
+Die Einschaltstellung wird nur bei ausgeschaltetem Netzteil angefahren: vor dem ersten
 Einschalten, und zwischen zwei Einschaltungen erst, wenn das Netzteil
-selbst seinen Ausgang aus meldet und der Strom unten ist
+selbst seinen Ausgang aus meldet und der Strom unter der festgelegten Grenze liegt
 (`ESC_STICK_OFF_MA`, `ESC_STICK_OFF_SETTLE_MS`). Er bleibt dort 1000ms
 (`ESC_STICK_SIGNAL_MS`), bevor das Netzteil einschaltet, wie bei jedem
 Einstieg.
@@ -211,12 +212,12 @@ Einstieg.
   Einschaltstellung, und die Auswahlbewegung muss sich von ihr
   unterscheiden.
 
-Die Warnung und die Karte des Laufs zeigen EINSCHALTEN BEI und die
-Stellung, wenn sie nicht MIN ist; die Warnung jede Stellung, die die
-Einschaltungen des Laufs nehmen.
+Die Warnung und die Ablaufkarte zeigen EINSCHALTEN BEI mit der Stellung,
+falls diese nicht MIN ist. Die Warnung nennt alle Einschaltstellungen, die
+der Lauf verwendet.
 
 START öffnet eine Warnung über den ganzen Bildschirm mit dem Titel PROPELLER AB? MOTOR GESICHERT?. Sie sagt, was der Lauf tut: er versorgt den
-ESC aus dem Netzteil und fährt Throttle auf MAX und zurück, um durch das
+ESC aus dem Netzteil und bewegt das Gas auf MAX und zurück, um durch das
 Programmiermenü zu schalten. In seltenen Fällen kann ein Motor anlaufen und
 drehen, deshalb muss ein angeschlossener Motor fest montiert sein und darf
 keinen Propeller tragen; ein Lastwiderstand anstelle des Motors geht
@@ -224,9 +225,9 @@ ebenso. Die Pieptöne werden aus dem Strom gezählt. Darunter stehen das
 Profil, die Sollwerte des Netzteils mit der Zahl der Änderungen und die
 Zeile, dass das Profil ungeprüft und jede Pieptonzeit ein Vorgabewert ist.
 
-2s HALTEN ZUM STARTEN startet den
-Lauf, wie ARM. Ein Finger, der den Knopf verlässt, ein
-verlorenes Touch-Ereignis oder ein STOP während des Haltens bricht es ab;
+Halte 2s HALTEN ZUM STARTEN für 2s, um den Lauf zu starten. Wie bei ARM
+wird das Halten abgebrochen, wenn dein Finger die Taste verlässt, ein
+Touch-Ereignis verloren geht oder währenddessen STOP ausgelöst wird;
 ABBRECHEN schließt die Warnung. Das ARM, das das Halten anfordert, verlässt den
 Bildschirm mit den Befehlen des nächsten Frames; ein STOP oder ein
 verlorenes Touch-Ereignis davor nimmt es zurück und beendet den Lauf, damit
@@ -236,7 +237,7 @@ es keinen Stopp aufheben kann, der danach kam.
 
 Während des Laufs zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und den Strom
-neben seinem Grundwert. ABBRECHEN beendet den Lauf, ebenso das Home-Tag im
+im Vergleich zu seinem Grundwert. ABBRECHEN beendet den Lauf, ebenso das Home-Tag im
 Band, STOP im Band und das Verlassen des Bildschirms. Das Home-Tag beendet ihn
 wie ABBRECHEN, und das Ergebnis bleibt auf der Seite. ZURÜCK und TIMING sind
 nicht verfügbar. Die
@@ -282,11 +283,11 @@ mit dem Zeitpunkt, an dem er fällig ist:
 
 | Fällig | Der Lauf |
 | --- | --- |
-| `before_power` | nennt ihn auf der Warnung: 2s HALTEN ZUM STARTEN sagt, dass er erledigt ist. Ab dem zweiten Einschalten eines Laufs hält er vor jedem Einschalten an und fragt erneut |
+| `before_power` | nennt ihn in der Warnung; mit abgeschlossenem 2s HALTEN ZUM STARTEN bestätigst du, dass er erledigt ist. Ab dem zweiten Einschalten eines Laufs hält er vor jedem Einschalten an und fragt erneut |
 | `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
-| `before_menu` | fragt, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Ein Schritt mit `starts_menu` ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); jeder andere wartet auf ERLEDIGT |
+| `before_menu` | fragt nach Ablauf der Einstiegszeit, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Ein Schritt mit `starts_menu` ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); jeder andere wartet auf ERLEDIGT |
 | `during_menu` | kann den Zeitpunkt nicht kennen: das Profil läuft nicht, `Handgriff` |
-| `before_power_off` | hält nach der letzten Bewegung des Speicherns an, mit versorgtem ESC und dem Knüppel, wo das Speichern ihn ließ, und schaltet das Netzteil erst auf ERLEDIGT aus. Niemand berührt den ESC: der Bediener beobachtet, wie er den Wert bestätigt (Pieptöne, LED) |
+| `before_power_off` | hält nach der letzten Bewegung des Speicherns an, mit versorgtem ESC und dem Knüppel, wo das Speichern ihn ließ, und schaltet das Netzteil erst auf ERLEDIGT aus. Berühre den ESC nicht; beobachte seine Bestätigung des Werts (Pieptöne, LED) |
 | `after_programming` | zeigt ihn auf dem Ergebnis |
 
 Ein Profil mit Handgriffen zeigt im Kopf seiner Punktliste rot MANUELLER
@@ -299,17 +300,18 @@ sie.
 
 ![Seine Handgriffe](img/de/motor-stick-hand-info.png)
 
-Die Warnung vor einem Lauf nennt die Schritte vor dem Einschalten und sagt,
-wann der Lauf für weitere anhält. Sie nennt sie, und 2s HALTEN ZUM STARTEN
-zählt, nur solange das Netzteil aus meldet: ein Messwert, nicht älter als
-1000ms (`ESC_STICK_STALE_MS`), in dem das Netzteil selbst seinen Ausgang
-aus meldet, mit dem Strom 200ms lang bei höchstens 20mA. Bis dahin sagt
-sie, das Netzteil auszuschalten, und ein laufendes Halten endet, sobald das
-Netzteil aufhört, aus zu melden. Der Lauf fordert dann selbst das
-Ausschalten an, schaltet nichts ein und fragt nach keinem Schritt an einem
-stromlosen ESC, bis seine eigenen Messwerte dasselbe sagen; das Ergebnis
-und die Schritte nach einem Lauf sagen, den ESC nicht zu berühren, solange
-das Netzteil nicht aus meldet.
+Die Warnung vor dem Lauf nennt die Schritte vor dem Einschalten und die
+Zeitpunkte weiterer Unterbrechungen. Die Schritte erscheinen und
+2s HALTEN ZUM STARTEN zählt nur, solange AUS bestätigt ist: durch einen
+höchstens 1000ms alten Messwert (`ESC_STICK_STALE_MS`), in dem das Netzteil
+selbst seinen Ausgang als aus meldet, mit höchstens 20mA über 200ms. Bis
+dahin fordert die Warnung zum Ausschalten auf. Ein begonnenes Halten wird
+abgebrochen, sobald diese AUS-Bestätigung fehlt.
+
+Der Lauf fordert anschließend selbst AUS an. Er schaltet nichts ein und
+fordert keinen Handgriff für einen unversorgten ESC an, bevor seine eigenen
+Messwerte AUS bestätigen. Das Ergebnis und die Schritte nach dem Lauf
+weisen darauf hin, den ESC erst zu berühren, wenn das Netzteil AUS meldet.
 
 ![Die Warnung mit einem Schritt vor dem Einschalten](img/de/motor-stick-hand-warning.png)
 
@@ -322,25 +324,27 @@ bestätigt so jeden Schritt, und eine neue Warnung fragt wieder danach.
 
 ![Vier Schritte vor dem Einschalten, unter ALLE HANDGRIFFE zu lesen (ein Beispielprofil)](img/de/motor-stick-hand-steps.png)
 
-Ein Schritt, nach dem der Lauf fragt, deckt die Seite ab: der Schritt, wo
-Netzteil und Knüppel stehen und wie lange der Lauf wartet. ERLEDIGT geht
-weiter; es ist die ersten 1000ms dunkel (`ESC_STICK_HAND_MIN_MS`), damit
-ein Tippen für den Schritt davor nicht den nächsten bestätigt, und es wirkt
-im nächsten Frame, nachdem dieser STOP, das Schalten auf ARMED, den Link und
-das Netzteil beurteilt hat. ABBRECHEN beendet den Lauf, ebenso STOP im Band.
-Kein ERLEDIGT innerhalb von 60s (`ESC_STICK_HAND_WAIT_MS`) beendet den
-Lauf mit NICHT BESTÄTIGT. Während er wartet, hält der Lauf jede Regel, die er
-sonst hält: ein versorgtes Warten beobachtet das Netzteil und seine
-Messwerte, und jedes Ende setzt Throttle auf MIN, schaltet das Netzteil aus
-und schaltet den Prüfstand auf SAFE.
+Eine Aufforderung während des Laufs überdeckt die Seite. Sie zeigt den
+Handgriff, den Zustand des Netzteils, die Knüppelstellung und die Wartezeit.
+Mit ERLEDIGT setzt du den Lauf fort. Die Taste bleibt die ersten 1000ms
+gesperrt (`ESC_STICK_HAND_MIN_MS`), damit ein Tipp für den vorherigen
+Schritt nicht zugleich den nächsten bestätigt. Sie wirkt im nächsten
+Frame, nachdem STOP, das Schalten auf ARMED, die Verbindung und das Netzteil
+geprüft wurden. ABBRECHEN und STOP im Band beenden den Lauf.
+
+Ohne ERLEDIGT innerhalb von 60s (`ESC_STICK_HAND_WAIT_MS`) endet der Lauf
+mit NICHT BESTÄTIGT. Während des Wartens gelten dieselben Regeln wie sonst:
+Bei eingeschaltetem Ausgang überwacht der Lauf das Netzteil und seine
+Messwerte. Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und
+den Prüfstand auf SAFE.
 
 ![Der Lauf wartet auf den Jumper](img/de/motor-stick-hand-prompt.png)
 
 **Bevor das Netzteil ausschaltet.** Ein Kontronik-ESC bestätigt einen
-gespeicherten Modus, indem er ihn als Pieptöne wiederholt (die Kontrollausgabe
-der Handbücher), Modus 7 als sieben, und die Handbücher stecken den Akku
-erst danach ab. SPEICHERN (vorgegeben 2000ms) kann vor einer langen
-Wiederholung enden. Jedes Profil für einen Kontronik-ESC, das läuft, und die fünf
+gespeicherten Modus durch eine wiederholte Pieptonfolge, etwa sieben
+Pieptöne für Modus 7. Die Handbücher nennen dies Kontrollausgabe und
+verlangen, den Akku erst danach abzustecken. SPEICHERN (vorgegeben 2000ms)
+kann vor dem Ende einer langen Wiederholung ablaufen. Jedes Profil für einen Kontronik-ESC, das läuft, und die fünf
 unten tragen einen Schritt `before_power_off`: nach der letzten Bewegung
 des Speicherns hält der Lauf den ESC versorgt, den Knüppel, wo das
 Speichern ihn ließ, und bittet den Bediener, den ESC zu beobachten und
@@ -381,7 +385,7 @@ Schritt, dessen Handlung die Modusfolge startet, mit `"starts_menu": true`;
 ein Schritt ohne das wartet auf ERLEDIGT, wo er auch steht. 16 Profile für
 Kontronik-ESCs kennzeichnen ihren letzten Schritt `before_menu`: der ESC
 beantwortet den
-abgezogenen Jumper oder den gedrückten Taster mit einem Dreiklang und gibt
+abgezogenen Jumper oder den gedrückten Taster mit einer Dreitonfolge und gibt
 danach Modus 1, 2, 3 ... aus (zum Beispiel Kontronik_Jazz.pdf S. 6,
 "Jumper abziehen", gefolgt von der Tonfolge und der Folge;
 Kontronik_Pix1000_3000.pdf S. 4 Schritte 5 und 6, "Taster drücken",
@@ -390,17 +394,17 @@ CYBER-Line und HELI-Line, deren Jumper beim Anstecken des Akkus abgezogen
 wird und die etwa 5s auf ein Signal warten, kennzeichnen ihn nicht. Die
 Hand des Bedieners ist dann am ESC, nicht am Bildschirm. Deshalb zählt
 der Lauf die Pieptöne ab dem Moment, in dem er nach diesem Schritt fragt,
-mit dem Knüppel dort, wo das Einschalten ihn ließ:
+mit dem Knüppel in der Einschaltstellung:
 
-- Der Schritt gilt als erledigt mit der ersten Gruppe, die die
-  Reihenfolgeregel in Folge mit der davor findet (das Menü läuft),
-  oder mit ERLEDIGT, was zuerst kommt. Der Dreiklang des ESC ist eine
+- Der Schritt gilt als erledigt, sobald eine Gruppe gemäß der
+  Reihenfolgeregel auf die vorherige folgt (das Menü läuft) oder du
+  ERLEDIGT drückst, je nachdem, was zuerst eintritt. Die Dreitonfolge des ESC ist eine
   Gruppe von 3 und nicht in Folge mit Modus 1, er zählt also nicht.
 - Die Regeln der ruhigen Leitung und der Reihenfolge gelten ab der Frage:
-  keine Gruppe zählt vor GROUP GAP Ruhe, und auf einen Wert wird erst mit
+  keine Gruppe zählt vor GRUPPENPAUSE Stille, und auf einen Wert wird erst mit
   der dritten Gruppe in Folge reagiert. Auf eine angeschnittene erste
   Gruppe wird nie reagiert.
-- SILENCE und ZEITLIMIT laufen ab dem Moment, in dem der Schritt erledigt
+- STILLE und ZEITLIMIT laufen ab dem Moment, in dem der Schritt erledigt
   ist; bis dahin schweigt der ESC planmäßig. Kein erledigter Schritt
   innerhalb von 60s beendet den Lauf mit NICHT BESTÄTIGT.
 - Der Knüppel bewegt sich nicht, solange nach dem Schritt gefragt wird. Ein
@@ -418,8 +422,8 @@ Motor-Aus-Stellung gebeten: MIN, oder MID, wo das `entry_throttle` eines
 Werts sie nennt, die Motor-Aus-Stellung des Handbuchs in der Mitte. Ein
 Profil, dessen Schritt `at_power_up` oder `before_menu` mit einem Einstieg
 auf MID oder MAX kommt, läuft nicht, `Handgriff`, und ein Wert, den es bei
-MAX einschalten würde, wird ebenso abgelehnt. Die 60s sind die Zeit des
-Bedieners, den ESC zu erreichen, nicht die des ESCs. Wie lange ein ESC auf
+MAX einschalten würde, wird ebenso abgelehnt. Die 60s geben dir Zeit, den ESC zu erreichen. Sie sagen nicht aus, wie
+lange der ESC selbst wartet. Wie lange ein ESC auf
 seinen Einstiegs-Jumper oder -Taster wartet, nennen nur die Handbücher von
 HELI JIVE und JIVE Pro: 10s nach dem Einschalten, und keines der beiden
 Profile läuft. Spätere Schritte eines Ablaufs haben eigene Fenster, und
@@ -439,9 +443,9 @@ und MANUELLER EINGRIFF NÖTIG im Kopf des Ergebnisses öffnet sie wieder.
 
 ![Vier Handgriffe nach dem Programmieren, über dem Ergebnis (ein Beispielprofil)](img/de/motor-stick-hand-after.png)
 
-Nach einem abgebrochenen Lauf eines Profils mit einem Schritt vor
-oder beim Einschalten sagt es, den ESC zu prüfen: ein für den Lauf
-gesteckter Jumper kann noch stecken.
+Nach einem abgebrochenen Lauf mit einem Handgriff vor oder beim
+Einschalten fordert das Ergebnis zur Prüfung des ESC auf. Ein für den Lauf
+gesteckter Jumper kann noch vorhanden sein.
 
 24 Profile haben Handgriffe: die 22 Familien der Kontronik-ESCs,
 `turnigy-aquastar` und `greatplanes-electrifly-c-series`. 10 laufen, jedes auch mit seinem
@@ -449,7 +453,7 @@ Schritt, bevor das Netzteil ausschaltet:
 
 | Profil | Schritte | Werte, bei MID eingeschaltet |
 | --- | --- | --- |
-| `kontronik-3sl` | Jumper vor dem Einschalten auf, nach 2s oder dem Dreiklang ab | Modus 6 |
+| `kontronik-3sl` | Jumper vor dem Einschalten auf, nach 2s oder der Dreitonfolge ab | Modus 6 |
 | `kontronik-beat` | Jumper auf 2 beliebige der 3 Kontakte, ab nach 2s oder den Pieptönen | Modi 6, 8 |
 | `kontronik-beat-car` | wie BEAT | Modi 2 bis 6, 8 |
 | `kontronik-beat-fai` | wie BEAT | keine |
@@ -469,9 +473,8 @@ Jumper oder Brücke während des Menüs bewegt wird, und bei
 
 ### Die Signalsäule
 
-Eine Signalsäule rechts auf der Karte des Laufs und des Ergebnisses zeigt
-zwei Dinge, gezeichnet wie eine Signalsäule an einer Maschine: Rot über
-Grün auf einem hellgrauen Fuß.
+Rechts auf der Ablaufkarte und dem Ergebnis steht eine Signalsäule: Rot
+über Grün auf einem hellgrauen Fuß. Die beiden Leuchten zeigen Folgendes:
 
 - **Grün** leuchtet, solange der Pieptondetektor einen Puls hält: vom
   Messwert, der über Grundwert plus SCHWELLE stieg, bis zu dem, der unter
@@ -509,7 +512,7 @@ gezeichnet.
 | FERTIG | MIN | aus | auf SAFE geschaltet |
 | ABGEBROCHEN | MIN | aus | auf SAFE geschaltet, alles in einem Schritt |
 
-MIN, MID und MAX sind 0, 50 und 100% des Wegs des Throttle-Ausgangs. Die
+MIN, MID und MAX sind 0, 50 und 100% des Stellbereichs des Gasausgangs. Die
 Ruhestellung ist `scheme.listen` des Profils, oder die Einstiegsstellung, wo
 es keines hat. Ein zweistufiges Menü (`value_select` gesetzt) wählt den
 Punkt mit `select` und speichert den Wert mit `value_select`, dann zählt es
@@ -524,23 +527,24 @@ schaltet zuerst das Netzteil aus und lässt den Knüppel, wo er gespeichert
 hat. Er bewegt ihn erst, wenn das Netzteil selbst den Ausgang aus meldet,
 in Messwerten, die nach der Anforderung genommen sind, mit dem Strom
 200ms lang bei höchstens 20mA (`ESC_STICK_OFF_MA`,
-`ESC_STICK_OFF_SETTLE_MS`). Das OFF des Panels ist eine Anforderung: das
+`ESC_STICK_OFF_SETTLE_MS`). Das OFF des Panels ist eine Anforderung: der
 PD mini schaltet einen Link-Austausch und eine Modultransaktion später ab,
 und bis dahin ist der ESC versorgt und in seinem Menü.
 
 Zwei Teile dieser Regel sind nicht gemessen:
-- Der Strom, den das PD mini bei ausgeschaltetem Ausgang meldet. Die Regel
+- Der Strom, den der PD mini bei ausgeschaltetem Ausgang meldet. Die Regel
   nimmt unter 20mA an. Ein Modul, das mehr meldet, beendet jeden geplanten
   Lauf mit ABGEBROCHEN und NETZTEIL BLEIBT EIN, und ein Lauf mit einer Änderung je
   Einschalten kommt nie zur zweiten Änderung.
 - Wie lange der ESC aus seinen Eingangskondensatoren weiterläuft, nachdem
   der Schalter des PD mini geöffnet hat. Der Strom zeigt, dass der Schalter
-  offen ist, nicht, dass der ESC aus ist. Die 200ms decken eine kleine
-  Kapazität ab, etwa 2000µF, die bei 30mA in rund 270ms um 4V fallen;
-  eine große decken sie nicht ab.
+  offen ist, nicht, dass der ESC aus ist. Die Wartezeit von 200ms bestätigt nicht, dass der ESC aus ist. Zum
+  Beispiel brauchen 2000µF bei 30mA rund 270ms, um um 4V zu fallen. Eine
+  größere Kapazität braucht unter denselben Bedingungen länger.
 
-Jede Bewegung geht hinaus wie die Befehle des Bildschirms MOTOR: ARM über
-die Arming-Policy, THROTTLE auf die Throttle-Kanäle, und das Netzteil über
+Jede Bewegung wird über dieselben Wege wie die Befehle auf MOTOR & ESC
+gesendet: ARM über die Regeln zum Schalten auf ARMED, THROTTLE an die
+Gaskanäle und das Netzteil über
 das eigene ON und OFF von SUPPLY. Nichts umgeht STOP oder die Regeln zum
 Schalten auf ARMED.
 
@@ -552,26 +556,27 @@ Schalten auf ARMED.
   Messwerten um 1/16 des Unterschieds je Messwert.
 - **Piepton.** Ein Messwert über Grundwert plus SCHWELLE beginnt einen
   Puls; einer unter Grundwert plus SCHWELLE minus HYSTERESE beendet ihn.
-- **Längen in Messwerten.** Ein Puls mit weniger Messwerten, als PIEPTON MIN
-  beim längsten gesehenen Abstand halten muss, oder eine Lücke zwischen zwei
-  Pulsen mit weniger, als PAUSE MIN halten muss, verdirbt seine Gruppe. Ein
-  Puls, dessen erster und letzter Messwert weiter als LANG MAX auseinander
-  liegen, verdirbt seine Gruppe. Ein Puls ab LANG ist ein langer Piepton; in
-  einem Profil ohne lange Pieptöne verdirbt er seine Gruppe, ebenso ein
-  langer nach einem kurzen.
+- **Längen in Messwerten.** Die Mindestzahl der Messwerte ergibt sich aus
+  PIEPTON MIN beziehungsweise PAUSE MIN und dem längsten beobachteten
+  Messabstand. Enthält ein Puls oder eine Pause zu wenige Messwerte, wird
+  die Gruppe ungültig. Dasselbe gilt, wenn erster und letzter Messwert
+  eines Pulses mehr als LANG MAX auseinanderliegen. Ein Puls ab LANG zählt
+  als langer Piepton. Er macht die Gruppe ungültig, wenn das Profil keine
+  langen Pieptöne vorsieht oder wenn er nach einem kurzen Piepton folgt.
 - **Gruppe.** Stille von GRUPPENPAUSE nach dem letzten Puls beendet eine
   Gruppe. Ihre Zahl sind die kurzen Pieptöne plus `long_equals_short` für
   jeden langen.
 - **Erst Stille.** Wenn eine Phase zu hören beginnt, wird keine Gruppe
   gezählt, bevor GRUPPENPAUSE Stille gehört ist; die erste Gruppe ist also
   ganz und nicht das Ende einer schon laufenden.
-- **Reihenfolge.** Eine Gruppe ist in Reihenfolge, wenn sie eins mehr als
-  die Gruppe davor ist, oder die niedrigste Nummer der Schleife nach ihrer
-  höchsten. Wo das Profil jede Gruppe wiederholt (`repeat` über 0), ist
-  dieselbe Zahl noch einmal nur nach einer Gruppe in Reihenfolge in
-  Reihenfolge, und höchstens `repeat`-mal. Auf eine Gruppe wird nur
-  reagiert, wenn sie in Reihenfolge ist und die davor auch: drei Gruppen
-  hintereinander stimmen überein. Eine Zahl, die ein verlorener Piepton
+- **Reihenfolge.** Eine Gruppe passt zur Folge, wenn ihre Zahl um eins
+  größer als die vorherige ist oder wenn auf die höchste Nummer der
+  Schleife die niedrigste folgt. Wiederholt das Profil jede Gruppe
+  (`repeat` über 0), ist dieselbe Zahl erneut zulässig, sofern schon die
+  vorherige Gruppe zur Folge passte, höchstens jedoch `repeat`-mal. Eine
+  Gruppe löst nur dann eine Auswahl aus, wenn sie und die vorherige zur
+  Folge passen. Damit müssen drei aufeinanderfolgende Gruppen die
+  Reihenfolge bestätigen. Eine Zahl, die ein verlorener Piepton
   falsch macht, ist kleiner als die wahre, also ist sie nur in Reihenfolge,
   wenn die Gruppen davor auch falsch waren. Ein verlorener Piepton übergeht
   deshalb seine Gruppe, und die nächste Schleife wird genutzt; eine falsche
@@ -580,14 +585,14 @@ Schalten auf ARMED.
   verlorene Gruppe und einen verlorenen Piepton in der nächsten.
 - **Späte Messwerte.** Ein Messwert, der mehr als das Kürzere von PIEPTON MIN
   und PAUSE MIN nach dem vorigen kommt, ist spät, ebenso einer, dessen Zähler
-  einen übersprungenen Messwert zeigt: er verdirbt die Gruppe, in die er
-  fällt, und bricht die Reihenfolge. 3 späte Messwerte hintereinander
+  einen übersprungenen Messwert zeigt: er macht die zugehörige Gruppe ungültig
+  und unterbricht die bestätigte Reihenfolge. 3 späte Messwerte hintereinander
   beenden den Lauf mit MESSRATE.
 
 ## Die Einstellungen
 
-TIMING auf der Seite eines Profils. Gespeichert mit den anderen
-Einstellungen. Kein Wert hier ist gemessen.
+Öffne TIMING auf der Seite eines Profils. Diese Werte werden mit den
+anderen Einstellungen gespeichert. Keiner davon ist gemessen.
 
 | Einstellung | Vorgabe | Bereich | Was sie ist |
 | --- | --- | --- | --- |
@@ -601,8 +606,8 @@ Einstellungen. Kein Wert hier ist gemessen.
 | Einstieg | 5000ms | 1000 bis 60000ms | Einschalten bis zum Menü, wo das Profil kein `hold_ms` nennt |
 | Speichern | 2000ms | 0 bis 10000ms | gehalten an der letzten Auswahl vor dem Ausschalten |
 | Ausschaltzeit | 3000ms | 500 bis 20000ms | Netzteil aus zwischen zwei Einstiegen |
-| Stille | 10000ms | 1000 bis 60000ms | so lange kein Piepton beendet den Lauf |
-| Zeitlimit | 180000ms | 5000 bis 600000ms | so lange keine Reaktion auf eine gewünschte Gruppe beendet den Lauf |
+| Stille | 10000ms | 1000 bis 60000ms | endet der Zeitraum ohne Piepton, wird der Lauf beendet |
+| Zeitlimit | 180000ms | 5000 bis 600000ms | endet der Zeitraum ohne Auswahl einer gewünschten Gruppe, wird der Lauf beendet |
 | Schwelle | 100mA | 10 bis 2000mA | über dem Grundwert: ein Piepton |
 | Hysterese | 40mA | 0 bis 1000mA | unter der Schwelle minus diesem Wert: Stille |
 
@@ -619,17 +624,17 @@ es eines nennt, sonst das niedrigste `cells_min` unter den Modellen des
 Profils,
 mit 3,8V je LiPo-Zelle (Lithium-Polymer) oder 1,2V je NiMH-Zelle
 (Nickel-Metallhydrid): über der Abschaltung dieses Modells und unter dem
-Maximum jedes Modells. Ein Profil, dessen Modelle keine Zellenzahl nennen,
-braucht SPANNUNG. Eine Spannung über der Grenze des Bildschirms SUPPLY oder
+Maximum jedes Modells. Nennt keines der Modelle eine Zellenzahl, musst du
+SPANNUNG selbst einstellen. Eine Spannung über der Grenze des Bildschirms SUPPLY oder
 unter dem Minimum des Netzteils, und eine Strombegrenzung über der Grenze
 von SUPPLY, werden abgelehnt. Die Sollwerte des Laufs werden die Sollwerte
 des Bildschirms SUPPLY.
 
-Auch die eigenen Grenzen des Modells halten die Sollwerte, in seiner
-Zeile, auf seiner Seite und bei RUN, der letzten Prüfung, bevor der Lauf
-auf ARMED schaltet:
+Die zulässigen Werte des Modells begrenzen die Sollwerte ebenfalls: in der
+Modellzeile, auf der Profilseite und bei START, der letzten Prüfung vor dem
+Schalten auf ARMED:
 
-| Sollwert | Abgelehnt, wenn | Die Zeile sagt | RUN sagt |
+| Sollwert | Abgelehnt, wenn | Die Zeile sagt | START sagt |
 | --- | --- | --- | --- |
 | SPANNUNG, oder die der Zellenzahl | über dem `v_max_mv` des Modells | `20.0V; ESC höchstens 8.4V` | `SPANNUNG 20.0V liegt über der ESC-Grenze von 8.4V.` |
 | SPANNUNG, oder die der Zellenzahl | unter dem `v_min_mv` des Modells, wo genannt | `11.9V; ESC mindestens 12.0V` | `SPANNUNG 11.9V liegt unter der ESC-Untergrenze von 12.0V.` |
@@ -651,12 +656,12 @@ genannt ist oder nicht. Auf der
 Seite der Familie ohne gewähltes Modell ist die Grenze das niedrigste
 `v_max_mv` ihrer Modelle, unbekannt, wenn eines keines nennt, und die
 niedrigste Eingangsspannung das höchste `v_min_mv`. STROMBEGRENZUNG geht
-höchstens bis 3.0A; jedes Modell im Satz, das einen Strom nennt, ist für
+höchstens bis 3,0A; jedes Modell im Satz, das einen Strom nennt, ist für
 4A oder mehr ausgelegt, also trifft diese Regel nur ein Kartenprofil.
 
 ## Welche Profile laufen
 
-24 der 72 Profile sind von einer Art, die der Ablauf ausführt: 13
+Der Ablauf unterstützt 24 der 72 Profile: 13
 zweistufige und 11 einstufige. Mit den 20V des PD mini und den
 vorgegebenen Grenzen öffnet die Liste 23 davon:
 hobbywing-skywalker-v2-hv-opto braucht 22,8V. Auch 4 Modellzeilen von
@@ -732,7 +737,7 @@ Liste.
 | ABGEBROCHEN | ABBRECHEN, oder das Home-Tag während des Laufs | aus |
 | SEITE VERLASSEN | der Bildschirm wurde verlassen | aus |
 
-Die Spalte der roten Leuchte ist `esc_stick_reason_is_fault()` in
+Die Spalte zur roten Leuchte entspricht `esc_stick_reason_is_fault()` in
 `shared/esc/esc_stick_read.c`, ein Fall je Grund. `tools/check_docs.py` liest
 diese Funktion und schlägt fehl, wenn diese Tabelle oder ihr englisches
 Gegenstück etwas anderes sagt. TOUCH-SIGNAL VERLOREN ist an: Ereignisse gingen
@@ -744,24 +749,27 @@ Aufruf wie der Stopp gezählt). Ein Lauf, der seit seinem Beginn mehr Stopps
 als Drücke sieht, endet mit PRÜFSTAND GESTOPPT, damit ein Stopp des
 Prüfstands nicht hinter einem Druck verschwindet, der mit ihm kam.
 
-Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und schaltet den Prüfstand auf SAFE;
-ein Abbruch tut alle drei in einem Schritt.
-Ein Stopp rastet ein wie jeder Stopp: der nächste Lauf schaltet erst über
-seine eigene Warnung wieder auf ARMED.
+Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und den
+Prüfstand auf SAFE. Ein Abbruch führt alle drei Aktionen in einem Schritt
+aus. Ist STOP eingerastet, setze ihn vor dem nächsten Lauf zurück. Jeder
+neue Lauf erfordert seine eigene Warnung und Bestätigung durch Halten,
+bevor er auf ARMED schaltet.
 
 ## Die Leserate
 
-Ein Messwert ist neu, wenn der Messwertzähler des Netzteils weiterläuft:
-beim PD mini SAMPLES auf der SUPPLY-Page, der Zähler des IOmcu für
-die Ausgangsmessungen, die das Modul beantwortet hat. Seine Zeit ist die
-Page-Lesung, die den Zähler zuerst zeigte. Das PD mini liest seinen Ausgang
-alle 100ms (`PDMINI_DISPLAY_MS`), und das Panel liest die Page alle 100ms
-(`SUPPLY_LINK_READ_MS`) in seinem 50-ms-Poll; neue Messwerte kommen also
-100 bis 150ms auseinander, und der Zähler kann zwischen zwei Page-Lesungen
-um 2 weiterlaufen. Ein Zähler, der um mehr als 1 weiterläuft, ist ein
-Messwert, den das Panel nie sah, und ist spät. Ein Zähler, der stehen
-bleibt, sind Messwerte, die ausbleiben: KEINE MESSWERTE nach 1000ms, wie frisch
-die Page selbst auch ist. Ein Piepton oder eine Lücke kürzer als etwa
+Ein Messwert gilt als neu, wenn der Messwertzähler des Netzteils steigt.
+Beim PD mini ist dies SAMPLES auf der Protokollseite SUPPLY: Der IOmcu
+zählt dort die vom Modul beantworteten Ausgangsmessungen. Als Zeitpunkt
+gilt das Lesen der Seite, bei dem der neue Zählerstand erstmals erscheint.
+Der PD mini misst seinen Ausgang alle 100ms (`PDMINI_DISPLAY_MS`). Das
+Panel liest die Seite alle 100ms (`SUPPLY_LINK_READ_MS`) innerhalb seines
+Poll-Takts von 50ms. Neue Messwerte kommen daher mit Abständen von 100 bis
+150ms an; zwischen zwei Seitenabfragen kann der Zähler um 2 steigen.
+
+Ein Sprung um mehr als 1 bedeutet, dass das Panel einen Messwert verpasst
+hat, und zählt als verspätete Messung. Bleibt der Zähler stehen, fehlen
+neue Messwerte: Nach 1000ms folgt KEINE MESSWERTE, unabhängig davon, wie
+aktuell die gelesene Protokollseite ist. Ein Piepton oder eine Lücke kürzer als etwa
 200ms kann zwischen zwei Messwerte des Moduls fallen und ungesehen
 bleiben; die Reihenfolgeregel übergeht dann die Gruppe, statt die Nummer
 darunter zu wählen. PIEPTON MIN und PAUSE MIN stehen deshalb auf 200ms. Ob der
@@ -774,14 +782,15 @@ Pieptöne, die nicht gemessen ist. Es wird nicht gemacht.
 
 ## Simulation
 
-Ist das PD mini im Tab PD MINI auf SUPPLY aus, betreibt der Bildschirm SUPPLY das
-Modell eines Netzteils im Panel. Während eines Stick-Laufs ist der Strom
+Ist der PD mini im Reiter PD MINI auf SUPPLY ausgeschaltet, verwendet
+SUPPLY die Netzteilsimulation des Panels. START wird in diesem Zustand wie
+oben beschrieben abgelehnt. Der Modellcode enthält außerdem die folgende
+ESC-Simulation. Während eines Stick-Laufs ist der Strom
 dieses Modells ein simulierter ESC (`shared/esc/esc_sim.c`), der dem Profil
 folgt: Einschalten in der Einstiegsstellung betritt das Menü nach dem
 `hold_ms` des Profils (3000ms ohne), Gruppen laufen mit 250ms Pieptönen,
 250ms Lücken, 800ms langen Pieptönen und 1500ms zwischen Gruppen, bei
-150mA Ruhestrom und 600mA mehr je Piepton. Jede dieser Zahlen ist
-ausgedacht. Wo das Profil eine Speicherbewegung nennt, wird eine Auswahl
+150mA Ruhestrom und 600mA mehr je Piepton. Diese Werte sind Annahmen für die Simulation, keine Messwerte. Wo das Profil eine Speicherbewegung nennt, wird eine Auswahl
 erst behalten, wenn der Knüppel sie macht. Ein Punkt mit dem Schlüssel
 `exit` verlässt das Menü, wenn er gewählt wird, und einer mit `reset` löscht,
 was gespeichert war. Die Messwerte des Modells kommen alle 50ms. Das Modell
@@ -829,7 +838,7 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   schaltet womöglich auch die Bremse um. Nicht gemessen.
 - Die Gasstellungen sind 0, 50 und 100% des Wegs des Ausgangs. Ein ESC, der
   auf andere Endpunkte kalibriert ist, liest sie womöglich anders.
-- Nur ein Netzteil: das PD mini, höchstens 20V. ESCs, die mehr brauchen,
+- Als Netzteil wird nur der PD mini mit höchstens 20V unterstützt. ESCs, die mehr brauchen,
   brauchen eine externe Versorgung, die der Prüfstand nicht schaltet.
 - Die Handgriffe sind die der Handbücher und unerprobt. Ob ein Kontronik-ESC
   ohne Grenze auf seinen Einstiegs-Jumper oder -Taster wartet und was er
@@ -843,8 +852,8 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   vor ERLEDIGT aus bei NICHT BESTÄTIGT (kein ERLEDIGT innerhalb von 60s),
   STOP, ABBRECHEN, einem Schalten auf SAFE, einem verlorenen Link und jeder
   Netzteilregel, und sagt dann, dass der ESC gesperrt sein kann. Der
-  Prüfstand sieht weder die Bestätigung noch die Sperre; ERLEDIGT ist das
-  Wort des Bedieners, dass die Bestätigung zu Ende ist.
+  Prüfstand sieht weder die Bestätigung noch die Sperre; Mit ERLEDIGT bestätigst du,
+  dass die Bestätigung des ESC abgeschlossen ist.
 - Welche Werte ein Kontronik-ESC aus der Mitte programmiert, ist den
   Handbüchern entnommen. Für JAZZ-Modi 6 und 8, KONTROL-X-Modus 3 und
   SUN-PLUS-Modus 6 nennt das Handbuch die Stellung nicht, und die Werte
@@ -866,7 +875,7 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   Modus 2, die Kontronik-Car-Modi, KONTROL-X Modus 3) folgen jeweils
   SPEICHERN nach der vorigen. Die Handbücher takten sie mit den
   Antworttönen des ESC, die der Lauf nicht dekodiert; SPEICHERN (vorgegeben
-  2000ms) steht für sie, nicht gemessen. Die wahlfreie eigene
+  2000ms) steht für sie, nicht gemessen. Die optionale separate
   Motor-Aus-Stellung der Segelflugmodi wird nicht angefahren.
 - Ein Schalter am ESC in der Einschaltfolge (SeaKing V3 mit Schalter,
   Trackstar 60A V2, der BEC-Schalter der Hacker-X- und Master-Reihe, der

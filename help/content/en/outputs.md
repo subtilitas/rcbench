@@ -6,13 +6,17 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. From TARGET on [MOTOR & ESC](motor.md#target) it opens on the protocol the throttle's pins are bound as (the overview while they are bound as several or none is known), and from TARGET on [SERVO](servo-settings.md#the-target-row) on what that row shows: the [PROG PORT entry](#the-prog-port-entry) while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known. The home tag goes back to the screen it opened from; over the open protocol list it closes the list first, choosing nothing. A board with a drawing or a shape shows [its keys](#the-board-and-its-keys): the list answers which GPIO (general-purpose input/output) is bound, the board where to put the lead. A board with neither, and the rbmod carrier, show [a grid of pins](#the-grid-view).
+OUTPUTS assigns IOmcu pins to output protocols, defining which pins drive servos or ESCs (electronic speed controllers) and which signal they use. From [SETUP](setup.md), it opens the [overview](#the-overview-off), with OFF selected and every assigned pin labelled by protocol.
+
+From TARGET on [MOTOR & ESC](motor.md#target), it opens the throttle protocol, or the overview for mixed or unknown protocols. From [SERVO](servo-settings.md#the-target-row), it follows TARGET: [PROG PORT](#the-prog-port-entry) for a programming port, SERVO PWM for outputs, or the overview for an unknown target. The home tag returns to the originating screen. If the protocol list is open, home first closes it without selecting anything.
+
+A board with a drawing or shape shows [pin keys](#the-board-and-its-keys). The list identifies each GPIO (general-purpose input/output); the drawing shows where to connect the lead. Boards without either description, and the rbmod carrier, use a [pin grid](#the-grid-view).
 
 ## The board and its keys
 
 ![Three pins bound as SERVO PWM on the board](view:outputs)
 
-A pad is under 40px across, smaller than a fingertip. So each pin has a key, 50 x 56px, on a straight trace to its pad: two staggered rows above the board and two below.
+Pads are less than 40px across, smaller than a fingertip. Each therefore has a 50 x 56px key connected to its pad by a straight line. Keys form two staggered rows above the board and two below.
 
 | Key | Pin | A tap |
 |---|---|---|
@@ -23,7 +27,7 @@ A pad is under 40px across, smaller than a fingertip. So each pin has a key, 50 
 
 A tap on a key writes the binding at once; [LAST WRITE](#last-write) says what became of it.
 
-Current limitation: on a board with a pin in the top-left corner of its outline, the keys of the upper rows lie under the protocol list, the count and the reason. A press on the part of such a key over the protocol list opens the list instead of taking the pin. The RP2350-CAN has no pin there.
+On a board with a pad near the upper-left outline, the upper keys can overlap the protocol list, count and reason. Pressing an overlapping area opens the list instead of selecting the pin. The RP2350-CAN has no pad in this position.
 
 The board also marks the other wires of a servo lead:
 
@@ -58,11 +62,11 @@ Each bound pin is one slot of the IOmcu's OUTPUTS page, in pin order across ever
 | DSHOT300, DSHOT600 | DShot digital throttle at 300 or 600kbit/s | up to 8 |
 | DSHOT300 BIDIR, DSHOT600 BIDIR | DShot with rpm telemetry from the ESC on the same wire | up to 8 |
 
-A servo channel centres when nothing commands it; a motor channel stops. The pulse cannot say which is on the pin, so the protocol says it. The MOTOR & ESC throttle drives every channel bound as MOTOR PWM or a DShot entry, and leaves the servo channels alone. PPM needs 8 channels, so a bench with PPM bound has room for nothing else.
+Without a command, a servo channel centres and a motor channel stops. The selected protocol determines this behavior because the pulse alone cannot identify the connected device. MOTOR & ESC drives every MOTOR PWM and DShot throttle channel while leaving servo channels unchanged. PPM requires all 8 channels, leaving no room for other protocols.
 
 ![The longest protocol names](view:outputs-bidir)
 
-Picking a protocol writes nothing. It chooses which keys show accented and which protocol the next tap joins. The pins of the other protocols stay bound.
+Selecting a protocol does not write anything. It highlights that protocol's assigned pins and sets the protocol for the next pin you tap. Other assignments remain unchanged.
 
 ## Idle pulse and Full pulse
 
@@ -93,7 +97,7 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 
 ## PINS and IN USE
 
-PINS, down the left, lists the selected protocol's pins in channel order with the pad number printed on the board. IN USE, down the right, lists the pins other protocols hold, each group under its protocol's name. With OFF selected PINS is not shown, because OFF holds no pin, and IN USE lists every bound pin.
+PINS on the left lists the selected protocol's pins in channel order, with the pad numbers printed on the board. IN USE on the right lists other assigned pins, grouped by protocol. With OFF selected, PINS is hidden and IN USE lists every assigned pin.
 
 ![GPIO 13 held by the programming port](view:outputs-prog)
 
@@ -109,7 +113,7 @@ A pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD MINI tab](supply.md#pd
 
 ![The PROG PORT entry](view:outputs-port)
 
-The open protocol list shows one PROG PORT entry per programming port the IOmcu reports, in a second column beside the protocols: 4 from IOmcu 0.22.0, 1 on an older build, and one for port 1 while the count is not known. An IOmcu older than 0.17.0 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Every entry has the same rows, in the column left of the board:
+The open protocol list has a second column with one PROG PORT entry for each reported programming port: 4 from IOmcu 0.22.0, 1 on older builds, or a provisional port 1 entry while the count is unknown. Before IOmcu 0.17.0 there is no programming port or entry. A programming port is a separate output type; it consumes neither a protocol entry nor a slot. Each entry shows the following rows to the left of the board:
 
 | Row | Shows and does |
 |---|---|
@@ -119,7 +123,7 @@ The open protocol list shows one PROG PORT entry per programming port the IOmcu 
 | SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port |
 | PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
 
-The IOmcu keeps each port's pin and function in its flash, with the outputs' binding: they belong to the board. Port 1 starts as SERVO PWM on GPIO 13, ports 2 to 4 as NONE with no pin. A FUNCTION tap and a key tapped are asks: the panel writes them on a bench at rest and the amber line says how they stand.
+The IOmcu stores each port's pin and function in flash alongside the output bindings, so they stay with the board. Port 1 defaults to SERVO PWM on GPIO 13; ports 2 to 4 default to NONE with no pin. Selecting a FUNCTION or pin requests a change. The panel writes it when the bench is at rest, and the amber line reports its status.
 
 ![PROG PORT 2 with its ask waiting](view:outputs-port2)
 
@@ -138,7 +142,7 @@ The IOmcu keeps each port's pin and function in its flash, with the outputs' bin
 | `IOMCU OLDER THAN 0.22.0: SERVO PWM ONLY` | the IOmcu has no FUNCTION |
 | `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM on a port that is not the tester's target |
 
-Picking the entry writes nothing to the IOmcu, and LAST WRITE is not shown on it. The tester's two settings are kept on the panel and reach the IOmcu on a bench at rest. With more than one port the entries read `PROG PORT 1` to `PROG PORT 4`.
+Opening a port entry writes nothing, and the entry does not show LAST WRITE. The two tester settings are stored on the panel and sent to the IOmcu when the bench is at rest. When multiple ports are available, entries are named `PROG PORT 1` to `PROG PORT 4`.
 
 Another port's pin, a protocol's and an interface's stay grey. A NONE port takes any free key. Before the IOmcu's ports are read every key is grey.
 
@@ -146,7 +150,7 @@ Another port's pin, a protocol's and an interface's stay grey. A NONE port takes
 
 ## The grid view
 
-A board that reports neither a drawing nor a shape cannot be drawn: a guessed picture would point at the wrong pad as confidently as the right one. OUTPUTS then shows its pins as a grid, 4 columns of 7 cells, and the protocol list, the count `3 OF 8 PINS` and LAST WRITE in the left column. A tap on a cell ticks it. The [rbmod carrier](#on-the-rbmod-carrier) has the same grid. No cat is drawn on it. A PROG PORT entry's PIN row takes no tap there: only the keys on a drawn board set a port's pin.
+Without a board drawing or shape, OUTPUTS uses a grid of 4 columns and 7 rows instead of guessing pad locations. The left column contains the protocol list, count such as `3 OF 8 PINS`, and LAST WRITE. Tap a free cell to assign it. The [rbmod carrier](#on-the-rbmod-carrier) uses the same grid, without the cat drawing. A PROG PORT entry's PIN row cannot be tapped here: only keys on a drawn board can change a port pin.
 
 ![Three pins on a board with no shape](view:outputs-grid)
 
@@ -169,23 +173,27 @@ A stored binding that holds GPIO 13 keeps it: the programming port then has no p
 
 ![PWM01 to PWM04, PWM03 refused for slice 2](view:outputs-rbmod)
 
-The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) solders every lead to its pin, so no pin is chosen here. The grid shows the four servo outputs, PWM01 to PWM04 on GPIO 2, 4, 5 and 1, each with its GPIO under the name. A tap gives the selected protocol to the output, as a tick does on a pin. Slot n is PWM0(n+1): PWM01 is channel 0. A protocol takes at most the 4 outputs, `SERVO PWM USES 4 PINS`.
+The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) has fixed wiring, so you choose protocols rather than pins. Its grid shows PWM01 to PWM04 on GPIO 2, 4, 5 and 1, with each GPIO below its connector name. Tap an output to assign the selected protocol. Slot n corresponds to PWM0(n+1), so PWM01 is channel 0. Each protocol can use at most these 4 outputs: `SERVO PWM USES 4 PINS`.
 
 PWM02 and PWM03 are one PWM slice and run at one frame rate. A surface protocol (SERVO PWM) and a throttle protocol (MOTOR PWM) are not offered on the two together: the cell reads `SLICE OF PWM02` and a tap on it `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on its own state machine and is offered beside either.
 
 ![PROG PORT 1 on the carrier](view:outputs-rbmod-port)
 
-The PROG PORT entries name each port's pin, `PROGP01 ON GPIO 13`, and the PIN row takes no tap. FUNCTION reads PROGRAMMING and takes no tap: a programming port carries the KST and Hitec programmers and no signal protocol. SERVO TESTER and PORT PWM are not shown. The line under the rows reads `KST AND HITEC PROGRAMMERS ONLY. SIGNALS: PWM01 TO PWM04`.
+PROG PORT entries show their fixed connector and pin, for example `PROGP01 ON GPIO 13`. PIN and FUNCTION cannot be edited directly. FUNCTION shows SERVO PWM when the port serves the tester, otherwise PROGRAMMING.
+
+With IOmcu protocol 4.36 or later, SERVO TESTER and PORT PWM are available. Selecting a port requests its servo-pulse function. A conflicting PWM output on the same slice blocks the choice, and PORT PWM ON also requires the programming ports' 5V supply to be switched on in the PROG 5V box. Older protocols hide the tester rows and show `PIN FIXED. THE TESTER NEEDS IOMCU PROTOCOL 4.36`.
 
 ## The overview: OFF
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)
 
-Every visit from SETUP opens with OFF selected. OFF binds nothing and unbinds nothing. IN USE lists every bound pin under its protocol, so the whole binding and every pin it drives are on one screen. A tap on a key does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the IOmcu. OFF stays selected until a protocol is picked, also across leaving the screen. A change of board, such as an IOmcu that answers during the visit or one swapped for another, selects OFF whatever was selected, so a protocol picked before is not carried to it. Pick a protocol to edit its pins; pick OFF to come back here.
+From SETUP, OUTPUTS always opens with OFF selected. OFF changes no assignment. IN USE groups all assigned pins by protocol; pin taps do nothing and the hint reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the IOmcu.
+
+OFF remains selected until you choose a protocol, including after leaving the screen. A board change also selects OFF, whether an IOmcu first answers during the visit or is replaced by another. This prevents a previous protocol selection from carrying over to a different board. Select a protocol to edit its pins, then OFF to return to the overview.
 
 ## LAST WRITE
 
-Every tap on a key is written at once. LAST WRITE stands right of the protocol list, and at the foot of the left column in the grid view; a PROG PORT entry's asks report on its own line instead. The panel then reads the IOmcu's pages back and shows what it holds.
+Pin-key changes are written immediately. LAST WRITE appears beside the protocol list, or at the foot of the left column in grid view. PROG PORT requests use their own status line instead. After writing, the panel reads the IOmcu pages back to display the active assignment.
 
 | LAST WRITE | Meaning |
 |---|---|
@@ -210,11 +218,11 @@ The drawing of the RP2350-CAN is 1,560 bytes, fetched in 26 blocks of 62 bytes. 
 
 ![The last binding read, after a read that failed](view:outputs-unread)
 
-The screen edits a binding only after reading it. While a page did not read, the screen keeps the last binding read, every key grey, with `NOT READ` (`ASSIGNMENT NOT READ. EDITING LOCKED.` in the grid view). A tap on a key does nothing. The panel reads again at every link-up and every 500ms.
+Editing requires a confirmed read of the binding. After a failed page read, the screen retains the last known binding but greys every key and shows `NOT READ`, or `ASSIGNMENT NOT READ. EDITING LOCKED.` in grid view. Pin taps have no effect. The panel retries at every link-up and every 500ms.
 
 ![Pages no binding describes](view:outputs-odd)
 
-When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS` under IN USE. Held, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2s or leaving the screen abandons the hold.
+If the pages are readable but contain an invalid binding, such as one pin in two slots, the screen shows `NO VALID ASSIGNMENT IN THE PAGES`. Under IN USE it offers `HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS`. Completing the hold writes an empty binding and enables editing again. Sliding off, releasing before 2s or leaving the screen cancels the hold.
 
 ## The IOmcu keeps the binding
 

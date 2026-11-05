@@ -74,7 +74,7 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 5000,
-      "confirm_signal": "Four-tone melody about 5 s after power-up; the motor does not start.",
+      "confirm_signal": "Four-tone melody about 5s after power-up; the motor does not start.",
       "steps": [
         "Throttle signal at full power (transmitter on).",
         "Connect the drive battery; switch the BEC on where fitted.",
@@ -95,7 +95,7 @@
     "select": {
       "throttle": "min",
       "within_ms": null,
-      "description": "Move the throttle to the stop position while the wanted group is sounding. The German edition says 'five times one to six tones' in the intro line but lists five groups."
+      "description": "Move the throttle to the stop position while the desired group is sounding. The German edition says 'five times one to six tones' in the intro line but lists five groups."
     },
     "skip": {
       "throttle": "none",
@@ -105,7 +105,7 @@
     "exit": "Disconnect the battery. The motor runs on throttle movement right after the confirmation.",
     "changes_per_entry": "one",
     "reset_to_defaults": null,
-    "description": "Throttle at full, then power: four-tone melody after about 5 s, groups of 1 to 5 beeps after about 5 s more, each five times. Throttle to stop during the wanted group selects that mode and stores it. One mode per power-up."
+    "description": "Throttle at full, then power: four-tone melody after about 5s, groups of 1 to 5 beeps after about 5s more, each five times. Throttle to stop during the desired group selects that mode and stores it. One mode per power-up."
   },
   "items": [
     {
@@ -137,7 +137,7 @@
       ],
       "applies_to": null,
       "source_page": "10",
-      "note": "Value numbers are the beep counts of the group. Other factory defaults on p8-9: brake off, operating mode normal, timing auto, 8 kHz, acceleration 1 s (1.5 s for Master Basic 90 Opto), cell count auto, rotation left, cutoff by slow down. Programming by transmitter resets all parameters to the chosen mode (p6)."
+      "note": "Value numbers are the beep counts of the group. Other factory defaults on p8-9: brake off, operating mode normal, timing auto, 8kHz, acceleration 1s (1.5s for Master Basic 90 Opto), cell count auto, rotation left, cutoff by slow down. Programming by transmitter resets all parameters to the chosen mode (p6)."
     }
   ],
   "unknowns": [
@@ -148,7 +148,7 @@
     "Beep pattern of the confirmation: only note symbols."
   ],
   "notes": [
-    "Cutoff voltage per LiPo cell: items table and defaults say 3.2 V (Hacker_Master_Basic.pdf p9-10; Hacker_Master_Basic_de.pdf p9-10), the FAQ in the English edition says slow down at 3.0 V (Hacker_Master_Basic.pdf p17).",
+    "Cutoff voltage per LiPo cell: items table and defaults say 3.2V (Hacker_Master_Basic.pdf p9-10; Hacker_Master_Basic_de.pdf p9-10), the FAQ in the English edition says slow down at 3.0V (Hacker_Master_Basic.pdf p17).",
     "Hacker_Master_Basic_de.pdf p11 states 'five times one to six tones' but lists groups 1 to 5 only; Hacker_Master_Basic.pdf p11 says one to 5.",
     "After a normal power-up the ESC beeps once (brake on) or twice (brake off); sounded only on the first connection after the battery is attached (p8).",
     "Servo testers are advised against; the manual wants a receiver signal (p4).",

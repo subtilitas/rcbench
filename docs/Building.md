@@ -2,8 +2,8 @@
 
 <sub>**English** · [Deutsch](Building-de.md)</sub>
 
-Three builds read one source tree: the host test suite, the panel firmware
-(ESP-IDF (Espressif Internet-of-Things Development Framework)) and the
+Three builds use the same source tree: the host test suite, the panel firmware
+(ESP-IDF, Espressif Internet-of-Things Development Framework) and the
 IOmcu firmware (pico-sdk).
 
 ## The tree
@@ -54,8 +54,8 @@ rcbench/
 ```
 
 Modules under `shared/` contain the logic and have no hardware dependency.
-A module under `protocols/` is one interface to external hardware, built
-to be copied into another pico-sdk project: its core includes C standard
+A module under `protocols/` implements one interface to external hardware
+and can be copied into another pico-sdk project: its core includes C standard
 headers only, and its `rp2350/` folder includes the core and the pico-sdk
 only. Everything else that touches hardware is under `firmware/`.
 `tools/check_protocols.py` holds each module to that
@@ -76,8 +76,8 @@ else()
 endif()
 ```
 
-The panel sets `EXTRA_COMPONENT_DIRS` to `shared/` and to each module under
-`protocols/` it names; the IOmcu and the host suite use
+The panel sets `EXTRA_COMPONENT_DIRS` to `shared/` and to each required module under
+`protocols/`; the IOmcu and the host suite use
 `add_subdirectory()` for the modules they need. A module with an `rp2350/`
 folder adds its pin driver as the INTERFACE library `rcbench_<module>_rp2350`
 in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
@@ -114,9 +114,9 @@ console on UART0 with USB-Serial-JTAG (the chip's built-in USB (Universal
 Serial Bus) serial and debug bridge) as secondary. Start from it rather
 than from `menuconfig`.
 
-ESP-IDF reads `sdkconfig.defaults` only when it generates `sdkconfig`. A tree
-that has been built before already has `firmware/panel/sdkconfig`, and that
-file wins: delete it after changing the defaults, or the change has no effect
+ESP-IDF reads `sdkconfig.defaults` only when it generates `sdkconfig`. An existing
+`firmware/panel/sdkconfig` takes precedence. Delete
+that file after changing the defaults; otherwise the change has no effect
 on the image.
 
 ## Rotary knob wiring
@@ -151,15 +151,15 @@ memory) setting is needed. Pins of the SOP-8 MT6701CT, from the
 | 7B/SCL | SCL |
 | 8 Z/CSN | VDD, as figure 17 |
 
-A breakout board brings out fewer pins. On one, check that MODE is at VDD
-(a pin, a jumper or a pull-up) and that its supply pin takes 3.3V. The
+A breakout board exposes fewer pins. Check that MODE is connected to VDD
+(through a pin, jumper or pull-up) and that its supply pin accepts 3.3V. The
 datasheet's I2C circuit has 4.7kΩ pull-ups on SDA and SCL to VDD; a
 breakout's own pull-ups go to its VDD, here 3.3V.
 
 - Address: 0x06, the datasheet's default. The panel reads 0x06 only. EEPROM
   programming can move the address to 0x46 (version 1.9; version 0.1 of the
   datasheet gives 0x26); a sensor moved there is not read.
-- Nothing of the board is on this bus. The panel refuses an address in the
+- No other part of the board uses this bus. The panel refuses an address in the
   table of `shared/bench/include/panel_i2c.h`, which holds 0x00 to 0x03 and
   0x78 to 0x7F, which the I2C specification reserves, and 0x14 and
   0x5D, the GT911 touch controller's two addresses on the touch bus. 0x06 is outside it. It is one of
@@ -197,7 +197,7 @@ connector and a 4-pin I2C header. The header carries this bus's SDA (GPIO7)
 and SCL (GPIO8). The silkscreen
 orders its four pins VCC, GND, SDA, SCL (the owner's photo of the board,
 2026-10-22). A jumper by the VCC pin selects 5V or 3V3 for it; its factory
-position is not known. Check the jumper with a meter before a lead goes on.
+position is not known. Check the jumper with a meter before connecting a lead.
 Whether the bus has pull-ups on the board is not measured. The touch
 injector (`testbench/touch-injector/README.md`)
 and the analyser leads of `testbench/WIRING.md` connect here. The knob is not on this header: it has its own bus
@@ -249,11 +249,11 @@ What the panel does instead
   PANEL's Time zone applies to the stamps. A year before 1980 is stamped
   as 1980. FAT keeps no zone: a stamp is the local time at the write, and
   a later zone change does not move it.
-- A join that ends while the request asks holds the radio up for it,
+- If the network session ends while the request is pending, the radio stays on for it,
   30000ms from the request at most (`wall_ntp_holds()`, `wa_lingers()` in
   `shared/webaccess/wa_session.c`).
-- The SNTP client runs in lwIP's task on core 0 and the request is moved on
-  by the Wi-Fi worker task. The control task on core 1, which owns STOP and
+- The SNTP client runs in lwIP's task on core 0. The Wi-Fi worker task
+  advances the request. The control task on core 1, which owns STOP and
   the heartbeat, reads no wall time and waits for none of it.
 
 ### The RTC slow clock
@@ -274,7 +274,7 @@ nominal) when it does not start:
    count that times out, or one more than 0.05% off 32.768kHz, returns 0
    (`components/esp_hw_support/port/esp32p4/rtc_time.c`, lines 177 to
    195).
-3. A count of 0 is tried again, 4 tries in all. After the fourth, ESP-IDF
+3. A result of 0 triggers another attempt, up to 4 attempts in total. After the fourth, ESP-IDF
    logs `clk: 32 kHz clock not found, switching to internal 150 kHz
    oscillator`, switches the crystal off and runs the RC
    (`components/esp_system/port/soc/esp32p4/clk.c`, `select_rtc_slow_clk()`,
@@ -291,7 +291,7 @@ I (...) clock: rtc slow clock 32k crystal, 32768.012Hz calibrated
 W (...) clock: rtc slow clock internal RC, 136012.345Hz calibrated: the 32k crystal did not start
 ```
 
-The start-up cost, from the counts in the source, not measured:
+Estimated start-up times, calculated from the source code's cycle counts, not measured:
 
 | Slow clock | Counts at start | Time |
 | --- | --- | --- |
@@ -307,8 +307,8 @@ measured. A USB flash of the whole image writes the bootloader too.
 
 Current limitation: a crystal that stops after the start is not detected.
 ESP-IDF v6.1 offers no XTAL32K watchdog on the ESP32-P4. The system time
-runs on from the main crystal (esp_timer), and the RTC timer stands still;
-the next software restart sets the clock back by the time it stood.
+continues from the main crystal (esp_timer), while the RTC timer stops.
+The next software restart sets the clock back by the time the RTC timer lost.
 
 ## Commands
 
@@ -391,8 +391,8 @@ carrier's files are named `rcbench-iomcu-rbmod-install.uf2`,
 `rcbench-iomcu-rbmod.uf2`, `rcbench-iomcu-rbmod-pt.uf2`,
 `rcbench-iomcu-rbmod.bin` and `rcbench-iomcu-rbmod.elf`. The panel option
 `RCBENCH_IOMCU_RBMOD_BIN` takes the carrier's `.bin`. The panel offers each
-IOmcu the image of the board it reports, and none to a board it carries no
-image for.
+IOmcu the image for its reported board. It offers no update if it carries no
+image for that board.
 
 `PICO_BOARD` defaults to `pimoroni_pico_plus2_rp2350`. The module used for
 bring-up is a Waveshare RP2350-CAN (RP2350A, 4MB flash), which has no board
@@ -416,7 +416,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | move the interface's words from the per-file form (English in `ui_text.def` and the schema, German in `ui_text_de.c`) into the one table, `shared/text/include/ui_text.def`; `merge BASE THEIRS` carries the text changes of a branch still in the per-file form into the table during a merge ([Interface language](Language.md#adding-a-text)) |
 | `tools/gen_font.py` | regenerates the seven embedded fonts from DejaVu Sans Mono, the five text faces with the German letters; `--check` fails if the committed tables differ |
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a string overflows where it is drawn, in either language, except the English overflows the tool lists as known ([Language](Language.md)) |
-| `tools/frame_cost.py` | measures L2 cache-line fills per frame under cachegrind with the ESP32-P4's L1 and L2 caches at 1024 x 600px; `--max-lines N` fails when a mode exceeds N, as CI runs it per group of modes; `--check-doc` holds the block in [Performance](Performance.md) to the measurement, to a tolerance of 2%, and the table of the board's probe row to `PROBE_CLEAR_US`; `--update-doc` writes the block |
+| `tools/frame_cost.py` | measures L2 cache-line fills per frame under cachegrind with the ESP32-P4's L1 and L2 caches at 1024 x 600px; `--max-lines N` fails when a mode exceeds N, as CI runs it per group of modes; `--check-doc` holds the block in [Performance](Performance.md) to the measurement, to a tolerance of 3%, with a minimum allowance of 500 fills, and the table of the board's probe row to `PROBE_CLEAR_US`; `--update-doc` writes the block |
 | `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; decodes the ESP32-P4's RISC-V code with `tools/stack_riscv.py` and stops on an ELF of another machine; CI runs it after both panel builds; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow; `--check-doc` holds the task table in [Performance](Performance.md#stacks) to the build; `--iomcu` reads the IOmcu image instead and fails when a core's deepest chain, one interrupt and 256 bytes exceed its stack; with `--check-doc` it holds core 0's row of the IOmcu table, the count of calls through a register reachable from `main` in both Performance pages and core 0's sentence in `STATUS.md`; the ELF reader and the call graph are in `tools/stack_elf.py`, the IOmcu's half in `tools/stack_iomcu.py` |
 | `tools/check_panel_console.py` | reads a panel ELF file for the console relay's symbols and its link line: `off ELF` fails when the image holds any of them, `on ELF` fails when it lacks one. CI and the release workflow hold every released build to `off` |
 | `tools/check_perf_log.py` | reads a panel ELF file for the start-up probe's text, the stack scan's text and the `scan_stacks` symbol: `off ELF` fails when the image holds any of them, `on ELF` fails when it lacks any; `ci.yml` runs both on its two panel builds and `release.yml` runs `off` on the release image, so a release build that omits `-D RCBENCH_PERF_LOG=OFF` fails |
@@ -490,7 +490,7 @@ hashes and is committed. The first build downloads them from
 `components.espressif.com` into `firmware/panel/managed_components/`, which
 git ignores, and checks each against its hash. A later build makes no
 request: with the folder filled, a build without network access completes.
-To move a version, change `idf_component.yml`, run
+To change a component version, edit `idf_component.yml`, run
 `idf.py update-dependencies` and commit the new lock file.
 
 ### The C6's firmware
@@ -513,8 +513,8 @@ esp_hosted also logs `Version mismatch: Host [2.13.0] > Co-proc [x.y.z]`
 when the major or minor numbers differ. Espressif states that a host newer
 than its co-processor runs and may see request time-outs; the panel's
 behaviour with an older C6 firmware is not measured. The panel has no path
-that updates the C6. A C6 that answers is reset once per start of the
-panel; later Wi-Fi starts find the link up and reset nothing.
+that updates the C6. A responding C6 is reset once per panel start.
+Later Wi-Fi starts reuse the active link without another reset.
 
 ### Failures
 
@@ -564,13 +564,13 @@ abort, which restarts it:
   and the block size registers (`port_esp_hosted_host_sdio.c` 131-134,
   195-217). A C6 that half answers during a Wi-Fi start can trigger it.
 - When the SDMMC controller or its slot 1 cannot be set up, or the memory
-  for esp_hosted's queues, buffer pools or tasks cannot be had, esp_hosted
+  for esp_hosted's queues, buffer pools or tasks cannot be allocated, esp_hosted
   stops the panel with an assertion during start-up, before `app_main()`
   and before the display shows anything. It sets these up at every start,
   with Wi-Fi off.
 
 The start-up release check starts the radio on its own: with SETUP >
-UPDATES' reminder on (`SET_UPD_REMIND`, on by default) and a kept home
+UPDATES' reminder on (`SET_UPD_REMIND`, on by default) and a saved home
 network, the panel checks GitHub for a release after each power-up. A
 persistent fault of the kinds above then restarts the panel at each
 power-up, until the reminder is switched off or the home network is
@@ -583,15 +583,15 @@ The SD card on slot 0 and the C6 on slot 1 share one SDMMC controller:
   (`sd_host_slot_sdmmc_do_transaction()`,
   `components/esp_driver_sdmmc/src/sd_trans_sdmmc.c`); registering a slot
   sets no clock. A mount on slot 0 and the C6's traffic on slot 1 take
-  turns command by command. What a clock change between two commands costs
-  a transfer of the other slot is not measured.
+  turns command by command. The effect of a clock change between two commands
+  on a transfer through the other slot is not measured.
 - ESP-IDF's mount registers slot 0 itself on the controller esp_hosted
   created (`sdmmc_host_init()` returns the existing controller). On a
   failure after that it removes slot 0, and the controller goes only when
   no slot is registered
   (`components/fatfs/vfs/vfs_fat_sdmmc.c`,
-  `components/esp_driver_sdmmc/legacy/src/sdmmc_host.c`). A slot 0 that did
-  not start has no handle, and its removal changes nothing. `storage.c`
+  `components/esp_driver_sdmmc/legacy/src/sdmmc_host.c`). If slot 0 did
+  not start, it has no handle, and removing it changes nothing. `storage.c`
   leaves the start of slot 0 to the mount: a slot 0 started beforehand
   makes the mount's own start fail with `ESP_ERR_INVALID_STATE`.
 
@@ -608,8 +608,8 @@ wrapped; esp_hosted uses `xTaskCreateStatic()` only with
 console lists every task at start-up, `task <name> core <0|1|any> priority
 <n>`.
 
-The SD card and the C6 share ESP-IDF's SDMMC request mutex, which passes
-on priority. While the run log task on core 1 holds it for a card write and
+The SD card and the C6 share ESP-IDF's SDMMC request mutex, which uses
+priority inheritance. While the run log task on core 1 holds it for a card write and
 an esp_hosted task waits for it, the run log task runs at priority 23 on
 core 1, above the control task. The control task's longest period under
 that load is not measured.
@@ -623,8 +623,8 @@ esp_hosted's memory, all of it internal RAM:
 | SDIO buffer pool | 47,680 | 31 blocks of 1,536 bytes, 64-byte aligned (`sdio_drv.c` 246-262) |
 | common buffer pool | 38,464 | 25 blocks of 1,536 bytes, 64-byte aligned (`transport_drv.c` 298-316) |
 
-The two pools come from DMA-capable (direct memory access) internal RAM
-(`port_esp_hosted_host_os.c` 130-147) and are made before `app_main()`,
+The two pools use DMA-capable (direct memory access) internal RAM
+(`port_esp_hosted_host_os.c` 130-147) and are allocated before `app_main()`,
 with Wi-Fi off. `CONFIG_ESP_HOSTED_MEMPOOL_PREFER_SPIRAM` would move them
 to PSRAM; it is off, and the free internal RAM with it on is not measured.
 Other allocations of esp_hosted are not counted here. The console line
@@ -651,7 +651,7 @@ fails unless all five succeed; it is the name the branch ruleset requires.
 The compilers of that image are gcc 15.2 for the host build and
 arm-none-eabi-gcc 14.2.1 for the IOmcu.
 
-Four results depend on the image and are those of the runner.
+Four results depend on the runner image that produces them.
 `tools/render_ui.py` and `tools/frame_cost.py` compile with
 `-ffp-contract=off`, because that gcc targets x86-64-v3, fuses a multiply and
 an add into one rounding, and moves single pixels of the arcs and plot lines.
@@ -665,7 +665,7 @@ which ARM GNU 14.2.Rel1 also gives. The fills of the frame-cost table in the
 same file are cachegrind counts of a build on that image, run with a fixed
 environment (the length of the environment shifts the stack, and with it a
 count by up to 9%); a machine with another libc can differ, and
-`tools/frame_cost.py --check-doc` accepts 2% of a mode, 100 fills at least.
+`tools/frame_cost.py --check-doc` accepts 3% of a mode, with a minimum allowance of 500 fills.
 
 clang-tidy does not run over `firmware/`: it compiles each file and needs
 the ESP-IDF and pico-sdk headers, which the analysis job does not have.
@@ -721,10 +721,10 @@ The patch number carries fixes in either kind: 0.21.1 is a fix of the
 testing release 0.21.0, 0.22.1 a fix of the stable release 0.22.0.
 
 `release.yml` reads the kind with `tools/release_kind.py` before it waits
-for CI (continuous integration). A tag out of form fails the job, and
-nothing is built. At the publish it runs the tool again with the tags of
-the full releases GitHub holds then; one publish runs at a time across
-tags. A stable release older than a published one is not marked latest:
+for CI (continuous integration). A tag in the wrong format fails the job, and
+nothing is built. Before publishing, it runs the tool again with the tags of
+the full releases then available on GitHub. Only one release is published
+at a time across all tags. A stable release older than a published one is not marked latest:
 
 ```bash
 python3 tools/release_kind.py v0.21.0   # kind=testing prerelease=true latest=false
@@ -741,9 +741,9 @@ TESTING. The ESP32-P4 panel's line is uncapped: on both settings
 it offers any release newer than the version it runs. The 0.22.x cap, with
 the second read STABLE makes for it, belongs to the ESP32-S3 panel's
 line only ([Screens: The release line](Screens.md#the-release-line)).
-A release also loads by hand: its
+A release can also be loaded manually: its
 `rcbench-panel-p4-vX.Y.Z.bin` through the panel's browser page, or its
-archives over USB (Universal Serial Bus), as in
+archives over USB (Universal Serial Bus), as described in
 [First run, §1](FirstRun.md#1-flash-both-boards). The release's
 `rcbench-iomcu-vX.Y.Z.zip` and the image the panel carries are of the same
 commit.

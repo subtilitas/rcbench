@@ -1,8 +1,8 @@
 # rcbench hardware
 
-The boards and the parts on them. No board exists; the firmware runs on modules
-and development boards. This directory records the part decisions the firmware
-depends on.
+This directory records the planned boards and the component decisions on which
+the firmware depends. The custom boards do not yet exist; the firmware runs
+on modules and development boards.
 
 | Page | Content |
 | --- | --- |
@@ -22,17 +22,17 @@ depends on.
 
 - A part is not chosen until it is available at a vendor. Availability is
   checked at the vendor's own API or page, not at a mirror.
-- A footprint is not committed on one vendor's stock. Either the part is
+- A footprint is not committed based on one vendor's stock alone. Either the part is
   available at both vendors or the board tolerates the alternative.
 
 ## Layout
 
-`hardware/` is laid out as a repository of its own (README, STATUS, `docs/`) so
-it can be split out later with a `git mv`. While it lives here:
+`hardware/` has its own repository structure (README, STATUS, `docs/`) so
+it can be separated later with a `git mv`. While it remains here:
 
 - `tools/check_docs.py` checks its links and anchors, and nothing else.
 - The pages are English only. The wiki is bilingual because it is a manual;
-  this is a design record and is translated when the boards exist.
+  this directory is a design record, with translation deferred until the boards exist.
 
 ## Licence
 

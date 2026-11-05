@@ -2,36 +2,39 @@
 
 <sub>[English](Bringup.md) · **Deutsch**</sub>
 
-Wie man prüft, dass Frames den CAN-Bus (Controller Area Network) zwischen den
-beiden Platinen überqueren, und wie der Bericht zu lesen ist. Die Verkabelung
-steht unter [Der Link](Link-de.md).
+Diese Seite erklärt, wie du die Frame-Übertragung über den CAN-Bus
+(Controller Area Network) zwischen beiden Platinen prüfst und den
+Diagnosebericht auswertest. Die Verkabelung steht unter
+[Der Link](Link-de.md).
 
 ## Echo-Selbsttest
 
-Der Selbsttest beantwortet eine Frage: kommen Frames unversehrt über den Bus?
-Er benutzt kein Page-Protokoll. Das Panel sendet einen Testframe, der
-IOmcu schickt ihn zurück, und das Panel vergleicht Byte für Byte.
-Besteht der Test und der Link funktioniert nicht, liegt der Fehler oberhalb
-der Leitung.
+Der Selbsttest prüft, ob Frames unverändert über den Bus übertragen
+werden. Er benutzt kein Page-Protokoll. Das Panel sendet einen Testframe,
+der IOmcu schickt ihn zurück, und das Panel vergleicht ihn Byte für Byte.
+Besteht der Test, obwohl der Link nicht funktioniert, liegt der Fehler
+oberhalb der Leitung.
 
 ### IOmcu
 
-Nichts zu konfigurieren. Der IOmcu startet CAN beim Boot, gibt aus, ob
-der Controller geantwortet hat, und beantwortet Probes dauerhaft. Das Echo
-kostet einen Registerzugriff je Schleifendurchlauf und beantwortet nur Frames
-an eine Page, die die Page Map nicht benutzt.
+Eine Konfiguration ist nicht nötig. Der IOmcu startet CAN beim Boot und
+meldet, ob der Controller antwortet. Er bleibt bereit, Testframes
+zurückzusenden. Diese Prüfung benötigt einen Registerzugriff je
+Schleifendurchlauf. Beantwortet werden nur Frames an eine Page, die in
+der Page Map nicht belegt ist.
 
 Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des IOmcu,
 alle 3s wiederholt:
 
     rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
 
-`requests served` zählt die Link-Page-Anfragen, die das Panel geschickt und
-dieses Ende beantwortet hat; `self-test echoes` zählt Testframes und steht
-auf 0, solange der CAN-Selbsttest des Panels nicht läuft. `tx_drop` zählt
-Antwortframes, die dieses Ende nach 1000 Versuchen an einem vollen Sendepuffer
-aufgegeben hat; das Panel wartet dann seinen Austausch ab. Zusammen sagen die
-ersten beiden, welches Ende aufgehört hat:
+`requests served` zählt Link-Page-Anfragen, die das Panel gesendet und der
+IOmcu beantwortet hat. `self-test echoes` zählt Testframes und steht auf
+0, solange der CAN-Selbsttest des Panels nicht läuft. `tx_drop` zählt
+Antwortframes, deren Übertragung nach 1000 Versuchen bei vollem
+Sendepuffer aufgegeben wurde. Das Panel wartet dann bis zum Timeout
+seines Austauschs. Die ersten beiden Zähler zeigen zusammen, welche
+Seite ausfällt:
 
 | Requests | Panel zeigt | Lesart |
 | --- | --- | --- |
@@ -46,16 +49,18 @@ nicht am CAN-Bus.
 
 ### Panel
 
-Der Test läuft bei jedem Start, innerhalb des Splash und vor dem
-Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert und
-nicht als eine Identity, die nie geantwortet hat.
+Der Test läuft bei jedem Start während des Startbildschirms und vor dem
+Identity-Poll. So kann das Panel einen Busfehler erkennen, bevor es auf
+eine Antwort mit der Gerätekennung wartet.
 
-Zuerst fragt das Panel den IOmcu bis zu 5000ms lang nach seinem Status und
-startet den Test bei der ersten Antwort. Der IOmcu öffnet CAN nach seinem
-Supply-Boot-off. Der dauert bis zu 3500ms, wenn der PD mini im selben Moment
-Strom bekommt wie der IOmcu. Ohne Antwort in 5000ms läuft der Test trotzdem
-und meldet den stummen Bus. Der Test selbst dauert 1200ms. `bus_err` zählt
-nur die Busfehler des Tests, nicht die der Wartezeit.
+Zuerst fragt das Panel den IOmcu bis zu 5000ms lang nach seinem Status.
+Bei der ersten Antwort startet der Test. Der IOmcu öffnet CAN, nachdem
+er beim Start das Netzteil ausgeschaltet hat. Dieser Vorgang dauert bis
+zu 3500ms, wenn der PD mini gleichzeitig mit dem IOmcu versorgt wird.
+Bleibt die Antwort innerhalb von 5000ms aus, läuft der Test trotzdem
+und meldet den Bus ohne Antwort. Der Test selbst dauert 1200ms.
+`bus_err` zählt nur Busfehler während des Tests, nicht während der
+Wartezeit.
 
 Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` bringt das Panel auf den
 [Bus-Fehler-Bildschirm](#der-bus-fehler-bildschirm) statt ins Menü. Es muss
@@ -77,10 +82,10 @@ sonst etwas. Der Takt des Controllers ist der 40-MHz-Quarz. Ausgegeben wird:
     I (…) rcbench:   panel  tx_err 0 rx_err 0 bus_err 0
     I (…) rcbench:   iomcu  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
 
-Die letzte Zeile ist der eigene Status des IOmcu, vor und nach der
-Echophase über den Bus abgefragt. Die Differenz der beiden Ablesungen ist die
-Zahl der Echos, die er während des Tests gesendet hat; das Panel vergleicht
-sie mit der Zahl, die es empfangen hat.
+Die letzte Zeile zeigt den Status des IOmcu, den das Panel vor und nach
+der Echophase über den Bus abfragt. Die Differenz der beiden Messwerte
+ergibt die Zahl der während des Tests gesendeten Echos. Das Panel
+vergleicht sie mit der Zahl der empfangenen Echos.
 
 ### Befunde
 
@@ -96,8 +101,9 @@ Die Konsole schreibt die englischen Urteile. Startbildschirm und
 Bus-Fehler-Bildschirm zeigen die deutschen aus der Tabelle; jedes passt in
 29 Zellen.
 
-Tritt beides auf, wird Verfälschung vor Verlust gemeldet, weil ein
-grenzwertiger Bus beides erzeugt und die Verfälschung die Ursache benennt.
+Treten veränderte und verlorene Frames gemeinsam auf, wird zuerst die
+Veränderung gemeldet. Ein grenzwertiger Bus kann beides verursachen;
+veränderte Daten weisen auf die Ursache hin.
 
 Der Verlust wird am Busfehlerzähler des Controllers aufgeteilt. Frames, die
 mit Busfehlern verloren gingen, wurden auf der Leitung beschädigt (Abschluss,
@@ -105,9 +111,10 @@ Timing, Länge). Frames, die mit null Busfehlern verloren gingen, kamen
 unversehrt an und wurden von einem Empfänger verworfen, der nicht rechtzeitig
 gelesen hat.
 
-Erreicht der Sendefehlerzähler während des Tests 128, quittiert kein anderer
-Knoten: der IOmcu ist gar nicht auf dem Bus. Der Test meldet das
-einmal, bevor der Durchlauf vorbei ist.
+Erreicht der Sendefehlerzähler während des Tests 128, meldet die Firmware
+einmalig eine frühe Warnung. Fehlende Quittierungen sind eine mögliche
+Ursache; andere Sendefehler erhöhen den Zähler ebenfalls. Dieser Wert allein
+belegt nicht, dass der IOmcu am Bus fehlt; siehe [Bus off](Link-de.md#bus-off).
 
 ### Der Bus-Fehler-Bildschirm
 
@@ -119,41 +126,40 @@ der einfach keine Zahlen zeigt.
 
 ![Frames kommen verändert an](img/de/busfault.png)
 
-Das Urteil ist die Überschrift, die Liste darunter ist das, was zu prüfen ist,
-in der Reihenfolge, die am wenigsten kostet, und die rechte Spalte ist das,
-was beide Enden gezählt haben. `zurück` ist grün, sobald überhaupt etwas
-zurückkam; `BUS OFF` heißt, dass dieses Panel aufgehört hat zu senden.
+Die Überschrift zeigt den Befund. Darunter stehen die Prüfungen nach
+steigendem Aufwand geordnet. Die rechte Spalte zeigt die Zähler beider
+Seiten. `zurück` ist grün, sobald ein Frame zurückkam. `BUS OFF` heißt,
+dass das Panel keine Frames sendet.
 
 ![Es kam nichts zurück](img/de/busfault-silent.png)
 
-Verlassen wird der Bildschirm mit einem zwei Sekunden langen Halten der Taste
-am unteren Rand — dieselbe Geste und dieselbe Überblendung wie bei ARM. Ein
-Bildschirm, der sagt, dass dem Prüfstand nicht zu trauen ist, soll sich nicht
-durch eine Berührung wegwischen lassen, die auch ein Ärmel gewesen sein
-könnte.
+Halte die Taste am unteren Rand zwei Sekunden lang, um die Seite zu
+verlassen. Geste und Überblendung entsprechen ARM. Die Haltebedingung soll verhindern, dass eine kurze Berührung,
+etwa durch einen Ärmel, den Fehlerbildschirm schließt.
 
-Das Quittieren repariert nichts und schaltet den Test nicht ab: der Prüfstand
-läuft in Simulation, nichts treibt einen Ausgang, und der Test läuft beim
-nächsten Start wieder.
+Die Bestätigung behebt den Fehler nicht und schaltet den Test nicht ab.
+Der Prüfstand läuft in der Simulation und steuert keinen Ausgang an.
+Beim nächsten Start wird der Test erneut ausgeführt.
 
-Die Probe-Nutzdaten durchlaufen nur dominant, nur rezessiv und beide
-alternierenden Muster, weil CAN nach fünf gleichen Bits ein komplementäres
-Bit einfügt und lange Folgen eines Pegels das sind, woran ein grenzwertiger
-Bus scheitert.
+Die Testframe-Nutzdaten durchlaufen rein dominante, rein rezessive und
+beide alternierenden Bitmuster. CAN fügt nach fünf gleichen Bits ein
+komplementäres Bit ein. Lange Folgen desselben Pegels können einen
+grenzwertigen Bus zum Scheitern bringen.
 
 ## Link-Bericht
 
-Nach der Inbetriebnahme pollt das Panel jede Sekunde die Identity-Page des
-IOmcu, bis er antwortet, dann die Bench-Page mit 20Hz und die
-Status-Page alle 500ms. Alle 5s, solange der Link ausgefallen ist, und einmal
-pro Minute, solange er läuft, gibt das Panel eine Diagnose aus. Die
-Control-Task, die den Heartbeat schlägt, nimmt die Zähler und übergibt sie der
-Logger-Task, die die Zeilen formatiert und ausgibt: Bis zu 7 Zeilen brauchen
-auf der Konsole 50ms und mehr, und die Grenze des Heartbeats ist 150ms. Eine
-Warteschlange fasst 2 Berichte; ist der Logger von der Karte aufgehalten und
-die Warteschlange voll, gibt die Control-Task den Bericht selbst aus, und keine
-Zeile geht verloren. Die Heartbeat-Lücke mit dem Bericht außerhalb der
-Control-Task ist nicht gemessen.
+Nach der Inbetriebnahme fragt das Panel die Identity-Page des IOmcu jede
+Sekunde ab, bis er antwortet. Danach fragt es die Bench-Page mit 20Hz
+und die Status-Page alle 500ms ab. Bei ausgefallenem Link gibt es alle
+5s eine Diagnose aus, bei bestehendem Link einmal pro Minute.
+
+Die Control-Task erzeugt den Heartbeat, erfasst die Zähler und übergibt
+sie der Logger-Task zum Formatieren und Ausgeben. Bis zu 7 Zeilen
+brauchen auf der Konsole 50ms oder mehr; die Heartbeat-Grenze liegt bei
+150ms. Die Warteschlange fasst 2 Berichte. Blockiert der Kartenzugriff
+den Logger und ist die Warteschlange voll, gibt die Control-Task den
+Bericht selbst aus. Dabei geht keine Zeile verloren. Die Heartbeat-Lücke
+bei Ausgabe durch die Logger-Task ist nicht gemessen.
 
     I (…) rcbench: LINK answers arrive too late
     W (…) rcbench:   check: a reply slower than the poll timeout, or a stalled far end
@@ -186,8 +192,9 @@ ist übergelaufen), und das Fenster nimmt seinen neuen Wert. `crc` und
 | `works, and not every time` | grenzwertiges Timing, oder eine Pollperiode enger als die Umlaufzeit |
 
 `nack` in der Panel-Zeile zählt Anfragen, die der IOmcu mit einem NACK
-(Negative Acknowledge) beantwortet hat. Ein NACK ist eine Antwort: der Link
-arbeitet, und die Page behielt, was sie hielt ([Frames](Link-de.md#frames)).
+(Negative Acknowledgement) beantwortet hat. Ein NACK bestätigt die
+Kommunikation über den Link, lässt die Werte der Page aber unverändert
+([Frames](Link-de.md#frames)).
 Eine Einstellung aus SETUP, die eine Page ablehnt, zählt je
 einmal: ein Schreiben je abgelehntem Wert, das erst wieder geschrieben wird,
 wenn sich der Wert ändert. Wer auf SETUP durch Zeilen schaltet, zählt also
@@ -256,9 +263,12 @@ sich als der Reset auf Chip-Ebene davor. Die Zeilen `BOOTSEL_REBOOT` und
 
 ## Was festzuhalten ist
 
-Die Umlaufzeit, die Fehlerzähler beider Enden und der Overflow-Zähler des
-IOmcu. Die Umlaufzeit legt fest, was eine Pollperiode schaffen muss;
-die Zähler sagen, ob der Bus oder die Software die Grenze setzt.
+Notiere die Umlaufzeit, die Fehlerzähler beider Seiten und den
+Overflow-Zähler des IOmcu. Die Pollperiode muss die Umlaufzeit
+berücksichtigen. Die Zähler zeigen, ob der Bus oder die Software die
+Kommunikation begrenzt.
 
-Bei beiden Platinen unter Spannung außerdem am Oszilloskop bestätigen, dass
-GPIO28 (`PANEL_HEARTBEAT_PIN`) mit der Rate flankt, die [Sicherheit](Safety-de.md) vorgibt. GPIO28 ist IO28 des 12-poligen Headers P3.
+Prüfe bei versorgten Platinen außerdem mit dem Oszilloskop, ob GPIO28
+(`PANEL_HEARTBEAT_PIN`) Flanken mit der unter
+[Sicherheit](Safety-de.md) vorgegebenen Rate erzeugt. GPIO28 ist IO28
+des 12-poligen Headers P3.

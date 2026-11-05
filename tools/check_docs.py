@@ -408,6 +408,8 @@ ENGLISH_QUOTES = {
     ("Servo-de.md", "OFF"),
     ("Servo-de.md", "HOLD"),
     ("EscProfiles-de.md", "none"),
+    # Protocol state LINK_ESC_OPEN, not the translated OPEN file control.
+    ("EscWire-de.md", "OPEN"),
     ("StickProgramming-de.md", "none"),
     ("LinkHitec-de.md", "RESULT"),
     ("LinkHitec-de.md", "SUPPLY"),
@@ -1096,7 +1098,7 @@ FACTS = [
      ("CONTROL_PERIOD_MS", "HEARTBEAT_PERIOD_MS")),
     ("docs/Safety.md", rf"runs every {N}ms on the core that does not draw",
      ("CONTROL_PERIOD_MS",)),
-    ("docs/Safety-de.md", rf"alle {N}ms auf dem Kern läuft, der nicht",
+    ("docs/Safety-de.md", rf"läuft alle {N}ms auf dem Kern, der nicht",
      ("CONTROL_PERIOD_MS",)),
     # The link's two time limits.
     ("docs/Safety.md", rf"IOmcu silence watchdog, {N}ms",

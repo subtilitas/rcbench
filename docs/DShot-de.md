@@ -2,21 +2,22 @@
 
 <sub>[English](DShot.md) · **Deutsch**</sub>
 
-Was der IOmcu auf einen Ausgangspin legt und was zurückkommt. Vier
-Treiber: Servo-PWM (Pulse-Width Modulation), PPM (Pulse-Position Modulation),
-DShot und bidirektionales DShot.
+Der IOmcu hat vier Ausgangstreiber: Servo-PWM (Pulse-Width Modulation),
+PPM (Pulse-Position Modulation), DShot und bidirektionales DShot. Diese
+Seite beschreibt ihre Ausgangssignale und die empfangenen Antworten.
 
-Die Regeln, denen jeder Output folgt — Weg, Rolle, Ruhelage, Slew, Begrenzung,
-Arming und das Silence-Timeout — stehen in `shared/outputs/` und gelten für alle
-vier gleich. Diese Seite handelt vom Signal auf der Leitung.
+Die gemeinsamen Regeln stehen in `shared/outputs/`: Weg, Rolle,
+Ruhelage, Slew, Begrenzung, Arming und Timeout bei ausbleibendem
+Link-Verkehr. Sie gelten für alle vier Ausgangstreiber. Hier geht es
+um die Signale auf der Leitung.
 
 ## Welche Platine
 
-Es wird mehr als einen IOmcu geben. Der, auf dem das Bring-up läuft, ist
-ein Modul im Pico-Formfaktor, von Hand verkabelt; eine spätere Platine trägt
-ihre Outputs auf Pins, die gelötet und nicht gewählt sind. Sie haben nicht
-dieselben Pins, und ein Pin-Index auf der einen bedeutet auf der anderen einen
-anderen Pin — oder keinen.
+IOmcu-Platinen haben unterschiedliche Pin-Belegungen. Für die
+Inbetriebnahme dient ein von Hand verkabeltes Modul im Pico-Formfaktor.
+Bei Platinen mit verlöteten Ausgängen sind die Zuordnungen fest. Ein
+Pin-Index kann auf einer anderen Platine einen anderen Pin bezeichnen
+oder dort gar nicht vorhanden sein.
 
 Der IOmcu sagt deshalb im Hardware-Register der
 [Identity-Page](Link-de.md#page-map), welche Platine er ist, und das Panel
@@ -24,24 +25,21 @@ bietet die Pins dieser Platine an und keine anderen. Ein Platinenwechsel
 verwirft jede Auswahl, denn ein Pin-Index auf der einen Platine bedeutet auf
 der anderen einen anderen Pin.
 
-Eine Platine, für die das Panel einen Katalog hat, benutzt diesen Katalog. Ihn
-hat jemand gelesen, er benennt das genaue Signal, das jeden reservierten Pin
-hält, und er ändert sich nicht unter einem laufenden Prüfstand.
+Für eine bekannte Platine nutzt das Panel den eingebauten Katalog.
+Dieser geprüfte Katalog benennt das Signal an jedem reservierten Pin
+und bleibt während des Betriebs unverändert.
 
-Eine Platine, von der das Panel noch nie gehört hat, beschreibt ihre eigenen
-Pins auf der [Catalogue-Page](Link-de.md#page-map): welche GPIOs sie
-herausführt, die daneben aufgedruckte Pad-Nummer und was die hält, die ein
-Output nicht haben darf. Ein IOmcu, der neuer ist als das Panel, ist so
-benutzbar statt leer.
+Eine unbekannte Platine beschreibt ihre Pins auf der
+[Catalogue-Page](Link-de.md#page-map): die herausgeführten GPIOs, die
+aufgedruckten Pad-Nummern und die Belegung der für Ausgänge gesperrten
+Pins. So kann das Panel auch einen IOmcu verwenden, der neuer als sein
+eingebauter Katalog ist.
 
-Eine Platine, die auch die [Shape-Page](Link-de.md#page-map) bedient, sagt, wo
-ihre Pads liegen — der Umriss, das Raster und die Ecke, an der Pad 1 sitzt —,
-sodass das Panel sie zeichnen und nicht nur auflisten kann. Nur ein Bild
-braucht das: eine Platine, die nicht antwortet, wird aus ihrem Katalog benutzt
-und einfach nicht gezeichnet. Ein aus einer geratenen Form gezeichnetes Bild
-zeigte mit derselben Überzeugung auf den falschen wie auf den richtigen Pad —
-auf einem Bildschirm, dessen Aufgabe „finde diesen Pad auf der Platine vor
-dir“ ist, ist das der Fehler, den es zu vermeiden gilt.
+Die [Shape-Page](Link-de.md#page-map) ergänzt den Platinenumriss, das
+Pad-Raster und die Ecke mit Pad 1. Mit diesen Angaben kann das Panel
+die Platine zeichnen. Antwortet die Shape-Page nicht, verwendet es nur
+den Katalog und zeigt keine Zeichnung. Eine geratene Form könnte auf
+das falsche Pad der tatsächlichen Platine verweisen.
 
 Was eine Platine nicht kann, ist einen ihrer Pins sicher machen. Der
 IOmcu reserviert seinen eigenen Satz an seinem eigenen Ende, was die
@@ -50,10 +48,9 @@ nicht die Safety-Leitung. Eine Platine, die sich weder beschreibt noch bekannt
 ist, bietet gar nichts an: eine Pin-Belegung zu raten ist der Weg, auf dem ein
 Output auf der Safety-Leitung landet.
 
-Eine Platine mit gelöteten Outputs wird gezeigt, nicht angeboten. Der
-IOmcu konfiguriert sich selbst, und das Panel zeigt, was es zurückliest,
-ohne es bearbeiten zu lassen: ein Bildschirm, der Pins neu bindet, die an
-keinem Stecker liegen, böte eine Wahl an, die die Platine nicht einlösen kann.
+Bei einer Platine mit verlöteten Ausgängen konfiguriert der IOmcu die
+festen Zuordnungen selbst. Das Panel zeigt die zurückgelesenen Werte
+an, erlaubt aber keine Änderungen, die die Platine nicht unterstützt.
 
 ## Welcher Pin
 
@@ -71,16 +68,16 @@ Wandlers auf dem Modul), GPIO 24 (VBUS-Messung), GPIO 25 (LED1) und GPIO 29
 Input/Output), den das Modul hat: GPIO 30 und aufwärts, 29 ist der höchste Pin des
 RP2350A. Die Menge gehört zum Modul und folgt nicht der SDK-Board-Datei, für die
 das Image gebaut wird. Die PD-mini-Pins der SUPPLY-Page werden an dieselbe Menge
-gebunden. Ein verweigerter Slot bleibt ungebunden. Die Page liest weiterhin
-zurück, was gefordert wurde, und kein Register auf ihr sagt, ob ein Slot
-gebunden ist: ein ungebundener Slot liest sich genau wie ein treibender. Beim
-Bediener kommt eine Leitung an, die sich nicht bewegt.
+gebunden. Ein abgelehnter Slot bleibt ohne Zuordnung. Die Page liefert weiterhin
+die angeforderten Werte zurück. Keines ihrer Register zeigt, ob die
+Zuordnung erfolgreich war. Ein nicht zugeordneter Slot liest sich
+deshalb wie ein aktiver, obwohl seine Leitung kein Signal ausgibt.
 
-Ein PIO-Block (Programmable Input/Output) adressiert 32 Pins ab Basis 0 oder 16,
-festgelegt, solange der Block ein Programm hält. Welcher Block einen bestimmten
-Pin erreicht, steht daher erst fest, wenn der Pin eintrifft, und der Block wird
-beim Binden des Slots gewählt. Ein Pin, den kein freier Block erreicht, wird wie
-jeder andere verweigert.
+Ein PIO-Block (Programmable Input/Output) adressiert 32 Pins ab Basis
+0 oder 16. Die Basis bleibt fest, solange der Block ein Programm
+enthält. Der Treiber wählt den Block deshalb erst bei der Zuordnung
+des Slots, wenn der Pin bekannt ist. Erreicht kein freier Block den
+Pin, wird die Zuordnung abgelehnt.
 
 ## Servo-PWM
 
@@ -116,10 +113,11 @@ dessen Endpunkt nicht zu seiner eigenen Rate passt, startet ungebunden. Die
 Regel ist `out_pwm_pulse_max()` und `outputs_pulse_check()`; [der
 Link](Link-de.md#ein-puls-nicht-länger-als-sein-frame) hat die Seite der Pages.
 
-Ein Slice sind zwei Kanäle an einem Zähler, zwei Pins auf demselben Slice laufen
-also mit derselben Frame Rate. Eine zweite Bindung, die auf einem belegten Slice
-eine andere Rate verlangt, wird verweigert statt umgestellt: Umstellen würde
-einen Output verschieben, den niemand angefasst hat.
+Ein Slice enthält zwei Kanäle mit einem gemeinsamen Zähler. Beide Pins
+verwenden deshalb dieselbe Pulsrate. Eine weitere Zuordnung mit einer
+anderen Rate wird auf einem belegten Slice abgelehnt. Die Rate wird
+nicht geändert, weil dies den bereits aktiven Ausgang beeinflussen
+würde.
 
 Die SERVO-Page setzt eine Frame Rate für ihr Ziel. Mit den Standard-Servoports
 als `TARGET` von PROG ist das jeder PWM-Ausgang, dessen erster Kanal die Rolle
@@ -199,9 +197,9 @@ Der Wert ist nicht über seinen ganzen Bereich ein Gasbefehl:
 | 1 bis 47 | Commands: Beeps, Drehrichtung, 3D-Mode, Save Settings, Extended Telemetry |
 | 48 bis 2047 | Gas |
 
-Ein Command muss zehnmal wiederholt werden, bevor ein ESC (Electronic Speed
-Controller) darauf reagiert; einmal gesendet bewirkt es gar nichts, was genau
-wie ein nicht funktionierender Treiber aussieht.
+Ein Kommando muss zehnmal wiederholt werden, bevor ein ESC (Electronic
+Speed Controller) darauf reagiert. Ein einmal gesendetes Kommando bleibt
+ohne Wirkung und kann deshalb wie ein Treiberfehler wirken.
 
 Der Prüfstand bildet den Weg so ab, dass ein Befehl von null Motor Stop ist und
 alles darüber in 48 bis 2047 landet. Ein Treiber, der den Weg direkt auf 0 bis
@@ -209,9 +207,10 @@ alles darüber in 48 bis 2047 landet. Ein Treiber, der den Weg direkt auf 0 bis
 Drehrichtungswechsel. Ein Befehl über der Spanne von 1000 wird auf null, Motor
 Stop, abgebildet, nicht auf volles Gas.
 
-`out_dshot_bind()` auf einem Pin, der schon mit anderer Rate oder anderem Modus
-gebunden ist, gibt false zurück und lässt den alten Output weiterlaufen. Ein
-Aufrufer gibt den Pin zuerst frei.
+`out_dshot_bind()` gibt false zurück, wenn der Pin bereits mit einer
+anderen Rate oder einem anderen Modus zugeordnet ist. Der bisherige
+Ausgang läuft weiter. Gib den Pin vor einer Zuordnung mit anderen
+Einstellungen frei.
 
 Frames gehen mit 1kHz hinaus. Diese Rate steht nicht auf der Leitung: das
 Ratenfeld der OUTPUTS-Page ist bei DShot eine Bitrate und keine Frame Rate, der
@@ -237,12 +236,12 @@ Turnaround geschieht im PIO-Block — der Transmitter gibt den Pin frei und setz
 ein Flag, der Receiver startet auf dieses Flag — denn 30µs sind keine Frist,
 die eine Schleife einhalten kann.
 
-Die Antwort ist GCR-codiert (Group-Coded Recording). Jedes Nibble eines 16-Bit-
-Werts wird zu einem Fünf-Bit-Codewort, gewählt so, dass die Leitung häufig den
-Pegel wechselt, und die Leitung ist differentiell: jedes Bit ist das vorige
-exklusiv-oder die Daten. Rückgängig macht das `x ^ (x >> 1)`. Das zuerst
-gesendete Bit ist eine Null, der Burst beginnt also mit einer fallenden Flanke
-aus dem Idle-Pegel und ist überhaupt auffindbar.
+Die Antwort ist GCR-codiert (Group-Coded Recording). Jedes Nibble eines
+16-Bit-Werts wird zu einem Fünf-Bit-Codewort, das häufige Pegelwechsel
+erzeugt. Die Codierung ist differenziell: Jedes Bit ergibt sich aus dem
+vorigen Bit exklusiv-oder den Daten. `x ^ (x >> 1)` macht diese
+Codierung rückgängig. Das erste gesendete Bit ist null. Die fallende
+Flanke vom Ruhepegel markiert damit den Beginn des Bursts.
 
 Die 16 Bit sind zwölf Nutzdaten und vier Prüfsumme, und die Prüfsumme ist das
 Komplement der eines ausgehenden Frames. Jeder Ein-Bit-Fehler wird gefangen: die
@@ -270,20 +269,22 @@ Der Pull-up nicht, denn Pulls liegen im Pad-Block; ein Pin, der seine
 Invertierung verloren hat, ruht also weiterhin high und sieht wie ein
 Protokollfehler aus und nicht wie ein Pin-Fehler.
 
-Der Bind liest das Register zurück und lehnt ab, statt eine Leitung zu treiben,
-deren Polarität er nicht setzen konnte. Die Reihenfolge ist hier die ganze
-Polarität, und nichts sonst im Treiber würde ihren Verlust bemerken.
+Bei der Zuordnung wird das Register zurückgelesen. Ist die benötigte
+Polarität nicht gesetzt, wird die Zuordnung abgelehnt. Die Reihenfolge
+der Initialisierung ist deshalb entscheidend; kein anderer Teil des
+Treibers erkennt eine verlorene Invertierung.
 
 ### Die Antwort wird abgetastet, nicht gemessen
 
-Der IOmcu tastet die Leitung mit dem Fünffachen der Bitrate der Antwort ab
-und decodiert in Software. Die Bitrate des ESC stammt von seinem eigenen Quarz,
-ein oder zwei Prozent neben der des Prüfstands, und 21 Bit reichen aus, damit
-das einen festen Abtastpunkt aus einem Bit hinausschiebt — der Decoder setzt
-seine Phase deshalb bei jeder Flanke zurück, so wie ein UART (Universal
-Asynchronous Receiver-Transmitter) auf einem Startbit resynchronisiert, und
-liest jedes Bit aus der Mitte seines Fensters. `test_dshot_telem` prüft das
-gegen eine Antwort mit 4,75 und 5,25 Abtastungen je Bit.
+Der IOmcu tastet die Leitung mit dem Fünffachen der Antwort-Bitrate ab
+und dekodiert die Daten in Software. Der ESC verwendet seinen eigenen
+Quarz; seine Bitrate kann ein oder zwei Prozent von der des Prüfstands
+abweichen. Über 21 Bit kann diese Abweichung einen festen Abtastpunkt
+aus dem Bit verschieben. Der Dekoder setzt seine Phase deshalb bei
+jeder Flanke zurück, ähnlich einem UART (Universal Asynchronous
+Receiver-Transmitter) am Startbit, und liest jedes Bit in der Mitte
+seines Fensters. `test_dshot_telem` prüft dies mit 4,75 und 5,25
+Abtastungen je Bit.
 
 ### Polzahl
 
@@ -298,9 +299,9 @@ Schreibvorgang, den niemand beantwortet, bleibt offen und geht beim nächsten
 50-ms-Poll erneut hinaus; einen, den der IOmcu ablehnt, wiederholt sie
 nicht, er wartet auf die nächste Änderung oder die nächste Link-up-Flanke.
 
-Bis sie eintrifft, meldet der IOmcu überhaupt keine Drehzahl. Eine aus
-einer geratenen Polzahl abgeleitete Drehzahl ist eine plausible Zahl ohne
-Kennzeichnung, dass sie falsch ist, und das ist schlimmer als ein leeres Feld.
+Bis die Polzahl eintrifft, meldet der IOmcu keine Drehzahl. Das Feld
+bleibt leer, weil eine geratene Polzahl eine plausible, aber falsche
+Drehzahl ergeben könnte.
 
 Das gilt nur für null. Jede gerade Zahl zwischen 2 und 42 wird angenommen und
 setzt das Gültig-Bit der Drehzahl. Eine ungerade wird abgelehnt, denn ein
@@ -380,12 +381,13 @@ deshalb als Argument entgegen, statt ihn zu erschließen. Ein ESC, der Command
 Drehzahl-Frames als Temperatur oder Spannung gelesen. Das ist ungemessen, und der
 Grund, die ersten Anzeigen an einem neuen ESC zu prüfen.
 
-Temperatur, Spannung und Strom erreichen die Zahlen des Prüfstands von hier
-und von nirgends sonst: Der IOmcu hat kein Messfrontend. Jede hat ihr eigenes
-Staleness-Fenster von 2000ms, gegen 200ms für die Drehzahl, weil die
-Extended-Frames nur wenige je Sekunde zwischen die anderen gestreut werden,
-während eine Periode mit jedem Frame zurückkommt. Die Leistung ist das Produkt
-aus Spannung und Strom und bleibt leer, wenn nicht beide eingetroffen sind.
+Diese Telemetrie-Frames sind die einzige Quelle des IOmcu für
+Temperatur, Spannung und Strom in der Prüfstandsanzeige; er hat kein
+Messfrontend. Jeder Wert gilt 2000ms lang als aktuell, die Drehzahl
+200ms. Extended-Frames treffen nur wenige Male je Sekunde ein, während
+jeder Frame eine Periode zurückliefert. Die Leistung wird aus Spannung
+und Strom berechnet. Ihre Anzeige bleibt leer, bis beide Werte
+eingetroffen sind.
 
 ## Was auf der Leitung nicht bestätigt ist
 
@@ -393,7 +395,8 @@ Die Implementierung ist aus der veröffentlichten Beschreibung des Protokolls
 geschrieben. Alles Folgende wird von der Host-Suite gegen Frames geprüft, die
 derselbe Code baut; das belegt die Arithmetik und nicht die Leitung.
 
-Eine Lesung steht nicht auf dieser Liste. Sie ist gegen einen ESC und ohne Messgerät am Pin, also ein Indiz und keine Messung.
+Die folgende Beobachtung stammt von einem ESC ohne Messgerät am Pin.
+Sie ist ein Hinweis auf die Funktion, keine Messung des Leitungssignals.
 
 - **Bidirektionales DShot600 gegen einen ESC** (#172): ein Skystars 35A mit AM32 2.21, Target `JUPITER_35A_F421` (der
   AM32-Konfigurator zeigt es gekürzt als `JUPITER_35A_F42`), an einem

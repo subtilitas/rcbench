@@ -2,9 +2,9 @@
 
 <sub>**English** · [Deutsch](DShot-de.md)</sub>
 
-What the IOmcu puts on an output pin, and what comes back. Four drivers:
-servo PWM (pulse-width modulation), PPM (pulse-position modulation), DShot, and
-bidirectional DShot.
+The IOmcu has four output drivers: servo PWM (pulse-width modulation),
+PPM (pulse-position modulation), DShot and bidirectional DShot. This page
+describes their output signals and the replies they receive.
 
 The rules every output obeys — travel, role, rest, slew, clamping, the ARMED state and
 the silence timeout — are in `shared/outputs/` and are the same for all four.
@@ -12,32 +12,30 @@ This page is about the wire.
 
 ## Which board
 
-More than one IOmcu will exist. The one the bring-up runs on is a
-Pico-form-factor module wired by hand; a later board carries its outputs on
-pins that are soldered rather than chosen. They do not have the same pins, and
-a pin index on one means a different pin, or no pin, on the other.
+IOmcu boards have different pin maps. Bring-up uses a Pico-form-factor
+module wired by hand; boards with soldered output connections have
+fixed assignments. A pin index on one board can mean a different pin,
+or no pin, on another.
 
 The IOmcu therefore says which board it is, in the hardware register of
 the [identity page](Link.md#page-map), and the panel offers that board's pins
 and no other. Changing board clears any selection, because a pin index on one
 board means a different pin on another.
 
-A board the panel has a catalogue for uses that catalogue. It has been read by
-somebody, it names the exact signal holding each reserved pin, and it cannot
-change under a running bench.
+For a known board, the panel uses its built-in catalogue. This reviewed
+catalogue identifies the signal occupying each reserved pin and remains
+fixed while the bench runs.
 
-A board the panel has never heard of describes its own pins, on the
-[catalogue page](Link.md#page-map): which GPIOs it brings out, the pad number
-printed beside each, and what holds the ones an output may not have. So an
-IOmcu newer than the panel is usable rather than blank.
+An unknown board describes its pins on the
+[catalogue page](Link.md#page-map): the exposed GPIOs, the pad number
+printed beside each, and the use of pins reserved from outputs. This
+lets the panel use an IOmcu that is newer than its built-in catalogue.
 
-A board that also serves the [shape page](Link.md#page-map) says where its
-pads are (the outline, the pitch, and which corner pad 1 sits at), so the
-panel can draw it rather than only list it. Only a picture needs that: a board
-that does not answer is used from its catalogue and is not drawn. A
-picture drawn from a guessed shape would point at the wrong pad with the same
-confidence as the right one, which on a screen whose job is "find this pad on
-the board in front of you" is the failure worth avoiding.
+The [shape page](Link.md#page-map) adds the board outline, pad pitch and
+the corner containing pad 1. With this information, the panel can draw
+the board. If the shape page does not answer, the panel uses the
+catalogue without a drawing. It does not guess a shape, because an
+incorrect drawing could direct the operator to the wrong physical pad.
 
 What a board cannot do is make one of its pins safe. The IOmcu reserves
 its own set at its own end whatever the catalogue page says, so a catalogue
@@ -45,10 +43,9 @@ that is wrong costs a pin rather than the safety line. A board that neither
 describes itself nor is known offers nothing: guessing a pin map is how an
 output ends up on the safety line.
 
-A board whose outputs are soldered is shown rather than offered. The
-IOmcu configures itself and the panel displays what it reads back
-without letting it be edited, because a screen that re-bound pins which are
-not on connectors would be offering a choice the board cannot honour.
+For a board with soldered outputs, the IOmcu configures the fixed
+assignments. The panel displays the values it reads back and does not
+allow edits that the board cannot support.
 
 ## Which pin
 
@@ -64,20 +61,21 @@ GPIO 24 (VBUS sense), GPIO 25 (LED1) and GPIO 29 (VSYS sense) — and any number
 the last GPIO (general-purpose input/output) the module has: GPIO 30 and up, 29
 being the top of the RP2350A. The set is the module's own and does not follow
 the SDK board file the image is built for. The PD mini's pins on the SUPPLY
-page are held to the same set. A refused slot is left unbound. The page still reads back what was asked for, and no register on it
-says whether a slot is bound, so an unbound slot reads back exactly like a
-driving one. What reaches the operator is a lead that does not move.
+page are held to the same set. A refused slot remains unbound. The page still returns the requested
+values, and none of its registers reports whether binding succeeded.
+An unbound slot therefore reads back like a driving one, although its
+lead produces no output.
 
-A PIO (programmable input/output) block addresses 32 pins from a base of 0 or
-16, fixed while the block holds a program. Which block can reach a given pin is
-therefore not known until the pin arrives, and the block is chosen when the
-slot is bound. A pin no free block can reach is refused like any other.
+A PIO (programmable input/output) block addresses 32 pins from a base
+of 0 or 16. The base is fixed while the block holds a program. The
+driver therefore selects a block when the slot is bound and its pin is
+known. Binding is refused if no free block can reach that pin.
 
 ## Servo PWM
 
-Hardware PWM, not PIO: the part has 12 slices and 24 channels, and a servo
-pulse is exactly what a slice does. The counter runs at 1MHz, so a pulse is a
-count of microseconds and the frame period is 1,000,000 divided by the rate.
+Servo pulses use hardware PWM. The part provides 12 slices and
+24 channels. Its counter runs at 1MHz, so the pulse count is in
+microseconds and the frame period is 1,000,000 divided by the rate.
 
 | | |
 | --- | --- |
@@ -195,9 +193,9 @@ above it lands in 48 to 2047. A driver that mapped travel straight onto 0 to
 2047 would send beeps and direction changes on its way up from idle. A command
 above the span of 1000 maps to zero, motor stop, not to full throttle.
 
-`out_dshot_bind()` on a pin that is already bound with a different rate or mode
-returns false and leaves the old output running. A caller releases the pin
-first.
+`out_dshot_bind()` returns false if the pin is already bound with a
+different rate or mode. The existing output keeps running. Release the
+pin before binding it with new settings.
 
 Frames go out at 1kHz. That rate is not on the wire: the OUTPUTS page's rate
 field is a bit rate for DShot rather than a frame rate, so the bench chooses it.
@@ -222,11 +220,12 @@ turnaround happens inside the PIO block — the transmitter releases the pin and
 raises a flag, and the receiver starts on that flag — because 30µs is not a
 deadline a loop can meet.
 
-The reply is group-coded. Each nibble of a 16-bit value becomes a five-bit code
-word chosen so the line changes level often, and the line is differential: each
-bit is the previous one exclusive-ored with the data. Undoing it is
-`x ^ (x >> 1)`. The first bit sent is a zero, so the burst starts with a falling
-edge from the idle level and can be found at all.
+The reply is group-coded. Each nibble of a 16-bit value becomes a
+five-bit code word chosen to produce frequent level changes. The
+encoding is differential: each bit is the previous bit exclusive-ored
+with the data. Decode it with `x ^ (x >> 1)`. The first transmitted bit
+is zero, producing a falling edge from the idle level that marks the
+start of the burst.
 
 The 16 bits are twelve of payload and four of checksum, and the checksum is the
 complement of the one on an outgoing frame. Every single-bit error is caught:
@@ -253,9 +252,9 @@ of masking it. The override lives in that register and is lost. The pull-up is
 not, because pulls are in the pad block, so a pin that lost its inversion still
 idles high and looks like a protocol fault rather than a pin fault.
 
-The bind reads the register back and refuses rather than driving a line whose
-polarity it could not set. Ordering is the whole of the polarity here, and
-nothing else in the driver would notice losing it.
+Binding reads the register back and fails if the required polarity
+was not set. Initialisation order is therefore critical; no other
+part of the driver detects the loss of inversion.
 
 ### The reply is sampled, not timed
 
@@ -279,9 +278,9 @@ the [CONTROL page](Link.md#page-map). A write nobody answers stays owed and
 goes out again at the next 50ms poll; one the IOmcu refuses is not
 retried, and waits for the next edit or link-up edge.
 
-Until it arrives the IOmcu reports no speed at all. A speed derived from a
-guessed pole count is a plausible number with nothing to mark it as wrong, which
-is worse than an empty field.
+The IOmcu reports no speed until it receives the pole count. It leaves
+the field empty because a guessed count could produce a plausible but
+incorrect speed.
 
 That covers zero only. Any even count between 2 and 42 is accepted and sets the
 rpm valid bit. An odd one is refused, because a typo that reached the far end
@@ -354,12 +353,12 @@ the mantissa's top bit is clear and the type nibble is not zero, which an ESC
 that normalises its exponent never sends. An ESC that does not normalise is
 the case this cannot survive, and no such ESC has been tried.
 
-Temperature, voltage and current reach the bench numbers from here and from
-nowhere else: there is no measurement front end on the IOmcu. Each keeps
-its own staleness window of 2000ms, against 200ms for speed, because the
-extended frames are interleaved a few a second while a period comes back on
-every frame. Power is the product of voltage and current, and stays empty
-unless both arrived.
+These telemetry frames are the IOmcu's only source of temperature,
+voltage and current for the bench display; it has no measurement front
+end. Each value has a staleness window of 2000ms, compared with 200ms
+for speed. Extended frames arrive a few times per second, while every
+frame returns a period. Power is calculated from voltage and current
+and remains empty until both have arrived.
 
 ## What has not been confirmed on a wire
 
@@ -367,7 +366,8 @@ The implementation is written from the published description of the protocol.
 Everything below is exercised by the host suite against frames the same code
 builds, which proves the arithmetic and not the wire.
 
-One reading is not on this list. It is against one ESC with no instrument on the pin, so it is evidence and not a measurement.
+The observation below comes from one ESC without an instrument on the
+pin. It provides evidence of operation, not a wire measurement.
 
 - **Bidirectional DShot600 against one ESC** (#172): a Skystars 35A running AM32 2.21, target `JUPITER_35A_F421` (the AM32
   configurator shows it cut to `JUPITER_35A_F42`), on a 4S pack, bound to

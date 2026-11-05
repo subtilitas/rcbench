@@ -2,25 +2,25 @@
 
 <sub>**English** · [Deutsch](BenchConsole-de.md)</sub>
 
-The bench console is a bench tool, for debug builds only. It is not in any released image. An IOmcu
-built with the option `IOMCU_CONSOLE` reads command lines on its USB
-(Universal Serial Bus) serial port and reads and writes the link pages of
-[The link](Link.md) from them. A station on that port drives the IOmcu's
-pages without a panel screen for them: the KST page, SUPPLY, PROG, HITEC
-and every other page.
+The bench console reads and writes the IOmcu's link pages from command
+lines. It is available only in debug builds, not in released images. Build
+the IOmcu with `IOMCU_CONSOLE` to use its USB (Universal Serial Bus) serial
+port. A station connected to that port can access the KST, SUPPLY, PROG,
+HITEC and other pages described in [The link](Link.md), including pages
+without a panel screen.
 
-Every request goes through the page handlers the link uses. A page refuses
-to the console what it refuses to the panel: an ARM write while the arm
-latch is set, a KST or HITEC command without its write key or with a wrong
-check, a SUPPLY ON without a heartbeat, a transaction after a stop. The
-console has no rights the panel does not have.
+Every request goes through the same page handlers as a link request. The
+same refusals apply: an ARM write while the arm latch is set, a KST or
+HITEC command without its write key or with an incorrect check, a SUPPLY
+ON without a heartbeat, and a transaction after a stop. The console has
+the same permissions as the panel.
 
-A request from the console is not link traffic. It does not hold the link's
-silence failsafe off (200ms), and it is not a heartbeat. Every page that
-needs a trusted heartbeat and a link that is not silent needs a running
-panel beside the console: SUPPLY's ON, a KST session, every HITEC command
-but ABORT and CLOSE, and an ARM. Without a panel those are refused or
-stopped, as they are on a bench whose panel has stopped.
+A console request does not count as link traffic or as a heartbeat, so it
+does not prevent the link's silence failsafe from triggering after 200ms.
+Operations that require a trusted heartbeat and an active link also
+require a running panel: SUPPLY's ON, a KST session, every HITEC command
+except ABORT and CLOSE, and ARM. Without a panel, these operations are
+refused or stopped, as they are when a bench's panel stops.
 
 The console can write what the panel can write, CONTROL included. A write
 of ARM from the console arms the bank when every rule of the safety gate
@@ -68,9 +68,9 @@ Every reply is one line or more, each starting with one word:
 | `page` | one line of `pages` |
 | `hitec` | a hitec command and its report |
 
-The output goes out in whole lines through a buffer of 2,048 bytes, as fast
-as the USB host takes it, or a panel over the link. What does not fit is dropped, and a line
-`err output full, N bytes dropped` follows.
+Output passes through a 2,048-byte buffer in whole lines, at the rate the
+USB host or the panel over the link can receive it. Lines that do not fit
+are dropped, followed by `err output full, N bytes dropped`.
 
 ## Raw pages
 
@@ -98,8 +98,9 @@ panel running, the same line is taken:
 ack page=0x2A off=4 n=3: 0x0001 0x1388 0x03E8
 ```
 
-The programming ports and a KST session the same way. CMD 0x0041 is ENTER
-(1) on port 0 with bit 6 set; `SEQ` is the page's plus 1:
+The same commands can access the programming ports and start a KST
+session. CMD 0x0041 is ENTER (1) on port 0 with bit 6 set; use the page's
+current `SEQ` plus 1:
 
 ```text
 > r 0x33 0 8
@@ -125,10 +126,11 @@ a LISTEN or POWER that answers. A command the page refuses is said at once:
 hitec SEND port=0 refused STOPPED
 ```
 
-A command that starts something prints `hitec <op> port=<n> started`, and
-the report follows when the port has finished it. A command that leaves the
-port free or open in its own frame, such as CLOSE or CLEAR, prints the
-report at once. The report's lines, the last one for each byte received:
+A command that starts an operation prints `hitec <op> port=<n> started`.
+The report follows when the port finishes the operation. Commands that
+leave the port free or open within their own frame, such as CLOSE or
+CLEAR, print the report immediately. The report contains these lines,
+with the last repeated for each received byte:
 
 ```text
 hitec done state=<state> port=<n> flags=<flags> seq=<n> op=<op> count=<n> result=<result> refusal=<refusal>
@@ -149,12 +151,12 @@ while the page holds a capture.
 hitec now state=OPEN port=0 flags=RAIL ...
 ```
 
-`flags=PRECHARGE` and `rx=` say two things. `PRECHARGE` in `flags` is
-register 23, the receive mode the next OPEN of a D series line takes.
-`rx=` on the `hitec line` line is the mode the last OPEN took: the open
-line's while a line is open, and kept after CLOSE. They differ after
-register 23 is written while a line is open: the open line keeps its mode
-until CLOSE. The panel writes register 23 at every link-up
+`flags=PRECHARGE` and `rx=` describe different states. `PRECHARGE` in
+`flags` reflects register 23: the receive mode for the next OPEN of a
+D series line. `rx=` on the `hitec line` line shows the mode selected by
+the last OPEN. It remains available after CLOSE. Writing register 23
+while a line is open can make the two differ, because the open line
+keeps its mode until CLOSE. The panel writes register 23 at every link-up
 and at every edit of Hitec D receive on the Hitec tab's MORE list:
 every value set on SETUP is in force at once.
 
@@ -199,17 +201,18 @@ and its save before the reboot. While it stands, `flags=MORE`, an OFF the
 panel writes to SUPPLY waits for the write's last step, 10,000ms after the
 OFF at most ([An OFF during a write](LinkHitec.md#an-off-during-a-write)).
 A step typed 10,000ms or more after the OFF goes to a servo whose supply
-is off. A SEND whose frame writes is held without `more` too, and for
-150ms after it; an OFF during a read or a LISTEN is not held.
+is off. OFF is also deferred during a SEND whose frame writes, and for 150ms
+after it, even without `more`. OFF is not deferred during a read or a
+LISTEN.
 
 ```text
 hitec c 0 0x62 0x10 0x55 more
 hitec c 0 0x62 0x1C 0xAA
 ```
 
-An option of `send`, `listen` or `power` left out is 0: no gap, no
-window, no byte received, no decoder. `answer` is the exception: left out,
-nothing is answered; `answer=0` answers 0x00. A `lead=` left out still
+Omitted options of `send`, `listen` and `power` default to 0: no gap,
+no window, no received byte and no decoder. The exception is `answer`: if
+omitted, no answer is sent; `answer=0` sends 0x00. A `lead=` left out still
 leaves the front padding of the PIO words: a 5-byte D series SEND is
 driven low for 117.2us with or without `lead=88`. `send` adds no sum
 byte. The raw form of `hitec d 0 read 0 0x32`:
@@ -257,8 +260,9 @@ hitec line pin=13 line=0x11 rx=pre ...
 > hitec d 0 read 0 0x32
 ```
 
-`pre` and `pu` write the same register the panel writes from SETUP Hitec D receive (the Hitec tab's MORE list). The panel writes it again at its next edit
-of that row and at every link-up.
+`pre` and `pu` write the register controlled by SETUP Hitec D receive
+(the Hitec tab's MORE list). The panel writes it again whenever that row
+is edited and whenever the link comes up.
 
 A raw `w` of the HITEC page gets no report and no key; the
 [worked example](LinkHitec.md#a-transaction-by-hand) writes one transaction
@@ -302,10 +306,10 @@ start bit. A test on such a line can end in `n=` values that do not match.
 
 ## The ESC settings page
 
-`esc` drives [the ESC_WIRE page](LinkEsc.md) in the frames a panel sends: the same
-checks, the same refusals. It needs a running panel beside the console, as every page
-that needs a heartbeat does. No command of it writes to an ESC. It is not in a released
-image.
+`esc` accesses [the ESC_WIRE page](LinkEsc.md) with the same frames as the
+panel. The same checks and refusals apply. Like other pages that require
+a heartbeat, it requires a running panel alongside the console. None of
+its commands writes to an ESC. It is absent from released images.
 
 ```
 esc
@@ -330,7 +334,11 @@ esc state=2 op=1 result=2 ref=0 flags=0x0008 line=0 gpio=5 ses=0 fw=0 layout=0 w
 
 Debug builds only. No released image of either end holds any of this.
 
-A panel built with `RCBENCH_PANEL_CONSOLE` relays its serial ports, UART0 and USB-Serial-JTAG, to an IOmcu built with `IOMCU_CONSOLE`, over the link's CONSOLE page (0xE0). Every command of this page runs on the IOmcu as it does on USB, `ewline` and other commands that drive lines included, and refuses what it refuses there. USB keeps working when it is plugged in.
+A panel built with `RCBENCH_PANEL_CONSOLE` relays its UART0 and
+USB-Serial-JTAG serial ports to an IOmcu built with `IOMCU_CONSOLE`. It uses
+the link's CONSOLE page (0xE0). Commands run on the IOmcu with the same
+behaviour and refusals as on USB, including `ewline` and other commands
+that drive lines. The IOmcu's USB connection remains usable.
 
 ```bash
 export PICO_SDK_PATH=/path/to/pico-sdk
@@ -359,13 +367,23 @@ The panel carries that image. An IOmcu running another build answers the build c
 | `err line dropped: 8 lines wait` | a line while 8 wait for the link |
 | `err panel buffer full, <n> bytes dropped` | the panel's own 4,096-byte buffer had no room, as when a serial host stops reading and the IOmcu starts again |
 
-The relay's own lines never land inside an IOmcu line. A window ends anywhere, so the panel keeps a line of the IOmcu until its LF, up to 256 bytes, and the relay's line goes first. A longer line goes on cut, and a relay line after that cut starts a new line. A line not ended when the IOmcu starts again goes out with an LF of its own, ahead of the `restarted` line.
+The relay's own messages never interrupt an IOmcu line. A window may end
+within a line, so the panel buffers the IOmcu line until its LF, up to
+256 bytes. The relay's message is sent first. A longer IOmcu line is sent
+in parts; a relay message after a split starts a new line. If the IOmcu
+restarts with a line incomplete, the panel adds an LF to that line before
+sending the `restarted` message.
 
-The panel finds the page by reading it. The page has no capability bit and no protocol minor: an IOmcu without it answers `BAD_PAGE`, as for any page it does not have.
+The panel detects the page by reading it. There is no capability bit or
+protocol minor version for this page. An IOmcu without it answers
+`BAD_PAGE`, as it does for any unsupported page.
 
 ### Rates
 
-The relay makes at most one exchange a control pass, 5ms when nothing else holds the pass, after the panel's own polling, and none while an IOmcu update holds the link. The table is calculated from the frames, at a pass of exactly 5ms.
+The relay performs at most one exchange per control pass, after the
+panel's own polling. A pass takes 5ms when no other work delays it. The
+relay performs no exchanges while an IOmcu update holds the link. The
+table is calculated from the frames with a pass of exactly 5ms.
 
 | Traffic | Frames | Rate |
 | --- | --- | --- |
@@ -377,17 +395,35 @@ The relay makes at most one exchange a control pass, 5ms when nothing else holds
 
 A window is one read of 16 registers, the most a read asks for: 4 reply frames fit the panel's TWAI receive FIFO ([The link](Link.md)). The page stays 32 registers wide, and the registers past the window read 0, so a panel built for 60-byte windows still reads it. This panel takes a window of up to 60 bytes from an IOmcu console build older than protocol 4.35 and reads it as 32 registers in one exchange.
 
-Measured at the station with a window of 60 bytes, which this build does not have: 2,856 to 3,510 bytes/s of output, with `help` sent at 6/s to 30/s, 17ms to 21ms a window against 10ms calculated. The control task's delay of 5ms comes after the pass's work (`vTaskDelay`), so a pass is 5ms plus its own exchanges: the panel's polls and the window's own frames. The share of each is not measured. At the same 17ms to 21ms a window, a 28-byte window gives about 1,330 to 1,650 bytes/s; not measured. A window and its acknowledgement take 2 passes, and after the last window of a burst the next look comes up to 50ms later.
+The station measured output of 2,856 to 3,510 bytes/s with a 60-byte
+window, which this build does not use. With `help` sent at 6/s to 30/s,
+each window took 17ms to 21ms, compared with the calculated 10ms. The
+control task waits 5ms after each pass's work (`vTaskDelay`), so a pass
+takes 5ms plus the time for its exchanges: the panel's polls and the
+window's frames. Their individual contributions are not measured. At the
+same 17ms to 21ms per window, a 28-byte window would give about 1,330 to
+1,650 bytes/s; this is not measured. A window and its acknowledgement
+require 2 passes. After the last window of a burst, the next poll can be
+up to 50ms later.
 
 At 1Mbit/s a frame of 8 bytes takes about 150us, so sustained output at the calculated rate takes about 11% of the bus. At 1,330 to 1,650 bytes/s the 2,048-byte buffer empties in about 1.2s to 1.5s. Output faster than that for longer than that buffer lasts loses whole lines, the IOmcu's own 3s lines included; the next line says `err output full, N bytes dropped` as it does on USB. Output is also held back when the panel's own buffer of 4,096 bytes has under 412 bytes free, as when a serial host stops reading.
 
-A window stays at the IOmcu until it is acknowledged, so a lost reply costs a second read and no byte. An unanswered exchange holds the control pass for up to 1000ms, as any exchange of the panel does, with the heartbeat kept going.
+The IOmcu retains a window until it is acknowledged. A lost reply
+therefore requires another read but loses no bytes. An unanswered exchange
+blocks the control pass for up to 1000ms, as other panel exchanges do; the
+heartbeat continues.
 
 ### What it does not change
 
 The commands reach the pages through `link_dev_apply()`. A request from the console is not link traffic: it does not hold the silence failsafe off. The frames of the CONSOLE page are requests of the panel, like its polls, and stop when the panel stops. The panel's own modules keep writing: the supply link, `hitec_link`, `kst_link`, `esc_link` and the 50ms write of ARM and THROTTLE can overwrite what a console `w` wrote to the same registers. A console write of ARM reaches the page, and the panel's next 50ms write overwrites it with the panel's own arming state.
 
-With the IOmcu's start, its lines wait in the buffer for a USB host or a panel, as far as the 2,048 bytes hold them. `rcbench-iomcu: reset ...` is the first of them, with the cause of the start, and repeats every 3s. A line from the panel runs whole and leaves what a USB host has typed so far as it was. While a USB host and a panel are both there, the output leaves at the slower one's pace; a USB host that has the port open and stops reading holds it back too.
+At IOmcu start-up, output waits in the 2,048-byte buffer for a USB host or
+a panel, up to the buffer's capacity. The first line,
+`rcbench-iomcu: reset ...`, gives the cause of the start and repeats every
+3s. A line from the panel is processed as a whole without changing a
+partially typed USB line. When both a USB host and a panel are connected,
+output follows the slower reader. A USB host that leaves the port open
+but stops reading also holds back output.
 
 ## Limits
 

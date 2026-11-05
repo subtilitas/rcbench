@@ -2,12 +2,13 @@
 
 <sub>**English** · [Deutsch](OpenYGE-de.md)</sub>
 
-Specification of the protocol: frame format, telemetry payload, parameter
-access and status encoding, with the arithmetic needed to implement it.
+This specification describes the frame format, telemetry payload,
+parameter access and status encoding, including the calculations
+needed for an implementation.
 
-> The implementation is pursued in a separate repository. This page is the
-> specification of record; it is going to YGE to be checked. The codec under
-> `protocols/openyge/` is built and tested but not wired into the firmware.
+> Implementation work takes place in a separate repository. This page is
+> the reference specification intended for review by YGE. The codec under
+> `protocols/openyge/` is built and tested but not connected to the firmware.
 
 **° marks an inferred meaning.** Those entries come from a field name and
 ordinary ESC (electronic speed controller) practice rather than from an
@@ -23,8 +24,8 @@ Together, ° and section 8 are everything on this page that is uncertain.
 | Topology | half duplex, one master and up to 127 addressable ESCs |
 | Rate | about 20Hz telemetry |
 
-The master hears its own transmission: a sender discards as many received bytes
-as it sent. The connection is a single wire with TX and RX commoned.
+The master receives an echo of its own transmission. The sender discards
+as many received bytes as it sent. TX and RX share a single wire.
 
 The protocol needs a UART of its own on the IOmcu: a hardware UART with
 TX and RX tied through a resistor and the echo discarded, or a PIO
@@ -80,9 +81,10 @@ different seed:
 | OpenYGE | 0x1021 | 0x0000 | none | none | 0x31C3 |
 | rcbench link CRC (`link_crc`) | 0x1021 | 0xFFFF | none | none | 0x29B1 |
 
-`protocols/openyge` carries its own routine, `openyge_crc()`, so the module
-includes nothing from the link. The host suite holds it to the check value
-and to `link_crc()` with seed 0 at every frame length from 0 to 140 bytes.
+`protocols/openyge` provides its own routine, `openyge_crc()`, without
+depending on the link module. The host suite checks it against the
+check value and against `link_crc()` with seed 0 for every frame length
+from 0 to 140 bytes.
 
 ---
 
@@ -157,10 +159,10 @@ The protocol reads and writes the ESC's configuration.
 
 ### 5.1 Delivery: one parameter per frame
 
-Every telemetry frame carries one `(pidx, pdata)` pair; the ESC walks its own
-table and the master collects. A master builds the table by caching each pair,
-reading parameter 0 (the parameter count), and treating the table as complete
-only when every index `0 … count−1` has been seen.
+Every telemetry frame carries one `(pidx, pdata)` pair. The ESC cycles
+through its table, and the master caches each pair. Parameter 0 gives
+the parameter count. The table is complete only after the master has
+received every index `0 … count−1`.
 
 At 20Hz and 32 parameters that takes about 1.6s. Show it as progress; never
 present a partial table as the ESC's settings.
@@ -191,9 +193,9 @@ no page write; a "save" is a queue of single writes.
 Grouped by function. Indices are as observed on the wire; ° marks a meaning
 inferred from the name.
 
-Confirm the indices before writing to a real ESC. Reading is safe: read every
-index, change one setting in YGE's own tool, read again, and the index that
-moved is the one that means it.
+Confirm the indices before writing to a real ESC. To identify an index,
+read every value, change one setting with YGE's own tool, and read the
+values again. The changed index identifies that setting.
 
 The reference comments are misnumbered around 26–28 (three consecutive entries
 labelled 26), so at least one of those three is wrong in the reference.
@@ -303,9 +305,9 @@ One byte carrying a motor state and a set of warnings.
 | 0x40 | over-current |
 | 0x80 | the warnings refer to the BEC, not the ESC |
 
-The encoding is overloaded: `0x80 | 0x40` (BEC over-current) cannot occur, and
-that combination means setpoint noise, a dirty input signal. Decode in this
-order:
+The encoding reuses one combination: `0x80 | 0x40` cannot represent BEC
+over-current and instead means setpoint noise, or a disturbed input
+signal. Decode it in this order:
 
 1. High nibble exactly `0xC0`: setpoint noise. Stop.
 2. Otherwise bit 0x80 selects the subject: set BEC, clear ESC.
@@ -341,10 +343,10 @@ implementation transcribed from it inherits all six.
 | 5. Struct casting over the wire buffer | assumes little-endian, no padding and aligned access |
 | 6. Parameter comments misnumbered | three consecutive entries labelled 26 |
 
-The reference resynchronises by discarding its buffer a byte at a time. The
-decoder in `protocols/openyge/` scans every sync candidate and takes the earliest
-complete frame, which recovers a frame that arrives behind noise containing a
-plausible sync.
+The reference resynchronises by discarding buffered bytes one at a
+time. The decoder in `protocols/openyge/` checks every sync candidate
+and accepts the earliest complete frame. It can therefore recover a
+frame preceded by noise that contains a plausible sync.
 
 ---
 
@@ -369,13 +371,14 @@ plausible sync.
 
 ## 9. Status in rcbench
 
-Neither board runs the protocol yet: the IOmcu image links the module,
-the panel image does not, and nothing calls it. The design puts it on the IOmcu: a 20Hz request and
-response loop with a turnaround in microseconds and a timeout that fires
-whether or not bytes arrive. The panel would see the result as a `bench_state`
-through the page protocol; no OpenYGE frame would cross the panel link. A
-throttle command would travel as a control-page write behind the heartbeat and
-the IOmcu's failsafe ([Safety](Safety.md)).
+Neither board runs the protocol. The IOmcu image links the module, the
+panel image does not, and neither calls it. The design assigns the
+protocol to the IOmcu: a 20Hz request-response loop with turnaround
+timing in microseconds and a timeout that expires even when no bytes
+arrive. The panel would receive the result as `bench_state` through
+the page protocol; OpenYGE frames would remain on the IOmcu side.
+Throttle commands would use control-page writes subject to the
+heartbeat and the IOmcu's failsafe ([Safety](Safety.md)).
 
 A YGE ESC reports voltage, current, consumption, eRPM and four temperatures
 itself, so every modelled field of `bench_state` has a source before the
@@ -394,10 +397,11 @@ held but whose shape was impossible. Nothing is cast over the receive buffer.
 `openyge_params_get` returns false until every index has arrived, and a pending
 write withdraws the whole table.
 
-Not built: `openyge_session.c`, the request and response state machine (polling
-at the frame period, sequence matching, read and write timeouts, fallback to
-listening for a pre-v3 ESC). It needs the turnaround measurement from section 8
-first. The implementation is pursued in a separate repository.
+`openyge_session.c` is not built. This request-response state machine
+is intended to handle periodic polling, sequence matching, read and
+write timeouts, and fallback to listening for a pre-v3 ESC. It first
+needs the turnaround measurement in section 8. Implementation work
+takes place in a separate repository.
 
 Open decision: which ESC protocols beyond OpenYGE are supported. The source
 material sits beside Hobbywing, Kontronik, Scorpion, OMP, ZTW, APD, FLY,

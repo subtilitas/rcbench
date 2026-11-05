@@ -3,17 +3,17 @@
 The parts of research group B: R5 (board power input and rails), R6 (the
 servo supply and the port switches), R7 (the charger and the bench's own 2S
 pack; 2S is two cells in series) and R8 (current and voltage monitors and the
-motor shunts). This page records the choice, the alternatives, the stock and
-the reason, from the returns of round 1 under `hardware/research/round1/`
-and `hardware/research/round1/selection.json`. One row per part, with every
-stock field, is in [Parts](Parts.md). [Power](Power.md) keeps the comparison
+motor shunts). This page records the selected parts, alternatives, stock and
+reasons for each choice, based on the reports from round 1 under `hardware/research/round1/`
+and `hardware/research/round1/selection.json`. [Parts](Parts.md) has one row per part with every
+stock field. [Power](Power.md) keeps the comparison
 of 2026-09-01 that seeded R6 to R8.
 
-**Availability was checked on 2026-09-29.** Stock figures are not valid after
-that day. `python3 tools/jlc_stock.py --check 5` reads them again.
+**Availability was checked on 2026-09-29.** The stock figures describe
+that date only. `python3 tools/jlc_stock.py --check 5` reads them again.
 
 P2 to P6 are the phases of [Research](Research.md#agent-layout): P4 the
-verifiers, P5 the cross-category check and P6 the completeness check. T1 to T6 are its tasks, and the runs named FU- its follow-up tasks. S, F, Q and V followed by a number are its questions to the owner, cited with the owner's answer. A figure no P4 verifier re-read is marked not verified. The alternatives below rank 1 are not verified by P4; their figures are the re-rank's.
+verifiers, P5 the cross-category check and P6 the completeness check. T1 to T6 identify its tasks, and names beginning with FU- identify follow-up tasks. S, F, Q and V followed by a number identify questions to the owner, cited with the corresponding answer. Figures that no P4 verifier checked again are marked not verified. Alternatives below rank 1 are not verified by P4; their figures come from the revised ranking.
 
 ## Summary
 
@@ -35,7 +35,7 @@ verifiers, P5 the cross-category check and P6 the completeness check. T1 to T6 a
 | Port current monitor | INA3221AIRGVR (Texas Instruments), 7 a board | QFN-16 | 8704 / 67241 | the owner's fixed input, kept whatever a research run returns (owner, 2026-10-03), 7 parts for 20 ports |
 | Port shunt | ERJ-6CWDR010V (Panasonic), 20 a board | 0805 | 4062 / 12302 | passes with the INA3221; a ±0.5% part, rank 1 on stock at both vendors |
 
-The three fixed or held inputs of group B do not stand as selected parts:
+The three fixed or held inputs in group B are not recorded as selected parts:
 the servo supply TPS55285VALR is refuted on its ambient range, the motor
 monitor INA238AIDGSR fails the stock gate at both vendors, and no 18650 cell
 is selected. Each is under [Not known](#not-known). The owner keeps the
@@ -59,9 +59,9 @@ XTRON 3000mAh 2S1P pack for the bench (2026-09-30).
 | 2S pack connector | no part | a connector, round 2 |
 | Logic supply from the RP2354B's USB port | no part | none |
 
-The same LM74800QDRRRQ1 on each input serves the reverse-polarity
-protection, the overvoltage cut-off, the inrush limit and the source
-selection, so those functions add no part.
+The LM74800QDRRRQ1 on each input handles reverse-polarity
+protection, overvoltage cut-off, inrush limiting and source
+selection, so those functions require no additional part.
 
 ## R6: servo supply and port switches
 
@@ -103,11 +103,11 @@ The MCP23017 drives 26 outputs: 20 port-switch enables, 5 bias selectors and
 
 ## Power budget
 
-P5's budget in T5, as its critic upheld it
+P5's budget from T5, upheld by its critic
 (`hardware/research/round1/T5/002-P5.json`,
-`hardware/research/round1/T5/004-P5-critic.json`). Over their limit: the
-servo rail, the cell rating, the pack protection, the motor overcurrent path
-and the shared-part stock of INA238AIDGSR. The owner's SLS XTRON pack passes
+`hardware/research/round1/T5/004-P5-critic.json`). The following exceed their limits: the
+servo rail, cell rating, pack protection, motor overcurrent path
+and shared-part stock of INA238AIDGSR. The owner's SLS XTRON pack passes
 the cell rating on its vendor-stated 90A (2026-09-30).
 
 | Budget | Value | Within its limit |
@@ -127,13 +127,13 @@ the cell rating on its vendor-stated 90A (2026-09-30).
 
 ## Not known
 
-Each item is reported to the owner, with its evidence; a part an item needs comes from a follow-up of its research category, or from round 2 for a passive, a connector, or the protection on the signal, sensor, balance-lead, link and heartbeat connectors ([Research](Research.md#scope)).
+Each item and its evidence are reported to the owner. Any additional part must be selected in a follow-up for its research category. Passives, connectors and protection for the signal, sensor, balance-lead, link and heartbeat connectors belong to round 2 ([Research](Research.md#scope)).
 
 - R8, INA238AIDGSR, a shared-part stock shortfall: not known how it is sourced. The fixed-input motor monitor serves the onboard-shunt path and the external-shunt sense path, 10 units for 5 boards (2 placements). It fails sourcing rule 4 at both vendors: JLCPCB stockCount 0 and canPresaleNumber −99, Digi-Key 0, with no rule-5 route, read again at 2026-09-29T17:18:33Z (`hardware/research/round1/FU-B3/017-P4-stock-R8.json`, `FU-B3/023-adjudicator-R8.json`). The INA228 alternate footprint failed rule 5 on the figures of 2026-09-01. selection.json keeps no part for either function. The owner fixes the INA228AIDGSR (2026-09-30), which returns to stock soon, as the owner states; its stock is not read.
 - R8, external shunt sense input, a second failure of INA238AIDGSR: not known. Beyond the stock, its differential input is rated −40V to +40V only, and its filter guidance allows too little series resistance on a 5mA pin to survive the required 85V fault of a mis-plugged or shorted sense lead (V179) (`FU-B3/021-P4-datasheet-R8.json`, `FU-B3/024-adjudicator-R8-2.json`). The sense leads need another clamp or isolation approach. The owner fixes the INA228 without further research on the monitor, and protects the sense leads with 1kΩ in series with each input and a low-capacitance TVS behind them (2026-09-30). The INA228's rating against the 85V fault, the error 1kΩ adds to its reading and the protection's parts are not known; the INA238's datasheet allows at most 100Ω of filter resistance (SLYS025B 7.1.4).
-- R6, TPS55285VALR, a rail conflict on temperature: not known whether it holds. At the pack-floor corner (6.0V in, 8.4V and 4.0A out, 50°C ambient) its estimated junction temperature spans 89 to 179°C against the 125°C recommended maximum, because its datasheet gives no IC-loss curve there. The refutation stands (`FU-B1/030-adjudicator-R6.json`, carried unchanged in `FU-B3/011-rerank-R6.json`). The part is a fixed input and is reported, not replaced; selection.json keeps no part for Servo supply and carries no note that sets it apart from an ordinary open function. The owner keeps the part and uses three, one for each servo rail (2026-09-30): 4 to 6.35A is a short peak for one servo, a heatsink cools each, and an MCP9808T-E/MS beside each switches its rail off when it runs hot, which bounds a sustained current from several servos ([IOBoard](IOBoard.md)). A follow-up of R6 finds the continuous current one converter holds at this corner.
+- R6, TPS55285VALR, a rail conflict on temperature: not known whether it holds. At the pack-floor corner (6.0V in, 8.4V and 4.0A out, 50°C ambient) its estimated junction temperature spans 89 to 179°C against the 125°C recommended maximum, because its datasheet gives no IC-loss curve there. The refutation stands (`FU-B1/030-adjudicator-R6.json`, carried unchanged in `FU-B3/011-rerank-R6.json`). The part is a fixed input and is reported, not replaced; selection.json keeps no part for Servo supply and carries no note that sets it apart from an ordinary open function. The owner keeps the part and uses three, one for each servo rail (2026-09-30): 4 to 6.35A is a short peak for one servo, a heatsink cools each, and an MCP9808T-E/MS beside each switches its rail off when it runs hot, which bounds a sustained current from several servos ([IOBoard](IOBoard.md)). A follow-up of R6 must determine the continuous current one converter can sustain at this operating point.
 - R7, pack cells, a sourcing-rule conflict that the owner resolves by naming the pack: an SLS XTRON 3000mAh 2S1P pack from Stefansliposhop, which sourcing rule 1 names (owner, 2026-09-30). INR-18650-P30B (Molicel, S9) passes every technical, stock and lifecycle check, with 6529 at Liion Wholesale (2026-09-29T17:21:44Z), but sourcing rule 1 buys a part off the board at Digi-Key, and Digi-Key's API (application programming interface) carries no 18650 cell from an S9 maker (V151) (`FU-B3/016-P4-stock-R7.json`, `FU-B3/004-P2-R7.json`). The pack-protection thresholds follow the cell (V150): the owner sets 3.0V a cell and 0°C to 55°C for the pack, read from an NTC taped at the center of the cells (2026-09-30), and the thresholds against them are a follow-up of R7's.
-- R7, pack cells, the selection record: selection.json keeps no part for Pack cells although both FU-B3 verifiers confirm INR-18650-P30B with no adjudicator against it (`FU-B3/016-P4-stock-R7.json`, `FU-B3/019-P4-datasheet-R7.json`). Not known whether the omission is the vendor question above or how selection.json was built.
+- R7, pack cells, the selection record: selection.json keeps no part for Pack cells although both FU-B3 verifiers confirm INR-18650-P30B with no adjudicator against it (`FU-B3/016-P4-stock-R7.json`, `FU-B3/019-P4-datasheet-R7.json`). It is not known whether the omission results from the vendor restriction above or from how selection.json was assembled.
 - R8, the motor overcurrent path to the ESC pack switch: no hardware actuation path exists, so its time is not known. The IOmcu can only switch the outputs to SAFE, at most 20ms after the averaged sample (V158, V159); the pack switch opens only when the heartbeat stops (155 to 185ms, 200ms deadline) or the operator clears the latch, and the overcurrent detection drives neither (V160, owner, 2026-09-28; `FU-B3/005-P2-R8.json`).
 - R6 and R7, FUSB303BTMX and MCP23017T-E/SS, an I²C address omission: not known whether they collide. The FUSB303's 7-bit address is 0x21 or 0x31, set by its ADDR/ORIENT pin, and 0x21 is inside the 0x20 to 0x27 block P5 reserves for the 2 MCP23017 expanders. No return checks the pair on one bus (onsemi FUSB303 datasheet, Table 4, read by the P5 critic at 2026-09-29T17:58:39Z; `FU-B3/019-P4-datasheet-R7.json` records no FUSB303 address).
 - R8, INA3221AIRGVR, the servo current sample period: not known which period the budget uses. P5 assumed 20ms, the motor monitor's reading window of V158. The tree gives 5ms a channel for the port current (V173: `docs/Servo.md:149`, `SAMPLE_MS` in `test/host/test_servo_limit.c`). Against 5ms, 4 INA3221 on one bus take 4.84ms of conversion, a margin of 0.16ms, and the servo current abort's worst-case latency is understated (`FU-B3/005-P2-R8.json`, `FU-B3/021-P4-datasheet-R8.json`). The specification states that the sample rate each port monitor needs is not stated ([IO board](IOBoard.md#power)), and V173 gives 5ms; which holds is not known.
@@ -142,12 +142,12 @@ Each item is reported to the owner, with its evidence; a part an item needs come
 - R8, INA238AIDGSR as a hard stock blocker: the motor monitor has no part while the fixed input fails rule 4 live on 2026-09-29, JLCPCB stockCount 0 and canPresaleNumber −99 against a gate of 50, Digi-Key 0 on every packaging. Not known when stock returns. The owner fixes the INA228AIDGSR in its place (2026-09-30).
 - R6, Servo supply, the standing refutation on its ambient range: at the worst-case point (4.0A at 8.4V from 6.0V, 50°C) the datasheet gives no IC loss and no guaranteed efficiency, so a junction at or under 125°C is not shown; the adjudicator's bound spans 89 to 179°C. Not known; reported as an open thermal-margin question.
 - R5, overvoltage protection, the selection record: selection.json keeps no part and no not-requalified note, although LM74800QDRRRQ1 was confirmed by both P4 verifiers in T3 (`T3/031-P4-stock-R5.json`, `T3/032-P4-datasheet-R5.json`) and FU-B3's re-rank states that the same part serves reverse polarity, inrush and source selection (`FU-B3/010-rerank-R5.json`). Not known whether the omission is deliberate.
-- R6, servo supply inductor, the selection record: selection.json keeps no part, although both FU-B3 verifiers confirm SRP1265A-4R7M (4.7µH, 28A saturation, 8.4mΩ DC resistance at most, −55 to 150°C) with no adjudicator against it (`FU-B3/015-P4-stock-R6.json`, `FU-B3/020-P4-datasheet-R6.json`). Not known why the confirmed part is not carried.
+- R6, servo supply inductor, the selection record: selection.json keeps no part, although both FU-B3 verifiers confirm SRP1265A-4R7M (4.7µH, 28A saturation, 8.4mΩ DC resistance at most, −55 to 150°C) with no adjudicator against it (`FU-B3/015-P4-stock-R6.json`, `FU-B3/020-P4-datasheet-R6.json`). It is not known why the confirmed part is absent from the selection record.
 
 ## Not verified
 
-Each function below has no part selected by a verified run, or its part is
-not requalified. The owner accepted each as open (owner, 2026-09-29).
+For each function below, either no verified run selected a part or the part
+has not been requalified. The owner accepted each as open (owner, 2026-09-29).
 
 - R5: reverse-polarity protection (LM74800QDRRRQ1 not requalified by FU-B3). Not verified.
 - R5: overvoltage protection. No part in selection.json; not verified.
@@ -165,7 +165,7 @@ not requalified. The owner accepted each as open (owner, 2026-09-29).
 - R8: Servo rail monitor. No part; not verified.
 - R8: External shunt (no second source). WSBE8518L1000JKA2 has no alternate, so rule 5 has no route; not verified.
 
-Figures of group B that no P4 verifier confirmed; each is not verified:
+The following group B figures remain unverified because no P4 verifier confirmed them:
 
 - R6: figure found V129, not confirmed in FU-B3; not verified.
 - R8: figure P2 report: BVR market introduction, not confirmed in FU-B3; not verified.

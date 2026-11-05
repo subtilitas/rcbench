@@ -44,9 +44,9 @@
       "throttle": "max",
       "when": "before_power_on",
       "hold_ms": 7000,
-      "confirm_signal": "2 beeps after about 2 s, a rising tone about 5 s later",
+      "confirm_signal": "2 beeps after about 2s, a rising tone about 5s later",
       "steps": [
-        "Transmitter on, throttle at max",
+        "Switch the transmitter on; set the throttle to maximum",
         "Connect battery",
         "Wait about 2000ms: 2 beeps",
         "Wait about 5000ms more: rising tone, programming mode entered"
@@ -65,22 +65,22 @@
     "select": {
       "throttle": "min",
       "within_ms": 3000,
-      "description": "Item: throttle to idle within 3000 ms after the wanted tone."
+      "description": "Item: throttle to idle within 3000ms after the desired tone."
     },
     "value_select": {
       "throttle": "max",
       "within_ms": null,
-      "description": "Value: throttle to full on the wanted value tone."
+      "description": "Value: throttle to full on the desired value tone."
     },
     "skip": {
       "throttle": "none",
       "description": "Leave the throttle unchanged."
     },
     "confirm_signal": "An alternating tone after a value is stored.",
-    "exit": "Item 8 (2 long beeps) then throttle to bottom within 3000 ms; or after the alternating tone throttle to bottom within 2000 ms. Holding full throttle returns to the item loop.",
+    "exit": "Item 8 (2 long beeps) then throttle to bottom within 3000ms; or after the alternating tone throttle to bottom within 2000ms. Holding full throttle returns to the item loop.",
     "changes_per_entry": "many",
     "reset_to_defaults": "Item 7 'Set All to Default'.",
-    "description": "Throttle max, battery on, 2 beeps at 2 s, rising tone at 5 s more. Eight item tones loop; throttle to idle within 3 s selects. Value tones loop; throttle to full stores the value and an alternating tone follows; holding full returns to the items."
+    "description": "Throttle at maximum, battery on, 2 beeps at 2s, rising tone at 5s more. Eight item tones loop; throttle to idle within 3s selects. Value tones loop; throttle to full stores the value and an alternating tone follows; holding full returns to the items."
   },
   "items": [
     {
@@ -238,8 +238,8 @@
     "The 'Break' item name is a misprint of Brake."
   ],
   "notes": [
-    "Same menu and gestures as hobbywing-flyfun-8item; the Surpass manual says Horizon Hobby distributes it and does not name the maker. Threshold values differ (3.0/3.15/3.3 V against 2.85/3.15/3.3 V).",
-    "Cells per Horizon: 2-4 LiPo/LiFe, 5-12 NiMH/NiCd; BEC 5 V/2 A linear."
+    "Same menu and gestures as hobbywing-flyfun-8item; the Surpass manual says Horizon Hobby distributes it and does not name the maker. Threshold values differ (3.0/3.15/3.3V against 2.85/3.15/3.3V).",
+    "Cells per Horizon: 2-4 LiPo/LiFe, 5-12 NiMH/NiCd; BEC 5V/2A linear."
   ],
   "schema": 1,
   "verified": false
