@@ -51,11 +51,11 @@ Wenn kein IOmcu antwortet, tragen auch MOTOR & ESC und SERVO die Markierung. Bei
 
 SETUP, PANEL, Design schaltet zwischen DUNKEL und HELL. Die Änderung gilt ab dem nächsten Frame.
 
-## Ein Alert am unteren Rand
+## Ein Alarm am unteren Rand
 
 ![Ein Alarm am unteren Rand des Menüs](view:overview-alert)
 
-Ein Fehler, den die geöffnete Seite nicht zeigt, erscheint in einem roten Band am unteren Rand jeder Seite mit Statusband. Das Alarmband ist 44px hoch. Ein Alarm verschwindet nach 30s oder wenn du auf das Band tippst. Die Seite [Statusband](band.md#das-alert-band) beschreibt die Einzelheiten.
+Ein Fehler, den die geöffnete Seite nicht zeigt, erscheint in einem roten Band am unteren Rand jeder Seite mit Statusband. Das Alarmband ist 44px hoch. Ein Alarm verschwindet nach 30s oder wenn du auf das Band tippst. Die Seite [Statusband](band.md#das-alarmband) beschreibt die Einzelheiten.
 
 ## Beim Start: der Splash
 

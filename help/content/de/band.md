@@ -108,7 +108,7 @@ Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PR
 - Der Drehknopf hat bei geöffneter Hilfe keine Wirkung.
 - Bei ARMED zeigt die Hilfe nur Seiten, die weder ein Bedienelement zum Anhalten eines Ausgangs noch eine ZIEL-Zeile verdecken.
 
-## Das Alert-Band
+## Das Alarmband
 
 ![Ein Alarm am unteren Rand des Menüs](view:overview-alert)
 
