@@ -6,7 +6,14 @@ on:
     # Tags too: a release builds from the tagged commit, which need not be on
     # main, and the host suite runs against it before firmware is published.
     tags: ['v*']
+  # A push to a pull request starts no run.  Adding a label does, the label
+  # `ci` by convention, once the reviews of the head are clean; a later head
+  # takes the label off and on again.  A head that a review round or a
+  # rebase replaces costs no run.  Only a pull_request run counts for the
+  # required checks: a manual run reports its checks on the commit, and the
+  # pull request does not take them.
   pull_request:
+    types: [labeled]
   workflow_dispatch:
 
 # One run per ref, the newest: a push to a pull request cancels the run of
@@ -622,21 +629,20 @@ jobs:
 
       - name: Every new or changed C file is documented
         env:
-          EVENT: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          if [ "$EVENT" = pull_request ]; then
-            python3 tools/doc_check.py --check --base "origin/$BASE_REF"
-          else
-            python3 tools/doc_check.py --check
-          fi
+          # A pull request against its base; a manual run of a branch other
+          # than main against main; main and tags against nothing.
+          BASE: >-
+            ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref)
+            || (github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') && 'origin/main')
+            || '' }}
+        run: python3 tools/doc_check.py --check ${BASE:+--base "$BASE"}
 
-  # What the suite does not notice in the lines a pull request changes.  It
-  # reports and does not fail on a survivor: the job fails only when the
-  # tool cannot run.  The run is bounded at 2700s by the tool's defaults.
+  # What the suite does not notice in the lines a pull request changes, or a
+  # branch run by hand changes against main.  It reports and does not fail on
+  # a survivor: the job fails only when the tool cannot run.  The run is bounded at 2700s by the tool's defaults.
   mutation:
     name: Mutation check of the changed lines (advisory)
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
@@ -647,7 +653,7 @@ jobs:
 
       - name: Mutate the changed lines of shared/ and protocols/
         env:
-          BASE: origin/${{ github.base_ref }}
+          BASE: origin/${{ github.base_ref || 'main' }}
         run: |
           python3 tools/mutate.py --base "$BASE" --json mutation.json \
             --summary "$GITHUB_STEP_SUMMARY"

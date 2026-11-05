@@ -422,7 +422,7 @@ request and a new one does.
   and compares its warnings with `tools/doc_check_baseline.txt`. A
   baseline line is a file and a message without the line number; code
   that moves inside a file changes no line. In a pull request CI passes
-  `--base origin/<base branch>`, and these warnings fail, listed or not:
+  `--base origin/<base branch>` (on a branch run by hand, `--base origin/main`), and these warnings fail, listed or not:
   - every warning in a C file the pull request adds;
   - in a C file it changes, every warning on a line it adds or rewrites
     (`git diff -U0`, new side). A warning stands for the line Doxygen
@@ -498,4 +498,4 @@ open work and settled decisions. `CHANGELOG.md` records version history;
 
 ## Pull requests
 
-One change per pull request, with CI green. State the change and its effect.
+One change per pull request, with CI green. A push to a pull request starts no CI run. A maintainer adds the label `ci` once the head's reviews are clean, and that starts the run; a later head needs the label taken off and added again. Only such a pull request run counts for the branch rules' required checks: a run started with `gh workflow run ci.yml --ref <branch>` reports its checks on the commit, and the pull request does not take them. A pull request from a fork runs the same way, with GitHub's read-only token and no secrets. State the change and its effect.
