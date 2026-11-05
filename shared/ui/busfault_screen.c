@@ -442,7 +442,7 @@ static void event(const touch_event_t *evt)
     }
     switch (evt->type) {
     case TOUCH_EVENT_DOWN:
-        if (s.hint_s > 0.0f && evt->point.y >= 0 && evt->point.y < BAR_H) {
+        if (s.hint_s > 0.0f && evt->point.y < BAR_H) {
             /* A tap on the hint closes it, as on the band. */
             s.hint_s = 0.0f;
             s.drawn_mask = 0;
@@ -488,10 +488,9 @@ static void tick(float dt_s)
 {
     s.flash_ms = ui_hold_flash_left(s.flash_ms, dt_s);
     if (s.hint_s > 0.0f) {
-        s.hint_s -= (dt_s > 0.0f) ? dt_s : 0.0f;
+        s.hint_s -= dt_s;
         if (s.hint_s <= 0.0f) {
-            s.hint_s = 0.0f;
-            s.drawn_mask = 0;
+            s.drawn_mask = 0;   /* the bar comes back */
         }
     }
     if (s.pressed && !s.fired) {

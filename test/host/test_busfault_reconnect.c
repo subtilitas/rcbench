@@ -16,6 +16,12 @@
  * - a_short_press_shows_what_the_hold_does_for_4s
  * - a_tap_on_the_hint_closes_it
  * - a_press_that_slides_off_shows_no_hint
+ * - a_new_report_closes_the_hint
+ * - the_hint_closes_on_the_bar_and_not_below_it
+ * - the_abandoned_hold_starts_its_fade_again
+ * - a_new_controller_state_repaints_the_heading
+ * - the_hint_ends_at_exactly_4s
+ * - every_number_of_the_link_column_repaints_it
  * - the_link_column_moves_with_its_counters
  * - the_start_up_verdict_does_not_take_live_numbers
  * - the_start_up_verdict_offers_reconnect_the_same_way
@@ -292,6 +298,97 @@ TEST_CASE(a_press_that_slides_off_shows_no_hint)
     CHECK(bar_face() != ui_theme_color(UI_C_WARN));
 }
 
+TEST_CASE(a_new_report_closes_the_hint)
+{
+    fresh();
+    touch(TOUCH_EVENT_DOWN, ack_cx(), ack_cy());
+    touch(TOUCH_EVENT_UP, ack_cx(), ack_cy());
+    CHECK_EQ(bar_face(), ui_theme_color(UI_C_WARN));
+    const busfault_report_t r = { .kind = BUSFAULT_LINK_LOST,
+                                  .bus = BUSFAULT_BUS_OFF };
+    busfault_screen_set(&r);
+    CHECK_EQ(bar_face(), ui_theme_color(UI_C_DANGER));
+}
+
+TEST_CASE(the_hint_closes_on_the_bar_and_not_below_it)
+{
+    /* The bar is y 0 to 63: its first and last rows close the hint, the
+     * row under it does not. */
+    static const struct { int y; bool closes; } k[] = {
+        { 0, true }, { 63, true }, { 64, false },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fresh();
+        touch(TOUCH_EVENT_DOWN, ack_cx(), ack_cy());
+        touch(TOUCH_EVENT_UP, ack_cx(), ack_cy());
+        touch(TOUCH_EVENT_DOWN, 500, k[i].y);
+        touch(TOUCH_EVENT_UP, 500, k[i].y);
+        CHECK_EQ(bar_face(), k[i].closes ? ui_theme_color(UI_C_DANGER)
+                                         : ui_theme_color(UI_C_WARN));
+    }
+}
+
+/** @brief The hold button's fill at its left end, clear of the label. */
+static gfx_color_t ack_face(void)
+{
+    scr()->render(&s_c, 0);
+    return s_px[ack_cy() * SCREEN_W + BF_ACK_X + 20];
+}
+
+TEST_CASE(the_abandoned_hold_starts_its_fade_again)
+{
+    /* The offer arrives 1.75s into the acknowledgement: the button shows
+     * no fade left over from the hold it abandoned. */
+    fresh();
+    const gfx_color_t base = ack_face();
+    touch(TOUCH_EVENT_DOWN, ack_cx(), ack_cy());
+    steps(HOLD_STEPS - 1);
+    CHECK(ack_face() != base);
+    answers(0u, BUSFAULT_BACK_MS);
+    CHECK_EQ(ack_face(), base);
+}
+
+/** @brief The sum of the heading's pixels, y 76 to 112, x 24 to 1000. */
+static unsigned long heading_sum(void)
+{
+    scr()->render(&s_c, 0);
+    unsigned long sum = 0;
+    for (int y = 76; y < 112; ++y) {
+        for (int x = 24; x < 1000; ++x) {
+            sum += s_px[y * SCREEN_W + x];
+        }
+    }
+    return sum;
+}
+
+TEST_CASE(a_new_controller_state_repaints_the_heading)
+{
+    fresh();
+    const unsigned long running = heading_sum();
+    busfault_report_t r = *busfault_screen_report();
+    r.bus = BUSFAULT_BUS_OFF;
+    busfault_screen_refresh(&r);
+    CHECK(heading_sum() != running);
+    /* New numbers in the same state leave it as it is. */
+    const unsigned long off = heading_sum();
+    r.polls += 1u;
+    busfault_screen_refresh(&r);
+    CHECK_EQ(heading_sum(), off);
+}
+
+TEST_CASE(the_hint_ends_at_exactly_4s)
+{
+    fresh();
+    touch(TOUCH_EVENT_DOWN, ack_cx(), ack_cy());
+    touch(TOUCH_EVENT_UP, ack_cx(), ack_cy());
+    for (int i = 0; i < 3; ++i) {
+        scr()->tick(1.0f);
+    }
+    CHECK_EQ(bar_face(), ui_theme_color(UI_C_WARN));
+    scr()->tick(1.0f);                       /* 4.0s, exact in binary */
+    CHECK_EQ(bar_face(), ui_theme_color(UI_C_DANGER));
+}
+
 /** @brief The sum of the link column's pixels, x 760 to 1000, y 124 to 432. */
 static unsigned long column_sum(int buffer)
 {
@@ -303,6 +400,27 @@ static unsigned long column_sum(int buffer)
         }
     }
     return sum;
+}
+
+TEST_CASE(every_number_of_the_link_column_repaints_it)
+{
+    /* One field at a time: each one the column shows, changed alone,
+     * paints the column again. */
+    for (int f = 0; f < 6; ++f) {
+        fresh();
+        const unsigned long before = column_sum(0);
+        busfault_report_t r = *busfault_screen_report();
+        switch (f) {
+        case 0:  r.polls      += 1u;  break;
+        case 1:  r.timeouts   += 1u;  break;
+        case 2:  r.tx_errors  += 1u;  break;
+        case 3:  r.rx_errors  += 1u;  break;
+        case 4:  r.bus_errors += 1u;  break;
+        default: r.recoveries += 1u;  break;
+        }
+        busfault_screen_refresh(&r);
+        CHECK(column_sum(0) != before);
+    }
 }
 
 TEST_CASE(the_link_column_moves_with_its_counters)
@@ -450,6 +568,12 @@ int main(void)
     RUN(a_short_press_shows_what_the_hold_does_for_4s);
     RUN(a_tap_on_the_hint_closes_it);
     RUN(a_press_that_slides_off_shows_no_hint);
+    RUN(a_new_report_closes_the_hint);
+    RUN(the_hint_closes_on_the_bar_and_not_below_it);
+    RUN(the_abandoned_hold_starts_its_fade_again);
+    RUN(a_new_controller_state_repaints_the_heading);
+    RUN(the_hint_ends_at_exactly_4s);
+    RUN(every_number_of_the_link_column_repaints_it);
     RUN(the_link_column_moves_with_its_counters);
     RUN(the_start_up_verdict_does_not_take_live_numbers);
     RUN(the_start_up_verdict_offers_reconnect_the_same_way);
