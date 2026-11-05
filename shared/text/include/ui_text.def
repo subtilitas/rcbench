@@ -5162,6 +5162,9 @@ UI_TEXT(HOLD_HINT_UNBIND, 94,
 UI_TEXT(HOLD_HINT_OVERWRITE, 94,
     "Hold 2s to overwrite.",
     "Halte 2s, um zu überschreiben.")
+UI_TEXT(HOLD_HINT_MOVE, 94,
+    "Hold 2s to move the servo.",
+    "Halte 2s, um das Servo zu bewegen.")
 
 UI_TEXT(SHOT_TAKEN, 94,
     "Screenshot taken.",
@@ -6738,6 +6741,84 @@ UI_TEXT(HP_OTHER_SERVO, 116,
 UI_TEXT(HP_OTHER_SERVO_2, 116,
     "Its backup contains the values from this read.",
     "Sein Backup enthält die Werte dieses Auslesevorgangs.")
+/* MOVE SERVO on the TRAVEL tab (hitec_panel_move.c, hitec_move.h): its row
+ * and hold page, the live lines while it is on, its refusals and how it
+ * ended. */
+UI_TEXT(HP_MOVE, 0,
+    "MOVE SERVO",
+    "SERVO BEWEGEN")
+UI_TEXT(HP_MOVE_HOLD, 0,
+    "HOLD 2s TO MOVE",
+    "2s HALTEN ZUM BEWEGEN")
+UI_TEXT(HP_MOVE_1, 0,
+    "The horn moves to the value being edited: NEUTRAL first, then the row whose - or + you tap.",
+    "Das Ruderhorn fährt auf den bearbeiteten Wert: zuerst NEUTRAL, dann die Zeile, deren - oder + du tippst.")
+UI_TEXT(HP_MOVE_2, 0,
+    "The bench stays SAFE. Keep hands clear of the horn.",
+    "Der Prüfstand bleibt SAFE. Halte die Hände vom Ruderhorn fern.")
+UI_TEXT(HP_MOVE_3, 0,
+    "STOP switches the servo supply off.",
+    "STOP schaltet die Servoversorgung aus.")
+UI_TEXT(HP_MOVE_4, 0,
+    "Nothing is saved in the servo until WRITE n VALUES.",
+    "Bis n WERTE SCHREIBEN wird nichts im Servo gespeichert.")
+UI_TEXT(HP_MOVE_5, 0,
+    "The horn moves back when the current stays at %umA or more for 0.4s.",
+    "Das Ruderhorn fährt zurück, wenn der Strom 0.4s lang bei %umA oder mehr bleibt.")
+UI_TEXT(HP_MOVE_6, 0,
+    "The hold confirms CHECK THIS CHANGE for NEUTRAL and both ends while MOVE SERVO is ON:",
+    "Das Halten bestätigt ÄNDERUNG PRÜFEN für NEUTRAL und beide Endlagen, solange SERVO BEWEGEN auf EIN steht:")
+UI_TEXT(HP_MOVE_NEED_PD, 0,
+    "Moving the servo needs a PD mini with its output on.",
+    "Bewegen braucht ein PD mini mit eingeschaltetem Ausgang.")
+UI_TEXT(HP_MOVE_NEED_DIR, 116,
+    "Write DIRECTION CW first. MOVE SERVO is measured on CW only.",
+    "Schreibe zuerst DREHRICHTUNG CW. SERVO BEWEGEN ist nur mit CW gemessen.")
+UI_TEXT(HP_MOVE_NO_MAP, 116,
+    "MOVE SERVO needs a D series servo with LEFT END, NEUTRAL and RIGHT END stored in ascending order.",
+    "SERVO BEWEGEN braucht ein Servo der D-Serie mit ENDE LINKS, NEUTRAL und ENDE RECHTS aufsteigend gespeichert.")
+UI_TEXT(HP_MOVE_OUTSIDE, 116,
+    "The servo stands at %u, outside its reach. MOVE SERVO is OFF.",
+    "Das Servo steht bei %u, außerhalb seiner Reichweite. SERVO BEWEGEN steht auf AUS.")
+UI_TEXT(HP_MOVE_DONE, 116,
+    "MOVE SERVO is OFF. The stored values read back unchanged.",
+    "SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.")
+UI_TEXT(HP_LIVE_POS, 0,
+    "POSITION %u (%s)",
+    "POSITION %u (%s)")
+UI_TEXT(HP_LIVE_NOTE, 0,
+    "Tap - or + to move the horn. It follows the row whose label is in the accent colour.",
+    "Tippe - oder +, um das Ruderhorn zu bewegen. Es folgt der Zeile mit dem Namen in der Akzentfarbe.")
+UI_TEXT(HP_LIVE_END, 0,
+    "%s: the horn stands where %uus puts it. At %uus it stops at %u%% of that side.",
+    "%s: Das Ruderhorn steht, wo %uus es hinstellt. Bei %uus hält es bei %u%% dieser Seite.")
+UI_TEXT(HP_LIVE_REACH, 0,
+    "Reach without a write: %u to %u. The horn stops at its edge.",
+    "Reichweite ohne Schreiben: %u bis %u. Das Ruderhorn hält an ihrem Rand.")
+UI_TEXT(HP_LIVE_BLOCKED, 0,
+    "Servo blocked at %u. Moved back to %u.",
+    "Servo bei %u blockiert. Zurück auf %u gefahren.")
+UI_TEXT(HP_LIVE_CURRENT, 116,
+    "Current at %umA or more for 0.4s. Moved back to %u.",
+    "Strom 0.4s lang bei %umA oder mehr. Zurück auf %u gefahren.")
+UI_TEXT(HP_LIVE_ENC, 116,
+    "The AS5600 angle does not follow. Moved back to %u.",
+    "Der AS5600-Winkel folgt nicht. Zurück auf %u gefahren.")
+UI_TEXT(HP_LIVE_CHANGED, 116,
+    "Servo values changed during MOVE SERVO. Tap READ ALL.",
+    "Servowerte haben sich bei SERVO BEWEGEN geändert. Tippe auf ALLES AUSLESEN.")
+UI_TEXT(HP_LIVE_SUPPLY, 116,
+    "The servo supply went off. MOVE SERVO ended.",
+    "Die Servoversorgung ist aus. SERVO BEWEGEN ist beendet.")
+UI_TEXT(HP_LIVE_ENC_LOST, 116,
+    "The AS5600 reading stopped. MOVE SERVO ended.",
+    "Der AS5600 liefert keinen Messwert mehr. SERVO BEWEGEN ist beendet.")
+UI_TEXT(HP_LIVE_OWED, 116,
+    "After MOVE SERVO the servo's values are not known. Tap READ ALL before writing.",
+    "Nach SERVO BEWEGEN sind die Servowerte nicht bekannt. Tippe vor dem Schreiben auf ALLES AUSLESEN.")
+UI_TEXT(HP_LIVE_ENDING, 116,
+    "Servo restarting with its stored values.",
+    "Servo startet mit seinen gespeicherten Werten neu.")
 /* --------------------- end of the Hitec programmer */
 
 /* ------------------------------------------------- WI-FI, PANEL UPDATE */

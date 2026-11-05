@@ -8,9 +8,10 @@
  * hitec_panel_page.c the hold pages; hitec_panel_touch.c the presses;
  * hitec_panel_draw.c the notes and the pages drawn; hitec_panel_file.c the
  * FILES list, the name keyboard, the pages of a file, a backup and FACTORY
- * DEFAULT and their texts.  The functions one calls of another are prefixed
- * hpn_.  Nothing outside these seven files includes this header; the
- * interface is hitec_panel.h.
+ * DEFAULT and their texts; hitec_panel_move.c MOVE SERVO: its row, its
+ * page, the -/+ keys of the positions and the live lines.  The functions
+ * one calls of another are prefixed hpn_.  Nothing outside these eight
+ * files includes this header; the interface is hitec_panel.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -80,7 +81,7 @@ enum { K_ACT = 0, K_SHOW };
 
 /** @brief The actions of the SERVO tab's rows. */
 enum { A_PORT = 0, A_SERIES, A_READ, A_MORE, A_CLEAR, A_ENABLE, A_RESTORE,
-       A_WRITE, A_FILES };
+       A_WRITE, A_FILES, A_MOVE };
 
 /** @brief The series a row is for. */
 enum { S_D = 1, S_C = 2, S_ANY = 3 };
@@ -99,7 +100,7 @@ typedef struct {
 } hpn_row_t;
 
 /** @brief The rows' count. */
-#define HP_ROW_COUNT 44
+#define HP_ROW_COUNT 45
 /** @brief The rows, in hitec_panel.c. */
 extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 
@@ -108,8 +109,11 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 /** @brief What a press is on. */
 enum {
     P_NONE = 0, P_TAB, P_CLOSE, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
-    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT
+    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS
 };
+
+/** @brief A position's -/+ keys while MOVE SERVO is on, KST's 56px. */
+#define HP_STEP_W 56
 
 /** @brief A line of Hitec D receive's list that sets nothing. */
 #define HP_RX_LINE (-1)
@@ -128,7 +132,7 @@ enum { FL_SAVE = -2, FL_NEXT = -3 };
 #define HP_FS_POSITION (-1)
 /** @brief The hold pages. */
 enum { W_LEAVE = 0, W_RELEASE, W_ENABLE, W_WRITE, W_SOFT, W_REPAIR,
-       W_RESTORE, W_LOAD, W_FACTORY, W_BACKUP, W_LOAD_MORE };
+       W_RESTORE, W_LOAD, W_FACTORY, W_BACKUP, W_LOAD_MORE, W_MOVE };
 /** @brief What the keypad edits. */
 enum { KP_NONE = 0, KP_VOLTAGE, KP_CURRENT, KP_VALUE };
 
@@ -143,6 +147,7 @@ typedef struct {
     int          kp_what;       /**< KP_*                                 */
     uint8_t      ed_id;         /**< the hitec_param_t a value editor is
                                      for                                  */
+    float        held_s;        /**< how long a -/+ key is held, s        */
 
     struct {
         bool open;              /**< the list shows                       */
@@ -525,6 +530,72 @@ void hpn_page_values(const hitec_image_t *to, int room);
  * @param rules the rule set
  */
 void hpn_page_rules(uint16_t rules);
+
+/* hitec_panel_move.c */
+
+/**
+ * @brief Whether row @p r shows the -/+ keys: a position while MOVE SERVO
+ *        is on.
+ * @param r the row
+ * @return true when it does
+ */
+bool hpn_stepped(const hpn_row_t *r);
+/**
+ * @brief A -/+ key of row @p r.
+ * @param r    the row
+ * @param plus true for +
+ * @return the key's rectangle
+ */
+gfx_rect_t hpn_step_rect(const hpn_row_t *r, bool plus);
+/**
+ * @brief One step of row @p r's position: HITEC_MOVE_STEP counts up or
+ *        down, through hitec_prog_move_edit().
+ * @param r    the row
+ * @param plus true for up
+ * @return true when the draft took it
+ */
+bool hpn_step(const hpn_row_t *r, bool plus);
+/**
+ * @brief Draws row @p r's -/+ keys; hpn_value_rect() is its value between
+ *        them.
+ * @param c the canvas
+ * @param r the row
+ * @param i its index in hpn_rows, for the key pressed
+ */
+void hpn_step_draw(gfx_canvas_t *c, const hpn_row_t *r, int i);
+/** @brief The tap on MOVE SERVO: off while on, else its page or the
+ *         refusal. */
+void hpn_move_act(void);
+/** @brief The page of MOVE SERVO. */
+void hpn_page_move(void);
+/**
+ * @brief MOVE SERVO off where the overlay no longer shows the TRAVEL tab:
+ *        a tab change, CLOSE, the home tag, a screen change.
+ */
+void hpn_move_follow(void);
+/**
+ * @brief The notes of the TRAVEL tab while MOVE SERVO's loop runs: the
+ *        port, the live line, the reach, the end point's note and how the
+ *        keys work.
+ * @param s     receives the notes, static texts
+ * @param color receives their colours
+ * @param max   the notes @p s holds
+ * @return the notes; -1 with no loop: the tab's own notes
+ */
+int hpn_move_notes(const char **s, gfx_color_t *color, int max);
+/**
+ * @brief The lines of a message of MOVE SERVO that takes arguments.
+ * @param m   the message
+ * @param out the lines
+ * @return the lines used; 0 for a message of another kind
+ */
+int hpn_move_lines(const hitec_prog_msg_t *m,
+                   char out[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE]);
+/** @brief The repeat of a -/+ key held, as KST's: 0.45s, then 8Hz, 30Hz
+ *         after 1.8s.
+ * @param dt_s the frame's time, s
+ */
+void hpn_step_tick(float dt_s);
 
 /* hitec_panel_touch.c */
 

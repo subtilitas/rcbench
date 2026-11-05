@@ -946,14 +946,33 @@ The rule:
   a commanded change of 3deg or more. A bind moves the command back to the
   last free position less 75 counts (1.0deg) toward the neutral.
 - The mapping takes a servo set to CW only (`hitec_live_d_ends()`).
-- Moves are switched on by a 2s hold, and only with a PD mini answering
-  with its output on: STOP switches the PD mini off, and with it the
-  servo. The PD mini's own current limit is the hard ceiling.
+- Moves are switched on by MOVE SERVO on the TRAVEL tab
+  ([MOVE SERVO on the Hitec programmer](HitecMove.md), `hitec_move.h`) with a 2s
+  hold, and only with a PD mini answering with its output on and read:
+  STOP switches the PD mini off, and with it the servo. The PD mini's own
+  current limit is the hard ceiling. The rbmod carrier's fixed 5V has no
+  current reading: MOVE SERVO is refused there.
+- The knob moves nothing while MOVE SERVO is on: the `-`/`+` keys and the
+  keypad edit the position, the knob rule of a SAFE bench stays.
+- A bind moves the horn back and ends the loop with its end sequence:
+  0x1E = 3000, the servo's restart (0x46 = 1) and a read held against the
+  loop's start. A bind is no error; the supply stays on.
+- A STOP, a switch to SAFE at the bench, a lost link, the PD mini's output
+  read off or not read, an AS5600 reading at the start that goes away and
+  a failed position read end the loop at once, with no end sequence. Each
+  is an error: the programmer counts a session fault
+  (`hitec_prog_gate_faults()`), and every output goes off, the servo's
+  supply included ([Errors](#errors)). A reading that feeds a judge gets
+  no dropout allowance. ABORT before the end runs the end sequence and is
+  no error.
+- Every pass writes 0x1E, a D series write frame. The IOmcu holds an
+  error's OFF for 150ms after it (`HITEC_PORT_WRITE_TAIL_MS`,
+  [A programming port's supply](#a-programming-ports-supply)). The loop
+  sends no frame once the panel reads the output off, so the OFF reaches
+  the PD mini at most 150ms after the last frame of the pass under way.
 
 Current limitations:
 
-- The panel has no control that switches moves on (MOVE SERVO on the
-  TRAVEL tab): nothing calls `hitec_session_move()`.
 - Every threshold of the judges is chosen, not measured with a horn
   against a block. The stall current of a D485HW is not known.
 - Whether the servo follows the target line below 400 and above 5600 or
@@ -961,7 +980,10 @@ Current limitations:
   goes on.
 - Whether a D series servo holds its last target with no frames is not
   measured. A switch to SAFE at the bench alone stops the port and leaves
-  the supply on ([LinkHitec, STOP](LinkHitec.md#stop-a-switch-to-safe-heartbeat-loss-and-link-loss)).
+  the supply on ([LinkHitec, STOP](LinkHitec.md#stop-a-switch-to-safe-heartbeat-loss-and-link-loss));
+  during MOVE SERVO the panel then turns every output off itself.
+- The time from a STOP during MOVE SERVO to the servo's supply off is not
+  measured (station step L0.5 of the Hitec plan asks for 500ms or less).
 - Whether a reboot discards a RAM write that was not saved is not
   measured.
 - The mapping of a servo set to CCW is not measured.

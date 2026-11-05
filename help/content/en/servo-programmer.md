@@ -221,6 +221,24 @@ IOmcu 0.21.1 and 0.21.2 (protocol 4.23) always receive with PULL-UP. If PRECHARG
 
 ![Hitec D receive's list](view:servo-hitec-rx)
 
+## Hitec: MOVE SERVO
+
+MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series servo's horn to the position being edited, inside the held session, while the bench stays SAFE. Nothing is saved in the servo until WRITE n VALUES.
+
+![MOVE SERVO's page](view:servo-hitec-move)
+![MOVE SERVO on, LEFT END followed](view:servo-hitec-move-on)
+
+- Tap OFF, read the page and hold HOLD 2s TO MOVE for 2s. A shorter press shows `Hold 2s to move the servo.` and starts nothing.
+- It needs a PD mini answering with its output on: STOP switches the servo's supply off. Without one, the rbmod carrier's fixed 5V included, it says `Moving the servo needs a PD mini with its output on.`
+- DIRECTION is CW in the servo and in the draft; the CCW mapping is not measured.
+- NEUTRAL, LEFT END and RIGHT END get `-` and `+` keys of 8 counts, 0.11°, repeating while held. The horn follows the row last stepped, its label in the accent colour; it starts on NEUTRAL. A tap on the value opens the keypad.
+- The horn moves 2.0° at most a pass and stays inside the reach of the stored end points, 2606 to 13743 on a factory D485HW.
+- A horn that lags more than 2.0° on 2 passes, a current at 80% of the current limit for 0.4s, or an AS5600 angle that does not follow moves the horn back 1.0° and ends the loop: `Servo blocked at 6000. Moved back to 6167.`
+- A tap on ON, a tab change, CLOSE or the home tag ends it: target 3000, a restart of the servo, and a read held against the start, about 2.6s in the host model. `MOVE SERVO is OFF. The stored values read back unchanged.`
+- STOP, a switch to SAFE at the bench, a lost link, the supply going off and a failed read end it at once with every output off.
+
+The thresholds are chosen, not measured with a horn against a block. [MOVE SERVO on the Hitec programmer](https://github.com/subtilitas/rcbench/wiki/HitecMove) holds every message and limit.
+
 ## Related pages
 
 - [Servo](servo.md) and [Servo settings](servo-settings.md)

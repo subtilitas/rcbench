@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "hitec_move.h"
 #include "hitec_reg.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
@@ -418,6 +419,9 @@ void hpn_page_apply(void)
         break;
     case W_BACKUP:
         (void)hitec_prog_restore_backup(p);
+        break;
+    case W_MOVE:
+        (void)hitec_prog_move_start(p);
         break;
     default:
         (void)hitec_prog_restore(p);

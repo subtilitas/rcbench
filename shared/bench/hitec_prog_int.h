@@ -8,11 +8,12 @@
  * which servos this module works with.
  *
  * The functions one file calls of another are prefixed hpg_ (in
- * hitec_prog.c), hpw_ (in hitec_prog_write.c) and hpf_ (in
- * hitec_prog_file.c).  hitec_prog_run.c, a run's writes, says its
- * messages through hpg_say2() and defines none of these.  Nothing outside
- * the four files includes this header; the interface is hitec_prog.h and
- * hitec_prog_run.h.
+ * hitec_prog.c), hpw_ (in hitec_prog_write.c), hpf_ (in
+ * hitec_prog_file.c) and hpm_ (in hitec_move.c, MOVE SERVO's loop).
+ * hitec_prog_run.c, a run's writes, says its messages through hpg_say2()
+ * and defines none of these.  Nothing outside the five files includes this
+ * header; the interface is hitec_prog.h, hitec_prog_run.h and
+ * hitec_move.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,7 +36,8 @@ enum {
 };
 
 /** @brief The session operations. */
-enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_LEAVE, OP_WRITE, OP_CHECK };
+enum { OP_NONE = 0, OP_ENTER, OP_READ, OP_LEAVE, OP_WRITE, OP_CHECK,
+       OP_MOVE };
 
 /* --- hitec_prog.c --------------------------------------------------------- */
 
@@ -238,3 +240,39 @@ void hpf_tick(hitec_prog_t *p);
  * @return true when one waited.
  */
 bool hpf_abort(hitec_prog_t *p);
+
+/* --- hitec_move.c --------------------------------------------------------- */
+
+/**
+ * @brief A session operation of MOVE SERVO's loop ended with @p r: the
+ *        loop's next operation starts, or the loop ends.
+ *
+ * @param p The programmer.
+ * @param r Its result.
+ */
+void hpm_done(hitec_prog_t *p, hitec_ses_t r);
+
+/**
+ * @brief Every feed: a stop, a stopped port, the supply off or an AS5600
+ *        reading gone ends a loop that runs.
+ *
+ * @param p The programmer.
+ */
+void hpm_tick(hitec_prog_t *p);
+
+/**
+ * @brief The session ends: no loop runs.
+ *
+ * @param p The programmer.
+ */
+void hpm_gone(hitec_prog_t *p);
+
+/**
+ * @brief Whether an edit of @p id is taken while the loop runs: NEUTRAL,
+ *        LEFT END and RIGHT END while the switch reads ON.
+ *
+ * @param p  The programmer.
+ * @param id hitec_param_t.
+ * @return true when it is.
+ */
+bool hpm_edit_ok(const hitec_prog_t *p, uint8_t id);

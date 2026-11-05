@@ -101,6 +101,7 @@ hitec_prog_level_t hitec_prog_level(unsigned id)
     case HITEC_PROG_MSG_LOADED_RAW:
     case HITEC_PROG_MSG_BACKUP_RESTORED:
     case HITEC_PROG_MSG_FACTORY_DONE:
+    case HITEC_PROG_MSG_MOVE_DONE:
         return HITEC_PROG_INFO;
     case HITEC_PROG_MSG_NO_C:
     case HITEC_PROG_MSG_NO_D:
@@ -119,6 +120,9 @@ hitec_prog_level_t hitec_prog_level(unsigned id)
     case HITEC_PROG_MSG_REC_MIX:
     case HITEC_PROG_MSG_REC_OTHER:
     case HITEC_PROG_MSG_RECORD_BAD:
+    case HITEC_PROG_MSG_MOVE_CHANGED:
+    case HITEC_PROG_MSG_MOVE_SUPPLY:
+    case HITEC_PROG_MSG_MOVE_ENC_LOST:
         return HITEC_PROG_DANGER;
     default:
         return HITEC_PROG_WARN;
@@ -294,6 +298,8 @@ static bool of_the_session(unsigned id)
     case HITEC_PROG_MSG_LOADED_RAW:
     case HITEC_PROG_MSG_OTHER_SERVO:
     case HITEC_PROG_MSG_READS_DIFFER:
+    case HITEC_PROG_MSG_MOVE_NEED_DIR:
+    case HITEC_PROG_MSG_MOVE_NO_MAP:
         return true;
     default:
         return false;
@@ -313,6 +319,7 @@ static void session_gone(hitec_prog_t *p)
     }
     p->owned = false;
     p->op = OP_NONE;
+    hpm_gone(p);
     hpf_session(p);
     (void)hitec_session_init(&p->ses, p->series, HITEC_SES_CLOCK_MS);
 }
@@ -517,6 +524,9 @@ static void ses_done(hitec_prog_t *p, hitec_ses_t r)
         break;
     case OP_CHECK:
         hpw_check_done(p, r);
+        break;
+    case OP_MOVE:
+        hpm_done(p, r);
         break;
     default: /* OP_LEAVE */
         /* Back to PWM whatever the leave came to: a STOPPED port refuses
@@ -793,6 +803,7 @@ void hitec_prog_feed(hitec_prog_t *p, const hitec_prog_feed_t *f)
     take_timeouts(p);
     hpw_tick(p);
     hpf_tick(p);
+    hpm_tick(p);
     follow(p);
     hpg_pump(p);
 }
@@ -816,6 +827,7 @@ hitec_prog_state_t hitec_prog_state(const hitec_prog_t *p)
         return p->op == OP_ENTER  ? HITEC_PROG_ENTERING
              : p->op == OP_LEAVE  ? HITEC_PROG_LEAVING
              : p->op == OP_WRITE  ? HITEC_PROG_WRITING
+             : p->op == OP_MOVE   ? HITEC_PROG_MOVING
                                   : HITEC_PROG_READING;
     case ST_RECORD:
         return HITEC_PROG_RECORDING;

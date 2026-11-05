@@ -6,6 +6,23 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series
+  servo's horn to the NEUTRAL, LEFT END or RIGHT END being edited, inside
+  the held session, while the bench stays SAFE. A 2s hold switches it on,
+  with a PD mini answering with its output on and DIRECTION CW; it is
+  refused on the rbmod carrier's fixed 5V. The three positions get `-`
+  and `+` keys of 8 counts with repeat. Each pass writes target 0x1E and
+  reads position 0x0C, 150 counts at most a pass, inside the reach of the
+  stored ends. A lag over 150 counts on 2 passes, 80% of the current
+  limit for 400ms or an AS5600 angle that does not follow moves the horn
+  back 75 counts. The end writes 0x1E = 3000, restarts the servo and
+  holds 16 registers against the start; nothing is saved. STOP, a switch
+  to SAFE at the bench, a lost link, the supply off and a failed read end
+  it at once with every output off. The thresholds and the target-to-pulse
+  model are not measured.
+
 ### Fixed
 
 - SERVO > TEST, SERVO > PROGRAM and the SERVO settings pages no longer repaint

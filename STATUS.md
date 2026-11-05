@@ -1107,7 +1107,7 @@ identification, write plans; `protocols/hitec/hitec_reg.c`) are host-tested agai
 reads and captured writes; the session state machine (entry of both families, reads, write
 plans with their read-back, moves, leave; `protocols/hitec/hitec_session.c`) is host-tested
 against a servo model; the live loop's core (`protocols/hitec/hitec_live.c`: target mapping,
-reach, slew, the judges of a pass, FIND STOP) is host-tested and called by nothing yet; the
+reach, slew, the judges of a pass, FIND STOP) is host-tested and drives MOVE SERVO; the
 panel's link half (`shared/bench/hitec_link.c`), which runs a session's steps on page 0x34,
 is host-tested against the page; the SERVO screen's Hitec programmer
 (`shared/bench/hitec_prog.c`, `shared/ui/hitec_panel*.c`,
@@ -1138,7 +1138,12 @@ Hitec servo (`shared/bench/hitec_prog_run.c`, `shared/ui/hitec_panel_run.c`: LEF
 RIGHT END in travel units, the run's 2s start hold as the consent, the backup file before
 the run's first write) are host-tested against the same page and servo model
 (`test_hitec_prog_run`, `test_hitec_panel_run`) and used by LIMIT RUN and RUDDER AUTO
-through `servo_limit_seam.c`: [Runs](docs/HitecProgrammer.md#runs).
+through `servo_limit_seam.c`: [Runs](docs/HitecProgrammer.md#runs). MOVE SERVO on the D
+series TRAVEL tab (`shared/bench/hitec_move.c`, `shared/ui/hitec_panel_move.c`: the horn
+moved to the position edited while SAFE, `-`/`+` keys, the judges, the end with the servo's
+restart and a compare, every hard end an error) is host-tested against the page and a servo
+model whose horn follows its target (`test_hitec_move`, `test_hitec_panel_move`); its
+thresholds are not measured on a bench: [MOVE SERVO](docs/HitecProgrammer.md#move-servo).
 
 ## The tree
 
@@ -1220,7 +1225,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 454 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1301,7 +1306,8 @@ The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`,
 `test_kst_panel_type`, `test_hitec_wire`, `test_hitec_pio`, `test_hitec_pre`,
 `test_hitec_reg`, `test_hitec_reg_plan`, `test_hitec_session`, `test_hitec_session_write`,
-`test_hitec_session_move`, `test_hitec_live`, `test_hitec_port`, `test_hitec_port_stop`,
+`test_hitec_session_move`, `test_hitec_live`, `test_hitec_move`, `test_hitec_port`,
+`test_hitec_port_stop`,
 `test_hitec_port_hold`, `test_hitec_port_cut`, `test_hitec_port_rx`, `test_hitec_link`,
 `test_hitec_link_loss`, `test_hitec_link_run`, `test_hitec_prog`, `test_hitec_prog_safe`,
 `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`,
@@ -1321,7 +1327,8 @@ The host suite is 452 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
 `test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
-`test_hitec_panel_run`, `test_servo_rudder`, `test_servo_rudder_panel`,
+`test_hitec_panel_run`, `test_hitec_panel_move`, `test_servo_rudder`,
+`test_servo_rudder_panel`,
 `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`, `test_imu`,
 `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_kst`, `test_servo_rauto_panel`,
@@ -1513,7 +1520,17 @@ image only; the reach, the pulse width of a target and the 1000us share; the sle
 151 counts and over 2 passes; the current at the stall level for 399, 400 and 401ms; the
 AS5600 rule at half the change, at a commanded change of 3deg and with a command that turns
 back; FIND STOP to a block, to the reach edge, on the current, its abort, its 40s cap and
-the 32-bit millisecond wrap.
+the 32-bit millisecond wrap. `test_hitec_move` runs MOVE SERVO on the programmer's model
+over the page and a servo whose horn follows its target: the passes toward the followed
+position at 150 counts a pass at most, the reach edge, the end with one restart and no save,
+a bind by the lag, by the current (799mA for 3s, 800mA for 350ms, 800mA held to 400ms and
+across the 32-bit millisecond wrap) and by the AS5600, the hard ends (STOP, a switch to SAFE
+at the bench, a lost link, the supply off, the AS5600 gone, a failed read), each one fault at
+the gate, ABORT at the start, in the loop and in the end, a register changed during the
+loop, a start outside the reach at 51 and 50 counts, the edits with the hold's consent, and
+every refusal with nothing sent. `test_hitec_panel_move` runs its row, page, hint, `-`/`+`
+keys with their repeat at 0.40s and 1.0s, the keypad, the live lines naming the port and pin
+the loop drives, and every way off on the overlay.
 
 `hitec_headers_cxx` calls the module through its 6 headers from C++11. `test_i2c_txq`,
 `test_i2c_txq_calls` and `test_i2c_txq_wire` run the core of `protocols/i2c_txq/` over a
@@ -1739,8 +1756,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 844 committed screenshots to the current render,
-422 in English and the same 422 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 854 committed screenshots to the current render,
+427 in English and the same 427 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
