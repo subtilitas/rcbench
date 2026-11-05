@@ -19,7 +19,8 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
 - **Eingerastet.** STOP bleibt rot in einem gelben Rahmen von 3px und zeigt
   `GESTOPPT` über `2s HALTEN ZUM LÖSEN`. Das Feld für den ARM-Zustand im Band zeigt STOP
   statt SAFE oder ARMED. ARM, AUSGANG EIN, PROG 5V EIN, der Start eines Tests oder Endlagenlaufs werden
-  mit der Meldung `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.` abgelehnt; die
+  mit der Meldung `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.` abgelehnt. Die
+  Meldung verschwindet im Frame nach dem abgeschlossenen Lösen aus dem Band. Die
   Programmierungen für KST, Hitec und die ESC-Leitung lehnen VERBINDEN mit
   ihrer Stopp-Zeile ab. Ein ARM hebt diesen Stopp nicht auf.
 - **Halten zum Lösen.** Ein Druck auf ein eingerastetes STOP ist ebenfalls

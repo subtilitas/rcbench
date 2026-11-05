@@ -60,7 +60,7 @@ manual beside the bench.
   paused sweep, is a state rather than the control and reads PAUSIERT;
   PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
-  BATTERY, BALANCE, OUTPUTS, WI-FI, FILES, UPDATES, UPDATE,
+  BATTERY, BALANCE, OUTPUTS, SENSORS, SD CARD, WI-FI, FILES, UPDATES, UPDATE,
   CAN BUS FAULT, LINK LOST, PANEL UPDATE. A tile, a tab of LOGS' strip and the
   band of the screen it opens carry the same word. A note that names a screen names it by its
   title: "der Seite SUPPLY".
@@ -75,7 +75,8 @@ manual beside the bench.
 - The field's own terms: Failsafe, Brown-out, Timing, Endpoint, Live,
   Online, Touch, Display, Pin, Slot, Slice, Pad, Resync, Bad tail, tx err,
   rx err, bus err, Frame, Upload, Build.
-- Units, the stick positions MIN, MID and MAX, and the key legends DEL, CLR
+- Units, among them rpm (the RPM tile and its unit on MOTOR & ESC) and
+  rpm/V, the stick positions MIN, MID and MAX, and the key legends DEL, CLR
   and OK.
 - The vendor tool's names of a KST or Chaservo servo's settings, as the
   rows of the servo programmer: DEAD BAND, MAX. DUTY, BOOST, STRETCH, SOFT
@@ -104,6 +105,7 @@ One German word per English concept, on every screen and in the report.
 | step (of the supply) | Stufe |
 | report | Bericht |
 | reading | Messwert |
+| EFF (the drivetrain estimate on MOTOR & ESC, LIVE) | WIRK. |
 | setting (a SETUP entry) | Einstellung |
 | SETTINGS (a screen's own settings) | OPTIONEN |
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
@@ -313,7 +315,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 534 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 536 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -359,7 +361,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,089 entries
+A language is one more column in every entry of the table: 3,090 entries
 with an ID and 102 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

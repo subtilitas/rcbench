@@ -695,6 +695,45 @@ size_t text_buf_prev(const text_buf_t *tb, size_t pos)
 
 /* ------------------------------------------------------------ the cells */
 
+/**
+ * @brief Whether byte @p b ends a word: a space, a tab or a line end.
+ *
+ * @param b The byte.
+ * @return true for a space, a tab, CR and LF.
+ */
+static bool word_ends_at(uint8_t b)
+{
+    return b == ' ' || b == '\t' || b == '\r' || b == '\n';
+}
+
+bool text_buf_breaks_before(const text_buf_t *tb, size_t pos, size_t col,
+                            unsigned width)
+{
+    if (tb == NULL || width == 0u) {
+        return false;
+    }
+    if (col >= width) {
+        return true;
+    }
+    /* Only the first unit of a word after a space or a tab moves on. */
+    if (col == 0u || pos == 0u || pos >= tb->len
+        || word_ends_at(at(tb, pos))
+        || (at(tb, pos - 1u) != ' ' && at(tb, pos - 1u) != '\t')) {
+        return false;
+    }
+    size_t cells = 0u;
+    size_t p = pos;
+    while (p < tb->len && cells <= width && !word_ends_at(at(tb, p))) {
+        ++cells;
+        p = text_buf_next(tb, p);
+    }
+    if (cells > width) {
+        return false;               /* broken where the row ends */
+    }
+    const size_t space = (p < tb->len && at(tb, p) == ' ') ? 1u : 0u;
+    return col + cells + space > width;
+}
+
 /** @brief Where a walk along a line's cells is. */
 typedef struct {
     size_t pos;   /**< text offset of the next unit */
@@ -721,7 +760,8 @@ static void cells_start(const text_buf_t *tb, size_t line, cells_t *w)
 
 /**
  * @brief Place the unit at w->pos: its first cell and the one after it,
- *        starting a row where it does not fit.
+ *        starting a row where it does not fit or where its word does not
+ *        (text_buf_breaks_before()).
  *
  * @param tb    The buffer.
  * @param w     The walk; w->pos under w->end.
@@ -732,7 +772,7 @@ static void cells_place(const text_buf_t *tb, cells_t *w, unsigned width)
     const bool tab = at(tb, w->pos) == '\t';
     size_t cells = 1u;
 
-    if (width > 0u && w->col >= width) {
+    if (text_buf_breaks_before(tb, w->pos, w->col, width)) {
         w->row++;
         w->col = 0u;
     }

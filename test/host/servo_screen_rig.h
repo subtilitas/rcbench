@@ -126,13 +126,14 @@ static inline int sweep_btn_pixels(gfx_color_t col)
  * card's column, the line over the power plot with its 90px name (PD
  * MINI) or 134px name (INA 0x40 CH1), the line and plot together
  * (power_rect()), and LIVE's CURRENT reading, the numerals of the third
- * column along the foot of the left card.
+ * column along the foot of the left card: right of COMMANDED's 192px and
+ * MEASURED's 216px, 188px wide less 4px.
  */
 #define RAIL_X     SV_RC_X
 #define RAIL_W     SV_RC_W
-#define CUR_X      (UI_MARGIN + 12 + 2 * 198)
+#define CUR_X      (UI_MARGIN + 12 + 192 + 216)
 #define CUR_Y      448
-#define CUR_W      194
+#define CUR_W      184
 #define CUR_H      44
 #define LINE_Y     72
 #define LINE_H     20

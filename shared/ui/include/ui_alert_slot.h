@@ -1,6 +1,7 @@
-/*
- * The control task's alert slot, and the band's record of the alert it
- * took from it.
+/**
+ * @file
+ * @brief The control task's alert slot, and the band's record of the alert
+ *        it took from it.
  *
  * The control task never calls the router (ui_screen.h): it posts an alert
  * into a slot, and the render loop takes it into the band once a frame.
@@ -33,37 +34,72 @@
 extern "C" {
 #endif
 
+/** @brief The slot: one alert, numbered, and the record of the last one
+ *         taken and taken back. */
 typedef struct {
-    char     text[UI_ALERT_MAX];
+    char     text[UI_ALERT_MAX]; /**< the alert posted                  */
     bool     pending;    /**< posted and not yet taken                    */
     uint32_t posted;     /**< number of the last alert posted, 0 none     */
     uint32_t taken;      /**< number of the last alert taken, 0 none      */
     uint32_t withdrawn;  /**< number of a taken alert taken back, 0 none  */
 } ui_alert_slot_t;
 
-/** Post @p text, replacing an alert not yet taken.  Returns its number,
- *  never 0. */
+/**
+ * @brief Post @p text, replacing an alert not yet taken.
+ * @param s    the slot
+ * @param text the alert, cut to UI_ALERT_MAX - 1 bytes
+ * @return its number, never 0
+ */
 uint32_t ui_alert_slot_post(ui_alert_slot_t *s, const char *text);
 
-/** Take back alert @p number: its cause is over.  0 does nothing. */
+/**
+ * @brief Take back alert @p number: its cause is over.
+ * @param s      the slot
+ * @param number its number; 0 does nothing
+ */
 void ui_alert_slot_withdraw(ui_alert_slot_t *s, uint32_t number);
 
-/** Copy the alert posted and not yet taken into @p out (@p size bytes) and
- *  mark it taken.  False, and @p out untouched, when there is none. */
+/**
+ * @brief Take back alert @p *number once its cause is over, and forget it:
+ *        the alert a standing STOP gives an ARM or an ON it refuses, which
+ *        goes when the STOP's reset completes, at once and not after
+ *        UI_ALERT_SHOW_S.  While the cause stands, or with no number kept,
+ *        nothing changes.
+ * @param s      the slot
+ * @param number the alert's number as ui_alert_slot_post() gave it, 0 for
+ *               none; set to 0 when it is taken back
+ * @param stands whether its cause still stands
+ * @return true when it took the alert back
+ */
+bool ui_alert_slot_withdraw_over(ui_alert_slot_t *s, uint32_t *number,
+                                 bool stands);
+
+/**
+ * @brief Copy the alert posted and not yet taken into @p out and mark it
+ *        taken.
+ * @param s    the slot
+ * @param out  takes the alert; untouched when there is none
+ * @param size bytes at @p out
+ * @return false when there is none
+ */
 bool ui_alert_slot_take(ui_alert_slot_t *s, char *out, size_t size);
 
-/** What the render loop keeps of the slot's alert it put in the band. */
+/** @brief What the render loop keeps of the slot's alert it put in the
+ *         band. */
 typedef struct {
     uint32_t slot;   /**< its number in the slot, 0 none           */
     uint32_t band;   /**< its number in the band, ui_router_alert_number() */
 } ui_alert_band_t;
 
 /**
- * Hand the slot's news to the router, outside the slot's lock: @p text the
- * alert just taken (NULL for none) under slot number @p taken, and
- * @p withdrawn the slot's withdrawal record as read with it.  Shows a new
- * alert, and clears the one in the band when the slot took it back and the
- * band still shows it.  True when it cleared one.
+ * @brief Hand the slot's news to the router, outside the slot's lock.
+ *        Shows a new alert, and clears the one in the band when the slot
+ *        took it back and the band still shows it.
+ * @param b         the band's record
+ * @param text      the alert just taken, NULL for none
+ * @param taken     its slot number
+ * @param withdrawn the slot's withdrawal record as read with it
+ * @return true when it cleared one
  */
 bool ui_alert_band_update(ui_alert_band_t *b, const char *text,
                           uint32_t taken, uint32_t withdrawn);

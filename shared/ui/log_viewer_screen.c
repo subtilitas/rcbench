@@ -397,7 +397,9 @@ void log_viewer_browse_title(char *out, size_t n)
     if (out == NULL || n == 0) {
         return;
     }
-    if (lv_paged()) {
+    /* Every list with a file in it names its part of the folder, on one
+     * page as on several; an empty one, or one not read, the word alone. */
+    if (s.listed == 1 && s.n_files > 0) {
         snprintf(out, n, TR(LOG_N_OF_FILES), s.first + 1,
                  s.first + s.n_files, s.n_card);
     } else {

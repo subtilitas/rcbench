@@ -237,6 +237,14 @@ const char *outputs_iface_name(outputs_iface_t which)
     }
 }
 
+const char *outputs_proto_name(uint8_t proto)
+{
+    if (proto >= OUTBIND_PROTOS) {
+        return "";
+    }
+    return (proto == 0u) ? TR(OFF) : outbind_protos()[proto].name;
+}
+
 void outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT])
 {
     pins[OUTPUTS_IFACE_NONE] = 0u;

@@ -55,7 +55,7 @@ WI-FI in the footer opens [Wi-Fi](wifi.md) for browser downloads; its home tag r
 
 ![The fourth page of a full card](view:logs-pages)
 
-- A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, a report by its own number and after its run's CSV, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`.
+- A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, a report by its own number and after its run's CSV, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`; on a single page it counts the whole list, `FILES 1 TO 7 OF 7`, and an empty folder reads `FILES`.
 - Pages are cut from the top, 48 at a time. With fewer than 48 entries ahead of the page on screen, for example after a run was recorded, PREV shows the first page.
 - Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
 - The scroll bar at the right edge, 56px (about 8.4mm) wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.

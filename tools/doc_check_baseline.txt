@@ -3100,7 +3100,6 @@ shared/ui/include/log_viewer_screen.h: warning: Member log_viewer_set_io(const l
 shared/ui/include/log_viewer_screen.h: warning: Member log_viewer_view_t (enumeration) of file log_viewer_screen.h is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Member name[LOG_VIEWER_NAME_MAX] (variable) of struct log_viewer_file_t is not documented.
 shared/ui/include/log_viewer_screen.h: warning: Member size (variable) of struct log_viewer_file_t is not documented.
-shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_browse_title are not documented
 shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_series_color are not documented
 shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_set_tab are not documented
 shared/ui/include/log_viewer_screen.h: warning: parameters of member log_viewer_tab_dir are not documented
@@ -3404,9 +3403,6 @@ shared/ui/include/supply_screen.h: warning: return type of member supply_screen_
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_set_v is not documented
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_task is not documented
 shared/ui/include/supply_screen.h: warning: return type of member supply_screen_typed_asks is not documented
-shared/ui/include/ui_alert_slot.h: file has no @file block
-shared/ui/include/ui_alert_slot.h: warning: Compound ui_alert_slot_t is not documented.
-shared/ui/include/ui_alert_slot.h: warning: Member text[UI_ALERT_MAX] (variable) of struct ui_alert_slot_t is not documented.
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_chip_rect are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_rect are not documented
 shared/ui/include/ui_band.h: warning: parameters of member ui_band_help_render are not documented
@@ -4438,7 +4434,6 @@ shared/ui/supply_screen.c: warning: Member k_screen (variable) of file supply_sc
 shared/ui/supply_screen.c: warning: Member k_tab_labels[] (variable) of file supply_screen.c is not documented.
 shared/ui/supply_screen.c: warning: Member leave(void) (function) of file supply_screen.c is not documented.
 shared/ui/supply_screen.c: warning: Member limits_from_settings(void) (function) of file supply_screen.c is not documented.
-shared/ui/ui_alert_slot.c: file has no @file block
 shared/ui/ui_band.c: warning: Compound chips_t is not documented.
 shared/ui/ui_band.c: warning: Member bit (variable) of struct [struct].k_bits is not documented.
 shared/ui/ui_band.c: warning: Member chip_label(const ui_bench_status_t *st, ui_band_chip_t chip, char *buf, size_t n) (function) of file ui_band.c is not documented.

@@ -12,6 +12,7 @@
 #include "esc_stick_panel.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "esc_profile.h"
 #include "settings.h"
@@ -58,10 +59,10 @@ static DRAWER void sp_draw_find(gfx_canvas_t *c)
 /** @brief The red MANUAL tag's height, px: drawn, not tapped. */
 #define SP_TAG_H 28
 
-/** @brief The red MANUAL tag's width, px. */
+/** @brief The red MANUAL tag's width, px: its word and 5px each side. */
 static int sp_tag_w(void)
 {
-    return gfx_text_cells(TR(SP_HAND_TAG)) * SP_CELL + 14;
+    return gfx_text_cells(TR(SP_HAND_TAG)) * SP_CELL + 10;
 }
 
 /**
@@ -173,6 +174,46 @@ static DRAWER void sp_draw_maker(gfx_canvas_t *c, gfx_rect_t r,
                      : ui_theme_color(UI_C_TEXT_FAINT), 1, GFX_ALIGN_RIGHT);
 }
 
+bool sp_model_cols(const esc_profile_t *p, int model, int row_w,
+                   sp_model_cols_t *out)
+{
+    memset(out, 0, sizeof(*out));
+    char cap[64];
+    const char *why = sp_model_why(p, model, cap, sizeof(cap));
+    const bool runs = why == NULL;
+    char warn[64];
+    out->unrated = runs
+                   && sp_model_warn(p, model, warn, sizeof(warn)) != NULL;
+    if (out->unrated) {
+        snprintf(out->right, sizeof(out->right), "%s", warn);
+    } else if (runs) {
+        char items[24];
+        const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
+        snprintf(items, sizeof(items),
+                 (p->item_count == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS),
+                 (unsigned)p->item_count);
+        snprintf(out->right, sizeof(out->right), "%s%s%s  %s",
+                 esc_profiles_is_override(p) ? TR(SP_CARD) : "",
+                 esc_profiles_is_override(p) ? "  " : "", items,
+                 (kind == ESC_STICK_KIND_TWO_STAGE) ? TR(SP_TWO_STAGE)
+                                                    : TR(SP_ONE_STAGE));
+    } else {
+        snprintf(out->right, sizeof(out->right), "%s", why);
+    }
+    const int room = SP_WHY_CELLS * SP_CELL;
+    int rw = gfx_text_cells(out->right) * SP_CELL;
+    rw = (rw < 260) ? 260 : rw;
+    rw = (rw > room) ? room : rw;
+    sp_cut(out->right, sizeof(out->right), rw / SP_CELL);
+    out->rw = rw;
+    out->rx = row_w - 12 - rw;
+    out->tag = p->manual_count > 0u && rw + 4 + sp_tag_w() <= room;
+    const int tag = out->tag ? sp_tag_w() + 8 : 0;
+    const int fam = (out->rx - 4 - tag - SP_FAMILY_X) / SP_CELL;
+    out->fam = (fam >= 3) ? fam : 0;
+    return runs;
+}
+
 /**
  * @brief A model's row: its name, current and voltage, its family, the MANUAL
  *        tag, and what its family's profile is or why it does not run.
@@ -182,9 +223,8 @@ static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
 {
     const esc_profile_t *p = esc_profiles_at(row->prof);
     const esc_model_t *m = &p->models[row->model];
-    char cap[64];
-    const char *why = sp_model_why(p, row->model, cap, sizeof(cap));
-    const bool runs = why == NULL;
+    sp_model_cols_t col;
+    const bool runs = sp_model_cols(p, row->model, r.w, &col);
     ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
                        : ui_theme_color(UI_C_PANEL_SUNK));
     const gfx_color_t ink = runs ? ui_theme_color(UI_C_TEXT)
@@ -213,50 +253,19 @@ static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + SP_VOLTS_X),
                                  (int16_t)(r.y + SP_ROW_TY), 64, 20 },
                 volts, SP_FONT, dim, 1, GFX_ALIGN_RIGHT);
-    char right[80];
-    char warn[64];
-    const bool unrated = runs
-                         && sp_model_warn(p, row->model, warn, sizeof(warn))
-                                != NULL;
-    if (unrated) {
-        snprintf(right, sizeof(right), "%s", warn);
-    } else if (runs) {
-        char items[24];
-        const esc_stick_kind_t kind = esc_stick_kind(p, NULL);
-        snprintf(items, sizeof(items),
-                 (p->item_count == 1u) ? TR(SP_ITEM) : TR(SP_ITEMS),
-                 (unsigned)p->item_count);
-        snprintf(right, sizeof(right), "%s%s%s  %s",
-                 esc_profiles_is_override(p) ? TR(SP_CARD) : "",
-                 esc_profiles_is_override(p) ? "  " : "", items,
-                 (kind == ESC_STICK_KIND_TWO_STAGE) ? TR(SP_TWO_STAGE)
-                                                    : TR(SP_ONE_STAGE));
-    } else {
-        snprintf(right, sizeof(right), "%s", why);
+    if (col.tag) {
+        (void)sp_draw_tag(c, r.x + col.rx - 4, r.y);
     }
-    /* The right text in 260px, or as wide as it is up to the family's
-     * column (SP_WHY_CELLS); the MANUAL tag left of it where both fit, and
-     * the family in what is left, from 3 cells. */
-    const int room = SP_WHY_CELLS * SP_CELL;
-    int rw = gfx_text_cells(right) * SP_CELL;
-    rw = (rw < 260) ? 260 : rw;
-    rw = (rw > room) ? room : rw;
-    sp_cut(right, sizeof(right), rw / SP_CELL);
-    const int rx = r.w - 12 - rw;
-    const int tag = (p->manual_count > 0u && rw + 4 + sp_tag_w() <= room)
-                        ? sp_draw_tag(c, r.x + rx - 4, r.y) + 8
-                        : 0;
-    const int fam = (rx - 4 - tag - SP_FAMILY_X) / SP_CELL;
-    if (fam >= 3) {
-        sp_text(c, r.x + SP_FAMILY_X, r.y + SP_ROW_TY, p->family, fam,
+    if (col.fam > 0) {
+        sp_text(c, r.x + SP_FAMILY_X, r.y + SP_ROW_TY, p->family, col.fam,
                 ui_theme_color(UI_C_TEXT_FAINT));
     }
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + rx),
-                                 (int16_t)(r.y + SP_ROW_TY), (int16_t)rw,
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + col.rx),
+                                 (int16_t)(r.y + SP_ROW_TY), (int16_t)col.rw,
                                  20 },
-                right, SP_FONT,
-                unrated ? ui_theme_color(UI_C_WARN)
-                : runs  ? ui_theme_color(UI_C_ACCENT)
+                col.right, SP_FONT,
+                col.unrated ? ui_theme_color(UI_C_WARN)
+                : runs      ? ui_theme_color(UI_C_ACCENT)
                         : ui_theme_color(UI_C_TEXT_FAINT), 1,
                 GFX_ALIGN_RIGHT);
 }

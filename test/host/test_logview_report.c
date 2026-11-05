@@ -395,7 +395,7 @@ TEST_CASE(a_limit_report_and_a_runs_report_are_listed_newest_first)
     CHECK_STR_EQ(list, "LIMIT005.TXT ATEST004.CSV ATEST004.TXT");
     char title[64];
     log_viewer_browse_title(title, sizeof(title));
-    CHECK_STR_EQ(title, "FILES");
+    CHECK_STR_EQ(title, "FILES 1 TO 3 OF 3");
     CHECK_EQ(g_walks, 1);
     /* The newest number is chosen, and OPEN opens it in the viewer. */
     tap(OPEN_X, FOOT_CY);
@@ -403,6 +403,37 @@ TEST_CASE(a_limit_report_and_a_runs_report_are_listed_newest_first)
     CHECK_STR_EQ(log_viewer_open_name(), "LIMIT005.TXT");
     ui_router_goto(SCREEN_LOGS);
     draw();
+}
+
+/* The list's tab counts the files on a single page as on several, in both
+ * languages, USER and BENCH alike; an empty folder keeps the word alone. */
+TEST_CASE(every_list_with_a_file_counts_its_files)
+{
+    char title[64];
+    for (int l = 0; l < 2; ++l) {
+        fresh();
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        show(LOG_TAB_USER);
+        log_viewer_browse_title(title, sizeof(title));
+        CHECK_STR_EQ(title, l == 0 ? "FILES" : "DATEIEN");
+        static const char *const k_names[] = {
+            "ATEST001.CSV", "ATEST002.CSV", "ATEST003.CSV", "ATEST004.CSV",
+            "ATEST005.CSV", "ATEST006.CSV", "ATEST007.CSV",
+        };
+        for (size_t k = 0; k < sizeof(k_names) / sizeof(k_names[0]); ++k) {
+            add(CARD_USER_LOGS, k_names[k], k_csv_text);
+        }
+        add(CARD_AUTO_LOGS, "SERVO001.CSV", k_csv_text);
+        show(LOG_TAB_USER);
+        log_viewer_browse_title(title, sizeof(title));
+        CHECK_STR_EQ(title, l == 0 ? "FILES 1 TO 7 OF 7"
+                                   : "DATEIEN 1 BIS 7 VON 7");
+        show(LOG_TAB_BENCH);
+        log_viewer_browse_title(title, sizeof(title));
+        CHECK_STR_EQ(title, l == 0 ? "FILES 1 TO 1 OF 1"
+                                   : "DATEIEN 1 BIS 1 VON 1");
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 TEST_CASE(a_servo_report_of_an_older_card_is_listed_in_the_root)
@@ -747,6 +778,7 @@ int main(void)
     RUN(the_list_and_files_report_label_are_one_rule);
     RUN(a_report_and_a_run_of_one_prefix_and_number_are_told_apart);
     RUN(a_limit_report_and_a_runs_report_are_listed_newest_first);
+    RUN(every_list_with_a_file_counts_its_files);
     RUN(a_servo_report_of_an_older_card_is_listed_in_the_root);
     RUN(a_runs_report_is_a_row_with_its_csv_there_or_not);
     RUN(a_card_of_reports_only_lists_them_newest_first);

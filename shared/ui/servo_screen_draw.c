@@ -584,7 +584,7 @@ static void hero_text(gfx_canvas_t *c, int x, int y, int w, const char *t,
 static gfx_rect_t cur_val_rect(void)
 {
     return (gfx_rect_t){ (int16_t)READ_X(2), READ_NUM_Y,
-                         (int16_t)(READ_W - 4), READ_NUM_H };
+                         (int16_t)(READ_W2 - 4), READ_NUM_H };
 }
 
 /**
@@ -632,7 +632,7 @@ static void draw_readings(gfx_canvas_t *c)
     static const char *const k_unit[3] = { "us", "deg", "A" };
     for (int k = 0; k < 3; ++k) {
         const gfx_rect_t lr = { (int16_t)READ_X(k), READ_LBL_Y,
-                                (int16_t)(READ_W - 14), 20 };
+                                (int16_t)(READ_W(k) - 14), 20 };
         gfx_text(c, lr.x, lr.y, ui_tr(k_label[k]), SV_FONT_LABEL,
                  ui_theme_color(UI_C_TEXT_DIM), 1);
         gfx_text_in(c, lr, k_unit[k], SV_FONT_LABEL,
@@ -642,7 +642,7 @@ static void draw_readings(gfx_canvas_t *c)
     char cmd[16];
     snprintf(cmd, sizeof(cmd), "%s", servo_screen_commanded_text());
     cmd[strspn(cmd, "+-.0123456789")] = '\0';
-    hero_text(c, READ_X(0), READ_NUM_Y, READ_W - 4, cmd,
+    hero_text(c, READ_X(0), READ_NUM_Y, READ_W0 - 4, cmd,
               ui_theme_color(UI_C_TEXT));
     char mea[16];
     if (enc_shown()) {
@@ -654,7 +654,7 @@ static void draw_readings(gfx_canvas_t *c)
     } else {
         snprintf(mea, sizeof(mea), "---");
     }
-    hero_text(c, READ_X(1), READ_NUM_Y, READ_W - 4, mea,
+    hero_text(c, READ_X(1), READ_NUM_Y, READ_W1 - 4, mea,
               ui_theme_color(UI_C_ACCENT));
     cur_value(c);
 }
@@ -948,7 +948,7 @@ static void draw_dial_part(gfx_canvas_t *c, int buf)
     clipped(c, rect_union(angle_box(s.drawn_deg[buf]),
                           angle_box(s.shown_deg)), draw_left);
     clipped(c, (gfx_rect_t){ (int16_t)READ_X(0), READ_NUM_Y,
-                             (int16_t)(2 * READ_W), READ_NUM_H },
+                             (int16_t)(READ_W0 + READ_W1), READ_NUM_H },
             draw_left);
     dial_drawn(buf);
     /* The grip is in the horn's box, at the breath it has now. */

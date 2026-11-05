@@ -18,7 +18,8 @@ host-tested in `test_stop_latch` and `test_stop_hold`.
   `STOPPED` over `HOLD 2s TO RESET` (DE `GESTOPPT`, `2s HALTEN ZUM
   LÖSEN`). The band's arm chip reads STOP in place of SAFE or ARMED. ARM,
   OUTPUT ON, PROG 5V ON, a test or a limit run start are refused with the
-  alert `STOP pressed: hold STOP 2s to reset.`; the KST, Hitec and ESC
+  alert `STOP pressed: hold STOP 2s to reset.`, which leaves the band in
+  the frame after the reset completes; the KST, Hitec and ESC
   wire programmers refuse CONNECT with their stop line. An arm does not
   clear this stop.
 - **Reset hold.** A press that lands on a latched STOP is a STOP as well,

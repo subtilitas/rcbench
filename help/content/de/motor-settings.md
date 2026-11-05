@@ -22,7 +22,7 @@ Jede 48px hohe Zeile zeigt Einstellung, Wert, Einheit und eine Hilfezeile. Tippe
 | AKKU | Kapazität | 0 bis 30000mAh, Schritte von 100mAh | 5000 | gespeichert; in diesem Release auf keiner Seite verwendet |
 | AKKU | Innenwiderstand | 0 bis 200mΩ | 18 | gespeichert; in diesem Release auf keiner Seite verwendet |
 | MOTOR | Motorpole | 2 bis 42, Schritte von 2 | 14 | Drehzahl = eRPM (elektrische Drehzahl) geteilt durch Pole/2 |
-| MOTOR | Nenn-kV | 0 bis 10000rpm/V, Schritte von 10 | 0 | kV-Wert auf [LIVE](motor.md#kv-rpm-v-und-eff); bei 0 bleibt er leer |
+| MOTOR | Nenn-kV | 0 bis 10000rpm/V, Schritte von 10 | 0 | kV-Wert auf [LIVE](motor.md#kv-rpm-v-und-wirk); bei 0 bleibt er leer |
 | GASAUSGANG | Leerlaufpuls | 800 bis 1600us, Schritte von 10 | 1000 | PWM-Breite (Pulsweitenmodulation) bei 0% Gas |
 | GASAUSGANG | Vollgaspuls | 1400 bis 2400us, Schritte von 10 | 2000 | PWM-Breite bei 100% Gas |
 | GASAUSGANG | Rampengrenze | 5 bis 300%/s, Schritte von 5 | 55 | Gasrampe des Panelmodells, solange kein IOmcu antwortet |

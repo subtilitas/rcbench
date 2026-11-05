@@ -156,7 +156,7 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
  *        ratio of the two says about the drivetrain.
  *
  * The arithmetic is sound and the number is still an estimate, which is why
- * it is labelled EFF rather than efficiency.  Terminal voltage splits into
+ * it is labelled EFF (WIRK. in German) rather than efficiency.  Terminal voltage splits into
  * the resistive drop and the back-EMF, so rpm/V under load is the rated kV
  * scaled by the fraction of the voltage reaching the back-EMF, and in an
  * ideal motor that fraction is the conversion efficiency exactly.
@@ -215,9 +215,9 @@ static void draw_derived(gfx_canvas_t *c)
         if (pct > 199) {
             pct = 199;
         }
-        snprintf(eff, sizeof(eff), "EFF %d%%", pct);
+        snprintf(eff, sizeof(eff), "%s %d%%", TR(MO_EFF), pct);
     } else {
-        snprintf(eff, sizeof(eff), "EFF --");
+        snprintf(eff, sizeof(eff), "%s --", TR(MO_EFF));
     }
 
     char line[96];

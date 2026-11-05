@@ -14,6 +14,7 @@
  * - small_switches_the_face_and_keeps_the_top_line
  * - the_page_keys_stop_at_the_first_and_last_screen
  * - a_long_line_wraps_onto_rows_with_the_mark
+ * - a_line_of_words_wraps_at_a_space
  * - a_drag_scrolls_a_row_a_pitch_and_the_bar_jumps
  * - the_bar_reaches_the_ends_inside_a_wrapped_line
  * - a_press_that_slides_off_or_a_second_finger_does_nothing
@@ -364,6 +365,37 @@ TEST_CASE(a_long_line_wraps_onto_rows_with_the_mark)
      * umlaut draws as itself. */
     view_text("a\xff" "b\x01" "c \xc3\xa4\n");
     CHECK_STR_EQ(row(0), "a?b?c \xc3\xa4");
+}
+
+/* A line of words wraps at a space: the word that would cross the row's
+ * end starts the next row whole, a number keeps its unit, and the rows
+ * after it and the scroll through them follow the same rows. */
+TEST_CASE(a_line_of_words_wraps_at_a_space)
+{
+    static char text[512];
+    /* 86 cells and a space, then "nicht" from cell 87: it and its space
+     * end past cell 92. */
+    memset(text, 'x', 86);
+    snprintf(text + 86, sizeof(text) - 86, " nicht zum Ausgleich\n%s",
+             numbered(3));
+    view_text(text);
+    CHECK_EQ(strlen(row(0)), 87u);
+    CHECK_STR_EQ(row(1), "nicht zum Ausgleich");
+    CHECK_STR_EQ(row(2), "line 1");
+    /* "600ms" from cell 89 moves on whole. */
+    memset(text, 'y', 88);
+    snprintf(text + 88, sizeof(text) - 88, " 600ms gemessen\n%s",
+             numbered(40));
+    view_text(text);
+    CHECK_STR_EQ(row(1), "600ms gemessen");
+    CHECK_STR_EQ(row(2), "line 1");
+    /* The scroll steps a row: the second row of the line is the top. */
+    drag(400, 300, 300 - FS_SPOT_TV_PITCH);
+    size_t r = 9u;
+    CHECK_EQ(top(&r), 0u);
+    CHECK_EQ(r, 1u);
+    CHECK_STR_EQ(row(0), "600ms gemessen");
+    CHECK_STR_EQ(row(1), "line 1");
 }
 
 TEST_CASE(a_drag_scrolls_a_row_a_pitch_and_the_bar_jumps)
@@ -806,6 +838,7 @@ int main(void)
     RUN(small_switches_the_face_and_keeps_the_top_line);
     RUN(the_page_keys_stop_at_the_first_and_last_screen);
     RUN(a_long_line_wraps_onto_rows_with_the_mark);
+    RUN(a_line_of_words_wraps_at_a_space);
     RUN(a_drag_scrolls_a_row_a_pitch_and_the_bar_jumps);
     RUN(the_bar_reaches_the_ends_inside_a_wrapped_line);
     RUN(a_press_that_slides_off_or_a_second_finger_does_nothing);

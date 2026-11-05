@@ -197,7 +197,7 @@ Pin-key changes are written immediately. LAST WRITE appears beside the protocol 
 
 | LAST WRITE | Meaning |
 |---|---|
-| `NOT WRITTEN` | nothing written since the panel started |
+| `NONE YET` | nothing written since the panel started |
 | `WRITTEN` | the IOmcu acknowledged the write |
 | `NO LINK` | an exchange got no answer within 1000ms, or the link is down |
 | `REFUSED` | the IOmcu refused: a pin it cannot bind, a change while ARMED, or a frame rate it could not put back |

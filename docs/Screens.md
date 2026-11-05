@@ -1671,7 +1671,7 @@ which movement stops. [Servo procedures](Servo.md#automatic-test) describes
 the method and files.
 
 The 600 x 188px card contains the run name; a summary such as
-`4.8 6.0V BROWN-OUT, 60s EACH` or `..., 20 MOVEMENTS EACH`; START TEST
+`4.8V, 6.0V, BROWN-OUT, 60s EACH` or `..., 20 MOVEMENTS EACH`; START TEST
 (300 x 48px) beside SETTINGS (160 x 48px); the state line; the last result
 and files, such as `LAST: PASS ATEST004.CSV + .TXT`; and the STALL AT note.
 An aborted result shows its reason in the warning colour, for example
@@ -2118,7 +2118,7 @@ OUTPUT reports the result:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT GPIO 13 runs at 330Hz.` The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330Hz.` or `Active: PROG PORT 1 GPIO 13 runs at 330Hz.`, the port numbered as TARGET names it: PORT 1, PORT 2, PORT 3 or PORT 4. The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target (a surface, or the programming port while its pulse is on) is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This IOmcu takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50Hz |
@@ -2782,7 +2782,8 @@ written before the clock is set carry a 1980 date.
 
 Folders with more than 48 files show PREV and NEXT in the header. The
 file heading gives the current range, such as `FILES 145 TO 192 OF 1000`,
-instead of `FILES`. PREV is disabled on the first page and NEXT on the
+and on a single page the whole list, such as `FILES 1 TO 7 OF 7`; an
+empty folder reads `FILES`. PREV is disabled on the first page and NEXT on the
 last. Pages contain groups of 48 counted from the top. If fewer than
 48 entries precede the displayed page, PREV loads the first page.
 
@@ -5984,7 +5985,7 @@ IOmcu. LAST WRITE below the protocol shows the result:
 
 | LAST WRITE | Meaning |
 | --- | --- |
-| `NOT WRITTEN` | nothing has been written since the panel started, or a write was not sent because the binding on the screen was not one a read confirmed |
+| `NONE YET` | nothing has been written since the panel started, or a write was not sent because the binding on the screen was not one a read confirmed |
 | `WRITTEN` | the IOmcu acknowledged every exchange of the write |
 | `NO LINK` | an exchange of the write got no answer within 1000ms, or the link was down |
 | `REFUSED` | the IOmcu answered and refused: a pin it cannot bind, a change while the bench is ARMED, or a frame rate it could not put back |

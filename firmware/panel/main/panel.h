@@ -254,6 +254,22 @@ control_alert(const char *text)
     snap_unlock();
 }
 
+/**
+ * @brief control_alert(), and the number the slot gave it: the alert a
+ *        caller takes back once its cause is over
+ *        (ui_alert_slot_withdraw_over()).  Inlined for the same reason; the
+ *        control task is the slot's only writer, so the number is read after
+ *        the lock.
+ * @param text the alert
+ * @return its number in the slot, never 0
+ */
+__attribute__((always_inline)) static inline uint32_t
+control_alert_kept(const char *text)
+{
+    control_alert(text);
+    return s_snap.alert.posted;
+}
+
 /* The safety loop's own state and the arming policy; see main.c. */
 extern outputs_t s_out;
 extern arming_t  s_arm;
@@ -262,6 +278,11 @@ extern atomic_bool s_disarm_request;
 /** @brief The reset of a latched STOP (stop_latch.h); control task only.
  *         See panel_stop.c. */
 extern stop_latch_t s_stop_latch;
+/** @brief The number of the alert ALERT_STOP_HELD that an ARM or an ON
+ *         refused while the STOP stands last posted, 0 for none: taken
+ *         back when the reset completes (stop_reset_service()).  Control
+ *         task only. */
+extern uint32_t     s_stop_alert;
 /** @brief The reset's hold completed (stop_hold_take_reset()): render side
  *         sets, control task takes (stop_reset_service()). */
 extern atomic_bool  s_stop_reset_request;

@@ -21,7 +21,7 @@ Jede Steckerposition umfasst Signal, + und GND. Die Zeilen folgen der Nummerieru
 | 3 | PROGP02, GPIO 14, VCC_PROGPORT | PWM01, GPIO 2, VCC_SERVOPORT_A |
 | 4 | PROGP03, GPIO 15, VCC_PROGPORT | PWM04, GPIO 1, VCC_SERVOPORT_A |
 
-Rechts in jeder J1-Zeile steht `PROGRAMMIERUNG`: Diese Ports dienen der KST- und Hitec-Programmierung. Jede J2-Zeile zeigt das zugeordnete Ausgangsprotokoll, `OFF` ohne Zuordnung oder `NICHT AUSGELESEN`, bis die Zuordnung dieser Platine ausgelesen ist. Änderungen unter OUTPUTS erscheinen hier im nächsten Frame.
+Rechts in jeder J1-Zeile steht `PROGRAMMIERUNG`: Diese Ports dienen der KST- und Hitec-Programmierung. Jede J2-Zeile zeigt das zugeordnete Ausgangsprotokoll, `AUS` ohne Zuordnung oder `NICHT AUSGELESEN`, bis die Zuordnung dieser Platine ausgelesen ist. Änderungen unter OUTPUTS erscheinen hier im nächsten Frame.
 
 ## Weitere Stecker
 

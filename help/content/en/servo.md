@@ -130,7 +130,7 @@ The test requires ARMED and a responding supply. The status line explains any re
 
 ![TEST and its two run cards](view:servo-test)
 
-The summary line shows the voltage steps and duration, such as `4.8 6.0V BROWN-OUT, 60s EACH`. Below START TEST are status, last result and files, for example `LAST: PASS ATEST004.CSV + .TXT`. An aborted run shows its reason instead: `LAST: ABORTED - link lost`.
+The summary line shows the voltage steps and duration, such as `4.8V, 6.0V, BROWN-OUT, 60s EACH`. Below START TEST are status, last result and files, for example `LAST: PASS ATEST004.CSV + .TXT`. An aborted run shows its reason instead: `LAST: ABORTED - link lost`.
 
 ![A test run](view:servo-run)
 

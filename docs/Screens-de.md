@@ -801,10 +801,10 @@ ohne Halten oder Warten auf das Loslassen. DISARM und STOP halten den
 Ausgang ohne Rampe an. SPITZENWERTE ZURÜCKSETZEN löscht die Spitzenmarken
 und lässt die laufenden Messwerte unverändert.
 
-### EFF ist eine Guessimetrik
+### WIRK. ist eine Guessimetrik
 
 Die Kopfzeile des Telemetriefelds zeigt Nenn-kV, die gemessenen Umdrehungen
-pro Minute und Volt sowie EFF: gemessene rpm/V geteilt durch Nenn-kV.
+pro Minute und Volt sowie WIRK.: gemessene rpm/V geteilt durch Nenn-kV.
 
 Die Klemmenspannung teilt sich in den ohmschen Spannungsabfall und die
 Gegen-EMK (elektromotorische Kraft) auf. Unter Last entsprechen rpm/V der
@@ -814,7 +814,7 @@ Leistung umgesetzt wird. Bei einem idealen Motor ist das Verhältnis daher
 der Umsetzungswirkungsgrad.
 
 Die angezeigte Zahl entspricht diesem idealen Wirkungsgrad aus drei
-Gründen nicht. Deshalb heißt sie EFF:
+Gründen nicht. Deshalb heißt sie WIRK. und nicht Wirkungsgrad:
 
 - Sie erfasst nur die Kupferverluste (I hoch 2 mal R). Eisenverluste, Reibung
   und Luftwiderstand fallen auf die mechanische Seite der Aufteilung, also ist
@@ -1799,7 +1799,7 @@ Spannung, bei der die Bewegung endet.
 [Servoverfahren](Servo-de.md#automatischer-test) beschreibt Methode und Dateien.
 
 Das 600 x 188px große Feld enthält Laufname, eine Zusammenfassung wie
-`4.8 6.0V BROWN-OUT, JE 60s` oder `..., JE 20 BEWEGUNGEN`, TEST STARTEN
+`4.8V, 6.0V, BROWN-OUT, JE 60s` oder `..., JE 20 BEWEGUNGEN`, TEST STARTEN
 (300 x 48px) neben OPTIONEN (160 x 48px), Zustandszeile, letztes Ergebnis
 mit Dateien und den Hinweis zu BLOCKIERT AB. Ein Ergebnis lautet etwa
 `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`; ein Abbruch zeigt den Grund in
@@ -2274,7 +2274,7 @@ langsameren Profils kombiniert. AUSGANG meldet das Ergebnis:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Page: `Aktiv: Ausgänge laufen mit 330Hz.` oder `Aktiv: PROG-PORT GPIO 13 läuft mit 330Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port zugeordneten Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Ruder mit der Rate, gleich was ZIEL nennt. Ohne Verbindung lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochener Verbindung neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
+| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Page: `Aktiv: Ausgänge laufen mit 330Hz.` oder `Aktiv: PROG-PORT 1 GPIO 13 läuft mit 330Hz.`, der Port mit der Nummer, die ZIEL nennt: PORT 1, PORT 2, PORT 3 oder PORT 4. Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port zugeordneten Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Ruder mit der Rate, gleich was ZIEL nennt. Ohne Verbindung lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochener Verbindung neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
 | Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
 | ABGELEHNT | ein Puls des Ziels (eines Ruders, oder des Programmierports, solange sein Puls eingeschaltet ist) ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser IOmcu nimmt keine Pulsrate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50Hz seiner Zuordnung |
@@ -2996,7 +2996,8 @@ Dateien tragen ein Datum von 1980.
 
 Bei mehr als 48 Dateien erscheinen VORIGE und NÄCHSTE in der Kopfzeile.
 Die Listenüberschrift nennt den Bereich, etwa
-`DATEIEN 145 BIS 192 VON 1000`, statt `DATEIEN`. VORIGE ist auf der ersten,
+`DATEIEN 145 BIS 192 VON 1000`, auf einer einzigen Seite die ganze Liste,
+etwa `DATEIEN 1 BIS 7 VON 7`; ein leerer Ordner zeigt `DATEIEN`. VORIGE ist auf der ersten,
 NÄCHSTE auf der letzten Seite gesperrt. Seiten werden von oben in Gruppen
 zu 48 Einträgen gezählt. Liegen weniger als 48 Einträge vor der aktuellen
 Seite, lädt VORIGE die erste Seite.
@@ -6228,13 +6229,13 @@ MOTOR & ESC oder SERVO. Das Home-Tag führt zum Ausgangsbildschirm zurück.
 Bei geöffneter Protokollliste schließt es zunächst die Liste ohne Auswahl;
 OUTPUTS bleibt geöffnet. Der Bildschirm zeigt die an IOmcu-Pins gebundenen
 Protokolle, ihre Pins und die Programmierports. Von SETUP aus öffnet der Bildschirm auf der
-[Übersicht](#die-übersicht-off): OFF gewählt, jeder gebundene Pin mit seinem
+[Übersicht](#die-übersicht-aus): AUS gewählt, jeder gebundene Pin mit seinem
 Protokoll benannt, und kein Pin änderbar, bis ein Protokoll gewählt ist. Von
 einer Zeile ZIEL aus zeigt er das von diesem Prüfstand angesteuerte Ziel:
 
 | Geöffnet von | Öffnet auf |
 | --- | --- |
-| der Kachel OUTPUTS auf SETUP | der Übersicht, OFF |
+| der Kachel OUTPUTS auf SETUP | der Übersicht, AUS |
 | der Zeile ZIEL von MOTOR & ESC | dem Protokoll, an das die Gas-Pins gebunden sind; dem Eintrag PROG-PORT eines DShot-Ports ohne Pin daneben; der Übersicht, solange sie an mehrere gebunden sind (`GEMISCHT`), zwei Ports das Gas treiben oder keines bekannt ist |
 | der Zeile ZIEL von SERVO | dem, was die Zeile zeigt: dem Eintrag PROG-PORT, solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist |
 
@@ -6452,7 +6453,7 @@ dem Protokoll als LETZTER SCHREIBVORGANG:
 
 | LETZTER SCHREIBVORGANG | Bedeutung |
 | --- | --- |
-| `NICHT GESCHRIEBEN` | seit dem Start des Panels wurde nichts geschrieben, oder ein Schreibvorgang wurde nicht gesendet, weil die Bindung auf dem Bildschirm nicht durch ein Lesen bestätigt war |
+| `NOCH KEINER` | seit dem Start des Panels wurde nichts geschrieben, oder ein Schreibvorgang wurde nicht gesendet, weil die Bindung auf dem Bildschirm nicht durch ein Lesen bestätigt war |
 | `GESCHRIEBEN` | der IOmcu hat jeden Austausch des Schreibvorgangs bestätigt |
 | `KEINE VERBINDUNG` | ein Austausch des Schreibvorgangs blieb 1000ms ohne Antwort, oder der Link war unten |
 | `ABGELEHNT` | der IOmcu hat geantwortet und abgelehnt: ein Pin, den er nicht binden kann, eine Änderung bei einem Prüfstand in ARMED oder eine Pulsrate, die er nicht zurücksetzen konnte |
@@ -6471,7 +6472,7 @@ Die Protokollwahl selbst schreibt nichts. Sie bestimmt, welche Pins als
 angehakt erscheinen und welchem Protokoll der nächste Haken zugeordnet wird.
 Die Pins aller anderen Protokolle bleiben gebunden. Beim Zurückwechseln
 erscheint ihr bisheriger Stand; ein weiteres Protokoll löst keine vorhandene
-Bindung. Beim Betreten zeigt die Liste OFF, die Übersicht.
+Bindung. Beim Betreten zeigt die Liste AUS, die Übersicht.
 Ein gewähltes Protokoll bleibt über das Zurücklesen derselben Platine
 gewählt. Beide Ansichten zeigen eine Auswahl.
 
@@ -6566,39 +6567,39 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
   ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)). CH3 misst
   alle vier Ports zusammen.
 
-### Die Übersicht: OFF
+### Die Übersicht: AUS
 
-Von SETUP aus öffnet OUTPUTS mit gewähltem OFF. Eine Zeile ZIEL öffnet
-stattdessen das Ziel, das der zugehörige Prüfstand ansteuert. OFF ist der erste
+Von SETUP aus öffnet OUTPUTS mit gewähltem AUS. Eine Zeile ZIEL öffnet
+stattdessen das Ziel, das der zugehörige Prüfstand ansteuert. AUS ist der erste
 Eintrag der Liste und bindet nichts: er nimmt 0 Pins, darum steht unter ihm
-keine Pin-Zählung. Mit OFF gewählt zeigt jeder gebundene Pin den
+keine Pin-Zählung. Mit AUS gewählt zeigt jeder gebundene Pin den
 Namen des Protokolls, das ihn hält, in voller Helligkeit; die ganze Bindung
 und jeder Pin, den der IOmcu treibt, stehen also auf einem Bildschirm.
 Kein Pin lässt sich anhaken oder lösen: ein Tippen auf einen Pin bewirkt
 nichts und schreibt nichts, und die Zeile unter der Liste sagt
 `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. Das Öffnen des Bildschirms schreibt
-nichts. Ein Protokoll in der Liste zu wählen verlässt die Übersicht, OFF zu
+nichts. Ein Protokoll in der Liste zu wählen verlässt die Übersicht, AUS zu
 wählen kehrt zu ihr zurück; keines von beiden schreibt etwas oder löst eine
 Bindung.
 
-OFF bleibt bei erneutem Auslesen, Neuzeichnen, Verbindungsabbruch und
+AUS bleibt bei erneutem Auslesen, Neuzeichnen, Verbindungsabbruch und
 Wiederverbindung sowie beim Verlassen des Bildschirms gewählt, bis du einen
-anderen Eintrag wählst. Ein Platinenwechsel setzt die Auswahl immer auf OFF.
+anderen Eintrag wählst. Ein Platinenwechsel setzt die Auswahl immer auf AUS.
 Das gilt auch, wenn ein IOmcu während des Besuchs erstmals antwortet oder
 gegen eine andere Platine getauscht wird. Ein
 zuvor gewähltes Protokoll geht nicht auf die Platine über, die antwortet;
 der nächste Tipp schreibt also nichts. Ein Druck auf einen Pin zeigt keine
 gedrückte Fläche.
 
-Auch bei gewähltem OFF ist ein Schreibvorgang möglich. Bei Pages, die keine
+Auch bei gewähltem AUS ist ein Schreibvorgang möglich. Bei Pages, die keine
 Bindung beschreiben, lautet die Zeile `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES`,
 und `2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN` gehalten schreibt eine Bindung
 ohne Pin. Dieses Halten ist der Weg aus diesen Pages
 ([Eine Bindung, die nicht bestätigt ist](#eine-bindung-die-nicht-bestätigt-ist)).
 
-Mit OFF gewählt listet BELEGT jeden gebundenen Pin unter seinem Protokoll:
+Mit AUS gewählt listet BELEGT jeden gebundenen Pin unter seinem Protokoll:
 
-![OFF zeigt das Protokoll jedes gebundenen Pins](img/de/outputs-off.png)
+![AUS zeigt das Protokoll jedes gebundenen Pins](img/de/outputs-off.png)
 
 ### Eine Bindung, die nicht bestätigt ist
 
@@ -6707,12 +6708,12 @@ Klaviatur. Reservierte Pins haben keine Taste, damit sie nicht als wählbar ersc
 Oben links steht die Protokollliste. Sie nennt das gewählte Protokoll. Ein
 Tippen öffnet sie über der Platine; eine Wahl bestimmt das Protokoll, dem ein
 Tippen auf eine Taste zufällt, und schreibt nichts. Ein Tippen neben die offene
-Liste schließt sie und wählt nichts. Ein Besuch von SETUP aus öffnet mit OFF
+Liste schließt sie und wählt nichts. Ein Besuch von SETUP aus öffnet mit AUS
 gewählt: keine Taste bindet oder löst einen Pin, bis ein Protokoll gewählt ist,
 und die Zeile unter der Liste sagt
-`WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. OFF bleibt über das Zurücklesen
+`WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. AUS bleibt über das Zurücklesen
 gewählt, bis ein Protokoll gewählt wird, und ein Wechsel der Platine wählt
-OFF, was auch gewählt war.
+AUS, was auch gewählt war.
 
 ![Die Protokollliste über der Platine](img/de/outputs-protocol.png)
 
@@ -6725,7 +6726,7 @@ Bernstein der Grund, warum keine Taste hinzukommen kann:
 | `ALLE 8 SLOTS BELEGT` | über alle Protokolle sind 8 Pins gebunden |
 | `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, das 8 Kanäle auf einem Pin trägt, bei 4 gebundenen Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS` | OFF ist gewählt |
+| `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS` | AUS ist gewählt |
 | `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt |
 | `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` | die Pages beschreiben keine Bindung |
 
@@ -6737,7 +6738,7 @@ Links unter PINS stehen die Pins des gewählten Protokolls in
 Kanalreihenfolge, jeder mit der auf der Platine aufgedruckten Padnummer in
 der Spalte PAD. Rechts unter BELEGT stehen die Pins, die andere Protokolle
 halten, jede Gruppe mit Namen und dort eingereiht, wo ihr erster Pin liegt.
-Zusammen bilden beide Tabellen die Kanalreihenfolge der OUTPUTS-Page ab. Mit OFF gewählt fehlt die Tabelle PINS, denn OFF
+Zusammen bilden beide Tabellen die Kanalreihenfolge der OUTPUTS-Page ab. Mit AUS gewählt fehlt die Tabelle PINS, denn AUS
 hält keinen Pin; die Slot-Zählung und BELEGT bleiben, und BELEGT führt dann
 jeden gebundenen Pin.
 
@@ -6789,7 +6790,7 @@ BELEGT führt jeden Pin, den es hält. Der Name eines Protokolls nimmt eine
 Zeile von 20px, ein Pin eine von 28px. Reichen diese über den Fuß der
 Tabelle hinaus, ist jede Pin-Zeile 20px hoch, mit dem GPIO in der kleineren
 Schrift, dann 16px, dann auch die Namen 16px. Die höchste Tabelle aus
-Protokollen ergibt sich mit OFF gewählt, dem Programmierport aufgeführt und
+Protokollen ergibt sich mit AUS gewählt, dem Programmierport aufgeführt und
 den 8 Slots auf den 6 Protokollen, die einen Kanal je Pin nehmen: 16 Zeilen,
 392px der 432px unter der Überschrift. Mit 4 Programmierports und allen
 Anschlüssen EIN neben dieser Bindung führt die Tabelle 27 Zeilen, die Ports
@@ -6932,7 +6933,7 @@ treibt nichts und nimmt keinen Tipp.
 | Spalte | Zeilen | Jede Zeile |
 | --- | --- | --- |
 | J1, `PROGRAMMIERPORTS` | Positionen 1 bis 4: PROGP04, PROGP01, PROGP02, PROGP03 | die Position, die Rolle, ihr GPIO und das Netz an ihrem +, VCC_PROGPORT; rechts `PROGRAMMIERUNG` |
-| J2, `SERVOAUSGÄNGE` | Positionen 1 bis 4: PWM03, PWM02, PWM01, PWM04 | dasselbe, mit VCC_SERVOPORT_B an den Positionen 1 und 2 und VCC_SERVOPORT_A an 3 und 4; rechts das auf dem Ausgang gebundene Protokoll, `OFF` für keines, `NICHT AUSGELESEN`, bis die Bindung dieses Boards gelesen ist |
+| J2, `SERVOAUSGÄNGE` | Positionen 1 bis 4: PWM03, PWM02, PWM01, PWM04 | dasselbe, mit VCC_SERVOPORT_B an den Positionen 1 und 2 und VCC_SERVOPORT_A an 3 und 4; rechts das auf dem Ausgang gebundene Protokoll, `AUS` für keines, `NICHT AUSGELESEN`, bis die Bindung dieses Boards gelesen ist |
 | `WEITERE STECKER` | J3 HEARTBEAT, J5 SENSOR I2C, J4 I2C 2 (`NICHT ANGESTEUERT`), J6 PD MINI, J9 TAP, PROG 5V EN an keinem Stecker | der Name, was er trägt, sein GPIO |
 
 Die Zeile unter den Spalten lautet

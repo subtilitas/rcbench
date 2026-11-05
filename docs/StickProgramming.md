@@ -616,7 +616,7 @@ minimum, where it rested, to store.
 | manual work at the ESC required | `automatable` is `assisted` and the profile lists no manual step the run could ask for: a person reads an LED or plugs in a JetiBox |
 | manual step | a manual step during the menu, or one at a powered ESC with the entry at MID or MAX |
 | no usable programming procedure | `automatable` is `none` |
-| menu entry is after power-on | `scheme.entry.when` is `after_power_on` |
+| menu entry after power-on | `scheme.entry.when` is `after_power_on` |
 | melody menu, yes/no menu, stick-position menu, menu of its own kind | `scheme.type` |
 | beeps differ by pitch | `scheme.announce.encoding` is `melody` or `yes_no` |
 | item and value use one movement | `item_then_value` with no `value_select`: which group the move answers is not stated |

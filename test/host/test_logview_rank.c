@@ -244,10 +244,10 @@ TEST_CASE(a_list_that_was_cut_says_so)
      * reads as a run that was never written.
      */
     fresh();
-    g_card_runs = LOG_VIEWER_MAX_FILES;  /* exactly fits: nothing to say */
+    g_card_runs = LOG_VIEWER_MAX_FILES;  /* exactly fits: one page */
     log_viewer_refresh();
     draw();
-    CHECK_EQ(browse_tab_width(), tab_width_for("FILES"));
+    CHECK_EQ(browse_tab_width(), tab_width_for("FILES 1 TO 48 OF 48"));
 
     fresh();
     g_card_runs = 200;

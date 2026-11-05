@@ -222,7 +222,7 @@ TEST_CASE(three_tabs_list_three_folders_and_bench_comes_first)
     /* After a start, BENCH: the automatic logs. */
     CHECK_EQ(log_viewer_tab(), LOG_TAB_BENCH);
     CHECK_STR_EQ(g_fc.dir, CARD_AUTO_LOGS);
-    check_tab(0, 0, 0);
+    check_tab(1, 3, 3);
     top_name(name, sizeof(name));
     CHECK_STR_EQ(name, "SERVO005.CSV");
     CHECK_STR_EQ(g_fc.opened_in, CARD_AUTO_LOGS);
@@ -653,7 +653,7 @@ TEST_CASE(a_run_written_while_logs_is_closed_is_listed_on_the_next_open)
     g_empty_card = false;
     g_card_runs = 1;
     reopen();
-    check_tab(0, 0, 0);
+    check_tab(1, 1, 1);
     check_top(1);
 
     /* No card when it was left, a card with runs when it opens. */

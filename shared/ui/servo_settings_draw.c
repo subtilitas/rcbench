@@ -222,11 +222,12 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     if (target == 0u) {
         snprintf(l1, size, TR(SV_IN_FORCE_OUT), (unsigned)hz);
     } else if (gpio == SERVO_SCREEN_NO_PIN) {
-        snprintf(l1, size, TR(SV_IN_FORCE_PORT), (unsigned)hz);
+        snprintf(l1, size, TR(SV_IN_FORCE_PORT), (unsigned)hz,
+                 (unsigned)target);
         warn = true;
     } else {
-        snprintf(l1, size, TR(SV_IN_FORCE_PORT_PIN), (unsigned)gpio,
-                 (unsigned)hz);
+        snprintf(l1, size, TR(SV_IN_FORCE_PORT_PIN), (unsigned)target,
+                 (unsigned)gpio, (unsigned)hz);
     }
     if (other) {
         snprintf(l2, size, "%s", TR(SV_IN_FORCE_NOT_SET));

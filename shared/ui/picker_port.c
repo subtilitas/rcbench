@@ -97,7 +97,7 @@ picker_pin_t picker_port_pin(const outbind_t *b, uint8_t index, uint8_t port,
     }
     const uint8_t g = outbind_group_of(b, index);
     if (g != 0u) {
-        hold(holder, cap, outbind_protos()[g].name);
+        hold(holder, cap, outputs_proto_name(g));
         return PICKER_PIN_HELD;
     }
     const outputs_iface_t f = outputs_iface_at(gpio);

@@ -1,5 +1,6 @@
-/*
- * The control task's alert slot (ui_alert_slot.h).
+/**
+ * @file
+ * @brief The control task's alert slot (ui_alert_slot.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -29,6 +30,17 @@ void ui_alert_slot_withdraw(ui_alert_slot_t *s, uint32_t number)
     } else if (s->taken == number) {
         s->withdrawn = number;          /* in the band, or cleared there */
     }
+}
+
+bool ui_alert_slot_withdraw_over(ui_alert_slot_t *s, uint32_t *number,
+                                 bool stands)
+{
+    if (s == NULL || number == NULL || *number == 0u || stands) {
+        return false;
+    }
+    ui_alert_slot_withdraw(s, *number);
+    *number = 0u;
+    return true;
 }
 
 bool ui_alert_slot_take(ui_alert_slot_t *s, char *out, size_t size)

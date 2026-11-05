@@ -2,8 +2,8 @@
  * @file render_help.c
  * @brief The screen guide's views for tools/render_ui.py (render_help.h).
  *
- * help-overview is the menu's guide at page 1, help-overview-2 and
- * help-overview-3 its other pages, each opened and turned by taps through
+ * help-overview is the menu's guide at page 1, help-overview-2 to
+ * help-overview-4 its other pages, each opened and turned by taps through
  * the router as a person does.  help-band-worst is MOTOR & ESC's band with
  * the widest row of chips test_nav_bubble finds: a clock of 10 hours,
  * ARMED MOTOR, FAULT 7F, BENCH and LINK.

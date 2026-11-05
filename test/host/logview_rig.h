@@ -511,8 +511,9 @@ static inline void next_page(void)
     tap(NEXT_X_PG, PG_CY);
 }
 
-/** @brief The tab reads "FILES a TO b OF n", or FILES with @p n 0: the text the
- * list draws, compared as text, and its width on the drawn frame. */
+/** @brief The tab reads "FILES a TO b OF n", or FILES with @p n 0 (an empty
+ * list): the text the list draws, compared as text, and its width on the
+ * drawn frame. */
 static inline void check_tab(int a, int b, int n)
 {
     draw();

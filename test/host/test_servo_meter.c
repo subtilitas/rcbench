@@ -11,6 +11,7 @@
  * - the_current_reading_paints_on_live_only
  * - the_plot_keeps_one_point_for_each_window
  * - a_run_reads_the_supply_while_the_meter_changes
+ * - the_measured_angle_and_the_current_never_touch
  *
  * SPDX-License-Identifier: MIT
  */
@@ -657,6 +658,86 @@ TEST_CASE(a_run_reads_the_supply_while_the_meter_changes)
     CHECK(row_reads("---", UI_C_TEXT));
 }
 
+/* LIVE's three columns along the foot of the card, mirrored from
+ * servo_screen_int.h: COMMANDED 192px, MEASURED 216px, CURRENT 188px. */
+static const int k_col_x[3] = { UI_MARGIN + 12, UI_MARGIN + 12 + 192,
+                                UI_MARGIN + 12 + 192 + 216 };
+static const int k_col_w[3] = { 192, 216, 188 };
+
+/* The leftmost (@p last false) or rightmost column from @p x0 to @p x1
+ * with a pixel of exactly @p col in rows @p y to @p y + @p h; -1 for
+ * none. */
+static int ink_edge(int x0, int x1, int y, int h, gfx_color_t col,
+                    bool last)
+{
+    int found = -1;
+    for (int x = x0; x < x1; ++x) {
+        for (int yy = y; yy < y + h; ++yy) {
+            if (fb[(size_t)yy * W + x] == col) {
+                if (!last) {
+                    return x;
+                }
+                found = x;
+                break;
+            }
+        }
+    }
+    return found;
+}
+
+/*
+ * The widest angles MEASURED shows, -180.0 and a 3-digit +174.1, beside a
+ * CURRENT of 19.99, in each language: the angle's last numeral ends at
+ * least 24px before the current's first, so the two never read as one
+ * number.  Over the numerals each label ends before its unit.
+ */
+TEST_CASE(the_measured_angle_and_the_current_never_touch)
+{
+    static const unsigned k_us[] = { 500u, 2467u };   /* -180.0, +174.1 */
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        for (size_t u = 0; u < sizeof(k_us) / sizeof(k_us[0]); ++u) {
+            fresh();
+            ui_text_set_language((ui_lang_t)l);
+            settings_set(SET_ENC_EN, 0.0f);
+            meter(SERVO_SOURCE_PDMINI);
+            rail_supply(6.0f, 19.99f);
+            servo_screen_feedback((uint16_t)k_us[u], 0.2f, true);
+            scr->render(&cv, 0);
+            CHECK(row_reads("19.99A", UI_C_TEXT));
+            const int angle_end = ink_edge(k_col_x[1], k_col_x[2], CUR_Y,
+                                           CUR_H,
+                                           ui_theme_color(UI_C_ACCENT),
+                                           true);
+            const int cur_start = ink_edge(k_col_x[1], CUR_X + CUR_W,
+                                           CUR_Y, CUR_H,
+                                           ui_theme_color(UI_C_TEXT),
+                                           false);
+            /* The angle reaches into its column's last third: 6 cells. */
+            CHECK(angle_end > k_col_x[1] + 160);
+            CHECK(cur_start >= CUR_X);
+            if (cur_start - angle_end - 1 < 24) {
+                T_FAIL("language %d, %uus: %dpx between MEASURED and "
+                       "CURRENT", l, k_us[u], cur_start - angle_end - 1);
+            }
+            /* Each unit, "us", "deg" and "A", right-aligned in its
+             * label's box, starts right of the label's last pixel. */
+            static const int k_unit_cells[3] = { 2, 3, 1 };
+            for (int k = 0; k < 3; ++k) {
+                const int x1 = k_col_x[k] + k_col_w[k] - 14;
+                const int lab = ink_edge(k_col_x[k], x1, CUR_Y - 26, 20,
+                                         ui_theme_color(UI_C_TEXT_DIM),
+                                         true);
+                const int unit = ink_edge(x1 - 10 * k_unit_cells[k], x1,
+                                          CUR_Y - 26, 20,
+                                          ui_theme_color(UI_C_TEXT_FAINT),
+                                          false);
+                CHECK(lab > k_col_x[k] && unit > lab);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(a_change_of_meter_repaints_the_row_the_line_and_the_plot);
@@ -666,5 +747,6 @@ int main(void)
     RUN(the_current_reading_paints_on_live_only);
     RUN(the_plot_keeps_one_point_for_each_window);
     RUN(a_run_reads_the_supply_while_the_meter_changes);
+    RUN(the_measured_angle_and_the_current_never_touch);
     return test_summary("servo_meter");
 }

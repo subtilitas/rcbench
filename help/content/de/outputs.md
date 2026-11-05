@@ -6,7 +6,7 @@ order: 62
 
 # Ausgänge
 
-OUTPUTS ordnet IOmcu-Pins Ausgangsprotokollen zu. Damit legst du fest, welche Pins Servos oder ESCs (Electronic Speed Controller) ansteuern und welches Signal sie verwenden. Von [SETUP](setup.md) aus öffnet sich die [Übersicht](#die-übersicht-off) mit OFF. Jeder zugeordnete Pin trägt seinen Protokollnamen.
+OUTPUTS ordnet IOmcu-Pins Ausgangsprotokollen zu. Damit legst du fest, welche Pins Servos oder ESCs (Electronic Speed Controller) ansteuern und welches Signal sie verwenden. Von [SETUP](setup.md) aus öffnet sich die [Übersicht](#die-übersicht-aus) mit AUS. Jeder zugeordnete Pin trägt seinen Protokollnamen.
 
 Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet sich das Gasprotokoll, bei gemischten oder unbekannten Protokollen die Übersicht. Über [SERVO](servo-settings.md#die-zeile-ziel) folgt die Auswahl der ZIEL-Zeile: [PROG-PORT](#der-eintrag-prog-port) für den Programmierport, SERVO PWM für Ausgänge oder die Übersicht bei unbekanntem Ziel. Das Home-Feld führt zur aufrufenden Seite zurück. Eine offene Protokollliste schließt es zuerst ohne Auswahl.
 
@@ -43,7 +43,7 @@ Die Platine markiert auch die anderen Adern eines Servokabels:
 1. Wähle ein Protokoll in der Liste. Vorher haben Pin-Tasten keine Wirkung.
 2. Tippe auf eine Taste. Der Pin wird sofort zugeordnet; eine zusätzliche Übernahmetaste gibt es nicht.
 3. Tippe auf eine hervorgehobene Taste, um den Pin freizugeben.
-4. Wähle OFF für die Übersicht.
+4. Wähle AUS für die Übersicht.
 
 Ein Pin kann höchstens einem Protokoll zugeordnet sein. Mehrere Protokolle können gleichzeitig Pins belegen.
 
@@ -55,7 +55,7 @@ Jeder zugeordnete Pin belegt einen Slot der OUTPUTS-Page des IOmcu. Die Kanalnum
 
 | Protokoll | Signal | Pins |
 |---|---|---|
-| OFF | ändert nichts und zeigt die gesamte Zuordnung | 0 |
+| AUS | ändert nichts und zeigt die gesamte Zuordnung | 0 |
 | SERVO PWM | PWM (Pulsweitenmodulation) mit 50Hz für Servo oder Ruder | bis 8 |
 | MOTOR PWM | Puls mit 50Hz für einen ESC, von Leerlaufpuls bis Vollgaspuls | bis 8 |
 | PPM | PPM (Pulspositionsmodulation): 8 Kanäle auf einem Pin mit 40Hz | 1 |
@@ -87,7 +87,7 @@ Unter der Liste zählt `4 VON 8 SLOTS BELEGT` die belegten Slots aller Protokoll
 | `ALLE 8 SLOTS BELEGT` | 8 Pins sind über alle Protokolle zugeordnet |
 | `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, mit 4 zugeordneten Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS` | OFF ist gewählt |
+| `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS` | AUS ist gewählt |
 | `NICHT AUSGELESEN` | die Zuordnung ist nicht bestätigt; jede Taste ist grau |
 | `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` | die Pages enthalten keine Zuordnung; jede Taste ist grau |
 | `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` | ein Tipp auf GPIO 28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GPIO 13 hält: ein PWM-Slice; die Taste ist grau |
@@ -97,7 +97,7 @@ Unter der Liste zählt `4 VON 8 SLOTS BELEGT` die belegten Slots aller Protokoll
 
 ## PINS und BELEGT
 
-PINS links listet die Pins des gewählten Protokolls nach Kanalnummer, ergänzt um die aufgedruckte Pad-Nummer. BELEGT rechts zeigt andere zugeordnete Pins, nach Protokoll gruppiert. Bei OFF entfällt PINS; BELEGT zeigt dann alle zugeordneten Pins.
+PINS links listet die Pins des gewählten Protokolls nach Kanalnummer, ergänzt um die aufgedruckte Pad-Nummer. BELEGT rechts zeigt andere zugeordnete Pins, nach Protokoll gruppiert. Bei AUS entfällt PINS; BELEGT zeigt dann alle zugeordneten Pins.
 
 ![GPIO 13 vom Programmierport gehalten](view:outputs-prog)
 
@@ -107,7 +107,7 @@ Der Programmierport belegt standardmäßig GPIO 13 (Pad 17). Ist der Pin keinem 
 
 Auch durch [SETUP > SENSORS](setup-sensors.md) oder [SUPPLY > PD MINI](supply.md#tab-pd-mini) belegte Pins sind grau. BELEGT listet sie nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Passt eine Tabelle nicht vollständig, nennt `+N` die Anzahl ausgelassener Zeilen.
 
-![OFF gewählt: jeder gebundene Pin unter BELEGT](view:outputs-off)
+![AUS gewählt: jeder gebundene Pin unter BELEGT](view:outputs-off)
 
 ## Der Eintrag PROG-PORT
 
@@ -183,13 +183,13 @@ PROG-PORT-Einträge nennen den festen Stecker und Pin, etwa `PROGP01 AUF GPIO 13
 
 Ab IOmcu-Protokoll 4.36 sind SERVO-TESTER und PORT-PWM verfügbar. Die Portwahl fordert die Servopulsfunktion an. Ein PWM-Ausgang auf demselben Slice sperrt die Wahl. PORT-PWM EIN benötigt außerdem die über das Feld PROG 5V eingeschaltete Portversorgung. Ältere Protokolle blenden die Testerzeilen aus und zeigen `PIN FEST. DER TESTER BRAUCHT IOMCU-PROTOKOLL 4.36`.
 
-## Die Übersicht: OFF
+## Die Übersicht: AUS
 
-![OFF zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
+![AUS zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
 
-Von SETUP aus öffnet OUTPUTS immer mit OFF. Diese Auswahl ändert keine Zuordnung. BELEGT gruppiert alle zugeordneten Pins nach Protokoll; Pin-Tasten haben keine Wirkung. Der Hinweis lautet `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. Beim Öffnen wird nichts an den IOmcu geschrieben.
+Von SETUP aus öffnet OUTPUTS immer mit AUS. Diese Auswahl ändert keine Zuordnung. BELEGT gruppiert alle zugeordneten Pins nach Protokoll; Pin-Tasten haben keine Wirkung. Der Hinweis lautet `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. Beim Öffnen wird nichts an den IOmcu geschrieben.
 
-OFF bleibt bis zur Protokollwahl ausgewählt, auch nach Verlassen der Seite. Ein Platinenwechsel wählt ebenfalls OFF, etwa wenn ein IOmcu erstmals während des Besuchs antwortet oder ersetzt wird. So geht eine vorherige Protokollauswahl nicht auf eine andere Platine über. Wähle ein Protokoll zum Ändern seiner Pins und OFF für die Übersicht.
+AUS bleibt bis zur Protokollwahl ausgewählt, auch nach Verlassen der Seite. Ein Platinenwechsel wählt ebenfalls AUS, etwa wenn ein IOmcu erstmals während des Besuchs antwortet oder ersetzt wird. So geht eine vorherige Protokollauswahl nicht auf eine andere Platine über. Wähle ein Protokoll zum Ändern seiner Pins und AUS für die Übersicht.
 
 ## LETZTER SCHREIBVORGANG
 
@@ -197,7 +197,7 @@ Pin-Änderungen werden sofort geschrieben. LETZTER SCHREIBVORGANG steht neben de
 
 | LETZTER SCHREIBVORGANG | Bedeutung |
 |---|---|
-| `NICHT GESCHRIEBEN` | seit dem Start des Panels nichts geschrieben |
+| `NOCH KEINER` | seit dem Start des Panels nichts geschrieben |
 | `GESCHRIEBEN` | der IOmcu hat das Schreiben bestätigt |
 | `KEINE VERBINDUNG` | ein Austausch bekam binnen 1000ms keine Antwort, oder die Verbindung ist unterbrochen |
 | `ABGELEHNT` | der IOmcu hat abgelehnt: ein Pin, den er nicht zuordnen kann, eine Änderung bei ARMED oder eine Pulsrate, die er nicht zurücksetzen konnte |

@@ -124,9 +124,9 @@ TABELLE zeigt Spannung, Strom, Leistung und Drehzahl mit ihren Spitzenwerten. Oh
 - Ohne INA228 stammen die Werte aus der ESC-Telemetrie; `ESC MELDET` entfällt.
 - Die Drehzahl stammt aus der bidirektionalen DShot-Telemetrie. Nicht gemessene Größen bleiben leer und werden nicht simuliert.
 
-## kV, rpm/V und EFF
+## kV, rpm/V und WIRK.
 
-Der Kopf der Grafik zeigt Nenn-kV, gemessene Drehzahl je Volt und EFF. EFF ist die gemessene Drehzahl je Volt geteilt durch Nenn-kV, begrenzt auf 199%. Stelle `Nenn-kV` unter MOTOR & ESC, OPTIONEN ein: 0 bis 10000rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und EFF entfällt. EFF berücksichtigt nur Kupferverluste einschließlich der ESC-Verluste. Es ist daher eine obere Grenze, kein Wirkungsgrad an der Welle.
+Der Kopf der Grafik zeigt Nenn-kV, gemessene Drehzahl je Volt und WIRK. (geschätzter Wirkungsgrad). WIRK. ist die gemessene Drehzahl je Volt geteilt durch Nenn-kV, begrenzt auf 199%. Stelle `Nenn-kV` unter MOTOR & ESC, OPTIONEN ein: 0 bis 10000rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und WIRK. entfällt. WIRK. berücksichtigt nur Kupferverluste einschließlich der ESC-Verluste. Es ist daher eine obere Grenze, kein Wirkungsgrad an der Welle.
 
 ## Das Log eines Laufs
 
