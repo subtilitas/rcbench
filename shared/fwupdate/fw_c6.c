@@ -121,17 +121,16 @@ bool fw_c6_ota_start(fw_c6_ota_t *o, uint32_t total, fw_version_t carried,
 
 uint32_t fw_c6_ota_limit_ms(fw_c6_phase_t ph)
 {
-    switch (ph) {
-    case FW_C6_PH_LINK:     return FW_C6_LINK_MS;
-    case FW_C6_PH_BEGIN:    return FW_C6_BEGIN_MS;
-    case FW_C6_PH_WRITE:    return FW_C6_WRITE_MS;
-    case FW_C6_PH_END:
-    case FW_C6_PH_CLOSE:    return FW_C6_END_MS;
-    case FW_C6_PH_ACTIVATE: return FW_C6_ACTIVATE_MS;
-    case FW_C6_PH_IDLE:
-    case FW_C6_PH_ENDED:
-    default:                return 0u;
-    }
+    /* In fw_c6_phase_t's order; IDLE and ENDED have no step. */
+    static const uint32_t k_limit[] = {
+        0u, FW_C6_LINK_MS, FW_C6_BEGIN_MS, FW_C6_WRITE_MS, FW_C6_END_MS,
+        FW_C6_ACTIVATE_MS, FW_C6_END_MS, 0u,
+    };
+    _Static_assert(sizeof(k_limit) / sizeof(k_limit[0])
+                       == (size_t)FW_C6_PH_ENDED + 1u,
+                   "a limit for every phase");
+    const unsigned i = (unsigned)ph;
+    return (i < sizeof(k_limit) / sizeof(k_limit[0])) ? k_limit[i] : 0u;
 }
 
 bool fw_c6_ota_next(fw_c6_ota_t *o, uint32_t now_ms, fw_c6_step_t *step)
@@ -169,8 +168,11 @@ bool fw_c6_ota_next(fw_c6_ota_t *o, uint32_t now_ms, fw_c6_step_t *step)
  */
 static void end_with(fw_c6_ota_t *o, fw_c6_res_t res)
 {
-    o->failed_in = (res == FW_C6_RES_UPDATED || res == FW_C6_RES_SAME)
-                       ? FW_C6_PH_IDLE : o->phase;
+    if (res == FW_C6_RES_UPDATED || res == FW_C6_RES_SAME) {
+        o->failed_in = FW_C6_PH_IDLE;
+    } else {
+        o->failed_in = o->phase;
+    }
     o->phase = FW_C6_PH_ENDED;
     o->result = res;
     o->issued = false;
