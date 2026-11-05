@@ -119,6 +119,15 @@ TEST_CASE(the_tiles_pages_mark_every_tile_once)
             }
         }
         CHECK_EQ(saves, 1);
+        /* Each tile named as it reads: PANEL first. */
+        ui_help_page_t p;
+        REQUIRE(ui_help_page(settings_screen(), false, 0, &p));
+        CHECK_STR_EQ(p.item[0].label, ui_setting_category(SET_CAT_APP));
+        CHECK_EQ(p.item[0].text, TX_HG_SET_PANEL);
+        /* The hub holds no tile past its last: page 2 ends on SAVE. */
+        REQUIRE(ui_help_page(settings_screen(), false, 1, &p));
+        CHECK_EQ(p.count, (settings_hub_tiles() > 7) ? 4 : 3);
+        CHECK(!ui_help_page(settings_screen(), false, 2, &p));
     }
     s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
     ui_board_set(s_board);
@@ -148,6 +157,8 @@ TEST_CASE(a_list_marks_the_keys_of_a_row_whose_value_opens_the_keypad)
     REQUIRE(p.count == 3);
     CHECK_STR_EQ(p.item[0].label, "<");
     CHECK_STR_EQ(p.item[1].label, ">");
+    CHECK_EQ(p.item[0].rect.y,
+             settings_screen_row_part(0, SETTINGS_ROW_MINUS).y);
     /* The first page marks the row that leads, whole in the pane. */
     REQUIRE(ui_help_page(settings_screen(), false, 0, &p));
     CHECK_EQ(p.item[0].text, TX_HG_SET_ROW);

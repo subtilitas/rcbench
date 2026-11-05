@@ -8,6 +8,7 @@
  * Cases:
  * - every_page_of_outputs_fits
  * - the_board_view_marks_the_column_and_a_key_each_side
+ * - the_marked_keys_are_the_outermost_whole_in_each_half
  * - a_prog_port_entry_marks_its_rows
  * - the_grid_view_marks_the_column_and_the_first_cell
  * - an_open_list_leaves_no_page
@@ -171,6 +172,50 @@ TEST_CASE(the_board_view_marks_the_column_and_a_key_each_side)
     CHECK(p.item[p.count - 1].rect.x > left.x);
 }
 
+/**
+ * @brief Whether key @p k of @p side's page is the outermost key whole in
+ *        the live half: none left of it (dock right) or right of it (dock
+ *        left), and none at its x lower down.
+ * @param side The dock's side.
+ * @param k    The marked key.
+ * @return True when no other key beats it.
+ */
+static bool outermost(ui_help_side_t side, gfx_rect_t k)
+{
+    const gfx_rect_t live = ui_help_live_rect(side);
+    int keys = 0;
+    for (uint8_t i = 0; i < outbind_pin_count(BOARD); ++i) {
+        gfx_rect_t r;
+        if (!picker_screen_button_rect(i, &r) || r.x < live.x
+            || r.x + r.w > live.x + live.w) {
+            continue;
+        }
+        ++keys;
+        const bool further = (side == UI_HELP_DOCK_RIGHT) ? r.x < k.x
+                                                          : r.x > k.x;
+        if (further || (r.x == k.x && r.y > k.y)) {
+            return false;
+        }
+    }
+    return keys > 1;
+}
+
+TEST_CASE(the_marked_keys_are_the_outermost_whole_in_each_half)
+{
+    pose_board();
+    ui_help_page_t p;
+    for (int n = 0; n < 2; ++n) {
+        REQUIRE(ui_help_page(view(), false, n, &p));
+        REQUIRE(p.item[p.count - 1].text == TX_HG_OUT_KEY);
+        CHECK(outermost(p.side, p.item[p.count - 1].rect));
+    }
+    CHECK(!ui_help_page(view(), false, 2, &p));
+    CHECK(!ui_help_page(view(), false, -1, &p));
+    CHECK(!outputs_help_page(0, NULL));
+    CHECK(!outputs_help_page(2, &p));
+    CHECK(outputs_help_page(1, &p));
+}
+
 TEST_CASE(a_prog_port_entry_marks_its_rows)
 {
     pose_board_port();
@@ -210,6 +255,7 @@ TEST_CASE(the_grid_view_marks_the_column_and_the_first_cell)
     ui_help_page_t p;
     REQUIRE(ui_help_page(view(), false, 0, &p));
     REQUIRE(p.count == 3);
+    CHECK_EQ(p.title, TX_HG_OUT_TITLE_PINS);
     CHECK_EQ(p.item[0].text, TX_HG_OUT_PROTO);
     CHECK_EQ(p.item[1].text, TX_HG_OUT_CELL);
     CHECK_EQ(p.item[2].text, TX_HG_OUT_LAST);
@@ -249,6 +295,7 @@ int main(void)
 {
     RUN(every_page_of_outputs_fits);
     RUN(the_board_view_marks_the_column_and_a_key_each_side);
+    RUN(the_marked_keys_are_the_outermost_whole_in_each_half);
     RUN(a_prog_port_entry_marks_its_rows);
     RUN(the_grid_view_marks_the_column_and_the_first_cell);
     RUN(an_open_list_leaves_no_page);
