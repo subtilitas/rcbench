@@ -331,7 +331,7 @@ zu welcher führt, ist nicht verfolgt:
 
 ---
 
-## 3. Der Heartbeat-Draht — das, was alles blockiert hat
+## 3. Der Heartbeat-Draht
 
 | | |
 |---|---|
@@ -1033,7 +1033,7 @@ gewählt, nicht gemessen.
 | Display friert kurz ein | Prüfe, ob gerade die Platinenzeichnung im Flash gespeichert wird: 4 Vorgänge für die Zeichnung des RP2350-CAN. Das Verhalten der Anzeige dabei ist nicht gemessen. |
 | IOmcu bootet nach dem Flashen nicht | Image über 4MB. Die Größenzeile aus §1 prüfen. |
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |
-| Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand ARMED ist |
+| Output geht nach 500ms in die Mitte | Kein Fehler: in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand ARMED ist |
 | Impulse hören ganz auf | Nicht der Timeout. Etwas hat den Pin freigegeben, auf SAFE geschaltet oder den Prüfstand gestoppt |
 | `sense flags` ohne 0x0100, ein Bauteil freigegeben | Der I2C-Block hat auf diesen Pins nicht geöffnet. Sie müssen SDA und SCL eines Blocks sein: die GPIO-Nummer von SDA mod 4 ist 0 oder 2, SCL die nächste |
 | `sense flags` 0x0200, das bleibt | SDA oder SCL low gehalten: ein unversorgtes Modul klemmt den Bus, ein Pull-up fehlt, oder ein Kurzschluss |

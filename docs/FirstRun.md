@@ -315,7 +315,7 @@ is not traced:
 
 ---
 
-## 3. The heartbeat wire — the thing that has blocked everything
+## 3. The heartbeat wire
 
 | | |
 |---|---|
@@ -952,7 +952,7 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 | Display freezes briefly | Check for a flash write while the board drawing is saved: 4 operations for the RP2350-CAN's drawing. The display behavior during those writes is not measured. |
 | IOmcu does not boot after flashing | Image past 4MB. Check the size line from §1. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
-| Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is ARMED |
+| Output goes to mid-travel after 500ms | Not a fault: nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is ARMED |
 | Pulses stop altogether | Not the timeout. Something released the pin, switched the bench to SAFE, or stopped the bench |
 | `sense flags` without 0x0100, a part enabled | The I2C block did not open on those pins. They must be one block's SDA and SCL: SDA's GPIO number mod 4 is 0 or 2, SCL the next |
 | `sense flags` 0x0200 that stays | SDA or SCL held low: an unpowered module clamping the bus, a missing pull-up, or a short |
@@ -982,4 +982,4 @@ about drivers on hardware, the control page and the flash store are the ones
 this run answers.
 
 **Anything that is not measured stays written as not measured.** A number
-guessed into that table is worse than an empty cell.
+that was not measured does not go into that table.
