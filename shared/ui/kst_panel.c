@@ -431,9 +431,6 @@ gfx_rect_t kpn_row_rect(const row_t *r)
 static gfx_rect_t control_rect(const row_t *r)
 {
     const gfx_rect_t rr = kpn_row_rect(r);
-    if (rr.w == 0) {
-        return rr;              /* a row hidden by KST EXPERT MODE OFF */
-    }
     const int w = r->kind == K_ACT && r->what == A_WRITE ? WRITE_W
                 : r->wide != 0u                          ? WIDE_W
                                                          : VAL_W;
@@ -445,7 +442,7 @@ gfx_rect_t kpn_value_rect(const row_t *r)
 {
     const gfx_rect_t v = control_rect(r);
 
-    if (r->kind != K_STEP || v.w == 0) {
+    if (r->kind != K_STEP) {
         return v;
     }
     return (gfx_rect_t){ (int16_t)(v.x + STEP_W + 4), v.y,
@@ -456,9 +453,6 @@ gfx_rect_t kpn_step_rect(const row_t *r, bool up)
 {
     const gfx_rect_t v = control_rect(r);
 
-    if (v.w == 0) {
-        return v;
-    }
     return (gfx_rect_t){ (int16_t)(up ? v.x + v.w - STEP_W : v.x), v.y,
                          STEP_W, v.h };
 }
@@ -490,7 +484,7 @@ static const row_t *shown_at(int page, int row, int col)
 
 gfx_rect_t kst_panel_tab_rect(int page)
 {
-    const int want = page >= 0 && page < PG_COUNT ? page : PG_SERVO;
+    const int want = (unsigned)page < PG_COUNT ? page : PG_SERVO;
 
     for (int t = 0; t < k.tab_count; ++t) {
         if (k.tab_page[t] == want) {

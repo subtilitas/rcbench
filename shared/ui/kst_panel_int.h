@@ -379,13 +379,15 @@ int kpn_foot(void);
  */
 int kpn_notes_foot(void);
 /**
- * @brief Row @p r, its label and its control.
+ * @brief Row @p r, its label and its control, at its place on the page as
+ *        it shows (rows closed up with KST EXPERT MODE OFF).
  * @param r the row
- * @return the rectangle
+ * @return the rectangle; empty for a row hidden (kpn_row_shown())
  */
 gfx_rect_t kpn_row_rect(const row_t *r);
 /**
- * @brief Row @p r's value, between its keys where it has them.
+ * @brief Row @p r's value, between its keys where it has them.  For a row
+ *        that shows: the callers ask of none other.
  * @param r the row
  * @return the rectangle
  */

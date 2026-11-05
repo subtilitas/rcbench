@@ -140,6 +140,10 @@ TEST_CASE(a_fresh_panel_starts_with_the_mode_off_and_the_expert_rows_absent)
     CHECK_EQ(kst_panel_step_rect(PG_TUNE, 0, true).w, 0);
     CHECK_EQ(kst_panel_step_rect(PG_TUNE, 0, false).w, 0);
     CHECK_EQ(kst_panel_tab_rect(PG_LOCKED).w, 0);
+    /* A tab no page has is the first. */
+    CHECK_EQ(kst_panel_tab_rect(5).x, kst_panel_tab_rect(PG_SERVO).x);
+    CHECK_EQ(kst_panel_tab_rect(-1).x, kst_panel_tab_rect(PG_SERVO).x);
+    CHECK(kst_panel_tab_rect(5).w > 0);
     /* The rows the owner keeps by default are there and take a tap. */
     CHECK_STR_EQ(kst_panel_label(PG_TUNE, 1, 0), "MAX. DUTY");
     CHECK_STR_EQ(kst_panel_label(PG_TUNE, 2, 1), "SOFT START");
