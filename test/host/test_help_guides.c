@@ -9,6 +9,7 @@
  * - every_servo_page_fits_and_hides_no_stop
  * - every_supply_page_fits_and_hides_no_stop
  * - a_live_supply_output_takes_the_pages_that_cover_output_off
+ * - prog_5v_on_takes_the_pages_that_cover_prog_5v_off
  * - a_run_takes_the_output_cards_pages_and_armed_leaves_none
  * - a_panel_or_a_question_takes_every_page
  * - the_labels_follow_what_the_controls_read
@@ -36,7 +37,7 @@
     } while (0)
 
 /** @brief PROG 5V's published states, as prog5v_box.h reads them. */
-enum { P5_OFF = 2 };
+enum { P5_OFF = 2, P5_ON = 3 };
 
 /* ------------------------------------------------------------- helpers */
 
@@ -314,6 +315,51 @@ TEST_CASE(a_live_supply_output_takes_the_pages_that_cover_output_off)
     CHECK_EQ(sup->help_count(), 3);
 }
 
+/**
+ * @brief How many points of @p sc's body, 8px apart, its safe_at() names.
+ * @param sc The screen.
+ * @return The count.
+ */
+static int safe_points(const ui_screen_t *sc)
+{
+    int n = 0;
+    for (int y = 0; y < UI_BODY_H; y += 8) {
+        for (int x = 0; x < UI_PANEL_W; x += 8) {
+            n += sc->safe_at(x, y) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/* PROG 5V OFF stops the ports' own supply, while SAFE as well and with the
+ * output off: while the supply reads ON it is a safe control on SERVO and
+ * SUPPLY, and the pages with the dock on the right over it are not
+ * offered.  At OFF they come back and PROG 5V ON is no safe control. */
+TEST_CASE(prog_5v_on_takes_the_pages_that_cover_prog_5v_off)
+{
+    prog5v_box_reset();
+    prog5v_box_publish(P5_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
+    fresh();
+    REQUIRE(!supply_screen_output_live());
+    CHECK(safe_points(scr) > 0);
+    CHECK_EQ(pages_checked(scr, false, "SERVO LIVE, PROG 5V on"), 2);
+    CHECK_EQ(title_of(scr, 0), TX_HG_SV_TITLE_CARD);
+    const ui_screen_t *sup = supply_screen();
+    sup->enter();
+    CHECK(safe_points(sup) > 0);
+    CHECK_EQ(pages_checked(sup, false, "SUPPLY LIVE, PROG 5V on"), 2);
+    CHECK_EQ(title_of(sup, 0), TX_HG_SU_TITLE_READ);
+    prog5v_box_publish(P5_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
+    fresh();
+    CHECK_EQ(safe_points(scr), 0);
+    CHECK_EQ(scr->help_count(), 3);
+    sup->enter();
+    CHECK_EQ(safe_points(sup), 0);
+    CHECK_EQ(sup->help_count(), 3);
+    prog5v_box_reset();
+    fresh();
+}
+
 /* A run's STOP TEST is on the left card, under the output card's dock: the
  * run offers no such page, and as it runs ARMED with the supply on, no
  * page at all, so the band shows no "?".  After it, they come back. */
@@ -474,6 +520,7 @@ int main(void)
     RUN(every_servo_page_fits_and_hides_no_stop);
     RUN(every_supply_page_fits_and_hides_no_stop);
     RUN(a_live_supply_output_takes_the_pages_that_cover_output_off);
+    RUN(prog_5v_on_takes_the_pages_that_cover_prog_5v_off);
     RUN(a_run_takes_the_output_cards_pages_and_armed_leaves_none);
     RUN(a_panel_or_a_question_takes_every_page);
     RUN(the_labels_follow_what_the_controls_read);

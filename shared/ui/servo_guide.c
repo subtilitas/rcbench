@@ -354,7 +354,9 @@ static int pages_now(guide_fn out[GUIDE_MAX])
         return 0;
     }
     int n = 0;
-    if (!supply_screen_output_live()) {
+    /* The task pages dock on the right, over OUTPUT OFF and PROG 5V OFF. */
+    if (!supply_screen_output_live()
+        && !(prog5v_box_shown() && prog5v_box_on())) {
         switch (wb_task()) {
         case UI_WB_LIVE:
             out[n++] = page_live;

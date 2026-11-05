@@ -760,7 +760,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   (den oberen 48px) oder auf dem Alert-Band aufsetzt, gehört dem Router, bis
   er abhebt, wohin er auch wandert. Die Ausnahme ist ein Druck auf ein
   Bedienelement, das anhält, was der Prüfstand treibt (DISARM, AUSGANG AUS,
-  ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN), das die Seite
+  PROG 5V AUS, solange die 5V der Ports EIN lesen, ABBRECHEN eines
+  Stick-Laufs, TEST BEENDEN, LAUF BEENDEN), das die Seite
   dem Router nennt (`safe_at` in ui_screen.h): Unter dem Alert-Band, bei
   offenem Hilfe-Kasten eines Chips oder bei offener Bildschirmhilfe gehört
   er der Seite, und Band, Kasten oder Hilfe schließen sich. ARM wird nie
@@ -776,7 +777,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   etwa die ZIEL-Zeile; `test_help_pages` prüft das Dock jeder solchen Seite
   in einem Raster von 8px. SUPPLY und SERVO lassen außerdem, bei SAFE wie
   bei ARMED, jede Seite weg, deren Dock AUSGANG AUS verdecken würde,
-  solange der Netzteilausgang an ist, und SERVO jede Seite, deren Dock die
+  solange der Netzteilausgang an ist, oder PROG 5V AUS, solange die 5V der
+  Ports EIN lesen, und SERVO jede Seite, deren Dock die
   linke Karte verdeckt, solange ein Test, ein Endlagenlauf oder AUTO läuft;
   `test_help_guides` prüft jede angebotene Seite. Ein Kontakt, der beim Bildschirmwechsel
   oder beim Verlust von Touch-Events auf dem Glas lag, gehört niemandem, bis

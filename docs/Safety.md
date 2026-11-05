@@ -689,7 +689,8 @@ reads the state and shows the alert, is not in the coverage figure.
   press it was handed. A contact that comes down on the status band (the top
   48px) or on the alert band is the router's until it lifts, wherever it
   travels. The exception is a press on a control that stops what the bench
-  drives (DISARM, OUTPUT OFF, a stick run's ABORT, STOP TEST, STOP RUN),
+  drives (DISARM, OUTPUT OFF, PROG 5V OFF while the ports' 5V reads ON, a
+  stick run's ABORT, STOP TEST, STOP RUN),
   which the screen names to the router (`safe_at` in ui_screen.h): under the
   alert band, with a chip's help box open or with the screen guide open it
   is the screen's, and the band, the box or the guide closes. ARM is never
@@ -704,7 +705,8 @@ reads the state and shows the alert, is not in the coverage figure.
   rect it must keep in view, such as the TARGET row; `test_help_pages`
   sweeps each such page's dock on an 8px grid. SUPPLY and SERVO also leave
   out, SAFE or ARMED, every page whose dock would cover OUTPUT OFF while the
-  supply's output is on, and SERVO every page whose dock covers the left
+  supply's output is on or PROG 5V OFF while the ports' 5V reads ON, and
+  SERVO every page whose dock covers the left
   card while a test, a limit run or AUTO runs; `test_help_guides` sweeps every offered
   page. A contact that was down when the screen changed or when touch
   events were lost is nobody's until it lifts and comes down again. A contact

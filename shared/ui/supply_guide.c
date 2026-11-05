@@ -260,8 +260,9 @@ static int pages_now(guide_fn out[GUIDE_MAX])
         return 0;
     }
     int n = 0;
-    /* OUTPUT OFF is under a dock on the right. */
-    const bool right_ok = !s.on && !s.on_asked;
+    /* OUTPUT OFF and PROG 5V OFF are under a dock on the right. */
+    const bool right_ok = !s.on && !s.on_asked
+                          && !(sup_p5_shown() && prog5v_box_on());
     if (sup_on_live()) {
         if (right_ok) {
             out[n++] = page_live;

@@ -45,6 +45,9 @@ history is in git.
 
 ### Fixed
 
+- PROG 5V OFF on SERVO and SUPPLY takes a press under the alert band and
+  a chip's help box while the ports' 5V reads ON, as OUTPUT OFF does. The
+  screen guide leaves out every page whose dock would cover it.
 - The IOmcu's firmware update cannot erase or program flash below 0x2000,
   the boot ROM's boot slots 0 and 1 that hold the partition table. The
   flash calls of the update refused only ranges past the store before. No
