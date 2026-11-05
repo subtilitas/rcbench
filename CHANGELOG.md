@@ -6,6 +6,27 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.8 - 2026-11-05
+
+0.23.8 is a testing release. Its minor number, 23, is odd. GitHub
+publishes it as a pre-release and does not mark it as latest. It runs on the
+ESP32-P4 panel, as 0.23.7 does; an ESP32-S3 panel stays on the 0.22 line and
+is not offered it. The link protocol is 4.36, as in 0.23.7. The assets are
+`rcbench-panel-p4-v0.23.8.zip`, `rcbench-panel-p4-v0.23.8.bin`,
+`rcbench-iomcu-v0.23.8.zip`, `rcbench-iomcu-rbmod-v0.23.8.zip` and
+`SHA256SUMS`.
+
+A bench on 0.23.7 gets 0.23.8 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. To set up a new bench, load both boards over USB
+(Universal Serial Bus) as [First run, §1](docs/FirstRun.md#1-flash-both-boards)
+describes.
+
+The entries below cover the 3 pull requests merged since v0.23.7: #730, #731
+and #733.
+
 ### Changed
 
 - The interface's texts are revised in English and German: 797 of the 3,191
