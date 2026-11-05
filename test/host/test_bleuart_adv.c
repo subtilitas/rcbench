@@ -289,6 +289,12 @@ TEST_CASE(a_name_ends_at_its_first_nul)
     longer[26] = 0x00;
     (void)bleu_adv_parse(longer, sizeof longer, &adv);
     CHECK_EQ(strlen(adv.name), 23);
+    /* A complete name shorter than the shortened one before it ends where
+     * it ends. */
+    const uint8_t two[] = { 0x06, 0x08, 'L', 'O', 'N', 'G', '!', 0x04, 0x09,
+                            'A', 'B', 0x00 };
+    (void)bleu_adv_parse(two, sizeof two, &adv);
+    CHECK_STR_EQ(adv.name, "AB");
 }
 
 TEST_CASE(the_complete_name_wins_over_the_shortened_one_in_either_order)
