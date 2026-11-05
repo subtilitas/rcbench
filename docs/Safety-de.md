@@ -774,7 +774,11 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   bietet die Hilfe nur Seiten an, deren Dock kein Bedienelement aus
   `safe_at` und kein Rechteck verdeckt, das die Seite sichtbar halten muss,
   etwa die ZIEL-Zeile; `test_help_pages` prüft das Dock jeder solchen Seite
-  in einem Raster von 8px. Ein Kontakt, der beim Bildschirmwechsel
+  in einem Raster von 8px. SUPPLY und SERVO lassen außerdem, bei SAFE wie
+  bei ARMED, jede Seite weg, deren Dock AUSGANG AUS verdecken würde,
+  solange der Netzteilausgang an ist, und SERVO jede Seite, deren Dock die
+  linke Karte verdeckt, solange ein Test, ein Endlagenlauf oder AUTO läuft;
+  `test_help_guides` prüft jede angebotene Seite. Ein Kontakt, der beim Bildschirmwechsel
   oder beim Verlust von Touch-Events auf dem Glas lag, gehört niemandem, bis
   er abhebt und neu aufsetzt. Ein Kontakt der Seite, der das Statusband
   erreicht, wird für die Seite an der letzten Stelle losgelassen, die sie

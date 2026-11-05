@@ -14,7 +14,7 @@
 /**
  * @brief Whether @p view is one of RUDDER's.
  * @param view the view's name
- * @return true for servo-rudder, servo-rudder-... and help-servo-rudder...
+ * @return true for servo-rudder and servo-rudder-...
  */
 bool render_rudder_view(const char *view);
 

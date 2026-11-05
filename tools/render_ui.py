@@ -111,6 +111,10 @@ SCREENS = {
     "help-outputs": ("help-outputs.png", "outputs", "dark"),
     "help-logs": ("help-logs.png", "logs", "dark"),
     "help-files": ("help-files.png", "files", "dark"),
+    # SERVO's guide at page 1 on LIVE, the dock on the right over the
+    # output card; SUPPLY's on LIVE, the output off.
+    "help-servo": ("help-servo.png", "servo", "dark"),
+    "help-supply": ("help-supply.png", "supply", "dark"),
     # The screenshot's popup over the menu, a save under way and a card that
     # was full.
     "shot-popup": ("shot-popup.png", "shot", "dark"),
@@ -811,8 +815,6 @@ FIT_ONLY = {
     "help-overview-3": (None, "overview", "dark"),
     "help-overview-4": (None, "overview", "dark"),
     "help-band-worst": (None, "motor", "dark"),
-    # SERVO's RUDDER guide: the output card's page over the task.
-    "help-servo-rudder":   (None, "servo", "dark"),
     # The other pages of SETUP's, OUTPUTS', LOGS' and FILES' guides, in
     # each state that has its own: a list, SENSORS, the carrier's tiles, a
     # PROG PORT entry, the grid view, the carrier, a paged list, the import
@@ -837,6 +839,27 @@ FIT_ONLY = {
     "help-logs-plot": (None, "logs", "dark"),
     "help-files-2": (None, "files", "dark"),
     "help-files-3": (None, "files", "dark"),
+    # SERVO's guide: the output card's two pages, each task's own pages,
+    # RUDDER's with AUTO's box too.
+    "help-servo-2":            (None, "servo", "dark"),
+    "help-servo-3":            (None, "servo", "dark"),
+    "help-servo-test":         (None, "servo", "dark"),
+    "help-servo-program":      (None, "servo", "dark"),
+    "help-servo-rudder":       (None, "servo", "dark"),
+    "help-servo-rudder-2":     (None, "servo", "dark"),
+    "help-servo-rudder-4":     (None, "servo", "dark"),
+    "help-servo-rudder-auto":  (None, "servo", "dark"),
+    "help-servo-output":       (None, "servo", "dark"),
+    "help-servo-output-2":     (None, "servo", "dark"),
+    "help-servo-sweep":        (None, "servo", "dark"),
+    "help-servo-dut":          (None, "servo", "dark"),
+    # SUPPLY's guide: the rail's two pages, SETTINGS' LIMITS and TRIPS and
+    # the PD MINI tab.
+    "help-supply-2":           (None, "supply", "dark"),
+    "help-supply-3":           (None, "supply", "dark"),
+    "help-supply-limits":      (None, "supply", "dark"),
+    "help-supply-limits-2":    (None, "supply", "dark"),
+    "help-supply-pdmini":      (None, "supply", "dark"),
     # ESC STICK > Great Planes: model rows with the MANUAL tag and the
     # longest reason beside their family.
     "motor-stick-greatplanes": (None, "motor", "dark"),
@@ -926,6 +949,12 @@ FIT_ONLY = {
     # SUPPLY's MODE card after either trip, its line under the label.
     "supply-trip-i":    (None, "supply", "dark"),
     "supply-trip-v":    (None, "supply", "dark"),
+    # SUPPLY's LIVE and SETTINGS with the output switched off, and RUDDER
+    # with AUTO's box while SAFE: the views SERVO's and SUPPLY's guides
+    # open over (render_help_base()).
+    "supply-off":          (None, "supply", "dark"),
+    "supply-settings-off": (None, "supply", "dark"),
+    "servo-rudder-auto-safe": (None, "servo", "dark"),
     # SUPPLY's TABLE; LIVE with a programming port holding the supply; and
     # SETTINGS with the PD mini's RESET PD MINI and the longest save line.
     "supply-table":     (None, "supply", "dark"),
@@ -1014,15 +1043,15 @@ OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "files-edit-see50"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
-# The screen guide's views over SETUP, OUTPUTS, LOGS and FILES: the dock
-# takes half the body, so the screen's strings on the other half are cut at
-# its edge and the marks are drawn over them by design.  The fit check
-# measures their dock, band and marks; the screen's own strings are
-# measured in the view each opens over (render_help_base() in
+# The screen guide's views over SETUP, OUTPUTS, LOGS, FILES, SERVO and
+# SUPPLY: the dock takes half the body, so the screen's strings on the other
+# half are cut at its edge and the marks are drawn over them by design.  The
+# fit check measures their dock, band and marks; the screen's own strings
+# are measured in the view each opens over (render_help_base() in
 # test/host/render_help.c).
 GUIDE_VIEWS = {name for name in (*SCREENS, *FIT_ONLY)
                if name.startswith(("help-setup", "help-outputs", "help-logs",
-                                   "help-files"))}
+                                   "help-files", "help-servo", "help-supply"))}
 
 # English overflows the layout has for a time: (view, string, finding), word
 # for word as --fit prints them; none today.  Each is a defect of the

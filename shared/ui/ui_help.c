@@ -220,7 +220,7 @@ bool ui_help_add(ui_help_page_t *p, const char *label, ui_text_id_t text,
     if (r.w <= 0 || r.h <= 0) {
         return false;
     }
-    p->item[p->count++] = (ui_help_item_t){ label, text, r };
+    p->item[p->count++] = (ui_help_item_t){ label, text, r, UI_HELP_AT_LEFT };
     return true;
 }
 
@@ -260,6 +260,11 @@ gfx_rect_t ui_help_badge_rect(const ui_help_page_t *p, int i)
         return gfx_rect_make(r.x, UI_BAND_H + BADGE_IN, BADGE, BADGE);
     }
     const int y = UI_BAND_H + r.y;
+    if (p->item[i].at == UI_HELP_AT_RIGHT) {
+        /* Clear of a label that starts at the control's left edge. */
+        return gfx_rect_make(r.x + r.w - BADGE_IN - BADGE, y + BADGE_IN,
+                             BADGE, BADGE);
+    }
     if (r.h < 2 * BADGE || r.w < 2 * BADGE) {
         /* Too small to carry one inside: left of it, centred, where the
          * live half has the room. */
@@ -463,6 +468,9 @@ uint32_t ui_help_marks_key(const ui_help_page_t *p)
     for (int i = 0; i < p->count && i < UI_HELP_ITEMS; ++i) {
         const gfx_rect_t r = p->item[i].rect;
         h = fnv_int(fnv_int(fnv_int(fnv_int(h, r.x), r.y), r.w), r.h);
+        if (p->item[i].at != UI_HELP_AT_LEFT) {
+            h = fnv_int(h, (int)p->item[i].at);
+        }
     }
     return h;
 }

@@ -48,6 +48,16 @@ typedef enum {
     UI_HELP_DOCK_RIGHT,     /**< x 536 to 1016; the screen to x 528       */
 } ui_help_side_t;
 
+/** @brief Where an item's badge sits (ui_help_badge_rect()). */
+typedef enum {
+    /** @brief Inside the top-left corner, or left of a small control. */
+    UI_HELP_AT_LEFT = 0,
+    /** @brief 4px inside the top-right corner, whatever the control's
+     *         size: for a control whose own text starts at its left edge.
+     *         A control in the band keeps its badge under the band. */
+    UI_HELP_AT_RIGHT,
+} ui_help_at_t;
+
 /** @brief One control a page marks. */
 typedef struct {
     /** @brief The control's name as the screen draws it; English where
@@ -57,6 +67,7 @@ typedef struct {
     /** @brief Where it is, in the screen's coordinates; y below 0 is the
      *         band. */
     gfx_rect_t   rect;
+    ui_help_at_t at;        /**< the badge's corner; 0 the top left       */
 } ui_help_item_t;
 
 /** @brief One page of a screen's guide. */
@@ -173,7 +184,8 @@ gfx_rect_t ui_help_button_rect(ui_help_side_t side, ui_help_hit_t hit);
  *        4px inside the control's top-left corner; 4px left of a control
  *        less than 56px tall or wide, centred on it, where the live half
  *        has the room; under the band below the left end of a control in
- *        the band.
+ *        the band.  An item marked UI_HELP_AT_RIGHT in the body has it
+ *        4px inside the control's top-right corner instead.
  * @param p The page.
  * @param i The item.
  * @return The badge's rect.
@@ -232,8 +244,9 @@ uint32_t ui_help_dock_key(const ui_help_page_t *p, int n, int count,
 
 /**
  * @brief A number for where ui_help_render_marks() draws @p p's marks: the
- *        side and each item's rect.  The router repaints the screen when it
- *        moves, so a badge that moved leaves nothing behind.
+ *        side and each item's rect and badge corner.  The router repaints
+ *        the screen when it moves, so a badge that moved leaves nothing
+ *        behind.
  * @param p The page.
  * @return A 32-bit FNV-1a hash.
  */

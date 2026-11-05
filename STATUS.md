@@ -369,11 +369,14 @@ and every frame over a simulated bench (`ui_band_key()`, `test_frame_work`).
 
 Built and tested on the host (`shared/ui/ui_help.c`, the router's guide in `ui_router.c`;
 `test_help_router`, `test_help_pages`): "?" in the band opens numbered marks and a dock with
-up to 5 controls a page, 3 rows each. The menu has 4 pages, SERVO's RUDDER task 1. OUTPUTS,
-SETUP, LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`,
-`help_logs.c`, `help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`,
-`test_help_files`).
-PREV and NEXT stand in the band, in the home tag's place, the same on every page.
+up to 5 controls a page, 3 rows each. The menu has 4 pages. SERVO has 12 pages over its
+tasks and SETTINGS' pages with 47 items (`shared/ui/servo_guide.c`), SUPPLY 6 with 25 items
+(`shared/ui/supply_guide.c`); `test_help_guides` holds them. A page whose dock would cover
+OUTPUT OFF, STOP TEST or STOP RUN is not offered while that control shows. OUTPUTS, SETUP,
+LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`, `help_logs.c`,
+`help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`, `test_help_files`).
+The other screens have none yet. PREV and NEXT stand in the band, in the home tag's place, the
+same on every page.
 
 ### Screenshot
 
@@ -1223,14 +1226,15 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 459 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 460 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_help_router`,
-`test_help_pages`, `test_help_setup`, `test_help_outputs`, `test_help_logs`,
-`test_help_files`, `test_widgets`, `test_hold_hint`, `test_workbench`, `test_prog_registry`,
+`test_help_pages`, `test_help_guides`, `test_help_setup`, `test_help_outputs`,
+`test_help_logs`, `test_help_files`, `test_widgets`, `test_hold_hint`, `test_workbench`,
+`test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
 `test_keypad_rows_motor`, `test_keypad_rows_supply`, `test_keypad_rows_servo`,
 `test_keypad_rows_kst`, `test_pinlist`, `test_bench`, `test_supply`, `test_supply_screen`,
@@ -1744,8 +1748,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 852 committed screenshots to the current render,
-426 in English and the same 426 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 856 committed screenshots to the current render,
+428 in English and the same 428 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

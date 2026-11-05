@@ -1974,6 +1974,103 @@ UI_TEXT(SUP_SET_POINTS, 0,
 UI_TEXT(SUP_NOT_ON_YET, 60,
     "Output has not been switched on yet.",
     "Ausgang wurde noch nicht eingeschaltet.")
+/* SUPPLY's screen guide (supply_guide.c), as SERVO's. */
+UI_TEXT(HG_SU_TITLE_LIVE, 0,
+    "SUPPLY: LIVE",
+    "SUPPLY: LIVE")
+UI_TEXT(HG_SU_TITLE_LIMITS, 0,
+    "SUPPLY SETTINGS: LIMITS",
+    "SUPPLY OPTIONEN: GRENZEN")
+UI_TEXT(HG_SU_TITLE_TRIPS, 0,
+    "SUPPLY SETTINGS: TRIPS",
+    "SUPPLY OPTIONEN: ABSCHALTUNGEN")
+UI_TEXT(HG_SU_TITLE_PDMINI, 0,
+    "SUPPLY SETTINGS: PD MINI",
+    "SUPPLY OPTIONEN: PD MINI")
+UI_TEXT(HG_SU_TITLE_READ, 0,
+    "SUPPLY: READINGS",
+    "SUPPLY: MESSWERTE")
+UI_TEXT(HG_SU_TITLE_CONTROL, 0,
+    "SUPPLY: CONTROL",
+    "SUPPLY: STEUERUNG")
+UI_TEXT(HG_SU_RANGE_NAME, 0,
+    "RANGE",
+    "BEREICH")
+UI_TEXT(HG_SU_TASKS, 0,
+    "LIVE: the plot and the set points. SETTINGS: caps, trips, questions and the PD mini's wiring.",
+    "LIVE: Grafik und Sollwerte. OPTIONEN: Grenzen, Abschaltungen, Rückfragen und Anschlüsse des PD mini.")
+UI_TEXT(HG_SU_PLOT, 0,
+    "Voltage, current and power over the last 30s, the set points dashed. TABLE lists the same values.",
+    "Spannung, Strom und Leistung der letzten 30s, die Sollwerte gestrichelt. TABELLE zeigt dieselben Werte.")
+UI_TEXT(HG_SU_VOLTAGE, 0,
+    "Drag the slider or tap its track. -0.1 and +0.1 step 0.1V. A live output asks first.",
+    "Ziehe den Regler oder tippe auf seine Bahn. -0.1 und +0.1 stufen 0.1V. Ein aktiver Ausgang fragt vorher.")
+UI_TEXT(HG_SU_CURRENT, 0,
+    "The supply holds the current at or under it; MODE then reads CC. The step keys move 0.1A.",
+    "Das Netzteil hält den Strom darunter; MODUS zeigt dann CC. Die Stufentasten ändern um 0.1A.")
+UI_TEXT(HG_SU_TABS, 0,
+    "LIMITS: caps, start values, trips and questions. PD MINI: the module and its wiring.",
+    "GRENZEN: Obergrenzen, Startwerte, Abschaltungen und Rückfragen. PD MINI: Modul und Anschlüsse.")
+UI_TEXT(HG_SU_CAPS, 0,
+    "VOLTAGE MAX and CURRENT MAX: the highest set points. A cap under a set point brings it down.",
+    "SPANNUNG MAX und STROM MAX: die höchsten Sollwerte. Eine Grenze unter einem Sollwert senkt ihn.")
+UI_TEXT(HG_SU_START, 0,
+    "START VOLTAGE and START CURRENT: the set points after a restart. The output starts off.",
+    "STARTSPANNUNG und STARTSTROM: die Sollwerte nach dem Neustart. Der Ausgang startet aus.")
+UI_TEXT(HG_SU_RESET_PD, 101,
+    "Switches the output off and restarts the module, for a module that shows ERR.",
+    "Schaltet den Ausgang aus und startet das Modul neu, für ein Modul, das ERR zeigt.")
+UI_TEXT(HG_SU_TRIP_I, 0,
+    "The output switches off when the current stays over it for TRIP TIME. 0 is OFF.",
+    "Der Ausgang schaltet aus, wenn der Strom ABSCHALTZEIT lang darüber liegt. 0 ist AUS.")
+UI_TEXT(HG_SU_TRIP_V, 0,
+    "The output switches off when the voltage stays over it for TRIP TIME. 0 is OFF.",
+    "Der Ausgang schaltet aus, wenn die Spannung ABSCHALTZEIT lang darüber liegt. 0 ist AUS.")
+UI_TEXT(HG_SU_TRIP_MS, 0,
+    "How long a reading stays over a trip before it fires, 0 to 5000ms.",
+    "Dauer über einer Schwelle bis zur Abschaltung, 0 bis 5000ms.")
+UI_TEXT(HG_SU_ASK_SLIDE, 0,
+    "ON: the slider and the step keys ask before they change a live output.",
+    "EIN: Regler und Stufentasten fragen, bevor sie einen aktiven Ausgang ändern.")
+UI_TEXT(HG_SU_ASK_KEYS, 0,
+    "ON: the keypad asks before it changes a live output.",
+    "EIN: das Tastenfeld fragt, bevor es einen aktiven Ausgang ändert.")
+UI_TEXT(HG_SU_PD_EN, 0,
+    "ON drives the PD mini over the UART below. OFF runs the panel's supply model: SIMULATED.",
+    "EIN steuert den PD mini über den UART darunter. AUS nutzt das Netzteilmodell der Anzeige: SIMULIERT.")
+UI_TEXT(HG_SU_PD_TX, 0,
+    "The IOmcu pin that sends to the module's DM. - and + step it; a tap on the value types it.",
+    "Der IOmcu-Pin, der an DM des Moduls sendet. - und + stufen; Tippen auf den Wert öffnet das Tastenfeld.")
+UI_TEXT(HG_SU_PD_RX, 0,
+    "The IOmcu pin that reads the module's DP; -1 until it is wired.",
+    "Der IOmcu-Pin, der DP des Moduls liest; -1, solange nicht verdrahtet.")
+UI_TEXT(HG_SU_PD_BAUD, 0,
+    "The module's UART rate. AUTO finds it; the arrow keys step through the rates.",
+    "Die UART-Rate des Moduls. AUTO erkennt sie; die Pfeiltasten wählen eine Rate.")
+UI_TEXT(HG_SU_RANGE, 0,
+    "The set point range in force: the supply's own, narrowed by the caps on LIMITS.",
+    "Gültiger Sollwertbereich: der des Netzteils, eingeengt durch GRENZEN.")
+UI_TEXT(HG_SU_VOLT, 0,
+    "The output voltage; in brackets the set point, under it the run's lowest. A tap opens the keypad.",
+    "Die Ausgangsspannung; in Klammern der Sollwert, darunter das Minimum des Laufs. Tippen öffnet das Tastenfeld.")
+UI_TEXT(HG_SU_CURR, 0,
+    "The output current; in brackets the current limit, under it the run's peak. A tap opens the keypad.",
+    "Der Ausgangsstrom; in Klammern die Strombegrenzung, darunter die Spitze des Laufs. Tippen öffnet das Tastenfeld.")
+UI_TEXT(HG_SU_PWR, 0,
+    "The output power, and the run's peak under it.",
+    "Die Ausgangsleistung, darunter die Spitze des Laufs.")
+UI_TEXT(HG_SU_MODE, 0,
+    "CV at the set voltage, CC at the current limit, TRIPPED after a trip.",
+    "CV bei der Sollspannung, CC an der Strombegrenzung, ABGESCHALTET nach einer Abschaltung.")
+UI_TEXT(HG_SU_VALUES, 0,
+    "A tap on a value opens the keypad with its range. OK takes a value inside it.",
+    "Tippen auf einen Wert öffnet das Tastenfeld mit seinem Bereich. OK übernimmt einen Wert darin.")
+UI_TEXT(HG_SU_RESET, 0,
+    "Clears the lowest voltage, the peaks and the mAh and Wh beside CONTROL.",
+    "Löscht Minimum, Spitzen sowie mAh und Wh neben STEUERUNG.")
+UI_TEXT(HG_SU_OUTPUT, 0,
+    "OUTPUT ON is a 2s hold, OUTPUT OFF a tap. Leaving SUPPLY switches off an output it switched on.",
+    "AUSGANG EIN: 2s halten, AUSGANG AUS: tippen. Verlassen von SUPPLY schaltet einen hier eingeschalteten aus.")
 
 /* ---------------------------------------------------------------- LOGS */
 UI_TEXT(LOG_NO_SOURCE, 36,
@@ -5032,6 +5129,214 @@ UI_TEXT(SV_ASK_YES, 0,
 UI_TEXT(SV_ASK_NO, 0,
     "NO",
     "NEIN")
+/* SERVO's screen guide (servo_guide.c): each page's title, the names of
+ * the parts that draw none of their own, and what each part does.  An
+ * item's text follows its label and two spaces in rows of 41 cells, 3
+ * rows at most (test_help_pages). */
+UI_TEXT(HG_SV_TITLE_LIVE, 0,
+    "SERVO: LIVE",
+    "SERVO: LIVE")
+UI_TEXT(HG_SV_TITLE_TEST, 0,
+    "SERVO: TEST",
+    "SERVO: TEST")
+UI_TEXT(HG_SV_TITLE_PROG, 0,
+    "SERVO: PROGRAM",
+    "SERVO: PROGRAMMIEREN")
+UI_TEXT(HG_SV_TITLE_RUDDER, 0,
+    "SERVO: RUDDER",
+    "SERVO: RUDER")
+UI_TEXT(HG_SV_TITLE_RUD_READ, 0,
+    "SERVO: RUDDER READINGS",
+    "SERVO: RUDER-MESSWERTE")
+UI_TEXT(HG_SV_TITLE_AUTO, 0,
+    "SERVO: RUDDER AUTO",
+    "SERVO: RUDER AUTO")
+UI_TEXT(HG_SV_TITLE_OUTPUT, 0,
+    "SERVO SETTINGS: OUTPUT",
+    "SERVO OPTIONEN: AUSGANG")
+UI_TEXT(HG_SV_TITLE_OUTPUT_2, 0,
+    "SERVO SETTINGS: TRIM AND TRAVEL",
+    "SERVO OPTIONEN: TRIMMUNG UND WEG")
+UI_TEXT(HG_SV_TITLE_SWEEP, 0,
+    "SERVO SETTINGS: SWEEP",
+    "SERVO OPTIONEN: SWEEP")
+UI_TEXT(HG_SV_TITLE_DUT, 0,
+    "SERVO SETTINGS: DUT",
+    "SERVO OPTIONEN: PRÜFLING")
+UI_TEXT(HG_SV_TITLE_CARD, 0,
+    "SERVO: OUTPUT CARD",
+    "SERVO: AUSGANGSKARTE")
+UI_TEXT(HG_SV_TITLE_DRIVE, 0,
+    "SERVO: WHAT IT DRIVES",
+    "SERVO: WAS ES ANSTEUERT")
+UI_TEXT(HG_SV_TASKS_NAME, 0,
+    "TASKS",
+    "AUFGABEN")
+UI_TEXT(HG_SV_ANGLE_NAME, 0,
+    "ANGLE",
+    "WINKEL")
+UI_TEXT(HG_SV_DIAL_NAME, 0,
+    "DIAL",
+    "SKALA")
+UI_TEXT(HG_SV_READ_NAME, 0,
+    "READINGS",
+    "MESSWERTE")
+UI_TEXT(HG_SV_CAPS_NAME, 0,
+    "CAPS",
+    "GRENZEN")
+UI_TEXT(HG_SV_PROG_NAME, 0,
+    "PROGRAMMERS",
+    "PROGRAMMIERUNG")
+UI_TEXT(HG_SV_SIDE_NAME, 0,
+    "SIDE VIEW",
+    "SEITENANSICHT")
+UI_TEXT(HG_SV_MARGIN_NAME, 0,
+    "MARGIN",
+    "RESERVE")
+UI_TEXT(HG_SV_PAGES_NAME, 0,
+    "PAGES",
+    "SEITEN")
+UI_TEXT(HG_SV_TASKS, 0,
+    "Switch the left card between the tasks. The output card on the right stays the same.",
+    "Wechseln die linke Karte zwischen den Aufgaben. Die Ausgangskarte rechts bleibt gleich.")
+UI_TEXT(HG_SV_ANGLE, 0,
+    "Where the horn is drawn: the measured angle with an angle source, else the commanded one.",
+    "Wo das Ruderhorn steht: mit Winkelquelle der gemessene Winkel, sonst der Sollwinkel.")
+UI_TEXT(HG_SV_DIAL, 0,
+    "While ARMED, drag on the arc to command a position. It stays when you lift. The knob moves it too.",
+    "Ziehe bei ARMED auf dem Bogen, um eine Position vorzugeben. Sie bleibt beim Loslassen, auch per Drehknopf.")
+UI_TEXT(HG_SV_READ, 0,
+    "COMMANDED: the pulse in us. MEASURED: the angle source's angle. CURRENT: the servo rail in A.",
+    "SOLL-PULSBREITE: Puls in us. GEMESSEN: Winkel der Winkelquelle. STROM: Servoschiene in A.")
+UI_TEXT(HG_SV_START, 0,
+    "Hold 2s to run the automatic test at its supply voltages, while ARMED. The lines under it say why not.",
+    "Halte 2s für den automatischen Test bei seinen Spannungen, bei ARMED. Darunter steht, warum nicht.")
+UI_TEXT(HG_SV_RUN_SET, 0,
+    "The run's steps, timing and limits, one level down. The home tag goes back to TEST.",
+    "Stufen, Zeiten und Grenzen des Laufs, eine Ebene tiefer. Das Home-Feld führt zurück zu TEST.")
+UI_TEXT(HG_SV_LIM, 0,
+    "Hold 2s to search the travel limits of the servo on TARGET, while ARMED.",
+    "Halte 2s, um die Endlagen des Servos am ZIEL zu suchen, bei ARMED.")
+UI_TEXT(HG_SV_CAPS, 0,
+    "SUPPLY's voltage and current caps, which the test's steps keep to. A tap opens SUPPLY.",
+    "Spannungs- und Stromgrenze von SUPPLY, die die Teststufen einhalten. Tippen öffnet SUPPLY.")
+UI_TEXT(HG_SV_PROG, 0,
+    "A row opens its programmer over the left card. Its right end names the port and GPIO, or why it is grey.",
+    "Eine Zeile öffnet ihre Programmierung über der linken Karte, rechts mit Port und GPIO oder Sperrgrund.")
+UI_TEXT(HG_SV_FIND, 115,
+    "Narrows the list to the names typed on the keyboard. ^ and v scroll it.",
+    "Grenzt die Liste auf die eingetippten Namen ein. ^ und v blättern.")
+UI_TEXT(HG_SV_RUD_LEN, 0,
+    "Hinge line to trailing edge, 0 or 10 to 500mm. TRAILING EDGE turns the deflection into mm with it.",
+    "Scharnierlinie bis Hinterkante, 0 oder 10 bis 500mm. Damit rechnet HINTERKANTE den Ausschlag in mm um.")
+UI_TEXT(HG_SV_RUD_DRIVE, 0,
+    "1000us, CENTRE and 2000us drive the servo to that pulse while ARMED. PULSE below names it.",
+    "1000us, ZENTRIEREN und 2000us fahren das Servo bei ARMED auf diesen Puls. PULS darunter nennt ihn.")
+UI_TEXT(HG_SV_RUD_ZERO, 0,
+    "Takes the angle now as the neutral and clears MAX. Tap it with the surface at neutral.",
+    "Übernimmt den Winkel jetzt als Nullpunkt und löscht MAX. Tippe bei Ruder in Neutrallage.")
+UI_TEXT(HG_SV_RUD_RESET, 0,
+    "Clears MAX, the largest deflection each way. The zero stays.",
+    "Löscht MAX, den größten Ausschlag je Seite. Der Nullpunkt bleibt.")
+UI_TEXT(HG_SV_RUD_AUTO, 0,
+    "Shows AUTO: it programs the end points of a KST, Chaservo or Hitec servo to a deflection.",
+    "Zeigt AUTO: programmiert die Endpunkte eines KST-, Chaservo- oder Hitec-Servos auf einen Ausschlag.")
+UI_TEXT(HG_SV_RUD_DEFL, 0,
+    "The angle from ZERO in °, signed in the commanded direction. MAX: the largest each way.",
+    "Winkel ab NULLPUNKT in °, mit Vorzeichen in Sollrichtung. MAX: der größte je Seite.")
+UI_TEXT(HG_SV_RUD_EDGE, 0,
+    "How far the trailing edge stands from neutral, in mm, from the deflection and LENGTH.",
+    "Abstand der Hinterkante von der Neutrallage in mm, aus Ausschlag und LÄNGE.")
+UI_TEXT(HG_SV_RUD_STATE, 0,
+    "The angle source, AS5600 or IMU, and its state, the pulse driven, and why the buttons wait.",
+    "Die Winkelquelle, AS5600 oder IMU, und ihr Zustand, der Puls und warum die Tasten warten.")
+UI_TEXT(HG_SV_RUD_SIDE, 0,
+    "The surface from the side at the deflection shown. Dashed lines mark each side's MAX.",
+    "Das Ruder von der Seite beim angezeigten Ausschlag. Gestrichelte Linien zeigen das MAX je Seite.")
+UI_TEXT(HG_SV_RA_TARGET, 0,
+    "The deflection 1000us and 2000us are to give, 0.5 to 90.0°. A tap opens the keypad.",
+    "Der Ausschlag bei 1000us und 2000us, 0.5 bis 90.0°. Tippen öffnet das Tastenfeld.")
+UI_TEXT(HG_SV_RA_MARGIN, 0,
+    "MARGIN aims past the target, 0 to 50%. TOLERANCE: how near the goal a measure counts, 0.1 to 5.0°.",
+    "RESERVE zielt über das Soll hinaus, 0 bis 50%. TOLERANZ: wie nah am Ziel ein Messwert zählt, 0.1 bis 5.0°.")
+UI_TEXT(HG_SV_RA_START, 0,
+    "Starts the run while ARMED; STOP RUN ends it. Take ZERO with the surface at neutral first.",
+    "Startet den Lauf bei ARMED; LAUF BEENDEN stoppt ihn. Setze vorher den NULLPUNKT in Neutrallage.")
+UI_TEXT(HG_SV_RA_MANUAL, 0,
+    "Closes AUTO and shows LENGTH and the drive buttons again. Locked while the run runs.",
+    "Schließt AUTO und zeigt LÄNGE und die Fahrtasten wieder. Gesperrt, solange der Lauf läuft.")
+UI_TEXT(HG_SV_PAGES, 0,
+    "OUTPUT, SWEEP and DUT: the pages of SERVO's own settings. The bottom line says whether they are saved.",
+    "AUSGANG, SWEEP und PRÜFLING: die Seiten der Optionen von SERVO. Die Zeile unten sagt, ob gespeichert.")
+UI_TEXT(HG_SV_ROW_TYPE, 0,
+    "The servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760.",
+    "Das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760.")
+UI_TEXT(HG_SV_ROW_RATE, 0,
+    "How often a pulse is sent: the type's list, or CUSTOM on the keypad.",
+    "Wie oft ein Puls gesendet wird: die Liste des Typs oder CUSTOM per Tastenfeld.")
+UI_TEXT(HG_SV_ROW_MIN, 0,
+    "The pulse at -90°, 400 to 2500us, at least 50us from PULSE CENTRE.",
+    "Der Puls bei -90°, 400 bis 2500us, mindestens 50us von PULS MITTE.")
+UI_TEXT(HG_SV_ROW_MAX, 0,
+    "The pulse at +90°, 400 to 2500us, at least 50us from PULSE CENTRE.",
+    "Der Puls bei +90°, 400 bis 2500us, mindestens 50us von PULS MITTE.")
+UI_TEXT(HG_SV_ROW_CENTRE, 0,
+    "The pulse at 0°, 400 to 2500us.",
+    "Der Puls bei 0°, 400 bis 2500us.")
+UI_TEXT(HG_SV_ROW_TRIM, 0,
+    "Adds to the centre, -200 to +200us in 5us steps. - and + step it; a tap on the value types it.",
+    "-200 bis +200us in 5us-Stufen zur Mitte. - und + stufen; Tippen auf den Wert öffnet das Tastenfeld.")
+UI_TEXT(HG_SV_ROW_TRAVEL, 0,
+    "How far the horn may move each way, 10 to 90°.",
+    "Wie weit das Ruderhorn je Seite fahren darf, 10 bis 90°.")
+UI_TEXT(HG_SV_ROW_REVERSE, 0,
+    "ON swaps the ends: the angle maps to the pulse the other way round.",
+    "EIN tauscht die Enden: der Winkel ergibt den Puls in umgekehrter Richtung.")
+UI_TEXT(HG_SV_ROW_CURVE, 0,
+    "The curve of SWEEP and of the test's moves: SQUARE, SINE or TRIANGLE.",
+    "Die Kurve von SWEEP und der Testbewegungen: SQUARE, SINE oder TRIANGLE.")
+UI_TEXT(HG_SV_ROW_SPEED, 0,
+    "Curves a second, 0.05 to 5Hz.",
+    "Kurven pro Sekunde, 0.05 bis 5Hz.")
+UI_TEXT(HG_SV_ROW_RANGE, 0,
+    "The share of the travel a curve moves through, 10 to 100%.",
+    "Anteil des Wegs, den eine Kurve durchfährt, 10 bis 100%.")
+UI_TEXT(HG_SV_ROW_NAME, 0,
+    "The device under test, up to 23 characters. It heads each test report.",
+    "Der Prüfling, bis 23 Zeichen. Er steht oben in jedem Testbericht.")
+UI_TEXT(HG_SV_ROW_REPORT, 0,
+    "ON writes a TXT report beside each test's log while User logs is ON on SETUP.",
+    "EIN schreibt zu jedem Test einen TXT-Bericht, solange Testaufzeichnungen in SETUP EIN ist.")
+UI_TEXT(HG_SV_ROW_ENC, 0,
+    "A tap takes the AS5600's count now as the centre. Centre the servo first.",
+    "Tippen übernimmt den AS5600-Wert jetzt als Mitte. Stelle das Servo vorher auf Mitte.")
+UI_TEXT(HG_SV_OPEN_ENC, 0,
+    "Opens SENSORS on the AS5600 entry, where it is switched on or off.",
+    "Öffnet SENSORS beim Eintrag AS5600, wo er ein- oder ausgeschaltet wird.")
+UI_TEXT(HG_SV_TYPE, 0,
+    "The servo type, frame rate and pulse range in force. SETTINGS sets them on OUTPUT.",
+    "Aktiver Servotyp, Pulsrate und Pulsbereich. OPTIONEN stellt sie auf AUSGANG ein.")
+UI_TEXT(HG_SV_PLOT, 0,
+    "Voltage, current and power of the servo rail over the last 17.8s. The line above names the meter.",
+    "Spannung, Strom und Leistung der Servoschiene der letzten 17.8s. Die Zeile darüber nennt das Messgerät.")
+UI_TEXT(HG_SV_P5, 114,
+    "The programming ports' own 5V at GPIO 21: hold PROG 5V ON 2s, tap PROG 5V OFF.",
+    "Die eigene 5V der Programmierports an GPIO 21: halte PROG 5V EIN 2s, tippe PROG 5V AUS.")
+UI_TEXT(HG_SV_SET, 0,
+    "SUPPLY's voltage and current limit; a tap opens the keypad. OUTPUT ON is a 2s hold, OUTPUT OFF a tap.",
+    "Spannung und Strombegrenzung von SUPPLY; Tippen öffnet das Tastenfeld. AUSGANG EIN: 2s halten, AUS: tippen.")
+UI_TEXT(HG_SV_SPEED, 0,
+    "How fast the bench may move the output. Each command passes straight through at 100%.",
+    "Wie schnell der Prüfstand den Ausgang bewegen darf. Jeder Befehl geht direkt durch bei 100%.")
+UI_TEXT(HG_SV_TARGET, 0,
+    "What the buttons and the knob drive. A tap opens OUTPUTS while SAFE.",
+    "Was die Tasten und der Drehknopf ansteuern. Ein Tippen öffnet OUTPUTS, solange SAFE.")
+UI_TEXT(HG_SV_BUTTONS, 0,
+    "While ARMED: CENTRE to PULSE CENTRE plus TRIM, SWEEP runs the curve. RELEASE goes back to rest.",
+    "Bei ARMED: ZENTRIEREN auf PULS MITTE plus TRIMMUNG, SWEEP fährt die Kurve. FREIGEBEN geht in Ruhe.")
+UI_TEXT(HG_SV_ARM, 0,
+    "Hold 2s to ARM. DISARM, STOP or leaving SERVO switches to SAFE.",
+    "Halte 2s für ARM. DISARM, STOP oder Verlassen von SERVO schaltet auf SAFE.")
 
 /* --------------- the alert band: the panel's control task raises these */
 UI_TEXT(ALERT_TOUCH_LOST_STOP, 94,
@@ -10238,15 +10543,6 @@ UI_TEXT(RUD_SRC_STALE, 36,
 UI_TEXT(RUD_SRC_LIVE, 0,
     "ANGLE: %s",
     "WINKEL: %s")
-UI_TEXT(HG_RUD_TITLE_OUT, 0,
-    "RUDDER: WHAT IT DRIVES",
-    "RUDER: WAS ES ANSTEUERT")
-UI_TEXT(HG_RUD_TARGET, 0,
-    "What the buttons and the knob drive. A tap opens OUTPUTS while SAFE.",
-    "Was die Tasten und der Drehknopf ansteuern. Ein Tippen öffnet OUTPUTS, solange SAFE.")
-UI_TEXT(HG_RUD_ARM, 0,
-    "Hold 2s to ARM. DISARM, STOP or leaving SERVO switches to SAFE.",
-    "Halte 2s für ARM. DISARM, STOP oder Verlassen von SERVO schaltet auf SAFE.")
 UI_SETTING_LABEL(SET_RUDDER_LEN_MM,
     "Rudder length",
     "Ruderlänge")
