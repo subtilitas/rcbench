@@ -36,6 +36,14 @@ history is in git.
   firmware ...`, `c6: C6: firmware version not reported ...` and `c6: C6
   link failed: C6 held in reset, Wi-Fi and Bluetooth are off until the
   panel restarts`.
+- The IMU controller is three parts. `shared/ui/imu_sensor.c` holds the
+  sensor's side without a radio: the reading, the outbox of WitMotion
+  commands, the calibration, the RATE and ALGORITHM writes, the gaps and the
+  handout to SERVO. `shared/ui/imu_hc05.c` holds the HC-05 link and converts
+  its devices, errors and version into the view's types (`imu_dev_t`,
+  `imu_err_t`). `shared/ui/imu_ctl.c` joins the two. The IMU screen, SETUP >
+  SENSORS > IMU and the servo runs behave as before. `test_imu_sensor` tests
+  the sensor's side alone.
 
 ### Fixed
 

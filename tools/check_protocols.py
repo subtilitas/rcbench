@@ -407,8 +407,12 @@ ASSERTED = {
         ),
     },
     "hc05": {
-        "shared/ui/imu_screen.c": (
-            "IMS_LY + (HC05_FOUND_MAX - 1) * IMS_LP + IMS_LH + 4 <= IMS_FLOOR",
+        "shared/ui/imu_hc05.c": (
+            "HC05_ADDR_MAX <= IMU_ADDR_MAX",
+            "HC05_NAME_MAX <= IMU_NAME_MAX",
+            "HC05_VERSION_MAX <= IMU_VERSION_MAX",
+            "HC05_FOUND_MAX <= IMU_FOUND_MAX",
+            "WIT_CMD_LEN <= HC05_OUT_MAX",
         ),
     },
     "hitec": {
@@ -442,6 +446,11 @@ ASSERTED = {
             "OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS",
             "PPM_CHANNEL_MIN_US == OUT_FLOOR_US "
             "&& PPM_CHANNEL_MAX_US == OUT_CEILING_US",
+        ),
+    },
+    "witmotion": {
+        "shared/ui/imu_hc05.c": (
+            "WIT_CMD_LEN <= HC05_OUT_MAX",
         ),
     },
 }

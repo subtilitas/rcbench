@@ -182,7 +182,7 @@ gfx_rect_t imu_screen_row_rect(int row)
 
 gfx_rect_t imu_screen_choice_rect(int i)
 {
-    if (i < 0 || i >= (int)HC05_FOUND_MAX) {
+    if (i < 0 || i >= (int)IMU_FOUND_MAX) {
         return gfx_rect_make(0, 0, 0, 0);
     }
     return gfx_rect_make(IMS_LX, IMS_LY + i * IMS_LP, IMS_LW, IMS_LH);
@@ -204,7 +204,7 @@ _Static_assert(IMS_RY + IMS_RH <= IMS_FLOOR, "the card ends over the band");
 _Static_assert(IMS_RX + IMS_RW <= UI_PANEL_W - UI_MARGIN,
                "the card keeps the margin");
 _Static_assert(IMS_BX + IMS_BW + 8 <= IMS_RX, "the controls end left of the card");
-_Static_assert(IMS_LY + (HC05_FOUND_MAX - 1) * IMS_LP + IMS_LH + 4 <= IMS_FLOOR,
+_Static_assert(IMS_LY + (IMU_FOUND_MAX - 1) * IMS_LP + IMS_LH + 4 <= IMS_FLOOR,
                "8 devices end over the band");
 _Static_assert(IMS_LX + IMS_LW + 4 + 16 <= IMS_SX,
                "the list's ground ends left of its buttons");
@@ -224,22 +224,22 @@ _Static_assert(IMS_BH >= UI_TAP_MIN && IMS_LH >= UI_TAP_MIN,
 static const char *err_text(char *buf, size_t n)
 {
     switch (ims.v.err) {
-    case HC05_ERR_NO_AT:       snprintf(buf, n, "%s", TR(IMU_ERR_NO_AT)); break;
-    case HC05_ERR_TIMEOUT:     snprintf(buf, n, "%s", TR(IMU_ERR_TIMEOUT)); break;
-    case HC05_ERR_REFUSED:
+    case IMU_ERR_NO_AT:       snprintf(buf, n, "%s", TR(IMU_ERR_NO_AT)); break;
+    case IMU_ERR_TIMEOUT:     snprintf(buf, n, "%s", TR(IMU_ERR_TIMEOUT)); break;
+    case IMU_ERR_REFUSED:
         if (ims.v.err_code == 0u) {
             snprintf(buf, n, "%s", TR(IMU_ERR_FAIL));
         } else {
             snprintf(buf, n, TR(IMU_ERR_REFUSED), (unsigned)ims.v.err_code);
         }
         break;
-    case HC05_ERR_INQ_REFUSED: snprintf(buf, n, "%s", TR(IMU_ERR_INQ)); break;
-    case HC05_ERR_PAIR:        snprintf(buf, n, "%s", TR(IMU_ERR_PAIR)); break;
-    case HC05_ERR_NONE_FOUND:  snprintf(buf, n, "%s", TR(IMU_ERR_NONE_FOUND));
-                               break;
-    case HC05_ERR_ARG:         snprintf(buf, n, "%s", TR(IMU_ERR_ARG)); break;
-    case HC05_ERR_NONE:
-    default:                   buf[0] = '\0'; break;
+    case IMU_ERR_INQ_REFUSED: snprintf(buf, n, "%s", TR(IMU_ERR_INQ)); break;
+    case IMU_ERR_PAIR:        snprintf(buf, n, "%s", TR(IMU_ERR_PAIR)); break;
+    case IMU_ERR_NONE_FOUND:  snprintf(buf, n, "%s", TR(IMU_ERR_NONE_FOUND));
+                              break;
+    case IMU_ERR_ARG:         snprintf(buf, n, "%s", TR(IMU_ERR_ARG)); break;
+    case IMU_ERR_NONE:
+    default:                  buf[0] = '\0'; break;
     }
     return buf;
 }
@@ -274,7 +274,7 @@ static void head_line(char *buf, size_t n, gfx_color_t *ink)
         snprintf(buf, n, "%s", TR(IMU_SCANNING));
     } else if (ims.v.found_n > 0u) {
         snprintf(buf, n, TR(IMU_FOUND), (unsigned)ims.v.found_n);
-    } else if (ims.v.err != HC05_ERR_NONE) {
+    } else if (ims.v.err != IMU_ERR_NONE) {
         (void)err_text(buf, n);
         *ink = UI_WARN;
     } else {
@@ -406,7 +406,7 @@ static int hit_at(int x, int y)
         }
     }
     if (ims.list && at_free()) {
-        for (int i = 0; i < (int)ims.v.found_n && i < (int)HC05_FOUND_MAX;
+        for (int i = 0; i < (int)ims.v.found_n && i < (int)IMU_FOUND_MAX;
              ++i) {
             if (gfx_rect_contains(imu_screen_choice_rect(i), x, y)) {
                 return IMS_HIT_DEV0 + i;

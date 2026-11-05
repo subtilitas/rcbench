@@ -143,11 +143,11 @@ TEST_CASE(scan_posts_the_command_and_the_list_shows_the_found_devices)
     ui_router_render(&s_c, 0);
     /* None found, and why. */
     v.found_n = 0u;
-    v.err = HC05_ERR_NONE_FOUND;
+    v.err = IMU_ERR_NONE_FOUND;
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD),
                  "NO DEVICE FOUND: IS THE SENSOR ON?");
-    v.err = HC05_ERR_NONE;
+    v.err = IMU_ERR_NONE;
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_HEAD), "NO SCAN YET");
     /* SCAN AGAIN posts another; CLOSE and the home tag close the list. */
@@ -207,7 +207,7 @@ TEST_CASE(a_tap_on_a_device_posts_bind_with_its_index)
     CHECK_EQ(took().kind, IMU_CMD_BIND);
     /* Out of range rects are empty. */
     CHECK_EQ(imu_screen_choice_rect(-1).w, 0);
-    CHECK_EQ(imu_screen_choice_rect((int)HC05_FOUND_MAX).w, 0);
+    CHECK_EQ(imu_screen_choice_rect((int)IMU_FOUND_MAX).w, 0);
     CHECK_EQ(imu_screen_row_rect(IMS_ROW_COUNT).w, 0);
 }
 
@@ -220,7 +220,7 @@ TEST_CASE(inq_refused_offers_connect_to_any_sensor)
     CHECK_EQ(took().kind, IMU_CMD_NONE);          /* not offered */
     tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
     (void)took();
-    v.err = HC05_ERR_INQ_REFUSED;
+    v.err = IMU_ERR_INQ_REFUSED;
     v.err_code = 0x1Fu;
     v.inq_refused = true;
     imu_screen_set(&v);
@@ -402,7 +402,7 @@ TEST_CASE(zero_posts_zero_and_the_lines_show_the_zeroed_angles)
     lift(FEED_LONE);
     CHECK_EQ(took().kind, IMU_CMD_ZERO);
     /* The operation's line is in the warning colour. */
-    v.err = HC05_ERR_NONE_FOUND;
+    v.err = IMU_ERR_NONE_FOUND;
     imu_screen_set(&v);
     char buf[96];
     gfx_color_t ink = 0;
@@ -446,17 +446,17 @@ TEST_CASE(the_state_line_names_every_link_state)
     imu_screen_set(&v);
     CHECK_STR_EQ(imu_screen_line(IMS_L_SENSOR), "SENSOR: NONE BOUND");
     /* Each error of an operation in words. */
-    static const struct { hc05_err_t e; uint8_t code; const char *t; } k[] = {
-        { HC05_ERR_NONE, 0u, "" },
-        { HC05_ERR_NO_AT, 0u,
+    static const struct { imu_err_t e; uint8_t code; const char *t; } k[] = {
+        { IMU_ERR_NONE, 0u, "" },
+        { IMU_ERR_NO_AT, 0u,
           "THE HC-05 DOES NOT ANSWER AT: CHECK ITS WIRES AND KEY" },
-        { HC05_ERR_TIMEOUT, 0u, "THE HC-05 DID NOT ANSWER IN TIME" },
-        { HC05_ERR_REFUSED, 0u, "THE HC-05 ANSWERED FAIL" },
-        { HC05_ERR_REFUSED, 0x1Du, "THE HC-05 ANSWERED ERROR:(1D)" },
-        { HC05_ERR_PAIR, 0u,
+        { IMU_ERR_TIMEOUT, 0u, "THE HC-05 DID NOT ANSWER IN TIME" },
+        { IMU_ERR_REFUSED, 0u, "THE HC-05 ANSWERED FAIL" },
+        { IMU_ERR_REFUSED, 0x1Du, "THE HC-05 ANSWERED ERROR:(1D)" },
+        { IMU_ERR_PAIR, 0u,
           "PAIRING FAILED: IS THE SENSOR ON AND IN RANGE?" },
-        { HC05_ERR_NONE_FOUND, 0u, "NO DEVICE FOUND: IS THE SENSOR ON?" },
-        { HC05_ERR_ARG, 0u,
+        { IMU_ERR_NONE_FOUND, 0u, "NO DEVICE FOUND: IS THE SENSOR ON?" },
+        { IMU_ERR_ARG, 0u,
           "THE HC-05 DOES NOT ACCEPT THIS ADDRESS OR PIN" },
     };
     for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
@@ -495,8 +495,8 @@ TEST_CASE(every_string_fits_its_field)
         }
         /* The card's lines at their longest: a 31-byte name, every state,
          * every error as the list's heading. */
-        memset(v.bound_name, 'W', HC05_NAME_MAX - 1u);
-        v.bound_name[HC05_NAME_MAX - 1u] = '\0';
+        memset(v.bound_name, 'W', IMU_NAME_MAX - 1u);
+        v.bound_name[IMU_NAME_MAX - 1u] = '\0';
         v.r.rate_dhz = 2000u;
         v.r.battery_v = 5.99f;
         v.r.angle[0] = -179.9f;
@@ -514,8 +514,8 @@ TEST_CASE(every_string_fits_its_field)
             CHECK(gfx_text_width(body, imu_screen_line(IMS_L_STATE), 1)
                   <= IMS_RW - 2 * IMS_RPAD);
         }
-        for (int e = HC05_ERR_NONE; e <= HC05_ERR_ARG; ++e) {
-            v.err = (hc05_err_t)e;
+        for (int e = IMU_ERR_NONE; e <= IMU_ERR_ARG; ++e) {
+            v.err = (imu_err_t)e;
             v.err_code = 0xFFu;
             imu_screen_set(&v);
             CHECK(gfx_text_width(body, imu_screen_line(IMS_L_HEAD), 1)
@@ -524,7 +524,7 @@ TEST_CASE(every_string_fits_its_field)
                   <= 2 * IMS_BW);
         }
         v.found_n = 8u;
-        v.err = HC05_ERR_NONE;
+        v.err = IMU_ERR_NONE;
         imu_screen_set(&v);
         CHECK(gfx_text_width(body, imu_screen_line(IMS_L_HEAD), 1) <= IMS_LW);
         for (int c = IMU_CAL_RUNNING; c <= IMU_CAL_FAILED; ++c) {

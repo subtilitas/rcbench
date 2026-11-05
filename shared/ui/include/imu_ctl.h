@@ -1,23 +1,16 @@
 /**
  * @file
- * @brief The Bluetooth IMU's controller: the HC-05's AT set-up
- *        (protocols/hc05) and the BWT901CL's reading (imu.h) on one UART,
- *        the screen's commands, the sensor's own commands, and the view the
- *        IMU screen and SETUP > SENSORS show.  Pure C: the panel's driver
+ * @brief The Bluetooth IMU's controller: joins the HC-05 link (imu_hc05.h)
+ *        and the sensor side (imu_sensor.h) on one UART, takes SETUP's
+ *        values and the screen's commands, and gives the view the IMU
+ *        screen and SETUP > SENSORS show.  Pure C: the panel's driver
  *        (firmware/panel/main/panel_imu.c) moves the bytes, drives KEY and
  *        sets the baud.
  *
- * With IMU ON the controller probes the HC-05 (AT at 115200, 38400 and
- * 9600 baud, then AT+VERSION?) and retries every IMU_PROBE_RETRY_MS while
- * no module answers.  While an AT operation runs the UART's bytes go to
- * the HC-05's machine; at any other time they are the sensor's frames.
- * SCAN, BIND and CONNECT TO ANY SENSOR start the hc05 operations of the
- * same names with the BWT901CL's PIN (IMU_PIN).  The sensor's commands
- * (CALIBRATE, RATE, ALGORITHM) go over the Bluetooth link as WitMotion
- * commands, each after the unlock, IMU_CMD_GAP_MS apart: CALIBRATE is
- * CALSW 1, IMU_CAL_MS, CALSW 0, SAVE; a RATE or ALGORITHM change is the
- * register and SAVE, sent while the sensor is connected or when it next
- * connects.
+ * The link decides where the UART's bytes go and when a sensor command
+ * can go; the sensor side holds the reading, the calibration and the
+ * commands.  The sensor's stream flows while IMU is ON, the link reads
+ * IMU_LINK_READY and a sensor is bound.
  *
  * Every function of one controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -32,32 +25,21 @@
 
 #include "hc05.h"
 #include "imu.h"
+#include "imu_hc05.h"
 #include "imu_screen.h"
+#include "imu_sensor.h"
 #include "witmotion.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** @brief The BWT901CL's PIN (its HC-06 radio's). */
-#define IMU_PIN            "1234"
-/** @brief The address kept for CONNECT TO ANY SENSOR (AT+CMODE=1). */
-#define IMU_ADDR_ANY       "*"
-/** @brief A probe again this long after one no module answered, ms. */
-#define IMU_PROBE_RETRY_MS 10000u
-/** @brief The accelerometer calibration's still time, ms. */
-#define IMU_CAL_MS         3000u
-/** @brief The gap between two sensor commands, ms. */
-#define IMU_CMD_GAP_MS     50u
-/** @brief Sensor commands held to send at most. */
-#define IMU_OUTBOX         8u
-
 /** @brief What SETUP sets: SET_IMU_EN, the bound sensor, RATE, ALGORITHM. */
 typedef struct {
     bool    en;                       /**< IMU ON */
-    char    addr[HC05_ADDR_MAX];      /**< SET_TEXT_IMU_ADDR: "" none,
+    char    addr[IMU_ADDR_MAX];       /**< SET_TEXT_IMU_ADDR: "" none,
                                            IMU_ADDR_ANY any sensor */
-    char    name[HC05_NAME_MAX];      /**< SET_TEXT_IMU_NAME */
+    char    name[IMU_NAME_MAX];       /**< SET_TEXT_IMU_NAME */
     uint8_t rate_code;                /**< wit_rate_t */
     bool    six;                      /**< ALGORITHM 6-AXIS (AXIS6 1) */
 } imu_cfg_t;
@@ -66,35 +48,9 @@ typedef struct {
 typedef struct {
     imu_cfg_t    cfg;            /**< SETUP's values, the bind's after one */
     bool         configured;     /**< a first imu_ctl_config() came */
-    hc05_t       bt;             /**< the HC-05's machine */
-    imu_t        m;              /**< the reading */
-    bool         op_open;        /**< an operation started, its end unread */
-    bool         probed;         /**< the HC-05 answered AT since IMU ON */
-    uint32_t     probe_at_ms;    /**< when the next probe goes out */
-    bool         had_frames;     /**< an angle frame since the probe or bind */
-    hc05_err_t   err;            /**< the last operation's error */
-    uint8_t      err_code;       /**< its ERROR:(hh) */
-    bool         inq_refused;    /**< the last scan ended ERROR:(1F) */
-    hc05_dev_t   found[HC05_FOUND_MAX]; /**< the last scan's devices */
-    uint8_t      found_n;        /**< their count */
     uint32_t     bind_seq;       /**< binds and ANYs that ended DONE */
-    imu_cal_t    cal;            /**< the calibration */
-    uint32_t     cal_from_ms;    /**< when it started */
-    bool         cal_lost;       /**< the reading went stale in it */
-    uint32_t     cal_left_ms;    /**< as of the last step */
-    bool         rate_due;       /**< RATE to send once connected */
-    bool         algo_due;       /**< ALGORITHM to send once connected */
-    uint8_t      out[IMU_OUTBOX][WIT_CMD_LEN]; /**< sensor commands held */
-    uint8_t      out_n;          /**< how many */
-    uint8_t      out_head;       /**< the oldest's index */
-    uint32_t     out_ms;         /**< when the last command went */
-    bool         out_sent;       /**< out_ms holds a time */
-    bool         angle_seen;     /**< an angle frame since IMU ON */
-    uint32_t     gaps;           /**< angle frames that came after the
-                                      reading went stale, counted */
-    uint32_t     gap_at_ms;      /**< when the last of those went stale */
-    uint32_t     zero_gen;       /**< ZERO, CLEAR ZERO, and IMU OFF with a
-                                      zero kept, counted */
+    imu_hc05_t   hc05;           /**< the link */
+    imu_sensor_t sensor;         /**< the sensor side */
 } imu_ctl_t;
 
 /** @brief Clear: IMU OFF, nothing bound. @param c NULL does nothing. */
@@ -163,48 +119,6 @@ imu_link_t imu_ctl_link(const imu_ctl_t *c);
  * @return The wit_rate_t code.
  */
 uint8_t imu_ctl_rate_code(int option);
-
-/**
- * @brief Which IMU readings go on to SERVO: each frame once, and a reading
- *        that went stale once, also one that was valid again before SERVO
- *        looked.
- */
-typedef struct {
-    bool     given;      /**< one went on since the reset */
-    bool     was_valid;  /**< that one was valid */
-    uint32_t last_taken; /**< taken_ms of the last valid one */
-    uint32_t gaps;       /**< imu_ctl_t's gaps as last seen */
-} imu_handout_t;
-
-/** @brief What imu_handout_next() says goes on to SERVO. */
-typedef enum {
-    IMU_HAND_NONE,     /**< nothing: the reading went on already */
-    IMU_HAND_READING,  /**< the reading, valid or stale */
-    IMU_HAND_GAP,      /**< a stale reading, timed at gap_at_ms: the reading
-                            went stale and back before SERVO looked; the
-                            next call hands the reading */
-} imu_hand_t;
-
-/**
- * @brief Forget what went on: the next reading goes, valid or not.  Called
- *        when ANGLE SOURCE turns to IMU, so SERVO learns the IMU's state
- *        in place of the AS5600's.
- * @param h The handout.
- */
-void imu_handout_reset(imu_handout_t *h);
-
-/**
- * @brief What goes on to SERVO now, noted as gone.
- * @param h    The handout.
- * @param r    The reading.
- * @param gaps imu_ctl_t's gaps as published with @p r.
- * @return IMU_HAND_GAP when the reading went stale and back since a valid
- *         one went on; IMU_HAND_READING for a valid reading of a frame not
- *         handed before, and for the first stale one after a valid one or
- *         a reset; IMU_HAND_NONE otherwise.
- */
-imu_hand_t imu_handout_next(imu_handout_t *h, const imu_reading_t *r,
-                            uint32_t gaps);
 
 #ifdef __cplusplus
 }

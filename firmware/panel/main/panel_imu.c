@@ -60,9 +60,9 @@ typedef struct {
 typedef struct {
     imu_view_t v;         /**< the view */
     uint32_t   bind_seq;  /**< binds that ended DONE (imu_ctl_t) */
-    uint32_t   gaps;      /**< stale stretches ended by a frame (imu_ctl_t) */
+    uint32_t   gaps;      /**< stale stretches a frame ended (imu_sensor_t) */
     uint32_t   gap_at_ms; /**< when the last of them went stale */
-    uint32_t   zero_gen;  /**< the zero's generation (imu_ctl_t) */
+    uint32_t   zero_gen;  /**< the zero's generation (imu_sensor_t) */
 } imu_pub_t;
 
 /** @brief The frame task's values and commands to the task; NULL off. */
@@ -163,9 +163,9 @@ static void imu_task(void *arg)
         }
         imu_ctl_view(&s_ctl, &s_next.v);
         s_next.bind_seq = s_ctl.bind_seq;
-        s_next.gaps = s_ctl.gaps;
-        s_next.gap_at_ms = s_ctl.gap_at_ms;
-        s_next.zero_gen = s_ctl.zero_gen;
+        s_next.gaps = s_ctl.sensor.gaps;
+        s_next.gap_at_ms = s_ctl.sensor.gap_at_ms;
+        s_next.zero_gen = s_ctl.sensor.zero_gen;
         if (s_next.v.link != was) {
             ESP_LOGI(TAG, "link %d -> %d", (int)was, (int)s_next.v.link);
             was = s_next.v.link;
