@@ -68,6 +68,7 @@ python3 tools/check_formats.py        # every translated format against its call
 python3 tools/check_units.py --check  # a number and its unit without a space
 python3 tools/check_prose.py --check  # the writing rules, exceptions in check_prose_allow.txt
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
+python3 tools/help_site.py --check    # the help pages agree in both languages
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
 python3 tools/mutate.py               # what the suite misses in the changed lines
@@ -471,8 +472,8 @@ pull requests and issues.
   "we", no "previously" or "now". Version history is in `CHANGELOG.md` and git.
 - No self-assessment. A defect that affects a user is documented as a current
   limitation with the condition that triggers it.
-- No marketing words (powerful, seamless, robust, comprehensive, simply, just,
-  easy). No exclamation marks, no emoji.
+- No marketing words (powerful, seamless, robust, blazing, comprehensive,
+  simply, just, easy). No exclamation marks, no emoji.
 - Facts carry numbers and units: pin numbers, voltage ranges, timings, buffer
   sizes, error codes. An adjective that could be a number is a missing number.
 - Short sentences, one idea each. Expand every acronym on first use in each
